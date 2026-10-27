@@ -7,9 +7,9 @@ import { hubServer, PEDIDOS } from '../../platform/test-hub.tsx'
 import type { DataUrl } from './attachments.ts'
 import { stashHandoffFiles } from './handoff.ts'
 import { conversationOf, FIRST, PROJECT, screens, typed, view } from './test-hub.tsx'
-import { HANDOFF_UNCONFIRMED, UNCONFIRMED_SEND } from './text.ts'
+import { UNCONFIRMED_SEND } from './text.ts'
 
-const { open, openConversation } = screens(hubServer())
+const { open } = screens(hubServer())
 
 afterEach(() => sessionStorage.clear())
 
@@ -73,16 +73,8 @@ test('o pedido recusado volta à caixa com o arquivo e a frase (11)', async () =
   expect((await screen.findByRole('alert')).textContent).toBe(UNCONFIRMED_SEND)
   expect(typed(field)).toBe(REQUEST)
   expect(screen.getByRole('button', { name: 'Tirar tabela.pdf' })).toBeTruthy()
-  expect(sessionStorage.getItem(`conexus-handoff:${FIRST}`)).toBeNull()
-})
-
-test('recarregar no meio do envio põe o texto na caixa com a frase e não reenvia (11)', async () => {
-  sessionStorage.setItem(`conexus-handoff:${FIRST}`, REQUEST)
-  const { sent, field } = await openConversation(conversationOf({ id: FIRST }))
-  expect((await screen.findByRole('alert')).textContent).toBe(HANDOFF_UNCONFIRMED)
-  expect(typed(field)).toBe(REQUEST)
-  expect(messagesOf(sent)).toHaveLength(0)
-  expect(sessionStorage.getItem(`conexus-handoff:${FIRST}`)).toBeNull()
+  // Unconfirmed, the copy stays: a reload says the request may have gone (Factory).
+  expect(sessionStorage.getItem(`conexus-handoff:${FIRST}`)).toBe(REQUEST)
 })
 
 test('o modelo recusado depois do Projeto: a página sem conversa diz por quê (10)', async () => {

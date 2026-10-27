@@ -1,10 +1,27 @@
 import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
-import { listModelAccounts } from '@conexus/hub-api'
-import type { Locator } from 'playwright-core'
+import {
+  BUILDER_CONTROLLER,
+  BUILDER_ROUTES,
+  createConversation,
+  createProject,
+  listModelAccounts,
+  readConversation,
+} from '@conexus/hub-api'
+import type { Locator, Page } from 'playwright-core'
 import type { Replies, Viewport } from './layout-harness.ts'
 import { createHarness, DESKTOP, ok, PHONE } from './layout-harness.ts'
-import { companies } from './sweep-replies.ts'
+import { HANDOFF_UNCONFIRMED } from './src/builder/conversation/text.ts'
+import { COMPANY } from './src/platform/fixtures.ts'
+import {
+  companies,
+  OWNER,
+  PROJECT_ID,
+  PROJECT_NAME,
+  projectsPage,
+  startsOn,
+} from './sweep-replies.ts'
+import { sessionReplies } from './sweep-session.ts'
 
 // Início in a real browser: one company Ana owns, its Início in the company's frame.
 const HOUSE = companies([{ name: 'Empresa Teste', role: 'owner' }], false)
@@ -86,3 +103,84 @@ for (const viewport of [DESKTOP, PHONE]) {
     await page.close()
   })
 }
+
+const CONVERSATION_ID = '33333333-3333-4333-8333-333333333333'
+const PROJECT_API = `/api/companies/${COMPANY.id}/projects/${PROJECT_ID}`
+const MESSAGES = `${BUILDER_ROUTES}/agent-controller/${BUILDER_CONTROLLER}/sessions/${CONVERSATION_ID}/messages`
+const REQUEST = 'Um app de encomendas com cliente, data de entrega e valor'
+const CREATED_AT = '2026-10-27T12:00:00.000Z'
+
+/** Início creates the Projeto and its conversation, which opens and sends; `sent` holds that send. */
+function starting(sent: Promise<unknown>): Replies {
+  return {
+    ...OWNER,
+    ...projectsPage(COMPANY.id),
+    ...startsOn(COMPANY.id),
+    [`POST /api/companies/${COMPANY.id}/projects`]: ok(createProject, {
+      project: {
+        id: PROJECT_ID,
+        name: PROJECT_NAME,
+        createdAt: CREATED_AT,
+        mayDelete: true,
+        mayManageVersions: true,
+        address: 'pedidos--empresa-teste.apps.example.test',
+        appVersion: null,
+      },
+    }),
+    [`POST ${PROJECT_API}/conversations`]: ok(createConversation, {
+      conversation: {
+        id: CONVERSATION_ID,
+        title: null,
+        createdAt: CREATED_AT,
+        model: 'anthropic/claude-sonnet-4',
+      },
+    }),
+    [`GET ${PROJECT_API}/conversations/${CONVERSATION_ID}`]: ok(readConversation, {
+      conversation: { id: CONVERSATION_ID, title: null, createdAt: CREATED_AT },
+    }),
+    ...sessionReplies(CONVERSATION_ID, {}),
+    [`POST ${MESSAGES}`]: { status: 200, json: { ok: true }, hold: sent },
+  }
+}
+
+/** The request written, **Enviar**, the name, **Criar e começar**: the conversation opens. */
+async function start(page: Page) {
+  await page.getByRole('textbox', { name: 'Mensagem para o Builder' }).fill(REQUEST)
+  await page.getByRole('button', { name: 'Enviar' }).click()
+  await page.getByLabel('Nome do projeto').fill('Pedidos')
+  await page.getByRole('button', { name: 'Criar e começar' }).click()
+  await page.waitForURL((url) => url.pathname.endsWith(`/conversations/${CONVERSATION_ID}`))
+}
+
+function messagesSent(page: Page & { seen: { method: string; path: string }[] }) {
+  return page.seen.filter((one) => one.method === 'POST' && one.path === MESSAGES).length
+}
+
+test('no celular, Criar e começar abre na Conversa, não na Prévia', async () => {
+  const page = await open(`/companies/${COMPANY.id}`, PHONE, starting(Promise.resolve()))
+  await start(page)
+  const conversation = page.getByRole('button', { name: 'Conversa', exact: true })
+  assert.equal(await conversation.getAttribute('aria-pressed'), 'true')
+  assert.ok(await page.getByRole('log', { name: 'Conversa com o Builder' }).isVisible())
+  assert.equal(await page.getByText(/Ainda não há uma prévia/).isVisible(), false)
+  assert.deepEqual(page.problems, [])
+  await page.close()
+})
+
+test('recarregar durante o envio do pedido põe o texto na caixa com a frase e não reenvia (11)', async () => {
+  const held = Promise.withResolvers<void>()
+  const page = await open(`/companies/${COMPANY.id}`, DESKTOP, starting(held.promise))
+  await start(page)
+  await page.waitForFunction(
+    (key) => sessionStorage.getItem(key) !== null,
+    `conexus-handoff:${CONVERSATION_ID}`,
+  )
+  assert.equal(messagesSent(page), 1)
+  await page.reload()
+  assert.equal(await page.getByRole('alert').textContent(), HANDOFF_UNCONFIRMED)
+  const field = page.getByRole('textbox', { name: 'Mensagem para o Builder' })
+  assert.equal(await field.inputValue(), REQUEST)
+  assert.equal(messagesSent(page), 1)
+  held.resolve()
+  await page.close()
+})

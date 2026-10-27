@@ -2,7 +2,7 @@ import { fireEvent } from '@testing-library/react'
 import { HttpResponse } from 'msw'
 import { z } from 'zod'
 import type { Stored } from './messages.ts'
-import { Display, IsStored, recordedEvent } from './test-recorded.ts'
+import { Display, IsStored, recordedEvent, recordedRun } from './test-recorded.ts'
 
 /** Mastra's display state as its stream sends it, the fields the screen reads given. */
 export function displayOf(fields: Record<string, unknown> = {}) {
@@ -97,15 +97,25 @@ const SentMessage = z.object({
     .optional(),
 })
 
-/** A message sent by the route as Mastra stores it, each file a part naming its type `mimeType`. */
+const StoredFile = z.looseObject({ type: z.literal('file'), mimeType: z.string() })
+
+/** A file part of a message Mastra stored, from the recording of a send with files (testing T26). */
+function recordedFile() {
+  for (const message of recordedRun('files').read) {
+    for (const part of message.content.parts) {
+      const file = StoredFile.safeParse(part)
+      if (file.success) return file.data
+    }
+  }
+  throw new Error('files.jsonl stores no file part')
+}
+
+/** A message sent by the route as Mastra stores it, each file the recorded part with its own data. */
 export function personSent(body: unknown, id: string): Stored {
   const { message, files = [] } = SentMessage.parse(body)
   const said = personSaid(message, id)
-  const parts = files.map(({ mediaType, ...file }) => ({
-    type: 'file',
-    mimeType: mediaType,
-    ...file,
-  }))
+  const stored = recordedFile()
+  const parts = files.map(({ mediaType, ...file }) => ({ ...stored, mimeType: mediaType, ...file }))
   return IsStored.parse({ ...said, content: { parts: [...said.content.parts, ...parts] } })
 }
 

@@ -60,6 +60,7 @@ export function useHandoff(
     const outgoing = { content: handoff.content, files: takeHandoffFiles(conversationId) }
     mirror.setItem(keyOf(conversationId), outgoing.content)
     void navigate({ to: '.', search: (search) => search, replace: true, state: {} })
-    void on.send(outgoing).finally(() => mirror.removeItem(keyOf(conversationId)))
+    // Kept unless the send is confirmed: a reload aborts it on its way out (Factory `useHandoffPrompt.ts`).
+    void on.send(outgoing).then((sent) => sent && mirror.removeItem(keyOf(conversationId)))
   }, [conversationId, handoff, navigate, on])
 }

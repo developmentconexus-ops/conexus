@@ -1,3 +1,4 @@
+import { useLocation } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
 import { useState } from 'react'
 import { useDefaultLayout } from 'react-resizable-panels'
@@ -25,7 +26,9 @@ const PHONE_REGIONS =
  * only paint.
  */
 export function Workbench(props: { area: ReactNode; panel: ReactNode }) {
-  const [view, setView] = useState<'app' | 'chat'>('app')
+  // Início's request opens its conversation in view, the person's message and the Builder at work.
+  const handedOver = useLocation({ select: (location) => location.state.handoff !== undefined })
+  const [view, setView] = useState<'app' | 'chat'>(handedOver ? 'chat' : 'app')
   const phone = useIsMobile()
   const layout = useDefaultLayout({ id: LAYOUT_ID, storage: layoutMemory })
   return (

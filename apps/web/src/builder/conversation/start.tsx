@@ -1,5 +1,4 @@
 import type { CompanyId, Effort, ModelId, Project } from '@conexus/hub-api'
-import { runningEffort } from '@conexus/hub-api'
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
@@ -10,18 +9,17 @@ import { useAttemptKey } from '../../platform/attempt-key.ts'
 import { HubFailure } from '../../platform/hub.ts'
 import { AttachmentGroup } from '../../ui/attachment.tsx'
 import { Button } from '../../ui/button.tsx'
-import { useIsMobile } from '../../ui/use-mobile.ts'
-import { accountsQuery, ModelPicker } from '../model-accounts/public.ts'
+import { accountsQuery } from '../model-accounts/public.ts'
 import type { Outgoing } from './attachments.ts'
 import { Composer } from './composer.tsx'
 import { useDraft } from './draft.ts'
 import type { ModelRefusal } from './handoff.ts'
 import { MODEL_REFUSALS, stashHandoffFiles } from './handoff.ts'
 import { chipOf } from './messages.ts'
-import { NoAccount } from './model-choice.tsx'
+import { ComposerModelPicker, NoAccount } from './model-choice.tsx'
 import { FileChip } from './person-turn.tsx'
 import { sendCreation } from './queries.ts'
-import { EXAMPLES, NO_SECRETS, START_NO_ACCOUNT, START_PLACEHOLDER } from './text.ts'
+import { EXAMPLES, START_NO_ACCOUNT, START_PLACEHOLDER } from './text.ts'
 
 type Phase =
   | { kind: 'WRITING' }
@@ -78,15 +76,7 @@ function usePicked(companyId: CompanyId) {
   const [picked, setPicked] = useState<{ model: ModelId; effort: Effort } | null>(
     start && { model: start.model, effort: start.effort },
   )
-  const providers = accounts.choices.mine
-  function pickModel(model: ModelId) {
-    const efforts = providers.flatMap((one) => one.models).find((one) => one.id === model)?.efforts
-    setPicked((now) => ({
-      model,
-      effort: efforts === undefined ? 'off' : runningEffort(efforts, now?.effort ?? 'off'),
-    }))
-  }
-  return { picked, setPicked, providers, pickModel }
+  return { picked, setPicked, providers: accounts.choices.mine }
 }
 
 /**
@@ -94,7 +84,11 @@ function usePicked(companyId: CompanyId) {
  * request handed over. A refusal of the model opens the Projeto instead, saying so; any other
  * failure goes back to the name step, the attempt key kept for its **Tentar de novo** (web W24).
  */
-function useCreated(companyId: CompanyId, picked: { model: ModelId; effort: Effort }) {
+function useCreated(
+  companyId: CompanyId,
+  picked: { model: ModelId; effort: Effort },
+  onOpened: () => void,
+) {
   const navigate = useNavigate()
   const create = useMutation(sendCreation)
   const attempt = useAttemptKey()
@@ -105,6 +99,7 @@ function useCreated(companyId: CompanyId, picked: { model: ModelId; effort: Effo
         create.mutateAsync({ params, body: picked, attemptKey }),
       )
       stashHandoffFiles(conversation.id, outgoing.files)
+      onOpened()
       await navigate({
         to: '/companies/$companyId/projects/$projectId/conversations/$conversationId',
         params: { ...params, conversationId: conversation.id },
@@ -130,14 +125,14 @@ function Naming(props: {
   phase: Sent
   picked: { model: ModelId; effort: Effort }
   onPhase: (phase: Phase) => void
-  onBack: (outgoing: Outgoing) => void
+  onOpened: () => void
 }) {
   const { companyId, phase } = props
   const { outgoing } = phase
   const { company } = useSuspenseQuery(companyQuery(companyId)).data
   const { databaseReady } = useSuspenseQuery(projectsQuery(companyId, undefined)).data
   const navigate = useNavigate()
-  const created = useCreated(companyId, props.picked)
+  const created = useCreated(companyId, props.picked, props.onOpened)
   return (
     <div className={`${FRAME} rounded-composer border border-line bg-surface`}>
       <Request outgoing={outgoing} />
@@ -150,7 +145,7 @@ function Naming(props: {
             props.onPhase({ kind: 'STARTING', outgoing, project })
             await created(project, outgoing)
           }}
-          onBack={() => props.onBack(outgoing)}
+          onBack={() => props.onPhase({ kind: 'WRITING' })}
           onOpenProject={() => {
             if (phase.kind !== 'STARTING') return
             void navigate({
@@ -171,11 +166,10 @@ function Naming(props: {
  * request. Without a model account, a notice takes the box's place.
  */
 export function Start({ companyId }: { companyId: CompanyId }): ReactNode {
-  const { picked, setPicked, providers, pickModel } = usePicked(companyId)
+  const { picked, setPicked, providers } = usePicked(companyId)
   const draft = useDraft(`start:${companyId}`)
   const field = useRef<HTMLTextAreaElement>(null)
   const [phase, setPhase] = useState<Phase>({ kind: 'WRITING' })
-  const phone = useIsMobile()
 
   if (picked === null)
     return (
@@ -191,10 +185,7 @@ export function Start({ companyId }: { companyId: CompanyId }): ReactNode {
         phase={phase}
         picked={picked}
         onPhase={setPhase}
-        onBack={(outgoing) => {
-          draft.restore(outgoing)
-          setPhase({ kind: 'WRITING' })
-        }}
+        onOpened={() => draft.take()}
       />
     )
 
@@ -208,24 +199,18 @@ export function Start({ companyId }: { companyId: CompanyId }): ReactNode {
           field={field}
           placeholder={START_PLACEHOLDER}
           onSend={(outgoing) => {
+            // The request stays in the draft until its conversation opens (criterion 12).
+            draft.restore(outgoing)
             setPhase({ kind: 'NAMING', outgoing })
             return Promise.resolve(true)
           }}
           onStop={() => undefined}
           picker={
-            <ModelPicker
+            <ComposerModelPicker
               providers={providers}
-              value={picked.model}
-              name="Modelo e raciocínio"
+              value={picked}
               heading="Modelo do pedido"
-              note={phone ? NO_SECRETS : undefined}
-              chevron={false}
-              className="h-8 rounded-pill bg-surface-3 px-sm max-md:h-11 text-label font-medium hover:bg-accent-soft data-popup-open:bg-accent-soft"
-              onChange={pickModel}
-              effort={{
-                value: picked.effort,
-                onChange: (effort) => setPicked({ model: picked.model, effort }),
-              }}
+              onChange={setPicked}
             />
           }
         />
