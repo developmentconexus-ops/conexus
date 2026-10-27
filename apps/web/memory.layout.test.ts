@@ -156,6 +156,12 @@ for (const [viewport, effort, shown] of [
     if (shown) {
       const name = button.getByText('Claude Sonnet 4', { exact: true })
       assert.ok(await name.evaluate((one) => one.scrollWidth <= one.clientWidth), 'name whole')
+      // Playwright calls a level clipped by the one-line box visible, so the line is measured.
+      const level = await button
+        .getByText('Alto', { exact: true })
+        .evaluate((one) => one.getBoundingClientRect().top)
+      const line = await name.evaluate((one) => one.getBoundingClientRect().top)
+      assert.ok(Math.abs(level - line) < 2, 'the level is on the name line, not clipped below it')
     }
     await button.click()
     const slider = page.getByRole('slider', { name: 'Raciocínio' })
