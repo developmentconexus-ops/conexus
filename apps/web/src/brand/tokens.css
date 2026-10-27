@@ -305,11 +305,11 @@
   }
 
   /* One keyboard focus for every piece (design V28); a utility that removes the outline wins. */
-  :focus-visible:not([tabindex="-1"]) {
+  :focus-visible {
     @apply outline-2 outline-offset-2 outline-solid outline-accent;
   }
 
-  /* The browser's default ring on a title the program focuses; V28 draws outlines only on buttons, tabs, links and fields (founder, 2026-10-27). */
+  /* A title the program focuses draws no ring (design V28; founder, 2026-10-27). */
   [tabindex="-1"]:focus-visible {
     outline: none;
   }

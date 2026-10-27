@@ -175,6 +175,7 @@ test('depois de entrar, o foco vai à caixa (#32-4)', async () => {
   fireEvent.submit(form)
   const box = await screen.findByRole('textbox', { name: 'Mensagem para o Builder' })
   await waitFor(() => expect(document.activeElement).toBe(box))
+  expect(box.tabIndex).toBe(0)
 })
 
 test('numa página sem campo, o título recebe o foco (#32-4)', async () => {
@@ -185,6 +186,17 @@ test('numa página sem campo, o título recebe o foco (#32-4)', async () => {
     name: 'Você ainda não está em nenhuma empresa.',
   })
   await waitFor(() => expect(document.activeElement).toBe(title))
+  expect(title.tabIndex).toBe(-1)
+})
+
+test('numa página só com caixa de marcar ou opção, o título recebe o foco (#32-4)', async () => {
+  hub(listed(FIRST), { signedIn: false })
+  open(`/companies/${FIRST.id}/settings/appearance`)
+  await signInFromLogin()
+  await screen.findByRole('heading', { name: 'Aparência' })
+  await waitFor(() =>
+    expect(document.activeElement).toBe(screen.getByRole('heading', { name: 'Aparência' })),
+  )
 })
 
 test('com o carregamento da página preso, a caixa que aparece depois recebe o foco', async () => {

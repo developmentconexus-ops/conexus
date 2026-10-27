@@ -47,6 +47,9 @@ const NOTICES: Record<SignInReason, string> = {
   'password-changed': 'Senha trocada. Entre com a nova senha.',
 }
 
+const TEXT_FIELD =
+  'main textarea, main input:is(:not([type]), [type=text], [type=email], [type=search], [type=password], [type=tel], [type=url], [type=number])'
+
 /**
  * The form unmounts when the person signs in, which drops focus to the page body; the new page's
  * first text field takes it, or its title when it has none (#32-4). The router emits `onRendered`
@@ -55,9 +58,7 @@ const NOTICES: Record<SignInReason, string> = {
 function focusWhenRendered(router: ReturnType<typeof useRouter>): () => void {
   const stop = router.subscribe('onRendered', () => {
     stop()
-    const field = document.querySelector<HTMLElement>(
-      'main textarea, main input:not([type=hidden])',
-    )
+    const field = document.querySelector<HTMLElement>(TEXT_FIELD)
     const target = field ?? document.querySelector<HTMLElement>('main h1')
     if (target) {
       if (!field) target.tabIndex = -1
