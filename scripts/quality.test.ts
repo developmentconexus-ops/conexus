@@ -53,18 +53,24 @@ function clone(name: string): string {
   ].join('\n')
 }
 
-function quality(before: Record<string, string>, after: Record<string, string>) {
+function quality(
+  before: Record<string, string>,
+  after: Record<string, string>,
+  options: { args?: string[]; move?: [string, string] } = {},
+) {
   const dir = mkdtempSync(join(tmpdir(), 'conexus-quality-'))
   dirs.push(dir)
   git(dir, 'init', '-q', '-b', 'main')
   for (const [path, content] of Object.entries(before)) write(dir, path, content)
   git(dir, 'add', '.')
   git(dir, 'commit', '-q', '-m', 'base', '--allow-empty')
+  if (options.move !== undefined) {
+    mkdirSync(dirname(join(dir, options.move[1])), { recursive: true })
+    git(dir, 'mv', ...options.move)
+  }
   for (const [path, content] of Object.entries(after)) write(dir, path, content)
-  return spawnSync('node', [SCRIPT, 'main', '--fast', '--root', dir], {
-    encoding: 'utf8',
-    timeout: 120_000,
-  })
+  const args = options.args ?? ['main', '--fast']
+  return spawnSync('node', [SCRIPT, ...args, '--root', dir], { encoding: 'utf8', timeout: 120_000 })
 }
 
 test('aceita uma função tocada até 15', () => {
@@ -106,4 +112,26 @@ test('não conta como novo um clone que já existia', () => {
   const both = { [FILE]: clone('one'), 'apps/web/src/b.ts': clone('two') }
   const run = quality(both, { 'apps/web/src/b.ts': `${clone('two')}export const c = 3\n` })
   assert.equal(run.status, 0, run.stderr)
+})
+
+test('lê a base e --fast em qualquer ordem e recusa um sinalizador desconhecido', () => {
+  const before = { [FILE]: 'export const a = 1\n' }
+  const after = { [FILE]: nested('g', 6) }
+  const flagFirst = quality(before, after, { args: ['--fast', 'main'] })
+  assert.equal(flagFirst.status, 1)
+  assert.match(flagFirst.stderr, /g is 21$/m)
+  const unknown = quality(before, after, { args: ['main', '--fats'] })
+  assert.notEqual(unknown.status, 0)
+  assert.match(unknown.stderr, /--fats/)
+})
+
+test('uma mudança de nome sem mudar o conteúdo não é código novo', () => {
+  const moved = quality({ [FILE]: nested('h', 6) }, {}, { move: [FILE, 'apps/web/src/b.ts'] })
+  assert.equal(moved.status, 0, moved.stderr)
+  const edited = quality(
+    { [FILE]: nested('h', 6) },
+    { 'apps/web/src/b.ts': `${nested('h', 6)}export const c = 3\n` },
+    { move: [FILE, 'apps/web/src/b.ts'] },
+  )
+  assert.equal(edited.status, 0, edited.stderr)
 })

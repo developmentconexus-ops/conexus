@@ -29,7 +29,7 @@ const Report = z.looseObject({
 })
 
 type Survivor = { file: string; line: number; mutator: string; replacement: string }
-export type Mutation = { package: string; mutants: number; survivors: Survivor[] }
+export type Mutation = { package: string; tests: string[]; mutants: number; survivors: Survivor[] }
 
 function packageOf(file: string): string {
   const [top, name] = file.split('/')
@@ -37,7 +37,13 @@ function packageOf(file: string): string {
 }
 
 /** The test files that own a package's changed code: the tests the change touches, and the one beside each file. */
-export function owners(root: string, changed: Changed, sources: Changed, pkg: string): string[] {
+export function owners(args: {
+  root: string
+  changed: Changed
+  sources: Changed
+  pkg: string
+}): string[] {
+  const { root, changed, sources, pkg } = args
   const touched = [...changed.keys()].filter((file) => packageOf(file) === pkg && isTest(file))
   const beside = [...sources.keys()]
     .filter((file) => packageOf(file) === pkg)
@@ -47,24 +53,30 @@ export function owners(root: string, changed: Changed, sources: Changed, pkg: st
 }
 
 /** Runs Stryker in `pkg` on the added lines of `sources`; the server's command runner gets the owning `tests`. */
-export function mutate(root: string, pkg: string, sources: Changed, tests: string[]): Mutation {
+export function mutate(args: {
+  root: string
+  pkg: string
+  sources: Changed
+  tests: string[]
+}): Mutation {
+  const { root, pkg, sources, tests } = args
   const cwd = join(root, pkg)
   const config = Config.parse(JSON.parse(readFileSync(join(cwd, 'stryker.config.json'), 'utf8')))
   const ranges = [...sources].filter(([file]) => packageOf(file) === pkg)
   const entries = ranges.flatMap(([file, lines]) =>
     lines.map(([start, end]) => `${relative(pkg, file)}:${start}-${end}`),
   )
-  const args = ['run', '--mutate', entries.join(',')]
+  const flags = ['run', '--mutate', entries.join(',')]
   if (config.commandRunner !== undefined) {
     if (tests.length === 0) {
       throw new Error(`${pkg}: no test file owns the changed code; name them with --tests`)
     }
     const files = tests.map((file) => relative(pkg, file)).join(' ')
-    args.push('--commandRunner.command', `${config.commandRunner.command} ${files}`)
+    flags.push('--commandRunner.command', `${config.commandRunner.command} ${files}`)
   }
   const reportFile = join(cwd, config.jsonReporter.fileName)
   rmSync(reportFile, { force: true })
-  const run = spawnCommand(STRYKER, args, { cwd, deadline: MUTATION_DEADLINE_MS })
+  const run = spawnCommand(STRYKER, flags, { cwd, deadline: MUTATION_DEADLINE_MS })
   if (!existsSync(reportFile))
     throw new Error(`${pkg}: Stryker wrote no report:\n${run.output.slice(-2000)}`)
   const report = Report.parse(JSON.parse(readFileSync(reportFile, 'utf8')))
@@ -82,7 +94,12 @@ export function mutate(root: string, pkg: string, sources: Changed, tests: strin
           : mutant.mutatorName,
       replacement: mutant.replacement ?? '',
     }))
-  return { package: pkg, mutants: mutants.length, survivors }
+  return {
+    package: pkg,
+    tests: config.commandRunner === undefined ? [] : tests,
+    mutants: mutants.length,
+    survivors,
+  }
 }
 
 /** Packages that hold changed source and a Stryker configuration; the rest are named as not mutated. */

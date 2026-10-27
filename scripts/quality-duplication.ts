@@ -47,12 +47,13 @@ function inChangedLines(clone: Clone, changed: Changed): boolean {
  * A clone with a side in the changed lines is new when its two files hold more clones than at the
  * base. `baseDir` is a callback because the base tree is only read when a candidate exists.
  */
-export function newClones(
-  root: string,
-  changed: Changed,
-  baseDir: () => string,
-  scratch: string,
-): Clone[] {
+export function newClones(args: {
+  root: string
+  changed: Changed
+  baseDir: () => string
+  scratch: string
+}): Clone[] {
+  const { root, changed, baseDir, scratch } = args
   const head = clonesIn(root, join(scratch, 'head-jscpd'))
   const candidates = head.filter((clone) => inChangedLines(clone, changed))
   if (candidates.length === 0) return []

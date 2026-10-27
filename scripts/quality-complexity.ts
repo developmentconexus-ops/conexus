@@ -137,12 +137,13 @@ export function fails(row: Row): boolean {
 }
 
 /** Every touched function that Biome scores above 1, with its score at the base and at the head. */
-export function complexityRows(
-  root: string,
-  changed: Changed,
-  baseDir: string,
-  scratch: string,
-): Row[] {
+export function complexityRows(args: {
+  root: string
+  changed: Changed
+  baseDir: string
+  scratch: string
+}): Row[] {
+  const { root, changed, baseDir, scratch } = args
   const files = [...changed.keys()]
   const head = scoresIn(root, files, join(scratch, 'head.json'))
   const base = scoresIn(
