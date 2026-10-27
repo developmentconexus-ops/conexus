@@ -229,3 +229,7 @@ Cartão da etapa 13.1 aprovado em 2026-10-27 (commit f5c056c42c56f47b8dc674c5822
 ## Etapa 13.2
 
 Cartão da etapa 13.2 aprovado em 2026-10-27 (commit c91b747f5e38e752b0b2b310f35a4c770047b7b2): "Aprovo"
+
+A emenda do cartão acrescenta à U1 o **+** e o microfone com o mesmo círculo de fundo da pílula do modelo, 32 px desenhados e 44 de toque, e o critério 29 (fundador, a captura do iPhone, 2026-10-27).
+
+Cartão da etapa 13.2 aprovado em 2026-10-27 (commit 6e29e54e07a8516f152260a3c8dbd9c0463233ea): "Sim"
