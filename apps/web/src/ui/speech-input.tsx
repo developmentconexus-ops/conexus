@@ -94,12 +94,12 @@ export function SpeechInput(props: {
   if (Recognition === undefined) return null
   return (
     <Button
-      variant="ghost"
+      variant="soft"
       size="icon"
       aria-label="Ditar"
       aria-pressed={listening}
       disabled={!ready}
-      className="aria-pressed:bg-surface-3 aria-pressed:text-danger"
+      className="aria-pressed:text-danger"
       onClick={() => (listening ? recognition.current?.stop() : recognition.current?.start())}
     >
       <MicIcon aria-hidden="true" />

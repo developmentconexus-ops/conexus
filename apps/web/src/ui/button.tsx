@@ -16,6 +16,8 @@ const buttonClasses = cva(
       variant: {
         primary: 'bg-ink text-on-ink',
         default: 'border-line bg-surface text-text hover:bg-surface-3',
+        // The composer's quiet round control, the same soft fill as its model button.
+        soft: 'rounded-pill bg-surface-3 text-text-2 hover:bg-accent-soft hover:text-text',
         ghost: 'bg-transparent text-text-2 hover:bg-surface-3 hover:text-text',
         // A destructive action: neutral on the page, full danger only at its confirmation (V55).
         danger: 'border-line bg-surface text-danger hover:bg-surface-3',

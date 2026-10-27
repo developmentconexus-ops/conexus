@@ -99,7 +99,11 @@ function Attach({ add }: { add: AddFiles }) {
   const picker = useRef<HTMLInputElement>(null)
   return (
     <>
-      <InputGroupButton aria-label="Anexar arquivos" onClick={() => picker.current?.click()}>
+      <InputGroupButton
+        variant="soft"
+        aria-label="Anexar arquivos"
+        onClick={() => picker.current?.click()}
+      >
         <PlusIcon aria-hidden="true" />
       </InputGroupButton>
       <input

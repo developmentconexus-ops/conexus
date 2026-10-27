@@ -211,3 +211,31 @@ for (const [reducedMotion, sweeps] of [
     await page.close()
   })
 }
+
+for (const viewport of [DESKTOP, PHONE]) {
+  test(`+, o modelo, o microfone e Enviar são uma família: 32 px e o mesmo fundo suave, em ${viewport.width}px`, async () => {
+    const page = await openedWith(viewport, 'anthropic/claude-sonnet-4')
+    await page.getByRole('button', { name: 'Enviar' }).waitFor()
+    const row = page.locator('form [data-slot="input-group-addon"]').last()
+    function look(name: string) {
+      return row.locator(`button[aria-label="${name}"]`).evaluate((button) => {
+        const style = getComputedStyle(button)
+        const height = button.getBoundingClientRect().height
+        return {
+          height,
+          background: style.backgroundColor,
+          radius: Number.parseFloat(style.borderTopLeftRadius) >= height / 2,
+        }
+      })
+    }
+    const [attach, model, mic] = await Promise.all(
+      ['Anexar arquivos', 'Modelo e raciocínio', 'Ditar'].map(look),
+    )
+    assert.ok(attach && model && mic)
+    for (const each of [attach, model, mic]) assert.equal(each.height, 32)
+    assert.equal(attach.background, model.background, "+ paints the pill's background")
+    assert.equal(mic.background, model.background, "the microphone paints the pill's background")
+    assert.ok(attach.radius && mic.radius, '+ and the microphone are circles')
+    await page.close()
+  })
+}

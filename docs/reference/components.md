@@ -40,6 +40,12 @@ icon-button:
   rounded: "{rounded.control}"
   size: "32px"
   touch: "44px on a touch screen (pointer: coarse), not drawn"
+icon-button-soft:
+  backgroundColor: "{colors.surface-3}"
+  textColor: "{colors.text-2}"
+  rounded: "{rounded.pill}"
+  size: "32px (the composer's + and microphone, with the model button's own fill)"
+  touch: "44px on a touch screen (pointer: coarse), not drawn"
 icon-button-small:
   backgroundColor: "transparent"
   textColor: "{colors.text-2}"
