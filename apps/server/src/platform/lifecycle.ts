@@ -64,19 +64,27 @@ export function shutDownOnSignal(
 }
 
 /**
- * The listeners close as Mastra's deployer closes its server (`deployer/src/server/index.ts`
- * shutdown): they stop accepting while `drain` ends the Hub's own work and streams, the requests
- * in flight then get `DRAIN_MS` to finish, and the connections left after it are cut.
+ * The listeners close in the Mastra deployer's order (`deployer/src/server/index.ts:713-734`, 1.78):
+ * they stop accepting, idle connections are closed at once and every 100 ms, and what is still
+ * open `DRAIN_MS` after the close began is cut. One difference: `drain` runs inside that window
+ * and also stops Mastra, which the deployer does after it; the pools stay open until `release`,
+ * so a request still in flight keeps its database.
  */
 export async function closeListeners(listeners: FastifyInstance[], drain: () => Promise<void>) {
   const closed = Promise.all(listeners.map((listener) => listener.close()))
-  await drain()
+  function closeIdle() {
+    for (const listener of listeners) listener.server.closeIdleConnections()
+  }
+  closeIdle()
+  const sweep = setInterval(closeIdle, 100)
   const cut = setTimeout(() => {
     for (const listener of listeners) listener.server.closeAllConnections()
   }, DRAIN_MS)
   try {
+    await drain()
     await closed
   } finally {
+    clearInterval(sweep)
     clearTimeout(cut)
   }
 }
