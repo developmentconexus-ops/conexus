@@ -184,3 +184,21 @@ test('recarregar durante o envio do pedido põe o texto na caixa com a frase e n
   held.resolve()
   await page.close()
 })
+
+test('no celular, recarregar durante o envio do pedido abre na Conversa, com a frase à vista', async () => {
+  const held = Promise.withResolvers<void>()
+  const page = await open(`/companies/${COMPANY.id}`, PHONE, starting(held.promise))
+  await start(page)
+  await page.waitForFunction(
+    (key) => sessionStorage.getItem(key) !== null,
+    `conexus-handoff:${CONVERSATION_ID}`,
+  )
+  await page.reload()
+  const conversation = page.getByRole('button', { name: 'Conversa', exact: true })
+  assert.equal(await conversation.getAttribute('aria-pressed'), 'true')
+  assert.equal(await page.getByRole('alert').textContent(), HANDOFF_UNCONFIRMED)
+  assert.ok(await page.getByRole('alert').isVisible())
+  assert.equal(await page.getByText(/Ainda não há uma prévia/).isVisible(), false)
+  held.resolve()
+  await page.close()
+})
