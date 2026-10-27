@@ -52,6 +52,13 @@
   --color-danger: #c0283d;
   --color-on-accent: #ffffff;
   --color-preview-paper: #ffffff;
+  --color-code-keyword: #cf222e;
+  --color-code-string: #0a3069;
+  --color-code-comment: #6e7781;
+  --color-code-function: #8250df;
+  --color-code-constant: #0550ae;
+  --color-code-parameter: #953800;
+  --color-code-expression: #116329;
 
   --font-display: "Bricolage Grotesque", system-ui, sans-serif;
   --font-body: "Hanken Grotesk", system-ui, sans-serif;
@@ -240,6 +247,13 @@
     --color-danger: #f28b9a;
     --color-on-accent: #ffffff;
     --color-preview-paper: #ffffff;
+    --color-code-keyword: #ff7b72;
+    --color-code-string: #a5d6ff;
+    --color-code-comment: #8b949e;
+    --color-code-function: #d2a8ff;
+    --color-code-constant: #79c0ff;
+    --color-code-parameter: #ffa657;
+    --color-code-expression: #7ee787;
   }
 }
 
@@ -265,6 +279,13 @@
   --color-danger: #f28b9a;
   --color-on-accent: #ffffff;
   --color-preview-paper: #ffffff;
+  --color-code-keyword: #ff7b72;
+  --color-code-string: #a5d6ff;
+  --color-code-comment: #8b949e;
+  --color-code-function: #d2a8ff;
+  --color-code-constant: #79c0ff;
+  --color-code-parameter: #ffa657;
+  --color-code-expression: #7ee787;
 }
 
 @media (max-width: 40rem) {

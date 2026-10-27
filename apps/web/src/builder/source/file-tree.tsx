@@ -1,4 +1,12 @@
-import { ChevronRightIcon } from 'lucide-react'
+import {
+  ChevronRightIcon,
+  FileCodeIcon,
+  FileIcon,
+  FileJsonIcon,
+  FileTextIcon,
+  FolderIcon,
+  FolderOpenIcon,
+} from 'lucide-react'
 import type { KeyboardEvent } from 'react'
 import { cn } from '../../ui/cn.ts'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../../ui/collapsible.tsx'
@@ -47,10 +55,34 @@ export function firstShown(nodes: TreeNode[]): string | undefined {
 }
 
 const ROW =
-  'flex w-full items-center gap-xs break-all rounded-control px-sm py-xs text-left font-mono text-fact hover:bg-surface-3'
+  'group flex w-full items-center gap-xs break-all rounded-control px-sm py-xs text-left font-mono text-fact'
 
-function Nodes(props: { nodes: TreeNode[]; chosen?: string; onChoose: (path: string) => void }) {
-  const { nodes, chosen, onChoose } = props
+const ICONS: Record<string, typeof FileIcon> = {
+  ts: FileCodeIcon,
+  tsx: FileCodeIcon,
+  js: FileCodeIcon,
+  json: FileJsonIcon,
+  md: FileTextIcon,
+}
+
+function FileKind(props: { name: string }) {
+  const Icon = ICONS[props.name.split('.').at(-1) ?? ''] ?? FileIcon
+  return <Icon aria-hidden="true" className="size-4 shrink-0 text-text-2" />
+}
+
+/** The folders on the way to a file: the only ones that open by themselves. */
+function ancestorsOf(path: string | undefined): Set<string> {
+  const parts = path?.split('/').slice(0, -1) ?? []
+  return new Set(parts.map((_, at) => parts.slice(0, at + 1).join('/')))
+}
+
+function Nodes(props: {
+  nodes: TreeNode[]
+  chosen?: string
+  open: Set<string>
+  onChoose: (path: string) => void
+}) {
+  const { nodes, chosen, open, onChoose } = props
   return nodes.map((node) =>
     node.children === undefined ? (
       <button
@@ -59,24 +91,38 @@ function Nodes(props: { nodes: TreeNode[]; chosen?: string; onChoose: (path: str
         role="treeitem"
         aria-selected={node.path === chosen}
         onClick={() => onChoose(node.path)}
-        className={cn(ROW, 'pl-lg', node.path === chosen && 'bg-accent-soft text-text')}
+        className={cn(
+          ROW,
+          'pl-lg',
+          node.path === chosen ? 'bg-accent-soft text-text' : 'hover:bg-surface-3',
+        )}
       >
-        {node.name}
+        <FileKind name={node.name} />
+        <span className="min-w-0 break-all">{node.name}</span>
       </button>
     ) : (
-      <Collapsible key={node.path} defaultOpen={!KIT.test(node.path)} className="group/folder">
-        <CollapsibleTrigger role="treeitem" className={ROW}>
+      <Collapsible key={node.path} defaultOpen={open.has(node.path)}>
+        {/* The trigger is the group: its own `data-panel-open`, never an outer folder's. */}
+        <CollapsibleTrigger role="treeitem" className={cn(ROW, 'hover:bg-surface-3')}>
           <ChevronRightIcon
             aria-hidden="true"
-            className="size-4 shrink-0 group-data-open/folder:rotate-90"
+            className="size-4 shrink-0 text-text-2 group-data-panel-open:rotate-90"
           />
-          {node.name}
+          <FolderIcon
+            aria-hidden="true"
+            className="size-4 shrink-0 text-text-2 group-data-panel-open:hidden"
+          />
+          <FolderOpenIcon
+            aria-hidden="true"
+            className="hidden size-4 shrink-0 text-text-2 group-data-panel-open:block"
+          />
+          <span className="min-w-0 break-all">{node.name}</span>
         </CollapsibleTrigger>
         <CollapsibleContent
           role="group"
-          className="ml-sm flex flex-col gap-xs border-l border-line"
+          className="ml-md flex flex-col gap-px border-l border-line pl-xs"
         >
-          <Nodes nodes={node.children} chosen={chosen} onChoose={onChoose} />
+          <Nodes nodes={node.children} chosen={chosen} open={open} onChoose={onChoose} />
         </CollapsibleContent>
       </Collapsible>
     ),
@@ -110,9 +156,9 @@ export function FileTree(props: {
       role="tree"
       aria-label="Arquivos do app"
       onKeyDown={walk}
-      className="flex min-w-0 flex-col gap-xs"
+      className="flex min-w-0 flex-col gap-px"
     >
-      <Nodes {...props} />
+      <Nodes {...props} open={ancestorsOf(props.chosen)} />
     </div>
   )
 }

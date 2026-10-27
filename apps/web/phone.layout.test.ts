@@ -4,6 +4,7 @@ import type { Locator, Page } from 'playwright-core'
 import type { Viewport } from './layout-harness.ts'
 import { createHarness, PHONE, SMALL_PHONE } from './layout-harness.ts'
 import { CONVERSATION_STATES } from './sweep-conversation-states.ts'
+import { LONG_TREE } from './sweep-project-states.ts'
 
 // The phone's new screens at 390px and 320px: the one-bar top of a Projeto, the conversation sheet
 // and the model sheet (design V18, testing T23). layout.test.ts holds the frame's own widths.
@@ -74,3 +75,17 @@ for (const viewport of [PHONE, SMALL_PHONE]) {
     })
   }
 }
+
+test('a lista longa do Sheet rola até o fim, e o botão de fechar diz "Fechar arquivos"', async () => {
+  const page = await harness.open(LONG_TREE.path, { viewport: PHONE, replies: LONG_TREE.replies })
+  await LONG_TREE.settle(page)
+  const sheet = page.getByRole('dialog', { name: 'Arquivos do app' })
+  await sheet.getByRole('button', { name: 'Fechar arquivos' }).waitFor()
+  const last = sheet.getByRole('treeitem', { name: 'peca-50.tsx' })
+  await last.scrollIntoViewIfNeeded()
+  assert.ok(await inside(last, PHONE), 'the last row stays out of the screen')
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), PHONE.width)
+  await last.click()
+  await sheet.waitFor({ state: 'hidden' })
+  await page.close()
+})

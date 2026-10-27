@@ -1,17 +1,58 @@
 import type { ProjectSource } from '@conexus/hub-api'
 import { useQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
-import { useState } from 'react'
+import { FileIcon, FolderTreeIcon } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { dayAndHour } from '../../platform/dates.ts'
 import { sentenceOf } from '../../platform/hub.ts'
 import { Button } from '../../ui/button.tsx'
+import {
+  CodeBlock,
+  CodeBlockContent,
+  CodeBlockHeader,
+  CodeBlockLine,
+  CodeBlockTitle,
+} from '../../ui/code-block.tsx'
 import { Sheet, SheetContent } from '../../ui/sheet.tsx'
 import { Empty, Loading, ReadFailure } from '../../ui/states.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
 import { FileTree, firstShown, treeOf } from './file-tree.tsx'
+import type { Token } from './highlight.ts'
+import { highlighted } from './highlight.ts'
 import { fileQuery, sourceQuery } from './queries.ts'
 
 const route = getRouteApi('/_app/companies/$companyId/projects/$projectId')
+
+function Code(props: { path: string; text: string }) {
+  const { path, text } = props
+  const [painted, setPainted] = useState<{ path: string; text: string; lines: Token[][] }>()
+  useEffect(() => {
+    let current = true
+    void highlighted(path, text).then(
+      (lines) => current && lines && setPainted({ path, text, lines }),
+    )
+    return () => {
+      current = false
+    }
+  }, [path, text])
+  const lines =
+    painted?.path === path && painted.text === text
+      ? painted.lines
+      : text.split('\n').map((line) => [{ text: line, className: '' }])
+  return (
+    <CodeBlockContent>
+      {[...lines.entries()].map(([at, tokens]) => (
+        <CodeBlockLine key={at}>
+          {[...tokens.entries()].map(([from, token]) => (
+            <span key={from} className={token.className || undefined}>
+              {token.text}
+            </span>
+          ))}
+        </CodeBlockLine>
+      ))}
+    </CodeBlockContent>
+  )
+}
 
 function FileText(props: { commit: string; path: string }) {
   const { companyId, projectId } = route.useParams()
@@ -19,13 +60,13 @@ function FileText(props: { commit: string; path: string }) {
   if (text.isPending) return <Loading />
   if (text.isError) return <p role="alert">{sentenceOf(text.error)}</p>
   return (
-    // A scrolling region: current browsers let the keyboard focus it, so no tabindex is set.
-    <section
-      aria-label={`Conteúdo de ${props.path}`}
-      className="min-w-0 overflow-auto rounded-control bg-surface-3 p-sm"
-    >
-      <pre className="font-mono text-fact text-text">{text.data.text}</pre>
-    </section>
+    <CodeBlock aria-label={`Conteúdo de ${props.path}`} role="region" className="min-h-0">
+      <CodeBlockHeader>
+        <FileIcon aria-hidden="true" className="size-4 shrink-0" />
+        <CodeBlockTitle>{props.path}</CodeBlockTitle>
+      </CodeBlockHeader>
+      <Code path={props.path} text={text.data.text} />
+    </CodeBlock>
   )
 }
 
@@ -53,19 +94,24 @@ function Files(props: { source: ProjectSource; commit: string }) {
     return (
       <div className="flex min-h-0 flex-col gap-md">
         <div className="flex items-center gap-sm">
-          <Button onClick={() => setListing(true)}>Arquivos</Button>
+          <Button onClick={() => setListing(true)}>
+            <FolderTreeIcon aria-hidden="true" />
+            Arquivos
+          </Button>
           <span className="min-w-0 break-all font-mono text-fact">{path}</span>
         </div>
         <Sheet open={listing} onOpenChange={setListing}>
-          <SheetContent title="Arquivos do app">{tree}</SheetContent>
+          <SheetContent title="Arquivos do app" closeLabel="Fechar arquivos">
+            <div className="min-h-0 overflow-y-auto">{tree}</div>
+          </SheetContent>
         </Sheet>
         {path !== undefined && <FileText commit={commit} path={path} />}
       </div>
     )
   }
   return (
-    <div className="grid min-h-0 gap-md md:grid-cols-[16rem_1fr]">
-      {tree}
+    <div className="grid min-h-0 items-start gap-md md:grid-cols-[16rem_1fr]">
+      <div className="sticky top-0 max-h-[calc(100dvh-10rem)] overflow-auto">{tree}</div>
       {path !== undefined && <FileText commit={commit} path={path} />}
     </div>
   )

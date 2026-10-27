@@ -31,8 +31,15 @@ async function createRefused(page: Page, sentence: string) {
   await waitFor(page, sentence)
 }
 
+/** A file with a keyword, a string, a comment and a function, over four lines. */
+const FILE_TEXT = `import { listar } from './listar'
+// as encomendas do dia
+export const encomendas = listar('hoje')
+export function total() { return encomendas.length }
+`
+
 /** The Projeto's first version, its files in the tree and the first one's text. */
-function withVersion(paths: string[]): Replies {
+function withVersion(paths: string[], text = FILE_TEXT): Replies {
   return {
     ...OF_OWNER,
     [`GET ${SOURCE}`]: ok(readProjectSource, {
@@ -41,7 +48,7 @@ function withVersion(paths: string[]): Replies {
       savedAt: '2026-10-21T12:00:00.000Z',
       files: paths.map((path) => ({ path, bytes: 40 })),
     }),
-    [`GET ${SOURCE}/file`]: ok(readProjectFile, { text: 'export const encomendas = []\n' }),
+    [`GET ${SOURCE}/file`]: ok(readProjectFile, { text }),
   }
 }
 
@@ -56,6 +63,25 @@ async function openFiles(page: Page) {
 async function openDeletion(page: Page) {
   await page.getByRole('button', { name: 'Apagar Projeto', exact: true }).click()
   await waitFor(page, 'Isto não se desfaz.')
+}
+
+/**
+ * The kit's folder holds 50 files, so the phone's Sheet has to scroll to the last (criterion 23).
+ * Kept out of the sweep: its Tab walk stops at 40 and this list has more rows than that.
+ */
+export const LONG_TREE: State = {
+  name: 'Projeto, Código com a lista longa',
+  path: CODE,
+  replies: withVersion([
+    'src/router.tsx',
+    ...Array.from({ length: 50 }, (_, at) => `src/components/ui/peca-${at + 1}.tsx`),
+  ]),
+  settle: async (page) => {
+    await openFiles(page)
+    await page.getByRole('treeitem', { name: 'components', exact: true }).click()
+    await page.getByRole('treeitem', { name: 'ui', exact: true }).click()
+    await page.getByRole('treeitem', { name: 'peca-50.tsx' }).waitFor({ state: 'attached' })
+  },
 }
 
 export const PROJECT_STATES: State[] = [
