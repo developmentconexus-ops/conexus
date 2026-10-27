@@ -85,6 +85,9 @@ can be another commit (one was at `729bdc5d`).
 | `@biomejs/biome` | `biome.json`, `scripts/*.grit` | `biome explain <rule>`; `biomejs.dev` | none | — | code | A nursery rule is not stable: review each bump |
 | `knip` | `knip.json` | `knip.dev` | none | — | L20 | — |
 | `dependency-cruiser` | `.dependency-cruiser.cjs` | `dependency-cruiser.js.org` | none | — | W4, W7 | — |
+| `@stryker-mutator/core` | `scripts/quality.ts`, `apps/*/stryker.config.json` | `node_modules/@stryker-mutator/core/README.md`; `stryker-mutator.io/docs` | none | — | L20, C26 | `inPlace` with `tempDirName` on another filesystem fails to restore the files: keep it inside the repository |
+| `@stryker-mutator/vitest-runner` | `apps/web/stryker.config.json` | `node_modules/@stryker-mutator/vitest-runner/README.md` | none | — | L20 | It mutates in Node, so code that only a Vite build into a browser runs gets a verdict from the unit tests alone |
+| `jscpd` | `scripts/quality.ts`, `.jscpd.json` | `node_modules/jscpd/README.md` | none | — | L20, C26 | Without `--absolute`, the file names are relative to a root that depends on how many paths it reads |
 | `yaml` | `scripts` | README | none | — | — | — |
 | PostgreSQL | everything; CI and `docs/how-to/local-database.md` | `postgresql.org/docs/18/` | `neon:neon-postgres` (Neon's) | — | 0020, 0037, data | — |
 | Node | everything | `nodejs.org/llms.txt` | `node` | — | 0002 | — |

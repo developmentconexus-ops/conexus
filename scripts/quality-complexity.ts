@@ -10,7 +10,7 @@ import type { Changed } from './quality-changes.ts'
 import { touches } from './quality-changes.ts'
 
 /** Cognitive complexity a touched function may not pass, nor raise once it has passed it (code C77). */
-export const MAX_COMPLEXITY = 15
+const MAX_COMPLEXITY = 15
 
 const CONFIG = join(import.meta.dirname, 'complexity.biome.json')
 const BIOME = join(import.meta.dirname, '../node_modules/.bin/biome')

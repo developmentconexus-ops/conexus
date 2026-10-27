@@ -28,7 +28,7 @@ const Report = z.looseObject({
   ),
 })
 
-export type Survivor = { file: string; line: number; mutator: string; replacement: string }
+type Survivor = { file: string; line: number; mutator: string; replacement: string }
 export type Mutation = { package: string; mutants: number; survivors: Survivor[] }
 
 function packageOf(file: string): string {
