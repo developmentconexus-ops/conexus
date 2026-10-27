@@ -225,3 +225,7 @@ Cartão da etapa 13.1 aprovado em 2026-10-27 (commit 560b2783c8cc8c91a03c0c105a2
 A emenda do cartão acrescenta a unidade U6 "O topo do Projeto no celular" e os critérios 30 a 32 (a opção A do estudo do celular, fundador, 2026-10-27: "sobre a imagem do celular é a letra A.").
 
 Cartão da etapa 13.1 aprovado em 2026-10-27 (commit f5c056c42c56f47b8dc674c58224b14f718a0a7d): "Aprovo u6"
+
+## Etapa 13.2
+
+Cartão da etapa 13.2 aprovado em 2026-10-27 (commit c91b747f5e38e752b0b2b310f35a4c770047b7b2): "Aprovo"
