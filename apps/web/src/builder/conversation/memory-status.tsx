@@ -2,7 +2,7 @@ import { BrainIcon, CircleAlertIcon, MessageSquareIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useId } from 'react'
 import { cn } from '../../ui/cn.ts'
-import { Meter } from '../../ui/meter.tsx'
+import { Meter, MeterLabel } from '../../ui/meter.tsx'
 import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover.tsx'
 import type { OMProgress } from './session-state.ts'
 
@@ -90,14 +90,15 @@ function Budget(props: {
 
   return (
     <div className={cn('flex flex-col gap-xs', className)}>
-      <div className="flex items-center gap-xs font-semibold text-text">
-        <span className={tone}>{icon}</span>
-        <span>{label}</span>
-        <span className="ms-auto text-text-2 tabular-nums">
-          {formatK(used)} de {formatK(threshold)}k
-        </span>
-      </div>
-      <Meter label={label} value={percent} className={tone} />
+      <Meter value={percent} className={cn('flex flex-col gap-xs', tone)}>
+        <div className="flex items-center gap-xs font-semibold text-text">
+          <span className={tone}>{icon}</span>
+          <MeterLabel>{label}</MeterLabel>
+          <span className="ms-auto text-text-2 tabular-nums">
+            {formatK(used)} de {formatK(threshold)}k
+          </span>
+        </div>
+      </Meter>
       <p className="text-text-2">{description}</p>
     </div>
   )

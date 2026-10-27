@@ -43,6 +43,11 @@ test('cada memória mostra sua barra cheia até o percentual usado (Critério 16
   await screen.findByText('3,6 de 30k')
   const values = screen.getAllByRole('meter').map((m) => m.getAttribute('aria-valuenow'))
   expect(values).toEqual(['12', '5.25'])
+  const meter = screen.getByRole('meter', { name: 'Mensagens' })
+  expect(meter.hasAttribute('aria-label')).toBe(false)
+  expect(document.getElementById(meter.getAttribute('aria-labelledby') ?? '')?.textContent).toBe(
+    'Mensagens',
+  )
 })
 
 test('o clique abre as duas memórias (Critério 16)', async () => {
