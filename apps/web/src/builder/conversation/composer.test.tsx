@@ -154,6 +154,14 @@ test('o seletor mostra o controle deslizante dos níveis do modelo, o nome do n�
   )
 })
 
+test('o botão do modelo não nomeia o nível quando ele está Desligado', async () => {
+  await openConversation(conversationOf({ id: FIRST, effort: 'off' }))
+  const button = screen.getByRole('combobox', PICKER)
+  expect(button.textContent).toContain('Claude Sonnet 4')
+  expect(button.textContent).not.toContain('Desligado')
+  expect(button.textContent).not.toContain('·')
+})
+
 test('um modelo sem níveis não mostra o controle, e a troca para ele volta o nível a Desligado', async () => {
   const { sent } = await openConversation(conversationOf({ id: FIRST, effort: 'high' }))
   await choose(screen.getByRole('combobox', PICKER), 'Claude Opus 4')
@@ -180,14 +188,14 @@ test('uma conversa guardada em Desligado num modelo que sempre raciocina mostra 
     conversationOf({ id: FIRST, model: ModelId.parse('openai/gpt-5'), effort: 'off' }),
     view({ providers: ['anthropic', 'openai'] }),
   )
-  expect(screen.getByRole('combobox', PICKER).textContent).toContain('· Baixo')
+  expect(screen.getByRole('combobox', PICKER).textContent).toContain('Baixo')
 })
 
 test('um nível guardado abaixo do mais baixo de um modelo mostra o nível em que o Hub o roda, não Desligado', async () => {
   await openConversation(
     conversationOf({ id: FIRST, model: ModelId.parse('google/gemini-2.5-flash'), effort: 'low' }),
   )
-  expect(screen.getByRole('combobox', PICKER).textContent).toContain('· Médio')
+  expect(screen.getByRole('combobox', PICKER).textContent).toContain('Médio')
 })
 
 test('o nível que o modelo não aceita volta a frase do Hub, sem trocar o botão', async () => {

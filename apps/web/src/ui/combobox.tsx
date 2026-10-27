@@ -17,12 +17,15 @@ export function ComboboxValue(props: ComboboxPrimitive.Value.Props) {
 export function ComboboxTrigger({
   className,
   children,
+  chevron = true,
   ...props
-}: ComboboxPrimitive.Trigger.Props) {
+}: ComboboxPrimitive.Trigger.Props & { chevron?: boolean | undefined }) {
   return (
     <ComboboxPrimitive.Trigger data-slot="combobox-trigger" className={className} {...props}>
       {children}
-      <ChevronDownIcon aria-hidden="true" className="pointer-events-none size-4 text-text-2" />
+      {chevron && (
+        <ChevronDownIcon aria-hidden="true" className="pointer-events-none size-4 text-text-2" />
+      )}
     </ComboboxPrimitive.Trigger>
   )
 }
