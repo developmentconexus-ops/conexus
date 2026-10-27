@@ -54,12 +54,13 @@ async function handedOver(answers: Parameters<typeof open>[2] = {}) {
 }
 
 test('o pedido do Início sai uma vez ao abrir, em modo estrito e sem aviso (8)', async () => {
-  const { sent, conexus } = await handedOver()
+  const { sent, conexus, field } = await handedOver()
   await waitFor(() => expect(messagesOf(sent)).toHaveLength(1))
   expect(messagesOf(sent)[0]?.body).toEqual({ message: REQUEST, files: [TABLE] })
   const log = screen.getByRole('log', { name: 'Conversa com o Builder' })
   expect(await within(log).findByText(REQUEST)).toBeTruthy()
   expect(within(log).getByText('tabela.pdf')).toBeTruthy()
+  expect(typed(field)).toBe('')
   await waitFor(() => expect(conexus.router.state.location.state.handoff).toBeUndefined())
   await waitFor(() => expect(conexus.queryClient.isFetching()).toBe(0))
   expect(messagesOf(sent)).toHaveLength(1)

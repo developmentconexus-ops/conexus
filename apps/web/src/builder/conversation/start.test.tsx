@@ -12,7 +12,7 @@ import {
   undecided,
 } from '../../platform/test-hub.tsx'
 import type { Answers } from './test-hub.tsx'
-import { PROJECT, SECOND, screens, typed, view } from './test-hub.tsx'
+import { choose, PROJECT, SECOND, screens, typed, view } from './test-hub.tsx'
 import { attach } from './test-stream.tsx'
 import { EXAMPLES, REQUEST_NOT_SENT } from './text.ts'
 
@@ -186,6 +186,16 @@ test('criar leva o nome, o modelo e as chaves, e abre a conversa', async () => {
   expect(conversations()[0]?.attemptKey).not.toBe(projects[0]?.key)
   await waitFor(() => expect(messages()).toHaveLength(1))
   expect(messages()[0]?.body).toEqual({ message: REQUEST })
+})
+
+test('outro modelo escolhido na caixa cria a conversa nele, com o raciocínio que ele tem', async () => {
+  const { conversations } = home()
+  await box()
+  await choose(screen.getByRole('combobox', { name: 'Modelo e raciocínio' }), 'Gemini 2.5 Flash')
+  await request()
+  create('Pedidos')
+  await waitFor(() => expect(conversations()).toHaveLength(1))
+  expect(conversations()[0]?.body).toEqual({ model: 'google/gemini-2.5-flash', effort: 'high' })
 })
 
 test('com o banco da empresa: "Criando…"; sem ele: "Preparando o banco da empresa…"', async () => {

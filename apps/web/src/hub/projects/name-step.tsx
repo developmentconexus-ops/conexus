@@ -3,7 +3,7 @@ import { appHostOf, createProject, hostLabelOf, PROJECT_NAME_MAX_LENGTH } from '
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from '@tanstack/react-router'
 import { useEffect, useRef } from 'react'
-import { keepsAttemptKey, useAttemptKey } from '../../platform/attempt-key.ts'
+import { useAttemptKey } from '../../platform/attempt-key.ts'
 import { HubFailure, sentenceOf } from '../../platform/hub.ts'
 import { Button } from '../../ui/button.tsx'
 import {
@@ -11,15 +11,20 @@ import {
   FormAlert,
   SubmitButton,
   setServerError,
+  setWriteError,
   TextField,
   useSchemaForm,
 } from '../../ui/form.tsx'
 import { allProjectsQueryKey, sendProject } from './queries.ts'
 
 const UNCONFIRMED = 'Não confirmamos a criação. Tente de novo.'
-// The two refusals that leave no Project and say to try again, with the button that does.
 // The refusals the name is to blame for, shown on its field.
-const ON_THE_NAME = ['PROJECT_NAME_TAKEN', 'PROJECT_ADDRESS_TAKEN', 'PROJECT_NAME_NO_ADDRESS']
+const ON_THE_NAME = {
+  PROJECT_NAME_TAKEN: 'name',
+  PROJECT_ADDRESS_TAKEN: 'name',
+  PROJECT_NAME_NO_ADDRESS: 'name',
+} as const
+// The two refusals that leave no Project and say to try again, with the button that does.
 const RETRYING = ['COMPANY_DATABASE_PREPARING', 'COMPANY_DATABASE_UNAVAILABLE']
 
 /**
@@ -66,12 +71,9 @@ export function NameStep(props: {
         // The company is gone for this person: the page reads again and shows what the Hub says.
         queryClient.removeQueries({ queryKey: allProjectsQueryKey(company.id) })
         await router.invalidate()
-      } else if (ON_THE_NAME.includes(error.code)) setServerError(form, error, 'name')
-      else if (RETRYING.includes(error.code)) {
+      } else if (RETRYING.includes(error.code)) {
         form.setError('root.server', { type: 'retry', message: sentenceOf(error) })
-      } else if (keepsAttemptKey(error)) {
-        form.setError('root.server', { type: 'server', message: UNCONFIRMED })
-      } else setServerError(form, error)
+      } else setWriteError(form, error, UNCONFIRMED, ON_THE_NAME)
     }
   }
 
