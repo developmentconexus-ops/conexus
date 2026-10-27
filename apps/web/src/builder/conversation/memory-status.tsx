@@ -2,6 +2,7 @@ import { BrainIcon, CircleAlertIcon, MessageSquareIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useId } from 'react'
 import { cn } from '../../ui/cn.ts'
+import { Meter } from '../../ui/meter.tsx'
 import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover.tsx'
 import type { OMProgress } from './session-state.ts'
 
@@ -96,10 +97,7 @@ function Budget(props: {
           {formatK(used)} de {formatK(threshold)}k
         </span>
       </div>
-      <svg aria-hidden="true" className={cn('h-1.5 w-full overflow-hidden rounded-pill', tone)}>
-        <rect width="100%" height="100%" fill="currentColor" opacity="0.15" />
-        <rect data-fill height="100%" width={`${percent}%`} fill="currentColor" />
-      </svg>
+      <Meter label={label} value={percent} className={tone} />
       <p className="text-text-2">{description}</p>
     </div>
   )

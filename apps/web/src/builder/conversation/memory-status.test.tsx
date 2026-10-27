@@ -43,10 +43,8 @@ test('cada memória mostra sua barra cheia até o percentual usado (Critério 16
   render(<MemoryStatus memory={MEMORY} />)
   fireEvent.click(screen.getByRole('button'))
   await screen.findByText('3,6 de 30k')
-  const widths = [...document.querySelectorAll('rect[data-fill]')].map((r) =>
-    r.getAttribute('width'),
-  )
-  expect(widths).toEqual(['12%', '5.25%'])
+  const values = screen.getAllByRole('meter').map((m) => m.getAttribute('aria-valuenow'))
+  expect(values).toEqual(['12', '5.25'])
 })
 
 test('o clique abre as duas memórias (Critério 16)', async () => {
