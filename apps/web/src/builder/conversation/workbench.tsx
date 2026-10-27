@@ -1,4 +1,4 @@
-import { useLocation } from '@tanstack/react-router'
+import { useLocation, useParams } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
 import { createContext, useContext, useState } from 'react'
 import { useDefaultLayout } from 'react-resizable-panels'
@@ -9,6 +9,7 @@ import { PageTitle } from '../../ui/list.tsx'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '../../ui/resizable.tsx'
 import { ToggleGroup, ToggleGroupItem } from '../../ui/toggle-group.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
+import { hasInterruptedHandoff } from './handoff.ts'
 
 const PhoneView = createContext<'app' | 'chat'>('app')
 
@@ -34,9 +35,15 @@ const PHONE_REGIONS =
  * only paint.
  */
 export function Workbench(props: { title: string; area: ReactNode; panel: ReactNode }) {
-  // Início's request opens its conversation in view, the person's message and the Builder at work.
+  // Início's request opens its conversation in view, the person's message and the Builder at work;
+  // so does a reload in the middle of that send, which gives the request back in the box.
   const handedOver = useLocation({ select: (location) => location.state.handoff !== undefined })
-  const [view, setView] = useState<'app' | 'chat'>(handedOver ? 'chat' : 'app')
+  const conversationId = useParams({ strict: false, select: (params) => params.conversationId })
+  const [view, setView] = useState<'app' | 'chat'>(
+    handedOver || (conversationId !== undefined && hasInterruptedHandoff(conversationId))
+      ? 'chat'
+      : 'app',
+  )
   const phone = useIsMobile()
   const layout = useDefaultLayout({ id: LAYOUT_ID, storage: layoutMemory })
   return (
