@@ -3,7 +3,7 @@ import { after, before, test } from 'node:test'
 import { BUILDER_CONTROLLER, BUILDER_ROUTES } from '@conexus/hub-api'
 import type { Locator, Page } from 'playwright-core'
 import type { Replies } from './layout-harness.ts'
-import { createHarness, DESKTOP, focusDrawn } from './layout-harness.ts'
+import { createHarness, DESKTOP, focusDrawn, PHONE } from './layout-harness.ts'
 import {
   AgentStart,
   recordedEvent,
@@ -256,4 +256,61 @@ test('o compositor vazio não esmaece; o foco do compositor e do título é a bo
   )
   assert.deepEqual(page.problems, [])
   await page.close()
+})
+
+// The founder, 2026-10-26, on an iPhone: with the panel open, a long task title ran past the screen.
+const LONG_TASKS = [
+  {
+    id: '1',
+    content:
+      'Construir tela de listagem de viagens com abas de status, busca e filtros por período',
+    activeForm: 'Construindo a tela de listagem de viagens com abas de status, busca e filtros',
+    status: 'in_progress',
+  },
+  {
+    id: '2',
+    content: 'Montar o cadastro de motoristas com documento, validade da carteira e telefone',
+    activeForm: 'Montando o cadastro de motoristas',
+    status: 'pending',
+  },
+] as const
+
+test('o painel de tarefas aberto quebra os títulos longos dentro da tela', async () => {
+  for (const viewport of [PHONE, DESKTOP]) {
+    const replies: Replies = { ...WITH_CONVERSATIONS }
+    Object.assign(
+      replies,
+      sessionReplies(FIRST, {
+        messages: MESSAGES,
+        display: { isRunning: true },
+        tasks: LONG_TASKS,
+        events: [recordedEvent('abort', AgentStart)],
+      }),
+    )
+    const page = await harness.open(`${PROJECT}/conversations/${FIRST}`, { viewport, replies })
+    if (viewport === PHONE)
+      await page.getByRole('button', { name: 'Conversa', exact: true }).click()
+    await page.getByRole('button', { name: /Tarefas · 0 de 2/ }).click()
+    const rows = page.getByRole('region', { name: 'Painel de tarefas' }).locator('li')
+    await rows.first().waitFor()
+    const measured = await page
+      .getByRole('region', { name: 'Painel de tarefas' })
+      .evaluate((panel) => {
+        const bounds = panel.getBoundingClientRect()
+        return [...panel.querySelectorAll('li')].map((row) => {
+          const text = row.querySelector('span:last-child')
+          return {
+            insideX: Math.round(row.getBoundingClientRect().right) <= Math.round(bounds.right),
+            whole: text === null || text.scrollWidth <= text.clientWidth,
+          }
+        })
+      })
+    assert.deepEqual(
+      measured,
+      LONG_TASKS.map(() => ({ insideX: true, whole: true })),
+      `${viewport.width}px`,
+    )
+    assert.deepEqual(page.problems, [])
+    await page.close()
+  }
 })

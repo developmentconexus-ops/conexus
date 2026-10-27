@@ -33,6 +33,7 @@ function OpenTasks({ tasks }: { tasks: readonly Task[] }) {
   const total = tasks.length
   const completed = tasks.filter((t) => t.status === 'completed').length
   const focused = focusedTask(tasks)
+  const words = open ? 'break-words' : 'truncate'
 
   return (
     <Collapsible
@@ -48,17 +49,13 @@ function OpenTasks({ tasks }: { tasks: readonly Task[] }) {
         />
         Tarefas · {completed} de {total}
       </CollapsibleTrigger>
-      <ul
-        className={cn(
-          'flex min-w-0 gap-sm',
-          open ? 'flex-col items-start' : 'items-center overflow-hidden',
-        )}
-      >
+      <ul className={cn('flex min-w-0 gap-sm', open ? 'flex-col' : 'items-center overflow-hidden')}>
         {tasks.map((task) => (
           <li
             key={task.id}
             className={cn(
-              'min-w-0 items-center gap-xs',
+              'min-w-0 gap-xs',
+              open ? 'items-start' : 'items-center',
               open || task.id === focused?.id
                 ? 'flex flex-1 md:flex-none'
                 : 'hidden md:flex md:shrink-0',
@@ -67,13 +64,13 @@ function OpenTasks({ tasks }: { tasks: readonly Task[] }) {
             {task.status === 'completed' && (
               <>
                 <CheckIcon className="size-3.5 text-success" aria-hidden="true" />
-                <span className="truncate text-text-2">{task.content}</span>
+                <span className={cn(words, 'text-text-2')}>{task.content}</span>
               </>
             )}
             {task.status === 'in_progress' && (
               <>
                 <PlayIcon className="size-3.5 fill-current text-accent" aria-hidden="true" />
-                <span className="truncate font-medium text-text">
+                <span className={cn(words, 'font-medium text-text')}>
                   {task.activeForm || task.content}
                 </span>
               </>
@@ -81,7 +78,7 @@ function OpenTasks({ tasks }: { tasks: readonly Task[] }) {
             {task.status === 'pending' && (
               <>
                 <CircleIcon className="size-3.5 text-text-2" aria-hidden="true" />
-                <span className="truncate text-text-2">{task.content}</span>
+                <span className={cn(words, 'text-text-2')}>{task.content}</span>
               </>
             )}
           </li>
