@@ -46,6 +46,7 @@
   --color-accent-text: #9a6a08;
   --color-accent-soft: #fbf1d9;
   --color-mark: #c08a12;
+  --color-memory: #903bdb;
   --color-success: #1a7f4b;
   --color-warning: #b54708;
   --color-danger: #c0283d;
@@ -105,6 +106,7 @@
   --animate-fit-b: fit-b 0.9s var(--ease-arrive) 0.3s both;
   --animate-working-a: working-a 1.2s var(--ease-fit) infinite;
   --animate-working-b: working-b 1.2s var(--ease-fit) infinite;
+  --animate-ring-sweep: ring-sweep 1.6s linear infinite;
 
   @keyframes fit-a {
     from {
@@ -126,6 +128,12 @@
   @keyframes working-a {
     50% {
       transform: translate(-2px, -2px);
+    }
+  }
+  /* The light of a working memory ring travels round the arc, which stays at its percent. */
+  @keyframes ring-sweep {
+    to {
+      transform: rotate(360deg);
     }
   }
   @keyframes working-b {
@@ -226,6 +234,7 @@
     --color-accent-text: #f2b53a;
     --color-accent-soft: #3a2e12;
     --color-mark: #f2b53a;
+    --color-memory: #b979ff;
     --color-success: #6fd39a;
     --color-warning: #f5a25b;
     --color-danger: #f28b9a;
@@ -250,6 +259,7 @@
   --color-accent-text: #f2b53a;
   --color-accent-soft: #3a2e12;
   --color-mark: #f2b53a;
+  --color-memory: #b979ff;
   --color-success: #6fd39a;
   --color-warning: #f5a25b;
   --color-danger: #f28b9a;
