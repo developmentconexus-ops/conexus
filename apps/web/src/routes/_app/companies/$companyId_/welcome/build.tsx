@@ -1,17 +1,18 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { buttonVariants } from '../../../../../ui/button.tsx'
+import { Start } from '../../../../../builder/conversation/public.ts'
 
-/** Step 4: until step 13 brings the composer here, only the way to Início. */
+/** Step 4: Início's box, and the way to Início without asking for anything. */
 function Step() {
   const params = Route.useParams()
   return (
-    <div>
+    <div className="flex flex-col gap-lg">
+      <Start companyId={params.companyId} />
       <Link
         to="/companies/$companyId"
         params={params}
-        className={buttonVariants({ variant: 'primary' })}
+        className="self-center text-label text-text-2 underline hover:text-text"
       >
-        Ir para o início
+        Ir para o início sem pedir nada
       </Link>
     </div>
   )

@@ -4,7 +4,7 @@ import { failure, ok } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import type { State } from './sweep-kit.ts'
 import { waitFor } from './sweep-kit.ts'
-import { central, MEMBER, OWNER } from './sweep-replies.ts'
+import { central, MEMBER, OWNER, startsOn } from './sweep-replies.ts'
 
 const HOME = `/companies/${COMPANY.id}`
 const SETTINGS = `${HOME}/settings`
@@ -105,8 +105,8 @@ export const HOUSE_STATES: State[] = [
   {
     name: 'passo 4',
     path: `${WELCOME}/build`,
-    replies: OWNER,
-    settle: (p) => waitFor(p, 'Ir para o início'),
+    replies: { ...OWNER, ...startsOn(COMPANY.id) },
+    settle: (p) => waitFor(p, 'Ir para o início sem pedir nada'),
   },
   {
     name: 'Central, estado do Hub',
