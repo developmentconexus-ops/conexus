@@ -108,7 +108,14 @@ for (const viewport of [
               'button[aria-label="Anexar arquivos"], button[aria-label="Enviar"]',
             ),
           ].map((one) => one.getBoundingClientRect().height)
+          const buttons = [...row.querySelectorAll('button')]
+          const seen = buttons.map((one) => one.getAttribute('aria-label') ?? '')
+          const byLeft = buttons
+            .toSorted((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left)
+            .map((one) => one.getAttribute('aria-label') ?? '')
           return {
+            seen,
+            tabIsVisualOrder: seen.join('|') === byLeft.join('|'),
             centres: new Set(tops).size,
             inside: row.scrollWidth <= Math.ceil(row.getBoundingClientRect().width),
             rowHeight: Math.round(row.getBoundingClientRect().height),
@@ -116,6 +123,9 @@ for (const viewport of [
             small,
           }
         })
+      assert.equal(measured.seen[0], 'Anexar arquivos', '+ is the first of the row')
+      assert.equal(measured.seen.at(-1), 'Enviar')
+      assert.ok(measured.tabIsVisualOrder, 'Tab goes in the order the eye reads')
       assert.equal(measured.centres, 1, 'the buttons share one line')
       assert.ok(measured.inside, 'the row stays inside the box')
       assert.ok(measured.rowHeight <= 60, `the row is one line high, ${measured.rowHeight}px`)
