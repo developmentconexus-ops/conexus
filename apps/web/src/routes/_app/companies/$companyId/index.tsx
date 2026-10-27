@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
+import { Start } from '../../../../builder/conversation/public.ts'
 import { accountsQuery } from '../../../../builder/model-accounts/public.ts'
 import { PreparationCard } from '../../../../hub/identity/public.ts'
 import { Home, projectsQuery } from '../../../../hub/projects/public.ts'
@@ -16,12 +17,23 @@ function Preparation() {
 function HomePage() {
   const { companyId } = Route.useParams()
   const { role } = Route.useRouteContext()
-  return <Home companyId={companyId} aside={role === 'member' ? undefined : <Preparation />} />
+  return (
+    <Home
+      companyId={companyId}
+      aside={role === 'member' ? undefined : <Preparation />}
+      start={<Start companyId={companyId} />}
+    />
+  )
 }
 
 export const Route = createFileRoute('/_app/companies/$companyId/')({
   staticData: { place: 'Início' },
   loader: ({ context, params }) =>
-    readOrNotFound(context.queryClient.ensureQueryData(projectsQuery(params.companyId, undefined))),
+    readOrNotFound(
+      Promise.all([
+        context.queryClient.ensureQueryData(projectsQuery(params.companyId, undefined)),
+        context.queryClient.ensureQueryData(accountsQuery(params.companyId)),
+      ]),
+    ),
   component: HomePage,
 })

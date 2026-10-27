@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { CheckIcon, CircleIcon } from 'lucide-react'
 import { buttonVariants } from '../../ui/button.tsx'
-import { SectionTitle } from '../../ui/list.tsx'
+import { cn } from '../../ui/cn.ts'
 import { preparationOf, teamDone } from './preparation.ts'
 import { everyMemberQuery, invitationsQuery } from './queries.ts'
 
@@ -25,7 +25,7 @@ function Step({ done, label }: { done: boolean; label: string }) {
   const Icon = done ? CheckIcon : CircleIcon
   return (
     <li className="flex items-center gap-xs text-label text-text-2">
-      <Icon aria-hidden="true" className="size-4" />
+      <Icon aria-hidden="true" className={done ? 'size-4 text-success' : 'size-3.5'} />
       {label}: {done ? 'feito' : 'falta'}
     </li>
   )
@@ -48,10 +48,10 @@ export function PreparationCard(props: { companyId: CompanyId; companyAccounts: 
   return (
     <section
       aria-label="Termine de preparar a empresa"
-      className="flex flex-wrap items-center justify-between gap-md rounded-object border border-line bg-surface p-lg"
+      className="flex flex-wrap items-center justify-between gap-md rounded-object border border-line px-lg py-sm max-md:py-md"
     >
-      <div className="flex flex-col gap-sm">
-        <SectionTitle>Termine de preparar a empresa</SectionTitle>
+      <div className="flex flex-col gap-sm lg:flex-row lg:items-center lg:gap-xl">
+        <h2 className="font-semibold text-label">Termine de preparar a empresa</h2>
         <ul className="flex flex-wrap gap-x-lg gap-y-xs">
           {/* Início opens only once the nickname is saved, so step 1 is always done here. */}
           <Step done label="Empresa" />
@@ -59,7 +59,14 @@ export function PreparationCard(props: { companyId: CompanyId; companyAccounts: 
           <Step done={done.team} label="Convidar equipe" />
         </ul>
       </div>
-      <Link to={missing} params={{ companyId }} className={buttonVariants()}>
+      <Link
+        to={missing}
+        params={{ companyId }}
+        className={cn(
+          buttonVariants({ variant: 'ghost' }),
+          'max-md:border-line max-md:bg-surface max-md:text-text',
+        )}
+      >
         Continuar
       </Link>
     </section>

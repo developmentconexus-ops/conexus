@@ -1,5 +1,6 @@
 export { ProjectArea } from './area.tsx'
 export { Home } from './home.tsx'
+export { NameStep } from './name-step.tsx'
 export { Projects } from './projects.tsx'
 export { projectQuery, projectsQuery } from './queries.ts'
 export { RecentProjects, rememberProject } from './recent-projects.tsx'

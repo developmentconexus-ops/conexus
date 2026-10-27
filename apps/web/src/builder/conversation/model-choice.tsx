@@ -10,6 +10,7 @@ import { runningEffort } from '@conexus/hub-api'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { sentenceOfCode, writeFailureText } from '../../platform/hub.ts'
+import { buttonVariants } from '../../ui/button.tsx'
 import { Notice } from '../../ui/notice.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
 import { ModelPicker } from '../model-accounts/public.ts'
@@ -17,15 +18,22 @@ import type { SessionRead } from './queries.ts'
 import { sendModel, sessionReadQuery } from './queries.ts'
 import { NO_SECRETS, UNCONFIRMED_MODEL } from './text.ts'
 
-/** The step 11 notice for a person with no account to answer with, and the way to link one. */
-export function NoAccount({ companyId }: { companyId: CompanyId }) {
+/**
+ * The step 11 notice for a person with no account to answer with, and the way to link one: a link
+ * in the conversation, a button on Início, where there is no model to change instead.
+ */
+export function NoAccount(props: {
+  companyId: CompanyId
+  text?: string
+  action?: 'link' | 'button'
+}) {
   return (
     <div className="flex flex-col items-start gap-sm">
-      <Notice>{sentenceOfCode('MODEL_NO_ACCOUNT')}</Notice>
+      <Notice>{props.text ?? sentenceOfCode('MODEL_NO_ACCOUNT')}</Notice>
       <Link
         to="/companies/$companyId/settings/my-model-accounts"
-        params={{ companyId }}
-        className="underline"
+        params={{ companyId: props.companyId }}
+        className={props.action === 'button' ? buttonVariants() : 'underline'}
       >
         Minhas contas de modelo
       </Link>

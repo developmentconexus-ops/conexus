@@ -186,6 +186,8 @@ export function Composer(props: {
   taskPanel?: ReactNode
   /** The memory ring, after the model's button on the row's left. */
   memory?: ReactNode
+  /** What the empty box says; without it, the conversation's words. */
+  placeholder?: string
 }) {
   const { draft } = props
   const phone = useIsMobile()
@@ -243,7 +245,9 @@ export function Composer(props: {
           id="message"
           ref={props.field}
           value={dictation.shown}
-          placeholder={props.answering ? STEER_PLACEHOLDER : 'Escreva sua mensagem'}
+          placeholder={
+            props.answering ? STEER_PLACEHOLDER : (props.placeholder ?? 'Escreva sua mensagem')
+          }
           readOnly={dictation.listening}
           onChange={(event) => draft.change(event.target.value)}
           onKeyDown={onKeyDown}

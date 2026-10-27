@@ -1,7 +1,8 @@
-import type { CompanyDetail } from '@conexus/hub-api'
+import type { CompanyDetail, Project } from '@conexus/hub-api'
 import { appHostOf, createProject, hostLabelOf, PROJECT_NAME_MAX_LENGTH } from '@conexus/hub-api'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from '@tanstack/react-router'
+import { useEffect, useRef } from 'react'
 import { keepsAttemptKey, useAttemptKey } from '../../platform/attempt-key.ts'
 import { HubFailure, sentenceOf } from '../../platform/hub.ts'
 import { Button } from '../../ui/button.tsx'
@@ -22,31 +23,43 @@ const ON_THE_NAME = ['PROJECT_NAME_TAKEN', 'PROJECT_ADDRESS_TAKEN', 'PROJECT_NAM
 const RETRYING = ['COMPANY_DATABASE_PREPARING', 'COMPANY_DATABASE_UNAVAILABLE']
 
 /**
- * "Criar projeto": the first Project of a company waits for the company's database, so the button
- * says so while it does. The attempt key stays until the Hub settles the outcome (web W24); the
- * Projeto created opens.
+ * The name of the Projeto a request starts, typed after **Enviar** in the box's place, with the
+ * app's address under it while it is typed. The first Project of a company waits for the company's
+ * database, so the button says so while it does. The attempt key stays until the Hub settles the
+ * outcome (web W24). Once the Projeto exists and `onCreated` failed, the name is `locked`: **Tentar
+ * de novo** calls `onCreated` again with the same Projeto, and **Voltar** becomes **Abrir o
+ * Projeto**, since the name never changes (decision 0024).
  */
-export function CreateProjectForm(props: { company: CompanyDetail; databaseReady: boolean }) {
+export function NameStep(props: {
+  company: CompanyDetail
+  databaseReady: boolean
+  locked: string | null
+  onCreated: (project: Project) => Promise<void>
+  onBack: () => void
+  onOpenProject: () => void
+}) {
   const router = useRouter()
   const queryClient = useQueryClient()
   const send = useMutation(sendProject)
   const attempt = useAttemptKey()
+  const made = useRef<Project | null>(null)
   const form = useSchemaForm(createProject.input.body, { name: '' })
-  const { company } = props
+  const { company, locked } = props
   const label =
     company.nickname === null
       ? undefined
       : hostLabelOf({ name: form.watch('name'), nickname: company.nickname })
 
+  useEffect(() => form.setFocus('name'), [form])
+
   async function submit(values: { name: string }) {
     try {
-      const { project } = await attempt((attemptKey) =>
-        send.mutateAsync({ params: { companyId: company.id }, body: values, attemptKey }),
-      )
-      await router.navigate({
-        to: '/companies/$companyId/projects/$projectId',
-        params: { companyId: company.id, projectId: project.id },
-      })
+      made.current ??= (
+        await attempt((attemptKey) =>
+          send.mutateAsync({ params: { companyId: company.id }, body: values, attemptKey }),
+        )
+      ).project
+      await props.onCreated(made.current)
     } catch (error) {
       if (!(error instanceof HubFailure)) setServerError(form, error)
       else if (error.code === 'NOT_FOUND') {
@@ -63,34 +76,52 @@ export function CreateProjectForm(props: { company: CompanyDetail; databaseReady
   }
 
   return (
-    <section className="flex w-full max-w-column flex-col gap-lg">
-      <Form form={form} onSubmit={submit}>
-        <TextField
-          name="name"
-          label="Nome do projeto"
-          type="text"
-          autoComplete="off"
-          invalid={`Escreva o nome do Projeto, com até ${PROJECT_NAME_MAX_LENGTH} caracteres.`}
-        />
+    <Form form={form} onSubmit={submit}>
+      <div className="flex w-full flex-col gap-sm">
+        {locked === null ? (
+          <TextField
+            name="name"
+            label="Nome do projeto"
+            type="text"
+            autoComplete="off"
+            invalid={`Escreva o nome do Projeto, com até ${PROJECT_NAME_MAX_LENGTH} caracteres.`}
+          />
+        ) : (
+          <p className="flex flex-col gap-xs">
+            <span className="text-label text-text-2">Nome do projeto</span>
+            <span className="text-text">{locked}</span>
+          </p>
+        )}
         {label && (
-          <p className="text-label text-text-2">
-            Endereço do app:{' '}
-            <span className="font-mono text-fact">
+          <p className="flex flex-wrap gap-x-xs text-label text-text-2">
+            Endereço do app:
+            <span className="break-all font-mono text-fact text-text">
               {appHostOf({ label, appsDomain: company.appsDomain })}
             </span>
           </p>
         )}
-        <FormAlert />
+      </div>
+      <FormAlert />
+      <div className="flex flex-wrap gap-sm max-md:flex-col max-md:[&>*]:h-11">
         {form.formState.errors.root?.server?.type === 'retry' && (
           <Button type="button" onClick={() => void form.handleSubmit(submit)()}>
             Tentar de novo
           </Button>
         )}
         <SubmitButton
-          idle="Criar projeto"
+          idle={locked === null ? 'Criar e começar' : 'Tentar de novo'}
           pending={props.databaseReady ? 'Criando…' : 'Preparando o banco da empresa…'}
         />
-      </Form>
-    </section>
+        {locked === null ? (
+          <Button type="button" onClick={props.onBack}>
+            Voltar
+          </Button>
+        ) : (
+          <Button type="button" onClick={props.onOpenProject}>
+            Abrir o Projeto
+          </Button>
+        )}
+      </div>
+    </Form>
   )
 }

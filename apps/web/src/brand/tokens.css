@@ -61,6 +61,11 @@
   --text-display--line-height: 1.15;
   --text-display--letter-spacing: -0.02em;
   --text-display--font-weight: 600;
+  /* The display title on a phone (design V13). */
+  --text-display-narrow: 1.6rem;
+  --text-display-narrow--line-height: 1.15;
+  --text-display-narrow--letter-spacing: -0.02em;
+  --text-display-narrow--font-weight: 600;
   --text-title: 1.05rem;
   --text-title--line-height: 1.3;
   --text-title--letter-spacing: -0.01em;

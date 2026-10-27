@@ -18,10 +18,12 @@ import type { HttpHandler } from 'msw'
 import { HttpResponse, http } from 'msw'
 import type { setupServer } from 'msw/node'
 import { afterEach, expect, vi } from 'vitest'
+import { z } from 'zod'
 import { Conexus, createConexus } from '../../main.tsx'
 import { ANA, COMPANY } from '../../platform/fixtures.ts'
 import { PEDIDOS, projectsRead, refusal } from '../../platform/test-hub.tsx'
 import type { Stored } from './messages.ts'
+import { IsStored } from './test-recorded.ts'
 import type { Line } from './test-stream.tsx'
 import { displayOf, openLine, personSaid } from './test-stream.tsx'
 
@@ -32,6 +34,11 @@ const BASE = `*/api/companies/${COMPANY.id}/projects/${PEDIDOS.id}/conversations
 const SESSION = `*${BUILDER_ROUTES}/agent-controller/${BUILDER_CONTROLLER}/sessions/:id`
 const MODEL = ModelId.parse('anthropic/claude-sonnet-4')
 const COMPANY_DEFAULT = { model: MODEL, effort: 'off' }
+/** What Mastra's `sendMessage` posts. */
+const SentMessage = z.object({
+  message: z.string(),
+  files: z.array(z.object({ data: z.string(), mediaType: z.string(), filename: z.string() })).optional(),
+})
 
 const EFFORTS: Record<string, string[]> = {
   'claude-sonnet-4': ['off', 'low', 'high'],
@@ -145,10 +152,16 @@ function writesOf(view: View, sent: Sent[], answers: Answers): HttpHandler[] {
       if (replaced) return replaced
       const conversation = view.conversations.find((one) => one.id === params.id)
       if (!conversation) return refusal('CONVERSATION_NOT_FOUND')
-      const message =
-        typeof body === 'object' && body !== null && 'message' in body ? body.message : ''
+      const { message, files = [] } = SentMessage.parse(body)
+      const said = personSaid(message, `person-${conversation.messages.length}`)
+      // Mastra stores each file as a part naming its type `mimeType`.
+      const parts = files.map(({ mediaType, ...file }) => ({
+        type: 'file',
+        mimeType: mediaType,
+        ...file,
+      }))
       conversation.messages.push(
-        personSaid(String(message), `person-${conversation.messages.length}`),
+        IsStored.parse({ ...said, content: { parts: [...said.content.parts, ...parts] } }),
       )
       return HttpResponse.json({ ok: true })
     }),
