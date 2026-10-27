@@ -67,6 +67,10 @@ computador e no celular, diz o que viu e aprova os textos das telas.
 - **Juntar "Minhas contas de modelo" e "Contas de modelo" numa página**, as suas em cima, e **a
   etapa antes da 15**. "1. Sim 2. Antes".
 
+- **O compositor numa família só**, nativo: o **+** e o microfone ganham o mesmo círculo de fundo suave
+  da pílula do modelo (`bg-surface-3`), 32 px desenhados e 44 de toque, como no app do Claude. Pela
+  captura do iPhone: "Achei a pill do modelo e o botao de enviar grande e desbalanceado com icone de
+  microfone e enviar arquivo, faz sentido?" / "Mandei a do claude pra ver"; a emenda na U1: "Sim".
 - **Aparência sai da barra (A1)**, nativo: a página só tinha o **Tema**, que fica no menu da sua conta,
   em toda tela; esta etapa põe esse menu também em Configurações (#198). A barra fica com 7 entradas.
   "Aprovado", 2026-10-27.
@@ -104,7 +108,7 @@ Nenhuma linha remendo.
 
 | Unidade | O que entrega | Pastas | Guia além do de código | Depende de |
 | --- | --- | --- | --- | --- |
-| U1 | A escala dos controles: 32 px, 28 px na linha, 44 px de toque sob `pointer: coarse`; saem os 44 px desenhados | `apps/web/src/ui/button.tsx`, `apps/web/src/ui/sidebar.tsx`, `apps/web/src/builder/conversation/`, `apps/web/src/hub/projects/name-step.tsx`, `apps/web/*.layout.test.ts`, `docs/reference/components.md` | design | 13.1 fechada |
+| U1 | A escala dos controles: 32 px, 28 px na linha, 44 px de toque sob `pointer: coarse`; saem os 44 px desenhados | `apps/web/src/ui/button.tsx`, `apps/web/src/ui/sidebar.tsx`, `apps/web/src/builder/conversation/`, `apps/web/src/ui/speech-input.tsx` (só a `className`), `apps/web/src/hub/projects/name-step.tsx`, `apps/web/*.layout.test.ts`, `docs/reference/components.md` | design | 13.1 fechada |
 | U2 | A barra C e a moldura: ícones, o nome da empresa numa linha, a página na largura com título e frase, o menu da conta no pé (#198), o teste da guarda (#199); Aparência sai | `apps/web/src/ui/settings-index.tsx`, `apps/web/src/ui/cn.ts`, `apps/web/src/routes/_app/companies/$companyId_/settings/`, `apps/web/src/ui/theme-choice.tsx` (sai, se A1), `packages/hub-api/src/pages.ts`, `docs/reference/screens.md` | web | U1 |
 | U3 | Contas de modelo numa página: as suas em cima, as da empresa e a troca automática embaixo; saem a rota `my-model-accounts`, o desvio `model-account` e os links para eles | `apps/web/src/builder/model-accounts/`, `apps/web/src/builder/conversation/model-choice.tsx`, `apps/web/src/routes/_app/companies/`, `packages/hub-api/src/pages.ts`, `tests/e2e/`, `docs/reference/screens.md` | web | U2 |
 | U4 | As contas em tabela: uma linha por conta, a etiqueta do estado, ↑ ↓ e o menu **…**, **Ligar conta** num painel lateral; sai a fileira de botões | `apps/web/src/builder/model-accounts/`, `apps/web/src/ui/` (`table.tsx`, `badge.tsx`, `sheet.tsx`), `docs/reference/components.md` | design | U3 |
@@ -124,13 +128,13 @@ fechamento da 13.1 (este cartão só entra em `docs/steps/` então, [L5](../guid
 botão **Minhas contas de modelo** abre `…/settings/my-model-accounts`) vira o critério 13, na U3: o
 botão e o texto ficam, o destino passa a `…/settings/model-accounts`, consequência direta de "1. Sim".
 
-**Orçamento de código alterado.** U1 60 (o diff da escala do estudo, +31 / −16, mais a medida de
+**Orçamento de código alterado.** U1 75 (o diff da escala do estudo, +31 / −16, o círculo do **+** e do microfone ~10, mais a medida de
 toque nos dois testes de navegador). U2 150 (o diff da barra C, +60 / −25, mais a moldura, o menu da
 conta e a saída da Aparência). U3 120 (compor duas telas numa e apagar duas rotas e quatro links).
 U4 550 (do diff do caminho 2: o menu 117, a linha ~100, a tabela e a etiqueta ~90, o painel 17, a
 fila e o Ligar ~70, as telas de contas ~150; menos as três colunas que não entram). U5 350 (a troca
 ~140, as seções e o interruptor ~50, as quatro páginas ~150, a #217 ~10). U6 150. Total da etapa:
-~1.380 linhas sem testes, teto 4.000 (L2).
+~1.395 linhas sem testes, teto 4.000 (L2).
 
 ## Os critérios de aceite
 
@@ -164,6 +168,7 @@ fila e o Ligar ~70, as telas de contas ~150; menos as três colunas que não ent
 | 26 | U5 | Padrões da empresa, depois de remover a conta do padrão salvo "GPT 5 · Médio", mostra "GPT 5 · Médio", como depois de pausar (#217) | `apps/web/src/builder/model-accounts/defaults.test.tsx`, "o raciocínio salvo fica à vista depois de remover a conta" | must |
 | 27 | U6 | Pessoas e convites mostra duas tabelas, **Pessoas** e **Convites pendentes**: nome e e-mail, o papel e as ações (**Mudar papel**, **Tirar**; **Reenviar**, **Cancelar**) em `sm` na linha; a página e o filtro continuam no endereço (W18) | `apps/web/src/hub/identity/people.test.tsx`, os casos de hoje nas tabelas | must |
 | 28 | U2 a U6 | Cada tela da etapa, a 1366 e a 390 px, claro e escuro, dono e membro, sem rolagem lateral nem erro de console ou de CSP | `apps/web/sweep.test.ts`, os estados de Configurações (`sweep-defaults-states.ts`, `sweep-house-states.ts` e os novos) | must |
+| 29 | U1 | A 1366 e a 390 px, na linha do compositor, **Anexar arquivos**, **Modelo e raciocínio**, **Ditar** e **Enviar** têm a mesma altura (32 px) e **Anexar arquivos** e **Ditar** pintam o fundo `bg-surface-3` do botão do modelo, em círculo; ditando, o microfone continua distinto (cor de perigo) | `memory.layout.test.ts`, o caso da linha do compositor (`:106-134`: a altura dos quatro e o `background-color` calculado de **Anexar arquivos** e **Ditar** igual ao do botão do modelo) | must |
 
 ## A matriz de estados
 
@@ -258,6 +263,7 @@ Quando as contas de um modelo acabam, …
 | A área de toque de 44 px | U1 | nenhum (o tamanho desenhado fazia o papel) | Apple HIG, Buttons ("a hit region of at least 44x44 pt"); WCAG 2.2 SC 2.5.5 e 2.5.8; Anthropic Console, CSS `2_c5k-qadpkkj.css` (`@media (pointer:coarse),(hover:none)`, uma pegada de 2.75rem em volta do controle menor); `tailwindcss@4.3.3` a variante `pointer-coarse:` (`@media (pointer: coarse)`, "useful for providing larger click targets on touch devices") | Lido: a área cresce, o desenho não; o Console usa margem, que move os vizinhos | embrulhado: a variante `pointer-coarse:` do Tailwind; o nosso acrescenta um `::after` centrado de no mínimo 44 × 44 (`touchArea`, uma constante em `button.tsx`), que não muda o layout | crítica, `evidence/c-medidas.json` (`touch.reach`): 6 px de cada lado num de 32, 8 num de 28, 0 sem toque | "Aprovado", 2026-10-27 | |
 | Ícones do topo do Projeto no celular | U1 | `button.tsx:26-28` (`phoneIcon`, `max-md:size-11`); `apps/web/phone.layout.test.ts:100` (`[44, 44]`), o critério 30 da 13.1 | a linha acima | Lido | nativo: `phoneIcon` com `max-md:size-8`, a área de toque da base | crítica, `escala-nova.diff` | "Aprovado" (a pergunta 2 da crítica), 2026-10-27 | |
 | A linha do compositor no celular | U1 | `apps/web/memory.layout.test.ts:134` (cada botão ≥ 44 px a menos de 768) | a linha acima | Lido | nativo | capturas `07-` e `08-conversa-*-390` | "o modelo, ele pode diminuir", 2026-10-27; "Aprovado" | |
+| O **+** e o microfone no mesmo traço da pílula | U1 | `builder/conversation/composer.tsx:102` (**+**, `InputGroupButton` `ghost`), `ui/speech-input.tsx:96-103` (microfone `ghost`), `builder/conversation/model-choice.tsx:137` (a pílula: `rounded-pill bg-surface-3`) | O compositor do app do Claude, a captura do iPhone que o fundador mandou (2026-10-27): **+**, modelo, microfone e enviar com o mesmo círculo de fundo suave | Lido (a captura) | nativo: as classes `rounded-full bg-surface-3` que a pílula já usa, passadas por `className`; `SpeechInput` ganha só a `className` | a captura do fundador | "Achei a pill do modelo e o botao de enviar grande e desbalanceado com icone de microfone e enviar arquivo, faz sentido?"; "Sim", 2026-10-27 | |
 | O que não muda de tamanho | fica de fora | `ui/dropdown-menu.tsx:59`, `ui/select.tsx:87` (34 px); `ui/sidebar.tsx:244` (34 px); campos `h-9`; `memory-status.tsx:132` (já uma área invisível) | Primer e base-nova: itens de menu e linhas de lista têm a sua própria escala | Lido | nativo, fora | | "só o tamanho dos controles", "Aprovado", 2026-10-27 | |
 | A barra com ícones e grupos | U2 | `ui/settings-index.tsx:9-14` (`SectionMeta` sem ícone), `:67-76` (`FrameLink` sem `icon`); `ui/frame.tsx:57-73` (`FrameLink` já aceita `icon`) | Mastra Factory `mastra-1.78@6a465f9d` `mastracode/factory-ui/src/ui/domains/settings/components/SettingsNavigation.tsx`, um ícone por entrada em grupos com título; Conexus OS `e0353c36` `apps/web/src/features/settings/components/rail.tsx:7-40`; Linear (changelog 2024-12-18) | Lido (primeiro estudo, seção 5) | nativo: `icon: LucideIcon` no `SectionMeta`, passado ao `FrameLink` | capturas `c-*` do primeiro estudo | "Opcao C que gostei da barea", 2026-10-27 | |
 | O nome da empresa numa linha | U2 | `settings-index.tsx:67` (o nome em três linhas quando comprido) | primeiro estudo, `option-c.diff` (`SidebarGroupLabel` com `truncate` e `title`) | Visto | nativo (CSS `truncate`) | captura `c-account-owner-1366-light.png` | "Opcao C" | |
@@ -328,6 +334,8 @@ testes de navegador.
   `evidence/scale-capture.ts` (sondagem por `elementFromPoint` com o toque emulado).
 - **Ícones do topo do Projeto**: `button.tsx:26-28`; `apps/web/phone.layout.test.ts:85-110`.
 - **A linha do compositor**: `apps/web/memory.layout.test.ts:100-136`.
+- **O **+** e o microfone como a pílula**: `composer.tsx:102, 149`, `model-choice.tsx:137`,
+  `ui/speech-input.tsx:96-103`.
 
 ### O raio da mudança
 
@@ -336,6 +344,8 @@ testes de navegador.
 | `apps/web/src/ui/button.tsx` | Muda: os tamanhos `default`, `sm`, `icon`, `icon-sm`; exporta `touchArea`; `phoneIcon` com `max-md:size-8` | os 45 arquivos que importam `Button` ou `buttonVariants`, em todos os andares (Entrada, Primeira entrada, Início, Projeto, Configurações, Central) e `ui/` (`dialog`, `form`, `sheet`, `states`, `attachment`, `input-group`, `message-scroller`, `questionnaire`, `speech-input`) |
 | `apps/web/src/ui/sidebar.tsx` | Muda: `SidebarTrigger` usa `touchArea`, sai `max-md:size-11` | `ui/frame.tsx` |
 | `apps/web/src/builder/conversation/start.tsx`, `model-choice.tsx` | Muda: saem os `max-md:h-11` e o `max-md:min-h-11` do botão sem conta (`:42`, que fica `min-h-8` e quebra a linha) | o Início, o passo 4, a conversa |
+| `apps/web/src/builder/conversation/composer.tsx` | Muda: o **+** e o `SpeechInput` recebem `rounded-full bg-surface-3` (a classe da pílula, `model-choice.tsx:137`) | a conversa e o Início |
+| `apps/web/src/ui/speech-input.tsx` | Muda: uma prop `className`, que o `Button` recebe junto de `aria-pressed:text-danger` (o fundo de `aria-pressed:bg-surface-3` some, pois já é `bg-surface-3`; ditando, a cor de perigo marca o estado) | só `composer.tsx` |
 | `apps/web/src/hub/projects/name-step.tsx` | Muda: sai `max-md:[&>*]:h-11` | `start.tsx` |
 | `apps/web/phone.layout.test.ts`, `memory.layout.test.ts`, `pieces.layout.test.ts` | Muda: as medidas novas e a de toque | — |
 | `apps/web/src/ui/pieces-fixture.tsx` | Muda: põe um `Button` de cada tamanho, que o critério 1 mede (hoje não tem nenhum) | `pieces.layout.test.ts` |
@@ -382,12 +392,14 @@ nos arquivos mudados ([impeccable](../reference/impeccable.md)).
 
 2. `sidebar.tsx:296`, `start.tsx:44`, `model-choice.tsx:42, 137`, `name-step.tsx:107`: saem os 44 px
    desenhados; o `SidebarTrigger` ganha `touchArea`.
-3. Os testes dos critérios 1 a 5, cada um falhando antes do passo 1 (a 390 px um botão mede 44).
-4. `components.md`: as entradas da linha "Altura do botão".
+3. Os testes dos critérios 1 a 5 e 29, cada um falhando antes do passo 1 (a 390 px um botão mede 44).
+4. `composer.tsx` e `speech-input.tsx`: o círculo de fundo do **+** e do microfone (critério 29), com o
+   teste falhando antes.
+5. `components.md`: as entradas da linha "Altura do botão".
 
 ### Como se prova
 
-Os critérios 1 a 5, pelos testes de navegador (`npm run test -w @conexus/web` com os
+Os critérios 1 a 5 e 29, pelos testes de navegador (`npm run test -w @conexus/web` com os
 `*.layout.test.ts`, sob o `flock` da bancada). O toque emulado é `Emulation.setTouchEmulationEnabled`
 pelo CDP, como a crítica fez. A U1 não tem escrita.
 
