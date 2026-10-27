@@ -88,16 +88,20 @@ test('barra: o app num iframe do endereço do Projeto, com Computador, Celular e
   expect(frame.className).not.toContain('390px')
   fireEvent.click(screen.getByRole('button', { name: 'Celular' }))
   expect(iframe().className).toContain('w-[390px]')
-  expect(screen.getByRole('button', { name: 'Recarregar' })).toBeTruthy()
+  // The toolbar's, and the phone's icon in the top row; CSS shows one of the two.
+  expect(screen.getAllByRole('button', { name: 'Recarregar' })).toHaveLength(2)
   expect(screen.queryByText(NO_PREVIEW)).toBeNull()
 })
 
-test('Recarregar: o iframe recarrega e o Projeto não é lido de novo', async () => {
+test('Recarregar, na barra e no ícone do celular: o iframe recarrega e o Projeto não é lido de novo', async () => {
   const { reads } = openProject({ appVersion: 1 })
-  const before = await screen.findByTitle('Prévia')
+  let before = await screen.findByTitle('Prévia')
   const readsBefore = reads.project
-  fireEvent.click(screen.getByRole('button', { name: 'Recarregar' }))
-  await waitFor(() => expect(iframe()).not.toBe(before))
+  for (const button of screen.getAllByRole('button', { name: 'Recarregar' })) {
+    fireEvent.click(button)
+    await waitFor(() => expect(iframe()).not.toBe(before))
+    before = iframe()
+  }
   expect(reads.project).toBe(readsBefore)
 })
 
@@ -169,7 +173,10 @@ test('entrada recusada: a frase da falha no lugar do iframe, e Recarregar tenta 
   expect(alert.textContent).toBe(sentenceOfCode('DATABASE_UNAVAILABLE'))
   expect(screen.queryByTitle('Prévia')).toBeNull()
   expect(screen.queryByRole('button', { name: 'Tentar de novo' })).toBeNull()
-  fireEvent.click(screen.getByRole('button', { name: 'Recarregar' }))
+  // Only the phone's icon, the first in the page, which the top row owns.
+  const [phoneIcon] = screen.getAllByRole('button', { name: 'Recarregar' })
+  if (!phoneIcon) throw new Error('the phone has no Recarregar')
+  fireEvent.click(phoneIcon)
   expect((await screen.findByTitle('Prévia')).getAttribute('src')).toBe(`${APP}/`)
 })
 

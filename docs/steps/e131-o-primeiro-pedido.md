@@ -145,6 +145,7 @@ Nenhuma linha remendo.
 | U3 | O passo 4 com a mesma caixa | `apps/web/src/routes/_app/companies/$companyId_/welcome/`, `apps/web/src/hub/identity/` | web | U2 |
 | U4 | O foco depois de entrar vai à caixa, e o título não ganha contorno | `apps/web/src/hub/identity/`, `apps/web/src/brand/`, `apps/web/src/routes/_app/` | design | U2 |
 | U5 | A aba Código legível: pastas fechadas menos o caminho do arquivo, a seta e o ícone de pasta que seguem o estado, ícone de arquivo, o código com cores (Shiki, `D2`), números de linha e o nome em cima, a árvore com rolagem própria; o celular com o `Sheet` de hoje, que passa a rolar até a última linha e diz "Fechar arquivos" | `apps/web/src/builder/source/`, `apps/web/src/brand/`, `apps/web/src/ui/sheet.tsx` (o rótulo de fechar), `apps/web/src/ui/code-block.tsx`, `docs/reference/stack.md` | design | 14.3 inteira |
+| U6 | O topo do Projeto no celular: o nome do Projeto na barra de cima do App (a conversa continua com o nome dela), uma linha só com Prévia / Código / Projeto e os ícones Recarregar e Abrir app, o "App \| Conversa" com o recuo de 4 px e a metade escolhida branca | `apps/web/src/builder/conversation/`, `apps/web/src/builder/preview/`, `apps/web/src/hub/projects/area.tsx`, `apps/web/src/ui/toggle-group.tsx`, `apps/web/src/routes/_app/companies/$companyId/projects/` | design | U5 |
 
 **A entrega.** Cada unidade é o seu próprio pull request, sobre o `main` com as anteriores já
 dentro ([entrega L9](../guides/delivery.md)): o CI verde, uma revisão por um revisor Opus e então o
@@ -156,7 +157,7 @@ entrou no `main`, porque a caixa, os arquivos e o rascunho são os dela.
 
 **Orçamento de código alterado.** U1 25; U2 490 (o protótipo do Início redesenhado, +312 / -60, mais ~120 que faltam: a passagem, as falhas da
 sequência e a prop do texto de espera; L2 conta também as ~60 linhas que saem de `create-project-form.tsx` e `home.tsx`); U3 25;
-U4 15; U5 260 (o protótipo do estudo: 234, mais a rolagem e o rótulo do `Sheet`). Total da etapa: ~815
+U4 15; U5 260 (o protótipo do estudo: 234, mais a rolagem e o rótulo do `Sheet`); U6 100 (a opção A do estudo do topo do Projeto no celular, 2026-10-27). Total da etapa: ~915
 linhas sem testes, teto 4.000 (L2).
 
 ## Os critérios de aceite
@@ -192,6 +193,9 @@ linhas sem testes, teto 4.000 (L2).
 | 27 | U2 | A caixa vazia do Início diz "Descreva o app que você quer…" e a da conversa continua dizendo "Escreva sua mensagem"; o texto vem de uma só prop do `Composer`, sem cópia do componente | `start.test.tsx`, "a caixa do Início tem o seu texto de espera"; `composer.test.tsx`, "sem a prop, a caixa diz Escreva sua mensagem" | must |
 | 28 | U2 | Sem conta de modelo, o Início diz "Você ainda não tem uma conta de modelo. Peça a quem administra a empresa ou ligue a sua." e mostra o botão **Minhas contas de modelo** (um `Link` com `buttonVariants()`, não o texto sublinhado), que abre `…/settings/my-model-accounts`; a conversa sem conta continua com a frase `MODEL_NO_ACCOUNT` de hoje, sem "Peça a quem administra" | `start.test.tsx`, "sem conta, o aviso do Início"; `conversation.test.tsx`, o caso do aviso sem conta, que segue como hoje | must |
 | 29 | U2 | Depois de um exemplo (critério 4), o foco está na caixa e tocar em outro exemplo troca o texto; a empresa sem Projetos mostra só "Nenhum projeto ainda."; o cartão de um Projeto mostra a inicial do nome na faixa de prévia, o nome e "Criado em", sem estado | `start.test.tsx`, "o foco fica na caixa e outro exemplo troca o texto"; `home.test.tsx`, "Início: o cartão com a prévia e a empresa sem Projetos" | must |
+| 30 | U6 | A 390 px, no App, o topo do Projeto tem duas linhas de ~101 px: a barra de cima com Abrir navegação, o nome do Projeto e "App \| Conversa"; embaixo, Prévia / Código / Projeto e dois ícones de 44 px, **Recarregar** e **Abrir app**, cada um com o seu `aria-label`. Na Conversa a barra mostra o nome da conversa, como hoje. A 1366 px nada muda: o título, **Abrir app** com texto e **Recarregar** na barra da Prévia | `apps/web/phone.layout.test.ts`, "o topo do App tem duas linhas" (navegador, 390 e 320 px: a altura 101, os ícones 44 × 44, a página sem rolagem lateral); `workbench.test.tsx` e `project.test.tsx`, o link e o botão pelo nome | must |
+| 31 | U6 | **Recarregar** no ícone do celular recarrega o iframe da Prévia sem ler o Projeto de novo, como o da barra; sem app publicado nenhum dos dois ícones aparece; fora da Prévia (Código, Projeto) só **Abrir app** | `apps/web/src/builder/preview/preview.test.tsx`, "Recarregar, na barra e no ícone do celular"; `workbench.test.tsx`, "sem endereço, o topo não mostra Abrir app" | must |
+| 32 | U6 | O "App \| Conversa" tem o recuo de 4 px e a metade escolhida é branca (`surface`), como no computador; o ipê fica no sublinhado da aba ativa (V5) | `phone.layout.test.ts`, o mesmo caso (o recuo medido); a cor, a QA | must |
 
 ## A matriz de estados
 
@@ -375,6 +379,7 @@ Versão 1, guardada em 26/10 às 15:42
 | Copiar o arquivo | fica de fora: ninguém pediu | nenhum | AI Elements `code-block.tsx:471-498` | Lido | nativo, fora | | não precisa | |
 | Editor completo (CodeMirror, Monaco) | fica de fora (`D1` e `D3` não escolhidas) | nenhum | OS `code-surfaces.tsx:1-46` e `apps/hub/src/http/app.ts:56-71` (nonce de estilo, `styleSrcAttr: ["'unsafe-inline'"]`); vibesdk `worker/config/security.ts:186-190`, `monaco-editor ^0.56.0` | Lido | nativo, fora | | `D2`, 2026-10-26 | |
 | Aba Alterações | fica de fora (14.1 B1) | nenhum | Factory `routes/fs.ts:157-188` | Lido na 14.1 | nativo, fora | | "Ok, pode ser então A1 e B1", 2026-10-25 | |
+| O topo do Projeto no celular, duas linhas | U6 | `hub/projects/area.tsx:77-100` (nome, abas e **Abrir app** quebram em três linhas); `workbench.tsx:27-55` (a barra mostra a conversa) | o estudo `projeto-celular-design` (opção A, `report.md`), as capturas do iPhone do fundador; Lovable e v0 no celular (a barra de cima nomeia o lugar; as abas embaixo) | Visto: uma barra que nomeia o lugar e uma linha de abas com as ações em ícone | nativo: um só link **Abrir app** que vira ícone no celular por `buttonVariants`; **Recarregar** sobe da `Preview` à `ProjectArea` pela prop da rota (`hub/` não importa `builder/`, W4); a metade escolhida do `ToggleGroup` volta a `surface`, uma leitura de V5 (o ipê fica no sublinhado da aba) | critérios 30 a 32; `a-390-*.png` | "sobre a imagem do celular é a letra A", 2026-10-27 | |
 
 As referências fora do `node_modules`: Mastra na estante `mastra-1.78` em `6a465f9d` (a Factory em
 `mastracode/factory-ui/src/ui/`), vibesdk `9da158d`, Dyad `902829f`, Conexus OS `e0353c36`; para a
@@ -832,3 +837,52 @@ abre a aba a 1366 e 390 px, nos dois temas, e lê o console.
   texto simples, sem trocar de motor.
 - Desenhar ~7.000 linhas pintadas num arquivo de 256 KiB trava a página no teste de layout (o
   estudo mediu só o tempo do Shiki, não o do desenho): relatar o tempo; o teto volta ao cartão.
+
+## U6 O topo do Projeto no celular
+
+**Base e modelo.** `main` com a U5. Sonnet: seis arquivos e o desenho já provado pelo estudo da opção A.
+
+### As linhas da tabela
+
+**O topo do Projeto no celular, duas linhas**: `hub/projects/area.tsx`; `builder/conversation/workbench.tsx`,
+`conversation-switch.tsx`; `builder/preview/preview.tsx`; `ui/toggle-group.tsx`; V5, V18, V28, V31; W4.
+
+### O raio da mudança
+
+| Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
+| --- | --- | --- |
+| `builder/conversation/workbench.tsx` | Muda: recebe `title`, mostra-o na barra de cima só no App e publica a parte mostrada (`usePhoneView`) | a rota do Projeto, `ConversationSwitch` |
+| `builder/conversation/conversation-switch.tsx` | Muda: a caixa de conversas sai da barra no App | — |
+| `hub/projects/area.tsx` | Muda: a linha das abas leva **Recarregar** e **Abrir app** em ícone no celular; guarda a contagem de recargas | a rota |
+| `builder/preview/preview.tsx` | Muda: a barra da Prévia só do `md` para cima; `reloads` vem de fora | a rota |
+| `ui/toggle-group.tsx` | Muda: o recuo e a metade escolhida iguais aos do computador | todo `ToggleGroup` |
+
+### Os contratos que a unidade cria
+
+```ts
+// workbench.tsx
+function Workbench(props: { title: string; area: ReactNode; panel: ReactNode }): JSX.Element
+function usePhoneView(): 'app' | 'chat'
+// area.tsx: preview: (project: Project, reloads: number) => ReactNode
+```
+
+### As skills e a leitura
+
+React, `shadcn` (`toggle-group`, `button`) e `impeccable` (`layout`, `adapt`); o guia de design (V5,
+V13, V18, V28, V31) e o de web (W4, W21, W31).
+
+### A ordem do trabalho
+
+1. O caso de `phone.layout.test.ts` primeiro: hoje a altura do topo passa de 101 px.
+2. `toggle-group.tsx`, `workbench.tsx` e `conversation-switch.tsx`; depois `area.tsx`, `preview.tsx` e a rota.
+3. Os casos de `preview.test.tsx` e a varredura (`sweep.test.ts`) com o estado "Prévia com o app".
+
+### Como se prova
+
+Critérios 30 a 32. A QA olha a 390 px, nos dois temas, a Prévia, o Código, o Projeto e a Conversa, e a
+1366 px que nada mudou.
+
+### Parar se
+
+- O topo não cabe em 101 px com o nome de um Projeto comprido: relatar a captura; o nome corta com
+  reticências, a linha das abas não cresce.
