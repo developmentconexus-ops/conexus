@@ -252,3 +252,56 @@ test('o stream fecha enquanto a pergunta é guardada: a sessão fica, e o turno 
   assert.deepEqual(textsOf(events), ['Resposta'])
   assert.equal(endOf(events), 'complete')
 })
+
+test('desligar com um stream ainda na verificação da sessão: o Hub fecha mesmo assim', async (t) => {
+  const { hub, ana, conversations } = await conversing(
+    t,
+    (asked) => title(asked) ?? { kind: 'text', text: 'Resposta' },
+  )
+  const closing = await hubBeside(t, hub)
+  const url = `${conversations}/${await started(closing, ana, conversations)}`
+  const address = await closing.app.listen({ port: 0, host: '127.0.0.1' })
+  const threads = await stalled(t, hub, 'mastra_threads')
+  const headers = { origin: TEST_ORIGIN, cookie: ana.cookie }
+  const stream = http.get(`${address}${sessionUrl(url)}/stream`, { headers })
+  stream.on('error', () => stream.destroy())
+  t.after(() => stream.destroy())
+  await threads.waited()
+  const closed = closing.close()
+  // The Hub's own streams are closed once its server stops listening; the guard then lets this one in.
+  while (closing.app.server.listening) await new Promise((done) => setTimeout(done, 20))
+  await threads.release()
+  const late = new Promise<string>((done) => setTimeout(() => done('hung'), 30_000).unref())
+  assert.equal(await Promise.race([closed.then(() => 'closed'), late]), 'closed')
+})
+
+test('desligar com um pedido comum ainda em curso: ele termina antes de o Hub fechar', async (t) => {
+  const { hub, ana, conversations } = await conversing(
+    t,
+    (asked) => title(asked) ?? { kind: 'text', text: 'Resposta' },
+  )
+  const closing = await hubBeside(t, hub)
+  const conversationId = await started(closing, ana, conversations)
+  const url = `${conversations}/${conversationId}`
+  const address = await closing.app.listen({ port: 0, host: '127.0.0.1' })
+  const threads = await stalled(t, hub, 'mastra_threads')
+  const headers = { origin: TEST_ORIGIN, cookie: ana.cookie }
+  const read = http.get(`${address}${sessionUrl(url)}/threads/${conversationId}/messages`, {
+    headers,
+  })
+  t.after(() => read.destroy())
+  const answered = once(read, 'response')
+  await threads.waited()
+  const closed = closing.close()
+  while (closing.app.server.listening) await new Promise((done) => setTimeout(done, 20))
+  await new Promise((done) => setTimeout(done, 1_000))
+  await threads.release()
+  const [response] = await answered
+  assert.ok(response instanceof http.IncomingMessage)
+  assert.equal(response.statusCode, 200)
+  response.resume()
+  await once(response, 'end')
+  // Well inside the 5 s window: the idle sweep closes the read's kept-alive connection at once.
+  const late = new Promise<string>((done) => setTimeout(() => done('late'), 2_000).unref())
+  assert.equal(await Promise.race([closed.then(() => 'closed'), late]), 'closed')
+})

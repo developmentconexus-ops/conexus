@@ -1,6 +1,7 @@
 import { ModelId } from '@conexus/hub-api'
 import type { MastraMessagePart } from '@mastra/client-js'
 import { z } from 'zod'
+import type { MessageFile } from './attachments.ts'
 
 /** A call Mastra keeps waiting for the person, as its display state holds it. */
 export type Suspended = {
@@ -114,7 +115,7 @@ const FilePart = z.object({
 /** How Mastra hands the model a text file's words (`createMessageInput`, `agent-controller-DO6rGsQm.js:5241`). */
 const TEXT_FILE = /^\[File: (.*)\]\n(`{3,})\n[\s\S]*\n\2$/
 
-export function chipOf(file: { data: string; mediaType: string; filename: string }): Chip {
+export function chipOf(file: Omit<MessageFile, 'data'> & { data: string }): Chip {
   return { filename: file.filename, image: file.mediaType.startsWith('image/') ? file.data : null }
 }
 

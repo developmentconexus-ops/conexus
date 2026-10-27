@@ -46,7 +46,7 @@ import type { FailureLog } from './platform/failure.ts'
 import { Failure, logFailure } from './platform/failure.ts'
 import { registerHealth } from './platform/health.ts'
 import { answer, createServer, serve } from './platform/http.ts'
-import { bootLog, listenQuietly, shutDownOnSignal } from './platform/lifecycle.ts'
+import { bootLog, closeListeners, listenQuietly, shutDownOnSignal } from './platform/lifecycle.ts'
 import { createMail } from './platform/mail.ts'
 import { migrate, migrateExitCode } from './platform/migrate.ts'
 import type { NeonProjects } from './platform/neon.ts'
@@ -221,7 +221,7 @@ async function runServer(): Promise<void> {
         .catch((error: unknown) => logFailure(log, databaseFailure(error)))
     } catch (error) {
       grace.uninstall()
-      await Promise.all([app.close(), edge.close(), conversations.close()])
+      await closeListeners([app, edge], () => conversations.close())
       throw error
     }
   } catch (error) {

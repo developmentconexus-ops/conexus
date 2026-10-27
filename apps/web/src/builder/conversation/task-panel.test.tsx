@@ -1,11 +1,12 @@
 import type { Task as HubTask } from '@conexus/hub-api'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { expect, test } from 'vitest'
 import type { z } from 'zod'
 import { hubServer } from '../../platform/test-hub.tsx'
 import { TaskPanel } from './task-panel.tsx'
 import { AGENT_START } from './test-events.ts'
 import { conversationOf, FIRST, screens } from './test-hub.tsx'
+import { recordedEvent, TaskUpdated } from './test-recorded.ts'
 
 type Task = z.infer<typeof HubTask>
 
@@ -135,4 +136,53 @@ test('o painel aberto dobra quando o turno termina e volta dobrado no seguinte (
   expect(
     screen.getByRole('button', { name: /Tarefas · 1 de 3/ }).getAttribute('aria-expanded'),
   ).toBe('false')
+})
+
+test('depois de a stream cair no meio da execução, o painel mostra as tarefas de agora, lidas do estado da sessão (Critério 10)', async () => {
+  const conversation = conversationOf({
+    id: FIRST,
+    tasks: [
+      { id: '1', content: 'Montar a tabela', activeForm: 'Montando', status: 'in_progress' },
+      { id: '2', content: 'Fazer a tela', activeForm: 'Fazendo', status: 'pending' },
+      { id: '3', content: 'Conferir o app', activeForm: 'Conferindo', status: 'pending' },
+    ],
+  })
+  const { line } = await openConversation(conversation)
+  line().emit(AGENT_START)
+  expect(await screen.findByText('Tarefas · 0 de 3')).toBeTruthy()
+
+  // The run goes on while the phone's stream is down: its task events are gone for good.
+  conversation.tasks = [
+    { id: '1', content: 'Montar a tabela', activeForm: 'Montando', status: 'completed' },
+    { id: '2', content: 'Fazer a tela', activeForm: 'Fazendo', status: 'completed' },
+    { id: '3', content: 'Conferir o app', activeForm: 'Conferindo', status: 'in_progress' },
+  ]
+  const first = line()
+  first.close()
+  await waitFor(() => expect(line()).not.toBe(first))
+  line().emit(AGENT_START)
+
+  expect(await screen.findByText('Tarefas · 2 de 3')).toBeTruthy()
+})
+
+test('cada atualização de tarefas que o Mastra envia avança a contagem do painel, uma de cada vez (Critério 10)', async () => {
+  const { line } = await openConversation(conversationOf({ id: FIRST }))
+  line().emit(AGENT_START)
+  for (const done of [0, 1, 2]) {
+    line().emit(
+      recordedEvent(
+        'tasks',
+        TaskUpdated,
+        (event) => event.tasks.filter((task) => task.status === 'completed').length === done,
+      ),
+    )
+    expect(await screen.findByText(`Tarefas · ${done} de 3`)).toBeTruthy()
+  }
+})
+
+test('cada situação de tarefa tem o nome no ícone, para o leitor de tela (Critério 10)', () => {
+  render(<TaskPanel tasks={TASKS} streaming={true} />)
+  expect(screen.getByRole('img', { name: 'Concluída' })).toBeTruthy()
+  expect(screen.getByRole('img', { name: 'Em andamento' })).toBeTruthy()
+  expect(screen.getByRole('img', { name: 'Pendente' })).toBeTruthy()
 })

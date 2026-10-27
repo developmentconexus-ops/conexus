@@ -42,6 +42,9 @@ const Params = z.object({
   threadId: z.string().optional(),
 })
 const Query = z.object({ threadId: z.string().optional() })
+const FileData = z.looseObject({
+  files: z.array(z.looseObject({ data: z.string().startsWith('data:') })),
+})
 
 /** What the guard and the Hub's platform answer on these routes; Mastra's handlers answer their own. */
 const FAILURES = [
@@ -69,14 +72,12 @@ function overreaches(input: unknown): boolean {
  * (`@mastra/core@1.79.0` `message-list-Bfir0O2V.js:12016-12041`), and its schema has no way to refuse it.
  */
 function sendsFileUrl(input: unknown): boolean {
-  if (typeof input !== 'object' || input === null || !('files' in input)) return false
-  const { files } = input
-  if (!Array.isArray(files)) return false
-  return files.some((file) => {
-    const data: unknown =
-      typeof file === 'object' && file !== null ? Reflect.get(file, 'data') : undefined
-    return typeof data !== 'string' || !data.startsWith('data:')
-  })
+  return (
+    typeof input === 'object' &&
+    input !== null &&
+    'files' in input &&
+    !FileData.safeParse(input).success
+  )
 }
 
 /** Mastra's routes of the fixed list, each found in the installed server, or the Hub does not start. */

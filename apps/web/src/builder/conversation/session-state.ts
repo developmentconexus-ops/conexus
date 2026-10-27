@@ -1,4 +1,3 @@
-import type { Task } from '@conexus/hub-api'
 import type { KnownAgentControllerEvent, MastraMessagePart } from '@mastra/client-js'
 import type { MessageFile } from './attachments.ts'
 import type { Stored, Suspended } from './messages.ts'
@@ -18,14 +17,13 @@ export type Running = { output: string; exit?: { code: number; success: boolean 
 /**
  * The conversation as the screen holds it, in the Factory UI's form (`transcript.ts`
  * `transcriptReducer`): Mastra's messages by id in the order they started, the read joined to them,
- * and what the session's display state says (running, the calls waiting, tasks, memory).
+ * and what the session's display state says (running, the calls waiting, memory).
  */
 export type SessionState = {
   messages: readonly Stored[]
   running: boolean
   startedAt: number | null
   suspended: Readonly<Record<string, Suspended>>
-  tasks: readonly Task[] | null
   memory: OMProgress | null
   omPhase: OMPhase
   memoryFailed: MemoryFailure | null
@@ -40,7 +38,6 @@ export const OPENED: SessionState = {
   running: false,
   startedAt: null,
   suspended: {},
-  tasks: null,
   memory: null,
   omPhase: 'idle',
   memoryFailed: null,
@@ -153,9 +150,6 @@ function heard(state: SessionState, event: KnownAgentControllerEvent): SessionSt
       if (message === undefined) return state
       return { ...state, messages: upsert(state.messages, updated(message, event.event)) }
     }
-    // As the Factory UI keeps them (`useAgentControllerConnection.ts`): the event over the read.
-    case 'task_updated':
-      return { ...state, tasks: event.tasks }
     case 'tool_start':
       return { ...state, heard: heardOf(state, event.toolCallId) }
     case 'shell_output': {

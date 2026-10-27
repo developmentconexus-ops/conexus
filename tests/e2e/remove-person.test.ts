@@ -152,11 +152,11 @@ async function recover(w: Windows, mail: Mailbox) {
 
 test('o roteiro de tirar uma pessoa: o último dono não sai, tirar, a Central convida e rebaixa, sair, esqueci a senha e a senha vazada', async (t) => {
   const mail = await mailProvider(t)
+  const browser: Browser = await chromium.launch()
+  t.after(() => closeBrowser(browser))
   const { port, database } = await liveHub(t, mail.url)
   database.passwords.leaked.add(LEAKED)
   await personWithPassword(database, ANA)
-  const browser: Browser = await chromium.launch()
-  t.after(() => closeBrowser(browser))
   const problems: string[] = []
   async function window(ip: string) {
     const context = await browser.newContext()

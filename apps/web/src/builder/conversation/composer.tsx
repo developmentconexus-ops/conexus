@@ -160,10 +160,13 @@ function useDictation(draft: Draft, setPhrase: (phrase: string | null) => void) 
 }
 
 /**
- * The field and its action row, at every width: on the left the status line, the memory ring and the
- * model's button, and on the right **+**, the microphone and the round button, which is **Parar**
- * while the Builder answers and the box is empty, and **Enviar** otherwise. The row wraps when it is
- * narrow, the status line and the buttons each on a line of their own (Factory's `ComposerActions`).
+ * The field and its action row, at every width: on the left **+**, the model's button and the memory
+ * ring, and on the right the microphone and the round button, which is **Parar** while the Builder
+ * answers and the box is empty, and **Enviar** otherwise (founder, 2026-10-27: **+** first, as AI
+ * Elements' `PromptInputTools` puts the attachments action, then the model and the ring after it). The row never wraps down to 320 px: the
+ * left takes the free width and the model's name truncates in it, the buttons keep theirs
+ * (`PromptInputFooter`, `PromptInputSubmit`). Under 20 rem, at 200% zoom on a phone (design V18),
+ * there is no room for four 44 px targets and the buttons take a line of their own.
  * Enter sends and Shift+Enter breaks the line, except while an input method is composing a character
  * (design V30); on touch Return breaks the line and only the button sends. While the Builder answers
  * the field stays open: Enter steers the running turn, Esc stops, and focus goes back to the field
@@ -181,7 +184,7 @@ export function Composer(props: {
   onStop: () => void
   picker: ReactNode
   taskPanel?: ReactNode
-  /** The memory ring, the first of the status line on the row's left. */
+  /** The memory ring, after the model's button on the row's left. */
   memory?: ReactNode
 }) {
   const { draft } = props
@@ -247,14 +250,14 @@ export function Composer(props: {
         />
         <InputGroupAddon
           align="block-end"
-          className="flex-wrap items-end justify-between gap-x-sm gap-y-xs"
+          className="flex-nowrap items-center justify-between gap-xs max-[20rem]:flex-wrap"
         >
-          <div className="flex flex-wrap items-center gap-x-sm gap-y-xs">
-            {props.memory}
-            {props.picker}
-          </div>
-          <div className="ms-auto flex items-center gap-xs">
+          <div className="flex min-w-0 flex-1 items-center gap-sm max-[20rem]:basis-full">
             <Attach add={addFiles} />
+            {props.picker}
+            {props.memory}
+          </div>
+          <div className="flex shrink-0 items-center gap-xs">
             {dictation.mic}
             <Button
               type={action === 'stop' ? 'button' : 'submit'}

@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { pageStorage } from '../../platform/storage.ts'
 import type { MessageFile, Outgoing } from './attachments.ts'
 
-/** Storage only mirrors the text: where the browser refuses it, the draft still holds (W19). */
+/** Storage only mirrors the text: where the browser refuses it, the draft still holds. */
 const mirror = pageStorage('session')
 const texts = new Map<ConversationId, string>()
 /** Files stay in the page's memory: storage holds ~5 MB, and a reload drops them, as in Factory. */

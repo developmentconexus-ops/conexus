@@ -125,10 +125,10 @@ async function deleteCompany(w: Windows, neon: Neon) {
 
 test('o roteiro de Projetos: criar, nome repetido, apagar por quem pode e a empresa apagada leva o banco', async (t) => {
   const mail = await mailProvider(t)
-  const { port, database, neon } = await liveHub(t, mail.url)
-  await personWithPassword(database, ANA)
   const browser: Browser = await chromium.launch()
   t.after(() => closeBrowser(browser))
+  const { port, database, neon } = await liveHub(t, mail.url)
+  await personWithPassword(database, ANA)
   const problems: string[] = []
   async function window(ip: string) {
     const context = await browser.newContext()

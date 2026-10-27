@@ -24,6 +24,11 @@ export const MessageUpdate = z.looseObject({
   event: z.looseObject({ type: z.string() }),
 })
 
+export const TaskUpdated = z.looseObject({
+  type: z.literal('task_updated'),
+  tasks: z.array(z.looseObject({ status: z.string() })),
+})
+
 const Row = z.looseObject({ kind: z.string(), event: z.unknown().optional() })
 
 /**

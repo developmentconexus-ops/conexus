@@ -95,6 +95,32 @@ test('os tetos da rota recusam com frase, e nada é enviado (9)', async () => {
   expect(sent).toHaveLength(0)
 })
 
+test('um arquivo que o navegador não lê fica de fora com frase, e os outros ficam (9)', async () => {
+  const { sent } = await openConversation(fresh())
+  const readAsDataURL = FileReader.prototype.readAsDataURL
+  let reads = 0
+  vi.spyOn(FileReader.prototype, 'readAsDataURL').mockImplementation(function (
+    this: FileReader,
+    blob: Blob,
+  ) {
+    reads += 1
+    if (reads === 2) queueMicrotask(() => this.dispatchEvent(new ProgressEvent('error')))
+    else readAsDataURL.call(this, blob)
+  })
+  try {
+    pick([PDF, MD, TXT])
+    await waitFor(() =>
+      expect(screen.getByRole('alert').textContent).toBe(
+        'Não conseguimos ler este arquivo. Escolha de novo.',
+      ),
+    )
+    expect(chips()).toEqual(['Tirar tabela-de-precos.pdf', 'Tirar notas.txt'])
+    expect(sent).toHaveLength(0)
+  } finally {
+    vi.restoreAllMocks()
+  }
+})
+
 test('o envio leva os arquivos como data URL, o .md sem tipo como text/markdown (10)', async () => {
   const { field, sent } = await openConversation(fresh())
   pick([MD, PDF])
@@ -162,7 +188,7 @@ test('o mesmo arquivo anexado duas vezes fica uma vez, sem frase (8)', async () 
   expect(screen.queryByRole('alert')).toBeNull()
 })
 
-test('sem armazenamento da aba, o texto digitado fica e um arquivo não o apaga (8, W19)', async () => {
+test('sem armazenamento da aba, o texto digitado fica e um arquivo não o apaga (8)', async () => {
   const { field } = await openConversation(fresh())
   const refuse = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
     throw new DOMException('blocked', 'SecurityError')
