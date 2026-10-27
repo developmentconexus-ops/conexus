@@ -94,7 +94,7 @@ test('acima do teto, texto simples, sem chamar o Shiki', async () => {
   server.use(
     source([{ path: 'grande.ts', bytes: 300_000 }]),
     http.get(`${SOURCE}/file`, () =>
-      HttpResponse.json({ text: `const a = 1\n${'// x\n'.repeat(65_536)}` }),
+      HttpResponse.json({ text: `const a = 1\n// ${'x'.repeat(262_144)}` }),
     ),
   )
   open()
