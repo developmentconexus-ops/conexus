@@ -4,7 +4,7 @@ import { extname, join } from 'node:path'
 import { appContentSecurityPolicy } from '@conexus/app-contract'
 import type { FailureCode } from '@conexus/hub-api'
 import { FAILURES } from '@conexus/hub-api'
-import type { Browser, Page } from 'playwright-core'
+import type { Browser, Locator, Page } from 'playwright-core'
 import { chromium } from 'playwright-core'
 import { build } from 'vite'
 import type { z } from 'zod'
@@ -282,4 +282,43 @@ export async function presses(page: Page, key: string, count: number): Promise<s
   const stops: string[] = []
   for (let stop = 0; stop < count; stop++) stops.push(await press(page, key))
   return stops
+}
+
+/** The page under a finger: `pointer: coarse` is true, as on a phone (`Emulation.setTouchEmulationEnabled`). */
+export async function touching(page: Page): Promise<void> {
+  const session = await page.context().newCDPSession(page)
+  await session.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 })
+  await session.send('Emulation.setEmitTouchEventsForMouse', {
+    enabled: true,
+    configuration: 'mobile',
+  })
+  await page.waitForFunction(() => matchMedia('(pointer: coarse)').matches)
+}
+
+/** How many px outside its drawn box a press still lands on the element, up to 20, from the middle of each edge. */
+export function reachOf(locator: Locator): Promise<{
+  up: number
+  down: number
+  left: number
+  right: number
+}> {
+  return locator.evaluate((element) => {
+    const box = element.getBoundingClientRect()
+    const mid = { x: box.left + box.width / 2, y: box.top + box.height / 2 }
+    function hits(x: number, y: number) {
+      const hit = document.elementFromPoint(x, y)
+      return hit !== null && element.contains(hit)
+    }
+    function reach(at: (step: number) => [number, number]) {
+      let steps = 0
+      while (steps < 20 && hits(...at(steps))) steps += 1
+      return steps
+    }
+    return {
+      up: reach((step) => [mid.x, box.top - 1 - step]),
+      down: reach((step) => [mid.x, box.bottom + step]),
+      left: reach((step) => [box.left - 1 - step, mid.y]),
+      right: reach((step) => [box.right + step, mid.y]),
+    }
+  })
 }

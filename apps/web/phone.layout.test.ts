@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
 import type { Locator, Page } from 'playwright-core'
 import type { Viewport } from './layout-harness.ts'
-import { createHarness, PHONE, SMALL_PHONE } from './layout-harness.ts'
+import { createHarness, PHONE, reachOf, SMALL_PHONE, touching } from './layout-harness.ts'
 import { CONVERSATION_STATES } from './sweep-conversation-states.ts'
 import { PREVIEW_STATES } from './sweep-preview-states.ts'
 import { LONG_TREE } from './sweep-project-states.ts'
@@ -79,7 +79,7 @@ for (const viewport of [PHONE, SMALL_PHONE]) {
 }
 
 for (const viewport of [PHONE, SMALL_PHONE]) {
-  test(`o topo do App tem duas linhas, o nome do Projeto e os ícones de 44px, em ${viewport.width}px`, async () => {
+  test(`o topo do App tem duas linhas, o nome do Projeto e os ícones de 32 desenhados e 44 de toque, em ${viewport.width}px`, async () => {
     const state = PREVIEW_STATES.find((each) => each.name === 'Projeto, Prévia com o app')
     assert.ok(state, 'the sweep lacks the Prévia state')
     const page = await harness.open(state.path, { viewport, replies: state.replies })
@@ -97,7 +97,7 @@ for (const viewport of [PHONE, SMALL_PHONE]) {
     assert.ok(Math.abs(name.y - toggle.y) < toggle.height, 'the name and the toggle share a row')
     assert.ok(tabs.y >= toggle.y + toggle.height, 'the tabs sit below the top bar')
     for (const icon of [reload, open]) {
-      assert.deepEqual([icon.width, icon.height], [44, 44])
+      assert.deepEqual([icon.width, icon.height], [32, 32])
       assert.ok(Math.abs(icon.y - tabs.y) < tabs.height, 'the icons share the row of the tabs')
     }
     assert.ok(reload.x + reload.width <= open.x, 'Recarregar comes before Abrir app')
@@ -108,6 +108,14 @@ for (const viewport of [PHONE, SMALL_PHONE]) {
       ].map((each) => each.locator('svg').evaluate((icon) => icon.getBoundingClientRect().width)),
     )
     assert.deepEqual(glyphs, [14, 14], 'the two icons differ in size')
+    await touching(page)
+    // The bar is as high as the icons and sits flush under a scroller, which clips the top 6 px of
+    // their touch area (the card's "Parar se"); the bottom reaches 44.
+    for (const icon of [
+      page.getByRole('button', { name: 'Recarregar', exact: true }),
+      page.getByRole('link', { name: 'Abrir app', exact: true }),
+    ])
+      assert.ok((await reachOf(icon)).down >= 6, 'the touch reaches 6 px below the icon')
     assert.equal((await page.getByRole('heading', { level: 1 }).count()) > 0, true)
     assert.equal(await page.getByRole('heading', { level: 1 }).locator('visible=true').count(), 1)
     assert.ok(open.x + open.width <= viewport.width, 'Abrir app leaves the screen')
@@ -115,7 +123,7 @@ for (const viewport of [PHONE, SMALL_PHONE]) {
       const row = list.parentElement?.getBoundingClientRect()
       return row ? Math.round(row.bottom) : 0
     })
-    if (viewport === PHONE) assert.equal(header, 101, 'the top of the Projeto is not two rows')
+    if (viewport === PHONE) assert.equal(header, 89, 'the top of the Projeto is not two rows')
     const pressed = await page
       .getByRole('group', { name: 'Parte do Projeto' })
       .getByRole('button', { name: 'App', exact: true })
@@ -138,5 +146,26 @@ test('a lista longa do Sheet rola até o fim, e o botão de fechar diz "Fechar a
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), PHONE.width)
   await last.click()
   await sheet.waitFor({ state: 'hidden' })
+  await page.close()
+})
+
+test('o toque pega 44 px sem desenhar 44', async () => {
+  function buttons(page: Page) {
+    return [
+      [page.getByRole('button', { name: 'Padrão', exact: true }), 6],
+      [page.getByRole('button', { name: 'Ícone', exact: true }), 6],
+      [page.getByRole('button', { name: 'Ícone pequeno', exact: true }), 8],
+    ] as const
+  }
+  const page = await harness.open('/pieces', { viewport: PHONE, replies: {} })
+  for (const [button] of buttons(page)) {
+    const reach = await reachOf(button)
+    assert.deepEqual([reach.up, reach.down], [0, 0], 'a press 1 px outside the drawn box hits it')
+  }
+  await touching(page)
+  for (const [button, outside] of buttons(page)) {
+    const reach = await reachOf(button)
+    assert.ok(reach.up >= outside && reach.down >= outside, `the touch reaches ${outside} px`)
+  }
   await page.close()
 })

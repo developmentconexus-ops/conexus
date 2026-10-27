@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
 import type { Replies } from './layout-harness.ts'
-import { createHarness, DESKTOP, PHONE, SMALL_PHONE } from './layout-harness.ts'
+import { createHarness, DESKTOP, PHONE, reachOf, SMALL_PHONE, touching } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import { MESSAGES, WITH_CONVERSATIONS } from './sweep-conversation-states.ts'
 import { PROJECT_ID } from './sweep-replies.ts'
@@ -105,7 +105,7 @@ for (const viewport of [
           )
           const small = [
             ...row.querySelectorAll(
-              'button[aria-label="Anexar arquivos"], button[aria-label="Enviar"]',
+              'button[aria-label="Anexar arquivos"], button[aria-label="Modelo e raciocínio"], button[aria-label="Enviar"]',
             ),
           ].map((one) => one.getBoundingClientRect().height)
           const buttons = [...row.querySelectorAll('button')]
@@ -131,7 +131,19 @@ for (const viewport of [
       assert.equal(measured.centres, 1, 'the buttons share one line')
       assert.ok(measured.inside, 'the row stays inside the box')
       assert.ok(measured.rowHeight <= 60, `the row is one line high, ${measured.rowHeight}px`)
-      if (viewport.width < 768) for (const height of measured.small) assert.ok(height >= 44)
+      assert.deepEqual(measured.small, [32, 32, 32], 'the row draws 32 px, at any width')
+      if (viewport.width < 768) {
+        // A button with nothing to send is disabled and takes no press, its touch area included.
+        await page.locator('form textarea').fill('Um app de encomendas')
+        await touching(page)
+        for (const name of ['Anexar arquivos', 'Modelo e raciocínio', 'Enviar']) {
+          const reach = await reachOf(page.locator(`form button[aria-label="${name}"]`))
+          assert.ok(
+            reach.up >= 6 && reach.down >= 6,
+            `${name} is touched over 44 px: ${JSON.stringify(reach)}`,
+          )
+        }
+      }
       await page.close()
     })
   }
