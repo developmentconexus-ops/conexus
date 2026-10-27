@@ -154,6 +154,14 @@ test('o seletor mostra o controle deslizante dos níveis do modelo, o nome do n�
   )
 })
 
+test('o botão do modelo não nomeia o nível quando ele está Desligado', async () => {
+  await openConversation(conversationOf({ id: FIRST, effort: 'off' }))
+  const button = screen.getByRole('combobox', PICKER)
+  expect(button.textContent).toContain('Claude Sonnet 4')
+  expect(button.textContent).not.toContain('Desligado')
+  expect(button.textContent).not.toContain('·')
+})
+
 test('um modelo sem níveis não mostra o controle, e a troca para ele volta o nível a Desligado', async () => {
   const { sent } = await openConversation(conversationOf({ id: FIRST, effort: 'high' }))
   await choose(screen.getByRole('combobox', PICKER), 'Claude Opus 4')

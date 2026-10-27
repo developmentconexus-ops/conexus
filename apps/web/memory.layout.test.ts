@@ -56,7 +56,7 @@ for (const [viewport, showsPercent] of [
 const LONG_MODEL = 'google/gemini-3.8-flash-preview-high-thinking-long'
 
 /** The conversation's session answering with `model`, and the memory at two digits. */
-async function openedWith(viewport: typeof DESKTOP, model: string) {
+async function openedWith(viewport: typeof DESKTOP, model: string, effort = 'off') {
   const replies: Replies = { ...WITH_CONVERSATIONS }
   const session = sessionReplies(FIRST, {
     messages: MESSAGES,
@@ -66,7 +66,14 @@ async function openedWith(viewport: typeof DESKTOP, model: string) {
   assert.ok(key)
   const read = session[key]
   assert.ok(typeof read?.json === 'object' && read.json !== null)
-  session[key] = { ...read, json: { ...read.json, modelId: model } }
+  session[key] = {
+    ...read,
+    json: {
+      ...read.json,
+      modelId: model,
+      settings: { yolo: false, thinkingLevel: effort, notifications: 'off', smartEditing: true },
+    },
+  }
   Object.assign(replies, session)
   const page = await harness.open(`${PROJECT}/conversations/${FIRST}`, {
     viewport,
@@ -116,6 +123,34 @@ for (const viewport of [
       await page.close()
     })
   }
+}
+
+for (const [viewport, effort, shown] of [
+  [DESKTOP, 'off', false],
+  [DESKTOP, 'high', true],
+  [PHONE, 'high', false],
+] as const) {
+  test(`o botão do modelo ${shown ? 'nomeia' : 'não nomeia'} o nível ${effort} em ${viewport.width}px, e o popover o mostra`, async () => {
+    const page = await openedWith(viewport, 'anthropic/claude-sonnet-4', effort)
+    const button = page.getByRole('combobox', { name: 'Modelo e raciocínio' })
+    await button.waitFor()
+    assert.equal(
+      await button
+        .getByText(/^· /)
+        .isVisible()
+        .catch(() => false),
+      shown,
+    )
+    if (shown) assert.equal(await button.getByText('· Alto').isVisible(), true)
+    await button.click()
+    const slider = page.getByRole('slider', { name: 'Raciocínio' })
+    await slider.waitFor()
+    assert.equal(
+      await slider.getAttribute('aria-valuetext'),
+      effort === 'off' ? 'Desligado' : 'Alto',
+    )
+    await page.close()
+  })
 }
 
 for (const [reducedMotion, sweeps] of [

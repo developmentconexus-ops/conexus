@@ -34,8 +34,8 @@ export type EffortChoice = { value: Effort; onChange: (effort: Effort) => void }
 /**
  * One model of the registry as `provider/model`, picked from a search over groups by provider,
  * each model beside its provider's mark. With `effort`, the popup also holds the levels the model
- * accepts, and none when it accepts only one; the button names the level only from `md`, where the
- * room is, and under it the name truncates and the popup holds the level. `name` is the button's accessible name and `heading`
+ * accepts, and none when it accepts only one; the button names the level only when there is one, and only from `md`, where
+ * the room is: `off` is not named, and under `md` the name truncates and the popup holds the level. `name` is the button's accessible name and `heading`
  * the popup's title. Esc closes the popup and returns focus to the button.
  */
 export function ModelPicker(props: {
@@ -89,7 +89,7 @@ export function ModelPicker(props: {
       >
         {current !== null && <ProviderMark provider={current.provider} />}
         <span className="truncate text-text">{current?.label ?? 'Escolha um modelo'}</span>
-        {running !== undefined && (
+        {running !== undefined && running !== 'off' && (
           <span className="shrink-0 text-text-2 max-md:hidden">{`· ${EFFORT_LABELS[running]}`}</span>
         )}
       </ComboboxTrigger>
