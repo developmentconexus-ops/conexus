@@ -18,12 +18,13 @@ const main = Buffer.from(\`export default { async fetch(request, env, ctx) {
 } }\`)
 const hooks = []
 const serve = threads({ after: (hook) => hooks.push(hook) })
-const db = { query: () => new Promise(() => {}) }
+const reached = Promise.withResolvers()
+const db = { query: () => { reached.resolve(); return new Promise(() => {}) } }
 const ended = serve('app', { main, cpuMs: 60_000 }, new Request('https://x/'), { caller: null, db }).then(
   () => 2,
   () => 0,
 )
-await new Promise((resolve) => setTimeout(resolve, 300))
+await reached.promise
 for (const hook of hooks) await hook()
 process.exitCode = await ended
 `
