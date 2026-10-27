@@ -17,7 +17,6 @@ colors:
   accent-text: "#9A6A08"
   accent-soft: "#FBF1D9"
   mark: "#C08A12"
-  memory: "#903BDB"
   success: "#1A7F4B"
   warning: "#B54708"
   danger: "#C0283D"
@@ -37,7 +36,6 @@ colors:
   dark-accent-text: "#F2B53A"
   dark-accent-soft: "#3A2E12"
   dark-mark: "#F2B53A"
-  dark-memory: "#B979FF"
   dark-success: "#6FD39A"
   dark-warning: "#F5A25B"
   dark-danger: "#F28B9A"
@@ -120,8 +118,7 @@ most colorful thing on screen. Ipê is the warm gold accent; prose is sans and f
   Tokens let both themes change in one file. [rule to write]
 - **V5.** Ipê **should** distinguish current activity and choice: focus, caret, selection, active
   lens and working agent, not every resting action or heading. The send hover keeps its current
-  accent. Failure: making everything gold hides the difference between focus and decoration. The
-  one other hue is violet, `memory`: it colors only the Memória budget beside Ipê's Mensagens.
+  accent. Failure: making everything gold hides the difference between focus and decoration.
   [review]
 - **V8.** Text **should** remain readable in both themes, with 4.5:1 as its contrast reference.
   Failure: a pale subtitle disappears on the light background. Syntax lint does not measure
