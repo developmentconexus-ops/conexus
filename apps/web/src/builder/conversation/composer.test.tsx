@@ -84,6 +84,11 @@ test(
 test('no celular, a linha de ações da caixa tem a memória e o modelo à esquerda e +, microfone e enviar à direita', () =>
   onPhone(expectStatusLineAndButtonsInTheBox))
 
+test('sem a prop, a caixa diz Escreva sua mensagem', async () => {
+  const { field } = await openConversation(conversationOf({ id: FIRST }))
+  expect(field.getAttribute('placeholder')).toBe('Escreva sua mensagem')
+})
+
 test('a caixa começa com uma linha e cresce com o texto', async () => {
   const { field } = await openConversation(conversationOf({ id: FIRST }))
   expect(field.className).toContain('field-sizing-content')

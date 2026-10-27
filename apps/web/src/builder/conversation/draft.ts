@@ -1,61 +1,63 @@
-import type { ConversationId } from '@conexus/hub-api'
+import type { CompanyId, ConversationId } from '@conexus/hub-api'
 import { useState } from 'react'
 import { pageStorage } from '../../platform/storage.ts'
 import type { MessageFile, Outgoing } from './attachments.ts'
 
 /** Storage only mirrors the text: where the browser refuses it, the draft still holds. */
 const mirror = pageStorage('session')
-const texts = new Map<ConversationId, string>()
+/** A conversation's draft, or the one of a company's Início. */
+export type DraftKey = ConversationId | `start:${CompanyId}`
+
+const texts = new Map<DraftKey, string>()
 /** Files stay in the page's memory: storage holds ~5 MB, and a reload drops them, as in Factory. */
-const files = new Map<ConversationId, readonly MessageFile[]>()
+const files = new Map<DraftKey, readonly MessageFile[]>()
 
 const NONE: readonly MessageFile[] = []
 
-function keyOf(conversationId: ConversationId) {
-  return `conexus-draft:${conversationId}`
+function keyOf(key: DraftKey) {
+  return `conexus-draft:${key}`
 }
 
-function heldOf(conversationId: ConversationId): Outgoing {
+function heldOf(key: DraftKey): Outgoing {
   return {
-    content: texts.get(conversationId) ?? mirror.getItem(keyOf(conversationId)) ?? '',
-    files: files.get(conversationId) ?? NONE,
+    content: texts.get(key) ?? mirror.getItem(keyOf(key)) ?? '',
+    files: files.get(key) ?? NONE,
   }
 }
 
 /**
- * The unsent text and files of a conversation, kept for this browser tab so a switch of
- * conversation loses nothing. A send takes them out at its start, so the message sent never comes
+ * The unsent text and files of a conversation, or of Início's box, kept for this browser tab so a
+ * switch of conversation or a visit elsewhere loses nothing. A send takes them out at its start, so the message sent never comes
  * back to the box after a switch (#167), and a refused send gives them back.
  */
-export function useDraft(conversationId: ConversationId) {
-  const [held, setHeld] = useState(() => ({ conversationId, ...heldOf(conversationId) }))
-  const now =
-    held.conversationId === conversationId ? held : { conversationId, ...heldOf(conversationId) }
+export function useDraft(key: DraftKey) {
+  const [held, setHeld] = useState(() => ({ key, ...heldOf(key) }))
+  const now = held.key === key ? held : { key, ...heldOf(key) }
 
   // Written at once and not by an effect: a send can end after the composer unmounted.
   function hold(next: Outgoing) {
-    texts.set(conversationId, next.content)
-    mirror.setItem(keyOf(conversationId), next.content)
-    files.set(conversationId, next.files)
-    setHeld({ conversationId, ...next })
+    texts.set(key, next.content)
+    mirror.setItem(keyOf(key), next.content)
+    files.set(key, next.files)
+    setHeld({ key, ...next })
   }
 
   return {
     text: now.content,
     files: now.files,
-    change: (text: string) => hold({ content: text, files: heldOf(conversationId).files }),
+    change: (text: string) => hold({ content: text, files: heldOf(key).files }),
     /** Evaluated on the draft as it is when written: a file's read can end after the box changed. */
     setFiles: (update: (files: readonly MessageFile[]) => readonly MessageFile[]) => {
-      const box = heldOf(conversationId)
+      const box = heldOf(key)
       hold({ content: box.content, files: update(box.files) })
     },
     take: (): Outgoing => {
-      const taken = heldOf(conversationId)
+      const taken = heldOf(key)
       hold({ content: '', files: NONE })
       return taken
     },
     restore: (outgoing: Outgoing) => {
-      const box = heldOf(conversationId)
+      const box = heldOf(key)
       if (box.content === '' && box.files.length === 0) hold(outgoing)
     },
   }

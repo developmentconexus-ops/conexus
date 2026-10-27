@@ -3,8 +3,8 @@ import type { Page } from 'playwright-core'
 import { failure, ok } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import type { State } from './sweep-kit.ts'
-import { waitFor } from './sweep-kit.ts'
-import { LONG_NAME, OWNER, projectsPage, SIGNED_IN } from './sweep-replies.ts'
+import { createRefused, waitFor } from './sweep-kit.ts'
+import { LONG_NAME, OWNER, projectsPage, SIGNED_IN, startsOn } from './sweep-replies.ts'
 
 const STEP_ONE = `/companies/${COMPANY.id}/welcome/company`
 const NICKNAME = `PUT /api/companies/${COMPANY.id}/nickname`
@@ -50,13 +50,11 @@ export const APP_STATES: State[] = [
     replies: {
       ...OWNER,
       ...projectsPage(COMPANY.id, { empty: true }),
+      ...startsOn(COMPANY.id),
       [`POST /api/companies/${COMPANY.id}/projects`]: failure('PROJECT_NAME_NO_ADDRESS'),
     },
-    settle: async (page) => {
-      await page.getByLabel('Nome do projeto').fill('TI')
-      await page.getByRole('button', { name: 'Criar projeto', exact: true }).click()
-      await waitFor(page, 'O nome precisa ter ao menos três letras ou números.')
-    },
+    settle: (page) =>
+      createRefused(page, 'O nome precisa ter ao menos três letras ou números.', 'TI'),
   },
   {
     name: 'abrir app, recusado',

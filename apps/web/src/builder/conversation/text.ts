@@ -12,6 +12,31 @@ export const STEER_PENDING = 'Vai ao Builder no próximo passo'
 export const STEER_PLACEHOLDER = 'Escreva para orientar o Builder'
 /** Where a person may put a secret by habit: said under the field on a computer, and on a phone in the first-time state and the model sheet. */
 export const NO_SECRETS = 'Não cole senhas ou chaves na conversa.'
+export const START_PLACEHOLDER = 'Descreva o app que você quer…'
+export const START_NO_ACCOUNT =
+  'Você ainda não tem uma conta de modelo. Peça a quem administra a empresa ou ligue a sua.'
+/** Início's request, sent by the conversation it opened, when a reload cut the send short. */
+export const HANDOFF_UNCONFIRMED =
+  'Não confirmamos o envio do seu pedido. Confira a conversa antes de enviar de novo.'
+/** What a Projeto created without its first request says, above "Nenhuma conversa". */
+export const REQUEST_NOT_SENT = 'O Projeto foi criado, mas o seu pedido não saiu.'
+export const WRITE_AGAIN = 'Comece uma Nova conversa e escreva de novo.'
+
+/** Início's examples: the chip's words, and what a tap puts in the box (the founder approves the texts at the end of step 13.1). */
+export const EXAMPLES = [
+  {
+    label: 'Controle de encomendas',
+    text: 'Um app de encomendas com cliente, data de entrega e valor',
+  },
+  {
+    label: 'Pedidos de férias',
+    text: 'Um app para a equipe pedir férias e o gestor aprovar ou recusar',
+  },
+  {
+    label: 'Cadastro de visitas',
+    text: 'Um app para registrar as visitas a clientes, com data, vendedor e anotações',
+  },
+] as const
 export const UNCONFIRMED_CREATION = 'Não confirmamos a criação da conversa. Tente de novo.'
 export const UNCONFIRMED_MODEL =
   'Não confirmamos a troca do modelo. Confira o modelo e tente de novo.'

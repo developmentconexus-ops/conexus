@@ -4,7 +4,7 @@ import type { Replies } from './layout-harness.ts'
 import { failure, ok } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import type { State } from './sweep-kit.ts'
-import { waitFor } from './sweep-kit.ts'
+import { createRefused, waitFor } from './sweep-kit.ts'
 import {
   CLIENT_ID,
   central,
@@ -13,6 +13,7 @@ import {
   PROJECT_ID,
   PROJECT_NAME,
   projectsPage,
+  startsOn,
 } from './sweep-replies.ts'
 
 const HOME = `/companies/${COMPANY.id}`
@@ -22,14 +23,8 @@ const CODE = `${PROJECTS}/${PROJECT_ID}?lens=code`
 const SOURCE = `/api/companies/${COMPANY.id}/projects/${PROJECT_ID}/source`
 const VERSIONS = `${ABOUT}&section=versions`
 const OF_OWNER = { ...OWNER, ...projectsPage(COMPANY.id) }
-const NOBODY = { ...OWNER, ...projectsPage(COMPANY.id, { empty: true }) }
+const NOBODY = { ...OWNER, ...projectsPage(COMPANY.id, { empty: true }), ...startsOn(COMPANY.id) }
 const OF_MEMBER = { ...OWNER, ...projectsPage(COMPANY.id, { mayDelete: false }) }
-
-async function createRefused(page: Page, sentence: string) {
-  await page.getByLabel('Nome do projeto').fill('Pedidos')
-  await page.getByRole('button', { name: 'Criar projeto', exact: true }).click()
-  await waitFor(page, sentence)
-}
 
 /** A file with a keyword, a string, a comment and a function, over four lines. */
 const FILE_TEXT = `import { listar } from './listar'
