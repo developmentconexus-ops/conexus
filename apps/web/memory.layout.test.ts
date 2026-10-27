@@ -79,6 +79,11 @@ for (const [reducedMotion, sweeps] of [
       const style = getComputedStyle(rect)
       return { animation: style.animationName, rotate: style.rotate }
     })
+    const ring = await page
+      .getByRole('button', { name: /Memória da conversa/ })
+      .locator('svg[data-working]')
+      .evaluate((svg) => getComputedStyle(svg).animationName)
+    assert.equal(ring, 'none')
     if (sweeps) assert.equal(seen.animation, 'ring-sweep')
     else assert.deepEqual(seen, { animation: 'none', rotate: '120deg' })
     await page.close()

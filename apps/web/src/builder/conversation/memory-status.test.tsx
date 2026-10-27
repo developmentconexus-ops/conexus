@@ -33,7 +33,6 @@ test('o anel não gira: enquanto guarda, observa ou reorganiza a luz corre sobre
   for (const omPhase of ['buffering', 'observing', 'reflecting'] as const) {
     rerender(<MemoryStatus memory={MEMORY} omPhase={omPhase} />)
     expect(ring()?.hasAttribute('data-working')).toBe(true)
-    expect(ring()?.getAttribute('class')).not.toContain('animate-spin')
   }
 })
 
