@@ -1,5 +1,5 @@
 import type { Task as HubTask } from '@conexus/hub-api'
-import { CheckIcon, ChevronRightIcon, CircleIcon, PlayIcon } from 'lucide-react'
+import { CheckIcon, ChevronRightIcon, CircleIcon, Loader2Icon } from 'lucide-react'
 import { useState } from 'react'
 import type { z } from 'zod'
 import { cn } from '../../ui/cn.ts'
@@ -63,13 +63,16 @@ function OpenTasks({ tasks }: { tasks: readonly Task[] }) {
           >
             {task.status === 'completed' && (
               <>
-                <CheckIcon className="size-3.5 text-success" aria-hidden="true" />
+                <CheckIcon className="size-3.5 shrink-0 text-success" aria-hidden="true" />
                 <span className={cn(words, 'text-text-2')}>{task.content}</span>
               </>
             )}
             {task.status === 'in_progress' && (
               <>
-                <PlayIcon className="size-3.5 fill-current text-accent" aria-hidden="true" />
+                <Loader2Icon
+                  className="size-3.5 shrink-0 text-accent motion-safe:animate-spin"
+                  aria-hidden="true"
+                />
                 <span className={cn(words, 'font-medium text-text')}>
                   {task.activeForm || task.content}
                 </span>
@@ -77,7 +80,7 @@ function OpenTasks({ tasks }: { tasks: readonly Task[] }) {
             )}
             {task.status === 'pending' && (
               <>
-                <CircleIcon className="size-3.5 text-text-2" aria-hidden="true" />
+                <CircleIcon className="size-3.5 shrink-0 text-text-2" aria-hidden="true" />
                 <span className={cn(words, 'text-text-2')}>{task.content}</span>
               </>
             )}

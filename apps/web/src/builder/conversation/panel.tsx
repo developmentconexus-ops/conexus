@@ -153,7 +153,7 @@ function PanelComposer(props: {
         field={field}
         onSend={onSend}
         onStop={onStop}
-        taskPanel={<TaskPanel tasks={state.tasks ?? session.tasks} streaming={state.running} />}
+        taskPanel={<TaskPanel tasks={session.tasks} streaming={state.running} />}
         memory={
           <MemoryStatus memory={state.memory} omPhase={state.omPhase} failed={state.memoryFailed} />
         }

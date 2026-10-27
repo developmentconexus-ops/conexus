@@ -1,5 +1,5 @@
 import type { Task as HubTask } from '@conexus/hub-api'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { expect, test } from 'vitest'
 import type { z } from 'zod'
 import { hubServer } from '../../platform/test-hub.tsx'
@@ -135,4 +135,31 @@ test('o painel aberto dobra quando o turno termina e volta dobrado no seguinte (
   expect(
     screen.getByRole('button', { name: /Tarefas · 1 de 3/ }).getAttribute('aria-expanded'),
   ).toBe('false')
+})
+
+test('depois de a stream cair no meio da execução, o painel mostra as tarefas de agora, lidas do estado da sessão (Critério 10)', async () => {
+  const conversation = conversationOf({
+    id: FIRST,
+    tasks: [
+      { id: '1', content: 'Montar a tabela', activeForm: 'Montando', status: 'in_progress' },
+      { id: '2', content: 'Fazer a tela', activeForm: 'Fazendo', status: 'pending' },
+      { id: '3', content: 'Conferir o app', activeForm: 'Conferindo', status: 'pending' },
+    ],
+  })
+  const { line } = await openConversation(conversation)
+  line().emit(AGENT_START)
+  expect(await screen.findByText('Tarefas · 0 de 3')).toBeTruthy()
+
+  // The run goes on while the phone's stream is down: its task events are gone for good.
+  conversation.tasks = [
+    { id: '1', content: 'Montar a tabela', activeForm: 'Montando', status: 'completed' },
+    { id: '2', content: 'Fazer a tela', activeForm: 'Fazendo', status: 'completed' },
+    { id: '3', content: 'Conferir o app', activeForm: 'Conferindo', status: 'in_progress' },
+  ]
+  const first = line()
+  first.close()
+  await waitFor(() => expect(line()).not.toBe(first))
+  line().emit(AGENT_START)
+
+  expect(await screen.findByText('Tarefas · 2 de 3')).toBeTruthy()
 })

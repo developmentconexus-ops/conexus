@@ -8,7 +8,8 @@ import { useEffect, useEffectEvent, useMemo, useReducer } from 'react'
 import { failureOfProblem } from '../../platform/hub.ts'
 import { previewChanged } from '../preview/public.ts'
 import { sourceChanged } from '../source/public.ts'
-import { conversationQuery } from './queries.ts'
+import type { SessionRead } from './queries.ts'
+import { conversationQuery, sessionReadQuery } from './queries.ts'
 import type { BuilderSession } from './session.ts'
 import { sessionOf } from './session.ts'
 import type { Action } from './session-state.ts'
@@ -48,6 +49,26 @@ function reread(hooks: Hooks): void {
   void hooks.queryClient.invalidateQueries({ queryKey: transcriptKey(hooks.ids.conversationId) })
 }
 
+/**
+ * The session state's tasks, as the Factory UI keeps them (`useAgentControllerConnection.ts:127-157`):
+ * the event is written into the read, and a read in flight that predates it is let go.
+ */
+function tasksHeard(hooks: Hooks, tasks: SessionRead['tasks']): void {
+  const { queryClient, ids } = hooks
+  const { queryKey } = sessionReadQuery(ids.conversationId)
+  void queryClient.cancelQueries({ queryKey }).then(() => {
+    queryClient.setQueryData<SessionRead>(queryKey, (read) => read && { ...read, tasks })
+  })
+}
+
+/** A reconnect: events sent while the stream was down are gone, so the session state is read again (`:106-118`). */
+function resync(hooks: Hooks): void {
+  reread(hooks)
+  void hooks.queryClient.invalidateQueries({
+    queryKey: sessionReadQuery(hooks.ids.conversationId).queryKey,
+  })
+}
+
 /** A version the run saved changes the Projeto's files: their reads are asked again. */
 function savesVersion(event: KnownAgentControllerEvent): boolean {
   return (
@@ -71,6 +92,7 @@ function readiesPreview(event: KnownAgentControllerEvent): boolean {
 function heard(hooks: Hooks, event: AgentControllerEvent): void {
   if (!isKnownAgentControllerEvent(event)) return
   hooks.dispatch({ type: 'event', event })
+  if (event.type === 'task_updated') tasksHeard(hooks, event.tasks)
   const { companyId, projectId } = hooks.ids
   if (savesVersion(event)) void sourceChanged(hooks.queryClient, { companyId, projectId })
   if (readiesPreview(event)) void previewChanged(hooks.queryClient, { companyId, projectId })
@@ -108,7 +130,7 @@ async function follow(hooks: Hooks, signal: AbortSignal): Promise<void> {
       const subscription = await hooks.builder.session.subscribe({
         onEvent: (event) => heard(hooks, event),
         reconnect: true,
-        onReconnect: () => reread(hooks),
+        onReconnect: () => resync(hooks),
         onError: (error) => void refused(hooks, error),
       })
       if (signal.aborted) return subscription.unsubscribe()
