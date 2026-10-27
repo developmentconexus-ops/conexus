@@ -86,7 +86,7 @@ test('sem gramática, texto simples, com os números de linha', async () => {
   const lines = await screen.findAllByText(
     (_, element) => element?.getAttribute('data-slot') === 'code-block-line-content',
   )
-  expect(lines.map((one) => one.textContent)).toEqual(['node_modules\n', 'dist\n', '\n'])
+  expect(lines.map((one) => one.textContent)).toEqual(['node_modules\n', 'dist\n'])
   expect(lines.every((one) => one.querySelector('[class]') === null)).toBe(true)
 })
 
@@ -99,8 +99,44 @@ test('acima do teto, texto simples, sem chamar o Shiki', async () => {
   )
   open()
   await screen.findByRole('region', { name: 'Conteúdo de grande.ts' })
-  await new Promise((resolve) => setTimeout(resolve, 200))
   expect(document.querySelector('[class*="text-code-"]')).toBeNull()
+})
+
+/** The highlighter on its own, with a fresh module so no earlier test has made the Shiki yet. */
+async function freshHighlighter() {
+  vi.resetModules()
+  const created = vi.fn()
+  vi.doMock('shiki/core', async (original) => {
+    const real = await original<typeof import('shiki/core')>()
+    return {
+      ...real,
+      createHighlighterCore: (...args: Parameters<typeof real.createHighlighterCore>) => {
+        created()
+        return real.createHighlighterCore(...args)
+      },
+    }
+  })
+  return { created, ...(await import('./highlight.ts')) }
+}
+
+test('acima do teto ou sem gramática, o Shiki nem é chamado', async () => {
+  const { created, highlighted } = await freshHighlighter()
+  expect(await highlighted('.gitignore', 'dist\n')).toBeNull()
+  expect(await highlighted('grande.tsx', `// ${'x'.repeat(262_144)}`)).toBeNull()
+  expect(created).not.toHaveBeenCalled()
+  expect(await highlighted('a.tsx', 'const a = 1')).not.toBeNull()
+  expect(created).toHaveBeenCalledOnce()
+})
+
+test('uma gramática que falha ao carregar deixa o arquivo em texto simples, sem erro', async () => {
+  const { highlighted } = await freshHighlighter()
+  vi.doMock('shiki/langs/sql.mjs', () => {
+    throw new Error('the chunk did not load')
+  })
+  const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+  expect(await highlighted('consulta.sql', 'select 1')).toBeNull()
+  expect(warn).toHaveBeenCalledOnce()
+  expect(await highlighted('a.tsx', 'const a = 1')).not.toBeNull()
 })
 
 test('um arquivo que não é texto: a frase da recusa, e os outros seguem', async () => {

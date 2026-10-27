@@ -1,12 +1,4 @@
-import {
-  ChevronRightIcon,
-  FileCodeIcon,
-  FileIcon,
-  FileJsonIcon,
-  FileTextIcon,
-  FolderIcon,
-  FolderOpenIcon,
-} from 'lucide-react'
+import { ChevronRightIcon, FileIcon, FolderIcon, FolderOpenIcon } from 'lucide-react'
 import type { KeyboardEvent } from 'react'
 import { cn } from '../../ui/cn.ts'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../../ui/collapsible.tsx'
@@ -57,19 +49,6 @@ export function firstShown(nodes: TreeNode[]): string | undefined {
 const ROW =
   'group flex w-full items-center gap-xs break-all rounded-control px-sm py-xs text-left font-mono text-fact'
 
-const ICONS: Record<string, typeof FileIcon> = {
-  ts: FileCodeIcon,
-  tsx: FileCodeIcon,
-  js: FileCodeIcon,
-  json: FileJsonIcon,
-  md: FileTextIcon,
-}
-
-function FileKind(props: { name: string }) {
-  const Icon = ICONS[props.name.split('.').at(-1) ?? ''] ?? FileIcon
-  return <Icon aria-hidden="true" className="size-4 shrink-0 text-text-2" />
-}
-
 /** The folders on the way to a file: the only ones that open by themselves. */
 function ancestorsOf(path: string | undefined): Set<string> {
   const parts = path?.split('/').slice(0, -1) ?? []
@@ -97,7 +76,7 @@ function Nodes(props: {
           node.path === chosen ? 'bg-accent-soft text-text' : 'hover:bg-surface-3',
         )}
       >
-        <FileKind name={node.name} />
+        <FileIcon aria-hidden="true" className="size-4 shrink-0 text-text-2" />
         <span className="min-w-0 break-all">{node.name}</span>
       </button>
     ) : (

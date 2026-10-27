@@ -38,7 +38,10 @@ function Code(props: { path: string; text: string }) {
   const lines =
     painted?.path === path && painted.text === text
       ? painted.lines
-      : text.split('\n').map((line) => [{ text: line, className: '' }])
+      : text
+          .replace(/\n$/, '')
+          .split('\n')
+          .map((line) => [{ text: line, className: '' }])
   return (
     <CodeBlockContent>
       {[...lines.entries()].map(([at, tokens]) => (

@@ -79,7 +79,7 @@ export async function highlighted(path: string, text: string): Promise<Token[][]
       await shiki.loadLanguage(GRAMMARS[grammar]())
     }
     return shiki
-      .codeToTokens(text, { lang: grammar, theme: 'conexus' })
+      .codeToTokens(text.replace(/\n$/, ''), { lang: grammar, theme: 'conexus' })
       .tokens.map((line) =>
         line.map((token) => ({ text: token.content, className: classOf(token) })),
       )
