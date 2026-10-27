@@ -7,6 +7,7 @@ import { hashPassword } from 'better-auth/crypto'
 import { createEdgeHub, createHub, identityOf, subjectsOf } from '../../main.ts'
 import type { Config } from '../../platform/config.ts'
 import type { FailureLog } from '../../platform/failure.ts'
+import { closeListeners } from '../../platform/lifecycle.ts'
 import { heldCompanyPostgres, testAppPorts } from '../../platform/test-app-ports.ts'
 import { fakeCloudflare } from '../../platform/test-cloudflare.ts'
 import type { TestDatabase } from '../../platform/test-database.ts'
@@ -46,7 +47,7 @@ async function hubServing(
   change?: Change,
 ) {
   // Registered before the database's own cleanup, so it runs first (node:test runs them in order):
-  // the Builder's turns drain and end their streams, as at shutdown, before the server closes.
+  // the Builder's turns drain and end their streams while the server closes, as at shutdown.
   // A turn parked on a card never drains, and production cuts the drain at its shutdown deadline,
   // so this close gets a deadline too: past it the database's cleanup still runs, and the last
   // hook fails the test (a hook that throws skips the hooks after it, and the file never exits).
@@ -73,7 +74,7 @@ async function hubServing(
   // Once, whichever comes first: a test that waits for the Hub's background work, or the test's end.
   let closed: Promise<void> | undefined
   function close() {
-    closed ??= conversations.close().then(() => app.close())
+    closed ??= closeListeners([app], () => conversations.close())
     return closed
   }
   closing.hub = close

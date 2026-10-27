@@ -57,10 +57,10 @@ async function join(page: Page, next: () => Promise<Mail>, owner: typeof OWNERS.
 
 test('o roteiro de duas empresas: a recusa cruzada, apagar B, o dono de B ainda entra e A segue', async (t) => {
   const mail = await mailProvider(t)
-  const { port, database } = await liveHub(t, mail.url)
-  await personWithPassword(database, ANA)
   const browser: Browser = await chromium.launch()
   t.after(() => closeBrowser(browser))
+  const { port, database } = await liveHub(t, mail.url)
+  await personWithPassword(database, ANA)
   const problems: string[] = []
   async function window(ip: string) {
     const context = await browser.newContext()

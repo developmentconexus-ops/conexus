@@ -17,7 +17,8 @@ const SUBSCRIBE_MS = 1500
  * A browser of its own that reaches the Hub by its public name through a streaming front: a
  * self-signed HTTPS server that pipes every request to the Hub as the tunnel does, with the
  * client address in Cloudflare's header. The test ends each window through `closers` before its
- * Hub, as `t.after` runs its hooks in the order they were given and the Hub's come first. `reachHub`'s route answers only once a body has ended,
+ * Hub stops listening: in its body, or in a `t.after` given before `liveHub`'s, as `t.after` runs
+ * its hooks in the order they were given. `reachHub`'s route answers only once a body has ended,
  * so it cannot carry the conversation's event stream, which stays open for the whole screen.
  * `cutConnections` ends every connection open through the front, as a network that drops does.
  */

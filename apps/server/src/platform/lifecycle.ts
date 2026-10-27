@@ -5,6 +5,8 @@ import type { Config } from './config.ts'
 import { Failure, logFailure } from './failure.ts'
 
 const SHUTDOWN_DEADLINE_MS = 15_000
+/** The Mastra deployer's default `drainTimeout` (`deployer/src/server/index.ts:590`, 1.78). */
+const DRAIN_MS = 5_000
 
 /**
  * The first-person command logs to stderr: its stdout is the terminal of infra/first-person.sh,
@@ -51,9 +53,7 @@ export function shutDownOnSignal(
       if (err) unexpected(err)
       app.log.info(signal === undefined ? {} : { signal }, 'SHUTTING_DOWN')
       try {
-        const closed = Promise.all([app.close(), edge.close()])
-        await steps.drain()
-        await closed
+        await closeListeners([app, edge], steps.drain)
         await steps.release()
       } catch (error) {
         unexpected(error)
@@ -61,4 +61,32 @@ export function shutDownOnSignal(
       }
     },
   )
+}
+
+/**
+ * The listeners close in the Mastra deployer's order (`deployer/src/server/index.ts:713-734`, 1.78):
+ * they stop accepting, idle connections are closed at once and every 100 ms, and what is still
+ * open `DRAIN_MS` after the close began is cut, with a warning. One difference: `drain` runs
+ * inside that window and also stops Mastra, which the deployer does after it. A request that ends
+ * inside the window keeps its database; one still running after the cut finds the pools closed by
+ * `release`, as in the deployer.
+ */
+export async function closeListeners(listeners: FastifyInstance[], drain: () => Promise<void>) {
+  const closed = Promise.all(listeners.map((listener) => listener.close()))
+  function closeIdle() {
+    for (const listener of listeners) listener.server.closeIdleConnections()
+  }
+  closeIdle()
+  const sweep = setInterval(closeIdle, 100)
+  const cut = setTimeout(() => {
+    listeners[0]?.log.warn({ timeoutMs: DRAIN_MS }, 'SHUTDOWN_CONNECTIONS_CUT')
+    for (const listener of listeners) listener.server.closeAllConnections()
+  }, DRAIN_MS)
+  try {
+    await drain()
+    await closed
+  } finally {
+    clearInterval(sweep)
+    clearTimeout(cut)
+  }
 }

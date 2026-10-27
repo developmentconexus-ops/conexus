@@ -188,11 +188,11 @@ async function anaSwitches(page: Page) {
 
 test('o roteiro da casa: o dono prepara a empresa, cria um Projeto e liga uma conta; Ana aceita, troca de empresa, sai, entra e usa o celular', async (t) => {
   const mail = await mailProvider(t)
+  const browser: Browser = await chromium.launch()
+  t.after(() => closeBrowser(browser))
   const { port, database } = await liveHub(t, mail.url)
   await personWithPassword(database, OPERATOR)
   await anaInEmpresaA(database)
-  const browser: Browser = await chromium.launch()
-  t.after(() => closeBrowser(browser))
   const problems: string[] = []
   const operatorContext = await browser.newContext()
   const ownerContext = await browser.newContext()

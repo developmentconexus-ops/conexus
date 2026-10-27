@@ -12,6 +12,7 @@ import { createEdgeHub, createHub, identityOf, subjectsOf } from '../../apps/ser
 import { createCloudflareApps } from '../../apps/server/src/platform/cloudflare.ts'
 import { createCompanyPostgres } from '../../apps/server/src/platform/company-postgres.ts'
 import type { Config } from '../../apps/server/src/platform/config.ts'
+import { closeListeners } from '../../apps/server/src/platform/lifecycle.ts'
 import { createNeonProjects } from '../../apps/server/src/platform/neon.ts'
 import { pgTransport } from '../../apps/server/src/platform/test-company-postgres.ts'
 import {
@@ -120,9 +121,8 @@ export async function liveHub(
     conversations,
     webRoot: WEB_ROOT,
   })
-  closing.hub = async function closeHub() {
-    await conversations.close()
-    await app.close()
+  closing.hub = function closeHub() {
+    return closeListeners([app], () => conversations.close())
   }
   const edge = await createEdgeHub(config, { apps })
   t.after(() => edge.close())
