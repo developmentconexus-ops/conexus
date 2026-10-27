@@ -13,7 +13,7 @@ const MEMORY: MemoryGauge = {
 test('um anel com o percentual de pendingTokens/threshold (Critério 15)', () => {
   render(<MemoryStatus memory={MEMORY} />)
   const trigger = screen.getByRole('button', {
-    name: 'Memória da conversa: Mensagens 12%, 3,6/30k, Observações 2,1/40k',
+    name: 'Memória da conversa: Mensagens 12%, 3,6/30k, Memória 2,1/40k',
   })
   expect(trigger.querySelectorAll('svg')).toHaveLength(1)
   expect(screen.getByText('12%').className).toContain('max-md:hidden')
