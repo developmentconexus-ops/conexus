@@ -208,6 +208,12 @@ Em 2026-10-26, na rodada de correção do pull request de fechamento da etapa 14
 
 Cartão da etapa 14.3 aprovado em 2026-10-26 (commit c316c0ea48ce6ea714a1e0dca2935f86e85982de): "B", "A" e "F"
 
+Em 2026-10-26, sobre a memória no anel e na janela do compositor: "o círculo ... tem que mostrar ele sendo preenchido"; e sobre as cores das duas barras, "Usa amarelo e roxo" e "Aprovado". O anel não gira, o arco fica no seu percentual com uma luz sobre ele; a janela tem uma barra por memória, Mensagens em Ipê e Memória no violeta novo `memory`, escrito no guia (design.md, V5) neste pull request de fechamento.
+
+Em 2026-10-27, sobre a linha de ações do compositor: "Que ai aprovado" (para a mudança do **+**), depois "inverte ... o modelo fica mais à esquerda e o anel à direita" e "Pilula" (o botão do modelo com nome e nível juntos, o nível mais claro, sem "·" e sem seta na caixa), e "C" (uma linha em todo tamanho, o nome do modelo se encurta, sem texto do nível no celular e sem nível quando está desligado). O critério 5 e o desenho do cartão seguiram essa ordem final: **+**, modelo, anel, e à direita microfone e enviar.
+
+Etapa 14.3 usada em 2026-10-27 em https://hub.conexus.fun (v0.14.12): "Ah, eu usei a 14.3, tá top, finalizada."
+
 ## Etapa 13.1
 
 Em 2026-10-25, olhando o Início de hoje: "Eu não sei em que etapa que a gente tem que vai mudar a página inicial, é depois da prévia? Porque essa não é a página inicial que a gente realmente quer ter ... E também, como você pode ver, ela tá até com o subliado lá em cima. Então, não que eu quero mudar isso agora, mas mudar quando a gente for mudar a página inicial, para deixar ela conforme a gente já vem planejando há um tempo. Mas acredito que a gente precisa esperar a prévia primeiro." À ordem proposta (14.1, depois arquivos e voz, depois a 13.1, com o compositor do Início sendo o mesmo com **+** e microfone e o contorno do título consertado na 13.1): "Concordo documente tudo isso para ser registrado"
