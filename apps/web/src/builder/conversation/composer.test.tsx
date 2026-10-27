@@ -188,14 +188,14 @@ test('uma conversa guardada em Desligado num modelo que sempre raciocina mostra 
     conversationOf({ id: FIRST, model: ModelId.parse('openai/gpt-5'), effort: 'off' }),
     view({ providers: ['anthropic', 'openai'] }),
   )
-  expect(screen.getByRole('combobox', PICKER).textContent).toContain('· Baixo')
+  expect(screen.getByRole('combobox', PICKER).textContent).toContain('Baixo')
 })
 
 test('um nível guardado abaixo do mais baixo de um modelo mostra o nível em que o Hub o roda, não Desligado', async () => {
   await openConversation(
     conversationOf({ id: FIRST, model: ModelId.parse('google/gemini-2.5-flash'), effort: 'low' }),
   )
-  expect(screen.getByRole('combobox', PICKER).textContent).toContain('· Médio')
+  expect(screen.getByRole('combobox', PICKER).textContent).toContain('Médio')
 })
 
 test('o nível que o modelo não aceita volta a frase do Hub, sem trocar o botão', async () => {

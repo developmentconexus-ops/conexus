@@ -148,12 +148,15 @@ for (const [viewport, effort, shown] of [
     await button.waitFor()
     assert.equal(
       await button
-        .getByText(/^· /)
+        .getByText('Alto', { exact: true })
         .isVisible()
         .catch(() => false),
       shown,
     )
-    if (shown) assert.equal(await button.getByText('· Alto').isVisible(), true)
+    if (shown) {
+      const name = button.getByText('Claude Sonnet 4', { exact: true })
+      assert.ok(await name.evaluate((one) => one.scrollWidth <= one.clientWidth), 'name whole')
+    }
     await button.click()
     const slider = page.getByRole('slider', { name: 'Raciocínio' })
     await slider.waitFor()

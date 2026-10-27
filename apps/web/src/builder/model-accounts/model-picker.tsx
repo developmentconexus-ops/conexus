@@ -34,9 +34,11 @@ export type EffortChoice = { value: Effort; onChange: (effort: Effort) => void }
 /**
  * One model of the registry as `provider/model`, picked from a search over groups by provider,
  * each model beside its provider's mark. With `effort`, the popup also holds the levels the model
- * accepts, and none when it accepts only one; the button names the level only when there is one, and only from `md`, where
- * the room is: `off` is not named, and under `md` the name truncates and the popup holds the level. `name` is the button's accessible name and `heading`
- * the popup's title. Esc closes the popup and returns focus to the button.
+ * accepts, and none when it accepts only one. The button holds the name and, lighter beside it, the level, only when there is
+ * one and only from `md`: `off` is not named, and under `md` the popup holds the level. Both sit in
+ * a box one line high, so when they do not fit together the level yields first and only then the
+ * name truncates. With `chevron` off the button is a pill in a row, as the Claude app draws it.
+ * `name` is the button's accessible name and `heading` the popup's title. Esc closes the popup and returns focus to the button.
  */
 export function ModelPicker(props: {
   providers: readonly Provider[]
@@ -49,6 +51,8 @@ export function ModelPicker(props: {
   className?: string
   onChange: (model: ModelId) => void
   effort?: EffortChoice
+  /** Off where the button is a pill in a row, as the Claude app's composer draws it. */
+  chevron?: boolean
 }) {
   const [search, setSearch] = useState('')
   const { groups, matched } = useMemo(
@@ -81,6 +85,7 @@ export function ModelPicker(props: {
       <ComboboxTrigger
         id={props.id}
         aria-label={props.name}
+        chevron={props.chevron}
         className={cn(
           buttonVariants({ variant: 'ghost' }),
           'max-w-full min-w-0 shrink',
@@ -88,10 +93,14 @@ export function ModelPicker(props: {
         )}
       >
         {current !== null && <ProviderMark provider={current.provider} />}
-        <span className="truncate text-text">{current?.label ?? 'Escolha um modelo'}</span>
-        {running !== undefined && running !== 'off' && (
-          <span className="shrink-0 text-text-2 max-md:hidden">{`· ${EFFORT_LABELS[running]}`}</span>
-        )}
+        <span className="flex h-lh min-w-0 flex-wrap gap-x-xs overflow-hidden">
+          <span className="truncate text-text">{current?.label ?? 'Escolha um modelo'}</span>
+          {running !== undefined && running !== 'off' && (
+            <span className="shrink-0 font-normal text-text-2 max-md:hidden">
+              {EFFORT_LABELS[running]}
+            </span>
+          )}
+        </span>
       </ComboboxTrigger>
       <ComboboxContent className="w-80 min-w-0" align="end" side="top">
         {props.heading !== undefined && (
