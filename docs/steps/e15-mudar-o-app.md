@@ -103,7 +103,7 @@ dos 45 recusado; nenhuma sonda do lado errado).
 | 1 | U1 | Uma versão cuja migração renomeia ou apaga uma coluna ou tabela salva (P1, P2, O1, O2, O5, Sa2, Sa3), ou a deixa obrigatória sem valor padrão (`dropDefault`), ou põe uma regra nova sobre coluna salva (`checkNotValid`, P7, a chave estrangeira `fkNotValid`), ou troca o tipo de uma coluna salva por um com limite ou que a versão anterior lê diferente (`textToVarchar3`, `intToBigint`), não entra: a transação recusa com `CX001`, o livro `conexus_migration` e as tabelas ficam como estavam | `apps/server/src/platform/company-postgres.test.ts`, "garantia: o que quebraria o Voltar é CX001 e nada muda" | must |
 | 2 | U1 | Apagar linhas ou sobrescrever um valor salvo (P8, P9, `truncate`, `json_overwrite`) é recusado com `CX002` | `company-postgres.test.ts`, "garantia: valor salvo que some ou muda é CX002" | must |
 | 3 | U1 | O que não perde nada passa e grava: todas as reescritas, O4, `varcharWiden`, Sa4 (`UPDATE … WHERE duracao_min IS NULL`), `P7_soltar`, Sa5, Sa6; uma tabela com colunas `json`, `point` e `xml` salvas não trava as migrações seguintes (`json_noop`, `json_add_column`, `xml_point_kept`); depois, a leitura e a gravação da versão anterior funcionam no banco migrado | `company-postgres.test.ts`, "garantia: as reescritas, O4, Sa4, soltar a regra e as colunas json passam, e a versão anterior lê e grava" | must |
-| 4 | U1 | Passa só o que a lista permite: criar tabela comum, índice, gravar linhas, as mudanças de coluna e de regra de `ALTER TABLE`, renomear, apagar tabela ou índice, comentário, gatilho e função `sql` ou `plpgsql` que só lê, insere ou muda `NEW`. Todo o resto é recusado antes da transação, com o nó: `SECURITY DEFINER` (também por `ALTER FUNCTION`), função que apaga ou muda outra linha, `EXECUTE` dinâmico, `GRANT`, `REVOKE`, `ALTER DEFAULT PRIVILEGES`, view, bloco `DO`, `BEGIN`, `COMMIT`, `SET`, `RESET`, `DISCARD`, `ENABLE` e `FORCE ROW LEVEL SECURITY`, `CREATE POLICY`, `CREATE RULE`, `ALTER SEQUENCE`, `SET UNLOGGED`, `OWNER TO`, tabela `UNLOGGED` ou `TEMP`, `SELECT INTO`, um nome com esquema ou começado por `cx_` (a foto), e um item com dois comandos. A resposta é `REFUSED_BY_RULE` com a migração e o comando, nada enviado ao banco; uma migração já aplicada não é relida (uma view aplicada antes da 15 não recusa a versão seguinte) | `company-postgres.test.ts`, "lista fixa: só passa o que a garantia vê" | must |
+| 4 | U1 | Passa só o que a lista permite: criar tabela comum, índice, gravar linhas, as mudanças de coluna e de regra de `ALTER TABLE`, renomear, apagar tabela ou índice, comentário, gatilho e função `sql` ou `plpgsql` que só lê, insere ou muda `NEW`. Todo o resto é recusado antes da transação, com o nó: `SECURITY DEFINER` (também por `ALTER FUNCTION`), função que apaga ou muda outra linha, gatilho que recusa (`RAISE EXCEPTION`) ou engole (`RETURN NULL`) a gravação (`trigRaise`, `trigNull`), função com `BEGIN ATOMIC` (`sql_body`), `EXECUTE` dinâmico, `GRANT`, `REVOKE`, `ALTER DEFAULT PRIVILEGES`, view, bloco `DO`, `BEGIN`, `COMMIT`, `SET`, `RESET`, `DISCARD`, `ENABLE` e `FORCE ROW LEVEL SECURITY`, `CREATE POLICY`, `CREATE RULE`, `ALTER SEQUENCE`, `SET UNLOGGED`, `OWNER TO`, tabela `UNLOGGED` ou `TEMP`, `SELECT INTO`, um nome com esquema, começado por `cx_` (a foto) ou `conexus_migration` (o livro), e um item com dois comandos. A resposta é `REFUSED_BY_RULE` com a migração e o comando, nada enviado ao banco; uma migração já aplicada não é relida (uma view aplicada antes da 15 não recusa a versão seguinte) | `company-postgres.test.ts`, "lista fixa: só passa o que a garantia vê" | must |
 | 5 | U1 | O que o banco recusa sozinho (P3 e O6 `23502`, P4 e O3 `23505`, P5 `22P02`, P6 `22008`, Sa1 `2BP01`) volta como `REFUSED` com o SQLSTATE; o livro `conexus_migration` e as tabelas ficam como estavam | `company-postgres.test.ts`, "o banco recusa sozinho e nada muda" | must |
 | 6 | U1 | Pela porta do envio do Builder, a versão com `RENAME COLUMN` fica `failed` com `APP_MIGRATION_FAILED` e a Prévia segue na anterior; a com `GRANT` fica `failed` com `APP_MIGRATION_REFUSED`; `npm run removals` tira a leitura da lista fixa e este teste falha | `apps/server/src/hub/apps/send-migrations.test.ts`, "o envio que quebraria o Voltar não entra" e "o envio com GRANT não entra" | must |
 | 7 | U2 | A skill `conexus-data` lida pelo Builder diz que os dados só andam para a frente e as saídas (renomear é acrescentar e copiar; tirar é tirar das telas; dado antigo se corrige pela tela; lista fixa no Zod, e para mudar um `CHECK` de lista que existe, soltar o `CHECK`; nada se apaga nesta versão); recusa segurança por linha, políticas e regras; não fala em views; o plano de mudança não diz "only then remove the old fields" | `apps/server/src/builder/conversation/prompt.test.ts`, o caso das skills lidas | should |
@@ -182,6 +182,9 @@ As referências fora do `node_modules` estão na estante de estudo nos commits c
 - Trocar valores entre duas linhas passa, porque a comparação é por coluna, não por linha (provado,
   `swapRows`). Gatilho: a primeira migração que mova valores entre linhas; a saída é comparar pela
   chave primária.
+- `SELECT setval(…)` que volta uma sequência passa, porque a garantia não olha sequências, e a versão
+  anterior recebe `23505` ao gravar (provado). Gatilho: a primeira migração com `setval`; a saída é
+  comparar `last_value` antes e depois.
 - A C (o proxy do Neon devolve `table` e os códigos `CX`): na 22.
 
 ## U1 A garantia no envio
@@ -293,14 +296,14 @@ function refused(text: string): string | undefined {
   if (stmts.length !== 1) return 'NOT_ONE_STATEMENT'      // "One statement per item" (manifest.ts:26)
   const [kind, node] = Object.entries(stmts[0].stmt)[0]
   if (!ALLOWED.has(kind)) return kind
-  const outside = outsideTheApp(node)   // a relname with a schema, or starting with cx_ (the snapshot)
+  const outside = outsideTheApp(node)   // a relname with a schema, starting with cx_ (the snapshot) or conexus_migration (the ledger)
   if (outside !== undefined) return `name ${outside}`
   switch (kind) {
     case 'CreateStmt': return node.relation.relpersistence === 'p' ? undefined : `CreateStmt ${node.relation.relpersistence}`
     case 'AlterTableStmt': return node.cmds.map(({ AlterTableCmd: c }) => c.subtype).find((one) => !ALTER_ALLOWED.has(one))
     case 'DropStmt': return DROP_ALLOWED.has(node.removeType) ? undefined : `DropStmt ${node.removeType}`
     case 'SelectStmt': return node.intoClause === undefined ? undefined : 'SelectStmt INTO'
-    case 'CreateFunctionStmt': return functionPower(node)   // linguagem fora de sql/plpgsql, SECURITY DEFINER, EXECUTE, corpo que não seja SELECT, INSERT ou NEW
+    case 'CreateFunctionStmt': return functionPower(node)   // linguagem fora de sql/plpgsql, SECURITY DEFINER, EXECUTE, corpo que não seja SELECT, INSERT ou NEW, `RAISE EXCEPTION`, `RETURN` que não seja NEW, `sql_body` (`BEGIN ATOMIC`)
     default: return undefined
   }
 }
