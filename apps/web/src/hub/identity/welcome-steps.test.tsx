@@ -1,5 +1,5 @@
 import { FAILURES } from '@conexus/hub-api'
-import { fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { http } from 'msw'
 import { expect, test } from 'vitest'
 import { COMPANY } from '../../platform/fixtures.ts'
@@ -122,20 +122,6 @@ test('Passo 1 com a barra no fim do endereço: a empresa sem apelido fica no Pas
   const router = openAt(`${WELCOME}/company/`)
   expect(await screen.findByRole('heading', { name: 'Sua empresa' })).toBeTruthy()
   expect(router.state.location.pathname).toMatch(/\/welcome\/company\/?$/)
-})
-
-test('Passo 4: só "Ir para o início", que abre o Início da empresa', async () => {
-  server.use(...companyHub(ready()).handlers)
-  openAt(`${WELCOME}/build`)
-  expect(await screen.findByText('Passo 4 de 4')).toBeTruthy()
-  const main = within(screen.getByRole('main'))
-  expect(main.getAllByRole('link').map((link) => link.textContent)).toEqual([
-    'Voltar',
-    'Ir para o início',
-  ])
-  expect(main.queryAllByRole('button')).toHaveLength(0)
-  fireEvent.click(main.getByRole('link', { name: 'Ir para o início' }))
-  expect(await screen.findByRole('heading', { name: 'O que vamos construir?' })).toBeTruthy()
 })
 
 for (const role of ['admin', 'member'] as const) {

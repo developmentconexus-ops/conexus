@@ -34,10 +34,12 @@ export function startHub(server: ReturnType<typeof setupServer>) {
       project?: () => Response | undefined
       answers?: Answers
       start?: typeof START | null
+      /** Where the screen opens, Início by default. */
+      at?: string
     } = {},
   ) {
     const shown = view({ start: options.start === null ? undefined : START })
-    const hub = open(shown, HOME, options.answers)
+    const hub = open(shown, options.at ?? HOME, options.answers)
     const projects: Sent[] = []
     server.use(
       http.post(`*/api/companies/${COMPANY.id}/projects`, async ({ request }) => {

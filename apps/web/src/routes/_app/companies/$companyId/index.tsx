@@ -1,10 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
-import { Start } from '../../../../builder/conversation/public.ts'
+import { readStart, Start } from '../../../../builder/conversation/public.ts'
 import { accountsQuery } from '../../../../builder/model-accounts/public.ts'
 import { PreparationCard } from '../../../../hub/identity/public.ts'
-import { Home, projectsQuery } from '../../../../hub/projects/public.ts'
-import { readOrNotFound } from '../../../../platform/hub.ts'
+import { Home } from '../../../../hub/projects/public.ts'
 
 /** What the company still needs, for an owner or an administrator; a member never sees it. */
 function Preparation() {
@@ -28,12 +27,6 @@ function HomePage() {
 
 export const Route = createFileRoute('/_app/companies/$companyId/')({
   staticData: { place: 'Início' },
-  loader: ({ context, params }) =>
-    readOrNotFound(
-      Promise.all([
-        context.queryClient.ensureQueryData(projectsQuery(params.companyId, undefined)),
-        context.queryClient.ensureQueryData(accountsQuery(params.companyId)),
-      ]),
-    ),
+  loader: ({ context, params }) => readStart(context.queryClient, params.companyId),
   component: HomePage,
 })

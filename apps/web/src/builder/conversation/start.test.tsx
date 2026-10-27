@@ -1,6 +1,6 @@
 import { CompanyId, FAILURES } from '@conexus/hub-api'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
-import { http } from 'msw'
+import { HttpResponse, http } from 'msw'
 import { afterEach, expect, test } from 'vitest'
 import { COMPANY } from '../../platform/fixtures.ts'
 import { hubServer, projectsRead, refusal } from '../../platform/test-hub.tsx'
@@ -165,4 +165,55 @@ test('sair do Início no passo do nome e voltar devolve o pedido à caixa', asyn
   await conexus.router.navigate({ to: '/companies/$companyId', params: { companyId } })
   expect(typed(await box())).toBe(REQUEST)
   expect(projects).toHaveLength(0)
+})
+
+// The same box in step 4 of the first entry (criteria 14, 27 and 28).
+const STEP_FOUR = `${HOME}/welcome/build`
+
+test('Passo 4: a caixa cria e abre a conversa', async () => {
+  const { projects, conversations, conexus } = home({ at: STEP_FOUR })
+  expect(await screen.findByText('Passo 4 de 4')).toBeTruthy()
+  expect(screen.getByRole('heading', { name: 'O que vamos construir primeiro?' })).toBeTruthy()
+  expect((await box()).getAttribute('placeholder')).toBe('Descreva o app que você quer…')
+  expect(screen.getByRole('list', { name: 'Exemplos' })).toBeTruthy()
+  await request()
+  create('Pedidos')
+  await waitFor(() =>
+    expect(conexus.router.state.location.pathname).toBe(`${PROJECT}/conversations/${SECOND}`),
+  )
+  expect(projects).toHaveLength(1)
+  expect(conversations()).toHaveLength(1)
+})
+
+test('Passo 4: sem conta, o aviso do Início no lugar da caixa', async () => {
+  home({ at: STEP_FOUR, start: null })
+  expect(
+    await screen.findByText(
+      'Você ainda não tem uma conta de modelo. Peça a quem administra a empresa ou ligue a sua.',
+    ),
+  ).toBeTruthy()
+  expect(screen.queryByRole('textbox', { name: 'Mensagem para o Builder' })).toBeNull()
+})
+
+test('Passo 4: Ir para o início sem pedir nada', async () => {
+  const { conexus, projects } = home({ at: STEP_FOUR })
+  fireEvent.click(await screen.findByRole('link', { name: 'Ir para o início sem pedir nada' }))
+  expect(await screen.findByRole('heading', { name: 'O que vamos construir?' })).toBeTruthy()
+  expect(conexus.router.state.location.pathname).toBe(HOME)
+  expect(projects).toHaveLength(0)
+})
+
+test('Passo 4: Enviar não cobre o passo com a tela de abertura, os Projetos já vieram', async () => {
+  home({ at: STEP_FOUR })
+  server.use(
+    http.get(`*/api/companies/${COMPANY.id}/projects`, async () => {
+      await new Promise((done) => setTimeout(done, 300))
+      return HttpResponse.json({ projects: [], next: { kind: 'END' }, databaseReady: true })
+    }),
+  )
+  fireEvent.change(await box(), { target: { value: REQUEST } })
+  fireEvent.click(screen.getByRole('button', { name: 'Enviar' }))
+  expect(screen.getByText('Passo 4 de 4')).toBeTruthy()
+  expect(screen.queryByText('Abrindo o Conexus')).toBeNull()
+  expect(screen.getByLabelText('Nome do projeto')).toBeTruthy()
 })
