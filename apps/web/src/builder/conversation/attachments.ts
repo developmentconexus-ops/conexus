@@ -39,7 +39,11 @@ function dataUrlOf(file: File, mediaType: string): Promise<DataUrl | null> {
  * the route measures it, and why the others were left out. A file already in the draft is left out
  * without a word.
  */
-function admitted(held: readonly MessageFile[], read: readonly MessageFile[], refused: Refusal | null) {
+function admitted(
+  held: readonly MessageFile[],
+  read: readonly MessageFile[],
+  refused: Refusal | null,
+) {
   const files = [...held]
   let total = files.reduce((sum, each) => sum + each.data.length, 0)
   for (const file of read) {

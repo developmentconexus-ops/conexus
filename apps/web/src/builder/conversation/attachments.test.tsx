@@ -99,9 +99,12 @@ test('um arquivo que o navegador não lê fica de fora com frase, e os outros fi
   const { sent } = await openConversation(fresh())
   const readAsDataURL = FileReader.prototype.readAsDataURL
   let reads = 0
-  vi.spyOn(FileReader.prototype, 'readAsDataURL').mockImplementation(function (this, blob) {
+  vi.spyOn(FileReader.prototype, 'readAsDataURL').mockImplementation(function (
+    this: FileReader,
+    blob: Blob,
+  ) {
     reads += 1
-    if (reads === 2) queueMicrotask(() => this.onerror?.(new ProgressEvent('error') as never))
+    if (reads === 2) queueMicrotask(() => this.dispatchEvent(new ProgressEvent('error')))
     else readAsDataURL.call(this, blob)
   })
   try {
