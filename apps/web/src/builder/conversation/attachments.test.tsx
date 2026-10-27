@@ -162,7 +162,7 @@ test('o mesmo arquivo anexado duas vezes fica uma vez, sem frase (8)', async () 
   expect(screen.queryByRole('alert')).toBeNull()
 })
 
-test('sem armazenamento da aba, o texto digitado fica e um arquivo não o apaga (8, W19)', async () => {
+test('sem armazenamento da aba, o texto digitado fica e um arquivo não o apaga (8)', async () => {
   const { field } = await openConversation(fresh())
   const refuse = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
     throw new DOMException('blocked', 'SecurityError')

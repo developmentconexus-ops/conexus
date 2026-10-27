@@ -21,7 +21,7 @@ test('um anel com o percentual de pendingTokens/threshold (Critério 15)', () =>
 
 test('sem memória o anel está vazio e diz 0% (Critério 15, matriz de estados)', () => {
   render(<MemoryStatus memory={null} />)
-  expect(screen.getByRole('button').getAttribute('aria-label')).toContain('Mensagens 0%')
+  expect(screen.getByRole('button', { name: /Mensagens 0%/ })).toBeTruthy()
   expect(screen.getByText('0%')).toBeTruthy()
 })
 
