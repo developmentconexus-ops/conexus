@@ -6,6 +6,7 @@ import type { RouterHistory } from '@tanstack/react-router'
 import { createRouter, RouterProvider, useRouter } from '@tanstack/react-router'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import type { ModelRefusal } from './builder/conversation/handoff.ts'
 import { sessionQuery } from './hub/identity/public.ts'
 import { createCache } from './platform/cache.ts'
 import { HubFailure } from './platform/hub.ts'
@@ -31,6 +32,15 @@ declare module '@tanstack/react-router' {
     section?: SectionMeta
     /** A step of the owner's first entry, which its frame shows as "Passo n de 4" (web W33). */
     step?: 1 | 2 | 3 | 4
+  }
+}
+declare module '@tanstack/history' {
+  /** What a navigation carries (TanStack Router `navigate({ state })`). */
+  interface HistoryState {
+    /** Início's request for the conversation to send now, the words only (Factory `promptHandoffState`). */
+    handoff?: { content: string }
+    /** The Projeto was created and the Hub refused the model of its conversation. */
+    refused?: ModelRefusal
   }
 }
 

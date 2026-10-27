@@ -15,6 +15,7 @@ import { accountsQuery, ModelPicker } from '../model-accounts/public.ts'
 import type { Outgoing } from './attachments.ts'
 import { Composer } from './composer.tsx'
 import { useDraft } from './draft.ts'
+import type { ModelRefusal } from './handoff.ts'
 import { MODEL_REFUSALS, stashHandoffFiles } from './handoff.ts'
 import { chipOf } from './messages.ts'
 import { NoAccount } from './model-choice.tsx'
@@ -28,7 +29,7 @@ type Phase =
   /** The Projeto exists; its conversation does not yet. */
   | { kind: 'STARTING'; outgoing: Outgoing; project: Project }
 
-function isRefused(code: string): code is (typeof MODEL_REFUSALS)[number] {
+function isRefused(code: string): code is ModelRefusal {
   return MODEL_REFUSALS.some((one) => one === code)
 }
 

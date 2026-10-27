@@ -11,6 +11,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { sentenceOfCode, writeFailureText } from '../../platform/hub.ts'
 import { buttonVariants } from '../../ui/button.tsx'
+import { cn } from '../../ui/cn.ts'
 import { Notice } from '../../ui/notice.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
 import { ModelPicker } from '../model-accounts/public.ts'
@@ -33,7 +34,15 @@ export function NoAccount(props: {
       <Link
         to="/companies/$companyId/settings/my-model-accounts"
         params={{ companyId: props.companyId }}
-        className={props.action === 'button' ? buttonVariants() : 'underline'}
+        className={
+          props.action === 'button'
+            ? // Wraps at 200% zoom on a phone instead of pushing the page sideways (design V18).
+              cn(
+                buttonVariants(),
+                'h-auto min-h-[34px] whitespace-normal py-xs max-md:h-auto max-md:min-h-11',
+              )
+            : 'underline'
+        }
       >
         Minhas contas de modelo
       </Link>
