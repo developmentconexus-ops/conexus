@@ -23,7 +23,7 @@ com cores e números de linha.
 4. Abre o Projeto **Encomendas** na conversa: a bolha dela com o texto e a etiqueta, e o Builder
    trabalhando. De volta ao Início, o cartão **Encomendas** está lá. Não existe mais **Criar
    projeto** sem pedido.
-5. Ana abre a aba **Código** do Encomendas. À esquerda, as pastas fechadas com o ícone de pasta,
+5. Quando o Builder termina e guarda a primeira versão, Ana abre a aba **Código** do Encomendas. À esquerda, as pastas fechadas com o ícone de pasta,
    menos o caminho até o arquivo aberto; à direita, o arquivo com cores, números de linha e o nome
    em cima. Ela abre `src` e depois `routes`, fecha `routes`, e a setinha volta para a direita. No
    celular, toca **Arquivos**, a lista rola até o fim, ela escolhe outro arquivo e o vê colorido.
@@ -31,11 +31,14 @@ com cores e números de linha.
    mesmo: caixa, exemplos, nome, e cai na conversa. Ou toca **Ir para o início sem pedir nada**.
 
 **O desenho de depois do Enviar.** Você aprova esta página olhando o que aparece depois do
-**Enviar**: o passo do nome no lugar da caixa, com o endereço do app logo embaixo do nome. São quatro capturas, a 1366 e
-a 390 px, claro e escuro, feitas de um desenho com as cores e letras do Conexus e entregues junto com
+**Enviar**: o passo do nome no lugar da caixa, com o endereço do app logo embaixo do nome. São
+quatro capturas, a 1366 e a 390 px, claro e escuro, feitas de um desenho com as cores e letras do Conexus e entregues junto com
 esta página, fora do repositório: `depois-de-enviar-1366-claro.png`,
 `depois-de-enviar-1366-escuro.png`, `depois-de-enviar-390-claro.png`,
-`depois-de-enviar-390-escuro.png`.
+`depois-de-enviar-390-escuro.png`. A aba **Código** tem o seu desenho também, do mesmo jeito:
+`codigo-1366-claro.png`, `codigo-1366-escuro.png`, `codigo-390-claro.png`, `codigo-390-escuro.png`
+e, com a lista **Arquivos** aberta no celular, `codigo-390-arquivos-claro.png` e
+`codigo-390-arquivos-escuro.png`.
 
 **O que você faz, e quando.** Antes: nada. No começo: aprova esta página. No fim: faz o roteiro no
 computador e no celular, diz o que viu e aprova os textos das telas.
@@ -57,19 +60,19 @@ computador e no celular, diz o que viu e aprova os textos das telas.
 - **B1**, nativo: saem o **+ Novo projeto** e o campo de nome sozinho de hoje; todo Projeto nasce de
   um pedido, no Início ou no passo 4. "B. B1".
 - **C**, nativo: o estado nos cartões fica para depois. `C. C1`.
-- `D2`, embrulhado: a aba **Código** arrumada e colorida com Shiki. `D2`.
-
-**D. Como o código aparece na aba Código:** `D2` (sua palavra `D2`, 2026-10-26). A árvore arrumada
-(pastas fechadas, setinha certa, ícones, nome do arquivo em cima, a lista do celular rolando), os
-números de linha e as cores, nos dois temas, guardadas na marca como as outras. É o que a Mastra, a
-AI Elements e o Streamdown usam. Não mexe na política de segurança da página (provado no navegador,
-sem nenhum erro). O Shiki só baixa ao abrir o primeiro arquivo, cerca de 67 kB; a página inicial
-cresce 1,7 kB. ~260 linhas. Embrulhado: o nosso acrescenta só a tabela que liga cada cor do Shiki a
-uma cor da marca. Capturas do estudo da aba Código, fora do repositório:
-`proto/desktop-file-light.png`, `proto/desktop-file-dark.png`, `proto/phone-file-light.png`.
-- `D1`, arrumar sem colorir: o código de uma cor só (~120 linhas). Não escolhida.
-- `D3`, colorir com CodeMirror, como o Conexus OS: afrouxa a política de segurança da página e traz
-  dobra e busca que ninguém pediu. Não escolhida.
+- **`D2`**, embrulhado: a aba **Código** arrumada e colorida com Shiki. Sua palavra `D2`, 2026-10-26. A árvore
+  arrumada (pastas fechadas, setinha certa, ícones, nome do arquivo em cima, a lista do celular
+  rolando), os números de linha e as cores, nos dois temas, guardadas na marca como as outras. É o
+  que a Mastra, a AI Elements e o Streamdown usam. A caixa do código, com o nome em cima e os números
+  de linha, é a peça pronta do shadcn, a biblioteca de peças que o Conexus já usa: o leitor de tela
+  lê o código sem os números. Não mexe na política de segurança da página (provado no navegador, sem
+  nenhum erro). O Shiki só baixa ao abrir o primeiro arquivo, cerca de 67 kB; a página inicial
+  cresce 1,7 kB. ~260 linhas. Embrulhado: o nosso acrescenta só a tabela que liga cada cor do Shiki
+  a uma cor da marca. Capturas do estudo da aba Código, fora do repositório:
+  `proto/desktop-file-light.png`, `proto/desktop-file-dark.png`, `proto/phone-file-light.png`.
+  - `D1`, arrumar sem colorir: o código de uma cor só (~120 linhas). Não escolhida.
+  - `D3`, colorir com CodeMirror, como o Conexus OS: afrouxa a política de segurança da página e
+    traz dobra e busca que ninguém pediu. Não escolhida.
 
 **Não é decisão sua, já está decidido:**
 - **Onde o nome é digitado**: depois do **Enviar**, no lugar da caixa, como fazia o seu Conexus OS,
@@ -105,7 +108,7 @@ Nenhuma linha remendo.
 | U2 | O Início: a caixa da 14.3, os exemplos, o passo do nome, a passagem do pedido à conversa; sai o campo de nome sozinho | `apps/web/src/builder/conversation/`, `apps/web/src/hub/projects/`, `apps/web/src/routes/_app/companies/$companyId/` | web | U1 |
 | U3 | O passo 4 com a mesma caixa | `apps/web/src/routes/_app/companies/$companyId_/welcome/`, `apps/web/src/hub/identity/` | web | U2 |
 | U4 | O foco depois de entrar vai à caixa, e o título não ganha contorno | `apps/web/src/hub/identity/`, `apps/web/src/brand/`, `apps/web/src/routes/_app/` | design | U2 |
-| U5 | A aba Código legível: pastas fechadas menos o caminho do arquivo, a seta e o ícone de pasta que seguem o estado, ícone de arquivo, o código com cores (Shiki, `D2`), números de linha e o nome em cima, a árvore com rolagem própria; o celular com o `Sheet` de hoje, que passa a rolar até a última linha e diz "Fechar arquivos" | `apps/web/src/builder/source/`, `apps/web/src/brand/`, `apps/web/src/ui/sheet.tsx` (o rótulo de fechar), `docs/reference/stack.md` | design | 14.3 inteira |
+| U5 | A aba Código legível: pastas fechadas menos o caminho do arquivo, a seta e o ícone de pasta que seguem o estado, ícone de arquivo, o código com cores (Shiki, `D2`), números de linha e o nome em cima, a árvore com rolagem própria; o celular com o `Sheet` de hoje, que passa a rolar até a última linha e diz "Fechar arquivos" | `apps/web/src/builder/source/`, `apps/web/src/brand/`, `apps/web/src/ui/sheet.tsx` (o rótulo de fechar), `apps/web/src/ui/code-block.tsx`, `docs/reference/stack.md` | design | 14.3 inteira |
 
 **A entrega.** Cada unidade é o seu próprio pull request, sobre o `main` com as anteriores já
 dentro ([entrega L9](../guides/delivery.md)): o CI verde, uma revisão por um revisor Opus e então o
@@ -143,11 +146,11 @@ entrou no `main`, porque a caixa, os arquivos e o rascunho são os dela.
 | 18 | U5 | Fechar uma pasta dentro de outra aberta põe a seta para a direita e o ícone de pasta fechada; abrir volta a seta para baixo e o ícone de pasta aberta; vale para o clique e para as setas do teclado (V30) | `apps/web/workbench.layout.test.ts` (navegador: `rotate` calculado `none` contra `90deg`) | must |
 | 19 | U5 | Um `.tsx` aberto mostra palavras-chave, textos, comentários e funções nas cores dos tokens `--color-code-*`, nos dois temas; nenhum erro de console nem relatório de CSP | `workbench.layout.test.ts` (cor calculada por tema; `page.problems` vazio, T23) | must |
 | 20 | U5 | Um arquivo sem gramática (`.gitignore`), acima de 256 KiB, ou cuja gramática falha ao carregar aparece em texto simples, com números de linha, sem erro | `source.test.tsx`, "sem gramática, texto simples" e "acima do teto, texto simples" | must |
-| 21 | U5 | Os números de linha não entram na seleção nem na cópia, e o leitor de tela não os lê | `source.test.tsx`, nenhum número no texto do código | must |
+| 21 | U5 | Os números de linha não entram na seleção nem na cópia, e o leitor de tela não os lê: a árvore de acessibilidade do navegador não tem nenhum texto que seja só um número de linha | `workbench.layout.test.ts` (navegador: o `innerText` do código sem os números; `Accessibility.getFullAXTree` pelo CDP, nenhum `StaticText` só de dígitos; o contador sem `/ ""` falha este caso) | must |
 | 22 | U5 | A 390 px e a 200 %: a página não rola para o lado; o código rola dentro da caixa; **Arquivos** abre o `Sheet` e escolher um arquivo o fecha, como hoje | `apps/web/phone.layout.test.ts`, `apps/web/sweep.test.ts` (o estado "Projeto, Código com a árvore") | must |
 | 23 | U5 | No celular, com `components/ui` aberta (50 linhas), a lista do **Arquivos** rola até a última linha; o botão de fechar diz "Fechar arquivos" | `phone.layout.test.ts`, "a lista longa do Sheet rola até o fim" | must |
 | 24 | U5 | A linha do arquivo escolhido mantém o fundo ipê com o ponteiro em cima | `source.test.tsx`, nenhum `hover:` que troque o fundo da escolhida; ou a QA | should |
-| 25 | U5 | Nada do Shiki chega na primeira página: o pedaço principal cresce menos de 5 kB comprimido, e o Shiki baixa só ao abrir o primeiro arquivo | `apps/web/vite.config.test.ts` ou a QA, pelos tamanhos do build | should |
+| 25 | U5 | Nada do Shiki chega na primeira página: no manifesto do Vite, o pedaço de entrada não importa nenhum módulo do Shiki, e o Shiki só aparece em `dynamicImports` | `apps/web/vite.config.test.ts`, "o Shiki só chega por import dinâmico" (o build com `manifest: true`) | must |
 
 ## A matriz de estados
 
@@ -221,6 +224,46 @@ encomendas--padaria-sol.<domínio>
 [Voltar]
 ```
 
+A aba **Código** (U5), na mesma forma, e desenhada em HTML com os tokens de `brand/tokens.css` e as
+cores `--color-code-*` do protótipo, capturada a 1366 e 390 px, claro e escuro, e a 390 px com
+**Arquivos** aberto (as seis capturas `codigo-*.png` da página do fundador, fora do repositório).
+A visão de código do Conexus OS não tem captura (estudo da aba Código, `report.md:288-289`).
+
+```text
+1280 px, Projeto, aba Código (a conversa à direita, como hoje)
+Encomendas   [Prévia|Código]                               [Abrir app] │ conversa
+Versão 1, guardada em 26/10 às 15:42                                   │
+┌ árvore, rola sozinha ─┐ ┌ ▤ src/routes/encomendas.tsx ──────────────┐ │
+│ ⌄ ▱ src               │ │  1  import { useState } from 'react'      │ │
+│   › ▭ components      │ │  2  import { Button } from '../comp…'     │ │
+│   › ▭ lib             │ │  3                                        │ │
+│   ⌄ ▱ routes          │ │  4  // Uma encomenda: quem pediu, …       │ │
+│       ▤ index.tsx     │ │  5  type Encomenda = { cliente: string …  │ │
+│     [▤ encomendas.tsx] │ │  …  (cores --color-code-*, rola na caixa)│ │
+│     ▤ main.tsx        │ │                                           │ │
+│ ▤ index.html          │ │                                           │ │
+│ ▤ package.json        │ │                                           │ │
+└───────────────────────┘ └───────────────────────────────────────────┘ │
+
+390 px, Projeto, aba Código
+Encomendas  [Prévia|Código]  [Abrir app]
+Versão 1, guardada em 26/10 às 15:42
+[▭ Arquivos]  src/routes/encomendas.tsx
+┌ ▤ src/routes/encomendas.tsx ────┐
+│  1  import { useState } from 'r…│  (o código rola dentro da caixa)
+│  2  import { Button } from '../…│
+│  …                              │
+└─────────────────────────────────┘
+
+390 px, Arquivos aberto (o Sheet de hoje)
+┌ Arquivos do app             [×] ┐  × = "Fechar arquivos"
+│ ⌄ ▱ src                         │
+│   › ▭ components                │
+│   ⌄ ▱ routes                    │
+│      [▤ encomendas.tsx]         │  a lista rola até a última linha
+└─────────────────────────────────┘
+```
+
 ## A tabela de falhas
 
 | Gravação ou comando, da etapa ou da biblioteca | Duas vezes ao mesmo tempo | Recusada no meio, depois de uma instrução ou de uma chamada | Uma dependência fora (o banco, ou um terceiro) | O que o processo imprime | Critérios |
@@ -244,7 +287,7 @@ encomendas--padaria-sol.<domínio>
 | A conversa recusada depois do Projeto | U2 | nenhum (hoje o Projeto nasce sozinho) | OS `e0353c36` `start-project.ts:22-34` (o Projeto fica, o primeiro pedido `REFUSED`) e `prompt-box.tsx:37-44` (abre o Projeto com o aviso "escreva de novo"); Dyad `commands.ts:142-166` (a falha do chat confirma o app e tenta só o chat) | Lido | nativo: uma falha que pode passar (resposta cortada, 502, 503, `DATABASE_UNAVAILABLE`) tenta só a conversa, como a Dyad; uma recusa do modelo abre o Projeto com a frase, como o OS | | não precisa | |
 | O valor inicial do seletor | U2 | `Defaults.start` em `listModelAccounts` (`model-accounts.ts:115`), lido por `my-defaults.tsx` | decisão 0054 | Lido | nativo | | não precisa | |
 | A mensagem passada à conversa | U2 | nenhum | Factory `mastra-1.78@6a465f9d` `domains/chat/hooks/useHandoffPrompt.ts:21-30, 91-133` e `useCreateUserSessionFromDraft.ts:63`; `services/handoffFiles.ts:3-17`; TanStack Router 1.170.44 `navigate({ state })` (`@tanstack/router-core` `link.d.ts:126`, `HistoryState` de `@tanstack/history` 1.162.5 `index.d.ts:43`) | Lido: o "envie agora" vai no estado da navegação (`:93`); ao tomá-lo, grava a cópia no `sessionStorage` e tira o estado com `replace` (`:111-116`); recupera só quando não há estado (`:101-109`); dois `ref` seguram a segunda volta do efeito (`:91-92, 100-103`); os arquivos cruzam num `Map` em memória ("base64 images can exceed browsers' history state size limits", `handoffFiles.ts:3-5`) | nativo: o mesmo mecanismo, com o estado do TanStack Router no lugar do `react-router`; a cópia sai quando o `send` da 14.3 volta, e depois de lida no recarregar | | não precisa | `apps/web/src/builder/conversation/handoff.ts` |
-| Rascunho do Início | U2 | `builder/conversation/draft.ts:24-63` (por conversa: o texto em memória com um espelho no `sessionStorage`, os arquivos só em memória; `take` e `restore`) | Factory `ComposerImagesContext` e o rascunho por rota | Lido | embrulhado: a chave do rascunho é a conversa ou `start:<empresa>` | Teste de tela (critério 12) | não precisa | |
+| Rascunho do Início | U2 | `builder/conversation/draft.ts:25-62` (por conversa: o texto em memória com um espelho no `sessionStorage`, os arquivos só em memória; `take` e `restore`) | Factory `ComposerImagesContext` e o rascunho por rota | Lido | embrulhado: a chave do rascunho é a conversa ou `start:<empresa>` | Teste de tela (critério 12) | não precisa | |
 | Sem conta de modelo | U2 | `NoAccount` (`model-choice.tsx:21`) na conversa | Factory `NewPage.tsx:126-142` (`MissingCredentialState` no lugar do compositor) | Lido | nativo | | "Sem conta de modelo, um aviso no lugar do compositor", 2026-10-19 | |
 | Três exemplos | U2 | nenhum | OS `prompt-box.tsx:16-21, 99, 147-155`; Dyad e Lovable (sugestões) | Lido: tocar põe o texto na caixa, não envia | nativo | | `wf-h1`, 2026-10-19; os textos no fim | |
 | Passo 4 da primeira entrada | U3 | `routes/_app/companies/$companyId_/welcome/build.tsx:5-18` (só "Ir para o início") | `wf-o4`; Linear `onb-linear-07` (termina dentro do produto) | Documentado | nativo | | W33; `wf-o4` | |
@@ -254,13 +297,14 @@ encomendas--padaria-sol.<domínio>
 | Cor do código (o realce) | U5 | `builder/source/source.tsx:27` (`<pre>` cru) | `shiki@4.5.0` (`docs/guide/regex-engines.md:42-62`, `best-performance.md:36-56`, shiki `f7d0167`); Mastra `mastra-1.78@6a465f9d` `packages/playground-ui/src/ds/components/CodeEditor/highlight.ts:51-95`, `Code/code.tsx:67`; shadcn `ui@8f04138` `apps/v4/registry/bases/base/lib/highlighter.tsx:2-48`; Streamdown `c6f5905` `packages/streamdown-code/index.ts:16-18, 303-307`; AI Elements `ca8be60` `packages/elements/src/code-block.tsx:30, 158-161, 213-219` | Lido: `shiki/core` com `createJavaScriptRegexEngine` (sem wasm) e um `import()` por gramática; `codeToTokens` desenhado como `span` do React, nunca `dangerouslySetInnerHTML`. Só a AI Elements usa o `shiki` inteiro com o wasm Oniguruma | embrulhado: o nosso liga cada variável de cor do tema a uma classe da marca (`COLOURS`, 8 linhas), porque `noInlineStyles` (`biome.json:118`) proíbe o `style` que a Mastra e a AI Elements usam | estudo da aba Código, `runs/proto.out`: palavra-chave `rgb(207,34,46)` no claro e `rgb(255,123,114)` no escuro; nenhum erro de console nem relatório de CSP a 1366 e 390, nos dois temas | "colorir o código, interpretador de código", 2026-10-26; `D2`, 2026-10-26 | `apps/web/src/builder/source/highlight.ts` |
 | Cores nos dois temas | U5 | nenhum | `@shikijs/core@4.5.0` `createCssVariablesTheme` (`dist/index.d.mts:133-164`); Mastra `index.css:150-158` (`--shiki-light`/`--shiki-dark`) | Lido: o tema escreve `var(--shiki-token-keyword)` e afins, 14 nomes; a página os define | nativo: a marca define 7 tokens `--color-code-*` por tema em `brand/tokens.css` (V3), sem tema duplo | `runs/proto.out`, as cores por tema | não precisa | |
 | Carregar só ao abrir um arquivo | U5 | nenhum | Mastra `highlight.ts:51-75`; shadcn `highlighter.tsx:10-24` | Lido: `import('shiki/langs/tsx.mjs')` e afins, um pedaço cada | nativo (divisão de código do Vite) | `runs/build-*-chunks.txt`: o pedaço principal +1,7 kB comprimido; o primeiro `.tsx` baixa núcleo 29,7 + motor 20,3 + tsx 16,6 kB | não precisa | |
-| Teto de tamanho do realce | U5 | o Hub lê até 1 MiB (`hub-api/src/source.ts:40`) | Mastra `use-highlight.ts:109` (75 ms de intervalo); AI Elements `code-block.tsx:316-319` (`content-visibility`) | Lido: cada um limita o custo na linha principal do seu jeito | embrulhado: acima de 256 KiB, texto simples com números de linha (C73: custo medido) | `runs/time.mjs`: 1 MiB de tsx 1.119 ms; 256 KiB 361 ms; 64 KiB 145 ms. O maior arquivo real é o `package-lock.json` do modelo inicial, 84 KB | não precisa | |
+| Teto de tamanho do realce | U5 | o Hub lê até 1 MiB (`hub-api/src/source.ts:40`) | Mastra `packages/playground-ui/src/ds/components/Code/use-highlight.ts:14, 19` (75 ms de intervalo); AI Elements `code-block.tsx:316-319` (`content-visibility`) | Lido: cada um limita o custo na linha principal do seu jeito | embrulhado: acima de 256 KiB, texto simples com números de linha (C73: custo medido) | `runs/time.mjs`: 1 MiB de tsx 1.119 ms; 256 KiB 361 ms; 64 KiB 145 ms. O maior arquivo real é o `package-lock.json` do modelo inicial, 84 KB | não precisa | |
 | Árvore fechada, menos o caminho do arquivo | U5 | `builder/source/file-tree.tsx:67` (`defaultOpen={!KIT.test(…)}`: tudo aberto menos `components/ui`) | AI Elements `file-tree.tsx:43, 51` (`defaultExpanded = new Set()`); Mastra `factory-ui/…/WorkspaceFileBrowser.tsx:157` (`openFolders[node.path] ?? false`); Conexus OS `e0353c36` `apps/web/src/features/builder/construir/lens-code.tsx:33, 40, 65` (abre só `ancestors(path)`); Dyad `902829f` `FileTree.tsx:694`. Ao contrário: vibesdk `file-explorer.tsx:71` (`useState(true)`), bolt.diy `353b44c` `FileTree.tsx:46` | Lido: fechadas em 4 de 6; o OS abre os ancestrais do arquivo escolhido | nativo: `defaultOpen` do Base UI a partir dos ancestrais do arquivo escolhido, como o OS | | "elas vêm expandidas já e não contraídas", 2026-10-26 | |
 | Seta que segue o estado | U5 | `file-tree.tsx:67, 71` (`group/folder` com `group-data-open/folder:rotate-90`: a seta de uma pasta fechada dentro de uma aberta lê o `data-open` da de cima) | `@base-ui/react@1.9.0` `docs/react/components/collapsible.md`, a demonstração Tailwind (`group` no `Collapsible.Trigger`, `group-data-panel-open:rotate-90`); `CollapsibleTriggerDataAttributes.js:10` (`data-panel-open`); AI Elements `file-tree.tsx:183-188`; Mastra `Tree/tree-folder-trigger.tsx:54`. O `sidebar-11` do shadcn usa `data-state`, que o Base UI 1.9 nunca escreve | Lido; provado | nativo: o exemplo da própria biblioteca | `runs/today.out` (o defeito) e `runs/proto.out` (consertado) | "mesmo você contraindo ele não volta a setinha certa", 2026-10-26 | |
 | Ícone de pasta aberta e fechada | U5 | nenhum | AI Elements `file-tree.tsx:197-202` (`FolderOpenIcon`/`FolderIcon`); Mastra `WorkspaceFileBrowser.tsx:47-52`; Dyad `FileTree.tsx:741`; OS `lens-code.tsx:34` | Lido | nativo: `FolderIcon` e `FolderOpenIcon` do lucide, trocados por `group-data-panel-open:` (nenhum estado nosso) | `shots/proto/desktop-tree-nested-closed-*.png` | "colocar símbolo de pastinha", 2026-10-26 | |
-| Ícone de arquivo pelo tipo | U5 | nenhum | Mastra `WorkspaceFileBrowser.tsx:22-44`; vibesdk `file-explorer.tsx:27-43`; AI Elements `file-tree.tsx` (um `FileIcon`) | Lido | embrulhado: um mapa de 5 extensões sobre ícones do lucide | | não precisa | |
-| Números de linha | U5 | nenhum | AI Elements `code-block.tsx:80-91, 282` (contadores CSS); vibesdk `main-content-panel.tsx:379-381`; OS `code-surfaces.tsx:31` | Lido | nativo: contadores CSS como a AI Elements, para que a cópia nunca leve os números | | não precisa | |
-| Nome do arquivo em cima do código | U5 | só no celular (`source.tsx:57`) | OS `lens-code.tsx:69` (`cx-file-head`); Mastra `WorkspaceFileViewer.tsx`, o cabeçalho | Lido | nativo | | não precisa | |
+| Ícone de arquivo | U5 | nenhum | AI Elements `file-tree.tsx` (um `FileIcon`); Mastra `WorkspaceFileBrowser.tsx:22-44` e vibesdk `file-explorer.tsx:27-43` (um ícone por tipo) | Lido | nativo: um `FileIcon` do lucide, como a AI Elements; um ícone por tipo ninguém pediu | | não precisa | |
+| Caixa do código, cabeçalho e números de linha | U5 | `source.tsx:23-28` (`<pre>` cru) | shadcn base-nova `code-block` (registro `ui.shadcn.com/r/styles/base-nova/code-block.json`, lido em 2026-10-27): `CodeBlock`, `CodeBlockHeader`, `CodeBlockTitle` (`code-block.tsx:27-69`), `CodeBlockContent lineNumbers` (`:149-191`), `CodeBlockLine` (`:193-235`), o contador `content: counter(line) / ''` atrás de um `supports-` (`:194`); a skill `shadcn`, `rules/chat.md:405-424` ("`lineNumbers` for source") | Lido; provado | embrulhado: copiado para `ui/code-block.tsx` como o `attachment` (`ui/attachment.tsx:5`), pintado com os tokens; o `style={{ counterReset }}` de `CodeBlockContent` (`:169`) vira a classe `[counter-reset:line]` (`noInlineStyles`); ficam de fora `CodeBlockActions`, `CodeBlockCopyButton` e `CodeBlockFooter` (copiar ficou de fora) e o `use-highlighted-code`, porque o realce é o `highlight.ts` | revisão do delta do cartão, 2026-10-27, Chromium 153: `content: counter(line)` põe `"1","2"` nos `StaticText` da árvore de acessibilidade; `counter(line) / ""` não | não precisa | `apps/web/src/ui/code-block.tsx` |
+| Números de linha | U5 | nenhum | shadcn base-nova `code-block.tsx:194` (contador com texto alternativo vazio); AI Elements `code-block.tsx:80-91, 282` (o mesmo contador, sem o texto alternativo: o leitor de tela lê os números); vibesdk `main-content-panel.tsx:379-381`; OS `code-surfaces.tsx:31` | Lido; provado | nativo: o `CodeBlockLine` da linha acima | | não precisa | |
+| Nome do arquivo em cima do código | U5 | só no celular (`source.tsx:57`) | shadcn base-nova `CodeBlockHeader` e `CodeBlockTitle` (`code-block.tsx:45-69`); OS `lens-code.tsx:69` (`cx-file-head`); Mastra `WorkspaceFileViewer.tsx`, o cabeçalho | Lido | nativo: o cabeçalho da caixa do código | | não precisa | |
 | Árvore com rolagem própria no computador | U5 | nenhum: a página inteira rola (`source.tsx:67-69`) | OS `construir.css:53` (`.cx-files { overflow: auto }`); vibesdk `file-explorer.tsx:187-194` | Lido | nativo (CSS) | | não precisa | |
 | Celular | U5 | `source.tsx:52-64` (`Sheet` a partir de **Arquivos**) | OS `construir.css:158-160`; Mastra `WorkspaceFilesToggle.tsx:36-52` (um `Popover` abaixo de 68 rem); vibesdk e Dyad: nenhum | Lido | nativo: fica o `Sheet`; **Arquivos** ganha o ícone; o código rola na sua caixa | `shots/proto/phone-*.png`; `scrollWidth` 390 | critério 13 da 14.2 ("o `Sheet` a 390 px"), aprovado | |
 | A lista do celular rola | U5 | `ui/sheet.tsx:26-30` (`fixed … h-full flex-col`, sem `overflow`); `file-tree.tsx:113` | shadcn `Sheet` (o conteúdo decide a rolagem); OS `construir.css:53, 160` | Lido; provado o defeito | nativo: `min-h-0 overflow-y-auto` no invólucro da árvore dentro do `Sheet` | `runs/sheet.out`: 50 linhas, a última em y=1339 de 844, `scrollTop` fica 0 | "Ainda mais no celular", 2026-10-26 | |
@@ -367,7 +411,7 @@ na tabela; a passagem copia o jeito da Factory (`useHandoffPrompt.ts`, `handoffF
 | `apps/web/src/builder/conversation/handoff.ts` | Cria | `start.tsx`, `panel.tsx` |
 | `apps/web/src/builder/conversation/draft.ts` | Muda: a chave | `panel.tsx`, `start.tsx` |
 | `apps/web/src/builder/conversation/panel.tsx` | Muda: `Screen` chama `useHandoff`; `EmptyPanel` mostra `HistoryState.refused` | — |
-| `apps/web/src/builder/conversation/text.ts` | Muda: os exemplos, o texto do campo, a frase do recarregar | `start.tsx`, `panel.tsx` |
+| `apps/web/src/builder/conversation/text.ts` | Muda: os exemplos, a frase do recarregar | `start.tsx`, `panel.tsx` |
 | `apps/web/src/builder/conversation/public.ts` | Muda: exporta `Start` | a rota; a U3 |
 | `apps/web/src/routes/_app/companies/$companyId/index.tsx` | Muda: passa `<Start companyId />` ao `Home` | — |
 | testes: `start.test.tsx` (cria), `home.test.tsx`, `panel.test.tsx` (mudam) | | |
@@ -580,7 +624,7 @@ mapa de cores e duas correções de classe, numa pasta só; o estudo já rodou o
 
 **Cor do código**, **Cores nos dois temas**, **Carregar só ao abrir um arquivo**, **Teto de tamanho
 do realce**, **Árvore fechada, menos o caminho do arquivo**, **Seta que segue o estado**, **Ícone de
-pasta aberta e fechada**, **Ícone de arquivo pelo tipo**, **Números de linha**, **Nome do arquivo em
+pasta aberta e fechada**, **Ícone de arquivo**, **Caixa do código, cabeçalho e números de linha**, **Números de linha**, **Nome do arquivo em
 cima do código**, **Árvore com rolagem própria no computador**, **Celular**, **A lista do celular
 rola**, **O botão de fechar do `Sheet` dos arquivos**, **A seleção sob o ponteiro**. Os arquivos de
 hoje: `builder/source/source.tsx` (`FileText` :16-30, `Files` com o `Sheet` :32-72, `Source`
@@ -597,6 +641,7 @@ hoje: `builder/source/source.tsx` (`FileText` :16-30, `Files` com o `Sheet` :32-
 | `apps/web/src/builder/source/source.tsx` | Muda: o cabeçalho do arquivo, os números de linha, o teto, o realce, a rolagem da árvore, o ícone de **Arquivos** | a rota do Projeto |
 | `apps/web/src/builder/source/file-tree.tsx` | Muda: `group` no gatilho, `defaultOpen` dos ancestrais, os ícones, o hover da escolhida | `source.tsx` |
 | `apps/web/src/ui/sheet.tsx` | Muda: o rótulo de fechar vem de quem abre; "Fechar navegação" fica o padrão | `source.tsx`, a navegação do celular |
+| `apps/web/src/ui/code-block.tsx` | Cria: o `code-block` do shadcn base-nova, copiado e pintado com os tokens | `source.tsx` |
 | `apps/web/src/brand/tokens.css` | Muda: 7 `--color-code-*` por tema | toda a web |
 | `apps/web/package.json`, `package-lock.json` | Muda: `shiki@4.5.0` | — |
 | `docs/reference/stack.md` | Muda: a linha do `shiki` (o `check-docs` recusa uma dependência sem linha) | — |
@@ -613,8 +658,8 @@ export function highlighted(path: string, text: string): Promise<Token[][] | nul
 ```
 
 - Um `createHighlighterCore` preguiçoso, criado no primeiro arquivo, com
-  `createCssVariablesTheme({ name: 'conexus' })` e `createJavaScriptRegexEngine({ forgiving: true })`
-  (sem wasm: a página fica com `script-src 'self'`, sem `'wasm-unsafe-eval'`). As gramáticas por
+  `createCssVariablesTheme({ name: 'conexus' })` e `createJavaScriptRegexEngine()`, o
+  padrão estrito, como a Mastra (`highlight.ts:74`) (sem wasm: a página fica com `script-src 'self'`, sem `'wasm-unsafe-eval'`). As gramáticas por
   `import()`, uma por extensão: tsx e jsx, ts, js e mjs, json, css, html, sql, md. Gramáticas
   pré-compiladas, nunca (a documentação as dá por não suportadas, `regex-engines.md:89-92`).
 - `codeToTokens` devolve `token.color` como `var(--shiki-…)` e `fontStyle` como bits (itálico 1);
@@ -625,12 +670,14 @@ export function highlighted(path: string, text: string): Promise<Token[][] | nul
 - `FileText` mostra o texto simples primeiro e pinta num `useEffect` quando `highlighted` volta,
   como o OS (`code-surfaces.tsx:10-24`) e a AI Elements (`code-block.tsx:168-181`); sem `useQuery`,
   porque W11 proíbe escrever uma chave de consulta.
-- Os números de linha por contadores CSS no `::before` de cada linha, fora da seleção e do leitor de
-  tela (critério 21).
+- A caixa do código é o `CodeBlock` de `ui/code-block.tsx`: `CodeBlockHeader` com `CodeBlockTitle`
+  (o caminho), `CodeBlockContent lineNumbers` e um `CodeBlockLine` por linha, com os `span` do
+  realce dentro. O contador `counter(line) / ''` tira os números da seleção e do leitor de tela
+  (critério 21); o texto simples usa a mesma caixa.
 - `file-tree.tsx`: `group` no `CollapsibleTrigger`, a seta e o ícone de pasta por
   `group-data-panel-open:` (o exemplo do Base UI); `defaultOpen` quando a pasta é ancestral do
   arquivo escolhido. `KIT` fica só em `firstShown`, para que o primeiro arquivo mostrado nunca seja
-  do kit. O ícone de arquivo por um mapa de 5 extensões sobre o lucide; os ícones em `text-text-2`.
+  do kit. O ícone de arquivo é um `FileIcon` do lucide; os ícones em `text-text-2`.
 - `Sheet`: `SheetContent` ganha `closeLabel`, e `source.tsx` passa "Fechar arquivos"; o invólucro da
   árvore dentro dele é `min-h-0 overflow-y-auto`.
 - Apaga: `group/folder` e `group-data-open/folder` (`file-tree.tsx:67, 71`), o próprio defeito; a
@@ -640,9 +687,9 @@ export function highlighted(path: string, text: string): Promise<Token[][] | nul
 ### As skills e a leitura
 
 O guia de design (V3, V5, V18, V30, V31). As linhas de `docs/reference/stack.md` para
-`apps/web/src/builder` e `apps/web/src/brand`, e a nova do `shiki`: "Read first"
-`node_modules/shiki` e as páginas `docs/guide/regex-engines.md` e `best-performance.md`; skill
-nenhuma; a armadilha: "o motor JavaScript, nunca o wasm padrão; `codeToTokens` para classes, nunca
+`apps/web/src/builder`, `apps/web/src/brand` e `apps/web/src/ui` (a skill `shadcn`, para o
+`code-block` do base-nova), e a nova do `shiki`: "Read first" `shiki.style/guide/regex-engines` e
+`shiki.style/guide/best-performance`; skill nenhuma; a armadilha: "o motor JavaScript, nunca o wasm padrão; `codeToTokens` para classes, nunca
 `codeToHtml`". O CI lista a dependência nova (entrega L16).
 
 ### A ordem do trabalho
@@ -651,9 +698,12 @@ nenhuma; a armadilha: "o motor JavaScript, nunca o wasm padrão; `codeToTokens` 
    para o critério 17, que falha hoje.
 2. `file-tree.tsx`: `defaultOpen` dos ancestrais, a seta e os ícones; o caso do critério 18 em
    `workbench.layout.test.ts`, que hoje lê `rotate: 90deg` numa pasta fechada.
-3. `tokens.css` e `highlight.ts`, com a linha do `stack.md`; `source.tsx`: o cabeçalho, as linhas,
-   o realce, o teto. Regras: V3, C73, W11, W22.
-4. `ui/sheet.tsx` e a rolagem da lista; os casos de `phone.layout.test.ts` e `sweep.test.ts`.
+3. `ui/code-block.tsx`, copiado do registro base-nova com a data e a versão do `shadcn` no
+   comentário, como `ui/attachment.tsx:5`; o caso do critério 21 em `workbench.layout.test.ts`, que
+   falha com o contador sem `/ ""`.
+4. `tokens.css` e `highlight.ts`, com a linha do `stack.md`; `source.tsx`: o `CodeBlock`, o realce,
+   o teto; o caso do critério 25 em `vite.config.test.ts`. Regras: V3, C73, W11, W22.
+5. `ui/sheet.tsx` e a rolagem da lista; os casos de `phone.layout.test.ts` e `sweep.test.ts`.
 
 ### Como se prova
 
