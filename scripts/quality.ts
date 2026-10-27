@@ -46,7 +46,9 @@ function reportMutation(sources: Changed, all: Changed): void {
     const result = mutate(root, pkg, sources, tests)
     console.log(`mutation: ${pkg}, ${result.mutants} mutants, ${result.survivors.length} survived`)
     for (const s of result.survivors) {
-      console.log(`  ${s.file}:${s.line} ${s.mutator} -> ${s.replacement.replace(/\s+/g, ' ')}`)
+      const replacement = s.replacement.replace(/\s+/g, ' ')
+      const shown = replacement.length > 100 ? `${replacement.slice(0, 100)}...` : replacement
+      console.log(`  ${s.file}:${s.line} ${s.mutator} -> ${shown}`)
     }
   }
 }

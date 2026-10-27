@@ -42,8 +42,10 @@ function nameOf(node: ts.FunctionLikeDeclaration, source: ts.SourceFile): string
   if (ts.isVariableDeclaration(parent) || ts.isPropertyAssignment(parent)) {
     return parent.name.getText(source)
   }
-  if (ts.isCallExpression(parent))
-    return `callback of ${parent.expression.getText(source).replace(/\s+/g, ' ').slice(-40)}`
+  if (ts.isCallExpression(parent)) {
+    const callee = parent.expression
+    return `callback of ${ts.isPropertyAccessExpression(callee) ? callee.name.text : callee.getText(source)}`
+  }
   return 'anonymous'
 }
 
