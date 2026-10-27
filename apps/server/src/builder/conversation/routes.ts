@@ -82,7 +82,10 @@ function registerReads(app: FastifyInstance, deps: Deps) {
  */
 async function created(
   deps: Deps,
-  input: InProject & { attemptKey: string; body: { model?: ModelId | undefined } },
+  input: InProject & {
+    attemptKey: string
+    body: { model?: ModelId | undefined; effort?: Effort | undefined }
+  },
 ) {
   const owner = { companyId: input.companyId, personId: input.person.id }
   const attempt = { ...input, bodyHash: bodyHashOf(input.body) }
@@ -91,7 +94,10 @@ async function created(
     const kept = await threadModel(deps.builder, owner, earlier.id)
     if (kept !== undefined) return { ...earlier, model: kept, created: false }
   }
-  const { model, effort } = await conversationStart(deps.queue, owner, input.body.model)
+  const start = await conversationStart(deps.queue, owner, input.body.model)
+  const { model } = start
+  const effort = input.body.effort ?? start.effort
+  if (!effortsOf(model).includes(effort)) throw new Failure('EFFORT_UNSUPPORTED')
   const made =
     earlier === undefined ? await deps.store.create(attempt) : { ...earlier, created: false }
   await switchModel(deps.builder, { owner, conversationId: made.id, model, effort })

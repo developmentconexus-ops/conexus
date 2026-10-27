@@ -92,18 +92,27 @@ export const listConversations = defineOperation({
 
 export const createConversation = defineOperation({
   id: 'createConversation',
-  summary: `Starts a conversation of the person in a Projeto, keyed by ${ATTEMPT_KEY_HEADER}, on the model chosen or the company’s default.`,
+  summary: `Starts a conversation of the person in a Projeto, keyed by ${ATTEMPT_KEY_HEADER}, on the model and reasoning effort chosen or the company’s default.`,
   access: 'session',
   method: 'POST',
   path: BASE,
   bodyLimit: 1024,
-  input: { params: InProject, body: z.object({ model: ModelId.optional() }) },
+  input: {
+    params: InProject,
+    body: z.object({ model: ModelId.optional(), effort: Effort.optional() }),
+  },
   attemptKey: true,
   success: {
     status: 201,
     body: z.object({ conversation: ConversationSummary.extend({ model: ModelId }) }),
   },
-  failures: [...READ_FAILURES, 'IDEMPOTENCY_CONFLICT', 'MODEL_UNKNOWN', 'MODEL_NO_ACCOUNT'],
+  failures: [
+    ...READ_FAILURES,
+    'IDEMPOTENCY_CONFLICT',
+    'MODEL_UNKNOWN',
+    'MODEL_NO_ACCOUNT',
+    'EFFORT_UNSUPPORTED',
+  ],
 })
 
 export const readConversation = defineOperation({
