@@ -160,6 +160,10 @@ async function passToDispatcher(
 }
 
 async function scenario(t: TestContext, options: { bypassCSP?: boolean } = {}) {
+  const closers: (() => Promise<void>)[] = []
+  t.after(async () => {
+    for (const close of closers) await close()
+  })
   const hub = await liveHub(t, 'http://127.0.0.1:9/unused', undefined, {
     publicOrigin: PublicOrigin.parse(HUB),
     appsDomain: AppsDomain.parse(APPS_DOMAIN),
@@ -174,7 +178,7 @@ async function scenario(t: TestContext, options: { bypassCSP?: boolean } = {}) {
     void passToDispatcher(hub.edgePort, incoming, outgoing)
   })
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
-  t.after(() => {
+  closers.push(async () => {
     server.closeAllConnections()
     server.close()
   })
@@ -186,7 +190,7 @@ async function scenario(t: TestContext, options: { bypassCSP?: boolean } = {}) {
       `--host-resolver-rules=MAP ${HUB_HOST} ${tls}, MAP *.${APPS_DOMAIN} ${tls}, MAP * ~NOTFOUND`,
     ],
   })
-  t.after(() => closeBrowser(browser))
+  closers.unshift(() => closeBrowser(browser))
   const context = await browser.newContext({ ignoreHTTPSErrors: true, ...options })
   const page = await context.newPage()
   const problems: string[] = []

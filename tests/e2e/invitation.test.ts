@@ -82,10 +82,10 @@ async function daviJoins(page: Page, mail: { next(): Promise<Mail> }) {
 
 test('o roteiro de uso: convidar, criar a senha, aceitar e ver a empresa com as duas pessoas', async (t) => {
   const mail = await mailProvider(t)
-  const { port, database } = await liveHub(t, mail.url)
-  await ownerOfCompany(database)
   const browser: Browser = await chromium.launch()
   t.after(() => closeBrowser(browser))
+  const { port, database } = await liveHub(t, mail.url)
+  await ownerOfCompany(database)
   const problems: string[] = []
   const anaContext = await browser.newContext()
   const daviContext = await browser.newContext()

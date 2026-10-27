@@ -128,6 +128,8 @@ async function removeFirst(owner: Page) {
 
 test('o roteiro da conta de modelo: tipos, chave, assinatura Claude, Google, fila, padrão, dar a uma pessoa e remover', async (t) => {
   anthropicTokens(t)
+  const browser: Browser = await chromium.launch()
+  t.after(() => closeBrowser(browser))
   const { port, database } = await liveHub(t, 'http://127.0.0.1:9/unused')
   await personWithPassword(database, ANA)
   const davi = await personWithPassword(database, DAVI)
@@ -149,8 +151,6 @@ test('o roteiro da conta de modelo: tipos, chave, assinatura Claude, Google, fil
       [id, cnpj],
     )
   }
-  const browser: Browser = await chromium.launch()
-  t.after(() => closeBrowser(browser))
   const problems: string[] = []
   async function window(ip: string) {
     const context = await browser.newContext()

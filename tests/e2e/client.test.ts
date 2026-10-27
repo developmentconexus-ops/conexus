@@ -37,10 +37,10 @@ async function accept(page: Page, company: string) {
 
 test('o roteiro da Central: cadastrar, o administrador cria a senha e entra como primeiro dono; um segundo cliente com o mesmo administrador', async (t) => {
   const mail = await mailProvider(t)
-  const { port, database } = await liveHub(t, mail.url)
-  await personWithPassword(database, ANA)
   const browser: Browser = await chromium.launch()
   t.after(() => closeBrowser(browser))
+  const { port, database } = await liveHub(t, mail.url)
+  await personWithPassword(database, ANA)
   const problems: string[] = []
   const anaContext = await browser.newContext()
   const daviContext = await browser.newContext()

@@ -49,6 +49,10 @@ export const RECADO = 'Ligar para o fornecedor'
 export async function scenario(t: TestContext) {
   plantAnthropic(t, versionWriting())
   const cloudflare = await cloudflareServer(t)
+  const closers: (() => Promise<void>)[] = []
+  t.after(async () => {
+    for (const close of closers) await close()
+  })
   const hub = await liveHub(t, 'http://127.0.0.1:9/unused', cloudflare.url)
   const companyId = await plantCompany(
     hub.database,
@@ -56,10 +60,6 @@ export async function scenario(t: TestContext) {
     await personWithPassword(hub.database, CARLA),
   )
   const problems: string[] = []
-  const closers: (() => Promise<void>)[] = []
-  t.after(async () => {
-    for (const close of closers) await close()
-  })
   async function window(ip: string) {
     const page = await hubWindow(closers, hub.port, ip, problems)
     return { context: page.context(), page }
