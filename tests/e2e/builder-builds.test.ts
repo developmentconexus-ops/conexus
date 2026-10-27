@@ -241,6 +241,7 @@ async function firstVersion(chat: Page) {
   await transcript.locator('pre', { hasText: '$ ls shared server' }).waitFor()
   await outputWith(chat, 'operations.ts').waitFor()
   await chat.getByText(/Versão 1, guardada em/).waitFor()
+  await reveal(chat, 'shared', 'server', 'src', 'routes')
   for (const name of ['operations.ts', 'handlers.ts', 'main.tsx'])
     await chat.getByRole('treeitem', { name, exact: true }).waitFor()
   await chat.getByRole('treeitem', { name: 'home.tsx', exact: true }).click()
@@ -250,11 +251,21 @@ async function firstVersion(chat: Page) {
     .waitFor()
 }
 
+/** The tree opens only the way to the shown file: open each folder, outer first, that is shut. */
+async function reveal(chat: Page, ...folders: string[]) {
+  for (const name of folders) {
+    const folder = chat.getByRole('treeitem', { name, exact: true })
+    await folder.waitFor()
+    if ((await folder.getAttribute('aria-expanded')) === 'false') await folder.click()
+  }
+}
+
 /** Step 5: a library the starter lacks, added with no question; version 2 builds. */
 async function libraryAdded(chat: Page) {
   const transcript = transcriptOf(chat)
   await ask(chat, 'Agora mostre as entregas num calendário.')
   await versionSaid(chat, 'Versão 2 guardada, montou: 2 arquivos mudados.')
+  await reveal(chat, 'src', 'routes')
   await chat.getByRole('treeitem', { name: 'entregas.tsx', exact: true }).waitFor()
 }
 
@@ -272,6 +283,7 @@ async function screenOnly(chat: Page) {
   await transcript.getByRole('button', { name: 'Enviar' }).click()
   await versionSaid(chat, /^Versão 1 guardada, montou: \d+ arquivos\.$/)
   await chat.getByText(/Versão 1, guardada em/).waitFor()
+  await reveal(chat, 'src', 'routes')
   await chat.getByRole('treeitem', { name: 'home.tsx', exact: true }).waitFor()
   const files = chat.getByRole('tree', { name: 'Arquivos do app' })
   assert.equal(await files.getByRole('treeitem', { name: /^(shared|server)$/ }).count(), 0)
