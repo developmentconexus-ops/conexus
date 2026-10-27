@@ -1,6 +1,6 @@
 import { MicIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useEffectEvent, useRef, useState } from 'react'
 import { Button } from './button.tsx'
 
 // Copied from AI Elements' `speech-input` (registry read with shadcn 4.22.1, 2026-10-26), painted
@@ -58,9 +58,10 @@ export function SpeechInput(props: {
   const [listening, setListening] = useState(false)
   const [ready, setReady] = useState(false)
   const recognition = useRef<SpeechRecognition | null>(null)
-  const latest = useRef(props)
-  latest.current = props
-  const { lang } = props
+  const { lang, onFinal, onInterim, onError } = props
+  const final = useEffectEvent(onFinal)
+  const interim = useEffectEvent(onInterim)
+  const failed = useEffectEvent(onError)
 
   useEffect(() => {
     if (Recognition === undefined) return
@@ -71,15 +72,15 @@ export function SpeechInput(props: {
     next.addEventListener('start', () => setListening(true))
     next.addEventListener('end', () => {
       setListening(false)
-      latest.current.onInterim('')
+      interim('')
     })
     next.addEventListener('result', (event) => {
-      const { final, interim } = heard(event)
-      if (final !== '') latest.current.onFinal(final)
-      latest.current.onInterim(interim)
+      const words = heard(event)
+      if (words.final !== '') final(words.final)
+      interim(words.interim)
     })
     next.addEventListener('error', (event) => {
-      if (event.error !== 'aborted') latest.current.onError(event.error)
+      if (event.error !== 'aborted') failed(event.error)
     })
     recognition.current = next
     setReady(true)
