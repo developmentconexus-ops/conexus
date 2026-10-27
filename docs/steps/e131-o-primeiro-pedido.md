@@ -5,7 +5,9 @@
 **No fim desta etapa** você entra no Conexus e cai no Início com o cursor na caixa de pedido, a
 mesma caixa da conversa (com **+** e microfone). Escreve o app que quer, envia, dá o nome do
 Projeto, e o Projeto abre com o seu pedido já na conversa e o Builder trabalhando. Um dono novo faz
-o mesmo no passo 4 da primeira entrada.
+o mesmo no passo 4 da primeira entrada. E a aba **Código** de um Projeto mostra o app como código de
+verdade: as pastas fechadas, menos o caminho até o arquivo aberto, a setinha certa, ícones, o código
+com cores e números de linha.
 
 **O roteiro de uso.** Padaria Sol, com Ana (dona), no computador e no celular.
 
@@ -19,11 +21,21 @@ o mesmo no passo 4 da primeira entrada.
    "Endereço do app: encomendas--padaria-sol.…". Toca **Criar e começar**. (**Voltar** devolve o
    pedido à caixa, com o arquivo.)
 4. Abre o Projeto **Encomendas** na conversa: a bolha dela com o texto e a etiqueta, e o Builder
-   trabalhando.
-5. Ana volta ao Início: o cartão **Encomendas** está lá. Não existe mais **Criar projeto** sem
-   pedido.
+   trabalhando. De volta ao Início, o cartão **Encomendas** está lá. Não existe mais **Criar
+   projeto** sem pedido.
+5. Ana abre a aba **Código** do Encomendas. À esquerda, as pastas fechadas com o ícone de pasta,
+   menos o caminho até o arquivo aberto; à direita, o arquivo com cores, números de linha e o nome
+   em cima. Ela abre `src` e depois `routes`, fecha `routes`, e a setinha volta para a direita. No
+   celular, toca **Arquivos**, a lista rola até o fim, ela escolhe outro arquivo e o vê colorido.
 6. Um dono novo, no **passo 4 de 4** da primeira entrada ("O que vamos construir primeiro?"), faz o
    mesmo: caixa, exemplos, nome, e cai na conversa. Ou toca **Ir para o início sem pedir nada**.
+
+**O desenho de depois do Enviar.** Você aprova esta página olhando o que aparece depois do
+**Enviar**: o passo do nome no lugar da caixa, com o endereço do app logo embaixo do nome. São quatro capturas, a 1366 e
+a 390 px, claro e escuro, feitas de um desenho com as cores e letras do Conexus e entregues junto com
+esta página, fora do repositório: `depois-de-enviar-1366-claro.png`,
+`depois-de-enviar-1366-escuro.png`, `depois-de-enviar-390-claro.png`,
+`depois-de-enviar-390-escuro.png`.
 
 **O que você faz, e quando.** Antes: nada. No começo: aprova esta página. No fim: faz o roteiro no
 computador e no celular, diz o que viu e aprova os textos das telas.
@@ -33,6 +45,7 @@ computador e no celular, diz o que viu e aprova os textos das telas.
   depois (sua palavra `C. C1`, 2026-10-26). O cartão continua com o nome e "Criado em".
 - A aba **Alterações**: fora desde a 14.1 (sua "B1", 2026-10-25).
 - Trocar o nome de um Projeto: não existe, e o endereço continua fixo para sempre (decisão 0024).
+- Copiar o arquivo e buscar dentro dele, na aba **Código**: ninguém pediu.
 - Das issues `next-card`, nenhuma toca as pastas desta etapa; a #167 e a #170 já entram na 14.3.
   A #253 (o primeiro turno de um Projeto novo depende do R2 responder) fica na fila: o roteiro passa
   por um primeiro turno, mas a issue só acontece com o R2 fora e o conserto é na máquina do Builder,
@@ -44,12 +57,35 @@ computador e no celular, diz o que viu e aprova os textos das telas.
 - **B1**, nativo: saem o **+ Novo projeto** e o campo de nome sozinho de hoje; todo Projeto nasce de
   um pedido, no Início ou no passo 4. "B. B1".
 - **C**, nativo: o estado nos cartões fica para depois. `C. C1`.
+- `D2`, embrulhado: a aba **Código** arrumada e colorida com Shiki. `D2`.
 
-**Onde o nome é digitado** (escolha deste cartão, não uma decisão nova): depois do **Enviar**, no
-lugar da caixa, como fazia o seu Conexus OS, que pedia o nome antes de criar. A caixa do Início
-fica igual à da conversa e ao desenho `wf-h1` que você aprovou; o nome só aparece quando importa,
-com o endereço ao lado. A outra forma, um campo de nome acima da caixa o tempo todo, não aparece em
-nenhuma referência nem no desenho aprovado.
+**D. Como o código aparece na aba Código:** `D2` (sua palavra `D2`, 2026-10-26). A árvore arrumada
+(pastas fechadas, setinha certa, ícones, nome do arquivo em cima, a lista do celular rolando), os
+números de linha e as cores, nos dois temas, guardadas na marca como as outras. É o que a Mastra, a
+AI Elements e o Streamdown usam. Não mexe na política de segurança da página (provado no navegador,
+sem nenhum erro). O Shiki só baixa ao abrir o primeiro arquivo, cerca de 67 kB; a página inicial
+cresce 1,7 kB. ~260 linhas. Embrulhado: o nosso acrescenta só a tabela que liga cada cor do Shiki a
+uma cor da marca. Capturas do estudo da aba Código, fora do repositório:
+`proto/desktop-file-light.png`, `proto/desktop-file-dark.png`, `proto/phone-file-light.png`.
+- `D1`, arrumar sem colorir: o código de uma cor só (~120 linhas). Não escolhida.
+- `D3`, colorir com CodeMirror, como o Conexus OS: afrouxa a política de segurança da página e traz
+  dobra e busca que ninguém pediu. Não escolhida.
+
+**Não é decisão sua, já está decidido:**
+- **Onde o nome é digitado**: depois do **Enviar**, no lugar da caixa, como fazia o seu Conexus OS,
+  que pedia o nome antes de criar. A caixa do Início fica igual à da conversa e ao desenho `wf-h1`
+  que você aprovou; o nome só aparece quando importa, com o endereço logo embaixo. A outra forma, um
+  campo de nome acima da caixa o tempo todo, não aparece em nenhuma referência nem no desenho
+  aprovado.
+- **Pastas fechadas** na aba Código: abre só o caminho até o arquivo aberto, como o Conexus OS
+  fazia. Isto muda a 14.2, que abria tudo menos `components/ui`. Sua palavra de 2026-10-26: "elas
+  vêm expandidas já e não contraídas".
+- **No celular**, **Arquivos** continua abrindo a lista por cima, como a 14.2 aprovou. Ganha o
+  ícone de pastas, passa a rolar até o fim, e o botão de fechar diz "Fechar arquivos".
+- **Nomes compridos** de arquivo continuam quebrando a linha em vez de serem cortados (correção 7
+  da QA da 14.2).
+- **Os ícones das pastas** ficam em cinza. O dourado da marca continua só no arquivo escolhido
+  (regra V5); a Mastra pinta as pastas de âmbar e a AI Elements de azul.
 
 **Se o Projeto nasce e a conversa não.** O nome fica travado, porque o Projeto já existe. Numa falha
 de rede ou do banco, **Tentar de novo** cria só a conversa. Se o Hub recusa o modelo (sem conta, ou
@@ -69,16 +105,19 @@ Nenhuma linha remendo.
 | U2 | O Início: a caixa da 14.3, os exemplos, o passo do nome, a passagem do pedido à conversa; sai o campo de nome sozinho | `apps/web/src/builder/conversation/`, `apps/web/src/hub/projects/`, `apps/web/src/routes/_app/companies/$companyId/` | web | U1 |
 | U3 | O passo 4 com a mesma caixa | `apps/web/src/routes/_app/companies/$companyId_/welcome/`, `apps/web/src/hub/identity/` | web | U2 |
 | U4 | O foco depois de entrar vai à caixa, e o título não ganha contorno | `apps/web/src/hub/identity/`, `apps/web/src/brand/`, `apps/web/src/routes/_app/` | design | U2 |
+| U5 | A aba Código legível: pastas fechadas menos o caminho do arquivo, a seta e o ícone de pasta que seguem o estado, ícone de arquivo, o código com cores (Shiki, `D2`), números de linha e o nome em cima, a árvore com rolagem própria; o celular com o `Sheet` de hoje, que passa a rolar até a última linha e diz "Fechar arquivos" | `apps/web/src/builder/source/`, `apps/web/src/brand/`, `apps/web/src/ui/sheet.tsx` (o rótulo de fechar), `docs/reference/stack.md` | design | 14.3 inteira |
 
 **A entrega.** Cada unidade é o seu próprio pull request, sobre o `main` com as anteriores já
 dentro ([entrega L9](../guides/delivery.md)): o CI verde, uma revisão por um revisor Opus e então o
 firstmate a junta ao `main`, uma de cada vez ([L13](../guides/delivery.md)). A ordem é U1, U2, U3,
-U4: a U2 usa o corpo da U1; a U3 põe no passo 4 a peça da U2; a U4 prova o foco sobre a caixa do
-Início da U2. A U1 começa só depois que a última unidade da 14.3 entrou no `main`, porque a caixa,
-os arquivos e o rascunho são os dela.
+U4, U5: a U2 usa o corpo da U1; a U3 põe no passo 4 a peça da U2; a U4 prova o foco sobre a caixa do
+Início da U2. A U5 não usa nada das outras quatro e vem por último, sobre o `main` com a U4, para
+que nenhuma unidade corra ao lado de outra. A U1 começa só depois que a última unidade da 14.3
+entrou no `main`, porque a caixa, os arquivos e o rascunho são os dela.
 
 **Orçamento de código alterado.** U1 25; U2 260 (sai ~60 de `create-project-form.tsx` e
-`home.tsx`); U3 25; U4 15. Total da etapa: ~325 linhas sem testes, teto 4.000 (L2).
+`home.tsx`); U3 25; U4 15; U5 260 (o protótipo do estudo: 234, mais a rolagem e o rótulo do
+`Sheet`). Total da etapa: ~585 linhas sem testes, teto 4.000 (L2).
 
 ## Os critérios de aceite
 
@@ -100,16 +139,26 @@ os arquivos e o rascunho são os dela.
 | 14 | U3 | O passo 4 de 4 mostra "O que vamos construir primeiro?", a mesma caixa, os exemplos e **Ir para o início sem pedir nada**; criar abre a conversa como no Início; o link abre o Início | `apps/web/src/hub/identity/welcome-steps.test.tsx`, "Passo 4: a caixa cria e abre a conversa" e "Passo 4: Ir para o início sem pedir nada" | must |
 | 15 | U4 | Depois de entrar com Enter, o foco vai ao primeiro campo de texto da página de destino quando ela tem um (a caixa do Início), senão ao título; o título focado não desenha contorno | `apps/web/src/routes/_app/index.test.tsx`, o caso #32-4 reescrito: "depois de entrar, o foco vai à caixa"; e "numa página sem campo, o título recebe o foco"; o contorno, a QA | must |
 | 16 | U4 | A regra global de `:focus-visible` não pinta um elemento com `tabindex="-1"`; botões, abas e links seguem com o contorno (V28) | `apps/web/layout.test.ts`, "o contorno não vai ao título focado pelo programa" | must |
+| 17 | U5 | Ao abrir Código, só as pastas do caminho até o arquivo mostrado estão abertas; as outras, `components/ui` incluída, fechadas | `apps/web/src/builder/source/source.test.tsx`, o caso `:116` reescrito: "só o caminho do arquivo aberto" | must |
+| 18 | U5 | Fechar uma pasta dentro de outra aberta põe a seta para a direita e o ícone de pasta fechada; abrir volta a seta para baixo e o ícone de pasta aberta; vale para o clique e para as setas do teclado (V30) | `apps/web/workbench.layout.test.ts` (navegador: `rotate` calculado `none` contra `90deg`) | must |
+| 19 | U5 | Um `.tsx` aberto mostra palavras-chave, textos, comentários e funções nas cores dos tokens `--color-code-*`, nos dois temas; nenhum erro de console nem relatório de CSP | `workbench.layout.test.ts` (cor calculada por tema; `page.problems` vazio, T23) | must |
+| 20 | U5 | Um arquivo sem gramática (`.gitignore`), acima de 256 KiB, ou cuja gramática falha ao carregar aparece em texto simples, com números de linha, sem erro | `source.test.tsx`, "sem gramática, texto simples" e "acima do teto, texto simples" | must |
+| 21 | U5 | Os números de linha não entram na seleção nem na cópia, e o leitor de tela não os lê | `source.test.tsx`, nenhum número no texto do código | must |
+| 22 | U5 | A 390 px e a 200 %: a página não rola para o lado; o código rola dentro da caixa; **Arquivos** abre o `Sheet` e escolher um arquivo o fecha, como hoje | `apps/web/phone.layout.test.ts`, `apps/web/sweep.test.ts` (o estado "Projeto, Código com a árvore") | must |
+| 23 | U5 | No celular, com `components/ui` aberta (50 linhas), a lista do **Arquivos** rola até a última linha; o botão de fechar diz "Fechar arquivos" | `phone.layout.test.ts`, "a lista longa do Sheet rola até o fim" | must |
+| 24 | U5 | A linha do arquivo escolhido mantém o fundo ipê com o ponteiro em cima | `source.test.tsx`, nenhum `hover:` que troque o fundo da escolhida; ou a QA | should |
+| 25 | U5 | Nada do Shiki chega na primeira página: o pedaço principal cresce menos de 5 kB comprimido, e o Shiki baixa só ao abrir o primeiro arquivo | `apps/web/vite.config.test.ts` ou a QA, pelos tamanhos do build | should |
 
 ## A matriz de estados
 
 | Tela | Primeira vez | Vazio | Carregando | Erro | Não encontrado | Sem permissão | Vencido ou recusado |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Início, caixa (U2) | a caixa com o foco, "Descreva o app que você quer", três exemplos | **Enviar** desabilitado, como na 14.3 | a página espera os Projetos, como hoje; a caixa espera `accountsQuery` | a leitura das contas falha: a página de falha da área, com **Tentar de novo** (W34) | a empresa: a página de "não encontrado" | o membro vê a mesma caixa e cria (`createProject` é de membro, `admission.ts:43`); sem o cartão de preparo | sem conta de modelo: o aviso `NoAccount` no lugar da caixa e dos exemplos |
+| Início, caixa (U2) | a caixa com o foco e o texto de espera da 14.3, "Escreva sua mensagem" (`composer.tsx:243`), três exemplos | **Enviar** desabilitado, como na 14.3 | a página espera os Projetos, como hoje; a caixa espera `accountsQuery` | a leitura das contas falha: a página de falha da área, com **Tentar de novo** (W34) | a empresa: a página de "não encontrado" | o membro vê a mesma caixa e cria (`createProject` é de membro, `admission.ts:43`); sem o cartão de preparo | sem conta de modelo: o aviso `NoAccount` no lugar da caixa e dos exemplos |
 | Início, passo do nome (U2) | o pedido, o campo vazio com o foco, **Criar e começar**, **Voltar** | nome vazio: a frase no campo, nada sai | "Criando…"; sem banco da empresa: "Preparando o banco da empresa…" | a frase do código no campo do nome ou no alerta; resposta cortada: "Não confirmamos a criação. Tente de novo." | a empresa: a página de "não encontrado" | — | a conversa cortada depois do Projeto: a frase, o nome travado, **Tentar de novo** e **Abrir o Projeto**; o modelo recusado: a página do Projeto sem conversa, com a frase |
 | Passo 4 (U3) | o título, a caixa, os exemplos, **Ir para o início sem pedir nada** | igual ao Início | igual | igual | — | só o dono vê a primeira entrada (W33) | sem conta (o passo 2 pulado): o aviso no lugar da caixa, e o link para o Início fica |
 | Conversa aberta com o pedido (U2) | a bolha pendente e o Builder trabalhando | — | o envio em curso, como na 14.3 | o envio recusado: texto e arquivos na caixa e a frase | `CONVERSATION_NOT_FOUND`: como hoje | — | recarregar no meio: o texto na caixa e a frase de não confirmado; os arquivos saem, como na 14.3 |
 | Cartões dos Projetos | "Nenhum projeto ainda." | igual | como hoje | como hoje | — | — | — |
+| Código (U5) | só o caminho do primeiro arquivo aberto; o arquivo em texto simples e, em seguida, colorido | "Este app ainda está vazio" | a lista: `Loading`; o arquivo: `Loading`, depois texto simples até a cor chegar | a leitura falha: `ReadFailure` com **Tentar de novo**; o arquivo: a frase do código; a gramática falha: texto simples, sem frase | o Projeto: como hoje | o membro lê o código como hoje | o arquivo grande demais ou não texto: a frase de hoje (`SOURCE_FILE_*`) |
 
 | Campo de contrato | Quem escreve | Quem lê |
 | --- | --- | --- |
@@ -124,7 +173,9 @@ os arquivos e o rascunho são os dela.
 
 **Desenho de caixas.** Segue o `wf-h1` e o `wf-o4` aprovados ("Aprovado tudo", 2026-10-19), com a
 caixa de uma linha da 14.3, e o passo do nome do Conexus OS (`prompt-box.tsx:129-144`, captura
-`os-11-home-projects-1280.png` do estudo de 2026-10-19, fora do repositório), sem o nome preenchido.
+`os-11-home-projects-1280.png` do estudo de 2026-10-19, fora do repositório), sem o nome preenchido. O
+passo do nome também está desenhado em HTML com os tokens de `brand/tokens.css` e capturado a 1366
+e 390 px, claro e escuro (as quatro capturas da página do fundador, fora do repositório).
 
 ```text
 1280 px, Início, antes de enviar
@@ -135,7 +186,7 @@ O que vamos construir?
 │ Um app de encomendas com cliente, data de entrega e valor    │
 │ Claude Sonnet · Alto ▾                          [+] [mic] [↑] │
 └──────────────────────────────────────────────────────────────┘
-              Não cole senhas ou chaves na conversa.
+              Não cole senhas ou chaves na conversa.  (só no computador, composer.tsx:277)
 (Controle de encomendas) (Pedidos de férias) (Cadastro de visitas)
 Projetos
 [ Encomendas      ] [ Pedidos de férias ] [ Checklist de loja ]
@@ -177,14 +228,14 @@ encomendas--padaria-sol.<domínio>
 | `createProject` (de hoje, sem mudança) | a chave de tentativa (W24, C37): o mesmo Projeto; dois cliques, um pedido | resposta cortada, 502 ou 503: a frase de não confirmado e a mesma chave na nova tentativa; a preparação do banco da empresa como hoje (data D22) | o banco do Hub: `DATABASE_UNAVAILABLE`; o Neon: `COMPANY_DATABASE_UNAVAILABLE` com **Tentar de novo** | `PROJECT_CREATED`, `COMPANY_DATABASE_CREATED`, como hoje | 7, 9, 13 |
 | `createConversation` com `effort` (U1) | a chave: a mesma conversa; outra `effort` com a mesma chave, 409 | o índice gravado antes do fio (data D17); a repetição põe o modelo e o raciocínio que faltam (`created`, `routes.ts:84-101`) | o banco: `DATABASE_UNAVAILABLE`; o armazenamento do Mastra: a falha de hoje, e a repetição conserta | `CONVERSATION_CREATED`, como hoje | 1, 2, 10 |
 | Projeto criado e conversa não (U2, a sequência no navegador) | — | o Projeto fica, sem conversa. Resposta cortada, 502, 503 ou `DATABASE_UNAVAILABLE`: o passo do nome tenta só a conversa, com a mesma chave. `MODEL_NO_ACCOUNT`, `MODEL_UNKNOWN`, `EFFORT_UNSUPPORTED`: a mesma recusa voltaria, e a tela abre o Projeto com a frase (OS `start-project.ts:22-34`). Quem sai da página deixa o Projeto, que abre em "Nenhuma conversa" com **Nova conversa**, como hoje; o mesmo nome no Início dá `PROJECT_NAME_TAKEN` | as do `createConversation` | nada novo | 9, 10 |
-| O envio do pedido na conversa (rota do Mastra, a da 14.3) | sai uma vez: o `ref` do `useHandoff` segura a segunda volta do efeito em modo estrito, e a navegação com `replace` tira o estado | resposta cortada, 502 ou 503: `UNCONFIRMED_SEND`, texto e arquivos voltam à caixa (14.3), e a cópia fica; recarregar no meio: a página abre sem o estado, o texto da cópia volta à caixa com a frase, sem reenviar | o banco e a Anthropic: como na 14.3 | como na 14.3 | 8, 11 |
+| O envio do pedido na conversa (rota do Mastra, a da 14.3) | sai uma vez: o `ref` do `useHandoff` segura a segunda volta do efeito em modo estrito, e a navegação com `replace` tira o estado | resposta cortada, 502 ou 503: `UNCONFIRMED_SEND`, texto e arquivos voltam à caixa pelo `restore` do rascunho (`draft.ts:57-60`), que já guarda o texto na aba, e a cópia sai; recarregar no meio: a página abre sem o estado, o texto da cópia volta à caixa com a frase, sem reenviar | o banco e a Anthropic: como na 14.3 | como na 14.3 | 8, 11 |
 
 ## A tabela de referência
 
 | Peça | Unidade | Hoje no main | Referência | Como a referência faz | Veredito | Prova, se não for nativo | Palavra do fundador | Arquivo novo |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Início: "O que vamos construir?" com a caixa | U2 | `hub/projects/home.tsx:16-37` (título + `CreateProjectForm`) | Factory `mastra-1.78@6a465f9d` `mastracode/factory-ui/src/ui/pages/NewPage.tsx:145-156`; Dyad `902829f` `src/pages/home.tsx:183-214`; vibesdk `9da158d` `src/routes/home.tsx:125-218`; Conexus OS `e0353c36` `apps/web/src/features/project/components/prompt-box.tsx:110-155`; Lovable (captura `builder-lovable-01`, 2026-10-19) | Lido: um `h1` e o mesmo compositor da conversa, nada mais acima | nativo | | "Aprovado tudo", 2026-10-19 (`wf-h1`) | |
-| O compositor no Início e no passo 4 | U2, U3 | `builder/conversation/composer.tsx`, o da 14.3 | Factory `Composer.tsx:49, 219-224` (`onUserDraft`: o mesmo componente cria a sessão no envio) | Lido | embrulhado: `answering=false`, sem `memory`, sem `taskPanel`; `onSend` abre o passo do nome; `picker` é o `ModelPicker` com estado local | Teste de tela (critérios 3, 6) | roadmap :83 | `apps/web/src/builder/conversation/start.tsx` |
+| O compositor no Início e no passo 4 | U2, U3 | `builder/conversation/composer.tsx`, o da 14.3 | Factory `Composer.tsx:49, 219-224` (`onUserDraft`: o mesmo componente cria a sessão no envio) | Lido | embrulhado: as props de `composer.tsx:175-186`, com `answering=false`, sem `memory` nem `taskPanel` (a linha de estado fica só com o seletor); `onSend` abre o passo do nome e devolve `true`; `onStop` nunca é chamado sem `answering`; `picker` é o `ModelPicker` com estado local | Teste de tela (critérios 3, 6) | roadmap :83 | `apps/web/src/builder/conversation/start.tsx` |
 | Onde a pessoa digita o nome | U2 | `hub/projects/create-project-form.tsx:66-93` (campo sozinho, endereço enquanto digita) | Conexus OS `e0353c36` `prompt-box.tsx:81-97, 129-144` (enviar abre "Nome do Projeto" com **Criar e começar** e **Voltar**, a caixa parada); Factory `NewPage.tsx:144-158` (só a caixa, sem nome); `wf-h1`, `wf-o4` (só a caixa) | Lido | nativo: a forma do OS, o nome depois do **Enviar** e antes de criar, sem o nome sugerido (A); a caixa fica como no `wf-h1`. O campo acima da caixa o tempo todo não tem referência | | "A. O cliente tem que colocar o nome do projeto", 2026-10-26 | |
 | O passo do nome: campo, endereço, recusas | U2 | `create-project-form.tsx:29-96` (o formulário, `hostLabelOf`, `ON_THE_NAME`, `RETRYING`, chave W24) | o mesmo arquivo; OS `prompt-box.tsx:86-97` | Lido | nativo: o formulário de hoje vira o passo do nome (`NameStep`), devolvendo o Projeto em vez de navegar | | "B. B1", 2026-10-26 | |
 | O nome do Projeto vindo do pedido | fica de fora (A) | nenhum | `@mastra/core@1.79.0` `generateTitleFromUserMessage`; vibesdk `worker/agents/schemas.ts:85-87`; Dyad `generateCuteAppName`; OS `project-name.ts` | Lido | nativo, fora: a pessoa digita o nome | | "A. O cliente tem que colocar o nome do projeto" | |
@@ -192,21 +243,43 @@ encomendas--padaria-sol.<domínio>
 | Modelo e raciocínio escolhidos antes da conversa | U1, U2 | `createConversation` aceita `model` (`conversations.ts:100`); o raciocínio só pela `setConversationModel` | Factory `useHandoffPrompt.ts` (`handoffModelId`, `switchModel` antes do envio); OS `start-project.ts:26-28` | Lido | nativo: `effort` opcional no corpo de `createConversation`, conferido com `effortsOf` como `setConversationModel` (`routes.ts:116-129`) | | não precisa | |
 | A conversa recusada depois do Projeto | U2 | nenhum (hoje o Projeto nasce sozinho) | OS `e0353c36` `start-project.ts:22-34` (o Projeto fica, o primeiro pedido `REFUSED`) e `prompt-box.tsx:37-44` (abre o Projeto com o aviso "escreva de novo"); Dyad `commands.ts:142-166` (a falha do chat confirma o app e tenta só o chat) | Lido | nativo: uma falha que pode passar (resposta cortada, 502, 503, `DATABASE_UNAVAILABLE`) tenta só a conversa, como a Dyad; uma recusa do modelo abre o Projeto com a frase, como o OS | | não precisa | |
 | O valor inicial do seletor | U2 | `Defaults.start` em `listModelAccounts` (`model-accounts.ts:115`), lido por `my-defaults.tsx` | decisão 0054 | Lido | nativo | | não precisa | |
-| A mensagem passada à conversa | U2 | nenhum | Factory `mastra-1.78@6a465f9d` `domains/chat/hooks/useHandoffPrompt.ts:21-30, 91-133` e `useCreateUserSessionFromDraft.ts:63`; `services/handoffFiles.ts:3-17`; TanStack Router 1.170.44 `navigate({ state })` (`@tanstack/router-core` `link.d.ts:126`, `HistoryState` de `@tanstack/history` 1.162.5 `index.d.ts:43`) | Lido: o "envie agora" vai no estado da navegação (`:93`); ao tomá-lo, grava a cópia no `sessionStorage` e tira o estado com `replace` (`:111-116`); recupera só quando não há estado (`:101-109`); dois `ref` seguram a segunda volta do efeito (`:91-92, 100-103`); os arquivos cruzam num `Map` em memória ("base64 images can exceed browsers' history state size limits", `handoffFiles.ts:3-5`) | nativo: o mesmo mecanismo, com o estado do TanStack Router no lugar do `react-router`; a cópia sai quando o Hub decide, e depois de lida no recarregar | | não precisa | `apps/web/src/builder/conversation/handoff.ts` |
-| Rascunho do Início | U2 | `builder/conversation/draft.ts` (por conversa; a 14.3 o muda para `take`/`restore` com arquivos) | Factory `ComposerImagesContext` e o rascunho por rota | Lido | embrulhado: a chave do rascunho é a conversa ou `start:<empresa>` | Teste de tela (critério 12) | não precisa | |
+| A mensagem passada à conversa | U2 | nenhum | Factory `mastra-1.78@6a465f9d` `domains/chat/hooks/useHandoffPrompt.ts:21-30, 91-133` e `useCreateUserSessionFromDraft.ts:63`; `services/handoffFiles.ts:3-17`; TanStack Router 1.170.44 `navigate({ state })` (`@tanstack/router-core` `link.d.ts:126`, `HistoryState` de `@tanstack/history` 1.162.5 `index.d.ts:43`) | Lido: o "envie agora" vai no estado da navegação (`:93`); ao tomá-lo, grava a cópia no `sessionStorage` e tira o estado com `replace` (`:111-116`); recupera só quando não há estado (`:101-109`); dois `ref` seguram a segunda volta do efeito (`:91-92, 100-103`); os arquivos cruzam num `Map` em memória ("base64 images can exceed browsers' history state size limits", `handoffFiles.ts:3-5`) | nativo: o mesmo mecanismo, com o estado do TanStack Router no lugar do `react-router`; a cópia sai quando o `send` da 14.3 volta, e depois de lida no recarregar | | não precisa | `apps/web/src/builder/conversation/handoff.ts` |
+| Rascunho do Início | U2 | `builder/conversation/draft.ts:24-63` (por conversa: o texto em memória com um espelho no `sessionStorage`, os arquivos só em memória; `take` e `restore`) | Factory `ComposerImagesContext` e o rascunho por rota | Lido | embrulhado: a chave do rascunho é a conversa ou `start:<empresa>` | Teste de tela (critério 12) | não precisa | |
 | Sem conta de modelo | U2 | `NoAccount` (`model-choice.tsx:21`) na conversa | Factory `NewPage.tsx:126-142` (`MissingCredentialState` no lugar do compositor) | Lido | nativo | | "Sem conta de modelo, um aviso no lugar do compositor", 2026-10-19 | |
 | Três exemplos | U2 | nenhum | OS `prompt-box.tsx:16-21, 99, 147-155`; Dyad e Lovable (sugestões) | Lido: tocar põe o texto na caixa, não envia | nativo | | `wf-h1`, 2026-10-19; os textos no fim | |
 | Passo 4 da primeira entrada | U3 | `routes/_app/companies/$companyId_/welcome/build.tsx:5-18` (só "Ir para o início") | `wf-o4`; Linear `onb-linear-07` (termina dentro do produto) | Documentado | nativo | | W33; `wf-o4` | |
 | "+ Novo projeto" e o campo Nome sozinho | U2 (sai) | `create-project-form.tsx`, `home.tsx:25` | Lovable, vibesdk: nenhum; Factory: "New session" abre a página da caixa (`SessionsSection.tsx:93`) | Lido | nativo: sai, todo Projeto nasce de um pedido | | "B. B1", 2026-10-26 | |
 | Estado nos cartões | fica de fora (decisão C) | `project-cards.tsx:8-31` ("Criado em …") | OS `os-11`; Lovable (miniatura) | Documentado | nativo, fora: o cartão fica com o nome e "Criado em" | | `C. C1`, 2026-10-26 | |
-| Foco depois de entrar e o contorno | U4 | `hub/identity/sign-in-form.tsx:50-65`; `brand/tokens.css:271-273` | Factory `ComposerInput` foca o campo na página nova; V28 nomeia botões, abas, links e campos | Lido | nativo: o foco vai ao primeiro campo de texto do destino quando há um, senão ao título; a regra global segue V28 (`:focus-visible` sem `[tabindex="-1"]`) | | "tá até com o subliado lá em cima", 2026-10-25 | |
+| Foco depois de entrar e o contorno | U4 | `hub/identity/sign-in-form.tsx:50-65`; `brand/tokens.css:281-284` | Factory `ComposerInput` foca o campo na página nova; V28 nomeia botões, abas, links e campos | Lido | nativo: o foco vai ao primeiro campo de texto do destino quando há um, senão ao título; a regra global segue V28 (`:focus-visible` sem `[tabindex="-1"]`) | | "tá até com o subliado lá em cima", 2026-10-25 | |
+| Cor do código (o realce) | U5 | `builder/source/source.tsx:27` (`<pre>` cru) | `shiki@4.5.0` (`docs/guide/regex-engines.md:42-62`, `best-performance.md:36-56`, shiki `f7d0167`); Mastra `mastra-1.78@6a465f9d` `packages/playground-ui/src/ds/components/CodeEditor/highlight.ts:51-95`, `Code/code.tsx:67`; shadcn `ui@8f04138` `apps/v4/registry/bases/base/lib/highlighter.tsx:2-48`; Streamdown `c6f5905` `packages/streamdown-code/index.ts:16-18, 303-307`; AI Elements `ca8be60` `packages/elements/src/code-block.tsx:30, 158-161, 213-219` | Lido: `shiki/core` com `createJavaScriptRegexEngine` (sem wasm) e um `import()` por gramática; `codeToTokens` desenhado como `span` do React, nunca `dangerouslySetInnerHTML`. Só a AI Elements usa o `shiki` inteiro com o wasm Oniguruma | embrulhado: o nosso liga cada variável de cor do tema a uma classe da marca (`COLOURS`, 8 linhas), porque `noInlineStyles` (`biome.json:118`) proíbe o `style` que a Mastra e a AI Elements usam | estudo da aba Código, `runs/proto.out`: palavra-chave `rgb(207,34,46)` no claro e `rgb(255,123,114)` no escuro; nenhum erro de console nem relatório de CSP a 1366 e 390, nos dois temas | "colorir o código, interpretador de código", 2026-10-26; `D2`, 2026-10-26 | `apps/web/src/builder/source/highlight.ts` |
+| Cores nos dois temas | U5 | nenhum | `@shikijs/core@4.5.0` `createCssVariablesTheme` (`dist/index.d.mts:133-164`); Mastra `index.css:150-158` (`--shiki-light`/`--shiki-dark`) | Lido: o tema escreve `var(--shiki-token-keyword)` e afins, 14 nomes; a página os define | nativo: a marca define 7 tokens `--color-code-*` por tema em `brand/tokens.css` (V3), sem tema duplo | `runs/proto.out`, as cores por tema | não precisa | |
+| Carregar só ao abrir um arquivo | U5 | nenhum | Mastra `highlight.ts:51-75`; shadcn `highlighter.tsx:10-24` | Lido: `import('shiki/langs/tsx.mjs')` e afins, um pedaço cada | nativo (divisão de código do Vite) | `runs/build-*-chunks.txt`: o pedaço principal +1,7 kB comprimido; o primeiro `.tsx` baixa núcleo 29,7 + motor 20,3 + tsx 16,6 kB | não precisa | |
+| Teto de tamanho do realce | U5 | o Hub lê até 1 MiB (`hub-api/src/source.ts:40`) | Mastra `use-highlight.ts:109` (75 ms de intervalo); AI Elements `code-block.tsx:316-319` (`content-visibility`) | Lido: cada um limita o custo na linha principal do seu jeito | embrulhado: acima de 256 KiB, texto simples com números de linha (C73: custo medido) | `runs/time.mjs`: 1 MiB de tsx 1.119 ms; 256 KiB 361 ms; 64 KiB 145 ms. O maior arquivo real é o `package-lock.json` do modelo inicial, 84 KB | não precisa | |
+| Árvore fechada, menos o caminho do arquivo | U5 | `builder/source/file-tree.tsx:67` (`defaultOpen={!KIT.test(…)}`: tudo aberto menos `components/ui`) | AI Elements `file-tree.tsx:43, 51` (`defaultExpanded = new Set()`); Mastra `factory-ui/…/WorkspaceFileBrowser.tsx:157` (`openFolders[node.path] ?? false`); Conexus OS `e0353c36` `apps/web/src/features/builder/construir/lens-code.tsx:33, 40, 65` (abre só `ancestors(path)`); Dyad `902829f` `FileTree.tsx:694`. Ao contrário: vibesdk `file-explorer.tsx:71` (`useState(true)`), bolt.diy `353b44c` `FileTree.tsx:46` | Lido: fechadas em 4 de 6; o OS abre os ancestrais do arquivo escolhido | nativo: `defaultOpen` do Base UI a partir dos ancestrais do arquivo escolhido, como o OS | | "elas vêm expandidas já e não contraídas", 2026-10-26 | |
+| Seta que segue o estado | U5 | `file-tree.tsx:67, 71` (`group/folder` com `group-data-open/folder:rotate-90`: a seta de uma pasta fechada dentro de uma aberta lê o `data-open` da de cima) | `@base-ui/react@1.9.0` `docs/react/components/collapsible.md`, a demonstração Tailwind (`group` no `Collapsible.Trigger`, `group-data-panel-open:rotate-90`); `CollapsibleTriggerDataAttributes.js:10` (`data-panel-open`); AI Elements `file-tree.tsx:183-188`; Mastra `Tree/tree-folder-trigger.tsx:54`. O `sidebar-11` do shadcn usa `data-state`, que o Base UI 1.9 nunca escreve | Lido; provado | nativo: o exemplo da própria biblioteca | `runs/today.out` (o defeito) e `runs/proto.out` (consertado) | "mesmo você contraindo ele não volta a setinha certa", 2026-10-26 | |
+| Ícone de pasta aberta e fechada | U5 | nenhum | AI Elements `file-tree.tsx:197-202` (`FolderOpenIcon`/`FolderIcon`); Mastra `WorkspaceFileBrowser.tsx:47-52`; Dyad `FileTree.tsx:741`; OS `lens-code.tsx:34` | Lido | nativo: `FolderIcon` e `FolderOpenIcon` do lucide, trocados por `group-data-panel-open:` (nenhum estado nosso) | `shots/proto/desktop-tree-nested-closed-*.png` | "colocar símbolo de pastinha", 2026-10-26 | |
+| Ícone de arquivo pelo tipo | U5 | nenhum | Mastra `WorkspaceFileBrowser.tsx:22-44`; vibesdk `file-explorer.tsx:27-43`; AI Elements `file-tree.tsx` (um `FileIcon`) | Lido | embrulhado: um mapa de 5 extensões sobre ícones do lucide | | não precisa | |
+| Números de linha | U5 | nenhum | AI Elements `code-block.tsx:80-91, 282` (contadores CSS); vibesdk `main-content-panel.tsx:379-381`; OS `code-surfaces.tsx:31` | Lido | nativo: contadores CSS como a AI Elements, para que a cópia nunca leve os números | | não precisa | |
+| Nome do arquivo em cima do código | U5 | só no celular (`source.tsx:57`) | OS `lens-code.tsx:69` (`cx-file-head`); Mastra `WorkspaceFileViewer.tsx`, o cabeçalho | Lido | nativo | | não precisa | |
+| Árvore com rolagem própria no computador | U5 | nenhum: a página inteira rola (`source.tsx:67-69`) | OS `construir.css:53` (`.cx-files { overflow: auto }`); vibesdk `file-explorer.tsx:187-194` | Lido | nativo (CSS) | | não precisa | |
+| Celular | U5 | `source.tsx:52-64` (`Sheet` a partir de **Arquivos**) | OS `construir.css:158-160`; Mastra `WorkspaceFilesToggle.tsx:36-52` (um `Popover` abaixo de 68 rem); vibesdk e Dyad: nenhum | Lido | nativo: fica o `Sheet`; **Arquivos** ganha o ícone; o código rola na sua caixa | `shots/proto/phone-*.png`; `scrollWidth` 390 | critério 13 da 14.2 ("o `Sheet` a 390 px"), aprovado | |
+| A lista do celular rola | U5 | `ui/sheet.tsx:26-30` (`fixed … h-full flex-col`, sem `overflow`); `file-tree.tsx:113` | shadcn `Sheet` (o conteúdo decide a rolagem); OS `construir.css:53, 160` | Lido; provado o defeito | nativo: `min-h-0 overflow-y-auto` no invólucro da árvore dentro do `Sheet` | `runs/sheet.out`: 50 linhas, a última em y=1339 de 844, `scrollTop` fica 0 | "Ainda mais no celular", 2026-10-26 | |
+| O botão de fechar do `Sheet` dos arquivos | U5 | `ui/sheet.tsx:41` (`aria-label="Fechar navegação"` fixo) | V31 | Lido | nativo: o `Sheet` recebe o rótulo de fechar; aqui "Fechar arquivos" | | não precisa | |
+| A seleção sob o ponteiro | U5 | `file-tree.tsx:50, 62` (`hover:bg-surface-3` cobre `bg-accent-soft`) | V5 (o ipê marca a escolha) | Lido | nativo: a linha escolhida não troca de fundo no hover | | não precisa | |
+| Copiar o arquivo | fica de fora: ninguém pediu | nenhum | AI Elements `code-block.tsx:471-498` | Lido | nativo, fora | | não precisa | |
+| Editor completo (CodeMirror, Monaco) | fica de fora (`D1` e `D3` não escolhidas) | nenhum | OS `code-surfaces.tsx:1-46` e `apps/hub/src/http/app.ts:56-71` (nonce de estilo, `styleSrcAttr: ["'unsafe-inline'"]`); vibesdk `worker/config/security.ts:186-190`, `monaco-editor ^0.56.0` | Lido | nativo, fora | | `D2`, 2026-10-26 | |
 | Aba Alterações | fica de fora (14.1 B1) | nenhum | Factory `routes/fs.ts:157-188` | Lido na 14.1 | nativo, fora | | "Ok, pode ser então A1 e B1", 2026-10-25 | |
 
 As referências fora do `node_modules`: Mastra na estante `mastra-1.78` em `6a465f9d` (a Factory em
-`mastracode/factory-ui/src/ui/`), vibesdk `9da158d`, Dyad `902829f`, Conexus OS `e0353c36`.
+`mastracode/factory-ui/src/ui/`), vibesdk `9da158d`, Dyad `902829f`, Conexus OS `e0353c36`; para a
+U5 também bolt.diy `353b44c`, AI Elements `ca8be60`, Streamdown `c6f5905`, shadcn/ui `8f04138` e
+Shiki `f7d0167` (4.5.0). As provas `runs/` e `shots/` são do estudo da aba Código, de 2026-10-26,
+fora do repositório.
 
 **A medida do transplante.** Nenhum código do Conexus OS. Do OS vem só a forma do passo do nome
-(enviar, nome, criar e começar, voltar); o `suggestProjectName` não entra (A).
+(enviar, nome, criar e começar, voltar); o `suggestProjectName` não entra (A). Na U5, do OS vem só
+a regra de abrir os ancestrais do arquivo (`lens-code.tsx:33, 40, 65`); o protótipo do estudo
+(`runs/prototype.diff`) é lido como prova, não copiado.
 
 **A dívida.** Nenhuma.
 
@@ -310,13 +383,13 @@ interface HistoryState {
   /** O Projeto nasceu e o Hub recusou o modelo da conversa. */
   refused?: 'MODEL_NO_ACCOUNT' | 'MODEL_UNKNOWN' | 'EFFORT_UNSUPPORTED'
 }
-/** Os arquivos cruzam em memória: 14.3 aceita até 30 MiB de data URLs (Factory `handoffFiles.ts`). */
+/** Os arquivos cruzam em memória: a 14.3 aceita até 28 MiB de data URL (`LIMITS.total`, `attachments.ts:8`; Factory `handoffFiles.ts`). */
 export function stashHandoffFiles(conversationId: ConversationId, files: readonly MessageFile[]): void
 export function takeHandoffFiles(conversationId: ConversationId): readonly MessageFile[]
 /** No `Screen` da conversa: envia o pedido do Início uma vez, ou recupera o texto depois de recarregar. */
 export function useHandoff(
   conversationId: ConversationId,
-  on: { send: (outgoing: Outgoing) => Promise<'DECIDED' | 'UNCONFIRMED'>; recover: (text: string) => void },
+  on: { send: (outgoing: Outgoing) => Promise<boolean>; recover: (text: string) => void },
 ): void
 
 // builder/conversation/draft.ts
@@ -348,6 +421,8 @@ export function Home(props: { companyId: CompanyId; aside?: ReactNode; start: Re
 - `Phase` é a união do Início (C21); `kind` separa. `STARTING` guarda o Projeto para que **Tentar de
   novo** crie só a conversa (critério 10). Em `STARTING` o `NameStep` troca **Voltar** por **Abrir
   o Projeto**: o nome não muda mais (decisão 0024), e o Projeto já está nos cartões.
+- O pedido sai do rascunho do Início no **Enviar** (`draft.take`, `composer.tsx:201`) e fica em
+  `NAMING`; **Voltar** o devolve com `draft.restore` (`draft.ts:57-60`).
 - As chaves: `useAttemptKey` de hoje, uma para o Projeto, outra para a conversa, cada uma guardada
   até o Hub decidir (W24, `keepsAttemptKey`).
 - `start.tsx`, depois de a conversa nascer: `stashHandoffFiles` e
@@ -358,8 +433,10 @@ export function Home(props: { companyId: CompanyId; aside?: ReactNode; start: Re
   (`main.tsx:79`). Com `HistoryState.handoff` e `handedOff` falso: marca `handedOff`, toma os
   arquivos, grava a cópia do texto no `sessionStorage` (`pageStorage('session')`, chave
   `conexus-handoff:<conversa>`), tira o estado com `navigate({ replace: true, state: {} })` e chama
-  `send`. A cópia sai quando o Hub decide (aceito, ou recusado com código e devolvido à caixa pela
-  14.3); `UNCONFIRMED` a deixa. Sem `HistoryState.handoff`, com `handedOff` falso e `recovered` falso: marca
+  `send`, o de `useSending` (`panel.tsx:88-109`), que devolve `true` aceito e `false` recusado ou
+  não confirmado, com a frase já posta. A cópia sai quando o `send` volta: `false` põe o pedido no
+  rascunho com `draft.restore` (`draft.ts:57-60`), como o `Composer` faz (`composer.tsx:204`), e o
+  rascunho já espelha o texto no `sessionStorage`. Só um recarregar no meio do envio a encontra. Sem `HistoryState.handoff`, com `handedOff` falso e `recovered` falso: marca
   `recovered`; havendo cópia, `recover(texto)` põe o texto no rascunho e a frase, e a cópia sai.
   Nunca reenvia sozinho. Um dono do texto do recarregar: `text.ts` (C26).
 - `EmptyPanel` com `HistoryState.refused`: a frase do Projeto criado sem pedido e a do código
@@ -388,8 +465,8 @@ lidos inteiros antes de escrever `handoff.ts`.
 3. `draft.ts`: `DraftKey`. `handoff.ts`: `HistoryState`, os arquivos e `useHandoff`, com o teste
    de modo estrito do critério 8 primeiro.
 4. `start.tsx`: a caixa da 14.3 (`answering=false`, sem `memory` nem `taskPanel`), o seletor, os
-   exemplos; `onSend` passa a `NAMING`; `NameStep` com o pedido acima (texto e as etiquetas de
-   `ui/attachment.tsx`, da 14.3); `onCreated` cria a conversa com `{ model, effort }`, guarda os
+   exemplos; `onSend` passa a `NAMING`; `NameStep` com o pedido acima (texto e as etiquetas `FileChip`
+   de `person-turn.tsx:17`, com `chipOf` de `messages.ts:117`, como as da caixa, `composer.tsx:47`); `onCreated` cria a conversa com `{ model, effort }`, guarda os
    arquivos e navega com o estado. Regras: W24, C21, C26, C48.
 5. `panel.tsx`: `useHandoff` no `Screen`; `refused` no `EmptyPanel`. Regras: V30 para o foco (a
    caixa da conversa, como hoje).
@@ -405,7 +482,8 @@ console.
 ### Parar se
 
 - O compositor da 14.3, como entrou no `main`, não recebe `answering=false` sem `memory` sem mudar
-  a sua forma: relatar a linha; a mudança volta ao cartão (L7).
+  a sua forma, ou o `sticky bottom-0` do seu formulário (`composer.tsx:23-24`) prende a caixa ao pé
+  do Início quando os Projetos rolam: relatar a linha e a captura; a mudança volta ao cartão (L7).
 - O `send` da 14.3 não aceita ser chamado ao montar o `Screen` (o fluxo do Mastra ainda não abriu):
   relatar o que o Mastra faz, sem esperar com um temporizador.
 
@@ -454,7 +532,7 @@ Nada que só o teste revele.
 ### As linhas da tabela
 
 **Foco depois de entrar e o contorno**: `hub/identity/sign-in-form.tsx:50-65`
-(`focusTitleWhenRendered`); `brand/tokens.css:271-273`; o teste
+(`focusTitleWhenRendered`); `brand/tokens.css:281-284`; o teste
 `routes/_app/index.test.tsx:127-137`; V28.
 
 ### O raio da mudança
@@ -492,3 +570,100 @@ Critérios 15 e 16; a QA entra com Enter e olha o título sem contorno, a 1280 e
 
 - O Chrome desenha o contorno do título mesmo com a regra nova (estilo do navegador, não o nosso):
   relatar a captura; não esconder o foco.
+
+## U5 A aba Código legível
+
+**Base e modelo.** `main` com a U4. Sonnet: uma biblioteca nova pelo jeito que ela documenta, um
+mapa de cores e duas correções de classe, numa pasta só; o estudo já rodou o protótipo.
+
+### As linhas da tabela
+
+**Cor do código**, **Cores nos dois temas**, **Carregar só ao abrir um arquivo**, **Teto de tamanho
+do realce**, **Árvore fechada, menos o caminho do arquivo**, **Seta que segue o estado**, **Ícone de
+pasta aberta e fechada**, **Ícone de arquivo pelo tipo**, **Números de linha**, **Nome do arquivo em
+cima do código**, **Árvore com rolagem própria no computador**, **Celular**, **A lista do celular
+rola**, **O botão de fechar do `Sheet` dos arquivos**, **A seleção sob o ponteiro**. Os arquivos de
+hoje: `builder/source/source.tsx` (`FileText` :16-30, `Files` com o `Sheet` :32-72, `Source`
+:78-98), `builder/source/file-tree.tsx` (`treeOf` :13-30, `firstShown` :39-47, `Nodes` :52-84,
+`walk` :87-101, `FileTree` :103-118), `ui/collapsible.tsx` (shadcn base-nova sobre
+`@base-ui/react@1.9.0`), `ui/sheet.tsx`; a rota em
+`routes/_app/companies/$companyId/projects/$projectId.tsx:28`.
+
+### O raio da mudança
+
+| Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
+| --- | --- | --- |
+| `apps/web/src/builder/source/highlight.ts` | Cria: o realçador preguiçoso e as classes das cores | `source.tsx` |
+| `apps/web/src/builder/source/source.tsx` | Muda: o cabeçalho do arquivo, os números de linha, o teto, o realce, a rolagem da árvore, o ícone de **Arquivos** | a rota do Projeto |
+| `apps/web/src/builder/source/file-tree.tsx` | Muda: `group` no gatilho, `defaultOpen` dos ancestrais, os ícones, o hover da escolhida | `source.tsx` |
+| `apps/web/src/ui/sheet.tsx` | Muda: o rótulo de fechar vem de quem abre; "Fechar navegação" fica o padrão | `source.tsx`, a navegação do celular |
+| `apps/web/src/brand/tokens.css` | Muda: 7 `--color-code-*` por tema | toda a web |
+| `apps/web/package.json`, `package-lock.json` | Muda: `shiki@4.5.0` | — |
+| `docs/reference/stack.md` | Muda: a linha do `shiki` (o `check-docs` recusa uma dependência sem linha) | — |
+| testes: `source.test.tsx`, `workbench.layout.test.ts`, `phone.layout.test.ts`, `sweep.test.ts` (mudam) | | |
+
+### Os contratos que a unidade cria
+
+```ts
+// builder/source/highlight.ts
+/** Um trecho de uma linha, já com a classe da marca; nunca `style`, nunca HTML. */
+export type Token = { text: string; className: string }
+/** As linhas pintadas, ou `null` quando o arquivo fica em texto simples (sem gramática, acima do teto, ou a gramática falhou). */
+export function highlighted(path: string, text: string): Promise<Token[][] | null>
+```
+
+- Um `createHighlighterCore` preguiçoso, criado no primeiro arquivo, com
+  `createCssVariablesTheme({ name: 'conexus' })` e `createJavaScriptRegexEngine({ forgiving: true })`
+  (sem wasm: a página fica com `script-src 'self'`, sem `'wasm-unsafe-eval'`). As gramáticas por
+  `import()`, uma por extensão: tsx e jsx, ts, js e mjs, json, css, html, sql, md. Gramáticas
+  pré-compiladas, nunca (a documentação as dá por não suportadas, `regex-engines.md:89-92`).
+- `codeToTokens` devolve `token.color` como `var(--shiki-…)` e `fontStyle` como bits (itálico 1);
+  `COLOURS` liga cada variável a uma classe `text-code-*`, e o itálico a `italic`. Um dono das cores:
+  `brand/tokens.css` (V3); os valores do protótipo são as paletas clara e escura do GitHub.
+- O teto: acima de 256 KiB, `null` sem chamar o Shiki. Um `import()` que falha rejeita
+  `loadLanguage`, e o arquivo fica em texto simples, sem frase (C50: nenhuma falha sai da página).
+- `FileText` mostra o texto simples primeiro e pinta num `useEffect` quando `highlighted` volta,
+  como o OS (`code-surfaces.tsx:10-24`) e a AI Elements (`code-block.tsx:168-181`); sem `useQuery`,
+  porque W11 proíbe escrever uma chave de consulta.
+- Os números de linha por contadores CSS no `::before` de cada linha, fora da seleção e do leitor de
+  tela (critério 21).
+- `file-tree.tsx`: `group` no `CollapsibleTrigger`, a seta e o ícone de pasta por
+  `group-data-panel-open:` (o exemplo do Base UI); `defaultOpen` quando a pasta é ancestral do
+  arquivo escolhido. `KIT` fica só em `firstShown`, para que o primeiro arquivo mostrado nunca seja
+  do kit. O ícone de arquivo por um mapa de 5 extensões sobre o lucide; os ícones em `text-text-2`.
+- `Sheet`: `SheetContent` ganha `closeLabel`, e `source.tsx` passa "Fechar arquivos"; o invólucro da
+  árvore dentro dele é `min-h-0 overflow-y-auto`.
+- Apaga: `group/folder` e `group-data-open/folder` (`file-tree.tsx:67, 71`), o próprio defeito; a
+  regra de abrir tudo menos `KIT` em `Nodes`; o `<pre>` cru sobre `bg-surface-3`
+  (`source.tsx:23-28`); o `hover:bg-surface-3` que cobre a escolhida.
+
+### As skills e a leitura
+
+O guia de design (V3, V5, V18, V30, V31). As linhas de `docs/reference/stack.md` para
+`apps/web/src/builder` e `apps/web/src/brand`, e a nova do `shiki`: "Read first"
+`node_modules/shiki` e as páginas `docs/guide/regex-engines.md` e `best-performance.md`; skill
+nenhuma; a armadilha: "o motor JavaScript, nunca o wasm padrão; `codeToTokens` para classes, nunca
+`codeToHtml`". O CI lista a dependência nova (entrega L16).
+
+### A ordem do trabalho
+
+1. Apagar antes: o `group/folder`, a regra de abertura e o caso `source.test.tsx:116`, reescrito
+   para o critério 17, que falha hoje.
+2. `file-tree.tsx`: `defaultOpen` dos ancestrais, a seta e os ícones; o caso do critério 18 em
+   `workbench.layout.test.ts`, que hoje lê `rotate: 90deg` numa pasta fechada.
+3. `tokens.css` e `highlight.ts`, com a linha do `stack.md`; `source.tsx`: o cabeçalho, as linhas,
+   o realce, o teto. Regras: V3, C73, W11, W22.
+4. `ui/sheet.tsx` e a rolagem da lista; os casos de `phone.layout.test.ts` e `sweep.test.ts`.
+
+### Como se prova
+
+Critérios 17 a 25. O 18, o 19, o 22 e o 23 no navegador, pelos testes de layout, que servem a web
+sob a política de segurança dos apps, mais estrita que a do Hub; o 25 pelos tamanhos do build. A QA
+abre a aba a 1366 e 390 px, nos dois temas, e lê o console.
+
+### Parar se
+
+- O motor JavaScript recusa uma gramática que o estudo listou: relatar a gramática; ela fica em
+  texto simples, sem trocar de motor.
+- Desenhar ~7.000 linhas pintadas num arquivo de 256 KiB trava a página no teste de layout (o
+  estudo mediu só o tempo do Shiki, não o do desenho): relatar o tempo; o teto volta ao cartão.
