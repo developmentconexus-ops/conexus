@@ -27,7 +27,7 @@ function Ring({ percent, working }: { percent: number; working: boolean }) {
     strokeWidth: 2,
     strokeDasharray: arc,
     strokeLinecap: 'round',
-    className: 'origin-center -rotate-90 transition-all duration-300',
+    className: 'origin-center -rotate-90 transition-all duration-300 motion-reduce:transition-none',
   } as const
 
   return (
@@ -44,7 +44,7 @@ function Ring({ percent, working }: { percent: number; working: boolean }) {
         fill="none"
         stroke="currentColor"
         strokeWidth="2"
-        className="opacity-20"
+        className="text-text-2 opacity-20"
       />
       {working ? (
         <>
