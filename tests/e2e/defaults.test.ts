@@ -128,9 +128,9 @@ async function script(window: (ip: string, who: string) => Promise<Page>, compan
   const base = `${TEST_ORIGIN}/companies/${companyId}/settings`
   await ownerPage.goto(`${base}/model-accounts`)
   await linkKey(ownerPage, 'Claude da empresa', CLAUDE_KEY)
-  await ownerPage.getByText('Claude da empresa · chave …x7Qa · ligada').first().waitFor()
+  await ownerPage.getByText('Claude da empresa', { exact: true }).first().waitFor()
   await linkKey(ownerPage, 'OpenAI da empresa', OPENAI_KEY, 'OpenAI')
-  await ownerPage.getByText('OpenAI da empresa · chave …9aZ1 · ligada').first().waitFor()
+  await ownerPage.getByText('OpenAI da empresa', { exact: true }).first().waitFor()
   await ownerPage.goto(`${TEST_ORIGIN}/companies/${companyId}`)
   await createProject(ownerPage, 'Encomendas')
   await ownerPage.getByRole('heading', { name: 'Encomendas', exact: true }).waitFor()

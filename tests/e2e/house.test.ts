@@ -131,7 +131,7 @@ async function linkAccount(page: Page) {
   await sidebarOf(page).getByRole('link', { name: 'Contas de modelo', exact: true }).click()
   await page.getByRole('heading', { name: 'Contas de modelo', exact: true }).waitFor()
   await linkKey(page, 'Conta da padaria', KEY)
-  await page.getByText('Conta da padaria · chave …x7Qa · ligada').first().waitFor()
+  await page.getByText('Conta da padaria', { exact: true }).first().waitFor()
   await sidebarOf(page).getByRole('link', { name: 'Voltar', exact: true }).click()
   await waitForHome(page)
   assert.equal(await page.getByRole('region', { name: 'Termine de preparar a empresa' }).count(), 0)
