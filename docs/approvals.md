@@ -279,3 +279,9 @@ Etapa 15 usada em AAAA-MM-DD em https://hub.conexus.fun (vX.Y.Z): ainda não lan
 Em 2026-10-28, sobre o cartão da etapa 17, Publicar, e a pergunta E (o membro vê Versões e publica qualquer versão guardada, `E1`, ou publica só a da Prévia, `E2`): "3.E1 sim E2. Okay". Lido como cartão aprovado e `E1`.
 
 Cartão da etapa 17 aprovado em 2026-10-28 (commit dc2549c7c4fe59184aa98cc79e6ca30aa8273028): "3.E1 sim E2. Okay"
+
+## Etapa 18
+
+Em 2026-10-28, sobre o cartão da etapa 18, Entrar num app, e a pergunta I (onde mora o convite de um app: na tabela de convites da biblioteca de login, marcado com o app e o papel, `I1`): "I1". O Hub escreve, aceita e cancela esse convite; o convite da empresa cancela os convites de app abertos daquele endereço; a entrada vai em `boundaries.md`. Lido como a resposta `I1`. A aprovação do cartão é também a palavra da regra de dados D11 para as permissões do banco da U1.
+
+Cartão da etapa 18 aprovado em 2026-10-28 (commit 29437b1f913cb74d44eedc44ddf104628f034227): "aPROVO PAGINA"
