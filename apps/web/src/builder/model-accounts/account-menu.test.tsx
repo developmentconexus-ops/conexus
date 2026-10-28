@@ -114,6 +114,24 @@ test('Renomear: o campo toma o foco, manda o nome e a revisão e o foco volta ao
   expect(sent.map((one) => one.body)).toEqual([{ revision: 0, label: 'Equipe 1' }])
 })
 
+test('a seta Descer da linha manda a ordem com a conta uma casa abaixo', async () => {
+  const accounts = ['A', 'B', 'C'].map((label, position) => accountOf({ label, position }))
+  const { sent } = open(view({ company: accounts }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Descer A' }))
+  await waitFor(() => expect(sent).toHaveLength(1))
+  const [a, b, c] = accounts.map((one) => one.id)
+  expect(sent[0]?.body).toEqual({ ids: [b, a, c] })
+})
+
+test('Dar a pessoas confirma com o botão comum, e só Remover usa o de perigo', async () => {
+  open(view({ company: [accountOf({ label: 'Time 1' })] }))
+  await pickFromMenu('Time 1', 'Dar a pessoas…')
+  const dialog = await screen.findByRole('alertdialog')
+  expect(within(dialog).getByRole('button', { name: 'Salvar' }).className).not.toContain(
+    'bg-danger',
+  )
+})
+
 test('Dar a pessoas manda a lista final; sem ninguém marcada a conta volta a ser para todos', async () => {
   const { sent } = open(view({ company: [accountOf({ label: 'Time 1' })] }))
   await pickFromMenu('Time 1', 'Dar a pessoas…')

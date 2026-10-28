@@ -99,6 +99,15 @@ test('quem só lê a empresa liga, pausa e remove as próprias contas', async ()
   fireEvent.click(await screen.findByRole('button', { name: 'Remover conta' }))
   expect(await screen.findByText('Nenhuma conta sua')).toBeTruthy()
   expect(sent.map((one) => one.method)).toEqual(['PATCH', 'DELETE'])
+  await waitFor(() =>
+    expect(document.activeElement).toBe(screen.getByRole('region', { name: 'Suas contas' })),
+  )
+})
+
+test('com contas, "Nenhuma conta sua" não aparece', async () => {
+  await openMine(view({ mine: [accountOf({ label: 'Minha 1', owner: 'me' })] }))
+  expect(screen.getByText('Minha 1')).toBeTruthy()
+  expect(screen.queryByText('Nenhuma conta sua')).toBeNull()
 })
 
 test('Ligar conta na página da pessoa liga uma conta dela', async () => {

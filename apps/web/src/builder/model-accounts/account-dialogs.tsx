@@ -1,7 +1,8 @@
 import type { CompanyId, ModelAccount, PersonId } from '@conexus/hub-api'
 import { useMutation } from '@tanstack/react-query'
+import type { ComponentProps } from 'react'
 import { useState } from 'react'
-import type { AlertDialogContentProps } from '../../ui/alert-dialog.tsx'
+import type { AlertDialogContent } from '../../ui/alert-dialog.tsx'
 import { AccountDialog } from './account-dialog.tsx'
 import { sendAssignees, sendRemoval } from './queries.ts'
 import type { Person } from './text.ts'
@@ -12,7 +13,7 @@ type Subject = {
   account: ModelAccount
   open: boolean
   onOpenChange: (open: boolean) => void
-  finalFocus: AlertDialogContentProps['finalFocus']
+  finalFocus: ComponentProps<typeof AlertDialogContent>['finalFocus']
 }
 
 /** "Remover": the Hub forgets the credential, and the person is told to end it at the provider too. */

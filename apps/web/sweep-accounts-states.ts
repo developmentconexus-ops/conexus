@@ -6,7 +6,7 @@ import { waitFor } from './sweep-kit.ts'
 import { MEMBER, OWNER } from './sweep-replies.ts'
 
 const PAGE = `/companies/${COMPANY.id}/settings/model-accounts`
-export const LONG_WORD = 'PalavraSemEspacoComQuarentaLetrasAQUI'
+export const LONG_WORD = 'PalavraSemEspacoQuarentaLetrasAquiJaEsta'
 
 function accountOf(n: number, fields: Record<string, unknown>) {
   return ModelAccount.parse({

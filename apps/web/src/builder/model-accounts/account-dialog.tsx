@@ -1,5 +1,4 @@
-import type { ReactNode } from 'react'
-import type { AlertDialogContentProps } from '../../ui/alert-dialog.tsx'
+import type { ComponentProps, ReactNode } from 'react'
 import { AlertDialog, AlertDialogContent } from '../../ui/alert-dialog.tsx'
 import { Button } from '../../ui/button.tsx'
 import { FieldError } from '../../ui/field.tsx'
@@ -16,7 +15,7 @@ export function AccountDialog(props: {
   onOpenChange: (open: boolean) => void
   danger: boolean
   /** Where focus lands on closing: the menu's "…", which the menu item that opened this has left. */
-  finalFocus: AlertDialogContentProps['finalFocus']
+  finalFocus: ComponentProps<typeof AlertDialogContent>['finalFocus']
   title: string
   description: string
   confirm: { label: string; pending: string }
