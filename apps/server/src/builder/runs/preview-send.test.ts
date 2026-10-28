@@ -9,7 +9,6 @@ import {
   listed,
   plantVersion,
   send,
-  versionNumbered,
 } from '../../hub/apps/test-versions.ts'
 import { BRUNO, call, memberOn } from '../../hub/identity/test-hub.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
@@ -204,13 +203,15 @@ test('o número da conversa: Versões lista as versões do Builder que montaram,
       [1, false],
     ],
   )
-  const one = await versionNumbered(subject, 1)
-  const back = await call(hub, ana, 'PUT', `${projects}/${projectId}/live-version`, {
-    versionId: one.id,
+  const published = await call(hub, ana, 'PUT', `${projects}/${projectId}/published-version`, {
+    number: 1,
   })
-  assert.equal(back.statusCode, 200, back.body)
+  assert.equal(published.statusCode, 200, published.body)
   const read = await call(hub, ana, 'GET', `${projects}/${projectId}`)
-  assert.equal(Object(read.json()).project.appVersion, 1)
+  assert.deepEqual(
+    [Object(read.json()).project.appVersion, Object(read.json()).project.publishedVersion],
+    [3, 1],
+  )
 })
 
 test('número já usado: o Git que voltou um commit dá um número que o Projeto tem, e a chave o recusa sem renomear (34)', async (t) => {

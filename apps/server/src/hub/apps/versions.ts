@@ -3,6 +3,7 @@ import type { Manifest } from '@conexus/app-contract'
 import type { AppVersion, CompanyId, PersonId, ProjectId, VersionFileInput } from '@conexus/hub-api'
 import { AppVersionFailure, AppVersionId } from '@conexus/hub-api'
 import { and, desc, eq, inArray, sql } from 'drizzle-orm'
+import { alias } from 'drizzle-orm/pg-core'
 import { z } from 'zod'
 import { CLOUDFLARE_DEADLINE_MS } from '../../platform/cloudflare.ts'
 import type { CommandTx, ReadTx } from '../../platform/database.ts'
@@ -69,11 +70,14 @@ type VersionRow = Pick<
   Exclude<keyof typeof VERSION_VIEW, 'sentByName'>
 > & { sentByName: string | null }
 
+/** The app's two pointers: the version of the Prévia and the Builder, and the published one. */
+// biome-ignore lint/plugin: the version rows hold strings and live.ts, removal.ts and repair.ts pass them on; the brand lands when those rows parse AppVersionId (C23)
+type Pointers = { liveVersionId: string | null; publishedVersionId: string | null }
+
 const ShownState = z.enum(['sending', 'ready', 'failed'])
 
 /** A version as the list shows it; one being pruned is never shown. */
-// biome-ignore lint/plugin: the version rows hold strings and live.ts, removal.ts and repair.ts pass them on; the brand lands when those rows parse AppVersionId (C23)
-export function versionView(row: VersionRow, liveVersionId: string | null): AppVersion {
+export function versionView(row: VersionRow, pointers: Pointers): AppVersion {
   return {
     id: AppVersionId.parse(row.id),
     number: row.number,
@@ -82,7 +86,8 @@ export function versionView(row: VersionRow, liveVersionId: string | null): AppV
     sentBy: row.sentBy,
     sentByName: row.sentByName,
     createdAt: row.createdAt.toISOString(),
-    live: row.id === liveVersionId,
+    live: row.id === pointers.liveVersionId,
+    published: row.id === pointers.publishedVersionId,
   }
 }
 
@@ -94,6 +99,7 @@ export async function lockApp(tx: CommandTx, ids: OfProject) {
   const [row] = await tx
     .select({
       liveVersionId: app.liveVersionId,
+      publishedVersionId: app.publishedVersionId,
       sendingVersionId: app.sendingVersionId,
       held: CLAIM_HELD,
       databaseReady: app.databaseReady,
@@ -105,7 +111,7 @@ export async function lockApp(tx: CommandTx, ids: OfProject) {
   return row
 }
 
-/** Ends a send that did not put its version on the air: the version fails with its reason. */
+/** Ends a send that did not put its version in the Prévia: the version fails with its reason. */
 export async function failVersion(
   tx: CommandTx,
   // biome-ignore lint/plugin: the version rows hold strings and live.ts, removal.ts and repair.ts pass them on; the brand lands when those rows parse AppVersionId (C23)
@@ -186,7 +192,7 @@ export async function storeAppVersion(input: {
     .set({ sendingVersionId: row.id, claimedUntil: CLAIM_UNTIL })
     .where(eq(app.projectId, ids.projectId))
   return {
-    version: versionView(row, held.liveVersionId),
+    version: versionView(row, held),
     databaseReady: held.databaseReady,
   }
 }
@@ -204,7 +210,7 @@ export async function holdsClaim(tx: ReadTx, input: { projectId: ProjectId; vers
 /** The kept versions of a Projeto, newest first: the prune keeps them few (code C44). */
 export async function listVersions(tx: ReadTx, ids: OfProject): Promise<AppVersion[]> {
   const [held] = await tx
-    .select({ liveVersionId: app.liveVersionId })
+    .select({ liveVersionId: app.liveVersionId, publishedVersionId: app.publishedVersionId })
     .from(app)
     .where(eq(app.projectId, ids.projectId))
   const rows = await tx
@@ -217,15 +223,22 @@ export async function listVersions(tx: ReadTx, ids: OfProject): Promise<AppVersi
       ),
     )
     .orderBy(desc(appVersion.number))
-  return rows.map((row) => versionView(row, held?.liveVersionId ?? null))
+  const pointers = held ?? { liveVersionId: null, publishedVersionId: null }
+  return rows.map((row) => versionView(row, pointers))
 }
 
-/** The number of the version on the air of the Projeto's app; null before its first. */
-export async function liveNumberOf(tx: ReadTx, projectId: ProjectId): Promise<number | null> {
+/** The numbers of the Prévia's and the published version, in one read; null before each first. */
+export async function versionNumbersOf(
+  tx: ReadTx,
+  projectId: ProjectId,
+): Promise<{ appVersion: number | null; publishedVersion: number | null }> {
+  const preview = alias(appVersion, 'preview_version')
+  const published = alias(appVersion, 'published_version')
   const [row] = await tx
-    .select({ number: appVersion.number })
+    .select({ appVersion: preview.number, publishedVersion: published.number })
     .from(app)
-    .innerJoin(appVersion, eq(appVersion.id, app.liveVersionId))
+    .leftJoin(preview, eq(preview.id, app.liveVersionId))
+    .leftJoin(published, eq(published.id, app.publishedVersionId))
     .where(eq(app.projectId, projectId))
-  return row?.number ?? null
+  return { appVersion: row?.appVersion ?? null, publishedVersion: row?.publishedVersion ?? null }
 }

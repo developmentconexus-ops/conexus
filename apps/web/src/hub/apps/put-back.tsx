@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { HubFailure, sentenceOf } from '../../platform/hub.ts'
 import { AlertDialog, AlertDialogContent, AlertDialogTrigger } from '../../ui/alert-dialog.tsx'
 import { Button } from '../../ui/button.tsx'
-import { sendLiveVersion } from './queries.ts'
+import { sendPublishedVersion } from './queries.ts'
 
 // The refusals that say the list is out of date: the dialog closes and the list is read again.
 const STALE = ['APP_VERSION_NOT_FOUND', 'APP_VERSION_SENDING']
@@ -24,11 +24,11 @@ export function PutBack(props: {
   const { companyId, projectId, version } = props
   const router = useRouter()
   const [open, setOpen] = useState(false)
-  const send = useMutation(sendLiveVersion)
+  const send = useMutation(sendPublishedVersion)
 
   async function confirm() {
     try {
-      await send.mutateAsync({ params: { companyId, projectId }, body: { versionId: version.id } })
+      await send.mutateAsync({ params: { companyId, projectId }, body: { number: version.number } })
       setOpen(false)
     } catch (error) {
       if (!(error instanceof HubFailure)) return

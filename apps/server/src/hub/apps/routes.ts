@@ -6,7 +6,7 @@ import {
   createAppSession,
   FAILURES,
   listAppVersions,
-  setLiveVersion,
+  publishAppVersion,
 } from '@conexus/hub-api'
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 import { optionalSessionOf } from '../../platform/access.ts'
@@ -51,7 +51,11 @@ export function registerHandoffRoute(app: FastifyInstance, door: AppDoor): void 
       }
       const session = optionalSessionOf(request)
       if (session === undefined) throw new Failure('SESSION_REQUIRED')
-      const made = await door.createHandoff({ ...session, ...query.data })
+      const made = await door.createHandoff({
+        ...session,
+        ...query.data,
+        environment: 'published',
+      })
       const { companyId, projectId } = made
       request.log.info({ companyId, projectId }, 'APP_HANDOFF_CREATED')
       return reply.redirect(made.location, 303)
@@ -60,19 +64,22 @@ export function registerHandoffRoute(app: FastifyInstance, door: AppDoor): void 
   // The same pass for the Prévia, whose frame cannot reach `/apps/open` with the Hub's cookie: the
   // Hub's own page asks, by its session and the binding hash the frame's entry page sent it.
   serve(app, createAppFrameHandoff, async ({ person, sessionToken, body, log }) => {
-    const made = await door.createHandoff({ person, sessionToken, ...body })
+    const made = await door.createHandoff({
+      ...{ person, sessionToken, ...body },
+      environment: 'preview',
+    })
     log.info({ companyId: made.companyId, projectId: made.projectId }, 'APP_HANDOFF_CREATED')
     return answer({ location: made.location })
   })
 }
 
-/** A Projeto's versions, for its owners and administrators, on the public listener. */
+/** A Projeto's versions, listed and published by its members, on the public listener. */
 export function registerVersionRoutes(app: FastifyInstance, versions: AppVersions): void {
   serve(app, listAppVersions, async ({ person, params }) =>
     answer({ versions: await versions.list({ person, ...params }) }),
   )
-  serve(app, setLiveVersion, async ({ person, params, body }) =>
-    answer({ version: await versions.setLive({ person, ...params, versionId: body.versionId }) }),
+  serve(app, publishAppVersion, async ({ person, params, body }) =>
+    answer({ version: await versions.publish({ person, ...params, number: body.number }) }),
   )
 }
 

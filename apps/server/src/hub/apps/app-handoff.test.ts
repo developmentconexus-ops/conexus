@@ -5,8 +5,16 @@ import { APP_SESSION_HEADER } from '@conexus/hub-api'
 import { queued, TEST_ORIGIN, withOwnerLock } from '../../platform/test-database.ts'
 import type { Hub, Person } from '../identity/test-hub.ts'
 import { call, codeOf, personOn, post } from '../identity/test-hub.ts'
-import { browser, companyWithApps, ESTOQUE, handoff, openPath, PEDIDOS } from './test-handoff.ts'
-import { companyForVersions, send, versionNumbered } from './test-versions.ts'
+import {
+  browser,
+  companyWithApps,
+  ESTOQUE,
+  frameHandoff,
+  handoff,
+  openPath,
+  PEDIDOS,
+} from './test-handoff.ts'
+import { companyForVersions, folder, send, versionNumbered } from './test-versions.ts'
 
 function redeem(hub: Hub, body: { host: string; code: string; binding: string }) {
   return hub.edge.inject({
@@ -25,19 +33,39 @@ function check(hub: Hub, host: string, session: string) {
   })
 }
 
-/** The pass the Hub gives the person for this browser, as the code in its location. */
-async function codeFor(hub: Hub, person: Person, host: string, hash: string) {
-  const made = await handoff(hub, person, { host, binding: hash })
-  assert.equal(made.statusCode, 303)
-  return String(new URL(String(made.headers.location)).searchParams.get('code'))
+/**
+ * The pass the Hub gives the person for this browser, as the code in its location: a tab's, through
+ * `/apps/open`, or the Prévia frame's.
+ */
+async function codeFor(
+  hub: Hub,
+  person: Person,
+  host: string,
+  hash: string,
+  environment: 'preview' | 'published' = 'published',
+) {
+  const body = { host, binding: hash }
+  const made =
+    environment === 'published'
+      ? await handoff(hub, person, body)
+      : await frameHandoff(hub, person, body)
+  assert.equal(made.statusCode, environment === 'published' ? 303 : 200)
+  const location =
+    environment === 'published' ? made.headers.location : Object(made.json()).location
+  return String(new URL(String(location)).searchParams.get('code'))
 }
 
 /** An app session of the person on the host, as the dispatcher holds it. */
-async function sessionOf(hub: Hub, person: Person, host: string) {
+async function sessionOf(
+  hub: Hub,
+  person: Person,
+  host: string,
+  environment: 'preview' | 'published' = 'preview',
+) {
   const { binding, hash } = browser()
   const redeemed = await redeem(hub, {
     host,
-    code: await codeFor(hub, person, host, hash),
+    code: await codeFor(hub, person, host, hash, environment),
     binding,
   })
   assert.equal(redeemed.statusCode, 201)
@@ -221,7 +249,11 @@ test('borda: as rotas do despachante só na porta de borda, as do Hub só na pú
   )
 })
 
-test('checagem com versão no ar: o Worker dela e o banco do login de execução; sem versão, o exemplo', async (t) => {
+function workerOf(answer: { json(): unknown }) {
+  return Object(Object(answer.json()).version).worker
+}
+
+test('checagem com versão na Prévia: o Worker dela e o banco do login de execução; sem versão, o exemplo', async (t) => {
   const subject = await companyForVersions(t)
   const { hub, ana, bruno, projectId, owner } = subject
   const session = await sessionOf(hub, bruno, PEDIDOS)
@@ -236,4 +268,41 @@ test('checagem com versão no ar: o Worker dela e o banco do login de execução
     database: 'neondb',
     login: `app_${projectId}_run`,
   })
+})
+
+test('a aba recebe a publicada e a moldura a da Prévia', async (t) => {
+  const subject = await companyForVersions(t)
+  const { hub, ana, bruno, versions } = subject
+  const tab = await sessionOf(hub, bruno, PEDIDOS, 'published')
+  const frame = await sessionOf(hub, bruno, PEDIDOS, 'preview')
+  const one = await versionNumbered(subject, (await send(subject, ana)).number)
+  const published = `${versions.replace(/\/versions$/, '')}/published-version`
+  assert.equal((await call(hub, ana, 'PUT', published, { number: 1 })).statusCode, 200)
+  const two = await versionNumbered(
+    subject,
+    (await send(subject, ana, folder({}, '#6b2fa3'))).number,
+  )
+  // The new send moved the Prévia, and the tab stays on the published version.
+  assert.deepEqual(
+    [await check(hub, PEDIDOS, tab), await check(hub, PEDIDOS, frame)].map(workerOf),
+    [`v-${one.id}`, `v-${two.id}`],
+  )
+  assert.equal((await call(hub, ana, 'PUT', published, { number: 2 })).statusCode, 200)
+  assert.equal(workerOf(await check(hub, PEDIDOS, tab)), `v-${two.id}`)
+})
+
+test('antes do primeiro Publicar: a aba recebe 404 APP_NOT_PUBLISHED e a moldura, a Prévia', async (t) => {
+  const subject = await companyForVersions(t)
+  const { hub, ana, bruno } = subject
+  const tab = await sessionOf(hub, bruno, PEDIDOS, 'published')
+  const frame = await sessionOf(hub, bruno, PEDIDOS, 'preview')
+  const before = await check(hub, PEDIDOS, tab)
+  assert.deepEqual([before.statusCode, codeOf(before)], [404, 'APP_NOT_PUBLISHED'])
+  assert.deepEqual(Object(Object(await check(hub, PEDIDOS, frame)).json()).version, {
+    example: true,
+  })
+  const one = await versionNumbered(subject, (await send(subject, ana)).number)
+  const after = await check(hub, PEDIDOS, tab)
+  assert.deepEqual([after.statusCode, codeOf(after)], [404, 'APP_NOT_PUBLISHED'])
+  assert.equal(workerOf(await check(hub, PEDIDOS, frame)), `v-${one.id}`)
 })

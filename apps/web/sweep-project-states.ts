@@ -139,9 +139,13 @@ export const PROJECT_STATES: State[] = [
   {
     name: 'Projeto, Versões do membro',
     path: VERSIONS,
-    replies: OF_MEMBER,
-    settle: (p) =>
-      waitFor(p, 'Só o dono ou quem administra a empresa vê as versões e volta para uma delas.'),
+    replies: {
+      ...OF_MEMBER,
+      [`GET /api/companies/${COMPANY.id}/projects/${PROJECT_ID}/versions`]: ok(listAppVersions, {
+        versions: [],
+      }),
+    },
+    settle: (p) => waitFor(p, 'Nenhuma versão foi ao app ainda.'),
   },
   {
     name: 'Projeto, Código com a árvore',

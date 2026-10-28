@@ -111,14 +111,9 @@ test('um valor de aba que não existe cai na Prévia', async () => {
   expect(await screen.findByText(NO_PREVIEW)).toBeTruthy()
 })
 
-test('o membro lê quem vê as versões, e não as vê (35)', async () => {
+test('o membro também vê as Versões (E1)', async () => {
   openProject(`${PROJECT}?lens=project&section=versions`, { mayDelete: false, role: 'member' })
-  expect(
-    await screen.findByText(
-      'Só o dono ou quem administra a empresa vê as versões e volta para uma delas.',
-    ),
-  ).toBeTruthy()
-  expect(screen.queryByRole('heading', { name: 'Versões' })).toBeNull()
+  expect(await screen.findByRole('heading', { name: 'Versões' })).toBeTruthy()
 })
 
 test('o endereço /settings acabou: "não encontrado"', async () => {

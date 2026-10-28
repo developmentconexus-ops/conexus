@@ -2,7 +2,7 @@ import type { CompanyId, Person, PersonId, PreviewData, ProjectId, RunId } from 
 import { PreviewFailure } from '@conexus/hub-api'
 import { databaseFailure } from '../../platform/database.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
-import { setLiveVersion } from './live.ts'
+import { publishVersion } from './live.ts'
 import type { SendDeps } from './send.ts'
 import { admitReader, sendVersion } from './send.ts'
 import type { VersionFolder } from './versions.ts'
@@ -56,7 +56,7 @@ async function sendFromBuilder(
 export function createAppVersions(deps: SendDeps) {
   return Object.freeze({
     sendFromBuilder: (input: BuilderVersion) => sendFromBuilder(deps, input),
-    setLive: (input: Parameters<typeof setLiveVersion>[1]) => setLiveVersion(deps, input),
+    publish: (input: Parameters<typeof publishVersion>[1]) => publishVersion(deps, input),
     list: (input: OfProject) =>
       deps.database.read(
         { kind: 'COMPANY', companyId: input.companyId, personId: input.person.id },

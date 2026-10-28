@@ -122,9 +122,9 @@ function starting(sent: Promise<unknown>): Replies {
         name: PROJECT_NAME,
         createdAt: CREATED_AT,
         mayDelete: true,
-        mayManageVersions: true,
         address: 'pedidos--empresa-teste.apps.example.test',
         appVersion: null,
+        publishedVersion: null,
       },
     }),
     [`POST ${PROJECT_API}/conversations`]: ok(createConversation, {

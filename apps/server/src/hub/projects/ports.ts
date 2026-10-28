@@ -17,8 +17,11 @@ export type AppRemoval = {
   }): Promise<'DONE' | 'LEFT'>
 }
 
-/** The number of the version on the air of a Projeto's app, null before its first (step 14.1). */
-export type AppVersionOf = (tx: ReadTx, projectId: ProjectId) => Promise<number | null>
+/** The numbers of the Prévia's and the published version of a Projeto's app; null before each first. */
+export type AppVersionsOf = (
+  tx: ReadTx,
+  projectId: ProjectId,
+) => Promise<{ appVersion: number | null; publishedVersion: number | null }>
 
 /**
  * What deleting a Projeto asks of the Builder (code C4): its conversations' threads and memory go

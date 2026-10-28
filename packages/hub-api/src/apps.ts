@@ -82,8 +82,9 @@ export const AppDatabase = z.object({
 })
 
 /**
- * What the dispatcher needs for one call: who calls, and either the live version's Worker with its
- * database, or the example app of step 8 when no version is on the air.
+ * What the dispatcher needs for one call: who calls, and either the Worker of the version this
+ * session gets (the Prévia's or the published one) with its database, or the example app of step 8
+ * when a frame's Projeto has no version yet.
  */
 export const AppCall = z.union([
   z.object({ caller: AppCaller, version: z.object({ worker: AppWorker }), database: AppDatabase }),
@@ -105,7 +106,13 @@ export const checkAppCall = defineOperation({
   bodyLimit: 1024,
   input: { query: OnHost },
   success: { status: 200, body: AppCall },
-  failures: ['APP_SESSION_INVALID', 'APP_ACCESS_REFUSED', 'APP_NOT_FOUND', 'DATABASE_UNAVAILABLE'],
+  failures: [
+    'APP_SESSION_INVALID',
+    'APP_ACCESS_REFUSED',
+    'APP_NOT_FOUND',
+    'APP_NOT_PUBLISHED',
+    'DATABASE_UNAVAILABLE',
+  ],
 })
 
 /** The session the dispatcher read from the app's cookie, parsed at the edge door. */
@@ -131,7 +138,10 @@ export const AppVersion = z.object({
   /** The sender's name; null once that person left the company. */
   sentByName: z.string().min(1).nullable(),
   createdAt: z.iso.datetime(),
+  /** The version the Prévia and the Builder are on. */
   live: z.boolean(),
+  /** The version who opens the app gets. */
+  published: z.boolean(),
 })
 export type AppVersion = z.infer<typeof AppVersion>
 
@@ -150,7 +160,7 @@ export type VersionFileInput = z.infer<typeof VersionFileInput>
 
 export const listAppVersions = defineOperation({
   id: 'listAppVersions',
-  summary: 'Lists the kept versions of a Projeto’s app, for an owner or administrator.',
+  summary: 'Lists the kept versions of a Projeto’s app, for any member.',
   access: 'session',
   method: 'GET',
   path: '/api/companies/{companyId}/projects/{projectId}/versions',
@@ -160,20 +170,15 @@ export const listAppVersions = defineOperation({
   failures: ['NOT_FOUND', 'SESSION_REQUIRED', 'DATABASE_UNAVAILABLE'],
 })
 
-export const setLiveVersion = defineOperation({
-  id: 'setLiveVersion',
-  summary: 'Puts a kept version of a Projeto’s app back on the air; the data stay as they are.',
+export const publishAppVersion = defineOperation({
+  id: 'publishAppVersion',
+  summary:
+    'Publishes a kept version of a Projeto’s app: who opens the app sees it; the Prévia stays.',
   access: 'session',
   method: 'PUT',
-  path: '/api/companies/{companyId}/projects/{projectId}/live-version',
+  path: '/api/companies/{companyId}/projects/{projectId}/published-version',
   bodyLimit: 1024,
-  input: { params: OfProject, body: z.object({ versionId: AppVersionId }) },
+  input: { params: OfProject, body: z.object({ number: z.int().positive() }) },
   success: { status: 200, body: z.object({ version: AppVersion }) },
-  failures: [
-    'NOT_FOUND',
-    'APP_VERSION_NOT_FOUND',
-    'APP_VERSION_SENDING',
-    'SESSION_REQUIRED',
-    'DATABASE_UNAVAILABLE',
-  ],
+  failures: ['NOT_FOUND', 'APP_VERSION_NOT_FOUND', 'SESSION_REQUIRED', 'DATABASE_UNAVAILABLE'],
 })

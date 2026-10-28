@@ -29,6 +29,10 @@ function instant(name: string) {
   return timestamp(name, { withTimezone: true })
 }
 
+/** Where a pass was asked: the Hub's Prévia frame, or a tab through `/apps/open` (0024 amended). */
+export const APP_ENVIRONMENTS = ['preview', 'published'] as const
+export type AppEnvironment = (typeof APP_ENVIRONMENTS)[number]
+
 export const handoff = apps.table(
   'handoff',
   {
@@ -39,9 +43,11 @@ export const handoff = apps.table(
     companyId: text('company_id').notNull(),
     projectId: text('project_id').notNull(),
     hubSessionId: text('hub_session_id').notNull(),
+    environment: text('environment', { enum: APP_ENVIRONMENTS }).notNull(),
     expiresAt: instant('expires_at').notNull(),
   },
   (table) => [
+    check('handoff_environment', sql`${table.environment} IN ('preview', 'published')`),
     foreignKey({
       name: 'handoff_hub_session_id_fkey',
       columns: [table.hubSessionId],
@@ -59,8 +65,10 @@ export const appSession = apps.table(
     companyId: text('company_id').notNull(),
     projectId: text('project_id').notNull(),
     hubSessionId: text('hub_session_id').notNull(),
+    environment: text('environment', { enum: APP_ENVIRONMENTS }).notNull(),
   },
   (table) => [
+    check('app_session_environment', sql`${table.environment} IN ('preview', 'published')`),
     foreignKey({
       name: 'app_session_hub_session_id_fkey',
       columns: [table.hubSessionId],
@@ -83,8 +91,9 @@ const COMPANY_POLICIES = [
 const FILE_MAX_BYTES = APP_LIMITS.bytes
 
 /**
- * One row per Projeto with an app: the version on the air (null: the example), the send in course
- * with the claim that ends it, and whether the app's schema and logins exist.
+ * One row per Projeto with an app: the version the Prévia and the Builder are on, the published one
+ * (who opens the app gets it; null for both before their first), the send in course with the claim
+ * that ends it, and whether the app's schema and logins exist.
  */
 export const app = apps.table(
   'app',
@@ -92,6 +101,7 @@ export const app = apps.table(
     projectId: text('project_id').primaryKey(),
     companyId: text('company_id').notNull(),
     liveVersionId: text('live_version_id'),
+    publishedVersionId: text('published_version_id'),
     sendingVersionId: text('sending_version_id'),
     claimedUntil: instant('claimed_until'),
     databaseReady: boolean('database_ready').notNull().default(false),
@@ -103,10 +113,15 @@ export const app = apps.table(
       columns: [table.projectId],
       foreignColumns: [project.id],
     }).onDelete('cascade'),
-    // The version on the air and the one being sent are versions of this Projeto.
+    // The Prévia's version, the published one and the one being sent are versions of this Projeto.
     foreignKey({
       name: 'app_live_version_fkey',
       columns: [table.projectId, table.liveVersionId],
+      foreignColumns: [appVersion.projectId, appVersion.id],
+    }),
+    foreignKey({
+      name: 'app_published_version_fkey',
+      columns: [table.projectId, table.publishedVersionId],
       foreignColumns: [appVersion.projectId, appVersion.id],
     }),
     foreignKey({

@@ -1,6 +1,14 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { CALLER, EXAMPLE_CALL, edge, pageText, SESSION, VERSION_CALL } from './test-edge.ts'
+import {
+  CALLER,
+  EXAMPLE_CALL,
+  edge,
+  pageText,
+  problem,
+  SESSION,
+  VERSION_CALL,
+} from './test-edge.ts'
 
 const LIVE = { Cookie: `__Host-conexus-app=${SESSION}` }
 
@@ -39,5 +47,13 @@ test('versão no ar cujo Worker sumiu: a 502 da etapa 8, nunca o exemplo', async
   const response = await door.fetch('/', { headers: LIVE })
   assert.equal(response.status, 502)
   assert.equal(await pageText(response), '<h1>O app não conseguiu responder agora.</h1>')
+  assert.equal(door.appCalls.length, 0)
+})
+
+test('o app não publicado tem a sua página: 404, sem chamar Worker algum', async () => {
+  const door = edge({ hub: () => problem('APP_NOT_PUBLISHED') })
+  const response = await door.fetch('/', { headers: LIVE })
+  assert.equal(response.status, 404)
+  assert.equal(await pageText(response), '<h1>Este app ainda não foi publicado.</h1>')
   assert.equal(door.appCalls.length, 0)
 })

@@ -51,9 +51,9 @@ export function startHub(server: ReturnType<typeof setupServer>) {
               project: {
                 ...PEDIDOS,
                 mayDelete: true,
-                mayManageVersions: true,
                 address: PEDIDOS_ADDRESS,
                 appVersion: null,
+                publishedVersion: null,
               },
             }),
             { status: 201 },

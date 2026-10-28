@@ -1,30 +1,48 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
-import { companyForVersions, folder, send, versionNumbered } from '../apps/test-versions.ts'
+import { companyForVersions, folder, send } from '../apps/test-versions.ts'
 import type { Person } from '../identity/test-hub.ts'
 import { call, post } from '../identity/test-hub.ts'
 
 // The Projeto says which version of its app is on the air (step 14.1, criterion 14).
 
-test('appVersion: null antes do primeiro app, o número da versão no ar depois, para dono e membro (14)', async (t) => {
+test('o Projeto diz a Prévia e a publicada: null antes do primeiro app, os números depois, para dono e membro (14, 17)', async (t) => {
   const subject = await companyForVersions(t)
   const { hub, ana, bruno, projects, projectId } = subject
   async function appVersionFor(person: Person) {
     const read = await call(hub, person, 'GET', `${projects}/${projectId}`)
     assert.equal(read.statusCode, 200)
-    return Object(read.json()).project.appVersion
+    const { appVersion, publishedVersion } = Object(read.json()).project
+    return [appVersion, publishedVersion]
   }
-  assert.deepEqual([await appVersionFor(ana), await appVersionFor(bruno)], [null, null])
+  assert.deepEqual(
+    [await appVersionFor(ana), await appVersionFor(bruno)],
+    [
+      [null, null],
+      [null, null],
+    ],
+  )
   assert.equal((await send(subject, ana)).preview?.state, 'ready')
   assert.equal((await send(subject, ana, folder({}, '#6b2fa3'))).preview?.state, 'ready')
-  assert.deepEqual([await appVersionFor(ana), await appVersionFor(bruno)], [2, 2])
-  const first = await versionNumbered(subject, 1)
-  const back = await call(hub, ana, 'PUT', `${projects}/${projectId}/live-version`, {
-    versionId: first.id,
+  assert.deepEqual(
+    [await appVersionFor(ana), await appVersionFor(bruno)],
+    [
+      [2, null],
+      [2, null],
+    ],
+  )
+  const published = await call(hub, bruno, 'PUT', `${projects}/${projectId}/published-version`, {
+    number: 1,
   })
-  assert.equal(back.statusCode, 200, back.body)
-  assert.deepEqual([await appVersionFor(ana), await appVersionFor(bruno)], [1, 1])
+  assert.equal(published.statusCode, 200, published.body)
+  assert.deepEqual(
+    [await appVersionFor(ana), await appVersionFor(bruno)],
+    [
+      [2, 1],
+      [2, 1],
+    ],
+  )
 })
 
 test('appVersion na criação repetida: a mesma chave devolve o Projeto com a versão no ar do app dele (14)', async (t) => {

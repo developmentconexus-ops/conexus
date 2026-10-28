@@ -15,17 +15,10 @@ import { Lens, Section } from './search.ts'
 
 const route = getRouteApi('/_app/companies/$companyId/projects/$projectId')
 
-/** Versões are read and put back by those the Hub lets manage them; the others are told who can. */
+/** Every member reads the Versões and publishes one (step 17, E1). */
 function VersionsSection() {
   const { companyId, projectId } = route.useParams()
-  const { project } = useSuspenseQuery(projectQuery(companyId, projectId)).data
-  return project.mayManageVersions ? (
-    <Versions companyId={companyId} projectId={projectId} />
-  ) : (
-    <p className="text-text-2">
-      Só o dono ou quem administra a empresa vê as versões e volta para uma delas.
-    </p>
-  )
+  return <Versions companyId={companyId} projectId={projectId} />
 }
 
 function Sections() {

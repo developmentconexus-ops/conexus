@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { test } from 'node:test'
 import { queued, withOwnerLock } from '../../platform/test-database.ts'
-import { post } from '../identity/test-hub.ts'
+import { call, post } from '../identity/test-hub.ts'
 import { PRUNE_BUDGET_MS } from './public.ts'
 import type { Turned } from './test-versions.ts'
 import { companyForVersions, folder, send, versionNumbered } from './test-versions.ts'
@@ -48,6 +48,24 @@ test('poda: com a 5 no ar ficam 2 a 5; a 1 sai com Worker e arquivos; "falhou" s
     `select count(*)::int as n from apps.blob where convert_from(bytes, 'UTF8') like '%${color(1)}%'`,
   )
   assert.deepEqual(sheets, [{ n: 0 }])
+})
+
+test('poda: a publicada fica, mesmo mais velha que as três guardadas', async (t) => {
+  const subject = await companyForVersions(t)
+  const { hub, ana, versions } = subject
+  const first = await versionNumbered(
+    subject,
+    (await send(subject, ana, folder({}, color(1)))).number,
+  )
+  const published = `${versions.replace(/\/versions$/, '')}/published-version`
+  assert.equal((await call(hub, ana, 'PUT', published, { number: 1 })).statusCode, 200)
+  for (const n of [2, 3, 4, 5, 6]) await send(subject, ana, folder({}, color(n)))
+  const kept = await hub.test.asOwner('select number from apps.app_version order by number')
+  assert.deepEqual(
+    kept.map((row) => row.number),
+    [1, 3, 4, 5, 6],
+  )
+  assert.ok(hub.cloudflare.workers().includes(`v-${first.id}`))
 })
 
 test('poda: o arquivo que outro Projeto nomeia no mesmo instante fica', async (t) => {

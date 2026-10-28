@@ -1535,8 +1535,8 @@
     "replace": "",
     "test": {
       "cwd": "apps/server",
-      "file": "src/hub/apps/live-version.test.ts",
-      "name": "voltar: 200"
+      "file": "src/hub/apps/publish.test.ts",
+      "name": "publicar: as recusas, e o envio em curso não atrapalha"
     }
   },
   {
@@ -1900,6 +1900,50 @@
       "cwd": "apps/server",
       "file": "src/builder/conversation/builder.eval.test.ts",
       "name": "o portão do Builder: uma senha colada"
+    }
+  },
+  {
+    "id": "tab-before-first-publish",
+    "file": "apps/server/src/hub/apps/handoff.ts",
+    "find": "      if (environment === 'published') {\n        throw new Failure('APP_NOT_PUBLISHED', { details: { companyId, projectId } })\n      }\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/apps/app-handoff.test.ts",
+      "name": "antes do primeiro Publicar"
+    }
+  },
+  {
+    "id": "prune-published-not-a-spare",
+    "file": "apps/server/src/hub/apps/prune.ts",
+    "find": "        notInArray(appVersion.id, [...input.keep]),\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/apps/prune.test.ts",
+      "name": "poda: a publicada fica"
+    }
+  },
+  {
+    "id": "prune-keeps-published",
+    "file": "apps/server/src/hub/apps/prune.ts",
+    "find": "notInArray(appVersion.id, [...input.keep, ...kept.map(({ id }) => id)])",
+    "replace": "notInArray(appVersion.id, kept.map(({ id }) => id))",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/apps/prune.test.ts",
+      "name": "poda: a publicada fica"
+    }
+  },
+  {
+    "id": "repair-published-worker",
+    "file": "apps/server/src/hub/apps/repair.ts",
+    "find": "      if (await restoreWorkerIfLost(deps, scope, { ...kept, companyId })) workers += 1\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/apps/repair.test.ts",
+      "name": "a reparação sobe a publicada também"
     }
   }
 ]
