@@ -73,7 +73,7 @@ async function firstProjects(carla: Page, neon: Neon) {
   await carla.goto(`${TEST_ORIGIN}/`)
   await carla.getByText('Nenhum projeto ainda.').waitFor()
   await createProject(carla, 'Pedidos')
-  await carla.getByRole('heading', { name: 'Pedidos', exact: true }).waitFor()
+  await carla.getByTestId('area').getByRole('heading', { name: 'Pedidos', exact: true }).waitFor()
   assert.equal(neon.projects().length, 1)
   await openHome(carla)
   assert.equal(await createProject(carla, 'pedidos'), 'PROJECT_NAME_TAKEN')

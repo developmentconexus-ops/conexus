@@ -13,7 +13,7 @@ depth of an ad hoc question to what he asks and to the knowledge he shows.
 For "quero entender a etapa X" (before the card's approval or after build and review), always both:
 
 1. **One page**, in Portuguese, written for reading on a computer, in the eight parts of
-   [outline](references/outline.md), in that order. Write it outside the repository (code S40: no
+   [outline](references/outline.md), in that order. Write it outside the repository (security S40: no
    company data, secret or machine path) and give its link or path.
 2. **A short summary in the chat**, in Portuguese: what the step changes for the person, the verdict
    and the decisions asked.
@@ -30,7 +30,7 @@ Fixed. Read these for the step, in order, and reuse confirmed context:
 3. The `docs/reference/stack.md` rows and the library skills of the stack the step touches; for
    Mastra, the maintainers' `mastra` skill and the types of the installed version.
 4. The guides the card names. The [documentation map](../../../docs/index.md) names their owners.
-5. The reference repositories at their frozen commits (`~/conexus-study/refs/`, `MANIFEST.md`),
+5. The reference repositories at their frozen commits (the checkouts and commits firstmate hands with the brief),
    read for the real code you quote.
 6. After build: the pull requests and the reviews.
 

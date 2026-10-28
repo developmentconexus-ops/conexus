@@ -110,7 +110,7 @@ test('o roteiro de Recusar um app: não inicia, grava errado, trava, e a versão
   assert.ok(Date.now() - started < 10_000, `cut after ${Date.now() - started} ms`)
   assert.deepEqual(await recados(pedidos.door, laco), [RECADO])
   await page.goto(`${pedidos.url}?lens=project`)
-  await page.getByRole('heading', { name: 'Pedidos', exact: true }).waitFor()
+  await page.getByTestId('area').getByRole('heading', { name: 'Pedidos', exact: true }).waitFor()
   // 5. Back to Versão 2: Recados works, with its recado.
   await putVersionTwoBack(page, settings)
   assert.deepEqual(await recados(pedidos.door, await openApp(s, pedidos.door, PURPLE)), [RECADO])

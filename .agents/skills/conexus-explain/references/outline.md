@@ -16,6 +16,8 @@ Evidence (commands, CI links) goes at the end of the page.
    functions; the core pseudocode.
 6. **Proof.** A table of criterion, test and result, separating proved, proved with a double and
    not proved. A "not proved" row ends as a question to the founder.
+   After build, add each divergence from the card that the build reports declared or the reviews
+   found, and whether it changes what the person sees.
 7. **Risks and open decisions.** Each with its options and, for each option, the native "how".
    Separate a demonstrated defect from a risk or a doubt; after build, include the reviews'
    Bloqueia and Fechamento findings.
