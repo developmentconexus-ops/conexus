@@ -31,6 +31,11 @@ async function tabStops(page: Page): Promise<string[]> {
   return [...new Set([...back, ...(await walk(page, 'Tab'))])]
 }
 
+// A state that shows the Hub's refusal makes the browser log the refused request and the page log
+// the failure it reads; anything else (a script error, a CSP block) is a problem (criterion 28).
+const ANSWERED =
+  /^(Failed to load resource: the server responded with a status of \d{3}|HubFailure: )/
+
 // The pages are separate browser contexts and spend their time waiting on frames, so the cases
 // share the machine's two cores instead of queueing behind each other.
 const VIEWPORTS: Viewport[] = [DESKTOP, PHONE, SMALL_PHONE]
@@ -54,6 +59,10 @@ describe('varredura', { concurrency: 4 }, () => {
           const stops = await tabStops(page)
           const flawed = stops.filter((stop) => !/ (solid 2px|halo|framed)( inside)?$/.test(stop))
           assert.deepEqual(flawed, [])
+          assert.deepEqual(
+            page.problems.filter((line) => !ANSWERED.test(line)),
+            [],
+          )
           await page.close()
         })
       }

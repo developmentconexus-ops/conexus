@@ -1,6 +1,6 @@
 import { PersonId } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
 import { COMPANY } from '../../platform/fixtures.ts'
@@ -117,7 +117,11 @@ test('Ligar conta na página da pessoa liga uma conta dela', async () => {
   fireEvent.change(screen.getByLabelText('Nome da conta'), { target: { value: 'Minha chave' } })
   fireEvent.change(screen.getByLabelText('Chave de API'), { target: { value: 'sk-minha-7777' } })
   fireEvent.click(screen.getByRole('button', { name: 'Ligar conta' }))
-  expect(await screen.findByText('Minha chave · chave …7777 · ligada')).toBeTruthy()
+  expect(await screen.findByText('Minha chave')).toBeTruthy()
+  const said = within(screen.getByRole('region', { name: 'Suas contas' }))
+    .getAllByRole('status')
+    .find((one) => one.textContent === 'Minha chave · chave …7777 · ligada')
+  expect(said?.className).toContain('sr-only')
   expect(sent[0]?.body).toMatchObject({ owner: 'me', provider: 'openai' })
 })
 

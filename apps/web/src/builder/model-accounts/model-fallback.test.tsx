@@ -182,9 +182,10 @@ test('Troca automática: descer troca com o próximo, diz o lugar novo e mostra 
       { enabled: true, chain: [GPT, SONNET], revision: 0 },
     ]),
   )
-  expect((await screen.findByRole('status')).textContent).toBe(
-    'Claude Sonnet 4 agora é a 2ª da fila da troca.',
-  )
+  expect(
+    (await within(screen.getByRole('region', { name: 'Troca automática' })).findByRole('status'))
+      .textContent,
+  ).toBe('Claude Sonnet 4 agora é a 2ª da fila da troca.')
 })
 
 test('Troca automática: uma mudança recusada não deixa foco nem frase para a próxima', async () => {
@@ -195,7 +196,10 @@ test('Troca automática: uma mudança recusada não deixa foco nem frase para a 
   await screen.findByRole('alert')
   recusar = false
   await addModel('Claude Sonnet 4')
-  expect(screen.getByRole('status').textContent).toBe('')
+  expect(
+    within(screen.getByRole('region', { name: 'Troca automática' })).getByRole('status')
+      .textContent,
+  ).toBe('')
 })
 
 test('Troca automática: só adiciona um modelo escolhido e que ainda não está na fila, e o campo esvazia', async () => {

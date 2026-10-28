@@ -56,19 +56,23 @@ function Panel(props: {
 /**
  * The "Ligar conta" button and the side sheet it opens, for an API key or, where the Conexus opened
  * the kind, a subscription. The sheet returns focus to the button; a linked account is said in
- * words. The button is black where the queue is empty, and outlined once it holds accounts.
+ * words: on the page beside the button where no table lists the account (`saysLinked`), and
+ * for a screen reader only where one does. The button is black where the queue is empty, and outlined once it holds accounts.
  */
 export function LinkAccount(props: {
   companyId: CompanyId
   owner: Owner
   hasAccounts?: boolean
+  /** Say the linked account in words: where no table lists it. */
+  saysLinked?: boolean
   providers: readonly Provider[]
   kinds: readonly SignInKind[]
 }) {
-  const { hasAccounts, ...panel } = props
+  const { hasAccounts, saysLinked, ...panel } = props
   const [open, setOpen] = useState(false)
   const [linked, setLinked] = useState<ModelAccount | undefined>(undefined)
 
+  const said = linked ? `${linked.label} · ${originText(linked)} · ${stateText(linked)}` : ''
   return (
     <div className="flex flex-col items-start gap-sm">
       <Sheet
@@ -93,8 +97,11 @@ export function LinkAccount(props: {
           />
         </SheetContent>
       </Sheet>
-      {linked && (
-        <Notice>{`${linked.label} · ${originText(linked)} · ${stateText(linked)}`}</Notice>
+      {saysLinked && linked && <Notice>{said}</Notice>}
+      {!saysLinked && (
+        <p role="status" className="sr-only">
+          {said}
+        </p>
       )}
     </div>
   )

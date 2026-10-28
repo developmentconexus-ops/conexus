@@ -78,7 +78,7 @@ test('Ligar conta: busca o fornecedor, "Ligando…", manda o corpo com a chave d
   expect(screen.getByLabelText('Chave de API').getAttribute('type')).toBe('password')
   held.resolve()
   fireEvent.click(submit())
-  expect(await screen.findByText('Time 3 · chave …9f3A · ligada')).toBeTruthy()
+  expect(await screen.findByText('Time 3')).toBeTruthy()
   expect(sent[0]?.body).toEqual({
     owner: 'company',
     provider: 'mistral',
@@ -104,7 +104,7 @@ test('"Ligando…" desliga o botão enquanto o Hub não respondeu', async () => 
   fireEvent.click(submit())
   expect(await screen.findByRole('button', { name: 'Ligando…' })).toHaveProperty('disabled', true)
   held.resolve()
-  expect(await screen.findByText('Time 3 · chave …9f3A · ligada')).toBeTruthy()
+  expect(await screen.findByText('Time 3')).toBeTruthy()
 })
 
 for (const [code, field] of [
@@ -140,7 +140,7 @@ test('resposta cortada: a chave de tentativa fica e a nova tentativa a leva; dep
   expect(await screen.findByText('Não confirmamos a ligação. Tente de novo.')).toBeTruthy()
   cut = false
   fireEvent.click(submit())
-  await screen.findByText('Time 3 · chave …9f3A · ligada')
+  await screen.findByText('Time 3')
   expect(sent).toHaveLength(2)
   expect(sent[1]?.attemptKey).toBe(sent[0]?.attemptKey)
 
@@ -193,7 +193,7 @@ test('Entrar com Google: o campo pede o endereço de retorno inteiro e o Hub rec
   const address = 'http://localhost:51121/oauth-callback?state=abc&code=xyz'
   fireEvent.change(field, { target: { value: address } })
   fireEvent.click(screen.getByRole('button', { name: 'Entrar' }))
-  expect(await screen.findByText('Time G · Google · ligada')).toBeTruthy()
+  expect(await screen.findByText('Time G')).toBeTruthy()
   expect(sent.at(-1)?.body).toEqual({ code: address })
 })
 
@@ -209,7 +209,7 @@ test('Entrar com assinatura: o endereço e o campo do código, "Entrando…" e a
   expect(screen.getByText(/O endereço vale até/)).toBeTruthy()
   fireEvent.change(screen.getByLabelText('Código da Anthropic'), { target: { value: 'abc#def' } })
   fireEvent.click(screen.getByRole('button', { name: 'Entrar' }))
-  expect(await screen.findByText('Time 2 · Assinatura Claude · ligada')).toBeTruthy()
+  expect(await screen.findByText('Time 2')).toBeTruthy()
   expect(sent.map((one) => one.body)).toEqual([
     { owner: 'company', kind: 'claude_subscription', label: 'Time 2' },
     { code: 'abc#def' },

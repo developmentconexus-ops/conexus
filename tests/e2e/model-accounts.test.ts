@@ -62,16 +62,16 @@ async function linkAccounts(owner: Page, companyA: string) {
   await enter(owner, DAVI.email, `/companies/${companyA}/settings/model-accounts`)
   await owner.getByText('Nenhuma conta ligada').waitFor()
   await linkKey(owner, 'Time 1', KEY)
-  await owner.getByText('Time 1 · chave …x7Qa · ligada').first().waitFor()
+  await owner.getByText('Time 1', { exact: true }).first().waitFor()
   await linkSignIn(owner, 'Assinatura Claude', 'Time 2', (state) => `codigo-1#${state}`)
-  await owner.getByText('Time 2 · Assinatura Claude · ligada').first().waitFor()
+  await owner.getByText('Time 2', { exact: true }).first().waitFor()
   await linkSignIn(
     owner,
     'Google',
     'Google 1',
     (state) => `http://localhost:51121/oauth-callback?state=${state}&code=c-1`,
   )
-  await owner.getByText('Google 1 · Google · ligada').first().waitFor()
+  await owner.getByText('Google 1', { exact: true }).first().waitFor()
 }
 
 /** Step 4: Time 2 goes up and Time 1 pauses. */
@@ -113,7 +113,7 @@ async function giveAndRead(owner: Page, member: Page, companyA: string) {
   await openSettings(member, 'Contas de modelo')
   await member.getByText('Sua ordem para Anthropic: Time 2, Time 1').waitFor()
   await linkKey(member, 'Carla 1', OWN_KEY, 'Anthropic', 'Suas contas')
-  await member.getByText('Carla 1 · chave …y9Zb · ligada').first().waitFor()
+  await member.getByText('Carla 1', { exact: true }).first().waitFor()
   await member.getByText('Sua ordem para Anthropic: Carla 1, Time 2, Time 1').waitFor()
 }
 
