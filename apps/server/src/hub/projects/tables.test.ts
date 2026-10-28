@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { CompanyId, InvitationId, PersonId } from '@conexus/hub-api'
+import { sql } from 'drizzle-orm'
 import { createTestDatabase } from '../../platform/test-database.ts'
 
 const TS = 'timestamp with time zone'
@@ -14,6 +16,11 @@ test('catálogo: as colunas, os únicos e as restrições de Projeto e do banco 
   assert.deepEqual(
     columns.map((row) => row.column),
     [
+      'app_access.company_id text NO',
+      'app_access.project_id text NO',
+      'app_access.person_id text NO',
+      'app_access.role text YES',
+      `app_access.granted_at ${TS} NO`,
       'company_database.company_id text NO',
       'company_database.state text NO',
       'company_database.neon_project_id text YES',
@@ -33,6 +40,8 @@ test('catálogo: as colunas, os únicos e as restrições de Projeto e do banco 
       where connamespace = 'projects'::regnamespace and contype <> 'n' order by conname`,
   )
   assert.deepEqual(constraints, [
+    { name: 'app_access_pkey', type: 'p' },
+    { name: 'app_access_project_id_project_id_fkey', type: 'f' },
     { name: 'company_database_creating_has_claim', type: 'c' },
     { name: 'company_database_neon_project_id_key', type: 'u' },
     { name: 'company_database_pkey', type: 'p' },
@@ -64,11 +73,17 @@ test('catálogo: as políticas de linha, e o mesmo nome em outra caixa é recusa
   assert.deepEqual(
     policies.map((row) => row.policy),
     [
+      'app_access app_people_select {hub_app_people} SELECT',
+      'app_access company_all {hub_company} ALL',
+      'app_access invitation_insert {hub_invitation} INSERT',
+      'app_access invitation_select {hub_invitation} SELECT',
       'company_database company_all {hub_company} ALL',
       'company_database operator_delete {hub_operator} DELETE',
       'company_database operator_select {hub_operator} SELECT',
+      'project app_people_select {hub_app_people} SELECT',
       'project company_all {hub_company} ALL',
       'project hosts_select {hub_hosts} SELECT',
+      'project invitation_select {hub_invitation} SELECT',
       'project operator_delete {hub_operator} DELETE',
       'project operator_select {hub_operator} SELECT',
     ],
@@ -78,6 +93,7 @@ test('catálogo: as políticas de linha, e o mesmo nome em outra caixa é recusa
       where relnamespace = 'projects'::regnamespace and relkind = 'r' order by relname`,
   )
   assert.deepEqual(secured, [
+    { name: 'app_access', secured: true },
     { name: 'company_database', secured: true },
     { name: 'project', secured: true },
   ])
@@ -136,4 +152,169 @@ test('catálogo: num banco com LC_CTYPE=C, "Ação" e "AÇÃO" ainda são o mesm
   }
   await insert('um', 'Ação')
   await assert.rejects(insert('dois', 'AÇÃO'), { code: '23505' })
+})
+
+const A = CompanyId.parse('companyAAAAAAAAAAAAAAAAAAAAAAAAA')
+const B = CompanyId.parse('companyBBBBBBBBBBBBBBBBBBBBBBBBB')
+const ANA = PersonId.parse('person-a')
+const BRUNO = PersonId.parse('person-b')
+const CARLA = PersonId.parse('person-carla')
+const DAVI = PersonId.parse('person-davi')
+const INVITATION = InvitationId.parse('invitationAAAAAAAAAAAAAAAAAAAAAA')
+
+const SEED = `
+  insert into auth."user"(id, name, email) values
+    ('person-a', 'Ana', 'ana@example.test'), ('person-b', 'Bruno', 'bruno@example.test'),
+    ('person-carla', 'Carla', 'carla@example.test'), ('person-davi', 'Davi', 'davi@example.test');
+  insert into auth.company(id, name, slug, created_at, attempt_key) values
+    ('companyAAAAAAAAAAAAAAAAAAAAAAAAA', 'Padaria Sol', 'key-a', now(), 'key-a'),
+    ('companyBBBBBBBBBBBBBBBBBBBBBBBBB', 'Loja Lua', 'key-b', now(), 'key-b');
+  insert into auth.member(id, company_id, user_id, role, created_at) values
+    ('member-a', 'companyAAAAAAAAAAAAAAAAAAAAAAAAA', 'person-a', 'owner', now()),
+    ('member-b', 'companyBBBBBBBBBBBBBBBBBBBBBBBBB', 'person-b', 'owner', now());
+  insert into projects.project(id, company_id, name, attempt_key, created_at, host_label) values
+    ('projectA1AAAAAAAAAAAAAAAAAAAAAAA', 'companyAAAAAAAAAAAAAAAAAAAAAAAAA', 'Encomendas', 'a1', now(), 'encomendas--sol'),
+    ('projectA2AAAAAAAAAAAAAAAAAAAAAAA', 'companyAAAAAAAAAAAAAAAAAAAAAAAAA', 'Estoque', 'a2', now(), 'estoque--sol'),
+    ('projectB1BBBBBBBBBBBBBBBBBBBBBBB', 'companyBBBBBBBBBBBBBBBBBBBBBBBBB', 'Vendas', 'b1', now(), 'vendas--lua');
+  insert into auth.invitation(id, company_id, email, role, project_id, app_role, status, expires_at,
+    created_at, inviter_id, attempt_key) values
+    ('invitationAAAAAAAAAAAAAAAAAAAAAA', 'companyAAAAAAAAAAAAAAAAAAAAAAAAA', 'carla@example.test', null,
+      'projectA1AAAAAAAAAAAAAAAAAAAAAAA', 'vendedor', 'pending', now() + interval '1 day', now(), 'person-a', 'attempt-a');`
+
+function grant(project: string, company: string, person: string, role: string | null = 'vendedor') {
+  return sql`insert into projects.app_access(company_id, project_id, person_id, role)
+    values (${company}, ${project}, ${person}, ${role})`
+}
+
+function refusedWith(sqlstate: string) {
+  return (error: unknown) => {
+    assert.ok(error instanceof Error && error.cause instanceof Error && 'code' in error.cause)
+    assert.equal(error.cause.code, sqlstate)
+    return true
+  }
+}
+
+const IN_A = { kind: 'COMPANY', companyId: A, personId: ANA } as const
+const IN_B = { kind: 'COMPANY', companyId: B, personId: BRUNO } as const
+const INVITED = { kind: 'INVITATION', invitationId: INVITATION, personId: null } as const
+
+async function seeded(t: Parameters<typeof createTestDatabase>[0]) {
+  const test = await createTestDatabase(t)
+  await test.asOwner(SEED)
+  return test
+}
+
+async function appsOfPerson(
+  database: Awaited<ReturnType<typeof seeded>>['database'],
+  person: PersonId,
+) {
+  const rows = await database.installationRead(
+    async (tx) =>
+      (await tx.execute(sql`select * from projects.apps_of_person(${person}) order by project_id`))
+        .rows,
+  )
+  return rows.map((row) => ({
+    projectId: row.project_id,
+    projectName: row.project_name,
+    companyName: row.company_name,
+    hostLabel: row.host_label,
+  }))
+}
+
+function readAs(
+  database: Awaited<ReturnType<typeof seeded>>['database'],
+  scope: typeof IN_A | typeof IN_B,
+  query: ReturnType<typeof sql>,
+) {
+  return database.read(scope, async (tx) => (await tx.execute(query)).rows)
+}
+
+test('o acesso a um app: uma linha por pessoa, some com o Projeto, cada empresa as suas', async (t) => {
+  const { asOwner, database } = await seeded(t)
+  await database.command(IN_A, (tx) =>
+    tx.execute(grant('projectA1AAAAAAAAAAAAAAAAAAAAAAA', A, CARLA)),
+  )
+  await database.command(IN_B, (tx) =>
+    tx.execute(grant('projectB1BBBBBBBBBBBBBBBBBBBBBBB', B, DAVI)),
+  )
+  await assert.rejects(
+    database.command(IN_A, (tx) =>
+      tx.execute(grant('projectA1AAAAAAAAAAAAAAAAAAAAAAA', A, CARLA, 'gerente')),
+    ),
+    refusedWith('23505'),
+  )
+  const people = sql`select person_id from projects.app_access`
+  assert.deepEqual(await readAs(database, IN_A, people), [{ person_id: CARLA }])
+  assert.deepEqual(await readAs(database, IN_B, people), [{ person_id: DAVI }])
+  await assert.rejects(
+    database.command(IN_A, (tx) => tx.execute(grant('projectB1BBBBBBBBBBBBBBBBBBBBBBB', B, CARLA))),
+    refusedWith('42501'),
+  )
+  assert.deepEqual(
+    await readAs(database, IN_A, sql`select name, email from auth."user" order by name`),
+    [
+      { name: 'Ana', email: 'ana@example.test' },
+      { name: 'Carla', email: 'carla@example.test' },
+    ],
+  )
+  await asOwner(`delete from projects.project where id = 'projectA1AAAAAAAAAAAAAAAAAAAAAAA'`)
+  assert.deepEqual(await readAs(database, IN_A, people), [])
+  assert.deepEqual(await readAs(database, IN_B, people), [{ person_id: DAVI }])
+})
+
+test('o acesso a um app: o convite escreve só a linha que nomeia', async (t) => {
+  const { database } = await seeded(t)
+  for (const [project, company, person, role] of [
+    ['projectA2AAAAAAAAAAAAAAAAAAAAAAA', A, CARLA, 'vendedor'],
+    ['projectA1AAAAAAAAAAAAAAAAAAAAAAA', A, CARLA, 'gerente'],
+    ['projectA1AAAAAAAAAAAAAAAAAAAAAAA', A, DAVI, 'vendedor'],
+    ['projectB1BBBBBBBBBBBBBBBBBBBBBBB', B, CARLA, 'vendedor'],
+  ] as const) {
+    await assert.rejects(
+      database.command(INVITED, (tx) => tx.execute(grant(project, company, person, role))),
+      refusedWith('42501'),
+      `${project} ${person} ${role}`,
+    )
+  }
+  await database.command(INVITED, (tx) =>
+    tx.execute(grant('projectA1AAAAAAAAAAAAAAAAAAAAAAA', A, CARLA)),
+  )
+  const mine = await database.read(
+    INVITED,
+    async (tx) => (await tx.execute(sql`select person_id from projects.app_access`)).rows,
+  )
+  assert.deepEqual(mine, [{ person_id: CARLA }])
+})
+
+test('o acesso a um app: a função dá à pessoa só os seus, sem Projeto apagado nem empresa marcada', async (t) => {
+  const { asOwner, database } = await seeded(t)
+  await asOwner(
+    `insert into projects.app_access(company_id, project_id, person_id, role) values
+      ('${A}', 'projectA1AAAAAAAAAAAAAAAAAAAAAAA', '${CARLA}', 'vendedor'), ('${A}', 'projectA2AAAAAAAAAAAAAAAAAAAAAAA', '${CARLA}', null),
+      ('${B}', 'projectB1BBBBBBBBBBBBBBBBBBBBBBB', '${CARLA}', 'x'), ('${B}', 'projectB1BBBBBBBBBBBBBBBBBBBBBBB', '${DAVI}', 'x')`,
+  )
+  await asOwner(
+    `update projects.project set deleting_since = now() where id = 'projectA2AAAAAAAAAAAAAAAAAAAAAAA'`,
+  )
+  assert.deepEqual(await appsOfPerson(database, CARLA), [
+    {
+      projectId: 'projectA1AAAAAAAAAAAAAAAAAAAAAAA',
+      projectName: 'Encomendas',
+      companyName: 'Padaria Sol',
+      hostLabel: 'encomendas--sol',
+    },
+    {
+      projectId: 'projectB1BBBBBBBBBBBBBBBBBBBBBBB',
+      projectName: 'Vendas',
+      companyName: 'Loja Lua',
+      hostLabel: 'vendas--lua',
+    },
+  ])
+  assert.deepEqual(await appsOfPerson(database, ANA), [])
+  await asOwner(`update auth.company set deleting_since = now() where id = '${B}'`)
+  const left = await appsOfPerson(database, CARLA)
+  assert.deepEqual(
+    left.map((app) => app.projectId),
+    ['projectA1AAAAAAAAAAAAAAAAAAAAAAA'],
+  )
 })

@@ -3,6 +3,7 @@ import {
   check,
   pgPolicy,
   pgSchema,
+  primaryKey,
   text,
   timestamp,
   unique,
@@ -10,6 +11,8 @@ import {
 } from 'drizzle-orm/pg-core'
 import { SCOPE_ROLES, scoped } from '../../platform/database.ts'
 import { ADMINISTRATOR, policy } from '../identity/public.ts'
+
+const { invitationId } = scoped
 
 export const projects = pgSchema('projects')
 
@@ -19,6 +22,7 @@ export const projects = pgSchema('projects')
 const OWN_COMPANY = sql`company_id = ${scoped.companyId}`
 const OPERATOR_COMPANY = sql`${ADMINISTRATOR} and company_id = ${scoped.companyId}`
 const HOSTS = 'hub_hosts'
+const APP_PEOPLE = 'hub_app_people'
 
 export const project = projects.table(
   'project',
@@ -52,6 +56,59 @@ export const project = projects.table(
     // The function behind projectOfHost finds a host's Project before anyone knows its company
     // (migration app_grants); its role reads three columns and cannot log in.
     pgPolicy('hosts_select', { for: 'select', to: HOSTS, using: sql`true` }),
+    // The function behind appsOfPerson reads the Projects of the rows it finds (migration app_grants).
+    pgPolicy('app_people_select', { for: 'select', to: APP_PEOPLE, using: sql`true` }),
+    // The acceptance of an app invitation checks that its Projeto is alive: the invitation's own.
+    policy(
+      SCOPE_ROLES.INVITATION,
+      'select',
+      sql`exists (select 1 from auth.invitation i where i.id = ${invitationId}
+        and i.company_id = project.company_id and i.project_id = project.id)`,
+    ),
+  ],
+)
+
+/** A person who is not a member and uses this Projeto's app, with one role (step 18, C). */
+export const appAccess = projects.table(
+  'app_access',
+  {
+    companyId: text('company_id').notNull(),
+    projectId: text('project_id')
+      .notNull()
+      .references(() => project.id, { onDelete: 'cascade' }),
+    // Neither person column is contained by the Projeto's owner, as app_session's is not (data D17):
+    // revoking and deleting the Projeto take the rows.
+    personId: text('person_id').notNull(),
+    // NULL when the published version declared no role; a role it stops declaring stays, inert.
+    role: text('role'),
+    grantedAt: timestamp('granted_at', { withTimezone: true })
+      .notNull()
+      .default(sql`statement_timestamp()`),
+  },
+  (table) => [
+    primaryKey({ columns: [table.projectId, table.personId] }),
+    policy(SCOPE_ROLES.COMPANY, 'all', OWN_COMPANY),
+    // The acceptance writes only the row its invitation names, for the person its address is.
+    policy(
+      SCOPE_ROLES.INVITATION,
+      'insert',
+      sql`exists (select 1 from auth.invitation i
+        join auth."user" u on lower(u.email) = lower(i.email)
+        where i.id = ${invitationId} and i.company_id = app_access.company_id
+          and i.project_id = app_access.project_id and i.app_role is not distinct from app_access.role
+          and u.id = app_access.person_id)`,
+    ),
+    // The acceptance reads the row it wrote, to answer a repeat with the same end.
+    policy(
+      SCOPE_ROLES.INVITATION,
+      'select',
+      sql`exists (select 1 from auth.invitation i
+        join auth."user" u on lower(u.email) = lower(i.email)
+        where i.id = ${invitationId} and i.project_id = app_access.project_id
+          and u.id = app_access.person_id)`,
+    ),
+    // The function behind appsOfPerson reads the rows, as hosts_select does for the Projects.
+    pgPolicy('app_people_select', { for: 'select', to: APP_PEOPLE, using: sql`true` }),
   ],
 )
 
