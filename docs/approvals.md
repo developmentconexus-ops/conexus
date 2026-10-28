@@ -249,3 +249,9 @@ A emenda do cartão acrescenta à U1 o **+** e o microfone com o mesmo círculo 
 Cartão da etapa 13.2 aprovado em 2026-10-27 (commit 6e29e54e07a8516f152260a3c8dbd9c0463233ea): "Sim"
 
 Em 2026-10-27, na revisão do pull request da U1, o fundador deu à noite a permissão para as chamadas visuais, pelas palavras dele: "como ela é mais visual, eu te dou permissão total para você já fazer merge, já fazer o lançamento. Depois, se eu não concordar com alguma coisa de visual, eu posso pedir para você mudar". Decidido pelo firstmate sob ela, a opção A: 12 px (`gap-md`) entre o microfone e o **Enviar** e entre **Recarregar** e **Abrir app**, para que nenhuma área de toque de 44 px cubra um botão vizinho. Vai para a lista da manhã, para ele reverter se quiser; como no "3. Sim" dele, uma decisão no meio da etapa vai para o livro, sem nova aprovação do cartão.
+
+Em 2026-10-28, sob a mesma permissão visual da noite, decidido pelo firstmate a partir da revisão do pull request da U6 e do QA: as colunas do papel e das ações das tabelas de **Pessoas** e de **Convites pendentes** têm largura fixa, para que se alinhem de uma tabela à outra (a diferença medida era de 16 a 45 px). Vai para a lista da manhã, para ele reverter se quiser.
+
+Em 2026-10-27, sobre o ritmo das etapas: "1. Sim 2. Sim 3. Sim 4. Nao". Uma etapa começa suas unidades quando o seu cartão é aprovado, enquanto o uso, os consertos e o fechamento da anterior correm; ele dá uma palavra de merge por etapa; uma decisão dele no meio da etapa vai para este livro, sem nova aprovação do cartão; as revisões continuam a bloquear por CI vermelho e por arquivo não declarado. As regras entram em L1, L5, L6 e L13 do guia de entrega neste pull request de fechamento.
+
+Etapa 13.2 usada em AAAA-MM-DD em https://hub.conexus.fun (v0.14.14): USO-A-PREENCHER
