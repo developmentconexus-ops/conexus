@@ -54,6 +54,7 @@ describe('varredura', { concurrency: 4 }, () => {
           const stops = await tabStops(page)
           const flawed = stops.filter((stop) => !/ (solid 2px|halo|framed)( inside)?$/.test(stop))
           assert.deepEqual(flawed, [])
+          assert.deepEqual(page.problems, [])
           await page.close()
         })
       }

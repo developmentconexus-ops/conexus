@@ -10,7 +10,7 @@ import { Button } from '../../ui/button.tsx'
 import { SectionTitle } from '../../ui/list.tsx'
 import { Pager } from '../../ui/pager.tsx'
 import { Empty } from '../../ui/states.tsx'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table.tsx'
+import { FramedTable, TableBody, TableCell, TableRow } from '../../ui/table.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
 import { CancelInvitationForm } from './cancel-invitation-form.tsx'
 import { InviteForm } from './invite-form.tsx'
@@ -38,22 +38,14 @@ function Lines({ main, under, role }: { main: string; under: string; role: Role 
   )
 }
 
-/** One list of the page as a table named by its section; on a phone the role moves under the name. */
+const COLUMNS = [{ name: 'Pessoa' }, { name: 'Papel', leavesOnPhone: true }, { name: 'Ações' }]
+
+/** One list of the page as a table named by its section; on a phone the role moves under the name. The role and action columns have one width, so the two lists line up. */
 function PeopleTable({ name, children }: { name: string; children: ReactNode }) {
-  const phone = useIsMobile()
   return (
-    <div className="overflow-hidden rounded-object border border-line bg-surface">
-      <Table aria-label={name}>
-        <TableHeader className="sr-only">
-          <TableRow>
-            <TableHead>Pessoa</TableHead>
-            {!phone && <TableHead>Papel</TableHead>}
-            <TableHead>Ações</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>{children}</TableBody>
-      </Table>
-    </div>
+    <FramedTable aria-label={name} columns={COLUMNS} className="md:table-fixed">
+      <TableBody>{children}</TableBody>
+    </FramedTable>
   )
 }
 
@@ -75,11 +67,11 @@ function Cells({
         <Lines main={name} under={under} role={role} />
       </TableCell>
       {!phone && (
-        <TableCell className="px-sm">
+        <TableCell className="px-sm md:w-32">
           <RoleBadge role={role} />
         </TableCell>
       )}
-      <TableCell className="w-px px-sm text-right">
+      <TableCell className="px-sm text-right max-md:w-px md:w-80">
         <span className="flex items-center justify-end gap-sm max-md:flex-col max-md:items-stretch">
           {children}
         </span>

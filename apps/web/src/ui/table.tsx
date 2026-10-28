@@ -1,5 +1,6 @@
 import type { ComponentProps } from 'react'
 import { cn } from './cn.ts'
+import { useIsMobile } from './use-mobile.ts'
 
 // Copied from shadcn's base-nova `table`, painted with the brand's hairlines. The rows keep their
 // table display at every width, so a screen reader still hears a table on a phone.
@@ -59,5 +60,33 @@ export function TableCell({ className, ...props }: ComponentProps<'td'>) {
       className={cn('whitespace-nowrap px-md py-md align-middle', className)}
       {...props}
     />
+  )
+}
+
+/** One column of a `FramedTable`'s hidden header; `leavesOnPhone` columns move under the name there. */
+export type FramedColumn = { name: string; leavesOnPhone?: boolean }
+
+/** A settings table in its frame: the hairline border, a screen-reader-only header and the columns that leave on a phone. */
+export function FramedTable({
+  columns,
+  children,
+  ...props
+}: { columns: readonly FramedColumn[] } & ComponentProps<'table'>) {
+  const phone = useIsMobile()
+  return (
+    <div className="overflow-hidden rounded-object border border-line bg-surface">
+      <Table {...props}>
+        <TableHeader className="sr-only">
+          <TableRow>
+            {columns
+              .filter((column) => !(phone && column.leavesOnPhone))
+              .map((column) => (
+                <TableHead key={column.name}>{column.name}</TableHead>
+              ))}
+          </TableRow>
+        </TableHeader>
+        {children}
+      </Table>
+    </div>
   )
 }
