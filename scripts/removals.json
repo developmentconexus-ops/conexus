@@ -1804,14 +1804,14 @@
     }
   },
   {
-    "id": "migration-session-control",
-    "file": "packages/app-contract/src/manifest.ts",
-    "find": ".refine((statement) => !SESSION_CONTROL.test(statement))",
-    "replace": ".refine((statement) => statement.length > 0)",
+    "id": "migration-rule",
+    "file": "apps/server/src/platform/company-postgres.ts",
+    "find": "  const rule = ruleBreak(pending)\n  if (rule !== undefined) return { kind: 'REFUSED_BY_RULE', rule }\n",
+    "replace": "",
     "test": {
-      "cwd": "packages/app-contract",
-      "file": "src/manifest.test.ts",
-      "name": "recusa comando que encerra, divide ou reconfigura"
+      "cwd": "apps/server",
+      "file": "src/hub/apps/send-migrations.test.ts",
+      "name": "o envio com GRANT não entra"
     }
   },
   {

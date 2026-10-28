@@ -62,6 +62,15 @@ export const APP_VERSION_FAILURES = {
     action: 'Peça ao Builder para corrigir a migração.',
     actionKind: 'NONE',
   },
+  // Step 15: the fixed list refuses what acts after the migrations' transaction, unchecked.
+  APP_MIGRATION_REFUSED: {
+    category: 'USER',
+    settles: true,
+    status: 422,
+    phrase: 'Uma migração do app faz o que o Conexus não confere.',
+    action: 'Peça ao Builder para corrigir a migração.',
+    actionKind: 'NONE',
+  },
   // Decision 0046: Cloudflare refuses code that does not start before any migration runs.
   APP_VERSION_NOT_STARTING: {
     category: 'USER',
