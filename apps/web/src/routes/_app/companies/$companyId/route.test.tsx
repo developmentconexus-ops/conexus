@@ -75,12 +75,14 @@ test('a barra: empresa, Início, Projetos recentes, Todos os projetos, Configura
   expect(screen.getByRole('main')).toBeTruthy()
 })
 
-test('sem Projeto, a barra não mostra Projetos recentes nem Todos os projetos, só Início', async () => {
+test('sem Projeto, a barra mostra Projetos recentes com o +, uma frase quieta e sem Todos os projetos', async () => {
   open(HOME, [])
   const nav = within(await screen.findByRole('navigation', { name: 'Navegação' }))
   await screen.findByRole('heading', { name: 'O que vamos construir?' })
   expect(nav.getByRole('link', { name: 'Início' })).toBeTruthy()
-  expect(nav.queryByText('Projetos recentes')).toBeNull()
+  expect(await nav.findByText('Projetos recentes')).toBeTruthy()
+  expect(nav.getByRole('button', { name: 'Novo projeto' })).toBeTruthy()
+  expect(nav.getByText('Sem projetos por enquanto.')).toBeTruthy()
   expect(nav.queryByRole('link', { name: 'Todos os projetos' })).toBeNull()
 })
 

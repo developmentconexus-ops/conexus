@@ -141,6 +141,8 @@ function Naming(props: {
           company={company}
           databaseReady={databaseReady}
           locked={phase.kind === 'STARTING' ? phase.project.name : null}
+          idle="Criar e começar"
+          back="Voltar"
           onCreated={async (project) => {
             props.onPhase({ kind: 'STARTING', outgoing, project })
             await created(project, outgoing)
