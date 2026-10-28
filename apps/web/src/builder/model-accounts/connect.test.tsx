@@ -1,7 +1,7 @@
 import type { SignInKind } from '@conexus/hub-api'
 import { FAILURES } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse } from 'msw'
 import { expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
@@ -31,9 +31,23 @@ function open(kinds: SignInKind[], answers: Answers = {}) {
   return hub.sent
 }
 
+/** The company's "Ligar conta", the page's second: the person's own is above it. */
+function pageButton() {
+  return within(screen.getByRole('region', { name: 'Contas da empresa' })).getByRole('button', {
+    name: 'Ligar conta',
+  })
+}
+
+function submit() {
+  return within(screen.getByRole('dialog', { name: 'Ligar conta' })).getByRole('button', {
+    name: 'Ligar conta',
+  })
+}
+
 async function openPanel() {
-  fireEvent.click(await screen.findByRole('button', { name: 'Ligar conta' }))
-  return screen.findByRole('region', { name: 'Ligar conta' })
+  await screen.findByRole('region', { name: 'Contas da empresa' })
+  fireEvent.click(pageButton())
+  return screen.findByRole('dialog', { name: 'Ligar conta' })
 }
 
 async function fillKey(label: string) {
@@ -63,8 +77,8 @@ test('Ligar conta: busca o fornecedor, "Ligando…", manda o corpo com a chave d
   expect(screen.getByText('Escolhido: Mistral')).toBeTruthy()
   expect(screen.getByLabelText('Chave de API').getAttribute('type')).toBe('password')
   held.resolve()
-  fireEvent.click(screen.getByRole('button', { name: 'Ligar conta' }))
-  expect(await screen.findByText('Time 3 · chave …9f3A · ligada')).toBeTruthy()
+  fireEvent.click(submit())
+  expect(await screen.findByText('Time 3')).toBeTruthy()
   expect(sent[0]?.body).toEqual({
     owner: 'company',
     provider: 'mistral',
@@ -74,9 +88,7 @@ test('Ligar conta: busca o fornecedor, "Ligando…", manda o corpo com a chave d
   expect(sent[0]?.attemptKey).toBeTruthy()
   expect(document.body.textContent).not.toContain(KEY)
   expect(screen.queryByDisplayValue(KEY)).toBeNull()
-  await waitFor(() =>
-    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Ligar conta' })),
-  )
+  await waitFor(() => expect(document.activeElement).toBe(pageButton()))
 })
 
 test('"Ligando…" desliga o botão enquanto o Hub não respondeu', async () => {
@@ -89,10 +101,10 @@ test('"Ligando…" desliga o botão enquanto o Hub não respondeu', async () => 
   })
   await openPanel()
   await fillKey('Time 3')
-  fireEvent.click(screen.getByRole('button', { name: 'Ligar conta' }))
+  fireEvent.click(submit())
   expect(await screen.findByRole('button', { name: 'Ligando…' })).toHaveProperty('disabled', true)
   held.resolve()
-  expect(await screen.findByText('Time 3 · chave …9f3A · ligada')).toBeTruthy()
+  expect(await screen.findByText('Time 3')).toBeTruthy()
 })
 
 for (const [code, field] of [
@@ -104,7 +116,7 @@ for (const [code, field] of [
     open([], { connect: () => refusal(code) })
     await openPanel()
     await fillKey('Time 3')
-    fireEvent.click(screen.getByRole('button', { name: 'Ligar conta' }))
+    fireEvent.click(submit())
     expect((await screen.findByText(FAILURES[code].phrase)).getAttribute('role')).toBe('alert')
     await waitFor(() =>
       expect(screen.getByLabelText(field).getAttribute('aria-invalid')).toBe('true'),
@@ -124,28 +136,36 @@ test('resposta cortada: a chave de tentativa fica e a nova tentativa a leva; dep
   })
   await openPanel()
   await fillKey('Time 3')
-  fireEvent.click(screen.getByRole('button', { name: 'Ligar conta' }))
+  fireEvent.click(submit())
   expect(await screen.findByText('Não confirmamos a ligação. Tente de novo.')).toBeTruthy()
   cut = false
-  fireEvent.click(screen.getByRole('button', { name: 'Ligar conta' }))
-  await screen.findByText('Time 3 · chave …9f3A · ligada')
+  fireEvent.click(submit())
+  await screen.findByText('Time 3')
   expect(sent).toHaveLength(2)
   expect(sent[1]?.attemptKey).toBe(sent[0]?.attemptKey)
 
   await openPanel()
   await fillKey('Time 4')
-  fireEvent.click(screen.getByRole('button', { name: 'Ligar conta' }))
+  fireEvent.click(submit())
   await waitFor(() => expect(sent).toHaveLength(3))
   expect(sent[2]?.attemptKey).not.toBe(sent[0]?.attemptKey)
 })
 
-test('Esc fecha o painel e o foco volta ao botão Ligar conta', async () => {
+test('Cancelar fecha o painel sem ligar nada', async () => {
+  const sent = open([])
+  const panel = await openPanel()
+  fireEvent.click(within(panel).getByRole('button', { name: 'Cancelar' }))
+  await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Ligar conta' })).toBeNull())
+  expect(sent).toHaveLength(0)
+})
+
+test('Ligar conta abre o painel lateral, e Esc o fecha e devolve o foco ao botão', async () => {
   open([])
   const panel = await openPanel()
-  await waitFor(() => expect(document.activeElement).toBe(panel))
+  expect(within(panel).getByLabelText('Nome da conta')).toBeTruthy()
   fireEvent.keyDown(panel, { key: 'Escape' })
-  await waitFor(() => expect(screen.queryByRole('region', { name: 'Ligar conta' })).toBeNull())
-  expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Ligar conta' }))
+  await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Ligar conta' })).toBeNull())
+  await waitFor(() => expect(document.activeElement).toBe(pageButton()))
 })
 
 test('Entrar com assinatura só oferece os tipos abertos', async () => {
@@ -173,7 +193,7 @@ test('Entrar com Google: o campo pede o endereço de retorno inteiro e o Hub rec
   const address = 'http://localhost:51121/oauth-callback?state=abc&code=xyz'
   fireEvent.change(field, { target: { value: address } })
   fireEvent.click(screen.getByRole('button', { name: 'Entrar' }))
-  expect(await screen.findByText('Time G · Google · ligada')).toBeTruthy()
+  expect(await screen.findByText('Time G')).toBeTruthy()
   expect(sent.at(-1)?.body).toEqual({ code: address })
 })
 
@@ -189,7 +209,7 @@ test('Entrar com assinatura: o endereço e o campo do código, "Entrando…" e a
   expect(screen.getByText(/O endereço vale até/)).toBeTruthy()
   fireEvent.change(screen.getByLabelText('Código da Anthropic'), { target: { value: 'abc#def' } })
   fireEvent.click(screen.getByRole('button', { name: 'Entrar' }))
-  expect(await screen.findByText('Time 2 · Assinatura Claude · ligada')).toBeTruthy()
+  expect(await screen.findByText('Time 2')).toBeTruthy()
   expect(sent.map((one) => one.body)).toEqual([
     { owner: 'company', kind: 'claude_subscription', label: 'Time 2' },
     { code: 'abc#def' },

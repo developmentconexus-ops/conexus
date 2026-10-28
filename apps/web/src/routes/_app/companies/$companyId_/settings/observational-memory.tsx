@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { BrainIcon } from 'lucide-react'
 import { accountsQuery } from '../../../../../builder/model-accounts/public.ts'
 import {
   ObservationalMemorySettings,
@@ -11,6 +12,8 @@ export const Route = createFileRoute('/_app/companies/$companyId_/settings/obser
     section: {
       group: 'company',
       label: 'Memória observacional',
+      icon: BrainIcon,
+      summary: 'Os modelos que observam as conversas e guardam o que importa.',
       order: 40,
       keywords: ['observador', 'refletor', 'modelo'],
     },

@@ -24,6 +24,8 @@ function Step() {
         <LinkAccount
           companyId={companyId}
           owner="company"
+          hasAccounts={linked}
+          saysLinked
           providers={providers.data.providers}
           kinds={accounts.data.kinds}
         />

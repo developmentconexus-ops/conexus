@@ -71,7 +71,13 @@ export function ModelPicker(props: {
     props.effort !== undefined && levels !== undefined && levels.length > 1
       ? { effort: props.effort, levels }
       : null
-  const running = choice === null ? undefined : runningEffort(choice.levels, choice.effort.value)
+  // A model the list no longer offers (its account was removed) keeps the level it was saved with.
+  const running =
+    choice !== null
+      ? runningEffort(choice.levels, choice.effort.value)
+      : levels === undefined
+        ? props.effort?.value
+        : undefined
 
   return (
     <Combobox

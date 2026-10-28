@@ -52,7 +52,11 @@ function ActionDialog(props: {
     <AlertDialog open={props.open} onOpenChange={changeOpen}>
       <AlertDialogTrigger
         render={
-          <Button variant={trigger.danger ? 'danger' : 'default'} aria-label={trigger.name} />
+          <Button
+            variant={trigger.danger ? 'danger' : 'default'}
+            size="sm"
+            aria-label={trigger.name}
+          />
         }
       >
         {trigger.label}

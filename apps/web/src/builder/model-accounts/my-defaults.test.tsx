@@ -111,7 +111,7 @@ test('sem conta usável em nenhum degrau: a frase e o caminho a Minhas contas de
   const link = within(screen.getByRole('main')).getByRole('link', {
     name: 'Minhas contas de modelo',
   })
-  expect(link.getAttribute('href')).toBe(`/companies/${COMPANY.id}/settings/my-model-accounts`)
+  expect(link.getAttribute('href')).toBe(`/companies/${COMPANY.id}/settings/model-accounts`)
 })
 
 test('o padrão próprio sem conta usável agora: a frase com o fornecedor e o degrau que vale', async () => {
@@ -154,7 +154,7 @@ test('a conta usada primeiro é a que o Hub dá, com Mudar a ordem', async () =>
   ).toBeTruthy()
   expect(screen.queryByText(/Pausada/)).toBeNull()
   expect(screen.getByRole('link', { name: 'Mudar a ordem' }).getAttribute('href')).toBe(
-    `/companies/${COMPANY.id}/settings/my-model-accounts`,
+    `/companies/${COMPANY.id}/settings/model-accounts`,
   )
 })
 
@@ -224,4 +224,40 @@ test('sem padrão próprio e sem o da empresa, "Você segue o padrão da empresa
   )
   await screen.findByText(/modelo inicial/)
   expect(screen.queryByText('Você segue o padrão da empresa.')).toBeNull()
+})
+
+test('com padrão próprio e com o da empresa também, "Você segue o padrão da empresa." não aparece', async () => {
+  await open(
+    view({
+      defaults: {
+        company: COMPANY_DEFAULT,
+        mine: { model: SONNET, effort: 'low' },
+        start: { model: SONNET, effort: 'low', from: 'mine', account: 'Claude da empresa' },
+        companyStart: { ...COMPANY_DEFAULT, from: 'company', account: 'Claude da empresa' },
+      },
+    }),
+  )
+  await screen.findByText(/Uma conversa nova começa em:/)
+  expect(screen.queryByText('Você segue o padrão da empresa.')).toBeNull()
+})
+
+test('o modelo de um nível só não mostra no seletor o nível que ficou salvo', async () => {
+  const saved = { model: SONNET, effort: 'medium' }
+  const defaults = {
+    company: null,
+    mine: saved,
+    start: { ...saved, from: 'mine' as const, account: 'Minha Claude' },
+    companyStart: null,
+  }
+  await open(
+    view({
+      defaults,
+      choices: {
+        mine: [{ id: 'anthropic', name: 'Anthropic', models: [{ id: SONNET, efforts: ['low'] }] }],
+        company: [],
+      },
+    }),
+  )
+  await screen.findByText(/Uma conversa nova começa em:/)
+  expect(screen.queryByText('Médio', { selector: 'span' })).toBeNull()
 })
