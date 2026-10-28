@@ -1,5 +1,5 @@
-import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { readdirSync, readFileSync } from 'node:fs'
+import { relative, resolve } from 'node:path'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
@@ -244,25 +244,24 @@ test('o primeiro arquivo aberto é do app, nunca da memória do Builder em .cone
   expect(screen.queryByText(/texto de \.conexus/)).toBeNull()
 })
 
-test('o primeiro arquivo aberto não é uma peça do kit: toda pasta do components.json fica fechada', async () => {
-  const { aliases } = JSON.parse(
-    readFileSync(resolve(process.cwd(), '../../packages/app/starter/components.json'), 'utf8'),
+test('o primeiro arquivo aberto não é uma peça do kit: com a árvore do starter, abre src/routes/home.tsx', async () => {
+  const starter = resolve(process.cwd(), '../../packages/app/starter')
+  const { aliases } = JSON.parse(readFileSync(resolve(starter, 'components.json'), 'utf8'))
+  const kit = [aliases.ui, aliases.hooks, aliases.lib].map((alias: string) =>
+    alias.replace('@/', 'src/'),
   )
-  const kit = [aliases.ui, aliases.hooks].map((alias: string) =>
-    alias.replace('@/', 'src/').concat('/peca.ts'),
-  )
+  const files = readdirSync(resolve(starter, 'src'), { recursive: true, withFileTypes: true })
+    .filter((entry) => entry.isFile())
+    .map((entry) => relative(starter, resolve(entry.parentPath, entry.name)))
+  expect(kit.every((folder) => files.some((file) => file.startsWith(`${folder}/`)))).toBe(true)
   server.use(
-    source([
-      ...kit.map((path) => ({ path, bytes: 2 })),
-      { path: 'package.json', bytes: 2 },
-      { path: 'src/pages/encomendas.tsx', bytes: 2 },
-    ]),
+    source([{ path: 'package.json', bytes: 2 }, ...files.map((path) => ({ path, bytes: 2 }))]),
     http.get(`${SOURCE}/file`, ({ request }) =>
       HttpResponse.json({ text: `texto de ${new URL(request.url).searchParams.get('path')}` }),
     ),
   )
   open()
-  expect(await screen.findByText(/texto de src\/pages\/encomendas\.tsx/)).toBeTruthy()
+  expect(await screen.findByText(/texto de src\/routes\/home\.tsx/)).toBeTruthy()
 })
 
 test('um app sem arquivos: o vazio', async () => {

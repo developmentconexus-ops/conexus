@@ -7,10 +7,11 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../../ui/co
 export type TreeNode = { name: string; path: string; children?: TreeNode[] }
 
 /**
- * The kit's folders are the `ui` and `hooks` aliases of the starter's `components.json`; they ship
- * their own files and open only when the person asks.
+ * The kit's folders are the `ui`, `hooks` and `lib` aliases of the starter's `components.json`
+ * (`components` stays open: the Builder writes its own there). They ship their own files and open
+ * only when the person asks.
  */
-const KIT = /(^|\/)(components\/ui|hooks)$/
+const KIT = /(^|\/)(components\/ui|hooks|lib)$/
 
 /** The Builder's own notes live here; they are not the app, so they never open first. */
 const BUILDER_NOTES = /^\.conexus$/
