@@ -26,7 +26,7 @@ usar o app). No computador e no celular, com um segundo e-mail seu no papel da C
 6. A Ana toca **Tirar acesso** na linha da Carla e confirma. No clique seguinte da Carla, o app dá
    lugar à página "Este app não existe ou você não tem acesso a ele."
 
-**O que você faz, e quando.** Antes: nada. No começo: aprova esta página e responde a `I`; a sua
+**O que você faz, e quando.** Antes: nada. No começo: aprova esta página; a sua
 aprovação é também a palavra que a regra de dados D11 pede para a lista de permissões do banco
 ganhar a tabela nova (a U1). No fim: faz o roteiro no computador e no celular, diz o que viu e aprova os textos novos (o
 e-mail, a seção, a lista da empresa, "Seus apps" e as recusas).
@@ -65,17 +65,18 @@ Dadas em 2026-10-28, ao estudo fundo, "Aprovo tudo da Etapa 18 com seu recomenda
   a linha a cada chamada.
 - `D-a` Recusa: num app com papéis, a operação sem tranca reprova a checagem do app.
 
-A decisão nova, da revisão do cartão:
+Dada em 2026-10-28, à decisão nova da revisão do cartão, "I1":
 
 - `I` Onde mora o convite de um app. A biblioteca de login só conhece o convite que faz a pessoa
-  membro da empresa (o nativo; o convite de time também faz membro). Recomendo guardar o convite de
-  um app na mesma tabela de convites dela, marcado com o app e o papel, e o Hub mesmo o escreve, o
-  aceita e o cancela: o link, o e-mail e a tela de criar senha são os de hoje. É um remendo nosso
-  sobre a biblioteca, anotado nos limites dela. O que a Ana vê: a Carla pode ter um convite de cada
-  app ao mesmo tempo; se a Ana convidar a Carla para a empresa, os convites de app abertos dela são
-  cancelados, porque um membro já usa todos os apps (`E1`). As outras formas: um convite aberto só
-  por pessoa e empresa (a Ana não convida a Carla para um segundo app antes de ela aceitar o
-  primeiro), ou uma tabela de convites nossa (outro link, outro e-mail, outra tela de senha).
+  membro da empresa (o nativo; o convite de time também faz membro). O convite de um app mora na
+  mesma tabela de convites dela, marcado com o app e o papel, e o Hub mesmo o escreve, o aceita e o
+  cancela: o link, o e-mail e a tela de criar senha são os de hoje. É um remendo nosso sobre a
+  biblioteca, anotado nos limites dela. O que a Ana vê: a Carla pode ter um convite de cada app ao
+  mesmo tempo; se a Ana convidar a Carla para a empresa, os convites de app abertos dela são
+  cancelados, porque um membro já usa todos os apps (`E1`). As outras formas, que ele não escolheu:
+  um convite aberto só por pessoa e empresa (a Ana não convida a Carla para um segundo app antes de
+  ela aceitar o primeiro), ou uma tabela de convites nossa (outro link, outro e-mail, outra tela de
+  senha).
 
 ## As unidades
 
