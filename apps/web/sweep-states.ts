@@ -188,6 +188,15 @@ export const STATES: State[] = [
     },
   },
   {
+    name: 'cancelar um convite, a confirmação',
+    path: `/companies/${COMPANY.id}/settings/people`,
+    replies: OWNER,
+    settle: async (page) => {
+      await page.getByRole('button', { name: /^Cancelar convite para/ }).click()
+      await waitFor(page, 'Confirmar e-mail')
+    },
+  },
+  {
     name: 'convite vencido na lista',
     path: `/companies/${COMPANY.id}/settings/people`,
     replies: WITH_EXPIRED,

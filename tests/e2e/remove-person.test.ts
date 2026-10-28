@@ -93,7 +93,7 @@ async function takeOut(w: Windows) {
   await dialog.getByRole('button', { name: 'Tirar da empresa', exact: true }).click()
   await w.davi
     .getByRole('main')
-    .getByRole('listitem')
+    .getByRole('row')
     .filter({ hasText: CARLA.email })
     .waitFor({ state: 'detached' })
   await w.davi.getByText(ERIN).waitFor({ state: 'detached' })
@@ -108,7 +108,7 @@ async function centralChanges(w: Windows, mail: Mailbox) {
   await w.ana.goto(`${TEST_ORIGIN}/operations/clients`)
   await w.ana.getByRole('link', { name: new RegExp(COMPANY) }).click()
   await w.ana.getByRole('heading', { name: 'Pessoas' }).waitFor()
-  await w.ana.getByRole('main').getByRole('listitem').filter({ hasText: DAVI.email }).waitFor()
+  await w.ana.getByRole('main').getByRole('row').filter({ hasText: DAVI.email }).waitFor()
   await invite(w.ana, CARLA.email, 'Dono')
   await w.carla.goto(linkIn(await mail.next()))
   await w.carla.getByRole('button', { name: 'Aceitar convite' }).click()
@@ -121,7 +121,7 @@ async function centralChanges(w: Windows, mail: Mailbox) {
   await change.getByRole('button', { name: 'Mudar papel', exact: true }).click()
   await w.ana
     .getByRole('main')
-    .getByRole('listitem')
+    .getByRole('row')
     .filter({ hasText: DAVI.email })
     .getByText('Administrador')
     .waitFor()
