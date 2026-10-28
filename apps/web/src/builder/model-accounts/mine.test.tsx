@@ -1,16 +1,19 @@
 import { PersonId } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
 import { COMPANY } from '../../platform/fixtures.ts'
 import { ACTIVE_CLIENT, centralHub, hubServer } from '../../platform/test-hub.tsx'
 import type { View } from './test-hub.tsx'
-import { accountOf, choose, modelHub } from './test-hub.tsx'
+import { accountOf, choose, modelHub, pickFromMenu } from './test-hub.tsx'
 
 const server = hubServer()
-const MINE = `/companies/${COMPANY.id}/settings/my-model-accounts`
-const OLD = `/companies/${COMPANY.id}/model-account`
+const MINE = `/companies/${COMPANY.id}/settings/model-accounts`
+const OLD = [
+  `/companies/${COMPANY.id}/model-account`,
+  `/companies/${COMPANY.id}/settings/my-model-accounts`,
+]
 
 function view(fields: Partial<View> = {}): View {
   return {
@@ -33,14 +36,20 @@ function open(shown: View, path = MINE) {
 
 async function openMine(shown: View) {
   const hub = open(shown, MINE)
-  await screen.findByRole('heading', { name: 'Minhas contas de modelo' })
+  await screen.findByRole('heading', { name: 'Suas contas' })
   return hub
 }
 
-test('o endereço antigo /model-account leva a Minhas contas de modelo; sem contas: "Nenhuma conta sua"', async () => {
-  const { router } = open(view({ mayManage: true }), OLD)
-  await screen.findByRole('heading', { name: 'Minhas contas de modelo' })
-  expect(router.state.location.pathname).toBe(MINE)
+test.each(OLD)('o endereço antigo %s não existe mais', async (old) => {
+  const { router } = open(view({ mayManage: true }), old)
+  expect(
+    await screen.findByRole('heading', { name: 'Não encontramos o que você procurou.' }),
+  ).toBeTruthy()
+  expect(router.state.location.pathname).toBe(old)
+})
+
+test('sem contas: "Nenhuma conta sua" e Ligar conta', async () => {
+  await openMine(view())
   expect(screen.getByText('Nenhuma conta sua')).toBeTruthy()
   expect(screen.getByRole('button', { name: 'Ligar conta' })).toBeTruthy()
   expect(screen.queryByText(/Sua ordem para/)).toBeNull()
@@ -65,8 +74,14 @@ test('a ordem da pessoa por fornecedor, e as contas dela, que ela ordena, sem Da
   expect(
     await screen.findByText('Sua ordem para Anthropic: Minha 1, Minha 2, Time 2, Time 1'),
   ).toBeTruthy()
-  expect(screen.queryByRole('button', { name: /^Dar / })).toBeNull()
   expect(screen.queryByRole('button', { name: /Time 1/ })).toBeNull()
+  fireEvent.click(screen.getByRole('button', { name: 'Mais ações para Minha 1' }))
+  expect((await screen.findAllByRole('menuitem')).map((one) => one.textContent)).toEqual([
+    'Renomear',
+    'Pausar',
+    'Remover…',
+  ])
+  fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' })
 
   fireEvent.click(screen.getByRole('button', { name: 'Subir Minha 2' }))
   await waitFor(() => expect(sent).toHaveLength(1))
@@ -78,12 +93,21 @@ test('a ordem da pessoa por fornecedor, e as contas dela, que ela ordena, sem Da
 
 test('quem só lê a empresa liga, pausa e remove as próprias contas', async () => {
   const { sent } = await openMine(view({ mine: [accountOf({ label: 'Minha 1', owner: 'me' })] }))
-  fireEvent.click(screen.getByRole('button', { name: 'Pausar Minha 1' }))
-  expect(await screen.findByRole('button', { name: 'Retomar Minha 1' })).toBeTruthy()
-  fireEvent.click(screen.getByRole('button', { name: 'Remover Minha 1' }))
+  await pickFromMenu('Minha 1', 'Pausar')
+  expect(await screen.findByText('pausada')).toBeTruthy()
+  await pickFromMenu('Minha 1', 'Remover…')
   fireEvent.click(await screen.findByRole('button', { name: 'Remover conta' }))
   expect(await screen.findByText('Nenhuma conta sua')).toBeTruthy()
   expect(sent.map((one) => one.method)).toEqual(['PATCH', 'DELETE'])
+  await waitFor(() =>
+    expect(document.activeElement).toBe(screen.getByRole('region', { name: 'Suas contas' })),
+  )
+})
+
+test('com contas, "Nenhuma conta sua" não aparece', async () => {
+  await openMine(view({ mine: [accountOf({ label: 'Minha 1', owner: 'me' })] }))
+  expect(screen.getByText('Minha 1')).toBeTruthy()
+  expect(screen.queryByText('Nenhuma conta sua')).toBeNull()
 })
 
 test('Ligar conta na página da pessoa liga uma conta dela', async () => {
@@ -93,7 +117,11 @@ test('Ligar conta na página da pessoa liga uma conta dela', async () => {
   fireEvent.change(screen.getByLabelText('Nome da conta'), { target: { value: 'Minha chave' } })
   fireEvent.change(screen.getByLabelText('Chave de API'), { target: { value: 'sk-minha-7777' } })
   fireEvent.click(screen.getByRole('button', { name: 'Ligar conta' }))
-  expect(await screen.findByText('Minha chave · chave …7777 · ligada')).toBeTruthy()
+  expect(await screen.findByText('Minha chave')).toBeTruthy()
+  const said = within(screen.getByRole('region', { name: 'Suas contas' }))
+    .getAllByRole('status')
+    .find((one) => one.textContent === 'Minha chave · chave …7777 · ligada')
+  expect(said?.className).toContain('sr-only')
   expect(sent[0]?.body).toMatchObject({ owner: 'me', provider: 'openai' })
 })
 

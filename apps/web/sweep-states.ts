@@ -2,6 +2,7 @@ import { getInvitation, listInvitations } from '@conexus/hub-api'
 import type { Page } from 'playwright-core'
 import { failure, ok } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
+import { ACCOUNT_STATES } from './sweep-accounts-states.ts'
 import { APP_STATES } from './sweep-app-states.ts'
 import { CARD_STATES } from './sweep-card-states.ts'
 import { CONVERSATION_STATES } from './sweep-conversation-states.ts'
@@ -47,6 +48,7 @@ export const STATES: State[] = [
   ...APP_STATES,
   ...HOUSE_STATES,
   ...DEFAULT_STATES,
+  ...ACCOUNT_STATES,
   {
     name: 'Central sem clientes',
     path: '/operations/clients',
@@ -183,6 +185,15 @@ export const STATES: State[] = [
     settle: async (page) => {
       await page.getByRole('button', { name: /^Mudar papel:/ }).click()
       await waitFor(page, 'Papel atual: Membro.')
+    },
+  },
+  {
+    name: 'cancelar um convite, a confirmação',
+    path: `/companies/${COMPANY.id}/settings/people`,
+    replies: OWNER,
+    settle: async (page) => {
+      await page.getByRole('button', { name: /^Cancelar convite para/ }).click()
+      await waitFor(page, 'Confirmar e-mail')
     },
   },
   {

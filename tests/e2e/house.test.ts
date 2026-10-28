@@ -102,21 +102,22 @@ async function home(page: Page) {
     .waitFor()
 }
 
-/** The card's "Continuar" opens Contas de modelo; the index searches, and Aparência holds the theme. */
+/** The card's "Continuar" opens Contas de modelo; the index searches, and the account menu holds the theme. */
 async function settings(page: Page) {
   await page.getByRole('link', { name: 'Continuar', exact: true }).click()
   await page.getByRole('heading', { name: 'Contas de modelo', exact: true }).waitFor()
   const index = sidebarOf(page)
   await index.getByText('Você', { exact: true }).waitFor()
   await index.getByText(COMPANY, { exact: true }).waitFor()
-  await index.getByLabel('Buscar nas configurações').fill('tema')
-  await index.getByRole('link', { name: 'Aparência', exact: true }).waitFor()
-  assert.equal(await index.getByRole('link', { name: 'Pessoas e convites' }).count(), 0)
-  await index.getByRole('link', { name: 'Aparência', exact: true }).click()
-  await page.getByRole('radio', { name: 'Escuro' }).click()
+  await index.getByLabel('Buscar nas configurações').fill('convite')
+  await index.getByRole('link', { name: 'Pessoas e convites', exact: true }).waitFor()
+  assert.equal(await index.getByRole('link', { name: 'Geral', exact: true }).count(), 0)
+  await page.getByRole('button', { name: /^Conta de / }).click()
+  await page.getByRole('menuitemradio', { name: 'Escuro' }).click()
   assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), 'dark')
+  await page.keyboard.press('Escape')
   await page.reload()
-  await page.getByRole('heading', { name: 'Aparência', exact: true }).waitFor()
+  await page.getByRole('heading', { name: 'Contas de modelo', exact: true }).waitFor()
   assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), 'dark')
   await index.getByLabel('Buscar nas configurações').fill('')
   await index.getByRole('link', { name: 'Pessoas e convites', exact: true }).click()
@@ -130,7 +131,7 @@ async function linkAccount(page: Page) {
   await sidebarOf(page).getByRole('link', { name: 'Contas de modelo', exact: true }).click()
   await page.getByRole('heading', { name: 'Contas de modelo', exact: true }).waitFor()
   await linkKey(page, 'Conta da padaria', KEY)
-  await page.getByText('Conta da padaria · chave …x7Qa · ligada').first().waitFor()
+  await page.getByText('Conta da padaria', { exact: true }).first().waitFor()
   await sidebarOf(page).getByRole('link', { name: 'Voltar', exact: true }).click()
   await waitForHome(page)
   assert.equal(await page.getByRole('region', { name: 'Termine de preparar a empresa' }).count(), 0)
@@ -163,7 +164,10 @@ async function anaAccepts(page: Page, next: () => Promise<Parameters<typeof link
   await page
     .getByText('Só o dono ou um administrador muda as contas de modelo da empresa.')
     .waitFor()
-  await page.getByText('Conta da padaria').waitFor()
+  await page
+    .getByRole('region', { name: 'Contas da empresa' })
+    .getByText('Conta da padaria')
+    .waitFor()
 }
 
 /** Script step 6: the switch to Empresa A is remembered across signing out and in; then a phone. */
