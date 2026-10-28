@@ -1,7 +1,9 @@
 import type { CompanyId, ModelAccount, Owner, Provider, SignInKind } from '@conexus/hub-api'
-import { useEffect, useRef, useState } from 'react'
+import { PlusIcon } from 'lucide-react'
+import { useState } from 'react'
 import { Button } from '../../ui/button.tsx'
 import { Notice } from '../../ui/notice.tsx'
+import { Sheet, SheetContent, SheetTrigger } from '../../ui/sheet.tsx'
 import { KeyForm } from './key-form.tsx'
 import { SignInForm } from './sign-in-form.tsx'
 import { originText, stateText } from './text.ts'
@@ -17,16 +19,8 @@ function Panel(props: {
   onClose: () => void
 }) {
   const [way, setWay] = useState<Way>('key')
-  const panel = useRef<HTMLElement>(null)
-  useEffect(() => panel.current?.focus(), [])
   return (
-    <section
-      ref={panel}
-      tabIndex={-1}
-      aria-label="Ligar conta"
-      className="flex w-full max-w-column flex-col gap-lg"
-      onKeyDown={(event) => event.key === 'Escape' && props.onClose()}
-    >
+    <div className="flex w-full flex-col gap-lg">
       {props.kinds.length > 0 && (
         <div className="flex flex-wrap gap-md">
           <Button aria-pressed={way === 'key'} onClick={() => setWay('key')}>
@@ -55,56 +49,59 @@ function Panel(props: {
       <div>
         <Button onClick={props.onClose}>Cancelar</Button>
       </div>
-    </section>
+    </div>
   )
 }
 
 /**
- * The "Ligar conta" button and the panel it opens, for an API key or, where the Conexus opened
- * the kind, a subscription. Closing returns focus to the button; a linked account is said in words.
+ * The "Ligar conta" button and the side sheet it opens, for an API key or, where the Conexus opened
+ * the kind, a subscription. The sheet returns focus to the button; a linked account is said in
+ * words: on the page beside the button where no table lists the account (`saysLinked`), and
+ * for a screen reader only where one does. The button is black where the queue is empty, and outlined once it holds accounts.
  */
 export function LinkAccount(props: {
   companyId: CompanyId
   owner: Owner
+  hasAccounts?: boolean
+  /** Say the linked account in words: where no table lists it. */
+  saysLinked?: boolean
   providers: readonly Provider[]
   kinds: readonly SignInKind[]
 }) {
+  const { hasAccounts, saysLinked, ...panel } = props
   const [open, setOpen] = useState(false)
   const [linked, setLinked] = useState<ModelAccount | undefined>(undefined)
-  const button = useRef<HTMLButtonElement>(null)
-  const wasOpen = useRef(false)
-  useEffect(() => {
-    if (wasOpen.current && !open) button.current?.focus()
-    wasOpen.current = open
-  }, [open])
 
+  const said = linked ? `${linked.label} · ${originText(linked)} · ${stateText(linked)}` : ''
   return (
-    <div className="flex flex-col gap-md">
-      {open ? (
-        <Panel
-          {...props}
-          onLinked={(account) => {
-            setLinked(account)
-            setOpen(false)
-          }}
-          onClose={() => setOpen(false)}
-        />
-      ) : (
-        <div>
-          <Button
-            ref={button}
-            variant="primary"
-            onClick={() => {
-              setLinked(undefined)
-              setOpen(true)
+    <div className="flex flex-col items-start gap-sm">
+      <Sheet
+        open={open}
+        onOpenChange={(next) => {
+          if (next) setLinked(undefined)
+          setOpen(next)
+        }}
+      >
+        <SheetTrigger render={<Button variant={hasAccounts ? 'default' : 'primary'} />}>
+          <PlusIcon aria-hidden="true" />
+          Ligar conta
+        </SheetTrigger>
+        <SheetContent side="right" title="Ligar conta" closeLabel="Fechar">
+          <Panel
+            {...panel}
+            onLinked={(account) => {
+              setLinked(account)
+              setOpen(false)
             }}
-          >
-            Ligar conta
-          </Button>
-        </div>
-      )}
-      {linked && (
-        <Notice>{`${linked.label} · ${originText(linked)} · ${stateText(linked)}`}</Notice>
+            onClose={() => setOpen(false)}
+          />
+        </SheetContent>
+      </Sheet>
+      {saysLinked && linked && <Notice>{said}</Notice>}
+      {!saysLinked && (
+        <p role="status" className="sr-only">
+          {said}
+        </p>
       )}
     </div>
   )

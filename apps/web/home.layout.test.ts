@@ -10,7 +10,7 @@ import {
 } from '@conexus/hub-api'
 import type { Locator, Page } from 'playwright-core'
 import type { Replies, Viewport } from './layout-harness.ts'
-import { createHarness, DESKTOP, ok, PHONE } from './layout-harness.ts'
+import { createHarness, DESKTOP, ok, PHONE, ZOOMED_PHONE } from './layout-harness.ts'
 import { HANDOFF_UNCONFIRMED } from './src/builder/conversation/text.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import {
@@ -228,4 +228,35 @@ test('no celular, recarregar durante o envio do pedido abre na Conversa, com a f
   assert.equal(await page.getByText(/Ainda não há uma prévia/).isVisible(), false)
   held.resolve()
   await page.close()
+})
+
+test('sem conta de modelo, o botão Minhas contas de modelo tem 32 px a 390 px e quebra a linha a 200%', async () => {
+  const replies: Replies = {
+    ...WITH_MODEL,
+    [`GET /api/companies/${COMPANY_ID}/model-accounts`]: ok(listModelAccounts, {
+      company: [],
+      mine: [],
+      order: [],
+      kinds: [],
+      defaults: { company: null, mine: null, start: null, companyStart: null },
+      choices: { mine: [], company: [] },
+      fallback: { enabled: false, chain: [], revision: 0 },
+      usableProviders: [],
+      mayManage: false,
+    }),
+  }
+  const page = await open(`/companies/${COMPANY_ID}`, PHONE, replies)
+  const link = page.getByRole('link', { name: 'Minhas contas de modelo' })
+  await link.waitFor()
+  const box = await link.boundingBox()
+  assert.equal(box?.height, 32)
+  await page.close()
+  const zoomed = await open(`/companies/${COMPANY_ID}`, ZOOMED_PHONE, replies)
+  const wrapped = await zoomed.getByRole('link', { name: 'Minhas contas de modelo' }).boundingBox()
+  assert.ok((wrapped?.height ?? 0) > 32, 'the label stays on one line at 200%')
+  assert.equal(
+    await zoomed.evaluate(() => document.documentElement.scrollWidth),
+    ZOOMED_PHONE.width,
+  )
+  await zoomed.close()
 })

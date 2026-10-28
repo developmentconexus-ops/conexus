@@ -104,7 +104,7 @@ export function NameStep(props: {
         )}
       </div>
       <FormAlert />
-      <div className="flex flex-wrap gap-sm max-md:flex-col max-md:[&>*]:h-11">
+      <div className="flex flex-wrap gap-sm max-md:flex-col">
         {form.formState.errors.root?.server?.type === 'retry' && (
           <Button type="button" onClick={() => void form.handleSubmit(submit)()}>
             Tentar de novo

@@ -1,16 +1,24 @@
 import type { CompanyId, ModelAccount, PersonId } from '@conexus/hub-api'
 import { useMutation } from '@tanstack/react-query'
+import type { ComponentProps } from 'react'
 import { useState } from 'react'
+import type { AlertDialogContent } from '../../ui/alert-dialog.tsx'
 import { AccountDialog } from './account-dialog.tsx'
 import { sendAssignees, sendRemoval } from './queries.ts'
 import type { Person } from './text.ts'
 
-type Subject = { companyId: CompanyId; account: ModelAccount }
+/** A dialog the account's menu opens: the menu holds whether it is open. */
+type Subject = {
+  companyId: CompanyId
+  account: ModelAccount
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  finalFocus: ComponentProps<typeof AlertDialogContent>['finalFocus']
+}
 
 /** "Remover": the Hub forgets the credential, and the person is told to end it at the provider too. */
 export function RemoveAccount(props: Subject & { providerName: string; onRemoved: () => void }) {
   const { companyId, account } = props
-  const [open, setOpen] = useState(false)
   const send = useMutation(sendRemoval)
   const advice =
     account.kind === 'api_key'
@@ -22,7 +30,7 @@ export function RemoveAccount(props: Subject & { providerName: string; onRemoved
       { params: { companyId, accountId: account.id } },
       {
         onSuccess: () => {
-          setOpen(false)
+          props.onOpenChange(false)
           props.onRemoved()
         },
       },
@@ -31,9 +39,10 @@ export function RemoveAccount(props: Subject & { providerName: string; onRemoved
 
   return (
     <AccountDialog
-      open={open}
-      onOpenChange={setOpen}
-      trigger={{ label: 'Remover', name: `Remover ${account.label}`, danger: true }}
+      open={props.open}
+      onOpenChange={props.onOpenChange}
+      danger
+      finalFocus={props.finalFocus}
       title={`Remover ${account.label}?`}
       description={`O Conexus apaga a credencial que guardou.${advice}`}
       confirm={{ label: 'Remover conta', pending: 'Removendo…' }}
@@ -46,7 +55,6 @@ export function RemoveAccount(props: Subject & { providerName: string; onRemoved
 /** "Dar a pessoas": the list sent is the final one, and with nobody ticked the account is for all. */
 export function AssignAccount(props: Subject & { people: readonly Person[] }) {
   const { companyId, account, people } = props
-  const [open, setOpen] = useState(false)
   const [picked, setPicked] = useState<readonly PersonId[]>(account.assignees)
   const send = useMutation(sendAssignees)
 
@@ -56,21 +64,22 @@ export function AssignAccount(props: Subject & { people: readonly Person[] }) {
 
   function changeOpen(next: boolean) {
     if (next) setPicked(account.assignees)
-    setOpen(next)
+    props.onOpenChange(next)
   }
 
   function assign() {
     send.mutate(
       { params: { companyId, accountId: account.id }, body: { personIds: [...picked] } },
-      { onSuccess: () => setOpen(false) },
+      { onSuccess: () => props.onOpenChange(false) },
     )
   }
 
   return (
     <AccountDialog
-      open={open}
+      open={props.open}
       onOpenChange={changeOpen}
-      trigger={{ label: 'Dar a pessoas', name: `Dar ${account.label} a pessoas`, danger: false }}
+      danger={false}
+      finalFocus={props.finalFocus}
       title={`Dar ${account.label} a pessoas`}
       description="Sem ninguém marcada, a conta é para todos."
       confirm={{ label: 'Salvar', pending: 'Salvando…' }}

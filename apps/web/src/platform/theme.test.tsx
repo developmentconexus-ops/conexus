@@ -7,7 +7,7 @@ import { companyRead, hubServer, sessionRead } from './test-hub.tsx'
 import { applyChosenTheme } from './theme.ts'
 
 const server = hubServer()
-const APPEARANCE = `/companies/${COMPANY.id}/settings/appearance`
+const SETTINGS = `/companies/${COMPANY.id}/settings/account`
 
 afterEach(() => {
   localStorage.clear()
@@ -20,30 +20,23 @@ function open() {
     ...companyRead({ role: 'owner' }),
   )
   return render(
-    <Conexus conexus={createConexus(createMemoryHistory({ initialEntries: [APPEARANCE] }))} />,
+    <Conexus conexus={createConexus(createMemoryHistory({ initialEntries: [SETTINGS] }))} />,
   )
 }
 
-test('Aparência oferece Claro, Escuro e Como o sistema, e começa em Como o sistema', async () => {
-  open()
-  expect(await screen.findByRole('heading', { name: 'Aparência' })).toBeTruthy()
-  const options = screen.getAllByRole('radio')
-  expect(options.map((radio) => radio.parentElement?.textContent)).toEqual([
-    'Claro',
-    'Escuro',
-    'Como o sistema',
-  ])
-  expect(screen.getByRole('radio', { name: 'Como o sistema' }).getAttribute('aria-checked')).toBe(
-    'true',
-  )
-})
+async function openMenu() {
+  fireEvent.click(await screen.findByRole('button', { name: 'Conta de Ana Lima' }))
+}
 
 test('a escolha vale na hora e fica ao recarregar: um roteador novo sobre o mesmo armazenamento', async () => {
   const view = open()
-  fireEvent.click(await screen.findByRole('radio', { name: 'Escuro' }))
+  await openMenu()
+  fireEvent.click(await screen.findByRole('menuitemradio', { name: 'Escuro' }))
   expect(document.documentElement.dataset.theme).toBe('dark')
   await waitFor(() =>
-    expect(screen.getByRole('radio', { name: 'Escuro' }).getAttribute('aria-checked')).toBe('true'),
+    expect(screen.getByRole('menuitemradio', { name: 'Escuro' }).getAttribute('aria-checked')).toBe(
+      'true',
+    ),
   )
 
   view.unmount()
@@ -51,18 +44,21 @@ test('a escolha vale na hora e fica ao recarregar: um roteador novo sobre o mesm
   applyChosenTheme()
   expect(document.documentElement.dataset.theme).toBe('dark')
   open()
-  await screen.findByRole('heading', { name: 'Aparência' })
-  expect(screen.getByRole('radio', { name: 'Escuro' }).getAttribute('aria-checked')).toBe('true')
+  await openMenu()
+  expect(
+    (await screen.findByRole('menuitemradio', { name: 'Escuro' })).getAttribute('aria-checked'),
+  ).toBe('true')
 })
 
 test('voltar a Como o sistema esquece a escolha', async () => {
   localStorage.setItem('conexus-theme', 'light')
   applyChosenTheme()
   open()
-  expect((await screen.findByRole('radio', { name: 'Claro' })).getAttribute('aria-checked')).toBe(
-    'true',
-  )
-  fireEvent.click(screen.getByRole('radio', { name: 'Como o sistema' }))
+  await openMenu()
+  expect(
+    (await screen.findByRole('menuitemradio', { name: 'Claro' })).getAttribute('aria-checked'),
+  ).toBe('true')
+  fireEvent.click(screen.getByRole('menuitemradio', { name: 'Como o sistema' }))
   expect(document.documentElement.dataset.theme).toBeUndefined()
   expect(localStorage.getItem('conexus-theme')).toBeNull()
 })

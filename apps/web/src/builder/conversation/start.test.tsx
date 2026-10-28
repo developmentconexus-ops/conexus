@@ -53,7 +53,7 @@ test('sem conta, o aviso do Início no lugar da caixa e dos exemplos', async () 
   expect(link.className).not.toContain('underline')
   fireEvent.click(link)
   await waitFor(() =>
-    expect(conexus.router.state.location.pathname).toBe(`${HOME}/settings/my-model-accounts`),
+    expect(conexus.router.state.location.pathname).toBe(`${HOME}/settings/model-accounts`),
   )
 })
 

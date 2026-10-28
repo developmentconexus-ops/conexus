@@ -46,7 +46,7 @@ test('o dono sem padrão: a frase da empresa, escolhe o modelo e salva; a linha 
   const shown = view()
   const { sent } = await open(shown)
   expect(await screen.findByText('A empresa ainda não tem padrão.')).toBeTruthy()
-  expect(screen.getByText('Toda a empresa')).toBeTruthy()
+  expect(screen.getByRole('region', { name: 'Conversa nova' })).toBeTruthy()
   await choose(screen.getByRole('combobox', { name: 'Modelo e raciocínio' }), 'GPT 5')
   fireEvent.click(screen.getByRole('button', { name: 'Salvar padrão' }))
   expect(
@@ -123,4 +123,26 @@ test('uma recusa fica no campo com a frase do código, e o valor escolhido conti
     'GPT 5',
   )
   expect(screen.getByText('A empresa ainda não tem padrão.')).toBeTruthy()
+})
+
+test('o raciocínio salvo fica à vista depois de remover a conta', async () => {
+  await open(
+    view({
+      connected: { mine: [], company: ['anthropic'] },
+      defaults: {
+        company: { model: 'openai/gpt-5', effort: 'medium' },
+        mine: null,
+        start: null,
+        companyStart: {
+          model: 'anthropic/claude-sonnet-5-5',
+          effort: 'low',
+          from: 'starter',
+          account: 'Claude da empresa',
+        },
+      },
+    }),
+  )
+  const picker = await screen.findByRole('combobox', { name: 'Modelo e raciocínio' })
+  expect(picker.textContent).toContain('GPT 5')
+  expect(picker.textContent).toContain('Médio')
 })

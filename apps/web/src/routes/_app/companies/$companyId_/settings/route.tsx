@@ -1,7 +1,12 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { createFileRoute, Link, Outlet, useMatches, useRouter } from '@tanstack/react-router'
 import { ArrowLeftIcon } from 'lucide-react'
-import { companyEntry, companyQuery, enterHouse } from '../../../../../hub/identity/public.ts'
+import {
+  AccountMenu,
+  companyEntry,
+  companyQuery,
+  enterHouse,
+} from '../../../../../hub/identity/public.ts'
 import { Frame } from '../../../../../ui/frame.tsx'
 import { PageTitle } from '../../../../../ui/list.tsx'
 import type { SettingsSection } from '../../../../../ui/settings-index.tsx'
@@ -42,6 +47,7 @@ function useSections(): SettingsSection[] {
 function SettingsFrame() {
   const { companyId } = Route.useParams()
   const { company } = useSuspenseQuery(companyQuery(companyId)).data
+  const { person } = Route.useRouteContext()
   const sections = useSections()
   const { routesById } = useRouter()
   const index = <SettingsIndex sections={sections} groupName={company.name} />
@@ -51,7 +57,7 @@ function SettingsFrame() {
       return leaf?.status === 'success' ? leaf.routeId : undefined
     },
   })
-  const title = opened && routesById[opened]?.options.staticData?.section?.label
+  const section = opened && routesById[opened]?.options.staticData?.section
   return (
     <Frame
       header={
@@ -68,7 +74,7 @@ function SettingsFrame() {
         </SidebarMenu>
       }
       nav={index}
-      footer={null}
+      footer={<AccountMenu person={person} />}
       compact={false}
     >
       {opened === INDEX ? (
@@ -76,9 +82,12 @@ function SettingsFrame() {
           <PageTitle className="mb-lg">Configurações</PageTitle>
           {index}
         </>
-      ) : title !== undefined ? (
-        <div className="flex flex-col gap-xl">
-          <PageTitle>{title}</PageTitle>
+      ) : section ? (
+        <div className="mx-auto flex w-full max-w-[80rem] flex-col gap-xl">
+          <div className="flex flex-col gap-xs">
+            <PageTitle className="text-display-narrow">{section.label}</PageTitle>
+            <p className="text-text-2">{section.summary}</p>
+          </div>
           <Outlet />
         </div>
       ) : (
