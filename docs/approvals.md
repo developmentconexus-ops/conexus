@@ -273,3 +273,9 @@ Em 2026-10-28, sobre a etapa 15: "Aprovado Etapa 15, porém temos que rodar full
 Em 2026-10-28, sobre a skill `conexus-explain`: "Decisao 2, sim quero, lança junto com o fechamento da 15 é cisa rapida". Ela passa a dar sempre uma página em português, para o computador, mais um resumo curto no chat.
 
 Etapa 15 usada em AAAA-MM-DD em https://hub.conexus.fun (vX.Y.Z): ainda não lançada; o lançamento e o aceite do fundador preenchem esta linha.
+
+## Etapa 17
+
+Em 2026-10-28, sobre o cartão da etapa 17, Publicar, e a pergunta E (o membro vê Versões e publica qualquer versão guardada, `E1`, ou publica só a da Prévia, `E2`): "3.E1 sim E2. Okay". Lido como cartão aprovado e `E1`.
+
+Cartão da etapa 17 aprovado em 2026-10-28 (commit dc2549c7c4fe59184aa98cc79e6ca30aa8273028): "3.E1 sim E2. Okay"
