@@ -226,6 +226,22 @@ test('a árvore: só o caminho do arquivo aberto, as outras pastas fechadas, e a
   fireEvent.keyDown(ui, { key: 'ArrowLeft' })
 })
 
+test('o primeiro arquivo aberto é do app, nunca da memória do Builder em .conexus', async () => {
+  server.use(
+    source([
+      { path: '.conexus/memory/MEMORY.md', bytes: 2 },
+      { path: 'package.json', bytes: 2 },
+      { path: 'src/pages/encomendas.tsx', bytes: 2 },
+    ]),
+    http.get(`${SOURCE}/file`, ({ request }) =>
+      HttpResponse.json({ text: `texto de ${new URL(request.url).searchParams.get('path')}` }),
+    ),
+  )
+  open()
+  expect(await screen.findByText(/texto de src\/pages\/encomendas\.tsx/)).toBeTruthy()
+  expect(screen.queryByText(/texto de \.conexus/)).toBeNull()
+})
+
 test('um app sem arquivos: o vazio', async () => {
   server.use(source([]))
   open()
