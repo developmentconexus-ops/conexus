@@ -27,6 +27,6 @@ In "Para construir":
 - O que depende disso: every screen, operation, table and saved data that uses what changes.
 - Caminho: fix in place, redesign or replace, with your recommendation and why. Fixing in place is often right. Redesign when the request would otherwise need a patch: an extra branch, a second flag kept in step with the first, a second way of doing one thing.
 - Desenho: what the code would be if this request had existed from the start, and what that deletes. Settle the data shape before the logic. For a screen that changes, its pattern from `conexus-app`, what the person sees first, and what it says when empty or when a read fails. Any library beyond the starter's, with why.
-- Dados salvos: when a table with saved data changes, migrate in safe steps: add the new fields as optional, copy the data, check it, and only then remove the old fields.
+- Dados salvos: when a table with saved data changes, add the new fields and copy into them; the old fields stay, off the screens. Say in the person's part what is copied and that nothing is deleted.
 - Verificações: checks that the new behavior works, and that what should stay the same still does; write these before you change the structure.
 - Ordem: remove and simplify first, then add, one step at a time, each ending in a passing check. Move every use of the old way to the new one and delete the old way in the same change; never leave both.
