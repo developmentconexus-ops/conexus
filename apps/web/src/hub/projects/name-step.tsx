@@ -33,7 +33,8 @@ const RETRYING = ['COMPANY_DATABASE_PREPARING', 'COMPANY_DATABASE_UNAVAILABLE']
  * database, so the button says so while it does. The attempt key stays until the Hub settles the
  * outcome (web W24). Once the Projeto exists and `onCreated` failed, the name is `locked`: **Tentar
  * de novo** calls `onCreated` again with the same Projeto, and **Voltar** becomes **Abrir o
- * Projeto**, since the name never changes (decision 0024).
+ * Projeto**, since the name never changes (decision 0024). The start page and the new-Projeto dialog
+ * share it, each naming its own buttons.
  */
 export function NameStep(props: {
   company: CompanyDetail
@@ -42,6 +43,8 @@ export function NameStep(props: {
   onCreated: (project: Project) => Promise<void>
   onBack: () => void
   onOpenProject: () => void
+  idle: string
+  back: string
 }) {
   const router = useRouter()
   const queryClient = useQueryClient()
@@ -111,12 +114,12 @@ export function NameStep(props: {
           </Button>
         )}
         <SubmitButton
-          idle={locked === null ? 'Criar e começar' : 'Tentar de novo'}
+          idle={locked === null ? props.idle : 'Tentar de novo'}
           pending={props.databaseReady ? 'Criando…' : 'Preparando o banco da empresa…'}
         />
         {locked === null ? (
           <Button type="button" onClick={props.onBack}>
-            Voltar
+            {props.back}
           </Button>
         ) : (
           <Button type="button" onClick={props.onOpenProject}>
