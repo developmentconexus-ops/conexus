@@ -15,7 +15,7 @@ function buttonOf(box: HTMLElement | null, id: ModelAccountId, move: Move) {
  * `box` holds the queue's rows; `expect` is called before the write, `forget` if it fails.
  */
 export function useMoveFeedback(accounts: readonly ModelAccount[], providerName: string) {
-  const box = useRef<HTMLDivElement>(null)
+  const box = useRef<HTMLTableSectionElement>(null)
   const expected = useRef<Expected | undefined>(undefined)
   const [said, setSaid] = useState('')
   const order = accounts.map((one) => one.id).join()
@@ -25,8 +25,8 @@ export function useMoveFeedback(accounts: readonly ModelAccount[], providerName:
     if (moved === undefined || moved.before === order) return
     expected.current = undefined
     const twin = moved.move === 'up' ? 'down' : 'up'
-    const target =
-      buttonOf(box.current, moved.id, moved.move) ?? buttonOf(box.current, moved.id, twin)
+    const used = buttonOf(box.current, moved.id, moved.move)
+    const target = used?.matches(':disabled') ? buttonOf(box.current, moved.id, twin) : used
     target?.focus()
     const index = accounts.findIndex((one) => one.id === moved.id)
     const account = accounts[index]

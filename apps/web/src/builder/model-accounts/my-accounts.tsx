@@ -4,6 +4,7 @@ import { getRouteApi } from '@tanstack/react-router'
 import { useRef } from 'react'
 import { SectionTitle } from '../../ui/list.tsx'
 import { Empty } from '../../ui/states.tsx'
+import { AccountsTable } from './accounts-table.tsx'
 import { LinkAccount } from './link-account.tsx'
 import { accountsQuery, providersQuery } from './queries.ts'
 import { Queue } from './queue.tsx'
@@ -41,22 +42,35 @@ export function MyAccounts() {
       aria-label="Suas contas"
       className="flex w-full flex-col gap-lg"
     >
-      <SectionTitle>Suas contas</SectionTitle>
-      {mine.length === 0 && <Empty>Nenhuma conta sua</Empty>}
-      {providersOf(mine).map((provider) => (
-        <Queue
-          key={provider}
+      <div className="flex flex-wrap items-start justify-between gap-md">
+        <SectionTitle>Suas contas</SectionTitle>
+        <LinkAccount
           companyId={companyId}
           owner="me"
-          provider={provider}
-          providerName={providerName(providers, provider)}
-          accounts={queueOf(mine, provider)}
-          people={[]}
-          powers={{ act: true, assign: false }}
-          canOrder
-          onRemoved={() => section.current?.focus()}
+          hasAccounts={mine.length > 0}
+          providers={providers}
+          kinds={accounts.kinds}
         />
-      ))}
+      </div>
+      {mine.length === 0 && <Empty>Nenhuma conta sua</Empty>}
+      {mine.length > 0 && (
+        <AccountsTable>
+          {providersOf(mine).map((provider) => (
+            <Queue
+              key={provider}
+              companyId={companyId}
+              owner="me"
+              provider={provider}
+              providerName={providerName(providers, provider)}
+              accounts={queueOf(mine, provider)}
+              people={[]}
+              powers={{ act: true, assign: false }}
+              canOrder
+              onRemoved={() => section.current?.focus()}
+            />
+          ))}
+        </AccountsTable>
+      )}
       {accounts.order.length > 0 && (
         <ul className="flex flex-col gap-xs">
           {accounts.order.map((entry) => (
@@ -69,7 +83,6 @@ export function MyAccounts() {
           ))}
         </ul>
       )}
-      <LinkAccount companyId={companyId} owner="me" providers={providers} kinds={accounts.kinds} />
     </section>
   )
 }

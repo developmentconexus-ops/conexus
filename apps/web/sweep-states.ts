@@ -2,6 +2,7 @@ import { getInvitation, listInvitations } from '@conexus/hub-api'
 import type { Page } from 'playwright-core'
 import { failure, ok } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
+import { ACCOUNT_STATES } from './sweep-accounts-states.ts'
 import { APP_STATES } from './sweep-app-states.ts'
 import { CARD_STATES } from './sweep-card-states.ts'
 import { CONVERSATION_STATES } from './sweep-conversation-states.ts'
@@ -47,6 +48,7 @@ export const STATES: State[] = [
   ...APP_STATES,
   ...HOUSE_STATES,
   ...DEFAULT_STATES,
+  ...ACCOUNT_STATES,
   {
     name: 'Central sem clientes',
     path: '/operations/clients',

@@ -53,9 +53,8 @@ test('o membro lê as filas e a troca, vê a frase, sem link para outra página 
   expect(screen.getAllByRole('button', { name: 'Ligar conta' })).toHaveLength(1)
   expect(screen.queryByRole('button', { name: 'Salvar troca automática' })).toBeNull()
   expect(screen.queryByRole('region', { name: 'Troca automática' })).toBeNull()
-  expect(screen.queryByRole('button', { name: 'Pausar Time 1' })).toBeNull()
-  expect(screen.queryByRole('button', { name: 'Remover Time 1' })).toBeNull()
-  expect(screen.queryByRole('button', { name: /^Dar / })).toBeNull()
+  expect(screen.queryByRole('button', { name: 'Mais ações para Time 1' })).toBeNull()
+  expect(screen.queryByRole('button', { name: 'Subir Time 1' })).toBeNull()
 
   expect(within(screen.getByRole('main')).queryByRole('link')).toBeNull()
   expect(sent).toHaveLength(0)

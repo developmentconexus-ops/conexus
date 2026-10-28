@@ -5,6 +5,7 @@ import { useRef } from 'react'
 import { everyMemberQuery } from '../../hub/identity/public.ts'
 import { SectionTitle } from '../../ui/list.tsx'
 import { Empty } from '../../ui/states.tsx'
+import { AccountsTable } from './accounts-table.tsx'
 import { LinkAccount } from './link-account.tsx'
 import { ModelFallbackSection } from './model-fallback.tsx'
 import { accountsQuery, providersQuery } from './queries.ts'
@@ -46,34 +47,41 @@ export function CompanyAccounts() {
       aria-label="Contas da empresa"
       className="flex w-full flex-col gap-lg"
     >
-      <SectionTitle>Contas da empresa</SectionTitle>
+      <div className="flex flex-wrap items-start justify-between gap-md">
+        <SectionTitle>Contas da empresa</SectionTitle>
+        {mayManage && (
+          <LinkAccount
+            companyId={companyId}
+            owner="company"
+            hasAccounts={company.length > 0}
+            providers={providers}
+            kinds={accounts.kinds}
+          />
+        )}
+      </div>
       {!mayManage && (
         <p className="text-text-2">
           Só o dono ou um administrador muda as contas de modelo da empresa.
         </p>
       )}
       {company.length === 0 && <Empty>Nenhuma conta ligada</Empty>}
-      {providersOf(company).map((provider) => (
-        <Queue
-          key={provider}
-          companyId={companyId}
-          owner="company"
-          provider={provider}
-          providerName={providerName(providers, provider)}
-          accounts={queueOf(company, provider)}
-          people={members}
-          powers={{ act: mayManage, assign: mayManage }}
-          canOrder={mayManage}
-          onRemoved={() => section.current?.focus()}
-        />
-      ))}
-      {mayManage && (
-        <LinkAccount
-          companyId={companyId}
-          owner="company"
-          providers={providers}
-          kinds={accounts.kinds}
-        />
+      {company.length > 0 && (
+        <AccountsTable>
+          {providersOf(company).map((provider) => (
+            <Queue
+              key={provider}
+              companyId={companyId}
+              owner="company"
+              provider={provider}
+              providerName={providerName(providers, provider)}
+              accounts={queueOf(company, provider)}
+              people={members}
+              powers={{ act: mayManage, assign: mayManage }}
+              canOrder={mayManage}
+              onRemoved={() => section.current?.focus()}
+            />
+          ))}
+        </AccountsTable>
       )}
     </section>
   )

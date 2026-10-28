@@ -33,15 +33,34 @@ export async function enter(page: Page, email: string, path: string) {
   await page.goto(`${TEST_ORIGIN}${path}`)
 }
 
-/** The rows of one provider's queue, in the order shown. */
-export function queueRows(page: Page, provider: string): Locator {
+/** The text of each account row of one provider's queue, in the order shown. */
+export async function queueTexts(page: Page, provider: string): Promise<string[]> {
   const heading = page.getByRole('heading', { name: provider, level: 3 })
-  return page.locator('div', { has: heading }).last().getByRole('listitem')
-}
-
-export async function rowsText(rows: Locator): Promise<string[]> {
+  const rows = page
+    .locator('tbody', { has: heading })
+    .getByRole('row')
+    .filter({ has: page.getByRole('button', { name: /^Mais ações para / }) })
   const texts = await rows.allInnerTexts()
   return texts.map((text) => text.replaceAll(/\s+/g, ' ').trim())
+}
+
+/** Opens the "…" menu of the account named `label` and chooses `item`. */
+export async function pickFromMenu(page: Page, label: string, item: string) {
+  await page.getByRole('button', { name: `Mais ações para ${label}`, exact: true }).click()
+  await page.getByRole('menuitem', { name: item, exact: true }).click()
+}
+
+/** Pauses or resumes the account and waits for its row to say the new state. */
+export async function changeState(page: Page, label: string, item: 'Pausar' | 'Retomar') {
+  await pickFromMenu(page, label, item)
+  const state = item === 'Pausar' ? 'pausada' : 'ligada'
+  await page.locator('tr', { hasText: label }).getByText(state, { exact: true }).waitFor()
+}
+
+/** Raises the account and waits until its arrow can go no further: the screen caught up with the write. */
+export async function moveUp(page: Page, label: string) {
+  await page.getByRole('button', { name: `Subir ${label}`, exact: true }).click()
+  await page.locator(`button[aria-label="Subir ${label}"]:disabled`).waitFor()
 }
 
 /** Picks `option` in the UI's select labelled `label`; its list opens at the page's end. */
@@ -82,7 +101,7 @@ export async function linkKey(
   part: Part = 'Contas da empresa',
 ) {
   await openLink(page, part)
-  const panel = page.getByRole('region', { name: 'Ligar conta' })
+  const panel = page.getByRole('dialog', { name: 'Ligar conta' })
   await panel.getByLabel('Buscar fornecedor').fill(provider)
   await pick(page, panel, 'Fornecedor', provider)
   await panel.getByLabel('Nome da conta').fill(label)
@@ -107,7 +126,7 @@ export async function linkSignIn(
   part: Part = 'Contas da empresa',
 ) {
   await openLink(page, part)
-  const panel = page.getByRole('region', { name: 'Ligar conta' })
+  const panel = page.getByRole('dialog', { name: 'Ligar conta' })
   await panel.getByRole('button', { name: 'Entrar com assinatura' }).click()
   await pick(page, panel, 'Tipo de assinatura', kind)
   await panel.getByLabel('Nome da conta').fill(label)
