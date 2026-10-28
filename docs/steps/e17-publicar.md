@@ -6,21 +6,23 @@
 diante o Builder continua mudando a Prévia, e quem abre o app vê só a versão publicada, até alguém
 publicar de novo.
 
-**O roteiro de uso.** Padaria Sol, com a Ana (dona) e o Bruno (membro), no computador e no celular.
-O "Encomendas" está na Prévia, na versão 7, e nunca foi publicado.
+**O roteiro de uso.** Padaria Sol, com a Ana (dona) e o Bruno (membro), no computador e no celular,
+num Projeto novo, criado depois que a 17 entra no ar: os Projetos que já têm versão entram nela já
+publicados.
 
-1. Antes de publicar, o endereço `encomendas--padaria-sol.<domínio>` mostra "Este app ainda não foi
-   publicado", e o botão **Abrir app** não aparece.
-2. A Ana toca **Publicar**, no alto do Projeto. A pergunta: "Publicar a versão 7? Quem abrir o app
-   passa a ver esta versão." Ela confirma. No lugar do botão aparece "Versão 7 publicada", e o
+1. A Ana cria o Projeto "Encomendas" e pede o app ao Builder. A Prévia mostra a versão 1. O endereço
+   `encomendas--padaria-sol.<domínio>` mostra "Este app ainda não foi publicado", e o botão **Abrir
+   app** não aparece.
+2. A Ana toca **Publicar**, no alto do Projeto. A pergunta: "Publicar a versão 1? Quem abrir o app
+   passa a ver esta versão." Ela confirma. No lugar do botão aparece "Versão 1 publicada", e o
    **Abrir app** aparece.
-3. A Ana toca **Abrir app**: o app abre numa aba nova, na versão 7.
-4. O Bruno pede ao Builder: "Ponha o campo observação." A Prévia mostra a versão 8. Na aba do app,
-   nada muda: a 7 continua lá. O **Publicar** volta ao alto do Projeto.
-5. Na aba **Versões**, a 8 tem a marca **Na Prévia** e a 7 a marca **Publicada**. O Bruno toca
-   **Publicar esta** na 8, e o app passa para a 8.
-6. A 8 tem um problema. A Ana toca **Publicar esta** na 7. O app volta para a 7. A Prévia e o
-   Builder seguem na 8, e os dados ficam como estão.
+3. A Ana toca **Abrir app**: o app abre numa aba nova, na versão 1.
+4. O Bruno, na tela dele, pede ao Builder: "Ponha o campo observação." A Prévia dele mostra a versão
+   2. Na aba do app da Ana, nada muda: a 1 continua lá.
+5. Na aba **Versões** do Bruno, a 2 tem a marca **Na Prévia** e a 1 a marca **Publicada**. Ele toca
+   **Publicar esta** na 2, e o app passa para a 2.
+6. A 2 tem um problema. A Ana, na tela dela, recarrega o Projeto e toca **Publicar esta** na 1. O app
+   volta para a 1. A Prévia e o Builder seguem na 2, e os dados ficam como estão.
 
 **O que você faz, e quando.** Antes: nada. No começo: aprova esta página e responde a E. No fim: faz
 o roteiro no computador e no celular, diz o que viu e aprova os textos novos (o botão, a pergunta,
@@ -33,8 +35,9 @@ as duas marcas e a página do app não publicado).
 - A etiqueta (tag) no Git ao publicar: a sua `B1`, 2026-10-27. A marca **Publicada** é a etiqueta.
 - "Restaurar na Prévia" (o código antigo de volta ao Builder): a sua `D1`. Quem quiser o código antigo
   pede ao Builder.
-- Publicar não roda migração, e o ensaio da migração num ramo do Neon, adiado da 15 para a 17, sai:
-  com `A1` a migração já rodou no envio, numa transação de tudo ou nada.
+- Publicar não roda migração, e o ensaio da migração num ramo do Neon sai: com `A1` a migração já
+  rodou no envio, numa transação de tudo ou nada. Isto troca a sua resposta 3 de 2026-10-22, que
+  adiou esse ensaio da 15 para a 17.
 - Despublicar, link público, domínio próprio e quem entra no app: ninguém pediu ainda; quem entra no
   app é a etapa 18.
 - Das pendências marcadas para o próximo cartão: o Voltar seguido de um turno do Builder (#355) some
@@ -88,7 +91,7 @@ hipótese.
 | 3 | U1 | Pela porta do dispatcher (`checkAppCall`): a sessão nascida de `/apps/open` recebe o Worker da versão publicada; a nascida de `createAppFrameHandoff` recebe o da Prévia; depois de um envio novo, a primeira continua na publicada e a segunda passa à nova | `apps/server/src/hub/apps/app-handoff.test.ts`, "a aba recebe a publicada e a moldura a da Prévia" | must |
 | 4 | U1 | Sem versão publicada, a sessão da aba recebe 404 `APP_NOT_PUBLISHED`, e o dispatcher mostra a página "Este app ainda não foi publicado." com 404; a da moldura sem versão nenhuma segue no app de exemplo, como hoje | `app-handoff.test.ts`, "antes do primeiro Publicar"; `apps/edge/src/dispatcher-versions.test.ts`, "o app não publicado tem a sua página" | must |
 | 5 | U1 | A limpeza depois de um envio nunca marca a versão publicada, mesmo mais velha que as três guardadas; a reparação na partida sobe de novo o Worker da publicada que sumiu, sem migrar por ela (a migração segue só pela da Prévia) | `apps/server/src/hub/apps/prune.test.ts`, "a publicada fica"; `repair.test.ts`, "a reparação sobe a publicada também" | must |
-| 6 | U1 | A migração: um Projeto com versão no ar antes da 17 sai com ela publicada (o endereço salvo não cai); um sem versão sai sem publicada | `repair.test.ts`, como o caso da 14.1 (`:136`), que roda o `UPDATE` do `migration.sql` sobre um ponteiro zerado: "a 17 entra com a versão no ar publicada" | should |
+| 6 | U1 | A migração: um Projeto com versão no ar antes da 17 sai com ela publicada (o endereço salvo não cai); um sem versão sai sem publicada; as sessões de app de antes da 17 não abrem nada, e a chamada seguinte recebe `APP_SESSION_INVALID` e passa pelo Hub | `repair.test.ts`, como o caso da 14.1 (`:136`), que roda o `UPDATE` do `migration.sql` sobre um ponteiro zerado: "a 17 entra com a versão no ar publicada" | should |
 | 7 | U1 | `getProject` traz `appVersion` (o número da Prévia) e `publishedVersion` (o publicado, ou `null`); `mayManageVersions` sai do contrato; o membro lista as versões (200) | `apps/server/src/hub/apps/versions.test.ts`, "o membro lista"; `apps/server/src/hub/projects/project-app-version.test.ts`, "o Projeto diz a Prévia e a publicada" | must |
 | 8 | U2 | No alto do Projeto: sem versão na Prévia, nem Publicar nem Abrir app; com a Prévia diferente da publicada, **Publicar**; o toque abre "Publicar a versão 7?" com "Quem abrir o app passa a ver esta versão." e a confirmação "Publicar a versão 7"; com as duas iguais, o texto "Versão 7 publicada" no lugar do botão; **Abrir app** só com `publishedVersion` | `apps/web/src/hub/projects/project.test.tsx`, "o alto do Projeto: Publicar, publicada e Abrir app" | must |
 | 9 | U2 | Em Versões, para qualquer membro: a marca **Na Prévia** e a **Publicada** (as duas numa versão só, quando é a mesma); **Publicar esta** em toda versão `ready` que não seja a publicada, com o mesmo diálogo; o "Voltar para esta" e o texto "Só o dono ou quem administra" não existem mais; um 404 `APP_VERSION_NOT_FOUND` fecha o diálogo e relê a lista | `apps/web/src/hub/apps/versions.test.tsx`, "as marcas e o Publicar esta" | must |
@@ -107,8 +110,8 @@ hipótese.
 | `apps.app.published_version_id` | `publishVersion` (`live.ts`); a migração, uma vez | `callTo` (`handoff.ts`), `markPrune`, a reparação, `listVersions`, o número em `getProject` |
 | `handoff.environment`, `app_session.environment` | `createHandoff` (`/apps/open`: `published`; moldura: `preview`); `redeemHandoff` copia | `callTo` |
 | `AppVersion.live` (agora: o da Prévia), `AppVersion.published` | `versionView` | web, Versões: as marcas e o Publicar esta |
-| `Project.publishedVersion` | `viewOf` (`projects.ts`), por `publishedNumberOf` | web, o alto: Publicar, "publicada" e Abrir app |
-| `Project.appVersion` (agora: o da Prévia) | `viewOf`, por `liveNumberOf`, como hoje | web: a Prévia (`preview.tsx:104`) e o alto |
+| `Project.publishedVersion` | `viewOf` (`projects.ts`), pela leitura única `versionNumbersOf` | web, o alto: Publicar, "publicada" e Abrir app |
+| `Project.appVersion` (agora: o da Prévia) | `viewOf`, pela mesma leitura, que substitui `liveNumberOf` | web: a Prévia (`preview.tsx:104`) e o alto |
 
 **Desenho de caixas.** Muda a linha do alto (`area.tsx:80-125`) e a linha de cada versão
 (`versions.tsx:27-44`). O Publicar é o `Button` primário com `phoneIcon` (só o ícone no celular),
@@ -137,7 +140,7 @@ Versões
 | Publicar (`publishVersion`, uma transação) | a linha do app travada (`lockApp`, C65): uma espera a outra e a última vale; com um envio terminando, a limpeza dele já vê a publicada | nada a desfazer: uma instrução só muda o ponteiro; uma resposta cortada, 502 ou 503 deixa o ponteiro como o banco o deixou, e tocar de novo dá o mesmo fim (o mesmo número) | o banco fora: `DATABASE_UNAVAILABLE`, o diálogo mostra a frase e fica aberto | `APP_VERSION_PUBLISHED` com `by`, `companyId`, `projectId`, `number` | 1, 2, 8 |
 | O fim do envio (`finish`, `send.ts`), que agora guarda a publicada na limpeza | como hoje (a trava do envio, 14.1) | como hoje: uma transação | como hoje | como hoje | 5 |
 | O passe e a sessão do app (`createHandoff`, `redeemHandoff`), que agora gravam `environment` | como hoje: o `DELETE` do passe decide (S22) | como hoje | como hoje | como hoje | 3, 4 |
-| A migração da 17 (o `migrate` do Hub) | o Hub sobe um por vez | uma transação: nada muda | o Hub não sobe, como hoje | como hoje | 6 |
+| A migração da 17 (o `migrate` do Hub), que apaga as sessões e os passes de antes | o Hub sobe um por vez | uma transação: nada muda | o Hub não sobe, como hoje | como hoje; a primeira chamada de cada sessão apagada passa pelo Hub de novo | 6 |
 | A reparação na partida, que agora sobe também o Worker da publicada | o Hub repara um por vez | uma falha no meio deixa um Worker de pé e o outro não; a partida seguinte refaz o que falta (`exists` antes de subir) | Cloudflare fora: `APP_VERSION_FAILED` com `NO_ANSWER`, como hoje (`repair.ts:150-152`) | como hoje | 5 |
 
 ## A tabela de referência
@@ -149,7 +152,7 @@ Versões
 | A versão guardada é a release | fica como está | `apps.app_version` (`tables.ts:128-161`), arquivos por conteúdo | Appwrite, Kamal (relay); vibesdk sem histórico (`deploy-engine.ts:130`) | uma unidade que não muda | nativo: feito na etapa 9; o fechamento escreve o Resultado da 0026 (um ato só) | — | 0026 | — |
 | A etiqueta no Git | fica de fora (`B1`) | nenhuma em `builder/git/` | vibesdk, Dyad, bolt.diy `353b44c`, chef `d8a6cb6`, open-lovable `806b807`, Mastra Factory 1.78: nenhuma | "não encontrado" em cada uma | nativo: a marca Publicada já registra; uma etiqueta seria remendo, um segundo registro do ponteiro, perdido pela cópia no R2, que leva só o `main` (0051) | — | `B1` | — |
 | Qual versão uma chamada recebe | U1 | `hub/apps/handoff.ts:173-199` `callTo` lê `liveVersionId` | vibesdk `worker/index.ts:195-206` (por host, depois `DISPATCHER.get`) | por pedido | embrulhado: a sessão guarda de onde veio (moldura ou `/apps/open`), e `callTo` escolhe o ponteiro por ela | a moldura e a aba têm cookies separados: o cookie é `SameSite=None; Partitioned` (`apps/edge/src/headers.ts:39`), e o Hub e os apps estão em sites diferentes (0023), então a chave da partição difere (CHIPS); hipótese até a sonda do começo da U1 e o critério 10 | não precisa | — |
-| O endereço da Prévia | U1 (a emenda da 0024) | o mesmo endereço; a 14.1 tirou o `--previa` | 0024 "um endereço por app e ambiente"; vibesdk serve a prévia e o publicado em origens diferentes (`durable-object.ts:545`) | origens separadas | nativo: a partição do cookie cumpre a premissa da 0024 (cookies separados); emendar a 0024 para "um endereço por app" | como acima | não precisa | — |
+| O endereço da Prévia | U1 (a emenda da 0024) | o mesmo endereço; a 14.1 tirou o `--previa` | 0024 "um endereço por app e ambiente"; vibesdk serve a prévia e o publicado em origens diferentes (`durable-object.ts:545`) | origens separadas | nativo: a partição do cookie cumpre a premissa da 0024 (cookies separados); o fechamento emenda a 0024 para "um endereço por app", e com ela `docs/architecture.md:142` ("one host per app and environment") e `:188` ("until Publicar it frames the Projeto's one app") | como acima | não precisa | — |
 | Os dados da Prévia e do publicado | fica como está (`A1`) | um esquema e dois logins por app (`hub-api/src/app-login.ts:8`) | vibesdk e Dyad separam; Lovable usa um banco só desde 2026-10-05 (documentado, relay) | duas de três separam | nativo: nada novo | provado no estudo: a versão 1 publicada lê e grava depois de cinco envios, com o SQL da 15 recusando os dois que a quebrariam | `A1` | — |
 | Migração ao publicar | fica de fora (`A1`) | o envio migra (`send.ts:124-130`) | Dyad só avisa (relay); vibesdk só a tag da classe (`think-user-deploy.ts:124`) | nenhuma migra ao publicar | nativo com `A1` | — | `A1` | — |
 | Voltar o app publicado | U1, U2 | "Voltar para esta" (`web/src/hub/apps/put-back.tsx`, `live.ts`) | Appwrite, Kamal: ativar uma release velha (relay); vibesdk: o rollback só toca a prévia (`think.ts:786-800`) | voltar é publicar uma versão mais velha | nativo: a mesma rota com o número mais velho; o botão vira "Publicar esta" | — | `D1` | `apps/web/src/hub/apps/publish.tsx` (de `put-back.tsx`) |
@@ -172,6 +175,9 @@ dos leitores do estudo da 17.
 - O que a Ana grava testando na Prévia aparece no app publicado (o custo da `A1`). Gatilho: a primeira
   empresa com dados reais.
 - A regra de quem publica é a de todo membro (`C2`). Gatilho: o controle de acesso por papel crescer.
+- A versão publicada pode ter vários envios de idade, e a garantia da 15 a protege. A limpeza de
+  verdade da 15.1 ("Apagar de verdade") tem de guardar toda coluna que a publicada lê, não só a da
+  versão anterior da Prévia. Gatilho: o cartão da 15.1.
 
 ## U1 O ponteiro publicado
 
@@ -207,17 +213,17 @@ coluna, um ponteiro a mais e uma regra de acesso, sobre caminhos que já existem
 | `apps/server/src/hub/apps/live.ts` | Muda: `setLiveVersion` vira `publishVersion`; apaga o ramo da trava | `app-versions.ts` |
 | `apps/server/src/hub/apps/app-versions.ts`, `routes.ts` | Muda: `publish` no lugar de `setLive`; a rota nova | `main.ts` |
 | `apps/server/src/hub/apps/handoff.ts` | Muda: `environment` no passe, na sessão e em `callTo` | `routes.ts` |
-| `apps/server/src/hub/apps/versions.ts` | Muda: `lockApp` lê `publishedVersionId`; `versionView` dá `published`; cria `publishedNumberOf` | `send.ts`, `live.ts`, `main.ts` |
+| `apps/server/src/hub/apps/versions.ts` | Muda: `lockApp` lê `publishedVersionId`; `versionView` dá `published`; `liveNumberOf` vira `versionNumbersOf`, os dois números numa leitura | `send.ts`, `live.ts`, `main.ts` |
 | `apps/server/src/hub/apps/send.ts` | Muda: `finish` passa a publicada a `markPrune`; `admitManager` vira `admitPublisher` | `live.ts` |
 | `apps/server/src/hub/apps/prune.ts` | Muda: `markPrune` guarda uma lista | `send.ts` |
 | `apps/server/src/hub/apps/repair.ts` | Muda: o Worker da publicada, sem migrar por ela | a partida |
 | `apps/server/src/hub/identity/admission.ts`, `roles.ts` | Muda (`E1`): `publishAppVersion` e `readAppVersions` de todo membro; apaga `manageAppVersions`, `MANAGE_VERSIONS` e o `appVersion` das funções | `send.ts`, `projects.ts` |
-| `apps/server/src/hub/projects/projects.ts`, `apps/server/src/hub/apps/public.ts`, `apps/server/src/main.ts` | Muda: `publishedVersion` no Projeto; apaga `mayManageVersions` (`E1`) | `getProject`, `listProjects` |
+| `apps/server/src/hub/projects/projects.ts`, `ports.ts` (`AppVersionOf` vira `AppVersionsOf`), `apps/server/src/hub/apps/public.ts`, `apps/server/src/main.ts` (`:154`) | Muda: `publishedVersion` no Projeto; apaga `mayManageVersions` (`E1`) | `getProject`, `listProjects` |
 | `packages/hub-api/src/apps.ts`, `projects.ts`, `app-failures.ts`, `index.ts` | Muda: `publishAppVersion` no lugar de `setLiveVersion`; `AppVersion`; `Project`; `APP_NOT_PUBLISHED` | servidor, web, edge |
 | `apps/edge/src/pages.ts`, `dispatch.ts` | Muda: a página do app não publicado | o dispatcher |
 | `apps/web/src/hub/apps/queries.ts`, `put-back.tsx`, `apps/web/src/platform/test-hub-versions.tsx`, `apps/web/src/hub/projects/area.tsx` | Muda só o nome da operação, para o tipo passar; a tela é da U2 | — |
 | `apps/web/src/platform/test-hub.tsx`, `apps/web/src/builder/conversation/test-start.tsx`, `apps/web/sweep-replies.ts`, `apps/web/sweep-project-states.ts`, `apps/web/home.layout.test.ts`, `apps/web/src/builder/conversation/workbench.test.tsx`, `apps/web/src/hub/projects/project.tsx`, `project.test.tsx` | Muda (`E1`): sai `mayManageVersions` e o texto "Só o dono ou quem administra"; o duplo do Projeto ganha `publishedVersion` | — |
-| testes do servidor: `publish.test.ts` (de `live-version.test.ts`), `app-handoff.test.ts`, `frame-handoff.test.ts`, `prune.test.ts`, `repair.test.ts`, `versions.test.ts`, `tables.test.ts` (a coluna e a FK nova), `apps/server/src/hub/projects/projects.test.ts`, `projects-delete.test.ts`, `project-app-version.test.ts`; `apps/edge/src/dispatcher-versions.test.ts` | Cria ou muda | — |
+| testes do servidor: `apps/server/src/builder/runs/preview-send.test.ts` (`:183-212` chama `PUT …/live-version` e espera a Prévia na 1; com a `D1` passa a publicar a 1 e ver a Prévia seguir na 3), `publish.test.ts` (de `live-version.test.ts`), `app-handoff.test.ts`, `frame-handoff.test.ts`, `prune.test.ts`, `repair.test.ts`, `versions.test.ts`, `tables.test.ts` (a coluna e a FK nova), `apps/server/src/hub/projects/projects.test.ts`, `projects-delete.test.ts`, `project-app-version.test.ts`; `apps/edge/src/dispatcher-versions.test.ts` | Cria ou muda | — |
 
 ### Os contratos que a unidade cria
 
@@ -272,7 +278,13 @@ createHandoff(deps, input: { person; sessionToken; host; binding; environment: A
 export async function markPrune(tx: CommandTx, input: Ids & { keep: readonly string[] })
 
 // apps/server/src/hub/apps/versions.ts
-export async function publishedNumberOf(tx: ReadTx, projectId: ProjectId): Promise<number | null>
+/** The numbers of the Prévia's and the published version, in one read; null before each first. */
+export async function versionNumbersOf(
+  tx: ReadTx,
+  projectId: ProjectId,
+): Promise<{ appVersion: number | null; publishedVersion: number | null }>
+// apps/server/src/hub/projects/ports.ts: AppVersionOf sai
+export type AppVersionsOf = typeof versionNumbersOf
 
 // apps/server/src/hub/identity/admission.ts (E1)
   readAppVersions: { by: 'MEMBER', statement: undefined, locks: false },
@@ -285,10 +297,13 @@ export async function publishedNumberOf(tx: ReadTx, projectId: ProjectId): Promi
   recebe um número, não um id.
 - **Donos**: quem publica, `ACTIONS` (S6, C26); a frase, `app-failures.ts`.
 - **Entrada externa**: o corpo da rota, pelo esquema da operação (C27).
-- **A migração**: o gerado pelo `drizzle-kit`, e `environment` sem padrão no esquema (assim nenhum
-  `insert` o esquece); no SQL, `ADD COLUMN … NOT NULL DEFAULT 'published'` e `DROP DEFAULT`, para as
-  linhas que existem; o `UPDATE apps.app SET published_version_id = live_version_id` vem depois da
-  FK. Só acrescenta (D6).
+- **A migração**: antes de tudo, `DELETE FROM apps.app_session` e `DELETE FROM apps.handoff`, porque
+  uma sessão de antes da 17 não diz se veio da moldura ou da aba; depois o gerado pelo `drizzle-kit`,
+  com `environment` `NOT NULL` sem padrão (nenhum `insert` o esquece); o `UPDATE apps.app SET
+  published_version_id = live_version_id` vem depois da FK. A próxima chamada de uma sessão apagada
+  recebe `APP_SESSION_INVALID`, e o dispatcher já limpa o cookie e passa pelo Hub de novo
+  (`dispatch.ts:204-206`): a moldura ganha uma sessão `preview` e a aba uma `published`. As colunas
+  só se acrescentam (D6); as linhas apagadas são passes de 60 s e sessões que se refazem sozinhas.
 - Modelo: `live.ts` (uma transação, a admissão relida, S8) e `prune.ts`; cumprem C21 e C26, não
   C23: os ids das linhas são texto, a dívida anotada em `versions.ts:111`, e `keep` a herda com a
   mesma linha de `biome-ignore`, sem dívida nova.
@@ -315,14 +330,15 @@ pelo fechamento).
    `PAGES` e de `CHECK_REFUSALS`. Critérios 3 e 4.
 5. `markPrune({ keep: [versão nova, publicada] })` em `finish`; a reparação sobe o Worker da
    publicada; critério 5. O `UPDATE` da migração no `repair.test.ts`, critério 6.
-6. `versionView`, `publishedNumberOf` e o Projeto; critério 7. Na web, os nomes e o
+6. `versionView`, `versionNumbersOf` (apaga `liveNumberOf`), a porta e o Projeto; critério 7. Na web, os nomes e o
    `mayManageVersions` que sai, para o tipo e os testes passarem.
 
 ### Como se prova
 
 `npm test -w @conexus/server -- src/hub/apps/publish.test.ts src/hub/apps/app-handoff.test.ts
 src/hub/apps/frame-handoff.test.ts src/hub/apps/prune.test.ts src/hub/apps/repair.test.ts
-src/hub/apps/versions.test.ts src/hub/apps/tables.test.ts src/hub/projects/`; `npm test -w
+src/hub/apps/versions.test.ts src/hub/apps/tables.test.ts src/hub/projects/
+src/builder/runs/preview-send.test.ts`; `npm test -w
 @conexus/web -- src/builder/conversation/workbench.test.tsx src/hub/projects/`; `npm test -w @conexus/edge -- src/dispatcher-versions.test.ts`;
 `npm run migrations`. Cada teste entra pela porta do Hub (T5): a rota, `checkAppCall`, a partida.
 
@@ -331,8 +347,8 @@ src/hub/apps/versions.test.ts src/hub/apps/tables.test.ts src/hub/projects/`; `n
 - A 15 ainda não está inteira no `main`: parar; a `A1` depende da garantia dela.
 - A sonda do passo 0 mostra o cookie da moldura na aba num dos dois navegadores: parar e relatar;
   o desenho da sessão por ambiente cai, e o cartão volta ao estudo.
-- Um arquivo fora do raio lê `mayManageVersions`, `manageAppVersions` ou `setLiveVersion`: relatar
-  a linha.
+- Um arquivo fora do raio lê `mayManageVersions`, `manageAppVersions`, `setLiveVersion` ou o caminho
+  `live-version`: relatar a linha.
 - A migração gerada mexe em outra coisa além das três tabelas: parar e relatar.
 
 ## U2 Publicar na tela
