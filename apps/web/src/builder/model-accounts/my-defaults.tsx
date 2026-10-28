@@ -1,9 +1,8 @@
 import type { CompanyId, ConversationStart, ModelDefault, Provider } from '@conexus/hub-api'
-import { useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi, Link } from '@tanstack/react-router'
 import { SettingsSection } from '../../ui/settings-section.tsx'
 import { DefaultChoice } from './default-choice.tsx'
-import { accountsQuery, providersQuery } from './queries.ts'
+import { useAccountsView } from './queries.ts'
 import { choiceText, modelProviderName, START_SOURCE_TEXT } from './text.ts'
 
 const route = getRouteApi('/_app/companies/$companyId_/settings/my-defaults')
@@ -54,9 +53,7 @@ function SkippedLine(props: {
  */
 export function MyDefaults() {
   const { companyId } = route.useParams()
-  const accounts = useSuspenseQuery(accountsQuery(companyId)).data
-  const { providers } = useSuspenseQuery(providersQuery).data
-  const { defaults, choices } = accounts
+  const { defaults, choices, providers } = useAccountsView(companyId)
   return (
     <div className="flex flex-col gap-2xl">
       <SettingsSection
