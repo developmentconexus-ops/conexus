@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
@@ -240,6 +242,27 @@ test('o primeiro arquivo aberto é do app, nunca da memória do Builder em .cone
   open()
   expect(await screen.findByText(/texto de src\/pages\/encomendas\.tsx/)).toBeTruthy()
   expect(screen.queryByText(/texto de \.conexus/)).toBeNull()
+})
+
+test('o primeiro arquivo aberto não é uma peça do kit: toda pasta do components.json fica fechada', async () => {
+  const { aliases } = JSON.parse(
+    readFileSync(resolve(process.cwd(), '../../packages/app/starter/components.json'), 'utf8'),
+  )
+  const kit = [aliases.ui, aliases.hooks].map((alias: string) =>
+    alias.replace('@/', 'src/').concat('/peca.ts'),
+  )
+  server.use(
+    source([
+      ...kit.map((path) => ({ path, bytes: 2 })),
+      { path: 'package.json', bytes: 2 },
+      { path: 'src/pages/encomendas.tsx', bytes: 2 },
+    ]),
+    http.get(`${SOURCE}/file`, ({ request }) =>
+      HttpResponse.json({ text: `texto de ${new URL(request.url).searchParams.get('path')}` }),
+    ),
+  )
+  open()
+  expect(await screen.findByText(/texto de src\/pages\/encomendas\.tsx/)).toBeTruthy()
 })
 
 test('um app sem arquivos: o vazio', async () => {

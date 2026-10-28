@@ -229,9 +229,7 @@ function Screen(params: Params) {
   useEffect(() => field.current?.focus(), [])
   useHandoff(conversationId, {
     send: async (outgoing) => {
-      const sent = await send(outgoing, false)
-      if (!sent) draft.restore(outgoing)
-      return sent
+      if (!(await send(outgoing, false))) draft.restore(outgoing)
     },
     recover: (text) => {
       draft.restore({ content: text, files: [] })
