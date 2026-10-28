@@ -4,7 +4,7 @@ import { useIsMobile } from './use-mobile.ts'
 
 // Copied from shadcn's base-nova `table`, painted with the brand's hairlines. The rows keep their
 // table display at every width, so a screen reader still hears a table on a phone.
-export function Table({ className, ...props }: ComponentProps<'table'>) {
+function Table({ className, ...props }: ComponentProps<'table'>) {
   return (
     <div data-slot="table-container" className="relative w-full overflow-x-auto">
       <table
@@ -16,7 +16,7 @@ export function Table({ className, ...props }: ComponentProps<'table'>) {
   )
 }
 
-export function TableHeader({ className, ...props }: ComponentProps<'thead'>) {
+function TableHeader({ className, ...props }: ComponentProps<'thead'>) {
   return <thead data-slot="table-header" className={cn('[&_tr]:border-b', className)} {...props} />
 }
 
@@ -40,7 +40,7 @@ export function TableRow({ className, ...props }: ComponentProps<'tr'>) {
   )
 }
 
-export function TableHead({ className, ...props }: ComponentProps<'th'>) {
+function TableHead({ className, ...props }: ComponentProps<'th'>) {
   return (
     <th
       data-slot="table-head"

@@ -26,6 +26,7 @@ test('FramedTable names every column in its header and gives each one its width'
   ])
   const cols = [...document.querySelectorAll('col')].map((col) => col.className)
   expect(cols).toEqual(['', 'md:w-36', 'md:w-80'])
+  expect(screen.getByRole('table', { name: 'Pessoas' }).className).toContain('md:table-fixed')
 })
 
 test('FramedTable drops the columns that leave on a phone from header and widths', () => {
