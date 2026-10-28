@@ -1,5 +1,5 @@
 // Defect: a feature ships lines its tests do not pin, a function it touches grows past what a
-// reader holds, or it adds a clone of code that already has an owner (testing T-rule on mutation,
+// reader holds, or it adds a clone of code that already has an owner (testing T27,
 // code C77 and C26). `quality.ts [<base>]` runs, on the lines the work adds against <base> (default
 // origin/main): Stryker mutation on the packages that have a stryker.config.json, Biome cognitive
 // complexity on the functions it touches, and jscpd for new clones. `--fast` skips the mutation, as

@@ -35,14 +35,15 @@ unit's one named guide, and loads the card's maintainers' skills, pstack `poteto
    listed, carrying only the old decisions listed. Past the study rule's measure
    ([`conexus-study`](../conexus-study/SKILL.md)), stop.
 5. Test through the server's public door, negative cases included, with provider doubles per
-   [testing T24](../../../docs/guides/testing.md). Screen texts come from the card's state matrix.
+   [T24](../../../docs/guides/testing.md). Screen texts come from the card's state matrix.
 6. Run the result for real: the server, the route, the migration on a disposable database, and a
-   changed screen looked at per [testing T23](../../../docs/guides/testing.md), through a
-   verification skill when one exists ([screen](references/screen.md)). A fix that touches state
-   reruns the A→B→A case, a fix that moves a layout reruns the card's failure states, and a new
+   changed screen looked at per [T23](../../../docs/guides/testing.md), through a
+   verification skill when one exists ([screen](references/screen.md)). A state fix reruns
+   A→B→A, a layout fix the card's failure states, and a new
    security guard gets its removal row (T12). A remendo row keeps the card's proof beside its
-   [boundaries](../../../docs/reference/boundaries.md) entry. Run pstack `deslop` and `no-comments`;
-   code C70 and C73 decide what leaves.
+   [boundaries](../../../docs/reference/boundaries.md) entry. Run pstack `deslop`, `no-comments` and
+   `npm run quality` ([T27](../../../docs/guides/testing.md)): answer every survivor; code C70 and
+   C73 decide what leaves.
 7. One pull request for the unit, its commits kept; the tests and proofs its section names are green
    locally ([delivery L9](../../../docs/guides/delivery.md)).
 
