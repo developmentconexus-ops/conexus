@@ -101,7 +101,8 @@ choice of test tools.
   [`conexus-qa`](../../.agents/skills/conexus-qa/SKILL.md). Horizontal overflow and a phone field
   under 16px are the browser checks' (`layout.test.ts`, `fields.layout.test.ts`), not captures to
   read; a new screen state joins their sweep. [review]
-- **T27.** Lines a change adds **must** be mutation-tested with the tests that own them, and every
+- **T27.** Lines a change adds in a package with a Stryker configuration (server and web) **must**
+  be mutation-tested with the tests that own them, and every
   surviving mutant accounted for: a test that kills it, or a line in the report naming it
   equivalent, style-only or owned by a named test elsewhere. There is no score threshold: a score
   pushes tests to assert classes of output against T7. Failure: a guard tested with one file passes
