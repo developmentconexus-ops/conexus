@@ -259,3 +259,9 @@ Em 2026-10-28, sob a mesma permissão visual da noite, decidido pelo firstmate: 
 Em 2026-10-28, sobre o teto de palavras do guia de entrega, que as regras do ritmo das etapas estouravam: "Decisao 1: A". O teto de `docs/guides/delivery.md` sobe de 1.800 para 1.900 palavras.
 
 Etapa 13.2 usada em 2026-10-28 em https://hub.conexus.fun (v0.14.14), uso ao vivo pelo firstmate no lugar do fundador, na empresa real dele, a pedido ("1. Sim" à pergunta da noite; "eu te dou permissão total para você já fazer merge, já fazer o lançamento. Depois, se eu não concordar com alguma coisa de visual, eu posso pedir para você mudar"). Ele ainda não viu: qualquer mudança visual que pedir depois é uma decisão nova neste livro. Passos 1, 2, 4 e 5 no computador (1366, claro) e no celular (390, escuro); o 3 em parte (Pausar, Retomar e a Troca automática; as setas e a fila de reserva não deu para fazer, com uma conta por fila na empresa dele); o 6 precisa de um membro e foi provado no QA local. Os ajustes dele foram devolvidos. Três defeitos achados (o e-mail de Minha conta quebrando no meio da palavra, a frase que prometia senha, as linhas "Sua ordem para …") saem no pull request https://github.com/developmentconexus-ops/conexus/pull/419, que entra antes deste. Pendência: #417 (teste instável visto uma vez no `main`). Aceite do fundador em 2026-10-28: "13.2 aprovado".
+
+## Etapa 15
+
+Em 2026-10-27, sobre o cartão da etapa 15, Mudar o app: "aprovo 15"
+
+Cartão da etapa 15 aprovado em 2026-10-27 (commit 3e50534fc0bb11e73558f6956c166e115dcb99f3): "aprovo 15"
