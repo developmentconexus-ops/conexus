@@ -83,7 +83,7 @@ export async function pedidosOf(s: Scenario) {
   await firstEntry(page)
   await page.goto(`${TEST_ORIGIN}/companies/${s.companyId}/settings/model-accounts`)
   await linkKey(page, 'Time 1', KEYS.first)
-  await page.getByText('Time 1 · chave …aB1c · ligada').first().waitFor()
+  await page.getByText('Time 1', { exact: true }).first().waitFor()
   await chooseDefaultModel(page, s.companyId)
   await page.goto(`${TEST_ORIGIN}/companies/${s.companyId}`)
   await createProject(page, 'Pedidos')

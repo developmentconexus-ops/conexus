@@ -1,8 +1,9 @@
 import type { CompanyId, ModelAccount, Owner, ProviderId } from '@conexus/hub-api'
 import { useMutation } from '@tanstack/react-query'
 import { FieldError } from '../../ui/field.tsx'
-import { List } from '../../ui/list.tsx'
-import type { Powers } from './account-row.tsx'
+import { TableBody, TableCell, TableRow } from '../../ui/table.tsx'
+import { useIsMobile } from '../../ui/use-mobile.ts'
+import type { Powers } from './account-menu.tsx'
 import { AccountRow } from './account-row.tsx'
 import { sendOrder } from './queries.ts'
 import type { Person } from './text.ts'
@@ -29,7 +30,8 @@ type Props = {
 export function Queue(props: Props) {
   const { accounts, providerName } = props
   const send = useMutation(sendOrder)
-  const feedback = useMoveFeedback(accounts, providerName)
+  const phone = useIsMobile()
+  const feedback = useMoveFeedback(accounts, providerName, send.isPending)
 
   function move(index: number, direction: Move) {
     const ids = accounts.map((one) => one.id)
@@ -50,35 +52,42 @@ export function Queue(props: Props) {
 
   const ordering = props.canOrder && accounts.length > 1
   return (
-    <div ref={feedback.box} className="flex flex-col gap-sm">
-      <h3 className="text-body text-text-2">{providerName}</h3>
-      <List>
-        {accounts.map((account, index) => (
-          <AccountRow
-            key={account.id}
-            companyId={props.companyId}
-            account={account}
-            providerName={providerName}
-            people={props.people}
-            powers={props.powers}
-            move={
-              ordering
-                ? {
-                    up: index > 0,
-                    down: index < accounts.length - 1,
-                    busy: send.isPending,
-                    onMove: (direction) => move(index, direction),
-                  }
-                : undefined
-            }
-            onRemoved={props.onRemoved}
-          />
-        ))}
-      </List>
-      <p role="status" className="sr-only">
-        {feedback.said}
-      </p>
-      <FieldError>{send.isError ? refusalText(send.error) : undefined}</FieldError>
-    </div>
+    <TableBody ref={feedback.box}>
+      <TableRow className="bg-surface-3 hover:bg-surface-3">
+        <TableCell
+          colSpan={phone ? 3 : 4}
+          className="whitespace-normal px-sm py-sm text-label text-text-2"
+        >
+          <h3 className="inline font-medium text-text">{providerName}</h3>
+          {` · ${accounts.length === 1 ? '1 conta' : `${accounts.length} contas`} · o Builder tenta nesta ordem`}
+          <p role="status" className="sr-only">
+            {feedback.said}
+          </p>
+          <FieldError>{send.isError ? refusalText(send.error) : undefined}</FieldError>
+        </TableCell>
+      </TableRow>
+      {accounts.map((account, index) => (
+        <AccountRow
+          key={account.id}
+          companyId={props.companyId}
+          account={account}
+          place={index + 1}
+          providerName={providerName}
+          people={props.people}
+          powers={props.powers}
+          move={
+            ordering
+              ? {
+                  up: index > 0,
+                  down: index < accounts.length - 1,
+                  busy: send.isPending,
+                  onMove: (direction) => move(index, direction),
+                }
+              : undefined
+          }
+          onRemoved={props.onRemoved}
+        />
+      ))}
+    </TableBody>
   )
 }

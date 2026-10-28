@@ -64,6 +64,7 @@ can be another commit (one was at `729bdc5d`).
 | `react-markdown` | `apps/web/src/builder` | README | none | Mastra fork `packages/playground-ui/src/ds/components/MarkdownRenderer/markdown-renderer.tsx:70`, `:226`; the reference pins `^9.1.0` | 0033 | Streaming needs `remend`, tables need `remark-gfm` (PR 192) |
 | `remark-gfm` | `apps/web/src/builder` | README | none | Mastra fork `markdown-renderer.tsx:226` | 0033 | As `react-markdown` |
 | `remend` | `apps/web/src/builder` | README | none | Mastra fork `markdown-renderer.tsx:70` | 0033 | As `react-markdown` |
+| `shiki` | `apps/web/src/builder/source` | `shiki.style/guide/regex-engines`; `shiki.style/guide/best-performance` | none | Mastra fork `packages/playground-ui/src/ds/components/CodeEditor/highlight.ts:74` | V3, C73, W11 | The JavaScript engine, never the wasm default (the page keeps `script-src 'self'`); `codeToTokens` mapped to classes, never `codeToHtml`; a grammar by `import()`, never precompiled |
 | `react-hook-form` | `apps/web/src` | `react-hook-form.com/docs` | none | — | W23 | — |
 | `@hookform/resolvers` | `apps/web/src/ui`, `packages/app/starter` | README | none | — | W23 | — |
 | `@tanstack/react-table` | `packages/app/starter`, `packages/app/skills` | `node_modules/@tanstack/react-table/skills/` | `getting-started`, `table-state`, `migrate-v8-to-v9` (in the package) | — | — | v9: `useTable` and `tableFeatures`; the v8 `useReactTable` and `getCoreRowModel` that models know fail the check |
@@ -85,6 +86,9 @@ can be another commit (one was at `729bdc5d`).
 | `@biomejs/biome` | `biome.json`, `scripts/*.grit` | `biome explain <rule>`; `biomejs.dev` | none | — | code | A nursery rule is not stable: review each bump |
 | `knip` | `knip.json` | `knip.dev` | none | — | L20 | — |
 | `dependency-cruiser` | `.dependency-cruiser.cjs` | `dependency-cruiser.js.org` | none | — | W4, W7 | — |
+| `@stryker-mutator/core` | `scripts/quality.ts`, `apps/*/stryker.config.json` | `node_modules/@stryker-mutator/core/README.md`; `stryker-mutator.io/docs` | none | — | L20, C26 | `inPlace` with `tempDirName` on another filesystem fails to restore the files: keep it inside the repository |
+| `@stryker-mutator/vitest-runner` | `apps/web/stryker.config.json` | `node_modules/@stryker-mutator/vitest-runner/README.md` | none | — | L20 | It mutates in Node, so code that only a Vite build into a browser runs gets a verdict from the unit tests alone |
+| `jscpd` | `scripts/quality.ts`, `.jscpd.json` | `node_modules/jscpd/README.md` | none | — | L20, C26 | Without `--absolute`, the file names are relative to a root that depends on how many paths it reads |
 | `yaml` | `scripts` | README | none | — | — | — |
 | PostgreSQL | everything; CI and `docs/how-to/local-database.md` | `postgresql.org/docs/18/` | `neon:neon-postgres` (Neon's) | — | 0020, 0037, data | — |
 | Node | everything | `nodejs.org/llms.txt` | `node` | — | 0002 | — |

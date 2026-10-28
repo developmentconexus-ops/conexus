@@ -1,0 +1,12 @@
+{
+  "format": ["typescript", "tsx"],
+  "ignore": [
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/routeTree.gen.ts",
+    "**/starter/**",
+    "**/recordings/**"
+  ],
+  "reporters": ["json"],
+  "silent": true
+}

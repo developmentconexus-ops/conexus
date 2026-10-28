@@ -83,7 +83,8 @@ export function signalStarted(
 const IsEvent = z.custom<KnownAgentControllerEvent>(
   (value) => typeof value === 'object' && value !== null && 'type' in value,
 )
-const IsStored = z.custom<Stored>(
+/** A message as Mastra stores it, whose file parts name their type `mimeType`, unlike the UI type. */
+export const IsStored = z.custom<Stored>(
   (value) => typeof value === 'object' && value !== null && 'id' in value && 'content' in value,
 )
 const RecordedRow = Row.extend({ table: z.string().optional(), row: z.unknown().optional() })

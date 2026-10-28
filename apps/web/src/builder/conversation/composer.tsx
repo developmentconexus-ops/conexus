@@ -94,12 +94,19 @@ function joined(text: string, added: string): string {
   return text === '' || /\s$/.test(text) ? text + added.trimStart() : `${text} ${added.trimStart()}`
 }
 
+/** The model button's round, soft fill, on the controls beside it (the card, row "O + e o microfone"). */
+const SOFT = 'rounded-full bg-surface-3 hover:bg-accent-soft'
+
 /** **+**: the browser's file picker, limited to the types the Builder reads. */
 function Attach({ add }: { add: AddFiles }) {
   const picker = useRef<HTMLInputElement>(null)
   return (
     <>
-      <InputGroupButton aria-label="Anexar arquivos" onClick={() => picker.current?.click()}>
+      <InputGroupButton
+        className={SOFT}
+        aria-label="Anexar arquivos"
+        onClick={() => picker.current?.click()}
+      >
         <PlusIcon aria-hidden="true" />
       </InputGroupButton>
       <input
@@ -148,6 +155,7 @@ function useDictation(draft: Draft, setPhrase: (phrase: string | null) => void) 
     mic: (
       <SpeechInput
         lang="pt-BR"
+        className={SOFT}
         onFinal={(text) => {
           setPhrase(null)
           draft.change(joined(draft.text, text))
@@ -186,6 +194,8 @@ export function Composer(props: {
   taskPanel?: ReactNode
   /** The memory ring, after the model's button on the row's left. */
   memory?: ReactNode
+  /** What the empty box says; without it, the conversation's words. */
+  placeholder?: string
 }) {
   const { draft } = props
   const phone = useIsMobile()
@@ -243,21 +253,23 @@ export function Composer(props: {
           id="message"
           ref={props.field}
           value={dictation.shown}
-          placeholder={props.answering ? STEER_PLACEHOLDER : 'Escreva sua mensagem'}
+          placeholder={
+            props.answering ? STEER_PLACEHOLDER : (props.placeholder ?? 'Escreva sua mensagem')
+          }
           readOnly={dictation.listening}
           onChange={(event) => draft.change(event.target.value)}
           onKeyDown={onKeyDown}
         />
         <InputGroupAddon
           align="block-end"
-          className="flex-nowrap items-center justify-between gap-xs max-[20rem]:flex-wrap"
+          className="flex-nowrap items-center justify-between gap-xs pointer-coarse:gap-sm max-[20rem]:flex-wrap"
         >
           <div className="flex min-w-0 flex-1 items-center gap-sm max-[20rem]:basis-full">
             <Attach add={addFiles} />
             {props.picker}
             {props.memory}
           </div>
-          <div className="flex shrink-0 items-center gap-xs">
+          <div className="flex shrink-0 items-center gap-xs pointer-coarse:gap-md">
             {dictation.mic}
             <Button
               type={action === 'stop' ? 'button' : 'submit'}

@@ -117,6 +117,33 @@ function companyPage(
   }
 }
 
+/** A person with a model to start on, for whom Início opens its box. */
+export function startsOn(id: string): Replies {
+  return {
+    [`GET /api/companies/${id}/model-accounts`]: ok(listModelAccounts, {
+      company: [],
+      mine: [],
+      order: [],
+      kinds: [],
+      defaults: {
+        company: null,
+        mine: null,
+        start: {
+          model: 'anthropic/claude-sonnet-4',
+          effort: 'off',
+          from: 'company',
+          account: 'Claude',
+        },
+        companyStart: null,
+      },
+      choices: { mine: [], company: [] },
+      fallback: { enabled: false, chain: [], revision: 0 },
+      usableProviders: ['anthropic'],
+      mayManage: false,
+    }),
+  }
+}
+
 /** The company's model accounts and the providers of their keys, which the rail preloads on focus. */
 function modelAccountsPage(id: string, mayManage: boolean): Replies {
   return {

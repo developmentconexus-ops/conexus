@@ -42,6 +42,11 @@ jobs:
       - name: The OpenAPI document emits from the operations
         run: npm run openapi -- "$RUNNER_TEMP/openapi.json"
       - run: npm run suppressions
+      - name: Complexity and new clones on the lines the pull request adds
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: npm run quality -- "origin/$BASE_REF" --fast
       - run: npm run boundaries
       - name: Approval of the step card
         env:

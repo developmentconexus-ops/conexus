@@ -74,8 +74,14 @@ async function daviJoins(page: Page, mail: { next(): Promise<Mail> }) {
   await page.getByRole('button', { name: 'Aceitar convite' }).click()
   await waitForHome(page)
   await openSettings(page, 'Pessoas e convites')
-  assert.equal(await page.getByRole('listitem').filter({ hasText: ANA.email }).count(), 1)
-  assert.equal(await page.getByRole('listitem').filter({ hasText: DAVI.email }).count(), 1)
+  assert.equal(
+    await page.getByRole('main').getByRole('row').filter({ hasText: ANA.email }).count(),
+    1,
+  )
+  assert.equal(
+    await page.getByRole('main').getByRole('row').filter({ hasText: DAVI.email }).count(),
+    1,
+  )
   await page.goto(invitationLink)
   await page.getByRole('heading', { name: 'Você já faz parte de Empresa Teste.' }).waitFor()
 }

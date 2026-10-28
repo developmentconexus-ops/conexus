@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
 import { existsSync, rmSync } from 'node:fs'
-import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
 import { CompanyId, ProjectId } from '@conexus/hub-api'
@@ -69,7 +68,7 @@ test('um turno que escreve: a versão 1 fica no main, a cópia no bucket, e o Pr
     'the version stands on the starter',
   )
   assert.equal(hub.builder.bucket.held.size, 1)
-  const dir = join(tmpdir(), companyId, `${projectId}.git`)
+  const dir = join(hub.config.gitRoot, companyId, `${projectId}.git`)
   const refs = execFileSync('git', ['--git-dir', dir, 'for-each-ref', 'refs/conexus/runs'])
   assert.equal(refs.toString(), '', "the run's own ref goes once main holds its commit")
 })
@@ -107,7 +106,7 @@ test('uma mensagem enquanto a versão é guardada espera o fim e faz mais uma ve
   assert.deepEqual(failuresOf(await stream.turn()), [])
   const repository = repositoryOf({ hub, companyId, projectId })
   assert.equal(await repository.version(), 2)
-  const dir = join(tmpdir(), companyId, `${projectId}.git`)
+  const dir = join(hub.config.gitRoot, companyId, `${projectId}.git`)
   function pathsAt(revision: string) {
     const listed = execFileSync('git', ['--git-dir', dir, 'ls-tree', '-r', '--name-only', revision])
     return listed

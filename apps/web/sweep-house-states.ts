@@ -1,14 +1,60 @@
-import { getStatus } from '@conexus/hub-api'
+import type { Provider } from '@conexus/hub-api'
+import { getStatus, listModelAccounts, listModelProviders, ModelAccount } from '@conexus/hub-api'
 import type { Page } from 'playwright-core'
+import type { z } from 'zod'
 import { failure, ok } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import type { State } from './sweep-kit.ts'
 import { waitFor } from './sweep-kit.ts'
-import { central, MEMBER, OWNER } from './sweep-replies.ts'
+import { central, MEMBER, OWNER, startsOn } from './sweep-replies.ts'
 
 const HOME = `/companies/${COMPANY.id}`
 const SETTINGS = `${HOME}/settings`
 const WELCOME = `${HOME}/welcome`
+
+const SONNET = 'anthropic/claude-sonnet-4'
+const PROVIDERS: z.input<typeof Provider>[] = [
+  { id: 'anthropic', name: 'Anthropic', models: [{ id: SONNET, efforts: ['off'] }] },
+]
+
+function accountOf(id: number, owner: 'me' | 'company', label: string) {
+  return ModelAccount.parse({
+    id: `00000000-0000-4000-8000-00000000000${id}`,
+    owner,
+    kind: 'api_key',
+    provider: 'anthropic',
+    label,
+    position: 0,
+    state: 'ready',
+    limitedUntil: null,
+    kindOff: false,
+    hint: 'x7Qa',
+    linkedBy: 'Ana Lima',
+    linkedAt: '2026-10-19T12:00:00.000Z',
+    assignees: [],
+    revision: 1,
+  })
+}
+
+const MINE = accountOf(1, 'me', 'Claude pessoal')
+const SHARED = accountOf(2, 'company', 'Claude da empresa')
+
+/** The owner's joined page: accounts in both parts and the switch on. */
+const OWNER_WITH_ACCOUNTS = {
+  ...OWNER,
+  [`GET /api/companies/${COMPANY.id}/model-accounts`]: ok(listModelAccounts, {
+    company: [SHARED],
+    mine: [MINE],
+    order: [{ provider: 'anthropic', accounts: [MINE.id, SHARED.id] }],
+    kinds: [],
+    defaults: { company: null, mine: null, start: null, companyStart: null },
+    choices: { mine: PROVIDERS, company: PROVIDERS },
+    fallback: { enabled: true, chain: [SONNET], revision: 1 },
+    usableProviders: ['anthropic'],
+    mayManage: true,
+  }),
+  'GET /api/model-providers': ok(listModelProviders, { providers: PROVIDERS }),
+}
 
 /** Opens what sits in the sidebar, which on a phone is the drawer, closed until asked. */
 async function inSidebar(page: Page, name: string | RegExp) {
@@ -60,16 +106,16 @@ export const HOUSE_STATES: State[] = [
     },
   },
   {
-    name: 'Configurações, aparência',
-    path: `${SETTINGS}/appearance`,
-    replies: OWNER,
-    settle: (p) => waitFor(p, 'Como o sistema'),
-  },
-  {
     name: 'Configurações, geral',
     path: `${SETTINGS}/general`,
     replies: OWNER,
     settle: (p) => waitFor(p, 'Exemplo de endereço'),
+  },
+  {
+    name: 'Configurações, memória observacional',
+    path: `${SETTINGS}/observational-memory`,
+    replies: OWNER,
+    settle: (p) => waitFor(p, 'Modelo do observador'),
   },
   {
     name: 'Configurações, contas de modelo do membro',
@@ -78,10 +124,10 @@ export const HOUSE_STATES: State[] = [
     settle: (p) => waitFor(p, 'Só o dono ou um administrador muda as contas de modelo'),
   },
   {
-    name: 'Configurações, minhas contas de modelo',
-    path: `${SETTINGS}/my-model-accounts`,
-    replies: MEMBER,
-    settle: (p) => waitFor(p, 'Nenhuma conta sua'),
+    name: 'Configurações, contas de modelo do dono, com contas nas duas partes',
+    path: `${SETTINGS}/model-accounts`,
+    replies: OWNER_WITH_ACCOUNTS,
+    settle: (p) => waitFor(p, 'Sua ordem para Anthropic: Claude pessoal, Claude da empresa'),
   },
   {
     name: 'passo 2, conta de modelo',
@@ -105,8 +151,8 @@ export const HOUSE_STATES: State[] = [
   {
     name: 'passo 4',
     path: `${WELCOME}/build`,
-    replies: OWNER,
-    settle: (p) => waitFor(p, 'Ir para o início'),
+    replies: { ...OWNER, ...startsOn(COMPANY.id) },
+    settle: (p) => waitFor(p, 'Ir para o início sem pedir nada'),
   },
   {
     name: 'Central, estado do Hub',

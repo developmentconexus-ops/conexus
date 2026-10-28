@@ -1,9 +1,10 @@
 import type { CompanyId, ConversationId, ProjectId, Provider } from '@conexus/hub-api'
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
-import { getRouteApi } from '@tanstack/react-router'
+import { getRouteApi, useLocation } from '@tanstack/react-router'
 import type { ReactNode, RefObject } from 'react'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { HubFailure, writeFailureText } from '../../platform/hub.ts'
+import { HubFailure, sentenceOfCode, writeFailureText } from '../../platform/hub.ts'
+import { Notice } from '../../ui/notice.tsx'
 import { Empty, NotFound } from '../../ui/states.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
 import { accountsQuery } from '../model-accounts/public.ts'
@@ -12,6 +13,7 @@ import { Composer } from './composer.tsx'
 import type { Item } from './conversation-switch.tsx'
 import { ConversationSwitch } from './conversation-switch.tsx'
 import { useDraft } from './draft.ts'
+import { useHandoff } from './handoff.ts'
 import { MemoryStatus } from './memory-status.tsx'
 import { ModelChoice, NoAccount } from './model-choice.tsx'
 import type { SessionRead } from './queries.ts'
@@ -19,7 +21,15 @@ import { allConversationsQueryKey, conversationQuery, sessionReadQuery } from '.
 import type { BuilderSession } from './session.ts'
 import type { Action, SessionState } from './session-state.ts'
 import { TaskPanel } from './task-panel.tsx'
-import { EMPTY_CONVERSATION, NO_SECRETS, titleOf, UNCONFIRMED_SEND } from './text.ts'
+import {
+  EMPTY_CONVERSATION,
+  HANDOFF_UNCONFIRMED,
+  NO_SECRETS,
+  REQUEST_NOT_SENT,
+  titleOf,
+  UNCONFIRMED_SEND,
+  WRITE_AGAIN,
+} from './text.ts'
 import { shownOf, Transcript } from './transcript.tsx'
 import { useSession } from './use-session.ts'
 import { WorkingLine } from './working-line.tsx'
@@ -59,10 +69,17 @@ export function Panel() {
   )
 }
 
+/** A Projeto with no conversation, which says why when Início created it and the Hub refused the model. */
 export function EmptyPanel() {
+  const refused = useLocation({ select: (location) => location.state.refused })
   return (
     <PanelFrame current={undefined}>
-      <div className="p-md">
+      <div className="flex flex-col gap-md p-md">
+        {refused !== undefined && (
+          <Notice>
+            {REQUEST_NOT_SENT} {sentenceOfCode(refused)} {WRITE_AGAIN}
+          </Notice>
+        )}
         <Empty>Nenhuma conversa</Empty>
       </div>
     </PanelFrame>
@@ -210,6 +227,15 @@ function Screen(params: Params) {
   )
 
   useEffect(() => field.current?.focus(), [])
+  useHandoff(conversationId, {
+    send: async (outgoing) => {
+      if (!(await send(outgoing, false))) draft.restore(outgoing)
+    },
+    recover: (text) => {
+      draft.restore({ content: text, files: [] })
+      setError(HANDOFF_UNCONFIRMED)
+    },
+  })
 
   const turns = useMemo(() => shownOf(state), [state])
   const waiting = Object.keys(state.suspended).length > 0

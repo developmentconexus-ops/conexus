@@ -57,26 +57,30 @@ function done() {
 test('o Projeto mostra o nome e a data, e o dono vê "Apagar Projeto"', async () => {
   hub(done)
   render(<Conexus conexus={createConexus(createMemoryHistory({ initialEntries: [ABOUT] }))} />)
-  expect(await screen.findByRole('heading', { name: 'Pedidos' })).toBeTruthy()
+  expect(await screen.findAllByRole('heading', { name: 'Pedidos' })).not.toHaveLength(0)
   expect(screen.getByText('Criado em 17/10/2026')).toBeTruthy()
   expect(screen.getByRole('button', { name: 'Apagar Projeto' })).toBeTruthy()
 })
 
-test('o nome do Projeto está uma vez só, na linha de cima, com o nome inteiro no title, em cada aba', async () => {
+test('o nome do Projeto é um título por largura, com o nome inteiro no title, em cada aba', async () => {
   hub(done)
   render(<Conexus conexus={createConexus(createMemoryHistory({ initialEntries: [PROJECT] }))} />)
-  const title = await screen.findByRole('heading', { name: 'Pedidos' })
-  expect(title.getAttribute('title')).toBe('Pedidos')
-  expect(title.nextElementSibling?.getAttribute('aria-label')).toBe('Projeto')
+  // The top bar's, shown under `md`, and the area's, shown from `md`; CSS hides the other.
+  const titles = await screen.findAllByRole('heading', { name: 'Pedidos' })
+  expect(titles).toHaveLength(2)
+  for (const title of titles) expect(title.getAttribute('title')).toBe('Pedidos')
+  expect(titles.map((title) => title.nextElementSibling?.getAttribute('aria-label'))).toContain(
+    'Projeto',
+  )
   fireEvent.click(screen.getByRole('tab', { name: 'Projeto' }))
   expect(await screen.findByText('Criado em 17/10/2026')).toBeTruthy()
-  expect(screen.getAllByRole('heading', { name: 'Pedidos' })).toHaveLength(1)
+  expect(screen.getAllByRole('heading', { name: 'Pedidos' })).toHaveLength(2)
 })
 
 test('o membro vê o Sobre sem "Apagar Projeto", e quem pode apagar', async () => {
   hub(done, false)
   render(<Conexus conexus={createConexus(createMemoryHistory({ initialEntries: [ABOUT] }))} />)
-  expect(await screen.findByRole('heading', { name: 'Pedidos' })).toBeTruthy()
+  expect(await screen.findAllByRole('heading', { name: 'Pedidos' })).not.toHaveLength(0)
   expect(screen.queryByRole('button', { name: 'Apagar Projeto' })).toBeNull()
   expect(
     screen.getByText('Só o dono ou quem administra a empresa pode apagar o Projeto.'),
@@ -115,7 +119,7 @@ test('Abrir app abre aba nova', async () => {
 test('antes do primeiro app, o topo não mostra "Abrir app"', async () => {
   server.use(...projectsRead({ projects: [PEDIDOS], databaseReady: true, mayDelete: true }))
   render(<Conexus conexus={createConexus(createMemoryHistory({ initialEntries: [ABOUT] }))} />)
-  expect(await screen.findByRole('heading', { name: 'Pedidos' })).toBeTruthy()
+  expect(await screen.findAllByRole('heading', { name: 'Pedidos' })).not.toHaveLength(0)
   expect(screen.queryByRole('link', { name: 'Abrir app' })).toBeNull()
 })
 
@@ -124,7 +128,7 @@ test('um Projeto sem endereço, feito na 7.x: nem o endereço nem "Abrir app"', 
     ...projectsRead({ projects: [PEDIDOS], databaseReady: true, mayDelete: true, address: null }),
   )
   render(<Conexus conexus={createConexus(createMemoryHistory({ initialEntries: [ABOUT] }))} />)
-  expect(await screen.findByRole('heading', { name: 'Pedidos' })).toBeTruthy()
+  expect(await screen.findAllByRole('heading', { name: 'Pedidos' })).not.toHaveLength(0)
   expect(screen.queryByText(/Endereço do app:/)).toBeNull()
   expect(screen.queryByRole('link', { name: 'Abrir app' })).toBeNull()
 })

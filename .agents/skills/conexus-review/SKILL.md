@@ -28,7 +28,9 @@ The pull request, its head commit and the card; nothing from the builders' conve
 4. Run the refusal criteria against the published step or a real database, saying what you ran (a
    claim not run is "read"), and read every CI job's log; when the change touches the test
    selector, its inputs or a dependency, confirm the plan ran everything. Drive the browser where
-   in doubt, and read QA's report if it is posted; never wait for it.
+   in doubt, and read QA's report if it is posted; never wait for it. Rerun `npm run quality` at
+   the head and list it under Ran; a survivor the build called equivalent or style-only that one
+   test kills is a finding (L12).
 5. Walk the card's reference table row by row against the diff ([code
    C75](../../../docs/guides/code.md)): a nativo row uses the named API; an embrulhado row adds only
    its line; a remendo row's native candidate runs at the installed version, listed in the verdict's

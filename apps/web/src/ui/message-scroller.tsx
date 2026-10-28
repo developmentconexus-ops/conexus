@@ -43,6 +43,11 @@ function atEnd(viewport: HTMLElement): boolean {
   return viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight <= END_THRESHOLD
 }
 
+/** iOS lets the finger pull the viewport past its end; letting go starts Safari's spring-back. */
+function pulledPastEnd(viewport: HTMLElement): boolean {
+  return viewport.scrollTop + viewport.clientHeight > viewport.scrollHeight
+}
+
 export function MessageScrollerViewport({
   className,
   onWheel,
@@ -74,7 +79,9 @@ export function MessageScrollerViewport({
         onKeyDown?.(event)
       }}
       onTouchEnd={(event) => {
-        stayAtEnd(event.currentTarget)
+        // Scrolling to the end now would cut the spring-back short; the scroller's own follow
+        // lands when it settles at the end.
+        if (!pulledPastEnd(event.currentTarget)) stayAtEnd(event.currentTarget)
         onTouchEnd?.(event)
       }}
       {...props}

@@ -7,13 +7,13 @@ description: "Builds one unit of an approved Conexus step card as its own pull r
 
 ## When to use
 
-To build one unit of the step in construction from its approved card, or to fix a defect; never by
+To build one unit of the step in construction, or the next ([delivery L1](../../../docs/guides/delivery.md)), from its approved card, or to fix a defect; never by
 the session that wrote the card.
 
 ## What it receives
 
-The card in `docs/steps/` and the unit's name. It reads the card's top tables and its unit's
-section, which is its spec. Nothing else is pasted in: a ruling not in the card is not built.
+The card (in `docs/steps/` or its pull request) and the unit. It reads the card's top
+tables and its unit's section, its spec. Nothing else is pasted in: a ruling not in the card is not built.
 
 It reads [`AGENTS.md`](../../../AGENTS.md), this skill, [code](../../../docs/guides/code.md) and the
 unit's one named guide, and loads the card's maintainers' skills, pstack `poteto-mode` and
@@ -35,14 +35,15 @@ unit's one named guide, and loads the card's maintainers' skills, pstack `poteto
    listed, carrying only the old decisions listed. Past the study rule's measure
    ([`conexus-study`](../conexus-study/SKILL.md)), stop.
 5. Test through the server's public door, negative cases included, with provider doubles per
-   [testing T24](../../../docs/guides/testing.md). Screen texts come from the card's state matrix.
+   [T24](../../../docs/guides/testing.md). Screen texts come from the card's state matrix.
 6. Run the result for real: the server, the route, the migration on a disposable database, and a
-   changed screen looked at per [testing T23](../../../docs/guides/testing.md), through a
-   verification skill when one exists ([screen](references/screen.md)). A fix that touches state
-   reruns the A→B→A case, a fix that moves a layout reruns the card's failure states, and a new
+   changed screen looked at per [T23](../../../docs/guides/testing.md), through a
+   verification skill when one exists ([screen](references/screen.md)). A state fix reruns
+   A→B→A, a layout fix the card's failure states, and a new
    security guard gets its removal row (T12). A remendo row keeps the card's proof beside its
-   [boundaries](../../../docs/reference/boundaries.md) entry. Run pstack `deslop` and `no-comments`;
-   code C70 and C73 decide what leaves.
+   [boundaries](../../../docs/reference/boundaries.md) entry. Run pstack `deslop`, `no-comments` and
+   `npm run quality` ([T27](../../../docs/guides/testing.md)): answer every survivor; code C70 and
+   C73 decide what leaves.
 7. One pull request for the unit, its commits kept; the tests and proofs its section names are green
    locally ([delivery L9](../../../docs/guides/delivery.md)).
 

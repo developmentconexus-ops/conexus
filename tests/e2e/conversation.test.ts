@@ -22,7 +22,7 @@ import {
 } from './conversation-journey.ts'
 import { anotherPage, hubWindow, openConversation } from './hub-window.ts'
 import { createProject, liveHub, openProject, waitForHome } from './live-hub.ts'
-import { enter, linkKey, queueRows, rowsText } from './model-accounts-journey.ts'
+import { changeState, enter, linkKey, moveUp, queueTexts } from './model-accounts-journey.ts'
 
 // Step 12's journey in Chromium, on a real Hub and the providers' doubles. Ana has two windows,
 // one on the conversation and one on the company's accounts, as the owner of Empresa A has: the
@@ -41,11 +41,11 @@ async function setUp(owner: Page, companyA: string) {
   await enter(owner, ANA.email, `/companies/${companyA}/settings/model-accounts`)
   await owner.getByText('Nenhuma conta ligada').waitFor()
   await linkKey(owner, 'Time 1', KEYS.first)
-  await owner.getByText('Time 1 · chave …aB1c · ligada').first().waitFor()
+  await owner.getByText('Time 1', { exact: true }).first().waitFor()
   await linkKey(owner, 'Time 3', KEYS.refused)
-  await owner.getByText('Time 3 · chave …dE2f · ligada').first().waitFor()
+  await owner.getByText('Time 3', { exact: true }).first().waitFor()
   await linkKey(owner, 'Groq 1', KEYS.groq, 'Groq')
-  await owner.getByText('Groq 1 · chave …gH3i · ligada').first().waitFor()
+  await owner.getByText('Groq 1', { exact: true }).first().waitFor()
   await chooseDefaultModel(owner, companyA)
   await owner.goto(`${TEST_ORIGIN}/companies/${companyA}`)
   await waitForHome(owner)
@@ -105,18 +105,16 @@ async function refusedThenPaused(
   companyA: string,
 ) {
   await owner.goto(`${TEST_ORIGIN}/companies/${companyA}/settings/model-accounts`)
-  await saving(owner, () => owner.getByRole('button', { name: 'Subir Time 3' }).click())
-  await owner.getByRole('button', { name: 'Subir Time 3' }).waitFor({ state: 'detached' })
+  await saving(owner, () => moveUp(owner, 'Time 3'))
   const notice = 'Time 3 foi recusada. Ligue de novo; continuei pela Time 1.'
   await noticed(chat, hold, 'E o segundo app?', notice)
   await chat.reload()
   await chat.getByRole('log', { name: 'Conversa com o Builder' }).getByText(notice).waitFor()
   await owner.reload()
   await owner.getByRole('heading', { name: 'Anthropic', level: 3 }).waitFor()
-  const [top] = await rowsText(queueRows(owner, 'Anthropic'))
-  assert.match(top ?? '', /^Time 3.*chave …dE2f · recusada · Ligue de novo/)
-  await saving(owner, () => owner.getByRole('button', { name: 'Pausar Time 1' }).click())
-  await owner.getByRole('button', { name: 'Retomar Time 1' }).waitFor()
+  const [top] = await queueTexts(owner, 'Anthropic')
+  assert.match(top ?? '', /^1ª Time 3 chave …dE2f recusada · Ligue de novo/)
+  await saving(owner, () => changeState(owner, 'Time 1', 'Pausar'))
   await noticed(chat, hold, 'E o terceiro?', EXHAUSTED)
 }
 
@@ -131,8 +129,7 @@ async function switched(
   const notice = `Troquei para ${SECOND_MODEL} pela troca automática da empresa.`
   await noticed(chat, hold, 'E o quarto?', notice)
   await transcriptShowed(chat, SECOND_ANSWER)
-  await saving(owner, () => owner.getByRole('button', { name: 'Retomar Time 1' }).click())
-  await owner.getByRole('button', { name: 'Pausar Time 1' }).waitFor()
+  await saving(owner, () => changeState(owner, 'Time 1', 'Retomar'))
   const before = claudeCalls()
   await answered(chat, hold, 'E o quinto?', ANSWER)
   // ANSWER was shown by an earlier turn: the screen says it before this turn's call is made.
@@ -290,8 +287,7 @@ async function pausedNoticeStays(
   companyA: string,
 ) {
   await owner.goto(`${TEST_ORIGIN}/companies/${companyA}/settings/model-accounts`)
-  await saving(owner, () => owner.getByRole('button', { name: 'Pausar Time 1' }).click())
-  await owner.getByRole('button', { name: 'Retomar Time 1' }).waitFor()
+  await saving(owner, () => changeState(owner, 'Time 1', 'Pausar'))
   await answered(chat, hold, 'E o segundo app?', REFUSED)
   await chat.reload()
   await chat.getByRole('log', { name: 'Conversa com o Builder' }).getByText(REFUSED).waitFor()

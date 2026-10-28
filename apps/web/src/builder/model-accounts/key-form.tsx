@@ -1,13 +1,12 @@
 import type { CompanyId, FailureCode, ModelAccount, Owner, Provider } from '@conexus/hub-api'
 import { ACCOUNT_LABEL_MAX_LENGTH, connectModelAccount } from '@conexus/hub-api'
 import { useMutation } from '@tanstack/react-query'
-import { keepsAttemptKey, useAttemptKey } from '../../platform/attempt-key.ts'
-import { HubFailure } from '../../platform/hub.ts'
+import { useAttemptKey } from '../../platform/attempt-key.ts'
 import {
   Form,
   FormAlert,
   SubmitButton,
-  setServerError,
+  setWriteError,
   TextField,
   useSchemaForm,
 } from '../../ui/form.tsx'
@@ -51,11 +50,7 @@ export function KeyForm(props: {
       form.reset()
       props.onLinked(account)
     } catch (error) {
-      if (!(error instanceof HubFailure)) setServerError(form, error)
-      else if (FIELD_OF[error.code] !== undefined) setServerError(form, error, FIELD_OF[error.code])
-      else if (keepsAttemptKey(error)) {
-        form.setError('root.server', { type: 'server', message: UNCONFIRMED })
-      } else setServerError(form, error)
+      setWriteError(form, error, UNCONFIRMED, FIELD_OF)
     }
   }
 

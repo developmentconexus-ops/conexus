@@ -10,3 +10,5 @@ coverage/
 secrets/
 /apps/server/src/hub/identity/invitation-render.mjs
 .wrangler/
+.stryker-tmp/
+.stryker-report/

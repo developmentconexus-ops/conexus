@@ -13,8 +13,9 @@ import {
   SMALL_PHONE,
   ZOOMED_PHONE,
 } from './layout-harness.ts'
+import { COMPANY } from './src/platform/fixtures.ts'
 import { DEFAULT_STATES } from './sweep-defaults-states.ts'
-import { central, companies, PROJECT_ID, PROJECT_NAME } from './sweep-replies.ts'
+import { companies, OWNER, PROJECT_ID } from './sweep-replies.ts'
 
 const WIDE_PHONE = { width: 600, height: 900 }
 const SIGNED_OUT: Replies = {
@@ -184,79 +185,6 @@ for (const viewport of [DESKTOP, PHONE]) {
   })
 }
 
-test('o Tab passa pela entrada com o foco visível em cada parada: halo nos campos, contorno de 2px no resto', async () => {
-  const page = await open('/login', DESKTOP, SIGNED_OUT)
-  await page.getByRole('textbox', { name: 'E-mail' }).waitFor()
-  assert.deepEqual(await presses(page, 'Tab', 5), [
-    'email halo',
-    'password halo',
-    'Entrar solid 2px',
-    'Esqueci minha senha solid 2px',
-    'body',
-  ])
-  await page.close()
-})
-
-const RAIL = [
-  'Início',
-  PROJECT_NAME,
-  'Todos os projetos',
-  'Configurações',
-  'Conta de Ana Lima',
-].map((name) => `${name} solid 2px`)
-
-test('o Tab passa pela barra com contorno de 2px numa tela de 1366px, antes do conteúdo', async () => {
-  const page = await open('/', DESKTOP, HOUSE)
-  await page.getByRole('button', { name: 'Conta de Ana Lima' }).waitFor()
-  assert.deepEqual(await presses(page, 'Tab', RAIL.length), RAIL)
-  await page.close()
-})
-
-test('numa tela de 390px o Tab começa em Abrir navegação e não entra na gaveta fechada', async () => {
-  const page = await open('/', PHONE, HOUSE)
-  await page.getByRole('heading', { name: 'O que vamos construir?' }).waitFor()
-  // The owner's Início opens with the preparation card, whose Continuar is the first of the content.
-  // The card is not shown while its reads load, so Tab waits for it.
-  await page.getByRole('link', { name: 'Continuar' }).waitFor()
-  assert.deepEqual(await presses(page, 'Tab', 2), [
-    'Abrir navegação solid 2px',
-    'Continuar solid 2px',
-  ])
-  await page.close()
-})
-
-test('o menu da conta aberto pelo teclado mostra o contorno no primeiro item', async () => {
-  const page = await open('/', DESKTOP, HOUSE)
-  await page.getByRole('button', { name: 'Conta de Ana Lima' }).focus()
-  assert.deepEqual(await presses(page, 'Enter', 1), ['Claro solid 2px inside'])
-  await page.close()
-})
-
-test('a gaveta aberta pelo teclado prende o Tab, com contorno em cada parada', async () => {
-  const page = await open('/', PHONE, HOUSE)
-  await page.getByRole('button', { name: 'Abrir navegação' }).focus()
-  assert.deepEqual(
-    [...(await presses(page, 'Enter', 1)), ...(await presses(page, 'Tab', 6))],
-    [...RAIL, 'Fechar navegação solid 2px', 'Início solid 2px'].map((stop) => `${stop} inside`),
-  )
-  await page.close()
-})
-
-test('na gaveta, Estado do Hub é um link: seguido, muda o endereço, fecha a gaveta e devolve o foco a "Abrir navegação"', async () => {
-  const page = await open('/operations/clients/new', PHONE, central('NONE'))
-  const opener = page.getByRole('button', { name: 'Abrir navegação' })
-  await opener.click()
-  await page
-    .getByRole('dialog', { name: 'Navegação' })
-    .getByRole('link', { name: 'Estado do Hub' })
-    .click()
-  await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 2000 })
-  await page.getByRole('heading', { name: 'Estado do Hub' }).waitFor()
-  assert.equal(new URL(page.url()).pathname, '/operations/status')
-  assert.equal(await opener.evaluate((button) => button === document.activeElement), true)
-  await page.close()
-})
-
 for (const scheme of ['light', 'dark'] as const) {
   test(`o aviso "Senha criada. Entre com ela." não tem a cor do subtítulo, no tema ${scheme}`, async () => {
     const page = await harness.open('/login?reason=password-set', {
@@ -328,6 +256,44 @@ for (const viewport of [DESKTOP, PHONE]) {
       return new Set([...text.getClientRects()].map((line) => line.top)).size
     })
     assert.equal(lines, 1)
+    await page.close()
+  })
+}
+
+for (const [viewport, width] of [
+  [DESKTOP, 'o main menos as margens'],
+  [{ width: 1920, height: 1080 }, '80rem, centrada'],
+] as const) {
+  test(`Configurações ocupa a largura: ${width}, numa tela de ${viewport.width}px`, async () => {
+    const page = await open(`/companies/${COMPANY.id}/settings/general`, viewport, OWNER)
+    await page.getByRole('heading', { name: 'Geral', level: 1 }).waitFor()
+    const { content, left, drawn } = await page.getByRole('main').evaluate((main) => {
+      const wrapper = main.querySelector('h1')?.parentElement?.parentElement
+      const area = wrapper?.parentElement
+      if (!wrapper || !area) throw new Error('the page is not laid out')
+      const style = getComputedStyle(area)
+      const padding = Number.parseFloat(style.paddingLeft) + Number.parseFloat(style.paddingRight)
+      return {
+        content: area.clientWidth - padding,
+        left:
+          wrapper.getBoundingClientRect().left -
+          area.getBoundingClientRect().left -
+          Number.parseFloat(style.paddingLeft),
+        drawn: wrapper.getBoundingClientRect().width,
+      }
+    })
+    const expected = Math.min(content, 1280)
+    assert.equal(Math.round(drawn), Math.round(expected))
+    assert.equal(Math.round(left), Math.round((content - expected) / 2))
+    await page.close()
+  })
+}
+
+for (const viewport of [PHONE, SMALL_PHONE]) {
+  test(`Configurações não rola para o lado numa tela de ${viewport.width}px`, async () => {
+    const page = await open(`/companies/${COMPANY.id}/settings/general`, viewport, OWNER)
+    await page.getByRole('heading', { name: 'Geral', level: 1 }).waitFor()
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), viewport.width)
     await page.close()
   })
 }

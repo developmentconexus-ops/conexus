@@ -4,7 +4,8 @@ import { createHarness, PHONE, SMALL_PHONE } from './layout-harness.ts'
 import { STATES } from './sweep-states.ts'
 
 // A phone's browser zooms the page into a text field whose text is under 16px, and the person then
-// drags the page both ways to read it. Every state the sweep knows, at 390px and at 320px.
+// drags the page both ways to read it. Every state the sweep knows, at 390px and at 320px. A
+// select's trigger is such a field: it answers to the same 16px (design V18).
 const harness = createHarness(import.meta.dirname)
 before(() => harness.start())
 after(() => harness.stop())
@@ -22,7 +23,7 @@ describe('campos de texto no celular', { concurrency: 4 }, () => {
         const small = await page.evaluate(() =>
           [
             ...document.querySelectorAll<HTMLElement>(
-              'textarea, input:not([type=checkbox], [type=radio], [type=file], [type=hidden], [type=range])',
+              'textarea, [data-slot=select-trigger], input:not([type=checkbox], [type=radio], [type=file], [type=hidden], [type=range])',
             ),
           ]
             // Base UI keeps a hidden input for a select's or a slider's value, out of the Tab order.

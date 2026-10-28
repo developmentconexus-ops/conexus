@@ -121,7 +121,7 @@ test('com um só Projeto, a barra lista só ele (critério 3)', async () => {
 
 test('abrir um Projeto o põe primeiro nos recentes (critério 3)', async () => {
   const router = open(`${HOME}/projects/${PROJECTS[5]?.id}`)
-  await screen.findByRole('heading', { name: 'Projeto 6' })
+  await screen.findAllByRole('heading', { name: 'Projeto 6' })
   await router.navigate({
     to: '/companies/$companyId',
     params: { companyId: CompanyId.parse(COMPANY.id) },
@@ -132,7 +132,7 @@ test('abrir um Projeto o põe primeiro nos recentes (critério 3)', async () => 
 
 test('dentro de um Projeto a barra vira ícones, Ctrl+B a abre e, ao sair, volta aberta (critério 4)', async () => {
   const router = open(`${HOME}/projects/${PROJECTS[0]?.id}`)
-  await screen.findByRole('heading', { name: 'Projeto 1' })
+  await screen.findAllByRole('heading', { name: 'Projeto 1' })
   const nav = await sidebar()
   expect(railLabel()).toBe('Abrir a barra lateral')
   expect(nav.getByRole('link', { name: 'Início' })).toBeTruthy()

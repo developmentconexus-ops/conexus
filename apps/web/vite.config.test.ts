@@ -72,3 +72,33 @@ test('a árvore de rotas gravada é a que o plugin do roteador gera, e o plugin 
     names.join(),
   )
 })
+
+type Chunk = { file: string; isEntry?: boolean; imports?: string[]; dynamicImports?: string[] }
+
+/** The chunks the first page loads: the entry and everything it imports statically. */
+function loadedFirst(manifest: Record<string, Chunk>, key: string, seen = new Set<string>()) {
+  if (seen.has(key)) return seen
+  seen.add(key)
+  for (const next of manifest[key]?.imports ?? []) loadedFirst(manifest, next, seen)
+  return seen
+}
+
+test('o Shiki só chega por import dinâmico', async (t) => {
+  const outDir = mkdtempSync(join(tmpdir(), 'conexus-web-shiki-'))
+  t.after(() => rmSync(outDir, { recursive: true, force: true }))
+  await build({ root: import.meta.dirname, logLevel: 'silent', build: { outDir, manifest: true } })
+  const manifest: Record<string, Chunk> = JSON.parse(
+    readFileSync(join(outDir, '.vite', 'manifest.json'), 'utf8'),
+  )
+  const entry = Object.keys(manifest).find((key) => manifest[key]?.isEntry)
+  assert.ok(entry, 'the build has no entry chunk')
+  const first = [...loadedFirst(manifest, entry)]
+  assert.deepEqual(
+    first.filter((key) => /shiki/.test(key)),
+    [],
+  )
+  assert.ok(
+    Object.values(manifest).some((chunk) => chunk.dynamicImports?.some((key) => /shiki/.test(key))),
+    'the Shiki is in no dynamic import',
+  )
+})

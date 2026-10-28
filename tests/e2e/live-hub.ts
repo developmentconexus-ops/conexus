@@ -4,6 +4,11 @@ import { existsSync } from 'node:fs'
 import { createServer, get } from 'node:http'
 import { join } from 'node:path'
 import type { TestContext } from 'node:test'
+import {
+  ATTEMPT_KEY_HEADER,
+  createProject as createProjectOperation,
+  Problem,
+} from '@conexus/hub-api'
 import { hashPassword } from 'better-auth/crypto'
 import type { Browser, BrowserContext, Page } from 'playwright-core'
 import { testBuilderPorts } from '../../apps/server/src/builder/runs/test-runs.ts'
@@ -211,7 +216,7 @@ async function moveOn(page: Page) {
   await done.or(page.getByRole('link', { name: 'Fazer depois', exact: true })).click()
 }
 
-/** Welcome steps 2 to 4 as the company stands: each step's way on, then "Ir para o início". */
+/** Welcome steps 2 to 4 as the company stands: each step's way on, then "Ir para o início sem pedir nada". */
 async function finishWelcome(page: Page) {
   await moveOn(page)
   await page.getByRole('heading', { name: 'Convide sua equipe', exact: true }).waitFor()
@@ -219,11 +224,11 @@ async function finishWelcome(page: Page) {
   await leaveWelcome(page)
 }
 
-/** Welcome step 4: "Ir para o início". */
+/** Welcome step 4: "Ir para o início sem pedir nada". */
 export async function leaveWelcome(page: Page) {
   const title = page.getByRole('heading', { name: 'O que vamos construir primeiro?', exact: true })
   await title.waitFor()
-  await page.getByRole('link', { name: 'Ir para o início', exact: true }).click()
+  await page.getByRole('link', { name: 'Ir para o início sem pedir nada', exact: true }).click()
   await waitForHome(page)
 }
 
@@ -251,10 +256,34 @@ export async function openSettings(page: Page, section: string) {
   await page.getByRole('heading', { name: section, exact: true }).waitFor()
 }
 
-/** Início's form: the name of a new Projeto, which opens once it is created. */
-export async function createProject(page: Page, name: string) {
-  await page.getByLabel('Nome do projeto').fill(name)
-  await page.getByRole('button', { name: 'Criar projeto', exact: true }).click()
+/**
+ * A new Projeto, created from the company page through the Hub's door as Início's name step sends
+ * it, then opened; returns the refusal's code when the Hub refuses. Início creates a Projeto only
+ * with a first request to the Builder (step 13.1), which `start.test.tsx` proves; these scripts
+ * need the Projeto alone.
+ */
+export async function createProject(page: Page, name: string): Promise<string | undefined> {
+  const companyId = new URL(page.url()).pathname.split('/')[2]
+  const answer = await page.evaluate(
+    async (sent) => {
+      const response = await globalThis.fetch(sent.path, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', [sent.header]: sent.key },
+        body: JSON.stringify({ name: sent.name }),
+      })
+      return { status: response.status, body: await response.json() }
+    },
+    {
+      path: `/api/companies/${companyId}/projects`,
+      header: ATTEMPT_KEY_HEADER,
+      key: randomUUID(),
+      name,
+    },
+  )
+  if (answer.status !== 201) return Problem.parse(answer.body).code
+  const { project } = createProjectOperation.success.body.parse(answer.body)
+  await page.goto(`${TEST_ORIGIN}/companies/${companyId}/projects/${project.id}`)
+  return undefined
 }
 
 /** A Projeto's card in the page's content, which opens it; the sidebar lists it too. */

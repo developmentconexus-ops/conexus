@@ -1,5 +1,6 @@
 import { listInvitations, listMembers } from '@conexus/hub-api'
 import { createFileRoute } from '@tanstack/react-router'
+import { UsersIcon } from 'lucide-react'
 import { z } from 'zod'
 import {
   companyQuery,
@@ -19,6 +20,8 @@ export const Route = createFileRoute('/_app/companies/$companyId_/settings/peopl
     section: {
       group: 'company',
       label: 'Pessoas e convites',
+      icon: UsersIcon,
+      summary: 'Quem está na empresa e quem foi convidado.',
       order: 20,
       keywords: ['convite', 'convidar', 'membro', 'administrador', 'equipe'],
     },

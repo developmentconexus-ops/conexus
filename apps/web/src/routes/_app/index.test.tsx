@@ -1,4 +1,11 @@
-import { getCompany, listCompanies, listProjects } from '@conexus/hub-api'
+import {
+  getCompany,
+  listCompanies,
+  listMembers,
+  listModelAccounts,
+  listModelProviders,
+  listProjects,
+} from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
@@ -43,6 +50,40 @@ function companyHandlers(...companies: { id: string; name: string }[]) {
       ),
     ),
   ]
+}
+
+const SONNET = 'anthropic/claude-sonnet-4'
+const { providers: PROVIDERS } = listModelProviders.success.body.parse({
+  providers: [{ id: 'anthropic', name: 'Anthropic', models: [{ id: SONNET, efforts: ['off'] }] }],
+})
+
+/** A model account the box can start on, which puts the Início's text field on the page. */
+function startable(mayManage = false) {
+  server.use(
+    http.get('*/api/companies/:companyId/model-accounts', () =>
+      HttpResponse.json(
+        listModelAccounts.success.body.parse({
+          company: [],
+          mine: [],
+          order: [],
+          kinds: [],
+          defaults: {
+            company: null,
+            mine: null,
+            start: { model: SONNET, effort: 'off', from: 'company', account: 'Claude da empresa' },
+            companyStart: null,
+          },
+          choices: { mine: PROVIDERS, company: PROVIDERS },
+          fallback: { enabled: false, chain: [], revision: 0 },
+          usableProviders: ['anthropic'],
+          mayManage,
+        }),
+      ),
+    ),
+    http.get('*/api/model-providers', () =>
+      HttpResponse.json(listModelProviders.success.body.parse({ providers: PROVIDERS })),
+    ),
+  )
 }
 
 function hub(companies: unknown, state = { signedIn: true }) {
@@ -124,21 +165,45 @@ test('o operador sem empresa vai à Central (critério 2)', async () => {
   expect(router.state.location.pathname).toBe('/operations/clients')
 })
 
-test('depois de entrar com Enter, o foco vai para o título da página (#32-4)', async () => {
+test('depois de entrar, o foco vai à caixa (#32-4)', async () => {
   hub(listed(FIRST), { signedIn: false })
+  startable()
   open()
   fireEvent.change(await screen.findByLabelText('E-mail'), { target: { value: ANA.email } })
   fireEvent.change(screen.getByLabelText('Senha'), { target: { value: 'senha-certa-1' } })
   const form = screen.getByRole('button', { name: 'Entrar' }).closest('form')
   if (form === null) throw new Error('the sign-in form is missing')
   fireEvent.submit(form)
-  const title = await screen.findByRole('heading', { name: 'O que vamos construir?' })
-  await waitFor(() => expect(document.activeElement).toBe(title))
+  const box = await screen.findByRole('textbox', { name: 'Mensagem para o Builder' })
+  await waitFor(() => expect(document.activeElement).toBe(box))
+  expect(box.tabIndex).toBe(0)
 })
 
-test('com o carregamento da página preso, o título que aparece depois recebe o foco', async () => {
+test('numa página sem campo, o título recebe o foco (#32-4)', async () => {
+  hub(NO_COMPANIES, { signedIn: false })
+  open()
+  await signInFromLogin()
+  const title = await screen.findByRole('heading', {
+    name: 'Você ainda não está em nenhuma empresa.',
+  })
+  await waitFor(() => expect(document.activeElement).toBe(title))
+  expect(title.tabIndex).toBe(-1)
+})
+
+test('numa página só com caixa de marcar ou opção, o título recebe o foco (#32-4)', async () => {
+  hub(listed(FIRST), { signedIn: false })
+  open(`/companies/${FIRST.id}/settings/account`)
+  await signInFromLogin()
+  await screen.findByRole('heading', { name: 'Minha conta' })
+  await waitFor(() =>
+    expect(document.activeElement).toBe(screen.getByRole('heading', { name: 'Minha conta' })),
+  )
+})
+
+test('com o carregamento da página preso, a caixa que aparece depois recebe o foco', async () => {
   const state = { signedIn: false }
   hub(listed(FIRST), state)
+  startable()
   const held = Promise.withResolvers<void>()
   server.use(
     http.get('*/api/companies', async () => {
@@ -153,8 +218,8 @@ test('com o carregamento da página preso, o título que aparece depois recebe o
   await waitFor(() => expect(state.signedIn).toBe(true))
   expect(screen.queryByRole('heading', { name: 'O que vamos construir?' })).toBeNull()
   held.resolve()
-  const title = await screen.findByRole('heading', { name: 'O que vamos construir?' })
-  await waitFor(() => expect(document.activeElement).toBe(title))
+  const box = await screen.findByRole('textbox', { name: 'Mensagem para o Builder' })
+  await waitFor(() => expect(document.activeElement).toBe(box))
 })
 
 async function signInFromLogin() {
@@ -171,12 +236,13 @@ test('depois de entrar, abre a página pedida, não a primeira empresa', async (
   expect(router.state.location.pathname).toBe(`/companies/${SECOND.id}`)
 })
 
-test('depois do foco no título, uma nova renderização não o puxa de volta', async () => {
+test('depois do foco na caixa, uma nova renderização não o puxa de volta', async () => {
   hub(listed(FIRST), { signedIn: false })
+  startable()
   const router = open()
   await signInFromLogin()
-  const title = await screen.findByRole('heading', { name: 'O que vamos construir?' })
-  await waitFor(() => expect(document.activeElement).toBe(title))
+  const box = await screen.findByRole('textbox', { name: 'Mensagem para o Builder' })
+  await waitFor(() => expect(document.activeElement).toBe(box))
   const account = screen.getByRole('button', { name: /Ana/ })
   account.focus()
   await router.invalidate()
@@ -206,4 +272,19 @@ test('uma falha que o Hub manda tentar de novo mostra "Tentar de novo", que lê 
   open()
   fireEvent.click(await screen.findByRole('button', { name: 'Tentar de novo' }))
   await waitFor(() => expect(reads).toBe(2))
+})
+
+test('numa página cujo primeiro controle é uma seleção, o foco vai ao título, não à entrada escondida', async () => {
+  hub(listed(FIRST), { signedIn: false })
+  startable(true)
+  server.use(
+    http.get('*/api/companies/:companyId/members', () =>
+      HttpResponse.json(listMembers.success.body.parse({ members: [], next: { kind: 'END' } })),
+    ),
+  )
+  open(`/companies/${FIRST.id}/settings/model-accounts`)
+  await signInFromLogin()
+  const title = await screen.findByRole('heading', { name: 'Contas de modelo' })
+  await waitFor(() => expect(document.activeElement).toBe(title))
+  expect(title.tabIndex).toBe(-1)
 })

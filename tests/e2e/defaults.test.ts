@@ -11,7 +11,7 @@ import {
   plantCompany,
   waitForHome,
 } from './live-hub.ts'
-import { enter, linkKey, pickModel } from './model-accounts-journey.ts'
+import { changeState, enter, linkKey, pickModel } from './model-accounts-journey.ts'
 
 // Step 12.3's script in Chromium, on a real Hub: Empresa A with a Claude key and an OpenAI key of
 // the company. The owner sets GPT 5 · Médio for the company; Ana, a member, starts there, chooses
@@ -85,8 +85,7 @@ async function ownDefault(ana: Page, owner: Page, companyId: string, base: strin
 
   const accounts = `${TEST_ORIGIN}/companies/${companyId}/settings/model-accounts`
   await owner.goto(accounts)
-  await owner.getByRole('button', { name: 'Pausar Claude da empresa' }).click()
-  await owner.getByRole('button', { name: 'Retomar Claude da empresa' }).waitFor()
+  await changeState(owner, 'Claude da empresa', 'Pausar')
   await ana.goto(`${base}/my-defaults`)
   await ana
     .getByText(
@@ -94,8 +93,7 @@ async function ownDefault(ana: Page, owner: Page, companyId: string, base: strin
     )
     .waitFor()
   await newConversationChoice(ana, companyId, /GPT 5\s*Médio/)
-  await owner.getByRole('button', { name: 'Retomar Claude da empresa' }).click()
-  await owner.getByRole('button', { name: 'Pausar Claude da empresa' }).waitFor()
+  await changeState(owner, 'Claude da empresa', 'Retomar')
 
   await ana.goto(`${base}/my-defaults`)
   await ana.getByRole('button', { name: 'Usar o da empresa' }).click()
@@ -130,9 +128,9 @@ async function script(window: (ip: string, who: string) => Promise<Page>, compan
   const base = `${TEST_ORIGIN}/companies/${companyId}/settings`
   await ownerPage.goto(`${base}/model-accounts`)
   await linkKey(ownerPage, 'Claude da empresa', CLAUDE_KEY)
-  await ownerPage.getByText('Claude da empresa · chave …x7Qa · ligada').first().waitFor()
+  await ownerPage.getByText('Claude da empresa', { exact: true }).first().waitFor()
   await linkKey(ownerPage, 'OpenAI da empresa', OPENAI_KEY, 'OpenAI')
-  await ownerPage.getByText('OpenAI da empresa · chave …9aZ1 · ligada').first().waitFor()
+  await ownerPage.getByText('OpenAI da empresa', { exact: true }).first().waitFor()
   await ownerPage.goto(`${TEST_ORIGIN}/companies/${companyId}`)
   await createProject(ownerPage, 'Encomendas')
   await ownerPage.getByRole('heading', { name: 'Encomendas', exact: true }).waitFor()

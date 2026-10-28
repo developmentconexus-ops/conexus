@@ -1,4 +1,4 @@
-import { ChevronRightIcon } from 'lucide-react'
+import { ChevronRightIcon, FileIcon, FolderIcon, FolderOpenIcon } from 'lucide-react'
 import type { KeyboardEvent } from 'react'
 import { cn } from '../../ui/cn.ts'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../../ui/collapsible.tsx'
@@ -6,8 +6,15 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../../ui/co
 /** A folder has `children`; a file has none. */
 export type TreeNode = { name: string; path: string; children?: TreeNode[] }
 
-/** The pieces of the kit ship their own files; they open only when the person asks. */
-const KIT = /(^|\/)components\/ui$/
+/**
+ * The kit's folders are the `ui`, `hooks` and `lib` aliases of the starter's `components.json`
+ * (`components` stays open: the Builder writes its own there). They ship their own files and open
+ * only when the person asks.
+ */
+const KIT = /(^|\/)(components\/ui|hooks|lib)$/
+
+/** The Builder's own notes live here; they are not the app, so they never open first. */
+const BUILDER_NOTES = /^\.conexus$/
 
 /** The paths of a version as folders and files, folders first, each level by name. */
 export function treeOf(paths: string[]): TreeNode[] {
@@ -35,11 +42,11 @@ function folderFirst(nodes: TreeNode[]): TreeNode[] {
     .sort((a, b) => Number(!!b.children) - Number(!!a.children) || (a.name < b.name ? -1 : 1))
 }
 
-/** The first file the person sees: the tree's order, leaving the kit's folder closed. */
+/** The first file the person sees: the tree's order, leaving the kit's folder and the Builder's notes closed. */
 export function firstShown(nodes: TreeNode[]): string | undefined {
   for (const node of nodes) {
     if (node.children === undefined) return node.path
-    if (KIT.test(node.path)) continue
+    if (KIT.test(node.path) || BUILDER_NOTES.test(node.path)) continue
     const inside = firstShown(node.children)
     if (inside !== undefined) return inside
   }
@@ -47,10 +54,21 @@ export function firstShown(nodes: TreeNode[]): string | undefined {
 }
 
 const ROW =
-  'flex w-full items-center gap-xs break-all rounded-control px-sm py-xs text-left font-mono text-fact hover:bg-surface-3'
+  'group flex w-full items-center gap-xs break-all rounded-control px-sm py-xs text-left font-mono text-fact'
 
-function Nodes(props: { nodes: TreeNode[]; chosen?: string; onChoose: (path: string) => void }) {
-  const { nodes, chosen, onChoose } = props
+/** The folders on the way to a file: the only ones that open by themselves. */
+function ancestorsOf(path: string | undefined): Set<string> {
+  const parts = path?.split('/').slice(0, -1) ?? []
+  return new Set(parts.map((_, at) => parts.slice(0, at + 1).join('/')))
+}
+
+function Nodes(props: {
+  nodes: TreeNode[]
+  chosen?: string
+  open: Set<string>
+  onChoose: (path: string) => void
+}) {
+  const { nodes, chosen, open, onChoose } = props
   return nodes.map((node) =>
     node.children === undefined ? (
       <button
@@ -59,24 +77,38 @@ function Nodes(props: { nodes: TreeNode[]; chosen?: string; onChoose: (path: str
         role="treeitem"
         aria-selected={node.path === chosen}
         onClick={() => onChoose(node.path)}
-        className={cn(ROW, 'pl-lg', node.path === chosen && 'bg-accent-soft text-text')}
+        className={cn(
+          ROW,
+          'pl-lg',
+          node.path === chosen ? 'bg-accent-soft text-text' : 'hover:bg-surface-3',
+        )}
       >
-        {node.name}
+        <FileIcon aria-hidden="true" className="size-4 shrink-0 text-text-2" />
+        <span className="min-w-0 break-all">{node.name}</span>
       </button>
     ) : (
-      <Collapsible key={node.path} defaultOpen={!KIT.test(node.path)} className="group/folder">
-        <CollapsibleTrigger role="treeitem" className={ROW}>
+      <Collapsible key={node.path} defaultOpen={open.has(node.path)}>
+        {/* The trigger is the group: its own `data-panel-open`, never an outer folder's. */}
+        <CollapsibleTrigger role="treeitem" className={cn(ROW, 'hover:bg-surface-3')}>
           <ChevronRightIcon
             aria-hidden="true"
-            className="size-4 shrink-0 group-data-open/folder:rotate-90"
+            className="size-4 shrink-0 text-text-2 group-data-panel-open:rotate-90"
           />
-          {node.name}
+          <FolderIcon
+            aria-hidden="true"
+            className="size-4 shrink-0 text-text-2 group-data-panel-open:hidden"
+          />
+          <FolderOpenIcon
+            aria-hidden="true"
+            className="hidden size-4 shrink-0 text-text-2 group-data-panel-open:block"
+          />
+          <span className="min-w-0 break-all">{node.name}</span>
         </CollapsibleTrigger>
         <CollapsibleContent
           role="group"
-          className="ml-sm flex flex-col gap-xs border-l border-line"
+          className="ml-md flex flex-col gap-px border-l border-line pl-xs"
         >
-          <Nodes nodes={node.children} chosen={chosen} onChoose={onChoose} />
+          <Nodes nodes={node.children} chosen={chosen} open={open} onChoose={onChoose} />
         </CollapsibleContent>
       </Collapsible>
     ),
@@ -110,9 +142,9 @@ export function FileTree(props: {
       role="tree"
       aria-label="Arquivos do app"
       onKeyDown={walk}
-      className="flex min-w-0 flex-col gap-xs"
+      className="flex min-w-0 flex-col gap-px"
     >
-      <Nodes {...props} />
+      <Nodes {...props} open={ancestorsOf(props.chosen)} />
     </div>
   )
 }

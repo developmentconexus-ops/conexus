@@ -16,15 +16,15 @@ button-primary:
   backgroundColor: "{colors.ink}"
   textColor: "{colors.on-ink}"
   rounded: "{rounded.control}"
-  padding: "0 0.9rem"
-  height: "34px"
+  padding: "0 0.75rem"
+  height: "32px"
   typography: "{typography.label}"
 button-default:
   backgroundColor: "{colors.surface}"
   textColor: "{colors.text}"
   rounded: "{rounded.control}"
-  padding: "0 0.9rem"
-  height: "34px"
+  padding: "0 0.75rem"
+  height: "32px"
   typography: "{typography.label}"
 button-default-hover:
   backgroundColor: "{colors.surface-3}"
@@ -32,13 +32,26 @@ button-ghost:
   backgroundColor: "transparent"
   textColor: "{colors.text-2}"
   rounded: "{rounded.control}"
-  padding: "0 0.9rem"
-  height: "34px"
+  padding: "0 0.75rem"
+  height: "32px"
 icon-button:
   backgroundColor: "transparent"
   textColor: "{colors.text-2}"
   rounded: "{rounded.control}"
   size: "32px"
+  touch: "44px on a touch screen (pointer: coarse), not drawn"
+icon-button-soft:
+  backgroundColor: "{colors.surface-3}"
+  textColor: "{colors.text-2}"
+  rounded: "{rounded.pill}"
+  size: "32px (the composer's + and microphone, with the model button's own fill)"
+  touch: "44px on a touch screen (pointer: coarse), not drawn"
+icon-button-small:
+  backgroundColor: "transparent"
+  textColor: "{colors.text-2}"
+  rounded: "{rounded.control}"
+  size: "28px (a row's own action)"
+  touch: "44px on a touch screen (pointer: coarse), not drawn"
 nav-item:
   backgroundColor: "transparent"
   textColor: "{colors.text-2}"
@@ -119,7 +132,21 @@ project-card:
   backgroundColor: "{colors.surface}"
   textColor: "{colors.text}"
   rounded: "{rounded.card}"
-  padding: "{spacing.lg}"
+  padding: "{spacing.md} {spacing.lg}, under the preview band"
+  border: "hairline, {colors.line}"
+  grid: "1 column, 2 from sm, 3 from lg; gap {spacing.md}, {spacing.lg} from sm"
+project-card-preview:
+  backgroundColor: "{colors.surface-3}"
+  textColor: "{colors.text-2}"
+  height: "112px (h-28) from sm; on a phone a 64px square at the card's start"
+  holds: "the name's first letter in {typography.display}, until a Projeto has a picture of its app"
+example-chip:
+  backgroundColor: "{colors.surface}"
+  textColor: "{colors.text-2}"
+  rounded: "{rounded.pill}"
+  padding: "0 {spacing.md}"
+  height: "32px (h-8)"
+  typography: "{typography.label}"
   border: "hairline, {colors.line}"
 frame-public-column:
   backgroundColor: "{colors.canvas}"
@@ -191,6 +218,40 @@ drawer:
   border: "right hairline, {colors.line}"
 drawer-backdrop:
   backgroundColor: "{colors.canvas}, 80% opacity"
+drawer-right:
+  backgroundColor: "{colors.surface}"
+  textColor: "{colors.text}"
+  width: "the screen, at most {containers.message}"
+  padding: "{spacing.lg}"
+  border: "left hairline, {colors.line}"
+table-row:
+  backgroundColor: "transparent"
+  textColor: "{colors.text}"
+  padding: "{spacing.md} {spacing.sm}"
+  border: "bottom hairline, {colors.line}"
+table-row-header:
+  backgroundColor: "{colors.surface-3}"
+  textColor: "{colors.text-2}"
+  typography: "{typography.label}"
+badge:
+  backgroundColor: "{colors.surface}"
+  textColor: "{colors.text-2}"
+  rounded: "{rounded.pill}"
+  padding: "0 {spacing.sm}"
+  height: "20px"
+  typography: "{typography.label}"
+  border: "hairline, {colors.line}"
+switch:
+  backgroundColor: "{colors.surface-4}"
+  rounded: "{rounded.pill}"
+  width: "36px"
+  height: "20px"
+switch-on:
+  backgroundColor: "{colors.ink}"
+settings-section:
+  width: "16rem title column from md, 20rem from lg, then the controls"
+  padding: "{spacing.xl} 0 0"
+  border: "top hairline, {colors.line}"
 button-danger:
   backgroundColor: "{colors.surface}"
   textColor: "{colors.danger}"
@@ -223,7 +284,17 @@ hairline, not a shadow, because the brand has no shadow token yet (design V3, V1
 `Menu.LinkItem`, is the same `menu-item`, and closes the menu as an item does; Base UI leaves it
 open by default (`closeOnClick`). The `alert-dialog` is Base UI's `AlertDialog` in the drawer's
 dress: a click outside does not close it, Escape and its buttons do, and its first field takes the
-focus. It holds the one `button-danger-confirm`; `button-danger` opens it (design V55).
+focus. It holds the one `button-danger-confirm`; a `button-danger`, or a menu item in danger text, opens it (design V55).
+The `drawer` has two sides: the left one is the phone's navigation (V56), the `drawer-right` is a
+panel for a form beside the page, such as **Ligar conta**. A `table` is shadcn's base-nova, painted
+with the brand's hairlines: its rows keep the table display at every width, so a screen reader
+still hears a table on a phone (`table-row`), and a provider's queue opens with a `table-row-header`.
+A `badge` is a state's word with a dot of its colour (success, warning, danger, or none for
+neutral), never the colour alone (design V35). A `switch` is Base UI's, as base-nova draws it, in
+ink when on and the surface-4 line when off; it saves on each change and waits disabled for the
+answer. A `settings-section` is a part of a settings page: its title and a sentence of whom it
+affects on the left from `md`, its controls on the right, one column on a phone, parts apart by a
+hairline (design V19).
 
 ## Brought from the old design, with no code yet
 

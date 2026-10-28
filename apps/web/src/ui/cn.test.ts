@@ -7,9 +7,9 @@ import { cn } from './cn.ts'
 const TOKENS = readFileSync(new URL('../brand/tokens.css', import.meta.url), 'utf8')
 
 function scale(name: string): string[] {
-  const names = [...TOKENS.matchAll(new RegExp(`^\\s*--${name}-([a-z0-9]+):`, 'gm'))].map(
-    ([, each]) => each ?? '',
-  )
+  const names = [
+    ...TOKENS.matchAll(new RegExp(`^\\s*--${name}-([a-z0-9]+(?:-[a-z0-9]+)*):`, 'gm')),
+  ].map(([, each]) => each ?? '')
   return [...new Set(names)]
 }
 

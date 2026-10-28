@@ -4,6 +4,7 @@ import type { Locator } from 'playwright-core'
 import { createHarness, DESKTOP, PHONE, SMALL_PHONE, ZOOMED_PHONE } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import { CONVERSATION_STATES, WITH_CONVERSATIONS } from './sweep-conversation-states.ts'
+import { PROJECT_STATES } from './sweep-project-states.ts'
 import { PROJECT_ID } from './sweep-replies.ts'
 
 // The Projeto's two regions, measured in the browser: jsdom computes no widths (testing T23).
@@ -92,6 +93,103 @@ test('no celular, "App | Conversa" troca de região sem perder o rascunho nem a 
   )
   assert.ok(scrolled > 0, 'the conversation did not scroll in the test')
   assert.deepEqual(page.problems, [])
+  await page.close()
+})
+
+function iconsOf(row: Locator) {
+  return row.evaluate((element) => {
+    const [chevron, closed, opened] = [...element.querySelectorAll('svg')].map((icon) =>
+      getComputedStyle(icon),
+    )
+    return { rotate: chevron?.rotate, closed: closed?.display, opened: opened?.display }
+  })
+}
+
+const TREE = PROJECT_STATES.find((each) => each.name === 'Projeto, Código com a árvore')
+
+async function openCode(scheme: 'light' | 'dark' = 'light') {
+  assert.ok(TREE, 'the sweep lacks the Código state')
+  const page = await harness.open(TREE.path, {
+    viewport: DESKTOP,
+    replies: TREE.replies,
+    scheme,
+  })
+  await TREE.settle(page)
+  return page
+}
+
+test('uma pasta dentro de outra aberta fecha sozinha: a seta e o ícone seguem o estado, no clique e no teclado', async () => {
+  const page = await openCode()
+  const outer = page.getByRole('treeitem', { name: 'src', exact: true })
+  const inner = page.getByRole('treeitem', { name: 'pages', exact: true })
+  const OPEN = { rotate: '90deg', closed: 'none', opened: 'block' }
+  const SHUT = { rotate: 'none', closed: 'block', opened: 'none' }
+  assert.deepEqual([await iconsOf(outer), await iconsOf(inner)], [OPEN, OPEN])
+  await inner.click()
+  assert.deepEqual([await iconsOf(outer), await iconsOf(inner)], [OPEN, SHUT])
+  await inner.focus()
+  await page.keyboard.press('ArrowRight')
+  assert.deepEqual(await iconsOf(inner), OPEN)
+  await page.keyboard.press('ArrowLeft')
+  assert.deepEqual([await iconsOf(outer), await iconsOf(inner)], [OPEN, SHUT])
+  await page.close()
+})
+
+for (const [scheme, keyword] of [
+  ['light', 'rgb(207, 34, 46)'],
+  ['dark', 'rgb(255, 123, 114)'],
+] as const) {
+  test(`um .tsx aberto pinta palavras, textos, comentários e funções com os tokens, tema ${scheme}`, async () => {
+    const page = await openCode(scheme)
+    const line = page.locator('[data-slot=code-block-line-content]').nth(2)
+    await line.locator('.text-code-keyword').first().waitFor()
+    const colours = await page
+      .locator('[data-slot=code-block-content] [class*=text-code-]')
+      .evaluateAll((spans) =>
+        Object.fromEntries(
+          spans.map((span) => [
+            [...span.classList].find((name) => name.startsWith('text-code-')),
+            getComputedStyle(span).color,
+          ]),
+        ),
+      )
+    assert.equal(colours['text-code-keyword'], keyword)
+    for (const name of ['expression', 'comment', 'function']) {
+      assert.ok(colours[`text-code-${name}`], `no ${name} was painted`)
+    }
+    assert.equal(new Set(Object.values(colours)).size, Object.keys(colours).length)
+    assert.deepEqual(page.problems, [])
+    await page.close()
+  })
+}
+
+test('os números de linha não entram na seleção, na cópia nem na árvore de acessibilidade', async () => {
+  const page = await openCode()
+  const code = page.locator('[data-slot=code-block-content]')
+  await code.locator('.text-code-keyword').first().waitFor()
+  const text = await code.innerText()
+  assert.ok(!/^\d+$/m.test(text), 'a line number is in the text')
+  assert.match(text, /export const encomendas/)
+  // The accessibility tree under the code: no text of its own may be only a line number.
+  const session = await page.context().newCDPSession(page)
+  const { root } = await session.send('DOM.getDocument')
+  const { nodeId } = await session.send('DOM.querySelector', {
+    nodeId: root.nodeId,
+    selector: '[data-slot=code-block-content]',
+  })
+  const { node } = await session.send('DOM.describeNode', { nodeId })
+  const { nodes } = await session.send('Accessibility.getFullAXTree')
+  const byId = new Map(nodes.map((each) => [each.nodeId, each]))
+  function under(each: (typeof nodes)[number]): boolean {
+    if (each.backendDOMNodeId === node.backendNodeId) return true
+    const parent = each.parentId === undefined ? undefined : byId.get(each.parentId)
+    return parent !== undefined && under(parent)
+  }
+  const digits = nodes.filter(
+    (each) =>
+      each.role?.value === 'StaticText' && /^\d+$/.test(each.name?.value ?? '') && under(each),
+  )
+  assert.deepEqual(digits, [])
   await page.close()
 })
 
