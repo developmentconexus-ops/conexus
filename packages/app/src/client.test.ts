@@ -3,7 +3,15 @@ import { test } from 'node:test'
 import type { AppProps } from '@conexus/app-contract'
 import { APP_FAILURE_CODES, serveApp } from '@conexus/app-contract'
 import { z } from 'zod'
-import { CallFailed, createApi, defineHandlers, defineOperations, failureText } from './index.ts'
+import {
+  CallFailed,
+  can,
+  createApi,
+  defineHandlers,
+  defineOperations,
+  failureText,
+  readCaller,
+} from './index.ts'
 
 const operations = defineOperations({
   dobrar: { input: z.object({ n: z.int() }), output: z.object({ n: z.int() }) },
@@ -11,7 +19,13 @@ const operations = defineOperations({
 })
 
 const PROPS: AppProps = {
-  caller: { personId: 'p', personName: 'Ana', projectId: 'j', projectName: 'Pedidos' },
+  caller: {
+    personId: 'p',
+    personName: 'Ana',
+    projectId: 'j',
+    projectName: 'Pedidos',
+    access: { kind: 'BUILDER' },
+  },
   db: { query: async () => ({ rows: [] }), batch: async () => ({ results: [] }) },
 }
 
@@ -61,4 +75,53 @@ test('uma saída fora do Zod do cliente: OUTPUT_INVALID', async () => {
 test('toda falha do contrato tem a sua frase', () => {
   assert.deepEqual(Object.keys(failureText).sort(), [...APP_FAILURE_CODES].sort())
   for (const text of Object.values(failureText)) assert.match(text, /\.$/)
+})
+
+test('quem chama e a frase do papel', async () => {
+  const caller = await readCaller(served())
+  assert.deepEqual(caller, { personName: 'Ana', access: { kind: 'BUILDER' } })
+  assert.equal(can(caller.access, 'gerente'), true)
+  assert.equal(can({ kind: 'USER', role: 'gerente' }, 'gerente'), true)
+  assert.equal(can({ kind: 'USER', role: 'vendedor' }, 'gerente'), false)
+  assert.equal(can({ kind: 'USER', role: null }, 'gerente'), false)
+  const forbidden = createApi(operations, async () =>
+    Response.json({ code: 'ROLE_FORBIDDEN' }, { status: 403 }),
+  )
+  await assert.rejects(forbidden('dobrar', { n: 1 }), {
+    code: 'ROLE_FORBIDDEN',
+    message: 'Seu papel neste app não permite isto.',
+  })
+})
+
+function refusedBy(platform: Response) {
+  return createApi(operations, async () => platform)
+}
+
+test('a recusa da plataforma recarrega a página', async (t) => {
+  const reload = t.mock.fn()
+  Object.defineProperty(globalThis, 'location', { value: { reload }, configurable: true })
+  t.after(() => Reflect.deleteProperty(globalThis, 'location'))
+  const redirected = Object.defineProperty(new Response(null), 'type', { value: 'opaqueredirect' })
+  const seen: RequestInit[] = []
+  const api = createApi(operations, async (_url, init) => {
+    seen.push(init ?? {})
+    return redirected
+  })
+  await assert.rejects(api('dobrar', { n: 1 }), { code: 'UNREACHABLE' })
+  assert.equal(seen[0]?.redirect, 'manual')
+  assert.equal(reload.mock.callCount(), 1)
+  await assert.rejects(
+    refusedBy(new Response('<h1>Sem acesso</h1>', { status: 403 }))('dobrar', { n: 1 }),
+    {
+      code: 'UNREACHABLE',
+    },
+  )
+  assert.equal(reload.mock.callCount(), 2)
+  await assert.rejects(
+    refusedBy(new Response('<h1>503</h1>', { status: 503 }))('dobrar', { n: 1 }),
+    {
+      code: 'UNREACHABLE',
+    },
+  )
+  assert.equal(reload.mock.callCount(), 2)
 })

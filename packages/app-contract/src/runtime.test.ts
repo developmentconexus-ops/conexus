@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { z } from 'zod'
-import type { AppProps, Db } from './index.ts'
+import type { AppProps, CallerAccess, Db, Operations, Roles } from './index.ts'
 import { serveApp } from './index.ts'
 
 const OPERATIONS = {
@@ -15,13 +15,26 @@ const DB: Db = {
   query: async () => ({ rows: [{ id: 7 }] }),
   batch: async () => ({ results: [] }),
 }
-const CALLER = { personId: 'p', personName: 'Ana', projectId: 'j', projectName: 'Pedidos' }
-const PROPS: AppProps = { caller: CALLER, db: DB }
+const BUILDER: CallerAccess = { kind: 'BUILDER' }
+const CALLER = {
+  personId: 'p',
+  personName: 'Ana',
+  projectId: 'j',
+  projectName: 'Pedidos',
+  access: BUILDER,
+}
 
-function call(app: ReturnType<typeof serveApp>, path: string, body: unknown, method = 'POST') {
+function call(
+  app: ReturnType<typeof serveApp>,
+  path: string,
+  body: unknown,
+  method = 'POST',
+  access: CallerAccess = BUILDER,
+) {
   const init: RequestInit = { method }
   if (method === 'POST') init.body = typeof body === 'string' ? body : JSON.stringify(body)
-  return app.fetch(new Request(`https://app.example/${path}`, init), {}, { props: PROPS })
+  const props: AppProps = { caller: { ...CALLER, access }, db: DB }
+  return app.fetch(new Request(`https://app.example/${path}`, init), {}, { props })
 }
 
 const app = serveApp({
@@ -141,4 +154,68 @@ test('zero operações: todo /api responde 404; e sem teto de operações', asyn
     handlers: Object.fromEntries(names.map((name) => [name, () => ({ id: 1 })])),
   })
   assert.equal((await call(many, 'api/op199', { texto: 'oi' })).status, 200)
+})
+
+const ROLES = { vendedor: 'Vendedor', gerente: 'Gerente' }
+const aprovar = { input: z.strictObject({ id: z.int() }), output: z.strictObject({ id: z.int() }) }
+const ROLED = {
+  listar: { ...OPERATIONS.escrever, roles: ['vendedor', 'gerente'] },
+  aprovar: { ...aprovar, roles: ['gerente'] },
+  ola: { ...aprovar, roles: 'everyone' as const },
+}
+const HANDLERS = { listar: () => ({ id: 1 }), aprovar: () => ({ id: 2 }), ola: () => ({ id: 3 }) }
+function user(role: string | null): CallerAccess {
+  return { kind: 'USER', role }
+}
+
+test('papéis: a operação recusa o papel que não lista, antes do handler', async (t) => {
+  const handler = t.mock.fn(() => ({ id: 2 }))
+  const roled = serveApp({
+    operations: ROLED,
+    handlers: { ...HANDLERS, aprovar: handler },
+    roles: ROLES,
+  })
+  const body = { id: 1 }
+  const sells = await call(roled, 'api/aprovar', body, 'POST', user('vendedor'))
+  assert.equal(sells.status, 403)
+  assert.deepEqual(await sells.json(), { code: 'ROLE_FORBIDDEN' })
+  const unreadable = await call(roled, 'api/aprovar', 'não é json', 'POST', user('vendedor'))
+  assert.equal(unreadable.status, 403)
+  assert.equal(handler.mock.callCount(), 0)
+  assert.equal((await call(roled, 'api/aprovar', body, 'POST', user('gerente'))).status, 200)
+  assert.equal(handler.mock.callCount(), 1)
+  assert.equal((await call(roled, 'api/aprovar', body, 'POST', BUILDER)).status, 200)
+  const listed = await call(roled, 'api/listar', { texto: 'oi' }, 'POST', user('vendedor'))
+  assert.equal(listed.status, 200)
+  for (const access of [user('extinto'), user(null)]) {
+    assert.equal((await call(roled, 'api/listar', { texto: 'oi' }, 'POST', access)).status, 403)
+    assert.equal((await call(roled, 'api/ola', body, 'POST', access)).status, 200)
+  }
+})
+
+test('papéis: operação sem tranca ou com papel desconhecido não sobe', () => {
+  function start(operations: Operations, roles?: Roles) {
+    return serveApp({ operations, handlers: HANDLERS, roles })
+  }
+  assert.throws(
+    () => start({ listar: ROLED.listar, aprovar: aprovar, ola: ROLED.ola }, ROLES),
+    /aprovar/,
+  )
+  assert.throws(
+    () => start({ ...ROLED, aprovar: { ...aprovar, roles: ['chefe'] } }, ROLES),
+    /aprovar.*chefe/,
+  )
+  assert.throws(() => start(ROLED), /vendedor|gerente/)
+  const open = { listar: OPERATIONS.escrever, aprovar, ola: aprovar }
+  assert.doesNotThrow(() => start(open))
+})
+
+test('GET /api/caller: quem chama e como detém o app', async () => {
+  const roled = serveApp({ operations: ROLED, handlers: HANDLERS, roles: ROLES })
+  for (const access of [BUILDER, user('gerente'), user(null)]) {
+    const response = await call(roled, 'api/caller', undefined, 'GET', access)
+    assert.equal(response.status, 200)
+    assert.deepEqual(await response.json(), { personName: 'Ana', access })
+  }
+  assert.equal((await call(roled, 'api/caller', {}, 'POST')).status, 404)
 })

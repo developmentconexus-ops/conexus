@@ -62,7 +62,13 @@ function fakeDb(): Db {
 async function run(folder: string) {
   const worker = await import(pathToFileURL(join(folder, 'worker.js')).href)
   const props: AppProps = {
-    caller: { personId: 'p', personName: 'Ana', projectId: 'j', projectName: 'Pedidos' },
+    caller: {
+      personId: 'p',
+      personName: 'Ana',
+      projectId: 'j',
+      projectName: 'Pedidos',
+      access: { kind: 'BUILDER' },
+    },
     db: fakeDb(),
   }
   function call(operation: string, input: unknown): Promise<Response> {

@@ -34,6 +34,7 @@ const Answer = z.strictObject({
     }),
   ),
   migrations: z.unknown(),
+  roles: z.record(z.string(), z.unknown()).optional(),
 })
 
 const BuildErrors = z.array(
@@ -44,9 +45,19 @@ const BuildErrors = z.array(
 )
 
 /**
+ * The lines that bring the app's `operations` and its `roles` (an app without roles exports none)
+ * into a generated module, which the manifest's program and the Worker's entry share.
+ */
+export function sharedOf(operations: boolean): string[] {
+  return operations
+    ? [`import * as shared from '../../${OPERATIONS}'`, 'const { operations, roles } = shared']
+    : ['const operations = {}', 'const roles = undefined']
+}
+
+/**
  * A program that imports the app's operations and handlers as the Worker will and starts the
  * contract's runtime on them, which refuses an operation without its handler, a handler without its
- * operation or a name `/api` cannot say. It writes what of the operations JSON cannot carry, and the
+ * operation, a name `/api` cannot say, or, in an app with roles, an operation without them. It writes what of the operations JSON cannot carry, and the
  * migrations the manifest lists, to a file: the app's own prints never mix with the answer.
  */
 function entryOf(operations: boolean, handlers: boolean, answerPath: string): string {
@@ -54,10 +65,10 @@ function entryOf(operations: boolean, handlers: boolean, answerPath: string): st
     "import { writeFileSync } from 'node:fs'",
     "import { serveApp } from '@conexus/app-contract'",
     "import { notJson } from '@conexus/app/json'",
-    operations ? `import { operations } from '../../${OPERATIONS}'` : 'const operations = {}',
+    ...sharedOf(operations),
     handlers ? `import * as server from '../../${HANDLERS}'` : 'const server = {}',
-    'serveApp({ operations, handlers: server.handlers ?? {} })',
-    'const answer = { notJson: notJson(operations), migrations: server.migrations ?? [] }',
+    'serveApp({ operations, handlers: server.handlers ?? {}, roles })',
+    'const answer = { notJson: notJson(operations), migrations: server.migrations ?? [], roles }',
     `writeFileSync(${JSON.stringify(answerPath)}, JSON.stringify(answer))`,
   ].join('\n')
 }
@@ -141,8 +152,18 @@ export async function manifesto(ctx: CheckContext): Promise<Outcome> {
     )
     return { state: 'failed', problems }
   }
-  const { migrations } = answer
-  const manifest = Manifest.safeParse({ contract: 1, entry: 'worker.js', migrations, assets: [] })
+  const { migrations, roles } = answer
+  const listed =
+    roles === undefined
+      ? {}
+      : { roles: Object.entries(roles).map(([name, label]) => ({ name, label })) }
+  const manifest = Manifest.safeParse({
+    contract: 1,
+    entry: 'worker.js',
+    ...listed,
+    migrations,
+    assets: [],
+  })
   if (!manifest.success) {
     const message = z.prettifyError(manifest.error)
     return { state: 'failed', problems: [problem({ code: 'MANIFEST_INVALID', file, message })] }

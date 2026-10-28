@@ -61,3 +61,19 @@ test('recusa migração sem comando e ids repetidos', () => {
     ],
   }))
 })
+
+test('roles é opcional, e um papel repetido ou de nome inválido não passa', () => {
+  assert.equal(Manifest.safeParse(GOOD).success, true)
+  const roles = [
+    { name: 'vendedor', label: 'Vendedor' },
+    { name: 'gerente', label: 'Gerente' },
+  ]
+  assert.deepEqual(Manifest.parse({ ...GOOD, roles }).roles, roles)
+  for (const bad of [
+    [roles[0], roles[0]],
+    [{ name: 'Chefe', label: 'Chefe' }],
+    [{ name: 'a', label: ' ' }],
+  ]) {
+    assert.equal(Manifest.safeParse({ ...GOOD, roles: bad }).success, false)
+  }
+})

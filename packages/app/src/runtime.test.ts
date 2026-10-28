@@ -13,7 +13,13 @@ const operations = defineOperations({
 
 const DB: Db = { query: async () => ({ rows: [] }), batch: async () => ({ results: [] }) }
 const PROPS: AppProps = {
-  caller: { personId: 'p', personName: 'Ana', projectId: 'j', projectName: 'Pedidos' },
+  caller: {
+    personId: 'p',
+    personName: 'Ana',
+    projectId: 'j',
+    projectName: 'Pedidos',
+    access: { kind: 'BUILDER' },
+  },
   db: DB,
 }
 

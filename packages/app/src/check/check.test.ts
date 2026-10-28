@@ -21,6 +21,7 @@ import { manifesto } from './manifest.ts'
 import type { CheckReport } from './report.ts'
 import { runCheck } from './run.ts'
 import type { CheckContext, Runner } from './step.ts'
+import { workOf } from './step.ts'
 
 // The repository's node_modules holds every package of the starter at its exact version, so a
 // copy of the starter that links to it is an app after `npm ci`. The install itself reaches the
@@ -154,6 +155,54 @@ test('manifesto: z.date() sem codec, bigint, Map ou transform de mão única na 
     ],
   )
   assert.match(problems[0]?.message ?? '', /Date cannot be represented/)
+})
+
+function roledOperations(aprovar: string): string {
+  return `import { defineOperations, defineRoles } from '@conexus/app'
+import { z } from 'zod'
+
+export const roles = defineRoles({ vendedor: 'Vendedor', gerente: 'Gerente' })
+
+export const operations = defineOperations({
+  criar: { input: z.object({}), output: z.object({}), roles: ['vendedor', 'gerente'] },
+  aprovar: { input: z.object({}), output: z.object({}), ${aprovar} },
+})
+`
+}
+test('o manifesto leva os papéis', async (t) => {
+  const files = {
+    'shared/operations.ts': roledOperations("roles: ['gerente']"),
+    'server/handlers.ts': ANY_HANDLERS,
+  }
+  const ctx = contextOf(appWith(t, files))
+  assert.equal((await manifesto(ctx)).state, 'passed')
+  const manifest = JSON.parse(readFileSync(workOf(ctx, 'manifest.json'), 'utf8'))
+  assert.deepEqual(manifest.roles, [
+    { name: 'vendedor', label: 'Vendedor' },
+    { name: 'gerente', label: 'Gerente' },
+  ])
+  const without = contextOf(
+    appWith(t, { 'shared/operations.ts': OPERATIONS, 'server/handlers.ts': ANY_HANDLERS }),
+  )
+  assert.equal((await manifesto(without)).state, 'passed')
+  assert.equal('roles' in JSON.parse(readFileSync(workOf(without, 'manifest.json'), 'utf8')), false)
+})
+
+test('a checagem recusa a operação sem papel', async (t) => {
+  for (const [aprovar, phrase] of [
+    ['', /Operation without roles: aprovar/],
+    ["roles: ['chefe']", /Operation aprovar names undeclared roles: chefe/],
+  ] as const) {
+    const files = {
+      'shared/operations.ts': roledOperations(aprovar),
+      'server/handlers.ts': ANY_HANDLERS,
+    }
+    const outcome = await manifesto(contextOf(appWith(t, files)))
+    assert.equal(outcome.state, 'failed')
+    const [first] = outcome.state === 'failed' ? outcome.problems : []
+    assert.equal(first?.code, 'MANIFEST_INVALID')
+    assert.match(first?.message ?? '', phrase)
+  }
 })
 
 /** The install's one command faked as npm itself prints it: what `npm ci --json` writes on stdout. */

@@ -14,7 +14,7 @@ Build in small steps and prove each one before the next. A step is done when you
 
 ## Prove each step
 
-`conexus_check` runs the steps Conexus runs when you finish: the packages, that `shared/operations.ts` fits in JSON, the types, the build, the Worker, and the page opened in a browser under the app's security policy. It does not call operations, touch data or show you the screen. Once it passes, prove the step with what can show it:
+`conexus_check` runs the steps Conexus runs when you finish: the packages, that `shared/operations.ts` fits in JSON and, in an app with roles, that every operation names the roles that call it, the types, the build, the Worker, and the page opened in a browser under the app's security policy. It does not call operations, touch data or show you the screen. Once it passes, prove the step with what can show it:
 - An operation: nothing here calls it. Read its handler against its input, its output, its table and the failures it can meet, and say it was not run.
 - A screen: you cannot see it. Trace each value it shows to the operation that returns it, check its four data states (`conexus-app`), and tell the person which screen to try and what they should see there.
 - A new table or migration: Conexus applies migrations when the version is sent, not in this run. Read the migration against how the table is used, and say it is proven only once the person tries the app.
