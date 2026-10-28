@@ -7,7 +7,7 @@ description: "Builds one unit of an approved Conexus step card as its own pull r
 
 ## When to use
 
-To build one unit of the step in construction from its approved card, or to fix a defect; never by
+To build one unit of the step in construction, or the next ([delivery L1](../../../docs/guides/delivery.md)), from its approved card, or to fix a defect; never by
 the session that wrote the card.
 
 ## What it receives

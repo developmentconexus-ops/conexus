@@ -19,7 +19,8 @@ merge.
 - **L1.** Product work **should** have one step in construction; study/scope of the next step and
   a draft method change can run beside it without product code. A sibling step (12.1, 12.2) builds
   only after the previous one merges, but once a card is approved (L6), its units that touch none of
-  the files of the previous step's fixes may start. Founder, 2026-10-27: "1. Sim". Failure: two stages approve incompatible forms of one
+  the files of the previous step's fixes may start, built from that card's pull request, while the
+  use, fixes and closing of the previous step run beside them. Founder, 2026-10-27: "1. Sim". Failure: two stages approve incompatible forms of one
   contract before anyone uses it. [review]
 - **L2.** A step **should** be usable within a few days, with about 4,000 changed code lines excluding
   tests/generated files, calibrated at step 5; split before build when it exceeds that budget.
@@ -101,7 +102,7 @@ merge.
 - **L17.** After the merge, the step **must** be published on the cloud installation, checked live by
   firstmate, item by item through the card's use script, before the founder is told, and used by
   the founder through the card's use script. His words, the date and the address go in the
-  approvals ledger, and only then **may** the next step start. Founder, 2026-10-12. Publishing is a GitHub Release firstmate creates after the merge, with CI green and a
+  approvals ledger, and only then **may** the next step start, but for the units of L1. Founder, 2026-10-12. Publishing is a GitHub Release firstmate creates after the merge, with CI green and a
   note of what the step delivers: `v0.N.0` for step N, `v0.N.P` for a fix of it, `v1.0.0` with
   the first company [0035]. A proof **must not** spend a name of this scheme; the card names the
   releases its proof creates. Failed use leaves the step open for a fix. [CI]
