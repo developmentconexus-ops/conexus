@@ -128,3 +128,12 @@ test('o modelo escolhido fica à vista no campo e uma resposta cortada diz que n
     ),
   ).toBeTruthy()
 })
+
+test('a recusa de quem escolhe o observador aparece no campo do observador, não no do refletor', async () => {
+  open('owner', () => refusal('MODEL_NO_ACCOUNT'))
+  const observer = await screen.findByRole('combobox', { name: 'Modelo do observador' })
+  await choose(observer, 'GPT 5')
+  const message = await screen.findByText(sentenceOfCode('MODEL_NO_ACCOUNT'))
+  expect(screen.getByRole('region', { name: 'Observador' }).contains(message)).toBe(true)
+  expect(screen.getByRole('region', { name: 'Refletor' }).contains(message)).toBe(false)
+})

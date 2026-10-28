@@ -41,11 +41,13 @@ export function ModelFallbackSection(props: {
   const switchId = useId()
   const send = useMutation(sendFallback)
   const switchRef = useRef<HTMLElement>(null)
+  const section = useRef<HTMLElement>(null)
   const switched = useRef(false)
   const chain = fallback.chain
   const feedback = useMoveFeedback<HTMLOListElement>(
     chain.map((model) => ({ id: model, label: modelLabel(model) })),
     'da troca',
+    send.isPending,
   )
 
   // The switch is disabled while its write runs, which drops its focus: it returns with the answer.
@@ -74,6 +76,7 @@ export function ModelFallbackSection(props: {
 
   return (
     <SettingsSection
+      ref={section}
       id="fallback"
       title="Troca automática"
       description="O Builder tenta as contas nesta ordem; quando as contas de um modelo acabam, a conversa segue com o próximo modelo da fila."
@@ -97,7 +100,9 @@ export function ModelFallbackSection(props: {
         box={feedback.box}
         onMove={move}
         onRemove={(model) =>
-          save({ enabled: fallback.enabled, chain: chain.filter((one) => one !== model) })
+          save({ enabled: fallback.enabled, chain: chain.filter((one) => one !== model) }, () =>
+            section.current?.focus(),
+          )
         }
       />
       <p role="status" className="sr-only">
@@ -108,7 +113,10 @@ export function ModelFallbackSection(props: {
         chain={chain}
         busy={send.isPending}
         onAdd={(model, onSaved) =>
-          save({ enabled: fallback.enabled, chain: [...chain, model] }, onSaved)
+          save({ enabled: fallback.enabled, chain: [...chain, model] }, () => {
+            onSaved()
+            section.current?.focus()
+          })
         }
       />
       <FieldError>{send.isError ? refusalText(send.error) : undefined}</FieldError>

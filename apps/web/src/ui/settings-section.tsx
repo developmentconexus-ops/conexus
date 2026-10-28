@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import type { ReactNode, Ref } from 'react'
 
 /**
  * A part of a settings page in two columns from `md`: what it is and whom it affects on the left,
@@ -9,12 +9,16 @@ export function SettingsSection(props: {
   id: string
   title: string
   description?: ReactNode
+  /** Given, the section takes focus when a change leaves the control that had it gone. */
+  ref?: Ref<HTMLElement>
   children: ReactNode
 }) {
   return (
     <section
+      ref={props.ref}
+      tabIndex={props.ref === undefined ? undefined : -1}
       aria-labelledby={`${props.id}-title`}
-      className="grid gap-lg border-line border-t pt-xl md:grid-cols-[16rem_minmax(0,1fr)] md:gap-2xl lg:grid-cols-[20rem_minmax(0,1fr)]"
+      className="grid gap-lg focus:outline-none border-line border-t pt-xl md:grid-cols-[16rem_minmax(0,1fr)] md:gap-2xl lg:grid-cols-[20rem_minmax(0,1fr)]"
     >
       <div className="flex flex-col gap-xs">
         <h2 id={`${props.id}-title`} className="font-display text-title">

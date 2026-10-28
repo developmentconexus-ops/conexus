@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
+import type { ModelAccount } from '@conexus/hub-api'
 import { setConversationModel } from '@conexus/hub-api'
 import type { Replies } from './layout-harness.ts'
 import { createHarness, DESKTOP, ok, presses } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
+import { withAccounts } from './sweep-accounts-states.ts'
 import { WITH_CONVERSATIONS } from './sweep-conversation-states.ts'
 import { DEFAULT_STATES } from './sweep-defaults-states.ts'
 import { waitFor } from './sweep-kit.ts'
@@ -160,5 +162,57 @@ test('Meus padrões, pelo teclado: o botão abre a lista, Tab vai ao deslizante,
     'Modelo e raciocínio',
   )
   assert.equal(await page.getByRole('button', { name: 'Salvar padrão' }).isEnabled(), true)
+  await page.close()
+})
+
+test('as filas, pelo teclado: depois de Subir ou Descer o foco fica na seta ou no par, na troca automática e nas contas', async () => {
+  const accountsPath = `/api/companies/${COMPANY.id}/model-accounts`
+  const replies = withAccounts(OWNER, true)
+  const read = replies[`GET ${accountsPath}`]
+  assert.ok(read)
+  const held = read.json as { company: ModelAccount[]; fallback: unknown }
+  const state = {
+    ...held,
+    fallback: {
+      enabled: true,
+      chain: ['anthropic/claude-sonnet-4', 'openai/gpt-5'],
+      revision: 0,
+    },
+  }
+  const page = await harness.open(`/companies/${COMPANY.id}/settings/model-accounts`, {
+    viewport: DESKTOP,
+    replies,
+  })
+  await page.route(`**${accountsPath}`, (route) => route.fulfill({ json: state }))
+  await page.route('**/model-fallback', async (route) => {
+    const body = route.request().postDataJSON() as typeof state.fallback
+    state.fallback = { ...body, revision: body.revision + 1 }
+    await route.fulfill({ json: state.fallback })
+  })
+  await page.route('**/model-account-orders/**', async (route) => {
+    const { ids } = route.request().postDataJSON() as { ids: string[] }
+    state.company = state.company.map((one) =>
+      ids.includes(one.id) ? { ...one, position: ids.indexOf(one.id) } : one,
+    )
+    await route.fulfill({ json: { accounts: state.company } })
+  })
+  await page.reload()
+  await waitFor(page, 'Claude do financeiro')
+
+  async function focused() {
+    return page.evaluate(() => document.activeElement?.getAttribute('aria-label') ?? 'body')
+  }
+  async function pressed(label: string, expected: string) {
+    await page.getByRole('button', { name: label, exact: true }).focus()
+    const written = page.waitForResponse((one) => one.request().method() === 'PUT')
+    await page.keyboard.press('Enter')
+    await written
+    await page.waitForLoadState('networkidle')
+    await page.waitForTimeout(300)
+    assert.equal(await focused(), expected, `after ${label}`)
+  }
+  await pressed('Descer Claude Sonnet 4', 'Subir Claude Sonnet 4')
+  await pressed('Subir Claude Sonnet 4', 'Descer Claude Sonnet 4')
+  await pressed('Descer Claude do financeiro', 'Descer Claude do financeiro')
   await page.close()
 })
