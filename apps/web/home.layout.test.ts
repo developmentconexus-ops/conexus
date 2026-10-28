@@ -185,6 +185,33 @@ test('recarregar durante o envio do pedido põe o texto na caixa com a frase e n
   await page.close()
 })
 
+test('o pedido recusado e reenviado não volta depois de recarregar: sem a frase do envio cortado, a caixa vazia, e no celular em App', async () => {
+  for (const viewport of [DESKTOP, PHONE]) {
+    const replies = {
+      ...starting(Promise.resolve()),
+      [`POST ${MESSAGES}`]: { status: 502, json: {} },
+    }
+    const page = await open(`/companies/${COMPANY.id}`, viewport, replies)
+    await start(page)
+    await page.getByRole('alert').waitFor()
+    replies[`POST ${MESSAGES}`] = { status: 200, json: { ok: true } }
+    await page.getByRole('button', { name: 'Enviar' }).click()
+    await page.waitForFunction(() => document.querySelector('[role=alert]') === null)
+    await page.reload()
+    const field = page.getByRole('textbox', { name: 'Mensagem para o Builder' })
+    if (viewport === PHONE) {
+      const app = page.getByRole('button', { name: 'App', exact: true })
+      await app.waitFor()
+      assert.equal(await app.getAttribute('aria-pressed'), 'true')
+      await page.getByRole('button', { name: 'Conversa', exact: true }).click()
+    }
+    await field.waitFor()
+    assert.equal(await page.getByRole('alert').count(), 0)
+    assert.equal(await field.inputValue(), '')
+    await page.close()
+  }
+})
+
 test('no celular, recarregar durante o envio do pedido abre na Conversa, com a frase à vista', async () => {
   const held = Promise.withResolvers<void>()
   const page = await open(`/companies/${COMPANY.id}`, PHONE, starting(held.promise))

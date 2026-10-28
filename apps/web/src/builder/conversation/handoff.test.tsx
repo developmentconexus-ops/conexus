@@ -5,7 +5,7 @@ import { afterEach, expect, test } from 'vitest'
 import { COMPANY } from '../../platform/fixtures.ts'
 import { hubServer, PEDIDOS } from '../../platform/test-hub.tsx'
 import type { DataUrl } from './attachments.ts'
-import { stashHandoffFiles } from './handoff.ts'
+import { hasInterruptedHandoff, stashHandoffFiles } from './handoff.ts'
 import { conversationOf, FIRST, PROJECT, screens, typed, view } from './test-hub.tsx'
 import { UNCONFIRMED_SEND } from './text.ts'
 
@@ -73,8 +73,9 @@ test('o pedido recusado volta à caixa com o arquivo e a frase (11)', async () =
   expect((await screen.findByRole('alert')).textContent).toBe(UNCONFIRMED_SEND)
   expect(typed(field)).toBe(REQUEST)
   expect(screen.getByRole('button', { name: 'Tirar tabela.pdf' })).toBeTruthy()
-  // Unconfirmed, the copy stays: a reload says the request may have gone (Factory).
-  expect(sessionStorage.getItem(`conexus-handoff:${FIRST}`)).toBe(REQUEST)
+  // The send answered, so the words are back in the box and the copy leaves: a reload gives nothing back.
+  await waitFor(() => expect(sessionStorage.getItem(`conexus-handoff:${FIRST}`)).toBeNull())
+  expect(hasInterruptedHandoff(FIRST)).toBe(false)
 })
 
 test('o modelo recusado depois do Projeto: a página sem conversa diz por quê (10)', async () => {
