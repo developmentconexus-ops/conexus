@@ -12,7 +12,7 @@ the session that wrote the card.
 
 ## What it receives
 
-The card in `docs/steps/` and the unit's name. It reads the card's top tables and its unit's
+The card in `docs/steps/` (or its own pull request, for the next step) and the unit's name. It reads the card's top tables and its unit's
 section, which is its spec. Nothing else is pasted in: a ruling not in the card is not built.
 
 It reads [`AGENTS.md`](../../../AGENTS.md), this skill, [code](../../../docs/guides/code.md) and the
