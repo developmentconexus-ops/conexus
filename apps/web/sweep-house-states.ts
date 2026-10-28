@@ -112,6 +112,12 @@ export const HOUSE_STATES: State[] = [
     settle: (p) => waitFor(p, 'Exemplo de endereço'),
   },
   {
+    name: 'Configurações, memória observacional',
+    path: `${SETTINGS}/observational-memory`,
+    replies: OWNER,
+    settle: (p) => waitFor(p, 'Modelo do observador'),
+  },
+  {
     name: 'Configurações, contas de modelo do membro',
     path: `${SETTINGS}/model-accounts`,
     replies: MEMBER,

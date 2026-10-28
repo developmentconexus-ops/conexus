@@ -28,7 +28,7 @@ function accountOf(n: number, fields: Record<string, unknown>) {
 }
 
 /** Several accounts in two queues, one of each state, one reserved and one with a name that never breaks. */
-function withAccounts(base: typeof OWNER, mayManage: boolean) {
+export function withAccounts(base: typeof OWNER, mayManage: boolean) {
   const company = [
     accountOf(1, { label: 'Claude do financeiro', position: 0 }),
     accountOf(2, { label: 'Claude reserva', position: 1, assignees: ['person-ana'] }),

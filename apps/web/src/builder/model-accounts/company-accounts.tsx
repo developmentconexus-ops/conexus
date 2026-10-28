@@ -8,6 +8,7 @@ import { Empty } from '../../ui/states.tsx'
 import { AccountsTable } from './accounts-table.tsx'
 import { LinkAccount } from './link-account.tsx'
 import { ModelFallbackSection } from './model-fallback.tsx'
+import { modelLabel } from './model-label.ts'
 import { accountsQuery, providersQuery } from './queries.ts'
 import { Queue } from './queue.tsx'
 import { providerName, providersOf, queueOf } from './text.ts'
@@ -22,7 +23,7 @@ function ModelSettingsRead(props: { fallback: ModelFallback }) {
       <dt className="text-label text-text-2">Troca automática</dt>
       <dd>
         {enabled ? 'Ligada' : 'Desligada'}
-        {chain.length > 0 && `: ${chain.join(', ')}`}
+        {chain.length > 0 && `: ${chain.map(modelLabel).join(', ')}`}
       </dd>
     </dl>
   )

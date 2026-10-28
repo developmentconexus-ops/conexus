@@ -1,8 +1,8 @@
 import type { CompanyId, ConversationStart, ModelDefault, Provider } from '@conexus/hub-api'
-import { useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi, Link } from '@tanstack/react-router'
+import { SettingsSection } from '../../ui/settings-section.tsx'
 import { DefaultChoice } from './default-choice.tsx'
-import { accountsQuery, providersQuery } from './queries.ts'
+import { useAccountsView } from './queries.ts'
 import { choiceText, modelProviderName, START_SOURCE_TEXT } from './text.ts'
 
 const route = getRouteApi('/_app/companies/$companyId_/settings/my-defaults')
@@ -53,42 +53,51 @@ function SkippedLine(props: {
  */
 export function MyDefaults() {
   const { companyId } = route.useParams()
-  const accounts = useSuspenseQuery(accountsQuery(companyId)).data
-  const { providers } = useSuspenseQuery(providersQuery).data
-  const { defaults, choices } = accounts
+  const { defaults, choices, providers } = useAccountsView(companyId)
   return (
-    <div className="flex flex-col gap-lg">
-      <p className="text-label text-text-2">Só você</p>
-      <StartLine start={defaults.start} companyId={companyId} />
-      {defaults.mine === null && defaults.company !== null && (
-        <p className="text-text-2">Você segue o padrão da empresa.</p>
-      )}
-      <SkippedLine
-        mine={defaults.mine}
-        company={defaults.company}
-        start={defaults.start}
-        providers={providers}
-      />
-      <DefaultChoice
-        companyId={companyId}
-        scope="mine"
-        defaults={defaults}
-        providers={choices.mine}
-        allProviders={providers}
-        mayChange
-      />
-      {defaults.start !== null && (
-        <p className="flex flex-wrap items-baseline gap-x-md">
-          <span className="min-w-0 break-words">{`Conta usada primeiro (${modelProviderName(providers, defaults.start.model)}): ${defaults.start.account}`}</span>
-          <Link
-            to="/companies/$companyId/settings/model-accounts"
-            params={{ companyId }}
-            className="underline"
-          >
-            Mudar a ordem
-          </Link>
-        </p>
-      )}
+    <div className="flex flex-col gap-2xl">
+      <SettingsSection
+        id="start"
+        title="Conversa nova"
+        description="Só você. Onde as suas conversas novas começam, e por quê."
+      >
+        <StartLine start={defaults.start} companyId={companyId} />
+        {defaults.mine === null && defaults.company !== null && (
+          <p className="text-text-2">Você segue o padrão da empresa.</p>
+        )}
+        <SkippedLine
+          mine={defaults.mine}
+          company={defaults.company}
+          start={defaults.start}
+          providers={providers}
+        />
+        {defaults.start !== null && (
+          <p className="flex flex-wrap items-baseline gap-x-md">
+            <span className="min-w-0 break-words">{`Conta usada primeiro (${modelProviderName(providers, defaults.start.model)}): ${defaults.start.account}`}</span>
+            <Link
+              to="/companies/$companyId/settings/model-accounts"
+              params={{ companyId }}
+              className="underline"
+            >
+              Mudar a ordem
+            </Link>
+          </p>
+        )}
+      </SettingsSection>
+      <SettingsSection
+        id="default"
+        title="Meu padrão"
+        description="O modelo e o raciocínio com que você começa uma conversa nova."
+      >
+        <DefaultChoice
+          companyId={companyId}
+          scope="mine"
+          defaults={defaults}
+          providers={choices.mine}
+          allProviders={providers}
+          mayChange
+        />
+      </SettingsSection>
     </div>
   )
 }
