@@ -46,6 +46,12 @@ export async function pgTransport(
   }
 }
 
+/** What the transport answers when nothing listens at the address: silence, never a refusal. */
+export function unreachableAnswer(): Promise<SqlAnswer> {
+  const url = DatabaseUrl.parse('postgres://nobody:nothing@127.0.0.1:1/none')
+  return pgTransport(url, [{ text: 'SELECT 1' }], AbortSignal.timeout(5000))
+}
+
 /**
  * A company's database on the test server, as Neon makes one: its owner may create logins but is
  * no superuser. The apps' logins belong to the whole server, so they go with the database.

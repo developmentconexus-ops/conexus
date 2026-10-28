@@ -1,5 +1,6 @@
 import type { Manifest } from '@conexus/app-contract'
 import type { MigrationCause } from '@conexus/hub-api'
+import { MigrationSubject } from '@conexus/hub-api'
 import type { CreateFunctionStmt, Node } from 'libpg-query'
 import { loadModule, parsePlPgSQLSync, parseSync } from 'libpg-query'
 
@@ -48,16 +49,17 @@ const DYNAMIC = ['PLpgSQL_stmt_dynexecute', 'PLpgSQL_stmt_dynfors', 'dynquery']
 /** PL/pgSQL's `RAISE EXCEPTION`, and a bare `RAISE`: PostgreSQL's ERROR level. */
 const ERROR_LEVEL = 21
 
-const SUBJECT_MAX = 60
-
 /** The first statement of the pending migrations that the fixed list refuses, or none. */
 export function ruleBreak(pending: readonly AppMigration[]): RuleBreak | undefined {
   for (const one of pending) {
     for (const [at, text] of one.statements.entries()) {
       const subject = refused(text)
-      // The contract's bound: a name with its schema can pass it, and the Prévia must still show.
       if (subject !== undefined) {
-        return { migration: one.id, statement: at + 1, subject: subject.slice(0, SUBJECT_MAX) }
+        return {
+          migration: one.id,
+          statement: at + 1,
+          subject: subject.slice(0, MigrationSubject.maxLength ?? undefined),
+        }
       }
     }
   }

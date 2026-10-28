@@ -184,9 +184,26 @@ test('a Prévia que falhou sem motivo não tem motivo nem botão', async () => {
   expect(within(log).queryByRole('button', { name: 'Pedir ao Builder para corrigir' })).toBeNull()
 })
 
-test('a Prévia recusada sem motivo, de antes, não manda para um botão que não há', async () => {
-  await openConversation(keptFailed({ state: 'failed', number: 7, code: 'APP_MIGRATION_FAILED' }))
+const BEFORE = [
+  ['APP_MIGRATION_FAILED', 'Uma migração do app falhou no banco.'],
+  ['APP_MIGRATION_REFUSED', 'Uma migração do app faz o que o Conexus não confere.'],
+] as const
+
+for (const [code, phrase] of BEFORE) {
+  test(`a Prévia ${code} sem motivo, de antes, diz só a frase, sem apontar para um botão que não há`, async () => {
+    await openConversation(keptFailed({ state: 'failed', number: 7, code }))
+    const log = screen.getByRole('log', { name: 'Conversa com o Builder' })
+    await within(log).findByText(`Prévia não atualizada: ${phrase}`)
+  })
+}
+
+test('com motivo, a frase do código leva a ação que aponta para o botão', async () => {
+  await openConversation(keptFailed(DUPLICATE))
   const log = screen.getByRole('log', { name: 'Conversa com o Builder' })
-  const said = await within(log).findByText(/^Prévia não atualizada: /)
-  expect(said.textContent).not.toContain('botão')
+  await within(log).findByText(
+    (_, node) =>
+      node?.getAttribute('data-slot') === 'marker-content' &&
+      node.firstChild?.textContent ===
+        'Prévia não atualizada: Uma migração do app falhou no banco. Use o botão para pedir ao Builder que corrija.',
+  )
 })

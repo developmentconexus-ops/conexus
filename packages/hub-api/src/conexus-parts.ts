@@ -66,6 +66,9 @@ export type PreviewFailure = z.infer<typeof PreviewFailure>
 
 const Name = z.string().min(1).max(63)
 
+/** What names the node a migration was refused for; the server cuts to its bound. */
+export const MigrationSubject = z.string().max(60)
+
 /**
  * Why a migration did not enter: the names the database or the fixed list gave, never a value
  * (code C52, security S40).
@@ -82,7 +85,7 @@ export const MigrationCause = z.discriminatedUnion('kind', [
     kind: z.literal('rule'),
     migration: z.string(),
     statement: z.int().positive(),
-    subject: z.string().max(60),
+    subject: MigrationSubject,
   }),
 ])
 export type MigrationCause = z.infer<typeof MigrationCause>

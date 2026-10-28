@@ -73,6 +73,7 @@ export {
   MachineData,
   MachinePhase,
   MigrationCause,
+  MigrationSubject,
   NoticeData,
   PreviewData,
   PreviewFailure,

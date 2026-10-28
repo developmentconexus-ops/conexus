@@ -162,3 +162,23 @@ test('reparo: o reparo poda as versões marcadas, as enviadas à mão que a migr
   })
   assert.equal(await appVersion(), 3)
 })
+
+test('reparo: a migração que o banco recusa deixa a empresa para a próxima, e o Hub segue', async (t) => {
+  const subject = await companyForVersions(t)
+  const { hub, ana, owner, projectId } = subject
+  await send(subject, ana)
+  const id = ProjectId.parse(projectId)
+  assert.equal(await forgetApp(owner, id, hub.config.appLoginKey), 'DONE')
+  t.mock.method(hub.postgres.companyPostgres, 'migrate', async () => ({
+    kind: 'REFUSED' as const,
+    code: '23505',
+  }))
+  await hub.repair()
+  const said = hub.lines.map(({ fields, message }) => [message, fields.code])
+  assert.ok(
+    said.some(
+      ([message, code]) => message === 'APP_REPAIR_FAILED' && code === 'APP_MIGRATION_FAILED',
+    ),
+  )
+  assert.ok(!said.some(([message]) => message === 'APP_REPAIRED'))
+})
