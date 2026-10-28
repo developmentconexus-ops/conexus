@@ -36,7 +36,7 @@ Build in small steps and prove each one before the next. A step is done when you
 
 ## Keep the code clean
 
-- When you replace something, find every use of the old one, in code and in text, move them all, and delete the old one in the same step.
+- When you replace something, find every use of the old one, in code and in text, move them all, and delete the old one in the same step; saved data is the exception, it stays (see `conexus-data`).
 - Keep a comment only for a why the code cannot show.
 - Handle the cases that can happen; add no checks for states that cannot.
 - Before a step is done, remove what it left behind: debug output, unused files, imports, packages and code.

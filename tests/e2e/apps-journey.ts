@@ -87,7 +87,7 @@ export async function pedidosOf(s: Scenario) {
   await chooseDefaultModel(page, s.companyId)
   await page.goto(`${TEST_ORIGIN}/companies/${s.companyId}`)
   await createProject(page, 'Pedidos')
-  await page.getByRole('heading', { name: 'Pedidos', exact: true }).waitFor()
+  await page.getByTestId('area').getByRole('heading', { name: 'Pedidos', exact: true }).waitFor()
   await page.getByRole('tab', { name: 'Prévia' }).waitFor()
   const url = page.url()
   await page.getByRole('tab', { name: 'Projeto' }).click()
