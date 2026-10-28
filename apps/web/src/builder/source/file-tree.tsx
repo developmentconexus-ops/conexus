@@ -9,6 +9,9 @@ export type TreeNode = { name: string; path: string; children?: TreeNode[] }
 /** The pieces of the kit ship their own files; they open only when the person asks. */
 const KIT = /(^|\/)components\/ui$/
 
+/** The Builder's own notes live here; they are not the app, so they never open first. */
+const BUILDER_NOTES = /^\.conexus$/
+
 /** The paths of a version as folders and files, folders first, each level by name. */
 export function treeOf(paths: string[]): TreeNode[] {
   const root: TreeNode = { name: '', path: '', children: [] }
@@ -35,11 +38,11 @@ function folderFirst(nodes: TreeNode[]): TreeNode[] {
     .sort((a, b) => Number(!!b.children) - Number(!!a.children) || (a.name < b.name ? -1 : 1))
 }
 
-/** The first file the person sees: the tree's order, leaving the kit's folder closed. */
+/** The first file the person sees: the tree's order, leaving the kit's folder and the Builder's notes closed. */
 export function firstShown(nodes: TreeNode[]): string | undefined {
   for (const node of nodes) {
     if (node.children === undefined) return node.path
-    if (KIT.test(node.path)) continue
+    if (KIT.test(node.path) || BUILDER_NOTES.test(node.path)) continue
     const inside = firstShown(node.children)
     if (inside !== undefined) return inside
   }

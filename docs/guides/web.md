@@ -43,7 +43,10 @@ behavior and [testing T6](testing.md) tests beside the owner; no second file tre
 - **W7.** `@mastra/*` **must** be imported only inside `builder/`; only the conversation **may**
   import Mastra's client, with the `fetch` of `platform/hub.ts`. [dependency-cruiser]
 - **W8.** A screen **must** read route parameters and data through `getRouteApi`, never by importing
-  the route. [dependency-cruiser]
+  the route. A piece drawn above the route that owns the parameter, such as the Workbench drawn by
+  the Projeto route reading a conversation's id, reads it with `useParams({ strict: false, select })`,
+  TanStack Router's documented form for a shared component; `getRouteApi` there would fail on the
+  parent route, where the child is absent. [dependency-cruiser, review]
 
 ## 3. Calling the Hub
 
@@ -156,3 +159,8 @@ tudo". The lines of [screens](../reference/screens.md) say which screen is on wh
   início" ([code C48](code.md); founder, 2026-10-20: "2. A"); a missing permission shows the page
   and says who can (design V29), and never hides it. Failure: a screen that hides what a person may
   not do leaves them guessing. [review]
+- **W35.** The Hub added to the iPhone home screen (iOS 26.1 or newer) draws a blurred band under
+  the status bar: WebKit bug 301994, with no fix in the page. The page **must not** carry a
+  workaround for it, such as a fixed padding or a status-bar style, and each iOS release is
+  retested in issue #387. Founder, 2026-10-27, offered a fixed padding and a retest: "A" (keep the
+  issue, retest). Failure: a fixed offset tuned to one iPhone leaves a gap on the next. [review]

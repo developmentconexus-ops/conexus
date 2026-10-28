@@ -20,7 +20,7 @@ export function ToggleGroupItem({ className, ...props }: TogglePrimitive.Props) 
     <TogglePrimitive
       data-slot="toggle-group-item"
       className={cn(
-        'inline-flex h-8 flex-1 items-center justify-center rounded-control px-md text-label text-text-2 hover:text-text data-pressed:bg-surface data-pressed:text-text max-md:h-9 max-md:px-sm',
+        'inline-flex h-8 flex-1 items-center justify-center rounded-control px-md text-label text-text-2 hover:text-text data-pressed:bg-surface data-pressed:text-text dark:data-pressed:bg-accent dark:data-pressed:text-on-ink max-md:h-9 max-md:px-sm',
         className,
       )}
       {...props}
