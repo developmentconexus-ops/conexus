@@ -2,7 +2,13 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import example from './index.ts'
 
-const CALLER = { personId: 'p1', personName: 'Ana Souza', projectId: 'j1', projectName: 'Pedidos' }
+const CALLER = {
+  personId: 'p1',
+  personName: 'Ana Souza',
+  projectId: 'j1',
+  projectName: 'Pedidos',
+  access: { kind: 'BUILDER' },
+} as const
 
 test('o exemplo mostra a pessoa e o Projeto, de props.caller, sem script', async () => {
   const response = example.fetch(

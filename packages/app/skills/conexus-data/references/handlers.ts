@@ -1,5 +1,5 @@
 // In the app: server/handlers.ts
-import { defineHandlers, query, write } from '@conexus/app'
+import { can, defineHandlers, query, write } from '@conexus/app'
 import { z } from 'zod'
 import { operations, TICKET_STATUSES, Ticket } from '../shared/operations'
 
@@ -51,32 +51,40 @@ const TICKET_COLUMNS = `id, subject, status, requester_name AS "requesterName", 
 // $1 is the search text or null; the same filter feeds the list and its counts.
 const MATCHES = `($1::text IS NULL OR subject ILIKE '%' || $1 || '%' OR requester_name ILIKE '%' || $1 || '%')`
 
+// The role locks the operation; this narrows the rows. A manager sees every ticket, an agent only the ones they opened.
+function ownerOf(caller: { access: Parameters<typeof can>[0]; personId: string }) {
+  return can(caller.access, 'manager') ? null : caller.personId
+}
+
 export const handlers = defineHandlers(operations, {
-  listTickets({ status, search }, { db }) {
+  listTickets({ status, search }, { db, caller }) {
     return query(
       db,
       TicketRow,
       `SELECT ${TICKET_COLUMNS} FROM ticket WHERE ${MATCHES} AND ($2::text IS NULL OR status = $2)
+         AND ($3::text IS NULL OR requester_id = $3)
        ORDER BY opened_at DESC LIMIT 500`,
-      [search ?? null, status ?? null],
+      [search ?? null, status ?? null, ownerOf(caller)],
     )
   },
-  countTickets({ search }, { db }) {
+  countTickets({ search }, { db, caller }) {
     const counted = z.object({ status: Status, total: z.int() })
     // count(*) is a bigint, which arrives as text: cast it to integer in SQL.
     return query(
       db,
       counted,
-      `SELECT status, count(*)::int AS total FROM ticket WHERE ${MATCHES} GROUP BY status`,
-      [search ?? null],
+      `SELECT status, count(*)::int AS total FROM ticket WHERE ${MATCHES} AND ($2::text IS NULL OR requester_id = $2)
+       GROUP BY status`,
+      [search ?? null, ownerOf(caller)],
     )
   },
-  async getTicket({ id }, { db }) {
+  async getTicket({ id }, { db, caller }) {
     const [ticket] = await query(
       db,
       DetailRow,
-      `SELECT ${TICKET_COLUMNS}, description FROM ticket WHERE id = $1`,
-      [id],
+      `SELECT ${TICKET_COLUMNS}, description FROM ticket
+       WHERE id = $1 AND ($2::text IS NULL OR requester_id = $2)`,
+      [id, ownerOf(caller)],
     )
     if (ticket === undefined) return {}
     const history = await query(

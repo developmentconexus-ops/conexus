@@ -1,4 +1,5 @@
 import type { Caller } from '@conexus/app-contract'
+import { CallerAccess } from '@conexus/app-contract'
 import { z } from 'zod'
 import { HostLabel } from './address.ts'
 import { CompanyId, LIBRARY_ID } from './companies.ts'
@@ -18,12 +19,13 @@ export const HANDOFF_SECONDS = 60
 /** Where the dispatcher sends a browser for a pass: the Hub's one `handoff` route (security S48). */
 export const APP_OPEN_PATH = '/apps/open'
 
-/** Who calls the app, as the app sees it in `props`: never an e-mail, a company or a role. */
+/** Who calls the app, as the app sees it in `props`: never an e-mail or a company. */
 export const AppCaller = z.object({
   personId: PersonId,
   personName: z.string().min(1),
   projectId: ProjectId,
   projectName: z.string().min(1),
+  access: CallerAccess,
 }) satisfies z.ZodType<Caller>
 export type AppCaller = z.infer<typeof AppCaller>
 

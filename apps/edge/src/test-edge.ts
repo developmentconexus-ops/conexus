@@ -16,6 +16,7 @@ export const CALLER = {
   personName: 'Ana Souza',
   projectId: 'J'.repeat(32),
   projectName: 'Pedidos',
+  access: { kind: 'BUILDER' },
 } as const
 
 type App = (request: Request, ctx: { props: AppProps }) => Response | Promise<Response>

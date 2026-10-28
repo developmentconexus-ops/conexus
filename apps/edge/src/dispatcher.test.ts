@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { test } from 'node:test'
+import { serveApp } from '@conexus/app-contract'
 import { BINDING, CODE, EXAMPLE_CALL, edge, HOST, pageText, problem, SESSION } from './test-edge.ts'
 
 const COOKIE_ATTRIBUTES = 'Path=/; Secure; HttpOnly; SameSite=None; Partitioned'
@@ -108,6 +109,20 @@ test('sessão viva: o Hub confere a chamada e o app responde', async () => {
   assert.equal(call?.method, 'GET')
   assert.equal(call?.url, `http://hub:8081/api/app-sessions/current?host=${HOST}`)
   assert.equal(call?.headers.get('X-Conexus-App-Session'), SESSION)
+})
+
+test('GET /api/caller chega ao Worker com quem chama', async () => {
+  const worker = serveApp({ operations: {}, handlers: {} })
+  const door = edge({ app: (request, ctx) => worker.fetch(request, {}, ctx) })
+  const response = await door.fetch('/api/caller', {
+    headers: { Cookie: `__Host-conexus-app=${SESSION}` },
+  })
+  assert.equal(response.status, 200)
+  assert.deepEqual(await response.json(), {
+    personName: 'Ana Souza',
+    access: { kind: 'BUILDER' },
+  })
+  assert.equal(door.appCalls[0]?.request.method, 'GET')
 })
 
 const MATRIX = [

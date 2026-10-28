@@ -7,7 +7,7 @@ description: How an app saves data and runs logic on the server. Covers the oper
 
 An app that saves or reads data has a server; a page with nothing saved has none (`conexus-app`). The platform contract owns two files, and the check builds the app's server from them:
 
-- `shared/operations.ts` exports `operations`, made with `defineOperations` from `@conexus/app`: each operation's name, its `input` and its `output`, in Zod. The screens and the server import the same file, so a field renamed there fails the check everywhere it is used.
+- `shared/operations.ts` exports `operations`, made with `defineOperations` from `@conexus/app`: each operation's name, its `input` and its `output`, in Zod, and, in an app with roles, who calls it. It also exports `roles` then (see Roles). The screens and the server import the same file, so a field renamed there fails the check everywhere it is used.
 - `server/handlers.ts` exports `handlers`, made with `defineHandlers(operations, { ... })`, one handler per operation, and `migrations`, the tables.
 
 `references/operations.ts` and `references/handlers.ts` are a complete pair that passes the check; the screens of `conexus-app` call them. Each one's first line names where it goes.
@@ -23,7 +23,7 @@ An app that saves or reads data has a server; a page with nothing saved has none
 ## Handlers
 
 - A handler is `(input, { db, caller }) => output`, typed by its operation: an object built with a field the output does not declare, or without one it requires, fails the check instead of failing in front of the person.
-- `caller` is the person using the app, set by Conexus from their sign-in: `personId`, `personName`, `projectId` and `projectName`. The browser cannot change it. To record who did something, read `caller`; never add a name or author field to the input.
+- `caller` is the person using the app, set by Conexus from their sign-in: `personId`, `personName`, `projectId`, `projectName` and `access`, how they hold the app (see Roles). The browser cannot change it. To record who did something, read `caller`; never add a name or author field to the input.
 - Read with `query(db, RowSchema, text, values)`: it returns the rows, each checked against `RowSchema`. `db.query` runs in a read-only transaction.
 - Write with `write(db, [{ text, values }, ...])`: every statement of the list runs in one transaction, all or none. Put a change and the row that records it in the same `write`.
 - Always pass values as parameters (`$1`, `$2`), never inside the text. Tables live in this app's own schema: do not prefix them with a schema name.
@@ -31,9 +31,18 @@ An app that saves or reads data has a server; a page with nothing saved has none
 - `server/` runs in a Worker: no file system, no environment variables and no network, since the platform refuses every request the app sends out. It reaches only `db`.
 - One call may use 50 ms of CPU and 50 `db` calls, 10 s in all, and 5 s per statement.
 
+## Roles
+
+An app has roles only when the plan names them, because the person said different people may do different things. Without roles, everyone with access to the app may call every operation, and nothing here applies.
+- `shared/operations.ts` exports `roles`, made with `defineRoles` from `@conexus/app`: each role's name (lowercase letters, digits and `_`, starting with a letter) and the label the person reads in Quem usa o app, in Portuguese. The example has two.
+- In an app with roles, every operation names `roles`: a list of the declared roles that may call it, or `'everyone'` for every person with access. An operation with no `roles`, or naming a role the app does not declare, stops the check, and the message names the operation.
+- The server refuses a caller whose role is not listed with `ROLE_FORBIDDEN`, before the input is read and before the handler runs. Never test the role inside a handler to refuse; list it on the operation.
+- `caller.access` is `{ kind: 'BUILDER' }` for the people who build the app, who hold every role, or `{ kind: 'USER', role }` for a person given the app with one role, or `null`. `can(caller.access, 'manager')` from `@conexus/app` tells whether the role holds. A role the app stops declaring is no role: its person reaches only the `'everyone'` operations.
+- A rule that shows different rows to different roles, such as a seller seeing only their own, is a filter in the handler on `caller.personId` and `can`. The example's `listTickets` does it. The role on the operation locks the call; the filter narrows the rows.
+
 ## Failures
 
-An expected failure is part of the output, and the screen shows it. Nothing found is data: an empty list or a field left out, as `getTicket` does. A refused statement throws `DatabaseRefused`, with the PostgreSQL code alone; a handler that throws answers `HANDLER_FAILED`, and the screen shows the platform's sentence for it (`failureOf` in `conexus-app`). Never return an error message of your own to the screen.
+An expected failure is part of the output, and the screen shows it. Nothing found is data: an empty list or a field left out, as `getTicket` does. A refused statement throws `DatabaseRefused`, with the PostgreSQL code alone; a handler that throws answers `HANDLER_FAILED`, and a caller whose role the operation does not list gets `ROLE_FORBIDDEN`; the screen shows the platform's sentence for each (`failureOf` in `conexus-app`). Never return an error message of your own to the screen.
 
 ## Migrations
 

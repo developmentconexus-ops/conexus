@@ -6,8 +6,16 @@ import type { AppProps, Caller } from './props.ts'
 /** What a handler receives beside its input (decision 0019). */
 export type Context = Readonly<{ db: Db; caller: Caller }>
 
-/** An app's operations in its own Zod (decision 0055): what each one takes and what it answers. */
-export type Operations = Readonly<Record<string, Readonly<{ input: z.ZodType; output: z.ZodType }>>>
+/** Who may call an operation: the app's roles it names, or everyone with access. */
+export type OperationRoles = readonly string[] | 'everyone'
+
+/** An app's operations in its own Zod (decision 0055): what each one takes, what it answers and who calls it. */
+export type Operations = Readonly<
+  Record<string, Readonly<{ input: z.ZodType; output: z.ZodType; roles?: OperationRoles }>>
+>
+
+/** The app's roles, by name, with what a person reads in Quem usa o app. */
+export type Roles = Readonly<Record<string, string>>
 
 /** One operation's code: its input as the input schema decodes it in, its output before encoding out. */
 export type Handler = (input: unknown, context: Context) => unknown
@@ -19,7 +27,12 @@ const OperationName = z
   .brand<'OperationName'>()
 type OperationName = z.infer<typeof OperationName>
 
-type Served = Readonly<{ input: z.ZodType; output: z.ZodType; handler: Handler }>
+type Served = Readonly<{
+  input: z.ZodType
+  output: z.ZodType
+  roles: OperationRoles | undefined
+  handler: Handler
+}>
 
 /** The runtime's own refusals, by code only: an answer never repeats the value it refused. */
 function answer(status: number, body: unknown): Response {
@@ -30,14 +43,40 @@ function refuse(status: number, code: AppFailureCode): Response {
   return answer(status, { code })
 }
 
-function servedOf(operations: Operations, handlers: Readonly<Record<string, Handler>>) {
+/**
+ * Whether the caller may run an operation, the one rule (code C26): a builder runs all, and a role
+ * the version no longer declares is no role, so it reaches only the operations open to everyone.
+ */
+function mayRun(declared: Roles, operation: Served, caller: Caller): boolean {
+  if (operation.roles === undefined || operation.roles === 'everyone') return true
+  if (caller.access.kind === 'BUILDER') return true
+  const { role } = caller.access
+  return role !== null && Object.hasOwn(declared, role) && operation.roles.includes(role)
+}
+
+/** An app with roles locks every operation, and only with roles it declares; an app without them locks none. */
+function lockOf(name: string, roles: OperationRoles | undefined, declared: Roles | undefined) {
+  if (declared === undefined && roles === undefined) return
+  if (roles === undefined) throw new Error(`Operation without roles: ${name}`)
+  if (roles === 'everyone') return
+  const unknown = roles.filter((role) => !Object.hasOwn(declared ?? {}, role))
+  if (unknown.length > 0)
+    throw new Error(`Operation ${name} names undeclared roles: ${unknown.join(', ')}`)
+}
+
+function servedOf(
+  operations: Operations,
+  handlers: Readonly<Record<string, Handler>>,
+  declared: Roles | undefined,
+) {
   const extra = Object.keys(handlers).filter((name) => !Object.hasOwn(operations, name))
   if (extra.length > 0) throw new Error(`Handlers without an operation: ${extra.join(', ')}`)
   return new Map(
-    Object.entries(operations).map(([name, { input, output }]): [OperationName, Served] => {
+    Object.entries(operations).map(([name, { input, output, roles }]): [OperationName, Served] => {
       const handler = Object.hasOwn(handlers, name) ? handlers[name] : undefined
       if (handler === undefined) throw new Error(`Operation without a handler: ${name}`)
-      return [OperationName.parse(name), { input, output, handler }]
+      lockOf(name, roles, declared)
+      return [OperationName.parse(name), { input, output, roles, handler }]
     }),
   )
 }
@@ -62,43 +101,65 @@ function encoded(
   }
 }
 
+/** The handler's answer for a call already admitted and decoded: the output encoded, or the app's failure by code. */
+async function respond(
+  name: OperationName,
+  operation: Served,
+  input: unknown,
+  context: Context,
+): Promise<Response> {
+  let output: unknown
+  try {
+    output = await operation.handler(input, context)
+  } catch (error) {
+    // The Worker's log keeps which operation failed and how, never the message's values.
+    const kind = error instanceof Error ? error.name : typeof error
+    console.error(JSON.stringify({ level: 50, msg: 'HANDLER_FAILED', operation: name, kind }))
+    return refuse(500, 'HANDLER_FAILED')
+  }
+  const checked = encoded(name, operation.output, output)
+  if (checked === undefined) return refuse(500, 'OUTPUT_INVALID')
+  return answer(200, checked.wire)
+}
+
 /**
  * The app's Worker for contract 1 (decisions 0019, 0055): `POST /api/<operation>` becomes
  * `handler(input, { db, caller })`, the input decoded by the operation's own Zod and the output
- * encoded by it. Static files never reach here: the platform answers them first, so an unknown path
- * is a 404. An operation without its handler, a handler without its operation, or a name `/api`
- * cannot say stops the Worker from starting.
+ * encoded by it, after the operation's `roles` admit the caller (`ROLE_FORBIDDEN`, before the input is
+ * read), and `GET /api/caller` answers who calls. Static files never reach here: the platform
+ * answers them first, so an unknown path is a 404. An operation without its handler, a handler
+ * without its operation, a name `/api` cannot say, or, in an app with roles, an operation without
+ * `roles` or naming a role the app does not declare stops the Worker from starting.
  */
 export function serveApp(
-  app: Readonly<{ operations: Operations; handlers: Readonly<Record<string, Handler>> }>,
+  app: Readonly<{
+    operations: Operations
+    handlers: Readonly<Record<string, Handler>>
+    roles?: Roles
+  }>,
 ) {
-  const served = servedOf(app.operations, app.handlers)
+  const served = servedOf(app.operations, app.handlers, app.roles)
+  const declared = app.roles ?? {}
   return {
     async fetch(request: Request, _env: unknown, ctx: Readonly<{ props: AppProps }>) {
       const { pathname } = new URL(request.url)
+      if (request.method === 'GET' && pathname === '/api/caller') {
+        const { personName, access } = ctx.props.caller
+        return answer(200, { personName, access })
+      }
       const name = pathname.startsWith('/api/')
         ? OperationName.safeParse(pathname.slice('/api/'.length)).data
         : undefined
       const operation =
         request.method === 'POST' && name !== undefined ? served.get(name) : undefined
       if (name === undefined || operation === undefined) return refuse(404, 'OPERATION_NOT_FOUND')
+      const { db, caller } = ctx.props
+      if (!mayRun(declared, operation, caller)) return refuse(403, 'ROLE_FORBIDDEN')
       // biome-ignore lint/plugin: an unreadable body fails the operation's input schema next (C27, C53)
       const body: unknown = await request.json().catch(() => undefined)
       const input = operation.input.safeParse(body)
       if (!input.success) return refuse(400, 'INPUT_INVALID')
-      const { db, caller } = ctx.props
-      let output: unknown
-      try {
-        output = await operation.handler(input.data, { db, caller })
-      } catch (error) {
-        // The Worker's log keeps which operation failed and how, never the message's values.
-        const kind = error instanceof Error ? error.name : typeof error
-        console.error(JSON.stringify({ level: 50, msg: 'HANDLER_FAILED', operation: name, kind }))
-        return refuse(500, 'HANDLER_FAILED')
-      }
-      const checked = encoded(name, operation.output, output)
-      if (checked === undefined) return refuse(500, 'OUTPUT_INVALID')
-      return answer(200, checked.wire)
+      return respond(name, operation, input.data, { db, caller })
     },
   }
 }
