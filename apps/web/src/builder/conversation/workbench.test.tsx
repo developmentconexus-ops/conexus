@@ -52,7 +52,7 @@ test('sem endereço, o topo não mostra "Abrir app"', async () => {
 })
 
 test('fora da Prévia, o topo guarda só "Abrir app"', async () => {
-  openProject(PROJECT, { appVersion: 1 })
+  openProject(PROJECT, { appVersion: 1, publishedVersion: 1 })
   expect(await screen.findAllByRole('button', { name: 'Recarregar' })).not.toHaveLength(0)
   fireEvent.click(await screen.findByRole('tab', { name: 'Código' }))
   expect(await screen.findByRole('link', { name: 'Abrir app' })).toBeTruthy()
