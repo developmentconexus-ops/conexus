@@ -13,7 +13,8 @@ ALTER TABLE "auth"."invitation" ADD COLUMN "project_id" text;--> statement-break
 ALTER TABLE "auth"."invitation" ADD COLUMN "app_role" text;--> statement-breakpoint
 DROP INDEX "auth"."invitation_pending_email_key";--> statement-breakpoint
 CREATE UNIQUE INDEX "invitation_pending_email_key" ON "auth"."invitation" ("company_id",lower("email"),coalesce("project_id", '')) WHERE "status" = 'pending';--> statement-breakpoint
-ALTER TABLE "projects"."app_access" ADD CONSTRAINT "app_access_project_id_project_id_fkey" FOREIGN KEY ("project_id") REFERENCES "projects"."project"("id") ON DELETE CASCADE;--> statement-breakpoint
+ALTER TABLE "projects"."project" ADD CONSTRAINT "project_company_id_id_key" UNIQUE("company_id","id");--> statement-breakpoint
+ALTER TABLE "projects"."app_access" ADD CONSTRAINT "app_access_company_id_project_id_fkey" FOREIGN KEY ("company_id","project_id") REFERENCES "projects"."project"("company_id","id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "auth"."invitation" ADD CONSTRAINT "invitation_kind" CHECK (("project_id" is null) = ("role" is not null));--> statement-breakpoint
 CREATE POLICY "app_people_select" ON "auth"."company" AS PERMISSIVE FOR SELECT TO "hub_app_people" USING (true);--> statement-breakpoint
 CREATE POLICY "company_all" ON "projects"."app_access" AS PERMISSIVE FOR ALL TO "hub_company" USING (company_id = nullif(current_setting('conexus.company_id', true), '')) WITH CHECK (company_id = nullif(current_setting('conexus.company_id', true), ''));--> statement-breakpoint

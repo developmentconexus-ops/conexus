@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm'
 import {
   check,
+  foreignKey,
   pgPolicy,
   pgSchema,
   primaryKey,
@@ -45,6 +46,8 @@ export const project = projects.table(
       sql`${table.hostLabel} ~ '^[a-z0-9]+(-[a-z0-9]+)*--[a-z0-9]+(-[a-z0-9]+)*$' and char_length(${table.hostLabel}) <= 63`,
     ),
     unique('project_company_id_attempt_key_key').on(table.companyId, table.attemptKey),
+    // The key a row that belongs to a Projeto and its company points at (app_access).
+    unique('project_company_id_id_key').on(table.companyId, table.id),
     uniqueIndex('project_company_name_key').on(
       table.companyId,
       sql`lower(${table.name} collate "und-x-icu")`,
@@ -73,9 +76,7 @@ export const appAccess = projects.table(
   'app_access',
   {
     companyId: text('company_id').notNull(),
-    projectId: text('project_id')
-      .notNull()
-      .references(() => project.id, { onDelete: 'cascade' }),
+    projectId: text('project_id').notNull(),
     // Neither person column is contained by the Projeto's owner, as app_session's is not (data D17):
     // revoking and deleting the Projeto take the rows.
     personId: text('person_id').notNull(),
@@ -87,6 +88,12 @@ export const appAccess = projects.table(
   },
   (table) => [
     primaryKey({ columns: [table.projectId, table.personId] }),
+    // The row's company is the Projeto's, so no scope writes a row about another company's app.
+    foreignKey({
+      name: 'app_access_company_id_project_id_fkey',
+      columns: [table.companyId, table.projectId],
+      foreignColumns: [project.companyId, project.id],
+    }).onDelete('cascade'),
     policy(SCOPE_ROLES.COMPANY, 'all', OWN_COMPANY),
     // The acceptance writes only the row its invitation names, for the person its address is.
     policy(

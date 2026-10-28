@@ -40,14 +40,15 @@ test('catálogo: as colunas, os únicos e as restrições de Projeto e do banco 
       where connamespace = 'projects'::regnamespace and contype <> 'n' order by conname`,
   )
   assert.deepEqual(constraints, [
+    { name: 'app_access_company_id_project_id_fkey', type: 'f' },
     { name: 'app_access_pkey', type: 'p' },
-    { name: 'app_access_project_id_project_id_fkey', type: 'f' },
     { name: 'company_database_creating_has_claim', type: 'c' },
     { name: 'company_database_neon_project_id_key', type: 'u' },
     { name: 'company_database_pkey', type: 'p' },
     { name: 'company_database_ready_has_project', type: 'c' },
     { name: 'company_database_state', type: 'c' },
     { name: 'project_company_id_attempt_key_key', type: 'u' },
+    { name: 'project_company_id_id_key', type: 'u' },
     { name: 'project_host_label_form', type: 'c' },
     { name: 'project_host_label_key', type: 'u' },
     { name: 'project_name_length', type: 'c' },
@@ -210,11 +211,13 @@ async function appsOfPerson(
 ) {
   const rows = await database.installationRead(
     async (tx) =>
-      (await tx.execute(sql`select * from projects.apps_of_person(${person}) order by project_id`))
-        .rows,
+      (
+        await tx.execute(
+          sql`select * from projects.apps_of_person(${person}) order by project_name`,
+        )
+      ).rows,
   )
   return rows.map((row) => ({
-    projectId: row.project_id,
     projectName: row.project_name,
     companyName: row.company_name,
     hostLabel: row.host_label,
@@ -249,6 +252,14 @@ test('o acesso a um app: uma linha por pessoa, some com o Projeto, cada empresa 
   await assert.rejects(
     database.command(IN_A, (tx) => tx.execute(grant('projectB1BBBBBBBBBBBBBBBBBBBBBBB', B, CARLA))),
     refusedWith('42501'),
+  )
+  await assert.rejects(
+    database.command(IN_A, (tx) => tx.execute(grant('projectB1BBBBBBBBBBBBBBBBBBBBBBB', A, CARLA))),
+    refusedWith('23503'),
+  )
+  assert.deepEqual(
+    (await appsOfPerson(database, CARLA)).map((app) => app.projectName),
+    ['Encomendas'],
   )
   assert.deepEqual(
     await readAs(database, IN_A, sql`select name, email from auth."user" order by name`),
@@ -298,13 +309,11 @@ test('o acesso a um app: a função dá à pessoa só os seus, sem Projeto apaga
   )
   assert.deepEqual(await appsOfPerson(database, CARLA), [
     {
-      projectId: 'projectA1AAAAAAAAAAAAAAAAAAAAAAA',
       projectName: 'Encomendas',
       companyName: 'Padaria Sol',
       hostLabel: 'encomendas--sol',
     },
     {
-      projectId: 'projectB1BBBBBBBBBBBBBBBBBBBBBBB',
       projectName: 'Vendas',
       companyName: 'Loja Lua',
       hostLabel: 'vendas--lua',
@@ -314,7 +323,7 @@ test('o acesso a um app: a função dá à pessoa só os seus, sem Projeto apaga
   await asOwner(`update auth.company set deleting_since = now() where id = '${B}'`)
   const left = await appsOfPerson(database, CARLA)
   assert.deepEqual(
-    left.map((app) => app.projectId),
-    ['projectA1AAAAAAAAAAAAAAAAAAAAAAA'],
+    left.map((app) => app.projectName),
+    ['Encomendas'],
   )
 })

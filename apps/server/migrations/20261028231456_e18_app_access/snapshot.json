@@ -3286,14 +3286,14 @@
       "table": "session"
     },
     {
-      "nameExplicit": false,
-      "columns": ["project_id"],
+      "nameExplicit": true,
+      "columns": ["company_id", "project_id"],
       "schemaTo": "projects",
       "tableTo": "project",
-      "columnsTo": ["id"],
+      "columnsTo": ["company_id", "id"],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
-      "name": "app_access_project_id_project_id_fkey",
+      "name": "app_access_company_id_project_id_fkey",
       "entityType": "fks",
       "schema": "projects",
       "table": "app_access"
@@ -3590,6 +3590,15 @@
       "columns": ["company_id", "attempt_key"],
       "nullsNotDistinct": false,
       "name": "project_company_id_attempt_key_key",
+      "entityType": "uniques",
+      "schema": "projects",
+      "table": "project"
+    },
+    {
+      "nameExplicit": true,
+      "columns": ["company_id", "id"],
+      "nullsNotDistinct": false,
+      "name": "project_company_id_id_key",
       "entityType": "uniques",
       "schema": "projects",
       "table": "project"

@@ -21,9 +21,9 @@ GRANT SELECT (id, name, deleting_since) ON TABLE auth.company TO hub_app_people;
 -- The Projects, with their company's name and address label, of the apps one person uses: the one
 -- answer the Hub's login gets from the rows of every company, and only for the person it names.
 CREATE FUNCTION projects.apps_of_person(person text)
-  RETURNS TABLE (project_id text, project_name text, company_name text, host_label text)
+  RETURNS TABLE (project_name text, company_name text, host_label text)
   LANGUAGE sql STABLE SECURITY DEFINER SET search_path = pg_catalog
-  AS $$ SELECT p.id, p.name, c.name, p.host_label
+  AS $$ SELECT p.name, c.name, p.host_label
     FROM projects.app_access a
     JOIN projects.project p ON p.id = a.project_id AND p.deleting_since IS NULL
     JOIN auth.company c ON c.id = p.company_id AND c.deleting_since IS NULL
