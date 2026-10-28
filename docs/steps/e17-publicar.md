@@ -24,7 +24,7 @@ publicados.
 6. A 2 tem um problema. A Ana, na tela dela, recarrega o Projeto e toca **Publicar esta** na 1. O app
    volta para a 1. A Prévia e o Builder seguem na 2, e os dados ficam como estão.
 
-**O que você faz, e quando.** Antes: nada. No começo: aprova esta página e responde a E. No fim: faz
+**O que você faz, e quando.** Antes: nada. No começo: aprova esta página. No fim: faz
 o roteiro no computador e no celular, diz o que viu e aprova os textos novos (o botão, a pergunta,
 as duas marcas e a página do app não publicado).
 
@@ -51,20 +51,12 @@ Dadas em 2026-10-27, "`A1` `B1` `C2` `D1`": os mesmos dados (`A1`); sem etiqueta
 2026-10-25); todo membro que conversa com o Builder publica, "pelo menos p agora que nosso
 authorizatin e capabilities RBAC é simples" (`C2`); o "Voltar para esta" vira "Publicar esta" (`D1`).
 
-Uma aberta:
-
-- **E. Com a `C2`, o membro também vê a aba Versões?** Hoje só o dono e quem administra veem as
-  versões (a sua resposta da etapa 9); o membro lê "Só o dono ou quem administra a empresa vê as
-  versões".
-  - **`E1` (recomendo), sim: todo membro vê Versões e publica qualquer versão guardada.** Exemplo: o
-    Bruno publica a 8 e ela tem um problema; ele mesmo toca **Publicar esta** na 7, sem esperar a
-    Ana. Nativo: quem vê e quem publica passam a ser os mesmos que mandam versão para a Prévia (todo
-    membro), uma linha na tabela de quem faz o quê. Quando os papéis crescerem, a regra volta para o
-    dono e o administrador.
-  - **`E2`, não: o membro publica só pelo botão do alto, a versão que está na Prévia.** Versões, e o
-    Publicar esta numa versão antiga, seguem com o dono e o administrador, como hoje. Exemplo: o Bruno
-    publica a 8 com um problema e chama a Ana para voltar à 7. Embrulhado: o Hub ganha uma regra
-    nossa, "o membro publica só o número que está na Prévia".
+Dada em 2026-10-28, "3.E1 sim E2. Okay" (lida como `E1`): com a `C2`, o membro que conversa com o
+Builder também vê a aba Versões e publica qualquer versão guardada, igual ao dono. Exemplo: o Bruno
+publica a 8 e ela tem um problema; ele mesmo toca **Publicar esta** na 7, sem esperar a Ana. Nativo:
+quem vê e quem publica passam a ser os mesmos que mandam versão para a Prévia (todo membro), uma
+linha na tabela de quem faz o quê. Quando os papéis crescerem, a regra volta para o dono e o
+administrador.
 
 ## As unidades
 
@@ -102,7 +94,7 @@ hipótese.
 | Tela | Primeira vez | Vazio | Carregando | Erro | Não encontrado | Sem permissão | Vencido ou recusado |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | O alto do Projeto (U2) | sem versão na Prévia: nem Publicar nem Abrir app, como hoje | — | o Publicar no diálogo: "Publicando…", botões parados | o diálogo mostra a frase do código (`sentenceOf`) e fica aberto | 404 `APP_VERSION_NOT_FOUND`: o diálogo fecha e o Projeto se relê; `NOT_FOUND`: a rota se relê, como hoje (`put-back.tsx:35`) | — (`C2`: todo membro publica) | Prévia igual à publicada: "Versão N publicada", sem botão |
-| Versões (U2) | a lista vazia, como hoje | `Empty`, como hoje | `Loading`, como hoje | `ReadFailure`, como hoje | como o alto | — (`E1`: todo membro vê); com `E2`, o texto de hoje para o membro | a versão que sumiu da lista ao publicar: a frase e a lista relida |
+| Versões (U2) | a lista vazia, como hoje | `Empty`, como hoje | `Loading`, como hoje | `ReadFailure`, como hoje | como o alto | — (`E1`: todo membro vê) | a versão que sumiu da lista ao publicar: a frase e a lista relida |
 | A página do app não publicado (U1, no dispatcher) | "Este app ainda não foi publicado." | — | — | — | — | — | — |
 
 | Campo de contrato | Quem escreve | Quem lê |
