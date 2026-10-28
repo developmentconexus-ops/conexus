@@ -78,8 +78,9 @@ export const ModelAccount = z.object({
 export type ModelAccount = z.infer<typeof ModelAccount>
 
 /**
- * The person's order for one provider (P2): their own accounts, then the company's given to them,
- * in the company's position, then the company's for everyone. They reorder only their own.
+ * The person's order for one provider (P2): the accounts the queue would call now (ready, not at
+ * the limit, of an open kind), their own, then the company's given to them, in the company's
+ * position, then the company's for everyone. They reorder only their own.
  */
 export const ProviderOrder = z.object({ provider: ProviderId, accounts: z.array(ModelAccountId) })
 export type ProviderOrder = z.infer<typeof ProviderOrder>

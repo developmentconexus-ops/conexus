@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { BRUNO, call, codeOf, companyOn, memberOn, post } from '../../hub/identity/test-hub.ts'
+import { patch } from './test-defaults.ts'
 
 const KEY = 'sk-order-key-for-tests-0001'
 
@@ -25,7 +26,7 @@ async function queue(t: TestContext) {
   function url(owner: string) {
     return `/api/companies/${companyId}/model-account-orders/${owner}/anthropic`
   }
-  return { hub, ana, bruno, link, orderOf, ids, url }
+  return { hub, ana, bruno, link, orderOf, ids, url, accounts }
 }
 
 test('ordenar uma fila com todos os seus ids grava; velha, incompleta ou de outro fornecedor dá 409', async (t) => {
@@ -78,4 +79,14 @@ test('duas ordens juntas: uma vence inteira; a conta nova vai depois dela; cada 
     'MODEL_ACCOUNT_ORDER_STALE',
   )
   assert.deepEqual(await orderOf(), [mine, ...won, d])
+})
+
+test('a ordem listada deixa de fora a conta pausada ou recusada, como a fila', async (t) => {
+  const { hub, ana, orderOf, ids, accounts } = await queue(t)
+  const [a, b, c] = ids
+  const paused = await patch(hub, ana, `${accounts}/${b}`, { revision: 1, state: 'paused' })
+  assert.equal(paused.statusCode, 200)
+  assert.deepEqual(await orderOf(), [a, c])
+  await hub.test.asOwner(`update builder.model_account set state = 'refused' where id = $1`, [c])
+  assert.deepEqual(await orderOf(), [a])
 })

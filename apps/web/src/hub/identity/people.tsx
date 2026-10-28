@@ -75,8 +75,8 @@ function Cells({
           <RoleBadge role={role} />
         </TableCell>
       )}
-      <TableCell className="w-px px-sm text-right">
-        <span className="flex items-center justify-end gap-sm max-md:flex-col max-md:items-stretch">
+      <TableCell className="w-px px-sm">
+        <span className="flex items-center justify-start gap-sm max-md:flex-col max-md:items-stretch">
           {children}
         </span>
       </TableCell>

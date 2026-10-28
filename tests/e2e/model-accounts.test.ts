@@ -111,10 +111,10 @@ async function giveAndRead(owner: Page, member: Page, companyA: string) {
   await enter(member, CARLA.email, `/companies/${companyA}`)
   await waitForHome(member)
   await openSettings(member, 'Contas de modelo')
-  await member.getByText('Sua ordem para Anthropic: Time 2, Time 1').waitFor()
+  await member.getByText('Sua ordem para Anthropic: Time 2').waitFor()
   await linkKey(member, 'Carla 1', OWN_KEY, 'Anthropic', 'Suas contas')
   await member.getByText('Carla 1', { exact: true }).first().waitFor()
-  await member.getByText('Sua ordem para Anthropic: Carla 1, Time 2, Time 1').waitFor()
+  await member.getByText('Sua ordem para Anthropic: Carla 1, Time 2').waitFor()
 }
 
 /** Step 6: removing Time 1 tells the owner to end the key at the provider's console too. */

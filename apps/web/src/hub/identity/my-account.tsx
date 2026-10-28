@@ -20,7 +20,7 @@ export function MyAccount() {
         </div>
         <div className="flex flex-col gap-xs">
           <dt className="text-label text-text-2">E-mail</dt>
-          <dd className="break-all">{person.email}</dd>
+          <dd className="break-words">{person.email}</dd>
         </div>
       </dl>
     </SettingsSection>

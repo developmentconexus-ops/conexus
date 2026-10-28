@@ -22,7 +22,9 @@ function OrderLine(props: {
     (id) => props.accounts.find((one) => one.id === id)?.label ?? [],
   )
   if (names.length === 0) return null
-  return <li>{`Sua ordem para ${props.name}: ${names.join(', ')}`}</li>
+  return (
+    <li className="text-label text-text-2">{`Sua ordem para ${props.name}: ${names.join(', ')}`}</li>
+  )
 }
 
 /**
