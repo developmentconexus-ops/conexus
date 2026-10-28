@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { rmSync } from 'node:fs'
+import { rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { test } from 'node:test'
 import {
@@ -41,7 +41,8 @@ test('as contas ligadas antes de a lista ser lida têm a lista lida na partida; 
   assert.ok(offered(Object((await call(hub, ana, 'GET', accounts)).json())).includes(SONNET_OLD))
 })
 
-test('o Google lê a lista do CLIProxy ao ligar e na partida: oferece cada Gemini que ela atende pelo nome do CLIProxy, nenhum Claude, e o início não cai num modelo que a conta não atende', async (t) => {
+/** A company that may sign in to Google, its owner and the address of its accounts. */
+async function googleCompany(t: import('node:test').TestContext) {
   const hub = await hubWithLog(t)
   const ana = await personOn(hub, ANA_OWNER)
   const companyId = await plantCompany(hub.test, ana.id)
@@ -50,8 +51,14 @@ test('o Google lê a lista do CLIProxy ao ligar e na partida: oferece cada Gemin
     [companyId],
   )
   const double = testCliProxy()
-  rmSync(join(double.control, 'mode'), { force: true })
-  rmSync(join(double.control, 'models'), { force: true })
+  for (const file of ['mode', 'models', 'loading']) {
+    rmSync(join(double.control, file), { force: true })
+  }
+  return { hub, ana, companyId, double, accounts: `/api/companies/${companyId}/model-accounts` }
+}
+
+/** The owner's Google sign-in, for the company, from its start to the code coming back. */
+async function linkGoogle({ hub, ana, companyId }: Awaited<ReturnType<typeof googleCompany>>) {
   const signIns = `/api/companies/${companyId}/model-account-sign-ins`
   const started = await post(hub, ana, signIns, {
     owner: 'company',
@@ -60,9 +67,15 @@ test('o Google lê a lista do CLIProxy ao ligar e na partida: oferece cada Gemin
   })
   const body = Object(started.json())
   const state = String(new URL(body.url).searchParams.get('state'))
-  const linked = await post(hub, ana, `${signIns}/${body.signInId}`, {
+  return post(hub, ana, `${signIns}/${body.signInId}`, {
     code: `http://localhost:51121/oauth-callback?state=${state}&code=c-1`,
   })
+}
+
+test('o Google lê a lista do CLIProxy ao ligar e na partida: oferece cada Gemini que ela atende pelo nome do CLIProxy, nenhum Claude, e o início não cai num modelo que a conta não atende', async (t) => {
+  const setup = await googleCompany(t)
+  const { hub, ana, companyId, accounts } = setup
+  const linked = await linkGoogle(setup)
   assert.equal(linked.statusCode, 201, linked.body)
   const listed = [
     'claude-sonnet-4-6',
@@ -78,7 +91,6 @@ test('o Google lê a lista do CLIProxy ao ligar e na partida: oferece cada Gemin
   ]
   const [row] = await hub.test.asOwner(`select served_models from builder.model_account`)
   assert.deepEqual(Object(row).served_models, listed)
-  const accounts = `/api/companies/${companyId}/model-accounts`
   async function read() {
     return Object((await call(hub, ana, 'GET', accounts)).json())
   }
@@ -106,4 +118,24 @@ test('o Google lê a lista do CLIProxy ao ligar e na partida: oferece cada Gemin
   assert.equal(await hub.readUnserved(), 1)
   const [again] = await hub.test.asOwner(`select served_models from builder.model_account`)
   assert.deepEqual(Object(again).served_models, listed)
+})
+
+test('a conta Google ligada enquanto o CLIProxy ainda carrega a lista oferece seus modelos, e uma lista guardada vazia é lida de novo na partida', async (t) => {
+  const setup = await googleCompany(t)
+  const { hub, ana, double, accounts } = setup
+  // CLIProxy v8.0.33 answers an empty list until it has fetched the login's models from Google.
+  writeFileSync(join(double.control, 'loading'), '1500')
+  const linked = await linkGoogle(setup)
+  rmSync(join(double.control, 'loading'))
+  assert.equal(linked.statusCode, 201, linked.body)
+  async function read() {
+    return Object((await call(hub, ana, 'GET', accounts)).json())
+  }
+  assert.ok(offered(await read()).includes('google/gemini-3.8-flash-high'))
+  assert.equal((await read()).defaults.start.model, 'google/gemini-3.8-flash-high')
+  // An account whose list was kept empty before this read waited for it.
+  await hub.test.asOwner(`update builder.model_account set served_models = '{}'`)
+  assert.deepEqual(offered(await read()), [])
+  assert.equal(await hub.readUnserved(), 1)
+  assert.ok(offered(await read()).includes('google/gemini-3.8-flash-high'))
 })
