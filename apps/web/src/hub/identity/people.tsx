@@ -38,12 +38,16 @@ function Lines({ main, under, role }: { main: string; under: string; role: Role 
   )
 }
 
-const COLUMNS = [{ name: 'Pessoa' }, { name: 'Papel', leavesOnPhone: true }, { name: 'Ações' }]
+const COLUMNS = [
+  { name: 'Pessoa' },
+  { name: 'Papel', leavesOnPhone: true, width: 'md:w-36' },
+  { name: 'Ações', width: 'md:w-80' },
+]
 
 /** One list of the page as a table named by its section; on a phone the role moves under the name. The role and action columns have one width, so the two lists line up. */
 function PeopleTable({ name, children }: { name: string; children: ReactNode }) {
   return (
-    <FramedTable aria-label={name} columns={COLUMNS} className="md:table-fixed">
+    <FramedTable aria-label={name} columns={COLUMNS}>
       <TableBody>{children}</TableBody>
     </FramedTable>
   )
@@ -67,11 +71,11 @@ function Cells({
         <Lines main={name} under={under} role={role} />
       </TableCell>
       {!phone && (
-        <TableCell className="px-sm md:w-32">
+        <TableCell className="px-sm">
           <RoleBadge role={role} />
         </TableCell>
       )}
-      <TableCell className="px-sm text-right max-md:w-px md:w-80">
+      <TableCell className="w-px px-sm text-right">
         <span className="flex items-center justify-end gap-sm max-md:flex-col max-md:items-stretch">
           {children}
         </span>

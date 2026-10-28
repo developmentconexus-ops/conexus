@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useRouter } from '@tanstack/react-router'
 import { KeyRoundIcon } from 'lucide-react'
 import {
   accountsQuery,
@@ -6,7 +6,8 @@ import {
   providersQuery,
 } from '../../../../../builder/model-accounts/public.ts'
 import { everyMemberQuery } from '../../../../../hub/identity/public.ts'
-import { readOrNotFound } from '../../../../../platform/hub.ts'
+import { readOrNotFound, sentenceOf } from '../../../../../platform/hub.ts'
+import { ReadFailure } from '../../../../../ui/states.tsx'
 
 export const Route = createFileRoute('/_app/companies/$companyId_/settings/model-accounts')({
   staticData: {
@@ -29,5 +30,14 @@ export const Route = createFileRoute('/_app/companies/$companyId_/settings/model
       ]),
     )
   },
+  errorComponent: AccountsFailure,
   component: ModelAccounts,
 })
+
+/** The accounts could not be read: the sentence and a way to read again, inside the settings frame. */
+function AccountsFailure({ error, reset }: { error: unknown; reset: () => void }) {
+  const router = useRouter()
+  return (
+    <ReadFailure text={sentenceOf(error)} onRetry={() => void router.invalidate().then(reset)} />
+  )
+}

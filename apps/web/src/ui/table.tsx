@@ -63,8 +63,11 @@ export function TableCell({ className, ...props }: ComponentProps<'td'>) {
   )
 }
 
-/** One column of a `FramedTable`'s hidden header; `leavesOnPhone` columns move under the name there. */
-export type FramedColumn = { name: string; leavesOnPhone?: boolean }
+/**
+ * One column of a `FramedTable`'s hidden header; `leavesOnPhone` columns move under the name there,
+ * and `width` (a class, for `md` and up) is shared by every table that names the column.
+ */
+export type FramedColumn = { name: string; leavesOnPhone?: boolean; width?: string }
 
 /** A settings table in its frame: the hairline border, a screen-reader-only header and the columns that leave on a phone. */
 export function FramedTable({
@@ -73,16 +76,20 @@ export function FramedTable({
   ...props
 }: { columns: readonly FramedColumn[] } & ComponentProps<'table'>) {
   const phone = useIsMobile()
+  const shown = columns.filter((column) => !(phone && column.leavesOnPhone))
   return (
     <div className="overflow-hidden rounded-object border border-line bg-surface">
-      <Table {...props}>
+      <Table {...props} className={cn('md:table-fixed', props.className)}>
+        <colgroup>
+          {shown.map((column) => (
+            <col key={column.name} className={column.width} />
+          ))}
+        </colgroup>
         <TableHeader className="sr-only">
           <TableRow>
-            {columns
-              .filter((column) => !(phone && column.leavesOnPhone))
-              .map((column) => (
-                <TableHead key={column.name}>{column.name}</TableHead>
-              ))}
+            {shown.map((column) => (
+              <TableHead key={column.name}>{column.name}</TableHead>
+            ))}
           </TableRow>
         </TableHeader>
         {children}

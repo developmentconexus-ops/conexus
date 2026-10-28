@@ -117,7 +117,8 @@ test('Ligar conta na página da pessoa liga uma conta dela', async () => {
   fireEvent.change(screen.getByLabelText('Nome da conta'), { target: { value: 'Minha chave' } })
   fireEvent.change(screen.getByLabelText('Chave de API'), { target: { value: 'sk-minha-7777' } })
   fireEvent.click(screen.getByRole('button', { name: 'Ligar conta' }))
-  expect(await screen.findByText('Minha chave · chave …7777 · ligada')).toBeTruthy()
+  expect(await screen.findByText('Minha chave')).toBeTruthy()
+  expect(screen.queryByText('Minha chave · chave …7777 · ligada')).toBeNull()
   expect(sent[0]?.body).toMatchObject({ owner: 'me', provider: 'openai' })
 })
 

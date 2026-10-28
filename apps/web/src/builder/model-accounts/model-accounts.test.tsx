@@ -1,6 +1,7 @@
 import { PersonId } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { http } from 'msw'
 import { expect, test, vi } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
 import { ANA, COMPANY } from '../../platform/fixtures.ts'
@@ -279,4 +280,21 @@ test('409: a frase da falha, e a fila é lida de novo na ordem que ficou', async
     'A fila mudou enquanto você a ordenava. Recarregue a página.',
   )
   await waitFor(() => expect(labelsInOrder()).toEqual(['D', 'C', 'B', 'A']))
+})
+
+test('a leitura das contas falha: a frase e Tentar de novo, e o clique lê de novo', async () => {
+  let failing = true
+  const hub = modelHub(view({ company: [accountOf({ label: 'Time 1', position: 0 })] }), {})
+  server.use(
+    http.get(`*/api/companies/${COMPANY.id}/model-accounts`, () =>
+      failing ? refusal('DATABASE_UNAVAILABLE') : undefined,
+    ),
+    ...hub.handlers,
+  )
+  render(<Conexus conexus={createConexus(createMemoryHistory({ initialEntries: [PAGE] }))} />)
+  const alert = await screen.findByRole('alert')
+  expect(alert.textContent).toContain('banco do Conexus')
+  failing = false
+  fireEvent.click(screen.getByRole('button', { name: 'Tentar de novo' }))
+  expect(await screen.findByText('Time 1')).toBeTruthy()
 })
