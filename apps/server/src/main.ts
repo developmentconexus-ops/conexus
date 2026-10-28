@@ -49,6 +49,7 @@ import { answer, createServer, serve } from './platform/http.ts'
 import { bootLog, closeListeners, listenQuietly, shutDownOnSignal } from './platform/lifecycle.ts'
 import { createMail } from './platform/mail.ts'
 import { migrate, migrateExitCode } from './platform/migrate.ts'
+import { loadMigrationRule } from './platform/migration-rule.ts'
 import type { NeonProjects } from './platform/neon.ts'
 import { createNeonProjects } from './platform/neon.ts'
 
@@ -179,6 +180,7 @@ async function runServer(): Promise<void> {
   try {
     await assertRuntimeLogin(database)
     await assertMigrated(database)
+    await loadMigrationRule()
     const status = createStatus({ version: config.version, database })
     const identity = identityOf({ database, config, log })
     const neon = createNeonProjects({ config, log })

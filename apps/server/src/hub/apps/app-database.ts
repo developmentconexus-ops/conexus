@@ -69,6 +69,9 @@ export async function migrateApp(
     case 'CHANGED':
       deps.log.error({ companyId, projectId, migration: ran.id }, 'APP_MIGRATION_CHANGED')
       return 'APP_MIGRATION_CHANGED'
+    case 'REFUSED_BY_RULE':
+      deps.log.error({ companyId, projectId, ...ran.rule }, 'APP_MIGRATION_REFUSED')
+      return 'APP_MIGRATION_REFUSED'
     case 'REFUSED':
       deps.log.error({ companyId, projectId, code: ran.code }, 'APP_MIGRATION_FAILED')
       return 'APP_MIGRATION_FAILED'

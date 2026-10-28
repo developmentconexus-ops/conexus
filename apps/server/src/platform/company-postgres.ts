@@ -7,6 +7,9 @@ import { NeonDbError, neon, neonConfig } from '@neondatabase/serverless'
 import { cappedText } from './capped-text.ts'
 import type { AppLoginKey } from './config.ts'
 import { DatabaseUrl } from './database.ts'
+import { OUTCOME_AFTER, OUTCOME_BEFORE } from './migration-outcome.ts'
+import type { RuleBreak } from './migration-rule.ts'
+import { ruleBreak } from './migration-rule.ts'
 import { NEON_CALL_BUDGET_MS } from './neon.ts'
 
 export type SqlStatement = Readonly<{ text: string; values?: readonly unknown[] }>
@@ -71,6 +74,7 @@ type AppMigration = Manifest['migrations'][number]
 type MigrateAnswer =
   | { kind: 'DONE'; applied: number }
   | { kind: 'CHANGED'; id: string }
+  | { kind: 'REFUSED_BY_RULE'; rule: RuleBreak }
   | { kind: 'REFUSED'; code: string }
   | { kind: 'NO_ANSWER' }
 
@@ -181,6 +185,8 @@ async function ensureApp(
  * Every pending migration in one transaction with its ledger rows, as the migration login; an
  * applied one whose statements changed refuses them all (decision 0046). One the version does not
  * name is a later version's, kept when Voltar put an earlier one back: its tables stay as they are.
+ * The transaction commits only if every value saved before is still there and the previous version
+ * still reads and writes (B, 2026-10-27).
  */
 async function migrate(
   context: Context,
@@ -199,15 +205,22 @@ async function migrate(
   const done = new Set(applied.map((row) => row.id))
   const pending = input.migrations.filter((one) => !done.has(one.id))
   if (pending.length === 0) return { kind: 'DONE', applied: 0 }
+  // The outcome check cannot see what acts after the transaction: the fixed list refuses it first.
+  const rule = ruleBreak(pending)
+  if (rule !== undefined) return { kind: 'REFUSED_BY_RULE', rule }
   const ran = await context.transport(
     url,
-    pending.flatMap((one) => [
-      ...one.statements.map((text) => ({ text })),
-      {
-        text: `INSERT INTO ${ledger} (id, sha256) VALUES ($1, $2)`,
-        values: [one.id, digests.get(one.id)],
-      },
-    ]),
+    [
+      OUTCOME_BEFORE,
+      ...pending.flatMap((one) => [
+        ...one.statements.map((text) => ({ text })),
+        {
+          text: `INSERT INTO ${ledger} (id, sha256) VALUES ($1, $2)`,
+          values: [one.id, digests.get(one.id)],
+        },
+      ]),
+      OUTCOME_AFTER,
+    ],
     signal,
   )
   return ran.kind === 'DONE' ? { kind: 'DONE', applied: pending.length } : ran

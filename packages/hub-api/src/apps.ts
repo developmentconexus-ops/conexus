@@ -117,6 +117,7 @@ export const AppVersionFailure = z.enum([
   'APP_VERSION_FAILED',
   'APP_VERSION_NOT_STARTING',
   'APP_MIGRATION_FAILED',
+  'APP_MIGRATION_REFUSED',
   'APP_MIGRATION_CHANGED',
 ])
 export type AppVersionFailure = z.infer<typeof AppVersionFailure>

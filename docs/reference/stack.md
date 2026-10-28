@@ -42,6 +42,7 @@ can be another commit (one was at `729bdc5d`).
 | `@better-auth/drizzle-adapter` | `apps/server/src/hub` | as `better-auth` | as `better-auth` | — | 0014 | — |
 | `@neon/sdk` | `apps/server/src/platform` | skill; `neon.com/llms.txt` | `neon:neon`, `neon-postgres-agent-platforms` | — | 0021, 0040, 0048 | — |
 | `@neondatabase/serverless` | `apps/server/src/platform`, `apps/edge/src` | skill; `neon.com/llms.txt` | `neon:neon-postgres` | — | 0008, 0009, 0041 | — |
+| `libpg-query` | `apps/server/src/platform` | `node_modules/libpg-query/README.md` | none | squawk `4855ff5` (regex, misses `DO`, `GRANT`, `SECURITY DEFINER`); supabase-mcp `5ab9a98` `destructive-sql.ts:64` | data D6 | Load the WASM with `loadModule()` before the first `parseSync`: the Hub awaits it at start |
 | `wrangler` | `apps/edge` | skill; `developers.cloudflare.com/workers/llms.txt` | `cloudflare:wrangler`, `cloudflare:workers-best-practices` | vibesdk `worker/index.ts:205` (dispatch), `worker/services/deployer/api/cloudflare-api.ts:131` (deploy), `space/src/space/durable-object.ts:752` (preview, Worker Loader) | 0018, 0042, 0047 | — |
 | `react-email` | `apps/server/src/hub` | docs site | none | — | 0017 | — |
 | `@react-email/render` | `apps/server/src/hub` | docs site | none | — | 0017 | — |
