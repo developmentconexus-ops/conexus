@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { expect, test } from 'vitest'
 import { hubServer } from '../../platform/test-hub.tsx'
 import { AGENT_START, agentEnd, RUNNING, stepStarted, updatePart } from './test-events.ts'
@@ -26,6 +26,7 @@ test('a pergunta respondida nunca vira um cartão vazio: o resultado do Mastra v
   line.emit(AGENT_START)
   line.emit(RUNNING)
   line.emit(stepStarted('step-2', [QUESTION_ANSWERED_PART]))
+  fireEvent.click(await screen.findByRole('button', { name: 'Respondeu 1 pergunta' }))
   await screen.findByText('Só eu')
   await waitFor(() => expect(screen.getAllByText(/Quem cadastra/).length).toBeGreaterThan(0))
 })

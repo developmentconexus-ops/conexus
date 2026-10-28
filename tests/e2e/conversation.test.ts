@@ -146,7 +146,7 @@ async function listed(chat: Page) {
 async function otherPerson(diego: Page, ids: { companyA: string; companyB: string }, link: string) {
   await enter(diego, DIEGO.email, `/companies/${ids.companyA}`)
   await openConversations(diego, ids.companyA)
-  await diego.getByText('Nenhuma conversa').waitFor()
+  await diego.getByText('Descreva o aplicativo que você quer criar.').waitFor()
   await diego.goto(link)
   await diego.getByText(NOT_FOUND).waitFor()
   await diego.goto(`${TEST_ORIGIN}/companies/${ids.companyB}/projects`)

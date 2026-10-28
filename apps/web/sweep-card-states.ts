@@ -174,6 +174,7 @@ export const CARD_STATES: State[] = [
     replies: REPLIES,
     settle: async (page) => {
       await inChat(page)
+      await page.getByRole('button', { name: 'Respondeu 1 pergunta' }).click()
       await page.getByText('Sábado, Domingo').scrollIntoViewIfNeeded()
       await waitFor(page, 'O app não passou na conferência depois de 4 tentativas.')
       await waitFor(page, 'Não consegui conferir o app.')

@@ -2,6 +2,7 @@ import type { Answer, Question } from '@conexus/hub-api'
 import { ToolCallId } from '@conexus/hub-api'
 import type { PlanResume } from '@mastra/client-js'
 import { getRouteApi } from '@tanstack/react-router'
+import { MessageCircleQuestionIcon } from 'lucide-react'
 import type { SubmitEvent } from 'react'
 import { useMemo, useRef, useState } from 'react'
 import { ConexusMark } from '../../brand/mark.tsx'
@@ -19,6 +20,14 @@ import {
   QuestionnaireSubmit,
   QuestionnaireTitle,
 } from '../../ui/questionnaire.tsx'
+import {
+  TraceCollapsible,
+  TraceCollapsibleContent,
+  TraceCollapsibleTrigger,
+  TraceIcon,
+  TraceLine,
+  TraceTitle,
+} from '../../ui/trace.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
 import type { QuestionCardItem } from './rows.ts'
 import { sessionOf } from './session.ts'
@@ -33,6 +42,12 @@ export const CARD_TEXT = {
   unsent: 'Não foi possível enviar. Tente de novo.',
   other: 'outra resposta…',
   stopped: 'Você parou o Builder.',
+}
+
+/** The collapsed row of a card no longer open, as the skill and tool rows are. */
+function rowTitle(state: QuestionCardItem['state'], count: number): string {
+  const questions = count === 1 ? '1 pergunta' : `${count} perguntas`
+  return state === 'answered' ? `Respondeu ${questions}` : `${questions} sem resposta`
 }
 
 /** On a phone the card says the Builder waits on the person, in place of the working line (founder, 2026-10-22, "Aprovo"). */
@@ -111,7 +126,9 @@ function Ask({ question, at }: { question: Question; at: number }) {
               defaultChecked={single && index === 0}
             >
               <span>{choice.label}</span>
-              {choice.hint && <span className="text-fact text-text-2">{choice.hint}</span>}
+              {choice.hint && (
+                <span className="text-fact text-text-2 md:truncate">{choice.hint}</span>
+              )}
             </QuestionnaireChoice>
           ))}
           <QuestionnaireInput
@@ -119,8 +136,8 @@ function Ask({ question, at }: { question: Question; at: number }) {
             placeholder={CARD_TEXT.other}
             render={
               <textarea
-                className="w-full min-h-16 rounded-control border border-line bg-surface p-sm text-base text-text md:text-body resize-y"
-                rows={2}
+                className="w-full min-h-9 max-md:min-h-16 field-sizing-content max-h-40 rounded-control border border-line bg-surface px-sm py-xs text-base text-text md:text-body resize-none"
+                rows={1}
               />
             }
           />
@@ -131,8 +148,8 @@ function Ask({ question, at }: { question: Question; at: number }) {
           placeholder="Escreva sua resposta…"
           render={
             <textarea
-              className="w-full min-h-20 rounded-control border border-line bg-surface p-sm text-base text-text md:text-body resize-y"
-              rows={3}
+              className="w-full min-h-9 max-md:min-h-16 field-sizing-content max-h-40 rounded-control border border-line bg-surface px-sm py-xs text-base text-text md:text-body resize-none"
+              rows={1}
             />
           }
         />
@@ -164,10 +181,17 @@ export function QuestionCard({ part }: { part: QuestionCardItem }) {
     void answer(answersOf(new FormData(event.currentTarget), part.questions))
   }
   const said = closedText(part.state)
+  const open = part.state === 'open'
   return (
-    <div className="flex min-w-0 flex-col gap-sm rounded-card border border-line bg-surface p-md">
-      {part.state === 'open' && <WaitingCaption />}
-      {part.state === 'open' ? (
+    <div
+      className={
+        open
+          ? 'flex min-w-0 flex-col gap-sm rounded-card border border-line bg-surface p-md md:p-sm'
+          : 'flex min-w-0 flex-col gap-sm'
+      }
+    >
+      {open && <WaitingCaption />}
+      {open ? (
         <Questionnaire onSubmit={submit}>
           {part.questions.map((question, at) => (
             <Ask key={question.question} question={question} at={at} />
@@ -181,18 +205,30 @@ export function QuestionCard({ part }: { part: QuestionCardItem }) {
           </QuestionnaireActions>
         </Questionnaire>
       ) : (
-        <ul className="flex flex-col gap-xs text-text-2">
-          {part.questions.map((question, at) => (
-            <li key={question.question} className="flex flex-col">
-              {question.question}
-              {part.state === 'answered' && part.answers && (
-                <span className="text-text">{answerText(part.answers[at])}</span>
-              )}
-            </li>
-          ))}
-        </ul>
+        <TraceCollapsible>
+          <TraceCollapsibleTrigger>
+            <TraceLine>
+              <TraceIcon>
+                <MessageCircleQuestionIcon />
+              </TraceIcon>
+              <TraceTitle>{rowTitle(part.state, part.questions.length)}</TraceTitle>
+            </TraceLine>
+          </TraceCollapsibleTrigger>
+          <TraceCollapsibleContent className="pt-xs">
+            <ul className="flex flex-col gap-xs rounded-control bg-surface-3 p-sm text-fact text-text-2">
+              {part.questions.map((question, at) => (
+                <li key={question.question} className="flex flex-col">
+                  {question.question}
+                  {part.state === 'answered' && part.answers && (
+                    <span className="text-text">{answerText(part.answers[at])}</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+            {said !== undefined && <p className="pt-xs text-fact text-text-2">{said}</p>}
+          </TraceCollapsibleContent>
+        </TraceCollapsible>
       )}
-      {said !== undefined && <p className="text-text-2">{said}</p>}
       {error !== undefined && (
         <p role="alert" className="text-danger">
           {error}

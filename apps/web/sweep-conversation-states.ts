@@ -167,7 +167,13 @@ export const CONVERSATION_STATES: State[] = [
     name: 'Projeto, Prévia vazia e sem conversa',
     path: PROJECT,
     replies: OWNER,
-    settle: (p) => inChat(p, 'Nenhuma conversa'),
+    settle: (p) => inChat(p, 'Descreva o aplicativo que você quer criar.'),
+  },
+  {
+    name: 'Projeto sem conversa, com conta, pronto para escrever',
+    path: PROJECT,
+    replies: WITH_ACCOUNT,
+    settle: (p) => inChat(p, 'Descreva o aplicativo que você quer criar.'),
   },
   {
     name: 'Projeto, Prévia vazia com a conversa mais recente',
