@@ -75,7 +75,7 @@ export function Transcript(props: {
   turns: readonly ShownTurn[]
   steers: readonly Steer[]
   model: ModelId
-  onAsk?: (text: string) => void
+  onAsk: (text: string) => void
 }) {
   const { turns } = props
   return (

@@ -23,7 +23,7 @@ function ConexusPartRow({
 }: {
   item: Extract<TranscriptItem, { kind: 'conexus' }>
   live: boolean
-  onAsk?: (text: string) => void
+  onAsk: (text: string) => void
 }) {
   if (item.partType === 'data-conexus-machine') {
     const parsed = MachineData.safeParse(item.data)
@@ -55,7 +55,7 @@ function ItemRow({
 }: {
   item: TranscriptItem
   streaming: boolean
-  onAsk?: (text: string) => void
+  onAsk: (text: string) => void
 }) {
   switch (item.kind) {
     case 'text':
@@ -93,7 +93,7 @@ export function BuilderTurn(props: {
   items: readonly TranscriptItem[]
   model: ModelId | null
   streaming: boolean
-  onAsk?: (text: string) => void
+  onAsk: (text: string) => void
 }) {
   const rows = fold(props.items)
 

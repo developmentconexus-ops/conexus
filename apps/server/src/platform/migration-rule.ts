@@ -1,11 +1,12 @@
 import type { Manifest } from '@conexus/app-contract'
+import type { MigrationCause } from '@conexus/hub-api'
 import type { CreateFunctionStmt, Node } from 'libpg-query'
 import { loadModule, parsePlPgSQLSync, parseSync } from 'libpg-query'
 
 type AppMigration = Manifest['migrations'][number]
 
 /** The statement the fixed list refuses: what may pass is what the outcome check sees (B, 2026-10-27). */
-export type RuleBreak = Readonly<{ migration: string; statement: number; subject: string }>
+export type RuleBreak = Omit<Extract<MigrationCause, { kind: 'rule' }>, 'kind'>
 
 /** Loads the parser's WASM; the Hub awaits it at start (libpg-query README: the `*Sync` need it). */
 export function loadMigrationRule(): Promise<void> {
@@ -47,12 +48,17 @@ const DYNAMIC = ['PLpgSQL_stmt_dynexecute', 'PLpgSQL_stmt_dynfors', 'dynquery']
 /** PL/pgSQL's `RAISE EXCEPTION`, and a bare `RAISE`: PostgreSQL's ERROR level. */
 const ERROR_LEVEL = 21
 
+const SUBJECT_MAX = 60
+
 /** The first statement of the pending migrations that the fixed list refuses, or none. */
 export function ruleBreak(pending: readonly AppMigration[]): RuleBreak | undefined {
   for (const one of pending) {
     for (const [at, text] of one.statements.entries()) {
       const subject = refused(text)
-      if (subject !== undefined) return { migration: one.id, statement: at + 1, subject }
+      // The contract's bound: a name with its schema can pass it, and the Prévia must still show.
+      if (subject !== undefined) {
+        return { migration: one.id, statement: at + 1, subject: subject.slice(0, SUBJECT_MAX) }
+      }
     }
   }
   return undefined

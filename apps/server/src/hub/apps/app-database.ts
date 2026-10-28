@@ -1,7 +1,6 @@
 import type { Manifest } from '@conexus/app-contract'
 import type { AppVersionFailure, CompanyId, MigrationCause, ProjectId } from '@conexus/hub-api'
 import type { CompanyPostgres } from '../../platform/company-postgres.ts'
-import { present } from '../../platform/company-postgres.ts'
 import type { Database, DatabaseUrl, Scope } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import type { NeonProjects } from '../../platform/neon.ts'
@@ -83,7 +82,9 @@ export async function migrateApp(
         cause: {
           kind: 'database',
           sqlstate: ran.code,
-          ...present({ table: ran.table, column: ran.column, constraint: ran.constraint }),
+          table: ran.table,
+          column: ran.column,
+          constraint: ran.constraint,
         },
       }
     case 'NO_ANSWER':

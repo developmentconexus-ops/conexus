@@ -43,15 +43,7 @@ export function answerOf(
   const code = error?.code
   if (code === undefined || CONNECTION_LOST.test(code)) return { kind: 'NO_ANSWER' }
   const { table, column, constraint } = error ?? {}
-  return { kind: 'REFUSED', code, ...present({ table, column, constraint }) }
-}
-
-/** The entries that hold a value: an absent name stays absent, not `undefined`. */
-export function present<T extends Record<string, string | undefined>>(
-  names: T,
-): Partial<Record<keyof T, string>> {
-  const held = Object.entries(names).filter(([, value]) => value !== undefined)
-  return Object.fromEntries(held) as Partial<Record<keyof T, string>>
+  return { kind: 'REFUSED', code, table, column, constraint }
 }
 
 /** A SQL reply past this is silence: the Hub's own statements read a few rows (code C59). */

@@ -111,6 +111,21 @@ test('o motivo vai sem valor', async (t) => {
     code: 'APP_MIGRATION_REFUSED',
     cause: { kind: 'rule', migration: '003_publico', statement: 1, subject: 'GrantStmt' },
   })
-  const everything = JSON.stringify([database, lost, grant, subject.hub.lines])
-  assert.ok(!everything.includes('99999'), 'no saved value in the part or the log')
+  const everything =
+    [database, lost, grant].map(({ raw }) => raw).join() + JSON.stringify(subject.hub.lines)
+  assert.ok(!everything.includes('99999'), 'no saved value in the stream or the log')
+})
+
+test('a tabela de outro esquema com nome longo recusa com o motivo inteiro', async (t) => {
+  const subject = await companyForVersions(t)
+  const named = 'app_vendas.historico_de_alteracoes_das_encomendas_do_cliente'
+  const sent = await send(
+    subject,
+    subject.ana,
+    folder({
+      migrations: [MIGRATION, { id: '002_fora', statements: [`CREATE TABLE ${named} (v text)`] }],
+    }),
+  )
+  assert.equal(sent.preview?.state === 'failed' && sent.preview.code, 'APP_MIGRATION_REFUSED')
+  assert.equal(sent.preview?.state === 'failed' && sent.preview.cause?.kind, 'rule')
 })

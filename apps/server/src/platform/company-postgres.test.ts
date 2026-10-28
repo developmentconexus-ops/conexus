@@ -113,7 +113,10 @@ test('banco do app: logins por SQL, nenhum superusuário; repetido após corte a
     { id: '002_extra', statements: ['CREATE TABLE extra (v text)'] },
     { id: '003_quebrada', statements: ['INSERT INTO nada VALUES (1)'] },
   ]
-  assert.deepEqual(await postgres.migrate(owner, id, broken), { kind: 'REFUSED', code: '42P01' })
+  assert.partialDeepStrictEqual(await postgres.migrate(owner, id, broken), {
+    kind: 'REFUSED',
+    code: '42P01',
+  })
   assert.deepEqual(await appTablesOf(owner, id), {
     tables: ['conexus_migration', 'recado'],
     ledger: [MIGRATION.id],

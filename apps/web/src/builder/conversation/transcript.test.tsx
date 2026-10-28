@@ -58,7 +58,12 @@ test('raciocínio: "Pensando…", depois "Pensou por N s", fechado por padrão, 
   }
 
   const { rerender } = render(
-    <Transcript turns={[turnOf([reasoningItemRunning], true)]} steers={[]} model={MODEL} />,
+    <Transcript
+      turns={[turnOf([reasoningItemRunning], true)]}
+      steers={[]}
+      model={MODEL}
+      onAsk={() => undefined}
+    />,
   )
   expect(screen.getByText('Pensando…')).toBeTruthy()
 
@@ -70,7 +75,14 @@ test('raciocínio: "Pensando…", depois "Pensou por N s", fechado por padrão, 
     streaming: false,
   }
 
-  rerender(<Transcript turns={[turnOf([reasoningItemDone], false)]} steers={[]} model={MODEL} />)
+  rerender(
+    <Transcript
+      turns={[turnOf([reasoningItemDone], false)]}
+      steers={[]}
+      model={MODEL}
+      onAsk={() => undefined}
+    />,
+  )
   expect(screen.queryByText('Pensando…')).toBeNull()
   const trigger = screen.getByRole('button', { name: 'Pensou por 6 s' })
   expect(trigger.getAttribute('aria-expanded')).toBe('false')
@@ -92,7 +104,14 @@ test('relido, o raciocínio do passo diz "Pensou por N s" com o tempo guardado n
     saved('step-2', [{ type: 'text', text: 'Pronto.' }]),
     saved('turn', [{ type: 'data-conexus-thought', data: { id: 'step-1.0', seconds: 6 } }]),
   ]
-  render(<Transcript turns={shownOf({ ...OPENED, messages })} steers={[]} model={MODEL} />)
+  render(
+    <Transcript
+      turns={shownOf({ ...OPENED, messages })}
+      steers={[]}
+      model={MODEL}
+      onAsk={() => undefined}
+    />,
+  )
   expect(screen.getByRole('button', { name: 'Pensou por 6 s' })).toBeTruthy()
 })
 
@@ -106,7 +125,12 @@ test('raciocínio sem tempo diz só "Pensou" e abre no texto (Critério 9)', asy
   }
 
   render(
-    <Transcript turns={[turnOf([reasoningWithoutSeconds], false)]} steers={[]} model={MODEL} />,
+    <Transcript
+      turns={[turnOf([reasoningWithoutSeconds], false)]}
+      steers={[]}
+      model={MODEL}
+      onAsk={() => undefined}
+    />,
   )
   const trigger = screen.getByRole('button', { name: 'Pensou' })
   expect(trigger).toBeTruthy()
@@ -121,7 +145,12 @@ test('uma ou duas ferramentas são linhas; três ou mais viram um grupo fechado 
   ]
 
   const { rerender } = render(
-    <Transcript turns={[turnOf(twoTools, false)]} steers={[]} model={MODEL} />,
+    <Transcript
+      turns={[turnOf(twoTools, false)]}
+      steers={[]}
+      model={MODEL}
+      onAsk={() => undefined}
+    />,
   )
   expect(screen.getByText(/Leu um arquivo/)).toBeTruthy()
   expect(screen.getByText(/Buscou no código/)).toBeTruthy()
@@ -134,7 +163,14 @@ test('uma ou duas ferramentas são linhas; três ou mais viram um grupo fechado 
     toolItem('t-4', 'mastra_workspace_edit_file'),
   ]
 
-  rerender(<Transcript turns={[turnOf(fourTools, false)]} steers={[]} model={MODEL} />)
+  rerender(
+    <Transcript
+      turns={[turnOf(fourTools, false)]}
+      steers={[]}
+      model={MODEL}
+      onAsk={() => undefined}
+    />,
+  )
   const group = screen.getByRole('button', { name: /4 ferramentas/ })
   expect(group.getAttribute('aria-expanded')).toBe('false')
 
@@ -163,7 +199,14 @@ test('skill, ask_user e submit_plan nunca se agrupam mesmo com 3 ou mais ferrame
     toolItem('t-4', 'mastra_workspace_read_file'),
   ]
 
-  render(<Transcript turns={[turnOf(itemsWithUngroupables, false)]} steers={[]} model={MODEL} />)
+  render(
+    <Transcript
+      turns={[turnOf(itemsWithUngroupables, false)]}
+      steers={[]}
+      model={MODEL}
+      onAsk={() => undefined}
+    />,
+  )
   // None of the runs reaches length >= 3, so no group button exists:
   expect(screen.queryByText(/ferramentas:/)).toBeNull()
   expect(screen.getByText(/Usou a skill conexus-build/)).toBeTruthy()
@@ -179,7 +222,14 @@ test('task_* tools não têm linha na conversa (Critério 9)', () => {
   )
   expect(itemsWithTasks).toEqual([])
 
-  render(<Transcript turns={[turnOf(itemsWithTasks, false)]} steers={[]} model={MODEL} />)
+  render(
+    <Transcript
+      turns={[turnOf(itemsWithTasks, false)]}
+      steers={[]}
+      model={MODEL}
+      onAsk={() => undefined}
+    />,
+  )
   expect(screen.queryByText(/tarefa/i)).toBeNull()
   expect(screen.queryByRole('button', { name: /ferramenta|tarefa/i })).toBeNull()
 })

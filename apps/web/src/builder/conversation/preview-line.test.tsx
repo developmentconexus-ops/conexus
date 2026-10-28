@@ -183,3 +183,10 @@ test('a Prévia que falhou sem motivo não tem motivo nem botão', async () => {
   expect(within(log).queryByText(/^Motivo:/)).toBeNull()
   expect(within(log).queryByRole('button', { name: 'Pedir ao Builder para corrigir' })).toBeNull()
 })
+
+test('a Prévia recusada sem motivo, de antes, não manda para um botão que não há', async () => {
+  await openConversation(keptFailed({ state: 'failed', number: 7, code: 'APP_MIGRATION_FAILED' }))
+  const log = screen.getByRole('log', { name: 'Conversa com o Builder' })
+  const said = await within(log).findByText(/^Prévia não atualizada: /)
+  expect(said.textContent).not.toContain('botão')
+})
