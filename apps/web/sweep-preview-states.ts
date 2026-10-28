@@ -8,7 +8,7 @@ import type { Said } from './sweep-session.ts'
 import { sessionReplies } from './sweep-session.ts'
 
 const PROJECT = `/companies/${COMPANY.id}/projects/${PROJECT_ID}`
-const WITH_APP = { ...OWNER, ...projectsPage(COMPANY.id, { appVersion: 3 }) }
+const WITH_APP = { ...OWNER, ...projectsPage(COMPANY.id, { appVersion: 3, publishedVersion: 2 }) }
 const IPHONE =
   'Mozilla/5.0 (iPhone; CPU iPhone OS 26_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6 Mobile/15E148 Safari/604.1'
 

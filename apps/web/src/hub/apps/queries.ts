@@ -6,4 +6,4 @@ export function versionsQuery(companyId: CompanyId, projectId: ProjectId) {
   return hubQuery(listAppVersions, { params: { companyId, projectId } })
 }
 
-export const sendPublishedVersion = hubMutation(publishAppVersion)
+export const publishVersion = hubMutation(publishAppVersion)

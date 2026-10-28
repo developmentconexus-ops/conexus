@@ -1,6 +1,6 @@
 import { deleteProject } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { beforeEach, expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
@@ -13,6 +13,7 @@ import {
   projectsRead,
   refusal,
 } from '../../platform/test-hub.tsx'
+import { publishedVersion, versionView } from '../../platform/test-hub-versions.tsx'
 
 const server = hubServer()
 const PROJECT = `/companies/${COMPANY.id}/projects/${PEDIDOS.id}`
@@ -96,6 +97,7 @@ for (const role of ['owner', 'admin', 'member'] as const) {
         mayDelete: false,
         role,
         appVersion: 1,
+        publishedVersion: 1,
       }),
     )
     render(<Conexus conexus={createConexus(createMemoryHistory({ initialEntries: [ABOUT] }))} />)
@@ -108,7 +110,13 @@ for (const role of ['owner', 'admin', 'member'] as const) {
 
 test('Abrir app abre aba nova', async () => {
   server.use(
-    ...projectsRead({ projects: [PEDIDOS], databaseReady: true, mayDelete: true, appVersion: 1 }),
+    ...projectsRead({
+      projects: [PEDIDOS],
+      databaseReady: true,
+      mayDelete: true,
+      appVersion: 1,
+      publishedVersion: 1,
+    }),
   )
   render(<Conexus conexus={createConexus(createMemoryHistory({ initialEntries: [ABOUT] }))} />)
   const link = await screen.findByRole('link', { name: 'Abrir app' })
@@ -121,6 +129,54 @@ test('antes do primeiro app, o topo não mostra "Abrir app"', async () => {
   render(<Conexus conexus={createConexus(createMemoryHistory({ initialEntries: [ABOUT] }))} />)
   expect(await screen.findAllByRole('heading', { name: 'Pedidos' })).not.toHaveLength(0)
   expect(screen.queryByRole('link', { name: 'Abrir app' })).toBeNull()
+})
+
+const PUBLISH_PATH = `*/api/companies/${COMPANY.id}/projects/${PEDIDOS.id}/published-version`
+
+test('o alto do Projeto: Publicar, publicada e Abrir app', async () => {
+  const view: Parameters<typeof projectsRead>[0] = {
+    projects: [PEDIDOS],
+    databaseReady: true,
+    mayDelete: true,
+    appVersion: null,
+  }
+  const sent: unknown[] = []
+  server.use(
+    ...projectsRead(view),
+    http.put(PUBLISH_PATH, async ({ request }) => {
+      sent.push(await request.json())
+      view.publishedVersion = view.appVersion
+      return publishedVersion(versionView(7, { live: true, published: true }))
+    }),
+  )
+  const conexus = createConexus(createMemoryHistory({ initialEntries: [PROJECT] }))
+  render(<Conexus conexus={conexus} />)
+  // Sem versão na Prévia: nem Publicar nem Abrir app.
+  expect(await screen.findAllByRole('heading', { name: 'Pedidos' })).not.toHaveLength(0)
+  expect(screen.queryByRole('button', { name: 'Publicar' })).toBeNull()
+  expect(screen.queryByRole('link', { name: 'Abrir app' })).toBeNull()
+  // A Prévia na 7 e nada publicado: o Publicar, e o Abrir app segue fora.
+  view.appVersion = 7
+  await act(() => conexus.queryClient.invalidateQueries())
+  fireEvent.click(await screen.findByRole('button', { name: 'Publicar' }))
+  const dialog = await screen.findByRole('alertdialog')
+  expect(dialog.textContent).toContain('Publicar a versão 7?')
+  expect(dialog.textContent).toContain('Quem abrir o app passa a ver esta versão.')
+  expect(screen.queryByRole('link', { name: 'Abrir app' })).toBeNull()
+  fireEvent.click(screen.getByRole('button', { name: 'Publicar a versão 7' }))
+  // As duas iguais: o texto no lugar do botão, e o Abrir app.
+  expect(await screen.findByText('Versão 7 publicada')).toBeTruthy()
+  expect(sent).toEqual([{ number: 7 }])
+  expect(screen.queryByRole('button', { name: 'Publicar' })).toBeNull()
+  expect((await screen.findByRole('link', { name: 'Abrir app' })).getAttribute('href')).toBe(
+    `https://${PEDIDOS_ADDRESS}/`,
+  )
+  // A Prévia anda para a 8: a publicada fica na 7, o Publicar volta e o Abrir app continua.
+  view.appVersion = 8
+  await act(() => conexus.queryClient.invalidateQueries())
+  expect(await screen.findByRole('button', { name: 'Publicar' })).toBeTruthy()
+  expect(screen.queryByText('Versão 7 publicada')).toBeNull()
+  expect(screen.getByRole('link', { name: 'Abrir app' })).toBeTruthy()
 })
 
 test('um Projeto sem endereço, feito na 7.x: nem o endereço nem "Abrir app"', async () => {

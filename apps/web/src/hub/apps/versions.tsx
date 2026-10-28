@@ -7,25 +7,31 @@ import { HubFailure, sentenceOf } from '../../platform/hub.ts'
 import { List, Row, rowBody, SectionTitle } from '../../ui/list.tsx'
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { Empty, NotFound, ReadFailure } from '../../ui/states.tsx'
-import { PutBack } from './put-back.tsx'
+import { Publish } from './publish.tsx'
 import { versionsQuery } from './queries.ts'
 
 type Scope = { companyId: CompanyId; projectId: ProjectId }
 
 /**
- * The words of a version's state after its number, "Versão 1 · no ar"; a failed one says why, from
- * the failure table (web V35).
+ * The words of a version's state after its number, "Versão 1 · Na Prévia · Publicada"; a failed one
+ * says why, from the failure table (web V35).
  */
 function State({ version }: { version: AppVersion }) {
-  if (version.live) return <span className="text-fact">· no ar</span>
   if (version.state === 'sending') return <span className="text-text-2">· Enviando…</span>
-  if (version.state === 'ready') return null
-  const why = version.failure === null ? undefined : FAILURES[version.failure].phrase
-  return <span className="text-danger">{why === undefined ? '· Falhou' : `· Falhou: ${why}`}</span>
+  if (version.state === 'failed') {
+    const why = version.failure === null ? undefined : FAILURES[version.failure].phrase
+    return (
+      <span className="text-danger">{why === undefined ? '· Falhou' : `· Falhou: ${why}`}</span>
+    )
+  }
+  const marks = [version.live && 'Na Prévia', version.published && 'Publicada'].filter(Boolean)
+  return marks.length === 0 ? null : <span className="text-fact">· {marks.join(' · ')}</span>
 }
 
-function VersionRow(props: Scope & { version: AppVersion; onStale: (message?: string) => void }) {
-  const { version } = props
+function VersionRow({
+  version,
+  ...props
+}: Scope & { version: AppVersion; onStale: (message?: string) => void }) {
   return (
     <Row>
       <div className={rowBody({ kind: 'wrapping' })}>
@@ -38,7 +44,9 @@ function VersionRow(props: Scope & { version: AppVersion; onStale: (message?: st
             {version.sentByName !== null && ` · ${version.sentByName}`}
           </span>
         </span>
-        {version.state === 'ready' && !version.live && <PutBack {...props} />}
+        {version.state === 'ready' && !version.published && (
+          <Publish {...props} number={version.number} label="Publicar esta" />
+        )}
       </div>
     </Row>
   )
