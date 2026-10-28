@@ -11,6 +11,7 @@ import {
   SidebarMenu,
   SidebarMenuSkeleton,
 } from '../../ui/sidebar.tsx'
+import { NewProjectDialog } from './new-project-dialog.tsx'
 import { projectsQuery } from './queries.ts'
 
 const SHOWN = 5
@@ -45,6 +46,7 @@ export function RecentProjects(props: { companyId: CompanyId; personId: PersonId
   return (
     <SidebarGroup>
       <SidebarGroupLabel>Projetos recentes</SidebarGroupLabel>
+      <NewProjectDialog companyId={companyId} />
       <SidebarMenu>
         {read.isPending ? (
           <>

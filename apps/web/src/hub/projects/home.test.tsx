@@ -71,15 +71,17 @@ test('Início: o título, a caixa, os exemplos e os Projetos', async () => {
   expect(box.getAttribute('placeholder')).toBe('Descreva o app que você quer…')
   const examples = screen.getByRole('list', { name: 'Exemplos' })
   expect(within(examples).getAllByRole('button')).toHaveLength(3)
-  const projects = within(screen.getByRole('main')).getByRole('heading', { name: /^Projetos/ })
+  const main = screen.getByRole('main')
+  const projects = within(main).getByRole('heading', { name: /^Projetos/ })
   expect(projects.textContent).toBe('Projetos1')
   const inDom = [projects, examples, box, title].sort((a, b) =>
     a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1,
   )
   expect(inDom).toEqual([title, box, examples, projects])
+  // The only place to create a Projeto beside the box is the sidebar's +, not the page.
   for (const name of ['Criar projeto', '+ Novo projeto', 'Novo projeto']) {
-    expect(screen.queryByRole('button', { name })).toBeNull()
-    expect(screen.queryByRole('link', { name })).toBeNull()
+    expect(within(main).queryByRole('button', { name })).toBeNull()
+    expect(within(main).queryByRole('link', { name })).toBeNull()
   }
   expect(screen.queryByLabelText(/Memória da conversa/)).toBeNull()
 })

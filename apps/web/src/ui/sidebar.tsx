@@ -216,6 +216,22 @@ export function SidebarGroupLabel({ className, ...props }: ComponentProps<'h2'>)
   )
 }
 
+// Shadcn's `sidebar-group-action`: the group's one icon button, on the label's line. It is 28px, the
+// action of one row (design V32), and the touch reaches 44px without drawing it larger.
+export function SidebarGroupAction({ className, ...props }: ComponentProps<'button'>) {
+  return (
+    <button
+      type="button"
+      data-slot="sidebar-group-action"
+      className={cn(
+        'absolute top-[0.625rem] right-sm flex size-7 items-center justify-center rounded-control text-text-2 hover:bg-surface-3 hover:text-text group-data-[collapsible=icon]:hidden pointer-coarse:after:absolute pointer-coarse:after:top-1/2 pointer-coarse:after:left-1/2 pointer-coarse:after:size-11 pointer-coarse:after:-translate-1/2 [&_svg]:size-3.5 [&_svg]:shrink-0',
+        className,
+      )}
+      {...props}
+    />
+  )
+}
+
 export function SidebarMenu({ className, ...props }: ComponentProps<'ul'>) {
   return (
     <ul
