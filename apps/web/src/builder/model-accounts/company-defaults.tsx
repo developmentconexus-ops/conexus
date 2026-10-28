@@ -1,6 +1,7 @@
 import type { CompanyId, Defaults, Provider } from '@conexus/hub-api'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi, Link } from '@tanstack/react-router'
+import { SettingsSection } from '../../ui/settings-section.tsx'
 import { DefaultChoice } from './default-choice.tsx'
 import { accountsQuery, providersQuery } from './queries.ts'
 import { choiceText, modelProviderName, START_SOURCE_TEXT } from './text.ts'
@@ -53,21 +54,32 @@ export function CompanyDefaults() {
   const { providers } = useSuspenseQuery(providersQuery).data
   const { defaults, choices, mayManage } = accounts
   return (
-    <div className="flex flex-col gap-lg">
-      <p className="text-label text-text-2">Toda a empresa</p>
-      <StartLine
-        companyId={companyId}
-        start={defaults.companyStart}
-        defaults={defaults}
-        providers={providers}
-      />
-      <DefaultChoice
-        companyId={companyId}
-        scope="company"
-        defaults={defaults}
-        providers={choices.company}
-        mayChange={mayManage}
-      />
+    <div className="flex flex-col gap-2xl">
+      <SettingsSection
+        id="start"
+        title="Conversa nova"
+        description="Toda a empresa. Onde as conversas novas começam, e por quê."
+      >
+        <StartLine
+          companyId={companyId}
+          start={defaults.companyStart}
+          defaults={defaults}
+          providers={providers}
+        />
+      </SettingsSection>
+      <SettingsSection
+        id="default"
+        title="Padrão da empresa"
+        description="O modelo e o raciocínio de quem não escolheu nenhum."
+      >
+        <DefaultChoice
+          companyId={companyId}
+          scope="company"
+          defaults={defaults}
+          providers={choices.company}
+          mayChange={mayManage}
+        />
+      </SettingsSection>
     </div>
   )
 }

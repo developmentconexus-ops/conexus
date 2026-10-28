@@ -19,6 +19,18 @@ const PAGE = `/companies/${COMPANY.id}/settings/observational-memory`
 const BASE = `*/api/companies/${COMPANY.id}/observational-memory-models`
 const MODEL = 'openai/gpt-5'
 
+/** Opens a select of the house and chooses the option named `name`. */
+async function choose(trigger: HTMLElement, name: string) {
+  await waitFor(() => expect(trigger.hasAttribute('disabled')).toBe(false))
+  fireEvent.click(trigger)
+  const option = await screen.findByRole('option', { name })
+  fireEvent.pointerDown(option)
+  fireEvent.mouseDown(option)
+  fireEvent.pointerUp(option)
+  fireEvent.mouseUp(option)
+  fireEvent.click(option)
+}
+
 type Chosen = { observer: string | null; reflector: string | null }
 
 /** The screen as a person who manages the accounts (`owner`) or one who does not (`member`) sees it. */
@@ -67,17 +79,18 @@ test('o dono configura cada papel, salva e retorna um deles a seguir a conversa'
   })
 
   expect(await screen.findByRole('heading', { name: 'Memória observacional' })).toBeTruthy()
-  expect(screen.getAllByRole('option', { name: 'Segue o modelo da conversa' })).toHaveLength(2)
-  expect(screen.getAllByRole('option', { name: 'GPT 5' })).toHaveLength(2)
+  expect(screen.getByRole('region', { name: 'Observador' })).toBeTruthy()
+  expect(screen.getByRole('region', { name: 'Refletor' })).toBeTruthy()
+  expect(document.querySelector('select')).toBeNull()
   const observer = screen.getByRole('combobox', { name: 'Modelo do observador' })
   const reflector = screen.getByRole('combobox', { name: 'Modelo do refletor' })
-  fireEvent.change(observer, { target: { value: MODEL } })
+  await choose(observer, 'GPT 5')
   await waitFor(() => expect(state?.observer).toBe(MODEL))
 
-  fireEvent.change(reflector, { target: { value: MODEL } })
+  await choose(reflector, 'GPT 5')
   await waitFor(() => expect(state?.reflector).toBe(MODEL))
 
-  fireEvent.change(observer, { target: { value: '' } })
+  await choose(observer, 'Segue o modelo da conversa')
   await waitFor(() => expect(state?.observer).toBeNull())
 
   expect(state).toEqual({ observer: null, reflector: MODEL })
@@ -87,7 +100,7 @@ test('o modelo sem conta é recusado, e a tela diz a frase da recusa', async () 
   open('owner', () => refusal('MODEL_NO_ACCOUNT'))
 
   const observer = await screen.findByRole('combobox', { name: 'Modelo do observador' })
-  fireEvent.change(observer, { target: { value: MODEL } })
+  await choose(observer, 'GPT 5')
 
   expect(await screen.findByText(sentenceOfCode('MODEL_NO_ACCOUNT'))).toBeTruthy()
 })

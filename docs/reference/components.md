@@ -241,6 +241,17 @@ badge:
   height: "20px"
   typography: "{typography.label}"
   border: "hairline, {colors.line}"
+switch:
+  backgroundColor: "{colors.surface-4}"
+  rounded: "{rounded.pill}"
+  width: "36px"
+  height: "20px"
+switch-on:
+  backgroundColor: "{colors.ink}"
+settings-section:
+  width: "16rem title column from md, 20rem from lg, then the controls"
+  padding: "{spacing.xl} 0 0"
+  border: "top hairline, {colors.line}"
 button-danger:
   backgroundColor: "{colors.surface}"
   textColor: "{colors.danger}"
@@ -279,7 +290,11 @@ panel for a form beside the page, such as **Ligar conta**. A `table` is shadcn's
 with the brand's hairlines: its rows keep the table display at every width, so a screen reader
 still hears a table on a phone (`table-row`), and a provider's queue opens with a `table-row-header`.
 A `badge` is a state's word with a dot of its colour (success, warning, danger, or none for
-neutral), never the colour alone (design V35).
+neutral), never the colour alone (design V35). A `switch` is Base UI's, as base-nova draws it, in
+ink when on and the surface-4 line when off; it saves on each change and waits disabled for the
+answer. A `settings-section` is a part of a settings page: its title and a sentence of whom it
+affects on the left from `md`, its controls on the right, one column on a phone, parts apart by a
+hairline (design V19).
 
 ## Brought from the old design, with no code yet
 

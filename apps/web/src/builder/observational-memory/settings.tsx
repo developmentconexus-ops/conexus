@@ -3,10 +3,15 @@ import { useMutation, useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import { writeFailureText } from '../../platform/hub.ts'
 import { Field, FieldError, FieldLabel } from '../../ui/field.tsx'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select.tsx'
+import { SettingsSection } from '../../ui/settings-section.tsx'
 import { accountsQuery, modelLabel } from '../model-accounts/public.ts'
 import { observationalMemoryModelsQuery, setObservationalMemoryModelMutation } from './queries.ts'
 
 const route = getRouteApi('/_app/companies/$companyId_/settings/observational-memory')
+
+/** The select's value for "no choice": the role follows the model of each conversation. */
+const FOLLOW = 'follow'
 
 /** The company's Observer and Reflector models: none follows each conversation's model; the two are chosen apart. */
 export function ObservationalMemorySettings() {
@@ -15,11 +20,15 @@ export function ObservationalMemorySettings() {
   const accounts = useSuspenseQuery(accountsQuery(companyId)).data
   const save = useMutation(setObservationalMemoryModelMutation)
   const models = accounts.choices.company.flatMap((provider) => provider.models)
+  const options = [
+    { value: FOLLOW, label: 'Segue o modelo da conversa' },
+    ...models.map((model) => ({ value: model.id, label: modelLabel(model.id) })),
+  ]
 
   function select(role: 'observer' | 'reflector', value: string) {
     save.mutate({
       params: { companyId },
-      body: { role, model: value === '' ? null : ModelId.parse(value) },
+      body: { role, model: value === FOLLOW ? null : ModelId.parse(value) },
     })
   }
 
@@ -27,49 +36,53 @@ export function ObservationalMemorySettings() {
     return (
       <Field>
         <FieldLabel htmlFor={`om-${role}`}>{label}</FieldLabel>
-        <select
+        <Select
           id={`om-${role}`}
-          aria-label={label}
-          className="h-9 w-full max-w-column rounded-control border border-line bg-surface px-md text-base md:text-body text-text disabled:cursor-not-allowed disabled:opacity-50"
-          value={value ?? ''}
+          value={value ?? FOLLOW}
+          items={options}
           disabled={!accounts.mayManage || save.isPending}
-          onChange={(event) => select(role, event.currentTarget.value)}
+          onValueChange={(next) => next !== null && select(role, next)}
         >
-          <option value="">Segue o modelo da conversa</option>
-          {models.map((model) => (
-            <option key={model.id} value={model.id}>
-              {modelLabel(model.id)}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger aria-label={label} className="max-w-column">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {options.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </Field>
     )
   }
 
   return (
-    <section
-      aria-label="Memória observacional"
-      className="flex w-full max-w-column flex-col gap-lg"
-    >
-      <p className="text-text-2">
-        Sem escolha, o observador e o refletor seguem o modelo da conversa. Quem não tem conta no
-        modelo escolhido aqui também segue o da conversa.
-      </p>
-      {selector('observer', observer, 'Modelo do observador')}
-      {selector('reflector', reflector, 'Modelo do refletor')}
-      {!accounts.mayManage && (
-        <p className="text-text-2">
-          Só o dono ou um administrador muda as configurações da empresa.
-        </p>
-      )}
-      <FieldError>
-        {save.isError
-          ? writeFailureText(
-              save.error,
-              'Não foi possível confirmar se o modelo foi salvo. Confira e tente de novo.',
-            )
-          : undefined}
-      </FieldError>
-    </section>
+    <div className="flex flex-col gap-2xl">
+      <SettingsSection
+        id="observer"
+        title="Observador"
+        description="Sem escolha, o observador e o refletor seguem o modelo da conversa. Quem não tem conta no modelo escolhido aqui também segue o da conversa."
+      >
+        {selector('observer', observer, 'Modelo do observador')}
+      </SettingsSection>
+      <SettingsSection id="reflector" title="Refletor">
+        {selector('reflector', reflector, 'Modelo do refletor')}
+        {!accounts.mayManage && (
+          <p className="text-text-2">
+            Só o dono ou um administrador muda as configurações da empresa.
+          </p>
+        )}
+        <FieldError>
+          {save.isError
+            ? writeFailureText(
+                save.error,
+                'Não foi possível confirmar se o modelo foi salvo. Confira e tente de novo.',
+              )
+            : undefined}
+        </FieldError>
+      </SettingsSection>
+    </div>
   )
 }
