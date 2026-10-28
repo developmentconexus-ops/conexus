@@ -18,7 +18,7 @@ type Row = Readonly<Record<string, unknown>>
 /** What PostgreSQL said to one transaction: a SQLSTATE left no effect; silence may have left it. */
 export type SqlAnswer =
   | { kind: 'DONE'; value: Row[][] }
-  | { kind: 'REFUSED'; code: string }
+  | { kind: 'REFUSED'; code: string; table?: string; column?: string; constraint?: string }
   | { kind: 'NO_ANSWER' }
 
 /** Runs the statements in one transaction as the URL's login, all or none. */
@@ -31,11 +31,19 @@ export type SqlTransport = (
 // Classes 08 and 57P0: the connection or the server went away, and the commit may have happened.
 const CONNECTION_LOST = /^(08|57P0)/
 
-/** A SQLSTATE refuses; none, or a lost connection, is silence. */
-export function answerOf(code: string | undefined): SqlAnswer {
-  return code === undefined || CONNECTION_LOST.test(code)
-    ? { kind: 'NO_ANSWER' }
-    : { kind: 'REFUSED', code }
+/**
+ * A SQLSTATE refuses with the names it carries; none, or a lost connection, is silence. Never
+ * `detail`, which holds values (code C52, security S40).
+ */
+export function answerOf(
+  error:
+    | Readonly<{ code?: string; table?: string; column?: string; constraint?: string }>
+    | undefined,
+): SqlAnswer {
+  const code = error?.code
+  if (code === undefined || CONNECTION_LOST.test(code)) return { kind: 'NO_ANSWER' }
+  const { table, column, constraint } = error ?? {}
+  return { kind: 'REFUSED', code, table, column, constraint }
 }
 
 /** A SQL reply past this is silence: the Hub's own statements read a few rows (code C59). */
@@ -66,7 +74,7 @@ export async function neonTransport(
     )
     return { kind: 'DONE', value }
   } catch (error) {
-    return answerOf(error instanceof NeonDbError ? error.code : undefined)
+    return answerOf(error instanceof NeonDbError ? error : undefined)
   }
 }
 
@@ -75,8 +83,7 @@ type MigrateAnswer =
   | { kind: 'DONE'; applied: number }
   | { kind: 'CHANGED'; id: string }
   | { kind: 'REFUSED_BY_RULE'; rule: RuleBreak }
-  | { kind: 'REFUSED'; code: string }
-  | { kind: 'NO_ANSWER' }
+  | Extract<SqlAnswer, { kind: 'REFUSED' | 'NO_ANSWER' }>
 
 export type CompanyPostgres = {
   ensureApp(owner: DatabaseUrl, projectId: ProjectId): Promise<SqlAnswer>

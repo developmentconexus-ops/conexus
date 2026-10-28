@@ -1,11 +1,13 @@
 import type { Manifest } from '@conexus/app-contract'
+import type { MigrationCause } from '@conexus/hub-api'
+import { MigrationSubject } from '@conexus/hub-api'
 import type { CreateFunctionStmt, Node } from 'libpg-query'
 import { loadModule, parsePlPgSQLSync, parseSync } from 'libpg-query'
 
 type AppMigration = Manifest['migrations'][number]
 
 /** The statement the fixed list refuses: what may pass is what the outcome check sees (B, 2026-10-27). */
-export type RuleBreak = Readonly<{ migration: string; statement: number; subject: string }>
+export type RuleBreak = Omit<Extract<MigrationCause, { kind: 'rule' }>, 'kind'>
 
 /** Loads the parser's WASM; the Hub awaits it at start (libpg-query README: the `*Sync` need it). */
 export function loadMigrationRule(): Promise<void> {
@@ -52,7 +54,13 @@ export function ruleBreak(pending: readonly AppMigration[]): RuleBreak | undefin
   for (const one of pending) {
     for (const [at, text] of one.statements.entries()) {
       const subject = refused(text)
-      if (subject !== undefined) return { migration: one.id, statement: at + 1, subject }
+      if (subject !== undefined) {
+        return {
+          migration: one.id,
+          statement: at + 1,
+          subject: subject.slice(0, MigrationSubject.maxLength ?? undefined),
+        }
+      }
     }
   }
   return undefined

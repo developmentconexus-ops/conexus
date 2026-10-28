@@ -39,11 +39,17 @@ export async function pgTransport(
     await client.query('COMMIT')
     return { kind: 'DONE', value }
   } catch (error) {
-    return answerOf(error instanceof pg.DatabaseError ? error.code : undefined)
+    return answerOf(error instanceof pg.DatabaseError ? error : undefined)
   } finally {
     signal.removeEventListener('abort', abort)
     await client.end().catch(() => undefined)
   }
+}
+
+/** What the transport answers when nothing listens at the address: silence, never a refusal. */
+export function unreachableAnswer(): Promise<SqlAnswer> {
+  const url = DatabaseUrl.parse('postgres://nobody:nothing@127.0.0.1:1/none')
+  return pgTransport(url, [{ text: 'SELECT 1' }], AbortSignal.timeout(5000))
 }
 
 /**

@@ -75,6 +75,7 @@ export function Transcript(props: {
   turns: readonly ShownTurn[]
   steers: readonly Steer[]
   model: ModelId
+  onAsk: (text: string) => void
 }) {
   const { turns } = props
   return (
@@ -96,6 +97,7 @@ export function Transcript(props: {
                     items={turn.items}
                     model={turn.model ?? props.model}
                     streaming={turn.streaming}
+                    onAsk={props.onAsk}
                   />
                 )}
               </MessageScrollerItem>

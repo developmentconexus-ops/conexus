@@ -156,8 +156,8 @@ async function restoreLive(
     }
     const opened = await openAppDatabase(deps, { ...ids, databaseReady: false })
     if (opened.kind === 'FAILED') throw new Failure(opened.failure)
-    const failure = await migrateApp(deps, { ...ids, owner: opened.owner, manifest: live.manifest })
-    if (failure !== undefined) throw new Failure(failure)
+    const refused = await migrateApp(deps, { ...ids, owner: opened.owner, manifest: live.manifest })
+    if (refused !== undefined) throw new Failure(refused.failure)
     // A deletion marked after the read above may have removed it all before this pass made it.
     if (!(await stillLive(deps, ids)))
       await takeBackRepair(deps, { ...ids, versionId: live.versionId })

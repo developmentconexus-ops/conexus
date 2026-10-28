@@ -113,7 +113,10 @@ test('banco do app: logins por SQL, nenhum superusuário; repetido após corte a
     { id: '002_extra', statements: ['CREATE TABLE extra (v text)'] },
     { id: '003_quebrada', statements: ['INSERT INTO nada VALUES (1)'] },
   ]
-  assert.deepEqual(await postgres.migrate(owner, id, broken), { kind: 'REFUSED', code: '42P01' })
+  assert.partialDeepStrictEqual(await postgres.migrate(owner, id, broken), {
+    kind: 'REFUSED',
+    code: '42P01',
+  })
   assert.deepEqual(await appTablesOf(owner, id), {
     tables: ['conexus_migration', 'recado'],
     ledger: [MIGRATION.id],
@@ -176,7 +179,10 @@ async function outcomesOf(t: TestContext, outcome: Outcome) {
     const id = await seeded(owner)
     const before = await savedOf(owner, id)
     const migrations = [SEED, { id: '002_caso', statements: one.statements }]
-    const answer = await postgres.migrate(owner, id, migrations)
+    const migrated = await postgres.migrate(owner, id, migrations)
+    // The names a refusal carries are proved through the send, in send-migrations.test.ts.
+    const answer =
+      migrated.kind === 'REFUSED' ? { kind: migrated.kind, code: migrated.code } : migrated
     const kept = isDeepStrictEqual(before, await savedOf(owner, id))
     got[one.name] =
       outcome === 'PASS'

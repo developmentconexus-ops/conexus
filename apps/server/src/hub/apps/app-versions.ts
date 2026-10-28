@@ -43,7 +43,12 @@ async function sendFromBuilder(
     if (!known.success) logFailure(deps.log, databaseFailure(error))
     const code = known.success ? known.data : 'APP_VERSION_FAILED'
     deps.log.error({ companyId, projectId, runId: input.runId, code }, 'PREVIEW_SEND_FAILED')
-    return { state: 'failed', number, code }
+    return {
+      state: 'failed',
+      number,
+      code,
+      cause: error instanceof Failure ? error.migration : undefined,
+    }
   }
 }
 

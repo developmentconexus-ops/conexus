@@ -46,6 +46,12 @@ export function useDraft(key: DraftKey) {
     text: now.content,
     files: now.files,
     change: (text: string) => hold({ content: text, files: heldOf(key).files }),
+    /** Adds a line to the text, once: a line already in the box is not repeated. */
+    append: (line: string) => {
+      const box = heldOf(key)
+      if (box.content.includes(line)) return
+      hold({ content: box.content === '' ? line : `${box.content}\n${line}`, files: box.files })
+    },
     /** Evaluated on the draft as it is when written: a file's read can end after the box changed. */
     setFiles: (update: (files: readonly MessageFile[]) => readonly MessageFile[]) => {
       const box = heldOf(key)
