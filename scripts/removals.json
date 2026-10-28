@@ -1938,7 +1938,7 @@
   {
     "id": "repair-published-worker",
     "file": "apps/server/src/hub/apps/repair.ts",
-    "find": "      if (await restoreWorkerIfLost(deps, scope, { ...kept, companyId })) workers += 1\n",
+    "find": "  if (published !== undefined && published.versionId !== live.versionId) lost.push(published)\n",
     "replace": "",
     "test": {
       "cwd": "apps/server",

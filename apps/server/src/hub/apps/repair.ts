@@ -143,6 +143,25 @@ async function restoreWorkerIfLost(
   return true
 }
 
+/**
+ * The Workers of the Prévia's version and of the published one, if Cloudflare lost them; how many
+ * went back. The database and the migrations are the Prévia's alone (step 17).
+ */
+async function restoreWorkers(
+  deps: RepairDeps,
+  scope: Scope,
+  input: { companyId: CompanyId; live: Live; published: Live | undefined },
+): Promise<number> {
+  const { companyId, live, published } = input
+  const lost = [live]
+  if (published !== undefined && published.versionId !== live.versionId) lost.push(published)
+  let restored = 0
+  for (const version of lost) {
+    if (await restoreWorkerIfLost(deps, scope, { ...version, companyId })) restored += 1
+  }
+  return restored
+}
+
 function stillLive(
   deps: RepairDeps,
   ids: { scope: Scope; companyId: CompanyId; projectId: ProjectId },
@@ -167,12 +186,11 @@ async function restoreLive(
     if (input.marked.has(live.projectId)) continue
     const ids = { scope, companyId, projectId: live.projectId }
     if (!(await stillLive(deps, ids))) continue
-    if (await restoreWorkerIfLost(deps, scope, { ...live, companyId })) workers += 1
-    // The published version's Worker only: its database and migrations are the Prévia's (step 17).
-    const kept = published.find((one) => one.projectId === live.projectId)
-    if (kept !== undefined && kept.versionId !== live.versionId) {
-      if (await restoreWorkerIfLost(deps, scope, { ...kept, companyId })) workers += 1
-    }
+    workers += await restoreWorkers(deps, scope, {
+      companyId,
+      live,
+      published: published.find((one) => one.projectId === live.projectId),
+    })
     const opened = await openAppDatabase(deps, { ...ids, databaseReady: false })
     if (opened.kind === 'FAILED') throw new Failure(opened.failure)
     const refused = await migrateApp(deps, { ...ids, owner: opened.owner, manifest: live.manifest })
