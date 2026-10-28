@@ -169,3 +169,24 @@ test('com a confirmação aberta, as ações do convite ficam travadas; "Voltar"
   await waitFor(() => expect(screen.queryByLabelText('Confirmar e-mail')).toBeNull())
   expect(send).toHaveProperty('disabled', false)
 })
+
+test('enquanto um reenvio espera a resposta do Hub, as duas ações do convite ficam travadas', async () => {
+  hub({ role: 'owner', mayInviteAs: ['admin'], invitations: [PENDING] })
+  server.use(
+    http.put(
+      `*/api/companies/${COMPANY.id}/invitations/${PENDING.id}`,
+      () => new Promise(() => undefined),
+    ),
+  )
+  open()
+  fireEvent.click(
+    await screen.findByRole('button', { name: 'Reenviar convite para bia@example.test' }),
+  )
+  const cancel = await screen.findByRole('button', {
+    name: 'Cancelar convite para bia@example.test',
+  })
+  await waitFor(() => expect(cancel).toHaveProperty('disabled', true))
+  expect(
+    screen.getByRole('button', { name: 'Reenviar convite para bia@example.test' }).textContent,
+  ).toBe('Enviando…')
+})
