@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { SlidersHorizontalIcon } from 'lucide-react'
 import {
   accountsQuery,
   CompanyDefaults,
@@ -11,6 +12,8 @@ export const Route = createFileRoute('/_app/companies/$companyId_/settings/defau
     section: {
       group: 'company',
       label: 'Padrões da empresa',
+      icon: SlidersHorizontalIcon,
+      summary: 'O modelo e o raciocínio com que as conversas novas da empresa começam.',
       order: 35,
       keywords: ['raciocínio', 'modelo padrão', 'modelo', 'conversa nova'],
     },

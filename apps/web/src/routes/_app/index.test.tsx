@@ -192,11 +192,11 @@ test('numa página sem campo, o título recebe o foco (#32-4)', async () => {
 
 test('numa página só com caixa de marcar ou opção, o título recebe o foco (#32-4)', async () => {
   hub(listed(FIRST), { signedIn: false })
-  open(`/companies/${FIRST.id}/settings/appearance`)
+  open(`/companies/${FIRST.id}/settings/account`)
   await signInFromLogin()
-  await screen.findByRole('heading', { name: 'Aparência' })
+  await screen.findByRole('heading', { name: 'Minha conta' })
   await waitFor(() =>
-    expect(document.activeElement).toBe(screen.getByRole('heading', { name: 'Aparência' })),
+    expect(document.activeElement).toBe(screen.getByRole('heading', { name: 'Minha conta' })),
   )
 })
 

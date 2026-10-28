@@ -13,8 +13,9 @@ import {
   SMALL_PHONE,
   ZOOMED_PHONE,
 } from './layout-harness.ts'
+import { COMPANY } from './src/platform/fixtures.ts'
 import { DEFAULT_STATES } from './sweep-defaults-states.ts'
-import { companies, PROJECT_ID } from './sweep-replies.ts'
+import { companies, OWNER, PROJECT_ID } from './sweep-replies.ts'
 
 const WIDE_PHONE = { width: 600, height: 900 }
 const SIGNED_OUT: Replies = {
@@ -255,6 +256,44 @@ for (const viewport of [DESKTOP, PHONE]) {
       return new Set([...text.getClientRects()].map((line) => line.top)).size
     })
     assert.equal(lines, 1)
+    await page.close()
+  })
+}
+
+for (const [viewport, width] of [
+  [DESKTOP, 'o main menos as margens'],
+  [{ width: 1920, height: 1080 }, '80rem, centrada'],
+] as const) {
+  test(`Configurações ocupa a largura: ${width}, numa tela de ${viewport.width}px`, async () => {
+    const page = await open(`/companies/${COMPANY.id}/settings/general`, viewport, OWNER)
+    await page.getByRole('heading', { name: 'Geral', level: 1 }).waitFor()
+    const { content, left, drawn } = await page.getByRole('main').evaluate((main) => {
+      const wrapper = main.querySelector('h1')?.parentElement?.parentElement
+      const area = wrapper?.parentElement
+      if (!wrapper || !area) throw new Error('the page is not laid out')
+      const style = getComputedStyle(area)
+      const padding = Number.parseFloat(style.paddingLeft) + Number.parseFloat(style.paddingRight)
+      return {
+        content: area.clientWidth - padding,
+        left:
+          wrapper.getBoundingClientRect().left -
+          area.getBoundingClientRect().left -
+          Number.parseFloat(style.paddingLeft),
+        drawn: wrapper.getBoundingClientRect().width,
+      }
+    })
+    const expected = Math.min(content, 1280)
+    assert.equal(Math.round(drawn), Math.round(expected))
+    assert.equal(Math.round(left), Math.round((content - expected) / 2))
+    await page.close()
+  })
+}
+
+for (const viewport of [PHONE, SMALL_PHONE]) {
+  test(`Configurações não rola para o lado numa tela de ${viewport.width}px`, async () => {
+    const page = await open(`/companies/${COMPANY.id}/settings/general`, viewport, OWNER)
+    await page.getByRole('heading', { name: 'Geral', level: 1 }).waitFor()
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), viewport.width)
     await page.close()
   })
 }

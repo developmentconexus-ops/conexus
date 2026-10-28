@@ -60,12 +60,6 @@ export const HOUSE_STATES: State[] = [
     },
   },
   {
-    name: 'Configurações, aparência',
-    path: `${SETTINGS}/appearance`,
-    replies: OWNER,
-    settle: (p) => waitFor(p, 'Como o sistema'),
-  },
-  {
     name: 'Configurações, geral',
     path: `${SETTINGS}/general`,
     replies: OWNER,
