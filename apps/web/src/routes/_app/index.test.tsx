@@ -1,6 +1,7 @@
 import {
   getCompany,
   listCompanies,
+  listMembers,
   listModelAccounts,
   listModelProviders,
   listProjects,
@@ -57,7 +58,7 @@ const { providers: PROVIDERS } = listModelProviders.success.body.parse({
 })
 
 /** A model account the box can start on, which puts the Início's text field on the page. */
-function startable() {
+function startable(mayManage = false) {
   server.use(
     http.get('*/api/companies/:companyId/model-accounts', () =>
       HttpResponse.json(
@@ -75,7 +76,7 @@ function startable() {
           choices: { mine: PROVIDERS, company: PROVIDERS },
           fallback: { enabled: false, chain: [], revision: 0 },
           usableProviders: ['anthropic'],
-          mayManage: false,
+          mayManage,
         }),
       ),
     ),
@@ -271,4 +272,19 @@ test('uma falha que o Hub manda tentar de novo mostra "Tentar de novo", que lê 
   open()
   fireEvent.click(await screen.findByRole('button', { name: 'Tentar de novo' }))
   await waitFor(() => expect(reads).toBe(2))
+})
+
+test('numa página cujo primeiro controle é uma seleção, o foco vai ao título, não à entrada escondida', async () => {
+  hub(listed(FIRST), { signedIn: false })
+  startable(true)
+  server.use(
+    http.get('*/api/companies/:companyId/members', () =>
+      HttpResponse.json(listMembers.success.body.parse({ members: [], next: { kind: 'END' } })),
+    ),
+  )
+  open(`/companies/${FIRST.id}/settings/model-accounts`)
+  await signInFromLogin()
+  const title = await screen.findByRole('heading', { name: 'Contas de modelo' })
+  await waitFor(() => expect(document.activeElement).toBe(title))
+  expect(title.tabIndex).toBe(-1)
 })

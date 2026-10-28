@@ -19,6 +19,11 @@ function keyOf(conversationId: ConversationId) {
   return `conexus-handoff:${conversationId}`
 }
 
+/** Whether a reload cut the conversation's send short, leaving a request to give back. */
+export function hasInterruptedHandoff(conversationId: ConversationId) {
+  return mirror.getItem(keyOf(conversationId)) !== null
+}
+
 export function stashHandoffFiles(conversationId: ConversationId, stashed: readonly MessageFile[]) {
   if (stashed.length > 0) files.set(conversationId, stashed)
   else files.delete(conversationId)

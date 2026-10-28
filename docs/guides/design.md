@@ -200,7 +200,9 @@ The brand piece retains Encaixe, the mark's pieces separating and fitting while 
   or the group that holds one, shows focus on its own edge instead: an `accent` edge with a soft
   `accent` halo, shadcn's field focus; a busy composer turns its working ring `accent` inside the
   same halo. Founder, 2026-10-20: "1. B". Failure: an outline drawn around a rounded field inside
-  its group makes a square box. [`layout.test.ts`, review]
+  its group makes a square box. An element the program focuses (`tabindex="-1"`, such as the title
+  after sign-in) draws no outline; founder, 2026-10-27: "Pode tirar esse contorno, muito feio."
+  [`layout.test.ts`, `focus.layout.test.ts`, review]
 - **V29.** A disabled action **should** explain a nonobvious impediment and how to resolve it.
   Failure: a permanently disabled button leaves the person with no next step. [review]
 - **V30.** Every action **should** have a keyboard path and coherent focus return, including Tab

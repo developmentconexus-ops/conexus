@@ -47,8 +47,9 @@ const NOTICES: Record<SignInReason, string> = {
   'password-changed': 'Senha trocada. Entre com a nova senha.',
 }
 
+// base-ui's select keeps a hidden `aria-hidden` input that hands focus to its trigger.
 const TEXT_FIELD =
-  'main textarea, main input:is(:not([type]), [type=text], [type=email], [type=search], [type=password], [type=tel], [type=url], [type=number])'
+  'main textarea, main input:not([aria-hidden=true]):is(:not([type]), [type=text], [type=email], [type=search], [type=password], [type=tel], [type=url], [type=number])'
 
 /**
  * The form unmounts when the person signs in, which drops focus to the page body; the new page's

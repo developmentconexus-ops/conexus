@@ -127,6 +127,32 @@ for (const viewport of [PHONE, SMALL_PHONE]) {
   })
 }
 
+for (const scheme of ['light', 'dark'] as const) {
+  test(`o App | Conversa pressionado é ${scheme === 'dark' ? 'dourado (Ipê)' : 'a superfície'} no tema ${scheme}`, async () => {
+    const state = conversationState('Prévia vazia com a conversa mais recente')
+    const page = await harness.open(state.path, { viewport: PHONE, replies: state.replies, scheme })
+    const pressed = page
+      .getByRole('group', { name: 'Parte do Projeto' })
+      .getByRole('button', { name: 'App', exact: true })
+    const [paint, token] = await Promise.all([
+      pressed.evaluate((item) => getComputedStyle(item).backgroundColor),
+      page.evaluate(
+        (name) => {
+          const probe = document.createElement('div')
+          probe.style.backgroundColor = `var(${name})`
+          document.body.append(probe)
+          const color = getComputedStyle(probe).backgroundColor
+          probe.remove()
+          return color
+        },
+        scheme === 'dark' ? '--color-accent' : '--color-surface',
+      ),
+    ])
+    assert.equal(paint, token)
+    await page.close()
+  })
+}
+
 test('a lista longa do Sheet rola até o fim, e o botão de fechar diz "Fechar arquivos"', async () => {
   const page = await harness.open(LONG_TREE.path, { viewport: PHONE, replies: LONG_TREE.replies })
   await LONG_TREE.settle(page)
