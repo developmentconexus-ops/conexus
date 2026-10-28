@@ -322,3 +322,23 @@ export function reachOf(locator: Locator): Promise<{
     }
   })
 }
+
+/** Under a finger, what lands on points inside the element's drawn box instead of it: a neighbour's touch area over it. */
+export function stolenBy(locator: Locator): Promise<string[]> {
+  return locator.evaluate((element) => {
+    const box = element.getBoundingClientRect()
+    const thieves = new Set<string>()
+    for (let column = 1; column < 8; column += 1)
+      for (let row = 1; row < 8; row += 1) {
+        const hit = document.elementFromPoint(
+          box.left + (box.width * column) / 8,
+          box.top + (box.height * row) / 8,
+        )
+        if (hit === null || !element.contains(hit)) {
+          const owner = hit?.closest('button, a')
+          thieves.add(owner?.getAttribute('aria-label') ?? hit?.tagName ?? 'nothing')
+        }
+      }
+    return [...thieves]
+  })
+}

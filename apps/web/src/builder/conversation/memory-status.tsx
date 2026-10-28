@@ -1,6 +1,7 @@
 import { BrainIcon, CircleAlertIcon, MessageSquareIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useId } from 'react'
+import { touchArea } from '../../ui/button.tsx'
 import { cn } from '../../ui/cn.ts'
 import { Meter, MeterLabel } from '../../ui/meter.tsx'
 import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover.tsx'
@@ -129,7 +130,10 @@ export function MemoryStatus(props: {
   return (
     <Popover>
       <PopoverTrigger
-        className="flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-xs text-fact text-text-2 hover:text-text md:min-h-0 md:min-w-0"
+        className={cn(
+          touchArea,
+          'flex shrink-0 items-center justify-center gap-xs text-fact text-text-2 hover:text-text',
+        )}
         aria-label={`Memória da conversa: Mensagens ${percent}%, ${formatK(pending)}/${formatK(threshold)}k, Memória ${formatK(observations)}/${formatK(reflectionThreshold)}k${
           failed ? ' · Falha na memória' : ''
         }`}

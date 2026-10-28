@@ -19,7 +19,7 @@ export type SectionMeta = {
 
 export type SettingsSection = Pick<LinkProps, 'to' | 'params'> & SectionMeta
 
-/** Lower case without accents, so "convite" finds "Convites" and "aparencia" finds "Aparência". */
+/** Lower case without accents, so "convite" finds "Convites". */
 function folded(text: string): string {
   return text
     .normalize('NFD')

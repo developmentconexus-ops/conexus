@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
 import type { Locator, Page } from 'playwright-core'
 import type { Viewport } from './layout-harness.ts'
-import { createHarness, PHONE, reachOf, SMALL_PHONE, touching } from './layout-harness.ts'
+import { createHarness, PHONE, reachOf, SMALL_PHONE, stolenBy, touching } from './layout-harness.ts'
 import { ACCOUNT_STATES, LONG_WORD } from './sweep-accounts-states.ts'
 import { CONVERSATION_STATES } from './sweep-conversation-states.ts'
 import { PREVIEW_STATES } from './sweep-preview-states.ts'
@@ -79,6 +79,16 @@ for (const viewport of [PHONE, SMALL_PHONE]) {
   }
 }
 
+/** The scrollers a finger could pan sideways: a touch area that reaches past a screen's edge widens one. */
+function scrollsSideways(page: Page) {
+  return page.evaluate(() =>
+    [...document.querySelectorAll('*')]
+      .filter((one) => ['auto', 'scroll'].includes(getComputedStyle(one).overflowX))
+      .filter((one) => one.scrollWidth > one.clientWidth)
+      .map((one) => `${one.tagName} ${one.scrollWidth}/${one.clientWidth}`),
+  )
+}
+
 for (const viewport of [PHONE, SMALL_PHONE]) {
   test(`o topo do App tem duas linhas, o nome do Projeto e os ícones de 32 desenhados e 44 de toque, em ${viewport.width}px`, async () => {
     const state = PREVIEW_STATES.find((each) => each.name === 'Projeto, Prévia com o app')
@@ -110,13 +120,19 @@ for (const viewport of [PHONE, SMALL_PHONE]) {
     )
     assert.deepEqual(glyphs, [14, 14], 'the two icons differ in size')
     await touching(page)
-    // The bar is as high as the icons and sits flush under a scroller, which clips the top 6 px of
-    // their touch area (the card's "Parar se"); the bottom reaches 44.
+    // The bar is as high as the icons and sits inside a scroller, which clips the top 6 px of their
+    // touch area (the card's "Parar se"); the bottom and the sides reach 44, and no neighbour's
+    // area covers a drawn icon.
     for (const icon of [
       page.getByRole('button', { name: 'Recarregar', exact: true }),
       page.getByRole('link', { name: 'Abrir app', exact: true }),
-    ])
-      assert.ok((await reachOf(icon)).down >= 6, 'the touch reaches 6 px below the icon')
+    ]) {
+      const reach = await reachOf(icon)
+      assert.ok(Math.min(reach.down, reach.left, reach.right) >= 6, JSON.stringify(reach))
+      assert.deepEqual(await stolenBy(icon), [], 'a neighbour covers the icon')
+    }
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), viewport.width)
+    assert.deepEqual(await scrollsSideways(page), [], 'under touch, something scrolls sideways')
     assert.equal((await page.getByRole('heading', { level: 1 }).count()) > 0, true)
     assert.equal(await page.getByRole('heading', { level: 1 }).locator('visible=true').count(), 1)
     assert.ok(open.x + open.width <= viewport.width, 'Abrir app leaves the screen')
@@ -136,28 +152,51 @@ for (const viewport of [PHONE, SMALL_PHONE]) {
   })
 }
 
-for (const scheme of ['light', 'dark'] as const) {
-  test(`o App | Conversa pressionado é ${scheme === 'dark' ? 'dourado (Ipê)' : 'a superfície'} no tema ${scheme}`, async () => {
+const THEMES = [
+  { system: 'light', pick: undefined, shown: 'light' },
+  { system: 'dark', pick: undefined, shown: 'dark' },
+  { system: 'light', pick: 'dark', shown: 'dark' },
+  { system: 'dark', pick: 'light', shown: 'light' },
+] as const
+
+for (const { system, pick, shown } of THEMES) {
+  const how =
+    pick === undefined ? `do sistema (${system})` : `escolhido (${pick}) sobre o sistema ${system}`
+  test(`o App | Conversa pressionado é ${shown === 'dark' ? 'dourado (Ipê)' : 'a superfície'} no tema ${how}`, async () => {
     const state = conversationState('Prévia vazia com a conversa mais recente')
-    const page = await harness.open(state.path, { viewport: PHONE, replies: state.replies, scheme })
+    const page = await harness.open(state.path, {
+      viewport: PHONE,
+      replies: state.replies,
+      scheme: system,
+    })
+    if (pick !== undefined) {
+      await page.evaluate((chosen) => localStorage.setItem('conexus-theme', chosen), pick)
+      await page.reload()
+    }
     const pressed = page
       .getByRole('group', { name: 'Parte do Projeto' })
       .getByRole('button', { name: 'App', exact: true })
-    const [paint, token] = await Promise.all([
+    await pressed.waitFor()
+    const [paint, ink, token] = await Promise.all([
       pressed.evaluate((item) => getComputedStyle(item).backgroundColor),
+      pressed.evaluate((item) => getComputedStyle(item).color),
       page.evaluate(
-        (name) => {
+        ([background, text]) => {
           const probe = document.createElement('div')
-          probe.style.backgroundColor = `var(${name})`
+          probe.style.backgroundColor = `var(${background})`
+          probe.style.color = `var(${text})`
           document.body.append(probe)
-          const color = getComputedStyle(probe).backgroundColor
+          const { backgroundColor, color } = getComputedStyle(probe)
           probe.remove()
-          return color
+          return { background: backgroundColor, text: color }
         },
-        scheme === 'dark' ? '--color-accent' : '--color-surface',
+        shown === 'dark'
+          ? ['--color-accent', '--color-on-ink']
+          : ['--color-surface', '--color-text'],
       ),
     ])
-    assert.equal(paint, token)
+    assert.equal(paint, token.background)
+    assert.equal(ink, token.text)
     await page.close()
   })
 }

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
 import type { Locator } from 'playwright-core'
 import { createHarness, DESKTOP, PHONE } from './layout-harness.ts'
+import { STATES } from './sweep-states.ts'
 
 // The chat pieces on their fixture page (pieces.html), under the Hub's policy in a real browser.
 const harness = createHarness(import.meta.dirname)
@@ -133,4 +134,27 @@ test('a escala dos botões, no computador e no celular', async () => {
     )
     await page.close()
   }
+})
+
+test('o que não muda: itens de menu e linhas da barra de 34 px, campos de 36 px, a 1366 e a 390 px', async () => {
+  const home = STATES.find((each) => each.name === 'Início, a primeira de duas empresas')
+  assert.ok(home, 'the sweep lacks Início')
+  for (const viewport of [DESKTOP, PHONE]) {
+    const page = await harness.open('/pieces', { viewport, replies: {} })
+    const field = await page.getByRole('textbox', { name: 'Campo' }).boundingBox()
+    assert.equal(field?.height, 36, `a field at ${viewport.width}px`)
+    await page.close()
+  }
+  const page = await harness.open(home.path, { viewport: DESKTOP, replies: home.replies })
+  await home.settle(page)
+  const rows = await page
+    .locator('[data-slot=sidebar-menu-item] > *')
+    .evaluateAll((all) => all.map((one) => one.getBoundingClientRect().height))
+  assert.ok(rows.length > 0, 'the sidebar has no rows')
+  assert.ok(rows.includes(34), 'no sidebar row is 34 px')
+  assert.ok(!rows.includes(32), 'a sidebar row follows the button scale')
+  await page.getByRole('button', { name: /^Conta de / }).click()
+  const item = await page.getByRole('menuitem', { name: 'Sair do Conexus' }).boundingBox()
+  assert.equal(item?.height, 34, 'a menu item is not 34 px')
+  await page.close()
 })

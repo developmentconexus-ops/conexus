@@ -41,7 +41,7 @@ function Examples(props: { onPick: (text: string) => void }) {
         <li key={example.label}>
           <Button
             onClick={() => props.onPick(example.text)}
-            className="h-8 rounded-pill text-label text-text-2 hover:text-text"
+            className="rounded-pill text-label text-text-2 hover:text-text"
           >
             {example.label}
           </Button>

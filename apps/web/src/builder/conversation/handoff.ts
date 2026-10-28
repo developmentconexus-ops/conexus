@@ -15,6 +15,15 @@ const mirror = pageStorage('session')
  */
 const files = new Map<ConversationId, readonly MessageFile[]>()
 
+/** Set as the page leaves, before the browser cuts the send in flight: that cut is no answer. */
+let leaving = false
+addEventListener('pagehide', () => {
+  leaving = true
+})
+addEventListener('pageshow', () => {
+  leaving = false
+})
+
 function keyOf(conversationId: ConversationId) {
   return `conexus-handoff:${conversationId}`
 }
@@ -43,7 +52,7 @@ function takeHandoffFiles(conversationId: ConversationId): readonly MessageFile[
  */
 export function useHandoff(
   conversationId: ConversationId,
-  on: { send: (outgoing: Outgoing) => Promise<boolean>; recover: (text: string) => void },
+  on: { send: (outgoing: Outgoing) => Promise<void>; recover: (text: string) => void },
 ): void {
   const navigate = useNavigate()
   const handoff = useLocation({ select: (location) => location.state.handoff })
@@ -65,7 +74,10 @@ export function useHandoff(
     const outgoing = { content: handoff.content, files: takeHandoffFiles(conversationId) }
     mirror.setItem(keyOf(conversationId), outgoing.content)
     void navigate({ to: '.', search: (search) => search, replace: true, state: {} })
-    // Kept unless the send is confirmed: a reload aborts it on its way out (Factory `useHandoffPrompt.ts`).
-    void on.send(outgoing).then((sent) => sent && mirror.removeItem(keyOf(conversationId)))
+    // Kept only while the send has no answer: a reload aborts it on its way out. A refusal already
+    // gave the words back to the box, so the copy protects nothing (card, failure table).
+    void on.send(outgoing).then(() => {
+      if (!leaving) mirror.removeItem(keyOf(conversationId))
+    })
   }, [conversationId, handoff, navigate, on])
 }
