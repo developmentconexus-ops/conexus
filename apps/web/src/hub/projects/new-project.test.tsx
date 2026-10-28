@@ -42,9 +42,9 @@ function hub(answer?: () => Response) {
             project: {
               ...NOVO,
               mayDelete: true,
-              mayManageVersions: true,
               address: PEDIDOS_ADDRESS,
               appVersion: null,
+              publishedVersion: null,
             },
           }),
           { status: 201 },
