@@ -140,7 +140,7 @@ export function savedOf(owner: DatabaseUrl, projectId: ProjectId) {
   })
 }
 
-/** A migration as a Hub before step 15 applied it: its statements run, its ledger row written. */
+/** Applies a migration without the fixed list or the outcome check: its statements, its ledger row. */
 export function plantApplied(
   owner: DatabaseUrl,
   projectId: ProjectId,

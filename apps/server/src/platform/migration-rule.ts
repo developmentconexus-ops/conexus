@@ -134,7 +134,7 @@ function outsideTheApp(node: Node): string | undefined {
   })
 }
 
-/** What a function does when it runs, after the transaction where the outcome check cannot see it. */
+/** A function's power: its language, `SECURITY DEFINER`, and what its body does. */
 function functionPower(fn: CreateFunctionStmt, text: string): string | undefined {
   if (fn.sql_body !== undefined) return 'sql_body'
   const options = new Map(

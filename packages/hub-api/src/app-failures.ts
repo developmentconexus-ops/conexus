@@ -62,7 +62,7 @@ export const APP_VERSION_FAILURES = {
     action: 'Peça ao Builder para corrigir a migração.',
     actionKind: 'NONE',
   },
-  // Step 15: the fixed list refuses what acts after the migrations' transaction, unchecked.
+  // The fixed list of step 15 (B, 2026-10-27).
   APP_MIGRATION_REFUSED: {
     category: 'USER',
     settles: true,

@@ -159,8 +159,6 @@ test('banco do app: os logins de um app não leem nem gravam no esquema de outro
   assert.deepEqual((await appTablesOf(owner, two)).tables, ['conexus_migration', 'recado'])
 })
 
-// The outcome check (step 15): the study's migrations after the seed, each on its own app.
-
 /** A Projeto's app with the seed's tables and rows saved by its first version. */
 async function seeded(owner: Owner): Promise<ProjectId> {
   const id = projectId()
@@ -241,11 +239,9 @@ test('lista fixa: só passa o que a garantia vê', async (t) => {
     const probe = { id: '002_sonda', statements: ['SELECT 1', statement] }
     got[name] = { answer: await counted.migrate(owner, id, [SEED, probe]), calls }
     const rule = { migration: '002_sonda', statement: 2, subject }
-    // The ledger's read only: nothing of the migration is sent.
     want[name] = { answer: { kind: 'REFUSED_BY_RULE', rule }, calls: 1 }
   }
   assert.deepEqual(got, want)
-  // What the list lets through reaches the database; the cases above reached it too.
   const reached: Record<string, boolean> = {}
   for (const { name, statement } of ALLOWED_PROBES) {
     calls = 0
