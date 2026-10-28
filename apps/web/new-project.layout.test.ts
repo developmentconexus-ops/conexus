@@ -40,6 +40,11 @@ for (const viewport of [DESKTOP, PHONE]) {
       drawn && drawn.x >= 0 && drawn.x + drawn.width <= viewport.width,
       'the dialog leaves the screen',
     )
+    // A pop-up asking one name, not a page: a 24rem card, and on the phone a card 16px from each side.
+    assert.ok(drawn.height < viewport.height, 'the dialog fills the screen')
+    assert.ok(drawn.y > 0, 'the dialog touches the top edge')
+    if (viewport === DESKTOP) assert.ok(drawn.width <= 384, `the dialog is ${drawn.width}px wide`)
+    else assert.equal(drawn.width, viewport.width - 32)
     assert.deepEqual(page.problems, [])
     await page.close()
   })

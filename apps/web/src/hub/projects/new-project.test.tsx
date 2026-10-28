@@ -23,7 +23,7 @@ const NOVO = ProjectSummary.parse({
 })
 
 /** The company's Projects as `projects`; the Projeto written is `NOVO`, unless `answer` says otherwise. */
-function hub(answer?: () => Response) {
+function hub(answer?: () => Response | Promise<Response>) {
   const sent: unknown[] = []
   server.use(
     conversationsNone,
@@ -70,9 +70,13 @@ function name(dialog: ReturnType<typeof within>, text: string) {
 test('o +: abre o diálogo, o nome cria o Projeto e a pessoa chega na página dele', async () => {
   const { sent, router } = hub()
   const dialog = await openDialog()
-  expect(
-    dialog.getByText('Um Projeto precisa só de um nome, por enquanto. O endereço do app sai dele.'),
-  ).toBeTruthy()
+  expect(dialog.getByText('Um Projeto precisa só de um nome, por enquanto.')).toBeTruthy()
+  const described = screen
+    .getByRole('dialog', { name: 'Novo projeto' })
+    .getAttribute('aria-describedby')
+  expect(document.getElementById(described ?? '')?.textContent).toBe(
+    'Um Projeto precisa só de um nome, por enquanto.',
+  )
   name(dialog, 'Estoque')
   expect(await dialog.findByText('estoque--empresa-teste.apps.example.test')).toBeTruthy()
   fireEvent.click(dialog.getByRole('button', { name: 'Criar projeto' }))
@@ -83,6 +87,24 @@ test('o +: abre o diálogo, o nome cria o Projeto e a pessoa chega na página de
   await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Novo projeto' })).toBeNull(), {
     timeout: 5000,
   })
+  expect(document.activeElement).not.toBe(screen.queryByRole('button', { name: 'Novo projeto' }))
+})
+
+test('enquanto o Hub responde, o botão diz Criando…', async () => {
+  const held = Promise.withResolvers<void>()
+  const { router } = hub(async () => {
+    await held.promise
+    return refusal('PROJECT_NAME_TAKEN')
+  })
+  const dialog = await openDialog()
+  name(dialog, 'Estoque')
+  fireEvent.click(dialog.getByRole('button', { name: 'Criar projeto' }))
+  expect(await dialog.findByRole('button', { name: 'Criando…' }, { timeout: 5000 })).toBeTruthy()
+  held.resolve()
+  expect(
+    await dialog.findByRole('button', { name: 'Criar projeto' }, { timeout: 5000 }),
+  ).toBeTruthy()
+  expect(router.state.location.pathname).toBe(`${HOME}/projects`)
 })
 
 test('um nome já usado: a frase no campo do nome, e o diálogo fica aberto', async () => {
