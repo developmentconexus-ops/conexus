@@ -13,7 +13,6 @@ const CHANGE_ROLE = { member: ['update'] } as const
 const CREATE_PROJECT = { project: ['create'] } as const
 const DELETE_PROJECT = { project: ['delete'] } as const
 const CHOOSE_NICKNAME = { company: ['nickname'] } as const
-const MANAGE_VERSIONS = { appVersion: ['create'] } as const
 const MANAGE_MODEL_ACCOUNTS = { modelAccount: ['manage'] } as const
 type ActionRule = {
   by: 'MEMBER' | 'COMPANY' | 'OPERATOR'
@@ -25,7 +24,6 @@ type ActionRule = {
     | typeof CREATE_PROJECT
     | typeof DELETE_PROJECT
     | typeof CHOOSE_NICKNAME
-    | typeof MANAGE_VERSIONS
     | typeof MANAGE_MODEL_ACCOUNTS
 }
 
@@ -43,10 +41,11 @@ const ACTIONS = {
   createProject: { by: 'MEMBER', statement: CREATE_PROJECT, locks: true },
   deleteProject: { by: 'MEMBER', statement: DELETE_PROJECT, locks: true },
   chooseNickname: { by: 'MEMBER', statement: CHOOSE_NICKNAME, locks: true },
-  // Listing reads in a read-only transaction, which cannot hold the member's row; sending and
-  // putting a version back hold it until they commit.
-  readAppVersions: { by: 'MEMBER', statement: MANAGE_VERSIONS, locks: false },
-  manageAppVersions: { by: 'MEMBER', statement: MANAGE_VERSIONS, locks: true },
+  // Every member who converses with the Builder lists the Projeto's versions and publishes any kept
+  // one (step 17, C2 and E1). Listing reads in a read-only transaction, which cannot hold the
+  // member's row; publishing holds it until it commits.
+  readAppVersions: { by: 'MEMBER', statement: undefined, locks: false },
+  publishAppVersion: { by: 'MEMBER', statement: undefined, locks: true },
   // Every member's Builder turn sends its version to the Projeto's one app (step 14.1, X1).
   sendBuilderVersion: { by: 'MEMBER', statement: undefined, locks: true },
   // Every member reads the company's model accounts and links, orders and removes their own; only

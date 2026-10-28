@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { appLogin, ProjectId } from '@conexus/hub-api'
+import { APP_SESSION_HEADER, appLogin, ProjectId } from '@conexus/hub-api'
 import {
   appLoginsOf,
   appLoginTimeoutsOf,
@@ -11,7 +11,8 @@ import {
   pgTransport,
 } from '../../platform/test-company-postgres.ts'
 import { whenIdle } from '../../platform/test-database.ts'
-import { call, post } from '../identity/test-hub.ts'
+import { call, codeOf, post } from '../identity/test-hub.ts'
+import { browser, frameHandoff, PEDIDOS } from './test-handoff.ts'
 import {
   companyForVersions,
   folder,
@@ -20,6 +21,81 @@ import {
   send,
   versionNumbered,
 } from './test-versions.ts'
+
+test('a reparação sobe a publicada também', async (t) => {
+  const subject = await companyForVersions(t)
+  const { hub, ana, versions } = subject
+  const first = await versionNumbered(subject, (await send(subject, ana)).number)
+  const published = `${versions.replace(/\/versions$/, '')}/published-version`
+  assert.equal((await call(hub, ana, 'PUT', published, { number: 1 })).statusCode, 200)
+  const second = await versionNumbered(
+    subject,
+    (await send(subject, ana, folder({}, '#6b2fa3'))).number,
+  )
+  // Cloudflare lost both Workers; the migrations of the Prévia's version are the only ones that run.
+  await hub.cloudflare.cloudflare.remove(`v-${first.id}`)
+  await hub.cloudflare.cloudflare.remove(`v-${second.id}`)
+  assert.deepEqual(hub.cloudflare.workers(), [])
+  await hub.repair()
+  assert.deepEqual(hub.cloudflare.workers(), [`v-${first.id}`, `v-${second.id}`].sort())
+})
+
+test('a 17 entra com a versão no ar publicada, e as sessões de antes saem', async (t) => {
+  const subject = await companyForVersions(t)
+  const { hub, ana, bruno, projects } = subject
+  await send(subject, ana)
+  // Estoque has an app row and no version.
+  const estoque = Object((await post(hub, ana, projects, { name: 'Estoque' })).json()).project
+  await hub.test.asOwner(
+    `insert into apps.app (project_id, company_id) select $1, company_id from apps.app limit 1`,
+    [estoque.id],
+  )
+  const migration = readFileSync(
+    join(
+      import.meta.dirname,
+      '../../../migrations/20261028172015_e17_published_version/migration.sql',
+    ),
+    'utf8',
+  )
+  const statements = migration.split('--> statement-breakpoint').map((one) =>
+    one
+      .split('\n')
+      .filter((line) => !line.startsWith('--'))
+      .join('\n')
+      .trim(),
+  )
+  // A session of before the step, planted as the Prévia's frame would have left it.
+  const { binding, hash } = browser()
+  const made = await frameHandoff(hub, bruno, { host: PEDIDOS, binding: hash })
+  const code = new URL(String(Object(made.json()).location)).searchParams.get('code')
+  const redeemed = await hub.edge.inject({
+    method: 'POST',
+    url: '/api/app-sessions',
+    headers: { 'content-type': 'application/json' },
+    payload: JSON.stringify({ host: PEDIDOS, binding, code }),
+  })
+  assert.equal(redeemed.statusCode, 201)
+  const session = String(Object(redeemed.json()).session)
+  // The Projetos of before the step have no published version; the migration's own statements run.
+  await hub.test.asOwner('update apps.app set published_version_id = null')
+  for (const statement of statements.filter((one) => /^(DELETE|UPDATE) /.test(one))) {
+    await hub.test.asOwner(statement)
+  }
+  const pointers = await hub.test.asOwner(
+    `select project_id, live_version_id, published_version_id from apps.app`,
+  )
+  const published = Object.fromEntries(
+    pointers.map((row) => [row.project_id, row.published_version_id === row.live_version_id]),
+  )
+  assert.deepEqual(published, { [subject.projectId]: true, [String(estoque.id)]: true })
+  assert.deepEqual(pointers.map((row) => row.published_version_id !== null).sort(), [false, true])
+  const opened = await hub.edge.inject({
+    method: 'GET',
+    url: `/api/app-sessions/current?host=${PEDIDOS}`,
+    headers: { [APP_SESSION_HEADER]: session },
+  })
+  assert.deepEqual([opened.statusCode, codeOf(opened)], [401, 'APP_SESSION_INVALID'])
+})
 
 test('reparo: Worker que falta e esquema, logins e migrações da versão no ar voltam; "enviando" vencida falha', async (t) => {
   const subject = await companyForVersions(t)

@@ -13,8 +13,8 @@ import {
   refusal,
 } from '../../platform/test-hub.tsx'
 import {
-  LIVE_PATH,
-  livedVersion,
+  PUBLISHED_PATH,
+  publishedVersion,
   versionsRead,
   versionView,
 } from '../../platform/test-hub-versions.tsx'
@@ -118,7 +118,7 @@ async function withPut(answer: () => Response | Promise<Response>) {
   const view = { versions: [versionView(2, { live: true }), versionView(1)] }
   const sent: unknown[] = []
   server.use(
-    http.put(LIVE_PATH, async ({ request }) => {
+    http.put(PUBLISHED_PATH, async ({ request }) => {
       sent.push(await request.json())
       return answer()
     }),
@@ -143,14 +143,14 @@ test('Voltar para esta: "Voltando…" na espera; 200 fecha e a lista mostra a ve
   const { view, sent } = await withPut(async () => {
     await held.promise
     view.versions = [versionView(2), versionView(1, { live: true })]
-    return livedVersion(versionView(1, { live: true }))
+    return publishedVersion(versionView(1, { live: true }))
   })
   fireEvent.click(screen.getByRole('button', { name: 'Voltar para a Versão 1' }))
   expect(await screen.findByRole('button', { name: 'Voltando…' })).toHaveProperty('disabled', true)
   expect(screen.getByRole('button', { name: 'Cancelar' })).toHaveProperty('disabled', true)
   held.resolve()
   await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull())
-  expect(sent).toEqual([{ versionId: versionView(1).id }])
+  expect(sent).toEqual([{ number: 1 }])
   await waitFor(() =>
     expect(within(screen.getByRole('main')).getByRole('list').textContent).toContain(
       'Versão 1 · no ar',

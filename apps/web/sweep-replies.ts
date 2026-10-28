@@ -190,7 +190,12 @@ const PROJECT = {
  */
 export function projectsPage(
   id: string,
-  view: { empty?: boolean; mayDelete?: boolean; appVersion?: number } = {},
+  view: {
+    empty?: boolean
+    mayDelete?: boolean
+    appVersion?: number
+    publishedVersion?: number
+  } = {},
 ): Replies {
   return {
     [`GET /api/companies/${id}/projects`]: ok(listProjects, {
@@ -202,9 +207,9 @@ export function projectsPage(
       project: {
         ...PROJECT,
         mayDelete: view.mayDelete ?? true,
-        mayManageVersions: view.mayDelete ?? true,
         address: ADDRESS,
         appVersion: view.appVersion ?? null,
+        publishedVersion: view.publishedVersion ?? null,
       },
     }),
     [`GET /api/companies/${id}/projects/${PROJECT.id}/conversations`]: ok(listConversations, {

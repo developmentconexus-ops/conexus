@@ -3,7 +3,7 @@ import { test } from 'node:test'
 import { APP_CALL_LIMITS } from '@conexus/app-contract'
 import { ProjectId } from '@conexus/hub-api'
 import { appTablesOf } from '../../platform/test-company-postgres.ts'
-import { ANA_OWNER, BRUNO, codeOf, post } from '../identity/test-hub.ts'
+import { ANA_OWNER, BRUNO, call, codeOf, post } from '../identity/test-hub.ts'
 import { companyForVersions, folder, listed, MIGRATION, send } from './test-versions.ts'
 
 test('envio: a versão do Builder vai ao ar com o número dele, enviada por dono ou membro; a rota de envio saiu (35)', async (t) => {
@@ -34,6 +34,24 @@ test('envio: a versão do Builder vai ao ar com o número dele, enviada por dono
   const gone = await post(hub, ana, versions, folder())
   assert.deepEqual([gone.statusCode, codeOf(gone)], [404, 'NOT_FOUND'])
   assert.equal((await hub.test.asOwner('select count(*)::int as n from apps.app_version'))[0]?.n, 2)
+})
+
+test('versões: o membro lista (200), com a marca da Prévia e a da publicada', async (t) => {
+  const subject = await companyForVersions(t)
+  const { hub, ana, bruno, versions } = subject
+  await send(subject, ana)
+  const read = await call(hub, bruno, 'GET', versions)
+  assert.equal(read.statusCode, 200, read.body)
+  assert.deepEqual(
+    Object(read.json()).versions.map(
+      (one: { number: number; live: boolean; published: boolean }) => [
+        one.number,
+        one.live,
+        one.published,
+      ],
+    ),
+    [[1, true, false]],
+  )
 })
 
 test('envio: a pasta que a máquina deixa fora do contrato ou acima do teto não guarda nada', async (t) => {

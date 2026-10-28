@@ -88,13 +88,17 @@ async function pruneMarked(
   }
 }
 
-/** The version on the air of each Projeto, with the manifest it was sent with. */
-function liveVersions(deps: RepairDeps, scope: Scope): Promise<Live[]> {
+/** The version a pointer of each Projeto names, with the manifest it was sent with. */
+function versionsPointedBy(
+  deps: RepairDeps,
+  scope: Scope,
+  pointer: typeof app.liveVersionId | typeof app.publishedVersionId,
+): Promise<Live[]> {
   return deps.database.read(scope, async (tx) => {
     const rows = await tx
       .select({ projectId: app.projectId, versionId: appVersion.id, manifest: appVersion.manifest })
       .from(app)
-      .innerJoin(appVersion, eq(appVersion.id, app.liveVersionId))
+      .innerJoin(appVersion, eq(appVersion.id, pointer))
     return rows.map((row) => ({
       projectId: ProjectId.parse(row.projectId),
       versionId: AppVersionId.parse(row.versionId),
@@ -103,7 +107,7 @@ function liveVersions(deps: RepairDeps, scope: Scope): Promise<Live[]> {
   })
 }
 
-/** Uploads a live version's Worker again, from the files the Hub keeps (decision 0043). */
+/** Uploads a version's Worker again, from the files the Hub keeps (decision 0043). */
 async function restoreWorker(
   deps: RepairDeps,
   scope: Scope,
@@ -125,6 +129,39 @@ async function restoreWorker(
   }
 }
 
+/** Uploads the version's Worker again if Cloudflare lost it; whether it had to. */
+async function restoreWorkerIfLost(
+  deps: RepairDeps,
+  scope: Scope,
+  live: Live & { companyId: CompanyId },
+): Promise<boolean> {
+  const found = await deps.cloudflare.exists(appWorkerOf(live.versionId))
+  if (found.kind !== 'DONE')
+    throw new Failure('APP_VERSION_FAILED', { details: { reason: 'NO_ANSWER' } })
+  if (found.value) return false
+  await restoreWorker(deps, scope, live)
+  return true
+}
+
+/**
+ * The Workers of the Prévia's version and of the published one, if Cloudflare lost them; how many
+ * went back. The database and the migrations are the Prévia's alone (step 17).
+ */
+async function restoreWorkers(
+  deps: RepairDeps,
+  scope: Scope,
+  input: { companyId: CompanyId; live: Live; published: Live | undefined },
+): Promise<number> {
+  const { companyId, live, published } = input
+  const lost = [live]
+  if (published !== undefined && published.versionId !== live.versionId) lost.push(published)
+  let restored = 0
+  for (const version of lost) {
+    if (await restoreWorkerIfLost(deps, scope, { ...version, companyId })) restored += 1
+  }
+  return restored
+}
+
 function stillLive(
   deps: RepairDeps,
   ids: { scope: Scope; companyId: CompanyId; projectId: ProjectId },
@@ -133,8 +170,9 @@ function stillLive(
 }
 
 /**
- * Brings each live app back to what the Hub holds: its Worker, if Cloudflare lost it, and its
- * schema, logins and migrations, if a restore of the company's database took them (founder, P2 A).
+ * Brings each live app back to what the Hub holds: its Workers (the Prévia's and the published
+ * one), if Cloudflare lost them, and its schema, logins and migrations, if a restore of the
+ * company's database took them (founder, P2 A).
  */
 async function restoreLive(
   deps: RepairDeps,
@@ -143,17 +181,16 @@ async function restoreLive(
 ) {
   const { companyId } = input
   let workers = 0
-  for (const live of await liveVersions(deps, scope)) {
+  const published = await versionsPointedBy(deps, scope, app.publishedVersionId)
+  for (const live of await versionsPointedBy(deps, scope, app.liveVersionId)) {
     if (input.marked.has(live.projectId)) continue
     const ids = { scope, companyId, projectId: live.projectId }
     if (!(await stillLive(deps, ids))) continue
-    const found = await deps.cloudflare.exists(appWorkerOf(live.versionId))
-    if (found.kind !== 'DONE')
-      throw new Failure('APP_VERSION_FAILED', { details: { reason: 'NO_ANSWER' } })
-    if (!found.value) {
-      await restoreWorker(deps, scope, { ...live, companyId })
-      workers += 1
-    }
+    workers += await restoreWorkers(deps, scope, {
+      companyId,
+      live,
+      published: published.find((one) => one.projectId === live.projectId),
+    })
     const opened = await openAppDatabase(deps, { ...ids, databaseReady: false })
     if (opened.kind === 'FAILED') throw new Failure(opened.failure)
     const refused = await migrateApp(deps, { ...ids, owner: opened.owner, manifest: live.manifest })

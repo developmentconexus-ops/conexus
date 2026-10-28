@@ -60,7 +60,7 @@
   "src/hub/apps/app-handoff.test.ts": 8,
   "src/hub/apps/app-log.test.ts": 3.4,
   "src/hub/apps/handoff-route.test.ts": 4.7,
-  "src/hub/apps/live-version.test.ts": 1.6,
+  "src/hub/apps/publish.test.ts": 7.4,
   "src/hub/apps/prune.test.ts": 14.1,
   "src/hub/apps/repair.test.ts": 15,
   "src/hub/apps/send-guards.test.ts": 7.3,

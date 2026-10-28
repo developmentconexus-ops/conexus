@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto'
 import type { TestContext } from 'node:test'
+import { TEST_ORIGIN } from '../../platform/test-database.ts'
 import type { Hub, Person } from '../identity/test-hub.ts'
 import {
   ANA_OWNER,
@@ -54,6 +55,28 @@ export function handoff(
     method: 'GET',
     url: openPath(body),
     headers: { ...headers, ...(person ? { cookie: person.cookie } : {}) },
+  })
+}
+
+/**
+ * The Prévia's pass: the Hub's own page asks for it with the person's session and the binding hash
+ * the app's entry page sent it from the frame (step 14.1, U2).
+ */
+export function frameHandoff(
+  hub: Hub,
+  person: Person | undefined,
+  body: { host: string; binding: string },
+  headers: Record<string, string> = { origin: TEST_ORIGIN },
+) {
+  return hub.app.inject({
+    method: 'POST',
+    url: '/api/apps/frame-handoff',
+    headers: {
+      'content-type': 'application/json',
+      ...headers,
+      ...(person ? { cookie: person.cookie } : {}),
+    },
+    payload: JSON.stringify(body),
   })
 }
 

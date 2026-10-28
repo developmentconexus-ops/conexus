@@ -1,22 +1,22 @@
 import type { AppVersionId, CompanyId, ProjectId } from '@conexus/hub-api'
 import { appWorkerOf, AppVersionId as VersionId } from '@conexus/hub-api'
-import { and, desc, eq, inArray, ne, notExists, notInArray } from 'drizzle-orm'
+import { and, desc, eq, inArray, notExists, notInArray } from 'drizzle-orm'
 import type { CloudflareApps } from '../../platform/cloudflare.ts'
 import type { CommandTx, Database, Scope } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { app, appVersion, blob, versionFile } from './tables.ts'
 
-/** The versions kept besides the one on the air, so Voltar has somewhere to go (founder, 6C). */
+/** The versions kept besides the Prévia's and the published one, so Publicar has somewhere to go (founder, 6C). */
 const KEPT_OLD_VERSIONS = 3
 
 type Ids = { companyId: CompanyId; projectId: ProjectId }
 
 /**
- * Marks for the prune, in the transaction that put `liveVersionId` on the air: every failed version,
- * and the ready ones past the newest three other than the live one. A version being sent stays.
+ * Marks for the prune, in the transaction that put a new version in the Prévia: every failed
+ * version, and the ready ones past the newest three other than those in `keep` (the new version and
+ * the published one, however old). A version being sent stays.
  */
-// biome-ignore lint/plugin: the version rows hold strings and live.ts, removal.ts and repair.ts pass them on; the brand lands when those rows parse AppVersionId (C23)
-export async function markPrune(tx: CommandTx, input: Ids & { liveVersionId: string }) {
+export async function markPrune(tx: CommandTx, input: Ids & { keep: readonly string[] }) {
   const kept = await tx
     .select({ id: appVersion.id })
     .from(appVersion)
@@ -24,7 +24,7 @@ export async function markPrune(tx: CommandTx, input: Ids & { liveVersionId: str
       and(
         eq(appVersion.projectId, input.projectId),
         eq(appVersion.state, 'ready'),
-        ne(appVersion.id, input.liveVersionId),
+        notInArray(appVersion.id, [...input.keep]),
       ),
     )
     .orderBy(desc(appVersion.number))
@@ -36,7 +36,7 @@ export async function markPrune(tx: CommandTx, input: Ids & { liveVersionId: str
       and(
         eq(appVersion.projectId, input.projectId),
         inArray(appVersion.state, ['ready', 'failed']),
-        notInArray(appVersion.id, [input.liveVersionId, ...kept.map(({ id }) => id)]),
+        notInArray(appVersion.id, [...input.keep, ...kept.map(({ id }) => id)]),
       ),
     )
 }

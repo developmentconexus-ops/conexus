@@ -70,16 +70,8 @@ test('ler: a lista traz o banco pronto e o Projeto diz se quem lê pode apagá-l
   assert.deepEqual([body.databaseReady, body.next], [true, { kind: 'END' }])
   const asMember = Object(Object(await call(hub, bruno, 'GET', url)).json())
   const asOwner = Object(Object(await call(hub, ana, 'GET', url)).json())
-  function rights(project: { mayDelete: boolean; mayManageVersions: boolean }) {
-    return [project.mayDelete, project.mayManageVersions]
-  }
-  assert.deepEqual(
-    [rights(asMember.project), rights(asOwner.project)],
-    [
-      [false, false],
-      [true, true],
-    ],
-  )
+  assert.deepEqual([asMember.project.mayDelete, asOwner.project.mayDelete], [false, true])
+  assert.equal('mayManageVersions' in asMember.project, false)
   const missing = await call(hub, ana, 'GET', `${projects}/${'a'.repeat(32)}`)
   assert.equal(missing.statusCode, 404)
 })

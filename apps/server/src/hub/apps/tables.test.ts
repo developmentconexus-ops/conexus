@@ -20,12 +20,14 @@ test('catálogo: passagens e sessões de app, só hashes, presas à sessão do H
       'app.sending_version_id text YES',
       `app.claimed_until ${TS} YES`,
       'app.database_ready boolean NO',
+      'app.published_version_id text YES',
       'app_session.token_hash text NO',
       'app_session.host_label text NO',
       'app_session.person_id text NO',
       'app_session.company_id text NO',
       'app_session.project_id text NO',
       'app_session.hub_session_id text NO',
+      'app_session.environment text NO',
       'app_version.id text NO',
       'app_version.company_id text NO',
       'app_version.project_id text NO',
@@ -48,6 +50,7 @@ test('catálogo: passagens e sessões de app, só hashes, presas à sessão do H
       'handoff.project_id text NO',
       'handoff.hub_session_id text NO',
       `handoff.expires_at ${TS} NO`,
+      'handoff.environment text NO',
       'version_file.version_id text NO',
       'version_file.company_id text NO',
       'version_file.path text NO',
@@ -64,8 +67,10 @@ test('catálogo: passagens e sessões de app, só hashes, presas à sessão do H
     { name: 'app_live_version_fkey', type: 'f', onDelete: 'a' },
     { name: 'app_pkey', type: 'p', onDelete: ' ' },
     { name: 'app_project_id_fkey', type: 'f', onDelete: 'c' },
+    { name: 'app_published_version_fkey', type: 'f', onDelete: 'a' },
     { name: 'app_sending_has_claim', type: 'c', onDelete: ' ' },
     { name: 'app_sending_version_fkey', type: 'f', onDelete: 'a' },
+    { name: 'app_session_environment', type: 'c', onDelete: ' ' },
     { name: 'app_session_hub_session_id_fkey', type: 'f', onDelete: 'c' },
     { name: 'app_session_pkey', type: 'p', onDelete: ' ' },
     { name: 'app_version_digest_form', type: 'c', onDelete: ' ' },
@@ -80,6 +85,7 @@ test('catálogo: passagens e sessões de app, só hashes, presas à sessão do H
     { name: 'blob_pkey', type: 'p', onDelete: ' ' },
     { name: 'blob_sha256_form', type: 'c', onDelete: ' ' },
     { name: 'blob_size', type: 'c', onDelete: ' ' },
+    { name: 'handoff_environment', type: 'c', onDelete: ' ' },
     { name: 'handoff_hub_session_id_fkey', type: 'f', onDelete: 'c' },
     { name: 'handoff_pkey', type: 'p', onDelete: ' ' },
     { name: 'version_file_blob_fkey', type: 'f', onDelete: 'a' },
@@ -118,7 +124,7 @@ test('catálogo: apelido e endereço só na forma de um nome de host', async (t)
   await address('p1', `${'p'.repeat(52)}--empresa-a`)
 })
 
-test('catálogo: a versão no ar é do Projeto, a que falhou diz por quê, e um blob em uso fica', async (t) => {
+test('catálogo: a versão da Prévia e a publicada são do Projeto, a que falhou diz por quê, e um blob em uso fica', async (t) => {
   const { asOwner } = await createTestDatabase(t)
   const sha = 'a'.repeat(64)
   await asOwner(`
@@ -134,7 +140,12 @@ test('catálogo: a versão no ar é do Projeto, a que falhou diz por quê, e um 
     asOwner(`update apps.app set live_version_id = 'v1' where project_id = 'p2'`),
     { code: '23503' },
   )
+  await assert.rejects(
+    asOwner(`update apps.app set published_version_id = 'v1' where project_id = 'p2'`),
+    { code: '23503' },
+  )
   await asOwner(`update apps.app set live_version_id = 'v1' where project_id = 'p1'`)
+  await asOwner(`update apps.app set published_version_id = 'v1' where project_id = 'p1'`)
   await assert.rejects(
     asOwner(`update apps.app set sending_version_id = 'v1' where project_id = 'p1'`),
     { code: '23514' },

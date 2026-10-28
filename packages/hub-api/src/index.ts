@@ -31,7 +31,7 @@ export {
   HANDOFF_PATH,
   HANDOFF_SECONDS,
   listAppVersions,
-  setLiveVersion,
+  publishAppVersion,
   VersionFileInput,
 } from './apps.ts'
 export { CAPACITY } from './capacity.ts'

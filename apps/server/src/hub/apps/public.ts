@@ -15,8 +15,8 @@ import { registerEdgeRoutes, registerHandoffRoute, registerVersionRoutes } from 
 
 /** How long a send's answer waits for its prune: a test of the send names it. */
 export { PRUNE_BUDGET_MS } from './prune.ts'
-/** What a Projeto's page reads of its app: the version on the air (step 14.1). */
-export { liveNumberOf } from './versions.ts'
+/** What a Projeto's page reads of its app: the Prévia's and the published version (step 17). */
+export { versionNumbersOf } from './versions.ts'
 
 export type Apps = ReturnType<typeof createApps>
 
@@ -38,7 +38,7 @@ export function createAppRemoval(deps: RemovalDeps) {
 /**
  * The app of a Projeto: the pass the Hub gives a person, what the apps' dispatcher asks on each
  * call (decision 0041), and the versions every member's Builder turn sends (decision 0043, step
- * 14.1), which an owner or administrator lists and puts back. It reaches identity and Projects only
+ * 14.1), which every member lists and publishes. It reaches identity and Projects only
  * through their ports (code C4), Neon and Cloudflare only through the ports `main.ts` hands it (C56).
  */
 export function createApps(deps: AppDeps & RepairDeps) {

@@ -20,6 +20,7 @@ import { Failure } from '../../platform/failure.ts'
 import { COMPANY_DATABASE } from '../../platform/neon.ts'
 import type { IdentityPorts } from '../identity/public.ts'
 import type { ProjectPorts } from '../projects/public.ts'
+import type { AppEnvironment } from './tables.ts'
 import { app, appSession, handoff } from './tables.ts'
 
 export type AppDeps = {
@@ -46,7 +47,13 @@ function hashOf(value: string): string {
  */
 async function createHandoff(
   deps: AppDeps,
-  input: { person: Person; sessionToken: string; host: HostLabel; binding: string },
+  input: {
+    person: Person
+    sessionToken: string
+    host: HostLabel
+    binding: string
+    environment: AppEnvironment
+  },
 ) {
   const found = await deps.projects.projectOfHost(input.host)
   if (found === undefined) throw new Failure('NOT_FOUND', { details: { reason: 'NO_HOST' } })
@@ -66,6 +73,7 @@ async function createHandoff(
       personId: input.person.id,
       ...found,
       hubSessionId,
+      environment: input.environment,
       expiresAt: sql`statement_timestamp() + make_interval(secs => ${HANDOFF_SECONDS})`,
     })
   })
@@ -105,6 +113,7 @@ function redeemHandoff(deps: AppDeps, input: { host: HostLabel; code: string; bi
       companyId,
       projectId,
       hubSessionId,
+      environment: taken.environment,
     })
     return { session, companyId, projectId }
   })
@@ -113,8 +122,8 @@ function redeemHandoff(deps: AppDeps, input: { host: HostLabel; code: string; bi
 /**
  * Checks one call to an app: its session on this host, the Hub session it lives in (security S18),
  * then the person's admission and the Projeto, read now, so a removal or a deletion refuses the next
- * call (S8, S13). The app sees only the caller; the dispatcher also learns the version on the air
- * and the database its run login reaches, or that the Projeto runs the example app.
+ * call (S8, S13). The app sees only the caller; the dispatcher also learns the version the session
+ * gets and the database its run login reaches, or that the Projeto runs the example app.
  */
 async function checkCall(
   deps: AppDeps,
@@ -139,7 +148,7 @@ async function checkCall(
       companyId: CompanyId.parse(row.companyId),
       projectId: ProjectId.parse(row.projectId),
     }
-    return { personId, personName, ids }
+    return { personId, personName, ids, environment: row.environment }
   })
   if (found === undefined) throw new Failure('APP_SESSION_INVALID')
   const { ids } = found
@@ -163,33 +172,48 @@ async function checkCall(
       const { personId, personName } = found
       const { projectName } = admitted
       const caller = { personId, personName, projectId: ids.projectId, projectName }
-      return callTo(deps, { ...ids, caller })
+      return callTo(deps, { ...ids, caller, environment: found.environment })
     }
     default:
       return admitted satisfies never
   }
 }
 
-/** The live version's Worker and the run login's database, or the example app when none is live. */
+/**
+ * The Worker of the version the session gets and the run login's database: the published one for a
+ * tab, the Prévia's for the frame. A tab before the first Publicar is refused; a frame before the
+ * first version gets the example app.
+ */
 function callTo(
   deps: AppDeps,
-  input: { companyId: CompanyId; projectId: ProjectId; caller: AppCaller },
+  input: {
+    companyId: CompanyId
+    projectId: ProjectId
+    caller: AppCaller
+    environment: AppEnvironment
+  },
 ): Promise<AppCall> {
-  const { companyId, projectId, caller } = input
+  const { companyId, projectId, caller, environment } = input
   const scope = { kind: 'COMPANY', companyId, personId: caller.personId } as const
   return deps.database.read(scope, async (tx): Promise<AppCall> => {
     const [row] = await tx
-      .select({ liveVersionId: app.liveVersionId })
+      .select({ preview: app.liveVersionId, published: app.publishedVersionId })
       .from(app)
       .where(eq(app.projectId, projectId))
-    if (row?.liveVersionId == null) return { caller, version: { example: true }, database: null }
+    const versionId = environment === 'published' ? row?.published : row?.preview
+    if (versionId == null) {
+      if (environment === 'published') {
+        throw new Failure('APP_NOT_PUBLISHED', { details: { companyId, projectId } })
+      }
+      return { caller, version: { example: true }, database: null }
+    }
     const ready = await deps.projects.readyDatabaseOf(tx, companyId)
     if (ready?.host == null) {
       throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'LIVE_WITHOUT_HOST' } })
     }
     return {
       caller,
-      version: { worker: appWorkerOf(AppVersionId.parse(row.liveVersionId)) },
+      version: { worker: appWorkerOf(AppVersionId.parse(versionId)) },
       database: {
         host: ready.host,
         database: COMPANY_DATABASE,

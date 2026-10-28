@@ -179,6 +179,7 @@ async function toApp(visit: Visit, call: AppCall): Promise<Response> {
 const CHECK_REFUSALS: Partial<Record<string, PageCode>> = {
   APP_ACCESS_REFUSED: 'APP_ACCESS_REFUSED',
   APP_NOT_FOUND: 'APP_NOT_FOUND',
+  APP_NOT_PUBLISHED: 'APP_NOT_PUBLISHED',
 }
 
 async function dispatch(request: Request, env: Env, exports: Exports): Promise<Response> {

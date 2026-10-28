@@ -1,29 +1,9 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { TEST_ORIGIN } from '../../platform/test-database.ts'
-import type { Hub, Person } from '../identity/test-hub.ts'
+import type { Hub } from '../identity/test-hub.ts'
 import { CARLA, call, codeOf, personOn, plantCompany } from '../identity/test-hub.ts'
-import { browser, companyWithApps, ESTOQUE, PEDIDOS, passes } from './test-handoff.ts'
-
-// The Prévia's pass: the Hub's own page asks for it with the person's session and the binding hash
-// the app's entry page sent it from the frame (step 14.1, U2).
-function frameHandoff(
-  hub: Hub,
-  person: Person | undefined,
-  body: { host: string; binding: string },
-  headers: Record<string, string> = { origin: TEST_ORIGIN },
-) {
-  return hub.app.inject({
-    method: 'POST',
-    url: '/api/apps/frame-handoff',
-    headers: {
-      'content-type': 'application/json',
-      ...headers,
-      ...(person ? { cookie: person.cookie } : {}),
-    },
-    payload: JSON.stringify(body),
-  })
-}
+import { browser, companyWithApps, ESTOQUE, frameHandoff, PEDIDOS, passes } from './test-handoff.ts'
 
 function redeem(hub: Hub, body: { host: string; code: string; binding: string }) {
   return hub.edge.inject({

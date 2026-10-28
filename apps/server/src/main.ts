@@ -18,7 +18,7 @@ import {
 import type { MachinesOf, RepositoryOf, Runs } from './builder/runs/public.ts'
 import { builderPortsOf, createRuns } from './builder/runs/public.ts'
 import type { Apps } from './hub/apps/public.ts'
-import { createAppRemoval, createApps, liveNumberOf } from './hub/apps/public.ts'
+import { createAppRemoval, createApps, versionNumbersOf } from './hub/apps/public.ts'
 import type { Identity } from './hub/identity/public.ts'
 import { createIdentity, passwordLinkText } from './hub/identity/public.ts'
 import type { Operations } from './hub/operations/public.ts'
@@ -152,7 +152,7 @@ export function subjectsOf(deps: {
   })
   const releaseConversations = conversations.release
   const projects = createProjects({
-    ...{ database, identity, neon, log, appsDomain, appRemoval, appVersionOf: liveNumberOf },
+    ...{ database, identity, neon, log, appsDomain, appRemoval, appVersionsOf: versionNumbersOf },
     releaseConversations,
   })
   const operations = createOperations({

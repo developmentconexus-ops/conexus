@@ -12,7 +12,7 @@ import {
   releaseCompanyDatabase,
 } from './company-deletion.ts'
 import { admitToApp, liveProjectOf, projectOfHost } from './hosts.ts'
-import type { AppRemoval, AppVersionOf, ProjectConversationRelease } from './ports.ts'
+import type { AppRemoval, AppVersionsOf, ProjectConversationRelease } from './ports.ts'
 import { createProjectStore, finishMarkedProject, markedProjectsOf } from './projects.ts'
 import { registerProjectRoutes } from './routes.ts'
 
@@ -21,7 +21,11 @@ export { readyDatabaseOf } from './company-database.ts'
 /** For the Builder's conversations, made before Projects to hand Projects their release. */
 export { liveProjectOf } from './hosts.ts'
 export { projectIdsOf } from './ids.ts'
-export type { AppRemoval, AppVersionOf, ProjectConversationRelease } from './ports.ts'
+export type {
+  AppRemoval,
+  AppVersionsOf,
+  ProjectConversationRelease,
+} from './ports.ts'
 /** For the apps' foreign key alone (code C8). */
 export { project } from './tables.ts'
 export type Projects = ReturnType<typeof createProjects>
@@ -38,7 +42,7 @@ export function createProjects(deps: {
   log: FailureLog
   appsDomain: AppsDomain
   appRemoval: AppRemoval
-  appVersionOf: AppVersionOf
+  appVersionsOf: AppVersionsOf
   releaseConversations: ProjectConversationRelease
 }) {
   const store = createProjectStore(deps)

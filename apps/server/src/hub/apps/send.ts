@@ -30,7 +30,7 @@ type Sending = Ids & { scope: Scope; versionId: AppVersionId; received: Received
 
 type Admitting = Pick<SendDeps, 'identity' | 'projects'>
 
-type VersionAction = 'manageAppVersions' | 'readAppVersions' | 'sendBuilderVersion'
+type VersionAction = 'publishAppVersion' | 'readAppVersions' | 'sendBuilderVersion'
 
 /**
  * Every member's Builder turn sends its version (step 14.1, X1), holding the membership until the
@@ -49,12 +49,12 @@ async function admitTo(
   if (found === undefined) throw new Failure('NOT_FOUND', { details: { reason: 'NO_PROJECT' } })
 }
 
-/** Admits an owner or administrator to put back a version, holding their membership (S8). */
-export function admitManager(deps: Admitting, tx: CommandTx, input: Ids & { person: Person }) {
-  return admitTo(deps, tx, { ...input, personId: input.person.id, action: 'manageAppVersions' })
+/** Admits a member to publish a version, holding their membership (S8). */
+export function admitPublisher(deps: Admitting, tx: CommandTx, input: Ids & { person: Person }) {
+  return admitTo(deps, tx, { ...input, personId: input.person.id, action: 'publishAppVersion' })
 }
 
-/** Admits an owner or administrator to read the versions of a Projeto not marked for deletion. */
+/** Admits a member to read the versions of a Projeto not marked for deletion. */
 export function admitReader(deps: Admitting, tx: ReadTx, input: Ids & { person: Person }) {
   return admitTo(deps, tx, { ...input, personId: input.person.id, action: 'readAppVersions' })
 }
@@ -160,7 +160,7 @@ async function stop(deps: SendDeps, sending: Sending, why: 'LOST' | 'GONE'): Pro
 }
 
 /**
- * Puts the version on the air if the send still holds the claim and the Projeto is not marked for
+ * Puts the version in the Prévia if the send still holds the claim and the Projeto is not marked for
  * deletion, under the admission read again (security S8).
  */
 function finish(deps: SendDeps, sending: Sending & { personId: PersonId }) {
@@ -181,7 +181,8 @@ function finish(deps: SendDeps, sending: Sending & { personId: PersonId }) {
         databaseReady: true,
       })
       .where(eq(app.projectId, sending.projectId))
-    await markPrune(tx, { ...sending, liveVersionId: sending.versionId })
+    const keep = [sending.versionId, held.publishedVersionId].filter((id) => id !== null)
+    await markPrune(tx, { ...sending, keep })
     return { kind: 'LIVE' } as const
   })
 }
@@ -189,7 +190,7 @@ function finish(deps: SendDeps, sending: Sending & { personId: PersonId }) {
 /**
  * Sends a Builder turn's version of a Projeto's app under the number the turn saved it as: a first
  * transaction stores it and takes the claim, the Worker and the database are prepared with none
- * open, and a second puts it on the air (data D22). A death in the middle leaves the pointer as it
+ * open, and a second puts it in the Prévia (data D22). A death in the middle leaves the pointer as it
  * was (code C65).
  */
 export async function sendVersion(
@@ -241,6 +242,6 @@ export async function sendVersion(
   }
   if (finished.kind !== 'LIVE') return stop(deps, sending, finished.kind)
   deps.log.info({ by: personId, companyId, projectId, versionId }, 'APP_VERSION_LIVE')
-  // The version is on the air: a prune that cannot finish now is retried by the next one.
+  // The version is in the Prévia: a prune that cannot finish now is retried by the next one.
   await prune(deps, sending).catch((error: unknown) => logFailure(deps.log, databaseFailure(error)))
 }

@@ -34,6 +34,14 @@ export const APP_FAILURES = {
     action: '',
     actionKind: 'NONE',
   },
+  APP_NOT_PUBLISHED: {
+    category: 'USER',
+    settles: true,
+    status: 404,
+    phrase: 'Este app ainda não foi publicado.',
+    action: '',
+    actionKind: 'NONE',
+  },
 } as const satisfies Record<string, FailureRow>
 
 /** The failures of sending a version and putting one back on the air (step 9). */

@@ -12,14 +12,14 @@ import type { NeonProjects } from '../../platform/neon.ts'
 import { after, pageKey, pageOf } from '../../platform/pages.ts'
 import type { IdentityPorts } from '../identity/public.ts'
 import { claimDatabase, markReady, prepareDatabase, releaseClaim } from './company-database.ts'
-import type { AppRemoval, AppVersionOf, ProjectConversationRelease } from './ports.ts'
+import type { AppRemoval, AppVersionsOf, ProjectConversationRelease } from './ports.ts'
 import { companyDatabase, project } from './tables.ts'
 
 type Deps = {
   database: Database
   identity: IdentityPorts
   appRemoval: AppRemoval
-  appVersionOf: AppVersionOf
+  appVersionsOf: AppVersionsOf
   releaseConversations: ProjectConversationRelease
   neon: NeonProjects
   log: FailureLog
@@ -51,28 +51,23 @@ function summaryOf(row: ProjectRow) {
   return { id: row.id, name: row.name, createdAt: row.createdAt.toISOString() }
 }
 
-type Rights = { mayDelete: boolean; mayManageVersions: boolean }
-
 /** What a viewer with this role may do to a Project: the Hub's answer, never the screen's (code C26). */
-function rightsOf(deps: Deps, role: Role): Rights {
-  return {
-    mayDelete: deps.identity.allows(role, 'deleteProject'),
-    mayManageVersions: deps.identity.allows(role, 'manageAppVersions'),
-  }
+function rightsOf(deps: Deps, role: Role) {
+  return { mayDelete: deps.identity.allows(role, 'deleteProject') }
 }
 
-/**
- * The Project as a viewer with these rights sees it, its app's address under the apps' domain and
- * the version on the air there; a Project just made has none.
- */
+type Rights = ReturnType<typeof rightsOf>
+type Versions = Pick<Project, 'appVersion' | 'publishedVersion'>
+
 function viewOf(
   deps: Deps,
-  input: { row: ProjectRow; rights: Rights; appVersion: number | null },
+  input: { row: ProjectRow; rights: Rights; versions?: Versions },
 ): Project {
   const { hostLabel } = input.row
   const address =
     hostLabel === null ? null : appHostOf({ label: hostLabel, appsDomain: deps.appsDomain })
-  return { ...summaryOf(input.row), ...input.rights, address, appVersion: input.appVersion }
+  const { appVersion = null, publishedVersion = null } = input.versions ?? {}
+  return { ...summaryOf(input.row), ...input.rights, address, appVersion, publishedVersion }
 }
 
 /**
@@ -159,18 +154,18 @@ async function create(deps: Deps, input: Creation): Promise<Created> {
     const entered = await enterCreation(deps, tx, input)
     const { rights } = entered
     if (entered.kind === 'REPLAY') {
-      const appVersion = await deps.appVersionOf(tx, entered.row.id)
-      return { kind: 'DONE', created: false, row: entered.row, rights, appVersion } as const
+      const versions = await deps.appVersionsOf(tx, entered.row.id)
+      return { kind: 'DONE', created: false, row: entered.row, rights, versions } as const
     }
     if ((await claimDatabase(tx, input.companyId)) === 'CLAIMED') {
       return { kind: 'CLAIMED', rights, nickname: entered.nickname } as const
     }
     const row = await insertProject(tx, { ...input, hostLabel: entered.hostLabel })
-    return { kind: 'DONE', created: true, row, rights, appVersion: null } as const
+    return { kind: 'DONE', created: true, row, rights } as const
   })
   if (started.kind === 'DONE') {
-    const { row, rights, created, appVersion } = started
-    return { project: viewOf(deps, { row, rights, appVersion }), created, databaseCreated: false }
+    const { row, rights, created, versions } = started
+    return { project: viewOf(deps, { row, rights, versions }), created, databaseCreated: false }
   }
   const { nickname } = started
   const prepared = await prepareDatabase(deps.neon, { companyId: input.companyId, nickname })
@@ -189,7 +184,7 @@ async function create(deps: Deps, input: Creation): Promise<Created> {
           project: viewOf(deps, {
             row: entered.row,
             rights,
-            appVersion: await deps.appVersionOf(tx, entered.row.id),
+            versions: await deps.appVersionsOf(tx, entered.row.id),
           }),
           created: false,
           databaseCreated: false,
@@ -201,7 +196,7 @@ async function create(deps: Deps, input: Creation): Promise<Created> {
       })
       const row = await insertProject(tx, { ...input, hostLabel: entered.hostLabel })
       return {
-        project: viewOf(deps, { row, rights, appVersion: null }),
+        project: viewOf(deps, { row, rights }),
         created: true,
         databaseCreated,
       }
@@ -298,8 +293,8 @@ function get(deps: Deps, input: OfProject) {
       .where(and(ofProject(input), isNull(project.deletingSince)))
     if (row === undefined) throw new Failure('NOT_FOUND')
     const rights = rightsOf(deps, admitted.role)
-    const appVersion = await deps.appVersionOf(tx, input.projectId)
-    return { project: viewOf(deps, { row: ProjectRow.parse(row), rights, appVersion }) }
+    const versions = await deps.appVersionsOf(tx, input.projectId)
+    return { project: viewOf(deps, { row: ProjectRow.parse(row), rights, versions }) }
   })
 }
 
