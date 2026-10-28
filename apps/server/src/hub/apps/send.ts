@@ -4,6 +4,7 @@ import type {
   AppVersionFailure,
   AppVersionId,
   CompanyId,
+  MigrationCause,
   Person,
   PersonId,
   ProjectId,
@@ -94,7 +95,7 @@ function standing(deps: SendDeps, sending: Sending): Promise<Standing> {
 
 type Prepared =
   | { kind: 'READY' }
-  | { kind: 'FAILED'; failure: AppVersionFailure }
+  | { kind: 'FAILED'; failure: AppVersionFailure; cause?: MigrationCause }
   | { kind: 'STOPPED'; why: Exclude<Standing, 'GO'> }
 
 /**
@@ -126,8 +127,8 @@ async function prepare(
   const openedThen = await stopped()
   if (openedThen !== undefined) return openedThen
   const owner = opened.owner
-  const failure = await migrateApp(deps, { ...sending, owner, manifest: received.manifest })
-  return failure === undefined ? { kind: 'READY' } : { kind: 'FAILED', failure }
+  const refused = await migrateApp(deps, { ...sending, owner, manifest: received.manifest })
+  return refused === undefined ? { kind: 'READY' } : { kind: 'FAILED', ...refused }
 }
 
 /** A send that cannot finish leaves its version failed; the next send fails it if this cannot. */
@@ -225,7 +226,10 @@ export async function sendVersion(
   )
   if (prepared.kind === 'FAILED') {
     await fail(deps, sending, prepared.failure)
-    throw new Failure(prepared.failure, { details: { companyId, projectId, versionId } })
+    throw new Failure(prepared.failure, {
+      details: { companyId, projectId, versionId },
+      migration: prepared.cause,
+    })
   }
   if (prepared.kind === 'STOPPED') return stop(deps, sending, prepared.why)
   let finished: Awaited<ReturnType<typeof finish>>

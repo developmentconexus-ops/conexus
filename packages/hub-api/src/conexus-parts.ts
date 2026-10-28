@@ -64,6 +64,29 @@ export type ThoughtData = z.infer<typeof ThoughtData>
 export const PreviewFailure = z.enum([...AppVersionFailure.options, 'APP_VERSION_SENDING'])
 export type PreviewFailure = z.infer<typeof PreviewFailure>
 
+const Name = z.string().min(1).max(63)
+
+/**
+ * Why a migration did not enter: the names the database or the fixed list gave, never a value
+ * (code C52, security S40).
+ */
+export const MigrationCause = z.discriminatedUnion('kind', [
+  z.object({
+    kind: z.literal('database'),
+    sqlstate: z.string().regex(/^[0-9A-Z]{5}$/),
+    table: Name.optional(),
+    column: Name.optional(),
+    constraint: Name.optional(),
+  }),
+  z.object({
+    kind: z.literal('rule'),
+    migration: z.string(),
+    statement: z.int().positive(),
+    subject: z.string().max(60),
+  }),
+])
+export type MigrationCause = z.infer<typeof MigrationCause>
+
 /**
  * Whether the turn's version reached the Projeto's app (step 14.1), by its number: `sending` from
  * the moment it is saved, kept in its message until the send says `ready` or `failed`.
@@ -71,7 +94,12 @@ export type PreviewFailure = z.infer<typeof PreviewFailure>
 export const PreviewData = z.discriminatedUnion('state', [
   z.object({ state: z.literal('sending'), number: z.int().positive() }),
   z.object({ state: z.literal('ready'), number: z.int().positive() }),
-  z.object({ state: z.literal('failed'), number: z.int().positive(), code: PreviewFailure }),
+  z.object({
+    state: z.literal('failed'),
+    number: z.int().positive(),
+    code: PreviewFailure,
+    cause: MigrationCause.optional(),
+  }),
 ])
 export type PreviewData = z.infer<typeof PreviewData>
 

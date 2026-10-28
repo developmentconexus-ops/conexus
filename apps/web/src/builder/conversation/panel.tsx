@@ -246,7 +246,15 @@ function Screen(params: Params) {
     <>
       <Notices companyId={companyId} canAnswer={canAnswer} empty={empty} />
       <div className="min-h-24 flex-1 md:min-h-40">
-        <Transcript turns={turns} steers={state.steers} model={session.model} />
+        <Transcript
+          turns={turns}
+          steers={state.steers}
+          model={session.model}
+          onAsk={(text) => {
+            draft.append(text)
+            field.current?.focus()
+          }}
+        />
       </div>
       {error !== undefined && (
         <p role="alert" className="px-md">

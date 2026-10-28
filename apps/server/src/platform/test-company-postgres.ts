@@ -39,7 +39,7 @@ export async function pgTransport(
     await client.query('COMMIT')
     return { kind: 'DONE', value }
   } catch (error) {
-    return answerOf(error instanceof pg.DatabaseError ? error.code : undefined)
+    return answerOf(error instanceof pg.DatabaseError ? error : undefined)
   } finally {
     signal.removeEventListener('abort', abort)
     await client.end().catch(() => undefined)
