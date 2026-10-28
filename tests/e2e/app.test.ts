@@ -155,9 +155,16 @@ async function getPass(s: Scenario, browser: Jar): Promise<string> {
   assert.equal(open.pathname, '/apps/open')
   assert.equal(open.searchParams.get('host'), LABEL)
   assert.match(browser.header(), /^__Host-conexus-binding=[\w-]{43}$/)
-  const handoff = await s.open(`${open.pathname}${open.search}`, s.sessions.member)
-  assert.equal(handoff.status, 303)
-  const { location } = handoff
+  // The Prévia's frame is the door that serves the example app: a tab has no published version.
+  const handoff = await s.hub(
+    'POST',
+    '/api/apps/frame-handoff',
+    s.sessions.member,
+    { host: LABEL, binding: open.searchParams.get('binding') },
+    MEMBER_IP,
+  )
+  assert.equal(handoff.status, 200)
+  const { location } = JSON.parse(handoff.text)
   const hubSide = `https://${LABEL}.${TEST_APPS_DOMAIN}`
   assert.ok(location.startsWith(`${hubSide}/__conexus/passagem?code=`))
   return location.slice(hubSide.length)

@@ -11,6 +11,7 @@ import {
   openApp,
   PURPLE,
   pedidosOf,
+  publishVersion,
   RECADO,
   recados,
   scenario,
@@ -24,7 +25,7 @@ import { openProject, PASSWORD, signIn, waitForHome } from './live-hub.ts'
 // runs on the test server with the login the Hub made. The app's visits carry their cookies by
 // hand, as step 8's journey does: a browser route is never called for a redirect's next request
 // (testing T5, T6, T14).
-/** 1. Versões: nothing on the app yet; Recados 1 goes on the air. The member reads who may see. */
+/** 1. Versões: nothing on the app yet; Recados 1 goes to the Prévia. The member sees the list too. */
 async function firstVersion(s: Scenario, pedidos: string) {
   const { page } = s.owner
   await page.goto(`${pedidos}?lens=project&section=versions`)
@@ -42,9 +43,7 @@ async function firstVersion(s: Scenario, pedidos: string) {
   await openProject(s.member.page, 'Pedidos')
   await s.member.page.getByRole('link', { name: 'Abrir app' }).waitFor()
   await s.member.page.goto(`${pedidos}?lens=project&section=versions`)
-  await s.member.page
-    .getByText('Só o dono ou quem administra a empresa vê as versões e volta para uma delas.')
-    .waitFor()
+  await s.member.page.getByText('Versão 1 · no ar').waitFor()
 }
 
 /**
@@ -74,7 +73,7 @@ async function putVersionOneBack(page: Page, pedidos: string) {
   const dialog = page.getByRole('alertdialog')
   await dialog.getByText('Os dados ficam como estão.').waitFor()
   await dialog.getByRole('button', { name: 'Voltar para a Versão 1' }).click()
-  await page.getByText('Versão 1 · no ar').waitFor()
+  await dialog.waitFor({ state: 'hidden' })
 }
 
 /** 5. Deleting Pedidos says the app, its database and its versions go. */
@@ -94,7 +93,8 @@ test('o roteiro de Enviar um app: o Builder envia, gravar, segunda versão, volt
   const pedidos = await pedidosOf(s)
   await firstVersion(s, pedidos.url)
   await opensAppTab(page, pedidos.url, pedidos.door.label)
-  // 2. Abrir app: Recados; a recado written stays for the next visit.
+  // 2. Publicar, then Abrir app: Recados; a recado written stays for the next visit.
+  await publishVersion(s, pedidos.url, 1)
   const app = await openApp(s, pedidos.door, GREEN)
   const written = await visitApp(pedidos.door, app, '/api/escreverRecado', { texto: RECADO })
   assert.equal(written.status, 200)
@@ -103,6 +103,7 @@ test('o roteiro de Enviar um app: o Builder envia, gravar, segunda versão, volt
   await builderSends(s, pedidos.url, 'recados-2')
   await page.goto(`${pedidos.url}?lens=project&section=versions`)
   await page.getByText('Versão 2 · no ar').waitFor()
+  await publishVersion(s, pedidos.url, 2)
   assert.deepEqual(await recados(pedidos.door, await openApp(s, pedidos.door, PURPLE)), [RECADO])
   await putVersionOneBack(page, pedidos.url)
   assert.deepEqual(await recados(pedidos.door, await openApp(s, pedidos.door, GREEN)), [RECADO])

@@ -40,6 +40,7 @@ import { linkKey } from './model-accounts-journey.ts'
 const ANA = { name: 'Ana Lima', email: 'ana@example.test' }
 export const CARLA = { name: 'Carla Dias', email: 'carla@example.test' }
 const OWNER_IP = '198.51.100.10'
+const send = globalThis.fetch
 const FOLDERS = join(import.meta.dirname, '..', '..', 'dist', 'apps')
 export const GREEN = '--cor: #0b6e4f'
 export const PURPLE = '--cor: #6b2fa3'
@@ -150,6 +151,29 @@ async function handoff(s: Scenario, context: BrowserContext, open: URL) {
   const answered = await openOnHub(s.hub.port, `${open.pathname}${open.search}`, cookie)
   assert.equal(answered.status, 303)
   return new URL(answered.location)
+}
+
+/**
+ * Publicar, as the Versões tab's request: the app's tab opens the published version, and the
+ * Prévia's versions are no longer what a tab gets (step 17).
+ */
+export async function publishVersion(s: Scenario, pedidos: string, number: number) {
+  const [, companyId, projectId] =
+    new URL(pedidos).pathname.match(/companies\/(\w+)\/projects\/(\w+)/) ?? []
+  const cookies = await s.owner.context.cookies(TEST_ORIGIN)
+  const answered = await send(
+    `http://127.0.0.1:${s.hub.port}/api/companies/${companyId}/projects/${projectId}/published-version`,
+    {
+      method: 'PUT',
+      headers: {
+        'content-type': 'application/json',
+        origin: TEST_ORIGIN,
+        cookie: cookies.map(({ name, value }) => `${name}=${value}`).join('; '),
+      },
+      body: JSON.stringify({ number }),
+    },
+  )
+  assert.equal(answered.status, 200, await answered.text())
 }
 
 /** Abrir app: the dispatcher sends to the Hub, the Hub's pass comes back, and the app answers. */

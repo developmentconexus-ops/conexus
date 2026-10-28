@@ -37,7 +37,8 @@ const LABEL = 'pedidos--acme'
 const APP = `https://${LABEL}.${APPS_DOMAIN}`
 const ANA = { name: 'Ana Lima', email: 'ana@example.test' }
 const CARLA = { name: 'Carla Dias', email: 'carla@example.test' }
-const GREETING = 'Olá, Carla Dias. Este é o app do Projeto Pedidos.'
+/** A tab opens the published version, and Pedidos has none: the dispatcher's own page (step 17). */
+const NOT_PUBLISHED = 'Este app ainda não foi publicado.'
 
 /** What the Hub received from the browser, one request each. */
 type Seen = {
@@ -233,7 +234,7 @@ test('passagem: o endereço do app sem sessão do Hub leva a Entrar e, logo depo
   assert.equal(new URL(page.url()).pathname, '/login')
   const before = s.seen.length
   await signIn(page, CARLA.email, PASSWORD)
-  await page.getByText(GREETING).waitFor()
+  await page.getByText(NOT_PUBLISHED).waitFor()
   assert.equal(new URL(page.url()).origin, APP)
   const documents = s.seen.slice(before).filter((one) => one.dest === 'document')
   assert.deepEqual(
@@ -252,14 +253,14 @@ test('passagem: o Hub abre o app numa aba nova e ele vai direto ao app, numa nav
   await createPedidos(s, page)
   // The Hub's page opens the app's address in a new tab as Abrir app does; the link itself shows
   // only once a Builder version is on the air, and the apps journey clicks it (`versions.test.ts`).
-  // No version is on the air here, so the dispatcher answers with the example app.
+  // No version is published here, so the dispatcher answers with its not-published page.
   const before = s.seen.length
   const projectAddress = page.url()
   const [app] = await Promise.all([
     page.context().waitForEvent('page'),
     page.evaluate((url) => window.open(url, '_blank', 'noopener,noreferrer'), `${APP}/`),
   ])
-  await app.getByText(GREETING).waitFor()
+  await app.getByText(NOT_PUBLISHED).waitFor()
   assert.equal(page.url(), projectAddress)
   const opened = s.seen.slice(before).filter((one) => one.dest === 'document')
   assert.deepEqual(

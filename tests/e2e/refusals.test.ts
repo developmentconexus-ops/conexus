@@ -13,6 +13,7 @@ import {
   openApp,
   PURPLE,
   pedidosOf,
+  publishVersion,
   RECADO,
   recados,
   scenario,
@@ -70,11 +71,9 @@ async function putVersionTwoBack(page: Page, settings: string) {
     .filter({ hasText: 'Versão 2' })
     .getByRole('button', { name: 'Voltar para esta' })
     .click()
-  await page
-    .getByRole('alertdialog')
-    .getByRole('button', { name: 'Voltar para a Versão 2' })
-    .click()
-  await page.getByText('Versão 2 · no ar').waitFor()
+  const dialog = page.getByRole('alertdialog')
+  await dialog.getByRole('button', { name: 'Voltar para a Versão 2' }).click()
+  await dialog.waitFor({ state: 'hidden' })
 }
 
 test('o roteiro de Recusar um app: não inicia, grava errado, trava, e a versão boa fica', async (t) => {
@@ -85,6 +84,7 @@ test('o roteiro de Recusar um app: não inicia, grava errado, trava, e a versão
   // 1. Recados 1 and 2; a recado written on Versão 2.
   await sent(s, pedidos.url, 'recados-1', 'Versão 1 · no ar')
   await sent(s, pedidos.url, 'recados-2', 'Versão 2 · no ar')
+  await publishVersion(s, pedidos.url, 2)
   const written = await openApp(s, pedidos.door, PURPLE)
   const kept = await visitApp(pedidos.door, written, '/api/escreverRecado', { texto: RECADO })
   assert.equal(kept.status, 200)
@@ -94,6 +94,7 @@ test('o roteiro de Recusar um app: não inicia, grava errado, trava, e a versão
   // 3. The write in `db.query` is on the air and refused; nothing reaches the company's database.
   await sent(s, pedidos.url, 'recados-defeito', 'Versão 4 · no ar')
   assert.equal(await page.getByText('Versão 3', { exact: false }).count(), 0)
+  await publishVersion(s, pedidos.url, 4)
   const defeito = await openApp(s, pedidos.door, GREEN)
   const refused = await visitApp(pedidos.door, defeito, '/api/escreverRecado', { texto: 'Perdido' })
   assert.equal(refused.status, 500)
@@ -102,6 +103,7 @@ test('o roteiro de Recusar um app: não inicia, grava errado, trava, e a versão
   assert.deepEqual(await storedRecados(pedidos.companyDatabase, pedidos.url), [RECADO])
   // 4. Travar: the CPU limit cuts it well before the call's deadline, and the Hub goes on.
   await sent(s, pedidos.url, 'recados-laco', 'Versão 5 · no ar')
+  await publishVersion(s, pedidos.url, 5)
   const laco = await openApp(s, pedidos.door, GREEN)
   const started = Date.now()
   const cut = await visitApp(pedidos.door, laco, '/api/travar', {})
