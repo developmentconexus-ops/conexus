@@ -70,7 +70,8 @@ Owners next door: [architecture](../architecture.md) for concepts and compositio
   behavior; consumers derive it rather than inferring it from timing, text or a stream ending. A value a script
   produces and the Hub reads, such as the template's name, is built by the Hub's own rule, imported.
   A run's result comes from server settlement. Failure: two role maps diverge between server and
-  screen, or a second state map contradicts the library's persisted state. [review]
+  screen, or a second state map contradicts the library's persisted state. A change **must** add
+  no jscpd clone with a side in its changed lines. [review; `npm run quality`]
 
 ## 5. Boundaries and the contract
 
@@ -222,4 +223,6 @@ Owners next door: [architecture](../architecture.md) for concepts and compositio
 - **C76.** A lint suppression **must** name its cause, and the count of suppressions **must** live
   in a committed file that CI compares. [CI]
 - **C77.** Line width and function and file size **must** have maxima in the Biome configuration,
-  applied without suppression. [Biome noExcessiveLinesPerFunction, noExcessiveLinesPerFile]
+  applied without suppression. A function a change touches **must** not exceed Biome cognitive
+  complexity 15, nor raise its score if it already does. [Biome noExcessiveLinesPerFunction,
+  noExcessiveLinesPerFile; `npm run quality`]
