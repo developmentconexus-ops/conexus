@@ -44,10 +44,10 @@ export async function claimForDeletion(tx: CommandTx, ids: Ids): Promise<void> {
  */
 export async function takeBackRepair(
   deps: RemovalDeps,
-  input: Ids & { scope: Scope; versionId: AppVersionId },
+  input: Ids & { scope: Scope; versionIds: readonly AppVersionId[] },
 ): Promise<void> {
-  const { removed } = await removeWorkers(deps.cloudflare, [input.versionId])
-  const dropped = removed.length === 1 && (await dropAppDatabase(deps, input))
+  const { removed } = await removeWorkers(deps.cloudflare, input.versionIds)
+  const dropped = removed.length === input.versionIds.length && (await dropAppDatabase(deps, input))
   if (!dropped) throw new Failure('APP_VERSION_FAILED', { details: { reason: 'TAKE_BACK_LEFT' } })
 }
 

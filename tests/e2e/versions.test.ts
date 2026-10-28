@@ -31,7 +31,7 @@ async function firstVersion(s: Scenario, pedidos: string) {
   await page.goto(`${pedidos}?lens=project&section=versions`)
   await page
     .getByText(
-      'Nenhuma versão foi ao app ainda. Cada versão do Builder que monta aparece aqui; até lá, o endereço mostra o app de exemplo.',
+      'Nenhuma versão ainda. Cada versão que o Builder monta aparece aqui, e o app abre no endereço depois do primeiro Publicar.',
     )
     .waitFor()
   await builderSends(s, pedidos, 'recados-1')

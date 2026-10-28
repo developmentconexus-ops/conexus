@@ -83,7 +83,7 @@ function PhoneTop(props: { slot: (element: HTMLElement | null) => void }) {
     },
   })
   return (
-    <header className="flex min-h-[calc(3.5rem+env(safe-area-inset-top))] items-center gap-sm border-b border-line bg-surface px-md pt-[env(safe-area-inset-top)] md:hidden">
+    <header className="flex min-h-[calc(3.5rem+env(safe-area-inset-top))] items-center gap-sm border-b border-line bg-canvas px-md pt-[env(safe-area-inset-top)] md:hidden">
       <SidebarTrigger label="Abrir navegação">
         <MenuIcon aria-hidden="true" />
       </SidebarTrigger>

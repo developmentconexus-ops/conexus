@@ -101,7 +101,7 @@ export function Preview({
   const [notice, setNotice] = useState<NoticeState>(() =>
     storage.getItem(NOTICE_CLOSED) === 'true' ? 'closed' : 'open',
   )
-  const { address, appVersion } = project
+  const { address, appVersion, publishedVersion } = project
   if (appVersion === null || address === null) return <Stage />
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -130,7 +130,7 @@ export function Preview({
         >
           <TriangleAlertIcon className="size-4 shrink-0" aria-hidden="true" />
           <p className="min-w-0 flex-1">O app pode não abrir aqui dentro neste navegador.</p>
-          <AppLink address={address} />
+          {publishedVersion !== null && <AppLink address={address} />}
           <Button
             aria-label="Fechar aviso"
             onClick={() => {

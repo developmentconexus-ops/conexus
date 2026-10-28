@@ -9,7 +9,7 @@ import type {
   PersonId,
   ProjectId,
 } from '@conexus/hub-api'
-import { appWorkerOf } from '@conexus/hub-api'
+import { appWorkerOf, AppVersionId as VersionId } from '@conexus/hub-api'
 import { eq } from 'drizzle-orm'
 import type { CloudflareApps, WorkerFile } from '../../platform/cloudflare.ts'
 import type { CommandTx, ReadTx, Scope } from '../../platform/database.ts'
@@ -181,7 +181,10 @@ function finish(deps: SendDeps, sending: Sending & { personId: PersonId }) {
         databaseReady: true,
       })
       .where(eq(app.projectId, sending.projectId))
-    const keep = [sending.versionId, held.publishedVersionId].filter((id) => id !== null)
+    const keep =
+      held.publishedVersionId === null
+        ? [sending.versionId]
+        : [sending.versionId, VersionId.parse(held.publishedVersionId)]
     await markPrune(tx, { ...sending, keep })
     return { kind: 'LIVE' } as const
   })

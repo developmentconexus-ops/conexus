@@ -87,8 +87,8 @@ export function Versions(scope: Scope) {
       )}
       {read.data?.versions.length === 0 && (
         <Empty>
-          Nenhuma versão foi ao app ainda. Cada versão do Builder que monta aparece aqui; até lá, o
-          endereço mostra o app de exemplo.
+          Nenhuma versão ainda. Cada versão que o Builder monta aparece aqui, e o app abre no
+          endereço depois do primeiro Publicar.
         </Empty>
       )}
       {read.data !== undefined && read.data.versions.length > 0 && (

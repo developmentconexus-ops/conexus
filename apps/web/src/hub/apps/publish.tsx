@@ -5,7 +5,7 @@ import { UploadIcon } from 'lucide-react'
 import { useState } from 'react'
 import { HubFailure, sentenceOf } from '../../platform/hub.ts'
 import { AlertDialog, AlertDialogContent, AlertDialogTrigger } from '../../ui/alert-dialog.tsx'
-import { Button, buttonVariants } from '../../ui/button.tsx'
+import { Button } from '../../ui/button.tsx'
 import { publishVersion } from './queries.ts'
 
 /**
@@ -53,11 +53,7 @@ export function Publish(props: {
       <AlertDialogTrigger
         render={
           label === 'Publicar' ? (
-            <button
-              type="button"
-              aria-label="Publicar"
-              className={buttonVariants({ variant: 'primary', phoneIcon: true })}
-            />
+            <Button variant="primary" phoneIcon aria-label="Publicar" />
           ) : (
             <Button />
           )
