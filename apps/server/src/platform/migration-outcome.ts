@@ -35,7 +35,7 @@ $cx$
 export const OUTCOME_AFTER = {
   text: `
 DO $cx$
-DECLARE c record; lost bigint; now_typ oid; now_mod int; old_p int; old_s int; now_p int; now_s int;
+DECLARE c record; lost bigint; now_typ oid; now_mod int; old_p int; old_s int; now_p int; now_s int; fewer boolean;
 BEGIN
   FOR c IN SELECT * FROM cx_col LOOP
     SELECT a.atttypid, a.atttypmod INTO now_typ, now_mod FROM pg_catalog.pg_attribute a
@@ -69,6 +69,12 @@ BEGIN
     EXCEPTION WHEN OTHERS THEN lost := -1;
     END;
     IF lost <> 0 THEN
+      -- Whole rows gone name no column: the first one to lose values is only the first in the catalog.
+      EXECUTE pg_catalog.format('SELECT (SELECT pg_catalog.count(*) FROM %I) > (SELECT pg_catalog.count(*) FROM %I)',
+                     'cx_rows_' || c.rel, c.tab) INTO fewer;
+      IF fewer THEN
+        RAISE EXCEPTION 'data lost: saved rows of % removed', c.tab USING ERRCODE = 'CX002', TABLE = c.tab;
+      END IF;
       RAISE EXCEPTION 'data lost: % saved value(s) of %.% changed or removed',
         CASE WHEN lost < 0 THEN 'some' ELSE lost::text END, c.tab, c.col
         USING ERRCODE = 'CX002', TABLE = c.tab, COLUMN = c.col;

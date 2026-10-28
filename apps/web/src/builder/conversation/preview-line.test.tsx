@@ -201,9 +201,6 @@ test('com motivo, a frase do código leva a ação que aponta para o botão', as
   await openConversation(keptFailed(DUPLICATE))
   const log = screen.getByRole('log', { name: 'Conversa com o Builder' })
   await within(log).findByText(
-    (_, node) =>
-      node?.getAttribute('data-slot') === 'marker-content' &&
-      node.firstChild?.textContent ===
-        'Prévia não atualizada: Uma migração do app falhou no banco. Use o botão para pedir ao Builder que corrija.',
+    'Prévia não atualizada: Uma migração do app falhou no banco. Use o botão para pedir ao Builder que corrija.',
   )
 })

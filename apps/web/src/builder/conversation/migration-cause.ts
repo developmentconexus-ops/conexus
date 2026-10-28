@@ -12,17 +12,25 @@ const WORDS: Readonly<Record<string, string>> = {
   CX002: 'um valor salvo mudaria ou sumiria',
 }
 
+/** A `CX002` that names no column: the guarantee found whole rows gone, not one value changed. */
+const ROWS_GONE = 'linhas salvas seriam apagadas'
+
 /** The cause in words, without a value: the SQLSTATE's words, then the names the database gave. */
 export function reasonOf(cause: MigrationCause): string {
   if (cause.kind === 'rule') {
     return `a migração ${cause.migration}, comando ${cause.statement}, faz o que o Conexus não confere (${cause.subject})`
   }
+  const rowsGone =
+    cause.sqlstate === 'CX002' && cause.table !== undefined && cause.column === undefined
   const names = [
     cause.table === undefined ? undefined : `tabela ${cause.table}`,
     cause.column === undefined ? undefined : `coluna ${cause.column}`,
     cause.constraint === undefined ? undefined : `regra ${cause.constraint}`,
   ]
-  return [WORDS[cause.sqlstate] ?? `código ${cause.sqlstate}`, ...names.filter(Boolean)].join(', ')
+  return [
+    rowsGone ? ROWS_GONE : (WORDS[cause.sqlstate] ?? `código ${cause.sqlstate}`),
+    ...names.filter(Boolean),
+  ].join(', ')
 }
 
 /** The sentence the button puts in the box for the Builder. */
