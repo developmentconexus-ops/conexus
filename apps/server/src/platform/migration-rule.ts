@@ -131,7 +131,7 @@ function firstIn(node: unknown, visit: (tree: Tree) => string | undefined): stri
  * A table named with a schema, or by a name the Hub's transaction owns: the snapshot (`cx_`) or the
  * ledger. Either could fool the outcome check.
  */
-function outsideTheApp(node: Node): string | undefined {
+function outsideTheApp(node: unknown): string | undefined {
   return firstIn(node, (tree) => {
     if (typeof tree.relname !== 'string') return undefined
     if (typeof tree.schemaname === 'string') return `${tree.schemaname}.${tree.relname}`
@@ -160,10 +160,15 @@ function functionPower(fn: CreateFunctionStmt, text: string): string | undefined
   return plpgsqlPower(text, returnsTrigger)
 }
 
-/** A body that changes another row: anything past reading and inserting, an upsert included. */
+/**
+ * A body that changes another row: anything past reading and inserting, an upsert included, or a
+ * name outside the app.
+ */
 function bodyPower(sql: string): string | undefined {
   const read = readWith(parseSync, sql)
   if (!('tree' in read)) return 'UNREADABLE'
+  const outside = outsideTheApp(read.tree)
+  if (outside !== undefined) return `name ${outside}`
   return firstIn(read.tree, (node) => {
     for (const [key, value] of Object.entries(node)) {
       // A node's kind starts upper case; `selectStmt` is a field of `InsertStmt`.
@@ -177,8 +182,9 @@ function bodyPower(sql: string): string | undefined {
 }
 
 /**
- * A PL/pgSQL body's power: dynamic SQL, a statement that changes another row, an error that refuses
- * the write, or a `RETURN` of anything but `NEW`, which drops or replaces a trigger's row.
+ * A PL/pgSQL body's power: dynamic SQL, a statement that changes another row, an error or an
+ * `ASSERT` that refuses the write, or a `RETURN` of anything but `NEW`, which drops or replaces a
+ * trigger's row.
  */
 function plpgsqlPower(statement: string, returnsTrigger: boolean): string | undefined {
   const read = readWith(parsePlPgSQLSync, statement)
@@ -195,6 +201,7 @@ function plpgsqlPower(statement: string, returnsTrigger: boolean): string | unde
   }
   return firstIn(fn?.action, (node) => {
     if (DYNAMIC.some((key) => key in node)) return 'EXECUTE'
+    if ('PLpgSQL_stmt_assert' in node) return 'ASSERT'
     const { PLpgSQL_stmt_raise: raise, PLpgSQL_stmt_return: ret, PLpgSQL_expr: expr } = node
     if (isTree(raise) && Number(raise.elog_level) >= ERROR_LEVEL) return 'RAISE EXCEPTION'
     if (isTree(ret) && returnsOther(ret)) return 'RETURN not NEW'
