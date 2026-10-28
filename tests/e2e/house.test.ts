@@ -164,7 +164,10 @@ async function anaAccepts(page: Page, next: () => Promise<Parameters<typeof link
   await page
     .getByText('Só o dono ou um administrador muda as contas de modelo da empresa.')
     .waitFor()
-  await page.getByText('Conta da padaria').waitFor()
+  await page
+    .getByRole('region', { name: 'Contas da empresa' })
+    .getByText('Conta da padaria')
+    .waitFor()
 }
 
 /** Script step 6: the switch to Empresa A is remembered across signing out and in; then a phone. */
