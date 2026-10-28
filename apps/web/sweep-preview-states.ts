@@ -122,4 +122,25 @@ export const PREVIEW_STATES: State[] = [
     ]),
     settle: (p) => inChat(p, 'Prévia não atualizada:'),
   },
+  {
+    name: 'Conversa, com a Prévia que o banco recusou',
+    path: `${PROJECT}/conversations/${ID}`,
+    replies: turnOf([
+      {
+        type: 'data-conexus-preview',
+        data: {
+          state: 'failed',
+          number: 7,
+          code: 'APP_MIGRATION_FAILED',
+          cause: {
+            kind: 'database',
+            sqlstate: '23505',
+            table: 'encomenda',
+            constraint: 'encomenda_whatsapp_key',
+          },
+        },
+      },
+    ]),
+    settle: (p) => inChat(p, 'Pedir ao Builder para corrigir'),
+  },
 ]
