@@ -145,6 +145,24 @@ test('Troca automática: o foco não é tomado ao abrir e volta à chave depois 
   expect(screen.getByRole('switch', { name: SWITCH }).getAttribute('aria-checked')).toBe('true')
 })
 
+test('Troca automática: depois da chave, o foco de uma seta fica na seta e não volta à chave', async () => {
+  const shown = view({ fallback: { enabled: false, chain: [SONNET, GPT], revision: 0 } })
+  const { sent } = open(shown)
+  fireEvent.click(await screen.findByRole('switch', { name: SWITCH }))
+  await waitFor(() => expect(sent).toHaveLength(1))
+  await waitFor(() =>
+    expect(document.activeElement).toBe(screen.getByRole('switch', { name: SWITCH })),
+  )
+  const down = await screen.findByLabelText('Descer Claude Sonnet 4')
+  await waitFor(() => expect(down).toHaveProperty('disabled', false))
+  down.focus()
+  fireEvent.click(down)
+  await waitFor(() => expect(sent).toHaveLength(2))
+  await waitFor(() =>
+    expect(document.activeElement).toBe(screen.getByLabelText('Subir Claude Sonnet 4')),
+  )
+})
+
 test('Troca automática: descer troca com o próximo, diz o lugar novo e mostra a posição de cada modelo', async () => {
   const shown = view({ fallback: { enabled: true, chain: [SONNET, GPT], revision: 0 } })
   const { sent } = open(shown)
