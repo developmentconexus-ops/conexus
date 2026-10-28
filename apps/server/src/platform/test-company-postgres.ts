@@ -117,9 +117,12 @@ async function asMigrateLogin<T>(
   const client = new pg.Client({ connectionString: owner.reveal() })
   await client.connect()
   try {
-    await client.query(`set role "${migrateLogin}"`)
-    await client.query(`set search_path = "${schema}"`)
-    return await act(client)
+    await client.query('begin')
+    await client.query(`set local role "${migrateLogin}"`)
+    await client.query(`set local search_path = "${schema}"`)
+    const done = await act(client)
+    await client.query('commit')
+    return done
   } finally {
     await client.end()
   }
