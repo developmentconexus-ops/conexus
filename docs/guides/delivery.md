@@ -18,7 +18,9 @@ merge.
 
 - **L1.** Product work **should** have one step in construction; study/scope of the next step and
   a draft method change can run beside it without product code. A sibling step (12.1, 12.2) builds
-  only after the previous one merges. Failure: two stages approve incompatible forms of one
+  only after the previous one merges, but once a card is approved (L6), its units that touch none of
+  the files of the previous step's fixes may start, built from that card's pull request, while the
+  use, fixes and closing of the previous step run beside them. Founder, 2026-10-27: "1. Sim". Failure: two stages approve incompatible forms of one
   contract before anyone uses it. [review]
 - **L2.** A step **should** be usable within a few days, with about 4,000 changed code lines excluding
   tests/generated files, calibrated at step 5; split before build when it exceeds that budget.
@@ -31,9 +33,11 @@ merge.
 ## 2. The card
 
 - **L5.** `docs/steps/` **must** hold one file: the card of the step in construction. The next card
-  waits in a draft pull request and enters when the current step closes. [check-docs]
+  waits in its own draft pull request, its units built on their branches once approved, and enters
+  when the current step closes. [check-docs]
 - **L6.** The founder **must** approve the card's page in Portuguese, recorded in the approvals
-  ledger with his words, the date and the card's commit. [CI]
+  ledger with his words, the date and the card's commit. A mid-step decision of his goes straight into the ledger, with no new card approval. Founder,
+  2026-10-27: "3. Sim". [CI]
 - **L7.** A unit **should** follow its card's folders and contract owners, declaring direct
   consequences of an approved contract/guard in the build report rather than stopping for a missing
   path. A change to visible behavior or scope returns to the card and founder. Founder,
@@ -82,7 +86,8 @@ merge.
 - **L13.** Each unit **must** enter `main` as its own merge, by firstmate, after the tests pass and
   its review approves the same commit. Founder, 2026-10-13: "1 ok"; 2026-10-25: "3. A". The card's
   pull request and a proof's decision record carry documents only; the closing pull request adds
-  the founder's text review and the reviews' follow-ups, as 14.1 and 14.2 did.
+  the founder's text review and the reviews' follow-ups, as 14.1 and 14.2 did. One founder merge word covers a step's units; review and CI still gate each.
+  Founder, 2026-10-27: "2. Sim".
   The merge **must** keep the commits, so a cited commit exists on `main`. [firstmate's merge script]
 - **L14.** GitHub does not protect `main` in this repository. Nobody but firstmate **may** merge into
   `main`, always through firstmate's merge script, and only after the CI job reported green on that
@@ -97,7 +102,7 @@ merge.
 - **L17.** After the merge, the step **must** be published on the cloud installation, checked live by
   firstmate, item by item through the card's use script, before the founder is told, and used by
   the founder through the card's use script. His words, the date and the address go in the
-  approvals ledger, and only then **may** the next step start. Founder, 2026-10-12. Publishing is a GitHub Release firstmate creates after the merge, with CI green and a
+  approvals ledger, and only then **may** the next step start, but for the units of L1. Founder, 2026-10-12. Publishing is a GitHub Release firstmate creates after the merge, with CI green and a
   note of what the step delivers: `v0.N.0` for step N, `v0.N.P` for a fix of it, `v1.0.0` with
   the first company [0035]. A proof **must not** spend a name of this scheme; the card names the
   releases its proof creates. Failed use leaves the step open for a fix. [CI]
@@ -146,7 +151,7 @@ merge.
 | `docs/guides/security.md` | 3,000 |
 | `docs/guides/data.md`, `design.md` | 2,500 |
 | `docs/guides/testing.md`, `web.md` | 2,000 |
-| `docs/guides/delivery.md` | 1,800 |
+| `docs/guides/delivery.md` | 1,900 |
 | `docs/decisions/*.md` | 350 |
 | `docs/steps/*.md` | none (L21), nor on the founder's page |
 | `docs/how-to/*.md` | 800 |

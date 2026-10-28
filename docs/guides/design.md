@@ -217,6 +217,11 @@ The brand piece retains Encaixe, the mark's pieces separating and fitting while 
   pt-BR labels for icon-only buttons. Failure: a screen reader announces only "button" with no
   purpose. Syntactic a11y lint does not prove name quality or language. [review]
 
+- **V32.** A control's drawn height **should** be 32px, and 28px for the action of one row; it does
+  not grow on a narrow screen. On a touch screen (`pointer: coarse`) the touch reaches at least
+  44 × 44px without drawing the control larger. Menu items, list rows and fields keep their own
+  scale. Founder, 2026-10-27: "Aprovado". [`phone.layout.test.ts`, `pieces.layout.test.ts`, review]
+
 ## Iconography
 
 - **V34.** Size follows the neighbour: 14px in toolbars, 16px inline, 18px in the rail.
