@@ -3,6 +3,7 @@ import { CSPProvider } from '@base-ui/react/csp-provider'
 import { createRoot } from 'react-dom/client'
 import { ConexusMark } from '../brand/mark.tsx'
 import { Bubble, BubbleContent } from './bubble.tsx'
+import { Button } from './button.tsx'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './collapsible.tsx'
 import {
   Combobox,
@@ -16,6 +17,7 @@ import {
   ComboboxList,
   ComboboxValue,
 } from './combobox.tsx'
+import { Input } from './input.tsx'
 import {
   InputGroup,
   InputGroupAddon,
@@ -69,6 +71,13 @@ function Pieces() {
             <TabsContent value="project">Projeto</TabsContent>
           </Tabs>
           <ConexusMark working size={48} />
+          <div className="flex flex-wrap items-center gap-lg p-lg">
+            <Button>Padrão</Button>
+            <Button size="sm">Pequeno</Button>
+            <Button size="icon" aria-label="Ícone" />
+            <Button size="icon-sm" aria-label="Ícone pequeno" />
+            <Input aria-label="Campo" />
+          </div>
         </ResizablePanel>
         <ResizableHandle aria-label="Redimensionar" />
         <ResizablePanel id="chat" defaultSize="40%" minSize="20%">
