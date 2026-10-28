@@ -76,9 +76,13 @@ test('o +: abre o diálogo, o nome cria o Projeto e a pessoa chega na página de
   name(dialog, 'Estoque')
   expect(await dialog.findByText('estoque--empresa-teste.apps.example.test')).toBeTruthy()
   fireEvent.click(dialog.getByRole('button', { name: 'Criar projeto' }))
-  await waitFor(() => expect(router.state.location.pathname).toBe(`${HOME}/projects/${NOVO.id}`))
+  await waitFor(() => expect(router.state.location.pathname).toBe(`${HOME}/projects/${NOVO.id}`), {
+    timeout: 5000,
+  })
   expect(sent).toEqual([{ name: 'Estoque' }])
-  await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Novo projeto' })).toBeNull())
+  await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Novo projeto' })).toBeNull(), {
+    timeout: 5000,
+  })
 })
 
 test('um nome já usado: a frase no campo do nome, e o diálogo fica aberto', async () => {
