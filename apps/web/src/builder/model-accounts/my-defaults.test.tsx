@@ -242,9 +242,6 @@ test('com padrão próprio e com o da empresa também, "Você segue o padrão da
 })
 
 test('o modelo de um nível só não mostra no seletor o nível que ficou salvo', async () => {
-  const offered = (efforts: string[]) => [
-    { id: 'anthropic', name: 'Anthropic', models: [{ id: SONNET, efforts }] },
-  ]
   const saved = { model: SONNET, effort: 'medium' }
   const defaults = {
     company: null,
@@ -252,7 +249,15 @@ test('o modelo de um nível só não mostra no seletor o nível que ficou salvo'
     start: { ...saved, from: 'mine' as const, account: 'Minha Claude' },
     companyStart: null,
   }
-  await open(view({ defaults, choices: { mine: offered(['low']), company: [] } }))
+  await open(
+    view({
+      defaults,
+      choices: {
+        mine: [{ id: 'anthropic', name: 'Anthropic', models: [{ id: SONNET, efforts: ['low'] }] }],
+        company: [],
+      },
+    }),
+  )
   await screen.findByText(/Uma conversa nova começa em:/)
   expect(screen.queryByText('Médio', { selector: 'span' })).toBeNull()
 })

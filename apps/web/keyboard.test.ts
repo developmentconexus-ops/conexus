@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
-import type { ModelAccount } from '@conexus/hub-api'
-import { setConversationModel } from '@conexus/hub-api'
+import {
+  listModelAccounts,
+  ModelFallback,
+  orderModelAccounts,
+  setConversationModel,
+} from '@conexus/hub-api'
 import type { Replies } from './layout-harness.ts'
 import { createHarness, DESKTOP, ok, presses } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
@@ -170,14 +174,14 @@ test('as filas, pelo teclado: depois de Subir ou Descer o foco fica na seta ou n
   const replies = withAccounts(OWNER, true)
   const read = replies[`GET ${accountsPath}`]
   assert.ok(read)
-  const held = read.json as { company: ModelAccount[]; fallback: unknown }
+  const held = listModelAccounts.success.body.parse(read.json)
   const state = {
     ...held,
-    fallback: {
+    fallback: ModelFallback.parse({
       enabled: true,
       chain: ['anthropic/claude-sonnet-4', 'openai/gpt-5'],
       revision: 0,
-    },
+    }),
   }
   const page = await harness.open(`/companies/${COMPANY.id}/settings/model-accounts`, {
     viewport: DESKTOP,
@@ -185,12 +189,12 @@ test('as filas, pelo teclado: depois de Subir ou Descer o foco fica na seta ou n
   })
   await page.route(`**${accountsPath}`, (route) => route.fulfill({ json: state }))
   await page.route('**/model-fallback', async (route) => {
-    const body = route.request().postDataJSON() as typeof state.fallback
+    const body = ModelFallback.parse(route.request().postDataJSON())
     state.fallback = { ...body, revision: body.revision + 1 }
     await route.fulfill({ json: state.fallback })
   })
   await page.route('**/model-account-orders/**', async (route) => {
-    const { ids } = route.request().postDataJSON() as { ids: string[] }
+    const { ids } = orderModelAccounts.input.body.parse(route.request().postDataJSON())
     state.company = state.company.map((one) =>
       ids.includes(one.id) ? { ...one, position: ids.indexOf(one.id) } : one,
     )

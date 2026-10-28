@@ -233,7 +233,7 @@ test('Troca automática: depois de tirar ou adicionar, o foco fica na seção e 
   fireEvent.click(await screen.findByLabelText('Tirar GPT 5'))
   await waitFor(() => expect(sent).toHaveLength(1))
   await waitFor(() => expect(document.activeElement).toBe(section))
-  ;(document.activeElement as HTMLElement).blur()
+  section.blur()
   await addModel('Claude Opus 4')
   await waitFor(() => expect(document.activeElement).toBe(section))
 })
