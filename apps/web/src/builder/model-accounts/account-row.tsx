@@ -81,14 +81,14 @@ export function AccountRow(props: Props) {
           {placeText(props.place)}
         </TableCell>
         <TableCell className="whitespace-normal px-sm">
-          <span className="flex flex-col gap-xs">
+          <span className="flex flex-wrap items-baseline gap-x-sm gap-y-xs">
             <span className="wrap-anywhere font-medium">{account.label}</span>
             <span className="wrap-anywhere font-mono text-fact text-text-2">
               {originText(account)}
               {reserved && ` · ${audienceText(account, props.people)}`}
             </span>
             {phone && (
-              <span>
+              <span className="basis-full">
                 <Badge tone={stateTone(account)}>{stateText(account)}</Badge>
               </span>
             )}

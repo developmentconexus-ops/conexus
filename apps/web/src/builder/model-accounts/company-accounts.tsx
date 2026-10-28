@@ -47,7 +47,18 @@ export function CompanyAccounts() {
       aria-label="Contas da empresa"
       className="flex w-full flex-col gap-lg"
     >
-      <SectionTitle>Contas da empresa</SectionTitle>
+      <div className="flex flex-wrap items-start justify-between gap-md">
+        <SectionTitle>Contas da empresa</SectionTitle>
+        {mayManage && (
+          <LinkAccount
+            companyId={companyId}
+            owner="company"
+            hasAccounts={company.length > 0}
+            providers={providers}
+            kinds={accounts.kinds}
+          />
+        )}
+      </div>
       {!mayManage && (
         <p className="text-text-2">
           Só o dono ou um administrador muda as contas de modelo da empresa.
@@ -71,15 +82,6 @@ export function CompanyAccounts() {
             />
           ))}
         </AccountsTable>
-      )}
-      {mayManage && (
-        <LinkAccount
-          companyId={companyId}
-          owner="company"
-          hasAccounts={company.length > 0}
-          providers={providers}
-          kinds={accounts.kinds}
-        />
       )}
     </section>
   )
