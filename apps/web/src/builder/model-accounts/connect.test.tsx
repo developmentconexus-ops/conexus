@@ -1,7 +1,7 @@
 import type { SignInKind } from '@conexus/hub-api'
 import { FAILURES } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse } from 'msw'
 import { expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
@@ -31,8 +31,22 @@ function open(kinds: SignInKind[], answers: Answers = {}) {
   return hub.sent
 }
 
+/** The company's "Ligar conta", the page's second: the person's own is above it. */
+function pageButton() {
+  return within(screen.getByRole('region', { name: 'Contas da empresa' })).getByRole('button', {
+    name: 'Ligar conta',
+  })
+}
+
+function submit() {
+  return within(screen.getByRole('region', { name: 'Ligar conta' })).getByRole('button', {
+    name: 'Ligar conta',
+  })
+}
+
 async function openPanel() {
-  fireEvent.click(await screen.findByRole('button', { name: 'Ligar conta' }))
+  await screen.findByRole('region', { name: 'Contas da empresa' })
+  fireEvent.click(pageButton())
   return screen.findByRole('region', { name: 'Ligar conta' })
 }
 
@@ -63,7 +77,7 @@ test('Ligar conta: busca o fornecedor, "Ligando…", manda o corpo com a chave d
   expect(screen.getByText('Escolhido: Mistral')).toBeTruthy()
   expect(screen.getByLabelText('Chave de API').getAttribute('type')).toBe('password')
   held.resolve()
-  fireEvent.click(screen.getByRole('button', { name: 'Ligar conta' }))
+  fireEvent.click(submit())
   expect(await screen.findByText('Time 3 · chave …9f3A · ligada')).toBeTruthy()
   expect(sent[0]?.body).toEqual({
     owner: 'company',
@@ -74,9 +88,7 @@ test('Ligar conta: busca o fornecedor, "Ligando…", manda o corpo com a chave d
   expect(sent[0]?.attemptKey).toBeTruthy()
   expect(document.body.textContent).not.toContain(KEY)
   expect(screen.queryByDisplayValue(KEY)).toBeNull()
-  await waitFor(() =>
-    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Ligar conta' })),
-  )
+  await waitFor(() => expect(document.activeElement).toBe(pageButton()))
 })
 
 test('"Ligando…" desliga o botão enquanto o Hub não respondeu', async () => {
@@ -89,7 +101,7 @@ test('"Ligando…" desliga o botão enquanto o Hub não respondeu', async () => 
   })
   await openPanel()
   await fillKey('Time 3')
-  fireEvent.click(screen.getByRole('button', { name: 'Ligar conta' }))
+  fireEvent.click(submit())
   expect(await screen.findByRole('button', { name: 'Ligando…' })).toHaveProperty('disabled', true)
   held.resolve()
   expect(await screen.findByText('Time 3 · chave …9f3A · ligada')).toBeTruthy()
@@ -104,7 +116,7 @@ for (const [code, field] of [
     open([], { connect: () => refusal(code) })
     await openPanel()
     await fillKey('Time 3')
-    fireEvent.click(screen.getByRole('button', { name: 'Ligar conta' }))
+    fireEvent.click(submit())
     expect((await screen.findByText(FAILURES[code].phrase)).getAttribute('role')).toBe('alert')
     await waitFor(() =>
       expect(screen.getByLabelText(field).getAttribute('aria-invalid')).toBe('true'),
@@ -124,17 +136,17 @@ test('resposta cortada: a chave de tentativa fica e a nova tentativa a leva; dep
   })
   await openPanel()
   await fillKey('Time 3')
-  fireEvent.click(screen.getByRole('button', { name: 'Ligar conta' }))
+  fireEvent.click(submit())
   expect(await screen.findByText('Não confirmamos a ligação. Tente de novo.')).toBeTruthy()
   cut = false
-  fireEvent.click(screen.getByRole('button', { name: 'Ligar conta' }))
+  fireEvent.click(submit())
   await screen.findByText('Time 3 · chave …9f3A · ligada')
   expect(sent).toHaveLength(2)
   expect(sent[1]?.attemptKey).toBe(sent[0]?.attemptKey)
 
   await openPanel()
   await fillKey('Time 4')
-  fireEvent.click(screen.getByRole('button', { name: 'Ligar conta' }))
+  fireEvent.click(submit())
   await waitFor(() => expect(sent).toHaveLength(3))
   expect(sent[2]?.attemptKey).not.toBe(sent[0]?.attemptKey)
 })
@@ -145,7 +157,7 @@ test('Esc fecha o painel e o foco volta ao botão Ligar conta', async () => {
   await waitFor(() => expect(document.activeElement).toBe(panel))
   fireEvent.keyDown(panel, { key: 'Escape' })
   await waitFor(() => expect(screen.queryByRole('region', { name: 'Ligar conta' })).toBeNull())
-  expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Ligar conta' }))
+  expect(document.activeElement).toBe(pageButton())
 })
 
 test('Entrar com assinatura só oferece os tipos abertos', async () => {

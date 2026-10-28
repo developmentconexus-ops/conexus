@@ -9,7 +9,7 @@ import { accountsQuery, providersQuery } from './queries.ts'
 import { Queue } from './queue.tsx'
 import { providerName, providersOf, queueOf } from './text.ts'
 
-const route = getRouteApi('/_app/companies/$companyId_/settings/my-model-accounts')
+const route = getRouteApi('/_app/companies/$companyId_/settings')
 
 /** "Sua ordem para Anthropic: Time 2, Time 1": the person's own, then those given, then the company's. */
 function OrderLine(props: {
@@ -25,8 +25,8 @@ function OrderLine(props: {
 }
 
 /**
- * "Minhas contas de modelo": the person's own accounts in this company, which they link, order,
- * pause, rename and remove, and the order each provider is tried in for them.
+ * "Suas contas": the person's own accounts in this company, which they link, order, pause, rename
+ * and remove, and the order each provider is tried in for them.
  */
 export function MyAccounts() {
   const { companyId } = route.useParams()
@@ -35,7 +35,28 @@ export function MyAccounts() {
   const section = useRef<HTMLElement>(null)
   const { mine, company } = accounts
   return (
-    <div className="flex flex-col gap-xl">
+    <section
+      ref={section}
+      tabIndex={-1}
+      aria-label="Suas contas"
+      className="flex w-full flex-col gap-lg"
+    >
+      <SectionTitle>Suas contas</SectionTitle>
+      {mine.length === 0 && <Empty>Nenhuma conta sua</Empty>}
+      {providersOf(mine).map((provider) => (
+        <Queue
+          key={provider}
+          companyId={companyId}
+          owner="me"
+          provider={provider}
+          providerName={providerName(providers, provider)}
+          accounts={queueOf(mine, provider)}
+          people={[]}
+          powers={{ act: true, assign: false }}
+          canOrder
+          onRemoved={() => section.current?.focus()}
+        />
+      ))}
       {accounts.order.length > 0 && (
         <ul className="flex flex-col gap-xs">
           {accounts.order.map((entry) => (
@@ -48,35 +69,7 @@ export function MyAccounts() {
           ))}
         </ul>
       )}
-      <section
-        ref={section}
-        tabIndex={-1}
-        aria-label="Suas contas"
-        className="flex w-full flex-col gap-lg"
-      >
-        <SectionTitle>Suas contas</SectionTitle>
-        {mine.length === 0 && <Empty>Nenhuma conta sua</Empty>}
-        {providersOf(mine).map((provider) => (
-          <Queue
-            key={provider}
-            companyId={companyId}
-            owner="me"
-            provider={provider}
-            providerName={providerName(providers, provider)}
-            accounts={queueOf(mine, provider)}
-            people={[]}
-            powers={{ act: true, assign: false }}
-            canOrder
-            onRemoved={() => section.current?.focus()}
-          />
-        ))}
-        <LinkAccount
-          companyId={companyId}
-          owner="me"
-          providers={providers}
-          kinds={accounts.kinds}
-        />
-      </section>
-    </div>
+      <LinkAccount companyId={companyId} owner="me" providers={providers} kinds={accounts.kinds} />
+    </section>
   )
 }

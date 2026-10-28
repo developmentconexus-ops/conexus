@@ -43,10 +43,55 @@ function labelsInOrder() {
     .filter((first) => first && 'ABCD'.includes(first))
 }
 
+test('as suas em cima, as da empresa embaixo, e a troca por último', async () => {
+  open(
+    view({
+      company: [accountOf({ label: 'Time 1', position: 0 })],
+      mine: [accountOf({ label: 'Minha 1', owner: 'me', position: 0 })],
+    }),
+  )
+  await screen.findByText('Time 1')
+  const headings = within(screen.getByRole('main'))
+    .getAllByRole('heading')
+    .map((one) => one.textContent)
+  expect(headings.filter((name) => name !== 'Anthropic')).toEqual([
+    'Contas de modelo',
+    'Suas contas',
+    'Contas da empresa',
+    'Troca automática',
+  ])
+  const mine = screen.getByRole('region', { name: 'Suas contas' })
+  const company = screen.getByRole('region', { name: 'Contas da empresa' })
+  expect(within(mine).getByText('Minha 1')).toBeTruthy()
+  expect(within(company).getByText('Time 1')).toBeTruthy()
+  expect(within(mine).getByRole('button', { name: 'Ligar conta' })).toBeTruthy()
+  expect(within(company).getByRole('button', { name: 'Ligar conta' })).toBeTruthy()
+  expect(screen.getByRole('region', { name: 'Troca automática' })).toBeTruthy()
+})
+
+test('o membro lê as da empresa e age nas dele, sem link para outra página', async () => {
+  const { sent } = open(
+    view({
+      mayManage: false,
+      company: [accountOf({ label: 'Time 1', position: 0 })],
+      mine: [accountOf({ label: 'Minha 1', owner: 'me', position: 0 })],
+    }),
+  )
+  const company = await screen.findByRole('region', { name: 'Contas da empresa' })
+  expect(within(company).getByText('Time 1')).toBeTruthy()
+  expect(within(company).getByText(/Só o dono ou um administrador muda as contas/)).toBeTruthy()
+  expect(within(company).queryByRole('button')).toBeNull()
+  expect(within(screen.getByRole('main')).queryByRole('link')).toBeNull()
+  fireEvent.click(screen.getByRole('button', { name: 'Pausar Minha 1' }))
+  expect(await screen.findByRole('button', { name: 'Retomar Minha 1' })).toBeTruthy()
+  expect(sent.map((one) => one.method)).toEqual(['PATCH'])
+})
+
 test('vazio: "Nenhuma conta ligada" e Ligar conta, para quem pode', async () => {
   open(view())
-  expect(await screen.findByText('Nenhuma conta ligada')).toBeTruthy()
-  expect(screen.getByRole('button', { name: 'Ligar conta' })).toBeTruthy()
+  const company = await screen.findByRole('region', { name: 'Contas da empresa' })
+  expect(within(company).getByText('Nenhuma conta ligada')).toBeTruthy()
+  expect(within(company).getByRole('button', { name: 'Ligar conta' })).toBeTruthy()
 })
 
 test('cada conta diz o estado em palavras: para todos, reservada, pausada, recusada, desligada', async () => {
@@ -232,7 +277,7 @@ test('Remover: o aviso do Console, Esc devolve o foco, e a confirmação apaga a
   expect(await screen.findByText('Nenhuma conta ligada')).toBeTruthy()
   expect(sent.map((one) => one.method)).toEqual(['DELETE'])
   await waitFor(() =>
-    expect(document.activeElement).toBe(screen.getByRole('region', { name: 'Contas de modelo' })),
+    expect(document.activeElement).toBe(screen.getByRole('region', { name: 'Contas da empresa' })),
   )
 })
 

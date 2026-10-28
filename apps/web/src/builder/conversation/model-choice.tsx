@@ -32,7 +32,7 @@ export function NoAccount(props: {
     <div className="flex flex-col items-start gap-sm">
       <Notice>{props.text ?? sentenceOfCode('MODEL_NO_ACCOUNT')}</Notice>
       <Link
-        to="/companies/$companyId/settings/my-model-accounts"
+        to="/companies/$companyId/settings/model-accounts"
         params={{ companyId: props.companyId }}
         className={
           props.action === 'button'

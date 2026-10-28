@@ -9,8 +9,11 @@ import type { View } from './test-hub.tsx'
 import { accountOf, choose, modelHub } from './test-hub.tsx'
 
 const server = hubServer()
-const MINE = `/companies/${COMPANY.id}/settings/my-model-accounts`
-const OLD = `/companies/${COMPANY.id}/model-account`
+const MINE = `/companies/${COMPANY.id}/settings/model-accounts`
+const OLD = [
+  `/companies/${COMPANY.id}/model-account`,
+  `/companies/${COMPANY.id}/settings/my-model-accounts`,
+]
 
 function view(fields: Partial<View> = {}): View {
   return {
@@ -33,14 +36,20 @@ function open(shown: View, path = MINE) {
 
 async function openMine(shown: View) {
   const hub = open(shown, MINE)
-  await screen.findByRole('heading', { name: 'Minhas contas de modelo' })
+  await screen.findByRole('heading', { name: 'Suas contas' })
   return hub
 }
 
-test('o endereço antigo /model-account leva a Minhas contas de modelo; sem contas: "Nenhuma conta sua"', async () => {
-  const { router } = open(view({ mayManage: true }), OLD)
-  await screen.findByRole('heading', { name: 'Minhas contas de modelo' })
-  expect(router.state.location.pathname).toBe(MINE)
+test.each(OLD)('o endereço antigo %s não existe mais', async (old) => {
+  const { router } = open(view({ mayManage: true }), old)
+  expect(
+    await screen.findByRole('heading', { name: 'Não encontramos o que você procurou.' }),
+  ).toBeTruthy()
+  expect(router.state.location.pathname).toBe(old)
+})
+
+test('sem contas: "Nenhuma conta sua" e Ligar conta', async () => {
+  await openMine(view())
   expect(screen.getByText('Nenhuma conta sua')).toBeTruthy()
   expect(screen.getByRole('button', { name: 'Ligar conta' })).toBeTruthy()
   expect(screen.queryByText(/Sua ordem para/)).toBeNull()
@@ -84,6 +93,15 @@ test('quem só lê a empresa liga, pausa e remove as próprias contas', async ()
   fireEvent.click(await screen.findByRole('button', { name: 'Remover conta' }))
   expect(await screen.findByText('Nenhuma conta sua')).toBeTruthy()
   expect(sent.map((one) => one.method)).toEqual(['PATCH', 'DELETE'])
+  await waitFor(() =>
+    expect(document.activeElement).toBe(screen.getByRole('region', { name: 'Suas contas' })),
+  )
+})
+
+test('com contas, "Nenhuma conta sua" não aparece', async () => {
+  await openMine(view({ mine: [accountOf({ label: 'Minha 1', owner: 'me' })] }))
+  expect(screen.getByText('Minha 1')).toBeTruthy()
+  expect(screen.queryByText('Nenhuma conta sua')).toBeNull()
 })
 
 test('Ligar conta na página da pessoa liga uma conta dela', async () => {

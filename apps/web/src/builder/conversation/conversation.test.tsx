@@ -78,7 +78,7 @@ test('sem conta, a conversa mostra o aviso da etapa 11 e não deixa enviar', asy
   const link = within(notice ?? document.body).getByRole('link', {
     name: 'Minhas contas de modelo',
   })
-  expect(link.getAttribute('href')).toBe(`/companies/${COMPANY.id}/settings/my-model-accounts`)
+  expect(link.getAttribute('href')).toBe(`/companies/${COMPANY.id}/settings/model-accounts`)
   fireEvent.change(field, { target: { value: 'Oi' } })
   expect(screen.getByRole('button', { name: 'Enviar' }).hasAttribute('disabled')).toBe(true)
 })
