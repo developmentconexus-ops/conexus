@@ -13,6 +13,7 @@ import { Composer } from './composer.tsx'
 import type { Item } from './conversation-switch.tsx'
 import { ConversationSwitch } from './conversation-switch.tsx'
 import { useDraft } from './draft.ts'
+import { FirstMessage } from './first-message.tsx'
 import { useHandoff } from './handoff.ts'
 import { MemoryStatus } from './memory-status.tsx'
 import { ModelChoice, NoAccount } from './model-choice.tsx'
@@ -37,6 +38,8 @@ import { WorkingLine } from './working-line.tsx'
 const route = getRouteApi(
   '/_app/companies/$companyId/projects/$projectId/conversations/$conversationId',
 )
+
+const emptyRoute = getRouteApi('/_app/companies/$companyId/projects/$projectId/')
 
 function PanelFrame(props: { current: Item | undefined; children: ReactNode }) {
   return (
@@ -69,19 +72,20 @@ export function Panel() {
   )
 }
 
-/** A Projeto with no conversation, which says why when Início created it and the Hub refused the model. */
+/** A Projeto with no conversation opens ready to type, and says why when Início created it and the Hub refused the model. */
 export function EmptyPanel() {
+  const { companyId, projectId } = emptyRoute.useParams()
   const refused = useLocation({ select: (location) => location.state.refused })
   return (
     <PanelFrame current={undefined}>
-      <div className="flex flex-col gap-md p-md">
-        {refused !== undefined && (
+      {refused !== undefined && (
+        <div className="px-md pt-md">
           <Notice>
             {REQUEST_NOT_SENT} {sentenceOfCode(refused)} {WRITE_AGAIN}
           </Notice>
-        )}
-        <Empty>Nenhuma conversa</Empty>
-      </div>
+        </div>
+      )}
+      <FirstMessage companyId={companyId} projectId={projectId} />
     </PanelFrame>
   )
 }

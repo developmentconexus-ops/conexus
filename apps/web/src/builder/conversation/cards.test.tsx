@@ -118,7 +118,6 @@ test('cartão de perguntas da tool-invocation ask_user: resposta livre em vária
 
   const other = await screen.findByRole('textbox', { name: 'Outra resposta' })
   expect(other.getAttribute('placeholder')).toBe('outra resposta…')
-  // Multiline free response (#272)
   const multilineText = 'Linha 1: só quando for entrega\nLinha 2: após as 18h'
   fireEvent.change(other, { target: { value: multilineText } })
   fireEvent.click(questionSend())
@@ -128,11 +127,8 @@ test('cartão de perguntas da tool-invocation ask_user: resposta livre em vária
 
   await waitFor(() => expect(bodies).toHaveLength(1))
   expect(bodies[0]).toEqual({ toolCallId: CALL, resumeData: ['Só eu', multilineText] })
-
-  const answers = ['Só eu', multilineText]
-  tell(questionPart('result', answers))
-
-  await waitFor(() => expect(screen.queryByRole('radio')).toBeNull())
+  tell(questionPart('result', ['Só eu', multilineText]))
+  fireEvent.click(await screen.findByRole('button', { name: 'Respondeu 2 perguntas' }))
   const asked = screen.getByText('Quem cadastra as encomendas?').closest('ul')
   expect([...(asked?.children ?? [])].map((item) => item.textContent)).toEqual([
     'Quem cadastra as encomendas?Só eu',
@@ -183,6 +179,7 @@ test('pergunta vencida ou fechada diz que foi fechada e não se responde', async
       args: { questions: [WHO] },
     },
   })
+  fireEvent.click(await screen.findByRole('button', { name: '1 pergunta sem resposta' }))
   await screen.findByText(/Esta pergunta já foi respondida ou não espera mais/)
   expect(within(log).queryByRole('button', { name: 'Enviar' })).toBeNull()
 })

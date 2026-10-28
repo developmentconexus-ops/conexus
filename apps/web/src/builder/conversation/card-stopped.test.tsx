@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react'
+import { fireEvent, screen } from '@testing-library/react'
 import { expect, test } from 'vitest'
 import { hubServer } from '../../platform/test-hub.tsx'
 import { AGENT_START, agentEnd, RUNNING, stepStarted, updatePart } from './test-events.ts'
@@ -29,6 +29,7 @@ test('a pergunta que fecha porque a pessoa parou o Builder diz só que ela parou
   line.emit(displayOf({ isRunning: true }))
   line.emit(agentEnd('aborted'))
   line.emit(displayOf())
+  fireEvent.click(await screen.findByRole('button', { name: /sem resposta/ }))
   await screen.findByText('Você parou o Builder.')
   // The next run starts: the card still says who closed it.
   line.emit(AGENT_START)

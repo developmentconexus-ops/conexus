@@ -7,7 +7,7 @@ import { hubServer, PEDIDOS } from '../../platform/test-hub.tsx'
 import type { DataUrl } from './attachments.ts'
 import { hasInterruptedHandoff, stashHandoffFiles } from './handoff.ts'
 import { conversationOf, FIRST, PROJECT, screens, typed, view } from './test-hub.tsx'
-import { UNCONFIRMED_SEND } from './text.ts'
+import { EMPTY_CONVERSATION, UNCONFIRMED_SEND } from './text.ts'
 
 const { open } = screens(hubServer())
 
@@ -37,7 +37,7 @@ const TABLE = {
 async function handedOver(answers: Parameters<typeof open>[2] = {}) {
   const shown = view()
   const hub = open(shown, PROJECT, answers)
-  await screen.findByText('Nenhuma conversa')
+  await screen.findByText(EMPTY_CONVERSATION)
   shown.conversations.push(conversationOf({ id: FIRST }))
   stashHandoffFiles(FIRST, [TABLE])
   await hub.conexus.router.navigate({
@@ -49,6 +49,7 @@ async function handedOver(answers: Parameters<typeof open>[2] = {}) {
     },
     state: { handoff: { content: REQUEST } },
   })
+  await screen.findByRole('log', { name: 'Conversa com o Builder' })
   const field = await screen.findByRole('textbox', { name: 'Mensagem para o Builder' })
   return { ...hub, field }
 }
@@ -57,9 +58,13 @@ test('o pedido do Início sai uma vez ao abrir, em modo estrito e sem aviso (8)'
   const { sent, conexus, field } = await handedOver()
   await waitFor(() => expect(messagesOf(sent)).toHaveLength(1))
   expect(messagesOf(sent)[0]?.body).toEqual({ message: REQUEST, files: [TABLE] })
-  const log = screen.getByRole('log', { name: 'Conversa com o Builder' })
-  expect(await within(log).findByText(REQUEST)).toBeTruthy()
-  expect(within(log).getByText('tabela.pdf')).toBeTruthy()
+  // The stream says Mastra took the message; the double has none, so the read is asked again.
+  void conexus.queryClient.invalidateQueries()
+  function logged() {
+    return within(screen.getByRole('log', { name: 'Conversa com o Builder' }))
+  }
+  await waitFor(() => expect(logged().getByText(REQUEST)).toBeTruthy())
+  expect(logged().getByText('tabela.pdf')).toBeTruthy()
   expect(typed(field)).toBe('')
   await waitFor(() => expect(conexus.router.state.location.state.handoff).toBeUndefined())
   await waitFor(() => expect(conexus.queryClient.isFetching()).toBe(0))
@@ -80,7 +85,7 @@ test('o pedido recusado volta à caixa com o arquivo e a frase (11)', async () =
 
 test('o modelo recusado depois do Projeto: a página sem conversa diz por quê (10)', async () => {
   const { conexus } = open(view(), PROJECT)
-  await screen.findByText('Nenhuma conversa')
+  await screen.findByText(EMPTY_CONVERSATION)
   await conexus.router.navigate({
     to: '/companies/$companyId/projects/$projectId',
     params: { companyId: CompanyId.parse(COMPANY.id), projectId: PEDIDOS.id },

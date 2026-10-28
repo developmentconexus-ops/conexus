@@ -14,7 +14,7 @@ export function Questionnaire({
   return (
     <QuestionnairePrimitive.Root
       data-slot="questionnaire"
-      className={cn('flex w-full min-w-0 flex-col gap-md', className)}
+      className={cn('flex w-full min-w-0 flex-col gap-md md:gap-sm', className)}
       {...props}
     />
   )
@@ -27,7 +27,7 @@ export function QuestionnaireItem({
   return (
     <QuestionnairePrimitive.Item
       data-slot="questionnaire-item"
-      className={cn('flex min-w-0 flex-col gap-sm border-0 p-0', className)}
+      className={cn('flex min-w-0 flex-col gap-sm md:gap-xs border-0 p-0', className)}
       {...props}
     />
   )
@@ -40,7 +40,7 @@ export function QuestionnaireTitle({
   return (
     <QuestionnairePrimitive.Title
       data-slot="questionnaire-title"
-      className={cn('mb-sm font-semibold text-pretty text-text', className)}
+      className={cn('mb-sm md:mb-xs font-semibold text-pretty text-text md:text-body', className)}
       {...props}
     />
   )
@@ -53,7 +53,7 @@ export function QuestionnaireChoices({
   return (
     <QuestionnairePrimitive.Choices
       data-slot="questionnaire-choices"
-      className={cn('grid min-w-0 gap-sm', className)}
+      className={cn('grid min-w-0 grid-cols-[minmax(0,1fr)] gap-sm md:gap-xs', className)}
       {...props}
     />
   )
@@ -68,7 +68,7 @@ export function QuestionnaireChoice({
     <QuestionnairePrimitive.Choice
       data-slot="questionnaire-choice"
       className={cn(
-        'flex min-h-11 cursor-pointer items-start gap-sm rounded-control border border-line bg-surface px-md py-sm text-text hover:bg-surface-3 data-checked:border-line-strong data-checked:bg-surface-3 data-disabled:cursor-not-allowed data-disabled:opacity-50 data-invalid:border-danger',
+        'flex min-h-11 md:min-h-0 cursor-pointer items-start gap-sm rounded-control border border-line bg-surface px-md py-sm md:border-transparent md:bg-transparent md:px-xs md:py-xs text-text hover:bg-surface-3 data-checked:border-line-strong data-checked:bg-surface-3 md:data-checked:border-transparent data-disabled:cursor-not-allowed data-disabled:opacity-50 data-invalid:border-danger',
         className,
       )}
       {...props}
@@ -79,7 +79,7 @@ export function QuestionnaireChoice({
       />
       <QuestionnairePrimitive.ChoiceLabel
         data-slot="questionnaire-choice-label"
-        className="flex min-w-0 flex-1 flex-col gap-xs wrap-break-word"
+        className="flex min-w-0 flex-1 flex-col gap-0 wrap-break-word"
       >
         {children}
       </QuestionnairePrimitive.ChoiceLabel>
@@ -127,7 +127,7 @@ export function QuestionnaireActions({ className, ...props }: ComponentProps<'di
   )
 }
 
-const ACTION = 'data-hidden:hidden'
+const ACTION = 'data-hidden:hidden md:h-7 md:px-2.5'
 
 export function QuestionnairePrevious({
   className,

@@ -1,4 +1,4 @@
-import type { CompanyId, ConversationId } from '@conexus/hub-api'
+import type { CompanyId, ConversationId, ProjectId } from '@conexus/hub-api'
 import { useState } from 'react'
 import { pageStorage } from '../../platform/storage.ts'
 import type { MessageFile, Outgoing } from './attachments.ts'
@@ -6,7 +6,7 @@ import type { MessageFile, Outgoing } from './attachments.ts'
 /** Storage only mirrors the text: where the browser refuses it, the draft still holds. */
 const mirror = pageStorage('session')
 /** A conversation's draft, or the one of a company's Início. */
-export type DraftKey = ConversationId | `start:${CompanyId}`
+export type DraftKey = ConversationId | `start:${CompanyId}` | `first:${ProjectId}`
 
 const texts = new Map<DraftKey, string>()
 /** Files stay in the page's memory: storage holds ~5 MB, and a reload drops them, as in Factory. */
