@@ -14,7 +14,7 @@ None written before. Brought from earlier work.
 
 ## Result
 
-Not run.
+Step 17 (v0.17.0, founder, 2026-10-28, "Etapa 17 aprovado"): a kept version is the release, and Publicar is the one act that makes it what opens at the address; no tag, no second record. Published and pointed by number, any kept version.
 
 ## Consequences
 

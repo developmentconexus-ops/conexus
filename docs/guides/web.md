@@ -143,9 +143,10 @@ tudo". The lines of [screens](../reference/screens.md) say which screen is on wh
   Publicação. [review]
 - **W32.** Configurações **should** swap the sidebar for an index with "← Voltar" and a search, in
   two groups: Você (Minha conta, Contas de modelo, Meus padrões; the theme lives in the account menu) and the company's,
-  headed by its name (Geral, Pessoas e convites, Padrões da empresa, Memória observacional, Sistemas da
-  empresa, Conectores); founder,
-  2026-10-20: "1. A"; 2026-10-27: "Opcao C", "1. Sim 2. Antes", "Aprovado". Owner and administrator change the company's group; a member reads Pessoas.
+  headed by its name (Geral, Pessoas e convites, Padrões da empresa, Memória observacional); founder,
+  2026-10-20: "1. A"; 2026-10-27: "Opcao C", "1. Sim 2. Antes", "Aprovado". Integrações is not
+  there: it is a company sidebar entry between Projetos and Configurações (founder, 2026-10-28, on
+  the connectors study: "O1"). Owner and administrator change the company's group; a member reads Pessoas.
   Atividade and Uso have their place reserved there and appear only when a card asks for them. [review]
 - **W33.** An owner's first entry **should** be four steps with progress, "Voltar" and "Sair":
   Sua empresa, Ligue uma conta de modelo, Convide sua equipe, O que vamos construir primeiro? Steps

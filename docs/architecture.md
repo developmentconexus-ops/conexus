@@ -139,7 +139,7 @@ and tests, and a `public.ts` with what others may use. The import law is
 | Where | What runs | Choice |
 | --- | --- | --- |
 | A rented server in São Paulo | The server program, from an image built by GitHub Actions and run with Compose, behind the Cloudflare Tunnel. The server opens no port | [0007] |
-| Cloudflare | Tunnel, dispatcher, outbound wall, and a Workers for Platforms namespace for the apps, on a second domain, one host per app and environment | [0018] [0023] [0024] |
+| Cloudflare | Tunnel, dispatcher, outbound wall, and a Workers for Platforms namespace for the apps, on a second domain, one host per app | [0018] [0023] [0024] |
 | Neon | Two organizations of Conexus's own: the Hub's, one project with two databases; the companies', one project each, under a key that cannot reach the Hub's | [0008] [0009] [0021] [0040] |
 | E2B | Build machines behind a list of domains, under the founder's free-account key | [0028] [0051] |
 
@@ -185,8 +185,8 @@ row works alone to sign in, the cookie is valid for one exact host, and the sess
 a total deadline. Who holds it, and where companies, members and invitations live, are reopened
 [0013] [0015]. Better Auth handles password, reset and the attempt limit. App sessions and the
 one-use handoff to an app, taken at `/apps/open` in a tab or by `createAppFrameHandoff` inside the
-Prévia's frame, are Conexus's own. The Prévia has no session of its own: until Publicar it frames
-the Projeto's one app under that app's session (step 14.1). An app session lives inside the Hub's,
+Prévia's frame, are Conexus's own. The Prévia frame and the tab hold separate sessions
+(`environment`), and Publicar moves only the published pointer (step 17). An app session lives inside the Hub's,
 with no sign-out of its own [0041].
 
 **Isolation, in layers.** Hub admission on every read and write, with the company column on every
