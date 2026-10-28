@@ -247,3 +247,5 @@ Cartão da etapa 13.2 aprovado em 2026-10-27 (commit c91b747f5e38e752b0b2b310f35
 A emenda do cartão acrescenta à U1 o **+** e o microfone com o mesmo círculo de fundo da pílula do modelo, 32 px desenhados e 44 de toque, e o critério 29 (fundador, a captura do iPhone, 2026-10-27).
 
 Cartão da etapa 13.2 aprovado em 2026-10-27 (commit 6e29e54e07a8516f152260a3c8dbd9c0463233ea): "Sim"
+
+Em 2026-10-27, na revisão do pull request da U1, o fundador deu à noite a permissão para as chamadas visuais, pelas palavras dele: "como ela é mais visual, eu te dou permissão total para você já fazer merge, já fazer o lançamento. Depois, se eu não concordar com alguma coisa de visual, eu posso pedir para você mudar". Decidido pelo firstmate sob ela, a opção A: 12 px (`gap-md`) entre o microfone e o **Enviar** e entre **Recarregar** e **Abrir app**, para que nenhuma área de toque de 44 px cubra um botão vizinho. Vai para a lista da manhã, para ele reverter se quiser; como no "3. Sim" dele, uma decisão no meio da etapa vai para o livro, sem nova aprovação do cartão.
