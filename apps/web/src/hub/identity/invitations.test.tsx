@@ -129,6 +129,11 @@ test('as ações pequenas ficam na linha, em tabelas com nome (critério 27)', a
   expect(davi.getByRole('button', { name: 'Mudar papel: Davi Costa' })).toBeTruthy()
   expect(davi.getByRole('button', { name: 'Tirar da empresa: Davi Costa' })).toBeTruthy()
   expect(people.getByRole('table', { name: 'Pessoas' })).toBeTruthy()
+  expect(people.getAllByRole('columnheader').map((head) => head.textContent)).toEqual([
+    'Pessoa',
+    'Papel',
+    'Ações',
+  ])
   const pending = within(
     sectionOf(await screen.findByRole('heading', { name: 'Convites pendentes' })),
   )
