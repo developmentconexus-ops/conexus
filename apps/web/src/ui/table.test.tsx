@@ -4,8 +4,8 @@ import { FramedTable } from './table.tsx'
 
 const COLUMNS = [
   { name: 'Pessoa' },
-  { name: 'Papel', leavesOnPhone: true, width: 'md:w-36' },
-  { name: 'Ações', width: 'md:w-80' },
+  { name: 'Papel', leavesOnPhone: true, width: 'lg:w-36' },
+  { name: 'Ações', width: 'lg:w-80' },
 ]
 
 function framed() {
@@ -25,8 +25,8 @@ test('FramedTable names every column in its header and gives each one its width'
     'Ações',
   ])
   const cols = [...document.querySelectorAll('col')].map((col) => col.className)
-  expect(cols).toEqual(['', 'md:w-36', 'md:w-80'])
-  expect(screen.getByRole('table', { name: 'Pessoas' }).className).toContain('md:table-fixed')
+  expect(cols).toEqual(['', 'lg:w-36', 'lg:w-80'])
+  expect(screen.getByRole('table', { name: 'Pessoas' }).className).toContain('lg:table-fixed')
 })
 
 test('FramedTable drops the columns that leave on a phone from header and widths', () => {

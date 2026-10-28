@@ -65,7 +65,7 @@ export function TableCell({ className, ...props }: ComponentProps<'td'>) {
 
 /**
  * One column of a `FramedTable`'s hidden header; `leavesOnPhone` columns move under the name there,
- * and `width` (a class, for `md` and up) is shared by every table that names the column.
+ * and `width` (a class, for `lg` and up) is shared by every table that names the column.
  */
 export type FramedColumn = { name: string; leavesOnPhone?: boolean; width?: string }
 
@@ -79,7 +79,7 @@ export function FramedTable({
   const shown = columns.filter((column) => !(phone && column.leavesOnPhone))
   return (
     <div className="overflow-hidden rounded-object border border-line bg-surface">
-      <Table {...props} className={cn('md:table-fixed', props.className)}>
+      <Table {...props} className={cn('lg:table-fixed', props.className)}>
         <colgroup>
           {shown.map((column) => (
             <col key={column.name} className={column.width} />

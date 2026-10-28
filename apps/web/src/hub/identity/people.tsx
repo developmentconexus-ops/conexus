@@ -40,8 +40,8 @@ function Lines({ main, under, role }: { main: string; under: string; role: Role 
 
 const COLUMNS = [
   { name: 'Pessoa' },
-  { name: 'Papel', leavesOnPhone: true, width: 'md:w-36' },
-  { name: 'Ações', width: 'md:w-80' },
+  { name: 'Papel', leavesOnPhone: true, width: 'lg:w-36' },
+  { name: 'Ações', width: 'lg:w-80' },
 ]
 
 /** One list of the page as a table named by its section; on a phone the role moves under the name. The role and action columns have one width, so the two lists line up. */
