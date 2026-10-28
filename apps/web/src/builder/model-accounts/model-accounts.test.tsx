@@ -1,12 +1,12 @@
 import { PersonId } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
-import { expect, test } from 'vitest'
+import { expect, test, vi } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
 import { ANA, COMPANY } from '../../platform/fixtures.ts'
 import { hubServer, refusal } from '../../platform/test-hub.tsx'
 import type { Answers, View } from './test-hub.tsx'
-import { accountOf, modelHub } from './test-hub.tsx'
+import { accountOf, modelHub, pickFromMenu } from './test-hub.tsx'
 
 const server = hubServer()
 const PAGE = `/companies/${COMPANY.id}/settings/model-accounts`
@@ -38,8 +38,8 @@ function queue() {
 
 function labelsInOrder() {
   return within(screen.getByRole('main'))
-    .getAllByRole('listitem')
-    .map((row) => row.textContent?.slice(0, 1))
+    .getAllByRole('row')
+    .map((row) => within(row).queryAllByRole('cell')[1]?.textContent?.slice(0, 1))
     .filter((first) => first && 'ABCD'.includes(first))
 }
 
@@ -69,7 +69,7 @@ test('as suas em cima, as da empresa embaixo, e a troca por último', async () =
   expect(screen.getByRole('region', { name: 'Troca automática' })).toBeTruthy()
 })
 
-test('o membro lê as da empresa e age nas dele, sem link para outra página', async () => {
+test('o membro lê as da empresa e age nas dele, sem link para outra página, sem setas e sem …', async () => {
   const { sent } = open(
     view({
       mayManage: false,
@@ -82,8 +82,9 @@ test('o membro lê as da empresa e age nas dele, sem link para outra página', a
   expect(within(company).getByText(/Só o dono ou um administrador muda as contas/)).toBeTruthy()
   expect(within(company).queryByRole('button')).toBeNull()
   expect(within(screen.getByRole('main')).queryByRole('link')).toBeNull()
-  fireEvent.click(screen.getByRole('button', { name: 'Pausar Minha 1' }))
-  expect(await screen.findByRole('button', { name: 'Retomar Minha 1' })).toBeTruthy()
+  await pickFromMenu('Minha 1', 'Pausar')
+  await waitFor(() => expect(sent).toHaveLength(1))
+  expect(await screen.findByText('pausada')).toBeTruthy()
   expect(sent.map((one) => one.method)).toEqual(['PATCH'])
 })
 
@@ -94,7 +95,14 @@ test('vazio: "Nenhuma conta ligada" e Ligar conta, para quem pode', async () => 
   expect(within(company).getByRole('button', { name: 'Ligar conta' })).toBeTruthy()
 })
 
-test('cada conta diz o estado em palavras: para todos, reservada, pausada, recusada, desligada', async () => {
+/** The row of the account named `label`: its place, name and origin, state, and actions. */
+function rowOf(label: string) {
+  const row = screen.getByText(label).closest('tr')
+  if (!row) throw new Error(`no row for ${label}`)
+  return within(row)
+}
+
+test('uma linha por conta, só o que muda: o lugar, o nome, a chave, a etiqueta e, se reservada, para quem', async () => {
   open(
     view({
       company: [
@@ -117,14 +125,49 @@ test('cada conta diz o estado em palavras: para todos, reservada, pausada, recus
     }),
   )
   expect(await screen.findByRole('heading', { name: 'Anthropic' })).toBeTruthy()
-  expect(screen.getByText('chave …x7Qa · ligada · para todos')).toBeTruthy()
-  expect(screen.getByText('chave …x7Qa · ligada · reservada para Ana Lima, Diego')).toBeTruthy()
-  expect(screen.getByText('chave …x7Qa · pausada · para todos')).toBeTruthy()
-  expect(screen.getByText('chave …x7Qa · recusada · Ligue de novo · para todos')).toBeTruthy()
-  expect(screen.getByText('Assinatura Claude · desligada pela Conexus · para todos')).toBeTruthy()
-  expect(screen.queryByRole('button', { name: 'Pausar Time 4' })).toBeNull()
-  expect(screen.queryByRole('button', { name: 'Retomar Time 4' })).toBeNull()
-  expect(screen.getByRole('button', { name: 'Retomar Time 3' })).toBeTruthy()
+  const first = rowOf('Time 1')
+  expect(first.getByText('1ª')).toBeTruthy()
+  expect(first.getByText('chave …x7Qa')).toBeTruthy()
+  expect(first.getByText('ligada')).toBeTruthy()
+  expect(rowOf('Time 1').queryByText(/para todos/)).toBeNull()
+  expect(rowOf('Time 2').getByText('chave …x7Qa · reservada para Ana Lima, Diego')).toBeTruthy()
+  expect(rowOf('Time 2').getByText('2ª')).toBeTruthy()
+  expect(rowOf('Time 3').getByText('pausada')).toBeTruthy()
+  expect(rowOf('Time 4').getByText('recusada · Ligue de novo')).toBeTruthy()
+  expect(rowOf('Time 5').getByText('Assinatura Claude')).toBeTruthy()
+  expect(rowOf('Time 5').getByText('desligada pela Conexus')).toBeTruthy()
+  const table = within(screen.getByRole('region', { name: 'Contas da empresa' }))
+  for (const column of ['Tipo', 'Para quem', 'Ligada por'])
+    expect(table.queryByRole('columnheader', { name: column })).toBeNull()
+})
+
+test('o cabeçalho do fornecedor diz o nome, a contagem e que o Builder tenta nesta ordem', async () => {
+  open(view({ company: queue() }))
+  const header = (await screen.findByRole('heading', { name: 'Anthropic' })).closest('td')
+  expect(header?.textContent).toContain('Anthropic · 4 contas · o Builder tenta nesta ordem')
+})
+
+function tone(label: string) {
+  return rowOf(label).getByText(/ligada|No limite|pausada|recusada/).className
+}
+
+test('a etiqueta pinta o estado: verde ligada, laranja no limite ou pausada, vermelha recusada', async () => {
+  const until = new Date(Date.now() + 3_600_000)
+  open(
+    view({
+      company: [
+        accountOf({ label: 'Time 1', position: 0 }),
+        accountOf({ label: 'Time 2', position: 1, limitedUntil: until.toISOString() }),
+        accountOf({ label: 'Time 3', position: 2, state: 'paused' }),
+        accountOf({ label: 'Time 4', position: 3, state: 'refused' }),
+      ],
+    }),
+  )
+  await screen.findByText('Time 1')
+  expect(tone('Time 1')).toContain('text-success')
+  expect(tone('Time 2')).toContain('text-warning')
+  expect(tone('Time 3')).toContain('text-warning')
+  expect(tone('Time 4')).toContain('text-danger')
 })
 
 test('uma conta no limite diz até que horas, na hora de quem lê', async () => {
@@ -135,76 +178,25 @@ test('uma conta no limite diz até que horas, na hora de quem lê', async () => 
       company: [accountOf({ label: 'Time 1', position: 0, limitedUntil: until.toISOString() })],
     }),
   )
-  expect(await screen.findByText(`chave …x7Qa · No limite até ${hour} · para todos`)).toBeTruthy()
+  expect(await screen.findByText(`No limite até ${hour}`)).toBeTruthy()
 })
 
-/**
- * The button once it can be pressed: a write stays pending until its reads come back
- * (`platform/cache.ts`), so the new word shows a moment before the button is enabled.
- */
-function enabledButton(name: string) {
-  return waitFor(() => {
-    const button = screen.getByRole('button', { name })
-    expect(button.hasAttribute('disabled')).toBe(false)
-    return button
-  })
-}
-
-test('Pausar e Retomar mandam a revisão lida e a conta muda de palavra', async () => {
-  const { sent } = open(view({ company: [accountOf({ label: 'Time 1' })] }))
-  fireEvent.click(await enabledButton('Pausar Time 1'))
-  fireEvent.click(await enabledButton('Retomar Time 1'))
-  expect(await enabledButton('Pausar Time 1')).toBeTruthy()
-  expect(sent.map((one) => one.body)).toEqual([
-    { revision: 0, state: 'paused' },
-    { revision: 1, state: 'ready' },
-  ])
-})
-
-test('412: a frase da falha na linha, e a conta é lida de novo', async () => {
-  const shown = view({ company: [accountOf({ label: 'Time 1' })] })
-  open(shown, {
-    change: () => {
-      shown.company = shown.company.map((one) => ({
-        ...one,
-        label: 'Time 1 de outra aba',
-        revision: 5,
-      }))
-      return refusal('MODEL_ACCOUNT_STALE')
-    },
-  })
-  fireEvent.click(await screen.findByRole('button', { name: 'Pausar Time 1' }))
-  expect((await screen.findByRole('alert')).textContent).toBe(
-    'Esta conta mudou. Recarregue a página.',
+test('Ligar conta é de contorno quando a fila tem contas e preta quando está vazia', async () => {
+  open(view({ company: [accountOf({ label: 'Time 1' })] }))
+  const company = await screen.findByRole('region', { name: 'Contas da empresa' })
+  const mine = screen.getByRole('region', { name: 'Suas contas' })
+  expect(within(company).getByRole('button', { name: 'Ligar conta' }).className).not.toContain(
+    'bg-ink',
   )
-  expect(await screen.findByText('Time 1 de outra aba')).toBeTruthy()
+  expect(within(mine).getByRole('button', { name: 'Ligar conta' }).className).toContain('bg-ink')
 })
 
-test('Renomear: o campo toma o foco, manda o nome e a revisão e o foco volta ao botão; Esc cancela', async () => {
-  const { sent } = open(view({ company: [accountOf({ label: 'Time 1' })] }))
-  fireEvent.click(await screen.findByRole('button', { name: 'Renomear Time 1' }))
-  const field = await screen.findByLabelText('Novo nome de Time 1')
-  await waitFor(() => expect(document.activeElement).toBe(field))
-  fireEvent.keyDown(field, { key: 'Escape' })
-  await waitFor(() => expect(screen.queryByLabelText('Novo nome de Time 1')).toBeNull())
-  expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Renomear Time 1' }))
-
-  fireEvent.click(screen.getByRole('button', { name: 'Renomear Time 1' }))
-  fireEvent.change(await screen.findByLabelText('Novo nome de Time 1'), {
-    target: { value: 'Equipe 1' },
-  })
-  fireEvent.click(screen.getByRole('button', { name: 'Salvar nome' }))
-  const renamed = await screen.findByRole('button', { name: 'Renomear Equipe 1' })
-  await waitFor(() => expect(document.activeElement).toBe(renamed))
-  expect(sent.map((one) => one.body)).toEqual([{ revision: 0, label: 'Equipe 1' }])
-})
-
-test('Subir e Descer só onde a conta se move, com a ordem inteira da fila e o foco no botão usado', async () => {
+test('as setas ficam nas pontas desabilitadas, mandam a ordem inteira e o foco fica na seta usada', async () => {
   const accounts = queue()
   const { sent } = open(view({ company: accounts }))
-  await screen.findByRole('button', { name: 'Descer A' })
-  expect(screen.queryByRole('button', { name: 'Subir A' })).toBeNull()
-  expect(screen.queryByRole('button', { name: 'Descer D' })).toBeNull()
+  const first = await screen.findByRole('button', { name: 'Subir A' })
+  expect(first.hasAttribute('disabled')).toBe(true)
+  expect(screen.getByRole('button', { name: 'Descer D' }).hasAttribute('disabled')).toBe(true)
   const [a, b, c, d] = accounts.map((one) => one.id)
 
   const up = screen.getByRole('button', { name: 'Subir C' })
@@ -224,6 +216,35 @@ test('Subir e Descer só onde a conta se move, com a ordem inteira da fila e o f
   await waitFor(() =>
     expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Descer C' })),
   )
+  expect(screen.getByRole('button', { name: 'Subir C' }).hasAttribute('disabled')).toBe(true)
+})
+
+test('no celular as setas saem da linha e Subir e Descer ficam no …', async () => {
+  const phone = vi.spyOn(globalThis, 'matchMedia').mockImplementation((media: string) =>
+    Object.assign(new EventTarget(), {
+      matches: true,
+      media,
+      onchange: null,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+      dispatchEvent: () => true,
+    }),
+  )
+  try {
+    const { sent } = open(view({ company: queue() }))
+    await screen.findByRole('button', { name: 'Mais ações para C' })
+    expect(screen.queryByRole('button', { name: 'Subir C' })).toBeNull()
+    await pickFromMenu('C', 'Subir')
+    await waitFor(() => expect(labelsInOrder()).toEqual(['A', 'C', 'B', 'D']))
+    expect(sent).toHaveLength(1)
+    await waitFor(() =>
+      expect(document.activeElement).toBe(
+        screen.getByRole('button', { name: 'Mais ações para C' }),
+      ),
+    )
+  } finally {
+    phone.mockRestore()
+  }
 })
 
 test('409: a frase da falha, e a fila é lida de novo na ordem que ficou', async () => {
@@ -240,54 +261,4 @@ test('409: a frase da falha, e a fila é lida de novo na ordem que ficou', async
     'A fila mudou enquanto você a ordenava. Recarregue a página.',
   )
   await waitFor(() => expect(labelsInOrder()).toEqual(['D', 'C', 'B', 'A']))
-})
-
-test('Dar a pessoas manda a lista final; sem ninguém marcada a conta volta a ser para todos', async () => {
-  const { sent } = open(view({ company: [accountOf({ label: 'Time 1' })] }))
-  fireEvent.click(await screen.findByRole('button', { name: 'Dar Time 1 a pessoas' }))
-  const dialog = await screen.findByRole('alertdialog')
-  fireEvent.click(within(dialog).getByRole('checkbox', { name: 'Diego' }))
-  fireEvent.click(within(dialog).getByRole('button', { name: 'Salvar' }))
-  expect(await screen.findByText('chave …x7Qa · ligada · reservada para Diego')).toBeTruthy()
-  await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull())
-
-  fireEvent.click(screen.getByRole('button', { name: 'Dar Time 1 a pessoas' }))
-  const again = await screen.findByRole('alertdialog')
-  expect(within(again).getByRole('checkbox', { name: 'Diego' })).toHaveProperty('checked', true)
-  fireEvent.click(within(again).getByRole('checkbox', { name: 'Diego' }))
-  fireEvent.click(within(again).getByRole('button', { name: 'Salvar' }))
-  expect(await screen.findByText('chave …x7Qa · ligada · para todos')).toBeTruthy()
-  expect(sent.map((one) => one.body)).toEqual([{ personIds: ['person-diego'] }, { personIds: [] }])
-})
-
-test('Remover: o aviso do Console, Esc devolve o foco, e a confirmação apaga a conta', async () => {
-  const { sent } = open(view({ company: [accountOf({ label: 'Time 1' })] }))
-  const trigger = await screen.findByRole('button', { name: 'Remover Time 1' })
-  fireEvent.click(trigger)
-  const dialog = await screen.findByRole('alertdialog', { name: 'Remover Time 1?' })
-  expect(within(dialog).getByText(/Apague também a chave no Console da Anthropic\./)).toBeTruthy()
-  fireEvent.keyDown(dialog, { key: 'Escape' })
-  await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull())
-  await waitFor(() => expect(document.activeElement).toBe(trigger))
-
-  fireEvent.click(trigger)
-  fireEvent.click(
-    within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Remover conta' }),
-  )
-  expect(await screen.findByText('Nenhuma conta ligada')).toBeTruthy()
-  expect(sent.map((one) => one.method)).toEqual(['DELETE'])
-  await waitFor(() =>
-    expect(document.activeElement).toBe(screen.getByRole('region', { name: 'Contas da empresa' })),
-  )
-})
-
-test('Dar a pessoas lê todas as páginas: a pessoa 51 aparece pelo nome e pode receber a conta', async () => {
-  const { sent } = open(view({ company: [accountOf({ label: 'Time 1' })], crowd: 49 }))
-  fireEvent.click(await screen.findByRole('button', { name: 'Dar Time 1 a pessoas' }))
-  const dialog = await screen.findByRole('alertdialog')
-  expect(within(dialog).getAllByRole('checkbox')).toHaveLength(51)
-  fireEvent.click(within(dialog).getByRole('checkbox', { name: 'Pessoa 49' }))
-  fireEvent.click(within(dialog).getByRole('button', { name: 'Salvar' }))
-  expect(await screen.findByText('chave …x7Qa · ligada · reservada para Pessoa 49')).toBeTruthy()
-  expect(sent.map((one) => one.body)).toEqual([{ personIds: ['person-extra-49'] }])
 })

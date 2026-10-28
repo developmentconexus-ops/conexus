@@ -13,6 +13,8 @@ export function AlertDialogTrigger(props: AlertDialogPrimitive.Trigger.Props) {
   return <AlertDialogPrimitive.Trigger data-slot="alert-dialog-trigger" {...props} />
 }
 
+export type AlertDialogContentProps = AlertDialogPrimitive.Popup.Props
+
 export function AlertDialogContent({
   className,
   title,

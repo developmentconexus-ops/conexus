@@ -39,7 +39,7 @@ function pageButton() {
 }
 
 function submit() {
-  return within(screen.getByRole('region', { name: 'Ligar conta' })).getByRole('button', {
+  return within(screen.getByRole('dialog', { name: 'Ligar conta' })).getByRole('button', {
     name: 'Ligar conta',
   })
 }
@@ -47,7 +47,7 @@ function submit() {
 async function openPanel() {
   await screen.findByRole('region', { name: 'Contas da empresa' })
   fireEvent.click(pageButton())
-  return screen.findByRole('region', { name: 'Ligar conta' })
+  return screen.findByRole('dialog', { name: 'Ligar conta' })
 }
 
 async function fillKey(label: string) {
@@ -151,13 +151,13 @@ test('resposta cortada: a chave de tentativa fica e a nova tentativa a leva; dep
   expect(sent[2]?.attemptKey).not.toBe(sent[0]?.attemptKey)
 })
 
-test('Esc fecha o painel e o foco volta ao botão Ligar conta', async () => {
+test('Ligar conta abre o painel lateral, e Esc o fecha e devolve o foco ao botão', async () => {
   open([])
   const panel = await openPanel()
-  await waitFor(() => expect(document.activeElement).toBe(panel))
+  expect(within(panel).getByLabelText('Nome da conta')).toBeTruthy()
   fireEvent.keyDown(panel, { key: 'Escape' })
-  await waitFor(() => expect(screen.queryByRole('region', { name: 'Ligar conta' })).toBeNull())
-  expect(document.activeElement).toBe(pageButton())
+  await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Ligar conta' })).toBeNull())
+  await waitFor(() => expect(document.activeElement).toBe(pageButton()))
 })
 
 test('Entrar com assinatura só oferece os tipos abertos', async () => {

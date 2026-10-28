@@ -5,6 +5,7 @@ import { useRef } from 'react'
 import { everyMemberQuery } from '../../hub/identity/public.ts'
 import { SectionTitle } from '../../ui/list.tsx'
 import { Empty } from '../../ui/states.tsx'
+import { AccountsTable } from './accounts-table.tsx'
 import { LinkAccount } from './link-account.tsx'
 import { ModelFallbackSection } from './model-fallback.tsx'
 import { accountsQuery, providersQuery } from './queries.ts'
@@ -53,24 +54,29 @@ export function CompanyAccounts() {
         </p>
       )}
       {company.length === 0 && <Empty>Nenhuma conta ligada</Empty>}
-      {providersOf(company).map((provider) => (
-        <Queue
-          key={provider}
-          companyId={companyId}
-          owner="company"
-          provider={provider}
-          providerName={providerName(providers, provider)}
-          accounts={queueOf(company, provider)}
-          people={members}
-          powers={{ act: mayManage, assign: mayManage }}
-          canOrder={mayManage}
-          onRemoved={() => section.current?.focus()}
-        />
-      ))}
+      {company.length > 0 && (
+        <AccountsTable>
+          {providersOf(company).map((provider) => (
+            <Queue
+              key={provider}
+              companyId={companyId}
+              owner="company"
+              provider={provider}
+              providerName={providerName(providers, provider)}
+              accounts={queueOf(company, provider)}
+              people={members}
+              powers={{ act: mayManage, assign: mayManage }}
+              canOrder={mayManage}
+              onRemoved={() => section.current?.focus()}
+            />
+          ))}
+        </AccountsTable>
+      )}
       {mayManage && (
         <LinkAccount
           companyId={companyId}
           owner="company"
+          hasAccounts={company.length > 0}
           providers={providers}
           kinds={accounts.kinds}
         />

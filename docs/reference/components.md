@@ -218,6 +218,29 @@ drawer:
   border: "right hairline, {colors.line}"
 drawer-backdrop:
   backgroundColor: "{colors.canvas}, 80% opacity"
+drawer-right:
+  backgroundColor: "{colors.surface}"
+  textColor: "{colors.text}"
+  width: "the screen, at most {containers.message}"
+  padding: "{spacing.lg}"
+  border: "left hairline, {colors.line}"
+table-row:
+  backgroundColor: "transparent"
+  textColor: "{colors.text}"
+  padding: "{spacing.md} {spacing.sm}"
+  border: "bottom hairline, {colors.line}"
+table-row-header:
+  backgroundColor: "{colors.surface-3}"
+  textColor: "{colors.text-2}"
+  typography: "{typography.label}"
+badge:
+  backgroundColor: "{colors.surface}"
+  textColor: "{colors.text-2}"
+  rounded: "{rounded.pill}"
+  padding: "0 {spacing.sm}"
+  height: "20px"
+  typography: "{typography.label}"
+  border: "hairline, {colors.line}"
 button-danger:
   backgroundColor: "{colors.surface}"
   textColor: "{colors.danger}"
@@ -250,7 +273,13 @@ hairline, not a shadow, because the brand has no shadow token yet (design V3, V1
 `Menu.LinkItem`, is the same `menu-item`, and closes the menu as an item does; Base UI leaves it
 open by default (`closeOnClick`). The `alert-dialog` is Base UI's `AlertDialog` in the drawer's
 dress: a click outside does not close it, Escape and its buttons do, and its first field takes the
-focus. It holds the one `button-danger-confirm`; `button-danger` opens it (design V55).
+focus. It holds the one `button-danger-confirm`; a `button-danger`, or a menu item in danger text, opens it (design V55).
+The `drawer` has two sides: the left one is the phone's navigation (V56), the `drawer-right` is a
+panel for a form beside the page, such as **Ligar conta**. A `table` is shadcn's base-nova, painted
+with the brand's hairlines: its rows keep the table display at every width, so a screen reader
+still hears a table on a phone (`table-row`), and a provider's queue opens with a `table-row-header`.
+A `badge` is a state's word with a dot of its colour (success, warning, danger, or none for
+neutral), never the colour alone (design V35).
 
 ## Brought from the old design, with no code yet
 

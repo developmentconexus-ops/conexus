@@ -31,7 +31,7 @@ function open(kinds: View['kinds'], answers: Answers = {}) {
 
 async function openPanel() {
   fireEvent.click(await screen.findByRole('button', { name: 'Ligar conta' }))
-  return screen.findByRole('region', { name: 'Ligar conta' })
+  return screen.findByRole('dialog', { name: 'Ligar conta' })
 }
 
 async function fillKey() {

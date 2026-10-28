@@ -117,3 +117,9 @@ export async function choose(trigger: HTMLElement, name: string) {
   fireEvent.mouseUp(option)
   fireEvent.click(option)
 }
+
+/** The "…" menu of the account named `label`, opened, and its item `item` chosen. */
+export async function pickFromMenu(label: string, item: string) {
+  fireEvent.click(await screen.findByRole('button', { name: `Mais ações para ${label}` }))
+  fireEvent.click(await screen.findByRole('menuitem', { name: item }))
+}

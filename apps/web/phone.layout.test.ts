@@ -3,6 +3,7 @@ import { after, before, test } from 'node:test'
 import type { Locator, Page } from 'playwright-core'
 import type { Viewport } from './layout-harness.ts'
 import { createHarness, PHONE, reachOf, SMALL_PHONE, touching } from './layout-harness.ts'
+import { ACCOUNT_STATES, LONG_WORD } from './sweep-accounts-states.ts'
 import { CONVERSATION_STATES } from './sweep-conversation-states.ts'
 import { PREVIEW_STATES } from './sweep-preview-states.ts'
 import { LONG_TREE } from './sweep-project-states.ts'
@@ -195,3 +196,34 @@ test('o toque pega 44 px sem desenhar 44', async () => {
   }
   await page.close()
 })
+
+for (const viewport of [PHONE, SMALL_PHONE]) {
+  test(`Contas de modelo no celular: ainda é tabela, as setas vão ao …, e um nome sem espaço quebra, em ${viewport.width}px`, async () => {
+    const state = ACCOUNT_STATES.find((each) => each.name.includes('tabela do dono'))
+    assert.ok(state, 'the sweep lacks the accounts state')
+    const page = await harness.open(state.path, { viewport, replies: state.replies })
+    await state.settle(page)
+    const client = await page.context().newCDPSession(page)
+    const { nodes } = await client.send('Accessibility.getFullAXTree')
+    const roles = new Set(nodes.map((node) => node.role?.value))
+    for (const role of ['table', 'row', 'cell'])
+      assert.ok(roles.has(role), `the accessibility tree lacks "${role}"`)
+    const displays = await page
+      .locator('tr')
+      .evaluateAll((rows) => rows.map((row) => getComputedStyle(row).display))
+    assert.deepEqual([...new Set(displays)], ['table-row'], 'a row left the table display')
+    assert.equal(await page.getByRole('button', { name: 'Subir Claude reserva' }).count(), 0)
+    await page.getByRole('button', { name: 'Mais ações para Claude reserva' }).click()
+    await page.getByRole('menuitem', { name: 'Subir' }).waitFor()
+    await page.getByRole('menuitem', { name: 'Descer' }).waitFor()
+    await page.keyboard.press('Escape')
+    const word = await page.getByText(LONG_WORD, { exact: true }).boundingBox()
+    assert.ok(word && word.x + word.width <= viewport.width, 'the long name leaves the screen')
+    for (const menu of await page.getByRole('button', { name: /^Mais ações para / }).all()) {
+      const box = await menu.boundingBox()
+      assert.ok(box && box.x >= 0 && box.x + box.width <= viewport.width, 'a "…" leaves the screen')
+    }
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), viewport.width)
+    await page.close()
+  })
+}

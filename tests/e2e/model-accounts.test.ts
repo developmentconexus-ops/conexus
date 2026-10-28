@@ -17,14 +17,16 @@ import {
 } from './live-hub.ts'
 import {
   anthropicTokens,
+  changeState,
   enter,
   KEY,
   linkKey,
   linkSignIn,
+  moveUp,
   OWN_KEY,
+  pickFromMenu,
   pickModel,
-  queueRows,
-  rowsText,
+  queueTexts,
 } from './model-accounts-journey.ts'
 
 // Step 11's journey in Chromium: the Conexus opens kinds for Empresa A, its owner links an API key,
@@ -74,13 +76,11 @@ async function linkAccounts(owner: Page, companyA: string) {
 
 /** Step 4: Time 2 goes up and Time 1 pauses. */
 async function arrange(owner: Page) {
-  await owner.getByRole('button', { name: 'Subir Time 2' }).click()
-  await owner.getByRole('button', { name: 'Subir Time 1' }).waitFor({ state: 'detached' })
-  await owner.getByRole('button', { name: 'Pausar Time 1' }).click()
-  await owner.getByRole('button', { name: 'Retomar Time 1' }).waitFor()
-  const [first, second] = await rowsText(queueRows(owner, 'Anthropic'))
-  assert.match(first ?? '', /^Time 2.*Assinatura Claude · ligada · para todos/)
-  assert.match(second ?? '', /^Time 1.*chave …x7Qa · pausada/)
+  await moveUp(owner, 'Time 2')
+  await changeState(owner, 'Time 1', 'Pausar')
+  const [first, second] = await queueTexts(owner, 'Anthropic')
+  assert.match(first ?? '', /^1ª Time 2 Assinatura Claude ligada/)
+  assert.match(second ?? '', /^2ª Time 1 chave …x7Qa pausada/)
 }
 
 /** Step 4b: a Claude Sonnet model becomes the company's default, in Padrões da empresa. */
@@ -103,7 +103,7 @@ async function chooseDefault(owner: Page, companyA: string) {
 
 /** Step 5: Time 2 goes to Carla, who reads her order and links a key of her own. */
 async function giveAndRead(owner: Page, member: Page, companyA: string) {
-  await owner.getByRole('button', { name: 'Dar Time 2 a pessoas' }).click()
+  await pickFromMenu(owner, 'Time 2', 'Dar a pessoas…')
   const dialog = owner.getByRole('alertdialog')
   await dialog.getByLabel(CARLA.name).check()
   await dialog.getByRole('button', { name: 'Salvar', exact: true }).click()
@@ -119,11 +119,11 @@ async function giveAndRead(owner: Page, member: Page, companyA: string) {
 
 /** Step 6: removing Time 1 tells the owner to end the key at the provider's console too. */
 async function removeFirst(owner: Page) {
-  await owner.getByRole('button', { name: 'Remover Time 1' }).click()
+  await pickFromMenu(owner, 'Time 1', 'Remover…')
   const dialog = owner.getByRole('alertdialog')
   await dialog.getByText(/Apague também a chave no Console da Anthropic\./).waitFor()
   await dialog.getByRole('button', { name: 'Remover conta', exact: true }).click()
-  await owner.getByRole('button', { name: 'Remover Time 1' }).waitFor({ state: 'detached' })
+  await owner.getByRole('button', { name: 'Mais ações para Time 1' }).waitFor({ state: 'detached' })
 }
 
 test('o roteiro da conta de modelo: tipos, chave, assinatura Claude, Google, fila, padrão, dar a uma pessoa e remover', async (t) => {

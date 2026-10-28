@@ -6,7 +6,7 @@ import { Conexus, createConexus } from '../../main.tsx'
 import { COMPANY } from '../../platform/fixtures.ts'
 import { ACTIVE_CLIENT, centralHub, hubServer } from '../../platform/test-hub.tsx'
 import type { View } from './test-hub.tsx'
-import { accountOf, choose, modelHub } from './test-hub.tsx'
+import { accountOf, choose, modelHub, pickFromMenu } from './test-hub.tsx'
 
 const server = hubServer()
 const MINE = `/companies/${COMPANY.id}/settings/model-accounts`
@@ -74,8 +74,14 @@ test('a ordem da pessoa por fornecedor, e as contas dela, que ela ordena, sem Da
   expect(
     await screen.findByText('Sua ordem para Anthropic: Minha 1, Minha 2, Time 2, Time 1'),
   ).toBeTruthy()
-  expect(screen.queryByRole('button', { name: /^Dar / })).toBeNull()
   expect(screen.queryByRole('button', { name: /Time 1/ })).toBeNull()
+  fireEvent.click(screen.getByRole('button', { name: 'Mais ações para Minha 1' }))
+  expect((await screen.findAllByRole('menuitem')).map((one) => one.textContent)).toEqual([
+    'Renomear',
+    'Pausar',
+    'Remover…',
+  ])
+  fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' })
 
   fireEvent.click(screen.getByRole('button', { name: 'Subir Minha 2' }))
   await waitFor(() => expect(sent).toHaveLength(1))
@@ -87,9 +93,9 @@ test('a ordem da pessoa por fornecedor, e as contas dela, que ela ordena, sem Da
 
 test('quem só lê a empresa liga, pausa e remove as próprias contas', async () => {
   const { sent } = await openMine(view({ mine: [accountOf({ label: 'Minha 1', owner: 'me' })] }))
-  fireEvent.click(screen.getByRole('button', { name: 'Pausar Minha 1' }))
-  expect(await screen.findByRole('button', { name: 'Retomar Minha 1' })).toBeTruthy()
-  fireEvent.click(screen.getByRole('button', { name: 'Remover Minha 1' }))
+  await pickFromMenu('Minha 1', 'Pausar')
+  expect(await screen.findByText('pausada')).toBeTruthy()
+  await pickFromMenu('Minha 1', 'Remover…')
   fireEvent.click(await screen.findByRole('button', { name: 'Remover conta' }))
   expect(await screen.findByText('Nenhuma conta sua')).toBeTruthy()
   expect(sent.map((one) => one.method)).toEqual(['PATCH', 'DELETE'])
