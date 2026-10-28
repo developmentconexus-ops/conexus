@@ -1,64 +1,36 @@
-# The two explanations of a step
+# The page of a step
 
-Every step gets two explanations of one form, written in the chat in Portuguese (see Limits in the
-skill). Evidence (commands, `file:line` lists, CI links) goes in an appendix outside the budget.
+One page of one form, in Portuguese, read on a computer, with a short summary in the chat. The
+parts come in this order and none is skipped; a part with nothing to say says so in one line.
+Evidence (commands, CI links) goes at the end of the page.
 
-| | A. Before the card is approved | B. After build and review, with the merge ask |
-| --- | --- | --- |
-| Budget | 700 words, read on a phone | 900 words, read on a phone |
-| Speaks of | the proposed design, always marked as a proposal | the reviewed commit, with `file:line` |
-| Closes with | only his real decisions, as the card's founder's page holds them | the merge ask and the review's verdict |
+1. **What changes for the person.** The Padaria Sol example (Bruno owns the company, Carla
+   administers it, Ana and Diego are members): one action of one person, and one refusal.
+2. **End to end.** A diagram of the path (browser, Hub process, databases, provider as the step
+   needs), then each hop with its `file:line` and a short real excerpt.
+3. **De onde veio.** The reference repositories' real code beside ours, with commit and line; why
+   ours is the best form; the discarded alternatives and what each would cost.
+4. **Nativo.** What the stack's library does at the installed version, against what Conexus writes
+   and why; each remendo row of the reference table (code C75).
+5. **Structure.** The folder tree, new, changed and removed, with line counts; the main types and
+   functions; the core pseudocode.
+6. **Proof.** A table of criterion, test and result, separating proved, proved with a double and
+   not proved. A "not proved" row ends as a question to the founder.
+7. **Risks and open decisions.** Each with its options and, for each option, the native "how".
+   Separate a demonstrated defect from a risk or a doubt; after build, include the reviews'
+   Bloqueia and Fechamento findings.
+8. **Glossary.** Short, one line per term.
 
-## The ten parts, in order
+## The founder's checklist
 
-1. **One sentence.** What the founder can do at the end of the step. In B: what exists in fact.
-2. **The Padaria Sol example.** One question or action of one person (Bruno owns the company, Carla
-   administers it, Ana and Diego are members), from screen to database and back, at most 8 steps,
-   with one refusal case (Diego gets 404). In B each step names the file that runs it.
-3. **Where each part runs.** A simple diagram: browser, Hub process, Hub database, Mastra database,
-   company database, provider. In B, "same as the card" when nothing changed since A.
-4. **The code architecture.** A table of folder, owner, what it does and a short signature; then at
-   most three main types, each with a valid and an invalid case.
-5. **Native against ours.** The reference table's remendo rows (C75): what the library does, in
-   the installed version with `file:line`, what Conexus wrote instead and why, and the founder's
-   word. In B, the rows as built, which closing moves into `docs/reference/boundaries.md`.
-6. **Why each choice.** The 3 to 5 main choices, each with the discarded alternative and its cost,
-   and what the references do, with commit and line. In B, only what changed since A.
-7. **How it was proved and what was not.** A table of acceptance criterion, test and observed
-   result (CI on the commit, or live proof), separating proved, proved with a double and not
-   proved. A "not proved" row ends as a question to the founder ("ship with this unproven?") or as
-   a block. Only in B; A lists the proofs still to run.
-8. **Where it differs from the card.** Each divergence the build report declared (L7) and those the
-   review found; for each, does it change what the person sees? Only in B.
-9. **What deserves questioning.** A demonstrated defect apart from a risk or a doubt; invent
-   nothing to fill the part. In B, also the review's Bloqueia and Fechamento findings.
-10. **Verdict and ask.** "Is this the best form for this step?", answered yes or no with the
-    reason; then the decision or the merge asked.
-
-## The founder's five-minute checklist
-
-1. Do the sentence and the example match the use script?
-2. Does each remendo row of part 5 have a reason he accepts? It is where most errors are.
+1. Do part 1 and the use script match?
+2. Does each remendo row of part 4 have a reason he accepts? It is where most errors are.
 3. Does each criterion have a test with an observed result? May what is "not proved" go to
    production?
 4. Does each divergence from the card leave what the person sees unchanged? If not, it returns to
-   him (L7).
+   him (delivery L7).
 5. Where does each datum live, process memory or database (C63)? What is lost on a restart?
 6. Is there a new dependency (L16) or an open Bloqueia? Both must be zero.
 
-The reviews own style, names, types in detail, line coverage, line citations, what Biome, knip and
-dependency-cruiser already refuse, and the security refusal criteria (L9). Do not spend the budget
-on them.
-
-## Reading order for B
-
-Write it while CI and the delta finish; it rides on the merge-ask message.
-
-1. A of this step: update parts 1, 3 and 6 only.
-2. The card: founder's page, acceptance criteria, the reference table.
-3. The build reports: declared divergences.
-4. The review report: verdict and findings.
-5. `git diff --stat` by unit folder, the diff of `boundaries.md` and of `package.json`.
-6. CI on the commit, which feeds part 7.
-7. Only then the code, and only the files behind table rows.
-8. For Mastra and other libraries, the maintainers' skill and the installed version.
+The reviews own style, names, line coverage and what Biome, knip and dependency-cruiser already
+refuse. Do not spend the page on them.
