@@ -36,14 +36,14 @@ async function firstVersion(s: Scenario, pedidos: string) {
     .waitFor()
   await builderSends(s, pedidos, 'recados-1')
   await page.goto(`${pedidos}?lens=project&section=versions`)
-  await page.getByText('Versão 1 · no ar').waitFor()
+  await page.getByText('Versão 1 · Na Prévia').waitFor()
   await s.member.page.goto(`${TEST_ORIGIN}/`)
   await signIn(s.member.page, CARLA.email, PASSWORD)
   await waitForHome(s.member.page)
   await openProject(s.member.page, 'Pedidos')
-  await s.member.page.getByRole('link', { name: 'Abrir app' }).waitFor()
+  await s.member.page.getByRole('button', { name: 'Publicar', exact: true }).waitFor()
   await s.member.page.goto(`${pedidos}?lens=project&section=versions`)
-  await s.member.page.getByText('Versão 1 · no ar').waitFor()
+  await s.member.page.getByText('Versão 1 · Na Prévia').waitFor()
 }
 
 /**
@@ -66,13 +66,17 @@ async function opensAppTab(page: Page, pedidos: string, label: string) {
   await tab.close()
 }
 
-/** 4. Voltar para esta, on Versão 1: the warning says the data stay as they are. */
-async function putVersionOneBack(page: Page, pedidos: string) {
+/** 4. Publicar esta, on Versão 1: the question says who opens the app sees it. */
+async function publishVersionOneAgain(page: Page, pedidos: string) {
   await page.goto(`${pedidos}?lens=project&section=versions`)
-  await page.getByRole('button', { name: 'Voltar para esta' }).click()
+  await page
+    .getByRole('listitem')
+    .filter({ hasText: 'Versão 1' })
+    .getByRole('button', { name: 'Publicar esta' })
+    .click()
   const dialog = page.getByRole('alertdialog')
-  await dialog.getByText('Os dados ficam como estão.').waitFor()
-  await dialog.getByRole('button', { name: 'Voltar para a Versão 1' }).click()
+  await dialog.getByText('Quem abrir o app passa a ver esta versão.').waitFor()
+  await dialog.getByRole('button', { name: 'Publicar a versão 1' }).click()
   await dialog.waitFor({ state: 'hidden' })
 }
 
@@ -92,9 +96,9 @@ test('o roteiro de Enviar um app: o Builder envia, gravar, segunda versão, volt
   const { page } = s.owner
   const pedidos = await pedidosOf(s)
   await firstVersion(s, pedidos.url)
-  await opensAppTab(page, pedidos.url, pedidos.door.label)
   // 2. Publicar, then Abrir app: Recados; a recado written stays for the next visit.
   await publishVersion(s, pedidos.url, 1)
+  await opensAppTab(page, pedidos.url, pedidos.door.label)
   const app = await openApp(s, pedidos.door, GREEN)
   const written = await visitApp(pedidos.door, app, '/api/escreverRecado', { texto: RECADO })
   assert.equal(written.status, 200)
@@ -102,10 +106,10 @@ test('o roteiro de Enviar um app: o Builder envia, gravar, segunda versão, volt
   // 3. Recados 2: another colour, and the recado is there.
   await builderSends(s, pedidos.url, 'recados-2')
   await page.goto(`${pedidos.url}?lens=project&section=versions`)
-  await page.getByText('Versão 2 · no ar').waitFor()
+  await page.getByText('Versão 2 · Na Prévia').waitFor()
   await publishVersion(s, pedidos.url, 2)
   assert.deepEqual(await recados(pedidos.door, await openApp(s, pedidos.door, PURPLE)), [RECADO])
-  await putVersionOneBack(page, pedidos.url)
+  await publishVersionOneAgain(page, pedidos.url)
   assert.deepEqual(await recados(pedidos.door, await openApp(s, pedidos.door, GREEN)), [RECADO])
   await deletePedidos(page, pedidos.url)
   const gone = await visitApp(pedidos.door, app, '/')

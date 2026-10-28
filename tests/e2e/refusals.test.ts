@@ -63,16 +63,16 @@ async function sent(s: Scenario, pedidos: string, folder: string, state: string)
   await s.owner.page.getByText(state, { exact: true }).waitFor()
 }
 
-/** 5. Voltar para esta, on Versão 2. */
-async function putVersionTwoBack(page: Page, settings: string) {
+/** 5. Publicar esta, on Versão 2. */
+async function publishVersionTwoAgain(page: Page, settings: string) {
   await page.goto(settings)
   await page
     .getByRole('listitem')
     .filter({ hasText: 'Versão 2' })
-    .getByRole('button', { name: 'Voltar para esta' })
+    .getByRole('button', { name: 'Publicar esta' })
     .click()
   const dialog = page.getByRole('alertdialog')
-  await dialog.getByRole('button', { name: 'Voltar para a Versão 2' }).click()
+  await dialog.getByRole('button', { name: 'Publicar a versão 2' }).click()
   await dialog.waitFor({ state: 'hidden' })
 }
 
@@ -82,8 +82,8 @@ test('o roteiro de Recusar um app: não inicia, grava errado, trava, e a versão
   const pedidos = await pedidosOf(s)
   const settings = `${pedidos.url}?lens=project&section=versions`
   // 1. Recados 1 and 2; a recado written on Versão 2.
-  await sent(s, pedidos.url, 'recados-1', 'Versão 1 · no ar')
-  await sent(s, pedidos.url, 'recados-2', 'Versão 2 · no ar')
+  await sent(s, pedidos.url, 'recados-1', 'Versão 1 · Na Prévia')
+  await sent(s, pedidos.url, 'recados-2', 'Versão 2 · Na Prévia')
   await publishVersion(s, pedidos.url, 2)
   const written = await openApp(s, pedidos.door, PURPLE)
   const kept = await visitApp(pedidos.door, written, '/api/escreverRecado', { texto: RECADO })
@@ -92,7 +92,7 @@ test('o roteiro de Recusar um app: não inicia, grava errado, trava, e a versão
   await sent(s, pedidos.url, 'recados-nao-inicia', 'Versão 3 · Falhou: O app não inicia.')
   assert.deepEqual(await recados(pedidos.door, await openApp(s, pedidos.door, PURPLE)), [RECADO])
   // 3. The write in `db.query` is on the air and refused; nothing reaches the company's database.
-  await sent(s, pedidos.url, 'recados-defeito', 'Versão 4 · no ar')
+  await sent(s, pedidos.url, 'recados-defeito', 'Versão 4 · Na Prévia')
   assert.equal(await page.getByText('Versão 3', { exact: false }).count(), 0)
   await publishVersion(s, pedidos.url, 4)
   const defeito = await openApp(s, pedidos.door, GREEN)
@@ -102,7 +102,7 @@ test('o roteiro de Recusar um app: não inicia, grava errado, trava, e a versão
   assert.deepEqual(await recados(pedidos.door, defeito), [RECADO])
   assert.deepEqual(await storedRecados(pedidos.companyDatabase, pedidos.url), [RECADO])
   // 4. Travar: the CPU limit cuts it well before the call's deadline, and the Hub goes on.
-  await sent(s, pedidos.url, 'recados-laco', 'Versão 5 · no ar')
+  await sent(s, pedidos.url, 'recados-laco', 'Versão 5 · Na Prévia')
   await publishVersion(s, pedidos.url, 5)
   const laco = await openApp(s, pedidos.door, GREEN)
   const started = Date.now()
@@ -114,7 +114,7 @@ test('o roteiro de Recusar um app: não inicia, grava errado, trava, e a versão
   await page.goto(`${pedidos.url}?lens=project`)
   await page.getByTestId('area').getByRole('heading', { name: 'Pedidos', exact: true }).waitFor()
   // 5. Back to Versão 2: Recados works, with its recado.
-  await putVersionTwoBack(page, settings)
+  await publishVersionTwoAgain(page, settings)
   assert.deepEqual(await recados(pedidos.door, await openApp(s, pedidos.door, PURPLE)), [RECADO])
   assert.deepEqual(s.problems, [])
 })
