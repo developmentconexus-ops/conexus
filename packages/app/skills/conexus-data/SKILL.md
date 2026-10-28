@@ -40,8 +40,11 @@ An expected failure is part of the output, and the screen shows it. Nothing foun
 `migrations` is a list of `{ id, statements }`, applied in order, each once, when a version is sent. An `id` is lowercase letters, digits, `_` and `-`, such as `001_ticket`; each statement is one SQL statement. Never edit a migration a sent version carried; add the next one.
 
 - A record that moves through statuses keeps its history in a table of its own: one row per change, with who made it and when.
-- A migration may create and alter tables, indexes, constraints and views in this app's schema only: no functions, procedures, triggers, DO blocks, extensions, roles, grants or other schemas.
-- The platform owns the migrations' one transaction: no `BEGIN`, `COMMIT`, `SAVEPOINT`, `SET` or other transaction control. Write literals with standard-conforming strings.
+- Saved data only moves forward. A migration may add tables, columns, indexes and constraints, and copy into what it added. It never drops, renames or retypes a saved column or table, never deletes or overwrites saved rows (filling only empty ones, `WHERE column IS NULL`, is fine), and never makes the previous version send a field it does not know. Conexus applies every pending migration in one transaction and keeps it only if every saved value is still there and the previous version still reads and writes; otherwise the version does not enter.
+- To rename, add the new column and copy. To remove a field, take it off the screens; what was saved stays. A saved row is fixed on the app's screen, never by a migration. A fixed list lives in Zod (`z.enum`), never in a `CHECK`; to change an existing `CHECK` list, drop the `CHECK` and keep the list in Zod. Nothing is truly deleted in this version: say so to the person.
+- No functions with `SECURITY DEFINER` or `EXECUTE`, no function body that changes rows other than inserting or setting `NEW`, no views, `DO` blocks, extensions, roles, grants or other schemas, no row level security, policies or rules, and no transaction control (`BEGIN`, `COMMIT`, `SET`): they act after the transaction, where Conexus cannot check them, and the version is refused. Write literals with standard-conforming strings.
+- The same list refuses `CREATE TYPE ... AS ENUM` (use a `text` column and the list in Zod), `CREATE SEQUENCE` (use a `serial` or identity column), `RAISE EXCEPTION` in a trigger (check in the handler and return the failure as output) and one item holding two statements (one item for each).
+- A trigger function always ends in `RETURN NEW`, in a `BEFORE` and in an `AFTER` trigger; `RETURN NULL` is refused.
 
 ## The browser side
 

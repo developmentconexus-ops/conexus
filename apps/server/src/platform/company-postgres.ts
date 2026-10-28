@@ -7,6 +7,9 @@ import { NeonDbError, neon, neonConfig } from '@neondatabase/serverless'
 import { cappedText } from './capped-text.ts'
 import type { AppLoginKey } from './config.ts'
 import { DatabaseUrl } from './database.ts'
+import { OUTCOME_AFTER, OUTCOME_BEFORE } from './migration-outcome.ts'
+import type { RuleBreak } from './migration-rule.ts'
+import { ruleBreak } from './migration-rule.ts'
 import { NEON_CALL_BUDGET_MS } from './neon.ts'
 
 export type SqlStatement = Readonly<{ text: string; values?: readonly unknown[] }>
@@ -15,7 +18,7 @@ type Row = Readonly<Record<string, unknown>>
 /** What PostgreSQL said to one transaction: a SQLSTATE left no effect; silence may have left it. */
 export type SqlAnswer =
   | { kind: 'DONE'; value: Row[][] }
-  | { kind: 'REFUSED'; code: string }
+  | { kind: 'REFUSED'; code: string; table?: string; column?: string; constraint?: string }
   | { kind: 'NO_ANSWER' }
 
 /** Runs the statements in one transaction as the URL's login, all or none. */
@@ -28,11 +31,19 @@ export type SqlTransport = (
 // Classes 08 and 57P0: the connection or the server went away, and the commit may have happened.
 const CONNECTION_LOST = /^(08|57P0)/
 
-/** A SQLSTATE refuses; none, or a lost connection, is silence. */
-export function answerOf(code: string | undefined): SqlAnswer {
-  return code === undefined || CONNECTION_LOST.test(code)
-    ? { kind: 'NO_ANSWER' }
-    : { kind: 'REFUSED', code }
+/**
+ * A SQLSTATE refuses with the names it carries; none, or a lost connection, is silence. Never
+ * `detail`, which holds values (code C52, security S40).
+ */
+export function answerOf(
+  error:
+    | Readonly<{ code?: string; table?: string; column?: string; constraint?: string }>
+    | undefined,
+): SqlAnswer {
+  const code = error?.code
+  if (code === undefined || CONNECTION_LOST.test(code)) return { kind: 'NO_ANSWER' }
+  const { table, column, constraint } = error ?? {}
+  return { kind: 'REFUSED', code, table, column, constraint }
 }
 
 /** A SQL reply past this is silence: the Hub's own statements read a few rows (code C59). */
@@ -63,7 +74,7 @@ export async function neonTransport(
     )
     return { kind: 'DONE', value }
   } catch (error) {
-    return answerOf(error instanceof NeonDbError ? error.code : undefined)
+    return answerOf(error instanceof NeonDbError ? error : undefined)
   }
 }
 
@@ -71,8 +82,8 @@ type AppMigration = Manifest['migrations'][number]
 type MigrateAnswer =
   | { kind: 'DONE'; applied: number }
   | { kind: 'CHANGED'; id: string }
-  | { kind: 'REFUSED'; code: string }
-  | { kind: 'NO_ANSWER' }
+  | { kind: 'REFUSED_BY_RULE'; rule: RuleBreak }
+  | Extract<SqlAnswer, { kind: 'REFUSED' | 'NO_ANSWER' }>
 
 export type CompanyPostgres = {
   ensureApp(owner: DatabaseUrl, projectId: ProjectId): Promise<SqlAnswer>
@@ -181,6 +192,8 @@ async function ensureApp(
  * Every pending migration in one transaction with its ledger rows, as the migration login; an
  * applied one whose statements changed refuses them all (decision 0046). One the version does not
  * name is a later version's, kept when Voltar put an earlier one back: its tables stay as they are.
+ * The transaction commits only if every value saved before is still there and the previous version
+ * still reads and writes (B, 2026-10-27).
  */
 async function migrate(
   context: Context,
@@ -199,15 +212,22 @@ async function migrate(
   const done = new Set(applied.map((row) => row.id))
   const pending = input.migrations.filter((one) => !done.has(one.id))
   if (pending.length === 0) return { kind: 'DONE', applied: 0 }
+  // The outcome check cannot see what acts after the transaction: the fixed list refuses it first.
+  const rule = ruleBreak(pending)
+  if (rule !== undefined) return { kind: 'REFUSED_BY_RULE', rule }
   const ran = await context.transport(
     url,
-    pending.flatMap((one) => [
-      ...one.statements.map((text) => ({ text })),
-      {
-        text: `INSERT INTO ${ledger} (id, sha256) VALUES ($1, $2)`,
-        values: [one.id, digests.get(one.id)],
-      },
-    ]),
+    [
+      OUTCOME_BEFORE,
+      ...pending.flatMap((one) => [
+        ...one.statements.map((text) => ({ text })),
+        {
+          text: `INSERT INTO ${ledger} (id, sha256) VALUES ($1, $2)`,
+          values: [one.id, digests.get(one.id)],
+        },
+      ]),
+      OUTCOME_AFTER,
+    ],
     signal,
   )
   return ran.kind === 'DONE' ? { kind: 'DONE', applied: pending.length } : ran

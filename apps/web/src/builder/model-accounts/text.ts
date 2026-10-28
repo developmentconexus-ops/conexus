@@ -39,6 +39,18 @@ export function providerName(providers: readonly Provider[], id: ProviderId): st
   return providers.find((one) => one.id === id)?.name ?? id
 }
 
+/** The state as a badge's tone: ready green, limited or paused amber, refused or closed red (design V35). */
+export function stateTone(account: ModelAccount): 'success' | 'warning' | 'danger' | 'neutral' {
+  if (account.kindOff || account.state === 'refused') return 'danger'
+  if (account.state === 'paused' || account.limitedUntil !== null) return 'warning'
+  return 'success'
+}
+
+/** "1ª", the place a queue gives the account. */
+export function placeText(position: number): string {
+  return `${position}ª`
+}
+
 /** The state in words (design V35); the Conexus closing the kind is told before the rest. */
 export function stateText(account: ModelAccount): string {
   if (account.kindOff) return 'desligada pela Conexus'

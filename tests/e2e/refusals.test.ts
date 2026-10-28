@@ -110,7 +110,7 @@ test('o roteiro de Recusar um app: não inicia, grava errado, trava, e a versão
   assert.ok(Date.now() - started < 10_000, `cut after ${Date.now() - started} ms`)
   assert.deepEqual(await recados(pedidos.door, laco), [RECADO])
   await page.goto(`${pedidos.url}?lens=project`)
-  await page.getByRole('heading', { name: 'Pedidos', exact: true }).waitFor()
+  await page.getByTestId('area').getByRole('heading', { name: 'Pedidos', exact: true }).waitFor()
   // 5. Back to Versão 2: Recados works, with its recado.
   await putVersionTwoBack(page, settings)
   assert.deepEqual(await recados(pedidos.door, await openApp(s, pedidos.door, PURPLE)), [RECADO])
@@ -127,7 +127,7 @@ test('o roteiro da sessão que termina: a conversa aberta, a volta à aba, um En
     const page = await hubWindow(closers, port, '198.51.100.10', problems)
     await enter(page, ANA.email, `/companies/${ids.companyA}/settings/model-accounts`)
     await linkKey(page, 'Time 1', KEYS.first)
-    await page.getByText('Time 1 · chave …aB1c · ligada').first().waitFor()
+    await page.getByText('Time 1', { exact: true }).first().waitFor()
     await chooseDefaultModel(page, ids.companyA)
     await page.goto(`${TEST_ORIGIN}/companies/${ids.companyA}`)
     await waitForHome(page)

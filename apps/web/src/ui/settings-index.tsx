@@ -1,4 +1,5 @@
 import type { LinkProps } from '@tanstack/react-router'
+import type { LucideIcon } from 'lucide-react'
 import { SearchIcon } from 'lucide-react'
 import { useState } from 'react'
 import { FrameLink } from './frame.tsx'
@@ -9,13 +10,16 @@ import { Empty } from './states.tsx'
 export type SectionMeta = {
   group: 'you' | 'company'
   label: string
+  icon: LucideIcon
+  /** One sentence under the page's title: what the section is for. */
+  summary: string
   order: number
   keywords?: readonly string[]
 }
 
 export type SettingsSection = Pick<LinkProps, 'to' | 'params'> & SectionMeta
 
-/** Lower case without accents, so "convite" finds "Convites" and "aparencia" finds "Aparência". */
+/** Lower case without accents, so "convite" finds "Convites". */
 function folded(text: string): string {
   return text
     .normalize('NFD')
@@ -64,7 +68,9 @@ export function SettingsIndex(props: { sections: readonly SettingsSection[]; gro
         if (shown.length === 0) return null
         return (
           <SidebarGroup key={group}>
-            <SidebarGroupLabel>{name}</SidebarGroupLabel>
+            <SidebarGroupLabel title={name} className="block truncate leading-8">
+              {name}
+            </SidebarGroupLabel>
             <SidebarMenu>
               {shown.map((section) => (
                 <FrameLink
@@ -72,6 +78,7 @@ export function SettingsIndex(props: { sections: readonly SettingsSection[]; gro
                   to={section.to}
                   params={section.params}
                   label={section.label}
+                  icon={section.icon}
                 />
               ))}
             </SidebarMenu>

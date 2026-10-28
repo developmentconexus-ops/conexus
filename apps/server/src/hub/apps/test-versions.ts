@@ -192,8 +192,9 @@ async function turnOn(hub: Hub, person: Person, conversationId: string) {
   assert.equal(response.statusCode, 200)
   const stream = response.stream()
   // The messages it started, each whole: ours is told again with the same id as the end adds to it.
-  const ended = Promise.withResolvers<z.infer<typeof Part>[][]>()
-  const told: z.infer<typeof Part>[][] = []
+  // `raw` is the parts as the stream said them, before the contract's parse drops what it does not know.
+  const ended = Promise.withResolvers<{ parts: z.infer<typeof Part>[]; raw: string }[]>()
+  const told: { parts: z.infer<typeof Part>[]; raw: string }[] = []
   let buffered = ''
   stream.on('data', (chunk: Buffer) => {
     buffered += chunk.toString('utf8')
@@ -202,7 +203,8 @@ async function turnOn(hub: Hub, person: Person, conversationId: string) {
     for (const frame of frames.filter((each) => each.startsWith('data: '))) {
       const event = Frame.parse(JSON.parse(frame.slice(6)))
       if (event.type === 'message_start') {
-        told.push(z.array(Part).parse(Object(Object(event.message).content).parts))
+        const raw = Object(Object(event.message).content).parts
+        told.push({ parts: z.array(Part).parse(raw), raw: JSON.stringify(raw) })
       }
       if (event.type === 'agent_end') ended.resolve(told)
     }
@@ -212,7 +214,12 @@ async function turnOn(hub: Hub, person: Person, conversationId: string) {
 }
 
 /** What a send's turn said: the version it saved and whether, and how, it reached the app. */
-export type Turned = { number: number | undefined; preview: PreviewData | undefined }
+export type Turned = {
+  number: number | undefined
+  preview: PreviewData | undefined
+  /** The version's message as the stream said it, to search for what must never be in it. */
+  raw: string
+}
 
 /**
  * Sends a version as the person, the Builder's way: a turn on a new conversation of the Projeto,
@@ -236,10 +243,9 @@ export async function send(
   const asked = await post(hub, person, messages, { message: `${ASK}${randomUUID()}` })
   assert.equal(asked.statusCode, 200, asked.body)
   // The version's message as last told: the Prévia `sending` at the save, replaced by the end.
-  const parts =
-    (await turn.ended).findLast((each) =>
-      each.some((part) => part.type === 'data-conexus-version'),
-    ) ?? []
+  const { parts, raw } = (await turn.ended).findLast((each) =>
+    each.parts.some((part) => part.type === 'data-conexus-version'),
+  ) ?? { parts: [], raw: '[]' }
   function data(type: string) {
     return parts.flatMap((part) => (part.type === type ? [part.data] : []))
   }
@@ -248,6 +254,7 @@ export async function send(
   return {
     number: saved === undefined ? undefined : z.object({ number: z.int() }).parse(saved).number,
     preview: preview === undefined ? undefined : PreviewData.parse(preview),
+    raw,
   }
 }
 

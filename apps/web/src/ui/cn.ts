@@ -8,7 +8,7 @@ import { extendTailwindMerge } from 'tailwind-merge'
 const merge = extendTailwindMerge({
   extend: {
     theme: {
-      text: ['display', 'title', 'body', 'label', 'eyebrow', 'fact'],
+      text: ['display', 'display-narrow', 'title', 'body', 'label', 'eyebrow', 'fact'],
       radius: ['control', 'object', 'card', 'composer', 'pill'],
       spacing: ['xs', 'sm', 'md', 'lg', 'xl', '2xl'],
     },

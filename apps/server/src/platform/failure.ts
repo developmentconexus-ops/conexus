@@ -1,4 +1,4 @@
-import type { FailureCode } from '@conexus/hub-api'
+import type { FailureCode, MigrationCause } from '@conexus/hub-api'
 import { FAILURES } from '@conexus/hub-api'
 
 export type Scalar = string | number | boolean
@@ -16,10 +16,17 @@ export class Failure extends Error {
   readonly details: Readonly<Record<string, Scalar>>
   /** A name the phrase says to the person; never logged. */
   readonly person: string | undefined
+  /** Why a migration did not enter, for the Prévia's line; names only, never a value, never logged. */
+  readonly migration: MigrationCause | undefined
 
   constructor(
     code: FailureCode,
-    options: { details?: Record<string, Scalar>; person?: string; cause?: unknown } = {},
+    options: {
+      details?: Record<string, Scalar>
+      person?: string
+      migration?: MigrationCause
+      cause?: unknown
+    } = {},
   ) {
     const details = options.details ?? {}
     const named = Object.entries(details).map(([key, value]) => `${key}=${value}`)
@@ -28,6 +35,7 @@ export class Failure extends Error {
     this.code = code
     this.details = details
     this.person = options.person
+    this.migration = options.migration
   }
 }
 

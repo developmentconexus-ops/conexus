@@ -1,11 +1,11 @@
 import type { MastraMessagePart } from '@mastra/client-js'
-import { screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { http } from 'msw'
 import { expect, test } from 'vitest'
 import { COMPANY } from '../../platform/fixtures.ts'
 import { hubServer, PEDIDOS } from '../../platform/test-hub.tsx'
 import { AGENT_START, RUNNING, stepStarted } from './test-events.ts'
-import { conversationOf, FIRST, say, screens } from './test-hub.tsx'
+import { conversationOf, FIRST, say, screens, typed } from './test-hub.tsx'
 import { builderSaid, personSaid } from './test-stream.tsx'
 
 const server = hubServer()
@@ -119,4 +119,88 @@ test('recarregar uma conversa parada cujo envio foi cortado não mostra "Subindo
   const log = screen.getByRole('log', { name: 'Conversa com o Builder' })
   await within(log).findByText(/^Versão 1 guardada/)
   expect(within(log).queryByText(/^Subindo o app…/)).toBeNull()
+})
+
+const DUPLICATE = {
+  state: 'failed',
+  number: 7,
+  code: 'APP_MIGRATION_FAILED',
+  cause: {
+    kind: 'database',
+    sqlstate: '23505',
+    table: 'encomenda',
+    constraint: 'encomenda_whatsapp_key',
+  },
+}
+const ASKED =
+  'A versão 7 não entrou: o banco recusou a migração (valor repetido, tabela encomenda, regra encomenda_whatsapp_key).'
+
+/** A conversation whose kept version message holds a failed Prévia. */
+function keptFailed(data: object) {
+  return conversationOf({
+    id: FIRST,
+    messages: [
+      personSaid('Não pode repetir WhatsApp'),
+      builderSaid('Pronto.'),
+      {
+        id: 'ours',
+        role: 'assistant',
+        createdAt: '2026-10-19T12:03:00.000Z',
+        content: { parts: [VERSION, preview(data)] },
+      },
+    ],
+  })
+}
+
+test('a Prévia que falhou com motivo diz o motivo e o botão o põe na caixa, sem enviar', async () => {
+  const opened = await openConversation(keptFailed(DUPLICATE))
+  const log = screen.getByRole('log', { name: 'Conversa com o Builder' })
+  await within(log).findByText(
+    'Motivo: valor repetido, tabela encomenda, regra encomenda_whatsapp_key.',
+  )
+  fireEvent.click(within(log).getByRole('button', { name: 'Pedir ao Builder para corrigir' }))
+  await waitFor(() => expect(typed(opened.field)).toBe(ASKED))
+  fireEvent.click(within(log).getByRole('button', { name: 'Pedir ao Builder para corrigir' }))
+  expect(typed(opened.field)).toBe(ASKED)
+})
+
+test('o botão acrescenta o motivo numa linha nova quando a caixa já tem texto', async () => {
+  const opened = await openConversation(keptFailed(DUPLICATE))
+  fireEvent.change(opened.field, { target: { value: 'mantenha só a encomenda mais nova' } })
+  const log = screen.getByRole('log', { name: 'Conversa com o Builder' })
+  fireEvent.click(
+    await within(log).findByRole('button', { name: 'Pedir ao Builder para corrigir' }),
+  )
+  await waitFor(() =>
+    expect(typed(opened.field)).toBe(`mantenha só a encomenda mais nova\n${ASKED}`),
+  )
+})
+
+test('a Prévia que falhou sem motivo não tem motivo nem botão', async () => {
+  await openConversation(keptFailed({ state: 'failed', number: 7, code: 'APP_VERSION_FAILED' }))
+  const log = screen.getByRole('log', { name: 'Conversa com o Builder' })
+  await within(log).findByText(/^Prévia não atualizada: /)
+  expect(within(log).queryByText(/^Motivo:/)).toBeNull()
+  expect(within(log).queryByRole('button', { name: 'Pedir ao Builder para corrigir' })).toBeNull()
+})
+
+const BEFORE = [
+  ['APP_MIGRATION_FAILED', 'Uma migração do app falhou no banco.'],
+  ['APP_MIGRATION_REFUSED', 'Uma migração do app faz o que o Conexus não confere.'],
+] as const
+
+for (const [code, phrase] of BEFORE) {
+  test(`a Prévia ${code} sem motivo, de antes, diz só a frase, sem apontar para um botão que não há`, async () => {
+    await openConversation(keptFailed({ state: 'failed', number: 7, code }))
+    const log = screen.getByRole('log', { name: 'Conversa com o Builder' })
+    await within(log).findByText(`Prévia não atualizada: ${phrase}`)
+  })
+}
+
+test('com motivo, a frase do código leva a ação que aponta para o botão', async () => {
+  await openConversation(keptFailed(DUPLICATE))
+  const log = screen.getByRole('log', { name: 'Conversa com o Builder' })
+  await within(log).findByText(
+    'Prévia não atualizada: Uma migração do app falhou no banco. Use o botão para pedir ao Builder que corrija.',
+  )
 })

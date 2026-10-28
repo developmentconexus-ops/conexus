@@ -19,9 +19,11 @@ import { ToolRow } from './tool-row.tsx'
 function ConexusPartRow({
   item,
   live,
+  onAsk,
 }: {
   item: Extract<TranscriptItem, { kind: 'conexus' }>
   live: boolean
+  onAsk: (text: string) => void
 }) {
   if (item.partType === 'data-conexus-machine') {
     const parsed = MachineData.safeParse(item.data)
@@ -41,12 +43,20 @@ function ConexusPartRow({
   }
   if (item.partType === 'data-conexus-preview') {
     const parsed = PreviewData.safeParse(item.data)
-    return parsed.success ? <PreviewLine data={parsed.data} live={live} /> : null
+    return parsed.success ? <PreviewLine data={parsed.data} live={live} onAsk={onAsk} /> : null
   }
   return null
 }
 
-function ItemRow({ item, streaming }: { item: TranscriptItem; streaming: boolean }) {
+function ItemRow({
+  item,
+  streaming,
+  onAsk,
+}: {
+  item: TranscriptItem
+  streaming: boolean
+  onAsk: (text: string) => void
+}) {
   switch (item.kind) {
     case 'text':
       return (
@@ -63,7 +73,7 @@ function ItemRow({ item, streaming }: { item: TranscriptItem; streaming: boolean
     case 'card':
       return item.cardKind === 'question' ? <QuestionCard part={item} /> : <PlanCard part={item} />
     case 'conexus':
-      return <ConexusPartRow item={item} live={streaming} />
+      return <ConexusPartRow item={item} live={streaming} onAsk={onAsk} />
     default:
       return item satisfies never
   }
@@ -83,6 +93,7 @@ export function BuilderTurn(props: {
   items: readonly TranscriptItem[]
   model: ModelId | null
   streaming: boolean
+  onAsk: (text: string) => void
 }) {
   const rows = fold(props.items)
 
@@ -117,7 +128,12 @@ export function BuilderTurn(props: {
               working={props.streaming && index === rows.length - 1}
             />
           ) : (
-            <ItemRow key={rowKey(row, index)} item={row.item} streaming={props.streaming} />
+            <ItemRow
+              key={rowKey(row, index)}
+              item={row.item}
+              streaming={props.streaming}
+              onAsk={props.onAsk}
+            />
           ),
         )}
       </MessageContent>

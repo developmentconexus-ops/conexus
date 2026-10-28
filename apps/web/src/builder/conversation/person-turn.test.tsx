@@ -36,12 +36,14 @@ const SENT = [
 test('a bolha mostra o texto e uma etiqueta por arquivo, ao vivo e depois de recarregar, a imagem em miniatura (11)', () => {
   let live = OPENED
   for (const event of events) live = session(live, { type: 'event', event })
-  const shown = render(<Transcript turns={shownOf(live)} steers={[]} model={MODEL} />)
+  const shown = render(
+    <Transcript turns={shownOf(live)} steers={[]} model={MODEL} onAsk={() => undefined} />,
+  )
   expect(bubbles()).toEqual(SENT)
   shown.unmount()
 
   const reread = session(OPENED, { type: 'loaded', messages: read })
-  render(<Transcript turns={shownOf(reread)} steers={[]} model={MODEL} />)
+  render(<Transcript turns={shownOf(reread)} steers={[]} model={MODEL} onAsk={() => undefined} />)
   expect(bubbles()).toEqual(SENT)
 })
 

@@ -1,4 +1,4 @@
-import type { Owner, ProviderId, ProviderOrder } from '@conexus/hub-api'
+import type { ModelAccountId, Owner, ProviderId, ProviderOrder } from '@conexus/hub-api'
 import { ModelFallback } from '@conexus/hub-api'
 import { and, asc, eq } from 'drizzle-orm'
 import { transactionLock } from '../../platform/database.ts'
@@ -16,7 +16,6 @@ import {
   insertAccount,
   labelOf,
   ownerOf,
-  partOf,
   scopeOf,
   usableInOrder,
   viewOf,
@@ -39,26 +38,17 @@ import { keepServed } from './served.ts'
 import { companyModelFallback, modelAccount } from './tables.ts'
 
 /**
- * The person's order for each provider (P2): their own, then the company's given to them, then the
- * company's for everyone, each part in its owner's order.
+ * The person's order for each provider (P2): the accounts the queue would call now, their own, then
+ * the company's given to them, then the company's for everyone, each part in its owner's order.
  */
 function ordersOf(viewer: Viewer, rows: AccountRow[], context: Context): ProviderOrder[] {
-  const byProvider = new Map<ProviderId, AccountRow[][]>()
-  for (const row of rows) {
-    const part = partOf(row, context, viewer.person.id)
-    if (part === undefined) continue
-    const parts = byProvider.get(row.provider) ?? [[], [], []]
-    parts[part]?.push(row)
-    byProvider.set(row.provider, parts)
+  const byProvider = new Map<ProviderId, ModelAccountId[]>()
+  for (const row of usableInOrder(rows, context, viewer.person.id)) {
+    byProvider.set(row.provider, [...(byProvider.get(row.provider) ?? []), row.id])
   }
   return [...byProvider.entries()]
     .sort(([left], [right]) => left.localeCompare(right))
-    .map(([provider, parts]) => ({
-      provider,
-      accounts: parts.flatMap((part) =>
-        part.sort((a, b) => a.position - b.position).map(({ id }) => id),
-      ),
-    }))
+    .map(([provider, accounts]) => ({ provider, accounts }))
 }
 
 /** The providers the viewer may converse with now: those with an account the queue would call. */

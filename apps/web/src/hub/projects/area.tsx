@@ -84,7 +84,7 @@ export function ProjectArea(props: {
       }}
       className="h-full gap-0"
     >
-      <div className="flex flex-wrap items-center gap-x-md gap-y-xs border-b border-line px-md py-xs max-md:flex-nowrap max-md:gap-x-xs max-md:px-xs max-md:py-0">
+      <div className="flex flex-wrap items-center gap-x-md gap-y-xs border-b border-line px-md py-xs max-md:flex-nowrap max-md:gap-x-md max-md:px-sm max-md:py-0">
         <PageTitle className="min-w-0 flex-[1_1_16rem] truncate max-md:hidden" title={project.name}>
           {project.name}
         </PageTitle>

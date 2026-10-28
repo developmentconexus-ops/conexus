@@ -85,7 +85,12 @@ test('envio: Neon ou Cloudflare fora "falhou"; código que não inicia e migraç
       { state: 'failed', number: 2, code: 'APP_VERSION_FAILED' },
       { state: 'failed', number: 3, code: 'APP_VERSION_FAILED' },
       { state: 'failed', number: 4, code: 'APP_VERSION_NOT_STARTING' },
-      { state: 'failed', number: 5, code: 'APP_MIGRATION_FAILED' },
+      {
+        state: 'failed',
+        number: 5,
+        code: 'APP_MIGRATION_FAILED',
+        cause: { kind: 'database', sqlstate: '42P01' },
+      },
       { state: 'failed', number: 6, code: 'APP_MIGRATION_CHANGED' },
     ],
   )

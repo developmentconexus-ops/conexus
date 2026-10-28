@@ -1,5 +1,5 @@
 import type { Manifest } from '@conexus/app-contract'
-import type { AppVersionFailure, CompanyId, ProjectId } from '@conexus/hub-api'
+import type { AppVersionFailure, CompanyId, MigrationCause, ProjectId } from '@conexus/hub-api'
 import type { CompanyPostgres } from '../../platform/company-postgres.ts'
 import type { Database, DatabaseUrl, Scope } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
@@ -54,11 +54,14 @@ export async function openAppDatabase(
   return { kind: 'OPEN', owner: owner.value }
 }
 
-/** The version's pending migrations, all or none (decision 0046); a refusal keeps only its code. */
+/**
+ * The version's pending migrations, all or none (decision 0046); a refusal keeps its code and the
+ * names it carries, never a value (code C52).
+ */
 export async function migrateApp(
   deps: AppDatabaseDeps,
   input: { owner: DatabaseUrl; companyId: CompanyId; projectId: ProjectId; manifest: Manifest },
-): Promise<AppVersionFailure | undefined> {
+): Promise<{ failure: AppVersionFailure; cause?: MigrationCause } | undefined> {
   const { companyId, projectId } = input
   const ran = await deps.companyPostgres.migrate(input.owner, projectId, input.manifest.migrations)
   switch (ran.kind) {
@@ -68,12 +71,24 @@ export async function migrateApp(
       return undefined
     case 'CHANGED':
       deps.log.error({ companyId, projectId, migration: ran.id }, 'APP_MIGRATION_CHANGED')
-      return 'APP_MIGRATION_CHANGED'
+      return { failure: 'APP_MIGRATION_CHANGED' }
+    case 'REFUSED_BY_RULE':
+      deps.log.error({ companyId, projectId, ...ran.rule }, 'APP_MIGRATION_REFUSED')
+      return { failure: 'APP_MIGRATION_REFUSED', cause: { kind: 'rule', ...ran.rule } }
     case 'REFUSED':
       deps.log.error({ companyId, projectId, code: ran.code }, 'APP_MIGRATION_FAILED')
-      return 'APP_MIGRATION_FAILED'
+      return {
+        failure: 'APP_MIGRATION_FAILED',
+        cause: {
+          kind: 'database',
+          sqlstate: ran.code,
+          table: ran.table,
+          column: ran.column,
+          constraint: ran.constraint,
+        },
+      }
     case 'NO_ANSWER':
-      return 'APP_VERSION_FAILED'
+      return { failure: 'APP_VERSION_FAILED' }
     default:
       return ran satisfies never
   }

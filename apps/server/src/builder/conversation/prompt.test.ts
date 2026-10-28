@@ -96,6 +96,14 @@ test('o prompt tem cada linha "igual" e "adaptada" da tabela, nenhuma "tirada"; 
     assert.doesNotMatch(text, WHEN_TO_CHECK)
     assert.doesNotMatch(text, CANNOT_BUILD)
   }
+  const data = skills.find((text) => text.startsWith('---\nname: conexus-data'))
+  assert.ok(data)
+  assert.match(data, /Saved data only moves forward/)
+  assert.match(data, /To rename, add the new column and copy/)
+  assert.match(data, /Nothing is truly deleted in this version/)
+  assert.doesNotMatch(data, /constraints and views/)
+  assert.match(data, /no row level security, policies or rules/)
+  assert.doesNotMatch(skills.join('\n'), /only then remove the old fields/)
   // The skills come through Mastra's skill tools; the second test sees none in the machine.
   for (const name of ['skill', 'skill_read', 'skill_search'])
     assert.ok(first.tools.includes(name), name)

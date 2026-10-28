@@ -7,13 +7,13 @@ description: "Builds one unit of an approved Conexus step card as its own pull r
 
 ## When to use
 
-To build one unit of the step in construction from its approved card, or to fix a defect; never by
+To build one unit of the step in construction, or the next ([delivery L1](../../../docs/guides/delivery.md)), from its approved card, or to fix a defect; never by
 the session that wrote the card.
 
 ## What it receives
 
-The card in `docs/steps/` and the unit's name. It reads the card's top tables and its unit's
-section, which is its spec. Nothing else is pasted in: a ruling not in the card is not built.
+The card (in `docs/steps/` or its pull request) and the unit. It reads the card's top
+tables and its unit's section, its spec. Nothing else is pasted in: a ruling not in the card is not built.
 
 It reads [`AGENTS.md`](../../../AGENTS.md), this skill, [code](../../../docs/guides/code.md) and the
 unit's one named guide, and loads the card's maintainers' skills, pstack `poteto-mode` and

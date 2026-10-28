@@ -292,7 +292,7 @@ export async function openProject(page: Page, name: string) {
     .getByRole('main')
     .getByRole('link', { name: new RegExp(name) })
     .click()
-  await page.getByRole('heading', { name, exact: true }).waitFor()
+  await page.getByTestId('area').getByRole('heading', { name, exact: true }).waitFor()
 }
 
 export function linkIn(mail: Mail): string {

@@ -1,7 +1,15 @@
 import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
 import type { Replies } from './layout-harness.ts'
-import { createHarness, DESKTOP, PHONE, SMALL_PHONE } from './layout-harness.ts'
+import {
+  createHarness,
+  DESKTOP,
+  PHONE,
+  reachOf,
+  SMALL_PHONE,
+  stolenBy,
+  touching,
+} from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import { MESSAGES, WITH_CONVERSATIONS } from './sweep-conversation-states.ts'
 import { PROJECT_ID } from './sweep-replies.ts'
@@ -105,7 +113,7 @@ for (const viewport of [
           )
           const small = [
             ...row.querySelectorAll(
-              'button[aria-label="Anexar arquivos"], button[aria-label="Enviar"]',
+              'button[aria-label="Anexar arquivos"], button[aria-label="Modelo e raciocínio"], button[aria-label="Enviar"]',
             ),
           ].map((one) => one.getBoundingClientRect().height)
           const buttons = [...row.querySelectorAll('button')]
@@ -130,8 +138,30 @@ for (const viewport of [
       assert.ok(measured.tabIsVisualOrder, 'Tab goes in the order the eye reads')
       assert.equal(measured.centres, 1, 'the buttons share one line')
       assert.ok(measured.inside, 'the row stays inside the box')
-      assert.ok(measured.rowHeight <= 60, `the row is one line high, ${measured.rowHeight}px`)
-      if (viewport.width < 768) for (const height of measured.small) assert.ok(height >= 44)
+      assert.ok(measured.rowHeight <= 44, `the row is one line high, ${measured.rowHeight}px`)
+      assert.deepEqual(measured.small, [32, 32, 32], 'the row draws 32 px, at any width')
+      if (viewport.width < 768) {
+        // A button with nothing to send is disabled and takes no press, its touch area included.
+        await page.locator('form textarea').fill('Um app de encomendas')
+        await touching(page)
+        const buttons = page
+          .locator('form [data-slot="input-group-addon"]')
+          .last()
+          .locator('button')
+        for (const button of await buttons.all()) {
+          const name = await button.getAttribute('aria-label')
+          const reach = await reachOf(button)
+          assert.ok(
+            reach.up >= 6 && reach.down >= 6,
+            `${name} is touched over 44 px: ${JSON.stringify(reach)}`,
+          )
+          assert.deepEqual(
+            await stolenBy(button),
+            [],
+            `a neighbour covers ${name} at ${viewport.width}px with ${model}`,
+          )
+        }
+      }
       await page.close()
     })
   }
@@ -196,6 +226,34 @@ for (const [reducedMotion, sweeps] of [
     assert.equal(ring, 'none')
     if (sweeps) assert.equal(seen.animation, 'ring-sweep')
     else assert.deepEqual(seen, { animation: 'none', rotate: '120deg' })
+    await page.close()
+  })
+}
+
+for (const viewport of [DESKTOP, PHONE]) {
+  test(`+, o modelo, o microfone e Enviar são uma família: 32 px e o mesmo fundo suave, em ${viewport.width}px`, async () => {
+    const page = await openedWith(viewport, 'anthropic/claude-sonnet-4')
+    await page.getByRole('button', { name: 'Enviar' }).waitFor()
+    const row = page.locator('form [data-slot="input-group-addon"]').last()
+    function look(name: string) {
+      return row.locator(`button[aria-label="${name}"]`).evaluate((button) => {
+        const style = getComputedStyle(button)
+        const height = button.getBoundingClientRect().height
+        return {
+          height,
+          background: style.backgroundColor,
+          radius: Number.parseFloat(style.borderTopLeftRadius) >= height / 2,
+        }
+      })
+    }
+    const [attach, model, mic] = await Promise.all(
+      ['Anexar arquivos', 'Modelo e raciocínio', 'Ditar'].map(look),
+    )
+    assert.ok(attach && model && mic)
+    for (const each of [attach, model, mic]) assert.equal(each.height, 32)
+    assert.equal(attach.background, model.background, "+ paints the pill's background")
+    assert.equal(mic.background, model.background, "the microphone paints the pill's background")
+    assert.ok(attach.radius && mic.radius, '+ and the microphone are circles')
     await page.close()
   })
 }

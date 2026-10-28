@@ -4,8 +4,13 @@ import { cva } from 'class-variance-authority'
 import { cn } from './cn.ts'
 
 // Copied from shadcn's base-nova `button`, painted with the brand's button rows (design V6, V27).
+// Where a finger points, the press reaches 44 px around the visible control (Apple's 44 pt hit target,
+// WCAG 2.5.5) without drawing it bigger.
+export const touchArea =
+  'relative pointer-coarse:after:absolute pointer-coarse:after:top-1/2 pointer-coarse:after:left-1/2 pointer-coarse:after:h-full pointer-coarse:after:min-h-11 pointer-coarse:after:w-full pointer-coarse:after:min-w-11 pointer-coarse:after:-translate-1/2'
+
 const buttonClasses = cva(
-  'inline-flex shrink-0 items-center justify-center gap-sm whitespace-nowrap rounded-control border border-transparent font-body text-label select-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0',
+  `${touchArea} inline-flex shrink-0 items-center justify-center gap-sm whitespace-nowrap rounded-control border border-transparent font-body text-label select-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0`,
   {
     variants: {
       variant: {
@@ -17,14 +22,16 @@ const buttonClasses = cva(
         'danger-confirm': 'bg-danger text-on-ink',
       },
       size: {
-        // Icons follow their neighbour: 16px beside a label, 14px in a toolbar (design V34). A phone's
-        // finger needs 44 px.
-        default: 'h-[34px] px-[0.9rem] max-md:h-11 [&_svg]:size-4',
-        icon: 'size-8 max-md:size-11 [&_svg]:size-3.5',
+        // shadcn base-nova's heights. Icons follow their neighbour: 16px beside a label, 14px in a
+        // toolbar (design V34). `sm` is a row's own action.
+        default: 'h-8 px-3 [&_svg]:size-4',
+        sm: 'h-7 px-2.5 [&_svg]:size-3.5',
+        icon: 'size-8 [&_svg]:size-3.5',
+        'icon-sm': 'size-7 [&_svg]:size-3.5',
       },
       // A link that is a labelled button from `md` and the quiet icon button (`ghost`, `icon`) under it.
       phoneIcon: {
-        true: 'max-md:size-11 max-md:bg-transparent max-md:px-0 max-md:text-text-2 max-md:hover:bg-surface-3 max-md:hover:text-text max-md:[&_svg]:size-3.5',
+        true: 'max-md:size-8 max-md:bg-transparent max-md:px-0 max-md:text-text-2 max-md:hover:bg-surface-3 max-md:hover:text-text max-md:[&_svg]:size-3.5',
       },
     },
     defaultVariants: { variant: 'default', size: 'default' },

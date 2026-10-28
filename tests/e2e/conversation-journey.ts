@@ -130,20 +130,22 @@ export async function chooseDefaultModel(page: Page, companyId: string) {
   await page.getByRole('button', { name: 'Salvar padrão' }).and(page.locator(':disabled')).waitFor()
 }
 
-/** The automatic switch: the default model, then `SECOND_MODEL`, saved and read back as on. */
+/** The automatic switch: the default model, then `SECOND_MODEL`, each change saved on its own, read back as on. */
 export async function turnOnSwitch(page: Page) {
   const section = page.getByRole('region', { name: 'Troca automática' })
-  await section.getByLabel('Trocar para o próximo modelo quando as contas acabarem').check()
   const models: [string, string][] = [
     ['Anthropic', 'sonnet'],
     ['Groq', SECOND_MODEL],
   ]
   for (const [provider, search] of models) {
     await pickModel(page, section, 'Modelo da troca', provider, search)
-    await section.getByRole('button', { name: 'Adicionar à fila' }).click()
+    await saving(page, () => section.getByRole('button', { name: 'Adicionar à fila' }).click())
   }
-  await section.getByRole('button', { name: 'Salvar troca automática' }).click()
-  await section.getByText('Ligada', { exact: true }).waitFor()
+  const toggle = section.getByRole('switch', {
+    name: 'Trocar para o próximo modelo quando as contas acabarem',
+  })
+  await saving(page, () => toggle.click())
+  await section.locator('[role=switch][aria-checked=true]').waitFor()
 }
 
 /** Writes in the field and sends; the answer is the caller's to wait for. */
@@ -216,7 +218,7 @@ export async function readyToBuild(owner: Page, companyId: string, name: string)
   await enter(owner, ANA.email, `/companies/${companyId}/settings/model-accounts`)
   await owner.getByText('Nenhuma conta ligada').waitFor()
   await linkKey(owner, 'Time 1', KEYS.first)
-  await owner.getByText('Time 1 · chave …aB1c · ligada').first().waitFor()
+  await owner.getByText('Time 1', { exact: true }).first().waitFor()
   await chooseDefaultModel(owner, companyId)
   await owner.goto(`${TEST_ORIGIN}/companies/${companyId}`)
   await waitForHome(owner)

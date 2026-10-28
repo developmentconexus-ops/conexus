@@ -10,7 +10,7 @@ import { runningEffort } from '@conexus/hub-api'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { sentenceOfCode, writeFailureText } from '../../platform/hub.ts'
-import { buttonVariants } from '../../ui/button.tsx'
+import { buttonVariants, touchArea } from '../../ui/button.tsx'
 import { cn } from '../../ui/cn.ts'
 import { Notice } from '../../ui/notice.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
@@ -32,15 +32,12 @@ export function NoAccount(props: {
     <div className="flex flex-col items-start gap-sm">
       <Notice>{props.text ?? sentenceOfCode('MODEL_NO_ACCOUNT')}</Notice>
       <Link
-        to="/companies/$companyId/settings/my-model-accounts"
+        to="/companies/$companyId/settings/model-accounts"
         params={{ companyId: props.companyId }}
         className={
           props.action === 'button'
             ? // Wraps at 200% zoom on a phone instead of pushing the page sideways (design V18).
-              cn(
-                buttonVariants(),
-                'h-auto min-h-[34px] whitespace-normal py-xs max-md:h-auto max-md:min-h-11',
-              )
+              cn(buttonVariants(), 'h-auto min-h-8 whitespace-normal py-xs')
             : 'underline'
         }
       >
@@ -134,7 +131,10 @@ export function ComposerModelPicker(props: {
       heading={props.heading}
       note={phone ? NO_SECRETS : undefined}
       chevron={false}
-      className="h-8 rounded-pill bg-surface-3 px-sm max-md:h-11 text-label font-medium hover:bg-accent-soft data-popup-open:bg-accent-soft"
+      className={cn(
+        touchArea,
+        'h-8 rounded-pill bg-surface-3 px-sm text-label font-medium hover:bg-accent-soft data-popup-open:bg-accent-soft',
+      )}
       onChange={pickModel}
       effort={{ value: effort, onChange: (next) => props.onChange({ model: now, effort: next }) }}
     />
