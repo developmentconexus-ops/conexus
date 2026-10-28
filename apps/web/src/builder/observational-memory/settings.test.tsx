@@ -114,3 +114,17 @@ test('quem não gerencia as contas lê a escolha e não a muda', async () => {
     screen.getByText('Só o dono ou um administrador muda as configurações da empresa.'),
   ).toBeTruthy()
 })
+
+test('o modelo escolhido fica à vista no campo e uma resposta cortada diz que não confirmou', async () => {
+  open('owner', () => new HttpResponse('{"observer"', { status: 200 }))
+
+  const observer = await screen.findByRole('combobox', { name: 'Modelo do observador' })
+  expect(observer.textContent).toContain('Segue o modelo da conversa')
+  await choose(observer, 'GPT 5')
+
+  expect(
+    await screen.findByText(
+      'Não foi possível confirmar se o modelo foi salvo. Confira e tente de novo.',
+    ),
+  ).toBeTruthy()
+})
