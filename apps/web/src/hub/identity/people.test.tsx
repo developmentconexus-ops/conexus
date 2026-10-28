@@ -2,7 +2,7 @@ import { FAILURES } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { http } from 'msw'
-import { expect, test } from 'vitest'
+import { expect, test, vi } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
 import { ANA, COMPANY } from '../../platform/fixtures.ts'
 import { refusal, sessionRead } from '../../platform/test-hub.tsx'
@@ -85,4 +85,30 @@ test('uma empresa que o Hub responde 404: a página de "não encontrado", não a
   open()
   expect(await screen.findByRole('heading', { name: FAILURES.NOT_FOUND.phrase })).toBeTruthy()
   expect(screen.queryByText('Não foi possível abrir o Conexus')).toBeNull()
+})
+
+test('no celular, o papel desce para baixo do nome e a tabela perde a coluna de papel', async () => {
+  const phone = vi.spyOn(globalThis, 'matchMedia').mockImplementation((media: string) =>
+    Object.assign(new EventTarget(), {
+      matches: true,
+      media,
+      onchange: null,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+      dispatchEvent: () => true,
+    }),
+  )
+  try {
+    hub({ role: 'owner', mayInviteAs: ['admin'] })
+    open()
+    const people = within(sectionOf(await screen.findByRole('heading', { name: 'Pessoas' })))
+    expect(people.queryByRole('columnheader', { name: 'Papel' })).toBeNull()
+    expect(people.getAllByRole('columnheader').length).toBe(2)
+    expect(bodyRows(people).map((row) => row.textContent)).toEqual([
+      'Ana Limaana@example.testDono',
+      'Davi Costadavi@example.testMembroMudar papelTirar da empresa',
+    ])
+  } finally {
+    phone.mockRestore()
+  }
 })

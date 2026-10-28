@@ -151,3 +151,21 @@ test('"Cancelar" um convite abre a confirmação numa linha sob o convite, na me
     screen.getByRole('button', { name: 'Reenviar convite para bia@example.test' }).closest('table'),
   )
 })
+
+test('com a confirmação aberta, as ações do convite ficam travadas; "Voltar" fecha a linha e não há recusa', async () => {
+  hub({ role: 'owner', mayInviteAs: ['admin'], invitations: [PENDING] })
+  open()
+  const cancel = await screen.findByRole('button', {
+    name: 'Cancelar convite para bia@example.test',
+  })
+  fireEvent.click(cancel)
+  const send = screen.getByRole('button', { name: 'Reenviar convite para bia@example.test' })
+  expect(send).toHaveProperty('disabled', true)
+  expect(cancel).toHaveProperty('disabled', true)
+  expect(screen.queryByRole('alert')).toBeNull()
+  fireEvent.click(
+    screen.getByRole('button', { name: 'Voltar sem cancelar convite para bia@example.test' }),
+  )
+  await waitFor(() => expect(screen.queryByLabelText('Confirmar e-mail')).toBeNull())
+  expect(send).toHaveProperty('disabled', false)
+})
