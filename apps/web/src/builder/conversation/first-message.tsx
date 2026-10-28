@@ -15,11 +15,10 @@ import { ComposerModelPicker, NoAccount } from './model-choice.tsx'
 import { sendCreation } from './queries.ts'
 import { usePicked } from './start.tsx'
 import {
+  CHOOSE_ANOTHER_MODEL,
   EMPTY_CONVERSATION,
   NO_SECRETS,
-  REQUEST_NOT_SENT,
   UNCONFIRMED_CREATION,
-  WRITE_AGAIN,
 } from './text.ts'
 
 /**
@@ -53,10 +52,9 @@ export function FirstMessage(props: { companyId: CompanyId; projectId: ProjectId
       })
       return true
     } catch (error) {
-      draft.restore(outgoing)
       setFailure(
         error instanceof HubFailure && isModelRefusal(error.code)
-          ? `${REQUEST_NOT_SENT} ${sentenceOfCode(error.code)} ${WRITE_AGAIN}`
+          ? `${sentenceOfCode(error.code)} ${CHOOSE_ANOTHER_MODEL}`
           : writeFailureText(error, UNCONFIRMED_CREATION),
       )
       return false

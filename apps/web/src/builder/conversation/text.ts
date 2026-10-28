@@ -20,6 +20,8 @@ export const HANDOFF_UNCONFIRMED =
   'Não confirmamos o envio do seu pedido. Confira a conversa antes de enviar de novo.'
 /** What a Projeto created without its first request says, above "Nenhuma conversa". */
 export const REQUEST_NOT_SENT = 'O Projeto foi criado, mas o seu pedido não saiu.'
+/** What the first send of an empty Projeto says after the Hub's sentence on a refused model: the text is back in the box. */
+export const CHOOSE_ANOTHER_MODEL = 'Escolha outro modelo e envie de novo.'
 export const WRITE_AGAIN = 'Comece uma Nova conversa e escreva de novo.'
 
 /** Início's examples: the chip's words, and what a tap puts in the box (the founder approves the texts at the end of step 13.1). */

@@ -98,6 +98,17 @@ test('a primeira mensagem do Projeto sem conversa cria a conversa e a abre envia
   await waitFor(() => expect(conexus.router.state.location.pathname).toMatch(/\/conversations\//))
 })
 
+test('a recusa do modelo no primeiro envio do Projeto sem conversa devolve o texto e diz o que fazer', async () => {
+  open(view(), PROJECT, { create: () => refusal('MODEL_NO_ACCOUNT') })
+  const field = await screen.findByRole('textbox', { name: 'Mensagem para o Builder' })
+  fireEvent.change(field, { target: { value: 'Um app de encomendas' } })
+  fireEvent.keyDown(field, { key: 'Enter' })
+  expect((await screen.findByRole('status')).textContent).toBe(
+    'Nenhuma conta que você pode usar atende a este modelo. Escolha outro modelo ou fale com quem administra a empresa. Escolha outro modelo e envie de novo.',
+  )
+  expect(typed(field)).toBe('Um app de encomendas')
+})
+
 test('sem conta, "Nova conversa" mostra a frase do Hub e nada é criado', async () => {
   open(view(), PROJECT, { create: () => refusal('MODEL_NO_ACCOUNT') })
   fireEvent.click(await screen.findByRole('button', { name: 'Nova conversa' }))

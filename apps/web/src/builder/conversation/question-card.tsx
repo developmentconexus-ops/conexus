@@ -126,9 +126,7 @@ function Ask({ question, at }: { question: Question; at: number }) {
               defaultChecked={single && index === 0}
             >
               <span>{choice.label}</span>
-              {choice.hint && (
-                <span className="text-fact text-text-2 md:truncate">{choice.hint}</span>
-              )}
+              {choice.hint && <span className="text-fact text-text-2">{choice.hint}</span>}
             </QuestionnaireChoice>
           ))}
           <QuestionnaireInput
