@@ -42,7 +42,16 @@ export function MyAccounts() {
       aria-label="Suas contas"
       className="flex w-full flex-col gap-lg"
     >
-      <SectionTitle>Suas contas</SectionTitle>
+      <div className="flex flex-wrap items-start justify-between gap-md">
+        <SectionTitle>Suas contas</SectionTitle>
+        <LinkAccount
+          companyId={companyId}
+          owner="me"
+          hasAccounts={mine.length > 0}
+          providers={providers}
+          kinds={accounts.kinds}
+        />
+      </div>
       {mine.length === 0 && <Empty>Nenhuma conta sua</Empty>}
       {mine.length > 0 && (
         <AccountsTable>
@@ -74,13 +83,6 @@ export function MyAccounts() {
           ))}
         </ul>
       )}
-      <LinkAccount
-        companyId={companyId}
-        owner="me"
-        hasAccounts={mine.length > 0}
-        providers={providers}
-        kinds={accounts.kinds}
-      />
     </section>
   )
 }

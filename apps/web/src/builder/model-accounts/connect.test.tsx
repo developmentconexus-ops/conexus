@@ -151,6 +151,14 @@ test('resposta cortada: a chave de tentativa fica e a nova tentativa a leva; dep
   expect(sent[2]?.attemptKey).not.toBe(sent[0]?.attemptKey)
 })
 
+test('Cancelar fecha o painel sem ligar nada', async () => {
+  const sent = open([])
+  const panel = await openPanel()
+  fireEvent.click(within(panel).getByRole('button', { name: 'Cancelar' }))
+  await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Ligar conta' })).toBeNull())
+  expect(sent).toHaveLength(0)
+})
+
 test('Ligar conta abre o painel lateral, e Esc o fecha e devolve o foco ao botão', async () => {
   open([])
   const panel = await openPanel()

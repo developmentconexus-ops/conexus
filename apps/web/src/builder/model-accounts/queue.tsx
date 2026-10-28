@@ -31,7 +31,7 @@ export function Queue(props: Props) {
   const { accounts, providerName } = props
   const send = useMutation(sendOrder)
   const phone = useIsMobile()
-  const feedback = useMoveFeedback(accounts, providerName)
+  const feedback = useMoveFeedback(accounts, providerName, send.isPending)
 
   function move(index: number, direction: Move) {
     const ids = accounts.map((one) => one.id)

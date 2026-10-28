@@ -8,6 +8,7 @@ import { Empty } from '../../ui/states.tsx'
 import { AccountsTable } from './accounts-table.tsx'
 import { LinkAccount } from './link-account.tsx'
 import { ModelFallbackSection } from './model-fallback.tsx'
+import { modelLabel } from './model-label.ts'
 import { accountsQuery, providersQuery } from './queries.ts'
 import { Queue } from './queue.tsx'
 import { providerName, providersOf, queueOf } from './text.ts'
@@ -22,7 +23,7 @@ function ModelSettingsRead(props: { fallback: ModelFallback }) {
       <dt className="text-label text-text-2">Troca automática</dt>
       <dd>
         {enabled ? 'Ligada' : 'Desligada'}
-        {chain.length > 0 && `: ${chain.join(', ')}`}
+        {chain.length > 0 && `: ${chain.map(modelLabel).join(', ')}`}
       </dd>
     </dl>
   )
@@ -47,7 +48,18 @@ export function CompanyAccounts() {
       aria-label="Contas da empresa"
       className="flex w-full flex-col gap-lg"
     >
-      <SectionTitle>Contas da empresa</SectionTitle>
+      <div className="flex flex-wrap items-start justify-between gap-md">
+        <SectionTitle>Contas da empresa</SectionTitle>
+        {mayManage && (
+          <LinkAccount
+            companyId={companyId}
+            owner="company"
+            hasAccounts={company.length > 0}
+            providers={providers}
+            kinds={accounts.kinds}
+          />
+        )}
+      </div>
       {!mayManage && (
         <p className="text-text-2">
           Só o dono ou um administrador muda as contas de modelo da empresa.
@@ -71,15 +83,6 @@ export function CompanyAccounts() {
             />
           ))}
         </AccountsTable>
-      )}
-      {mayManage && (
-        <LinkAccount
-          companyId={companyId}
-          owner="company"
-          hasAccounts={company.length > 0}
-          providers={providers}
-          kinds={accounts.kinds}
-        />
       )}
     </section>
   )

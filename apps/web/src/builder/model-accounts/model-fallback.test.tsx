@@ -129,3 +129,112 @@ test('Troca automática: uma frase liga a fila das contas à fila da troca', asy
     'quando as contas de um modelo acabam, a conversa segue com o próximo modelo da fila',
   )
 })
+
+const SWITCH = /Trocar para o próximo modelo/
+
+test('Troca automática: o foco não é tomado ao abrir e volta à chave depois de ligá-la', async () => {
+  const shown = view({ fallback: { enabled: false, chain: [SONNET], revision: 0 } })
+  const { sent } = open(shown)
+  const chave = await screen.findByRole('switch', { name: SWITCH })
+  expect(document.activeElement).not.toBe(chave)
+  fireEvent.click(chave)
+  await waitFor(() => expect(sent).toHaveLength(1))
+  await waitFor(() =>
+    expect(document.activeElement).toBe(screen.getByRole('switch', { name: SWITCH })),
+  )
+  expect(screen.getByRole('switch', { name: SWITCH }).getAttribute('aria-checked')).toBe('true')
+})
+
+test('Troca automática: depois da chave, o foco de uma seta fica na seta e não volta à chave', async () => {
+  const shown = view({ fallback: { enabled: false, chain: [SONNET, GPT], revision: 0 } })
+  const { sent } = open(shown)
+  fireEvent.click(await screen.findByRole('switch', { name: SWITCH }))
+  await waitFor(() => expect(sent).toHaveLength(1))
+  await waitFor(() =>
+    expect(document.activeElement).toBe(screen.getByRole('switch', { name: SWITCH })),
+  )
+  const down = await screen.findByLabelText('Descer Claude Sonnet 4')
+  await waitFor(() => expect(down).toHaveProperty('disabled', false))
+  down.focus()
+  fireEvent.click(down)
+  await waitFor(() => expect(sent).toHaveLength(2))
+  await waitFor(() =>
+    expect(document.activeElement).toBe(screen.getByLabelText('Subir Claude Sonnet 4')),
+  )
+})
+
+test('Troca automática: descer troca com o próximo, diz o lugar novo e mostra a posição de cada modelo', async () => {
+  const shown = view({ fallback: { enabled: true, chain: [SONNET, GPT], revision: 0 } })
+  const { sent } = open(shown)
+  const list = within(await screen.findByRole('region', { name: 'Troca automática' })).getByRole(
+    'list',
+  )
+  expect(
+    within(list)
+      .getAllByRole('listitem')
+      .map((one) => one.textContent?.[0]),
+  ).toEqual(['1', '2'])
+  expect(screen.getByLabelText('Subir Claude Sonnet 4')).toHaveProperty('disabled', true)
+  expect(screen.getByLabelText('Descer GPT 5')).toHaveProperty('disabled', true)
+  fireEvent.click(screen.getByLabelText('Descer Claude Sonnet 4'))
+  await waitFor(() =>
+    expect(sent.map((one) => one.body)).toEqual([
+      { enabled: true, chain: [GPT, SONNET], revision: 0 },
+    ]),
+  )
+  expect((await screen.findByRole('status')).textContent).toBe(
+    'Claude Sonnet 4 agora é a 2ª da fila da troca.',
+  )
+})
+
+test('Troca automática: uma mudança recusada não deixa foco nem frase para a próxima', async () => {
+  let recusar = true
+  const shown = view({ fallback: { enabled: true, chain: [GPT, OPUS], revision: 3 } })
+  open(shown, { fallback: () => (recusar ? refusal('MODEL_FALLBACK_STALE') : undefined) })
+  fireEvent.click(await screen.findByLabelText('Descer GPT 5'))
+  await screen.findByRole('alert')
+  recusar = false
+  await addModel('Claude Sonnet 4')
+  expect(screen.getByRole('status').textContent).toBe('')
+})
+
+test('Troca automática: só adiciona um modelo escolhido e que ainda não está na fila, e o campo esvazia', async () => {
+  const shown = view({ fallback: { enabled: true, chain: [GPT], revision: 0 } })
+  const { sent } = open(shown)
+  const add = await screen.findByRole('button', { name: 'Adicionar à fila' })
+  expect(add).toHaveProperty('disabled', true)
+  await choose(screen.getByLabelText('Modelo da troca'), 'GPT 5')
+  expect(add).toHaveProperty('disabled', true)
+  await choose(screen.getByLabelText('Modelo da troca'), 'Claude Opus 4')
+  expect(add).toHaveProperty('disabled', false)
+  fireEvent.click(add)
+  await waitFor(() => expect(sent).toHaveLength(1))
+  await waitFor(() => expect(add).toHaveProperty('disabled', true))
+  expect(screen.getByLabelText('Modelo da troca').textContent).not.toContain('Opus')
+})
+
+test('Troca automática: com a fila cheia, mais um modelo não entra', async () => {
+  const full = Array.from({ length: 50 }, (_, one) => ModelId.parse(`openai/modelo-${one}`))
+  open(view({ fallback: { enabled: true, chain: full, revision: 0 } }))
+  const add = await screen.findByRole('button', { name: 'Adicionar à fila' })
+  await choose(screen.getByLabelText('Modelo da troca'), 'Claude Opus 4')
+  expect(add).toHaveProperty('disabled', true)
+})
+
+test('Troca automática: quem não gerencia lê os nomes dos modelos, não os ids', async () => {
+  open(view({ mayManage: false, fallback: { enabled: true, chain: [SONNET, GPT], revision: 1 } }))
+  expect(await screen.findByText('Ligada: Claude Sonnet 4, GPT 5')).toBeTruthy()
+})
+
+test('Troca automática: depois de tirar ou adicionar, o foco fica na seção e não se perde', async () => {
+  const shown = view({ fallback: { enabled: true, chain: [SONNET, GPT], revision: 0 } })
+  const { sent } = open(shown)
+  const section = await screen.findByRole('region', { name: 'Troca automática' })
+  expect(section.getAttribute('tabindex')).toBe('-1')
+  fireEvent.click(await screen.findByLabelText('Tirar GPT 5'))
+  await waitFor(() => expect(sent).toHaveLength(1))
+  await waitFor(() => expect(document.activeElement).toBe(section))
+  section.blur()
+  await addModel('Claude Opus 4')
+  await waitFor(() => expect(document.activeElement).toBe(section))
+})

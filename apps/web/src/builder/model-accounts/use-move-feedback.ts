@@ -11,12 +11,14 @@ function buttonOf(box: HTMLElement | null, id: string, move: Move) {
 /**
  * What a reorder leaves behind once the page reads the new order: the button the person used keeps
  * focus, or its twin when the row reached an end, and the new place is said aloud (design V30, V35).
- * `box` holds the queue's rows; `expect` is called before the write, `forget` if it fails. The
- * queue is the accounts of a provider, or the models of the automatic switch.
+ * `box` holds the queue's rows; `expect` is called before the write, `forget` if it fails; `busy` is
+ * true while the write runs. The queue is the accounts of a provider, or the models of the
+ * automatic switch.
  */
 export function useMoveFeedback<Box extends HTMLElement = HTMLTableSectionElement>(
   items: readonly { id: string; label: string }[],
   queueName: string,
+  busy: boolean,
 ) {
   const box = useRef<Box>(null)
   const expected = useRef<Expected | undefined>(undefined)
@@ -25,7 +27,8 @@ export function useMoveFeedback<Box extends HTMLElement = HTMLTableSectionElemen
 
   useEffect(() => {
     const moved = expected.current
-    if (moved === undefined || moved.before === order) return
+    // The arrows are disabled until the write and the read after it settle: focus waits for them.
+    if (moved === undefined || moved.before === order || busy) return
     expected.current = undefined
     const twin = moved.move === 'up' ? 'down' : 'up'
     const used = buttonOf(box.current, moved.id, moved.move)

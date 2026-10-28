@@ -54,6 +54,14 @@ export function ObservationalMemorySettings() {
             ))}
           </SelectContent>
         </Select>
+        <FieldError>
+          {save.isError && save.variables?.body.role === role
+            ? writeFailureText(
+                save.error,
+                'Não foi possível confirmar se o modelo foi salvo. Confira e tente de novo.',
+              )
+            : undefined}
+        </FieldError>
       </Field>
     )
   }
@@ -74,14 +82,6 @@ export function ObservationalMemorySettings() {
             Só o dono ou um administrador muda as configurações da empresa.
           </p>
         )}
-        <FieldError>
-          {save.isError
-            ? writeFailureText(
-                save.error,
-                'Não foi possível confirmar se o modelo foi salvo. Confira e tente de novo.',
-              )
-            : undefined}
-        </FieldError>
       </SettingsSection>
     </div>
   )

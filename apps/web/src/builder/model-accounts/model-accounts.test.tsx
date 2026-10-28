@@ -130,6 +130,7 @@ test('uma linha por conta, só o que muda: o lugar, o nome, a chave, a etiqueta 
   expect(first.getByText('chave …x7Qa')).toBeTruthy()
   expect(first.getByText('ligada')).toBeTruthy()
   expect(rowOf('Time 1').queryByText(/para todos/)).toBeNull()
+  expect(rowOf('Time 1').getAllByText('ligada')).toHaveLength(1)
   expect(rowOf('Time 2').getByText('chave …x7Qa · reservada para Ana Lima, Diego')).toBeTruthy()
   expect(rowOf('Time 2').getByText('2ª')).toBeTruthy()
   expect(rowOf('Time 3').getByText('pausada')).toBeTruthy()
@@ -145,6 +146,12 @@ test('o cabeçalho do fornecedor diz o nome, a contagem e que o Builder tenta ne
   open(view({ company: queue() }))
   const header = (await screen.findByRole('heading', { name: 'Anthropic' })).closest('td')
   expect(header?.textContent).toContain('Anthropic · 4 contas · o Builder tenta nesta ordem')
+})
+
+test('com uma só conta, o cabeçalho diz "1 conta"', async () => {
+  open(view({ company: [accountOf({ label: 'Time 1' })] }))
+  const header = (await screen.findByRole('heading', { name: 'Anthropic' })).closest('td')
+  expect(header?.textContent).toContain('Anthropic · 1 conta · o Builder')
 })
 
 function tone(label: string) {
@@ -187,6 +194,9 @@ test('Ligar conta é de contorno quando a fila tem contas e preta quando está v
   const mine = screen.getByRole('region', { name: 'Suas contas' })
   expect(within(company).getByRole('button', { name: 'Ligar conta' }).className).not.toContain(
     'bg-ink',
+  )
+  expect(within(company).getByRole('button', { name: 'Ligar conta' }).className).toContain(
+    'border-line',
   )
   expect(within(mine).getByRole('button', { name: 'Ligar conta' }).className).toContain('bg-ink')
 })
@@ -234,9 +244,17 @@ test('no celular as setas saem da linha e Subir e Descer ficam no …', async ()
     const { sent } = open(view({ company: queue() }))
     await screen.findByRole('button', { name: 'Mais ações para C' })
     expect(screen.queryByRole('button', { name: 'Subir C' })).toBeNull()
+    expect(rowOf('C').getAllByText('ligada')).toHaveLength(1)
     await pickFromMenu('C', 'Subir')
     await waitFor(() => expect(labelsInOrder()).toEqual(['A', 'C', 'B', 'D']))
     expect(sent).toHaveLength(1)
+    await pickFromMenu('C', 'Descer')
+    await waitFor(() => expect(labelsInOrder()).toEqual(['A', 'B', 'C', 'D']))
+    expect(sent).toHaveLength(2)
+    fireEvent.click(screen.getByRole('button', { name: 'Mais ações para A' }))
+    await screen.findByRole('menuitem', { name: 'Descer' })
+    expect(screen.queryByRole('menuitem', { name: 'Subir' })).toBeNull()
+    fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' })
     await waitFor(() =>
       expect(document.activeElement).toBe(
         screen.getByRole('button', { name: 'Mais ações para C' }),
