@@ -1,14 +1,17 @@
 import type { CompanyId, ListedInvitation, Role } from '@conexus/hub-api'
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
+import type { ReactNode } from 'react'
 import { useRef, useState } from 'react'
 import { keepsAttemptKey } from '../../platform/attempt-key.ts'
 import { dayAndHour } from '../../platform/dates.ts'
 import { sentenceOf } from '../../platform/hub.ts'
 import { Button } from '../../ui/button.tsx'
-import { List, Row, rowBody, SectionTitle } from '../../ui/list.tsx'
+import { SectionTitle } from '../../ui/list.tsx'
 import { Pager } from '../../ui/pager.tsx'
 import { Empty } from '../../ui/states.tsx'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table.tsx'
+import { useIsMobile } from '../../ui/use-mobile.ts'
 import { CancelInvitationForm } from './cancel-invitation-form.tsx'
 import { InviteForm } from './invite-form.tsx'
 import { MemberActions } from './member-actions.tsx'
@@ -24,12 +27,64 @@ import { RoleBadge } from './role-badge.tsx'
 
 const route = getRouteApi('/_app/companies/$companyId_/settings/people')
 
-function Lines({ main, under }: { main: string; under: string }) {
+function Lines({ main, under, role }: { main: string; under: string; role: Role }) {
+  const phone = useIsMobile()
   return (
-    <span className="flex min-w-0 flex-col">
-      <span className="truncate">{main}</span>
-      <span className="truncate text-label text-text-2">{under}</span>
+    <span className="flex flex-col gap-xs">
+      <span className="wrap-anywhere">{main}</span>
+      <span className="wrap-anywhere text-label text-text-2">{under}</span>
+      {phone && <RoleBadge role={role} />}
     </span>
+  )
+}
+
+/** One list of the page as a table named by its section; on a phone the role moves under the name. */
+function PeopleTable({ name, children }: { name: string; children: ReactNode }) {
+  const phone = useIsMobile()
+  return (
+    <div className="overflow-hidden rounded-object border border-line bg-surface">
+      <Table aria-label={name}>
+        <TableHeader className="sr-only">
+          <TableRow>
+            <TableHead>Pessoa</TableHead>
+            {!phone && <TableHead>Papel</TableHead>}
+            <TableHead>Ações</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>{children}</TableBody>
+      </Table>
+    </div>
+  )
+}
+
+function Cells({
+  name,
+  under,
+  role,
+  children,
+}: {
+  name: string
+  under: string
+  role: Role
+  children: ReactNode
+}) {
+  const phone = useIsMobile()
+  return (
+    <>
+      <TableCell className="whitespace-normal px-sm">
+        <Lines main={name} under={under} role={role} />
+      </TableCell>
+      {!phone && (
+        <TableCell className="px-sm">
+          <RoleBadge role={role} />
+        </TableCell>
+      )}
+      <TableCell className="w-px px-sm text-right">
+        <span className="flex items-center justify-end gap-sm max-md:flex-col max-md:items-stretch">
+          {children}
+        </span>
+      </TableCell>
+    </>
   )
 }
 
@@ -44,26 +99,52 @@ function Members({ company, page }: { company: Company; page: string | undefined
   return (
     <section className="flex flex-col gap-lg">
       <SectionTitle>Pessoas</SectionTitle>
-      <List>
+      <PeopleTable name="Pessoas">
         {data.members.map((member) => (
-          <Row key={member.personId}>
-            <div className={rowBody({ kind: 'wrapping' })}>
-              <Lines main={member.name} under={member.email} />
-              <span className="flex flex-wrap items-center gap-md">
-                <RoleBadge role={member.role} />
-                <MemberActions
-                  companyId={company.id}
-                  companyName={company.name}
-                  member={member}
-                  self={member.personId === me}
-                />
-              </span>
-            </div>
-          </Row>
+          <TableRow key={member.personId}>
+            <Cells name={member.name} under={member.email} role={member.role}>
+              <MemberActions
+                companyId={company.id}
+                companyName={company.name}
+                member={member}
+                self={member.personId === me}
+              />
+            </Cells>
+          </TableRow>
         ))}
-      </List>
+      </PeopleTable>
       <Pager next={data.next} param="members" page={page} list="Pessoas" />
     </section>
+  )
+}
+
+/** Under the invitation's row: the cancellation's confirmation, or the refusal of the last send. */
+function InvitationNote(props: {
+  companyId: CompanyId
+  invitation: ListedInvitation
+  canceling: boolean
+  error: unknown
+  onClose: () => void
+}) {
+  const phone = useIsMobile()
+  if (!props.canceling && props.error === null) return null
+  return (
+    <TableRow>
+      <TableCell colSpan={phone ? 2 : 3} className="whitespace-normal px-sm py-sm">
+        {props.canceling && (
+          <CancelInvitationForm
+            companyId={props.companyId}
+            invitation={props.invitation}
+            onClose={props.onClose}
+          />
+        )}
+        {props.error !== null && (
+          <p role="alert" className="text-label text-danger">
+            {sentenceOf(props.error)}
+          </p>
+        )}
+      </TableCell>
+    </TableRow>
   )
 }
 
@@ -107,48 +188,45 @@ function InvitationRow({
     )
   }
 
+  const busy = send.isPending || renew.isPending || canceling
   return (
-    <Row>
-      <div className={rowBody({ kind: 'wrapping' })}>
-        <Lines
-          main={invitation.email}
+    <>
+      <TableRow>
+        <Cells
+          name={invitation.email}
           under={
             invitation.state === 'PENDING'
               ? `Vence em ${dayAndHour(invitation.expiresAt)}`
               : 'Vencido'
           }
-        />
-        <span className="flex flex-wrap items-center gap-md">
-          <RoleBadge role={invitation.role} />
+          role={invitation.role}
+        >
           <Button
+            size="sm"
             aria-label={`Reenviar convite para ${invitation.email}`}
-            disabled={send.isPending || renew.isPending || canceling}
+            disabled={busy}
             onClick={inviteAgain}
           >
             {send.isPending || renew.isPending ? 'Enviando…' : 'Reenviar'}
           </Button>
           <Button
+            size="sm"
             aria-label={`Cancelar convite para ${invitation.email}`}
-            disabled={send.isPending || renew.isPending || canceling}
+            disabled={busy}
             onClick={() => setCanceling(true)}
           >
             Cancelar
           </Button>
-        </span>
-        {canceling && (
-          <CancelInvitationForm
-            companyId={companyId}
-            invitation={invitation}
-            onClose={() => setCanceling(false)}
-          />
-        )}
-        {(send.isError || renew.isError) && (
-          <p role="alert" className="basis-full text-label text-danger">
-            {sentenceOf(send.error ?? renew.error)}
-          </p>
-        )}
-      </div>
-    </Row>
+        </Cells>
+      </TableRow>
+      <InvitationNote
+        companyId={companyId}
+        invitation={invitation}
+        canceling={canceling}
+        error={send.error ?? renew.error}
+        onClose={() => setCanceling(false)}
+      />
+    </>
   )
 }
 
@@ -166,11 +244,11 @@ function PendingInvitations({
       {data.invitations.length === 0 ? (
         <Empty>Nenhum convite pendente.</Empty>
       ) : (
-        <List>
+        <PeopleTable name="Convites pendentes">
           {data.invitations.map((invitation) => (
             <InvitationRow key={invitation.id} companyId={companyId} invitation={invitation} />
           ))}
-        </List>
+        </PeopleTable>
       )}
       <Pager next={data.next} param="invitations" page={page} list="Convites pendentes" />
     </section>
