@@ -81,6 +81,8 @@ test('a busca acha pelo nome e pelas palavras, sem acento: "convite" leva a Pess
   expect(sections(nav)).toEqual(['Pessoas e convites'])
   fireEvent.change(search, { target: { value: 'CONTA' } })
   expect(sections(nav)).toEqual(['Minha conta', 'Contas de modelo'])
+  fireEvent.change(search, { target: { value: 'e-mail' } })
+  expect(sections(nav)).toEqual(['Minha conta'])
 })
 
 test('"raciocínio" e "modelo padrão" acham Meus padrões e Padrões da empresa, e Contas de modelo não guarda mais o modelo padrão', async () => {
