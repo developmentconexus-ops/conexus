@@ -19,16 +19,16 @@ usar o app). No computador e no celular, com um segundo e-mail seu no papel da C
 3. A Carla recebe o e-mail "Ana convidou você para usar o app Encomendas, da Padaria Sol.", cria a
    senha e cai no app. Ela cria uma encomenda e não vê o botão **Aprovar**. No endereço do Hub, ela
    vê só "Seus apps: Encomendas".
-4. A Ana troca a Carla para **Gerente**. No clique seguinte, a Carla vê todas as encomendas e o
-   **Aprovar**.
+4. A Ana troca a Carla para **Gerente**. O clique seguinte da Carla já vale como Gerente; ao
+   recarregar o app, ela vê todas as encomendas e o **Aprovar**.
 5. Em **Configurações › Pessoas e convites**, a lista **Quem usa os apps** mostra a Carla com
    "Encomendas · Gerente". O Bruno, membro, vê as duas listas e não muda nada.
-6. A Ana toca **Tirar acesso** na linha da Carla e confirma. O clique seguinte da Carla mostra "Este
-   app não existe ou você não tem acesso a ele."
+6. A Ana toca **Tirar acesso** na linha da Carla e confirma. No clique seguinte da Carla, o app dá
+   lugar à página "Este app não existe ou você não tem acesso a ele."
 
-**O que você faz, e quando.** Antes: nada. No começo: aprova esta página; a sua aprovação é também a
-palavra que a regra de dados D11 pede para a lista de permissões do banco ganhar a tabela nova (a
-U1). No fim: faz o roteiro no computador e no celular, diz o que viu e aprova os textos novos (o
+**O que você faz, e quando.** Antes: nada. No começo: aprova esta página e responde a `I`; a sua
+aprovação é também a palavra que a regra de dados D11 pede para a lista de permissões do banco
+ganhar a tabela nova (a U1). No fim: faz o roteiro no computador e no celular, diz o que viu e aprova os textos novos (o
 e-mail, a seção, a lista da empresa, "Seus apps" e as recusas).
 
 **Fica de fora.**
@@ -65,7 +65,17 @@ Dadas em 2026-10-28, ao estudo fundo, "Aprovo tudo da Etapa 18 com seu recomenda
   a linha a cada chamada.
 - `D-a` Recusa: num app com papéis, a operação sem tranca reprova a checagem do app.
 
-Nenhuma pergunta nova.
+A decisão nova, da revisão do cartão:
+
+- `I` Onde mora o convite de um app. A biblioteca de login só conhece o convite que faz a pessoa
+  membro da empresa (o nativo; o convite de time também faz membro). Recomendo guardar o convite de
+  um app na mesma tabela de convites dela, marcado com o app e o papel, e o Hub mesmo o escreve, o
+  aceita e o cancela: o link, o e-mail e a tela de criar senha são os de hoje. É um remendo nosso
+  sobre a biblioteca, anotado nos limites dela. O que a Ana vê: a Carla pode ter um convite de cada
+  app ao mesmo tempo; se a Ana convidar a Carla para a empresa, os convites de app abertos dela são
+  cancelados, porque um membro já usa todos os apps (`E1`). As outras formas: um convite aberto só
+  por pessoa e empresa (a Ana não convida a Carla para um segundo app antes de ela aceitar o
+  primeiro), ou uma tabela de convites nossa (outro link, outro e-mail, outra tela de senha).
 
 ## As unidades
 
@@ -82,8 +92,8 @@ a U2 correm ao mesmo tempo: não dividem pasta. A U1 é o único pull request qu
 permissões do banco, como a [regra D11](../guides/data.md) pede; a U2, a U3 e a U4 não mudam
 nenhuma.
 
-**Orçamento de código alterado.** U1 ~90 (a migração gerada fora); U2 ~300 mais o texto das skills;
-U3 ~750; U4 ~500. Total da etapa: ~1.640 linhas sem testes, teto 4.000
+**Orçamento de código alterado.** U1 ~150 (a migração gerada fora); U2 ~320 mais o texto das skills;
+U3 ~800; U4 ~500. Total da etapa: ~1.770 linhas sem testes, teto 4.000
 ([L2](../guides/delivery.md)). Nenhum pacote novo. Estimativas pelo tamanho dos arquivos vizinhos;
 hipótese.
 
@@ -91,8 +101,8 @@ hipótese.
 
 | # | Unidade | Critério, observável de fora, com a recusa | Teste que o prova | Nível |
 | --- | --- | --- | --- | --- |
-| 1 | U1 | `projects.app_access` guarda uma linha por (Projeto, pessoa): a segunda dá `23505`; apagar o Projeto leva as linhas; o login de uma empresa não lê as linhas de outra (RLS); no escopo de um convite, só entra a linha que o convite nomeia (o Projeto, o papel, a pessoa do endereço), e outra dá `42501`; `projects.apps_of_person` dá à pessoa só os seus | `apps/server/src/hub/projects/tables.test.ts`, "o acesso a um app: uma linha por pessoa, some com o Projeto, cada empresa as suas" | must |
-| 2 | U1 | Um convite aberto por empresa, endereço e Projeto: a Carla pode ter um convite da empresa e um de cada app ao mesmo tempo; dois do mesmo app dão `23505` | `apps/server/src/hub/identity/tables.test.ts`, "um convite aberto por empresa, endereço e Projeto" | must |
+| 1 | U1 | `projects.app_access` guarda uma linha por (Projeto, pessoa): a segunda dá `23505`; apagar o Projeto leva as linhas; o login de uma empresa não lê as linhas de outra (RLS); no escopo de um convite, só entra a linha que o convite nomeia (o Projeto, o papel, a pessoa do endereço), e outra dá `42501`; `projects.apps_of_person` dá à pessoa só os seus, sem os Projetos apagados nem as empresas marcadas para apagar; no escopo da empresa, o nome e o e-mail de quem tem uma linha nela se leem | `apps/server/src/hub/projects/tables.test.ts`, "o acesso a um app: uma linha por pessoa, some com o Projeto, cada empresa as suas" | must |
+| 2 | U1 | Um convite aberto por empresa, endereço e Projeto: no banco, a Carla pode ter um convite da empresa e um de cada app ao mesmo tempo; dois do mesmo app dão `23505`; um convite com Projeto e papel da empresa, ou sem nenhum dos dois, dá `23514` | `apps/server/src/hub/identity/tables.test.ts`, "um convite aberto por empresa, endereço e Projeto" | must |
 | 3 | U1 | A lista de permissões do banco é a do arquivo `database-grants.sql` com as linhas novas, e nenhuma outra muda | `apps/server/src/platform/catalog.test.ts` | must |
 | 4 | U2 | `serveApp` de um app com papéis: o papel listado na operação passa; o papel fora dela recebe 403 `ROLE_FORBIDDEN` antes de a entrada ser lida e antes do handler; quem constrói passa em tudo; um papel que a versão não declara só passa nas operações `everyone` | `packages/app-contract/src/runtime.test.ts`, "papéis: a operação recusa o papel que não lista, antes do handler" | must |
 | 5 | U2 | Num app com papéis, uma operação sem `roles`, ou com um papel que o app não declara, impede o `serveApp` de começar, e a checagem do app reprova com a frase que diz qual operação (`D-a`); um app sem papéis segue como hoje | `runtime.test.ts`, "papéis: operação sem tranca ou com papel desconhecido não sobe"; `packages/app/src/check/check.test.ts`, "a checagem recusa a operação sem papel" | must |
@@ -113,6 +123,9 @@ hipótese.
 | 20 | U4 | Em **Pessoas e convites**, a lista **Quem usa os apps**, cada app levando à seção do Projeto, e **Tirar de todos** com a confirmação, só para quem gere | `apps/web/src/hub/identity/people.test.tsx`, "Quem usa os apps" | must |
 | 21 | U4 | O link do convite de um app diz "Ana convidou você para usar o app Encomendas, da Padaria Sol."; depois da senha ou do aceite, o navegador vai para o endereço do app; quem não está em nenhuma empresa vê "Seus apps" com o link de cada um | `apps/web/src/hub/identity/invitation.test.tsx`, "o convite de um app leva ao app"; `apps/web/src/routes/_app/index.test.tsx`, "Seus apps" | must |
 | 22 | U4 | Num navegador de verdade (Chrome e WebKit, 1366 e 390 px, os dois temas), o roteiro inteiro, com um segundo e-mail no papel da Carla | o teste das telas (`conexus-qa`) | must |
+| 23 | U3 | Pelas rotas do Hub, com um convite de app aberto para a Carla: o convite da empresa para ela dá 201, e o link do de app mostra `CLOSED` (`I`); um convite de outro app dá 201 e o primeiro segue aberto; renovar ou cancelar um convite de app pelas rotas de convites da empresa dá 404, e a lista de convites da empresa não o mostra | `invitation-app.test.ts`, "o convite da empresa com um de app aberto" | must |
+| 24 | U3 | Um convite de app vencido: o link mostra `CLOSED`, criar a senha e aceitar dão 409 `INVITATION_CLOSED`, e nenhuma linha nasce | `invitation-app.test.ts`, "o convite de app vencido não dá o app" | must |
+| 25 | U2 | Uma chamada do cliente que o dispatcher responde com o redirecionamento ao Hub (a sessão do app apagada) ou com a sua página de recusa (4xx, sem JSON) recarrega a página, e o navegador vê a recusa; um 503 sem JSON segue `UNREACHABLE` | `packages/app/src/client.test.ts`, "a recusa da plataforma recarrega a página" | must |
 
 ## A matriz de estados
 
@@ -125,8 +138,8 @@ hipótese.
 
 | Campo de contrato | Quem escreve | Quem lê |
 | --- | --- | --- |
-| `projects.app_access` (a linha) | o aceite do convite de um app; a troca; o tirar | `admitToApp` em cada chamada; as listas; `GET /api/apps` |
-| `auth.invitation.project_id`, `app_role` | o convite de um app | o aceite; o link (`getInvitation`); o tirar, que cancela; a lista do Projeto |
+| `projects.app_access` (a linha; quem deu fica no log, `by`) | o aceite do convite de um app; a troca; o tirar | `admitToApp` em cada chamada; as listas; `GET /api/apps` |
+| `auth.invitation.project_id`, `app_role` | o convite de um app | `PendingRow`, que os separa do convite da empresa: o aceite; o link (`getInvitation`); o e-mail; o tirar, que cancela; o convite da empresa, que cancela os de app; a lista do Projeto; as rotas de convites da empresa, que não os veem |
 | `Manifest.roles` | a checagem do app (U2) | o Hub: os papéis que a seção oferece, a recusa `APP_ROLE_UNKNOWN`, `roleDeclared` |
 | `Caller.access` | `checkCall` pelo `admitToApp` | `serveApp` (a tranca); o handler do app (o filtro); `GET /api/caller` (a tela) |
 | `AppAccessList.mayManage` | a lista do Projeto, por `allows(role, 'manageAppAccess')` | a seção: os controles |
@@ -167,11 +180,12 @@ Configurações › Pessoas e convites, depois de Convites pendentes
 
 | Gravação ou comando, da etapa ou da biblioteca | Duas vezes ao mesmo tempo | Recusada no meio, depois de uma instrução ou de uma chamada | Uma dependência fora (o banco, ou um terceiro) | O que o processo imprime | Critérios |
 | --- | --- | --- | --- | --- | --- |
-| Dar acesso (o convite de um app, `createInvitationCommand`) | a trava da empresa (`lockCompany`) e a chave de tentativa, como o convite de hoje: a segunda com a mesma chave devolve o mesmo convite; um convite aberto do mesmo app é cancelado pelo novo, como hoje (`cancelOpen`) | uma transação; o e-mail sai depois, e a repetição com a mesma chave o manda de novo se ele não saiu, como hoje | o banco fora: `DATABASE_UNAVAILABLE`; o provedor de e-mail fora: `MAIL_UNAVAILABLE`, como hoje | `INVITATION_CREATED` com `projectId` | 9 |
-| Aceitar o convite de um app (`acceptCommand`, o ramo novo) | a trava da empresa, como hoje: o segundo aceite vê `accepted` e a linha, e devolve o mesmo fim; uma resposta cortada, 502 ou 503, repetida, dá o mesmo app | uma transação: a linha e o `accepted` juntos (D22) | o banco fora: `DATABASE_UNAVAILABLE`, como hoje | `INVITATION_ACCEPTED` com `projectId` | 10, 12 |
+| Dar acesso (o convite de um app, `createInvitationCommand`) | a trava da empresa (`lockCompany`) e a chave de tentativa, como o convite de hoje: a segunda com a mesma chave devolve o mesmo convite; um convite aberto do mesmo app é cancelado pelo novo, como hoje (`cancelOpen`), pelo adaptador | uma transação; o e-mail sai depois, e a repetição com a mesma chave o manda de novo se ele não saiu, como hoje | o banco fora: `DATABASE_UNAVAILABLE`; o provedor de e-mail fora: `MAIL_UNAVAILABLE`, como hoje | `INVITATION_CREATED` com `projectId` | 9, 23 |
+| O convite da empresa (o de hoje) com convites de app abertos para o endereço | a trava da empresa, como hoje | os convites de app saem pelo adaptador na mesma transação, antes de `createInvitation`, que recusaria o endereço (`I`) | como hoje | `INVITATION_CANCELED` com `projectId`, um por convite de app | 23 |
+| Aceitar o convite de um app (`acceptCommand`, o ramo novo) | a trava da empresa, como hoje: o segundo aceite vê `accepted` e a linha, e devolve o mesmo fim; uma resposta cortada, 502 ou 503, repetida, dá o mesmo app | uma transação: a linha e o `accepted` juntos (D22); vencido ou não `pending`, nada muda | o banco fora: `DATABASE_UNAVAILABLE`, como hoje | `INVITATION_ACCEPTED` com `projectId` | 10, 12, 24 |
 | Trocar o papel | a trava da empresa: a última vale | uma instrução | o banco fora: a frase, e a lista relida | `APP_ACCESS_CHANGED` com `by`, `projectId`, `personId`, `role` | 11, 15 |
 | Tirar o acesso (a linha e os convites do app para o endereço; depois, as sessões do app) | a trava da empresa, a mesma do aceite: um aceite e um tirar ao mesmo tempo terminam sem linha e sem convite aberto, numa ordem ou na outra | a linha e os convites numa transação (D22); as sessões saem depois, pelo login do Hub sem escopo, como `checkCall` já as apaga (`handoff.ts:161`): se essa segunda instrução falhar, a chamada seguinte já é recusada pela admissão, e repetir o tirar dá 204 e apaga o que ficou | o banco fora: a frase; nada mudou | `APP_ACCESS_REVOKED` com `by`, `projectId`, `personId` | 11, 12, 15, 16 |
-| Cancelar o convite de um app | a trava da empresa, a mesma do aceite: o aceite depois vê `CLOSED`; o aceite antes deixa a linha, e o cancelar dá 404 | uma instrução; repetido, dá 204 | o banco fora: a frase; nada mudou | `INVITATION_CANCELED` com `projectId` | 12, 15 |
+| Cancelar o convite de um app | a trava da empresa, a mesma do aceite: o aceite depois vê `CLOSED`; o aceite antes deixa a linha, e o cancelar dá 404 | uma instrução, pelo adaptador; repetido, dá 204 | o banco fora: a frase; nada mudou | `INVITATION_CANCELED` com `projectId` | 12, 15 |
 | Tirar de todos | como o tirar, numa transação para todos os Projetos da empresa | como o tirar | como o tirar | `APP_ACCESS_REVOKED` uma vez por Projeto | 16 |
 | A migração da U1 | o Hub sobe um por vez | uma transação | o Hub não sobe, como hoje | como hoje | 1, 2 |
 
@@ -180,7 +194,7 @@ Configurações › Pessoas e convites, depois de Convites pendentes
 | Peça | Unidade | Hoje no main | Referência | Como a referência faz | Veredito | Prova, se não for nativo | Palavra do fundador | Arquivo novo |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | A linha "pessoa usa este app" | U1, U3 | nenhuma | Budibase `624d68a` `packages/types/src/documents/global/user.ts:134`; OS `e0353c36` `apps/hub/migrations/0022_application_access.sql:46-62` (armadilhas em `0024`, `0025`); basejump `7a1f95c` `account_user`; better-auth 1.7.8 times (`crud-invites.mjs:295-327`, `crud-team.mjs:637-640`) | cada análogo guarda (pessoa, app, nível) ele mesmo; o time da biblioteca exige um membro | remendo: `projects.app_access`, PK (Projeto, pessoa), RLS como `projects.project`, cascata no Projeto; a entrada em `boundaries.md` | provado no estudo fundo com better-auth 1.7.8: aceitar um convite de time cria o membro (o script da biblioteca), e a tabela no Hub faz a jornada | `C` | a migração `<data>_e18_app_access/` |
-| Convite só para um app | U1, U3 | `identity/invitations.ts`, `invitation-response.ts:123-178` (o aceite chama `acceptInvitation`) | better-auth 1.7.8 `crud-invites.mjs:322` (o aceite sempre cria o membro); Budibase `backend-core/src/users/invites.ts:17`; OS `iam.application_invitation` | o convite carrega o app; o OS tinha a sua tabela | embrulhado: a linha de convite da biblioteca com dois campos do Hub (`project_id`, `app_role`), como `attemptKey` e `mailedAt` (`auth.ts:264`); escrita pelo adaptador, como a do operador; o aceite nunca chama `acceptInvitation` | — | `C` | — |
+| Convite só para um app | U1, U3 | `identity/invitations.ts`, `invitation-response.ts:123-178` (o aceite chama `acceptInvitation`) | better-auth 1.7.8 `crud-invites.mjs:322` (o aceite sempre cria o membro), `:128-132` (`createInvitation` recusa o endereço com qualquer convite aberto na empresa, `adapter.mjs:753-768`), `:268` (o aceite confere o prazo); Budibase `backend-core/src/users/invites.ts:17`; OS `iam.application_invitation` | o convite carrega o app; o OS tinha a sua tabela | remendo: a linha de convite da biblioteca com dois campos do Hub (`project_id`, `app_role`) e `role` nulo, um tipo de convite que a biblioteca não conhece; o Hub o escreve, o aceita e o cancela pelo adaptador (`organizationAdapter`, `auth.ts:282`), confere ele mesmo o prazo, e cancela os convites de app do endereço antes do convite da empresa; a entrada em `boundaries.md` | a revisão do cartão leu 1.7.8: a forma "um convite aberto por endereço" tira da Ana o segundo app, e uma tabela nossa repete o link, o e-mail e a senha | `C`, `I` | a entrada em `docs/reference/boundaries.md` |
 | Quem dá e tira | U3 | `admission.ts:38-71` `ACTIONS`; `roles.ts:10-37` | better-auth 1.7.8 `plugins/access/access.mjs:45-76`; cal.com `54343aa` `PERMISSIONS.md:3`; Documenso `cd0cc5f` `packages/lib/constants/teams.ts:31-34`; OS `0001_baseline.sql:103-111,852-860` | papéis mapeados para capacidades `recurso: ações` | nativo: `appAccess: ['manage']` em `ACCESS_CONTROL` e em `MANAGE_COMPANY`; as ações `manageAppAccess` e `readAppAccess` | provado no estudo fundo: dona sim, administrador sim, membro não | `B`, `B2` | — |
 | Papéis da empresa criados na tela | fica de fora | `Role` é `z.enum` (`hub-api/src/companies.ts:15`) | better-auth 1.7.8 `dynamicAccessControl` (`organization.mjs:665-703`) | papéis por empresa numa tabela | nativo, quando vier: ligar `dynamicAccessControl`; fica de fora por não haver caso | — | não precisa | — |
 | Quem pode abrir o app | U3 | `projects/hosts.ts:37-65` `admitToApp` = `admitMember(readProjects)` | Budibase `server/src/middleware/authorized.ts:65-81`; vibesdk `9da158d` `worker/index.ts:166-199` | a linha lida a cada pedido, a recusa esconde a existência | embrulhado: o membro como quem constrói, nas duas portas; senão a linha, só no ambiente `published`, com a empresa não marcada | provado no estudo fundo | não precisa | — |
@@ -196,9 +210,11 @@ Configurações › Pessoas e convites, depois de Convites pendentes
 | O papel de quem chama | U2, U3 | `Caller` sem papel (`props.ts:5-11`, `hub-api/src/apps.ts:21-27`) | Cloudflare `ctx.props` (0041); Supabase `auth.jwt()` | o papel chega com quem chama | nativo: `caller.access`, calculado por `admitToApp` em cada chamada; sem token, sem segredo no app | provado (0041 e o estudo fundo) | `E1` | — |
 | O papel que uma versão deixa de declarar | U2, U3 | nenhum | OS 0005 AC-7 (as atribuições ficam inertes) | a linha fica, o papel não vale | embrulhado: a linha fica; o `serveApp` trata o papel não declarado como nenhum; a lista o marca | provado no estudo fundo (`200, 403, 403`) | não precisa | — |
 | Linhas por pessoa | U2 | os handlers gravam `caller.personId` (`skills/conexus-data/references/handlers.ts:91-110`) | Mitra `:VAR_USER`; Supabase RLS `authorize()` | um filtro por quem chama | nativo: um filtro no handler por `caller.personId` e `can(caller.access, …)` | — | não precisa | — |
+| A recusa no meio do app (passos 4 e 6) | U2 | `packages/app/src/client.ts:42-57`: o `fetch` segue o 303 do dispatcher (`apps/edge/src/dispatch.ts:49-53,205-207`) para o Hub, falha, e vira `UNREACHABLE`; a página de recusa (`:208-213`) não é JSON e também | WHATWG Fetch: `redirect: 'manual'` dá a resposta `opaqueredirect`; `location.reload()` | o navegador segue o redirecionamento numa navegação, onde o Hub mostra a recusa | embrulhado: `createApi` pede `redirect: 'manual'`; um `opaqueredirect`, ou um 4xx sem JSON, recarrega a página | a revisão do cartão leu o caminho; o critério 25 | não precisa | — |
 | A tela esconde o que o papel não pode | U2 | `packages/app/src/client.ts` `createApi` | OS 0005 `useMe`, `useCan` | a tela lê quem chama; o servidor garante | embrulhado: `GET /api/caller` respondido pelo `serveApp`, e `readCaller` no cliente | — | não precisa | — |
 | O Builder escreve o app com papéis | U2 | skills `conexus-data/SKILL.md:25-26`, `conexus-plan-new/SKILL.md:62`, `conexus-plan-change/SKILL.md:73`, `conexus-app` | Mitra (o agente cria os perfis por código); OS 0005 | — | embrulhado: as skills aprendem `defineRoles`, `roles`, `caller.access` e o 403 | — | `D` | — |
 | Apagar Projeto ou empresa | U1 | a exclusão em fases; `app_session` | OS `purgeProject` (`application-access.ts:82-91`) | — | nativo: FK de `app_access` para o Projeto com cascata (contenção, D17); o convite guarda o Projeto sem FK, e o aceite recusa o de um Projeto que não está vivo | — | não precisa | — |
+| Os testes LT1 a LT4 e LT9 do roteiro | U3 | LT1 e LT4 provados para membros (o primeiro estudo, `app-handoff.test.ts` testes 4 e 10) | a sonda `7f0e829` `proofs/P4-gate.md:87-96` | — | nativo: LT1 é o critério 10, LT4 o 11; LT2, LT3 e LT9 não mudam (nenhum cookie novo; tirar de todos é o "desligar" de quem só usa apps, critério 16) | os critérios 10, 11 e 16 | não precisa | — |
 | Cookies entre apps vizinhos | fica como está | `apps/edge/src/headers.ts:5-7` | 0041, resultado 7 | — | nativo: nenhum cookie novo | provado (0041) | não precisa | — |
 
 As referências estão na estante de estudo nos commits citados; Retool, Cloudflare e Mitra são
@@ -214,6 +230,11 @@ pendente que devolvia o acesso; as sessões que sobreviviam) entram como critér
   outra empresa.
 - O membro não vê o app como Vendedor (`E1`). Gatilho: o primeiro pedido.
 
+**Para o fechamento.** A frase de W29 "A person who only uses an app never enters them" passa a
+dizer que essa pessoa vê só "Seus apps" em `/`; `docs/architecture.md:227` ("Revisited in step 18")
+recebe a resposta `G` (a checagem fica no Hub, 0025 fica); a decisão 0055 ganha `roles`; o remendo
+`I` está em `boundaries.md` desde a U3.
+
 ## U1 A linha do acesso
 
 **Base e modelo.** `main` com a 17, no commit em que o cartão for aprovado. Sonnet: uma tabela, duas
@@ -225,11 +246,17 @@ colunas e as permissões, por caminhos que já existem.
   `project` (as políticas de linha) e `apps.app` (`apps/tables.ts:98-126`, a FK para o Projeto).
 - **O que a Carla vê no Hub**: a função `projects.apps_of_person(person text)`, dona de um papel
   estreito e chamada pelo `hub_runtime`, como `projects.project_of_host` (`hosts.ts:12-25`): o nome
-  do Projeto, o nome da empresa e o rótulo do endereço, só das linhas da pessoa.
+  do Projeto, o nome da empresa e o rótulo do endereço, só das linhas da pessoa, sem os Projetos
+  apagados nem as empresas com `deleting_since`, que `admitToApp` recusaria.
 - **Convite só para um app**: `invitation` (`identity/tables.ts:265-305`) ganha `project_id` e
   `app_role`, sem FK: `projects/tables.ts:12` já importa a identidade, e uma FK daqui fecharia o
   ciclo (C6); `auth.ts:264` ganha os dois em `additionalFields`, ou o adaptador os perde. O índice
-  `invitation_pending_email_key` passa a incluir o Projeto.
+  `invitation_pending_email_key` passa a incluir o Projeto, e um `check` separa os dois tipos: o
+  convite da empresa tem `role` e nenhum Projeto; o de um app tem o Projeto e `role` nulo (D15).
+- **Quem a empresa lê**: a política `COMPANY` de `auth."user"` (`identity/tables.ts:70-76`) lê hoje
+  quem age, os membros e quem convidou. Ela passa a ler também quem tem uma linha de `app_access`
+  na empresa, por SQL cru: sem isso, as listas e o tirar não leem o nome nem o e-mail da Carla. Ela
+  alarga quem lê o nome de quem, e só isso: a pessoa de fora não lê ninguém (S6).
 - **Apagar Projeto ou empresa**: a FK `on delete cascade` de `app_access` para `projects.project`.
 
 ### O raio da mudança
@@ -239,6 +266,7 @@ colunas e as permissões, por caminhos que já existem.
 | `apps/server/src/hub/projects/tables.ts` | Cria `appAccess` | U3 |
 | `apps/server/src/hub/identity/tables.ts`, `auth.ts` | Muda `invitation` e os seus `additionalFields` | todo `hub/identity/` |
 | `apps/server/migrations/<data>_e18_app_access/` | Cria `migration.sql` (gerado, mais a linha `-- contract:` da troca do índice) e `snapshot.json` | `npm run migrations` |
+| `apps/server/migrations/<data>_e18_app_people_role/`, `<data>_e18_app_grants/` | Cria: o papel, a função e as permissões, em SQL nosso | `npm run migrations` |
 | `apps/server/database-grants.sql`, `apps/server/src/platform/catalog.test.ts` | Muda: as permissões novas (D10, D11) | o catálogo |
 | `apps/server/src/hub/projects/tables.test.ts`, `apps/server/src/hub/identity/tables.test.ts` | Muda: critérios 1 e 2 | — |
 | `apps/server/src/hub/projects/hosts.ts` | Muda: `appsOfPerson`, a leitora da função, ao lado de `projectOfHost` | U3 |
@@ -254,7 +282,6 @@ export const appAccess = projects.table('app_access', {
   personId: text('person_id').notNull(),
   // NULL when the published version declared no role; a role it stops declaring stays, inert.
   role: text('role'),
-  grantedBy: text('granted_by').notNull(),
   grantedAt: instant('granted_at').notNull().default(sql`statement_timestamp()`),
 }, (table) => [
   primaryKey({ columns: [table.projectId, table.personId] }),
@@ -262,8 +289,11 @@ export const appAccess = projects.table('app_access', {
   // The acceptance writes only the row its invitation names, for the person its address is.
   policy(SCOPE_ROLES.INVITATION, 'insert', sql`exists (select 1 from auth.invitation i
     join auth."user" u on lower(u.email) = lower(i.email)
-    where i.id = ${invitationId} and i.company_id = company_id and i.project_id = project_id
-      and i.app_role is not distinct from role and u.id = person_id)`),
+    where i.id = ${invitationId} and i.company_id = app_access.company_id
+      and i.project_id = app_access.project_id and i.app_role is not distinct from app_access.role
+      and u.id = app_access.person_id)`),
+  // The function behind appsOfPerson reads the rows, as hosts_select does (projects/tables.ts:52-54).
+  pgPolicy('app_people_select', { for: 'select', to: APP_PEOPLE, using: sql`true` }),
 ])
 // As colunas de pessoa não têm FK para `auth.user`, como `app_session` (D17: a pessoa não é
 // contida pelo Projeto); o tirar e a exclusão do Projeto as levam.
@@ -274,6 +304,9 @@ export const appAccess = projects.table('app_access', {
   appRole: text('app_role'),
 // o índice: uniqueIndex('invitation_pending_email_key')
 //   .on(organizationId, sql`lower(email)`, sql`coalesce(project_id, '')`).where(status = 'pending')
+// check('invitation_kind', sql`(project_id is null) = (role is not null)`)
+// auth."user", a política COMPANY ganha:
+//   or exists (select 1 from projects.app_access a where a.person_id = "user".id and a.company_id = ${companyId})
 ```
 
 - As permissões (D10, D11, D12), todas novas: `hub_company` `SELECT, INSERT, UPDATE, DELETE` em
@@ -281,8 +314,14 @@ export const appAccess = projects.table('app_access', {
   `projects.app_access` e `SELECT` em `projects.project` (o aceite confere o Projeto vivo; uma
   política `INVITATION` de `select` no `project` pela linha do convite); um papel novo,
   `hub_app_people`, dono de `projects.apps_of_person`, com `SELECT` nas três tabelas que ela lê, e
-  `EXECUTE` dela só ao `hub_runtime`, como `hub_hosts` e `project_of_host`. `apps.app_session` não
+  `EXECUTE` dela só ao `hub_runtime`, como `hub_hosts` e `project_of_host`; `hub_app_people` lê sob
+  as políticas de linha, então ganha uma política de `select` em `projects.app_access`,
+  `projects.project` e `auth.company`, como `hosts_select` em `project` (`projects/tables.ts:52-54`). `apps.app_session` não
   ganha permissão: o tirar apaga as sessões pelo `hub_runtime`, que já pode (`:107`).
+- O que o Drizzle não gera vai em SQL nosso, em migrações próprias depois da gerada, como
+  `20261018101315_app_hosts_role` e `20261018101320_app_grants`: o papel `hub_app_people`, a
+  função, o seu `REVOKE` e `GRANT EXECUTE`, as permissões e a troca de dono (D5, D10).
+  `database-grants.sql` é só o instantâneo que o teste do catálogo compara.
 - A política `INVITATION` de `insert` lê `auth.invitation` por SQL cru, sem importar a identidade
   além do que `projects/tables.ts:12` já importa.
 - A troca do índice é `DROP INDEX` e `CREATE UNIQUE INDEX` na mesma migração, com a linha
@@ -300,7 +339,8 @@ pacote; `pg`). Guia de dados D6, D10, D11, D12; segurança S6.
 
 1. Os testes dos critérios 1 e 2, falhando hoje.
 2. As tabelas; `npx drizzle-kit generate --name e18_app_access`; a linha `-- contract:`.
-3. `database-grants.sql` e o instantâneo do catálogo; critério 3.
+3. As migrações de SQL nosso: o papel, a função, as permissões.
+4. `database-grants.sql` e o instantâneo do catálogo; critério 3.
 
 ### Como se prova
 
@@ -309,7 +349,8 @@ src/platform/catalog.test.ts`; `npm run migrations`; `node scripts/check-migrati
 
 ### Parar se
 
-- A migração gerada mexe em outra tabela além das duas: parar e relatar.
+- A migração gerada mexe em outra tabela além das duas e da política de `auth."user"`: parar e
+  relatar.
 - A função precisa de uma coluna além do nome do Projeto, do nome da empresa e do rótulo do
   endereço: relatar a coluna.
 
@@ -328,6 +369,11 @@ handler, já rodada no estudo fundo (`proto/scratch.diff`).
 - **O papel que uma versão deixa de declarar**: em `mayRun`, um papel fora de `roles` do app não é
   papel.
 - **A tela esconde o que o papel não pode**: `GET /api/caller` no `serveApp`; `client.ts`.
+- **A recusa no meio do app**: `createApi` (`client.ts:42-57`) pede `redirect: 'manual'`. Uma
+  resposta `opaqueredirect` (o 303 do dispatcher para o Hub, `apps/edge/src/dispatch.ts:205-207`)
+  ou um 4xx sem JSON (a página de recusa, `:208-213`) é o dispatcher falando ao navegador, não o
+  app: o cliente chama `location.reload()`, e a navegação mostra a recusa do Hub. Um 5xx sem JSON
+  segue `UNREACHABLE`, porque recarregar não conserta o Hub fora.
 - **O Builder escreve o app com papéis**: as cinco skills de `packages/app/skills/`.
 - **Linhas por pessoa**: `skills/conexus-data/references/handlers.ts:91-110`.
 
@@ -382,6 +428,7 @@ export function defineRoles<const R extends Roles>(roles: R): R
 export function can(access: CallerAccess, role: string): boolean   // BUILDER: sempre
 export function readCaller(fetcher?: typeof fetch): Promise<{ personName: string; access: CallerAccess }>
 // failureText.ROLE_FORBIDDEN: 'Seu papel neste app não permite isto.'
+// createApi: fetcher(`/api/${name}`, { ..., redirect: 'manual' }); opaqueredirect ou 4xx sem JSON → reload
 ```
 
 - **O estado**: `CallerAccess` é união com `kind` (C21); o dono é `props.ts`, e o `AppCaller` do
@@ -407,7 +454,7 @@ Código C21, C26, C27; decisão 0055.
 2. `props.ts`, `runtime.ts` (`mayRun` como no estudo fundo, com `everyone` e a recusa ao começar),
    `failures.ts`, `manifest.ts`; `AppCaller`; a linha do `handoff.ts`; critério 8.
 3. A checagem: `manifest.ts` e `build.ts`; critérios 5 e 6.
-4. O cliente: `can`, `readCaller`, a frase; critério 7.
+4. O cliente: `can`, `readCaller`, a frase, a recarga na recusa da plataforma; critérios 7 e 25.
 5. As skills. `conexus-plan-new` (`:62`) e `conexus-plan-change` (`:73`): perguntar quem chama o quê
    e anotar os papéis no plano, e "todos com acesso" sem papéis. `conexus-data` (`:25-26`):
    `caller.access`, o filtro por `caller.personId` e `can`, e `roles` em cada operação quando o app
@@ -444,21 +491,43 @@ empresa entre o aceite e o tirar; é o desenho entre módulos que a regra do mod
   `admitAppUser(tx, { companyId })`, que chama `refuseIfDeleting` (`admission.ts:270`). O
   comentário "as they may read its Projects" (`hosts.ts:27`) muda. `checkCall` e `createHandoff`
   (`handoff.ts`) passam o ambiente; a moldura (`preview`) segue só para membros.
-- **Convite só para um app**: `createInvitationCommand` (`invitations.ts:282-349`) recebe `app?: {
-  projectId; role }`. Com `app`, a admissão é `manageAppAccess`; o convite é escrito pelo adaptador
-  (`invitations.ts:272-275`), com `role` nulo, porque o endpoint da biblioteca exige `invitation:
-  create`; antes de escrever, as recusas do critério 9, pelas portas de Projetos (o Projeto vivo, a
+- **Convite só para um app** (o remendo `I`; a entrada em `boundaries.md` cita better-auth 1.7.8
+  `crud-invites.mjs:128-132,268,322`): `createInvitationCommand` (`invitations.ts:282-349`) recebe
+  `app?: { projectId; role }`. Com `app`, a admissão é `manageAppAccess`; o convite é escrito pelo
+  adaptador (`invitations.ts:272-275`), com `role` nulo, porque o endpoint da biblioteca exige
+  `invitation: create` e recusaria o endereço com outro convite aberto; antes de escrever, as recusas do critério 9, pelas portas de Projetos (o Projeto vivo, a
   linha que já existe) e de apps (os papéis da publicada). `openOf`, `checkRoom` e a contagem seguem
   como hoje, com o Projeto na chave: os convites de app contam no limite de convites abertos da
   empresa e no ritmo de quem convida, que são guardas contra abuso do envio de e-mail, não regra de
   produto. A comparação da chave de tentativa (`invitations.ts:300-306`) passa a incluir o Projeto e o
   papel do app.
+- **O convite da empresa com convites de app abertos**: `createInvitationCommand` sem `app` cancela,
+  pelo adaptador e antes de `written`, cada convite de app aberto do endereço na empresa, porque
+  `createInvitation` da biblioteca (`crud-invites.mjs:128-132`, `findPendingInvitation`,
+  `adapter.mjs:753-768`) recusaria o endereço com `USER_IS_ALREADY_INVITED_TO_THIS_ORGANIZATION`, e
+  o Hub não liga `cancelPendingInvitationsOnReInvite` (ele cancela só o primeiro, `:163-166`). Um
+  membro usa todos os apps (`E1`), então o convite da empresa os substitui. `openOf` e `cancelOpen`
+  seguem só para o convite da empresa.
+- **Os leitores do convite**: `PendingRow` (`invitations.ts:39-45`) passa a ler `project_id` e
+  `app_role` e separa os dois tipos numa união com `kind` (C21): `COMPANY` com `role: Role`, `APP`
+  com `projectId` e `role: RoleName | null`. Cada leitor que hoje lê `role` escolhe pelo `kind`:
+  `createdOf` e `invitation-mail.ts:45` (o e-mail do app), `invitation-reads.ts:128` (o link e os
+  convites recebidos), `invitation-response.ts:22,43` (`lockedInvitation`, por onde passam
+  `passwordCommand` e `declineCommand`), `invitation-management.ts:35,133` (a lista, renovar e
+  cancelar da empresa, que respondem `NOT_FOUND` a um convite de app). `passwordCommand` então
+  serve o convite de um app sem mudar: cria a conta e entra.
+- **Cancelar o convite de um app**: pelo adaptador (`organizationAdapter(...).updateInvitation`,
+  `invitations.ts:233-234`), depois de `manageAppAccess`: quem decide é a capacidade (`B`), não a
+  `invitation: cancel` da biblioteca, que `auth.api.cancelInvitation` conferiria.
 - **Aceitar e cair no app**: `acceptCommand` (`invitation-response.ts:123-178`) lê `projectId` com o
-  convite; com ele, grava a linha (`grantedBy` = quem convidou) e o `accepted` na mesma transação, e
-  **nunca** chama `acceptInvitation`. `passwordCommand` segue como está (cria a conta e entra).
+  convite; com ele, recusa um convite que não esteja `pending` ou não esteja vivo (`LIVE`,
+  `invitations.ts:35-37`) com `INVITATION_CLOSED`, como a biblioteca faz no seu aceite
+  (`crud-invites.mjs:268`), porque o ramo do app não a chama (S12); depois grava a linha e o
+  `accepted` na mesma transação, e **nunca** chama `acceptInvitation`.
   `getInvitation` (`invitation-reads.ts`) dá o app no `OpenInvitation`.
 - **Tirar o acesso**: o arquivo novo `apps/server/src/hub/projects/app-access.ts`, com a trava da
-  empresa (`lockCompany`, a mesma do aceite).
+  empresa (`lockCompany`, a mesma do aceite); os convites do app para o endereço saem pelo
+  adaptador, como o cancelar.
 - **O que a Carla vê no Hub**: `GET /api/apps`, por `appsOfPerson` (U1).
 - As listas da empresa e do Projeto deixam de fora quem é membro: a linha de um membro fica inerte,
   porque `admitToApp` admite o membro antes de ler a linha.
@@ -472,8 +541,9 @@ empresa entre o aceite e o tirar; é o desenho entre módulos que a regra do mod
 | --- | --- | --- |
 | `apps/server/src/hub/identity/roles.ts`, `admission.ts`, `public.ts` | Muda: a capacidade, as ações, `admitAppUser` | `projects`, `apps` |
 | `apps/server/src/hub/identity/auth.ts` | Muda só se o adaptador pedir os campos novos na escrita (a U1 já os declarou) | — |
-| `apps/server/src/hub/identity/invitations.ts`, `invitation-response.ts`, `invitation-reads.ts`, `invitation-management.ts`, `invitation-mail.ts`, `invitation-email.tsx` | Muda: o convite de um app; a lista de convites da empresa só mostra os sem Projeto | `routes.ts`, `company-routes.ts` |
+| `apps/server/src/hub/identity/invitations.ts`, `invitation-response.ts`, `invitation-reads.ts`, `invitation-management.ts`, `invitation-mail.ts`, `invitation-email.tsx` | Muda: `PendingRow` em união; o convite de um app; o convite da empresa cancela os de app; as rotas de convites da empresa só veem os sem Projeto | `routes.ts`, `company-routes.ts` |
 | `apps/server/src/hub/projects/app-access.ts` | Cria: as listas, trocar, tirar, tirar de todos, `GET /api/apps` | `routes.ts` |
+| `docs/reference/boundaries.md` | Muda: a entrada do convite de um app (o remendo `I`), com better-auth 1.7.8 e as linhas acima | — |
 | `apps/server/src/hub/projects/hosts.ts`, `ports.ts`, `routes.ts`, `public.ts` | Muda: `admitToApp`; as portas dos papéis publicados e das sessões | `apps/handoff.ts`, `main.ts` |
 | `apps/server/src/hub/apps/handoff.ts`, `versions.ts`, `public.ts` | Muda: o ambiente na admissão; `publishedRolesOf`; `endAppSessions` | `main.ts` |
 | `apps/server/src/main.ts` | Muda: liga as portas novas | — |
@@ -556,8 +626,9 @@ Segurança S6, S8, S10, S11, S13, S22; dados D22; código C26, C65.
 2. A capacidade e as ações (`roles.ts`, `admission.ts`).
 3. `admitToApp` com o ambiente e a linha; `admitAppUser`; `checkCall` passa o `access`. Regras: S8
    (a linha relida a cada chamada), S10 (o mesmo 404).
-4. O convite de um app e o aceite; o e-mail; a lista de convites da empresa sem os de app. Regras:
-   D22; o aceite nunca chama `acceptInvitation`.
+4. `PendingRow` como união e os seus leitores; o convite de um app e o aceite, com o prazo; o convite
+   da empresa que cancela os de app; o e-mail; as rotas de convites da empresa sem os de app;
+   critérios 23 e 24. Regras: C21, D22, S12; o aceite nunca chama `acceptInvitation`.
 5. `app-access.ts`: as listas, trocar, tirar (a linha, os convites, as sessões), tirar de todos,
    `GET /api/apps`; as portas em `main.ts`. Regras: S13, C65 (a trava da empresa).
 6. `npm run openapi` e o teste do contrato, com as rotas novas.
@@ -573,6 +644,7 @@ src/openapi-contract.test.ts`. Cada teste entra pela porta do Hub (T5): as rotas
 
 - O adaptador da biblioteca recusa `role` nulo num convite: parar e relatar; não gravar `member` no
   papel do convite.
+- Um leitor do convite fora dos nomeados acima lê `role`: incluí-lo na união e relatar a linha.
 - Um caminho que já existe chama `acceptInvitation` para um convite com Projeto: relatar a linha.
 - O tirar precisa apagar algo além da linha, dos convites do app e das sessões do app: relatar.
 - Uma lista que já existe (os convites recebidos, as Pessoas) mostra um convite de app como de
@@ -601,7 +673,7 @@ src/openapi-contract.test.ts`. Cada teste entra pela porta do Hub (T5): as rotas
 | `apps/web/src/hub/projects/access.tsx`, `area.tsx`, `search.ts`, `queries.ts` | Cria ou muda | a rota do Projeto |
 | `apps/web/src/hub/identity/people.tsx`, `invitation.tsx`, `no-company.tsx`, `queries.ts` | Muda | as rotas de Configurações, do convite e `/` |
 | `apps/web/src/platform/test-hub.tsx` (ou um `test-hub-access.tsx` novo) | Muda: os duplos das rotas novas | os testes |
-| `docs/reference/screens.md` | Muda: a linha da seção nova (W29) | — |
+| `docs/reference/screens.md` | Muda: a linha da seção nova e a linha de `/`, que passa a servir também quem só usa apps ("Seus apps", `F1`) (W29) | — |
 | testes: `apps/web/src/hub/projects/access.test.tsx` (novo), `people.test.tsx`, `invitation.test.tsx`, `apps/web/src/routes/_app/index.test.tsx` | Cria ou muda | — |
 
 ### Os contratos que a unidade cria
