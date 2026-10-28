@@ -25,8 +25,8 @@ CREATE TABLE contato (id serial PRIMARY KEY, nome text, whatsapp text, instagram
 INSERT INTO contato (nome, whatsapp, instagram) VALUES ('Beatriz', '(11) 97777-0000', '@bia'), ('Renata', '(11) 96666-0000', '@re')
 CREATE TABLE agendamento (id serial PRIMARY KEY, cliente_id int REFERENCES cliente (id), servico text, quando text, duracao_min int)
 INSERT INTO agendamento (cliente_id, servico, quando, duracao_min) VALUES (1, 'corte', 'sexta', NULL), (2, 'escova', 'sábado', NULL), (1, 'cor', 'domingo', 90)
-CREATE TABLE comissao (id serial PRIMARY KEY, valor numeric)
-INSERT INTO comissao (valor) VALUES (10)
+CREATE TABLE comissao (id serial PRIMARY KEY, valor numeric, taxa numeric(12,2), forma varchar, pago_em timestamp)
+INSERT INTO comissao (valor, taxa, forma, pago_em) VALUES (10.50, 1.5, 'pix', '2026-10-25 14:30:00')
 CREATE TABLE registro (id serial PRIMARY KEY, extra json, pos point, x xml)
 INSERT INTO registro (extra, pos, x) VALUES ('{"a":1}', '(1,2)', '<a>1</a>')
 CREATE TABLE "Caixa" (id serial PRIMARY KEY, nota text NOT NULL)
@@ -50,7 +50,7 @@ SELECT id, nome, whatsapp, instagram FROM contato
 INSERT INTO contato (nome, whatsapp) VALUES ('Nova', '(11) 95555-0000')
 SELECT id, cliente_id, servico, quando, duracao_min FROM agendamento
 INSERT INTO agendamento (cliente_id, servico, quando) VALUES (1, 'corte', 'segunda')
-SELECT id, valor FROM comissao
+SELECT id, valor, taxa, forma, pago_em FROM comissao
 INSERT INTO comissao (valor) VALUES (5)
 SELECT id, extra, pos, x FROM registro
 INSERT INTO registro (extra) VALUES ('{}')
@@ -112,6 +112,12 @@ Sa6 | PASS | ALTER TABLE agendamento ADD COLUMN status text NOT NULL DEFAULT 'ma
 truncate | CX002 | TRUNCATE encomenda_teste
 dropDefault | CX001 | ALTER TABLE encomenda ALTER COLUMN status DROP DEFAULT
 varcharWiden | PASS | ALTER TABLE ordem_servico ALTER COLUMN observacao TYPE varchar(200)
+numericLimit | CX001 | ALTER TABLE comissao ALTER COLUMN valor TYPE numeric(12,2)
+numericScale | CX001 | ALTER TABLE comissao ALTER COLUMN taxa TYPE numeric(12,4)
+numericWiden | PASS | ALTER TABLE comissao ALTER COLUMN taxa TYPE numeric(14,2)
+varcharLimit | CX001 | ALTER TABLE comissao ALTER COLUMN forma TYPE varchar(3)
+timestampLimit | CX001 | ALTER TABLE comissao ALTER COLUMN pago_em TYPE timestamp(0)
+formatOverload | CX002 | CREATE FUNCTION format(text, name, text, text, name) RETURNS text LANGUAGE sql AS $$ SELECT 'SELECT 0' $$ ;; DELETE FROM encomenda_teste
 json_noop | PASS | SELECT 1
 json_add_column | PASS | ALTER TABLE encomenda ADD COLUMN whatsapp text
 json_overwrite | CX002 | UPDATE registro SET extra = '{"a":2}'
@@ -142,6 +148,7 @@ createTemp | CreateStmt t | CREATE TEMP TABLE t (id int)
 cxCol | name cx_col | DELETE FROM cx_col
 pgTempCxCol | name pg_temp.cx_col | DELETE FROM pg_temp.cx_col
 ledger | name conexus_migration | DELETE FROM conexus_migration
+fnSnapshot | name cx_check | CREATE FUNCTION f() RETURNS int LANGUAGE sql AS $$ INSERT INTO cx_check (def) VALUES ('x') RETURNING 1 $$
 qualified | name app.encomenda | INSERT INTO app.encomenda (cliente) VALUES ('x')
 doBlock | DoStmt | DO $$ BEGIN DELETE FROM encomenda; END $$
 view | ViewStmt | CREATE VIEW v AS SELECT * FROM encomenda
@@ -159,6 +166,7 @@ fnUpsert | body ON CONFLICT DO UPDATE | CREATE FUNCTION f() RETURNS trigger LANG
 fnDynamic | EXECUTE | CREATE FUNCTION f() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN EXECUTE 'DELETE FROM encomenda'; RETURN NEW; END $$
 trigRaise | RAISE EXCEPTION | CREATE FUNCTION f() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'não'; END $$
 trigNull | RETURN not NEW | CREATE FUNCTION f() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RETURN NULL; END $$
+trigAssert | ASSERT | CREATE FUNCTION f() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN ASSERT NEW.cliente <> ''; RETURN NEW; END $$
 trigFallsOff | RETURN not NEW | CREATE FUNCTION f() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.cliente := upper(NEW.cliente); END $$
 sqlBody | sql_body | CREATE FUNCTION g() RETURNS void LANGUAGE sql BEGIN ATOMIC DELETE FROM encomenda; END
 language | language c | CREATE FUNCTION g() RETURNS int LANGUAGE c AS 'x', 'y'
