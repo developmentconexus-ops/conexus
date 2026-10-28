@@ -110,9 +110,9 @@ async function giveAndRead(owner: Page, member: Page, companyA: string) {
   await owner.getByText(`reservada para ${CARLA.name}`).waitFor()
   await enter(member, CARLA.email, `/companies/${companyA}`)
   await waitForHome(member)
-  await openSettings(member, 'Minhas contas de modelo')
+  await openSettings(member, 'Contas de modelo')
   await member.getByText('Sua ordem para Anthropic: Time 2, Time 1').waitFor()
-  await linkKey(member, 'Carla 1', OWN_KEY)
+  await linkKey(member, 'Carla 1', OWN_KEY, 'Anthropic', 'Suas contas')
   await member.getByText('Carla 1 · chave …y9Zb · ligada').first().waitFor()
   await member.getByText('Sua ordem para Anthropic: Carla 1, Time 2, Time 1').waitFor()
 }

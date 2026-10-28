@@ -16,7 +16,7 @@ function StartLine(props: { start: Start; companyId: CompanyId }) {
       <p>
         Nenhum padrão nem modelo inicial tem conta sua disponível.{' '}
         <Link
-          to="/companies/$companyId/settings/my-model-accounts"
+          to="/companies/$companyId/settings/model-accounts"
           params={{ companyId: props.companyId }}
           className="underline"
         >
@@ -81,7 +81,7 @@ export function MyDefaults() {
         <p className="flex flex-wrap items-baseline gap-x-md">
           <span className="min-w-0 break-words">{`Conta usada primeiro (${modelProviderName(providers, defaults.start.model)}): ${defaults.start.account}`}</span>
           <Link
-            to="/companies/$companyId/settings/my-model-accounts"
+            to="/companies/$companyId/settings/model-accounts"
             params={{ companyId }}
             className="underline"
           >

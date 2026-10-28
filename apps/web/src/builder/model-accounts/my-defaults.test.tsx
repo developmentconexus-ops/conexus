@@ -111,7 +111,7 @@ test('sem conta usável em nenhum degrau: a frase e o caminho a Minhas contas de
   const link = within(screen.getByRole('main')).getByRole('link', {
     name: 'Minhas contas de modelo',
   })
-  expect(link.getAttribute('href')).toBe(`/companies/${COMPANY.id}/settings/my-model-accounts`)
+  expect(link.getAttribute('href')).toBe(`/companies/${COMPANY.id}/settings/model-accounts`)
 })
 
 test('o padrão próprio sem conta usável agora: a frase com o fornecedor e o degrau que vale', async () => {
@@ -154,7 +154,7 @@ test('a conta usada primeiro é a que o Hub dá, com Mudar a ordem', async () =>
   ).toBeTruthy()
   expect(screen.queryByText(/Pausada/)).toBeNull()
   expect(screen.getByRole('link', { name: 'Mudar a ordem' }).getAttribute('href')).toBe(
-    `/companies/${COMPANY.id}/settings/my-model-accounts`,
+    `/companies/${COMPANY.id}/settings/model-accounts`,
   )
 })
 

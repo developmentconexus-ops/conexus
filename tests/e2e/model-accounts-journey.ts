@@ -63,9 +63,25 @@ export async function pickModel(
   await page.getByRole('group', { name: provider }).getByRole('option').first().click()
 }
 
+/** The page has a "Ligar conta" in each of its two parts: the company's unless said. */
+type Part = 'Suas contas' | 'Contas da empresa'
+
+async function openLink(page: Page, part: Part) {
+  await page
+    .getByRole('region', { name: part })
+    .getByRole('button', { name: 'Ligar conta', exact: true })
+    .click()
+}
+
 /** Opens "Ligar conta" and links an API key of `provider` (Anthropic unless said). */
-export async function linkKey(page: Page, label: string, key: string, provider = 'Anthropic') {
-  await page.getByRole('button', { name: 'Ligar conta', exact: true }).click()
+export async function linkKey(
+  page: Page,
+  label: string,
+  key: string,
+  provider = 'Anthropic',
+  part: Part = 'Contas da empresa',
+) {
+  await openLink(page, part)
   const panel = page.getByRole('region', { name: 'Ligar conta' })
   await panel.getByLabel('Buscar fornecedor').fill(provider)
   await pick(page, panel, 'Fornecedor', provider)
@@ -88,8 +104,9 @@ export async function linkSignIn(
   kind: 'Assinatura Claude' | 'Google',
   label: string,
   pasted: (state: string) => string,
+  part: Part = 'Contas da empresa',
 ) {
-  await page.getByRole('button', { name: 'Ligar conta', exact: true }).click()
+  await openLink(page, part)
   const panel = page.getByRole('region', { name: 'Ligar conta' })
   await panel.getByRole('button', { name: 'Entrar com assinatura' }).click()
   await pick(page, panel, 'Tipo de assinatura', kind)

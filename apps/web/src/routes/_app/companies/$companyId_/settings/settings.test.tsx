@@ -63,19 +63,14 @@ test('Configurações: Voltar, a busca, Você e a empresa, cada seção na sua o
     `/companies/${COMPANY.id}`,
   )
   expect(nav.getByRole('searchbox', { name: 'Buscar nas configurações' })).toBeTruthy()
-  expect(linksOf(groupOf(nav, 'Você'))).toEqual([
-    'Minha conta',
-    'Minhas contas de modelo',
-    'Meus padrões',
-  ])
+  expect(linksOf(groupOf(nav, 'Você'))).toEqual(['Minha conta', 'Contas de modelo', 'Meus padrões'])
   expect(linksOf(groupOf(nav, COMPANY.name))).toEqual([
     'Geral',
     'Pessoas e convites',
-    'Contas de modelo',
     'Padrões da empresa',
     'Memória observacional',
   ])
-  expect(sections(nav)).toHaveLength(8)
+  expect(sections(nav)).toHaveLength(7)
 })
 
 test('a busca acha pelo nome e pelas palavras, sem acento: "convite" leva a Pessoas e convites', async () => {
@@ -85,7 +80,7 @@ test('a busca acha pelo nome e pelas palavras, sem acento: "convite" leva a Pess
   fireEvent.change(search, { target: { value: 'convite' } })
   expect(sections(nav)).toEqual(['Pessoas e convites'])
   fireEvent.change(search, { target: { value: 'CONTA' } })
-  expect(sections(nav)).toEqual(['Minha conta', 'Minhas contas de modelo', 'Contas de modelo'])
+  expect(sections(nav)).toEqual(['Minha conta', 'Contas de modelo'])
 })
 
 test('"raciocínio" e "modelo padrão" acham Meus padrões e Padrões da empresa, e Contas de modelo não guarda mais o modelo padrão', async () => {
@@ -107,7 +102,7 @@ test('a busca sem resultado diz "Nenhuma seção encontrada." e volta com o camp
   expect(sections(nav)).toHaveLength(0)
   fireEvent.change(search, { target: { value: '' } })
   expect(nav.queryByText('Nenhuma seção encontrada.')).toBeNull()
-  expect(sections(nav)).toHaveLength(8)
+  expect(sections(nav)).toHaveLength(7)
 })
 
 test('uma filha de settings com staticData.section aparece na sua ordem, sem mudar o índice', async () => {
@@ -133,7 +128,6 @@ test('uma filha de settings com staticData.section aparece na sua ordem, sem mud
     'Geral',
     'Cobrança',
     'Pessoas e convites',
-    'Contas de modelo',
     'Padrões da empresa',
     'Memória observacional',
   ])
@@ -189,7 +183,7 @@ test('cada seção com o seu ícone: um svg dentro do link', async () => {
   open()
   const nav = await index()
   const links = nav.getAllByRole('link').filter((link) => link.textContent !== 'Voltar')
-  expect(links).toHaveLength(8)
+  expect(links).toHaveLength(7)
   for (const link of links) expect(link.querySelector('svg'), link.textContent ?? '').toBeTruthy()
 })
 

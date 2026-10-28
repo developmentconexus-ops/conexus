@@ -72,12 +72,6 @@ export const HOUSE_STATES: State[] = [
     settle: (p) => waitFor(p, 'Só o dono ou um administrador muda as contas de modelo'),
   },
   {
-    name: 'Configurações, minhas contas de modelo',
-    path: `${SETTINGS}/my-model-accounts`,
-    replies: MEMBER,
-    settle: (p) => waitFor(p, 'Nenhuma conta sua'),
-  },
-  {
     name: 'passo 2, conta de modelo',
     path: `${WELCOME}/model-account`,
     replies: OWNER,

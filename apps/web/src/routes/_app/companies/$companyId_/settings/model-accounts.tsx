@@ -2,7 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { KeyRoundIcon } from 'lucide-react'
 import {
   accountsQuery,
-  CompanyAccounts,
+  ModelAccounts,
   providersQuery,
 } from '../../../../../builder/model-accounts/public.ts'
 import { everyMemberQuery } from '../../../../../hub/identity/public.ts'
@@ -11,12 +11,12 @@ import { readOrNotFound } from '../../../../../platform/hub.ts'
 export const Route = createFileRoute('/_app/companies/$companyId_/settings/model-accounts')({
   staticData: {
     section: {
-      group: 'company',
+      group: 'you',
       label: 'Contas de modelo',
       icon: KeyRoundIcon,
-      summary: 'As contas de modelo da empresa e a troca automática entre elas.',
-      order: 30,
-      keywords: ['troca automática', 'chave', 'assinatura'],
+      summary: 'As contas que o Builder usa, na ordem em que tenta cada uma.',
+      order: 20,
+      keywords: ['modelo', 'chave', 'assinatura', 'claude', 'google', 'troca automática'],
     },
   },
   loader: async ({ context, params }) => {
@@ -29,5 +29,5 @@ export const Route = createFileRoute('/_app/companies/$companyId_/settings/model
       ]),
     )
   },
-  component: CompanyAccounts,
+  component: ModelAccounts,
 })
