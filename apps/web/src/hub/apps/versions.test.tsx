@@ -2,7 +2,7 @@ import { FAILURES } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
-import { beforeEach, expect, test } from 'vitest'
+import { beforeEach, expect, test, vi } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
 import { COMPANY } from '../../platform/fixtures.ts'
 import {
@@ -28,12 +28,14 @@ async function open(view: { versions: ReturnType<typeof versionView>[] }, mayDel
     ...projectsRead({ projects: [PEDIDOS], databaseReady: true, mayDelete }),
     versionsRead(view),
   )
-  render(<Conexus conexus={createConexus(createMemoryHistory({ initialEntries: [SETTINGS] }))} />)
+  const conexus = createConexus(createMemoryHistory({ initialEntries: [SETTINGS] }))
+  render(<Conexus conexus={conexus} />)
   await screen.findByRole('heading', { name: 'Versões' })
+  return conexus
 }
 
 const EMPTY =
-  'Nenhuma versão foi ao app ainda. Cada versão do Builder que monta aparece aqui; até lá, o endereço mostra o app de exemplo.'
+  'Nenhuma versão ainda. Cada versão que o Builder monta aparece aqui, e o app abre no endereço depois do primeiro Publicar.'
 
 test('vazio: de onde vêm as versões e o app de exemplo no endereço, sem "Enviar versão" (35)', async () => {
   await open({ versions: [] })
@@ -135,11 +137,11 @@ async function withPut(answer: () => Response | Promise<Response>) {
       return answer()
     }),
   )
-  await open(view)
+  const conexus = await open(view)
   await screen.findByText(/Versão 2/)
   fireEvent.click(screen.getByRole('button', { name: 'Publicar esta' }))
   await screen.findByRole('alertdialog')
-  return { view, sent }
+  return { view, sent, conexus }
 }
 
 test('Publicar esta: a pergunta e o aviso "Quem abrir o app passa a ver esta versão."; Cancelar não envia', async () => {
@@ -196,4 +198,22 @@ test('503: o diálogo fica e diz a frase; confirmar de novo vale', async () => {
     'disabled',
     false,
   )
+})
+
+test('reabrir o diálogo apaga a frase da falha de antes', async () => {
+  await withPut(() => refusal('DATABASE_UNAVAILABLE'))
+  fireEvent.click(screen.getByRole('button', { name: 'Publicar a versão 2' }))
+  await screen.findByRole('alert')
+  fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
+  await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull())
+  fireEvent.click(screen.getByRole('button', { name: 'Publicar esta' }))
+  await screen.findByRole('alertdialog')
+  expect(screen.queryByRole('alert')).toBeNull()
+})
+
+test('404 do Projeto ao publicar: o roteador lê o Projeto de novo', async () => {
+  const { conexus } = await withPut(() => refusal('NOT_FOUND'))
+  const invalidate = vi.spyOn(conexus.router, 'invalidate')
+  fireEvent.click(screen.getByRole('button', { name: 'Publicar a versão 2' }))
+  await waitFor(() => expect(invalidate).toHaveBeenCalled())
 })

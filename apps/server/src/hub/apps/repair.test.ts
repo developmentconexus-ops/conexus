@@ -28,16 +28,22 @@ test('a reparação sobe a publicada também', async (t) => {
   const first = await versionNumbered(subject, (await send(subject, ana)).number)
   const published = `${versions.replace(/\/versions$/, '')}/published-version`
   assert.equal((await call(hub, ana, 'PUT', published, { number: 1 })).statusCode, 200)
+  const extra = { id: '002_extra', statements: ['CREATE TABLE extra (v text)'] }
   const second = await versionNumbered(
     subject,
-    (await send(subject, ana, folder({}, '#6b2fa3'))).number,
+    (await send(subject, ana, folder({ migrations: [MIGRATION, extra] }, '#6b2fa3'))).number,
   )
   // Cloudflare lost both Workers; the migrations of the Prévia's version are the only ones that run.
   await hub.cloudflare.cloudflare.remove(`v-${first.id}`)
   await hub.cloudflare.cloudflare.remove(`v-${second.id}`)
   assert.deepEqual(hub.cloudflare.workers(), [])
+  const ran = t.mock.method(hub.postgres.companyPostgres, 'migrate')
   await hub.repair()
   assert.deepEqual(hub.cloudflare.workers(), [`v-${first.id}`, `v-${second.id}`].sort())
+  assert.deepEqual(
+    ran.mock.calls.map((call) => call.arguments[2].map(({ id }) => id)),
+    [[MIGRATION.id, extra.id]],
+  )
 })
 
 test('a 17 entra com a versão no ar publicada, e as sessões de antes saem', async (t) => {
@@ -182,10 +188,19 @@ test('reparo: Cloudflare fora, a empresa fica para a próxima e o Hub segue', as
   assert.deepEqual(sent.preview, { state: 'ready', number: 2 })
 })
 
-test('reparo: o Projeto marcado para apagar enquanto o reparo o refaz perde o que ele refez', async (t) => {
+test('reparo: o Projeto marcado para apagar enquanto o reparo o refaz perde o que ele refez, a publicada também', async (t) => {
   const subject = await companyForVersions(t)
-  const { hub, ana, owner, projectId } = subject
-  await send(subject, ana)
+  const { hub, ana, owner, projectId, versions } = subject
+  const first = await versionNumbered(subject, (await send(subject, ana)).number)
+  const published = `${versions.replace(/\/versions$/, '')}/published-version`
+  assert.equal((await call(hub, ana, 'PUT', published, { number: 1 })).statusCode, 200)
+  const second = await versionNumbered(
+    subject,
+    (await send(subject, ana, folder({}, '#6b2fa3'))).number,
+  )
+  // Cloudflare lost both Workers, so the repair uploads both before the deletion's mark is seen.
+  await hub.cloudflare.cloudflare.remove(`v-${first.id}`)
+  await hub.cloudflare.cloudflare.remove(`v-${second.id}`)
   const id = ProjectId.parse(projectId)
   assert.equal(await forgetApp(owner, id, hub.config.appLoginKey), 'DONE')
   const held = hub.postgres.holdMigrate()
