@@ -215,6 +215,32 @@ test('reparo: o Projeto marcado para apagar enquanto o reparo o refaz perde o qu
   assert.deepEqual((await appTablesOf(owner, id)).tables, [])
 })
 
+test('reparo: Cloudflare recusa tirar um Worker no recolhimento, e o reparo para sem apagar o banco do app', async (t) => {
+  const subject = await companyForVersions(t)
+  const { hub, ana, owner, projectId, versions } = subject
+  const first = await versionNumbered(subject, (await send(subject, ana)).number)
+  const published = `${versions.replace(/\/versions$/, '')}/published-version`
+  assert.equal((await call(hub, ana, 'PUT', published, { number: 1 })).statusCode, 200)
+  const second = await versionNumbered(
+    subject,
+    (await send(subject, ana, folder({}, '#6b2fa3'))).number,
+  )
+  await hub.cloudflare.cloudflare.remove(`v-${first.id}`)
+  await hub.cloudflare.cloudflare.remove(`v-${second.id}`)
+  const id = ProjectId.parse(projectId)
+  assert.equal(await forgetApp(owner, id, hub.config.appLoginKey), 'DONE')
+  const held = hub.postgres.holdMigrate()
+  const repaired = hub.repair()
+  await held.arrived
+  await hub.test.asOwner('update projects.project set deleting_since = now()')
+  // The take-back removes two Workers; Cloudflare refuses the first and answers the second.
+  hub.cloudflare.script('remove', 'NO_ANSWER')
+  held.release()
+  await repaired
+  assert.equal(hub.cloudflare.workers().length, 1, 'the refused Worker waits for the next pass')
+  assert.notDeepEqual((await appTablesOf(owner, id)).tables, [], 'the app database is not dropped')
+})
+
 test('reparo: o reparo poda as versões marcadas, as enviadas à mão que a migração da 14.1 marca (36)', async (t) => {
   const subject = await companyForVersions(t)
   const { hub, ana, projects, projectId } = subject
