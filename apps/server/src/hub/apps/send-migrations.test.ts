@@ -47,7 +47,7 @@ test('o envio com GRANT não entra', async (t) => {
   const refused = sent.lines.filter((line) => line.message === 'APP_MIGRATION_REFUSED')
   assert.deepEqual(
     refused.map(({ fields }) => [fields.migration, fields.statement, fields.subject]),
-    [['002_publico', 1, 'GrantStmt']],
+    [['002_publico', 1, 'dar ou tirar permissão de acesso']],
   )
   assert.ok(!JSON.stringify(sent.lines).includes('GRANT SELECT'), 'the log carries no SQL')
 })
@@ -109,7 +109,12 @@ test('o motivo vai sem valor', async (t) => {
     state: 'failed',
     number: 4,
     code: 'APP_MIGRATION_REFUSED',
-    cause: { kind: 'rule', migration: '003_publico', statement: 1, subject: 'GrantStmt' },
+    cause: {
+      kind: 'rule',
+      migration: '003_publico',
+      statement: 1,
+      subject: 'dar ou tirar permissão de acesso',
+    },
   })
   const everything =
     [database, lost, grant].map(({ raw }) => raw).join() + JSON.stringify(subject.hub.lines)
@@ -128,4 +133,29 @@ test('a tabela de outro esquema com nome longo recusa com o motivo inteiro', asy
   )
   assert.equal(sent.preview?.state === 'failed' && sent.preview.code, 'APP_MIGRATION_REFUSED')
   assert.equal(sent.preview?.state === 'failed' && sent.preview.cause?.kind, 'rule')
+})
+
+test('CX002 depois de DELETE diz as linhas, e depois de UPDATE a coluna', async (t) => {
+  const subject = await companyForVersions(t)
+  const seed = {
+    id: '002_recados',
+    statements: ["INSERT INTO recado (texto) VALUES ('um'), ('dois')"],
+  }
+  await send(subject, subject.ana, folder({ migrations: [MIGRATION, seed] }))
+  async function changing(id: string, statement: string) {
+    const migrations = [MIGRATION, seed, { id, statements: [statement] }]
+    return (await send(subject, subject.ana, folder({ migrations }))).preview
+  }
+  assert.deepEqual(await changing('003_apaga', 'DELETE FROM recado'), {
+    state: 'failed',
+    number: 2,
+    code: 'APP_MIGRATION_FAILED',
+    cause: { kind: 'database', sqlstate: 'CX002', table: 'recado' },
+  })
+  assert.deepEqual(await changing('003_troca', "UPDATE recado SET texto = 'outro'"), {
+    state: 'failed',
+    number: 3,
+    code: 'APP_MIGRATION_FAILED',
+    cause: { kind: 'database', sqlstate: 'CX002', table: 'recado', column: 'texto' },
+  })
 })

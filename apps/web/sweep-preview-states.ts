@@ -143,4 +143,41 @@ export const PREVIEW_STATES: State[] = [
     ]),
     settle: (p) => inChat(p, 'Pedir ao Builder para corrigir'),
   },
+  {
+    name: 'Conversa, com a Prévia que a lista fixa recusou',
+    path: `${PROJECT}/conversations/${ID}`,
+    replies: turnOf([
+      {
+        type: 'data-conexus-preview',
+        data: {
+          state: 'failed',
+          number: 7,
+          code: 'APP_MIGRATION_REFUSED',
+          cause: {
+            kind: 'rule',
+            migration: '004_publico',
+            statement: 1,
+            subject: 'dar ou tirar permissão de acesso',
+          },
+        },
+      },
+    ]),
+    settle: (p) => inChat(p, 'Pedir ao Builder para corrigir'),
+  },
+  {
+    name: 'Conversa, com a Prévia que a garantia recusou por linhas apagadas',
+    path: `${PROJECT}/conversations/${ID}`,
+    replies: turnOf([
+      {
+        type: 'data-conexus-preview',
+        data: {
+          state: 'failed',
+          number: 7,
+          code: 'APP_MIGRATION_FAILED',
+          cause: { kind: 'database', sqlstate: 'CX002', table: 'recado' },
+        },
+      },
+    ]),
+    settle: (p) => inChat(p, 'Pedir ao Builder para corrigir'),
+  },
 ]

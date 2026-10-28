@@ -132,54 +132,54 @@ swapRows | PASS | UPDATE encomenda SET produto = CASE cliente WHEN 'Maria' THEN 
   return { name, outcome, statements: statements.split(' ;; ') }
 })
 
-/** Statements the fixed list refuses, each with the node it names; none reaches the database. */
+/** Statements the fixed list refuses, each with the plain name the person reads; none reaches the database. */
 export const REFUSED_PROBES = rows(`
-rls | AT_EnableRowSecurity | ALTER TABLE encomenda ENABLE ROW LEVEL SECURITY
-forceRls | AT_ForceRowSecurity | ALTER TABLE encomenda FORCE ROW LEVEL SECURITY
-policy | CreatePolicyStmt | CREATE POLICY p ON encomenda USING (false)
-rule | RuleStmt | CREATE RULE r AS ON INSERT TO encomenda DO INSTEAD NOTHING
-alterFunctionDefiner | AlterFunctionStmt | ALTER FUNCTION f() SECURITY DEFINER
-alterDefaultPrivileges | AlterDefaultPrivilegesStmt | ALTER DEFAULT PRIVILEGES GRANT ALL ON TABLES TO public
-seqRestart | AlterSeqStmt | ALTER SEQUENCE encomenda_id_seq RESTART 1
-setUnlogged | AT_SetUnLogged | ALTER TABLE encomenda SET UNLOGGED
-ownerTo | AT_ChangeOwner | ALTER TABLE encomenda OWNER TO someone
-createUnlogged | CreateStmt u | CREATE UNLOGGED TABLE t (id int)
-createTemp | CreateStmt t | CREATE TEMP TABLE t (id int)
-cxCol | name cx_col | DELETE FROM cx_col
-pgTempCxCol | name pg_temp.cx_col | DELETE FROM pg_temp.cx_col
-ledger | name conexus_migration | DELETE FROM conexus_migration
-fnSnapshot | name cx_check | CREATE FUNCTION f() RETURNS int LANGUAGE sql AS $$ INSERT INTO cx_check (def) VALUES ('x') RETURNING 1 $$
-qualified | name app.encomenda | INSERT INTO app.encomenda (cliente) VALUES ('x')
-doBlock | DoStmt | DO $$ BEGIN DELETE FROM encomenda; END $$
-view | ViewStmt | CREATE VIEW v AS SELECT * FROM encomenda
-grant | GrantStmt | GRANT SELECT ON encomenda TO public
-revoke | GrantStmt | REVOKE SELECT ON encomenda FROM public
-begin | TransactionStmt | BEGIN
-commit | TransactionStmt | COMMIT
-set | VariableSetStmt | SET statement_timeout = 0
-reset | VariableSetStmt | RESET ALL
-discard | DiscardStmt | DISCARD TEMP
-definer | SECURITY DEFINER | CREATE FUNCTION f() RETURNS int LANGUAGE sql SECURITY DEFINER AS $$ SELECT 1 $$
-fnDelete | body DeleteStmt | CREATE FUNCTION f() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN DELETE FROM encomenda; RETURN NEW; END $$
-fnCteDelete | body DeleteStmt | CREATE FUNCTION f() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN WITH d AS (DELETE FROM encomenda RETURNING 1) SELECT 1; RETURN NEW; END $$
-fnUpsert | body ON CONFLICT DO UPDATE | CREATE FUNCTION f() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN INSERT INTO veiculo VALUES (NEW.placa) ON CONFLICT (placa) DO UPDATE SET placa = NULL; RETURN NEW; END $$
-fnDynamic | EXECUTE | CREATE FUNCTION f() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN EXECUTE 'DELETE FROM encomenda'; RETURN NEW; END $$
-trigRaise | RAISE EXCEPTION | CREATE FUNCTION f() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'não'; END $$
-trigNull | RETURN not NEW | CREATE FUNCTION f() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RETURN NULL; END $$
-trigAssert | ASSERT | CREATE FUNCTION f() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN ASSERT NEW.cliente <> ''; RETURN NEW; END $$
-trigFallsOff | RETURN not NEW | CREATE FUNCTION f() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.cliente := upper(NEW.cliente); END $$
-sqlBody | sql_body | CREATE FUNCTION g() RETURNS void LANGUAGE sql BEGIN ATOMIC DELETE FROM encomenda; END
-language | language c | CREATE FUNCTION g() RETURNS int LANGUAGE c AS 'x', 'y'
-dropFunction | DropStmt OBJECT_FUNCTION | DROP FUNCTION f()
-dropTrigger | DropStmt OBJECT_TRIGGER | DROP TRIGGER t ON encomenda
-dropView | DropStmt OBJECT_VIEW | DROP VIEW v
-selectInto | SelectStmt INTO | SELECT * INTO copia FROM encomenda
-ctas | CreateTableAsStmt | CREATE TABLE copia AS SELECT * FROM encomenda
-enumType | CreateEnumStmt | CREATE TYPE s AS ENUM ('a')
-extension | CreateExtensionStmt | CREATE EXTENSION unaccent
-sequence | CreateSeqStmt | CREATE SEQUENCE s
-twoInOne | NOT_ONE_STATEMENT | SELECT 1; SELECT 2
-unreadable | UNREADABLE | ALTER TABLE encomenda ADD COLUMN
+rls | ligar a segurança por linha | ALTER TABLE encomenda ENABLE ROW LEVEL SECURITY
+forceRls | forçar a segurança por linha | ALTER TABLE encomenda FORCE ROW LEVEL SECURITY
+policy | criar regra de acesso por linha | CREATE POLICY p ON encomenda USING (false)
+rule | criar regra que reescreve comandos | CREATE RULE r AS ON INSERT TO encomenda DO INSTEAD NOTHING
+alterFunctionDefiner | alterar uma função já criada | ALTER FUNCTION f() SECURITY DEFINER
+alterDefaultPrivileges | mudar as permissões padrão | ALTER DEFAULT PRIVILEGES GRANT ALL ON TABLES TO public
+seqRestart | alterar uma sequência | ALTER SEQUENCE encomenda_id_seq RESTART 1
+setUnlogged | tornar a tabela sem registro (UNLOGGED) | ALTER TABLE encomenda SET UNLOGGED
+ownerTo | trocar o dono da tabela | ALTER TABLE encomenda OWNER TO someone
+createUnlogged | criar tabela sem registro (UNLOGGED) | CREATE UNLOGGED TABLE t (id int)
+createTemp | criar tabela temporária | CREATE TEMP TABLE t (id int)
+cxCol | nome do Conexus (cx_col) | DELETE FROM cx_col
+pgTempCxCol | tabela de outro esquema (pg_temp.cx_col) | DELETE FROM pg_temp.cx_col
+ledger | nome do Conexus (conexus_migration) | DELETE FROM conexus_migration
+fnSnapshot | nome do Conexus (cx_check) | CREATE FUNCTION f() RETURNS int LANGUAGE sql AS $$ INSERT INTO cx_check (def) VALUES ('x') RETURNING 1 $$
+qualified | tabela de outro esquema (app.encomenda) | INSERT INTO app.encomenda (cliente) VALUES ('x')
+doBlock | rodar um bloco de código solto (DO) | DO $$ BEGIN DELETE FROM encomenda; END $$
+view | criar uma visão (view) | CREATE VIEW v AS SELECT * FROM encomenda
+grant | dar ou tirar permissão de acesso | GRANT SELECT ON encomenda TO public
+revoke | dar ou tirar permissão de acesso | REVOKE SELECT ON encomenda FROM public
+begin | controlar a transação (BEGIN, COMMIT) | BEGIN
+commit | controlar a transação (BEGIN, COMMIT) | COMMIT
+set | mudar configuração do banco (SET) | SET statement_timeout = 0
+reset | mudar configuração do banco (SET) | RESET ALL
+discard | descartar o estado da conexão | DISCARD TEMP
+definer | função com o poder do dono (SECURITY DEFINER) | CREATE FUNCTION f() RETURNS int LANGUAGE sql SECURITY DEFINER AS $$ SELECT 1 $$
+fnDelete | função que apaga linhas | CREATE FUNCTION f() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN DELETE FROM encomenda; RETURN NEW; END $$
+fnCteDelete | função que apaga linhas | CREATE FUNCTION f() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN WITH d AS (DELETE FROM encomenda RETURNING 1) SELECT 1; RETURN NEW; END $$
+fnUpsert | função que muda linha existente (ON CONFLICT) | CREATE FUNCTION f() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN INSERT INTO veiculo VALUES (NEW.placa) ON CONFLICT (placa) DO UPDATE SET placa = NULL; RETURN NEW; END $$
+fnDynamic | SQL montado na hora (EXECUTE) | CREATE FUNCTION f() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN EXECUTE 'DELETE FROM encomenda'; RETURN NEW; END $$
+trigRaise | erro lançado por um gatilho (RAISE EXCEPTION) | CREATE FUNCTION f() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'não'; END $$
+trigNull | gatilho que não termina em RETURN NEW | CREATE FUNCTION f() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RETURN NULL; END $$
+trigAssert | conferência ASSERT num gatilho | CREATE FUNCTION f() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN ASSERT NEW.cliente <> ''; RETURN NEW; END $$
+trigFallsOff | gatilho que não termina em RETURN NEW | CREATE FUNCTION f() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.cliente := upper(NEW.cliente); END $$
+sqlBody | função com corpo BEGIN ATOMIC | CREATE FUNCTION g() RETURNS void LANGUAGE sql BEGIN ATOMIC DELETE FROM encomenda; END
+language | função em outra linguagem (c) | CREATE FUNCTION g() RETURNS int LANGUAGE c AS 'x', 'y'
+dropFunction | apagar uma função | DROP FUNCTION f()
+dropTrigger | apagar um gatilho | DROP TRIGGER t ON encomenda
+dropView | apagar uma visão | DROP VIEW v
+selectInto | SELECT ... INTO, que cria uma tabela | SELECT * INTO copia FROM encomenda
+ctas | criar tabela a partir de consulta | CREATE TABLE copia AS SELECT * FROM encomenda
+enumType | criar um tipo de lista (ENUM) | CREATE TYPE s AS ENUM ('a')
+extension | instalar uma extensão | CREATE EXTENSION unaccent
+sequence | criar uma sequência (SEQUENCE) | CREATE SEQUENCE s
+twoInOne | mais de um comando no mesmo item | SELECT 1; SELECT 2
+unreadable | um comando que o Conexus não consegue ler | ALTER TABLE encomenda ADD COLUMN
 `).map(([name = '', subject = '', statement = '']) => ({ name, subject, statement }))
 
 /** Statements the fixed list lets through: the outcome check sees what they do. */

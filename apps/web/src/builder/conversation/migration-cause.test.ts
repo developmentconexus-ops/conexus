@@ -27,22 +27,26 @@ test('cada código do banco diz o motivo em palavras, com os nomes que trouxe', 
     'um valor salvo mudaria ou sumiria, tabela encomenda, coluna whatsapp',
   )
   assert.equal(reasonOf(database('42P01')), 'código 42P01')
+  assert.equal(
+    reasonOf(database('CX002', { table: 'recado' })),
+    'linhas salvas seriam apagadas, tabela recado',
+  )
 })
 
-test('a lista fixa diz a migração, o comando e o nó, e o pedido ao Builder a frase inteira', () => {
+test('a lista fixa diz a migração, o comando e o nome do comando, e o pedido ao Builder a frase inteira', () => {
   const rule: MigrationCause = {
     kind: 'rule',
     migration: '003_publico',
     statement: 2,
-    subject: 'GrantStmt',
+    subject: 'dar ou tirar permissão de acesso',
   }
   assert.equal(
     reasonOf(rule),
-    'a migração 003_publico, comando 2, faz o que o Conexus não confere (GrantStmt)',
+    'a migração 003_publico, comando 2, faz o que o Conexus não confere (dar ou tirar permissão de acesso)',
   )
   assert.equal(
     askOf(4, rule),
-    'A versão 4 não entrou: a migração 003_publico, comando 2, faz o que o Conexus não confere (GrantStmt).',
+    'A versão 4 não entrou: a migração 003_publico, comando 2, faz o que o Conexus não confere (dar ou tirar permissão de acesso).',
   )
   const duplicate = database('23505', { table: 'encomenda', constraint: 'encomenda_whatsapp_key' })
   assert.equal(

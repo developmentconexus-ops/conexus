@@ -49,6 +49,84 @@ const DYNAMIC = ['PLpgSQL_stmt_dynexecute', 'PLpgSQL_stmt_dynfors', 'dynquery']
 /** PL/pgSQL's `RAISE EXCEPTION`, and a bare `RAISE`: PostgreSQL's ERROR level. */
 const ERROR_LEVEL = 21
 
+/** What the person reads for a statement kind the list refuses; any other kind gets `OTHER`. */
+const KIND_NAMES: Readonly<Record<string, string>> = {
+  GrantStmt: 'dar ou tirar permissão de acesso',
+  CreatePolicyStmt: 'criar regra de acesso por linha',
+  RuleStmt: 'criar regra que reescreve comandos',
+  AlterFunctionStmt: 'alterar uma função já criada',
+  AlterDefaultPrivilegesStmt: 'mudar as permissões padrão',
+  AlterSeqStmt: 'alterar uma sequência',
+  DoStmt: 'rodar um bloco de código solto (DO)',
+  ViewStmt: 'criar uma visão (view)',
+  TransactionStmt: 'controlar a transação (BEGIN, COMMIT)',
+  VariableSetStmt: 'mudar configuração do banco (SET)',
+  DiscardStmt: 'descartar o estado da conexão',
+  CreateTableAsStmt: 'criar tabela a partir de consulta',
+  CreateEnumStmt: 'criar um tipo de lista (ENUM)',
+  CreateSeqStmt: 'criar uma sequência (SEQUENCE)',
+  CreateExtensionStmt: 'instalar uma extensão',
+  CreateRoleStmt: 'criar um usuário do banco',
+  AlterRoleStmt: 'alterar um usuário do banco',
+  DropRoleStmt: 'apagar um usuário do banco',
+  CreateSchemaStmt: 'criar um esquema',
+  CreateDomainStmt: 'criar um tipo próprio (DOMAIN)',
+  CompositeTypeStmt: 'criar um tipo composto',
+  CopyStmt: 'copiar de ou para arquivo (COPY)',
+  CallStmt: 'chamar um procedimento (CALL)',
+  LockStmt: 'travar uma tabela (LOCK)',
+  VacuumStmt: 'limpar o banco (VACUUM)',
+  ExplainStmt: 'explicar um comando (EXPLAIN)',
+  NotifyStmt: 'enviar aviso entre conexões (NOTIFY)',
+  ListenStmt: 'escutar avisos entre conexões (LISTEN)',
+  PrepareStmt: 'preparar um comando (PREPARE)',
+  ExecuteStmt: 'rodar um comando preparado (EXECUTE)',
+  ReindexStmt: 'refazer índices (REINDEX)',
+  ClusterStmt: 'reordenar uma tabela (CLUSTER)',
+  RefreshMatViewStmt: 'atualizar uma visão guardada',
+}
+const OTHER = 'um comando que o Conexus não confere'
+/** The same for the `ALTER TABLE` pieces, `OBJECT_*` kinds, and the other reasons `refused` gives. */
+const REASON_NAMES: Readonly<Record<string, string>> = {
+  AT_EnableRowSecurity: 'ligar a segurança por linha',
+  AT_ForceRowSecurity: 'forçar a segurança por linha',
+  AT_SetUnLogged: 'tornar a tabela sem registro (UNLOGGED)',
+  AT_ChangeOwner: 'trocar o dono da tabela',
+  'CreateStmt u': 'criar tabela sem registro (UNLOGGED)',
+  'CreateStmt t': 'criar tabela temporária',
+  'DropStmt OBJECT_FUNCTION': 'apagar uma função',
+  'DropStmt OBJECT_TRIGGER': 'apagar um gatilho',
+  'DropStmt OBJECT_VIEW': 'apagar uma visão',
+  'SelectStmt INTO': 'SELECT ... INTO, que cria uma tabela',
+  'SECURITY DEFINER': 'função com o poder do dono (SECURITY DEFINER)',
+  'body DeleteStmt': 'função que apaga linhas',
+  'body UpdateStmt': 'função que muda linhas',
+  'body ON CONFLICT DO UPDATE': 'função que muda linha existente (ON CONFLICT)',
+  EXECUTE: 'SQL montado na hora (EXECUTE)',
+  'RAISE EXCEPTION': 'erro lançado por um gatilho (RAISE EXCEPTION)',
+  'RETURN not NEW': 'gatilho que não termina em RETURN NEW',
+  ASSERT: 'conferência ASSERT num gatilho',
+  sql_body: 'função com corpo BEGIN ATOMIC',
+  NOT_ONE_STATEMENT: 'mais de um comando no mesmo item',
+  UNREADABLE: 'um comando que o Conexus não consegue ler',
+}
+
+/** The person's name for what `refused` found: one table, here, so the reason never shows a parser node. */
+function plainOf(found: string): string {
+  const named = REASON_NAMES[found] ?? KIND_NAMES[found]
+  if (named !== undefined) return named
+  if (found.startsWith('name ')) {
+    return found.includes('.')
+      ? `tabela de outro esquema (${found.slice(5)})`
+      : `nome do Conexus (${found.slice(5)})`
+  }
+  if (found.startsWith('language ')) return `função em outra linguagem (${found.slice(9)})`
+  if (found.startsWith('body ')) return 'função que faz mais que ler e inserir'
+  if (found.startsWith('AT_')) return 'alteração de tabela que o Conexus não confere'
+  if (found.startsWith('DropStmt ')) return 'apagar algo que não é tabela nem índice'
+  return OTHER
+}
+
 /** The first statement of the pending migrations that the fixed list refuses, or none. */
 export function ruleBreak(pending: readonly AppMigration[]): RuleBreak | undefined {
   for (const one of pending) {
@@ -58,7 +136,7 @@ export function ruleBreak(pending: readonly AppMigration[]): RuleBreak | undefin
         return {
           migration: one.id,
           statement: at + 1,
-          subject: subject.slice(0, MigrationSubject.maxLength ?? undefined),
+          subject: plainOf(subject).slice(0, MigrationSubject.maxLength ?? undefined),
         }
       }
     }
