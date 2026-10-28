@@ -102,21 +102,22 @@ async function home(page: Page) {
     .waitFor()
 }
 
-/** The card's "Continuar" opens Contas de modelo; the index searches, and Aparência holds the theme. */
+/** The card's "Continuar" opens Contas de modelo; the index searches, and the account menu holds the theme. */
 async function settings(page: Page) {
   await page.getByRole('link', { name: 'Continuar', exact: true }).click()
   await page.getByRole('heading', { name: 'Contas de modelo', exact: true }).waitFor()
   const index = sidebarOf(page)
   await index.getByText('Você', { exact: true }).waitFor()
   await index.getByText(COMPANY, { exact: true }).waitFor()
-  await index.getByLabel('Buscar nas configurações').fill('tema')
-  await index.getByRole('link', { name: 'Aparência', exact: true }).waitFor()
-  assert.equal(await index.getByRole('link', { name: 'Pessoas e convites' }).count(), 0)
-  await index.getByRole('link', { name: 'Aparência', exact: true }).click()
-  await page.getByRole('radio', { name: 'Escuro' }).click()
+  await index.getByLabel('Buscar nas configurações').fill('convite')
+  await index.getByRole('link', { name: 'Pessoas e convites', exact: true }).waitFor()
+  assert.equal(await index.getByRole('link', { name: 'Geral', exact: true }).count(), 0)
+  await page.getByRole('button', { name: /^Conta de / }).click()
+  await page.getByRole('menuitemradio', { name: 'Escuro' }).click()
   assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), 'dark')
+  await page.keyboard.press('Escape')
   await page.reload()
-  await page.getByRole('heading', { name: 'Aparência', exact: true }).waitFor()
+  await page.getByRole('heading', { name: 'Contas de modelo', exact: true }).waitFor()
   assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), 'dark')
   await index.getByLabel('Buscar nas configurações').fill('')
   await index.getByRole('link', { name: 'Pessoas e convites', exact: true }).click()

@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { KeyRoundIcon } from 'lucide-react'
 import {
   accountsQuery,
   MyAccounts,
@@ -11,6 +12,8 @@ export const Route = createFileRoute('/_app/companies/$companyId_/settings/my-mo
     section: {
       group: 'you',
       label: 'Minhas contas de modelo',
+      icon: KeyRoundIcon,
+      summary: 'As contas de modelo que são só suas, usadas antes das da empresa.',
       order: 20,
       keywords: ['modelo', 'chave', 'assinatura', 'claude', 'google'],
     },

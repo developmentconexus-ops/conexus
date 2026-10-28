@@ -17,7 +17,6 @@ export const PAGES = [
   '/companies/$companyId/settings/account',
   '/companies/$companyId/settings/my-model-accounts',
   '/companies/$companyId/settings/my-defaults',
-  '/companies/$companyId/settings/appearance',
   '/companies/$companyId/settings/general',
   '/companies/$companyId/settings/people',
   '/companies/$companyId/settings/model-accounts',

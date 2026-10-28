@@ -17,7 +17,7 @@ L24](../guides/delivery.md)): it grows by one line per screen.
 | Início of a company | `/companies/<c>` | Empresa | owner, administrator, member |
 | Todos os projetos | `/companies/<c>/projects` | Empresa | owner, administrator, member |
 | Configurações' index: the sections as a list on a phone; a wide screen opens Minha conta | `/companies/<c>/settings` | Empresa | owner, administrator, member |
-| Configurações: Minha conta, Minhas contas de modelo, Meus padrões, Aparência | `/companies/<c>/settings/account`, `my-model-accounts`, `my-defaults`, `appearance` | Empresa | owner, administrator, member |
+| Configurações: Minha conta, Minhas contas de modelo, Meus padrões | `/companies/<c>/settings/account`, `my-model-accounts`, `my-defaults` | Empresa | owner, administrator, member |
 | Configurações: Geral, Pessoas e convites, Contas de modelo, Padrões da empresa | `/companies/<c>/settings/general`, `people`, `model-accounts`, `defaults` | Empresa | owner, administrator, member (reads) |
 | The owner's first entry, steps 1 to 4 | `/companies/<c>/welcome/company`, `model-account`, `team`, `build` | Empresa | owner |
 | A Projeto, on its latest conversation | `/companies/<c>/projects/<p>` | Projeto | owner, administrator, member |
