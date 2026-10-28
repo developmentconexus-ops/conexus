@@ -2,6 +2,7 @@ import { MicIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useEffect, useEffectEvent, useRef, useState } from 'react'
 import { Button } from './button.tsx'
+import { cn } from './cn.ts'
 
 // Copied from AI Elements' `speech-input` (registry read with shadcn 4.22.1, 2026-10-26), painted
 // with brand tokens and cut to the browser's recognition: no `MediaRecorder`, no `onAudioRecorded`.
@@ -46,6 +47,7 @@ function heard(event: SpeechRecognitionEvent) {
  */
 export function SpeechInput(props: {
   lang: 'pt-BR'
+  className?: string
   /** The final text of each result, to join to the box. */
   onFinal: (text: string) => void
   /** The phrase in progress, shown in the box until it is final. */
@@ -58,7 +60,7 @@ export function SpeechInput(props: {
   const [listening, setListening] = useState(false)
   const [ready, setReady] = useState(false)
   const recognition = useRef<SpeechRecognition | null>(null)
-  const { lang, onFinal, onInterim, onError } = props
+  const { lang, className, onFinal, onInterim, onError } = props
   const final = useEffectEvent(onFinal)
   const interim = useEffectEvent(onInterim)
   const failed = useEffectEvent(onError)
@@ -94,12 +96,12 @@ export function SpeechInput(props: {
   if (Recognition === undefined) return null
   return (
     <Button
-      variant="soft"
+      variant="ghost"
       size="icon"
       aria-label="Ditar"
       aria-pressed={listening}
       disabled={!ready}
-      className="aria-pressed:text-danger"
+      className={cn('aria-pressed:text-danger', className)}
       onClick={() => (listening ? recognition.current?.stop() : recognition.current?.start())}
     >
       <MicIcon aria-hidden="true" />

@@ -17,6 +17,7 @@ import {
   ComboboxList,
   ComboboxValue,
 } from './combobox.tsx'
+import { Input } from './input.tsx'
 import {
   InputGroup,
   InputGroupAddon,
@@ -75,6 +76,7 @@ function Pieces() {
             <Button size="sm">Pequeno</Button>
             <Button size="icon" aria-label="Ícone" />
             <Button size="icon-sm" aria-label="Ícone pequeno" />
+            <Input aria-label="Campo" />
           </div>
         </ResizablePanel>
         <ResizableHandle aria-label="Redimensionar" />

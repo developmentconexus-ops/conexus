@@ -1,7 +1,15 @@
 import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
 import type { Replies } from './layout-harness.ts'
-import { createHarness, DESKTOP, PHONE, reachOf, SMALL_PHONE, touching } from './layout-harness.ts'
+import {
+  createHarness,
+  DESKTOP,
+  PHONE,
+  reachOf,
+  SMALL_PHONE,
+  stolenBy,
+  touching,
+} from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import { MESSAGES, WITH_CONVERSATIONS } from './sweep-conversation-states.ts'
 import { PROJECT_ID } from './sweep-replies.ts'
@@ -130,17 +138,27 @@ for (const viewport of [
       assert.ok(measured.tabIsVisualOrder, 'Tab goes in the order the eye reads')
       assert.equal(measured.centres, 1, 'the buttons share one line')
       assert.ok(measured.inside, 'the row stays inside the box')
-      assert.ok(measured.rowHeight <= 60, `the row is one line high, ${measured.rowHeight}px`)
+      assert.ok(measured.rowHeight <= 44, `the row is one line high, ${measured.rowHeight}px`)
       assert.deepEqual(measured.small, [32, 32, 32], 'the row draws 32 px, at any width')
       if (viewport.width < 768) {
         // A button with nothing to send is disabled and takes no press, its touch area included.
         await page.locator('form textarea').fill('Um app de encomendas')
         await touching(page)
-        for (const name of ['Anexar arquivos', 'Modelo e raciocínio', 'Enviar']) {
-          const reach = await reachOf(page.locator(`form button[aria-label="${name}"]`))
+        const buttons = page
+          .locator('form [data-slot="input-group-addon"]')
+          .last()
+          .locator('button')
+        for (const button of await buttons.all()) {
+          const name = await button.getAttribute('aria-label')
+          const reach = await reachOf(button)
           assert.ok(
             reach.up >= 6 && reach.down >= 6,
             `${name} is touched over 44 px: ${JSON.stringify(reach)}`,
+          )
+          assert.deepEqual(
+            await stolenBy(button),
+            [],
+            `a neighbour covers ${name} at ${viewport.width}px with ${model}`,
           )
         }
       }

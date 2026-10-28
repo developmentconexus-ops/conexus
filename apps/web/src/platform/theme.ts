@@ -6,7 +6,7 @@ import { pageStorage } from './storage.ts'
 export const ThemeChoice = z.enum(['light', 'dark', 'system'])
 export type ThemeChoice = z.infer<typeof ThemeChoice>
 
-/** The three choices' words, in the account menu's and Aparência's order (design V9). */
+/** The three choices' words, in the account menu's order (design V9). */
 export const THEME_LABELS: Record<ThemeChoice, string> = {
   light: 'Claro',
   dark: 'Escuro',
