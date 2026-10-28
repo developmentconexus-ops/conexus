@@ -230,6 +230,7 @@ test('Troca automática: depois de tirar ou adicionar, o foco fica na seção e 
   const shown = view({ fallback: { enabled: true, chain: [SONNET, GPT], revision: 0 } })
   const { sent } = open(shown)
   const section = await screen.findByRole('region', { name: 'Troca automática' })
+  expect(section.getAttribute('tabindex')).toBe('-1')
   fireEvent.click(await screen.findByLabelText('Tirar GPT 5'))
   await waitFor(() => expect(sent).toHaveLength(1))
   await waitFor(() => expect(document.activeElement).toBe(section))
