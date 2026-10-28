@@ -239,3 +239,11 @@ Em 2026-10-27, sobre as ferramentas de qualidade na construção e na revisão (
 Em 2026-10-27, sobre a entrega: "Publica tudo com 13.2". Os consertos do uso da 13.1 não têm release à parte: saem com a 13.2.
 
 Etapa 13.1 usada em 2026-10-27 em https://hub.conexus.fun (v0.14.13), no computador e no iPhone: "Aprovo". Pendências: #387 (a faixa de cima do iPhone, testar de novo a cada iOS), #388 e #389, e a #407 (os textos do passo 4 que faltam à sua aprovação e a pasta `.conexus` na aba Código).
+
+## Etapa 13.2
+
+Cartão da etapa 13.2 aprovado em 2026-10-27 (commit c91b747f5e38e752b0b2b310f35a4c770047b7b2): "Aprovo"
+
+A emenda do cartão acrescenta à U1 o **+** e o microfone com o mesmo círculo de fundo da pílula do modelo, 32 px desenhados e 44 de toque, e o critério 29 (fundador, a captura do iPhone, 2026-10-27).
+
+Cartão da etapa 13.2 aprovado em 2026-10-27 (commit 6e29e54e07a8516f152260a3c8dbd9c0463233ea): "Sim"
