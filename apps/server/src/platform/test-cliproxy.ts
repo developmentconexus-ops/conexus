@@ -2,7 +2,9 @@
 // it reads the config it is given, refuses to listen off 127.0.0.1, and writes one login file once
 // the callback brings its state. In the folder after `--control`, the file `mode` says `refuse` to
 // fail the login, and `runs` gets its pid and folder, a line per run. Its model list, `/v1/models`,
-// answers the ids the file `models` holds, comma apart, or the ids recorded from the founder's proxy. Its model route, `/v1`'s Chat
+// answers the ids the file `models` holds, comma apart, or the ids recorded from the founder's proxy,
+// and none for the milliseconds the file `loading` holds after it starts, as v8.0.33 does while it
+// fetches the login's models from Google. Its model route, `/v1`'s Chat
 // Completions, answers with the recording the file `recording` names (testing T24), and adds the
 // model each call asks for to the file `asked`, a line per call.
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
@@ -31,6 +33,9 @@ const LISTED = z
   .object({ data: z.array(z.object({ id: z.string() })) })
   .parse(JSON.parse(readFileSync(join(RECORDINGS, 'google-cliproxy-models.list.json'), 'utf8')))
   .data.map((one) => one.id)
+const loadingFile = join(control, 'loading')
+const loadedAt =
+  Date.now() + (existsSync(loadingFile) ? Number(readFileSync(loadingFile, 'utf8')) : 0)
 const state = `estado-${process.pid}`
 let status = 'wait'
 
@@ -74,6 +79,7 @@ const server = createServer(async (request, response) => {
   if (url.pathname === '/v1/models' && request.method === 'GET') {
     const file = join(control, 'models')
     const ids = existsSync(file) ? readFileSync(file, 'utf8').trim().split(',') : LISTED
+    if (Date.now() < loadedAt) return reply(200, { object: 'list', data: [] })
     return reply(200, { object: 'list', data: ids.map((id) => ({ id, object: 'model' })) })
   }
   if (url.pathname === '/v1/chat/completions' && request.method === 'POST') {

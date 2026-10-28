@@ -1,7 +1,7 @@
 import type { CompanyId, ModelAccountId, ModelId } from '@conexus/hub-api'
 import { CompanyId as CompanyIdSchema } from '@conexus/hub-api'
 import { parseModelString } from '@mastra/core/llm'
-import { and, eq, isNull, sql } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { Database, ReadTx, Scope } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
@@ -157,7 +157,20 @@ async function readServed(
   const { reader, url, headers } = request
   if (reader === 'anthropic') return anthropicList(url, headers)
   if (reader === 'google') return googleList(url, headers)
+  if (target.kind === 'google_cliproxy') return cliProxyList(url, headers)
   return (await getJson(url, headers, OpenAiList)).data.map((one) => one.id)
+}
+
+/**
+ * CLIProxyAPI answers its list empty until it has fetched the login's models from Google (v8.0.33),
+ * which the process's start waits for (`launch`): an empty list is one not loaded, never kept.
+ */
+async function cliProxyList(url: URL, headers: Headers): Promise<string[]> {
+  const ids = (await getJson(url, headers, OpenAiList)).data.map((one) => one.id)
+  if (ids.length === 0) {
+    throw new Failure('MODEL_ACCOUNT_UNAVAILABLE', { details: { reason: 'LIST_EMPTY' } })
+  }
+  return ids
 }
 
 /**
@@ -277,7 +290,8 @@ export async function readServedOf(
 
 /**
  * The accounts of every company whose list was never read, which are the ones linked before the
- * list was read at link, read now one by one, outside any transaction. A read that fails leaves
+ * list was read at link, or was kept empty, as a Google sign-in's was while CLIProxy still loaded
+ * it, read now one by one, outside any transaction. A read that fails leaves
  * the account unread, as before, and the next start tries it again.
  */
 export async function readUnserved(deps: ReadingDeps): Promise<number> {
@@ -292,7 +306,12 @@ export async function readUnserved(deps: ReadingDeps): Promise<number> {
       tx
         .select(columns)
         .from(modelAccount)
-        .where(and(eq(modelAccount.companyId, companyId), isNull(modelAccount.servedModels))),
+        .where(
+          and(
+            eq(modelAccount.companyId, companyId),
+            sql`coalesce(cardinality(${modelAccount.servedModels}), 0) = 0`,
+          ),
+        ),
     )
     for (const row of unread.map((each) => AccountRow.parse(each)).filter(hasReader)) {
       await readServedOf(deps, scope, companyId, row.id)

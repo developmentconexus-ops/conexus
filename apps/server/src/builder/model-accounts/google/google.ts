@@ -23,6 +23,7 @@ export type Deps = { cliProxy: CliProxy; log: FailureLog }
 
 const AuthUrl = z.object({ url: z.url(), state: z.string().min(1) })
 const AuthStatus = z.object({ status: z.string().optional() })
+const ModelList = z.object({ data: z.array(z.unknown()).min(1) })
 
 async function freePort(): Promise<number> {
   const server = createServer()
@@ -105,7 +106,10 @@ export async function launch(deps: Deps, login?: Credential): Promise<Process> {
   while (Date.now() < deadline && child.exitCode === null) {
     try {
       const ready = await management(started, '/get-auth-status')
-      if (ready.ok) return started
+      if (ready.ok) {
+        if (login !== undefined) await modelsLoaded(started, deadline)
+        return started
+      }
       cause = undefined
     } catch (error) {
       cause = error
@@ -114,6 +118,22 @@ export async function launch(deps: Deps, login?: Credential): Promise<Process> {
   }
   await end(started)
   throw new Failure('CLIPROXY_UNAVAILABLE', { details: { reason: 'NOT_READY' }, cause })
+}
+
+/**
+ * CLIProxy answers its model list empty until it has fetched the login's models from Google, which
+ * it does once it listens (v8.0.33): a process for an account waits for them until the deadline,
+ * and past it goes on, its calls and its list read failing as they would.
+ */
+async function modelsLoaded(process: Process, deadline: number): Promise<void> {
+  while (Date.now() < deadline) {
+    const reply = await fetch(`http://127.0.0.1:${process.port}/v1/models`, {
+      signal: AbortSignal.timeout(READY_MS),
+      headers: { authorization: `Bearer ${process.key}` },
+    })
+    if (ModelList.safeParse(await reply.json()).success) return
+    await sleep(POLL_MS)
+  }
 }
 
 async function loggedIn(process: Process, state: string): Promise<boolean> {
