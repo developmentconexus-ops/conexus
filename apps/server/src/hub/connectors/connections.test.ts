@@ -201,6 +201,22 @@ test('desligar, e de novo', async (t) => {
   assert.equal(relinked.statusCode, 201)
 })
 
+test('a dona de outra empresa não testa nem desliga a ligação de Ana', async (t) => {
+  const { hub, fake, ana, base } = await connectionsOn(t)
+  const { connection } = Object((await linkSankhya(hub, ana, base, fake.credential)).json())
+  const davi = await personOn(hub, { name: 'Davi Souza', email: 'davi@example.test' })
+  const own = `/api/companies/${await plantCompany(hub.test, davi.id)}/connections`
+  const tested = await testOf(hub, davi, own, connection.id)
+  assert.deepEqual([tested.statusCode, codeOf(tested)], [404, 'CONNECTION_NOT_FOUND'])
+  assert.equal((await call(hub, davi, 'DELETE', `${own}/${connection.id}`)).statusCode, 204)
+  const foreign = await testOf(hub, davi, base, connection.id)
+  assert.deepEqual([foreign.statusCode, codeOf(foreign)], [404, 'NOT_FOUND'])
+  const removed = await call(hub, davi, 'DELETE', `${base}/${connection.id}`)
+  assert.deepEqual([removed.statusCode, codeOf(removed)], [404, 'NOT_FOUND'])
+  assert.equal(fake.logins(), 0)
+  assert.equal(Object((await testOf(hub, ana, base, connection.id)).json()).result, 'WORKING')
+})
+
 test('a lista: o membro lê, nada da credencial sai', async (t) => {
   const { hub, fake, ana, carla, base } = await connectionsOn(t)
   const { connection } = Object((await linkSankhya(hub, ana, base, fake.credential)).json())
