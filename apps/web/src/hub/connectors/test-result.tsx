@@ -1,4 +1,4 @@
-import type { TestResult as Result } from '@conexus/hub-api'
+import type { TestResult as Result, TestCheck } from '@conexus/hub-api'
 import { cn } from '../../ui/cn.ts'
 import { outcomeText, unreachableText } from './text.ts'
 
@@ -21,19 +21,39 @@ export function TestResult(props: { result: Result; name: string }) {
       <p role="status" className="font-medium">
         Ligação funcionando
       </p>
-      <ul
-        aria-label="Resultado do teste"
-        className="flex flex-col gap-xs md:flex-row md:flex-wrap md:gap-x-md"
-      >
-        {result.checks.map((check) => (
-          <li key={check.id}>
-            {check.label}{' '}
-            <span className={cn(check.outcome === 'READS' ? 'text-success' : 'text-text-2')}>
-              {outcomeText(check, name)}
+      <ul aria-label="Resultado do teste" className="flex flex-col gap-sm">
+        {subjectsOf(result.checks).map((subject) => (
+          <li key={subject.label}>
+            {subject.label}{' '}
+            <span className={cn(subject.missing.length === 0 ? 'text-success' : 'text-text-2')}>
+              {subject.missing.length === 0
+                ? 'lê'
+                : `lê ${subject.total - subject.missing.length} de ${subject.total}`}
             </span>
+            {subject.missing.length > 0 && (
+              <ul className="ml-md flex flex-col gap-xs text-text-2">
+                {subject.missing.map((check) => (
+                  <li key={check.id}>
+                    {check.label} {outcomeText(check, name)}
+                  </li>
+                ))}
+              </ul>
+            )}
           </li>
         ))}
       </ul>
     </div>
   )
+}
+
+/** The checks grouped by the subject the Hub names, in the order they arrive. */
+function subjectsOf(checks: readonly TestCheck[]) {
+  const subjects = new Map<string, { label: string; total: number; missing: TestCheck[] }>()
+  for (const check of checks) {
+    const subject = subjects.get(check.subject) ?? { label: check.subject, total: 0, missing: [] }
+    subject.total += 1
+    if (check.outcome !== 'READS') subject.missing.push(check)
+    subjects.set(check.subject, subject)
+  }
+  return [...subjects.values()]
 }

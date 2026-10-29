@@ -1,7 +1,7 @@
 {
   ".github/actions/test-database/action.yml": 1,
-  ".github/workflows/ci.yml": 13,
-  ".github/workflows/publish.yml": 2,
+  ".github/workflows/ci.yml": 14,
+  ".github/workflows/publish.yml": 3,
   ".github/workflows/rollback.yml": 1,
   "apps/server/src/builder/model-accounts/google/calls.ts": 1,
   "apps/server/src/hub/apps/versions.ts": 3,
@@ -23,6 +23,8 @@
   "packages/app/src/client.ts": 1,
   "packages/app/src/types.check.ts": 3,
   "packages/connectors/src/kernel/kernel.test.ts": 3,
+  "packages/connectors/src/sankhya/spec-source.ts": 1,
+  "packages/connectors/src/sankhya/spec.test.ts": 2,
   "scripts/check-approval.ts": 1,
   "scripts/log-line.ts": 1,
   "scripts/record-provider.ts": 1

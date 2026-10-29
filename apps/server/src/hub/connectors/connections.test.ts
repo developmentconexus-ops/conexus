@@ -14,24 +14,14 @@ import {
   personOn,
   plantCompany,
 } from '../identity/test-hub.ts'
-import { connectionsOn, linkSankhya, testOf } from './test-connections.ts'
-
-const ALL_READS = [
-  'empresas',
-  'pedidos',
-  'produtos',
-  'clientes',
-  'impostosDoPedido',
-  'consultar',
-  'carregar',
-].map((id) => [id, 'READS'])
-
-function outcomes(response: { json(): unknown }) {
-  return Object(response.json()).checks.map((check: { id: string; outcome: string }) => [
-    check.id,
-    check.outcome,
-  ])
-}
+import {
+  ALL_READS,
+  connectionsOn,
+  linkSankhya,
+  outcomes,
+  reads,
+  testOf,
+} from './test-connections.ts'
 
 test('ligar: quem pode, e as recusas', async (t) => {
   const { hub, fake, ana, bruno, carla, base } = await connectionsOn(t)
@@ -94,31 +84,29 @@ test('testar: cada parte, com a sua resposta', async (t) => {
   const tested = Object(working.json()).connection
   assert.equal(tested.state, 'ACTIVE')
   assert.notEqual(tested.testedAt, null)
-  assert.deepEqual(Object(working.json()).checks[1], {
+  assert.equal(Object(working.json()).checks.length, 25)
+  assert.deepEqual(Object(working.json()).checks[10], {
     id: 'pedidos',
     label: 'Pedidos',
+    subject: 'Vendas',
     outcome: 'READS',
   })
+  assert.equal(Object(working.json()).checks[0].subject, 'Porta de leitura')
 
   fake.switches.refuse.add('pedidos')
   fake.switches.refuse.add('consultar')
   const refused = await testOf(hub, ana, base, connection.id)
   assert.equal(Object(refused.json()).result, 'WORKING')
-  assert.deepEqual(outcomes(refused), [
-    ['empresas', 'READS'],
-    ['pedidos', 'REFUSED'],
-    ['produtos', 'READS'],
-    ['clientes', 'READS'],
-    ['impostosDoPedido', 'NOTHING_TO_READ'],
-    ['consultar', 'REFUSED'],
-    ['carregar', 'READS'],
-  ])
+  assert.deepEqual(
+    outcomes(refused),
+    reads({ pedidos: 'REFUSED', consultar: 'REFUSED', impostosDoPedido: 'NOTHING_TO_READ' }),
+  )
 
   fake.switches.refuse.clear()
   fake.switches.malformed = true
   const unreadable = await testOf(hub, ana, base, connection.id)
   assert.equal(Object(unreadable.json()).result, 'WORKING')
-  assert.deepEqual(outcomes(unreadable)[0], ['empresas', 'UNREADABLE'])
+  assert.deepEqual(outcomes(unreadable)[2], ['empresas', 'UNREADABLE'])
 })
 
 test('testar: chave recusada, fornecedor fora', async (t) => {

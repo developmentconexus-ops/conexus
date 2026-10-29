@@ -25,6 +25,7 @@ export function builderPortsOf(deps: { config: Config; log: FailureLog }): {
   function machinesOf() {
     return createMachines({
       ...{ log, mark, installation: config.installationId },
+      template: config.machineTemplate,
       kit: createE2bKit(config),
       api: createE2bApi(config, mark),
       seedOf: async (ids) => {

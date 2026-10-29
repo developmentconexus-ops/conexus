@@ -3,7 +3,7 @@
   "workspaces": {
     ".": {
       "project": ["scripts/**/*.ts", "tests/e2e/**/*.ts"],
-      "ignoreBinaries": ["openssl"],
+      "ignoreBinaries": ["openssl", "sha256sum"],
       "ignoreDependencies": ["jscpd"]
     },
     "apps/server": {
@@ -13,6 +13,9 @@
     },
     "apps/web": {
       "entry": ["src/ui/pieces-fixture.tsx"]
+    },
+    "packages/connectors": {
+      "entry": ["scripts/*.ts"]
     },
     "packages/app": {
       "entry": ["src/**/*.check.ts"],

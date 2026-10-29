@@ -18,9 +18,12 @@ export type Connector = Readonly<{
   origin: `https://${string}` // the one published origin
   auth: Auth
   oneRequestAtATime: boolean // a token is one session (Sankhya's envelope "4")
+  subjects: Readonly<Record<string, string>> // subject id → label ("vendas" → "Vendas"); each has an operation
   operations: readonly Operation<unknown, unknown>[] // typed, the same for every company
   readDoor?: ReadDoor // for what each company has of its own
-  skill: string // what the Builder reads to use the connector (decision 0055); the conformance checks it names every operation
+  // What the Builder reads (decision 0055): SKILL.md and its references by file name, the shape
+  // createSkill takes in step 20; a reference is read on demand through Mastra's skill_read.
+  skill: Readonly<{ content: string; references: Readonly<Record<string, string>> }>
 }>
 
 const Version = z.string().regex(/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/)
@@ -31,7 +34,7 @@ const Origin = z
       URL.canParse(value) && new URL(value).origin === value && value.startsWith('https://'),
   )
 
-/** Takes `id` as a plain string and brands it; throws on a repeated operation id, a bad version or origin, a door entry that is not 'read'. */
+/** Takes `id` as a plain string and brands it; throws on a repeated operation id, a bad version or origin, a door entry that is not 'read', an operation of a subject the connector lacks or a subject with no operation. */
 export function defineConnector(connector: Omit<Connector, 'id'> & { id: string }): Connector {
   Version.parse(connector.version)
   Origin.parse(connector.origin)
@@ -45,6 +48,14 @@ export function defineConnector(connector: Omit<Connector, 'id'> & { id: string 
     if (operation.class !== 'read') throw new Error(`Door entry not read: ${key}`)
     if (operation.id !== key) throw new Error(`Door entry ${key} is named ${operation.id}`)
   }
+  const named = new Set([
+    ...connector.operations.map((operation) => operation.subject),
+    ...door.map(([, operation]) => operation.subject),
+  ])
+  for (const subject of named)
+    if (!(subject in connector.subjects)) throw new Error(`Unknown subject ${subject}`)
+  for (const subject of Object.keys(connector.subjects))
+    if (!named.has(subject)) throw new Error(`Subject without operation: ${subject}`)
   return Object.freeze({ ...connector, id: ConnectorId.parse(connector.id) })
 }
 

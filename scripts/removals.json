@@ -1239,7 +1239,51 @@
     "test": {
       "cwd": ".",
       "file": "scripts/workflows.test.ts",
-      "name": "o Release publica o Hub depois da imagem, e a borda depois do Hub"
+      "name": "o Release publica o Hub depois da imagem e do template, e a borda depois do Hub"
+    }
+  },
+  {
+    "id": "deploy-waits-for-template",
+    "file": ".github/workflows/publish.yml",
+    "find": "  deploy:\n    needs: [image, template]\n",
+    "replace": "  deploy:\n    needs: image\n",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/workflows.test.ts",
+      "name": "o Release publica o Hub depois da imagem e do template, e a borda depois do Hub"
+    }
+  },
+  {
+    "id": "template-after-main-check",
+    "file": ".github/workflows/publish.yml",
+    "find": "  template:\n    needs: image\n",
+    "replace": "  template:\n",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/workflows.test.ts",
+      "name": "o template nasce do commit do Release numa máquina nova do GitHub, depois da imagem conferir main"
+    }
+  },
+  {
+    "id": "deploy-back-to-previous-template",
+    "file": "infra/deploy.sh",
+    "find": "HUB_IMAGE=\"$previous\" HUB_E2B_TEMPLATE=\"$previous_template\"",
+    "replace": "HUB_IMAGE=\"$previous\" HUB_E2B_TEMPLATE=\"$template\"",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/deploy.test.ts",
+      "name": "a imagem nova que não fica saudável volta à imagem e ao template de antes"
+    }
+  },
+  {
+    "id": "deploy-refuses-bad-template",
+    "file": "infra/deploy.sh",
+    "find": "if ! [[ $template =~ $template_pattern ]]; then",
+    "replace": "if false; then",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/deploy.test.ts",
+      "name": "deploy.sh aceita um template exatamente quando o Hub o aceita"
     }
   },
   {
@@ -1388,19 +1432,19 @@
   {
     "id": "release-recorded-after-deploy",
     "file": ".github/workflows/publish.yml",
-    "find": "run: infra/releases.sh record \"$VERSION\" \"$REFERENCE\"",
+    "find": "run: infra/releases.sh record \"$VERSION\" \"$REFERENCE\" \"$TEMPLATE\"",
     "replace": "run: \"true\"",
     "test": {
       "cwd": ".",
       "file": "scripts/workflows.test.ts",
-      "name": "o Release registra o digest depois que o deploy deu certo"
+      "name": "o Release sobe e registra o digest com o template do mesmo commit, o registro depois do deploy"
     }
   },
   {
     "id": "rollback-reads-record",
     "file": ".github/workflows/rollback.yml",
-    "find": "reference=\"$(infra/releases.sh find \"$VERSION\")\"",
-    "replace": "reference=\"$(docker buildx imagetools inspect \"$IMAGE:$VERSION\")\"",
+    "find": "found=\"$(infra/releases.sh find \"$VERSION\")\"",
+    "replace": "found=\"$(docker buildx imagetools inspect \"$IMAGE:$VERSION\")\"",
     "test": {
       "cwd": ".",
       "file": "scripts/workflows.test.ts",
@@ -2032,6 +2076,28 @@
       "cwd": "apps/server",
       "file": "src/hub/connectors/executor.test.ts",
       "name": "a origem, o redirecionamento e o teto"
+    }
+  },
+  {
+    "id": "machine-replaced-after-template-change",
+    "file": "apps/server/src/builder/machine/machines.ts",
+    "find": "const stale = this.deps.api.killStale(session.conversationId, this.deps.template)",
+    "replace": "const stale = Promise.resolve()",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/machine/machine.test.ts",
+      "name": "máquina: a pausada de um template anterior ao Release não é retomada; volta nova, do template do Hub, copiada do main"
+    }
+  },
+  {
+    "id": "machine-kills-only-stale-template",
+    "file": "apps/server/src/builder/machine/e2b.ts",
+    "find": "(metadata) => metadata[MARK.template] !== template",
+    "replace": "() => true",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/machine/machine-e2b.test.ts",
+      "name": "máquina: depois de um Release, mata só as da conversa de outro template ou sem template, e guarda a do template do Hub"
     }
   }
 ]

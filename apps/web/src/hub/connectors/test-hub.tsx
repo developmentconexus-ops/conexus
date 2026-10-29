@@ -58,13 +58,13 @@ export function connectionOf(fields: Partial<Connection> = {}): Connection {
 }
 
 const CHECKS = [
-  ['companies', 'Empresas'],
-  ['orders', 'Pedidos'],
-  ['products', 'Produtos'],
-  ['partners', 'Clientes'],
-  ['taxes', 'Impostos dos pedidos'],
-  ['load', 'Leitura genérica'],
-  ['query', 'Consulta livre'],
+  ['gateway', 'Consulta livre', 'Porta de leitura'],
+  ['load', 'Leitura genérica', 'Porta de leitura'],
+  ['companies', 'Empresas', 'Cadastros'],
+  ['partners', 'Clientes', 'Cadastros'],
+  ['products', 'Produtos', 'Produtos'],
+  ['orders', 'Pedidos', 'Vendas'],
+  ['taxes', 'Impostos dos pedidos', 'Vendas'],
 ] as const
 
 /** The test's answer: every part reads, unless `outcomes` name another for a part by its label. */
@@ -74,9 +74,10 @@ export function workingOf(
 ): TestResult {
   return TestResultShape.parse({
     result: 'WORKING',
-    checks: CHECKS.map(([id, label]) => ({
+    checks: CHECKS.map(([id, label, subject]) => ({
       id,
       label,
+      subject,
       outcome: outcomes[label] ?? 'READS',
     })),
     connection: { ...connection, state: 'ACTIVE', testedAt: '2026-10-29T14:02:00.000Z' },

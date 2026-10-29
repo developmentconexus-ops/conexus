@@ -39,10 +39,17 @@ export const ConnectionList = z.object({
 })
 export type ConnectionList = z.infer<typeof ConnectionList>
 
-export const TEST_OUTCOMES = ['READS', 'REFUSED', 'UNREADABLE', 'NOTHING_TO_READ'] as const
+export const TEST_OUTCOMES = [
+  'READS',
+  'REFUSED',
+  'UNREADABLE',
+  'NOTHING_TO_READ',
+  'NOT_TESTED', // the test's whole deadline ran out before this item
+] as const
 export const TestCheck = z.object({
   id: z.string(),
   label: z.string(),
+  subject: z.string(), // the subject's label, for the screen's one line per subject
   outcome: z.enum(TEST_OUTCOMES),
 })
 export type TestCheck = z.infer<typeof TestCheck>
@@ -98,18 +105,6 @@ export const linkConnection = defineOperation({
     'IDEMPOTENCY_CONFLICT',
   ],
 })
-
-/** How long one call to a provider may take, its login included (the failure table: 10 s). */
-export const CONNECTOR_CALL_DEADLINE_MS = 10_000
-
-/** The time at which Cloudflare's edge cuts any answer, so no wait for the Hub may reach it. */
-export const EDGE_CUT_MS = 100_000
-
-/** What the Hub spends on one Testar, all its calls together; past it the provider counts as unreachable. */
-export const TEST_BUDGET_MS = 90_000
-
-/** What the browser waits for Testar: the Hub's budget and the round trip, still under the edge's cut. */
-export const TEST_CONNECTION_DEADLINE_MS = TEST_BUDGET_MS + 5_000
 
 export const testConnection = defineOperation({
   id: 'testConnection',

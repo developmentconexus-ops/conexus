@@ -67,7 +67,7 @@ const CarregarInput = z.object({
   criterio: z
     .object({
       expressao: z.string().max(2000).refine(isReadCondition),
-      parametros: z.array(z.object({ valor: z.string(), tipo: z.enum(['I', 'S', 'D']) })),
+      parametros: z.array(z.object({ valor: z.string(), tipo: z.enum(['D', 'H', 'F', 'I', 'S']) })),
     })
     .optional(),
   pagina: z.number().int().min(0),
@@ -76,6 +76,7 @@ const CarregarInput = z.object({
 const carregar = defineOperation({
   id: 'carregar',
   class: 'read' as const,
+  subject: 'porta',
   idempotent: true,
   summary:
     'Lê registros de uma entidade do dicionário do Sankhya (loadRecords), uma página por chamada.',
@@ -129,6 +130,7 @@ const Queried = z.object({
 const consultar = defineOperation({
   id: 'consultar',
   class: 'read' as const,
+  subject: 'porta',
   idempotent: true,
   summary:
     'Roda uma consulta SQL de leitura (SELECT ou WITH, uma só) no Sankhya (DbExplorerSP.executeQuery).',

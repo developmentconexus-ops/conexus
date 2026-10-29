@@ -166,6 +166,20 @@ jobs:
       - run: npm test -w @conexus/app -w @conexus/app-contract -w @conexus/connectors -w @conexus/hub-api
       - run: npm run test:unit -w @conexus/web
 
+  # The ready Sankhya reads against Sankhya's public documentation, downloaded here and kept nowhere
+  # (it is Sankhya's, "Licença Sankhya"). Its own job, so a page that did not download reads as
+  # "a documentação do Sankhya não baixou" and not as a mismatch.
+  sankhya-docs:
+    name: a documentação do Sankhya
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/install # zizmor: ignore[self-repository] actionlint 1.7.12 rejects the $/ form
+      - run: npm run test:docs -w @conexus/connectors
+
   e2e:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -316,7 +330,7 @@ jobs:
 
   ci:
     if: always()
-    needs: [check, scripts, server, web, packages, e2e, removals-plan, removals, image]
+    needs: [check, scripts, server, web, packages, sankhya-docs, e2e, removals-plan, removals, image]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -326,7 +340,7 @@ jobs:
       - name: Every job must have succeeded
         env:
           # No removal row to prove is a pass the plan job reported, never a job skipped for another reason.
-          RESULTS: ${{ needs.check.result }} ${{ needs.scripts.result }} ${{ needs.server.result }} ${{ needs.web.result }} ${{ needs.packages.result }} ${{ needs.e2e.result }} ${{ needs.removals-plan.result }} ${{ needs.removals.result == 'skipped' && needs.removals-plan.result == 'success' && needs.removals-plan.outputs.selected == '0' && 'success' || needs.removals.result }} ${{ github.event_name == 'pull_request' && needs.image.result || 'success' }}
+          RESULTS: ${{ needs.check.result }} ${{ needs.scripts.result }} ${{ needs.server.result }} ${{ needs.web.result }} ${{ needs.packages.result }} ${{ needs.sankhya-docs.result }} ${{ needs.e2e.result }} ${{ needs.removals-plan.result }} ${{ needs.removals.result == 'skipped' && needs.removals-plan.result == 'success' && needs.removals-plan.outputs.selected == '0' && 'success' || needs.removals.result }} ${{ github.event_name == 'pull_request' && needs.image.result || 'success' }}
         run: |
           echo "results: $RESULTS"
           for result in $RESULTS; do

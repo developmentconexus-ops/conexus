@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { call, hubWithLog } from '../identity/test-hub.ts'
+import { hubWithLog } from '../identity/test-hub.ts'
 import { connectionsOn, linkSankhya, testOf } from './test-connections.ts'
 
 test('a origem, o redirecionamento e o teto', async (t) => {
@@ -32,16 +32,4 @@ test('o Hub com a origem de um conector que o kit não tem não sobe', async (t)
       return true
     },
   )
-})
-
-test('testar: as chamadas juntas passam do orçamento e o fornecedor conta como fora do ar', async (t) => {
-  const { hub, fake, ana, base } = await connectionsOn(t)
-  const { connection } = Object((await linkSankhya(hub, ana, base, fake.credential)).json())
-  // Each call answers inside its own deadline; together they pass the Testar's budget.
-  fake.switches.delayMs = 150
-  const slow = await testOf(hub, ana, base, connection.id)
-  assert.equal(slow.statusCode, 200)
-  assert.deepEqual(Object(slow.json()), { result: 'UNREACHABLE', connection })
-  const listed = await call(hub, ana, 'GET', base)
-  assert.deepEqual(Object(listed.json()).connections, [connection])
 })

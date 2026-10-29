@@ -8,11 +8,13 @@ import {
   COMPANY,
   CONVERSATION,
   INSTALLATION,
+  OLD_TEMPLATE,
   OTHER_CONVERSATION,
   OTHER_INSTALLATION,
   PROJECT,
   restoreRefused,
   sandboxOf,
+  TEMPLATE,
   world,
 } from './test-machine.ts'
 
@@ -172,6 +174,7 @@ test('máquina: o nome leva a instalação e a conversa, sem o Projeto, e a marc
     conexus_company: COMPANY,
     conexus_project: PROJECT,
     conexus_conversation: CONVERSATION,
+    conexus_template: TEMPLATE,
   })
 })
 
@@ -217,4 +220,23 @@ test('máquina: um pacote do turno maior que 64 MiB não entra no Hub', async (t
   control.beforeRead = (path) => truncateSync(path, 65 * 1024 * 1024)
   const collected = await machines.collect({ conversationId: CONVERSATION, base })
   assert.equal(typeof collected === 'object' ? 'a bundle' : collected, 'too-large')
+})
+
+test('máquina: a pausada de um template anterior ao Release não é retomada; volta nova, do template do Hub, copiada do main', async (t) => {
+  const { open, phases, control, machines } = await world(t)
+  control.discoverable = [OWN]
+  control.templates = { [OWN]: OLD_TEMPLATE }
+  const workspace = await open()
+  await workspace.filesystem?.writeFile('a.ts', 'um\n')
+  assert.deepEqual(control.replaced, [OWN])
+  assert.deepEqual(control.attached, [], 'the old machine is never resumed')
+  assert.deepEqual(phases, ['starting', 'copying'])
+  assert.equal(control.marks.at(-1)?.conexus_template, TEMPLATE)
+  await machines.release(CONVERSATION)
+  phases.length = 0
+  control.discoverable = [OWN]
+  control.templates = {}
+  await (await open()).filesystem?.writeFile('b.ts', 'dois\n')
+  assert.deepEqual(control.replaced, [OWN], 'a machine of the Hub template is kept')
+  assert.deepEqual(control.attached, [OWN])
 })

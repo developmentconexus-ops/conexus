@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import type { Connector, OperationId } from '@conexus/connectors'
+import type { Connector } from '@conexus/connectors'
 import { CONNECTORS, connectorOf } from '@conexus/connectors'
 import type {
   CompanyId,
@@ -7,7 +7,6 @@ import type {
   ConnectionList,
   ConnectorEntry,
   Person,
-  TestCheck,
   TestResult,
 } from '@conexus/hub-api'
 import { CONNECTION_STATES, ConnectionId, PersonId } from '@conexus/hub-api'
@@ -20,7 +19,9 @@ import type { SealKeys } from '../../platform/seal.ts'
 import { Credential, open, seal } from '../../platform/seal.ts'
 import type { IdentityPorts } from '../identity/public.ts'
 import { personNameColumn } from '../identity/public.ts'
-import type { BearerToken, Executor, OpenedConnection } from './executor.ts'
+import type { Executor, OpenedConnection } from './executor.ts'
+import type { Probed } from './probe.ts'
+import { probed } from './probe.ts'
 import { connection } from './tables.ts'
 
 export type Deps = {
@@ -28,7 +29,8 @@ export type Deps = {
   identity: IdentityPorts
   sealKeys: SealKeys
   executor: Executor
-  testBudgetMs: number
+  callDeadlineMs: number
+  testDeadlineMs: number
 }
 export type Viewer = { person: Person; companyId: CompanyId }
 
@@ -254,65 +256,6 @@ function opened(deps: Deps, input: OfConnection): Promise<OpenedConnection> {
   })
 }
 
-type Probed =
-  | Readonly<{ result: 'WORKING'; checks: TestCheck[] }>
-  | Readonly<{ result: 'AUTH_REFUSED' | 'UNREACHABLE' }>
-
-/**
- * Testar's second step: a new token, then each read operation and door entry once, in order and one
- * at a time (the connector's `oneRequestAtATime`). An expired token is asked again once per call.
- * The calls together stay inside `signal`: once it fires the provider is unreachable.
- * Nothing read leaves this function but each operation's outcome.
- */
-async function probed(
-  executor: Executor,
-  opened: OpenedConnection,
-  signal: AbortSignal,
-): Promise<Probed> {
-  const { connector } = opened
-  const first = await executor.login(opened, signal)
-  if (first.kind !== 'TOKEN') return { result: first.kind }
-  let token: BearerToken = first.token
-  const checks: TestCheck[] = []
-  const earlier = new Map<OperationId, unknown>()
-  const operations = [...connector.operations, ...Object.values(connector.readDoor ?? {})]
-  for (const operation of operations) {
-    function check(outcome: TestCheck['outcome']) {
-      checks.push({ id: operation.id, label: operation.label, outcome })
-    }
-    const input = operation.probe(earlier)
-    if (input === null) {
-      check('NOTHING_TO_READ')
-      continue
-    }
-    let answered = await executor.call(opened, token, operation, input, signal)
-    if (answered.kind === 'TOKEN_EXPIRED') {
-      const again = await executor.login(opened, signal)
-      if (again.kind !== 'TOKEN') return { result: again.kind }
-      token = again.token
-      answered = await executor.call(opened, token, operation, input, signal)
-    }
-    switch (answered.kind) {
-      case 'OK':
-        earlier.set(operation.id, answered.value)
-        check('READS')
-        break
-      case 'REFUSED':
-      case 'UNREADABLE':
-        check(answered.kind)
-        break
-      case 'AUTH_REFUSED':
-      case 'TOKEN_EXPIRED':
-        return { result: 'AUTH_REFUSED' }
-      case 'UNREACHABLE':
-        return { result: 'UNREACHABLE' }
-      default:
-        return answered satisfies never
-    }
-  }
-  return { result: 'WORKING', checks }
-}
-
 const NEXT_STATE = { WORKING: 'ACTIVE', AUTH_REFUSED: 'NEEDS_REAUTH' } as const
 
 /**
@@ -343,7 +286,7 @@ function recorded(deps: Deps, input: OfConnection, opened: OpenedConnection, pro
 /** Testar (criteria 10 to 12): the three steps of the failure table. */
 export async function test(deps: Deps, input: OfConnection): Promise<TestResult> {
   const open = await opened(deps, input)
-  const probe = await probed(deps.executor, open, AbortSignal.timeout(deps.testBudgetMs))
+  const probe = await probed(deps, open)
   const view = await recorded(deps, input, open, probe)
   return probe.result === 'WORKING'
     ? { result: 'WORKING', checks: probe.checks, connection: view }

@@ -25,6 +25,14 @@ function open(view?: View, answers?: Answers) {
   return openIntegrations(server, view, answers)
 }
 
+/** The text of each subject's line, the items that do not read included. */
+function subjectLines(list: ReturnType<typeof within>): string[] {
+  return list
+    .getAllByRole('listitem')
+    .filter((one) => one.parentElement?.getAttribute('aria-label') === 'Resultado do teste')
+    .map((one) => one.textContent ?? '')
+}
+
 test('a dona liga, testa e desliga', async () => {
   const sent = open()
   expect(await screen.findByRole('heading', { name: 'Integrações' })).toBeTruthy()
@@ -59,14 +67,11 @@ test('a dona liga, testa e desliga', async () => {
   fireEvent.click(screen.getByRole('button', { name: 'Testar' }))
   expect(await screen.findByText('Ligação funcionando')).toBeTruthy()
   const checks = within(screen.getByRole('list', { name: 'Resultado do teste' }))
-  expect(checks.getAllByRole('listitem').map((one) => one.textContent)).toEqual([
-    'Empresas lê',
-    'Pedidos lê',
+  expect(subjectLines(checks)).toEqual([
+    'Porta de leitura lê',
+    'Cadastros lê',
     'Produtos lê',
-    'Clientes lê',
-    'Impostos dos pedidos lê',
-    'Leitura genérica lê',
-    'Consulta livre lê',
+    'Vendas lê',
   ])
   expect(await screen.findByText(/testada em/)).toBeTruthy()
 
@@ -89,6 +94,7 @@ test('Testar mostra "Testando…" e depois cada parte com a sua palavra', async 
       Pedidos: 'REFUSED',
       Produtos: 'UNREADABLE',
       'Impostos dos pedidos': 'NOTHING_TO_READ',
+      Clientes: 'NOT_TESTED',
     }),
   )
   server.use(
@@ -104,11 +110,12 @@ test('Testar mostra "Testando…" e depois cada parte com a sua palavra', async 
   expect(await screen.findByRole('button', { name: 'Testando…' })).toBeTruthy()
   held.resolve(undefined)
   const checks = within(await screen.findByRole('list', { name: 'Resultado do teste' }))
-  const words = checks.getAllByRole('listitem').map((one) => one.textContent)
-  expect(words).toContain('Pedidos recusado pelo Sankhya')
-  expect(words).toContain('Produtos resposta que o Conexus não entendeu')
-  expect(words).toContain('Impostos dos pedidos nada para ler')
-  expect(words).toContain('Empresas lê')
+  expect(subjectLines(checks)).toEqual([
+    'Porta de leitura lê',
+    'Cadastros lê 1 de 2Clientes não testado: o Sankhya demorou, teste de novo',
+    'Produtos lê 0 de 1Produtos resposta que o Conexus não entendeu',
+    'Vendas lê 0 de 2Pedidos recusado pelo SankhyaImpostos dos pedidos nada para ler',
+  ])
 })
 
 test('chave recusada no Testar: a frase do Sankhya; fornecedor fora: a outra frase', async () => {

@@ -64,5 +64,7 @@ export function outcomeText(check: TestCheck, name: string): string {
       return 'resposta que o Conexus não entendeu'
     case 'NOTHING_TO_READ':
       return 'nada para ler'
+    case 'NOT_TESTED':
+      return `não testado: o ${name} demorou, teste de novo`
   }
 }

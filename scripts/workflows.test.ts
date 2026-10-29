@@ -37,6 +37,8 @@ function workflow(name: string): Workflow {
 const SHA = ['${{', 'github.sha', '}}'].join(' ')
 const VERSION = ['${{', 'inputs.version', '}}'].join(' ')
 const RECORDED = ['${{', 'needs.record.outputs.reference', '}}'].join(' ')
+const RECORDED_TEMPLATE = ['${{', 'needs.record.outputs.template', '}}'].join(' ')
+const BUILT_TEMPLATE = ['${{', 'needs.template.outputs.template', '}}'].join(' ')
 const publish = workflow('publish.yml')
 const rollback = workflow('rollback.yml')
 const ci = workflow('ci.yml')
@@ -47,8 +49,8 @@ function onServer(job: Job): boolean {
   return !(typeof labels === 'string' && labels.startsWith('ubuntu-'))
 }
 
-test('o Release publica o Hub depois da imagem, e a borda depois do Hub', () => {
-  assert.equal(publish.jobs.deploy?.needs, 'image')
+test('o Release publica o Hub depois da imagem e do template, e a borda depois do Hub', () => {
+  assert.deepEqual(publish.jobs.deploy?.needs, ['image', 'template'])
   assert.equal(publish.jobs.edge?.needs, 'deploy')
 })
 
@@ -83,7 +85,7 @@ test('a volta acha o registro antes de mexer na borda, e põe a borda de volta a
 test('a imagem do Release nasce numa máquina nova do GitHub, e o resto roda no runner do servidor', () => {
   assert.equal(publish.jobs.image?.['runs-on'], 'ubuntu-24.04')
   const server = [...Object.entries(publish.jobs), ...Object.entries(rollback.jobs)].filter(
-    ([name]) => !['image', 'apps', 'apps-release'].includes(name),
+    ([name]) => !['image', 'template', 'apps', 'apps-release'].includes(name),
   )
   for (const [name, job] of server) assert.deepEqual(job['runs-on'], ['self-hosted', 'hub'], name)
 })
@@ -92,7 +94,7 @@ test('cada trabalho do Release usa o commit que o gancho conferiu, não a tag', 
   const checkouts = Object.values(publish.jobs).flatMap((job) =>
     job.steps.filter((step) => step.uses?.startsWith('actions/checkout@')),
   )
-  assert.equal(checkouts.length, 4)
+  assert.equal(checkouts.length, 5)
   for (const step of checkouts) assert.equal(step.with?.ref, SHA)
 })
 
@@ -120,20 +122,61 @@ test('a volta lê o registro do servidor antes do deploy, sem perguntar à GHCR'
     ['${{', 'steps.reference.outputs.reference', '}}'].join(' '),
   )
   const deploy = rollback.jobs.rollback?.steps.find(
-    (step) => step.run === 'infra/deploy.sh "$REFERENCE"',
+    (step) => step.run === 'infra/deploy.sh "$REFERENCE" "$TEMPLATE"',
   )
   assert.equal(deploy?.env?.REFERENCE, RECORDED)
+  assert.equal(deploy?.env?.TEMPLATE, RECORDED_TEMPLATE)
+  assert.equal(
+    record?.outputs?.template,
+    ['${{', 'steps.reference.outputs.template', '}}'].join(' '),
+  )
+  assert.match(find?.run ?? '', /read -r reference template <<< "\$found"/)
   for (const job of Object.values(rollback.jobs))
     for (const step of job.steps) assert.doesNotMatch(step.run ?? '', /imagetools/)
 })
 
-test('o Release registra o digest depois que o deploy deu certo', () => {
+test('o Release sobe e registra o digest com o template do mesmo commit, o registro depois do deploy', () => {
   const steps = publish.jobs.deploy?.steps ?? []
-  const deploy = steps.findIndex((step) => step.run === 'infra/deploy.sh "$REFERENCE"')
+  const deploy = steps.findIndex((step) => step.run === 'infra/deploy.sh "$REFERENCE" "$TEMPLATE"')
   const record = steps.findIndex(
-    (step) => step.run === 'infra/releases.sh record "$VERSION" "$REFERENCE"',
+    (step) => step.run === 'infra/releases.sh record "$VERSION" "$REFERENCE" "$TEMPLATE"',
   )
   assert.ok(deploy >= 0 && record > deploy, `${deploy} ${record}`)
+  for (const at of [deploy, record]) assert.equal(steps[at]?.env?.TEMPLATE, BUILT_TEMPLATE)
+})
+
+test('o template nasce do commit do Release numa máquina nova do GitHub, depois da imagem conferir main', () => {
+  const job = publish.jobs.template
+  assert.equal(job?.needs, 'image')
+  assert.equal(job?.['runs-on'], 'ubuntu-24.04')
+  assert.deepEqual(job?.permissions, { contents: 'read' })
+  assert.equal(job?.outputs?.template, ['${{', 'steps.build.outputs.template', '}}'].join(' '))
+  const build = job?.steps.find((step) => step.id === 'build')
+  assert.match(build?.run ?? '', /node infra\/e2b\/template\.ts/)
+  assert.match(build?.run ?? '', /\^HUB_E2B_TEMPLATE=\(conexus-builder:\[0-9a-f\]\{7,40\}\)\$/)
+})
+
+test('a chave da E2B vem só do segredo do GitHub e só ao passo do build, nunca ecoada', () => {
+  const key = ['${{', 'secrets.E2B_API_KEY', '}}'].join(' ')
+  for (const [file, workflow] of Object.entries({ publish, rollback, ci })) {
+    for (const [name, job] of Object.entries(workflow.jobs)) {
+      for (const step of job.steps) {
+        const holds = JSON.stringify(step).includes('E2B_API_KEY')
+        const isBuild = file === 'publish' && name === 'template' && step.id === 'build'
+        assert.equal(holds, isBuild, `${file}: ${name}: ${step.id ?? step.name ?? step.uses}`)
+      }
+    }
+  }
+  const build = publish.jobs.template?.steps.find((step) => step.id === 'build')
+  assert.deepEqual(build?.env, { E2B_API_KEY: key })
+  assert.doesNotMatch(build?.run ?? '', /E2B_API_KEY/)
+})
+
+test('reiniciar o Hub mantém o template no ar, ou experimenta o que a pessoa der', () => {
+  const restart = workflow('restart.yml')
+  const step = restart.jobs.restart?.steps.find((step) => step.run?.includes('infra/deploy.sh'))
+  assert.equal(step?.run, 'infra/deploy.sh --restart "$TEMPLATE"')
+  assert.equal(step?.env?.TEMPLATE, ['${{', 'inputs.template', '}}'].join(' '))
 })
 
 test('a CI roda em máquinas do GitHub e não usa segredo, porque um pull request de fora a dispara', () => {
