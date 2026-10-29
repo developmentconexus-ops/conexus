@@ -26,7 +26,7 @@ type Roles = AppAccessList['roles']
 
 const COLUMNS = [
   { name: 'Pessoa' },
-  { name: 'Papel', leavesOnPhone: true, width: 'lg:w-44' },
+  { name: 'Papel', leavesOnPhone: true, width: 'lg:w-52' },
   { name: 'Ações', leavesOnPhone: true, width: 'lg:w-40' },
 ]
 
@@ -259,6 +259,9 @@ export function Access(scope: Scope) {
       )}
       {list !== undefined && (
         <>
+          {!list.mayManage && (
+            <p className="text-text-2">Só o dono ou um administrador dá ou tira acesso ao app.</p>
+          )}
           <FramedTable aria-label="Quem usa o app" columns={COLUMNS}>
             <TableBody>
               {list.members.map((member) => (

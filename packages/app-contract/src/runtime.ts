@@ -44,14 +44,23 @@ function refuse(status: number, code: AppFailureCode): Response {
 }
 
 /**
- * Whether the caller may run an operation, the one rule (code C26): a builder runs all, and a role
- * the version no longer declares is no role, so it reaches only the operations open to everyone.
+ * What the app sees of the caller (code C26): a role the version no longer declares is no role, so
+ * the handler and `/api/caller` get `null` and no operation, which can name only declared roles
+ * (`lockOf`), admits it.
  */
-function mayRun(declared: Roles, operation: Served, caller: Caller): boolean {
+function seenBy(declared: Roles, caller: Caller): Caller {
+  const { access } = caller
+  if (access.kind === 'BUILDER' || access.role === null || Object.hasOwn(declared, access.role))
+    return caller
+  return { ...caller, access: { kind: 'USER', role: null } }
+}
+
+/** Whether the caller may run an operation: a builder runs all, a role runs the operations that list it. */
+function mayRun(operation: Served, caller: Caller): boolean {
   if (operation.roles === undefined || operation.roles === 'everyone') return true
   if (caller.access.kind === 'BUILDER') return true
   const { role } = caller.access
-  return role !== null && Object.hasOwn(declared, role) && operation.roles.includes(role)
+  return role !== null && operation.roles.includes(role)
 }
 
 /** An app with roles locks every operation, and only with roles it declares; an app without them locks none. */
@@ -144,7 +153,7 @@ export function serveApp(
     async fetch(request: Request, _env: unknown, ctx: Readonly<{ props: AppProps }>) {
       const { pathname } = new URL(request.url)
       if (request.method === 'GET' && pathname === '/api/caller') {
-        const { personName, access } = ctx.props.caller
+        const { personName, access } = seenBy(declared, ctx.props.caller)
         return answer(200, { personName, access })
       }
       const name = pathname.startsWith('/api/')
@@ -153,8 +162,9 @@ export function serveApp(
       const operation =
         request.method === 'POST' && name !== undefined ? served.get(name) : undefined
       if (name === undefined || operation === undefined) return refuse(404, 'OPERATION_NOT_FOUND')
-      const { db, caller } = ctx.props
-      if (!mayRun(declared, operation, caller)) return refuse(403, 'ROLE_FORBIDDEN')
+      const { db } = ctx.props
+      const caller = seenBy(declared, ctx.props.caller)
+      if (!mayRun(operation, caller)) return refuse(403, 'ROLE_FORBIDDEN')
       // biome-ignore lint/plugin: an unreadable body fails the operation's input schema next (C27, C53)
       const body: unknown = await request.json().catch(() => undefined)
       const input = operation.input.safeParse(body)

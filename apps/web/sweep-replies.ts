@@ -134,6 +134,7 @@ function companyPage(
         },
       ],
       next: { kind: 'END' },
+      mayManage: true,
     }),
   }
 }

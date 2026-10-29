@@ -219,3 +219,22 @@ test('GET /api/caller: quem chama e como detém o app', async () => {
   }
   assert.equal((await call(roled, 'api/caller', {}, 'POST')).status, 404)
 })
+
+test('papéis: o papel que a versão não declara chega ao app como nenhum', async () => {
+  const seen: CallerAccess[] = []
+  const roled = serveApp({
+    operations: ROLED,
+    handlers: {
+      ...HANDLERS,
+      ola: (_input, { caller }) => {
+        seen.push(caller.access)
+        return { id: 3 }
+      },
+    },
+    roles: ROLES,
+  })
+  const response = await call(roled, 'api/caller', undefined, 'GET', user('extinto'))
+  assert.deepEqual(await response.json(), { personName: 'Ana', access: user(null) })
+  await call(roled, 'api/ola', { id: 1 }, 'POST', user('extinto'))
+  assert.deepEqual(seen, [user(null)])
+})

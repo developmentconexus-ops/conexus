@@ -63,3 +63,11 @@ test('quem já usa o app abre o app, sem aceitar de novo', async () => {
   expect(screen.getByRole('heading', { name: 'Você já usa o app Encomendas.' })).toBeTruthy()
   expect(screen.queryByRole('button', { name: 'Aceitar convite' })).toBeNull()
 })
+
+test('quem já é da empresa lê que já faz parte dela, não do app', async () => {
+  hub({ kind: 'JOINED', company: SOL, app: null })
+  expect(
+    await screen.findByRole('heading', { name: 'Você já faz parte de Padaria Sol.' }),
+  ).toBeTruthy()
+  expect(screen.queryByRole('link', { name: 'Abrir app' })).toBeNull()
+})
