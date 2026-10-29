@@ -1,8 +1,13 @@
+/** What the invitation gives: a company's first owner, a role in the company, or the use of an app. */
+export type InvitedAs =
+  | { kind: 'FIRST_OWNER' }
+  | { kind: 'COMPANY'; roleLabel: string }
+  | { kind: 'APP'; appName: string }
+
 export type InvitationMailProps = {
   companyName: string
   inviterName: string
-  firstOwner: boolean
-  roleLabel: string
+  invited: InvitedAs
   link: string
   expiresOn: string
   to: string

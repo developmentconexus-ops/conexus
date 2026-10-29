@@ -1,6 +1,6 @@
 import type { FailureRow } from './failure-row.ts'
 
-/** The failures of taking a person out and of choosing a password (step 6). */
+/** The failures of taking a person out, of choosing a password (step 6) and of giving an app (step 18). */
 export const PEOPLE_FAILURES = {
   LAST_OWNER: {
     category: 'USER',
@@ -15,6 +15,30 @@ export const PEOPLE_FAILURES = {
     settles: true,
     status: 412,
     phrase: 'Esta pessoa mudou de papel enquanto você olhava.',
+    action: 'Veja a lista de novo.',
+    actionKind: 'NONE',
+  },
+  APP_ACCESS_MEMBER: {
+    category: 'USER',
+    settles: true,
+    status: 409,
+    phrase: 'Esta pessoa já é da empresa e usa o app com todos os papéis.',
+    action: '',
+    actionKind: 'NONE',
+  },
+  APP_ACCESS_EXISTS: {
+    category: 'USER',
+    settles: true,
+    status: 409,
+    phrase: 'Esta pessoa já usa o app. Troque o papel na lista.',
+    action: '',
+    actionKind: 'NONE',
+  },
+  APP_ROLE_UNKNOWN: {
+    category: 'USER',
+    settles: true,
+    status: 409,
+    phrase: 'Este papel não existe na versão publicada.',
     action: 'Veja a lista de novo.',
     actionKind: 'NONE',
   },

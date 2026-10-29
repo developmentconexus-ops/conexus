@@ -1,4 +1,5 @@
 export {
+  AppEntry,
   appHostOf,
   CompanyNickname,
   HostLabel,
@@ -9,6 +10,20 @@ export {
   RESERVED_NICKNAMES,
   suggestedNickname,
 } from './address.ts'
+export {
+  AppAccessInvitation,
+  AppAccessList,
+  AppAccessRow,
+  CompanyAppPerson,
+  cancelAppInvitation,
+  changeAppAccess,
+  inviteToApp,
+  listAppAccess,
+  listCompanyAppAccess,
+  listMyApps,
+  revokeAllAppAccess,
+  revokeAppAccess,
+} from './app-access.ts'
 export { type AppLogin, appLogin, appLoginPassword } from './app-login.ts'
 export {
   APP_OPEN_PATH,
