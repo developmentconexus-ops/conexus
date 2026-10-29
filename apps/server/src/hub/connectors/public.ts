@@ -13,18 +13,22 @@ import { registerConnectionRoutes } from './routes.ts'
 /** How long one call to a provider may take, the login included (the failure table: 10 s). */
 const CALL_DEADLINE_MS = 10_000
 
+/** How long Testar may take in all, from its first login: under the 100 s the Cloudflare edge allows (platform/http.ts). */
+const TEST_DEADLINE_MS = 80_000
+
 export type Connectors = ReturnType<typeof createConnectors>
 
 /**
  * The company's connections to outside systems (decision 0056): the only subject that imports the
  * kit and opens a connection's seal. A double's origin the configuration names for a connector the
- * kit does not have refuses the Hub (criterion 16). Tests shorten `callDeadlineMs`.
+ * kit does not have refuses the Hub (criterion 16). Tests shorten `callDeadlineMs` and `testDeadlineMs`.
  */
 export function createConnectors(deps: {
   database: Database
   identity: IdentityPorts
   config: Pick<Config, 'sealKeys' | 'connectorOrigins'>
   callDeadlineMs?: number
+  testDeadlineMs?: number
 }) {
   const origins = new Map<ConnectorId, string>()
   for (const [id, origin] of deps.config.connectorOrigins ?? []) {
@@ -35,9 +39,14 @@ export function createConnectors(deps: {
       })
     origins.set(connector.id, origin)
   }
-  const callDeadlineMs = deps.callDeadlineMs ?? CALL_DEADLINE_MS
-  const executor = createExecutor({ fetch, origins, callDeadlineMs })
-  const routeDeps = { ...deps, sealKeys: deps.config.sealKeys, executor }
+  const executor = createExecutor({ fetch, origins })
+  const routeDeps = {
+    ...deps,
+    sealKeys: deps.config.sealKeys,
+    executor,
+    callDeadlineMs: deps.callDeadlineMs ?? CALL_DEADLINE_MS,
+    testDeadlineMs: deps.testDeadlineMs ?? TEST_DEADLINE_MS,
+  }
   return Object.freeze({
     routes: (app: FastifyInstance) => registerConnectionRoutes(app, routeDeps),
   })

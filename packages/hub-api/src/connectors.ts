@@ -39,10 +39,17 @@ export const ConnectionList = z.object({
 })
 export type ConnectionList = z.infer<typeof ConnectionList>
 
-export const TEST_OUTCOMES = ['READS', 'REFUSED', 'UNREADABLE', 'NOTHING_TO_READ'] as const
+export const TEST_OUTCOMES = [
+  'READS',
+  'REFUSED',
+  'UNREADABLE',
+  'NOTHING_TO_READ',
+  'NOT_TESTED', // the test's whole deadline ran out before this item
+] as const
 export const TestCheck = z.object({
   id: z.string(),
   label: z.string(),
+  subject: z.string(), // the subject's label, for the screen's one line per subject
   outcome: z.enum(TEST_OUTCOMES),
 })
 export type TestCheck = z.infer<typeof TestCheck>

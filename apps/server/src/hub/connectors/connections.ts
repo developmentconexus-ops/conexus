@@ -28,6 +28,8 @@ export type Deps = {
   identity: IdentityPorts
   sealKeys: SealKeys
   executor: Executor
+  callDeadlineMs: number
+  testDeadlineMs: number
 }
 export type Viewer = { person: Person; companyId: CompanyId }
 
@@ -258,33 +260,51 @@ type Probed =
   | Readonly<{ result: 'AUTH_REFUSED' | 'UNREACHABLE' }>
 
 /**
- * Testar's second step: a new token, then each read operation and door entry once, in order and one
- * at a time (the connector's `oneRequestAtATime`). An expired token is asked again once per call.
- * Nothing read leaves this function but each operation's outcome.
+ * Testar's second step: a new token, then each door entry and each read operation once, in that
+ * order and one at a time (the connector's `oneRequestAtATime`). Each call gets the shorter of its
+ * own deadline and what is left of the whole test's, counted from the first login: an item the
+ * deadline does not reach, or cuts short, is NOT_TESTED, and a login that does not fit is UNREACHABLE. An expired
+ * token is asked again once per call. Nothing read leaves this function but each item's outcome.
  */
-async function probed(executor: Executor, opened: OpenedConnection): Promise<Probed> {
+async function probed(deps: Deps, opened: OpenedConnection): Promise<Probed> {
+  const { executor } = deps
   const { connector } = opened
-  const first = await executor.login(opened)
+  const endsAt = performance.now() + deps.testDeadlineMs
+  const left = () => endsAt - performance.now()
+  const allowed = () => Math.min(deps.callDeadlineMs, left())
+  async function login() {
+    const deadlineMs = allowed()
+    return deadlineMs <= 0 ? ({ kind: 'UNREACHABLE' } as const) : executor.login(opened, deadlineMs)
+  }
+  const first = await login()
   if (first.kind !== 'TOKEN') return { result: first.kind }
   let token: BearerToken = first.token
   const checks: TestCheck[] = []
   const earlier = new Map<OperationId, unknown>()
-  const operations = [...connector.operations, ...Object.values(connector.readDoor ?? {})]
+  let outOfTime = false
+  const operations = [...Object.values(connector.readDoor ?? {}), ...connector.operations]
   for (const operation of operations) {
     function check(outcome: TestCheck['outcome']) {
-      checks.push({ id: operation.id, label: operation.label, outcome })
+      const subject = connector.subjects[operation.subject] ?? operation.subject
+      checks.push({ id: operation.id, label: operation.label, subject, outcome })
+    }
+    if (outOfTime || allowed() <= 0) {
+      check('NOT_TESTED')
+      continue
     }
     const input = operation.probe(earlier)
     if (input === null) {
       check('NOTHING_TO_READ')
       continue
     }
-    let answered = await executor.call(opened, token, operation, input)
+    // A call the whole test's deadline cut short is an item the test did not reach, not a provider down.
+    const cutShort = left() < deps.callDeadlineMs
+    let answered = await executor.call(opened, token, operation, input, allowed())
     if (answered.kind === 'TOKEN_EXPIRED') {
-      const again = await executor.login(opened)
+      const again = await login()
       if (again.kind !== 'TOKEN') return { result: again.kind }
       token = again.token
-      answered = await executor.call(opened, token, operation, input)
+      answered = await executor.call(opened, token, operation, input, allowed())
     }
     switch (answered.kind) {
       case 'OK':
@@ -299,7 +319,10 @@ async function probed(executor: Executor, opened: OpenedConnection): Promise<Pro
       case 'TOKEN_EXPIRED':
         return { result: 'AUTH_REFUSED' }
       case 'UNREACHABLE':
-        return { result: 'UNREACHABLE' }
+        if (!cutShort) return { result: 'UNREACHABLE' }
+        outOfTime = true
+        check('NOT_TESTED')
+        break
       default:
         return answered satisfies never
     }
@@ -337,7 +360,7 @@ function recorded(deps: Deps, input: OfConnection, opened: OpenedConnection, pro
 /** Testar (criteria 10 to 12): the three steps of the failure table. */
 export async function test(deps: Deps, input: OfConnection): Promise<TestResult> {
   const open = await opened(deps, input)
-  const probe = await probed(deps.executor, open)
+  const probe = await probed(deps, open)
   const view = await recorded(deps, input, open, probe)
   return probe.result === 'WORKING'
     ? { result: 'WORKING', checks: probe.checks, connection: view }

@@ -132,6 +132,7 @@ export function subjectsOf(deps: {
   copy: GitCopy
   log: FailureLog
   callDeadlineMs?: number
+  testDeadlineMs?: number
 }): {
   runs: Runs
   projects: Projects

@@ -33,17 +33,19 @@ type Login =
 
 /** The one place the Hub opens a connector's credential and talks to its provider (decision 0056). */
 export type Executor = {
-  /** A new token for an opened connection: the login, sent once (no cache in step 19). */
-  login(connection: OpenedConnection): Promise<Login>
+  /** A new token for an opened connection: the login, sent once (no cache in step 19), given up on after `deadlineMs`. */
+  login(connection: OpenedConnection, deadlineMs: number): Promise<Login>
   /**
-   * Calls one operation with that token; never logs input, output or credential (S41). Transport,
-   * deadline, redirect and 5xx are UNREACHABLE; the kit's Answered otherwise.
+   * Calls one operation with that token, given up on after `deadlineMs`; never logs input, output
+   * or credential (S41). Transport, deadline, redirect and 5xx are UNREACHABLE; the kit's Answered
+   * otherwise.
    */
   call<I, O>(
     connection: OpenedConnection,
     token: BearerToken,
     operation: Operation<I, O>,
     input: I,
+    deadlineMs: number,
   ): Promise<Answered<O> | Unreachable>
 }
 
@@ -92,7 +94,6 @@ function answerOf(status: number, bytes: Uint8Array): ProviderAnswer | Unreadabl
 export function createExecutor(deps: {
   fetch: typeof fetch
   origins: ReadonlyMap<ConnectorId, string>
-  callDeadlineMs: number
 }): Executor {
   function originOf(connector: Connector): string {
     return deps.origins.get(connector.id) ?? connector.origin
@@ -102,10 +103,10 @@ export function createExecutor(deps: {
    * Sends one request (the OS's `send`): a redirect refused by fetch, a 5xx's body cancelled unread,
    * the rest read up to the cap and parsed only at the end. The provider's body is never logged.
    */
-  async function send(request: Request): Promise<ProviderAnswer | Unreadable | Unreachable> {
+  async function send(request: Request, deadlineMs: number): Promise<ProviderAnswer | Unreadable | Unreachable> {
     try {
       const response = await deps.fetch(request, {
-        signal: AbortSignal.timeout(deps.callDeadlineMs),
+        signal: AbortSignal.timeout(deadlineMs),
       })
       if (response.status >= 500) {
         await response.body?.cancel()
@@ -119,7 +120,7 @@ export function createExecutor(deps: {
   }
 
   return {
-    async login(connection) {
+    async login(connection, deadlineMs) {
       const { connector } = connection
       const auth = connector.auth
       const request = toRequest(
@@ -128,7 +129,7 @@ export function createExecutor(deps: {
         null,
         originOf(connector),
       )
-      const sent = await send(request)
+      const sent = await send(request, deadlineMs)
       // A login answered with what the kit cannot read is the provider's fault, not the key's.
       if ('kind' in sent) return UNREACHABLE
       const token = readToken(auth, sent)
@@ -137,7 +138,7 @@ export function createExecutor(deps: {
       return { kind: 'TOKEN', token: new Secret('BearerToken', token.accessToken) }
     },
 
-    async call(connection, token, operation, input) {
+    async call(connection, token, operation, input, deadlineMs) {
       const { connector } = connection
       const request = toRequest(
         connector,
@@ -145,7 +146,7 @@ export function createExecutor(deps: {
         token.reveal(),
         originOf(connector),
       )
-      const sent = await send(request)
+      const sent = await send(request, deadlineMs)
       return 'kind' in sent ? sent : operation.answer(sent)
     },
   }
