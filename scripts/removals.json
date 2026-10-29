@@ -2070,7 +2070,7 @@
   {
     "id": "connector-response-cap",
     "file": "apps/server/src/hub/connectors/executor.ts",
-    "find": "    if (bytes > RESPONSE_CAP_BYTES) {\n      await reader.cancel()\n      return UNREADABLE\n    }\n",
+    "find": "    if (bytes > RESPONSE_CAP_BYTES) {\n      await reader.cancel()\n      return null\n    }\n",
     "replace": "",
     "test": {
       "cwd": "apps/server",
