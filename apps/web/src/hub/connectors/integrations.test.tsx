@@ -29,8 +29,10 @@ function open(view?: View, answers?: Answers) {
 function subjectLines(list: ReturnType<typeof within>): string[] {
   return list
     .getAllByRole('listitem')
-    .filter((one) => one.parentElement?.getAttribute('aria-label') === 'Resultado do teste')
-    .map((one) => one.textContent ?? '')
+    .filter(
+      (one: HTMLElement) => one.parentElement?.getAttribute('aria-label') === 'Resultado do teste',
+    )
+    .map((one: HTMLElement) => one.textContent ?? '')
 }
 
 test('a dona liga, testa e desliga', async () => {

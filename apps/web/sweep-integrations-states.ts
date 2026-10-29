@@ -12,18 +12,18 @@ const WORKING = connectionOf({ state: 'ACTIVE', testedAt: TESTED })
 const TEST = `POST /api/companies/${COMPANY.id}/connections/${WORKING.id}/test`
 
 const CHECKS = [
-  ['companies', 'Empresas', 'READS'],
-  ['orders', 'Pedidos', 'READS'],
-  ['products', 'Produtos', 'UNREADABLE'],
-  ['partners', 'Clientes', 'READS'],
-  ['taxes', 'Impostos dos pedidos', 'NOTHING_TO_READ'],
-  ['load', 'Leitura genérica', 'READS'],
-  ['query', 'Consulta livre', 'REFUSED'],
+  ['gateway', 'Consulta livre', 'Porta de leitura', 'REFUSED'],
+  ['load', 'Leitura genérica', 'Porta de leitura', 'READS'],
+  ['companies', 'Empresas', 'Cadastros', 'READS'],
+  ['partners', 'Clientes', 'Cadastros', 'NOT_TESTED'],
+  ['products', 'Produtos', 'Produtos', 'UNREADABLE'],
+  ['orders', 'Pedidos', 'Vendas', 'READS'],
+  ['taxes', 'Impostos dos pedidos', 'Vendas', 'NOTHING_TO_READ'],
 ] as const
 
 const TEST_WORKING = ok(testConnection, {
   result: 'WORKING',
-  checks: CHECKS.map(([id, label, outcome]) => ({ id, label, outcome })),
+  checks: CHECKS.map(([id, label, subject, outcome]) => ({ id, label, subject, outcome })),
   connection: WORKING,
 })
 
