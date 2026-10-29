@@ -123,7 +123,7 @@ most colorful thing on screen. Ipê is the warm gold accent; prose is sans and f
   Tokens let both themes change in one file. The Prévia's drawn phone frame is the color token
   `phone-frame` (`dark-phone-frame` in the dark theme, where `#1d2125` would vanish into the stage)
   rather than a raw value; founder, 2026-10-28, on proposal B, Janela, of the Prévia screen: "1. Sim".
-  [review]
+  [rule to write]
 - **V5.** Ipê **should** distinguish current activity and choice: focus, caret, selection, active
   lens and working agent, not every resting action or heading. The send hover keeps its current
   accent. Failure: making everything gold hides the difference between focus and decoration. The
@@ -176,7 +176,7 @@ churn, not runtime style enforcement; do not extend this check to vendor-generat
 - **V22.** Every radius comes from `rounded`: `control` for buttons and inputs, `object` for windows,
   popovers and panels, `card` for Project cards, `composer` for the composer, `pill` for chips.
   Regions and panes take none. One more radius, 36 px, is for the Prévia's drawn phone frame only,
-  as its own token, `rounded.phone`; founder, 2026-10-28: "1. Sim". [review]
+  as its own token, `rounded.phone`; founder, 2026-10-28: "1. Sim". [rule to write]
 
 ## Components
 

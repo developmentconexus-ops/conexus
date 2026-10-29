@@ -92,7 +92,7 @@ Login social. Arquivos enviados por pessoas para dentro de um app ou da máquina
 | 20.1 Escrever pelo app | A 20 | Nenhuma | Leitura, escrita, destrutiva. Escrita nova pede nova liberação |
 | 20.2 App que se atualiza | A 20 | Nenhuma | Avisos do fornecedor (S48) |
 | 20.3 Jet | A 20 | Quem pede o ambiente de teste | Fornecedor com documentação fina |
-| 20.4 Notificações | A 20 | Nenhuma | O estudo do portal de eventos |
+| 20.4 Notificações | A 20 | Nenhuma | O estudo do portal de eventos. Fundador, 2026-10-29: "podemos ir depois da 20 as notificações" |
 | 21 Outras contas | A 12 | Nenhuma | A leitura dos termos da OpenAI |
 | 21.1 Ver o que acontece | A 20 | Grafana no Brasil, provado | Um só caminho OTel (0052) |
 | 16 Atualizar sem cortar | A 14 | Nenhuma | Consertos de execução da auditoria. Testes 9 e 10 |

@@ -161,7 +161,7 @@ refused for its media type or its origin.
 - **Library line.** `better-auth/dist/plugins/organization/routes/crud-invites.mjs:128-132`:
   `createInvitation` refuses an address with any open invitation in the company
   (`findPendingInvitation`, `adapter.mjs:753-768`), so one person cannot hold a company invitation
-  and an app's, or two apps', at once. `:268`: the acceptance checks the deadline. `:322`: the
+  and an app's, or two apps', at once. `:268`: the acceptance checks the deadline. `:324`: the
   acceptance always writes the member. The library knows no invitation that does not make a member.
 - **Hand-made piece.** The invitation row carries two Hub fields, `project_id` and `app_role`
   (`additionalFields` in `auth.ts`), and an app's invitation has `role` NULL; the check
@@ -191,7 +191,7 @@ refused for its media type or its origin.
 ### A person given one app: the Hub's own table, since the library's teams need a member
 
 - **Library line.** `better-auth/dist/plugins/organization/routes/crud-team.mjs:637-640`: adding a
-  person to a team refuses one who is not a member of the company. `crud-invites.mjs:322`: an
+  person to a team refuses one who is not a member of the company. `crud-invites.mjs:324`: an
   accepted invitation always writes the member. The library keeps no (person, app, role) pair for
   someone outside the company.
 - **Hand-made piece.** `projects.app_access`, one row per Projeto and person (primary key
