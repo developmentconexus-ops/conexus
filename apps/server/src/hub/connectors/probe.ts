@@ -9,7 +9,7 @@ export type Probed =
 
 type Deadlines = { executor: Executor; callDeadlineMs: number; testDeadlineMs: number }
 type Ended = Exclude<Probed, { result: 'WORKING' }>
-type Outcome = TestCheck['outcome']
+type Outcome = Exclude<TestCheck['outcome'], 'SOURCE_UNREAD'>
 
 /** The first source the operation reads from that did not read (refused, unreadable or not tested): a null probe would then say nothing about the item. A source that read nothing did read. */
 function unread(
@@ -18,7 +18,10 @@ function unread(
 ) {
   return operation.from
     .map((id) => outcomes.get(id))
-    .find((check) => check?.outcome !== 'READS' && check?.outcome !== 'NOTHING_TO_READ')
+    .find(
+      (check) =>
+        check !== undefined && check.outcome !== 'READS' && check.outcome !== 'NOTHING_TO_READ',
+    )
 }
 
 /**
@@ -90,22 +93,28 @@ export async function probed(deps: Deadlines, opened: OpenedConnection): Promise
   }
 
   const checks: TestCheck[] = []
-  let outOfTime = false
   for (const operation of inProbeOrder(connector)) {
-    const late: boolean = outOfTime || spent()
-    const source: TestCheck | undefined = late ? undefined : unread(operation, outcomes)
-    const outcome: Outcome | Ended =
-      late || source !== undefined ? 'NOT_TESTED' : await read(operation)
-    if (typeof outcome === 'object') return outcome
-    outOfTime ||= source === undefined && outcome === 'NOT_TESTED'
     const subject = connector.subjects[operation.subject] ?? operation.subject
-    const check = { id: operation.id, label: operation.label, subject, outcome }
+    const item = { id: operation.id, label: operation.label, subject }
+    const check = await checked(operation, item)
+    if ('result' in check) return check
     outcomes.set(operation.id, check)
-    checks.push(
-      source === undefined
-        ? check
-        : { ...check, dependsOn: { id: source.id, label: source.label } },
-    )
+    checks.push(check)
   }
   return { result: 'WORKING', checks }
+
+  /**
+   * The deadline first: past it the true reason is the delay, even for an item whose source did not
+   * read; then the sources, then the call.
+   */
+  async function checked(
+    operation: Operation<unknown, unknown>,
+    item: Omit<TestCheck, 'outcome'>,
+  ): Promise<TestCheck | Ended> {
+    if (spent()) return { ...item, outcome: 'NOT_TESTED' }
+    const source = unread(operation, outcomes)
+    if (source !== undefined) return { ...item, outcome: 'SOURCE_UNREAD', source: source.label }
+    const outcome = await read(operation)
+    return typeof outcome === 'object' ? outcome : { ...item, outcome }
+  }
 }

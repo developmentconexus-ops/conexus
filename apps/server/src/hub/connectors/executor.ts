@@ -8,6 +8,7 @@ import type {
 import { readToken, requestOf, tokenRequest, toRequest } from '@conexus/connectors'
 import type { ConnectionId } from '@conexus/hub-api'
 import { z } from 'zod'
+import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { Credential } from '../../platform/seal.ts'
 import { Secret } from '../../platform/secret.ts'
@@ -59,6 +60,7 @@ function valuesOf(connection: OpenedConnection): Readonly<Record<string, string>
   try {
     return credential.parse(JSON.parse(connection.credential.reveal()))
   } catch (cause) {
+    if (!(cause instanceof SyntaxError || cause instanceof z.ZodError)) throw cause
     throw new Failure('SEAL_REFUSED', { details: { reason: 'credential shape' }, cause })
   }
 }
@@ -85,15 +87,29 @@ async function bodyOf(response: Response): Promise<Uint8Array | Unreadable> {
 function answerOf(status: number, bytes: Uint8Array): ProviderAnswer | Unreadable {
   if (bytes.byteLength === 0) return { status, body: undefined }
   try {
-    return { status, body: z.unknown().parse(JSON.parse(Buffer.from(bytes).toString('utf8'))) }
-  } catch {
-    return UNREADABLE
+    const body: unknown = JSON.parse(Buffer.from(bytes).toString('utf8'))
+    return { status, body }
+  } catch (error) {
+    if (error instanceof SyntaxError) return UNREADABLE
+    throw error
   }
+}
+
+/**
+ * What fetch documents for a provider that cannot be reached: a network failure or a refused
+ * redirect (TypeError), the deadline (TimeoutError) or an abort. Anything else is a bug and goes up.
+ */
+function unreachableKind(error: unknown): string | undefined {
+  if (error instanceof TypeError) return error.name
+  if (error instanceof DOMException && ['TimeoutError', 'AbortError'].includes(error.name))
+    return error.name
+  return undefined
 }
 
 export function createExecutor(deps: {
   fetch: typeof fetch
   origins: ReadonlyMap<ConnectorId, string>
+  log: FailureLog
 }): Executor {
   function originOf(connector: Connector): string {
     return deps.origins.get(connector.id) ?? connector.origin
@@ -101,10 +117,12 @@ export function createExecutor(deps: {
 
   /**
    * Sends one request (the OS's `send`): a redirect refused by fetch, a 5xx's body cancelled unread,
-   * the rest read up to the cap and parsed only at the end. The provider's body is never logged.
+   * the rest read up to the cap and parsed only at the end. An unreachable provider is logged by
+   * the kind of error and the connector alone; its body is never logged.
    */
   async function send(
     request: Request,
+    connector: Connector,
     deadlineMs: number,
   ): Promise<ProviderAnswer | Unreadable | Unreachable> {
     // Outside the `try`: a deadline the timer refuses is the caller's mistake, not the provider down.
@@ -117,7 +135,10 @@ export function createExecutor(deps: {
       }
       const body = await bodyOf(response)
       return 'kind' in body ? body : answerOf(response.status, body)
-    } catch {
+    } catch (error) {
+      const kind = unreachableKind(error)
+      if (kind === undefined) throw error
+      deps.log.info({ kind, connector: connector.id }, 'CONNECTOR_UNREACHABLE')
       return UNREACHABLE
     }
   }
@@ -132,7 +153,7 @@ export function createExecutor(deps: {
         null,
         originOf(connector),
       )
-      const sent = await send(request, deadlineMs)
+      const sent = await send(request, connector, deadlineMs)
       // A login answered with what the kit cannot read is the provider's fault, not the key's.
       if ('kind' in sent) return UNREACHABLE
       const token = readToken(auth, sent)
@@ -149,7 +170,7 @@ export function createExecutor(deps: {
         token.reveal(),
         originOf(connector),
       )
-      const sent = await send(request, deadlineMs)
+      const sent = await send(request, connector, deadlineMs)
       return 'kind' in sent ? sent : operation.answer(sent)
     },
   }

@@ -4,6 +4,7 @@ import { TEST_DEADLINE_MS } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
 import type { Config } from '../../platform/config.ts'
 import type { Database } from '../../platform/database.ts'
+import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { SealKeys } from '../../platform/seal.ts'
 import type { IdentityPorts } from '../identity/public.ts'
@@ -28,6 +29,7 @@ export function createConnectors(deps: {
   database: Database
   identity: IdentityPorts
   config: Pick<Config, 'sealKeys' | 'connectorOrigins'>
+  log: FailureLog
   deadlines?: ConnectorDeadlines
 }) {
   const origins = new Map<ConnectorId, string>()
@@ -39,7 +41,7 @@ export function createConnectors(deps: {
       })
     origins.set(connector.id, origin)
   }
-  const executor = createExecutor({ fetch, origins })
+  const executor = createExecutor({ fetch, origins, log: deps.log })
   const routeDeps = {
     ...deps,
     sealKeys: deps.config.sealKeys,

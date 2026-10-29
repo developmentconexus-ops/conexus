@@ -3,6 +3,7 @@ import { test } from 'node:test'
 import type { Operation } from '@conexus/hub-api'
 import {
   createSession,
+  getConnection,
   getHealth,
   linkConnection,
   listCompanies,
@@ -116,6 +117,8 @@ test('as rotas das ligações estão no documento, com o seu sucesso e as suas f
   assert.deepEqual(declared(linkConnection, 201), ['application/json'])
   assert.deepEqual(declared(linkConnection, 409), [PROBLEM])
   assert.deepEqual(declared(linkConnection, 422), [PROBLEM])
+  assert.deepEqual(declared(getConnection, 200), ['application/json'])
+  assert.deepEqual(declared(getConnection, 404), [PROBLEM])
   assert.deepEqual(declared(testConnection, 200), ['application/json'])
   assert.deepEqual(declared(testConnection, 500), [PROBLEM])
   assert.deepEqual(declared(unlinkConnection, 404), [PROBLEM])
