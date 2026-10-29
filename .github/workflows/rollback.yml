@@ -26,6 +26,7 @@ jobs:
       contents: read
     outputs:
       reference: ${{ steps.reference.outputs.reference }}
+      template: ${{ steps.reference.outputs.template }}
     steps:
       - name: The version is a version name
         env:
@@ -38,13 +39,16 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Find the digest main's Publish recorded for the version
+      # A version published before templates were recorded has none: the Hub keeps the running one.
+      - name: Find the digest and the template main's Publish recorded for the version
         id: reference
         env:
           VERSION: ${{ inputs.version }}
         run: |
-          reference="$(infra/releases.sh find "$VERSION")"
+          found="$(infra/releases.sh find "$VERSION")"
+          read -r reference template <<< "$found"
           echo "reference=$reference" >> "$GITHUB_OUTPUT"
+          echo "template=$template" >> "$GITHUB_OUTPUT"
 
   # The edge goes back before the Hub, by publishing the earlier release's code with the script
   # that publishes. Not `wrangler rollback`: a Worker in a namespace has no versions, so it would
@@ -100,4 +104,5 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - env:
           REFERENCE: ${{ needs.record.outputs.reference }}
-        run: infra/deploy.sh "$REFERENCE"
+          TEMPLATE: ${{ needs.record.outputs.template }}
+        run: infra/deploy.sh "$REFERENCE" "$TEMPLATE"

@@ -73,6 +73,37 @@ jobs:
           package-type: container
           min-versions-to-keep: 10
 
+  # The Builder's E2B template from the Release's commit, on a GitHub-hosted machine once the image
+  # job found that commit on main: the SDK the Hub's image expects travels with it, so the deploy
+  # never pairs a new Hub with an old template. Every Release builds; E2B reuses the cached layers
+  # of an unchanged one. The key reaches only the build step. A failed build or proof fails the
+  # Release before the deploy, and the running Hub keeps its image and template.
+  template:
+    needs: image
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    outputs:
+      template: ${{ steps.build.outputs.template }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/install # zizmor: ignore[self-repository] actionlint 1.7.12 rejects the $/ form
+      - id: build
+        env:
+          E2B_API_KEY: ${{ secrets.E2B_API_KEY }}
+        run: |
+          set -o pipefail
+          line="$(node infra/e2b/template.ts | tee /dev/stderr | tail -n 1)"
+          if ! [[ "$line" =~ ^HUB_E2B_TEMPLATE=(conexus-builder:[0-9a-f]{7,40})$ ]]; then
+            echo "the build did not end with the template's name"
+            exit 1
+          fi
+          echo "template=${BASH_REMATCH[1]}" >> "$GITHUB_OUTPUT"
+
   # The two versions of Recados the founder sends from Configurações (P1 A), built from the Release's
   # commit on a GitHub-hosted machine once the image job found that commit on main. The build runs
   # every dependency's install with a read-only token; only the next job, with no checkout and no
@@ -119,7 +150,7 @@ jobs:
         run: gh release upload "$VERSION" recados-*.zip --clobber --repo "$GITHUB_REPOSITORY"
 
   deploy:
-    needs: image
+    needs: [image, template]
     runs-on: [self-hosted, hub]
     environment: production
     timeout-minutes: 10
@@ -138,12 +169,14 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - env:
           REFERENCE: ${{ needs.image.outputs.reference }}
-        run: infra/deploy.sh "$REFERENCE"
+          TEMPLATE: ${{ needs.template.outputs.template }}
+        run: infra/deploy.sh "$REFERENCE" "$TEMPLATE"
       # Voltar atrás deploys only what is recorded here: a tag can be rewritten, a digest cannot.
       - env:
           VERSION: ${{ github.event.release.tag_name }}
           REFERENCE: ${{ needs.image.outputs.reference }}
-        run: infra/releases.sh record "$VERSION" "$REFERENCE"
+          TEMPLATE: ${{ needs.template.outputs.template }}
+        run: infra/releases.sh record "$VERSION" "$REFERENCE" "$TEMPLATE"
 
   # After the Hub, from the Release's own commit. A failed step fails the Release; the Hub stays
   # new and each Worker already published stays, and the rest keep the previous code.

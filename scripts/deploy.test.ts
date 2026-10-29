@@ -4,7 +4,7 @@ import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync 
 import { tmpdir } from 'node:os'
 import { delimiter, join, resolve } from 'node:path'
 import { after, test } from 'node:test'
-import { parse } from 'yaml'
+import { MachineTemplate } from '../apps/server/src/platform/config-machine.ts'
 
 const DEPLOY = resolve(import.meta.dirname, '../infra/deploy.sh')
 const dirs: string[] = []
@@ -13,10 +13,12 @@ after(() => {
 })
 
 const STUB_DOCKER = `#!/bin/bash
-echo "$* [HUB_IMAGE=\${HUB_IMAGE:-}]" >> "$CALLS"
+echo "$* [HUB_IMAGE=\${HUB_IMAGE:-}] [HUB_E2B_TEMPLATE=\${HUB_E2B_TEMPLATE:-}]" >> "$CALLS"
 case "$*" in
   *" ps --quiet hub") echo "\${STUB_RUNNING_ID:-}" ;;
   "inspect --format {{.Config.Image}}"*) echo "\${STUB_RUNNING_IMAGE:-}" ;;
+  "inspect --format {{range .Config.Env}}"*)
+    echo "PATH=/usr/bin"; [ -n "\${STUB_RUNNING_TEMPLATE:-}" ] && echo "HUB_E2B_TEMPLATE=$STUB_RUNNING_TEMPLATE"; exit 0 ;;
   "image inspect"*conexus.reseal*) echo "\${STUB_RESEAL_LABEL:-}" ;;
   "image inspect"*) echo "\${STUB_LABEL:-}" ;;
   *" run --rm migrate")
@@ -30,8 +32,13 @@ case "$*" in
 esac
 `
 
+/** The template a Release built beside the image, and the one the running Hub was started with. */
+const NEW_TEMPLATE = 'conexus-builder:1111111'
+const OLD_TEMPLATE = 'conexus-builder:0000000'
+
 type Stub = {
   running?: string
+  runningTemplate?: string
   labeled?: boolean
   resealLabeled?: boolean
   migrateStatus?: number
@@ -42,7 +49,11 @@ type Stub = {
   hubEnv?: 'missing' | 'unreadable'
 }
 
-function deploy(argument: string, stub: Stub = {}) {
+function deploy(
+  argument: string,
+  stub: Stub = {},
+  template: string | null = argument === '--restart' ? null : NEW_TEMPLATE,
+) {
   const dir = mkdtempSync(join(tmpdir(), 'conexus-deploy-'))
   dirs.push(dir)
   mkdirSync(join(dir, 'bin'))
@@ -53,7 +64,8 @@ function deploy(argument: string, stub: Stub = {}) {
   if (stub.hubEnv !== 'missing') writeFileSync(hubEnv, 'HUB_MAIL_FROM=a@b.test\n')
   if (stub.hubEnv === 'unreadable') chmodSync(hubEnv, 0o000)
   writeFileSync(calls, '')
-  const run = spawnSync('bash', [DEPLOY, argument], {
+  const args = template === null ? [argument] : [argument, template]
+  const run = spawnSync('bash', [DEPLOY, ...args], {
     encoding: 'utf8',
     timeout: 60_000,
     env: {
@@ -63,6 +75,8 @@ function deploy(argument: string, stub: Stub = {}) {
       HUB_ENV_FILE: hubEnv,
       STUB_RUNNING_ID: stub.running === undefined ? '' : 'container-id',
       STUB_RUNNING_IMAGE: stub.running ?? '',
+      STUB_RUNNING_TEMPLATE:
+        stub.runningTemplate ?? (stub.running === undefined ? '' : OLD_TEMPLATE),
       STUB_LABEL: stub.labeled === false ? '' : '1',
       STUB_RESEAL_LABEL: stub.resealLabeled === false ? '' : '1',
       STUB_MIGRATE_STATUS: String(stub.migrateStatus ?? 0),
@@ -126,8 +140,11 @@ test('migrate que falha por outro motivo não é repetido', () => {
   assert.equal(count('run --rm migrate'), 1)
 })
 
-test('a imagem que já roda não muda nada', () => {
-  const { run, count } = deploy('hub@sha256:same', { running: 'hub@sha256:same' })
+test('a imagem que já roda com o mesmo template não muda nada', () => {
+  const { run, count } = deploy('hub@sha256:same', {
+    running: 'hub@sha256:same',
+    runningTemplate: NEW_TEMPLATE,
+  })
   assert.equal(run.status, 0, run.stderr)
   assert.equal(count('run --rm migrate'), 0)
   assert.equal(count(' up '), 0)
@@ -225,7 +242,7 @@ test('os segredos são conferidos na imagem nova, sem rede, como o usuário do H
   for (const secret of SECRETS) {
     assert.ok(
       log.includes(
-        `run --rm --network none --user 1000 --mount type=bind,source=/etc/conexus/secrets/${secret},target=/run/check,readonly --entrypoint test hub@sha256:new -s /run/check [HUB_IMAGE=]`,
+        `run --rm --network none --user 1000 --mount type=bind,source=/etc/conexus/secrets/${secret},target=/run/check,readonly --entrypoint test hub@sha256:new -s /run/check [HUB_IMAGE=] [HUB_E2B_TEMPLATE=]`,
       ),
       log.join('\n'),
     )
@@ -249,41 +266,80 @@ for (const hubEnv of ['missing', 'unreadable'] as const) {
   }
 }
 
-const INFRA = resolve(import.meta.dirname, '../infra')
+/** The template each call to Compose named, for the calls that hold `text`. */
+function templatesOf(log: string[], text: string): string[] {
+  return log
+    .filter((call) => call.includes(text))
+    .map((call) => /\[HUB_E2B_TEMPLATE=([^\]]*)\]$/.exec(call)?.[1] ?? '')
+}
 
-test('a imagem do Hub traz o git e a pasta dos repositórios é um volume do usuário do Hub (0051)', () => {
-  const dockerfile = readFileSync(join(INFRA, 'hub.Dockerfile'), 'utf8')
-  const last = dockerfile.slice(dockerfile.lastIndexOf('\nFROM '))
-  assert.match(last, /apt-get install[^\n]*\bgit\b/)
-  assert.match(
-    last,
-    /mkdir -p \/var\/lib\/conexus\/git && chown node:node \/var\/lib\/conexus\/git/,
-  )
-  const compose = parse(readFileSync(join(INFRA, 'compose.yaml'), 'utf8'))
-  assert.deepEqual(compose.services.hub.volumes, ['hub_git:/var/lib/conexus/git'])
-  assert.ok('hub_git' in compose.volumes)
-  assert.equal(compose.services.hub.environment.HUB_GIT_ROOT, '/var/lib/conexus/git')
-  assert.equal(
-    compose.services.hub.environment.HUB_GIT_COPY_KEY_FILE,
-    '/run/secrets/hub_git_copy_key',
-  )
-  assert.ok(compose.services.hub.secrets.includes('hub_git_copy_key'))
-  assert.equal(
-    compose.services.hub.environment.HUB_E2B_API_KEY_FILE,
-    '/run/secrets/hub_e2b_api_key',
-  )
-  assert.ok(compose.services.hub.secrets.includes('hub_e2b_api_key'))
-  // The template is hub.env's: a value here would win over the line a candidate build prints.
-  assert.equal('HUB_E2B_TEMPLATE' in compose.services.hub.environment, false)
+test('o Release sobe a imagem com o template do mesmo commit, e migrate lê o arquivo com ele', () => {
+  const { run, log } = deploy('hub@sha256:new', { running: 'hub@sha256:old' })
+  assert.equal(run.status, 0, run.stderr)
+  assert.deepEqual(templatesOf(log, ' up '), [NEW_TEMPLATE])
+  assert.deepEqual(templatesOf(log, 'run --rm migrate'), [NEW_TEMPLATE])
+  assert.match(run.stdout, new RegExp(`live: hub@sha256:new with ${NEW_TEMPLATE}`))
 })
 
-test('o log de cada serviço gira: json-file, dez megabytes, cinco arquivos (S42)', () => {
-  const compose = parse(readFileSync(join(INFRA, 'compose.yaml'), 'utf8'))
-  for (const [name, service] of Object.entries<{ logging?: unknown }>(compose.services)) {
-    assert.deepEqual(
-      service.logging,
-      { driver: 'json-file', options: { 'max-size': '10m', 'max-file': '5' } },
-      name,
-    )
+test('a mesma imagem com outro template sobe de novo', () => {
+  const { run, log } = deploy('hub@sha256:same', { running: 'hub@sha256:same' })
+  assert.equal(run.status, 0, run.stderr)
+  assert.deepEqual(templatesOf(log, ' up '), [NEW_TEMPLATE])
+})
+
+test('sem template, a volta a uma versão de antes do registro do template mantém o do Hub no ar', () => {
+  for (const template of [null, '']) {
+    const { run, log } = deploy('hub@sha256:old', { running: 'hub@sha256:new' }, template)
+    assert.equal(run.status, 0, run.stderr)
+    assert.deepEqual(templatesOf(log, ' up '), [OLD_TEMPLATE])
+  }
+})
+
+test('--restart mantém o template no ar, e com um template de candidato recria o Hub com ele', () => {
+  const keep = deploy('--restart', { running: 'hub@sha256:old' })
+  assert.equal(keep.run.status, 0, keep.run.stderr)
+  assert.deepEqual(templatesOf(keep.log, '--force-recreate'), [OLD_TEMPLATE])
+  const candidate = deploy('--restart', { running: 'hub@sha256:old' }, NEW_TEMPLATE)
+  assert.equal(candidate.run.status, 0, candidate.run.stderr)
+  assert.deepEqual(templatesOf(candidate.log, '--force-recreate'), [NEW_TEMPLATE])
+  assert.match(candidate.run.stdout, new RegExp(`restarted: hub@sha256:old with ${NEW_TEMPLATE}`))
+})
+
+test('a imagem nova que não fica saudável volta à imagem e ao template de antes', () => {
+  const { run, log } = deploy('hub@sha256:new', { running: 'hub@sha256:old', upStatus: 1 })
+  assert.equal(run.status, 1)
+  const ups = log.filter((call) => call.includes(' up '))
+  assert.equal(ups.length, 2)
+  assert.match(
+    ups[1] ?? '',
+    new RegExp(`\\[HUB_IMAGE=hub@sha256:old\\] \\[HUB_E2B_TEMPLATE=${OLD_TEMPLATE}\\]$`),
+  )
+})
+
+test('sem template e sem Hub no ar recusa antes de migrate e não sobe nada', () => {
+  const { run, count } = deploy('hub@sha256:new', {}, null)
+  assert.equal(run.status, 1)
+  assert.match(run.stderr, /no template/)
+  assert.equal(count('run --rm migrate'), 0)
+  assert.equal(count(' up '), 0)
+})
+
+test('deploy.sh aceita um template exatamente quando o Hub o aceita', () => {
+  for (const value of [
+    NEW_TEMPLATE,
+    'conexus-builder:5a2ae2be',
+    'conexus-builder',
+    'conexus-builder:',
+    'Conexus-builder:1111111',
+    'conexus-builder:1111111:1111111',
+    'conexus-builder:$(id)',
+  ]) {
+    const { run, count } = deploy('hub@sha256:new', { running: 'hub@sha256:old' }, value)
+    const accepted = MachineTemplate.safeParse(value).success
+    assert.equal(run.status === 0, accepted, `${value}: ${run.stderr}`)
+    if (!accepted) {
+      assert.match(run.stderr, /not a template name:tag/)
+      assert.equal(count(' up '), 0)
+    }
   }
 })

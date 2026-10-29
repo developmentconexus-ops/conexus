@@ -124,3 +124,57 @@ test('máquina: um E2B que falha na lista faz a morte falhar, sem dizer pronto',
   )
   await assert.rejects(api.kill(CONVERSATION))
 })
+
+test('máquina: depois de um Release, mata só as da conversa de outro template ou sem template, e guarda a do template do Hub', async (t) => {
+  const seen: string[] = []
+  const machines = {
+    'sb-old': 'conexus-builder:0000000',
+    'sb-none': undefined,
+    'sb-new': 'conexus-builder:1111111',
+  }
+  const server = createServer((request, response) => {
+    seen.push(`${request.method} ${request.url}`)
+    response.setHeader('content-type', 'application/json')
+    if (request.method !== 'GET') return response.end('')
+    response.end(
+      JSON.stringify(
+        Object.entries(machines).map(([sandboxID, template]) => ({
+          sandboxID,
+          templateID: 't',
+          alias: 'conexus-builder',
+          clientID: 'c',
+          startedAt: new Date().toISOString(),
+          endAt: new Date().toISOString(),
+          cpuCount: 2,
+          memoryMB: 512,
+          diskSizeMB: 1024,
+          envdVersion: '0.1.0',
+          state: 'paused',
+          metadata: {
+            [MARK.origin]: 'hub.example.test',
+            [MARK.conversation]: CONVERSATION,
+            ...(template === undefined ? {} : { [MARK.template]: template }),
+          },
+        })),
+      ),
+    )
+  })
+  await new Promise<void>((done) => server.listen(0, '127.0.0.1', done))
+  t.after(() => server.close())
+  const address = server.address()
+  assert.ok(address !== null && typeof address === 'object')
+  const api = createE2bApi(
+    testConfig(await unreachableDatabaseUrl()),
+    { conexus_origin: 'hub.example.test' },
+    `http://127.0.0.1:${address.port}`,
+  )
+  assert.equal(await api.killStale(CONVERSATION, 'conexus-builder:1111111'), 2)
+  assert.match(
+    decodeURIComponent(seen[0] ?? ''),
+    new RegExp(`conexus_conversation=${CONVERSATION}`),
+  )
+  assert.deepEqual(
+    seen.slice(1).map((line) => line.split('?')[0]),
+    ['DELETE /sandboxes/sb-old', 'DELETE /sandboxes/sb-none'],
+  )
+})

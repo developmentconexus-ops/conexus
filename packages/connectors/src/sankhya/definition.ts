@@ -1,9 +1,24 @@
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { z } from 'zod'
 import { clientCredentials } from '../kernel/auth.ts'
 import { defineConnector } from '../kernel/definition.ts'
 import { sankhyaDoor } from './door.ts'
-import { sankhyaOperations } from './operations.ts'
+import { sankhyaOperations, sankhyaSubjects } from './operations/index.ts'
+
+const SKILL = new URL('./skill/', import.meta.url)
+
+/** The skill as its folder holds it: `SKILL.md`, and each part of `references/` by file name. */
+function readSkill() {
+  const references = new URL('references/', SKILL)
+  return {
+    content: readFileSync(new URL('SKILL.md', SKILL), 'utf8'),
+    references: Object.fromEntries(
+      readdirSync(references)
+        .sort()
+        .map((name) => [name, readFileSync(new URL(name, references), 'utf8')]),
+    ),
+  }
+}
 
 export const sankhya = defineConnector({
   id: 'sankhya',
@@ -36,7 +51,8 @@ export const sankhya = defineConnector({
       })),
   }),
   oneRequestAtATime: true, // a second call on the same token cancels the first (envelope "4")
+  subjects: { porta: 'Porta de leitura', ...sankhyaSubjects },
   operations: sankhyaOperations,
   readDoor: sankhyaDoor,
-  skill: readFileSync(new URL('./skill/SKILL.md', import.meta.url), 'utf8'),
+  skill: readSkill(),
 })

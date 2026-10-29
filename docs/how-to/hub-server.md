@@ -49,8 +49,8 @@ login, which only `migrate` mounts. `migrate` creates Mastra's database.
 
 The volume `hub_git` holds each app's Git. The founder makes a private R2 bucket and its key; firstmate
 writes `hub_git_copy_key` (`<key id> <secret>`), `hub_e2b_api_key` and, in `hub.env`,
-`HUB_GIT_COPY_BUCKET`, `HUB_INSTALLATION_ID` (`openssl rand -hex 12`) and `HUB_E2B_TEMPLATE` (no
-default: the Hub stops at boot without it), built as [builder-template](builder-template.md) says ([0051](../decisions/0051-builder-machine-git-and-copy-in-r2.md)). Every installation makes its own id and never copies production's `hub.env`: the id alone keeps
+`HUB_GIT_COPY_BUCKET` and `HUB_INSTALLATION_ID` (`openssl rand -hex 12`)
+([0051](../decisions/0051-builder-machine-git-and-copy-in-r2.md)). Every installation makes its own id and never copies production's `hub.env`: the id alone keeps
 machines apart.
 
 ## Session secret and first person
@@ -70,9 +70,9 @@ ends every session. The model accounts' seal keys: [seal-keys](seal-keys.md).
 ## Publish
 
 Merging into `main` publishes nothing. Create a GitHub Release tagged `v<n>.<n>.<n>` on a commit of
-`main`. The workflow Publish builds the image, keeps the last ten, and runs `infra/deploy.sh` on the
-server. A tag on another commit ends red and the Hub does not change. Keeping ten images needs Admin
-in the package's Actions access ([apps-edge](apps-edge.md)).
+`main`. Publish builds the image, keeps the last ten, builds [the Builder's
+template](builder-template.md) from that commit and runs `infra/deploy.sh` with both on the server.
+A tag on another commit or a failed template ends red; the Hub does not change. Keeping ten images needs Admin in the package's Actions access ([apps-edge](apps-edge.md)).
 
 Before it starts the new image, `deploy.sh` runs `migrate` for 60 seconds, only when the image
 carries the label `conexus.migrate=1`. A failed `migrate` leaves the live Hub as it is and ends the
@@ -91,8 +91,8 @@ about 1 to 2 s, until step 16. A check that polls through it expects those 502s 
 ## Put back
 
 Actions, Voltar atrás, Run workflow, with a version whose digest main's Publish recorded on the
-server; no record ends red. Running it again changes nothing. An image from before step 2 has no
-label, so putting it back skips `migrate`.
+server, with its template; no record ends red. Running it again changes nothing. An image from
+before step 2 has no label, so putting it back skips `migrate`.
 
 ## When it fails
 

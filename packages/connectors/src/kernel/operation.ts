@@ -30,9 +30,12 @@ export const OperationId = z
   .brand('OperationId')
 export type OperationId = z.infer<typeof OperationId>
 
+const Subject = z.string().regex(/^[a-z]+$/)
+
 export type Operation<I, O, C extends OperationClass = OperationClass> = Readonly<{
   id: OperationId
   class: C // required, no default
+  subject: string // a key of the connector's `subjects`: what the skill groups it under
   idempotent: boolean
   summary: string // one line, Portuguese: the skill and, later, the tool read it
   label: string // what Testar shows ("Pedidos")
@@ -49,7 +52,11 @@ export type Operation<I, O, C extends OperationClass = OperationClass> = Readonl
 export function defineOperation<I, O, C extends OperationClass>(
   operation: Omit<Operation<I, O, C>, 'id'> & { id: string },
 ): Operation<I, O, C> {
-  return Object.freeze({ ...operation, id: OperationId.parse(operation.id) })
+  return Object.freeze({
+    ...operation,
+    id: OperationId.parse(operation.id),
+    subject: Subject.parse(operation.subject),
+  })
 }
 
 /** The only way a request is built from an input: the operation's own schema parses it first, so a refused input never reaches `request`. */

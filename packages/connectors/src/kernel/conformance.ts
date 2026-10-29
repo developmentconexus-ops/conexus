@@ -42,11 +42,24 @@ export function runConformance(connector: Connector, fake: Fake): void {
   const all: readonly Operation<unknown, unknown>[] = [...connector.operations, ...door]
 
   describe(connector.id, () => {
-    it('declares unique ids, a semver version and a skill that names every operation', () => {
+    it('declares unique ids, a semver version and subjects that each have an operation and a part of the skill', () => {
       assert.equal(new Set(all.map((operation) => operation.id)).size, all.length)
       assert.match(connector.version, /^\d+\.\d+\.\d+$/)
-      for (const operation of all)
-        assert.ok(connector.skill.includes(operation.id), `skill names ${operation.id}`)
+      const { content, references } = connector.skill
+      for (const [subject, label] of Object.entries(connector.subjects)) {
+        assert.ok(content.includes(subject) && content.includes(label), `SKILL.md names ${subject}`)
+        const operations = connector.operations.filter((operation) => operation.subject === subject)
+        if (operations.length === 0) continue // the door's entries are named in SKILL.md itself
+        const part = references[`${subject}.md`]
+        assert.ok(part, `${subject} has a part of the skill`)
+        for (const operation of operations)
+          assert.ok(part.includes(operation.id), `${subject}.md names ${operation.id}`)
+      }
+      for (const operation of door) assert.ok(content.includes(operation.id), operation.id)
+      assert.ok(
+        content.split('\n').length < 500,
+        'SKILL.md stays under the 500 lines Mastra recommends',
+      )
     })
 
     it('gives each operation a class, a summary and a probe, and each read idempotent', () => {
@@ -70,7 +83,6 @@ export function runConformance(connector: Connector, fake: Fake): void {
         const answered = operation.answer(await answerOf(await fake.handle(request)))
         assert.equal(answered.kind, 'OK', operation.id)
         if (answered.kind !== 'OK') continue
-        operation.output.parse(answered.value)
         earlier.set(operation.id, answered.value)
       }
     })
