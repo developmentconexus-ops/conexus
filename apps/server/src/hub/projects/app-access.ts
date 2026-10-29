@@ -19,7 +19,7 @@ import type { CommandTx, Database, ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import { after, pageKey, pageOf } from '../../platform/pages.ts'
 import type { IdentityPorts, ProjectApps } from '../identity/public.ts'
-import { appsOfPerson, liveProjectOf } from './hosts.ts'
+import { liveProjectOf } from './hosts.ts'
 import type { AppSessionsEnd, PublishedRolesOf } from './ports.ts'
 import { appAccess, project } from './tables.ts'
 
@@ -260,9 +260,13 @@ export function readCompanyAccess(
   page: string | undefined,
 ) {
   return deps.database.read(scopeOf(input), async (tx) => {
-    const { companyId } = input
-    const personId = input.person.id
-    await deps.identity.admitMember({ tx, personId, companyId, action: 'readAppAccess' })
+    const { companyId, person } = input
+    const admitted = await deps.identity.admitMember({
+      tx,
+      personId: person.id,
+      companyId,
+      action: 'readAppAccess',
+    })
     const members = (await deps.identity.companyMembersOf(tx, companyId)).map((one) => one.personId)
     const key = pageKey(page, PersonIdSchema)
     const live = and(
@@ -316,6 +320,7 @@ export function readCompanyAccess(
         ]
       }),
       next: listed.next,
+      mayManage: deps.identity.allows(admitted.role, 'manageAppAccess'),
     }
   })
 }
@@ -331,9 +336,4 @@ async function labelsOf(
     for (const role of roles) labels.set(`${projectId}:${role.name}`, role.label)
   }
   return labels
-}
-
-/** The apps the person uses, from any company, for the Hub of someone in no company (F1). */
-export function readMyApps(deps: AccessDeps, person: Person) {
-  return appsOfPerson(deps, person.id)
 }

@@ -101,7 +101,7 @@ test('a dona: os membros com todos os papéis, a pessoa com o papel e o convite,
   expect(screen.getByRole('button', { name: 'Dar acesso' })).toBeTruthy()
 })
 
-test('trocar o papel: o Select manda o PUT, a linha mostra "Salvo" e relê a lista', async () => {
+test('trocar o papel: o Select manda o PUT e a linha mostra "Salvo"', async () => {
   const view = { list: accessView() }
   const writes = hub(view, {
     change: () => {
@@ -110,12 +110,14 @@ test('trocar o papel: o Select manda o PUT, a linha mostra "Salvo" e relê a lis
     },
   })
   await open()
+  expect(screen.queryByText('Salvo')).toBeNull()
+  expect(screen.queryByRole('button', { name: 'Tentar de novo' })).toBeNull()
   await pick('Papel de Carla Souza', 'Gerente')
   expect(await screen.findByText('Salvo')).toBeTruthy()
   expect(writes).toEqual([{ method: 'PUT', url: CARLA.personId, body: { role: 'gerente' } }])
 })
 
-test('a troca recusada mostra a frase do código e relê', async () => {
+test('a troca recusada mostra a frase do código', async () => {
   hub({ list: accessView() }, { change: () => refusal('APP_ROLE_UNKNOWN') })
   await open()
   await pick('Papel de Carla Souza', 'Gerente')
@@ -133,6 +135,16 @@ test('tirar acesso: a confirmação diz o que acontece e confirmar manda o DELET
   fireEvent.click(within(dialog).getByRole('button', { name: 'Tirar acesso' }))
   await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull())
   expect(writes).toEqual([{ method: 'DELETE', url: CARLA.personId }])
+})
+
+test('tirar acesso de quem o Hub já não encontra fecha a confirmação', async () => {
+  hub({ list: accessView() }, { revoke: () => refusal('NOT_FOUND') })
+  await open()
+  fireEvent.click(await screen.findByRole('button', { name: 'Tirar acesso: Carla Souza' }))
+  fireEvent.click(
+    within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Tirar acesso' }),
+  )
+  await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull())
 })
 
 test('cancelar o convite pendente manda o DELETE do convite', async () => {
@@ -180,6 +192,14 @@ test('o membro vê quem usa o app, sem Select, sem Tirar acesso e sem formulári
   expect(screen.queryByRole('button', { name: /Tirar acesso/ })).toBeNull()
   expect(screen.queryByRole('button', { name: /Cancelar convite/ })).toBeNull()
   expect(screen.queryByRole('button', { name: 'Dar acesso' })).toBeNull()
+  expect(screen.getByText('Só o dono ou um administrador dá ou tira acesso ao app.')).toBeTruthy()
+  expect(screen.queryByText('Publique o app para dar acesso a alguém.')).toBeNull()
+})
+
+test('o membro de um app sem versão publicada não lê a frase de quem publica', async () => {
+  hub({ list: accessView({ mayManage: false, published: false, roles: [], people: [] }) })
+  await open()
+  expect(screen.queryByText('Publique o app para dar acesso a alguém.')).toBeNull()
 })
 
 test('sem versão publicada: a frase e nenhum formulário', async () => {
@@ -187,6 +207,7 @@ test('sem versão publicada: a frase e nenhum formulário', async () => {
   await open()
   expect(await screen.findByText('Publique o app para dar acesso a alguém.')).toBeTruthy()
   expect(screen.queryByRole('button', { name: 'Dar acesso' })).toBeNull()
+  expect(screen.queryByText(/Só o dono ou um administrador/)).toBeNull()
 })
 
 test('um app sem papéis: o formulário só pede o e-mail e manda o papel nulo', async () => {
@@ -208,6 +229,39 @@ test('o papel que a versão publicada não tem mais: a linha diz e o Select pede
   await open()
   expect(await screen.findByText('Papel que a versão publicada não tem mais')).toBeTruthy()
   expect(screen.getByLabelText('Papel de Carla Souza').textContent).toContain('Escolha um papel')
+})
+
+test('o membro lê que o papel sumiu, sem Select', async () => {
+  hub({
+    list: accessView({
+      mayManage: false,
+      people: [{ ...CARLA, role: 'caixa', roleDeclared: false }],
+    }),
+  })
+  await open()
+  expect(await screen.findByText('Papel que a versão publicada não tem mais')).toBeTruthy()
+  expect(screen.queryByLabelText('Papel de Carla Souza')).toBeNull()
+})
+
+test('um segundo convite recusado apaga o aviso do primeiro', async () => {
+  let sent = 0
+  hub(
+    { list: accessView() },
+    {
+      invite: () =>
+        sent++ === 0 ? invitedToApp('dora@example.test', 'vendedor') : refusal('APP_ACCESS_EXISTS'),
+    },
+  )
+  await open()
+  const email = await screen.findByLabelText('E-mail')
+  fireEvent.change(email, { target: { value: 'dora@example.test' } })
+  await pick('Papel', 'Gerente')
+  fireEvent.click(screen.getByRole('button', { name: 'Dar acesso' }))
+  await screen.findByText('Convite enviado para dora@example.test.')
+  fireEvent.change(email, { target: { value: 'ana@example.test' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Dar acesso' }))
+  expect(await screen.findByText(FAILURES.APP_ACCESS_EXISTS.phrase)).toBeTruthy()
+  expect(screen.queryByText('Convite enviado para dora@example.test.')).toBeNull()
 })
 
 test('carregando: o Skeleton até a lista chegar; erro: a frase e "Tentar de novo"', async () => {

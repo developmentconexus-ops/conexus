@@ -56,6 +56,7 @@ export const CompanyAppPerson = z.object({
       projectId: ProjectId,
       projectName: z.string().min(1),
       role: RoleName.nullable(),
+      // Null with a role: the published version no longer declares it.
       roleLabel: z.string().nullable(),
     }),
   ),
@@ -151,7 +152,10 @@ export const listCompanyAppAccess = defineOperation({
   path: '/api/companies/{companyId}/app-access',
   bodyLimit: 1024,
   input: { params: InCompany, query: Page },
-  success: { status: 200, body: z.object({ people: z.array(CompanyAppPerson), next: Next }) },
+  success: {
+    status: 200,
+    body: z.object({ people: z.array(CompanyAppPerson), next: Next, mayManage: z.boolean() }),
+  },
   failures: ['NOT_FOUND', 'SESSION_REQUIRED', 'DATABASE_UNAVAILABLE'],
 })
 

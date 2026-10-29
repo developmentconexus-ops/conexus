@@ -6,7 +6,12 @@ import { expect, test, vi } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
 import { ANA, COMPANY } from '../../platform/fixtures.ts'
 import { PEDIDOS, refusal, sessionRead } from '../../platform/test-hub.tsx'
-import { CARLA, COMPANY_ACCESS_NONE } from '../../platform/test-hub-access.tsx'
+import {
+  CARLA,
+  COMPANY_ACCESS_NONE,
+  carlaOfCompany,
+  companyAppAccessRead,
+} from '../../platform/test-hub-access.tsx'
 import { bodyRows, hub, open, sectionOf, server } from './test-people.tsx'
 
 test('dono: os membros com o papel, os convites pendentes e o formulário "Convidar pessoa"', async () => {
@@ -144,6 +149,42 @@ test('Quem usa os apps: o membro lê a lista e não vê "Tirar de todos"', async
   const apps = within(sectionOf(await screen.findByRole('heading', { name: 'Quem usa os apps' })))
   expect(await apps.findByText('Carla Souza')).toBeTruthy()
   expect(apps.queryByRole('button', { name: /Tirar de todos/ })).toBeNull()
+  expect(apps.getByText('Só o dono ou um administrador dá ou tira acesso aos apps.')).toBeTruthy()
+})
+
+test('Quem usa os apps: quem pode tirar não lê a frase de quem pode', async () => {
+  hub({ role: 'admin', mayInviteAs: ['member'] })
+  open()
+  const apps = within(sectionOf(await screen.findByRole('heading', { name: 'Quem usa os apps' })))
+  expect(await apps.findByRole('button', { name: /Tirar de todos/ })).toBeTruthy()
+  expect(apps.queryByText(/Só o dono ou um administrador dá ou tira/)).toBeNull()
+})
+
+test('Quem usa os apps: um app sem papéis aparece só com o nome', async () => {
+  hub({ role: 'owner', mayInviteAs: ['admin'] })
+  const [app] = carlaOfCompany().apps
+  server.use(
+    companyAppAccessRead([
+      { ...carlaOfCompany(), apps: [{ ...app, role: null, roleLabel: null }] },
+    ]),
+  )
+  open()
+  const apps = within(sectionOf(await screen.findByRole('heading', { name: 'Quem usa os apps' })))
+  expect((await apps.findByRole('link', { name: 'Pedidos' })).textContent).toBe('Pedidos')
+})
+
+test('Quem usa os apps: o papel que a versão publicada não tem mais é dito, não o código', async () => {
+  hub({ role: 'owner', mayInviteAs: ['admin'] })
+  const [app] = carlaOfCompany().apps
+  server.use(
+    companyAppAccessRead([
+      { ...carlaOfCompany(), apps: [{ ...app, role: 'caixa', roleLabel: null }] },
+    ]),
+  )
+  open()
+  const apps = within(sectionOf(await screen.findByRole('heading', { name: 'Quem usa os apps' })))
+  expect(await apps.findByText(/Papel que a versão publicada não tem mais/)).toBeTruthy()
+  expect(apps.queryByText(/caixa/)).toBeNull()
 })
 
 test('Quem usa os apps: sem ninguém de fora, a frase', async () => {
@@ -151,4 +192,18 @@ test('Quem usa os apps: sem ninguém de fora, a frase', async () => {
   server.use(COMPANY_ACCESS_NONE)
   open()
   expect(await screen.findByText('Ninguém de fora da empresa usa os apps.')).toBeTruthy()
+})
+
+test('Quem usa os apps: tirar de quem o Hub já não encontra fecha a confirmação', async () => {
+  hub({ role: 'owner', mayInviteAs: ['admin'] })
+  server.use(
+    http.delete(`*/api/companies/${COMPANY.id}/app-access/:personId`, () => refusal('NOT_FOUND')),
+  )
+  open()
+  const apps = within(sectionOf(await screen.findByRole('heading', { name: 'Quem usa os apps' })))
+  fireEvent.click(await apps.findByRole('button', { name: 'Tirar de todos os apps: Carla Souza' }))
+  fireEvent.click(
+    within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Tirar de todos' }),
+  )
+  await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull())
 })

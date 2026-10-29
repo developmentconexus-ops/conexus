@@ -33,6 +33,7 @@ test('invitation mail renders the generated module at send time with escaped HTM
   assert.ok(sent.text.includes(name))
   assert.ok(sent.text.includes(link))
   assert.ok(sent.text.includes('Ver convite'))
+  assert.ok(sent.text.includes('ninguém entra na empresa sem a sua resposta'))
   const expiry = new Intl.DateTimeFormat('pt-BR', {
     dateStyle: 'short',
     timeStyle: 'short',
