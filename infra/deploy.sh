@@ -1,19 +1,24 @@
 #!/usr/bin/env bash
-# Keeps no state: the image that runs is read from Docker, so running it again with the same
-# image changes nothing.
+# Keeps no state: the image and the Builder's template that run are read from Docker, so running it
+# again with the same pair changes nothing. The template travels with the image (a Release builds
+# both from one commit); without one, the running Hub's template stays.
 set -euo pipefail
 
-mode="${1:?usage: deploy.sh <image reference by digest> | deploy.sh --restart}"
+usage="usage: deploy.sh <image reference by digest> [<template>] | deploy.sh --restart [<template>]"
+mode="${1:?$usage}"
+requested_template="${2:-}"
 cd "$(dirname "$0")"
 compose=(docker compose --file compose.yaml)
+# MachineTemplate's rule (apps/server/src/platform/config-machine.ts): E2B's `name:tag`, tag required.
+template_pattern='^[a-z0-9][a-z0-9-]{0,62}:[a-z0-9][a-z0-9._-]{0,127}$'
 
-# Compose needs the variable to read the file, and `ps` does not use its value.
-running_image() {
-  local id
-  id="$(HUB_IMAGE=ps-only "${compose[@]}" ps --quiet hub)"
-  if [ -n "$id" ]; then
-    docker inspect --format '{{.Config.Image}}' "$id"
-  fi
+# Compose needs both variables to read the file, and `ps` uses neither value.
+running_id() {
+  HUB_IMAGE=ps-only HUB_E2B_TEMPLATE=ps-only "${compose[@]}" ps --quiet hub
+}
+
+running_template() {
+  docker inspect --format '{{range .Config.Env}}{{println .}}{{end}}' "$1" | sed -n 's/^HUB_E2B_TEMPLATE=//p'
 }
 
 migrate_if_labeled() {
@@ -30,7 +35,7 @@ migrate_if_labeled() {
   local attempt=1 status
   while true; do
     status=0
-    HUB_IMAGE="$image" timeout 120 "${compose[@]}" run --rm migrate || status=$?
+    HUB_IMAGE="$image" HUB_E2B_TEMPLATE="$template" timeout 120 "${compose[@]}" run --rm migrate || status=$?
     if [ "$status" -eq 0 ]; then
       return 0
     fi
@@ -52,7 +57,7 @@ reseal_if_labeled() {
     echo "no reseal in: $image"
     return 0
   fi
-  if ! HUB_IMAGE="$image" timeout 120 "${compose[@]}" run --rm --no-deps hub node apps/server/src/main.ts reseal; then
+  if ! HUB_IMAGE="$image" HUB_E2B_TEMPLATE="$template" timeout 120 "${compose[@]}" run --rm --no-deps hub node apps/server/src/main.ts reseal; then
     echo "reseal failed: $image" >&2
     return 1
   fi
@@ -87,18 +92,34 @@ require_hub_env() {
 }
 
 require_hub_env
-previous="$(running_image)"
+id="$(running_id)"
+previous=""
+previous_template=""
+if [ -n "$id" ]; then
+  previous="$(docker inspect --format '{{.Config.Image}}' "$id")"
+  previous_template="$(running_template "$id")"
+fi
+template="${requested_template:-$previous_template}"
+
+if [ "$mode" = "--restart" ] && [ -z "$previous" ]; then
+  echo "no Hub is running" >&2
+  exit 1
+fi
+if [ -z "$template" ]; then
+  echo "no template: name the Builder's template, for no running Hub has one to keep" >&2
+  exit 1
+fi
+if ! [[ $template =~ $template_pattern ]]; then
+  echo "not a template name:tag: $template" >&2
+  exit 1
+fi
 
 if [ "$mode" = "--restart" ]; then
-  if [ -z "$previous" ]; then
-    echo "no Hub is running" >&2
-    exit 1
-  fi
   require_secrets "$previous"
   migrate_if_labeled "$previous"
   reseal_if_labeled "$previous"
-  if HUB_IMAGE="$previous" "${compose[@]}" up --detach --wait --wait-timeout 90 --force-recreate --no-deps hub; then
-    echo "restarted: $previous"
+  if HUB_IMAGE="$previous" HUB_E2B_TEMPLATE="$template" "${compose[@]}" up --detach --wait --wait-timeout 90 --force-recreate --no-deps hub; then
+    echo "restarted: $previous with $template"
     exit 0
   fi
   echo "not healthy after the restart: $previous; run Voltar atrás to start an earlier release" >&2
@@ -106,8 +127,8 @@ if [ "$mode" = "--restart" ]; then
 fi
 
 image="$mode"
-if [ "$previous" = "$image" ]; then
-  echo "already running: $image"
+if [ "$previous" = "$image" ] && [ "$previous_template" = "$template" ]; then
+  echo "already running: $image with $template"
   exit 0
 fi
 
@@ -116,14 +137,14 @@ require_secrets "$image"
 migrate_if_labeled "$image"
 reseal_if_labeled "$image"
 
-if HUB_IMAGE="$image" "${compose[@]}" up --detach --wait --wait-timeout 90; then
-  echo "live: $image"
+if HUB_IMAGE="$image" HUB_E2B_TEMPLATE="$template" "${compose[@]}" up --detach --wait --wait-timeout 90; then
+  echo "live: $image with $template"
   exit 0
 fi
 
-echo "not healthy: $image" >&2
+echo "not healthy: $image with $template" >&2
 if [ -n "$previous" ]; then
-  HUB_IMAGE="$previous" "${compose[@]}" up --detach --wait --wait-timeout 90
-  echo "back to: $previous" >&2
+  HUB_IMAGE="$previous" HUB_E2B_TEMPLATE="$previous_template" "${compose[@]}" up --detach --wait --wait-timeout 90
+  echo "back to: $previous with $previous_template" >&2
 fi
 exit 1

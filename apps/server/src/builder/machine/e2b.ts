@@ -1,3 +1,4 @@
+import type { ConversationId } from '@conexus/hub-api'
 import { E2BSandbox } from '@mastra/e2b'
 import { ALL_TRAFFIC, Sandbox } from 'e2b'
 import type { Config } from '../../platform/config.ts'
@@ -49,19 +50,25 @@ export function createE2bApi(
 ): MachineApi {
   const apiKey = config.e2bApiKey.reveal()
   const where = { apiKey, ...(apiUrl === undefined ? {} : { apiUrl }), requestTimeoutMs: CALL_MS }
-  return {
-    async kill(conversationId) {
-      let killed = 0
-      const pages = Sandbox.list({
-        ...where,
-        query: { metadata: { ...mark, [MARK.conversation]: conversationId } },
-      })
-      while (pages.hasNext) {
-        for (const item of await pages.nextItems()) {
-          if (await Sandbox.kill(item.sandboxId, where)) killed += 1
-        }
+  async function killWhere(
+    conversationId: ConversationId,
+    doomed: (metadata: Record<string, string>) => boolean,
+  ) {
+    let killed = 0
+    const pages = Sandbox.list({
+      ...where,
+      query: { metadata: { ...mark, [MARK.conversation]: conversationId } },
+    })
+    while (pages.hasNext) {
+      for (const item of await pages.nextItems()) {
+        if (doomed(item.metadata) && (await Sandbox.kill(item.sandboxId, where))) killed += 1
       }
-      return killed
-    },
+    }
+    return killed
+  }
+  return {
+    kill: (conversationId) => killWhere(conversationId, () => true),
+    killStale: (conversationId, template) =>
+      killWhere(conversationId, (metadata) => metadata[MARK.template] !== template),
   }
 }

@@ -1,15 +1,17 @@
 // Builds the E2B template the Builder's machines start from (decisions 0051, 0055): Node 24 and git,
 // the app folder, and in /opt/conexus the check program with its tools (TypeScript, esbuild,
 // wrangler, Chromium's headless shell), the SDK it copies into each app, and an npm cache of the
-// starter's packages. Firstmate runs it from the commit to build, with the account's key in
-// E2B_API_KEY (the SDK reads it), and writes the `name:tag` it prints into HUB_E2B_TEMPLATE. The tag
+// starter's packages. Publish runs it from the Release's commit, with the account's key in
+// E2B_API_KEY (the SDK reads it); so does firstmate to try a candidate. It proves the build carries
+// the commit's SDK, then prints the `name:tag` the deploy gives the Hub as HUB_E2B_TEMPLATE. The tag
 // is the commit, so a build never replaces the one production runs and the old tag is the rollback.
 import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
-import { defaultBuildLogger, Template } from 'e2b'
+import { defaultBuildLogger, Sandbox, Template } from 'e2b'
 import { z } from 'zod'
-import { templateName } from './name.ts'
+import { templateLine, templateName } from './name.ts'
+import { digests, IGNORED, SDK_FOLDERS, sdkFiles } from './sdk.ts'
 
 const ROOT = resolve(import.meta.dirname, '../..')
 const OPT = '/opt/conexus'
@@ -44,11 +46,12 @@ export PLAYWRIGHT_BROWSERS_PATH=${BROWSERS} npm_config_cache=${CACHE}
 exec node ${OPT}/packages/app/src/check/main.ts --tools ${OPT}/node_modules --platform ${OPT}/packages "$@"
 `
 
-const template = Template({ fileContextPath: ROOT, fileIgnorePatterns: ['**/node_modules'] })
-  .fromNodeImage('24')
-  .aptInstall(['git'])
-  .copy('packages/app', `${OPT}/packages/app`, { user: 'root' })
-  .copy('packages/app-contract', `${OPT}/packages/app-contract`, { user: 'root' })
+const template = SDK_FOLDERS.reduce(
+  (built, folder) => built.copy(folder, `${OPT}/${folder}`, { user: 'root' }),
+  Template({ fileContextPath: ROOT, fileIgnorePatterns: IGNORED })
+    .fromNodeImage('24')
+    .aptInstall(['git']),
+)
   .runCmd(
     [
       `printf '%s' '${TOOLS}' > ${OPT}/package.json`,
@@ -72,11 +75,32 @@ const template = Template({ fileContextPath: ROOT, fileIgnorePatterns: ['**/node
   )
   .setWorkdir('/home/user/app')
 
+// A machine from the new build hashes the SDK files it was given; one missing or different fails the
+// build, so a Release never hands the Hub a template without its commit's SDK.
+async function proveSdk(name: string): Promise<void> {
+  const files = sdkFiles(ROOT)
+  const sandbox = await Sandbox.create(name, { timeoutMs: 120_000 })
+  try {
+    await sandbox.files.write('/tmp/sdk-files', files.join('\0'))
+    const { stdout } = await sandbox.commands.run(
+      `cd ${OPT} && xargs -0 sha256sum < /tmp/sdk-files`,
+    )
+    const expected = digests(ROOT, files)
+    if (stdout !== expected) {
+      const carried = new Set(stdout.split('\n'))
+      const wrong = expected.split('\n').filter((line) => line !== '' && !carried.has(line))
+      throw new Error(`the template does not carry the commit's SDK:\n${wrong.join('\n')}`)
+    }
+  } finally {
+    await sandbox.kill()
+  }
+}
+
 const commit = execFileSync('git', ['rev-parse', '--short', 'HEAD'], {
   cwd: ROOT,
   encoding: 'utf8',
 }).trim()
-const built = await Template.build(template, templateName(commit), {
-  onBuildLogs: defaultBuildLogger(),
-})
-console.log(`HUB_E2B_TEMPLATE=${built.name}:${built.tags.join(',')}`)
+const name = templateName(commit)
+await Template.build(template, name, { onBuildLogs: defaultBuildLogger() })
+await proveSdk(name)
+console.log(templateLine(name))
