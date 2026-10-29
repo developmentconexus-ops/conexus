@@ -8,11 +8,13 @@ import {
   getStatus,
   listClients,
   listCompanies,
+  listCompanyAppAccess,
   listConversations,
   listInvitations,
   listMembers,
   listModelAccounts,
   listModelProviders,
+  listMyApps,
   listProjects,
   readObservationalMemoryModels,
 } from '@conexus/hub-api'
@@ -49,6 +51,8 @@ export const SIGNED_IN: Replies = {
     mayOperate: false,
     next: { kind: 'END' },
   }),
+  // "Seus apps" for a person in no company reads their apps.
+  'GET /api/apps': ok(listMyApps, { apps: [] }),
 }
 
 export function companies(
@@ -112,6 +116,24 @@ function companyPage(
     }),
     [`GET /api/companies/${id}/invitations`]: ok(listInvitations, {
       invitations: [LIVE_INVITATION],
+      next: { kind: 'END' },
+    }),
+    [`GET /api/companies/${id}/app-access`]: ok(listCompanyAppAccess, {
+      people: [
+        {
+          personId: 'person-dora',
+          name: 'Dora Pinto',
+          email: LONG_EMAIL,
+          apps: [
+            {
+              projectId: PROJECT.id,
+              projectName: PROJECT.name,
+              role: 'gerente',
+              roleLabel: 'Gerente',
+            },
+          ],
+        },
+      ],
       next: { kind: 'END' },
     }),
   }
