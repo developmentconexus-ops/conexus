@@ -1,5 +1,6 @@
 import type { ConnectorId } from '@conexus/connectors'
 import { connectorOf } from '@conexus/connectors'
+import { CONNECTOR_CALL_DEADLINE_MS } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
 import type { Config } from '../../platform/config.ts'
 import type { Database } from '../../platform/database.ts'
@@ -9,9 +10,6 @@ import type { IdentityPorts } from '../identity/public.ts'
 import { createExecutor } from './executor.ts'
 import { reseal } from './reseal.ts'
 import { registerConnectionRoutes } from './routes.ts'
-
-/** How long one call to a provider may take, the login included (the failure table: 10 s). */
-const CALL_DEADLINE_MS = 10_000
 
 export type Connectors = ReturnType<typeof createConnectors>
 
@@ -35,7 +33,7 @@ export function createConnectors(deps: {
       })
     origins.set(connector.id, origin)
   }
-  const callDeadlineMs = deps.callDeadlineMs ?? CALL_DEADLINE_MS
+  const callDeadlineMs = deps.callDeadlineMs ?? CONNECTOR_CALL_DEADLINE_MS
   const executor = createExecutor({ fetch, origins, callDeadlineMs })
   const routeDeps = { ...deps, sealKeys: deps.config.sealKeys, executor }
   return Object.freeze({

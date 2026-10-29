@@ -1,8 +1,19 @@
 import type { Connection, ConnectorEntry, TestCheck } from '@conexus/hub-api'
 import { clockOf, dayAndMonth } from '../../platform/dates.ts'
+import { HubFailure } from '../../platform/hub.ts'
 
 export const NO_CONNECTIONS = 'Nenhuma integração ligada ainda.'
 export const MEMBER_SENTENCE = 'Só a dona ou um administrador liga, testa e desliga.'
+
+const LIST_CHANGED = new Set(['CONNECTION_NOT_FOUND', 'CONNECTION_EXISTS', 'CONNECTOR_UNKNOWN'])
+
+/**
+ * A refusal that says someone changed the list meanwhile: the row or the dialog it came from leaves
+ * with the list read again, so the page keeps the sentence above the rows.
+ */
+export function listChanged(error: unknown): error is HubFailure {
+  return error instanceof HubFailure && LIST_CHANGED.has(error.code)
+}
 
 /** The connector's name, or its id for one the catalog no longer holds. */
 export function connectorName(connectors: readonly ConnectorEntry[], id: string): string {

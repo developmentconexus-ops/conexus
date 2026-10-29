@@ -6,9 +6,13 @@ import {
   ConnectorEntry,
   TestResult as TestResultShape,
 } from '@conexus/hub-api'
+import { createMemoryHistory } from '@tanstack/react-router'
+import { fireEvent, render, screen } from '@testing-library/react'
 import type { HttpHandler } from 'msw'
 import { HttpResponse, http } from 'msw'
+import { Conexus, createConexus } from '../../main.tsx'
 import { ANA, COMPANY } from '../../platform/fixtures.ts'
+import type { hubServer } from '../../platform/test-hub.tsx'
 import { companyRead, memberView, sessionRead } from '../../platform/test-hub.tsx'
 
 const BASE = `*/api/companies/${COMPANY.id}`
@@ -157,4 +161,38 @@ export function connectionsHub(
 ) {
   const sent: Sent[] = []
   return { sent, handlers: [...reads(view), ...writes(view, sent, answers, result)] }
+}
+
+export const PAGE = `/companies/${COMPANY.id}/integrations`
+export const SECRETS = {
+  'Client ID': 'id-plantado-1',
+  'Client Secret': 'segredo-plantado-2',
+  'X-Token': 'token-plantado-3',
+}
+
+export function viewOf(fields: Partial<View> = {}): View {
+  return { connections: [], mayManage: true, ...fields }
+}
+
+/** Opens Integrações on the Hub of `view`; returns the writes it received. */
+export function openIntegrations(
+  server: ReturnType<typeof hubServer>,
+  view: View = viewOf(),
+  answers: Answers = {},
+) {
+  const hub = connectionsHub(view, answers)
+  server.use(...hub.handlers)
+  render(<Conexus conexus={createConexus(createMemoryHistory({ initialEntries: [PAGE] }))} />)
+  return hub.sent
+}
+
+export function fill() {
+  for (const [label, value] of Object.entries(SECRETS)) {
+    fireEvent.change(screen.getByLabelText(label), { target: { value } })
+  }
+}
+
+export async function openForm() {
+  fireEvent.click(await screen.findByRole('button', { name: 'Ligar' }))
+  return screen.findByRole('dialog', { name: 'Ligar Sankhya' })
 }

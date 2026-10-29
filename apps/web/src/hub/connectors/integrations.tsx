@@ -1,6 +1,6 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { List, PageTitle, Row, SectionTitle } from '../../ui/list.tsx'
 import { Empty } from '../../ui/states.tsx'
 import { ConnectionRow } from './connection-row.tsx'
@@ -20,19 +20,23 @@ export function Integrations() {
   const { connectors, connections, mayManage } = useSuspenseQuery(connectionsQuery(companyId)).data
   const linked = useRef<HTMLElement>(null)
   const toLink = connectors.filter((one) => !connections.some((c) => c.connector === one.id))
+  const [notice, setNotice] = useState<string>()
   const moveFocus = useRef(false)
-  const count = useRef(connections.length)
-  function settled() {
+  const shape = `${connections.length}:${toLink.length}`
+  const seen = useRef(shape)
+  // What a row or a dialog settled: the sentence a refusal leaves above the rows, if there is one.
+  function settled(refusal?: string) {
     moveFocus.current = true
+    setNotice(refusal)
   }
   // A dialog's button leaves with its row, so once the list is read again focus goes to the list.
   useEffect(() => {
-    if (moveFocus.current && count.current !== connections.length) {
+    if (moveFocus.current && seen.current !== shape) {
       moveFocus.current = false
       linked.current?.focus()
     }
-    count.current = connections.length
-  }, [connections.length])
+    seen.current = shape
+  }, [shape])
 
   return (
     <div className="flex w-full max-w-page flex-col gap-xl">
@@ -40,6 +44,11 @@ export function Integrations() {
       {!mayManage && <p className="text-text-2">{MEMBER_SENTENCE}</p>}
       <section ref={linked} tabIndex={-1} aria-label="Ligadas" className="flex flex-col gap-md">
         <SectionTitle>Ligadas</SectionTitle>
+        {notice !== undefined && (
+          <p role="alert" className="text-danger">
+            {notice}
+          </p>
+        )}
         {connections.length === 0 ? (
           <Empty>{NO_CONNECTIONS}</Empty>
         ) : (
@@ -51,7 +60,7 @@ export function Integrations() {
                 connection={connection}
                 name={connectorName(connectors, connection.connector)}
                 mayManage={mayManage}
-                onUnlinked={settled}
+                onSettled={settled}
               />
             ))}
           </List>

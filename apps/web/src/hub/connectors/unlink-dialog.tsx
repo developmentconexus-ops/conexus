@@ -41,7 +41,9 @@ export function UnlinkDialog(props: {
 
   return (
     <AlertDialog open={open} onOpenChange={changeOpen}>
-      <AlertDialogTrigger render={<Button variant="danger" />}>Desligar</AlertDialogTrigger>
+      <AlertDialogTrigger render={<Button variant="danger" size="sm" />}>
+        Desligar
+      </AlertDialogTrigger>
       <AlertDialogContent
         title={`Desligar o ${props.name}?`}
         description="O Conexus apaga as chaves que guardou."

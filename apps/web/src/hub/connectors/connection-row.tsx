@@ -6,7 +6,7 @@ import { Button } from '../../ui/button.tsx'
 import { Row } from '../../ui/list.tsx'
 import { sendTest } from './queries.ts'
 import { TestResult } from './test-result.tsx'
-import { linkedText, refusedKeysText, stateBadge, testedText } from './text.ts'
+import { linkedText, listChanged, refusedKeysText, stateBadge, testedText } from './text.ts'
 import { UnlinkDialog } from './unlink-dialog.tsx'
 
 /**
@@ -19,10 +19,15 @@ export function ConnectionRow(props: {
   connection: Connection
   name: string
   mayManage: boolean
-  onUnlinked: () => void
+  onSettled: (notice?: string) => void
 }) {
   const { companyId, connection, name } = props
-  const test = useMutation(sendTest)
+  const test = useMutation({
+    ...sendTest,
+    onError: (error) => {
+      if (listChanged(error)) props.onSettled(sentenceOf(error))
+    },
+  })
   const badge = stateBadge(connection)
 
   return (
@@ -44,6 +49,7 @@ export function ConnectionRow(props: {
           {props.mayManage && (
             <div className="flex flex-wrap gap-sm">
               <Button
+                size="sm"
                 disabled={test.isPending}
                 onClick={() => test.mutate({ params: { companyId, connectionId: connection.id } })}
               >
@@ -53,7 +59,7 @@ export function ConnectionRow(props: {
                 companyId={companyId}
                 connection={connection}
                 name={name}
-                onUnlinked={props.onUnlinked}
+                onUnlinked={props.onSettled}
               />
             </div>
           )}
@@ -64,7 +70,7 @@ export function ConnectionRow(props: {
           </p>
         )}
         {test.data && <TestResult result={test.data} name={name} />}
-        {test.isError && (
+        {test.isError && !listChanged(test.error) && (
           <p role="alert" className="text-danger">
             {sentenceOf(test.error)}
           </p>

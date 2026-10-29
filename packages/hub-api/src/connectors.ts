@@ -99,6 +99,20 @@ export const linkConnection = defineOperation({
   ],
 })
 
+/** How long one call to a provider may take, its login included (the failure table: 10 s). */
+export const CONNECTOR_CALL_DEADLINE_MS = 10_000
+
+/** The most read operations a connector of the kit may have: Testar reads each one once. */
+export const TEST_MAX_READS = 8
+
+/**
+ * What Testar may take, the one number the Hub and the browser both wait by: a login, then for each
+ * read the call and, when the token has expired, a new login and the call again; each under the
+ * call deadline, and a second of slack for the Hub's own work.
+ */
+export const TEST_CONNECTION_DEADLINE_MS =
+  CONNECTOR_CALL_DEADLINE_MS * (1 + 3 * TEST_MAX_READS) + 1_000
+
 export const testConnection = defineOperation({
   id: 'testConnection',
   summary:

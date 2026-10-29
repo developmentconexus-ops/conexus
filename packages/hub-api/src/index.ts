@@ -99,6 +99,7 @@ export {
 } from './conexus-parts.ts'
 export {
   CONNECTION_STATES,
+  CONNECTOR_CALL_DEADLINE_MS,
   Connection,
   ConnectionId,
   ConnectionList,
@@ -106,6 +107,8 @@ export {
   ConnectorEntry,
   linkConnection,
   listConnections,
+  TEST_CONNECTION_DEADLINE_MS,
+  TEST_MAX_READS,
   TEST_OUTCOMES,
   TestCheck,
   TestResult,

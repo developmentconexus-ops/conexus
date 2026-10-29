@@ -6,38 +6,23 @@ import { Conexus, createConexus } from '../../main.tsx'
 import { COMPANY } from '../../platform/fixtures.ts'
 import { hubServer, refusal, undecided } from '../../platform/test-hub.tsx'
 import type { Answers, View } from './test-hub.tsx'
-import { connectionOf, connectionsHub, workingOf } from './test-hub.tsx'
+import {
+  connectionOf,
+  connectionsHub,
+  fill,
+  openForm,
+  openIntegrations,
+  PAGE,
+  SECRETS,
+  viewOf,
+  workingOf,
+} from './test-hub.tsx'
 
 const server = hubServer()
-const PAGE = `/companies/${COMPANY.id}/integrations`
 const MEMBER_SENTENCE = 'Só a dona ou um administrador liga, testa e desliga.'
-const SECRETS = {
-  'Client ID': 'id-plantado-1',
-  'Client Secret': 'segredo-plantado-2',
-  'X-Token': 'token-plantado-3',
-}
 
-function viewOf(fields: Partial<View> = {}): View {
-  return { connections: [], mayManage: true, ...fields }
-}
-
-function open(view: View = viewOf(), answers: Answers = {}) {
-  const hub = connectionsHub(view, answers)
-  server.use(...hub.handlers)
-  const conexus = createConexus(createMemoryHistory({ initialEntries: [PAGE] }))
-  render(<Conexus conexus={conexus} />)
-  return hub.sent
-}
-
-function fill() {
-  for (const [label, value] of Object.entries(SECRETS)) {
-    fireEvent.change(screen.getByLabelText(label), { target: { value } })
-  }
-}
-
-async function openForm() {
-  fireEvent.click(await screen.findByRole('button', { name: 'Ligar' }))
-  return screen.findByRole('dialog', { name: 'Ligar Sankhya' })
+function open(view?: View, answers?: Answers) {
+  return openIntegrations(server, view, answers)
 }
 
 test('a dona liga, testa e desliga', async () => {
@@ -149,36 +134,6 @@ test('chave recusada no Testar: a frase do Sankhya; fornecedor fora: a outra fra
   ).toBeTruthy()
   expect(screen.queryByText('O Sankhya não respondeu. Tente de novo em alguns minutos.')).toBeNull()
 })
-
-test('uma ligação desligada por outra pessoa: a frase do código e a lista relida', async () => {
-  const connection = connectionOf()
-  const view = viewOf({ connections: [connection] })
-  open(view, {
-    test: () => {
-      view.connections = []
-      return refusal('CONNECTION_NOT_FOUND')
-    },
-  })
-  fireEvent.click(await screen.findByRole('button', { name: 'Testar' }))
-  expect(await screen.findByText('Nenhuma integração ligada ainda.')).toBeTruthy()
-  expect(screen.queryByRole('button', { name: 'Testar' })).toBeNull()
-})
-
-test.each([
-  ['CONNECTION_CREDENTIAL_INVALID', 'Confira os campos: cole cada chave inteira.'],
-  ['CONNECTION_EXISTS', 'Essa integração já está ligada nesta empresa.'],
-  ['CONNECTOR_UNKNOWN', 'Esse conector não existe no Conexus.'],
-] as const)(
-  'Ligar recusado com %s: a frase no formulário, as chaves coladas ficam',
-  async (code, sentence) => {
-    open(viewOf(), { link: () => refusal(code) })
-    const form = await openForm()
-    fill()
-    fireEvent.click(within(form).getByRole('button', { name: 'Ligar' }))
-    expect((await within(form).findByRole('alert')).textContent).toBe(sentence)
-    expect(within(form).getByDisplayValue(SECRETS['X-Token'])).toBeTruthy()
-  },
-)
 
 test.each(undecided('{"connection":'))(
   'Ligar com %s: "Não confirmamos a ligação", a mesma chave de tentativa na repetição',

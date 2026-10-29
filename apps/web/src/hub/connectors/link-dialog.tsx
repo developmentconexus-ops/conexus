@@ -3,6 +3,7 @@ import { useMutation } from '@tanstack/react-query'
 import { useState } from 'react'
 import { z } from 'zod'
 import { useAttemptKey } from '../../platform/attempt-key.ts'
+import { sentenceOf } from '../../platform/hub.ts'
 import { Button } from '../../ui/button.tsx'
 import { Dialog, DialogContent, DialogTrigger } from '../../ui/dialog.tsx'
 import {
@@ -14,6 +15,7 @@ import {
   useSchemaForm,
 } from '../../ui/form.tsx'
 import { sendLink } from './queries.ts'
+import { listChanged } from './text.ts'
 
 const UNCONFIRMED = 'Não confirmamos a ligação. Tente de novo.'
 
@@ -35,7 +37,7 @@ function credentialOf(entry: ConnectorEntry) {
 function LinkForm(props: {
   companyId: CompanyId
   entry: ConnectorEntry
-  onLinked: () => void
+  onLinked: (notice?: string) => void
   onCancel: () => void
 }) {
   const { companyId, entry } = props
@@ -58,7 +60,8 @@ function LinkForm(props: {
       form.reset()
       props.onLinked()
     } catch (error) {
-      setWriteError(form, error, UNCONFIRMED)
+      if (listChanged(error)) props.onLinked(sentenceOf(error))
+      else setWriteError(form, error, UNCONFIRMED)
     }
   }
 
@@ -94,12 +97,12 @@ function LinkForm(props: {
 export function LinkDialog(props: {
   companyId: CompanyId
   entry: ConnectorEntry
-  onLinked: () => void
+  onLinked: (notice?: string) => void
 }) {
   const [open, setOpen] = useState(false)
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant="primary" />}>Ligar</DialogTrigger>
+      <DialogTrigger render={<Button variant="primary" size="sm" />}>Ligar</DialogTrigger>
       <DialogContent
         title={`Ligar ${props.entry.name}`}
         description="As chaves ficam guardadas no Hub e não aparecem de novo."
@@ -107,9 +110,9 @@ export function LinkDialog(props: {
         <LinkForm
           companyId={props.companyId}
           entry={props.entry}
-          onLinked={() => {
+          onLinked={(notice) => {
             setOpen(false)
-            props.onLinked()
+            props.onLinked(notice)
           }}
           onCancel={() => setOpen(false)}
         />

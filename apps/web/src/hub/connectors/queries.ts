@@ -1,5 +1,11 @@
 import type { CompanyId } from '@conexus/hub-api'
-import { linkConnection, listConnections, testConnection, unlinkConnection } from '@conexus/hub-api'
+import {
+  linkConnection,
+  listConnections,
+  TEST_CONNECTION_DEADLINE_MS,
+  testConnection,
+  unlinkConnection,
+} from '@conexus/hub-api'
 import { hubMutation, hubQuery } from '../../platform/hub.ts'
 
 export function connectionsQuery(companyId: CompanyId) {
@@ -7,5 +13,5 @@ export function connectionsQuery(companyId: CompanyId) {
 }
 
 export const sendLink = hubMutation(linkConnection)
-export const sendTest = hubMutation(testConnection)
+export const sendTest = hubMutation(testConnection, { deadlineMs: TEST_CONNECTION_DEADLINE_MS })
 export const sendUnlink = hubMutation(unlinkConnection)

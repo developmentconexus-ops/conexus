@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { CONNECTORS } from '@conexus/connectors'
+import { TEST_MAX_READS } from '@conexus/hub-api'
 import { hubWithLog } from '../identity/test-hub.ts'
 import { connectionsOn, linkSankhya, testOf } from './test-connections.ts'
 
@@ -32,4 +34,11 @@ test('o Hub com a origem de um conector que o kit não tem não sobe', async (t)
       return true
     },
   )
+})
+
+test('testar: o prazo do contrato cobre as leituras de cada conector do kit', () => {
+  for (const connector of CONNECTORS) {
+    const reads = connector.operations.length + Object.keys(connector.readDoor ?? {}).length
+    assert.ok(reads <= TEST_MAX_READS, `${connector.id} has ${reads} reads`)
+  }
 })
