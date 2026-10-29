@@ -13,6 +13,7 @@ import { beforeEach, expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
 import { ANA, COMPANY } from '../../platform/fixtures.ts'
 import { centralHub, homeHub, hubServer, NO_COMPANIES, refusal } from '../../platform/test-hub.tsx'
+import { ENCOMENDAS, myAppsRead } from '../../platform/test-hub-access.tsx'
 
 const server = hubServer()
 
@@ -87,7 +88,7 @@ function startable(mayManage = false) {
 }
 
 function hub(companies: unknown, state = { signedIn: true }) {
-  server.use(...homeHub(state, companies), ...companyHandlers(FIRST, SECOND))
+  server.use(...homeHub(state, companies), ...companyHandlers(FIRST, SECOND), myAppsRead([]))
 }
 
 function open(path = '/') {
@@ -156,6 +157,18 @@ test('sem empresa, / diz que a pessoa não está em nenhuma e oferece "Sair do C
   expect(await screen.findByText('Você ainda não está em nenhuma empresa.')).toBeTruthy()
   expect(screen.getByRole('button', { name: 'Sair do Conexus' })).toBeTruthy()
   expect(router.state.location.pathname).toBe('/')
+})
+
+test('sem empresa, quem usa um app vê "Seus apps" com o link de cada um', async () => {
+  hub(NO_COMPANIES)
+  server.use(myAppsRead([ENCOMENDAS]))
+  open()
+  expect(await screen.findByRole('heading', { name: 'Seus apps' })).toBeTruthy()
+  const link = screen.getByRole('link', { name: /Encomendas/ })
+  expect(link.getAttribute('href')).toBe(`https://${ENCOMENDAS.address}/`)
+  expect(link.textContent).toContain('Padaria Sol')
+  expect(screen.queryByText('Você ainda não está em nenhuma empresa.')).toBeNull()
+  expect(screen.getByRole('button', { name: 'Sair do Conexus' })).toBeTruthy()
 })
 
 test('o operador sem empresa vai à Central (critério 2)', async () => {

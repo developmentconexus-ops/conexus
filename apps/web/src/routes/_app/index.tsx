@@ -1,5 +1,5 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
-import { companiesQuery, lastCompanyOf, NoCompany } from '../../hub/identity/public.ts'
+import { companiesQuery, lastCompanyOf, myAppsQuery, NoCompany } from '../../hub/identity/public.ts'
 
 /**
  * "/" opens a company (web W30): the one this browser opened last, while the Hub still lists it on
@@ -17,5 +17,6 @@ export const Route = createFileRoute('/_app/')({
     }
     if (mayOperate) throw redirect({ to: '/operations' })
   },
+  loader: ({ context }) => context.queryClient.ensureQueryData(myAppsQuery),
   component: NoCompany,
 })

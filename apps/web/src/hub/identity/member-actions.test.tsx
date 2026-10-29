@@ -6,6 +6,7 @@ import { expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
 import { ANA, COMPANY } from '../../platform/fixtures.ts'
 import { hubServer, memberView, refusal, sessionRead } from '../../platform/test-hub.tsx'
+import { COMPANY_ACCESS_NONE } from '../../platform/test-hub-access.tsx'
 
 const server = hubServer()
 
@@ -37,6 +38,7 @@ function hub(answers: { remove?: () => Response; change?: () => Response } = {})
   const writes: { method: string; url: string; body?: unknown }[] = []
   server.use(
     sessionRead(() => ANA),
+    COMPANY_ACCESS_NONE,
     http.get(`*/api/companies/${COMPANY.id}`, () =>
       HttpResponse.json(
         getCompany.success.body.parse({
