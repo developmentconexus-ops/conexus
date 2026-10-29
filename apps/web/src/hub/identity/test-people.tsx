@@ -45,7 +45,7 @@ export function hub(view: View) {
   const sent: { key: string | null; body: unknown }[] = []
   server.use(
     sessionRead(() => ANA),
-    companyAppAccessRead(),
+    companyAppAccessRead(undefined, view.role !== 'member'),
     http.get(`*/api/companies/${COMPANY.id}`, () =>
       HttpResponse.json(
         getCompany.success.body.parse({

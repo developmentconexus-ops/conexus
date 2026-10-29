@@ -1,5 +1,5 @@
 // In the app: server/handlers.ts
-import { can, defineHandlers, query, write } from '@conexus/app'
+import { type Caller, can, defineHandlers, query, write } from '@conexus/app'
 import { z } from 'zod'
 import { operations, TICKET_STATUSES, Ticket } from '../shared/operations'
 
@@ -52,7 +52,7 @@ const TICKET_COLUMNS = `id, subject, status, requester_name AS "requesterName", 
 const MATCHES = `($1::text IS NULL OR subject ILIKE '%' || $1 || '%' OR requester_name ILIKE '%' || $1 || '%')`
 
 // The role locks the operation; this narrows the rows. A manager sees every ticket, an agent only the ones they opened.
-function ownerOf(caller: { access: Parameters<typeof can>[0]; personId: string }) {
+function ownerOf(caller: Caller) {
   return can(caller.access, 'manager') ? null : caller.personId
 }
 

@@ -50,7 +50,12 @@ function Apps({ companyId, person }: { companyId: CompanyId; person: Person }) {
           className="wrap-anywhere underline"
         >
           {app.projectName}
-          {app.role !== null && ` · ${app.roleLabel ?? app.role}`}
+          {app.role !== null &&
+            (app.roleLabel === null ? (
+              <span className="text-danger"> · Papel que a versão publicada não tem mais</span>
+            ) : (
+              ` · ${app.roleLabel}`
+            ))}
         </Link>
       ))}
     </span>
@@ -61,17 +66,16 @@ function Apps({ companyId, person }: { companyId: CompanyId; person: Person }) {
  * "Quem usa os apps": the people from outside the company with the apps they use, each app leading
  * to its Projeto's section; whoever manages takes a person from every app at once (step 18, H).
  */
-export function AppUsers(props: {
-  companyId: CompanyId
-  mayManage: boolean
-  page: string | undefined
-}) {
-  const { companyId, mayManage, page } = props
+export function AppUsers(props: { companyId: CompanyId; page: string | undefined }) {
+  const { companyId, page } = props
   const { data } = useSuspenseQuery(companyAppAccessQuery(companyId, page))
   const phone = useIsMobile()
   return (
     <section className="flex flex-col gap-lg">
       <SectionTitle>Quem usa os apps</SectionTitle>
+      {!data.mayManage && (
+        <p className="text-text-2">Só o dono ou um administrador dá ou tira acesso aos apps.</p>
+      )}
       {data.people.length === 0 ? (
         <Empty>Ninguém de fora da empresa usa os apps.</Empty>
       ) : (
@@ -95,7 +99,7 @@ export function AppUsers(props: {
                   </TableCell>
                 )}
                 <TableCell className="w-px px-sm">
-                  {mayManage && <RevokeEverywhere companyId={companyId} person={person} />}
+                  {data.mayManage && <RevokeEverywhere companyId={companyId} person={person} />}
                 </TableCell>
               </TableRow>
             ))}

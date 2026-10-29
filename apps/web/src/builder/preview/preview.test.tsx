@@ -59,6 +59,19 @@ function handoffs(location = LOCATION) {
   return bodies
 }
 
+function onAPhone() {
+  vi.spyOn(globalThis, 'matchMedia').mockImplementation((media: string) =>
+    Object.assign(new EventTarget(), {
+      matches: true,
+      media,
+      onchange: null,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+      dispatchEvent: () => true,
+    }),
+  )
+}
+
 function iframe() {
   const frame = screen.getByTitle('Prévia')
   if (!(frame instanceof HTMLIFrameElement)) throw new Error('the Prévia is not an iframe')
@@ -119,16 +132,7 @@ test('Celular: a visão fica no endereço e volta com Computador', async () => {
 })
 
 test('celular de verdade: Recarregar, o endereço e Abrir app na barra; sem Computador e Celular', async () => {
-  vi.spyOn(globalThis, 'matchMedia').mockImplementation((media: string) =>
-    Object.assign(new EventTarget(), {
-      matches: true,
-      media,
-      onchange: null,
-      addListener: () => undefined,
-      removeListener: () => undefined,
-      dispatchEvent: () => true,
-    }),
-  )
+  onAPhone()
   openProject({ appVersion: 1, publishedVersion: 1 })
   const bar = await screen.findByRole('region', { name: 'Prévia' })
   expect(within(bar).getByRole('button', { name: 'Recarregar' })).toBeTruthy()
@@ -136,6 +140,25 @@ test('celular de verdade: Recarregar, o endereço e Abrir app na barra; sem Comp
   expect(within(bar).getByRole('link', { name: 'Abrir app' }).getAttribute('href')).toBe(`${APP}/`)
   expect(screen.queryByRole('button', { name: 'Computador' })).toBeNull()
   expect(screen.getAllByRole('link', { name: 'Abrir app' })).toHaveLength(1)
+})
+
+test('celular de verdade: antes do primeiro Publicar, a barra não oferece Abrir app', async () => {
+  onAPhone()
+  openProject({ appVersion: 1 })
+  const bar = await screen.findByRole('region', { name: 'Prévia' })
+  expect(within(bar).getByRole('button', { name: 'Recarregar' })).toBeTruthy()
+  expect(screen.queryByRole('link', { name: 'Abrir app' })).toBeNull()
+})
+
+test('Celular: tocar no item já escolhido não troca a visão', async () => {
+  const { conexus } = openProject({ appVersion: 1 })
+  await screen.findByTitle('Prévia')
+  fireEvent.click(screen.getByRole('button', { name: 'Celular' }))
+  await waitFor(() => expect(conexus.router.state.location.search).toMatchObject({ view: 'phone' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Celular' }))
+  await new Promise((resolve) => setTimeout(resolve, 50))
+  expect(conexus.router.state.location.search).toMatchObject({ view: 'phone' })
+  expect(iframe().className).toContain('390px')
 })
 
 test('recarga: a versão nova do app recarrega o iframe', async () => {

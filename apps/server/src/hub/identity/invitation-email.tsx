@@ -121,10 +121,11 @@ function InvitationContent(props: InvitationMailProps) {
 }
 
 function InvitationEmail(props: InvitationMailProps) {
+  const unanswered = props.invited.kind === 'APP' ? 'ninguém usa o app' : 'ninguém entra na empresa'
   return (
     <MailFrame
       preview={invitationSentence(props)}
-      note={`Este convite foi enviado para ${props.to}. Se você não esperava por ele, pode ignorar esta mensagem: ninguém entra na empresa sem a sua resposta.`}
+      note={`Este convite foi enviado para ${props.to}. Se você não esperava por ele, pode ignorar esta mensagem: ${unanswered} sem a sua resposta.`}
     >
       <InvitationContent {...props} />
     </MailFrame>
