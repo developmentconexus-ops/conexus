@@ -74,7 +74,8 @@ function read<O>(output: z.ZodType<O>, answer: ProviderAnswer, body: unknown): A
 /**
  * The REST answer: the body in the operation's schema, or the failure its status says. A 404 is a
  * list only when its body says so: the list itself, or (for the reads whose page documents it) the
- * documented not-found body, which reads as `empty`, the list with no rows; any other 404 is the kernel's.
+ * not-found body the kit expects (NotFound), which reads as `empty`, the list with no rows; any
+ * other 404 is the kernel's.
  */
 export function restAnswer<O>(
   answer: ProviderAnswer,

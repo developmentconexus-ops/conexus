@@ -262,16 +262,7 @@ test('a porta lê o envelope: sucesso, recusa do fornecedor e o que não se lê'
   )
   assert.partialDeepStrictEqual(
     answer('consultar', 200, { status: '1', responseBody: { rows: 'x' } }),
-    {
-      kind: 'UNREADABLE',
-      native: { status: 200, body: null },
-    },
-  )
-  assert.partialDeepStrictEqual(
-    answer('consultar', 200, { status: '1', responseBody: { rows: 'x' } }),
-    {
-      kind: 'UNREADABLE',
-    },
+    { kind: 'UNREADABLE' },
   )
   assert.partialDeepStrictEqual(answer('carregar', 200, { responseBody: {} }), {
     kind: 'UNREADABLE',
@@ -308,4 +299,8 @@ test('a recusa do envelope leva o que o Sankhya disse; uma linha lida e um 2xx i
     native: { code: '0' },
   })
   // A 2xx the kit cannot read never carries the company's data body.
+  assert.partialDeepStrictEqual(
+    answer('consultar', 200, { status: '1', responseBody: { rows: 'x' } }),
+    { kind: 'UNREADABLE', native: { status: 200, body: null } },
+  )
 })
