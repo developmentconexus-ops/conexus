@@ -284,6 +284,8 @@ Em 2026-10-28, sobre o QA da etapa 17: "Sobre etapa 17. aprovo a A". Lançar a v
 
 Em 2026-10-28, sobre os textos novos da etapa 17: "E aprovo as frases". São o botão **Publicar**; a pergunta "Publicar a versão N?" com "Quem abrir o app passa a ver esta versão."; a confirmação "Publicar a versão N" e "Publicando…"; "Versão N publicada" no alto, só no computador; as marcas **Na Prévia** e **Publicada** e o botão **Publicar esta**; a página "Este app ainda não foi publicado."; a frase de Versões vazia ("Nenhuma versão ainda. Cada versão que o Builder monta aparece aqui, e o app abre no endereço depois do primeiro Publicar."); e "Essa versão não existe mais.".
 
+Em 2026-10-27, sobre as decisões da etapa 17: "`A1` `B1` `C2` `D1`". Os mesmos dados (`A1`); sem etiqueta (Tag) no Git ao publicar (`B1`, que troca o "Sim" de 2026-10-25 à pergunta "deveria ser um release ou tag não?"): a marca **Publicada** é o registro; todo membro que conversa com o Builder publica, "pelo menos p agora que nosso authorizatin e capabilities RBAC é simples" (`C2`); o "Voltar para esta" vira "Publicar esta" (`D1`).
+
 Etapa 17 usada em 2026-10-28 em https://hub.conexus.fun (v0.17.0), no computador e no iPhone: "Etapa 17 aprovado". No iPhone de verdade a Prévia passou; o achado do QA foi visto só no WebKit do Playwright no Linux. Pendências: #355 tomada pela `D1` (fechada); as dívidas da etapa em #440; o achado do WebKit sobre o `style-src` em #441; o que sobrou das revisões em #442.
 
 ## Etapa 18
@@ -291,3 +293,9 @@ Etapa 17 usada em 2026-10-28 em https://hub.conexus.fun (v0.17.0), no computador
 Em 2026-10-28, sobre o cartão da etapa 18, Entrar num app, e a pergunta I (onde mora o convite de um app: na tabela de convites da biblioteca de login, marcado com o app e o papel, `I1`): "I1". O Hub escreve, aceita e cancela esse convite; o convite da empresa cancela os convites de app abertos daquele endereço; a entrada vai em `boundaries.md`. Lido como a resposta `I1`. A aprovação do cartão é também a palavra da regra de dados D11 para as permissões do banco da U1.
 
 Cartão da etapa 18 aprovado em 2026-10-28 (commit 29437b1f913cb74d44eedc44ddf104628f034227): "aPROVO PAGINA"
+
+Em 2026-10-29, sobre a Prévia em janela de navegador (#444, proposta B, Janela): "Aprovado". Sobre o ícone escolhido de Computador e Celular no tema claro (#445): "Dourado" (2026-10-28).
+
+Em 2026-10-29, sobre os textos novos da etapa 18: "Aprovo os textos da 18 como estão e manter os dois toques". São os textos do e-mail do convite de um app (assunto "Convite para usar o app Encomendas", título, corpo, "Ver convite" e o rodapé "ninguém usa o app sem a sua resposta", como o #455 o mudou); da página do convite; da seção **Quem usa o app** (os papéis, **Tirar acesso**, **Cancelar convite**, **Dar acesso**, as confirmações e os avisos); as recusas ao dar acesso; da lista **Quem usa os apps** e **Tirar de todos**; "Seus apps"; "Seu papel neste app não permite isto."; as recusas da plataforma; e as quatro frases do #455: "Só o dono ou um administrador dá ou tira acesso ao app.", "Só o dono ou um administrador dá ou tira acesso aos apps.", "Encomendas · Papel que a versão publicada não tem mais" em vermelho na lista da empresa, e o rodapé acima. "Manter os dois toques": **Criar senha** e depois **Aceitar convite** seguem dois toques, e o passo 3 do roteiro, "cria a senha e cai no app", fica registrado como dois toques.
+
+Em 2026-10-29, sobre as notificações, um portal de eventos emitidos (um convite seria um evento, e uma tela lista todas; um agente que manda uma mensagem também): "é todo um estudo que poderia vir em uma etapa futura" e "podemos ir depois da 20 as notificações". Entram no roteiro como a 20.4.

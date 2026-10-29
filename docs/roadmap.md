@@ -41,6 +41,7 @@ Aprovações e usos: [aprovações](approvals.md).
     20.1 **Escrever pelo app.** Responde pelo app uma pergunta do Mercado Livre.
     20.2 **App que se atualiza.** Vê o app mudar sozinho com um aviso do fornecedor.
     20.3 **Jet.** Liga a Jet, feita com o kit.
+    20.4 **Notificações.** Vê um convite, ou a mensagem de um agente, chegar como um evento na lista de notificações.
 21. **Outras contas.** Liga a da OpenAI, se os termos confirmarem.
     21.1 **Ver o que acontece.** Vê a Atividade da empresa e o painel.
 16. **Atualizar sem cortar.** Conversa enquanto o Conexus é atualizado.
@@ -99,6 +100,7 @@ Login social. Arquivos enviados por pessoas para dentro de um app ou da máquina
 | 20.1 Escrever pelo app | A 20 | Nenhuma | Leitura, escrita, destrutiva. Escrita nova pede nova liberação |
 | 20.2 App que se atualiza | A 20 | Nenhuma | Avisos do fornecedor (S48) |
 | 20.3 Jet | A 20 | Quem pede o ambiente de teste | Fornecedor com documentação fina |
+| 20.4 Notificações | A 20 | Nenhuma ainda: o estudo traz as suas | Um portal em que chegam os eventos emitidos; o convite é um evento. Fundador, 2026-10-29: "um portal de notificação, em que ele chega através de eventos que são emitidos" e "podemos ir depois da 20 as notificações" |
 | 21 Outras contas | A 12 | Nenhuma | A leitura dos termos da OpenAI |
 | 21.1 Ver o que acontece | A 20 | Grafana no Brasil, provado | Um só caminho OTel (0052) |
 | 16 Atualizar sem cortar | A 14 | Nenhuma | Consertos de execução da auditoria. Testes 9 e 10 |
