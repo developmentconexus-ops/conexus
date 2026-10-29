@@ -1,8 +1,9 @@
-import { listInvitations, listMembers } from '@conexus/hub-api'
+import { listCompanyAppAccess, listInvitations, listMembers } from '@conexus/hub-api'
 import { createFileRoute } from '@tanstack/react-router'
 import { UsersIcon } from 'lucide-react'
 import { z } from 'zod'
 import {
+  companyAppAccessQuery,
   companyQuery,
   invitationsQuery,
   membersQuery,
@@ -13,6 +14,7 @@ import { readOrNotFound } from '../../../../../platform/hub.ts'
 const Search = z.object({
   members: listMembers.input.query.shape.page.catch(undefined),
   invitations: listInvitations.input.query.shape.page.catch(undefined),
+  apps: listCompanyAppAccess.input.query.shape.page.catch(undefined),
 })
 
 export const Route = createFileRoute('/_app/companies/$companyId_/settings/people')({
@@ -36,6 +38,7 @@ export const Route = createFileRoute('/_app/companies/$companyId_/settings/peopl
     await readOrNotFound(
       Promise.all([
         queryClient.ensureQueryData(membersQuery(params.companyId, deps.members)),
+        queryClient.ensureQueryData(companyAppAccessQuery(params.companyId, deps.apps)),
         ...(company.mayInviteAs.length > 0
           ? [queryClient.ensureQueryData(invitationsQuery(params.companyId, deps.invitations))]
           : []),

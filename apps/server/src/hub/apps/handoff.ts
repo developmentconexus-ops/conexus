@@ -41,7 +41,7 @@ function hashOf(value: string): string {
 }
 
 /**
- * Gives a person of the company a pass to the app on the host, bound to the browser by the hash its
+ * Gives a person of the company, or one given its app, a pass to the app on the host, bound to the browser by the hash its
  * binding cookie holds. An unknown host, an outsider and a company being deleted get the same
  * not-found (security S10); the Hub session the pass hangs from is the request's own.
  */
@@ -57,7 +57,12 @@ async function createHandoff(
 ) {
   const found = await deps.projects.projectOfHost(input.host)
   if (found === undefined) throw new Failure('NOT_FOUND', { details: { reason: 'NO_HOST' } })
-  const admitted = await deps.projects.admitToApp({ personId: input.person.id, ...found })
+  const { environment } = input
+  const admitted = await deps.projects.admitToApp({
+    personId: input.person.id,
+    ...found,
+    environment,
+  })
   if (admitted.kind !== 'ADMITTED') {
     const reason = admitted.kind === 'REFUSED' ? admitted.reason : 'NO_PROJECT'
     throw new Failure('NOT_FOUND', { details: { reason } })
@@ -162,7 +167,8 @@ async function checkCall(
     )
     throw new Failure('APP_SESSION_INVALID', { details: { ...ids, reason: 'PROJECT_REPLACED' } })
   }
-  const admitted = await deps.projects.admitToApp({ personId: found.personId, ...ids })
+  const { environment } = found
+  const admitted = await deps.projects.admitToApp({ personId: found.personId, ...ids, environment })
   switch (admitted.kind) {
     case 'REFUSED':
       throw new Failure('APP_ACCESS_REFUSED', { details: { ...ids, reason: admitted.reason } })
@@ -170,10 +176,9 @@ async function checkCall(
       throw new Failure('APP_NOT_FOUND', { details: ids })
     case 'ADMITTED': {
       const { personId, personName } = found
-      const { projectName } = admitted
-      const access = { kind: 'BUILDER' } as const
+      const { projectName, access } = admitted
       const caller = { personId, personName, projectId: ids.projectId, projectName, access }
-      return callTo(deps, { ...ids, caller, environment: found.environment })
+      return callTo(deps, { ...ids, caller, environment })
     }
     default:
       return admitted satisfies never
@@ -222,6 +227,21 @@ function callTo(
       },
     }
   })
+}
+
+/**
+ * Ends a person's sessions in a Projeto's app once their access is taken (security S13), after the
+ * commit and through the Hub's login without a company, as `checkCall` ends a replaced one.
+ */
+export async function endAppSessions(
+  deps: { database: Database },
+  ids: { projectId: ProjectId; personId: PersonId },
+): Promise<void> {
+  await deps.database.installation((tx) =>
+    tx
+      .delete(appSession)
+      .where(and(eq(appSession.projectId, ids.projectId), eq(appSession.personId, ids.personId))),
+  )
 }
 
 /** The door's three acts, each bound to its dependencies. */

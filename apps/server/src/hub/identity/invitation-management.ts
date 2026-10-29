@@ -1,14 +1,15 @@
-import type { CompanyId, InvitationId, Person, PersonId } from '@conexus/hub-api'
+import type { CompanyId, InvitationId, Person, PersonId, ProjectId } from '@conexus/hub-api'
 import { and, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { CommandTx, Database } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { CompanyProof } from './admission.ts'
-import { admitCompany } from './admission.ts'
+import { admit, admitCompany } from './admission.ts'
 import type { Auth, LibraryCommand } from './auth.ts'
-import { invitationExpiry, refusedAs } from './auth.ts'
+import { invitationExpiry, organizationAdapter, refusedAs } from './auth.ts'
 import { companyById } from './companies.ts'
 import {
+  CompanyPendingRow,
   cancelThrough,
   checkPace,
   companyScope,
@@ -17,7 +18,7 @@ import {
   LIVE,
   lockCompany,
   lockedInviter,
-  PendingRow,
+  OF_COMPANY,
   pending,
   pendingOf,
   Status,
@@ -32,7 +33,8 @@ type Manage = {
   sessionToken: string
   headers: Headers
 }
-const ManagedRow = PendingRow.extend({
+// The company's routes renew and cancel only its own invitations; an app's is not found here.
+const ManagedRow = CompanyPendingRow.extend({
   status: Status,
   live: z.boolean(),
   superseded: z.boolean(),
@@ -69,7 +71,11 @@ async function admittedInvitation(tx: CommandTx, input: Manage) {
     })
     .from(invitation)
     .where(
-      and(eq(invitation.id, input.invitationId), eq(invitation.organizationId, input.companyId)),
+      and(
+        eq(invitation.id, input.invitationId),
+        eq(invitation.organizationId, input.companyId),
+        OF_COMPANY,
+      ),
     )
   const row = ManagedRow.optional().parse(found)
   if (row === undefined) throw new Failure('NOT_FOUND')
@@ -108,11 +114,51 @@ export function cancelInvitationCommand(deps: { auth: Auth; libraryCommand: Libr
       const { admitted, row } = await admittedInvitation(tx, input)
       if (row.status === 'canceled' && !row.superseded) return false
       current(row, input)
-      await cancelThrough(deps.auth, { admitted, headers: input.headers, invitationId: row.id })
+      const { headers } = input
+      await cancelThrough(deps.auth, { admitted, headers, invitationId: row.id, kind: row.kind })
       await tx
         .update(invitation)
         .set({ revision: sql`${invitation.revision} + 1` })
         .where(eq(invitation.id, row.id))
+      return true
+    })
+}
+
+/**
+ * Cancels an app's open invitation, by the capability to manage who uses the apps (step 18, B),
+ * through the plugin's adapter: its endpoint would check the plugin's own permission to cancel
+ * (docs/reference/boundaries.md). A repeat answers as the first; an accepted one is not found.
+ */
+export function cancelAppInvitationCommand(deps: { auth: Auth; libraryCommand: LibraryCommand }) {
+  return (input: {
+    person: Person
+    companyId: CompanyId
+    projectId: ProjectId
+    invitationId: InvitationId
+  }) =>
+    deps.libraryCommand(companyScope(input), async (tx) => {
+      await lockCompany(tx, input.companyId)
+      const { companyId } = input
+      await admit({ tx, personId: input.person.id, companyId, action: 'manageAppAccess' })
+      const [found] = await tx
+        .select({ status: invitation.status })
+        .from(invitation)
+        .where(
+          and(
+            eq(invitation.id, input.invitationId),
+            eq(invitation.organizationId, companyId),
+            eq(invitation.projectId, input.projectId),
+          ),
+        )
+      const status = Status.optional().parse(found?.status)
+      if (status === 'canceled') return false
+      if (status !== 'pending') throw new Failure('NOT_FOUND')
+      const adapter = await organizationAdapter(deps.auth)
+      await adapter.updateInvitation({ invitationId: input.invitationId, status: 'canceled' })
+      await tx
+        .update(invitation)
+        .set({ revision: sql`${invitation.revision} + 1` })
+        .where(eq(invitation.id, input.invitationId))
       return true
     })
 }
@@ -149,7 +195,7 @@ async function renewed(
     })
     .where(eq(invitation.id, row.id))
     .returning(pending)
-  return pendingOf(PendingRow.parse(renewal))
+  return pendingOf(CompanyPendingRow.parse(renewal))
 }
 
 export function renewInvitationCommand(deps: {

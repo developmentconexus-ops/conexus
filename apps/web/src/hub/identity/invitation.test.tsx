@@ -21,6 +21,7 @@ const ENTRY = `/invitations/${ID}`
 const DETAILS = {
   company: COMPANY,
   role: 'admin',
+  app: null,
   inviterName: 'Ana Lima',
   firstOwner: false,
   expiresAt: '2026-10-20T12:00:00.000Z',
@@ -193,7 +194,7 @@ test('acceptance is explicit and sends its revision before opening the company',
     sessionRead(() => DAVI),
     http.put(`*/api/invitations/${ID}/acceptance`, async ({ request }) => {
       sent.push(await request.json())
-      return HttpResponse.json(acceptInvitation.success.body.parse({ company: COMPANY }))
+      return HttpResponse.json(acceptInvitation.success.body.parse({ company: COMPANY, app: null }))
     }),
   )
   const router = open()
@@ -210,7 +211,7 @@ test('o membro convidado aceita e cai no Início, sem passos nem cartão; a empr
     sessionRead(() => DAVI),
     ...companyRead({ role: 'member', members: [] }),
     http.put(`*/api/invitations/${ID}/acceptance`, () =>
-      HttpResponse.json(acceptInvitation.success.body.parse({ company: COMPANY })),
+      HttpResponse.json(acceptInvitation.success.body.parse({ company: COMPANY, app: null })),
     ),
   )
   const router = open()
@@ -259,8 +260,8 @@ test('acceptance does not flash the joined invitation while the company is still
     sessionRead(() => DAVI),
     http.put(`*/api/invitations/${ID}/acceptance`, () => {
       accepted = true
-      state.invitation = { kind: 'JOINED', company: COMPANY }
-      return HttpResponse.json(acceptInvitation.success.body.parse({ company: COMPANY }))
+      state.invitation = { kind: 'JOINED', company: COMPANY, app: null }
+      return HttpResponse.json(acceptInvitation.success.body.parse({ company: COMPANY, app: null }))
     }),
     http.get(`*/api/companies/${COMPANY.id}/projects`, async () => {
       await held
@@ -294,7 +295,7 @@ test('acceptance does not flash the joined invitation while the company is still
 })
 
 test('a current member opens the joined company without accepting again', async () => {
-  hub({ kind: 'JOINED', company: COMPANY })
+  hub({ kind: 'JOINED', company: COMPANY, app: null })
   open()
   expect(await screen.findByRole('link', { name: 'Abrir empresa' })).toBeTruthy()
   expect(screen.queryByRole('button', { name: 'Aceitar convite' })).toBeNull()

@@ -199,7 +199,8 @@ test('apagar com app: Workers, esquema e logins antes das linhas; a marca dá 40
     personId: PersonId.parse(ana.id),
     companyId: CompanyId.parse(companyId),
     projectId: ProjectId.parse(projectId),
-  }
+    environment: 'published',
+  } as const
   assert.deepEqual(await hub.projects.ports.admitToApp(ids), { kind: 'NOT_FOUND' })
   assert.deepEqual(hub.cloudflare.workers(), [`v-${version.id}`])
   // The same request resumes the marked Projeto; another name finds nothing.

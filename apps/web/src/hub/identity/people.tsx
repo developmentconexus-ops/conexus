@@ -12,6 +12,7 @@ import { Pager } from '../../ui/pager.tsx'
 import { Empty } from '../../ui/states.tsx'
 import { FramedTable, TableBody, TableCell, TableRow } from '../../ui/table.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
+import { AppUsers } from './app-users.tsx'
 import { CancelInvitationForm } from './cancel-invitation-form.tsx'
 import { InviteForm } from './invite-form.tsx'
 import { MemberActions } from './member-actions.tsx'
@@ -84,8 +85,12 @@ function Cells({
   )
 }
 
-/** The pages of the two lists, kept in the address (web W18). */
-export type PeoplePages = { members?: string | undefined; invitations?: string | undefined }
+/** The pages of the lists, kept in the address (web W18). */
+export type PeoplePages = {
+  members?: string | undefined
+  invitations?: string | undefined
+  apps?: string | undefined
+}
 type Company = { id: CompanyId; name: string }
 
 function Members({ company, page }: { company: Company; page: string | undefined }) {
@@ -285,6 +290,7 @@ export function People() {
         <p className="text-text-2">Só o dono ou um administrador convida pessoas.</p>
       )}
       <CompanyPeople company={data.company} pages={pages} mayInviteAs={data.mayInviteAs} />
+      <AppUsers companyId={data.company.id} page={pages.apps} />
     </div>
   )
 }

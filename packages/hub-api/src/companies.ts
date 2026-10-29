@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { CompanyNickname } from './address.ts'
+import { AppEntry, CompanyNickname } from './address.ts'
 import { Email, Password, PersonId } from './identity.ts'
 import { defineOperation } from './operation.ts'
 
@@ -74,9 +74,11 @@ export const ListedInvitation = PendingInvitation.extend({
 })
 export type ListedInvitation = z.infer<typeof ListedInvitation>
 
+/** An open invitation: to the company with `role`, or to use one of its apps, `app`, with no `role`. */
 const OpenInvitation = z.object({
   company: Company,
-  role: Role,
+  role: Role.nullable(),
+  app: z.object({ projectName: z.string().min(1) }).nullable(),
   inviterName: z.string().min(1),
   /** The company has no member yet: Conexus invites its first owner (step 4.2). */
   firstOwner: z.boolean(),
@@ -89,7 +91,7 @@ export const InvitationView = z.discriminatedUnion('kind', [
   OpenInvitation.extend({ kind: z.literal('INVITED') }),
   z.object({ kind: z.literal('OTHER'), signedInAs: Email }),
   z.object({ kind: z.literal('CLOSED'), state: InvitationState.exclude(['PENDING']) }),
-  z.object({ kind: z.literal('JOINED'), company: Company }),
+  z.object({ kind: z.literal('JOINED'), company: Company, app: AppEntry.nullable() }),
 ])
 export type InvitationView = z.infer<typeof InvitationView>
 
@@ -333,13 +335,13 @@ export const declineInvitation = defineOperation({
 
 export const acceptInvitation = defineOperation({
   id: 'acceptInvitation',
-  summary: 'Accepts an invitation sent to the signed-in person’s e-mail and joins the company.',
+  summary: 'Accepts an invitation sent to the signed-in person’s e-mail: the company, or one app.',
   access: 'session',
   method: 'PUT',
   path: '/api/invitations/{invitationId}/acceptance',
   bodyLimit: 1024,
   input: { params: OfInvitation, body: Revision },
-  success: { status: 200, body: z.object({ company: Company }) },
+  success: { status: 200, body: z.object({ company: Company, app: AppEntry.nullable() }) },
   failures: [
     'NOT_FOUND',
     'INVITATION_CLOSED',

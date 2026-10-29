@@ -14,6 +14,7 @@ const CREATE_PROJECT = { project: ['create'] } as const
 const DELETE_PROJECT = { project: ['delete'] } as const
 const CHOOSE_NICKNAME = { company: ['nickname'] } as const
 const MANAGE_MODEL_ACCOUNTS = { modelAccount: ['manage'] } as const
+const MANAGE_APP_ACCESS = { appAccess: ['manage'] } as const
 type ActionRule = {
   by: 'MEMBER' | 'COMPANY' | 'OPERATOR'
   locks: boolean
@@ -25,6 +26,7 @@ type ActionRule = {
     | typeof DELETE_PROJECT
     | typeof CHOOSE_NICKNAME
     | typeof MANAGE_MODEL_ACCOUNTS
+    | typeof MANAGE_APP_ACCESS
 }
 
 /**
@@ -57,6 +59,10 @@ const ACTIONS = {
   useConversations: { by: 'MEMBER', statement: undefined, locks: false },
   // Every member reads the files of the Projeto's saved versions (step 13).
   readProjectSource: { by: 'MEMBER', statement: undefined, locks: false },
+  // Every member reads who uses the company's apps; only an owner or an administrator gives and
+  // takes that access (step 18, B and B2). The operator does not manage a client's apps (S11).
+  readAppAccess: { by: 'MEMBER', statement: undefined, locks: false },
+  manageAppAccess: { by: 'MEMBER', statement: MANAGE_APP_ACCESS, locks: true },
   readMembers: { by: 'COMPANY', statement: undefined, locks: false },
   readInvitations: { by: 'COMPANY', statement: INVITE, locks: false },
   invite: { by: 'COMPANY', statement: INVITE, locks: true },
@@ -267,7 +273,7 @@ function admitMember(input: CompanyInput, role: Role, action: RoleAction): Membe
  * any other, with the reason only in the log (security S10). The mark is read after the caller's
  * company lock, so a deletion that has marked the company is seen (S8).
  */
-async function refuseIfDeleting(input: CompanyInput): Promise<void> {
+async function refuseIfDeleting(input: Omit<CompanyInput, 'personId'>): Promise<void> {
   const [row] = await input.tx
     .select({ since: company.deletingSince })
     .from(company)
@@ -285,6 +291,14 @@ export async function admit(input: CompanyInput & { action: MemberAction }): Pro
   const admitted = admitMember(input, role, input.action)
   await refuseIfDeleting(input)
   return admitted
+}
+
+/**
+ * Admits a person who only uses an app of the company, whose row the caller read (step 18): the
+ * company being deleted refuses them as it refuses a member.
+ */
+export async function admitAppUser(tx: ReadTx, input: { companyId: CompanyId }): Promise<void> {
+  await refuseIfDeleting({ tx, companyId: input.companyId })
 }
 
 /**
