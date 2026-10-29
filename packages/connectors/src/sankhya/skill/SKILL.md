@@ -16,7 +16,7 @@ The connection is read only. Never write, never ask for values to store, and nev
 - Each operation counts its pages in its own way: the first page is 0 on some and 1 on others, and the parameter is `page` on all but the prices, which take `pagina`. The part for the subject gives the first page of each; use it.
 - Use the ready operations before the read doors. They are typed, the same for every company, and cost one call.
 - Confirm what a code or a field means in this company's dictionary before relying on it (see The dictionary).
-- Leave the HR and payroll tables alone: the read doors do not read them (tables that start with `TFP`, and employees' personal data), and no ready operation covers them.
+- Leave the HR and payroll tables alone: never read them through the read doors (tables that start with `TFP`, and employees' personal data); no ready operation covers them.
 
 ## The ready operations, by subject
 

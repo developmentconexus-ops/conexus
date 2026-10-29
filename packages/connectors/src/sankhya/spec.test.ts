@@ -3,12 +3,12 @@ import { readFileSync } from 'node:fs'
 import { describe, it } from 'node:test'
 import { z } from 'zod'
 import { readToken, tokenRequest } from '../kernel/auth.ts'
-import type { OperationId, ProviderRequest } from '../kernel/operation.ts'
+import type { Operation, OperationId, ProviderRequest } from '../kernel/operation.ts'
 import { requestOf } from '../kernel/operation.ts'
 import { toRequest } from '../kernel/request.ts'
 import { sankhya } from './definition.ts'
 import { sankhyaFake } from './fake.ts'
-import { downloadSpec, SITE, Spec } from './spec-source.ts'
+import { downloadSpec, fetchText, SITE, Spec } from './spec-source.ts'
 
 // The documentation is Sankhya's ("Licença Sankhya") and the repository is public, so none of it is
 // kept here. The check reads it when it runs: SANKHYA_SPEC names a file or an address of the cut
@@ -22,9 +22,7 @@ async function readSpec(): Promise<Spec | null> {
   // biome-ignore lint/style/noProcessEnv: a switch of this one check, not the app's configuration
   const given = process.env.SANKHYA_SPEC
   if (given) {
-    const text = /^https?:\/\//.test(given)
-      ? await (await globalThis.fetch(given)).text()
-      : readFileSync(given, 'utf8')
+    const text = /^https?:\/\//.test(given) ? await fetchText(given) : readFileSync(given, 'utf8')
     return Spec.parse(JSON.parse(text))
   }
   // biome-ignore lint/style/noProcessEnv: a switch of this one check, not the app's configuration
@@ -38,7 +36,8 @@ function loadSpec(): Promise<Spec | null> {
   return loaded
 }
 
-type Sample = { id: OperationId; request: ProviderRequest; body: unknown }
+/** `queried` is every key of the input that `request` puts in the query, not only the ones the probe sends. */
+type Sample = { id: OperationId; request: ProviderRequest; body: unknown; queried: string[] }
 
 /** The route of a request: a literal path before one with `{param}`, a parameter standing for one segment. */
 function routeOf(spec: Spec, request: ProviderRequest) {
@@ -64,13 +63,21 @@ function problemsOf(spec: Spec, sample: Sample): string[] {
       `${sample.id}: ${sample.request.method} ${sample.request.path} is not a documented route`,
     ]
   const [key, route] = found
-  const problems = Object.keys(sample.request.query)
+  const problems = [...new Set([...Object.keys(sample.request.query), ...sample.queried])]
     .filter((name) => !route.query.includes(name))
     .map((name) => `${sample.id}: ${key} declares no query parameter ${name}`)
   const answer = z.fromJSONSchema(route.answer)
   if (!answer.safeParse(sample.body).success)
     problems.push(`${sample.id}: the fake's answer is not the 200 of ${key}`)
   return problems
+}
+
+/** The keys of an operation's input that its request sends in the query, each tried on its own beside the probe's input. */
+function queriedKeys(operation: Operation<unknown, unknown>, probe: unknown): string[] {
+  const names = Object.keys(z.toJSONSchema(operation.input, { io: 'input' }).properties ?? {})
+  return names.filter(
+    (name) => name in operation.request({ ...z.looseObject({}).parse(probe), [name]: '1' }).query,
+  )
 }
 
 /** The probes in order, as the conformance runs them, against the fake. */
@@ -92,7 +99,7 @@ async function samples(): Promise<Sample[]> {
     const body = z.unknown().parse(await response.json())
     const answered = operation.answer({ status: response.status, body })
     if (answered.kind === 'OK') earlier.set(operation.id, answered.value)
-    out.push({ id: operation.id, request, body })
+    out.push({ id: operation.id, request, body, queried: queriedKeys(operation, input) })
   }
   return out
 }
@@ -133,5 +140,6 @@ describe('a documentação do Sankhya', () => {
     assert.equal(problemsOf(spec, { ...clientes, body: bare }).length, 1)
     const extra = { ...clientes.request, query: { ...clientes.request.query, bogus: '1' } }
     assert.equal(problemsOf(spec, { ...clientes, request: extra }).length, 1)
+    assert.equal(problemsOf(spec, { ...clientes, queried: ['dataInicio'] }).length, 1)
   })
 })

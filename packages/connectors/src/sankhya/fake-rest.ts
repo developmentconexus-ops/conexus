@@ -278,6 +278,25 @@ const ROUTES: readonly Route[] = [
   },
 ]
 
+/** The reads whose page documents the 403 body as `mensagem: { codigo, descricao }`; the other pages give it none. */
+const DOCUMENTED_403 = new Set([
+  'clientes',
+  'estoque',
+  'contasAReceber',
+  'contasAPagar',
+  'precosDoProduto',
+  'precosDaTabela',
+])
+
+/** A 403 as the route's page documents it, or with the gateway's own `code` on a route whose page gives no body. */
+export function forbidden(path: string, code: string, text: string): Response {
+  const documented = DOCUMENTED_403.has(routeOf(path)?.name ?? '')
+  return json(
+    documented ? { mensagem: { codigo: code, descricao: text } } : { code, message: text },
+    403,
+  )
+}
+
 /** The route a REST path belongs to, or null when the fake has no such route. */
 export function routeOf(
   path: string,
