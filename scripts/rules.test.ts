@@ -13,6 +13,7 @@ function cruise(dir: string): Violation[] {
   cpSync(join(ROOT, 'tsconfig.base.json'), join(dir, 'tsconfig.base.json'))
   mkdirSync(join(dir, 'node_modules/@conexus'), { recursive: true })
   symlinkSync(join(dir, 'packages/hub-api'), join(dir, 'node_modules/@conexus/hub-api'))
+  symlinkSync(join(dir, 'packages/connectors'), join(dir, 'node_modules/@conexus/connectors'))
   const run = spawnSync(
     join(ROOT, 'node_modules/.bin/depcruise'),
     ['.', '--config', join(ROOT, '.dependency-cruiser.cjs'), '--output-type', 'json'],
@@ -75,6 +76,8 @@ const BAD_IMPORTS: Record<string, [string, string, Record<string, string>]> = {
   'mastra-only-in-builder': ['apps/web/src/hub/a/agent.ts', '@mastra/core/agent', {}],
   'e2b-only-in-the-machine': ['apps/server/src/builder/runs/sandbox.ts', 'e2b', {}],
   's3-only-in-the-git-copy': ['apps/server/src/builder/git/bucket.ts', '@aws-sdk/client-s3', {}],
+  'connectors-kit-stands-alone': ['packages/connectors/src/x.ts', 'pg', {}],
+  'connectors-kit-only-in-the-executor': ['apps/web/src/hub/a/kit.ts', '@conexus/connectors', {}],
   'web-tree-shape': [
     'apps/web/src/components/button.ts',
     '../platform/hub.ts',
@@ -110,6 +113,8 @@ const GOOD_IMPORTS: Record<string, string> = {
   'infra/e2b/template.ts': 'e2b',
   'apps/server/src/builder/git/copy/bucket.ts': '@aws-sdk/client-s3',
   'apps/web/src/builder/a/conversation.ts': '@mastra/client-js',
+  'apps/server/src/hub/connectors/executor.ts': '@conexus/connectors',
+  'tests/e2e/live-hub.ts': '@conexus/connectors',
 }
 
 let violations: Violation[] = []
@@ -118,6 +123,9 @@ before(() => {
     'packages/hub-api/package.json':
       '{"name":"@conexus/hub-api","type":"module","exports":{".":"./src/index.ts"}}',
     'packages/hub-api/src/index.ts': PUBLIC,
+    'packages/connectors/package.json':
+      '{"name":"@conexus/connectors","type":"module","exports":{".":"./src/index.ts"}}',
+    'packages/connectors/src/index.ts': PUBLIC,
   }
   for (const [file, target, extra] of Object.values(BAD_IMPORTS)) {
     files[file] = importing(target)
