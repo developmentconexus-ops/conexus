@@ -17,8 +17,9 @@ usuário só de leitura do Sankhya de uma empresa (o que você fornece antes).
    confirma. O Sankhya passa para "Ligadas", com "Ligada por Ana em 29/10, ainda não testada". Os
    campos nunca mais aparecem.
 3. Ela toca **Testar**. Em poucos segundos aparece "Ligação funcionando" e, linha por linha,
-   **Empresas**, **Pedidos**, **Produtos**, **Clientes**, **Impostos dos pedidos** e **Consulta
-   livre**, cada um com "lê", "recusado pelo Sankhya" ou, sem pedido para olhar, "nada para ler".
+   **Empresas**, **Pedidos**, **Produtos**, **Clientes**, **Impostos dos pedidos**, **Leitura
+   genérica** e **Consulta livre**, cada um com "lê", "recusado pelo Sankhya", "resposta que o
+   Conexus não entendeu" ou, sem pedido para olhar, "nada para ler".
 4. O Bruno abre **Integrações**: vê o Sankhya e o seu estado, sem **Ligar**, **Testar** nem
    **Desligar**, e a frase "Só a dona ou um administrador liga, testa e desliga."
 5. A Ana toca **Desligar** e confirma. O Sankhya volta para "Para ligar"; as chaves saem do Hub.
@@ -59,7 +60,7 @@ que viu e aprova os textos da tela.
 
 Dadas em 2026-10-28, ao primeiro estudo dos conectores: `C1` (a ligação é da empresa), `D` (ligar e
 desligar é a capacidade `connection: manage`, da dona e do administrador), `E1` com escrita, `F1` e
-`G1`; Integrações na barra lateral, não em Configurações. Ao estudo fundo: `I1` (o Sankhya com
+`G1`; Integrações na barra lateral, não em Configurações. `A1` (um catálogo de conectores escrito por nós, como um kit). Ao estudo fundo: `I1` (o Sankhya com
 operações prontas e a porta de leitura, skill em todos), `J1`, `K1` (o kit é um pacote neste
 repositório, com uma parede), `L1` (a ligação guarda a versão do conector), `M1` (cada operação
 declara leitura, escrita ou destrutiva), `N` na primeira opção (o executor no Hub, em São Paulo), `O1` e o roteiro
@@ -123,28 +124,27 @@ arquivos vizinhos (`model-accounts/`, o `gateway.ts` do OS); hipótese.
 
 | # | Unidade | Critério, observável de fora, com a recusa | Teste que o prova | Nível |
 | --- | --- | --- | --- | --- |
-| 1 | U0 | `npm run deps` recusa um arquivo de `packages/connectors/` que importe `apps/`, outro pacote do repositório que não `zod`, `pg`, `drizzle-orm` ou `fastify`; e recusa um arquivo de fora de `apps/server/src/hub/connectors/` que importe `@conexus/connectors` | `npm run deps` com dois arquivos plantados num ramo de prova, nomeados no pull request | must |
+| 1 | U0 | `npm run deps` recusa um arquivo de `packages/connectors/` que importe `apps/`, outro pacote do repositório, `pg`, `drizzle-orm`, `fastify` ou `@mastra/*` (o kit importa só `zod` e o Node); e recusa um arquivo de fora de `apps/server/src/hub/connectors/` e de `tests/` que importe `@conexus/connectors` | `scripts/rules.test.ts`, um arquivo plantado por regra, como as outras | must |
 | 2 | U1 | `defineOperation` sem `class`, ou com uma classe fora de `read`, `write`, `destructive`, não compila; a porta de leitura só aceita operações `read` | `packages/connectors/src/kernel/kernel.test.ts`, "a classe é obrigatória" (com `// @ts-expect-error`) | must |
 | 3 | U1 | `toRequest` monta o pedido só na origem fixa do conector: um caminho absoluto (`https://…`), com `//` no começo, com `..` ou com `@` lança antes de qualquer `fetch`; a consulta e o corpo vão como o conector os monta | `kernel.test.ts`, "o pedido fica na origem fixa" | must |
-| 4 | U1 | `runConformance(sankhya, fake)` passa: ids únicos, versão semver, cada operação com classe, resumo e `probe`; os `probe` em ordem, cada um respondido pelo dublê, passam no esquema de saída; o pedido de token com a chave errada dá `AUTH_REFUSED`; nenhum pedido montado leva um valor da credencial fora do pedido de token e do cabeçalho; a skill nomeia cada operação | `packages/connectors/src/sankhya/sankhya.test.ts`, "o Sankhya passa no teste comum" | must |
+| 4 | U1 | `runConformance(sankhya, fake)` passa: ids únicos, versão semver, cada operação com classe, resumo e `probe`, e cada `read` com `idempotent: true`; os `probe` em ordem, cada um respondido pelo dublê, passam no esquema de saída; o pedido de token com a chave errada dá `AUTH_REFUSED`; nenhum pedido montado leva um valor da credencial fora do pedido de token e do cabeçalho; a skill nomeia cada operação | `packages/connectors/src/sankhya/sankhya.test.ts`, "o Sankhya passa no teste comum" | must |
 | 5 | U1 | A porta de leitura do Sankhya: `consultar` aceita um `SELECT` ou `WITH`; recusa, antes de montar o pedido, duas instruções, `INSERT`, `UPDATE`, `DELETE`, `MERGE`, `EXEC`, um comentário que esconde `;`, a citação `q'` do Oracle; `carregar` só chama `CRUDServiceProvider.loadRecords`; nenhum outro serviço sai do kit | `sankhya.test.ts`, "a porta de leitura só lê" | must |
-| 6 | U1 | Cada operação pronta (empresas, pedidos, produtos, clientes, impostos de um pedido) faz um `GET` na API REST e devolve linhas tipadas; um 403 que não é de token vira `REFUSED` (`NO_PERMISSION`); um 400 `RetornoErro`, `REFUSED` (`INPUT`); um 401 ou 403 `4303` ou `4405`, `AUTH_REFUSED`; um 403 `GTW3403` (token vencido), `TOKEN_EXPIRED`; na porta, um envelope com `status` diferente de `"1"`, ou um 200 com `[CORE_E…]`, vira `REFUSED` (`VENDOR`); uma resposta fora do esquema, `UNREADABLE`; nunca linhas vazias no lugar de uma recusa | `sankhya.test.ts`, "as operações prontas leem o envelope" | must |
-| 7 | U2 | `connectors.connection` guarda uma por (empresa, conector): a segunda dá `23505`; apagar a empresa leva a linha; o login de uma empresa não lê a de outra (RLS); `hub_company` não lê a coluna `sealed`; `connectors.sealed_of(id)` devolve o selo só na empresa da transação | `apps/server/src/hub/connectors/tables.test.ts`, "a ligação: uma por conector, cada empresa a sua, o selo só pela função" | must |
+| 6 | U1 | Cada operação pronta (empresas, pedidos, produtos, clientes, impostos de um pedido) faz um `GET` na API REST e devolve linhas tipadas; um 403 que não é de token vira `REFUSED` (`NO_PERMISSION`); um 400 `RetornoErro`, `REFUSED` (`INPUT`); no login, 400, 401 ou 403 dão `AUTH_REFUSED` (como o OS, `gateway.ts:47`); numa operação, um 401 ou 403 `4303` ou `4405`, `AUTH_REFUSED`; um 403 `GTW3403` (token vencido), `TOKEN_EXPIRED`; na porta, um envelope com `status` diferente de `"1"`, ou um 200 com `[CORE_E…]`, vira `REFUSED` (`VENDOR`); uma resposta fora do esquema, `UNREADABLE`; nunca linhas vazias no lugar de uma recusa | `sankhya.test.ts`, "as operações prontas leem o envelope" | must |
+| 7 | U2 | `connectors.connection` guarda uma por (empresa, conector): a segunda dá `23505`; apagar a empresa leva a linha; o login de uma empresa não lê a de outra (RLS); `hub_company` não lê a coluna `sealed`; `connectors.sealed_of(id)` devolve o selo só na empresa da transação | `apps/server/src/hub/connectors/tables.test.ts`, "a ligação: uma por conector, cada empresa a sua, o selo só pela função", por SQL no banco de teste (`createTestDatabase`, como `platform/isolation-model-accounts.test.ts`) | must |
 | 8 | U2 | A lista de permissões do banco é a de `database-grants.sql` com as linhas novas, e nenhuma outra muda | `apps/server/src/platform/catalog.test.ts` | must |
 | 9 | U3 | `POST /api/companies/{c}/connections` com `{ connector: 'sankhya', credential }`, da dona ou do administrador: 201, a ligação com `state: 'NEW'` e sem nenhum campo da credencial; o membro recebe 404 `NOT_FOUND` (S10); um conector que o kit não tem, 404 `CONNECTOR_UNKNOWN`; uma credencial fora do esquema, 422 `CONNECTION_CREDENTIAL_INVALID`; um segundo Sankhya, 409 `CONNECTION_EXISTS`; a mesma chave de tentativa com outra credencial, 409 `IDEMPOTENCY_CONFLICT`, e com a mesma, a mesma ligação | `apps/server/src/hub/connectors/connections.test.ts`, "ligar: quem pode, e as recusas" | must |
-| 10 | U3 | `POST …/connections/{id}/test` com o dublê: 200 `{ result: 'WORKING', checks }`, um item por operação pronta e por entrada da porta, cada um `READS`, `REFUSED` ou `NOTHING_TO_READ` (os impostos sem pedido nenhum); a ligação passa a `ACTIVE` com `testedAt`; com o dublê recusando um serviço, aquele item dá `REFUSED` e os outros `READS` | `connections.test.ts`, "testar: cada parte, lê ou sem permissão" | must |
-| 11 | U3 | Testar com a chave recusada pelo dublê: 200 `{ result: 'AUTH_REFUSED' }` e a ligação passa a `NEEDS_REAUTH`; com o dublê fora do ar ou mudo além do prazo: 200 `{ result: 'UNREACHABLE' }` e o estado não muda; o membro recebe 404 | `connections.test.ts`, "testar: chave recusada, fornecedor fora" | must |
-| 12 | U3 | Uma ligação desligada durante o Testar: o Testar responde 404 `CONNECTION_NOT_FOUND` e nenhuma linha volta; dois Testar ao mesmo tempo pedem um token cada um e o dublê nunca vê dois serviços no mesmo token ao mesmo tempo (o envelope "4" do Sankhya) | `connections.test.ts`, "testar e desligar juntos; um serviço por token" | must |
+| 10 | U3 | `POST …/connections/{id}/test` com o dublê: 200 `{ result: 'WORKING', checks }`, um item por operação pronta e por entrada da porta, cada um `READS`, `REFUSED`, `UNREADABLE` (a resposta fora do esquema ou acima de 256 KB: aquela linha só) ou `NOTHING_TO_READ` (os impostos sem pedido nenhum); a ligação passa a `ACTIVE` com `testedAt`; com o dublê recusando um serviço, aquele item dá `REFUSED` e os outros `READS` | `connections.test.ts`, "testar: cada parte, com a sua resposta" | must |
+| 11 | U3 | Testar com a chave recusada pelo dublê: 200 `{ result: 'AUTH_REFUSED' }` e a ligação passa a `NEEDS_REAUTH`; com o dublê fora do ar, ou mudo além do prazo por chamada (o prazo vem das dependências do Hub, 10 s, e o teste o põe em 200 ms): 200 `{ result: 'UNREACHABLE' }` e o estado não muda; o token que o dublê dá por vencido (403 `GTW3403`) é pedido de novo uma vez, e a segunda vez dá `AUTH_REFUSED`; o membro recebe 404 | `connections.test.ts`, "testar: chave recusada, fornecedor fora" | must |
+| 12 | U3 | Uma ligação desligada durante o Testar: o Testar responde 404 `CONNECTION_NOT_FOUND` e nenhuma linha volta; dois Testar ao mesmo tempo pedem um token cada um, os dois dão `WORKING`, e o dublê nunca vê dois pedidos no mesmo token ao mesmo tempo (o envelope "4" do Sankhya: o Testar chama em fila, nunca em paralelo, e o dublê responde "4" a um segundo pedido em curso) | `connections.test.ts`, "testar e desligar juntos; um serviço por token" | must |
 | 13 | U3 | `DELETE …/connections/{id}`: 204, também quando a ligação já não existe; depois, a lista não a mostra e um Testar dela dá 404; o membro recebe 404 | `connections.test.ts`, "desligar, e de novo" | must |
 | 14 | U3 | `GET /api/companies/{c}/connections`: todo membro lê o catálogo (o Sankhya com os rótulos dos campos) e as ligações (estado, quem ligou, quando, `testedAt`, a versão do conector) e `mayManage`; nenhuma resposta, log ou erro leva um valor da credencial; quem não é membro recebe 404 | `connections.test.ts`, "a lista: o membro lê, nada da credencial sai" | must |
-| 15 | U3 | O selo da ligação abre só com o seu contexto: copiado para outra linha, outra empresa ou outro conector, `SEAL_REFUSED`; `reseal` move as ligações seladas com uma chave antiga para a atual e conta `moved`, `kept`, `refused`, como as contas de modelo | `apps/server/src/hub/connectors/connection-seal.test.ts`, "o selo da ligação e o reseal" | must |
-| 16 | U3 | O executor pede o pedido só à origem do conector, ou à do dublê que a configuração nomeia, que só pode ser `http://127.0.0.1` ou `localhost` (`HUB_CONNECTOR_ORIGINS`); qualquer outra recusa o Hub de subir; um redirecionamento do fornecedor é recusado; uma resposta acima de 256 KB é cortada e vira `UNREADABLE` | `apps/server/src/hub/connectors/executor.test.ts`, "a origem, o redirecionamento e o teto"; `apps/server/src/platform/config.test.ts`, "a origem do dublê é só local" | must |
-| 17 | U3 | O token do Sankhya é reusado até `expires_in` menos a margem, pedido uma vez só por vários chamadores ao mesmo tempo, pedido de novo uma vez quando o Sankhya responde 403 `GTW3403` (vencido), e esquecido quando a ligação é desligada | `executor.test.ts`, "o token: um pedido por vez, reusado, esquecido" | should |
-| 18 | U4 | Em **Integrações**, a dona vê "Ligadas" e "Para ligar"; **Ligar** abre o formulário com os três campos, sem mostrar o que foi colado depois de ligar; cada recusa mostra a frase do código no campo ou no formulário; **Testar** mostra "Testando…" e depois o resultado, linha por linha; **Desligar** pede confirmação | `apps/web/src/hub/connectors/integrations.test.tsx`, "a dona liga, testa e desliga" | must |
-| 19 | U4 | O membro vê a página, as ligações e o estado, sem **Ligar**, **Testar** nem **Desligar**, e a frase de quem pode (W34, V29); sem ligação nenhuma, "Nenhuma integração ligada ainda."; a lista que não carrega mostra o erro com "Tentar de novo" | `integrations.test.tsx`, "o membro lê; vazio e erro" | must |
-| 20 | U4 | A barra da empresa tem **Integrações** entre os Projetos e as Configurações, ativa na página; no celular, na gaveta (V56) | `apps/web/src/routes/_app/companies/$companyId/route.test.tsx`, "Integrações na barra" | must |
-| 21 | U4 | Num navegador de verdade (Chrome e WebKit, 1366 e 390 px, os dois temas), o roteiro inteiro com o dublê do Sankhya | o teste das telas (`conexus-qa`) | must |
-| 22 | U3 | No Hub de verdade, com o usuário só de leitura que você fornece, o Testar dá `WORKING` | o roteiro de uso, passo 3, por você (não roda em CI: nenhum Sankhya de verdade em teste, S40) | must |
+| 15 | U3 | O selo da ligação abre só com o seu contexto: copiado para outra linha, outra empresa ou outro conector, `SEAL_REFUSED`; `reseal` move as ligações seladas com uma chave antiga para a atual e conta `moved` e `refused`, como as contas de modelo (`reseal.ts:73`); uma ligação de um conector que o kit não tem mais conta `refused` | `apps/server/src/hub/connectors/connection-seal.test.ts`, "o selo da ligação e o reseal": o selo copiado por SQL cru no banco de teste, e o `reseal` pelo processo (`spawnHub`, como `model-accounts/reseal.test.ts`) | must |
+| 16 | U3 | O executor pede o pedido só à origem do conector, ou à do dublê que a configuração nomeia, que só pode ser `http://127.0.0.1` ou `localhost` (`HUB_CONNECTOR_ORIGINS`); qualquer outra recusa o Hub de subir; um redirecionamento do fornecedor dá `UNREACHABLE`; uma resposta acima de 256 KB é cortada e aquela linha dá `UNREADABLE`; o Hub com uma origem para um conector que o kit não tem não sobe | `apps/server/src/hub/connectors/executor.test.ts`, "a origem, o redirecionamento e o teto", pela rota do Testar com os interruptores do dublê; `apps/server/src/platform/config.test.ts`, "a origem do dublê é só local" | must |
+| 17 | U4 | Em **Integrações**, a dona vê "Ligadas" e "Para ligar"; **Ligar** abre o formulário com os três campos, sem mostrar o que foi colado depois de ligar; cada recusa mostra a frase do código no campo ou no formulário; **Testar** mostra "Testando…" e depois o resultado, linha por linha; **Desligar** pede confirmação | `apps/web/src/hub/connectors/integrations.test.tsx`, "a dona liga, testa e desliga" | must |
+| 18 | U4 | O membro vê a página, as ligações e o estado, sem **Ligar**, **Testar** nem **Desligar**, e a frase de quem pode (W34, V29); sem ligação nenhuma, "Nenhuma integração ligada ainda."; a lista que não carrega mostra o erro com "Tentar de novo" | `integrations.test.tsx`, "o membro lê; vazio e erro" | must |
+| 19 | U4 | A barra da empresa tem **Integrações** entre os Projetos e as Configurações, ativa na página; no celular, na gaveta (V56) | `apps/web/src/routes/_app/companies/$companyId/route.test.tsx`, "Integrações na barra" | must |
+| 20 | U4 | Num navegador de verdade (Chrome e WebKit, 1366 e 390 px, os dois temas), o roteiro inteiro com o dublê do Sankhya | o teste das telas (`conexus-qa`) | must |
+| 21 | U3 | No Hub de verdade, com o usuário só de leitura que você fornece, o Testar dá `WORKING` | o roteiro de uso, passo 3, por você (não roda em CI: nenhum Sankhya de verdade em teste, S40) | must |
 
 ## A matriz de estados
 
@@ -178,7 +178,7 @@ o diálogo de ligar, o `AlertDialog`).
 |  Projetos          +   |  [S] Sankhya   Funcionando · testada em 29/10, 14:02         |
 |    Encomendas          |                Ligada por Ana em 29/10      [Testar] [Desligar]|
 |  Integrações   <       |      Empresas lê · Pedidos lê · Produtos lê · Clientes lê    |
-|                        |      Impostos dos pedidos lê · Consulta livre: recusado      |
+|                        |      Impostos lê · Leitura genérica lê · Consulta: recusado  |
 |  Configurações         |  Para ligar                                                  |
 |  Ana Lima        v     |  (nenhum outro conector ainda)                               |
 +------------------------+--------------------------------------------------------------+
@@ -203,10 +203,10 @@ Ligar Sankhya (diálogo)
 
 | Gravação ou comando, da etapa ou da biblioteca | Duas vezes ao mesmo tempo | Recusada no meio, depois de uma instrução ou de uma chamada | Uma dependência fora (o banco, ou um terceiro) | O que o processo imprime | Critérios |
 | --- | --- | --- | --- | --- | --- |
-| Ligar (`POST …/connections`) | a trava da linha do membro (`locks`, S8) e a chave de tentativa (C37): a segunda com a mesma chave devolve a mesma ligação; sem chave, a segunda dá `CONNECTION_EXISTS` pelo índice único; uma resposta cortada, 502 ou 503, repetida com a mesma chave, dá a mesma ligação | uma transação: a linha com o selo, ou nada | o banco fora: `DATABASE_UNAVAILABLE`, como hoje | `CONNECTION_LINKED` com `by`, `companyId`, `connectionId`, `connector` | 9 |
-| Testar (`POST …/test`), três passos: ler o selo; o login e as chamadas ao Sankhya; gravar o estado | dois Testar: cada um pede o seu token (o Testar nunca reusa o token guardado) e as chamadas de cada token vão uma por vez; o último estado gravado vale | o selo lido numa transação curta, sem conexão do banco presa durante as chamadas (D22); o estado gravado só se a linha ainda é a mesma (`id` e `linked_at`), senão 404 `CONNECTION_NOT_FOUND` e nada muda | o banco fora no primeiro ou no último passo: `DATABASE_UNAVAILABLE`, e o estado não muda; o Sankhya fora ou mudo além de 10 s por chamada: `UNREACHABLE`, o estado não muda; repetir é seguro (só leitura) | `CONNECTION_TESTED` com `by`, `connectionId`, `result` e a contagem de cada `outcome`; nunca um valor lido, um SQL ou um corpo (S41) | 10, 11, 12 |
-| Desligar (`DELETE …/connections/{id}`) | a trava do membro: o segundo dá 204 | uma instrução; o token esquecido depois do `commit`; um Testar em curso termina em 404 | o banco fora: a frase; nada mudou | `CONNECTION_REMOVED` com `by`, `connectionId` | 12, 13 |
-| O login no Sankhya (`POST /authenticate`, do executor) | pedido uma vez por ligação ao mesmo tempo; os que esperam recebem o mesmo token | a chave recusada (401 ou 403): `AUTH_REFUSED`, e o token não fica guardado | o Sankhya fora: `UNREACHABLE` | nada além da linha do Testar | 11, 17 |
+| Ligar (`POST …/connections`) | a trava da linha do membro (`locks`, S8) e a chave de tentativa (C37): a segunda com a mesma chave devolve a mesma ligação; duas pessoas com chaves diferentes não se travam (cada uma trava a sua linha de membro), e a segunda dá `23505` em `connection_connector_key`, que `connections.ts` traduz para `CONNECTION_EXISTS`; uma resposta cortada, 502 ou 503, repetida com a mesma chave, dá a mesma ligação | uma transação: a linha com o selo, ou nada | o banco fora: `DATABASE_UNAVAILABLE`, como hoje | `CONNECTION_LINKED` com `by`, `companyId`, `connectionId`, `connector` | 9 |
+| Testar (`POST …/test`), três passos: ler o selo; o login e as chamadas ao Sankhya; gravar o estado | dois Testar: cada um pede o seu token (nesta etapa nenhum token é guardado) e as chamadas de cada token vão uma por vez; o último estado gravado vale | o selo lido numa transação curta, sem conexão do banco presa durante as chamadas (D22); o estado gravado só se a linha ainda é a mesma (`id` e `linked_at`), senão 404 `CONNECTION_NOT_FOUND` e nada muda; o selo que não abre: 500 `SEAL_REFUSED` (a de hoje, `model-account-failures.ts:5`), antes de chamar o Sankhya | o banco fora no primeiro ou no último passo: `DATABASE_UNAVAILABLE`, e o estado não muda; o Sankhya fora ou mudo além de 10 s por chamada: `UNREACHABLE`, o estado não muda; repetir é seguro (só leitura) | `CONNECTION_TESTED` com `by`, `connectionId`, `result` e a contagem de cada `outcome`; nunca um valor lido, um SQL ou um corpo (S41) | 10, 11, 12 |
+| Desligar (`DELETE …/connections/{id}`) | a trava do membro: o segundo dá 204 | uma instrução; um Testar em curso termina em 404 | o banco fora: a frase; nada mudou | `CONNECTION_REMOVED` com `by`, `connectionId` | 12, 13 |
+| O login no Sankhya (`POST /authenticate`, do executor) | um por Testar | a chave recusada (400, 401 ou 403): `AUTH_REFUSED` | o Sankhya fora: `UNREACHABLE` | nada além da linha do Testar | 11 |
 | `reseal` das ligações (o comando de hoje, que passa a cobrir as ligações) | o comando roda sozinho, como hoje | uma transação por empresa, como as contas de modelo | um selo que não abre fica e é contado `refused`; nenhum abre: o comando falha, como hoje | as contagens de hoje, com as das ligações | 15 |
 | As migrações da U2 | o Hub sobe um por vez | uma transação | o Hub não sobe, como hoje | como hoje | 7, 8 |
 
@@ -223,22 +223,25 @@ Context7 e por `developer.sankhya.com.br` (U1, "A API do Sankhya").
 | O núcleo do kit (definição) | U1 | nenhum | Activepieces `packages/pieces/framework/src/lib/piece-metadata.ts:61-66`; Nango `packages/providers/providers.yaml:9368-9400` (a entrada de provedor: modo de login, URL do token, base fixa, campos); nenhuma faz a peça para o nosso executor e o nosso selo | uma definição por conector, com o login declarado e a base fixa | remendo: nenhuma biblioteca serve ao nosso executor e ao selo; a forma é a do Activepieces e do Nango, o código é nosso | o critério 4 (o teste comum); `docs/decisions/0056` | `A1`, `K1` | `packages/connectors/src/kernel/definition.ts` |
 | A classe da operação | U1 | nenhum | Activepieces `ActionClassification = READ, SEARCH, WRITE, DESTRUCTIVE` (`piece-metadata.ts:61`); Pipedream `components/github/actions/create-issue/create-issue.mjs:8-12` (`annotations`) | uma classe por ação | embrulhado: campo obrigatório, sem padrão (o "sem classe vale escrita" do Activepieces é a armadilha evitada) | o critério 2 | `M1` | `packages/connectors/src/kernel/operation.ts` |
 | A versão do conector | U1, U2 | nenhum | Activepieces `community/github/package.json:3` (semver por conector) | versão por conector | embrulhado: `version` na definição, guardada na ligação | o critério 4 (semver) e 9 (a ligação a guarda) | `L1` | — |
-| O pedido na origem fixa | U1, U3 | nenhum | OS `apps/hub/src/connectors/native.ts` `pinnedUrl`; OS `sankhya/gateway.ts:12,37-41` (as duas origens publicadas, `redirect: 'error'` em `:52`) | a URL é montada da origem fixa, nunca do texto de quem chama | embrulhado: `toRequest(connector, request, token)` no kit, a única montagem de URL; o executor só envia | o critério 3 | não precisa | `packages/connectors/src/kernel/request.ts` |
-| O login por chave (`client_credentials`) | U1, U3 | nenhum | Sankhya `POST /authenticate` (U1, "A API do Sankhya"); OS `sankhya/gateway.ts:140-157` | o pedido de token declarado; o executor o envia | embrulhado: o kit declara o login e monta o pedido de token como função pura; abrir o selo, enviar e guardar o token é só do executor (S36) | os critérios 4 e 11 | não precisa | `packages/connectors/src/kernel/auth.ts` |
-| Uma chamada por token | U3 | nenhum | OS `connectors/token-cache.ts:22-30` (`inLane`: um token do Sankhya é uma sessão, e uma segunda chamada em curso cancela a primeira, envelope "4") | uma fila por token | embrulhado (herdado do OS): `oneRequestAtATime` na definição; a fila no executor | o critério 12 | não precisa | — |
+| O pedido na origem fixa | U1, U3 | nenhum | OS `apps/hub/src/connectors/native.ts` `pinnedUrl`; OS `sankhya/gateway.ts:12,39-43` (as duas origens publicadas, `redirect: 'error'` em `:55`) | a URL é montada da origem fixa, nunca do texto de quem chama | embrulhado: `toRequest(connector, request, token)` no kit, a única montagem de URL; o executor só envia | o critério 3 | não precisa | `packages/connectors/src/kernel/request.ts` |
+| O login por chave (`client_credentials`) | U1, U3 | nenhum | Sankhya `POST /authenticate` (U1, "A API do Sankhya"); OS `sankhya/gateway.ts:139-151` | o pedido de token declarado; o executor o envia | embrulhado: o kit declara o login e monta o pedido de token como função pura; abrir o selo, enviar e guardar o token é só do executor (S36) | os critérios 4 e 11 | não precisa | `packages/connectors/src/kernel/auth.ts` |
+| Uma chamada por token | U3 | nenhum | OS `connectors/token-cache.ts:22-30` (`inLane`: um token do Sankhya é uma sessão, e uma segunda chamada em curso cancela a primeira, envelope "4") | uma fila por token | embrulhado (herdado do OS): `oneRequestAtATime` na definição; nesta etapa só o Testar chama, em fila; a fila por token do executor entra com a 20, quando um token for reusado | o critério 12 | não precisa | — |
 | O teste comum e o dublê | U1 | nenhum | Airbyte CAT (um teste para todos, **relay**); Nango `NangoActionMock` (**relay**); OS `scripts/builder-eval/sankhya-sim.mjs` (o simulador de `loadRecords`) | um harness por conector, contra respostas gravadas | embrulhado: `runConformance` puro (sem rede) e `fake.ts` por conector, que serve aos testes, ao Hub local e ao QA | o critério 4 | não precisa | `packages/connectors/src/kernel/conformance.ts`, `packages/connectors/src/sankhya/fake.ts` |
 | As operações prontas do Sankhya | U1 | nenhum | Sankhya API REST v1 (`GET /v1/empresas`, `/v1/vendas/pedidos`, `/v1/produtos`, `/v1/parceiros/clientes`; U1, "A API do Sankhya") | a API pública, a mesma para todas as empresas, paginada por `page` | nativo: o fornecedor já tem a operação; cinco `read` tipadas, uma por recurso, e os impostos lidos dos itens do pedido | o critério 6 | `I1` (as palavras sobre o comum) | `packages/connectors/src/sankhya/operations.ts` |
-| A porta de leitura do Sankhya | U1 | nenhum | OS `sankhya/gateway.ts:22-30` (a lista de serviços de leitura), `read-only-sql.ts` (a instrução única), `:33` (o teto de 256 KB); OS `apps/hub/src/builder/handler-kit/sankhya.ts:38-51,84-90` (a leitura das respostas de `loadRecords` e `executeQuery`, que rodou com um Sankhya de verdade); Sankhya `loadRecords` (documentado) | a lista de dois serviços; o SQL conferido | embrulhado: `defineReadDoor` com `consultar` e `carregar`, só `read`; o SQL conferido é o arame, não a guarda (a guarda é o usuário de integração) | o critério 5 | `I1` | `packages/connectors/src/sankhya/door.ts`, `read-only-sql.ts` |
+| A porta de leitura do Sankhya | U1 | nenhum | OS `sankhya/gateway.ts:22-30` (a lista de serviços de leitura), `read-only-sql.ts` (a instrução única), `:34` (o teto de 256 KB); OS `apps/hub/src/builder/handler-kit/sankhya.ts:39-52,84-90` (a leitura das respostas de `loadRecords` e `executeQuery`, que rodou com um Sankhya de verdade); Sankhya `loadRecords` (documentado) | a lista de dois serviços; o SQL conferido | embrulhado: `defineReadDoor` com `consultar` e `carregar`, só `read`; o SQL conferido é o arame, não a guarda (a guarda é o usuário de integração) | o critério 5 | `I1` | `packages/connectors/src/sankhya/door.ts`, `read-only-sql.ts` |
 | A skill do Sankhya | U1 | `packages/app/skills/*` | OS `builder-skills/conexus-sankhya/SKILL.md` e `references/topics.md`, `traps.md` (o dicionário `TDDCAM`, `TDDOPC`, `AD_`) | a skill ensina a descobrir o que cada empresa tem | nativo (as skills já são o meio do Builder, 0055); o texto reescrito para as operações e a porta; o Builder a carrega na 20 | o critério 4 (a skill nomeia cada operação) | `I1`, `J1` | `packages/connectors/src/sankhya/skill/SKILL.md` |
-| A ligação (a conta da empresa) | U2, U3 | as contas de modelo (`apps/server/src/builder/model-accounts/tables.ts:51-102`) | Mastra Connect `client.ts` (estados `active`, `needs_reauth`, `error`); Nango (a ligação separada da integração) | uma linha por conta, com estado | embrulhado: `connectors.connection`, como `model_account`: empresa, conector, versão, estado, selo, quem ligou | os critérios 7 e 9 | `C1`, `D` | `apps/server/src/hub/connectors/tables.ts` |
+| A ligação (a conta da empresa) | U2, U3 | as contas de modelo (`apps/server/src/builder/model-accounts/tables.ts:51-99`) | Mastra Connect `client.ts` (estados `active`, `needs_reauth`, `error`); Nango (a ligação separada da integração) | uma linha por conta, com estado | embrulhado: `connectors.connection`, como `model_account`: empresa, conector, versão, estado, selo, quem ligou | os critérios 7 e 9 | `C1`, `D` | `apps/server/src/hub/connectors/tables.ts` |
 | O selo da ligação | U2, U3 | `apps/server/src/platform/seal.ts:41-48` (`SealContext`), `builder.sealed_of` (`migrations/20261019110219_model_accounts_grants`) | n8n `Cipher` (**relay**) | selar com a chave do servidor | embrulhado (herdado das contas de modelo): o propósito `connection`, a função `connectors.sealed_of` do papel `hub_connection_seals`, como `hub_model_seals` | o critério 15 | não precisa | — |
 | Quem liga, testa e desliga | U3 | `admission.ts:38-71` `ACTIONS`; `roles.ts:10-37` | better-auth 1.7.8 `plugins/access` | papéis mapeados para capacidades | nativo: `connection: ['manage']` em `ACCESS_CONTROL` e `MANAGE_COMPANY`; as ações `readConnections` e `manageConnections` | os critérios 9, 11, 13 | `D` | — |
-| O executor | U3 | nenhum | OS `connectors/broker.ts`, `gateway.ts:44-98` (`send`: `redirect: 'error'`, o corpo do fornecedor nunca sai, o teto lido em pedaços); Mastra Connect (o proxy que guarda a credencial, sem log de argumentos, **relay**); nenhuma faz a peça no Brasil | um só lugar abre a credencial, chama e corta | remendo (0031, emendada pela 0056): o executor no Hub; nenhuma biblioteca o faz no Brasil | os critérios 10 a 17; `docs/decisions/0056` | `N` | `apps/server/src/hub/connectors/executor.ts` |
+| O executor | U3 | nenhum | OS `connectors/broker.ts`, `gateway.ts:52-90` (`send`: `redirect: 'error'`, o corpo do fornecedor nunca sai, o teto lido em pedaços); Mastra Connect (o proxy que guarda a credencial, sem log de argumentos, **relay**); nenhuma faz a peça no Brasil | um só lugar abre a credencial, chama e corta | remendo (0031, emendada pela 0056): o executor no Hub; nenhuma biblioteca o faz no Brasil | os critérios 10 a 16; `docs/decisions/0056` | `N` | `apps/server/src/hub/connectors/executor.ts` |
 | A origem do dublê | U3 | `platform/config.ts:64-69` (`NeonApiUrl`, `GitCopyUrl` com `overHttpsOrLoopback`) | — | a configuração aponta para um dublê local | embrulhado (herdado de `NeonApiUrl`): `HUB_CONNECTOR_ORIGINS`, só local; a de produção vem só da definição (S36) | o critério 16 | não precisa | — |
 | A decisão do conector | U3 | 0031 ("`connectors.fetch`", base "implemented so") | o estudo fundo, 4.1 e 4.2 | — | embrulhado: a decisão 0056 substitui a 0031: o kit de definições, operações por classe e a porta de leitura, um executor no Hub | — | `I1`, `M1`, `N` | `docs/decisions/0056-connectors-kit-and-one-executor.md` |
-| Integrações na barra da empresa | U4 | `routes/_app/companies/$companyId/route.tsx:40-70` (Início, Projetos, Configurações); W32 já diz onde fica | OS `apps/web/src/app/shell.tsx:91-104`; Supabase (o menu da organização, "Integrations"); Mitra (a foto do fundador, não na estante) | uma entrada de primeiro nível | embrulhado: um `FrameLink` entre os Projetos e as Configurações | o critério 20 e o QA | `O1` | — |
-| A página Integrações | U4 | Contas de modelo (`web/src/builder/model-accounts/{company-accounts,key-form,accounts-table}.tsx`) | o estudo fundo, 4.5 | a lista de ligadas e para ligar | embrulhado: a página com as peças de Contas de modelo | os critérios 18 e 19 e o QA | `O1` | `apps/web/src/hub/connectors/integrations.tsx` |
+| Integrações na barra da empresa | U4 | `routes/_app/companies/$companyId/route.tsx:40-70` (Início, Projetos, Configurações); W32 já diz onde fica | OS `apps/web/src/app/shell.tsx:91-104`; Supabase (o menu da organização, "Integrations"); Mitra (a foto do fundador, não na estante) | uma entrada de primeiro nível | embrulhado: um `FrameLink` entre os Projetos e as Configurações | o critério 19 e o QA | `O1` | — |
+| A página Integrações | U4 | Contas de modelo (`web/src/builder/model-accounts/{company-accounts,key-form,accounts-table}.tsx`) | o estudo fundo, 4.5 | a lista de ligadas e para ligar | embrulhado: a página com as peças de Contas de modelo | os critérios 17 e 18 e o QA | `O1` | `apps/web/src/hub/connectors/integrations.tsx` |
 | Code Mode, busca de ferramentas, ferramentas por liberação, caderno, liberação, OAuth, escrita | fica de fora | — | o estudo fundo, 3 | — | nativo quando vier (Mastra 1.79 `createCodeMode`, `ToolSearchProcessor`, `requireApproval`), nas etapas 19.1, 20, 20.1 e 24, como o roteiro diz | — | `H` | — |
+
+**O que sai do `main`.** Nenhum código: o `main` não tem conectores. A decisão 0031 passa a
+"Superseded by 0056" (U3). Fica para o fechamento o que os guias dizem (W30, architecture §3).
 
 **A medida do transplante.** Nenhum arquivo trazido. Do OS em `e0353c36` entram ideias, reescritas:
 a lista de serviços de leitura e o arame do SQL (`sankhya/gateway.ts`, `read-only-sql.ts`, 49 e 60
@@ -251,11 +254,11 @@ espaço de trabalho (`store.ts:80`) e a porta local do handler. A regra do estud
 muda em cada parte, e nenhuma decisão antiga entra só por ter sido feita.
 
 **A dívida.**
-- O teste do Sankhya de verdade é só o do fundador (critério 22); nenhum teste automático o vê.
+- O teste do Sankhya de verdade é só o do fundador (critério 21); nenhum teste automático o vê.
   Gatilho: uma mudança na resposta do Sankhya que o dublê não acompanhe; a resposta é gravar, sem
   dados da empresa, o que o dublê serve.
-- O token do Sankhya fica na memória do processo: uma segunda cópia do Hub pede o seu. Gatilho: a
-  segunda cópia (0006, o teste de carga da 22).
+- Nesta etapa nenhum token é guardado: cada Testar faz o seu login. O token guardado e a fila por
+  token entram com a 20, a primeira com chamadas repetidas.
 - O conector não confere a versão subida no CI. Gatilho: a primeira mudança de um conector no `main`.
 
 **Para o fechamento.** W30 ganha Integrações na lista da barra (W32 já a nomeia);
@@ -277,6 +280,7 @@ já tem a linha do pacote desde a U1.
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
 | `.dependency-cruiser.cjs` | Muda: duas regras `forbidden` | `npm run deps`, o CI |
+| `scripts/rules.test.ts` | Muda: um arquivo plantado por regra nova, e o `cruise()` liga `packages/connectors` em `node_modules/@conexus/` como já liga `hub-api` (`:15`) | `npm run test:scripts` |
 
 ### Os contratos que a unidade cria
 
@@ -296,7 +300,8 @@ já tem a linha do pacote desde a U1.
   name: 'connectors-kit-only-in-the-executor',
   comment: 'Only the Hub subject that opens a credential uses the kit (security S36).',
   severity: 'error',
-  from: { pathNot: ['^packages/connectors/', '^apps/server/src/hub/connectors/'] },
+  // tests/ for the local Hub's double (tests/e2e/live-hub.ts) and the QA.
+  from: { pathNot: ['^packages/connectors/', '^apps/server/src/hub/connectors/', '^tests/'] },
   to: { path: '^packages/connectors/' },
 },
 ```
@@ -311,13 +316,13 @@ arquivo plantado.
 
 ### A ordem do trabalho
 
-1. As duas regras. 2. Num ramo de prova (não juntado), um arquivo em `packages/connectors/src/x.ts`
-   que importa `pg`, e um em `apps/web/src/` que importa `@conexus/connectors`: `npm run deps`
-   recusa os dois; o pull request cita a saída.
+1. Os dois casos em `scripts/rules.test.ts`, falhando: `packages/connectors/src/x.ts` que importa
+   `pg`, e `apps/web/src/hub/x.ts` que importa `@conexus/connectors` (a forma dos casos de hoje,
+   `plant(files)` e `cruise`). 2. As duas regras.
 
 ### Como se prova
 
-`npm run deps` verde no `main` com as regras; a saída das duas recusas no pull request.
+`node --test scripts/rules.test.ts`; `npm run deps` verde no `main` com as regras.
 
 ### Parar se
 
@@ -350,6 +355,8 @@ já existe no OS para reescrever.
 | `packages/connectors/` (`package.json`, `tsconfig.json`, `src/kernel/`, `src/sankhya/`, `src/index.ts`) | Cria | U3 (`apps/server/src/hub/connectors/`) |
 | `package.json` (raiz), `package-lock.json` | Muda: o espaço de trabalho novo, pelo `npm install` | — |
 | `knip.json` | Muda: `packages/connectors` com `ignore: ["src/*/skill/**"]` | `npm run knip` |
+| `.github/workflows/ci.yml` (`:166`) | Muda: `-w @conexus/connectors` no `npm test` dos pacotes | o CI |
+| `infra/hub.Dockerfile` (`:9-10`, `:45-52`) | Muda: o `COPY` de `packages/connectors/package.json` nas duas fases e o da pasta, como `packages/app-contract` | a imagem do Hub |
 | `docs/reference/stack.md` | Muda: nenhuma dependência nova; o pacote usa `zod` (a linha diz "every workspace") | `npm run docs` |
 | testes: `src/kernel/kernel.test.ts`, `src/sankhya/sankhya.test.ts`, `src/sankhya/read-only-sql.test.ts` | Cria | — |
 
@@ -394,8 +401,10 @@ export type Operation<I, O> = Readonly<{
   request(input: I): ProviderRequest
   answer(answer: ProviderAnswer): Answered<O>
 }>
-export function defineOperation<I, O>(operation: Operation<I, O>): Operation<I, O>
-export type OperationId = string & z.$brand<'OperationId'>
+/** Takes `id` as a plain string and brands it (throws on a bad one), so a definition writes `id: 'pedidos'`. */
+export function defineOperation<I, O>(operation: Omit<Operation<I, O>, 'id'> & { id: string }): Operation<I, O>
+export const OperationId = z.string().regex(/^[a-z][a-zA-Z0-9]{1,39}$/).brand('OperationId')
+export type OperationId = z.infer<typeof OperationId> // the model: OperationName, app-contract runtime.ts:25-29
 
 // packages/connectors/src/kernel/auth.ts
 /** A login by fields the company pastes, exchanged for a bearer token (Sankhya). OAuth comes in 19.1. */
@@ -415,7 +424,8 @@ export type Auth = ClientCredentialsAuth
 export function tokenRequest(auth: ClientCredentialsAuth, credential: Readonly<Record<string, string>>): ProviderRequest & { form: URLSearchParams; headers: Readonly<Record<string, string>> }
 
 // packages/connectors/src/kernel/definition.ts
-export type ConnectorId = string & z.$brand<'ConnectorId'> // /^[a-z][a-z0-9-]{1,31}$/
+export const ConnectorId = z.string().regex(/^[a-z][a-z0-9-]{1,31}$/).brand('ConnectorId')
+export type ConnectorId = z.infer<typeof ConnectorId>
 export type ReadDoor = Readonly<Record<string, Operation<any, any> & { class: 'read' }>>
 export type Connector = Readonly<{
   id: ConnectorId
@@ -427,13 +437,16 @@ export type Connector = Readonly<{
   operations: readonly Operation<any, any>[] // typed, the same for every company
   readDoor?: ReadDoor                         // for what each company has of its own
 }>
-export function defineConnector(connector: Connector): Connector // throws on a repeated id, a bad version, a door entry not 'read'
+// Takes `id` as a plain string and brands it; throws on a repeated operation id, a bad version, a door entry not 'read'.
+export function defineConnector(connector: Omit<Connector, 'id'> & { id: string }): Connector
 export function defineReadDoor<D extends ReadDoor>(door: D): D
 
 // packages/connectors/src/kernel/request.ts
 /** The fetch Request on the connector's origin: the one place a connector's URL is built (S36). */
-export function toRequest(connector: Connector, request: ProviderRequest, bearer: string | null): Request
-// a path that does not start with exactly one '/', or holds '..', '@', '\\' or a scheme, throws.
+// `origin` is the connector's own, or a local double's that the Hub's configuration names (U3); the
+// URL is checked against the origin it was given. A path that does not start with exactly one '/',
+// or holds '..', '@', a backslash or a scheme, throws.
+export function toRequest(connector: Connector, request: ProviderRequest, bearer: string | null, origin?: string): Request
 
 // packages/connectors/src/kernel/conformance.ts
 /** What every connector passes, against its fake, with no network (node:test describe/it). */
@@ -506,7 +519,7 @@ auth: {
 oneRequestAtATime: true, // herdado do OS: uma segunda chamada no mesmo token cancela a primeira (envelope "4")
 ```
 
-Um valor com `\r` ou `\n` é recusado pelo esquema da credencial (o OS, `gateway.ts:143`).
+Um valor com `\r` ou `\n` é recusado pelo esquema da credencial (o OS, `gateway.ts:141`).
 
 **Os limites** (documentado, `reference/boas-práticas-para-integração`): até 1.000 pedidos por
 minuto; 10 MB por pedido; 504 depois de 2 minutos. O prazo de 10 s por chamada do executor fica bem
@@ -565,7 +578,7 @@ exemplo de `CentroResultado`):
   pagina: int ≥ 0 }`, montada como `dataSet { rootEntity, includePresentationFields: "N",
   offsetPage, criteria: { expression: { $ }, parameter: [{ $, type }] }, entity: { fieldset: { list }
   } }`. A saída: `{ linhas: Record<string, string | null>[], temMais: boolean }`, lida como o OS
-  (`handler-kit/sankhya.ts:38-51`): os nomes de `metadata.fields.field` em ordem, `f<n>.$` em cada
+  (`handler-kit/sankhya.ts:39-52`): os nomes de `metadata.fields.field` em ordem, `f<n>.$` em cada
   linha, `entity` um objeto ou uma lista. O tamanho da página: não verificado. Probe: `{ entidade:
   'Empresa', campos: ['CODEMP'], pagina: 0 }` (o nome da entidade `Empresa` para `TSIEMP`: não
   verificado; o passo 6 o confere no dicionário, `reference` "dicionário de dados").
@@ -623,8 +636,9 @@ e `references/topics.md`, `traps.md`) é o ponto de partida do texto.
    configurável; `executeQuery` que responde a `SELECT COUNT(*) AS N FROM TSIEMP`; `loadRecords` sobre
    `Empresa`; uma fila por token que responde o envelope `"4"` (ou 409 no REST) se chegar um segundo
    pedido ao mesmo token antes do primeiro responder; um interruptor por operação para recusar (403
-   no REST, `status: "0"` na porta) e um para o token vencido (403 `GTW3403`). A U3 usa os
-   interruptores.
+   no REST, `status: "0"` na porta), um para o token vencido (403 `GTW3403`), um para responder fora
+   do esquema, um para um corpo acima de 256 KB, um para um redirecionamento (302) e um para não
+   responder nunca; `serve()` fechado faz o "fora do ar". A U3 usa os interruptores.
 8. `src/sankhya/skill/SKILL.md`: as operações prontas com o resumo, a porta de leitura e quando usar
    cada uma, o dicionário (`TDDTAB`, `TDDCAM`, `TDDOPC`, `AD_`), e o que nunca fazer (escrever, pedir
    valores para guardar); das 131 linhas do OS ficam as etapas de descoberta, reescritas.
@@ -650,7 +664,7 @@ modelo.
 ### As linhas da tabela
 
 - **A ligação**: `apps/server/src/hub/connectors/tables.ts`, um esquema novo `connectors` (D1), com
-  `model_account` (`builder/model-accounts/tables.ts:51-102`) como modelo: a chave para a empresa com
+  `model_account` (`builder/model-accounts/tables.ts:51-99`) como modelo: a chave para a empresa com
   cascata, as políticas `COMPANY`, a chave de tentativa única por empresa.
 - **O selo da ligação**: o papel `hub_connection_seals`, como `hub_model_seals`
   (`migrations/20261019110058_model_seals_role/migration.sql`); a função `connectors.sealed_of(uuid)`
@@ -662,9 +676,9 @@ modelo.
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
 | `apps/server/src/hub/connectors/tables.ts` | Cria `connectors`, `connection` | U3 |
-| `apps/server/drizzle.config.ts` (ou onde o `schema` se lista) | Muda: o arquivo novo de tabelas | `drizzle-kit` |
 | `apps/server/migrations/<data>_e19_connection_seals_role/`, `<data>_e19_connection/`, `<data>_e19_connection_grants/` | Cria: o papel (SQL nosso), a tabela (gerada), as permissões e as funções (SQL nosso) | `npm run migrations` |
 | `apps/server/database-grants.sql`, `apps/server/src/platform/catalog.test.ts` | Muda: as permissões novas (D10, D11) | o catálogo |
+| `packages/hub-api/src/connectors.ts`, `index.ts` | Cria: só `CONNECTION_STATES` e `ConnectionState`; a U3 acrescenta o resto | as tabelas, a U3, a web |
 | `apps/server/src/hub/connectors/tables.test.ts` | Cria: critério 7 | — |
 
 ### Os contratos que a unidade cria
@@ -675,7 +689,7 @@ modelo.
 // leaves with it; its credential is sealed, and only connectors.sealed_of reads it (Grant A, as builder).
 export const connectors = pgSchema('connectors')
 
-export const CONNECTION_STATES = ['NEW', 'ACTIVE', 'NEEDS_REAUTH'] as const // owned in hub-api (U3) — U2 declares it here and U3 moves the list to hub-api, importing it back
+import { CONNECTION_STATES } from '@conexus/hub-api' // the one owner, created by this unit
 
 /** A company's account in an outside system (founder, C1): one per connector, sealed (S32). */
 export const connection = connectors.table('connection', {
@@ -754,23 +768,32 @@ Testar).
 
 - **O selo da ligação**: `seal.ts:41-48`, `SealContext.purpose` ganha `'connection'` e `rowId`
   ganha `ConnectionId`; o contexto é `{ purpose: 'connection', rowId, companyId, personId: null,
-  kind: connector.auth.kind, provider: connector.id }`. O `reseal` das ligações segue
-  `builder/model-accounts/reseal.ts` linha a linha, com `connectors.companies_with_seals()` e
-  `connectors.sealed_of`, e o comando `reseal` de `main.ts:296` soma as duas contagens.
+  kind: connector.auth.kind, provider: connector.id }`. O `reseal` das ligações tem a forma de
+  `builder/model-accounts/reseal.ts` (uma empresa por vez, abrir, selar de novo só com a chave
+  antiga), com `connectors.companies_with_seals()` e `connectors.sealed_of`; uma ligação cujo
+  conector o kit não tem conta `refused`; o comando `reseal` de `main.ts:296` soma as duas contagens
+  `{ moved, refused }`. É escrito, não copiado: o subject do Hub não importa o do Builder
+  (`hub-does-not-import-builder`) e o CI recusa um clone (jscpd, código C26).
+- **A credencial selada**: o Ligar confere `credential` pelo `auth.credential` do conector e sela
+  `Credential.parse(JSON.stringify(values))` (`seal.ts:52-57`); só o executor faz
+  `JSON.parse(credential.reveal())` e o confere de novo pelo mesmo esquema (uma falha é
+  `SEAL_REFUSED`), passa os valores a `tokenRequest` e não os guarda (S36).
 - **Quem liga, testa e desliga**: `roles.ts`, `connection: ['manage']` em `ACCESS_CONTROL` e em
   `MANAGE_COMPANY`; `admission.ts`, `readConnections: { by: 'MEMBER', statement: undefined, locks:
   false }` e `manageConnections: { by: 'MEMBER', statement: MANAGE_CONNECTIONS, locks: true }`, como
   `readModelAccounts` e `manageModelAccounts`.
 - **O executor**: `apps/server/src/hub/connectors/executor.ts`. O envio segue o `send` do OS
-  (`gateway.ts:44-98`): `redirect: 'error'`, o corpo de uma resposta de erro cancelado e nunca
+  (`gateway.ts:52-90`): `redirect: 'error'`, o corpo de uma resposta de erro cancelado e nunca
   lido para log, a leitura em pedaços até 256 KB, o JSON lido só no fim; o prazo é
-  `AbortSignal.timeout(10_000)` por chamada. O token: reusado até `expires_in − max(60 s, 10 %)`
-  (OS `token-cache.ts:55-60`), pedido por uma promessa compartilhada por ligação (um pedido em
-  curso por vez), guardado por `connectionId` e `linkedAt`, esquecido no Desligar. A fila por token
-  (OS `token-cache.ts:22-30`) quando `connector.oneRequestAtATime`.
+  `AbortSignal.timeout(callDeadlineMs)` por chamada, `callDeadlineMs` das dependências do subject
+  (10.000 no Hub, 200 nos testes). Nesta etapa só o Testar chama o Sankhya: ele pede um token novo,
+  chama o login e as operações uma depois da outra (nunca `Promise.all`, por `oneRequestAtATime`), e
+  não guarda o token. O token guardado entre chamadas (reusado até `expires_in − max(60 s, 10 %)`, OS
+  `token-cache.ts:55-60`) e a fila por token (`:22-30`) entram com a 20, que tem quem os chame.
 - **A origem do dublê**: `config.ts`, `HUB_CONNECTOR_ORIGINS` (`sankhya=http://127.0.0.1:4180`),
-  cada valor por `overHttpsOrLoopback` e mais: só `http://127.0.0.1`, `http://localhost` ou
-  `http://[::1]`; um conector que o kit não tem recusa a configuração.
+  cada valor só `http://127.0.0.1`, `http://localhost` ou `http://[::1]`, com porta; a
+  configuração não conhece o kit (só `hub/connectors/` o importa, U0): é `createConnectors`, ao
+  montar o subject, que recusa subir com uma origem de um conector que o kit não tem.
 - **A decisão do conector**: `docs/decisions/0056-connectors-kit-and-one-executor.md`, na forma das
   outras (Contexto, Decisão, Critério, Resultado, Consequências, Reabre quando, Estado), com a base
   "o estudo fundo dos conectores e as palavras do fundador de 2026-10-28"; a 0031 passa a
@@ -784,20 +807,21 @@ Testar).
 | `apps/server/src/hub/identity/roles.ts`, `admission.ts`, `public.ts` | Muda: a capacidade e as duas ações | todo o Hub |
 | `apps/server/src/platform/seal.ts` | Muda: o propósito e o id | contas de modelo, conectores |
 | `apps/server/src/platform/config.ts` | Muda: `HUB_CONNECTOR_ORIGINS` | `main.ts`, `tests/e2e/live-hub.ts` |
-| `apps/server/src/main.ts` | Muda: monta o subject, o `reseal` | — |
+| `apps/server/src/main.ts` | Muda: `createHub` ganha o subject nas suas dependências (`:59-70`), as rotas, o `reseal` | — |
+| `apps/server/src/platform/test-database.ts` (`testConfig`), `apps/server/src/hub/identity/test-hub.ts` (`subjectsOf`, `hubServing`, `:56-62`) | Muda: a configuração de teste sem origem de dublê por padrão, e o subject novo montado como os outros | todos os testes do servidor |
 | `apps/server/package.json` | Muda: `"@conexus/connectors": "*"` | — |
 | `packages/hub-api/src/connectors.ts`, `connector-failures.ts`, `failures.ts`, `index.ts` | Cria ou muda: as rotas, os tipos, as falhas | servidor, web |
 | `apps/server/src/openapi-contract.test.ts` | Muda: as rotas novas no documento | — |
 | `tests/e2e/live-hub.ts` | Muda: sobe o dublê do Sankhya e passa a sua origem | o QA |
 | `docs/decisions/0031-connectors-single-executor.md`, `0056-connectors-kit-and-one-executor.md`, `docs/index.md` | Muda, cria | `npm run docs` |
-| testes: `connections.test.ts`, `executor.test.ts`, `connection-seal.test.ts`, `platform/config.test.ts`, `platform/seal.test.ts` (se o contexto tiver teste) | Cria ou muda | — |
+| testes: `connections.test.ts`, `executor.test.ts` (pela rota do Testar, `hubOn` de `test-hub.ts`), `connection-seal.test.ts` (SQL no banco de teste e `spawnHub`), `platform/config.test.ts` (o seu próprio arquivo, como hoje) | Cria ou muda | — |
 
 ### Os contratos que a unidade cria
 
 ```ts
 // packages/hub-api/src/connectors.ts
 export const ConnectionId = z.uuid().brand('ConnectionId')
-export const CONNECTION_STATES = ['NEW', 'ACTIVE', 'NEEDS_REAUTH'] as const // from U2
+// CONNECTION_STATES and ConnectionState: already here, from U2
 export const ConnectorEntry = z.object({
   id: z.string(), name: z.string(), version: z.string(),
   fields: z.array(z.object({ name: z.string(), label: z.string(), maxLength: z.number().int() })),
@@ -810,7 +834,7 @@ export const Connection = z.object({
 export const ConnectionList = z.object({
   connectors: z.array(ConnectorEntry), connections: z.array(Connection), mayManage: z.boolean(),
 })
-export const TestCheck = z.object({ id: z.string(), label: z.string(), outcome: z.enum(['READS', 'REFUSED', 'NOTHING_TO_READ']) })
+export const TestCheck = z.object({ id: z.string(), label: z.string(), outcome: z.enum(['READS', 'REFUSED', 'UNREADABLE', 'NOTHING_TO_READ']) })
 export const TestResult = z.discriminatedUnion('result', [
   z.object({ result: z.literal('WORKING'), checks: z.array(TestCheck), connection: Connection }),
   z.object({ result: z.literal('AUTH_REFUSED'), connection: Connection }),
@@ -834,8 +858,10 @@ unlinkConnection: DELETE /api/companies/{companyId}/connections/{connectionId}  
   aprova no fim.
 - **Cada estado como união**: `TestResult` por `result`; dentro do Hub, a chamada do executor
   devolve `Answered` do kit, e o Testar a traduz: `OK` dá `READS`; `REFUSED` (qualquer motivo) dá `REFUSED`;
-  um `probe` que devolve `null` dá `NOTHING_TO_READ`; `AUTH_REFUSED` no login ou numa chamada dá `AUTH_REFUSED` e encerra; um erro de
-  transporte, o prazo, um 5xx ou `UNREADABLE` dá `UNREACHABLE` e encerra.
+  `UNREADABLE` dá `UNREADABLE` naquela linha e o Testar segue; um `probe` que devolve `null` dá
+  `NOTHING_TO_READ`; `AUTH_REFUSED` no login ou numa chamada dá `AUTH_REFUSED` e encerra;
+  `TOKEN_EXPIRED` pede um token de novo uma vez e repete, e a segunda vez é `AUTH_REFUSED`; um erro
+  de transporte, o prazo, um redirecionamento ou um 5xx dá `UNREACHABLE` e encerra.
 - **Cada id com a sua marca**: `ConnectionId` (hub-api), conferido na rota; `ConnectorId` pelo
   `connectorOf` do kit, na entrada do Ligar.
 - **O dono de cada fato**: a lista de estados em hub-api; o catálogo no kit (`CONNECTORS`); quem pode
@@ -848,12 +874,15 @@ unlinkConnection: DELETE /api/companies/{companyId}/connections/{connectionId}  
 
 ```ts
 export type Executor = {
-  /** Calls one operation of an opened connection; never logs input, output or credential (S41). */
-  call<I, O>(connection: OpenedConnection, operation: Operation<I, O>, input: I, options: { freshToken: boolean }): Promise<Answered<O>>
-  forget(connectionId: ConnectionId): void
+  /** A new token for an opened connection: the login, sent once (no cache in step 19). */
+  login(connection: OpenedConnection): Promise<Readonly<{ kind: 'TOKEN'; token: BearerToken } | { kind: 'AUTH_REFUSED' } | { kind: 'UNREACHABLE' }>>
+  /** Calls one operation with that token; never logs input, output or credential (S41). Transport,
+   *  deadline, redirect and 5xx are UNREACHABLE; the kit's Answered otherwise. */
+  call<I, O>(connection: OpenedConnection, token: BearerToken, operation: Operation<I, O>, input: I): Promise<Answered<O> | Readonly<{ kind: 'UNREACHABLE' }>>
 }
 type OpenedConnection = Readonly<{ id: ConnectionId; linkedAt: string; connector: Connector; credential: Credential }> // Credential: the Secret of seal.ts
-export function createExecutor(deps: { fetch: typeof fetch; origins: ReadonlyMap<ConnectorId, string> }): Executor
+type BearerToken = Secret<'BearerToken'> // printed, it shows only its name, as seal.ts's Credential
+export function createExecutor(deps: { fetch: typeof fetch; origins: ReadonlyMap<ConnectorId, string>; callDeadlineMs: number }): Executor
 ```
 
 - **O modelo**: `builder/model-accounts/{routes,store,reseal}.ts` para rotas, comando e `reseal`
@@ -868,25 +897,14 @@ S41, S42; dados D22; código C33, C37, C38.
 
 ### A ordem do trabalho
 
-1. Os testes dos critérios 9 a 17, falhando, pelas portas públicas (`createHub`, `inject`, T5), com
+1. Os testes dos critérios 9 a 16, falhando, pelas portas públicas (`createHub`, `inject`, T5), com
    o dublê do kit servindo num endereço local e a sua origem na configuração de teste.
 2. `seal.ts`: o propósito e o id. `roles.ts` e `admission.ts`: a capacidade e as ações.
 3. hub-api: os tipos, as rotas, as falhas; `npm run openapi` e o teste do contrato.
-4. `executor.ts`: o envio, o token, a fila. Funções: Node 24 `fetch(request, { signal })` com o
-   `Request` de `toRequest`, `AbortSignal.any([timeout, signal])`, `response.body.getReader()`.
-   Para a fila, a forma do OS:
-
-   ```ts
-   const lanes = new Map<ConnectionId, Promise<unknown>>()
-   function inLane<T>(id: ConnectionId, work: () => Promise<T>): Promise<T> {
-     const turn = (lanes.get(id) ?? Promise.resolve()).then(work)
-     lanes.set(id, turn.catch(() => undefined))
-     return turn
-   }
-   ```
-
-   A fila é por token, não por ligação: o Testar com token novo tem a sua fila; o mapa se limpa
-   quando a promessa da vez é a última.
+4. `executor.ts`: o login e o envio. Funções: Node 24 `fetch(request, { signal })` com o `Request`
+   de `toRequest` (a origem do dublê, se a configuração a tem), `AbortSignal.timeout`,
+   `response.body.getReader()` até o teto. Nenhum token guardado, nenhuma fila: o Testar chama em
+   sequência.
 5. `connections.ts`: Ligar (`database.command` com `admitMember('manageConnections')`, a chave de
    tentativa, `seal`, `insert`), Testar (os três passos da tabela de falhas: um `command` curto que
    admite e lê `connectors.sealed_of`; as chamadas fora de transação; um `command` que grava o estado
@@ -898,15 +916,15 @@ S41, S42; dados D22; código C33, C37, C38.
 ### Como se prova
 
 `npm test -w @conexus/server -- src/hub/connectors/ src/platform/config.test.ts`; `npm run openapi
-> /dev/null`; `npm run typecheck`; `npm run deps`. O critério 12 falha hoje sem a fila (o dublê
-responde "4"); o 14 falha se um teste plantar o Client Secret do dublê e o encontrar no log do Hub
+> /dev/null`; `npm run typecheck`; `npm run deps`. O critério 12 falha se o Testar chamar as
+operações em paralelo (o dublê responde "4" e a linha sai `REFUSED`); o 14 falha se um teste plantar o Client Secret do dublê e o encontrar no log do Hub
 (o teste lê o log, como `model-accounts-log.test.ts`).
 
 ### Parar se
 
 - A U3 da 18 ainda não está no `main`: esperar; `roles.ts` e `admission.ts` são das duas.
-- O Testar passa de 30 s com o dublê lento em todas as chamadas: relatar o tempo; o prazo por
-  chamada é 10 s e são seis chamadas em fila.
+- O Testar com o Sankhya de verdade pode passar de 30 s (o login e sete chamadas em fila, 10 s no
+  máximo cada uma): relatar se o QA, com o dublê lento, vê a tela sem resposta.
 - O `reseal` de hoje não tem um lugar para somar outro subject sem mudar a sua saída: relatar a
   forma.
 
@@ -923,6 +941,8 @@ responde "4"); o 14 falha se um teste plantar o Client Secret do dublê e o enco
   `link-dialog.tsx`, `test-result.tsx`, `public.ts`; as peças de
   `builder/model-accounts/company-accounts.tsx` (a lista), `key-form.tsx` (o formulário, a chave de
   tentativa até o Hub responder, W24; os campos limpos depois de ligar) e `AlertDialog` (Desligar).
+  Como modelo, não como cópia: `web/src/hub/` não importa `web/src/builder/`, e o CI recusa um clone
+  (jscpd, C26); as peças comuns já estão em `web/src/ui/` (`form.tsx`, `TextField`, `SubmitButton`).
 
 ### O raio da mudança
 
@@ -935,7 +955,8 @@ responde "4"); o 14 falha se um teste plantar o Client Secret do dublê e o enco
 
 ### Os contratos que a unidade cria
 
-Nenhum contrato novo: lê `listConnections` e chama `linkConnection`, `testConnection`,
+Nenhum contrato novo: lê `listConnections` (a linha da ligação mostra também "conector versão
+1.0.0", o leitor de `connectorVersion` nesta etapa) e chama `linkConnection`, `testConnection`,
 `unlinkConnection` do hub-api. O formulário se monta dos `fields` do catálogo, cada um um
 `TextField` de senha (`type="password"`, `autoComplete="off"`), o rótulo do catálogo. O resultado do
 Testar vive no estado da página e some ao recarregar; o estado e `testedAt` vêm da lista.
@@ -948,7 +969,7 @@ crítica. Web W23, W24, W29, W30, W32, W34; design V29, V56.
 
 ### A ordem do trabalho
 
-1. Os testes dos critérios 18 a 20, falhando, com o duplo do Hub da tela (`test-hub.tsx` de Contas de
+1. Os testes dos critérios 17 a 19, falhando, com o duplo do Hub da tela (`test-hub.tsx` de Contas de
    modelo como modelo).
 2. A rota e o `FrameLink`. 3. A página, o diálogo, o resultado, o Desligar. 4. A linha de
    `screens.md`. 5. A crítica do Impeccable nas duas larguras e nos dois temas.
@@ -956,7 +977,7 @@ crítica. Web W23, W24, W29, W30, W32, W34; design V29, V56.
 ### Como se prova
 
 `npm test -w @conexus/web -- src/hub/connectors src/routes/_app/companies`; `npm run typecheck`;
-`npm run lint`. O QA (critério 21) roda depois da U4, com `tests/e2e/live-hub.ts`.
+`npm run lint`. O QA (critério 20) roda depois da U4, com `tests/e2e/live-hub.ts`.
 
 ### Parar se
 
