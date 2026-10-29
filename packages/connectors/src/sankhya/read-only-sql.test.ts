@@ -135,7 +135,11 @@ describe('read-only SQL, comments and quotes', () => {
 
 describe('read-only criteria', () => {
   it('holds a condition to the same wire', () => {
-    for (const text of ['this.CODEMP = ?', "this.NOME = 'DELETE; DROP'", 'this.A = 1E5 AND this.AD_CAMPO1 = ?'])
+    for (const text of [
+      'this.CODEMP = ?',
+      "this.NOME = 'DELETE; DROP'",
+      'this.A = 1E5 AND this.AD_CAMPO1 = ?',
+    ])
       assert.equal(isReadCondition(text), true, text)
     for (const text of [
       'this.A = 1; DELETE FROM TGFPAR',
