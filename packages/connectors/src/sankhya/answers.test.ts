@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { NOT_FOUND } from './answers.ts'
 import { sankhya } from './definition.ts'
 
 function answer(id: string, status: number, body: unknown) {
@@ -41,12 +42,17 @@ test('o 403 no corpo que as seis páginas documentam dá o mesmo que o code do g
 test('o 404 que as seis páginas documentam é a leitura sem linhas; outro 404 não é', () => {
   const notFound = {
     statusCode: 404,
-    error: { code: 'NOT_FOUND', message: 'Dados não encontrados' },
+    error: { code: 'NOT_FOUND', message: NOT_FOUND },
   }
+  // The same two keys with another message: a moved route, not an empty list.
+  const framework = { statusCode: 404, error: { message: 'Cannot GET /v1/x' } }
+  const keysOnly = { statusCode: 404, error: 'Not Found' }
   for (const id of DOCUMENTED) {
     assert.equal(answer(id, 404, notFound).kind, 'OK', id)
     assert.deepEqual(answer(id, 404, { message: 'nada' }), { kind: 'UNREADABLE' }, id)
     assert.deepEqual(answer(id, 404, undefined), { kind: 'UNREADABLE' }, id)
+    assert.deepEqual(answer(id, 404, framework), { kind: 'UNREADABLE' }, id)
+    assert.deepEqual(answer(id, 404, keysOnly), { kind: 'UNREADABLE' }, id)
   }
   assert.deepEqual(answer('clientes', 404, notFound), {
     kind: 'OK',

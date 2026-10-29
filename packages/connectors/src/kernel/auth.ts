@@ -1,7 +1,18 @@
 import { z } from 'zod'
 import type { ProviderAnswer, ProviderRequest } from './operation.ts'
 
-type Fields = Readonly<Record<string, Readonly<{ label: string; maxLength: number }>>>
+/** `help`: one line and a public page on where the key comes from, shown in Ligar; `visible`: shown while pasted (an id), else masked. */
+type Fields = Readonly<
+  Record<
+    string,
+    Readonly<{
+      label: string
+      maxLength: number
+      help: Readonly<{ text: string; url: `https://${string}` }>
+      visible: boolean
+    }>
+  >
+>
 type Credential = Readonly<Record<string, string>>
 
 /** A login by fields the company pastes, exchanged for a bearer token (Sankhya). OAuth comes in 19.1. */

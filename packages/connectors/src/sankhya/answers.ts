@@ -40,8 +40,14 @@ function refusalOf(answer: ProviderAnswer): Answered<never> | null {
   return { kind: 'UNREADABLE' }
 }
 
-/** The body six pages document for a 404 ("Dados não encontrados"): the list has nothing to say, which is not a refusal. */
-const NotFound = z.looseObject({ statusCode: z.literal(404), error: z.unknown() })
+/** What the six pages say a 404 means; `spec.test.ts` checks each page still says it. */
+export const NOT_FOUND = 'Dados não encontrados'
+
+/** The 404 body six pages document: the message must be theirs, or a moved route (the framework's own 404) would read as an empty list. */
+const NotFound = z.looseObject({
+  statusCode: z.literal(404),
+  error: z.looseObject({ message: z.literal(NOT_FOUND) }),
+})
 
 function read<O>(output: z.ZodType<O>, body: unknown): Answered<O> {
   const parsed = output.safeParse(body)

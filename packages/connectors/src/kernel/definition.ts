@@ -11,12 +11,22 @@ export type ConnectorId = z.infer<typeof ConnectorId>
 /** `unknown` erases an operation's types: its methods are bivariant, so a typed operation is a member. */
 export type ReadDoor = Readonly<Record<string, Operation<unknown, unknown, 'read'>>>
 
+/** What the provider says about the account behind a connection (several connections per connector, founder 2026-10-29). */
+type AccountIdentity =
+  // No account in the login's answer (Sankhya): the name the company gives tells connections apart.
+  // 19.1 adds `reported`: the login reports the account; `exclusive`, one connection per account in all of Conexus.
+  Readonly<{ kind: 'none' }>
+
 export type Connector = Readonly<{
   id: ConnectorId
   name: string
   version: `${number}.${number}.${number}`
   origin: `https://${string}` // the one published origin
   auth: Auth
+  account: AccountIdentity // required, no default
+  category: string // "ERP": the catalog and the list group show it
+  summary: string // one line, Portuguese: what the system is
+  logo: string // the provider's official logo, an SVG read from the connector's folder; the screen shows it as a data: image
   oneRequestAtATime: boolean // a token is one session (Sankhya's envelope "4")
   subjects: Readonly<Record<string, string>> // subject id → label ("vendas" → "Vendas"); each has an operation
   operations: readonly Operation<unknown, unknown>[] // typed, the same for every company
