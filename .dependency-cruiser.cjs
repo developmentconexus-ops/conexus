@@ -133,6 +133,25 @@ module.exports = {
       to: { path: '(^|node_modules/)@mastra/' },
     },
     {
+      name: 'connectors-kit-stands-alone',
+      comment:
+        'The connector kit knows no Hub, no other program and no driver, so it can leave (K1).',
+      severity: 'error',
+      from: { path: '^packages/connectors/' },
+      to: {
+        path: ['^(apps|packages)/', '(^|node_modules/)(pg|drizzle-orm|fastify|@mastra)(/|$)'],
+        pathNot: '^packages/connectors/',
+      },
+    },
+    {
+      name: 'connectors-kit-only-in-the-executor',
+      comment: 'Only the Hub subject that opens a credential uses the kit (security S36).',
+      severity: 'error',
+      // tests/ for the local Hub's double (tests/e2e/live-hub.ts) and the QA.
+      from: { pathNot: ['^packages/connectors/', '^apps/server/src/hub/connectors/', '^tests/'] },
+      to: { path: '^packages/connectors/' },
+    },
+    {
       name: 'web-tree-shape',
       comment:
         'W1: apps/web/src holds main.tsx, the generated routeTree.gen.ts and the folders routes, hub, builder, ui, platform, brand.',
