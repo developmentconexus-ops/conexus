@@ -14,7 +14,7 @@ import { PEDIDOS } from './test-hub.tsx'
 const ACCESS_PATH = `*/api/companies/${COMPANY.id}/projects/${PEDIDOS.id}/access`
 const COMPANY_ACCESS_PATH = `*/api/companies/${COMPANY.id}/app-access`
 
-export const ROLES = [
+const ROLES = [
   { name: 'vendedor', label: 'Vendedor' },
   { name: 'gerente', label: 'Gerente' },
 ]
@@ -83,7 +83,7 @@ export function companyAppAccessRead(people: unknown[] = [carlaOfCompany()]) {
   )
 }
 
-export function carlaOfCompany() {
+function carlaOfCompany() {
   return {
     personId: CARLA.personId,
     name: CARLA.name,
