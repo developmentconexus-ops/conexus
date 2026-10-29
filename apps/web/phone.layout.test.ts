@@ -191,9 +191,7 @@ for (const { system, pick, shown } of THEMES) {
           probe.remove()
           return { background: backgroundColor, text: color }
         },
-        shown === 'dark'
-          ? ['--color-surface-4', '--color-accent-text']
-          : ['--color-surface', '--color-text'],
+        [shown === 'dark' ? '--color-surface-4' : '--color-surface', '--color-accent-text'],
       ),
     ])
     assert.equal(paint, token.background)
