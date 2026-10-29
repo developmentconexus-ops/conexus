@@ -4,9 +4,9 @@
 -- transaction's company. The Hub's login reaches no table of them.
 GRANT USAGE ON SCHEMA connectors TO hub_company;
 --> statement-breakpoint
-GRANT SELECT (id, company_id, connector_id, connector_version, state, key_id, linked_by, linked_at, tested_at, attempt_key), INSERT, DELETE ON TABLE connectors.connection TO hub_company;
+GRANT SELECT (id, company_id, connector_id, name, connector_version, state, key_id, linked_by, linked_at, tested_at, tested_by, last_test, attempt_key), INSERT, DELETE ON TABLE connectors.connection TO hub_company;
 --> statement-breakpoint
-GRANT UPDATE (state, tested_at, sealed, key_id) ON TABLE connectors.connection TO hub_company;
+GRANT UPDATE (state, tested_at, tested_by, last_test, sealed, key_id) ON TABLE connectors.connection TO hub_company;
 --> statement-breakpoint
 GRANT USAGE ON SCHEMA connectors TO hub_connection_seals;
 --> statement-breakpoint

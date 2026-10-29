@@ -2,7 +2,7 @@ import { z } from 'zod'
 import type { OperationId } from '../../kernel/operation.ts'
 import { defineOperation } from '../../kernel/operation.ts'
 import { restAnswer } from '../answers.ts'
-import { firstProduto } from './produtos.ts'
+import { firstProduto, produtos } from './produtos.ts'
 import { Code, get, maybe, Page } from './shared.ts'
 
 const Precos = z.object({
@@ -29,6 +29,7 @@ export const precosDoProduto = defineOperation({
   label: 'Preços de um produto',
   input: z.object({ codigoProduto: Code, pagina: Page(1) }),
   output: Precos,
+  from: [produtos.id],
   probe: (earlier) => {
     const first = firstProduto(earlier)
     return first ? { codigoProduto: first.codigoProduto, pagina: 1 } : null
@@ -53,6 +54,7 @@ export const precosDaTabela = defineOperation({
   label: 'Preços de uma tabela',
   input: z.object({ codigoTabela: Code, pagina: Page(1) }),
   output: Precos,
+  from: [precosDoProduto.id],
   probe: (earlier) => {
     const codigoTabela = firstTabela(earlier)
     return codigoTabela === undefined ? null : { codigoTabela, pagina: 1 }

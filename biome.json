@@ -12,6 +12,7 @@
       "!**/*.woff2",
       "!apps/web/src/routeTree.gen.ts",
       "!apps/web/src/builder/model-accounts/marks",
+      "!packages/connectors/src/*/logo.svg",
       "!packages/app/starter",
       "!packages/app/skills"
     ]

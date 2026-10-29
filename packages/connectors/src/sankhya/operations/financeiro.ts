@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { defineOperation } from '../../kernel/operation.ts'
 import { restAnswer } from '../answers.ts'
-import { firstEmpresaPage } from './cadastros.ts'
+import { empresas, firstEmpresaPage } from './cadastros.ts'
 import { Code, Date_, get, maybe, Page } from './shared.ts'
 
 const Titulos = z.object({
@@ -52,6 +52,7 @@ export const contasAReceber = defineOperation({
   label: 'Contas a receber',
   input: TitulosInput,
   output: Titulos,
+  from: [empresas.id],
   probe: firstEmpresaPage,
   request: (input) => get('/v1/financeiros/receitas', input),
   answer: (answer) => restAnswer(answer, Titulos, { financeiros: [] }),
@@ -67,6 +68,7 @@ export const contasAPagar = defineOperation({
   label: 'Contas a pagar',
   input: TitulosInput,
   output: Titulos,
+  from: [empresas.id],
   probe: firstEmpresaPage,
   request: (input) => get('/v1/financeiros/despesas', input),
   answer: (answer) => restAnswer(answer, Titulos, { financeiros: [] }),

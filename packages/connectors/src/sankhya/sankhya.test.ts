@@ -122,37 +122,38 @@ test('as operações prontas leem o envelope', () => {
     answer('empresas', 200, { empresas: [{ codigoEmpresa: 1, extra: 'ignored' }] }).kind,
     'OK',
   )
-  assert.deepEqual(answer('empresas', 200, { empresas: [{ nomeFantasia: 'A' }] }), {
+  assert.partialDeepStrictEqual(answer('empresas', 200, { empresas: [{ nomeFantasia: 'A' }] }), {
     kind: 'UNREADABLE',
   })
-  assert.deepEqual(answer('empresas', 200, 'text'), { kind: 'UNREADABLE' })
+  assert.partialDeepStrictEqual(answer('empresas', 200, 'text'), { kind: 'UNREADABLE' })
   assert.deepEqual(answer('empresas', 404, { empresas: [] }), {
     kind: 'OK',
     value: { empresas: [] },
   })
-  assert.deepEqual(answer('empresas', 404, { message: 'nada' }), { kind: 'UNREADABLE' })
-  assert.deepEqual(answer('empresas', 400, { code: 'X', message: 'm', details: [] }), {
+  assert.partialDeepStrictEqual(answer('empresas', 404, { message: 'nada' }), {
     kind: 'REFUSED',
-    reason: 'INPUT',
   })
-  assert.deepEqual(answer('empresas', 401, undefined), { kind: 'AUTH_REFUSED' })
-  assert.deepEqual(answer('empresas', 403, { code: '4303' }), { kind: 'AUTH_REFUSED' })
-  assert.deepEqual(answer('empresas', 403, { code: 4405 }), { kind: 'AUTH_REFUSED' })
-  assert.deepEqual(answer('empresas', 403, { code: 'GTW3403' }), { kind: 'TOKEN_EXPIRED' })
-  assert.deepEqual(
+  assert.partialDeepStrictEqual(answer('empresas', 400, { code: 'X', message: 'm', details: [] }), {
+    kind: 'REFUSED',
+  })
+  assert.partialDeepStrictEqual(answer('empresas', 401, undefined), { kind: 'AUTH_REFUSED' })
+  assert.partialDeepStrictEqual(answer('empresas', 403, { code: '4303' }), { kind: 'AUTH_REFUSED' })
+  assert.partialDeepStrictEqual(answer('empresas', 403, { code: 4405 }), { kind: 'AUTH_REFUSED' })
+  assert.partialDeepStrictEqual(answer('empresas', 403, { code: 'GTW3403' }), {
+    kind: 'TOKEN_EXPIRED',
+  })
+  assert.partialDeepStrictEqual(
     answer('empresas', 403, { message: 'GTW3403 - Bearer Token inválido ou Expirado' }),
     { kind: 'TOKEN_EXPIRED' },
   )
-  assert.deepEqual(answer('empresas', 403, { code: 'NO_ACCESS' }), {
+  assert.partialDeepStrictEqual(answer('empresas', 403, { code: 'NO_ACCESS' }), {
     kind: 'REFUSED',
-    reason: 'NO_PERMISSION',
   })
-  assert.deepEqual(answer('empresas', 403, undefined), {
+  assert.partialDeepStrictEqual(answer('empresas', 403, undefined), {
     kind: 'REFUSED',
-    reason: 'NO_PERMISSION',
   })
-  assert.deepEqual(answer('empresas', 409, undefined), { kind: 'UNREADABLE' })
-  assert.deepEqual(answer('empresas', 503, undefined), { kind: 'UNREADABLE' })
+  assert.partialDeepStrictEqual(answer('empresas', 409, undefined), { kind: 'REFUSED' })
+  assert.partialDeepStrictEqual(answer('empresas', 503, undefined), { kind: 'UNREADABLE' })
 })
 
 test('os pedidos e os impostos saem dos mesmos registros', () => {
@@ -193,11 +194,12 @@ test('os pedidos e os impostos saem dos mesmos registros', () => {
     kind: 'OK',
     value: { itens: [] },
   })
-  assert.deepEqual(answer('impostosDoPedido', 403, undefined), {
+  assert.partialDeepStrictEqual(answer('impostosDoPedido', 403, undefined), {
     kind: 'REFUSED',
-    reason: 'NO_PERMISSION',
   })
-  assert.deepEqual(answer('pedidos', 200, { registros: [pedido] }), { kind: 'UNREADABLE' })
+  assert.partialDeepStrictEqual(answer('pedidos', 200, { registros: [pedido] }), {
+    kind: 'UNREADABLE',
+  })
 })
 
 test('a porta lê o envelope: sucesso, recusa do fornecedor e o que não se lê', () => {
@@ -245,27 +247,60 @@ test('a porta lê o envelope: sucesso, recusa do fornecedor e o que não se lê'
   })
 
   for (const status of ['0', '2', '4', 'x'])
-    assert.deepEqual(
+    assert.partialDeepStrictEqual(
       answer('carregar', 200, envelope({}, status)),
-      { kind: 'REFUSED', reason: 'VENDOR' },
+      { kind: 'REFUSED' },
       status,
     )
-  assert.deepEqual(
+  assert.partialDeepStrictEqual(
     answer('consultar', 200, {
       status: '1',
       statusMessage: '[CORE_E01234] regra',
       responseBody: { fieldsMetadata: [], rows: [] },
     }),
-    { kind: 'REFUSED', reason: 'VENDOR' },
+    { kind: 'REFUSED' },
   )
-  assert.deepEqual(answer('consultar', 200, { status: '1', responseBody: { rows: 'x' } }), {
+  assert.partialDeepStrictEqual(
+    answer('consultar', 200, { status: '1', responseBody: { rows: 'x' } }),
+    { kind: 'UNREADABLE' },
+  )
+  assert.partialDeepStrictEqual(answer('carregar', 200, { responseBody: {} }), {
     kind: 'UNREADABLE',
   })
-  assert.deepEqual(answer('carregar', 200, { responseBody: {} }), { kind: 'UNREADABLE' })
-  assert.deepEqual(answer('carregar', 403, { code: 'GTW3403' }), { kind: 'TOKEN_EXPIRED' })
-  assert.deepEqual(answer('carregar', 403, undefined), {
-    kind: 'REFUSED',
-    reason: 'NO_PERMISSION',
+  assert.partialDeepStrictEqual(answer('carregar', 403, { code: 'GTW3403' }), {
+    kind: 'TOKEN_EXPIRED',
   })
-  assert.deepEqual(answer('carregar', 400, undefined), { kind: 'REFUSED', reason: 'INPUT' })
+  assert.partialDeepStrictEqual(answer('carregar', 403, undefined), {
+    kind: 'REFUSED',
+  })
+  assert.partialDeepStrictEqual(answer('carregar', 400, undefined), { kind: 'REFUSED' })
+})
+
+test('a recusa do envelope leva o que o Sankhya disse; uma linha lida e um 2xx ilegível não', () => {
+  // A row the company wrote may hold the vendor's marker; only the envelope's message refuses.
+  assert.deepEqual(
+    answer('consultar', 200, {
+      status: '1',
+      responseBody: { fieldsMetadata: [{ name: 'OBS' }], rows: [['[CORE_E123] texto gravado']] },
+    }),
+    { kind: 'OK', value: { linhas: [{ OBS: '[CORE_E123] texto gravado' }], completo: true } },
+  )
+  const rule = answer('consultar', 200, {
+    status: '1',
+    statusMessage: '[CORE_E01234] regra',
+    responseBody: { rows: [['dado da empresa']] },
+  })
+  assert.partialDeepStrictEqual(rule, {
+    kind: 'REFUSED',
+    native: { status: 200, code: 'CORE_E01234', message: '[CORE_E01234] regra' },
+  })
+  assert.partialDeepStrictEqual(answer('consultar', 200, envelope({}, '0')), {
+    kind: 'REFUSED',
+    native: { code: '0' },
+  })
+  // A 2xx the kit cannot read never carries the company's data body.
+  assert.partialDeepStrictEqual(
+    answer('consultar', 200, { status: '1', responseBody: { rows: 'x' } }),
+    { kind: 'UNREADABLE', native: { status: 200, body: null } },
+  )
 })

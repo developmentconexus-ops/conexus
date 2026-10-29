@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { defineOperation } from '../../kernel/operation.ts'
 import { restAnswer } from '../answers.ts'
-import { firstEmpresaPage } from './cadastros.ts'
+import { empresas, firstEmpresaPage } from './cadastros.ts'
 import { Code, DashDate, Date_, get, Metadados, maybe, Page } from './shared.ts'
 
 const Item = z.object({
@@ -53,6 +53,7 @@ export const pedidos = defineOperation({
   label: 'Pedidos',
   input: Janela.extend({ confirmada: z.boolean().optional(), pendente: z.boolean().optional() }),
   output: Pedidos,
+  from: [empresas.id],
   probe: firstEmpresaPage,
   request: (input) => get('/v1/vendas/pedidos', input),
   answer: (answer) => restAnswer(answer, Pedidos),
@@ -96,6 +97,7 @@ export const impostosDoPedido = defineOperation({
   label: 'Impostos dos pedidos',
   input: z.object({ codigoEmpresa: Code, codigoNota: Code }),
   output: PedidoItens,
+  from: [pedidos.id],
   probe: (earlier) => {
     const first = Pedidos.safeParse(earlier.get(pedidos.id)).data?.registros[0]
     return first ? { codigoEmpresa: first.codigoEmpresa, codigoNota: first.codigoNota } : null
@@ -133,6 +135,7 @@ export const notasFiscais = defineOperation({
   label: 'Notas fiscais',
   input: Janela.extend({ statusNFe: z.number().int().optional() }),
   output: Notas,
+  from: [empresas.id],
   probe: firstEmpresaPage,
   request: (input) => get('/v1/vendas/nfe', input),
   answer: (answer) => restAnswer(answer, Notas),
@@ -158,6 +161,7 @@ export const notaFiscal = defineOperation({
   label: 'Nota fiscal com itens',
   input: z.object({ codigoNota: Code }),
   output: NotaCompleta,
+  from: [notasFiscais.id],
   probe: (earlier) => {
     const first = Notas.safeParse(earlier.get(notasFiscais.id)).data?.registros[0]
     return first ? { codigoNota: first.codigoNota } : null
@@ -182,6 +186,7 @@ export const devolucoes = defineOperation({
     codigoCliente: Code.optional(),
   }),
   output: Notas,
+  from: [empresas.id],
   probe: firstEmpresaPage,
   request: (input) => get('/v1/vendas/nfe/devolucoes', input),
   answer: (answer) => restAnswer(answer, Notas),
@@ -221,6 +226,7 @@ export const notasCanceladas = defineOperation({
     dataCancelamentoFinal: DashDate.optional(),
   }),
   output: Canceladas,
+  from: [empresas.id],
   probe: firstEmpresaPage,
   request: (input) => get('/v1/vendas/nfe/canceladas', input),
   answer: (answer) => restAnswer(answer, Canceladas),

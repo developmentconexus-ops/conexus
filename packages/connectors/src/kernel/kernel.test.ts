@@ -4,8 +4,9 @@ import { z } from 'zod'
 import { sankhya } from '../sankhya/definition.ts'
 import { clientCredentials, readToken, tokenRequest } from './auth.ts'
 import { defineConnector, defineReadDoor } from './definition.ts'
+import { LOGO_MAX_BYTES, logoProblems } from './logo.ts'
 import type { ProviderRequest } from './operation.ts'
-import { defineOperation } from './operation.ts'
+import { defineOperation, locateOf, outcomeOf } from './operation.ts'
 import { toRequest } from './request.ts'
 
 function get(path: `/${string}`, query: Record<string, string> = {}): ProviderRequest {
@@ -25,7 +26,10 @@ const base = {
   output: z.object({}),
   probe: () => ({}),
   request: () => get('/ping'),
-  answer: () => ({ kind: 'UNREADABLE' as const }),
+  answer: () => ({
+    kind: 'UNREADABLE' as const,
+    native: { status: 0, code: null, message: null, body: null },
+  }),
 }
 
 /** A definition with fields the types would refuse: the checks at run time are what the Hub meets. */
@@ -71,6 +75,22 @@ test('o assunto de cada operação é um assunto do conector, e nenhum assunto f
   )
   assert.equal(defineConnector({ ...lone, subjects: { ping: 'Ping' } }).subjects.ping, 'Ping')
   assert.throws(() => defineOperation({ ...base, class: 'read', subject: 'Not a subject' }))
+})
+
+test('cada operação lê só operações anteriores, a porta primeiro', () => {
+  const ping = defineOperation({ ...base, class: 'read' })
+  const pong = defineOperation({ ...base, id: 'pong', class: 'read', from: ['ping'] })
+  const lone = { ...sankhya, subjects: { ping: 'Ping' }, readDoor: undefined }
+  assert.deepEqual(defineConnector({ ...lone, operations: [ping, pong] }).operations[1]?.from, [
+    'ping',
+  ])
+  assert.throws(() => defineConnector({ ...lone, operations: [pong, ping] }), /not earlier/)
+  const self = defineOperation({ ...base, class: 'read', from: ['ping'] })
+  assert.throws(() => defineConnector({ ...lone, operations: [self] }), /not earlier/)
+  const absent = defineOperation({ ...base, class: 'read', from: ['nobody'] })
+  assert.throws(() => defineConnector({ ...lone, operations: [absent] }), /not earlier/)
+  assert.equal(defineConnector({ ...lone, operations: [pong], readDoor: { ping } }).id, 'sankhya')
+  assert.throws(() => defineOperation({ ...base, class: 'read', from: ['Bad id'] }))
 })
 
 test('a versão e a origem do conector são conferidas', () => {
@@ -150,7 +170,9 @@ test('a resposta do login: token, chave recusada ou ilegível', () => {
     expiresInSeconds: 300,
   })
   for (const status of [400, 401, 403]) {
-    assert.deepEqual(readToken(auth, { status, body: undefined }), { kind: 'AUTH_REFUSED' })
+    assert.partialDeepStrictEqual(readToken(auth, { status, body: undefined }), {
+      kind: 'AUTH_REFUSED',
+    })
   }
   const unreadable = [
     { status: 200, body: {} },
@@ -158,5 +180,71 @@ test('a resposta do login: token, chave recusada ou ilegível', () => {
     { status: 200, body: { access_token: 't', expires_in: 0 } },
     { status: 500, body: undefined },
   ]
-  for (const answer of unreadable) assert.deepEqual(readToken(auth, answer), { kind: 'UNREADABLE' })
+  for (const answer of unreadable)
+    assert.partialDeepStrictEqual(readToken(auth, answer), { kind: 'UNREADABLE' })
+})
+
+const SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"><path d="M0 0h1v1z"/></svg>'
+
+test('o logotipo: um SVG sem script, sem on…=, sem endereço de fora e até o teto', () => {
+  assert.deepEqual(logoProblems(SVG), [])
+  assert.deepEqual(logoProblems(`<?xml version="1.0"?><!-- a -->\n${SVG}`), [])
+  const inside = `<svg xmlns="http://www.w3.org/2000/svg"><g clip-path="url(#a)" fill="url('#b')"><use xlink:href="#c"/></g></svg>`
+  assert.deepEqual(logoProblems(inside), [])
+  for (const bad of [
+    '',
+    '<html></html>',
+    `<div>${SVG}</div>`,
+    SVG.replace('<path', '<script>x()</script><path'),
+    SVG.replace('<path', '<SCRIPT src="#a"></SCRIPT><path'),
+    SVG.replace('<path', '<path onload="x()"'),
+    SVG.replace('<path', '<path\nonclick = "x()"'),
+    SVG.replace('<path', '<image href="https://example.test/a.png"/><path'),
+    SVG.replace('<path', '<image xlink:href="data:image/png;base64,AA"/><path'),
+    SVG.replace('<path', "<a HREF='//example.test'/><path"),
+    SVG.replace('<path', '<path fill="url(https://example.test/a)"'),
+    SVG.replace('<path', '<path fill="url( \'x.svg#a\' )"'),
+    SVG.replace('</svg>', `<!-- ${'x'.repeat(LOGO_MAX_BYTES)} --></svg>`),
+  ])
+    assert.notDeepEqual(logoProblems(bad), [], bad.slice(0, 60))
+})
+
+test('o conector sem conta, ou o campo sem ajuda, não compila', () => {
+  const { account: _account, ...noAccount } = sankhya
+  assert.throws(
+    // @ts-expect-error the account is required, with no default
+    () => assert.ok(defineConnector(noAccount).account),
+  )
+  const fields = { a: { label: 'A', maxLength: 1, visible: true } }
+  assert.throws(() => {
+    // @ts-expect-error a field's help is required
+    const auth = clientCredentials({ ...sankhya.auth, fields })
+    return auth.fields.a?.help.text.length
+  })
+})
+
+test('a status the connector documents no exception for gets the kernel outcome of its class', () => {
+  assert.equal(outcomeOf(401), 'AUTH_REFUSED')
+  for (const status of [400, 403, 404, 409, 422])
+    assert.equal(outcomeOf(status), 'REFUSED', String(status))
+  for (const status of [300, 402, 429, 500, 503])
+    assert.equal(outcomeOf(status), 'UNREADABLE', String(status))
+})
+
+test('the login carries what the provider said, and never a 2xx body', () => {
+  const { auth } = sankhya
+  assert.deepEqual(readToken(auth, { status: 401, body: { code: 'X1', message: 'recusado' } }), {
+    kind: 'AUTH_REFUSED',
+    native: {
+      status: 401,
+      code: 'X1',
+      message: 'recusado',
+      body: { code: 'X1', message: 'recusado' },
+    },
+  })
+  assert.deepEqual(readToken(auth, { status: 200, body: { access_token: '' } }), {
+    kind: 'UNREADABLE',
+    native: { status: 200, code: null, message: null, body: null },
+  })
+  assert.deepEqual(locateOf('texto'), { code: null, message: null })
 })

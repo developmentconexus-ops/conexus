@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { describe, it } from 'node:test'
+import { before, describe, it } from 'node:test'
 import { z } from 'zod'
 import { readToken, tokenRequest } from '../kernel/auth.ts'
 import type { Operation, OperationId, ProviderRequest } from '../kernel/operation.ts'
 import { requestOf } from '../kernel/operation.ts'
 import { toRequest } from '../kernel/request.ts'
+import { NOT_FOUND } from './answers.ts'
 import { sankhya } from './definition.ts'
 import { sankhyaFake } from './fake.ts'
 import { downloadSpec, fetchText, SITE, Spec } from './spec-source.ts'
@@ -27,13 +28,6 @@ async function readSpec(): Promise<Spec | null> {
   }
   // biome-ignore lint/style/noProcessEnv: a switch of this one check, not the app's configuration
   return process.env.SANKHYA_SPEC_ONLINE === '1' ? downloadSpec() : null
-}
-
-/** Read once for the whole file: the online source takes a minute. */
-let loaded: Promise<Spec | null> | undefined
-function loadSpec(): Promise<Spec | null> {
-  loaded ??= readSpec()
-  return loaded
 }
 
 /** `queried` is every key of the input that `request` puts in the query, not only the ones the probe sends. */
@@ -105,16 +99,20 @@ async function samples(): Promise<Sample[]> {
 }
 
 describe('a documentação do Sankhya', () => {
-  it('baixou', async (t) => {
-    const spec = await loadSpec().catch((error: unknown) => {
-      assert.fail(`a documentação do Sankhya não baixou (${SITE}): ${String(error)}`)
-    })
+  // Read once for the whole file (the online source takes a minute); a failed read fails the hook.
+  let loaded: Spec | null = null
+  before(async () => {
+    loaded = await readSpec()
+  })
+
+  it('baixou', (t) => {
+    const spec = loaded
     if (!spec) return t.skip(SKIP)
     assert.ok(Object.keys(spec.routes).length > 0, `a documentação do Sankhya não baixou (${SITE})`)
   })
 
   it('cada leitura confere com a documentação do Sankhya', async (t) => {
-    const spec = await loadSpec().catch(() => null)
+    const spec = loaded
     if (!spec) return t.skip(SKIP)
     const all = await samples()
     assert.deepEqual(
@@ -129,8 +127,22 @@ describe('a documentação do Sankhya', () => {
     )
   })
 
+  it('a descrição da resposta 404 diz "Dados não encontrados" nas seis páginas, e só nas leituras que leem o 404 como sem linhas', async (t) => {
+    const spec = loaded
+    if (!spec) return t.skip(SKIP)
+    const documented = { statusCode: 404, error: { message: NOT_FOUND } }
+    const emptyRoutes = (await samples()).flatMap((sample) => {
+      const operation = sankhya.operations.find((candidate) => candidate.id === sample.id)
+      const empty = operation?.answer({ status: 404, body: documented }).kind === 'OK'
+      return empty ? (routeOf(spec, sample.request)?.[0] ?? []) : []
+    })
+    assert.equal(emptyRoutes.length, 6, 'as seis leituras que leem o 404 como lista vazia')
+    const saying = Object.entries(spec.routes).filter(([, route]) => route.notFound === NOT_FOUND)
+    assert.deepEqual(saying.map(([key]) => key).sort(), emptyRoutes.sort())
+  })
+
   it('recusa o dublê dos clientes sem o endereço e o filtro que a rota não declara', async (t) => {
-    const spec = await loadSpec().catch(() => null)
+    const spec = loaded
     if (!spec) return t.skip(SKIP)
     const all = await samples()
     const clientes = all.find((sample) => sample.id === 'clientes')

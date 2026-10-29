@@ -11,12 +11,22 @@ export type ConnectorId = z.infer<typeof ConnectorId>
 /** `unknown` erases an operation's types: its methods are bivariant, so a typed operation is a member. */
 export type ReadDoor = Readonly<Record<string, Operation<unknown, unknown, 'read'>>>
 
+/** What the provider says about the account behind a connection (several connections per connector, founder 2026-10-29). */
+type AccountIdentity =
+  // No account in the login's answer (Sankhya): the name the company gives tells connections apart.
+  // 19.1 adds `reported`: the login reports the account; `exclusive`, one connection per account in all of Conexus.
+  Readonly<{ kind: 'none' }>
+
 export type Connector = Readonly<{
   id: ConnectorId
   name: string
   version: `${number}.${number}.${number}`
   origin: `https://${string}` // the one published origin
   auth: Auth
+  account: AccountIdentity // required, no default
+  category: string // "ERP": the catalog and the list group show it
+  summary: string // one line, Portuguese: what the system is
+  logo: string // the provider's official logo, an SVG read from the connector's folder; the screen shows it as a data: image
   oneRequestAtATime: boolean // a token is one session (Sankhya's envelope "4")
   subjects: Readonly<Record<string, string>> // subject id → label ("vendas" → "Vendas"); each has an operation
   operations: readonly Operation<unknown, unknown>[] // typed, the same for every company
@@ -34,29 +44,40 @@ const Origin = z
       URL.canParse(value) && new URL(value).origin === value && value.startsWith('https://'),
   )
 
-/** Takes `id` as a plain string and brands it; throws on a repeated operation id, a bad version or origin, a door entry that is not 'read', an operation of a subject the connector lacks or a subject with no operation. */
+/** Takes `id` as a plain string and brands it; throws on a repeated operation id, a bad version or origin, a door entry that is not 'read', an operation of a subject the connector lacks, a subject with no operation or a `from` that is not an earlier operation. */
 export function defineConnector(connector: Omit<Connector, 'id'> & { id: string }): Connector {
   Version.parse(connector.version)
   Origin.parse(connector.origin)
-  const door = Object.entries(connector.readDoor ?? {})
-  const ids: OperationId[] = [
-    ...connector.operations.map((operation) => operation.id),
-    ...door.map(([, operation]) => operation.id),
-  ]
+  const all = inProbeOrder(connector)
+  const ids = all.map((operation) => operation.id)
   if (new Set(ids).size !== ids.length) throw new Error(`Repeated operation id in ${connector.id}`)
-  for (const [key, operation] of door) {
+  for (const [key, operation] of Object.entries(connector.readDoor ?? {})) {
     if (operation.class !== 'read') throw new Error(`Door entry not read: ${key}`)
     if (operation.id !== key) throw new Error(`Door entry ${key} is named ${operation.id}`)
   }
-  const named = new Set([
-    ...connector.operations.map((operation) => operation.subject),
-    ...door.map(([, operation]) => operation.subject),
-  ])
+  const named = new Set(all.map((operation) => operation.subject))
   for (const subject of named)
     if (!(subject in connector.subjects)) throw new Error(`Unknown subject ${subject}`)
   for (const subject of Object.keys(connector.subjects))
     if (!named.has(subject)) throw new Error(`Subject without operation: ${subject}`)
+  assertSourcesEarlier(all)
   return Object.freeze({ ...connector, id: ConnectorId.parse(connector.id) })
+}
+
+function assertSourcesEarlier(all: readonly Operation<unknown, unknown>[]): void {
+  const before = new Set<OperationId>()
+  for (const operation of all) {
+    for (const source of operation.from)
+      if (!before.has(source)) throw new Error(`${operation.id} reads ${source}, not earlier`)
+    before.add(operation.id)
+  }
+}
+
+/** The order every probe runs in, the door first: each operation's `from` is before it. */
+export function inProbeOrder(
+  connector: Pick<Connector, 'operations' | 'readDoor'>,
+): readonly Operation<unknown, unknown>[] {
+  return [...Object.values(connector.readDoor ?? {}), ...connector.operations]
 }
 
 /** A door of read operations only: a write or destructive entry does not compile. */
