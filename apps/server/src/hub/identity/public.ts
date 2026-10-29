@@ -4,7 +4,9 @@ import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import type { SendMail } from '../../platform/mail.ts'
 import type { OperatorProof } from './admission.ts'
-import { admit, admitOperator, allows } from './admission.ts'
+import { admit, admitAppUser, admitOperator, allows } from './admission.ts'
+import type { ProjectApps } from './app-invitations.ts'
+import { cancelAppInvitationsOf, openAppInvitations } from './app-invitations.ts'
 import { createAuth, libraryCommandOn } from './auth.ts'
 import {
   companyNameOf,
@@ -20,11 +22,13 @@ import { createFirstPerson } from './first-person.ts'
 import { mailInvitation } from './invitation-mail.ts'
 import { lockCompany } from './invitations.ts'
 import type { PersonConversationRelease } from './memberships.ts'
+import { companyMembersOf, peopleNamed } from './memberships.ts'
 import { companyNicknameOf } from './nickname.ts'
 import { createPasswordRecovery } from './password-recovery.ts'
 import { registerIdentityRoutes } from './routes.ts'
-import { createSessionReader, liveHubSession, personNameOf } from './session.ts'
+import { addressOf, createSessionReader, liveHubSession, personNameOf } from './session.ts'
 
+export type { ProjectApps } from './app-invitations.ts'
 // The library's own configuration, for its tests: nothing routes to its sign-up, so only a direct
 // call can prove the sign-up stays closed (criterion 18).
 export { createAuth } from './auth.ts'
@@ -66,6 +70,14 @@ export function createIdentity(deps: {
       lockCompany,
       admitMember: admit,
       allows,
+      // What a person's access to an app reaches identity through (step 18): the company being
+      // deleted refuses them; the members, who use every app; names; the app's invitations.
+      admitAppUser,
+      companyMembersOf,
+      peopleNamed,
+      openAppInvitations,
+      addressOf,
+      cancelAppInvitations: cancelAppInvitationsOf(auth),
       admitOperator,
       registerCompany: registerCompanyOn(auth),
       renameCompany: renameCompanyOn(auth),
@@ -91,19 +103,21 @@ export function createIdentity(deps: {
             companyId: input.company.id,
           },
           invitation: input.invitation,
+          gives: { kind: 'COMPANY', role: input.invitation.role },
           companyName: input.company.name,
           inviter: { kind: 'CONEXUS', firstOwner: true },
           link: `${deps.config.publicOrigin}/invitations/${input.invitation.id}`,
           signal: input.signal,
         }),
     }),
-    // The Builder's release comes with the routes: identity exists before the Builder (code C4).
+    // The Builder's release and the Projetos' apps come with the routes: identity exists before
+    // either (code C4).
     routes: (
       app: Parameters<typeof registerIdentityRoutes>[0],
-      builder: { releaseConversations: PersonConversationRelease },
+      later: { releaseConversations: PersonConversationRelease; apps: ProjectApps },
     ) => {
       registerIdentityRoutes(app, { auth, config: deps.config, readSession, recovery })
-      registerCompanyRoutes(app, { ...deps, ...builder, auth, libraryCommand })
+      registerCompanyRoutes(app, { ...deps, ...later, auth, libraryCommand })
     },
   })
 }

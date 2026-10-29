@@ -85,3 +85,11 @@ export function hostLabelOf(input: {
 export function appHostOf(input: { label: HostLabel; appsDomain: string }): string {
   return `${input.label}.${input.appsDomain}`
 }
+
+/** An app a person uses: its Projeto's name, its company's and the address it opens at. */
+export const AppEntry = z.object({
+  projectName: z.string().min(1),
+  companyName: z.string().min(1),
+  address: z.string().min(1),
+})
+export type AppEntry = z.infer<typeof AppEntry>

@@ -5,6 +5,7 @@ import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import type { NeonProjects } from '../../platform/neon.ts'
 import type { IdentityPorts } from '../identity/public.ts'
+import { projectAppsOf } from './app-access.ts'
 import { nameDatabases, readyDatabaseOf, recordDatabaseHost } from './company-database.ts'
 import {
   deleteCompanyProjects,
@@ -12,7 +13,13 @@ import {
   releaseCompanyDatabase,
 } from './company-deletion.ts'
 import { admitToApp, liveProjectOf, projectOfHost } from './hosts.ts'
-import type { AppRemoval, AppVersionsOf, ProjectConversationRelease } from './ports.ts'
+import type {
+  AppRemoval,
+  AppSessionsEnd,
+  AppVersionsOf,
+  ProjectConversationRelease,
+  PublishedRolesOf,
+} from './ports.ts'
 import { createProjectStore, finishMarkedProject, markedProjectsOf } from './projects.ts'
 import { registerProjectRoutes } from './routes.ts'
 
@@ -23,8 +30,10 @@ export { liveProjectOf } from './hosts.ts'
 export { projectIdsOf } from './ids.ts'
 export type {
   AppRemoval,
+  AppSessionsEnd,
   AppVersionsOf,
   ProjectConversationRelease,
+  PublishedRolesOf,
 } from './ports.ts'
 /** For the apps' foreign key alone (code C8). */
 export { project } from './tables.ts'
@@ -44,10 +53,14 @@ export function createProjects(deps: {
   appRemoval: AppRemoval
   appVersionsOf: AppVersionsOf
   releaseConversations: ProjectConversationRelease
+  publishedRolesOf: PublishedRolesOf
+  endAppSessions: AppSessionsEnd
 }) {
   const store = createProjectStore(deps)
   return Object.freeze({
-    routes: (app: FastifyInstance) => registerProjectRoutes(app, store),
+    routes: (app: FastifyInstance) => registerProjectRoutes(app, store, deps),
+    /** What an app's invitation reaches Projects through, handed to identity's routes (step 18). */
+    appInvitations: projectAppsOf(deps),
     /** One pass at start: each company's Neon project takes its `<nickname>-<companyId>` (0048). */
     nameDatabases: () => nameDatabases(deps),
     // What the Operations Central reaches Projects through when it deletes a company (code C4).
