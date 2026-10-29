@@ -56,6 +56,7 @@ test('o contorno não vai ao título focado pelo programa', async () => {
 
 const RAIL = [
   'Início',
+  'Novo projeto',
   PROJECT_NAME,
   'Todos os projetos',
   'Configurações',
@@ -93,7 +94,7 @@ test('a gaveta aberta pelo teclado prende o Tab, com contorno em cada parada', a
   const page = await open('/', PHONE, HOUSE)
   await page.getByRole('button', { name: 'Abrir navegação' }).focus()
   assert.deepEqual(
-    [...(await presses(page, 'Enter', 1)), ...(await presses(page, 'Tab', 6))],
+    [...(await presses(page, 'Enter', 1)), ...(await presses(page, 'Tab', 7))],
     [...RAIL, 'Fechar navegação solid 2px', 'Início solid 2px'].map((stop) => `${stop} inside`),
   )
   await page.close()

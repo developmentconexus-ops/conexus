@@ -141,7 +141,7 @@ test('aviso: no WebKit da Apple, acima do iframe, com Abrir app numa aba nova', 
   vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(
     'Mozilla/5.0 (iPhone; CPU iPhone OS 26_6 like Mac OS X) AppleWebKit/605.1.15 Version/26.6 Mobile/15E148 Safari/604.1',
   )
-  openProject({ appVersion: 1 })
+  openProject({ appVersion: 1, publishedVersion: 1 })
   const notice = (await screen.findByText(WEBKIT)).closest('[role="status"]')
   if (!(notice instanceof HTMLElement)) throw new Error('the notice has no status region')
   const link = within(notice).getByRole('link', { name: 'Abrir app' })
@@ -150,6 +150,14 @@ test('aviso: no WebKit da Apple, acima do iframe, com Abrir app numa aba nova', 
   expect(link.getAttribute('rel')).toBe('noopener noreferrer')
   expect(notice.compareDocumentPosition(iframe()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   expect(iframe().getAttribute('src')).toBe(`${APP}/`)
+})
+
+test('aviso: antes do primeiro Publicar, sem Abrir app', async () => {
+  vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(APPLE)
+  openProject({ appVersion: 1 })
+  const notice = (await screen.findByText(WEBKIT)).closest('[role="status"]')
+  if (!(notice instanceof HTMLElement)) throw new Error('the notice has no status region')
+  expect(within(notice).queryByRole('link', { name: 'Abrir app' })).toBeNull()
 })
 
 test('aviso: Fechar aviso o esconde, e a aba lembra', async () => {

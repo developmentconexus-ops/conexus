@@ -13,6 +13,9 @@ export const FilePath = z
   .regex(/^[A-Za-z0-9_-][A-Za-z0-9._-]*(\/[A-Za-z0-9_-][A-Za-z0-9._-]*)*$/)
   .refine((path) => !path.split('/').some((segment) => segment === '.' || segment === '..'))
 
+/** A role of the app, as `defineRoles` names it. */
+export const RoleName = z.string().regex(/^[a-z][a-z0-9_]{0,31}$/)
+
 const Migration = z.strictObject({
   id: z.string().regex(/^[a-z0-9][a-z0-9_-]{0,63}$/),
   // One statement per item, so a migration is applied whole in one transaction (0043, check 11).
@@ -31,6 +34,13 @@ export const Manifest = z
     // accepted so they stay valid (0019), never read. The app's Worker checks every call with the
     // app's own Zod (`serveApp`).
     operations: z.record(z.string(), z.unknown()).optional(),
+    // The roles the app declares, with what a person reads in Quem usa o app; a manifest before
+    // them stays valid (0019).
+    roles: z
+      .array(z.strictObject({ name: RoleName, label: z.string().trim().min(1).max(40) }))
+      .max(20)
+      .refine((list) => unique(list.map(({ name }) => name)))
+      .optional(),
     migrations: z.array(Migration).refine((list) => unique(list.map(({ id }) => id))),
     assets: z
       .array(FilePath)

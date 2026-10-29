@@ -54,6 +54,7 @@ Ask the person's decisions in `ask_user` cards of up to four questions, the most
 - Write each question about their work, in their words: business terms, never a table, a field or where something is stored. It reads alone and says what the answer changes.
 - Give 2 to 4 options, each saying in a few words what the app will do, with your recommendation first. Base it on the request and what this kind of work usually needs. Leave the options out only when you cannot guess the likely answers.
 - What is saved and who may see or change it come before how something is shown.
+- When the request names different people with different rights, ask who calls what: which kinds of people use the app, and what each may do or see. Each kind that differs becomes a role of the app (`conexus-data`), with the label the person already uses; the plan names the roles and, for each operation, the roles that call it, or "todos com acesso". When everyone does and sees the same, the app has no roles.
 
 Read the answers before the next card. Another card exists only because a decision is still the person's: one not asked yet, one an answer opened, or an answer that contradicts what you found. Never ask again what an answer settled. Continue until each of the person's decisions is answered, or left open in the plan with what it leaves off.
 

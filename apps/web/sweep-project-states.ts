@@ -134,7 +134,7 @@ export const PROJECT_STATES: State[] = [
         versions: [],
       }),
     },
-    settle: (p) => waitFor(p, 'Nenhuma versão foi ao app ainda.'),
+    settle: (p) => waitFor(p, 'Nenhuma versão ainda.'),
   },
   {
     name: 'Projeto, Versões do membro',
@@ -145,7 +145,7 @@ export const PROJECT_STATES: State[] = [
         versions: [],
       }),
     },
-    settle: (p) => waitFor(p, 'Nenhuma versão foi ao app ainda.'),
+    settle: (p) => waitFor(p, 'Nenhuma versão ainda.'),
   },
   {
     name: 'Projeto, Código com a árvore',

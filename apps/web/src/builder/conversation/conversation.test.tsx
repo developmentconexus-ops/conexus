@@ -5,6 +5,7 @@ import { hubServer } from '../../platform/test-hub.tsx'
 import { AGENT_START, RUNNING, signalStarted, stepStarted, textDelta } from './test-events.ts'
 import { choose, conversationOf, FIRST, PROJECT, say, screens, typed, view } from './test-hub.tsx'
 import { builderSaid, personSaid } from './test-stream.tsx'
+import { EMPTY_CONVERSATION } from './text.ts'
 
 const { open, openConversation } = screens(hubServer())
 
@@ -140,5 +141,5 @@ test('sem thread no meio da conversa: não encontrado, e a linha sai da lista', 
     await screen.findByRole('heading', { name: 'Não encontramos o que você procurou.' }),
   ).toBeTruthy()
   await conexus.router.navigate({ to: PROJECT })
-  expect(await screen.findByText('Nenhuma conversa')).toBeTruthy()
+  expect(await screen.findByText(EMPTY_CONVERSATION)).toBeTruthy()
 })

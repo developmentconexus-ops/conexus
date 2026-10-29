@@ -68,6 +68,7 @@ src/
 
 **Data.** Call the server only through `api` from `@/conexus/api.gen`, never with `fetch`: `api('listTickets', input)` sends the input and returns the output its operation declares, or throws a `CallFailed`. Import the operations' types and schemas from `shared/operations.ts`.
 - Read with `useQuery`. The key is `[operation, input]`, and the input object is the whole cache identity.
+- In an app with roles, hide what the person's role cannot do: read who calls with `useQuery({ queryKey: ['caller'], queryFn: () => readCaller() })` and test `can(caller.access, 'manager')`, both from `@conexus/app`. Hiding is only the screen's courtesy; the server refuses with `ROLE_FORBIDDEN`, and `failureOf` shows its sentence.
 - Write with `useMutation({ mutationFn: (input) => api('<operation>', input) })`. On success, invalidate every read the write changes by its operation name, which covers every filter already cached. Do not copy server data into `useState`.
 - Every part that reads data shows four states: loading (`Skeleton`), error (`Alert` with `failureOf(error)`), empty (`Empty` that says what to do next) and data.
 - `failureOf(error)` turns a failed call into the platform's sentence for it, from `failureText` in `@conexus/app`. Never show a code or a stack, and never write a retry sentence of your own.

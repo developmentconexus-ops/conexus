@@ -144,20 +144,21 @@ async function restoreWorkerIfLost(
 }
 
 /**
- * The Workers of the Prévia's version and of the published one, if Cloudflare lost them; how many
- * went back. The database and the migrations are the Prévia's alone (step 17).
+ * The Workers of the Prévia's version and of the published one, if Cloudflare lost them; the
+ * versions whose Worker went back. The database and the migrations are the Prévia's alone (step 17).
  */
 async function restoreWorkers(
   deps: RepairDeps,
   scope: Scope,
   input: { companyId: CompanyId; live: Live; published: Live | undefined },
-): Promise<number> {
+): Promise<AppVersionId[]> {
   const { companyId, live, published } = input
   const lost = [live]
   if (published !== undefined && published.versionId !== live.versionId) lost.push(published)
-  let restored = 0
+  const restored: AppVersionId[] = []
   for (const version of lost) {
-    if (await restoreWorkerIfLost(deps, scope, { ...version, companyId })) restored += 1
+    if (await restoreWorkerIfLost(deps, scope, { ...version, companyId }))
+      restored.push(version.versionId)
   }
   return restored
 }
@@ -186,18 +187,22 @@ async function restoreLive(
     if (input.marked.has(live.projectId)) continue
     const ids = { scope, companyId, projectId: live.projectId }
     if (!(await stillLive(deps, ids))) continue
-    workers += await restoreWorkers(deps, scope, {
+    const restored = await restoreWorkers(deps, scope, {
       companyId,
       live,
       published: published.find((one) => one.projectId === live.projectId),
     })
+    workers += restored.length
     const opened = await openAppDatabase(deps, { ...ids, databaseReady: false })
     if (opened.kind === 'FAILED') throw new Failure(opened.failure)
     const refused = await migrateApp(deps, { ...ids, owner: opened.owner, manifest: live.manifest })
     if (refused !== undefined) throw new Failure(refused.failure)
     // A deletion marked after the read above may have removed it all before this pass made it.
     if (!(await stillLive(deps, ids)))
-      await takeBackRepair(deps, { ...ids, versionId: live.versionId })
+      await takeBackRepair(deps, {
+        ...ids,
+        versionIds: [...new Set([live.versionId, ...restored])],
+      })
   }
   return workers
 }

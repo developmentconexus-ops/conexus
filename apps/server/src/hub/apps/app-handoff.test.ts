@@ -139,7 +139,13 @@ test('checagem: 200 com quem chama; outro host e sem sessão 401; sessão do Hub
   const checked = await check(hub, PEDIDOS, session)
   assert.equal(checked.statusCode, 200)
   assert.deepEqual(checked.json(), {
-    caller: { personId: bruno.id, personName: 'Bruno Reis', projectId, projectName: 'Pedidos' },
+    caller: {
+      personId: bruno.id,
+      personName: 'Bruno Reis',
+      projectId,
+      projectName: 'Pedidos',
+      access: { kind: 'BUILDER' },
+    },
     version: { example: true },
     database: null,
   })

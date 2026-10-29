@@ -133,7 +133,7 @@ export function PlanCard({ part }: { part: PlanCardItem }) {
           <DialogTrigger render={<Button className="self-start" />}>
             Ler plano completo
           </DialogTrigger>
-          <DialogContent title={title}>
+          <DialogContent title={title} size="page">
             <div className="min-h-0 flex-1 overflow-y-auto">
               <Markdown text={plan} />
             </div>

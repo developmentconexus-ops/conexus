@@ -5,8 +5,12 @@ import { pageStorage } from '../../platform/storage.ts'
 import type { MessageFile, Outgoing } from './attachments.ts'
 
 /** The refusals of the model a new conversation would meet again: Início opens the Projeto with them. */
-export const MODEL_REFUSALS = ['MODEL_NO_ACCOUNT', 'MODEL_UNKNOWN', 'EFFORT_UNSUPPORTED'] as const
+const MODEL_REFUSALS = ['MODEL_NO_ACCOUNT', 'MODEL_UNKNOWN', 'EFFORT_UNSUPPORTED'] as const
 export type ModelRefusal = (typeof MODEL_REFUSALS)[number]
+
+export function isModelRefusal(code: string): code is ModelRefusal {
+  return MODEL_REFUSALS.some((one) => one === code)
+}
 
 const mirror = pageStorage('session')
 /**

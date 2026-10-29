@@ -16,7 +16,7 @@ type Ids = { companyId: CompanyId; projectId: ProjectId }
  * version, and the ready ones past the newest three other than those in `keep` (the new version and
  * the published one, however old). A version being sent stays.
  */
-export async function markPrune(tx: CommandTx, input: Ids & { keep: readonly string[] }) {
+export async function markPrune(tx: CommandTx, input: Ids & { keep: readonly AppVersionId[] }) {
   const kept = await tx
     .select({ id: appVersion.id })
     .from(appVersion)

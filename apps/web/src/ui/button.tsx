@@ -31,7 +31,7 @@ const buttonClasses = cva(
       },
       // A link that is a labelled button from `md` and the quiet icon button (`ghost`, `icon`) under it.
       phoneIcon: {
-        true: 'max-md:size-8 max-md:bg-transparent max-md:px-0 max-md:text-text-2 max-md:hover:bg-surface-3 max-md:hover:text-text max-md:[&_svg]:size-3.5',
+        true: 'max-md:size-8 max-md:border-transparent max-md:bg-transparent max-md:px-0 max-md:text-text-2 max-md:hover:bg-surface-3 max-md:hover:text-text max-md:[&_svg]:size-3.5',
       },
     },
     defaultVariants: { variant: 'default', size: 'default' },
@@ -50,12 +50,13 @@ export function Button({
   className,
   variant,
   size,
+  phoneIcon,
   ...props
 }: ButtonPrimitive.Props & VariantProps<typeof buttonClasses>) {
   return (
     <ButtonPrimitive
       data-slot="button"
-      className={cn(buttonVariants({ variant, size }), className)}
+      className={cn(buttonVariants({ variant, size, phoneIcon }), className)}
       {...props}
     />
   )

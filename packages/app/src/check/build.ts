@@ -1,7 +1,7 @@
 import { cpSync, existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { APP_COMPATIBILITY_DATE, ASSETS_FOLDER, Manifest } from '@conexus/app-contract'
-import { HANDLERS, OPERATIONS } from './manifest.ts'
+import { HANDLERS, OPERATIONS, sharedOf } from './manifest.ts'
 import { CHECK_LIMITS } from './report.ts'
 import type { CheckContext, Outcome } from './step.ts'
 import { outputProblem, overran, PASSED, problem, workOf } from './step.ts'
@@ -33,9 +33,9 @@ function workerSource(ctx: CheckContext): string {
   const handlers = existsSync(join(ctx.root, HANDLERS))
   return [
     "import { serveApp } from '@conexus/app-contract'",
-    operations ? `import { operations } from '../../${OPERATIONS}'` : 'const operations = {}',
+    ...sharedOf(operations),
     handlers ? `import { handlers } from '../../${HANDLERS}'` : 'const handlers = {}',
-    'export default serveApp({ operations, handlers })',
+    'export default serveApp({ operations, handlers, roles })',
   ].join('\n')
 }
 

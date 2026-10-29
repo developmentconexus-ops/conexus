@@ -171,7 +171,8 @@ async function checkCall(
     case 'ADMITTED': {
       const { personId, personName } = found
       const { projectName } = admitted
-      const caller = { personId, personName, projectId: ids.projectId, projectName }
+      const access = { kind: 'BUILDER' } as const
+      const caller = { personId, personName, projectId: ids.projectId, projectName, access }
       return callTo(deps, { ...ids, caller, environment: found.environment })
     }
     default:

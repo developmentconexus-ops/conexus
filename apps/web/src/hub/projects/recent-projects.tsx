@@ -11,6 +11,7 @@ import {
   SidebarMenu,
   SidebarMenuSkeleton,
 } from '../../ui/sidebar.tsx'
+import { NewProjectDialog } from './new-project-dialog.tsx'
 import { projectsQuery } from './queries.ts'
 
 const SHOWN = 5
@@ -30,13 +31,15 @@ export function rememberProject(input: {
 /**
  * "Projetos recentes": the Projects opened last in this browser that the Hub still lists, then the
  * first of the list, up to five, and "Todos os projetos" (web W30). Only the list's first page
- * counts. While it loads, a skeleton; with no Projeto or a failed read, the group is not shown.
+ * counts. While it loads, a skeleton; with a failed read, the group is not shown; with no Projeto
+ * it keeps the **+** and says so quietly, since the + is where a person creates the first one.
  */
 export function RecentProjects(props: { companyId: CompanyId; personId: PersonId }) {
   const { companyId } = props
   const read = useQuery(projectsQuery(companyId, undefined))
-  if (read.isError || read.data?.projects.length === 0) return null
+  if (read.isError) return null
   const listed = read.data?.projects ?? []
+  const empty = read.isSuccess && listed.length === 0
   const opened = recall({ list: listOf(companyId), personId: props.personId })
   const recent = [
     ...opened.flatMap((id) => listed.filter((project) => project.id === id)),
@@ -45,31 +48,38 @@ export function RecentProjects(props: { companyId: CompanyId; personId: PersonId
   return (
     <SidebarGroup>
       <SidebarGroupLabel>Projetos recentes</SidebarGroupLabel>
-      <SidebarMenu>
-        {read.isPending ? (
-          <>
-            <SidebarMenuSkeleton />
-            <SidebarMenuSkeleton />
-          </>
-        ) : (
-          recent.map((project) => (
-            <FrameLink
-              key={project.id}
-              to="/companies/$companyId/projects/$projectId"
-              params={{ companyId, projectId: project.id }}
-              icon={FolderIcon}
-              label={project.name}
-            />
-          ))
-        )}
-        <FrameLink
-          to="/companies/$companyId/projects"
-          params={{ companyId }}
-          activeOptions={{ exact: true }}
-          icon={LayoutGridIcon}
-          label="Todos os projetos"
-        />
-      </SidebarMenu>
+      <NewProjectDialog companyId={companyId} />
+      {empty ? (
+        <p className="px-[0.6rem] py-xs text-label text-text-2 group-data-[collapsible=icon]:hidden">
+          Sem projetos por enquanto.
+        </p>
+      ) : (
+        <SidebarMenu>
+          {read.isPending ? (
+            <>
+              <SidebarMenuSkeleton />
+              <SidebarMenuSkeleton />
+            </>
+          ) : (
+            recent.map((project) => (
+              <FrameLink
+                key={project.id}
+                to="/companies/$companyId/projects/$projectId"
+                params={{ companyId, projectId: project.id }}
+                icon={FolderIcon}
+                label={project.name}
+              />
+            ))
+          )}
+          <FrameLink
+            to="/companies/$companyId/projects"
+            params={{ companyId }}
+            activeOptions={{ exact: true }}
+            icon={LayoutGridIcon}
+            label="Todos os projetos"
+          />
+        </SidebarMenu>
+      )}
     </SidebarGroup>
   )
 }

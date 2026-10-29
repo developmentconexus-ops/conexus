@@ -24,7 +24,7 @@ import {
   view,
 } from './test-hub.tsx'
 import { attach, displayOf, parkedOf } from './test-stream.tsx'
-import { UNCONFIRMED_SEND } from './text.ts'
+import { EMPTY_CONVERSATION, UNCONFIRMED_SEND } from './text.ts'
 
 const { open, openConversation } = screens(hubServer())
 
@@ -47,10 +47,11 @@ async function pick(name: string) {
   fireEvent.click(option)
 }
 
-test('um Projeto sem conversa diz "Nenhuma conversa" e oferece "Nova conversa"', async () => {
-  open(view(), PROJECT)
-  expect(await screen.findByText('Nenhuma conversa')).toBeTruthy()
-  expect(screen.getByRole('button', { name: 'Nova conversa' })).toBeTruthy()
+test('um Projeto sem conversa abre numa conversa vazia, pronta para escrever, sem criar nada', async () => {
+  const { sent } = open(view(), PROJECT)
+  expect(await screen.findByText(EMPTY_CONVERSATION)).toBeTruthy()
+  expect(screen.getByRole('textbox', { name: 'Mensagem para o Builder' })).toBeTruthy()
+  expect(sent).toHaveLength(0)
 })
 
 test('o Projeto abre na conversa mais recente, e a caixa lista as da pessoa', async () => {
@@ -73,14 +74,39 @@ test('o Projeto abre na conversa mais recente, e a caixa lista as da pessoa', as
 })
 
 test('"Nova conversa" cria com a chave da tentativa e abre a conversa com o foco no campo', async () => {
-  const { sent } = open(view(), PROJECT)
+  const { sent } = open(
+    view({ conversations: [conversationOf({ id: FIRST })] }),
+    `${PROJECT}/conversations/${FIRST}`,
+  )
   fireEvent.click(await screen.findByRole('button', { name: 'Nova conversa' }))
-  const field = await screen.findByRole('textbox', { name: 'Mensagem para o Builder' })
+  await waitFor(() => expect(sent).toHaveLength(1))
+  await waitFor(() => expect(box()).toHaveProperty('value', expect.stringMatching(/^Conversa de /)))
+  const field = screen.getByRole('textbox', { name: 'Mensagem para o Builder' })
   await waitFor(() => expect(document.activeElement).toBe(field))
-  expect(sent).toHaveLength(1)
   expect(sent[0]?.attemptKey).toMatch(/^[0-9a-f-]{36}$/)
   expect(sent[0]?.body).toEqual({})
   expect(box()).toHaveProperty('value', expect.stringMatching(/^Conversa de /))
+})
+
+test('a primeira mensagem do Projeto sem conversa cria a conversa e a abre enviando o pedido', async () => {
+  const { sent, conexus } = open(view(), PROJECT)
+  const field = await screen.findByRole('textbox', { name: 'Mensagem para o Builder' })
+  fireEvent.change(field, { target: { value: 'Um app de encomendas' } })
+  fireEvent.keyDown(field, { key: 'Enter' })
+  await waitFor(() => expect(sent).toHaveLength(1))
+  expect(sent[0]?.attemptKey).toMatch(/^[0-9a-f-]{36}$/)
+  await waitFor(() => expect(conexus.router.state.location.pathname).toMatch(/\/conversations\//))
+})
+
+test('a recusa do modelo no primeiro envio do Projeto sem conversa devolve o texto e diz o que fazer', async () => {
+  open(view(), PROJECT, { create: () => refusal('MODEL_NO_ACCOUNT') })
+  const field = await screen.findByRole('textbox', { name: 'Mensagem para o Builder' })
+  fireEvent.change(field, { target: { value: 'Um app de encomendas' } })
+  fireEvent.keyDown(field, { key: 'Enter' })
+  expect((await screen.findByRole('status')).textContent).toBe(
+    'Nenhuma conta que você pode usar atende a este modelo. Escolha outro modelo ou fale com quem administra a empresa. Escolha outro modelo e envie de novo.',
+  )
+  expect(typed(field)).toBe('Um app de encomendas')
 })
 
 test('sem conta, "Nova conversa" mostra a frase do Hub e nada é criado', async () => {

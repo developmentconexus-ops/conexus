@@ -6,7 +6,7 @@ import { COMPANY } from '../../platform/fixtures.ts'
 import { hubServer, refusal, undecided } from '../../platform/test-hub.tsx'
 import { PROJECT, SECOND } from './test-hub.tsx'
 import { create, REQUEST, request, startHub, UNCONFIRMED } from './test-start.tsx'
-import { REQUEST_NOT_SENT } from './text.ts'
+import { EMPTY_CONVERSATION, REQUEST_NOT_SENT } from './text.ts'
 
 // What the Hub refuses or leaves undecided when Início creates (step 13.1, criteria 9, 10 and 13).
 const server = hubServer()
@@ -93,7 +93,7 @@ test('a conversa cortada depois do Projeto: "Abrir o Projeto" abre a página sem
   await request()
   create('Pedidos')
   fireEvent.click(await screen.findByRole('button', { name: 'Abrir o Projeto' }))
-  expect(await screen.findByText('Nenhuma conversa')).toBeTruthy()
+  expect(await screen.findByText(EMPTY_CONVERSATION)).toBeTruthy()
   expect(conexus.router.state.location.pathname).toBe(PROJECT)
 })
 
@@ -105,7 +105,7 @@ test('o modelo recusado depois do Projeto abre o Projeto com a frase', async () 
   create('Pedidos')
   expect(await screen.findByText(new RegExp(REQUEST_NOT_SENT))).toBeTruthy()
   expect(conexus.router.state.location.pathname).toBe(PROJECT)
-  expect(screen.getByText('Nenhuma conversa')).toBeTruthy()
+  expect(screen.getByText(EMPTY_CONVERSATION)).toBeTruthy()
   expect(conversations()).toHaveLength(1)
 })
 

@@ -5,7 +5,6 @@ import { ExternalLinkIcon, RotateCwIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useState } from 'react'
 import { Button, buttonVariants } from '../../ui/button.tsx'
-import { cn } from '../../ui/cn.ts'
 import { PageTitle } from '../../ui/list.tsx'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs.tsx'
 import { Publish, Versions } from '../apps/public.ts'
@@ -130,7 +129,7 @@ export function ProjectArea(props: {
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Abrir app"
-              className={cn(buttonVariants({ phoneIcon: true }), 'max-md:border-transparent')}
+              className={buttonVariants({ phoneIcon: true })}
             >
               <ExternalLinkIcon className="md:hidden" aria-hidden="true" />
               <span className="max-md:hidden">Abrir app</span>

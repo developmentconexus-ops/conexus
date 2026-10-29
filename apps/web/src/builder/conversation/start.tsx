@@ -13,8 +13,7 @@ import { accountsQuery } from '../model-accounts/public.ts'
 import type { Outgoing } from './attachments.ts'
 import { Composer } from './composer.tsx'
 import { useDraft } from './draft.ts'
-import type { ModelRefusal } from './handoff.ts'
-import { MODEL_REFUSALS, stashHandoffFiles } from './handoff.ts'
+import { isModelRefusal, stashHandoffFiles } from './handoff.ts'
 import { chipOf } from './messages.ts'
 import { ComposerModelPicker, NoAccount } from './model-choice.tsx'
 import { FileChip } from './person-turn.tsx'
@@ -26,10 +25,6 @@ type Phase =
   | { kind: 'NAMING'; outgoing: Outgoing }
   /** The Projeto exists; its conversation does not yet. */
   | { kind: 'STARTING'; outgoing: Outgoing; project: Project }
-
-function isRefused(code: string): code is ModelRefusal {
-  return MODEL_REFUSALS.some((one) => one === code)
-}
 
 const FRAME = 'mx-auto flex w-full max-w-[46rem] flex-col'
 
@@ -70,13 +65,18 @@ function Request({ outgoing }: { outgoing: Outgoing }) {
 }
 
 /** The model the request starts on, the person's default at first (decision 0054). */
-function usePicked(companyId: CompanyId) {
+export function usePicked(companyId: CompanyId) {
   const accounts = useSuspenseQuery(accountsQuery(companyId)).data
   const start = accounts.defaults.start
   const [picked, setPicked] = useState<{ model: ModelId; effort: Effort } | null>(
     start && { model: start.model, effort: start.effort },
   )
-  return { picked, setPicked, providers: accounts.choices.mine }
+  return {
+    picked,
+    setPicked,
+    providers: accounts.choices.mine,
+    usable: accounts.usableProviders.length > 0,
+  }
 }
 
 /**
@@ -106,7 +106,7 @@ function useCreated(
         state: { handoff: { content: outgoing.content } },
       })
     } catch (error) {
-      if (!(error instanceof HubFailure && isRefused(error.code))) throw error
+      if (!(error instanceof HubFailure && isModelRefusal(error.code))) throw error
       await navigate({
         to: '/companies/$companyId/projects/$projectId',
         params,
@@ -141,6 +141,8 @@ function Naming(props: {
           company={company}
           databaseReady={databaseReady}
           locked={phase.kind === 'STARTING' ? phase.project.name : null}
+          idle="Criar e começar"
+          back="Voltar"
           onCreated={async (project) => {
             props.onPhase({ kind: 'STARTING', outgoing, project })
             await created(project, outgoing)

@@ -179,6 +179,26 @@ test('o alto do Projeto: Publicar, publicada e Abrir app', async () => {
   expect(screen.getByRole('link', { name: 'Abrir app' })).toBeTruthy()
 })
 
+test('o alto do Projeto: a versão sumiu ao publicar, a frase fica abaixo do alto e some ao reabrir', async () => {
+  server.use(
+    ...projectsRead({
+      projects: [PEDIDOS],
+      databaseReady: true,
+      mayDelete: true,
+      appVersion: 7,
+    }),
+    http.put(PUBLISH_PATH, () => refusal('APP_VERSION_NOT_FOUND')),
+  )
+  render(<Conexus conexus={createConexus(createMemoryHistory({ initialEntries: [PROJECT] }))} />)
+  fireEvent.click(await screen.findByRole('button', { name: 'Publicar' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Publicar a versão 7' }))
+  expect((await screen.findByRole('alert')).textContent).toBe('Essa versão não existe mais.')
+  await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull())
+  fireEvent.click(screen.getByRole('button', { name: 'Publicar' }))
+  await screen.findByRole('alertdialog')
+  expect(screen.queryByText('Essa versão não existe mais.')).toBeNull()
+})
+
 test('um Projeto sem endereço, feito na 7.x: nem o endereço nem "Abrir app"', async () => {
   server.use(
     ...projectsRead({ projects: [PEDIDOS], databaseReady: true, mayDelete: true, address: null }),

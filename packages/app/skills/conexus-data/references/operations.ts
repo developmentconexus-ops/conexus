@@ -1,5 +1,5 @@
 // In the app: shared/operations.ts
-import { defineOperations } from '@conexus/app'
+import { defineOperations, defineRoles } from '@conexus/app'
 import { z } from 'zod'
 
 // One owner for the statuses: the handlers, the client and the screens all read this list.
@@ -22,16 +22,26 @@ const Change = z.object({
   at: z.string(),
 })
 
+// The app's roles: a name, and the label a person reads in Quem usa o app. An app without roles has none of this.
+export const roles = defineRoles({ agent: 'Atendente', manager: 'Gerente' })
+
+// Every operation of an app with roles says who calls it: the roles it names, or 'everyone' with access.
+const WORKERS = ['agent', 'manager'] as const
+const MANAGERS = ['manager'] as const
+
 export const operations = defineOperations({
   listTickets: {
+    roles: WORKERS,
     input: z.object({ status: Status.optional(), search: z.string().max(100).optional() }),
     output: z.array(Ticket).max(500),
   },
   countTickets: {
+    roles: WORKERS,
     input: z.object({ search: z.string().max(100).optional() }),
     output: z.array(z.object({ status: Status, total: z.int() })),
   },
   getTicket: {
+    roles: WORKERS,
     input: z.object({ id: z.int().min(1) }),
     // A ticket that does not exist is data, not a failure: the field is left out.
     output: z.object({
@@ -39,6 +49,7 @@ export const operations = defineOperations({
     }),
   },
   createTicket: {
+    roles: WORKERS,
     input: z.object({
       subject: z.string().min(1).max(200),
       description: z.string().max(2000),
@@ -47,14 +58,17 @@ export const operations = defineOperations({
     output: z.object({ id: z.int() }),
   },
   changeTicketStatus: {
+    roles: MANAGERS,
     input: z.object({ id: z.int().min(1), status: Status, note: z.string().max(500) }),
     output: z.object({ id: z.int() }),
   },
   ticketSummary: {
+    roles: MANAGERS,
     input: z.object({}),
     output: z.object({ open: z.int(), waiting: z.int(), resolvedLastWeek: z.int() }),
   },
   ticketsByWeek: {
+    roles: MANAGERS,
     input: z.object({ weeks: z.int().min(1).max(52) }),
     output: z.array(z.object({ week: z.string(), total: z.int() })),
   },
