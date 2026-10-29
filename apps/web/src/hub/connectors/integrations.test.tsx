@@ -19,7 +19,7 @@ import {
 } from './test-hub.tsx'
 
 const server = hubServer()
-const MEMBER_SENTENCE = 'Só a dona ou um administrador liga, testa e desliga.'
+const MEMBER_SENTENCE = 'Só o dono ou um administrador liga, testa e desliga.'
 
 function open(view?: View, answers?: Answers) {
   return openIntegrations(server, view, answers)
@@ -192,7 +192,7 @@ test('chaves recusadas: o membro lê a quem pedir, a dona lê o que fazer', asyn
   const refused = connectionOf({ state: 'NEEDS_REAUTH', testedAt: '2026-10-29T14:02:00.000Z' })
   const owner = 'As chaves foram recusadas pelo Sankhya. Desligue e ligue de novo com chaves novas.'
   const member =
-    'As chaves foram recusadas pelo Sankhya. Peça à dona ou a um administrador para ligar de novo.'
+    'As chaves foram recusadas pelo Sankhya. Peça ao dono ou a um administrador para ligar de novo.'
   open(viewOf({ mayManage: false, connections: [refused] }))
   expect(await screen.findByText(member)).toBeTruthy()
   expect(screen.queryByText(owner)).toBeNull()

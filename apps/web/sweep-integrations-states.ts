@@ -87,6 +87,6 @@ export const INTEGRATIONS_STATES: State[] = [
     name: 'Integrações do membro',
     path: PAGE,
     replies: { ...MEMBER, ...connectionsPage(COMPANY.id, false, [WORKING]) },
-    settle: (p) => waitFor(p, 'Só a dona ou um administrador liga, testa e desliga.'),
+    settle: (p) => waitFor(p, 'Só o dono ou um administrador liga, testa e desliga.'),
   },
 ]

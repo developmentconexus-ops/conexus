@@ -3,7 +3,7 @@ import { clockOf, dayAndMonth } from '../../platform/dates.ts'
 import { HubFailure } from '../../platform/hub.ts'
 
 export const NO_CONNECTIONS = 'Nenhuma integração ligada ainda.'
-export const MEMBER_SENTENCE = 'Só a dona ou um administrador liga, testa e desliga.'
+export const MEMBER_SENTENCE = 'Só o dono ou um administrador liga, testa e desliga.'
 
 const LIST_CHANGED = new Set(['CONNECTION_NOT_FOUND', 'CONNECTION_EXISTS', 'CONNECTOR_UNKNOWN'])
 
@@ -46,7 +46,7 @@ export function refusedKeysText(name: string): string {
 
 /** What a reader who may not manage the connections sees for the same refusal. */
 export function refusedKeysMemberText(name: string): string {
-  return `As chaves foram recusadas pelo ${name}. Peça à dona ou a um administrador para ligar de novo.`
+  return `As chaves foram recusadas pelo ${name}. Peça ao dono ou a um administrador para ligar de novo.`
 }
 
 export function unreachableText(name: string): string {
