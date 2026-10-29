@@ -317,3 +317,7 @@ Essa emenda muda só duas coisas no cartão. A primeira é o 404 vazio do Sankhy
 Cartão da etapa 19 aprovado em 2026-10-29 (commit 2186754fbdba0dcaa5759098a30e5a55aecf54f9): "Opção A"; sobre o erro natural do fornecedor, "1 A / 2. Okay / 3. Okay"
 
 As edições da revisão 6 só dão palavras às duas decisões já registradas acima, sem decisão nova do fundador: o 404 diz que o corpo é o formato que o kit espera até o roteiro de uso medir ("Opção A"), e a linha "Os erros" diz que a recusa do envelope leva o envelope inteiro só ao Testar e ao Builder e que o código de um `[CORE_E` é o `CORE_E` com o número ("1 A / 2. Okay / 3. Okay"). O firstmate aprovou essas palavras em 2026-10-29.
+
+## Etapa 19.2
+
+Cartão da etapa 19.2 aprovado em 2026-10-29 (commit 417c076bc841624eee6440982033a0866c6c0ae2): "Aprovo"

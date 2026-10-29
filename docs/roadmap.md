@@ -36,6 +36,7 @@ Aprovações e usos: [aprovações](approvals.md).
 17. **Publicar.** Publica um app e o abre.
 18. **Entrar num app.** Convida alguém só para um app, e tira o acesso.
 19. **Conectores: o kit e a primeira ligação.** Liga o Sankhya em Integrações, na barra lateral, e testa.
+    19.2 **Central de Ajuda.** Abre `ajuda.conexus.fun`, acha o Sankhya e liga seguindo o guia.
     19.1 **Ligar por OAuth.** Liga o Mercado Livre e o vê pedir para conectar de novo.
 20. **App com dados de um conector.** Libera uma ligação num Projeto e abre um app com os dados dela.
     20.1 **Escrever pelo app.** Responde pelo app uma pergunta do Mercado Livre.
@@ -62,6 +63,7 @@ Aprovações e usos: [aprovações](approvals.md).
 | 11, 21 | As assinaturas de modelo | Nenhum |
 | 13 | Uma chave do E2B (a da conta grátis). Um bucket privado no R2 | E2B pago: US$ 150 por mês, se o uso pedir |
 | 19 | Usuário só de leitura no Sankhya de uma empresa | Nenhum |
+| 19.2 | Os passos do Sankhya com prints. Um clique liga `ajuda.conexus.fun` ao site | US$ 0 |
 | 19.1 | O seu app de desenvolvedor do Mercado Livre | Não lido |
 | 20.3 | O ambiente de teste da Jet, por você ou um cliente (em aberto) | Não lido |
 | 22 | Um lugar de cópia fora do Neon | Não lido |
@@ -87,7 +89,8 @@ Login social. Arquivos enviados por pessoas para dentro de um app ou da máquina
 | 15 Mudar o app | A 14.1 | Nenhuma | Migrações atômicas de app. O lote |
 | 18 Entrar num app | A 17 | Onde a checagem de sessão vive, pelo teste | Ficha de sessões e passagem. LT1 a LT4 e LT9 |
 | 19 Conectores | A 11 | Nenhuma | Os estudos de conectores (fundador, 2026-10-28: "H okay"). O kit `packages/connectors`. Sankhya: operações prontas para o comum (pedidos, produtos, parceiros, impostos), lidas na API pelo Context7 e no site oficial, e a porta de leitura do DbExplorer para cada empresa. Integrações na barra da empresa |
-| 19.1 Ligar por OAuth | A 19 | Nenhuma | A trava de renovação entre cópias do Hub |
+| 19.2 Central de Ajuda | A 19 | Nenhuma (fundador, 2026-10-29: "D recomendado") | O estudo da central. Starlight num Worker de arquivos, o guia ao lado de cada conector, um link por chave |
+| 19.1 Ligar por OAuth | A 19.2 | Nenhuma | A trava de renovação entre cópias do Hub |
 | 20 App com dados | A 18 e a 19.1 | Nenhuma | A barra do Projeto nasce com Integrações. O caderno da ligação. Banco livre durante a chamada |
 | 20.1 Escrever pelo app | A 20 | Nenhuma | Leitura, escrita, destrutiva. Escrita nova pede nova liberação |
 | 20.2 App que se atualiza | A 20 | Nenhuma | Avisos do fornecedor (S48) |
@@ -98,4 +101,4 @@ Login social. Arquivos enviados por pessoas para dentro de um app ou da máquina
 | 16 Atualizar sem cortar | A 14 | Nenhuma | Consertos de execução da auditoria. Testes 9 e 10 |
 | 22 Ensaio geral | A 21.1 | O lugar da cópia fora do Neon | Ensaios das etapas 2, 7, 9, 12 e 13. Teste de carga |
 | 23 Primeira empresa | A 22 | Os riscos aceitos. O plano pago | A seção 11 da arquitetura |
-| 24 Agentes com conectores | A 23 | Nenhuma | Aprovação por classe. Code Mode só em leituras, se medido |
+| 24 Agentes com conectores | A 23 | Nenhuma | Aprovação por classe. Code Mode só em leituras, se medido. O estudo parte dos agentes do Mastra e das referências de sempre, e soma o Open Bots (fundador, 2026-10-29: "eu quero que você adicione Open Bots, que tá agora bem forte"; qual projeto é, a confirmar com ele) |
