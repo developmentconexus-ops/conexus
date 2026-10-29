@@ -45,7 +45,7 @@ function refusedWith(sqlstate: string) {
   }
 }
 
-test('a ligação: várias por conector, cada uma pelo seu nome, cada empresa a sua, o selo só pela função', async (t) => {
+test('a ligação: várias por conector, uma por nome, cada empresa a sua, o selo só pela função', async (t) => {
   const { database, asOwner } = await createTestDatabase(t)
   await asOwner(SEED)
   function inA(personId: PersonId, statement: ReturnType<typeof sql>) {
