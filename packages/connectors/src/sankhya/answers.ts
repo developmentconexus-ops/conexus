@@ -43,7 +43,10 @@ function refusalOf(answer: ProviderAnswer): Answered<never> | null {
 /** What the six pages say a 404 means; `spec.test.ts` checks each page still says it. */
 export const NOT_FOUND = 'Dados não encontrados'
 
-/** The 404 body six pages document: the message must be theirs, or a moved route (the framework's own 404) would read as an empty list. */
+/**
+ * The 404 body six pages document: the message must be theirs, or a moved route (the framework's own 404) would read as an empty list.
+ * The pages show the phrase as the 404 response's description; this body shape is unmeasured and is set from the founder's use script (step 3) with a real empty 404.
+ */
 const NotFound = z.looseObject({
   statusCode: z.literal(404),
   error: z.looseObject({ message: z.literal(NOT_FOUND) }),

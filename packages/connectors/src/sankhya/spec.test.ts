@@ -127,7 +127,7 @@ describe('a documentação do Sankhya', () => {
     )
   })
 
-  it('as páginas dizem o 404 que o Conexus lê como leitura sem linhas, e só nas leituras que o leem assim', async (t) => {
+  it('a descrição da resposta 404 diz "Dados não encontrados" nas seis páginas, e só nas leituras que leem o 404 como sem linhas', async (t) => {
     const spec = loaded
     if (!spec) return t.skip(SKIP)
     const documented = { statusCode: 404, error: { message: NOT_FOUND } }

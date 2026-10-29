@@ -350,7 +350,7 @@ instalado). As linhas desta revisão são hipótese.
 | 19 | U4 | A barra da empresa tem **Integrações** entre os Projetos e as Configurações, ativa na lista e na página de uma ligação (`/companies/<c>/integrations/<connectionId>`); no celular, na gaveta (V56) | `apps/web/src/routes/_app/companies/$companyId/route.test.tsx`, "Integrações na barra" | must |
 | 20 | U4 | Num navegador de verdade (Chrome e WebKit, 1366 e 390 px, os dois temas), o roteiro inteiro com o dublê do Sankhya | o teste das telas (`conexus-qa`) | must |
 | 21 | U3 | No Hub de verdade, com o usuário só de leitura que você fornece, o Testar dá `WORKING`; na sonda, no DB Explorer do Sankhya com o usuário de integração, só na tabela de sonda, as quatro escritas sem linha são recusadas, e a leitura depois do `UPDATE` de verdade (só com a palavra do fundador) diz se ele passou: passou, a consulta estruturada volta. Prova a guarda do Sankhya e a permissão do usuário, sem o Conexus | o roteiro de uso, passos 3 e 5, por você (não roda em CI: nenhum Sankhya de verdade em teste, S40) | must |
-| 22 | U1 | Cada operação pronta confere com a documentação do Sankhya, baixada na hora das páginas públicas e nunca guardada no repositório (fundador, 2026-10-29: "não guardar e baixar na hora"): o método e o caminho do seu `probe` são uma rota do recorte; cada chave de consulta que ela manda é um parâmetro declarado da rota; a resposta do dublê ao `probe` passa em `z.fromJSONSchema` do esquema 200 da rota; nenhuma rota do recorte fica sem operação; o exemplo do 404 de cada uma das seis páginas que o documentam traz a mensagem que `NotFound` exige. Recusa: o dublê dos clientes sem o endereço que a documentação exige falha (o estudo achou esse desvio na U1 de hoje) | `packages/connectors/src/sankhya/spec.test.ts`, "cada leitura confere com a documentação do Sankhya", no passo `sankhya-docs` do CI (`npm run test:docs -w @conexus/connectors`), que roda quando o pull request muda `packages/connectors/` ou o CI; a recusa de baixar (uma página que não chega, ou grande demais) pelo `spec-source.test.ts`, sem rede | must |
+| 22 | U1 | Cada operação pronta confere com a documentação do Sankhya, baixada na hora das páginas públicas e nunca guardada no repositório (fundador, 2026-10-29: "não guardar e baixar na hora"): o método e o caminho do seu `probe` são uma rota do recorte; cada chave de consulta que ela manda é um parâmetro declarado da rota; a resposta do dublê ao `probe` passa em `z.fromJSONSchema` do esquema 200 da rota; nenhuma rota do recorte fica sem operação; a descrição da resposta 404 de cada uma das seis páginas que o documentam diz "Dados não encontrados" (o que a documentação mostra é essa frase; o formato do corpo que `NotFound` lê não foi medido e se fixa no roteiro de uso do fundador, passo 3, com um 404 vazio de verdade). Recusa: o dublê dos clientes sem o endereço que a documentação exige falha (o estudo achou esse desvio na U1 de hoje) | `packages/connectors/src/sankhya/spec.test.ts`, "cada leitura confere com a documentação do Sankhya", no passo `sankhya-docs` do CI (`npm run test:docs -w @conexus/connectors`), que roda quando o pull request muda `packages/connectors/` ou o CI; a recusa de baixar (uma página que não chega, ou grande demais) pelo `spec-source.test.ts`, sem rede | must |
 | 23 | U3 | O Testar inteiro tem um prazo, 80 s no Hub (o teste o põe em 1 s): cada chamada tem o prazo menor entre os 10 s e o que falta; quando acaba o prazo, os itens que faltam dão `NOT_TESTED`, também uma operação cuja fonte ficou `NOT_TESTED` (o prazo se olha antes do `from`: nunca `SOURCE_UNREAD` por demora), o resultado continua `WORKING` e a resposta sai antes do prazo mais uma folga; o login que não cabe no prazo dá `UNREACHABLE` | `connections.test.ts`, "testar: o prazo do teste inteiro", com o interruptor do dublê que demora cada resposta | must |
 | 24 | U3 | Duas ligações do Sankhya numa empresa, "Matriz" e "Filial": o Testar da Filial com a chave recusada a passa a `NEEDS_REAUTH` e a Matriz continua `ACTIVE`; o Desligar da Filial deixa a Matriz na lista e o Testar dela dá `WORKING`; um Testar ou Desligar com o id de uma ligação de outra empresa dá 404, e a de lá não muda; a lista traz as duas, por conector e depois pela hora de ligar | `connections.test.ts`, "duas ligações do mesmo conector" | must |
 
@@ -733,9 +733,9 @@ como um commit novo nele:
   mensagem, é `UNREADABLE` (`answers.ts`, `NotFound`). As duas chaves sozinhas não bastam: o 404
   de uma rota que não existe, num servidor do feitio do NestJS, tem as mesmas, e uma rota mudada
   apareceria como "Lê, mas não havia nada para olhar", a linha vazia no lugar da recusa que o
-  critério 6 proíbe. O esquema `NotFound` exige a mensagem no campo em que as seis páginas a
-  mostram (copiada delas na construção), e o critério 22 confere, nas páginas baixadas, que o
-  exemplo do 404 de cada uma das seis traz essa mensagem.
+  critério 6 proíbe. O esquema `NotFound` exige a mensagem; as seis páginas a mostram como a
+  descrição da resposta 404, e o critério 22 confere, nas páginas baixadas, só essa frase. O formato
+  do corpo não foi medido: ele se fixa no roteiro de uso do fundador (passo 3), com um 404 vazio de verdade.
 
 ### O raio da mudança
 
@@ -1121,8 +1121,8 @@ roda com `SANKHYA_SPEC_ONLINE=1 npm run test:docs -w @conexus/connectors` (só a
 - A ampliação passa das ~1.240 linhas estimadas em mais de um quinto: relatar antes de seguir.
 - A página de marca do Sankhya não dá o logotipo em SVG, ou o SVG dela não passa na conferência do
   logotipo sem ser editado: relatar o que a página dá; nenhum logotipo redesenhado nem convertido.
-- Uma das seis páginas do 404 não mostra a mensagem de "não encontrado" no corpo do exemplo, ou
-  mostra outra: relatar a página; nenhuma mensagem escrita de memória.
+- Uma das seis páginas do 404 não traz "Dados não encontrados" na descrição da resposta 404, ou
+  traz outra: relatar a página; nenhuma mensagem escrita de memória.
 
 ## U2 A tabela da ligação
 
