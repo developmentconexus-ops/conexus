@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import type { Connector, OperationId } from '@conexus/connectors'
+import type { Connector } from '@conexus/connectors'
 import { CONNECTORS, connectorOf } from '@conexus/connectors'
 import type {
   CompanyId,
@@ -7,7 +7,6 @@ import type {
   ConnectionList,
   ConnectorEntry,
   Person,
-  TestCheck,
   TestResult,
 } from '@conexus/hub-api'
 import { CONNECTION_STATES, ConnectionId, PersonId } from '@conexus/hub-api'
@@ -20,7 +19,9 @@ import type { SealKeys } from '../../platform/seal.ts'
 import { Credential, open, seal } from '../../platform/seal.ts'
 import type { IdentityPorts } from '../identity/public.ts'
 import { personNameColumn } from '../identity/public.ts'
-import type { BearerToken, Executor, OpenedConnection } from './executor.ts'
+import type { Executor, OpenedConnection } from './executor.ts'
+import type { Probed } from './probe.ts'
+import { probed } from './probe.ts'
 import { connection } from './tables.ts'
 
 export type Deps = {
@@ -253,81 +254,6 @@ function opened(deps: Deps, input: OfConnection): Promise<OpenedConnection> {
     const credential = open(deps.sealKeys, context, await sealedOf(tx, id))
     return { id, linkedAt: row.linkedAt, connector, credential }
   })
-}
-
-type Probed =
-  | Readonly<{ result: 'WORKING'; checks: TestCheck[] }>
-  | Readonly<{ result: 'AUTH_REFUSED' | 'UNREACHABLE' }>
-
-/**
- * Testar's second step: a new token, then each door entry and each read operation once, in that
- * order and one at a time (the connector's `oneRequestAtATime`). Each call gets the shorter of its
- * own deadline and what is left of the whole test's, counted from the first login: an item the
- * deadline does not reach, or cuts short, is NOT_TESTED, and a login that does not fit is UNREACHABLE. An expired
- * token is asked again once per call. Nothing read leaves this function but each item's outcome.
- */
-async function probed(deps: Deps, opened: OpenedConnection): Promise<Probed> {
-  const { executor } = deps
-  const { connector } = opened
-  const endsAt = performance.now() + deps.testDeadlineMs
-  const left = () => endsAt - performance.now()
-  const allowed = () => Math.min(deps.callDeadlineMs, left())
-  async function login() {
-    const deadlineMs = allowed()
-    return deadlineMs <= 0 ? ({ kind: 'UNREACHABLE' } as const) : executor.login(opened, deadlineMs)
-  }
-  const first = await login()
-  if (first.kind !== 'TOKEN') return { result: first.kind }
-  let token: BearerToken = first.token
-  const checks: TestCheck[] = []
-  const earlier = new Map<OperationId, unknown>()
-  let outOfTime = false
-  const operations = [...Object.values(connector.readDoor ?? {}), ...connector.operations]
-  for (const operation of operations) {
-    function check(outcome: TestCheck['outcome']) {
-      const subject = connector.subjects[operation.subject] ?? operation.subject
-      checks.push({ id: operation.id, label: operation.label, subject, outcome })
-    }
-    if (outOfTime || allowed() <= 0) {
-      check('NOT_TESTED')
-      continue
-    }
-    const input = operation.probe(earlier)
-    if (input === null) {
-      check('NOTHING_TO_READ')
-      continue
-    }
-    // A call the whole test's deadline cut short is an item the test did not reach, not a provider down.
-    const cutShort = left() < deps.callDeadlineMs
-    let answered = await executor.call(opened, token, operation, input, allowed())
-    if (answered.kind === 'TOKEN_EXPIRED') {
-      const again = await login()
-      if (again.kind !== 'TOKEN') return { result: again.kind }
-      token = again.token
-      answered = await executor.call(opened, token, operation, input, allowed())
-    }
-    switch (answered.kind) {
-      case 'OK':
-        earlier.set(operation.id, answered.value)
-        check('READS')
-        break
-      case 'REFUSED':
-      case 'UNREADABLE':
-        check(answered.kind)
-        break
-      case 'AUTH_REFUSED':
-      case 'TOKEN_EXPIRED':
-        return { result: 'AUTH_REFUSED' }
-      case 'UNREACHABLE':
-        if (!cutShort) return { result: 'UNREACHABLE' }
-        outOfTime = true
-        check('NOT_TESTED')
-        break
-      default:
-        return answered satisfies never
-    }
-  }
-  return { result: 'WORKING', checks }
 }
 
 const NEXT_STATE = { WORKING: 'ACTIVE', AUTH_REFUSED: 'NEEDS_REAUTH' } as const

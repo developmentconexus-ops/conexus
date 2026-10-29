@@ -103,7 +103,10 @@ export function createExecutor(deps: {
    * Sends one request (the OS's `send`): a redirect refused by fetch, a 5xx's body cancelled unread,
    * the rest read up to the cap and parsed only at the end. The provider's body is never logged.
    */
-  async function send(request: Request, deadlineMs: number): Promise<ProviderAnswer | Unreadable | Unreachable> {
+  async function send(
+    request: Request,
+    deadlineMs: number,
+  ): Promise<ProviderAnswer | Unreadable | Unreachable> {
     try {
       const response = await deps.fetch(request, {
         signal: AbortSignal.timeout(deadlineMs),

@@ -14,49 +14,14 @@ import {
   personOn,
   plantCompany,
 } from '../identity/test-hub.ts'
-import { connectionsOn, linkSankhya, testOf } from './test-connections.ts'
-
-// The two door entries first, then the 23 operations in the definition's order (criterion 10).
-const CHECK_IDS = [
-  'consultar',
-  'carregar',
-  'empresas',
-  'clientes',
-  'vendedores',
-  'tiposOperacao',
-  'naturezas',
-  'centrosResultado',
-  'produtos',
-  'gruposProduto',
-  'pedidos',
-  'impostosDoPedido',
-  'notasFiscais',
-  'notaFiscal',
-  'devolucoes',
-  'notasCanceladas',
-  'estoque',
-  'locaisEstoque',
-  'contasAReceber',
-  'contasAPagar',
-  'tiposPagamento',
-  'precosDoProduto',
-  'precosDaTabela',
-  'transportadoras',
-  'ordensCarga',
-]
-const ALL_READS = CHECK_IDS.map((id) => [id, 'READS'])
-
-/** ALL_READS with some items' outcomes changed. */
-function reads(changes: Record<string, string>) {
-  return ALL_READS.map(([id, outcome]) => [id, changes[id as string] ?? outcome])
-}
-
-function outcomes(response: { json(): unknown }) {
-  return Object(response.json()).checks.map((check: { id: string; outcome: string }) => [
-    check.id,
-    check.outcome,
-  ])
-}
+import {
+  ALL_READS,
+  connectionsOn,
+  linkSankhya,
+  outcomes,
+  reads,
+  testOf,
+} from './test-connections.ts'
 
 test('ligar: quem pode, e as recusas', async (t) => {
   const { hub, fake, ana, bruno, carla, base } = await connectionsOn(t)
@@ -181,29 +146,6 @@ test('testar: o fornecedor fora do ar não muda o estado', async (t) => {
   const down = await testOf(hub, ana, base, connection.id)
   assert.equal(down.statusCode, 200)
   assert.deepEqual(Object(down.json()), { result: 'UNREACHABLE', connection })
-})
-
-test('testar: o prazo do teste inteiro', async (t) => {
-  const { hub, fake, ana, base } = await connectionsOn(t)
-  const { connection } = Object((await linkSankhya(hub, ana, base, fake.credential)).json())
-  // Each answer fits its own deadline (200 ms) but all 25 do not fit the whole test's (1 s).
-  fake.switches.delayMilliseconds = 150
-  const started = performance.now()
-  const slow = await testOf(hub, ana, base, connection.id)
-  assert.ok(performance.now() - started < 1_500)
-  assert.equal(slow.statusCode, 200)
-  const body = Object(slow.json())
-  assert.equal(body.result, 'WORKING')
-  assert.equal(body.connection.state, 'ACTIVE')
-  const found = outcomes(slow)
-  assert.deepEqual(
-    found.map(([id]: string[]) => id),
-    CHECK_IDS,
-  )
-  const untested = found.findIndex(([, outcome]: string[]) => outcome === 'NOT_TESTED')
-  assert.ok(untested > 0, 'some items were reached')
-  assert.ok(found.slice(0, untested).every(([, outcome]: string[]) => outcome === 'READS'))
-  assert.ok(found.slice(untested).every(([, outcome]: string[]) => outcome === 'NOT_TESTED'))
 })
 
 test('testar e desligar juntos; um serviço por token', async (t) => {
