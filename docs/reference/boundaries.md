@@ -218,7 +218,7 @@ person given an app inside the app; each has a test that covers it, and none has
 
 Two have rows: a removed member takes the person's rows of that company (`member-removal-takes-app-access`),
 and a one-Projeto revoke checks the Projeto is the company's (`app-access-revoke-own-project`). The
-rows for the five above wait on a Hub issue linked from the step 18 closing.
+rows for the five above wait on issue #458.
 
 ### Deleting a company: the adapter, with the native route closed
 
