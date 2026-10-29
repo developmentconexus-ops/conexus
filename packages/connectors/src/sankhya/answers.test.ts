@@ -53,7 +53,7 @@ test('o 403 no corpo que as seis páginas documentam dá o mesmo que o code do g
   )
 })
 
-test('o 404 que as seis páginas documentam é a leitura sem linhas; outro 404 não é', () => {
+test('o 404 no formato que o kit espera é a leitura sem linhas; outro 404 não é', () => {
   const notFound = {
     statusCode: 404,
     error: { code: 'NOT_FOUND', message: NOT_FOUND },
