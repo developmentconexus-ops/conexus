@@ -75,32 +75,24 @@ Login social. Arquivos enviados por pessoas para dentro de um app ou da máquina
 
 1. **Código antigo só entra com os consertos médios e grandes feitos.** "2. A": "ele não manter decisões antigas só porque elas já foram
    feitas." Vive na regra do estudo, no `conexus-study`.
-2. **A 16 vai para depois da 21.1, antes da 22, com o número que tem.** Em 2026-10-22: "Deixarei ela mais pro final mesmo." e, à posição antes da 22, "Sim". Nenhuma etapa depende dela.
+2. **A 16 vai para depois da 21.1, antes da 22, com o número que tem.** Em 2026-10-22: "Cara, então vamos mudar esse roadmap aí, velho. Porque essa 16 pra mim não faz sentido entrar agora ... Deixarei ela mais pro final mesmo." e, à posição antes da 22, "Sim". Nenhuma etapa depende dela; os consertos de execução da auditoria e os testes 9 e 10 vão com ela.
 3. **Arquivos e voz entram como a 14.3, depois da 14.1.** "A1 sim B1 okay ... C sim", "B1 por agora".
 4. **O Início que você planeja vem depois da Prévia e da 14.3.** A ordem é 14.1, 14.3, 13.1: "Concordo documente tudo isso para ser registrado".
+5. **O roadmap perde o detalhe das etapas fechadas.** Em 2026-10-29: "Roadmap pode ir removendo o que foi de etapas passadas se tiver detalhes ou algo assim, se não vamos ter que aumentar ele para não perder informação". A linha de uma etapa fechada sai da tabela; o que ficou é nas [aprovações](approvals.md). O teto de 1.600 palavras não sobe.
 
 ## 2. As etapas
 
 | Etapa | O que precisa antes | Decisão sua nela | Conhecimento trazido |
 | --- | --- | --- | --- |
-| 13 O Builder escreve | A chave do E2B. O bucket do R2 | A rede da máquina (10) | Onze achados do turno real. Fichas do motor, sandbox, Git. Testes 11, 12 |
-| 14 O Builder constrói | A 13 | As capturas dos cartões do OS | O prompt, as skills e a casca do Conexus OS |
-| 14.0 Um registro da conversa | A 14 | Nenhuma | Dobrada na 14.2, U2 (fundador: "C") |
-| 14.2 Correção de tudo | A 14 | Nenhuma | Fechada em 2026-10-25 (v0.14.2 a v0.14.7, [aprovações](approvals.md)). Não agora: o cartão aberto atravessar a atualização e a queda |
-| 14.1 A Prévia | A 10, a 14.0 e a 14.2 | A1, B1, X1, um número por versão (A), Apaga tudo | Fechada em 2026-10-26 (v0.14.10, [aprovações](approvals.md)) |
-| 14.3 Arquivos e voz | A 14.1 | Nenhuma | Fechada em 2026-10-27 (v0.14.11 e v0.14.12, [aprovações](approvals.md)). A transcrição no servidor (Whisper e outras) espera, se for preciso |
-| 13.1 O primeiro pedido | A 14.3 e a 14.1 | A Alterações saiu do plano com a B1 da 14.1 | Fechada em 2026-10-27 (v0.14.13, [aprovações](approvals.md)) |
-| 13.2 Configurações | A 13.1 | A1, B1 | Escala |
 | 15 Mudar o app | A 14.1 | Nenhuma | Migrações atômicas de app. O lote |
-| 17 Publicar | A 15 | Nenhuma | Pré-requisitos de Release e Publish. O estudo 04 |
 | 18 Entrar num app | A 17 | Onde a checagem de sessão vive, pelo teste | Ficha de sessões e passagem. LT1 a LT4 e LT9 |
-| 19 Conectores | A 11 | Nenhuma | Os estudos de conectores (fundador, 2026-10-28: "H okay"). O kit `packages/connectors`. Sankhya: operações prontas para o comum (pedidos, produtos, parceiros, impostos) e a leitura do DbExplorer por empresa. Integrações na barra da empresa |
+| 19 Conectores | A 11 | Nenhuma | Os estudos de conectores (fundador, 2026-10-28: "H okay"). O kit `packages/connectors`. Sankhya: operações prontas para o comum (pedidos, produtos, parceiros, impostos), lidas na API pelo Context7 e no site oficial, e a porta de leitura do DbExplorer para cada empresa. Integrações na barra da empresa |
 | 19.1 Ligar por OAuth | A 19 | Nenhuma | A trava de renovação entre cópias do Hub |
 | 20 App com dados | A 18 e a 19.1 | Nenhuma | A barra do Projeto nasce com Integrações. O caderno da ligação. Banco livre durante a chamada |
 | 20.1 Escrever pelo app | A 20 | Nenhuma | Leitura, escrita, destrutiva. Escrita nova pede nova liberação |
 | 20.2 App que se atualiza | A 20 | Nenhuma | Avisos do fornecedor (S48) |
 | 20.3 Jet | A 20 | Quem pede o ambiente de teste | Fornecedor com documentação fina |
-| 20.4 Notificações | A 20 | Nenhuma | O estudo do portal de eventos. Fundador, 2026-10-29: "podemos ir depois da 20 as notificações" |
+| 20.4 Notificações | A 20 | Nenhuma | O estudo do portal de eventos |
 | 21 Outras contas | A 12 | Nenhuma | A leitura dos termos da OpenAI |
 | 21.1 Ver o que acontece | A 20 | Grafana no Brasil, provado | Um só caminho OTel (0052) |
 | 16 Atualizar sem cortar | A 14 | Nenhuma | Consertos de execução da auditoria. Testes 9 e 10 |
