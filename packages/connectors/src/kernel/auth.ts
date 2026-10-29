@@ -1,5 +1,6 @@
 import { z } from 'zod'
-import type { ProviderAnswer, ProviderRequest } from './operation.ts'
+import type { Native, ProviderAnswer, ProviderRequest } from './operation.ts'
+import { locateOf } from './operation.ts'
 
 /** `help`: one line and a public page on where the key comes from, shown in Ligar; `visible`: shown while pasted (an id), else masked. */
 type Fields = Readonly<
@@ -80,14 +81,16 @@ export function tokenRequest(auth: ClientCredentialsAuth, credential: Credential
 /** What the login answered: a token, a refused key, or a body the kit cannot read. */
 export type TokenAnswered =
   | Readonly<{ kind: 'OK'; accessToken: string; expiresInSeconds: number }>
-  | Readonly<{ kind: 'AUTH_REFUSED' }>
-  | Readonly<{ kind: 'UNREADABLE' }>
+  | Readonly<{ kind: 'AUTH_REFUSED' | 'UNREADABLE'; native: Native }>
 
 /** At the login, 400, 401 and 403 all mean the key is refused (the OS did the same); anything else unreadable is not the key's fault. */
 export function readToken(auth: ClientCredentialsAuth, answer: ProviderAnswer): TokenAnswered {
+  const native = { status: answer.status, ...locateOf(answer.body), body: answer.body }
   if (answer.status === 400 || answer.status === 401 || answer.status === 403)
-    return { kind: 'AUTH_REFUSED' }
-  if (answer.status < 200 || answer.status >= 300) return { kind: 'UNREADABLE' }
+    return { kind: 'AUTH_REFUSED', native }
+  if (answer.status < 200 || answer.status >= 300) return { kind: 'UNREADABLE', native }
   const token = auth.answer.safeParse(answer.body)
-  return token.success ? { kind: 'OK', ...token.data } : { kind: 'UNREADABLE' }
+  return token.success
+    ? { kind: 'OK', ...token.data }
+    : { kind: 'UNREADABLE', native: { ...native, body: null } } // a 2xx body may hold a token: never carried
 }
