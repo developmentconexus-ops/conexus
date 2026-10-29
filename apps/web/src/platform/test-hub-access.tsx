@@ -77,13 +77,15 @@ export function changedRole(role: string) {
 }
 
 /** The company's list of the people who use its apps: Carla in Pedidos as Gerente, unless `people` says otherwise. */
-export function companyAppAccessRead(people: unknown[] = [carlaOfCompany()]) {
+export function companyAppAccessRead(people: unknown[] = [carlaOfCompany()], mayManage = true) {
   return http.get(COMPANY_ACCESS_PATH, () =>
-    HttpResponse.json(listCompanyAppAccess.success.body.parse({ people, next: { kind: 'END' } })),
+    HttpResponse.json(
+      listCompanyAppAccess.success.body.parse({ people, next: { kind: 'END' }, mayManage }),
+    ),
   )
 }
 
-function carlaOfCompany() {
+export function carlaOfCompany() {
   return {
     personId: CARLA.personId,
     name: CARLA.name,

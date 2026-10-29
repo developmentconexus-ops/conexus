@@ -186,7 +186,7 @@ export function hubServer() {
     http.get('*/api/companies', () => HttpResponse.json(NO_COMPANIES)),
     http.get('*/api/apps', () => HttpResponse.json({ apps: [] })),
     http.get('*/api/companies/:companyId/app-access', () =>
-      HttpResponse.json({ people: [], next: { kind: 'END' } }),
+      HttpResponse.json({ people: [], next: { kind: 'END' }, mayManage: true }),
     ),
     http.get('*/api/companies/:companyId/model-accounts', () =>
       HttpResponse.json(
