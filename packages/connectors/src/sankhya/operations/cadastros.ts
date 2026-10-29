@@ -69,7 +69,7 @@ export const clientes = defineOperation({
   probe: () => ({ page: 1 }),
   request: (input) =>
     get('/v1/parceiros/clientes', { ...input, sort_by: 'codigoCliente', sort_order: 'ASC' }),
-  answer: (answer) => restAnswer(answer, Clientes),
+  answer: (answer) => restAnswer(answer, Clientes, { clientes: [], temMaisRegistros: false }),
 })
 
 const Vendedores = z.object({

@@ -1,21 +1,25 @@
 import { z } from 'zod'
 import type { Answered, ProviderAnswer } from '../kernel/operation.ts'
 
-/** The gateway code of a refused call, read from a loose body (`code`, or a message that starts with `GTW`); never leaves the kit. */
+const Text = z.union([z.string(), z.number()])
+const Refusal = z.looseObject({
+  code: Text.optional(),
+  mensagem: z.union([z.string(), z.looseObject({ codigo: Text.optional() })]).optional(),
+  message: z.string().optional(),
+  error: z.string().optional(),
+})
+
+/**
+ * The gateway code of a refused call, read from a loose body: `code`, the `mensagem.codigo` six
+ * pages document, or a message that starts with `GTW`. It never leaves the kit.
+ */
 function errorCode(body: unknown): string | null {
-  const loose = z
-    .looseObject({ code: z.union([z.string(), z.number()]).optional() })
-    .safeParse(body)
-  if (loose.success && loose.data.code !== undefined) return String(loose.data.code)
-  const message = z
-    .looseObject({
-      message: z.string().optional(),
-      mensagem: z.string().optional(),
-      error: z.string().optional(),
-    })
-    .safeParse(body)
-  if (!message.success) return null
-  const text = [message.data.message, message.data.mensagem, message.data.error].find((value) =>
+  const parsed = Refusal.safeParse(body)
+  if (!parsed.success) return null
+  const { code, mensagem, message, error } = parsed.data
+  if (code !== undefined) return String(code)
+  if (typeof mensagem === 'object' && mensagem.codigo !== undefined) return String(mensagem.codigo)
+  const text = [message, typeof mensagem === 'string' ? mensagem : undefined, error].find((value) =>
     value?.startsWith('GTW'),
   )
   return text?.match(/^GTW\d+/)?.[0] ?? null
@@ -36,12 +40,28 @@ function refusalOf(answer: ProviderAnswer): Answered<never> | null {
   return { kind: 'UNREADABLE' }
 }
 
-/** The REST answer: the body in the operation's schema, or the refusal its status says. A 404 is a list only when its body says so. */
-export function restAnswer<O>(answer: ProviderAnswer, output: z.ZodType<O>): Answered<O> {
-  const refusal = answer.status === 404 ? null : refusalOf(answer)
-  if (refusal) return refusal
-  const parsed = output.safeParse(answer.body)
+/** The body six pages document for a 404 ("Dados não encontrados"): the list has nothing to say, which is not a refusal. */
+const NotFound = z.looseObject({ statusCode: z.literal(404), error: z.unknown() })
+
+function read<O>(output: z.ZodType<O>, body: unknown): Answered<O> {
+  const parsed = output.safeParse(body)
   return parsed.success ? { kind: 'OK', value: parsed.data } : { kind: 'UNREADABLE' }
+}
+
+/**
+ * The REST answer: the body in the operation's schema, or the refusal its status says. A 404 is a
+ * list only when its body says so: the list itself, or (for the reads whose page documents it) the
+ * documented not-found body, which reads as `empty`, the list with no rows.
+ */
+export function restAnswer<O>(
+  answer: ProviderAnswer,
+  output: z.ZodType<O>,
+  empty?: unknown,
+): Answered<O> {
+  if (answer.status === 404 && empty !== undefined && NotFound.safeParse(answer.body).success)
+    return read(output, empty)
+  const refusal = answer.status === 404 ? null : refusalOf(answer)
+  return refusal ?? read(output, answer.body)
 }
 
 const Envelope = z.looseObject({ status: z.string(), responseBody: z.unknown().optional() })

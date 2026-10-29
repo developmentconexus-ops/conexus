@@ -107,10 +107,10 @@ export function createExecutor(deps: {
     request: Request,
     deadlineMs: number,
   ): Promise<ProviderAnswer | Unreadable | Unreachable> {
+    // Outside the `try`: a deadline the timer refuses is the caller's mistake, not the provider down.
+    const signal = AbortSignal.timeout(deadlineMs)
     try {
-      const response = await deps.fetch(request, {
-        signal: AbortSignal.timeout(deadlineMs),
-      })
+      const response = await deps.fetch(request, { signal })
       if (response.status >= 500) {
         await response.body?.cancel()
         return UNREACHABLE

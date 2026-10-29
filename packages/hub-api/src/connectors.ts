@@ -106,6 +106,9 @@ export const linkConnection = defineOperation({
   ],
 })
 
+/** How long Testar may take in all, from its first login: under the 100 s the Cloudflare edge allows (platform/http.ts). */
+export const TEST_DEADLINE_MS = 80_000
+
 export const testConnection = defineOperation({
   id: 'testConnection',
   summary:

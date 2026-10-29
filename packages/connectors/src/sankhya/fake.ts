@@ -13,7 +13,7 @@ import {
   SERVICE_PATH,
 } from './fake-data.ts'
 import { serveOnLoopback } from './fake-http.ts'
-import { routeOf } from './fake-rest.ts'
+import { forbidden, routeOf } from './fake-rest.ts'
 
 /** What the fake can be told to do wrong, per service: the executor's tests (U3) and the QA flip these. */
 type SankhyaSwitches = {
@@ -31,16 +31,24 @@ type SankhyaSwitches = {
   silent: boolean
   /** Milliseconds each answer is held back, for the executor's deadline tests (U3). */
   delayMilliseconds: number
+  /** Milliseconds the login is held back, for the executor's deadline tests (U3). */
+  loginDelayMilliseconds: number
   /** The `expires_in` the login gives. */
   expiresInSeconds: number
 }
 
-export type SankhyaFake = Fake & Readonly<{ switches: SankhyaSwitches; logins: () => number }>
+export type SankhyaFake = Fake &
+  Readonly<{
+    switches: SankhyaSwitches
+    logins: () => number
+    /** The tokens issued so far expire, as after their hour; a login after this gives a good one. */
+    expireTokens: () => void
+  }>
 
 /** How long a call holds its token: long enough for a second call over HTTP to arrive while the first is unanswered. */
 const SERVICE_MILLISECONDS = 25
 
-type Sessions = { issued: Set<string>; busy: Set<string>; logins: number }
+type Sessions = { issued: Set<string>; expired: Set<string>; busy: Set<string>; logins: number }
 
 const DoorBody = z.object({ requestBody: z.unknown() })
 
@@ -78,9 +86,7 @@ async function serveCall(request: Request, url: URL, switches: SankhyaSwitches):
   const route = door ? null : routeOf(url.pathname)
   const name = door ? (DOOR_NAMES[service] ?? service) : (route?.name ?? '')
   if (switches.refuse.has(name)) {
-    return door
-      ? envelope(service, '0')
-      : json({ code: 'NO_ACCESS', message: 'Sem permissão' }, 403)
+    return door ? envelope(service, '0') : forbidden(url.pathname, 'NO_ACCESS', 'Sem permissão')
   }
   if (switches.oversize) return json(OVERSIZE)
   if (switches.malformed) return json({ unexpected: true })
@@ -90,6 +96,11 @@ async function serveCall(request: Request, url: URL, switches: SankhyaSwitches):
   return service === 'DbExplorerSP.executeQuery'
     ? executeQuery(requestBody)
     : envelope(service, '0')
+}
+
+/** The gateway's answer to a token past its hour. */
+function tokenExpired(url: URL): Response {
+  return forbidden(url.pathname, 'GTW3403', 'Bearer Token inválido ou expirado')
 }
 
 /** The switches that spoil every call, before any session is looked at; null when none is on. */
@@ -102,11 +113,14 @@ function misbehaviour(url: URL, switches: SankhyaSwitches): Response | Promise<R
     return empty(307, { location: `${target.pathname}${target.search}` })
   }
   if (!switches.expireToken) return null
-  return json({ code: 'GTW3403', message: 'Bearer Token inválido ou expirado' }, 403)
+  return tokenExpired(url)
 }
 
 /** A token the fake never issued is refused; a token already in a call gets the envelope "4" (409 on REST). */
 function refuseSession(url: URL, token: string, sessions: Sessions): Response | null {
+  if (sessions.expired.has(token)) {
+    return tokenExpired(url)
+  }
   if (!sessions.issued.has(token)) return json({ code: 'GTW3501', message: 'Token inválido' }, 401)
   if (!sessions.busy.has(token)) return null
   if (url.pathname !== SERVICE_PATH) return json({ code: 'BUSY' }, 409)
@@ -126,13 +140,15 @@ export function sankhyaFake(): SankhyaFake {
     redirect: false,
     silent: false,
     delayMilliseconds: 0,
+    loginDelayMilliseconds: 0,
     expiresInSeconds: 300,
   }
-  const sessions: Sessions = { issued: new Set(), busy: new Set(), logins: 0 }
+  const sessions: Sessions = { issued: new Set(), expired: new Set(), busy: new Set(), logins: 0 }
 
   async function handle(request: Request): Promise<Response> {
     const url = new URL(request.url)
     if (url.pathname === '/authenticate' && request.method === 'POST') {
+      await sleep(switches.loginDelayMilliseconds)
       return authenticate(request, sessions, switches)
     }
     const early = misbehaviour(url, switches)
@@ -155,5 +171,8 @@ export function sankhyaFake(): SankhyaFake {
     serve: () => serveOnLoopback(handle),
     switches,
     logins: () => sessions.logins,
+    expireTokens: () => {
+      for (const token of sessions.issued) sessions.expired.add(token)
+    },
   }
 }
