@@ -2,7 +2,9 @@
  * The wire, not the guard. What keeps a consult read only is Sankhya's integration user, which holds
  * no insert, update or delete permission. This refuses, before any request is built, a consult that
  * is plainly not one read. Quoting follows Oracle and SQL Server, the databases Sankhya runs on; SQL
- * Server runs a second statement with no `;` before it, so statement words are refused anywhere.
+ * Server runs a second statement with no `;` before it, so statement words are refused anywhere. Block
+ * comments are refused outright: SQL Server nests them and Oracle does not, so no reading of where one
+ * ends is safe on both, and a read never needs one.
  */
 const REFUSED_WORDS = new RegExp(
   `\\b(?:${[
@@ -34,10 +36,17 @@ const REFUSED_WORDS = new RegExp(
     'OPENROWSET',
     'OPENDATASOURCE',
     'OPENQUERY',
+    'DISABLE',
+    'ENABLE',
+    'DECLARE',
+    'WAITFOR',
+    'RENAME',
+    'ROLLBACK',
   ].join('|')})\\b`,
   'i',
 )
 
+const BLOCK_COMMENT = /\/\*|\*\//
 const LINE_END = /[\n\r\v\f\u0085\u2028\u2029]/
 const CLOSING_QUOTE: Readonly<Record<string, string>> = { "'": "'", '"': '"', '[': ']' }
 
@@ -50,24 +59,20 @@ function pastQuote(sql: string, start: number, close: string): number {
   }
 }
 
-/** The index past the comment or quoted text that starts at `at`, -1 when it never closes or a comment nests, or null when `at` starts plain code. */
+/** The index past the line comment or quoted text that starts at `at`, -1 when it never closes, or null when `at` starts plain code. */
 function skipAt(sql: string, at: number): number | null {
   const pair = sql.slice(at, at + 2)
   if (pair === '--') {
     const end = sql.slice(at).search(LINE_END)
     return end === -1 ? sql.length : at + end
   }
-  if (pair === '/*') {
-    const end = sql.indexOf('*/', at + 2)
-    // SQL Server nests block comments and Oracle does not; a comment that opens another reads two ways.
-    return end === -1 || sql.slice(at + 2, end).includes('/*') ? -1 : end + 2
-  }
   const close = CLOSING_QUOTE[sql[at] ?? '']
   return close === undefined ? null : pastQuote(sql, at, close)
 }
 
-/** The SQL with each comment and quoted text replaced by a space; null when one never closes, a comment nests, or Oracle's `q'` quoting appears. */
+/** The SQL with each line comment and quoted text replaced by a space; null when one never closes, a block comment appears anywhere, or Oracle's `q'` quoting appears. */
 function codeOf(sql: string): string | null {
+  if (BLOCK_COMMENT.test(sql)) return null
   let code = ''
   let at = 0
   while (at < sql.length) {

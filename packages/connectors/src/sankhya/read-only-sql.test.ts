@@ -10,7 +10,6 @@ describe('read-only SQL', () => {
       'WITH a AS (SELECT 1 AS X FROM DUAL) SELECT X FROM a',
       "SELECT 'DELETE; DROP' AS T FROM DUAL",
       'SELECT "UPDATE" FROM T -- INSERT later',
-      'SELECT 1 /* ; */ FROM DUAL',
     ])
       assert.equal(isOneReadStatement(sql), true, sql)
   })
@@ -25,6 +24,17 @@ describe('read-only SQL', () => {
       'SELECT 1 FROM T DELETE FROM TGFPAR',
       "SELECT 1 /* /* */ ' */ DELETE FROM TGFPAR --'",
       "SELECT 1 /* /* */ ' */ ; DELETE FROM TGFPAR --'",
+      "SELECT 1 /* /* /* */ */ ' */ DELETE FROM TGFPAR --'",
+      "SELECT 1 /*/*/ ' */ */ DELETE FROM TGFPAR --'",
+      "SELECT 1 /*/*/ ' */ DELETE FROM TGFPAR --'",
+      "SELECT 1 /**/*/ ' DELETE FROM TGFPAR --'",
+      "SELECT 1 /* -- */ DELETE FROM TGFPAR",
+      'SELECT 1 -- /*\n DELETE FROM TGFPAR',
+      'SELECT 1 /* x */DELETE FROM TGFPAR',
+      'SELECT 1 /**/DELETE FROM TGFPAR',
+      "SELECT N'x' DELETE FROM T",
+      'SELECT [x /*] FROM T /* */ DELETE',
+      'SELECT 1 DISABLE TRIGGER ALL ON TGFPAR',
     ])
       assert.equal(isOneReadStatement(sql), false, sql)
   })
@@ -40,9 +50,35 @@ describe('read-only SQL', () => {
       'DROP',
       'TRUNCATE',
       'GRANT',
+      'DISABLE',
+      'ENABLE',
+      'DENY',
+      'REVOKE',
+      'BACKUP',
+      'RESTORE',
+      'DBCC',
+      'SHUTDOWN',
+      'KILL',
+      'RECONFIGURE',
+      'DECLARE',
+      'WAITFOR',
+      'RENAME',
+      'ROLLBACK',
     ])
       assert.equal(isOneReadStatement(`SELECT 1 FROM T WHERE ${word} = 1`), false, word)
     assert.equal(isOneReadStatement('SELECT A INTO B FROM T'), false)
+  })
+
+  it('refuses a block comment anywhere, even a harmless or quoted one', () => {
+    for (const sql of [
+      'SELECT 1 /* ; */ FROM DUAL',
+      'SELECT 1 /**/ FROM DUAL',
+      "SELECT '/*' FROM DUAL",
+      'SELECT [a/*b] FROM T',
+      'SELECT 1 */ FROM DUAL',
+      '/* note */ SELECT 1 FROM DUAL',
+    ])
+      assert.equal(isOneReadStatement(sql), false, sql)
   })
 
   it('refuses a text that is not a SELECT or WITH', () => {
@@ -76,12 +112,24 @@ describe('read-only SQL', () => {
 
 describe('read-only criteria', () => {
   it('holds a condition to the same wire', () => {
-    for (const text of ['this.CODEMP = ?', "this.NOME = 'DELETE; DROP'", 'this.A = 1 /* ; */'])
+    for (const text of ['this.CODEMP = ?', "this.NOME = 'DELETE; DROP'"])
       assert.equal(isReadCondition(text), true, text)
     for (const text of [
       'this.A = 1; DELETE FROM TGFPAR',
       'this.A = 1 DELETE FROM TGFPAR',
       "this.A = 1 /* /* */ ' */ DELETE FROM TGFPAR --'",
+      "this.A = 1 /*/*/ ' */ */ DELETE FROM TGFPAR --'",
+      "this.A = 1 /* /* /* */ */ ' */ DELETE FROM TGFPAR --'",
+      "this.A = 1 /*/*/ ' */ DELETE FROM TGFPAR --'",
+      "this.A = 1 /**/*/ ' DELETE FROM TGFPAR --'",
+      'this.A = 1 /* -- */ DELETE FROM TGFPAR',
+      'this.A = 1 -- /*\n DELETE FROM TGFPAR',
+      'this.A = 1 /* x */DELETE FROM TGFPAR',
+      'this.A = 1 /**/DELETE FROM TGFPAR',
+      'this.A = 1 /* ; */',
+      'this.A = 1 /**/',
+      'this.A = 1 DISABLE TRIGGER ALL ON TGFPAR',
+      'this.A = 1 ENABLE TRIGGER ALL ON TGFPAR',
       'this.A = 1 /* open',
     ])
       assert.equal(isReadCondition(text), false, text)
