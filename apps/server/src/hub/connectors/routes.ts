@@ -1,3 +1,4 @@
+import type { TestCheck } from '@conexus/hub-api'
 import {
   getConnection,
   linkConnection,
@@ -10,6 +11,23 @@ import { answer, serve } from '../../platform/http.ts'
 import { detail, link, list, unlink } from './connections.ts'
 import type { Deps } from './rows.ts'
 import { test } from './testing.ts'
+
+/** How many items ended each way. */
+function countsOf(checks: readonly TestCheck[]) {
+  return Object.fromEntries(
+    Object.entries(Object.groupBy(checks, (check) => check.outcome)).map(([outcome, group]) => [
+      outcome,
+      group?.length ?? 0,
+    ]),
+  )
+}
+
+/** The status and code an ended test came with, when it came with any. */
+function ended(
+  native: { status: number; code: string | null } | null,
+): Record<string, string | number> {
+  return native === null ? {} : { status: native.status, code: native.code ?? '-' }
+}
 
 export function registerConnectionRoutes(app: FastifyInstance, deps: Deps): void {
   serve(app, listConnections, async ({ person, params }) =>
@@ -36,13 +54,22 @@ export function registerConnectionRoutes(app: FastifyInstance, deps: Deps): void
 
   serve(app, testConnection, async ({ person, params, log }) => {
     const tested = await test(deps, { person, ...params })
-    const counts =
-      tested.result === 'WORKING' ? Object.groupBy(tested.checks, (check) => check.outcome) : {}
-    const outcomes = Object.fromEntries(
-      Object.entries(counts).map(([outcome, checks]) => [outcome, checks?.length ?? 0]),
-    )
+    // Scalars only (S41): the counts, and for what the provider refused its status and code, never its body.
+    const fields =
+      tested.result === 'WORKING'
+        ? {
+            ...countsOf(tested.checks),
+            refusals: tested.checks
+              .flatMap((check) =>
+                'native' in check
+                  ? [`${check.id} ${check.native.status} ${check.native.code ?? '-'}`]
+                  : [],
+              )
+              .join(', '),
+          }
+        : ended(tested.native)
     log.info(
-      { by: person.id, connectionId: params.connectionId, result: tested.result, ...outcomes },
+      { by: person.id, connectionId: params.connectionId, result: tested.result, ...fields },
       'CONNECTION_TESTED',
     )
     return answer(tested)
