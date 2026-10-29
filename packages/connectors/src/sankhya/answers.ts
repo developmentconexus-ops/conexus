@@ -56,8 +56,8 @@ function failureOf(answer: ProviderAnswer): Failure | null {
 export const NOT_FOUND = 'Dados não encontrados'
 
 /**
- * The 404 body six pages document: the message must be theirs, or a moved route (the framework's own 404) would read as an empty list.
- * The pages show the phrase as the 404 response's description; this body shape is unmeasured and is set from the founder's use script (step 3) with a real empty 404.
+ * The 404 body the kit expects: the message must be the pages' phrase, or a moved route (the framework's own 404) would read as an empty list.
+ * The six pages show the phrase only as the 404 response's description; this body shape is unmeasured and is set from the founder's use script (step 3) with a real empty 404.
  */
 const NotFound = z.looseObject({
   statusCode: z.literal(404),
@@ -74,7 +74,8 @@ function read<O>(output: z.ZodType<O>, answer: ProviderAnswer, body: unknown): A
 /**
  * The REST answer: the body in the operation's schema, or the failure its status says. A 404 is a
  * list only when its body says so: the list itself, or (for the reads whose page documents it) the
- * documented not-found body, which reads as `empty`, the list with no rows; any other 404 is the kernel's.
+ * not-found body the kit expects (NotFound), which reads as `empty`, the list with no rows; any
+ * other 404 is the kernel's.
  */
 export function restAnswer<O>(
   answer: ProviderAnswer,
@@ -101,12 +102,14 @@ export function gatewayAnswer<O>(answer: ProviderAnswer, responseBody: z.ZodType
   const envelope = Envelope.safeParse(answer.body)
   if (!envelope.success) return { kind: 'UNREADABLE', native: nativeOf(answer) }
   const { status, statusMessage } = envelope.data
+  const rule = statusMessage?.match(/CORE_E\d+/)?.[0]
   if (status !== '1' || statusMessage?.includes('[CORE_E'))
+    // The vendor's own refusal, envelope and all: the body goes only to the Testar and the Builder, which already read company data.
     return {
       kind: 'REFUSED',
       native: {
         status: answer.status,
-        code: status,
+        code: rule ?? status,
         message: statusMessage ?? null,
         body: answer.body,
       },
