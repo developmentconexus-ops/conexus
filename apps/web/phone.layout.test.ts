@@ -109,7 +109,8 @@ for (const viewport of [PHONE, SMALL_PHONE]) {
     assert.ok(tabs.y >= toggle.y + toggle.height, 'the tabs sit below the top bar')
     for (const icon of [reload, open]) {
       assert.deepEqual([icon.width, icon.height], [32, 32])
-      assert.ok(Math.abs(icon.y - tabs.y) < tabs.height, 'the icons share the row of the tabs')
+      assert.ok(icon.y >= tabs.y + tabs.height, 'the icons sit in the window bar, under the tabs')
+      assert.ok(Math.abs(icon.y - reload.y) < reload.height, 'the icons share the window bar')
     }
     assert.ok(reload.x + reload.width <= open.x, 'Recarregar comes before Abrir app')
     const glyphs = await Promise.all(
@@ -162,7 +163,7 @@ const THEMES = [
 for (const { system, pick, shown } of THEMES) {
   const how =
     pick === undefined ? `do sistema (${system})` : `escolhido (${pick}) sobre o sistema ${system}`
-  test(`o App | Conversa pressionado é ${shown === 'dark' ? 'dourado (Ipê)' : 'a superfície'} no tema ${how}`, async () => {
+  test(`o App | Conversa pressionado é ${shown === 'dark' ? 'neutro, com o texto dourado' : 'a superfície'} no tema ${how}`, async () => {
     const state = conversationState('Prévia vazia com a conversa mais recente')
     const page = await harness.open(state.path, {
       viewport: PHONE,
@@ -191,7 +192,7 @@ for (const { system, pick, shown } of THEMES) {
           return { background: backgroundColor, text: color }
         },
         shown === 'dark'
-          ? ['--color-accent', '--color-on-ink']
+          ? ['--color-surface-4', '--color-accent-text']
           : ['--color-surface', '--color-text'],
       ),
     ])
