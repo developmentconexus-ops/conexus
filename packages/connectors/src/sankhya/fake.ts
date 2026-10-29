@@ -10,14 +10,14 @@ import {
   json,
   loadRecords,
   OVERSIZE,
-  rest,
   SERVICE_PATH,
 } from './fake-data.ts'
 import { serveOnLoopback } from './fake-http.ts'
+import { routeOf } from './fake-rest.ts'
 
 /** What the fake can be told to do wrong, per service: the executor's tests (U3) and the QA flip these. */
 type SankhyaSwitches = {
-  /** Services that refuse: a REST path (`empresas`, `pedidos`, `produtos`, `clientes`) answers 403, a door service (`consultar`, `carregar`) `status: "0"`. */
+  /** Services that refuse: a ready operation (`empresas`, `pedidos`, `vendedores`...) answers 403, a door service (`consultar`, `carregar`) `status: "0"`. */
   refuse: Set<string>
   /** Every call on a token answers 403 `GTW3403`, as an expired one does. */
   expireToken: boolean
@@ -29,6 +29,8 @@ type SankhyaSwitches = {
   redirect: boolean
   /** Never answers a call. */
   silent: boolean
+  /** Milliseconds each answer is held back, for the executor's deadline tests (U3). */
+  delayMilliseconds: number
   /** The `expires_in` the login gives. */
   expiresInSeconds: number
 }
@@ -70,7 +72,8 @@ async function authenticate(
 async function serveCall(request: Request, url: URL, switches: SankhyaSwitches): Promise<Response> {
   const door = url.pathname === SERVICE_PATH
   const service = door ? (url.searchParams.get('serviceName') ?? '') : ''
-  const name = door ? (DOOR_NAMES[service] ?? service) : (url.pathname.split('/').at(-1) ?? '')
+  const route = door ? null : routeOf(url.pathname)
+  const name = door ? (DOOR_NAMES[service] ?? service) : (route?.name ?? '')
   if (switches.refuse.has(name)) {
     return door
       ? envelope(service, '0')
@@ -78,7 +81,7 @@ async function serveCall(request: Request, url: URL, switches: SankhyaSwitches):
   }
   if (switches.oversize) return json({ padding: OVERSIZE })
   if (switches.malformed) return json({ unexpected: true })
-  if (!door) return rest(url.pathname, url.searchParams) ?? json({ code: 'NOT_FOUND' }, 404)
+  if (!door) return route?.answer(url.searchParams) ?? json({ code: 'NOT_FOUND' }, 404)
   const { requestBody } = DoorBody.parse(await request.json())
   if (service === 'CRUDServiceProvider.loadRecords') return loadRecords(requestBody)
   return service === 'DbExplorerSP.executeQuery'
@@ -114,6 +117,7 @@ export function sankhyaFake(): SankhyaFake {
     oversize: false,
     redirect: false,
     silent: false,
+    delayMilliseconds: 0,
     expiresInSeconds: 300,
   }
   const sessions: Sessions = { issued: new Set(), busy: new Set(), logins: 0 }
@@ -130,7 +134,7 @@ export function sankhyaFake(): SankhyaFake {
     if (refused) return refused
     sessions.busy.add(token)
     try {
-      await sleep(SERVICE_MILLISECONDS)
+      await sleep(SERVICE_MILLISECONDS + switches.delayMilliseconds)
       return await serveCall(request, url, switches)
     } finally {
       sessions.busy.delete(token)

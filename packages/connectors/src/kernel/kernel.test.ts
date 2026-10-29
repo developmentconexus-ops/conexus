@@ -17,6 +17,7 @@ const Unchecked = z.custom<`/${string}`>()
 
 const base = {
   id: 'ping',
+  subject: 'ping',
   idempotent: true,
   summary: 'Ping.',
   label: 'Ping',
@@ -55,6 +56,21 @@ test('o id da operação e o do conector são marcados e conferidos', () => {
   assert.throws(() => redefine({ id: 'Sankhya!' }))
   const op = defineOperation({ ...base, class: 'read' })
   assert.throws(() => redefine({ operations: [op, op], readDoor: undefined }), /Repeated/)
+})
+
+test('o assunto de cada operação é um assunto do conector, e nenhum assunto fica vazio', () => {
+  const op = defineOperation({ ...base, class: 'read' })
+  const lone = { ...sankhya, operations: [op], readDoor: undefined }
+  assert.throws(
+    () => defineConnector({ ...lone, subjects: { ping: 'Ping', extra: 'Extra' } }),
+    /without operation: extra/,
+  )
+  assert.throws(
+    () => defineConnector({ ...lone, subjects: { other: 'Other' } }),
+    /Unknown subject ping/,
+  )
+  assert.equal(defineConnector({ ...lone, subjects: { ping: 'Ping' } }).subjects.ping, 'Ping')
+  assert.throws(() => defineOperation({ ...base, class: 'read', subject: 'Not a subject' }))
 })
 
 test('a versão e a origem do conector são conferidas', () => {

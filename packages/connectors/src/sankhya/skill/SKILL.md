@@ -9,24 +9,34 @@ The tables and columns are the same in every company. What they mean is not: whi
 
 The connection is read only. Never write, never ask for values to store, and never look for a way around a refusal: a refusal is the answer.
 
-## The ready operations
+## Rules for every read
 
-Use these first. Each is a typed `GET` on Sankhya's REST API, one page per call, the same for every company.
+- Read only. There is no operation that writes, and a refusal is the answer, never a thing to get around.
+- One page per call. A page that is not the last says so (`possuiMaisPaginas`, `temMaisRegistros`, `pagination.hasMore`), and some lists never say: an empty or short page is their end. Read the next page only when the person's question needs it.
+- Each operation counts its pages in its own way: the first page is 0 on some and 1 on others, and the parameter is `page` on all but the prices, which take `pagina`. The part for the subject gives the first page of each; use it.
+- Use the ready operations before the read doors. They are typed, the same for every company, and cost one call.
+- Confirm what a code or a field means in this company's dictionary before relying on it (see The dictionary).
+- Leave the HR and payroll tables alone: the read doors do not read them (tables that start with `TFP`, and employees' personal data), and no ready operation covers them.
 
-- `empresas`: the companies (code and name). The page starts at 0.
-- `pedidos`: the sales orders of one company, with customer, salesperson, total and items. Needs `codigoEmpresa`; the page starts at 1. Filter by date, customer or note number to keep the answer small.
-- `produtos`: the products (code, name, group, brand, NCM). The page starts at 0.
-- `clientes`: the customers, with the company's own `AD_` fields in `camposAdicionais`. The page starts at 1.
-- `impostosDoPedido`: the taxes on the items of one order (CFOP, NCM, CST, ICMS, IPI and the rest), by `codigoEmpresa` and `codigoNota`.
+## The ready operations, by subject
 
-A page that is not the last says so (`possuiMaisPaginas`, `temMaisRegistros`). Read the next page only when the person's question needs it.
+Each subject has a part you read on demand (`skill_read`, `references/<subject>.md`) with its operations, the first page, the main filters and what the documentation warns.
 
-## The read doors
+- `cadastros` (Cadastros): `empresas`, `clientes`, `vendedores`, `tiposOperacao`, `naturezas`, `centrosResultado`. Companies, customers, salespeople, operation types (TOP), financial natures and result centers. Read `empresas` first: other operations need a company code.
+- `produtos` (Produtos): `produtos`, `gruposProduto`. The catalog and its groups.
+- `vendas` (Vendas): `pedidos`, `impostosDoPedido`, `notasFiscais`, `notaFiscal`, `devolucoes`, `notasCanceladas`. Sales orders, invoices, returns and cancelled invoices.
+- `estoque` (Estoque): `estoque`, `locaisEstoque`. Stock balances and stock locations.
+- `financeiro` (Financeiro): `contasAReceber`, `contasAPagar`, `tiposPagamento`. Receivables, payables and payment types.
+- `precos` (Preços): `precosDoProduto`, `precosDaTabela`. Sale prices by product and by price table.
+- `logistica` (Logística): `transportadoras`, `ordensCarga`. Carriers and load orders.
+- `tabelas`: what the REST API does not have (purchases, suppliers, costs, detailed finance, bank movement, order-to-invoice links, sale price rules, stock with reservation and shelf life) and the tables to read it from through the door.
 
-Use these when the company's own data is what the person asks about and no ready operation covers it.
+## The read doors (Porta de leitura, subject `porta`)
+
+Use these when the company's own data is what the person asks about and no ready operation covers it (`tabelas` says where to look).
 
 - `consultar`: one SQL read (`SELECT` or `WITH`, one statement) through the DB Explorer. Use it to investigate the dictionary and to join tables. It refuses any other statement, any comment (`--`, `/*` or `*/`, quoted or not; a read never needs one), a statement word outside quotes (`INSERT`, `UPDATE`, `DELETE`, `MERGE`, `EXEC`, `INTO` and the like, so an alias with one of those names needs another name), and Oracle's `q'` quoting. It is for reading only, and a write is refused: first by this filter, which is best effort and not a guarantee, then by Sankhya's DbExplorer, with the company's read only integration user behind both. Never try a write. The answer is `linhas` (each row keyed by column) and `completo`; `completo: false` means Sankhya cut the list.
-- `carregar`: `loadRecords`, one entity by its instance name. Put every value in `criterio.parametros` with `?` in the expression (`I` number, `S` text, `D` date). The expression takes the same refusals as `consultar` (no `;`, no comment, no statement word outside quotes). Every value comes back as text. `temMais` says there is another page.
+- `carregar`: `loadRecords`, one entity by its instance name. Put every value in `criterio.parametros` with `?` in the expression (`I` integer, `S` text, `D` date `dd/mm/yyyy`, `H` date and time `dd/mm/yyyy hh:mm:ss`, `F` decimal with a dot; always pass a date as a parameter, never inside the expression). The expression takes the same refusals as `consultar` (no `;`, no comment, no statement word outside quotes). Every value comes back as text. `temMais` says there is another page.
 
 Decimals arrive as JSON numbers in `consultar`, which can lose precision, and dates as text. Convert both in the SQL (on Oracle, `TO_CHAR(VALUE, 'FM999999999990.00')` and `TO_CHAR(DATE, 'YYYY-MM-DD')`), and sum in SQL rather than in code.
 
