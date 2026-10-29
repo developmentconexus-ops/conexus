@@ -72,7 +72,8 @@ export const user = auth.table(
       'all',
       sql`id = ${personId}
         or exists (select 1 from auth.member m where m.user_id = "user".id and m.company_id = ${companyId})
-        or exists (select 1 from auth.invitation i where i.inviter_id = "user".id and i.company_id = ${companyId})`,
+        or exists (select 1 from auth.invitation i where i.inviter_id = "user".id and i.company_id = ${companyId})
+        or exists (select 1 from projects.app_access a where a.person_id = "user".id and a.company_id = ${companyId})`,
     ),
     policy(SCOPE_ROLES.PERSON, 'all', sql`id = ${personId}`),
     policy(
@@ -202,6 +203,8 @@ export const company = auth.table(
       sql`${table.nickname} ~ '^[a-z0-9]+(-[a-z0-9]+)*$' and char_length(${table.nickname}) BETWEEN 3 AND 30`,
     ),
     policy(SCOPE_ROLES.COMPANY, 'all', sql`id = ${companyId}`),
+    // The function behind projects.appsOfPerson reads the name of a company the person uses an app of.
+    pgPolicy('app_people_select', { for: 'select', to: 'hub_app_people', using: OPEN }),
     policy(
       SCOPE_ROLES.PERSON,
       'select',
@@ -271,6 +274,10 @@ export const invitation = auth.table(
       .references(() => company.id, { onDelete: 'restrict' }),
     email: text('email').notNull(),
     role: text('role'),
+    // The Projeto whose app the invitation gives, and the role in it; NULL for a company
+    // invitation. No foreign key: projects/tables.ts imports this file (code C6).
+    projectId: text('project_id'),
+    appRole: text('app_role'),
     status: text('status').notNull(),
     expiresAt: instant('expires_at').notNull(),
     createdAt: instant('created_at').notNull(),
@@ -285,11 +292,12 @@ export const invitation = auth.table(
     replaces: jsonb('replaces'),
   },
   (table) => [
-    // One open invitation per company and address: the plugin checks before it writes, so two
-    // invitations at once would both pass without this index.
+    // One open invitation per company, address and Projeto (none for the company's own): the
+    // plugin checks before it writes, so two invitations at once would both pass without this index.
     uniqueIndex('invitation_pending_email_key')
-      .on(table.organizationId, sql`lower(${table.email})`)
+      .on(table.organizationId, sql`lower(${table.email})`, sql`coalesce(${table.projectId}, '')`)
       .where(sql`${table.status} = 'pending'`),
+    check('invitation_kind', sql`(${table.projectId} is null) = (${table.role} is not null)`),
     unique('invitation_company_id_attempt_key_key').on(table.organizationId, table.attemptKey),
     index('invitation_email_idx').on(table.email),
     policy(SCOPE_ROLES.COMPANY, 'all', sql`company_id = ${companyId}`),

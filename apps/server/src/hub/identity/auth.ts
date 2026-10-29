@@ -244,6 +244,7 @@ export async function hasPassword(auth: Auth, personId: PersonId): Promise<boole
 const KEY_FIELD = { type: 'string', required: true } as const
 // Left out of the plugin's request body (db/to-zod.mjs:17), so only the Hub's mark sets it.
 const MAILED_FIELD = { type: 'date', required: false, input: false } as const
+const APP_FIELD = { type: 'string', required: false, input: false } as const
 // The mark of a company the Central is deleting: only the Hub sets it, never a request.
 const DELETING_FIELD = { type: 'date', required: false, input: false } as const
 // The company's nickname in its apps' addresses: only the owner's choice through the Hub sets it.
@@ -261,7 +262,14 @@ const ORGANIZATION = {
         nickname: NICKNAME_FIELD,
       },
     },
-    invitation: { additionalFields: { attemptKey: KEY_FIELD, mailedAt: MAILED_FIELD } },
+    invitation: {
+      additionalFields: {
+        attemptKey: KEY_FIELD,
+        mailedAt: MAILED_FIELD,
+        projectId: APP_FIELD,
+        appRole: APP_FIELD,
+      },
+    },
   },
   // Only the Operations Central creates a company, through the adapter (step 4.2).
   allowUserToCreateOrganization: false,

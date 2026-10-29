@@ -53,6 +53,8 @@ test('catálogo: as colunas de empresa, membro e convite, e as dos plugins em pe
       'invitation.revision integer NO default 0',
       `invitation.superseded_at ${ts} YES`,
       'invitation.replaces jsonb YES',
+      'invitation.project_id text YES',
+      'invitation.app_role text YES',
       'member.id text NO',
       'member.company_id text NO',
       'member.user_id text NO',
@@ -97,7 +99,7 @@ test('catálogo: os únicos, as chaves estrangeiras RESTRICT das novas tabelas e
   assert.deepEqual(pending, [
     {
       indexdef:
-        "CREATE UNIQUE INDEX invitation_pending_email_key ON auth.invitation USING btree (company_id, lower(email)) WHERE (status = 'pending'::text)",
+        "CREATE UNIQUE INDEX invitation_pending_email_key ON auth.invitation USING btree (company_id, lower(email), COALESCE(project_id, ''::text)) WHERE (status = 'pending'::text)",
     },
   ])
   const keys = await asOwner(
@@ -143,6 +145,35 @@ test('catálogo: um só convite pendente por empresa e endereço, em qualquer ca
   await invite('i3', 'bruno@example.test', 'canceled')
   await asOwner(`update auth.invitation set status = 'canceled' where id = 'i1'`)
   await invite('i4', 'bruno@example.test', 'pending')
+})
+
+test('catálogo: um convite aberto por empresa, endereço e Projeto', async (t) => {
+  const { asOwner } = await createTestDatabase(t)
+  await asOwner(`insert into auth.user (id, name, email) values ('p1', 'Ana', 'ana@example.test');
+    insert into auth.company (id, name, slug, created_at, attempt_key)
+      values ('c1', 'Empresa', 'k1', now(), 'k1')`)
+  function invite(
+    id: string,
+    project: string | null,
+    role: string | null,
+    appRole: string | null,
+    status = 'pending',
+  ) {
+    return asOwner(
+      `insert into auth.invitation
+         (id, company_id, email, role, project_id, app_role, status, expires_at, created_at, inviter_id, attempt_key)
+       values ($1, 'c1', 'carla@example.test', $2, $3, $4, $5, now(), now(), 'p1', $1)`,
+      [id, role, project, appRole, status],
+    )
+  }
+  await invite('company', null, 'member', null)
+  await invite('app-1', 'projectA', null, 'vendedor')
+  await invite('app-2', 'projectB', null, null)
+  await assert.rejects(invite('again', 'projectA', null, 'gerente'), { code: '23505' })
+  await assert.rejects(invite('again', null, 'admin', null), { code: '23505' })
+  await invite('canceled', 'projectA', null, 'gerente', 'canceled')
+  await assert.rejects(invite('both', 'projectC', 'member', 'vendedor'), { code: '23514' })
+  await assert.rejects(invite('neither', null, null, null), { code: '23514' })
 })
 
 for (const [name, adminBefore, expected] of [
