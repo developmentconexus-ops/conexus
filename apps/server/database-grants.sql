@@ -24,6 +24,8 @@ ALTER FUNCTION auth.is_installation_administrator(person text) OWNER TO hub_admi
 -- reads five columns of the accounts; hub_company executes the first, hub_runtime the second.
 ALTER FUNCTION builder.companies_with_seals() OWNER TO hub_model_seals;
 ALTER FUNCTION builder.sealed_of(account uuid) OWNER TO hub_model_seals;
+-- Step 18 (D11, founder 2026-10-28, "aPROVO PAGINA"): who uses an app and the Projects of one person.
+ALTER FUNCTION projects.apps_of_person(person text) OWNER TO hub_app_people;
 -- Step 8, founder 2026-10-17 ("Grant A"): a host's Project and company, one SECURITY DEFINER function
 -- owned by a role that cannot log in and reads three columns of the Projects; only hub_runtime
 -- executes it.
@@ -55,6 +57,8 @@ ALTER TABLE drizzle.__drizzle_migrations OWNER TO test_owner;
 ALTER SEQUENCE drizzle.__drizzle_migrations_id_seq OWNER TO test_owner;
 ALTER TABLE hub.starts OWNER TO test_owner;
 ALTER TABLE operations.client OWNER TO test_owner;
+-- Step 18 (D11, founder 2026-10-28, "aPROVO PAGINA"): who uses an app and the Projects of one person.
+ALTER TABLE projects.app_access OWNER TO test_owner;
 ALTER TABLE projects.company_database OWNER TO test_owner;
 ALTER TABLE projects.project OWNER TO test_owner;
 -- Step 12, founder 2026-10-19 ("1. A", decision 0010): the Hub's database lets in its own logins only,
@@ -75,6 +79,8 @@ GRANT USAGE ON SCHEMA auth TO hub_person;
 GRANT USAGE ON SCHEMA auth TO hub_invitation;
 GRANT USAGE ON SCHEMA auth TO hub_operator;
 GRANT USAGE ON SCHEMA auth TO hub_administrators;
+-- Step 18 (D11, founder 2026-10-28, "aPROVO PAGINA"): who uses an app and the Projects of one person.
+GRANT USAGE ON SCHEMA auth TO hub_app_people;
 GRANT USAGE ON SCHEMA builder TO hub_company;
 GRANT USAGE ON SCHEMA builder TO hub_operator;
 GRANT USAGE ON SCHEMA builder TO hub_model_seals;
@@ -87,6 +93,9 @@ GRANT USAGE ON SCHEMA projects TO hub_company;
 GRANT USAGE ON SCHEMA projects TO hub_operator;
 GRANT USAGE ON SCHEMA projects TO hub_hosts;
 GRANT USAGE ON SCHEMA projects TO hub_runtime;
+-- Step 18 (D11, founder 2026-10-28, "aPROVO PAGINA"): who uses an app and the Projects of one person.
+GRANT USAGE ON SCHEMA projects TO hub_invitation;
+GRANT USAGE ON SCHEMA projects TO hub_app_people;
 REVOKE ALL ON FUNCTION apps.companies_with_apps() FROM PUBLIC;
 GRANT ALL ON FUNCTION apps.companies_with_apps() TO hub_runtime;
 REVOKE ALL ON FUNCTION auth.is_installation_administrator(person text) FROM PUBLIC;
@@ -95,6 +104,9 @@ REVOKE ALL ON FUNCTION builder.companies_with_seals() FROM PUBLIC;
 GRANT ALL ON FUNCTION builder.companies_with_seals() TO hub_runtime;
 REVOKE ALL ON FUNCTION builder.sealed_of(account uuid) FROM PUBLIC;
 GRANT ALL ON FUNCTION builder.sealed_of(account uuid) TO hub_company;
+-- Step 18 (D11, founder 2026-10-28, "aPROVO PAGINA"): who uses an app and the Projects of one person.
+REVOKE ALL ON FUNCTION projects.apps_of_person(person text) FROM PUBLIC;
+GRANT ALL ON FUNCTION projects.apps_of_person(person text) TO hub_runtime;
 REVOKE ALL ON FUNCTION projects.project_of_host(label text) FROM PUBLIC;
 GRANT ALL ON FUNCTION projects.project_of_host(label text) TO hub_runtime;
 -- Step 9, founder 2026-10-18 ("Tudo A"): a company's routes send, list, put back and delete its apps'
@@ -123,8 +135,13 @@ GRANT SELECT ON TABLE auth.company TO hub_company;
 GRANT SELECT ON TABLE auth.company TO hub_person;
 GRANT SELECT ON TABLE auth.company TO hub_invitation;
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE auth.company TO hub_operator;
+-- Step 18 (D11, founder 2026-10-28, "aPROVO PAGINA"): who uses an app and the Projects of one person.
+GRANT SELECT(id) ON TABLE auth.company TO hub_app_people;
+GRANT SELECT(name) ON TABLE auth.company TO hub_app_people;
 GRANT UPDATE(created_at) ON TABLE auth.company TO hub_company;
 GRANT UPDATE(created_at) ON TABLE auth.company TO hub_invitation;
+-- Step 18 (D11, founder 2026-10-28, "aPROVO PAGINA"): who uses an app and the Projects of one person.
+GRANT SELECT(deleting_since) ON TABLE auth.company TO hub_app_people;
 -- Step 8, founder 2026-10-17 ("Grant A"): a company's routes record its nickname.
 GRANT UPDATE(nickname) ON TABLE auth.company TO hub_company;
 GRANT SELECT,INSERT,UPDATE ON TABLE auth.invitation TO hub_company;
@@ -218,6 +235,11 @@ GRANT SELECT ON TABLE drizzle.__drizzle_migrations TO hub_runtime;
 GRANT SELECT,INSERT ON TABLE hub.starts TO hub_runtime;
 -- Step 4.2, founder 2026-10-16 ("Aprovo", option A): the Hub never deletes a client.
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE operations.client TO hub_operator;
+-- Step 18 (D11, founder 2026-10-28, "aPROVO PAGINA"): who uses an app and the Projects of one person.
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE projects.app_access TO hub_company;
+GRANT SELECT,INSERT ON TABLE projects.app_access TO hub_invitation;
+GRANT SELECT(project_id) ON TABLE projects.app_access TO hub_app_people;
+GRANT SELECT(person_id) ON TABLE projects.app_access TO hub_app_people;
 -- Step 7, founder 2026-10-17 ("A"): a company's routes read, create and delete Projects, and read,
 -- create and mark ready the company's database; the Central, deleting a company, reads and deletes
 -- both of that company's.
@@ -231,11 +253,22 @@ GRANT UPDATE(claimed_until) ON TABLE projects.company_database TO hub_company;
 GRANT UPDATE(host) ON TABLE projects.company_database TO hub_company;
 GRANT SELECT,INSERT,DELETE ON TABLE projects.project TO hub_company;
 GRANT SELECT,DELETE ON TABLE projects.project TO hub_operator;
+-- Step 18 (D11, founder 2026-10-28, "aPROVO PAGINA"): who uses an app and the Projects of one person.
+GRANT SELECT ON TABLE projects.project TO hub_invitation;
 GRANT SELECT(id) ON TABLE projects.project TO hub_hosts;
+-- Step 18 (D11, founder 2026-10-28, "aPROVO PAGINA"): who uses an app and the Projects of one person.
+GRANT SELECT(id) ON TABLE projects.project TO hub_app_people;
 GRANT SELECT(company_id) ON TABLE projects.project TO hub_hosts;
+-- Step 18 (D11, founder 2026-10-28, "aPROVO PAGINA"): who uses an app and the Projects of one person.
+GRANT SELECT(company_id) ON TABLE projects.project TO hub_app_people;
+GRANT SELECT(name) ON TABLE projects.project TO hub_app_people;
 GRANT SELECT(host_label) ON TABLE projects.project TO hub_hosts;
+-- Step 18 (D11, founder 2026-10-28, "aPROVO PAGINA"): who uses an app and the Projects of one person.
+GRANT SELECT(host_label) ON TABLE projects.project TO hub_app_people;
 GRANT UPDATE(deleting_since) ON TABLE projects.project TO hub_company;
 GRANT SELECT(deleting_since) ON TABLE projects.project TO hub_hosts;
+-- Step 18 (D11, founder 2026-10-28, "aPROVO PAGINA"): who uses an app and the Projects of one person.
+GRANT SELECT(deleting_since) ON TABLE projects.project TO hub_app_people;
 -- Step 12, founder 2026-10-19 ("1. A", decision 0010): Mastra's database, the same dump of its
 -- objects, open to Mastra's login alone, which creates its tables there at start.
 ALTER DATABASE mastra_database OWNER TO test_owner;
@@ -246,6 +279,9 @@ CREATE ROLE hub_administrators;
 ALTER ROLE hub_administrators WITH NOSUPERUSER NOINHERIT NOCREATEROLE NOCREATEDB NOLOGIN NOREPLICATION NOBYPASSRLS;
 CREATE ROLE hub_app_companies;
 ALTER ROLE hub_app_companies WITH NOSUPERUSER NOINHERIT NOCREATEROLE NOCREATEDB NOLOGIN NOREPLICATION NOBYPASSRLS;
+-- Step 18 (D11, founder 2026-10-28, "aPROVO PAGINA"): who uses an app and the Projects of one person.
+CREATE ROLE hub_app_people;
+ALTER ROLE hub_app_people WITH NOSUPERUSER NOINHERIT NOCREATEROLE NOCREATEDB NOLOGIN NOREPLICATION NOBYPASSRLS;
 -- Step 5: the scope roles cannot log in, own nothing and pass no row policy.
 CREATE ROLE hub_company;
 ALTER ROLE hub_company WITH NOSUPERUSER NOINHERIT NOCREATEROLE NOCREATEDB NOLOGIN NOREPLICATION NOBYPASSRLS;
@@ -271,6 +307,8 @@ ALTER ROLE mastra_runtime SET statement_timeout TO '10s';
 ALTER ROLE mastra_runtime SET idle_in_transaction_session_timeout TO '10s';
 GRANT hub_administrators TO test_owner WITH ADMIN OPTION, INHERIT FALSE, SET FALSE GRANTED BY test_superuser;
 GRANT hub_app_companies TO test_owner WITH ADMIN OPTION, INHERIT FALSE, SET FALSE GRANTED BY test_superuser;
+-- Step 18 (D11, founder 2026-10-28, "aPROVO PAGINA"): who uses an app and the Projects of one person.
+GRANT hub_app_people TO test_owner WITH ADMIN OPTION, INHERIT FALSE, SET FALSE GRANTED BY test_superuser;
 -- The Hub's login switches to a scope role for one transaction and inherits nothing from it.
 GRANT hub_company TO test_owner WITH ADMIN OPTION, INHERIT FALSE, SET FALSE GRANTED BY test_superuser;
 GRANT hub_company TO hub_runtime WITH INHERIT FALSE GRANTED BY test_owner;
