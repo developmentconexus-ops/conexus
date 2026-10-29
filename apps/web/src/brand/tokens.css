@@ -63,6 +63,8 @@
   --color-danger: #c0283d;
   --color-on-accent: #ffffff;
   --color-preview-paper: #ffffff;
+  /* The dark frame the Prévia draws round the app on a phone (design V3). */
+  --color-phone-frame: #1d2125;
   --color-code-keyword: #cf222e;
   --color-code-string: #0a3069;
   --color-code-comment: #6e7781;
@@ -105,6 +107,8 @@
   --radius-card: 14px;
   --radius-composer: 16px;
   --radius-pill: 999px;
+  /* The corner of the Prévia's drawn phone frame, and only of it (design V22). */
+  --radius-phone: 36px;
 
   --spacing-xs: 0.25rem;
   --spacing-sm: 0.5rem;
@@ -263,6 +267,7 @@
     --color-danger: #f28b9a;
     --color-on-accent: #ffffff;
     --color-preview-paper: #ffffff;
+    --color-phone-frame: #3a4148;
     --color-code-keyword: #ff7b72;
     --color-code-string: #a5d6ff;
     --color-code-comment: #8b949e;
@@ -295,6 +300,7 @@
   --color-danger: #f28b9a;
   --color-on-accent: #ffffff;
   --color-preview-paper: #ffffff;
+  --color-phone-frame: #3a4148;
   --color-code-keyword: #ff7b72;
   --color-code-string: #a5d6ff;
   --color-code-comment: #8b949e;

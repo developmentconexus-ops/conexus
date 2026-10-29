@@ -5,13 +5,20 @@ import { z } from 'zod'
 import { Workbench } from '../../../../../builder/conversation/public.ts'
 import { Preview } from '../../../../../builder/preview/public.ts'
 import { Source } from '../../../../../builder/source/public.ts'
-import { Lens, ProjectArea, projectQuery, Section } from '../../../../../hub/projects/public.ts'
+import {
+  Lens,
+  ProjectArea,
+  projectQuery,
+  Section,
+  View,
+} from '../../../../../hub/projects/public.ts'
 import { idOrNotFound, readOrNotFound } from '../../../../../platform/hub.ts'
 
-// The tab and the section are in the address (web W18); a value that is not one of ours is the default.
+// The tab, the section and the Prévia's view are in the address (web W18); a value that is not one of ours is the default.
 const Search = z.object({
   lens: Lens.optional().catch(undefined),
   section: Section.optional().catch(undefined),
+  view: View.optional().catch(undefined),
 })
 
 export const Route = createFileRoute('/_app/companies/$companyId/projects/$projectId')({
