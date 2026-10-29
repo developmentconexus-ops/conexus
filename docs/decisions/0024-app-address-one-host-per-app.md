@@ -1,4 +1,4 @@
-# 0024. One host per app and environment
+# 0024. One host per app
 
 ## Context
 
@@ -6,7 +6,7 @@ The browser separates cookies and storage by host.
 
 ## Decision
 
-Each app and environment has its own host, one level under the apps' domain. A wildcard route sends every host to the dispatcher, which picks the app by name. Basis: Purpose, by reasoning: with one host per company, one app's code could call another app with the person's session. Cloudflare's free certificate covers one level.
+Each app has its own host, one level under the apps' domain. A wildcard route sends every host to the dispatcher, which picks the app by name. Basis: Purpose, by reasoning: with one host per company, one app's code could call another app with the person's session. Cloudflare's free certificate covers one level.
 
 The host is `<projeto>--<apelido>`: the Projeto's name without accents, lowercase, hyphenated and
 cut to fit 63 characters, then the company's nickname, as in `estoque--metal-nobre.<domain>`. It is
@@ -20,7 +20,7 @@ None written before. Brought from earlier work.
 
 ## Result
 
-Not run. Login tests LT2 and LT13 assume it.
+Not run. Login tests LT2 and LT13 assume it. Step 17 (v0.17.0, founder, 2026-10-28): the Prévia frame and the app tab share one host and hold separate sessions, the cookie being `Partitioned`; the two showed different versions at once in Chromium, and on the founder's iPhone.
 
 ## Consequences
 
@@ -36,3 +36,5 @@ Brought. Decided in the architecture of 2026-10-13; the domain name is the found
 The address, founder, 2026-10-17: "2A mas estoque-metal-nobre.<dominio>", then "Sim" to `--`; the
 nickname: "Entraria no fluxo inicial de configuração", fixed with "A", reserved names "A"; short
 names: "Nome A".
+
+Amended in step 17: one address per app, no host per environment. The founder's `A1` and the published pointer (2026-10-27, 2026-10-28, "Etapa 17 aprovado") make the environment a property of the session.
