@@ -82,6 +82,7 @@ export {
   VersionCheck,
   VersionData,
 } from './conexus-parts.ts'
+export { CONNECTION_STATES, type ConnectionState } from './connectors.ts'
 export {
   BUILDER_CONTROLLER,
   BUILDER_ROUTES,
