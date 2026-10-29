@@ -9,7 +9,6 @@ describe('read-only SQL', () => {
       'select * from TGFPAR;',
       'WITH a AS (SELECT 1 AS X FROM DUAL) SELECT X FROM a',
       "SELECT 'DELETE; DROP' AS T FROM DUAL",
-      'SELECT "UPDATE" FROM T -- INSERT later',
     ])
       assert.equal(isOneReadStatement(sql), true, sql)
   })
@@ -37,11 +36,18 @@ describe('read-only SQL refusals', () => {
       "SELECT N'x' DELETE FROM T",
       'SELECT [x /*] FROM T /* */ DELETE',
       'SELECT 1 DISABLE TRIGGER ALL ON TGFPAR',
+      "SELECT 1 --\u000b' \n DELETE FROM TGFPAR --'",
+      "SELECT 1 --\f' \n DELETE FROM TGFPAR --'",
+      "SELECT 1 --\u0085' \n DELETE FROM TGFPAR --'",
+      "SELECT 1 -- ' \n DELETE FROM TGFPAR --'",
+      "SELECT 1 -- ' \n DELETE FROM TGFPAR --'",
     ])
       assert.equal(isOneReadStatement(sql), false, sql)
   })
+})
 
-  it('refuses every statement word outside a quote or a comment', () => {
+describe('read-only SQL statement words', () => {
+  it('refuses every statement word outside a quote', () => {
     for (const word of [
       'INSERT',
       'UPDATE',
@@ -66,6 +72,11 @@ describe('read-only SQL refusals', () => {
       'WAITFOR',
       'RENAME',
       'ROLLBACK',
+      'RECEIVE',
+      'SEND',
+      'MOVE',
+      'CHECKPOINT',
+      'SETUSER',
     ])
       assert.equal(isOneReadStatement(`SELECT 1 FROM T WHERE ${word} = 1`), false, word)
     assert.equal(isOneReadStatement('SELECT A INTO B FROM T'), false)
@@ -73,7 +84,7 @@ describe('read-only SQL refusals', () => {
 })
 
 describe('read-only SQL, comments and quotes', () => {
-  it('refuses a block comment anywhere, even a harmless or quoted one', () => {
+  it('refuses a comment anywhere, even a harmless or quoted one', () => {
     for (const sql of [
       'SELECT 1 /* ; */ FROM DUAL',
       'SELECT 1 /**/ FROM DUAL',
@@ -81,6 +92,9 @@ describe('read-only SQL, comments and quotes', () => {
       'SELECT [a/*b] FROM T',
       'SELECT 1 */ FROM DUAL',
       '/* note */ SELECT 1 FROM DUAL',
+      'SELECT "UPDATE" FROM T -- INSERT later',
+      'SELECT 1 FROM DUAL -- note',
+      "SELECT 'a--b' FROM DUAL",
     ])
       assert.equal(isOneReadStatement(sql), false, sql)
   })
@@ -134,6 +148,12 @@ describe('read-only criteria', () => {
       'this.A = 1 /**/',
       'this.A = 1 DISABLE TRIGGER ALL ON TGFPAR',
       'this.A = 1 ENABLE TRIGGER ALL ON TGFPAR',
+      "this.A = 1 --\u000b' \n DELETE FROM TGFPAR --'",
+      "this.A = 1 --\f' \n DELETE FROM TGFPAR --'",
+      "this.A = 1 --\u0085' \n DELETE FROM TGFPAR --'",
+      "this.A = 1 -- ' \n DELETE FROM TGFPAR --'",
+      "this.A = 1 -- ' \n DELETE FROM TGFPAR --'",
+      'this.A = 1 -- note',
       'this.A = 1 /* open',
     ])
       assert.equal(isReadCondition(text), false, text)
