@@ -155,7 +155,11 @@ export function link(deps: Deps, input: Link) {
     await admitted(deps, tx, input, 'manageConnections')
     const connector = connectorOf(input.connector)
     if (connector === undefined) throw new Failure('CONNECTOR_UNKNOWN')
-    const parsed = connector.auth.credential.safeParse(input.credential)
+    const parsed = connector.auth.credential.safeParse(
+      Object.fromEntries(
+        Object.entries(input.credential).map(([name, value]) => [name, value.trim()]),
+      ),
+    )
     if (!parsed.success) throw new Failure('CONNECTION_CREDENTIAL_INVALID')
     const [found] = await tx
       .select({ id: connection.id, connector: connection.connectorId })

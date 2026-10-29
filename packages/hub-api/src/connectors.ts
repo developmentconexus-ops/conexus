@@ -51,6 +51,8 @@ export const TestCheck = z.object({
   label: z.string(),
   subject: z.string(), // the subject's label, for the screen's one line per subject
   outcome: z.enum(TEST_OUTCOMES),
+  // Only on a NOT_TESTED item whose source did not read: the source it waits for, for the screen's reason.
+  dependsOn: z.object({ id: z.string(), label: z.string() }).optional(),
 })
 export type TestCheck = z.infer<typeof TestCheck>
 

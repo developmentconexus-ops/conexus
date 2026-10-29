@@ -99,7 +99,7 @@ test('testar: cada parte, com a sua resposta', async (t) => {
   assert.equal(Object(refused.json()).result, 'WORKING')
   assert.deepEqual(
     outcomes(refused),
-    reads({ pedidos: 'REFUSED', consultar: 'REFUSED', impostosDoPedido: 'NOTHING_TO_READ' }),
+    reads({ pedidos: 'REFUSED', consultar: 'REFUSED', impostosDoPedido: 'NOT_TESTED' }),
   )
 
   fake.switches.refuse.clear()

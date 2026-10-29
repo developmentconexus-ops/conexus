@@ -1,4 +1,5 @@
 import type { Operation, OperationId } from '@conexus/connectors'
+import { inProbeOrder } from '@conexus/connectors'
 import type { TestCheck } from '@conexus/hub-api'
 import type { BearerToken, Executor, OpenedConnection } from './executor.ts'
 
@@ -9,6 +10,16 @@ export type Probed =
 type Deadlines = { executor: Executor; callDeadlineMs: number; testDeadlineMs: number }
 type Ended = Exclude<Probed, { result: 'WORKING' }>
 type Outcome = TestCheck['outcome']
+
+/** The first source the operation reads from that did not read (refused, unreadable or not tested): a null probe would then say nothing about the item. A source that read nothing did read. */
+function unread(
+  operation: Operation<unknown, unknown>,
+  outcomes: ReadonlyMap<OperationId, TestCheck>,
+) {
+  return operation.from
+    .map((id) => outcomes.get(id))
+    .find((check) => check?.outcome !== 'READS' && check?.outcome !== 'NOTHING_TO_READ')
+}
 
 /**
  * Testar's second step: a new token, then each door entry and each read operation once, in that
@@ -23,6 +34,7 @@ export async function probed(deps: Deadlines, opened: OpenedConnection): Promise
   const { connector } = opened
   const endsAt = performance.now() + deps.testDeadlineMs
   const earlier = new Map<OperationId, unknown>()
+  const outcomes = new Map<OperationId, TestCheck>()
   const first = await login()
   if (first.kind !== 'TOKEN') return { result: first.kind }
   let token: BearerToken = first.token
@@ -79,12 +91,21 @@ export async function probed(deps: Deadlines, opened: OpenedConnection): Promise
 
   const checks: TestCheck[] = []
   let outOfTime = false
-  for (const operation of [...Object.values(connector.readDoor ?? {}), ...connector.operations]) {
-    const outcome: Outcome | Ended = outOfTime || spent() ? 'NOT_TESTED' : await read(operation)
+  for (const operation of inProbeOrder(connector)) {
+    const late: boolean = outOfTime || spent()
+    const source: TestCheck | undefined = late ? undefined : unread(operation, outcomes)
+    const outcome: Outcome | Ended =
+      late || source !== undefined ? 'NOT_TESTED' : await read(operation)
     if (typeof outcome === 'object') return outcome
-    outOfTime ||= outcome === 'NOT_TESTED'
+    outOfTime ||= source === undefined && outcome === 'NOT_TESTED'
     const subject = connector.subjects[operation.subject] ?? operation.subject
-    checks.push({ id: operation.id, label: operation.label, subject, outcome })
+    const check = { id: operation.id, label: operation.label, subject, outcome }
+    outcomes.set(operation.id, check)
+    checks.push(
+      source === undefined
+        ? check
+        : { ...check, dependsOn: { id: source.id, label: source.label } },
+    )
   }
   return { result: 'WORKING', checks }
 }
