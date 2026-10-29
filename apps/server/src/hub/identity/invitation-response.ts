@@ -238,14 +238,16 @@ export function acceptCommand(deps: {
         )
         .where(eq(invitation.id, input.invitationId))
       const joined = JoinedRow.optional().parse(row)
-      const company = await companyById(tx, found.companyId)
+      // The company is read after the checks: one deleted first answers `INVITATION_CLOSED`.
       if (found.projectId !== null) {
         const ids = { companyId: found.companyId, projectId: found.projectId }
         const given = { ...input, ids, role: found.appRole }
         const made = await acceptedApp(tx, deps.apps, given, joined)
+        const company = await companyById(tx, found.companyId)
         return { company, ...made, projectId: found.projectId }
       }
       const accepted = await acceptedCompany(deps.auth, tx, input, joined)
+      const company = await companyById(tx, found.companyId)
       return { company, app: null, projectId: null, accepted }
     })
 }
