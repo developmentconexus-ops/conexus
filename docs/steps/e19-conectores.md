@@ -191,6 +191,21 @@ As referências fazem o mesmo: no Nango a ligação tem um id próprio dentro da
 Activepieces cada ligação tem um nome e a peça pode dizer de que conta é; no n8n cada credencial tem
 um nome, e um tipo tem quantas a pessoa quiser.
 
+**O que espera as suas respostas ao estudo da tela.** O estudo de desenho da área de Integrações
+terminou e lhe fez sete perguntas, de X1 a X7. Este cartão não responde nenhuma por você:
+- **X4** (várias ligações do mesmo sistema já na 19) já é a sua regra de 2026-10-29: está acima.
+- **X1** (a direção da área: lista e página, catálogo e painel, ou a linha que abre) e **X5** (o
+  Client ID à vista): só a disposição da tela (U4). O cartão diz o que a tela faz; onde cada coisa
+  fica vem da sua resposta. Com a lista e a página, a U3 pode ganhar a leitura de uma ligação e o
+  catálogo ganha categoria, resumo e ajuda por campo: entram no cartão com a resposta.
+- **X2** (guardar o último teste, sem nenhum valor lido): hoje o cartão diz que o resultado não se
+  guarda. Se for sim, a U2 ganha uma coluna, a U3 grava o resultado no Testar e a lista o devolve.
+- **X3** (Ligar e testar num toque): só a U4, que chama o Testar logo depois do Ligar.
+- **X6** (as frases novas, entre elas a do "depende de"): as frases deste cartão são provisórias até
+  a sua resposta, como todo texto da tela.
+- **X7** (o tamanho com as recomendações do estudo): a conta acima não soma X2, X3 e a página; o
+  estudo estima ~4.950 sobre a base de ~4.520, e a medida de hoje é maior (acima).
+
 **Onde ficam as leituras, e como o agente as aprende.** No pacote de conectores, o Sankhya continua
 sendo um conector só, com uma definição; as leituras ficam em arquivos por assunto (cadastros,
 produtos, vendas, estoque, financeiro, preços, logística), como gavetas de um mesmo armário. A
@@ -1405,8 +1420,9 @@ operações em paralelo (o dublê responde "4" e a linha sai `REFUSED`); o 14 fa
   demorou, teste de novo"). Nenhum nome de assunto vive na tela: vêm do Hub. A 390 px, um assunto
   por linha e os itens embaixo.
 - **Várias ligações por conector** e **o "depende de"**: a seção com esse nome, abaixo. A tela está
-  sendo redesenhada (o estudo `conexus-integrations-design`): as linhas desta revisão dizem o que a
-  tela faz, e a disposição vem do desenho aprovado daquele estudo.
+  sendo redesenhada (o estudo `conexus-integrations-design`, terminado, com as perguntas X1 a X7 ao
+  fundador): as linhas desta revisão dizem o que a tela faz, e a disposição, o Ligar e testar num
+  toque (X3), o Client ID à vista (X5) e as frases (X6) esperam as respostas dele.
 
 ### Várias ligações por conector, e o "depende de"
 
