@@ -1,13 +1,16 @@
-import type { PendingInvitation } from '@conexus/hub-api'
+import type { Email, InvitationId } from '@conexus/hub-api'
 import { and, eq, isNull, sql } from 'drizzle-orm'
 import type { CommandTx, Database, Scope } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { SendMail } from '../../platform/mail.ts'
-import type { Inviter } from './messages.ts'
+import type { InvitationGives, Inviter } from './messages.ts'
 import { invitationMail } from './messages.ts'
 import { invitation } from './tables.ts'
 
-async function markMailed(tx: CommandTx, sent: PendingInvitation): Promise<void> {
+/** The invitation an e-mail carries, of either kind, at the revision it was written. */
+type Sent = { id: InvitationId; email: Email; expiresAt: string; revision: number }
+
+async function markMailed(tx: CommandTx, sent: Sent): Promise<void> {
   await tx
     .update(invitation)
     .set({ mailedAt: sql`statement_timestamp()` })
@@ -32,7 +35,8 @@ export async function mailInvitation(
   deps: { database: Database; sendMail: SendMail },
   input: {
     scope: Scope
-    invitation: PendingInvitation
+    invitation: Sent
+    gives: InvitationGives
     companyName: string
     inviter: Inviter
     link: string
@@ -42,7 +46,7 @@ export async function mailInvitation(
   const { invitation: sent, signal } = input
   const message = await invitationMail({
     to: sent.email,
-    role: sent.role,
+    gives: input.gives,
     expiresAt: sent.expiresAt,
     companyName: input.companyName,
     inviter: input.inviter,

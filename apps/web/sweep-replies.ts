@@ -8,17 +8,18 @@ import {
   getStatus,
   listClients,
   listCompanies,
+  listCompanyAppAccess,
   listConversations,
   listInvitations,
   listMembers,
   listModelAccounts,
-  listModelProviders,
+  listMyApps,
   listProjects,
-  readObservationalMemoryModels,
 } from '@conexus/hub-api'
 import type { Replies } from './layout-harness.ts'
 import { ok } from './layout-harness.ts'
 import { ANA, COMPANY } from './src/platform/fixtures.ts'
+import { modelAccountsPage } from './sweep-model-accounts.ts'
 
 export const INVITATION = 'i'.repeat(32)
 export const LONG_EMAIL =
@@ -49,6 +50,8 @@ export const SIGNED_IN: Replies = {
     mayOperate: false,
     next: { kind: 'END' },
   }),
+  // "Seus apps" for a person in no company reads their apps.
+  'GET /api/apps': ok(listMyApps, { apps: [] }),
 }
 
 export function companies(
@@ -114,6 +117,25 @@ function companyPage(
       invitations: [LIVE_INVITATION],
       next: { kind: 'END' },
     }),
+    [`GET /api/companies/${id}/app-access`]: ok(listCompanyAppAccess, {
+      people: [
+        {
+          personId: 'person-dora',
+          name: 'Dora Pinto',
+          email: LONG_EMAIL,
+          apps: [
+            {
+              projectId: PROJECT.id,
+              projectName: PROJECT.name,
+              role: 'gerente',
+              roleLabel: 'Gerente',
+            },
+          ],
+        },
+      ],
+      next: { kind: 'END' },
+      mayManage: true,
+    }),
   }
 }
 
@@ -140,39 +162,6 @@ export function startsOn(id: string): Replies {
       fallback: { enabled: false, chain: [], revision: 0 },
       usableProviders: ['anthropic'],
       mayManage: false,
-    }),
-  }
-}
-
-/** The company's model accounts and the providers of their keys, which the rail preloads on focus. */
-function modelAccountsPage(id: string, mayManage: boolean): Replies {
-  return {
-    [`GET /api/companies/${id}/observational-memory-models`]: ok(readObservationalMemoryModels, {
-      observer: null,
-      reflector: null,
-    }),
-    [`GET /api/companies/${id}/model-accounts`]: ok(listModelAccounts, {
-      company: [],
-      mine: [],
-      order: [],
-      kinds: [],
-      defaults: { company: null, mine: null, start: null, companyStart: null },
-      choices: { mine: [], company: [] },
-      fallback: { enabled: false, chain: [], revision: 0 },
-      usableProviders: [],
-      mayManage,
-    }),
-    'GET /api/model-providers': ok(listModelProviders, {
-      providers: [
-        {
-          id: 'anthropic',
-          name: 'Anthropic',
-          models: [
-            { id: 'anthropic/claude-sonnet-4', efforts: ['off', 'low', 'high'] },
-            { id: 'anthropic/claude-opus-4', efforts: ['off'] },
-          ],
-        },
-      ],
     }),
   }
 }
@@ -225,6 +214,7 @@ export const PROJECT_NAME = PROJECT.name
 export const INVITATION_DETAILS = {
   company: { id: COMPANY.id, name: LONG_NAME },
   role: 'admin',
+  app: null,
   inviterName: 'Ana Lima',
   firstOwner: false,
   revision: 0,
@@ -234,7 +224,7 @@ export const INVITATION_DETAILS = {
 export function received(state: 'PENDING' | 'EXPIRED' | 'ACCEPTED' | 'CANCELED'): Replies {
   const views = {
     PENDING: { kind: 'INVITED', ...INVITATION_DETAILS },
-    ACCEPTED: { kind: 'JOINED', company: INVITATION_DETAILS.company },
+    ACCEPTED: { kind: 'JOINED', company: INVITATION_DETAILS.company, app: null },
     EXPIRED: { kind: 'CLOSED', state: 'EXPIRED' },
     CANCELED: { kind: 'CLOSED', state: 'CANCELED' },
   } as const

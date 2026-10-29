@@ -54,6 +54,7 @@ test('read: the invitee sees the pending details; another session sees only itse
     revision: 0,
     company: { id: companyId, name: 'Empresa Teste' },
     role: 'admin',
+    app: null,
     inviterName: 'Ana Lima',
     firstOwner: false,
   })
@@ -84,7 +85,10 @@ test('aceitar: 200 e um membro; de novo, a mesma resposta; outra pessoa, 404 sem
   assert.deepEqual(await statusOf(hub, invitationId), [{ status: 'pending' }])
   const accepted = await accept(hub, davi, invitationId)
   assert.equal(accepted.statusCode, 200)
-  assert.deepEqual(accepted.json(), { company: { id: companyId, name: 'Empresa Teste' } })
+  assert.deepEqual(accepted.json(), {
+    company: { id: companyId, name: 'Empresa Teste' },
+    app: null,
+  })
   const again = await accept(hub, davi, invitationId)
   assert.deepEqual([again.statusCode, again.body], [200, accepted.body])
   assert.deepEqual(await members(hub, davi.id), [{ role: 'admin' }])

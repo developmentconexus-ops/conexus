@@ -12,6 +12,8 @@ An app that saves or reads data has a server; a page with nothing saved has none
 
 `references/operations.ts` and `references/handlers.ts` are a complete pair that passes the check; the screens of `conexus-app` call them. Each one's first line names where it goes.
 
+Every piece this skill names comes from `@conexus/app`. When one is missing from the installed `@conexus/app`, such as an export that does not exist or a field `caller` lacks, stop and tell the person which piece is missing and that the rule it carries cannot hold yet. Never imitate the piece on the screen or in a handler, and never say the rule holds.
+
 ## Operations
 
 - The browser calls an operation by name with a JSON body. The app's server checks the input with the operation's own Zod before the handler runs, and the output with it after, so a handler only sees what its input declares: `z.email()`, `z.uuid()`, a default, a union of objects and a refinement all hold.

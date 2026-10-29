@@ -133,7 +133,7 @@
   },
   {
     "id": "invitation-attempt-replay",
-    "file": "apps/server/src/hub/identity/invitations.ts",
+    "file": "apps/server/src/hub/identity/invitation-create.ts",
     "find": "if (same !== undefined) {",
     "replace": "if (same === null) {",
     "test": {
@@ -144,7 +144,7 @@
   },
   {
     "id": "invitation-capacity",
-    "file": "apps/server/src/hub/identity/invitations.ts",
+    "file": "apps/server/src/hub/identity/invitation-create.ts",
     "find": "if (live >= CAPACITY.openInvitations) throw new Failure('INVITATIONS_FULL')",
     "replace": "void live",
     "test": {
@@ -155,7 +155,7 @@
   },
   {
     "id": "invitation-capacity-live-only",
-    "file": "apps/server/src/hub/identity/invitations.ts",
+    "file": "apps/server/src/hub/identity/invitation-create.ts",
     "find": "      LIVE,\n    ),\n  )\n  if (live >= CAPACITY.openInvitations)",
     "replace": "    ),\n  )\n  if (live >= CAPACITY.openInvitations)",
     "test": {
@@ -177,7 +177,7 @@
   },
   {
     "id": "invitation-company-lock",
-    "file": "apps/server/src/hub/identity/invitations.ts",
+    "file": "apps/server/src/hub/identity/invitation-create.ts",
     "find": "await lockCompany(tx, input.companyId)",
     "replace": "",
     "test": {
@@ -188,7 +188,7 @@
   },
   {
     "id": "open-invitation-row-parsed",
-    "file": "apps/server/src/hub/identity/invitations.ts",
+    "file": "apps/server/src/hub/identity/invitation-create.ts",
     "find": "return OpenRow.optional().parse(open)",
     "replace": "return open",
     "test": {
@@ -221,9 +221,9 @@
   },
   {
     "id": "invitation-replay-resends-unmailed",
-    "file": "apps/server/src/hub/identity/invitations.ts",
-    "find": "if (same.unmailed) {",
-    "replace": "if (false) {",
+    "file": "apps/server/src/hub/identity/invitation-create.ts",
+    "find": "same.unmailed ? replayed.mail : undefined",
+    "replace": "undefined",
     "test": {
       "cwd": "apps/server",
       "file": "src/hub/identity/invitation-replay.test.ts",
@@ -320,8 +320,8 @@
   },
   {
     "id": "re-invite-cancels-expired",
-    "file": "apps/server/src/hub/identity/invitations.ts",
-    "find": "const open = await openOf(tx, admitted, email)",
+    "file": "apps/server/src/hub/identity/invitation-create.ts",
+    "find": "const open = await openOf(tx, admitted, input, args.email)",
     "replace": "const open = undefined",
     "test": {
       "cwd": "apps/server",
@@ -397,7 +397,7 @@
   },
   {
     "id": "invitation-create-replay-terminal",
-    "file": "apps/server/src/hub/identity/invitations.ts",
+    "file": "apps/server/src/hub/identity/invitation-create.ts",
     "find": "if (same.status !== 'pending' || !same.live) throw new Failure('INVITATION_CLOSED')",
     "replace": "",
     "test": {
@@ -518,8 +518,8 @@
   },
   {
     "id": "invitation-member-native-endpoint",
-    "file": "apps/server/src/hub/identity/invitations.ts",
-    "find": "    return refusedAs(\n      () => auth.api.createInvitation({ headers: input.headers, body }),\n      INVITATION_REFUSALS,\n    )",
+    "file": "apps/server/src/hub/identity/invitation-create.ts",
+    "find": "    return refusedAs(\n      () => auth.api.createInvitation({ headers: invite.headers, body }),\n      INVITATION_REFUSALS,\n    )",
     "replace": "    return (await organizationAdapter(auth)).createInvitation({\n      invitation: { ...body, teamIds: [] },\n      user: { id: admitted.personId },\n    })",
     "test": {
       "cwd": "apps/server",
@@ -1239,7 +1239,51 @@
     "test": {
       "cwd": ".",
       "file": "scripts/workflows.test.ts",
-      "name": "o Release publica o Hub depois da imagem, e a borda depois do Hub"
+      "name": "o Release publica o Hub depois da imagem e do template, e a borda depois do Hub"
+    }
+  },
+  {
+    "id": "deploy-waits-for-template",
+    "file": ".github/workflows/publish.yml",
+    "find": "  deploy:\n    needs: [image, template]\n",
+    "replace": "  deploy:\n    needs: image\n",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/workflows.test.ts",
+      "name": "o Release publica o Hub depois da imagem e do template, e a borda depois do Hub"
+    }
+  },
+  {
+    "id": "template-after-main-check",
+    "file": ".github/workflows/publish.yml",
+    "find": "  template:\n    needs: image\n",
+    "replace": "  template:\n",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/workflows.test.ts",
+      "name": "o template nasce do commit do Release numa máquina nova do GitHub, depois da imagem conferir main"
+    }
+  },
+  {
+    "id": "deploy-back-to-previous-template",
+    "file": "infra/deploy.sh",
+    "find": "HUB_IMAGE=\"$previous\" HUB_E2B_TEMPLATE=\"$previous_template\"",
+    "replace": "HUB_IMAGE=\"$previous\" HUB_E2B_TEMPLATE=\"$template\"",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/deploy.test.ts",
+      "name": "a imagem nova que não fica saudável volta à imagem e ao template de antes"
+    }
+  },
+  {
+    "id": "deploy-refuses-bad-template",
+    "file": "infra/deploy.sh",
+    "find": "if ! [[ $template =~ $template_pattern ]]; then",
+    "replace": "if false; then",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/deploy.test.ts",
+      "name": "deploy.sh aceita um template exatamente quando o Hub o aceita"
     }
   },
   {
@@ -1388,19 +1432,19 @@
   {
     "id": "release-recorded-after-deploy",
     "file": ".github/workflows/publish.yml",
-    "find": "run: infra/releases.sh record \"$VERSION\" \"$REFERENCE\"",
+    "find": "run: infra/releases.sh record \"$VERSION\" \"$REFERENCE\" \"$TEMPLATE\"",
     "replace": "run: \"true\"",
     "test": {
       "cwd": ".",
       "file": "scripts/workflows.test.ts",
-      "name": "o Release registra o digest depois que o deploy deu certo"
+      "name": "o Release sobe e registra o digest com o template do mesmo commit, o registro depois do deploy"
     }
   },
   {
     "id": "rollback-reads-record",
     "file": ".github/workflows/rollback.yml",
-    "find": "reference=\"$(infra/releases.sh find \"$VERSION\")\"",
-    "replace": "reference=\"$(docker buildx imagetools inspect \"$IMAGE:$VERSION\")\"",
+    "find": "found=\"$(infra/releases.sh find \"$VERSION\")\"",
+    "replace": "found=\"$(docker buildx imagetools inspect \"$IMAGE:$VERSION\")\"",
     "test": {
       "cwd": ".",
       "file": "scripts/workflows.test.ts",
@@ -1944,6 +1988,50 @@
       "cwd": "apps/server",
       "file": "src/hub/apps/repair.test.ts",
       "name": "a reparação sobe a publicada também"
+    }
+  },
+  {
+    "id": "member-removal-takes-app-access",
+    "file": "apps/server/src/hub/identity/memberships.ts",
+    "find": "      const projectIds = await deps.apps.takeAccess(tx, { companyId, personId })\n",
+    "replace": "      const projectIds = []\n",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/apps/app-access-journey.test.ts",
+      "name": "quem sai da empresa leva a linha que estava inerte"
+    }
+  },
+  {
+    "id": "app-access-revoke-own-project",
+    "file": "apps/server/src/hub/projects/app-access.ts",
+    "find": "    if (projectId !== undefined) await liveProject(tx, { companyId, projectId })\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/apps/app-access-journey.test.ts",
+      "name": "outra empresa não tira o acesso a um app da empresa"
+    }
+  },
+  {
+    "id": "machine-replaced-after-template-change",
+    "file": "apps/server/src/builder/machine/machines.ts",
+    "find": "const stale = this.deps.api.killStale(session.conversationId, this.deps.template)",
+    "replace": "const stale = Promise.resolve()",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/machine/machine.test.ts",
+      "name": "máquina: a pausada de um template anterior ao Release não é retomada; volta nova, do template do Hub, copiada do main"
+    }
+  },
+  {
+    "id": "machine-kills-only-stale-template",
+    "file": "apps/server/src/builder/machine/e2b.ts",
+    "find": "(metadata) => metadata[MARK.template] !== template",
+    "replace": "() => true",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/machine/machine-e2b.test.ts",
+      "name": "máquina: depois de um Release, mata só as da conversa de outro template ou sem template, e guarda a do template do Hub"
     }
   }
 ]

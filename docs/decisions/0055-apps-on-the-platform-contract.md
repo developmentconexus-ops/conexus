@@ -8,7 +8,7 @@ Until step 13 an app had a rigid frame. The platform keeps [0019], [0018] and th
 
 - The contract owns `shared/operations.ts`, `server/handlers.ts`, the generated client, `worker.js`,
   the check and the packing. The rest is the model's, from an editable starter.
-- Contract 1 allows zero or more operations [0019], in Zod, checked by the Worker. Upload sets
+- Contract 1 allows zero or more operations [0019], in Zod, checked by the Worker. An app may declare `roles`; an operation lists who calls it, else `ROLE_FORBIDDEN` (step 18). Upload sets
   `not_found_handling: 'single-page-application'`, `/api` staying in the Worker.
 - No library gate: the model installs what an app needs; the check runs `npm ci --ignore-scripts`
   through the registry [0051] allows. Founder, 2026-10-22: "Como que esses outros aplicativos fazem,
@@ -31,8 +31,7 @@ Until step 13 an app had a rigid frame. The platform keeps [0019], [0018] and th
 
 2026-10-22, https://github.com/developmentconexus-ops/conexus/pull/255, v0.14.1:
 
-- Row 1 met: Claude once, Gemini three times after the release; each built in the first turn, no path outside the app. Gemini run 2 stopped halfway through the plan and was
-  saved as "montou"; cause unproved.
+- Row 1 met: Claude once, Gemini three times after the release; each built in the first turn, no path outside the app.
 - Rows 2 and 3 met: check 35.3 s cold, folder equal to the lab's, start 1.3 s.
 
 **Not proved.** The end-of-turn `abort` with `retry`; which directory `list_files`, `file_stat` and

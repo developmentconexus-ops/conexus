@@ -13,11 +13,14 @@ import {
   getInvitation,
   getSession,
   listCompanies,
+  listCompanyAppAccess,
   listInvitations,
   listMembers,
+  listMyApps,
   removeMember,
   renewInvitation,
   requestPasswordRecovery,
+  revokeAllAppAccess,
   setCompanyNickname,
   setPassword,
 } from '@conexus/hub-api'
@@ -62,6 +65,11 @@ export function everyMemberQuery(companyId: CompanyId) {
     },
   }
 }
+export function companyAppAccessQuery(companyId: CompanyId, page: string | undefined) {
+  return hubQuery(listCompanyAppAccess, { params: { companyId }, query: { page } })
+}
+export const myAppsQuery = hubQuery(listMyApps)
+export const revokeEveryApp = hubMutation(revokeAllAppAccess)
 export function invitationsQuery(companyId: CompanyId, page: string | undefined) {
   return hubQuery(listInvitations, { params: { companyId }, query: { page } })
 }

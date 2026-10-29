@@ -15,6 +15,8 @@ export const MARK = {
   company: 'conexus_company',
   project: 'conexus_project',
   conversation: 'conexus_conversation',
+  /** The template the machine was made from: E2B's own record of a machine names no tag. */
+  template: 'conexus_template',
 } as const
 
 /** The hosts a machine may reach: `npm install` needs the registry and nothing else (decision 0051). */
@@ -87,4 +89,8 @@ export function machineInstructions(workdir: string): string {
 export type KitFactory = (options: KitOptions) => Kit
 
 /** Kills every machine of the conversation this installation marked, and says how many; throws when the provider fails. */
-export type MachineApi = { kill(conversationId: ConversationId): Promise<number> }
+export type MachineApi = {
+  kill(conversationId: ConversationId): Promise<number>
+  /** The same, only the machines whose mark names a template other than `template`, or none. */
+  killStale(conversationId: ConversationId, template: string): Promise<number>
+}

@@ -128,9 +128,9 @@ tudo". The lines of [screens](../reference/screens.md) say which screen is on wh
   entrada (`/companies/<e>/welcome/<step>`, the owner, once); Empresa (`/companies/<e>`: Início and
   its Projetos); Projeto (`/companies/<e>/projects/<p>/<tab>`); Configurações
   (`/companies/<e>/settings/<section>`); Central (`/operations/…`). A person who only uses an app
-  never enters them. [review]
+  sees only "Seus apps" at `/` and never enters them. [review]
 - **W30.** The frame **should** be one sidebar on the left and no top bar: the company with its
-  switcher, Início, up to five recent Projetos with "Todos os projetos", Configurações, and the
+  switcher, Início, up to five recent Projetos with "Todos os projetos", Integrações, Configurações, and the
   account (name, theme, Central for whoever operates it, Sair). It collapses to icons inside a
   Projeto and returns on leaving; on a phone it is a drawer opened from the top button (design
   V56). A person with two companies opens the last one used; "Suas empresas" is the switcher's

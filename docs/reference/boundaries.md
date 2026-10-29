@@ -123,7 +123,7 @@ refused for its media type or its origin.
   the same rows without those checks (`adapter.mjs:141`, `:352`, `:728`, `:793`), on
   `getCurrentAdapter`, so inside `runWithTransaction` on the Hub's transaction.
 - **Hand-made piece.** `organizationAdapter` in `apps/server/src/hub/identity/auth.ts`, on the
-  operator's path only: `registerCompanyOn` and `renameCompanyOn` in `clients.ts`, and an owner's
+  operator's path, and for an app's invitation (the entry below): `registerCompanyOn` and `renameCompanyOn` in `clients.ts`, and an owner's
   invitation, its cancel and its renewal when the admission is the operator's
   (`CompanyOperatorProof`) in `invitations.ts` and `invitation-management.ts`. The Hub's admission
   decides who writes (`admitOperator`, `admitCompany`), the role is only owner
@@ -155,6 +155,70 @@ refused for its media type or its origin.
   adapter writes inside the Hub's transaction, which it joins through `runWithTransaction` and
   `joiningTransaction` alike, so no single removal row proves either. When the library
   changes, reread `getOrgAdapter`'s signature and these four methods.
+
+### An invitation to use one app: the library's invitation row, written, accepted and canceled by the Hub
+
+- **Library line.** `better-auth/dist/plugins/organization/routes/crud-invites.mjs:128-132`:
+  `createInvitation` refuses an address with any open invitation in the company
+  (`findPendingInvitation`, `adapter.mjs:753-768`), so one person cannot hold a company invitation
+  and an app's, or two apps', at once. `:268`: the acceptance checks the deadline. `:324`: the
+  acceptance always writes the member. The library knows no invitation that does not make a member.
+- **Hand-made piece.** The invitation row carries two Hub fields, `project_id` and `app_role`
+  (`additionalFields` in `auth.ts`), and an app's invitation has `role` NULL; the check
+  `invitation_kind` and the unique index on company, address and Projeto keep the two kinds apart
+  (migration `e18_app_access`). `PendingRow` in `identity/invitations.ts` reads the row as a union
+  by `kind`, and each reader chooses by it. The Hub writes an app's invitation through
+  `organizationAdapter` (`inviteToAppCommand`), after the admission `manageAppAccess` and Projects'
+  refusals; the write carries one `@ts-expect-error`, the adapter typing `role` as a string. It
+  accepts one without the library (`acceptedApp` in `invitation-response.ts`): it checks the
+  deadline and the status itself, writes the row of `projects.app_access` and the `accepted` in one
+  transaction, and never calls `acceptInvitation`. It cancels one through the adapter
+  (`cancelAppInvitationCommand`, `cancelAppInvitations`), the capability deciding, not the
+  plugin's `invitation: cancel`. A company invitation cancels the address's open app invitations
+  first, through the adapter, since the endpoint would refuse the address. The link, the e-mail
+  and the password page are the company invitation's. The company's invitation routes and its
+  list read only the rows with no Projeto (`OF_COMPANY`).
+- **Why.** Step 18, the founder's `I1` (2026-10-28): a person given an app is not a member (`E1`,
+  `C`), may hold one invitation per app at once, and a company invitation replaces them. The other
+  forms, one open invitation per address, or a table of invitations of our own, took the second
+  app from the owner or repeated the link, the mail and the password. "o convite de um app:
+  aceitar não faz membro, e leva ao app" in `invitation-app.test.ts` fails if the acceptance
+  writes a member; "o convite da empresa com um de app aberto" fails if the company invitation
+  meets the library's refusal; "o convite de app vencido não dá o app" fails without the Hub's own
+  deadline check. When the library changes, reread `createInvitation`'s pending check, the
+  acceptance's member write and `getOrgAdapter`'s invitation methods.
+
+### A person given one app: the Hub's own table, since the library's teams need a member
+
+- **Library line.** `better-auth/dist/plugins/organization/routes/crud-team.mjs:637-640`: adding a
+  person to a team refuses one who is not a member of the company. `crud-invites.mjs:324`: an
+  accepted invitation always writes the member. The library keeps no (person, app, role) pair for
+  someone outside the company.
+- **Hand-made piece.** `projects.app_access`, one row per Projeto and person (primary key
+  `project_id, person_id`), with row-level security like `projects.project` and a cascade from the
+  Projeto (migration `e18_app_access`). `projectAppsOf` in `projects/app-access.ts` is its one owner;
+  `admitToApp` in `projects/hosts.ts` reads it on every call.
+- **Why.** Step 18, the founder's `C` (2026-10-28): the person is not a member (`E1`), and a role
+  per person per app has no library home. The tests of `projects/tables.test.ts`
+  ("o acesso a um app: uma linha por pessoa, some com o Projeto, cada empresa as suas") and
+  `app-access-journey.test.ts` fail without the table's key, cascade and policies. When the
+  library changes, reread the team add and the invitation acceptance above.
+
+### The protections of an app's access that the removal rows do not cover (step 18)
+
+Better Auth 1.7.8 and the Hub's own tables, as in the two entries above. These guards keep a
+person given an app inside the app; each has a test that covers it, and none has a row in
+`scripts/removals.json` yet, so none is proved to fail without it ([T12](../guides/testing.md)):
+
+- the row admits only in the `published` environment (`admitToApp`, `projects/hosts.ts`);
+- `admitAppUser`'s (`identity/admission.ts`) refusal of a row holder while the company is marked for deletion (`DELETING`);
+- the capability `manageAppAccess` on giving, changing, taking and canceling;
+- the cancellation of the app's pending invitations when access is taken;
+- the acceptance's own `LIVE` check of the Projeto and the invitation's deadline.
+
+Two have rows: a removed member takes the person's rows of that company (`member-removal-takes-app-access`),
+and a one-Projeto revoke checks the Projeto is the company's (`app-access-revoke-own-project`). The
+rows for the five above wait on issue #458.
 
 ### Deleting a company: the adapter, with the native route closed
 

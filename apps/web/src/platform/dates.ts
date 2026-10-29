@@ -19,3 +19,10 @@ const DAY = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short' })
 export function dayOf(instant: string): string {
   return DAY.format(new Date(instant))
 }
+
+const DAY_AND_MONTH = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit' })
+
+/** The day and the month, as "28/10". */
+export function dayAndMonth(instant: string): string {
+  return DAY_AND_MONTH.format(new Date(instant))
+}

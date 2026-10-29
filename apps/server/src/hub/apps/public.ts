@@ -1,7 +1,8 @@
 import type { FastifyInstance } from 'fastify'
+import type { Database } from '../../platform/database.ts'
 import { createAppVersions } from './app-versions.ts'
 import type { AppDeps } from './handoff.ts'
-import { createAppDoor } from './handoff.ts'
+import { createAppDoor, endAppSessions } from './handoff.ts'
 import type { RemovalDeps } from './removal.ts'
 import {
   claimForDeletion,
@@ -12,6 +13,7 @@ import {
 import type { RepairDeps } from './repair.ts'
 import { repairApps } from './repair.ts'
 import { registerEdgeRoutes, registerHandoffRoute, registerVersionRoutes } from './routes.ts'
+import { publishedRolesOf } from './versions.ts'
 
 /** How long a send's answer waits for its prune: a test of the send names it. */
 export { PRUNE_BUDGET_MS } from './prune.ts'
@@ -19,6 +21,18 @@ export { PRUNE_BUDGET_MS } from './prune.ts'
 export { versionNumbersOf } from './versions.ts'
 
 export type Apps = ReturnType<typeof createApps>
+
+/**
+ * What Projects asks of the apps for who uses them: the published version's roles, and the end of a
+ * person's sessions once their access is taken, after the commit (step 18, D and S13).
+ */
+export function appAccessOf(database: Database) {
+  return Object.freeze({
+    publishedRolesOf,
+    endAppSessions: (ids: Parameters<typeof endAppSessions>[1]) =>
+      endAppSessions({ database }, ids),
+  })
+}
 
 /**
  * How deleting a Projeto, or a client, removes its apps: Workers, schemas and logins before rows

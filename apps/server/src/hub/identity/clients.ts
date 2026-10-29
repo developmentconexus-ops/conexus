@@ -10,10 +10,10 @@ import { organizationAdapter, storedAddress } from './auth.ts'
 import { companyById } from './companies.ts'
 import { stateOf } from './invitation-reads.ts'
 import {
+  CompanyPendingRow,
   checkOwnerNotOperator,
   LIVE,
   lockCompany,
-  PendingRow,
   pending,
   pendingOf,
   Status,
@@ -23,7 +23,8 @@ import { company, invitation, member, user } from './tables.ts'
 // The ports the Operations Central reaches identity through (code C4), each in the caller's
 // transaction. The operator's proof comes from `admitOperator`; nothing here checks a role again.
 
-const SentRow = PendingRow.extend({ status: Status, unmailed: z.boolean() })
+// A client's first owner's invitation, an invitation into the company.
+const SentRow = CompanyPendingRow.extend({ status: Status, unmailed: z.boolean() })
 
 /**
  * Creates a client's company with no member and the invitation of its first owner, through the
@@ -74,7 +75,7 @@ export function registerCompanyOn(auth: Auth) {
       user: input.admitted.inviter,
     })
     const [row] = await tx.select(pending).from(invitation).where(eq(invitation.id, invited.id))
-    return { company: created, mail: pendingOf(PendingRow.parse(row)), created: true }
+    return { company: created, mail: pendingOf(CompanyPendingRow.parse(row)), created: true }
   }
 }
 
@@ -159,7 +160,7 @@ export function deleteCompanyOn(auth: Auth) {
 
 export type OperatedCompany = { name: string; state: Client['state'] }
 
-const InvitationRow = PendingRow.extend({
+const InvitationRow = CompanyPendingRow.extend({
   status: Status,
   live: z.boolean(),
   companyId: z.string(),

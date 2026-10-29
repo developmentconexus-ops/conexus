@@ -84,11 +84,19 @@ class BuilderMachines implements Machines {
     return session.ready
   }
 
-  /** Starts the conversation's machine: the provider finds it by name, or makes one (`onStart`). */
+  /**
+   * Starts the conversation's machine: the provider finds it by name, or makes one (`onStart`). A
+   * machine paused from another template, the one before a Release, is killed first, so the start
+   * makes a new one from the Hub's template and seeds it as any new machine.
+   */
   private async boot(session: Session): Promise<Kit> {
     session.onPhase('starting')
+    const stale = this.deps.api.killStale(session.conversationId, this.deps.template)
     try {
-      await within(session.kit.sandbox.start?.() ?? Promise.resolve(), this.startMs)
+      await within(
+        stale.then(() => session.kit.sandbox.start?.()),
+        this.startMs,
+      )
     } catch (cause) {
       const restore = restoreFailure(cause)
       if (restore !== undefined) throw restore
@@ -158,6 +166,7 @@ class BuilderMachines implements Machines {
         [MARK.company]: companyId,
         [MARK.project]: projectId,
         [MARK.conversation]: conversationId,
+        [MARK.template]: this.deps.template,
       },
       workingDirectory: this.workdir,
       instructions: machineInstructions(this.workdir),

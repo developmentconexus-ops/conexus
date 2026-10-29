@@ -17,10 +17,11 @@ import { test } from 'node:test'
 const SCRIPT = resolve(import.meta.dirname, '../infra/first-person.sh')
 
 const STUB_DOCKER = `#!/bin/bash
-printf '%s\\n' "$@" > "$CALLS"
+printf '%s\\n' "$@" "HUB_IMAGE=\${HUB_IMAGE:-}" "HUB_E2B_TEMPLATE=\${HUB_E2B_TEMPLATE:-}" > "$CALLS"
 case "$*" in
   *" ps --quiet hub") echo "\${STUB_RUNNING_ID:-}" ;;
-  "inspect "*) echo "hub@sha256:live" ;;
+  "inspect --format {{.Config.Image}}"*) echo "hub@sha256:live" ;;
+  "inspect "*) printf 'PATH=/usr/bin\\nHUB_E2B_TEMPLATE=conexus-builder:5a2ae2be\\n' ;;
   *" run --rm --no-deps -T hub "*) echo "LINK-FOR-TERMINAL"; echo '{"msg":"FIRST_PERSON_LINK_GIVEN"}' >&2; exit "\${STUB_STATUS:-0}" ;;
 esac
 `
@@ -56,6 +57,11 @@ test('a primeira pessoa: o link vai só ao terminal, o nome e o e-mail entram co
     calls,
   )
   assert.ok(calls.includes('\n--summary\n/dev/stdout\n'), calls)
+  // Compose reads the whole file: the run names the running Hub's image and template.
+  assert.ok(
+    calls.endsWith('\nHUB_IMAGE=hub@sha256:live\nHUB_E2B_TEMPLATE=conexus-builder:5a2ae2be\n'),
+    calls,
+  )
   assert.equal(existsSync(join(dir, 'pwned')), false)
 })
 

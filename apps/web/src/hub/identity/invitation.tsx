@@ -1,4 +1,4 @@
-import type { InvitationView } from '@conexus/hub-api'
+import type { AppEntry, InvitationView } from '@conexus/hub-api'
 import { createInvitationPassword, ROLE_LABELS } from '@conexus/hub-api'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { getRouteApi, Link, useRouter } from '@tanstack/react-router'
@@ -36,6 +36,24 @@ const PasswordForm = createInvitationPassword.input.body
     message: 'As senhas não são iguais.',
   })
 type OpenInvitation = Extract<InvitationView, { kind: 'NEW' | 'HAS_PASSWORD' | 'INVITED' }>
+
+type OpenView = Extract<InvitationView, { kind: 'NEW' | 'HAS_PASSWORD' | 'INVITED' }>
+
+/** What the invitation gives, in one sentence: an app of the company, or a place in it. */
+function invitationTitle(invitation: OpenView): string {
+  const { inviterName, company } = invitation
+  if (invitation.app !== null)
+    return `${inviterName} convidou você para usar o app ${invitation.app.projectName}, da ${company.name}.`
+  if (invitation.firstOwner)
+    return `${inviterName} convidou você para ser o primeiro dono de ${company.name}.`
+  const as = invitation.role === null ? '' : ` como ${ROLE_LABELS[invitation.role]}`
+  return `${inviterName} convidou você para ${company.name}${as}.`
+}
+
+/** The app is another address, so the browser leaves the Hub for it (step 18). */
+function openApp(app: AppEntry) {
+  globalThis.location.assign(`https://${app.address}/`)
+}
 
 function InvitationPassword(props: {
   invitation: Extract<InvitationView, { kind: 'NEW' }>
@@ -100,8 +118,10 @@ function InvitationActions({ invitation }: { invitation: OpenInvitation }) {
   const router = useRouter()
   const accept = useMutation({
     ...acceptReceivedInvitation,
-    onSuccess: ({ company }) =>
-      router.navigate({ to: '/companies/$companyId', params: { companyId: company.id } }),
+    onSuccess: ({ company, app }) => {
+      if (app !== null) return openApp(app)
+      return router.navigate({ to: '/companies/$companyId', params: { companyId: company.id } })
+    },
   })
   const decline = useMutation({
     ...declineReceivedInvitation,
@@ -185,14 +205,24 @@ export function InvitationEntry() {
     case 'JOINED':
       content = (
         <>
-          <PageTitle>Você já faz parte de {invitation.company.name}.</PageTitle>
-          <Link
-            to="/companies/$companyId"
-            params={{ companyId: invitation.company.id }}
-            className={buttonVariants()}
-          >
-            Abrir empresa
-          </Link>
+          <PageTitle>
+            {invitation.app === null
+              ? `Você já faz parte de ${invitation.company.name}.`
+              : `Você já usa o app ${invitation.app.projectName}.`}
+          </PageTitle>
+          {invitation.app === null ? (
+            <Link
+              to="/companies/$companyId"
+              params={{ companyId: invitation.company.id }}
+              className={buttonVariants()}
+            >
+              Abrir empresa
+            </Link>
+          ) : (
+            <a href={`https://${invitation.app.address}/`} className={buttonVariants()}>
+              Abrir app
+            </a>
+          )}
         </>
       )
       break
@@ -201,11 +231,7 @@ export function InvitationEntry() {
     case 'INVITED':
       content = (
         <>
-          <PageTitle>
-            {invitation.firstOwner
-              ? `${invitation.inviterName} convidou você para ser o primeiro dono de ${invitation.company.name}.`
-              : `${invitation.inviterName} convidou você para ${invitation.company.name} como ${ROLE_LABELS[invitation.role]}.`}
-          </PageTitle>
+          <PageTitle>{invitationTitle(invitation)}</PageTitle>
           <p className="text-text-2">
             Válido até{' '}
             {new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(
