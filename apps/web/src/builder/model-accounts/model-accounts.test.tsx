@@ -252,6 +252,12 @@ test('no celular as setas saem da linha e Subir e Descer ficam no …', async ()
     await pickFromMenu('C', 'Descer')
     await waitFor(() => expect(labelsInOrder()).toEqual(['A', 'B', 'C', 'D']))
     expect(sent).toHaveLength(2)
+    // The menu of A returns focus to what had it when it opened: let the one of C give it back first.
+    await waitFor(() =>
+      expect(document.activeElement).toBe(
+        screen.getByRole('button', { name: 'Mais ações para C' }),
+      ),
+    )
     fireEvent.click(screen.getByRole('button', { name: 'Mais ações para A' }))
     await screen.findByRole('menuitem', { name: 'Descer' })
     expect(screen.queryByRole('menuitem', { name: 'Subir' })).toBeNull()

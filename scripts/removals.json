@@ -1991,6 +1991,28 @@
     }
   },
   {
+    "id": "connector-request-origin",
+    "file": "packages/connectors/src/kernel/request.ts",
+    "find": "  if (url.origin !== new URL(origin).origin) throw new Error('Request left its origin')\n",
+    "replace": "",
+    "test": {
+      "cwd": "packages/connectors",
+      "file": "src/kernel/kernel.test.ts",
+      "name": "o pedido fica na origem fixa"
+    }
+  },
+  {
+    "id": "sankhya-read-only-words",
+    "file": "packages/connectors/src/sankhya/read-only-sql.ts",
+    "find": " && !REFUSED_WORDS.test(code)",
+    "replace": "",
+    "test": {
+      "cwd": "packages/connectors",
+      "file": "src/sankhya/read-only-sql.test.ts",
+      "name": "refuses every statement word"
+    }
+  },
+  {
     "id": "member-removal-takes-app-access",
     "file": "apps/server/src/hub/identity/memberships.ts",
     "find": "      const projectIds = await deps.apps.takeAccess(tx, { companyId, personId })\n",

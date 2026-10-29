@@ -163,8 +163,41 @@ jobs:
       - uses: ./.github/actions/install # zizmor: ignore[self-repository] actionlint 1.7.12 rejects the $/ form
       # The check program drives a real Chromium (decision 0055).
       - run: npm exec -w @conexus/web -- playwright-core install chromium-headless-shell
-      - run: npm test -w @conexus/app -w @conexus/app-contract -w @conexus/hub-api
+      - run: npm test -w @conexus/app -w @conexus/app-contract -w @conexus/connectors -w @conexus/hub-api
       - run: npm run test:unit -w @conexus/web
+
+  # The ready Sankhya reads against Sankhya's public documentation, downloaded here and kept nowhere
+  # (it is Sankhya's, "Licença Sankhya"). Its own job, so a page that did not download reads as
+  # "a documentação do Sankhya não baixou" and not as a mismatch. The public site is a third party,
+  # so a pull request that touches neither the connectors nor this workflow does not wait on it
+  # (the job ends as a success with its steps skipped); every push to main, and every pull request
+  # that does touch them, runs it and it blocks.
+  sankhya-docs:
+    name: a documentação do Sankhya
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Does this run touch the connectors or this workflow?
+        id: scope
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          changed="$(git diff --name-only "origin/${BASE_REF:-main}...HEAD")"
+          if [ "$EVENT" != pull_request ] || grep -qE '^(packages/connectors/|\.github/workflows/ci\.yml$)' <<<"$changed"; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "No connector change: the documentation check is skipped." >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - if: steps.scope.outputs.run == 'true'
+        uses: ./.github/actions/install # zizmor: ignore[self-repository] actionlint 1.7.12 rejects the $/ form
+      - if: steps.scope.outputs.run == 'true'
+        run: npm run test:docs -w @conexus/connectors
 
   e2e:
     runs-on: ubuntu-24.04
@@ -316,7 +349,7 @@ jobs:
 
   ci:
     if: always()
-    needs: [check, scripts, server, web, packages, e2e, removals-plan, removals, image]
+    needs: [check, scripts, server, web, packages, sankhya-docs, e2e, removals-plan, removals, image]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -326,7 +359,7 @@ jobs:
       - name: Every job must have succeeded
         env:
           # No removal row to prove is a pass the plan job reported, never a job skipped for another reason.
-          RESULTS: ${{ needs.check.result }} ${{ needs.scripts.result }} ${{ needs.server.result }} ${{ needs.web.result }} ${{ needs.packages.result }} ${{ needs.e2e.result }} ${{ needs.removals-plan.result }} ${{ needs.removals.result == 'skipped' && needs.removals-plan.result == 'success' && needs.removals-plan.outputs.selected == '0' && 'success' || needs.removals.result }} ${{ github.event_name == 'pull_request' && needs.image.result || 'success' }}
+          RESULTS: ${{ needs.check.result }} ${{ needs.scripts.result }} ${{ needs.server.result }} ${{ needs.web.result }} ${{ needs.packages.result }} ${{ needs.sankhya-docs.result }} ${{ needs.e2e.result }} ${{ needs.removals-plan.result }} ${{ needs.removals.result == 'skipped' && needs.removals-plan.result == 'success' && needs.removals-plan.outputs.selected == '0' && 'success' || needs.removals.result }} ${{ github.event_name == 'pull_request' && needs.image.result || 'success' }}
         run: |
           echo "results: $RESULTS"
           for result in $RESULTS; do

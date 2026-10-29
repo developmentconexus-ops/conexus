@@ -170,7 +170,7 @@ página de cada ligação, a janela de ligar, **Ligar e testar**, o Client ID à
 guardado, o logotipo); várias ligações do mesmo conector, com um nome que a empresa dá (o roteiro
 ganhou o passo 4 e o Desligar de uma só); a regra da 19.1 sobre uma conta do fornecedor em
 duas empresas, escrita para todo conector; uma leitura que parte de outra que não leu aparece como
-"não testado: depende de …"; um 404 do Sankhya com o corpo de "não encontrado" que ele documenta é
+"não testado: depende de …"; um 404 do Sankhya no formato de "não encontrado" que o kit espera é
 uma leitura vazia, não uma recusa; o recorte da documentação baixado na hora, não guardado; a `R1`
 decidida, com o tamanho medido de novo. Na revisão do B: a pergunta e o B; as 23 leituras com os
 seus assuntos; a conferência contra a documentação do Sankhya; a skill em partes por assunto; o
@@ -334,7 +334,7 @@ instalado). As linhas desta revisão são hipótese.
 | 3 | U1 | `toRequest` monta o pedido só na origem fixa do conector: um caminho absoluto (`https://…`), com `//` no começo, com `..` ou com `@` lança antes de qualquer `fetch`; a consulta e o corpo vão como o conector os monta | `kernel.test.ts`, "o pedido fica na origem fixa" | must |
 | 4 | U1 | `runConformance(sankhya, fake)` passa: ids únicos, versão semver, cada operação com classe, assunto, resumo e `probe`, e cada `read` com `idempotent: true`; cada nome de `from` é uma operação que vem antes dela na definição; a definição declara `account` (o Sankhya, `{ kind: 'none' }`), `category`, `summary` de uma linha, `logo` (um SVG: só a declaração XML e comentários antes de `<svg`; sem `<script`; sem atributo `on…=`; cada `href`, `xlink:href` e `url(` só `#…`; os `xmlns` aceitos; até o teto medido do arquivo oficial; e o teste planta um SVG com `href` de fora e outro com `onload` e os vê recusados) e, em cada campo, `help` com uma linha e um `url` `https://`; cada assunto declarado na definição tem operação e a sua parte da skill (`skill/references/<assunto>.md`); os `probe` em ordem, cada um respondido pelo dublê, passam no esquema de saída; o pedido de token com a chave errada dá `AUTH_REFUSED`; nenhum pedido montado leva um valor da credencial fora do pedido de token e do cabeçalho; o `SKILL.md` nomeia cada assunto e cada entrada da porta, e cada operação é nomeada na parte do seu assunto; o `SKILL.md` fica abaixo das 500 linhas que o Mastra recomenda | `packages/connectors/src/sankhya/sankhya.test.ts`, "o Sankhya passa no teste comum" | must |
 | 5 | U1 | A porta de leitura do Sankhya só lê por esforço, em duas camadas, não por garantia (fundador, 2026-10-29): o filtro do Conexus e a guarda do DB Explorer do Sankhya; o usuário de integração não impede uma escrita. O filtro, provado aqui: o esquema de entrada de `consultar` aceita um `SELECT` ou `WITH` e recusa, antes de montar o pedido, um comentário, duas instruções, `INSERT`, `UPDATE`, `DELETE`, `MERGE`, `EXEC`, a citação `q'` do Oracle, também com `WHERE 1=0` e em `INSERT … SELECT`; `carregar` só chama `CRUDServiceProvider.loadRecords`, e o seu critério aceita os cinco tipos que o Sankhya documenta (`D`, `H`, `F`, `I`, `S`) e recusa outro; nenhum outro serviço sai do kit | `sankhya.test.ts`, "a porta de leitura só lê" | must |
-| 6 | U1 | Cada uma das 23 operações prontas (a lista em U1, "A API do Sankhya") faz um `GET` na API REST e devolve linhas tipadas, e `tiposOperacao` aceita a lista ou o objeto único que a documentação mostra; um 403 que não é de token vira `REFUSED` (`NO_PERMISSION`); um 400 `RetornoErro`, `REFUSED` (`INPUT`); um 404 com o corpo de "não encontrado" que a documentação mostra (`statusCode: 404` e a mensagem "Dados não encontrados") é `OK` com a lista vazia, e um 404 com outro corpo, ou com as mesmas chaves e outra mensagem (o 404 de uma rota que não existe), `UNREADABLE`; no login, 400, 401 ou 403 dão `AUTH_REFUSED` (como o OS, `gateway.ts:47`); numa operação, um 401 ou 403 `4303` ou `4405`, `AUTH_REFUSED`; um 403 `GTW3403` (token vencido), `TOKEN_EXPIRED`; na porta, um envelope com `status` diferente de `"1"`, ou um 200 com `[CORE_E…]`, vira `REFUSED` (`VENDOR`); uma resposta fora do esquema, `UNREADABLE`; nunca linhas vazias no lugar de uma recusa | `sankhya.test.ts`, "as operações prontas leem o envelope" | must |
+| 6 | U1 | Cada uma das 23 operações prontas (a lista em U1, "A API do Sankhya") faz um `GET` na API REST e devolve linhas tipadas, e `tiposOperacao` aceita a lista ou o objeto único que a documentação mostra; um 403 que não é de token, um 400 `RetornoErro` e um 404 que não é o de "não encontrado" vêm da tabela do núcleo (`outcomeOf`: 401 `AUTH_REFUSED`; 400, 403, 404, 409, 422 `REFUSED`; o resto `UNREADABLE`), cada um com `native` (`status`, `code`, `message`, o `body` como veio); um 404 no formato de "não encontrado" que o kit espera até o roteiro de uso medir (`statusCode: 404` e a mensagem "Dados não encontrados", a frase que as páginas trazem na descrição do 404) é `OK` com a lista vazia, e um 404 com outro corpo, ou com as mesmas chaves e outra mensagem (o 404 de uma rota que não existe), `REFUSED`; no login, 400, 401 ou 403 dão `AUTH_REFUSED` (como o OS, `gateway.ts:47`); numa operação, um 401 ou 403 `4303` ou `4405`, `AUTH_REFUSED`; um 403 `GTW3403` (token vencido), `TOKEN_EXPIRED`; na porta, um envelope com `status` diferente de `"1"`, ou um 200 com `[CORE_E…]` na mensagem do envelope (nunca numa linha lida), vira `REFUSED`; uma resposta fora do esquema, `UNREADABLE`; nunca linhas vazias no lugar de uma recusa | `sankhya.test.ts`, "as operações prontas leem o envelope" | must |
 | 7 | U2 | `connectors.connection` guarda várias por (empresa, conector), uma por nome: duas do Sankhya com nomes diferentes na mesma empresa convivem, e a segunda com o mesmo nome dá `23505` em `connection_name_key`, também com outras maiúsculas ("matriz" depois de "Matriz"); o mesmo nome noutra empresa, ou noutro conector, passa; um nome vazio ou acima de 60 caracteres dá `23514`; `hub_company` grava `last_test` e `tested_by` e não muda `name`; apagar a empresa leva a linha; o login de uma empresa não lê a de outra (RLS); `hub_company` não lê a coluna `sealed`; `connectors.sealed_of(id)` devolve o selo só na empresa da transação | `apps/server/src/hub/connectors/tables.test.ts`, "a ligação: várias por conector, uma por nome, cada empresa a sua, o selo só pela função", por SQL no banco de teste (`createTestDatabase`, como `platform/isolation-model-accounts.test.ts`) | must |
 | 8 | U2 | A lista de permissões do banco é a de `database-grants.sql` com as linhas novas, e nenhuma outra muda | `apps/server/src/platform/catalog.test.ts` | must |
 | 9 | U3 | `POST /api/companies/{c}/connections` com `{ connector: 'sankhya', name: 'Matriz', credential }`, da dona ou do administrador: 201, a ligação com `name`, `state: 'NEW'` e sem nenhum campo da credencial; um segundo Sankhya, "Filial", 201 também (as duas na lista); o nome chega sem os espaços das pontas; o membro recebe 404 `NOT_FOUND` (S10); um conector que o kit não tem, 404 `CONNECTOR_UNKNOWN`; uma credencial fora do esquema, 422 `CONNECTION_CREDENTIAL_INVALID`; um nome vazio, só de espaços ou acima de 60 caracteres, 422 `CONNECTION_NAME_INVALID`; um nome que outra ligação do Sankhya da empresa já tem, 409 `CONNECTION_NAME_TAKEN`; a mesma chave de tentativa com outra credencial ou outro nome, 409 `IDEMPOTENCY_CONFLICT`, e com a mesma, a mesma ligação | `apps/server/src/hub/connectors/connections.test.ts`, "ligar: quem pode, e as recusas" | must |
@@ -350,7 +350,7 @@ instalado). As linhas desta revisão são hipótese.
 | 19 | U4 | A barra da empresa tem **Integrações** entre os Projetos e as Configurações, ativa na lista e na página de uma ligação (`/companies/<c>/integrations/<connectionId>`); no celular, na gaveta (V56) | `apps/web/src/routes/_app/companies/$companyId/route.test.tsx`, "Integrações na barra" | must |
 | 20 | U4 | Num navegador de verdade (Chrome e WebKit, 1366 e 390 px, os dois temas), o roteiro inteiro com o dublê do Sankhya | o teste das telas (`conexus-qa`) | must |
 | 21 | U3 | No Hub de verdade, com o usuário só de leitura que você fornece, o Testar dá `WORKING`; na sonda, no DB Explorer do Sankhya com o usuário de integração, só na tabela de sonda, as quatro escritas sem linha são recusadas, e a leitura depois do `UPDATE` de verdade (só com a palavra do fundador) diz se ele passou: passou, a consulta estruturada volta. Prova a guarda do Sankhya e a permissão do usuário, sem o Conexus | o roteiro de uso, passos 3 e 5, por você (não roda em CI: nenhum Sankhya de verdade em teste, S40) | must |
-| 22 | U1 | Cada operação pronta confere com a documentação do Sankhya, baixada na hora das páginas públicas e nunca guardada no repositório (fundador, 2026-10-29: "não guardar e baixar na hora"): o método e o caminho do seu `probe` são uma rota do recorte; cada chave de consulta que ela manda é um parâmetro declarado da rota; a resposta do dublê ao `probe` passa em `z.fromJSONSchema` do esquema 200 da rota; nenhuma rota do recorte fica sem operação; o exemplo do 404 de cada uma das seis páginas que o documentam traz a mensagem que `NotFound` exige. Recusa: o dublê dos clientes sem o endereço que a documentação exige falha (o estudo achou esse desvio na U1 de hoje) | `packages/connectors/src/sankhya/spec.test.ts`, "cada leitura confere com a documentação do Sankhya", no passo `sankhya-docs` do CI (`npm run test:docs -w @conexus/connectors`), que roda quando o pull request muda `packages/connectors/` ou o CI; a recusa de baixar (uma página que não chega, ou grande demais) pelo `spec-source.test.ts`, sem rede | must |
+| 22 | U1 | Cada operação pronta confere com a documentação do Sankhya, baixada na hora das páginas públicas e nunca guardada no repositório (fundador, 2026-10-29: "não guardar e baixar na hora"): o método e o caminho do seu `probe` são uma rota do recorte; cada chave de consulta que ela manda é um parâmetro declarado da rota; a resposta do dublê ao `probe` passa em `z.fromJSONSchema` do esquema 200 da rota; nenhuma rota do recorte fica sem operação; a descrição da resposta 404 de cada uma das seis páginas que o documentam diz "Dados não encontrados" (o que a documentação mostra é essa frase; o formato do corpo que `NotFound` lê não foi medido e se fixa no roteiro de uso do fundador, passo 3, com um 404 vazio de verdade). Recusa: o dublê dos clientes sem o endereço que a documentação exige falha (o estudo achou esse desvio na U1 de hoje) | `packages/connectors/src/sankhya/spec.test.ts`, "cada leitura confere com a documentação do Sankhya", no passo `sankhya-docs` do CI (`npm run test:docs -w @conexus/connectors`), que roda quando o pull request muda `packages/connectors/` ou o CI; a recusa de baixar (uma página que não chega, ou grande demais) pelo `spec-source.test.ts`, sem rede | must |
 | 23 | U3 | O Testar inteiro tem um prazo, 80 s no Hub (o teste o põe em 1 s): cada chamada tem o prazo menor entre os 10 s e o que falta; quando acaba o prazo, os itens que faltam dão `NOT_TESTED`, também uma operação cuja fonte ficou `NOT_TESTED` (o prazo se olha antes do `from`: nunca `SOURCE_UNREAD` por demora), o resultado continua `WORKING` e a resposta sai antes do prazo mais uma folga; o login que não cabe no prazo dá `UNREACHABLE` | `connections.test.ts`, "testar: o prazo do teste inteiro", com o interruptor do dublê que demora cada resposta | must |
 | 24 | U3 | Duas ligações do Sankhya numa empresa, "Matriz" e "Filial": o Testar da Filial com a chave recusada a passa a `NEEDS_REAUTH` e a Matriz continua `ACTIVE`; o Desligar da Filial deixa a Matriz na lista e o Testar dela dá `WORKING`; um Testar ou Desligar com o id de uma ligação de outra empresa dá 404, e a de lá não muda; a lista traz as duas, por conector e depois pela hora de ligar | `connections.test.ts`, "duas ligações do mesmo conector" | must |
 
@@ -726,16 +726,15 @@ como um commit novo nele:
   o seu `probe` parte (`pedidos` parte de `empresas`), e `defineOperation` dá `[]` quando não
   declara; a conformidade confere que cada nome de `from` vem antes na definição. Assim quem chama
   separa uma fonte que não leu de uma que leu nada (a U3 dá `SOURCE_UNREAD`).
-- **O 404 de "não encontrado"**: seis páginas da documentação mostram um 404 com o corpo
-  `{ statusCode: 404, error, … }` e a mensagem "Dados não encontrados" para uma lista sem
-  registros. Esse 404, com esse corpo **e essa mensagem**, é `OK` com a lista vazia (a decisão do
-  firstmate, lida na documentação); um 404 com outro corpo, ou com as mesmas chaves e outra
-  mensagem, é `UNREADABLE` (`answers.ts`, `NotFound`). As duas chaves sozinhas não bastam: o 404
+- **O 404 de "não encontrado"**: seis páginas da documentação trazem a frase "Dados não encontrados" na descrição
+  do 404 de uma lista sem registros; o kit espera o corpo `{ statusCode: 404, error, … }` com essa mensagem. Esse 404, com esse corpo **e essa mensagem**, é `OK` com a lista vazia (a decisão do
+  firstmate); um 404 com outro corpo, ou com as mesmas chaves e outra
+  mensagem, é `REFUSED` (`answers.ts`, `NotFound`). As duas chaves sozinhas não bastam: o 404
   de uma rota que não existe, num servidor do feitio do NestJS, tem as mesmas, e uma rota mudada
   apareceria como "Lê, mas não havia nada para olhar", a linha vazia no lugar da recusa que o
-  critério 6 proíbe. O esquema `NotFound` exige a mensagem no campo em que as seis páginas a
-  mostram (copiada delas na construção), e o critério 22 confere, nas páginas baixadas, que o
-  exemplo do 404 de cada uma das seis traz essa mensagem.
+  critério 6 proíbe. O esquema `NotFound` exige a mensagem; as seis páginas a mostram como a
+  descrição da resposta 404, e o critério 22 confere, nas páginas baixadas, só essa frase. O formato
+  do corpo não foi medido: ele se fixa no roteiro de uso do fundador (passo 3), com um 404 vazio de verdade.
 
 ### O raio da mudança
 
@@ -773,11 +772,12 @@ export type ProviderAnswer = Readonly<{ status: number; body: unknown }>
 /** An operation's outcome as data: a refusal is never an empty list (architecture §1). */
 export type Answered<O> = Readonly<
   | { kind: 'OK'; value: O }
-  | { kind: 'REFUSED'; reason: 'NO_PERMISSION' | 'INPUT' | 'VENDOR' }
-  | { kind: 'AUTH_REFUSED' }
-  | { kind: 'TOKEN_EXPIRED' } // the executor asks a new token once and repeats; a second time is AUTH_REFUSED
-  | { kind: 'UNREADABLE' }
+  | { kind: 'REFUSED' | 'AUTH_REFUSED' | 'TOKEN_EXPIRED' | 'UNREADABLE'; native: Native } // TOKEN_EXPIRED: the executor asks a new token once and repeats; a second time is AUTH_REFUSED
 >
+/** What the provider said, as it came: where its code and message sit, and the body unchanged. */
+export type Native = Readonly<{ status: number; code: string | null; message: string | null; body: unknown }>
+/** The kernel's table for a status the connector documents no exception for: 401 AUTH_REFUSED; 400, 403, 404, 409, 422 REFUSED; the rest UNREADABLE. */
+export declare function outcomeOf(status: number): 'AUTH_REFUSED' | 'REFUSED' | 'UNREADABLE'
 
 export type Operation<I, O> = Readonly<{
   id: OperationId                 // /^[a-z][a-zA-Z0-9]{1,39}$/, unique in its connector
@@ -942,8 +942,8 @@ abaixo. O formato de um 429: não verificado.
 Expirado" (pedir token de novo), `4303` (token inválido ou inativado), `4405` (token e appkey não
 associados); 400 `GTW2509` (falta `offsetPage`); 200 com mensagem `[CORE_Exxxxx]` é um erro de regra
 do Sankhya, com HTTP 200. A forma do corpo de cada erro: não verificado, salvo o `RetornoErro`
-abaixo. O kit lê o código do corpo (`code` ou o texto que começa com `GTW`) por um esquema solto e
-nunca o leva para fora do kit além do `kind`.
+abaixo. O kit lê o código e a mensagem do corpo (`code`, `mensagem.codigo` ou o texto que começa com `GTW`) por um esquema solto, e toda recusa leva o que o fornecedor disse, `native`
+(`status`, `code`, `message` e o `body` como veio, sem cortar; o corpo de um 2xx lido, que é dado da empresa, nunca vai; a exceção é a recusa do envelope, que é a mensagem do próprio Sankhya e leva o envelope inteiro, só ao Testar e ao Builder, que já leem dado da empresa; `last_test` e os logs guardam só o estado e o código, e o código de um `[CORE_E…]` é o `CORE_E` com o número). O `[CORE_E…]` só vale na mensagem do envelope, nunca nas linhas lidas.
 
 **As operações prontas** (todas `class: 'read'`, `idempotent: true`, `GET`, uma página por chamada):
 
@@ -998,12 +998,12 @@ na resposta é ignorado (`z.object`, não `strictObject`: o Sankhya acrescenta c
 
 **Os erros do REST** (documentado): o pedido de venda responde 400 `RetornoErro { code, message,
 details }`; clientes 400 `{ statusCode, error, mensagem { code, message, details, help } }`; produtos
-não dá esquema. O kit: 2xx no esquema dá `OK`; 400 dá `REFUSED` (`INPUT`); 401, 403 `4303` ou `4405`
-dá `AUTH_REFUSED`; 403 `GTW3403`, `TOKEN_EXPIRED`; outro 403, `REFUSED` (`NO_PERMISSION`, o
+não dá esquema. O kit: 2xx no esquema dá `OK`; 400 dá `REFUSED`; 401, 403 `4303` ou `4405`
+dá `AUTH_REFUSED`; 403 `GTW3403`, `TOKEN_EXPIRED`; outro 403, `REFUSED` (o
 usuário de integração sem a tela, `reference/camada-de-autorização-para-api`); 404 numa lista,
-`OK` com a lista vazia só se o corpo for o de "não encontrado" que seis páginas documentam
-(`{ statusCode: 404, error, … }` com a mensagem "Dados não encontrados"; a decisão do firstmate de 2026-10-29, lida na documentação), senão
-`UNREADABLE`; 5xx é do executor
+`OK` com a lista vazia só se o corpo for o de "não encontrado" que o kit espera
+(`{ statusCode: 404, error, … }` com a mensagem "Dados não encontrados", a frase das seis páginas; o formato do corpo se mede no roteiro de uso; a decisão do firstmate de 2026-10-29), senão
+`REFUSED`; o resto vem da tabela do núcleo; 5xx é do executor
 (`UNREACHABLE`).
 
 **A porta de leitura** (`defineReadDoor`), pelo gateway de serviços (documentado,
@@ -1121,8 +1121,8 @@ roda com `SANKHYA_SPEC_ONLINE=1 npm run test:docs -w @conexus/connectors` (só a
 - A ampliação passa das ~1.240 linhas estimadas em mais de um quinto: relatar antes de seguir.
 - A página de marca do Sankhya não dá o logotipo em SVG, ou o SVG dela não passa na conferência do
   logotipo sem ser editado: relatar o que a página dá; nenhum logotipo redesenhado nem convertido.
-- Uma das seis páginas do 404 não mostra a mensagem de "não encontrado" no corpo do exemplo, ou
-  mostra outra: relatar a página; nenhuma mensagem escrita de memória.
+- Uma das seis páginas do 404 não traz "Dados não encontrados" na descrição da resposta 404, ou
+  traz outra: relatar a página; nenhuma mensagem escrita de memória.
 
 ## U2 A tabela da ligação
 
