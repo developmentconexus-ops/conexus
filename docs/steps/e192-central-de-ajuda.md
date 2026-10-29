@@ -28,7 +28,7 @@ Livre chega com o guia dele.
 **O que você faz, e quando.**
 
 - **Antes da U2:** os passos que você segue no Sankhya para achar cada uma das três chaves, com os
-  prints (a sua resposta D3 A, 2026-10-29). Os prints vêm de uma empresa de teste ou com nomes,
+  prints (a sua resposta `D3 A`, 2026-10-29). Os prints vêm de uma empresa de teste ou com nomes,
   CNPJs e valores cobertos: nada de dado de empresa no repositório (segurança S40). O agente
   escreve a página e a linha curta de cada chave a partir do seu texto, e confere cada print antes
   do commit.
@@ -50,7 +50,7 @@ Livre chega com o guia dele.
   pedir.
 - "Respondeu à sua pergunta?", comentários, fórum ou atendimento: a central é só leitura (o estudo:
   Zapier separa a central da comunidade).
-- Login na central: aberta (D4 A).
+- Login na central: aberta (`D4 A`).
 - O link "Editar esta página": o repositório é privado.
 - Um segundo idioma: o roteiro deixa fora do lançamento.
 - O guia do Mercado Livre: nasce com a 19.1, no mesmo molde. O da Jet, com a 20.3.
@@ -66,8 +66,8 @@ tela) espera o kit e a tela da 19 no `main` e os seus prints. As duas entram no 
 19 fechar ([entrega L1, L5](../guides/delivery.md)).
 
 **As decisões suas nesta etapa.** Nenhuma nova. As quatro do estudo já têm a sua palavra
-(2026-10-29, "D recomendado"): D1 A `ajuda.conexus.fun`; D2 A a 19.2 entre a 19 e a 19.1; D3 A você
-dá os passos e os prints e o agente escreve; D4 A aberta. O subdomínio criado na Cloudflare pelo seu
+(2026-10-29, "D recomendado"): `D1 A` `ajuda.conexus.fun`; `D2 A` a 19.2 entre a 19 e a 19.1; `D3 A` você
+dá os passos e os prints e o agente escreve; `D4 A` aberta. O subdomínio criado na Cloudflare pelo seu
 clique: "Ah entendi, aprovado então do subdominio, tinha esquecido".
 
 ## As unidades
@@ -119,7 +119,7 @@ entre as escolhas caras: é um site estático, que se troca sem migrar nada.
 
 | Tela | Primeira vez | Vazio | Carregando | Erro | Não encontrado | Sem permissão | Vencido ou recusado |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Início da central (`/`) | "Ajuda do Conexus", uma linha do que a central é, e "Conectores" com o Sankhya | — (sempre há o Sankhya) | — (estático) | — | — | — (aberta, D4 A) | — |
+| Início da central (`/`) | "Ajuda do Conexus", uma linha do que a central é, e "Conectores" com o Sankhya | — (sempre há o Sankhya) | — (estático) | — | — | — (aberta, `D4 A`) | — |
 | Uma página de guia (`/conectores/sankhya/ligar/`) | o título, "O que você precisa", os trechos por chave, o índice da página à direita (1280) ou no topo (390) | — | — | — | — | — | — |
 | A busca | o campo "Pesquisar" | "Nenhum resultado para …" (a frase do Pagefind em pt-BR) | o Pagefind carregando o índice | o índice que não carrega: a frase do Pagefind | — | — | — |
 | A 404 (`/qualquer-coisa`) | — | — | — | — | "Página não encontrada", com a busca e o link para o início | — | — |
@@ -170,18 +170,18 @@ Context7 e pela prova do estudo (Astro 7.4.4, Starlight 0.42.7, `wrangler deploy
 
 | Peça | Unidade | Hoje no main | Referência | Como a referência faz | Veredito | Prova, se não for nativo | Palavra do fundador | Arquivo novo |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| O site de ajuda | U1 | nenhum | `@astrojs/starlight@0.42.7`: `starlight({ title, locales: { root: { label, lang: 'pt-BR' } }, sidebar, customCss })`; Airbyte `docusaurus/docusaurus.config.ts`; Nango `docs/docs.json:2` (Mintlify) | um gerador de site estático de documentação, no próprio repositório | nativo: o Starlight como vem, com a interface em pt-BR embutida | — | D2 A (2026-10-29) | `apps/help/astro.config.ts` |
+| O site de ajuda | U1 | nenhum | `@astrojs/starlight@0.42.7`: `starlight({ title, locales: { root: { label, lang: 'pt-BR' } }, sidebar, customCss })`; Airbyte `docusaurus/docusaurus.config.ts`; Nango `docs/docs.json:2` (Mintlify) | um gerador de site estático de documentação, no próprio repositório | nativo: o Starlight como vem, com a interface em pt-BR embutida | — | `D2 A` (2026-10-29) | `apps/help/astro.config.ts` |
 | As páginas: as do site e os guias dos conectores numa coleção | U1 | nenhum | Astro `glob()` de `astro/loaders` com `docsSchema()` do Starlight (a prova do estudo: um só `glob` com as duas pastas, porque `docsLoader()` junto de um `glob()` apaga as do primeiro) | a coleção `docs` lê Markdown de pastas | nativo: um `glob({ base: '../..', pattern: [...], generateId })` | — | não precisa | `apps/help/src/content.config.ts` |
 | A busca | U1 | nenhum | Starlight: Pagefind embutido, estático | a busca monta com o site, sem serviço | nativo | — | não precisa | — |
 | A barra lateral | U1 | nenhum | Starlight `sidebar: [{ label, items: [{ autogenerate: { directory } }] }]` (desde a 0.39, `{ label, autogenerate }` é recusado: a prova do estudo); Linear "Integration Directory" | um grupo por conector | nativo | — | não precisa | — |
 | A marca no site | U1 | `apps/web/src/brand/tokens.css` (as fontes, o `@theme` claro e os blocos escuros `:root`, `:243-312`) | Starlight `customCss` com `--sl-color-accent`, `--sl-color-accent-high`, `--sl-color-accent-low`, `--sl-color-white`, `--sl-color-gray-1` a `-6`, `--sl-color-black`, `--sl-font`, `--sl-font-mono`, nos seletores `:root` e `:root[data-theme='light']` | o tema muda por propriedades CSS | nativo: a paleta (fontes e valores, claro e escuro) sai do `tokens.css` para `apps/web/src/brand/palette.css`, CSS puro, que o `tokens.css` e o site importam; o site só mapeia `--sl-*` para ela | — | não precisa | `apps/web/src/brand/palette.css`, `apps/help/src/brand.css` |
 | O tema claro e escuro | U1 | o Hub: claro por padrão, escuro pelo sistema ([V9](../guides/design.md)) | Starlight: o seletor de tema com "auto", que segue o sistema, e `data-theme` no `<html>` | o tema segue o sistema e a pessoa pode escolher | nativo | — | não precisa | — |
-| O endereço | U1, o fundador | nenhum | Cloudflare Workers, domínio próprio pelo painel ("Cloudflare will create DNS records and issue necessary certificates on your behalf", `/workers/configuration/routing/custom-domains/`); `wrangler@4.151.1` `triggersDeploy` (`wrangler-dist/cli.js:165084`) só publica domínios listados na configuração (`:165206`), então um `wrangler.jsonc` sem `routes` deixa o domínio do painel | um Worker com o domínio dele | nativo: o clique do fundador; nenhuma rota na configuração | — | D1 A; "aprovado então do subdominio" (2026-10-29) | `apps/help/wrangler.jsonc` |
+| O endereço | U1, o fundador | nenhum | Cloudflare Workers, domínio próprio pelo painel ("Cloudflare will create DNS records and issue necessary certificates on your behalf", `/workers/configuration/routing/custom-domains/`); `wrangler@4.151.1` `triggersDeploy` (`wrangler-dist/cli.js:165084`) só publica domínios listados na configuração (`:165206`), então um `wrangler.jsonc` sem `routes` deixa o domínio do painel | um Worker com o domínio dele | nativo: o clique do fundador; nenhuma rota na configuração | — | `D1 A`; "aprovado então do subdominio" (2026-10-29) | `apps/help/wrangler.jsonc` |
 | O Worker de arquivos estáticos | U1 | `apps/edge/wrangler.jsonc` (Workers com código) | Cloudflare Workers static assets: `assets.directory`, `not_found_handling: '404-page'`, sem `main`; "Requests to static assets are free and unlimited" (`/workers/static-assets/billing-and-limitations/`) | um Worker só de arquivos | nativo | — | US$ 0 (2026-10-29) | — |
 | Os cabeçalhos | U1 | o Hub ([segurança S24](../guides/security.md)) | Cloudflare Workers static assets: o arquivo `_headers` na pasta publicada | cabeçalhos por padrão de caminho | nativo: `apps/help/public/_headers` | — | não precisa | `apps/help/public/_headers` |
 | A publicação no Release | U1 | `infra/publish-edge.sh` (a borda, `--env-file`, decisão 0042) | o próprio script: `publish()` com `timeout` e `--env-file` | o mesmo token, o mesmo passo, um Release | nativo: mais um `wrangler deploy` no script | — | não precisa | — |
 | A montagem no CI | U1 | `.github/workflows/ci.yml`, job `web`, `npm run build` (todos os espaços de trabalho) | npm workspaces: `build` de cada um | o `build` do espaço novo entra sozinho | nativo: o `build` do `apps/help`; `tests/help/` depois dele | — | não precisa | `tests/help/site.test.ts` |
-| O guia de cada conector | U2 | nenhum | Nango `docs/api-integrations/zendesk/connect.mdx:1-36` (Overview, Prerequisites, "Step 1", prints); Airbyte `docs/integrations/sources/stripe.md` (Setup guide e links para a documentação da Stripe) | o guia é Markdown no repositório, ao lado do fornecedor | nativo: `packages/connectors/src/<id>/guide/<página>.md`, em português ([L23](../guides/delivery.md)) | — | D3 A (2026-10-29) | `packages/connectors/src/sankhya/guide/ligar.md` |
+| O guia de cada conector | U2 | nenhum | Nango `docs/api-integrations/zendesk/connect.mdx:1-36` (Overview, Prerequisites, "Step 1", prints); Airbyte `docs/integrations/sources/stripe.md` (Setup guide e links para a documentação da Stripe) | o guia é Markdown no repositório, ao lado do fornecedor | nativo: `packages/connectors/src/<id>/guide/<página>.md`, em português ([L23](../guides/delivery.md)) | — | `D3 A` (2026-10-29) | `packages/connectors/src/sankhya/guide/ligar.md` |
 | O link de cada campo para o seu trecho | U2 | o kit da 19: `help: { text, url }` em cada campo (`packages/connectors/src/kernel/auth.ts`, PR #449) | Nango `packages/providers/providers.yaml:30433` (`docs_connect`) e `:30443` (`doc_section`); `packages/connect-ui/src/views/Go.tsx:705-716` (o ⓘ leva a `${docsConnectUrl}${doc_section}`) | cada campo aponta para o trecho do guia | nativo: o `help.url` da 19 passa a ser o endereço do trecho na central; os trechos são os `id` que o Astro dá aos títulos ("Client ID" vira `#client-id`, a prova do estudo) | — | não precisa | `packages/connectors/src/kernel/guide.ts` |
 | O teste comum confere o guia | U2 | `runConformance` (PR #449, `kernel/conformance.ts:122-130`, "declares the account, what the catalog shows and where each key comes from") | Nango: `doc_section` é dado sem conferência; nenhuma confere | — | embrulhado: o teste comum exige a página e o endereço; o trecho é conferido no site montado (`tests/help/anchors.test.ts`), onde o Astro já deu os `id` | o critério 7 e 9 | não precisa | — |
 | "Ver o passo a passo" na tela | U2 | a janela Ligar da 19 (U4): a linha e o link de cada campo | Nango `Go.tsx:577-583` ("Need help? View guide") e `:705-716` | um link por campo, que abre o guia | nativo: o texto do link em `text.ts`; o `href` é o `help.url` do catálogo | — | os textos, no fim | — |
@@ -476,7 +476,7 @@ proteções de segurança). Segurança S40 para os prints. Entrega L23 para o te
 ### Parar se
 
 - Os passos e os prints do fundador não chegaram: não escrever o guia de páginas públicas (a
-  resposta dele foi D3 A); relatar `needs-decision` e esperar.
+  resposta dele foi `D3 A`); relatar `needs-decision` e esperar.
 - Um print mostra dado de empresa e não dá para cobrir sem mudar o que ele ensina: parar e pedir
   outro ao fundador.
 - O `id` que o Astro dá a um título não é o que o `help.url` espera (um acento, um sinal): mudar o
