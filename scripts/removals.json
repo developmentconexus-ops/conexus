@@ -1945,5 +1945,27 @@
       "file": "src/hub/apps/repair.test.ts",
       "name": "a reparação sobe a publicada também"
     }
+  },
+  {
+    "id": "member-removal-takes-app-access",
+    "file": "apps/server/src/hub/identity/memberships.ts",
+    "find": "      const projectIds = await deps.apps.takeAccess(tx, { companyId, personId })\n",
+    "replace": "      const projectIds = []\n",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/apps/app-access-journey.test.ts",
+      "name": "quem sai da empresa leva a linha que estava inerte"
+    }
+  },
+  {
+    "id": "app-access-revoke-own-project",
+    "file": "apps/server/src/hub/projects/app-access.ts",
+    "find": "    if (projectId !== undefined) await liveProject(tx, { companyId, projectId })\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/apps/app-access-journey.test.ts",
+      "name": "outra empresa não tira o acesso a um app da empresa"
+    }
   }
 ]

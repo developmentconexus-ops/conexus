@@ -14,6 +14,7 @@ import { Failure } from '../../platform/failure.ts'
 import { after, pageKey, pageOf } from '../../platform/pages.ts'
 import type { Actor, CompanyProof } from './admission.ts'
 import { actorOf, admitCompany, rankAllows } from './admission.ts'
+import type { ProjectApps } from './app-invitations.ts'
 import type { Auth, LibraryCommand } from './auth.ts'
 import { organizationAdapter } from './auth.ts'
 import { cancelSentBy } from './invitation-management.ts'
@@ -176,7 +177,9 @@ async function removable(tx: CommandTx, input: OfMember) {
 
 /**
  * Takes a person out of the company, or the person out of theirs; a person already out stays out.
- * Their pending invitations go with them. Their conversations go first, with no transaction open
+ * Their pending invitations go with them, and so do the rows that gave them an app before they
+ * joined, inert while they were a member (step 18): no access outlives the removal (S13), and their
+ * sessions in those apps end after the commit. Their conversations go first, with no transaction open
  * (data D22), after a first pass of the same checks: if the Builder cannot release them, the
  * person stays, `PERSON_REMOVAL_PENDING`. It writes through the plugin's adapter: the endpoints
  * require the caller to be a member, which the operator is not, and their last-owner count is not
@@ -186,6 +189,7 @@ export function removeMemberCommand(deps: {
   auth: Auth
   libraryCommand: LibraryCommand
   releaseConversations: PersonConversationRelease
+  apps: ProjectApps
 }) {
   return async (input: OfMember) => {
     const { companyId, personId } = input
@@ -194,7 +198,7 @@ export function removeMemberCommand(deps: {
     await deps.releaseConversations({ companyId, personId }).catch((cause: unknown) => {
       throw new Failure('PERSON_REMOVAL_PENDING', { cause })
     })
-    return deps.libraryCommand(companyScope(input), async (tx) => {
+    const removed = await deps.libraryCommand(companyScope(input), async (tx) => {
       const target = await removable(tx, input)
       if (target === undefined) return undefined
       const adapter = await organizationAdapter(deps.auth)
@@ -204,8 +208,12 @@ export function removeMemberCommand(deps: {
         userId: personId,
       })
       await cancelSentBy(tx, { companyId, personId })
-      return target.role
+      const projectIds = await deps.apps.takeAccess(tx, { companyId, personId })
+      return { role: target.role, projectIds }
     })
+    if (removed === undefined) return undefined
+    await deps.apps.endSessions({ projectIds: removed.projectIds, personId })
+    return removed.role
   }
 }
 

@@ -95,7 +95,33 @@ export function projectAppsOf(deps: AccessDeps): ProjectApps {
     async grant(tx, row) {
       await tx.insert(appAccess).values(row)
     },
+    takeAccess,
+    endSessions: (ids) => endSessions(deps, ids),
   })
+}
+
+/** Deletes a person's rows in the company, one Projeto's or all of them, and answers their Projetos. */
+async function takeAccess(
+  tx: CommandTx,
+  ids: { companyId: CompanyId; personId: PersonId; projectId?: ProjectId },
+): Promise<ProjectId[]> {
+  const rows = await tx
+    .delete(appAccess)
+    .where(
+      and(
+        eq(appAccess.companyId, ids.companyId),
+        eq(appAccess.personId, ids.personId),
+        ids.projectId === undefined ? undefined : eq(appAccess.projectId, ids.projectId),
+      ),
+    )
+    .returning({ projectId: appAccess.projectId })
+  return rows.map((row) => ProjectIdSchema.parse(row.projectId))
+}
+
+/** Ends the person's sessions in those Projetos' apps, after the commit that took their access. */
+async function endSessions(deps: AccessDeps, ids: Parameters<ProjectApps['endSessions']>[0]) {
+  for (const projectId of ids.projectIds)
+    await deps.endAppSessions({ projectId, personId: ids.personId })
 }
 
 function scopeOf(input: { person: Person; companyId: CompanyId }) {
@@ -206,8 +232,8 @@ export function changeAccess(
  * Takes a person's access to the company's apps, one Projeto's or all of them: the rows and their
  * open invitations to those apps in one transaction (D22), then their sessions in those apps, after
  * the commit, through the Hub's login without a company. Should that second step fail, the next
- * call is refused by the admission anyway, and a repeat ends what stayed. Answers the Projetos
- * whose row it took.
+ * call is refused by the admission anyway, and a repeat ends what stayed. Another company's Projeto
+ * is `NOT_FOUND`, nothing taken or ended (S6). Answers the Projetos whose row it took.
  */
 export async function revokeAccess(
   deps: AccessDeps,
@@ -217,23 +243,13 @@ export async function revokeAccess(
   const email = await deps.database.installationRead((tx) => deps.identity.addressOf(tx, personId))
   const taken = await deps.identity.libraryCommand(scopeOf(input), async (tx) => {
     await admittedManager(deps, tx, input)
-    const rows = await tx
-      .delete(appAccess)
-      .where(
-        and(
-          eq(appAccess.companyId, companyId),
-          eq(appAccess.personId, personId),
-          projectId === undefined ? undefined : eq(appAccess.projectId, projectId),
-        ),
-      )
-      .returning({ projectId: appAccess.projectId })
+    if (projectId !== undefined) await liveProject(tx, { companyId, projectId })
     if (email !== undefined)
       await deps.identity.cancelAppInvitations(tx, { companyId, email, projectId })
-    return rows.map((row) => ProjectIdSchema.parse(row.projectId))
+    return takeAccess(tx, { companyId, personId, projectId })
   })
   // A revoke repeated after its sessions failed to end finds no row, and ends them still.
-  const ended = projectId === undefined ? taken : [projectId]
-  for (const one of ended) await deps.endAppSessions({ projectId: one, personId })
+  await endSessions(deps, { projectIds: projectId === undefined ? taken : [projectId], personId })
   return taken
 }
 
