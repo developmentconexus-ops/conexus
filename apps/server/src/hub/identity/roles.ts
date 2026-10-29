@@ -13,18 +13,21 @@ export const ACCESS_CONTROL = createAccessControl({
   company: ['nickname'],
   modelAccount: ['manage'],
   appAccess: ['manage'],
+  connection: ['manage'],
 })
 
 const MANAGE_COMPANY = {
   project: ['create', 'delete'],
   modelAccount: ['manage'],
   appAccess: ['manage'],
+  connection: ['manage'],
 } as const
 
 /**
  * The plugin's roles: its defaults and what each does to a Project (founder, step 7, P1 A). Every
  * member creates one; only an owner or an administrator deletes one and changes its model
- * accounts (step 11, D4), and gives and takes a person's access to an app (step 18, B). Only the
+ * accounts (step 11, D4), gives and takes a person's access to an app (step 18, B), and links,
+ * tests and removes the company's connections (step 19, D). Only the
  * owner chooses the company's nickname (step 8, N1).
  * `allows` in admission reads these, so who may do what lives here alone (code C26).
  */

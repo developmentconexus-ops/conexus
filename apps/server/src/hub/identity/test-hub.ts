@@ -37,6 +37,9 @@ export const INVITEE = 'davi@example.test'
 
 type Change = (config: Config) => Config
 
+/** A connector call's deadline in tests: a silent double is given up on quickly (criterion 11). */
+const TEST_CALL_DEADLINE_MS = 200
+
 /** Production's shutdown deadline (`SHUTDOWN_DEADLINE_MS` in platform/lifecycle.ts). */
 const CLOSE_DEADLINE_MS = 15_000
 
@@ -67,6 +70,7 @@ async function hubServing(
   const subjects = subjectsOf({
     ...{ database: test.database, mastraPool: test.mastraPool, config, identity },
     ...{ ...ports, log },
+    callDeadlineMs: TEST_CALL_DEADLINE_MS,
   })
   const { projects, apps, conversations, runs } = subjects
   const webRoot = testWebRoot(t)

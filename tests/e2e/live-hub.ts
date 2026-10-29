@@ -4,6 +4,7 @@ import { existsSync } from 'node:fs'
 import { createServer, get } from 'node:http'
 import { join } from 'node:path'
 import type { TestContext } from 'node:test'
+import { sankhyaFake } from '@conexus/connectors'
 import {
   ATTEMPT_KEY_HEADER,
   createProject as createProjectOperation,
@@ -28,8 +29,8 @@ import {
 import { neonServer } from '../../apps/server/src/platform/test-neon.ts'
 
 // What the founder's journeys share: a real Hub on a real database, serving the built screens, and
-// the browser reaching it by its public name. Only the mail provider, Neon and Cloudflare are faked,
-// at their HTTP doors (testing T14, T16).
+// the browser reaching it by its public name. Only the mail provider, Neon, Cloudflare and the
+// Sankhya are faked, at their HTTP doors (testing T14, T16).
 export const PASSWORD = 'senha-certa-1'
 const silent = { info: () => undefined, error: () => undefined }
 
@@ -98,11 +99,19 @@ export async function liveHub(
   t.after(() => closing.hub())
   const database = await createTestDatabase(t)
   const neon = await neonServer(t)
-  const config = { ...testConfig(database.runtimeUrl, mailUrl, neon.url, cloudflareUrl), ...names }
+  // The kit's Sankhya double, whose switches the QA flips through `sankhya.switches`.
+  const sankhya = sankhyaFake()
+  const sankhyaServed = await sankhya.serve()
+  t.after(() => sankhyaServed.close())
+  const config = {
+    ...testConfig(database.runtimeUrl, mailUrl, neon.url, cloudflareUrl),
+    ...names,
+    connectorOrigins: new Map([['sankhya', sankhyaServed.origin]]),
+  }
   const status = createStatus({ version: config.version, database: database.database })
   const identity = identityOf({ database: database.database, config, log: silent })
   const { machinesOf, repository, copy, folder } = testBuilderPorts(config)
-  const { projects, operations, apps, modelAccounts, conversations } = subjectsOf({
+  const { projects, operations, apps, modelAccounts, conversations, connectors } = subjectsOf({
     ...{ machinesOf, repository, copy },
     database: database.database,
     mastraPool: database.mastraPool,
@@ -124,6 +133,7 @@ export async function liveHub(
     apps,
     modelAccounts,
     conversations,
+    connectors,
     webRoot: WEB_ROOT,
   })
   closing.hub = function closeHub() {
@@ -138,6 +148,7 @@ export async function liveHub(
     edgePort: portOf(edge),
     database,
     neon,
+    sankhya,
     config,
     machineFolder: folder,
   }

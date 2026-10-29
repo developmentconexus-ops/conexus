@@ -68,6 +68,25 @@ export type NeonApiUrl = z.infer<typeof NeonApiUrl>
 const GitCopyUrl = z.string().refine(overHttpsOrLoopback).brand('GitCopyUrl')
 type GitCopyUrl = z.infer<typeof GitCopyUrl>
 
+/**
+ * A connector's local double, by the connector's id (`sankhya=http://127.0.0.1:4180`): only this
+ * machine, with a port. A provider's real origin lives only in the connector's definition (S36).
+ */
+const ConnectorOrigin = z.string().refine((value) => {
+  const url = URL.parse(value)
+  return (
+    url?.protocol === 'http:' &&
+    LOOPBACK.includes(url.hostname) &&
+    url.port !== '' &&
+    url.origin === value
+  )
+})
+const ConnectorOrigins = z
+  .string()
+  .transform((value) => value.split(',').map((pair) => pair.trim().split('=')))
+  .pipe(z.array(z.tuple([z.string().regex(/^[a-z][a-z0-9-]{1,31}$/), ConnectorOrigin])))
+  .transform((pairs): ReadonlyMap<string, string> => new Map(pairs))
+
 /** The Neon organization that holds the companies' projects, apart from the Hub's own (decision 0040). */
 export const NeonOrgId = z.string().min(1).brand('NeonOrgId')
 export type NeonOrgId = z.infer<typeof NeonOrgId>
@@ -141,6 +160,8 @@ export type Config = BaseConfig & {
   gitCopyBucket: GitCopyBucket
   gitCopyKey: GitCopyKey
   gitCopyUrl?: GitCopyUrl
+  /** Each connector's double on this machine, for tests and the local Hub; never in production. */
+  connectorOrigins?: ReadonlyMap<string, string>
   e2bApiKey: E2bApiKey
   machineTemplate: MachineTemplate
   installationId: InstallationId
@@ -190,6 +211,7 @@ const ServeEnvironment = z.object({
   HUB_SEAL_KEYS_FILE: z.string().min(1),
   ...GitEnvironment.shape,
   HUB_GIT_COPY_URL: GitCopyUrl.optional(),
+  HUB_CONNECTOR_ORIGINS: ConnectorOrigins.optional(),
   ...MachineEnvironment.shape,
 })
 
@@ -280,6 +302,9 @@ export function readConfig(mode: 'serve' | 'migrate', env = process.env): Config
     gitCopyBucket: serve.HUB_GIT_COPY_BUCKET,
     gitCopyKey: readSecret('HUB_GIT_COPY_KEY_FILE', serve.HUB_GIT_COPY_KEY_FILE, GitCopyKey.parse),
     ...(serve.HUB_GIT_COPY_URL === undefined ? {} : { gitCopyUrl: serve.HUB_GIT_COPY_URL }),
+    ...(serve.HUB_CONNECTOR_ORIGINS === undefined
+      ? {}
+      : { connectorOrigins: serve.HUB_CONNECTOR_ORIGINS }),
     e2bApiKey: readSecret('HUB_E2B_API_KEY_FILE', serve.HUB_E2B_API_KEY_FILE, E2bApiKey.parse),
     machineTemplate: serve.HUB_E2B_TEMPLATE,
     installationId: serve.HUB_INSTALLATION_ID,

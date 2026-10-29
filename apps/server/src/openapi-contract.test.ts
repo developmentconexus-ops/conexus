@@ -1,7 +1,16 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import type { Operation } from '@conexus/hub-api'
-import { createSession, getHealth, listCompanies, registerClient } from '@conexus/hub-api'
+import {
+  createSession,
+  getHealth,
+  linkConnection,
+  listCompanies,
+  listConnections,
+  registerClient,
+  testConnection,
+  unlinkConnection,
+} from '@conexus/hub-api'
 import { z } from 'zod'
 import { emitOpenApi } from '../../../scripts/emit-openapi.ts'
 import { hubOn } from './hub/identity/test-hub.ts'
@@ -100,4 +109,14 @@ test('o corpo acima do limite e o pedido malformado saem como o documento declar
   })
   assert.equal(malformed.statusCode, 400)
   assert.equal(malformed.json().code, 'REQUEST_MALFORMED')
+})
+
+test('as rotas das ligações estão no documento, com o seu sucesso e as suas falhas', () => {
+  assert.deepEqual(declared(listConnections, 200), ['application/json'])
+  assert.deepEqual(declared(linkConnection, 201), ['application/json'])
+  assert.deepEqual(declared(linkConnection, 409), [PROBLEM])
+  assert.deepEqual(declared(linkConnection, 422), [PROBLEM])
+  assert.deepEqual(declared(testConnection, 200), ['application/json'])
+  assert.deepEqual(declared(testConnection, 500), [PROBLEM])
+  assert.deepEqual(declared(unlinkConnection, 404), [PROBLEM])
 })
