@@ -7,7 +7,7 @@ import { hintText, nativeText, othersText, outcomeText, reads, verdictOf } from 
 export type Check = TestCheck | KeptCheck
 
 /** The checks grouped by the subject the Hub names, in the order they arrive. */
-export function subjectsOf(checks: readonly Check[]) {
+function subjectsOf(checks: readonly Check[]) {
   const subjects = new Map<string, Check[]>()
   for (const check of checks) {
     subjects.set(check.subject, [...(subjects.get(check.subject) ?? []), check])
