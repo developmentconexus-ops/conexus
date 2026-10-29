@@ -340,7 +340,7 @@ jobs:
       - name: Every job must have succeeded
         env:
           # No removal row to prove is a pass the plan job reported, never a job skipped for another reason.
-          RESULTS: ${{ needs.check.result }} ${{ needs.scripts.result }} ${{ needs.server.result }} ${{ needs.web.result }} ${{ needs.packages.result }} ${{ needs['sankhya-docs'].result }} ${{ needs.e2e.result }} ${{ needs.removals-plan.result }} ${{ needs.removals.result == 'skipped' && needs.removals-plan.result == 'success' && needs.removals-plan.outputs.selected == '0' && 'success' || needs.removals.result }} ${{ github.event_name == 'pull_request' && needs.image.result || 'success' }}
+          RESULTS: ${{ needs.check.result }} ${{ needs.scripts.result }} ${{ needs.server.result }} ${{ needs.web.result }} ${{ needs.packages.result }} ${{ needs.sankhya-docs.result }} ${{ needs.e2e.result }} ${{ needs.removals-plan.result }} ${{ needs.removals.result == 'skipped' && needs.removals-plan.result == 'success' && needs.removals-plan.outputs.selected == '0' && 'success' || needs.removals.result }} ${{ github.event_name == 'pull_request' && needs.image.result || 'success' }}
         run: |
           echo "results: $RESULTS"
           for result in $RESULTS; do

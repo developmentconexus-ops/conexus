@@ -15,7 +15,8 @@ import { downloadSpec, SITE, Spec } from './spec-source.ts'
 // (`node packages/connectors/scripts/sankhya-spec.ts <file>` writes one), and SANKHYA_SPEC_ONLINE=1
 // downloads the public pages (CI's own job). With neither, the check is skipped.
 
-const SKIP = 'sem SANKHYA_SPEC nem SANKHYA_SPEC_ONLINE: a conferência com a documentação não rodou'
+const SKIP =
+  'opt-in: sem SANKHYA_SPEC nem SANKHYA_SPEC_ONLINE: a conferência com a documentação não rodou'
 
 async function readSpec(): Promise<Spec | null> {
   // biome-ignore lint/style/noProcessEnv: a switch of this one check, not the app's configuration
