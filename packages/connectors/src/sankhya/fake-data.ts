@@ -12,7 +12,14 @@ export const EMPRESAS = [
   { codigoEmpresa: 2, nomeFantasia: 'Empresa Beta', razaoSocial: 'Beta Distribuidora Ltda' },
 ]
 
-export const OVERSIZE = 'x'.repeat(300 * 1024)
+/** A page of empresas above the 256 KB cap that the schema reads: only the cap can refuse it. */
+export const OVERSIZE = {
+  empresas: Array.from({ length: 3000 }, (_, index) => ({
+    codigoEmpresa: index + 1,
+    nomeFantasia: `Empresa ${index + 1}`,
+    razaoSocial: 'Comercial Distribuidora Ltda '.repeat(4),
+  })),
+}
 
 export function json(body: unknown, status = 200): Response {
   return Response.json(body, { status })

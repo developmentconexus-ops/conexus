@@ -73,8 +73,7 @@ async function hubServing(
   const subjects = subjectsOf({
     ...{ database: test.database, mastraPool: test.mastraPool, config, identity },
     ...{ ...ports, log },
-    callDeadlineMs: TEST_CALL_DEADLINE_MS,
-    testDeadlineMs: TEST_DEADLINE_MS,
+    deadlines: { callDeadlineMs: TEST_CALL_DEADLINE_MS, testDeadlineMs: TEST_DEADLINE_MS },
   })
   const { projects, apps, conversations, runs } = subjects
   const webRoot = testWebRoot(t)
