@@ -1,11 +1,12 @@
 import { FAILURES } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
-import { http } from 'msw'
+import { HttpResponse, http } from 'msw'
 import { expect, test, vi } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
 import { ANA, COMPANY } from '../../platform/fixtures.ts'
-import { refusal, sessionRead } from '../../platform/test-hub.tsx'
+import { PEDIDOS, refusal, sessionRead } from '../../platform/test-hub.tsx'
+import { CARLA, COMPANY_ACCESS_NONE } from '../../platform/test-hub-access.tsx'
 import { bodyRows, hub, open, sectionOf, server } from './test-people.tsx'
 
 test('dono: os membros com o papel, os convites pendentes e o formulário "Convidar pessoa"', async () => {
@@ -111,4 +112,43 @@ test('no celular, o papel desce para baixo do nome e a tabela perde a coluna de 
   } finally {
     phone.mockRestore()
   }
+})
+
+test('Quem usa os apps: a pessoa de fora com o app e o papel, o app leva à seção do Projeto e a dona tira de todos', async () => {
+  hub({ role: 'owner', mayInviteAs: ['owner', 'admin', 'member'] })
+  const deleted: string[] = []
+  server.use(
+    http.delete(`*/api/companies/${COMPANY.id}/app-access/:personId`, ({ params }) => {
+      deleted.push(String(params.personId))
+      return new HttpResponse(null, { status: 204 })
+    }),
+  )
+  open()
+  const apps = within(sectionOf(await screen.findByRole('heading', { name: 'Quem usa os apps' })))
+  expect(bodyRows(apps).map((row) => row.textContent)).toEqual([
+    'Carla Souzacarla@example.testPedidos · GerenteTirar de todos',
+  ])
+  expect(apps.getByRole('link', { name: 'Pedidos · Gerente' }).getAttribute('href')).toBe(
+    `/companies/${COMPANY.id}/projects/${PEDIDOS.id}?lens=project&section=access`,
+  )
+  fireEvent.click(apps.getByRole('button', { name: 'Tirar de todos os apps: Carla Souza' }))
+  const dialog = await screen.findByRole('alertdialog')
+  expect(dialog.textContent).toContain('Tirar Carla Souza de todos os apps?')
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Tirar de todos' }))
+  await waitFor(() => expect(deleted).toEqual([CARLA.personId]))
+})
+
+test('Quem usa os apps: o membro lê a lista e não vê "Tirar de todos"', async () => {
+  hub({ role: 'member', mayInviteAs: [] })
+  open()
+  const apps = within(sectionOf(await screen.findByRole('heading', { name: 'Quem usa os apps' })))
+  expect(await apps.findByText('Carla Souza')).toBeTruthy()
+  expect(apps.queryByRole('button', { name: /Tirar de todos/ })).toBeNull()
+})
+
+test('Quem usa os apps: sem ninguém de fora, a frase', async () => {
+  hub({ role: 'owner', mayInviteAs: ['admin'] })
+  server.use(COMPANY_ACCESS_NONE)
+  open()
+  expect(await screen.findByText('Ninguém de fora da empresa usa os apps.')).toBeTruthy()
 })

@@ -5,6 +5,8 @@ export { CompanySwitcher } from './company-switcher.tsx'
 export { companyEntry, enterHouse, enterWelcome, lastCompanyOf } from './enter-company.ts'
 export { ForgotPasswordForm } from './forgot-password-form.tsx'
 export { InvitationEntry, InvitationNotFound } from './invitation.tsx'
+export { InviteFields } from './invite-fields.tsx'
+export { ActionDialog, isGone } from './member-actions.tsx'
 export { MyAccount } from './my-account.tsx'
 export { NoCompany } from './no-company.tsx'
 export { CompanyPeople, People } from './people.tsx'
@@ -12,10 +14,12 @@ export { preparationOf } from './preparation.ts'
 export { PreparationCard } from './preparation-card.tsx'
 export {
   companiesQuery,
+  companyAppAccessQuery,
   companyQuery,
   everyMemberQuery,
   invitationsQuery,
   membersQuery,
+  myAppsQuery,
   receivedInvitationQuery,
   sessionQuery,
 } from './queries.ts'

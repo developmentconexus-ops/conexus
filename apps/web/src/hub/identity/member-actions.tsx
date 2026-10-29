@@ -19,7 +19,7 @@ function refusalText(error: unknown): string {
 }
 
 /** The Hub no longer knows the person or the company: the dialog closes and the lists are read again. */
-function isGone(error: unknown): boolean {
+export function isGone(error: unknown): boolean {
   return error instanceof HubFailure && error.code === 'NOT_FOUND'
 }
 
@@ -32,7 +32,7 @@ function invitationsNote(count: number, who: string): string {
 type Write = { isPending: boolean; error: unknown; isError: boolean; reset: () => void }
 
 /** A confirmation: what it asks, the write's refusal, and the two buttons that answer it. */
-function ActionDialog(props: {
+export function ActionDialog(props: {
   open: boolean
   onOpenChange: (open: boolean) => void
   trigger: { label: string; name: string; danger: boolean }
