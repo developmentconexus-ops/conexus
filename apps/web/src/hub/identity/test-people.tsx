@@ -6,6 +6,7 @@ import { HttpResponse, http } from 'msw'
 import { Conexus, createConexus } from '../../main.tsx'
 import { ANA, COMPANY } from '../../platform/fixtures.ts'
 import { hubServer, memberView, refusal, sessionRead } from '../../platform/test-hub.tsx'
+import { companyAppAccessRead } from '../../platform/test-hub-access.tsx'
 
 export const server = hubServer()
 
@@ -44,6 +45,7 @@ export function hub(view: View) {
   const sent: { key: string | null; body: unknown }[] = []
   server.use(
     sessionRead(() => ANA),
+    companyAppAccessRead(),
     http.get(`*/api/companies/${COMPANY.id}`, () =>
       HttpResponse.json(
         getCompany.success.body.parse({
