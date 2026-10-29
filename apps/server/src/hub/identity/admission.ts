@@ -15,6 +15,7 @@ const DELETE_PROJECT = { project: ['delete'] } as const
 const CHOOSE_NICKNAME = { company: ['nickname'] } as const
 const MANAGE_MODEL_ACCOUNTS = { modelAccount: ['manage'] } as const
 const MANAGE_APP_ACCESS = { appAccess: ['manage'] } as const
+const MANAGE_CONNECTIONS = { connection: ['manage'] } as const
 type ActionRule = {
   by: 'MEMBER' | 'COMPANY' | 'OPERATOR'
   locks: boolean
@@ -27,6 +28,7 @@ type ActionRule = {
     | typeof CHOOSE_NICKNAME
     | typeof MANAGE_MODEL_ACCOUNTS
     | typeof MANAGE_APP_ACCESS
+    | typeof MANAGE_CONNECTIONS
 }
 
 /**
@@ -63,6 +65,10 @@ const ACTIONS = {
   // takes that access (step 18, B and B2). The operator does not manage a client's apps (S11).
   readAppAccess: { by: 'MEMBER', statement: undefined, locks: false },
   manageAppAccess: { by: 'MEMBER', statement: MANAGE_APP_ACCESS, locks: true },
+  // Every member reads the company's connections; only an owner or an administrator links, tests
+  // and removes one (step 19, D).
+  readConnections: { by: 'MEMBER', statement: undefined, locks: false },
+  manageConnections: { by: 'MEMBER', statement: MANAGE_CONNECTIONS, locks: true },
   readMembers: { by: 'COMPANY', statement: undefined, locks: false },
   readInvitations: { by: 'COMPANY', statement: INVITE, locks: false },
   invite: { by: 'COMPANY', statement: INVITE, locks: true },

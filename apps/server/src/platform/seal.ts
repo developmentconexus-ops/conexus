@@ -1,5 +1,5 @@
 import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto'
-import type { CompanyId, ModelAccountId, PersonId, SignInId } from '@conexus/hub-api'
+import type { CompanyId, ConnectionId, ModelAccountId, PersonId, SignInId } from '@conexus/hub-api'
 import { Failure } from './failure.ts'
 import { Secret } from './secret.ts'
 
@@ -36,11 +36,12 @@ export function parseSealKeys(text: string): SealKeys {
 
 /**
  * What a sealed value is bound to, as associated data: copied to another row, owner, kind or
- * provider, it no longer opens (S32). A sign-in's pending value has its own purpose.
+ * provider, it no longer opens (S32). A sign-in's pending value and a company's connection each
+ * have their own purpose.
  */
 export type SealContext = {
-  purpose: 'model-account' | 'model-account-sign-in'
-  rowId: ModelAccountId | SignInId
+  purpose: 'model-account' | 'model-account-sign-in' | 'connection'
+  rowId: ModelAccountId | SignInId | ConnectionId
   companyId: CompanyId
   personId: PersonId | null
   kind: string

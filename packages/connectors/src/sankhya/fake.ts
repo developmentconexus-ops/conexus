@@ -23,26 +23,37 @@ type SankhyaSwitches = {
   expireToken: boolean
   /** Answers 200 with a body no schema reads. */
   malformed: boolean
-  /** Answers with a body above 256 KB. */
+  /** Answers with a page of empresas the schema reads, above 256 KB. */
   oversize: boolean
-  /** Answers every call with a 302. */
+  /** Answers every call with a 307 to the same call on the fake, answered as without the switch. */
   redirect: boolean
   /** Never answers a call. */
   silent: boolean
   /** Milliseconds each answer is held back, for the executor's deadline tests (U3). */
   delayMilliseconds: number
+  /** Milliseconds the login is held back, for the executor's deadline tests (U3). */
+  loginDelayMilliseconds: number
   /** The `expires_in` the login gives. */
   expiresInSeconds: number
 }
 
-export type SankhyaFake = Fake & Readonly<{ switches: SankhyaSwitches; logins: () => number }>
+export type SankhyaFake = Fake &
+  Readonly<{
+    switches: SankhyaSwitches
+    logins: () => number
+    /** The tokens issued so far expire, as after their hour; a login after this gives a good one. */
+    expireTokens: () => void
+  }>
 
 /** How long a call holds its token: long enough for a second call over HTTP to arrive while the first is unanswered. */
 const SERVICE_MILLISECONDS = 25
 
-type Sessions = { issued: Set<string>; busy: Set<string>; logins: number }
+type Sessions = { issued: Set<string>; expired: Set<string>; busy: Set<string>; logins: number }
 
 const DoorBody = z.object({ requestBody: z.unknown() })
+
+/** The query mark of a call the redirect switch already sent back to the fake. */
+const REDIRECTED = 'redirected'
 
 async function authenticate(
   request: Request,
@@ -77,7 +88,7 @@ async function serveCall(request: Request, url: URL, switches: SankhyaSwitches):
   if (switches.refuse.has(name)) {
     return door ? envelope(service, '0') : forbidden(url.pathname, 'NO_ACCESS', 'Sem permissão')
   }
-  if (switches.oversize) return json({ padding: OVERSIZE })
+  if (switches.oversize) return json(OVERSIZE)
   if (switches.malformed) return json({ unexpected: true })
   if (!door) return route?.answer(url.searchParams) ?? json({ code: 'NOT_FOUND' }, 404)
   const { requestBody } = DoorBody.parse(await request.json())
@@ -87,16 +98,29 @@ async function serveCall(request: Request, url: URL, switches: SankhyaSwitches):
     : envelope(service, '0')
 }
 
-/** The switches that spoil every call, before any session is looked at; null when none is on. */
-function misbehaviour(switches: SankhyaSwitches, url: URL): Response | Promise<Response> | null {
-  if (switches.silent) return new Promise<Response>(() => undefined)
-  if (switches.redirect) return empty(302, { location: 'https://example.test/elsewhere' })
-  if (!switches.expireToken) return null
+/** The gateway's answer to a token past its hour. */
+function tokenExpired(url: URL): Response {
   return forbidden(url.pathname, 'GTW3403', 'Bearer Token inválido ou expirado')
+}
+
+/** The switches that spoil every call, before any session is looked at; null when none is on. */
+function misbehaviour(url: URL, switches: SankhyaSwitches): Response | Promise<Response> | null {
+  if (switches.silent) return new Promise<Response>(() => undefined)
+  if (switches.redirect && !url.searchParams.has(REDIRECTED)) {
+    // 307 keeps the method and body, so a client that follows it reads the same answer.
+    const target = new URL(url)
+    target.searchParams.set(REDIRECTED, '1')
+    return empty(307, { location: `${target.pathname}${target.search}` })
+  }
+  if (!switches.expireToken) return null
+  return tokenExpired(url)
 }
 
 /** A token the fake never issued is refused; a token already in a call gets the envelope "4" (409 on REST). */
 function refuseSession(url: URL, token: string, sessions: Sessions): Response | null {
+  if (sessions.expired.has(token)) {
+    return tokenExpired(url)
+  }
   if (!sessions.issued.has(token)) return json({ code: 'GTW3501', message: 'Token inválido' }, 401)
   if (!sessions.busy.has(token)) return null
   if (url.pathname !== SERVICE_PATH) return json({ code: 'BUSY' }, 409)
@@ -116,16 +140,18 @@ export function sankhyaFake(): SankhyaFake {
     redirect: false,
     silent: false,
     delayMilliseconds: 0,
+    loginDelayMilliseconds: 0,
     expiresInSeconds: 300,
   }
-  const sessions: Sessions = { issued: new Set(), busy: new Set(), logins: 0 }
+  const sessions: Sessions = { issued: new Set(), expired: new Set(), busy: new Set(), logins: 0 }
 
   async function handle(request: Request): Promise<Response> {
     const url = new URL(request.url)
     if (url.pathname === '/authenticate' && request.method === 'POST') {
+      await sleep(switches.loginDelayMilliseconds)
       return authenticate(request, sessions, switches)
     }
-    const early = misbehaviour(switches, url)
+    const early = misbehaviour(url, switches)
     if (early) return early
     const token = request.headers.get('authorization')?.replace(/^Bearer /, '') ?? ''
     const refused = refuseSession(url, token, sessions)
@@ -145,5 +171,8 @@ export function sankhyaFake(): SankhyaFake {
     serve: () => serveOnLoopback(handle),
     switches,
     logins: () => sessions.logins,
+    expireTokens: () => {
+      for (const token of sessions.issued) sessions.expired.add(token)
+    },
   }
 }

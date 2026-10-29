@@ -2035,6 +2035,50 @@
     }
   },
   {
+    "id": "connector-origin-only-local",
+    "file": "apps/server/src/platform/config.ts",
+    "find": "    LOOPBACK.includes(url.hostname) &&\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/config.test.ts",
+      "name": "configuração: a origem do dublê é só local"
+    }
+  },
+  {
+    "id": "connection-manage-only-owner-admin",
+    "file": "apps/server/src/hub/identity/admission.ts",
+    "find": "  manageConnections: { by: 'MEMBER', statement: MANAGE_CONNECTIONS, locks: true },\n",
+    "replace": "  manageConnections: { by: 'MEMBER', statement: undefined, locks: true },\n",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/connectors/connections.test.ts",
+      "name": "ligar: quem pode, e as recusas"
+    }
+  },
+  {
+    "id": "connector-redirect-refused",
+    "file": "packages/connectors/src/kernel/request.ts",
+    "find": ", redirect: 'error' })",
+    "replace": " })",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/connectors/executor.test.ts",
+      "name": "a origem, o redirecionamento e o teto"
+    }
+  },
+  {
+    "id": "connector-response-cap",
+    "file": "apps/server/src/hub/connectors/executor.ts",
+    "find": "    if (bytes > RESPONSE_CAP_BYTES) {\n      await reader.cancel()\n      return null\n    }\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/connectors/executor.test.ts",
+      "name": "a origem, o redirecionamento e o teto"
+    }
+  },
+  {
     "id": "machine-replaced-after-template-change",
     "file": "apps/server/src/builder/machine/machines.ts",
     "find": "const stale = this.deps.api.killStale(session.conversationId, this.deps.template)",

@@ -19,6 +19,8 @@ import type { MachinesOf, RepositoryOf, Runs } from './builder/runs/public.ts'
 import { builderPortsOf, createRuns } from './builder/runs/public.ts'
 import type { Apps } from './hub/apps/public.ts'
 import { appAccessOf, createAppRemoval, createApps, versionNumbersOf } from './hub/apps/public.ts'
+import type { ConnectorDeadlines, Connectors } from './hub/connectors/public.ts'
+import { createConnectors, resealConnections } from './hub/connectors/public.ts'
 import type { Identity } from './hub/identity/public.ts'
 import { createIdentity, passwordLinkText } from './hub/identity/public.ts'
 import type { Operations } from './hub/operations/public.ts'
@@ -66,6 +68,7 @@ export async function createHub(
     apps: Apps
     modelAccounts: ModelAccounts
     conversations: Conversations
+    connectors: Connectors
     webRoot?: string
   },
 ): Promise<FastifyInstance> {
@@ -84,6 +87,7 @@ export async function createHub(
   deps.apps.routes(app)
   deps.modelAccounts.routes(app)
   deps.conversations.routes(app)
+  deps.connectors.routes(app)
   await app.ready()
   return app
 }
@@ -127,6 +131,7 @@ export function subjectsOf(deps: {
   repository: RepositoryOf
   copy: GitCopy
   log: FailureLog
+  deadlines?: ConnectorDeadlines
 }): {
   runs: Runs
   projects: Projects
@@ -134,6 +139,7 @@ export function subjectsOf(deps: {
   apps: Apps
   modelAccounts: ModelAccounts
   conversations: Conversations
+  connectors: Connectors
 } {
   const { database, config, log, neon } = deps
   const identity = deps.identity.ports
@@ -165,14 +171,10 @@ export function subjectsOf(deps: {
   const apps = createApps({ ...deps, identity, projects: projects.ports, appsDomain })
   const flows = signInFlows({ cliProxy: config.cliProxy, log })
   const modelAccounts = createModelAccounts({
-    database,
-    identity,
-    sealKeys: config.sealKeys,
-    flows,
-    googleCalls: google.googleCalls,
-    log,
+    ...{ database, identity, sealKeys, flows, log, googleCalls: google.googleCalls },
   })
-  return { runs, projects, operations, apps, modelAccounts, conversations }
+  const connectors = createConnectors({ ...deps, identity })
+  return { runs, projects, operations, apps, modelAccounts, conversations, connectors }
 }
 
 async function runServer(): Promise<void> {
@@ -296,8 +298,10 @@ async function runReseal(): Promise<void> {
   try {
     await assertRuntimeLogin(database)
     await assertMigrated(database)
-    const counts = await resealModelAccounts({ database, sealKeys: config.sealKeys })
-    log.info({ moved: counts.moved, refused: counts.refused }, 'RESEALED')
+    const accounts = await resealModelAccounts({ database, sealKeys: config.sealKeys })
+    const connections = await resealConnections({ database, sealKeys: config.sealKeys })
+    const moved = accounts.moved + connections.moved
+    log.info({ moved, refused: accounts.refused + connections.refused }, 'RESEALED')
   } finally {
     await database.close()
   }

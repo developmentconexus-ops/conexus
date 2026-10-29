@@ -26,4 +26,4 @@ Step 20 finds no way for a Worker to reach the Hub.
 
 ## State
 
-Brought. Kept from the old code.
+Superseded by [0056].

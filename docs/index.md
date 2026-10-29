@@ -90,6 +90,7 @@ One line per document (`check-docs`).
 - [0053](decisions/0053-builder-tools-run-without-asking.md) no approval.
 - [0054](decisions/0054-model-defaults-and-served-models.md) defaults.
 - [0055](decisions/0055-apps-on-the-platform-contract.md) contract.
+- [0056](decisions/0056-connectors-kit-and-one-executor.md) connectors kit.
 
 ## Skills
 

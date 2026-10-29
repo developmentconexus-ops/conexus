@@ -22,7 +22,7 @@ async function hubOn(t: Parameters<typeof createTestDatabase>[0]) {
   const status = createStatus({ version: VERSION, database: test.database })
   const config = testConfig(test.runtimeUrl)
   const identity = identityOf({ database: test.database, config, log: silent })
-  const { projects, operations, apps, modelAccounts, conversations } = subjectsOf({
+  const { projects, operations, apps, modelAccounts, conversations, connectors } = subjectsOf({
     mastraPool: test.mastraPool,
     database: test.database,
     config,
@@ -38,6 +38,7 @@ async function hubOn(t: Parameters<typeof createTestDatabase>[0]) {
     apps,
     modelAccounts,
     conversations,
+    connectors,
   })
   t.after(() => app.close())
   return { app, status, test }
@@ -105,7 +106,7 @@ test('com o banco fora, /api/status responde 503 e /api/health continua 200', as
   const status = createStatus({ version: VERSION, database })
   const config = testConfig(await unreachableDatabaseUrl())
   const identity = identityOf({ database, config, log: silent })
-  const { projects, operations, apps, modelAccounts, conversations } = subjectsOf({
+  const { projects, operations, apps, modelAccounts, conversations, connectors } = subjectsOf({
     mastraPool: testMastraPool(t, config),
     database,
     config,
@@ -121,6 +122,7 @@ test('com o banco fora, /api/status responde 503 e /api/health continua 200', as
     apps,
     modelAccounts,
     conversations,
+    connectors,
   })
   t.after(() => app.close())
   const response = await app.inject(STATUS)

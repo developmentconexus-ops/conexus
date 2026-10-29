@@ -97,7 +97,26 @@ export {
   VersionCheck,
   VersionData,
 } from './conexus-parts.ts'
-export { CONNECTION_STATES, type ConnectionState } from './connectors.ts'
+export {
+  CONNECTION_STATES,
+  Connection,
+  ConnectionDetail,
+  ConnectionId,
+  ConnectionList,
+  ConnectionName,
+  type ConnectionState,
+  ConnectorEntry,
+  getConnection,
+  KeptCheck,
+  linkConnection,
+  listConnections,
+  Native,
+  TEST_DEADLINE_MS,
+  TestCheck,
+  TestResult,
+  testConnection,
+  unlinkConnection,
+} from './connectors.ts'
 export {
   BUILDER_CONTROLLER,
   BUILDER_ROUTES,

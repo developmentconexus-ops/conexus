@@ -146,3 +146,32 @@ test('configuração: a chave do E2B vem de arquivo e o molde nomeia a variável
   writeFileSync(env.HUB_E2B_API_KEY_FILE, '\n')
   refusal(env, 'HUB_E2B_API_KEY_FILE')
 })
+
+test('configuração: a origem do dublê é só local', async (t) => {
+  const env = serveEnvironment(t, await unreachableDatabaseUrl(), { port: 8080, edgePort: 8081 })
+  assert.equal(readConfig('serve', env).connectorOrigins, undefined)
+  const doubles = readConfig('serve', {
+    ...env,
+    HUB_CONNECTOR_ORIGINS: 'sankhya=http://127.0.0.1:4180, outro=http://localhost:4181',
+  })
+  assert.deepEqual(
+    doubles.connectorOrigins,
+    new Map([
+      ['sankhya', 'http://127.0.0.1:4180'],
+      ['outro', 'http://localhost:4181'],
+    ]),
+  )
+  const ipv6 = readConfig('serve', { ...env, HUB_CONNECTOR_ORIGINS: 'sankhya=http://[::1]:4180' })
+  assert.equal(ipv6.connectorOrigins?.get('sankhya'), 'http://[::1]:4180')
+  for (const value of [
+    'sankhya=https://api.sankhya.com.br',
+    'sankhya=http://api.sankhya.com.br:4180',
+    'sankhya=http://127.0.0.1',
+    'sankhya=http://127.0.0.1:4180/caminho',
+    'sankhya=http://user@127.0.0.1:4180',
+    'sankhya=http://10.0.0.1:4180',
+    'Sankhya=http://127.0.0.1:4180',
+    'sankhya',
+  ])
+    refusal({ ...env, HUB_CONNECTOR_ORIGINS: value }, 'HUB_CONNECTOR_ORIGINS')
+})

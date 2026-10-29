@@ -19,15 +19,18 @@ async function send(request: Request): Promise<ProviderAnswer> {
   }
 }
 
-function query(token: string, origin: string): Promise<ProviderAnswer> {
+function door(requestBody: typeof COUNT): ProviderRequest {
   const serviceName = 'DbExplorerSP.executeQuery'
-  const request: ProviderRequest = {
+  return {
     method: 'POST',
     path: GATEWAY,
     query: { serviceName, outputType: 'json' },
-    body: { serviceName, requestBody: COUNT },
+    body: { serviceName, requestBody },
   }
-  return send(toRequest(sankhya, request, token, origin))
+}
+
+function query(token: string, origin: string): Promise<ProviderAnswer> {
+  return send(toRequest(sankhya, door(COUNT), token, origin))
 }
 
 function empresas(token: string, origin: string): Promise<ProviderAnswer> {
@@ -84,7 +87,9 @@ test('os interruptores: recusa, token vencido, fora do esquema, acima de 256 KB,
     })
     fake.switches.malformed = false
     fake.switches.oversize = true
-    assert.ok(JSON.stringify((await empresas(token, origin)).body).length > 256 * 1024)
+    const oversize = await empresas(token, origin)
+    assert.ok(JSON.stringify(oversize.body).length > 256 * 1024)
+    assert.equal(ready.answer(oversize).kind, 'OK')
     fake.switches.oversize = false
     fake.switches.expireToken = true
     assert.partialDeepStrictEqual(ready.answer(await empresas(token, origin)), {
@@ -93,6 +98,9 @@ test('os interruptores: recusa, token vencido, fora do esquema, acima de 256 KB,
     fake.switches.expireToken = false
     fake.switches.redirect = true
     await assert.rejects(empresas(token, origin))
+    const refused = toRequest(sankhya, door(COUNT), token, origin)
+    const followed = await send(new Request(refused, { redirect: 'follow' }))
+    assert.equal(z.object({ status: z.string() }).parse(followed.body).status, '1')
     fake.switches.redirect = false
     assert.equal((await empresas(token, origin)).status, 200)
   })

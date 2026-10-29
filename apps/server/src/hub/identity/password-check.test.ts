@@ -23,7 +23,7 @@ async function linked(t: TestContext) {
   const config = testConfig(test.runtimeUrl)
   const status = createStatus({ version: config.version, database: test.database })
   const identity = identityOf({ database: test.database, config, log: silent })
-  const { projects, operations, apps, modelAccounts, conversations } = subjectsOf({
+  const { projects, operations, apps, modelAccounts, conversations, connectors } = subjectsOf({
     mastraPool: test.mastraPool,
     database: test.database,
     config,
@@ -39,6 +39,7 @@ async function linked(t: TestContext) {
     apps,
     modelAccounts,
     conversations,
+    connectors,
   })
   t.after(() => app.close())
   const { link } = await identity.firstPerson({
