@@ -18,7 +18,7 @@ import {
 import type { MachinesOf, RepositoryOf, Runs } from './builder/runs/public.ts'
 import { builderPortsOf, createRuns } from './builder/runs/public.ts'
 import type { Apps } from './hub/apps/public.ts'
-import { createAppRemoval, createApps, versionNumbersOf } from './hub/apps/public.ts'
+import { appAccessOf, createAppRemoval, createApps, versionNumbersOf } from './hub/apps/public.ts'
 import type { Identity } from './hub/identity/public.ts'
 import { createIdentity, passwordLinkText } from './hub/identity/public.ts'
 import type { Operations } from './hub/operations/public.ts'
@@ -75,7 +75,10 @@ export async function createHub(
   })
   registerHealth(app)
   serve(app, getStatus, async () => answer(await deps.status.read()))
-  deps.identity.routes(app, { releaseConversations: deps.conversations.release })
+  deps.identity.routes(app, {
+    releaseConversations: deps.conversations.release,
+    apps: deps.projects.appInvitations,
+  })
   deps.operations.routes(app)
   deps.projects.routes(app)
   deps.apps.routes(app)
@@ -153,7 +156,7 @@ export function subjectsOf(deps: {
   const releaseConversations = conversations.release
   const projects = createProjects({
     ...{ database, identity, neon, log, appsDomain, appRemoval, appVersionsOf: versionNumbersOf },
-    releaseConversations,
+    ...{ releaseConversations, ...appAccessOf(database) },
   })
   const operations = createOperations({
     ...{ database, identity, projects: projects.ports },

@@ -1,8 +1,15 @@
 import type { CompanyId, Person, PersonId } from '@conexus/hub-api'
-import { Email, LIBRARY_ID, Member, PAGE_SIZE, Role } from '@conexus/hub-api'
-import { and, asc, eq, sql } from 'drizzle-orm'
+import {
+  Email,
+  LIBRARY_ID,
+  Member,
+  PAGE_SIZE,
+  PersonId as PersonIdSchema,
+  Role,
+} from '@conexus/hub-api'
+import { and, asc, eq, inArray, sql } from 'drizzle-orm'
 import { z } from 'zod'
-import type { CommandTx, Database } from '../../platform/database.ts'
+import type { CommandTx, Database, ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import { after, pageKey, pageOf } from '../../platform/pages.ts'
 import type { Actor, CompanyProof } from './admission.ts'
@@ -83,6 +90,29 @@ export function readMembers(
     const viewer = viewerOf(admitted, input.personId)
     return { members: listed.rows.map((row) => viewOf(viewer, row)), next: listed.next }
   })
+}
+
+const Named = z.object({ personId: PersonIdSchema, name: z.string().min(1), email: Email })
+
+/** The company's members, who build its apps and use every one (step 18, E1). */
+export async function companyMembersOf(tx: ReadTx, companyId: CompanyId) {
+  const rows = await tx
+    .select({ personId: user.id, name: user.name, email: user.email })
+    .from(member)
+    .innerJoin(user, eq(member.userId, user.id))
+    .where(eq(member.organizationId, companyId))
+    .orderBy(asc(user.name), asc(user.id))
+  return rows.map((row) => Named.parse(row))
+}
+
+/** The name and address of each person the scope reads among `personIds`. */
+export async function peopleNamed(tx: ReadTx, personIds: readonly PersonId[]) {
+  if (personIds.length === 0) return new Map<PersonId, z.infer<typeof Named>>()
+  const rows = await tx
+    .select({ personId: user.id, name: user.name, email: user.email })
+    .from(user)
+    .where(inArray(user.id, [...personIds]))
+  return new Map(rows.map((row) => Named.parse(row)).map((named) => [named.personId, named]))
 }
 
 type OfMember = { person: Person; companyId: CompanyId; personId: PersonId }

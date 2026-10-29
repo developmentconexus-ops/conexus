@@ -1,5 +1,6 @@
 import {
   acceptInvitation,
+  cancelAppInvitation,
   cancelInvitation,
   changeMemberRole,
   createInvitation,
@@ -7,6 +8,7 @@ import {
   declineInvitation,
   getCompany,
   getInvitation,
+  inviteToApp,
   listCompanies,
   listInvitations,
   listMembers,
@@ -19,14 +21,20 @@ import type { Config } from '../../platform/config.ts'
 import type { Database } from '../../platform/database.ts'
 import { answer, serve } from '../../platform/http.ts'
 import type { SendMail } from '../../platform/mail.ts'
+import type { ProjectApps } from './app-invitations.ts'
 import type { Auth, LibraryCommand } from './auth.ts'
 import { INVITATION_DECLINATION_PATH, INVITATION_PASSWORD_PATH } from './auth.ts'
 import { readCompany, readMemberships } from './companies.ts'
+import { createInvitationCommand, inviteToAppCommand } from './invitation-create.ts'
 import { deliveredOrRefused, mailInvitation } from './invitation-mail.ts'
-import { cancelInvitationCommand, renewInvitationCommand } from './invitation-management.ts'
+import {
+  cancelAppInvitationCommand,
+  cancelInvitationCommand,
+  renewInvitationCommand,
+} from './invitation-management.ts'
 import { readInvitations, readReceived } from './invitation-reads.ts'
 import { acceptCommand, declineCommand, passwordCommand } from './invitation-response.ts'
-import { companyScope, createInvitationCommand } from './invitations.ts'
+import { appInvitationOf, companyScope, pendingOf } from './invitations.ts'
 import type { PersonConversationRelease } from './memberships.ts'
 import { changeMemberRoleCommand, readMembers, removeMemberCommand } from './memberships.ts'
 import { chooseNickname } from './nickname.ts'
@@ -40,6 +48,7 @@ type Deps = {
   config: Config
   sendMail: SendMail
   releaseConversations: PersonConversationRelease
+  apps: ProjectApps
 }
 
 function registerReads(app: FastifyInstance, deps: Deps): void {
@@ -62,7 +71,7 @@ function registerReads(app: FastifyInstance, deps: Deps): void {
   )
 
   serve(app, getInvitation, async ({ person, params }) =>
-    answer({ invitation: await readReceived(database, person, params.invitationId) }),
+    answer({ invitation: await readReceived(deps, person, params.invitationId) }),
   )
 }
 
@@ -79,14 +88,18 @@ function registerWrites(app: FastifyInstance, deps: Deps): void {
     createInvitation,
     async ({ person, headers, params, body, attemptKey, log, signal }) => {
       const made = await invite({ person, headers, ...params, ...body, attemptKey })
-      const { invitation } = made
+      const invitation = pendingOf(made.row)
+      // The address's open app invitations give way to the company's, a member using every app.
+      for (const projectId of made.canceled) {
+        log.info({ companyId: params.companyId, projectId }, 'INVITATION_CANCELED')
+      }
       if (made.created) {
         log.info({ companyId: params.companyId }, 'INVITATION_CREATED')
       }
-      const link = `${origin}/invitations/${invitation.id}`
       if (made.mail !== undefined) {
         const scope = companyScope({ person, ...params })
-        const mail = { scope, invitation, ...made.mail, link, signal }
+        const link = `${origin}/invitations/${invitation.id}`
+        const mail = { scope, invitation: made.mail.sent, ...made.mail, link, signal }
         deliveredOrRefused(await mailInvitation(deps, mail))
       }
       return answer({ invitation })
@@ -126,21 +139,14 @@ function registerWrites(app: FastifyInstance, deps: Deps): void {
   })
 
   serve(app, acceptInvitation, async ({ person, sessionToken, headers, params, body, log }) => {
-    const { company, accepted } = await accept({
-      person,
-      sessionToken,
-      headers,
-      ...params,
-      ...body,
-    })
-    if (accepted) {
-      const fields = {
-        companyId: company.id,
-        personId: person.id,
-      }
-      log.info(fields, 'INVITATION_ACCEPTED')
+    const made = await accept({ person, sessionToken, headers, ...params, ...body })
+    const { company } = made
+    if (made.accepted) {
+      const fields = { companyId: company.id, personId: person.id }
+      if (made.projectId === null) log.info(fields, 'INVITATION_ACCEPTED')
+      else log.info({ ...fields, projectId: made.projectId }, 'INVITATION_ACCEPTED')
     }
-    return answer({ company })
+    return answer({ company, app: made.app })
   })
 }
 
@@ -160,10 +166,38 @@ function registerManagement(app: FastifyInstance, deps: Deps): void {
       log.info({ companyId: params.companyId }, 'INVITATION_RENEWED')
       const link = `${deps.config.publicOrigin}/invitations/${result.invitation.id}`
       const scope = companyScope({ person, ...params })
-      deliveredOrRefused(await mailInvitation(deps, { scope, ...result, link, signal }))
+      const gives = { kind: 'COMPANY', role: result.invitation.role } as const
+      deliveredOrRefused(await mailInvitation(deps, { scope, ...result, gives, link, signal }))
       return answer({ invitation: result.invitation })
     },
   )
+}
+
+/** An invitation to use one app, the e-mail after the commit as for the company's (step 18, I). */
+function registerAppInvitations(app: FastifyInstance, deps: Deps): void {
+  const inviteApp = inviteToAppCommand(deps)
+  const cancelApp = cancelAppInvitationCommand(deps)
+  serve(app, inviteToApp, async ({ person, headers, params, body, attemptKey, log, signal }) => {
+    const made = await inviteApp({ person, headers, ...params, ...body, attemptKey })
+    const invitation = appInvitationOf(made.row)
+    if (made.created) {
+      log.info({ companyId: params.companyId, projectId: params.projectId }, 'INVITATION_CREATED')
+    }
+    if (made.mail !== undefined) {
+      const scope = companyScope({ person, ...params })
+      const link = `${deps.config.publicOrigin}/invitations/${invitation.id}`
+      const mail = { scope, invitation: made.mail.sent, ...made.mail, link, signal }
+      deliveredOrRefused(await mailInvitation(deps, mail))
+    }
+    return answer({ invitation })
+  })
+
+  serve(app, cancelAppInvitation, async ({ person, params, log }) => {
+    if (await cancelApp({ person, ...params })) {
+      log.info({ companyId: params.companyId, projectId: params.projectId }, 'INVITATION_CANCELED')
+    }
+    return answer(undefined)
+  })
 }
 
 /** A change of people names who acted and on whom, by ids and the role, never by name (S41). */
@@ -187,5 +221,6 @@ export function registerCompanyRoutes(app: FastifyInstance, deps: Deps): void {
   registerReads(app, deps)
   registerWrites(app, deps)
   registerManagement(app, deps)
+  registerAppInvitations(app, deps)
   registerMemberships(app, deps)
 }

@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto'
-import type { Manifest } from '@conexus/app-contract'
+import { Manifest } from '@conexus/app-contract'
 import type { AppVersion, CompanyId, PersonId, ProjectId, VersionFileInput } from '@conexus/hub-api'
 import { AppVersionFailure, AppVersionId } from '@conexus/hub-api'
 import { and, desc, eq, inArray, sql } from 'drizzle-orm'
@@ -241,4 +241,22 @@ export async function versionNumbersOf(
     .leftJoin(published, eq(published.id, app.publishedVersionId))
     .where(eq(app.projectId, projectId))
   return { appVersion: row?.appVersion ?? null, publishedVersion: row?.publishedVersion ?? null }
+}
+
+/**
+ * The roles the published version declares, with their labels, read from its manifest (step 18,
+ * D): what "Quem usa o app" offers and the Hub accepts. None before the first Publicar, and none in
+ * a manifest written before roles existed (0019).
+ */
+export async function publishedRolesOf(
+  tx: ReadTx,
+  projectId: ProjectId,
+): Promise<{ published: boolean; roles: readonly { name: string; label: string }[] }> {
+  const [row] = await tx
+    .select({ manifest: appVersion.manifest })
+    .from(app)
+    .innerJoin(appVersion, eq(appVersion.id, app.publishedVersionId))
+    .where(eq(app.projectId, projectId))
+  if (row === undefined) return { published: false, roles: [] }
+  return { published: true, roles: Manifest.parse(row.manifest).roles ?? [] }
 }

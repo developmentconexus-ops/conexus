@@ -54,6 +54,16 @@ export async function liveHubSession(
   return row.id
 }
 
+/**
+ * The person's address, read outside any company: taking a person's access to an app also closes
+ * their open invitations to it, and the company's scope reads no one who only holds an invitation
+ * (step 18).
+ */
+export async function addressOf(tx: ReadTx, personId: PersonId): Promise<string | undefined> {
+  const [row] = await tx.select({ email: user.email }).from(user).where(eq(user.id, personId))
+  return row?.email
+}
+
 /** The person's name, which an app sees as its caller's. */
 export async function personNameOf(tx: ReadTx, personId: PersonId): Promise<string | undefined> {
   const [row] = await tx.select({ name: user.name }).from(user).where(eq(user.id, personId))

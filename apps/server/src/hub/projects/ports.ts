@@ -1,4 +1,4 @@
-import type { CompanyId, ProjectId } from '@conexus/hub-api'
+import type { CompanyId, PersonId, ProjectId } from '@conexus/hub-api'
 import type { CommandTx, ReadTx, Scope } from '../../platform/database.ts'
 
 /**
@@ -31,3 +31,12 @@ export type ProjectConversationRelease = (scope: {
   companyId: CompanyId
   projectId: ProjectId
 }) => Promise<void>
+
+/** The roles the published version of a Projeto's app declares, with their labels (step 18, D). */
+export type PublishedRolesOf = (
+  tx: ReadTx,
+  projectId: ProjectId,
+) => Promise<{ published: boolean; roles: readonly { name: string; label: string }[] }>
+
+/** Ends a person's sessions in a Projeto's app, after the commit that took their access (S13). */
+export type AppSessionsEnd = (ids: { projectId: ProjectId; personId: PersonId }) => Promise<void>

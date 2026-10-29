@@ -1,10 +1,11 @@
-import type { InvitationId } from '@conexus/hub-api'
-import { CompanyId, Email, Person } from '@conexus/hub-api'
+import type { AppEntry, InvitationId } from '@conexus/hub-api'
+import { CompanyId, Email, Person, ProjectId } from '@conexus/hub-api'
 import { and, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { CommandTx } from '../../platform/database.ts'
 import { transactionLock } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
+import type { ProjectApps } from './app-invitations.ts'
 import type { Auth, LibraryCommand } from './auth.ts'
 import {
   forgetLinks,
@@ -19,10 +20,16 @@ import { LIVE, lockCompany, PendingRow, pending, Status } from './invitations.ts
 import { invitation, member, session } from './tables.ts'
 
 const InvitationTarget = z.object({ email: Email, companyId: CompanyId })
-const ActionRow = PendingRow.extend({ status: Status, live: z.boolean() })
+// The acceptance also reads what the invitation gives: the company, or a Projeto's app and its role.
+const AcceptedTarget = InvitationTarget.extend({
+  projectId: ProjectId.nullable(),
+  appRole: z.string().nullable(),
+})
+const ActionRow = PendingRow.and(z.object({ status: Status, live: z.boolean() }))
 const JoinedRow = z.object({
   status: Status,
   revision: z.number().int().nonnegative(),
+  live: z.boolean(),
   memberId: z.string().nullable(),
 })
 type InvitationAction = { invitationId: InvitationId; revision: number; person: Person | undefined }
@@ -120,20 +127,84 @@ export function declineCommand(deps: { libraryCommand: LibraryCommand }) {
     })
 }
 
-export function acceptCommand(deps: { auth: Auth; libraryCommand: LibraryCommand }) {
-  return (input: {
-    person: Person
-    headers: Headers
-    invitationId: InvitationId
-    revision: number
-    sessionToken: string
-  }) =>
+async function closeAccepted(tx: CommandTx, invitationId: InvitationId): Promise<void> {
+  await tx
+    .update(invitation)
+    .set({ status: 'accepted', revision: sql`${invitation.revision} + 1` })
+    .where(eq(invitation.id, invitationId))
+}
+
+type Acceptance = {
+  person: Person
+  headers: Headers
+  invitationId: InvitationId
+  revision: number
+  sessionToken: string
+}
+
+/**
+ * Accepts an app's invitation: the row and the `accepted` in one transaction (D22), never the
+ * library's acceptance, which would make the person a member (better-auth 1.7.8
+ * crud-invites.mjs:322). The Hub checks the deadline the library's acceptance would (`:268`), and
+ * a Projeto deleted or marked since gives nothing. A repeat finds the row and gives the same app.
+ */
+async function acceptedApp(
+  tx: CommandTx,
+  apps: ProjectApps,
+  input: Acceptance & { ids: { companyId: CompanyId; projectId: ProjectId }; role: string | null },
+  joined: z.infer<typeof JoinedRow> | undefined,
+): Promise<{ app: AppEntry; accepted: boolean }> {
+  const { ids } = input
+  const personId = input.person.id
+  const found = await apps.appOf(tx, ids)
+  if (found === undefined) throw new Failure('INVITATION_CLOSED')
+  const app = { ...found, companyName: (await companyById(tx, ids.companyId)).name }
+  if (joined?.status === 'accepted' && (await apps.uses(tx, { ...ids, personId }))) {
+    return { app, accepted: false }
+  }
+  if (joined?.status !== 'pending' || !joined.live) throw new Failure('INVITATION_CLOSED')
+  checkRevision(joined.revision, input.revision)
+  await apps.grant(tx, { ...ids, personId, role: input.role })
+  await closeAccepted(tx, input.invitationId)
+  return { app, accepted: true }
+}
+
+/** Joins the company through the plugin's endpoint; one accepted already answers the same. */
+async function acceptedCompany(
+  auth: Auth,
+  tx: CommandTx,
+  input: Acceptance,
+  joined: z.infer<typeof JoinedRow> | undefined,
+): Promise<boolean> {
+  if (joined?.status === 'accepted' && joined.memberId !== null) return false
+  if (joined?.status !== 'pending') throw new Failure('INVITATION_CLOSED')
+  checkRevision(joined.revision, input.revision)
+  const body = { invitationId: input.invitationId }
+  await refusedAs(() => auth.api.acceptInvitation({ headers: input.headers, body }), {
+    INVITATION_NOT_FOUND: 'INVITATION_CLOSED',
+    ORGANIZATION_MEMBERSHIP_LIMIT_REACHED: 'COMPANY_FULL',
+  })
+  await advanceRevision(tx, input.invitationId)
+  return true
+}
+
+export function acceptCommand(deps: {
+  auth: Auth
+  libraryCommand: LibraryCommand
+  apps: ProjectApps
+}) {
+  return (input: Acceptance) =>
     deps.libraryCommand(invitationScope(input), async (tx) => {
       const [listed] = await tx
-        .select({ companyId: invitation.organizationId, email: invitation.email })
+        .select({
+          companyId: invitation.organizationId,
+          email: invitation.email,
+          projectId: invitation.projectId,
+          appRole: invitation.appRole,
+        })
         .from(invitation)
         .where(eq(invitation.id, input.invitationId))
-      const found = InvitationTarget.optional().parse(listed)
+      const found = AcceptedTarget.optional().parse(listed)
       if (found === undefined || found.email !== storedAddress(input.person.email)) {
         throw new Failure('NOT_FOUND', { details: { reason: 'OUTSIDER' } })
       }
@@ -151,7 +222,12 @@ export function acceptCommand(deps: { auth: Auth; libraryCommand: LibraryCommand
         .for('share')
       if (active === undefined) throw new Failure('SESSION_REQUIRED')
       const [row] = await tx
-        .select({ status: invitation.status, revision: invitation.revision, memberId: member.id })
+        .select({
+          status: invitation.status,
+          revision: invitation.revision,
+          live: sql<boolean>`${LIVE}`,
+          memberId: member.id,
+        })
         .from(invitation)
         .leftJoin(
           member,
@@ -162,17 +238,14 @@ export function acceptCommand(deps: { auth: Auth; libraryCommand: LibraryCommand
         )
         .where(eq(invitation.id, input.invitationId))
       const joined = JoinedRow.optional().parse(row)
-      const already = joined?.status === 'accepted' && joined.memberId !== null
-      if (!already) {
-        if (joined?.status !== 'pending') throw new Failure('INVITATION_CLOSED')
-        checkRevision(joined.revision, input.revision)
-        const body = { invitationId: input.invitationId }
-        await refusedAs(() => deps.auth.api.acceptInvitation({ headers: input.headers, body }), {
-          INVITATION_NOT_FOUND: 'INVITATION_CLOSED',
-          ORGANIZATION_MEMBERSHIP_LIMIT_REACHED: 'COMPANY_FULL',
-        })
-        await advanceRevision(tx, input.invitationId)
+      const company = await companyById(tx, found.companyId)
+      if (found.projectId !== null) {
+        const ids = { companyId: found.companyId, projectId: found.projectId }
+        const given = { ...input, ids, role: found.appRole }
+        const made = await acceptedApp(tx, deps.apps, given, joined)
+        return { company, ...made, projectId: found.projectId }
       }
-      return { company: await companyById(tx, found.companyId), accepted: !already }
+      const accepted = await acceptedCompany(deps.auth, tx, input, joined)
+      return { company, app: null, projectId: null, accepted }
     })
 }
