@@ -1,11 +1,12 @@
 /*
- * The wire, not the guard. What keeps a consult read only is Sankhya's integration user, which holds
- * no insert, update or delete permission. This refuses, before any request is built, a consult that
- * is plainly not one read. Quoting follows Oracle and SQL Server, the databases Sankhya runs on; SQL
- * Server runs a second statement with no `;` before it, so statement words are refused anywhere. Comments
- * are refused outright, quoted or not: SQL Server nests block comments and Oracle does not, and a line
- * comment ends at different characters on each, so no reading of where one ends is safe on both, and a
- * read never needs one.
+ * A best-effort first layer, not a guarantee. It refuses, before any request is built, what is plainly
+ * not one read: a comment, a second statement, a write word, a number glued to a word. Sankhya's
+ * DbExplorer, which refuses a consult that writes, is the second layer, and the read only integration
+ * user the company created is behind both. Quoting follows Oracle and SQL Server, the databases Sankhya
+ * runs on; SQL Server runs a second statement with no `;` before it, so statement words are refused
+ * anywhere. Comments are refused outright, quoted or not: SQL Server nests block comments and Oracle
+ * does not, and a line comment ends at different characters on each, so no reading of where one ends is
+ * safe on both, and a read never needs one.
  */
 const REFUSED_WORDS = new RegExp(
   `\\b(?:${[
