@@ -32,11 +32,13 @@ test('ligar: quem pode, e as recusas', async (t) => {
   assert.deepEqual(connection, {
     id: connection.id,
     connector: 'sankhya',
+    name: 'Matriz',
     connectorVersion: '1.0.0',
     state: 'NEW',
     linkedBy: { id: bruno.id, name: 'Bruno Reis' },
     linkedAt: connection.linkedAt,
     testedAt: null,
+    testedBy: null,
   })
   const again = await linkSankhya(hub, bruno, base, { ...fake.credential }, key)
   assert.equal(again.statusCode, 201)
@@ -44,8 +46,14 @@ test('ligar: quem pode, e as recusas', async (t) => {
   const other = { ...fake.credential, clientSecret: 'outro-segredo' }
   const conflict = await linkSankhya(hub, bruno, base, other, key)
   assert.deepEqual([conflict.statusCode, codeOf(conflict)], [409, 'IDEMPOTENCY_CONFLICT'])
-  const second = await linkSankhya(hub, ana, base, fake.credential)
-  assert.deepEqual([second.statusCode, codeOf(second)], [409, 'CONNECTION_EXISTS'])
+  const second = await linkSankhya(hub, ana, base, fake.credential, undefined, '  MATRIZ ')
+  assert.deepEqual([second.statusCode, codeOf(second)], [409, 'CONNECTION_NAME_TAKEN'])
+  const renamed = await linkSankhya(hub, bruno, base, fake.credential, key, 'Filial')
+  assert.deepEqual([renamed.statusCode, codeOf(renamed)], [409, 'IDEMPOTENCY_CONFLICT'])
+  for (const name of ['', '   ', 'x'.repeat(61)]) {
+    const refused = await linkSankhya(hub, ana, base, fake.credential, undefined, name)
+    assert.deepEqual([refused.statusCode, codeOf(refused)], [422, 'CONNECTION_NAME_INVALID'])
+  }
   const member = await linkSankhya(hub, carla, base, fake.credential)
   assert.deepEqual([member.statusCode, codeOf(member)], [404, 'NOT_FOUND'])
   const none = await hub.app.inject({
@@ -57,7 +65,7 @@ test('ligar: quem pode, e as recusas', async (t) => {
       'content-type': 'application/json',
       'idempotency-key': randomUUID(),
     },
-    payload: JSON.stringify({ connector: 'nenhum', credential: fake.credential }),
+    payload: JSON.stringify({ connector: 'nenhum', name: 'Matriz', credential: fake.credential }),
   })
   assert.deepEqual([none.statusCode, codeOf(none)], [404, 'CONNECTOR_UNKNOWN'])
   const { xToken: _xToken, ...missing } = fake.credential
@@ -99,7 +107,7 @@ test('testar: cada parte, com a sua resposta', async (t) => {
   assert.equal(Object(refused.json()).result, 'WORKING')
   assert.deepEqual(
     outcomes(refused),
-    reads({ pedidos: 'REFUSED', consultar: 'REFUSED', impostosDoPedido: 'NOTHING_TO_READ' }),
+    reads({ pedidos: 'REFUSED', consultar: 'REFUSED', impostosDoPedido: 'SOURCE_UNREAD' }),
   )
 
   fake.switches.refuse.clear()
@@ -145,7 +153,7 @@ test('testar: o fornecedor fora do ar não muda o estado', async (t) => {
   await served.close()
   const down = await testOf(hub, ana, base, connection.id)
   assert.equal(down.statusCode, 200)
-  assert.deepEqual(Object(down.json()), { result: 'UNREACHABLE', connection })
+  assert.deepEqual(Object(down.json()), { result: 'UNREACHABLE', native: null, connection })
 })
 
 test('testar e desligar juntos; um serviço por token', async (t) => {
@@ -212,18 +220,24 @@ test('a lista: o membro lê, nada da credencial sai', async (t) => {
   const read = await call(hub, carla, 'GET', base)
   assert.equal(read.statusCode, 200)
   const list = Object(read.json())
-  assert.deepEqual(list.connectors, [
-    {
-      id: 'sankhya',
-      name: 'Sankhya',
-      version: '1.0.0',
-      fields: [
-        { name: 'clientId', label: 'Client ID', maxLength: 200 },
-        { name: 'clientSecret', label: 'Client Secret', maxLength: 200 },
-        { name: 'xToken', label: 'X-Token', maxLength: 4096 },
-      ],
-    },
-  ])
+  assert.equal(list.connectors.length, 1)
+  const [entry] = list.connectors
+  assert.deepEqual(
+    [entry.id, entry.name, entry.version, entry.category, entry.reads],
+    ['sankhya', 'Sankhya', '1.0.0', 'ERP', 25],
+  )
+  assert.ok(entry.summary.length > 0 && entry.logo.includes('<svg'))
+  assert.deepEqual(
+    entry.fields.map((field: { name: string; visible: boolean }) => [field.name, field.visible]),
+    [
+      ['clientId', true],
+      ['clientSecret', false],
+      ['xToken', false],
+    ],
+  )
+  assert.ok(
+    entry.fields.every((field: { help: { url: string } }) => field.help.url.startsWith('https://')),
+  )
   assert.equal(list.mayManage, false)
   assert.equal(list.connections.length, 1)
   assert.equal(list.connections[0].state, 'ACTIVE')
@@ -262,7 +276,7 @@ test('o Client Secret plantado não sai no log do Hub, na resposta nem na falha'
       const answer = await fetch(connections, {
         method: 'POST',
         headers: { ...json, cookie, 'idempotency-key': randomUUID() },
-        body: JSON.stringify({ connector: 'sankhya', credential }),
+        body: JSON.stringify({ connector: 'sankhya', name: 'Matriz', credential }),
       })
       bodies.push(await answer.text())
       return answer

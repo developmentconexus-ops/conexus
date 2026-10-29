@@ -18,11 +18,19 @@ export const CONNECTOR_FAILURES = {
     action: '',
     actionKind: 'NONE',
   },
-  CONNECTION_EXISTS: {
+  CONNECTION_NAME_INVALID: {
+    category: 'USER',
+    settles: true,
+    status: 422,
+    phrase: 'Dê um nome à ligação, de até 60 letras.',
+    action: '',
+    actionKind: 'NONE',
+  },
+  CONNECTION_NAME_TAKEN: {
     category: 'USER',
     settles: true,
     status: 409,
-    phrase: 'Essa integração já está ligada nesta empresa.',
+    phrase: 'Já existe uma ligação desse conector com esse nome. Dê outro nome.',
     action: '',
     actionKind: 'NONE',
   },

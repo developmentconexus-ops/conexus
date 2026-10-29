@@ -10,25 +10,47 @@ export type ConnectionState = (typeof CONNECTION_STATES)[number]
 export const ConnectionId = z.uuid().brand('ConnectionId')
 export type ConnectionId = z.infer<typeof ConnectionId>
 
-/** A connector of the kit's catalog, as the screen offers it: its fields by their labels. */
+/** A connector of the kit's catalog, as the screen offers it: its fields by their labels, help and visibility. */
 export const ConnectorEntry = z.object({
   id: z.string(),
   name: z.string(),
   version: z.string(),
-  fields: z.array(z.object({ name: z.string(), label: z.string(), maxLength: z.number().int() })),
+  category: z.string(),
+  summary: z.string(),
+  // The kit's SVG, shown by the screen as a data: image.
+  logo: z.string(),
+  // What one Testar reads: the read door's entries plus the operations, counted from the definition.
+  reads: z.number().int(),
+  fields: z.array(
+    z.object({
+      name: z.string(),
+      label: z.string(),
+      maxLength: z.number().int(),
+      help: z.object({ text: z.string(), url: z.url() }),
+      visible: z.boolean(),
+    }),
+  ),
 })
 export type ConnectorEntry = z.infer<typeof ConnectorEntry>
+
+/** The name the company gives a connection at Ligar ("Matriz"): what tells two of a connector apart. */
+export const ConnectionName = z.string().trim().min(1).max(60)
+
+const Person = z.object({ id: PersonId, name: z.string() })
 
 /** A connection as every member reads it: never a value of its credential (S41). */
 export const Connection = z.object({
   id: ConnectionId,
   connector: z.string(),
+  name: z.string(),
   connectorVersion: z.string(),
   state: z.enum(CONNECTION_STATES),
   // null: who linked has left the company, and the connection stays the company's (C1).
-  linkedBy: z.object({ id: PersonId, name: z.string() }).nullable(),
+  linkedBy: Person.nullable(),
   linkedAt: z.iso.datetime(),
   testedAt: z.iso.datetime().nullable(),
+  // null: nobody has tested it, or who tested has left the company.
+  testedBy: Person.nullable(),
 })
 export type Connection = z.infer<typeof Connection>
 
@@ -39,26 +61,45 @@ export const ConnectionList = z.object({
 })
 export type ConnectionList = z.infer<typeof ConnectionList>
 
-export const TEST_OUTCOMES = [
-  'READS',
-  'REFUSED',
-  'UNREADABLE',
-  'NOTHING_TO_READ',
-  'NOT_TESTED', // the test's whole deadline ran out before this item
-] as const
-export const TestCheck = z.object({
+/** What the provider said, as it came (founder, 2026-10-29): its status, where its code and message sit, and its body with the request's secrets replaced. */
+export const Native = z.object({
+  status: z.number().int(),
+  code: z.string().nullable(),
+  message: z.string().nullable(),
+  body: z.unknown(),
+})
+export type Native = z.infer<typeof Native>
+
+const Item = z.object({
   id: z.string(),
   label: z.string(),
   subject: z.string(), // the subject's label, for the screen's one line per subject
-  outcome: z.enum(TEST_OUTCOMES),
 })
+
+/** One item of a test, by what its call came to; `native` is on the items the provider answered badly. */
+function checkOf<N extends z.ZodType>(native: N) {
+  return z.discriminatedUnion('outcome', [
+    // NOT_TESTED: the test's whole deadline ran out before this item.
+    Item.extend({ outcome: z.enum(['READS', 'NOTHING_TO_READ', 'NOT_TESTED']) }),
+    Item.extend({ outcome: z.enum(['REFUSED', 'UNREADABLE']), native }),
+    // Not called: a source it reads from did not read; `source` is that source's label.
+    Item.extend({ outcome: z.literal('SOURCE_UNREAD'), source: z.string() }),
+  ])
+}
+export const TestCheck = checkOf(Native)
 export type TestCheck = z.infer<typeof TestCheck>
 
-/** What Testar answers, shown at that moment and never kept (the values read stay in the executor). */
+/** A test item as it is kept (every member reads it): the status and code only, never the body or the message. */
+export const KeptCheck = checkOf(Native.pick({ status: true, code: true }))
+export type KeptCheck = z.infer<typeof KeptCheck>
+
+/** What Testar answers, shown at that moment (the values read stay in the executor; what the provider said about a refusal is shown, never kept whole). */
 export const TestResult = z.discriminatedUnion('result', [
   z.object({ result: z.literal('WORKING'), checks: z.array(TestCheck), connection: Connection }),
-  z.object({ result: z.literal('AUTH_REFUSED'), connection: Connection }),
-  z.object({ result: z.literal('UNREACHABLE'), connection: Connection }),
+  // The test ended on the provider's own answer: `native` is what it said (null: it said nothing, as a timeout).
+  z.object({ result: z.literal('AUTH_REFUSED'), native: Native, connection: Connection }),
+  z.object({ result: z.literal('UNREADABLE'), native: Native, connection: Connection }),
+  z.object({ result: z.literal('UNREACHABLE'), native: Native.nullable(), connection: Connection }),
 ])
 export type TestResult = z.infer<typeof TestResult>
 
@@ -93,7 +134,11 @@ export const linkConnection = defineOperation({
   bodyLimit: 16 * 1024,
   input: {
     params: InCompany,
-    body: z.object({ connector: z.string().max(64), credential: PastedCredential }),
+    body: z.object({
+      connector: z.string().max(64),
+      name: z.string().max(256),
+      credential: PastedCredential,
+    }),
   },
   attemptKey: true,
   success: { status: 201, body: z.object({ connection: Connection }) },
@@ -101,7 +146,8 @@ export const linkConnection = defineOperation({
     ...READ_FAILURES,
     'CONNECTOR_UNKNOWN',
     'CONNECTION_CREDENTIAL_INVALID',
-    'CONNECTION_EXISTS',
+    'CONNECTION_NAME_INVALID',
+    'CONNECTION_NAME_TAKEN',
     'IDEMPOTENCY_CONFLICT',
   ],
 })
@@ -120,6 +166,25 @@ export const testConnection = defineOperation({
   input: { params: OfConnection },
   success: { status: 200, body: TestResult },
   failures: [...READ_FAILURES, 'CONNECTION_NOT_FOUND', 'SEAL_REFUSED'],
+})
+
+/** One connection with its last WORKING test, kept: the items only, never a value read (founder, X2). */
+export const ConnectionDetail = z.object({
+  connection: Connection,
+  lastTest: z.array(KeptCheck).nullable(),
+})
+export type ConnectionDetail = z.infer<typeof ConnectionDetail>
+
+export const getConnection = defineOperation({
+  id: 'getConnection',
+  summary: 'Reads one connection and the items of its last working test, with no credential.',
+  access: 'session',
+  method: 'GET',
+  path: '/api/companies/{companyId}/connections/{connectionId}',
+  bodyLimit: 1024,
+  input: { params: OfConnection },
+  success: { status: 200, body: ConnectionDetail },
+  failures: [...READ_FAILURES, 'CONNECTION_NOT_FOUND'],
 })
 
 export const unlinkConnection = defineOperation({

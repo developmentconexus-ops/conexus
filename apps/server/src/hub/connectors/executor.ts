@@ -2,12 +2,14 @@ import type {
   Answered,
   Connector,
   ConnectorId,
+  Native,
   Operation,
   ProviderAnswer,
 } from '@conexus/connectors'
-import { readToken, requestOf, tokenRequest, toRequest } from '@conexus/connectors'
+import { locateOf, readToken, requestOf, tokenRequest, toRequest } from '@conexus/connectors'
 import type { ConnectionId } from '@conexus/hub-api'
 import { z } from 'zod'
+import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { Credential } from '../../platform/seal.ts'
 import { Secret } from '../../platform/secret.ts'
@@ -26,9 +28,14 @@ export type OpenedConnection = Readonly<{
   credential: Credential
 }>
 
-type Unreachable = Readonly<{ kind: 'UNREACHABLE' }>
+/** The provider could not be reached (or answered 5xx): `native` is what it said, when it said anything. */
+type Unreachable = Readonly<{ kind: 'UNREACHABLE'; native: Native | null }>
+/** The provider answered what the kit cannot read, with what it said. */
+type Unreadable = Readonly<{ kind: 'UNREADABLE'; native: Native }>
 type Login =
-  | Readonly<{ kind: 'TOKEN'; token: BearerToken } | { kind: 'AUTH_REFUSED' }>
+  | Readonly<{ kind: 'TOKEN'; token: BearerToken }>
+  | Readonly<{ kind: 'AUTH_REFUSED'; native: Native }>
+  | Unreadable
   | Unreachable
 
 /** The one place the Hub opens a connector's credential and talks to its provider (decision 0056). */
@@ -49,22 +56,19 @@ export type Executor = {
   ): Promise<Answered<O> | Unreachable>
 }
 
-const UNREACHABLE: Unreachable = { kind: 'UNREACHABLE' }
-type Unreadable = Readonly<{ kind: 'UNREADABLE' }>
-const UNREADABLE: Unreadable = { kind: 'UNREADABLE' }
-
 /** The opened values, checked again by the connector's own schema: a value it refuses never opened. */
 function valuesOf(connection: OpenedConnection): Readonly<Record<string, string>> {
   const { credential } = connection.connector.auth
   try {
     return credential.parse(JSON.parse(connection.credential.reveal()))
   } catch (cause) {
+    if (!(cause instanceof SyntaxError || cause instanceof z.ZodError)) throw cause
     throw new Failure('SEAL_REFUSED', { details: { reason: 'credential shape' }, cause })
   }
 }
 
-/** The body, read in pieces up to the cap; past it the read is cancelled and nothing is kept. */
-async function bodyOf(response: Response): Promise<Uint8Array | Unreadable> {
+/** The body, read in pieces up to the cap; past it the read is cancelled, nothing is kept and the result is null. */
+async function bodyOf(response: Response): Promise<Uint8Array | null> {
   const chunks: Uint8Array[] = []
   let bytes = 0
   const reader = response.body?.getReader()
@@ -75,50 +79,99 @@ async function bodyOf(response: Response): Promise<Uint8Array | Unreadable> {
     bytes += value.byteLength
     if (bytes > RESPONSE_CAP_BYTES) {
       await reader.cancel()
-      return UNREADABLE
+      return null
     }
     chunks.push(value)
   }
 }
 
-/** The JSON read only at the end; a body that is not JSON is unreadable, never an empty answer. */
-function answerOf(status: number, bytes: Uint8Array): ProviderAnswer | Unreadable {
+const REDACTED = '[redacted]'
+
+/** The text with every secret of the request replaced, as it is and as JSON writes it (Nango's `buildValuesToFilter`). */
+function redacted(text: string, secrets: readonly string[]): string {
+  return secrets
+    .filter((secret) => secret !== '')
+    .flatMap((secret) => [secret, JSON.stringify(secret).slice(1, -1)])
+    .reduce((safe, secret) => safe.replaceAll(secret, REDACTED), text)
+}
+
+/**
+ * The JSON read only at the end; null for a body that is not JSON, never an empty answer. An error
+ * body (outside 2xx) has the request's secrets replaced before it is parsed.
+ */
+function answerOf(
+  status: number,
+  bytes: Uint8Array,
+  secrets: readonly string[],
+): ProviderAnswer | null {
   if (bytes.byteLength === 0) return { status, body: undefined }
+  const text = Buffer.from(bytes).toString('utf8')
   try {
-    return { status, body: z.unknown().parse(JSON.parse(Buffer.from(bytes).toString('utf8'))) }
-  } catch {
-    return UNREADABLE
+    const safe = status >= 200 && status < 300 ? text : redacted(text, secrets)
+    return { status, body: z.unknown().parse(JSON.parse(safe)) }
+  } catch (error) {
+    if (error instanceof SyntaxError) return null
+    throw error
   }
+}
+
+function nativeOf(status: number, body: unknown): Native {
+  return { status, ...locateOf(body), body }
+}
+
+/**
+ * What fetch documents for a provider that cannot be reached: a network failure or a refused
+ * redirect (TypeError), the deadline (TimeoutError) or an abort. Anything else is a bug and goes up.
+ * The scalars a log may carry: the error's name and the system code of its cause (ECONNREFUSED...).
+ */
+function unreachableCause(error: unknown): Record<string, string> | undefined {
+  const known =
+    error instanceof TypeError ||
+    (error instanceof DOMException && ['TimeoutError', 'AbortError'].includes(error.name))
+  if (!known) return undefined
+  const code = z.object({ code: z.string() }).safeParse(error.cause)
+  return code.success ? { kind: error.name, cause: code.data.code } : { kind: error.name }
 }
 
 export function createExecutor(deps: {
   fetch: typeof fetch
   origins: ReadonlyMap<ConnectorId, string>
+  log: FailureLog
 }): Executor {
   function originOf(connector: Connector): string {
     return deps.origins.get(connector.id) ?? connector.origin
   }
 
   /**
-   * Sends one request (the OS's `send`): a redirect refused by fetch, a 5xx's body cancelled unread,
-   * the rest read up to the cap and parsed only at the end. The provider's body is never logged.
+   * Sends one request (the OS's `send`): a redirect refused by fetch, every body read up to the
+   * cap and parsed only at the end, an error body redacted of `secrets` first. A 5xx is
+   * UNREACHABLE and keeps what it said. What is logged is scalars: the connection, the status or
+   * the error's name and cause code; never a body.
    */
   async function send(
     request: Request,
+    connection: OpenedConnection,
+    secrets: readonly string[],
     deadlineMs: number,
   ): Promise<ProviderAnswer | Unreadable | Unreachable> {
+    const where = { connectionId: connection.id, connector: connection.connector.id }
     // Outside the `try`: a deadline the timer refuses is the caller's mistake, not the provider down.
     const signal = AbortSignal.timeout(deadlineMs)
     try {
       const response = await deps.fetch(request, { signal })
-      if (response.status >= 500) {
-        await response.body?.cancel()
-        return UNREACHABLE
+      const { status } = response
+      const bytes = await bodyOf(response)
+      const answer = bytes === null ? null : answerOf(status, bytes, secrets)
+      if (status >= 500) {
+        deps.log.info({ ...where, status }, 'CONNECTOR_UNREACHABLE')
+        return { kind: 'UNREACHABLE', native: nativeOf(status, answer?.body ?? null) }
       }
-      const body = await bodyOf(response)
-      return 'kind' in body ? body : answerOf(response.status, body)
-    } catch {
-      return UNREACHABLE
+      return answer ?? { kind: 'UNREADABLE', native: nativeOf(status, null) }
+    } catch (error) {
+      const cause = unreachableCause(error)
+      if (cause === undefined) throw error
+      deps.log.info({ ...where, ...cause }, 'CONNECTOR_UNREACHABLE')
+      return { kind: 'UNREACHABLE', native: null }
     }
   }
 
@@ -126,18 +179,12 @@ export function createExecutor(deps: {
     async login(connection, deadlineMs) {
       const { connector } = connection
       const auth = connector.auth
-      const request = toRequest(
-        connector,
-        tokenRequest(auth, valuesOf(connection)),
-        null,
-        originOf(connector),
-      )
-      const sent = await send(request, deadlineMs)
-      // A login answered with what the kit cannot read is the provider's fault, not the key's.
-      if ('kind' in sent) return UNREACHABLE
+      const values = valuesOf(connection)
+      const request = toRequest(connector, tokenRequest(auth, values), null, originOf(connector))
+      const sent = await send(request, connection, Object.values(values), deadlineMs)
+      if ('kind' in sent) return sent
       const token = readToken(auth, sent)
-      if (token.kind === 'AUTH_REFUSED') return token
-      if (token.kind === 'UNREADABLE') return UNREACHABLE
+      if (token.kind !== 'OK') return token
       return { kind: 'TOKEN', token: new Secret('BearerToken', token.accessToken) }
     },
 
@@ -149,7 +196,8 @@ export function createExecutor(deps: {
         token.reveal(),
         originOf(connector),
       )
-      const sent = await send(request, deadlineMs)
+      const secrets = [...Object.values(valuesOf(connection)), token.reveal()]
+      const sent = await send(request, connection, secrets, deadlineMs)
       return 'kind' in sent ? sent : operation.answer(sent)
     },
   }

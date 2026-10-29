@@ -1,128 +1,37 @@
 import { randomUUID } from 'node:crypto'
 import type { Connector } from '@conexus/connectors'
-import { CONNECTORS, connectorOf } from '@conexus/connectors'
+import { CONNECTORS, connectorOf, inProbeOrder } from '@conexus/connectors'
 import type {
   CompanyId,
   Connection,
+  ConnectionDetail,
   ConnectionList,
   ConnectorEntry,
-  Person,
-  TestResult,
 } from '@conexus/hub-api'
-import { CONNECTION_STATES, ConnectionId, PersonId } from '@conexus/hub-api'
+import { ConnectionId, ConnectionName, KeptCheck } from '@conexus/hub-api'
 import { and, asc, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
-import type { Database, ReadTx, Scope } from '../../platform/database.ts'
+import type { ReadTx } from '../../platform/database.ts'
 import { transactionLock, violatedConstraint } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
-import type { SealKeys } from '../../platform/seal.ts'
 import { Credential, open, seal } from '../../platform/seal.ts'
-import type { IdentityPorts } from '../identity/public.ts'
-import { personNameColumn } from '../identity/public.ts'
-import type { Executor, OpenedConnection } from './executor.ts'
-import type { Probed } from './probe.ts'
-import { probed } from './probe.ts'
+import type { Deps, OfConnection, Viewer } from './rows.ts'
+import { admitted, columns, ofCompany, scopeOf, sealContext, sealedOf, viewOf } from './rows.ts'
 import { connection } from './tables.ts'
 
-export type Deps = {
-  database: Database
-  identity: IdentityPorts
-  sealKeys: SealKeys
-  executor: Executor
-  callDeadlineMs: number
-  testDeadlineMs: number
-}
-export type Viewer = { person: Person; companyId: CompanyId }
-
-const CONNECTOR_KEY = 'connection_connector_key'
-
-// Every column but `sealed`, which the company's role cannot read (U2's grant).
-const columns = {
-  id: connection.id,
-  connector: connection.connectorId,
-  connectorVersion: connection.connectorVersion,
-  state: connection.state,
-  linkedById: connection.linkedBy,
-  linkedByName: personNameColumn(connection.linkedBy),
-  linkedAt: connection.linkedAt,
-  testedAt: connection.testedAt,
-}
-
-const Row = z.object({
-  id: ConnectionId,
-  connector: z.string(),
-  connectorVersion: z.string(),
-  state: z.enum(CONNECTION_STATES),
-  linkedById: PersonId,
-  linkedByName: z.string().nullable(),
-  linkedAt: z.date(),
-  testedAt: z.date().nullable(),
-})
-
-function viewOf(found: unknown): Connection {
-  const row = Row.parse(found)
-  return {
-    id: row.id,
-    connector: row.connector,
-    connectorVersion: row.connectorVersion,
-    state: row.state,
-    linkedBy: row.linkedByName === null ? null : { id: row.linkedById, name: row.linkedByName },
-    linkedAt: row.linkedAt.toISOString(),
-    testedAt: row.testedAt?.toISOString() ?? null,
-  }
-}
+const NAME_KEY = 'connection_name_key'
 
 function entryOf(connector: Connector): ConnectorEntry {
   return {
     id: connector.id,
     name: connector.name,
     version: connector.version,
+    category: connector.category,
+    summary: connector.summary,
+    logo: connector.logo,
+    reads: inProbeOrder(connector).length,
     fields: Object.entries(connector.auth.fields).map(([name, field]) => ({ name, ...field })),
   }
-}
-
-function scopeOf(viewer: Viewer): Scope {
-  return { kind: 'COMPANY', companyId: viewer.companyId, personId: viewer.person.id }
-}
-
-function admitted(
-  deps: Deps,
-  tx: ReadTx,
-  viewer: Viewer,
-  action: 'readConnections' | 'manageConnections',
-) {
-  return deps.identity.admitMember({
-    tx,
-    personId: viewer.person.id,
-    companyId: viewer.companyId,
-    action,
-  })
-}
-
-function ofCompany(viewer: Viewer, id: ConnectionId) {
-  return and(eq(connection.id, id), eq(connection.companyId, viewer.companyId))
-}
-
-/** What a connection's seal is bound to: copied to another row, company or connector, it does not open (S32). */
-export function sealContext(row: { id: ConnectionId; companyId: CompanyId; connector: Connector }) {
-  return {
-    purpose: 'connection',
-    rowId: row.id,
-    companyId: row.companyId,
-    personId: null,
-    kind: row.connector.auth.kind,
-    provider: row.connector.id,
-  } as const
-}
-
-const Sealed = z.object({ sealed: z.instanceof(Buffer), key_id: z.string().min(1) })
-
-/** A connection's sealed credential, through the one function that hands it out (U2's grant). */
-export async function sealedOf(tx: ReadTx, id: ConnectionId) {
-  const result = await tx.execute(sql`select sealed, key_id from connectors.sealed_of(${id})`)
-  if (result.rows[0] === undefined) throw new Failure('CONNECTION_NOT_FOUND')
-  const found = Sealed.parse(result.rows[0])
-  return { keyId: found.key_id, blob: found.sealed }
 }
 
 /** Every member reads the catalog and the company's connections; nothing of a credential (S41). */
@@ -133,7 +42,7 @@ export function list(deps: Deps, viewer: Viewer): Promise<ConnectionList> {
       .select(columns)
       .from(connection)
       .where(eq(connection.companyId, viewer.companyId))
-      .orderBy(asc(connection.connectorId))
+      .orderBy(asc(connection.connectorId), asc(connection.linkedAt))
     return {
       connectors: CONNECTORS.map(entryOf),
       connections: rows.map(viewOf),
@@ -142,23 +51,35 @@ export function list(deps: Deps, viewer: Viewer): Promise<ConnectionList> {
   })
 }
 
-type Link = Viewer & { connector: string; credential: Record<string, string>; attemptKey: string }
+type Link = Viewer & {
+  connector: string
+  name: string
+  credential: Record<string, string>
+  attemptKey: string
+}
 
 /**
  * Links the company to a connector (criterion 9): the attempt's lock, the admission, the fields by
  * the connector's own schema, then a replay compared with the sealed values (code C37). Nothing is
  * called: linking only seals and keeps.
  */
-export function link(deps: Deps, input: Link) {
+export async function link(deps: Deps, input: Link) {
+  // Before the transaction opens: a name the company must fix needs no lock and no admission.
+  const name = ConnectionName.safeParse(input.name)
+  if (!name.success) throw new Failure('CONNECTION_NAME_INVALID')
   return deps.database.command(scopeOf(input), async (tx) => {
     await transactionLock(tx, `conexus.connection:${input.companyId}:${input.attemptKey}`)
     await admitted(deps, tx, input, 'manageConnections')
     const connector = connectorOf(input.connector)
     if (connector === undefined) throw new Failure('CONNECTOR_UNKNOWN')
-    const parsed = connector.auth.credential.safeParse(input.credential)
+    const parsed = connector.auth.credential.safeParse(
+      Object.fromEntries(
+        Object.entries(input.credential).map(([name, value]) => [name, value.trim()]),
+      ),
+    )
     if (!parsed.success) throw new Failure('CONNECTION_CREDENTIAL_INVALID')
     const [found] = await tx
-      .select({ id: connection.id, connector: connection.connectorId })
+      .select({ id: connection.id, connector: connection.connectorId, name: connection.name })
       .from(connection)
       .where(
         and(eq(connection.companyId, input.companyId), eq(connection.attemptKey, input.attemptKey)),
@@ -167,6 +88,7 @@ export function link(deps: Deps, input: Link) {
       const id = ConnectionId.parse(found.id)
       const same =
         found.connector === connector.id &&
+        found.name === name.data &&
         (await sealedText(deps, tx, { id, companyId: input.companyId, connector })) ===
           JSON.stringify(parsed.data)
       if (!same) throw new Failure('IDEMPOTENCY_CONFLICT')
@@ -183,6 +105,7 @@ export function link(deps: Deps, input: Link) {
         id,
         companyId: input.companyId,
         connectorId: connector.id,
+        name: name.data,
         connectorVersion: connector.version,
         state: 'NEW',
         sealed: Buffer.from(sealed.blob),
@@ -192,8 +115,8 @@ export function link(deps: Deps, input: Link) {
         attemptKey: input.attemptKey,
       })
     } catch (error) {
-      if (violatedConstraint(error) === CONNECTOR_KEY)
-        throw new Failure('CONNECTION_EXISTS', { cause: error })
+      if (violatedConstraint(error) === NAME_KEY)
+        throw new Failure('CONNECTION_NAME_TAKEN', { cause: error })
       throw error
     }
     return { connection: await viewIn(tx, input, id), created: true }
@@ -227,68 +150,21 @@ export function unlink(deps: Deps, input: Viewer & { connectionId: ConnectionId 
   })
 }
 
-type OfConnection = Viewer & { connectionId: ConnectionId }
-
-/**
- * Testar's first step (the failure table): a short command that admits and opens the seal, so no
- * database connection is held while the provider answers (data D22). The row's `linked_at` is kept
- * as the database wrote it, to tell the same row from one linked again meanwhile.
- */
-function opened(deps: Deps, input: OfConnection): Promise<OpenedConnection> {
-  return deps.database.command(scopeOf(input), async (tx) => {
-    await admitted(deps, tx, input, 'manageConnections')
+/** One connection and the items of its last working test; one that no longer matches KeptCheck is read as no test (never an invented item). */
+export function detail(deps: Deps, input: OfConnection): Promise<ConnectionDetail> {
+  return deps.database.read(scopeOf(input), async (tx) => {
+    await admitted(deps, tx, input, 'readConnections')
     const [row] = await tx
-      .select({
-        connector: connection.connectorId,
-        linkedAt: sql<string>`${connection.linkedAt}::text`,
-      })
+      .select({ ...columns, lastTest: connection.lastTest })
       .from(connection)
       .where(ofCompany(input, input.connectionId))
     if (row === undefined) throw new Failure('CONNECTION_NOT_FOUND')
-    const connector = connectorOf(row.connector)
-    // A connector the kit no longer has cannot rebuild its seal's context: the seal does not open.
-    if (connector === undefined)
-      throw new Failure('SEAL_REFUSED', { details: { reason: 'connector gone' } })
-    const id = input.connectionId
-    const context = sealContext({ id, companyId: input.companyId, connector })
-    const credential = open(deps.sealKeys, context, await sealedOf(tx, id))
-    return { id, linkedAt: row.linkedAt, connector, credential }
+    const lastTest = z.array(KeptCheck).safeParse(row.lastTest)
+    if (row.lastTest !== null && !lastTest.success)
+      deps.log.error(
+        { connectionId: row.id, kind: 'last test shape' },
+        'CONNECTION_LAST_TEST_UNREAD',
+      )
+    return { connection: viewOf(row), lastTest: lastTest.success ? lastTest.data : null }
   })
-}
-
-const NEXT_STATE = { WORKING: 'ACTIVE', AUTH_REFUSED: 'NEEDS_REAUTH' } as const
-
-/**
- * Testar's last step: the state is written only on the row the first step opened (its id and
- * `linked_at`); one removed meanwhile is not found and nothing changes. An unreachable provider
- * changes nothing.
- */
-function recorded(deps: Deps, input: OfConnection, opened: OpenedConnection, probe: Probed) {
-  return deps.database.command(scopeOf(input), async (tx) => {
-    await admitted(deps, tx, input, 'manageConnections')
-    const same = and(
-      ofCompany(input, input.connectionId),
-      sql`${connection.linkedAt} = ${opened.linkedAt}::timestamptz`,
-    )
-    const [row] =
-      probe.result === 'UNREACHABLE'
-        ? await tx.select(columns).from(connection).where(same)
-        : await tx
-            .update(connection)
-            .set({ state: NEXT_STATE[probe.result], testedAt: sql`statement_timestamp()` })
-            .where(same)
-            .returning(columns)
-    if (row === undefined) throw new Failure('CONNECTION_NOT_FOUND')
-    return viewOf(row)
-  })
-}
-
-/** Testar (criteria 10 to 12): the three steps of the failure table. */
-export async function test(deps: Deps, input: OfConnection): Promise<TestResult> {
-  const open = await opened(deps, input)
-  const probe = await probed(deps, open)
-  const view = await recorded(deps, input, open, probe)
-  return probe.result === 'WORKING'
-    ? { result: 'WORKING', checks: probe.checks, connection: view }
-    : { result: probe.result, connection: view }
 }

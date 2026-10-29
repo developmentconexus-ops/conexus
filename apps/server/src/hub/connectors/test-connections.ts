@@ -19,13 +19,18 @@ import {
  * Empresa Teste on a Hub whose Sankhya is the kit's double on this machine: Ana its owner, Bruno an
  * administrator, Carla a member.
  */
-export async function connectionsOn(t: TestContext) {
+export async function connectionsOn(
+  t: TestContext,
+  /** The origin the Hub is given for the double, when something stands in front of it. */
+  through: (origin: string) => Promise<string> = async (origin) => origin,
+) {
   const fake = sankhyaFake()
   const served = await fake.serve()
   t.after(() => served.close())
+  const origin = await through(served.origin)
   const hub = await hubWithLog(t, (config) => ({
     ...config,
-    connectorOrigins: new Map([['sankhya', served.origin]]),
+    connectorOrigins: new Map([['sankhya', origin]]),
   }))
   const ana = await personOn(hub, ANA_OWNER)
   const companyId = await plantCompany(hub.test, ana.id)
@@ -41,8 +46,9 @@ export function linkSankhya(
   base: string,
   credential: Record<string, string>,
   key?: string,
+  name = 'Matriz',
 ) {
-  return post(hub, person, base, { connector: 'sankhya', credential }, key)
+  return post(hub, person, base, { connector: 'sankhya', name, credential }, key)
 }
 
 /** Testar: a POST with no body. */
