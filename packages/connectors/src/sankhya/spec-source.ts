@@ -73,6 +73,16 @@ const Method = z.object({
     }),
   }),
 })
+const NotFoundPage = z.object({
+  paths: z.record(
+    z.string(),
+    z.object({
+      get: z.object({
+        responses: z.object({ '404': z.object({ description: z.string() }).optional() }),
+      }),
+    }),
+  ),
+})
 const Page = z.object({
   paths: z.record(z.string(), z.object({ get: Method })),
 })
@@ -121,6 +131,7 @@ function resolveEach(properties: unknown, root: unknown, seen: readonly string[]
 const Route = z.object({
   page: z.string(),
   query: z.array(z.string()),
+  notFound: z.string().nullable(), // the 404's description up to its first full stop, null when the page has none
   answer: z.record(z.string(), z.unknown()),
 })
 export const Spec = z.object({
@@ -137,9 +148,11 @@ export async function downloadSpec(): Promise<Spec> {
   for (const page of PAGES) {
     const document = Json.parse(openApiOf(await fetchText(`${SITE}/${page}.md`)))
     const parsed = Page.parse({ paths: resolve(document.paths, document) })
+    const notFound = NotFoundPage.parse({ paths: document.paths }).paths
     for (const [path, item] of Object.entries(parsed.paths)) {
       routes[`GET ${path}`] = {
         page,
+        notFound: notFound[path]?.get.responses['404']?.description.split('.')[0]?.trim() ?? null,
         query: item.get.parameters.filter((p) => p.in === 'query').map((p) => p.name),
         answer: item.get.responses['200'].content['application/json'].schema,
       }

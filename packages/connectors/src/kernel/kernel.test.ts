@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { sankhya } from '../sankhya/definition.ts'
 import { clientCredentials, readToken, tokenRequest } from './auth.ts'
 import { defineConnector, defineReadDoor } from './definition.ts'
+import { LOGO_MAX_BYTES, logoProblems } from './logo.ts'
 import type { ProviderRequest } from './operation.ts'
 import { defineOperation } from './operation.ts'
 import { toRequest } from './request.ts'
@@ -175,4 +176,43 @@ test('a resposta do login: token, chave recusada ou ilegível', () => {
     { status: 500, body: undefined },
   ]
   for (const answer of unreadable) assert.deepEqual(readToken(auth, answer), { kind: 'UNREADABLE' })
+})
+
+const SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"><path d="M0 0h1v1z"/></svg>'
+
+test('o logotipo: um SVG sem script, sem on…=, sem endereço de fora e até o teto', () => {
+  assert.deepEqual(logoProblems(SVG), [])
+  assert.deepEqual(logoProblems(`<?xml version="1.0"?><!-- a -->\n${SVG}`), [])
+  const inside = `<svg xmlns="http://www.w3.org/2000/svg"><g clip-path="url(#a)" fill="url('#b')"><use xlink:href="#c"/></g></svg>`
+  assert.deepEqual(logoProblems(inside), [])
+  for (const bad of [
+    '',
+    '<html></html>',
+    `<div>${SVG}</div>`,
+    SVG.replace('<path', '<script>x()</script><path'),
+    SVG.replace('<path', '<SCRIPT src="#a"></SCRIPT><path'),
+    SVG.replace('<path', '<path onload="x()"'),
+    SVG.replace('<path', '<path\nonclick = "x()"'),
+    SVG.replace('<path', '<image href="https://example.test/a.png"/><path'),
+    SVG.replace('<path', '<image xlink:href="data:image/png;base64,AA"/><path'),
+    SVG.replace('<path', "<a HREF='//example.test'/><path"),
+    SVG.replace('<path', '<path fill="url(https://example.test/a)"'),
+    SVG.replace('<path', '<path fill="url( \'x.svg#a\' )"'),
+    SVG.replace('</svg>', `<!-- ${'x'.repeat(LOGO_MAX_BYTES)} --></svg>`),
+  ])
+    assert.notDeepEqual(logoProblems(bad), [], bad.slice(0, 60))
+})
+
+test('o conector sem conta, ou o campo sem ajuda, não compila', () => {
+  const { account: _account, ...noAccount } = sankhya
+  assert.throws(
+    // @ts-expect-error the account is required, with no default
+    () => assert.ok(defineConnector(noAccount).account),
+  )
+  const fields = { a: { label: 'A', maxLength: 1, visible: true } }
+  assert.throws(() => {
+    // @ts-expect-error a field's help is required
+    const auth = clientCredentials({ ...sankhya.auth, fields })
+    return auth.fields.a?.help.text.length
+  })
 })

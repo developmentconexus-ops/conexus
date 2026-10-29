@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { readToken, tokenRequest } from './auth.ts'
 import type { Connector } from './definition.ts'
 import { inProbeOrder } from './definition.ts'
+import { logoProblems } from './logo.ts'
 import type { Operation, OperationId, ProviderAnswer } from './operation.ts'
 import { OPERATION_CLASSES, requestOf } from './operation.ts'
 import { toRequest } from './request.ts'
@@ -114,6 +115,18 @@ export function runConformance(connector: Connector, fake: Fake): void {
         content.split('\n').length < 500,
         'SKILL.md stays under the 500 lines Mastra recommends',
       )
+    })
+
+    it('declares the account, what the catalog shows and where each key comes from', () => {
+      assert.ok(connector.account.kind, 'the account')
+      assert.ok(connector.category.length > 0, 'a category')
+      assert.ok(connector.summary.length > 0 && !connector.summary.includes('\n'), 'a summary line')
+      assert.deepEqual(logoProblems(connector.logo), [], 'the logo')
+      for (const [name, field] of Object.entries(connector.auth.fields)) {
+        const { text, url } = field.help
+        assert.ok(text.length > 0 && !text.includes('\n'), `${name} has a line of help`)
+        assert.ok(URL.canParse(url) && new URL(url).protocol === 'https:', `${name} help url`)
+      }
     })
 
     it('gives each operation a class, a summary and a probe, and each read idempotent', () => {

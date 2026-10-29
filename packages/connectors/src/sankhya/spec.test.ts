@@ -6,6 +6,7 @@ import { readToken, tokenRequest } from '../kernel/auth.ts'
 import type { Operation, OperationId, ProviderRequest } from '../kernel/operation.ts'
 import { requestOf } from '../kernel/operation.ts'
 import { toRequest } from '../kernel/request.ts'
+import { NOT_FOUND } from './answers.ts'
 import { sankhya } from './definition.ts'
 import { sankhyaFake } from './fake.ts'
 import { downloadSpec, fetchText, SITE, Spec } from './spec-source.ts'
@@ -127,6 +128,20 @@ describe('a documentação do Sankhya', () => {
       [],
       'rota sem operação',
     )
+  })
+
+  it('as páginas dizem o 404 que o Conexus lê como leitura sem linhas, e só nas leituras que o leem assim', async (t) => {
+    const spec = await loadSpec().catch(() => null)
+    if (!spec) return t.skip(SKIP)
+    const documented = { statusCode: 404, error: { message: NOT_FOUND } }
+    const emptyRoutes = (await samples()).flatMap((sample) => {
+      const operation = sankhya.operations.find((candidate) => candidate.id === sample.id)
+      const empty = operation?.answer({ status: 404, body: documented }).kind === 'OK'
+      return empty ? (routeOf(spec, sample.request)?.[0] ?? []) : []
+    })
+    assert.equal(emptyRoutes.length, 6, 'as seis leituras que leem o 404 como lista vazia')
+    const saying = Object.entries(spec.routes).filter(([, route]) => route.notFound === NOT_FOUND)
+    assert.deepEqual(saying.map(([key]) => key).sort(), emptyRoutes.sort())
   })
 
   it('recusa o dublê dos clientes sem o endereço e o filtro que a rota não declara', async (t) => {
