@@ -3,6 +3,7 @@ import { describe, it } from 'node:test'
 import { z } from 'zod'
 import { readToken, tokenRequest } from './auth.ts'
 import type { Connector } from './definition.ts'
+import { inProbeOrder } from './definition.ts'
 import type { Operation, OperationId, ProviderAnswer } from './operation.ts'
 import { OPERATION_CLASSES, requestOf } from './operation.ts'
 import { toRequest } from './request.ts'
@@ -36,10 +37,63 @@ async function textOf(request: Request): Promise<string> {
   return `${request.url}\n${headers}\n${await request.clone().text()}`
 }
 
+/** The `earlier` a probe gets, noting each key it asks for. */
+class Watched extends Map<OperationId, unknown> {
+  readonly asked = new Set<OperationId>()
+  override get(key: OperationId) {
+    this.asked.add(key)
+    return super.get(key)
+  }
+  override has(key: OperationId) {
+    this.asked.add(key)
+    return super.has(key)
+  }
+}
+
+/** The probe reads only the sources it declares, and has nothing to read when any one is missing. */
+function assertSources(
+  operation: Operation<unknown, unknown>,
+  earlier: ReadonlyMap<OperationId, unknown>,
+): void {
+  const watched = new Watched(earlier)
+  operation.probe(watched)
+  for (const key of watched.asked)
+    assert.ok(operation.from.includes(key), `${operation.id} reads ${key} without declaring it`)
+  for (const source of operation.from) {
+    const missing = new Map(earlier)
+    missing.delete(source)
+    assert.equal(operation.probe(missing), null, `${operation.id} without ${source}`)
+  }
+}
+
+/** Each probe, in order, from the sources it declares, answered with the value its output schema reads from the body. */
+async function answerInOrder(connector: Connector, fake: Fake): Promise<void> {
+  const token = await login(connector, fake, fake.credential)
+  assert.equal(token.kind, 'OK')
+  if (token.kind !== 'OK') return
+  const earlier = new Map<OperationId, unknown>()
+  for (const operation of inProbeOrder(connector)) {
+    assertSources(operation, earlier)
+    const input = operation.probe(earlier)
+    assert.notEqual(input, null, `${operation.id} has a probe the fake can answer`)
+    const request = toRequest(connector, requestOf(operation, input), token.accessToken)
+    const raw = await answerOf(await fake.handle(request))
+    const answered = operation.answer(raw)
+    assert.equal(answered.kind, 'OK', operation.id)
+    if (answered.kind !== 'OK') continue
+    // A ready operation's `output` reads the body itself; a door entry's is the shape of the
+    // value its answer takes out of an envelope, so the value is what it must accept.
+    if (connector.operations.includes(operation))
+      assert.deepEqual(operation.output.parse(raw.body), answered.value, operation.id)
+    else assert.ok(operation.output.safeParse(answered.value).success, operation.id)
+    earlier.set(operation.id, answered.value)
+  }
+}
+
 /** What every connector passes, against its fake, with no network (node:test describe/it). */
 export function runConformance(connector: Connector, fake: Fake): void {
   const door = Object.values(connector.readDoor ?? {})
-  const all: readonly Operation<unknown, unknown>[] = [...connector.operations, ...door]
+  const all = inProbeOrder(connector)
 
   describe(connector.id, () => {
     it('declares unique ids, a semver version and subjects that each have an operation and a part of the skill', () => {
@@ -71,26 +125,8 @@ export function runConformance(connector: Connector, fake: Fake): void {
       }
     })
 
-    it('answers each probe, in order, with the value its output schema reads from the body', async () => {
-      const token = await login(connector, fake, fake.credential)
-      assert.equal(token.kind, 'OK')
-      if (token.kind !== 'OK') return
-      const earlier = new Map<OperationId, unknown>()
-      for (const operation of all) {
-        const input = operation.probe(earlier)
-        assert.notEqual(input, null, `${operation.id} has a probe the fake can answer`)
-        const request = toRequest(connector, requestOf(operation, input), token.accessToken)
-        const raw = await answerOf(await fake.handle(request))
-        const answered = operation.answer(raw)
-        assert.equal(answered.kind, 'OK', operation.id)
-        if (answered.kind !== 'OK') continue
-        // A ready operation's `output` reads the body itself; a door entry's is the shape of the
-        // value its answer takes out of an envelope, so the value is what it must accept.
-        if (door.some((entry) => entry.id === operation.id))
-          assert.ok(operation.output.safeParse(answered.value).success, operation.id)
-        else assert.deepEqual(operation.output.parse(raw.body), answered.value, operation.id)
-        earlier.set(operation.id, answered.value)
-      }
+    it('answers each probe, in order, from the sources it declares, with the value its output schema reads from the body', async () => {
+      await answerInOrder(connector, fake)
     })
 
     it('refuses a wrong key at the login', async () => {
