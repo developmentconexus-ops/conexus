@@ -13,7 +13,9 @@ describe('read-only SQL', () => {
     ])
       assert.equal(isOneReadStatement(sql), true, sql)
   })
+})
 
+describe('read-only SQL refusals', () => {
   it('refuses a second statement, with or without the semicolon', () => {
     for (const sql of [
       'SELECT 1; DELETE FROM TGFPAR',
@@ -28,7 +30,7 @@ describe('read-only SQL', () => {
       "SELECT 1 /*/*/ ' */ */ DELETE FROM TGFPAR --'",
       "SELECT 1 /*/*/ ' */ DELETE FROM TGFPAR --'",
       "SELECT 1 /**/*/ ' DELETE FROM TGFPAR --'",
-      "SELECT 1 /* -- */ DELETE FROM TGFPAR",
+      'SELECT 1 /* -- */ DELETE FROM TGFPAR',
       'SELECT 1 -- /*\n DELETE FROM TGFPAR',
       'SELECT 1 /* x */DELETE FROM TGFPAR',
       'SELECT 1 /**/DELETE FROM TGFPAR',
@@ -68,7 +70,9 @@ describe('read-only SQL', () => {
       assert.equal(isOneReadStatement(`SELECT 1 FROM T WHERE ${word} = 1`), false, word)
     assert.equal(isOneReadStatement('SELECT A INTO B FROM T'), false)
   })
+})
 
+describe('read-only SQL, comments and quotes', () => {
   it('refuses a block comment anywhere, even a harmless or quoted one', () => {
     for (const sql of [
       'SELECT 1 /* ; */ FROM DUAL',
