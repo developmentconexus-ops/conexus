@@ -1,5 +1,5 @@
-/** The most a logo takes: the official Sankhya file measures 6,857 bytes, so 8 KiB leaves room for a provider's own. */
-export const LOGO_MAX_BYTES = 8192
+/** The most a logo takes: the official Sankhya file measures 6,857 bytes, rounded up to the next KB (7,168). */
+export const LOGO_MAX_BYTES = 7168
 
 const LEADING = /^(?:\s|<\?xml[\s\S]*?\?>|<!--[\s\S]*?-->)*<svg[\s>]/
 const SCRIPT = /<script/i
