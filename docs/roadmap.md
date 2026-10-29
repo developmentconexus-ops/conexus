@@ -101,4 +101,4 @@ Login social. Arquivos enviados por pessoas para dentro de um app ou da máquina
 | 16 Atualizar sem cortar | A 14 | Nenhuma | Consertos de execução da auditoria. Testes 9 e 10 |
 | 22 Ensaio geral | A 21.1 | O lugar da cópia fora do Neon | Ensaios das etapas 2, 7, 9, 12 e 13. Teste de carga |
 | 23 Primeira empresa | A 22 | Os riscos aceitos. O plano pago | A seção 11 da arquitetura |
-| 24 Agentes com conectores | A 23 | Nenhuma | Aprovação por classe. Code Mode só em leituras, se medido |
+| 24 Agentes com conectores | A 23 | Nenhuma | Aprovação por classe. Code Mode só em leituras, se medido. O estudo parte dos agentes do Mastra e das referências de sempre, e soma o Open Bots (fundador, 2026-10-29: "eu quero que você adicione Open Bots, que tá agora bem forte"; qual projeto é, a confirmar com ele) |
