@@ -69,6 +69,14 @@ test('o último teste: guardado no que funciona, apagado no que a chave recusa, 
   const kept = Object((await call(hub, carla, 'GET', `${base}/${id}`)).json())
   assert.deepEqual(kept.lastTest, working.checks)
 
+  // A refusal is kept as its status and code, never its body or message.
+  fake.switches.refuse.add('empresas')
+  assert.equal(Object((await testOf(hub, ana, base, id)).json()).result, 'WORKING')
+  fake.switches.refuse.clear()
+  const keptOnes = Object((await call(hub, carla, 'GET', `${base}/${id}`)).json()).lastTest
+  const refusedItem = keptOnes.find((check: { id: string }) => check.id === 'empresas')
+  assert.deepEqual(Object.keys(refusedItem.native).sort(), ['code', 'status'])
+
   // A stored item that no longer matches the contract reads as no test, never an invented item.
   await hub.test.asOwner(
     `update connectors.connection set last_test = '[{"id":1}]' where id = $1`,

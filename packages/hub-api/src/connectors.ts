@@ -61,28 +61,45 @@ export const ConnectionList = z.object({
 })
 export type ConnectionList = z.infer<typeof ConnectionList>
 
+/** What the provider said, as it came (founder, 2026-10-29): its status, where its code and message sit, and its body with the request's secrets replaced. */
+export const Native = z.object({
+  status: z.number().int(),
+  code: z.string().nullable(),
+  message: z.string().nullable(),
+  body: z.unknown(),
+})
+export type Native = z.infer<typeof Native>
+
 const Item = z.object({
   id: z.string(),
   label: z.string(),
   subject: z.string(), // the subject's label, for the screen's one line per subject
 })
 
-/** One item of a test: what the call to it came to (never a value it read). */
-export const TestCheck = z.discriminatedUnion('outcome', [
-  Item.extend({
+/** One item of a test, by what its call came to; `native` is on the items the provider answered badly. */
+function checkOf<N extends z.ZodType>(native: N) {
+  return z.discriminatedUnion('outcome', [
     // NOT_TESTED: the test's whole deadline ran out before this item.
-    outcome: z.enum(['READS', 'REFUSED', 'UNREADABLE', 'NOTHING_TO_READ', 'NOT_TESTED']),
-  }),
-  // Not called: a source it reads from did not read; `source` is that source's label.
-  Item.extend({ outcome: z.literal('SOURCE_UNREAD'), source: z.string() }),
-])
+    Item.extend({ outcome: z.enum(['READS', 'NOTHING_TO_READ', 'NOT_TESTED']) }),
+    Item.extend({ outcome: z.enum(['REFUSED', 'UNREADABLE']), native }),
+    // Not called: a source it reads from did not read; `source` is that source's label.
+    Item.extend({ outcome: z.literal('SOURCE_UNREAD'), source: z.string() }),
+  ])
+}
+export const TestCheck = checkOf(Native)
 export type TestCheck = z.infer<typeof TestCheck>
 
-/** What Testar answers, shown at that moment and never kept (the values read stay in the executor). */
+/** A test item as it is kept (every member reads it): the status and code only, never the body or the message. */
+export const KeptCheck = checkOf(Native.pick({ status: true, code: true }))
+export type KeptCheck = z.infer<typeof KeptCheck>
+
+/** What Testar answers, shown at that moment (the values read stay in the executor; what the provider said about a refusal is shown, never kept whole). */
 export const TestResult = z.discriminatedUnion('result', [
   z.object({ result: z.literal('WORKING'), checks: z.array(TestCheck), connection: Connection }),
-  z.object({ result: z.literal('AUTH_REFUSED'), connection: Connection }),
-  z.object({ result: z.literal('UNREACHABLE'), connection: Connection }),
+  // The test ended on the provider's own answer: `native` is what it said (null: it said nothing, as a timeout).
+  z.object({ result: z.literal('AUTH_REFUSED'), native: Native, connection: Connection }),
+  z.object({ result: z.literal('UNREADABLE'), native: Native, connection: Connection }),
+  z.object({ result: z.literal('UNREACHABLE'), native: Native.nullable(), connection: Connection }),
 ])
 export type TestResult = z.infer<typeof TestResult>
 
@@ -154,7 +171,7 @@ export const testConnection = defineOperation({
 /** One connection with its last WORKING test, kept: the items only, never a value read (founder, X2). */
 export const ConnectionDetail = z.object({
   connection: Connection,
-  lastTest: z.array(TestCheck).nullable(),
+  lastTest: z.array(KeptCheck).nullable(),
 })
 export type ConnectionDetail = z.infer<typeof ConnectionDetail>
 

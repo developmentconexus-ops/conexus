@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
+import { sankhyaFake } from '@conexus/connectors'
 import { hubWithLog } from '../identity/test-hub.ts'
 import { connectionsOn, linkSankhya, testOf } from './test-connections.ts'
 
@@ -42,7 +43,8 @@ async function testingWith(t: TestContext, fetching: () => Promise<Response>) {
   const { connection } = Object(
     (await linkSankhya(on.hub, on.ana, on.base, on.fake.credential)).json(),
   )
-  return { ...on, tested: await testOf(on.hub, on.ana, on.base, connection.id) }
+  const tested = await testOf(on.hub, on.ana, on.base, connection.id)
+  return { ...on, connectionId: connection.id, tested }
 }
 
 function unreachableLines(lines: { message: string; fields: Record<string, unknown> }[]) {
@@ -52,14 +54,16 @@ function unreachableLines(lines: { message: string; fields: Record<string, unkno
 test('o fornecedor fora do ar é UNREACHABLE e uma linha de log com o tipo e o conector', async (t) => {
   const down = await testingWith(t, () => Promise.reject(new TypeError('fetch failed')))
   assert.equal(Object(down.tested.json()).result, 'UNREACHABLE')
-  assert.deepEqual(unreachableLines(down.hub.lines), [{ kind: 'TypeError', connector: 'sankhya' }])
+  assert.deepEqual(unreachableLines(down.hub.lines), [
+    { kind: 'TypeError', connector: 'sankhya', connectionId: down.connectionId },
+  ])
 })
 
 test('o prazo do fornecedor é UNREACHABLE e logado pelo tipo', async (t) => {
   const slow = await testingWith(t, () => Promise.reject(new DOMException('cut', 'TimeoutError')))
   assert.equal(Object(slow.tested.json()).result, 'UNREACHABLE')
   assert.deepEqual(unreachableLines(slow.hub.lines), [
-    { kind: 'TimeoutError', connector: 'sankhya' },
+    { kind: 'TimeoutError', connector: 'sankhya', connectionId: slow.connectionId },
   ])
 })
 
@@ -75,7 +79,63 @@ test('um erro de programação dentro do envio sobe como falha, não vira UNREAC
   assert.equal(reading.tested.statusCode, 500)
 })
 
-test('um corpo que não é JSON no login não é um erro: dá UNREACHABLE sem lançar', async (t) => {
+test('uma falha de rede loga o código da causa', async (t) => {
+  const refused = await testingWith(t, () =>
+    Promise.reject(new TypeError('fetch failed', { cause: { code: 'ECONNREFUSED' } })),
+  )
+  assert.deepEqual(unreachableLines(refused.hub.lines), [
+    {
+      kind: 'TypeError',
+      cause: 'ECONNREFUSED',
+      connector: 'sankhya',
+      connectionId: refused.connectionId,
+    },
+  ])
+})
+
+test('um 5xx guarda o que o fornecedor disse e é UNREACHABLE', async (t) => {
+  const down = await testingWith(t, () =>
+    Promise.resolve(Response.json({ code: 'E500', message: 'fora do ar' }, { status: 503 })),
+  )
+  const answer = Object(down.tested.json())
+  assert.equal(answer.result, 'UNREACHABLE')
+  assert.deepEqual(answer.native, {
+    status: 503,
+    code: 'E500',
+    message: 'fora do ar',
+    body: { code: 'E500', message: 'fora do ar' },
+  })
+  assert.equal(answer.connection.state, 'NEW')
+  assert.deepEqual(unreachableLines(down.hub.lines), [
+    { status: 503, connector: 'sankhya', connectionId: down.connectionId },
+  ])
+})
+
+test('o corpo de erro perde os valores da credencial antes de ser lido', async (t) => {
+  const { clientSecret = '', xToken = '' } = sankhyaFake().credential
+  const refused = await testingWith(t, () =>
+    Promise.resolve(
+      Response.json(
+        { code: 'BAD', message: `segredo ${clientSecret}`, echo: { header: xToken } },
+        { status: 401 },
+      ),
+    ),
+  )
+  const answer = Object(refused.tested.json())
+  assert.equal(answer.result, 'AUTH_REFUSED')
+  assert.equal(answer.native.message, 'segredo [redacted]')
+  assert.deepEqual(answer.native.body.echo, { header: '[redacted]' })
+  assert.equal(refused.tested.body.includes(clientSecret), false)
+})
+
+test('um login com um status ou corpo inesperado é UNREADABLE com o que veio, não UNREACHABLE', async (t) => {
+  const odd = await testingWith(t, () => Promise.resolve(Response.json({ ok: 1 }, { status: 200 })))
+  const answer = Object(odd.tested.json())
+  assert.equal(answer.result, 'UNREADABLE')
+  assert.equal(answer.native.status, 200)
+  assert.equal(answer.connection.state, 'NEW')
   const html = await testingWith(t, () => Promise.resolve(new Response('<html>', { status: 200 })))
-  assert.equal(Object(html.tested.json()).result, 'UNREACHABLE')
+  assert.equal(Object(html.tested.json()).result, 'UNREADABLE')
+  const teapot = await testingWith(t, () => Promise.resolve(Response.json({}, { status: 418 })))
+  assert.equal(Object(teapot.tested.json()).result, 'UNREADABLE')
 })

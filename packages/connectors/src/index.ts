@@ -20,12 +20,13 @@ export {
 } from './kernel/definition.ts'
 export type {
   Answered,
+  Native,
   Operation,
   OperationClass,
   OperationId,
   ProviderAnswer,
   ProviderRequest,
 } from './kernel/operation.ts'
-export { requestOf } from './kernel/operation.ts'
+export { locateOf, requestOf } from './kernel/operation.ts'
 export { toRequest } from './kernel/request.ts'
 export { sankhyaFake } from './sankhya/fake.ts'

@@ -63,7 +63,9 @@ test('testar: a fonte recusada deixa quem depende dela sem ser chamado, com o mo
   assert.ok(waiting.length >= 8)
   assert.equal(checks.find((check) => check.id === 'pedidos')?.source, 'Empresas')
   assert.equal(checks.find((check) => check.id === 'impostosDoPedido')?.source, 'Pedidos')
-  assert.equal(checks.find((check) => check.id === 'empresas')?.outcome, 'REFUSED')
+  const refused = checks.find((check) => check.id === 'empresas')
+  assert.equal(refused?.outcome, 'REFUSED')
+  assert.equal(Object(refused).native.status, 403)
   assert.equal(checks.find((check) => check.id === 'clientes')?.outcome, 'READS')
   assert.ok(
     checks.every((check) => (check.source === undefined) === (check.outcome !== 'SOURCE_UNREAD')),

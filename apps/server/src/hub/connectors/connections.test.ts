@@ -153,7 +153,7 @@ test('testar: o fornecedor fora do ar não muda o estado', async (t) => {
   await served.close()
   const down = await testOf(hub, ana, base, connection.id)
   assert.equal(down.statusCode, 200)
-  assert.deepEqual(Object(down.json()), { result: 'UNREACHABLE', connection })
+  assert.deepEqual(Object(down.json()), { result: 'UNREACHABLE', native: null, connection })
 })
 
 test('testar e desligar juntos; um serviço por token', async (t) => {

@@ -1,5 +1,5 @@
 import { connectorOf } from '@conexus/connectors'
-import type { Person, TestResult } from '@conexus/hub-api'
+import type { KeptCheck, Person, TestCheck, TestResult } from '@conexus/hub-api'
 import { and, sql } from 'drizzle-orm'
 import { Failure } from '../../platform/failure.ts'
 import { open } from '../../platform/seal.ts'
@@ -39,20 +39,29 @@ function opened(deps: Deps, input: OfConnection): Promise<OpenedConnection> {
 
 const NEXT_STATE = { WORKING: 'ACTIVE', AUTH_REFUSED: 'NEEDS_REAUTH' } as const
 
+/** An item as it is kept: what the provider said stays as its status and code, never its body or message (founder, 2026-10-29). */
+function kept(check: TestCheck): KeptCheck {
+  if (!('native' in check)) return check
+  const { status, code } = check.native
+  return { ...check, native: { status, code } }
+}
+
+type Written = Extract<Probed, { result: 'WORKING' | 'AUTH_REFUSED' }>
+
 /** What a finished test writes: the state, who tested and when; the items of a working test, nothing of a refused key (founder, X2). */
-function writtenBy(probe: Exclude<Probed, { result: 'UNREACHABLE' }>, tester: Person) {
+function writtenBy(probe: Written, tester: Person) {
   return {
     state: NEXT_STATE[probe.result],
     testedAt: sql`statement_timestamp()`,
     testedBy: tester.id,
-    lastTest: probe.result === 'WORKING' ? probe.checks : null,
+    lastTest: probe.result === 'WORKING' ? probe.checks.map(kept) : null,
   }
 }
 
 /**
  * Testar's last step: the state and the last test are written only on the row the first step
  * opened (its id and `linked_at`); one removed meanwhile is not found and nothing changes. An
- * unreachable provider changes nothing.
+ * unreachable provider, or one that answered what the kit cannot read, changes nothing.
  */
 function recorded(deps: Deps, input: OfConnection, opened: OpenedConnection, probe: Probed) {
   return deps.database.command(scopeOf(input), async (tx) => {
@@ -62,7 +71,7 @@ function recorded(deps: Deps, input: OfConnection, opened: OpenedConnection, pro
       sql`${connection.linkedAt} = ${opened.linkedAt}::timestamptz`,
     )
     const [row] =
-      probe.result === 'UNREACHABLE'
+      probe.result === 'UNREACHABLE' || probe.result === 'UNREADABLE'
         ? await tx.select(columns).from(connection).where(same)
         : await tx
             .update(connection)
@@ -81,5 +90,5 @@ export async function test(deps: Deps, input: OfConnection): Promise<TestResult>
   const view = await recorded(deps, input, open, probe)
   return probe.result === 'WORKING'
     ? { result: 'WORKING', checks: probe.checks, connection: view }
-    : { result: probe.result, connection: view }
+    : { ...probe, connection: view }
 }

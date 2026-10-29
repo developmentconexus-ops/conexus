@@ -8,7 +8,7 @@ import type {
   ConnectionList,
   ConnectorEntry,
 } from '@conexus/hub-api'
-import { ConnectionId, ConnectionName, TestCheck } from '@conexus/hub-api'
+import { ConnectionId, ConnectionName, KeptCheck } from '@conexus/hub-api'
 import { and, asc, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { ReadTx } from '../../platform/database.ts'
@@ -150,7 +150,7 @@ export function unlink(deps: Deps, input: Viewer & { connectionId: ConnectionId 
   })
 }
 
-/** One connection and the items of its last working test; one that no longer matches TestCheck is read as no test (never an invented item). */
+/** One connection and the items of its last working test; one that no longer matches KeptCheck is read as no test (never an invented item). */
 export function detail(deps: Deps, input: OfConnection): Promise<ConnectionDetail> {
   return deps.database.read(scopeOf(input), async (tx) => {
     await admitted(deps, tx, input, 'readConnections')
@@ -159,7 +159,7 @@ export function detail(deps: Deps, input: OfConnection): Promise<ConnectionDetai
       .from(connection)
       .where(ofCompany(input, input.connectionId))
     if (row === undefined) throw new Failure('CONNECTION_NOT_FOUND')
-    const lastTest = z.array(TestCheck).safeParse(row.lastTest)
+    const lastTest = z.array(KeptCheck).safeParse(row.lastTest)
     if (row.lastTest !== null && !lastTest.success)
       deps.log.error(
         { connectionId: row.id, kind: 'last test shape' },
