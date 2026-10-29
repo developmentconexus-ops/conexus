@@ -13,10 +13,18 @@ const BRUNO = PersonId.parse('person-b')
 const CONNECTION_A = '00000000-0000-4000-8000-00000000000a'
 const CONNECTION_B = '00000000-0000-4000-8000-00000000000b'
 
-function connection(id: string, company: string, connector: string, sealed: string, key: string) {
-  return `insert into connectors.connection(id, company_id, connector_id, connector_version, state,
-    sealed, key_id, linked_by, linked_at, attempt_key) values
-    ('${id}', '${company}', '${connector}', '1.0.0', 'NEW', '${sealed}', 'k1', 'person-b', now(), '${key}');`
+function connection(
+  id: string,
+  company: string,
+  connector: string,
+  name: string,
+  sealed: string,
+  key: string,
+) {
+  return `insert into connectors.connection(id, company_id, connector_id, name, connector_version,
+    state, sealed, key_id, linked_by, linked_at, attempt_key) values
+    ('${id}', '${company}', '${connector}', '${name}', '1.0.0', 'NEW', '${sealed}', 'k1',
+     'person-b', now(), '${key}');`
 }
 
 const SEED = `
@@ -26,8 +34,8 @@ const SEED = `
     ('${A}', 'Empresa A', 'key-a', now(), 'key-a'), ('${B}', 'Empresa B', 'key-b', now(), 'key-b');
   insert into auth.member(id, company_id, user_id, role, created_at) values
     ('member-a', '${A}', 'person-a', 'member', now()), ('member-b', '${A}', 'person-b', 'owner', now());
-  ${connection(CONNECTION_A, A, 'sankhya', '\\x01', 'a')}
-  ${connection(CONNECTION_B, B, 'sankhya', '\\x02', 'b')}`
+  ${connection(CONNECTION_A, A, 'sankhya', 'Matriz', '\\x01', 'a')}
+  ${connection(CONNECTION_B, B, 'sankhya', 'Matriz', '\\x02', 'b')}`
 
 function refusedWith(sqlstate: string) {
   return (error: unknown) => {
@@ -37,7 +45,7 @@ function refusedWith(sqlstate: string) {
   }
 }
 
-test('a ligação: uma por conector, cada empresa a sua, o selo só pela função', async (t) => {
+test('a ligação: várias por conector, cada uma pelo seu nome, cada empresa a sua, o selo só pela função', async (t) => {
   const { database, asOwner } = await createTestDatabase(t)
   await asOwner(SEED)
   function inA(personId: PersonId, statement: ReturnType<typeof sql>) {
@@ -46,18 +54,35 @@ test('a ligação: uma por conector, cada empresa a sua, o selo só pela funçã
     )
   }
 
-  // One connection for each (company, connector): the second Sankhya of A is refused.
-  await assert.rejects(asOwner(connection(crypto.randomUUID(), A, 'sankhya', '\\x03', 'a2')), {
+  // As many connections of a connector as the company wants, each under its own name; the name is
+  // unique in the company and connector whatever its case, and the same name stays free elsewhere.
+  await asOwner(connection(crypto.randomUUID(), A, 'sankhya', 'Filial', '\\x03', 'a2'))
+  for (const name of ['Matriz', 'matriz', 'MATRIZ']) {
+    await assert.rejects(
+      asOwner(connection(crypto.randomUUID(), A, 'sankhya', name, '\\x03', `again-${name}`)),
+      { code: '23505', constraint: 'connection_name_key' },
+    )
+  }
+  await asOwner(connection(crypto.randomUUID(), A, 'bling', 'Matriz', '\\x03', 'a3'))
+  await assert.rejects(asOwner(connection(crypto.randomUUID(), A, 'bling', 'x', '\\x03', 'a3')), {
     code: '23505',
-    constraint: 'connection_connector_key',
+    constraint: 'connection_attempt_key',
   })
-  await asOwner(connection(crypto.randomUUID(), A, 'bling', '\\x03', 'a3'))
+  for (const name of ['', ' Matriz', 'Matriz ', 'x'.repeat(61)]) {
+    await assert.rejects(
+      asOwner(connection(crypto.randomUUID(), A, 'bling', name, '\\x03', `bad-${name.length}`)),
+      { code: '23514', constraint: 'connection_name' },
+    )
+  }
+  await asOwner(connection(crypto.randomUUID(), A, 'bling', 'x'.repeat(60), '\\x03', 'long'))
 
   // A company's login reads its own row and no other's, and writes none into another company.
   const ids = sql`select coalesce(array_agg(id::text order by id), '{}') as ids from connectors.connection`
-  const own = sql`select coalesce(array_agg(connector_id order by connector_id), '{}') as connectors
-    from connectors.connection`
-  assert.deepEqual((await inA(ANA, own)).rows, [{ connectors: ['bling', 'sankhya'] }])
+  const own = sql`select coalesce(array_agg(connector_id || ':' || name order by connector_id, name), '{}')
+    as connections from connectors.connection where length(name) < 10`
+  assert.deepEqual((await inA(ANA, own)).rows, [
+    { connections: ['bling:Matriz', 'sankhya:Filial', 'sankhya:Matriz'] },
+  ])
   const inB = await database.command({ kind: 'COMPANY', companyId: B, personId: BRUNO }, (tx) =>
     tx.execute(ids),
   )
@@ -65,9 +90,9 @@ test('a ligação: uma por conector, cada empresa a sua, o selo só pela funçã
   await assert.rejects(
     inA(
       ANA,
-      sql`insert into connectors.connection(id, company_id, connector_id, connector_version, state,
-        sealed, key_id, linked_by, linked_at, attempt_key)
-        values (gen_random_uuid(), ${B}, 'bling', '1.0.0', 'NEW', '\\x00', 'k1', ${ANA}, now(), 'planted')`,
+      sql`insert into connectors.connection(id, company_id, connector_id, name, connector_version,
+        state, sealed, key_id, linked_by, linked_at, attempt_key)
+        values (gen_random_uuid(), ${B}, 'bling', 'Matriz', '1.0.0', 'NEW', '\\x00', 'k1', ${ANA}, now(), 'planted')`,
     ),
     refusedWith('42501'),
   )
@@ -120,23 +145,52 @@ test('a ligação: a empresa troca o estado e o selo, e a apaga com a empresa', 
     )
   }
 
-  // The company's role reseals and tests a connection, and changes nothing else about it.
+  // The company's role reseals and tests a connection (keeping the last test's items, null until
+  // the first test), and changes nothing else about it: not even its name.
+  const fresh = await inA(
+    ANA,
+    sql`select tested_by, last_test from connectors.connection where id = ${CONNECTION_A}`,
+  )
+  assert.deepEqual(fresh.rows, [{ tested_by: null, last_test: null }])
   await inA(
     ANA,
-    sql`update connectors.connection set state = 'ACTIVE', tested_at = now()
+    sql`update connectors.connection set state = 'ACTIVE', tested_at = now(), tested_by = ${ANA},
+    last_test = ${JSON.stringify([{ id: 'login', outcome: 'WORKS' }])}::jsonb
     where id = ${CONNECTION_A}`,
   )
-  await assert.rejects(
-    inA(
-      ANA,
-      sql`update connectors.connection set connector_id = 'outro' where id = ${CONNECTION_A}`,
-    ),
-    refusedWith('42501'),
+  const tested = await inA(
+    ANA,
+    sql`select tested_by, last_test from connectors.connection where id = ${CONNECTION_A}`,
   )
+  assert.deepEqual(tested.rows, [
+    { tested_by: ANA, last_test: [{ id: 'login', outcome: 'WORKS' }] },
+  ])
+  for (const column of ['connector_id', 'name']) {
+    await assert.rejects(
+      inA(
+        ANA,
+        sql`update connectors.connection set ${sql.raw(column)} = 'outro' where id = ${CONNECTION_A}`,
+      ),
+      refusedWith('42501'),
+    )
+  }
 
   // The company leaves (its people first, as the deletion's phases do), and its connections with it.
   await asOwner(
     `delete from auth.member where company_id = '${A}'; delete from auth.company where id = '${A}'`,
   )
   assert.deepEqual(await asOwner(`select id from connectors.connection`), [{ id: CONNECTION_B }])
+})
+
+test('catálogo: o nome da ligação é único sem caixa, no índice que o REINDEX do D33 reconstrói', async (t) => {
+  const { asOwner } = await createTestDatabase(t)
+  const index = await asOwner(
+    `select indexdef from pg_indexes where indexname = 'connection_name_key'`,
+  )
+  assert.deepEqual(index, [
+    {
+      indexdef:
+        'CREATE UNIQUE INDEX connection_name_key ON connectors.connection USING btree (company_id, connector_id, lower((name COLLATE "und-x-icu")))',
+    },
+  ])
 })
