@@ -133,7 +133,7 @@ test('antes do primeiro app, o topo não mostra "Abrir app"', async () => {
 
 const PUBLISH_PATH = `*/api/companies/${COMPANY.id}/projects/${PEDIDOS.id}/published-version`
 
-test('o alto do Projeto: Publicar, publicada e Abrir app', async () => {
+test('o alto do Projeto: a versão, Abrir app e Publicar, nessa ordem', async () => {
   const view: Parameters<typeof projectsRead>[0] = {
     projects: [PEDIDOS],
     databaseReady: true,
@@ -165,7 +165,7 @@ test('o alto do Projeto: Publicar, publicada e Abrir app', async () => {
   expect(screen.queryByRole('link', { name: 'Abrir app' })).toBeNull()
   fireEvent.click(screen.getByRole('button', { name: 'Publicar a versão 7' }))
   // As duas iguais: o texto no lugar do botão, e o Abrir app.
-  expect(await screen.findByText('Versão 7 publicada')).toBeTruthy()
+  expect(await screen.findByText('Versão 7 · publicada')).toBeTruthy()
   expect(sent).toEqual([{ number: 7 }])
   expect(screen.queryByRole('button', { name: 'Publicar' })).toBeNull()
   expect((await screen.findByRole('link', { name: 'Abrir app' })).getAttribute('href')).toBe(
@@ -174,9 +174,12 @@ test('o alto do Projeto: Publicar, publicada e Abrir app', async () => {
   // A Prévia anda para a 8: a publicada fica na 7, o Publicar volta e o Abrir app continua.
   view.appVersion = 8
   await act(() => conexus.queryClient.invalidateQueries())
-  expect(await screen.findByRole('button', { name: 'Publicar' })).toBeTruthy()
-  expect(screen.queryByText('Versão 7 publicada')).toBeNull()
-  expect(screen.getByRole('link', { name: 'Abrir app' })).toBeTruthy()
+  const publish = await screen.findByRole('button', { name: 'Publicar' })
+  expect(screen.queryByText('Versão 7 · publicada')).toBeNull()
+  const status = screen.getByText('Versão 8 · não publicada')
+  const open = screen.getByRole('link', { name: 'Abrir app' })
+  expect(status.compareDocumentPosition(open) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  expect(open.compareDocumentPosition(publish) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
 })
 
 test('o alto do Projeto: a versão sumiu ao publicar, a frase fica abaixo do alto e some ao reabrir', async () => {
