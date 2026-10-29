@@ -1,7 +1,7 @@
 {
   "version": "8",
   "dialect": "postgres",
-  "id": "faeb5de3-cc36-4c97-ba57-4017dceb488e",
+  "id": "5689c105-1b19-4cfe-8447-09d806b37469",
   "prevIds": ["14ff4160-c80b-4a28-9840-27b21993de20"],
   "ddl": [
     {
@@ -1514,6 +1514,19 @@
       "default": null,
       "generated": null,
       "identity": null,
+      "name": "name",
+      "entityType": "columns",
+      "schema": "connectors",
+      "table": "connection"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
       "name": "connector_version",
       "entityType": "columns",
       "schema": "connectors",
@@ -1593,6 +1606,32 @@
       "generated": null,
       "identity": null,
       "name": "tested_at",
+      "entityType": "columns",
+      "schema": "connectors",
+      "table": "connection"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "tested_by",
+      "entityType": "columns",
+      "schema": "connectors",
+      "table": "connection"
+    },
+    {
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "last_test",
       "entityType": "columns",
       "schema": "connectors",
       "table": "connection"
@@ -2910,6 +2949,41 @@
       "nameExplicit": true,
       "columns": [
         {
+          "value": "company_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "connector_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "lower(\"name\" collate \"und-x-icu\")",
+          "isExpression": true,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": true,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "connection_name_key",
+      "entityType": "indexes",
+      "schema": "connectors",
+      "table": "connection"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
           "value": "user_id",
           "isExpression": false,
           "asc": true,
@@ -3743,15 +3817,6 @@
     },
     {
       "nameExplicit": true,
-      "columns": ["company_id", "connector_id"],
-      "nullsNotDistinct": false,
-      "name": "connection_connector_key",
-      "entityType": "uniques",
-      "schema": "connectors",
-      "table": "connection"
-    },
-    {
-      "nameExplicit": true,
       "columns": ["company_id", "attempt_key"],
       "nullsNotDistinct": false,
       "name": "connection_attempt_key",
@@ -4031,6 +4096,13 @@
       "entityType": "checks",
       "schema": "apps",
       "table": "version_file"
+    },
+    {
+      "value": "char_length(\"name\") BETWEEN 1 AND 60 AND \"name\" = btrim(\"name\")",
+      "name": "connection_name",
+      "entityType": "checks",
+      "schema": "connectors",
+      "table": "connection"
     },
     {
       "value": "\"state\" IN ('NEW', 'ACTIVE', 'NEEDS_REAUTH')",
