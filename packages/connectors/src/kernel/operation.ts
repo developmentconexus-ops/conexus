@@ -51,3 +51,8 @@ export function defineOperation<I, O, C extends OperationClass>(
 ): Operation<I, O, C> {
   return Object.freeze({ ...operation, id: OperationId.parse(operation.id) })
 }
+
+/** The only way a request is built from an input: the operation's own schema parses it first, so a refused input never reaches `request`. */
+export function requestOf<I>(operation: Operation<I, unknown>, input: unknown): ProviderRequest {
+  return operation.request(operation.input.parse(input))
+}

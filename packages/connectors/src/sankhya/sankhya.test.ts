@@ -3,6 +3,7 @@ import { test } from 'node:test'
 import { CONNECTORS, connectorOf } from '../index.ts'
 import { runConformance } from '../kernel/conformance.ts'
 import type { Operation } from '../kernel/operation.ts'
+import { requestOf } from '../kernel/operation.ts'
 import { sankhya } from './definition.ts'
 import { sankhyaDoor } from './door.ts'
 import { sankhyaFake } from './fake.ts'
@@ -50,6 +51,16 @@ test('a porta de leitura só lê', () => {
     '',
   ])
     assert.equal(consultar.input.safeParse({ sql }).success, false, sql)
+
+  assert.throws(() => requestOf(sankhyaDoor.consultar, { sql: 'DELETE FROM T' }))
+  assert.throws(() =>
+    requestOf(sankhyaDoor.carregar, {
+      entidade: 'Empresa',
+      campos: ['CODEMP'],
+      pagina: 0,
+      criterio: { expressao: 'this.CODEMP = 1; DELETE FROM TSIEMP', parametros: [] },
+    }),
+  )
 
   const loaded = carregar.request({
     entidade: 'Empresa',

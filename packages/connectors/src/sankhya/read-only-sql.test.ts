@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
-import { isOneReadStatement } from './read-only-sql.ts'
+import { isOneReadStatement, isReadCondition } from './read-only-sql.ts'
 
 describe('read-only SQL', () => {
   it('accepts one SELECT or WITH, with a closing semicolon, comments and quoted words', () => {
@@ -23,6 +23,8 @@ describe('read-only SQL', () => {
       'SELECT 1 /* x */; DELETE FROM TGFPAR',
       'SELECT 1;\n-- note\nDELETE FROM TGFPAR',
       'SELECT 1 FROM T DELETE FROM TGFPAR',
+      "SELECT 1 /* /* */ ' */ DELETE FROM TGFPAR --'",
+      "SELECT 1 /* /* */ ' */ ; DELETE FROM TGFPAR --'",
     ])
       assert.equal(isOneReadStatement(sql), false, sql)
   })
@@ -69,5 +71,19 @@ describe('read-only SQL', () => {
   it('reads a doubled quote as an escape, not a close', () => {
     assert.equal(isOneReadStatement("SELECT 'it''s; DELETE' FROM DUAL"), true)
     assert.equal(isOneReadStatement("SELECT 'a''; DELETE FROM T -- "), false)
+  })
+})
+
+describe('read-only criteria', () => {
+  it('holds a condition to the same wire', () => {
+    for (const text of ['this.CODEMP = ?', "this.NOME = 'DELETE; DROP'", 'this.A = 1 /* ; */'])
+      assert.equal(isReadCondition(text), true, text)
+    for (const text of [
+      'this.A = 1; DELETE FROM TGFPAR',
+      'this.A = 1 DELETE FROM TGFPAR',
+      "this.A = 1 /* /* */ ' */ DELETE FROM TGFPAR --'",
+      'this.A = 1 /* open',
+    ])
+      assert.equal(isReadCondition(text), false, text)
   })
 })

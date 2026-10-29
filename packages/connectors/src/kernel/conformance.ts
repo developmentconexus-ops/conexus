@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { readToken, tokenRequest } from './auth.ts'
 import type { Connector } from './definition.ts'
 import type { Operation, OperationId, ProviderAnswer } from './operation.ts'
-import { OPERATION_CLASSES } from './operation.ts'
+import { OPERATION_CLASSES, requestOf } from './operation.ts'
 import { toRequest } from './request.ts'
 
 export type Fake = Readonly<{
@@ -66,8 +66,7 @@ export function runConformance(connector: Connector, fake: Fake): void {
       for (const operation of all) {
         const input = operation.probe(earlier)
         assert.notEqual(input, null, `${operation.id} has a probe the fake can answer`)
-        const parsed = operation.input.parse(input)
-        const request = toRequest(connector, operation.request(parsed), token.accessToken)
+        const request = toRequest(connector, requestOf(operation, input), token.accessToken)
         const answered = operation.answer(await answerOf(await fake.handle(request)))
         assert.equal(answered.kind, 'OK', operation.id)
         if (answered.kind !== 'OK') continue
@@ -88,9 +87,7 @@ export function runConformance(connector: Connector, fake: Fake): void {
       for (const operation of all) {
         const input = operation.probe(new Map())
         if (input === null) continue
-        const text = await textOf(
-          toRequest(connector, operation.request(operation.input.parse(input)), 'bearer'),
-        )
+        const text = await textOf(toRequest(connector, requestOf(operation, input), 'bearer'))
         for (const value of values)
           assert.ok(!text.includes(value), `${operation.id} leaks a credential value`)
       }

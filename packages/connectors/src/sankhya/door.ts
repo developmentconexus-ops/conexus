@@ -3,7 +3,7 @@ import { defineReadDoor } from '../kernel/definition.ts'
 import type { ProviderRequest } from '../kernel/operation.ts'
 import { defineOperation } from '../kernel/operation.ts'
 import { gatewayAnswer } from './answers.ts'
-import { isOneReadStatement } from './read-only-sql.ts'
+import { isOneReadStatement, isReadCondition } from './read-only-sql.ts'
 
 const GATEWAY_PATH = '/gateway/v1/mge/service.sbr'
 const LOAD_RECORDS = 'CRUDServiceProvider.loadRecords'
@@ -66,7 +66,7 @@ const CarregarInput = z.object({
     .max(50),
   criterio: z
     .object({
-      expressao: z.string().max(2000),
+      expressao: z.string().max(2000).refine(isReadCondition),
       parametros: z.array(z.object({ valor: z.string(), tipo: z.enum(['I', 'S', 'D']) })),
     })
     .optional(),
