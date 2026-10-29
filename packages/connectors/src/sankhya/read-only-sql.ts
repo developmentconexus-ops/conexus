@@ -48,11 +48,17 @@ const REFUSED_WORDS = new RegExp(
     'MOVE',
     'CHECKPOINT',
     'SETUSER',
+    'ADD',
+    'USE',
+    'SET',
+    'END\\s+CONVERSATION',
   ].join('|')})\\b`,
   'i',
 )
 
 const COMMENT = /\/\*|\*\/|--/
+// SQL Server ends a number at its first non-digit, so `1DELETE` is `1` and then `DELETE`, where `\b` sees one word.
+const GLUED_NUMBER = /(?<![\w@#])(?=((?:\d+\.?\d*|\.\d+)(?:e[+-]?\d*)?))\1[a-z_]/i
 const CLOSING_QUOTE: Readonly<Record<string, string>> = { "'": "'", '"': '"', '[': ']' }
 
 /** The index just past the quoted text opened at `start`, where a doubled closing quote is an escape; -1 if it never closes. */
@@ -90,9 +96,9 @@ function codeOf(sql: string): string | null {
   return code
 }
 
-/** No `;` and no refused word in the code, the part of the wire that a statement and a condition share. */
+/** No `;`, no refused word and no number glued to a letter in the code, the part of the wire that a statement and a condition share. */
 function isInert(code: string): boolean {
-  return !code.includes(';') && !REFUSED_WORDS.test(code)
+  return !code.includes(';') && !REFUSED_WORDS.test(code) && !GLUED_NUMBER.test(code)
 }
 
 /** One SELECT or WITH statement, with no refused word outside quoted text. */

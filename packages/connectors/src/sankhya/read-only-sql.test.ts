@@ -9,6 +9,7 @@ describe('read-only SQL', () => {
       'select * from TGFPAR;',
       'WITH a AS (SELECT 1 AS X FROM DUAL) SELECT X FROM a',
       "SELECT 'DELETE; DROP' AS T FROM DUAL",
+      'SELECT 1E5, AD_CAMPO1, 1.5 FROM T1 WHERE A1B = 10',
     ])
       assert.equal(isOneReadStatement(sql), true, sql)
   })
@@ -77,9 +78,13 @@ describe('read-only SQL statement words', () => {
       'MOVE',
       'CHECKPOINT',
       'SETUSER',
+      'ADD',
+      'USE',
+      'SET',
     ])
       assert.equal(isOneReadStatement(`SELECT 1 FROM T WHERE ${word} = 1`), false, word)
     assert.equal(isOneReadStatement('SELECT A INTO B FROM T'), false)
+    assert.equal(isOneReadStatement('SELECT 1 FROM T END CONVERSATION @h'), false)
   })
 })
 
@@ -130,7 +135,7 @@ describe('read-only SQL, comments and quotes', () => {
 
 describe('read-only criteria', () => {
   it('holds a condition to the same wire', () => {
-    for (const text of ['this.CODEMP = ?', "this.NOME = 'DELETE; DROP'"])
+    for (const text of ['this.CODEMP = ?', "this.NOME = 'DELETE; DROP'", 'this.A = 1E5 AND this.AD_CAMPO1 = ?'])
       assert.equal(isReadCondition(text), true, text)
     for (const text of [
       'this.A = 1; DELETE FROM TGFPAR',
@@ -155,6 +160,7 @@ describe('read-only criteria', () => {
       "this.A = 1 -- ' \n DELETE FROM TGFPAR --'",
       'this.A = 1 -- note',
       'this.A = 1 /* open',
+      'this.A = 1DELETE FROM TGFPAR',
     ])
       assert.equal(isReadCondition(text), false, text)
   })
