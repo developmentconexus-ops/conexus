@@ -51,9 +51,8 @@ usuário só de leitura do Sankhya de uma empresa (o que você fornece antes).
 **O que você faz, e quando.** Antes: o usuário só de leitura no Sankhya de uma empresa, com o Client
 ID, o Client Secret e o X-Token (o roadmap, linha 19); e, no Construtor de Telas desse Sankhya, uma
 tabela de estoque simples para a sonda (por exemplo "Conexus Sonda Estoque", com Código e
-Descrição) com uma linha de teste (1, "teste"); o texto de onde achar as três chaves no Sankhya (o
-seu, ou um link da documentação do Sankhya) e o arquivo do logotipo oficial do Sankhya (de você, ou
-da página de marca do Sankhya). No começo: aprova esta página; a sua aprovação
+Descrição) com uma linha de teste (1, "teste"); e o arquivo do logotipo oficial do Sankhya (de você,
+ou da página de marca do Sankhya). No começo: aprova esta página; a sua aprovação
 é também a palavra que a regra de dados D11 pede para a lista de permissões do banco ganhar a tabela
 da ligação (a U2). No fim: faz o roteiro no computador e no celular com o usuário de verdade, diz o
 que viu e aprova os textos da tela.
@@ -218,11 +217,23 @@ Livre, a logo do Mercado Livre, para ficar bem profissional e organizado." Daí:
   o Hub guarda o resultado de cada leitura do último teste, nunca um valor lido, e o Bruno o vê;
   **`X3`**, **Ligar e testar** num toque; **`X4`**, várias ligações já na 19 (a sua regra acima);
   **`X5`**, o Client ID à vista enquanto ela cola; **`X7`**, aceitar o tamanho (abaixo).
-- **Abertos, seus**: as frases novas (`X6`: "Não testada: depende de Empresas, que não leu", "Lê,
-  mas não havia nada para olhar", "Lê em parte", "Lê 4 de 8 assuntos inteiros", as dicas por
-  assunto, "Antes de colar"); o texto de onde achar as três chaves no Sankhya; e o arquivo do
-  logotipo oficial do Sankhya. As frases deste cartão são provisórias até a sua resposta; o Ligar
-  mostra o lugar do "onde achar" vazio até o texto chegar.
+- **`X6`**, as frases novas, aprovadas ("Aprovo", 2026-10-29): "Não testada: depende de <fonte>,
+  que não leu", "Lê, mas não havia nada para olhar", o selo "Lê em parte", "Lê 4 de 8 assuntos
+  inteiros" e as dicas por assunto.
+- **Onde achar as chaves.** Você quer, depois, um site de ajuda do Conexus, com um guia por conector,
+  passo a passo, apontando para a documentação do fornecedor. Nesta etapa, cada campo de chave tem
+  uma linha curta e um link para a página pública do Sankhya que explica de onde ela vem; o conector
+  declara o link, e ele poderá apontar para o nosso guia depois. As páginas dizem com clareza:
+  - **Client ID** e **Client Secret**: "gerados na Área do Desenvolvedor" do Sankhya, no Componente
+    de Integração, com o botão "Gerar novas chaves"
+    (`developer.sankhya.com.br/reference/guia-de-conversao-do-componente-de-integracao-appkey-oauth2`;
+    também `reference/post_authenticate`: "`client_id` e `client_secret` fornecidos na Área do
+    Desenvolvedor").
+  - **X-Token**: "obtido na tela **Configurações Gateway** do Sankhya Om", ligado ao usuário de
+    integração (`developer.sankhya.com.br/reference/gerando-tokens-de-integração-no-sankhyaom`, e
+    `reference/post_authenticate`).
+- **Aberto, seu**: o arquivo do logotipo oficial do Sankhya (de você, ou da página de marca do
+  Sankhya).
 
 **Onde ficam as leituras, e como o agente as aprende.** No pacote de conectores, o Sankhya continua
 sendo um conector só, com uma definição; as leituras ficam em arquivos por assunto (cadastros,
@@ -252,10 +263,10 @@ O que a escrita do cartão escolheu dentro do que você já aprovou, para você 
   estiver fora, esse passo diz "a documentação do Sankhya não baixou" e o pull request espera.
 - **Uma lista vazia não é uma recusa.** Seis páginas da documentação do Sankhya dizem que uma
   lista sem registros responde 404 com o corpo de "dados não encontrados". Esse 404, com esse corpo,
-  é "nada para ler"; qualquer outro 404 é uma resposta que o Conexus não entendeu.
+  é "Lê, mas não havia nada para olhar"; qualquer outro 404 é uma resposta que o Conexus não entendeu.
 - **Uma leitura que depende de outra.** Onze leituras partem de um valor de outra (os pedidos
   precisam do código de uma empresa). Se a primeira foi recusada, a segunda não é tentada e aparece
-  como "não testado: depende de Empresas, que não leu", nunca como "nada para ler". O teste de
+  como "Não testada: depende de Empresas, que não leu", nunca como "nada para olhar". O teste de
   telas viu esse erro, e cada leitura passa a declarar de qual parte.
 - **O Testar com 23 leituras.** O Sankhya aceita uma chamada por vez em cada sessão, e a Cloudflare
   corta uma resposta aos 100 s. Com 26 chamadas em fila, de até 10 s cada uma, o pior caso passaria
@@ -322,7 +333,7 @@ instalado). As linhas desta revisão são hipótese.
 | 1 | U0 | `npm run deps` recusa um arquivo de `packages/connectors/` que importe `apps/`, outro pacote do repositório, `pg`, `drizzle-orm`, `fastify` ou `@mastra/*` (o kit importa só `zod` e o Node); e recusa um arquivo de fora de `apps/server/src/hub/connectors/` e de `tests/` que importe `@conexus/connectors` | `scripts/rules.test.ts`, um arquivo plantado por regra, como as outras | must |
 | 2 | U1 | `defineOperation` sem `class`, ou com uma classe fora de `read`, `write`, `destructive`, não compila; a porta de leitura só aceita operações `read` | `packages/connectors/src/kernel/kernel.test.ts`, "a classe é obrigatória" (com `// @ts-expect-error`) | must |
 | 3 | U1 | `toRequest` monta o pedido só na origem fixa do conector: um caminho absoluto (`https://…`), com `//` no começo, com `..` ou com `@` lança antes de qualquer `fetch`; a consulta e o corpo vão como o conector os monta | `kernel.test.ts`, "o pedido fica na origem fixa" | must |
-| 4 | U1 | `runConformance(sankhya, fake)` passa: ids únicos, versão semver, cada operação com classe, assunto, resumo e `probe`, e cada `read` com `idempotent: true`; cada nome de `from` é uma operação que vem antes dela na definição; a definição declara `account` (o Sankhya, `{ kind: 'none' }`), `category`, `summary` de uma linha, `logo` (um SVG que começa em `<svg`, sem `<script`, sem `on…=` e sem endereço de fora, até 16 KB) e, em cada campo, `help` ou `null`; cada assunto declarado na definição tem operação e a sua parte da skill (`skill/references/<assunto>.md`); os `probe` em ordem, cada um respondido pelo dublê, passam no esquema de saída; o pedido de token com a chave errada dá `AUTH_REFUSED`; nenhum pedido montado leva um valor da credencial fora do pedido de token e do cabeçalho; o `SKILL.md` nomeia cada assunto e cada entrada da porta, e cada operação é nomeada na parte do seu assunto; o `SKILL.md` fica abaixo das 500 linhas que o Mastra recomenda | `packages/connectors/src/sankhya/sankhya.test.ts`, "o Sankhya passa no teste comum" | must |
+| 4 | U1 | `runConformance(sankhya, fake)` passa: ids únicos, versão semver, cada operação com classe, assunto, resumo e `probe`, e cada `read` com `idempotent: true`; cada nome de `from` é uma operação que vem antes dela na definição; a definição declara `account` (o Sankhya, `{ kind: 'none' }`), `category`, `summary` de uma linha, `logo` (um SVG que começa em `<svg`, sem `<script`, sem `on…=` e sem endereço de fora, até 16 KB) e, em cada campo, `help` com uma linha e um `url` `https://`; cada assunto declarado na definição tem operação e a sua parte da skill (`skill/references/<assunto>.md`); os `probe` em ordem, cada um respondido pelo dublê, passam no esquema de saída; o pedido de token com a chave errada dá `AUTH_REFUSED`; nenhum pedido montado leva um valor da credencial fora do pedido de token e do cabeçalho; o `SKILL.md` nomeia cada assunto e cada entrada da porta, e cada operação é nomeada na parte do seu assunto; o `SKILL.md` fica abaixo das 500 linhas que o Mastra recomenda | `packages/connectors/src/sankhya/sankhya.test.ts`, "o Sankhya passa no teste comum" | must |
 | 5 | U1 | A porta de leitura do Sankhya só lê por esforço, em duas camadas, não por garantia (fundador, 2026-10-29): o filtro do Conexus e a guarda do DB Explorer do Sankhya; o usuário de integração não impede uma escrita. O filtro, provado aqui: o esquema de entrada de `consultar` aceita um `SELECT` ou `WITH` e recusa, antes de montar o pedido, um comentário, duas instruções, `INSERT`, `UPDATE`, `DELETE`, `MERGE`, `EXEC`, a citação `q'` do Oracle, também com `WHERE 1=0` e em `INSERT … SELECT`; `carregar` só chama `CRUDServiceProvider.loadRecords`, e o seu critério aceita os cinco tipos que o Sankhya documenta (`D`, `H`, `F`, `I`, `S`) e recusa outro; nenhum outro serviço sai do kit | `sankhya.test.ts`, "a porta de leitura só lê" | must |
 | 6 | U1 | Cada uma das 23 operações prontas (a lista em U1, "A API do Sankhya") faz um `GET` na API REST e devolve linhas tipadas, e `tiposOperacao` aceita a lista ou o objeto único que a documentação mostra; um 403 que não é de token vira `REFUSED` (`NO_PERMISSION`); um 400 `RetornoErro`, `REFUSED` (`INPUT`); um 404 com o corpo de "não encontrado" que a documentação mostra (`statusCode: 404`) é `OK` com a lista vazia, e um 404 com outro corpo, `UNREADABLE`; no login, 400, 401 ou 403 dão `AUTH_REFUSED` (como o OS, `gateway.ts:47`); numa operação, um 401 ou 403 `4303` ou `4405`, `AUTH_REFUSED`; um 403 `GTW3403` (token vencido), `TOKEN_EXPIRED`; na porta, um envelope com `status` diferente de `"1"`, ou um 200 com `[CORE_E…]`, vira `REFUSED` (`VENDOR`); uma resposta fora do esquema, `UNREADABLE`; nunca linhas vazias no lugar de uma recusa | `sankhya.test.ts`, "as operações prontas leem o envelope" | must |
 | 7 | U2 | `connectors.connection` guarda várias por (empresa, conector), uma por nome: duas do Sankhya com nomes diferentes na mesma empresa convivem, e a segunda com o mesmo nome dá `23505` em `connection_name_key`; o mesmo nome noutra empresa, ou noutro conector, passa; um nome vazio ou acima de 60 caracteres dá `23514`; `hub_company` grava `last_test` e `tested_by` e não muda `name`; apagar a empresa leva a linha; o login de uma empresa não lê a de outra (RLS); `hub_company` não lê a coluna `sealed`; `connectors.sealed_of(id)` devolve o selo só na empresa da transação | `apps/server/src/hub/connectors/tables.test.ts`, "a ligação: várias por conector, uma por nome, cada empresa a sua, o selo só pela função", por SQL no banco de teste (`createTestDatabase`, como `platform/isolation-model-accounts.test.ts`) | must |
@@ -335,7 +346,7 @@ instalado). As linhas desta revisão são hipótese.
 | 14 | U3 | `GET /api/companies/{c}/connections`: todo membro lê o catálogo (o Sankhya com a categoria, o resumo, o logotipo e, em cada campo, o rótulo e a ajuda) e as ligações (o nome, o conector, o estado, quem ligou, quando, `testedAt`, a versão do conector) e `mayManage`; `GET …/connections/{id}` devolve a ligação com o último teste guardado (ou `null`), e 404 `CONNECTION_NOT_FOUND` para uma desligada ou de outra empresa; nenhuma resposta, log ou erro leva um valor da credencial; quem não é membro recebe 404 | `connections.test.ts`, "a lista e uma ligação: o membro lê, nada da credencial sai" | must |
 | 15 | U3 | O selo da ligação abre só com o seu contexto: copiado para outra linha, outra empresa ou outro conector, `SEAL_REFUSED`; `reseal` move as ligações seladas com uma chave antiga para a atual e conta `moved` e `refused`, como as contas de modelo (`reseal.ts:73`); uma ligação de um conector que o kit não tem mais conta `refused` | `apps/server/src/hub/connectors/connection-seal.test.ts`, "o selo da ligação e o reseal": o selo copiado por SQL cru no banco de teste, e o `reseal` pelo processo (`spawnHub`, como `model-accounts/reseal.test.ts`) | must |
 | 16 | U3 | O executor pede o pedido só à origem do conector, ou à do dublê que a configuração nomeia, que só pode ser `http://127.0.0.1` ou `localhost` (`HUB_CONNECTOR_ORIGINS`); qualquer outra recusa o Hub de subir; um redirecionamento do fornecedor dá `UNREACHABLE`; uma resposta acima de 256 KB é cortada e aquela linha dá `UNREADABLE`; o Hub com uma origem para um conector que o kit não tem não sobe | `apps/server/src/hub/connectors/executor.test.ts`, "a origem, o redirecionamento e o teto", pela rota do Testar com os interruptores do dublê; `apps/server/src/platform/config.test.ts`, "a origem do dublê é só local" | must |
-| 17 | U4 | Em **Integrações**, a dona vê as ligações agrupadas por conector, cada conector com o seu logotipo e a sua categoria, cada ligação com o seu nome e o seu estado, e cada conector do catálogo com **Ligar**, também o que já tem ligação; **Ligar** abre a janela no meio da tela (`ui/dialog.tsx`, como `new-project-dialog.tsx`) com "Antes de colar", o nome (preenchido com o nome do conector) e os campos do catálogo, o Client ID à vista e os outros escondidos (o catálogo diz quais), sem mostrar o que foi colado depois de ligar; `CONNECTION_NAME_TAKEN` e `CONNECTION_NAME_INVALID` aparecem no campo do nome, e as chaves coladas ficam; **Ligar e testar** liga, testa e abre a página da ligação com o resultado; um Ligar que deu certo e um Testar que falhou deixam a ligação na lista com a frase do Testar; na página, o resultado por assunto na ordem que o Hub manda, os assuntos que leem inteiros fechados e, nos outros, cada leitura que não leu com o que aconteceu (`SOURCE_UNREAD` com o nome da fonte); o resultado continua depois de recarregar, com quem testou e quando; o Testar de uma ligação não mostra nada nas outras; **Desligar** pede confirmação com o nome da ligação | `apps/web/src/hub/connectors/integrations.test.tsx`, "a dona liga e testa num toque, e desliga" | must |
+| 17 | U4 | Em **Integrações**, a dona vê as ligações agrupadas por conector, cada conector com o seu logotipo e a sua categoria, cada ligação com o seu nome e o seu estado, e cada conector do catálogo com **Ligar**, também o que já tem ligação; **Ligar** abre a janela no meio da tela (`ui/dialog.tsx`, como `new-project-dialog.tsx`) com "Antes de colar", o nome (preenchido com o nome do conector) e os campos do catálogo, o Client ID à vista e os outros escondidos (o catálogo diz quais), sem mostrar o que foi colado depois de ligar; `CONNECTION_NAME_TAKEN` e `CONNECTION_NAME_INVALID` aparecem no campo do nome, e as chaves coladas ficam; **Ligar e testar** liga, testa e abre a página da ligação com o resultado; um Ligar que deu certo e um Testar que falhou deixam a ligação na lista com a frase do Testar; na página, o resultado por assunto na ordem que o Hub manda, os assuntos que leem inteiros fechados e, nos outros, cada leitura que não leu com o que aconteceu (`SOURCE_UNREAD`: "Não testada: depende de <fonte>, que não leu"); o resultado continua depois de recarregar, com quem testou e quando; o Testar de uma ligação não mostra nada nas outras; **Desligar** pede confirmação com o nome da ligação | `apps/web/src/hub/connectors/integrations.test.tsx`, "a dona liga e testa num toque, e desliga" | must |
 | 18 | U4 | O membro vê a lista, as ligações e o estado, e a página de cada uma com o último teste guardado, sem **Ligar**, **Testar** nem **Desligar**, e a frase de quem pode (W34, V29); sem ligação nenhuma, "Nenhuma integração ligada ainda."; a lista que não carrega mostra o erro com "Tentar de novo" | `integrations.test.tsx`, "o membro lê; vazio e erro" | must |
 | 19 | U4 | A barra da empresa tem **Integrações** entre os Projetos e as Configurações, ativa na lista e na página de uma ligação (`/companies/<c>/integrations/<connectionId>`); no celular, na gaveta (V56) | `apps/web/src/routes/_app/companies/$companyId/route.test.tsx`, "Integrações na barra" | must |
 | 20 | U4 | Num navegador de verdade (Chrome e WebKit, 1366 e 390 px, os dois temas), o roteiro inteiro com o dublê do Sankhya | o teste das telas (`conexus-qa`) | must |
@@ -349,8 +360,8 @@ instalado). As linhas desta revisão são hipótese.
 | Tela | Primeira vez | Vazio | Carregando | Erro | Não encontrado | Sem permissão | Vencido ou recusado |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Integrações (U4) | nenhuma ligada: "Nenhuma integração ligada ainda." e o Sankhya em "Para ligar" | a mesma frase | a moldura na hora e o esqueleto só na lista (W34) | `ReadFailure` com "Tentar de novo", como Contas de modelo | a empresa que sumiu: a rota da empresa já trata, como hoje | o membro: a lista sem botões e "Só o dono ou um administrador liga, testa e desliga." (V29) | cada frase na ligação a que se refere, nunca nas outras do mesmo conector. `NEEDS_REAUTH`: ao dono e ao administrador, "As chaves foram recusadas pelo Sankhya. Desligue e ligue de novo com chaves novas."; ao membro, "As chaves foram recusadas pelo Sankhya. Peça ao dono ou a um administrador para ligar de novo."; `UNREACHABLE` no Testar: "O Sankhya não respondeu. Tente de novo em alguns minutos."; a ligação desligada por outra pessoa: a frase de `CONNECTION_NOT_FOUND` e a lista relida |
-| Ligar (U4, a janela no meio da tela, `ui/dialog.tsx`) | "Antes de colar" com o "onde achar" de cada campo do catálogo (o do Sankhya, aberto: o texto do fundador), o nome, preenchido com o nome do conector (vazio se a empresa já tem uma ligação desse conector com esse nome), e os três campos vazios, com o rótulo do catálogo; o Client ID à vista, os outros escondidos | — | **Ligar e testar** ocupado, os campos travados; depois do Ligar, "Testando…" até o Testar responder, e a página da ligação | a frase do código no campo (`CONNECTION_CREDENTIAL_INVALID`; `CONNECTION_NAME_INVALID` no nome) ou no formulário; "Não confirmamos a ligação. Tente de novo." numa resposta cortada (W24) | `CONNECTOR_UNKNOWN`: a frase, e a lista relida | o membro não abre | `CONNECTION_NAME_TAKEN`: a frase no campo do nome, os outros campos como estão, e a lista relida |
-| A página da ligação e o seu último teste (U4) | "Ainda não testada" (um Ligar sem teste guardado) | — | a moldura e o cabeçalho na hora, o esqueleto só no teste; "Testando as 25 leituras, uma por vez…" e **Testar** ocupado só nesta ligação, sem barra de progresso falsa | `WORKING` com uma linha por assunto, e no assunto que não lê inteiro, os itens `REFUSED` ("recusado pelo Sankhya"), `UNREADABLE` ("resposta que o Conexus não entendeu"), `NOTHING_TO_READ` ("nada para ler"), `SOURCE_UNREAD` ("não testado: depende de <source>, que não leu") ou `NOT_TESTED` ("não testado: o Sankhya demorou, teste de novo"); `AUTH_REFUSED`; `UNREACHABLE`; cada um com a sua frase | `CONNECTION_NOT_FOUND`: a frase, e a volta à lista | o membro vê o último teste guardado, sem botões | — |
+| Ligar (U4, a janela no meio da tela, `ui/dialog.tsx`) | "Antes de colar" com a linha e o link de cada campo do catálogo (`help`), o nome, preenchido com o nome do conector (vazio se a empresa já tem uma ligação desse conector com esse nome), e os três campos vazios, com o rótulo do catálogo; o Client ID à vista, os outros escondidos | — | **Ligar e testar** ocupado, os campos travados; depois do Ligar, "Testando…" até o Testar responder, e a página da ligação | a frase do código no campo (`CONNECTION_CREDENTIAL_INVALID`; `CONNECTION_NAME_INVALID` no nome) ou no formulário; "Não confirmamos a ligação. Tente de novo." numa resposta cortada (W24) | `CONNECTOR_UNKNOWN`: a frase, e a lista relida | o membro não abre | `CONNECTION_NAME_TAKEN`: a frase no campo do nome, os outros campos como estão, e a lista relida |
+| A página da ligação e o seu último teste (U4) | "Ainda não testada" (um Ligar sem teste guardado) | — | a moldura e o cabeçalho na hora, o esqueleto só no teste; "Testando as 25 leituras, uma por vez…" e **Testar** ocupado só nesta ligação, sem barra de progresso falsa | `WORKING` com uma linha por assunto, e no assunto que não lê inteiro, os itens `REFUSED` ("recusado pelo Sankhya"), `UNREADABLE` ("resposta que o Conexus não entendeu"), `NOTHING_TO_READ` ("Lê, mas não havia nada para olhar"), `SOURCE_UNREAD` ("Não testada: depende de <fonte>, que não leu") ou `NOT_TESTED` ("não testado: o Sankhya demorou, teste de novo"); `AUTH_REFUSED`; `UNREACHABLE`; cada um com a sua frase | `CONNECTION_NOT_FOUND`: a frase, e a volta à lista | o membro vê o último teste guardado, sem botões | — |
 
 | Campo de contrato | Quem escreve | Quem lê |
 | --- | --- | --- |
@@ -688,7 +699,14 @@ como um commit novo nele:
    conformidade confere que é um SVG sem `<script`, sem atributo `on…` e sem endereço de fora, até
    16 KB (a tela o mostra como `<img>` de `data:`, que a política da página já aceita: `img-src
    'self' data:`, `platform/http.test.ts:297`). O arquivo vem do fundador ou da página de marca do
-   Sankhya (aberto); o `help` do Sankhya é `null` até o texto do fundador chegar. A forma é a das
+   Sankhya (aberto). O `help` de cada campo é `{ text, url }`: uma linha curta e o link de uma página
+   pública que explica de onde a chave vem (o fundador, 2026-10-29; depois, o guia do Conexus). Os do
+   Sankhya: Client ID e Client Secret, "Gerado na Área do Desenvolvedor do Sankhya, no Componente de
+   Integração (Gerar novas chaves)." com
+   `https://developer.sankhya.com.br/reference/guia-de-conversao-do-componente-de-integracao-appkey-oauth2`;
+   X-Token, "Gerado no Sankhya Om, na tela Configurações Gateway, para o usuário de integração." com
+   `https://developer.sankhya.com.br/reference/gerando-tokens-de-integração-no-sankhyaom` (lidas em
+   2026-10-29). A conformidade confere que cada `url` é `https://`. A forma é a das
    referências: o Activepieces declara `logoUrl`, `description` e `categories` em cada peça
    (`packages/pieces/framework/src/lib/piece-metadata.ts:17-24`); o Nango guarda um SVG por provedor
    (`packages/webapp/public/images/template-logos/`) e `categories` em `providers.yaml:4`.
@@ -777,9 +795,9 @@ export type OperationId = z.infer<typeof OperationId> // the model: OperationNam
 /** A login by fields the company pastes, exchanged for a bearer token (Sankhya). OAuth comes in 19.1. */
 export type ClientCredentialsAuth = Readonly<{
   kind: 'client_credentials'
-  // help: where to find the key, shown in Ligar (the Sankhya text is the founder's, still open: null until then);
+  // help: one line and a public page on where the key comes from, shown in Ligar (founder, 2026-10-29);
   // visible: shown while pasted (the Client ID, founder X5), else masked.
-  fields: Readonly<Record<string, Readonly<{ label: string; maxLength: number; help: string | null; visible: boolean }>>>
+  fields: Readonly<Record<string, Readonly<{ label: string; maxLength: number; help: Readonly<{ text: string; url: `https://${string}` }>; visible: boolean }>>>
   credential: z.ZodType<Readonly<Record<string, string>>> // strict, from `fields`
   token: Readonly<{
     path: `/${string}`
@@ -882,12 +900,14 @@ dois-pontos, como o exemplo). O `expires_in` real é lido da resposta, nunca fix
 entra. O `auth` da definição:
 
 ```ts
+const DEVELOPER_AREA = { text: 'Gerado na Área do Desenvolvedor do Sankhya, no Componente de Integração (Gerar novas chaves).', url: 'https://developer.sankhya.com.br/reference/guia-de-conversao-do-componente-de-integracao-appkey-oauth2' }
+const GATEWAY_SETTINGS = { text: 'Gerado no Sankhya Om, na tela Configurações Gateway, para o usuário de integração.', url: 'https://developer.sankhya.com.br/reference/gerando-tokens-de-integração-no-sankhyaom' }
 auth: {
   kind: 'client_credentials',
   fields: {
-    clientId: { label: 'Client ID', maxLength: 200, help: null, visible: true },
-    clientSecret: { label: 'Client Secret', maxLength: 200, help: null, visible: false },
-    xToken: { label: 'X-Token', maxLength: 4096, help: null, visible: false },
+    clientId: { label: 'Client ID', maxLength: 200, help: DEVELOPER_AREA, visible: true },
+    clientSecret: { label: 'Client Secret', maxLength: 200, help: DEVELOPER_AREA, visible: false },
+    xToken: { label: 'X-Token', maxLength: 4096, help: GATEWAY_SETTINGS, visible: false },
   },
   token: {
     path: '/authenticate',
@@ -1305,7 +1325,7 @@ export const ConnectionId = z.uuid().brand('ConnectionId')
 export const ConnectorEntry = z.object({
   id: z.string(), name: z.string(), version: z.string(),
   category: z.string(), summary: z.string(), logo: z.string(), // logo: the kit's SVG, shown as a data: image
-  fields: z.array(z.object({ name: z.string(), label: z.string(), maxLength: z.number().int(), help: z.string().nullable(), visible: z.boolean() })),
+  fields: z.array(z.object({ name: z.string(), label: z.string(), maxLength: z.number().int(), help: z.object({ text: z.string(), url: z.url() }), visible: z.boolean() })),
 })
 export const ConnectionName = z.string().trim().min(1).max(60) // the name the company gives ("Matriz")
 export const Connection = z.object({
@@ -1495,11 +1515,11 @@ faz:
    nome), o nome, a categoria, quantas ligações e **Ligar** (outra ligação); cada ligação com o seu
    nome, o seu estado e "testada em …", e um toque abre a sua página. "Para ligar" lista cada
    conector do catálogo com o logotipo, a categoria, o resumo e **Ligar**, também o que já tem
-   ligação. Sem ligação nenhuma, a frase da primeira vez (texto aberto, `X6`).
+   ligação. Sem ligação nenhuma, a frase da primeira vez do estudo.
 2. **A janela de ligar**: `ui/dialog.tsx` (`Dialog`, `DialogContent`), como
    `hub/projects/new-project-dialog.tsx`, nunca `sheet.tsx` nem `drawer.tsx`. Dentro: "Antes de
-   colar" com o `help` de cada campo (o do Sankhya é `null` até o texto do fundador: a janela mostra
-   só os passos, sem link); o nome, preenchido com o nome do conector quando a empresa não tem uma
+   colar" com o `help` de cada campo, a linha e o link para a página do fornecedor, aberto em outra
+   aba; o nome, preenchido com o nome do conector quando a empresa não tem uma
    ligação desse conector com esse nome, senão vazio; os campos do catálogo, `type="text"` quando
    `visible` (o Client ID, `X5`) e `type="password"` senão, todos `autoComplete="off"`; e **Ligar e
    testar** (`X3`). `CONNECTION_NAME_INVALID` e `CONNECTION_NAME_TAKEN` aparecem no campo do nome e as
@@ -1520,10 +1540,11 @@ faz:
 6. **O membro**: a lista e a página, com o último teste, sem **Ligar**, **Testar** nem **Desligar**,
    e "Só o dono ou um administrador liga, testa e desliga."
 7. **O Desligar confirma pelo nome** (texto novo) e volta à lista.
-8. **As frases** são provisórias até o fundador responder a `X6`: as do estudo ("Não testada:
-   depende de Empresas, que não leu", "Lê, mas não havia nada para olhar", "Lê em parte", "Lê 4 de 8
-   assuntos inteiros", as dicas por assunto, "Antes de colar") entram em `text.ts` como estão no
-   estudo, e o fundador as aprova no fim com os outros textos.
+8. **As frases** aprovadas pelo fundador (`X6`, 2026-10-29) entram em `text.ts` como estão: "Não
+   testada: depende de <fonte>, que não leu" (`SOURCE_UNREAD`, a fonte vem do Hub), "Lê, mas não
+   havia nada para olhar" (`NOTHING_TO_READ`), o selo "Lê em parte", "Lê n de m assuntos inteiros"
+   e as dicas por assunto do estudo. As outras frases novas desta revisão (o Desligar pelo nome, a
+   primeira vez) o fundador aprova no fim com os textos da tela.
 
 ### O raio da mudança
 
