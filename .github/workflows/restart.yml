@@ -2,6 +2,11 @@ name: Reiniciar o Hub
 
 on:
   workflow_dispatch:
+    inputs:
+      template:
+        description: "Template do Builder para experimentar, por exemplo conexus-builder:5a2ae2be; vazio mantém o que roda"
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -19,4 +24,6 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - run: infra/deploy.sh --restart
+      - env:
+          TEMPLATE: ${{ inputs.template }}
+        run: infra/deploy.sh --restart "$TEMPLATE"

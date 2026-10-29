@@ -1,7 +1,12 @@
 {
   ".github/actions/test-database/action.yml": 1,
+<<<<<<< HEAD
   ".github/workflows/ci.yml": 14,
   ".github/workflows/publish.yml": 2,
+=======
+  ".github/workflows/ci.yml": 13,
+  ".github/workflows/publish.yml": 3,
+>>>>>>> origin/main
   ".github/workflows/rollback.yml": 1,
   "apps/server/src/builder/model-accounts/google/calls.ts": 1,
   "apps/server/src/hub/apps/versions.ts": 3,

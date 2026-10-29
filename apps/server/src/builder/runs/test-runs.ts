@@ -6,7 +6,7 @@ import { silent } from '../../platform/test-database.ts'
 import type { GitCopy, Repository, Sha } from '../git/public.ts'
 import { openRepository, restoreGuarded } from '../git/public.ts'
 import { createMachines } from '../machine/public.ts'
-import { INSTALLATION, localKit, newControl } from '../machine/test-machine.ts'
+import { INSTALLATION, localKit, newControl, TEMPLATE } from '../machine/test-machine.ts'
 
 /** A bucket of memory: puts that fail on demand, and what it holds, by key. */
 export function memoryCopy() {
@@ -104,9 +104,11 @@ export function testBuilderPorts(
           if (started) control.killed = true
           return started ? 1 : 0
         },
+        killStale: async () => 0,
       },
       mark: { conexus_origin: INSTALLATION },
       installation: INSTALLATION,
+      template: TEMPLATE,
       seedOf: async (ids) => {
         const git = repository(ids)
         await git.ensure()

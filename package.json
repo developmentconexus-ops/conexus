@@ -47,6 +47,7 @@
     "@types/node": "24.19.2",
     "better-auth": "1.7.8",
     "dependency-cruiser": "18.4.0",
+    "e2b": "2.56.0",
     "jscpd": "5.4.2",
     "knip": "6.38.0",
     "playwright-core": "1.63.0",

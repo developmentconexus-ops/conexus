@@ -6,7 +6,7 @@ import { CompanyId, ConversationId, ProjectId } from '@conexus/hub-api'
 import { RequestContext } from '@mastra/core/request-context'
 import type { Workspace, WorkspaceSandbox } from '@mastra/core/workspace'
 import { LocalSandbox } from '@mastra/core/workspace'
-import { InstallationId } from '../../platform/config-machine.ts'
+import { InstallationId, MachineTemplate } from '../../platform/config-machine.ts'
 import { Failure } from '../../platform/failure.ts'
 import { openRepository } from '../git/public.ts'
 import type { Kit, KitFactory } from './kit.ts'
@@ -20,6 +20,9 @@ export function restoreRefused(): Promise<Buffer> {
 
 export const INSTALLATION = InstallationId.parse('testinstallation0')
 export const OTHER_INSTALLATION = InstallationId.parse('otherinstallation0')
+/** The template the Hub runs, and the one a Release left behind. */
+export const TEMPLATE = MachineTemplate.parse('conexus-builder:1111111')
+export const OLD_TEMPLATE = MachineTemplate.parse('conexus-builder:0000000')
 
 /** What the provider does, for a test to choose: the outcome of a start, and how the start goes. */
 export type Control = {
@@ -27,6 +30,10 @@ export type Control = {
   start: 'ok' | 'hang' | 'unreachable'
   /** The names of the machines the provider holds, which Mastra finds by name. */
   discoverable: string[]
+  /** The template each machine the provider holds was made from, by name; unlisted is the Hub's. */
+  templates: Record<string, string>
+  /** The names the Hub killed for coming from another template. */
+  replaced: string[]
   /** The names the Hub's machines found and attached. */
   attached: string[]
   networkClosed: number
@@ -55,6 +62,8 @@ export function newControl(): Control {
     outcome: 'created',
     start: 'ok',
     discoverable: [],
+    templates: {},
+    replaced: [],
     attached: [],
     networkClosed: 0,
     upMs: 0,
@@ -157,10 +166,23 @@ export async function world(
   const control = newControl()
   const machines = createMachines({
     kit: localKit(folder, control),
-    api: { kill: async () => 0 },
+    api: {
+      kill: async () => 0,
+      // The provider's list by the conversation's mark, as E2B's: every machine of another template goes.
+      killStale: async (conversationId, template) => {
+        const stale = control.discoverable.filter(
+          (name) =>
+            name.endsWith(conversationId) && (control.templates[name] ?? TEMPLATE) !== template,
+        )
+        control.discoverable = control.discoverable.filter((name) => !stale.includes(name))
+        control.replaced.push(...stale)
+        return stale.length
+      },
+    },
     seedOf: seedOf ?? (() => repository.bundleOfMain()),
     mark: { conexus_origin: installation },
     installation,
+    template: TEMPLATE,
     log: LOG,
     workdir: join(folder, 'app'),
     tmp: folder,
