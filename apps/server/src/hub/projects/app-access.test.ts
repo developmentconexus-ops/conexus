@@ -126,6 +126,7 @@ test('dar acesso: quem pode, e as recusas', async (t) => {
   assert.equal(mail.sent.length, 1)
   assert.equal(mail.sent[0]?.to, CARLA.email)
   assert.ok(mail.sent[0]?.text.includes(`https://hub.example.test/invitations/${id}`))
+  assert.match(String(mail.sent[0]?.text), /ninguém usa o app sem a sua resposta/)
   assert.equal((await invite(admin, EDU.email, 'gerente')).statusCode, 201)
 
   // The member cannot give access, and the e-mail of a member is no one to invite (E1).
@@ -291,6 +292,10 @@ test('a lista da empresa e o tirar de todos', async (t) => {
   const company = `/api/companies/${companyId}/app-access`
   const read = await call(hub, bruno, 'GET', company)
   assert.equal(read.statusCode, 200, read.body)
+  assert.equal(Object(read.json()).mayManage, false)
+  assert.equal(Object((await call(hub, ana, 'GET', company)).json()).mayManage, true)
+  const mine = Object((await call(hub, carla, 'GET', '/api/apps')).json())
+  assert.equal(mine.apps[0].projectName, 'Pedidos')
   assert.deepEqual(Object(read.json()).people, [
     {
       personId: carla.id,
@@ -301,6 +306,13 @@ test('a lista da empresa e o tirar de todos', async (t) => {
   ])
   const kept = 'select count(*)::int as n from projects.app_access where person_id = $1'
   assert.deepEqual(await hub.test.asOwner(kept, [edu.id]), [{ n: 1 }])
+
+  await c.admit(carla, CARLA.email, 'gerente', estoque)
+  assert.equal((await call(hub, ana, 'DELETE', `${c.access}/${carla.id}`)).statusCode, 204)
+  const left = Object((await call(hub, ana, 'GET', company)).json()).people[0].apps
+  assert.equal(left[0].projectName, 'Estoque')
+  assert.equal((await call(hub, ana, 'DELETE', `${estoque}/${carla.id}`)).statusCode, 204)
+  await c.admit(carla, CARLA.email, 'vendedor')
 
   // Carla also gets Estoque as a pending invitation and has a live session in Pedidos.
   const pending = await c.invite(ana, CARLA.email, 'gerente', undefined, estoque)

@@ -1,10 +1,12 @@
 /*
- * The wire, not the guard. What keeps a consult read only is Sankhya's integration user, which holds
- * no insert, update or delete permission. This refuses, before any request is built, a consult that
- * is plainly not one read. Quoting follows Oracle and SQL Server, the databases Sankhya runs on; SQL
- * Server runs a second statement with no `;` before it, so statement words are refused anywhere. Block
- * comments are refused outright: SQL Server nests them and Oracle does not, so no reading of where one
- * ends is safe on both, and a read never needs one.
+ * A best-effort first layer, not a guarantee. It refuses, before any request is built, what is plainly
+ * not one read: a comment, a second statement, a write word, a number glued to a word. Sankhya's
+ * DbExplorer, which refuses a consult that writes, is the second layer, and the read only integration
+ * user the company created is behind both. Quoting follows Oracle and SQL Server, the databases Sankhya
+ * runs on; SQL Server runs a second statement with no `;` before it, so statement words are refused
+ * anywhere. Comments are refused outright, quoted or not: SQL Server nests block comments and Oracle
+ * does not, and a line comment ends at different characters on each, so no reading of where one ends is
+ * safe on both, and a read never needs one.
  */
 const REFUSED_WORDS = new RegExp(
   `\\b(?:${[
@@ -42,12 +44,22 @@ const REFUSED_WORDS = new RegExp(
     'WAITFOR',
     'RENAME',
     'ROLLBACK',
+    'RECEIVE',
+    'SEND',
+    'MOVE',
+    'CHECKPOINT',
+    'SETUSER',
+    'ADD',
+    'USE',
+    'SET',
+    'END\\s+CONVERSATION',
   ].join('|')})\\b`,
   'i',
 )
 
-const BLOCK_COMMENT = /\/\*|\*\//
-const LINE_END = /[\n\r\v\f\u0085\u2028\u2029]/
+const COMMENT = /\/\*|\*\/|--/
+// SQL Server ends a number at its first non-digit, so `1DELETE` is `1` and then `DELETE`, where `\b` sees one word.
+const GLUED_NUMBER = /(?<![\w@#])(?=((?:\d+\.?\d*|\.\d+)(?:e[+-]?\d*)?))\1[a-z_]/i
 const CLOSING_QUOTE: Readonly<Record<string, string>> = { "'": "'", '"': '"', '[': ']' }
 
 /** The index just past the quoted text opened at `start`, where a doubled closing quote is an escape; -1 if it never closes. */
@@ -59,20 +71,15 @@ function pastQuote(sql: string, start: number, close: string): number {
   }
 }
 
-/** The index past the line comment or quoted text that starts at `at`, -1 when it never closes, or null when `at` starts plain code. */
+/** The index past the quoted text that starts at `at`, -1 when it never closes, or null when `at` starts plain code. */
 function skipAt(sql: string, at: number): number | null {
-  const pair = sql.slice(at, at + 2)
-  if (pair === '--') {
-    const end = sql.slice(at).search(LINE_END)
-    return end === -1 ? sql.length : at + end
-  }
   const close = CLOSING_QUOTE[sql[at] ?? '']
   return close === undefined ? null : pastQuote(sql, at, close)
 }
 
-/** The SQL with each line comment and quoted text replaced by a space; null when one never closes, a block comment appears anywhere, or Oracle's `q'` quoting appears. */
+/** The SQL with each quoted text replaced by a space; null when one never closes, a comment appears anywhere, or Oracle's `q'` quoting appears. */
 function codeOf(sql: string): string | null {
-  if (BLOCK_COMMENT.test(sql)) return null
+  if (COMMENT.test(sql)) return null
   let code = ''
   let at = 0
   while (at < sql.length) {
@@ -90,12 +97,12 @@ function codeOf(sql: string): string | null {
   return code
 }
 
-/** No `;` and no refused word in the code, the part of the wire that a statement and a condition share. */
+/** No `;`, no refused word and no number glued to a letter in the code, the part of the wire that a statement and a condition share. */
 function isInert(code: string): boolean {
-  return !code.includes(';') && !REFUSED_WORDS.test(code)
+  return !code.includes(';') && !REFUSED_WORDS.test(code) && !GLUED_NUMBER.test(code)
 }
 
-/** One SELECT or WITH statement, with no refused word outside comments and quoted text. */
+/** One SELECT or WITH statement, with no refused word outside quoted text. */
 export function isOneReadStatement(sql: string): boolean {
   const code = codeOf(sql)?.trim().replace(/;$/, '')
   return code !== undefined && /^(?:SELECT|WITH)\b/i.test(code) && isInert(code)

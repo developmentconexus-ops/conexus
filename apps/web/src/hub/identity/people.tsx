@@ -290,7 +290,7 @@ export function People() {
         <p className="text-text-2">Só o dono ou um administrador convida pessoas.</p>
       )}
       <CompanyPeople company={data.company} pages={pages} mayInviteAs={data.mayInviteAs} />
-      <AppUsers companyId={data.company.id} mayManage={data.role !== 'member'} page={pages.apps} />
+      <AppUsers companyId={data.company.id} page={pages.apps} />
     </div>
   )
 }

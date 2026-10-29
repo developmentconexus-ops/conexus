@@ -14,13 +14,8 @@ import type { FastifyInstance } from 'fastify'
 import type { FailureLog } from '../../platform/failure.ts'
 import { answer, serve } from '../../platform/http.ts'
 import type { AccessDeps } from './app-access.ts'
-import {
-  changeAccess,
-  readCompanyAccess,
-  readMyApps,
-  readProjectAccess,
-  revokeAccess,
-} from './app-access.ts'
+import { changeAccess, readCompanyAccess, readProjectAccess, revokeAccess } from './app-access.ts'
+import { appsOfPerson } from './hosts.ts'
 import type { ProjectStore } from './projects.ts'
 
 /** Who uses the company's apps (step 18): a change names who acted and on whom, by ids (S41). */
@@ -45,7 +40,9 @@ function registerAccessRoutes(app: FastifyInstance, deps: AccessDeps): void {
     answer(await readCompanyAccess(deps, { person, ...params }, query.page)),
   )
   serve(app, revokeAllAppAccess, ({ person, params, log }) => revoked({ person, ...params }, log))
-  serve(app, listMyApps, async ({ person }) => answer({ apps: await readMyApps(deps, person) }))
+  serve(app, listMyApps, async ({ person }) =>
+    answer({ apps: await appsOfPerson(deps, person.id) }),
+  )
 }
 
 export function registerProjectRoutes(
