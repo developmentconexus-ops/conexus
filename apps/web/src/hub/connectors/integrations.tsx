@@ -17,26 +17,28 @@ const route = getRouteApi('/_app/companies/$companyId/integrations')
  */
 export function Integrations() {
   const { companyId } = route.useParams()
-  const { connectors, connections, mayManage } = useSuspenseQuery(connectionsQuery(companyId)).data
+  const { data, dataUpdatedAt } = useSuspenseQuery(connectionsQuery(companyId))
+  const { connectors, connections, mayManage } = data
   const linked = useRef<HTMLElement>(null)
   const toLink = connectors.filter((one) => !connections.some((c) => c.connector === one.id))
   const [notice, setNotice] = useState<string>()
-  const moveFocus = useRef(false)
   const shape = `${connections.length}:${toLink.length}`
   const seen = useRef(shape)
+  const settledAt = useRef<number | undefined>(undefined)
   // What a row or a dialog settled: the sentence a refusal leaves above the rows, if there is one.
   function settled(refusal?: string) {
-    moveFocus.current = true
+    settledAt.current = dataUpdatedAt
     setNotice(refusal)
   }
   // A dialog's button leaves with its row, so once the list is read again focus goes to the list.
+  // That read is the only one the settling waits for: when the list kept its shape, nothing moves.
   useEffect(() => {
-    if (moveFocus.current && seen.current !== shape) {
-      moveFocus.current = false
-      linked.current?.focus()
+    if (settledAt.current !== undefined && settledAt.current !== dataUpdatedAt) {
+      if (seen.current !== shape) linked.current?.focus()
+      settledAt.current = undefined
     }
     seen.current = shape
-  }, [shape])
+  }, [dataUpdatedAt, shape])
 
   return (
     <div className="flex w-full max-w-page flex-col gap-xl">
@@ -60,6 +62,7 @@ export function Integrations() {
                 connection={connection}
                 name={connectorName(connectors, connection.connector)}
                 mayManage={mayManage}
+                onAttempt={() => setNotice(undefined)}
                 onSettled={settled}
               />
             ))}
@@ -77,7 +80,12 @@ export function Integrations() {
                 <div className="flex flex-wrap items-center justify-between gap-md px-sm py-md">
                   <span className="font-medium">{entry.name}</span>
                   {mayManage && (
-                    <LinkDialog companyId={companyId} entry={entry} onLinked={settled} />
+                    <LinkDialog
+                      companyId={companyId}
+                      entry={entry}
+                      onAttempt={() => setNotice(undefined)}
+                      onLinked={settled}
+                    />
                   )}
                 </div>
               </Row>

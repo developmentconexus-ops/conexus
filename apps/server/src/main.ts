@@ -19,7 +19,7 @@ import type { MachinesOf, RepositoryOf, Runs } from './builder/runs/public.ts'
 import { builderPortsOf, createRuns } from './builder/runs/public.ts'
 import type { Apps } from './hub/apps/public.ts'
 import { appAccessOf, createAppRemoval, createApps, versionNumbersOf } from './hub/apps/public.ts'
-import type { Connectors } from './hub/connectors/public.ts'
+import type { ConnectorDeadlines, Connectors } from './hub/connectors/public.ts'
 import { createConnectors, resealConnections } from './hub/connectors/public.ts'
 import type { Identity } from './hub/identity/public.ts'
 import { createIdentity, passwordLinkText } from './hub/identity/public.ts'
@@ -131,7 +131,7 @@ export function subjectsOf(deps: {
   repository: RepositoryOf
   copy: GitCopy
   log: FailureLog
-  callDeadlineMs?: number
+  deadlines?: ConnectorDeadlines
 }): {
   runs: Runs
   projects: Projects

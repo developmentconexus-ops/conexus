@@ -28,6 +28,7 @@ export type Deps = {
   identity: IdentityPorts
   sealKeys: SealKeys
   executor: Executor
+  testBudgetMs: number
 }
 export type Viewer = { person: Person; companyId: CompanyId }
 
@@ -260,11 +261,16 @@ type Probed =
 /**
  * Testar's second step: a new token, then each read operation and door entry once, in order and one
  * at a time (the connector's `oneRequestAtATime`). An expired token is asked again once per call.
+ * The calls together stay inside `signal`: once it fires the provider is unreachable.
  * Nothing read leaves this function but each operation's outcome.
  */
-async function probed(executor: Executor, opened: OpenedConnection): Promise<Probed> {
+async function probed(
+  executor: Executor,
+  opened: OpenedConnection,
+  signal: AbortSignal,
+): Promise<Probed> {
   const { connector } = opened
-  const first = await executor.login(opened)
+  const first = await executor.login(opened, signal)
   if (first.kind !== 'TOKEN') return { result: first.kind }
   let token: BearerToken = first.token
   const checks: TestCheck[] = []
@@ -279,12 +285,12 @@ async function probed(executor: Executor, opened: OpenedConnection): Promise<Pro
       check('NOTHING_TO_READ')
       continue
     }
-    let answered = await executor.call(opened, token, operation, input)
+    let answered = await executor.call(opened, token, operation, input, signal)
     if (answered.kind === 'TOKEN_EXPIRED') {
-      const again = await executor.login(opened)
+      const again = await executor.login(opened, signal)
       if (again.kind !== 'TOKEN') return { result: again.kind }
       token = again.token
-      answered = await executor.call(opened, token, operation, input)
+      answered = await executor.call(opened, token, operation, input, signal)
     }
     switch (answered.kind) {
       case 'OK':
@@ -337,7 +343,7 @@ function recorded(deps: Deps, input: OfConnection, opened: OpenedConnection, pro
 /** Testar (criteria 10 to 12): the three steps of the failure table. */
 export async function test(deps: Deps, input: OfConnection): Promise<TestResult> {
   const open = await opened(deps, input)
-  const probe = await probed(deps.executor, open)
+  const probe = await probed(deps.executor, open, AbortSignal.timeout(deps.testBudgetMs))
   const view = await recorded(deps, input, open, probe)
   return probe.result === 'WORKING'
     ? { result: 'WORKING', checks: probe.checks, connection: view }

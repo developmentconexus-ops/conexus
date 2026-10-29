@@ -19,6 +19,7 @@ export function ConnectionRow(props: {
   connection: Connection
   name: string
   mayManage: boolean
+  onAttempt: () => void
   onSettled: (notice?: string) => void
 }) {
   const { companyId, connection, name } = props
@@ -51,7 +52,10 @@ export function ConnectionRow(props: {
               <Button
                 size="sm"
                 disabled={test.isPending}
-                onClick={() => test.mutate({ params: { companyId, connectionId: connection.id } })}
+                onClick={() => {
+                  props.onAttempt()
+                  test.mutate({ params: { companyId, connectionId: connection.id } })
+                }}
               >
                 {test.isPending ? 'Testando…' : 'Testar'}
               </Button>
@@ -59,6 +63,7 @@ export function ConnectionRow(props: {
                 companyId={companyId}
                 connection={connection}
                 name={name}
+                onAttempt={props.onAttempt}
                 onUnlinked={props.onSettled}
               />
             </div>

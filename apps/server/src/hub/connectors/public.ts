@@ -1,6 +1,6 @@
 import type { ConnectorId } from '@conexus/connectors'
 import { connectorOf } from '@conexus/connectors'
-import { CONNECTOR_CALL_DEADLINE_MS } from '@conexus/hub-api'
+import { CONNECTOR_CALL_DEADLINE_MS, TEST_BUDGET_MS } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
 import type { Config } from '../../platform/config.ts'
 import type { Database } from '../../platform/database.ts'
@@ -13,16 +13,19 @@ import { registerConnectionRoutes } from './routes.ts'
 
 export type Connectors = ReturnType<typeof createConnectors>
 
+/** Production's waits, which tests shorten: one provider call, and one Testar's calls together. */
+export type ConnectorDeadlines = { callDeadlineMs?: number; testBudgetMs?: number }
+
 /**
  * The company's connections to outside systems (decision 0056): the only subject that imports the
  * kit and opens a connection's seal. A double's origin the configuration names for a connector the
- * kit does not have refuses the Hub (criterion 16). Tests shorten `callDeadlineMs`.
+ * kit does not have refuses the Hub (criterion 16). Tests shorten its `deadlines`.
  */
 export function createConnectors(deps: {
   database: Database
   identity: IdentityPorts
   config: Pick<Config, 'sealKeys' | 'connectorOrigins'>
-  callDeadlineMs?: number
+  deadlines?: ConnectorDeadlines
 }) {
   const origins = new Map<ConnectorId, string>()
   for (const [id, origin] of deps.config.connectorOrigins ?? []) {
@@ -33,9 +36,10 @@ export function createConnectors(deps: {
       })
     origins.set(connector.id, origin)
   }
-  const callDeadlineMs = deps.callDeadlineMs ?? CONNECTOR_CALL_DEADLINE_MS
+  const callDeadlineMs = deps.deadlines?.callDeadlineMs ?? CONNECTOR_CALL_DEADLINE_MS
   const executor = createExecutor({ fetch, origins, callDeadlineMs })
-  const routeDeps = { ...deps, sealKeys: deps.config.sealKeys, executor }
+  const testBudgetMs = deps.deadlines?.testBudgetMs ?? TEST_BUDGET_MS
+  const routeDeps = { ...deps, sealKeys: deps.config.sealKeys, executor, testBudgetMs }
   return Object.freeze({
     routes: (app: FastifyInstance) => registerConnectionRoutes(app, routeDeps),
   })

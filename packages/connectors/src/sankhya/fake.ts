@@ -29,6 +29,8 @@ type SankhyaSwitches = {
   redirect: boolean
   /** Never answers a call. */
   silent: boolean
+  /** Milliseconds each answered call takes besides its own work. */
+  delayMs: number
   /** The `expires_in` the login gives. */
   expiresInSeconds: number
 }
@@ -122,6 +124,7 @@ export function sankhyaFake(): SankhyaFake {
     oversize: false,
     redirect: false,
     silent: false,
+    delayMs: 0,
     expiresInSeconds: 300,
   }
   const sessions: Sessions = { issued: new Set(), busy: new Set(), logins: 0 }
@@ -138,7 +141,7 @@ export function sankhyaFake(): SankhyaFake {
     if (refused) return refused
     sessions.busy.add(token)
     try {
-      await sleep(SERVICE_MILLISECONDS)
+      await sleep(SERVICE_MILLISECONDS + switches.delayMs)
       return await serveCall(request, url, switches)
     } finally {
       sessions.busy.delete(token)

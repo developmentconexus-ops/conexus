@@ -45,6 +45,40 @@ test('uma ligação desligada por outra pessoa: a frase fica acima da lista reli
   )
 })
 
+test('a frase de uma recusa sai no próximo Testar, e o foco só vai à seção quando a lista mudou', async () => {
+  const connection = connectionOf()
+  const view = viewOf({ connections: [connection] })
+  let tests = 0
+  open(view, {
+    test: () => {
+      tests += 1
+      if (tests === 1) return refusal('CONNECTOR_UNKNOWN')
+      view.connections = []
+      return undefined
+    },
+  })
+  let reads = 0
+  server.use(
+    http.get(`*/api/companies/${COMPANY.id}/connections`, () => {
+      reads += 1
+      return undefined
+    }),
+  )
+  fireEvent.click(await screen.findByRole('button', { name: 'Testar' }))
+  expect((await screen.findByRole('alert')).textContent).toBe(
+    'Esse conector não existe no Conexus.',
+  )
+  await waitFor(() => expect(reads).toBe(2))
+  // The row outlives the list read again here, and the sentence is still the page's alone.
+  await screen.findByRole('button', { name: 'Testar' })
+  expect(screen.getAllByRole('alert')).toHaveLength(1)
+  expect(document.activeElement).not.toBe(screen.getByRole('region', { name: 'Ligadas' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Testar' }))
+  expect(await screen.findByText('Nenhuma integração ligada ainda.')).toBeTruthy()
+  expect(screen.queryByRole('alert')).toBeNull()
+  expect(document.activeElement).not.toBe(screen.getByRole('region', { name: 'Ligadas' }))
+})
+
 test('Testar recusado sem mudar a lista: a frase fica na linha', async () => {
   open(viewOf({ connections: [connectionOf()] }), { test: () => refusal('DATABASE_UNAVAILABLE') })
   fireEvent.click(await screen.findByRole('button', { name: 'Testar' }))

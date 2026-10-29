@@ -37,6 +37,7 @@ function credentialOf(entry: ConnectorEntry) {
 function LinkForm(props: {
   companyId: CompanyId
   entry: ConnectorEntry
+  onAttempt: () => void
   onLinked: (notice?: string) => void
   onCancel: () => void
 }) {
@@ -49,6 +50,7 @@ function LinkForm(props: {
   )
 
   async function submit(credential: Record<string, string>) {
+    props.onAttempt()
     try {
       await attempt((attemptKey) =>
         send.mutateAsync({
@@ -97,6 +99,7 @@ function LinkForm(props: {
 export function LinkDialog(props: {
   companyId: CompanyId
   entry: ConnectorEntry
+  onAttempt: () => void
   onLinked: (notice?: string) => void
 }) {
   const [open, setOpen] = useState(false)
@@ -110,6 +113,7 @@ export function LinkDialog(props: {
         <LinkForm
           companyId={props.companyId}
           entry={props.entry}
+          onAttempt={props.onAttempt}
           onLinked={(notice) => {
             setOpen(false)
             props.onLinked(notice)

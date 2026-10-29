@@ -17,6 +17,7 @@ export function UnlinkDialog(props: {
   companyId: CompanyId
   connection: Connection
   name: string
+  onAttempt: () => void
   onUnlinked: () => void
 }) {
   const [open, setOpen] = useState(false)
@@ -28,6 +29,7 @@ export function UnlinkDialog(props: {
   }
 
   function unlink() {
+    props.onAttempt()
     send.mutate(
       { params: { companyId: props.companyId, connectionId: props.connection.id } },
       {
