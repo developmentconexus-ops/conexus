@@ -2011,5 +2011,27 @@
       "file": "src/hub/apps/app-access-journey.test.ts",
       "name": "outra empresa não tira o acesso a um app da empresa"
     }
+  },
+  {
+    "id": "machine-replaced-after-template-change",
+    "file": "apps/server/src/builder/machine/machines.ts",
+    "find": "const stale = this.deps.api.killStale(session.conversationId, this.deps.template)",
+    "replace": "const stale = Promise.resolve()",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/machine/machine.test.ts",
+      "name": "máquina: a pausada de um template anterior ao Release não é retomada; volta nova, do template do Hub, copiada do main"
+    }
+  },
+  {
+    "id": "machine-kills-only-stale-template",
+    "file": "apps/server/src/builder/machine/e2b.ts",
+    "find": "(metadata) => metadata[MARK.template] !== template",
+    "replace": "() => true",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/machine/machine-e2b.test.ts",
+      "name": "máquina: depois de um Release, mata só as da conversa de outro template ou sem template, e guarda a do template do Hub"
+    }
   }
 ]

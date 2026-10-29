@@ -1,7 +1,7 @@
 import type { CheckReport } from '@conexus/app/check'
 import type { CompanyId, ConversationId, MachinePhase, ProjectId } from '@conexus/hub-api'
 import type { Workspace } from '@mastra/core/workspace'
-import type { InstallationId } from '../../platform/config-machine.ts'
+import type { InstallationId, MachineTemplate } from '../../platform/config-machine.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import type { Result } from '../../platform/result.ts'
 import type { Sha } from '../git/public.ts'
@@ -62,6 +62,8 @@ export type MachinesDeps = {
   mark: Record<string, string>
   /** This installation's id, in every machine's name: Mastra attaches by name alone (S36). */
   installation: InstallationId
+  /** The template a new machine starts from; a paused one from another is replaced, not resumed. */
+  template: MachineTemplate
   log: FailureLog
   workdir?: string
   /** A folder the machine can write for the bundles that cross; `/tmp` on E2B. */

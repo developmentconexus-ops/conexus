@@ -13,6 +13,10 @@ byte for byte, then prints `HUB_E2B_TEMPLATE=conexus-builder:<commit>`. The depl
 with that template beside the image and records both for Voltar atrás. A failed build or check
 fails the Release before the deploy, and the Hub keeps its image and template.
 
+Each machine carries the template it was made from in its mark. On a conversation's next turn, the
+Hub kills that conversation's paused machine when its template is not the Hub's, and starts a new
+one from `main`, as for a new conversation.
+
 Every Release builds, even when the SDK did not change: the template also depends on
 `infra/e2b/template.ts`, the edge's `wrangler` and the Node image, and E2B reuses the cached layers
 of an unchanged build.
