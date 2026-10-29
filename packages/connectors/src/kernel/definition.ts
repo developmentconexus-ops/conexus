@@ -34,29 +34,40 @@ const Origin = z
       URL.canParse(value) && new URL(value).origin === value && value.startsWith('https://'),
   )
 
-/** Takes `id` as a plain string and brands it; throws on a repeated operation id, a bad version or origin, a door entry that is not 'read', an operation of a subject the connector lacks or a subject with no operation. */
+/** Takes `id` as a plain string and brands it; throws on a repeated operation id, a bad version or origin, a door entry that is not 'read', an operation of a subject the connector lacks, a subject with no operation or a `from` that is not an earlier operation. */
 export function defineConnector(connector: Omit<Connector, 'id'> & { id: string }): Connector {
   Version.parse(connector.version)
   Origin.parse(connector.origin)
-  const door = Object.entries(connector.readDoor ?? {})
-  const ids: OperationId[] = [
-    ...connector.operations.map((operation) => operation.id),
-    ...door.map(([, operation]) => operation.id),
-  ]
+  const all = inProbeOrder(connector)
+  const ids = all.map((operation) => operation.id)
   if (new Set(ids).size !== ids.length) throw new Error(`Repeated operation id in ${connector.id}`)
-  for (const [key, operation] of door) {
+  for (const [key, operation] of Object.entries(connector.readDoor ?? {})) {
     if (operation.class !== 'read') throw new Error(`Door entry not read: ${key}`)
     if (operation.id !== key) throw new Error(`Door entry ${key} is named ${operation.id}`)
   }
-  const named = new Set([
-    ...connector.operations.map((operation) => operation.subject),
-    ...door.map(([, operation]) => operation.subject),
-  ])
+  const named = new Set(all.map((operation) => operation.subject))
   for (const subject of named)
     if (!(subject in connector.subjects)) throw new Error(`Unknown subject ${subject}`)
   for (const subject of Object.keys(connector.subjects))
     if (!named.has(subject)) throw new Error(`Subject without operation: ${subject}`)
+  assertSourcesEarlier(all)
   return Object.freeze({ ...connector, id: ConnectorId.parse(connector.id) })
+}
+
+function assertSourcesEarlier(all: readonly Operation<unknown, unknown>[]): void {
+  const before = new Set<OperationId>()
+  for (const operation of all) {
+    for (const source of operation.from)
+      if (!before.has(source)) throw new Error(`${operation.id} reads ${source}, not earlier`)
+    before.add(operation.id)
+  }
+}
+
+/** The order every probe runs in, the door first: each operation's `from` is before it. */
+export function inProbeOrder(
+  connector: Pick<Connector, 'operations' | 'readDoor'>,
+): readonly Operation<unknown, unknown>[] {
+  return [...Object.values(connector.readDoor ?? {}), ...connector.operations]
 }
 
 /** A door of read operations only: a write or destructive entry does not compile. */

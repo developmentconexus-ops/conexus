@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { defineOperation } from '../../kernel/operation.ts'
 import { restAnswer } from '../answers.ts'
-import { firstEmpresaPage } from './cadastros.ts'
+import { empresas, firstEmpresaPage } from './cadastros.ts'
 import { Code, DateTime, get, maybe, Page } from './shared.ts'
 
 /** Both routes send the end of the list as text or as a boolean, and may leave it out. */
@@ -69,6 +69,7 @@ export const ordensCarga = defineOperation({
   label: 'Ordens de carga',
   input: z.object({ codigoEmpresa: Code, page: Page(1) }),
   output: OrdensCarga,
+  from: [empresas.id],
   probe: firstEmpresaPage,
   request: (input) => get('/v1/logistica/ordens-carga', input),
   answer: (answer) => restAnswer(answer, OrdensCarga),

@@ -20,7 +20,7 @@ import {
   pedidos,
 } from './vendas.ts'
 
-/** The order Testar calls them in: `empresas` first, since eight probes read it; each subject keeps the ready five before the rest. */
+/** The order Testar calls them in: `empresas` first, since seven probes read it (their `from`); each subject keeps the ready five before the rest. */
 export const sankhyaOperations = [
   empresas,
   clientes,

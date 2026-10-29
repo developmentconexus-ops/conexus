@@ -73,6 +73,22 @@ test('o assunto de cada operação é um assunto do conector, e nenhum assunto f
   assert.throws(() => defineOperation({ ...base, class: 'read', subject: 'Not a subject' }))
 })
 
+test('cada operação lê só operações anteriores, a porta primeiro', () => {
+  const ping = defineOperation({ ...base, class: 'read' })
+  const pong = defineOperation({ ...base, id: 'pong', class: 'read', from: ['ping'] })
+  const lone = { ...sankhya, subjects: { ping: 'Ping' }, readDoor: undefined }
+  assert.deepEqual(defineConnector({ ...lone, operations: [ping, pong] }).operations[1]?.from, [
+    'ping',
+  ])
+  assert.throws(() => defineConnector({ ...lone, operations: [pong, ping] }), /not earlier/)
+  const self = defineOperation({ ...base, class: 'read', from: ['ping'] })
+  assert.throws(() => defineConnector({ ...lone, operations: [self] }), /not earlier/)
+  const absent = defineOperation({ ...base, class: 'read', from: ['nobody'] })
+  assert.throws(() => defineConnector({ ...lone, operations: [absent] }), /not earlier/)
+  assert.equal(defineConnector({ ...lone, operations: [pong], readDoor: { ping } }).id, 'sankhya')
+  assert.throws(() => defineOperation({ ...base, class: 'read', from: ['Bad id'] }))
+})
+
 test('a versão e a origem do conector são conferidas', () => {
   assert.throws(() => redefine({ version: '1.0' }))
   assert.throws(() => redefine({ origin: 'http://api.sankhya.com.br' }))

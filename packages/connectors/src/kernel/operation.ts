@@ -41,21 +41,25 @@ export type Operation<I, O, C extends OperationClass = OperationClass> = Readonl
   label: string // what Testar shows ("Pedidos")
   input: z.ZodType<I>
   output: z.ZodType<O>
-  // The smallest input, for Testar and the conformance, from the values the earlier probes read
+  // The earlier operations whose answers `probe` reads (pedidos reads empresas), so a caller
+  // tells a source that never read apart from one that read nothing.
+  from: readonly OperationId[]
+  // The smallest input, for Testar and the conformance, from the values its `from` read
   // (pedidos needs a company code); null when there is nothing to read (impostos with no pedido).
   probe(earlier: ReadonlyMap<OperationId, unknown>): I | null
   request(input: I): ProviderRequest
   answer(answer: ProviderAnswer): Answered<O>
 }>
 
-/** Takes `id` as a plain string and brands it (throws on a bad one), so a definition writes `id: 'pedidos'`. */
+/** Takes `id` as a plain string and brands it (throws on a bad one), so a definition writes `id: 'pedidos'`; `from` is empty unless given. */
 export function defineOperation<I, O, C extends OperationClass>(
-  operation: Omit<Operation<I, O, C>, 'id'> & { id: string },
+  operation: Omit<Operation<I, O, C>, 'id' | 'from'> & { id: string; from?: readonly string[] },
 ): Operation<I, O, C> {
   return Object.freeze({
     ...operation,
     id: OperationId.parse(operation.id),
     subject: Subject.parse(operation.subject),
+    from: Object.freeze(z.array(OperationId).parse(operation.from ?? [])),
   })
 }
 
