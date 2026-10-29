@@ -6,7 +6,7 @@ import type { CommandTx, Database } from '../../platform/database.ts'
 import type { Resealed } from '../../platform/reseal.ts'
 import { resealCompanies, resealOne } from '../../platform/reseal.ts'
 import type { Sealed, SealKeys } from '../../platform/seal.ts'
-import { sealContext, sealedOf } from './connections.ts'
+import { sealContext, sealedOf } from './rows.ts'
 import { connection } from './tables.ts'
 
 /** One company's connections; one of a connector the kit no longer has cannot rebuild its context. */

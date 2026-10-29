@@ -5,7 +5,8 @@ import type { BearerToken, Executor, OpenedConnection } from './executor.ts'
 
 export type Probed =
   | Readonly<{ result: 'WORKING'; checks: TestCheck[] }>
-  | Readonly<{ result: 'AUTH_REFUSED' | 'UNREACHABLE' }>
+  | Readonly<{ result: 'AUTH_REFUSED' }>
+  | Readonly<{ result: 'UNREACHABLE' }>
 
 type Deadlines = { executor: Executor; callDeadlineMs: number; testDeadlineMs: number }
 type Ended = Exclude<Probed, { result: 'WORKING' }>

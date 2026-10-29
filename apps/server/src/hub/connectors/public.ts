@@ -46,6 +46,7 @@ export function createConnectors(deps: {
     ...deps,
     sealKeys: deps.config.sealKeys,
     executor,
+    log: deps.log,
     callDeadlineMs: deps.deadlines?.callDeadlineMs ?? CALL_DEADLINE_MS,
     testDeadlineMs: deps.deadlines?.testDeadlineMs ?? TEST_DEADLINE_MS,
   }

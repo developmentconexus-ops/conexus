@@ -46,8 +46,9 @@ export function linkSankhya(
   base: string,
   credential: Record<string, string>,
   key?: string,
+  name = 'Matriz',
 ) {
-  return post(hub, person, base, { connector: 'sankhya', credential }, key)
+  return post(hub, person, base, { connector: 'sankhya', name, credential }, key)
 }
 
 /** Testar: a POST with no body. */

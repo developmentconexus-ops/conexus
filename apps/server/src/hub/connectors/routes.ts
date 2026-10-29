@@ -1,12 +1,23 @@
-import { linkConnection, listConnections, testConnection, unlinkConnection } from '@conexus/hub-api'
+import {
+  getConnection,
+  linkConnection,
+  listConnections,
+  testConnection,
+  unlinkConnection,
+} from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
 import { answer, serve } from '../../platform/http.ts'
-import type { Deps } from './connections.ts'
-import { link, list, test, unlink } from './connections.ts'
+import { detail, link, list, unlink } from './connections.ts'
+import type { Deps } from './rows.ts'
+import { test } from './testing.ts'
 
 export function registerConnectionRoutes(app: FastifyInstance, deps: Deps): void {
   serve(app, listConnections, async ({ person, params }) =>
     answer(await list(deps, { person, ...params })),
+  )
+
+  serve(app, getConnection, async ({ person, params }) =>
+    answer(await detail(deps, { person, ...params })),
   )
 
   serve(app, linkConnection, async ({ person, params, body, attemptKey, log }) => {

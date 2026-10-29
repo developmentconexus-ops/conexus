@@ -87,8 +87,7 @@ async function bodyOf(response: Response): Promise<Uint8Array | Unreadable> {
 function answerOf(status: number, bytes: Uint8Array): ProviderAnswer | Unreadable {
   if (bytes.byteLength === 0) return { status, body: undefined }
   try {
-    const body: unknown = JSON.parse(Buffer.from(bytes).toString('utf8'))
-    return { status, body }
+    return { status, body: z.unknown().parse(JSON.parse(Buffer.from(bytes).toString('utf8'))) }
   } catch (error) {
     if (error instanceof SyntaxError) return UNREADABLE
     throw error
