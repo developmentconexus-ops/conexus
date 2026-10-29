@@ -162,6 +162,52 @@ test('papel no app, troca, tirar, na chamada seguinte', async (t) => {
   assert.deepEqual(await peopleOf(c), [])
 })
 
+test('quem sai da empresa leva a linha que estava inerte', async (t) => {
+  const c = await appCompany(t)
+  const { hub, ana, companyId } = c
+  const carla = await personOn(hub, CARLA)
+  await c.give(carla, CARLA.email, 'vendedor')
+  const session = await sessionOf(hub, carla, PEDIDOS)
+
+  // A member: the row stays, inert, and the session calls as a member.
+  const invited = await post(hub, ana, `/api/companies/${companyId}/invitations`, {
+    email: CARLA.email,
+    role: 'member',
+  })
+  assert.equal(invited.statusCode, 201, invited.body)
+  const invitationId = String(Object(invited.json()).invitation.id)
+  const joined = await call(hub, carla, 'PUT', `/api/invitations/${invitationId}/acceptance`, {
+    revision: 0,
+  })
+  assert.equal(joined.statusCode, 200, joined.body)
+  assert.deepEqual(await accessOf(hub, PEDIDOS, session), { kind: 'BUILDER' })
+
+  // Taken out of the company, she takes the row with her: no session, and no new pass.
+  const removed = await call(hub, ana, 'DELETE', `/api/companies/${companyId}/members/${carla.id}`)
+  assert.equal(removed.statusCode, 204, removed.body)
+  assert.deepEqual(refused(await check(hub, PEDIDOS, session)), [401, 'APP_SESSION_INVALID'])
+  const again = await handoff(hub, carla, { host: PEDIDOS, binding: browser().hash })
+  assert.equal(again.statusCode, 404)
+  assert.deepEqual(await peopleOf(c), [])
+})
+
+test('outra empresa não tira o acesso a um app da empresa', async (t) => {
+  const c = await appCompany(t)
+  const { hub, projectId } = c
+  const carla = await personOn(hub, CARLA)
+  await c.give(carla, CARLA.email, 'vendedor')
+  const session = await sessionOf(hub, carla, PEDIDOS)
+  const davi = await personOn(hub, DAVI)
+  const other = await plantCompany(hub.test, davi.id, 'Empresa B', 'empresa-b')
+
+  // Empresa A's Projeto is not Empresa B's: nothing is taken, nothing ends.
+  const foreign = `/api/companies/${other}/projects/${projectId}/access/${carla.id}`
+  assert.deepEqual(refused(await call(hub, davi, 'DELETE', foreign)), [404, 'NOT_FOUND'])
+  const all = await call(hub, davi, 'DELETE', `/api/companies/${other}/app-access/${carla.id}`)
+  assert.equal(all.statusCode, 204, all.body)
+  assert.deepEqual(await accessOf(hub, PEDIDOS, session), { kind: 'USER', role: 'vendedor' })
+})
+
 test('empresa marcada e Projeto apagado', async (t) => {
   const c = await appCompany(t)
   const { hub, ana, companyId, projects, projectId } = c

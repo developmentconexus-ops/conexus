@@ -9,9 +9,9 @@ import { ADDRESS, AppPendingRow, appInvitationOf, LIVE, pending } from './invita
 import { invitation, member, user } from './tables.ts'
 
 /**
- * What an app's invitation asks of Projects (code C4), which owns the Projeto, the rows of who uses
- * its app and the roles of its published version. `main.ts` hands it over with the routes, Projects
- * being made after identity.
+ * What an app's invitation and a member's removal ask of Projects (code C4), which owns the Projeto,
+ * the rows of who uses its app and the roles of its published version. `main.ts` hands it over with
+ * the routes, Projects being made after identity.
  */
 export type ProjectApps = {
   /** Refuses what the app cannot take; `personId` is the person of the address, if there is one. */
@@ -31,6 +31,10 @@ export type ProjectApps = {
     tx: CommandTx,
     row: { companyId: CompanyId; projectId: ProjectId; personId: PersonId; role: string | null },
   ): Promise<void>
+  /** Deletes the person's rows in the company, all of them, and answers their Projetos. */
+  takeAccess(tx: CommandTx, ids: { companyId: CompanyId; personId: PersonId }): Promise<ProjectId[]>
+  /** Ends the person's sessions in those Projetos' apps, after the commit that took the rows. */
+  endSessions(ids: { projectIds: readonly ProjectId[]; personId: PersonId }): Promise<void>
 }
 
 /**
