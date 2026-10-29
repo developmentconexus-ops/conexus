@@ -11,6 +11,7 @@ COPY packages/app-contract/package.json packages/app-contract/
 COPY packages/connectors/package.json packages/connectors/
 COPY packages/app/package.json packages/app/
 COPY apps/edge/package.json apps/edge/
+COPY apps/help/package.json apps/help/
 RUN npm ci --no-audit --no-fund
 COPY tsconfig.base.json ./
 COPY packages packages
@@ -48,6 +49,7 @@ COPY packages/app-contract/package.json packages/app-contract/
 COPY packages/connectors/package.json packages/connectors/
 COPY packages/app/package.json packages/app/
 COPY apps/edge/package.json apps/edge/
+COPY apps/help/package.json apps/help/
 # Node refuses .ts files under node_modules, so the workspace packages stay linked to their folders.
 RUN npm ci --omit=dev --omit=optional --no-audit --no-fund -w @conexus/server && npm cache clean --force
 COPY packages/hub-api packages/hub-api

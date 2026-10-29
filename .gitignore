@@ -12,3 +12,4 @@ secrets/
 .wrangler/
 .stryker-tmp/
 .stryker-report/
+.astro/

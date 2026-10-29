@@ -30,6 +30,9 @@
     },
     "apps/edge": {
       "ignoreDependencies": ["cloudflare"]
+    },
+    "apps/help": {
+      "ignoreDependencies": ["@conexus/web", "wrangler"]
     }
   }
 }

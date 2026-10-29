@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
 # Run from the root of a release's checkout, on the server's runner. Publishes the wall, the
-# example into the apps' namespace, the dispatcher's app login key, then the dispatcher, each from
-# that checkout's code. A
-# namespace Worker has no versions, so `wrangler rollback` cannot put an app back; the rollback
-# publishes the earlier release's code with this same script (C75). Running it again with the same
-# code changes nothing.
+# example into the apps' namespace, the dispatcher's app login key, the dispatcher, then the help
+# site, each from that checkout's code. A namespace Worker has no versions, so `wrangler rollback`
+# cannot put an app back; the rollback publishes the earlier release's code with this same script
+# (C75). Running it again with the same code changes nothing.
 set -euo pipefail
 
 if [ ! -d apps/edge ]; then
@@ -52,7 +51,8 @@ if ! [[ $key_text =~ ^[0-9a-f]{64}$ ]]; then
   exit 1
 fi
 
-wrangler="$PWD/node_modules/.bin/wrangler"
+root="$PWD"
+wrangler="$root/node_modules/.bin/wrangler"
 cd apps/edge
 publish() {
   echo "publishing: $*"
@@ -65,3 +65,14 @@ echo "setting the dispatcher's APP_LOGIN_KEY"
 printf '%s' "$key_text" | timeout --kill-after=10 120 "$wrangler" secret put APP_LOGIN_KEY --env-file "$file"
 publish
 echo "edge published"
+
+cd "$root"
+if [ ! -d apps/help ]; then
+  echo "this release has no apps/help; the help site stays as it is"
+  exit 0
+fi
+# A build that fails ends the script here, before wrangler is called for the site.
+timeout --kill-after=10 300 npm run build -w @conexus/help
+cd apps/help
+publish --config ../help/wrangler.jsonc
+echo "help site published"

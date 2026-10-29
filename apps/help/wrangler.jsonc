@@ -1,0 +1,11 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "conexus-help",
+  "compatibility_date": "2026-10-29",
+  "workers_dev": false,
+  // Like apps/edge/wrangler.jsonc: no address besides the domain.
+  "preview_urls": false,
+  // No routes: ajuda.conexus.fun is bound once in the dashboard (Workers & Pages › conexus-help ›
+  // Domains & Routes › Custom domain), and wrangler deploy leaves what the file does not list.
+  "assets": { "directory": "./dist", "not_found_handling": "404-page" }
+}
