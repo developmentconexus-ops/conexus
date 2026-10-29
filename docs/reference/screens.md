@@ -16,6 +16,7 @@ L24](../guides/delivery.md)): it grows by one line per screen.
 | The way in: the last company opened, else the first, else the Central, else "Seus apps" for a person who only uses apps, or "Nenhuma empresa" | `/` | Empresa | every signed-in person |
 | Início of a company | `/companies/<c>` | Empresa | owner, administrator, member |
 | Todos os projetos | `/companies/<c>/projects` | Empresa | owner, administrator, member |
+| Integrações: the company's connections to outside systems, linked, tested and unlinked | `/companies/<c>/integrations` | Empresa | owner, administrator, member (reads) |
 | Configurações' index: the sections as a list on a phone; a wide screen opens Minha conta | `/companies/<c>/settings` | Empresa | owner, administrator, member |
 | Configurações: Minha conta, Contas de modelo, Meus padrões | `/companies/<c>/settings/account`, `model-accounts`, `my-defaults` | Empresa | owner, administrator, member |
 | Configurações: Geral, Pessoas e convites (with Quem usa os apps), Padrões da empresa | `/companies/<c>/settings/general`, `people`, `defaults` | Empresa | owner, administrator, member (reads) |

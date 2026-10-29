@@ -220,6 +220,7 @@
         "apps/web/src/builder/conversation/test-stream.tsx",
         "apps/web/src/hub/identity/test-hub.tsx",
         "apps/web/src/hub/identity/test-people.tsx",
+        "apps/web/src/hub/connectors/test-hub.tsx",
         "apps/web/vitest.*",
         "apps/web/vite.config.ts"
       ],
