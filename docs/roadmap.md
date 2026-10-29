@@ -71,8 +71,6 @@ Aprovações e usos: [aprovações](approvals.md).
 
 Login social. Arquivos enviados por pessoas para dentro de um app ou da máquina (na conversa com o Builder eles entram, na 14.3). Medição de uso, segundo idioma. Domínio de empresa.
 
-Apps que o Builder faz quebram no celular (fundador, 2026-10-29); fica com o trabalho de qualidade do Builder: navegador do agente, QA, estratégias de IA.
-
 ### As suas respostas de 2026-10-13
 
 1. **Código antigo só entra com os consertos médios e grandes feitos.** "2. A": "ele não manter decisões antigas só porque elas já foram
