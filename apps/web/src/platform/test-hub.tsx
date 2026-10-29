@@ -184,6 +184,10 @@ export function hubServer() {
   const server = setupServer(
     sessionRead(() => undefined),
     http.get('*/api/companies', () => HttpResponse.json(NO_COMPANIES)),
+    http.get('*/api/apps', () => HttpResponse.json({ apps: [] })),
+    http.get('*/api/companies/:companyId/app-access', () =>
+      HttpResponse.json({ people: [], next: { kind: 'END' } }),
+    ),
     http.get('*/api/companies/:companyId/model-accounts', () =>
       HttpResponse.json(
         listModelAccounts.success.body.parse({
