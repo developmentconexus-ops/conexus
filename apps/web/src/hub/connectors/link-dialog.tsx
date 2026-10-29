@@ -1,11 +1,12 @@
-import type { CompanyId, ConnectorEntry } from '@conexus/hub-api'
-import { useMutation } from '@tanstack/react-query'
-import { useState } from 'react'
+import type { CompanyId, Connection, ConnectorEntry } from '@conexus/hub-api'
+import { ConnectionName } from '@conexus/hub-api'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useNavigate } from '@tanstack/react-router'
+import { ExternalLinkIcon } from 'lucide-react'
 import { z } from 'zod'
 import { useAttemptKey } from '../../platform/attempt-key.ts'
-import { sentenceOf } from '../../platform/hub.ts'
 import { Button } from '../../ui/button.tsx'
-import { Dialog, DialogContent, DialogTrigger } from '../../ui/dialog.tsx'
+import { Dialog, DialogContent } from '../../ui/dialog.tsx'
 import {
   Form,
   FormAlert,
@@ -14,68 +15,131 @@ import {
   TextField,
   useSchemaForm,
 } from '../../ui/form.tsx'
-import { sendLink } from './queries.ts'
-import { listChanged } from './text.ts'
+import { connectionsPrefix, sendLink } from './queries.ts'
 
 const UNCONFIRMED = 'Não confirmamos a ligação. Tente de novo.'
+const NAME = 'name'
 
-/** The connector's fields as the catalog names them: each pasted whole, within its length. */
-function credentialOf(entry: ConnectorEntry) {
-  return z.object(
-    Object.fromEntries(
+/** The form's schema: the name the company gives the connection, then each of the connector's fields pasted whole. */
+function schemaOf(entry: ConnectorEntry) {
+  return z.object({
+    [NAME]: ConnectionName,
+    ...Object.fromEntries(
       entry.fields.map((field) => [field.name, z.string().min(1).max(field.maxLength)]),
     ),
+  })
+}
+
+/** The name offered: the connector's own, unless the company already has a connection of it by that name. */
+function suggestedName(entry: ConnectorEntry, connections: readonly Connection[]): string {
+  const taken = connections.some((one) => one.connector === entry.id && one.name === entry.name)
+  return taken ? '' : entry.name
+}
+
+/** What the provider's help says, each text once with the fields it covers and where to find them. */
+function helpOf(entry: ConnectorEntry) {
+  const helps = new Map<string, { text: string; url: string; labels: string[] }>()
+  for (const field of entry.fields) {
+    const { text, url } = field.help
+    const same = helps.get(`${text}\n${url}`) ?? { text, url, labels: [] }
+    same.labels.push(field.label)
+    helps.set(`${text}\n${url}`, same)
+  }
+  return [...helps.values()]
+}
+
+function BeforePasting({ entry }: { entry: ConnectorEntry }) {
+  return (
+    <section
+      aria-label="Antes de colar"
+      className="flex flex-col gap-sm rounded-control border border-line bg-surface-3 p-md"
+    >
+      <h3 className="font-medium">Antes de colar</h3>
+      <ol className="flex list-decimal flex-col gap-sm pl-lg">
+        {helpOf(entry).map((help) => (
+          <li key={help.url + help.text}>
+            <span className="font-medium">{help.labels.join(', ')}</span>: {help.text}{' '}
+            <a
+              href={help.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`Onde achar ${help.labels.join(', ')}`}
+              className="inline-flex items-center gap-xs underline underline-offset-2"
+            >
+              Onde achar
+              <ExternalLinkIcon aria-hidden="true" className="size-3.5" />
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
   )
 }
 
 /**
- * The form builds itself from the catalog's fields, each a password field. The Hub seals what is
- * pasted and answers with the connection, never the fields, and they are cleared once it is linked.
- * The attempt key stays until the Hub settles the outcome (web W24); keys it refused stay in their
- * fields, for the person to correct.
+ * "Ligar e testar": the form builds itself from the catalog's fields, the Client ID to the eye and
+ * the others hidden, and the name beside them. The Hub seals what is pasted and answers with the
+ * connection, never the fields; the page of the connection opens and tests it. The attempt key
+ * stays until the Hub settles the outcome (web W24); what the Hub refused stays in its fields.
  */
 function LinkForm(props: {
   companyId: CompanyId
   entry: ConnectorEntry
-  onAttempt: () => void
-  onLinked: (notice?: string) => void
-  onCancel: () => void
+  connections: readonly Connection[]
+  onClose: () => void
 }) {
   const { companyId, entry } = props
   const send = useMutation(sendLink)
   const attempt = useAttemptKey()
-  const form = useSchemaForm(
-    credentialOf(entry),
-    Object.fromEntries(entry.fields.map((field) => [field.name, ''])),
-  )
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const form = useSchemaForm(schemaOf(entry), {
+    [NAME]: suggestedName(entry, props.connections),
+    ...Object.fromEntries(entry.fields.map((field) => [field.name, ''])),
+  })
 
-  async function submit(credential: Record<string, string>) {
-    props.onAttempt()
+  async function submit(values: Record<string, string>) {
+    const { [NAME]: name = '', ...credential } = values
     try {
-      await attempt((attemptKey) =>
+      const { connection } = await attempt((attemptKey) =>
         send.mutateAsync({
           params: { companyId },
-          body: { connector: entry.id, credential },
+          body: { connector: entry.id, name, credential },
           attemptKey,
         }),
       )
       form.reset()
-      props.onLinked()
+      void queryClient.invalidateQueries({ queryKey: connectionsPrefix(companyId) })
+      await navigate({
+        to: '/companies/$companyId/integrations/$connectionId',
+        params: { companyId, connectionId: connection.id },
+        search: { testar: true },
+      })
     } catch (error) {
-      if (listChanged(error)) props.onLinked(sentenceOf(error))
-      else setWriteError(form, error, UNCONFIRMED)
+      setWriteError(form, error, UNCONFIRMED, {
+        CONNECTION_NAME_INVALID: NAME,
+        CONNECTION_NAME_TAKEN: NAME,
+      })
     }
   }
 
   return (
     <Form form={form} onSubmit={submit}>
       <fieldset disabled={form.formState.isSubmitting} className="contents">
+        <BeforePasting entry={entry} />
+        <TextField
+          name={NAME}
+          label="Nome da ligação"
+          type="text"
+          autoComplete="off"
+          invalid="Dê um nome à ligação, de até 60 letras."
+        />
         {entry.fields.map((field) => (
           <TextField
             key={field.name}
             name={field.name}
             label={field.label}
-            type="password"
+            type={field.visible ? 'text' : 'password'}
             autoComplete="off"
             invalid={`Cole ${field.label}.`}
           />
@@ -83,8 +147,8 @@ function LinkForm(props: {
       </fieldset>
       <FormAlert />
       <div className="flex flex-wrap gap-md">
-        <SubmitButton idle="Ligar" pending="Ligando…" />
-        <Button type="button" disabled={form.formState.isSubmitting} onClick={props.onCancel}>
+        <SubmitButton idle="Ligar e testar" pending="Ligando…" />
+        <Button type="button" disabled={form.formState.isSubmitting} onClick={props.onClose}>
           Cancelar
         </Button>
       </div>
@@ -92,34 +156,20 @@ function LinkForm(props: {
   )
 }
 
-/**
- * "Ligar" and the dialog it opens. The connector leaves "Para ligar" once linked, so the page is told
- * (`onLinked`) to put focus on the list it joined and not on the button it leaves.
- */
+/** The window "Ligar" opens, in the middle of the screen like "Novo projeto". */
 export function LinkDialog(props: {
   companyId: CompanyId
   entry: ConnectorEntry
-  onAttempt: () => void
-  onLinked: (notice?: string) => void
+  connections: readonly Connection[]
+  onClose: () => void
 }) {
-  const [open, setOpen] = useState(false)
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant="primary" size="sm" />}>Ligar</DialogTrigger>
+    <Dialog open onOpenChange={(open) => open || props.onClose()}>
       <DialogContent
         title={`Ligar ${props.entry.name}`}
         description="As chaves ficam guardadas no Hub e não aparecem de novo."
       >
-        <LinkForm
-          companyId={props.companyId}
-          entry={props.entry}
-          onAttempt={props.onAttempt}
-          onLinked={(notice) => {
-            setOpen(false)
-            props.onLinked(notice)
-          }}
-          onCancel={() => setOpen(false)}
-        />
+        <LinkForm {...props} />
       </DialogContent>
     </Dialog>
   )

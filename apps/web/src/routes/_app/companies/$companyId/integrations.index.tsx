@@ -3,7 +3,7 @@ import { connectionsQuery, Integrations } from '../../../../hub/connectors/publi
 import { readOrNotFound } from '../../../../platform/hub.ts'
 import { RouteReadFailure } from '../../../../ui/states.tsx'
 
-export const Route = createFileRoute('/_app/companies/$companyId/integrations')({
+export const Route = createFileRoute('/_app/companies/$companyId/integrations/')({
   staticData: { place: 'Integrações' },
   loader: ({ context, params }) =>
     readOrNotFound(context.queryClient.ensureQueryData(connectionsQuery(params.companyId))),

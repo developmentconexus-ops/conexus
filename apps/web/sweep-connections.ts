@@ -1,27 +1,17 @@
-import { Connection, listConnections } from '@conexus/hub-api'
+import { Connection, getConnection, listConnections } from '@conexus/hub-api'
 import type { Replies } from './layout-harness.ts'
 import { ok } from './layout-harness.ts'
+import { checksOf, connectionOf as fixtureOf, SANKHYA } from './src/hub/connectors/fixtures.ts'
 
-const SANKHYA = {
-  id: 'sankhya',
-  name: 'Sankhya',
-  version: '1.0.0',
-  fields: [
-    { name: 'clientId', label: 'Client ID', maxLength: 200 },
-    { name: 'clientSecret', label: 'Client Secret', maxLength: 200 },
-    { name: 'xToken', label: 'X-Token', maxLength: 4096 },
-  ],
-}
+let made = 0
 
+/** A connection of the company to the Sankhya, by its own stable id, linked by Ana Lima. */
 export function connectionOf(fields: Record<string, unknown> = {}) {
+  made += 1
   return Connection.parse({
-    id: '00000000-0000-4000-8000-000000000001',
-    connector: 'sankhya',
-    connectorVersion: '1.0.0',
-    state: 'NEW',
+    ...fixtureOf(),
+    id: `00000000-0000-4000-8000-${String(made).padStart(12, '0')}`,
     linkedBy: { id: 'person-ana', name: 'Ana Lima' },
-    linkedAt: '2026-10-29T12:00:00.000Z',
-    testedAt: null,
     ...fields,
   })
 }
@@ -37,6 +27,27 @@ export function connectionsPage(
       connectors: [SANKHYA],
       connections,
       mayManage,
+    }),
+  }
+}
+
+/** One connection's page and its last working test, kept as the Hub keeps it: status and code only. */
+export function connectionPage(
+  id: string,
+  connection: ReturnType<typeof connectionOf>,
+  outcomes?: Parameters<typeof checksOf>[0],
+): Replies {
+  return {
+    [`GET /api/companies/${id}/connections/${connection.id}`]: ok(getConnection, {
+      connection,
+      lastTest:
+        outcomes === undefined
+          ? null
+          : checksOf(outcomes).map((one) =>
+              'native' in one
+                ? { ...one, native: { status: one.native.status, code: one.native.code } }
+                : one,
+            ),
     }),
   }
 }

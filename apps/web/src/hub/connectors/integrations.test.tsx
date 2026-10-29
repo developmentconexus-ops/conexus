@@ -1,59 +1,77 @@
-import { createMemoryHistory } from '@tanstack/react-router'
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { http } from 'msw'
 import { expect, test } from 'vitest'
-import { Conexus, createConexus } from '../../main.tsx'
-import { COMPANY } from '../../platform/fixtures.ts'
 import { hubServer, refusal, undecided } from '../../platform/test-hub.tsx'
+import { checksOf, connectionOf, REFUSAL, SANKHYA } from './fixtures.ts'
 import type { Answers, View } from './test-hub.tsx'
 import {
-  connectionOf,
   connectionsHub,
   fill,
+  mount,
   openForm,
   openIntegrations,
   PAGE,
+  pageOf,
   SECRETS,
   viewOf,
-  workingOf,
 } from './test-hub.tsx'
 
 const server = hubServer()
 const MEMBER_SENTENCE = 'Só o dono ou um administrador liga, testa e desliga.'
+const TESTED = '2026-10-29T14:02:00.000Z'
 
-function open(view?: View, answers?: Answers) {
-  return openIntegrations(server, view, answers)
+function open(view?: View, answers?: Answers, path?: string) {
+  return openIntegrations(server, view, answers, path)
 }
 
-/** The text of each subject's line, the items that do not read included. */
-function subjectLines(list: ReturnType<typeof within>): string[] {
-  return list
+/** Each subject's line of the result, its parts that did not read included. */
+async function subjectLines() {
+  const list = await screen.findByRole('list', { name: 'Resultado do teste' })
+  return within(list)
     .getAllByRole('listitem')
-    .filter(
-      (one: HTMLElement) => one.parentElement?.getAttribute('aria-label') === 'Resultado do teste',
-    )
-    .map((one: HTMLElement) => one.textContent ?? '')
+    .filter((one) => one.parentElement === list)
+    .map((one) => one.textContent ?? '')
 }
 
-test('a dona liga, testa e desliga', async () => {
-  const sent = open()
+test('a primeira vez: a frase, o logotipo e o resumo do conector, e Ligar para quem pode', async () => {
+  open()
   expect(await screen.findByRole('heading', { name: 'Integrações' })).toBeTruthy()
-  expect(screen.getByRole('heading', { name: 'Ligadas' })).toBeTruthy()
-  expect(screen.getByRole('heading', { name: 'Para ligar' })).toBeTruthy()
-  expect(screen.getByText('Nenhuma integração ligada ainda.')).toBeTruthy()
+  expect(screen.getByText(/O Conexus só lê\.$/)).toBeTruthy()
+  expect(
+    screen.getByText('Nenhum sistema ligado ainda. Ligue o primeiro abaixo; leva dois minutos.'),
+  ).toBeTruthy()
+  const toLink = within(screen.getByRole('region', { name: 'Para ligar' }))
+  expect(toLink.getByText('Sankhya')).toBeTruthy()
+  expect(toLink.getByText('ERP')).toBeTruthy()
+  expect(toLink.getByText(SANKHYA.summary)).toBeTruthy()
+  const logo = toLink.getByRole('presentation', { hidden: true })
+  expect(logo.getAttribute('src')?.startsWith('data:image/svg+xml;utf8,')).toBe(true)
   expect(screen.queryByText(MEMBER_SENTENCE)).toBeNull()
+})
 
+test('Ligar e testar: a janela monta os campos do catálogo, liga, abre a página e testa', async () => {
+  const sent = open()
   const form = await openForm()
-  for (const label of Object.keys(SECRETS)) {
+  expect(within(form).getByRole('region', { name: 'Antes de colar' })).toBeTruthy()
+  const guide = within(form).getByRole('link', { name: 'Onde achar Client ID, Client Secret' })
+  expect(guide.getAttribute('target')).toBe('_blank')
+  expect(guide.getAttribute('rel')).toContain('noopener')
+  expect(within(form).getByLabelText<HTMLInputElement>('Nome da ligação').value).toBe('Sankhya')
+  expect(within(form).getByLabelText('Client ID').getAttribute('type')).toBe('text')
+  for (const label of ['Client Secret', 'X-Token']) {
     expect(within(form).getByLabelText(label).getAttribute('type')).toBe('password')
   }
-  fill()
-  fireEvent.click(within(form).getByRole('button', { name: 'Ligar' }))
-  expect(await screen.findByText(/Ligada por Ana em/)).toBeTruthy()
-  expect(screen.getByText(/ainda não testada/)).toBeTruthy()
-  expect(screen.getByText(/versão 1\.0\.0/)).toBeTruthy()
+  for (const label of Object.keys(SECRETS)) {
+    expect(within(form).getByLabelText(label).getAttribute('autocomplete')).toBe('off')
+  }
+  fill('Comercial')
+  fireEvent.click(within(form).getByRole('button', { name: 'Ligar e testar' }))
+  expect(await screen.findByRole('heading', { name: 'Comercial' })).toBeTruthy()
+  expect(await screen.findByText('Lê 8 de 8 assuntos inteiros')).toBeTruthy()
+  expect(sent.map((one) => one.method)).toEqual(['POST', 'POST'])
   expect(sent[0]?.body).toEqual({
     connector: 'sankhya',
+    name: 'Comercial',
     credential: {
       clientId: 'id-plantado-1',
       clientSecret: 'segredo-plantado-2',
@@ -61,87 +79,52 @@ test('a dona liga, testa e desliga', async () => {
     },
   })
   expect(sent[0]?.attemptKey).toBeTruthy()
+  expect(sent[1]?.path).toMatch(/\/test$/)
   expect(screen.queryByRole('dialog')).toBeNull()
   expect(document.body.textContent).not.toContain('segredo-plantado-2')
-  expect(screen.queryByDisplayValue('segredo-plantado-2')).toBeNull()
-  expect(screen.getByText('Nenhum outro conector ainda.')).toBeTruthy()
+})
 
-  fireEvent.click(screen.getByRole('button', { name: 'Testar' }))
-  expect(await screen.findByText('Ligação funcionando')).toBeTruthy()
-  const checks = within(screen.getByRole('list', { name: 'Resultado do teste' }))
-  expect(subjectLines(checks)).toEqual([
-    'Porta de leitura lê',
-    'Cadastros lê',
-    'Produtos lê',
-    'Vendas lê',
-  ])
-  expect(await screen.findByText(/testada em/)).toBeTruthy()
-
-  fireEvent.click(screen.getByRole('button', { name: 'Desligar' }))
-  const dialog = await screen.findByRole('alertdialog')
-  fireEvent.click(within(dialog).getByRole('button', { name: 'Desligar' }))
-  expect(await screen.findByText('Nenhuma integração ligada ainda.')).toBeTruthy()
-  expect(sent.map((one) => one.method)).toEqual(['POST', 'POST', 'DELETE'])
+test('a página que chega de Ligar e testar mostra "Testando as 25 leituras, uma por vez…" enquanto espera', async () => {
+  const connection = connectionOf()
+  open(viewOf({ connections: [connection] }), {}, `${pageOf(connection)}?testar=true`)
+  expect(await screen.findByText('Testando as 25 leituras, uma por vez…')).toBeTruthy()
+  expect(screen.getByRole('button', { name: 'Testando…' })).toBeTruthy()
+  expect(await screen.findByText('Lê 8 de 8 assuntos inteiros')).toBeTruthy()
   await waitFor(() =>
-    expect(document.activeElement).toBe(screen.getByRole('region', { name: 'Ligadas' })),
+    expect(screen.queryByText('Testando as 25 leituras, uma por vez…')).toBeNull(),
   )
 })
 
-test('Testar mostra "Testando…" e depois cada parte com a sua palavra', async () => {
-  const held = Promise.withResolvers<Response | undefined>()
-  const connection = connectionOf({ state: 'ACTIVE', testedAt: '2026-10-29T14:02:00.000Z' })
-  const view: View = { connections: [connection], mayManage: true }
-  const hub = connectionsHub(view, {}, (one) =>
-    workingOf(one, {
-      Pedidos: 'REFUSED',
-      Produtos: 'UNREADABLE',
-      'Impostos dos pedidos': 'NOTHING_TO_READ',
-      Clientes: 'NOT_TESTED',
-    }),
-  )
-  server.use(
-    http.post(`*/api/companies/${COMPANY.id}/connections/:id/test`, async () => {
-      await held.promise
-      return undefined
-    }),
-    ...hub.handlers,
-  )
-  const conexus = createConexus(createMemoryHistory({ initialEntries: [PAGE] }))
-  render(<Conexus conexus={conexus} />)
-  fireEvent.click(await screen.findByRole('button', { name: 'Testar' }))
-  expect(await screen.findByRole('button', { name: 'Testando…' })).toBeTruthy()
-  held.resolve(undefined)
-  const checks = within(await screen.findByRole('list', { name: 'Resultado do teste' }))
-  expect(subjectLines(checks)).toEqual([
-    'Porta de leitura lê',
-    'Cadastros lê 1 de 2Clientes não testado: o Sankhya demorou, teste de novo',
-    'Produtos lê 0 de 1Produtos resposta que o Conexus não entendeu',
-    'Vendas lê 0 de 2Pedidos recusado pelo SankhyaImpostos dos pedidos nada para ler',
-  ])
+test('o nome sugerido é o do conector, e vazio quando a empresa já tem uma ligação com ele', async () => {
+  open(viewOf({ connections: [connectionOf({ name: 'Sankhya' })] }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Ligar outra ligação do Sankhya' }))
+  const form = await screen.findByRole('dialog', { name: 'Ligar Sankhya' })
+  expect(within(form).getByLabelText<HTMLInputElement>('Nome da ligação').value).toBe('')
 })
 
-test('chave recusada no Testar: a frase do Sankhya; fornecedor fora: a outra frase', async () => {
-  const connection = connectionOf({ state: 'ACTIVE', testedAt: '2026-10-29T14:02:00.000Z' })
-  const view: View = { connections: [connection], mayManage: true }
-  let result: 'AUTH_REFUSED' | 'UNREACHABLE' = 'UNREACHABLE'
-  const hub = connectionsHub(view, {}, (one) => ({
-    result,
-    connection: { ...one, state: result === 'AUTH_REFUSED' ? 'NEEDS_REAUTH' : one.state },
-  }))
-  server.use(...hub.handlers)
-  render(<Conexus conexus={createConexus(createMemoryHistory({ initialEntries: [PAGE] }))} />)
-  fireEvent.click(await screen.findByRole('button', { name: 'Testar' }))
-  expect(
-    await screen.findByText('O Sankhya não respondeu. Tente de novo em alguns minutos.'),
-  ).toBeTruthy()
-  result = 'AUTH_REFUSED'
-  fireEvent.click(screen.getByRole('button', { name: 'Testar' }))
-  expect(
-    await screen.findByText(
-      'As chaves foram recusadas pelo Sankhya. Desligue e ligue de novo com chaves novas.',
-    ),
-  ).toBeTruthy()
-  expect(screen.queryByText('O Sankhya não respondeu. Tente de novo em alguns minutos.')).toBeNull()
+test.each([
+  ['CONNECTION_NAME_TAKEN', 'Já existe uma ligação desse conector com esse nome. Dê outro nome.'],
+  ['CONNECTION_NAME_INVALID', 'Dê um nome à ligação, de até 60 letras.'],
+] as const)('%s aparece no campo do nome e as chaves coladas ficam', async (code, sentence) => {
+  open(viewOf(), { link: () => refusal(code) })
+  const form = await openForm()
+  fill('Comercial')
+  fireEvent.click(within(form).getByRole('button', { name: 'Ligar e testar' }))
+  const name = within(form).getByLabelText('Nome da ligação')
+  await waitFor(() => expect(name.getAttribute('aria-invalid')).toBe('true'))
+  expect(within(form).getByText(sentence)).toBeTruthy()
+  expect(within(form).getByDisplayValue(SECRETS['X-Token'])).toBeTruthy()
+  expect(screen.getByRole('dialog', { name: 'Ligar Sankhya' })).toBeTruthy()
+})
+
+test('Ligar recusado por chave inválida: a frase no formulário, nada some em silêncio', async () => {
+  open(viewOf(), { link: () => refusal('CONNECTION_CREDENTIAL_INVALID') })
+  const form = await openForm()
+  fill('Comercial')
+  fireEvent.click(within(form).getByRole('button', { name: 'Ligar e testar' }))
+  expect((await within(form).findByRole('alert')).textContent).toBe(
+    'Confira os campos: cole cada chave inteira.',
+  )
 })
 
 test.each(undecided('{"connection":'))(
@@ -150,14 +133,15 @@ test.each(undecided('{"connection":'))(
     let answers = 0
     const sent = open(viewOf(), { link: () => (answers++ === 0 ? reply() : undefined) })
     const form = await openForm()
-    fill()
-    fireEvent.click(within(form).getByRole('button', { name: 'Ligar' }))
+    fill('Comercial')
+    fireEvent.click(within(form).getByRole('button', { name: 'Ligar e testar' }))
     expect((await within(form).findByRole('alert')).textContent).toBe(
       'Não confirmamos a ligação. Tente de novo.',
     )
-    fireEvent.click(within(form).getByRole('button', { name: 'Ligar' }))
-    expect(await screen.findByText(/Ligada por Ana em/)).toBeTruthy()
-    expect(sent).toHaveLength(2)
+    fireEvent.click(within(form).getByRole('button', { name: 'Ligar e testar' }))
+    expect(await screen.findByRole('heading', { name: 'Comercial' })).toBeTruthy()
+    // The page tests the new connection; the test ends once it has answered.
+    expect(await screen.findByText('Lê 8 de 8 assuntos inteiros')).toBeTruthy()
     expect(sent[1]?.attemptKey).toBe(sent[0]?.attemptKey)
   },
 )
@@ -165,71 +149,146 @@ test.each(undecided('{"connection":'))(
 test('campo vazio: o formulário pede os campos antes de mandar', async () => {
   const sent = open()
   const form = await openForm()
-  fireEvent.click(within(form).getByRole('button', { name: 'Ligar' }))
+  fireEvent.click(within(form).getByRole('button', { name: 'Ligar e testar' }))
   expect((await within(form).findAllByText(/^Cole /)).length).toBe(3)
   expect(sent).toHaveLength(0)
 })
 
-test('Desligar pede confirmação, e Cancelar não manda nada', async () => {
-  const sent = open(viewOf({ connections: [connectionOf()] }))
-  fireEvent.click(await screen.findByRole('button', { name: 'Desligar' }))
-  const dialog = await screen.findByRole('alertdialog')
-  expect(within(dialog).getByText('Desligar o Sankhya?')).toBeTruthy()
-  fireEvent.click(within(dialog).getByRole('button', { name: 'Cancelar' }))
-  await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull())
-  expect(sent).toHaveLength(0)
-  expect(screen.getByText(/Ligada por Ana em/)).toBeTruthy()
+test('duas ligações do mesmo conector: um grupo com o logotipo, a conta e cada ligação com o seu estado', async () => {
+  const tested = connectionOf({ name: 'Comercial', state: 'ACTIVE', testedAt: TESTED })
+  const refused = connectionOf({ name: 'Financeiro', state: 'NEEDS_REAUTH', linkedBy: null })
+  open(viewOf({ connections: [tested, refused] }))
+  const linked = within(await screen.findByRole('region', { name: 'Ligadas' }))
+  expect(linked.getByText('2 ligações')).toBeTruthy()
+  expect(linked.getAllByRole('presentation', { hidden: true })).toHaveLength(1)
+  expect(linked.getByText('Funcionando')).toBeTruthy()
+  expect(linked.getByText('Chaves recusadas')).toBeTruthy()
+  expect(linked.getByText(/^testada em \d\d\/\d\d, \d\d:\d\d$/)).toBeTruthy()
+  expect(linked.getByText(/^Ligada por Ana em \d\d\/\d\d$/)).toBeTruthy()
+  expect(linked.getByText(/^Ligada em \d\d\/\d\d$/)).toBeTruthy()
+  const links = linked.getAllByRole('link').map((one) => one.getAttribute('href'))
+  expect(links).toEqual([pageOf(tested), pageOf(refused)].map((one) => one))
+  // The connector stays under "Para ligar" too: another account of it can be linked.
+  expect(
+    within(screen.getByRole('region', { name: 'Para ligar' })).getByText(SANKHYA.summary),
+  ).toBeTruthy()
 })
 
-test('o membro lê; vazio e erro', async () => {
+test('a ligação nova diz "ainda não testada", sem selo e sem "testada em"', async () => {
+  open(viewOf({ connections: [connectionOf()] }))
+  expect(await screen.findByText(/^Ligada por Ana em \d\d\/\d\d, ainda não testada$/)).toBeTruthy()
+  expect(screen.queryByText('Funcionando')).toBeNull()
+  expect(screen.queryByText(/^testada em/)).toBeNull()
+})
+
+test('o membro lê a lista, sem Ligar, e a frase de quem pode', async () => {
   const sent = open(
     viewOf({
       mayManage: false,
-      connections: [connectionOf({ state: 'ACTIVE', testedAt: '2026-10-29T14:02:00.000Z' })],
+      connections: [connectionOf({ state: 'ACTIVE', testedAt: TESTED })],
     }),
   )
   expect(await screen.findByText(MEMBER_SENTENCE)).toBeTruthy()
-  expect(screen.getByText('Sankhya')).toBeTruthy()
-  expect(screen.getByText(/testada em/)).toBeTruthy()
-  for (const name of ['Ligar', 'Testar', 'Desligar']) {
+  expect(screen.getByText('Comercial')).toBeTruthy()
+  expect(screen.queryByRole('button', { name: /^Ligar/ })).toBeNull()
+  expect(sent).toHaveLength(0)
+})
+
+test('a página: o cabeçalho, o último teste guardado, o conector e a sua versão', async () => {
+  const connection = connectionOf({
+    state: 'ACTIVE',
+    testedAt: TESTED,
+    testedBy: connectionOf().linkedBy,
+  })
+  const view = viewOf({
+    connections: [connection],
+    lastTests: { [connection.id]: [] },
+  })
+  view.lastTests = {
+    [connection.id]: checksOf({
+      Empresas: { outcome: 'REFUSED', native: REFUSAL },
+      'Notas canceladas': 'NOTHING_TO_READ',
+    }).map((one) =>
+      'native' in one ? { ...one, native: { status: 403, code: 'SEM_ACESSO' } } : one,
+    ),
+  }
+  open(view, {}, pageOf(connection))
+  expect(await screen.findByRole('heading', { name: 'Comercial' })).toBeTruthy()
+  expect(screen.getByText('Sankhya · ERP')).toBeTruthy()
+  expect(screen.getByText('Lê em parte')).toBeTruthy()
+  expect(screen.getByText('Lê 7 de 8 assuntos inteiros')).toBeTruthy()
+  expect(screen.getByText(/^testada em \d\d\/\d\d, \d\d:\d\d, por Ana$/)).toBeTruthy()
+  expect(screen.getByText('1.0.0')).toBeTruthy()
+  const lines = await subjectLines()
+  expect(lines[0]).toContain('Porta de leitura')
+  expect(lines[0]).toContain('Lê tudo')
+  expect(lines[1]).toContain('Lê 5 de 6')
+  expect(lines[1]).toContain('EmpresasRecusada pelo Sankhya')
+  expect(lines[1]).toContain('Sankhya respondeu 403, código SEM_ACESSO')
+  expect(lines[1]).toContain('As outras 5 leem: Clientes, Vendedores')
+  expect(lines[1]).toContain('Libere a tela no Sankhya e teste de novo.')
+  expect(lines[1]).not.toContain('Sem acesso à tela')
+  expect(screen.queryByText('Ver a resposta inteira')).toBeNull()
+  // A subject that reads whole is shut: its parts are not listed.
+  expect(screen.queryByText('Estoque por produto')).toBeNull()
+})
+
+test('uma ligação ainda não testada diz que não foi testada, e o menu da dona tem Desligar', async () => {
+  const connection = connectionOf()
+  open(viewOf({ connections: [connection] }), {}, pageOf(connection))
+  expect(await screen.findByText('Ainda não testada.')).toBeTruthy()
+  fireEvent.click(screen.getByRole('button', { name: 'Mais ações' }))
+  expect(await screen.findByRole('menuitem', { name: 'Desligar' })).toBeTruthy()
+})
+
+test('o membro lê a página com o último teste, sem Testar nem Desligar', async () => {
+  const connection = connectionOf({ state: 'ACTIVE', testedAt: TESTED })
+  const view = viewOf({ mayManage: false, connections: [connection] })
+  view.lastTests = { [connection.id]: checksOf() }
+  const sent = open(view, {}, pageOf(connection))
+  expect(await screen.findByText(MEMBER_SENTENCE)).toBeTruthy()
+  expect(await screen.findByText('Lê 8 de 8 assuntos inteiros')).toBeTruthy()
+  for (const name of ['Testar', 'Mais ações', 'Ligar']) {
     expect(screen.queryByRole('button', { name })).toBeNull()
   }
   expect(sent).toHaveLength(0)
 })
 
-test('chaves recusadas: o membro lê a quem pedir, a dona lê o que fazer', async () => {
-  const refused = connectionOf({ state: 'NEEDS_REAUTH', testedAt: '2026-10-29T14:02:00.000Z' })
-  const owner = 'As chaves foram recusadas pelo Sankhya. Desligue e ligue de novo com chaves novas.'
-  const member =
-    'As chaves foram recusadas pelo Sankhya. Peça ao dono ou a um administrador para ligar de novo.'
-  open(viewOf({ mayManage: false, connections: [refused] }))
-  expect(await screen.findByText(member)).toBeTruthy()
-  expect(screen.queryByText(owner)).toBeNull()
-  cleanup()
-  open(viewOf({ connections: [refused] }))
-  expect(await screen.findByText(owner)).toBeTruthy()
-  expect(screen.queryByText(member)).toBeNull()
-})
-
-test('o membro sem ligação nenhuma lê a frase vazia e o Sankhya sem Ligar', async () => {
-  open(viewOf({ mayManage: false }))
-  expect(await screen.findByText('Nenhuma integração ligada ainda.')).toBeTruthy()
-  expect(screen.getByText('Sankhya')).toBeTruthy()
-  expect(screen.queryByRole('button', { name: 'Ligar' })).toBeNull()
+test('Desligar confirma pelo nome e volta à lista; Cancelar não manda nada', async () => {
+  const connection = connectionOf({ name: 'Financeiro' })
+  const sent = open(viewOf({ connections: [connection] }), {}, pageOf(connection))
+  fireEvent.click(await screen.findByRole('button', { name: 'Mais ações' }))
+  fireEvent.click(await screen.findByRole('menuitem', { name: 'Desligar' }))
+  let dialog = await screen.findByRole('alertdialog')
+  expect(within(dialog).getByText('Desligar Financeiro?')).toBeTruthy()
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Cancelar' }))
+  await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull())
+  expect(sent).toHaveLength(0)
+  fireEvent.click(screen.getByRole('button', { name: 'Mais ações' }))
+  fireEvent.click(await screen.findByRole('menuitem', { name: 'Desligar' }))
+  dialog = await screen.findByRole('alertdialog')
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Desligar' }))
+  expect(await screen.findByRole('heading', { name: 'Integrações' })).toBeTruthy()
+  expect(
+    await screen.findByText(
+      'Nenhum sistema ligado ainda. Ligue o primeiro abaixo; leva dois minutos.',
+    ),
+  ).toBeTruthy()
+  expect(sent.map((one) => one.method)).toEqual(['DELETE'])
 })
 
 test('a lista que não carrega mostra o erro com "Tentar de novo"', async () => {
   let failing = true
   const hub = connectionsHub(viewOf())
-  server.use(...hub.handlers)
   server.use(
-    http.get(`*/api/companies/${COMPANY.id}/connections`, () =>
+    http.get('*/api/companies/*/connections', () =>
       failing ? refusal('DATABASE_UNAVAILABLE') : undefined,
     ),
+    ...hub.handlers,
   )
-  render(<Conexus conexus={createConexus(createMemoryHistory({ initialEntries: [PAGE] }))} />)
+  mount(PAGE)
   expect(await screen.findByRole('alert')).toBeTruthy()
   failing = false
   fireEvent.click(screen.getByRole('button', { name: 'Tentar de novo' }))
-  expect(await screen.findByRole('heading', { name: 'Ligadas' })).toBeTruthy()
+  expect(await screen.findByRole('heading', { name: 'Para ligar' })).toBeTruthy()
 })

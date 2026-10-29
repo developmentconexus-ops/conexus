@@ -1,23 +1,22 @@
-import type { Connection, ConnectorEntry, TestCheck } from '@conexus/hub-api'
+import type { Connection, ConnectorEntry, KeptCheck, TestCheck } from '@conexus/hub-api'
 import { clockOf, dayAndMonth } from '../../platform/dates.ts'
-import { HubFailure } from '../../platform/hub.ts'
 
-export const NO_CONNECTIONS = 'Nenhuma integração ligada ainda.'
+export const LEAD =
+  'Ligue os sistemas da empresa e os apps do Conexus passam a ler os dados deles. O Conexus só lê.'
+export const NO_CONNECTIONS =
+  'Nenhum sistema ligado ainda. Ligue o primeiro abaixo; leva dois minutos.'
 export const MEMBER_SENTENCE = 'Só o dono ou um administrador liga, testa e desliga.'
-
-const LIST_CHANGED = new Set(['CONNECTION_NOT_FOUND', 'CONNECTION_EXISTS', 'CONNECTOR_UNKNOWN'])
-
-/**
- * A refusal that says someone changed the list meanwhile: the row or the dialog it came from leaves
- * with the list read again, so the page keeps the sentence above the rows.
- */
-export function listChanged(error: unknown): error is HubFailure {
-  return error instanceof HubFailure && LIST_CHANGED.has(error.code)
-}
+export const NOT_TESTED_YET = 'Ainda não testada.'
+export const UNREADABLE_TEXT = 'Resposta que o Conexus não entendeu'
+export const ALL_LINKED = 'Todos os sistemas que o Conexus liga hoje já estão ligados.'
 
 /** The connector's name, or its id for one the catalog no longer holds. */
 export function connectorName(connectors: readonly ConnectorEntry[], id: string): string {
   return connectors.find((one) => one.id === id)?.name ?? id
+}
+
+export function connectionsCount(count: number): string {
+  return count === 1 ? '1 ligação' : `${count} ligações`
 }
 
 /** The state as a badge, in words and a tone (design V35); a connection never tested has none. */
@@ -46,25 +45,89 @@ export function refusedKeysText(name: string): string {
 
 /** What a reader who may not manage the connections sees for the same refusal. */
 export function refusedKeysMemberText(name: string): string {
-  return `As chaves foram recusadas pelo ${name}. Peça ao dono ou a um administrador para ligar de novo.`
+  return `As chaves foram recusadas pelo ${name}. Peça à dona ou a um administrador para ligar de novo.`
 }
 
 export function unreachableText(name: string): string {
   return `O ${name} não respondeu. Tente de novo em alguns minutos.`
 }
 
-/** What a part of the test found, in words. */
-export function outcomeText(check: TestCheck, name: string): string {
+export function testingText(reads: number): string {
+  return `Testando as ${reads} leituras, uma por vez…`
+}
+
+/** What a part of the test found, in words (the founder's sentences, X6). */
+export function outcomeText(check: TestCheck | KeptCheck, name: string): string {
   switch (check.outcome) {
     case 'READS':
-      return 'lê'
+      return 'Lê'
     case 'REFUSED':
-      return `recusado pelo ${name}`
+      return `Recusada pelo ${name}`
     case 'UNREADABLE':
-      return 'resposta que o Conexus não entendeu'
+      return UNREADABLE_TEXT
     case 'NOTHING_TO_READ':
-      return 'nada para ler'
+      return 'Lê, mas não havia nada para olhar'
     case 'NOT_TESTED':
-      return `não testado: o ${name} demorou, teste de novo`
+      return `Não testada: o ${name} demorou. Teste de novo`
+    case 'SOURCE_UNREAD':
+      return `Não testada: depende de ${check.source}, que não leu`
   }
+}
+
+/** A part reads when the provider answered it, even with nothing in it. */
+export function reads(check: TestCheck | KeptCheck): boolean {
+  return check.outcome === 'READS' || check.outcome === 'NOTHING_TO_READ'
+}
+
+/** What to do next about a subject, by what its parts found (the study's hints, X6). */
+export function hintText(items: readonly (TestCheck | KeptCheck)[], name: string): string {
+  if (items.some((one) => one.outcome === 'REFUSED')) {
+    return `O usuário de integração não tem acesso a esta parte. Libere a tela no ${name} e teste de novo.`
+  }
+  if (items.some((one) => one.outcome === 'NOT_TESTED')) {
+    return 'O tempo do teste acabou antes destas leituras. Teste de novo.'
+  }
+  if (items.some((one) => one.outcome === 'SOURCE_UNREAD')) {
+    return 'Estas leituras partem de outra que não leu. Resolva aquela e teste de novo.'
+  }
+  return ''
+}
+
+/** What one subject comes to: the word on its line, its tone, and whether its parts stay shut. */
+export function verdictOf(items: readonly (TestCheck | KeptCheck)[]): {
+  text: string
+  tone: 'success' | 'warning' | 'danger' | 'neutral'
+  whole: boolean
+} {
+  const read = items.filter(reads).length
+  if (read === items.length) return { text: 'Lê tudo', tone: 'success', whole: true }
+  const bad = items.some((one) => one.outcome === 'REFUSED' || one.outcome === 'UNREADABLE')
+  if (read > 0) return { text: `Lê ${read} de ${items.length}`, tone: 'warning', whole: false }
+  return bad
+    ? { text: 'Não lê', tone: 'danger', whole: false }
+    : { text: 'Não testado', tone: 'neutral', whole: false }
+}
+
+/** The badge a connection wears on the list: the state, or "Lê em parte" when its last test left subjects open. */
+export const PARTIAL_BADGE = 'Lê em parte'
+
+export function wholeSubjectsText(whole: number, subjects: number): string {
+  return `Lê ${whole} de ${subjects} assuntos inteiros`
+}
+
+/** "As outras 5 leem: Clientes, Vendedores" or "A outra lê: Tipos de pagamento". */
+export function othersText(labels: readonly string[]): string {
+  return labels.length === 1
+    ? `A outra lê: ${labels[0]}.`
+    : `As outras ${labels.length} leem: ${labels.join(', ')}.`
+}
+
+/** What the provider answered, on one line: "Sankhya respondeu 403, código ACESSO". */
+export function nativeText(
+  native: { status: number; code: string | null; message: string | null },
+  name: string,
+): string {
+  const code = native.code === null ? '' : `, código ${native.code}`
+  const message = native.message === null ? '' : `: ${native.message}`
+  return `${name} respondeu ${native.status}${code}${message}`
 }

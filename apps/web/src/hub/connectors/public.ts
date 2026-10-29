@@ -1,2 +1,3 @@
+export { ConnectionPage, ConnectionReadFailure } from './connection-page.tsx'
 export { Integrations } from './integrations.tsx'
-export { connectionsQuery } from './queries.ts'
+export { connectionQuery, connectionsQuery } from './queries.ts'

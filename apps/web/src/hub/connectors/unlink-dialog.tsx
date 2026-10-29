@@ -1,53 +1,52 @@
 import type { CompanyId, Connection } from '@conexus/hub-api'
-import { useMutation } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useNavigate } from '@tanstack/react-router'
 import { writeFailureText } from '../../platform/hub.ts'
-import { AlertDialog, AlertDialogContent, AlertDialogTrigger } from '../../ui/alert-dialog.tsx'
+import { AlertDialog, AlertDialogContent } from '../../ui/alert-dialog.tsx'
 import { Button } from '../../ui/button.tsx'
 import { FieldError } from '../../ui/field.tsx'
-import { sendUnlink } from './queries.ts'
+import { connectionKeys, sendUnlink } from './queries.ts'
 
 const UNCONFIRMED = 'Não confirmamos o desligamento. Veja a lista.'
 
 /**
- * "Desligar": the Hub forgets the keys it sealed. The row is gone once it is unlinked, so the page
- * is told (`onUnlinked`) to put focus on its list and not on the button the row leaves.
+ * "Desligar" asks by the connection's name: the Hub forgets the keys it sealed, and the person is
+ * taken back to the list, where the connection is gone.
  */
 export function UnlinkDialog(props: {
   companyId: CompanyId
   connection: Connection
-  name: string
-  onAttempt: () => void
-  onUnlinked: () => void
+  open: boolean
+  onOpenChange: (open: boolean) => void
 }) {
-  const [open, setOpen] = useState(false)
+  const { companyId, connection } = props
   const send = useMutation(sendUnlink)
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
 
   function changeOpen(next: boolean) {
     send.reset()
-    setOpen(next)
+    props.onOpenChange(next)
   }
 
   function unlink() {
-    props.onAttempt()
     send.mutate(
-      { params: { companyId: props.companyId, connectionId: props.connection.id } },
+      { params: { companyId, connectionId: connection.id } },
       {
-        onSuccess: () => {
-          setOpen(false)
-          props.onUnlinked()
+        onSuccess: async () => {
+          await navigate({ to: '/companies/$companyId/integrations', params: { companyId } })
+          for (const queryKey of connectionKeys(companyId, connection.id)) {
+            void queryClient.invalidateQueries({ queryKey })
+          }
         },
       },
     )
   }
 
   return (
-    <AlertDialog open={open} onOpenChange={changeOpen}>
-      <AlertDialogTrigger render={<Button variant="danger" size="sm" />}>
-        Desligar
-      </AlertDialogTrigger>
+    <AlertDialog open={props.open} onOpenChange={changeOpen}>
       <AlertDialogContent
-        title={`Desligar o ${props.name}?`}
+        title={`Desligar ${connection.name}?`}
         description="O Conexus apaga as chaves que guardou."
       >
         <FieldError>
