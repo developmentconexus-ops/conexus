@@ -9,6 +9,48 @@ import type {
   renderInvitation as RenderInvitation,
 } from './invitation-render.mjs'
 
+/** The sentence of the invitation, the same in the preview and in the body. */
+function invitationSentence(props: InvitationMailProps): string {
+  switch (props.invited.kind) {
+    case 'FIRST_OWNER':
+      return `${props.inviterName} convidou você para ser o primeiro dono de ${props.companyName}.`
+    case 'COMPANY':
+      return `${props.inviterName} convidou você para ${props.companyName} no Conexus.`
+    case 'APP':
+      return `${props.inviterName} convidou você para usar o app ${props.invited.appName}, da ${props.companyName}.`
+    default:
+      return props.invited satisfies never
+  }
+}
+
+function InvitationText(props: InvitationMailProps) {
+  switch (props.invited.kind) {
+    case 'FIRST_OWNER':
+      return (
+        <>
+          {props.inviterName} convidou você para ser o primeiro dono de{' '}
+          <strong>{props.companyName}</strong>.
+        </>
+      )
+    case 'COMPANY':
+      return (
+        <>
+          {props.inviterName} convidou você para entrar em <strong>{props.companyName}</strong> no
+          Conexus, como {props.invited.roleLabel}.
+        </>
+      )
+    case 'APP':
+      return (
+        <>
+          {props.inviterName} convidou você para usar o app <strong>{props.invited.appName}</strong>
+          , da {props.companyName}.
+        </>
+      )
+    default:
+      return props.invited satisfies never
+  }
+}
+
 function InvitationContent(props: InvitationMailProps) {
   return (
     <Section
@@ -30,20 +72,12 @@ function InvitationContent(props: InvitationMailProps) {
           overflowWrap: 'anywhere',
         }}
       >
-        Convite para {props.companyName}
+        {props.invited.kind === 'APP'
+          ? `Convite para usar ${props.invited.appName}`
+          : `Convite para ${props.companyName}`}
       </Heading>
       <Text className="text" style={{ color: COLORS.text, fontSize: 16, lineHeight: '25px' }}>
-        {props.firstOwner ? (
-          <>
-            {props.inviterName} convidou você para ser o primeiro dono de{' '}
-            <strong>{props.companyName}</strong>.
-          </>
-        ) : (
-          <>
-            {props.inviterName} convidou você para entrar em <strong>{props.companyName}</strong> no
-            Conexus, como {props.roleLabel}.
-          </>
-        )}
+        <InvitationText {...props} />
       </Text>
       <Button
         className="action"
@@ -89,11 +123,7 @@ function InvitationContent(props: InvitationMailProps) {
 function InvitationEmail(props: InvitationMailProps) {
   return (
     <MailFrame
-      preview={
-        props.firstOwner
-          ? `${props.inviterName} convidou você para ser o primeiro dono de ${props.companyName}.`
-          : `${props.inviterName} convidou você para ${props.companyName} no Conexus.`
-      }
+      preview={invitationSentence(props)}
       note={`Este convite foi enviado para ${props.to}. Se você não esperava por ele, pode ignorar esta mensagem: ninguém entra na empresa sem a sua resposta.`}
     >
       <InvitationContent {...props} />

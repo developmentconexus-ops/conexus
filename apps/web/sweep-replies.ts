@@ -225,6 +225,7 @@ export const PROJECT_NAME = PROJECT.name
 export const INVITATION_DETAILS = {
   company: { id: COMPANY.id, name: LONG_NAME },
   role: 'admin',
+  app: null,
   inviterName: 'Ana Lima',
   firstOwner: false,
   revision: 0,
@@ -234,7 +235,7 @@ export const INVITATION_DETAILS = {
 export function received(state: 'PENDING' | 'EXPIRED' | 'ACCEPTED' | 'CANCELED'): Replies {
   const views = {
     PENDING: { kind: 'INVITED', ...INVITATION_DETAILS },
-    ACCEPTED: { kind: 'JOINED', company: INVITATION_DETAILS.company },
+    ACCEPTED: { kind: 'JOINED', company: INVITATION_DETAILS.company, app: null },
     EXPIRED: { kind: 'CLOSED', state: 'EXPIRED' },
     CANCELED: { kind: 'CLOSED', state: 'CANCELED' },
   } as const

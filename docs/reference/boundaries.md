@@ -123,7 +123,7 @@ refused for its media type or its origin.
   the same rows without those checks (`adapter.mjs:141`, `:352`, `:728`, `:793`), on
   `getCurrentAdapter`, so inside `runWithTransaction` on the Hub's transaction.
 - **Hand-made piece.** `organizationAdapter` in `apps/server/src/hub/identity/auth.ts`, on the
-  operator's path only: `registerCompanyOn` and `renameCompanyOn` in `clients.ts`, and an owner's
+  operator's path, and for an app's invitation (the entry below): `registerCompanyOn` and `renameCompanyOn` in `clients.ts`, and an owner's
   invitation, its cancel and its renewal when the admission is the operator's
   (`CompanyOperatorProof`) in `invitations.ts` and `invitation-management.ts`. The Hub's admission
   decides who writes (`admitOperator`, `admitCompany`), the role is only owner
@@ -155,6 +155,38 @@ refused for its media type or its origin.
   adapter writes inside the Hub's transaction, which it joins through `runWithTransaction` and
   `joiningTransaction` alike, so no single removal row proves either. When the library
   changes, reread `getOrgAdapter`'s signature and these four methods.
+
+### An invitation to use one app: the library's invitation row, written, accepted and canceled by the Hub
+
+- **Library line.** `better-auth/dist/plugins/organization/routes/crud-invites.mjs:128-132`:
+  `createInvitation` refuses an address with any open invitation in the company
+  (`findPendingInvitation`, `adapter.mjs:753-768`), so one person cannot hold a company invitation
+  and an app's, or two apps', at once. `:268`: the acceptance checks the deadline. `:322`: the
+  acceptance always writes the member. The library knows no invitation that does not make a member.
+- **Hand-made piece.** The invitation row carries two Hub fields, `project_id` and `app_role`
+  (`additionalFields` in `auth.ts`), and an app's invitation has `role` NULL; the check
+  `invitation_kind` and the unique index on company, address and Projeto keep the two kinds apart
+  (migration `e18_app_access`). `PendingRow` in `identity/invitations.ts` reads the row as a union
+  by `kind`, and each reader chooses by it. The Hub writes an app's invitation through
+  `organizationAdapter` (`inviteToAppCommand`), after the admission `manageAppAccess` and Projects'
+  refusals; the write carries one `@ts-expect-error`, the adapter typing `role` as a string. It
+  accepts one without the library (`acceptedApp` in `invitation-response.ts`): it checks the
+  deadline and the status itself, writes the row of `projects.app_access` and the `accepted` in one
+  transaction, and never calls `acceptInvitation`. It cancels one through the adapter
+  (`cancelAppInvitationCommand`, `cancelAppInvitations`), the capability deciding, not the
+  plugin's `invitation: cancel`. A company invitation cancels the address's open app invitations
+  first, through the adapter, since the endpoint would refuse the address. The link, the e-mail
+  and the password page are the company invitation's. The company's invitation routes and its
+  list read only the rows with no Projeto (`OF_COMPANY`).
+- **Why.** Step 18, the founder's `I1` (2026-10-28): a person given an app is not a member (`E1`,
+  `C`), may hold one invitation per app at once, and a company invitation replaces them. The other
+  forms, one open invitation per address, or a table of invitations of our own, took the second
+  app from the owner or repeated the link, the mail and the password. "o convite de um app:
+  aceitar não faz membro, e leva ao app" in `invitation-app.test.ts` fails if the acceptance
+  writes a member; "o convite da empresa com um de app aberto" fails if the company invitation
+  meets the library's refusal; "o convite de app vencido não dá o app" fails without the Hub's own
+  deadline check. When the library changes, reread `createInvitation`'s pending check, the
+  acceptance's member write and `getOrgAdapter`'s invitation methods.
 
 ### Deleting a company: the adapter, with the native route closed
 

@@ -37,6 +37,19 @@ const PasswordForm = createInvitationPassword.input.body
   })
 type OpenInvitation = Extract<InvitationView, { kind: 'NEW' | 'HAS_PASSWORD' | 'INVITED' }>
 
+type OpenView = Extract<InvitationView, { kind: 'NEW' | 'HAS_PASSWORD' | 'INVITED' }>
+
+/** What the invitation gives, in one sentence: an app of the company, or a place in it. */
+function invitationTitle(invitation: OpenView): string {
+  const { inviterName, company } = invitation
+  if (invitation.app !== null)
+    return `${inviterName} convidou você para usar o app ${invitation.app.projectName}, da ${company.name}.`
+  if (invitation.firstOwner)
+    return `${inviterName} convidou você para ser o primeiro dono de ${company.name}.`
+  const as = invitation.role === null ? '' : ` como ${ROLE_LABELS[invitation.role]}`
+  return `${inviterName} convidou você para ${company.name}${as}.`
+}
+
 function InvitationPassword(props: {
   invitation: Extract<InvitationView, { kind: 'NEW' }>
   onCreated: () => void
@@ -201,11 +214,7 @@ export function InvitationEntry() {
     case 'INVITED':
       content = (
         <>
-          <PageTitle>
-            {invitation.firstOwner
-              ? `${invitation.inviterName} convidou você para ser o primeiro dono de ${invitation.company.name}.`
-              : `${invitation.inviterName} convidou você para ${invitation.company.name} como ${ROLE_LABELS[invitation.role]}.`}
-          </PageTitle>
+          <PageTitle>{invitationTitle(invitation)}</PageTitle>
           <p className="text-text-2">
             Válido até{' '}
             {new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(

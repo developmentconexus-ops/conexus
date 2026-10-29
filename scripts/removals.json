@@ -133,7 +133,7 @@
   },
   {
     "id": "invitation-attempt-replay",
-    "file": "apps/server/src/hub/identity/invitations.ts",
+    "file": "apps/server/src/hub/identity/invitation-create.ts",
     "find": "if (same !== undefined) {",
     "replace": "if (same === null) {",
     "test": {
@@ -144,7 +144,7 @@
   },
   {
     "id": "invitation-capacity",
-    "file": "apps/server/src/hub/identity/invitations.ts",
+    "file": "apps/server/src/hub/identity/invitation-create.ts",
     "find": "if (live >= CAPACITY.openInvitations) throw new Failure('INVITATIONS_FULL')",
     "replace": "void live",
     "test": {
@@ -155,7 +155,7 @@
   },
   {
     "id": "invitation-capacity-live-only",
-    "file": "apps/server/src/hub/identity/invitations.ts",
+    "file": "apps/server/src/hub/identity/invitation-create.ts",
     "find": "      LIVE,\n    ),\n  )\n  if (live >= CAPACITY.openInvitations)",
     "replace": "    ),\n  )\n  if (live >= CAPACITY.openInvitations)",
     "test": {
@@ -177,7 +177,7 @@
   },
   {
     "id": "invitation-company-lock",
-    "file": "apps/server/src/hub/identity/invitations.ts",
+    "file": "apps/server/src/hub/identity/invitation-create.ts",
     "find": "await lockCompany(tx, input.companyId)",
     "replace": "",
     "test": {
@@ -188,7 +188,7 @@
   },
   {
     "id": "open-invitation-row-parsed",
-    "file": "apps/server/src/hub/identity/invitations.ts",
+    "file": "apps/server/src/hub/identity/invitation-create.ts",
     "find": "return OpenRow.optional().parse(open)",
     "replace": "return open",
     "test": {
@@ -221,9 +221,9 @@
   },
   {
     "id": "invitation-replay-resends-unmailed",
-    "file": "apps/server/src/hub/identity/invitations.ts",
-    "find": "if (same.unmailed) {",
-    "replace": "if (false) {",
+    "file": "apps/server/src/hub/identity/invitation-create.ts",
+    "find": "same.unmailed ? replayed.mail : undefined",
+    "replace": "undefined",
     "test": {
       "cwd": "apps/server",
       "file": "src/hub/identity/invitation-replay.test.ts",
@@ -320,8 +320,8 @@
   },
   {
     "id": "re-invite-cancels-expired",
-    "file": "apps/server/src/hub/identity/invitations.ts",
-    "find": "const open = await openOf(tx, admitted, email)",
+    "file": "apps/server/src/hub/identity/invitation-create.ts",
+    "find": "const open = await openOf(tx, admitted, input, args.email)",
     "replace": "const open = undefined",
     "test": {
       "cwd": "apps/server",
@@ -397,7 +397,7 @@
   },
   {
     "id": "invitation-create-replay-terminal",
-    "file": "apps/server/src/hub/identity/invitations.ts",
+    "file": "apps/server/src/hub/identity/invitation-create.ts",
     "find": "if (same.status !== 'pending' || !same.live) throw new Failure('INVITATION_CLOSED')",
     "replace": "",
     "test": {
@@ -518,8 +518,8 @@
   },
   {
     "id": "invitation-member-native-endpoint",
-    "file": "apps/server/src/hub/identity/invitations.ts",
-    "find": "    return refusedAs(\n      () => auth.api.createInvitation({ headers: input.headers, body }),\n      INVITATION_REFUSALS,\n    )",
+    "file": "apps/server/src/hub/identity/invitation-create.ts",
+    "find": "    return refusedAs(\n      () => auth.api.createInvitation({ headers: invite.headers, body }),\n      INVITATION_REFUSALS,\n    )",
     "replace": "    return (await organizationAdapter(auth)).createInvitation({\n      invitation: { ...body, teamIds: [] },\n      user: { id: admitted.personId },\n    })",
     "test": {
       "cwd": "apps/server",
@@ -1966,6 +1966,28 @@
       "cwd": "packages/connectors",
       "file": "src/sankhya/read-only-sql.test.ts",
       "name": "refuses every statement word"
+    }
+  },
+  {
+    "id": "member-removal-takes-app-access",
+    "file": "apps/server/src/hub/identity/memberships.ts",
+    "find": "      const projectIds = await deps.apps.takeAccess(tx, { companyId, personId })\n",
+    "replace": "      const projectIds = []\n",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/apps/app-access-journey.test.ts",
+      "name": "quem sai da empresa leva a linha que estava inerte"
+    }
+  },
+  {
+    "id": "app-access-revoke-own-project",
+    "file": "apps/server/src/hub/projects/app-access.ts",
+    "find": "    if (projectId !== undefined) await liveProject(tx, { companyId, projectId })\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/apps/app-access-journey.test.ts",
+      "name": "outra empresa não tira o acesso a um app da empresa"
     }
   }
 ]
