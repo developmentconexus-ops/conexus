@@ -106,6 +106,7 @@ export {
   ConnectorEntry,
   linkConnection,
   listConnections,
+  TEST_DEADLINE_MS,
   TEST_OUTCOMES,
   TestCheck,
   TestResult,

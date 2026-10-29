@@ -15,7 +15,7 @@ type Outcome = TestCheck['outcome']
  * order and one at a time (the connector's `oneRequestAtATime`). Each call gets the shorter of its
  * own deadline and what is left of the whole test's, counted from the first login: an item the
  * deadline does not reach, or cuts short, is NOT_TESTED, and a login that does not fit is
- * UNREACHABLE. An expired token is asked again once per call. Nothing read leaves this function
+ * UNREACHABLE; a provider that fails with time left is UNREACHABLE too. An expired token is asked again once per call. Nothing read leaves this function
  * but each item's outcome.
  */
 export async function probed(deps: Deadlines, opened: OpenedConnection): Promise<Probed> {
@@ -31,21 +31,27 @@ export async function probed(deps: Deadlines, opened: OpenedConnection): Promise
     return endsAt - performance.now()
   }
 
+  /** Less than a whole millisecond is no time: the timer takes no fraction. */
+  function spent() {
+    return left() < 1
+  }
+
+  /** What a call may take, in whole milliseconds (the timer refuses a fraction), never below 0. */
   function allowed() {
-    return Math.min(deps.callDeadlineMs, left())
+    return Math.max(0, Math.floor(Math.min(deps.callDeadlineMs, left())))
   }
 
   async function login() {
     const deadlineMs = allowed()
-    return deadlineMs <= 0 ? ({ kind: 'UNREACHABLE' } as const) : executor.login(opened, deadlineMs)
+    return deadlineMs === 0
+      ? ({ kind: 'UNREACHABLE' } as const)
+      : executor.login(opened, deadlineMs)
   }
 
   /** The item's outcome, or the end of the whole test (the key refused, the provider down). */
   async function read(operation: Operation<unknown, unknown>): Promise<Outcome | Ended> {
     const input = operation.probe(earlier)
     if (input === null) return 'NOTHING_TO_READ'
-    // A call the whole test's deadline cut short is an item the test did not reach, not a provider down.
-    const cutShort = left() < deps.callDeadlineMs
     let answered = await executor.call(opened, token, operation, input, allowed())
     if (answered.kind === 'TOKEN_EXPIRED') {
       const again = await login()
@@ -64,7 +70,8 @@ export async function probed(deps: Deadlines, opened: OpenedConnection): Promise
       case 'TOKEN_EXPIRED':
         return { result: 'AUTH_REFUSED' }
       case 'UNREACHABLE':
-        return cutShort ? 'NOT_TESTED' : { result: 'UNREACHABLE' }
+        // Judged after the call: the whole test's deadline ending it is an item not reached, any other end is the provider down.
+        return spent() ? 'NOT_TESTED' : { result: 'UNREACHABLE' }
       default:
         return answered satisfies never
     }
@@ -73,8 +80,7 @@ export async function probed(deps: Deadlines, opened: OpenedConnection): Promise
   const checks: TestCheck[] = []
   let outOfTime = false
   for (const operation of [...Object.values(connector.readDoor ?? {}), ...connector.operations]) {
-    const outcome: Outcome | Ended =
-      outOfTime || allowed() <= 0 ? 'NOT_TESTED' : await read(operation)
+    const outcome: Outcome | Ended = outOfTime || spent() ? 'NOT_TESTED' : await read(operation)
     if (typeof outcome === 'object') return outcome
     outOfTime ||= outcome === 'NOT_TESTED'
     const subject = connector.subjects[operation.subject] ?? operation.subject
