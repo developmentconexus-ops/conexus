@@ -309,3 +309,7 @@ Etapa 18 usada em 2026-10-29 em https://hub.conexus.fun (v0.18.1), no computador
 Cartão da etapa 19 aprovado em 2026-10-29 (commit fda16a6eb3d2f335b62d41a9b44f84068543a2e3): "Aprovado"
 
 Ele aprovou a página do cartão no commit 6cd14ac180e9a249987c229b0fa4c16ac0714de6, respondendo também às duas perguntas dela: seguir com cerca de 5.500 linhas, sem dividir a etapa, e tirar o logotipo oficial do Sankhya da página de marca do Sankhya. O commit citado acima só escreve essas duas respostas na página e põe nas seções das unidades os nove acertos de Fechamento da leitura independente do cartão, sem mudar o que ele vê ou decidiu. A aprovação é também a palavra da regra de dados D11 para as permissões do banco da U2.
+
+## Etapa 19.2
+
+Cartão da etapa 19.2 aprovado em 2026-10-29 (commit 417c076bc841624eee6440982033a0866c6c0ae2): "Aprovo"
