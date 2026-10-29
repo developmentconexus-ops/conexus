@@ -163,7 +163,7 @@ jobs:
       - uses: ./.github/actions/install # zizmor: ignore[self-repository] actionlint 1.7.12 rejects the $/ form
       # The check program drives a real Chromium (decision 0055).
       - run: npm exec -w @conexus/web -- playwright-core install chromium-headless-shell
-      - run: npm test -w @conexus/app -w @conexus/app-contract -w @conexus/hub-api
+      - run: npm test -w @conexus/app -w @conexus/app-contract -w @conexus/connectors -w @conexus/hub-api
       - run: npm run test:unit -w @conexus/web
 
   e2e:
