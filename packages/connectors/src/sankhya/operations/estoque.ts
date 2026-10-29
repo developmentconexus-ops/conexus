@@ -27,7 +27,7 @@ export const estoque = defineOperation({
   output: Estoque,
   probe: () => ({ page: 1 }),
   request: ({ page }) => get('/v1/estoque/produtos', { page }),
-  answer: (answer) => restAnswer(answer, Estoque),
+  answer: (answer) => restAnswer(answer, Estoque, { estoque: [] }),
 })
 
 const LocaisEstoque = z

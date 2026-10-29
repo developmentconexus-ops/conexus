@@ -54,7 +54,7 @@ export const contasAReceber = defineOperation({
   output: Titulos,
   probe: firstEmpresaPage,
   request: (input) => get('/v1/financeiros/receitas', input),
-  answer: (answer) => restAnswer(answer, Titulos),
+  answer: (answer) => restAnswer(answer, Titulos, { financeiros: [] }),
 })
 
 export const contasAPagar = defineOperation({
@@ -69,7 +69,7 @@ export const contasAPagar = defineOperation({
   output: Titulos,
   probe: firstEmpresaPage,
   request: (input) => get('/v1/financeiros/despesas', input),
-  answer: (answer) => restAnswer(answer, Titulos),
+  answer: (answer) => restAnswer(answer, Titulos, { financeiros: [] }),
 })
 
 const TiposPagamento = z

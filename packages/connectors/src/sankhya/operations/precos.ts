@@ -34,7 +34,7 @@ export const precosDoProduto = defineOperation({
     return first ? { codigoProduto: first.codigoProduto, pagina: 1 } : null
   },
   request: ({ codigoProduto, pagina }) => get(`/v1/precos/produto/${codigoProduto}`, { pagina }),
-  answer: (answer) => restAnswer(answer, Precos),
+  answer: (answer) => restAnswer(answer, Precos, { precos: [], temMaisRegistros: false }),
 })
 
 /** The first price table an earlier probe read. */
@@ -58,5 +58,5 @@ export const precosDaTabela = defineOperation({
     return codigoTabela === undefined ? null : { codigoTabela, pagina: 1 }
   },
   request: ({ codigoTabela, pagina }) => get(`/v1/precos/tabela/${codigoTabela}`, { pagina }),
-  answer: (answer) => restAnswer(answer, Precos),
+  answer: (answer) => restAnswer(answer, Precos, { precos: [], temMaisRegistros: false }),
 })

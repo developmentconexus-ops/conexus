@@ -103,6 +103,35 @@ test('os interruptores: recusa, token vencido, fora do esquema, acima de 256 KB,
   })
 })
 
+test('os seis 403 que a documentação descreve vêm em mensagem.codigo, e as outras rotas com o code', async () => {
+  const clientes = sankhya.operations.find((candidate) => candidate.id === 'clientes')
+  const pedidos = sankhya.operations.find((candidate) => candidate.id === 'pedidos')
+  assert.ok(clientes && pedidos)
+  await withToken(async (origin, token, fake) => {
+    function read(path: ProviderRequest['path'], query: Record<string, string>) {
+      return send(
+        toRequest(sankhya, { method: 'GET', path, query, body: undefined }, token, origin),
+      )
+    }
+    fake.switches.expireToken = true
+    const expired = await read('/v1/parceiros/clientes', { page: '1' })
+    assert.deepEqual(expired.body, {
+      mensagem: { codigo: 'GTW3403', descricao: 'Bearer Token inválido ou expirado' },
+    })
+    assert.deepEqual(clientes.answer(expired), { kind: 'TOKEN_EXPIRED' })
+    const bare = await read('/v1/vendas/pedidos', { codigoEmpresa: '1', page: '1' })
+    assert.deepEqual(bare.body, { code: 'GTW3403', message: 'Bearer Token inválido ou expirado' })
+    assert.deepEqual(pedidos.answer(bare), { kind: 'TOKEN_EXPIRED' })
+    fake.switches.expireToken = false
+    fake.switches.refuse.add('clientes')
+    const refused = await read('/v1/parceiros/clientes', { page: '1' })
+    assert.deepEqual(refused.body, {
+      mensagem: { codigo: 'NO_ACCESS', descricao: 'Sem permissão' },
+    })
+    assert.deepEqual(clientes.answer(refused), { kind: 'REFUSED', reason: 'NO_PERMISSION' })
+  })
+})
+
 test('a chave errada dá 401, e o servidor fechado recusa a conexão', async () => {
   const fake = sankhyaFake()
   const server = await fake.serve()

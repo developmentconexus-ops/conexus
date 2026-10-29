@@ -71,7 +71,7 @@ export function runConformance(connector: Connector, fake: Fake): void {
       }
     })
 
-    it('answers each probe, in order, with a value its output schema accepts', async () => {
+    it('answers each probe, in order, with the value its output schema reads from the body', async () => {
       const token = await login(connector, fake, fake.credential)
       assert.equal(token.kind, 'OK')
       if (token.kind !== 'OK') return
@@ -80,9 +80,15 @@ export function runConformance(connector: Connector, fake: Fake): void {
         const input = operation.probe(earlier)
         assert.notEqual(input, null, `${operation.id} has a probe the fake can answer`)
         const request = toRequest(connector, requestOf(operation, input), token.accessToken)
-        const answered = operation.answer(await answerOf(await fake.handle(request)))
+        const raw = await answerOf(await fake.handle(request))
+        const answered = operation.answer(raw)
         assert.equal(answered.kind, 'OK', operation.id)
         if (answered.kind !== 'OK') continue
+        // A ready operation's `output` reads the body itself; a door entry's is the shape of the
+        // value its answer takes out of an envelope, so the value is what it must accept.
+        if (door.some((entry) => entry.id === operation.id))
+          assert.ok(operation.output.safeParse(answered.value).success, operation.id)
+        else assert.deepEqual(operation.output.parse(raw.body), answered.value, operation.id)
         earlier.set(operation.id, answered.value)
       }
     })

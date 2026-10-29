@@ -80,9 +80,7 @@ const ItemTaxes = z.object({
     .transform((value) => value ?? []),
 })
 
-const Impostos = z.object({ itens: z.array(ItemTaxes) })
-
-/** What the pedido read answers, for the items alone. */
+/** What the pedido read answers, for the items alone: the schema of the body and the value taken from it. */
 const PedidoItens = z
   .object({ registros: z.array(z.object({ itens: z.array(ItemTaxes) })) })
   .transform(({ registros }) => ({ itens: registros[0]?.itens ?? [] }))
@@ -97,7 +95,7 @@ export const impostosDoPedido = defineOperation({
     'Lê os impostos de um pedido (CFOP, NCM, CST, ICMS, IPI e os demais) a partir dos itens dele.',
   label: 'Impostos dos pedidos',
   input: z.object({ codigoEmpresa: Code, codigoNota: Code }),
-  output: Impostos,
+  output: PedidoItens,
   probe: (earlier) => {
     const first = Pedidos.safeParse(earlier.get(pedidos.id)).data?.registros[0]
     return first ? { codigoEmpresa: first.codigoEmpresa, codigoNota: first.codigoNota } : null

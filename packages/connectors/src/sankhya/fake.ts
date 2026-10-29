@@ -13,7 +13,7 @@ import {
   SERVICE_PATH,
 } from './fake-data.ts'
 import { serveOnLoopback } from './fake-http.ts'
-import { routeOf } from './fake-rest.ts'
+import { forbidden, routeOf } from './fake-rest.ts'
 
 /** What the fake can be told to do wrong, per service: the executor's tests (U3) and the QA flip these. */
 type SankhyaSwitches = {
@@ -78,9 +78,7 @@ async function serveCall(request: Request, url: URL, switches: SankhyaSwitches):
   const route = door ? null : routeOf(url.pathname)
   const name = door ? (DOOR_NAMES[service] ?? service) : (route?.name ?? '')
   if (switches.refuse.has(name)) {
-    return door
-      ? envelope(service, '0')
-      : json({ code: 'NO_ACCESS', message: 'Sem permissão' }, 403)
+    return door ? envelope(service, '0') : forbidden(url.pathname, 'NO_ACCESS', 'Sem permissão')
   }
   if (switches.oversize) return json(OVERSIZE)
   if (switches.malformed) return json({ unexpected: true })
@@ -102,7 +100,7 @@ function misbehaviour(url: URL, switches: SankhyaSwitches): Response | Promise<R
     return empty(307, { location: `${target.pathname}${target.search}` })
   }
   if (!switches.expireToken) return null
-  return json({ code: 'GTW3403', message: 'Bearer Token inválido ou expirado' }, 403)
+  return forbidden(url.pathname, 'GTW3403', 'Bearer Token inválido ou expirado')
 }
 
 /** A token the fake never issued is refused; a token already in a call gets the envelope "4" (409 on REST). */
