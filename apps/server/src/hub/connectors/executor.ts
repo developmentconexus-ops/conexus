@@ -96,8 +96,10 @@ function redacted(text: string, secrets: readonly string[]): string {
 }
 
 /**
- * The JSON read only at the end; null for a body that is not JSON, never an empty answer. An error
- * body (outside 2xx) has the request's secrets replaced before it is parsed.
+ * The body read only at the end, with the request's secrets replaced first, whatever the status
+ * (a gateway refuses at HTTP 200 and carries its body in `native`). Text that is not JSON is the
+ * body itself outside 2xx, so the kit still decides by status; a 2xx that is not JSON is null,
+ * never an empty answer.
  */
 function answerOf(
   status: number,
@@ -105,13 +107,12 @@ function answerOf(
   secrets: readonly string[],
 ): ProviderAnswer | null {
   if (bytes.byteLength === 0) return { status, body: undefined }
-  const text = Buffer.from(bytes).toString('utf8')
+  const safe = redacted(Buffer.from(bytes).toString('utf8'), secrets)
   try {
-    const safe = status >= 200 && status < 300 ? text : redacted(text, secrets)
     return { status, body: z.unknown().parse(JSON.parse(safe)) }
   } catch (error) {
-    if (error instanceof SyntaxError) return null
-    throw error
+    if (!(error instanceof SyntaxError)) throw error
+    return status >= 200 && status < 300 ? null : { status, body: safe }
   }
 }
 
@@ -144,7 +145,7 @@ export function createExecutor(deps: {
 
   /**
    * Sends one request (the OS's `send`): a redirect refused by fetch, every body read up to the
-   * cap and parsed only at the end, an error body redacted of `secrets` first. A 5xx is
+   * cap and parsed only at the end, every body redacted of `secrets` first. A 5xx is
    * UNREACHABLE and keeps what it said. What is logged is scalars: the connection, the status or
    * the error's name and cause code; never a body.
    */

@@ -89,6 +89,13 @@ test('o último teste: guardado no que funciona, apagado no que a chave recusa, 
     JSON.stringify(working.checks),
   ])
 
+  // A key refused after a working test takes the stored test with it.
+  fake.switches.expireToken = true
+  const revoked = Object((await testOf(hub, ana, base, id)).json())
+  fake.switches.expireToken = false
+  assert.deepEqual([revoked.result, revoked.connection.state], ['AUTH_REFUSED', 'NEEDS_REAUTH'])
+  assert.deepEqual(Object((await call(hub, carla, 'GET', `${base}/${id}`)).json()).lastTest, null)
+
   const wrong = idOf(
     await linkSankhya(
       hub,

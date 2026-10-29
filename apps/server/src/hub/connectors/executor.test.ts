@@ -5,6 +5,9 @@ import { sankhyaFake } from '@conexus/connectors'
 import { hubWithLog } from '../identity/test-hub.ts'
 import { connectionsOn, linkSankhya, testOf } from './test-connections.ts'
 
+/** The program's own fetch, taken before any test replaces the global one. */
+const realFetch = globalThis.fetch
+
 test('a origem, o redirecionamento e o teto', async (t) => {
   const { hub, fake, ana, base } = await connectionsOn(t)
   const { connection } = Object((await linkSankhya(hub, ana, base, fake.credential)).json())
@@ -37,7 +40,7 @@ test('o Hub com a origem de um conector que o kit não tem não sobe', async (t)
 })
 
 /** Testar on a Hub whose executor's fetch is `fetching` (the executor keeps the fetch of its start). */
-async function testingWith(t: TestContext, fetching: () => Promise<Response>) {
+async function testingWith(t: TestContext, fetching: (request: Request) => Promise<Response>) {
   t.mock.method(globalThis, 'fetch', fetching)
   const on = await connectionsOn(t)
   const { connection } = Object(
@@ -138,4 +141,49 @@ test('um login com um status ou corpo inesperado é UNREADABLE com o que veio, n
   assert.equal(Object(html.tested.json()).result, 'UNREADABLE')
   const teapot = await testingWith(t, () => Promise.resolve(Response.json({}, { status: 418 })))
   assert.equal(Object(teapot.tested.json()).result, 'UNREADABLE')
+})
+
+test('um corpo de erro que não é JSON chega como texto e o status decide', async (t) => {
+  const login = await testingWith(t, () =>
+    Promise.resolve(new Response('Unauthorized', { status: 401 })),
+  )
+  const refused = Object(login.tested.json())
+  assert.equal(refused.result, 'AUTH_REFUSED')
+  assert.equal(refused.native.body, 'Unauthorized')
+  assert.equal(refused.connection.state, 'NEEDS_REAUTH')
+
+  const gateway = await testingWith(t, () =>
+    Promise.resolve(new Response('<html>502 Bad Gateway</html>', { status: 502 })),
+  )
+  const down = Object(gateway.tested.json())
+  assert.equal(down.result, 'UNREACHABLE')
+  assert.equal(down.native.body, '<html>502 Bad Gateway</html>')
+})
+
+test('o token sai de todo corpo de uma operação, no envelope do gateway e no erro REST', async (t) => {
+  let bearer = ''
+  const planted = await testingWith(t, async (request) => {
+    if (request.headers.get('authorization') === null) {
+      const login = await realFetch(request)
+      bearer = Object(await login.clone().json()).access_token
+      return login
+    }
+    const planted = { code: 'BAD', message: `token ${bearer}`, echo: bearer }
+    return new URL(request.url).searchParams.has('serviceName')
+      ? Response.json({ status: '0', statusMessage: `token ${bearer}`, echo: bearer })
+      : Response.json(planted, { status: 400 })
+  })
+  assert.notEqual(bearer, '')
+  assert.equal(planted.tested.body.includes(bearer), false)
+  const checks: { id: string; native: { message: string; body: { echo: string } } }[] = Object(
+    planted.tested.json(),
+  ).checks
+  function byId(id: string) {
+    return checks.find((check) => check.id === id)?.native
+  }
+  assert.deepEqual(
+    [byId('consultar')?.message, byId('consultar')?.body.echo],
+    ['token [redacted]', '[redacted]'],
+  )
+  assert.equal(byId('empresas')?.body.echo, '[redacted]')
 })

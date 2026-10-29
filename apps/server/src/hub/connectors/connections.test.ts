@@ -50,7 +50,7 @@ test('ligar: quem pode, e as recusas', async (t) => {
   assert.deepEqual([second.statusCode, codeOf(second)], [409, 'CONNECTION_NAME_TAKEN'])
   const renamed = await linkSankhya(hub, bruno, base, fake.credential, key, 'Filial')
   assert.deepEqual([renamed.statusCode, codeOf(renamed)], [409, 'IDEMPOTENCY_CONFLICT'])
-  for (const name of ['', '   ', 'x'.repeat(61)]) {
+  for (const name of ['', '   ', 'x'.repeat(61), 'x'.repeat(257)]) {
     const refused = await linkSankhya(hub, ana, base, fake.credential, undefined, name)
     assert.deepEqual([refused.statusCode, codeOf(refused)], [422, 'CONNECTION_NAME_INVALID'])
   }

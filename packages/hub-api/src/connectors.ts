@@ -136,7 +136,7 @@ export const linkConnection = defineOperation({
     params: InCompany,
     body: z.object({
       connector: z.string().max(64),
-      name: z.string().max(256),
+      name: z.string(),
       credential: PastedCredential,
     }),
   },
