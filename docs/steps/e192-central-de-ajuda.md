@@ -30,7 +30,7 @@ Livre chega com o guia dele.
 
 - **Antes da U2:** os passos que você segue no Sankhya para achar cada uma das três chaves, com os
   prints (a sua resposta `D3 A`, 2026-10-29). Os prints vêm de uma empresa de teste ou com nomes,
-  CNPJs e valores cobertos: nada de dado de empresa no repositório (segurança S40). O agente
+  CNPJs e valores cobertos: nada de dado de empresa no repositório, que é público (segurança S40). O agente
   escreve a página e a linha curta de cada chave a partir do seu texto, e confere cada print antes
   do commit.
 - **No começo:** aprova esta página.
@@ -53,7 +53,8 @@ Livre chega com o guia dele.
 - "Respondeu à sua pergunta?", comentários, fórum ou atendimento: a Central de Ajuda é só leitura
   (o estudo: o Zapier separa a central de ajuda da comunidade).
 - Login: ela é aberta, como você respondeu.
-- O link "Editar esta página": o repositório é privado.
+- O link "Editar esta página": quem lê a Central de Ajuda é quem usa o Sankhya, não quem muda o
+  código, e o link levaria ao GitHub; o guia muda no pull request do conector, revisado com o código.
 - Um segundo idioma: o roteiro deixa fora do lançamento.
 - O guia do Mercado Livre: nasce com a 19.1, no mesmo molde. O da Jet, com a 20.3.
 - Voltar a uma versão de antes desta etapa deixa a Central de Ajuda como está.
