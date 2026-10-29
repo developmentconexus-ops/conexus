@@ -1,0 +1,19 @@
+/* The help site wears the Hub's palette: Starlight's variables only point at it, so no colour or
+   font is written here (design V3). */
+@import "@conexus/web/brand/palette.css";
+
+:root {
+  --sl-font: var(--brand-font-body);
+  --sl-font-mono: var(--brand-font-mono);
+  --sl-color-black: var(--brand-canvas);
+  --sl-color-white: var(--brand-text);
+  --sl-color-gray-1: var(--brand-text);
+  --sl-color-gray-2: var(--brand-text);
+  --sl-color-gray-3: var(--brand-text-2);
+  --sl-color-gray-4: var(--brand-line-strong);
+  --sl-color-gray-5: var(--brand-line);
+  --sl-color-gray-6: var(--brand-surface-3);
+  --sl-color-accent: var(--brand-accent);
+  --sl-color-accent-high: var(--brand-accent-text);
+  --sl-color-accent-low: var(--brand-accent-soft);
+}

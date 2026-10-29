@@ -152,6 +152,7 @@ jobs:
       # The screens in a real Chromium; their vitest half runs in packages, beside this job.
       - run: npm run test:browser -w @conexus/web
       - run: npm run build
+      - run: npm run test:help
 
   packages:
     runs-on: ubuntu-24.04

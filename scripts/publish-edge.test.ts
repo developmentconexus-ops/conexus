@@ -24,6 +24,8 @@ if [ "$(wc -l < "$CALLS")" = "\${STUB_FAIL_AT:-0}" ]; then echo "the upload fail
 function publish(
   options: {
     edge?: boolean
+    help?: boolean
+    buildFails?: boolean
     content?: string
     mode?: number
     failAt?: number
@@ -39,6 +41,7 @@ function publish(
     writeFileSync(join(root, 'node_modules/.bin/wrangler'), WRANGLER)
     chmodSync(join(root, 'node_modules/.bin/wrangler'), 0o755)
   }
+  if (options.help !== false) mkdirSync(join(root, 'apps/help'), { recursive: true })
   const file = join(root, 'cloudflare.env')
   writeFileSync(
     file,
@@ -53,6 +56,12 @@ function publish(
   // A stub `id` stands for a runner that is not the file's owner.
   const bin = join(root, 'bin')
   mkdirSync(bin)
+  // A stub `npm` records the build and can fail it.
+  writeFileSync(
+    join(bin, 'npm'),
+    `#!/bin/bash\necho "npm $*" >> "$CALLS"\n${options.buildFails ? 'echo "the build failed" >&2; exit 1\n' : ''}`,
+  )
+  chmodSync(join(bin, 'npm'), 0o755)
   if (options.user !== undefined) {
     writeFileSync(join(bin, 'id'), `#!/bin/bash\necho ${options.user}\n`)
     chmodSync(join(bin, 'id'), 0o755)
@@ -74,7 +83,7 @@ function publish(
 }
 
 test('publica o muro, o exemplo no espaço de nomes, a chave e o despachante, nessa ordem', () => {
-  const { run, recorded, file } = publish()
+  const { run, recorded, file } = publish({ help: false })
   assert.equal(run.status, 0, run.stderr)
   assert.deepEqual(recorded, [
     `wrangler deploy --env-file ${file} --config wrangler.outbound.jsonc [token-in-env=]`,
@@ -82,7 +91,41 @@ test('publica o muro, o exemplo no espaço de nomes, a chave e o despachante, ne
     `wrangler secret put APP_LOGIN_KEY --env-file ${file} [token-in-env=] [stdin=${KEY.length}]`,
     `wrangler deploy --env-file ${file} [token-in-env=]`,
   ])
-  assert.match(run.stdout, /edge published\n$/)
+  assert.match(run.stdout, /edge published\n/)
+})
+
+test('publica o site de ajuda depois da borda', () => {
+  const { run, recorded, file } = publish()
+  assert.equal(run.status, 0, run.stderr)
+  assert.deepEqual(recorded.slice(3), [
+    `wrangler deploy --env-file ${file} [token-in-env=]`,
+    'npm run build -w @conexus/help',
+    `wrangler deploy --env-file ${file} --config ../help/wrangler.jsonc [token-in-env=]`,
+  ])
+  assert.match(
+    run.stdout,
+    /publishing: --config \.\.\/help\/wrangler\.jsonc\nhelp site published\n$/,
+  )
+  assert.doesNotMatch(`${recorded.join('\n')}${run.stdout}${run.stderr}`, new RegExp(TOKEN))
+})
+
+test('um Release sem apps/help deixa a central', () => {
+  const { run, recorded } = publish({ help: false })
+  assert.equal(run.status, 0, run.stderr)
+  assert.equal(recorded.length, 4)
+  assert.match(
+    run.stdout,
+    /edge published\nthis release has no apps\/help; the help site stays as it is\n$/,
+  )
+})
+
+test('a montagem que falha não publica', () => {
+  const { run, recorded } = publish({ buildFails: true })
+  assert.equal(run.status, 1)
+  assert.match(run.stderr, /the build failed/)
+  assert.equal(recorded.length, 5)
+  assert.equal(recorded.filter((call) => call.includes('help/wrangler.jsonc')).length, 0)
+  assert.doesNotMatch(run.stdout, /help site published/)
 })
 
 test('o token e a chave não estão na linha de comando, no ambiente do script nem na saída', () => {
