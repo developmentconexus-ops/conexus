@@ -1,5 +1,5 @@
 import { createMemoryHistory } from '@tanstack/react-router'
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { http } from 'msw'
 import { expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
@@ -186,6 +186,20 @@ test('o membro lê; vazio e erro', async () => {
     expect(screen.queryByRole('button', { name })).toBeNull()
   }
   expect(sent).toHaveLength(0)
+})
+
+test('chaves recusadas: o membro lê a quem pedir, a dona lê o que fazer', async () => {
+  const refused = connectionOf({ state: 'NEEDS_REAUTH', testedAt: '2026-10-29T14:02:00.000Z' })
+  const owner = 'As chaves foram recusadas pelo Sankhya. Desligue e ligue de novo com chaves novas.'
+  const member =
+    'As chaves foram recusadas pelo Sankhya. Peça à dona ou a um administrador para ligar de novo.'
+  open(viewOf({ mayManage: false, connections: [refused] }))
+  expect(await screen.findByText(member)).toBeTruthy()
+  expect(screen.queryByText(owner)).toBeNull()
+  cleanup()
+  open(viewOf({ connections: [refused] }))
+  expect(await screen.findByText(owner)).toBeTruthy()
+  expect(screen.queryByText(member)).toBeNull()
 })
 
 test('o membro sem ligação nenhuma lê a frase vazia e o Sankhya sem Ligar', async () => {

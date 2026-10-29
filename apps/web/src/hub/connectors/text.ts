@@ -44,6 +44,11 @@ export function refusedKeysText(name: string): string {
   return `As chaves foram recusadas pelo ${name}. Desligue e ligue de novo com chaves novas.`
 }
 
+/** What a reader who may not manage the connections sees for the same refusal. */
+export function refusedKeysMemberText(name: string): string {
+  return `As chaves foram recusadas pelo ${name}. Peça à dona ou a um administrador para ligar de novo.`
+}
+
 export function unreachableText(name: string): string {
   return `O ${name} não respondeu. Tente de novo em alguns minutos.`
 }

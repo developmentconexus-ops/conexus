@@ -6,7 +6,14 @@ import { Button } from '../../ui/button.tsx'
 import { Row } from '../../ui/list.tsx'
 import { sendTest } from './queries.ts'
 import { TestResult } from './test-result.tsx'
-import { linkedText, listChanged, refusedKeysText, stateBadge, testedText } from './text.ts'
+import {
+  linkedText,
+  listChanged,
+  refusedKeysMemberText,
+  refusedKeysText,
+  stateBadge,
+  testedText,
+} from './text.ts'
 import { UnlinkDialog } from './unlink-dialog.tsx'
 
 /**
@@ -71,7 +78,7 @@ export function ConnectionRow(props: {
         </div>
         {connection.state === 'NEEDS_REAUTH' && (
           <p role="alert" className="text-danger">
-            {refusedKeysText(name)}
+            {props.mayManage ? refusedKeysText(name) : refusedKeysMemberText(name)}
           </p>
         )}
         {test.data && <TestResult result={test.data} name={name} />}
