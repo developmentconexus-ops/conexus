@@ -13,7 +13,7 @@ import type {
 import { CONNECTION_STATES, ConnectionId, PersonId } from '@conexus/hub-api'
 import { and, asc, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
-import type { CommandTx, Database, ReadTx, Scope } from '../../platform/database.ts'
+import type { Database, ReadTx, Scope } from '../../platform/database.ts'
 import { transactionLock, violatedConstraint } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { SealKeys } from '../../platform/seal.ts'
@@ -315,7 +315,7 @@ const NEXT_STATE = { WORKING: 'ACTIVE', AUTH_REFUSED: 'NEEDS_REAUTH' } as const
  * changes nothing.
  */
 function recorded(deps: Deps, input: OfConnection, opened: OpenedConnection, probe: Probed) {
-  return deps.database.command(scopeOf(input), async (tx: CommandTx) => {
+  return deps.database.command(scopeOf(input), async (tx) => {
     await admitted(deps, tx, input, 'manageConnections')
     const same = and(
       ofCompany(input, input.connectionId),

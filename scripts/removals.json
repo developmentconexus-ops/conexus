@@ -1989,5 +1989,27 @@
       "file": "src/hub/apps/app-access-journey.test.ts",
       "name": "outra empresa não tira o acesso a um app da empresa"
     }
+  },
+  {
+    "id": "connector-origin-only-local",
+    "file": "apps/server/src/platform/config.ts",
+    "find": "    LOOPBACK.includes(url.hostname) &&\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/config.test.ts",
+      "name": "configuração: a origem do dublê é só local"
+    }
+  },
+  {
+    "id": "connection-manage-only-owner-admin",
+    "file": "apps/server/src/hub/identity/admission.ts",
+    "find": "  manageConnections: { by: 'MEMBER', statement: MANAGE_CONNECTIONS, locks: true },\n",
+    "replace": "  manageConnections: { by: 'MEMBER', statement: undefined, locks: true },\n",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/connectors/connections.test.ts",
+      "name": "ligar: quem pode, e as recusas"
+    }
   }
 ]
