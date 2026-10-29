@@ -1,12 +1,13 @@
 import type { Project } from '@conexus/hub-api'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi, useNavigate } from '@tanstack/react-router'
-import { ExternalLinkIcon, RotateCwIcon } from 'lucide-react'
+import { ExternalLinkIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useState } from 'react'
-import { Button, buttonVariants } from '../../ui/button.tsx'
+import { buttonVariants } from '../../ui/button.tsx'
 import { PageTitle } from '../../ui/list.tsx'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs.tsx'
+import { useIsMobile } from '../../ui/use-mobile.ts'
 import { Publish, Versions } from '../apps/public.ts'
 import { About } from './project.tsx'
 import { projectQuery } from './queries.ts'
@@ -20,7 +21,7 @@ function VersionsSection() {
   return <Versions companyId={companyId} projectId={projectId} />
 }
 
-// The three tabs are tight under `md`, so that Recarregar, Publicar and Abrir app fit beside them at 320px.
+// The three tabs are tight under `md`, so that Publicar and Abrir app fit beside them at 320px.
 const LENSES = [
   [Lens.enum.preview, 'Prévia'],
   [Lens.enum.code, 'Código'],
@@ -76,6 +77,7 @@ export function ProjectArea(props: {
   const { address, appVersion, publishedVersion } = project
   const live = address !== null && appVersion !== null
   const [stale, setStale] = useState<string>()
+  const isMobile = useIsMobile()
   return (
     <Tabs
       value={lens}
@@ -98,22 +100,26 @@ export function ProjectArea(props: {
           ))}
         </TabsList>
         <div className="ml-auto flex items-center gap-md">
-          {live && lens === Lens.enum.preview && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="md:hidden"
-              aria-label="Recarregar"
-              onClick={reload}
-            >
-              <RotateCwIcon aria-hidden="true" />
-            </Button>
-          )}
-          {appVersion !== null && appVersion === publishedVersion && (
+          {appVersion !== null && (
             <span className="text-label text-text-2 max-md:sr-only">
-              Versão {appVersion} publicada
+              Versão {appVersion} ·{' '}
+              {appVersion === publishedVersion ? 'publicada' : 'não publicada'}
             </span>
           )}
+          {address !== null &&
+            publishedVersion !== null &&
+            !(live && lens === Lens.enum.preview && isMobile) && (
+              <a
+                href={`https://${address}/`}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Abrir app"
+                className={buttonVariants({ phoneIcon: true })}
+              >
+                <ExternalLinkIcon className="md:hidden" aria-hidden="true" />
+                <span className="max-md:hidden">Abrir app</span>
+              </a>
+            )}
           {appVersion !== null && appVersion !== publishedVersion && (
             <Publish
               companyId={companyId}
@@ -122,18 +128,6 @@ export function ProjectArea(props: {
               label="Publicar"
               onStale={setStale}
             />
-          )}
-          {address !== null && publishedVersion !== null && (
-            <a
-              href={`https://${address}/`}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Abrir app"
-              className={buttonVariants({ phoneIcon: true })}
-            >
-              <ExternalLinkIcon className="md:hidden" aria-hidden="true" />
-              <span className="max-md:hidden">Abrir app</span>
-            </a>
           )}
         </div>
       </div>

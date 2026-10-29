@@ -23,6 +23,7 @@ colors:
   danger: "#C0283D"
   on-accent: "#FFFFFF"
   preview-paper: "#FFFFFF"
+  phone-frame: "#1D2125"
   dark-canvas: "#0E1012"
   dark-surface: "#16191C"
   dark-surface-3: "#1D2125"
@@ -41,6 +42,7 @@ colors:
   dark-success: "#6FD39A"
   dark-warning: "#F5A25B"
   dark-danger: "#F28B9A"
+  dark-phone-frame: "#3A4148"
 typography:
   display:
     fontFamily: "Bricolage Grotesque, system-ui, sans-serif"
@@ -81,6 +83,7 @@ rounded:
   card: "14px"
   composer: "16px"
   pill: "999px"
+  phone: "36px"
 spacing:
   xs: "0.25rem"
   sm: "0.5rem"
@@ -117,9 +120,10 @@ most colorful thing on screen. Ipê is the warm gold accent; prose is sans and f
 
 - **V3.** Every color is a token; only the brand folder holds a raw value, shadows and overlays
   included. Outbound e-mail HTML is an exception: e-mail clients require inline color values [0017].
-  Tokens let both themes change in one file. The Prévia's drawn phone frame is a dark color token
-  (`#1d2125` in the mock, a name for the build to pick) rather than a raw value; founder, 2026-10-28,
-  on proposal B, Janela, of the Prévia screen: "1. Sim". [rule to write]
+  Tokens let both themes change in one file. The Prévia's drawn phone frame is the dark token
+  `phone-frame` (a lighter dark in the dark theme, so the frame still shows on the canvas) rather
+  than a raw value; founder, 2026-10-28, on proposal B, Janela, of the Prévia screen: "1. Sim".
+  [review]
 - **V5.** Ipê **should** distinguish current activity and choice: focus, caret, selection, active
   lens and working agent, not every resting action or heading. The send hover keeps its current
   accent. Failure: making everything gold hides the difference between focus and decoration. The
@@ -172,7 +176,7 @@ churn, not runtime style enforcement; do not extend this check to vendor-generat
 - **V22.** Every radius comes from `rounded`: `control` for buttons and inputs, `object` for windows,
   popovers and panels, `card` for Project cards, `composer` for the composer, `pill` for chips.
   Regions and panes take none. One more radius, 36 px, is for the Prévia's drawn phone frame only,
-  as its own token; founder, 2026-10-28: "1. Sim". [rule to write]
+  as its own token, `phone`; founder, 2026-10-28: "1. Sim". [review]
 
 ## Components
 

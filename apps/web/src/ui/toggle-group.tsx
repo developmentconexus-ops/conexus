@@ -1,5 +1,7 @@
 import { Toggle as TogglePrimitive } from '@base-ui/react/toggle'
 import { ToggleGroup as ToggleGroupPrimitive } from '@base-ui/react/toggle-group'
+import type { VariantProps } from 'class-variance-authority'
+import { cva } from 'class-variance-authority'
 import { cn } from './cn.ts'
 
 // Shaped after shadcn's base-nova `toggle-group`, painted with brand tokens: one pressed item at a
@@ -15,14 +17,29 @@ export function ToggleGroup({ className, ...props }: ToggleGroupPrimitive.Props)
   )
 }
 
-export function ToggleGroupItem({ className, ...props }: TogglePrimitive.Props) {
+const itemClasses = cva(
+  'inline-flex items-center justify-center rounded-control text-label text-text-2 hover:text-text data-pressed:bg-surface data-pressed:text-text dark:data-pressed:bg-surface-4 dark:data-pressed:text-accent-text',
+  {
+    variants: {
+      // `icon` is an item of one icon, 14px in a toolbar (design V34), as base-nova's `size`.
+      size: {
+        default: 'h-8 flex-1 px-md max-md:h-9 max-md:px-sm',
+        icon: 'size-8 [&_svg]:size-3.5 [&_svg]:shrink-0',
+      },
+    },
+    defaultVariants: { size: 'default' },
+  },
+)
+
+export function ToggleGroupItem({
+  className,
+  size,
+  ...props
+}: TogglePrimitive.Props & VariantProps<typeof itemClasses>) {
   return (
     <TogglePrimitive
       data-slot="toggle-group-item"
-      className={cn(
-        'inline-flex h-8 flex-1 items-center justify-center rounded-control px-md text-label text-text-2 hover:text-text data-pressed:bg-surface data-pressed:text-text dark:data-pressed:bg-accent dark:data-pressed:text-on-ink max-md:h-9 max-md:px-sm',
-        className,
-      )}
+      className={cn(itemClasses({ size }), className)}
       {...props}
     />
   )

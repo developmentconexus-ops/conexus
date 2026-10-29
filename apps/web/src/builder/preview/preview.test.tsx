@@ -76,7 +76,7 @@ test('vazio: antes do primeiro app, a Prévia diz que não há prévia', async (
   expect(screen.queryByRole('button', { name: 'Recarregar' })).toBeNull()
 })
 
-test('barra: o app num iframe do endereço do Projeto, com Computador, Celular e Recarregar', async () => {
+test('janela: o app num iframe do endereço do Projeto, com Recarregar, o endereço e Computador e Celular só de ícone', async () => {
   openProject({ appVersion: 1 })
   const frame = await screen.findByTitle('Prévia')
   expect(frame.getAttribute('src')).toBe(`${APP}/`)
@@ -86,23 +86,56 @@ test('barra: o app num iframe do endereço do Projeto, com Computador, Celular e
   const computer = screen.getByRole('button', { name: 'Computador' })
   expect(computer.getAttribute('aria-pressed')).toBe('true')
   expect(frame.className).not.toContain('390px')
+  const bar = screen.getByRole('region', { name: 'Prévia' })
+  expect(within(bar).getByText(PEDIDOS_ADDRESS).className).toContain('font-mono')
+  expect(within(bar).getByText('versão 1')).toBeTruthy()
+  expect(computer.textContent).toBe('')
   fireEvent.click(screen.getByRole('button', { name: 'Celular' }))
-  expect(iframe().className).toContain('w-[390px]')
-  // The toolbar's, and the phone's icon in the top row; CSS shows one of the two.
-  expect(screen.getAllByRole('button', { name: 'Recarregar' })).toHaveLength(2)
+  await waitFor(() => expect(iframe().className).toContain('w-[390px]'))
+  expect(screen.getByRole('button', { name: 'Celular' }).getAttribute('aria-pressed')).toBe('true')
+  expect(screen.getAllByRole('button', { name: 'Recarregar' })).toHaveLength(1)
   expect(screen.queryByText(NO_PREVIEW)).toBeNull()
 })
 
-test('Recarregar, na barra e no ícone do celular: o iframe recarrega e o Projeto não é lido de novo', async () => {
+test('Recarregar: o iframe recarrega e o Projeto não é lido de novo', async () => {
   const { reads } = openProject({ appVersion: 1 })
-  let before = await screen.findByTitle('Prévia')
+  const before = await screen.findByTitle('Prévia')
   const readsBefore = reads.project
-  for (const button of screen.getAllByRole('button', { name: 'Recarregar' })) {
-    fireEvent.click(button)
-    await waitFor(() => expect(iframe()).not.toBe(before))
-    before = iframe()
-  }
+  fireEvent.click(screen.getByRole('button', { name: 'Recarregar' }))
+  await waitFor(() => expect(iframe()).not.toBe(before))
   expect(reads.project).toBe(readsBefore)
+})
+
+test('Celular: a visão fica no endereço e volta com Computador', async () => {
+  const { conexus } = openProject({ appVersion: 1 })
+  await screen.findByTitle('Prévia')
+  fireEvent.click(screen.getByRole('button', { name: 'Celular' }))
+  await waitFor(() => expect(conexus.router.state.location.search).toMatchObject({ view: 'phone' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Computador' }))
+  await waitFor(() =>
+    expect(conexus.router.state.location.search).toMatchObject({ view: 'computer' }),
+  )
+  expect(iframe().className).not.toContain('390px')
+})
+
+test('celular de verdade: Recarregar, o endereço e Abrir app na barra; sem Computador e Celular', async () => {
+  vi.spyOn(globalThis, 'matchMedia').mockImplementation((media: string) =>
+    Object.assign(new EventTarget(), {
+      matches: true,
+      media,
+      onchange: null,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+      dispatchEvent: () => true,
+    }),
+  )
+  openProject({ appVersion: 1, publishedVersion: 1 })
+  const bar = await screen.findByRole('region', { name: 'Prévia' })
+  expect(within(bar).getByRole('button', { name: 'Recarregar' })).toBeTruthy()
+  expect(within(bar).getByText(PEDIDOS_ADDRESS)).toBeTruthy()
+  expect(within(bar).getByRole('link', { name: 'Abrir app' }).getAttribute('href')).toBe(`${APP}/`)
+  expect(screen.queryByRole('button', { name: 'Computador' })).toBeNull()
+  expect(screen.getAllByRole('link', { name: 'Abrir app' })).toHaveLength(1)
 })
 
 test('recarga: a versão nova do app recarrega o iframe', async () => {
@@ -137,14 +170,16 @@ test('entrada: uma mensagem de outra origem, de outra janela ou que não é a en
   expect(iframe().getAttribute('src')).toBe(`${APP}/`)
 })
 
-test('aviso: no WebKit da Apple, acima do iframe, com Abrir app numa aba nova', async () => {
+test('aviso: no WebKit da Apple, dentro da janela e acima do iframe; o Abrir app é o do alto', async () => {
   vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(
     'Mozilla/5.0 (iPhone; CPU iPhone OS 26_6 like Mac OS X) AppleWebKit/605.1.15 Version/26.6 Mobile/15E148 Safari/604.1',
   )
   openProject({ appVersion: 1, publishedVersion: 1 })
   const notice = (await screen.findByText(WEBKIT)).closest('[role="status"]')
   if (!(notice instanceof HTMLElement)) throw new Error('the notice has no status region')
-  const link = within(notice).getByRole('link', { name: 'Abrir app' })
+  expect(within(notice).queryByRole('link', { name: 'Abrir app' })).toBeNull()
+  expect(screen.getByRole('region', { name: 'Prévia' }).contains(notice)).toBe(true)
+  const link = screen.getByRole('link', { name: 'Abrir app' })
   expect(link.getAttribute('href')).toBe(`${APP}/`)
   expect(link.getAttribute('target')).toBe('_blank')
   expect(link.getAttribute('rel')).toBe('noopener noreferrer')
@@ -152,7 +187,7 @@ test('aviso: no WebKit da Apple, acima do iframe, com Abrir app numa aba nova', 
   expect(iframe().getAttribute('src')).toBe(`${APP}/`)
 })
 
-test('aviso: antes do primeiro Publicar, sem Abrir app', async () => {
+test('aviso: antes do primeiro Publicar, sem Abrir app em lugar nenhum', async () => {
   vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(APPLE)
   openProject({ appVersion: 1 })
   const notice = (await screen.findByText(WEBKIT)).closest('[role="status"]')
@@ -181,10 +216,7 @@ test('entrada recusada: a frase da falha no lugar do iframe, e Recarregar tenta 
   expect(alert.textContent).toBe(sentenceOfCode('DATABASE_UNAVAILABLE'))
   expect(screen.queryByTitle('Prévia')).toBeNull()
   expect(screen.queryByRole('button', { name: 'Tentar de novo' })).toBeNull()
-  // Only the phone's icon, the first in the page, which the top row owns.
-  const [phoneIcon] = screen.getAllByRole('button', { name: 'Recarregar' })
-  if (!phoneIcon) throw new Error('the phone has no Recarregar')
-  fireEvent.click(phoneIcon)
+  fireEvent.click(screen.getByRole('button', { name: 'Recarregar' }))
   expect((await screen.findByTitle('Prévia')).getAttribute('src')).toBe(`${APP}/`)
 })
 
