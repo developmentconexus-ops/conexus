@@ -2011,5 +2011,27 @@
       "file": "src/hub/connectors/connections.test.ts",
       "name": "ligar: quem pode, e as recusas"
     }
+  },
+  {
+    "id": "connector-redirect-refused",
+    "file": "packages/connectors/src/kernel/request.ts",
+    "find": ", redirect: 'error' })",
+    "replace": " })",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/connectors/executor.test.ts",
+      "name": "a origem, o redirecionamento e o teto"
+    }
+  },
+  {
+    "id": "connector-response-cap",
+    "file": "apps/server/src/hub/connectors/executor.ts",
+    "find": "    if (bytes > RESPONSE_CAP_BYTES) {\n      await reader.cancel()\n      return UNREADABLE\n    }\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/connectors/executor.test.ts",
+      "name": "a origem, o redirecionamento e o teto"
+    }
   }
 ]
