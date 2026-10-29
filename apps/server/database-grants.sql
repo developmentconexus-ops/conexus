@@ -7,6 +7,7 @@ ALTER DATABASE hub_database OWNER TO test_owner;
 ALTER SCHEMA apps OWNER TO test_owner;
 ALTER SCHEMA auth OWNER TO test_owner;
 ALTER SCHEMA builder OWNER TO test_owner;
+ALTER SCHEMA connectors OWNER TO test_owner;
 ALTER SCHEMA drizzle OWNER TO test_owner;
 ALTER SCHEMA hub OWNER TO test_owner;
 ALTER SCHEMA operations OWNER TO test_owner;
@@ -25,6 +26,8 @@ ALTER FUNCTION auth.is_installation_administrator(person text) OWNER TO hub_admi
 ALTER FUNCTION builder.companies_with_seals() OWNER TO hub_model_seals;
 ALTER FUNCTION builder.sealed_of(account uuid) OWNER TO hub_model_seals;
 -- Step 18 (D11, founder 2026-10-28, "aPROVO PAGINA"): who uses an app and the Projects of one person.
+ALTER FUNCTION connectors.companies_with_seals() OWNER TO hub_connection_seals;
+ALTER FUNCTION connectors.sealed_of(connection uuid) OWNER TO hub_connection_seals;
 ALTER FUNCTION projects.apps_of_person(person text) OWNER TO hub_app_people;
 -- Step 8, founder 2026-10-17 ("Grant A"): a host's Project and company, one SECURITY DEFINER function
 -- owned by a role that cannot log in and reads three columns of the Projects; only hub_runtime
@@ -53,6 +56,7 @@ ALTER TABLE builder.model_account_assignee OWNER TO test_owner;
 ALTER TABLE builder.model_account_sign_in OWNER TO test_owner;
 ALTER TABLE builder.observational_memory_models OWNER TO test_owner;
 ALTER TABLE builder.person_model_default OWNER TO test_owner;
+ALTER TABLE connectors.connection OWNER TO test_owner;
 ALTER TABLE drizzle.__drizzle_migrations OWNER TO test_owner;
 ALTER SEQUENCE drizzle.__drizzle_migrations_id_seq OWNER TO test_owner;
 ALTER TABLE hub.starts OWNER TO test_owner;
@@ -85,6 +89,9 @@ GRANT USAGE ON SCHEMA builder TO hub_company;
 GRANT USAGE ON SCHEMA builder TO hub_operator;
 GRANT USAGE ON SCHEMA builder TO hub_model_seals;
 GRANT USAGE ON SCHEMA builder TO hub_runtime;
+GRANT USAGE ON SCHEMA connectors TO hub_company;
+GRANT USAGE ON SCHEMA connectors TO hub_connection_seals;
+GRANT USAGE ON SCHEMA connectors TO hub_runtime;
 GRANT USAGE ON SCHEMA drizzle TO hub_runtime;
 GRANT USAGE ON SCHEMA hub TO hub_runtime;
 GRANT USAGE ON SCHEMA operations TO hub_runtime;
@@ -105,6 +112,10 @@ GRANT ALL ON FUNCTION builder.companies_with_seals() TO hub_runtime;
 REVOKE ALL ON FUNCTION builder.sealed_of(account uuid) FROM PUBLIC;
 GRANT ALL ON FUNCTION builder.sealed_of(account uuid) TO hub_company;
 -- Step 18 (D11, founder 2026-10-28, "aPROVO PAGINA"): who uses an app and the Projects of one person.
+REVOKE ALL ON FUNCTION connectors.companies_with_seals() FROM PUBLIC;
+GRANT ALL ON FUNCTION connectors.companies_with_seals() TO hub_runtime;
+REVOKE ALL ON FUNCTION connectors.sealed_of(connection uuid) FROM PUBLIC;
+GRANT ALL ON FUNCTION connectors.sealed_of(connection uuid) TO hub_company;
 REVOKE ALL ON FUNCTION projects.apps_of_person(person text) FROM PUBLIC;
 GRANT ALL ON FUNCTION projects.apps_of_person(person text) TO hub_runtime;
 REVOKE ALL ON FUNCTION projects.project_of_host(label text) FROM PUBLIC;
@@ -231,6 +242,25 @@ GRANT UPDATE(reflector) ON TABLE builder.observational_memory_models TO hub_comp
 GRANT SELECT,INSERT,DELETE ON TABLE builder.person_model_default TO hub_company;
 GRANT UPDATE(model) ON TABLE builder.person_model_default TO hub_company;
 GRANT UPDATE(effort) ON TABLE builder.person_model_default TO hub_company;
+GRANT INSERT,DELETE ON TABLE connectors.connection TO hub_company;
+GRANT SELECT(id) ON TABLE connectors.connection TO hub_company;
+GRANT SELECT(id) ON TABLE connectors.connection TO hub_connection_seals;
+GRANT SELECT(company_id) ON TABLE connectors.connection TO hub_company;
+GRANT SELECT(company_id) ON TABLE connectors.connection TO hub_connection_seals;
+GRANT SELECT(connector_id) ON TABLE connectors.connection TO hub_company;
+GRANT SELECT(name) ON TABLE connectors.connection TO hub_company;
+GRANT SELECT(connector_version) ON TABLE connectors.connection TO hub_company;
+GRANT SELECT(state),UPDATE(state) ON TABLE connectors.connection TO hub_company;
+GRANT UPDATE(sealed) ON TABLE connectors.connection TO hub_company;
+GRANT SELECT(sealed) ON TABLE connectors.connection TO hub_connection_seals;
+GRANT SELECT(key_id),UPDATE(key_id) ON TABLE connectors.connection TO hub_company;
+GRANT SELECT(key_id) ON TABLE connectors.connection TO hub_connection_seals;
+GRANT SELECT(linked_by) ON TABLE connectors.connection TO hub_company;
+GRANT SELECT(linked_at) ON TABLE connectors.connection TO hub_company;
+GRANT SELECT(tested_at),UPDATE(tested_at) ON TABLE connectors.connection TO hub_company;
+GRANT SELECT(tested_by),UPDATE(tested_by) ON TABLE connectors.connection TO hub_company;
+GRANT SELECT(last_test),UPDATE(last_test) ON TABLE connectors.connection TO hub_company;
+GRANT SELECT(attempt_key) ON TABLE connectors.connection TO hub_company;
 GRANT SELECT ON TABLE drizzle.__drizzle_migrations TO hub_runtime;
 GRANT SELECT,INSERT ON TABLE hub.starts TO hub_runtime;
 -- Step 4.2, founder 2026-10-16 ("Aprovo", option A): the Hub never deletes a client.
@@ -285,6 +315,8 @@ ALTER ROLE hub_app_people WITH NOSUPERUSER NOINHERIT NOCREATEROLE NOCREATEDB NOL
 -- Step 5: the scope roles cannot log in, own nothing and pass no row policy.
 CREATE ROLE hub_company;
 ALTER ROLE hub_company WITH NOSUPERUSER NOINHERIT NOCREATEROLE NOCREATEDB NOLOGIN NOREPLICATION NOBYPASSRLS;
+CREATE ROLE hub_connection_seals;
+ALTER ROLE hub_connection_seals WITH NOSUPERUSER NOINHERIT NOCREATEROLE NOCREATEDB NOLOGIN NOREPLICATION NOBYPASSRLS;
 CREATE ROLE hub_hosts;
 ALTER ROLE hub_hosts WITH NOSUPERUSER NOINHERIT NOCREATEROLE NOCREATEDB NOLOGIN NOREPLICATION NOBYPASSRLS;
 CREATE ROLE hub_invitation;
@@ -312,6 +344,7 @@ GRANT hub_app_people TO test_owner WITH ADMIN OPTION, INHERIT FALSE, SET FALSE G
 -- The Hub's login switches to a scope role for one transaction and inherits nothing from it.
 GRANT hub_company TO test_owner WITH ADMIN OPTION, INHERIT FALSE, SET FALSE GRANTED BY test_superuser;
 GRANT hub_company TO hub_runtime WITH INHERIT FALSE GRANTED BY test_owner;
+GRANT hub_connection_seals TO test_owner WITH ADMIN OPTION, INHERIT FALSE, SET FALSE GRANTED BY test_superuser;
 GRANT hub_hosts TO test_owner WITH ADMIN OPTION, INHERIT FALSE, SET FALSE GRANTED BY test_superuser;
 GRANT hub_invitation TO test_owner WITH ADMIN OPTION, INHERIT FALSE, SET FALSE GRANTED BY test_superuser;
 GRANT hub_invitation TO hub_runtime WITH INHERIT FALSE GRANTED BY test_owner;
