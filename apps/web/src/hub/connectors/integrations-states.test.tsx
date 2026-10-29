@@ -1,3 +1,4 @@
+import { TEST_DEADLINE_MS } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { delay, http } from 'msw'
@@ -6,6 +7,7 @@ import { Conexus, createConexus } from '../../main.tsx'
 import { COMPANY } from '../../platform/fixtures.ts'
 import { sentenceOfCode } from '../../platform/hub.ts'
 import { hubServer, refusal } from '../../platform/test-hub.tsx'
+import { EDGE_CUT_MS, TEST_WAIT_MS } from './queries.ts'
 import type { Answers, View } from './test-hub.tsx'
 import {
   connectionOf,
@@ -79,6 +81,37 @@ test('a frase de uma recusa sai no próximo Testar, e o foco só vai à seção 
   expect(document.activeElement).not.toBe(screen.getByRole('region', { name: 'Ligadas' }))
 })
 
+test('a frase de uma recusa sai quando a pessoa liga outra vez', async () => {
+  const view = viewOf({ connections: [connectionOf()] })
+  open(view, {
+    test: () => {
+      view.connections = []
+      return refusal('CONNECTION_NOT_FOUND')
+    },
+  })
+  fireEvent.click(await screen.findByRole('button', { name: 'Testar' }))
+  expect((await screen.findByRole('alert')).textContent).toBe('Essa integração foi desligada.')
+  const form = await openForm()
+  fill()
+  fireEvent.click(within(form).getByRole('button', { name: 'Ligar' }))
+  expect(await screen.findByText(/Ligada por Ana em/)).toBeTruthy()
+  expect(screen.queryByRole('alert')).toBeNull()
+})
+
+test('a frase de uma recusa sai quando a pessoa desliga', async () => {
+  open(viewOf({ connections: [connectionOf()] }), { test: () => refusal('CONNECTOR_UNKNOWN') })
+  fireEvent.click(await screen.findByRole('button', { name: 'Testar' }))
+  expect((await screen.findByRole('alert')).textContent).toBe(
+    'Esse conector não existe no Conexus.',
+  )
+  fireEvent.click(screen.getByRole('button', { name: 'Desligar' }))
+  fireEvent.click(
+    within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Desligar' }),
+  )
+  expect(await screen.findByText('Nenhuma integração ligada ainda.')).toBeTruthy()
+  expect(screen.queryByRole('alert')).toBeNull()
+})
+
 test('Testar recusado sem mudar a lista: a frase fica na linha', async () => {
   open(viewOf({ connections: [connectionOf()] }), { test: () => refusal('DATABASE_UNAVAILABLE') })
   fireEvent.click(await screen.findByRole('button', { name: 'Testar' }))
@@ -143,7 +176,7 @@ test.each([
     )
     server.use(
       http.post(`*/api/companies/${COMPANY.id}/connections/:id/test`, async () => {
-        await delay(50)
+        await delay(TEST_DEADLINE_MS / 1000 + 5)
         return undefined
       }),
       ...hub.handlers,
@@ -153,6 +186,11 @@ test.each([
     expect(await screen.findByText(sentence)).toBeTruthy()
   },
 )
+
+test('o navegador espera o Testar além do prazo do Hub e responde antes da borda da Cloudflare', () => {
+  expect(TEST_WAIT_MS).toBeGreaterThan(TEST_DEADLINE_MS)
+  expect(TEST_WAIT_MS).toBeLessThan(EDGE_CUT_MS)
+})
 
 test('o estado em palavras: Funcionando, Chaves recusadas e nenhum selo para a nova', async () => {
   const tested = '2026-10-29T14:02:00.000Z'
@@ -164,6 +202,15 @@ test('o estado em palavras: Funcionando, Chaves recusadas e nenhum selo para a n
   expect(await screen.findByText('Funcionando')).toBeTruthy()
   expect(screen.queryByText('Chaves recusadas')).toBeNull()
   expect(screen.queryByText(/As chaves foram recusadas/)).toBeNull()
+  expect(screen.getByText(/^Ligada por Ana em \d\d\/\d\d ·/)).toBeTruthy()
+  expect(screen.queryByText(/ainda não testada/)).toBeNull()
+  expect(screen.getByText(/^testada em \d\d\/\d\d, \d\d:\d\d$/)).toBeTruthy()
+})
+
+test('uma ligação nova diz "ainda não testada" e não mostra "testada em"; sem quem ligou, não diz por quem', async () => {
+  open(viewOf({ connections: [connectionOf({ linkedBy: null })] }))
+  expect(await screen.findByText(/^Ligada em \d\d\/\d\d, ainda não testada ·/)).toBeTruthy()
+  expect(screen.queryByText(/testada em/)).toBeNull()
 })
 
 test('chaves recusadas: o selo e a frase da linha; sem teste ainda, nenhum selo', async () => {
