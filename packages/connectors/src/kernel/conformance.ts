@@ -146,7 +146,7 @@ export function runConformance(connector: Connector, fake: Fake): void {
       const wrong = Object.fromEntries(
         Object.keys(fake.credential).map((name) => [name, 'wrong-value']),
       )
-      assert.deepEqual(await login(connector, fake, wrong), { kind: 'AUTH_REFUSED' })
+      assert.equal((await login(connector, fake, wrong)).kind, 'AUTH_REFUSED')
     })
 
     it('puts no credential value in any request but the login', async () => {

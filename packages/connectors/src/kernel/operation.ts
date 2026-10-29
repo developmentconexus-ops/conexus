@@ -15,14 +15,44 @@ export type ProviderRequest = Readonly<{
 /** What came back, already parsed as JSON by the executor; the raw text never reaches the kit. */
 export type ProviderAnswer = Readonly<{ status: number; body: unknown }>
 
-/** An operation's outcome as data: a refusal is never an empty list (architecture §1). */
-export type Answered<O> = Readonly<
-  | { kind: 'OK'; value: O }
-  | { kind: 'REFUSED'; reason: 'NO_PERMISSION' | 'INPUT' | 'VENDOR' }
-  | { kind: 'AUTH_REFUSED' }
-  | { kind: 'TOKEN_EXPIRED' } // the executor asks a new token once and repeats; a second time is AUTH_REFUSED
-  | { kind: 'UNREADABLE' }
->
+/** What the provider said when it refused, as it came: the status, where its code and message sit, and the body unchanged. */
+export type Native = Readonly<{
+  status: number
+  code: string | null
+  message: string | null
+  body: unknown
+}>
+
+/** A call that gave no rows. `TOKEN_EXPIRED`: the executor asks a new token once and repeats; a second time is `AUTH_REFUSED`. */
+export type Failure = Readonly<{
+  kind: 'REFUSED' | 'AUTH_REFUSED' | 'TOKEN_EXPIRED' | 'UNREADABLE'
+  native: Native
+}>
+
+/** An operation's outcome as data: a refusal is never an empty list (architecture §1), and carries what the provider said. */
+export type Answered<O> = Readonly<{ kind: 'OK'; value: O }> | Failure
+
+/** What a status outside 2xx means when the connector documents no exception: the key is refused, the request is, or the answer is not understood. */
+export function outcomeOf(status: number): 'AUTH_REFUSED' | 'REFUSED' | 'UNREADABLE' {
+  if (status === 401) return 'AUTH_REFUSED'
+  if (status === 400 || status === 403 || status === 404 || status === 409 || status === 422)
+    return 'REFUSED'
+  return 'UNREADABLE'
+}
+
+/** Where a body usually keeps its code and message, for the logins and the connectors that declare no better place. */
+export function locateOf(body: unknown): Pick<Native, 'code' | 'message'> {
+  const found = z
+    .looseObject({
+      code: z.union([z.string(), z.number()]).optional(),
+      message: z.string().optional(),
+    })
+    .safeParse(body)
+  return {
+    code: found.success && found.data.code !== undefined ? String(found.data.code) : null,
+    message: found.success ? (found.data.message ?? null) : null,
+  }
+}
 
 export const OperationId = z
   .string()

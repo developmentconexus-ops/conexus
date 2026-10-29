@@ -24,19 +24,33 @@ function documented403(codigo: string | number) {
 
 test('o 403 no corpo que as seis páginas documentam dá o mesmo que o code do gateway', () => {
   for (const id of DOCUMENTED) {
-    assert.deepEqual(answer(id, 403, documented403('GTW3403')), { kind: 'TOKEN_EXPIRED' }, id)
-    assert.deepEqual(answer(id, 403, documented403('4303')), { kind: 'AUTH_REFUSED' }, id)
-    assert.deepEqual(answer(id, 403, documented403(4405)), { kind: 'AUTH_REFUSED' }, id)
-    assert.deepEqual(
+    assert.partialDeepStrictEqual(
+      answer(id, 403, documented403('GTW3403')),
+      { kind: 'TOKEN_EXPIRED' },
+      id,
+    )
+    assert.partialDeepStrictEqual(
+      answer(id, 403, documented403('4303')),
+      { kind: 'AUTH_REFUSED' },
+      id,
+    )
+    assert.partialDeepStrictEqual(
+      answer(id, 403, documented403(4405)),
+      { kind: 'AUTH_REFUSED' },
+      id,
+    )
+    assert.partialDeepStrictEqual(
       answer(id, 403, documented403('NO_ACCESS')),
-      { kind: 'REFUSED', reason: 'NO_PERMISSION' },
+      { kind: 'REFUSED' },
       id,
     )
   }
-  assert.deepEqual(answer('clientes', 403, { mensagem: { descricao: 'sem código' } }), {
-    kind: 'REFUSED',
-    reason: 'NO_PERMISSION',
-  })
+  assert.partialDeepStrictEqual(
+    answer('clientes', 403, { mensagem: { descricao: 'sem código' } }),
+    {
+      kind: 'REFUSED',
+    },
+  )
 })
 
 test('o 404 que as seis páginas documentam é a leitura sem linhas; outro 404 não é', () => {
@@ -49,10 +63,10 @@ test('o 404 que as seis páginas documentam é a leitura sem linhas; outro 404 n
   const keysOnly = { statusCode: 404, error: 'Not Found' }
   for (const id of DOCUMENTED) {
     assert.equal(answer(id, 404, notFound).kind, 'OK', id)
-    assert.deepEqual(answer(id, 404, { message: 'nada' }), { kind: 'UNREADABLE' }, id)
-    assert.deepEqual(answer(id, 404, undefined), { kind: 'UNREADABLE' }, id)
-    assert.deepEqual(answer(id, 404, framework), { kind: 'UNREADABLE' }, id)
-    assert.deepEqual(answer(id, 404, keysOnly), { kind: 'UNREADABLE' }, id)
+    assert.partialDeepStrictEqual(answer(id, 404, { message: 'nada' }), { kind: 'REFUSED' }, id)
+    assert.partialDeepStrictEqual(answer(id, 404, undefined), { kind: 'REFUSED' }, id)
+    assert.partialDeepStrictEqual(answer(id, 404, framework), { kind: 'REFUSED' }, id)
+    assert.partialDeepStrictEqual(answer(id, 404, keysOnly), { kind: 'REFUSED' }, id)
   }
   assert.deepEqual(answer('clientes', 404, notFound), {
     kind: 'OK',
@@ -62,5 +76,17 @@ test('o 404 que as seis páginas documentam é a leitura sem linhas; outro 404 n
     kind: 'OK',
     value: { financeiros: [], pagination: null },
   })
-  assert.deepEqual(answer('empresas', 404, notFound), { kind: 'UNREADABLE' })
+  assert.partialDeepStrictEqual(answer('empresas', 404, notFound), { kind: 'REFUSED' })
+})
+
+test('a recusa leva o que o Sankhya disse, o corpo como veio', () => {
+  const body = { mensagem: { codigo: 'NO_ACCESS', descricao: 'sem acesso' }, extra: [1] }
+  assert.deepEqual(answer('clientes', 403, body), {
+    kind: 'REFUSED',
+    native: { status: 403, code: 'NO_ACCESS', message: 'sem acesso', body },
+  })
+  assert.deepEqual(answer('clientes', 503, 'fora do ar'), {
+    kind: 'UNREADABLE',
+    native: { status: 503, code: null, message: null, body: 'fora do ar' },
+  })
 })
