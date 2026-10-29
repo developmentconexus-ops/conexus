@@ -10,12 +10,13 @@ email="${2:?usage: first-person.sh <name> <e-mail>}"
 cd "$(dirname "$0")"
 compose=(docker compose --file compose.yaml)
 
-# Compose needs the variable to read the file, and `ps` does not use its value.
-id="$(HUB_IMAGE=ps-only "${compose[@]}" ps --quiet hub)"
+# Compose needs both variables to read the file, and `ps` uses neither value.
+id="$(HUB_IMAGE=ps-only HUB_E2B_TEMPLATE=ps-only "${compose[@]}" ps --quiet hub)"
 if [ -z "$id" ]; then
   echo "no Hub is running" >&2
   exit 1
 fi
 image="$(docker inspect --format '{{.Config.Image}}' "$id")"
-HUB_IMAGE="$image" timeout 120 "${compose[@]}" run --rm --no-deps -T hub \
+template="$(docker inspect --format '{{range .Config.Env}}{{println .}}{{end}}' "$id" | sed -n 's/^HUB_E2B_TEMPLATE=//p')"
+HUB_IMAGE="$image" HUB_E2B_TEMPLATE="$template" timeout 120 "${compose[@]}" run --rm --no-deps -T hub \
   node apps/server/src/main.ts first-person --name "$name" --email "$email" --summary /dev/stdout

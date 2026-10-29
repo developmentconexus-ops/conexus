@@ -157,3 +157,11 @@ test('os limites de uma chamada que conexus-data diz são os do contrato', () =>
     ),
   )
 })
+
+test('conexus-data manda parar e dizer à pessoa quando falta uma peça de @conexus/app', () => {
+  const data = SKILLS.find(({ directory }) => directory === 'conexus-data')?.content ?? ''
+  assert.match(
+    data,
+    /When one is missing from the installed `@conexus\/app`.*stop and tell the person which piece is missing.*Never imitate the piece on the screen or in a handler, and never say the rule holds\./,
+  )
+})

@@ -224,7 +224,7 @@ too.
 | CPU limits act in seconds, with tolerance | Many looping apps at once slow others | Step 22 load test |
 | The Hub's database never sleeps | The free allowance ends near day 17 and Neon suspends it [0009] | Step 2 test; back to the founder if it fails |
 | Six hours of history on the free plan | A mistake seen the next day cannot be undone | Paid plan with the first company [0009] |
-| The server stops | Hub and published apps stop [0025] | Revisited in step 18 |
+| The server stops | Hub and published apps stop [0025] | Kept: the check stays in the Hub (step 18, `G`) |
 | Betas: Cloudflare e-mail, Workers VPC, Mastra's agent controller, Drizzle 1.0 | An update breaks a path | Versions pinned; fallback named in each record |
 | One E2B key for the founder's account | A release kills another's machine | It kills only this installation's machines [0051] |
 | The publish runner runs as root on the server | Any writer of the repository can command the server [0035] | Accepted by the founder; forks never reach the runner |
