@@ -1,4 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto'
+import { Manifest } from '@conexus/app-contract'
 import type { AppCall, AppCaller, HostLabel, Person } from '@conexus/hub-api'
 import {
   APP_SESSION_HEADER,
@@ -21,7 +22,7 @@ import { COMPANY_DATABASE } from '../../platform/neon.ts'
 import type { IdentityPorts } from '../identity/public.ts'
 import type { ProjectPorts } from '../projects/public.ts'
 import type { AppEnvironment } from './tables.ts'
-import { app, appSession, handoff } from './tables.ts'
+import { app, appSession, appVersion, handoff } from './tables.ts'
 
 export type AppDeps = {
   database: Database
@@ -130,10 +131,16 @@ function redeemHandoff(deps: AppDeps, input: { host: HostLabel; code: string; bi
  * call (S8, S13). The app sees only the caller; the dispatcher also learns the version the session
  * gets and the database its run login reaches, or that the Projeto runs the example app.
  */
-async function checkCall(
+type Admitted = Readonly<{
+  ids: { companyId: CompanyId; projectId: ProjectId }
+  caller: AppCaller
+  environment: AppEnvironment
+}>
+
+async function admitCall(
   deps: AppDeps,
   input: { host: HostLabel; headers: Headers },
-): Promise<AppCall> {
+): Promise<Admitted> {
   const token = AppSessionToken.safeParse(input.headers.get(APP_SESSION_HEADER))
   if (!token.success) throw new Failure('APP_SESSION_INVALID', { details: { reason: 'NO_TOKEN' } })
   const found = await deps.database.installationRead(async (tx) => {
@@ -178,10 +185,58 @@ async function checkCall(
       const { personId, personName } = found
       const { projectName, access } = admitted
       const caller = { personId, personName, projectId: ids.projectId, projectName, access }
-      return callTo(deps, { ...ids, caller, environment })
+      return { ids, caller, environment }
     }
     default:
       return admitted satisfies never
+  }
+}
+
+async function checkCall(
+  deps: AppDeps,
+  input: { host: HostLabel; headers: Headers },
+): Promise<AppCall> {
+  const { ids, caller, environment } = await admitCall(deps, input)
+  return callTo(deps, { ...ids, caller, environment })
+}
+
+/** What the connectors' door needs of an app call: who, and the version the session gets with the connectors it declared. */
+export type ConnectorCall = Readonly<{
+  ids: { companyId: CompanyId; projectId: ProjectId }
+  caller: AppCaller
+  versionId: AppVersionId
+  manifest: Manifest
+}>
+
+/**
+ * `checkCall`'s admission, then the version the session gets and its manifest in one read (the
+ * published one for a tab, the Prévia's for the frame): the connectors check the grant against it.
+ */
+async function connectorCall(
+  deps: AppDeps,
+  input: { host: HostLabel; headers: Headers },
+): Promise<ConnectorCall> {
+  const { ids, caller, environment } = await admitCall(deps, input)
+  const scope = { kind: 'COMPANY', companyId: ids.companyId, personId: caller.personId } as const
+  const [row] = await deps.database.read(scope, (tx) =>
+    tx
+      .select({ id: appVersion.id, manifest: appVersion.manifest })
+      .from(app)
+      .innerJoin(
+        appVersion,
+        eq(appVersion.id, environment === 'published' ? app.publishedVersionId : app.liveVersionId),
+      )
+      .where(eq(app.projectId, ids.projectId)),
+  )
+  if (row === undefined)
+    throw new Failure(environment === 'published' ? 'APP_NOT_PUBLISHED' : 'APP_NOT_FOUND', {
+      details: ids,
+    })
+  return {
+    ids,
+    caller,
+    versionId: AppVersionId.parse(row.id),
+    manifest: Manifest.parse(row.manifest),
   }
 }
 
@@ -250,6 +305,7 @@ export function createAppDoor(deps: AppDeps) {
     createHandoff: (input: Parameters<typeof createHandoff>[1]) => createHandoff(deps, input),
     redeemHandoff: (input: Parameters<typeof redeemHandoff>[1]) => redeemHandoff(deps, input),
     checkCall: (input: Parameters<typeof checkCall>[1]) => checkCall(deps, input),
+    connectorCall: (input: Parameters<typeof connectorCall>[1]) => connectorCall(deps, input),
   })
 }
 export type AppDoor = ReturnType<typeof createAppDoor>

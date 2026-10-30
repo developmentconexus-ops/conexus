@@ -29,7 +29,13 @@ export type ClientCredentialsAuth = Readonly<{
   }>
   answer: z.ZodType<Readonly<{ accessToken: string; expiresInSeconds: number }>>
   // The session's end, sent with the bearer while it lives (an expired token's logout is refused).
-  logout?: Readonly<{ path: `/${string}`; query: Readonly<Record<string, string>>; body: unknown }>
+  // `ended` is what a logout's 2xx body must match to count as done: a gateway may refuse inside a 200.
+  logout?: Readonly<{
+    path: `/${string}`
+    query: Readonly<Record<string, string>>
+    body: unknown
+    ended: z.ZodType
+  }>
 }>
 export type Auth = ClientCredentialsAuth | OAuth2CodeAuth
 
@@ -83,6 +89,16 @@ export function logoutRequest(auth: ClientCredentialsAuth): ProviderRequest | nu
   if (auth.logout === undefined) return null
   const { path, query, body } = auth.logout
   return { method: 'POST', path, query, body }
+}
+
+/** Whether the logout's answer ended the session: a 2xx whose body the connector's `ended` accepts. */
+export function loggedOutBy(auth: ClientCredentialsAuth, answer: ProviderAnswer): boolean {
+  return (
+    auth.logout !== undefined &&
+    answer.status >= 200 &&
+    answer.status < 300 &&
+    auth.logout.ended.safeParse(answer.body).success
+  )
 }
 
 /** What the login answered: a token, a refused key, or a body the kit cannot read. */

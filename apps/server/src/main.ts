@@ -1,9 +1,7 @@
 import { appendFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { parseArgs } from 'node:util'
-import { Email, FAILURES, getStatus } from '@conexus/hub-api'
+import { FAILURES, getStatus } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
-import { z } from 'zod'
 import type { Conversations } from './builder/conversation/public.ts'
 import { createConversations } from './builder/conversation/public.ts'
 import type { GitCopy } from './builder/git/public.ts'
@@ -17,7 +15,8 @@ import {
 } from './builder/model-accounts/public.ts'
 import type { MachinesOf, RepositoryOf, Runs } from './builder/runs/public.ts'
 import { builderPortsOf, createRuns } from './builder/runs/public.ts'
-import type { Apps } from './hub/apps/public.ts'
+import { firstPersonArguments } from './first-person-arguments.ts'
+import type { Apps, Ungranted } from './hub/apps/public.ts'
 import { appAccessOf, createAppRemoval, createApps, versionNumbersOf } from './hub/apps/public.ts'
 import type { ConnectorDeadlines, Connectors } from './hub/connectors/public.ts'
 import { createConnectors, resealConnections } from './hub/connectors/public.ts'
@@ -57,6 +56,8 @@ import { createNeonProjects } from './platform/neon.ts'
 
 const WEB_ROOT = join(import.meta.dirname, '..', '..', 'web', 'dist')
 
+// Within the 15 s shutdown deadline: each live provider token's logout gets this long.
+const SHUTDOWN_LOGOUT_MS = 5_000
 /** `webRoot` is where the built screens are; without them `/` answers 404. */
 export async function createHub(
   config: Config,
@@ -95,10 +96,11 @@ export async function createHub(
 /** The listener on `HUB_EDGE_PORT`: the apps' dispatcher's calls and nothing else (security S48). */
 export async function createEdgeHub(
   config: Config,
-  deps: { apps: Apps },
+  deps: { apps: Apps; connectors: Connectors },
 ): Promise<FastifyInstance> {
   const edge = await createEdgeServer(config)
   deps.apps.edgeRoutes(edge)
+  deps.connectors.edgeRoutes(edge)
   await edge.ready()
   return edge
 }
@@ -168,12 +170,14 @@ export function subjectsOf(deps: {
     ...{ database, identity, projects: projects.ports },
     ...{ appRemoval, releaseConversations },
   })
-  const apps = createApps({ ...deps, identity, projects: projects.ports, appsDomain })
+  // The connectors come below, after the apps whose door they read; a publish comes long after.
+  const ungranted: Ungranted = (tx, ids, declared) => connectors.ungranted(tx, ids, declared)
+  const apps = createApps({ ...deps, identity, projects: projects.ports, appsDomain, ungranted })
   const flows = signInFlows({ cliProxy: config.cliProxy, log })
   const modelAccounts = createModelAccounts({
     ...{ database, identity, sealKeys, flows, log, googleCalls: google.googleCalls },
   })
-  const connectors = createConnectors({ ...deps, identity })
+  const connectors = createConnectors({ ...deps, identity, door: apps.connectorCall })
   return { runs, projects, operations, apps, modelAccounts, conversations, connectors }
 }
 
@@ -199,13 +203,17 @@ async function runServer(): Promise<void> {
       ...{ neon, companyPostgres, cloudflare, mastraPool, log },
       ...builderPortsOf({ config, log }),
     })
-    const { projects, apps, conversations, modelAccounts, runs } = subjects
+    const { projects, apps, conversations, modelAccounts, runs, connectors } = subjects
     await conversations.prepare()
     const app = await createHub(config, { status, identity, ...subjects })
-    const edge = await createEdgeHub(config, { apps })
+    const edge = await createEdgeHub(config, { apps, connectors })
     const grace = shutDownOnSignal(app, edge, {
       drain: () => conversations.close(),
-      release: () => Promise.all([database.close(), mastraPool.end()]).then(() => undefined),
+      // Every live provider token is logged out before the database closes.
+      release: () =>
+        connectors
+          .closeAll(SHUTDOWN_LOGOUT_MS)
+          .finally(() => Promise.all([database.close(), mastraPool.end()]).then(() => undefined)),
     })
     try {
       await listenQuietly(edge, config.edgePort)
@@ -247,25 +255,6 @@ async function runMigrate(): Promise<void> {
   const log = bootLog(config.logLevel)
   log.info('MASTRA_LOGIN_READY')
   log.info('MIGRATED')
-}
-
-const FirstPersonArguments = z.object({
-  name: z.string().trim().min(1),
-  email: Email,
-  summary: z.string().min(1),
-})
-
-function firstPersonArguments(args: string[]) {
-  const { values } = parseArgs({
-    args,
-    options: { name: { type: 'string' }, email: { type: 'string' }, summary: { type: 'string' } },
-  })
-  const parsed = FirstPersonArguments.safeParse(values)
-  if (!parsed.success) {
-    const variables = parsed.error.issues.map((issue) => `--${String(issue.path[0])}`).join(',')
-    throw new Failure('CONFIG_INVALID', { details: { variables } })
-  }
-  return parsed.data
 }
 
 async function runFirstPerson(args: string[]): Promise<void> {

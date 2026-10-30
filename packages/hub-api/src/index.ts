@@ -46,6 +46,7 @@ export {
   HANDOFF_PATH,
   HANDOFF_SECONDS,
   listAppVersions,
+  type OfProject,
   publishAppVersion,
   VersionFileInput,
 } from './apps.ts'
@@ -105,6 +106,7 @@ export {
   ConnectionId,
   ConnectionList,
   ConnectionName,
+  ConnectionNote,
   ConnectionSignInId,
   type ConnectionState,
   ConnectorEntry,
@@ -224,6 +226,17 @@ export {
   registerClient,
 } from './operations.ts'
 export { PAGES, REDIRECT_PATH } from './pages.ts'
+export {
+  APP_CONNECTOR_REPLY_BYTES,
+  callAppConnector,
+  deleteConnectionNote,
+  Grant,
+  grantProjectConnection,
+  listAppConnections,
+  listProjectConnections,
+  ProjectConnections,
+  revokeProjectConnection,
+} from './project-connections.ts'
 export {
   createProject,
   deleteProject,

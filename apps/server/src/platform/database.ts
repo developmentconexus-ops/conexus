@@ -13,6 +13,10 @@ import { Secret } from './secret.ts'
 
 export const MIGRATIONS_FOLDER = join(import.meta.dirname, '..', '..', 'migrations')
 export const POOL_LIMITS = {
+  // 20: an app's call holds none while the provider answers (D22), so this is the calls' short
+  // transactions at once. Neon's smallest machine allows about 104 connections, less Mastra's pool
+  // and the reserved ones (neon.com/docs/connect/connection-pooling#connection-limits, read at build).
+  max: 20,
   connectionTimeoutMillis: 5_000,
   idleTimeoutMillis: 10_000,
   min: 0,
@@ -130,6 +134,11 @@ export function violatedConstraint(error: unknown): string | undefined {
 /** The foreign key a reference violation (23503) names, read by SQLSTATE and name (code C52). */
 export function violatedReference(error: unknown): string | undefined {
   return constraintOf(error, '23503')
+}
+
+/** The check constraint a violation (23514) names, read by SQLSTATE and name (code C52). */
+export function violatedCheck(error: unknown): string | undefined {
+  return constraintOf(error, '23514')
 }
 
 function constraintOf(error: unknown, sqlstate: string): string | undefined {

@@ -96,6 +96,14 @@ export const APP_VERSION_FAILURES = {
     action: 'Peça ao Builder uma migração nova, sem mudar a que já foi aplicada.',
     actionKind: 'NONE',
   },
+  CONNECTOR_NOT_GRANTED: {
+    category: 'USER',
+    settles: true,
+    status: 409,
+    phrase: 'Este app usa um sistema que o Projeto não liberou.',
+    action: 'Libere em Integrações do Projeto.',
+    actionKind: 'NONE',
+  },
   APP_VERSION_NOT_FOUND: {
     category: 'USER',
     settles: true,

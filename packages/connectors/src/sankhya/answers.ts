@@ -2,7 +2,7 @@ import { z } from 'zod'
 import type { Answered, Failure, Native, ProviderAnswer } from '../kernel/operation.ts'
 import { failedBy, shapeOf } from '../kernel/operation.ts'
 import type { Rows } from '../kernel/rows.ts'
-import { listOf } from '../kernel/rows.ts'
+import { CONCURRENT_CALL, listOf } from '../kernel/rows.ts'
 
 const Text = z.union([z.string(), z.number()])
 const Refusal = z.looseObject({
@@ -141,7 +141,7 @@ export function gatewayAnswer<O>(answer: ProviderAnswer, responseBody: z.ZodType
       kind: 'UNREADABLE',
       native: {
         status: answer.status,
-        code: status,
+        code: CONCURRENT_CALL,
         message: statusMessage ?? null,
         body: answer.body,
       },

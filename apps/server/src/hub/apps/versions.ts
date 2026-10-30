@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { Manifest } from '@conexus/app-contract'
-import type { AppVersion, CompanyId, PersonId, ProjectId, VersionFileInput } from '@conexus/hub-api'
+import type { AppVersion, OfProject, PersonId, ProjectId, VersionFileInput } from '@conexus/hub-api'
 import { AppVersionFailure, AppVersionId } from '@conexus/hub-api'
 import { and, desc, eq, inArray, sql } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
@@ -90,8 +90,6 @@ export function versionView(row: VersionRow, pointers: Pointers): AppVersion {
     published: row.id === pointers.publishedVersionId,
   }
 }
-
-type OfProject = { companyId: CompanyId; projectId: ProjectId }
 
 /** The Projeto's app row, made on its first send and held until the transaction ends (code C65). */
 export async function lockApp(tx: CommandTx, ids: OfProject) {

@@ -1,4 +1,3 @@
-import { setTimeout as sleep } from 'node:timers/promises'
 import type {
   AccountOf,
   AccountRef,
@@ -6,14 +5,14 @@ import type {
   AppKeys,
   ClientCredentialsAuth,
   Connector,
-  ConnectorId,
   codeRequest,
   GrantAnswered,
   Native,
   Operation,
-  ProviderAnswer,
 } from '@conexus/connectors'
 import {
+  loggedOutBy,
+  logoutRequest,
   readGrant,
   readToken,
   requestOf,
@@ -21,16 +20,16 @@ import {
   tokenRequest,
   toRequest,
 } from '@conexus/connectors'
-import type { ConnectionId, ConnectionSignInId } from '@conexus/hub-api'
+import type { ConnectionId } from '@conexus/hub-api'
 import { z } from 'zod'
-import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
-import { retryAfterMs } from '../../platform/retry-after.ts'
 import type { Credential } from '../../platform/seal.ts'
 import { Secret } from '../../platform/secret.ts'
 import type { OAuthConnector } from './apps.ts'
-import type { Redaction, Unreadable } from './wire.ts'
-import { answerOf, bodyOf, isOk, nativeOf, unreadable } from './wire.ts'
+import type { ExecutorDeps, Where } from './send.ts'
+import { send, sendRead, unreachableAt, whereOf } from './send.ts'
+import type { Unreadable } from './wire.ts'
+import { isOk, nativeOf } from './wire.ts'
 
 /** A bearer token inside the program: printed, it shows only its name, as a sealed credential. */
 export type BearerToken = Secret<'BearerToken'>
@@ -48,31 +47,32 @@ export type OpenedConnection = Readonly<{
   accountRef: AccountRef | null
 }>
 
-/** What a log line about one exchange with the provider names: the connection, or the authorization before it exists. */
-type Where = Readonly<
-  { connector: ConnectorId } & ({ connectionId: ConnectionId } | { signInId: ConnectionSignInId })
->
+import type { Unreachable } from './send.ts'
 
 /** The exchange or the renewal, as the kit builds it. */
 type TokenRequest = ReturnType<typeof codeRequest>
 
-/** The provider could not be reached (or answered 5xx): `native` is what it said, when it said anything. */
-type Unreachable = Readonly<{ kind: 'UNREACHABLE'; native: Native | null }>
 /** What the provider answered to taking the grant back: done, or it refused (`native`), or it could not be reached. */
 type Revoked =
   | Readonly<{ kind: 'REVOKED' }>
   | Readonly<{ kind: 'REFUSED'; native: Native }>
   | Unreachable
+/** What the provider answered to ending a token's session: done, refused, or not reached. */
+type LoggedOut = 'LOGGED_OUT' | 'REFUSED' | 'UNREACHABLE'
 export type Login =
   | Readonly<{ kind: 'TOKEN'; token: BearerToken }>
   | Readonly<{ kind: 'AUTH_REFUSED'; native: Native }>
   | Unreadable
   | Unreachable
+/** A pasted-key login: the token and how long the provider says it lives. */
+type PastedLogin =
+  | Readonly<{ kind: 'TOKEN'; token: BearerToken; expiresInSeconds: number }>
+  | Exclude<Login, { kind: 'TOKEN' }>
 
 /** The one place the Hub opens a connector's credential and talks to its provider (decision 0056). */
 export type Executor = {
-  /** A new token for an opened connection: the login, sent once (no cache in step 19), given up on after `deadlineMs`. */
-  login(connection: OpenedConnection, deadlineMs: number): Promise<Login>
+  /** A new token for an opened connection: the login, sent once (`limits.ts` owns when), given up on after `deadlineMs`. */
+  login(connection: OpenedConnection, deadlineMs: number): Promise<PastedLogin>
   /**
    * Calls one operation with that token, given up on after `deadlineMs`; never logs input, output
    * or credential (S41). Transport, deadline, redirect and 5xx are UNREACHABLE; the kit's Answered
@@ -86,6 +86,17 @@ export type Executor = {
     input: I,
     deadlineMs: number,
   ): Promise<Answered<O> | Unreachable>
+  /**
+   * Ends the session of a pasted-key connection's token at the provider, as the connector declares
+   * it, while the token lives (an expired token's logout is refused). Nothing is sent, and null
+   * comes back, when the connector declares none; a refusal or a connector that cannot be reached
+   * is logged by name and never thrown.
+   */
+  logout(
+    connection: Pick<OpenedConnection, 'id' | 'connector'>,
+    token: BearerToken,
+    deadlineMs: number,
+  ): Promise<LoggedOut | null>
   /**
    * Sends an OAuth exchange or renewal and reads it by the kit. A 429 is UNREACHABLE, as a 5xx. A
    * refusal's body comes back with `secrets` replaced; a 2xx reaches the kit whole, since it may
@@ -132,95 +143,6 @@ function valuesOf(
   }
 }
 
-/**
- * What fetch documents for a provider that cannot be reached: a network failure or a refused
- * redirect (TypeError), the deadline (TimeoutError) or an abort. Anything else is a bug and goes up.
- * The scalars a log may carry: the error's name and the system code of its cause (ECONNREFUSED...).
- */
-function unreachableCause(error: unknown): Record<string, string> | undefined {
-  const known =
-    error instanceof TypeError ||
-    (error instanceof DOMException && ['TimeoutError', 'AbortError'].includes(error.name))
-  if (!known) return undefined
-  const code = z.object({ code: z.string() }).safeParse(error.cause)
-  return code.success ? { kind: error.name, cause: code.data.code } : { kind: error.name }
-}
-
-type ExecutorDeps = {
-  fetch: typeof fetch
-  origins: ReadonlyMap<ConnectorId, string>
-  log: FailureLog
-}
-
-/**
- * Sends one request (the OS's `send`): a redirect refused by fetch, every body read up to the cap
- * and parsed only at the end, every body redacted of `secrets` first. A 5xx is UNREACHABLE and
- * keeps what it said. What is logged is scalars: the connection, the status or the error's name
- * and cause code; never a body.
- */
-async function send(
-  deps: ExecutorDeps,
-  request: Request,
-  where: Where,
-  redaction: Redaction,
-  deadlineMs: number,
-): Promise<ProviderAnswer | Unreadable | Unreachable> {
-  // Outside the `try`: a deadline the timer refuses is the caller's mistake, not the provider down.
-  const signal = AbortSignal.timeout(deadlineMs)
-  try {
-    const response = await deps.fetch(request, { signal })
-    const { status } = response
-    const bytes = await bodyOf(response)
-    const wait =
-      status === 429 ? retryAfterMs(Object.fromEntries(response.headers), Date.now()) : undefined
-    const answer = bytes === null ? null : answerOf(status, bytes, redaction, wait)
-    if (status >= 500) return unreachableAt(deps, where, status, answer?.body ?? null)
-    return answer ?? unreadable(status, bytes)
-  } catch (error) {
-    const cause = unreachableCause(error)
-    if (cause === undefined) throw error
-    deps.log.info({ ...where, ...cause }, 'CONNECTOR_UNREACHABLE')
-    return { kind: 'UNREACHABLE', native: null }
-  }
-}
-
-/**
- * `send`, and when the provider answered 429 with a wait that fits what is left of the deadline, the
- * wait and one repeat on a fresh request, since a read's body (Sankhya's POST reads) is spent by the
- * first send. Only a read repeats (`repeat`): a write is never sent twice.
- */
-async function sendRead(
-  deps: ExecutorDeps,
-  requestFor: () => Request,
-  where: Where,
-  redaction: Redaction,
-  a: Readonly<{ deadlineMs: number; repeat: boolean }>,
-): Promise<ProviderAnswer | Unreadable | Unreachable> {
-  const started = performance.now()
-  const sent = await send(deps, requestFor(), where, redaction, a.deadlineMs)
-  if (!a.repeat || 'kind' in sent || sent.status !== 429 || sent.retryAfterMs === undefined)
-    return sent
-  if (sent.retryAfterMs >= a.deadlineMs - (performance.now() - started) - 1) return sent
-  await sleep(sent.retryAfterMs)
-  const remaining = Math.floor(a.deadlineMs - (performance.now() - started))
-  return send(deps, requestFor(), where, redaction, remaining)
-}
-
-function unreachableAt(
-  deps: ExecutorDeps,
-  where: Where,
-  status: number,
-  body: unknown,
-): Unreachable {
-  deps.log.info({ ...where, status }, 'CONNECTOR_UNREACHABLE')
-  return { kind: 'UNREACHABLE', native: nativeOf(status, body) }
-}
-
-/** Whose connection a call is about, for the log. */
-function whereOf(connection: OpenedConnection): Where {
-  return { connectionId: connection.id, connector: connection.connector.id }
-}
-
 /** The connector's declared revoke, sent with the connection's token; null when it declares none or the connection has no account yet. */
 async function revoked(
   deps: ExecutorDeps,
@@ -257,24 +179,74 @@ async function revoked(
     : { kind: 'REFUSED', native: nativeOf(sent.status, sent.body) }
 }
 
+/** The pasted-key login, sent once to the connector's token path with the opened values. */
+async function loggedIn(
+  deps: ExecutorDeps,
+  a: Readonly<{ connection: OpenedConnection; origin: string }>,
+  deadlineMs: number,
+): Promise<PastedLogin> {
+  const { connection } = a
+  const { connector } = connection
+  const auth = connector.auth
+  if (auth.kind !== 'client_credentials') throw new Error(`No pasted login for ${auth.kind}`)
+  const values = valuesOf(connection, auth)
+  const request = toRequest(connector, tokenRequest(auth, values), null, a.origin)
+  const redaction = { secrets: Object.values(values), whole2xx: false }
+  const sent = await send(deps, request, whereOf(connection), redaction, deadlineMs)
+  if ('kind' in sent) return sent
+  const token = readToken(auth, sent)
+  if (token.kind !== 'OK') return token
+  return {
+    kind: 'TOKEN',
+    token: new Secret('BearerToken', token.accessToken),
+    expiresInSeconds: token.expiresInSeconds,
+  }
+}
+
+/** The connector's declared logout, sent with the token while it lives; null when it declares none. */
+async function loggedOut(
+  deps: ExecutorDeps,
+  a: Readonly<{
+    connection: Pick<OpenedConnection, 'id' | 'connector'>
+    token: BearerToken
+    origin: string
+  }>,
+  deadlineMs: number,
+): Promise<LoggedOut | null> {
+  const { connection, token } = a
+  const { auth } = connection.connector
+  if (auth.kind !== 'client_credentials') return null
+  const request = logoutRequest(auth)
+  if (request === null) return null
+  const where = whereOf(connection)
+  const redaction = { secrets: [token.reveal()], whole2xx: false }
+  const sent = await send(
+    deps,
+    toRequest(connection.connector, request, token.reveal(), a.origin),
+    where,
+    redaction,
+    deadlineMs,
+  )
+  if ('kind' in sent) {
+    deps.log.info(where, 'CONNECTOR_LOGOUT_FAILED')
+    return sent.kind === 'UNREACHABLE' ? 'UNREACHABLE' : 'REFUSED'
+  }
+  if (!loggedOutBy(auth, sent)) {
+    deps.log.info({ ...where, status: sent.status }, 'CONNECTOR_LOGOUT_FAILED')
+    return 'REFUSED'
+  }
+  deps.log.info(where, 'CONNECTOR_LOGGED_OUT')
+  return 'LOGGED_OUT'
+}
+
 export function createExecutor(deps: ExecutorDeps): Executor {
   function originOf(connector: Connector): string {
     return deps.origins.get(connector.id) ?? connector.origin
   }
 
   return {
-    async login(connection, deadlineMs) {
-      const { connector } = connection
-      const auth = connector.auth
-      if (auth.kind !== 'client_credentials') throw new Error(`No pasted login for ${auth.kind}`)
-      const values = valuesOf(connection, auth)
-      const request = toRequest(connector, tokenRequest(auth, values), null, originOf(connector))
-      const redaction = { secrets: Object.values(values), whole2xx: false }
-      const sent = await send(deps, request, whereOf(connection), redaction, deadlineMs)
-      if ('kind' in sent) return sent
-      const token = readToken(auth, sent)
-      if (token.kind !== 'OK') return token
-      return { kind: 'TOKEN', token: new Secret('BearerToken', token.accessToken) }
+    login(connection, deadlineMs) {
+      return loggedIn(deps, { connection, origin: originOf(connection.connector) }, deadlineMs)
     },
 
     async call(connection, token, operation, input, deadlineMs) {
@@ -296,6 +268,14 @@ export function createExecutor(deps: ExecutorDeps): Executor {
         repeat: operation.idempotent,
       })
       return 'kind' in sent ? sent : operation.answer(sent)
+    },
+
+    logout(connection, token, deadlineMs) {
+      return loggedOut(
+        deps,
+        { connection, token, origin: originOf(connection.connector) },
+        deadlineMs,
+      )
     },
 
     async grant(where, connector, request, secrets, deadlineMs) {

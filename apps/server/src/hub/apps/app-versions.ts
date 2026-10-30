@@ -2,6 +2,7 @@ import type { CompanyId, Person, PersonId, PreviewData, ProjectId, RunId } from 
 import { PreviewFailure } from '@conexus/hub-api'
 import { databaseFailure } from '../../platform/database.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
+import type { Ungranted } from './live.ts'
 import { publishVersion } from './live.ts'
 import type { SendDeps } from './send.ts'
 import { admitReader, sendVersion } from './send.ts'
@@ -53,7 +54,7 @@ async function sendFromBuilder(
 }
 
 /** What the routes reach a Projeto's versions through, each act bound to its dependencies. */
-export function createAppVersions(deps: SendDeps) {
+export function createAppVersions(deps: SendDeps & { ungranted: Ungranted }) {
   return Object.freeze({
     sendFromBuilder: (input: BuilderVersion) => sendFromBuilder(deps, input),
     publish: (input: Parameters<typeof publishVersion>[1]) => publishVersion(deps, input),

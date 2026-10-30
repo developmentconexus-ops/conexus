@@ -57,6 +57,8 @@ export const sankhya = defineConnector({
       path: '/gateway/v1/mge/service.sbr',
       query: { serviceName: 'MobileLoginSP.logout', outputType: 'json' },
       body: { serviceName: 'MobileLoginSP.logout', requestBody: {} },
+      // The gateway answers a refused logout with 200 and the envelope "4" or a rule status, never "1".
+      ended: z.object({ status: z.literal('1') }),
     },
     answer: z
       .object({

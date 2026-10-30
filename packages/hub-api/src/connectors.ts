@@ -117,9 +117,9 @@ const PastedCredential = z
   .refine((fields) => Object.keys(fields).length <= 8)
 
 const InCompany = z.object({ companyId: CompanyId })
-const OfConnection = InCompany.extend({ connectionId: ConnectionId })
+export const OfConnection = InCompany.extend({ connectionId: ConnectionId })
 const OfSignIn = InCompany.extend({ signInId: ConnectionSignInId })
-const READ_FAILURES = ['NOT_FOUND', 'SESSION_REQUIRED', 'DATABASE_UNAVAILABLE'] as const
+export const READ_FAILURES = ['NOT_FOUND', 'SESSION_REQUIRED', 'DATABASE_UNAVAILABLE'] as const
 
 export const listConnections = defineOperation({
   id: 'listConnections',
@@ -185,8 +185,22 @@ export const testConnection = defineOperation({
   failures: [...READ_FAILURES, 'CONNECTION_NOT_FOUND', 'SEAL_REFUSED', 'CONNECTOR_NOT_CONFIGURED'],
 })
 
-/** One connection, as every member reads it. */
-export const ConnectionDetail = z.object({ connection: Connection })
+/** What the Builder proved about a connection's system: names and codes, never a value (founder, J1). */
+export const ConnectionNote = z.object({
+  concept: z.string().min(1).max(120),
+  mapping: z.string().min(1).max(500),
+  provedAt: z.iso.datetime(),
+  provedRows: z.int().nonnegative(),
+  // null: who wrote it has left the company.
+  writtenBy: z.string().nullable(),
+})
+export type ConnectionNote = z.infer<typeof ConnectionNote>
+
+/** One connection, as every member reads it, with the Builder's notebook. */
+export const ConnectionDetail = z.object({
+  connection: Connection,
+  notes: z.array(ConnectionNote),
+})
 export type ConnectionDetail = z.infer<typeof ConnectionDetail>
 
 export const getConnection = defineOperation({

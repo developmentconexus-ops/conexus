@@ -18,6 +18,7 @@ import { Credential, open, seal } from '../../platform/seal.ts'
 import type { OAuthConnector } from './apps.ts'
 import { appKeysOf, isOAuth } from './apps.ts'
 import type { BearerToken, OpenedConnection } from './executor.ts'
+import { notesOf } from './notes.ts'
 import type { Deps, OfConnection, Viewer } from './rows.ts'
 import { admitted, columns, ofCompany, scopeOf, sealContext, sealedOf, viewOf } from './rows.ts'
 import { connection } from './tables.ts'
@@ -146,11 +147,11 @@ export async function link(deps: Deps, input: Link) {
  * revision, who linked and when, and no last test. A Testar still running on the old fields
  * compares `linked_at` and writes nothing over it.
  */
-export function reconnect(
+export async function reconnect(
   deps: Deps,
   input: OfConnection & { credential: Record<string, string> },
 ): Promise<Connection> {
-  return deps.database.command(scopeOf(input), async (tx) => {
+  const reconnected = await deps.database.command(scopeOf(input), async (tx) => {
     await admitted(deps, tx, input, 'manageConnections')
     const [row] = await tx
       .select({ connector: connection.connectorId })
@@ -182,6 +183,9 @@ export function reconnect(
     if (updated === undefined) throw new Failure('CONNECTION_NOT_FOUND')
     return viewOf(updated)
   })
+  // The old keys' token is logged out after the write, as a warning if it fails (the executor logs it).
+  await deps.limits.forget(input.connectionId)
+  return reconnected
 }
 
 /** The sealed values as they were sealed, the connector's fields in its own order, to compare a replay. */
@@ -297,6 +301,7 @@ export async function unlink(deps: Deps, input: Viewer & { connectionId: Connect
       .where(ofCompany(input, input.connectionId))
       .returning({ id: connection.id })
   })
+  await deps.limits.forget(input.connectionId)
   return {
     removed: removed.length > 0,
     revocation: removed.length > 0 ? revocation : ('NONE' as const),
@@ -307,6 +312,9 @@ export async function unlink(deps: Deps, input: Viewer & { connectionId: Connect
 export function detail(deps: Deps, input: OfConnection): Promise<ConnectionDetail> {
   return deps.database.read(scopeOf(input), async (tx) => {
     await admitted(deps, tx, input, 'readConnections')
-    return { connection: await viewIn(tx, input, input.connectionId) }
+    return {
+      connection: await viewIn(tx, input, input.connectionId),
+      notes: await notesOf(tx, input),
+    }
   })
 }

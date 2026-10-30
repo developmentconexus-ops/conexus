@@ -3,6 +3,7 @@ import type { Database } from '../../platform/database.ts'
 import { createAppVersions } from './app-versions.ts'
 import type { AppDeps } from './handoff.ts'
 import { createAppDoor, endAppSessions } from './handoff.ts'
+import type { Ungranted } from './live.ts'
 import type { RemovalDeps } from './removal.ts'
 import {
   claimForDeletion,
@@ -21,6 +22,8 @@ export { PRUNE_BUDGET_MS } from './prune.ts'
 export { versionNumbersOf } from './versions.ts'
 
 export type Apps = ReturnType<typeof createApps>
+export type { ConnectorCall } from './handoff.ts'
+export type { Ungranted } from './live.ts'
 
 /**
  * What Projects asks of the apps for who uses them: the published version's roles, and the end of a
@@ -55,7 +58,7 @@ export function createAppRemoval(deps: RemovalDeps) {
  * 14.1), which every member lists and publishes. It reaches identity and Projects only
  * through their ports (code C4), Neon and Cloudflare only through the ports `main.ts` hands it (C56).
  */
-export function createApps(deps: AppDeps & RepairDeps) {
+export function createApps(deps: AppDeps & RepairDeps & { ungranted: Ungranted }) {
   const door = createAppDoor(deps)
   const versions = createAppVersions(deps)
   return Object.freeze({
@@ -64,6 +67,8 @@ export function createApps(deps: AppDeps & RepairDeps) {
       registerVersionRoutes(app, versions)
     },
     edgeRoutes: (edge: FastifyInstance) => registerEdgeRoutes(edge, door),
+    /** What the connectors' door asks of an app call: who, the version the session gets and its manifest (step 20). */
+    connectorCall: door.connectorCall,
     /** One pass over the companies' apps at start (architecture §8). */
     repair: () => repairApps(deps),
     /** Where a Builder turn's version goes to the Projeto's app (step 14.1). */

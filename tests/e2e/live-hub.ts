@@ -150,7 +150,7 @@ export async function liveHub(
   closing.hub = function closeHub() {
     return closeListeners([app], () => conversations.close())
   }
-  const edge = await createEdgeHub(config, { apps })
+  const edge = await createEdgeHub(config, { apps, connectors })
   t.after(() => edge.close())
   await app.listen({ host: '127.0.0.1', port: 0 })
   await edge.listen({ host: '127.0.0.1', port: 0 })
