@@ -103,9 +103,9 @@ export function registerConnectionRoutes(app: FastifyInstance, deps: Deps): void
   )
 
   serve(app, unlinkConnection, async ({ person, params, log }) => {
-    const { removed } = await unlink(deps, { person, ...params })
+    const { removed, revocation } = await unlink(deps, { person, ...params })
     if (removed)
       log.info({ by: person.id, connectionId: params.connectionId }, 'CONNECTION_REMOVED')
-    return answer(undefined)
+    return answer({ revocation })
   })
 }

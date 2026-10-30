@@ -1,8 +1,11 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import { z } from 'zod'
+import { revokeRequest } from '../kernel/oauth.ts'
+import { mercadoLivre } from './definition.ts'
 import { downloadPages, inBrowser, routeInPage } from './docs-source.ts'
 import { mercadoLivreFake } from './fake.ts'
+import { APP } from './fake-data.ts'
 import { docsOf } from './operations/shared.ts'
 import { ACCOUNT, probeAll } from './test-session.ts'
 
@@ -25,6 +28,17 @@ const ONLINE = MERCADO_LIVRE_DOCS_ONLINE === '1'
 const SKIP = 'opt-in: sem MERCADO_LIVRE_DOCS_ONLINE: a conferência com a documentação não rodou'
 
 const SELLER = ACCOUNT.ref
+
+// The page the revoke cites (definition.ts), the route Desligar sends.
+const REVOKE_PAGE = 'usuarios-e-aplicativos'
+
+function revokeRoute() {
+  const auth = mercadoLivre.auth
+  assert.equal(auth.kind, 'oauth2_code')
+  const request = revokeRequest(auth, { accountRef: SELLER, clientId: APP.clientId })
+  assert.ok(request)
+  return { method: request.method, path: request.path, variable: [SELLER, APP.clientId] }
+}
 
 describe('o conferidor de rotas', () => {
   const page = `Pesquisar\ncurl -X GET -H 'Authorization: Bearer $ACCESS_TOKEN' https://api.mercadolibre.com/users/$USER_ID/items/search?status=active`
@@ -73,6 +87,14 @@ describe('o conferidor de rotas', () => {
   })
 })
 
+describe('a rota de revogar', () => {
+  it('é achada na página que a escreve com a conta e o aplicativo como ela os nomeia', () => {
+    const page = `Revogar permissão\ncurl -X DELETE -H 'Authorization: Bearer $ACCESS_TOKEN' https://api.mercadolibre.com/users/$USER_ID/applications/$APP_ID`
+    assert.equal(routeInPage(page, revokeRoute()), true)
+    assert.equal(routeInPage(page, { ...revokeRoute(), method: 'GET' }), false)
+  })
+})
+
 describe('a conferência com a documentação', { skip: ONLINE ? false : SKIP }, () => {
   it('cada leitura tem a sua rota na página que ela cita, baixada na hora', async () => {
     const sent = await probeAll(mercadoLivreFake())
@@ -102,5 +124,11 @@ describe('a conferência com a documentação', { skip: ONLINE ? false : SKIP },
       verdicts.filter((verdict) => verdict.startsWith('MISS')),
       [],
     )
+  })
+
+  it('a rota de revogar está na página que a definição cita, baixada na hora', async () => {
+    const pages = await inBrowser((fetchPage) => downloadPages([REVOKE_PAGE], fetchPage), SAVE_TO)
+    const text = pages.get(REVOKE_PAGE)
+    assert.ok(text !== undefined && routeInPage(text, revokeRoute()))
   })
 })

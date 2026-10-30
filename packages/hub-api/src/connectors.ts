@@ -208,15 +208,24 @@ export const getConnection = defineOperation({
   failures: [...READ_FAILURES, 'CONNECTION_NOT_FOUND'],
 })
 
+/**
+ * What Desligar did at the provider: `NONE` when the connector declares no revoke (or the
+ * connection was already gone), `REVOKED` when the provider took the authorization back, else why
+ * it stayed: refused, unreachable, or never sent because the sealed keys would not open.
+ */
+export const Revocation = z.enum(['NONE', 'REVOKED', 'REFUSED', 'UNREACHABLE', 'NOT_SENT'])
+export type Revocation = z.infer<typeof Revocation>
+
 export const unlinkConnection = defineOperation({
   id: 'unlinkConnection',
-  summary: 'Removes a connection and its sealed fields; removing it again answers the same.',
+  summary:
+    'Removes a connection and its sealed fields, after asking the provider to take the authorization back when the connector can; removing it again answers the same.',
   access: 'session',
   method: 'DELETE',
   path: '/api/companies/{companyId}/connections/{connectionId}',
   bodyLimit: 1024,
   input: { params: OfConnection },
-  success: { status: 204 },
+  success: { status: 200, body: z.object({ revocation: Revocation }) },
   failures: READ_FAILURES,
 })
 

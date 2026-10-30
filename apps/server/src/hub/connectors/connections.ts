@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import type { ClientCredentialsAuth, Connector } from '@conexus/connectors'
+import type { AppKeys, ClientCredentialsAuth, Connector, Native } from '@conexus/connectors'
 import { CONNECTORS, connectorOf, inProbeOrder } from '@conexus/connectors'
 import type {
   CompanyId,
@@ -7,6 +7,7 @@ import type {
   ConnectionDetail,
   ConnectionList,
   ConnectorEntry,
+  Revocation,
 } from '@conexus/hub-api'
 import { ConnectionId, ConnectionName, KeptCheck } from '@conexus/hub-api'
 import { and, asc, eq, sql } from 'drizzle-orm'
@@ -15,9 +16,14 @@ import type { ReadTx } from '../../platform/database.ts'
 import { transactionLock, violatedConstraint } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import { Credential, open, seal } from '../../platform/seal.ts'
+import type { OAuthConnector } from './apps.ts'
+import { appKeysOf, isOAuth } from './apps.ts'
+import type { BearerToken, OpenedConnection } from './executor.ts'
 import type { Deps, OfConnection, Viewer } from './rows.ts'
 import { admitted, columns, ofCompany, scopeOf, sealContext, sealedOf, viewOf } from './rows.ts'
 import { connection } from './tables.ts'
+import { opened } from './testing.ts'
+import { accessFor, statusOf } from './tokens.ts'
 
 const NAME_KEY = 'connection_name_key'
 
@@ -196,16 +202,109 @@ async function viewIn(tx: ReadTx, viewer: Viewer, id: ConnectionId): Promise<Con
   return viewOf(row)
 }
 
-/** Removes a connection and its seal; removing one already gone answers the same (criterion 13). */
-export function unlink(deps: Deps, input: Viewer & { connectionId: ConnectionId }) {
-  return deps.database.command(scopeOf(input), async (tx) => {
+/** Where the grant stands at the provider after Desligar's try; each but REVOKED is also a named log line. */
+async function revoked(deps: Deps, input: OfConnection): Promise<Revocation> {
+  const [row] = await deps.database.read(scopeOf(input), (tx) =>
+    tx
+      .select({ connector: connection.connectorId })
+      .from(connection)
+      .where(ofCompany(input, input.connectionId)),
+  )
+  const declared = row === undefined ? undefined : connectorOf(row.connector)
+  if (declared === undefined || !isOAuth(declared) || declared.auth.revoke === undefined)
+    return 'NONE'
+  const where = whereOf(input, declared)
+  let open: OpenedConnection
+  let app: AppKeys
+  try {
+    app = appKeysOf(deps.apps, declared)
+    open = await opened(deps, input)
+  } catch (error) {
+    if (error instanceof Failure && NOT_SENDABLE.has(error.code)) {
+      deps.log.error(where, 'CONNECTION_REVOKE_NOT_SENT')
+      return 'NOT_SENT'
+    }
+    if (error instanceof Failure && error.code === 'CONNECTION_NOT_FOUND') return 'NONE'
+    throw error
+  }
+  const answered = await revokeWithToken(deps, input, { open, declared, app })
+  switch (answered.kind) {
+    case 'NO_TOKEN':
+      deps.log.error({ ...where, ...statusOf(answered.native) }, 'CONNECTION_REVOKE_NOT_SENT')
+      return 'NOT_SENT'
+    case 'NONE':
+      return 'NONE'
+    case 'REVOKED':
+      deps.log.info(where, 'CONNECTION_REVOKED')
+      return 'REVOKED'
+    case 'REFUSED':
+      deps.log.error({ ...where, ...statusOf(answered.native) }, 'CONNECTION_REVOKE_REFUSED')
+      return 'REFUSED'
+    case 'UNREACHABLE':
+      deps.log.info(where, 'CONNECTION_REVOKE_UNANSWERED')
+      return 'UNREACHABLE'
+    default:
+      return answered satisfies never
+  }
+}
+
+/** The failures after which Desligar cannot send the revoke but still removes the connection. */
+const NOT_SENDABLE: ReadonlySet<string> = new Set(['SEAL_REFUSED', 'CONNECTOR_NOT_CONFIGURED'])
+
+type Sent =
+  | NonNullable<Awaited<ReturnType<Deps['executor']['revoke']>>>
+  | { kind: 'NONE' }
+  | { kind: 'NO_TOKEN'; native: Native }
+
+/** The revoke sent with the connection's live token; an expired one the provider refuses is asked again, forced, once (as Testar does). */
+async function revokeWithToken(
+  deps: Deps,
+  input: OfConnection,
+  a: { open: OpenedConnection; declared: OAuthConnector; app: AppKeys },
+): Promise<Sent> {
+  const access = accessFor(deps, input)
+  const ask = { deadlineMs: deps.callDeadlineMs }
+  function send(token: BearerToken) {
+    return deps.executor.revoke(a.open, a.declared, token, a.app, deps.callDeadlineMs)
+  }
+  const login = await access.token(a.open, { force: false, ...ask })
+  if (login.kind === 'UNREACHABLE') return { kind: 'UNREACHABLE', native: login.native }
+  if (login.kind !== 'TOKEN') return { kind: 'NO_TOKEN', native: login.native }
+  const answered = await send(login.token)
+  if (answered === null) return { kind: 'NONE' }
+  if (answered.kind !== 'REFUSED' || answered.native.status !== 401) return answered
+  const again = await access.token(a.open, { force: true, refused: answered.native, ...ask })
+  if (again.kind === 'UNREACHABLE') return again
+  if (again.kind !== 'TOKEN') return { kind: 'NO_TOKEN', native: again.native }
+  return (await send(again.token)) ?? { kind: 'NONE' }
+}
+
+function whereOf(input: OfConnection, connector: Connector) {
+  return { connectionId: input.connectionId, connector: connector.id }
+}
+
+/**
+ * Removes a connection and its seal; removing one already gone answers the same (criterion 13).
+ * Before, a connector that declares a revoke is asked to take the authorization back with the
+ * connection's live token. The provider refusing or being down never stops the removal: the
+ * company asked to disconnect. What happened comes back, and is logged by name.
+ */
+export async function unlink(deps: Deps, input: Viewer & { connectionId: ConnectionId }) {
+  await deps.database.command(scopeOf(input), (tx) =>
+    admitted(deps, tx, input, 'manageConnections'),
+  )
+  const revocation = await revoked(deps, input)
+  const removed = await deps.database.command(scopeOf(input), async (tx) => {
     await admitted(deps, tx, input, 'manageConnections')
-    const removed = await tx
+    return tx
       .delete(connection)
       .where(ofCompany(input, input.connectionId))
       .returning({ id: connection.id })
-    return { removed: removed.length > 0 }
   })
+  return {
+    removed: removed.length > 0,
+    revocation: removed.length > 0 ? revocation : ('NONE' as const),
+  }
 }
 
 /** One connection and the items of its last working test; one that no longer matches KeptCheck is read as no test (never an invented item). */

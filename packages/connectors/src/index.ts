@@ -28,6 +28,7 @@ export {
   type OAuth2CodeAuth,
   readGrant,
   refreshRequest,
+  revokeRequest,
 } from './kernel/oauth.ts'
 export type {
   Account,

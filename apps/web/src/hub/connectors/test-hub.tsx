@@ -152,7 +152,7 @@ function writes(
       const replaced = answers.unlink?.()
       if (replaced) return replaced
       view.connections = view.connections.filter((one) => one.id !== params.connectionId)
-      return new HttpResponse(null, { status: 204 })
+      return HttpResponse.json({ revocation: 'NONE' })
     }),
   ]
 }
