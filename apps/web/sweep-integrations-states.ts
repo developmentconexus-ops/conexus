@@ -21,8 +21,29 @@ const GONE = connectionOf({ name: 'Antiga' })
 const PARTIAL = {
   Empresas: { outcome: 'REFUSED', native: REFUSAL },
   Pedidos: { outcome: 'SOURCE_UNREAD', source: 'Empresas' },
-  'Impostos dos pedidos': { outcome: 'SOURCE_UNREAD', source: 'Pedidos' },
-  Clientes: { outcome: 'UNREADABLE', native: { ...REFUSAL, status: 200, code: null } },
+  Clientes: {
+    outcome: 'UNREADABLE',
+    native: {
+      status: 200,
+      code: null,
+      message: null,
+      body: null,
+      reason: {
+        kind: 'SHAPE',
+        issues: [{ path: 'clientes', expected: 'array', received: 'string' }],
+      },
+    },
+  },
+  Vendedores: {
+    outcome: 'UNREADABLE',
+    native: {
+      status: 200,
+      code: null,
+      message: null,
+      body: null,
+      reason: { kind: 'TOO_LARGE', limitBytes: 2097152 },
+    },
+  },
   'Locais de estoque': 'NOT_TESTED',
   'Preços de uma tabela': 'NOTHING_TO_READ',
 }
@@ -108,7 +129,7 @@ export const INTEGRATIONS_STATES: State[] = [
     },
     settle: async (p) => {
       await p.getByRole('button', { name: 'Testar', exact: true }).click()
-      await waitFor(p, 'Testando as 25 leituras, uma por vez…')
+      await waitFor(p, 'Testando as 24 leituras, uma por vez…')
     },
   },
   {

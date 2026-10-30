@@ -1,148 +1,116 @@
-/** The address the documentation requires of every customer. */
-function address(cidade: string, uf: string) {
-  return {
+// Invented values only (S40), in the shapes the real gateway sent (measured 2026-10-30): the keys
+// and the types as they came, a number as text where it came as text.
+
+export const CLIENTES = [1, 2].map((codigo) => ({
+  codigoCliente: String(codigo),
+  tipo: codigo === 1 ? 'J' : 'F',
+  cnpjCpf: codigo === 1 ? '00000000000100' : '00000000001',
+  nome: `Cliente ${codigo}`,
+  razao: `Cliente ${codigo} Ltda`,
+  email: `cliente${codigo}@example.test`,
+  endereco: {
     logradouro: 'Rua Inventada',
     numero: '10',
-    bairro: 'Centro',
-    cidade,
-    codigoIbge: '0000000',
-    uf,
-    cep: '00000000',
-  }
-}
-
-/** The custom fields the documentation's customer schema names. */
-const ADICIONAIS = {
-  AD_TESTE_API_CAMPO_ADICIONAL_1: 'a',
-  AD_TESTE_API_CAMPO_ADICIONAL_2: 'b',
-  AD_TESTE_API_CAMPO_ADICIONAL_3: 'c',
-  AD_TESTE_API_CAMPO_ADICIONAL_4: 'd',
-}
-
-export const PEDIDOS = [
-  {
-    codigoNota: 101,
-    numeroNota: 5001,
-    serieNota: '1',
-    codigoEmpresa: 1,
-    cliente: { nome: 'Cliente Um', cnpjCpf: '00000000000' },
-    dataNegociacao: '2026-10-01',
-    confirmada: true,
-    pendente: false,
-    codigoVendedor: 7,
-    nomeVendedor: 'Vendedor Sete',
-    valorNota: 150.5,
-    itens: [
-      {
-        sequencia: 1,
-        codigoProduto: 11,
-        descricaoProduto: 'Produto Onze',
-        quantidade: 2,
-        unidade: 'UN',
-        valorUnitario: 50,
-        valorTotal: 100,
-        cfop: '5102',
-        ncm: '00000000',
-        cst: '00',
-        valorICMS: 18,
-        valorIPI: 0,
-        impostos: [{ tipo: 'icms', cst: '00', aliquota: 18, valorBase: 100, valorImposto: 18 }],
-      },
-      {
-        sequencia: 2,
-        codigoProduto: 12,
-        descricaoProduto: 'Produto Doze',
-        quantidade: 1,
-        unidade: 'UN',
-        valorUnitario: 50.5,
-        valorTotal: 50.5,
-        cfop: '5102',
-        ncm: '00000000',
-        cst: '00',
-        valorICMS: 9.09,
-        valorIPI: 0,
-        impostos: [],
-      },
-    ],
+    cidade: {
+      nome: `Cidade ${codigo}`,
+      codigoIbge: '0000000',
+      uf: 'SP',
+      camposNaoMapeados: {},
+      camposAdicionais: {},
+    },
   },
-  {
-    codigoNota: 102,
-    numeroNota: 5002,
-    serieNota: '1',
-    codigoEmpresa: 1,
-    cliente: { nome: 'Cliente Dois', cnpjCpf: '00000000001' },
-    dataNegociacao: '2026-10-02',
-    confirmada: false,
-    pendente: true,
-    codigoVendedor: 8,
-    nomeVendedor: 'Vendedor Oito',
-    valorNota: 30,
-    itens: [
-      {
-        sequencia: 1,
-        codigoProduto: 13,
-        descricaoProduto: 'Produto Treze',
-        quantidade: 3,
-        unidade: 'CX',
-        valorUnitario: 10,
-        valorTotal: 30,
-      },
-    ],
-  },
+  camposAdicionais: { AD_CAMPO_INVENTADO: 'a' },
+}))
+
+// One salesperson sends `tipo` as text where the others send a number, as the real list did.
+export const VENDEDORES = [
+  { codigoVendedor: 7, nome: 'Vendedor Sete', ativo: true, tipo: 1, codigoEmpresa: 1 },
+  { codigoVendedor: 8, nome: 'Vendedor Oito', ativo: true, tipo: 'G', codigoEmpresa: 1 },
 ]
 
-export const PRODUTOS = [
-  {
-    codigoProduto: 11,
-    nome: 'Produto Onze',
-    referencia: 'P-11',
-    codigoGrupoProduto: 1,
-    nomeGrupoProduto: 'Grupo Um',
-    marca: 'Marca A',
-    ativo: true,
-    ncm: '00000000',
-  },
-  {
-    codigoProduto: 12,
-    nome: 'Produto Doze',
-    referencia: 'P-12',
-    codigoGrupoProduto: 1,
-    nomeGrupoProduto: 'Grupo Um',
-    marca: 'Marca A',
-    ativo: true,
-    ncm: '00000000',
-  },
-  {
-    codigoProduto: 13,
-    nome: 'Produto Treze',
-    referencia: 'P-13',
-    codigoGrupoProduto: 2,
-    nomeGrupoProduto: 'Grupo Dois',
-    marca: 'Marca B',
-    ativo: false,
-    ncm: '00000000',
-  },
+export const TIPOS_OPERACAO = [
+  { codigoTipoOperacao: 1100, nome: 'Venda', tipoMovimento: 'V', ativo: true },
+  { codigoTipoOperacao: 1200, nome: 'Devolução', tipoMovimento: 'D', ativo: true },
 ]
 
-export const CLIENTES = [
-  {
-    codigoCliente: 1,
-    tipo: 'PJ',
-    cnpjCpf: '00000000000100',
-    nome: 'Cliente Um',
-    razao: 'Cliente Um Ltda',
-    email: 'um@example.test',
-    endereco: address('Cidade Um', 'SP'),
-    camposAdicionais: ADICIONAIS,
-  },
-  {
-    codigoCliente: 2,
-    tipo: 'PF',
-    cnpjCpf: '00000000001',
-    nome: 'Cliente Dois',
-    razao: 'Cliente Dois',
-    email: 'dois@example.test',
-    endereco: address('Cidade Dois', 'RJ'),
-    camposAdicionais: ADICIONAIS,
-  },
+export const NATUREZAS = [
+  { codigoNatureza: 30100, nome: 'Receita com vendas', codigoNaturezaPai: 30000, ativo: true },
+]
+
+export const CENTROS = [
+  { codigoCentroResultado: 202, nome: 'Comercial', codigoCentroResultadoPai: 200, ativo: true },
+  { codigoCentroResultado: 203, nome: 'Logística', ativo: true },
+]
+
+// The real field is spelled with a colon, as the API sends it.
+export const PRODUTOS = [11, 12, 13].map((codigo) => ({
+  codigoProduto: codigo,
+  nome: `Produto ${codigo}`,
+  codigoGrupoProduto: codigo === 13 ? 2 : 1,
+  marca: 'Marca A',
+  ativo: 'S',
+  ncm: '00000000',
+  'dataAlteracao:': '01/10/2026',
+}))
+
+export const GRUPOS = [
+  { codigoGrupoProduto: 1, nome: 'Grupo Um', grau: 1, ativo: true },
+  { codigoGrupoProduto: 2, nome: 'Grupo Dois', codigoGrupoProdutoPai: 1, grau: 2, ativo: true },
+]
+
+export const PEDIDOS = [101, 102].map((codigo) => ({
+  codigoNota: codigo,
+  codigoEmpresa: 1,
+  cliente: { nome: `Cliente ${codigo - 100}`, cnpjCpf: '00000000000' },
+  dataNegociacao: '01/10/2026',
+  confirmada: codigo === 101,
+  valorNota: 150.5,
+  itens: [{ sequencia: 1, codigoProduto: 11, quantidade: 2, valorUnitario: 50, valorTotal: 100 }],
+}))
+
+// The invoices send their numbers as text.
+export const NOTAS = [201, 202].map((codigo) => ({
+  codigoNota: String(codigo),
+  numeroNota: String(codigo + 6800),
+  codigoEmpresa: '1',
+  codigoTipoOperacao: '1100',
+  valorNota: '150.50',
+  statusNFe: 'A',
+}))
+
+export const NOTA_COMPLETA = {
+  ...NOTAS[0],
+  xmlNFe: '<nfeProc>inventado</nfeProc>',
+  itens: [{ sequencia: '1', codProduto: '11', quantidade: '2', valorTotal: '100.00' }],
+}
+
+export const ESTOQUE = [
+  { codigoProduto: 11, codigoEmpresa: 1, codigoLocal: 1, estoque: 40 },
+  { codigoProduto: 12, codigoEmpresa: 1, codigoLocal: 1, controle: 'L1', estoque: 12.5 },
+]
+
+export const LOCAIS = [{ codigoLocal: 1, descricaoLocal: 'Depósito', grau: 1, ativo: true }]
+
+export const FINANCEIROS = [301, 302].map((codigo) => ({
+  codigoFinanceiro: codigo,
+  codigoEmpresa: 1,
+  codigoParceiro: 1,
+  dataVencimento: '01/11/2026',
+  valorParcela: 150.5,
+}))
+
+export const TIPOS_PAGAMENTO = [{ codigoTipoPagamento: 1, nome: 'Boleto', ativo: true }]
+
+export const PRECOS = [
+  { codigoProduto: 11, codigoTabela: 1, unidade: 'UN', valor: 50 },
+  { codigoProduto: 11, codigoTabela: 2, unidade: 'UN', valor: 45 },
+  { codigoProduto: 12, codigoTabela: 1, unidade: 'UN', valor: 50.5 },
+]
+
+export const TRANSPORTADORAS = [
+  { codigoTransportadora: 5, nome: 'Transportadora Cinco', cnpj: '00000000000500', ativo: true },
+]
+
+export const ORDENS_CARGA = [
+  { codigoOrdemCarga: 55, codigoEmpresa: 1, codigoVeiculo: 3, situacao: 'A' },
 ]

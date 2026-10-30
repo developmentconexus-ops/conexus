@@ -1,4 +1,4 @@
-import type { Connection, ConnectorEntry, KeptCheck, TestCheck } from '@conexus/hub-api'
+import type { Connection, ConnectorEntry, KeptCheck, Native, TestCheck } from '@conexus/hub-api'
 import { clockOf, dayAndMonth } from '../../platform/dates.ts'
 
 export const LEAD =
@@ -84,7 +84,10 @@ export function reads(check: TestCheck | KeptCheck): boolean {
 
 /** What to do next about a subject, by what its parts found (the study's hints, X6). */
 export function hintText(items: readonly (TestCheck | KeptCheck)[], name: string): string {
-  if (items.some((one) => one.outcome === 'REFUSED')) {
+  // Only a status that says the user lacks access: a 404 or 409 refused something else.
+  if (
+    items.some((one) => one.outcome === 'REFUSED' && 'native' in one && one.native.status === 403)
+  ) {
     return `O usuário de integração não tem acesso a esta parte. Libere a tela no ${name} e teste de novo.`
   }
   if (items.some((one) => one.outcome === 'NOT_TESTED')) {
@@ -133,4 +136,33 @@ export function nativeText(
   const code = native.code === null ? '' : `, código ${native.code}`
   const message = native.message === null ? '' : `: ${native.message}`
   return `${name} respondeu ${native.status}${code}${message}`
+}
+
+/** A kind as Zod's issues and the Hub name it, in the founder's words. */
+const KINDS: Readonly<Record<string, string>> = {
+  array: 'lista',
+  object: 'objeto',
+  string: 'texto',
+  number: 'número',
+  boolean: 'verdadeiro ou falso',
+  null: 'nulo',
+  undefined: 'nada',
+  json: 'JSON',
+  text: 'texto',
+}
+
+function kindText(kind: string): string {
+  return KINDS[kind] ?? kind
+}
+
+/** Why a 2xx did not read, on one line: "data: esperava lista, veio objeto", or "Resposta acima de 2 MB". */
+export function reasonText(reason: NonNullable<Native['reason']>): string {
+  if (reason.kind === 'TOO_LARGE')
+    return `Resposta acima de ${reason.limitBytes / (1024 * 1024)} MB`
+  return reason.issues
+    .map(
+      ({ path, expected, received }) =>
+        `${path === '' ? 'A resposta' : path}: esperava ${kindText(expected)}, veio ${kindText(received)}`,
+    )
+    .join('; ')
 }

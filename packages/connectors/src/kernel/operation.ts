@@ -15,12 +15,24 @@ export type ProviderRequest = Readonly<{
 /** What came back, already parsed as JSON by the executor; the raw text never reaches the kit. */
 export type ProviderAnswer = Readonly<{ status: number; body: unknown }>
 
-/** What the provider said when it refused, as it came: the status, where its code and message sit, and the body unchanged. */
+/**
+ * Why a 2xx did not read, never a value from it: the body passed the executor's cap, or its envelope
+ * is not in the shape the kit reads (each Zod issue's path, the type it expected and the type that came).
+ */
+export type Unread =
+  | Readonly<{ kind: 'TOO_LARGE'; limitBytes: number }>
+  | Readonly<{
+      kind: 'SHAPE'
+      issues: Readonly<{ path: string; expected: string; received: string }>[]
+    }>
+
+/** What the provider said when it refused, as it came: the status, where its code and message sit, and the body unchanged; `reason` on a 2xx that did not read. */
 export type Native = Readonly<{
   status: number
   code: string | null
   message: string | null
   body: unknown
+  reason?: Unread
 }>
 
 /** A call that gave no rows. `TOKEN_EXPIRED`: the executor asks a new token once and repeats; a second time is `AUTH_REFUSED`. */
@@ -52,6 +64,30 @@ export function locateOf(body: unknown): Pick<Native, 'code' | 'message'> {
     code: found.success && found.data.code !== undefined ? String(found.data.code) : null,
     message: found.success ? (found.data.message ?? null) : null,
   }
+}
+
+/** The kind of a value, by the names Zod's issues use, so the expected and the received read alike. */
+function kindOf(value: unknown): string {
+  if (Array.isArray(value)) return 'array'
+  return value === null ? 'null' : typeof value
+}
+
+/** The Zod issues of a body that did not parse, as an Unread: the type found at each path, never what it held. */
+export function shapeOf(error: z.ZodError, body: unknown): Unread {
+  const issues = error.issues.slice(0, 3).map((issue) => {
+    const found = issue.path.reduce<unknown>(
+      (at, key) => (typeof at === 'object' && at !== null ? Reflect.get(at, key) : undefined),
+      body,
+    )
+    const expected =
+      issue.code === 'invalid_type'
+        ? issue.expected
+        : issue.code === 'invalid_value'
+          ? issue.values.map(String).join(' | ')
+          : issue.code
+    return { path: issue.path.map(String).join('.'), expected, received: kindOf(found) }
+  })
+  return { kind: 'SHAPE', issues }
 }
 
 export const OperationId = z

@@ -2,14 +2,14 @@ import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { sankhyaFake } from '@conexus/connectors'
-import { hubWithLog } from '../identity/test-hub.ts'
+import { call, hubWithLog } from '../identity/test-hub.ts'
 import { connectionsOn, linkSankhya, testOf } from './test-connections.ts'
 
 /** The program's own fetch, taken before any test replaces the global one. */
 const realFetch = globalThis.fetch
 
 test('a origem, o redirecionamento e o teto', async (t) => {
-  const { hub, fake, ana, base } = await connectionsOn(t)
+  const { hub, fake, ana, carla, base } = await connectionsOn(t)
   const { connection } = Object((await linkSankhya(hub, ana, base, fake.credential)).json())
 
   fake.switches.redirect = true
@@ -24,6 +24,63 @@ test('a origem, o redirecionamento e o teto', async (t) => {
   const checks = Object(oversize.json()).checks.map((check: { outcome: string }) => check.outcome)
   assert.equal(checks[0], 'UNREADABLE')
   assert.ok(checks.every((outcome: string) => outcome !== 'READS'))
+  assert.deepEqual(Object(oversize.json()).checks[0].native, {
+    status: 200,
+    code: null,
+    message: null,
+    body: null,
+    reason: { kind: 'TOO_LARGE', limitBytes: 2 * 1024 * 1024 },
+  })
+  // What is kept is the status and code: the reason is shown at that moment only.
+  const kept = Object((await call(hub, carla, 'GET', `${base}/${connection.id}`)).json()).lastTest
+  assert.deepEqual(kept[0].native, { status: 200, code: null })
+})
+
+test('um 2xx que não encaixa diz no Testar onde e que tipo veio, nunca um valor', async (t) => {
+  const { hub, fake, ana, base } = await connectionsOn(t)
+  const { connection } = Object((await linkSankhya(hub, ana, base, fake.credential)).json())
+  fake.switches.malformed = true
+  const tested = Object((await testOf(hub, ana, base, connection.id)).json())
+  const empresas = tested.checks.find((check: { id: string }) => check.id === 'empresas')
+  assert.deepEqual(empresas.native, {
+    status: 200,
+    code: null,
+    message: null,
+    body: null,
+    reason: {
+      kind: 'SHAPE',
+      issues: [{ path: 'empresas', expected: 'array', received: 'undefined' }],
+    },
+  })
+  fake.switches.malformed = false
+  fake.switches.notJson = true
+  const text = await testOf(hub, ana, base, connection.id)
+  const first = Object(text.json()).checks.find((check: { id: string }) => check.id === 'empresas')
+  assert.deepEqual(first.native, {
+    status: 200,
+    code: null,
+    message: null,
+    body: null,
+    reason: { kind: 'SHAPE', issues: [{ path: '', expected: 'json', received: 'text' }] },
+  })
+  assert.ok(!text.body.includes('valor da empresa'))
+})
+
+test('a página sem linhas que o Sankhya manda (404 RESOURCE_NOT_FOUND) lê em toda leitura, não é recusa', async (t) => {
+  const { hub, fake, ana, base } = await connectionsOn(t)
+  const { connection } = Object((await linkSankhya(hub, ana, base, fake.credential)).json())
+  fake.switches.nothingFound = true
+  const tested = Object((await testOf(hub, ana, base, connection.id)).json())
+  assert.equal(tested.result, 'WORKING')
+  const outcomes = new Map(
+    tested.checks.map((check: { id: string; outcome: string }) => [check.id, check.outcome]),
+  )
+  // With no company read, the reads that need one have nothing to read.
+  for (const id of ['empresas', 'clientes', 'centrosResultado', 'estoque'])
+    assert.equal(outcomes.get(id), 'READS', id)
+  for (const id of ['pedidos', 'notasFiscais', 'contasAReceber', 'ordensCarga'])
+    assert.equal(outcomes.get(id), 'NOTHING_TO_READ', id)
+  assert.ok(![...outcomes.values()].includes('REFUSED'))
 })
 
 test('o Hub com a origem de um conector que o kit não tem não sobe', async (t) => {

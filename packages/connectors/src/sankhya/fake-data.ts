@@ -12,9 +12,9 @@ export const EMPRESAS = [
   { codigoEmpresa: 2, nomeFantasia: 'Empresa Beta', razaoSocial: 'Beta Distribuidora Ltda' },
 ]
 
-/** A page of empresas above the 256 KB cap that the schema reads: only the cap can refuse it. */
+/** A page of empresas above the executor's 2 MiB cap that the kit reads: only the cap can refuse it. */
 export const OVERSIZE = {
-  empresas: Array.from({ length: 3000 }, (_, index) => ({
+  empresas: Array.from({ length: 15000 }, (_, index) => ({
     codigoEmpresa: index + 1,
     nomeFantasia: `Empresa ${index + 1}`,
     razaoSocial: 'Comercial Distribuidora Ltda '.repeat(4),
@@ -29,18 +29,19 @@ export function empty(status: number, headers: Record<string, string> = {}): Res
   return new Response(null, { status, headers })
 }
 
-/** The page numbered from `from`: the rows a page holds and whether more follow. */
-export function paged<T>(
-  rows: readonly T[],
-  query: URLSearchParams,
-  from: 0 | 1,
-  size = 2,
-): { page: T[]; more: boolean } {
-  const index = Number(query.get('page') ?? from) - from
-  return {
-    page: rows.slice(index * size, (index + 1) * size),
-    more: (index + 1) * size < rows.length,
-  }
+/** The 404 every REST list sends for a page with no rows (measured 2026-10-30), naming the route's entity. */
+export function nothingFound(entity: string): Response {
+  return json(
+    {
+      statusCode: 404,
+      error: {
+        code: 'RESOURCE_NOT_FOUND',
+        message: 'Recurso solicitado não foi encontrado!',
+        details: `Nenhum registro da entidade ${entity} com o identificador informado!`,
+      },
+    },
+    404,
+  )
 }
 
 export function retornoErro(message: string): Response {
