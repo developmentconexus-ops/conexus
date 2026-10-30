@@ -52,6 +52,18 @@ test('um 2xx que não encaixa diz no Testar onde e que tipo veio, nunca um valor
       issues: [{ path: 'empresas', expected: 'array', received: 'undefined' }],
     },
   })
+  fake.switches.malformed = false
+  fake.switches.notJson = true
+  const text = await testOf(hub, ana, base, connection.id)
+  const first = Object(text.json()).checks.find((check: { id: string }) => check.id === 'empresas')
+  assert.deepEqual(first.native, {
+    status: 200,
+    code: null,
+    message: null,
+    body: null,
+    reason: { kind: 'SHAPE', issues: [{ path: '', expected: 'json', received: 'text' }] },
+  })
+  assert.ok(!text.body.includes('valor da empresa'))
 })
 
 test('a página sem linhas que o Sankhya manda (404 RESOURCE_NOT_FOUND) lê em toda leitura, não é recusa', async (t) => {

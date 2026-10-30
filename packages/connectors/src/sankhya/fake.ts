@@ -24,6 +24,8 @@ type SankhyaSwitches = {
   expireToken: boolean
   /** Answers 200 with a body no schema reads. */
   malformed: boolean
+  /** Answers 200 with text that is not JSON. */
+  notJson: boolean
   /** Every REST read answers the 404 the real gateway sends for a page with no rows, as a company with nothing to list does. */
   nothingFound: boolean
   /** Answers with a page of empresas the kit reads, above the executor's 2 MiB cap. */
@@ -98,6 +100,7 @@ async function serveCall(request: Request, url: URL, switches: SankhyaSwitches):
   }
   if (switches.oversize) return json(OVERSIZE)
   if (switches.malformed) return json({ unexpected: true })
+  if (switches.notJson) return new Response('<html>valor da empresa</html>', { status: 200 })
   if (!door) return restAnswer(route, url, switches)
   const { requestBody } = DoorBody.parse(await request.json())
   if (service === 'CRUDServiceProvider.loadRecords') return loadRecords(requestBody)
@@ -144,6 +147,7 @@ export function sankhyaFake(): SankhyaFake {
     refuse: new Set(),
     expireToken: false,
     malformed: false,
+    notJson: false,
     nothingFound: false,
     oversize: false,
     redirect: false,
