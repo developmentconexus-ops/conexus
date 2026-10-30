@@ -60,6 +60,7 @@ ALTER TABLE builder.person_model_default OWNER TO test_owner;
 -- Step 19 (D11, founder 2026-10-29, "Aprovado"): the connections of a company, the role that reads their seals and what each role may do with them.
 ALTER TABLE connectors.connection OWNER TO test_owner;
 ALTER TABLE connectors.connection_sign_in OWNER TO test_owner;
+ALTER TABLE connectors.project_connection OWNER TO test_owner;
 ALTER TABLE drizzle.__drizzle_migrations OWNER TO test_owner;
 ALTER SEQUENCE drizzle.__drizzle_migrations_id_seq OWNER TO test_owner;
 ALTER TABLE hub.starts OWNER TO test_owner;
@@ -273,7 +274,11 @@ GRANT SELECT(revision),UPDATE(revision) ON TABLE connectors.connection TO hub_co
 GRANT SELECT(refresh_until),UPDATE(refresh_until) ON TABLE connectors.connection TO hub_company;
 GRANT SELECT(account_ref),UPDATE(account_ref) ON TABLE connectors.connection TO hub_company;
 GRANT SELECT(account_label),UPDATE(account_label) ON TABLE connectors.connection TO hub_company;
+-- Step 20 (D11, founder 2026-10-30, "1 aprovo"): a company's routes grant a Projeto a connection and
+-- take it back, and read and change a connection's notes.
+GRANT SELECT(notes),UPDATE(notes) ON TABLE connectors.connection TO hub_company;
 GRANT SELECT,INSERT,DELETE ON TABLE connectors.connection_sign_in TO hub_company;
+GRANT SELECT,INSERT,DELETE ON TABLE connectors.project_connection TO hub_company;
 GRANT SELECT ON TABLE drizzle.__drizzle_migrations TO hub_runtime;
 GRANT SELECT,INSERT ON TABLE hub.starts TO hub_runtime;
 -- Step 4.2, founder 2026-10-16 ("Aprovo", option A): the Hub never deletes a client.
