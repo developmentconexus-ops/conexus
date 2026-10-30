@@ -20,7 +20,9 @@ export type Checked =
 type Deps = { executor: Executor; access: Access; callDeadlineMs: number }
 
 /** The token's own end: refused, unreadable, unreachable, or the installation's app refused. */
-function endedBy(answer: Exclude<Awaited<ReturnType<Access['token']>>, { kind: 'TOKEN' }>): Checked {
+function endedBy(
+  answer: Exclude<Awaited<ReturnType<Access['token']>>, { kind: 'TOKEN' }>,
+): Checked {
   return answer.kind === 'UNREACHABLE'
     ? { result: 'UNREACHABLE', native: answer.native }
     : { result: answer.kind, native: answer.native }

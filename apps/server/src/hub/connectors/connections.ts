@@ -11,7 +11,6 @@ import type {
 } from '@conexus/hub-api'
 import { ConnectionId, ConnectionName } from '@conexus/hub-api'
 import { and, asc, eq, sql } from 'drizzle-orm'
-import { z } from 'zod'
 import type { ReadTx } from '../../platform/database.ts'
 import { transactionLock, violatedConstraint } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'

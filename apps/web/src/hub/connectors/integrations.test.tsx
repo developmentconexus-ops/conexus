@@ -3,7 +3,7 @@ import { http } from 'msw'
 import { expect, test } from 'vitest'
 import { sentenceOfCode } from '../../platform/hub.ts'
 import { hubServer, refusal, undecided } from '../../platform/test-hub.tsx'
-import { checksOf, connectionOf, REFUSAL, SANKHYA } from './fixtures.ts'
+import { connectionOf, SANKHYA } from './fixtures.ts'
 import type { Answers, View } from './test-hub.tsx'
 import {
   connectionsHub,
@@ -23,15 +23,6 @@ const TESTED = '2026-10-29T14:02:00.000Z'
 
 function open(view?: View, answers?: Answers, path?: string) {
   return openIntegrations(server, view, answers, path)
-}
-
-/** Each subject's line of the result, its parts that did not read included. */
-async function subjectLines() {
-  const list = await screen.findByRole('list', { name: 'Resultado do teste' })
-  return within(list)
-    .getAllByRole('listitem')
-    .filter((one) => one.parentElement === list)
-    .map((one) => one.textContent ?? '')
 }
 
 test('a primeira vez: a frase, o logotipo e o resumo do conector, e Ligar para quem pode', async () => {
@@ -66,7 +57,7 @@ test('a dona liga e testa num toque, e desliga: a janela monta os campos do cat�
   fill('Comercial')
   fireEvent.click(within(form).getByRole('button', { name: 'Ligar e testar' }))
   expect(await screen.findByRole('heading', { name: 'Comercial' })).toBeTruthy()
-  expect(await screen.findByText('Lê 8 de 8 assuntos inteiros')).toBeTruthy()
+  expect(await screen.findByText('Ligado e funcionando.')).toBeTruthy()
   expect(sent.map((one) => one.method)).toEqual(['POST', 'POST'])
   expect(sent[0]?.body).toEqual({
     connector: 'sankhya',
@@ -91,15 +82,13 @@ test('a dona liga e testa num toque, e desliga: a janela monta os campos do cat�
   expect(sent.map((one) => one.method)).toEqual(['POST', 'POST', 'DELETE'])
 })
 
-test('a página que chega de Ligar e testar mostra "Testando as 24 leituras, uma por vez…" enquanto espera', async () => {
+test('a página que chega de Ligar e testar mostra "Testando a ligação…" enquanto espera', async () => {
   const connection = connectionOf()
   open(viewOf({ connections: [connection] }), {}, `${pageOf(connection)}?testar=true`)
-  expect(await screen.findByText('Testando as 24 leituras, uma por vez…')).toBeTruthy()
+  expect(await screen.findByText('Testando a ligação…')).toBeTruthy()
   expect(screen.getByRole('button', { name: 'Testando…' })).toBeTruthy()
-  expect(await screen.findByText('Lê 8 de 8 assuntos inteiros')).toBeTruthy()
-  await waitFor(() =>
-    expect(screen.queryByText('Testando as 24 leituras, uma por vez…')).toBeNull(),
-  )
+  expect(await screen.findByText('Ligado e funcionando.')).toBeTruthy()
+  await waitFor(() => expect(screen.queryByText('Testando a ligação…')).toBeNull())
 })
 
 test('o nome sugerido é o do conector, e vazio quando a empresa já tem uma ligação com ele', async () => {
@@ -164,7 +153,7 @@ test.each(undecided('{"connection":'))(
     fireEvent.click(within(form).getByRole('button', { name: 'Ligar e testar' }))
     expect(await screen.findByRole('heading', { name: 'Comercial' })).toBeTruthy()
     // The page tests the new connection; the test ends once it has answered.
-    expect(await screen.findByText('Lê 8 de 8 assuntos inteiros')).toBeTruthy()
+    expect(await screen.findByText('Ligado e funcionando.')).toBeTruthy()
     expect(sent[1]?.attemptKey).toBe(sent[0]?.attemptKey)
   },
 )
@@ -252,60 +241,37 @@ test('o membro lê; vazio e erro: a lista sem Ligar, e a frase de quem pode', as
   expect(await screen.findByText(MEMBER_SENTENCE)).toBeTruthy()
 })
 
-test('a página: o cabeçalho, o último teste guardado, o conector e a sua versão', async () => {
+test('a página: o cabeçalho, o selo, quem testou e quando, o conector e a sua versão; nada de um teste antigo', async () => {
   const connection = connectionOf({
     state: 'ACTIVE',
     testedAt: TESTED,
     testedBy: connectionOf().linkedBy,
   })
-  const view = viewOf({
-    connections: [connection],
-    lastTests: { [connection.id]: [] },
-  })
-  view.lastTests = {
-    [connection.id]: checksOf({
-      Empresas: { outcome: 'REFUSED', native: REFUSAL },
-      'Notas canceladas': 'NOTHING_TO_READ',
-    }).map((one) =>
-      'native' in one ? { ...one, native: { status: 403, code: 'SEM_ACESSO' } } : one,
-    ),
-  }
-  open(view, {}, pageOf(connection))
+  open(viewOf({ connections: [connection] }), {}, pageOf(connection))
   expect(await screen.findByRole('heading', { name: 'Comercial' })).toBeTruthy()
   expect(screen.getByText('Sankhya · ERP')).toBeTruthy()
-  expect(screen.getByText('Lê em parte')).toBeTruthy()
-  expect(screen.getByText('Lê 7 de 8 assuntos inteiros')).toBeTruthy()
+  expect(screen.getByText('Funcionando')).toBeTruthy()
+  expect(screen.getByText(/^Ligada por Ana em \d\d\/\d\d$/)).toBeTruthy()
   expect(screen.getByText(/^testada em \d\d\/\d\d, \d\d:\d\d, por Ana$/)).toBeTruthy()
   expect(screen.getByText('1.0.0')).toBeTruthy()
-  const lines = await subjectLines()
-  expect(lines[0]).toContain('Porta de leitura')
-  expect(lines[0]).toContain('Lê tudo')
-  expect(lines[1]).toContain('Lê 5 de 6')
-  expect(lines[1]).toContain('EmpresasRecusada pelo Sankhya')
-  expect(lines[1]).toContain('Sankhya respondeu 403, código SEM_ACESSO')
-  expect(lines[1]).toContain('As outras 5 leem: Clientes, Vendedores')
-  expect(lines[1]).toContain('Libere a tela no Sankhya e teste de novo.')
-  expect(lines[1]).not.toContain('Sem acesso à tela')
-  expect(screen.queryByText('Ver a resposta inteira')).toBeNull()
-  // A subject that reads whole is shut: its parts are not listed.
-  expect(screen.queryByText('Estoque por produto')).toBeNull()
+  // What a Testar answered is shown only on the page that ran it.
+  expect(screen.queryByText('Ligado e funcionando.')).toBeNull()
 })
 
 test('uma ligação ainda não testada diz que não foi testada, e o menu da dona tem Desligar', async () => {
   const connection = connectionOf()
   open(viewOf({ connections: [connection] }), {}, pageOf(connection))
-  expect(await screen.findByText('Ainda não testada.')).toBeTruthy()
+  expect(await screen.findByText(/^Ligada por Ana em \d\d\/\d\d, ainda não testada$/)).toBeTruthy()
+  expect(screen.queryByText(/^testada em/)).toBeNull()
   fireEvent.click(screen.getByRole('button', { name: 'Mais ações' }))
   expect(await screen.findByRole('menuitem', { name: 'Desligar' })).toBeTruthy()
 })
 
-test('o membro lê a página com o último teste, sem Testar nem Desligar', async () => {
+test('o membro lê a página com quem testou, sem Testar nem Desligar', async () => {
   const connection = connectionOf({ state: 'ACTIVE', testedAt: TESTED })
-  const view = viewOf({ mayManage: false, connections: [connection] })
-  view.lastTests = { [connection.id]: checksOf() }
-  const sent = open(view, {}, pageOf(connection))
+  const sent = open(viewOf({ mayManage: false, connections: [connection] }), {}, pageOf(connection))
   expect(await screen.findByText(MEMBER_SENTENCE)).toBeTruthy()
-  expect(await screen.findByText('Lê 8 de 8 assuntos inteiros')).toBeTruthy()
+  expect(screen.getByText(/^testada em \d\d\/\d\d, \d\d:\d\d$/)).toBeTruthy()
   for (const name of ['Testar', 'Mais ações', 'Ligar']) {
     expect(screen.queryByRole('button', { name })).toBeNull()
   }

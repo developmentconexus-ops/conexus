@@ -1,7 +1,7 @@
 import { Connection, getConnection, listConnections } from '@conexus/hub-api'
 import type { Replies } from './layout-harness.ts'
 import { ok } from './layout-harness.ts'
-import { checksOf, connectionOf as fixtureOf, SANKHYA } from './src/hub/connectors/fixtures.ts'
+import { connectionOf as fixtureOf, SANKHYA } from './src/hub/connectors/fixtures.ts'
 
 let made = 0
 
@@ -31,23 +31,9 @@ export function connectionsPage(
   }
 }
 
-/** One connection's page and its last working test, kept as the Hub keeps it: status and code only. */
-export function connectionPage(
-  id: string,
-  connection: ReturnType<typeof connectionOf>,
-  outcomes?: Parameters<typeof checksOf>[0],
-): Replies {
+/** One connection's page. */
+export function connectionPage(id: string, connection: ReturnType<typeof connectionOf>): Replies {
   return {
-    [`GET /api/companies/${id}/connections/${connection.id}`]: ok(getConnection, {
-      connection,
-      lastTest:
-        outcomes === undefined
-          ? null
-          : checksOf(outcomes).map((one) =>
-              'native' in one
-                ? { ...one, native: { status: one.native.status, code: one.native.code } }
-                : one,
-            ),
-    }),
+    [`GET /api/companies/${id}/connections/${connection.id}`]: ok(getConnection, { connection }),
   }
 }

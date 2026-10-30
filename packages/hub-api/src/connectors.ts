@@ -161,8 +161,7 @@ export const TEST_LONGEST_MS = 40_000
 
 export const testConnection = defineOperation({
   id: 'testConnection',
-  summary:
-    "Gets the connection's token and sends the connector's one check read.",
+  summary: "Gets the connection's token and sends the connector's one check read.",
   access: 'session',
   method: 'POST',
   path: '/api/companies/{companyId}/connections/{connectionId}/test',

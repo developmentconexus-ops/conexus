@@ -116,8 +116,8 @@ export {
   reconnectConnection,
   SignInCompleted,
   startConnectionSignIn,
-  TestResult,
   TEST_LONGEST_MS,
+  TestResult,
   testConnection,
   unlinkConnection,
 } from './connectors.ts'

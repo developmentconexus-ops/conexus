@@ -152,47 +152,6 @@ export function sealingWith(...lines: string[]) {
   return (config: Config): Config => ({ ...config, sealKeys: parseSealKeys(lines.join('\n')) })
 }
 
-// The two door entries first, then the 22 operations in the definition's order (criterion 10).
-export const CHECK_IDS = [
-  'consultar',
-  'carregar',
-  'empresas',
-  'clientes',
-  'vendedores',
-  'tiposOperacao',
-  'naturezas',
-  'centrosResultado',
-  'produtos',
-  'gruposProduto',
-  'pedidos',
-  'notasFiscais',
-  'notaFiscal',
-  'devolucoes',
-  'notasCanceladas',
-  'estoque',
-  'locaisEstoque',
-  'contasAReceber',
-  'contasAPagar',
-  'tiposPagamento',
-  'precosDoProduto',
-  'precosDaTabela',
-  'transportadoras',
-  'ordensCarga',
-]
-export const ALL_READS = CHECK_IDS.map((id) => [id, 'READS'])
-
-/** ALL_READS with some items' outcomes changed. */
-export function reads(changes: Record<string, string>) {
-  return CHECK_IDS.map((id) => [id, changes[id] ?? 'READS'])
-}
-
-export function outcomes(response: { json(): unknown }) {
-  return Object(response.json()).checks.map((check: { id: string; outcome: string }) => [
-    check.id,
-    check.outcome,
-  ])
-}
-
 /**
  * In front of a double: the token route answers as `mode.refresh` says, everything else passes;
  * every body the token route answers is kept in `mode.seen`, to look for its keys elsewhere.

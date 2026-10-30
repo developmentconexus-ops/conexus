@@ -37,8 +37,8 @@ export const INVITEE = 'davi@example.test'
 
 type Change = (config: Config) => Config
 
-/** A connector call's deadline in tests: a silent double is given up on quickly (criterion 11). */
-const TEST_CALL_DEADLINE_MS = 200
+/** A connector call's deadline in tests: a silent double is given up on quickly (criterion 11), and a Testar waiting on another's refresh still sees the double's refresh land. */
+const TEST_CALL_DEADLINE_MS = 1_000
 
 /** Production's shutdown deadline (`SHUTDOWN_DEADLINE_MS` in platform/lifecycle.ts). */
 const CLOSE_DEADLINE_MS = 15_000

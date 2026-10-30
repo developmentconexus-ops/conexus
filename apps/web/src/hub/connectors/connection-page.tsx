@@ -23,24 +23,23 @@ import { RouteReadFailure } from '../../ui/states.tsx'
 import { ReconnectButton } from './link-dialog.tsx'
 import { ConnectorLogo } from './logo.tsx'
 import { connectionKeys, connectionQuery, connectionsQuery, sendTest } from './queries.ts'
-import type { Check } from './test-result.tsx'
-import { countOf, Said, TestResult } from './test-result.tsx'
+import { Said } from './said.tsx'
 import {
   accountText,
   appRefusedText,
+  busyText,
   connectorName,
   linkedText,
   MEMBER_SENTENCE,
-  NOT_TESTED_YET,
-  PARTIAL_BADGE,
+  readRefusedText,
   reauthText,
   serverErrorText,
   stateBadge,
+  TESTING_TEXT,
   testedText,
-  testingText,
   UNREADABLE_TEXT,
   unreachableText,
-  wholeSubjectsText,
+  WORKING_TEXT,
 } from './text.ts'
 import { UnlinkDialog } from './unlink-dialog.tsx'
 
@@ -79,19 +78,32 @@ export function ConnectionReadFailure(props: { error: unknown; reset: () => void
   return <RouteReadFailure error={props.error} reset={props.reset} />
 }
 
-/** What a Testar that did not reach the reads says, with what the provider answered. */
-function TestRefusal(props: { answer: Exclude<Answer, { result: 'WORKING' }>; name: string }) {
+type Refusal = Exclude<Answer, { result: 'WORKING' }>
+
+/** The sentence of a Testar that did not work; the refused keys are the connection's state, said once above. */
+function refusalText(answer: Refusal, name: string): string | null {
+  switch (answer.result) {
+    case 'AUTH_REFUSED':
+      return null
+    case 'READ_REFUSED':
+      return readRefusedText(name, answer.read)
+    case 'BUSY':
+      return busyText(name)
+    case 'UNREACHABLE':
+      return answer.native === null ? unreachableText(name) : serverErrorText(name)
+    case 'UNREADABLE':
+      return UNREADABLE_TEXT
+    case 'APP_REFUSED':
+      return appRefusedText(name)
+    default:
+      return answer satisfies never
+  }
+}
+
+/** What a Testar that did not work says, with what the provider answered. */
+function TestRefusal(props: { answer: Refusal; name: string }) {
   const { answer, name } = props
-  // The refused keys are the connection's state, said once above; here only what the provider answered.
-  const sentence = {
-    AUTH_REFUSED: null,
-    UNREACHABLE:
-      answer.result === 'UNREACHABLE' && answer.native !== null
-        ? serverErrorText(name)
-        : unreachableText(name),
-    UNREADABLE: UNREADABLE_TEXT,
-    APP_REFUSED: appRefusedText(name),
-  }[answer.result]
+  const sentence = refusalText(answer, name)
   return (
     <div role="alert" className="flex flex-col gap-xs">
       {sentence !== null && <p className="text-danger">{sentence}</p>}
@@ -126,13 +138,10 @@ function Header(props: {
   entry: ConnectorEntry | undefined
   name: string
   connection: Connection
-  partial: boolean
   actions: React.ReactNode
 }) {
   const { entry, connection } = props
-  const badge = props.partial
-    ? { text: PARTIAL_BADGE, tone: 'warning' as const }
-    : stateBadge(connection, entry?.auth ?? 'client_credentials')
+  const badge = stateBadge(connection, entry?.auth ?? 'client_credentials')
   const account = accountText(connection)
   return (
     <div className="flex flex-wrap items-start justify-between gap-md">
@@ -158,25 +167,20 @@ function Header(props: {
   )
 }
 
-/** What the last test found: the subjects that read whole, and the sentence of whatever stopped a new one. */
-function LastTest(props: {
+/** Who tested last and when, and what a Testar run on this page answered; nothing of it is kept. */
+function Test(props: {
   name: string
-  auth: ConnectorEntry['auth']
-  reads: number
-  checks: readonly Check[] | null
   connection: Connection
   pending: boolean
   error: unknown
   answer: Answer | undefined
 }) {
-  const { name, checks, connection, answer } = props
-  const { subjects, whole } = countOf(checks)
+  const { name, connection, answer } = props
   return (
-    <section aria-label="O que o Conexus lê" className="flex flex-col gap-md">
-      <SectionTitle>O que o Conexus lê</SectionTitle>
+    <div className="flex flex-col gap-md">
       {props.pending && (
         <p role="status" className="text-text-2">
-          {testingText(props.reads)}
+          {TESTING_TEXT}
         </p>
       )}
       {props.error !== null && (
@@ -185,23 +189,22 @@ function LastTest(props: {
         </p>
       )}
       {answer && answer.result !== 'WORKING' && <TestRefusal answer={answer} name={name} />}
-      {checks === null ? (
-        connection.state !== 'NEEDS_REAUTH' && <p className="text-text-2">{NOT_TESTED_YET}</p>
-      ) : (
-        <>
-          <p className="flex flex-wrap items-baseline gap-x-md gap-y-xs">
-            <span className="font-medium">{wholeSubjectsText(whole, subjects)}</span>
-            {connection.testedAt !== null && (
-              <span className="text-text-2">
-                {testedText(connection.testedAt)}
-                {connection.testedBy !== null && `, por ${connection.testedBy.name}`}
-              </span>
-            )}
-          </p>
-          <TestResult checks={checks} name={name} auth={props.auth} />
-        </>
+      {(answer?.result === 'WORKING' || connection.testedAt !== null) && (
+        <p className="flex flex-wrap items-baseline gap-x-md gap-y-xs">
+          {answer?.result === 'WORKING' && (
+            <span role="status" className="font-medium">
+              {WORKING_TEXT}
+            </span>
+          )}
+          {connection.testedAt !== null && (
+            <span className="text-text-2">
+              {testedText(connection.testedAt)}
+              {connection.testedBy !== null && `, por ${connection.testedBy.name}`}
+            </span>
+          )}
+        </p>
       )}
-    </section>
+    </div>
   )
 }
 
@@ -269,9 +272,9 @@ function Reauth(props: {
 }
 
 /**
- * One connection: who linked it, its state, the last test (kept by the Hub, so it is here after a
- * reload) and, for an owner or an administrator, Testar and Desligar. What a Testar found stays
- * on this page only; another connection of the same connector has its own.
+ * One connection: who linked it, its state, who tested it last and, for an owner or an
+ * administrator, Testar and Desligar. What a Testar answered stays on this page only; another
+ * connection of the same connector has its own.
  */
 export function ConnectionPage() {
   const { companyId, connectionId } = route.useParams()
@@ -293,10 +296,6 @@ export function ConnectionPage() {
   const entry = connectors.find((one) => one.id === detail.connection.connector)
   const name = connectorName(connectors, detail.connection.connector)
   const connection = test.data?.connection ?? detail.connection
-  const auth = entry?.auth ?? 'client_credentials'
-  const fresh = test.data?.result === 'WORKING' ? test.data.checks : undefined
-  const checks: readonly Check[] | null = fresh ?? detail.lastTest
-  const { subjects, whole } = countOf(checks)
 
   function run() {
     test.mutate({ params: { companyId, connectionId } })
@@ -310,7 +309,6 @@ export function ConnectionPage() {
         entry={entry}
         name={name}
         connection={connection}
-        partial={connection.state === 'ACTIVE' && subjects > whole}
         actions={
           mayManage &&
           !gone && (
@@ -328,11 +326,8 @@ export function ConnectionPage() {
           mayManage={mayManage && !gone}
         />
       )}
-      <LastTest
+      <Test
         name={name}
-        auth={auth}
-        reads={entry?.reads ?? 0}
-        checks={checks}
         connection={connection}
         pending={test.isPending}
         error={test.error}

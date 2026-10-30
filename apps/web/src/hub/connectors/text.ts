@@ -1,18 +1,10 @@
-import type {
-  Connection,
-  ConnectorEntry,
-  KeptCheck,
-  Native,
-  SignInCompleted,
-  TestCheck,
-} from '@conexus/hub-api'
+import type { Connection, ConnectorEntry, Native, SignInCompleted } from '@conexus/hub-api'
 import { clockOf, dayAndMonth } from '../../platform/dates.ts'
 
 export const LEAD =
   'Ligue os sistemas da empresa e os apps do Conexus passam a ler os dados deles. O Conexus só lê.'
 export const NO_CONNECTIONS = 'Nenhuma integração ligada ainda.'
 export const MEMBER_SENTENCE = 'Só o dono ou um administrador liga, testa e desliga.'
-export const NOT_TESTED_YET = 'Ainda não testada.'
 export const UNREADABLE_TEXT = 'Resposta que o Conexus não entendeu'
 export const RECONNECT = 'Conectar de novo'
 const ASK_MANAGER = 'Peça ao dono ou a um administrador.'
@@ -84,95 +76,19 @@ export function appRefusedText(name: string): string {
   return `O app do Conexus foi recusado pelo ${name}. Avise o suporte.`
 }
 
-export function testingText(reads: number): string {
-  return `Testando as ${reads} leituras, uma por vez…`
+export const TESTING_TEXT = 'Testando a ligação…'
+
+/** Testar's one check read answered. */
+export const WORKING_TEXT = 'Ligado e funcionando.'
+
+/** The key was accepted and the check read, `read` by its label ("Empresas"), was refused. */
+export function readRefusedText(name: string, read: string): string {
+  return `O ${name} aceitou a ligação, mas não deixou ler ${read}. Peça ao responsável pela conta no ${name} para liberar.`
 }
 
-/** What a part of the test found, in words (the founder's sentences, X6). */
-export function outcomeText(check: TestCheck | KeptCheck, name: string): string {
-  switch (check.outcome) {
-    case 'READS':
-      return 'Lê'
-    case 'REFUSED':
-      return `Recusada pelo ${name}`
-    case 'UNREADABLE':
-      return UNREADABLE_TEXT
-    case 'NOTHING_TO_READ':
-      return 'Lê, mas não havia nada para olhar'
-    case 'NOT_TESTED':
-      return `Não testada: o ${name} demorou. Teste de novo`
-    case 'SOURCE_UNREAD':
-      return `Não testada: depende de ${check.source}, que não leu`
-  }
-}
-
-/** A part reads when the provider answered it, even with nothing in it. */
-export function reads(check: TestCheck | KeptCheck): boolean {
-  return check.outcome === 'READS' || check.outcome === 'NOTHING_TO_READ'
-}
-
-/** What to do next about a subject, by what its parts found (the study's hints, X6). */
-export function hintText(
-  items: readonly (TestCheck | KeptCheck)[],
-  name: string,
-  auth: Auth,
-): string {
-  // Only a status that says the user lacks access: a 400, 404 or 409 refused something else.
-  if (
-    items.some((one) => one.outcome === 'REFUSED' && 'native' in one && one.native.status === 403)
-  ) {
-    return auth === 'oauth2_code'
-      ? `O app do Conexus não tem permissão para esta parte no ${name}.`
-      : `O usuário de integração não tem acesso a esta parte. Libere a tela no ${name} e teste de novo.`
-  }
-  // A 400 or 404 that is not an empty page: the provider failed this read (the Sankhya 400 on a TOP its own dictionary lacks), and the door reads the same data.
-  if (
-    auth === 'client_credentials' &&
-    items.some(
-      (one) =>
-        one.outcome === 'REFUSED' &&
-        'native' in one &&
-        (one.native.status === 400 || one.native.status === 404),
-    )
-  ) {
-    return `O ${name} deu erro nesta leitura; não é falta de acesso. Os apps leem estes dados pela porta de leitura.`
-  }
-  if (items.some((one) => one.outcome === 'NOT_TESTED')) {
-    return 'O tempo do teste acabou antes destas leituras. Teste de novo.'
-  }
-  if (items.some((one) => one.outcome === 'SOURCE_UNREAD')) {
-    return 'Estas leituras partem de outra que não leu. Resolva aquela e teste de novo.'
-  }
-  return ''
-}
-
-/** What one subject comes to: the word on its line, its tone, and whether its parts stay shut. */
-export function verdictOf(items: readonly (TestCheck | KeptCheck)[]): {
-  text: string
-  tone: 'success' | 'warning' | 'danger' | 'neutral'
-  whole: boolean
-} {
-  const read = items.filter(reads).length
-  if (read === items.length) return { text: 'Lê tudo', tone: 'success', whole: true }
-  const bad = items.some((one) => one.outcome === 'REFUSED' || one.outcome === 'UNREADABLE')
-  if (read > 0) return { text: `Lê ${read} de ${items.length}`, tone: 'warning', whole: false }
-  return bad
-    ? { text: 'Não lê', tone: 'danger', whole: false }
-    : { text: 'Não testado', tone: 'neutral', whole: false }
-}
-
-/** The badge a connection wears on its page: the state, or "Lê em parte" when its last test left subjects open. */
-export const PARTIAL_BADGE = 'Lê em parte'
-
-export function wholeSubjectsText(whole: number, subjects: number): string {
-  return `Lê ${whole} de ${subjects} assuntos inteiros`
-}
-
-/** "As outras 5 leem: Clientes, Vendedores" or "A outra lê: Tipos de pagamento". */
-export function othersText(labels: readonly string[]): string {
-  return labels.length === 1
-    ? `A outra lê: ${labels[0]}.`
-    : `As outras ${labels.length} leem: ${labels.join(', ')}.`
+/** The provider answered the check read with a 429. */
+export function busyText(name: string): string {
+  return `O ${name} pediu para esperar. Tente de novo em alguns minutos.`
 }
 
 /** What the provider answered, on one line: "Sankhya respondeu 403, código ACESSO". */
