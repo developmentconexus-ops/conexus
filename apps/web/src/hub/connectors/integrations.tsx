@@ -11,6 +11,7 @@ import { LinkDialog } from './link-dialog.tsx'
 import { ConnectorLogo } from './logo.tsx'
 import { connectionsQuery } from './queries.ts'
 import {
+  accountText,
   connectionsCount,
   LEAD,
   linkedText,
@@ -22,9 +23,14 @@ import {
 
 const route = getRouteApi('/_app/companies/$companyId/integrations/')
 
-function ConnectionLink(props: { companyId: CompanyId; connection: Connection }) {
+function ConnectionLink(props: {
+  companyId: CompanyId
+  connection: Connection
+  auth: ConnectorEntry['auth']
+}) {
   const { connection } = props
-  const badge = stateBadge(connection)
+  const badge = stateBadge(connection, props.auth)
+  const account = accountText(connection)
   return (
     <Link
       to="/companies/$companyId/integrations/$connectionId"
@@ -33,7 +39,10 @@ function ConnectionLink(props: { companyId: CompanyId; connection: Connection })
     >
       <span className="flex min-w-0 flex-col gap-xs">
         <span className="font-medium">{connection.name}</span>
-        <span className="text-text-2">{linkedText(connection)}</span>
+        <span className="text-text-2">
+          {linkedText(connection)}
+          {account !== null && ` · ${account}`}
+        </span>
       </span>
       <span className="flex shrink-0 items-center gap-sm">
         {badge && <Badge tone={badge.tone}>{badge.text}</Badge>}
@@ -121,7 +130,11 @@ export function Integrations() {
                 <ul className="ml-md border-t border-line sm:ml-14">
                   {own.map((connection) => (
                     <Row key={connection.id}>
-                      <ConnectionLink companyId={companyId} connection={connection} />
+                      <ConnectionLink
+                        companyId={companyId}
+                        connection={connection}
+                        auth={entry.auth}
+                      />
                     </Row>
                   ))}
                 </ul>

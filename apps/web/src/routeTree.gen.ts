@@ -11,6 +11,7 @@ import { Route as PublicForgotPasswordRouteImport } from './routes/_public/forgo
 import { Route as PublicLoginRouteImport } from './routes/_public/login.tsx'
 import { Route as PublicSetPasswordRouteImport } from './routes/_public/set-password.tsx'
 import { Route as AppCompaniesCompanyIdRouteRouteImport } from './routes/_app/companies/$companyId/route.tsx'
+import { Route as AppIntegrationsReturnRouteImport } from './routes/_app/integrations/return.tsx'
 import { Route as AppOperationsIndexRouteImport } from './routes/_app/operations/index.tsx'
 import { Route as AppOperationsStatusRouteImport } from './routes/_app/operations/status.tsx'
 import { Route as PublicAppsOpenRouteImport } from './routes/_public/apps/open.tsx'
@@ -80,6 +81,11 @@ const AppCompaniesCompanyIdRouteRoute =
     path: '/companies/$companyId',
     getParentRoute: () => AppRouteRoute,
   } as any)
+const AppIntegrationsReturnRoute = AppIntegrationsReturnRouteImport.update({
+  id: '/integrations/return',
+  path: '/integrations/return',
+  getParentRoute: () => AppRouteRoute,
+} as any)
 const AppOperationsIndexRoute = AppOperationsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -260,6 +266,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof PublicLoginRoute
   '/set-password': typeof PublicSetPasswordRoute
   '/companies/$companyId': typeof AppCompaniesCompanyIdRouteRouteWithChildren
+  '/integrations/return': typeof AppIntegrationsReturnRoute
   '/operations/status': typeof AppOperationsStatusRoute
   '/apps/open': typeof PublicAppsOpenRoute
   '/invitations/$invitationId': typeof PublicInvitationsInvitationIdRoute
@@ -295,6 +302,7 @@ export interface FileRoutesByTo {
   '/forgot-password': typeof PublicForgotPasswordRoute
   '/login': typeof PublicLoginRoute
   '/set-password': typeof PublicSetPasswordRoute
+  '/integrations/return': typeof AppIntegrationsReturnRoute
   '/operations/status': typeof AppOperationsStatusRoute
   '/apps/open': typeof PublicAppsOpenRoute
   '/invitations/$invitationId': typeof PublicInvitationsInvitationIdRoute
@@ -332,6 +340,7 @@ export interface FileRoutesById {
   '/_public/set-password': typeof PublicSetPasswordRoute
   '/_app/': typeof AppIndexRoute
   '/_app/companies/$companyId': typeof AppCompaniesCompanyIdRouteRouteWithChildren
+  '/_app/integrations/return': typeof AppIntegrationsReturnRoute
   '/_app/operations/status': typeof AppOperationsStatusRoute
   '/_public/apps/open': typeof PublicAppsOpenRoute
   '/_public/invitations/$invitationId': typeof PublicInvitationsInvitationIdRoute
@@ -371,6 +380,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/set-password'
     | '/companies/$companyId'
+    | '/integrations/return'
     | '/operations/status'
     | '/apps/open'
     | '/invitations/$invitationId'
@@ -406,6 +416,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/set-password'
+    | '/integrations/return'
     | '/operations/status'
     | '/apps/open'
     | '/invitations/$invitationId'
@@ -442,6 +453,7 @@ export interface FileRouteTypes {
     | '/_public/set-password'
     | '/_app/'
     | '/_app/companies/$companyId'
+    | '/_app/integrations/return'
     | '/_app/operations/status'
     | '/_public/apps/open'
     | '/_public/invitations/$invitationId'
@@ -534,6 +546,13 @@ declare module '@tanstack/react-router' {
       path: '/companies/$companyId'
       fullPath: '/companies/$companyId'
       preLoaderRoute: typeof AppCompaniesCompanyIdRouteRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/_app/integrations/return': {
+      id: '/_app/integrations/return'
+      path: '/integrations/return'
+      fullPath: '/integrations/return'
+      preLoaderRoute: typeof AppIntegrationsReturnRouteImport
       parentRoute: typeof AppRouteRoute
     }
     '/_app/operations/': {
@@ -872,6 +891,7 @@ interface AppRouteRouteChildren {
   AppOperationsRouteRoute: typeof AppOperationsRouteRouteWithChildren
   AppIndexRoute: typeof AppIndexRoute
   AppCompaniesCompanyIdRouteRoute: typeof AppCompaniesCompanyIdRouteRouteWithChildren
+  AppIntegrationsReturnRoute: typeof AppIntegrationsReturnRoute
   AppCompaniesCompanyIdSettingsRouteRoute: typeof AppCompaniesCompanyIdSettingsRouteRouteWithChildren
   AppCompaniesCompanyIdWelcomeRouteRoute: typeof AppCompaniesCompanyIdWelcomeRouteRouteWithChildren
 }
@@ -880,6 +900,7 @@ const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppOperationsRouteRoute: AppOperationsRouteRouteWithChildren,
   AppIndexRoute: AppIndexRoute,
   AppCompaniesCompanyIdRouteRoute: AppCompaniesCompanyIdRouteRouteWithChildren,
+  AppIntegrationsReturnRoute: AppIntegrationsReturnRoute,
   AppCompaniesCompanyIdSettingsRouteRoute:
     AppCompaniesCompanyIdSettingsRouteRouteWithChildren,
   AppCompaniesCompanyIdWelcomeRouteRoute:
