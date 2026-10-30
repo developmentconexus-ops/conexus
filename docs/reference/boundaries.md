@@ -1076,7 +1076,7 @@ sealed credential, so both rows of the card's reference table that read "remendo
   removes a credential's values from what it logs; Mastra Connect's proxy keeps the credential
   outside the caller. Neither runs in Brazil.
 - **Hand-made piece.** `createExecutor` in `apps/server/src/hub/connectors/executor.ts`. `bodyOf`
-  reads the answer in pieces up to 256 KB and cancels past it; `redacted` replaces every secret of
+  reads the answer in pieces up to 2 MiB (`RESPONSE_CAP_BYTES`, `wire.ts`) and cancels past it; `redacted` replaces every secret of
   the request, as it is and as JSON writes it, in every body before the answer is read;
   `unreachableCause` turns only what `fetch` documents for an unreachable provider into
   `UNREACHABLE` and logs the error's name and the system code of its cause, and any other error
@@ -1092,3 +1092,23 @@ sealed credential, so both rows of the card's reference table that read "remendo
   texto e o status decide".
 - **Revisit when** Node's `fetch` takes a body cap, or a connector library runs the call in Brazil
   with the credential outside the caller.
+
+## Connectors (step 19.1): the Mercado Livre documentation check
+
+playwright-core 1.63.0, the installed version. Mercado Livre publishes no OpenAPI and no `llms.txt`
+(`/llms.txt` answers 404; none of the 221 pages read on 2026-10-29 names an OpenAPI file), so no
+reference tool checks a read against its documentation.
+
+- **Library line.** Sankhya's `spec-source.ts` downloads a published OpenAPI document and checks the
+  route and the response schema. Mercado Livre has none, and its site answers 403 to a plain HTTP
+  client and to headless Chromium, and 200 to a normal browser window.
+- **Hand-made piece.** `packages/connectors/src/mercado-livre/docs-source.ts` reads the page each
+  read cites through a headed Chromium (`inBrowser`), at run time, and `docs.test.ts` checks that the
+  read's route is in the page's text (`MERCADO_LIVRE_DOCS_ONLINE=1`, `npm run test:docs -w
+  @conexus/connectors`, by hand on a desktop, never in CI).
+- **Why.** The founder, 2026-10-29: "não guardar e baixar na hora". The check is weaker than
+  Sankhya's: it does not check the shape of the answer.
+- **Proof.** Card criterion 21: a read whose route is not in the page fails. No removal row: the test
+  needs the live site.
+- **Revisit when** Mercado Livre publishes an OpenAPI document, or a read fails on a real account
+  (then its answer, without company data, becomes the double's data).
