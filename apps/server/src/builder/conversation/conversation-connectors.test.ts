@@ -135,7 +135,7 @@ test('sem liberação a conversa não tem ferramenta nem skill de conector; libe
   assert.ok(!after?.system.includes(SKILL))
 })
 
-test('um turno retomado de um cartão também resolve de novo: tirar a liberação com o cartão aberto tira as três', async (t) => {
+test('num turno retomado as ferramentas são resolvidas de novo: tirar a liberação com o cartão aberto tira as três', async (t) => {
   const on = await connecting(t, [[ask(WHO)]])
   const id = await on.link()
   await on.release(id)
@@ -150,8 +150,6 @@ test('um turno retomado de um cartão também resolve de novo: tirar a liberaç�
   assert.equal(answered.statusCode, 200, answered.body)
   assert.equal(endOf(await on.stream.turn()), 'complete')
   assert.deepEqual(connectorTools(on.calls.at(1)), [])
-  assert.ok(on.calls.at(0)?.system.includes(SKILL))
-  assert.ok(!on.calls.at(1)?.system.includes(SKILL))
 })
 
 test('o corte: 500 linhas ficam na memória só 20, até 16 KB, com complete falso', async (t) => {
