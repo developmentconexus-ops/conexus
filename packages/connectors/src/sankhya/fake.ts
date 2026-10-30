@@ -23,6 +23,8 @@ type SankhyaSwitches = {
   expireToken: boolean
   /** Answers 200 with a body no schema reads. */
   malformed: boolean
+  /** The list reads answer the 404 the real gateway sends for an empty list (measured 2026-10-29), as a company with nothing to list does. */
+  nothingFound: boolean
   /** Answers with a page of empresas the schema reads, above 256 KB. */
   oversize: boolean
   /** Answers every call with a 307 to the same call on the fake, answered as without the switch. */
@@ -80,6 +82,38 @@ async function authenticate(
   })
 }
 
+/** The entity each list read names in the gateway's empty-list 404. */
+const EMPTY_ENTITY: Readonly<Record<string, string>> = {
+  centrosResultado: 'CentroResultado',
+  pedidos: 'CabecalhoNota',
+  notasFiscais: 'CabecalhoNota',
+  devolucoes: 'CabecalhoNota',
+  notasCanceladas: 'CabecalhoNota',
+  ordensCarga: 'OrdemCarga',
+}
+
+/** The gateway's 404 for a list with nothing in it, for the list reads that name an entity; null for any other. */
+function emptyList(name: string | undefined): Response | null {
+  const entity = EMPTY_ENTITY[name ?? '']
+  if (entity === undefined) return null
+  return json(
+    {
+      statusCode: 404,
+      error: {
+        code: 'RESOURCE_NOT_FOUND',
+        message: 'Recurso solicitado não foi encontrado!',
+        details: `Nenhum registro da entidade ${entity} com o identificador informado!`,
+      },
+    },
+    404,
+  )
+}
+
+function restAnswer(route: ReturnType<typeof routeOf>, url: URL, switches: SankhyaSwitches) {
+  const nothing = switches.nothingFound ? emptyList(route?.name) : null
+  return nothing ?? route?.answer(url.searchParams) ?? json({ code: 'NOT_FOUND' }, 404)
+}
+
 async function serveCall(request: Request, url: URL, switches: SankhyaSwitches): Promise<Response> {
   const door = url.pathname === SERVICE_PATH
   const service = door ? (url.searchParams.get('serviceName') ?? '') : ''
@@ -90,7 +124,7 @@ async function serveCall(request: Request, url: URL, switches: SankhyaSwitches):
   }
   if (switches.oversize) return json(OVERSIZE)
   if (switches.malformed) return json({ unexpected: true })
-  if (!door) return route?.answer(url.searchParams) ?? json({ code: 'NOT_FOUND' }, 404)
+  if (!door) return restAnswer(route, url, switches)
   const { requestBody } = DoorBody.parse(await request.json())
   if (service === 'CRUDServiceProvider.loadRecords') return loadRecords(requestBody)
   return service === 'DbExplorerSP.executeQuery'
@@ -136,6 +170,7 @@ export function sankhyaFake(): SankhyaFake {
     refuse: new Set(),
     expireToken: false,
     malformed: false,
+    nothingFound: false,
     oversize: false,
     redirect: false,
     silent: false,

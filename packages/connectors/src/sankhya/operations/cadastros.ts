@@ -186,5 +186,5 @@ export const centrosResultado = defineOperation({
   output: CentrosResultado,
   probe: () => ({ page: 1 }),
   request: ({ page }) => get('/v1/centros-resultado', { page }),
-  answer: (answer) => restAnswer(answer, CentrosResultado),
+  answer: (answer) => restAnswer(answer, CentrosResultado, []),
 })

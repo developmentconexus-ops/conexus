@@ -56,7 +56,11 @@ export const pedidos = defineOperation({
   from: [empresas.id],
   probe: firstEmpresaPage,
   request: (input) => get('/v1/vendas/pedidos', input),
-  answer: (answer) => restAnswer(answer, Pedidos),
+  answer: (answer) =>
+    restAnswer(answer, Pedidos, {
+      registros: [],
+      metadados: { paginaAtual: 1, totalPaginas: 1, possuiMaisPaginas: false },
+    }),
 })
 
 const Tax = z.object({
@@ -138,7 +142,11 @@ export const notasFiscais = defineOperation({
   from: [empresas.id],
   probe: firstEmpresaPage,
   request: (input) => get('/v1/vendas/nfe', input),
-  answer: (answer) => restAnswer(answer, Notas),
+  answer: (answer) =>
+    restAnswer(answer, Notas, {
+      registros: [],
+      metadados: { paginaAtual: 1, totalPaginas: 1, possuiMaisPaginas: false },
+    }),
 })
 
 const NotaCompleta = Nota.extend({
@@ -189,7 +197,11 @@ export const devolucoes = defineOperation({
   from: [empresas.id],
   probe: firstEmpresaPage,
   request: (input) => get('/v1/vendas/nfe/devolucoes', input),
-  answer: (answer) => restAnswer(answer, Notas),
+  answer: (answer) =>
+    restAnswer(answer, Notas, {
+      registros: [],
+      metadados: { paginaAtual: 1, totalPaginas: 1, possuiMaisPaginas: false },
+    }),
 })
 
 const Canceladas = z.object({
@@ -229,5 +241,5 @@ export const notasCanceladas = defineOperation({
   from: [empresas.id],
   probe: firstEmpresaPage,
   request: (input) => get('/v1/vendas/nfe/canceladas', input),
-  answer: (answer) => restAnswer(answer, Canceladas),
+  answer: (answer) => restAnswer(answer, Canceladas, { registros: [], metadados: null }),
 })

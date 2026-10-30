@@ -26,6 +26,27 @@ test('a origem, o redirecionamento e o teto', async (t) => {
   assert.ok(checks.every((outcome: string) => outcome !== 'READS'))
 })
 
+test('a lista vazia que o Sankhya manda de verdade (404 RESOURCE_NOT_FOUND) lê, não é recusa', async (t) => {
+  const { hub, fake, ana, base } = await connectionsOn(t)
+  const { connection } = Object((await linkSankhya(hub, ana, base, fake.credential)).json())
+  fake.switches.nothingFound = true
+  const tested = Object((await testOf(hub, ana, base, connection.id)).json())
+  assert.equal(tested.result, 'WORKING')
+  const outcomes = new Map(
+    tested.checks.map((check: { id: string; outcome: string }) => [check.id, check.outcome]),
+  )
+  const lists = [
+    'centrosResultado',
+    'pedidos',
+    'notasFiscais',
+    'devolucoes',
+    'notasCanceladas',
+    'ordensCarga',
+  ]
+  for (const id of lists) assert.equal(outcomes.get(id), 'READS', id)
+  assert.ok(![...outcomes.values()].includes('REFUSED'))
+})
+
 test('o Hub com a origem de um conector que o kit não tem não sobe', async (t) => {
   await assert.rejects(
     hubWithLog(t, (config) => ({

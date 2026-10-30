@@ -84,7 +84,10 @@ export function reads(check: TestCheck | KeptCheck): boolean {
 
 /** What to do next about a subject, by what its parts found (the study's hints, X6). */
 export function hintText(items: readonly (TestCheck | KeptCheck)[], name: string): string {
-  if (items.some((one) => one.outcome === 'REFUSED')) {
+  // Only a status that says the user lacks access: a 404 or 409 refused something else.
+  if (
+    items.some((one) => one.outcome === 'REFUSED' && 'native' in one && one.native.status === 403)
+  ) {
     return `O usuário de integração não tem acesso a esta parte. Libere a tela no ${name} e teste de novo.`
   }
   if (items.some((one) => one.outcome === 'NOT_TESTED')) {

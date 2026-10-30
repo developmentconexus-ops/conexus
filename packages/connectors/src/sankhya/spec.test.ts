@@ -127,18 +127,31 @@ describe('a documentação do Sankhya', () => {
     )
   })
 
-  it('a descrição da resposta 404 diz "Dados não encontrados" nas seis páginas, e só nas leituras que leem o 404 como sem linhas', async (t) => {
+  it('a descrição da resposta 404 diz "Dados não encontrados" nas seis páginas; as doze listas leem o 404 medido como sem linhas', async (t) => {
     const spec = loaded
     if (!spec) return t.skip(SKIP)
+    const measured = {
+      statusCode: 404,
+      error: {
+        code: 'RESOURCE_NOT_FOUND',
+        message: 'Recurso solicitado não foi encontrado!',
+        details: 'Nenhum registro da entidade CabecalhoNota com o identificador informado!',
+      },
+    }
     const documented = { statusCode: 404, error: { message: NOT_FOUND } }
-    const emptyRoutes = (await samples()).flatMap((sample) => {
-      const operation = sankhya.operations.find((candidate) => candidate.id === sample.id)
-      const empty = operation?.answer({ status: 404, body: documented }).kind === 'OK'
-      return empty ? (routeOf(spec, sample.request)?.[0] ?? []) : []
-    })
-    assert.equal(emptyRoutes.length, 6, 'as seis leituras que leem o 404 como lista vazia')
+    async function reading(body: unknown, from: Spec) {
+      return (await samples()).flatMap((sample) => {
+        const operation = sankhya.operations.find((candidate) => candidate.id === sample.id)
+        const empty = operation?.answer({ status: 404, body }).kind === 'OK'
+        return empty ? (routeOf(from, sample.request)?.[0] ?? []) : []
+      })
+    }
+    const emptyRoutes = await reading(measured, spec)
+    assert.equal(emptyRoutes.length, 12, 'as doze listas que leem o 404 medido como lista vazia')
+    assert.deepEqual((await reading(documented, spec)).sort(), emptyRoutes.sort())
     const saying = Object.entries(spec.routes).filter(([, route]) => route.notFound === NOT_FOUND)
-    assert.deepEqual(saying.map(([key]) => key).sort(), emptyRoutes.sort())
+    assert.equal(saying.length, 6)
+    for (const [key] of saying) assert.ok(emptyRoutes.includes(key), key)
   })
 
   it('recusa o dublê dos clientes sem o endereço e o filtro que a rota não declara', async (t) => {

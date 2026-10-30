@@ -72,5 +72,5 @@ export const ordensCarga = defineOperation({
   from: [empresas.id],
   probe: firstEmpresaPage,
   request: (input) => get('/v1/logistica/ordens-carga', input),
-  answer: (answer) => restAnswer(answer, OrdensCarga),
+  answer: (answer) => restAnswer(answer, OrdensCarga, { ordensCarga: [], pagination: null }),
 })

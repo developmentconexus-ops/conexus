@@ -37,8 +37,11 @@ function locate(body: unknown): Pick<Native, 'code' | 'message'> {
 
 function nativeOf(answer: ProviderAnswer): Native {
   const ok = answer.status >= 200 && answer.status < 300
-  // A 2xx body is the company's data: it never rides along on an unreadable answer.
-  return { status: answer.status, ...locate(answer.body), body: ok ? null : answer.body }
+  // A 2xx body is the company's data: it never rides along on an unreadable answer, and its
+  // "Consulta realizada com sucesso!" does not sit under a failure.
+  return ok
+    ? { status: answer.status, code: null, message: null, body: null }
+    : { status: answer.status, ...locate(answer.body), body: answer.body }
 }
 
 /** A status outside 2xx: the Sankhya codes the pages document, else the kernel's table; null for a 2xx. */
@@ -52,17 +55,30 @@ function failureOf(answer: ProviderAnswer): Failure | null {
   return { kind: outcomeOf(status), native }
 }
 
-/** What the six pages say a 404 means; `spec.test.ts` checks each page still says it. */
+/** What the pages say a 404 means; `spec.test.ts` checks the six that document it still say it. */
 export const NOT_FOUND = 'Dados não encontrados'
 
+/** What the real gateway sends for an empty list (measured on the founder's run, 2026-10-29): the entity's name follows. */
+export const NOTHING_FOUND = 'Nenhum registro da entidade'
+
 /**
- * The 404 body the kit expects: the message must be the pages' phrase, or a moved route (the framework's own 404) would read as an empty list.
- * The six pages show the phrase only as the 404 response's description; this body shape is unmeasured and is set from the founder's use script (step 3) with a real empty 404.
+ * The 404 body that reads as an empty list: the pages' phrase, or the measured one (code
+ * `RESOURCE_NOT_FOUND` and details that begin with NOTHING_FOUND). Any other 404, such as a moved
+ * route's own, stays the kernel's.
  */
-const NotFound = z.looseObject({
-  statusCode: z.literal(404),
-  error: z.looseObject({ message: z.literal(NOT_FOUND) }),
-})
+const NotFound = z.union([
+  z.looseObject({
+    statusCode: z.literal(404),
+    error: z.looseObject({ message: z.literal(NOT_FOUND) }),
+  }),
+  z.looseObject({
+    statusCode: z.literal(404),
+    error: z.looseObject({
+      code: z.literal('RESOURCE_NOT_FOUND'),
+      details: z.string().startsWith(NOTHING_FOUND),
+    }),
+  }),
+])
 
 function read<O>(output: z.ZodType<O>, answer: ProviderAnswer, body: unknown): Answered<O> {
   const parsed = output.safeParse(body)
@@ -73,8 +89,8 @@ function read<O>(output: z.ZodType<O>, answer: ProviderAnswer, body: unknown): A
 
 /**
  * The REST answer: the body in the operation's schema, or the failure its status says. A 404 is a
- * list only when its body says so: the list itself, or (for the reads whose page documents it) the
- * not-found body the kit expects (NotFound), which reads as `empty`, the list with no rows; any
+ * list only when its body says so: the list itself, or the not-found body the kit expects
+ * (NotFound), which reads as `empty`, the list with no rows; any
  * other 404 is the kernel's.
  */
 export function restAnswer<O>(

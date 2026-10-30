@@ -79,6 +79,57 @@ test('o 404 no formato que o kit espera é a leitura sem linhas; outro 404 não 
   assert.partialDeepStrictEqual(answer('empresas', 404, notFound), { kind: 'REFUSED' })
 })
 
+test('o 404 que o Sankhya manda de verdade para a lista vazia lê sem linhas; outro RESOURCE_NOT_FOUND não', () => {
+  function measured(details: string) {
+    return {
+      statusCode: 404,
+      error: {
+        code: 'RESOURCE_NOT_FOUND',
+        message: 'Recurso solicitado não foi encontrado!',
+        details,
+      },
+    }
+  }
+  const empty = measured('Nenhum registro da entidade CabecalhoNota com o identificador informado!')
+  const lists = [
+    ...DOCUMENTED,
+    'centrosResultado',
+    'pedidos',
+    'notasFiscais',
+    'devolucoes',
+    'notasCanceladas',
+    'ordensCarga',
+  ]
+  for (const id of lists) {
+    assert.equal(answer(id, 404, empty).kind, 'OK', id)
+    assert.partialDeepStrictEqual(
+      answer(id, 404, measured('A rota mudou')),
+      { kind: 'REFUSED' },
+      id,
+    )
+    assert.partialDeepStrictEqual(
+      answer(id, 404, { statusCode: 404, error: { code: 'OUTRO', details: empty.error.details } }),
+      { kind: 'REFUSED' },
+      id,
+    )
+  }
+  assert.deepEqual(answer('centrosResultado', 404, empty), {
+    kind: 'OK',
+    value: { centrosResultado: [] },
+  })
+})
+
+test('um 2xx que não encaixa diz só o status: nem a frase de sucesso do Sankhya nem um valor', () => {
+  const body = {
+    mensagem: 'Consulta realizada com sucesso!',
+    empresas: [{ codigoEmpresa: 'VALOR' }],
+  }
+  assert.deepEqual(answer('empresas', 200, body), {
+    kind: 'UNREADABLE',
+    native: { status: 200, code: null, message: null, body: null },
+  })
+})
+
 test('a recusa leva o que o Sankhya disse, o corpo como veio', () => {
   const body = { mensagem: { codigo: 'NO_ACCESS', descricao: 'sem acesso' }, extra: [1] }
   assert.deepEqual(answer('clientes', 403, body), {
