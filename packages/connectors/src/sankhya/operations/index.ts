@@ -11,14 +11,7 @@ import { contasAPagar, contasAReceber, tiposPagamento } from './financeiro.ts'
 import { ordensCarga, transportadoras } from './logistica.ts'
 import { precosDaTabela, precosDoProduto } from './precos.ts'
 import { gruposProduto, produtos } from './produtos.ts'
-import {
-  devolucoes,
-  impostosDoPedido,
-  notaFiscal,
-  notasCanceladas,
-  notasFiscais,
-  pedidos,
-} from './vendas.ts'
+import { devolucoes, notaFiscal, notasCanceladas, notasFiscais, pedidos } from './vendas.ts'
 
 /** The order Testar calls them in: `empresas` first, since seven probes read it (their `from`); each subject keeps the ready five before the rest. */
 export const sankhyaOperations = [
@@ -31,7 +24,6 @@ export const sankhyaOperations = [
   produtos,
   gruposProduto,
   pedidos,
-  impostosDoPedido,
   notasFiscais,
   notaFiscal,
   devolucoes,

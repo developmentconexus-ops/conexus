@@ -72,7 +72,7 @@ test('um segundo pedido no mesmo token em curso recebe o envelope "4"; no REST, 
   })
 })
 
-test('os interruptores: recusa, token vencido, fora do esquema, acima de 256 KB, redirecionamento', async () => {
+test('os interruptores: recusa, token vencido, fora do esquema, acima de 2 MiB, redirecionamento', async () => {
   const [ready] = sankhya.operations
   assert.ok(ready)
   await withToken(async (origin, token, fake) => {
@@ -88,7 +88,7 @@ test('os interruptores: recusa, token vencido, fora do esquema, acima de 256 KB,
     fake.switches.malformed = false
     fake.switches.oversize = true
     const oversize = await empresas(token, origin)
-    assert.ok(JSON.stringify(oversize.body).length > 256 * 1024)
+    assert.ok(JSON.stringify(oversize.body).length > 2 * 1024 * 1024)
     assert.equal(ready.answer(oversize).kind, 'OK')
     fake.switches.oversize = false
     fake.switches.expireToken = true
@@ -117,17 +117,17 @@ test('os seis 403 que a documentação descreve vêm em mensagem.codigo, e as ou
       )
     }
     fake.switches.expireToken = true
-    const expired = await read('/v1/parceiros/clientes', { page: '1' })
+    const expired = await read('/v1/parceiros/clientes', { page: '0' })
     assert.deepEqual(expired.body, {
       mensagem: { codigo: 'GTW3403', descricao: 'Bearer Token inválido ou expirado' },
     })
     assert.partialDeepStrictEqual(clientes.answer(expired), { kind: 'TOKEN_EXPIRED' })
-    const bare = await read('/v1/vendas/pedidos', { codigoEmpresa: '1', page: '1' })
+    const bare = await read('/v1/vendas/pedidos', { codigoEmpresa: '1', page: '0' })
     assert.deepEqual(bare.body, { code: 'GTW3403', message: 'Bearer Token inválido ou expirado' })
     assert.partialDeepStrictEqual(pedidos.answer(bare), { kind: 'TOKEN_EXPIRED' })
     fake.switches.expireToken = false
     fake.switches.refuse.add('clientes')
-    const refused = await read('/v1/parceiros/clientes', { page: '1' })
+    const refused = await read('/v1/parceiros/clientes', { page: '0' })
     assert.deepEqual(refused.body, {
       mensagem: { codigo: 'NO_ACCESS', descricao: 'Sem permissão' },
     })

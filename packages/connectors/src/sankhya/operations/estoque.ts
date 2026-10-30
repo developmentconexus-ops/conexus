@@ -1,19 +1,7 @@
 import { z } from 'zod'
-import { defineOperation } from '../../kernel/operation.ts'
-import { restAnswer } from '../answers.ts'
-import { Code, get, maybe, Page } from './shared.ts'
-
-const Estoque = z.object({
-  estoque: z.array(
-    z.object({
-      codigoProduto: Code,
-      codigoEmpresa: Code,
-      codigoLocal: Code,
-      controle: maybe(z.string()),
-      estoque: z.number(),
-    }),
-  ),
-})
+import { defineOperation, get } from '../../kernel/operation.ts'
+import { rows } from '../answers.ts'
+import { Page } from './shared.ts'
 
 export const estoque = defineOperation({
   id: 'estoque',
@@ -21,39 +9,23 @@ export const estoque = defineOperation({
   subject: 'estoque',
   idempotent: true,
   summary:
-    'Lista o saldo de estoque por produto, empresa e local (até 50 por página); a página começa em 1 e a lista não diz quando acaba. Só traz produto que já teve movimento.',
+    'Lista o saldo de estoque por produto, empresa e local (até 50 por página); a página começa em 0. Só traz produto que já teve movimento.',
   label: 'Estoque por produto',
-  input: z.object({ page: Page(1) }),
-  output: Estoque,
-  probe: () => ({ page: 1 }),
+  input: z.object({ page: Page(0) }),
+  ...rows({ list: 'estoque' }),
+  probe: () => ({ page: 0 }),
   request: ({ page }) => get('/v1/estoque/produtos', { page }),
-  answer: (answer) => restAnswer(answer, Estoque, { estoque: [] }),
 })
-
-const LocaisEstoque = z
-  .array(
-    z.object({
-      codigoLocal: Code,
-      codigoLocalPai: maybe(Code),
-      descricaoLocal: maybe(z.string()),
-      grau: maybe(Code),
-      analitico: maybe(z.boolean()),
-      ativo: maybe(z.boolean()),
-    }),
-  )
-  .transform((locais) => ({ locais }))
 
 export const locaisEstoque = defineOperation({
   id: 'locaisEstoque',
   class: 'read' as const,
   subject: 'estoque',
   idempotent: true,
-  summary:
-    'Lista os locais de estoque (código, descrição, local pai); a página começa em 0 e a lista não diz quando acaba.',
+  summary: 'Lista os locais de estoque (código, descrição, local pai); a página começa em 0.',
   label: 'Locais de estoque',
   input: z.object({ page: Page(0) }),
-  output: LocaisEstoque,
+  ...rows({ list: 'locais' }),
   probe: () => ({ page: 0 }),
   request: ({ page }) => get('/v1/estoque/locais', { page }),
-  answer: (answer) => restAnswer(answer, LocaisEstoque),
 })

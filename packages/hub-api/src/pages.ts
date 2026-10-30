@@ -33,4 +33,8 @@ export const PAGES = [
   '/operations/clients/new',
   '/operations/clients/$companyId',
   '/invitations/$invitationId',
+  '/integrations/return',
 ] as const
+
+/** Where a provider sends the person back after an OAuth authorization: the Hub's redirect address is its public origin plus this (C26). */
+export const REDIRECT_PATH = '/integrations/return'

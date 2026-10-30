@@ -1,4 +1,10 @@
-import type { TestResult as Answer, CompanyId, Connection, ConnectorEntry } from '@conexus/hub-api'
+import type {
+  TestResult as Answer,
+  CompanyId,
+  Connection,
+  ConnectionId,
+  ConnectorEntry,
+} from '@conexus/hub-api'
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi, Link, useNavigate } from '@tanstack/react-router'
 import { ArrowLeftIcon, MoreHorizontalIcon } from 'lucide-react'
@@ -14,18 +20,20 @@ import {
 } from '../../ui/dropdown-menu.tsx'
 import { PageTitle, SectionTitle } from '../../ui/list.tsx'
 import { RouteReadFailure } from '../../ui/states.tsx'
+import { ReconnectButton } from './link-dialog.tsx'
 import { ConnectorLogo } from './logo.tsx'
 import { connectionKeys, connectionQuery, connectionsQuery, sendTest } from './queries.ts'
 import type { Check } from './test-result.tsx'
 import { countOf, Said, TestResult } from './test-result.tsx'
 import {
+  accountText,
+  appRefusedText,
   connectorName,
   linkedText,
   MEMBER_SENTENCE,
   NOT_TESTED_YET,
   PARTIAL_BADGE,
-  refusedKeysMemberText,
-  refusedKeysText,
+  reauthText,
   serverErrorText,
   stateBadge,
   testedText,
@@ -82,6 +90,7 @@ function TestRefusal(props: { answer: Exclude<Answer, { result: 'WORKING' }>; na
         ? serverErrorText(name)
         : unreachableText(name),
     UNREADABLE: UNREADABLE_TEXT,
+    APP_REFUSED: appRefusedText(name),
   }[answer.result]
   return (
     <div role="alert" className="flex flex-col gap-xs">
@@ -123,7 +132,8 @@ function Header(props: {
   const { entry, connection } = props
   const badge = props.partial
     ? { text: PARTIAL_BADGE, tone: 'warning' as const }
-    : stateBadge(connection)
+    : stateBadge(connection, entry?.auth ?? 'client_credentials')
+  const account = accountText(connection)
   return (
     <div className="flex flex-wrap items-start justify-between gap-md">
       <div className="flex min-w-0 flex-wrap items-center gap-x-lg gap-y-sm">
@@ -136,7 +146,10 @@ function Header(props: {
           <PageTitle className="break-words">{connection.name}</PageTitle>
           <span className="flex flex-wrap items-center gap-x-sm gap-y-xs">
             {badge && <Badge tone={badge.tone}>{badge.text}</Badge>}
-            <span className="text-text-2">{linkedText(connection)}</span>
+            <span className="text-text-2">
+              {linkedText(connection)}
+              {account !== null && ` · ${account}`}
+            </span>
           </span>
         </div>
       </div>
@@ -148,6 +161,7 @@ function Header(props: {
 /** What the last test found: the subjects that read whole, and the sentence of whatever stopped a new one. */
 function LastTest(props: {
   name: string
+  auth: ConnectorEntry['auth']
   reads: number
   checks: readonly Check[] | null
   connection: Connection
@@ -184,7 +198,7 @@ function LastTest(props: {
               </span>
             )}
           </p>
-          <TestResult checks={checks} name={name} />
+          <TestResult checks={checks} name={name} auth={props.auth} />
         </>
       )}
     </section>
@@ -208,6 +222,52 @@ function Facts(props: { name: string; connection: Connection }) {
   )
 }
 
+/** "Ligar e testar", "Conectar de novo" and the return from an authorization land here with `testar`: each arrival starts a test once, then leaves the address clean. */
+function useFirstTest(
+  mutate: (variables: { params: { companyId: CompanyId; connectionId: ConnectionId } }) => void,
+  at: {
+    companyId: CompanyId
+    connectionId: ConnectionId
+    testar: boolean | undefined
+    mayManage: boolean
+  },
+) {
+  const { companyId, connectionId, testar, mayManage } = at
+  const navigate = useNavigate()
+  const started = useRef(false)
+  useEffect(() => {
+    if (!testar) {
+      started.current = false
+      return
+    }
+    if (started.current) return
+    started.current = true
+    if (mayManage) mutate({ params: { companyId, connectionId } })
+    void navigate({ to: '.', search: {}, replace: true })
+  }, [testar, mayManage, companyId, connectionId, navigate, mutate])
+}
+
+/** A refused connection says so, once, and the way back: "Conectar de novo" for who manages, who to ask for who does not. */
+function Reauth(props: {
+  companyId: CompanyId
+  entry: ConnectorEntry | undefined
+  connection: Connection
+  name: string
+  mayManage: boolean
+}) {
+  const { entry, connection } = props
+  return (
+    <div className="flex flex-col items-start gap-md">
+      <p role="alert" className="text-danger">
+        {reauthText(props.name, entry?.auth ?? 'client_credentials', props.mayManage)}
+      </p>
+      {props.mayManage && entry && (
+        <ReconnectButton companyId={props.companyId} entry={entry} connection={connection} />
+      )}
+    </div>
+  )
+}
+
 /**
  * One connection: who linked it, its state, the last test (kept by the Hub, so it is here after a
  * reload) and, for an owner or an administrator, Testar and Desligar. What a Testar found stays
@@ -218,7 +278,6 @@ export function ConnectionPage() {
   const { testar } = route.useSearch()
   const { connectors, mayManage } = useSuspenseQuery(connectionsQuery(companyId)).data
   const detail = useSuspenseQuery(connectionQuery(companyId, connectionId)).data
-  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [unlinking, setUnlinking] = useState(false)
   const test = useMutation({
@@ -234,6 +293,7 @@ export function ConnectionPage() {
   const entry = connectors.find((one) => one.id === detail.connection.connector)
   const name = connectorName(connectors, detail.connection.connector)
   const connection = test.data?.connection ?? detail.connection
+  const auth = entry?.auth ?? 'client_credentials'
   const fresh = test.data?.result === 'WORKING' ? test.data.checks : undefined
   const checks: readonly Check[] | null = fresh ?? detail.lastTest
   const { subjects, whole } = countOf(checks)
@@ -241,14 +301,7 @@ export function ConnectionPage() {
   function run() {
     test.mutate({ params: { companyId, connectionId } })
   }
-  // "Ligar e testar" lands here with `testar`: it starts the first test once, then leaves the address clean.
-  const started = useRef(false)
-  useEffect(() => {
-    if (!testar || started.current) return
-    started.current = true
-    if (mayManage) test.mutate({ params: { companyId, connectionId } })
-    void navigate({ to: '.', search: {}, replace: true })
-  }, [testar, mayManage, companyId, connectionId, navigate, test.mutate])
+  useFirstTest(test.mutate, { companyId, connectionId, testar, mayManage })
 
   return (
     <div className="flex w-full max-w-page flex-col gap-xl">
@@ -267,12 +320,17 @@ export function ConnectionPage() {
       />
       {!mayManage && <p className="text-text-2">{MEMBER_SENTENCE}</p>}
       {connection.state === 'NEEDS_REAUTH' && (
-        <p role="alert" className="text-danger">
-          {mayManage ? refusedKeysText(name) : refusedKeysMemberText(name)}
-        </p>
+        <Reauth
+          companyId={companyId}
+          entry={entry}
+          connection={connection}
+          name={name}
+          mayManage={mayManage && !gone}
+        />
       )}
       <LastTest
         name={name}
+        auth={auth}
         reads={entry?.reads ?? 0}
         checks={checks}
         connection={connection}

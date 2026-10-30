@@ -12,7 +12,8 @@ export const SANKHYA = ConnectorEntry.parse({
   category: 'ERP',
   summary: 'O sistema de gestão da empresa: pedidos, estoque, financeiro e cadastros.',
   logo: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28"><rect width="28" height="28" rx="6" fill="#66CB66"/></svg>',
-  reads: 25,
+  reads: 24,
+  auth: 'client_credentials',
   fields: [
     {
       name: 'clientId',
@@ -38,6 +39,19 @@ export const SANKHYA = ConnectorEntry.parse({
   ],
 })
 
+/** A connector that links by a trip to the provider: no fields, and the logo is the symbol alone. */
+export const MERCADO_LIVRE = ConnectorEntry.parse({
+  id: 'mercado-livre',
+  name: 'Mercado Livre',
+  version: '1.0.0',
+  category: 'Marketplace',
+  summary: 'O marketplace da loja: anúncios, vendas, envios e perguntas.',
+  logo: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28"><circle cx="14" cy="14" r="14" fill="#FFE600"/></svg>',
+  reads: 27,
+  auth: 'oauth2_code',
+  fields: [],
+})
+
 let made = 0
 
 /** A connection of the company to the Sankhya, linked by Ana and not yet tested, unless `fields` say otherwise. */
@@ -53,11 +67,12 @@ export function connectionOf(fields: Partial<ConnectionOf> = {}): ConnectionOf {
     linkedAt: '2026-10-29T12:00:00.000Z',
     testedAt: null,
     testedBy: null,
+    account: null,
     ...fields,
   })
 }
 
-/** What one Testar reads, by subject and label: the 25 reads of the Sankhya. */
+/** What one Testar reads, by subject and label: the 24 reads of the Sankhya. */
 const SUBJECTS: readonly (readonly [string, readonly string[]])[] = [
   ['Porta de leitura', ['Consulta', 'Leitura genérica']],
   [
@@ -74,14 +89,7 @@ const SUBJECTS: readonly (readonly [string, readonly string[]])[] = [
   ['Produtos', ['Produtos', 'Grupos de produto']],
   [
     'Vendas',
-    [
-      'Pedidos',
-      'Impostos dos pedidos',
-      'Notas fiscais',
-      'Nota fiscal com itens',
-      'Devoluções',
-      'Notas canceladas',
-    ],
+    ['Pedidos', 'Notas fiscais', 'Nota fiscal com itens', 'Devoluções', 'Notas canceladas'],
   ],
   ['Estoque', ['Estoque por produto', 'Locais de estoque']],
   ['Financeiro', ['Contas a receber', 'Contas a pagar', 'Tipos de pagamento']],

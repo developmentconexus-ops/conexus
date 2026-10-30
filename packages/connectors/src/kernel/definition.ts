@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import type { Auth } from './auth.ts'
-import type { Operation, OperationId } from './operation.ts'
+import type { AccountOf, Operation, OperationId } from './operation.ts'
 
 export const ConnectorId = z
   .string()
@@ -14,8 +14,13 @@ export type ReadDoor = Readonly<Record<string, Operation<unknown, unknown, 'read
 /** What the provider says about the account behind a connection (several connections per connector, founder 2026-10-29). */
 type AccountIdentity =
   // No account in the login's answer (Sankhya): the name the company gives tells connections apart.
-  // 19.1 adds `reported`: the login reports the account; `exclusive`, one connection per account in all of Conexus.
-  Readonly<{ kind: 'none' }>
+  | Readonly<{ kind: 'none' }>
+  // The provider says whose the grant is; `exclusive`: one connection per account in all of Conexus.
+  | Readonly<{
+      kind: 'reported'
+      exclusive: true
+      who: Readonly<{ path: `/${string}`; answer: z.ZodType<AccountOf> }>
+    }>
 
 export type Connector = Readonly<{
   id: ConnectorId
@@ -44,10 +49,14 @@ const Origin = z
       URL.canParse(value) && new URL(value).origin === value && value.startsWith('https://'),
   )
 
-/** Takes `id` as a plain string and brands it; throws on a repeated operation id, a bad version or origin, a door entry that is not 'read', an operation of a subject the connector lacks, a subject with no operation or a `from` that is not an earlier operation. */
-export function defineConnector(connector: Omit<Connector, 'id'> & { id: string }): Connector {
+/** Takes `id` as a plain string and brands it; throws on a reported account with a login that is not OAuth, a repeated operation id, a bad version or origin, a door entry that is not 'read', an operation of a subject the connector lacks, a subject with no operation or a `from` that is not an earlier operation. */
+export function defineConnector<A extends Auth>(
+  connector: Omit<Connector, 'id' | 'auth'> & { id: string; auth: A },
+): Connector & Readonly<{ auth: A }> {
   Version.parse(connector.version)
   Origin.parse(connector.origin)
+  if (connector.account.kind === 'reported' && connector.auth.kind !== 'oauth2_code')
+    throw new Error(`Reported account without an OAuth login in ${connector.id}`)
   const all = inProbeOrder(connector)
   const ids = all.map((operation) => operation.id)
   if (new Set(ids).size !== ids.length) throw new Error(`Repeated operation id in ${connector.id}`)

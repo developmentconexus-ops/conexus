@@ -1,8 +1,11 @@
 import type { CompanyId, ConnectionId } from '@conexus/hub-api'
 import {
+  completeConnectionSignIn,
   getConnection,
   linkConnection,
   listConnections,
+  reconnectConnection,
+  startConnectionSignIn,
   TEST_DEADLINE_MS,
   testConnection,
   unlinkConnection,
@@ -36,3 +39,6 @@ export function connectionKeys(companyId: CompanyId, connectionId: ConnectionId)
 export const sendLink = hubMutation(linkConnection)
 export const sendTest = hubMutation(testConnection, { deadlineMs: TEST_WAIT_MS })
 export const sendUnlink = hubMutation(unlinkConnection)
+export const sendSignInStart = hubMutation(startConnectionSignIn)
+export const sendSignInEnd = hubMutation(completeConnectionSignIn)
+export const sendReconnect = hubMutation(reconnectConnection)

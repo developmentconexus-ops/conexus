@@ -104,13 +104,18 @@ export {
   ConnectionId,
   ConnectionList,
   ConnectionName,
+  ConnectionSignInId,
   type ConnectionState,
   ConnectorEntry,
+  completeConnectionSignIn,
   getConnection,
   KeptCheck,
   linkConnection,
   listConnections,
   Native,
+  reconnectConnection,
+  SignInCompleted,
+  startConnectionSignIn,
   TEST_DEADLINE_MS,
   TestCheck,
   TestResult,
@@ -217,7 +222,7 @@ export {
   OwnerInvitation,
   registerClient,
 } from './operations.ts'
-export { PAGES } from './pages.ts'
+export { PAGES, REDIRECT_PATH } from './pages.ts'
 export {
   createProject,
   deleteProject,

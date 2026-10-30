@@ -194,3 +194,97 @@ test('catálogo: o nome da ligação é único sem caixa, no índice que o REIND
     },
   ])
 })
+
+function linkedTo(id: string, company: string, connector: string, ref: string | null) {
+  const label = ref === null ? 'null' : `'${ref}-label'`
+  return `insert into connectors.connection(id, company_id, connector_id, name, connector_version,
+    state, sealed, key_id, linked_by, linked_at, attempt_key, account_ref, account_label) values
+    ('${id}', '${company}', '${connector}', '${id}', '1.0.0', 'NEW', '\\x01', 'k1', 'person-b',
+     now(), '${id}', ${ref === null ? 'null' : `'${ref}'`}, ${label});`
+}
+
+test('a conta numa ligação só: o banco recusa a segunda linha com a mesma conta, em qualquer empresa', async (t) => {
+  const { asOwner } = await createTestDatabase(t)
+  await asOwner(SEED)
+  await asOwner(linkedTo(crypto.randomUUID(), A, 'mercado-livre', 'seller-1'))
+
+  // The second link of the account, by the same company or by another, is the database's refusal.
+  for (const company of [A, B]) {
+    await assert.rejects(
+      asOwner(linkedTo(crypto.randomUUID(), company, 'mercado-livre', 'seller-1')),
+      {
+        code: '23505',
+        constraint: 'connection_account_key',
+      },
+    )
+  }
+  // Another account, the same account id under another connector, and any number of connections
+  // with no account (a connector whose account is none) stand.
+  await asOwner(linkedTo(crypto.randomUUID(), B, 'mercado-livre', 'seller-2'))
+  await asOwner(linkedTo(crypto.randomUUID(), B, 'bling', 'seller-1'))
+  const unlinked = crypto.randomUUID()
+  await asOwner(linkedTo(unlinked, A, 'sankhya', null))
+  await asOwner(linkedTo(crypto.randomUUID(), B, 'sankhya', null))
+
+  // The account is a pair: a reference without its label, or a label without its reference, and a
+  // label outside 1 to 120 characters, are refused.
+  const bad = [
+    `account_ref = 'x', account_label = null`,
+    `account_ref = null, account_label = 'x'`,
+    `account_ref = 'x', account_label = ''`,
+    `account_ref = 'x', account_label = '${'x'.repeat(121)}'`,
+  ]
+  for (const set of bad) {
+    await assert.rejects(
+      asOwner(`update connectors.connection set ${set} where id = '${unlinked}'`),
+      { code: '23514', constraint: 'connection_account' },
+    )
+  }
+  await asOwner(
+    `update connectors.connection set account_ref = 'x', account_label = '${'x'.repeat(120)}' where id = '${unlinked}'`,
+  )
+})
+
+test('a ligação: a empresa lê e troca a conta, a revisão e a trava, e quem a refez; o selo continua fechado', async (t) => {
+  const { database, asOwner } = await createTestDatabase(t)
+  await asOwner(SEED)
+  function inA(personId: PersonId, statement: ReturnType<typeof sql>) {
+    return database.command({ kind: 'COMPANY', companyId: A, personId }, (tx) =>
+      tx.execute(statement),
+    )
+  }
+
+  const fresh = await inA(
+    ANA,
+    sql`select revision, refresh_until, account_ref, account_label from connectors.connection
+      where id = ${CONNECTION_A}`,
+  )
+  assert.deepEqual(fresh.rows, [
+    { revision: 0, refresh_until: null, account_ref: null, account_label: null },
+  ])
+  await inA(
+    ANA,
+    sql`update connectors.connection set revision = revision + 1, refresh_until = now(),
+      account_ref = 'seller-1', account_label = 'PADARIASOL', linked_by = ${ANA}, linked_at = now()
+      where id = ${CONNECTION_A}`,
+  )
+  const renewed = await inA(
+    ANA,
+    sql`select revision, account_ref, account_label, linked_by from connectors.connection
+      where id = ${CONNECTION_A}`,
+  )
+  assert.deepEqual(renewed.rows, [
+    { revision: 1, account_ref: 'seller-1', account_label: 'PADARIASOL', linked_by: ANA },
+  ])
+  // What D11 left closed stays closed: the seal, who the connection belongs to, its attempt key.
+  for (const column of ['sealed', 'company_id', 'attempt_key']) {
+    await assert.rejects(
+      inA(ANA, sql`update connectors.connection set ${sql.raw(column)} = ${sql.raw(column)}`),
+      refusedWith('42501'),
+    )
+  }
+  await assert.rejects(
+    inA(ANA, sql`select sealed from connectors.connection`),
+    refusedWith('42501'),
+  )
+})

@@ -9,7 +9,8 @@
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
     "test": "node --test --test-reporter=../../scripts/test-reporter.ts \"src/**/*.test.ts\"",
-    "test:docs": "SANKHYA_SPEC_ONLINE=1 node --test --test-reporter=../../scripts/test-reporter.ts src/sankhya/spec.test.ts"
+    "test:docs": "SANKHYA_SPEC_ONLINE=1 node --test --test-reporter=../../scripts/test-reporter.ts src/sankhya/spec.test.ts",
+    "test:docs:mercado-livre": "MERCADO_LIVRE_DOCS_ONLINE=1 node --test --test-reporter=../../scripts/test-reporter.ts src/mercado-livre/docs.test.ts"
   },
   "dependencies": {
     "zod": "4.6.5"

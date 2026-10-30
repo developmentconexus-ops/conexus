@@ -1,4 +1,11 @@
-import type { Connection, ConnectorEntry, KeptCheck, TestCheck } from '@conexus/hub-api'
+import type {
+  Connection,
+  ConnectorEntry,
+  KeptCheck,
+  Native,
+  SignInCompleted,
+  TestCheck,
+} from '@conexus/hub-api'
 import { clockOf, dayAndMonth } from '../../platform/dates.ts'
 
 export const LEAD =
@@ -7,6 +14,13 @@ export const NO_CONNECTIONS = 'Nenhuma integração ligada ainda.'
 export const MEMBER_SENTENCE = 'Só o dono ou um administrador liga, testa e desliga.'
 export const NOT_TESTED_YET = 'Ainda não testada.'
 export const UNREADABLE_TEXT = 'Resposta que o Conexus não entendeu'
+export const RECONNECT = 'Conectar de novo'
+const ASK_MANAGER = 'Peça ao dono ou a um administrador.'
+export const RETURNING_TEXT = 'Voltando da autorização…'
+export const NOT_A_SIGN_IN_TEXT = 'Esse endereço não é de uma ligação.'
+export const BACK_TO_INTEGRATIONS = 'Voltar a Integrações'
+
+type Auth = ConnectorEntry['auth']
 
 /** The connector's name, or its id for one the catalog no longer holds. */
 export function connectorName(connectors: readonly ConnectorEntry[], id: string): string {
@@ -17,12 +31,22 @@ export function connectionsCount(count: number): string {
   return count === 1 ? '1 ligação' : `${count} ligações`
 }
 
-/** The state as a badge, in words and a tone (design V35); a connection never tested has none. */
+/** The state as a badge, in words and a tone (design V35); a connection never tested has none. What a refusal means depends on how the connector links. */
 export function stateBadge(
   connection: Connection,
+  auth: Auth,
 ): { text: string; tone: 'success' | 'danger' } | null {
   if (connection.state === 'ACTIVE') return { text: 'Funcionando', tone: 'success' }
-  return connection.state === 'NEEDS_REAUTH' ? { text: 'Chaves recusadas', tone: 'danger' } : null
+  if (connection.state !== 'NEEDS_REAUTH') return null
+  return {
+    text: auth === 'oauth2_code' ? 'Pede para conectar de novo' : 'Chaves recusadas',
+    tone: 'danger',
+  }
+}
+
+/** "conta PADARIASOL": the provider's account the connection is of, for a connector that reports one. */
+export function accountText(connection: Connection): string | null {
+  return connection.account === null ? null : `conta ${connection.account.label}`
 }
 
 /** "Ligada por Ana em 29/10", and ", ainda não testada" until the first test. */
@@ -37,13 +61,13 @@ export function testedText(testedAt: string): string {
   return `testada em ${dayAndMonth(testedAt)}, ${clockOf(testedAt)}`
 }
 
-export function refusedKeysText(name: string): string {
-  return `As chaves foram recusadas pelo ${name}. Desligue e ligue de novo com chaves novas.`
-}
-
-/** What a reader who may not manage the connections sees for the same refusal. */
-export function refusedKeysMemberText(name: string): string {
-  return `As chaves foram recusadas pelo ${name}. Peça ao dono ou a um administrador para ligar de novo.`
+/** The refusal that asks the company to connect again, in the words of how the connector links; a reader who cannot manage is told who can. */
+export function reauthText(name: string, auth: Auth, mayManage: boolean): string {
+  const sentence =
+    auth === 'oauth2_code'
+      ? `O ${name} pediu para conectar de novo.`
+      : `As chaves foram recusadas pelo ${name}.`
+  return mayManage ? sentence : `${sentence} ${ASK_MANAGER}`
 }
 
 export function unreachableText(name: string): string {
@@ -53,6 +77,11 @@ export function unreachableText(name: string): string {
 /** The provider answered, with a server error of its own: it did answer, so it is not "não respondeu". */
 export function serverErrorText(name: string): string {
   return `O ${name} respondeu com erro. Tente de novo em alguns minutos.`
+}
+
+/** The provider refused the installation's app at a refresh (19.1, the card's state matrix): nothing the company can fix. */
+export function appRefusedText(name: string): string {
+  return `O app do Conexus foi recusado pelo ${name}. Avise o suporte.`
 }
 
 export function testingText(reads: number): string {
@@ -83,9 +112,18 @@ export function reads(check: TestCheck | KeptCheck): boolean {
 }
 
 /** What to do next about a subject, by what its parts found (the study's hints, X6). */
-export function hintText(items: readonly (TestCheck | KeptCheck)[], name: string): string {
-  if (items.some((one) => one.outcome === 'REFUSED')) {
-    return `O usuário de integração não tem acesso a esta parte. Libere a tela no ${name} e teste de novo.`
+export function hintText(
+  items: readonly (TestCheck | KeptCheck)[],
+  name: string,
+  auth: Auth,
+): string {
+  // Only a status that says the user lacks access: a 404 or 409 refused something else.
+  if (
+    items.some((one) => one.outcome === 'REFUSED' && 'native' in one && one.native.status === 403)
+  ) {
+    return auth === 'oauth2_code'
+      ? `O app do Conexus não tem permissão para esta parte no ${name}.`
+      : `O usuário de integração não tem acesso a esta parte. Libere a tela no ${name} e teste de novo.`
   }
   if (items.some((one) => one.outcome === 'NOT_TESTED')) {
     return 'O tempo do teste acabou antes destas leituras. Teste de novo.'
@@ -111,7 +149,7 @@ export function verdictOf(items: readonly (TestCheck | KeptCheck)[]): {
     : { text: 'Não testado', tone: 'neutral', whole: false }
 }
 
-/** The badge a connection wears on the list: the state, or "Lê em parte" when its last test left subjects open. */
+/** The badge a connection wears on its page: the state, or "Lê em parte" when its last test left subjects open. */
 export const PARTIAL_BADGE = 'Lê em parte'
 
 export function wholeSubjectsText(whole: number, subjects: number): string {
@@ -133,4 +171,60 @@ export function nativeText(
   const code = native.code === null ? '' : `, código ${native.code}`
   const message = native.message === null ? '' : `: ${native.message}`
   return `${name} respondeu ${native.status}${code}${message}`
+}
+
+/** A kind as Zod's issues and the Hub name it, in the founder's words. */
+const KINDS: Readonly<Record<string, string>> = {
+  array: 'lista',
+  object: 'objeto',
+  string: 'texto',
+  number: 'número',
+  boolean: 'verdadeiro ou falso',
+  null: 'nulo',
+  undefined: 'nada',
+  json: 'JSON',
+  text: 'texto',
+}
+
+function kindText(kind: string): string {
+  return KINDS[kind] ?? kind
+}
+
+/** Why a 2xx did not read, on one line: "data: esperava lista, veio objeto", or "Resposta acima de 2 MB". */
+export function reasonText(reason: NonNullable<Native['reason']>): string {
+  if (reason.kind === 'TOO_LARGE')
+    return `Resposta acima de ${reason.limitBytes / (1024 * 1024)} MB`
+  return reason.issues
+    .map(
+      ({ path, expected, received }) =>
+        `${path === '' ? 'A resposta' : path}: esperava ${kindText(expected)}, veio ${kindText(received)}`,
+    )
+    .join('; ')
+}
+
+/** What the return page says when the authorization did not link: the provider's word, the person's, or the Hub's. `name` is the catalog's name of `answer.connector`. */
+export function signInEndText(
+  answer: Exclude<SignInCompleted, { result: 'LINKED' }>,
+  name: string,
+): string {
+  switch (answer.result) {
+    case 'REFUSED':
+    case 'UNREADABLE':
+      return `O ${name} recusou a autorização.`
+    case 'APP_REFUSED':
+      return appRefusedText(name)
+    case 'UNREACHABLE':
+      return unreachableText(name)
+    case 'CANCELLED':
+      return `Você não autorizou o Conexus no ${name}.`
+  }
+}
+
+/** The window "Ligar" opens for a connector that links by a trip to the provider. */
+export function signInWindowText(name: string): string {
+  return `Você vai ao ${name} entrar com a conta e autorizar o Conexus.`
+}
+
+export function continueText(name: string): string {
+  return `Continuar no ${name}`
 }

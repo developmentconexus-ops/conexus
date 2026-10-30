@@ -1,5 +1,7 @@
 import { Email, Version } from '@conexus/hub-api'
 import { z } from 'zod'
+import type { ConnectorApp } from './config-connectors.ts'
+import { ConnectorApps } from './config-connectors.ts'
 import type { GitCopyBucket } from './config-git.ts'
 import { GitCopyKey, GitEnvironment } from './config-git.ts'
 import type { InstallationId, MachineTemplate } from './config-machine.ts'
@@ -162,6 +164,8 @@ export type Config = BaseConfig & {
   gitCopyUrl?: GitCopyUrl
   /** Each connector's double on this machine, for tests and the local Hub; never in production. */
   connectorOrigins?: ReadonlyMap<string, string>
+  /** The installation's app at each OAuth connector; none, and no OAuth connector can be linked. */
+  connectorApps?: ReadonlyMap<string, ConnectorApp>
   e2bApiKey: E2bApiKey
   machineTemplate: MachineTemplate
   installationId: InstallationId
@@ -212,6 +216,7 @@ const ServeEnvironment = z.object({
   ...GitEnvironment.shape,
   HUB_GIT_COPY_URL: GitCopyUrl.optional(),
   HUB_CONNECTOR_ORIGINS: ConnectorOrigins.optional(),
+  HUB_CONNECTOR_APPS_FILE: z.string().min(1).optional(),
   ...MachineEnvironment.shape,
 })
 
@@ -305,6 +310,15 @@ export function readConfig(mode: 'serve' | 'migrate', env = process.env): Config
     ...(serve.HUB_CONNECTOR_ORIGINS === undefined
       ? {}
       : { connectorOrigins: serve.HUB_CONNECTOR_ORIGINS }),
+    ...(serve.HUB_CONNECTOR_APPS_FILE === undefined
+      ? {}
+      : {
+          connectorApps: readSecret(
+            'HUB_CONNECTOR_APPS_FILE',
+            serve.HUB_CONNECTOR_APPS_FILE,
+            ConnectorApps.parse,
+          ),
+        }),
     e2bApiKey: readSecret('HUB_E2B_API_KEY_FILE', serve.HUB_E2B_API_KEY_FILE, E2bApiKey.parse),
     machineTemplate: serve.HUB_E2B_TEMPLATE,
     installationId: serve.HUB_INSTALLATION_ID,

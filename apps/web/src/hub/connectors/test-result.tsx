@@ -1,8 +1,16 @@
-import type { KeptCheck, Native, TestCheck } from '@conexus/hub-api'
+import type { ConnectorEntry, KeptCheck, Native, TestCheck } from '@conexus/hub-api'
 import { ChevronDownIcon } from 'lucide-react'
 import { Badge } from '../../ui/badge.tsx'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../../ui/collapsible.tsx'
-import { hintText, nativeText, othersText, outcomeText, reads, verdictOf } from './text.ts'
+import {
+  hintText,
+  nativeText,
+  othersText,
+  outcomeText,
+  reads,
+  reasonText,
+  verdictOf,
+} from './text.ts'
 
 export type Check = TestCheck | KeptCheck
 
@@ -26,18 +34,21 @@ export function countOf(checks: readonly Check[] | null) {
 
 /**
  * What the provider said, as text: its status and code on one line, its message when it sent one,
- * and in a fresh answer its body, shut until asked for. The kept test has the status and code only.
+ * why a 2xx did not read, and in a fresh answer its body, shut until asked for. The kept test has
+ * the status and code only.
  */
 export function Said(props: { native: Pick<Native, 'status' | 'code'> | Native; name: string }) {
   const { native } = props
   const full = 'body' in native
   const message = full ? native.message : null
   const body = full && native.body !== undefined && native.body !== null ? native.body : undefined
+  const reason = full ? native.reason : undefined
   return (
     <div className="flex flex-col gap-xs">
       <p className="break-words text-text-2">
         {nativeText({ status: native.status, code: native.code, message }, props.name)}
       </p>
+      {reason !== undefined && <p className="break-words text-text-2">{reasonText(reason)}</p>}
       {body !== undefined && (
         <Collapsible>
           <CollapsibleTrigger className="text-text-2 underline underline-offset-2">
@@ -67,11 +78,16 @@ function Item(props: { check: Check; name: string }) {
   )
 }
 
-function Subject(props: { label: string; items: readonly Check[]; name: string }) {
-  const { label, items, name } = props
+function Subject(props: {
+  label: string
+  items: readonly Check[]
+  name: string
+  auth: ConnectorEntry['auth']
+}) {
+  const { label, items, name, auth } = props
   const verdict = verdictOf(items)
   const shown = verdict.whole ? items : items.filter((one) => !reads(one))
-  const hint = hintText(items, name)
+  const hint = hintText(items, name, auth)
   const others = items.filter(reads).map((one) => one.label)
   return (
     <li className="border-b border-line last:border-b-0">
@@ -106,11 +122,15 @@ function Subject(props: { label: string; items: readonly Check[]; name: string }
 }
 
 /** What a test found, one line per subject: the ones that read whole shut, the others open on what did not. */
-export function TestResult(props: { checks: readonly Check[]; name: string }) {
+export function TestResult(props: {
+  checks: readonly Check[]
+  name: string
+  auth: ConnectorEntry['auth']
+}) {
   return (
     <ul aria-label="Resultado do teste" className="flex flex-col border-y border-line">
       {subjectsOf(props.checks).map((subject) => (
-        <Subject key={subject.label} {...subject} name={props.name} />
+        <Subject key={subject.label} {...subject} name={props.name} auth={props.auth} />
       ))}
     </ul>
   )
