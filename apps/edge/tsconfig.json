@@ -1,5 +1,5 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": { "types": ["node"] },
-  "include": ["worker-configuration.d.ts", "src", "example/src"]
+  "include": ["worker-configuration.d.ts", "src", "example/src", "clone"]
 }

@@ -72,7 +72,11 @@ test('limites: o prazo vai só no db do despachante; o app recebe caller e db, s
   const door = edge({ hub: () => Response.json(VERSION_CALL) })
   const before = Date.now()
   await door.fetch('/', { headers: LIVE })
-  assert.deepEqual(Object.keys(door.appCalls[0]?.args.props ?? {}).sort(), ['caller', 'db'])
+  assert.deepEqual(Object.keys(door.appCalls[0]?.args.props ?? {}).sort(), [
+    'caller',
+    'connectors',
+    'db',
+  ])
   const [bound] = door.dbBindings
   const { endsAt = 0, ...login } = bound ?? {}
   assert.deepEqual(login, VERSION_CALL.database)
