@@ -8,6 +8,7 @@ import type { z } from 'zod'
 import { keepsAttemptKey } from '../platform/attempt-key.ts'
 import { HubFailure, sentenceOf } from '../platform/hub.ts'
 import { Button } from './button.tsx'
+import { cn } from './cn.ts'
 import { Field, FieldError, FieldGroup, FieldLabel } from './field.tsx'
 import { Input } from './input.tsx'
 
@@ -28,12 +29,18 @@ export function useSchemaForm<I extends FieldValues, O>(
 export function Form<I extends FieldValues, O>(props: {
   form: UseFormReturn<I, unknown, O>
   onSubmit: (values: O) => Promise<void>
+  /** The form fills a `fields` dialog, so its body can scroll between the header and the footer. */
+  fill?: boolean
   children: ReactNode
 }) {
   return (
     <FormProvider {...props.form}>
-      <form noValidate onSubmit={props.form.handleSubmit(props.onSubmit)} className="w-full">
-        <FieldGroup>{props.children}</FieldGroup>
+      <form
+        noValidate
+        onSubmit={props.form.handleSubmit(props.onSubmit)}
+        className={cn('w-full', props.fill && 'flex min-h-0 flex-1 flex-col')}
+      >
+        <FieldGroup className={cn(props.fill && 'min-h-0 flex-1')}>{props.children}</FieldGroup>
       </form>
     </FormProvider>
   )
