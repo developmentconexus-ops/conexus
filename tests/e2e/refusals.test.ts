@@ -59,7 +59,7 @@ async function storedRecados(database: DatabaseUrl, pedidos: string): Promise<st
 
 async function sent(s: Scenario, pedidos: string, folder: string, state: string) {
   await builderSends(s, pedidos, folder)
-  await s.owner.page.goto(`${pedidos}?lens=project&section=versions`)
+  await s.owner.page.goto(`${pedidos}/about?part=versions`)
   await s.owner.page.getByText(state, { exact: true }).waitFor()
 }
 
@@ -80,7 +80,7 @@ test('o roteiro de Recusar um app: não inicia, grava errado, trava, e a versão
   const s = await scenario(t)
   const { page } = s.owner
   const pedidos = await pedidosOf(s)
-  const settings = `${pedidos.url}?lens=project&section=versions`
+  const settings = `${pedidos.url}/about?part=versions`
   // 1. Recados 1 and 2; a recado written on Versão 2.
   await sent(s, pedidos.url, 'recados-1', 'Versão 1 · Na Prévia')
   await sent(s, pedidos.url, 'recados-2', 'Versão 2 · Na Prévia')
@@ -111,8 +111,8 @@ test('o roteiro de Recusar um app: não inicia, grava errado, trava, e a versão
   assert.match(cut.text, FAILED_PAGE)
   assert.ok(Date.now() - started < 10_000, `cut after ${Date.now() - started} ms`)
   assert.deepEqual(await recados(pedidos.door, laco), [RECADO])
-  await page.goto(`${pedidos.url}?lens=project`)
-  await page.getByTestId('area').getByRole('heading', { name: 'Pedidos', exact: true }).waitFor()
+  await page.goto(`${pedidos.url}/about`)
+  await page.getByRole('tab', { name: 'Versões' }).waitFor()
   // 5. Back to Versão 2: Recados works, with its recado.
   await publishVersionTwoAgain(page, settings)
   assert.deepEqual(await recados(pedidos.door, await openApp(s, pedidos.door, PURPLE)), [RECADO])

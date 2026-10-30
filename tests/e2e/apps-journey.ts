@@ -91,7 +91,10 @@ export async function pedidosOf(s: Scenario) {
   await page.getByTestId('area').getByRole('heading', { name: 'Pedidos', exact: true }).waitFor()
   await page.getByRole('tab', { name: 'Prévia' }).waitFor()
   const url = page.url()
-  await page.getByRole('tab', { name: 'Projeto' }).click()
+  await page
+    .getByRole('navigation', { name: 'Navegação' })
+    .getByRole('link', { name: 'Sobre' })
+    .click()
   const address = await page.getByText(`.${TEST_APPS_DOMAIN}`).textContent()
   const label = (address ?? '').replace(`.${TEST_APPS_DOMAIN}`, '')
   const [neonProject] = s.hub.neon.projects()

@@ -86,12 +86,18 @@ async function firstProjects(carla: Page, neon: Neon) {
 async function deletePedidos(w: Windows, neon: Neon) {
   await openHome(w.carla)
   await openProject(w.carla, 'Pedidos')
-  await w.carla.getByRole('tab', { name: 'Projeto' }).click()
+  await w.carla
+    .getByRole('navigation', { name: 'Navegação' })
+    .getByRole('link', { name: 'Sobre' })
+    .click()
   await w.carla.getByText('Só o dono ou quem administra a empresa pode apagar o Projeto.').waitFor()
   assert.equal(await w.carla.getByRole('button', { name: 'Apagar Projeto' }).count(), 0)
   await w.davi.goto(`${TEST_ORIGIN}/`)
   await openProject(w.davi, 'Pedidos')
-  await w.davi.getByRole('tab', { name: 'Projeto' }).click()
+  await w.davi
+    .getByRole('navigation', { name: 'Navegação' })
+    .getByRole('link', { name: 'Sobre' })
+    .click()
   await w.davi.getByRole('button', { name: 'Apagar Projeto' }).click()
   const dialog = w.davi.getByRole('alertdialog')
   const confirm = dialog.getByRole('button', { name: 'Apagar Projeto' })

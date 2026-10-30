@@ -92,27 +92,28 @@ test('de 768px para cima não há barra no topo: a barra lateral aberta tem 256p
   await page.close()
 })
 
-test('no Projeto a barra vira ícones com dica; Ctrl+B a abre e, ao sair do Projeto, volta aberta', async () => {
+test('no Projeto a barra é a do Projeto e abre com 256px; Ctrl+B a recolhe para ícones com dica e, ao sair do Projeto, a da empresa volta', async () => {
   const page = await open(PROJECT, DESKTOP, HOUSE)
   const nav = page.getByRole('navigation', { name: 'Navegação' })
-  const home = nav.getByRole('link', { name: 'Início' })
-  await home.waitFor()
-  await page.waitForTimeout(250)
-  const collapsed = await widthOf(nav)
-  await home.hover()
-  // Base UI's tooltip popup carries no role; the trigger names the place by its own label.
-  const tip = await page.locator('[data-slot=tooltip-content]').textContent()
-  await page.keyboard.press('Control+b')
+  const construir = nav.getByRole('link', { name: 'Construir' })
+  await construir.waitFor()
   await page.waitForTimeout(250)
   const opened = await widthOf(nav)
   await page.keyboard.press('Control+b')
   await page.waitForTimeout(250)
-  await home.click()
+  const collapsed = await widthOf(nav)
+  await construir.hover()
+  // Base UI's tooltip popup carries no role; the trigger names the place by its own label.
+  const tip = await page.locator('[data-slot=tooltip-content]').textContent()
+  await page.keyboard.press('Control+b')
+  await page.waitForTimeout(250)
+  await nav.getByRole('link').first().click()
   await page.getByRole('heading', { name: 'O que vamos construir?' }).waitFor()
+  await nav.getByRole('link', { name: 'Início' }).waitFor()
   await page.waitForTimeout(250)
   assert.deepEqual(
-    { collapsed, tip, opened, after: await widthOf(nav) },
-    { collapsed: 52, tip: 'Início', opened: 256, after: 256 },
+    { opened, collapsed, tip, after: await widthOf(nav) },
+    { opened: 256, collapsed: 52, tip: 'Construir', after: 256 },
   )
   await page.close()
 })

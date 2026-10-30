@@ -28,21 +28,21 @@ import { openProject, PASSWORD, signIn, waitForHome } from './live-hub.ts'
 /** 1. Versões: nothing on the app yet; Recados 1 goes to the Prévia. The member sees the list too. */
 async function firstVersion(s: Scenario, pedidos: string) {
   const { page } = s.owner
-  await page.goto(`${pedidos}?lens=project&section=versions`)
+  await page.goto(`${pedidos}/about?part=versions`)
   await page
     .getByText(
       'Nenhuma versão ainda. Cada versão que o Builder monta aparece aqui, e o app abre no endereço depois do primeiro Publicar.',
     )
     .waitFor()
   await builderSends(s, pedidos, 'recados-1')
-  await page.goto(`${pedidos}?lens=project&section=versions`)
+  await page.goto(`${pedidos}/about?part=versions`)
   await page.getByText('Versão 1 · Na Prévia').waitFor()
   await s.member.page.goto(`${TEST_ORIGIN}/`)
   await signIn(s.member.page, CARLA.email, PASSWORD)
   await waitForHome(s.member.page)
   await openProject(s.member.page, 'Pedidos')
   await s.member.page.getByRole('button', { name: 'Publicar', exact: true }).waitFor()
-  await s.member.page.goto(`${pedidos}?lens=project&section=versions`)
+  await s.member.page.goto(`${pedidos}/about?part=versions`)
   await s.member.page.getByText('Versão 1 · Na Prévia').waitFor()
 }
 
@@ -68,7 +68,7 @@ async function opensAppTab(page: Page, pedidos: string, label: string) {
 
 /** 4. Publicar esta, on Versão 1: the question says who opens the app sees it. */
 async function publishVersionOneAgain(page: Page, pedidos: string) {
-  await page.goto(`${pedidos}?lens=project&section=versions`)
+  await page.goto(`${pedidos}/about?part=versions`)
   await page
     .getByRole('listitem')
     .filter({ hasText: 'Versão 1' })
@@ -82,7 +82,7 @@ async function publishVersionOneAgain(page: Page, pedidos: string) {
 
 /** 5. Deleting Pedidos says the app, its database and its versions go. */
 async function deletePedidos(page: Page, pedidos: string) {
-  await page.goto(`${pedidos}?lens=project`)
+  await page.goto(`${pedidos}/about`)
   await page.getByRole('button', { name: 'Apagar Projeto' }).click()
   const dialog = page.getByRole('alertdialog')
   await dialog.getByText('O app, o banco dele e as versões vão junto com o Projeto.').waitFor()
@@ -105,7 +105,7 @@ test('o roteiro de Enviar um app: o Builder envia, gravar, segunda versão, volt
   assert.deepEqual(await recados(pedidos.door, app), [RECADO])
   // 3. Recados 2: another colour, and the recado is there.
   await builderSends(s, pedidos.url, 'recados-2')
-  await page.goto(`${pedidos.url}?lens=project&section=versions`)
+  await page.goto(`${pedidos.url}/about?part=versions`)
   await page.getByText('Versão 2 · Na Prévia').waitFor()
   await publishVersion(s, pedidos.url, 2)
   assert.deepEqual(await recados(pedidos.door, await openApp(s, pedidos.door, PURPLE)), [RECADO])
