@@ -55,7 +55,11 @@ choice of test tools.
   setup produced it, or a scripted model is presented as a Builder proof. A simulation does not
   close the real use required by [delivery L17](delivery.md). This guide grants no service access.
   No test reaches a third-party service: a double stands in, or the host is blocked (the leaked-password
-  service, step 6 review). [review]
+  service, step 6 review). One exception: the CI job `sankhya-docs` downloads Sankhya's public
+  documentation pages at run time and checks the kit's operations against them, with no login and
+  no company data. It runs on every push to `main` and on the pull requests that change
+  `packages/connectors/` or the workflow, and the page is never stored in the repository. Founder,
+  2026-10-29: "Pode seguir, não guardar e baixar na hora". [review]
 - **T24.** A double of a model provider **must** send what the installed provider adapter
   receives from the real service: recorded wire bodies (server-sent events, JSON) entering
   through a fake `fetch`, so that the installed SDK and Mastra build the parts. Each recording

@@ -317,3 +317,17 @@ Essa emenda muda só duas coisas no cartão. A primeira é o 404 vazio do Sankhy
 Cartão da etapa 19 aprovado em 2026-10-29 (commit 2186754fbdba0dcaa5759098a30e5a55aecf54f9): "Opção A"; sobre o erro natural do fornecedor, "1 A / 2. Okay / 3. Okay"
 
 As edições da revisão 6 só dão palavras às duas decisões já registradas acima, sem decisão nova do fundador: o 404 diz que o corpo é o formato que o kit espera até o roteiro de uso medir ("Opção A"), e a linha "Os erros" diz que a recusa do envelope leva o envelope inteiro só ao Testar e ao Builder e que o código de um `[CORE_E` é o `CORE_E` com o número ("1 A / 2. Okay / 3. Okay"). O firstmate aprovou essas palavras em 2026-10-29.
+
+Em 2026-10-29, sobre os 404 vazios do Sankhya: "Opção A". O kit só lê como lista vazia o 404 que traz o corpo e a mensagem "Dados não encontrados" que ele espera; qualquer outro 404 é uma recusa. O que as seis páginas mostram é essa frase na descrição da resposta 404; o formato do corpo se mede no passo 3 do roteiro de uso, com um 404 vazio de verdade.
+
+Em 2026-10-29, sobre a documentação do Sankhya: "Pode seguir, não guardar e baixar na hora". O repositório não guarda a documentação; o passo `sankhya-docs` do CI a baixa das páginas públicas a cada execução (exceção em T14 do guia de testes).
+
+Em 2026-10-29, sobre o erro natural do fornecedor, ao estudo dos erros: "1 A / 2. Okay / 3. Okay". O erro do fornecedor (status, código, mensagem, corpo como veio, sem os valores da credencial) vai ao Testar e ao Builder; os logs levam só escalares; a última ligação testada guarda o status e o código de cada item, nunca o corpo.
+
+Em 2026-10-29, sobre erros engolidos: "Eu estava dando uma lida e eu vi que a gente estava suprimindo alguns erros. Para mim isso não é bom. Isso não é seguir [...] nossos princípios." O executor passou a pegar só o que o `fetch` documenta para um fornecedor fora do ar, a registrar uma linha com o tipo do erro e o conector, e a deixar subir qualquer outro erro; os testes da documentação do Sankhya deixam um download que falhou falhar. O que ele pediu e ainda espera a palavra dele: uma checagem que recuse um `catch` que descarta o erro.
+
+Em 2026-10-29, sobre a frase da ligação recusada para quem é membro: "5. Aprovado". "As chaves foram recusadas pelo Sankhya. Peça ao dono ou a um administrador para ligar de novo."
+
+Em 2026-10-29, à noite, sobre os textos novos da tela Integrações (a lista do QA 2, "Os textos novos da etapa"): "Aprovo". Corrigido pelo que ele disse a seguir: a frase da primeira vez é "Nenhuma integração ligada ainda.", dita por ele ("Pode ser nenhuma integracao ligada ainda"). Aprovou também as duas frases do ciclo de conserto: "<campo> passa de 200 letras." (Client ID e Client Secret) e "O Sankhya respondeu com erro. Tente de novo em alguns minutos.", com a linha do que o Sankhya respondeu logo abaixo ("Aprovado"). A frase do membro ficou a de "5. Aprovado" acima: "Peça ao dono ou a um administrador para ligar de novo."
+
+Em 2026-10-29, sobre os merges: "1. Merge do cartãp e depois tabela aprovado" (o cartão, https://github.com/developmentconexus-ops/conexus/pull/447, e depois a tabela, https://github.com/developmentconexus-ops/conexus/pull/451); "Pode fazer merge" (a U1, https://github.com/developmentconexus-ops/conexus/pull/449); "Pode" (a U3, https://github.com/developmentconexus-ops/conexus/pull/453).
