@@ -1,8 +1,8 @@
 {
+  "id": "b526f4ad-4e6d-4261-943a-f0d0c38a71d4",
+  "prevIds": ["ebd01125-4b15-47fc-ae44-d5a6e5af45ed"],
   "version": "8",
   "dialect": "postgres",
-  "id": "891d7af8-aef7-4d17-a1a2-1a612fe45108",
-  "prevIds": ["5689c105-1b19-4cfe-8447-09d806b37469"],
   "ddl": [
     {
       "name": "builder",
@@ -3678,13 +3678,13 @@
     },
     {
       "nameExplicit": true,
-      "columns": ["connection_id"],
+      "columns": ["company_id", "connector_id", "connection_id"],
       "schemaTo": "connectors",
       "tableTo": "connection",
-      "columnsTo": ["id"],
+      "columnsTo": ["company_id", "connector_id", "id"],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
-      "name": "connection_sign_in_connection_id_fkey",
+      "name": "connection_sign_in_company_id_connector_id_connection_id_fkey",
       "entityType": "fks",
       "schema": "connectors",
       "table": "connection_sign_in"
@@ -4076,6 +4076,15 @@
     },
     {
       "nameExplicit": true,
+      "columns": ["company_id", "connector_id", "id"],
+      "nullsNotDistinct": false,
+      "name": "connection_company_connector_id_key",
+      "entityType": "uniques",
+      "schema": "connectors",
+      "table": "connection"
+    },
+    {
+      "nameExplicit": true,
       "columns": ["company_id", "attempt_key"],
       "nullsNotDistinct": false,
       "name": "invitation_company_id_attempt_key_key",
@@ -4374,6 +4383,13 @@
       "entityType": "checks",
       "schema": "connectors",
       "table": "connection"
+    },
+    {
+      "value": "\"name\" IS NULL OR (char_length(\"name\") BETWEEN 1 AND 60 AND \"name\" = btrim(\"name\"))",
+      "name": "connection_sign_in_name",
+      "entityType": "checks",
+      "schema": "connectors",
+      "table": "connection_sign_in"
     },
     {
       "value": "(\"connection_id\" IS NULL) <> (\"name\" IS NULL)\n        AND (\"connection_id\" IS NULL) = (\"connection_revision\" IS NULL)",
