@@ -73,7 +73,7 @@ export async function inBrowser<T>(
       const response = await page.goto(url, { waitUntil: 'load', timeout: 30_000 })
       const status = response?.status() ?? 0
       if (status < 200 || status >= 300) throw new Error(`${url}: ${status}`)
-      const text = await page.evaluate(() => document.body.innerText)
+      const text = await page.locator('body').innerText()
       if (saveTo) {
         await mkdir(saveTo, { recursive: true })
         await writeFile(join(saveTo, `${basename(url)}.txt`), `${status} ${page.url()}\n${text}`)
