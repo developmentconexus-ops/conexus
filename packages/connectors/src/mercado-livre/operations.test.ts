@@ -5,7 +5,7 @@ import { toRequest } from '../kernel/request.ts'
 import { mercadoLivre } from './definition.ts'
 import { mercadoLivreFake } from './fake.ts'
 import { mensagensDoPacote } from './operations/mensagens.ts'
-import { ACCOUNT, probeAll } from './test-session.ts'
+import { ACCOUNT, answerOf, authorize, probeAll } from './test-session.ts'
 
 test('não marca como lida', async () => {
   const request = requestOf(mensagensDoPacote, { packId: '2000000000099' }, ACCOUNT)
@@ -36,6 +36,7 @@ test('sem dados do comprador', async () => {
     'Fictícia',
     'COMPRADORFICTICIO',
     'Rua Inventada',
+    '11988776655',
     'dono@exemplo.test',
   ])
     assert.ok(!text.includes(buyer), `an output carries ${buyer}`)
@@ -100,3 +101,99 @@ test('o envio pede o formato novo pelo cabeçalho, e o pedido sai com ele', () =
   assert.equal(request.headers?.['x-format-new'], 'true')
   assert.equal(toRequest(mercadoLivre, request, 'bearer').headers.get('x-format-new'), 'true')
 })
+
+test('o envio no formato novo não deixa sair o comprador: nome, telefone e endereço de destination', () => {
+  const shipment = mercadoLivre.operations.find((operation) => operation.id === 'envio')
+  assert.ok(shipment)
+  const answered = shipment.answer({
+    status: 200,
+    body: {
+      id: 40000000001,
+      status: 'delivered',
+      substatus: null,
+      origin: { type: 'selling_address', sender_id: 1, shipping_address: { address_line: 'loja' } },
+      destination: {
+        comments: null,
+        receiver_id: 77001,
+        receiver_name: 'Maria Fictícia',
+        receiver_phone: '11988776655',
+        shipping_address: { address_line: 'Rua Inventada 1', zip_code: '99887766' },
+      },
+    },
+  })
+  assert.equal(answered.kind, 'OK')
+  const text = JSON.stringify(answered)
+  for (const buyer of ['Maria', '11988776655', 'Rua Inventada', '99887766', 'destination'])
+    assert.ok(!text.includes(buyer), `the shipment carries ${buyer}`)
+  assert.ok(text.includes('delivered'))
+})
+
+test('o resumo do faturamento é uma linha, e as duas leituras mandam document_type', async () => {
+  const fake = mercadoLivreFake()
+  const granted = await authorize(fake)
+  assert.equal(granted.kind, 'OK')
+  const sent = (await probeAll(fake)).filter(({ operation }) =>
+    ['periodosDeFaturamento', 'cobrancasDoPeriodo'].includes(operation.id),
+  )
+  assert.equal(sent.length, 2)
+  for (const { request } of sent) assert.equal(request.query.document_type, 'BILL')
+  const summary = sent.find(({ operation }) => operation.id === 'cobrancasDoPeriodo')
+  assert.ok(summary)
+  assert.ok(isRows(summary.value))
+  assert.equal(summary.value.linhas.length, 1)
+  assert.equal(summary.value.temMais, null)
+  const credit = requestOf(
+    mercadoLivre.operations.find((operation) => operation.id === 'periodosDeFaturamento') ??
+      assert.fail('periodosDeFaturamento'),
+    { documentType: 'CREDIT_NOTE' },
+    ACCOUNT,
+  )
+  assert.equal(credit.query.document_type, 'CREDIT_NOTE')
+})
+
+function isRows(value: unknown): value is { linhas: unknown[]; temMais: boolean | null } {
+  return typeof value === 'object' && value !== null && 'linhas' in value && 'temMais' in value
+}
+
+/** Two pages of a read of the double: the first, and the one after it. */
+async function twoPages(
+  id: string,
+  first: Record<string, unknown>,
+  second: Record<string, unknown>,
+) {
+  const fake = mercadoLivreFake()
+  const granted = await authorize(fake)
+  assert.equal(granted.kind, 'OK')
+  if (granted.kind !== 'OK') return assert.fail('authorize')
+  const operation = mercadoLivre.operations.find((candidate) => candidate.id === id)
+  assert.ok(operation)
+  async function page(input: Record<string, unknown>) {
+    const request = requestOf(operation ?? assert.fail(id), input, ACCOUNT)
+    const answered = (operation ?? assert.fail(id)).answer(
+      await answerOf(
+        await fake.handle(
+          toRequest(mercadoLivre, request, granted.kind === 'OK' ? granted.accessToken : ''),
+        ),
+      ),
+    )
+    assert.equal(answered.kind, 'OK', id)
+    return answered.kind === 'OK' && isRows(answered.value) ? answered.value : assert.fail(id)
+  }
+  return [await page(first), await page(second)] as const
+}
+
+for (const [id, total] of [
+  ['anuncios', 12],
+  ['perguntas', 12],
+  ['periodosDeFaturamento', 14],
+] as const) {
+  test(`${id}: a segunda página difere da primeira e temMais vira false no fim`, async () => {
+    const limit = id === 'periodosDeFaturamento' ? 6 : 5
+    const [first, second] = await twoPages(id, { offset: 0, limit }, { offset: total - 2, limit })
+    assert.equal(first.linhas.length, limit)
+    assert.equal(first.temMais, true)
+    assert.notDeepEqual(second.linhas, first.linhas)
+    assert.equal(second.linhas.length, 2)
+    assert.equal(second.temMais, false)
+  })
+}

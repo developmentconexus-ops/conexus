@@ -13,7 +13,7 @@ export const envio = readOf({
   label: 'Envio',
   input: z.object({ shipmentId: PathId }),
   list: null,
-  omit: ['receiver_address', 'receiver'],
+  omit: ['destination'], // the buyer: `receiver_name`, `receiver_phone` and `shipping_address`
   from: [pedido.id],
   probe: chain(pedido.id, 'shipping.id', (shipmentId) => ({ shipmentId })),
   request: (input) => get(`/shipments/${input.shipmentId}`, {}, { 'x-format-new': 'true' }),

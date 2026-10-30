@@ -1,9 +1,11 @@
 import type { Route } from './fake-data.ts'
 import {
+  BUYER,
   ITEMS,
   itemBody,
   ORDER,
   ORDER_BODY,
+  pageOf,
   paging,
   SELLER,
   SELLER_PATH,
@@ -17,9 +19,16 @@ export const ROUTES: readonly Route[] = [
     name: 'anuncios',
     group: 'anuncios',
     pattern: new RegExp(`^/users/${SELLER_PATH}/items/search$`),
-    answer: ({ query }) => ({
-      body: { seller_id: SELLER.ref, results: ITEMS, paging: paging(ITEMS.length, query) },
-    }),
+    answer: ({ query }) => {
+      const page = pageOf(ITEMS, query, 50)
+      return {
+        body: {
+          seller_id: SELLER.ref,
+          results: page.rows,
+          paging: { total: page.total, offset: page.offset, limit: page.limit },
+        },
+      }
+    },
   },
   {
     name: 'anunciosDetalhe',
@@ -115,12 +124,22 @@ export const ROUTES: readonly Route[] = [
               date_created: '2026-09-10T11:00:00.000-03:00',
               last_updated: '2026-09-12T15:00:00.000-03:00',
               logistic: { mode: 'me2', type: 'cross_docking' },
-              receiver_address: {
+              origin: {
+                type: 'selling_address',
+                sender_id: Number(SELLER.ref),
+                shipping_address: { address_line: 'Rua da Loja 1', city: { name: 'Cidade' } },
+              },
+              destination: {
+                comments: null,
+                receiver_id: BUYER.id,
                 receiver_name: 'Maria Fictícia',
                 receiver_phone: '11988776655',
-                street_name: 'Rua Inventada',
-                street_number: '1',
-                zip_code: '00000000',
+                shipping_address: {
+                  address_line: 'Rua Inventada 1',
+                  street_name: 'Rua Inventada',
+                  street_number: '1',
+                  zip_code: '00000000',
+                },
               },
             },
           }

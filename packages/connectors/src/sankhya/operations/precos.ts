@@ -10,7 +10,7 @@ export const precosDoProduto = defineOperation({
   subject: 'precos',
   idempotent: true,
   summary:
-    'Lista os preços de um produto em cada tabela de preço (até 50 por página); a página se chama `pagina` e começa em 1.',
+    'Lista os preços de um produto em cada tabela de preço; a página se chama `pagina` e começa em 1.',
   label: 'Preços de um produto',
   input: z.object({ codigoProduto: Code, pagina: Page(1) }),
   ...rows({ list: 'produtos' }),
@@ -28,7 +28,7 @@ export const precosDaTabela = defineOperation({
   subject: 'precos',
   idempotent: true,
   summary:
-    'Lista os preços de uma tabela de preço, de todos os produtos (até 50 por página); a página se chama `pagina` e começa em 1.',
+    'Lista os preços de uma tabela de preço, de todos os produtos; a página se chama `pagina` e começa em 1.',
   label: 'Preços de uma tabela',
   input: z.object({ codigoTabela: Code, pagina: Page(1) }),
   ...rows({ list: 'produtos' }),
