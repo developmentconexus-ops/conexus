@@ -65,13 +65,11 @@ test('o Projeto mostra o nome e a data, e o dono vê "Apagar Projeto"', async ()
 test('o nome do Projeto é um título por largura, com o nome inteiro no title, em cada aba', async () => {
   hub(done)
   render(<Conexus conexus={createConexus(createMemoryHistory({ initialEntries: [PROJECT] }))} />)
-  // The top bar's, shown under `md`, and the area's, shown from `md`; CSS hides the other.
+  // The top bar's, shown under `md`, and the area's, read from `md` (the sidebar draws the name); CSS hides the other.
   const titles = await screen.findAllByRole('heading', { name: 'Pedidos' })
   expect(titles).toHaveLength(2)
   for (const title of titles) expect(title.getAttribute('title')).toBe('Pedidos')
-  expect(titles.map((title) => title.nextElementSibling?.getAttribute('aria-label'))).toContain(
-    'Projeto',
-  )
+  expect(screen.getByRole('tablist', { name: 'Projeto' })).toBeTruthy()
   fireEvent.click(screen.getByRole('tab', { name: 'Código' }))
   expect(screen.getAllByRole('heading', { name: 'Pedidos' })).toHaveLength(2)
 })

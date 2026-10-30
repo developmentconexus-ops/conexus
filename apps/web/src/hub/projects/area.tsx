@@ -4,6 +4,7 @@ import { getRouteApi, useNavigate } from '@tanstack/react-router'
 import { ExternalLinkIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useState } from 'react'
+import { Badge } from '../../ui/badge.tsx'
 import { buttonVariants } from '../../ui/button.tsx'
 import { PageTitle } from '../../ui/list.tsx'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs.tsx'
@@ -21,7 +22,7 @@ const LENSES = [
 ] as const
 
 /**
- * The big region of the Construir: the top line with the Projeto's name, its tabs, **Publicar** (or
+ * The big region of the Construir: the top line with its tabs (the name is at the head of the sidebar), **Publicar** (or
  * the version published) and **Abrir app**, and below the Prévia (the route hands it in) or the
  * Código. The tab lives in the address.
  */
@@ -51,10 +52,7 @@ export function ProjectArea(props: {
       }}
       className="h-full gap-0"
     >
-      <div className="flex flex-wrap items-center gap-x-md gap-y-xs border-b border-line px-md py-xs max-md:flex-nowrap max-md:gap-x-md max-md:px-sm max-md:py-0">
-        <PageTitle className="min-w-0 flex-[1_1_16rem] truncate max-md:hidden" title={project.name}>
-          {project.name}
-        </PageTitle>
+      <div className="flex h-12 items-center gap-md border-b border-line px-md max-md:h-auto max-md:px-sm">
         <TabsList aria-label="Projeto" className="max-md:gap-0">
           {LENSES.map(([value, label]) => (
             <TabsTrigger key={value} value={value} className="max-md:px-sm max-md:after:inset-x-sm">
@@ -62,12 +60,18 @@ export function ProjectArea(props: {
             </TabsTrigger>
           ))}
         </TabsList>
-        <div className="ml-auto flex items-center gap-md">
+        <PageTitle className="sr-only max-md:hidden" title={project.name}>
+          {project.name}
+        </PageTitle>
+        <div className="ml-auto flex items-center gap-sm">
           {appVersion !== null && (
-            <span className="text-label text-text-2 max-md:sr-only">
+            <Badge
+              tone={appVersion === publishedVersion ? 'success' : 'neutral'}
+              className="max-md:sr-only"
+            >
               Versão {appVersion} ·{' '}
               {appVersion === publishedVersion ? 'publicada' : 'não publicada'}
-            </span>
+            </Badge>
           )}
           {address !== null &&
             publishedVersion !== null &&
