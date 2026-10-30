@@ -125,6 +125,8 @@
   --container-column: 24rem;
   --container-message: 28rem;
   --container-page: 64rem;
+  /* A window for a form with several fields and its help beside them (design V26). */
+  --container-wide: 48rem;
   /* The sidebar open and as icons (web W30); the drawer keeps --container-drawer. */
   --container-sidebar: 16rem;
   --container-sidebar-icon: 3.25rem;

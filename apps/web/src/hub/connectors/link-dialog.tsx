@@ -7,7 +7,7 @@ import { z } from 'zod'
 import { useAttemptKey } from '../../platform/attempt-key.ts'
 import { HubFailure } from '../../platform/hub.ts'
 import { Button } from '../../ui/button.tsx'
-import { Dialog, DialogContent } from '../../ui/dialog.tsx'
+import { Dialog, DialogBody, DialogContent, DialogFooter } from '../../ui/dialog.tsx'
 import {
   Form,
   FormAlert,
@@ -60,7 +60,7 @@ function BeforePasting({ entry }: { entry: ConnectorEntry }) {
   return (
     <section
       aria-label="Antes de colar"
-      className="flex flex-col gap-sm rounded-control border border-line bg-surface-3 p-md"
+      className="flex flex-col gap-sm self-start rounded-control border border-line bg-surface-3 p-md"
     >
       <h3 className="font-medium">Antes de colar</h3>
       <ol className="flex list-decimal flex-col gap-sm pl-lg">
@@ -136,33 +136,42 @@ function LinkForm(props: {
   }
 
   return (
-    <Form form={form} onSubmit={submit}>
-      <fieldset disabled={form.formState.isSubmitting} className="contents">
-        <BeforePasting entry={entry} />
-        <TextField
-          name={NAME}
-          label="Nome da ligação"
-          type="text"
-          autoComplete="off"
-          invalid="Dê um nome à ligação, de até 60 letras."
-        />
-        {entry.fields.map((field) => (
-          <TextField
-            key={field.name}
-            name={field.name}
-            label={field.label}
-            type={field.visible ? 'text' : 'password'}
-            autoComplete="off"
-          />
-        ))}
-      </fieldset>
-      <FormAlert />
-      <div className="flex flex-wrap gap-md">
-        <SubmitButton idle="Ligar e testar" pending="Ligando…" />
-        <Button type="button" disabled={form.formState.isSubmitting} onClick={props.onClose}>
-          Cancelar
-        </Button>
-      </div>
+    <Form form={form} onSubmit={submit} fill>
+      <DialogBody>
+        <fieldset
+          disabled={form.formState.isSubmitting}
+          className="grid min-w-0 gap-xl md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]"
+        >
+          <BeforePasting entry={entry} />
+          <div className="flex min-w-0 flex-col gap-lg">
+            <TextField
+              name={NAME}
+              label="Nome da ligação"
+              type="text"
+              autoComplete="off"
+              invalid="Dê um nome à ligação, de até 60 letras."
+            />
+            {entry.fields.map((field) => (
+              <TextField
+                key={field.name}
+                name={field.name}
+                label={field.label}
+                type={field.visible ? 'text' : 'password'}
+                autoComplete="off"
+              />
+            ))}
+          </div>
+        </fieldset>
+      </DialogBody>
+      <DialogFooter>
+        <FormAlert />
+        <div className="flex flex-wrap gap-md">
+          <SubmitButton idle="Ligar e testar" pending="Ligando…" />
+          <Button type="button" disabled={form.formState.isSubmitting} onClick={props.onClose}>
+            Cancelar
+          </Button>
+        </div>
+      </DialogFooter>
     </Form>
   )
 }
@@ -179,6 +188,7 @@ export function LinkDialog(props: {
       <DialogContent
         title={`Ligar ${props.entry.name}`}
         description="As chaves ficam guardadas no Hub e não aparecem de novo."
+        size="fields"
       >
         <LinkForm {...props} />
       </DialogContent>
