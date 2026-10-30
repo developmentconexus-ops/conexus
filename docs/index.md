@@ -92,6 +92,7 @@ One line per document (`check-docs`).
 - [0055](decisions/0055-apps-on-the-platform-contract.md) contract.
 - [0056](decisions/0056-connectors-kit-and-one-executor.md) connectors kit.
 - [0057](decisions/0057-connections-by-oauth.md) OAuth.
+- [0058](decisions/0058-provider-limits-and-queues.md) provider limits.
 
 ## Skills
 

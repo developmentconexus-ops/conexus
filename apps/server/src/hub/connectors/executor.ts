@@ -1,3 +1,4 @@
+import { setTimeout as sleep } from 'node:timers/promises'
 import type {
   AccountOf,
   AccountRef,
@@ -24,6 +25,7 @@ import type { ConnectionId, ConnectionSignInId } from '@conexus/hub-api'
 import { z } from 'zod'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
+import { retryAfterMs } from '../../platform/retry-after.ts'
 import type { Credential } from '../../platform/seal.ts'
 import { Secret } from '../../platform/secret.ts'
 import type { OAuthConnector } from './apps.ts'
@@ -76,7 +78,8 @@ export type Executor = {
   /**
    * Calls one operation with that token, given up on after `deadlineMs`; never logs input, output
    * or credential (S41). Transport, deadline, redirect and 5xx are UNREACHABLE; the kit's Answered
-   * otherwise.
+   * otherwise. An idempotent read that gets a 429 naming its wait waits once, when the wait fits the
+   * deadline, and is repeated; a second 429, or a wait that does not fit, is the kit's BUSY.
    */
   call<I, O>(
     connection: OpenedConnection,
@@ -160,15 +163,21 @@ function isOk(status: number): boolean {
  * that is not JSON is the body itself outside 2xx, so the kit still decides by status; a 2xx that
  * is not JSON is null, never an empty answer.
  */
-function answerOf(status: number, bytes: Uint8Array, redaction: Redaction): ProviderAnswer | null {
-  if (bytes.byteLength === 0) return { status, body: undefined }
+function answerOf(
+  status: number,
+  bytes: Uint8Array,
+  redaction: Redaction,
+  waitMs?: number,
+): ProviderAnswer | null {
+  const wait = waitMs === undefined ? {} : { retryAfterMs: waitMs }
+  if (bytes.byteLength === 0) return { status, body: undefined, ...wait }
   const text = Buffer.from(bytes).toString('utf8')
   const safe = redaction.whole2xx && isOk(status) ? text : redacted(text, redaction.secrets)
   try {
-    return { status, body: z.unknown().parse(JSON.parse(safe)) }
+    return { status, body: z.unknown().parse(JSON.parse(safe)), ...wait }
   } catch (error) {
     if (!(error instanceof SyntaxError)) throw error
-    return isOk(status) ? null : { status, body: safe }
+    return isOk(status) ? null : { status, body: safe, ...wait }
   }
 }
 
@@ -224,7 +233,9 @@ async function send(
     const response = await deps.fetch(request, { signal })
     const { status } = response
     const bytes = await bodyOf(response)
-    const answer = bytes === null ? null : answerOf(status, bytes, redaction)
+    const wait =
+      status === 429 ? retryAfterMs(Object.fromEntries(response.headers), Date.now()) : undefined
+    const answer = bytes === null ? null : answerOf(status, bytes, redaction, wait)
     if (status >= 500) return unreachableAt(deps, where, status, answer?.body ?? null)
     return answer ?? unreadable(status, bytes)
   } catch (error) {
@@ -233,6 +244,27 @@ async function send(
     deps.log.info({ ...where, ...cause }, 'CONNECTOR_UNREACHABLE')
     return { kind: 'UNREACHABLE', native: null }
   }
+}
+
+/**
+ * `send`, and when the provider answered 429 with a wait that fits what is left of the deadline, the
+ * wait and one repeat. Only a read repeats (`repeat`): a write's body was spent by the first send.
+ */
+async function sendRead(
+  deps: ExecutorDeps,
+  request: Request,
+  where: Where,
+  redaction: Redaction,
+  a: Readonly<{ deadlineMs: number; repeat: boolean }>,
+): Promise<ProviderAnswer | Unreadable | Unreachable> {
+  const started = performance.now()
+  const sent = await send(deps, request, where, redaction, a.deadlineMs)
+  if (!a.repeat || 'kind' in sent || sent.status !== 429 || sent.retryAfterMs === undefined)
+    return sent
+  if (sent.retryAfterMs >= a.deadlineMs - (performance.now() - started) - 1) return sent
+  await sleep(sent.retryAfterMs)
+  const remaining = Math.floor(a.deadlineMs - (performance.now() - started))
+  return send(deps, request, where, redaction, remaining)
 }
 
 function unreachableAt(
@@ -281,7 +313,10 @@ export function createExecutor(deps: ExecutorDeps): Executor {
       const { auth } = connector
       const pasted = auth.kind === 'client_credentials' ? valuesOf(connection, auth) : {}
       const redaction = { secrets: [...Object.values(pasted), token.reveal()], whole2xx: false }
-      const sent = await send(deps, request, whereOf(connection), redaction, deadlineMs)
+      const sent = await sendRead(deps, request, whereOf(connection), redaction, {
+        deadlineMs,
+        repeat: operation.idempotent,
+      })
       return 'kind' in sent ? sent : operation.answer(sent)
     },
 
