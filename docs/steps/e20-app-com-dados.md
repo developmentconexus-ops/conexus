@@ -81,7 +81,7 @@ Dadas em 2026-10-30, nas suas palavras: `S S1`, `2. R2`, `Ta`. O cartão as segu
 
 **`A`. Onde ficam as Versões.** Hoje a aba "Projeto", no alto do Projeto, tem Sobre, Versões e Quem
 usa o app. Com a `R2`, Sobre e Quem usa o app viram entradas da barra.
-- **`A1` (recomendação, aguarda a sua palavra):** a aba "Projeto" do alto sai. **Sobre** abre uma
+- **`A1` (decidida pelo fundador, 2026-10-30: `2 A1`):** a aba "Projeto" do alto sai. **Sobre** abre uma
   página com duas partes, Sobre e Versões (e Publicação, quando vier). O Construir fica com Prévia,
   Código e Alterações. Exemplo: a Ana toca **Sobre** e vê o nome, a descrição e, ao lado, Versões com
   a lista e **Publicar esta**.
