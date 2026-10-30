@@ -59,7 +59,7 @@ function failureOf(answer: ProviderAnswer): Failure | null {
 export const NOT_FOUND = 'Dados não encontrados'
 
 /** What the real gateway sends for an empty list (measured on the founder's run, 2026-10-29): the entity's name follows. */
-export const NOTHING_FOUND = 'Nenhum registro da entidade'
+const NOTHING_FOUND = 'Nenhum registro da entidade'
 
 /**
  * The 404 body that reads as an empty list: the pages' phrase, or the measured one (code
