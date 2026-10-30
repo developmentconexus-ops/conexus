@@ -113,6 +113,13 @@ const ALL = [NOTES, SAVE, READ].sort()
 test('sem liberação a conversa não tem ferramenta nem skill de conector; liberado, tem as três e a skill; tirar tira no turno seguinte', async (t) => {
   const on = await connecting(t, [])
   const id = await on.link()
+  const door = on.hub.connectors.builder
+  const grantedBy = door.granted.bind(door)
+  let reads = 0
+  door.granted = (ids) => {
+    reads += 1
+    return grantedBy(ids)
+  }
   assert.equal(endOf(await on.say()), 'complete')
   const before = on.calls.at(0)
   assert.deepEqual(connectorTools(before), [])
@@ -120,12 +127,20 @@ test('sem liberação a conversa não tem ferramenta nem skill de conector; libe
   assert.ok(!before?.system.includes(SKILL))
 
   await on.release(id)
+  const readBefore = reads
   assert.equal(endOf(await on.say()), 'complete')
   const during = on.calls.at(1)
   assert.deepEqual(connectorTools(during), ALL)
   assert.ok(during?.system.includes('## Connections'))
   assert.ok(during?.system.includes('`Matriz`: sankhya'))
   assert.ok(during?.system.includes(SKILL))
+  assert.ok(during?.system.includes('this Project reads one sankhya connection'))
+  assert.ok(during?.system.includes('Notebook: nothing yet.'))
+  assert.equal(
+    reads - readBefore,
+    1,
+    'the grants are read once for the turn, not once per tools, skills and instructions',
+  )
 
   await on.withdraw(id)
   assert.equal(endOf(await on.say()), 'complete')
@@ -248,4 +263,45 @@ test('connector_notes devolve as anotações da ligação com a consulta de cada
     )
   assert.equal(listed.length, 1)
   assert.equal(listed[0].Empresa.provingQuery, COUNT)
+})
+
+test('o bloco das ligações mostra o conceito salvo no turno seguinte; um nome que não é de ligação liberada responde NOT_GRANTED', async (t) => {
+  const missing = { connection: 'Filial', connector: 'sankhya' }
+  const on = await connecting(t, [
+    [
+      tool(SAVE, {
+        connection: 'Matriz',
+        concept: 'Empresa',
+        mapping: 'TSIEMP.CODEMP',
+        provingQuery: COUNT,
+      }),
+      tool(READ, { connection: 'Filial', operation: 'sankhya.consultar', input: { sql: COUNT } }),
+      tool(NOTES, missing),
+      tool(SAVE, { ...missing, concept: 'X', mapping: 'm', provingQuery: COUNT }),
+    ],
+  ])
+  await on.release(await on.link())
+  assert.equal(endOf(await on.say()), 'complete')
+  const refused = (await messagesOf(on.hub, on.ana, on.url))
+    .flatMap((message) => message.parts)
+    .flatMap((part) =>
+      part.type === 'tool-invocation' && part.toolInvocation.toolName !== SAVE
+        ? [[part.toolInvocation.toolName, Object(part.toolInvocation.result).kind]]
+        : [],
+    )
+    .filter(([name]) => [READ, NOTES].includes(String(name)))
+  assert.deepEqual(refused, [
+    [READ, 'NOT_GRANTED'],
+    [NOTES, 'NOT_GRANTED'],
+  ])
+  assert.equal(endOf(await on.say()), 'complete')
+  assert.ok(on.calls.at(-1)?.system.includes('Notebook: Empresa.'))
+  const saves = (await messagesOf(on.hub, on.ana, on.url))
+    .flatMap((message) => message.parts)
+    .flatMap((part) =>
+      part.type === 'tool-invocation' && part.toolInvocation.toolName === SAVE
+        ? [Object(part.toolInvocation.result).kind]
+        : [],
+    )
+  assert.deepEqual(saves, ['SAVED', 'NOT_GRANTED'])
 })

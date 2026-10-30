@@ -33,6 +33,20 @@ function named(granted: readonly GrantedConnection[], name: string, connector?: 
   )
 }
 
+const AMBIGUOUS = { kind: 'AMBIGUOUS_CONNECTION' } as const
+
+/** The connection for the notebook tools: `connector` is needed only when two granted systems share the name. */
+function inNotebook(granted: readonly GrantedConnection[], name: string, connector?: string) {
+  const sameName = granted.filter((each) => each.name === name)
+  if (connector === undefined && sameName.length > 1) return AMBIGUOUS
+  return named(granted, name, connector)
+}
+
+const CONNECTOR_FIELD = z
+  .string()
+  .optional()
+  .describe('The connector, needed when two connections share the name')
+
 function describeReads(granted: readonly GrantedConnection[]): string {
   return granted
     .map((each) => {
@@ -86,10 +100,11 @@ function notesTool(port: BuilderConnectors, granted: readonly GrantedConnection[
       id: BUILDER_TOOL.connectorNotes,
       description:
         'The notebook of a connection: each concept the Builder proved before, with its mapping and the query that proved it. Read it before you ask the person what a code means.',
-      inputSchema: z.object({ connection: z.string() }),
-      execute: async ({ connection }) => {
-        const found = named(granted, connection)
+      inputSchema: z.object({ connection: z.string(), connector: CONNECTOR_FIELD }),
+      execute: async ({ connection, connector }) => {
+        const found = inNotebook(granted, connection, connector)
         if (found === undefined) return NOT_GRANTED
+        if ('kind' in found) return found
         return (await port.notes(who, found.connectionId)) ?? NOT_GRANTED
       },
     }),
@@ -104,13 +119,18 @@ function noteSaveTool(port: BuilderConnectors, granted: readonly GrantedConnecti
         "Saves in a connection's notebook what a code or a field means in this company. It runs `provingQuery` once through the connection's read door and keeps the mapping, the query, the date and the number of rows it returned, never a row. Names and codes only, never a value.",
       inputSchema: z.object({
         connection: z.string(),
+        connector: CONNECTOR_FIELD,
         concept: z.string().min(1).max(120),
         mapping: z.string().min(1).max(500),
         provingQuery: z.string().min(1).max(4000),
       }),
-      execute: async ({ connection, concept, mapping, provingQuery }, { requestContext }) => {
-        const found = named(granted, connection)
+      execute: async (
+        { connection, connector, concept, mapping, provingQuery },
+        { requestContext },
+      ) => {
+        const found = inNotebook(granted, connection, connector)
         if (found === undefined || requestContext === undefined) return NOT_GRANTED
+        if ('kind' in found) return found
         return port.saveNote(who, {
           connectionId: found.connectionId,
           personId: who.personId,
