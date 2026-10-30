@@ -225,10 +225,7 @@ async function send(
     const { status } = response
     const bytes = await bodyOf(response)
     const answer = bytes === null ? null : answerOf(status, bytes, redaction)
-    if (status >= 500) {
-      deps.log.info({ ...where, status }, 'CONNECTOR_UNREACHABLE')
-      return { kind: 'UNREACHABLE', native: nativeOf(status, answer?.body ?? null) }
-    }
+    if (status >= 500) return unreachableAt(deps, where, status, answer?.body ?? null)
     return answer ?? unreadable(status, bytes)
   } catch (error) {
     const cause = unreachableCause(error)
@@ -236,6 +233,16 @@ async function send(
     deps.log.info({ ...where, ...cause }, 'CONNECTOR_UNREACHABLE')
     return { kind: 'UNREACHABLE', native: null }
   }
+}
+
+function unreachableAt(
+  deps: ExecutorDeps,
+  where: Where,
+  status: number,
+  body: unknown,
+): Unreachable {
+  deps.log.info({ ...where, status }, 'CONNECTOR_UNREACHABLE')
+  return { kind: 'UNREACHABLE', native: nativeOf(status, body) }
 }
 
 /** Whose connection a call is about, for the log. */
@@ -287,10 +294,7 @@ export function createExecutor(deps: ExecutorDeps): Executor {
         deadlineMs,
       )
       if ('kind' in sent) return sent
-      if (sent.status === 429) {
-        deps.log.info({ ...where, status: sent.status }, 'CONNECTOR_UNREACHABLE')
-        return { kind: 'UNREACHABLE', native: nativeOf(sent.status, sent.body) }
-      }
+      if (sent.status === 429) return unreachableAt(deps, where, sent.status, sent.body)
       return readGrant(connector.auth, sent)
     },
 
@@ -306,6 +310,7 @@ export function createExecutor(deps: ExecutorDeps): Executor {
       const redaction = { secrets: [token.reveal()], whole2xx: false }
       const sent = await send(deps, request, where, redaction, deadlineMs)
       if ('kind' in sent) return sent
+      if (sent.status === 429) return unreachableAt(deps, where, sent.status, sent.body)
       if (!isOk(sent.status))
         return { kind: 'UNREADABLE', native: nativeOf(sent.status, sent.body) }
       const account = who.answer.safeParse(sent.body)
