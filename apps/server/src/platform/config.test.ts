@@ -206,10 +206,7 @@ test('configuração: as chaves dos apps', async (t) => {
     JSON.stringify({ 'mercado-livre': { ...app, clientSecret: '' } }),
     JSON.stringify({ 'Mercado Livre': app }),
   ])
-    refusal(
-      { ...env, HUB_CONNECTOR_APPS_FILE: appsFile(t, text) },
-      'HUB_CONNECTOR_APPS_FILE',
-    )
+    refusal({ ...env, HUB_CONNECTOR_APPS_FILE: appsFile(t, text) }, 'HUB_CONNECTOR_APPS_FILE')
   refusal(
     { ...env, HUB_CONNECTOR_APPS_FILE: `${appsFile(t, '{}')}-ausente` },
     'HUB_CONNECTOR_APPS_FILE',

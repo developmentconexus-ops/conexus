@@ -1,10 +1,12 @@
+import { createServer } from 'node:http'
 import type { TestContext } from 'node:test'
 import type { AppKeys } from '@conexus/connectors'
 import { mercadoLivreFake, sankhyaFake } from '@conexus/connectors'
 import { REDIRECT_PATH } from '@conexus/hub-api'
+import { z } from 'zod'
 import type { Config } from '../../platform/config.ts'
+import { ConnectorApps } from '../../platform/config-connectors.ts'
 import { parseSealKeys } from '../../platform/seal.ts'
-import { Secret } from '../../platform/secret.ts'
 import { TEST_ORIGIN } from '../../platform/test-database.ts'
 import type { Hub, Person } from '../identity/test-hub.ts'
 import {
@@ -45,8 +47,7 @@ export async function connectionsOn(
 
 /** The installation's apps file, as the configuration reads it, with the double's invented app. */
 export function appsOf(app: AppKeys): Config['connectorApps'] {
-  const clientSecret = new Secret('ConnectorAppSecret', app.clientSecret)
-  return new Map([['mercado-livre', { clientId: app.clientId, clientSecret }]])
+  return ConnectorApps.parse(JSON.stringify({ 'mercado-livre': app }))
 }
 
 /**
@@ -54,14 +55,23 @@ export function appsOf(app: AppKeys): Config['connectorApps'] {
  * person back to the Hub's return page, with the double's app keys: Ana its owner, Bruno an
  * administrator, Carla a member.
  */
-export async function mercadoLivreOn(t: TestContext, change: (config: Config) => Config = (c) => c) {
+export async function mercadoLivreOn(
+  t: TestContext,
+  a: {
+    change?: (config: Config) => Config
+    /** The origin the Hub is given for the double, when something stands in front of it. */
+    through?: (origin: string) => Promise<string>
+  } = {},
+) {
   const fake = mercadoLivreFake({ redirectUri: `${TEST_ORIGIN}${REDIRECT_PATH}` })
   const served = await fake.serve()
   t.after(() => served.close())
+  const origin = a.through === undefined ? served.origin : await a.through(served.origin)
+  const change = a.change ?? ((config: Config) => config)
   const hub = await hubWithLog(t, (config) =>
     change({
       ...config,
-      connectorOrigins: new Map([['mercado-livre', served.origin]]),
+      connectorOrigins: new Map([['mercado-livre', origin]]),
       connectorApps: appsOf(fake.app),
     }),
   )
@@ -177,4 +187,47 @@ export function outcomes(response: { json(): unknown }) {
     check.id,
     check.outcome,
   ])
+}
+
+/**
+ * In front of a double: the token route answers as `mode.refresh` says, everything else passes;
+ * every body the token route answers is kept in `mode.seen`, to look for its keys elsewhere.
+ */
+export function standIn(
+  t: TestContext,
+  mode: { refresh: 'pass' | 'unreadable' | 'down'; seen?: string[] },
+) {
+  return async (origin: string) => {
+    const server = createServer(async (incoming, outgoing) => {
+      const chunks: Buffer[] = []
+      for await (const chunk of incoming) chunks.push(z.instanceof(Buffer).parse(chunk))
+      if (incoming.url === '/oauth/token' && mode.refresh !== 'pass') {
+        const [status, body] = mode.refresh === 'down' ? [503, '{}'] : [200, '{"token":"?"}']
+        outgoing.writeHead(status, { 'content-type': 'application/json' }).end(body)
+        return
+      }
+      const headers = Object.entries(incoming.headers).flatMap(([name, value]) =>
+        typeof value === 'string' && name !== 'host'
+          ? [[name, value] satisfies [string, string]]
+          : [],
+      )
+      const answered = await fetch(`${origin}${incoming.url}`, {
+        method: incoming.method,
+        headers,
+        redirect: 'manual',
+        ...(incoming.method === 'GET' ? {} : { body: Buffer.concat(chunks) }),
+      })
+      const body = Buffer.from(await answered.arrayBuffer())
+      if (incoming.url === '/oauth/token') mode.seen?.push(body.toString('utf8'))
+      outgoing.writeHead(answered.status, Object.fromEntries(answered.headers))
+      outgoing.end(body)
+    })
+    await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
+    t.after(() => {
+      server.closeAllConnections()
+      server.close()
+    })
+    const { port } = z.object({ port: z.number() }).parse(server.address())
+    return `http://127.0.0.1:${port}`
+  }
 }

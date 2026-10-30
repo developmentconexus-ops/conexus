@@ -1,5 +1,7 @@
 import { Email, Version } from '@conexus/hub-api'
 import { z } from 'zod'
+import type { ConnectorApp } from './config-connectors.ts'
+import { ConnectorApps } from './config-connectors.ts'
 import type { GitCopyBucket } from './config-git.ts'
 import { GitCopyKey, GitEnvironment } from './config-git.ts'
 import type { InstallationId, MachineTemplate } from './config-machine.ts'
@@ -86,32 +88,6 @@ const ConnectorOrigins = z
   .transform((value) => value.split(',').map((pair) => pair.trim().split('=')))
   .pipe(z.array(z.tuple([z.string().regex(/^[a-z][a-z0-9-]{1,31}$/), ConnectorOrigin])))
   .transform((pairs): ReadonlyMap<string, string> => new Map(pairs))
-
-/** The installation's app at an OAuth provider (W1): the Client Secret prints as its name only. */
-export type ConnectorApp = Readonly<{ clientId: string; clientSecret: Secret<'ConnectorAppSecret'> }>
-
-/**
- * The installation's apps, by connector id, from one file (S31): JSON
- * `{ "<connector id>": { "clientId": "...", "clientSecret": "..." } }`, strict, at least one, no
- * empty value. Whether the kit has each connector, and an OAuth one, the connectors subject decides.
- */
-export const ConnectorApps = {
-  parse(text: string): ReadonlyMap<string, ConnectorApp> {
-    const apps = z
-      .record(
-        z.string().regex(/^[a-z][a-z0-9-]{1,31}$/),
-        z.strictObject({ clientId: z.string().min(1), clientSecret: z.string().min(1) }),
-      )
-      .refine((all) => Object.keys(all).length > 0)
-      .parse(JSON.parse(text))
-    return new Map(
-      Object.entries(apps).map(([id, app]) => [
-        id,
-        { clientId: app.clientId, clientSecret: new Secret('ConnectorAppSecret', app.clientSecret) },
-      ]),
-    )
-  },
-}
 
 /** The Neon organization that holds the companies' projects, apart from the Hub's own (decision 0040). */
 export const NeonOrgId = z.string().min(1).brand('NeonOrgId')

@@ -1,5 +1,5 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto'
-import type { AccountOf, Native } from '@conexus/connectors'
+import type { AccountOf, ConnectorId, GrantAnswered } from '@conexus/connectors'
 import { authorizeUrl, codeRequest, connectorOf } from '@conexus/connectors'
 import type { Connection, SignInCompleted } from '@conexus/hub-api'
 import { ConnectionId, ConnectionName, ConnectionSignInId, REDIRECT_PATH } from '@conexus/hub-api'
@@ -13,29 +13,23 @@ import { Secret } from '../../platform/secret.ts'
 import type { OAuthConnector } from './apps.ts'
 import { appKeysOf, isOAuth } from './apps.ts'
 import type { Deps, Viewer } from './rows.ts'
-import { admitted, columns, ofCompany, scopeOf, sealContext, viewOf } from './rows.ts'
+import { admitted, columns, ofCompany, scopeOf, viewOf } from './rows.ts'
 import { connection, connectionSignIn } from './tables.ts'
-import { GRANT_DEADLINE_MS, sealTokens } from './tokens.ts'
+import type { ConnectionTokens } from './tokens.ts'
+import { GRANT_DEADLINE_MS, sealTokens, statusOf } from './tokens.ts'
 
 /** How long a started authorization waits for its code (decision 0049's ten minutes). */
 const SIGN_IN_SECONDS = 600
 
-type SignIn = Readonly<{
-  id: ConnectionSignInId
-  companyId: Viewer['companyId']
-  personId: Viewer['person']['id']
-  connector: OAuthConnector
-}>
-
 /** What the verifier's seal is bound to: the row, the company, the person and the connector (S32). */
-function signInContext(signIn: SignIn) {
+function signInContext(id: ConnectionSignInId, viewer: Viewer, connector: OAuthConnector) {
   return {
     purpose: 'connection-sign-in',
-    rowId: signIn.id,
-    companyId: signIn.companyId,
-    personId: signIn.personId,
-    kind: signIn.connector.auth.kind,
-    provider: signIn.connector.id,
+    rowId: id,
+    companyId: viewer.companyId,
+    personId: viewer.person.id,
+    kind: connector.auth.kind,
+    provider: connector.id,
   } as const
 }
 
@@ -49,25 +43,15 @@ function redirectUriOf(deps: Deps): string {
   return `${deps.publicOrigin}${REDIRECT_PATH}`
 }
 
-/** A first link's name is free in the company, by the same rule as the index (case and accents ignored as the ICU collation does). */
-async function assertNameFree(tx: ReadTx, viewer: Viewer, connectorId: string, name: string) {
-  const [taken] = await tx
-    .select({ id: connection.id })
-    .from(connection)
-    .where(
-      and(
-        eq(connection.companyId, viewer.companyId),
-        eq(connection.connectorId, connectorId),
-        sql`lower(${connection.name} collate "und-x-icu") = lower(${name} collate "und-x-icu")`,
-      ),
-    )
-  if (taken !== undefined) throw new Failure('CONNECTION_NAME_TAKEN')
-}
-
-type Target = Readonly<
-  | { connector: OAuthConnector; name: string; connectionId: null; revision: null }
-  | { connector: OAuthConnector; name: null; connectionId: ConnectionId; revision: number }
->
+/** A first link under a free name, or Conectar de novo on a connection at the revision read when it started (C38). */
+type Target =
+  | Readonly<{ connector: OAuthConnector; name: string; connectionId: null; revision: null }>
+  | Readonly<{
+      connector: OAuthConnector
+      name: null
+      connectionId: ConnectionId
+      revision: number
+    }>
 
 async function targetOf(
   tx: ReadTx,
@@ -75,7 +59,18 @@ async function targetOf(
 ): Promise<Target> {
   if ('connector' in input) {
     const connector = oauthConnectorOf(input.connector)
-    await assertNameFree(tx, input, connector.id, input.name)
+    // The same rule as connection_name_key: case and accents as the ICU collation compares them.
+    const [taken] = await tx
+      .select({ id: connection.id })
+      .from(connection)
+      .where(
+        and(
+          eq(connection.companyId, input.companyId),
+          eq(connection.connectorId, connector.id),
+          sql`lower(${connection.name} collate "und-x-icu") = lower(${input.name} collate "und-x-icu")`,
+        ),
+      )
+    if (taken !== undefined) throw new Failure('CONNECTION_NAME_TAKEN')
     return { connector, name: input.name, connectionId: null, revision: null }
   }
   const [row] = await tx
@@ -88,14 +83,14 @@ async function targetOf(
 }
 
 /**
- * Starts an authorization (criterion 6): a new connection by its name, or Conectar de novo on one
- * (`connectionId`, with its revision now). The PKCE verifier is sealed to its row for ten minutes;
- * the person's expired ones leave (S22). Nothing is called: the address is only built.
+ * Starts an authorization (criterion 6): a new connection by its name, or Conectar de novo on one.
+ * The PKCE verifier is sealed to its row for ten minutes and the person's expired ones leave (S22).
+ * Nothing is called: the address is only built, its `state` the company and the row.
  */
 export async function startSignIn(
   deps: Deps,
   input: Viewer & ({ connector: string; name: string } | { connectionId: ConnectionId }),
-) {
+): Promise<{ url: string; connector: ConnectorId }> {
   const named = 'name' in input ? ConnectionName.safeParse(input.name) : null
   if (named?.success === false) throw new Failure('CONNECTION_NAME_INVALID')
   const given = named === null ? input : { ...input, name: named.data }
@@ -105,41 +100,34 @@ export async function startSignIn(
     const { connector } = target
     const app = appKeysOf(deps.apps, connector)
     const verifier = randomBytes(32).toString('base64url')
-    const challenge = createHash('sha256').update(verifier).digest('base64url')
-    const signIn = {
-      id: ConnectionSignInId.parse(randomUUID()),
-      companyId: input.companyId,
-      personId: input.person.id,
-      connector,
-    }
-    const sealed = seal(deps.sealKeys, signInContext(signIn), Credential.parse(verifier))
+    const id = ConnectionSignInId.parse(randomUUID())
+    const sealed = seal(
+      deps.sealKeys,
+      signInContext(id, input, connector),
+      Credential.parse(verifier),
+    )
+    const mine = and(
+      eq(connectionSignIn.companyId, input.companyId),
+      eq(connectionSignIn.personId, input.person.id),
+    )
     await tx
       .delete(connectionSignIn)
-      .where(
-        and(
-          eq(connectionSignIn.companyId, input.companyId),
-          eq(connectionSignIn.personId, input.person.id),
-          lte(connectionSignIn.expiresAt, sql`statement_timestamp()`),
-        ),
-      )
+      .where(and(mine, lte(connectionSignIn.expiresAt, sql`statement_timestamp()`)))
     await tx.insert(connectionSignIn).values({
-      id: signIn.id,
-      companyId: signIn.companyId,
-      personId: signIn.personId,
-      connectorId: connector.id,
-      connectionId: target.connectionId,
-      name: target.name,
+      ...{ id, companyId: input.companyId, personId: input.person.id, connectorId: connector.id },
+      ...{ name: target.name, connectionId: target.connectionId },
       connectionRevision: target.revision,
       sealed: Buffer.from(sealed.blob),
       keyId: sealed.keyId,
       expiresAt: sql`statement_timestamp() + make_interval(secs => ${SIGN_IN_SECONDS})`,
     })
+    const challenge = createHash('sha256').update(verifier).digest('base64url')
     const url = authorizeUrl(
       connector.auth,
       {
         clientId: app.clientId,
         redirectUri: redirectUriOf(deps),
-        state: `${input.companyId}.${signIn.id}`,
+        state: `${input.companyId}.${id}`,
         challenge,
       },
       deps.origins.get(connector.id),
@@ -181,47 +169,39 @@ async function take(deps: Deps, input: Viewer & { signInId: ConnectionSignInId }
   // A connector the kit no longer has, or no longer OAuth, cannot rebuild the seal's context.
   if (connector === undefined || !isOAuth(connector))
     throw new Failure('SEAL_REFUSED', { details: { reason: 'connector gone' } })
-  const signIn = {
-    id: input.signInId,
-    companyId: input.companyId,
-    personId: input.person.id,
-    connector,
-  }
-  const verifier = open(deps.sealKeys, signInContext(signIn), {
-    keyId: taken.keyId,
-    blob: taken.sealed,
-  })
-  return { target: targetTaken(connector, taken), verifier }
+  const context = signInContext(input.signInId, input, connector)
+  const verifier = open(deps.sealKeys, context, { keyId: taken.keyId, blob: taken.sealed })
+  // connection_sign_in_target keeps one of the two.
+  const target: Target =
+    taken.connectionId !== null && taken.revision !== null
+      ? {
+          connector,
+          name: null,
+          connectionId: ConnectionId.parse(taken.connectionId),
+          revision: taken.revision,
+        }
+      : { connector, name: String(taken.name), connectionId: null, revision: null }
+  return { target, verifier }
 }
 
-/** The row's target, as its CHECK keeps it: a name for a first link, or a connection and its revision. */
-function targetTaken(
-  connector: OAuthConnector,
-  taken: { connectionId: string | null; name: string | null; revision: number | null },
-): Target {
-  if (taken.connectionId !== null && taken.revision !== null)
-    return {
-      connector,
-      name: null,
-      connectionId: ConnectionId.parse(taken.connectionId),
-      revision: taken.revision,
-    }
-  if (taken.name !== null) return { connector, name: taken.name, connectionId: null, revision: null }
-  throw new Error('A sign-in without its target escaped connection_sign_in_target')
-}
+type Ended = Exclude<SignInCompleted, { result: 'LINKED' | 'CANCELLED' }>
 
-type Tokens = Readonly<{ access: string; refresh: string; expiresAt: number }>
-
-/** What the provider said, as the log may carry it: status and code (S41). */
-function statusOf(native: Native) {
-  return { status: native.status, code: native.code ?? '-' }
+/** A refused exchange, as the screen and the log read it; the app refused is the operators' to fix. */
+function refusedGrant(
+  granted: Exclude<GrantAnswered, { kind: 'OK' }>,
+  where: Readonly<{ signInId: ConnectionSignInId; connector: ConnectorId }>,
+  log: FailureLog,
+): Ended {
+  const result = granted.kind === 'GRANT_REFUSED' ? 'REFUSED' : granted.kind
+  const fields = { ...where, result, ...statusOf(granted.native) }
+  if (result === 'APP_REFUSED') log.error(fields, 'CONNECTOR_APP_REFUSED')
+  else log.info(fields, 'CONNECTION_SIGN_IN_REFUSED')
+  return { result, connector: where.connector, native: granted.native }
 }
 
 /**
  * Completes an authorization (criteria 7, 8, 16, 18): taken first, then the code exchanged and the
- * account asked with no transaction open (D22), then written in one command, admitted again. A new
- * connection is NEW with its account; Conectar de novo replaces the seal and the account on the
- * revision read at the start (C38) and keeps the id and the name.
+ * account asked with no transaction open (D22), then written in one command, admitted again.
  */
 export async function completeSignIn(
   deps: Deps,
@@ -233,37 +213,27 @@ export async function completeSignIn(
 ): Promise<SignInCompleted> {
   const { target, verifier } = await take(deps, input)
   const { connector } = target
-  const where = { signInId: input.signInId, connector: connector.id }
   if ('refused' in input.answer) return { result: 'CANCELLED', connector: connector.id }
   const app = appKeysOf(deps.apps, connector)
-  const code = input.answer.code
+  const { code } = input.answer
+  const where = { signInId: input.signInId, connector: connector.id }
+  const exchange = { code, redirectUri: redirectUriOf(deps), verifier: verifier.reveal() }
   const granted = await deps.executor.grant(
     where,
     connector,
-    codeRequest(connector.auth, app, {
-      code,
-      redirectUri: redirectUriOf(deps),
-      verifier: verifier.reveal(),
-    }),
-    [app.clientSecret, code, verifier.reveal()],
+    codeRequest(connector.auth, app, exchange),
+    [app.clientSecret, code, exchange.verifier],
     GRANT_DEADLINE_MS,
   )
   if (granted.kind === 'UNREACHABLE')
     return { result: 'UNREACHABLE', connector: connector.id, native: granted.native }
-  if (granted.kind !== 'OK') {
-    const result = granted.kind === 'GRANT_REFUSED' ? 'REFUSED' : granted.kind
-    const fields = { ...where, result, ...statusOf(granted.native) }
-    // The installation's app refused is the operators' to fix, as at a refresh.
-    if (result === 'APP_REFUSED') input.log.error(fields, 'CONNECTOR_APP_REFUSED')
-    else input.log.info(fields, 'CONNECTION_SIGN_IN_REFUSED')
-    return { result, connector: connector.id, native: granted.native }
-  }
+  if (granted.kind !== 'OK') return refusedGrant(granted, where, input.log)
   const bearer = new Secret('BearerToken', granted.accessToken)
   const who = await deps.executor.who(where, connector, bearer, deps.callDeadlineMs)
   if (who.kind === 'UNREACHABLE')
-    return { result: 'UNREACHABLE', connector: connector.id, native: who.native }
+    return { result: who.kind, connector: connector.id, native: who.native }
   if (who.kind === 'UNREADABLE')
-    return { result: 'UNREADABLE', connector: connector.id, native: who.native }
+    return { result: who.kind, connector: connector.id, native: who.native }
   // A first grant without a refresh token cannot be kept alive past its hours: it did not read.
   if (granted.refreshToken === null) {
     const issues = [{ path: 'refresh_token', expected: 'string', received: 'undefined' }]
@@ -278,87 +248,68 @@ export async function completeSignIn(
   }
   const linked = await written(deps, input, target, { tokens, account: who.account })
   const event = target.connectionId === null ? 'CONNECTION_LINKED' : 'CONNECTION_RECONNECTED'
-  input.log.info(
-    {
-      by: input.person.id,
-      companyId: input.companyId,
-      connectionId: linked.id,
-      connector: connector.id,
-    },
-    event,
-  )
+  const fields = { by: input.person.id, companyId: input.companyId, connectionId: linked.id }
+  input.log.info({ ...fields, connector: connector.id }, event)
   return { result: 'LINKED', connection: linked }
 }
 
-const ACCOUNT_KEY = 'connection_account_key'
-const NAME_KEY = 'connection_name_key'
-
-/** The unique keys a write meets, as the company reads them; the other company is never named (S10). */
-function refusedBy(error: unknown): Failure | undefined {
-  const constraint = violatedConstraint(error)
-  if (constraint === ACCOUNT_KEY)
-    return new Failure('CONNECTION_ACCOUNT_ELSEWHERE', { cause: error })
-  if (constraint === NAME_KEY) return new Failure('CONNECTION_NAME_TAKEN', { cause: error })
-  return undefined
-}
-
+/**
+ * The connection as the authorization leaves it: a new one NEW with its account, or Conectar de
+ * novo replacing the seal and the account on the revision read at the start (C38), keeping the id
+ * and the name. A unique key met names neither the row nor the other company (S10).
+ */
 async function written(
   deps: Deps,
   viewer: Viewer,
   target: Target,
-  got: Readonly<{ tokens: Tokens; account: AccountOf }>,
+  got: Readonly<{ tokens: ConnectionTokens; account: AccountOf }>,
 ): Promise<Connection> {
   const { connector } = target
   const id = target.connectionId ?? ConnectionId.parse(randomUUID())
   const sealed = sealTokens(deps, { id, companyId: viewer.companyId, connector }, got.tokens)
   const linked = {
-    sealed: Buffer.from(sealed.blob),
-    keyId: sealed.keyId,
-    state: 'NEW' as const,
-    accountRef: got.account.ref,
-    accountLabel: got.account.label,
-    linkedBy: viewer.person.id,
-    linkedAt: sql`statement_timestamp()`,
+    ...{ sealed: Buffer.from(sealed.blob), keyId: sealed.keyId, state: 'NEW' as const },
+    ...{ accountRef: got.account.ref, accountLabel: got.account.label },
+    ...{ linkedBy: viewer.person.id, linkedAt: sql`statement_timestamp()` },
   }
   return deps.database.command(scopeOf(viewer), async (tx) => {
     await admitted(deps, tx, viewer, 'manageConnections')
     try {
-      if (target.connectionId === null) {
+      if (target.connectionId === null)
         await tx.insert(connection).values({
-          ...linked,
-          id,
-          companyId: viewer.companyId,
-          connectorId: connector.id,
-          name: target.name,
-          connectorVersion: connector.version,
-          attemptKey: randomUUID(),
+          ...{ ...linked, id, companyId: viewer.companyId, connectorId: connector.id },
+          ...{ name: target.name, connectorVersion: connector.version, attemptKey: randomUUID() },
         })
-      } else {
+      else {
         const [updated] = await tx
           .update(connection)
           .set({
-            ...linked,
-            revision: target.revision + 1,
-            refreshUntil: null,
-            testedAt: null,
-            testedBy: null,
-            lastTest: null,
+            ...{ ...linked, revision: target.revision + 1, refreshUntil: null },
+            ...{ testedAt: null, testedBy: null, lastTest: null },
           })
           .where(and(ofCompany(viewer, id), eq(connection.revision, target.revision)))
           .returning({ id: connection.id })
-        if (updated === undefined) await assertStillThere(tx, viewer, id)
+        // Nothing written: the connection left, or changed meanwhile (another Conectar de novo).
+        if (updated === undefined) {
+          const [there] = await tx
+            .select({ id: connection.id })
+            .from(connection)
+            .where(ofCompany(viewer, id))
+          throw new Failure(
+            there === undefined ? 'CONNECTION_NOT_FOUND' : 'CONNECTION_SIGN_IN_EXPIRED',
+          )
+        }
       }
     } catch (error) {
-      throw refusedBy(error) ?? error
+      const constraint = violatedConstraint(error)
+      if (constraint === 'connection_account_key')
+        throw new Failure('CONNECTION_ACCOUNT_ELSEWHERE', { cause: error })
+      if (constraint === 'connection_name_key')
+        throw new Failure('CONNECTION_NAME_TAKEN', { cause: error })
+      throw error
     }
     const [row] = await tx.select(columns).from(connection).where(ofCompany(viewer, id))
     if (row === undefined) throw new Failure('CONNECTION_NOT_FOUND')
     return viewOf(row)
   })
-}
-
-/** Conectar de novo wrote nothing: the connection left (NOT_FOUND) or changed meanwhile, as another Conectar de novo (EXPIRED). */
-async function assertStillThere(tx: ReadTx, viewer: Viewer, id: ConnectionId): Promise<never> {
-  const [row] = await tx.select({ id: connection.id }).from(connection).where(ofCompany(viewer, id))
-  throw new Failure(row === undefined ? 'CONNECTION_NOT_FOUND' : 'CONNECTION_SIGN_IN_EXPIRED')
 }

@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
 import { REDIRECT_PATH } from '@conexus/hub-api'
 import { TEST_ORIGIN } from '../../platform/test-database.ts'
-import { codeOf, personOn, plantCompany } from '../identity/test-hub.ts'
+import { call, codeOf, personOn, plantCompany } from '../identity/test-hub.ts'
 import {
   completeOf,
   consentAt,
@@ -36,32 +36,31 @@ test('começar: a dona recebe o endereço do dublê; as recusas não criam nada'
   const sankhya = { connector: 'sankhya', name: 'Matriz' }
   assert.deepEqual(failed(await startOf(hub, ana, companyId, sankhya)), [404, 'CONNECTOR_UNKNOWN'])
   const blank = { ...MERCADO_LIVRE, name: '   ' }
-  assert.deepEqual(
-    failed(await startOf(hub, ana, companyId, blank)),
-    [422, 'CONNECTION_NAME_INVALID'],
-  )
+  assert.deepEqual(failed(await startOf(hub, ana, companyId, blank)), [
+    422,
+    'CONNECTION_NAME_INVALID',
+  ])
   const gone = { connectionId: randomUUID() }
   assert.deepEqual(failed(await startOf(hub, ana, companyId, gone)), [404, 'CONNECTION_NOT_FOUND'])
 
   assert.equal((await linkMercadoLivre(hub, ana, companyId)).statusCode, 200)
   const before = await hub.test.asOwner('select id from connectors.connection_sign_in')
   const taken = { ...MERCADO_LIVRE, name: 'loja 1' }
-  assert.deepEqual(
-    failed(await startOf(hub, ana, companyId, taken)),
-    [409, 'CONNECTION_NAME_TAKEN'],
-  )
+  assert.deepEqual(failed(await startOf(hub, ana, companyId, taken)), [
+    409,
+    'CONNECTION_NAME_TAKEN',
+  ])
   assert.deepEqual(await hub.test.asOwner('select id from connectors.connection_sign_in'), before)
 })
 
 test('começar: sem as chaves do app nesta instalação', async (t) => {
-  const { hub, ana, companyId } = await mercadoLivreOn(t, (config) => ({
-    ...config,
-    connectorApps: undefined,
-  }))
-  assert.deepEqual(
-    failed(await startOf(hub, ana, companyId, MERCADO_LIVRE)),
-    [503, 'CONNECTOR_NOT_CONFIGURED'],
-  )
+  const { hub, ana, companyId } = await mercadoLivreOn(t, {
+    change: (config) => ({ ...config, connectorApps: undefined }),
+  })
+  assert.deepEqual(failed(await startOf(hub, ana, companyId, MERCADO_LIVRE)), [
+    503,
+    'CONNECTOR_NOT_CONFIGURED',
+  ])
 })
 
 test('completar: cria a ligação uma vez; a autorização gasta, alheia ou vencida', async (t) => {
@@ -115,13 +114,16 @@ test('recusada: pela pessoa ou pelo Mercado Livre, nada se cria', async (t) => {
   const answered = await linkMercadoLivre(hub, ana, companyId)
   assert.equal(answered.statusCode, 200)
   const body = Object(answered.json())
-  assert.deepEqual([body.result, body.connector, body.native.status], ['REFUSED', 'mercado-livre', 400])
+  assert.deepEqual(
+    [body.result, body.connector, body.native.status],
+    ['REFUSED', 'mercado-livre', 400],
+  )
   assert.equal(JSON.stringify(body).includes('invalid_operator_user_id'), true)
   assert.deepEqual(await hub.test.asOwner('select id from connectors.connection'), [])
 })
 
 test('conectar de novo: a mesma ligação, outra conta; a conta já ligada em outra', async (t) => {
-  const { hub, fake, ana, companyId } = await mercadoLivreOn(t)
+  const { hub, fake, ana, companyId, base } = await mercadoLivreOn(t)
   const first = Object((await linkMercadoLivre(hub, ana, companyId)).json()).connection
   await hub.test.asOwner(
     `update connectors.connection set state = 'NEEDS_REAUTH', tested_at = now(), tested_by = $1`,
@@ -136,6 +138,8 @@ test('conectar de novo: a mesma ligação, outra conta; a conta já ligada em ou
     [connection.id, connection.name, connection.state, connection.account, connection.testedAt],
     [first.id, 'Loja 1', 'NEW', { label: 'OUTRALOJA' }, null],
   )
+  const pasted = await call(hub, ana, 'PUT', `${base}/${first.id}/credential`, { credential: {} })
+  assert.deepEqual(failed(pasted), [404, 'CONNECTOR_UNKNOWN'])
   const [after] = await hub.test.asOwner('select sealed, revision from connectors.connection')
   assert.equal(after?.revision, Number(before?.revision) + 1)
   assert.notDeepEqual(after?.sealed, before?.sealed)

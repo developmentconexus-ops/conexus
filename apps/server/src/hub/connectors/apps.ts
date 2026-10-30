@@ -1,5 +1,5 @@
 import type { AppKeys, Connector, ConnectorId, OAuth2CodeAuth } from '@conexus/connectors'
-import type { ConnectorApp } from '../../platform/config.ts'
+import type { ConnectorApp } from '../../platform/config-connectors.ts'
 import { Failure } from '../../platform/failure.ts'
 
 /** A connector the company links by a trip to the provider. */

@@ -186,12 +186,7 @@ export const testConnection = defineOperation({
   bodyLimit: 1024,
   input: { params: OfConnection },
   success: { status: 200, body: TestResult },
-  failures: [
-    ...READ_FAILURES,
-    'CONNECTION_NOT_FOUND',
-    'SEAL_REFUSED',
-    'CONNECTOR_NOT_CONFIGURED',
-  ],
+  failures: [...READ_FAILURES, 'CONNECTION_NOT_FOUND', 'SEAL_REFUSED', 'CONNECTOR_NOT_CONFIGURED'],
 })
 
 /** One connection with its last WORKING test, kept: the items only, never a value read (founder, X2). */

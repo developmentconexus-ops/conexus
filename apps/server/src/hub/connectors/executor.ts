@@ -2,14 +2,14 @@ import type {
   AccountOf,
   AccountRef,
   Answered,
-  codeRequest,
+  ClientCredentialsAuth,
   Connector,
   ConnectorId,
+  codeRequest,
   GrantAnswered,
   Native,
   Operation,
   ProviderAnswer,
-  ClientCredentialsAuth,
   Unread,
 } from '@conexus/connectors'
 import {
@@ -160,11 +160,7 @@ function isOk(status: number): boolean {
  * that is not JSON is the body itself outside 2xx, so the kit still decides by status; a 2xx that
  * is not JSON is null, never an empty answer.
  */
-function answerOf(
-  status: number,
-  bytes: Uint8Array,
-  redaction: Redaction,
-): ProviderAnswer | null {
+function answerOf(status: number, bytes: Uint8Array, redaction: Redaction): ProviderAnswer | null {
   if (bytes.byteLength === 0) return { status, body: undefined }
   const text = Buffer.from(bytes).toString('utf8')
   const safe = redaction.whole2xx && isOk(status) ? text : redacted(text, redaction.secrets)
@@ -203,50 +199,53 @@ function unreachableCause(error: unknown): Record<string, string> | undefined {
   return code.success ? { kind: error.name, cause: code.data.code } : { kind: error.name }
 }
 
-export function createExecutor(deps: {
+type ExecutorDeps = {
   fetch: typeof fetch
   origins: ReadonlyMap<ConnectorId, string>
   log: FailureLog
-}): Executor {
+}
+
+/**
+ * Sends one request (the OS's `send`): a redirect refused by fetch, every body read up to the cap
+ * and parsed only at the end, every body redacted of `secrets` first. A 5xx is UNREACHABLE and
+ * keeps what it said. What is logged is scalars: the connection, the status or the error's name
+ * and cause code; never a body.
+ */
+async function send(
+  deps: ExecutorDeps,
+  request: Request,
+  where: Where,
+  redaction: Redaction,
+  deadlineMs: number,
+): Promise<ProviderAnswer | Unreadable | Unreachable> {
+  // Outside the `try`: a deadline the timer refuses is the caller's mistake, not the provider down.
+  const signal = AbortSignal.timeout(deadlineMs)
+  try {
+    const response = await deps.fetch(request, { signal })
+    const { status } = response
+    const bytes = await bodyOf(response)
+    const answer = bytes === null ? null : answerOf(status, bytes, redaction)
+    if (status >= 500) {
+      deps.log.info({ ...where, status }, 'CONNECTOR_UNREACHABLE')
+      return { kind: 'UNREACHABLE', native: nativeOf(status, answer?.body ?? null) }
+    }
+    return answer ?? unreadable(status, bytes)
+  } catch (error) {
+    const cause = unreachableCause(error)
+    if (cause === undefined) throw error
+    deps.log.info({ ...where, ...cause }, 'CONNECTOR_UNREACHABLE')
+    return { kind: 'UNREACHABLE', native: null }
+  }
+}
+
+/** Whose connection a call is about, for the log. */
+function whereOf(connection: OpenedConnection): Where {
+  return { connectionId: connection.id, connector: connection.connector.id }
+}
+
+export function createExecutor(deps: ExecutorDeps): Executor {
   function originOf(connector: Connector): string {
     return deps.origins.get(connector.id) ?? connector.origin
-  }
-
-  /**
-   * Sends one request (the OS's `send`): a redirect refused by fetch, every body read up to the
-   * cap and parsed only at the end, every body redacted of `secrets` first. A 5xx is
-   * UNREACHABLE and keeps what it said. What is logged is scalars: the connection, the status or
-   * the error's name and cause code; never a body.
-   */
-  async function send(
-    request: Request,
-    where: Where,
-    redaction: Redaction,
-    deadlineMs: number,
-  ): Promise<ProviderAnswer | Unreadable | Unreachable> {
-    // Outside the `try`: a deadline the timer refuses is the caller's mistake, not the provider down.
-    const signal = AbortSignal.timeout(deadlineMs)
-    try {
-      const response = await deps.fetch(request, { signal })
-      const { status } = response
-      const bytes = await bodyOf(response)
-      const answer = bytes === null ? null : answerOf(status, bytes, redaction)
-      if (status >= 500) {
-        deps.log.info({ ...where, status }, 'CONNECTOR_UNREACHABLE')
-        return { kind: 'UNREACHABLE', native: nativeOf(status, answer?.body ?? null) }
-      }
-      return answer ?? unreadable(status, bytes)
-    } catch (error) {
-      const cause = unreachableCause(error)
-      if (cause === undefined) throw error
-      deps.log.info({ ...where, ...cause }, 'CONNECTOR_UNREACHABLE')
-      return { kind: 'UNREACHABLE', native: null }
-    }
-  }
-
-  /** Whose connection a call is about, for the log. */
-  function whereOf(connection: OpenedConnection): Where {
-    return { connectionId: connection.id, connector: connection.connector.id }
   }
 
   return {
@@ -257,7 +256,7 @@ export function createExecutor(deps: {
       const values = valuesOf(connection, auth)
       const request = toRequest(connector, tokenRequest(auth, values), null, originOf(connector))
       const redaction = { secrets: Object.values(values), whole2xx: false }
-      const sent = await send(request, whereOf(connection), redaction, deadlineMs)
+      const sent = await send(deps, request, whereOf(connection), redaction, deadlineMs)
       if ('kind' in sent) return sent
       const token = readToken(auth, sent)
       if (token.kind !== 'OK') return token
@@ -275,12 +274,13 @@ export function createExecutor(deps: {
       const { auth } = connector
       const pasted = auth.kind === 'client_credentials' ? valuesOf(connection, auth) : {}
       const redaction = { secrets: [...Object.values(pasted), token.reveal()], whole2xx: false }
-      const sent = await send(request, whereOf(connection), redaction, deadlineMs)
+      const sent = await send(deps, request, whereOf(connection), redaction, deadlineMs)
       return 'kind' in sent ? sent : operation.answer(sent)
     },
 
     async grant(where, connector, request, secrets, deadlineMs) {
       const sent = await send(
+        deps,
         toRequest(connector, request, null, originOf(connector)),
         where,
         { secrets, whole2xx: true },
@@ -304,9 +304,10 @@ export function createExecutor(deps: {
         originOf(connector),
       )
       const redaction = { secrets: [token.reveal()], whole2xx: false }
-      const sent = await send(request, where, redaction, deadlineMs)
+      const sent = await send(deps, request, where, redaction, deadlineMs)
       if ('kind' in sent) return sent
-      if (!isOk(sent.status)) return { kind: 'UNREADABLE', native: nativeOf(sent.status, sent.body) }
+      if (!isOk(sent.status))
+        return { kind: 'UNREADABLE', native: nativeOf(sent.status, sent.body) }
       const account = who.answer.safeParse(sent.body)
       // A 2xx outside the schema keeps none of its body: it is the person's own profile.
       if (!account.success) return { kind: 'UNREADABLE', native: nativeOf(sent.status, null) }
