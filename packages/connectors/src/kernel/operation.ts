@@ -41,8 +41,8 @@ export type Failure = Readonly<{
   native: Native
 }>
 
-/** An operation's outcome as data: a refusal is never an empty list (architecture §1), and carries what the provider said. */
-export type Answered<O> = Readonly<{ kind: 'OK'; value: O }> | Failure
+/** An operation's outcome as data: a refusal is never an empty list (architecture §1), and carries what the provider said. `empty` marks an OK read that had nothing to look at. */
+export type Answered<O> = Readonly<{ kind: 'OK'; value: O; empty?: true }> | Failure
 
 /** What a status outside 2xx means when the connector documents no exception: the key is refused, the request is, or the answer is not understood. */
 export function outcomeOf(status: number): 'AUTH_REFUSED' | 'REFUSED' | 'UNREADABLE' {
