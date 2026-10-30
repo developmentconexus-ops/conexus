@@ -137,18 +137,25 @@ export function ProjectIntegrations(scope: Scope) {
   const { companyId, projectId } = scope
   const read = useQuery(projectConnectionsQuery(companyId, projectId))
   const company = useQuery(connectionsQuery(companyId))
-  const mayManage = company.data?.mayManage === true
   if (read.error instanceof HubFailure && read.error.code === 'NOT_FOUND') return <NotFound />
+  // The lines say what the Projeto reads and the company's list says who may change it and how each
+  // connector signs in, so the page waits for both and fails with either.
+  const failure = read.error ?? company.error ?? undefined
+  const shown = read.data !== undefined && company.data !== undefined
+  const mayManage = company.data?.mayManage === true
   const groups = read.data?.connectors.filter((group) => group.connections.length > 0)
   return (
     <section className="flex w-full max-w-page flex-col gap-lg">
       <PageTitle>{PROJECT_LEAD}</PageTitle>
-      {company.data !== undefined && !mayManage && <p className="text-text-2">{ASK_MANAGER}</p>}
-      {read.isPending && <Loading />}
-      {read.isError && (
-        <ReadFailure text={sentenceOf(read.error)} onRetry={() => void read.refetch()} />
+      {shown && !mayManage && <p className="text-text-2">{ASK_MANAGER}</p>}
+      {failure === undefined && !shown && <Loading />}
+      {failure !== undefined && (
+        <ReadFailure
+          text={sentenceOf(failure)}
+          onRetry={() => void Promise.all([read.refetch(), company.refetch()])}
+        />
       )}
-      {groups?.length === 0 && (
+      {shown && groups?.length === 0 && (
         <div className="flex flex-col items-start gap-sm">
           <Empty>{NO_COMPANY_CONNECTIONS}</Empty>
           {mayManage && (
@@ -162,7 +169,7 @@ export function ProjectIntegrations(scope: Scope) {
           )}
         </div>
       )}
-      {groups !== undefined && groups.length > 0 && (
+      {shown && groups !== undefined && groups.length > 0 && (
         <List>
           {groups.map((group) => (
             <Row key={group.connector.id}>

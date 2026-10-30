@@ -5,7 +5,8 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import { HttpResponse, http } from 'msw'
 import { beforeEach, expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
-import { ANA, COMPANY } from '../../platform/fixtures.ts'
+import { COMPANY } from '../../platform/fixtures.ts'
+import { sentenceOfCode } from '../../platform/hub.ts'
 import {
   conversationsNone,
   hubServer,
@@ -207,11 +208,20 @@ test('a liberação recusada porque o Projeto já lê outra ligação diz a fras
   ).toBeTruthy()
 })
 
-test('a leitura que falha diz a frase com Tentar de novo', async () => {
+test('a leitura das ligações que falha diz a frase com Tentar de novo', async () => {
   open({ sankhya: [], ml: [], mayManage: true })
   server.use(
     http.get(`${API}/projects/${PEDIDOS.id}/connections`, () => refusal('DATABASE_UNAVAILABLE')),
   )
-  expect(await screen.findByRole('button', { name: 'Tentar de novo' })).toBeTruthy()
-  expect(ANA.name).toBeTruthy()
+  expect(await screen.findByRole('alert')).toBeTruthy()
+  expect(screen.getByText(sentenceOfCode('DATABASE_UNAVAILABLE'))).toBeTruthy()
+  expect(screen.getByRole('button', { name: 'Tentar de novo' })).toBeTruthy()
+})
+
+test('a lista da empresa que falha também diz a frase, e não deixa a dona sem saber', async () => {
+  open({ sankhya: [line('Matriz')], ml: [], mayManage: true })
+  server.use(http.get(`${API}/connections`, () => refusal('DATABASE_UNAVAILABLE')))
+  expect(await screen.findByText(sentenceOfCode('DATABASE_UNAVAILABLE'))).toBeTruthy()
+  expect(screen.getByRole('button', { name: 'Tentar de novo' })).toBeTruthy()
+  expect(screen.queryByRole('button', { name: /Liberar|Tirar/ })).toBeNull()
 })
