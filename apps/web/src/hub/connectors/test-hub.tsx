@@ -49,7 +49,7 @@ function reads(view: View): HttpHandler[] {
     http.get(`${BASE}/connections/:connectionId`, ({ params }) => {
       const connection = view.connections.find((one) => one.id === params.connectionId)
       if (!connection) return refusal('CONNECTION_NOT_FOUND')
-      return HttpResponse.json(ConnectionDetail.parse({ connection }))
+      return HttpResponse.json(ConnectionDetail.parse({ connection, notes: [] }))
     }),
   ]
 }

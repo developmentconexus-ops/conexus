@@ -2,6 +2,7 @@ import type {
   AppAccessRow,
   CompanyAppPerson,
   CompanyId,
+  OfProject,
   Person,
   PersonId,
   ProjectId,
@@ -32,7 +33,6 @@ export type AccessDeps = {
 }
 
 type Roles = readonly { name: string; label: string }[]
-type OfProject = { companyId: CompanyId; projectId: ProjectId }
 
 /**
  * Whether the role names one the published version declares; an app that declares none takes no

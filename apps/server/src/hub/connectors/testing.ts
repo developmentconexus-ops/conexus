@@ -97,6 +97,11 @@ export async function test(deps: Deps, input: OfConnection): Promise<TestResult>
   const turn = await deps.limits.inTurn(open.id, deps.callDeadlineMs, () =>
     checked({ ...deps, access: accessFor(deps, input) }, open),
   )
+  if ('kind' in turn)
+    deps.log.info(
+      { connectionId: open.id, connector: open.connector.id },
+      'CONNECTOR_TEST_QUEUE_DEADLINE',
+    )
   const check: Checked = 'kind' in turn ? { result: 'UNREACHABLE', native: null } : turn
   return { ...check, connection: await recorded(deps, input, open, check) }
 }

@@ -59,7 +59,9 @@ export type AppRefused = Readonly<{ kind: 'APP_REFUSED'; native: Native }>
 export type Access = {
   token(
     opened: OpenedConnection,
-    a: Readonly<{ force: false } | { force: true; refused: Native }>,
+    a: Readonly<
+      { force: false; deadlineMs?: number } | { force: true; refused: Native; deadlineMs?: number }
+    >,
   ): Promise<Login | AppRefused>
 }
 
@@ -218,6 +220,17 @@ async function waited(g: Ground, a: Parameters<Access['token']>[1]): Promise<Tur
   }
 }
 
+/** The pasted key's token from `limits`; a forced one is a token the provider ended, dropped so the next is a new login. */
+function pastedToken(
+  deps: Deps,
+  opened: OpenedConnection,
+  a: Parameters<Access['token']>[1],
+  remembered: BearerToken | null,
+) {
+  if (a.force && remembered !== null) deps.limits.invalidate(opened, remembered)
+  return deps.limits.token(opened, a.deadlineMs ?? deps.callDeadlineMs)
+}
+
 /** One Testar's access to its connection (security S34); each step is a short command, no transaction open during a call (D22). */
 export function accessFor(deps: Deps, viewer: Viewer): Access {
   let held: Held | null = null
@@ -226,9 +239,7 @@ export function accessFor(deps: Deps, viewer: Viewer): Access {
     async token(opened, a) {
       const { connector } = opened
       if (!isOAuth(connector)) {
-        // A forced token is one the provider ended: dropped, so the next one is a new login.
-        if (a.force && pasted !== null) deps.limits.invalidate(opened, pasted)
-        const login = await deps.limits.token(opened, deps.callDeadlineMs)
+        const login = await pastedToken(deps, opened, a, pasted)
         pasted = login.kind === 'TOKEN' ? login.token : null
         return login
       }

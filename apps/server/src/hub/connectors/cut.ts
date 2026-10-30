@@ -7,6 +7,7 @@ const CUT_BYTES = 16 * 1024
 // A single row over the bytes loses its long text before any row is dropped: Mastra Factory read-tools.ts MAX_TEXT = 600 (:53, :57-59).
 const MAX_TEXT = 600
 
+/** Every read lists its rows in `linhas`; the page reads add `temMais`, the DbExplorer door `completo`. Whatever else a read sent is kept as it came. */
 export const Listed = z.looseObject({
   linhas: z.array(z.unknown()),
   temMais: z.boolean().nullable().optional(),

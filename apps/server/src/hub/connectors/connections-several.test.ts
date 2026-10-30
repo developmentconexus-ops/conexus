@@ -55,7 +55,7 @@ test('o que fica de um Testar: o estado e quem testou, nunca o resultado; o que 
   const working = Object((await testOf(hub, bruno, base, id)).json())
   assert.equal(working.result, 'WORKING')
   const stored = Object((await call(hub, carla, 'GET', `${base}/${id}`)).json())
-  assert.deepEqual(Object.keys(stored), ['connection'])
+  assert.deepEqual(Object.keys(stored), ['connection', 'notes'])
   assert.deepEqual(stored.connection, working.connection)
   assert.deepEqual(stored.connection.testedBy, { id: bruno.id, name: 'Bruno Reis' })
   assert.equal(stored.connection.state, 'ACTIVE')

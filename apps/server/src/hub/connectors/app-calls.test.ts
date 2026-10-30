@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
+import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
 import { connectorOf } from '@conexus/connectors'
+import { CompanyId, PersonId, ProjectId, RunId } from '@conexus/hub-api'
 import { call } from '../identity/test-hub.ts'
 import { appCalls, readOf } from './test-app-calls.ts'
 
@@ -45,4 +47,27 @@ test('só leitura: uma operação que não é read nunca é lida pela porta', ()
   const withWrite = { ...sankhya, operations: [{ ...empresas, class: 'write' as const }] }
   assert.equal(readOf(withWrite, 'empresas'), undefined)
   assert.equal(readOf(sankhya, 'empresas')?.id, 'empresas')
+})
+
+test('só leitura nas duas portas: uma operação de escrita no kit nunca é lida, pelo app nem pelo Builder', async (t) => {
+  const on = await appCalls(t)
+  await on.connect('Matriz')
+  const sankhya = connectorOf('sankhya')
+  const index = sankhya?.operations.findIndex((operation) => operation.id === 'empresas') ?? -1
+  const original = sankhya?.operations[index]
+  assert.ok(sankhya && original)
+  Reflect.set(sankhya.operations, index, { ...original, class: 'write' })
+  t.after(() => Reflect.set(sankhya.operations, index, original))
+  assert.deepEqual((await on.read()).json(), { kind: 'NOT_GRANTED' })
+  const ids = { companyId: CompanyId.parse(on.companyId), projectId: ProjectId.parse(on.projectId) }
+  const [granted] = await on.hub.connectors.builder.granted(ids)
+  assert.ok(granted)
+  const built = await on.hub.connectors.builder.read(ids, {
+    connectionId: granted.connectionId,
+    personId: PersonId.parse(on.ana.id),
+    runId: RunId.parse(randomUUID()),
+    operation: 'empresas',
+    input: { page: 0 },
+  })
+  assert.equal(built.kind, 'NOT_GRANTED')
 })

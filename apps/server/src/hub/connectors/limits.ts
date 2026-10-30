@@ -93,9 +93,42 @@ function createLanes(): Pick<Limits, 'inTurn'> {
   }
 }
 
+/** Each live token's own end: logged out before it expires, since an expired token's logout is refused. */
+function createEndings(held: Map<ConnectionId, Held>, executor: Executor) {
+  const timers = new Map<ConnectionId, NodeJS.Timeout>()
+
+  function stop(id: ConnectionId): void {
+    clearTimeout(timers.get(id))
+    timers.delete(id)
+  }
+
+  return {
+    stop,
+    stopAll(): void {
+      for (const id of [...timers.keys()]) stop(id)
+    },
+    schedule(opened: OpenedConnection, token: BearerToken, expiresAt: number): void {
+      stop(opened.id)
+      const timer = setTimeout(
+        () => {
+          timers.delete(opened.id)
+          const now = held.get(opened.id)?.state
+          if (now?.kind !== 'LIVE' || now.token !== token) return
+          held.set(opened.id, { seat: opened, state: NONE })
+          void executor.logout(opened, token, LOGOUT_DEADLINE_MS)
+        },
+        Math.max(0, expiresAt - EARLY_MS - Date.now()),
+      )
+      timer.unref()
+      timers.set(opened.id, timer)
+    },
+  }
+}
+
 /** The one token of each pasted-key connection: reused while it lives, renewed with the old one's logout first. */
 function createTokens(executor: Executor): Omit<Limits, 'inTurn'> {
   const held = new Map<ConnectionId, Held>()
+  const endings = createEndings(held, executor)
 
   async function login(opened: OpenedConnection, deadlineMs: number): Promise<Login> {
     const answered = await executor.login(opened, deadlineMs)
@@ -105,6 +138,7 @@ function createTokens(executor: Executor): Omit<Limits, 'inTurn'> {
     }
     const expiresAt = Date.now() + answered.expiresInSeconds * 1000
     held.set(opened.id, { seat: opened, state: { kind: 'LIVE', token: answered.token, expiresAt } })
+    endings.schedule(opened, answered.token, expiresAt)
     return { kind: 'TOKEN', token: answered.token }
   }
 
@@ -136,12 +170,15 @@ function createTokens(executor: Executor): Omit<Limits, 'inTurn'> {
 
     invalidate(opened, token) {
       const now = held.get(opened.id)?.state
-      if (now?.kind === 'LIVE' && now.token === token)
+      if (now?.kind === 'LIVE' && now.token === token) {
+        endings.stop(opened.id)
         held.set(opened.id, { seat: opened, state: NONE })
+      }
     },
 
     async forget(connection) {
       const now = held.get(connection)
+      endings.stop(connection)
       held.delete(connection)
       if (now?.state.kind === 'LIVE')
         await executor.logout(now.seat, now.state.token, LOGOUT_DEADLINE_MS)
@@ -152,6 +189,7 @@ function createTokens(executor: Executor): Omit<Limits, 'inTurn'> {
         entry.state.kind === 'LIVE' ? [{ seat: entry.seat, token: entry.state.token }] : [],
       )
       held.clear()
+      endings.stopAll()
       await Promise.all(live.map((one) => executor.logout(one.seat, one.token, deadlineMs)))
     },
   }

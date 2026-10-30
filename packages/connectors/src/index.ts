@@ -45,5 +45,6 @@ export type {
 } from './kernel/operation.ts'
 export { AccountRef, deniesAccess, locateOf, requestOf } from './kernel/operation.ts'
 export { toRequest } from './kernel/request.ts'
+export { CONCURRENT_CALL } from './kernel/rows.ts'
 export { mercadoLivreFake } from './mercado-livre/fake.ts'
 export { sankhyaFake } from './sankhya/fake.ts'

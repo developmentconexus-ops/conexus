@@ -2,7 +2,7 @@ import type { Connector, Operation } from '@conexus/connectors'
 import { CONNECTORS, connectorOf } from '@conexus/connectors'
 import type { ConnectionId, Grant, OfProject, ProjectConnections } from '@conexus/hub-api'
 import { and, asc, eq, sql } from 'drizzle-orm'
-import type { ReadTx } from '../../platform/database.ts'
+import type { CommandTx, ReadTx } from '../../platform/database.ts'
 import { violatedConstraint, violatedReference } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import { personNameColumn } from '../identity/public.ts'
@@ -90,10 +90,63 @@ export function list(deps: Deps, input: Viewer & OfProject): Promise<ProjectConn
   })
 }
 
+/** The grant's row, or none when the pair already has one; a second Projeto key, a connection or Projeto gone meanwhile are the database's refusals (23505, 23503). */
+async function inserted(
+  tx: CommandTx,
+  input: OfGrant,
+  connector: Connector,
+): Promise<Grant | undefined> {
+  try {
+    const [made] = await tx
+      .insert(projectConnection)
+      .values({
+        projectId: input.projectId,
+        companyId: input.companyId,
+        connectorId: connector.id,
+        connectionId: input.connectionId,
+        exclusive: connector.perProject === 'one',
+        grantedBy: input.person.id,
+        grantedAt: sql`statement_timestamp()`,
+      })
+      .onConflictDoNothing({
+        target: [projectConnection.projectId, projectConnection.connectionId],
+      })
+      .returning({ ...GRANT_COLUMNS })
+    return made === undefined ? undefined : grantOf(made)
+  } catch (error) {
+    throw refusedGrant(error)
+  }
+}
+
+function refusedGrant(error: unknown): unknown {
+  if (violatedConstraint(error) === 'project_connection_one_key')
+    return new Failure('PROJECT_CONNECTION_TAKEN', { cause: error })
+  const reference = violatedReference(error)
+  if (reference === 'project_connection_connection_fkey')
+    return new Failure('CONNECTION_NOT_FOUND', { cause: error })
+  if (reference === 'project_connection_project_fkey')
+    return new Failure('NOT_FOUND', { cause: error })
+  return error
+}
+
+async function existingGrant(tx: CommandTx, input: OfGrant): Promise<Grant> {
+  const [existing] = await tx
+    .select(GRANT_COLUMNS)
+    .from(projectConnection)
+    .where(
+      and(
+        eq(projectConnection.projectId, input.projectId),
+        eq(projectConnection.connectionId, input.connectionId),
+      ),
+    )
+  if (existing === undefined) throw new Failure('CONNECTION_NOT_FOUND')
+  return grantOf(existing)
+}
+
 /**
  * Lets the Projeto read the connection, whole (founder, T-A: no ceiling). One row per pair: the
  * second call finds it and answers the same grant. A connector that allows one per Projeto has the
- * database refuse a second (23505); a connection or Projeto removed meanwhile is a 23503.
+ * database refuse a second.
  */
 export function grant(deps: Deps, input: OfGrant): Promise<Grant> {
   return deps.database.command(scopeOf(input), async (tx) => {
@@ -106,44 +159,7 @@ export function grant(deps: Deps, input: OfGrant): Promise<Grant> {
     if (found === undefined) throw new Failure('CONNECTION_NOT_FOUND')
     const connector = connectorOf(found.connector)
     if (connector === undefined) throw new Failure('CONNECTOR_UNKNOWN')
-    try {
-      const [made] = await tx
-        .insert(projectConnection)
-        .values({
-          projectId: input.projectId,
-          companyId: input.companyId,
-          connectorId: connector.id,
-          connectionId: input.connectionId,
-          exclusive: connector.perProject === 'one',
-          grantedBy: input.person.id,
-          grantedAt: sql`statement_timestamp()`,
-        })
-        .onConflictDoNothing({
-          target: [projectConnection.projectId, projectConnection.connectionId],
-        })
-        .returning({ ...GRANT_COLUMNS })
-      if (made !== undefined) return grantOf(made)
-    } catch (error) {
-      if (violatedConstraint(error) === 'project_connection_one_key')
-        throw new Failure('PROJECT_CONNECTION_TAKEN', { cause: error })
-      const reference = violatedReference(error)
-      if (reference === 'project_connection_connection_fkey')
-        throw new Failure('CONNECTION_NOT_FOUND', { cause: error })
-      if (reference === 'project_connection_project_fkey')
-        throw new Failure('NOT_FOUND', { cause: error })
-      throw error
-    }
-    const [existing] = await tx
-      .select(GRANT_COLUMNS)
-      .from(projectConnection)
-      .where(
-        and(
-          eq(projectConnection.projectId, input.projectId),
-          eq(projectConnection.connectionId, input.connectionId),
-        ),
-      )
-    if (existing === undefined) throw new Failure('CONNECTION_NOT_FOUND')
-    return grantOf(existing)
+    return (await inserted(tx, input, connector)) ?? (await existingGrant(tx, input))
   })
 }
 

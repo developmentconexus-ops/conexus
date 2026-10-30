@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { call } from '../identity/test-hub.ts'
+import { call, personOn } from '../identity/test-hub.ts'
 import { appCalls } from './test-app-calls.ts'
 
 test('liberar: a dona libera e lê a liberação; o membro 404; a segunda Sankhya dá PROJECT_CONNECTION_TAKEN e nada muda; tirar duas vezes dá 204', async (t) => {
@@ -49,4 +49,12 @@ test('a lista: o membro lê cada conector ligado com o perProject e a liberaçã
     `/api/companies/${on.companyId}/projects/00000000000000000000000000/connections`,
   )
   assert.equal(other.statusCode, 404)
+  const davi = await personOn(on.hub, { name: 'Davi Souza', email: 'davi@example.test' })
+  const foreign = await call(
+    on.hub,
+    davi,
+    'GET',
+    `/api/companies/${on.companyId}/projects/${on.projectId}/connections`,
+  )
+  assert.equal(foreign.statusCode, 404, 'another company reads nothing')
 })

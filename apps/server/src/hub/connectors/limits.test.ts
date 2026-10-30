@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { createServer } from 'node:http'
 import { test } from 'node:test'
 import { setTimeout as sleep } from 'node:timers/promises'
+import { CONCURRENT_CALL } from '@conexus/connectors'
 import { z } from 'zod'
 import { appCalls } from './test-app-calls.ts'
 import { A, B, createLimits, executorOf, NO_EXECUTOR, OPENED } from './test-limits.ts'
@@ -111,7 +112,25 @@ test('o status 4: UNREADABLE com o que veio, a linha de erro CONNECTOR_CONCURREN
   const read = await on.read({ operation: 'consultar', input: { sql: 'SELECT 1 FROM TSIEMP' } })
   const answer = Object(read.json())
   assert.equal(answer.kind, 'UNREADABLE')
-  assert.equal(answer.native.code, '4')
+  assert.equal(answer.native.code, CONCURRENT_CALL)
   assert.equal(calls, 1)
   assert.ok(on.hub.lines.some((line) => line.message === 'CONNECTOR_CONCURRENCY_FAULT'))
+})
+
+test('nenhum token vence aberto: perto do fim, o logout sai sozinho, uma vez, e a próxima leitura faz outro login', async () => {
+  const events: string[] = []
+  const limits = createLimits({ executor: executorOf(events, 61) })
+  await limits.token(OPENED, 1000)
+  assert.deepEqual(events, ['login1'])
+  await sleep(1300)
+  assert.deepEqual(events, ['login1', 'logout t1'], 'logged out at its end minus the margin')
+  await limits.token(OPENED, 1000)
+  assert.deepEqual(events, ['login1', 'logout t1', 'login2'])
+  await limits.closeAll(1000)
+  await sleep(1300)
+  assert.deepEqual(
+    events,
+    ['login1', 'logout t1', 'login2', 'logout t2'],
+    'closeAll stops the timer',
+  )
 })

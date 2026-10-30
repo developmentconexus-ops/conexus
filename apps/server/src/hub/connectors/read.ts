@@ -1,5 +1,6 @@
 import type { ConnectorAnswer } from '@conexus/app-contract'
 import type { Answered, Native, Operation } from '@conexus/connectors'
+import { CONCURRENT_CALL } from '@conexus/connectors'
 import type { OfProject } from '@conexus/hub-api'
 import { and, eq, sql } from 'drizzle-orm'
 import type { Login, OpenedConnection } from './executor.ts'
@@ -21,9 +22,6 @@ export type ReadRequest = Readonly<{
   input: unknown
   deadlineMs: number
 }>
-
-// The sankhya kit gives the envelope "4" (a second call on a token while one is open) this code.
-const SANKHYA_CONCURRENCY_CODE = '4'
 
 /** What of the provider's answer an app may see: never its body (S41). */
 function summaryOf(native: Native) {
@@ -77,11 +75,15 @@ async function once(deps: Deps, a: ReadRequest, input: unknown, endsAt: number) 
   function left() {
     return Math.max(1, Math.floor(endsAt - performance.now()))
   }
-  const first = await access.token(a.opened, { force: false })
+  const first = await access.token(a.opened, { force: false, deadlineMs: left() })
   if (first.kind !== 'TOKEN') return first
   const sent = await deps.executor.call(a.opened, first.token, a.operation, input, left())
   if (sent.kind !== 'TOKEN_EXPIRED') return sent
-  const again = await access.token(a.opened, { force: true, refused: sent.native })
+  const again = await access.token(a.opened, {
+    force: true,
+    refused: sent.native,
+    deadlineMs: left(),
+  })
   if (again.kind !== 'TOKEN') return again
   return deps.executor.call(a.opened, again.token, a.operation, input, left())
 }
@@ -98,16 +100,14 @@ export async function readThrough(deps: Deps, a: ReadRequest): Promise<Connector
   // The kit's own schema judges what the app wrote: nothing reaches the provider when it refuses.
   if (!parsed.success)
     return { kind: 'REFUSED', native: { status: 400, code: 'INPUT_INVALID', message: null } }
-  const turn = await deps.limits.inTurn(a.opened.id, a.deadlineMs, (waitedMs) =>
-    once(deps, a, parsed.data, performance.now() + a.deadlineMs - waitedMs),
-  )
+  let queuedMs = a.deadlineMs
+  const turn = await deps.limits.inTurn(a.opened.id, a.deadlineMs, (waitedMs) => {
+    queuedMs = Math.round(waitedMs)
+    return once(deps, a, parsed.data, performance.now() + a.deadlineMs - waitedMs)
+  })
   const answered = 'kind' in turn && turn.kind === 'DEADLINE' ? null : turn
   const result: ConnectorAnswer = answered === null ? { kind: 'DEADLINE' } : answerOf(answered)
-  if (
-    answered?.kind === 'UNREADABLE' &&
-    a.opened.connector.id === 'sankhya' &&
-    answered.native.code === SANKHYA_CONCURRENCY_CODE
-  )
+  if (answered?.kind === 'UNREADABLE' && answered.native.code === CONCURRENT_CALL)
     deps.log.error(
       { connectionId: a.opened.id, connector: a.opened.connector.id },
       'CONNECTOR_CONCURRENCY_FAULT',
@@ -124,6 +124,7 @@ export async function readThrough(deps: Deps, a: ReadRequest): Promise<Connector
       by: a.by,
       result: result.kind,
       ms,
+      queuedMs,
       bytes: result.kind === 'OK' ? Buffer.byteLength(JSON.stringify(result.value) ?? '') : 0,
     },
     'CONNECTOR_CALLED',

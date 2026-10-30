@@ -20,3 +20,6 @@ export const Rows = z.object({
   parcial: z.literal(true).optional(),
 })
 export type Rows = z.infer<typeof Rows>
+
+/** The `native.code` of an answer the provider gave for our own fault: two calls open on one token, never repeated (#470). */
+export const CONCURRENT_CALL = 'CONCURRENT_CALL'

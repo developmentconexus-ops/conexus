@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { CONNECTORS, connectorOf } from '../index.ts'
+import { CONCURRENT_CALL, CONNECTORS, connectorOf } from '../index.ts'
 import { runConformance } from '../kernel/conformance.ts'
 import type { Operation } from '../kernel/operation.ts'
 import { requestOf } from '../kernel/operation.ts'
@@ -228,7 +228,7 @@ test('a porta lê o envelope: sucesso, recusa do fornecedor e o que não se lê'
   const four = { status: '4', statusMessage: 'Requisição cancelada' }
   assert.deepEqual(answer('consultar', 200, four), {
     kind: 'UNREADABLE',
-    native: { status: 200, code: '4', message: 'Requisição cancelada', body: four },
+    native: { status: 200, code: CONCURRENT_CALL, message: 'Requisição cancelada', body: four },
   })
   assert.partialDeepStrictEqual(answer('carregar', 401, undefined), { kind: 'TOKEN_EXPIRED' })
   assert.partialDeepStrictEqual(

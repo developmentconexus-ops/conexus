@@ -16,6 +16,10 @@ test('os conectores: Publicar recusa o conector sem liberação e a operação f
   assert.equal(refused.statusCode, 409)
   assert.equal(Object(refused.json()).code, 'CONNECTOR_NOT_GRANTED')
   assert.equal(await published(on), null)
+  const [preview] = await on.hub.test.asOwner(
+    'select live_version_id from apps.app where live_version_id is not null',
+  )
+  assert.notEqual(preview, undefined, 'the Prévia holds the version the Publicar refused')
   await on.connect('Matriz')
   await on.hub.test.asOwner(
     `update apps.app_version set manifest = jsonb_set(manifest, '{connectors}', '[{"connector":"sankhya","operations":["inexistente"]}]')`,
