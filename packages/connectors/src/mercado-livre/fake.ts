@@ -3,7 +3,7 @@ import { setTimeout as sleep } from 'node:timers/promises'
 import type { OAuthFake } from '../kernel/conformance.ts'
 import { serveOnLoopback } from '../kernel/loopback.ts'
 import type { Route } from './fake-data.ts'
-import { APP, me, REDIRECT_URI, SELLER } from './fake-data.ts'
+import { APP, REDIRECT_URI as DEFAULT_REDIRECT_URI, me, SELLER } from './fake-data.ts'
 import { ROUTES } from './fake-routes.ts'
 
 /** What the fake can be told to do wrong: the Hub's tests and the QA flip these. */
@@ -53,6 +53,7 @@ type Code = {
 /** What the double remembers: the codes, the keys it issued and how many renewals it answered. */
 type World = {
   switches: Switches
+  redirectUri: string
   codes: Map<string, Code>
   access: Map<string, { ref: string; expired: boolean }>
   refresh: Map<string, Account & { current: boolean }>
@@ -98,13 +99,13 @@ function authorization(world: World, url: URL): Response {
   const right =
     q.get('response_type') === 'code' &&
     q.get('client_id') === APP.clientId &&
-    q.get('redirect_uri') === REDIRECT_URI &&
+    q.get('redirect_uri') === world.redirectUri &&
     q.get('code_challenge_method') === 'S256' &&
     (q.get('code_challenge') ?? '') !== '' &&
     (q.get('state') ?? '') !== ''
   if (!right) return oauthError('invalid_request', 400)
   const { switches } = world
-  const back = new URL(REDIRECT_URI)
+  const back = new URL(world.redirectUri)
   back.searchParams.set('state', q.get('state') ?? '')
   if (switches.refuse) {
     switches.refuse = false
@@ -114,7 +115,7 @@ function authorization(world: World, url: URL): Response {
   const code = next(world, 'TG')
   world.codes.set(code, {
     challenge: q.get('code_challenge') ?? '',
-    redirectUri: REDIRECT_URI,
+    redirectUri: world.redirectUri,
     account: { ...switches.account },
     operator: switches.operator,
     used: false,
@@ -213,12 +214,15 @@ async function handle(world: World, request: Request): Promise<Response> {
 }
 
 /**
- * A Mercado Livre that answers like the documentation, with invented data. The authorization page
+ * A Mercado Livre that answers like the documentation, with invented data. It takes the Hub's
+ * `redirectUri` as configuration and refuses any other, as Mercado Livre does. The authorization page
  * answers 302 to the redirect; the code works once, with the verifier and the redirect it was asked
  * for; the refresh key works once and only the last one counts, and a new authorization of the same
  * account drops the previous one (the card's worst-case hypothesis, U1).
  */
-export function mercadoLivreFake(): MercadoLivreFake {
+export function mercadoLivreFake({
+  redirectUri = DEFAULT_REDIRECT_URI,
+}: Readonly<{ redirectUri?: string }> = {}): MercadoLivreFake {
   const switches: Switches = {
     refuse: false,
     operator: false,
@@ -233,6 +237,7 @@ export function mercadoLivreFake(): MercadoLivreFake {
   }
   const world: World = {
     switches,
+    redirectUri,
     codes: new Map(),
     access: new Map(),
     refresh: new Map(),
@@ -243,7 +248,7 @@ export function mercadoLivreFake(): MercadoLivreFake {
   }
   return {
     app: APP,
-    redirectUri: REDIRECT_URI,
+    redirectUri,
     handle: answer,
     serve: () => serveOnLoopback(answer),
     switches,
