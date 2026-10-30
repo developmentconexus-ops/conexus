@@ -4,6 +4,7 @@ import { clientCredentials } from '../kernel/auth.ts'
 import { defineConnector } from '../kernel/definition.ts'
 import { readSkill } from '../kernel/skill.ts'
 import { sankhyaDoor } from './door.ts'
+import { empresas } from './operations/cadastros.ts'
 import { sankhyaOperations, sankhyaSubjects } from './operations/index.ts'
 
 const SKILL = new URL('./skill/', import.meta.url)
@@ -74,6 +75,7 @@ export const sankhya = defineConnector({
   perProject: 'one', // a Projeto reads one Sankhya (founder, 2026-10-29)
   subjects: { porta: 'Porta de leitura', ...sankhyaSubjects },
   operations: sankhyaOperations,
+  check: empresas,
   readDoor: sankhyaDoor,
   skill: readSkill(SKILL),
 })

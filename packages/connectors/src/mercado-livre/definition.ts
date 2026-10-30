@@ -4,6 +4,7 @@ import { defineConnector } from '../kernel/definition.ts'
 import { oauth2Code } from '../kernel/oauth.ts'
 import { AccountRef } from '../kernel/operation.ts'
 import { readSkill } from '../kernel/skill.ts'
+import { conta } from './operations/conta.ts'
 import { mercadoLivreOperations, mercadoLivreSubjects } from './operations/index.ts'
 
 const SKILL = new URL('./skill/', import.meta.url)
@@ -60,5 +61,6 @@ export const mercadoLivre = defineConnector({
   perProject: 'many', // a Projeto may read several stores
   subjects: mercadoLivreSubjects,
   operations: mercadoLivreOperations,
+  check: conta,
   skill: readSkill(SKILL),
 })

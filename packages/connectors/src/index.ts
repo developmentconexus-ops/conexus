@@ -13,12 +13,7 @@ export function connectorOf(id: string): Connector | undefined {
 
 export { type Auth, type ClientCredentialsAuth, readToken, tokenRequest } from './kernel/auth.ts'
 export type { CredentialFake, Fake, OAuthFake } from './kernel/conformance.ts'
-export {
-  type Connector,
-  type ConnectorId,
-  inProbeOrder,
-  type ReadDoor,
-} from './kernel/definition.ts'
+export type { Connector, ConnectorId, ReadDoor } from './kernel/definition.ts'
 export {
   type AppKeys,
   type AppSource,
@@ -42,7 +37,7 @@ export type {
   ProviderRequest,
   Unread,
 } from './kernel/operation.ts'
-export { AccountRef, locateOf, requestOf } from './kernel/operation.ts'
+export { AccountRef, deniesAccess, locateOf, requestOf } from './kernel/operation.ts'
 export { toRequest } from './kernel/request.ts'
 export { mercadoLivreFake } from './mercado-livre/fake.ts'
 export { sankhyaFake } from './sankhya/fake.ts'

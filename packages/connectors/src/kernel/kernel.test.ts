@@ -64,12 +64,15 @@ test('o id da operação e o do conector são marcados e conferidos', () => {
   assert.throws(() => defineOperation({ ...base, id: 'Bad id', class: 'read' }))
   assert.throws(() => redefine({ id: 'Sankhya!' }))
   const op = defineOperation({ ...base, class: 'read' })
-  assert.throws(() => redefine({ operations: [op, op], readDoor: undefined }), /Repeated/)
+  assert.throws(
+    () => redefine({ operations: [op, op], check: op, readDoor: undefined }),
+    /Repeated/,
+  )
 })
 
 test('o assunto de cada operação é um assunto do conector, e nenhum assunto fica vazio', () => {
   const op = defineOperation({ ...base, class: 'read' })
-  const lone = { ...sankhya, operations: [op], readDoor: undefined }
+  const lone = { ...sankhya, operations: [op], check: op, readDoor: undefined }
   assert.throws(
     () => defineConnector({ ...lone, subjects: { ping: 'Ping', extra: 'Extra' } }),
     /without operation: extra/,
@@ -85,7 +88,7 @@ test('o assunto de cada operação é um assunto do conector, e nenhum assunto f
 test('cada operação lê só operações anteriores, a porta primeiro', () => {
   const ping = defineOperation({ ...base, class: 'read' })
   const pong = defineOperation({ ...base, id: 'pong', class: 'read', from: ['ping'] })
-  const lone = { ...sankhya, subjects: { ping: 'Ping' }, readDoor: undefined }
+  const lone = { ...sankhya, subjects: { ping: 'Ping' }, check: ping, readDoor: undefined }
   assert.deepEqual(defineConnector({ ...lone, operations: [ping, pong] }).operations[1]?.from, [
     'ping',
   ])
@@ -94,7 +97,9 @@ test('cada operação lê só operações anteriores, a porta primeiro', () => {
   assert.throws(() => defineConnector({ ...lone, operations: [self] }), /not earlier/)
   const absent = defineOperation({ ...base, class: 'read', from: ['nobody'] })
   assert.throws(() => defineConnector({ ...lone, operations: [absent] }), /not earlier/)
-  assert.equal(defineConnector({ ...lone, operations: [pong], readDoor: { ping } }).id, 'sankhya')
+  const root = defineOperation({ ...base, id: 'root', class: 'read' })
+  const door = { ...lone, operations: [pong, root], check: root, readDoor: { ping } }
+  assert.equal(defineConnector(door).id, 'sankhya')
   assert.throws(() => defineOperation({ ...base, class: 'read', from: ['Bad id'] }))
 })
 
@@ -126,6 +131,22 @@ test('as leituras por nome: a chave é o id, e o registro é a porta mais as ope
     [mercadoLivre, mercadoLivreReads],
   ] as const)
     assert.deepEqual(Object.values(reads), inProbeOrder(connector), connector.id)
+})
+
+test('o Testar é uma leitura do próprio conector, que não depende de outra', () => {
+  const ping = defineOperation({ ...base, class: 'read' })
+  const pong = defineOperation({ ...base, id: 'pong', class: 'read', from: ['ping'] })
+  const nothing = defineOperation({ ...base, id: 'nothing', class: 'read', probe: () => null })
+  const lone = { ...sankhya, subjects: { ping: 'Ping' }, readDoor: undefined }
+  assert.equal(defineConnector({ ...lone, operations: [ping], check: ping }).check.id, 'ping')
+  const outside = { ...lone, operations: [ping], check: pong }
+  assert.throws(() => defineConnector(outside), /Check pong is no operation/)
+  const after = { ...lone, operations: [ping, pong], check: pong }
+  assert.throws(() => defineConnector(after), /Check pong needs an earlier read/)
+  const empty = { ...lone, operations: [nothing], check: nothing }
+  assert.throws(() => defineConnector(empty), /Check nothing needs an earlier read/)
+  assert.equal(sankhya.check.id, 'empresas')
+  assert.equal(mercadoLivre.check.id, 'conta')
 })
 
 test('a versão e a origem do conector são conferidas', () => {

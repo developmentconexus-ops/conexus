@@ -90,6 +90,7 @@ function connectorWith(changes: { auth: OAuth2CodeAuth | typeof sankhya.auth }) 
     perProject: 'many',
     subjects: { ping: 'Ping' },
     operations: [ping],
+    check: ping,
     skill: { content: '', references: {} },
     ...changes,
   })

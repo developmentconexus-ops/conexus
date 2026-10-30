@@ -1,10 +1,5 @@
-import type { Connection, ConnectorEntry, KeptCheck, TestResult } from '@conexus/hub-api'
-import {
-  ATTEMPT_KEY_HEADER,
-  ConnectionDetail,
-  ConnectionList,
-  KeptCheck as KeptCheckShape,
-} from '@conexus/hub-api'
+import type { Connection, ConnectorEntry, TestResult } from '@conexus/hub-api'
+import { ATTEMPT_KEY_HEADER, ConnectionDetail, ConnectionList } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { fireEvent, render, screen } from '@testing-library/react'
 import type { HttpHandler } from 'msw'
@@ -25,8 +20,6 @@ export type View = {
   connections: Connection[]
   mayManage: boolean
   role?: 'owner' | 'admin' | 'member'
-  // The items of each connection's last working test, as the Hub keeps them.
-  lastTests?: Record<string, KeptCheck[]>
   connectors?: ConnectorEntry[]
 }
 
@@ -56,12 +49,7 @@ function reads(view: View): HttpHandler[] {
     http.get(`${BASE}/connections/:connectionId`, ({ params }) => {
       const connection = view.connections.find((one) => one.id === params.connectionId)
       if (!connection) return refusal('CONNECTION_NOT_FOUND')
-      return HttpResponse.json(
-        ConnectionDetail.parse({
-          connection,
-          lastTest: view.lastTests?.[connection.id] ?? null,
-        }),
-      )
+      return HttpResponse.json(ConnectionDetail.parse({ connection }))
     }),
   ]
 }
@@ -138,12 +126,6 @@ function writes(
       view.connections = view.connections.map((one) =>
         one.id === params.connectionId ? { ...one, ...tested.connection } : one,
       )
-      if (tested.result === 'WORKING') {
-        view.lastTests = {
-          ...view.lastTests,
-          [String(params.connectionId)]: tested.checks.map((one) => KeptCheckShape.parse(one)),
-        }
-      }
       return HttpResponse.json(tested)
     }),
     ...signInWrites(view, note, answers),
@@ -159,7 +141,7 @@ function writes(
 
 /**
  * The Hub as Ana sees the company's connections; `sent` lists the writes it received. A Testar
- * answers with `result(connection)`, every part reading unless the test says otherwise.
+ * answers with `result(connection)`, working unless the test says otherwise.
  */
 export function connectionsHub(
   view: View,
