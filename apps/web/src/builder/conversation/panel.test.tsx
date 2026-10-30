@@ -62,11 +62,11 @@ test('o Projeto abre na conversa mais recente, e a caixa lista as da pessoa', as
         conversationOf({ id: SECOND }),
       ],
     }),
-    `${PROJECT}?lens=project`,
+    `${PROJECT}?lens=code`,
   )
   await screen.findByRole('textbox', { name: 'Mensagem para o Builder' })
   expect(conexus.router.state.location.pathname).toBe(`${PROJECT}/conversations/${FIRST}`)
-  expect(conexus.router.state.location.search).toEqual({ lens: 'project' })
+  expect(conexus.router.state.location.search).toEqual({ lens: 'code' })
   expect(box()).toHaveProperty('value', 'Apps de padaria')
   fireEvent.keyDown(box(), { key: 'ArrowDown' })
   const options = (await screen.findAllByRole('option')).map((one) => one.textContent)

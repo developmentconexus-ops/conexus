@@ -21,7 +21,7 @@ import {
 
 const server = hubServer()
 beforeEach(() => server.use(conversationsNone))
-const SETTINGS = `/companies/${COMPANY.id}/projects/${PEDIDOS.id}?lens=project&section=versions`
+const SETTINGS = `/companies/${COMPANY.id}/projects/${PEDIDOS.id}/about?part=versions`
 
 async function open(view: { versions: ReturnType<typeof versionView>[] }, mayDelete = true) {
   server.use(

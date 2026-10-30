@@ -18,10 +18,10 @@ import {
 
 const HOME = `/companies/${COMPANY.id}`
 const PROJECTS = `${HOME}/projects`
-const ABOUT = `${PROJECTS}/${PROJECT_ID}?lens=project`
+const ABOUT = `${PROJECTS}/${PROJECT_ID}/about`
 const CODE = `${PROJECTS}/${PROJECT_ID}?lens=code`
 const SOURCE = `/api/companies/${COMPANY.id}/projects/${PROJECT_ID}/source`
-const VERSIONS = `${ABOUT}&section=versions`
+const VERSIONS = `${ABOUT}?part=versions`
 const OF_OWNER = { ...OWNER, ...projectsPage(COMPANY.id) }
 const NOBODY = { ...OWNER, ...projectsPage(COMPANY.id, { empty: true }), ...startsOn(COMPANY.id) }
 const OF_MEMBER = { ...OWNER, ...projectsPage(COMPANY.id, { mayDelete: false }) }

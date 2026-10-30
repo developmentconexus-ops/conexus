@@ -4,73 +4,27 @@ import { getRouteApi, useNavigate } from '@tanstack/react-router'
 import { ExternalLinkIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useState } from 'react'
+import { Badge } from '../../ui/badge.tsx'
 import { buttonVariants } from '../../ui/button.tsx'
 import { PageTitle } from '../../ui/list.tsx'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
-import { Publish, Versions } from '../apps/public.ts'
-import { Access } from './access.tsx'
-import { About } from './project.tsx'
+import { Publish } from '../apps/public.ts'
 import { projectQuery } from './queries.ts'
-import { Lens, Section } from './search.ts'
+import { Lens } from './search.ts'
 
 const route = getRouteApi('/_app/companies/$companyId/projects/$projectId')
 
-/** Every member reads the Versões and publishes one (step 17, E1). */
-function VersionsSection() {
-  const { companyId, projectId } = route.useParams()
-  return <Versions companyId={companyId} projectId={projectId} />
-}
-
-function AccessSection() {
-  const { companyId, projectId } = route.useParams()
-  return <Access companyId={companyId} projectId={projectId} />
-}
-
-// The three tabs are tight under `md`, so that Publicar and Abrir app fit beside them at 320px.
+// The two tabs are tight under `md`, so that Publicar and Abrir app fit beside them at 320px.
 const LENSES = [
   [Lens.enum.preview, 'Prévia'],
   [Lens.enum.code, 'Código'],
-  [Lens.enum.project, 'Projeto'],
 ] as const
 
-function Sections() {
-  const { section = Section.enum.about } = route.useSearch()
-  const navigate = useNavigate()
-  return (
-    <Tabs
-      value={section}
-      onValueChange={(next) => {
-        const section = Section.safeParse(next)
-        if (section.success)
-          void navigate({
-            to: '.',
-            search: (previous) => ({ ...previous, section: section.data }),
-          })
-      }}
-    >
-      <TabsList aria-label="Seções do Projeto">
-        <TabsTrigger value={Section.enum.about}>Sobre</TabsTrigger>
-        <TabsTrigger value={Section.enum.versions}>Versões</TabsTrigger>
-        <TabsTrigger value={Section.enum.access}>Quem usa o app</TabsTrigger>
-      </TabsList>
-      <TabsContent value={Section.enum.about}>
-        <About />
-      </TabsContent>
-      <TabsContent value={Section.enum.versions}>
-        <VersionsSection />
-      </TabsContent>
-      <TabsContent value={Section.enum.access}>
-        <AccessSection />
-      </TabsContent>
-    </Tabs>
-  )
-}
-
 /**
- * The big region of a Projeto: the top line with its name, its tabs, **Publicar** (or the version
- * published) and **Abrir app**, and below the Prévia (the route hands it in) or the Projeto's
- * sections. The tab and the section live in the address.
+ * The big region of the Construir: the top line with its tabs (the name is at the head of the sidebar), **Publicar** (or
+ * the version published) and **Abrir app**, and below the Prévia (the route hands it in) or the
+ * Código. The tab lives in the address.
  */
 export function ProjectArea(props: {
   preview: (project: Project, reloads: number, reload: () => void) => ReactNode
@@ -98,10 +52,7 @@ export function ProjectArea(props: {
       }}
       className="h-full gap-0"
     >
-      <div className="flex flex-wrap items-center gap-x-md gap-y-xs border-b border-line px-md py-xs max-md:flex-nowrap max-md:gap-x-md max-md:px-sm max-md:py-0">
-        <PageTitle className="min-w-0 flex-[1_1_16rem] truncate max-md:hidden" title={project.name}>
-          {project.name}
-        </PageTitle>
+      <div className="flex h-12 items-center gap-md border-b border-line px-md max-md:h-auto max-md:px-sm">
         <TabsList aria-label="Projeto" className="max-md:gap-0">
           {LENSES.map(([value, label]) => (
             <TabsTrigger key={value} value={value} className="max-md:px-sm max-md:after:inset-x-sm">
@@ -109,12 +60,18 @@ export function ProjectArea(props: {
             </TabsTrigger>
           ))}
         </TabsList>
-        <div className="ml-auto flex items-center gap-md">
+        <PageTitle className="sr-only max-md:hidden" title={project.name}>
+          {project.name}
+        </PageTitle>
+        <div className="ml-auto flex items-center gap-sm">
           {appVersion !== null && (
-            <span className="text-label text-text-2 max-md:sr-only">
+            <Badge
+              tone={appVersion === publishedVersion ? 'success' : 'neutral'}
+              className="max-md:sr-only"
+            >
               Versão {appVersion} ·{' '}
               {appVersion === publishedVersion ? 'publicada' : 'não publicada'}
-            </span>
+            </Badge>
           )}
           {address !== null &&
             publishedVersion !== null &&
@@ -151,9 +108,6 @@ export function ProjectArea(props: {
       </TabsContent>
       <TabsContent value={Lens.enum.code} className="min-h-0 overflow-y-auto p-xl">
         {props.code}
-      </TabsContent>
-      <TabsContent value={Lens.enum.project} className="min-h-0 overflow-y-auto p-xl">
-        <Sections />
       </TabsContent>
     </Tabs>
   )

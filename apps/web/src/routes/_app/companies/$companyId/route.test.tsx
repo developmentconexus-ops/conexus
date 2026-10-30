@@ -45,7 +45,7 @@ function railLabel() {
 
 async function sidebar() {
   const nav = within(await screen.findByRole('navigation', { name: 'Navegação' }))
-  await nav.findByRole('link', { name: 'Todos os projetos' })
+  await nav.findByRole('link', { name: /Todos os projetos|Construir/ })
   return nav
 }
 
@@ -140,29 +140,22 @@ test('abrir um Projeto o põe primeiro nos recentes (critério 3)', async () => 
   expect(linkNames(nav)[1]).toBe('Projeto 6')
 })
 
-test('dentro de um Projeto a barra vira ícones, Ctrl+B a abre e, ao sair, volta aberta (critério 4)', async () => {
+test('dentro de um Projeto a barra é a do Projeto e fica aberta; Ctrl+B a recolhe e, ao sair, a da empresa volta (critério 4)', async () => {
   const router = open(`${HOME}/projects/${PROJECTS[0]?.id}`)
   await screen.findAllByRole('heading', { name: 'Projeto 1' })
   const nav = await sidebar()
-  expect(railLabel()).toBe('Abrir a barra lateral')
-  expect(nav.getByRole('link', { name: 'Início' })).toBeTruthy()
-  expect(nav.getByRole('link', { name: 'Configurações' })).toBeTruthy()
-
-  fireEvent.keyDown(globalThis.window, { key: 'b', ctrlKey: true })
-  await waitFor(() => expect(railLabel()).toBe('Recolher a barra lateral'))
+  expect(railLabel()).toBe('Recolher a barra lateral')
+  expect(nav.getByRole('link', { name: 'Construir' })).toBeTruthy()
 
   fireEvent.keyDown(globalThis.window, { key: 'b', ctrlKey: true })
   await waitFor(() => expect(railLabel()).toBe('Abrir a barra lateral'))
-
   fireEvent.click(rail())
   await waitFor(() => expect(railLabel()).toBe('Recolher a barra lateral'))
-  fireEvent.click(rail())
-  await waitFor(() => expect(railLabel()).toBe('Abrir a barra lateral'))
 
-  fireEvent.click(nav.getByRole('link', { name: 'Início' }))
+  fireEvent.click(nav.getByRole('link', { name: COMPANY.name }))
   await screen.findByRole('heading', { name: 'O que vamos construir?' })
   expect(router.state.location.pathname).toBe(HOME)
-  expect(railLabel()).toBe('Recolher a barra lateral')
+  expect(nav.getByRole('link', { name: 'Início' })).toBeTruthy()
 })
 
 test('Integrações na barra: entre os Projetos e as Configurações, ativa na página (critério 19)', async () => {

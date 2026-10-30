@@ -31,7 +31,7 @@ const UNSET = {
   }),
 }
 
-const ACCESS = `/companies/${COMPANY.id}/projects/${PROJECT_ID}?lens=project&section=access`
+const ACCESS = `/companies/${COMPANY.id}/projects/${PROJECT_ID}/access`
 const APP = {
   projectName: 'Encomendas',
   companyName: LONG_NAME,

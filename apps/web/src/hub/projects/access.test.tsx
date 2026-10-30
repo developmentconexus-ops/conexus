@@ -23,7 +23,7 @@ import {
 const server = hubServer()
 beforeEach(() => server.use(conversationsNone))
 const ACCESS = `/api/companies/${COMPANY.id}/projects/${PEDIDOS.id}/access`
-const ADDRESS = `/companies/${COMPANY.id}/projects/${PEDIDOS.id}?lens=project&section=access`
+const ADDRESS = `/companies/${COMPANY.id}/projects/${PEDIDOS.id}/access`
 
 type Write = { method: string; url: string; key?: string | null; body?: unknown }
 

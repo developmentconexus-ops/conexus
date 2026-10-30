@@ -261,9 +261,9 @@ export async function firstEntry(page: Page) {
   await finishWelcome(page)
 }
 
-/** Início again, from any page of the company's frame, by the sidebar's first link. */
+/** Início again, from any page of the company's frame, by the sidebar's first link (inside a Projeto, the way back to the company). */
 export async function openHome(page: Page) {
-  await sidebarOf(page).getByRole('link', { name: 'Início', exact: true }).click()
+  await sidebarOf(page).getByRole('link').first().click()
   await waitForHome(page)
 }
 

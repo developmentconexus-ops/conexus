@@ -184,21 +184,18 @@ test('o roteiro da primeira conversa: resposta com páginas e título, recusa, p
 const FOLDED = '4 ferramentas: leu página, pesquisou'
 const DRAFT = 'rascunho da Ana'
 
-/** The Projeto in two regions: the Prévia and the Projeto tabs, the conversation on the right, the rail in icons. */
+/** The Projeto in two regions: the Prévia and Código tabs, the conversation on the right, the Projeto's sidebar and its Sobre page. */
 async function twoRegions(chat: Page) {
   await chat
     .getByText('Ainda não há uma prévia disponível. Descreva o aplicativo para começar.')
     .waitFor()
   await chat.getByRole('button', { name: 'Nova conversa' }).waitFor()
-  const nav = await chat.getByRole('navigation', { name: 'Navegação' }).elementHandle()
-  await chat.waitForFunction(
-    (bar) => Math.round(bar?.getBoundingClientRect().width ?? 0) === 52,
-    nav,
-  )
-  await chat.getByRole('tab', { name: 'Projeto', exact: true }).click()
+  const nav = chat.getByRole('navigation', { name: 'Navegação' })
+  await nav.getByRole('link', { name: 'Sobre', exact: true }).click()
   await chat.getByRole('tab', { name: 'Sobre' }).waitFor()
   await chat.getByRole('tab', { name: 'Versões' }).waitFor()
-  await chat.getByRole('tab', { name: 'Prévia' }).click()
+  await nav.getByRole('link', { name: 'Construir', exact: true }).click()
+  await chat.getByRole('tab', { name: 'Prévia' }).waitFor()
 }
 
 /** Step 2: "Alto" reaches the provider; the answer thinks, reads three pages and searches, folded in one line. */

@@ -91,7 +91,7 @@ async function home(page: Page) {
   await card.getByText('Convidar equipe: feito').waitFor()
   await createProject(page, 'Encomendas')
   await page.getByRole('heading', { name: 'Encomendas', exact: true }).waitFor()
-  await page.getByRole('button', { name: 'Abrir a barra lateral' }).waitFor()
+  await sidebarOf(page).getByRole('link', { name: 'Construir', exact: true }).waitFor()
   await openHome(page)
   await page.getByRole('button', { name: 'Recolher a barra lateral' }).waitFor()
   await bar.getByText('Projetos recentes').waitFor()
