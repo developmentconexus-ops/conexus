@@ -1102,8 +1102,8 @@
   {
     "id": "edge-missing-script",
     "file": "apps/edge/src/dispatch.ts",
-    "find": "  try {\n    const app =\n      call.database === null\n        ? visit.env.DISPATCHER.get(EXAMPLE_SCRIPT, { props: { caller } }, DISPATCH_OPTIONS)\n        : visit.env.DISPATCHER.get(\n            call.version.worker,\n            {\n              props: {\n                caller,\n                db: visit.exports.Db({ props: { ...call.database, endsAt: deadline.endsAt } }),\n                connectors: NO_CONNECTORS,\n              } satisfies AppProps,\n            },\n            DISPATCH_OPTIONS,\n          )\n",
-    "replace": "  const app =\n    call.database === null\n      ? visit.env.DISPATCHER.get(EXAMPLE_SCRIPT, { props: { caller } }, DISPATCH_OPTIONS)\n      : visit.env.DISPATCHER.get(\n          call.version.worker,\n          {\n            props: {\n              caller,\n              db: visit.exports.Db({ props: { ...call.database, endsAt: deadline.endsAt } }),\n              connectors: NO_CONNECTORS,\n            } satisfies AppProps,\n          },\n          DISPATCH_OPTIONS,\n        )\n  try {\n",
+    "find": "  try {\n    const app =\n      call.database === null\n        ? visit.env.DISPATCHER.get(EXAMPLE_SCRIPT, { props: { caller } }, DISPATCH_OPTIONS)\n        : visit.env.DISPATCHER.get(\n            call.version.worker,\n            {\n              props: {\n                caller,\n                db: visit.exports.Db({ props: { ...call.database, endsAt: deadline.endsAt } }),\n                connectors: visit.exports.Connectors({ props: {} }),\n              } satisfies AppProps,\n            },\n            DISPATCH_OPTIONS,\n          )\n",
+    "replace": "  const app =\n    call.database === null\n      ? visit.env.DISPATCHER.get(EXAMPLE_SCRIPT, { props: { caller } }, DISPATCH_OPTIONS)\n      : visit.env.DISPATCHER.get(\n          call.version.worker,\n          {\n            props: {\n              caller,\n              db: visit.exports.Db({ props: { ...call.database, endsAt: deadline.endsAt } }),\n              connectors: visit.exports.Connectors({ props: {} }),\n            } satisfies AppProps,\n          },\n          DISPATCH_OPTIONS,\n        )\n  try {\n",
     "test": {
       "cwd": "apps/edge",
       "file": "src/dispatcher-versions.test.ts",
@@ -1146,8 +1146,8 @@
   {
     "id": "edge-password-not-in-props",
     "file": "apps/edge/src/dispatch.ts",
-    "find": "                db: visit.exports.Db({ props: { ...call.database, endsAt: deadline.endsAt } }),\n                connectors: NO_CONNECTORS,\n              } satisfies AppProps,",
-    "replace": "                db: visit.exports.Db({ props: { ...call.database, endsAt: deadline.endsAt } }),\n                connectors: NO_CONNECTORS,\n                key: visit.env.APP_LOGIN_KEY,\n              },",
+    "find": "                db: visit.exports.Db({ props: { ...call.database, endsAt: deadline.endsAt } }),\n                connectors: visit.exports.Connectors({ props: {} }),\n              } satisfies AppProps,",
+    "replace": "                db: visit.exports.Db({ props: { ...call.database, endsAt: deadline.endsAt } }),\n                connectors: visit.exports.Connectors({ props: {} }),\n                key: visit.env.APP_LOGIN_KEY,\n              },",
     "test": {
       "cwd": "apps/edge",
       "file": "src/dispatcher-versions.test.ts",
