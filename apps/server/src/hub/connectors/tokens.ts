@@ -35,7 +35,7 @@ export const ConnectionTokens = z.object({
 export type ConnectionTokens = z.infer<typeof ConnectionTokens>
 
 /** The tokens of an opened seal; a seal that does not hold them never opened (as the pasted fields). */
-export function tokensOf(credential: Credential): ConnectionTokens {
+function tokensOf(credential: Credential): ConnectionTokens {
   try {
     return ConnectionTokens.parse(JSON.parse(credential.reveal()))
   } catch (cause) {

@@ -13,6 +13,7 @@ export const SANKHYA = ConnectorEntry.parse({
   summary: 'O sistema de gestão da empresa: pedidos, estoque, financeiro e cadastros.',
   logo: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28"><rect width="28" height="28" rx="6" fill="#66CB66"/></svg>',
   reads: 24,
+  auth: 'client_credentials',
   fields: [
     {
       name: 'clientId',
@@ -53,6 +54,7 @@ export function connectionOf(fields: Partial<ConnectionOf> = {}): ConnectionOf {
     linkedAt: '2026-10-29T12:00:00.000Z',
     testedAt: null,
     testedBy: null,
+    account: null,
     ...fields,
   })
 }

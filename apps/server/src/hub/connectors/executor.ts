@@ -52,7 +52,7 @@ export type OpenedConnection = Readonly<{
 }>
 
 /** What a log line about one exchange with the provider names: the connection, or the authorization before it exists. */
-export type Where = Readonly<
+type Where = Readonly<
   { connector: ConnectorId } & ({ connectionId: ConnectionId } | { signInId: ConnectionSignInId })
 >
 
@@ -60,7 +60,7 @@ export type Where = Readonly<
 type TokenRequest = ReturnType<typeof codeRequest>
 
 /** The provider could not be reached (or answered 5xx): `native` is what it said, when it said anything. */
-export type Unreachable = Readonly<{ kind: 'UNREACHABLE'; native: Native | null }>
+type Unreachable = Readonly<{ kind: 'UNREACHABLE'; native: Native | null }>
 /** The provider answered what the kit cannot read, with what it said. */
 type Unreadable = Readonly<{ kind: 'UNREADABLE'; native: Native }>
 export type Login =

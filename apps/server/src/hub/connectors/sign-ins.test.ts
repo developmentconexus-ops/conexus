@@ -64,7 +64,7 @@ test('começar: sem as chaves do app nesta instalação', async (t) => {
 })
 
 test('completar: cria a ligação uma vez; a autorização gasta, alheia ou vencida', async (t) => {
-  const { hub, ana, bruno, companyId } = await mercadoLivreOn(t)
+  const { hub, ana, bruno, companyId, base } = await mercadoLivreOn(t)
   const started = await startOf(hub, ana, companyId, MERCADO_LIVRE)
   const back = await consentAt(Object(started.json()).url)
   assert.equal(back.companyId, companyId)
@@ -84,6 +84,17 @@ test('completar: cria a ligação uma vez; a autorização gasta, alheia ou venc
     ['mercado-livre', 'Loja 1', 'NEW', { label: 'PADARIASOL' }],
   )
   assert.deepEqual(connection.linkedBy, { id: ana.id, name: 'Ana Lima' })
+  const list = Object((await call(hub, ana, 'GET', base)).json())
+  const auths = list.connectors.map((each: { id: string; auth: string; fields: unknown[] }) => [
+    each.id,
+    each.auth,
+    each.fields.length > 0,
+  ])
+  assert.deepEqual(auths, [
+    ['sankhya', 'client_credentials', true],
+    ['mercado-livre', 'oauth2_code', false],
+  ])
+  assert.deepEqual(list.connections[0].account, { label: 'PADARIASOL' })
   const again = await completeOf(hub, ana, companyId, back.signInId, answer)
   assert.deepEqual(failed(again), [410, 'CONNECTION_SIGN_IN_EXPIRED'])
 

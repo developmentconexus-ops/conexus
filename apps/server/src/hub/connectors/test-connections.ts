@@ -1,4 +1,7 @@
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { createServer } from 'node:http'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import type { TestContext } from 'node:test'
 import type { AppKeys } from '@conexus/connectors'
 import { mercadoLivreFake, sankhyaFake } from '@conexus/connectors'
@@ -15,6 +18,7 @@ import {
   CARLA,
   hubWithLog,
   memberOn,
+  PASSWORD,
   personOn,
   plantCompany,
   post,
@@ -230,4 +234,43 @@ export function standIn(
     const { port } = z.object({ port: z.number() }).parse(server.address())
     return `http://127.0.0.1:${port}`
   }
+}
+
+/** The apps file a spawned Hub reads, readable by its owner alone (S31). */
+export function appsFileOf(t: TestContext, apps: Record<string, AppKeys>): string {
+  const dir = mkdtempSync(join(tmpdir(), 'conexus-apps-'))
+  t.after(() => rmSync(dir, { recursive: true, force: true }))
+  const path = join(dir, 'apps.json')
+  writeFileSync(path, JSON.stringify(apps), { mode: 0o600 })
+  return path
+}
+
+/** Ana signed in on a spawned Hub: her calls under the company, every body kept, and Ligar on Mercado Livre. */
+export async function spawnedSession(port: number, companyId: string) {
+  const origin = `http://127.0.0.1:${port}`
+  const json = { origin: TEST_ORIGIN, 'content-type': 'application/json' }
+  const signedIn = await fetch(`${origin}/api/sessions/current`, {
+    method: 'PUT',
+    headers: { ...json, 'cf-connecting-ip': '203.0.113.9' },
+    body: JSON.stringify({ email: ANA_OWNER.email, password: PASSWORD }),
+  })
+  const cookie = (signedIn.headers.get('set-cookie') ?? '').split(';')[0] ?? ''
+  const bodies: string[] = []
+  async function send(method: 'GET' | 'POST', path: string, body?: object) {
+    const answered = await fetch(`${origin}/api/companies/${companyId}${path}`, {
+      method,
+      headers: body === undefined ? { origin: TEST_ORIGIN, cookie } : { ...json, cookie },
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+    })
+    const text = await answered.text()
+    bodies.push(text)
+    return { status: answered.status, body: Object(text === '' ? null : JSON.parse(text)) }
+  }
+  async function link(body: object) {
+    const started = await send('POST', '/connection-sign-ins', body)
+    const back = await consentAt(started.body.url)
+    const done = await send('POST', `/connection-sign-ins/${back.signInId}`, { code: back.code })
+    return { ...done, code: back.code ?? '' }
+  }
+  return { send, link, bodies }
 }

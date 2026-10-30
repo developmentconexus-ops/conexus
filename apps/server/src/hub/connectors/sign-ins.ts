@@ -253,6 +253,11 @@ export async function completeSignIn(
   return { result: 'LINKED', connection: linked }
 }
 
+const TAKEN = new Map<string, 'CONNECTION_ACCOUNT_ELSEWHERE' | 'CONNECTION_NAME_TAKEN'>([
+  ['connection_account_key', 'CONNECTION_ACCOUNT_ELSEWHERE'],
+  ['connection_name_key', 'CONNECTION_NAME_TAKEN'],
+])
+
 /**
  * The connection as the authorization leaves it: a new one NEW with its account, or Conectar de
  * novo replacing the seal and the account on the revision read at the start (C38), keeping the id
@@ -301,11 +306,8 @@ async function written(
         }
       }
     } catch (error) {
-      const constraint = violatedConstraint(error)
-      if (constraint === 'connection_account_key')
-        throw new Failure('CONNECTION_ACCOUNT_ELSEWHERE', { cause: error })
-      if (constraint === 'connection_name_key')
-        throw new Failure('CONNECTION_NAME_TAKEN', { cause: error })
+      const taken = TAKEN.get(violatedConstraint(error) ?? '')
+      if (taken !== undefined) throw new Failure(taken, { cause: error })
       throw error
     }
     const [row] = await tx.select(columns).from(connection).where(ofCompany(viewer, id))

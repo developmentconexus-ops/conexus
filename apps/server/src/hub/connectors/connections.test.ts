@@ -39,6 +39,7 @@ test('ligar: quem pode, e as recusas', async (t) => {
     linkedAt: connection.linkedAt,
     testedAt: null,
     testedBy: null,
+    account: null,
   })
   const again = await linkSankhya(hub, bruno, base, { ...fake.credential }, key)
   assert.equal(again.statusCode, 201)
