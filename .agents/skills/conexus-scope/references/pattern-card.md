@@ -4,7 +4,8 @@ For a step of the pattern track ([delivery L27](../../../../docs/guides/delivery
 through the kit, or other work that has a template. A step with a new mechanism is frontier and uses
 the [full card](card.md).
 
-The card stays under 2,000 words. Firstmate reads it; there is no separate card reader, and the
+Name the card file `docs/steps/pattern-<step>.md`: the name is how `check-method-freeze` reads
+the track. The card stays under 2,000 words. Firstmate reads it; there is no separate card reader, and the
 founder approves its page from the chat summary. The study is only for a new login kind or a
 provider's quirk; otherwise the kit is the study.
 
