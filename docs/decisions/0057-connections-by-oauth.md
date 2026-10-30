@@ -17,7 +17,7 @@ card (`W1`, `V2`, `U1`, `Y1`), approved 2026-10-29, and the "Sim" of 2026-10-30 
 - A refused grant sets `NEEDS_REAUTH`; a refused app logs an error only.
 - The app keys come from one file (`HUB_CONNECTOR_APPS_FILE`), read only by `appKeysOf`.
 - Desligar revokes at the provider first when the connector declares it; the delete never waits
-  on it, and the log and answer name the outcome.
+  on it.
 - Remendo: each Mercado Livre route is checked against the page it cites.
 
 ## Criterion
@@ -36,7 +36,7 @@ Rows 1 to 3 and 5 met. **Not proved.** Row 4 runs in U0's job; no real provider 
 
 ## Consequences
 
-A connection unused six months, or a lost refresh answer, asks Conectar de novo.
+A connection unused six months, or a lost refresh answer, asks to connect again.
 
 ## Reopens when
 
