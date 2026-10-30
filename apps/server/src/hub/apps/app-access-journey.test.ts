@@ -272,7 +272,11 @@ async function run(caller: AppProps['caller'], name: string) {
     body: '{}',
   })
   const db = { query: async () => ({ rows: [] }), batch: async () => ({ results: [] }) }
-  return (await app.fetch(request, {}, { props: { caller, db } })).status
+  const connectors = {
+    call: async () => ({ kind: 'NOT_GRANTED' as const }),
+    connections: async () => [],
+  }
+  return (await app.fetch(request, {}, { props: { caller, db, connectors } })).status
 }
 
 test('o papel que a versão deixa de declarar', async (t) => {

@@ -133,7 +133,10 @@ test('as operações prontas leem o envelope e passam as linhas como vieram', ()
   assert.partialDeepStrictEqual(answer('empresas', 400, { code: 'X', message: 'm', details: [] }), {
     kind: 'REFUSED',
   })
-  assert.partialDeepStrictEqual(answer('empresas', 401, undefined), { kind: 'AUTH_REFUSED' })
+  // The logged-out token's answer, measured 2026-10-30: renewed once, never "connect again".
+  assert.partialDeepStrictEqual(answer('empresas', 401, { code: 'UNAUTHORIZED' }), {
+    kind: 'TOKEN_EXPIRED',
+  })
   assert.partialDeepStrictEqual(answer('empresas', 403, { code: '4303' }), { kind: 'AUTH_REFUSED' })
   assert.partialDeepStrictEqual(answer('empresas', 403, { code: 4405 }), { kind: 'AUTH_REFUSED' })
   assert.partialDeepStrictEqual(answer('empresas', 403, { code: 'GTW3403' }), {
@@ -215,12 +218,19 @@ test('a porta lê o envelope: sucesso, recusa do fornecedor e o que não se lê'
     },
   })
 
-  for (const status of ['0', '2', '4', 'x'])
+  for (const status of ['0', '2', 'x'])
     assert.partialDeepStrictEqual(
       answer('carregar', 200, envelope({}, status)),
       { kind: 'REFUSED' },
       status,
     )
+  // Two calls open on one token: our fault (#470), unreadable with what came, never the vendor's refusal.
+  const four = { status: '4', statusMessage: 'Requisição cancelada' }
+  assert.deepEqual(answer('consultar', 200, four), {
+    kind: 'UNREADABLE',
+    native: { status: 200, code: '4', message: 'Requisição cancelada', body: four },
+  })
+  assert.partialDeepStrictEqual(answer('carregar', 401, undefined), { kind: 'TOKEN_EXPIRED' })
   assert.partialDeepStrictEqual(
     answer('consultar', 200, {
       status: '1',

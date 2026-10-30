@@ -3,8 +3,8 @@ import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { join, matchesGlob } from 'node:path'
 
-/** What the template copies into /opt/conexus/packages: the SDK and its contract. */
-export const SDK_FOLDERS = ['packages/app', 'packages/app-contract'] as const
+/** What the template copies into /opt/conexus/packages: the SDK, its contract and the kit whose types the SDK reads. */
+export const SDK_FOLDERS = ['packages/app', 'packages/app-contract', 'packages/connectors'] as const
 /** The template's own ignore patterns; E2B adds the repository's `.dockerignore` to them. */
 export const IGNORED = ['**/node_modules']
 

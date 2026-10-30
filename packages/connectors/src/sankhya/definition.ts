@@ -51,6 +51,12 @@ export const sankhya = defineConnector({
       },
       headers: { 'X-Token': { field: 'xToken' } },
     },
+    // Ends the MGE session the login opened; idempotent, and refused (403) once the token expired.
+    logout: {
+      path: '/gateway/v1/mge/service.sbr',
+      query: { serviceName: 'MobileLoginSP.logout', outputType: 'json' },
+      body: { serviceName: 'MobileLoginSP.logout', requestBody: {} },
+    },
     answer: z
       .object({
         access_token: z.string().min(1).max(8192),
@@ -65,7 +71,7 @@ export const sankhya = defineConnector({
   category: 'ERP',
   summary: 'O sistema de gestão da empresa: pedidos, estoque, financeiro e cadastros.',
   logo: LOGO,
-  oneRequestAtATime: true, // a second call on the same token cancels the first (envelope "4")
+  perProject: 'one', // a Projeto reads one Sankhya (founder, 2026-10-29)
   subjects: { porta: 'Porta de leitura', ...sankhyaSubjects },
   operations: sankhyaOperations,
   readDoor: sankhyaDoor,

@@ -78,6 +78,15 @@ const BAD_IMPORTS: Record<string, [string, string, Record<string, string>]> = {
   's3-only-in-the-git-copy': ['apps/server/src/builder/git/bucket.ts', '@aws-sdk/client-s3', {}],
   'connectors-kit-stands-alone': ['packages/connectors/src/x.ts', 'pg', {}],
   'connectors-kit-only-in-the-executor': ['apps/web/src/hub/a/kit.ts', '@conexus/connectors', {}],
+  'app-reads-kit-types-only': ['packages/app/src/run.ts', '@conexus/connectors/calls', {}],
+  'app-reads-only-the-kit-calls': [
+    'packages/app/src/kit.ts',
+    '@conexus/connectors',
+    {
+      'packages/app/src/kit.ts':
+        "import type { x } from '@conexus/connectors'\nexport type y = typeof x\n",
+    },
+  ],
   'web-tree-shape': [
     'apps/web/src/components/button.ts',
     '../platform/hub.ts',
@@ -117,6 +126,9 @@ const GOOD_IMPORTS: Record<string, string> = {
   'tests/e2e/live-hub.ts': '@conexus/connectors',
 }
 
+/** The one way an app's SDK reads the kit: its types, from the calls entry. */
+const TYPES_FROM_THE_KIT = 'packages/app/src/connectors.ts'
+
 let violations: Violation[] = []
 before(() => {
   const files: Record<string, string> = {
@@ -124,13 +136,16 @@ before(() => {
       '{"name":"@conexus/hub-api","type":"module","exports":{".":"./src/index.ts"}}',
     'packages/hub-api/src/index.ts': PUBLIC,
     'packages/connectors/package.json':
-      '{"name":"@conexus/connectors","type":"module","exports":{".":"./src/index.ts"}}',
+      '{"name":"@conexus/connectors","type":"module","exports":{".":"./src/index.ts","./calls":"./src/calls.ts"}}',
     'packages/connectors/src/index.ts': PUBLIC,
+    'packages/connectors/src/calls.ts': PUBLIC,
   }
   for (const [file, target, extra] of Object.values(BAD_IMPORTS)) {
     files[file] = importing(target)
     Object.assign(files, extra)
   }
+  files[TYPES_FROM_THE_KIT] =
+    "import type { x } from '@conexus/connectors/calls'\nexport type y = typeof x\n"
   for (const [file, target] of Object.entries(GOOD_IMPORTS)) files[file] = importing(target)
   for (const file of [
     'apps/server/src/hub/b/public.ts',
@@ -167,7 +182,10 @@ test('dependency-cruiser recusa o driver de PostgreSQL por outro caminho de impo
 })
 
 test('dependency-cruiser aceita as portas públicas', () => {
-  const refused = violations.filter((violation) => Object.hasOwn(GOOD_IMPORTS, violation.from))
+  const refused = violations.filter(
+    (violation) =>
+      Object.hasOwn(GOOD_IMPORTS, violation.from) || violation.from === TYPES_FROM_THE_KIT,
+  )
   assert.deepEqual(refused, [])
 })
 

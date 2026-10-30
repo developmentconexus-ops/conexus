@@ -50,6 +50,8 @@ export type SankhyaFake = CredentialFake &
   Readonly<{
     switches: SankhyaSwitches
     logins: () => number
+    /** The logouts answered so far, of live or already ended tokens. */
+    logouts: () => number
     /** The tokens issued so far expire, as after their hour; a login after this gives a good one. */
     expireTokens: () => void
   }>
@@ -57,7 +59,16 @@ export type SankhyaFake = CredentialFake &
 /** How long a call holds its token: long enough for a second call over HTTP to arrive while the first is unanswered. */
 const SERVICE_MILLISECONDS = 25
 
-type Sessions = { issued: Set<string>; expired: Set<string>; busy: Set<string>; logins: number }
+type Sessions = {
+  issued: Set<string>
+  expired: Set<string>
+  ended: Set<string> // logged out: refused with 401, as the real gateway does
+  busy: Set<string>
+  logins: number
+  logouts: number
+}
+
+const LOGOUT = 'MobileLoginSP.logout'
 
 const DoorBody = z.object({ requestBody: z.unknown() })
 
@@ -131,15 +142,34 @@ function misbehaviour(url: URL, switches: SankhyaSwitches): Response | Promise<R
   return tokenExpired(url)
 }
 
-/** A token the fake never issued is refused; a token already in a call gets the envelope "4" (409 on REST). */
+/** A token the fake never issued is refused, a logged-out one with 401; a token already in a call gets the envelope "4" (409 on REST). */
 function refuseSession(url: URL, token: string, sessions: Sessions): Response | null {
   if (sessions.expired.has(token)) {
     return tokenExpired(url)
   }
+  if (sessions.ended.has(token)) return json({ code: 'UNAUTHORIZED', message: 'Unauthorized' }, 401)
   if (!sessions.issued.has(token)) return json({ code: 'GTW3501', message: 'Token inválido' }, 401)
   if (!sessions.busy.has(token)) return null
   if (url.pathname !== SERVICE_PATH) return json({ code: 'BUSY' }, 409)
   return envelope(url.searchParams.get('serviceName') ?? '', '4')
+}
+
+/** The logout ends a live token's session, and answers a second time alike (measured 2026-10-30); an expired token's is refused first. */
+function logout(sessions: Sessions, token: string): Response {
+  sessions.ended.add(token)
+  sessions.logouts += 1
+  return envelope(LOGOUT, '1', {})
+}
+
+function isLogout(url: URL): boolean {
+  return url.pathname === SERVICE_PATH && url.searchParams.get('serviceName') === LOGOUT
+}
+
+/** The logout's answer or the session's refusal; null when the call goes on to its service. */
+function sessionAnswer(url: URL, token: string, sessions: Sessions): Response | null {
+  if (isLogout(url) && sessions.ended.has(token)) return logout(sessions, token)
+  const refused = refuseSession(url, token, sessions)
+  return refused === null && isLogout(url) ? logout(sessions, token) : refused
 }
 
 /**
@@ -162,7 +192,14 @@ export function sankhyaFake(): SankhyaFake {
     loginDelayMilliseconds: 0,
     expiresInSeconds: 300,
   }
-  const sessions: Sessions = { issued: new Set(), expired: new Set(), busy: new Set(), logins: 0 }
+  const sessions: Sessions = {
+    issued: new Set(),
+    expired: new Set(),
+    ended: new Set(),
+    busy: new Set(),
+    logins: 0,
+    logouts: 0,
+  }
 
   async function handle(request: Request): Promise<Response> {
     const url = new URL(request.url)
@@ -173,8 +210,8 @@ export function sankhyaFake(): SankhyaFake {
     const early = misbehaviour(url, switches)
     if (early) return early
     const token = request.headers.get('authorization')?.replace(/^Bearer /, '') ?? ''
-    const refused = refuseSession(url, token, sessions)
-    if (refused) return refused
+    const stopped = sessionAnswer(url, token, sessions)
+    if (stopped) return stopped
     if (switches.busyReads > 0) {
       switches.busyReads -= 1
       const { busyWait } = switches
@@ -198,6 +235,7 @@ export function sankhyaFake(): SankhyaFake {
     serve: () => serveOnLoopback(handle),
     switches,
     logins: () => sessions.logins,
+    logouts: () => sessions.logouts,
     expireTokens: () => {
       for (const token of sessions.issued) sessions.expired.add(token)
     },

@@ -147,9 +147,32 @@ module.exports = {
       name: 'connectors-kit-only-in-the-executor',
       comment: 'Only the Hub subject that opens a credential uses the kit (security S36).',
       severity: 'error',
-      // tests/ for the local Hub's double (tests/e2e/live-hub.ts) and the QA.
-      from: { pathNot: ['^packages/connectors/', '^apps/server/src/hub/connectors/', '^tests/'] },
+      // tests/ for the local Hub's double (tests/e2e/live-hub.ts) and the QA; packages/app/src/ by the next two rules.
+      from: {
+        pathNot: [
+          '^packages/connectors/',
+          '^apps/server/src/hub/connectors/',
+          '^tests/',
+          '^packages/app/src/',
+        ],
+      },
       to: { path: '^packages/connectors/' },
+    },
+    {
+      name: 'app-reads-kit-types-only',
+      comment:
+        "An app's SDK takes only the kit's types, so no line of the kit runs in an app (security S36).",
+      severity: 'error',
+      from: { path: '^packages/app/' },
+      to: { path: '^packages/connectors/', dependencyTypesNot: ['type-only'] },
+    },
+    {
+      name: 'app-reads-only-the-kit-calls',
+      comment:
+        "An app's SDK reads the kit through its calls entry alone (@conexus/connectors/calls).",
+      severity: 'error',
+      from: { path: '^packages/app/' },
+      to: { path: '^packages/connectors/', pathNot: '^packages/connectors/src/calls\\.ts$' },
     },
     {
       name: 'web-tree-shape',

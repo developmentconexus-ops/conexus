@@ -29,12 +29,13 @@ test('a linha que o build imprime é o nome pedido, uma vez só o commit, e o Hu
   assert.ok(MachineTemplate.safeParse(line.slice('HUB_E2B_TEMPLATE='.length)).success)
 })
 
-test('a prova do SDK confere o programa da conferência e o contrato, sem os testes que o build deixa fora', () => {
+test('a prova do SDK confere o programa da conferência, o contrato e o kit dos tipos, sem os testes que o build deixa fora', () => {
   const files = sdkFiles(ROOT)
   assert.ok(files.includes('packages/app/src/check/main.ts'))
   assert.ok(files.includes('packages/app-contract/package.json'))
+  assert.ok(files.includes('packages/connectors/src/calls.ts'))
   assert.ok(
-    files.every((file) => /^packages\/app(-contract)?\//.test(file)),
+    files.every((file) => /^packages\/(app|app-contract|connectors)\//.test(file)),
     files.join('\n'),
   )
   assert.equal(

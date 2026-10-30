@@ -54,7 +54,9 @@ function failureOf(answer: ProviderAnswer): Failure | null {
   const { status } = answer
   if (status >= 200 && status < 300) return null
   const native = nativeOf(answer)
-  if (status === 403 && native.code === 'GTW3403') return { kind: 'TOKEN_EXPIRED', native }
+  // Every read carries the bearer, so a 401 is a token ended early (logged out): the keys are judged at the login.
+  if (status === 401 || (status === 403 && native.code === 'GTW3403'))
+    return { kind: 'TOKEN_EXPIRED', native }
   if (status === 403 && (native.code === '4303' || native.code === '4405'))
     return { kind: 'AUTH_REFUSED', native }
   return failedBy(answer, native)
@@ -133,6 +135,17 @@ export function gatewayAnswer<O>(answer: ProviderAnswer, responseBody: z.ZodType
     }
   const { status, statusMessage } = envelope.data
   const rule = statusMessage?.match(/CORE_E\d+/)?.[0]
+  // "4": a second call on the token while one was open. Ours, never repeated, so the Hub sees it by this code (#470).
+  if (status === '4')
+    return {
+      kind: 'UNREADABLE',
+      native: {
+        status: answer.status,
+        code: status,
+        message: statusMessage ?? null,
+        body: answer.body,
+      },
+    }
   if (status !== '1' || statusMessage?.includes('[CORE_E'))
     // The vendor's own refusal, envelope and all: the body goes only to the Testar and the Builder, which already read company data.
     return {

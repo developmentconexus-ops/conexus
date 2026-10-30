@@ -62,6 +62,23 @@ test('recusa migração sem comando e ids repetidos', () => {
   }))
 })
 
+test('connectors é opcional, e um conector repetido ou uma lista vazia de operações não passa', () => {
+  const connectors = [
+    { connector: 'sankhya', operations: ['pedidos', 'consultar'] },
+    { connector: 'mercado-livre', operations: ['perguntas'] },
+  ]
+  assert.deepEqual(Manifest.parse({ ...GOOD, connectors }).connectors, connectors)
+  for (const bad of [
+    [connectors[0], connectors[0]],
+    [{ connector: 'sankhya', operations: [] }],
+    [{ connector: 'sankhya', operations: [''] }],
+    [{ connector: 'Sankhya', operations: ['pedidos'] }],
+    [{ connector: 'sankhya', operations: ['pedidos'], extra: true }],
+  ]) {
+    assert.equal(Manifest.safeParse({ ...GOOD, connectors: bad }).success, false)
+  }
+})
+
 test('roles é opcional, e um papel repetido ou de nome inválido não passa', () => {
   assert.equal(Manifest.safeParse(GOOD).success, true)
   const roles = [

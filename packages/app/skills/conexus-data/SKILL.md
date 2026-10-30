@@ -1,6 +1,6 @@
 ---
 name: conexus-data
-description: How an app saves data and runs logic on the server. Covers the operations in `shared/operations.ts` written in Zod, their handlers in `server/handlers.ts` with `query` and `write`, tables and migrations, who is calling, the values PostgreSQL gives back, failures and the limits of a call. Use before designing an app's tables or changing `shared/operations.ts` or anything in `server/`.
+description: How an app saves data and runs logic on the server. Covers the operations in `shared/operations.ts` written in Zod, their handlers in `server/handlers.ts` with `query` and `write`, tables and migrations, who is calling, the values PostgreSQL gives back, reading the company's connected systems (Sankhya, Mercado Livre), failures and the limits of a call. Use before designing an app's tables or changing `shared/operations.ts` or anything in `server/`.
 ---
 
 # Server logic and saved data
@@ -24,7 +24,7 @@ Every piece this skill names comes from `@conexus/app`. When one is missing from
 
 ## Handlers
 
-- A handler is `(input, { db, caller }) => output`, typed by its operation: an object built with a field the output does not declare, or without one it requires, fails the check instead of failing in front of the person.
+- A handler is `(input, { db, caller, connectors }) => output`, typed by its operation: an object built with a field the output does not declare, or without one it requires, fails the check instead of failing in front of the person.
 - `caller` is the person using the app, set by Conexus from their sign-in: `personId`, `personName`, `projectId`, `projectName` and `access`, how they hold the app (see Roles). The browser cannot change it. To record who did something, read `caller`; never add a name or author field to the input.
 - Read with `query(db, RowSchema, text, values)`: it returns the rows, each checked against `RowSchema`. `db.query` runs in a read-only transaction.
 - Write with `write(db, [{ text, values }, ...])`: every statement of the list runs in one transaction, all or none. Put a change and the row that records it in the same `write`.
@@ -41,6 +41,22 @@ An app has roles only when the plan names them, because the person said differen
 - The server refuses a caller whose role is not listed with `ROLE_FORBIDDEN`, before the input is read and before the handler runs. Never test the role inside a handler to refuse; list it on the operation.
 - `caller.access` is `{ kind: 'BUILDER' }` for the people who build the app, who hold every role, or `{ kind: 'USER', role }` for a person given the app with one role, or `null`. `can(caller.access, 'manager')` from `@conexus/app` tells whether the role holds. A role the app stops declaring is no role: its person reaches only the `'everyone'` operations.
 - A rule that shows different rows to different roles, such as a seller seeing only their own, is a filter in the handler on `caller.personId` and `can`. The example's `listTickets` does it. The role on the operation locks the call; the filter narrows the rows.
+
+## Connectors
+
+An app reads the company's connected systems, such as the Sankhya or the Mercado Livre, only on the server, and only the reads the app declares.
+- `shared/operations.ts` exports `connectors`, made with `defineConnectors` from `@conexus/app`: each connector's id (`sankhya`, `mercado-livre`) and the list of its reads the app calls, by the ids the connector's own skill gives, such as `defineConnectors({ sankhya: ['pedidos', 'consultar'] })`. The check carries the list to the version's manifest; a read left out of it is not in the client.
+- In a handler, `connectorsOf(context, connectors)` gives the client: `await client.sankhya.pedidos({ codigoEmpresa: 1, page: 0 })`. Each read takes the input its connector's skill describes, typed: a field that does not exist, or a read not declared, fails the check. A key or the system's address never reaches the app.
+- A connector that reads several connections in one Projeto, such as the Mercado Livre's stores, takes the connection's name as the last argument. Get the names with `await client['mercado-livre'].connections()` and go through them; never write a store's name in the code. A connector that reads one connection per Projeto, such as the Sankhya, takes no name.
+- Every read answers a value with `kind`, never throws for the system's refusal. Handle each kind and return what the screen shows as part of the output:
+  - `OK`: `value` holds what the read gives; `empty: true` means there was nothing to read, which is the screen's empty state.
+  - `NOT_GRANTED`: "O <conector> não está liberado para este app."
+  - `AUTH_REFUSED`: "O <conector> pediu para conectar de novo."
+  - `BUSY`: "O <conector> pediu para esperar."; when `waitMs` is a number, add "Tente de novo em N segundos.", with `waitMs` rounded up to seconds.
+  - `UNREACHABLE` and `DEADLINE`: "O <conector> não respondeu a tempo. Tente de novo."
+  - `REFUSED`: "O <conector> recusou esta leitura."
+  - `UNREADABLE`: "O <conector> respondeu de um jeito inesperado. Tente de novo."
+- `<conector>` is the connector's name as the person reads it: Sankhya, Mercado Livre. Show the sentence, never `native`, which is what the system said and is for the logs.
 
 ## Failures
 

@@ -62,7 +62,7 @@ function unread(
 
 /**
  * Testar's second step: the connection's token, then each door entry and each read operation once, in that
- * order and one at a time (the connector's `oneRequestAtATime`). Each call gets the shorter of its
+ * order and one at a time (a Sankhya token is one session: envelope "4"). Each call gets the shorter of its
  * own deadline and what is left of the whole test's, counted from the first token: an item the
  * deadline does not reach, or cuts short, is NOT_TESTED, and a token that does not fit is
  * UNREACHABLE; a provider that fails with time left is UNREACHABLE too. An expired token is asked again, forced, once per call. Nothing read leaves this function

@@ -1,6 +1,7 @@
 // What a Projeto's app receives from the platform (decision 0019, security S4). Everything here is
 // visible to the app's code, so it carries only what the app may know.
 import { z } from 'zod'
+import type { Connectors } from './connectors.ts'
 import type { Db } from './db.ts'
 import { RoleName } from './manifest.ts'
 
@@ -21,4 +22,4 @@ export const CallerAccess = z.discriminatedUnion('kind', [
 export type CallerAccess = Readonly<z.infer<typeof CallerAccess>>
 
 /** The dispatcher's `props` to the app's Worker, which reads them as `ctx.props`. */
-export type AppProps = Readonly<{ caller: Caller; db: Db }>
+export type AppProps = Readonly<{ caller: Caller; db: Db; connectors: Connectors }>

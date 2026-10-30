@@ -1,4 +1,4 @@
-import type { AppProps } from '@conexus/app-contract'
+import type { AppProps, Connectors } from '@conexus/app-contract'
 import { APP_CALL_LIMITS } from '@conexus/app-contract'
 import type { AppCall, HostLabel as Label } from '@conexus/hub-api'
 import {
@@ -32,6 +32,12 @@ const EXAMPLE_SCRIPT = 'conexus-example'
 const DISPATCHER_PATHS = '/__conexus/'
 const ENTRY_SCRIPT = `${DISPATCHER_PATHS}entry.js`
 const SECRET_BYTES = 32
+
+/** No connection is released to any app until the Hub's door for them (step 20, U4 replaces this). */
+const NO_CONNECTORS: Connectors = {
+  call: async () => ({ kind: 'NOT_GRANTED' }),
+  connections: async () => [],
+}
 
 /** What the dispatcher needs of its own exports: a `db` stub bound to one login (decision 0043). */
 export type Exports = { Db(options: { props: DbProps }): AppProps['db'] }
@@ -154,6 +160,7 @@ async function toApp(visit: Visit, call: AppCall): Promise<Response> {
               props: {
                 caller,
                 db: visit.exports.Db({ props: { ...call.database, endsAt: deadline.endsAt } }),
+                connectors: NO_CONNECTORS,
               } satisfies AppProps,
             },
             DISPATCH_OPTIONS,

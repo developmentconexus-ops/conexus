@@ -41,7 +41,7 @@ test('cada operação pronta lê a recusa, o pedido errado e o corpo ilegível',
       id,
     )
     assert.partialDeepStrictEqual(answer(id, 400, { code: 'X' }), { kind: 'REFUSED' }, id)
-    assert.partialDeepStrictEqual(answer(id, 401, undefined), { kind: 'AUTH_REFUSED' }, id)
+    assert.partialDeepStrictEqual(answer(id, 401, undefined), { kind: 'TOKEN_EXPIRED' }, id)
     assert.partialDeepStrictEqual(answer(id, 200, { unexpected: true }), { kind: 'UNREADABLE' }, id)
   }
 })

@@ -6,7 +6,7 @@ import type { CheckContext, Outcome } from './step.ts'
 import { overran, PASSED, problem } from './step.ts'
 
 /** What the platform puts in every app's `node_modules` itself: the SDK, never from the registry. */
-const PLATFORM_PACKAGES = ['@conexus/app', '@conexus/app-contract']
+const PLATFORM_PACKAGES = ['@conexus/app', '@conexus/app-contract', '@conexus/connectors']
 
 // npm's codes for a registry it could not reach: the machine's fault, not the app's.
 const UNREACHABLE = new Set(['ENOTFOUND', 'ECONNREFUSED', 'ECONNRESET', 'ETIMEDOUT', 'EAI_AGAIN'])

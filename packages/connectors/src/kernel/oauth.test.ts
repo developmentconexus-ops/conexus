@@ -87,7 +87,7 @@ function connectorWith(changes: { auth: OAuth2CodeAuth | typeof sankhya.auth }) 
     category: 'Teste',
     summary: 'Um.',
     logo: sankhya.logo,
-    oneRequestAtATime: false,
+    perProject: 'many',
     subjects: { ping: 'Ping' },
     operations: [ping],
     skill: { content: '', references: {} },

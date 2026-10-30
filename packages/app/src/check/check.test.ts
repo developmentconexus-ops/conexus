@@ -1,66 +1,19 @@
 import assert from 'node:assert/strict'
-import {
-  cpSync,
-  mkdirSync,
-  mkdtempSync,
-  readdirSync,
-  readFileSync,
-  rmSync,
-  symlinkSync,
-  writeFileSync,
-} from 'node:fs'
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { dirname, join, resolve } from 'node:path'
+import { join } from 'node:path'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { STARTER_DIR } from '../starter.ts'
-import { browseInChromium, navegador } from './browser.ts'
-import { spawnRunner } from './command.ts'
+import { navegador } from './browser.ts'
 import { dependencies } from './dependencies.ts'
 import { manifesto } from './manifest.ts'
 import type { CheckReport } from './report.ts'
 import { runCheck } from './run.ts'
 import type { CheckContext, Runner } from './step.ts'
 import { workOf } from './step.ts'
-
-// The repository's node_modules holds every package of the starter at its exact version, so a
-// copy of the starter that links to it is an app after `npm ci`. The install itself reaches the
-// registry, which no test may (testing T14): it is the one command faked here, and recorded.
-const MODULES = join(resolve(import.meta.dirname, '../../../..'), 'node_modules')
-
-type Files = Readonly<Record<string, string | null>>
-
-function appWith(t: TestContext, files: Files): string {
-  const root = mkdtempSync(join(tmpdir(), 'conexus-check-'))
-  t.after(() => rmSync(root, { recursive: true, force: true }))
-  cpSync(STARTER_DIR, root, { recursive: true, filter: (path) => !path.includes('node_modules') })
-  mkdirSync(join(root, 'node_modules'))
-  for (const name of readdirSync(MODULES)) {
-    if (name !== '.conexus') symlinkSync(join(MODULES, name), join(root, 'node_modules', name))
-  }
-  for (const [path, text] of Object.entries(files)) {
-    rmSync(join(root, path), { force: true })
-    if (text === null) continue
-    mkdirSync(dirname(join(root, path)), { recursive: true })
-    writeFileSync(join(root, path), text)
-  }
-  return root
-}
-
-function contextOf(root: string, installs: string[][] = []): CheckContext {
-  const run: Runner = async (command, args, options) => {
-    if (command !== 'npm') return spawnRunner(command, args, options)
-    installs.push([command, ...args])
-    return { code: 0, output: '', timedOut: false }
-  }
-  return {
-    root,
-    tools: MODULES,
-    platform: undefined,
-    run,
-    browse: browseInChromium,
-  }
-}
+import type { Files } from './test-app.ts'
+import { ANY_HANDLERS, appWith, contextOf } from './test-app.ts'
 
 async function reportOf(ctx: CheckContext): Promise<CheckReport> {
   const result = await runCheck(ctx)
@@ -115,12 +68,6 @@ test('o handler que devolve { codigo } falha em tipos na linha 13 e pula os pass
   const [first] = report.steps[2]?.problems ?? []
   assert.deepEqual([first?.file, first?.line, first?.code], ['server/handlers.ts', 13, 'TS2322'])
 })
-
-// Every handler answers the same: the manifesto step starts the runtime, never calls them.
-const ANY_HANDLERS = `import { operations } from '../shared/operations'
-
-export const handlers = Object.fromEntries(Object.keys(operations).map((name) => [name, () => ({})]))
-`
 
 const NOT_JSON = `import { defineOperations } from '@conexus/app'
 import { z } from 'zod'
@@ -185,7 +132,9 @@ test('o manifesto leva os papéis', async (t) => {
     appWith(t, { 'shared/operations.ts': OPERATIONS, 'server/handlers.ts': ANY_HANDLERS }),
   )
   assert.equal((await manifesto(without)).state, 'passed')
-  assert.equal('roles' in JSON.parse(readFileSync(workOf(without, 'manifest.json'), 'utf8')), false)
+  const bare = JSON.parse(readFileSync(workOf(without, 'manifest.json'), 'utf8'))
+  assert.equal('roles' in bare, false)
+  assert.equal('connectors' in bare, false)
 })
 
 test('a checagem recusa a operação sem papel', async (t) => {
