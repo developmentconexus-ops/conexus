@@ -362,3 +362,19 @@ Cartão da etapa 19.1 aprovado em 2026-10-30 (commit cd0452fabbfcba1ea5797b05125
 
 Essa emenda só escreve no cartão a palavra acima: a unidade U4, o critério 19 reescrito, a matriz de estados e a linha da tabela de referência do Testar de uma leitura só, e o que ele vê no roteiro, passos 3 e 6.
 
+
+Em 2026-10-30, sobre os merges: "1. Sim" (o fechamento da 19, https://github.com/developmentconexus-ops/conexus/pull/471, e a 19.1); "1. Pode" (https://github.com/developmentconexus-ops/conexus/pull/484, a espera do 429); "Pode mesclar" (https://github.com/developmentconexus-ops/conexus/pull/486, o Testar de uma leitura só).
+
+Em 2026-10-30, sobre o logotipo do Mercado Livre: "2. Manter". Fica o logotipo como está.
+
+Em 2026-10-30, sobre o que depende dos webhooks: "Isso depois de webhooks, tá? Não vamos fazer isso agora, não."
+
+Em 2026-10-30, sobre os textos novos da etapa 19.1 (os 28 itens da lista que o firstmate levou a ele): "Aprovado". São as frases da janela **Desligar** ("Desligar <nome da ligação>?", "O Conexus apaga as chaves que guardou.", **Desligar**, **Desligando…**, **Cancelar**, **Fechar**), os três avisos de quando o fornecedor ainda lista o Conexus como autorizado ("Desligamos aqui, mas o fornecedor não aceitou retirar a autorização do Conexus. Retire você mesmo na conta dele." e "Desligamos aqui, mas não conseguimos avisar o fornecedor. Retire a autorização do Conexus na conta dele.", esta última mantida como uma frase só para o fornecedor fora do ar e para a ausência de chave viva) e "Não confirmamos o desligamento. Veja a lista."; as frases do fornecedor que pede para esperar ("O <conector> pediu para esperar. Tente de novo em alguns minutos." e, com tempo, "O <conector> pediu para esperar 30 segundos. Tente de novo depois disso."); as da página de volta da autorização ("Voltando da autorização…", "Esse endereço não é de uma ligação.", **Voltar a Integrações**, "Você não autorizou o Conexus no <conector>.", "O <conector> recusou a autorização.", "O app do Conexus foi recusado pelo <conector>. Avise o suporte.", "O <conector> não respondeu. Tente de novo em alguns minutos."), a da janela **Ligar** ("Você vai ao <conector> entrar com a conta e autorizar o Conexus.", **Continuar no <conector>**) e as de **Conectar de novo** ("O <conector> pediu para conectar de novo.", "Pede para conectar de novo"); e as do Testar de uma chamada só ("Testando a ligação…", "Ligado e funcionando.", "O <conector> aceitou a ligação, mas não deixou ler <leitura>. Peça ao responsável pela conta no <conector> para liberar.", "O <conector> respondeu com erro. Tente de novo em alguns minutos.", "Resposta que o Conexus não entendeu" e a linha "<conector> respondeu 403, código <código>: <mensagem>").
+
+Etapa 19.1 usada em 2026-10-30 em https://hub.conexus.fun (v0.19.7), com a conta real dele de vendedor no Mercado Livre e a ligação dele com o Sankhya: ligou o Mercado Livre por OAuth, as leituras rodaram e, depois do Testar de uma chamada só, as duas ligações responderam "Ligado e funcionando". Antes dos consertos: "Meio que validado"; perguntado se as duas responderam "Ligado e funcionando" depois da v0.19.7: "Sim adeu certo".
+
+## Etapa 20
+
+Cartão da etapa 20 aprovado em 2026-10-30 (commit fa6f160301872fc196efdaae078b1911641d1f00): "1 aprovo / 2 A1"
+
+Ele aprovou a página do cartão e escolheu a `A1`: a aba "Projeto" do alto sai, **Sobre** reúne Sobre e Versões, e o Construir fica com Prévia, Código e Alterações. As decisões `S1`, `R2` e `T-A` com o ajuste vieram antes, ao estudo, no mesmo dia. O commit citado só escreve a `A1` na página. A aprovação é também a palavra da regra de dados D11 para as permissões do banco da U2: a tabela `connectors.project_connection` e o campo `connection.notes`.

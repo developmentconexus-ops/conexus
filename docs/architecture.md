@@ -227,21 +227,23 @@ too.
 | The server stops | Hub and published apps stop [0025] | Kept: the check stays in the Hub (step 18, `G`) |
 | Betas: Cloudflare e-mail, Workers VPC, Mastra's agent controller, Drizzle 1.0 | An update breaks a path | Versions pinned; fallback named in each record |
 | One E2B key for the founder's account | A release kills another's machine | It kills only this installation's machines [0051] |
-| The publish runner runs as root on the server | Any writer of the repository can command the server [0035] | Accepted by the founder; forks never reach the runner |
-| The runner registration token passes through one call's environment, not a file (S31) | A token readable by root for one call on the server | Accepted by the founder [0036] |
-| The owner login's key, the app key and the Workers token rest on the server | Root there reads them and changes the edge | Accepted with the runner row [0035] |
+| The publish runner runs as root; its registration token and the owner login's key, the app key and the Workers token rest on the server (S31) | Any writer of the repository, or root there, commands the server and the edge [0035] [0036] | Accepted by the founder; forks never reach the runner |
 | Transplanted code carries old decisions | A rule kept only because it existed | `conexus-study` [0001] |
 | A page the Builder reads hides instructions | It strays, or leaks conversation text in an address | Accepted, founder 2026-10-19 [0050] |
 | A company's Neon project outlives its company | Company data nobody sees | Phased deletion keeps the company until its project leaves [0040] |
 
-**Debt.** Small fixes left on a brought part, one line each, with the step that
-removes them.
+**Debt.** Fixes left, one line each, with the step that removes them.
 
-- Until the first scheduled job, expired `auth.session` and `auth.verification` rows leave only
-  when presented; expired app handoffs, and a deleted Projeto's, only with their Hub session.
-- `projects.project.host_label` stays nullable: a rolled-back 7.x Projeto has none.
-- `createUser`, `listUsers` and `findCredentialAccount` are internal library calls, with no
-  public one while sign-up is closed: the version stays pinned (step 3, criteria 21 and 22).
+- Until the first scheduled job, expired `auth.session`, `auth.verification` and app-handoff rows
+  leave only when presented.
+- `projects.project.host_label` stays nullable (a rolled-back 7.x Projeto).
+- `createUser`, `listUsers` and `findCredentialAccount` are internal calls while sign-up is closed:
+  the version stays pinned (step 3).
 - Trace ids are Fastify's request ids until 21.1 [0052].
 - A conversation created between a release and its removal leaves an orphan thread (16).
-- The database calls carry no cancel signal (C57): `pg@8.23.1` accepts none, so deadlines end waits.
+- Database calls cannot be cancelled (C57, `pg@8.23.1`): deadlines end waits.
+- A refresh lost after the key turned, or 6 idle months, forces a reconnect. Trigger: `CONNECTION_REFRESH_UNANSWERED` then `NEEDS_REAUTH`.
+- Mercado Livre's page shapes are unmeasured. Trigger: a read failing on a real account.
+- `connection.last_test` stays until a later migration (D6); no unit owns the drop yet.
+- Sankhya Testar never logs out; a logged-out token's 401 is unnamed: step 20 U1 and U3.
+- Decision 0058's "fair queue" wording: step 20 U3.

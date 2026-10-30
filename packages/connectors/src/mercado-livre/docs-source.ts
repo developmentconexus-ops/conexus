@@ -2,7 +2,8 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import { basename, join } from 'node:path'
 import { setTimeout as sleep } from 'node:timers/promises'
 
-// Mercado Livre's public documentation pages, read at run time and never kept. Only the public
+// Mercado Livre's public documentation pages, read at run time and kept only when the caller gives
+// `saveTo` (the docs test does, with `MERCADO_LIVRE_DOCS_SAVE`). Only the public
 // pages are fetched; no Mercado Livre API is called. The site answers 403 to a plain HTTP client
 // and to headless Chromium, and 200 to a normal browser window, so the pages are read through a
 // headed Chromium (`inBrowser`): run it by hand on a desktop, never in CI. It publishes no OpenAPI and
