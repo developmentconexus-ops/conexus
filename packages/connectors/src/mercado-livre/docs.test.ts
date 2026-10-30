@@ -19,11 +19,9 @@ const SITE_ID = 'MLB'
 // The reads whose page lists the route in a table that names no method.
 const LISTED_WITHOUT_METHOD = new Set(['anunciosDetalhe'])
 
-const ONLINE =
-  // biome-ignore lint/style/noProcessEnv: a switch of this one check, not the app's configuration
-  process.env.MERCADO_LIVRE_DOCS_ONLINE === '1'
-// biome-ignore lint/style/noProcessEnv: a switch of this one check, not the app's configuration
-const SAVE_TO = process.env.MERCADO_LIVRE_DOCS_SAVE
+// biome-ignore lint/style/noProcessEnv: switches of this one check, not the app's configuration
+const { MERCADO_LIVRE_DOCS_ONLINE, MERCADO_LIVRE_DOCS_SAVE: SAVE_TO } = process.env
+const ONLINE = MERCADO_LIVRE_DOCS_ONLINE === '1'
 const SKIP = 'opt-in: sem MERCADO_LIVRE_DOCS_ONLINE: a conferência com a documentação não rodou'
 
 const SELLER = ACCOUNT.ref
