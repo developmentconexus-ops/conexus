@@ -274,7 +274,7 @@ async function run(caller: AppProps['caller'], name: string) {
   const db = { query: async () => ({ rows: [] }), batch: async () => ({ results: [] }) }
   const connectors = {
     call: async () => ({ kind: 'NOT_GRANTED' as const }),
-    connections: async () => [],
+    connections: async () => ({ kind: 'OK' as const, names: [] }),
   }
   return (await app.fetch(request, {}, { props: { caller, db, connectors } })).status
 }

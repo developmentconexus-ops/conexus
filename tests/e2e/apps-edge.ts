@@ -226,7 +226,7 @@ export function dbExport(owner: DatabaseUrl, key: string) {
           return { kind: 'NOT_GRANTED' } as const
         },
         async connections() {
-          return []
+          return { kind: 'OK' as const, names: [] }
         },
       }
     },

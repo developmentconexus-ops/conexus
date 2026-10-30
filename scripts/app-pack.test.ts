@@ -70,7 +70,10 @@ async function run(folder: string) {
       access: { kind: 'BUILDER' },
     },
     db: fakeDb(),
-    connectors: { call: async () => ({ kind: 'NOT_GRANTED' }), connections: async () => [] },
+    connectors: {
+      call: async () => ({ kind: 'NOT_GRANTED' }),
+      connections: async () => ({ kind: 'OK', names: [] }),
+    },
   }
   function call(operation: string, input: unknown): Promise<Response> {
     return worker.default.fetch(

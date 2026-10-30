@@ -8,6 +8,7 @@ import {
   HANDOFF_PATH,
   HostLabel,
 } from '@conexus/hub-api'
+import type { ConnectorsProps } from './connectors.ts'
 import type { DbProps } from './db.ts'
 import { base64Of, sha256Of } from './digest.ts'
 import { entryPage, entryScript } from './entry.ts'
@@ -36,7 +37,7 @@ const SECRET_BYTES = 32
 /** What the dispatcher needs of its own exports: a `db` stub bound to one login (decision 0043) and the `connectors` stub. */
 export type Exports = {
   Db(options: { props: DbProps }): AppProps['db']
-  Connectors(options: { props: Record<string, never> }): AppProps['connectors']
+  Connectors(options: { props: ConnectorsProps }): AppProps['connectors']
 }
 
 type Visit = {
@@ -144,7 +145,7 @@ function deadlineOf(ms: number) {
  * included, or a version whose Worker is gone ("Worker not found.", no code: decision 0043), gets the
  * 502 page, and so does one that has not answered at the call's deadline.
  */
-async function toApp(visit: Visit, call: AppCall): Promise<Response> {
+async function toApp(visit: Visit, call: AppCall, session: AppSessionToken): Promise<Response> {
   const { caller } = call
   const deadline = deadlineOf(APP_CALL_LIMITS.callDeadlineMs)
   try {
@@ -157,7 +158,9 @@ async function toApp(visit: Visit, call: AppCall): Promise<Response> {
               props: {
                 caller,
                 db: visit.exports.Db({ props: { ...call.database, endsAt: deadline.endsAt } }),
-                connectors: visit.exports.Connectors({ props: {} }),
+                connectors: visit.exports.Connectors({
+                  props: { host: visit.label, session, endsAt: deadline.endsAt },
+                }),
               } satisfies AppProps,
             },
             DISPATCH_OPTIONS,
@@ -205,7 +208,7 @@ async function dispatch(request: Request, env: Env, exports: Exports): Promise<R
   const session = AppSessionToken.safeParse(cookiesOf(request.headers).get(APP_SESSION_COOKIE))
   if (!session.success) return toHub(visit, [])
   const answer = await visit.hub.checkAppCall({ host: visit.label, session: session.data })
-  if (answer.kind === 'DONE') return toApp(visit, answer.value)
+  if (answer.kind === 'DONE') return toApp(visit, answer.value, session.data)
   if (answer.kind === 'REFUSED' && answer.code === 'APP_SESSION_INVALID') {
     return toHub(visit, [setCookie(APP_SESSION_COOKIE, '')])
   }

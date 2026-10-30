@@ -3,10 +3,19 @@
 // (decision 0043).
 
 import { WorkerEntrypoint } from 'cloudflare:workers'
-import type { Db as AppDb, ConnectorAnswer, DbResult, Statement } from '@conexus/app-contract'
+import type {
+  Db as AppDb,
+  ConnectionsAnswer,
+  ConnectorAnswer,
+  DbResult,
+  Statement,
+} from '@conexus/app-contract'
+import type { ConnectorsProps } from './connectors.ts'
+import { connectorsOf } from './connectors.ts'
 import type { DbProps } from './db.ts'
 import { dbOf } from './db.ts'
 import { serveDispatch } from './dispatch.ts'
+import { hubOf } from './hub.ts'
 
 /**
  * The stub the dispatcher hands in `props.db`, bound to one login: the app can reach no other, and
@@ -24,16 +33,26 @@ export class Db extends WorkerEntrypoint<Env, DbProps> {
 
 /**
  * The stub the dispatcher hands in `props.connectors`: an entrypoint, because a plain object of
- * functions cannot cross into the app's `props` (decision 0047, result 4). No connection is released
- * to any app until the Hub's door for them (step 20, U4 fills this in).
+ * functions cannot cross into the app's `props` (decision 0047, result 4). It holds the app's
+ * session and the click's deadline; the app holds neither.
  */
-export class Connectors extends WorkerEntrypoint<Env> {
-  call(): ConnectorAnswer {
-    return { kind: 'NOT_GRANTED' }
+export class Connectors extends WorkerEntrypoint<Env, ConnectorsProps> {
+  call(
+    connector: string,
+    operation: string,
+    input: unknown,
+    connection?: string,
+  ): Promise<ConnectorAnswer> {
+    return connectorsOf(hubOf(this.env), this.ctx.props).call(
+      connector,
+      operation,
+      input,
+      connection,
+    )
   }
 
-  connections(): readonly string[] {
-    return []
+  connections(connector: string): Promise<ConnectionsAnswer> {
+    return connectorsOf(hubOf(this.env), this.ctx.props).connections(connector)
   }
 }
 

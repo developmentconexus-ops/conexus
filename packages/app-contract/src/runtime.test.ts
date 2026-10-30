@@ -17,7 +17,7 @@ const DB: Db = {
 }
 const CONNECTORS: Connectors = {
   call: async () => ({ kind: 'NOT_GRANTED' }),
-  connections: async () => [],
+  connections: async () => ({ kind: 'OK', names: [] }),
 }
 const BUILDER: CallerAccess = { kind: 'BUILDER' }
 const CALLER = {
