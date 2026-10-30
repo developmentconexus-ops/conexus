@@ -260,11 +260,9 @@ O que a escrita do cartão escolheu dentro do que você já aprovou, para você 
   documentação fica no repositório: a conferência baixa as páginas públicas do Sankhya na hora, num
   passo próprio do CI que só roda quando um pull request mexe nos conectores. Se o site do Sankhya
   estiver fora, esse passo diz "a documentação do Sankhya não baixou" e o pull request espera.
-- **Uma lista vazia não é uma recusa.** Seis páginas da documentação do Sankhya trazem a frase
-  "Dados não encontrados" na descrição da resposta 404; o formato do corpo não está nelas e se mede
-  no roteiro de uso do fundador (passo 3, "Opção A"). O 404 no formato que o kit espera, com essa
-  mensagem, é "Lê, mas não havia nada para olhar"; qualquer outro 404 é uma resposta que o Conexus
-  não entendeu.
+- **Uma lista vazia não é uma recusa.** Seis páginas da documentação do Sankhya dizem que uma
+  lista sem registros responde 404 com o corpo de "dados não encontrados". Esse 404, com esse corpo,
+  é "Lê, mas não havia nada para olhar"; qualquer outro 404 é uma resposta que o Conexus não entendeu.
 - **Uma leitura que depende de outra.** Onze leituras partem de um valor de outra (os pedidos
   precisam do código de uma empresa). Se a primeira foi recusada, a segunda não é tentada e aparece
   como "Não testada: depende de Empresas, que não leu", nunca como "nada para olhar". O teste de
