@@ -75,8 +75,9 @@ type Built = { success: true; data: Rows } | { success: false; error: z.ZodError
  * A ready read: the envelope checked (the list under `list`, or the body itself when it is the list
  * or one object, read as a list of one), the paging, and every row as Mercado Livre sent it minus
  * the `omit` keys. 401 is an expired access token (the Hub renews once and repeats), 403 a
- * permission the app lacks, and a 206 is a partial answer (`X-Content-Missing` on orders):
- * unreadable, never a shorter list. Any other status is the kernel's table.
+ * permission the app lacks, and a 206 is an order the API could not fill whole (`X-Content-Missing`):
+ * it says in its docs that the rest usually suffices, so the rows are read and carry `parcial`.
+ * Any other status is the kernel's table.
  */
 export function rows({ list, omit = [] }: { list: string | null; omit?: readonly string[] }) {
   const Found =
@@ -86,13 +87,13 @@ export function rows({ list, omit = [] }: { list: string | null; omit?: readonly
           .record(z.string(), z.unknown())
           .transform((body) => body[list])
           .pipe(listOf(Row))
-  function build(body: unknown): Built {
+  function build(body: unknown, parcial = false): Built {
     const parsed = Found.safeParse(body)
     if (!parsed.success) return { success: false, error: parsed.error }
     const linhas = parsed.data.map((row) =>
       omit.reduce<unknown>((kept, path) => without(kept, path.split('.')), row),
     )
-    return Rows.safeParse({ linhas, temMais: moreOf(body) })
+    return Rows.safeParse({ linhas, temMais: moreOf(body), ...(parcial ? { parcial } : {}) })
   }
   const output = z.unknown().transform((body, context): Rows => {
     const built = build(body)
@@ -105,10 +106,9 @@ export function rows({ list, omit = [] }: { list: string | null; omit?: readonly
     const native = nativeOf(answer)
     if (answer.status === 401) return { kind: 'TOKEN_EXPIRED', native }
     if (answer.status === 403) return { kind: 'REFUSED', native }
-    if (answer.status === 206) return { kind: 'UNREADABLE', native }
     if (answer.status < 200 || answer.status >= 300)
       return { kind: outcomeOf(answer.status), native }
-    const built = build(answer.body)
+    const built = build(answer.body, answer.status === 206)
     return built.success
       ? { kind: 'OK', value: built.data }
       : { kind: 'UNREADABLE', native: { ...native, reason: shapeOf(built.error, answer.body) } }

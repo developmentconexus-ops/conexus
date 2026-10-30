@@ -50,7 +50,7 @@ export const cobrancasDoPeriodo = readOf({
 export const notaFiscalDoPedido = readOf({
   id: 'notaFiscalDoPedido',
   subject: 'faturamento',
-  docs: 'faturador',
+  docs: 'obtendo-nota-fiscal',
   summary:
     'Mostra a nota fiscal emitida para um pedido: série, número, status e data. O destinatário não vem.',
   label: 'Nota fiscal do pedido',

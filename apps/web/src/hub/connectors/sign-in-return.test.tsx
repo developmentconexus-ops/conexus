@@ -59,6 +59,35 @@ test('error=access_denied manda { refused: true } e mostra a frase com o nome do
   expect(back.getAttribute('href')).toBe(`/companies/${COMPANY.id}/integrations`)
 })
 
+test('outro error: manda o error e a descrição ao Hub e mostra o que ele respondeu', async () => {
+  const sent = hubOf({
+    end: () =>
+      HttpResponse.json({
+        result: 'REFUSED',
+        connector: 'mercado-livre',
+        native: {
+          status: 302,
+          code: 'invalid_operator_user_id',
+          message: 'colaborador sem acesso',
+          body: null,
+        },
+      }),
+  })
+  open(
+    `?error=invalid_operator_user_id&error_description=${encodeURIComponent('colaborador sem acesso')}&state=${STATE}`,
+  )
+  expect(await screen.findByText('O Mercado Livre recusou a autorização.')).toBeTruthy()
+  expect(
+    screen.getByText(
+      'Mercado Livre respondeu 302, código invalid_operator_user_id: colaborador sem acesso',
+    ),
+  ).toBeTruthy()
+  expect(screen.queryByText(/Você não autorizou/)).toBeNull()
+  expect(sent[0]).toMatchObject({
+    body: { error: 'invalid_operator_user_id', description: 'colaborador sem acesso' },
+  })
+})
+
 test('a página troca o endereço na história antes de chamar o Hub: voltar não manda o código de novo', async () => {
   const held = Promise.withResolvers<void>()
   let seen = 'ainda não chamou'

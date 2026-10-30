@@ -28,17 +28,29 @@ type Arrival =
       kind: 'KNOWN'
       companyId: CompanyId
       signInId: ConnectionSignInId
-      body: { code: string } | { refused: true }
+      body: { code: string } | { refused: true } | { error: string; description?: string }
     }
 
 /** `state` is the company and the authorization, `<companyId>.<signInId>`; anything else is not one of ours. */
-function arrivalOf(search: { code?: string; state?: string; error?: string }): Arrival {
+function arrivalOf(search: {
+  code?: string
+  state?: string
+  error?: string
+  error_description?: string
+}): Arrival {
   const [company, signIn, ...rest] = (search.state ?? '').split('.')
   const companyId = CompanyId.safeParse(company)
   const signInId = ConnectionSignInId.safeParse(signIn)
   if (!companyId.success || !signInId.success || rest.length > 0) return { kind: 'UNKNOWN' }
   const base = { kind: 'KNOWN', companyId: companyId.data, signInId: signInId.data } as const
-  if (search.error !== undefined) return { ...base, body: { refused: true } }
+  if (search.error === 'access_denied') return { ...base, body: { refused: true } }
+  if (search.error !== undefined) {
+    const { error_description: description } = search
+    return {
+      ...base,
+      body: { error: search.error, ...(description === undefined ? {} : { description }) },
+    }
+  }
   if (search.code !== undefined) return { ...base, body: { code: search.code } }
   return { kind: 'UNKNOWN' }
 }

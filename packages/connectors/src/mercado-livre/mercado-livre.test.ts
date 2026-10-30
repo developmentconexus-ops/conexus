@@ -7,6 +7,7 @@ import { inProbeOrder } from '../kernel/definition.ts'
 import { authorizeUrl, codeRequest, refreshRequest } from '../kernel/oauth.ts'
 import { AccountRef, requestOf } from '../kernel/operation.ts'
 import { toRequest } from '../kernel/request.ts'
+import { Rows } from '../kernel/rows.ts'
 import { mercadoLivre } from './definition.ts'
 import { mercadoLivreFake } from './fake.ts'
 import { docsOf } from './operations/shared.ts'
@@ -141,4 +142,25 @@ test('nenhuma leitura, resumo, habilidade ou pedido nomeia um cursor de varredur
     const request = requestOf(operation, input, { ref: AccountRef.parse('123456789') })
     assert.doesNotMatch(JSON.stringify(request), cursor, `${operation.id} request`)
   }
+})
+
+test('um pedido que o Mercado Livre devolve parcial (206) é lido e diz que veio parcial', async () => {
+  const fake = mercadoLivreFake()
+  const granted = await authorize(fake)
+  assert.equal(granted.kind, 'OK')
+  if (granted.kind !== 'OK') return
+  const pedido = mercadoLivre.operations.find((operation) => operation.id === 'pedido')
+  assert.ok(pedido)
+  const path = '/orders/2000000000001'
+  const whole = pedido.answer(await getWith(fake, path, granted.accessToken))
+  assert.ok(whole.kind === 'OK')
+  assert.equal(Rows.parse(whole.value).parcial, undefined)
+  fake.switches.partialOrders = true
+  const partial = await getWith(fake, path, granted.accessToken)
+  assert.equal(partial.status, 206)
+  const answered = pedido.answer(partial)
+  assert.ok(answered.kind === 'OK')
+  const rows = Rows.parse(answered.value)
+  assert.equal(rows.parcial, true)
+  assert.equal(rows.linhas.length, 1)
 })

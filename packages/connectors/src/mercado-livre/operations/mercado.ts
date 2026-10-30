@@ -18,7 +18,7 @@ export const tendencias = readOf({
 export const maisVendidos = readOf({
   id: 'maisVendidos',
   subject: 'mercado',
-  docs: 'mais-vendidos',
+  docs: 'mais-vendidos-no-mercado-livre',
   summary:
     'Lista os mais vendidos de uma categoria do Mercado Livre Brasil, na ordem, com o id e o tipo de cada um.',
   label: 'Mais vendidos',
@@ -32,7 +32,7 @@ export const maisVendidos = readOf({
 export const tarifaDeVenda = readOf({
   id: 'tarifaDeVenda',
   subject: 'mercado',
-  docs: 'custos-por-vender',
+  docs: 'comissao-por-vender',
   summary:
     'Calcula a tarifa de venda de um preço numa categoria e tipo de anúncio: o valor e a parte percentual e fixa.',
   label: 'Tarifa de venda',

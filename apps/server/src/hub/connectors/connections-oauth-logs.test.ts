@@ -6,7 +6,7 @@ import { z } from 'zod'
 import { serveEnvironment, TEST_ORIGIN } from '../../platform/test-database.ts'
 import { spawnHub } from '../../platform/test-hub-process.ts'
 import { ANA_OWNER, hubWithMail, personOn, plantCompany } from '../identity/test-hub.ts'
-import { appsFileOf, spawnedSession, standIn } from './test-connections.ts'
+import { appsFileOf, consentAt, spawnedSession, standIn } from './test-connections.ts'
 
 const Issued = z.looseObject({ access_token: z.string(), refresh_token: z.string() })
 const LEVELS = [
@@ -21,6 +21,21 @@ const LEVELS = [
 function keysIn(body: string) {
   const issued = Issued.safeParse(JSON.parse(body))
   return issued.success ? [issued.data.access_token, issued.data.refresh_token] : []
+}
+
+/** The provider's error on the redirect, instead of a code, is answered like a refused exchange. */
+async function redirectRefused(session: Awaited<ReturnType<typeof spawnedSession>>) {
+  const started = await session.send('POST', '/connection-sign-ins', {
+    connector: 'mercado-livre',
+    name: 'Loja 3',
+  })
+  const { signInId } = await consentAt(started.body.url)
+  const sent = { error: 'temporarily_unavailable', description: 'tente depois' }
+  const redirected = await session.send('POST', `/connection-sign-ins/${signInId}`, sent)
+  assert.deepEqual(
+    [redirected.body.result, redirected.body.native.code, redirected.body.native.message],
+    ['REFUSED', 'temporarily_unavailable', 'tente depois'],
+  )
 }
 
 test('nenhuma resposta, log ou erro leva uma chave; o selo copiado não abre', async (t) => {
@@ -52,6 +67,8 @@ test('nenhuma resposta, log ou erro leva uma chave; o selo copiado não abre', a
     codes.push(refused.code)
     assert.equal(refused.body.result, 'REFUSED')
 
+    await redirectRefused(session)
+
     fake.switches.account = { ref: '987654321', label: 'OUTRALOJA' }
     const second = await session.link({ connector: 'mercado-livre', name: 'Loja 2' })
     codes.push(second.code)
@@ -78,6 +95,10 @@ test('nenhuma resposta, log ou erro leva uma chave; o selo copiado não abre', a
       spawned.lines.some((line) => line.msg === msg && line.level === level),
       `${msg} at level ${level}`,
     )
+  const redirectLine = spawned.lines.find(
+    (line) => line.msg === 'CONNECTION_SIGN_IN_REFUSED' && line.code === 'temporarily_unavailable',
+  )
+  assert.equal(redirectLine?.status, 302)
   const keys = seen.flatMap(keysIn)
   assert.ok(keys.length >= 6, 'three exchanges and a refresh were seen')
   const printed = JSON.stringify([spawned.lines, session.bodies])
