@@ -57,6 +57,7 @@ ALTER TABLE builder.model_account_sign_in OWNER TO test_owner;
 ALTER TABLE builder.observational_memory_models OWNER TO test_owner;
 ALTER TABLE builder.person_model_default OWNER TO test_owner;
 ALTER TABLE connectors.connection OWNER TO test_owner;
+ALTER TABLE connectors.connection_sign_in OWNER TO test_owner;
 ALTER TABLE drizzle.__drizzle_migrations OWNER TO test_owner;
 ALTER SEQUENCE drizzle.__drizzle_migrations_id_seq OWNER TO test_owner;
 ALTER TABLE hub.starts OWNER TO test_owner;
@@ -255,12 +256,19 @@ GRANT UPDATE(sealed) ON TABLE connectors.connection TO hub_company;
 GRANT SELECT(sealed) ON TABLE connectors.connection TO hub_connection_seals;
 GRANT SELECT(key_id),UPDATE(key_id) ON TABLE connectors.connection TO hub_company;
 GRANT SELECT(key_id) ON TABLE connectors.connection TO hub_connection_seals;
-GRANT SELECT(linked_by) ON TABLE connectors.connection TO hub_company;
-GRANT SELECT(linked_at) ON TABLE connectors.connection TO hub_company;
+GRANT SELECT(linked_by),UPDATE(linked_by) ON TABLE connectors.connection TO hub_company;
+GRANT SELECT(linked_at),UPDATE(linked_at) ON TABLE connectors.connection TO hub_company;
 GRANT SELECT(tested_at),UPDATE(tested_at) ON TABLE connectors.connection TO hub_company;
 GRANT SELECT(tested_by),UPDATE(tested_by) ON TABLE connectors.connection TO hub_company;
 GRANT SELECT(last_test),UPDATE(last_test) ON TABLE connectors.connection TO hub_company;
 GRANT SELECT(attempt_key) ON TABLE connectors.connection TO hub_company;
+-- Step 19.1 (D11, founder 2026-10-29, "Aprovado 19.1"): a company's routes start, read and spend an
+-- OAuth authorization, and read and renew a connection's account and refresh lease.
+GRANT SELECT(revision),UPDATE(revision) ON TABLE connectors.connection TO hub_company;
+GRANT SELECT(refresh_until),UPDATE(refresh_until) ON TABLE connectors.connection TO hub_company;
+GRANT SELECT(account_ref),UPDATE(account_ref) ON TABLE connectors.connection TO hub_company;
+GRANT SELECT(account_label),UPDATE(account_label) ON TABLE connectors.connection TO hub_company;
+GRANT SELECT,INSERT,DELETE ON TABLE connectors.connection_sign_in TO hub_company;
 GRANT SELECT ON TABLE drizzle.__drizzle_migrations TO hub_runtime;
 GRANT SELECT,INSERT ON TABLE hub.starts TO hub_runtime;
 -- Step 4.2, founder 2026-10-16 ("Aprovo", option A): the Hub never deletes a client.
