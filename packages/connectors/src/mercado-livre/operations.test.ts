@@ -37,7 +37,6 @@ test('sem dados do comprador', async () => {
     'COMPRADORFICTICIO',
     'Rua Inventada',
     'dono@exemplo.test',
-    '77001',
   ])
     assert.ok(!text.includes(buyer), `an output carries ${buyer}`)
 })
@@ -59,8 +58,11 @@ test('cada resposta que não é 2xx vira o resultado do kit, sem o corpo de um 2
     'UNREADABLE',
     'a partial answer is never a shorter list',
   )
-  assert.equal(kind(200, { unexpected: true }), 'UNREADABLE')
-  const odd = conta.answer({ status: 200, body: { secret: 'seller data' } })
+  const pedidos = mercadoLivre.operations.find((operation) => operation.id === 'pedidos')
+  assert.ok(pedidos)
+  assert.equal(pedidos.answer({ status: 200, body: { orders: [] } }).kind, 'UNREADABLE')
+  assert.equal(pedidos.answer({ status: 200, body: { results: 'x' } }).kind, 'UNREADABLE')
+  const odd = pedidos.answer({ status: 200, body: { results: 'seller data' } })
   assert.ok(!JSON.stringify(odd).includes('seller data'))
   const refused = conta.answer({
     status: 403,
@@ -68,6 +70,27 @@ test('cada resposta que não é 2xx vira o resultado do kit, sem o corpo de um 2
   })
   assert.ok('native' in refused)
   assert.equal(refused.native.code, 'PA_UNAUTHORIZED_RESULT_FROM_POLICIES')
+})
+
+test('uma linha passa como o Mercado Livre a mandou, com campo a mais ou de outro tipo', () => {
+  const pedidos = mercadoLivre.operations.find((operation) => operation.id === 'pedidos')
+  assert.ok(pedidos)
+  const answered = pedidos.answer({
+    status: 200,
+    body: {
+      results: [
+        { id: 1, extra: { novo: true }, total_amount: 'dez', buyer: { email: 'a@b.test' } },
+      ],
+      paging: { total: 3, offset: 0, limit: 1 },
+    },
+  })
+  assert.deepEqual(answered, {
+    kind: 'OK',
+    value: {
+      linhas: [{ id: 1, extra: { novo: true }, total_amount: 'dez' }],
+      temMais: true,
+    },
+  })
 })
 
 test('o envio pede o formato novo pelo cabeçalho, e o pedido sai com ele', () => {

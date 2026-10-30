@@ -1,15 +1,8 @@
 import { z } from 'zod'
 import { get } from '../../kernel/operation.ts'
-import { Instant, maybe, readOf, sellerOf } from './shared.ts'
+import { Instant, readOf, sellerOf } from './shared.ts'
 
 const DAYS = 150
-
-const Visitas = z.object({
-  date_from: maybe(z.string()),
-  date_to: maybe(z.string()),
-  total_visits: z.number().int(),
-  visits_detail: z.array(z.object({ company: z.string(), quantity: z.number().int() })).default([]),
-})
 
 export const visitas = readOf({
   id: 'visitas',
@@ -21,7 +14,7 @@ export const visitas = readOf({
     const days = (Date.parse(dateTo) - Date.parse(dateFrom)) / 86_400_000
     return days >= 0 && days <= DAYS
   }, `A janela vai de 0 a ${DAYS} dias`),
-  output: Visitas,
+  list: null,
   probe: () => {
     const to = new Date()
     const from = new Date(to.getTime() - 30 * 86_400_000)

@@ -2,7 +2,15 @@ import type { KeptCheck, Native, TestCheck } from '@conexus/hub-api'
 import { ChevronDownIcon } from 'lucide-react'
 import { Badge } from '../../ui/badge.tsx'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../../ui/collapsible.tsx'
-import { hintText, nativeText, othersText, outcomeText, reads, verdictOf } from './text.ts'
+import {
+  hintText,
+  nativeText,
+  othersText,
+  outcomeText,
+  reads,
+  reasonText,
+  verdictOf,
+} from './text.ts'
 
 export type Check = TestCheck | KeptCheck
 
@@ -26,18 +34,21 @@ export function countOf(checks: readonly Check[] | null) {
 
 /**
  * What the provider said, as text: its status and code on one line, its message when it sent one,
- * and in a fresh answer its body, shut until asked for. The kept test has the status and code only.
+ * why a 2xx did not read, and in a fresh answer its body, shut until asked for. The kept test has
+ * the status and code only.
  */
 export function Said(props: { native: Pick<Native, 'status' | 'code'> | Native; name: string }) {
   const { native } = props
   const full = 'body' in native
   const message = full ? native.message : null
   const body = full && native.body !== undefined && native.body !== null ? native.body : undefined
+  const reason = full ? native.reason : undefined
   return (
     <div className="flex flex-col gap-xs">
       <p className="break-words text-text-2">
         {nativeText({ status: native.status, code: native.code, message }, props.name)}
       </p>
+      {reason !== undefined && <p className="break-words text-text-2">{reasonText(reason)}</p>}
       {body !== undefined && (
         <Collapsible>
           <CollapsibleTrigger className="text-text-2 underline underline-offset-2">

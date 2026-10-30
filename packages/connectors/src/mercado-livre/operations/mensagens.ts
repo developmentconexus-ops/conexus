@@ -1,22 +1,7 @@
 import { z } from 'zod'
 import { get } from '../../kernel/operation.ts'
-import {
-  fromEarlier,
-  Id,
-  Limit,
-  maybe,
-  Offset,
-  Paging,
-  PathId,
-  readOf,
-  sellerOf,
-} from './shared.ts'
+import { firstId, Limit, Offset, PathId, readOf, sellerOf } from './shared.ts'
 import { pacote } from './vendas.ts'
-
-const NaoLidas = z.object({
-  paging: maybe(Paging),
-  results: z.array(z.object({ resource: z.string(), count: z.number().int() })),
-})
 
 export const mensagensNaoLidas = readOf({
   id: 'mensagensNaoLidas',
@@ -25,22 +10,9 @@ export const mensagensNaoLidas = readOf({
   summary: 'Conta as mensagens de pós-venda ainda não lidas do vendedor, por pedido ou pacote.',
   label: 'Mensagens não lidas',
   input: z.object({}),
-  output: NaoLidas,
+  list: 'results',
   probe: () => ({}),
   request: () => get('/messages/unread', { role: 'seller', tag: 'post_sale' }),
-})
-
-const Mensagens = z.object({
-  paging: maybe(Paging),
-  conversation_status: maybe(z.object({ status: maybe(z.string()), substatus: maybe(z.string()) })),
-  messages: z.array(
-    z.object({
-      id: Id,
-      text: maybe(z.object({ plain: maybe(z.string()) })),
-      status: maybe(z.string()),
-      message_date: maybe(z.object({ created: maybe(z.string()), read: maybe(z.string()) })),
-    }),
-  ),
 })
 
 export const mensagensDoPacote = readOf({
@@ -51,9 +23,13 @@ export const mensagensDoPacote = readOf({
     'Lê as mensagens de pós-venda de um pacote. A leitura nunca marca como lida: manda sempre mark_as_read=false.',
   label: 'Mensagens do pacote',
   input: z.object({ packId: PathId, offset: Offset.optional(), limit: Limit(100).optional() }),
-  output: Mensagens,
+  list: 'messages',
+  omit: ['from.email', 'from.name', 'to.email', 'to.name'],
   from: [pacote.id],
-  probe: (earlier) => fromEarlier(earlier, pacote, (found) => ({ packId: found.id })),
+  probe: (earlier) => {
+    const packId = firstId(earlier, pacote.id, 'id')
+    return packId === undefined ? null : { packId }
+  },
   request: (input, account) =>
     get(`/messages/packs/${input.packId}/sellers/${sellerOf(account)}`, {
       tag: 'post_sale',

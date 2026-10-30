@@ -35,7 +35,7 @@ function reached(response: { json(): unknown }) {
 
 test('testar: o prazo do teste inteiro', async (t) => {
   const { test } = await slowTest(t)
-  // Each answer fits its own deadline (200 ms) but all 25 do not fit the whole test's (1 s).
+  // Each answer fits its own deadline (200 ms) but all 24 do not fit the whole test's (1 s).
   const { response, body, elapsed } = await test()
   assert.equal(response.statusCode, 200)
   assert.equal(body.result, 'WORKING')

@@ -1,28 +1,6 @@
 import { z } from 'zod'
 import { get } from '../../kernel/operation.ts'
-import { Id, Limit, maybe, Offset, readOf, sellerOf } from './shared.ts'
-
-/** A question on a listing. The asker is left out: the route's `from` is the buyer, and the single question route adds their name and contact. */
-const Pergunta = z.object({
-  id: Id,
-  text: z.string(),
-  status: maybe(z.string()),
-  date_created: maybe(z.string()),
-  item_id: maybe(Id),
-  answer: maybe(
-    z.object({
-      text: maybe(z.string()),
-      status: maybe(z.string()),
-      date_created: maybe(z.string()),
-    }),
-  ),
-})
-
-const Perguntas = z.object({
-  total: z.number().int(),
-  limit: maybe(z.number().int()),
-  questions: z.array(Pergunta),
-})
+import { Limit, Offset, readOf, sellerOf } from './shared.ts'
 
 export const perguntas = readOf({
   id: 'perguntas',
@@ -38,7 +16,8 @@ export const perguntas = readOf({
     offset: Offset,
     limit: Limit(50),
   }),
-  output: Perguntas,
+  list: 'questions',
+  omit: ['from'], // the asker: the question route adds their name and contact
   probe: () => ({ offset: 0, limit: 5 }),
   request: (input, account) =>
     get('/questions/search', {
@@ -50,11 +29,6 @@ export const perguntas = readOf({
     }),
 })
 
-const TempoDeResposta = z.object({
-  user_id: maybe(Id),
-  total: maybe(z.object({ response_time: maybe(z.number()), sales: maybe(z.number()) })),
-})
-
 export const tempoDeResposta = readOf({
   id: 'tempoDeResposta',
   subject: 'perguntas',
@@ -62,7 +36,7 @@ export const tempoDeResposta = readOf({
   summary: 'Mostra o tempo médio, em minutos, que o vendedor leva para responder as perguntas.',
   label: 'Tempo de resposta',
   input: z.object({}),
-  output: TempoDeResposta,
+  list: null,
   probe: () => ({}),
   request: (_input, account) => get(`/users/${sellerOf(account)}/questions/response_time`),
 })

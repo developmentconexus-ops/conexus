@@ -37,26 +37,7 @@ const PAGES = [
 
 const Json = z.record(z.string(), z.unknown())
 const Parameter = z.object({ name: z.string(), in: z.string() })
-const Method = z.object({
-  parameters: z.array(Parameter).default([]),
-  responses: z.object({
-    '200': z.object({
-      content: z.object({
-        'application/json': z.object({ schema: z.record(z.string(), z.unknown()) }),
-      }),
-    }),
-  }),
-})
-const NotFoundPage = z.object({
-  paths: z.record(
-    z.string(),
-    z.object({
-      get: z.object({
-        responses: z.object({ '404': z.object({ description: z.string() }).optional() }),
-      }),
-    }),
-  ),
-})
+const Method = z.object({ parameters: z.array(Parameter).default([]) })
 const Page = z.object({
   paths: z.record(z.string(), z.object({ get: Method })),
 })
@@ -105,8 +86,6 @@ function resolveEach(properties: unknown, root: unknown, seen: readonly string[]
 const Route = z.object({
   page: z.string(),
   query: z.array(z.string()),
-  notFound: z.string().nullable(), // the 404's description up to its first full stop, null when the page has none
-  answer: z.record(z.string(), z.unknown()),
 })
 export const Spec = z.object({
   source: z.string(),
@@ -122,13 +101,10 @@ export async function downloadSpec(): Promise<Spec> {
   for (const page of PAGES) {
     const document = Json.parse(openApiOf(await fetchText(`${SITE}/${page}.md`)))
     const parsed = Page.parse({ paths: resolve(document.paths, document) })
-    const notFound = NotFoundPage.parse({ paths: document.paths }).paths
     for (const [path, item] of Object.entries(parsed.paths)) {
       routes[`GET ${path}`] = {
         page,
-        notFound: notFound[path]?.get.responses['404']?.description.split('.')[0]?.trim() ?? null,
         query: item.get.parameters.filter((p) => p.in === 'query').map((p) => p.name),
-        answer: item.get.responses['200'].content['application/json'].schema,
       }
     }
     await sleep(SECONDS_BETWEEN_PAGES * 1000)

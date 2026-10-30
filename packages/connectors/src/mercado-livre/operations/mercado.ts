@@ -1,9 +1,7 @@
 import { z } from 'zod'
 import { get } from '../../kernel/operation.ts'
 import { anunciosDetalhe } from './anuncios.ts'
-import { fromEarlier, maybe, PathId, readOf } from './shared.ts'
-
-const Tendencias = z.array(z.object({ keyword: z.string(), url: maybe(z.string()) }))
+import { firstId, firstRowWith, PathId, readOf, valueAt } from './shared.ts'
 
 export const tendencias = readOf({
   id: 'tendencias',
@@ -12,15 +10,9 @@ export const tendencias = readOf({
   summary: 'Lista as buscas em alta no Mercado Livre Brasil, com a palavra e o endereço da busca.',
   label: 'Tendências',
   input: z.object({}),
-  output: Tendencias,
+  list: null,
   probe: () => ({}),
   request: () => get('/trends/MLB'),
-})
-
-const MaisVendidos = z.object({
-  content: z.array(
-    z.object({ id: z.string(), position: maybe(z.number().int()), type: maybe(z.string()) }),
-  ),
 })
 
 export const maisVendidos = readOf({
@@ -31,28 +23,13 @@ export const maisVendidos = readOf({
     'Lista os mais vendidos de uma categoria do Mercado Livre Brasil, na ordem, com o id e o tipo de cada um.',
   label: 'Mais vendidos',
   input: z.object({ categoryId: PathId }),
-  output: MaisVendidos,
+  list: 'content',
   from: [anunciosDetalhe.id],
-  probe: (earlier) =>
-    fromEarlier(earlier, anunciosDetalhe, (items) => {
-      const found = items.find((item) => item.body?.category_id)?.body?.category_id
-      return found ? { categoryId: found } : null
-    }),
+  probe: (earlier) => {
+    const categoryId = firstId(earlier, anunciosDetalhe.id, 'body.category_id')
+    return categoryId === undefined ? null : { categoryId }
+  },
   request: (input) => get(`/highlights/MLB/category/${input.categoryId}`),
-})
-
-const Tarifa = z.object({
-  listing_type_id: maybe(z.string()),
-  listing_type_name: maybe(z.string()),
-  currency_id: maybe(z.string()),
-  sale_fee_amount: z.number(),
-  sale_fee_details: maybe(
-    z.object({
-      percentage_fee: maybe(z.number()),
-      fixed_fee: maybe(z.number()),
-      gross_amount: maybe(z.number()),
-    }),
-  ),
 })
 
 export const tarifaDeVenda = readOf({
@@ -67,21 +44,23 @@ export const tarifaDeVenda = readOf({
     categoryId: PathId,
     listingTypeId: PathId,
   }),
-  output: Tarifa,
+  list: null,
   from: [anunciosDetalhe.id],
-  probe: (earlier) =>
-    fromEarlier(earlier, anunciosDetalhe, (items) => {
-      const found = items.find(
-        (item) => item.body?.price && item.body.category_id && item.body.listing_type_id,
-      )?.body
-      return found?.price && found.category_id && found.listing_type_id
-        ? {
-            price: found.price,
-            categoryId: found.category_id,
-            listingTypeId: found.listing_type_id,
-          }
-        : null
-    }),
+  probe: (earlier) => {
+    const row = firstRowWith(earlier, anunciosDetalhe.id, [
+      'body.price',
+      'body.category_id',
+      'body.listing_type_id',
+    ])
+    const price = row && valueAt(row, 'body.price')
+    const categoryId = row && valueAt(row, 'body.category_id')
+    const listingTypeId = row && valueAt(row, 'body.listing_type_id')
+    return typeof price === 'number' &&
+      typeof categoryId === 'string' &&
+      typeof listingTypeId === 'string'
+      ? { price, categoryId, listingTypeId }
+      : null
+  },
   request: (input) =>
     get('/sites/MLB/listing_prices', {
       price: input.price,
