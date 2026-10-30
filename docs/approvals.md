@@ -355,3 +355,9 @@ Essa emenda vem da revisão da U1, decidida pelo firstmate, sem decisão nova do
 Pergunta do firstmate durante a 19.1, 2026-10-30: "Ao desligar uma ligação, avisar o Mercado Livre e revogar a autorização?"; resposta do fundador, 2026-10-30: "Sim"
 
 Isso muda o Desligar da `Y1` do cartão: o conector OAuth pode declarar a chamada que tira a autorização, o Mercado Livre a declara, e o Desligar a manda com a chave viva antes de apagar; se o fornecedor recusa, está fora ou não há chave viva, a ligação sai do mesmo jeito, o log nomeia o caso e a janela avisa a pessoa. É uma decisão dele no meio da etapa, que entra no livro sem nova aprovação do cartão (L6); o cartão fica como estava. Pull request: https://github.com/developmentconexus-ops/conexus/pull/483
+
+## Etapa 20
+
+Cartão da etapa 20 aprovado em 2026-10-30 (commit fa6f160301872fc196efdaae078b1911641d1f00): "1 aprovo / 2 A1"
+
+Ele aprovou a página do cartão e escolheu a `A1`: a aba "Projeto" do alto sai, **Sobre** reúne Sobre e Versões, e o Construir fica com Prévia, Código e Alterações. As decisões `S1`, `R2` e `T-A` com o ajuste vieram antes, ao estudo, no mesmo dia. O commit citado só escreve a `A1` na página. A aprovação é também a palavra da regra de dados D11 para as permissões do banco da U2: a tabela `connectors.project_connection` e o campo `connection.notes`.
