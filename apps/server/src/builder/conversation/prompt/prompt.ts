@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs'
+import type { GrantedConnection } from '../../connectors/public.ts'
 import type { Repository, Sha } from '../../git/public.ts'
 
 /** The prompt (card of step 14, U7): Conexus OS `e0353c36` `builder.md`, as the card's table adapts it. */
@@ -28,11 +29,13 @@ export type PromptValues = Readonly<{
   instructions: string
   /** `.conexus/memory/MEMORY.md` as read from `main`, or the line that says why it is empty. */
   memory: string
+  /** The Projeto's granted connections as `connectionsContext` says them; empty drops the block. */
+  connections: string
 }>
 
 // One pass over the template, so text a placeholder brings in is never read as another placeholder.
 const PLACEHOLDER =
-  /^- This app is new: it has only the starter screen\.\n| Your knowledge cutoff: \{cutoff\}\.|\{project name\}|\{date\}|\{app folder\}|\{checks\}|\{AGENTS\.md content\}|\{index\}/gm
+  /^- This app is new: it has only the starter screen\.\n| Your knowledge cutoff: \{cutoff\}\.|\{project name\}|\{date\}|\{app folder\}|\{checks\}|\{AGENTS\.md content\}|\{index\}|^\{connections\}\n\n/gm
 
 /** The prompt with the turn's values in place (Conexus OS `e0353c36` `harness/prompt.ts:45-59`). */
 export function fillPrompt(values: PromptValues): string {
@@ -51,6 +54,8 @@ export function fillPrompt(values: PromptValues): string {
         return String(values.checks)
       case '{AGENTS.md content}':
         return values.instructions
+      case '{connections}\n\n':
+        return values.connections === '' ? '' : `${values.connections}\n\n`
       default:
         return values.memory
     }
@@ -149,4 +154,25 @@ export async function projectContext(
     }),
   ])
   return { starter, instructions, memory }
+}
+
+/**
+ * The block of the Projeto's granted connections (card of step 20, U5): each by name, its connector
+ * and skill, how many the Projeto reads of that connector and the concepts of its notebook; never a value.
+ */
+export function connectionsContext(granted: readonly GrantedConnection[]): string {
+  if (granted.length === 0) return ''
+  const lines = granted.map((each) => {
+    const reads =
+      each.perProject === 'one'
+        ? `this Project reads one ${each.connector} connection`
+        : `this Project may read several ${each.connector} connections: always name the connection`
+    const notebook = each.notes.length === 0 ? 'nothing yet' : each.notes.join(', ')
+    return `- \`${each.name}\`: ${each.connector} (skill \`${each.skill.name}\`; ${reads}). Notebook: ${notebook}.`
+  })
+  return [
+    '## Connections',
+    "The owner of this Project released these company systems for you to read. Load a connection's skill before you read it or write code for it.",
+    ...lines,
+  ].join('\n')
 }

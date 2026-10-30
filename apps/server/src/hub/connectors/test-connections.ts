@@ -127,6 +127,14 @@ export async function linkMercadoLivre(
   return completeOf(hub, person, companyId, back.signInId, { code: back.code })
 }
 
+/** The kit's Sankhya double, served on this machine until the test ends. */
+export async function servedSankhya(t: TestContext) {
+  const fake = sankhyaFake()
+  const served = await fake.serve()
+  t.after(() => served.close())
+  return { credential: fake.credential, origin: served.origin }
+}
+
 export function linkSankhya(
   hub: Hub,
   person: Person,

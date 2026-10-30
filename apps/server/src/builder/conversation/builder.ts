@@ -12,6 +12,8 @@ import { Memory } from '@mastra/memory'
 import type { MastraPool } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
+import type { BuilderConnectors, GrantedConnection } from '../connectors/public.ts'
+import { connectorTools } from '../connectors/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import {
   accountErrorProcessors,
@@ -22,7 +24,7 @@ import {
   providerOf,
 } from '../model-accounts/public.ts'
 import type { Runs } from '../runs/public.ts'
-import { APP_SKILLS, builderInstructions } from './instructions.ts'
+import { APP_SKILLS, builderInstructions, skillOf } from './instructions.ts'
 import { BuilderLogger } from './logger.ts'
 import { TOOL_CLOSURE } from './permissions.ts'
 import {
@@ -71,6 +73,28 @@ function toolsOf(modelId: ModelId, check: ToolsInput[string]): ToolsInput {
   const tools: ToolsInput = { web_fetch: webFetchTool, [BUILDER_TOOL.check]: check }
   if (SEARCH_PROVIDERS.has(providerOf(modelId))) tools.web_search = webSearchTool
   return tools
+}
+
+/**
+ * The Projeto's granted connections for a Mastra run, read once for its tools, its skills and its
+ * instructions: Mastra resolves each of them with the run's `RequestContext`, and a resumed run
+ * brings a new one, so a grant taken between two turns is gone in the next.
+ */
+function grantedFor(
+  port: BuilderConnectors,
+  projectOf: ReturnType<typeof projectIn>,
+): (requestContext: RequestContext) => Promise<readonly GrantedConnection[]> {
+  const read = new WeakMap<RequestContext, Promise<readonly GrantedConnection[]>>()
+  return (requestContext) => {
+    let granted = read.get(requestContext)
+    if (granted === undefined) {
+      granted = projectOf(requestContext).then((ids) =>
+        ids === undefined ? [] : port.granted(ids),
+      )
+      read.set(requestContext, granted)
+    }
+    return granted
+  }
 }
 
 /**
@@ -145,12 +169,14 @@ export function createBuilder(deps: {
   queue: QueueDeps
   runs: Runs
   index: ConversationIndex
+  connectors: BuilderConnectors
   log: FailureLog
   projectName: Parameters<typeof builderInstructions>[0]['projectName']
 }) {
   const storage = createMastraStorage(deps.pool)
   const check = checkTool(deps.runs)
   const projectOf = projectIn(deps.index)
+  const granted = grantedFor(deps.connectors, projectOf)
   const modelSettings = { timeout: MODEL_TIMEOUT }
   const memory = builderMemory(storage, deps.queue, modelSettings)
   const agent = createCodingAgent({
@@ -160,10 +186,27 @@ export function createBuilder(deps: {
       runs: deps.runs,
       projectOf,
       projectName: deps.projectName,
+      granted,
     }),
-    skills: APP_SKILLS,
+    skills: async ({ requestContext }) => [
+      ...APP_SKILLS,
+      ...(await granted(requestContext)).map((each) =>
+        skillOf({ directory: each.skill.name, ...each.skill }),
+      ),
+    ],
     model: ({ requestContext }) => sessionModel(requestContext),
-    tools: ({ requestContext }) => toolsOf(sessionModel(requestContext), check),
+    tools: async ({ requestContext }) => {
+      const ids = await projectOf(requestContext)
+      return {
+        ...toolsOf(sessionModel(requestContext), check),
+        ...(ids === undefined
+          ? {}
+          : connectorTools(deps.connectors, await granted(requestContext), {
+              ...ids,
+              runIdOf: (context) => deps.runs.runIdOf(context),
+            })),
+      }
+    },
     inputProcessors: [turnOf(deps), accountPick(deps.queue)],
     workspace: undefined,
     outputProcessors: [new CyberRefusalHandler(), workspaceMetadataLive],

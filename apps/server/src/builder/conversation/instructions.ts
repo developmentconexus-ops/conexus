@@ -6,10 +6,17 @@ import type { RequestContext } from '@mastra/core/request-context'
 import { createSkill, validateSkillContent } from '@mastra/core/skills'
 import { z } from 'zod'
 import { Failure } from '../../platform/failure.ts'
+import type { GrantedConnection } from '../connectors/public.ts'
 import { APP_FOLDER } from '../machine/public.ts'
 import { chosenModel } from '../model-accounts/public.ts'
 import type { Runs } from '../runs/public.ts'
-import { fillPrompt, MODEL_KNOWLEDGE_CUTOFFS, projectContext, turnDate } from './prompt/prompt.ts'
+import {
+  connectionsContext,
+  fillPrompt,
+  MODEL_KNOWLEDGE_CUTOFFS,
+  projectContext,
+  turnDate,
+} from './prompt/prompt.ts'
 
 type ProjectIds = { companyId: CompanyId; projectId: ProjectId }
 
@@ -23,6 +30,8 @@ export function builderInstructions(deps: {
   /** The Projeto of the conversation the run is, read before the run takes it (`turnOf`). */
   projectOf: (requestContext: RequestContext) => Promise<ProjectIds | undefined>
   projectName: (ids: ProjectIds) => Promise<string | undefined>
+  /** The Projeto's granted connections for the turn, read once for the run's tools, skills and these instructions. */
+  granted: (requestContext: RequestContext) => Promise<readonly GrantedConnection[]>
 }) {
   return async ({ requestContext }: { requestContext: RequestContext }): Promise<string> => {
     const ids = await deps.projectOf(requestContext)
@@ -31,9 +40,10 @@ export function builderInstructions(deps: {
         details: { reason: 'PROMPT_WITHOUT_CONVERSATION' },
       })
     }
-    const [projectName, context] = await Promise.all([
+    const [projectName, context, granted] = await Promise.all([
       deps.projectName(ids),
       projectContext(deps.runs.repositoryOf(ids)),
+      deps.granted(requestContext),
     ])
     if (projectName === undefined) {
       throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'PROMPT_PROJECT_GONE' } })
@@ -48,6 +58,7 @@ export function builderInstructions(deps: {
         : null,
       appFolder: APP_FOLDER,
       checks: CHECK_LIMITS.checks,
+      connections: connectionsContext(granted),
     })
   }
 }
@@ -55,7 +66,7 @@ export function builderInstructions(deps: {
 const Metadata = z.object({ name: z.string(), description: z.string() })
 
 /** A skill of `@conexus/app/skills`, checked as Mastra checks a `SKILL.md` it loads (code C27). */
-function skillOf(files: SkillFiles) {
+export function skillOf(files: SkillFiles) {
   const checked = validateSkillContent({ content: files.content, directoryName: files.directory })
   if (!checked.valid) {
     throw new Failure('INTERNAL_UNEXPECTED', {
