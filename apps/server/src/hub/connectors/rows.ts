@@ -11,6 +11,7 @@ import type { IdentityPorts } from '../identity/public.ts'
 import { personNameColumn } from '../identity/public.ts'
 import type { ConnectorApps } from './apps.ts'
 import type { Executor } from './executor.ts'
+import type { Limits } from './limits.ts'
 import { connection } from './tables.ts'
 
 export type Deps = {
@@ -18,6 +19,7 @@ export type Deps = {
   identity: IdentityPorts
   sealKeys: SealKeys
   executor: Executor
+  limits: Limits
   log: FailureLog
   callDeadlineMs: number
   apps: ConnectorApps
@@ -26,7 +28,8 @@ export type Deps = {
   /** The Hub's address as the browser sees it: the provider sends the person back to it. */
   publicOrigin: string
 }
-export type Viewer = { person: Person; companyId: CompanyId }
+/** Who asks: for a call the app or the Builder makes, the person is only the scope (the id). */
+export type Viewer = { person: Pick<Person, 'id'>; companyId: CompanyId }
 export type OfConnection = Viewer & { connectionId: ConnectionId }
 
 // Every column but `sealed`, which the company's role cannot read (U2's grant).

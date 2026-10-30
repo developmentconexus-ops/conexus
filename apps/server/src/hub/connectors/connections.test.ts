@@ -132,7 +132,7 @@ test('testar: chave recusada, fornecedor fora', async (t) => {
   const logins = fake.logins()
   const expired = await testOf(hub, ana, base, linked.id)
   assert.equal(Object(expired.json()).result, 'AUTH_REFUSED')
-  assert.equal(fake.logins() - logins, 2)
+  assert.equal(fake.logins() - logins, 1, 'one fresh token and one retry, never more')
   assert.equal(Object(expired.json()).connection.state, 'NEEDS_REAUTH')
 })
 
@@ -153,16 +153,15 @@ test('testar e desligar juntos; um serviço por token', async (t) => {
     testOf(hub, ana, base, connection.id),
     testOf(hub, ana, base, connection.id),
   ])
-  assert.equal(fake.logins() - logins, 2)
+  assert.equal(fake.logins() - logins, 1, 'two Testar share one token')
   for (const each of both) {
     assert.equal(Object(each.json()).result, 'WORKING')
   }
 
   // The check read is held in flight, so the Desligar commits while the Testar is still on it.
   fake.switches.delayMilliseconds = 1_000
-  const started = fake.logins()
   const testing = testOf(hub, ana, base, connection.id)
-  while (fake.logins() === started) await setTimeout(5)
+  await setTimeout(200)
   const removed = await call(hub, ana, 'DELETE', `${base}/${connection.id}`)
   assert.equal(removed.statusCode, 200)
   const gone = await testing

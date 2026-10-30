@@ -1,0 +1,194 @@
+import type { Connector, Operation } from '@conexus/connectors'
+import { CONNECTORS, connectorOf } from '@conexus/connectors'
+import type { ConnectionId, Grant, OfProject, ProjectConnections } from '@conexus/hub-api'
+import { and, asc, eq, sql } from 'drizzle-orm'
+import type { ReadTx } from '../../platform/database.ts'
+import { violatedConstraint, violatedReference } from '../../platform/database.ts'
+import { Failure } from '../../platform/failure.ts'
+import { personNameColumn } from '../identity/public.ts'
+import { liveProjectOf } from '../projects/public.ts'
+import type { Deps, Viewer } from './rows.ts'
+import { admitted, columns, scopeOf, viewOf } from './rows.ts'
+import { connection, projectConnection } from './tables.ts'
+
+type OfGrant = Viewer & OfProject & { connectionId: ConnectionId }
+
+async function liveProject(tx: ReadTx, ids: OfProject) {
+  if ((await liveProjectOf(tx, ids)) === undefined)
+    throw new Failure('NOT_FOUND', { details: { reason: 'NO_PROJECT' } })
+}
+
+/** The kit's read by its id, from the connector's operations or its read door; a write or an unknown id is none. */
+export function readOf(
+  connector: Connector,
+  id: string,
+): Operation<unknown, unknown, 'read'> | undefined {
+  const found =
+    connector.operations.find((operation) => operation.id === id) ?? connector.readDoor?.[id]
+  return found !== undefined && isRead(found) ? found : undefined
+}
+
+function isRead(
+  operation: Operation<unknown, unknown>,
+): operation is Operation<unknown, unknown, 'read'> {
+  return operation.class === 'read'
+}
+
+const GRANT_COLUMNS = {
+  grantedByName: personNameColumn(projectConnection.grantedBy),
+  grantedAt: projectConnection.grantedAt,
+}
+
+function grantOf(row: { grantedByName: string | null; grantedAt: Date }): Grant {
+  return { by: row.grantedByName, at: row.grantedAt.toISOString() }
+}
+
+/** The company's connections by connector, each with the Projeto's grant: every member reads it. */
+export function list(deps: Deps, input: Viewer & OfProject): Promise<ProjectConnections> {
+  return deps.database.read(scopeOf(input), async (tx) => {
+    await admitted(deps, tx, input, 'readConnections')
+    await liveProject(tx, input)
+    const rows = await tx
+      .select({ ...columns, ...GRANT_COLUMNS })
+      .from(connection)
+      .leftJoin(
+        projectConnection,
+        and(
+          eq(projectConnection.connectionId, connection.id),
+          eq(projectConnection.projectId, input.projectId),
+        ),
+      )
+      .where(eq(connection.companyId, input.companyId))
+      .orderBy(asc(connection.connectorId), asc(connection.linkedAt))
+    return {
+      connectors: CONNECTORS.flatMap((connector) => {
+        const own = rows.filter((row) => row.connector === connector.id)
+        if (own.length === 0) return []
+        const { id, name, logo, category, perProject } = connector
+        return [
+          {
+            connector: { id, name, logo, category },
+            perProject,
+            connections: own.map((row) => {
+              const view = viewOf(row)
+              const grant =
+                row.grantedAt === null
+                  ? null
+                  : grantOf({ grantedByName: row.grantedByName, grantedAt: row.grantedAt })
+              return {
+                id: view.id,
+                name: view.name,
+                state: view.state,
+                account: view.account,
+                grant,
+              }
+            }),
+          },
+        ]
+      }),
+    }
+  })
+}
+
+/**
+ * Lets the Projeto read the connection, whole (founder, T-A: no ceiling). One row per pair: the
+ * second call finds it and answers the same grant. A connector that allows one per Projeto has the
+ * database refuse a second (23505); a connection or Projeto removed meanwhile is a 23503.
+ */
+export function grant(deps: Deps, input: OfGrant): Promise<Grant> {
+  return deps.database.command(scopeOf(input), async (tx) => {
+    await admitted(deps, tx, input, 'manageConnections')
+    await liveProject(tx, input)
+    const [found] = await tx
+      .select({ connector: connection.connectorId })
+      .from(connection)
+      .where(and(eq(connection.id, input.connectionId), eq(connection.companyId, input.companyId)))
+    if (found === undefined) throw new Failure('CONNECTION_NOT_FOUND')
+    const connector = connectorOf(found.connector)
+    if (connector === undefined) throw new Failure('CONNECTOR_UNKNOWN')
+    try {
+      const [made] = await tx
+        .insert(projectConnection)
+        .values({
+          projectId: input.projectId,
+          companyId: input.companyId,
+          connectorId: connector.id,
+          connectionId: input.connectionId,
+          exclusive: connector.perProject === 'one',
+          grantedBy: input.person.id,
+          grantedAt: sql`statement_timestamp()`,
+        })
+        .onConflictDoNothing({
+          target: [projectConnection.projectId, projectConnection.connectionId],
+        })
+        .returning({ ...GRANT_COLUMNS })
+      if (made !== undefined) return grantOf(made)
+    } catch (error) {
+      if (violatedConstraint(error) === 'project_connection_one_key')
+        throw new Failure('PROJECT_CONNECTION_TAKEN', { cause: error })
+      const reference = violatedReference(error)
+      if (reference === 'project_connection_connection_fkey')
+        throw new Failure('CONNECTION_NOT_FOUND', { cause: error })
+      if (reference === 'project_connection_project_fkey')
+        throw new Failure('NOT_FOUND', { cause: error })
+      throw error
+    }
+    const [existing] = await tx
+      .select(GRANT_COLUMNS)
+      .from(projectConnection)
+      .where(
+        and(
+          eq(projectConnection.projectId, input.projectId),
+          eq(projectConnection.connectionId, input.connectionId),
+        ),
+      )
+    if (existing === undefined) throw new Failure('CONNECTION_NOT_FOUND')
+    return grantOf(existing)
+  })
+}
+
+/** Takes the grant; taking one already gone answers the same. A call already admitted finishes, the next is NOT_GRANTED. */
+export async function revoke(deps: Deps, input: OfGrant): Promise<boolean> {
+  const taken = await deps.database.command(scopeOf(input), async (tx) => {
+    await admitted(deps, tx, input, 'manageConnections')
+    return tx
+      .delete(projectConnection)
+      .where(
+        and(
+          eq(projectConnection.companyId, input.companyId),
+          eq(projectConnection.projectId, input.projectId),
+          eq(projectConnection.connectionId, input.connectionId),
+        ),
+      )
+      .returning({ id: projectConnection.connectionId })
+  })
+  return taken.length > 0
+}
+
+/**
+ * What the declared connectors and operations lack at the Projeto, for Publicar: a connector with
+ * no granted connection, or an operation that is not a read of the kit's. Read in the publish's own
+ * transaction, so a refusal writes nothing.
+ */
+export async function ungranted(
+  tx: ReadTx,
+  ids: OfProject,
+  declared: readonly { connector: string; operations: readonly string[] }[],
+): Promise<readonly { connector: string; operation: string | null }[]> {
+  const granted = await tx
+    .select({ connector: projectConnection.connectorId })
+    .from(projectConnection)
+    .where(eq(projectConnection.projectId, ids.projectId))
+  const lacking: { connector: string; operation: string | null }[] = []
+  for (const one of declared) {
+    const connector = connectorOf(one.connector)
+    if (connector === undefined || !granted.some((row) => row.connector === connector.id)) {
+      lacking.push({ connector: one.connector, operation: null })
+      continue
+    }
+    for (const name of one.operations)
+      if (readOf(connector, name) === undefined)
+        lacking.push({ connector: one.connector, operation: name })
+  }
+  return lacking
+}

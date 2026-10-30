@@ -148,6 +148,8 @@ export const AppVersion = z.object({
 export type AppVersion = z.infer<typeof AppVersion>
 
 const OfProject = z.object({ companyId: CompanyId, projectId: ProjectId })
+/** A Projeto of a company, as the Hub's subjects name one. */
+export type OfProject = z.infer<typeof OfProject>
 
 /**
  * One file of a version's folder, as the end of a Builder turn read it from the machine; the Hub
@@ -182,5 +184,11 @@ export const publishAppVersion = defineOperation({
   bodyLimit: 1024,
   input: { params: OfProject, body: z.object({ number: z.int().positive() }) },
   success: { status: 200, body: z.object({ version: AppVersion }) },
-  failures: ['NOT_FOUND', 'APP_VERSION_NOT_FOUND', 'SESSION_REQUIRED', 'DATABASE_UNAVAILABLE'],
+  failures: [
+    'NOT_FOUND',
+    'APP_VERSION_NOT_FOUND',
+    'CONNECTOR_NOT_GRANTED',
+    'SESSION_REQUIRED',
+    'DATABASE_UNAVAILABLE',
+  ],
 })

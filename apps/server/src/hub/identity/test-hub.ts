@@ -82,7 +82,7 @@ async function hubServing(
     return closed
   }
   closing.hub = close
-  const edge = await createEdgeHub(config, { apps })
+  const edge = await createEdgeHub(config, { apps, connectors: subjects.connectors })
   t.after(() => edge.close())
   t.after(() => {
     if (closing.late) throw new Error(`the Hub did not close within ${CLOSE_DEADLINE_MS} ms`)
@@ -105,6 +105,7 @@ async function hubServing(
       killed: ports.killed,
       folder: ports.folder,
     },
+    connectors: subjects.connectors,
     repair: apps.repair,
     readUnserved: subjects.modelAccounts.readUnserved,
     close,

@@ -9,10 +9,15 @@ import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { SealKeys } from '../../platform/seal.ts'
 import type { IdentityPorts } from '../identity/public.ts'
+import type { AppDoorPort } from './app-calls.ts'
+import { createAppCalls } from './app-calls.ts'
 import { isOAuth } from './apps.ts'
+import { createBuilderConnectors } from './builder-port.ts'
 import { createExecutor } from './executor.ts'
+import { ungranted } from './grants.ts'
+import { createLimits } from './limits.ts'
 import { reseal } from './reseal.ts'
-import { registerConnectionRoutes } from './routes.ts'
+import { registerAppCallRoutes, registerConnectionRoutes } from './routes.ts'
 
 /** Tests shorten the deadline. */
 export type ConnectorDeadlines = { callDeadlineMs?: number }
@@ -30,6 +35,8 @@ export function createConnectors(deps: {
   identity: IdentityPorts
   config: Pick<Config, 'sealKeys' | 'connectorOrigins' | 'connectorApps' | 'publicOrigin'>
   log: FailureLog
+  /** The apps' door: who an app's call is, the version its session gets and its manifest. */
+  door: AppDoorPort
   deadlines?: ConnectorDeadlines
 }) {
   const origins = new Map<ConnectorId, string>()
@@ -51,6 +58,7 @@ export function createConnectors(deps: {
     apps.set(connector.id, app)
   }
   const executor = createExecutor({ fetch, origins, log: deps.log })
+  const limits = createLimits({ executor })
   const routeDeps = {
     ...deps,
     sealKeys: deps.config.sealKeys,
@@ -58,11 +66,20 @@ export function createConnectors(deps: {
     apps,
     origins,
     executor,
+    limits,
     log: deps.log,
     callDeadlineMs: deps.deadlines?.callDeadlineMs ?? CALL_DEADLINE_MS,
   }
+  const appCalls = createAppCalls(routeDeps, deps.door)
   return Object.freeze({
     routes: (app: FastifyInstance) => registerConnectionRoutes(app, routeDeps),
+    edgeRoutes: (edge: FastifyInstance) => registerAppCallRoutes(edge, appCalls),
+    /** What Publicar asks: the declared connectors and operations the Projeto may not read. */
+    ungranted,
+    /** What the Builder's tools and instructions read; the Builder wires it in U5. */
+    builder: createBuilderConnectors(routeDeps),
+    /** The Hub's end: every live token logged out before the database closes. */
+    closeAll: limits.closeAll,
   })
 }
 

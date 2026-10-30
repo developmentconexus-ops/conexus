@@ -67,4 +67,12 @@ export const CONNECTOR_FAILURES = {
     action: '',
     actionKind: 'NONE',
   },
+  PROJECT_CONNECTION_TAKEN: {
+    category: 'USER',
+    settles: true,
+    status: 409,
+    phrase: 'Este Projeto já lê outra ligação desse sistema.',
+    action: 'Tire a outra ligação antes de liberar esta.',
+    actionKind: 'NONE',
+  },
 } as const satisfies Record<string, FailureRow>

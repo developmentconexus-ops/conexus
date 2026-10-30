@@ -10,7 +10,7 @@ import { Credential, open, seal } from '../../platform/seal.ts'
 import { Secret } from '../../platform/secret.ts'
 import type { OAuthConnector } from './apps.ts'
 import { appKeysOf, isOAuth } from './apps.ts'
-import type { Login, OpenedConnection } from './executor.ts'
+import type { BearerToken, Login, OpenedConnection } from './executor.ts'
 import type { Deps, Viewer } from './rows.ts'
 import { ofCompany, scopeOf, sealContext, sealedOf } from './rows.ts'
 import { connection } from './tables.ts'
@@ -48,10 +48,10 @@ export function sealTokens(
   return seal(deps.sealKeys, sealContext(row), Credential.parse(JSON.stringify(tokens)))
 }
 
-type AppRefused = Readonly<{ kind: 'APP_REFUSED'; native: Native }>
+export type AppRefused = Readonly<{ kind: 'APP_REFUSED'; native: Native }>
 
 /**
- * The bearer for one call. Pasted fields log in every time; OAuth uses the sealed token while it
+ * The bearer for one call. Pasted fields use the token `limits.ts` owns, one login at a time; OAuth uses the sealed token while it
  * lives, else one refresh leased in the database. `force` refreshes a token the provider refused
  * with 401, whose answer is `refused`: a refresh another caller already found refused ends with it.
  * A login, and a wait for another caller's refresh, each take one call's deadline.
@@ -221,10 +221,17 @@ async function waited(g: Ground, a: Parameters<Access['token']>[1]): Promise<Tur
 /** One Testar's access to its connection (security S34); each step is a short command, no transaction open during a call (D22). */
 export function accessFor(deps: Deps, viewer: Viewer): Access {
   let held: Held | null = null
+  let pasted: BearerToken | null = null
   return {
     async token(opened, a) {
       const { connector } = opened
-      if (!isOAuth(connector)) return deps.executor.login(opened, deps.callDeadlineMs)
+      if (!isOAuth(connector)) {
+        // A forced token is one the provider ended: dropped, so the next one is a new login.
+        if (a.force && pasted !== null) deps.limits.invalidate(opened, pasted)
+        const login = await deps.limits.token(opened, deps.callDeadlineMs)
+        pasted = login.kind === 'TOKEN' ? login.token : null
+        return login
+      }
       const from = held ?? { revision: opened.revision, tokens: tokensOf(opened.credential) }
       held = from
       if (!a.force && from.tokens.expiresAt - EARLY_MS > Date.now()) return bearer(from.tokens)

@@ -1,4 +1,4 @@
-# 0058. Provider limits: the 429 wait now, a short queue in step 20, a Postgres queue with the webhooks
+# 0058. Provider limits: the 429 wait now, one call per connection in step 20, a Postgres queue with the webhooks
 
 ## Context
 
@@ -11,7 +11,7 @@ Conexus has one Mercado Livre app, so every company shares it. Basis: the founde
 - **Now:** a 429 on a data read is its own outcome, `BUSY`, with the wait the provider asked for.
   The executor waits that time once, when it fits the call's deadline, and repeats an idempotent
   read once; otherwise it answers `BUSY`. The person reads "O fornecedor pediu para esperar".
-- **Step 20:** a short in-process fair queue per provider.
+- **Step 20:** one call at a time per connection, in process; a waiter past its deadline gets DEADLINE.
 - **With the webhooks step:** a Postgres queue (pg-boss).
 - **Not now:** a large workflow engine, Redis, or a limiter shared across Hub copies.
 - The in-process limiter holds only while one Hub process runs. It moves to the database before a

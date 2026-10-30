@@ -11,7 +11,13 @@ export function connectorOf(id: string): Connector | undefined {
   return parsed.success ? CONNECTORS.find((connector) => connector.id === parsed.data) : undefined
 }
 
-export { type Auth, type ClientCredentialsAuth, readToken, tokenRequest } from './kernel/auth.ts'
+export {
+  type Auth,
+  type ClientCredentialsAuth,
+  logoutRequest,
+  readToken,
+  tokenRequest,
+} from './kernel/auth.ts'
 export type { CredentialFake, Fake, OAuthFake } from './kernel/conformance.ts'
 export type { Connector, ConnectorId, ReadDoor } from './kernel/definition.ts'
 export {

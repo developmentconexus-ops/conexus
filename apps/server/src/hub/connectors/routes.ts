@@ -1,16 +1,25 @@
 import {
+  callAppConnector,
   completeConnectionSignIn,
+  deleteConnectionNote,
   getConnection,
+  grantProjectConnection,
   linkConnection,
+  listAppConnections,
   listConnections,
+  listProjectConnections,
   reconnectConnection,
+  revokeProjectConnection,
   startConnectionSignIn,
   testConnection,
   unlinkConnection,
 } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
 import { answer, serve } from '../../platform/http.ts'
+import type { AppCalls } from './app-calls.ts'
 import { detail, link, list, reconnect, unlink } from './connections.ts'
+import { grant, list as listGrants, revoke } from './grants.ts'
+import { erase } from './notes.ts'
 import type { Deps } from './rows.ts'
 import { completeSignIn, startSignIn } from './sign-ins.ts'
 import { test } from './testing.ts'
@@ -79,10 +88,47 @@ export function registerConnectionRoutes(app: FastifyInstance, deps: Deps): void
     answer(await completeSignIn(deps, { person, ...params, answer: body, log })),
   )
 
+  registerGrantRoutes(app, deps)
+
   serve(app, unlinkConnection, async ({ person, params, log }) => {
     const { removed, revocation } = await unlink(deps, { person, ...params })
     if (removed)
       log.info({ by: person.id, connectionId: params.connectionId }, 'CONNECTION_REMOVED')
     return answer({ revocation })
   })
+}
+
+/** The grant of a connection to a Projeto, and the connection's notebook (step 20). */
+function registerGrantRoutes(app: FastifyInstance, deps: Deps): void {
+  serve(app, listProjectConnections, async ({ person, params }) =>
+    answer(await listGrants(deps, { person, ...params })),
+  )
+
+  serve(app, grantProjectConnection, async ({ person, params, log }) => {
+    const made = await grant(deps, { person, ...params })
+    log.info({ by: person.id, ...params }, 'PROJECT_CONNECTION_GRANTED')
+    return answer({ grant: made })
+  })
+
+  serve(app, revokeProjectConnection, async ({ person, params, log }) => {
+    if (await revoke(deps, { person, ...params }))
+      log.info({ by: person.id, ...params }, 'PROJECT_CONNECTION_REVOKED')
+    return answer(undefined)
+  })
+
+  serve(app, deleteConnectionNote, async ({ person, params, log }) => {
+    await erase(deps, { person, ...params })
+    log.info({ by: person.id, connectionId: params.connectionId }, 'CONNECTION_NOTE_DELETED')
+    return answer(undefined)
+  })
+}
+
+/** The dispatcher's two connector calls, on the edge listener alone (security S48). */
+export function registerAppCallRoutes(edge: FastifyInstance, calls: AppCalls): void {
+  serve(edge, callAppConnector, async ({ body, headers }) =>
+    answer(await calls.call({ host: body.host, headers, body })),
+  )
+  serve(edge, listAppConnections, async ({ query, headers }) =>
+    answer({ names: await calls.names({ host: query.host, headers, connector: query.connector }) }),
+  )
 }
