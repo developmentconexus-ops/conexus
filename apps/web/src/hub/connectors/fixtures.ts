@@ -12,7 +12,7 @@ export const SANKHYA = ConnectorEntry.parse({
   category: 'ERP',
   summary: 'O sistema de gestão da empresa: pedidos, estoque, financeiro e cadastros.',
   logo: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28"><rect width="28" height="28" rx="6" fill="#66CB66"/></svg>',
-  reads: 25,
+  reads: 24,
   fields: [
     {
       name: 'clientId',
@@ -57,7 +57,7 @@ export function connectionOf(fields: Partial<ConnectionOf> = {}): ConnectionOf {
   })
 }
 
-/** What one Testar reads, by subject and label: the 25 reads of the Sankhya. */
+/** What one Testar reads, by subject and label: the 24 reads of the Sankhya. */
 const SUBJECTS: readonly (readonly [string, readonly string[]])[] = [
   ['Porta de leitura', ['Consulta', 'Leitura genérica']],
   [
@@ -74,14 +74,7 @@ const SUBJECTS: readonly (readonly [string, readonly string[]])[] = [
   ['Produtos', ['Produtos', 'Grupos de produto']],
   [
     'Vendas',
-    [
-      'Pedidos',
-      'Impostos dos pedidos',
-      'Notas fiscais',
-      'Nota fiscal com itens',
-      'Devoluções',
-      'Notas canceladas',
-    ],
+    ['Pedidos', 'Notas fiscais', 'Nota fiscal com itens', 'Devoluções', 'Notas canceladas'],
   ],
   ['Estoque', ['Estoque por produto', 'Locais de estoque']],
   ['Financeiro', ['Contas a receber', 'Contas a pagar', 'Tipos de pagamento']],

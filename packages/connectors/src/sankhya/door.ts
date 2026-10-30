@@ -3,6 +3,7 @@ import { defineReadDoor } from '../kernel/definition.ts'
 import type { ProviderRequest } from '../kernel/operation.ts'
 import { defineOperation } from '../kernel/operation.ts'
 import { gatewayAnswer } from './answers.ts'
+import { listOf } from './operations/shared.ts'
 import { isOneReadStatement, isReadCondition } from './read-only-sql.ts'
 
 const GATEWAY_PATH = '/gateway/v1/mge/service.sbr'
@@ -18,14 +19,6 @@ function gatewayRequest(serviceName: string, requestBody: unknown): ProviderRequ
   }
 }
 
-/** Sankhya sends a list with one element as the element itself. */
-function listOf<T extends z.ZodType>(item: T) {
-  return z
-    .union([z.array(item), item])
-    .optional()
-    .transform((value) => (value === undefined ? [] : Array.isArray(value) ? value : [value]))
-}
-
 const Cell = z.looseObject({ $: z.unknown().optional() })
 
 const LoadedRecords = z
@@ -33,16 +26,16 @@ const LoadedRecords = z
     entities: z.looseObject({
       metadata: z
         .looseObject({
-          fields: z.looseObject({ field: listOf(z.looseObject({ name: z.string() })) }),
+          fields: z.looseObject({ field: listOf(z.looseObject({ name: z.string() })).optional() }),
         })
         .optional(),
-      entity: listOf(z.record(z.string(), Cell)),
+      entity: listOf(z.record(z.string(), Cell)).optional(),
       hasMoreResult: z.union([z.string(), z.boolean()]).optional(),
     }),
   })
   .transform(({ entities }) => {
     const names = (entities.metadata?.fields.field ?? []).map(({ name }) => name)
-    const linhas = entities.entity.map((cells) =>
+    const linhas = (entities.entity ?? []).map((cells) =>
       Object.fromEntries(
         names.map((name, index): [string, string | null] => {
           const value = cells[`f${index}`]?.$

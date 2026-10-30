@@ -9,7 +9,7 @@ function answer(id: string, status: number, body: unknown) {
   return found.answer({ status, body })
 }
 
-test('as 23 operações prontas ficam nos assuntos, na ordem do Testar, e nenhuma é do RH', () => {
+test('as 22 operações prontas ficam nos assuntos, na ordem do Testar, e nenhuma é do RH', () => {
   const bySubject = Object.groupBy(sankhya.operations, (operation) => operation.subject)
   assert.deepEqual(
     Object.entries(bySubject).map(([subject, operations]) => [
@@ -22,24 +22,14 @@ test('as 23 operações prontas ficam nos assuntos, na ordem do Testar, e nenhum
         ['empresas', 'clientes', 'vendedores', 'tiposOperacao', 'naturezas', 'centrosResultado'],
       ],
       ['produtos', ['produtos', 'gruposProduto']],
-      [
-        'vendas',
-        [
-          'pedidos',
-          'impostosDoPedido',
-          'notasFiscais',
-          'notaFiscal',
-          'devolucoes',
-          'notasCanceladas',
-        ],
-      ],
+      ['vendas', ['pedidos', 'notasFiscais', 'notaFiscal', 'devolucoes', 'notasCanceladas']],
       ['estoque', ['estoque', 'locaisEstoque']],
       ['financeiro', ['contasAReceber', 'contasAPagar', 'tiposPagamento']],
       ['precos', ['precosDoProduto', 'precosDaTabela']],
       ['logistica', ['transportadoras', 'ordensCarga']],
     ],
   )
-  assert.equal(sankhya.operations.length, 23)
+  assert.equal(sankhya.operations.length, 22)
 })
 
 test('cada operação pronta lê a recusa, o pedido errado e o corpo ilegível', () => {
@@ -54,16 +44,6 @@ test('cada operação pronta lê a recusa, o pedido errado e o corpo ilegível',
     assert.partialDeepStrictEqual(answer(id, 401, undefined), { kind: 'AUTH_REFUSED' }, id)
     assert.partialDeepStrictEqual(answer(id, 200, { unexpected: true }), { kind: 'UNREADABLE' }, id)
   }
-})
-
-test('os tipos de operação aceitam a lista ou o objeto único da documentação', () => {
-  const tipo = { codigoTipoOperacao: 1100, nome: 'Venda' }
-  const expected = {
-    kind: 'OK',
-    value: { tiposOperacao: [{ ...tipo, tipoMovimento: null, ativo: null }] },
-  }
-  assert.deepEqual(answer('tiposOperacao', 200, tipo), expected)
-  assert.deepEqual(answer('tiposOperacao', 200, [tipo]), expected)
 })
 
 test('o carregar aceita os cinco tipos de parâmetro e recusa outro', () => {

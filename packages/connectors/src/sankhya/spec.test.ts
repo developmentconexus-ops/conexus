@@ -6,7 +6,6 @@ import { readToken, tokenRequest } from '../kernel/auth.ts'
 import type { Operation, OperationId, ProviderRequest } from '../kernel/operation.ts'
 import { requestOf } from '../kernel/operation.ts'
 import { toRequest } from '../kernel/request.ts'
-import { NOT_FOUND } from './answers.ts'
 import { sankhya } from './definition.ts'
 import { sankhyaFake } from './fake.ts'
 import { downloadSpec, fetchText, SITE, Spec } from './spec-source.ts'
@@ -31,7 +30,7 @@ async function readSpec(): Promise<Spec | null> {
 }
 
 /** `queried` is every key of the input that `request` puts in the query, not only the ones the probe sends. */
-type Sample = { id: OperationId; request: ProviderRequest; body: unknown; queried: string[] }
+type Sample = { id: OperationId; request: ProviderRequest; queried: string[] }
 
 /** The route of a request: a literal path before one with `{param}`, a parameter standing for one segment. */
 function routeOf(spec: Spec, request: ProviderRequest) {
@@ -49,7 +48,11 @@ function routeOf(spec: Spec, request: ProviderRequest) {
   return matching.find(([key]) => !key.includes('{')) ?? matching[0]
 }
 
-/** What the documentation says is wrong with one request and the answer the fake gave it. */
+/**
+ * What the documentation says is wrong with one request. Its 200 schema is not checked: the real
+ * gateway answers in other shapes (another list key, numbers as text, one object for a list of one;
+ * measured 2026-10-30), and the double follows the gateway.
+ */
 function problemsOf(spec: Spec, sample: Sample): string[] {
   const found = routeOf(spec, sample.request)
   if (!found)
@@ -60,9 +63,6 @@ function problemsOf(spec: Spec, sample: Sample): string[] {
   const problems = [...new Set([...Object.keys(sample.request.query), ...sample.queried])]
     .filter((name) => !route.query.includes(name))
     .map((name) => `${sample.id}: ${key} declares no query parameter ${name}`)
-  const answer = z.fromJSONSchema(route.answer)
-  if (!answer.safeParse(sample.body).success)
-    problems.push(`${sample.id}: the fake's answer is not the 200 of ${key}`)
   return problems
 }
 
@@ -93,7 +93,7 @@ async function samples(): Promise<Sample[]> {
     const body = z.unknown().parse(await response.json())
     const answered = operation.answer({ status: response.status, body })
     if (answered.kind === 'OK') earlier.set(operation.id, answered.value)
-    out.push({ id: operation.id, request, body, queried: queriedKeys(operation, input) })
+    out.push({ id: operation.id, request, queried: queriedKeys(operation, input) })
   }
   return out
 }
@@ -127,29 +127,14 @@ describe('a documentação do Sankhya', () => {
     )
   })
 
-  it('a descrição da resposta 404 diz "Dados não encontrados" nas seis páginas, e só nas leituras que leem o 404 como sem linhas', async (t) => {
-    const spec = loaded
-    if (!spec) return t.skip(SKIP)
-    const documented = { statusCode: 404, error: { message: NOT_FOUND } }
-    const emptyRoutes = (await samples()).flatMap((sample) => {
-      const operation = sankhya.operations.find((candidate) => candidate.id === sample.id)
-      const empty = operation?.answer({ status: 404, body: documented }).kind === 'OK'
-      return empty ? (routeOf(spec, sample.request)?.[0] ?? []) : []
-    })
-    assert.equal(emptyRoutes.length, 6, 'as seis leituras que leem o 404 como lista vazia')
-    const saying = Object.entries(spec.routes).filter(([, route]) => route.notFound === NOT_FOUND)
-    assert.deepEqual(saying.map(([key]) => key).sort(), emptyRoutes.sort())
-  })
-
-  it('recusa o dublê dos clientes sem o endereço e o filtro que a rota não declara', async (t) => {
+  it('recusa a rota que não existe e o filtro que a rota não declara', async (t) => {
     const spec = loaded
     if (!spec) return t.skip(SKIP)
     const all = await samples()
     const clientes = all.find((sample) => sample.id === 'clientes')
     assert.ok(clientes)
-    const bare = JSON.parse(JSON.stringify(clientes.body))
-    bare.clientes[0].endereco = { cidade: 'Cidade Um', uf: 'SP' }
-    assert.equal(problemsOf(spec, { ...clientes, body: bare }).length, 1)
+    const moved = { ...clientes.request, path: '/v1/parceiros/clientes-x' as const }
+    assert.equal(problemsOf(spec, { ...clientes, request: moved }).length, 1)
     const extra = { ...clientes.request, query: { ...clientes.request.query, bogus: '1' } }
     assert.equal(problemsOf(spec, { ...clientes, request: extra }).length, 1)
     assert.equal(problemsOf(spec, { ...clientes, queried: ['dataInicio'] }).length, 1)

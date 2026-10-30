@@ -26,6 +26,7 @@ export type {
   OperationId,
   ProviderAnswer,
   ProviderRequest,
+  Unread,
 } from './kernel/operation.ts'
 export { locateOf, requestOf } from './kernel/operation.ts'
 export { toRequest } from './kernel/request.ts'

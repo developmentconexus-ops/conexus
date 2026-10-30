@@ -9,6 +9,7 @@ import {
   executeQuery,
   json,
   loadRecords,
+  nothingFound,
   OVERSIZE,
   SERVICE_PATH,
 } from './fake-data.ts'
@@ -23,7 +24,11 @@ type SankhyaSwitches = {
   expireToken: boolean
   /** Answers 200 with a body no schema reads. */
   malformed: boolean
-  /** Answers with a page of empresas the schema reads, above 256 KB. */
+  /** Answers 200 with text that is not JSON. */
+  notJson: boolean
+  /** Every REST read answers the 404 the real gateway sends for a page with no rows, as a company with nothing to list does. */
+  nothingFound: boolean
+  /** Answers with a page of empresas the kit reads, above the executor's 2 MiB cap. */
   oversize: boolean
   /** Answers every call with a 307 to the same call on the fake, answered as without the switch. */
   redirect: boolean
@@ -80,6 +85,11 @@ async function authenticate(
   })
 }
 
+function restAnswer(route: ReturnType<typeof routeOf>, url: URL, switches: SankhyaSwitches) {
+  if (!route) return json({ code: 'NOT_FOUND' }, 404)
+  return switches.nothingFound ? nothingFound(route.entity) : route.answer(url.searchParams)
+}
+
 async function serveCall(request: Request, url: URL, switches: SankhyaSwitches): Promise<Response> {
   const door = url.pathname === SERVICE_PATH
   const service = door ? (url.searchParams.get('serviceName') ?? '') : ''
@@ -90,7 +100,8 @@ async function serveCall(request: Request, url: URL, switches: SankhyaSwitches):
   }
   if (switches.oversize) return json(OVERSIZE)
   if (switches.malformed) return json({ unexpected: true })
-  if (!door) return route?.answer(url.searchParams) ?? json({ code: 'NOT_FOUND' }, 404)
+  if (switches.notJson) return new Response('<html>valor da empresa</html>', { status: 200 })
+  if (!door) return restAnswer(route, url, switches)
   const { requestBody } = DoorBody.parse(await request.json())
   if (service === 'CRUDServiceProvider.loadRecords') return loadRecords(requestBody)
   return service === 'DbExplorerSP.executeQuery'
@@ -128,7 +139,7 @@ function refuseSession(url: URL, token: string, sessions: Sessions): Response | 
 }
 
 /**
- * A Sankhya that answers like the documentation, with invented rows. One token is one session: a
+ * A Sankhya that answers in the shapes the real gateway sent, with invented rows. One token is one session: a
  * second call on a token while the first is unanswered gets the gateway's envelope "4" (409 on REST).
  */
 export function sankhyaFake(): SankhyaFake {
@@ -136,6 +147,8 @@ export function sankhyaFake(): SankhyaFake {
     refuse: new Set(),
     expireToken: false,
     malformed: false,
+    notJson: false,
+    nothingFound: false,
     oversize: false,
     redirect: false,
     silent: false,

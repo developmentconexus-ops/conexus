@@ -91,14 +91,14 @@ test('a dona liga e testa num toque, e desliga: a janela monta os campos do cat�
   expect(sent.map((one) => one.method)).toEqual(['POST', 'POST', 'DELETE'])
 })
 
-test('a página que chega de Ligar e testar mostra "Testando as 25 leituras, uma por vez…" enquanto espera', async () => {
+test('a página que chega de Ligar e testar mostra "Testando as 24 leituras, uma por vez…" enquanto espera', async () => {
   const connection = connectionOf()
   open(viewOf({ connections: [connection] }), {}, `${pageOf(connection)}?testar=true`)
-  expect(await screen.findByText('Testando as 25 leituras, uma por vez…')).toBeTruthy()
+  expect(await screen.findByText('Testando as 24 leituras, uma por vez…')).toBeTruthy()
   expect(screen.getByRole('button', { name: 'Testando…' })).toBeTruthy()
   expect(await screen.findByText('Lê 8 de 8 assuntos inteiros')).toBeTruthy()
   await waitFor(() =>
-    expect(screen.queryByText('Testando as 25 leituras, uma por vez…')).toBeNull(),
+    expect(screen.queryByText('Testando as 24 leituras, uma por vez…')).toBeNull(),
   )
 })
 
