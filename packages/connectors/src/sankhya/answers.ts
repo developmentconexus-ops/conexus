@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import type { Answered, Failure, Native, ProviderAnswer } from '../kernel/operation.ts'
-import { outcomeOf, shapeOf } from '../kernel/operation.ts'
+import { failedBy, shapeOf } from '../kernel/operation.ts'
 import type { Rows } from '../kernel/rows.ts'
 import { listOf } from '../kernel/rows.ts'
 
@@ -57,7 +57,7 @@ function failureOf(answer: ProviderAnswer): Failure | null {
   if (status === 403 && native.code === 'GTW3403') return { kind: 'TOKEN_EXPIRED', native }
   if (status === 403 && (native.code === '4303' || native.code === '4405'))
     return { kind: 'AUTH_REFUSED', native }
-  return { kind: outcomeOf(status), native }
+  return failedBy(answer, native)
 }
 
 /**

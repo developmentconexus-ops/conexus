@@ -88,7 +88,7 @@ function refusalText(answer: Refusal, name: string): string | null {
     case 'READ_REFUSED':
       return readRefusedText(name, answer.read)
     case 'BUSY':
-      return busyText(name)
+      return busyText(name, answer.waitMs)
     case 'UNREACHABLE':
       return answer.native === null ? unreachableText(name) : serverErrorText(name)
     case 'UNREADABLE':

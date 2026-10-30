@@ -12,7 +12,7 @@ type Said<R extends string> = Readonly<{ result: R; native: Native }>
 export type Checked =
   | Readonly<{ result: 'WORKING' }>
   | Said<'AUTH_REFUSED'>
-  | Said<'BUSY'>
+  | Readonly<{ result: 'BUSY'; native: Native; waitMs: number | null }>
   | Said<'UNREADABLE'>
   | Said<'APP_REFUSED'>
   | Readonly<{ result: 'READ_REFUSED'; read: string; native: Native }>
@@ -56,7 +56,7 @@ export async function checked(deps: Deps, opened: OpenedConnection): Promise<Che
         ? { result: 'READ_REFUSED', read: check.label, native: answered.native }
         : { result: 'UNREACHABLE', native: answered.native }
     case 'BUSY':
-      return { result: 'BUSY', native: answered.native }
+      return { result: 'BUSY', native: answered.native, waitMs: answered.waitMs }
     case 'AUTH_REFUSED':
     case 'TOKEN_EXPIRED':
       return { result: 'AUTH_REFUSED', native: answered.native }

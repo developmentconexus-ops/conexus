@@ -101,9 +101,9 @@ test('testar: uma leitura só, a das empresas, e o que ela responde', async (t) 
   assert.deepEqual(refused.connection, body.connection)
 
   fake.switches.refuse.clear()
-  fake.switches.rateLimited = true
+  fake.switches.busyReads = 5
   const busy = Object((await testOf(hub, ana, base, connection.id)).json())
-  assert.deepEqual([busy.result, busy.native.status], ['BUSY', 429])
+  assert.deepEqual([busy.result, busy.native.status, busy.waitMs], ['BUSY', 429, null])
   assert.deepEqual(busy.connection, body.connection)
 })
 

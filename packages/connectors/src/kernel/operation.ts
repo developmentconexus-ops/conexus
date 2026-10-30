@@ -17,8 +17,11 @@ export type ProviderRequest = Readonly<{
 export type TokenRequest = ProviderRequest &
   Readonly<{ form: URLSearchParams; headers: Readonly<Record<string, string>> }>
 
-/** What came back, already parsed as JSON by the executor; the raw text never reaches the kit. */
-export type ProviderAnswer = Readonly<{ status: number; body: unknown }>
+/**
+ * What came back, already parsed as JSON by the executor; the raw text never reaches the kit.
+ * `retryAfterMs` is the wait the provider's `Retry-After` header asked for, when it sent one.
+ */
+export type ProviderAnswer = Readonly<{ status: number; body: unknown; retryAfterMs?: number }>
 
 /**
  * Why a 2xx did not read, never a value from it: the body passed the executor's cap, or its envelope
@@ -42,20 +45,21 @@ export type Native = Readonly<{
 
 /**
  * A call that gave no rows. `TOKEN_EXPIRED`: the executor asks a new token once and repeats; a second time is `AUTH_REFUSED`.
- * `BUSY`: the provider answered 429, asking to wait.
+ * `BUSY`: the provider answered 429 and the executor's one wait did not clear it; `waitMs` is the wait it asked for, null when it named none.
  */
-export type Failure = Readonly<{
-  kind: 'REFUSED' | 'AUTH_REFUSED' | 'TOKEN_EXPIRED' | 'UNREADABLE' | 'BUSY'
-  native: Native
-}>
+export type Failure =
+  | Readonly<{
+      kind: 'REFUSED' | 'AUTH_REFUSED' | 'TOKEN_EXPIRED' | 'UNREADABLE'
+      native: Native
+    }>
+  | Readonly<{ kind: 'BUSY'; native: Native; waitMs: number | null }>
 
 /** An operation's outcome as data: a refusal is never an empty list (architecture §1), and carries what the provider said. `empty` marks an OK read that had nothing to look at. */
 export type Answered<O> = Readonly<{ kind: 'OK'; value: O; empty?: true }> | Failure
 
 /** What a status outside 2xx means when the connector documents no exception: the key is refused, the request is, or the answer is not understood. */
-export function outcomeOf(status: number): 'AUTH_REFUSED' | 'REFUSED' | 'UNREADABLE' | 'BUSY' {
+export function outcomeOf(status: number): 'AUTH_REFUSED' | 'REFUSED' | 'UNREADABLE' {
   if (status === 401) return 'AUTH_REFUSED'
-  if (status === 429) return 'BUSY'
   if (status === 400 || status === 403 || status === 404 || status === 409 || status === 422)
     return 'REFUSED'
   return 'UNREADABLE'
@@ -67,6 +71,12 @@ export function outcomeOf(status: number): 'AUTH_REFUSED' | 'REFUSED' | 'UNREADA
  */
 export function deniesAccess(native: Native): boolean {
   return native.status === 403
+}
+
+/** `outcomeOf` as a Failure: a 429 is the provider asking to wait, with the wait it named, not an answer the kit cannot read. */
+export function failedBy(answer: ProviderAnswer, native: Native): Failure {
+  if (answer.status === 429) return { kind: 'BUSY', native, waitMs: answer.retryAfterMs ?? null }
+  return { kind: outcomeOf(answer.status), native }
 }
 
 /** Where a body usually keeps its code and message, for the logins and the connectors that declare no better place. */

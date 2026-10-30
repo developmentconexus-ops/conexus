@@ -97,10 +97,15 @@ export const TestResult = z.discriminatedUnion('result', [
     native: Native,
     connection: Connection,
   }),
-  // The provider answered 429 to the check read.
-  z.object({ result: z.literal('BUSY'), native: Native, connection: Connection }),
   z.object({ result: z.literal('UNREADABLE'), native: Native, connection: Connection }),
   z.object({ result: z.literal('UNREACHABLE'), native: Native.nullable(), connection: Connection }),
+  // The check read got 429: `waitMs` is the wait the provider asked for, null when it named none.
+  z.object({
+    result: z.literal('BUSY'),
+    native: Native,
+    waitMs: z.number().int().nonnegative().nullable(),
+    connection: Connection,
+  }),
   // The provider refused the installation's app at a refresh: nothing about the connection changed.
   z.object({ result: z.literal('APP_REFUSED'), native: Native, connection: Connection }),
 ])

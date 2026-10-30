@@ -71,10 +71,25 @@ test.each([
     'Sankhya respondeu 403, código SEM_ACESSO: Sem acesso à tela',
   ],
   [
-    'BUSY',
+    'BUSY, sem espera pedida',
     SANKHYA,
-    { result: 'BUSY', native: { status: 429, code: null, message: null, body: null } },
+    {
+      result: 'BUSY',
+      native: { status: 429, code: null, message: null, body: null },
+      waitMs: null,
+    },
     'O Sankhya pediu para esperar. Tente de novo em alguns minutos.',
+    'Sankhya respondeu 429',
+  ],
+  [
+    'BUSY, com a espera que o fornecedor pediu',
+    SANKHYA,
+    {
+      result: 'BUSY',
+      native: { status: 429, code: null, message: null, body: null },
+      waitMs: 3_000,
+    },
+    'O Sankhya pediu para esperar 3 segundos. Tente de novo depois disso.',
     'Sankhya respondeu 429',
   ],
   [

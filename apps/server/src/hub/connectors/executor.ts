@@ -1,3 +1,4 @@
+import { setTimeout as sleep } from 'node:timers/promises'
 import type {
   AccountOf,
   AccountRef,
@@ -11,10 +12,8 @@ import type {
   Native,
   Operation,
   ProviderAnswer,
-  Unread,
 } from '@conexus/connectors'
 import {
-  locateOf,
   readGrant,
   readToken,
   requestOf,
@@ -26,16 +25,12 @@ import type { ConnectionId, ConnectionSignInId } from '@conexus/hub-api'
 import { z } from 'zod'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
+import { retryAfterMs } from '../../platform/retry-after.ts'
 import type { Credential } from '../../platform/seal.ts'
 import { Secret } from '../../platform/secret.ts'
 import type { OAuthConnector } from './apps.ts'
-
-/**
- * A provider's answer is read up to this many bytes and no further. Measured on a real Sankhya
- * (2026-10-30), a page of 50 reached 354 KB (clientes), 500 KB (notas fiscais) and 931 KB
- * (devoluções); the OS's 256 KB came from its SQL gateway and cut REST pages.
- */
-const RESPONSE_CAP_BYTES = 2 * 1024 * 1024
+import type { Redaction, Unreadable } from './wire.ts'
+import { answerOf, bodyOf, isOk, nativeOf, unreadable } from './wire.ts'
 
 /** A bearer token inside the program: printed, it shows only its name, as a sealed credential. */
 export type BearerToken = Secret<'BearerToken'>
@@ -63,8 +58,6 @@ type TokenRequest = ReturnType<typeof codeRequest>
 
 /** The provider could not be reached (or answered 5xx): `native` is what it said, when it said anything. */
 type Unreachable = Readonly<{ kind: 'UNREACHABLE'; native: Native | null }>
-/** The provider answered what the kit cannot read, with what it said. */
-type Unreadable = Readonly<{ kind: 'UNREADABLE'; native: Native }>
 /** What the provider answered to taking the grant back: done, or it refused (`native`), or it could not be reached. */
 type Revoked =
   | Readonly<{ kind: 'REVOKED' }>
@@ -83,7 +76,8 @@ export type Executor = {
   /**
    * Calls one operation with that token, given up on after `deadlineMs`; never logs input, output
    * or credential (S41). Transport, deadline, redirect and 5xx are UNREACHABLE; the kit's Answered
-   * otherwise.
+   * otherwise. An idempotent read that gets a 429 naming its wait waits once, when the wait fits the
+   * deadline, and is repeated; a second 429, or a wait that does not fit, is the kit's BUSY.
    */
   call<I, O>(
     connection: OpenedConnection,
@@ -138,72 +132,6 @@ function valuesOf(
   }
 }
 
-/** The body, read in pieces up to the cap; past it the read is cancelled, nothing is kept and the result is null. */
-async function bodyOf(response: Response): Promise<Uint8Array | null> {
-  const chunks: Uint8Array[] = []
-  let bytes = 0
-  const reader = response.body?.getReader()
-  if (reader === undefined) return new Uint8Array()
-  for (;;) {
-    const { done, value } = await reader.read()
-    if (done) return Buffer.concat(chunks)
-    bytes += value.byteLength
-    if (bytes > RESPONSE_CAP_BYTES) {
-      await reader.cancel()
-      return null
-    }
-    chunks.push(value)
-  }
-}
-
-const REDACTED = '[redacted]'
-
-/** The request's secrets, replaced in what comes back; `whole2xx`: a 2xx reaches the kit unchanged. */
-type Redaction = Readonly<{ secrets: readonly string[]; whole2xx: boolean }>
-
-/** The text with every secret of the request replaced, as it is and as JSON writes it (Nango's `buildValuesToFilter`). */
-function redacted(text: string, secrets: readonly string[]): string {
-  return secrets
-    .filter((secret) => secret !== '')
-    .flatMap((secret) => [secret, JSON.stringify(secret).slice(1, -1)])
-    .reduce((safe, secret) => safe.replaceAll(secret, REDACTED), text)
-}
-
-function isOk(status: number): boolean {
-  return status >= 200 && status < 300
-}
-
-/**
- * The body read only at the end, with the request's secrets replaced first, whatever the status
- * (a gateway refuses at HTTP 200 and carries its body in `native`), except a 2xx sent `whole`. Text
- * that is not JSON is the body itself outside 2xx, so the kit still decides by status; a 2xx that
- * is not JSON is null, never an empty answer.
- */
-function answerOf(status: number, bytes: Uint8Array, redaction: Redaction): ProviderAnswer | null {
-  if (bytes.byteLength === 0) return { status, body: undefined }
-  const text = Buffer.from(bytes).toString('utf8')
-  const safe = redaction.whole2xx && isOk(status) ? text : redacted(text, redaction.secrets)
-  try {
-    return { status, body: z.unknown().parse(JSON.parse(safe)) }
-  } catch (error) {
-    if (!(error instanceof SyntaxError)) throw error
-    return isOk(status) ? null : { status, body: safe }
-  }
-}
-
-function nativeOf(status: number, body: unknown): Native {
-  return { status, ...locateOf(body), body }
-}
-
-/** An answer the kit never sees: past the cap (`bytes` null), or a 2xx in text that is not JSON; the screen says which. */
-function unreadable(status: number, bytes: Uint8Array | null): Unreadable {
-  const reason: Unread =
-    bytes === null
-      ? { kind: 'TOO_LARGE', limitBytes: RESPONSE_CAP_BYTES }
-      : { kind: 'SHAPE', issues: [{ path: '', expected: 'json', received: 'text' }] }
-  return { kind: 'UNREADABLE', native: { ...nativeOf(status, null), reason } }
-}
-
 /**
  * What fetch documents for a provider that cannot be reached: a network failure or a refused
  * redirect (TypeError), the deadline (TimeoutError) or an abort. Anything else is a bug and goes up.
@@ -243,7 +171,9 @@ async function send(
     const response = await deps.fetch(request, { signal })
     const { status } = response
     const bytes = await bodyOf(response)
-    const answer = bytes === null ? null : answerOf(status, bytes, redaction)
+    const wait =
+      status === 429 ? retryAfterMs(Object.fromEntries(response.headers), Date.now()) : undefined
+    const answer = bytes === null ? null : answerOf(status, bytes, redaction, wait)
     if (status >= 500) return unreachableAt(deps, where, status, answer?.body ?? null)
     return answer ?? unreadable(status, bytes)
   } catch (error) {
@@ -252,6 +182,28 @@ async function send(
     deps.log.info({ ...where, ...cause }, 'CONNECTOR_UNREACHABLE')
     return { kind: 'UNREACHABLE', native: null }
   }
+}
+
+/**
+ * `send`, and when the provider answered 429 with a wait that fits what is left of the deadline, the
+ * wait and one repeat on a fresh request, since a read's body (Sankhya's POST reads) is spent by the
+ * first send. Only a read repeats (`repeat`): a write is never sent twice.
+ */
+async function sendRead(
+  deps: ExecutorDeps,
+  requestFor: () => Request,
+  where: Where,
+  redaction: Redaction,
+  a: Readonly<{ deadlineMs: number; repeat: boolean }>,
+): Promise<ProviderAnswer | Unreadable | Unreachable> {
+  const started = performance.now()
+  const sent = await send(deps, requestFor(), where, redaction, a.deadlineMs)
+  if (!a.repeat || 'kind' in sent || sent.status !== 429 || sent.retryAfterMs === undefined)
+    return sent
+  if (sent.retryAfterMs >= a.deadlineMs - (performance.now() - started) - 1) return sent
+  await sleep(sent.retryAfterMs)
+  const remaining = Math.floor(a.deadlineMs - (performance.now() - started))
+  return send(deps, requestFor(), where, redaction, remaining)
 }
 
 function unreachableAt(
@@ -327,17 +279,22 @@ export function createExecutor(deps: ExecutorDeps): Executor {
 
     async call(connection, token, operation, input, deadlineMs) {
       const { connector } = connection
-      const request = toRequest(
-        connector,
-        requestOf(operation, input, { ref: connection.accountRef }),
-        token.reveal(),
-        originOf(connector),
-      )
+      function requestFor() {
+        return toRequest(
+          connector,
+          requestOf(operation, input, { ref: connection.accountRef }),
+          token.reveal(),
+          originOf(connector),
+        )
+      }
       const { auth } = connector
       const pasted = auth.kind === 'client_credentials' ? valuesOf(connection, auth) : {}
       // No door returns an operation's 2xx body: the kit nulls an unreadable one, and the check keeps none.
       const redaction = { secrets: [...Object.values(pasted), token.reveal()], whole2xx: true }
-      const sent = await send(deps, request, whereOf(connection), redaction, deadlineMs)
+      const sent = await sendRead(deps, requestFor, whereOf(connection), redaction, {
+        deadlineMs,
+        repeat: operation.idempotent,
+      })
       return 'kind' in sent ? sent : operation.answer(sent)
     },
 
