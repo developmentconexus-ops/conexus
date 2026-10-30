@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react'
 import { ConexusWordmark } from '../../brand/mark.tsx'
 import { HubFailure, sentenceOf } from '../../platform/hub.ts'
 import { buttonVariants } from '../../ui/button.tsx'
+import { ReadFailure } from '../../ui/states.tsx'
 import { connectionsPrefix, connectionsQuery, sendSignInEnd } from './queries.ts'
 import { Said } from './test-result.tsx'
 import {
@@ -69,14 +70,29 @@ function Back(props: { companyId: CompanyId | null }) {
   )
 }
 
-/** The catalog names the connector the Hub's answer carries by id (the Hub leaves the naming to the screen). */
+/** The catalog names the connector the Hub's answer carries by id (the Hub leaves the naming to the screen); until it is read the page keeps waiting, and a read that fails says so. */
 function Ended(props: {
   companyId: CompanyId
   answer: Exclude<SignInCompleted, { result: 'LINKED' }>
 }) {
   const { answer } = props
   const catalog = useQuery(connectionsQuery(props.companyId))
-  const name = connectorName(catalog.data?.connectors ?? [], answer.connector)
+  if (catalog.isPending) {
+    return (
+      <p role="status" className="text-text-2">
+        {RETURNING_TEXT}
+      </p>
+    )
+  }
+  if (catalog.data === undefined) {
+    return (
+      <>
+        <ReadFailure text={sentenceOf(catalog.error)} onRetry={() => void catalog.refetch()} />
+        <Back companyId={props.companyId} />
+      </>
+    )
+  }
+  const name = connectorName(catalog.data.connectors, answer.connector)
   return (
     <>
       <p role="alert" className="text-danger">

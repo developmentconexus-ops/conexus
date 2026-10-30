@@ -179,6 +179,22 @@ function LinkForm(props: {
     ...Object.fromEntries(entry.fields.map((field) => [field.name, ''])),
   })
 
+  /** The pasted keys sealed by the Hub: a new connection, or the same one with its keys replaced. */
+  function save(name: string, credential: Record<string, string>) {
+    return reconnecting
+      ? resend.mutateAsync({
+          params: { companyId, connectionId: reconnecting.id },
+          body: { credential },
+        })
+      : attempt((attemptKey) =>
+          send.mutateAsync({
+            params: { companyId },
+            body: { connector: entry.id, name, credential },
+            attemptKey,
+          }),
+        )
+  }
+
   async function submit(values: Record<string, string>) {
     const { [NAME]: name = '', ...credential } = values
     try {
@@ -188,19 +204,10 @@ function LinkForm(props: {
         setLeaving(true)
         return
       }
-      const { connection } = reconnecting
-        ? await resend.mutateAsync({
-            params: { companyId, connectionId: reconnecting.id },
-            body: { credential },
-          })
-        : await attempt((attemptKey) =>
-            send.mutateAsync({
-              params: { companyId },
-              body: { connector: entry.id, name, credential },
-              attemptKey,
-            }),
-          )
+      const { connection } = await save(name, credential)
       form.reset()
+      // A reconnect stays on the page it came from, so its window closes here; a first link leaves with the route.
+      if (reconnecting) props.onClose()
       for (const queryKey of reconnecting
         ? connectionKeys(companyId, reconnecting.id)
         : [connectionsPrefix(companyId)]) {
@@ -278,7 +285,7 @@ export function LinkDialog(props: {
             ? signInWindowText(props.entry.name)
             : 'As chaves ficam guardadas no Hub e não aparecem de novo.'
         }
-        size="fields"
+        size={oauth ? 'ask' : 'fields'}
       >
         <LinkForm {...props} reconnecting={props.reconnecting} />
       </DialogContent>

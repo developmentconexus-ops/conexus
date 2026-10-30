@@ -2,7 +2,7 @@ import { fireEvent, screen, within } from '@testing-library/react'
 import { afterEach, expect, test, vi } from 'vitest'
 import { COMPANY } from '../../platform/fixtures.ts'
 import { hubServer, refusal } from '../../platform/test-hub.tsx'
-import { connectionOf, MERCADO_LIVRE, SANKHYA } from './fixtures.ts'
+import { connectionOf, MERCADO_LIVRE, SANKHYA, workingOf } from './fixtures.ts'
 import type { Answers } from './test-hub.tsx'
 import {
   AUTHORIZE_URL,
@@ -115,6 +115,31 @@ test('um client_credentials NEEDS_REAUTH abre a janela das chaves com o nome tra
       },
     },
   })
+})
+
+test('Ligar e testar recusado, depois Conectar de novo com chaves boas: a janela fecha, o teste roda e a página volta a funcionar', async () => {
+  const connection = connectionOf({ name: 'Comercial' })
+  const hub = connectionsHub(viewOf({ connections: [connection] }), {}, (one) => {
+    const tests = hub.sent.filter((sent) => sent.method === 'POST' && sent.path.endsWith('/test'))
+    return tests.length === 1
+      ? {
+          result: 'AUTH_REFUSED',
+          native: { status: 401, code: 'NEGADO', message: null, body: null },
+          connection: { ...one, state: 'NEEDS_REAUTH' },
+        }
+      : workingOf(one)
+  })
+  server.use(...hub.handlers)
+  mount(`${pageOf(connection)}?testar=true`)
+  expect(await screen.findByText('As chaves foram recusadas pelo Sankhya.')).toBeTruthy()
+  fireEvent.click(screen.getByRole('button', { name: 'Conectar de novo' }))
+  const dialog = await screen.findByRole('dialog', { name: 'Conectar de novo' })
+  fill()
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Conectar de novo' }))
+  expect(await screen.findByText('Funcionando')).toBeTruthy()
+  expect(screen.queryByRole('dialog')).toBeNull()
+  expect(screen.queryByText('As chaves foram recusadas pelo Sankhya.')).toBeNull()
+  expect(hub.sent.filter((sent) => sent.path.endsWith('/test'))).toHaveLength(2)
 })
 
 test('o membro lê a frase e "Peça ao dono ou a um administrador.", sem botão', async () => {

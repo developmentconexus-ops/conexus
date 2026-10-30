@@ -222,7 +222,7 @@ function Facts(props: { name: string; connection: Connection }) {
   )
 }
 
-/** "Ligar e testar" and the return from an authorization land here with `testar`: it starts the first test once, then leaves the address clean. */
+/** "Ligar e testar", "Conectar de novo" and the return from an authorization land here with `testar`: each arrival starts a test once, then leaves the address clean. */
 function useFirstTest(
   mutate: (variables: { params: { companyId: CompanyId; connectionId: ConnectionId } }) => void,
   at: {
@@ -236,7 +236,11 @@ function useFirstTest(
   const navigate = useNavigate()
   const started = useRef(false)
   useEffect(() => {
-    if (!testar || started.current) return
+    if (!testar) {
+      started.current = false
+      return
+    }
+    if (started.current) return
     started.current = true
     if (mayManage) mutate({ params: { companyId, connectionId } })
     void navigate({ to: '.', search: {}, replace: true })

@@ -4,6 +4,7 @@ import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
 import { ANA, COMPANY } from '../../platform/fixtures.ts'
+import { sentenceOfCode } from '../../platform/hub.ts'
 import { hubServer, refusal, sessionRead } from '../../platform/test-hub.tsx'
 import { connectionOf, MERCADO_LIVRE } from './fixtures.ts'
 import { connectionsHub, viewOf } from './test-hub.tsx'
@@ -126,10 +127,31 @@ test.each([['CONNECTION_SIGN_IN_EXPIRED'], ['CONNECTION_ACCOUNT_ELSEWHERE']] as 
   async (code) => {
     hubOf({ end: () => refusal(code) })
     open(`?code=abc&state=${STATE}`)
-    expect(await screen.findByRole('alert')).toBeTruthy()
+    expect((await screen.findByRole('alert')).textContent).toBe(sentenceOfCode(code))
     expect(screen.getByRole('link', { name: 'Voltar a Integrações' })).toBeTruthy()
   },
 )
+
+test('o catálogo que não carrega na volta: a frase do Hub e "Tentar de novo", nunca o id do conector', async () => {
+  const hub = connectionsHub(viewOf({ connectors: [MERCADO_LIVRE] }), {
+    end: () => HttpResponse.json({ result: 'CANCELLED', connector: 'mercado-livre' }),
+  })
+  let failing = true
+  server.use(
+    http.get(`*/api/companies/${COMPANY.id}/connections`, () =>
+      failing ? refusal('DATABASE_UNAVAILABLE') : undefined,
+    ),
+    ...hub.handlers,
+  )
+  open(`?error=access_denied&state=${STATE}`)
+  expect((await screen.findByRole('alert')).textContent).toBe(
+    sentenceOfCode('DATABASE_UNAVAILABLE'),
+  )
+  expect(screen.queryByText(/mercado-livre/)).toBeNull()
+  failing = false
+  fireEvent.click(screen.getByRole('button', { name: 'Tentar de novo' }))
+  expect(await screen.findByText('Você não autorizou o Conexus no Mercado Livre.')).toBeTruthy()
+})
 
 test('NOT_FOUND (outra empresa): "Esse endereço não é de uma ligação."', async () => {
   hubOf({ end: () => refusal('NOT_FOUND') })

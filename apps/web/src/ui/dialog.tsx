@@ -8,7 +8,8 @@ import { cn } from './cn.ts'
 // is the canvas, a hairline separates the popup, and its fade stops under reduced motion (design
 // V26). A `form` dialog, the default, is a small card in the middle at every width; a `page` dialog,
 // for reading a long text, and a `fields` dialog, for a form of several fields with its help, take
-// the whole screen under `sm`. Its title is the popup's name, its
+// the whole screen under `sm`; an `ask` dialog is the `fields` window above `sm` and the `form`
+// card under it, for one field that needs the wider room beside it. Its title is the popup's name, its
 // description (when given) what the screen reader says after it; the close button says "Fechar"
 // (design V31).
 const SHAPE = {
@@ -20,6 +21,8 @@ const SHAPE = {
   // between a header and a footer that stay in view (see DialogBody and DialogFooter).
   fields:
     'inset-0 overflow-hidden sm:inset-auto sm:top-1/2 sm:left-1/2 sm:max-h-[calc(100dvh-4rem)] sm:w-[calc(100%-4rem)] sm:max-w-wide sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-object sm:border sm:border-line',
+  // One field with a sentence: the card of `form` under sm, the window of `fields` above it.
+  ask: 'top-1/2 left-1/2 max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-object border border-line sm:max-h-[calc(100dvh-4rem)] sm:w-[calc(100%-4rem)] sm:max-w-wide',
 } as const
 
 export function Dialog(props: DialogPrimitive.Root.Props) {
