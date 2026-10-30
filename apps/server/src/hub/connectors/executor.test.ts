@@ -66,7 +66,7 @@ test('um 2xx que não encaixa diz no Testar onde e que tipo veio, nunca um valor
   assert.ok(!text.body.includes('valor da empresa'))
 })
 
-test('a página sem linhas que o Sankhya manda (404 RESOURCE_NOT_FOUND) lê em toda leitura, não é recusa', async (t) => {
+test('a página sem linhas que o Sankhya manda (404 RESOURCE_NOT_FOUND) lê, sem nada para olhar, em toda leitura; não é recusa', async (t) => {
   const { hub, fake, ana, base } = await connectionsOn(t)
   const { connection } = Object((await linkSankhya(hub, ana, base, fake.credential)).json())
   fake.switches.nothingFound = true
@@ -75,9 +75,9 @@ test('a página sem linhas que o Sankhya manda (404 RESOURCE_NOT_FOUND) lê em t
   const outcomes = new Map(
     tested.checks.map((check: { id: string; outcome: string }) => [check.id, check.outcome]),
   )
-  // With no company read, the reads that need one have nothing to read.
+  // Every list answered an empty page; the ones that need a company read before them never ran.
   for (const id of ['empresas', 'clientes', 'centrosResultado', 'estoque'])
-    assert.equal(outcomes.get(id), 'READS', id)
+    assert.equal(outcomes.get(id), 'NOTHING_TO_READ', id)
   for (const id of ['pedidos', 'notasFiscais', 'contasAReceber', 'ordensCarga'])
     assert.equal(outcomes.get(id), 'NOTHING_TO_READ', id)
   assert.ok(![...outcomes.values()].includes('REFUSED'))
