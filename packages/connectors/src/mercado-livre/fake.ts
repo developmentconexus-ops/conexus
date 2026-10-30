@@ -30,8 +30,10 @@ type Switches = {
   slowMilliseconds: number
   /** Permission groups that answer 403 `PA_UNAUTHORIZED_RESULT_FROM_POLICIES`. */
   refuseGroups: Set<string>
-  /** Orders answer 206 with `X-Content-Missing`. */
+  /** A single order (`/orders/{id}`) answers 206 with `X-Content-Missing`. */
   partialOrders: boolean
+  /** The next revocation answers 403, as when the key cannot take the app's permission back. */
+  refuseRevoke: boolean
   /** The `expires_in` the exchange and the renewal give. */
   expiresInSeconds: number
 }
@@ -45,6 +47,8 @@ export type MercadoLivreFake = OAuthFake &
     expireAccess: () => void
     /** How many reads of messages did not say `mark_as_read=false`. */
     markedAsRead: () => number
+    /** The account and app of each permission taken back, in order. */
+    revocations: () => readonly string[]
   }>
 
 type Account = { ref: string; label: string }
@@ -64,6 +68,7 @@ type World = {
   access: Map<string, { ref: string; expired: boolean }>
   refresh: Map<string, Account & { current: boolean }>
   count: { issued: number; renewals: number; unmarked: number }
+  revoked: string[]
 }
 
 function json(body: unknown, status = 200, headers: Record<string, string> = {}): Response {
@@ -190,17 +195,25 @@ function routed(
     match: a.match,
     headers: a.request.headers,
   })
-  if (route.name === 'pedidos' && switches.partialOrders)
-    return json(reply.body, 206, { 'x-content-missing': 'true' })
+  if (route.name === 'pedido' && switches.partialOrders)
+    return json(reply.body, 206, { 'x-content-missing': 'buyer, feedback' })
   return json(reply.body, reply.status ?? 200, reply.headers)
 }
 
-function read(world: World, request: Request, url: URL): Response {
+/** The live access a request's bearer holds, or the 401 the provider answers instead. */
+function bearing(world: World, request: Request) {
   const given = world.access.get(
     request.headers.get('authorization')?.replace(/^Bearer /, '') ?? '',
   )
-  if (!given || given.expired)
-    return json({ message: 'invalid_token', error: 'not_found', status: 401, cause: [] }, 401)
+  if (given && !given.expired) return { given }
+  return {
+    refused: json({ message: 'invalid_token', error: 'not_found', status: 401, cause: [] }, 401),
+  }
+}
+
+function read(world: World, request: Request, url: URL): Response {
+  const { given, refused } = bearing(world, request)
+  if (!given) return refused
   if (url.pathname === '/users/me' && world.switches.accountRateLimited)
     return json({ message: 'too many requests', status: 429 }, 429)
   if (url.pathname === '/users/me')
@@ -221,11 +234,27 @@ function read(world: World, request: Request, url: URL): Response {
   return json({ message: 'Resource not found', error: 'not_found', status: 404 }, 404)
 }
 
+/** `DELETE /users/{account}/applications/{app}`: the bearer's own account and this app only, then the app's keys stop working. */
+function revoke(world: World, request: Request, url: URL): Response {
+  const { given, refused } = bearing(world, request)
+  if (!given) return refused
+  const match = /^\/users\/(?<account>[^/]+)\/applications\/(?<app>[^/]+)$/.exec(url.pathname)
+  if (!match || match.groups?.account !== given.ref || match.groups.app !== APP.clientId)
+    return forbidden()
+  if (world.switches.refuseRevoke) return forbidden()
+  world.revoked.push(`${given.ref}/${APP.clientId}`)
+  for (const [key, held] of world.access) if (held.ref === given.ref) world.access.delete(key)
+  for (const held of world.refresh.values()) if (held.ref === given.ref) held.current = false
+  return json({})
+}
+
 async function handle(world: World, request: Request): Promise<Response> {
   const url = new URL(request.url)
   if (url.pathname === '/authorization' && request.method === 'GET')
     return authorization(world, url)
   if (url.pathname === '/oauth/token' && request.method === 'POST') return token(world, request)
+  if (request.method === 'DELETE' && url.pathname.startsWith('/users/'))
+    return revoke(world, request, url)
   if (request.method !== 'GET') return json({ message: 'Method not allowed', status: 405 }, 405)
   return read(world, request, url)
 }
@@ -253,6 +282,7 @@ export function mercadoLivreFake({
     slowMilliseconds: 0,
     refuseGroups: new Set(),
     partialOrders: false,
+    refuseRevoke: false,
     expiresInSeconds: 21_600,
   }
   const world: World = {
@@ -262,6 +292,7 @@ export function mercadoLivreFake({
     access: new Map(),
     refresh: new Map(),
     count: { issued: 0, renewals: 0, unmarked: 0 },
+    revoked: [],
   }
   function answer(request: Request) {
     return handle(world, request)
@@ -277,5 +308,6 @@ export function mercadoLivreFake({
       for (const given of world.access.values()) given.expired = true
     },
     markedAsRead: () => world.count.unmarked,
+    revocations: () => world.revoked,
   }
 }

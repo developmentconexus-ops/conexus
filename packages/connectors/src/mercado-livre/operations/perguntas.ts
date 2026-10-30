@@ -11,7 +11,15 @@ export const perguntas = readOf({
   label: 'Perguntas',
   input: z.object({
     status: z
-      .enum(['UNANSWERED', 'ANSWERED', 'CLOSED_UNANSWERED', 'UNDER_REVIEW', 'BANNED', 'DELETED'])
+      .enum([
+        'UNANSWERED',
+        'ANSWERED',
+        'CLOSED_UNANSWERED',
+        'UNDER_REVIEW',
+        'BANNED',
+        'DELETED',
+        'DISABLED',
+      ])
       .optional(),
     offset: Offset,
     limit: Limit(50),

@@ -22,7 +22,7 @@ test('várias ligações do mesmo conector: a lista as ordena e uma não mexe na
 
   assert.equal(Object((await testOf(hub, ana, base, refused)).json()).result, 'AUTH_REFUSED')
   assert.equal(Object((await testOf(hub, ana, base, matriz)).json()).result, 'WORKING')
-  assert.equal((await call(hub, ana, 'DELETE', `${base}/${refused}`)).statusCode, 204)
+  assert.equal((await call(hub, ana, 'DELETE', `${base}/${refused}`)).statusCode, 200)
 
   const after = Object((await call(hub, ana, 'GET', base)).json()).connections
   assert.deepEqual(
@@ -45,7 +45,7 @@ test('o id de outra empresa dá 404 no Testar, no Desligar e no getConnection', 
   assert.deepEqual([tested.statusCode, codeOf(tested)], [404, 'CONNECTION_NOT_FOUND'])
   const read = await call(hub, davi, 'GET', `${otherBase}/${mine}`)
   assert.deepEqual([read.statusCode, codeOf(read)], [404, 'CONNECTION_NOT_FOUND'])
-  assert.equal((await call(hub, davi, 'DELETE', `${otherBase}/${mine}`)).statusCode, 204)
+  assert.equal((await call(hub, davi, 'DELETE', `${otherBase}/${mine}`)).statusCode, 200)
   assert.equal(Object((await testOf(hub, ana, base, mine)).json()).result, 'WORKING')
 })
 

@@ -113,6 +113,7 @@ export {
   linkConnection,
   listConnections,
   Native,
+  Revocation,
   reconnectConnection,
   SignInCompleted,
   startConnectionSignIn,

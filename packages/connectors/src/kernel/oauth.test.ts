@@ -5,7 +5,14 @@ import { mercadoLivre } from '../mercado-livre/definition.ts'
 import { sankhya } from '../sankhya/definition.ts'
 import { defineConnector } from './definition.ts'
 import type { OAuth2CodeAuth } from './oauth.ts'
-import { authorizeUrl, codeRequest, oauth2Code, readGrant, refreshRequest } from './oauth.ts'
+import {
+  authorizeUrl,
+  codeRequest,
+  oauth2Code,
+  readGrant,
+  refreshRequest,
+  revokeRequest,
+} from './oauth.ts'
 import { AccountRef, defineOperation } from './operation.ts'
 import { toRequest } from './request.ts'
 
@@ -265,5 +272,33 @@ describe('a troca e a renovação', () => {
     const body = { error: 'invalid_grant' }
     assert.equal(readGrant(mercadoLivre.auth, { status: 400, body }).kind, 'GRANT_REFUSED')
     assert.equal(readGrant(invented, { status: 400, body }).kind, 'UNREADABLE')
+  })
+})
+
+describe('a revogação declarada', () => {
+  const a = { accountRef: '123456789', clientId: '8001' }
+
+  it('o Mercado Livre monta o DELETE da página que cita, sem chave: o executor põe a do portador', () => {
+    assert.ok(mercadoLivre.auth.kind === 'oauth2_code')
+    assert.deepEqual(revokeRequest(mercadoLivre.auth, a), {
+      method: 'DELETE',
+      path: '/users/123456789/applications/8001',
+      query: {},
+      body: undefined,
+    })
+  })
+
+  it('um valor com barra não sai do caminho', () => {
+    assert.ok(mercadoLivre.auth.kind === 'oauth2_code')
+    const request = revokeRequest(mercadoLivre.auth, { ...a, accountRef: '1/../2' })
+    assert.equal(request?.path, '/users/1%2F..%2F2/applications/8001')
+  })
+
+  it('quem não declara não tem pedido, e uma declaração sem a conta é recusada', () => {
+    assert.equal(revokeRequest(invented, a), null)
+    assert.throws(
+      () => oauth2Code({ ...invented, revoke: { method: 'DELETE', path: '/users/me' } }),
+      /\{account\}/,
+    )
   })
 })

@@ -35,7 +35,7 @@ export const prazoDoEnvio = readOf({
 export const estoqueFull = readOf({
   id: 'estoqueFull',
   subject: 'envios',
-  docs: 'estoque-full',
+  docs: 'envios-fulfillment',
   summary:
     'Mostra o estoque no Full de um inventário: o total, o disponível e o indisponível por motivo.',
   label: 'Estoque no Full',

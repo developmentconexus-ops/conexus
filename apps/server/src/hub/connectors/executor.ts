@@ -3,6 +3,7 @@ import type {
   AccountOf,
   AccountRef,
   Answered,
+  AppKeys,
   ClientCredentialsAuth,
   Connector,
   ConnectorId,
@@ -18,6 +19,7 @@ import {
   readGrant,
   readToken,
   requestOf,
+  revokeRequest,
   tokenRequest,
   toRequest,
 } from '@conexus/connectors'
@@ -29,13 +31,8 @@ import { retryAfterMs } from '../../platform/retry-after.ts'
 import type { Credential } from '../../platform/seal.ts'
 import { Secret } from '../../platform/secret.ts'
 import type { OAuthConnector } from './apps.ts'
-
-/**
- * A provider's answer is read up to this many bytes and no further. Measured on a real Sankhya
- * (2026-10-30), a page of 50 reached 354 KB (clientes), 500 KB (notas fiscais) and 931 KB
- * (devoluções); the OS's 256 KB came from its SQL gateway and cut REST pages.
- */
-const RESPONSE_CAP_BYTES = 2 * 1024 * 1024
+import type { Redaction, Unreadable } from './wire.ts'
+import { answerOf, bodyOf, isOk, nativeOf, unreadable } from './wire.ts'
 
 /** A bearer token inside the program: printed, it shows only its name, as a sealed credential. */
 export type BearerToken = Secret<'BearerToken'>
@@ -63,8 +60,11 @@ type TokenRequest = ReturnType<typeof codeRequest>
 
 /** The provider could not be reached (or answered 5xx): `native` is what it said, when it said anything. */
 type Unreachable = Readonly<{ kind: 'UNREACHABLE'; native: Native | null }>
-/** The provider answered what the kit cannot read, with what it said. */
-type Unreadable = Readonly<{ kind: 'UNREADABLE'; native: Native }>
+/** What the provider answered to taking the grant back: done, or it refused (`native`), or it could not be reached. */
+type Revoked =
+  | Readonly<{ kind: 'REVOKED' }>
+  | Readonly<{ kind: 'REFUSED'; native: Native }>
+  | Unreachable
 export type Login =
   | Readonly<{ kind: 'TOKEN'; token: BearerToken }>
   | Readonly<{ kind: 'AUTH_REFUSED'; native: Native }>
@@ -100,6 +100,18 @@ export type Executor = {
     secrets: readonly string[],
     deadlineMs: number,
   ): Promise<GrantAnswered | Unreachable>
+  /**
+   * Takes the grant back at the provider with the connection's live token, as the connector
+   * declares it; a 429 is UNREACHABLE. Nothing is sent, and null comes back, when the connector
+   * declares no revoke.
+   */
+  revoke(
+    connection: OpenedConnection,
+    connector: OAuthConnector,
+    token: BearerToken,
+    app: AppKeys,
+    deadlineMs: number,
+  ): Promise<Revoked | null>
   /** Whose account a token is (`who.path`), read by the connector's `who.answer`. */
   who(
     where: Where,
@@ -120,78 +132,6 @@ function valuesOf(
     if (!(cause instanceof SyntaxError || cause instanceof z.ZodError)) throw cause
     throw new Failure('SEAL_REFUSED', { details: { reason: 'credential shape' }, cause })
   }
-}
-
-/** The body, read in pieces up to the cap; past it the read is cancelled, nothing is kept and the result is null. */
-async function bodyOf(response: Response): Promise<Uint8Array | null> {
-  const chunks: Uint8Array[] = []
-  let bytes = 0
-  const reader = response.body?.getReader()
-  if (reader === undefined) return new Uint8Array()
-  for (;;) {
-    const { done, value } = await reader.read()
-    if (done) return Buffer.concat(chunks)
-    bytes += value.byteLength
-    if (bytes > RESPONSE_CAP_BYTES) {
-      await reader.cancel()
-      return null
-    }
-    chunks.push(value)
-  }
-}
-
-const REDACTED = '[redacted]'
-
-/** The request's secrets, replaced in what comes back; `whole2xx`: a 2xx reaches the kit unchanged. */
-type Redaction = Readonly<{ secrets: readonly string[]; whole2xx: boolean }>
-
-/** The text with every secret of the request replaced, as it is and as JSON writes it (Nango's `buildValuesToFilter`). */
-function redacted(text: string, secrets: readonly string[]): string {
-  return secrets
-    .filter((secret) => secret !== '')
-    .flatMap((secret) => [secret, JSON.stringify(secret).slice(1, -1)])
-    .reduce((safe, secret) => safe.replaceAll(secret, REDACTED), text)
-}
-
-function isOk(status: number): boolean {
-  return status >= 200 && status < 300
-}
-
-/**
- * The body read only at the end, with the request's secrets replaced first, whatever the status
- * (a gateway refuses at HTTP 200 and carries its body in `native`), except a 2xx sent `whole`. Text
- * that is not JSON is the body itself outside 2xx, so the kit still decides by status; a 2xx that
- * is not JSON is null, never an empty answer.
- */
-function answerOf(
-  status: number,
-  bytes: Uint8Array,
-  redaction: Redaction,
-  waitMs?: number,
-): ProviderAnswer | null {
-  const wait = waitMs === undefined ? {} : { retryAfterMs: waitMs }
-  if (bytes.byteLength === 0) return { status, body: undefined, ...wait }
-  const text = Buffer.from(bytes).toString('utf8')
-  const safe = redaction.whole2xx && isOk(status) ? text : redacted(text, redaction.secrets)
-  try {
-    return { status, body: z.unknown().parse(JSON.parse(safe)), ...wait }
-  } catch (error) {
-    if (!(error instanceof SyntaxError)) throw error
-    return isOk(status) ? null : { status, body: safe, ...wait }
-  }
-}
-
-function nativeOf(status: number, body: unknown): Native {
-  return { status, ...locateOf(body), body }
-}
-
-/** An answer the kit never sees: past the cap (`bytes` null), or a 2xx in text that is not JSON; the screen says which. */
-function unreadable(status: number, bytes: Uint8Array | null): Unreadable {
-  const reason: Unread =
-    bytes === null
-      ? { kind: 'TOO_LARGE', limitBytes: RESPONSE_CAP_BYTES }
-      : { kind: 'SHAPE', issues: [{ path: '', expected: 'json', received: 'text' }] }
-  return { kind: 'UNREADABLE', native: { ...nativeOf(status, null), reason } }
 }
 
 /**
@@ -248,23 +188,24 @@ async function send(
 
 /**
  * `send`, and when the provider answered 429 with a wait that fits what is left of the deadline, the
- * wait and one repeat. Only a read repeats (`repeat`): a write's body was spent by the first send.
+ * wait and one repeat on a fresh request, since a read's body (Sankhya's POST reads) is spent by the
+ * first send. Only a read repeats (`repeat`): a write is never sent twice.
  */
 async function sendRead(
   deps: ExecutorDeps,
-  request: Request,
+  requestFor: () => Request,
   where: Where,
   redaction: Redaction,
   a: Readonly<{ deadlineMs: number; repeat: boolean }>,
 ): Promise<ProviderAnswer | Unreadable | Unreachable> {
   const started = performance.now()
-  const sent = await send(deps, request, where, redaction, a.deadlineMs)
+  const sent = await send(deps, requestFor(), where, redaction, a.deadlineMs)
   if (!a.repeat || 'kind' in sent || sent.status !== 429 || sent.retryAfterMs === undefined)
     return sent
   if (sent.retryAfterMs >= a.deadlineMs - (performance.now() - started) - 1) return sent
   await sleep(sent.retryAfterMs)
   const remaining = Math.floor(a.deadlineMs - (performance.now() - started))
-  return send(deps, request, where, redaction, remaining)
+  return send(deps, requestFor(), where, redaction, remaining)
 }
 
 function unreachableAt(
@@ -280,6 +221,42 @@ function unreachableAt(
 /** Whose connection a call is about, for the log. */
 function whereOf(connection: OpenedConnection): Where {
   return { connectionId: connection.id, connector: connection.connector.id }
+}
+
+/** The connector's declared revoke, sent with the connection's token; null when it declares none or the connection has no account yet. */
+async function revoked(
+  deps: ExecutorDeps,
+  a: Readonly<{
+    connection: OpenedConnection
+    connector: OAuthConnector
+    token: BearerToken
+    app: AppKeys
+  }>,
+  origin: string,
+  deadlineMs: number,
+): Promise<Revoked | null> {
+  const { connection, connector, token } = a
+  if (connection.accountRef === null) return null
+  const request = revokeRequest(connector.auth, {
+    accountRef: connection.accountRef,
+    clientId: a.app.clientId,
+  })
+  if (request === null) return null
+  const where = whereOf(connection)
+  const redaction = { secrets: [token.reveal()], whole2xx: false }
+  const sent = await send(
+    deps,
+    toRequest(connector, request, token.reveal(), origin),
+    where,
+    redaction,
+    deadlineMs,
+  )
+  if ('kind' in sent)
+    return sent.kind === 'UNREACHABLE' ? sent : { kind: 'REFUSED', native: sent.native }
+  if (sent.status === 429) return unreachableAt(deps, where, sent.status, sent.body)
+  return isOk(sent.status)
+    ? { kind: 'REVOKED' }
+    : { kind: 'REFUSED', native: nativeOf(sent.status, sent.body) }
 }
 
 export function createExecutor(deps: ExecutorDeps): Executor {
@@ -304,16 +281,18 @@ export function createExecutor(deps: ExecutorDeps): Executor {
 
     async call(connection, token, operation, input, deadlineMs) {
       const { connector } = connection
-      const request = toRequest(
-        connector,
-        requestOf(operation, input, { ref: connection.accountRef }),
-        token.reveal(),
-        originOf(connector),
-      )
+      function requestFor() {
+        return toRequest(
+          connector,
+          requestOf(operation, input, { ref: connection.accountRef }),
+          token.reveal(),
+          originOf(connector),
+        )
+      }
       const { auth } = connector
       const pasted = auth.kind === 'client_credentials' ? valuesOf(connection, auth) : {}
       const redaction = { secrets: [...Object.values(pasted), token.reveal()], whole2xx: false }
-      const sent = await sendRead(deps, request, whereOf(connection), redaction, {
+      const sent = await sendRead(deps, requestFor, whereOf(connection), redaction, {
         deadlineMs,
         repeat: operation.idempotent,
       })
@@ -331,6 +310,10 @@ export function createExecutor(deps: ExecutorDeps): Executor {
       if ('kind' in sent) return sent
       if (sent.status === 429) return unreachableAt(deps, where, sent.status, sent.body)
       return readGrant(connector.auth, sent)
+    },
+
+    revoke(connection, connector, token, app, deadlineMs) {
+      return revoked(deps, { connection, connector, token, app }, originOf(connector), deadlineMs)
     },
 
     async who(where, connector, token, deadlineMs) {

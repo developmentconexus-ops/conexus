@@ -4,7 +4,7 @@ One line per document (`check-docs`).
 
 ## Overview
 
-- [AGENTS.md](../AGENTS.md): what every agent reads first; skill per stage.
+- [AGENTS.md](../AGENTS.md): read first; skill per stage.
 - [README.md](../README.md): this repository.
 - [roadmap.md](roadmap.md): steps.
 - [approvals.md](approvals.md): approvals.
@@ -16,8 +16,8 @@ One line per document (`check-docs`).
 - [how-to/hub-company-databases.md](how-to/hub-company-databases.md): companies' Neon key.
 - [how-to/local-database.md](how-to/local-database.md): test PostgreSQL 18; [Builder](how-to/builder-builds.md).
 - [steps/](steps/): the card in construction.
-- [reference/boundaries.md](reference/boundaries.md): mechanisms Conexus writes over their libraries'.
-- [reference/stack.md](reference/stack.md): each package's sources, skill, trap.
+- [reference/boundaries.md](reference/boundaries.md): mechanisms written over libraries'.
+- [reference/stack.md](reference/stack.md): sources, skill, trap per package.
 - [reference/components.md](reference/components.md): screen pieces and their tokens (design V23).
 - [reference/checklist.md](reference/checklist.md): readers' questions.
 - [reference/screens.md](reference/screens.md): screens, floors; [prompt](reference/builder-prompt.md).
@@ -29,7 +29,7 @@ One line per document (`check-docs`).
 - [data](guides/data.md): stores, schema, migrations, database access, apps' data.
 - [security](guides/security.md): trust zones, authority, sessions, browser, abuse, secrets, logs.
 - [testing](guides/testing.md): test tools, assertions, doubles.
-- [delivery](guides/delivery.md): how a step goes from card to use; what the repository keeps.
+- [delivery](guides/delivery.md): card to use; what the repository keeps.
 - [design](guides/design.md): how screens look, move and speak.
 - [web](guides/web.md): how the Hub's screens are organized.
 

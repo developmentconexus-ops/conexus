@@ -25,6 +25,9 @@ export const mercadoLivre = defineConnector({
     app: { from: 'installation' },
     authorize: { url: 'https://auth.mercadolivre.com.br/authorization', pkce: 'S256', params: {} },
     token: { path: '/oauth/token' },
+    // Revoga a permissão do aplicativo para o usuário, with the seller's own bearer
+    // (developers.mercadolivre.com.br/pt_br/gerenciamento-de-vendas/usuarios-e-aplicativos).
+    revoke: { method: 'DELETE', path: '/users/{account}/applications/{app}' },
     answer: z
       .object({
         access_token: z.string().min(1).max(8192),

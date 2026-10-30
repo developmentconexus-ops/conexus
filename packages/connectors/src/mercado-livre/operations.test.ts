@@ -54,11 +54,10 @@ test('cada resposta que não é 2xx vira o resultado do kit, sem o corpo de um 2
   assert.equal(kind(404), 'REFUSED')
   assert.equal(kind(429), 'BUSY')
   assert.equal(kind(500), 'UNREADABLE')
-  assert.equal(
-    kind(206, { id: 1, nickname: 'x' }),
-    'UNREADABLE',
-    'a partial answer is never a shorter list',
-  )
+  assert.deepEqual(conta.answer({ status: 206, body: { id: 1, nickname: 'x' } }), {
+    kind: 'OK',
+    value: { linhas: [{ id: 1, nickname: 'x' }], temMais: null, parcial: true },
+  })
   const pedidos = mercadoLivre.operations.find((operation) => operation.id === 'pedidos')
   assert.ok(pedidos)
   assert.equal(pedidos.answer({ status: 200, body: { orders: [] } }).kind, 'UNREADABLE')
@@ -197,3 +196,19 @@ for (const [id, total] of [
     assert.equal(second.temMais, false)
   })
 }
+
+test('as visitas mandam as datas como a documentação mostra, só o dia', () => {
+  const visitas = mercadoLivre.operations.find((operation) => operation.id === 'visitas')
+  assert.ok(visitas)
+  const input = { dateFrom: '2026-09-01', dateTo: '2026-09-30' }
+  assert.deepEqual(requestOf(visitas, input, ACCOUNT).query, {
+    date_from: '2026-09-01',
+    date_to: '2026-09-30',
+  })
+  assert.equal(
+    visitas.input.safeParse({ dateFrom: '2026-09-01T00:00:00Z', dateTo: '2026-09-30' }).success,
+    false,
+  )
+  const probe = visitas.probe(new Map())
+  assert.ok(visitas.input.safeParse(probe).success)
+})

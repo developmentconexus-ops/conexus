@@ -34,6 +34,10 @@ type SankhyaSwitches = {
   redirect: boolean
   /** Never answers a call. */
   silent: boolean
+  /** The next calls on a session answer 429, this many times; each is counted down. */
+  busyReads: number
+  /** The `Retry-After` header those 429s carry (`retry-after-ms` when it is a number of milliseconds), or none. */
+  busyWait: { header: 'retry-after' | 'retry-after-ms'; value: string } | null
   /** Milliseconds each answer is held back, for the executor's deadline tests (U3). */
   delayMilliseconds: number
   /** Milliseconds the login is held back, for the executor's deadline tests (U3). */
@@ -152,6 +156,8 @@ export function sankhyaFake(): SankhyaFake {
     oversize: false,
     redirect: false,
     silent: false,
+    busyReads: 0,
+    busyWait: null,
     delayMilliseconds: 0,
     loginDelayMilliseconds: 0,
     expiresInSeconds: 300,
@@ -169,6 +175,14 @@ export function sankhyaFake(): SankhyaFake {
     const token = request.headers.get('authorization')?.replace(/^Bearer /, '') ?? ''
     const refused = refuseSession(url, token, sessions)
     if (refused) return refused
+    if (switches.busyReads > 0) {
+      switches.busyReads -= 1
+      const { busyWait } = switches
+      return Response.json(
+        { code: 'TOO_MANY_REQUESTS' },
+        { status: 429, headers: busyWait === null ? {} : { [busyWait.header]: busyWait.value } },
+      )
+    }
     sessions.busy.add(token)
     try {
       await sleep(SERVICE_MILLISECONDS + switches.delayMilliseconds)

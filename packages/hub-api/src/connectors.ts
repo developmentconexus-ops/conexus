@@ -215,15 +215,24 @@ export const getConnection = defineOperation({
   failures: [...READ_FAILURES, 'CONNECTION_NOT_FOUND'],
 })
 
+/**
+ * What Desligar did at the provider: `NONE` when the connector declares no revoke (or the
+ * connection was already gone), `REVOKED` when the provider took the authorization back, else why
+ * it stayed: refused, unreachable, or never sent because the sealed keys would not open.
+ */
+export const Revocation = z.enum(['NONE', 'REVOKED', 'REFUSED', 'UNREACHABLE', 'NOT_SENT'])
+export type Revocation = z.infer<typeof Revocation>
+
 export const unlinkConnection = defineOperation({
   id: 'unlinkConnection',
-  summary: 'Removes a connection and its sealed fields; removing it again answers the same.',
+  summary:
+    'Removes a connection and its sealed fields, after asking the provider to take the authorization back when the connector can; removing it again answers the same.',
   access: 'session',
   method: 'DELETE',
   path: '/api/companies/{companyId}/connections/{connectionId}',
   bodyLimit: 1024,
   input: { params: OfConnection },
-  success: { status: 204 },
+  success: { status: 200, body: z.object({ revocation: Revocation }) },
   failures: READ_FAILURES,
 })
 
@@ -270,7 +279,7 @@ export type SignInCompleted = z.infer<typeof SignInCompleted>
 export const completeConnectionSignIn = defineOperation({
   id: 'completeConnectionSignIn',
   summary:
-    'Completes an authorization with the code the provider sent back, or ends it when the person refused; spent once.',
+    'Completes an authorization with the code the provider sent back, or ends it when the person refused or the provider sent an error back; spent once.',
   access: 'session',
   method: 'POST',
   path: '/api/companies/{companyId}/connection-sign-ins/{signInId}',
@@ -280,6 +289,10 @@ export const completeConnectionSignIn = defineOperation({
     body: z.union([
       z.strictObject({ code: z.string().min(1).max(2048) }),
       z.strictObject({ refused: z.literal(true) }),
+      z.strictObject({
+        error: z.string().min(1).max(256),
+        description: z.string().max(1024).optional(),
+      }),
     ]),
   },
   success: { status: 200, body: SignInCompleted },

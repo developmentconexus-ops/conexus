@@ -61,7 +61,7 @@ export const pedido = readOf({
 export const pacote = readOf({
   id: 'pacote',
   subject: 'vendas',
-  docs: 'gerenciamento-de-pacotes',
+  docs: 'gestao-packs',
   summary: 'Mostra um pacote (várias vendas de um comprador num envio só): os pedidos e o envio.',
   label: 'Pacote',
   input: z.object({ packId: PathId }),
