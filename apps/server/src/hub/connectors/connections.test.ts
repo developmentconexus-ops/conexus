@@ -14,14 +14,7 @@ import {
   personOn,
   plantCompany,
 } from '../identity/test-hub.ts'
-import {
-  ALL_READS,
-  connectionsOn,
-  linkSankhya,
-  outcomes,
-  reads,
-  testOf,
-} from './test-connections.ts'
+import { connectionsOn, linkSankhya, testOf } from './test-connections.ts'
 
 test('ligar: quem pode, e as recusas', async (t) => {
   const { hub, fake, ana, bruno, carla, base } = await connectionsOn(t)
@@ -83,36 +76,35 @@ test('ligar: quem pode, e as recusas', async (t) => {
     assert.equal(Buffer.from(Object(rows[0]).sealed).includes(value), false)
 })
 
-test('testar: cada parte, com a sua resposta', async (t) => {
+test('testar: uma leitura só, a das empresas, e o que ela responde', async (t) => {
   const { hub, fake, ana, base } = await connectionsOn(t)
   const { connection } = Object((await linkSankhya(hub, ana, base, fake.credential)).json())
+  // Every other read refused: Testar does not send them.
+  for (const id of ['consultar', 'carregar', 'clientes', 'pedidos', 'estoque'])
+    fake.switches.refuse.add(id)
   const working = await testOf(hub, ana, base, connection.id)
   assert.equal(working.statusCode, 200)
-  assert.equal(Object(working.json()).result, 'WORKING')
-  assert.deepEqual(outcomes(working), ALL_READS)
-  const tested = Object(working.json()).connection
-  assert.equal(tested.state, 'ACTIVE')
-  assert.notEqual(tested.testedAt, null)
-  assert.equal(Object(working.json()).checks.length, 24)
-  assert.deepEqual(Object(working.json()).checks[10], {
-    id: 'pedidos',
-    label: 'Pedidos',
-    subject: 'Vendas',
-    outcome: 'READS',
-  })
-  assert.equal(Object(working.json()).checks[0].subject, 'Porta de leitura')
+  const body = Object(working.json())
+  assert.deepEqual(Object.keys(body).sort(), ['connection', 'result'])
+  assert.equal(body.result, 'WORKING')
+  assert.equal(body.connection.state, 'ACTIVE')
+  assert.notEqual(body.connection.testedAt, null)
+  assert.deepEqual(body.connection.testedBy, { id: ana.id, name: 'Ana Lima' })
 
-  fake.switches.refuse.add('pedidos')
-  fake.switches.refuse.add('consultar')
-  const refused = await testOf(hub, ana, base, connection.id)
-  assert.equal(Object(refused.json()).result, 'WORKING')
-  assert.deepEqual(outcomes(refused), reads({ pedidos: 'REFUSED', consultar: 'REFUSED' }))
+  fake.switches.refuse.add('empresas')
+  const refused = Object((await testOf(hub, ana, base, connection.id)).json())
+  assert.deepEqual(
+    [refused.result, refused.read, refused.native.status, refused.native.code],
+    ['READ_REFUSED', 'Empresas', 403, 'NO_ACCESS'],
+  )
+  // The key was taken: the connection stays as the working test left it.
+  assert.deepEqual(refused.connection, body.connection)
 
   fake.switches.refuse.clear()
-  fake.switches.malformed = true
-  const unreadable = await testOf(hub, ana, base, connection.id)
-  assert.equal(Object(unreadable.json()).result, 'WORKING')
-  assert.deepEqual(outcomes(unreadable)[2], ['empresas', 'UNREADABLE'])
+  fake.switches.busyReads = 5
+  const busy = Object((await testOf(hub, ana, base, connection.id)).json())
+  assert.deepEqual([busy.result, busy.native.status, busy.waitMs], ['BUSY', 429, null])
+  assert.deepEqual(busy.connection, body.connection)
 })
 
 test('testar: chave recusada, fornecedor fora', async (t) => {
@@ -124,7 +116,6 @@ test('testar: chave recusada, fornecedor fora', async (t) => {
   assert.equal(Object(refused.json()).result, 'AUTH_REFUSED')
   assert.equal(Object(refused.json()).connection.state, 'NEEDS_REAUTH')
   assert.notEqual(Object(refused.json()).connection.testedAt, null)
-  assert.equal(Object(refused.json()).checks, undefined)
   const member = await testOf(hub, carla, base, connection.id)
   assert.deepEqual([member.statusCode, codeOf(member)], [404, 'NOT_FOUND'])
 
@@ -165,9 +156,10 @@ test('testar e desligar juntos; um serviço por token', async (t) => {
   assert.equal(fake.logins() - logins, 2)
   for (const each of both) {
     assert.equal(Object(each.json()).result, 'WORKING')
-    assert.deepEqual(outcomes(each), ALL_READS)
   }
 
+  // The check read is held in flight, so the Desligar commits while the Testar is still on it.
+  fake.switches.delayMilliseconds = 1_000
   const started = fake.logins()
   const testing = testOf(hub, ana, base, connection.id)
   while (fake.logins() === started) await setTimeout(5)
@@ -175,7 +167,6 @@ test('testar e desligar juntos; um serviço por token', async (t) => {
   assert.equal(removed.statusCode, 200)
   const gone = await testing
   assert.deepEqual([gone.statusCode, codeOf(gone)], [404, 'CONNECTION_NOT_FOUND'])
-  assert.equal(gone.body.includes('checks'), false)
 })
 
 test('desligar, e de novo', async (t) => {
@@ -221,8 +212,8 @@ test('a lista: o membro lê, nada da credencial sai', async (t) => {
   assert.equal(list.connectors.length, 2)
   const [entry] = list.connectors
   assert.deepEqual(
-    [entry.id, entry.name, entry.version, entry.category, entry.reads],
-    ['sankhya', 'Sankhya', '1.0.0', 'ERP', 24],
+    [entry.id, entry.name, entry.version, entry.category],
+    ['sankhya', 'Sankhya', '1.0.0', 'ERP'],
   )
   assert.ok(entry.summary.length > 0 && entry.logo.includes('<svg'))
   assert.deepEqual(

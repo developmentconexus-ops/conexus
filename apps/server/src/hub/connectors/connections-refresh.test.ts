@@ -22,13 +22,6 @@ async function tested(on: Linked, id: string) {
   return { body: Object(response.json()), elapsed: performance.now() - started }
 }
 
-async function responseTimeCheck(on: Linked, id: string) {
-  const checks: { id: string; outcome: string; native?: { status: number; code: string } }[] = (
-    await tested(on, id)
-  ).body.checks
-  return checks.find((check) => check.id === 'tempoDeResposta')
-}
-
 async function rowOf(on: Linked) {
   const [row] = await on.hub.test.asOwner(
     'select state, revision, refresh_until from connectors.connection',
@@ -120,38 +113,27 @@ test('o app recusado, o fornecedor fora e a resposta ilegível não mudam nada',
   assert.equal(on.fake.refreshes(), 1)
 })
 
-test('uma permissão faltando: essas leituras recusadas, as outras leem', async (t) => {
+test('testar: a conta, uma leitura só; a conta recusada ou o Mercado Livre pedindo para esperar', async (t) => {
   const on = await mercadoLivreOn(t)
   const id = String(
     Object((await linkMercadoLivre(on.hub, on.ana, on.companyId)).json()).connection.id,
   )
-  on.fake.switches.refuseGroups.add('vendas')
-  const { body } = await tested(on, id)
-  assert.equal(body.result, 'WORKING')
-  const checks: { outcome: string; native?: { status: number; code: string } }[] = body.checks
-  const refused = checks.filter((check) => check.outcome === 'REFUSED')
-  assert.ok(refused.length > 0)
-  for (const check of refused)
-    assert.deepEqual(
-      [check.native?.status, check.native?.code],
-      [403, 'PA_UNAUTHORIZED_RESULT_FROM_POLICIES'],
-    )
-  assert.ok(checks.some((check) => check.outcome === 'READS'))
-  assert.equal(checks.filter((check) => check.outcome === 'NOT_TESTED').length, 0)
-})
+  // A permission the app lacks for other reads: Testar does not send them.
+  for (const group of ['anuncios', 'vendas']) on.fake.switches.refuseGroups.add(group)
+  const working = (await tested(on, id)).body
+  assert.deepEqual([working.result, working.connection.state], ['WORKING', 'ACTIVE'])
 
-test('um vendedor sem tempo de resposta: o 404 que a documentação mostra lê sem nada para olhar; outro 404 é recusa', async (t) => {
-  const on = await mercadoLivreOn(t)
-  const id = String(
-    Object((await linkMercadoLivre(on.hub, on.ana, on.companyId)).json()).connection.id,
+  on.fake.switches.accountRefused = true
+  const refused = (await tested(on, id)).body
+  assert.deepEqual(
+    [refused.result, refused.read, refused.native.status, refused.native.code],
+    ['READ_REFUSED', 'Conta', 403, 'PA_UNAUTHORIZED_RESULT_FROM_POLICIES'],
   )
-  assert.equal((await responseTimeCheck(on, id))?.outcome, 'READS')
+  assert.deepEqual(refused.connection, working.connection)
 
-  on.fake.switches.responseTime = 'none'
-  assert.equal((await responseTimeCheck(on, id))?.outcome, 'NOTHING_TO_READ')
-
-  on.fake.switches.responseTime = 'other'
-  const refused = await responseTimeCheck(on, id)
-  assert.equal(refused?.outcome, 'REFUSED')
-  assert.deepEqual([refused?.native?.status, refused?.native?.code], [404, 'not_found'])
+  on.fake.switches.accountRefused = false
+  on.fake.switches.accountRateLimited = true
+  const busy = (await tested(on, id)).body
+  assert.deepEqual([busy.result, busy.native.status], ['BUSY', 429])
+  assert.deepEqual(busy.connection, working.connection)
 })

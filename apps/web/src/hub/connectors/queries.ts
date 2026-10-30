@@ -6,7 +6,7 @@ import {
   listConnections,
   reconnectConnection,
   startConnectionSignIn,
-  TEST_DEADLINE_MS,
+  TEST_LONGEST_MS,
   testConnection,
   unlinkConnection,
 } from '@conexus/hub-api'
@@ -14,9 +14,9 @@ import { hubMutation, hubQuery, hubQueryPrefix } from '../../platform/hub.ts'
 
 /** The 100 s at which Cloudflare's edge cuts any answer (apps/server/src/platform/http.ts). */
 export const EDGE_CUT_MS = 100_000
-/** What the browser adds to the Hub's Testar deadline: the round trip and the reads outside it. */
+/** What the browser adds to the longest a Testar takes: the round trip and the Hub's own reads. */
 const TEST_WAIT_MARGIN_MS = 10_000
-export const TEST_WAIT_MS = TEST_DEADLINE_MS + TEST_WAIT_MARGIN_MS
+export const TEST_WAIT_MS = TEST_LONGEST_MS + TEST_WAIT_MARGIN_MS
 
 export function connectionsQuery(companyId: CompanyId) {
   return hubQuery(listConnections, { params: { companyId } })

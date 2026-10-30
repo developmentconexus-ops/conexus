@@ -41,18 +41,20 @@ test('o log do Testar leva o status e o código do fornecedor, nunca o corpo', a
       return id
     }
     const wrong = await tested('Errada', { ...fake.credential, clientSecret: 'segredo-errado' })
-    fake.switches.refuse.add('pedidos')
-    fake.switches.refuse.add('consultar')
     const right = await tested('Certa', fake.credential)
+    fake.switches.refuse.add('empresas')
+    const barred = await tested('Sem empresas', fake.credential)
 
     const lines = spawned.lines.filter((line) => line.msg === 'CONNECTION_TESTED')
     assert.deepEqual(
-      lines.map((line) => [line.connectionId, line.result, line.status, line.code, line.refusals]),
+      lines.map((line) => [line.connectionId, line.result, line.status, line.code]),
       [
-        [wrong, 'AUTH_REFUSED', 401, 'GTW2510', undefined],
-        [right, 'WORKING', undefined, undefined, 'consultar 200 0, pedidos 403 NO_ACCESS'],
+        [wrong, 'AUTH_REFUSED', 401, 'GTW2510'],
+        [right, 'WORKING', undefined, undefined],
+        [barred, 'READ_REFUSED', 403, 'NO_ACCESS'],
       ],
     )
+    assert.equal(JSON.stringify(spawned.lines).includes('Sem permissão'), false)
     assert.equal(JSON.stringify(spawned.lines).includes('Credenciais inválidas'), false)
   } finally {
     await spawned.stop()

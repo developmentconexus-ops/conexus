@@ -20,7 +20,6 @@ export type Deps = {
   executor: Executor
   log: FailureLog
   callDeadlineMs: number
-  testDeadlineMs: number
   apps: ConnectorApps
   /** Each connector's double on this machine: the authorization page is placed on it too. */
   origins: ReadonlyMap<ConnectorId, string>

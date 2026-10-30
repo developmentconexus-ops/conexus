@@ -22,7 +22,9 @@ type Switches = {
   rateLimited: boolean
   /** The account call (`/users/me`) answers 429. */
   accountRateLimited: boolean
-  /** The next data reads (not the account call) answer 429, this many times; each is counted down. */
+  /** The account call (`/users/me`) answers 403 as the permission policies do. */
+  accountRefused: boolean
+  /** The next reads (the account call, which is the check, and the data routes) answer 429, this many times; each is counted down. */
   busyReads: number
   /** The `Retry-After` header those 429s carry (`retry-after-ms` when it is a number of milliseconds), or none. */
   busyWait: { header: 'retry-after' | 'retry-after-ms'; value: string } | null
@@ -32,8 +34,6 @@ type Switches = {
   refuseGroups: Set<string>
   /** A single order (`/orders/{id}`) answers 206 with `X-Content-Missing`. */
   partialOrders: boolean
-  /** What the response-time route answers: its data, the 404 the documentation shows for a seller with none, or a 404 of another kind. */
-  responseTime: 'data' | 'none' | 'other'
   /** The next revocation answers 403, as when the key cannot take the app's permission back. */
   refuseRevoke: boolean
   /** The `expires_in` the exchange and the renewal give. */
@@ -197,13 +197,6 @@ function routed(
     match: a.match,
     headers: a.request.headers,
   })
-  if (route.name === 'tempoDeResposta' && switches.responseTime !== 'data') {
-    const message =
-      switches.responseTime === 'none'
-        ? `Response time not found for user id: ${a.ref}`
-        : 'Resource not found'
-    return json({ message, error: 'not_found', status: 404, cause: [] }, 404)
-  }
   if (route.name === 'pedido' && switches.partialOrders)
     return json(reply.body, 206, { 'x-content-missing': 'buyer, feedback' })
   return json(reply.body, reply.status ?? 200, reply.headers)
@@ -223,23 +216,25 @@ function bearing(world: World, request: Request) {
 function read(world: World, request: Request, url: URL): Response {
   const { given, refused } = bearing(world, request)
   if (!given) return refused
+  if (url.pathname === '/users/me' && world.switches.accountRefused) return forbidden()
   if (url.pathname === '/users/me' && world.switches.accountRateLimited)
     return json({ message: 'too many requests', status: 429 }, 429)
+  const match = ROUTES.map((route) => ({ route, match: route.pattern.exec(url.pathname) })).find(
+    (found) => found.match,
+  )
+  if ((match || url.pathname === '/users/me') && world.switches.busyReads > 0) {
+    const { busyWait } = world.switches
+    world.switches.busyReads -= 1
+    return json(
+      { message: 'too many requests', status: 429 },
+      429,
+      busyWait === null ? {} : { [busyWait.header]: busyWait.value },
+    )
+  }
   if (url.pathname === '/users/me')
     return json(me({ ref: given.ref, label: world.switches.account.label }))
-  for (const route of ROUTES) {
-    const match = route.pattern.exec(url.pathname)
-    if (match && world.switches.busyReads > 0) {
-      const { busyWait } = world.switches
-      world.switches.busyReads -= 1
-      return json(
-        { message: 'too many requests', status: 429 },
-        429,
-        busyWait === null ? {} : { [busyWait.header]: busyWait.value },
-      )
-    }
-    if (match) return routed(world, route, { request, url, ref: given.ref, match })
-  }
+  if (match?.match)
+    return routed(world, match.route, { request, url, ref: given.ref, match: match.match })
   return json({ message: 'Resource not found', error: 'not_found', status: 404 }, 404)
 }
 
@@ -286,12 +281,12 @@ export function mercadoLivreFake({
     invalidClient: false,
     rateLimited: false,
     accountRateLimited: false,
+    accountRefused: false,
     busyReads: 0,
     busyWait: null,
     slowMilliseconds: 0,
     refuseGroups: new Set(),
     partialOrders: false,
-    responseTime: 'data',
     refuseRevoke: false,
     expiresInSeconds: 21_600,
   }

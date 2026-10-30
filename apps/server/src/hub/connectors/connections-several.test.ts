@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { call, codeOf, personOn, plantCompany } from '../identity/test-hub.ts'
-import { CHECK_IDS, connectionsOn, linkSankhya, testOf } from './test-connections.ts'
+import { connectionsOn, linkSankhya, testOf } from './test-connections.ts'
 
 function idOf(linked: { json(): unknown }): string {
   return Object(linked.json()).connection.id
@@ -49,64 +49,33 @@ test('o id de outra empresa dá 404 no Testar, no Desligar e no getConnection', 
   assert.equal(Object((await testOf(hub, ana, base, mine)).json()).result, 'WORKING')
 })
 
-test('o último teste: guardado no que funciona, apagado no que a chave recusa, intacto no que não alcança', async (t) => {
+test('o que fica de um Testar: o estado e quem testou, nunca o resultado; o que não alcança não muda nada', async (t) => {
   const { hub, fake, ana, bruno, carla, base } = await connectionsOn(t)
   const id = idOf(await linkSankhya(hub, ana, base, fake.credential))
-  const empty = await call(hub, carla, 'GET', `${base}/${id}`)
-  assert.deepEqual(Object(empty.json()).lastTest, null)
-
   const working = Object((await testOf(hub, bruno, base, id)).json())
   assert.equal(working.result, 'WORKING')
   const stored = Object((await call(hub, carla, 'GET', `${base}/${id}`)).json())
-  assert.deepEqual(stored.lastTest, working.checks)
-  assert.equal(stored.lastTest.length, CHECK_IDS.length)
+  assert.deepEqual(Object.keys(stored), ['connection'])
+  assert.deepEqual(stored.connection, working.connection)
   assert.deepEqual(stored.connection.testedBy, { id: bruno.id, name: 'Bruno Reis' })
   assert.equal(stored.connection.state, 'ACTIVE')
 
-  fake.switches.silent = true
-  assert.equal(Object((await testOf(hub, ana, base, id)).json()).result, 'UNREACHABLE')
-  fake.switches.silent = false
-  const kept = Object((await call(hub, carla, 'GET', `${base}/${id}`)).json())
-  assert.deepEqual(kept.lastTest, working.checks)
+  for (const change of [
+    () => (fake.switches.silent = true),
+    () => fake.switches.refuse.add('empresas'),
+  ]) {
+    change()
+    assert.notEqual(Object((await testOf(hub, ana, base, id)).json()).result, 'WORKING')
+    fake.switches.silent = false
+    fake.switches.refuse.clear()
+    const kept = Object((await call(hub, carla, 'GET', `${base}/${id}`)).json())
+    assert.deepEqual(kept.connection, stored.connection)
+  }
 
-  // A refusal is kept as its status and code, never its body or message.
-  fake.switches.refuse.add('empresas')
-  assert.equal(Object((await testOf(hub, ana, base, id)).json()).result, 'WORKING')
-  fake.switches.refuse.clear()
-  const keptOnes = Object((await call(hub, carla, 'GET', `${base}/${id}`)).json()).lastTest
-  const refusedItem = keptOnes.find((check: { id: string }) => check.id === 'empresas')
-  assert.deepEqual(Object.keys(refusedItem.native).sort(), ['code', 'status'])
-
-  // A stored item that no longer matches the contract reads as no test, never an invented item.
-  await hub.test.asOwner(
-    `update connectors.connection set last_test = '[{"id":1}]' where id = $1`,
-    [id],
-  )
-  assert.deepEqual(Object((await call(hub, carla, 'GET', `${base}/${id}`)).json()).lastTest, null)
-  assert.ok(hub.lines.some((line) => line.message === 'CONNECTION_LAST_TEST_UNREAD'))
-  await hub.test.asOwner(`update connectors.connection set last_test = $2::jsonb where id = $1`, [
-    id,
-    JSON.stringify(working.checks),
-  ])
-
-  // A key refused after a working test takes the stored test with it.
   fake.switches.expireToken = true
   const revoked = Object((await testOf(hub, ana, base, id)).json())
   fake.switches.expireToken = false
   assert.deepEqual([revoked.result, revoked.connection.state], ['AUTH_REFUSED', 'NEEDS_REAUTH'])
-  assert.deepEqual(Object((await call(hub, carla, 'GET', `${base}/${id}`)).json()).lastTest, null)
-
-  const wrong = idOf(
-    await linkSankhya(
-      hub,
-      ana,
-      base,
-      { ...fake.credential, xToken: 'errado' },
-      undefined,
-      'Errada',
-    ),
-  )
-  assert.equal(Object((await testOf(hub, ana, base, wrong)).json()).result, 'AUTH_REFUSED')
-  const refused = Object((await call(hub, carla, 'GET', `${base}/${wrong}`)).json())
-  assert.deepEqual([refused.connection.state, refused.lastTest], ['NEEDS_REAUTH', null])
+  const refused = Object((await call(hub, carla, 'GET', `${base}/${id}`)).json())
+  assert.deepEqual(refused.connection, revoked.connection)
 })

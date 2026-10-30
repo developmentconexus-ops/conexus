@@ -2,7 +2,13 @@ import { createHash, randomBytes, randomUUID } from 'node:crypto'
 import type { AccountOf, ConnectorId, GrantAnswered } from '@conexus/connectors'
 import { authorizeUrl, codeRequest, connectorOf } from '@conexus/connectors'
 import type { Connection, SignInCompleted } from '@conexus/hub-api'
-import { ConnectionId, ConnectionName, ConnectionSignInId, REDIRECT_PATH } from '@conexus/hub-api'
+import {
+  ConnectionId,
+  ConnectionName,
+  ConnectionSignInId,
+  GRANT_DEADLINE_MS,
+  REDIRECT_PATH,
+} from '@conexus/hub-api'
 import { and, eq, lte, sql } from 'drizzle-orm'
 import type { ReadTx } from '../../platform/database.ts'
 import { violatedConstraint } from '../../platform/database.ts'
@@ -16,7 +22,7 @@ import type { Deps, Viewer } from './rows.ts'
 import { admitted, columns, ofCompany, scopeOf, viewOf } from './rows.ts'
 import { connection, connectionSignIn } from './tables.ts'
 import type { ConnectionTokens } from './tokens.ts'
-import { GRANT_DEADLINE_MS, sealTokens, statusOf } from './tokens.ts'
+import { sealTokens, statusOf } from './tokens.ts'
 
 /** How long a started authorization waits for its code (decision 0049's ten minutes). */
 const SIGN_IN_SECONDS = 600
@@ -303,7 +309,7 @@ async function written(
           .update(connection)
           .set({
             ...{ ...linked, revision: target.revision + 1, refreshUntil: null },
-            ...{ testedAt: null, testedBy: null, lastTest: null },
+            ...{ testedAt: null, testedBy: null },
           })
           .where(and(ofCompany(viewer, id), eq(connection.revision, target.revision)))
           .returning({ id: connection.id })
