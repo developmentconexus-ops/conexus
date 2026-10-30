@@ -53,6 +53,13 @@ writes `hub_git_copy_key` (`<key id> <secret>`), `hub_e2b_api_key` and, in `hub.
 ([0051](../decisions/0051-builder-machine-git-and-copy-in-r2.md)). Every installation makes its own id and never copies production's `hub.env`: the id alone keeps
 machines apart.
 
+## Connector app keys
+
+Firstmate writes `hub_connector_apps` beside those keys, owner uid 1000, mode 0400: the installation's
+OAuth app of each connector, as JSON `{"<connector id>":{"clientId":"...","clientSecret":"..."}}`
+([0057](../decisions/0057-connections-by-oauth.md)). Without it the Hub answers Ligar with "Esse
+conector ainda não está disponível neste Conexus."; `deploy.sh` refuses to run without the file.
+
 ## Session secret and first person
 
 Firstmate writes `hub_session_secret` beside those keys, 32 random characters or more
