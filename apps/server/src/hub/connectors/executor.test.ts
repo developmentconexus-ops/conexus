@@ -1,13 +1,8 @@
 import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
-import type { Operation } from '@conexus/connectors'
-import { connectorOf, sankhyaFake } from '@conexus/connectors'
-import { ConnectionId } from '@conexus/hub-api'
-import { Credential } from '../../platform/seal.ts'
-import { Secret } from '../../platform/secret.ts'
+import { sankhyaFake } from '@conexus/connectors'
 import { hubWithLog } from '../identity/test-hub.ts'
-import { createExecutor } from './executor.ts'
 import { connectionsOn, linkSankhya, testOf } from './test-connections.ts'
 
 /** The program's own fetch, taken before any test replaces the global one. */
@@ -258,36 +253,4 @@ test('o token que o fornecedor devolve num 2xx da leitura do Testar não volta n
     [tested.result, tested.native.status, tested.native.body],
     ['UNREADABLE', 200, null],
   )
-})
-
-test('o executor troca o token pelo texto [redacted] também num 2xx que o kit devolve', async () => {
-  const sankhya = connectorOf('sankhya')
-  assert.ok(sankhya)
-  const keeping: Operation<unknown, unknown> = {
-    ...sankhya.check,
-    answer: (answer) => ({ kind: 'OK', value: answer.body }),
-  }
-  const bearer = 'bearer-que-o-fornecedor-devolve'
-  const executor = createExecutor({
-    fetch: () => Promise.resolve(Response.json({ echo: bearer })),
-    origins: new Map(),
-    log: { info: () => undefined, error: () => undefined },
-  })
-  const answered = await executor.call(
-    {
-      id: ConnectionId.parse(crypto.randomUUID()),
-      linkedAt: new Date().toISOString(),
-      connector: sankhya,
-      credential: Credential.parse(
-        JSON.stringify({ clientId: 'id', clientSecret: 'segredo', xToken: 'x' }),
-      ),
-      revision: 1,
-      accountRef: null,
-    },
-    new Secret('BearerToken', bearer),
-    keeping,
-    { page: 0 },
-    1_000,
-  )
-  assert.deepEqual(answered, { kind: 'OK', value: { echo: '[redacted]' } })
 })

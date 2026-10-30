@@ -335,7 +335,8 @@ export function createExecutor(deps: ExecutorDeps): Executor {
       )
       const { auth } = connector
       const pasted = auth.kind === 'client_credentials' ? valuesOf(connection, auth) : {}
-      const redaction = { secrets: [...Object.values(pasted), token.reveal()], whole2xx: false }
+      // No door returns an operation's 2xx body: the kit nulls an unreadable one, and the check keeps none.
+      const redaction = { secrets: [...Object.values(pasted), token.reveal()], whole2xx: true }
       const sent = await send(deps, request, whereOf(connection), redaction, deadlineMs)
       return 'kind' in sent ? sent : operation.answer(sent)
     },
