@@ -1,11 +1,11 @@
 import { AccountRef, connectorOf } from '@conexus/connectors'
-import type { KeptCheck, Person, TestCheck, TestResult } from '@conexus/hub-api'
+import type { Person, TestResult } from '@conexus/hub-api'
 import { and, sql } from 'drizzle-orm'
 import { Failure } from '../../platform/failure.ts'
 import { open } from '../../platform/seal.ts'
+import type { Checked } from './check.ts'
+import { checked } from './check.ts'
 import type { OpenedConnection } from './executor.ts'
-import type { Probed } from './probe.ts'
-import { probed } from './probe.ts'
 import type { Deps, OfConnection } from './rows.ts'
 import { admitted, columns, ofCompany, scopeOf, sealContext, sealedOf, viewOf } from './rows.ts'
 import { connection } from './tables.ts'
@@ -43,39 +43,30 @@ export function opened(deps: Deps, input: OfConnection): Promise<OpenedConnectio
 
 const NEXT_STATE = { WORKING: 'ACTIVE', AUTH_REFUSED: 'NEEDS_REAUTH' } as const
 
-/** An item as it is kept: what the provider said stays as its status and code, never its body or message (founder, 2026-10-29). */
-function kept(check: TestCheck): KeptCheck {
-  if (!('native' in check)) return check
-  const { status, code } = check.native
-  return { ...check, native: { status, code } }
-}
+type Written = Extract<Checked, { result: 'WORKING' | 'AUTH_REFUSED' }>
 
-type Written = Extract<Probed, { result: 'WORKING' | 'AUTH_REFUSED' }>
-
-/** What a finished test writes: the state, who tested and when; the items of a working test, nothing of a refused key (founder, X2). */
-function writtenBy(probe: Written, tester: Person) {
+/** What a finished test writes: the state, who tested and when. */
+function writtenBy(check: Written, tester: Person) {
   return {
-    state: NEXT_STATE[probe.result],
+    state: NEXT_STATE[check.result],
     testedAt: sql`statement_timestamp()`,
     testedBy: tester.id,
-    lastTest: probe.result === 'WORKING' ? probe.checks.map(kept) : null,
   }
 }
 
 /**
- * Testar's last step: the state and the last test are written only on the row the first step
- * opened (its id and `linked_at`); one removed meanwhile is not found and nothing changes. An
- * unreachable provider, one that answered what the kit cannot read, or one that refused the
- * installation's app, changes nothing.
+ * Testar's last step: the state is written only on the row the first step opened (its id and
+ * `linked_at`); one removed meanwhile is not found and nothing changes. Only a working check and a
+ * refused key change the state: the others say nothing about the key.
  */
-function recorded(deps: Deps, input: OfConnection, opened: OpenedConnection, probe: Probed) {
+function recorded(deps: Deps, input: OfConnection, opened: OpenedConnection, check: Checked) {
   return deps.database.command(scopeOf(input), async (tx) => {
     await admitted(deps, tx, input, 'manageConnections')
     const same = and(
       ofCompany(input, input.connectionId),
       sql`${connection.linkedAt} = ${opened.linkedAt}::timestamptz`,
     )
-    const written = probe.result === 'WORKING' || probe.result === 'AUTH_REFUSED' ? probe : null
+    const written = check.result === 'WORKING' || check.result === 'AUTH_REFUSED' ? check : null
     const [row] =
       written === null
         ? await tx.select(columns).from(connection).where(same)
@@ -89,12 +80,9 @@ function recorded(deps: Deps, input: OfConnection, opened: OpenedConnection, pro
   })
 }
 
-/** Testar (criteria 10 to 12): the three steps of the failure table. */
+/** Testar: the three steps of the failure table, one check read between them (founder, 2026-10-30). */
 export async function test(deps: Deps, input: OfConnection): Promise<TestResult> {
   const open = await opened(deps, input)
-  const probe = await probed({ ...deps, access: accessFor(deps, input) }, open)
-  const view = await recorded(deps, input, open, probe)
-  return probe.result === 'WORKING'
-    ? { result: 'WORKING', checks: probe.checks, connection: view }
-    : { ...probe, connection: view }
+  const check = await checked({ ...deps, access: accessFor(deps, input) }, open)
+  return { ...check, connection: await recorded(deps, input, open, check) }
 }

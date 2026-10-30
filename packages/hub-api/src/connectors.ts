@@ -23,8 +23,6 @@ export const ConnectorEntry = z.object({
   summary: z.string(),
   // The kit's SVG, shown by the screen as a data: image.
   logo: z.string(),
-  // What one Testar reads: the read door's entries plus the operations, counted from the definition.
-  reads: z.number().int(),
   // How the company links it: pasted fields, or a trip to the provider (`fields` empty).
   auth: z.enum(['client_credentials', 'oauth2_code']),
   fields: z.array(
@@ -88,37 +86,20 @@ export const Native = z.object({
 })
 export type Native = z.infer<typeof Native>
 
-const Item = z.object({
-  id: z.string(),
-  label: z.string(),
-  subject: z.string(), // the subject's label, for the screen's one line per subject
-})
-
-/** One item of a test, by what its call came to; `native` is on the items the provider answered badly. */
-function checkOf<N extends z.ZodType>(native: N) {
-  return z.discriminatedUnion('outcome', [
-    // NOT_TESTED: the test's whole deadline ran out before this item.
-    Item.extend({ outcome: z.enum(['READS', 'NOTHING_TO_READ', 'NOT_TESTED']) }),
-    Item.extend({ outcome: z.enum(['REFUSED', 'UNREADABLE']), native }),
-    // Not called: a source it reads from did not read; `source` is that source's label.
-    Item.extend({ outcome: z.literal('SOURCE_UNREAD'), source: z.string() }),
-  ])
-}
-export const TestCheck = checkOf(Native)
-export type TestCheck = z.infer<typeof TestCheck>
-
-/** A test item as it is kept (every member reads it): the status and code only, never the body or the message. */
-export const KeptCheck = checkOf(Native.pick({ status: true, code: true }))
-export type KeptCheck = z.infer<typeof KeptCheck>
-
-/** What Testar answers, shown at that moment (the values read stay in the executor; what the provider said about a refusal is shown, never kept whole). */
+/** What Testar's one check answers, shown at that moment and never kept (founder, 2026-10-30): `native` is what the provider said (null: it said nothing, as a timeout). */
 export const TestResult = z.discriminatedUnion('result', [
-  z.object({ result: z.literal('WORKING'), checks: z.array(TestCheck), connection: Connection }),
-  // The test ended on the provider's own answer: `native` is what it said (null: it said nothing, as a timeout).
+  z.object({ result: z.literal('WORKING'), connection: Connection }),
   z.object({ result: z.literal('AUTH_REFUSED'), native: Native, connection: Connection }),
+  // The key was taken and the check read was refused: `read` is its label ("Empresas").
+  z.object({
+    result: z.literal('READ_REFUSED'),
+    read: z.string(),
+    native: Native,
+    connection: Connection,
+  }),
   z.object({ result: z.literal('UNREADABLE'), native: Native, connection: Connection }),
   z.object({ result: z.literal('UNREACHABLE'), native: Native.nullable(), connection: Connection }),
-  // A read got 429: `waitMs` is the wait the provider asked for, null when it named none.
+  // The check read got 429: `waitMs` is the wait the provider asked for, null when it named none.
   z.object({
     result: z.literal('BUSY'),
     native: Native,
@@ -180,13 +161,21 @@ export const linkConnection = defineOperation({
   ],
 })
 
-/** How long Testar may take in all, from its first login: under the 100 s the Cloudflare edge allows (platform/http.ts). */
-export const TEST_DEADLINE_MS = 80_000
+/** How long one call to a provider may take, the login included (the failure table: 10 s). */
+export const CALL_DEADLINE_MS = 10_000
+
+/**
+ * An exchange's or a refresh's own deadline, never what is left of a Testar: once the provider has
+ * turned the refresh token, its answer must reach `store` (under the lease's 30 s).
+ */
+export const GRANT_DEADLINE_MS = 10_000
+
+/** The longest Testar takes: up to two tokens and two check calls; the browser waits past it. */
+export const TEST_LONGEST_MS = 2 * (GRANT_DEADLINE_MS + CALL_DEADLINE_MS)
 
 export const testConnection = defineOperation({
   id: 'testConnection',
-  summary:
-    'Logs in to the provider with the sealed fields and reads once with each read operation.',
+  summary: "Gets the connection's token and sends the connector's one check read.",
   access: 'session',
   method: 'POST',
   path: '/api/companies/{companyId}/connections/{connectionId}/test',
@@ -196,16 +185,13 @@ export const testConnection = defineOperation({
   failures: [...READ_FAILURES, 'CONNECTION_NOT_FOUND', 'SEAL_REFUSED', 'CONNECTOR_NOT_CONFIGURED'],
 })
 
-/** One connection with its last WORKING test, kept: the items only, never a value read (founder, X2). */
-export const ConnectionDetail = z.object({
-  connection: Connection,
-  lastTest: z.array(KeptCheck).nullable(),
-})
+/** One connection, as every member reads it. */
+export const ConnectionDetail = z.object({ connection: Connection })
 export type ConnectionDetail = z.infer<typeof ConnectionDetail>
 
 export const getConnection = defineOperation({
   id: 'getConnection',
-  summary: 'Reads one connection and the items of its last working test, with no credential.',
+  summary: 'Reads one connection, with no credential.',
   access: 'session',
   method: 'GET',
   path: '/api/companies/{companyId}/connections/{connectionId}',

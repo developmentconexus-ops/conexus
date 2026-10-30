@@ -2,14 +2,14 @@ import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { sankhyaFake } from '@conexus/connectors'
-import { call, hubWithLog } from '../identity/test-hub.ts'
+import { hubWithLog } from '../identity/test-hub.ts'
 import { connectionsOn, linkSankhya, testOf } from './test-connections.ts'
 
 /** The program's own fetch, taken before any test replaces the global one. */
 const realFetch = globalThis.fetch
 
 test('a origem, o redirecionamento e o teto', async (t) => {
-  const { hub, fake, ana, carla, base } = await connectionsOn(t)
+  const { hub, fake, ana, base } = await connectionsOn(t)
   const { connection } = Object((await linkSankhya(hub, ana, base, fake.credential)).json())
 
   fake.switches.redirect = true
@@ -19,21 +19,15 @@ test('a origem, o redirecionamento e o teto', async (t) => {
   fake.switches.redirect = false
 
   fake.switches.oversize = true
-  const oversize = await testOf(hub, ana, base, connection.id)
-  assert.equal(Object(oversize.json()).result, 'WORKING')
-  const checks = Object(oversize.json()).checks.map((check: { outcome: string }) => check.outcome)
-  assert.equal(checks[0], 'UNREADABLE')
-  assert.ok(checks.every((outcome: string) => outcome !== 'READS'))
-  assert.deepEqual(Object(oversize.json()).checks[0].native, {
+  const oversize = Object((await testOf(hub, ana, base, connection.id)).json())
+  assert.deepEqual([oversize.result, oversize.connection.state], ['UNREADABLE', 'NEW'])
+  assert.deepEqual(oversize.native, {
     status: 200,
     code: null,
     message: null,
     body: null,
     reason: { kind: 'TOO_LARGE', limitBytes: 2 * 1024 * 1024 },
   })
-  // What is kept is the status and code: the reason is shown at that moment only.
-  const kept = Object((await call(hub, carla, 'GET', `${base}/${connection.id}`)).json()).lastTest
-  assert.deepEqual(kept[0].native, { status: 200, code: null })
 })
 
 test('um 2xx que não encaixa diz no Testar onde e que tipo veio, nunca um valor', async (t) => {
@@ -41,8 +35,8 @@ test('um 2xx que não encaixa diz no Testar onde e que tipo veio, nunca um valor
   const { connection } = Object((await linkSankhya(hub, ana, base, fake.credential)).json())
   fake.switches.malformed = true
   const tested = Object((await testOf(hub, ana, base, connection.id)).json())
-  const empresas = tested.checks.find((check: { id: string }) => check.id === 'empresas')
-  assert.deepEqual(empresas.native, {
+  assert.equal(tested.result, 'UNREADABLE')
+  assert.deepEqual(tested.native, {
     status: 200,
     code: null,
     message: null,
@@ -55,8 +49,7 @@ test('um 2xx que não encaixa diz no Testar onde e que tipo veio, nunca um valor
   fake.switches.malformed = false
   fake.switches.notJson = true
   const text = await testOf(hub, ana, base, connection.id)
-  const first = Object(text.json()).checks.find((check: { id: string }) => check.id === 'empresas')
-  assert.deepEqual(first.native, {
+  assert.deepEqual(Object(text.json()).native, {
     status: 200,
     code: null,
     message: null,
@@ -66,21 +59,12 @@ test('um 2xx que não encaixa diz no Testar onde e que tipo veio, nunca um valor
   assert.ok(!text.body.includes('valor da empresa'))
 })
 
-test('a página sem linhas que o Sankhya manda (404 RESOURCE_NOT_FOUND) lê, sem nada para olhar, em toda leitura; não é recusa', async (t) => {
+test('a página sem linhas que o Sankhya manda (404 RESOURCE_NOT_FOUND) lê: a empresa sem empresas funciona, não é recusa', async (t) => {
   const { hub, fake, ana, base } = await connectionsOn(t)
   const { connection } = Object((await linkSankhya(hub, ana, base, fake.credential)).json())
   fake.switches.nothingFound = true
   const tested = Object((await testOf(hub, ana, base, connection.id)).json())
-  assert.equal(tested.result, 'WORKING')
-  const outcomes = new Map(
-    tested.checks.map((check: { id: string; outcome: string }) => [check.id, check.outcome]),
-  )
-  // Every list answered an empty page; the ones that need a company read before them never ran.
-  for (const id of ['empresas', 'clientes', 'centrosResultado', 'estoque'])
-    assert.equal(outcomes.get(id), 'NOTHING_TO_READ', id)
-  for (const id of ['pedidos', 'notasFiscais', 'contasAReceber', 'ordensCarga'])
-    assert.equal(outcomes.get(id), 'NOTHING_TO_READ', id)
-  assert.ok(![...outcomes.values()].includes('REFUSED'))
+  assert.deepEqual([tested.result, tested.connection.state], ['WORKING', 'ACTIVE'])
 })
 
 test('o Hub com a origem de um conector que o kit não tem não sobe', async (t) => {
@@ -217,7 +201,7 @@ test('um corpo de erro que não é JSON chega como texto e o status decide', asy
   assert.equal(down.native.body, '<html>502 Bad Gateway</html>')
 })
 
-test('o token sai de todo corpo de uma operação, no envelope do gateway e no erro REST', async (t) => {
+test('o token sai do corpo do erro que a leitura do Testar recebe', async (t) => {
   let bearer = ''
   const planted = await testingWith(t, async (request) => {
     if (request.headers.get('authorization') === null) {
@@ -225,22 +209,48 @@ test('o token sai de todo corpo de uma operação, no envelope do gateway e no e
       bearer = Object(await login.clone().json()).access_token
       return login
     }
-    const planted = { code: 'BAD', message: `token ${bearer}`, echo: bearer }
-    return new URL(request.url).searchParams.has('serviceName')
-      ? Response.json({ status: '0', statusMessage: `token ${bearer}`, echo: bearer })
-      : Response.json(planted, { status: 400 })
+    return Response.json({ code: 'BAD', message: `token ${bearer}`, echo: bearer }, { status: 400 })
   })
   assert.notEqual(bearer, '')
   assert.equal(planted.tested.body.includes(bearer), false)
-  const checks: { id: string; native: { message: string; body: { echo: string } } }[] = Object(
-    planted.tested.json(),
-  ).checks
-  function byId(id: string) {
-    return checks.find((check) => check.id === id)?.native
-  }
+  const tested = Object(planted.tested.json())
   assert.deepEqual(
-    [byId('consultar')?.message, byId('consultar')?.body.echo],
-    ['token [redacted]', '[redacted]'],
+    [tested.result, tested.native.message, tested.native.body.echo],
+    ['UNREACHABLE', 'token [redacted]', '[redacted]'],
   )
-  assert.equal(byId('empresas')?.body.echo, '[redacted]')
+})
+
+test('uma leitura recusada por pedido errado não é falta de acesso: o fornecedor respondeu com erro', async (t) => {
+  for (const status of [400, 404, 409, 422]) {
+    const wrong = await testingWith(t, async (request) =>
+      request.headers.get('authorization') === null
+        ? realFetch(request)
+        : Response.json({ code: 'WRONG', message: 'pedido errado' }, { status }),
+    )
+    const tested = Object(wrong.tested.json())
+    assert.deepEqual(
+      [tested.result, tested.native.status, tested.native.code],
+      ['UNREACHABLE', status, 'WRONG'],
+      String(status),
+    )
+  }
+})
+
+test('o token que o fornecedor devolve num 2xx da leitura do Testar não volta na resposta', async (t) => {
+  let bearer = ''
+  const planted = await testingWith(t, async (request) => {
+    if (request.headers.get('authorization') === null) {
+      const login = await realFetch(request)
+      bearer = Object(await login.clone().json()).access_token
+      return login
+    }
+    return Response.json({ empresas: bearer, echo: bearer })
+  })
+  assert.notEqual(bearer, '')
+  assert.equal(planted.tested.body.includes(bearer), false)
+  const tested = Object(planted.tested.json())
+  assert.deepEqual(
+    [tested.result, tested.native.status, tested.native.body],
+    ['UNREADABLE', 200, null],
+  )
 })

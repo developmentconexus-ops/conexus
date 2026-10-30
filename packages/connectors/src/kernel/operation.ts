@@ -65,6 +65,14 @@ export function outcomeOf(status: number): 'AUTH_REFUSED' | 'REFUSED' | 'UNREADA
   return 'UNREADABLE'
 }
 
+/**
+ * Whether a `REFUSED` answer is the provider withholding permission (n8n's rejected): a 403. A 400,
+ * 404, 409 or 422 says the request was wrong, which proves nothing about the person's access.
+ */
+export function deniesAccess(native: Native): boolean {
+  return native.status === 403
+}
+
 /** `outcomeOf` as a Failure: a 429 is the provider asking to wait, with the wait it named, not an answer the kit cannot read. */
 export function failedBy(answer: ProviderAnswer, native: Native): Failure {
   if (answer.status === 429) return { kind: 'BUSY', native, waitMs: answer.retryAfterMs ?? null }
@@ -134,13 +142,13 @@ export type Operation<I, O, C extends OperationClass = OperationClass> = Readonl
   subject: string // a key of the connector's `subjects`: what the skill groups it under
   idempotent: boolean
   summary: string // one line, Portuguese: the skill and, later, the tool read it
-  label: string // what Testar shows ("Pedidos")
+  label: string // the read's name ("Pedidos"), what Testar names when its check is refused
   input: z.ZodType<I>
   output: z.ZodType<O>
   // The earlier operations whose answers `probe` reads (pedidos reads empresas), so a caller
   // tells a source that never read apart from one that read nothing.
   from: readonly OperationId[]
-  // The smallest input, for Testar and the conformance, from the values its `from` read
+  // The smallest input, for the conformance and the check, from the values its `from` read
   // (pedidos needs a company code); null when there is nothing to read (impostos with no pedido).
   probe(earlier: ReadonlyMap<OperationId, unknown>): I | null
   request(input: I, account: Account): ProviderRequest

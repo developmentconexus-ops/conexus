@@ -2,6 +2,7 @@ import { setTimeout } from 'node:timers/promises'
 import type { Native } from '@conexus/connectors'
 import { refreshRequest } from '@conexus/connectors'
 import type { CompanyId, ConnectionId } from '@conexus/hub-api'
+import { GRANT_DEADLINE_MS } from '@conexus/hub-api'
 import { and, eq, inArray, isNull, lt, or, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { Failure } from '../../platform/failure.ts'
@@ -20,12 +21,6 @@ const LEASE_MS = 30_000
 const WAIT_STEP_MS = 200
 // A token this close to its end is refreshed before a call rather than refused in the middle of one.
 const EARLY_MS = 300_000
-/**
- * An exchange's or a refresh's own deadline, never what is left of a Testar: once the provider has
- * turned the refresh token, its answer must reach `store` (under the lease's 30 s).
- */
-export const GRANT_DEADLINE_MS = 10_000
-
 /** What an OAuth connection's seal holds (S32): `expiresAt` in epoch milliseconds. */
 export const ConnectionTokens = z.object({
   access: z.string().min(1),
@@ -59,14 +54,12 @@ type AppRefused = Readonly<{ kind: 'APP_REFUSED'; native: Native }>
  * The bearer for one call. Pasted fields log in every time; OAuth uses the sealed token while it
  * lives, else one refresh leased in the database. `force` refreshes a token the provider refused
  * with 401, whose answer is `refused`: a refresh another caller already found refused ends with it.
- * `deadlineMs` is what is left of the caller's whole work: a login takes one call's deadline of it.
+ * A login, and a wait for another caller's refresh, each take one call's deadline.
  */
 export type Access = {
   token(
     opened: OpenedConnection,
-    a: Readonly<
-      { force: false; deadlineMs: number } | { force: true; deadlineMs: number; refused: Native }
-    >,
+    a: Readonly<{ force: false } | { force: true; refused: Native }>,
   ): Promise<Login | AppRefused>
 }
 
@@ -207,7 +200,7 @@ async function refreshed(g: Ground): Promise<Turned> {
  * refused the grant, the lease drops with nothing stored, or its own deadline ends.
  */
 async function waited(g: Ground, a: Parameters<Access['token']>[1]): Promise<Turned> {
-  const endsAt = performance.now() + a.deadlineMs
+  const endsAt = performance.now() + g.deps.callDeadlineMs
   for (;;) {
     const now = await reread(g)
     if (now.revision !== g.from.revision)
@@ -231,8 +224,7 @@ export function accessFor(deps: Deps, viewer: Viewer): Access {
   return {
     async token(opened, a) {
       const { connector } = opened
-      if (!isOAuth(connector))
-        return deps.executor.login(opened, Math.min(deps.callDeadlineMs, a.deadlineMs))
+      if (!isOAuth(connector)) return deps.executor.login(opened, deps.callDeadlineMs)
       const from = held ?? { revision: opened.revision, tokens: tokensOf(opened.credential) }
       held = from
       if (!a.force && from.tokens.expiresAt - EARLY_MS > Date.now()) return bearer(from.tokens)

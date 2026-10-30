@@ -1,4 +1,3 @@
-import type { TestCheck } from '@conexus/hub-api'
 import {
   completeConnectionSignIn,
   getConnection,
@@ -15,16 +14,6 @@ import { detail, link, list, reconnect, unlink } from './connections.ts'
 import type { Deps } from './rows.ts'
 import { completeSignIn, startSignIn } from './sign-ins.ts'
 import { test } from './testing.ts'
-
-/** How many items ended each way. */
-function countsOf(checks: readonly TestCheck[]) {
-  return Object.fromEntries(
-    Object.entries(Object.groupBy(checks, (check) => check.outcome)).map(([outcome, group]) => [
-      outcome,
-      group?.length ?? 0,
-    ]),
-  )
-}
 
 /** The status and code an ended test came with, when it came with any. */
 function ended(
@@ -58,20 +47,8 @@ export function registerConnectionRoutes(app: FastifyInstance, deps: Deps): void
 
   serve(app, testConnection, async ({ person, params, log }) => {
     const tested = await test(deps, { person, ...params })
-    // Scalars only (S41): the counts, and for what the provider refused its status and code, never its body.
-    const fields =
-      tested.result === 'WORKING'
-        ? {
-            ...countsOf(tested.checks),
-            refusals: tested.checks
-              .flatMap((check) =>
-                'native' in check
-                  ? [`${check.id} ${check.native.status} ${check.native.code ?? '-'}`]
-                  : [],
-              )
-              .join(', '),
-          }
-        : ended(tested.native)
+    // Scalars only (S41): for what the provider refused, its status and code, never its body.
+    const fields = tested.result === 'WORKING' ? {} : ended(tested.native)
     log.info(
       { by: person.id, connectionId: params.connectionId, result: tested.result, ...fields },
       'CONNECTION_TESTED',

@@ -47,8 +47,8 @@ export const connection = connectors.table(
     testedAt: instant('tested_at'),
     // No foreign key, as linked_by.
     testedBy: text('tested_by'),
-    // The last working test's items (founder, X2): id, label, subject, outcome, source; never a
-    // value read. The Hub parses it with hub-api's TestCheck on read (C27); the database only keeps it.
+    // Written and read by nothing since Testar became one check (founder, 2026-10-30): a later
+    // migration drops it, once no running image reads it (data D6).
     lastTest: jsonb('last_test'),
     // The creation's Idempotency-Key (code C37).
     attemptKey: text('attempt_key').notNull(),
