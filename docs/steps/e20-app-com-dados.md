@@ -101,11 +101,14 @@ usa o app. Com a `R2`, Sobre e Quem usa o app viram entradas da barra.
 | U2 | A tabela `connectors.project_connection` e o campo `connection.notes`; as permissões do banco (D11) | `apps/server/migrations/`, `apps/server/src/hub/connectors/tables.ts`, `apps/server/database-grants.sql`, `apps/server/src/platform/catalog.test.ts` | [data](../guides/data.md) | nada: começa já |
 | U3 | O Hub: a fila de uma chamada por ligação e o dono do token (`limits.ts`), o banco solto durante a chamada e o `max` do pool, as rotas da liberação, a porta da borda para o app, o Publicar que recusa, a linha por chamada, a porta do Builder, o caderno no Hub, as decisões 0058 e 0056 corrigidas | `apps/server/src/hub/connectors/`, `apps/server/src/hub/apps/`, `apps/server/src/platform/database.ts`, `apps/server/src/main.ts`, `packages/hub-api/src/`, `docs/decisions/` | [security](../guides/security.md) | U1, U2 |
 | U4 | O dispatcher: a entrada `Connectors` ao lado de `Db`, `hubOf.callAppConnector` e `listAppConnections` | `apps/edge/src/` | [security](../guides/security.md) | U3 |
-| U5 | O Builder: as ferramentas de leitura e do caderno só com a liberação, o corte das leituras, o rastro escondido, a skill do conector por liberação, o bloco das ligações nas instruções, a linha do aviso 0032 | `apps/server/src/builder/conversation/`, `docs/decisions/0032-data-leaving-brazil-told.md` | [code](../guides/code.md) (só ele) | U3 |
+| U5 | O Builder: as ferramentas de leitura e do caderno só com a liberação, o corte das leituras, o rastro escondido, a skill do conector por liberação, o bloco das ligações nas instruções, a linha do aviso 0032 | `apps/server/src/builder/conversation/`, `apps/server/src/main.ts`, `packages/hub-api/src/tools.ts`, `docs/decisions/0032-data-leaving-brazil-told.md` | [code](../guides/code.md) (só ele) | U3 |
 | U6 | As telas da liberação e do caderno: Integrações do Projeto (Liberar para ler, Tirar, a escolha pelo nome), a entrada Integrações na barra, o Caderno na página da ligação com Apagar | `apps/web/src/hub/connectors/`, `apps/web/src/hub/projects/`, `apps/web/src/routes/_app/companies/$companyId/`, `packages/hub-api/src/pages.ts`, `docs/reference/screens.md` | [web](../guides/web.md) | U0, U3 |
 
-U0, U1 e U2 correm em paralelo desde a aprovação desta página: não dividem pasta, e nenhuma toca os
-arquivos da rodada de consertos da 19.1 (regra L1). U4 e U5 correm em paralelo depois da U3. A U6
+U0, U1 e U2 correm em paralelo desde a aprovação desta página: não dividem pasta. A U0 não toca
+nenhum arquivo da 19.1. A U1 e a U2 tocam arquivos do kit e do Hub que a rodada de consertos da 19.1
+ainda pode mudar (`kernel/definition.ts`, `sankhya/answers.ts`, `probe.ts`, `tables.ts`): pela regra
+L1, cada uma começa só depois que a rodada que tocar esses arquivos entrar no `main`, e o que essa
+rodada já fez (o logout do Testar, por exemplo) ela reusa. U4 e U5 correm em paralelo depois da U3. A U6
 vem por último. Os arquivos que a 19.1 ainda mudar (`apps/server/src/hub/connectors/`,
 `apps/web/src/hub/connectors/`) a U3 e a U6 tomam do `main` quando começam.
 
@@ -118,11 +121,11 @@ pelos arquivos vizinhos (a U2 da 19.1 com ~830; o protótipo R2 com +242).
 | # | Unidade | Critério, observável de fora, com a recusa | Teste que o prova | Nível |
 | --- | --- | --- | --- | --- |
 | 1 | U0 | Dentro de um Projeto a barra mostra o nome do Projeto com a troca, "← <empresa>", Construir, Sobre, Quem usa o app e a conta, e nenhuma entrada "em breve"; fora do Projeto, a barra da empresa como hoje; a 390 px, a gaveta tem as mesmas entradas | `apps/web/src/hub/projects/project-bar.test.tsx` | must |
-| 2 | U0 | `?lens=project&section=access` leva a `/companies/<e>/projects/<p>/access`, e `?lens=project` (com ou sem `section=about` ou `versions`) leva a `/companies/<e>/projects/<p>/about`, trocando o endereço na história (W18); um `lens` desconhecido abre a Prévia | `project-bar.test.tsx`, "o endereço antigo" | must |
+| 2 | U0 | `?lens=project&section=access` leva a `/companies/<e>/projects/<p>/access`; `?lens=project&section=versions` a `/companies/<e>/projects/<p>/about?part=versions`; `?lens=project` (sem `section` ou com `section=about`) a `/companies/<e>/projects/<p>/about`, trocando o endereço na história (W18); um `lens` desconhecido abre a Prévia | `project-bar.test.tsx`, "o endereço antigo" | must |
 | 3 | U0 | O membro sem papel de dono abre Quem usa o app só para ler, como na 18; um Projeto de outra empresa nos endereços novos dá a página de não encontrado | `apps/web/src/hub/projects/access.test.tsx` (mudado), `project-bar.test.tsx` | must |
 | 4 | U1 | `defineConnector` recusa uma definição sem `perProject`; não existe mais `oneRequestAtATime`; `sankhya.perProject` é `'one'`, `mercadoLivre.perProject` é `'many'` | `packages/connectors/src/kernel/kernel.test.ts` | must |
-| 5 | U1 | `ConnectorReads` dá a cada leitura do kit, pela chave igual ao `id` dela, a entrada e a saída; uma chave diferente do `id` recusa a definição; `packages/app` importa só os tipos de `@conexus/connectors/calls`, e importar um valor do kit falha a parede | `kernel.test.ts`, "as leituras por nome"; `scripts/rules.test.ts` (o caso da parede) | must |
-| 6 | U1 | Num app de exemplo, `connectors.sankhya.pedidos({ dataInicial: 1 })` falha o `tsc` (tipo errado), e `connectors.sankhya.inexistente()` também; uma operação que o app não declarou em `defineConnectors` não existe no cliente | `packages/app/src/types.check.ts` (os casos `@ts-expect-error`) | must |
+| 5 | U1 | `ConnectorReads` dá a cada leitura do kit, pela chave igual ao `id` dela, a entrada e a saída; `readsOf` recusa uma chave diferente do `id`; o registro de cada conector é exatamente a porta mais as operações; `packages/app` importa só os tipos de `@conexus/connectors/calls`, e importar um valor do kit falha a parede | `kernel.test.ts`, "as leituras por nome"; `scripts/rules.test.ts` (o caso da parede) | must |
+| 6 | U1 | Num app de exemplo, `connectors.sankhya.consultar({ sql: 'SELECT 1 FROM TSIEMP' })` passa o `tsc` com uma string comum; `connectors.sankhya.pedidos({ dataInicial: 1 })` falha (tipo errado), e `connectors.sankhya.inexistente()` também; uma operação que o app não declarou em `defineConnectors` não existe no cliente | `packages/app/src/types.check.ts` (os casos `@ts-expect-error`) | must |
 | 7 | U1 | O passo do manifesto da checagem leva `connectors` (a lista declarada) ao `manifest.json`; um manifesto sem `connectors` continua válido (0019); `connectors` com conector repetido ou operação vazia é recusado | `packages/app-contract/src/manifest.test.ts`; `packages/app/src/check/check.test.ts`, "os conectores declarados" | must |
 | 8 | U1 | `ConnectorAnswer` de cada tipo chega ao handler pelo cliente como veio; um `OK` leva o valor; nenhum leva `body` do fornecedor | `packages/app/src/runtime.test.ts`, "a resposta do conector" | must |
 | 9 | U2 | Uma segunda liberação de outra ligação Sankhya no mesmo Projeto é recusada pelo banco (23505 em `project_connection_one_key`); duas do Mercado Livre entram; uma liberação de uma ligação de outra empresa é recusada pela chave composta; apagar a ligação apaga as liberações | `apps/server/src/hub/connectors/tables.test.ts`, "a liberação" | must |
@@ -133,9 +136,9 @@ pelos arquivos vizinhos (a U2 da 19.1 com ~830; o protótipo R2 com +242).
 | 14 | U3 | Uma operação de classe que não é `read` nunca sai pela porta do app nem pela do Builder: `NOT_GRANTED` (a regra está no código, mesmo sem nenhuma no kit hoje: o teste usa um conector de teste com uma escrita) | `app-calls.test.ts`, "só leitura" | must |
 | 15 | U3 | Dez leituras ao mesmo tempo na mesma ligação Sankhya: o dublê conta **um** login e nunca duas chamadas abertas juntas; numa segunda ligação, as leituras andam ao lado, sem esperar a primeira | `apps/server/src/hub/connectors/limits.test.ts`, "uma por vez" | must |
 | 16 | U3 | Quem espera na fila e passa do próprio prazo responde `DEADLINE` no seu prazo; quem está com a vez segue | `limits.test.ts`, "o prazo de quem espera" | must |
-| 17 | U3 | O token do Sankhya é reusado enquanto vale; antes de vencer (60 s de folga) o Hub faz o logout do velho e só depois o login; um 401 numa leitura derruba o token, renova uma vez e repete; no fim do Hub (`release`), cada token vivo recebe o logout; um logout que falha vai ao registro e não para nada | `limits.test.ts`, "o dono do token"; `connections-sessions.test.ts` (o fim do Hub) | must |
-| 18 | U3 | Com o dublê segurando cada resposta 5 s, vinte leituras ao mesmo tempo pela porta da borda, e no meio `GET /api/app-sessions/current` responde em menos de 500 ms; nenhuma das vinte dá `DATABASE_UNAVAILABLE` | `apps/server/src/hub/connectors/app-calls-pool.test.ts` | must |
-| 19 | U3 | `POOL_LIMITS.max` é um número escrito com a sua fonte | `apps/server/src/platform/database.test.ts` | should |
+| 17 | U3 | O token do Sankhya é reusado enquanto vale; antes de vencer (60 s de folga) o Hub faz o logout do velho e só depois o login; um 401 numa leitura derruba o token, renova uma vez e repete; no fim do Hub (`release`), cada token vivo recebe o logout; um logout que falha vai ao registro e não para nada | `limits.test.ts`, "o dono do token"; `connections-sessions.test.ts` (novo: o fim do Hub) | must |
+| 18 | U3 | Com o dublê segurando cada resposta 5 s, vinte leituras ao mesmo tempo pela porta da borda, **cada uma numa ligação diferente** (vinte ligações liberadas, para a fila não as separar), e no meio `GET /api/app-sessions/current` responde em menos de 500 ms; as vinte respondem `OK` e nenhuma dá `DATABASE_UNAVAILABLE` | `apps/server/src/hub/connectors/app-calls-pool.test.ts` | must |
+| 19 | U3 | (sai: o `max` do pool é provado pelo critério 18, não por um teste da constante) | — | — |
 | 20 | U3 | O Publicar de uma versão cujo `Manifest.connectors` nomeia um conector sem ligação liberada no Projeto, ou uma operação que não é do kit, dá `CONNECTOR_NOT_GRANTED` com o conector, e a versão publicada não muda; a Prévia recebe a mesma versão sem recusa | `apps/server/src/hub/apps/publish.test.ts`, "os conectores" | must |
 | 21 | U3 | Cada chamada a um fornecedor deixa uma linha `CONNECTOR_CALLED` com empresa, Projeto, ligação, conector, operação, quem (app ou Builder), resultado, ms, ms de espera na fila e bytes; o teste planta um valor na entrada e na resposta e não o acha no registro | `apps/server/src/hub/connectors/app-calls-logs.test.ts` | must |
 | 22 | U3 | O envelope "4" do Sankhya (dublê forçado) vira `UNREADABLE` com o que veio e uma linha `CONNECTOR_CONCURRENCY_FAULT` em nível de erro, sem repetir a chamada (#470) | `limits.test.ts`, "o status 4" | must |
@@ -144,12 +147,12 @@ pelos arquivos vizinhos (a U2 da 19.1 com ~830; o protótipo R2 com +242).
 | 25 | U4 | Uma chamada depois do fim do prazo do clique não chega ao Hub e dá `DEADLINE`; uma em andamento é cortada no prazo; o prazo mandado ao Hub é o que resta do clique | `dispatcher-connectors.test.ts`, "o prazo" | must |
 | 26 | U4 | A chamada conta no limite de 50 subpedidos do clique, junto com o `db` (0047) | `apps/edge/src/dispatcher-limits.test.ts`, um caso a mais | must |
 | 27 | U4 | Uma resposta do Hub acima do teto, ilegível ou um Hub fora: o app recebe `UNREACHABLE`, e o dispatcher registra a razão sem dados | `dispatcher-connectors.test.ts`, "o Hub fora" | must |
-| 28 | U5 | Uma conversa num Projeto sem liberação não tem ferramenta de conector nem skill de conector; com o Sankhya liberado, tem `connector_read`, `connector_notes` e `connector_note_save` e a skill `conexus-sankhya`; tirar a liberação entre dois turnos tira as duas no turno seguinte, também num turno retomado | `apps/server/src/builder/conversation/conversation-connectors.test.ts` | must |
+| 28 | U5 | Uma conversa num Projeto sem liberação não tem ferramenta de conector nem skill de conector; com o Sankhya liberado, tem `connector_read`, `connector_notes` e `connector_note_save` e a skill `conexus-sankhya`; tirar a liberação entre dois turnos tira as duas no turno seguinte; num turno retomado também (premissa do estudo ainda não provada: se falhar, vale o "Parar se" da U5) | `apps/server/src/builder/conversation/conversation-connectors.test.ts` | must |
 | 29 | U5 | `connector_read` com o dublê devolvendo 500 linhas guarda na memória e no rastro só 20 linhas, até 16 KB, com `complete: false`; um valor plantado na resposta não aparece no rastro exportado | `conversation-connectors.test.ts`, "o corte" e "o rastro" | must |
-| 30 | U5, U3 | `connector_note_save` sem consulta é recusado; com consulta, roda a consulta uma vez pela porta de leitura e guarda o mapa, a consulta, a data, o número de linhas e quem, nunca uma linha; uma consulta que a porta recusa recusa a anotação; a 51ª chamada de conector numa conversa é recusada | `conversation-connectors.test.ts`, "o caderno"; `notes.test.ts`, "guardar" | must |
+| 30 | U5, U3 | `connector_note_save` sem consulta é recusado; com consulta, roda a consulta uma vez pela porta de leitura e guarda o mapa, a consulta, a data, o número de linhas e quem, nunca uma linha; uma consulta que a porta recusa recusa a anotação; a 51ª chamada de conector numa mesma execução do Builder (um turno) é recusada; o caderno cheio (acima de 32 KB) recusa a anotação com `NOTE_INVALID` | `conversation-connectors.test.ts`, "o caderno"; `notes.test.ts`, "guardar" | must |
 | 31 | U6 | Num navegador de verdade (Chrome e WebKit, 1366 e 390, os dois temas): a barra do roteiro, Liberar para ler e Tirar, a escolha pelo nome com dois Sankhya, as duas lojas do Mercado Livre liberadas, o Caderno com Apagar, o membro sem botões | QA (`conexus-qa`), o relatório do pull request da etapa | must |
 | 32 | U6 | Integrações do Projeto: a liberação certa por linha; a dona vê **Liberar para ler** e **Tirar**; o membro vê o estado e "Peça ao dono ou a um administrador."; num conector `one` com uma ligação liberada, as outras linhas não têm **Liberar para ler** e dizem qual tirar antes; num `many`, cada linha libera; uma ligação `NEEDS_REAUTH` mostra o selo e o caminho para Integrações da empresa | `apps/web/src/hub/projects/project-integrations.test.tsx` | must |
-| 33 | U6 | A página da ligação mostra o Caderno (conceito, mapa, provado em, por quem); a dona apaga com confirmação; vazio, "O Builder ainda não anotou nada desta ligação." | `apps/web/src/hub/connectors/notes.test.tsx` | must |
+| 33 | U6 | A página da ligação mostra o Caderno (conceito, mapa, provado em, com quantas linhas, por quem); a dona apaga com confirmação; vazio, "O Builder ainda não anotou nada desta ligação." | `apps/web/src/hub/connectors/notes.test.tsx` | must |
 | 34 | Fundador | O roteiro, passos 1 a 6, no Hub de verdade com o Sankhya e o Mercado Livre dele (fora da CI, S40) | o uso, no livro de aprovações | must |
 
 ## A matriz de estados
@@ -162,7 +165,7 @@ pelos arquivos vizinhos (a U2 da 19.1 com ~830; o protótipo R2 com +242).
 | Integrações do Projeto | a lista dos conectores ligados, cada ligação "não liberada" | "A empresa ainda não ligou nenhum sistema." com o caminho para Integrações da empresa (a dona) ou "Peça ao dono ou a um administrador." (o membro) | esqueleto das linhas | a frase da falha (`DATABASE_UNAVAILABLE`) com Tentar de novo | — | o membro vê o estado e a frase, sem botões | `NEEDS_REAUTH`: o selo da 19.1 e "Conectar de novo em Integrações da empresa"; num conector `one` com outra ligação liberada, as outras linhas dizem "O <conector> lê uma ligação por Projeto. Tire a <nome> antes.", sem **Liberar para ler** |
 | A confirmação de Liberar para ler | a frase do roteiro, passo 2 | — | **Liberar** ocupado | a frase na janela | `CONNECTION_NOT_FOUND`: a frase da 19 | — | `PROJECT_CONNECTION_TAKEN`: a frase da falha na janela |
 | O Caderno, na página da ligação | — | "O Builder ainda não anotou nada desta ligação." | da página | da página | da 19 | o membro lê, sem **Apagar** | — |
-| O app (o que o Builder escreve) | — | `OK` com `empty` | o que o app mostra | `BUSY`: "O <conector> pediu para esperar."; `UNREACHABLE`, `DEADLINE`: "O <conector> não respondeu a tempo. Tente de novo." | — | `NOT_GRANTED`: "O <conector> não está liberado para este app." | `AUTH_REFUSED`: "O <conector> pediu para conectar de novo." |
+| O app (o que o Builder escreve) | — | `OK` com `empty` | o que o app mostra | `BUSY`: "O <conector> pediu para esperar.", com o tempo de `waitMs` quando vem (a frase da 0058); `UNREACHABLE`, `DEADLINE`: "O <conector> não respondeu a tempo. Tente de novo." | — | `NOT_GRANTED`: "O <conector> não está liberado para este app." | `AUTH_REFUSED`: "O <conector> pediu para conectar de novo." |
 
 As frases do app são da skill `conexus-data`, que o Builder segue; o app é código da empresa, e os
 textos dele são os do Builder.
@@ -209,15 +212,17 @@ apps/web/src/app/shell.tsx:78-106`, lida, não rodada.
 
 | Gravação ou comando, da etapa ou da biblioteca | Duas vezes ao mesmo tempo | Recusada no meio, depois de uma instrução ou de uma chamada | Uma dependência fora (o banco, ou um terceiro) | O que o processo imprime | Critérios |
 | --- | --- | --- | --- | --- | --- |
-| Liberar (`INSERT project_connection … ON CONFLICT DO NOTHING`) | a mesma ligação: uma linha só, as duas respostas iguais; duas ligações de um conector `one`: o banco aceita uma, a outra recebe `PROJECT_CONNECTION_TAKEN` | uma instrução | banco: `DATABASE_UNAVAILABLE`; nenhum fornecedor é chamado | `PROJECT_CONNECTION_GRANTED` (empresa, Projeto, ligação, pessoa) | 9, 11 |
+| Liberar (`INSERT project_connection … ON CONFLICT (project_id, connection_id) DO NOTHING RETURNING`, e sem linha a releitura da existente) | a mesma ligação: uma linha só, e as duas respondem a liberação relida; duas ligações de um conector `one`: o banco aceita uma, a outra recebe 23505 em `project_connection_one_key`, que vira `PROJECT_CONNECTION_TAKEN`; um Desligar ou a remoção do Projeto ao mesmo tempo: 23503, que vira `CONNECTION_NOT_FOUND` ou `NOT_FOUND` | uma instrução | banco: `DATABASE_UNAVAILABLE`; nenhum fornecedor é chamado | `PROJECT_CONNECTION_GRANTED` (empresa, Projeto, ligação, pessoa) | 9, 11 |
 | Tirar (`DELETE project_connection`) | as duas respondem 204 | uma instrução; uma chamada já admitida termina; a seguinte é `NOT_GRANTED` | banco: `DATABASE_UNAVAILABLE` | `PROJECT_CONNECTION_REVOKED` | 11, 13 |
 | Uma chamada do app ou do Builder (tx 1: sessão, versão, liberação, selo; a chamada; tx 2: `NEEDS_REAUTH` só se o fornecedor recusou a chave) | a fila da ligação: uma por vez; quem passa do prazo esperando, `DEADLINE` | nenhuma conexão do banco presa durante a chamada (D22); um clique que acaba no meio corta a espera; o fornecedor que já respondeu não é chamado de novo | o fornecedor fora: `UNREACHABLE`; 429: a espera da 0058 e `BUSY`; banco fora na tx 1: `DATABASE_UNAVAILABLE` (a borda dá `UNREACHABLE` ao app) | `CONNECTOR_CALLED`; da 19 (`CONNECTOR_UNREACHABLE`) | 13 a 18, 21 |
 | O login do Sankhya e o logout do token velho (no fornecedor) | um login por ligação: quem chega durante o login espera o mesmo | o logout sai antes do login, com prazo curto; um logout recusado ou sem resposta vai ao registro e o login segue | o fornecedor fora no login: `UNREACHABLE`, nenhum token guardado | `CONNECTOR_LOGGED_OUT`; `CONNECTOR_LOGOUT_FAILED` (aviso) | 15, 17 |
 | O fim do Hub (`release`): o logout de cada token vivo | — | cada logout com o seu prazo dentro do prazo do fim; nenhum lança | o fornecedor fora: o aviso, e a sessão fica até o Sankhya a encerrar por inatividade | `CONNECTOR_LOGOUT_FAILED` | 17 |
-| Guardar uma anotação (a consulta pela porta; `UPDATE connection SET notes = notes \|\| …`) | a mesma anotação: vale a última (uma instrução, a trava da linha); duas diferentes: as duas ficam | a consulta roda antes; uma consulta recusada não grava nada | o fornecedor fora: a anotação é recusada com `UNREACHABLE`; banco fora: `DATABASE_UNAVAILABLE` | `CONNECTION_NOTE_SAVED` (ligação, conceito, linhas) | 30 |
+| Guardar uma anotação (a consulta pela porta; `UPDATE connection SET notes = notes \|\| …`) | a mesma anotação: vale a última (uma instrução, a trava da linha); duas diferentes: as duas ficam | a consulta roda antes; uma consulta recusada não grava nada; o caderno acima de 32 KB: 23514, `NOTE_INVALID`, nada gravado | o fornecedor fora: a anotação é recusada com `UNREACHABLE`; banco fora: `DATABASE_UNAVAILABLE` | `CONNECTION_NOTE_SAVED` (ligação, conceito, linhas) | 30 |
 | Apagar uma anotação (`UPDATE … SET notes = notes - $concept`) | as duas: a anotação some uma vez, as duas respondem 204 | uma instrução | banco: `DATABASE_UNAVAILABLE` | `CONNECTION_NOTE_DELETED` | 23 |
 | Publicar com conectores (a leitura das liberações, depois o Publicar da 17) | da 17 | a leitura antes da gravação: uma recusa não muda nada | da 17 | `APP_VERSION_REFUSED` com o código | 20 |
-| Desligar (da 19): leva liberações e anotações | da 19 | o `ON DELETE CASCADE` na mesma instrução | da 19 | da 19 | 9 |
+| Desligar (da 19) e Conectar de novo (da 19.1): levam liberações e anotações; `limits.forget` faz o logout do token e solta a fila da ligação | da 19 | o `ON DELETE CASCADE` na mesma instrução; o logout depois da gravação, como aviso se falha | da 19; o fornecedor fora no logout: `CONNECTOR_LOGOUT_FAILED` | da 19; `CONNECTOR_LOGGED_OUT` | 9, 17 |
+| O envelope "4" do Sankhya (que a fila torna impossível) | — | não se repete | — | `CONNECTOR_CONCURRENCY_FAULT` (erro): o Hub o reconhece pelo `native.code` que o kit dá a esse envelope | 22 |
+| A chamada do dispatcher ao Hub (U4) | cada uma a sua | o clique acaba: o dispatcher corta e dá `DEADLINE` | o Hub fora, ou a resposta acima do teto ou ilegível: `UNREACHABLE` ao app | `CONNECTOR_HUB_NO_ANSWER` com a razão | 25, 27 |
 
 ## A tabela de referência
 
@@ -232,17 +237,17 @@ são do leitor (relay) e a unidade as reabre antes de usar.
 | A liberação de uma ligação a um Projeto | U2, U3 | nenhum | n8n `packages/@n8n/db/src/entities/shared-credentials.ts:10-23` (lido); Activepieces `app-connection.entity.ts:46`, `app-connection-service.ts:153-166` (lido) | uma ligação "este projeto pode usar esta credencial", conferida quando o trabalho começa; nenhum teto de classe | nativo (o `SharedCredentials` do n8n): `connectors.project_connection`; só leitura pela `class` da própria operação | critérios 9, 11, 13, 14 | `T-A` (1), `S1`, D | `hub/connectors/grants.ts` |
 | Quantas ligações de um conector um Projeto usa | U1, U2, U3 | `Connector` sem a declaração (`kernel/definition.ts:25-42`) | Activepieces `projectIds text[]` (uma ligação, vários projetos); nenhuma referência declara o número no conector | — | embrulhado: `perProject: 'one' \| 'many'` na definição; `exclusive` copiado na linha e um índice único parcial | critério 9 | `T-A` (1), nota de 2026-10-29 | — |
 | `props.connectors` | U1, U4 | `AppProps = { caller, db }` (`packages/app-contract/src/props.ts:24`); `Db` (`apps/edge/src/dispatcher.ts:14-22`) | Workers RPC `WorkerEntrypoint` com `ctx.props` (0043); 0047, verificação 3: as chamadas ao stub contam em `limits.subRequests` (`docs/decisions/0047-*.md:38`, lido) | o dispatcher dá props que o app não muda; a chave fica no dispatcher | nativo (o desenho do `db`): a entrada `Connectors` ao lado de `Db` | critérios 24, 26 | não precisa | `apps/edge/src/connectors.ts` |
-| A chamada do dispatcher ao Hub | U3, U4 | `hubOf` com `createAppSession` e `checkAppCall` (`apps/edge/src/hub.ts:51-56`), 5 s, 16 KB (`:60-61`) | Activepieces: o servidor tira o projeto do principal da máquina (`app-connection-worker-controller.ts:11-14`, relay) | o servidor nunca toma o projeto do corpo | embrulhado: duas operações `edge` novas (S48); o Hub confere a sessão do app como `checkAppCall`; prazo = o que resta do clique; teto da resposta 2 MiB, o mesmo do executor (`wire.ts:10`) | critérios 13, 25, 27 | não precisa | `hub/connectors/app-calls.ts` |
-| O app declara o que usa | U1, U3 | `Manifest.roles` (`packages/app-contract/src/manifest.ts:61-67`), `defineRoles` (`packages/app/src/operations.ts:17`) | o `defineRoles` da 18 (herdado) | declara no código, a dona libera, o Hub confere | embrulhado: `defineConnectors` em `shared/operations.ts`, `Manifest.connectors`; Publicar recusa o não liberado; a chamada recusa o não declarado | critérios 7, 13, 20 | não precisa | — |
-| O cliente tipado | U1 | `createApi` tipado por `Operations` (`packages/app/src/operations.ts:9`) | Supabase `gen types` → `createClient<Database>` (relay) | tipos do esquema que manda | embrulhado: `@conexus/connectors/calls` (só tipos) e `connectorsOf(context, declared)` em `@conexus/app`; o kit vai à máquina como `packages/app` | critérios 5, 6 | não precisa | `packages/connectors/src/calls.ts`, `packages/app/src/connectors.ts` |
+| A chamada do dispatcher ao Hub | U3, U4 | `HubPort` com `createAppSession` e `checkAppCall` (`apps/edge/src/hub.ts:23-28`), 5 s e 16 KB (`:32-33`) | Activepieces: o servidor tira o projeto do principal da máquina (`app-connection-worker-controller.ts:11-14`, relay) | o servidor nunca toma o projeto do corpo | embrulhado: duas operações `edge` novas (S48); o Hub confere a sessão do app como `checkAppCall`; prazo = o que resta do clique; teto da resposta 2 MiB, o mesmo do executor (`wire.ts:10`) | critérios 13, 25, 27 | não precisa | `hub/connectors/app-calls.ts` |
+| O app declara o que usa | U1, U3 | `Manifest.roles` (`packages/app-contract/src/manifest.ts:37-43`), `defineRoles` (`packages/app/src/operations.ts:17`) | o `defineRoles` da 18 (herdado) | declara no código, a dona libera, o Hub confere | embrulhado: `defineConnectors` em `shared/operations.ts`, `Manifest.connectors`; Publicar recusa o não liberado; a chamada recusa o não declarado | critérios 7, 13, 20 | não precisa | — |
+| O cliente tipado | U1 | `createApi` tipado por `Operations` (`packages/app/src/client.ts:88`) | Supabase `gen types` → `createClient<Database>` (relay) | tipos do esquema que manda | embrulhado: `@conexus/connectors/calls` (só tipos) e `connectorsOf(context, declared)` em `@conexus/app`; o kit vai à máquina como `packages/app` | critérios 5, 6 | não precisa | `packages/connectors/src/calls.ts`, `packages/app/src/connectors.ts` |
 | A resposta como dado | U1, U3 | `Answered` do kit (`packages/connectors/src/kernel/operation.ts:50-58`); `DbResult` por código (`packages/app-contract/src/db.ts:9`) | OS: códigos fechados (`e0353c36 apps/hub/src/connectors/errors.ts`, relay) | a falha é um código, nunca linhas vazias | embrulhado: `ConnectorAnswer` = os resultados do kit sem o `body`, mais `NOT_GRANTED` e `DEADLINE` | critério 8 | não precisa | `packages/app-contract/src/connectors.ts` |
 | O papel de quem usa o app | — | `mayRun` antes do handler (`packages/app-contract/src/runtime.ts:59-64`) | 18 `D` (herdado) | o papel da operação do app | nativo (nosso desde a 18): fica de fora, nada novo; a chamada ao conector roda dentro do handler | os testes da 18 | não precisa | — |
-| Uma chamada por vez em cada ligação | U1, U3 | `oneRequestAtATime` lido só pelo Testar (`probe.ts:63-70`); o status 4 sem nome (#470) | Pipedream Bottleneck `maxConcurrent: 1` por conector (`components/airtable_oauth/airtable_oauth.app.mjs:3-10`, lido); OS uma fila por token (`e0353c36 apps/hub/src/connectors/token-cache.ts:22-30`, lido) | um teto por chave, em memória | embrulhado: uma fila de um por ligação em `limits.ts`, um processo do Hub (0058); sai `oneRequestAtATime` | critérios 15, 16, 22 | `T-A` (2) | `hub/connectors/limits.ts` |
+| Uma chamada por vez em cada ligação | U1, U3 | `oneRequestAtATime`, que nenhum código lê (só o comentário de `probe.ts:65`); o status 4 sem nome (#470) | Pipedream Bottleneck `maxConcurrent: 1` por conector (`components/airtable_oauth/airtable_oauth.app.mjs:3-10`, lido); OS uma fila por token (`e0353c36 apps/hub/src/connectors/token-cache.ts:22-30`, lido) | um teto por chave, em memória | embrulhado: uma fila de um por ligação em `limits.ts`, um processo do Hub (0058); sai `oneRequestAtATime` | critérios 15, 16, 22 | `T-A` (2) | `hub/connectors/limits.ts` |
 | A espera do fornecedor | — | 429 → `BUSY` com a espera, uma vez dentro do prazo (`executor.ts:187-207`, decisão 0058) | Nango `retry.ts:10-15,60-137` (lido em parte) | espera o que o fornecedor pede, até um limite | nativo (já no `main`): fica de fora, nada novo; só a frase da 0058 muda | critérios da 0058 | `T-A` (2) | — |
 | O dono do token do Sankhya | U1, U3 | o login a cada Testar, sem logout (`executor.ts:266-278`) | OS `token-cache.ts:55-110` (relay); o estudo das sessões do Sankhya, 2026-10-30: o logout `MobileLoginSP.logout` funciona no token do gateway e só enquanto ele vale | reusa até perto do fim; um login por vez; logout antes de renovar | embrulhado: em memória por ligação, folga de 60 s, logout antes do login, 401 derruba e renova uma vez, `closeAll` no fim | critério 17 | não precisa | `hub/connectors/limits.ts` |
 | O banco solto durante a chamada | U3 | o pool sem `max` (`apps/server/src/platform/database.ts:15-19`) → 10 (`node_modules/pg-pool/index.js:89`) | Nango: `getConnection` e depois a chamada, sem transação aberta (`proxy.service.ts:219-345`, relay) | nenhuma conexão do banco durante a chamada | embrulhado: duas transações curtas (D22), `max` explícito | **provado** no estudo da 20 (seção 4.5: segurando o cliente, 4.817 ms por checagem e 10 falhas; com duas curtas, 1 ms) | não precisa | — |
 | A linha por chamada | U3 | `CONNECTOR_UNREACHABLE` com escalares (`executor.ts:182,215`) | OS spans com ids, passo, resultado, status e bytes (`broker.ts:247-258`, relay) | só escalares | embrulhado: `CONNECTOR_CALLED` (S41) | critério 21 | `T-A` (2) | — |
-| O caderno da ligação | U2, U3, U5, U6 | `connection.last_test` jsonb (`tables.ts:50-52`) como precedente | Nango `docs/getting-started/use-cases/customer-configuration.mdx:7,33`, `docs/guides/auth/connection-tags-configuration-metadata.mdx:17,294-298`, `packages/types/lib/connection/db.ts:18` (lidos) | um JSON por ligação, escrito por quem aprendeu | embrulhado: `connection.notes` jsonb, tipado por Zod no Hub, escrito por `connector_note_save` com a consulta que o provou | critérios 10, 23, 30, 33 | J1, `T-A` (3) | `hub/connectors/notes.ts` |
+| O caderno da ligação | U2, U3, U5, U6 | `connection.last_test` jsonb (`tables.ts:50-52`) como precedente | Nango `docs/getting-started/use-cases/customer-configuration.mdx:7,33`, `docs/guides/auth/connection-tags-configuration-metadata.mdx:17,294-298`, `packages/types/lib/connection/db.ts:35` (lidos) | um JSON por ligação, escrito por quem aprendeu | embrulhado: `connection.notes` jsonb, tipado por Zod no Hub, escrito por `connector_note_save` com a consulta que o provou | critérios 10, 23, 30, 33 | J1, `T-A` (3) | `hub/connectors/notes.ts` |
 | As ferramentas de leitura do Builder | U5 | `tools: ({ requestContext }) => toolsOf(...)` (`builder.ts:166`) | `@mastra/core` `agent.ts:852,3489-3530` (`DynamicArgument`, resolvido a cada execução; um retorno vazio lança), `agent.ts:10560-10568` (a retomada resolve de novo; relay); OS `connector_fetch`, uma ferramenta, 50 chamadas por execução (`e0353c36 apps/hub/src/connectors/builder-tool.ts:15`, lido) | ferramentas do contexto do pedido | nativo: três ferramentas (`connector_read`, `connector_notes`, `connector_note_save`) só com uma liberação; a operação é um parâmetro, como o `connector_fetch` do OS, e não uma ferramenta por leitura (o Sankhya e o Mercado Livre somam mais de 50) | critério 28 | F1 | `builder/conversation/connector-tools.ts` |
 | A skill do conector por liberação | U5 | `skills: APP_SKILLS` fixo (`builder.ts:164`) | `@mastra/core@1.79.0 dist/coding-agent/index.js:218-228` (lido: passa `skills` ao `Agent`); `skills` como função do `requestContext` (`agent.ts:1735-1767`, relay) | skills resolvidas por pedido | nativo: `skills: async ({ requestContext }) => [...APP_SKILLS, ...dos conectores liberados]`, cada uma com `directoryName` igual ao seu `name` | critério 28 | I1 | — |
 | O corte da leitura antes do modelo | U3, U5 | nenhum | Mastra `toModelOutput` guarda o resultado cru (`tool-result-commit-core.ts:18-77`, relay); OS: só 256 KB (`builder-tool.ts:242-243`, relay) | nenhuma corta linhas | nativo: a porta do Builder devolve o valor já cortado (20 linhas, 16 KB, `complete`); `toModelOutput` rejeitado | critério 29 | F1 | — |
@@ -267,7 +272,8 @@ não protegeria nada).
   Gatilho: um `DEADLINE` de fila no registro do Mercado Livre; então o conector declara um número
   maior.
 - O tipo de entrada do cliente é o tipo já lido pelo esquema (o kit guarda `z.ZodType<I>`): um campo
-  com valor padrão precisa ser passado. Gatilho: o Builder tropeçar nisso.
+  com valor padrão precisa ser passado. Gatilho: o Builder tropeçar nisso. (Uma marca, como a
+  `ReadSql` do `consultar`, não é dívida: `ReadsOf` a tira, critério 6.)
 
 ## U0 A barra do Projeto
 
@@ -372,7 +378,7 @@ pacotes e a máquina (o kit, o contrato do app, o SDK), com tipos derivados.
   `sankhya/door.ts`, `mercado-livre/operations/index.ts`; `infra/e2b/sdk.ts:7` (`SDK_FOLDERS`);
   `.dependency-cruiser.cjs:146-153` (`connectors-kit-only-in-the-executor`).
 - **`props.connectors` e a resposta.** `packages/app-contract/src/props.ts:24`, `runtime.ts:7,143-173`
-  (`Context`, `serveApp`), `manifest.ts:53-75`, `db.ts` (o molde de um dado de resposta por código).
+  (`Context`, `serveApp`), `manifest.ts:29-51`, `db.ts` (o molde de um dado de resposta por código).
 - **O app declara o que usa.** `packages/app/src/check/manifest.ts:26-60` (`Answer`, `sharedOf`: as
   `roles` já vão ao manifesto assim).
 
@@ -389,6 +395,7 @@ pacotes e a máquina (o kit, o contrato do app, o SDK), com tipos derivados.
 | `infra/e2b/sdk.ts` | Muda: `packages/connectors` entra em `SDK_FOLDERS` | `infra/e2b/template.ts` |
 | `.dependency-cruiser.cjs`, `scripts/rules.test.ts` | Muda: a exceção da parede, só tipos | a CI |
 | `apps/server/src/hub/connectors/probe.ts` | Muda: o comentário de `oneRequestAtATime` | — |
+| os testes que montam um conector (`kernel/oauth.test.ts`, `mercado-livre/mercado-livre.test.ts` e os do Hub que usam `defineConnector`) | Muda: `perProject` no lugar de `oneRequestAtATime` | — |
 | `package-lock.json` | Muda: a dependência de `packages/app` | — |
 
 ### Os contratos que a unidade cria
@@ -404,10 +411,16 @@ logout?: Readonly<{ path: `/${string}`; query: Readonly<Record<string, string>>;
 
 // packages/connectors/src/sankhya/operations/index.ts (e o mesmo no Mercado Livre)
 /** Every read of the connector by its id, the door's included; the key is the operation's id (defineConnector checks). */
-export const sankhyaReads = { empresas, clientes, /* … */, consultar: sankhyaDoor.consultar, carregar: sankhyaDoor.carregar } as const
+export const sankhyaReads = readsOf({ empresas, clientes, /* … */, consultar: sankhyaDoor.consultar, carregar: sankhyaDoor.carregar })
+
+// packages/connectors/src/kernel/definition.ts
+/** The record of a connector's reads by id; throws when a key is not its operation's id. */
+export function readsOf<const R extends Readonly<Record<string, Operation<unknown, unknown, 'read'>>>>(reads: R): R
 
 // packages/connectors/src/calls.ts: entrada "./calls", só tipos, nada que rode
-type ReadsOf<R> = { readonly [K in keyof R]: R[K] extends Operation<infer I, infer O> ? Readonly<{ input: I; output: O }> : never }
+// A brand (sankhya/door.ts:103, ReadSql) is the kit's own check: the app writes the plain string, and the Hub parses it.
+type Unbranded<T> = T extends string & z.$brand<string> ? string : T extends object ? { [K in keyof T]: Unbranded<T[K]> } : T
+type ReadsOf<R> = { readonly [K in keyof R]: R[K] extends Operation<infer I, infer O> ? Readonly<{ input: Unbranded<I>; output: O }> : never }
 export type ConnectorReads = Readonly<{
   sankhya: ReadsOf<typeof sankhyaReads>
   'mercado-livre': ReadsOf<typeof mercadoLivreReads>
@@ -468,13 +481,15 @@ não tem id).
 
 1. Subtrair: `oneRequestAtATime` sai do tipo, das duas definições e do comentário de `probe.ts`.
 2. `perProject` no tipo, `defineConnector` o exige; Sankhya `'one'`, Mercado Livre `'many'`.
-3. `sankhyaReads` e `mercadoLivreReads`; as listas que o `Connector` leva passam a ser
-   `Object.values(...)` delas (a ordem do Testar é a ordem das chaves); `defineConnector` confere a
-   chave com o `id`. Regras: C26.
+3. `readsOf` em `kernel/definition.ts` (confere cada chave com o `id`), `sankhyaReads` e
+   `mercadoLivreReads`. Os registros são a fonte dos tipos; as listas `sankhyaOperations` e
+   `sankhyaDoor` continuam o que o `Connector` leva, e um teste confere que o registro é exatamente a
+   porta mais as operações (sem a porta em `operations`, senão `inProbeOrder` repete ids). Regras:
+   C26.
 4. `logout` no `ClientCredentialsAuth` e na definição do Sankhya; o dublê responde ao logout e dá 401
    ao token encerrado; `sankhya/answers.ts`: um 401 numa leitura com bearer é `TOKEN_EXPIRED`; o
-   envelope "4" é `UNREADABLE` com o que veio (#470: a fila torna isso um defeito nosso, e repetir o
-   esconderia). Se o conserto pequeno já está no `main`, só o envelope 4.
+   envelope "4" é `UNREADABLE` com o que veio e `native.code` igual a `'4'` (#470: a fila torna isso um
+   defeito nosso, e repetir o esconderia; o Hub, que registra, o reconhece por esse código). Se o conserto pequeno já está no `main`, só o envelope 4.
 5. `calls.ts` e a entrada `./calls`; um teste confere `PerProject` contra as definições.
 6. `app-contract/src/connectors.ts`; `props.ts`, `runtime.ts` (o `serveApp` passa
    `ctx.props.connectors` ao `Context`), `manifest.ts`.
@@ -513,7 +528,7 @@ Critérios 4 a 8: `npm test -w @conexus/connectors`, `npm test -w @conexus/app`,
   `connection_company_connector_id_key` em `:81`), `:114-158` (`connection_sign_in`, o molde da chave
   composta). n8n `shared-credentials.ts:10-23`.
 - **O caderno.** `tables.ts:50-52` (`last_test` jsonb), `apps/server/database-grants.sql:251-261`
-  (as permissões por coluna). Nango `packages/types/lib/connection/db.ts:18`.
+  (as permissões por coluna). Nango `packages/types/lib/connection/db.ts:35` (`metadata`).
 
 ### O raio da mudança
 
@@ -566,7 +581,8 @@ em `project_connection` e `SELECT(notes), UPDATE(notes)` em `connection` para o 
 ### A ordem do trabalho
 
 1. As duas mudanças em `tables.ts`; a chave do Projeto é a mesma de
-   `app_access_company_id_project_id_fkey` (procurar em `apps/server/src/hub/apps/tables.ts`).
+   `app_access_company_id_project_id_fkey` (`apps/server/src/hub/projects/tables.ts:93`), com a tabela
+   `project` exportada por `hub/projects/public.ts`.
 2. `npm run db:generate -w @conexus/server`; ler o SQL gerado. Regras: D1, D11, D33.
 3. `database-grants.sql` e o retrato de `catalog.test.ts`.
 
@@ -610,7 +626,7 @@ Hub) e um contrato entre três assuntos (conectores, apps, Builder).
 | `apps/server/src/hub/connectors/` | Cria `limits.ts`, `grants.ts`, `app-calls.ts`, `notes.ts`, `builder-port.ts`; muda `executor.ts` (`logout`), `probe.ts` (pela fila), `connections.ts` (Desligar e Conectar de novo encerram o token; `getConnection` com `notes`), `routes.ts`, `public.ts` | `main.ts`; U5 por `public.ts` |
 | `apps/server/src/hub/apps/` | Muda `live.ts` ou `send.ts` (o Publicar pergunta aos conectores), `routes.ts` (nada: a porta da borda é dos conectores), `public.ts` (a porta que dá a versão de uma sessão) | `hub/connectors` |
 | `apps/server/src/platform/database.ts` | Muda: `max` | todos |
-| `apps/server/src/main.ts` | Muda: `createEdgeHub` recebe os conectores; o `release` chama `closeAll`; `createBuilder` recebe a porta | — |
+| `apps/server/src/main.ts` | Muda: `createEdgeHub` recebe os conectores; o `release` chama `closeAll` | — |
 | `packages/hub-api/src/` | Muda `connectors.ts` (operações e tipos novos), `connector-failures.ts`, `app-failures.ts` (`CONNECTOR_NOT_GRANTED`), `apps.ts` (`publishAppVersion.failures`) | `apps/web`, `apps/edge` |
 | `docs/decisions/` | Muda 0058 (a frase do passo 20) e 0056 (o teto) | — |
 | `tests/e2e/live-hub.ts` | Muda: o Hub local com os dublês sabe liberar | a QA |
@@ -681,9 +697,9 @@ export type GrantedConnection = Readonly<{
 export type ShapedRead = Readonly<{ kind: 'OK'; value: unknown; complete: boolean }> | Exclude<ConnectorAnswer, { kind: 'OK' }>
 export type BuilderConnectors = {
   granted(ids: OfProject): Promise<readonly GrantedConnection[]>
-  read(ids: OfProject, a: { connectionId: ConnectionId; operation: string; input: unknown; personId: PersonId }): Promise<ShapedRead>
+  read(ids: OfProject, a: { connectionId: ConnectionId; operation: string; input: unknown; personId: PersonId; runId: string }): Promise<ShapedRead | Readonly<{ kind: 'CALLS_SPENT' }>>
   notes(ids: OfProject, connectionId: ConnectionId): Promise<Readonly<Record<string, z.infer<typeof Note>>> | null>
-  saveNote(ids: OfProject, a: { connectionId: ConnectionId; concept: string; mapping: string; provingQuery: string; personId: PersonId }):
+  saveNote(ids: OfProject, a: { connectionId: ConnectionId; concept: string; mapping: string; provingQuery: string; personId: PersonId; runId: string }):
     Promise<Readonly<{ kind: 'SAVED'; provedRows: number }> | Exclude<ConnectorAnswer, { kind: 'OK' }> | Readonly<{ kind: 'NOTE_INVALID' }>>
 }
 ```
@@ -695,7 +711,8 @@ Manifest['connectors']): Promise<readonly { connector: string; operation: string
 exporta.
 
 Cada estado é união por `kind` (C21). `ConnectionId`, `ProjectId`, `CompanyId` com a marca do
-`hub-api`, conferidos na entrada da rota (C23). Os donos (C26): `ConnectorAnswer` (`app-contract`),
+`hub-api`, conferidos na entrada da rota (C23); `OfProject` é `{ companyId: CompanyId; projectId: ProjectId }`,
+exportado pelo `hub-api` (hoje é local em `projects.ts:213` e `versions.ts:94`: a U3 o move). Os donos (C26): `ConnectorAnswer` (`app-contract`),
 `Notes` (`notes.ts`), o teto de 50 chamadas por conversa (`builder-port.ts`, `BUILDER_CALLS_PER_RUN`),
 o corte (`builder-port.ts`, 20 linhas e 16 KB), o teto da resposta da borda (`hub-api`,
 `APP_CONNECTOR_REPLY_BYTES = 2 MiB`, o mesmo número de `wire.ts`). Esquemas de entrada externa (C27):
@@ -721,8 +738,11 @@ em jsonb); o guia de [security](../guides/security.md) (S10, S36, S41, S48).
    (memória de um processo, 0058).
 4. `probe.ts` passa por `limits.inTurn` e `limits.token`; o Testar nunca encontra uma chamada do app
    na mesma ligação.
-5. `grants.ts` e as rotas da liberação; o 23505 de `project_connection_one_key` vira
-   `PROJECT_CONNECTION_TAKEN`. Regras: S10 (o membro e outra empresa dão 404).
+5. `grants.ts` e as rotas da liberação: `ON CONFLICT (project_id, connection_id) DO NOTHING RETURNING` e,
+   sem linha, a releitura (o molde do OS, `e0353c36 apps/hub/src/connectors/store.ts:154-176`); um
+   `ON CONFLICT` sem alvo engoliria o 23505 de `project_connection_one_key`, que tem de virar
+   `PROJECT_CONNECTION_TAKEN`; o 23503 de uma ligação ou Projeto apagado no meio vira
+   `CONNECTION_NOT_FOUND` ou `NOT_FOUND`. Regras: S10 (o membro e outra empresa dão 404).
 6. `app-calls.ts`: tx 1 curta (a sessão pela porta de apps, a versão e o manifesto, a liberação da
    ligação pelo nome ou a única do conector, `ACTIVE`, a `class` `read`, o selo); a chamada dentro de
    `inTurn`, com o prazo `min(deadlineMs, CALL_DEADLINE_MS)`; tx 2 só para `NEEDS_REAUTH`. Toda recusa
@@ -732,12 +752,14 @@ em jsonb); o guia de [security](../guides/security.md) (S10, S36, S41, S48).
    escrever).
 8. A linha `CONNECTOR_CALLED`, escrita uma vez por chamada em `app-calls.ts` e `builder-port.ts`.
 9. Publicar: `hub/apps` pergunta `connectors.ungranted` antes de gravar.
-10. `notes.ts` (`UPDATE … SET notes = notes || jsonb_build_object($1, $2::jsonb)`, `notes - $1`) e
+10. `notes.ts` (`UPDATE … SET notes = notes || jsonb_build_object($1::text, $2::jsonb)`, `notes - $1::text`;
+    o 23514 de `connection_notes`, o caderno cheio, vira `NOTE_INVALID`) e
     `builder-port.ts` (o corte, o teto de 50 por execução contado por `runId`, `saveNote` roda a
     consulta pela entrada `consultar` da porta de leitura do conector e guarda só o número de
     linhas). Um conector sem `readDoor` não tem caderno: `saveNote` dá `NOTE_INVALID`.
 11. `main.ts`: `createEdgeHub` registra as rotas da borda dos conectores; `release` chama
-    `limits.closeAll` antes de fechar o banco; `createBuilder` recebe `connectors.builder`.
+    `limits.closeAll` antes de fechar o banco. A porta do Builder fica exportada por `public.ts`; quem a
+    liga ao Builder é a U5.
 12. `connections.ts`: Desligar e Conectar de novo chamam `limits.forget`.
 13. `tests/e2e/live-hub.ts`: a liberação no Hub local.
 
@@ -746,7 +768,8 @@ em jsonb); o guia de [security](../guides/security.md) (S10, S36, S41, S48).
 Critérios 11 a 23 e 30 (a parte do Hub): os testes nomeados, pelo Hub de teste e os dublês (T5),
 `npm test -w @conexus/server -- grants app-calls limits notes publish connections-sessions`. O
 critério 18 é o do estudo (seção 4.5) pela porta pública: o dublê do Sankhya com `slow(5000)`, vinte
-`POST /api/app-connector-calls` e `GET /api/app-sessions/current` no meio. Hoje todos falham: nada
+ligações liberadas e um `POST /api/app-connector-calls` em cada, ao mesmo tempo, e `GET
+/api/app-sessions/current` no meio. Hoje todos falham: nada
 disso existe.
 
 ### Parar se
@@ -767,7 +790,7 @@ disso existe.
 - **`props.connectors`.** `apps/edge/src/dispatcher.ts:14-28` (`Db`, o `export default`),
   `dispatch.ts:37` (`Exports`), `:144-180` (`toApp`: as props, o prazo), `db.ts:1-40` (o prazo e a
   linha de registro de um `db` vencido).
-- **A chamada ao Hub.** `apps/edge/src/hub.ts:41-137` (`HubAnswer`, `hubOf`, `cappedText`, o teto).
+- **A chamada ao Hub.** `apps/edge/src/hub.ts:13-109` (`HubAnswer`, `HubPort`, o teto em `:33`, `hubOf` em `:59`).
 
 ### O raio da mudança
 
@@ -846,7 +869,8 @@ Mastra.
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `apps/server/src/builder/conversation/` | Cria `connector-tools.ts`; muda `builder.ts` (`tools`, `skills`), `permissions.ts` (as três em `READ`), `instructions.ts` e `prompt/` (o bloco das ligações) | `main.ts` |
+| `apps/server/src/builder/conversation/` | Cria `connector-tools.ts`; muda `builder.ts` (`tools`, `skills`, `createBuilder` recebe a porta), `public.ts` (`createConversations` a passa a `createBuilder`, `public.ts:49`), `permissions.ts` (as três em `READ`), `instructions.ts` e `prompt/` (o bloco das ligações) | `main.ts` |
+| `apps/server/src/main.ts` | Muda: `createConversations` recebe `connectors.builder` | — |
 | `packages/hub-api/src/tools.ts` | Muda: os três nomes em `BUILDER_TOOL` (a tela mostra a linha da ferramenta) | `apps/web` |
 | `docs/decisions/0032-data-leaving-brazil-told.md` | Muda: uma linha | — |
 
