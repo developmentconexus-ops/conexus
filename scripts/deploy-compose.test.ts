@@ -28,6 +28,12 @@ test('a imagem do Hub traz o git e a pasta dos repositórios é um volume do usu
     '/run/secrets/hub_e2b_api_key',
   )
   assert.ok(compose.services.hub.secrets.includes('hub_e2b_api_key'))
+  assert.equal(
+    compose.services.hub.environment.HUB_CONNECTOR_APPS_FILE,
+    '/run/secrets/hub_connector_apps',
+  )
+  assert.ok(compose.services.hub.secrets.includes('hub_connector_apps'))
+  assert.equal(compose.secrets.hub_connector_apps.file, '/etc/conexus/secrets/hub_connector_apps')
   // The template comes beside the image from deploy.sh, never fixed here nor read from hub.env.
   assert.equal(
     compose.services.hub.environment.HUB_E2B_TEMPLATE,

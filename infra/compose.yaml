@@ -25,6 +25,7 @@ services:
       - hub_seal_keys
       - hub_git_copy_key
       - hub_e2b_api_key
+      - hub_connector_apps
     volumes:
       - hub_git:/var/lib/conexus/git
     # HUB_MAIL_API_URL, HUB_MAIL_FROM, HUB_NEON_ORG_ID, HUB_CLOUDFLARE_ACCOUNT_ID and
@@ -57,6 +58,8 @@ services:
       # The build machines (decision 0051): the account's E2B key, and the template the Release built
       # from the image's own commit, which deploy.sh passes beside the image and never a file holds.
       HUB_E2B_API_KEY_FILE: /run/secrets/hub_e2b_api_key
+      # The installation's OAuth app keys per connector (decision 0057).
+      HUB_CONNECTOR_APPS_FILE: /run/secrets/hub_connector_apps
       HUB_E2B_TEMPLATE: ${HUB_E2B_TEMPLATE:?HUB_E2B_TEMPLATE must name the Builder's template}
       # The router's registry is the one bundled in the image, never refreshed (decision 0049).
       MASTRA_OFFLINE: "1"
@@ -134,3 +137,5 @@ secrets:
     file: /etc/conexus/secrets/hub_git_copy_key
   hub_e2b_api_key:
     file: /etc/conexus/secrets/hub_e2b_api_key
+  hub_connector_apps:
+    file: /etc/conexus/secrets/hub_connector_apps
