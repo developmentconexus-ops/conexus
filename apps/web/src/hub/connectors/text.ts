@@ -114,7 +114,7 @@ export function verdictOf(items: readonly (TestCheck | KeptCheck)[]): {
     : { text: 'Não testado', tone: 'neutral', whole: false }
 }
 
-/** The badge a connection wears on the list: the state, or "Lê em parte" when its last test left subjects open. */
+/** The badge a connection wears on its page: the state, or "Lê em parte" when its last test left subjects open. */
 export const PARTIAL_BADGE = 'Lê em parte'
 
 export function wholeSubjectsText(whole: number, subjects: number): string {

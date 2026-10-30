@@ -64,7 +64,7 @@ test('o 404 que o Sankhya manda para uma página sem linhas lê sem linhas em to
   for (const { id } of sankhya.operations) {
     assert.deepEqual(
       answer(id, 404, empty),
-      { kind: 'OK', value: { linhas: [], temMais: false } },
+      { kind: 'OK', value: { linhas: [], temMais: false }, empty: true },
       id,
     )
     assert.partialDeepStrictEqual(
@@ -89,6 +89,30 @@ test('o 404 que o Sankhya manda para uma página sem linhas lê sem linhas em to
   }
 })
 
+test('uma lista vazia no 200 também lê sem nada para olhar; uma com linhas não', () => {
+  assert.deepEqual(answer('vendedores', 200, { vendedores: [] }), {
+    kind: 'OK',
+    value: { linhas: [], temMais: null },
+    empty: true,
+  })
+  assert.equal(answer('vendedores', 200, { vendedores: [{ codigoVendedor: 7 }] }).kind, 'OK')
+  assert.equal(
+    Object(answer('vendedores', 200, { vendedores: [{ codigoVendedor: 7 }] })).empty,
+    undefined,
+  )
+})
+
+test('o código do corpo de erro do gateway fica com a recusa', () => {
+  const body = {
+    statusCode: 400,
+    error: { code: 'INVALID_REQUEST', message: 'Texto inventado', details: 'x' },
+  }
+  assert.partialDeepStrictEqual(answer('clientes', 400, body), {
+    kind: 'REFUSED',
+    native: { status: 400, code: 'INVALID_REQUEST', message: 'Texto inventado' },
+  })
+})
+
 test('as linhas passam como vieram; o objeto único é uma lista de um; a página diz se há outra', () => {
   const vendedores = {
     vendedores: [
@@ -107,7 +131,7 @@ test('as linhas passam como vieram; o objeto único é uma lista de um; a págin
   )
   assert.deepEqual(
     answer('contasAPagar', 200, { financeiros: [], pagination: { page: 1, hasMore: false } }),
-    { kind: 'OK', value: { linhas: [], temMais: false } },
+    { kind: 'OK', value: { linhas: [], temMais: false }, empty: true },
   )
   assert.deepEqual(
     answer('precosDoProduto', 200, { produtos: [{ codigoTabela: 1 }], temMaisRegistros: true }),
