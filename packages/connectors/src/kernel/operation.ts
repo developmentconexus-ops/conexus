@@ -62,12 +62,11 @@ export function outcomeOf(status: number): 'AUTH_REFUSED' | 'REFUSED' | 'UNREADA
 }
 
 /**
- * Whether a `REFUSED` answer is the provider withholding permission (n8n's rejected): a 403, or a
- * gateway's own refusal in a 2xx. A 400, 404, 409 or 422 says the request was wrong, which proves
- * nothing about the person's access.
+ * Whether a `REFUSED` answer is the provider withholding permission (n8n's rejected): a 403. A 400,
+ * 404, 409 or 422 says the request was wrong, which proves nothing about the person's access.
  */
 export function deniesAccess(native: Native): boolean {
-  return native.status === 403 || (native.status >= 200 && native.status < 300)
+  return native.status === 403
 }
 
 /** Where a body usually keeps its code and message, for the logins and the connectors that declare no better place. */
