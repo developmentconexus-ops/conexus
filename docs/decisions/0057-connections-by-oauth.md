@@ -4,8 +4,8 @@
 
 Step 19.1 links a company to a provider the person authorizes, the Mercado Livre first; its refresh
 token is single use. Basis: the 19.1
-card (`W1`, `V2`, `U1`, `Y1`), approved 2026-10-29, and the founder's "Sim" of 2026-10-30 to
-revoking at the provider, in the 19.1 section of `docs/approvals.md`.
+card (`W1`, `V2`, `U1`, `Y1`), approved 2026-10-29, and the "Sim" of 2026-10-30 to revoking, in
+`docs/approvals.md`.
 
 ## Decision
 
@@ -16,8 +16,8 @@ revoking at the provider, in the 19.1 section of `docs/approvals.md`.
   refreshes with its own 10 s deadline and stores on the `revision` it read.
 - A refused grant sets `NEEDS_REAUTH`; a refused app logs an error only.
 - The app keys come from one file (`HUB_CONNECTOR_APPS_FILE`), read only by `appKeysOf`.
-- Desligar revokes at the provider first when the connector declares it; a refusal never stops
-  the delete, and the log and answer name it.
+- Desligar revokes at the provider first when the connector declares it; the delete never waits
+  on it, and the log and answer name the outcome.
 - Remendo: each Mercado Livre route is checked against the page it cites.
 
 ## Criterion
@@ -32,8 +32,7 @@ revoking at the provider, in the 19.1 section of `docs/approvals.md`.
 
 ## Result
 
-Rows 1 to 3 and 5 met. **Not proved.** Row 4 runs in U0's job; no real Mercado Livre is called
-(S40).
+Rows 1 to 3 and 5 met. **Not proved.** Row 4 runs in U0's job; no real provider is called (S40).
 
 ## Consequences
 
