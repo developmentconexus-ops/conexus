@@ -5,6 +5,7 @@ import type {
   Native,
   Operation,
   ProviderAnswer,
+  Unread,
 } from '@conexus/connectors'
 import { locateOf, readToken, requestOf, tokenRequest, toRequest } from '@conexus/connectors'
 import type { ConnectionId } from '@conexus/hub-api'
@@ -14,8 +15,12 @@ import { Failure } from '../../platform/failure.ts'
 import type { Credential } from '../../platform/seal.ts'
 import { Secret } from '../../platform/secret.ts'
 
-/** A provider's answer is read up to this many bytes and no further (the OS's gateway cap). */
-const RESPONSE_CAP_BYTES = 256 * 1024
+/**
+ * A provider's answer is read up to this many bytes and no further. Measured on a real Sankhya
+ * (2026-10-30), a page of 50 reached 354 KB (clientes), 500 KB (notas fiscais) and 931 KB
+ * (devoluções); the OS's 256 KB came from its SQL gateway and cut REST pages.
+ */
+const RESPONSE_CAP_BYTES = 2 * 1024 * 1024
 
 /** A bearer token inside the program: printed, it shows only its name, as a sealed credential. */
 export type BearerToken = Secret<'BearerToken'>
@@ -120,6 +125,15 @@ function nativeOf(status: number, body: unknown): Native {
   return { status, ...locateOf(body), body }
 }
 
+/** An answer the kit never sees: past the cap (`bytes` null), or a 2xx in text that is not JSON; the screen says which. */
+function unreadable(status: number, bytes: Uint8Array | null): Unreadable {
+  const reason: Unread =
+    bytes === null
+      ? { kind: 'TOO_LARGE', limitBytes: RESPONSE_CAP_BYTES }
+      : { kind: 'SHAPE', issues: [{ path: '', expected: 'json', received: 'text' }] }
+  return { kind: 'UNREADABLE', native: { ...nativeOf(status, null), reason } }
+}
+
 /**
  * What fetch documents for a provider that cannot be reached: a network failure or a refused
  * redirect (TypeError), the deadline (TimeoutError) or an abort. Anything else is a bug and goes up.
@@ -167,7 +181,7 @@ export function createExecutor(deps: {
         deps.log.info({ ...where, status }, 'CONNECTOR_UNREACHABLE')
         return { kind: 'UNREACHABLE', native: nativeOf(status, answer?.body ?? null) }
       }
-      return answer ?? { kind: 'UNREADABLE', native: nativeOf(status, null) }
+      return answer ?? unreadable(status, bytes)
     } catch (error) {
       const cause = unreachableCause(error)
       if (cause === undefined) throw error

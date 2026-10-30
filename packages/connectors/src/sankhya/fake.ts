@@ -9,6 +9,7 @@ import {
   executeQuery,
   json,
   loadRecords,
+  nothingFound,
   OVERSIZE,
   SERVICE_PATH,
 } from './fake-data.ts'
@@ -23,9 +24,9 @@ type SankhyaSwitches = {
   expireToken: boolean
   /** Answers 200 with a body no schema reads. */
   malformed: boolean
-  /** The list reads answer the 404 the real gateway sends for an empty list (measured 2026-10-29), as a company with nothing to list does. */
+  /** Every REST read answers the 404 the real gateway sends for a page with no rows, as a company with nothing to list does. */
   nothingFound: boolean
-  /** Answers with a page of empresas the schema reads, above 256 KB. */
+  /** Answers with a page of empresas the kit reads, above the executor's 2 MiB cap. */
   oversize: boolean
   /** Answers every call with a 307 to the same call on the fake, answered as without the switch. */
   redirect: boolean
@@ -82,36 +83,9 @@ async function authenticate(
   })
 }
 
-/** The entity each list read names in the gateway's empty-list 404. */
-const EMPTY_ENTITY: Readonly<Record<string, string>> = {
-  centrosResultado: 'CentroResultado',
-  pedidos: 'CabecalhoNota',
-  notasFiscais: 'CabecalhoNota',
-  devolucoes: 'CabecalhoNota',
-  notasCanceladas: 'CabecalhoNota',
-  ordensCarga: 'OrdemCarga',
-}
-
-/** The gateway's 404 for a list with nothing in it, for the list reads that name an entity; null for any other. */
-function emptyList(name: string | undefined): Response | null {
-  const entity = EMPTY_ENTITY[name ?? '']
-  if (entity === undefined) return null
-  return json(
-    {
-      statusCode: 404,
-      error: {
-        code: 'RESOURCE_NOT_FOUND',
-        message: 'Recurso solicitado não foi encontrado!',
-        details: `Nenhum registro da entidade ${entity} com o identificador informado!`,
-      },
-    },
-    404,
-  )
-}
-
 function restAnswer(route: ReturnType<typeof routeOf>, url: URL, switches: SankhyaSwitches) {
-  const nothing = switches.nothingFound ? emptyList(route?.name) : null
-  return nothing ?? route?.answer(url.searchParams) ?? json({ code: 'NOT_FOUND' }, 404)
+  if (!route) return json({ code: 'NOT_FOUND' }, 404)
+  return switches.nothingFound ? nothingFound(route.entity) : route.answer(url.searchParams)
 }
 
 async function serveCall(request: Request, url: URL, switches: SankhyaSwitches): Promise<Response> {
@@ -162,7 +136,7 @@ function refuseSession(url: URL, token: string, sessions: Sessions): Response | 
 }
 
 /**
- * A Sankhya that answers like the documentation, with invented rows. One token is one session: a
+ * A Sankhya that answers in the shapes the real gateway sent, with invented rows. One token is one session: a
  * second call on a token while the first is unanswered gets the gateway's envelope "4" (409 on REST).
  */
 export function sankhyaFake(): SankhyaFake {

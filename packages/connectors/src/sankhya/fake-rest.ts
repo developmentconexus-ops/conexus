@@ -1,39 +1,60 @@
-import { EMPRESAS, json, paged, retornoErro } from './fake-data.ts'
-import { CLIENTES, PEDIDOS, PRODUTOS } from './fake-rows.ts'
+import { EMPRESAS, json, nothingFound, retornoErro } from './fake-data.ts'
 import {
   CENTROS,
+  CLIENTES,
+  ESTOQUE,
   FINANCEIROS,
   GRUPOS,
+  LOCAIS,
   NATUREZAS,
+  NOTA_COMPLETA,
   NOTAS,
+  ORDENS_CARGA,
+  PEDIDOS,
   PRECOS,
+  PRODUTOS,
+  TIPOS_OPERACAO,
+  TIPOS_PAGAMENTO,
+  TRANSPORTADORAS,
   VENDEDORES,
-} from './fake-rows-more.ts'
+} from './fake-rows.ts'
 
-/** A route of the fake: the operation it answers (the name a switch refuses it by) and how. */
+/** A route of the fake: the operation it answers (the name a switch refuses it by), the entity its empty 404 names, and how. */
 type Route = {
   name: string
+  entity: string
   pattern: RegExp
   answer(query: URLSearchParams, match: RegExpExecArray): Response
 }
 
-/** The list the route holds, in a page, wrapped as its answer shapes it. */
-function listOf<T>(rows: readonly T[], query: URLSearchParams, from: 0 | 1, key = 'page') {
-  const size = 2
+const SIZE = 2
+
+/** The page asked, two rows a page, counted from `from`; null past the end, where the gateway sends its empty 404. */
+function slice<T>(rows: readonly T[], query: URLSearchParams, from: 0 | 1, key = 'page') {
   const index = Number(query.get(key) ?? from) - from
-  return {
-    page: rows.slice(index * size, (index + 1) * size),
-    more: (index + 1) * size < rows.length,
-  }
+  const page = rows.slice(index * SIZE, (index + 1) * SIZE)
+  return page.length === 0 ? null : { index, page, more: (index + 1) * SIZE < rows.length }
 }
 
-function metadados(query: URLSearchParams, total: number, more: boolean) {
-  return {
-    paginaAtual: Number(query.get('page')),
-    totalPaginas: Math.max(1, Math.ceil(total / 2)),
-    totalRegistros: total,
-    possuiMaisPaginas: more,
-  }
+/** A list of one goes out as the element itself, as the gateway sends it. */
+function sent<T>(page: readonly T[]): T | readonly T[] {
+  return page.length === 1 && page[0] !== undefined ? page[0] : page
+}
+
+/** The family most routes belong to: the page from 0 and `pagination` all in text. */
+function paginated(entity: string, list: string, rows: readonly unknown[], query: URLSearchParams) {
+  const found = slice(rows, query, 0)
+  if (!found) return nothingFound(entity)
+  const { index, page, more } = found
+  return json({
+    [list]: sent(page),
+    pagination: {
+      page: String(index),
+      offset: String(index * SIZE),
+      total: String(page.length),
+      hasMore: String(more),
+    },
+  })
 }
 
 function needs(query: URLSearchParams, ...names: string[]) {
@@ -42,183 +63,176 @@ function needs(query: URLSearchParams, ...names: string[]) {
     : retornoErro(`${names.join(' e ')} são obrigatórios`)
 }
 
-/** Notes of one company, wrapped as the nfe lists answer. */
+/** The rows of one company: the reads that need one refuse a call without it. */
+function ofEmpresa(entity: string, list: string, rows: readonly unknown[], query: URLSearchParams) {
+  return needs(query, 'codigoEmpresa', 'page') ?? paginated(entity, list, rows, query)
+}
+
+/** The invoices carry no `pagination`: the list alone. */
 function notas(query: URLSearchParams, rows: readonly unknown[]) {
   const refused = needs(query, 'codigoEmpresa', 'page')
   if (refused) return refused
-  const { page, more } = listOf(rows, query, 1)
-  return json({ registros: page, metadados: metadados(query, rows.length, more) })
+  const found = slice(rows, query, 0)
+  return found ? json({ nota: sent(found.page) }) : nothingFound('CabecalhoNota')
 }
 
-function titulos(query: URLSearchParams) {
-  const refused = needs(query, 'codigoEmpresa')
+/** The financial lists count from 1 and send `pagination` in numbers. */
+function titulos(query: URLSearchParams, rows: readonly unknown[]) {
+  const refused = needs(query, 'codigoEmpresa', 'page')
   if (refused) return refused
-  const { page, more } = listOf(FINANCEIROS, query, 1)
+  const found = slice(rows, query, 1)
+  if (!found) return nothingFound('Financeiro')
   return json({
-    financeiros: page,
-    pagination: { page: Number(query.get('page') ?? 1), pageSize: 2, hasMore: more },
+    pagination: {
+      page: found.index + 1,
+      pageSize: SIZE,
+      total: rows.length,
+      totalPages: Math.ceil(rows.length / SIZE),
+      hasMore: found.more,
+    },
+    financeiros: sent(found.page),
   })
 }
 
+/** The prices count `pagina` from 1 and say the end with `temMaisRegistros`. */
 function precos(query: URLSearchParams, rows: readonly unknown[]) {
-  const { page, more } = listOf(rows, query, 1, 'pagina')
+  const found = slice(rows, query, 1, 'pagina')
+  if (!found) return nothingFound('Preco')
   return json({
-    precos: page,
-    page: Number(query.get('pagina') ?? 1),
-    numeroRegistros: page.length,
-    temMaisRegistros: more,
+    codigo: 1,
+    pagina: found.index + 1,
+    numeroRegistros: found.page.length,
+    temMaisRegistros: found.more,
+    tipo: 'SUCESSO',
+    mensagem: 'Consulta realizada com sucesso!',
+    produtos: found.page,
   })
 }
 
 const ROUTES: readonly Route[] = [
   {
     name: 'empresas',
+    entity: 'Empresa',
     pattern: /^\/v1\/empresas$/,
-    answer: (q) => json({ empresas: paged(EMPRESAS, q, 0).page }),
+    answer: (q) => paginated('Empresa', 'empresas', EMPRESAS, q),
   },
   {
     name: 'produtos',
+    entity: 'Produto',
     pattern: /^\/v1\/produtos$/,
-    answer: (q) => json({ produtos: paged(PRODUTOS, q, 0).page }),
+    answer: (q) => paginated('Produto', 'produtos', PRODUTOS, q),
   },
   {
     name: 'clientes',
+    entity: 'Parceiro',
     pattern: /^\/v1\/parceiros\/clientes$/,
-    answer: (q) => {
-      const { page, more } = paged(CLIENTES, q, 1)
-      return json({ clientes: page, temMaisRegistros: more })
-    },
+    answer: (q) => paginated('Parceiro', 'clientes', CLIENTES, q),
   },
   {
     name: 'pedidos',
+    entity: 'CabecalhoNota',
     pattern: /^\/v1\/vendas\/pedidos$/,
-    answer: (q) => {
-      const empresa = Number(q.get('codigoEmpresa'))
-      if (!Number.isInteger(empresa) || !q.has('page'))
-        return retornoErro('codigoEmpresa e page são obrigatórios')
-      const nota = q.get('codigoNota')
-      const rows = PEDIDOS.filter(
-        (p) => p.codigoEmpresa === empresa && (nota === null || p.codigoNota === Number(nota)),
-      )
-      return json({
-        registros: paged(rows, q, 1).page,
-        metadados: metadados(q, rows.length, paged(rows, q, 1).more),
-      })
-    },
+    answer: (q) => ofEmpresa('CabecalhoNota', 'pedido', PEDIDOS, q),
   },
   {
     name: 'vendedores',
+    entity: 'Vendedor',
     pattern: /^\/v1\/vendedores$/,
-    answer: (q) => json({ vendedores: paged(VENDEDORES, q, 0).page }),
+    answer: (q) => paginated('Vendedor', 'vendedores', VENDEDORES, q),
   },
-  // The documentation shows the one type of operation as an object, not a list.
   {
     name: 'tiposOperacao',
+    entity: 'TipoOperacao',
     pattern: /^\/v1\/tipos-operacao$/,
-    answer: () => json({ codigoTipoOperacao: 1100, nome: 'Venda', tipoMovimento: 3, ativo: true }),
+    answer: (q) => paginated('TipoOperacao', 'data', TIPOS_OPERACAO, q),
   },
   {
     name: 'naturezas',
+    entity: 'Natureza',
     pattern: /^\/v1\/naturezas$/,
-    answer: (q) => json(paged(NATUREZAS, q, 1).page),
+    answer: (q) => paginated('Natureza', 'data', NATUREZAS, q),
   },
   {
     name: 'centrosResultado',
+    entity: 'CentroResultado',
     pattern: /^\/v1\/centros-resultado$/,
-    answer: (q) => json(paged(CENTROS, q, 1).page),
+    answer: (q) => paginated('CentroResultado', 'data', CENTROS, q),
   },
   {
     name: 'gruposProduto',
+    entity: 'GrupoProduto',
     pattern: /^\/v1\/grupos-produto$/,
-    answer: (q) => json({ grupos: paged(GRUPOS, q, 0).page }),
+    answer: (q) => paginated('GrupoProduto', 'grupos', GRUPOS, q),
   },
   {
     name: 'notasFiscais',
+    entity: 'CabecalhoNota',
     pattern: /^\/v1\/vendas\/nfe$/,
-    answer: (q) =>
-      notas(
-        q,
-        NOTAS.map(({ itens: _itens, financeiros: _financeiros, ...nota }) => nota),
-      ),
+    answer: (q) => notas(q, NOTAS),
   },
   {
     name: 'notaFiscal',
+    entity: 'CabecalhoNota',
     pattern: /^\/v1\/vendas\/nfe\/(\d+)$/,
-    answer: (_q, match) => {
-      const nota = NOTAS.find((candidate) => candidate.codigoNota === Number(match[1]))
-      return nota ? json(nota) : json({ code: 'NOT_FOUND' }, 404)
-    },
+    answer: (_q, match) =>
+      match[1] === NOTA_COMPLETA.codigoNota
+        ? json({ nota: NOTA_COMPLETA })
+        : nothingFound('CabecalhoNota'),
   },
   {
     name: 'devolucoes',
+    entity: 'CabecalhoNota',
     pattern: /^\/v1\/vendas\/nfe\/devolucoes$/,
-    answer: (q) =>
-      notas(q, [
-        {
-          ...NOTAS[0],
-          codigoNota: 203,
-          numeroNota: 7003,
-          codigoTipoOperacao: 1200,
-          nomeTipoOperacao: 'Devolução de venda',
-        },
-      ]),
+    answer: (q) => notas(q, [{ ...NOTAS[0], codigoNota: '203', codigoTipoOperacao: '1200' }]),
   },
   {
     name: 'notasCanceladas',
+    entity: 'CabecalhoNota',
     pattern: /^\/v1\/vendas\/nfe\/canceladas$/,
     answer: (q) => {
       const refused = needs(q, 'codigoEmpresa', 'page')
       if (refused) return refused
-      const registros = [
-        {
-          codigoNota: 204,
-          numeroNota: 7004,
-          serieNota: '1',
-          codigoEmpresa: 1,
-          nomeEmpresa: 'Empresa Alfa',
-          codigoCliente: 1,
-          nomeCliente: 'Cliente Um',
-          chaveNFe: '00000000000000000000000000000000000000000004',
-          status: 'Cancelada',
-          valorTotal: 80,
-          dataEmissao: '2026-10-03',
-          dataCancelamento: '2026-10-04',
-          motivoCancelamento: 'Pedido em duplicidade',
-        },
-      ]
       return json({
-        registros,
-        metadados: { paginaAtual: Number(q.get('page')), totalRegistros: registros.length },
+        metadados: {},
+        registros: [{ codigoNota: 204, numeroNota: 7004, codigoEmpresa: 1, valorTotal: 80 }],
+        pagination: { page: '0', offset: '0', total: '1', hasMore: 'false' },
       })
     },
   },
   {
     name: 'estoque',
+    entity: 'Estoque',
     pattern: /^\/v1\/estoque\/produtos$/,
-    answer: () =>
-      json({
-        estoque: [
-          { codigoProduto: 11, codigoEmpresa: 1, codigoLocal: 1, estoque: 40 },
-          { codigoProduto: 12, codigoEmpresa: 1, codigoLocal: 1, controle: 'L1', estoque: 12.5 },
-        ],
-      }),
+    answer: (q) => paginated('Estoque', 'estoque', ESTOQUE, q),
   },
   {
     name: 'locaisEstoque',
+    entity: 'LocalEstoque',
     pattern: /^\/v1\/estoque\/locais$/,
-    answer: () =>
-      json([{ codigoLocal: 1, descricaoLocal: 'Depósito', grau: 1, analitico: true, ativo: true }]),
+    answer: (q) => paginated('LocalEstoque', 'locais', LOCAIS, q),
   },
-  { name: 'contasAReceber', pattern: /^\/v1\/financeiros\/receitas$/, answer: (q) => titulos(q) },
-  { name: 'contasAPagar', pattern: /^\/v1\/financeiros\/despesas$/, answer: (q) => titulos(q) },
+  {
+    name: 'contasAReceber',
+    entity: 'Financeiro',
+    pattern: /^\/v1\/financeiros\/receitas$/,
+    answer: (q) => titulos(q, FINANCEIROS),
+  },
+  // One title: the gateway sends it as an object, not a list.
+  {
+    name: 'contasAPagar',
+    entity: 'Financeiro',
+    pattern: /^\/v1\/financeiros\/despesas$/,
+    answer: (q) => titulos(q, FINANCEIROS.slice(1)),
+  },
   {
     name: 'tiposPagamento',
+    entity: 'TipoPagamento',
     pattern: /^\/v1\/financeiros\/tipos-pagamento$/,
-    answer: () =>
-      json([{ codigoTipoPagamento: 1, nome: 'Boleto', ativo: true, subTipoPagamento: 2 }]),
+    answer: (q) => paginated('TipoPagamento', 'data', TIPOS_PAGAMENTO, q),
   },
   {
     name: 'precosDoProduto',
+    entity: 'Preco',
     pattern: /^\/v1\/precos\/produto\/(\d+)$/,
     answer: (q, m) =>
       precos(
@@ -228,6 +242,7 @@ const ROUTES: readonly Route[] = [
   },
   {
     name: 'precosDaTabela',
+    entity: 'Preco',
     pattern: /^\/v1\/precos\/tabela\/(\d+)$/,
     answer: (q, m) =>
       precos(
@@ -237,44 +252,15 @@ const ROUTES: readonly Route[] = [
   },
   {
     name: 'transportadoras',
+    entity: 'Transportadora',
     pattern: /^\/v1\/parceiros\/transportadoras$/,
-    answer: () =>
-      json({
-        transportadoras: [
-          {
-            ativo: true,
-            codigoTransportadora: 5,
-            nome: 'Transportadora Cinco',
-            cnpj: '00000000000500',
-            endereco: { cidade: 'Cidade Um', uf: 'SP' },
-          },
-        ],
-        pagination: { page: '1', offset: '0', total: '1', hasMore: false },
-      }),
+    answer: (q) => paginated('Transportadora', 'transportadoras', TRANSPORTADORAS, q),
   },
   {
     name: 'ordensCarga',
+    entity: 'OrdemCarga',
     pattern: /^\/v1\/logistica\/ordens-carga$/,
-    answer: (q) => {
-      const refused = needs(q, 'page')
-      if (refused) return refused
-      return json({
-        ordensCarga: [
-          {
-            codigoOrdemCarga: 55,
-            codigoEmpresa: 1,
-            nomeEmpresa: 'Empresa Alfa',
-            dataInicio: '2026-10-05',
-            codigoVeiculo: 3,
-            codigoTransportadora: 5,
-            nomeTransportadora: 'Transportadora Cinco',
-            tipo: 1,
-            situacao: 1,
-          },
-        ],
-        pagination: { page: '1', offset: '0', total: '1', hasMore: 'false' },
-      })
-    },
+    answer: (q) => ofEmpresa('OrdemCarga', 'ordensCarga', ORDENS_CARGA, q),
   },
 ]
 
@@ -300,10 +286,15 @@ export function forbidden(path: string, code: string, text: string): Response {
 /** The route a REST path belongs to, or null when the fake has no such route. */
 export function routeOf(
   path: string,
-): { name: string; answer(query: URLSearchParams): Response } | null {
+): { name: string; entity: string; answer(query: URLSearchParams): Response } | null {
   for (const route of ROUTES) {
     const match = route.pattern.exec(path)
-    if (match) return { name: route.name, answer: (query) => route.answer(query, match) }
+    if (match)
+      return {
+        name: route.name,
+        entity: route.entity,
+        answer: (query) => route.answer(query, match),
+      }
   }
   return null
 }

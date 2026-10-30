@@ -1,6 +1,8 @@
 import { z } from 'zod'
 import type { Answered, Failure, Native, ProviderAnswer } from '../kernel/operation.ts'
-import { outcomeOf } from '../kernel/operation.ts'
+import { outcomeOf, shapeOf } from '../kernel/operation.ts'
+import type { Rows } from './operations/shared.ts'
+import { listOf } from './operations/shared.ts'
 
 const Text = z.union([z.string(), z.number()])
 const Refusal = z.looseObject({
@@ -55,54 +57,56 @@ function failureOf(answer: ProviderAnswer): Failure | null {
   return { kind: outcomeOf(status), native }
 }
 
-/** What the pages say a 404 means; `spec.test.ts` checks the six that document it still say it. */
-export const NOT_FOUND = 'Dados não encontrados'
-
-/** What the real gateway sends for an empty list (measured on the founder's run, 2026-10-29): the entity's name follows. */
-const NOTHING_FOUND = 'Nenhum registro da entidade'
-
 /**
- * The 404 body that reads as an empty list: the pages' phrase, or the measured one (code
- * `RESOURCE_NOT_FOUND` and details that begin with NOTHING_FOUND). Any other 404, such as a moved
- * route's own, stays the kernel's.
+ * The 404 every REST list sends for a page with no rows, an empty list or a page past the end
+ * (measured on every route, 2026-10-30): any other 404, such as a moved route's own, stays the kernel's.
  */
-const NotFound = z.union([
-  z.looseObject({
-    statusCode: z.literal(404),
-    error: z.looseObject({ message: z.literal(NOT_FOUND) }),
+const NothingFound = z.looseObject({
+  statusCode: z.literal(404),
+  error: z.looseObject({
+    code: z.literal('RESOURCE_NOT_FOUND'),
+    details: z.string().startsWith('Nenhum registro da entidade'),
   }),
-  z.looseObject({
-    statusCode: z.literal(404),
-    error: z.looseObject({
-      code: z.literal('RESOURCE_NOT_FOUND'),
-      details: z.string().startsWith(NOTHING_FOUND),
-    }),
-  }),
-])
+})
 
 function read<O>(output: z.ZodType<O>, answer: ProviderAnswer, body: unknown): Answered<O> {
   const parsed = output.safeParse(body)
   return parsed.success
     ? { kind: 'OK', value: parsed.data }
-    : { kind: 'UNREADABLE', native: nativeOf(answer) }
+    : { kind: 'UNREADABLE', native: { ...nativeOf(answer), reason: shapeOf(parsed.error, body) } }
 }
 
+const HasMore = z.union([
+  z.boolean(),
+  z.enum(['true', 'false']).transform((text) => text === 'true'),
+])
+
+/** Where the routes say another page follows: `pagination.hasMore` (text or boolean), or the prices' `temMaisRegistros`. */
+const Paging = z.object({
+  pagination: z.object({ hasMore: HasMore.optional() }).optional(),
+  temMaisRegistros: z.boolean().optional(),
+})
+
 /**
- * The REST answer: the body in the operation's schema, or the failure its status says. A 404 is a
- * list only when its body says so: the list itself, or the not-found body the kit expects
- * (NotFound), which reads as `empty`, the list with no rows; any
- * other 404 is the kernel's.
+ * A ready read: the envelope checked (the list under `list`, one object read as a list of one, and
+ * the paging), every row as Sankhya sent it. The measured empty 404 is a page with no rows; any
+ * other answer outside 2xx is the refusal its status says.
  */
-export function restAnswer<O>(
-  answer: ProviderAnswer,
-  output: z.ZodType<O>,
-  empty?: unknown,
-): Answered<O> {
-  if (answer.status === 404 && empty !== undefined && NotFound.safeParse(answer.body).success)
-    return read(output, answer, empty)
-  const listed = answer.status === 404 ? read(output, answer, answer.body) : null
-  if (listed?.kind === 'OK') return listed
-  return failureOf(answer) ?? read(output, answer, answer.body)
+export function rows({ list }: { list: string }) {
+  // Two objects that each keep only their own keys, so the intersection never meets one key twice.
+  const List = z.object({ [list]: listOf(z.record(z.string(), z.unknown())) })
+  const output = List.and(Paging).transform(
+    (body): Rows => ({
+      linhas: body[list] ?? [],
+      temMais: body.pagination?.hasMore ?? body.temMaisRegistros ?? null,
+    }),
+  )
+  function answer(answer: ProviderAnswer): Answered<Rows> {
+    if (answer.status === 404 && NothingFound.safeParse(answer.body).success)
+      return { kind: 'OK', value: { linhas: [], temMais: false } }
+    return failureOf(answer) ?? read(output, answer, answer.body)
+  }
+  return { output, answer }
 }
 
 const Envelope = z.looseObject({
@@ -116,7 +120,11 @@ export function gatewayAnswer<O>(answer: ProviderAnswer, responseBody: z.ZodType
   const failure = failureOf(answer)
   if (failure) return failure
   const envelope = Envelope.safeParse(answer.body)
-  if (!envelope.success) return { kind: 'UNREADABLE', native: nativeOf(answer) }
+  if (!envelope.success)
+    return {
+      kind: 'UNREADABLE',
+      native: { ...nativeOf(answer), reason: shapeOf(envelope.error, answer.body) },
+    }
   const { status, statusMessage } = envelope.data
   const rule = statusMessage?.match(/CORE_E\d+/)?.[0]
   if (status !== '1' || statusMessage?.includes('[CORE_E'))

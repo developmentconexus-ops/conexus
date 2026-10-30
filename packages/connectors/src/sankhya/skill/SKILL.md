@@ -12,9 +12,10 @@ The connection is read only. Never write, never ask for values to store, and nev
 ## Rules for every read
 
 - Read only. There is no operation that writes, and a refusal is the answer, never a thing to get around.
-- One page per call. A page that is not the last says so (`possuiMaisPaginas`, `temMaisRegistros`, `pagination.hasMore`), and some lists never say: an empty or short page is their end. Read the next page only when the person's question needs it.
-- Each operation counts its pages in its own way: the first page is 0 on some and 1 on others, and the parameter is `page` on all but the prices, which take `pagina`. The part for the subject gives the first page of each; use it.
-- Use the ready operations before the read doors. They are typed, the same for every company, and cost one call.
+- One page per call. Every ready operation answers `{ linhas, temMais }`: `temMais` is `true` when another page follows, `false` when this is the last, and `null` when the route does not say (then an empty or short page is the end). A page with no rows is `linhas: []`, never a refusal. Read the next page only when the person's question needs it.
+- The first page is 0 on every ready operation but the finance titles (`contasAReceber`, `contasAPagar`) and the prices, where it is 1; the parameter is `page` on all but the prices, which take `pagina`. The part for the subject repeats it for each.
+- Each row comes as Sankhya sent it, field by field. A number may come as text (`"201"`), the same field may come as a number in one row and as text in another, a name may be spelled oddly (`"dataAlteracao:"`), and a list of one comes as a list. Parse the fields your code uses, in your code, and never assume a type from the field's name.
+- Use the ready operations before the read doors. They are the same routes for every company and cost one call.
 - Confirm what a code or a field means in this company's dictionary before relying on it (see The dictionary).
 - Leave the HR and payroll tables alone: never read them through the read doors (tables that start with `TFP`, and employees' personal data); no ready operation covers them.
 
@@ -24,7 +25,7 @@ Each subject has a part you read on demand (`skill_read`, `references/<subject>.
 
 - `cadastros` (Cadastros): `empresas`, `clientes`, `vendedores`, `tiposOperacao`, `naturezas`, `centrosResultado`. Companies, customers, salespeople, operation types (TOP), financial natures and result centers. Read `empresas` first: other operations need a company code.
 - `produtos` (Produtos): `produtos`, `gruposProduto`. The catalog and its groups.
-- `vendas` (Vendas): `pedidos`, `impostosDoPedido`, `notasFiscais`, `notaFiscal`, `devolucoes`, `notasCanceladas`. Sales orders, invoices, returns and cancelled invoices.
+- `vendas` (Vendas): `pedidos`, `notasFiscais`, `notaFiscal`, `devolucoes`, `notasCanceladas`. Sales orders, invoices, returns and cancelled invoices. The taxes of an order are read through the door (`consultar`).
 - `estoque` (Estoque): `estoque`, `locaisEstoque`. Stock balances and stock locations.
 - `financeiro` (Financeiro): `contasAReceber`, `contasAPagar`, `tiposPagamento`. Receivables, payables and payment types.
 - `precos` (Preços): `precosDoProduto`, `precosDaTabela`. Sale prices by product and by price table.
