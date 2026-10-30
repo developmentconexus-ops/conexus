@@ -1,10 +1,14 @@
-import type { CompanyId, ConnectionId } from '@conexus/hub-api'
+import type { CompanyId, ConnectionId, ProjectId } from '@conexus/hub-api'
 import {
   completeConnectionSignIn,
+  deleteConnectionNote,
   getConnection,
+  grantProjectConnection,
   linkConnection,
   listConnections,
+  listProjectConnections,
   reconnectConnection,
+  revokeProjectConnection,
   startConnectionSignIn,
   TEST_LONGEST_MS,
   testConnection,
@@ -42,3 +46,16 @@ export const sendUnlink = hubMutation(unlinkConnection)
 export const sendSignInStart = hubMutation(startConnectionSignIn)
 export const sendSignInEnd = hubMutation(completeConnectionSignIn)
 export const sendReconnect = hubMutation(reconnectConnection)
+
+export function projectConnectionsQuery(companyId: CompanyId, projectId: ProjectId) {
+  return hubQuery(listProjectConnections, { params: { companyId, projectId } })
+}
+
+/** The Projeto's list of what it may read: what a Liberar or a Tirar makes stale. */
+export function projectConnectionsKey(companyId: CompanyId, projectId: ProjectId) {
+  return hubQueryPrefix(listProjectConnections, { companyId, projectId })
+}
+
+export const sendGrant = hubMutation(grantProjectConnection)
+export const sendRevoke = hubMutation(revokeProjectConnection)
+export const sendNoteDeletion = hubMutation(deleteConnectionNote)

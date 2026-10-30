@@ -1,4 +1,4 @@
-import type { Connection, ConnectorEntry, TestResult } from '@conexus/hub-api'
+import type { Connection, ConnectionNote, ConnectorEntry, TestResult } from '@conexus/hub-api'
 import { ATTEMPT_KEY_HEADER, ConnectionDetail, ConnectionList } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { fireEvent, render, screen } from '@testing-library/react'
@@ -21,6 +21,7 @@ export type View = {
   mayManage: boolean
   role?: 'owner' | 'admin' | 'member'
   connectors?: ConnectorEntry[]
+  notes?: ConnectionNote[]
 }
 
 type Sent = { method: string; path: string; body: unknown; attemptKey: string | null }
@@ -49,7 +50,7 @@ function reads(view: View): HttpHandler[] {
     http.get(`${BASE}/connections/:connectionId`, ({ params }) => {
       const connection = view.connections.find((one) => one.id === params.connectionId)
       if (!connection) return refusal('CONNECTION_NOT_FOUND')
-      return HttpResponse.json(ConnectionDetail.parse({ connection, notes: [] }))
+      return HttpResponse.json(ConnectionDetail.parse({ connection, notes: view.notes ?? [] }))
     }),
   ]
 }
