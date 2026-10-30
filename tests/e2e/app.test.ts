@@ -34,6 +34,9 @@ const NO_VERSION = {
   Db(): never {
     throw new Error('no version is on the air in this journey')
   },
+  Connectors(): never {
+    throw new Error('no version is on the air in this journey')
+  },
 }
 
 /** The dispatcher's bindings: the Hub's edge port, and a namespace that runs the example app. */

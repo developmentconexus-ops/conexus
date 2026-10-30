@@ -220,6 +220,16 @@ export function dbExport(owner: DatabaseUrl, key: string) {
         },
       }
     },
+    Connectors() {
+      return {
+        async call() {
+          return { kind: 'NOT_GRANTED' } as const
+        },
+        async connections() {
+          return []
+        },
+      }
+    },
   }
 }
 
