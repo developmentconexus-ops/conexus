@@ -27,7 +27,13 @@ function schemaOf(entry: ConnectorEntry) {
   return z.object({
     [NAME]: ConnectionName,
     ...Object.fromEntries(
-      entry.fields.map((field) => [field.name, z.string().min(1).max(field.maxLength)]),
+      entry.fields.map((field) => [
+        field.name,
+        z
+          .string()
+          .min(1, `Cole ${field.label}.`)
+          .max(field.maxLength, `${field.label} passa de ${field.maxLength} letras.`),
+      ]),
     ),
   })
 }
@@ -147,7 +153,6 @@ function LinkForm(props: {
             label={field.label}
             type={field.visible ? 'text' : 'password'}
             autoComplete="off"
-            invalid={`Cole ${field.label}.`}
           />
         ))}
       </fieldset>

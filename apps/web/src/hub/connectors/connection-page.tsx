@@ -26,6 +26,7 @@ import {
   PARTIAL_BADGE,
   refusedKeysMemberText,
   refusedKeysText,
+  serverErrorText,
   stateBadge,
   testedText,
   testingText,
@@ -76,7 +77,10 @@ function TestRefusal(props: { answer: Exclude<Answer, { result: 'WORKING' }>; na
   // The refused keys are the connection's state, said once above; here only what the provider answered.
   const sentence = {
     AUTH_REFUSED: null,
-    UNREACHABLE: unreachableText(name),
+    UNREACHABLE:
+      answer.result === 'UNREACHABLE' && answer.native !== null
+        ? serverErrorText(name)
+        : unreachableText(name),
     UNREADABLE: UNREADABLE_TEXT,
   }[answer.result]
   return (

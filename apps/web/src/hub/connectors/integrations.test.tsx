@@ -162,6 +162,19 @@ test.each(undecided('{"connection":'))(
   },
 )
 
+test('uma chave maior que o catálogo aceita: a frase diz que passou do tamanho, não que está vazia', async () => {
+  const sent = open()
+  const form = await openForm()
+  fill('Comercial')
+  fireEvent.change(within(form).getByLabelText('Client ID', { exact: true }), {
+    target: { value: 'a'.repeat(201) },
+  })
+  fireEvent.click(within(form).getByRole('button', { name: 'Ligar e testar' }))
+  expect(await within(form).findByText('Client ID passa de 200 letras.')).toBeTruthy()
+  expect(within(form).queryByText('Cole Client ID.')).toBeNull()
+  expect(sent).toHaveLength(0)
+})
+
 test('campo vazio: o formulário pede os campos antes de mandar', async () => {
   const sent = open()
   const form = await openForm()

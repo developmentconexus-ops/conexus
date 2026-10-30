@@ -51,6 +51,11 @@ export function unreachableText(name: string): string {
   return `O ${name} não respondeu. Tente de novo em alguns minutos.`
 }
 
+/** The provider answered, with a server error of its own: it did answer, so it is not "não respondeu". */
+export function serverErrorText(name: string): string {
+  return `O ${name} respondeu com erro. Tente de novo em alguns minutos.`
+}
+
 export function testingText(reads: number): string {
   return `Testando as ${reads} leituras, uma por vez…`
 }

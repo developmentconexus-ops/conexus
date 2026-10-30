@@ -68,7 +68,7 @@ export function TextField(props: {
   label: string
   type: 'email' | 'password' | 'text'
   autoComplete: string
-  invalid: string
+  invalid?: string
 }) {
   const { register } = useFormContext()
   const shown = useFieldError(props.name, props.invalid)

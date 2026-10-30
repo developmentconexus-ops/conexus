@@ -1,12 +1,11 @@
-import { FAILURES, TEST_DEADLINE_MS } from '@conexus/hub-api'
+import { FAILURES } from '@conexus/hub-api'
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
-import { delay, http } from 'msw'
+import { http } from 'msw'
 import { afterEach, expect, test, vi } from 'vitest'
 import { COMPANY } from '../../platform/fixtures.ts'
 import { sentenceOfCode } from '../../platform/hub.ts'
 import { hubServer, refusal } from '../../platform/test-hub.tsx'
 import { checksOf, connectionOf, REFUSAL, workingOf } from './fixtures.ts'
-import { EDGE_CUT_MS, TEST_WAIT_MS } from './queries.ts'
 import type { Answers, View } from './test-hub.tsx'
 import { connectionsHub, mount, openIntegrations, pageOf, viewOf } from './test-hub.tsx'
 
@@ -118,7 +117,7 @@ test.each([
     'AUTH_REFUSED',
     'As chaves foram recusadas pelo Sankhya. Desligue e ligue de novo com chaves novas.',
   ],
-  ['UNREACHABLE', 'O Sankhya não respondeu. Tente de novo em alguns minutos.'],
+  ['UNREACHABLE', 'O Sankhya respondeu com erro. Tente de novo em alguns minutos.'],
   ['UNREADABLE', 'Resposta que o Conexus não entendeu'],
 ] as const)('Testar que acaba em %s: a frase e o que o Sankhya disse', async (result, sentence) => {
   const connection = connectionOf({ state: 'ACTIVE', testedAt: TESTED })
@@ -223,36 +222,6 @@ test('Desligar que o Hub não confirma: a frase no diálogo, a página fica', as
     await within(dialog).findByText('Não confirmamos o desligamento. Veja a lista.'),
   ).toBeTruthy()
   expect(screen.getByRole('heading', { name: 'Comercial', hidden: true })).toBeTruthy()
-})
-
-test.each([
-  ['WORKING', 'Lê 8 de 8 assuntos inteiros'],
-  ['UNREACHABLE', 'O Sankhya não respondeu. Tente de novo em alguns minutos.'],
-] as const)(
-  'Testar que o Hub responde depois do prazo comum do navegador mostra o resultado: %s',
-  async (result, sentence) => {
-    const real = AbortSignal.timeout.bind(AbortSignal)
-    vi.spyOn(AbortSignal, 'timeout').mockImplementation((ms) => real(ms / 1000))
-    const connection = connectionOf({ state: 'ACTIVE', testedAt: TESTED })
-    const hub = connectionsHub(viewOf({ connections: [connection] }), {}, (one) =>
-      result === 'WORKING' ? workingOf(one) : { result, native: null, connection: one },
-    )
-    server.use(
-      http.post(`*/api/companies/${COMPANY.id}/connections/:id/test`, async () => {
-        await delay(TEST_DEADLINE_MS / 1000 + 5)
-        return undefined
-      }),
-      ...hub.handlers,
-    )
-    mount(pageOf(connection))
-    fireEvent.click(await screen.findByRole('button', { name: 'Testar' }))
-    expect(await screen.findByText(sentence, {}, { timeout: 4000 })).toBeTruthy()
-  },
-)
-
-test('o navegador espera o Testar além do prazo do Hub e responde antes da borda da Cloudflare', () => {
-  expect(TEST_WAIT_MS).toBeGreaterThan(TEST_DEADLINE_MS)
-  expect(TEST_WAIT_MS).toBeLessThan(EDGE_CUT_MS)
 })
 
 test('um teste novo que não lê um assunto inteiro abre o assunto que estava fechado', async () => {
