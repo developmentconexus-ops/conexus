@@ -41,7 +41,7 @@ Database roles and grants live beside the migrations, not in a second list here.
   needs. The migration checker is a heuristic, not a complete SQL parser. [review]
 - **D32.** `migrate` **must** set a login's password only when that login, with its key file's
   password, is refused with 28P01. [`migrate.test.ts`, the verifier unchanged]
-- **D33.** An index on an ICU collation (the Projects' unique name, `und-x-icu`) **must** be rebuilt
+- **D33.** An index on an ICU collation (the Projects' unique name and `connection_name_key`, the company's connection name, both `und-x-icu`) **must** be rebuilt
   with `REINDEX` when the provider's ICU major version changes. PostgreSQL only warns of the
   mismatch, and a stale index lets a duplicate in or hides a row. Failure: "Ação" and "AÇÃO" both insert after an upgrade. [review]
 

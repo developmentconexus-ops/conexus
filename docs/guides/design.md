@@ -43,6 +43,7 @@ colors:
   dark-danger: "#F28B9A"
   phone-frame: "#1D2125"
   dark-phone-frame: "#3A4148"
+  logo-plate: "#FFFFFF"
 typography:
   display:
     fontFamily: "Bricolage Grotesque, system-ui, sans-serif"
@@ -123,6 +124,11 @@ most colorful thing on screen. Ipê is the warm gold accent; prose is sans and f
   Tokens let both themes change in one file. The Prévia's drawn phone frame is the color token
   `phone-frame` (`dark-phone-frame` in the dark theme, where `#1d2125` would vanish into the stage)
   rather than a raw value; founder, 2026-10-28, on proposal B, Janela, of the Prévia screen: "1. Sim".
+  A provider's logo sits on the color token `logo-plate`, a light plate in both themes like
+  `phone-frame`, because a provider draws its symbol for a light ground (step 19, the Integrações
+  screen). The logo of every connector is the provider's square symbol without the written name,
+  and the kit refuses a wide one (`packages/connectors/src/kernel/logo.ts`); founder, 2026-10-29:
+  "só a logo mesmo, igual eu te mandei" and "a logo do Mercado Livre é só a logo, sem escrita".
   [rule to write]
 - **V5.** Ipê **should** distinguish current activity and choice: focus, caret, selection, active
   lens and working agent, not every resting action or heading. The send hover keeps its current
@@ -187,7 +193,10 @@ churn, not runtime style enforcement; do not extend this check to vendor-generat
   so `max-w-sm` becomes 0.5rem. Use a distinct container name; numeric, intrinsic and zero widths
   remain valid. Failure: a copied hex misses a theme change, or a spacing name makes a column 8px
   wide. The existing GritQL plugin checks only that width collision, not all token semantics.
-  [review]
+  Um diálogo de formulário com vários campos e a ajuda deles usa o tamanho `fields` (janela de
+  48rem, tela inteira abaixo de `sm`): a ajuda ao lado dos campos a partir de `md` e acima no
+  celular, o corpo rola e o rodapé com os botões fica sempre à vista. `form` fica para um pedido
+  curto. [review]
 - **V55.** Destructive actions **should** retain the approved distinction: neutral `button-danger`
   with danger text on the page, full-danger `button-danger-confirm` only at the final confirmation
   instead of ink. Founder, 2026-10-14: "B". Failure: two equally red actions obscure which click

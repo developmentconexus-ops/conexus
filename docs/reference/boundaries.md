@@ -1039,3 +1039,56 @@ rows for the five above wait on issue #458.
   to 17.1 s (about 0.3 s of bytes and about 9.7 s of Cloudflare's processing over five sequential
   calls).
   Revisit when e2b's read takes a no-follow option.
+
+## Connectors (step 19): the kit's definition and the one executor
+
+Zod 4.6.5 and Node 24.21.0's `fetch`, the installed versions. No connector library is installed:
+the references read for this step (Activepieces `piece-metadata.ts:61-66`, Nango
+`providers.yaml:9368-9400`) run their own runtime and none runs a provider call in Brazil with a
+sealed credential, so both rows of the card's reference table that read "remendo" are written here.
+
+### The definition of a connector (the kit's core)
+
+- **Library line.** Activepieces' `ActionClassification` and `piece-metadata.ts` and Nango's
+  provider entry declare a connector as data, but each leaves open the sealed credential's fields,
+  the fixed origin, the class of every operation, the subject each read belongs to and the one-call-
+  at-a-time rule. Zod 4.6.5 `z.object(...).strict()` parses the credential; it does not know which
+  values are secrets.
+- **Hand-made piece.** `defineConnector`, `defineOperation` and `toRequest` in
+  `packages/connectors/src/kernel/`. The class is required and has no default; `toRequest` is the
+  one place a URL is built, from the connector's fixed origin (or a local double's, named only in
+  the Hub's configuration) and a checked path, with `redirect: 'error'` (`request.ts:48`).
+- **Why.** A caller's text must never choose the host the Hub sends a credential to (S36), and a
+  write must never pass as a read for lack of a class.
+- **Proof.** Removals `connector-request-origin`, `connector-redirect-refused`,
+  `connector-origin-only-local` and `sankhya-read-only-words` (the read door's statement words).
+  Tests without a row: `kernel.test.ts` "a classe é obrigatória" and "a porta de leitura só aceita
+  operações read", which fail at compile time or at definition rather than by a line a scratch copy
+  could remove.
+- **Revisit when** a connector library runs a provider call in the Hub's region with the credential
+  sealed.
+
+### The executor (the only code that opens a credential and calls a provider)
+
+- **Library line.** Node 24.21.0 `fetch` returns the response before its body is read, throws a
+  `TypeError` for a network failure or a refused redirect and `TimeoutError` or `AbortError` for the
+  deadline (`AbortSignal.timeout`), and has no cap on the body. Nango's `buildValuesToFilter`
+  removes a credential's values from what it logs; Mastra Connect's proxy keeps the credential
+  outside the caller. Neither runs in Brazil.
+- **Hand-made piece.** `createExecutor` in `apps/server/src/hub/connectors/executor.ts`. `bodyOf`
+  reads the answer in pieces up to 256 KB and cancels past it; `redacted` replaces every secret of
+  the request, as it is and as JSON writes it, in every body before the answer is read;
+  `unreachableCause` turns only what `fetch` documents for an unreachable provider into
+  `UNREACHABLE` and logs the error's name and the system code of its cause, and any other error
+  goes up (decision 0056, S36, S41).
+- **Why.** A provider's body is its own and can be large or carry the credential back; and a bug in
+  the executor must not read as "the provider is down" (the founder, 2026-10-29: "a gente estava
+  suprimindo alguns erros. Para mim isso não é bom").
+- **Proof.** Removals `connector-redirect-refused` and `connector-response-cap`, both through
+  `executor.test.ts` "a origem, o redirecionamento e o teto". Tests without a row, each on the
+  public door: "o corpo de erro perde os valores da credencial antes de ser lido", "o token sai de
+  todo corpo de uma operação, no envelope do gateway e no erro REST", "um erro de programação dentro
+  do envio sobe como falha, não vira UNREACHABLE" and "um corpo de erro que não é JSON chega como
+  texto e o status decide".
+- **Revisit when** Node's `fetch` takes a body cap, or a connector library runs the call in Brazil
+  with the credential outside the caller.
