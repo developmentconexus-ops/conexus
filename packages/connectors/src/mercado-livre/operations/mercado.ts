@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { get } from '../../kernel/operation.ts'
 import { anunciosDetalhe } from './anuncios.ts'
-import { firstId, firstRowWith, PathId, readOf, valueAt } from './shared.ts'
+import { chain, firstRowWith, PathId, readOf, valueAt } from './shared.ts'
 
 export const tendencias = readOf({
   id: 'tendencias',
@@ -25,10 +25,7 @@ export const maisVendidos = readOf({
   input: z.object({ categoryId: PathId }),
   list: 'content',
   from: [anunciosDetalhe.id],
-  probe: (earlier) => {
-    const categoryId = firstId(earlier, anunciosDetalhe.id, 'body.category_id')
-    return categoryId === undefined ? null : { categoryId }
-  },
+  probe: chain(anunciosDetalhe.id, 'body.category_id', (categoryId) => ({ categoryId })),
   request: (input) => get(`/highlights/MLB/category/${input.categoryId}`),
 })
 

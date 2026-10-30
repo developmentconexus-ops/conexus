@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { get } from '../../kernel/operation.ts'
-import { firstId, Limit, Offset, PathId, readOf, sellerOf } from './shared.ts'
+import { chain, Limit, Offset, PathId, readOf, sellerOf } from './shared.ts'
 import { pacote } from './vendas.ts'
 
 export const mensagensNaoLidas = readOf({
@@ -26,10 +26,7 @@ export const mensagensDoPacote = readOf({
   list: 'messages',
   omit: ['from.email', 'from.name', 'to.email', 'to.name'],
   from: [pacote.id],
-  probe: (earlier) => {
-    const packId = firstId(earlier, pacote.id, 'id')
-    return packId === undefined ? null : { packId }
-  },
+  probe: chain(pacote.id, 'id', (packId) => ({ packId })),
   request: (input, account) =>
     get(`/messages/packs/${input.packId}/sellers/${sellerOf(account)}`, {
       tag: 'post_sale',

@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { get } from '../../kernel/operation.ts'
-import { firstId, ids, Limit, Offset, PathId, readOf, sellerOf } from './shared.ts'
+import { chain, ids, Limit, Offset, PathId, readOf, sellerOf } from './shared.ts'
 
 export const anuncios = readOf({
   id: 'anuncios',
@@ -49,19 +49,21 @@ export const anunciosDetalhe = readOf({
   request: (input) => get('/items/bulk', { ids: input.ids.join(',') }),
 })
 
+/** What a read of one listing shares: its id, taken from the listing search. */
+const ofItem = {
+  input: z.object({ itemId: PathId }),
+  list: null,
+  from: [anuncios.id],
+  probe: chain(anuncios.id, 'id', (itemId) => ({ itemId })),
+}
+
 export const descricao = readOf({
   id: 'descricao',
   subject: 'anuncios',
   docs: 'descricao-de-produtos',
   summary: 'Mostra a descrição, em texto, de um anúncio.',
   label: 'Descrição',
-  input: z.object({ itemId: PathId }),
-  list: null,
-  from: [anuncios.id],
-  probe: (earlier) => {
-    const itemId = firstId(earlier, anuncios.id, 'id')
-    return itemId === undefined ? null : { itemId }
-  },
+  ...ofItem,
   request: (input) => get(`/items/${input.itemId}/description`),
 })
 
@@ -75,10 +77,7 @@ export const estoque = readOf({
   input: z.object({ userProductId: PathId }),
   list: null,
   from: [anunciosDetalhe.id],
-  probe: (earlier) => {
-    const userProductId = firstId(earlier, anunciosDetalhe.id, 'body.user_product_id')
-    return userProductId === undefined ? null : { userProductId }
-  },
+  probe: chain(anunciosDetalhe.id, 'body.user_product_id', (userProductId) => ({ userProductId })),
   request: (input) => get(`/user-products/${input.userProductId}/stock`),
 })
 
@@ -88,12 +87,6 @@ export const qualidade = readOf({
   docs: 'qualidade-das-publicacoes',
   summary: 'Mostra a nota de qualidade de um anúncio (0 a 100), o nível e quando foi calculada.',
   label: 'Qualidade',
-  input: z.object({ itemId: PathId }),
-  list: null,
-  from: [anuncios.id],
-  probe: (earlier) => {
-    const itemId = firstId(earlier, anuncios.id, 'id')
-    return itemId === undefined ? null : { itemId }
-  },
+  ...ofItem,
   request: (input) => get(`/item/${input.itemId}/performance`),
 })

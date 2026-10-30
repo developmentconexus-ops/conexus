@@ -72,7 +72,7 @@ export function valueAt(row: unknown, path: string): unknown {
 }
 
 /** The rows an earlier read gave. */
-export function rowsOf(earlier: ReadonlyMap<OperationId, unknown>, id: OperationId) {
+function rowsOf(earlier: ReadonlyMap<OperationId, unknown>, id: OperationId) {
   return RowsOut.safeParse(earlier.get(id)).data?.linhas ?? []
 }
 
@@ -85,6 +85,14 @@ export function firstId(
   return rowsOf(earlier, id)
     .map((row) => Identity.safeParse(valueAt(row, path)).data)
     .find((found) => found !== undefined)
+}
+
+/** A probe that reads one identity of an earlier read and asks with it (`ask`); none to read, none to probe. */
+export function chain<I>(from: OperationId, path: string, ask: (id: string) => I) {
+  return (earlier: ReadonlyMap<OperationId, unknown>): I | null => {
+    const found = firstId(earlier, from, path)
+    return found === undefined ? null : ask(found)
+  }
 }
 
 /** Up to `count` identities `path` of an earlier read, from the rows that have one. */

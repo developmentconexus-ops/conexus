@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { get } from '../../kernel/operation.ts'
 import { anunciosDetalhe } from './anuncios.ts'
-import { firstId, PathId, readOf } from './shared.ts'
+import { chain, PathId, readOf } from './shared.ts'
 import { pedido } from './vendas.ts'
 
 export const envio = readOf({
@@ -15,10 +15,7 @@ export const envio = readOf({
   list: null,
   omit: ['receiver_address', 'receiver'],
   from: [pedido.id],
-  probe: (earlier) => {
-    const shipmentId = firstId(earlier, pedido.id, 'shipping.id')
-    return shipmentId === undefined ? null : { shipmentId }
-  },
+  probe: chain(pedido.id, 'shipping.id', (shipmentId) => ({ shipmentId })),
   request: (input) => get(`/shipments/${input.shipmentId}`, {}, { 'x-format-new': 'true' }),
 })
 
@@ -31,10 +28,7 @@ export const prazoDoEnvio = readOf({
   input: z.object({ shipmentId: PathId }),
   list: null,
   from: [envio.id],
-  probe: (earlier) => {
-    const shipmentId = firstId(earlier, envio.id, 'id')
-    return shipmentId === undefined ? null : { shipmentId }
-  },
+  probe: chain(envio.id, 'id', (shipmentId) => ({ shipmentId })),
   request: (input) => get(`/shipments/${input.shipmentId}/sla`),
 })
 
@@ -48,9 +42,6 @@ export const estoqueFull = readOf({
   input: z.object({ inventoryId: PathId }),
   list: null,
   from: [anunciosDetalhe.id],
-  probe: (earlier) => {
-    const inventoryId = firstId(earlier, anunciosDetalhe.id, 'body.inventory_id')
-    return inventoryId === undefined ? null : { inventoryId }
-  },
+  probe: chain(anunciosDetalhe.id, 'body.inventory_id', (inventoryId) => ({ inventoryId })),
   request: (input) => get(`/inventories/${input.inventoryId}/stock/fulfillment`),
 })

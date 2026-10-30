@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { get } from '../../kernel/operation.ts'
-import { firstId, Limit, Offset, PathId, readOf, sellerOf } from './shared.ts'
+import { chain, Limit, Offset, PathId, readOf, sellerOf } from './shared.ts'
 import { firstOrder, pedidos } from './vendas.ts'
 
 export const periodosDeFaturamento = readOf({
@@ -31,10 +31,7 @@ export const cobrancasDoPeriodo = readOf({
   input: z.object({ key: PathId }),
   list: 'results',
   from: [periodosDeFaturamento.id],
-  probe: (earlier) => {
-    const key = firstId(earlier, periodosDeFaturamento.id, 'key')
-    return key === undefined ? null : { key }
-  },
+  probe: chain(periodosDeFaturamento.id, 'key', (key) => ({ key })),
   request: (input) =>
     get(`/billing/integration/periods/key/${input.key}/summary/details`, { group: 'ML' }),
 })

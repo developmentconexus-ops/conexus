@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { get } from '../../kernel/operation.ts'
-import { firstId, Limit, Offset, PathId, readOf, sellerOf } from './shared.ts'
+import { chain, Limit, Offset, PathId, readOf, sellerOf } from './shared.ts'
 
 export const reclamacoes = readOf({
   id: 'reclamacoes',
@@ -26,19 +26,21 @@ export const reclamacoes = readOf({
     }),
 })
 
+/** What a read of one claim shares: its id, taken from the claim search. */
+const ofClaim = {
+  input: z.object({ claimId: PathId }),
+  list: null,
+  from: [reclamacoes.id],
+  probe: chain(reclamacoes.id, 'id', (claimId) => ({ claimId })),
+}
+
 export const reclamacao = readOf({
   id: 'reclamacao',
   subject: 'reclamacoes',
   docs: 'gerenciar-reclamacoes',
   summary: 'Mostra uma reclamação pelo id: tipo, etapa, motivo, datas e a resolução quando há.',
   label: 'Reclamação',
-  input: z.object({ claimId: PathId }),
-  list: null,
-  from: [reclamacoes.id],
-  probe: (earlier) => {
-    const claimId = firstId(earlier, reclamacoes.id, 'id')
-    return claimId === undefined ? null : { claimId }
-  },
+  ...ofClaim,
   request: (input) => get(`/post-purchase/v1/claims/${input.claimId}`),
 })
 
@@ -48,12 +50,6 @@ export const devolucao = readOf({
   docs: 'gerenciar-devolucoes',
   summary: 'Mostra a devolução ligada a uma reclamação: status, tipo e datas.',
   label: 'Devolução',
-  input: z.object({ claimId: PathId }),
-  list: null,
-  from: [reclamacoes.id],
-  probe: (earlier) => {
-    const claimId = firstId(earlier, reclamacoes.id, 'id')
-    return claimId === undefined ? null : { claimId }
-  },
+  ...ofClaim,
   request: (input) => get(`/post-purchase/v2/claims/${input.claimId}/returns`),
 })

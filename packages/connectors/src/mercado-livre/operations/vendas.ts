@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import type { OperationId } from '../../kernel/operation.ts'
 import { get } from '../../kernel/operation.ts'
-import { firstId, Instant, Limit, Offset, PathId, readOf, sellerOf } from './shared.ts'
+import { chain, firstId, Instant, Limit, Offset, PathId, readOf, sellerOf } from './shared.ts'
 
 /** The buyer is left out whole: the API sends a nickname, a name and, on some routes, an e-mail and a phone (founder, T1). */
 const BUYER = ['buyer'] as const
@@ -67,9 +67,6 @@ export const pacote = readOf({
   input: z.object({ packId: PathId }),
   list: null,
   from: [pedido.id],
-  probe: (earlier) => {
-    const packId = firstId(earlier, pedido.id, 'pack_id')
-    return packId === undefined ? null : { packId }
-  },
+  probe: chain(pedido.id, 'pack_id', (packId) => ({ packId })),
   request: (input) => get(`/packs/${input.packId}`),
 })
