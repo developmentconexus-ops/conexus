@@ -327,3 +327,7 @@ Ele aprovou a página do cartão com a recomendação `Y1` (o Desligar continua 
 Cartão da etapa 19.1 aprovado em 2026-10-30 (commit 2359d27e61b50d36e06e8488f2743c8f89d7b05b): "Aprovado 19.1"; sobre a forma das leituras, "Fazer o básico bem feito [...] em vez de querer complicar"
 
 Essa emenda é a opção B do estudo do Sankhya de verdade, aplicada à 19.1 pelo firstmate sob essas palavras do fundador, sem decisão nova dele: cada leitura do Mercado Livre diz a rota, a entrada, a chave da lista e a paginação, e as linhas passam como vieram, com o envelope conferido; o critério 23 confere o envelope e a saída dos dados do comprador; a forma real das páginas se mede no primeiro uso dele. O que ele vê no roteiro não muda.
+
+Cartão da etapa 19.1 aprovado em 2026-10-30 (commit bf11da92fb4dcf9a4e6dfed0e2612553fa8f2c82): "Aprovado 19.1"
+
+Essa emenda vem da revisão da U1, decidida pelo firstmate, sem decisão nova do fundador nem mudança no que ele vê: a linha de autorização em andamento só aponta uma ligação da mesma empresa e do mesmo conector (uma chave composta, como a do acesso a um app), o nome dela tem o mesmo limite do nome da ligação, e a migração de permissões vai numa migração e num commit próprios dentro do pull request da U1, como nas etapas 18 e 19. A palavra D11 do fundador é a mesma, "Aprovado 19.1".
