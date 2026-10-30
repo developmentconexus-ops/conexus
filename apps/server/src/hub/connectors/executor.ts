@@ -11,6 +11,7 @@ import type {
   Operation,
 } from '@conexus/connectors'
 import {
+  loggedOutBy,
   logoutRequest,
   readGrant,
   readToken,
@@ -214,7 +215,8 @@ async function loggedOut(
 ): Promise<LoggedOut | null> {
   const { connection, token } = a
   const { auth } = connection.connector
-  const request = auth.kind === 'client_credentials' ? logoutRequest(auth) : null
+  if (auth.kind !== 'client_credentials') return null
+  const request = logoutRequest(auth)
   if (request === null) return null
   const where = whereOf(connection)
   const redaction = { secrets: [token.reveal()], whole2xx: false }
@@ -229,7 +231,7 @@ async function loggedOut(
     deps.log.info(where, 'CONNECTOR_LOGOUT_FAILED')
     return sent.kind === 'UNREACHABLE' ? 'UNREACHABLE' : 'REFUSED'
   }
-  if (!isOk(sent.status)) {
+  if (!loggedOutBy(auth, sent)) {
     deps.log.info({ ...where, status: sent.status }, 'CONNECTOR_LOGOUT_FAILED')
     return 'REFUSED'
   }

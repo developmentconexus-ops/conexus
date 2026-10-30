@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { CONCURRENT_CALL, CONNECTORS, connectorOf } from '../index.ts'
+import { CONCURRENT_CALL, CONNECTORS, connectorOf, loggedOutBy } from '../index.ts'
 import { runConformance } from '../kernel/conformance.ts'
 import type { Operation } from '../kernel/operation.ts'
 import { requestOf } from '../kernel/operation.ts'
@@ -282,4 +282,13 @@ test('a recusa do envelope leva o que o Sankhya disse; uma linha lida e um 2xx i
     answer('consultar', 200, { status: '1', responseBody: { rows: 'x' } }),
     { kind: 'UNREADABLE', native: { status: 200, body: null } },
   )
+})
+
+test('o logout só vale com o envelope "1": o "4" e a regra recusada em um 200 não encerram a sessão', () => {
+  const { auth } = sankhya
+  assert.equal(auth.kind, 'client_credentials')
+  if (auth.kind !== 'client_credentials') return
+  assert.equal(loggedOutBy(auth, { status: 200, body: { status: '1' } }), true)
+  assert.equal(loggedOutBy(auth, { status: 200, body: { status: '4' } }), false)
+  assert.equal(loggedOutBy(auth, { status: 403, body: { status: '1' } }), false)
 })

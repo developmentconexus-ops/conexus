@@ -134,3 +134,18 @@ test('nenhum token vence aberto: perto do fim, o logout sai sozinho, uma vez, e 
     'closeAll stops the timer',
   )
 })
+
+test('o logout do fim espera a vez da ligação: com uma leitura aberta no token, nada sai; quando ela termina, o logout sai', async () => {
+  const events: string[] = []
+  const limits = createLimits({ executor: executorOf(events, 61) })
+  await limits.token(OPENED, 1000)
+  const reading = limits.inTurn(OPENED.id, 1000, async () => {
+    await sleep(1800)
+    events.push('read done')
+  })
+  await sleep(1300)
+  assert.deepEqual(events, ['login1'], 'the timer fired and the logout did not meet the read')
+  await reading
+  await sleep(100)
+  assert.deepEqual(events, ['login1', 'read done', 'logout t1'])
+})

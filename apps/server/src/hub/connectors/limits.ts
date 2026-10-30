@@ -5,6 +5,8 @@ import type { BearerToken, Executor, Login, OpenedConnection } from './executor.
 // an expired Sankhya token's logout is refused, and its session hangs (measured 2026-10-30).
 const EARLY_MS = 60_000
 const LOGOUT_DEADLINE_MS = 3_000
+// The scheduled logout waits for its turn up to this, well inside the margin before the token's end.
+const ENDING_TURN_MS = 30_000
 
 /** What `inTurn` answers to a waiter whose deadline passed in the queue. */
 type Deadline = Readonly<{ kind: 'DEADLINE' }>
@@ -94,7 +96,11 @@ function createLanes(): Pick<Limits, 'inTurn'> {
 }
 
 /** Each live token's own end: logged out before it expires, since an expired token's logout is refused. */
-function createEndings(held: Map<ConnectionId, Held>, executor: Executor) {
+function createEndings(
+  held: Map<ConnectionId, Held>,
+  executor: Executor,
+  inTurn: Limits['inTurn'],
+) {
   const timers = new Map<ConnectionId, NodeJS.Timeout>()
 
   function stop(id: ConnectionId): void {
@@ -112,10 +118,14 @@ function createEndings(held: Map<ConnectionId, Held>, executor: Executor) {
       const timer = setTimeout(
         () => {
           timers.delete(opened.id)
-          const now = held.get(opened.id)?.state
-          if (now?.kind !== 'LIVE' || now.token !== token) return
-          held.set(opened.id, { seat: opened, state: NONE })
-          void executor.logout(opened, token, LOGOUT_DEADLINE_MS)
+          // In the connection's turn, like every call: a logout on a token with a read open is refused.
+          // A turn not had in time leaves the token to the next call's renewal, which logs out first.
+          void inTurn(opened.id, ENDING_TURN_MS, async () => {
+            const now = held.get(opened.id)?.state
+            if (now?.kind !== 'LIVE' || now.token !== token) return
+            held.set(opened.id, { seat: opened, state: NONE })
+            await executor.logout(opened, token, LOGOUT_DEADLINE_MS)
+          })
         },
         Math.max(0, expiresAt - EARLY_MS - Date.now()),
       )
@@ -126,9 +136,9 @@ function createEndings(held: Map<ConnectionId, Held>, executor: Executor) {
 }
 
 /** The one token of each pasted-key connection: reused while it lives, renewed with the old one's logout first. */
-function createTokens(executor: Executor): Omit<Limits, 'inTurn'> {
+function createTokens(executor: Executor, inTurn: Limits['inTurn']): Omit<Limits, 'inTurn'> {
   const held = new Map<ConnectionId, Held>()
-  const endings = createEndings(held, executor)
+  const endings = createEndings(held, executor, inTurn)
 
   async function login(opened: OpenedConnection, deadlineMs: number): Promise<Login> {
     const answered = await executor.login(opened, deadlineMs)
@@ -196,5 +206,6 @@ function createTokens(executor: Executor): Omit<Limits, 'inTurn'> {
 }
 
 export function createLimits(deps: { executor: Executor }): Limits {
-  return { ...createLanes(), ...createTokens(deps.executor) }
+  const lanes = createLanes()
+  return { ...lanes, ...createTokens(deps.executor, lanes.inTurn) }
 }

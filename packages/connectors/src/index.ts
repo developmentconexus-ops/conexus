@@ -14,6 +14,7 @@ export function connectorOf(id: string): Connector | undefined {
 export {
   type Auth,
   type ClientCredentialsAuth,
+  loggedOutBy,
   logoutRequest,
   readToken,
   tokenRequest,
