@@ -1,4 +1,4 @@
-import { connectorOf } from '@conexus/connectors'
+import { AccountRef, connectorOf } from '@conexus/connectors'
 import type { KeptCheck, Person, TestCheck, TestResult } from '@conexus/hub-api'
 import { and, sql } from 'drizzle-orm'
 import { Failure } from '../../platform/failure.ts'
@@ -9,6 +9,7 @@ import { probed } from './probe.ts'
 import type { Deps, OfConnection } from './rows.ts'
 import { admitted, columns, ofCompany, scopeOf, sealContext, sealedOf, viewOf } from './rows.ts'
 import { connection } from './tables.ts'
+import { accessFor } from './tokens.ts'
 
 /**
  * Testar's first step (the failure table): a short command that admits and opens the seal, so no
@@ -22,6 +23,8 @@ function opened(deps: Deps, input: OfConnection): Promise<OpenedConnection> {
       .select({
         connector: connection.connectorId,
         linkedAt: sql<string>`${connection.linkedAt}::text`,
+        revision: connection.revision,
+        accountRef: connection.accountRef,
       })
       .from(connection)
       .where(ofCompany(input, input.connectionId))
@@ -33,7 +36,8 @@ function opened(deps: Deps, input: OfConnection): Promise<OpenedConnection> {
     const id = input.connectionId
     const context = sealContext({ id, companyId: input.companyId, connector })
     const credential = open(deps.sealKeys, context, await sealedOf(tx, id))
-    return { id, linkedAt: row.linkedAt, connector, credential }
+    const accountRef = row.accountRef === null ? null : AccountRef.parse(row.accountRef)
+    return { id, linkedAt: row.linkedAt, connector, credential, revision: row.revision, accountRef }
   })
 }
 
@@ -61,7 +65,8 @@ function writtenBy(probe: Written, tester: Person) {
 /**
  * Testar's last step: the state and the last test are written only on the row the first step
  * opened (its id and `linked_at`); one removed meanwhile is not found and nothing changes. An
- * unreachable provider, or one that answered what the kit cannot read, changes nothing.
+ * unreachable provider, one that answered what the kit cannot read, or one that refused the
+ * installation's app, changes nothing.
  */
 function recorded(deps: Deps, input: OfConnection, opened: OpenedConnection, probe: Probed) {
   return deps.database.command(scopeOf(input), async (tx) => {
@@ -70,12 +75,13 @@ function recorded(deps: Deps, input: OfConnection, opened: OpenedConnection, pro
       ofCompany(input, input.connectionId),
       sql`${connection.linkedAt} = ${opened.linkedAt}::timestamptz`,
     )
+    const written = probe.result === 'WORKING' || probe.result === 'AUTH_REFUSED' ? probe : null
     const [row] =
-      probe.result === 'UNREACHABLE' || probe.result === 'UNREADABLE'
+      written === null
         ? await tx.select(columns).from(connection).where(same)
         : await tx
             .update(connection)
-            .set(writtenBy(probe, input.person))
+            .set(writtenBy(written, input.person))
             .where(same)
             .returning(columns)
     if (row === undefined) throw new Failure('CONNECTION_NOT_FOUND')
@@ -86,7 +92,7 @@ function recorded(deps: Deps, input: OfConnection, opened: OpenedConnection, pro
 /** Testar (criteria 10 to 12): the three steps of the failure table. */
 export async function test(deps: Deps, input: OfConnection): Promise<TestResult> {
   const open = await opened(deps, input)
-  const probe = await probed(deps, open)
+  const probe = await probed({ ...deps, access: accessFor(deps, input) }, open)
   const view = await recorded(deps, input, open, probe)
   return probe.result === 'WORKING'
     ? { result: 'WORKING', checks: probe.checks, connection: view }

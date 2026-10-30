@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict'
 import { randomBytes } from 'node:crypto'
-import { chmodSync, writeFileSync } from 'node:fs'
+import { chmodSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { templateName } from '../../../../infra/e2b/name.ts'
 import { readConfig } from './config.ts'
@@ -174,4 +177,41 @@ test('configuração: a origem do dublê é só local', async (t) => {
     'sankhya',
   ])
     refusal({ ...env, HUB_CONNECTOR_ORIGINS: value }, 'HUB_CONNECTOR_ORIGINS')
+})
+
+function appsFile(t: TestContext, text: string): string {
+  const dir = mkdtempSync(join(tmpdir(), 'conexus-apps-'))
+  t.after(() => rmSync(dir, { recursive: true, force: true }))
+  const path = join(dir, 'apps.json')
+  writeFileSync(path, text, { mode: 0o600 })
+  return path
+}
+
+test('configuração: as chaves dos apps', async (t) => {
+  const env = serveEnvironment(t, await unreachableDatabaseUrl(), { port: 8080, edgePort: 8081 })
+  assert.equal(readConfig('serve', env).connectorApps, undefined)
+  const app = { clientId: 'app-inventado', clientSecret: 'segredo-inventado' }
+  const read = readConfig('serve', {
+    ...env,
+    HUB_CONNECTOR_APPS_FILE: appsFile(t, JSON.stringify({ 'mercado-livre': app })),
+  }).connectorApps?.get('mercado-livre')
+  assert.equal(read?.clientId, app.clientId)
+  assert.equal(read?.clientSecret.reveal(), app.clientSecret)
+  assert.equal(JSON.stringify(read).includes(app.clientSecret), false)
+  for (const text of [
+    '',
+    '{}',
+    'não é JSON',
+    JSON.stringify({ 'mercado-livre': { ...app, extra: 'x' } }),
+    JSON.stringify({ 'mercado-livre': { ...app, clientSecret: '' } }),
+    JSON.stringify({ 'Mercado Livre': app }),
+  ])
+    refusal(
+      { ...env, HUB_CONNECTOR_APPS_FILE: appsFile(t, text) },
+      'HUB_CONNECTOR_APPS_FILE',
+    )
+  refusal(
+    { ...env, HUB_CONNECTOR_APPS_FILE: `${appsFile(t, '{}')}-ausente` },
+    'HUB_CONNECTOR_APPS_FILE',
+  )
 })

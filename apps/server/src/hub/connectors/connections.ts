@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import type { Connector } from '@conexus/connectors'
+import type { ClientCredentialsAuth, Connector } from '@conexus/connectors'
 import { CONNECTORS, connectorOf, inProbeOrder } from '@conexus/connectors'
 import type {
   CompanyId,
@@ -30,6 +30,7 @@ function entryOf(connector: Connector): ConnectorEntry {
     summary: connector.summary,
     logo: connector.logo,
     reads: inProbeOrder(connector).length,
+    auth: connector.auth.kind,
     fields:
       connector.auth.kind === 'client_credentials'
         ? Object.entries(connector.auth.fields).map(([name, field]) => ({ name, ...field }))
@@ -61,11 +62,20 @@ type Link = Viewer & {
   attemptKey: string
 }
 
-/** The connector and its pasted-fields login; until 19.1 U2 no other kind can be linked. */
+/** The connector and its pasted-fields login; an OAuth connector links through its sign-in (sign-ins.ts). */
 function pastedLogin(id: string) {
   const connector = connectorOf(id)
   if (connector?.auth.kind !== 'client_credentials') throw new Failure('CONNECTOR_UNKNOWN')
   return { connector, auth: connector.auth }
+}
+
+/** The pasted fields, trimmed, by the connector's own schema. */
+function pastedOf(auth: ClientCredentialsAuth, credential: Record<string, string>) {
+  const parsed = auth.credential.safeParse(
+    Object.fromEntries(Object.entries(credential).map(([name, value]) => [name, value.trim()])),
+  )
+  if (!parsed.success) throw new Failure('CONNECTION_CREDENTIAL_INVALID')
+  return parsed.data
 }
 
 /**
@@ -81,12 +91,7 @@ export async function link(deps: Deps, input: Link) {
     await transactionLock(tx, `conexus.connection:${input.companyId}:${input.attemptKey}`)
     await admitted(deps, tx, input, 'manageConnections')
     const { connector, auth } = pastedLogin(input.connector)
-    const parsed = auth.credential.safeParse(
-      Object.fromEntries(
-        Object.entries(input.credential).map(([name, value]) => [name, value.trim()]),
-      ),
-    )
-    if (!parsed.success) throw new Failure('CONNECTION_CREDENTIAL_INVALID')
+    const pasted = pastedOf(auth, input.credential)
     const [found] = await tx
       .select({ id: connection.id, connector: connection.connectorId, name: connection.name })
       .from(connection)
@@ -99,7 +104,7 @@ export async function link(deps: Deps, input: Link) {
         found.connector === connector.id &&
         found.name === name.data &&
         (await sealedText(deps, tx, { id, companyId: input.companyId, connector })) ===
-          JSON.stringify(parsed.data)
+          JSON.stringify(pasted)
       if (!same) throw new Failure('IDEMPOTENCY_CONFLICT')
       return { connection: await viewIn(tx, input, id), created: false }
     }
@@ -107,7 +112,7 @@ export async function link(deps: Deps, input: Link) {
     const sealed = seal(
       deps.sealKeys,
       sealContext({ id, companyId: input.companyId, connector }),
-      Credential.parse(JSON.stringify(parsed.data)),
+      Credential.parse(JSON.stringify(pasted)),
     )
     try {
       await tx.insert(connection).values({
@@ -129,6 +134,50 @@ export async function link(deps: Deps, input: Link) {
       throw error
     }
     return { connection: await viewIn(tx, input, id), created: true }
+  })
+}
+
+/**
+ * Conectar de novo for pasted fields (criterion 17): new fields sealed to the same row, NEW, a new
+ * revision, who linked and when, and no last test. A Testar still running on the old fields
+ * compares `linked_at` and writes nothing over it.
+ */
+export function reconnect(
+  deps: Deps,
+  input: OfConnection & { credential: Record<string, string> },
+): Promise<Connection> {
+  return deps.database.command(scopeOf(input), async (tx) => {
+    await admitted(deps, tx, input, 'manageConnections')
+    const [row] = await tx
+      .select({ connector: connection.connectorId })
+      .from(connection)
+      .where(ofCompany(input, input.connectionId))
+    if (row === undefined) throw new Failure('CONNECTION_NOT_FOUND')
+    const { connector, auth } = pastedLogin(row.connector)
+    const pasted = pastedOf(auth, input.credential)
+    const id = input.connectionId
+    const sealed = seal(
+      deps.sealKeys,
+      sealContext({ id, companyId: input.companyId, connector }),
+      Credential.parse(JSON.stringify(pasted)),
+    )
+    const [updated] = await tx
+      .update(connection)
+      .set({
+        sealed: Buffer.from(sealed.blob),
+        keyId: sealed.keyId,
+        state: 'NEW',
+        revision: sql`${connection.revision} + 1`,
+        linkedBy: input.person.id,
+        linkedAt: sql`statement_timestamp()`,
+        testedAt: null,
+        testedBy: null,
+        lastTest: null,
+      })
+      .where(ofCompany(input, id))
+      .returning(columns)
+    if (updated === undefined) throw new Failure('CONNECTION_NOT_FOUND')
+    return viewOf(updated)
   })
 }
 

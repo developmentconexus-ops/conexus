@@ -1,4 +1,4 @@
-import type { Connector } from '@conexus/connectors'
+import type { Connector, ConnectorId } from '@conexus/connectors'
 import type { CompanyId, Connection, Person } from '@conexus/hub-api'
 import { CONNECTION_STATES, ConnectionId, PersonId } from '@conexus/hub-api'
 import { and, eq, sql } from 'drizzle-orm'
@@ -8,6 +8,7 @@ import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { SealKeys } from '../../platform/seal.ts'
 import type { IdentityPorts } from '../identity/public.ts'
+import type { ConnectorApps } from './apps.ts'
 import { personNameColumn } from '../identity/public.ts'
 import type { Executor } from './executor.ts'
 import { connection } from './tables.ts'
@@ -20,6 +21,11 @@ export type Deps = {
   log: FailureLog
   callDeadlineMs: number
   testDeadlineMs: number
+  apps: ConnectorApps
+  /** Each connector's double on this machine: the authorization page is placed on it too. */
+  origins: ReadonlyMap<ConnectorId, string>
+  /** The Hub's address as the browser sees it: the provider sends the person back to it. */
+  publicOrigin: string
 }
 export type Viewer = { person: Person; companyId: CompanyId }
 export type OfConnection = Viewer & { connectionId: ConnectionId }
@@ -37,6 +43,7 @@ export const columns = {
   testedAt: connection.testedAt,
   testedById: connection.testedBy,
   testedByName: personNameColumn(connection.testedBy),
+  accountLabel: connection.accountLabel,
 }
 
 const Row = z.object({
@@ -51,6 +58,7 @@ const Row = z.object({
   testedAt: z.date().nullable(),
   testedById: PersonId.nullable(),
   testedByName: z.string().nullable(),
+  accountLabel: z.string().nullable(),
 })
 
 export function viewOf(found: unknown): Connection {
@@ -68,6 +76,7 @@ export function viewOf(found: unknown): Connection {
       row.testedById === null || row.testedByName === null
         ? null
         : { id: row.testedById, name: row.testedByName },
+    account: row.accountLabel === null ? null : { label: row.accountLabel },
   }
 }
 

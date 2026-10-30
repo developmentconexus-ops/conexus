@@ -87,6 +87,32 @@ const ConnectorOrigins = z
   .pipe(z.array(z.tuple([z.string().regex(/^[a-z][a-z0-9-]{1,31}$/), ConnectorOrigin])))
   .transform((pairs): ReadonlyMap<string, string> => new Map(pairs))
 
+/** The installation's app at an OAuth provider (W1): the Client Secret prints as its name only. */
+export type ConnectorApp = Readonly<{ clientId: string; clientSecret: Secret<'ConnectorAppSecret'> }>
+
+/**
+ * The installation's apps, by connector id, from one file (S31): JSON
+ * `{ "<connector id>": { "clientId": "...", "clientSecret": "..." } }`, strict, at least one, no
+ * empty value. Whether the kit has each connector, and an OAuth one, the connectors subject decides.
+ */
+export const ConnectorApps = {
+  parse(text: string): ReadonlyMap<string, ConnectorApp> {
+    const apps = z
+      .record(
+        z.string().regex(/^[a-z][a-z0-9-]{1,31}$/),
+        z.strictObject({ clientId: z.string().min(1), clientSecret: z.string().min(1) }),
+      )
+      .refine((all) => Object.keys(all).length > 0)
+      .parse(JSON.parse(text))
+    return new Map(
+      Object.entries(apps).map(([id, app]) => [
+        id,
+        { clientId: app.clientId, clientSecret: new Secret('ConnectorAppSecret', app.clientSecret) },
+      ]),
+    )
+  },
+}
+
 /** The Neon organization that holds the companies' projects, apart from the Hub's own (decision 0040). */
 export const NeonOrgId = z.string().min(1).brand('NeonOrgId')
 export type NeonOrgId = z.infer<typeof NeonOrgId>
@@ -162,6 +188,8 @@ export type Config = BaseConfig & {
   gitCopyUrl?: GitCopyUrl
   /** Each connector's double on this machine, for tests and the local Hub; never in production. */
   connectorOrigins?: ReadonlyMap<string, string>
+  /** The installation's app at each OAuth connector; none, and no OAuth connector can be linked. */
+  connectorApps?: ReadonlyMap<string, ConnectorApp>
   e2bApiKey: E2bApiKey
   machineTemplate: MachineTemplate
   installationId: InstallationId
@@ -212,6 +240,7 @@ const ServeEnvironment = z.object({
   ...GitEnvironment.shape,
   HUB_GIT_COPY_URL: GitCopyUrl.optional(),
   HUB_CONNECTOR_ORIGINS: ConnectorOrigins.optional(),
+  HUB_CONNECTOR_APPS_FILE: z.string().min(1).optional(),
   ...MachineEnvironment.shape,
 })
 
@@ -305,6 +334,15 @@ export function readConfig(mode: 'serve' | 'migrate', env = process.env): Config
     ...(serve.HUB_CONNECTOR_ORIGINS === undefined
       ? {}
       : { connectorOrigins: serve.HUB_CONNECTOR_ORIGINS }),
+    ...(serve.HUB_CONNECTOR_APPS_FILE === undefined
+      ? {}
+      : {
+          connectorApps: readSecret(
+            'HUB_CONNECTOR_APPS_FILE',
+            serve.HUB_CONNECTOR_APPS_FILE,
+            ConnectorApps.parse,
+          ),
+        }),
     e2bApiKey: readSecret('HUB_E2B_API_KEY_FILE', serve.HUB_E2B_API_KEY_FILE, E2bApiKey.parse),
     machineTemplate: serve.HUB_E2B_TEMPLATE,
     installationId: serve.HUB_INSTALLATION_ID,

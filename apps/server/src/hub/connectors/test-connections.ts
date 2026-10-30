@@ -1,7 +1,10 @@
 import type { TestContext } from 'node:test'
-import { sankhyaFake } from '@conexus/connectors'
+import type { AppKeys } from '@conexus/connectors'
+import { mercadoLivreFake, sankhyaFake } from '@conexus/connectors'
+import { REDIRECT_PATH } from '@conexus/hub-api'
 import type { Config } from '../../platform/config.ts'
 import { parseSealKeys } from '../../platform/seal.ts'
+import { Secret } from '../../platform/secret.ts'
 import { TEST_ORIGIN } from '../../platform/test-database.ts'
 import type { Hub, Person } from '../identity/test-hub.ts'
 import {
@@ -38,6 +41,76 @@ export async function connectionsOn(
   const carla = await memberOn(hub, companyId, CARLA, 'member')
   const base = `/api/companies/${companyId}/connections`
   return { hub, fake, served, ana, bruno, carla, companyId, base }
+}
+
+/** The installation's apps file, as the configuration reads it, with the double's invented app. */
+export function appsOf(app: AppKeys): Config['connectorApps'] {
+  const clientSecret = new Secret('ConnectorAppSecret', app.clientSecret)
+  return new Map([['mercado-livre', { clientId: app.clientId, clientSecret }]])
+}
+
+/**
+ * Empresa Teste on a Hub whose Mercado Livre is the kit's double on this machine, sending the
+ * person back to the Hub's return page, with the double's app keys: Ana its owner, Bruno an
+ * administrator, Carla a member.
+ */
+export async function mercadoLivreOn(t: TestContext, change: (config: Config) => Config = (c) => c) {
+  const fake = mercadoLivreFake({ redirectUri: `${TEST_ORIGIN}${REDIRECT_PATH}` })
+  const served = await fake.serve()
+  t.after(() => served.close())
+  const hub = await hubWithLog(t, (config) =>
+    change({
+      ...config,
+      connectorOrigins: new Map([['mercado-livre', served.origin]]),
+      connectorApps: appsOf(fake.app),
+    }),
+  )
+  const ana = await personOn(hub, ANA_OWNER)
+  const companyId = await plantCompany(hub.test, ana.id)
+  const bruno = await memberOn(hub, companyId, BRUNO, 'admin')
+  const carla = await memberOn(hub, companyId, CARLA, 'member')
+  const base = `/api/companies/${companyId}/connections`
+  return { hub, fake, served, ana, bruno, carla, companyId, base }
+}
+
+export function startOf(hub: Hub, person: Person, companyId: string, body: object) {
+  return post(hub, person, `/api/companies/${companyId}/connection-sign-ins`, body)
+}
+
+/** The person at the double's authorization page: where it sends them back, read. */
+export async function consentAt(url: string) {
+  const page = await fetch(url, { redirect: 'manual' })
+  const back = new URL(page.headers.get('location') ?? '')
+  const state = back.searchParams.get('state') ?? ''
+  return {
+    back,
+    code: back.searchParams.get('code'),
+    error: back.searchParams.get('error'),
+    signInId: state.split('.')[1] ?? '',
+    companyId: state.split('.')[0] ?? '',
+  }
+}
+
+export function completeOf(
+  hub: Hub,
+  person: Person,
+  companyId: string,
+  signInId: string,
+  body: object,
+) {
+  return post(hub, person, `/api/companies/${companyId}/connection-sign-ins/${signInId}`, body)
+}
+
+/** Ligar on Mercado Livre all the way: start, the double's page, and the return with its code. */
+export async function linkMercadoLivre(
+  hub: Hub,
+  person: Person,
+  companyId: string,
+  body: object = { connector: 'mercado-livre', name: 'Loja 1' },
+) {
+  const started = await startOf(hub, person, companyId, body)
+  const back = await consentAt(Object(started.json()).url)
+  return completeOf(hub, person, companyId, back.signInId, { code: back.code })
 }
 
 export function linkSankhya(

@@ -1,6 +1,6 @@
 import type { FailureRow } from './failure-row.ts'
 
-/** The failures of a company's connections to outside systems (step 19). */
+/** The failures of a company's connections to outside systems (steps 19 and 19.1). */
 export const CONNECTOR_FAILURES = {
   CONNECTOR_UNKNOWN: {
     category: 'USER',
@@ -39,6 +39,31 @@ export const CONNECTOR_FAILURES = {
     settles: true,
     status: 404,
     phrase: 'Essa integração foi desligada.',
+    action: '',
+    actionKind: 'NONE',
+  },
+  CONNECTOR_NOT_CONFIGURED: {
+    category: 'SYSTEM',
+    settles: true,
+    status: 503,
+    phrase: 'Esse conector ainda não está disponível neste Conexus. Avise o suporte.',
+    action: '',
+    actionKind: 'NONE',
+  },
+  CONNECTION_SIGN_IN_EXPIRED: {
+    category: 'USER',
+    settles: true,
+    status: 410,
+    phrase: 'Essa autorização venceu ou já foi usada. Ligue de novo.',
+    action: '',
+    actionKind: 'NONE',
+  },
+  CONNECTION_ACCOUNT_ELSEWHERE: {
+    category: 'USER',
+    settles: true,
+    status: 409,
+    phrase:
+      'Essa conta já está ligada no Conexus. Use outra conta, ou desligue a outra ligação primeiro.',
     action: '',
     actionKind: 'NONE',
   },

@@ -1,19 +1,32 @@
 import type {
+  AccountOf,
+  AccountRef,
   Answered,
+  codeRequest,
   Connector,
   ConnectorId,
+  GrantAnswered,
   Native,
   Operation,
   ProviderAnswer,
+  ClientCredentialsAuth,
   Unread,
 } from '@conexus/connectors'
-import { locateOf, readToken, requestOf, tokenRequest, toRequest } from '@conexus/connectors'
-import type { ConnectionId } from '@conexus/hub-api'
+import {
+  locateOf,
+  readGrant,
+  readToken,
+  requestOf,
+  tokenRequest,
+  toRequest,
+} from '@conexus/connectors'
+import type { ConnectionId, ConnectionSignInId } from '@conexus/hub-api'
 import { z } from 'zod'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { Credential } from '../../platform/seal.ts'
 import { Secret } from '../../platform/secret.ts'
+import type { OAuthConnector } from './apps.ts'
 
 /**
  * A provider's answer is read up to this many bytes and no further. Measured on a real Sankhya
@@ -25,19 +38,32 @@ const RESPONSE_CAP_BYTES = 2 * 1024 * 1024
 /** A bearer token inside the program: printed, it shows only its name, as a sealed credential. */
 export type BearerToken = Secret<'BearerToken'>
 
-/** A connection whose sealed credential was opened for this call; the values live only here (S36). */
+/**
+ * A connection whose sealed credential was opened for this call; the values live only here (S36).
+ * `revision` is the row's as it was opened: a refresh stores only on it (C38).
+ */
 export type OpenedConnection = Readonly<{
   id: ConnectionId
   linkedAt: string
   connector: Connector
   credential: Credential
+  revision: number
+  accountRef: AccountRef | null
 }>
 
+/** What a log line about one exchange with the provider names: the connection, or the authorization before it exists. */
+export type Where = Readonly<
+  { connector: ConnectorId } & ({ connectionId: ConnectionId } | { signInId: ConnectionSignInId })
+>
+
+/** The exchange or the renewal, as the kit builds it. */
+type TokenRequest = ReturnType<typeof codeRequest>
+
 /** The provider could not be reached (or answered 5xx): `native` is what it said, when it said anything. */
-type Unreachable = Readonly<{ kind: 'UNREACHABLE'; native: Native | null }>
+export type Unreachable = Readonly<{ kind: 'UNREACHABLE'; native: Native | null }>
 /** The provider answered what the kit cannot read, with what it said. */
 type Unreadable = Readonly<{ kind: 'UNREADABLE'; native: Native }>
-type Login =
+export type Login =
   | Readonly<{ kind: 'TOKEN'; token: BearerToken }>
   | Readonly<{ kind: 'AUTH_REFUSED'; native: Native }>
   | Unreadable
@@ -59,16 +85,34 @@ export type Executor = {
     input: I,
     deadlineMs: number,
   ): Promise<Answered<O> | Unreachable>
+  /**
+   * Sends an OAuth exchange or renewal and reads it by the kit. A 429 is UNREACHABLE, as a 5xx. A
+   * refusal's body comes back with `secrets` replaced; a 2xx reaches the kit whole, since it may
+   * carry the same refresh token back.
+   */
+  grant(
+    where: Where,
+    connector: OAuthConnector,
+    request: TokenRequest,
+    secrets: readonly string[],
+    deadlineMs: number,
+  ): Promise<GrantAnswered | Unreachable>
+  /** Whose account a token is (`who.path`), read by the connector's `who.answer`. */
+  who(
+    where: Where,
+    connector: OAuthConnector,
+    token: BearerToken,
+    deadlineMs: number,
+  ): Promise<Readonly<{ kind: 'OK'; account: AccountOf }> | Unreadable | Unreachable>
 }
 
 /** The opened values, checked again by the connector's own schema: a value it refuses never opened. */
-function valuesOf(connection: OpenedConnection): Readonly<Record<string, string>> {
-  const { auth } = connection.connector
-  // Linking refuses a connector that is not a pasted-fields login, so no connection of another kind exists until 19.1 U2.
-  if (auth.kind !== 'client_credentials') throw new Error(`No pasted credential for ${auth.kind}`)
-  const { credential } = auth
+function valuesOf(
+  connection: OpenedConnection,
+  auth: ClientCredentialsAuth,
+): Readonly<Record<string, string>> {
   try {
-    return credential.parse(JSON.parse(connection.credential.reveal()))
+    return auth.credential.parse(JSON.parse(connection.credential.reveal()))
   } catch (cause) {
     if (!(cause instanceof SyntaxError || cause instanceof z.ZodError)) throw cause
     throw new Failure('SEAL_REFUSED', { details: { reason: 'credential shape' }, cause })
@@ -95,6 +139,9 @@ async function bodyOf(response: Response): Promise<Uint8Array | null> {
 
 const REDACTED = '[redacted]'
 
+/** The request's secrets, replaced in what comes back; `whole2xx`: a 2xx reaches the kit unchanged. */
+type Redaction = Readonly<{ secrets: readonly string[]; whole2xx: boolean }>
+
 /** The text with every secret of the request replaced, as it is and as JSON writes it (Nango's `buildValuesToFilter`). */
 function redacted(text: string, secrets: readonly string[]): string {
   return secrets
@@ -103,24 +150,29 @@ function redacted(text: string, secrets: readonly string[]): string {
     .reduce((safe, secret) => safe.replaceAll(secret, REDACTED), text)
 }
 
+function isOk(status: number): boolean {
+  return status >= 200 && status < 300
+}
+
 /**
  * The body read only at the end, with the request's secrets replaced first, whatever the status
- * (a gateway refuses at HTTP 200 and carries its body in `native`). Text that is not JSON is the
- * body itself outside 2xx, so the kit still decides by status; a 2xx that is not JSON is null,
- * never an empty answer.
+ * (a gateway refuses at HTTP 200 and carries its body in `native`), except a 2xx sent `whole`. Text
+ * that is not JSON is the body itself outside 2xx, so the kit still decides by status; a 2xx that
+ * is not JSON is null, never an empty answer.
  */
 function answerOf(
   status: number,
   bytes: Uint8Array,
-  secrets: readonly string[],
+  redaction: Redaction,
 ): ProviderAnswer | null {
   if (bytes.byteLength === 0) return { status, body: undefined }
-  const safe = redacted(Buffer.from(bytes).toString('utf8'), secrets)
+  const text = Buffer.from(bytes).toString('utf8')
+  const safe = redaction.whole2xx && isOk(status) ? text : redacted(text, redaction.secrets)
   try {
     return { status, body: z.unknown().parse(JSON.parse(safe)) }
   } catch (error) {
     if (!(error instanceof SyntaxError)) throw error
-    return status >= 200 && status < 300 ? null : { status, body: safe }
+    return isOk(status) ? null : { status, body: safe }
   }
 }
 
@@ -168,18 +220,17 @@ export function createExecutor(deps: {
    */
   async function send(
     request: Request,
-    connection: OpenedConnection,
-    secrets: readonly string[],
+    where: Where,
+    redaction: Redaction,
     deadlineMs: number,
   ): Promise<ProviderAnswer | Unreadable | Unreachable> {
-    const where = { connectionId: connection.id, connector: connection.connector.id }
     // Outside the `try`: a deadline the timer refuses is the caller's mistake, not the provider down.
     const signal = AbortSignal.timeout(deadlineMs)
     try {
       const response = await deps.fetch(request, { signal })
       const { status } = response
       const bytes = await bodyOf(response)
-      const answer = bytes === null ? null : answerOf(status, bytes, secrets)
+      const answer = bytes === null ? null : answerOf(status, bytes, redaction)
       if (status >= 500) {
         deps.log.info({ ...where, status }, 'CONNECTOR_UNREACHABLE')
         return { kind: 'UNREACHABLE', native: nativeOf(status, answer?.body ?? null) }
@@ -193,14 +244,20 @@ export function createExecutor(deps: {
     }
   }
 
+  /** Whose connection a call is about, for the log. */
+  function whereOf(connection: OpenedConnection): Where {
+    return { connectionId: connection.id, connector: connection.connector.id }
+  }
+
   return {
     async login(connection, deadlineMs) {
       const { connector } = connection
       const auth = connector.auth
       if (auth.kind !== 'client_credentials') throw new Error(`No pasted login for ${auth.kind}`)
-      const values = valuesOf(connection)
+      const values = valuesOf(connection, auth)
       const request = toRequest(connector, tokenRequest(auth, values), null, originOf(connector))
-      const sent = await send(request, connection, Object.values(values), deadlineMs)
+      const redaction = { secrets: Object.values(values), whole2xx: false }
+      const sent = await send(request, whereOf(connection), redaction, deadlineMs)
       if ('kind' in sent) return sent
       const token = readToken(auth, sent)
       if (token.kind !== 'OK') return token
@@ -211,13 +268,49 @@ export function createExecutor(deps: {
       const { connector } = connection
       const request = toRequest(
         connector,
-        requestOf(operation, input, { ref: null }),
+        requestOf(operation, input, { ref: connection.accountRef }),
         token.reveal(),
         originOf(connector),
       )
-      const secrets = [...Object.values(valuesOf(connection)), token.reveal()]
-      const sent = await send(request, connection, secrets, deadlineMs)
+      const { auth } = connector
+      const pasted = auth.kind === 'client_credentials' ? valuesOf(connection, auth) : {}
+      const redaction = { secrets: [...Object.values(pasted), token.reveal()], whole2xx: false }
+      const sent = await send(request, whereOf(connection), redaction, deadlineMs)
       return 'kind' in sent ? sent : operation.answer(sent)
+    },
+
+    async grant(where, connector, request, secrets, deadlineMs) {
+      const sent = await send(
+        toRequest(connector, request, null, originOf(connector)),
+        where,
+        { secrets, whole2xx: true },
+        deadlineMs,
+      )
+      if ('kind' in sent) return sent
+      if (sent.status === 429) {
+        deps.log.info({ ...where, status: sent.status }, 'CONNECTOR_UNREACHABLE')
+        return { kind: 'UNREACHABLE', native: nativeOf(sent.status, sent.body) }
+      }
+      return readGrant(connector.auth, sent)
+    },
+
+    async who(where, connector, token, deadlineMs) {
+      const { who } = connector.account.kind === 'reported' ? connector.account : { who: null }
+      if (who === null) throw new Error(`No reported account for ${connector.id}`)
+      const request = toRequest(
+        connector,
+        { method: 'GET', path: who.path, query: {}, body: undefined },
+        token.reveal(),
+        originOf(connector),
+      )
+      const redaction = { secrets: [token.reveal()], whole2xx: false }
+      const sent = await send(request, where, redaction, deadlineMs)
+      if ('kind' in sent) return sent
+      if (!isOk(sent.status)) return { kind: 'UNREADABLE', native: nativeOf(sent.status, sent.body) }
+      const account = who.answer.safeParse(sent.body)
+      // A 2xx outside the schema keeps none of its body: it is the person's own profile.
+      if (!account.success) return { kind: 'UNREADABLE', native: nativeOf(sent.status, null) }
+      return { kind: 'OK', account: account.data }
     },
   }
 }
