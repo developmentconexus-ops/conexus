@@ -97,3 +97,15 @@ test('limites: dois db.batch numa chamada chegam os dois ao db do despachante; n
   assert.equal(await response.text(), 'gravado')
   assert.deepEqual(answers, [{ results: [] }, { results: [] }])
 })
+
+test('limites: o connectors do despachante recebe o mesmo prazo do db, e o app o conta nos mesmos 50 subpedidos', async () => {
+  const door = edge({ hub: () => Response.json(VERSION_CALL) })
+  await door.fetch('/', { headers: LIVE })
+  const [db] = door.dbBindings
+  const [connectors] = door.connectorBindings
+  assert.equal(connectors?.endsAt, db?.endsAt)
+  assert.deepEqual(door.appCalls[0]?.options, {
+    outbound: {},
+    limits: { subRequests: 50, cpuMs: 50 },
+  })
+})

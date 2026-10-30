@@ -9,6 +9,24 @@ import { APP_ORIGIN, VERSION_CALL } from '../src/test-edge.ts'
 
 export { Connectors, Db }
 
+function hubDouble(input: RequestInfo | URL): Response {
+  const { pathname } = new URL(String(input))
+  if (pathname === '/api/app-connector-calls/connections') {
+    return Response.json({ names: ['matriz'] })
+  }
+  if (pathname === '/api/app-connector-calls') {
+    return Response.json({ kind: 'OK', value: { rows: [] } })
+  }
+  return Response.json(VERSION_CALL)
+}
+
+/** What the `HUB` binding of the dispatcher's own entrypoints reaches. */
+export class HubDouble extends WorkerEntrypoint<Env> {
+  fetch(request: Request): Response {
+    return hubDouble(request.url)
+  }
+}
+
 /** The app: answers what its `connectors` stub said. */
 export class App extends WorkerEntrypoint<Env, AppProps> {
   async fetch() {
@@ -27,7 +45,7 @@ export default {
       APPS_DOMAIN: 'conexusapp.tech',
       APP_LOGIN_KEY: 'k'.repeat(43),
       HUB: {
-        fetch: async () => Response.json(VERSION_CALL),
+        fetch: async (input: RequestInfo | URL) => hubDouble(input),
         connect(): Socket {
           throw new Error('the dispatcher never opens a socket to the Hub')
         },

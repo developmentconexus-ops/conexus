@@ -1,6 +1,8 @@
 // The clone test's Worker: dispatcher.ts's entrypoints and the dispatch path, run in local workerd.
+// `HUB` is a service binding to the worker's own `HubDouble`, as the VPC service is on Cloudflare.
 {
   "name": "conexus-clone-test",
   "main": "worker.ts",
-  "compatibility_date": "2026-10-18"
+  "compatibility_date": "2026-10-18",
+  "services": [{ "binding": "HUB", "service": "conexus-clone-test", "entrypoint": "HubDouble" }]
 }
