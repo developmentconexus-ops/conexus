@@ -9,7 +9,7 @@ const CALL_PATH = '/api/app-connector-calls'
 
 type Reader = (connectors: {
   call(...args: [string, string, unknown, string?]): Promise<unknown>
-  connections(connector: string): Promise<readonly string[]>
+  connections(connector: string): Promise<unknown>
 }) => Promise<unknown>
 
 /** A version on the air whose app runs `read` through its connectors; `connector` answers the Hub's connector paths. */
@@ -78,13 +78,13 @@ test('a chamada leva ao Hub a sessão do app no cabeçalho, o Projeto pelo ender
   })
 })
 
-test('connections: dá os nomes que o Hub dá; um Hub que recusa dá a lista vazia, registrada', async (t) => {
+test('connections: dá os nomes que o Hub dá; um Hub que recusa dá UNREACHABLE, registrado, nunca a lista vazia', async (t) => {
   const named = reading(
     (connectors) => connectors.connections('sankhya'),
     () => Response.json({ names: ['matriz', 'filial'] }),
   )
   await named.door.fetch('/', { headers: LIVE })
-  assert.deepEqual(named.results, [['matriz', 'filial']])
+  assert.deepEqual(named.results, [{ kind: 'OK', names: ['matriz', 'filial'] }])
   const [request] = named.connectorCalls()
   assert.equal(new URL(request?.url ?? '').searchParams.get('connector'), 'sankhya')
   assert.equal(request?.headers.get(APP_SESSION_HEADER), SESSION)
@@ -94,7 +94,7 @@ test('connections: dá os nomes que o Hub dá; um Hub que recusa dá a lista vaz
     () => problem('APP_ACCESS_REFUSED'),
   )
   const { lines } = await errorsLogged(t, () => refused.door.fetch('/', { headers: LIVE }))
-  assert.deepEqual(refused.results, [[]])
+  assert.deepEqual(refused.results, [{ kind: 'UNREACHABLE' }])
   assert.deepEqual(lines, [
     { level: 50, msg: 'CONNECTOR_HUB_NO_ANSWER', reason: 'APP_ACCESS_REFUSED' },
   ])
@@ -134,6 +134,16 @@ test('o prazo: o Hub recebe o que resta do clique, e uma chamada em andamento é
   await door.fetch('/', { headers: LIVE })
   assert.equal(sent, 50)
   assert.deepEqual(results, [{ kind: 'DEADLINE' }])
+})
+
+test('o teto: uma resposta de 1 MiB, bem acima dos 16 KB das outras operações, passa inteira', async () => {
+  const big = { kind: 'OK', value: 'a'.repeat(1024 * 1024) }
+  const { door, results } = reading(
+    (connectors) => connectors.call('sankhya', 'readOrders', {}),
+    () => Response.json(big),
+  )
+  await door.fetch('/', { headers: LIVE })
+  assert.deepEqual(results, [big])
 })
 
 test('o Hub fora: sem resposta, recusa, acima do teto ou ilegível dão UNREACHABLE e uma linha com a razão', async (t) => {

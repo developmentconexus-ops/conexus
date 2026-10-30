@@ -40,9 +40,10 @@ export async function reads(context: Context) {
   await connectors.sankhya.inexistente()
   // @ts-expect-error: a read of the kit the app did not declare is not in its client.
   await connectors.sankhya.clientes({ codigoEmpresa: 1, page: 0 })
-  const [loja] = await connectors['mercado-livre'].connections()
-  if (loja !== undefined)
-    await connectors['mercado-livre'].perguntas({ offset: 0, limit: 50 }, loja)
+  const stores = await connectors['mercado-livre'].connections()
+  if (stores.kind === 'OK')
+    for (const loja of stores.names)
+      await connectors['mercado-livre'].perguntas({ offset: 0, limit: 50 }, loja)
   // @ts-expect-error: a connector that allows many connections is told which one.
   await connectors['mercado-livre'].perguntas({ offset: 0, limit: 50 })
   // @ts-expect-error: Sankhya reads one connection per Projeto, so it takes no name and lists none.

@@ -22,7 +22,7 @@ test('versão no ar: o connectors de props atravessa a clonagem do workerd e res
     assert.equal(response.status, 200)
     assert.deepEqual(await response.json(), {
       answer: { kind: 'OK', value: { rows: [] } },
-      connections: ['matriz'],
+      connections: { kind: 'OK', names: ['matriz'] },
     })
   } finally {
     await worker.stop()

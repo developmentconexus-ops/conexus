@@ -3,7 +3,13 @@
 // (decision 0043).
 
 import { WorkerEntrypoint } from 'cloudflare:workers'
-import type { Db as AppDb, ConnectorAnswer, DbResult, Statement } from '@conexus/app-contract'
+import type {
+  Db as AppDb,
+  ConnectionsAnswer,
+  ConnectorAnswer,
+  DbResult,
+  Statement,
+} from '@conexus/app-contract'
 import type { ConnectorsProps } from './connectors.ts'
 import { connectorsOf } from './connectors.ts'
 import type { DbProps } from './db.ts'
@@ -45,7 +51,7 @@ export class Connectors extends WorkerEntrypoint<Env, ConnectorsProps> {
     )
   }
 
-  connections(connector: string): Promise<readonly string[]> {
+  connections(connector: string): Promise<ConnectionsAnswer> {
     return connectorsOf(hubOf(this.env), this.ctx.props).connections(connector)
   }
 }

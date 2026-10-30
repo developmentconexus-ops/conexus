@@ -1,4 +1,4 @@
-import type { ConnectorAnswer, Connectors } from '@conexus/app-contract'
+import type { ConnectionsAnswer, ConnectorAnswer, Connectors } from '@conexus/app-contract'
 import type { AppSessionToken, HostLabel } from '@conexus/hub-api'
 import { CALL_DEADLINE_MS } from '@conexus/hub-api'
 import type { HubPort } from './hub.ts'
@@ -10,8 +10,8 @@ export type ConnectorsProps = Readonly<{
   endsAt: number
 }>
 
-const DEADLINE: ConnectorAnswer = { kind: 'DEADLINE' }
-const UNREACHABLE: ConnectorAnswer = { kind: 'UNREACHABLE' }
+const DEADLINE: ConnectorAnswer & ConnectionsAnswer = { kind: 'DEADLINE' }
+const UNREACHABLE: ConnectorAnswer & ConnectionsAnswer = { kind: 'UNREACHABLE' }
 
 /** The dispatcher's log line of a Hub that gave no usable answer, with the reason and no data (S41). */
 function hubGaveNone(reason: string) {
@@ -38,10 +38,11 @@ export function connectorsOf(hub: HubPort, { host, session, endsAt }: Connectors
       return UNREACHABLE
     },
     async connections(connector) {
+      if (endsAt - Date.now() < 1) return DEADLINE
       const answer = await hub.listAppConnections({ host, session, connector })
-      if (answer.kind === 'DONE') return answer.value.names
+      if (answer.kind === 'DONE') return { kind: 'OK', names: answer.value.names }
       hubGaveNone(answer.kind === 'REFUSED' ? answer.code : answer.reason)
-      return []
+      return UNREACHABLE
     },
   }
 }

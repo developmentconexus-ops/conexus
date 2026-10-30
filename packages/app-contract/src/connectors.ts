@@ -27,6 +27,13 @@ export const ConnectorAnswer = z.discriminatedUnion('kind', [
 ])
 export type ConnectorAnswer = z.infer<typeof ConnectorAnswer>
 
+/** What `connections()` answers: the names, or why there are none to give, as `call` answers (code C26). */
+export const ConnectionsAnswer = z.discriminatedUnion('kind', [
+  z.strictObject({ kind: z.literal('OK'), names: z.array(z.string()) }),
+  z.strictObject({ kind: z.enum(['UNREACHABLE', 'DEADLINE']) }),
+])
+export type ConnectionsAnswer = z.infer<typeof ConnectionsAnswer>
+
 /** The stub in `props.connectors`: `connection` is the connection's name, given only for a connector that allows many. */
 export type Connectors = Readonly<{
   call(
@@ -35,5 +42,5 @@ export type Connectors = Readonly<{
     input: unknown,
     connection?: string,
   ): Promise<ConnectorAnswer>
-  connections(connector: string): Promise<readonly string[]>
+  connections(connector: string): Promise<ConnectionsAnswer>
 }>

@@ -19,7 +19,7 @@ export type NoAnswerReason =
   | 'UNEXPECTED_STATUS'
 
 /** What the Hub said: a refusal by its code, or no answer the dispatcher can read in time. */
-export type HubAnswer<T> =
+type HubAnswer<T> =
   | { kind: 'DONE'; value: T }
   | { kind: 'REFUSED'; code: FailureCode }
   | { kind: 'NO_ANSWER'; reason: NoAnswerReason }
