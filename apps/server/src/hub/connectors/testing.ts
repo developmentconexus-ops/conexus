@@ -16,7 +16,7 @@ import { accessFor } from './tokens.ts'
  * database connection is held while the provider answers (data D22). The row's `linked_at` is kept
  * as the database wrote it, to tell the same row from one linked again meanwhile.
  */
-function opened(deps: Deps, input: OfConnection): Promise<OpenedConnection> {
+export function opened(deps: Deps, input: OfConnection): Promise<OpenedConnection> {
   return deps.database.command(scopeOf(input), async (tx) => {
     await admitted(deps, tx, input, 'manageConnections')
     const [row] = await tx

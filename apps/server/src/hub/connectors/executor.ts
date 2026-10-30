@@ -2,6 +2,7 @@ import type {
   AccountOf,
   AccountRef,
   Answered,
+  AppKeys,
   ClientCredentialsAuth,
   Connector,
   ConnectorId,
@@ -17,6 +18,7 @@ import {
   readGrant,
   readToken,
   requestOf,
+  revokeRequest,
   tokenRequest,
   toRequest,
 } from '@conexus/connectors'
@@ -63,6 +65,11 @@ type TokenRequest = ReturnType<typeof codeRequest>
 type Unreachable = Readonly<{ kind: 'UNREACHABLE'; native: Native | null }>
 /** The provider answered what the kit cannot read, with what it said. */
 type Unreadable = Readonly<{ kind: 'UNREADABLE'; native: Native }>
+/** What the provider answered to taking the grant back: done, or it refused (`native`), or it could not be reached. */
+type Revoked =
+  | Readonly<{ kind: 'REVOKED' }>
+  | Readonly<{ kind: 'REFUSED'; native: Native }>
+  | Unreachable
 export type Login =
   | Readonly<{ kind: 'TOKEN'; token: BearerToken }>
   | Readonly<{ kind: 'AUTH_REFUSED'; native: Native }>
@@ -97,6 +104,18 @@ export type Executor = {
     secrets: readonly string[],
     deadlineMs: number,
   ): Promise<GrantAnswered | Unreachable>
+  /**
+   * Takes the grant back at the provider with the connection's live token, as the connector
+   * declares it; a 429 is UNREACHABLE. Nothing is sent, and null comes back, when the connector
+   * declares no revoke.
+   */
+  revoke(
+    connection: OpenedConnection,
+    connector: OAuthConnector,
+    token: BearerToken,
+    app: AppKeys,
+    deadlineMs: number,
+  ): Promise<Revoked | null>
   /** Whose account a token is (`who.path`), read by the connector's `who.answer`. */
   who(
     where: Where,
@@ -250,6 +269,42 @@ function whereOf(connection: OpenedConnection): Where {
   return { connectionId: connection.id, connector: connection.connector.id }
 }
 
+/** The connector's declared revoke, sent with the connection's token; null when it declares none or the connection has no account yet. */
+async function revoked(
+  deps: ExecutorDeps,
+  a: Readonly<{
+    connection: OpenedConnection
+    connector: OAuthConnector
+    token: BearerToken
+    app: AppKeys
+  }>,
+  origin: string,
+  deadlineMs: number,
+): Promise<Revoked | null> {
+  const { connection, connector, token } = a
+  if (connection.accountRef === null) return null
+  const request = revokeRequest(connector.auth, {
+    accountRef: connection.accountRef,
+    clientId: a.app.clientId,
+  })
+  if (request === null) return null
+  const where = whereOf(connection)
+  const redaction = { secrets: [token.reveal()], whole2xx: false }
+  const sent = await send(
+    deps,
+    toRequest(connector, request, token.reveal(), origin),
+    where,
+    redaction,
+    deadlineMs,
+  )
+  if ('kind' in sent)
+    return sent.kind === 'UNREACHABLE' ? sent : { kind: 'REFUSED', native: sent.native }
+  if (sent.status === 429) return unreachableAt(deps, where, sent.status, sent.body)
+  return isOk(sent.status)
+    ? { kind: 'REVOKED' }
+    : { kind: 'REFUSED', native: nativeOf(sent.status, sent.body) }
+}
+
 export function createExecutor(deps: ExecutorDeps): Executor {
   function originOf(connector: Connector): string {
     return deps.origins.get(connector.id) ?? connector.origin
@@ -296,6 +351,10 @@ export function createExecutor(deps: ExecutorDeps): Executor {
       if ('kind' in sent) return sent
       if (sent.status === 429) return unreachableAt(deps, where, sent.status, sent.body)
       return readGrant(connector.auth, sent)
+    },
+
+    revoke(connection, connector, token, app, deadlineMs) {
+      return revoked(deps, { connection, connector, token, app }, originOf(connector), deadlineMs)
     },
 
     async who(where, connector, token, deadlineMs) {
