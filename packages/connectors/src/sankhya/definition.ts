@@ -4,6 +4,7 @@ import { clientCredentials } from '../kernel/auth.ts'
 import { defineConnector } from '../kernel/definition.ts'
 import { readSkill } from '../kernel/skill.ts'
 import { sankhyaDoor } from './door.ts'
+import { empresas } from './operations/cadastros.ts'
 import { sankhyaOperations, sankhyaSubjects } from './operations/index.ts'
 
 const SKILL = new URL('./skill/', import.meta.url)
@@ -68,6 +69,7 @@ export const sankhya = defineConnector({
   oneRequestAtATime: true, // a second call on the same token cancels the first (envelope "4")
   subjects: { porta: 'Porta de leitura', ...sankhyaSubjects },
   operations: sankhyaOperations,
+  check: empresas,
   readDoor: sankhyaDoor,
   skill: readSkill(SKILL),
 })

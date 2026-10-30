@@ -109,7 +109,6 @@ export {
   ConnectorEntry,
   completeConnectionSignIn,
   getConnection,
-  KeptCheck,
   linkConnection,
   listConnections,
   Native,
@@ -117,9 +116,8 @@ export {
   reconnectConnection,
   SignInCompleted,
   startConnectionSignIn,
-  TEST_DEADLINE_MS,
-  TestCheck,
   TestResult,
+  TEST_LONGEST_MS,
   testConnection,
   unlinkConnection,
 } from './connectors.ts'

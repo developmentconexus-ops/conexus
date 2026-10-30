@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import type { AppKeys, ClientCredentialsAuth, Connector, Native } from '@conexus/connectors'
-import { CONNECTORS, connectorOf, inProbeOrder } from '@conexus/connectors'
+import { CONNECTORS, connectorOf } from '@conexus/connectors'
 import type {
   CompanyId,
   Connection,
@@ -9,7 +9,7 @@ import type {
   ConnectorEntry,
   Revocation,
 } from '@conexus/hub-api'
-import { ConnectionId, ConnectionName, KeptCheck } from '@conexus/hub-api'
+import { ConnectionId, ConnectionName } from '@conexus/hub-api'
 import { and, asc, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { ReadTx } from '../../platform/database.ts'
@@ -35,7 +35,6 @@ function entryOf(connector: Connector): ConnectorEntry {
     category: connector.category,
     summary: connector.summary,
     logo: connector.logo,
-    reads: inProbeOrder(connector).length,
     auth: connector.auth.kind,
     fields:
       connector.auth.kind === 'client_credentials'
@@ -178,7 +177,6 @@ export function reconnect(
         linkedAt: sql`statement_timestamp()`,
         testedAt: null,
         testedBy: null,
-        lastTest: null,
       })
       .where(ofCompany(input, id))
       .returning(columns)
@@ -307,21 +305,10 @@ export async function unlink(deps: Deps, input: Viewer & { connectionId: Connect
   }
 }
 
-/** One connection and the items of its last working test; one that no longer matches KeptCheck is read as no test (never an invented item). */
+/** One connection, as every member reads it. */
 export function detail(deps: Deps, input: OfConnection): Promise<ConnectionDetail> {
   return deps.database.read(scopeOf(input), async (tx) => {
     await admitted(deps, tx, input, 'readConnections')
-    const [row] = await tx
-      .select({ ...columns, lastTest: connection.lastTest })
-      .from(connection)
-      .where(ofCompany(input, input.connectionId))
-    if (row === undefined) throw new Failure('CONNECTION_NOT_FOUND')
-    const lastTest = z.array(KeptCheck).safeParse(row.lastTest)
-    if (row.lastTest !== null && !lastTest.success)
-      deps.log.error(
-        { connectionId: row.id, kind: 'last test shape' },
-        'CONNECTION_LAST_TEST_UNREAD',
-      )
-    return { connection: viewOf(row), lastTest: lastTest.success ? lastTest.data : null }
+    return { connection: await viewIn(tx, input, input.connectionId) }
   })
 }

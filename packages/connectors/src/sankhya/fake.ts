@@ -34,6 +34,8 @@ type SankhyaSwitches = {
   redirect: boolean
   /** Never answers a call. */
   silent: boolean
+  /** Every call on a token answers 429, as a gateway asking to wait. */
+  rateLimited: boolean
   /** Milliseconds each answer is held back, for the executor's deadline tests (U3). */
   delayMilliseconds: number
   /** Milliseconds the login is held back, for the executor's deadline tests (U3). */
@@ -98,6 +100,8 @@ async function serveCall(request: Request, url: URL, switches: SankhyaSwitches):
   if (switches.refuse.has(name)) {
     return door ? envelope(service, '0') : forbidden(url.pathname, 'NO_ACCESS', 'Sem permissão')
   }
+  if (switches.rateLimited)
+    return json({ statusCode: 429, error: { code: 'TOO_MANY_REQUESTS' } }, 429)
   if (switches.oversize) return json(OVERSIZE)
   if (switches.malformed) return json({ unexpected: true })
   if (switches.notJson) return new Response('<html>valor da empresa</html>', { status: 200 })
@@ -152,6 +156,7 @@ export function sankhyaFake(): SankhyaFake {
     oversize: false,
     redirect: false,
     silent: false,
+    rateLimited: false,
     delayMilliseconds: 0,
     loginDelayMilliseconds: 0,
     expiresInSeconds: 300,

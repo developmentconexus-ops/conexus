@@ -22,6 +22,8 @@ type Switches = {
   rateLimited: boolean
   /** The account call (`/users/me`) answers 429. */
   accountRateLimited: boolean
+  /** The account call (`/users/me`) answers 403 as the permission policies do. */
+  accountRefused: boolean
   /** Milliseconds each renewal is held back (`slow(ms)`). */
   slowMilliseconds: number
   /** Permission groups that answer 403 `PA_UNAUTHORIZED_RESULT_FROM_POLICIES`. */
@@ -210,6 +212,7 @@ function bearing(world: World, request: Request) {
 function read(world: World, request: Request, url: URL): Response {
   const { given, refused } = bearing(world, request)
   if (!given) return refused
+  if (url.pathname === '/users/me' && world.switches.accountRefused) return forbidden()
   if (url.pathname === '/users/me' && world.switches.accountRateLimited)
     return json({ message: 'too many requests', status: 429 }, 429)
   if (url.pathname === '/users/me')
@@ -264,6 +267,7 @@ export function mercadoLivreFake({
     invalidClient: false,
     rateLimited: false,
     accountRateLimited: false,
+    accountRefused: false,
     slowMilliseconds: 0,
     refuseGroups: new Set(),
     partialOrders: false,

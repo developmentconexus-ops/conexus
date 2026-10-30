@@ -303,7 +303,7 @@ async function written(
           .update(connection)
           .set({
             ...{ ...linked, revision: target.revision + 1, refreshUntil: null },
-            ...{ testedAt: null, testedBy: null, lastTest: null },
+            ...{ testedAt: null, testedBy: null },
           })
           .where(and(ofCompany(viewer, id), eq(connection.revision, target.revision)))
           .returning({ id: connection.id })

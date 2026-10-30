@@ -36,6 +36,9 @@ export type Connector = Readonly<{
   subjects: Readonly<Record<string, string>> // subject id → label ("vendas" → "Vendas"); each has an operation
   operations: readonly Operation<unknown, unknown>[] // typed, the same for every company
   readDoor?: ReadDoor // for what each company has of its own
+  // The one read Testar sends (Nango's `verification`, n8n's credential `test`): one of
+  // `operations`, reading from no earlier one; each read's own health is the platform's.
+  check: Operation<unknown, unknown, 'read'>
   // What the Builder reads (decision 0055): SKILL.md and its references by file name, the shape
   // createSkill takes in step 20; a reference is read on demand through Mastra's skill_read.
   skill: Readonly<{ content: string; references: Readonly<Record<string, string>> }>
@@ -49,7 +52,7 @@ const Origin = z
       URL.canParse(value) && new URL(value).origin === value && value.startsWith('https://'),
   )
 
-/** Takes `id` as a plain string and brands it; throws on a reported account with a login that is not OAuth, a repeated operation id, a bad version or origin, a door entry that is not 'read', an operation of a subject the connector lacks, a subject with no operation or a `from` that is not an earlier operation. */
+/** Takes `id` as a plain string and brands it; throws on a reported account with a login that is not OAuth, a repeated operation id, a bad version or origin, a door entry that is not 'read', an operation of a subject the connector lacks, a subject with no operation, a `from` that is not an earlier operation, or a check that is not one of its operations or needs an earlier one. */
 export function defineConnector<A extends Auth>(
   connector: Omit<Connector, 'id' | 'auth'> & { id: string; auth: A },
 ): Connector & Readonly<{ auth: A }> {
@@ -70,6 +73,10 @@ export function defineConnector<A extends Auth>(
   for (const subject of Object.keys(connector.subjects))
     if (!named.has(subject)) throw new Error(`Subject without operation: ${subject}`)
   assertSourcesEarlier(all)
+  const { check } = connector
+  if (!connector.operations.includes(check)) throw new Error(`Check ${check.id} is no operation`)
+  if (check.from.length > 0 || check.probe(new Map()) === null)
+    throw new Error(`Check ${check.id} needs an earlier read`)
   return Object.freeze({ ...connector, id: ConnectorId.parse(connector.id) })
 }
 
