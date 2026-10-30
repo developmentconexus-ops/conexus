@@ -1,5 +1,6 @@
 import type { ConnectorId } from '@conexus/connectors'
 import { connectorOf } from '@conexus/connectors'
+import { CALL_DEADLINE_MS } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
 import type { Config } from '../../platform/config.ts'
 import type { ConnectorApp } from '../../platform/config-connectors.ts'
@@ -12,9 +13,6 @@ import { isOAuth } from './apps.ts'
 import { createExecutor } from './executor.ts'
 import { reseal } from './reseal.ts'
 import { registerConnectionRoutes } from './routes.ts'
-
-/** How long one call to a provider may take, the login included (the failure table: 10 s). */
-const CALL_DEADLINE_MS = 10_000
 
 /** Tests shorten the deadline. */
 export type ConnectorDeadlines = { callDeadlineMs?: number }

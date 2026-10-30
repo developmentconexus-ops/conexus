@@ -251,7 +251,8 @@ test('a status the connector documents no exception for gets the kernel outcome 
   assert.equal(outcomeOf(401), 'AUTH_REFUSED')
   for (const status of [400, 403, 404, 409, 422])
     assert.equal(outcomeOf(status), 'REFUSED', String(status))
-  for (const status of [300, 402, 429, 500, 503])
+  assert.equal(outcomeOf(429), 'BUSY')
+  for (const status of [300, 402, 500, 503])
     assert.equal(outcomeOf(status), 'UNREADABLE', String(status))
 })
 

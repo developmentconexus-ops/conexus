@@ -98,6 +98,7 @@ export {
   VersionData,
 } from './conexus-parts.ts'
 export {
+  CALL_DEADLINE_MS,
   CONNECTION_STATES,
   Connection,
   ConnectionDetail,
@@ -108,6 +109,7 @@ export {
   type ConnectionState,
   ConnectorEntry,
   completeConnectionSignIn,
+  GRANT_DEADLINE_MS,
   getConnection,
   linkConnection,
   listConnections,

@@ -158,6 +158,8 @@ test('testar e desligar juntos; um serviço por token', async (t) => {
     assert.equal(Object(each.json()).result, 'WORKING')
   }
 
+  // The check read is held in flight, so the Desligar commits while the Testar is still on it.
+  fake.switches.delayMilliseconds = 1_000
   const started = fake.logins()
   const testing = testOf(hub, ana, base, connection.id)
   while (fake.logins() === started) await setTimeout(5)

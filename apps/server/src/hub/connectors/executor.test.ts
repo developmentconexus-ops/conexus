@@ -216,6 +216,41 @@ test('o token sai do corpo do erro que a leitura do Testar recebe', async (t) =>
   const tested = Object(planted.tested.json())
   assert.deepEqual(
     [tested.result, tested.native.message, tested.native.body.echo],
-    ['READ_REFUSED', 'token [redacted]', '[redacted]'],
+    ['UNREACHABLE', 'token [redacted]', '[redacted]'],
+  )
+})
+
+test('uma leitura recusada por pedido errado não é falta de acesso: o fornecedor respondeu com erro', async (t) => {
+  for (const status of [400, 404, 409, 422]) {
+    const wrong = await testingWith(t, async (request) =>
+      request.headers.get('authorization') === null
+        ? realFetch(request)
+        : Response.json({ code: 'WRONG', message: 'pedido errado' }, { status }),
+    )
+    const tested = Object(wrong.tested.json())
+    assert.deepEqual(
+      [tested.result, tested.native.status, tested.native.code],
+      ['UNREACHABLE', status, 'WRONG'],
+      String(status),
+    )
+  }
+})
+
+test('o token que o fornecedor devolve num 2xx da leitura do Testar não volta na resposta', async (t) => {
+  let bearer = ''
+  const planted = await testingWith(t, async (request) => {
+    if (request.headers.get('authorization') === null) {
+      const login = await realFetch(request)
+      bearer = Object(await login.clone().json()).access_token
+      return login
+    }
+    return Response.json({ empresas: bearer, echo: bearer })
+  })
+  assert.notEqual(bearer, '')
+  assert.equal(planted.tested.body.includes(bearer), false)
+  const tested = Object(planted.tested.json())
+  assert.deepEqual(
+    [tested.result, tested.native.status, tested.native.body],
+    ['UNREADABLE', 200, null],
   )
 })

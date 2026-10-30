@@ -260,17 +260,16 @@ async function revokeWithToken(
   a: { open: OpenedConnection; declared: OAuthConnector; app: AppKeys },
 ): Promise<Sent> {
   const access = accessFor(deps, input)
-  const ask = { deadlineMs: deps.callDeadlineMs }
   function send(token: BearerToken) {
     return deps.executor.revoke(a.open, a.declared, token, a.app, deps.callDeadlineMs)
   }
-  const login = await access.token(a.open, { force: false, ...ask })
+  const login = await access.token(a.open, { force: false })
   if (login.kind === 'UNREACHABLE') return { kind: 'UNREACHABLE', native: login.native }
   if (login.kind !== 'TOKEN') return { kind: 'NO_TOKEN', native: login.native }
   const answered = await send(login.token)
   if (answered === null) return { kind: 'NONE' }
   if (answered.kind !== 'REFUSED' || answered.native.status !== 401) return answered
-  const again = await access.token(a.open, { force: true, refused: answered.native, ...ask })
+  const again = await access.token(a.open, { force: true, refused: answered.native })
   if (again.kind === 'UNREACHABLE') return again
   if (again.kind !== 'TOKEN') return { kind: 'NO_TOKEN', native: again.native }
   return (await send(again.token)) ?? { kind: 'NONE' }

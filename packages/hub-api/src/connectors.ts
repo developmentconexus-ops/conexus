@@ -156,8 +156,17 @@ export const linkConnection = defineOperation({
   ],
 })
 
-/** The longest Testar takes: up to two tokens and two check calls, 10 s each (the Hub's call deadline); the browser waits past it. */
-export const TEST_LONGEST_MS = 40_000
+/** How long one call to a provider may take, the login included (the failure table: 10 s). */
+export const CALL_DEADLINE_MS = 10_000
+
+/**
+ * An exchange's or a refresh's own deadline, never what is left of a Testar: once the provider has
+ * turned the refresh token, its answer must reach `store` (under the lease's 30 s).
+ */
+export const GRANT_DEADLINE_MS = 10_000
+
+/** The longest Testar takes: up to two tokens and two check calls; the browser waits past it. */
+export const TEST_LONGEST_MS = 2 * (GRANT_DEADLINE_MS + CALL_DEADLINE_MS)
 
 export const testConnection = defineOperation({
   id: 'testConnection',

@@ -75,7 +75,7 @@ test('cada resposta que não é 2xx vira o resultado do kit, sem o corpo de um 2
   assert.equal(kind(401), 'TOKEN_EXPIRED')
   assert.equal(kind(403), 'REFUSED')
   assert.equal(kind(404), 'REFUSED')
-  assert.equal(kind(429), 'UNREADABLE')
+  assert.equal(kind(429), 'BUSY')
   assert.equal(kind(500), 'UNREADABLE')
   assert.deepEqual(conta.answer({ status: 206, body: { id: 1, nickname: 'x' } }), {
     kind: 'OK',

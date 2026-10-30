@@ -40,9 +40,12 @@ export type Native = Readonly<{
   reason?: Unread
 }>
 
-/** A call that gave no rows. `TOKEN_EXPIRED`: the executor asks a new token once and repeats; a second time is `AUTH_REFUSED`. */
+/**
+ * A call that gave no rows. `TOKEN_EXPIRED`: the executor asks a new token once and repeats; a second time is `AUTH_REFUSED`.
+ * `BUSY`: the provider answered 429, asking to wait.
+ */
 export type Failure = Readonly<{
-  kind: 'REFUSED' | 'AUTH_REFUSED' | 'TOKEN_EXPIRED' | 'UNREADABLE'
+  kind: 'REFUSED' | 'AUTH_REFUSED' | 'TOKEN_EXPIRED' | 'UNREADABLE' | 'BUSY'
   native: Native
 }>
 
@@ -50,11 +53,21 @@ export type Failure = Readonly<{
 export type Answered<O> = Readonly<{ kind: 'OK'; value: O; empty?: true }> | Failure
 
 /** What a status outside 2xx means when the connector documents no exception: the key is refused, the request is, or the answer is not understood. */
-export function outcomeOf(status: number): 'AUTH_REFUSED' | 'REFUSED' | 'UNREADABLE' {
+export function outcomeOf(status: number): 'AUTH_REFUSED' | 'REFUSED' | 'UNREADABLE' | 'BUSY' {
   if (status === 401) return 'AUTH_REFUSED'
+  if (status === 429) return 'BUSY'
   if (status === 400 || status === 403 || status === 404 || status === 409 || status === 422)
     return 'REFUSED'
   return 'UNREADABLE'
+}
+
+/**
+ * Whether a `REFUSED` answer is the provider withholding permission (n8n's rejected): a 403, or a
+ * gateway's own refusal in a 2xx. A 400, 404, 409 or 422 says the request was wrong, which proves
+ * nothing about the person's access.
+ */
+export function deniesAccess(native: Native): boolean {
+  return native.status === 403 || (native.status >= 200 && native.status < 300)
 }
 
 /** Where a body usually keeps its code and message, for the logins and the connectors that declare no better place. */
