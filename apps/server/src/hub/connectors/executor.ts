@@ -12,10 +12,8 @@ import type {
   Native,
   Operation,
   ProviderAnswer,
-  Unread,
 } from '@conexus/connectors'
 import {
-  locateOf,
   readGrant,
   readToken,
   requestOf,

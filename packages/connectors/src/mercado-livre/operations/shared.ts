@@ -39,6 +39,7 @@ type ReadSpec<I> = Readonly<{
   input: z.ZodType<I>
   list: string | null // where the rows are: a key of the body, or the body itself
   omit?: readonly string[] // the buyer's personal data, by dotted path
+  emptyNotFound?: string // the start of the message of the 404 that means the seller has no data yet
   from?: readonly string[]
   probe(earlier: ReadonlyMap<OperationId, unknown>): NoInfer<I> | null
   request(input: I, account: Account): ProviderRequest
@@ -46,12 +47,12 @@ type ReadSpec<I> = Readonly<{
 
 /** A read of Mercado Livre: idempotent by class, answered as rows by the API's own table (`rows`). */
 export function readOf<I>(spec: ReadSpec<I>): Operation<I, Rows, 'read'> {
-  const { docs, list, omit, ...operation } = spec
+  const { docs, list, omit, emptyNotFound, ...operation } = spec
   const defined = defineOperation({
     ...operation,
     class: 'read' as const,
     idempotent: true,
-    ...rows({ list, omit }),
+    ...rows({ list, omit, emptyNotFound }),
   })
   DOCS.set(defined.id, docs)
   return defined

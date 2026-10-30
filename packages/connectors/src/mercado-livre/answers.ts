@@ -77,9 +77,23 @@ type Built = { success: true; data: Rows } | { success: false; error: z.ZodError
  * the `omit` keys. 401 is an expired access token (the Hub renews once and repeats), 403 a
  * permission the app lacks, and a 206 is an order the API could not fill whole (`X-Content-Missing`):
  * it says in its docs that the rest usually suffices, so the rows are read and carry `parcial`.
- * Any other status is the kernel's table.
+ * Any other status is the kernel's table, except the one 404 a read declares in `emptyNotFound`
+ * (the start of its `message`, with `error: "not_found"`): the seller has no data yet, so it reads
+ * as an empty answer; any other 404 stays a refusal.
  */
-export function rows({ list, omit = [] }: { list: string | null; omit?: readonly string[] }) {
+export function rows({
+  list,
+  omit = [],
+  emptyNotFound,
+}: {
+  list: string | null
+  omit?: readonly string[]
+  emptyNotFound?: string
+}) {
+  const NothingFound = z.looseObject({
+    error: z.literal('not_found'),
+    message: z.string().startsWith(emptyNotFound ?? ''),
+  })
   const Found =
     list === null
       ? listOf(Row)
@@ -106,6 +120,12 @@ export function rows({ list, omit = [] }: { list: string | null; omit?: readonly
     const native = nativeOf(answer)
     if (answer.status === 401) return { kind: 'TOKEN_EXPIRED', native }
     if (answer.status === 403) return { kind: 'REFUSED', native }
+    if (
+      emptyNotFound !== undefined &&
+      answer.status === 404 &&
+      NothingFound.safeParse(answer.body).success
+    )
+      return { kind: 'OK', value: { linhas: [], temMais: false }, empty: true }
     if (answer.status < 200 || answer.status >= 300) return failedBy(answer, native)
     const built = build(answer.body, answer.status === 206)
     return built.success

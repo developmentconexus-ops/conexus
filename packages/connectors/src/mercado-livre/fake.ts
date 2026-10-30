@@ -32,6 +32,8 @@ type Switches = {
   refuseGroups: Set<string>
   /** A single order (`/orders/{id}`) answers 206 with `X-Content-Missing`. */
   partialOrders: boolean
+  /** What the response-time route answers: its data, the 404 the documentation shows for a seller with none, or a 404 of another kind. */
+  responseTime: 'data' | 'none' | 'other'
   /** The next revocation answers 403, as when the key cannot take the app's permission back. */
   refuseRevoke: boolean
   /** The `expires_in` the exchange and the renewal give. */
@@ -195,6 +197,13 @@ function routed(
     match: a.match,
     headers: a.request.headers,
   })
+  if (route.name === 'tempoDeResposta' && switches.responseTime !== 'data') {
+    const message =
+      switches.responseTime === 'none'
+        ? `Response time not found for user id: ${a.ref}`
+        : 'Resource not found'
+    return json({ message, error: 'not_found', status: 404, cause: [] }, 404)
+  }
   if (route.name === 'pedido' && switches.partialOrders)
     return json(reply.body, 206, { 'x-content-missing': 'buyer, feedback' })
   return json(reply.body, reply.status ?? 200, reply.headers)
@@ -282,6 +291,7 @@ export function mercadoLivreFake({
     slowMilliseconds: 0,
     refuseGroups: new Set(),
     partialOrders: false,
+    responseTime: 'data',
     refuseRevoke: false,
     expiresInSeconds: 21_600,
   }
