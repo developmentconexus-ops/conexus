@@ -58,6 +58,17 @@ test('o dublê recusa um código usado duas vezes, um verificador errado e um re
   )
 })
 
+test('o dublê aceita o redirect_uri que o Hub configura e recusa o de fábrica', async () => {
+  const fake = mercadoLivreFake({ redirectUri: 'https://hub.example.test/integrations/return' })
+  assert.equal(fake.redirectUri, 'https://hub.example.test/integrations/return')
+  assert.equal((await authorize(fake)).kind, 'OK')
+  const factory = await startSignIn(fake)
+  assert.equal(
+    (await factory.exchange({ redirectUri: 'https://hub.exemplo.test/integrations/return' })).kind,
+    'GRANT_REFUSED',
+  )
+})
+
 test('o dublê recusa uma chave de renovação usada ou antiga', async () => {
   const fake = mercadoLivreFake()
   const granted = await authorize(fake)
