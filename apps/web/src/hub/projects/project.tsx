@@ -1,6 +1,7 @@
 import type { CompanyId, ProjectId } from '@conexus/hub-api'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { dayOf } from '../../platform/dates.ts'
+import { SectionTitle } from '../../ui/list.tsx'
 import { DeleteProjectDialog } from './delete-project-dialog.tsx'
 import { projectQuery } from './queries.ts'
 
@@ -12,6 +13,7 @@ export function About({ companyId, projectId }: { companyId: CompanyId; projectI
   const { project } = useSuspenseQuery(projectQuery(companyId, projectId)).data
   return (
     <div className="flex flex-col gap-xl">
+      <SectionTitle>Sobre</SectionTitle>
       <p className="text-label text-text-2">Criado em {dayOf(project.createdAt)}</p>
       {project.address !== null && (
         <p className="text-label text-text-2">

@@ -8,7 +8,6 @@ import {
   hubServer,
   PEDIDOS,
   projectsRead,
-  refusal,
 } from '../../platform/test-hub.tsx'
 import { versionsRead } from '../../platform/test-hub-versions.tsx'
 
@@ -48,6 +47,13 @@ test('dentro do Projeto a barra é a do Projeto: o nome com a troca, a empresa, 
   expect(screen.queryByText(/em breve/i)).toBeNull()
   expect(rail.queryByText('Projetos recentes')).toBeNull()
   expect(rail.getByRole('link', { name: 'Construir' }).getAttribute('aria-current')).toBe('page')
+})
+
+test('um endereço de conversa marca Construir como o lugar atual', async () => {
+  open(`${PROJECT}/conversations/${'c'.repeat(32)}`)
+  expect(
+    (await bar()).getByRole('link', { name: 'Construir' }).getAttribute('aria-current'),
+  ).toBe('page')
 })
 
 test('fora do Projeto, a barra da empresa como hoje', async () => {
@@ -112,5 +118,4 @@ test('um Projeto que o Hub não acha, nos endereços novos: não encontrado', as
     ).toBeTruthy()
     document.body.innerHTML = ''
   }
-  expect(refusal).toBeTypeOf('function')
 })

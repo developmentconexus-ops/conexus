@@ -127,7 +127,7 @@ export function ProjectRailNav(scope: Scope) {
           <SidebarMenuButton
             tooltip="Construir"
             aria-current={building ? 'page' : undefined}
-            className={building ? 'bg-surface-3! text-text!' : undefined}
+            data-status={building ? 'active' : undefined}
             render={
               <Link
                 to="/companies/$companyId/projects/$projectId"
