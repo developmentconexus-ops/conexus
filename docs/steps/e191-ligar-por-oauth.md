@@ -539,12 +539,16 @@ accountLabel: text('account_label'), // its name as the provider shows it (nickn
 
 // connectors.connection_sign_in
 id: uuid pk, companyId: text, personId: text, connectorId: text,
-connectionId: uuid null → connection(id) ON DELETE CASCADE, // set for Conectar de novo
-name: text null,          // the name for a first link; null when connectionId is set
+connectionId: uuid null, // set for Conectar de novo
+name: text null,          // the name for a first link; null when connectionId is set; CHECK 1..60 and = btrim(name), as connection_name
 connectionRevision: integer null, // the connection's revision when Conectar de novo started (C38)
 sealed: bytea, keyId: text, // the PKCE verifier, sealed to the row
 expiresAt: timestamptz
 // FK (company_id, person_id) → member ON DELETE CASCADE, as model_account_sign_in_member_fkey
+// FK (company_id, connector_id, connection_id) → connection(company_id, connector_id, id)
+//   MATCH SIMPLE ON DELETE CASCADE: no company writes a sign-in about another company's
+//   connection, nor about one of another connector (D15; as app_access_company_id_project_id_fkey)
+// connection gains UNIQUE (company_id, connector_id, id), the target of that key
 // CHECK connection_sign_in_target: (connection_id IS NULL) <> (name IS NULL),
 //   and (connection_id IS NULL) = (connection_revision IS NULL)
 // RLS: company_id = scoped company and person_id = scoped person, as model_account_sign_in
@@ -562,7 +566,7 @@ e a skill `drizzle` do pacote (só a linha de comando).
 
 1. As colunas e a tabela em `tables.ts`; a migração gerada pelo `drizzle-kit`, conferida à mão (o
    índice parcial, os `CHECK`). Regras: D1, D33, C21.
-2. A migração de permissões, num pull request só dela dentro da unidade, como a 19 fez (D11): o papel
+2. A migração de permissões, numa migração e num commit só dela dentro do pull request da unidade, como as etapas 18 e 19 fizeram (D11; a escolha do firstmate, com a palavra do fundador "Aprovado 19.1" registrada): o papel
    da empresa (`hub_company`) ganha `SELECT, INSERT, DELETE` em `connection_sign_in`, `SELECT` e
    `UPDATE` nas quatro colunas novas de `connection` (as permissões são por coluna,
    `database-grants.sql:245-263`) e `UPDATE` em `linked_by` e `linked_at`, que o Conectar de novo
