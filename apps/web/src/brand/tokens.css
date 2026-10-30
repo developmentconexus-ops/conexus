@@ -63,6 +63,8 @@
   --color-danger: #c0283d;
   --color-on-accent: #ffffff;
   --color-preview-paper: #ffffff;
+  /* The light plate a provider's logo sits on, in both themes: a wordmark is drawn for a light ground. */
+  --color-logo-plate: #ffffff;
   /* The dark frame the Prévia draws round the app on a phone (design V3). */
   --color-phone-frame: #1d2125;
   --color-code-keyword: #cf222e;
@@ -267,6 +269,7 @@
     --color-danger: #f28b9a;
     --color-on-accent: #ffffff;
     --color-preview-paper: #ffffff;
+    --color-logo-plate: #ffffff;
     --color-phone-frame: #3a4148;
     --color-code-keyword: #ff7b72;
     --color-code-string: #a5d6ff;
@@ -300,6 +303,7 @@
   --color-danger: #f28b9a;
   --color-on-accent: #ffffff;
   --color-preview-paper: #ffffff;
+  --color-logo-plate: #ffffff;
   --color-phone-frame: #3a4148;
   --color-code-keyword: #ff7b72;
   --color-code-string: #a5d6ff;

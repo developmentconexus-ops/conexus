@@ -118,7 +118,7 @@ export function Integrations() {
                       : null
                   }
                 />
-                <ul className="ml-14 border-t border-line">
+                <ul className="ml-md border-t border-line sm:ml-14">
                   {own.map((connection) => (
                     <Row key={connection.id}>
                       <ConnectionLink companyId={companyId} connection={connection} />

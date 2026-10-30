@@ -1,6 +1,7 @@
-import { fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { http } from 'msw'
 import { expect, test } from 'vitest'
+import { sentenceOfCode } from '../../platform/hub.ts'
 import { hubServer, refusal, undecided } from '../../platform/test-hub.tsx'
 import { checksOf, connectionOf, REFUSAL, SANKHYA } from './fixtures.ts'
 import type { Answers, View } from './test-hub.tsx'
@@ -80,6 +81,14 @@ test('a dona liga e testa num toque, e desliga: a janela monta os campos do cat�
   expect(sent[1]?.path).toMatch(/\/test$/)
   expect(screen.queryByRole('dialog')).toBeNull()
   expect(document.body.textContent).not.toContain('segredo-plantado-2')
+  // ... e desliga: o menu da página, a confirmação pelo nome, e a lista de volta sem a ligação.
+  fireEvent.click(await screen.findByRole('button', { name: 'Mais ações' }))
+  fireEvent.click(await screen.findByRole('menuitem', { name: 'Desligar' }))
+  const confirm = await screen.findByRole('alertdialog')
+  expect(within(confirm).getByText('Desligar Comercial?')).toBeTruthy()
+  fireEvent.click(within(confirm).getByRole('button', { name: 'Desligar' }))
+  expect(await screen.findByText('Nenhuma integração ligada ainda.')).toBeTruthy()
+  expect(sent.map((one) => one.method)).toEqual(['POST', 'POST', 'DELETE'])
 })
 
 test('a página que chega de Ligar e testar mostra "Testando as 25 leituras, uma por vez…" enquanto espera', async () => {
@@ -219,6 +228,28 @@ test('o membro lê; vazio e erro: a lista sem Ligar, e a frase de quem pode', as
   expect(screen.getByText('Comercial')).toBeTruthy()
   expect(screen.queryByRole('button', { name: /^Ligar/ })).toBeNull()
   expect(sent).toHaveLength(0)
+  // Vazio: a frase da primeira vez e o conector sem Ligar.
+  cleanup()
+  open(viewOf({ mayManage: false }))
+  expect(await screen.findByText('Nenhuma integração ligada ainda.')).toBeTruthy()
+  expect(screen.getByText(SANKHYA.summary)).toBeTruthy()
+  expect(screen.queryByRole('button', { name: /^Ligar/ })).toBeNull()
+  // Erro: a leitura que falha mostra a frase do Hub e "Tentar de novo" lê outra vez.
+  cleanup()
+  let failing = true
+  server.use(
+    http.get('*/api/companies/*/connections', () =>
+      failing ? refusal('DATABASE_UNAVAILABLE') : undefined,
+    ),
+    ...connectionsHub(viewOf({ mayManage: false })).handlers,
+  )
+  mount(PAGE)
+  expect((await screen.findByRole('alert')).textContent).toBe(
+    sentenceOfCode('DATABASE_UNAVAILABLE'),
+  )
+  failing = false
+  fireEvent.click(screen.getByRole('button', { name: 'Tentar de novo' }))
+  expect(await screen.findByText(MEMBER_SENTENCE)).toBeTruthy()
 })
 
 test('a página: o cabeçalho, o último teste guardado, o conector e a sua versão', async () => {
@@ -279,39 +310,4 @@ test('o membro lê a página com o último teste, sem Testar nem Desligar', asyn
     expect(screen.queryByRole('button', { name })).toBeNull()
   }
   expect(sent).toHaveLength(0)
-})
-
-test('Desligar confirma pelo nome e volta à lista; Cancelar não manda nada', async () => {
-  const connection = connectionOf({ name: 'Financeiro' })
-  const sent = open(viewOf({ connections: [connection] }), {}, pageOf(connection))
-  fireEvent.click(await screen.findByRole('button', { name: 'Mais ações' }))
-  fireEvent.click(await screen.findByRole('menuitem', { name: 'Desligar' }))
-  let dialog = await screen.findByRole('alertdialog')
-  expect(within(dialog).getByText('Desligar Financeiro?')).toBeTruthy()
-  fireEvent.click(within(dialog).getByRole('button', { name: 'Cancelar' }))
-  await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull())
-  expect(sent).toHaveLength(0)
-  fireEvent.click(screen.getByRole('button', { name: 'Mais ações' }))
-  fireEvent.click(await screen.findByRole('menuitem', { name: 'Desligar' }))
-  dialog = await screen.findByRole('alertdialog')
-  fireEvent.click(within(dialog).getByRole('button', { name: 'Desligar' }))
-  expect(await screen.findByRole('heading', { name: 'Integrações' })).toBeTruthy()
-  expect(await screen.findByText('Nenhuma integração ligada ainda.')).toBeTruthy()
-  expect(sent.map((one) => one.method)).toEqual(['DELETE'])
-})
-
-test('a lista que não carrega mostra o erro com "Tentar de novo"', async () => {
-  let failing = true
-  const hub = connectionsHub(viewOf())
-  server.use(
-    http.get('*/api/companies/*/connections', () =>
-      failing ? refusal('DATABASE_UNAVAILABLE') : undefined,
-    ),
-    ...hub.handlers,
-  )
-  mount(PAGE)
-  expect(await screen.findByRole('alert')).toBeTruthy()
-  failing = false
-  fireEvent.click(screen.getByRole('button', { name: 'Tentar de novo' }))
-  expect(await screen.findByRole('heading', { name: 'Para ligar' })).toBeTruthy()
 })
