@@ -146,8 +146,10 @@ function Header(props: {
           <PageTitle className="break-words">{connection.name}</PageTitle>
           <span className="flex flex-wrap items-center gap-x-sm gap-y-xs">
             {badge && <Badge tone={badge.tone}>{badge.text}</Badge>}
-            <span className="text-text-2">{linkedText(connection)}</span>
-            {account !== null && <span className="text-text-2">{account}</span>}
+            <span className="text-text-2">
+              {linkedText(connection)}
+              {account !== null && ` · ${account}`}
+            </span>
           </span>
         </div>
       </div>
