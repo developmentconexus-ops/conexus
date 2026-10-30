@@ -1,5 +1,6 @@
 import { z } from 'zod'
-import type { Native, ProviderAnswer, ProviderRequest } from './operation.ts'
+import type { OAuth2CodeAuth } from './oauth.ts'
+import type { Native, ProviderAnswer, TokenRequest } from './operation.ts'
 import { locateOf } from './operation.ts'
 
 /** `help`: one line and a public page on where the key comes from, shown in Ligar; `visible`: shown while pasted (an id), else masked. */
@@ -16,7 +17,7 @@ type Fields = Readonly<
 >
 type Credential = Readonly<Record<string, string>>
 
-/** A login by fields the company pastes, exchanged for a bearer token (Sankhya). OAuth comes in 19.1. */
+/** A login by fields the company pastes, exchanged for a bearer token (Sankhya). */
 export type ClientCredentialsAuth = Readonly<{
   kind: 'client_credentials'
   fields: Fields
@@ -28,7 +29,7 @@ export type ClientCredentialsAuth = Readonly<{
   }>
   answer: z.ZodType<Readonly<{ accessToken: string; expiresInSeconds: number }>>
 }>
-export type Auth = ClientCredentialsAuth
+export type Auth = ClientCredentialsAuth | OAuth2CodeAuth
 
 /** A header value cannot carry a line break, so a pasted field with one is refused where it is parsed. */
 const oneLine = /^[^\r\n]*$/
@@ -49,9 +50,6 @@ export function clientCredentials(
     credential: z.strictObject(shape),
   })
 }
-
-export type TokenRequest = ProviderRequest &
-  Readonly<{ form: URLSearchParams; headers: Readonly<Record<string, string>> }>
 
 function fieldValue(credential: Credential, field: string): string {
   const found = credential[field]

@@ -10,6 +10,8 @@ import { sankhyaFake } from './fake.ts'
 
 runConformance(sankhya, sankhyaFake())
 
+const NO_ACCOUNT = { ref: null }
+
 function operation(id: string): Operation<unknown, unknown> {
   const found = [...sankhya.operations, ...Object.values(sankhya.readDoor ?? {})].find(
     (candidate) => candidate.id === id,
@@ -25,15 +27,29 @@ function envelope(responseBody: unknown, status = '1') {
   return { serviceName: 'x', status, responseBody }
 }
 
-test('o catálogo tem o Sankhya, achado pelo id', () => {
+test('o catálogo tem o Sankhya e o Mercado Livre, o Sankhya achado pelo id', () => {
   assert.deepEqual(
     CONNECTORS.map((connector) => connector.id),
-    ['sankhya'],
+    ['sankhya', 'mercado-livre'],
   )
   assert.equal(connectorOf('sankhya'), sankhya)
   assert.equal(connectorOf('Sankhya'), undefined)
   assert.equal(connectorOf('nope'), undefined)
 })
+
+const INJECTION = {
+  entidade: 'Empresa',
+  campos: ['CODEMP'],
+  pagina: 0,
+  criterio: { expressao: 'this.CODEMP = 1; DELETE FROM TSIEMP', parametros: [] },
+}
+
+const LOADING = {
+  entidade: 'Empresa',
+  campos: ['CODEMP', 'NOMEFANTASIA'],
+  pagina: 2,
+  criterio: { expressao: 'this.CODEMP = ?', parametros: [{ valor: '1', tipo: 'I' as const }] },
+}
 
 test('a porta de leitura só lê', () => {
   const { consultar, carregar } = sankhyaDoor
@@ -52,22 +68,10 @@ test('a porta de leitura só lê', () => {
   ])
     assert.equal(consultar.input.safeParse({ sql }).success, false, sql)
 
-  assert.throws(() => requestOf(sankhyaDoor.consultar, { sql: 'DELETE FROM T' }))
-  assert.throws(() =>
-    requestOf(sankhyaDoor.carregar, {
-      entidade: 'Empresa',
-      campos: ['CODEMP'],
-      pagina: 0,
-      criterio: { expressao: 'this.CODEMP = 1; DELETE FROM TSIEMP', parametros: [] },
-    }),
-  )
+  assert.throws(() => requestOf(sankhyaDoor.consultar, { sql: 'DELETE FROM T' }, NO_ACCOUNT))
+  assert.throws(() => requestOf(sankhyaDoor.carregar, INJECTION, NO_ACCOUNT))
 
-  const loaded = carregar.request({
-    entidade: 'Empresa',
-    campos: ['CODEMP', 'NOMEFANTASIA'],
-    pagina: 2,
-    criterio: { expressao: 'this.CODEMP = ?', parametros: [{ valor: '1', tipo: 'I' }] },
-  })
+  const loaded = carregar.request(LOADING, NO_ACCOUNT)
   assert.equal(loaded.method, 'POST')
   assert.equal(loaded.path, '/gateway/v1/mge/service.sbr')
   assert.deepEqual(loaded.query, {
@@ -101,8 +105,9 @@ test('a porta de leitura só lê', () => {
     )
 
   const services = [
-    consultar.request(consultar.input.parse(consultar.probe(new Map()))).query.serviceName,
-    carregar.request(carregar.input.parse(carregar.probe(new Map()))).query.serviceName,
+    consultar.request(consultar.input.parse(consultar.probe(new Map())), NO_ACCOUNT).query
+      .serviceName,
+    carregar.request(carregar.input.parse(carregar.probe(new Map())), NO_ACCOUNT).query.serviceName,
   ]
   assert.deepEqual(services.sort(), [
     'CRUDServiceProvider.loadRecords',

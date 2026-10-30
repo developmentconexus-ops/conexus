@@ -1,8 +1,8 @@
 import { z } from 'zod'
-import { defineOperation } from '../../kernel/operation.ts'
+import { defineOperation, get } from '../../kernel/operation.ts'
 import { rows } from '../answers.ts'
 import { empresaPage, empresas } from './cadastros.ts'
-import { Code, DashDate, Date_, firstCode, get, Page } from './shared.ts'
+import { Code, DashDate, Date_, firstCode, Page } from './shared.ts'
 
 /** The filters the orders and the invoices share; the order route ignores `codigoNota` (measured 2026-10-30), so only the invoices take it. */
 const Janela = z.object({

@@ -5,10 +5,11 @@ import { z } from 'zod'
 import { readToken, tokenRequest } from '../kernel/auth.ts'
 import type { Operation, OperationId, ProviderRequest } from '../kernel/operation.ts'
 import { requestOf } from '../kernel/operation.ts'
+import { fetchText } from '../kernel/page.ts'
 import { toRequest } from '../kernel/request.ts'
 import { sankhya } from './definition.ts'
 import { sankhyaFake } from './fake.ts'
-import { downloadSpec, fetchText, SITE, Spec } from './spec-source.ts'
+import { downloadSpec, SITE, Spec } from './spec-source.ts'
 
 // The documentation is Sankhya's ("Licença Sankhya") and the repository is public, so none of it is
 // kept here. The check reads it when it runs: SANKHYA_SPEC names a file or an address of the cut
@@ -70,7 +71,9 @@ function problemsOf(spec: Spec, sample: Sample): string[] {
 function queriedKeys(operation: Operation<unknown, unknown>, probe: unknown): string[] {
   const names = Object.keys(z.toJSONSchema(operation.input, { io: 'input' }).properties ?? {})
   return names.filter(
-    (name) => name in operation.request({ ...z.looseObject({}).parse(probe), [name]: '1' }).query,
+    (name) =>
+      name in
+      operation.request({ ...z.looseObject({}).parse(probe), [name]: '1' }, { ref: null }).query,
   )
 }
 
@@ -88,7 +91,7 @@ async function samples(): Promise<Sample[]> {
   for (const operation of sankhya.operations) {
     const input = operation.probe(earlier)
     assert.notEqual(input, null, operation.id)
-    const request = requestOf(operation, input)
+    const request = requestOf(operation, input, { ref: null })
     const response = await fake.handle(toRequest(sankhya, request, token.accessToken))
     const body = z.unknown().parse(await response.json())
     const answered = operation.answer({ status: response.status, body })

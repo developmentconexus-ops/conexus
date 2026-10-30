@@ -1,8 +1,8 @@
 import { z } from 'zod'
-import { defineOperation } from '../../kernel/operation.ts'
+import { defineOperation, get } from '../../kernel/operation.ts'
 import { rows } from '../answers.ts'
 import { empresaPage, empresas } from './cadastros.ts'
-import { Code, DateTime, get, Page } from './shared.ts'
+import { Code, DateTime, Page } from './shared.ts'
 
 export const transportadoras = defineOperation({
   id: 'transportadoras',

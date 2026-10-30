@@ -1,6 +1,7 @@
 import { setTimeout as sleep } from 'node:timers/promises'
 import { z } from 'zod'
-import type { Fake } from '../kernel/conformance.ts'
+import type { CredentialFake } from '../kernel/conformance.ts'
+import { serveOnLoopback } from '../kernel/loopback.ts'
 import {
   CREDENTIAL,
   DOOR_NAMES,
@@ -13,7 +14,6 @@ import {
   OVERSIZE,
   SERVICE_PATH,
 } from './fake-data.ts'
-import { serveOnLoopback } from './fake-http.ts'
 import { forbidden, routeOf } from './fake-rest.ts'
 
 /** What the fake can be told to do wrong, per service: the executor's tests (U3) and the QA flip these. */
@@ -42,7 +42,7 @@ type SankhyaSwitches = {
   expiresInSeconds: number
 }
 
-export type SankhyaFake = Fake &
+export type SankhyaFake = CredentialFake &
   Readonly<{
     switches: SankhyaSwitches
     logins: () => number

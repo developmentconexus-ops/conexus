@@ -30,7 +30,10 @@ function entryOf(connector: Connector): ConnectorEntry {
     summary: connector.summary,
     logo: connector.logo,
     reads: inProbeOrder(connector).length,
-    fields: Object.entries(connector.auth.fields).map(([name, field]) => ({ name, ...field })),
+    fields:
+      connector.auth.kind === 'client_credentials'
+        ? Object.entries(connector.auth.fields).map(([name, field]) => ({ name, ...field }))
+        : [],
   }
 }
 
@@ -58,6 +61,13 @@ type Link = Viewer & {
   attemptKey: string
 }
 
+/** The connector and its pasted-fields login; until 19.1 U2 no other kind can be linked. */
+function pastedLogin(id: string) {
+  const connector = connectorOf(id)
+  if (connector?.auth.kind !== 'client_credentials') throw new Failure('CONNECTOR_UNKNOWN')
+  return { connector, auth: connector.auth }
+}
+
 /**
  * Links the company to a connector (criterion 9): the attempt's lock, the admission, the fields by
  * the connector's own schema, then a replay compared with the sealed values (code C37). Nothing is
@@ -70,9 +80,8 @@ export async function link(deps: Deps, input: Link) {
   return deps.database.command(scopeOf(input), async (tx) => {
     await transactionLock(tx, `conexus.connection:${input.companyId}:${input.attemptKey}`)
     await admitted(deps, tx, input, 'manageConnections')
-    const connector = connectorOf(input.connector)
-    if (connector === undefined) throw new Failure('CONNECTOR_UNKNOWN')
-    const parsed = connector.auth.credential.safeParse(
+    const { connector, auth } = pastedLogin(input.connector)
+    const parsed = auth.credential.safeParse(
       Object.fromEntries(
         Object.entries(input.credential).map(([name, value]) => [name, value.trim()]),
       ),

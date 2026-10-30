@@ -1,8 +1,8 @@
 import { z } from 'zod'
-import { defineOperation } from '../../kernel/operation.ts'
+import { defineOperation, get } from '../../kernel/operation.ts'
 import { rows } from '../answers.ts'
 import { empresaPage, empresas } from './cadastros.ts'
-import { Code, Date_, get, Page } from './shared.ts'
+import { Code, Date_, Page } from './shared.ts'
 
 /** The filters the two financial lists share; their pages start at 1, where the other routes start at 0. */
 const TitulosInput = z.object({

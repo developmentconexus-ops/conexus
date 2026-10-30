@@ -1,8 +1,8 @@
 import { z } from 'zod'
 import type { Answered, Failure, Native, ProviderAnswer } from '../kernel/operation.ts'
 import { outcomeOf, shapeOf } from '../kernel/operation.ts'
-import type { Rows } from './operations/shared.ts'
-import { listOf } from './operations/shared.ts'
+import type { Rows } from '../kernel/rows.ts'
+import { listOf } from '../kernel/rows.ts'
 
 const Text = z.union([z.string(), z.number()])
 const Refusal = z.looseObject({

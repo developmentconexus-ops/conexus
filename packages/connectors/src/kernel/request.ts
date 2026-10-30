@@ -1,6 +1,5 @@
-import type { TokenRequest } from './auth.ts'
 import type { Connector } from './definition.ts'
-import type { ProviderRequest } from './operation.ts'
+import type { ProviderRequest, TokenRequest } from './operation.ts'
 
 /** A path is one absolute path on the origin: one leading '/', no scheme, no userinfo, no '..', no backslash, even percent-encoded. */
 function assertPath(path: string): void {

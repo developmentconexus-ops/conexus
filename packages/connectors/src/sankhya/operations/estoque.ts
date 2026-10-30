@@ -1,7 +1,7 @@
 import { z } from 'zod'
-import { defineOperation } from '../../kernel/operation.ts'
+import { defineOperation, get } from '../../kernel/operation.ts'
 import { rows } from '../answers.ts'
-import { get, Page } from './shared.ts'
+import { Page } from './shared.ts'
 
 export const estoque = defineOperation({
   id: 'estoque',
