@@ -111,7 +111,7 @@ desenvolver". E, ao estudo do app, `W1`. O cartão os segue assim:
 **`Y`. O que o Desligar faz no fornecedor.** O Desligar da 19 apaga a ligação e as chaves do Hub, sem
 chamar ninguém. Com o OAuth, a autorização continua na conta do Mercado Livre da loja até ela mesma a
 tirar (o Magis5, por exemplo, chama o Mercado Livre para tirar a autorização ao desligar).
-- **`Y1` (recomendação, aguarda a palavra do fundador):** o Desligar continua só no Hub, como na 19:
+- **`Y1` (aprovada com a página, 2026-10-29: "Aprovado 19.1"):** o Desligar continua só no Hub, como na 19:
   nunca falha porque o fornecedor está fora, e serve a todo conector igual. Ligar a mesma conta de
   novo depois funciona. Tirar a autorização no fornecedor entra quando um conector declarar como (o
   Mercado Livre tem uma rota para isso, ainda não lida a fundo).
