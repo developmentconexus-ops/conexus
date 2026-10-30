@@ -74,9 +74,14 @@ export async function authorize(fake: Fake): Promise<GrantAnswered> {
 export const ACCOUNT = { ref: AccountRef.parse('123456789') }
 
 /** Every read, in probe order, from the answers before it: the request it built and the value it gave. */
-export async function probeAll(
-  fake: Fake,
-): Promise<{ operation: Operation<unknown, unknown>; request: ProviderRequest; value: unknown }[]> {
+export async function probeAll(fake: Fake): Promise<
+  {
+    operation: Operation<unknown, unknown>
+    input: unknown
+    request: ProviderRequest
+    value: unknown
+  }[]
+> {
   const granted = await authorize(fake)
   assert.equal(granted.kind, 'OK')
   if (granted.kind !== 'OK') return []
@@ -92,7 +97,7 @@ export async function probeAll(
     assert.equal(answered.kind, 'OK', operation.id)
     if (answered.kind !== 'OK') continue
     earlier.set(operation.id, answered.value)
-    done.push({ operation, request, value: answered.value })
+    done.push({ operation, input, request, value: answered.value })
   }
   return done
 }

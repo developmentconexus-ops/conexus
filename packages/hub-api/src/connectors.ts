@@ -263,7 +263,7 @@ export type SignInCompleted = z.infer<typeof SignInCompleted>
 export const completeConnectionSignIn = defineOperation({
   id: 'completeConnectionSignIn',
   summary:
-    'Completes an authorization with the code the provider sent back, or ends it when the person refused; spent once.',
+    'Completes an authorization with the code the provider sent back, or ends it when the person refused or the provider sent an error back; spent once.',
   access: 'session',
   method: 'POST',
   path: '/api/companies/{companyId}/connection-sign-ins/{signInId}',
@@ -273,6 +273,10 @@ export const completeConnectionSignIn = defineOperation({
     body: z.union([
       z.strictObject({ code: z.string().min(1).max(2048) }),
       z.strictObject({ refused: z.literal(true) }),
+      z.strictObject({
+        error: z.string().min(1).max(256),
+        description: z.string().max(1024).optional(),
+      }),
     ]),
   },
   success: { status: 200, body: SignInCompleted },

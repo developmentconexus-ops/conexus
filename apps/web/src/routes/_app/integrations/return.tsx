@@ -8,6 +8,7 @@ const Search = z.object({
   code: z.string().optional().catch(undefined),
   state: z.string().optional().catch(undefined),
   error: z.string().optional().catch(undefined),
+  error_description: z.string().optional().catch(undefined),
 })
 
 export const Route = createFileRoute('/_app/integrations/return')({

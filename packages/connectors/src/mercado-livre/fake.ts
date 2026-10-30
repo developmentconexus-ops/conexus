@@ -26,7 +26,7 @@ type Switches = {
   slowMilliseconds: number
   /** Permission groups that answer 403 `PA_UNAUTHORIZED_RESULT_FROM_POLICIES`. */
   refuseGroups: Set<string>
-  /** Orders answer 206 with `X-Content-Missing`. */
+  /** A single order (`/orders/{id}`) answers 206 with `X-Content-Missing`. */
   partialOrders: boolean
   /** The `expires_in` the exchange and the renewal give. */
   expiresInSeconds: number
@@ -186,8 +186,8 @@ function routed(
     match: a.match,
     headers: a.request.headers,
   })
-  if (route.name === 'pedidos' && switches.partialOrders)
-    return json(reply.body, 206, { 'x-content-missing': 'true' })
+  if (route.name === 'pedido' && switches.partialOrders)
+    return json(reply.body, 206, { 'x-content-missing': 'buyer, feedback' })
   return json(reply.body, reply.status ?? 200, reply.headers)
 }
 

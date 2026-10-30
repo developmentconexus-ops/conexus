@@ -133,6 +133,39 @@ test('recusada: pela pessoa ou pelo Mercado Livre, nada se cria', async (t) => {
   assert.deepEqual(await hub.test.asOwner('select id from connectors.connection'), [])
 })
 
+async function sentBack(
+  of: Awaited<ReturnType<typeof mercadoLivreOn>>,
+  error: string,
+  description?: string,
+) {
+  const { hub, ana, companyId } = of
+  const started = await startOf(hub, ana, companyId, MERCADO_LIVRE)
+  const { signInId } = await consentAt(Object(started.json()).url)
+  return Object((await completeOf(hub, ana, companyId, signInId, { error, description })).json())
+}
+
+test('a volta com error: REFUSED com o que veio, APP_REFUSED se o app, nada se cria', async (t) => {
+  const on = await mercadoLivreOn(t)
+  const { hub } = on
+  const refused = await sentBack(on, 'invalid_operator_user_id', 'colaborador sem acesso')
+  assert.deepEqual(refused, {
+    result: 'REFUSED',
+    connector: 'mercado-livre',
+    native: {
+      status: 302,
+      code: 'invalid_operator_user_id',
+      message: 'colaborador sem acesso',
+      body: null,
+    },
+  })
+  const app = await sentBack(on, 'unauthorized_application')
+  assert.deepEqual(
+    [app.result, app.native.code, app.native.message],
+    ['APP_REFUSED', 'unauthorized_application', null],
+  )
+  assert.deepEqual(await hub.test.asOwner('select id from connectors.connection'), [])
+})
+
 test('completar: o Mercado Livre limita a chamada da conta, nada se cria e a pessoa tenta de novo', async (t) => {
   const { hub, fake, ana, companyId } = await mercadoLivreOn(t)
   fake.switches.accountRateLimited = true
