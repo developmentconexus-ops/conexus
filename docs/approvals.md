@@ -368,3 +368,5 @@ Em 2026-10-30, sobre os merges: "1. Sim" (o fechamento da 19, https://github.com
 Em 2026-10-30, sobre o logotipo do Mercado Livre: "2. Manter". Fica o logotipo como está.
 
 Em 2026-10-30, sobre o que depende dos webhooks: "Isso depois de webhooks, tá? Não vamos fazer isso agora, não."
+
+Etapa 19.1 usada em 2026-10-30 em https://hub.conexus.fun (v0.19.7), com a conta real dele de vendedor no Mercado Livre e a ligação dele com o Sankhya: ligou o Mercado Livre por OAuth, as leituras rodaram e, depois do Testar de uma chamada só, as duas ligações responderam "Ligado e funcionando". Antes dos consertos: "Meio que validado"; perguntado se as duas responderam "Ligado e funcionando" depois da v0.19.7: "Sim adeu certo".
