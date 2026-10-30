@@ -76,6 +76,16 @@ export function edge(doubles: { hub?: Hub; app?: App; missingScript?: boolean } 
         },
       }
     },
+    Connectors() {
+      return {
+        async call() {
+          return { kind: 'NOT_GRANTED' }
+        },
+        async connections() {
+          return []
+        },
+      }
+    },
   }
   const env = {
     HUB_PUBLIC_ORIGIN: 'https://hub.conexus.fun',

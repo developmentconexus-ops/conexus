@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { z } from 'zod'
-import { readToken, tokenRequest } from '../kernel/auth.ts'
+import { logoutRequest, readToken, tokenRequest } from '../kernel/auth.ts'
 import type { ProviderAnswer, ProviderRequest } from '../kernel/operation.ts'
 import { toRequest } from '../kernel/request.ts'
 import { sankhya } from './definition.ts'
@@ -69,6 +69,37 @@ test('um segundo pedido no mesmo token em curso recebe o envelope "4"; no REST, 
     assert.deepEqual([first, second].map((a) => statuses.parse(a.body).status).sort(), ['1', '4'])
     const rest = await Promise.all([empresas(token, origin), empresas(token, origin)])
     assert.deepEqual(rest.map((a) => a.status).sort(), [200, 409])
+  })
+})
+
+test('o logout encerra o token, conta, a leitura depois pede outro, e o token vencido não sai mais', async () => {
+  const declared = logoutRequest(sankhya.auth)
+  const [ready] = sankhya.operations
+  assert.ok(declared && ready)
+  const logout: ProviderRequest = declared
+  await withToken(async (origin, token, fake) => {
+    function end(bearer: string) {
+      return send(toRequest(sankhya, logout, bearer, origin))
+    }
+    assert.partialDeepStrictEqual((await end(token)).body, { status: '1' })
+    const after = await empresas(token, origin)
+    assert.deepEqual(after, {
+      status: 401,
+      body: { code: 'UNAUTHORIZED', message: 'Unauthorized' },
+    })
+    assert.equal(ready.answer(after).kind, 'TOKEN_EXPIRED', 'a read after the logout renews')
+    assert.partialDeepStrictEqual((await end(token)).body, { status: '1' })
+    assert.equal(fake.logouts(), 2)
+    fake.expireTokens()
+    assert.equal((await end(token)).status, 200, 'an ended token stays ended')
+    const second = readToken(
+      sankhya.auth,
+      await send(toRequest(sankhya, tokenRequest(sankhya.auth, fake.credential), null, origin)),
+    )
+    assert.ok(second.kind === 'OK')
+    fake.expireTokens()
+    assert.equal((await end(second.accessToken)).status, 403, 'an expired token cannot log out')
+    assert.equal(fake.logouts(), 3)
   })
 })
 

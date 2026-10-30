@@ -1,10 +1,14 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { z } from 'zod'
+import type { PerProject } from '../calls.ts'
+import { CONNECTORS } from '../index.ts'
 import { mercadoLivre } from '../mercado-livre/definition.ts'
+import { mercadoLivreReads } from '../mercado-livre/operations/index.ts'
 import { sankhya } from '../sankhya/definition.ts'
+import { sankhyaReads } from '../sankhya/operations/index.ts'
 import { clientCredentials, readToken, tokenRequest } from './auth.ts'
-import { defineConnector, defineReadDoor } from './definition.ts'
+import { defineConnector, defineReadDoor, inProbeOrder, readsOf } from './definition.ts'
 import { LOGO_MAX_BYTES, logoProblems } from './logo.ts'
 import type { ProviderRequest } from './operation.ts'
 import { defineOperation, failedBy, locateOf, outcomeOf } from './operation.ts'
@@ -97,6 +101,36 @@ test('cada operação lê só operações anteriores, a porta primeiro', () => {
   const door = { ...lone, operations: [pong, root], check: root, readDoor: { ping } }
   assert.equal(defineConnector(door).id, 'sankhya')
   assert.throws(() => defineOperation({ ...base, class: 'read', from: ['Bad id'] }))
+})
+
+test('o conector declara quantas ligações um Projeto usa, e nada mais diz uma chamada por vez', () => {
+  assert.throws(() => redefine({ perProject: undefined }))
+  assert.throws(() => redefine({ perProject: 'two' }))
+  // @ts-expect-error a definition without perProject does not compile
+  assert.throws(() => defineConnector({ ...sankhya, perProject: undefined }))
+  // @ts-expect-error the old flag left the connector
+  assert.equal(sankhya.oneRequestAtATime, undefined)
+  const declared: PerProject = { sankhya: 'one', 'mercado-livre': 'many' }
+  assert.deepEqual(
+    Object.fromEntries(CONNECTORS.map(({ id, perProject }) => [id, perProject])),
+    declared,
+  )
+  assert.equal(sankhya.perProject, 'one')
+  assert.equal(mercadoLivre.perProject, 'many')
+})
+
+test('as leituras por nome: a chave é o id, e o registro é a porta mais as operações', () => {
+  const ping = defineOperation({ ...base, class: 'read' })
+  assert.equal(readsOf({ ping }).ping, ping)
+  assert.throws(() => readsOf({ pong: ping }), /Read pong is named ping/)
+  const write = defineOperation({ ...base, id: 'poke', class: 'write' })
+  // @ts-expect-error a write is not a read the app may call
+  readsOf({ poke: write })
+  for (const [connector, reads] of [
+    [sankhya, sankhyaReads],
+    [mercadoLivre, mercadoLivreReads],
+  ] as const)
+    assert.deepEqual(Object.values(reads), inProbeOrder(connector), connector.id)
 })
 
 test('o Testar é uma leitura do próprio conector, que não depende de outra', () => {

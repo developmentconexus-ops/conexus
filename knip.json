@@ -29,6 +29,7 @@
       ]
     },
     "apps/edge": {
+      "entry": ["clone/worker.ts"],
       "ignoreDependencies": ["cloudflare"]
     }
   }

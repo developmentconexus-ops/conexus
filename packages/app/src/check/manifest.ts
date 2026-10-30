@@ -35,6 +35,7 @@ const Answer = z.strictObject({
   ),
   migrations: z.unknown(),
   roles: z.record(z.string(), z.unknown()).optional(),
+  connectors: z.record(z.string(), z.unknown()).optional(),
 })
 
 const BuildErrors = z.array(
@@ -45,13 +46,16 @@ const BuildErrors = z.array(
 )
 
 /**
- * The lines that bring the app's `operations` and its `roles` (an app without roles exports none)
- * into a generated module, which the manifest's program and the Worker's entry share.
+ * The lines that bring the app's `operations`, its `roles` and its `connectors` (an app without
+ * them exports none) into a generated module, which the manifest's program and the Worker's entry share.
  */
 export function sharedOf(operations: boolean): string[] {
   return operations
-    ? [`import * as shared from '../../${OPERATIONS}'`, 'const { operations, roles } = shared']
-    : ['const operations = {}', 'const roles = undefined']
+    ? [
+        `import * as shared from '../../${OPERATIONS}'`,
+        'const { operations, roles, connectors } = shared',
+      ]
+    : ['const operations = {}', 'const roles = undefined', 'const connectors = undefined']
 }
 
 /**
@@ -68,7 +72,7 @@ function entryOf(operations: boolean, handlers: boolean, answerPath: string): st
     ...sharedOf(operations),
     handlers ? `import * as server from '../../${HANDLERS}'` : 'const server = {}',
     'serveApp({ operations, handlers: server.handlers ?? {}, roles })',
-    'const answer = { notJson: notJson(operations), migrations: server.migrations ?? [], roles }',
+    'const answer = { notJson: notJson(operations), migrations: server.migrations ?? [], roles, connectors }',
     `writeFileSync(${JSON.stringify(answerPath)}, JSON.stringify(answer))`,
   ].join('\n')
 }
@@ -152,15 +156,25 @@ export async function manifesto(ctx: CheckContext): Promise<Outcome> {
     )
     return { state: 'failed', problems }
   }
-  const { migrations, roles } = answer
+  const { migrations, roles, connectors } = answer
   const listed =
     roles === undefined
       ? {}
       : { roles: Object.entries(roles).map(([name, label]) => ({ name, label })) }
+  const used =
+    connectors === undefined
+      ? {}
+      : {
+          connectors: Object.entries(connectors).map(([connector, operations]) => ({
+            connector,
+            operations,
+          })),
+        }
   const manifest = Manifest.safeParse({
     contract: 1,
     entry: 'worker.js',
     ...listed,
+    ...used,
     migrations,
     assets: [],
   })

@@ -33,8 +33,11 @@ const DISPATCHER_PATHS = '/__conexus/'
 const ENTRY_SCRIPT = `${DISPATCHER_PATHS}entry.js`
 const SECRET_BYTES = 32
 
-/** What the dispatcher needs of its own exports: a `db` stub bound to one login (decision 0043). */
-export type Exports = { Db(options: { props: DbProps }): AppProps['db'] }
+/** What the dispatcher needs of its own exports: a `db` stub bound to one login (decision 0043) and the `connectors` stub. */
+export type Exports = {
+  Db(options: { props: DbProps }): AppProps['db']
+  Connectors(options: { props: Record<string, never> }): AppProps['connectors']
+}
 
 type Visit = {
   request: Request
@@ -154,6 +157,7 @@ async function toApp(visit: Visit, call: AppCall): Promise<Response> {
               props: {
                 caller,
                 db: visit.exports.Db({ props: { ...call.database, endsAt: deadline.endsAt } }),
+                connectors: visit.exports.Connectors({ props: {} }),
               } satisfies AppProps,
             },
             DISPATCH_OPTIONS,

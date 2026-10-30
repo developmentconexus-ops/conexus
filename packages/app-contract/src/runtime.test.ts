@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { z } from 'zod'
-import type { AppProps, CallerAccess, Db, Operations, Roles } from './index.ts'
+import type { AppProps, CallerAccess, Connectors, Db, Operations, Roles } from './index.ts'
 import { serveApp } from './index.ts'
 
 const OPERATIONS = {
@@ -14,6 +14,10 @@ const OPERATIONS = {
 const DB: Db = {
   query: async () => ({ rows: [{ id: 7 }] }),
   batch: async () => ({ results: [] }),
+}
+const CONNECTORS: Connectors = {
+  call: async () => ({ kind: 'NOT_GRANTED' }),
+  connections: async () => [],
 }
 const BUILDER: CallerAccess = { kind: 'BUILDER' }
 const CALLER = {
@@ -33,22 +37,23 @@ function call(
 ) {
   const init: RequestInit = { method }
   if (method === 'POST') init.body = typeof body === 'string' ? body : JSON.stringify(body)
-  const props: AppProps = { caller: { ...CALLER, access }, db: DB }
+  const props: AppProps = { caller: { ...CALLER, access }, db: DB, connectors: CONNECTORS }
   return app.fetch(new Request(`https://app.example/${path}`, init), {}, { props })
 }
 
 const app = serveApp({
   operations: OPERATIONS,
   handlers: {
-    escrever: async (input, { db, caller }) => {
+    escrever: async (input, { db, caller, connectors }) => {
       const result = await db.query('SELECT 7 AS id', [input])
       assert.equal(caller.personName, 'Ana')
+      assert.equal(connectors, CONNECTORS, 'the props connectors reach the handler as given')
       return 'rows' in result ? result.rows[0] : result
     },
   },
 })
 
-test('uma operação declarada roda o handler com db e caller', async () => {
+test('uma operação declarada roda o handler com db, caller e connectors', async () => {
   const response = await call(app, 'api/escrever', { texto: 'oi' })
   assert.equal(response.status, 200)
   assert.deepEqual(await response.json(), { id: 7 })

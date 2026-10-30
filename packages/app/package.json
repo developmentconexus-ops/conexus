@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@conexus/app-contract": "*",
+    "@conexus/connectors": "*",
     "esbuild": "0.28.2",
     "playwright-core": "1.63.0",
     "typescript": "6.0.3",

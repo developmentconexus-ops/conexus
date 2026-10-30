@@ -1,3 +1,5 @@
+import { readsOf } from '../../kernel/definition.ts'
+import { sankhyaDoor } from '../door.ts'
 import {
   centrosResultado,
   clientes,
@@ -14,7 +16,7 @@ import { gruposProduto, produtos } from './produtos.ts'
 import { devolucoes, notaFiscal, notasCanceladas, notasFiscais, pedidos } from './vendas.ts'
 
 /** The order the probes run in: `empresas` first, since seven probes read it (their `from`); each subject keeps the ready five before the rest. */
-export const sankhyaOperations = [
+const ready = readsOf({
   empresas,
   clientes,
   vendedores,
@@ -37,7 +39,13 @@ export const sankhyaOperations = [
   precosDaTabela,
   transportadoras,
   ordensCarga,
-] as const
+})
+
+/** The ready reads, in that order: what the connector declares as its `operations`. */
+export const sankhyaOperations = Object.values(ready)
+
+/** Every read of the connector by its id, the door's included: what an app's typed client is made of (`calls.ts`). */
+export const sankhyaReads = readsOf({ ...sankhyaDoor, ...ready })
 
 /** The subjects and their labels; each has a part of the skill. */
 export const sankhyaSubjects = {

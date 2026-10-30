@@ -1,0 +1,6 @@
+// The clone test's Worker: dispatcher.ts's entrypoints and the dispatch path, run in local workerd.
+{
+  "name": "conexus-clone-test",
+  "main": "worker.ts",
+  "compatibility_date": "2026-10-18"
+}

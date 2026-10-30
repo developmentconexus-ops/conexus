@@ -58,7 +58,7 @@ export const mercadoLivre = defineConnector({
   category: 'Marketplace',
   summary: 'O marketplace onde a loja vende: anúncios, pedidos, envios, perguntas e reclamações.',
   logo: LOGO,
-  oneRequestAtATime: false,
+  perProject: 'many', // a Projeto may read several stores
   subjects: mercadoLivreSubjects,
   operations: mercadoLivreOperations,
   check: conta,

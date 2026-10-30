@@ -25,7 +25,6 @@ test('o Mercado Livre é achado pelo id', () => {
 test('são 27 leituras em 11 assuntos, cada uma um GET na origem fixa, com a sua página da documentação', () => {
   assert.equal(mercadoLivre.operations.length, 27)
   assert.equal(Object.keys(mercadoLivre.subjects).length, 11)
-  assert.equal(mercadoLivre.oneRequestAtATime, false)
   for (const operation of inProbeOrder(mercadoLivre)) {
     assert.equal(operation.class, 'read', operation.id)
     assert.ok(docsOf(operation), `${operation.id} cites its page`)

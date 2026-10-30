@@ -22,6 +22,9 @@ type AccountIdentity =
       who: Readonly<{ path: `/${string}`; answer: z.ZodType<AccountOf> }>
     }>
 
+const PerProject = z.enum(['one', 'many'])
+type PerProject = z.infer<typeof PerProject>
+
 export type Connector = Readonly<{
   id: ConnectorId
   name: string
@@ -32,7 +35,8 @@ export type Connector = Readonly<{
   category: string // "ERP": the catalog and the list group show it
   summary: string // one line, Portuguese: what the system is
   logo: string // the provider's official logo, an SVG read from the connector's folder; the screen shows it as a data: image
-  oneRequestAtATime: boolean // a token is one session (Sankhya's envelope "4")
+  // How many of this connector's connections one Projeto may use (founder, 2026-10-29): a key, not code.
+  perProject: PerProject // required, no default
   subjects: Readonly<Record<string, string>> // subject id → label ("vendas" → "Vendas"); each has an operation
   operations: readonly Operation<unknown, unknown>[] // typed, the same for every company
   readDoor?: ReadDoor // for what each company has of its own
@@ -52,12 +56,13 @@ const Origin = z
       URL.canParse(value) && new URL(value).origin === value && value.startsWith('https://'),
   )
 
-/** Takes `id` as a plain string and brands it; throws on a reported account with a login that is not OAuth, a repeated operation id, a bad version or origin, a door entry that is not 'read', an operation of a subject the connector lacks, a subject with no operation, a `from` that is not an earlier operation, or a check that is not one of its operations or needs an earlier one. */
+/** Takes `id` as a plain string and brands it; throws on a `perProject` other than 'one' or 'many', a reported account with a login that is not OAuth, a repeated operation id, a bad version or origin, a door entry that is not 'read', an operation of a subject the connector lacks, a subject with no operation, a `from` that is not an earlier operation, or a check that is not one of its operations or needs an earlier one. */
 export function defineConnector<A extends Auth>(
   connector: Omit<Connector, 'id' | 'auth'> & { id: string; auth: A },
 ): Connector & Readonly<{ auth: A }> {
   Version.parse(connector.version)
   Origin.parse(connector.origin)
+  PerProject.parse(connector.perProject)
   if (connector.account.kind === 'reported' && connector.auth.kind !== 'oauth2_code')
     throw new Error(`Reported account without an OAuth login in ${connector.id}`)
   const all = inProbeOrder(connector)
@@ -98,6 +103,15 @@ export function inProbeOrder(
   connector: Pick<Connector, 'operations' | 'readDoor'>,
 ): readonly Operation<unknown, unknown>[] {
   return [...Object.values(connector.readDoor ?? {}), ...connector.operations]
+}
+
+/** The record of a connector's reads by id, the source of the app's types (`calls.ts`); throws when a key is not its operation's id. */
+export function readsOf<
+  const R extends Readonly<Record<string, Operation<unknown, unknown, 'read'>>>,
+>(reads: R): R {
+  for (const [key, operation] of Object.entries(reads))
+    if (operation.id !== key) throw new Error(`Read ${key} is named ${operation.id}`)
+  return Object.freeze(reads)
 }
 
 /** A door of read operations only: a write or destructive entry does not compile. */

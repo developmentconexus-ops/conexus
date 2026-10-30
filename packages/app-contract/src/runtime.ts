@@ -1,10 +1,11 @@
 import { z } from 'zod'
+import type { Connectors } from './connectors.ts'
 import type { Db } from './db.ts'
 import type { AppFailureCode } from './failures.ts'
 import type { AppProps, Caller } from './props.ts'
 
 /** What a handler receives beside its input (decision 0019). */
-export type Context = Readonly<{ db: Db; caller: Caller }>
+export type Context = Readonly<{ db: Db; caller: Caller; connectors: Connectors }>
 
 /** Who may call an operation: the app's roles it names, or everyone with access. */
 export type OperationRoles = readonly string[] | 'everyone'
@@ -133,7 +134,7 @@ async function respond(
 
 /**
  * The app's Worker for contract 1 (decisions 0019, 0055): `POST /api/<operation>` becomes
- * `handler(input, { db, caller })`, the input decoded by the operation's own Zod and the output
+ * `handler(input, { db, caller, connectors })`, the input decoded by the operation's own Zod and the output
  * encoded by it, after the operation's `roles` admit the caller (`ROLE_FORBIDDEN`, before the input is
  * read), and `GET /api/caller` answers who calls. Static files never reach here: the platform
  * answers them first, so an unknown path is a 404. An operation without its handler, a handler
@@ -162,14 +163,14 @@ export function serveApp(
       const operation =
         request.method === 'POST' && name !== undefined ? served.get(name) : undefined
       if (name === undefined || operation === undefined) return refuse(404, 'OPERATION_NOT_FOUND')
-      const { db } = ctx.props
+      const { db, connectors } = ctx.props
       const caller = seenBy(declared, ctx.props.caller)
       if (!mayRun(operation, caller)) return refuse(403, 'ROLE_FORBIDDEN')
       // biome-ignore lint/plugin: an unreadable body fails the operation's input schema next (C27, C53)
       const body: unknown = await request.json().catch(() => undefined)
       const input = operation.input.safeParse(body)
       if (!input.success) return refuse(400, 'INPUT_INVALID')
-      return respond(name, operation, input.data, { db, caller })
+      return respond(name, operation, input.data, { db, caller, connectors })
     },
   }
 }

@@ -29,17 +29,29 @@ test('sem versão no ar: o exemplo, com props só caller, sem o que mais o Hub d
   assert.deepEqual(door.dbBindings, [])
 })
 
-test('versão no ar: o Worker dela, com props só caller e db, e o db preso ao login de execução', async () => {
+test('versão no ar: o Worker dela, com props só caller, db e connectors, e o db preso ao login de execução', async () => {
   const door = edge({ hub: () => Response.json(VERSION_CALL) })
   const response = await door.fetch('/', { headers: LIVE })
   assert.equal(response.status, 200)
   const [call] = door.appCalls
   assert.equal(call?.name, VERSION_CALL.version.worker)
-  assert.deepEqual(Object.keys(call?.args.props ?? {}), ['caller', 'db'])
+  assert.deepEqual(Object.keys(call?.args.props ?? {}), ['caller', 'db', 'connectors'])
   assert.deepEqual(
     door.dbBindings.map(({ endsAt: _endsAt, ...login }) => login),
     [VERSION_CALL.database],
   )
+})
+
+test('até a porta dos conectores, toda chamada do app a um conector é NOT_GRANTED e não há ligação', async () => {
+  const door = edge({ hub: () => Response.json(VERSION_CALL) })
+  await door.fetch('/', { headers: LIVE })
+  const connectors = door.appCalls[0]?.args.props.connectors
+  assert.ok(connectors)
+  assert.deepEqual(await connectors.call('sankhya', 'pedidos', { codigoEmpresa: 1, page: 0 }), {
+    kind: 'NOT_GRANTED',
+  })
+  assert.deepEqual(await connectors.connections('mercado-livre'), [])
+  assert.equal(door.hubCalls.length, 1, 'no call reached the Hub but the session check')
 })
 
 test('versão no ar cujo Worker sumiu: a 502 da etapa 8, nunca o exemplo', async () => {

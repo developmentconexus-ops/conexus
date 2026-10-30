@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import type { AppProps, Db } from '@conexus/app-contract'
-import { serveApp } from '@conexus/app-contract'
+import type { AppProps, ConnectorAnswer, Connectors, Db } from '@conexus/app-contract'
+import { ConnectorAnswer as Answer, serveApp } from '@conexus/app-contract'
 import { z } from 'zod'
-import { defineHandlers, defineOperations } from './index.ts'
+import { connectorsOf, defineConnectors, defineHandlers, defineOperations } from './index.ts'
 
 const operations = defineOperations({
   escrever: { input: z.object({ texto: z.string().min(1) }), output: z.object({ id: z.int() }) },
@@ -21,6 +21,7 @@ const PROPS: AppProps = {
     access: { kind: 'BUILDER' },
   },
   db: DB,
+  connectors: { call: async () => ({ kind: 'NOT_GRANTED' }), connections: async () => [] },
 }
 
 const app = serveApp({
@@ -128,4 +129,59 @@ test('a encomenda da Ana: 200, com a situação padrão e a data codificada; e-m
     assert.equal(refused.status, 400)
     assert.deepEqual(await refused.json(), { code: 'INPUT_INVALID' })
   }
+})
+
+const NATIVE = { status: 403, code: 'NO_ACCESS', message: 'Sem permissão' }
+const ANSWERS: readonly ConnectorAnswer[] = [
+  { kind: 'OK', value: { linhas: [{ N: 1 }], completo: true } },
+  { kind: 'OK', value: { linhas: [], temMais: false }, empty: true },
+  { kind: 'NOT_GRANTED' },
+  { kind: 'REFUSED', native: NATIVE },
+  { kind: 'AUTH_REFUSED', native: { ...NATIVE, status: 401 } },
+  { kind: 'UNREADABLE', native: { status: 200, code: '4', message: null } },
+  { kind: 'BUSY', waitMs: 1_500 },
+  { kind: 'BUSY', waitMs: null },
+  { kind: 'UNREACHABLE' },
+  { kind: 'DEADLINE' },
+]
+
+test('a resposta do conector chega ao handler pelo cliente como veio, e nenhuma leva o body do fornecedor', async () => {
+  const declared = defineConnectors({ sankhya: ['consultar'], 'mercado-livre': ['perguntas'] })
+  const reading = defineOperations({ ler: { input: z.object({}), output: z.unknown() } })
+  const sent: unknown[][] = []
+  for (const given of ANSWERS) {
+    const connectors: Connectors = {
+      call: async (...args) => {
+        sent.push(args)
+        return given
+      },
+      connections: async (connector) => [`${connector} loja 1`],
+    }
+    const served = serveApp({
+      operations: reading,
+      handlers: defineHandlers(reading, {
+        ler: async (_input, context) => {
+          const client = connectorsOf(context, declared)
+          const [loja = ''] = await client['mercado-livre'].connections()
+          await client['mercado-livre'].perguntas({ offset: 0, limit: 50 }, loja)
+          return client.sankhya.consultar({ sql: 'SELECT 1 FROM TSIEMP' })
+        },
+      }),
+    })
+    const init = { method: 'POST', body: '{}' }
+    const props = { ...PROPS, connectors }
+    const response = await served.fetch(
+      new Request('https://app.example/api/ler', init),
+      {},
+      { props },
+    )
+    assert.deepEqual(await response.json(), given, given.kind)
+  }
+  assert.deepEqual(sent.slice(0, 2), [
+    ['mercado-livre', 'perguntas', { offset: 0, limit: 50 }, 'mercado-livre loja 1'],
+    ['sankhya', 'consultar', { sql: 'SELECT 1 FROM TSIEMP' }, undefined],
+  ])
+  const withBody = { kind: 'REFUSED', native: { ...NATIVE, body: { segredo: 'da empresa' } } }
+  assert.equal(Answer.safeParse(withBody).success, false, 'the contract has no body')
+  for (const given of ANSWERS) assert.equal(Answer.safeParse(given).success, true, given.kind)
 })

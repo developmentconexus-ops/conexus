@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import type { OAuth2CodeAuth } from './oauth.ts'
-import type { Native, ProviderAnswer, TokenRequest } from './operation.ts'
+import type { Native, ProviderAnswer, ProviderRequest, TokenRequest } from './operation.ts'
 import { locateOf } from './operation.ts'
 
 /** `help`: one line and a public page on where the key comes from, shown in Ligar; `visible`: shown while pasted (an id), else masked. */
@@ -28,6 +28,8 @@ export type ClientCredentialsAuth = Readonly<{
     headers: Readonly<Record<string, Readonly<{ field: string }>>>
   }>
   answer: z.ZodType<Readonly<{ accessToken: string; expiresInSeconds: number }>>
+  // The session's end, sent with the bearer while it lives (an expired token's logout is refused).
+  logout?: Readonly<{ path: `/${string}`; query: Readonly<Record<string, string>>; body: unknown }>
 }>
 export type Auth = ClientCredentialsAuth | OAuth2CodeAuth
 
@@ -74,6 +76,13 @@ export function tokenRequest(auth: ClientCredentialsAuth, credential: Credential
     ]),
   )
   return { method: 'POST', path: auth.token.path, query: {}, body: undefined, form, headers }
+}
+
+/** The logout of the token it is sent with, or null when the login declares none; the executor adds the bearer. */
+export function logoutRequest(auth: ClientCredentialsAuth): ProviderRequest | null {
+  if (auth.logout === undefined) return null
+  const { path, query, body } = auth.logout
+  return { method: 'POST', path, query, body }
 }
 
 /** What the login answered: a token, a refused key, or a body the kit cannot read. */

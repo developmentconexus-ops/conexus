@@ -41,6 +41,21 @@ export const Manifest = z
       .max(20)
       .refine((list) => unique(list.map(({ name }) => name)))
       .optional(),
+    // The connectors' reads the app calls (step 20), by the kit's ids, for the Hub to check them;
+    // a manifest before them stays valid (0019).
+    connectors: z
+      .array(
+        z.strictObject({
+          connector: z.string().regex(/^[a-z][a-z0-9-]{1,31}$/),
+          operations: z
+            .array(z.string().regex(/^[a-z][a-zA-Z0-9]{1,39}$/))
+            .min(1)
+            .max(100),
+        }),
+      )
+      .max(20)
+      .refine((list) => unique(list.map(({ connector }) => connector)))
+      .optional(),
     migrations: z.array(Migration).refine((list) => unique(list.map(({ id }) => id))),
     assets: z
       .array(FilePath)

@@ -27,6 +27,7 @@ const PROPS: AppProps = {
     access: { kind: 'BUILDER' },
   },
   db: { query: async () => ({ rows: [] }), batch: async () => ({ results: [] }) },
+  connectors: { call: async () => ({ kind: 'NOT_GRANTED' }), connections: async () => [] },
 }
 
 function served() {

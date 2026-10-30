@@ -99,6 +99,9 @@ const NO_VERSION = {
   Db(): never {
     throw new Error('no version is on the air in this journey')
   },
+  Connectors(): never {
+    throw new Error('no version is on the air in this journey')
+  },
 }
 
 async function bodyOf(incoming: IncomingMessage): Promise<Buffer> {
