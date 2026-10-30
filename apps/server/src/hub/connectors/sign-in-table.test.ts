@@ -72,6 +72,31 @@ test('a autorização em andamento: o alvo é uma ligação nova ou uma refeita,
   }
 })
 
+test('a autorização em andamento: a ligação é da mesma empresa e do mesmo conector, e o nome vem aparado', async (t) => {
+  const { asOwner } = await createTestDatabase(t)
+  await asOwner(SEED)
+  await asOwner(
+    `insert into auth.member(id, company_id, user_id, role, created_at)
+      values ('member-b-b', '${B}', 'person-b', 'member', now())`,
+  )
+  // Another company's connection, or the right company's under another connector, is refused.
+  for (const row of [
+    signIn(B, 'person-b', AGAIN).text,
+    signIn(A, 'person-a', AGAIN).text.replace(`'mercado-livre'`, `'bling'`),
+  ]) {
+    await assert.rejects(asOwner(row), {
+      code: '23503',
+      constraint: 'connection_sign_in_company_id_connector_id_connection_id_fkey',
+    })
+  }
+  for (const name of ['', ' Loja', 'Loja ', 'x'.repeat(61)]) {
+    await assert.rejects(asOwner(signIn(A, 'person-a', [null, name, null]).text), {
+      code: '23514',
+      constraint: 'connection_sign_in_name',
+    })
+  }
+})
+
 test('a autorização em andamento: uma pessoa, uma vez, e sai com a ligação ou com a pessoa', async (t) => {
   const { database, asOwner } = await createTestDatabase(t)
   await asOwner(SEED)

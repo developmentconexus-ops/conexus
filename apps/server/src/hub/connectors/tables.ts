@@ -76,6 +76,9 @@ export const connection = connectors.table(
       sql`lower(${table.name} collate "und-x-icu")`,
     ),
     unique('connection_attempt_key').on(table.companyId, table.attemptKey),
+    // The target of connection_sign_in's composite key: a row about a connection is the connection's
+    // company's and connector's.
+    unique('connection_company_connector_id_key').on(table.companyId, table.connectorId, table.id),
     // The Hub trims before it writes; the database refuses what escapes (as model_account_label_length, 1 to 60).
     check(
       'connection_name',
@@ -128,11 +131,18 @@ export const connectionSignIn = connectors.table(
       columns: [table.companyId, table.personId],
       foreignColumns: [member.organizationId, member.userId],
     }).onDelete('cascade'),
+    // The row's company and connector are the connection's, so no scope writes a row about another
+    // company's connection (as app_access_company_id_project_id_fkey). MATCH SIMPLE: a first link
+    // has no connection.
     foreignKey({
-      name: 'connection_sign_in_connection_id_fkey',
-      columns: [table.connectionId],
-      foreignColumns: [connection.id],
+      name: 'connection_sign_in_company_id_connector_id_connection_id_fkey',
+      columns: [table.companyId, table.connectorId, table.connectionId],
+      foreignColumns: [connection.companyId, connection.connectorId, connection.id],
     }).onDelete('cascade'),
+    check(
+      'connection_sign_in_name',
+      sql`${table.name} IS NULL OR (char_length(${table.name}) BETWEEN 1 AND 60 AND ${table.name} = btrim(${table.name}))`,
+    ),
     check(
       'connection_sign_in_target',
       sql`(${table.connectionId} IS NULL) <> (${table.name} IS NULL)
