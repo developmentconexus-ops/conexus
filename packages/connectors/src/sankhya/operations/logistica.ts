@@ -1,8 +1,8 @@
 import { z } from 'zod'
-import { defineOperation } from '../../kernel/operation.ts'
+import { defineOperation, get } from '../../kernel/operation.ts'
 import { restAnswer } from '../answers.ts'
 import { empresas, firstEmpresaPage } from './cadastros.ts'
-import { Code, DateTime, get, maybe, Page } from './shared.ts'
+import { Code, DateTime, maybe, Page } from './shared.ts'
 
 /** Both routes send the end of the list as text or as a boolean, and may leave it out. */
 const Paginacao = maybe(z.object({ hasMore: maybe(z.union([z.string(), z.boolean()])) }))

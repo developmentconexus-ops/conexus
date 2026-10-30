@@ -1,8 +1,8 @@
 import { z } from 'zod'
-import { defineOperation } from '../../kernel/operation.ts'
+import { defineOperation, get } from '../../kernel/operation.ts'
 import { restAnswer } from '../answers.ts'
 import { empresas, firstEmpresaPage } from './cadastros.ts'
-import { Code, Date_, get, maybe, Page } from './shared.ts'
+import { Code, Date_, maybe, Page } from './shared.ts'
 
 const Titulos = z.object({
   financeiros: z.array(

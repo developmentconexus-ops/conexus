@@ -220,7 +220,7 @@ test('a lista: o membro lê, nada da credencial sai', async (t) => {
   const read = await call(hub, carla, 'GET', base)
   assert.equal(read.statusCode, 200)
   const list = Object(read.json())
-  assert.equal(list.connectors.length, 1)
+  assert.equal(list.connectors.length, 2)
   const [entry] = list.connectors
   assert.deepEqual(
     [entry.id, entry.name, entry.version, entry.category, entry.reads],

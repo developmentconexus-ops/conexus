@@ -58,7 +58,10 @@ export type Executor = {
 
 /** The opened values, checked again by the connector's own schema: a value it refuses never opened. */
 function valuesOf(connection: OpenedConnection): Readonly<Record<string, string>> {
-  const { credential } = connection.connector.auth
+  const { auth } = connection.connector
+  // Linking refuses a connector that is not a pasted-fields login, so no connection of another kind exists until 19.1 U2.
+  if (auth.kind !== 'client_credentials') throw new Error(`No pasted credential for ${auth.kind}`)
+  const { credential } = auth
   try {
     return credential.parse(JSON.parse(connection.credential.reveal()))
   } catch (cause) {
@@ -180,6 +183,7 @@ export function createExecutor(deps: {
     async login(connection, deadlineMs) {
       const { connector } = connection
       const auth = connector.auth
+      if (auth.kind !== 'client_credentials') throw new Error(`No pasted login for ${auth.kind}`)
       const values = valuesOf(connection)
       const request = toRequest(connector, tokenRequest(auth, values), null, originOf(connector))
       const sent = await send(request, connection, Object.values(values), deadlineMs)
@@ -193,7 +197,7 @@ export function createExecutor(deps: {
       const { connector } = connection
       const request = toRequest(
         connector,
-        requestOf(operation, input),
+        requestOf(operation, input, { ref: null }),
         token.reveal(),
         originOf(connector),
       )

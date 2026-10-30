@@ -10,7 +10,12 @@ export type ProviderRequest = Readonly<{
   path: `/${string}`
   query: Readonly<Record<string, string>>
   body: unknown // JSON, or undefined
+  headers?: Readonly<Record<string, string>> // fixed, public ones (a format switch); never a credential
 }>
+
+/** The exchange or the login: a request whose form body and headers carry the credential, sent by the executor alone (S36). */
+export type TokenRequest = ProviderRequest &
+  Readonly<{ form: URLSearchParams; headers: Readonly<Record<string, string>> }>
 
 /** What came back, already parsed as JSON by the executor; the raw text never reaches the kit. */
 export type ProviderAnswer = Readonly<{ status: number; body: unknown }>
@@ -62,6 +67,17 @@ export type OperationId = z.infer<typeof OperationId>
 
 const Subject = z.string().regex(/^[a-z]+$/)
 
+// One path segment, never `/`, `?` or `#`: it goes into request paths (C23, parsed in `who.answer`)
+export const AccountRef = z
+  .string()
+  .regex(/^[A-Za-z0-9_-]{1,64}$/)
+  .brand('AccountRef')
+export type AccountRef = z.infer<typeof AccountRef>
+export type AccountOf = Readonly<{ ref: AccountRef; label: string }>
+
+/** The connection's account as the operation sees it: `ref` is parsed again when the Hub opens the connection, and null for an account of kind `none`. */
+export type Account = Readonly<{ ref: AccountRef | null }>
+
 export type Operation<I, O, C extends OperationClass = OperationClass> = Readonly<{
   id: OperationId
   class: C // required, no default
@@ -77,7 +93,7 @@ export type Operation<I, O, C extends OperationClass = OperationClass> = Readonl
   // The smallest input, for Testar and the conformance, from the values its `from` read
   // (pedidos needs a company code); null when there is nothing to read (impostos with no pedido).
   probe(earlier: ReadonlyMap<OperationId, unknown>): I | null
-  request(input: I): ProviderRequest
+  request(input: I, account: Account): ProviderRequest
   answer(answer: ProviderAnswer): Answered<O>
 }>
 
@@ -93,7 +109,29 @@ export function defineOperation<I, O, C extends OperationClass>(
   })
 }
 
+/** The read: the path with its query, a key left undefined is not sent; `headers` are fixed, public ones. */
+export function get(
+  path: `/${string}`,
+  query: Readonly<Record<string, string | number | boolean | undefined>> = {},
+  headers?: Readonly<Record<string, string>>,
+): ProviderRequest {
+  const set = Object.entries(query).flatMap(([name, value]) =>
+    value === undefined ? [] : [[name, String(value)] as const],
+  )
+  return {
+    method: 'GET',
+    path,
+    query: Object.fromEntries(set),
+    body: undefined,
+    ...(headers === undefined ? {} : { headers }),
+  }
+}
+
 /** The only way a request is built from an input: the operation's own schema parses it first, so a refused input never reaches `request`. */
-export function requestOf<I>(operation: Operation<I, unknown>, input: unknown): ProviderRequest {
-  return operation.request(operation.input.parse(input))
+export function requestOf<I>(
+  operation: Operation<I, unknown>,
+  input: unknown,
+  account: Account,
+): ProviderRequest {
+  return operation.request(operation.input.parse(input), account)
 }

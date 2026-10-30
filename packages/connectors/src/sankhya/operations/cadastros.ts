@@ -1,8 +1,8 @@
 import { z } from 'zod'
 import type { OperationId } from '../../kernel/operation.ts'
-import { defineOperation } from '../../kernel/operation.ts'
+import { defineOperation, get } from '../../kernel/operation.ts'
 import { restAnswer } from '../answers.ts'
-import { Code, DateTime, get, maybe, Page } from './shared.ts'
+import { Code, DateTime, maybe, Page } from './shared.ts'
 
 const Empresas = z.object({
   empresas: z.array(

@@ -1,5 +1,4 @@
 import { z } from 'zod'
-import type { ProviderRequest } from '../../kernel/operation.ts'
 
 /** A field the API may leave out or send as null: either way the kit hands on `null`. */
 export function maybe<T extends z.ZodType>(schema: T) {
@@ -24,14 +23,3 @@ export const Metadados = z.object({
   totalPaginas: Code,
   possuiMaisPaginas: z.boolean(),
 })
-
-/** The REST read: the path with its query, a key left undefined is not sent. */
-export function get(
-  path: `/${string}`,
-  query: Readonly<Record<string, string | number | boolean | undefined>>,
-): ProviderRequest {
-  const set = Object.entries(query).flatMap(([name, value]) =>
-    value === undefined ? [] : [[name, String(value)] as const],
-  )
-  return { method: 'GET', path, query: Object.fromEntries(set), body: undefined }
-}

@@ -1,7 +1,7 @@
 import { z } from 'zod'
-import { defineOperation } from '../../kernel/operation.ts'
+import { defineOperation, get } from '../../kernel/operation.ts'
 import { restAnswer } from '../answers.ts'
-import { Code, get, maybe, Page } from './shared.ts'
+import { Code, maybe, Page } from './shared.ts'
 
 const Estoque = z.object({
   estoque: z.array(

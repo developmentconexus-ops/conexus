@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { createServer } from 'node:http'
 import { test } from 'node:test'
-import { fetchText } from './spec-source.ts'
+import { fetchText } from './page.ts'
 
 async function serving(
   handle: Parameters<typeof createServer>[1],
