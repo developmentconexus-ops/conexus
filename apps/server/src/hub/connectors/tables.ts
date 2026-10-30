@@ -4,6 +4,7 @@ import {
   bytea,
   check,
   foreignKey,
+  integer,
   jsonb,
   pgPolicy,
   pgSchema,
@@ -14,7 +15,7 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core'
 import { SCOPE_ROLES, scoped } from '../../platform/database.ts'
-import { company, policy } from '../identity/public.ts'
+import { company, member, policy } from '../identity/public.ts'
 
 // The connectors' own schema in the Hub's database (data D1). A connection belongs to a company and
 // leaves with it; its credential is sealed, and only connectors.sealed_of reads it (Grant A, as builder).
@@ -51,6 +52,15 @@ export const connection = connectors.table(
     lastTest: jsonb('last_test'),
     // The creation's Idempotency-Key (code C37).
     attemptKey: text('attempt_key').notNull(),
+    // Bumped by every write of `sealed` that other writers must notice: a refresh stores only on
+    // the revision it read, and Conectar de novo raises it (code C38).
+    revision: integer('revision').notNull().default(0),
+    // The lease of an OAuth key's refresh: one refresh at a time (security S34, data D25).
+    refreshUntil: instant('refresh_until'),
+    // The provider's account id (AccountRef) and its name as the provider shows it; both null for a
+    // connector whose account is `none`.
+    accountRef: text('account_ref'),
+    accountLabel: text('account_label'),
   },
   (table) => [
     foreignKey({
@@ -72,6 +82,16 @@ export const connection = connectors.table(
       sql`char_length(${table.name}) BETWEEN 1 AND 60 AND ${table.name} = btrim(${table.name})`,
     ),
     check('connection_state', sql`${table.state} IN ('NEW', 'ACTIVE', 'NEEDS_REAUTH')`),
+    // One provider account is one connection, across companies: the index ignores the row policy,
+    // and its 23505 does not say whose row it met.
+    uniqueIndex('connection_account_key')
+      .on(table.connectorId, table.accountRef)
+      .where(sql`${table.accountRef} IS NOT NULL`),
+    check(
+      'connection_account',
+      sql`(${table.accountRef} IS NULL) = (${table.accountLabel} IS NULL)
+        AND (${table.accountLabel} IS NULL OR char_length(${table.accountLabel}) BETWEEN 1 AND 120)`,
+    ),
     check('connection_connector_id', sql`${table.connectorId} ~ '^[a-z][a-z0-9-]{1,31}$'`),
     policy(SCOPE_ROLES.COMPANY, 'all', sql`company_id = ${scoped.companyId}`),
     pgPolicy('connection_seals_select', {
@@ -79,5 +99,50 @@ export const connection = connectors.table(
       to: 'hub_connection_seals',
       using: sql`true`,
     }),
+  ],
+)
+
+/**
+ * An OAuth authorization between its start and its return: the PKCE verifier, sealed, for the one
+ * person who started it. It is spent once (security S22) and lives as long as the provider's code
+ * (decision 0049). `connectionId` is set for Conectar de novo, with the connection's `revision` at
+ * the start; `name` is set for a first link.
+ */
+export const connectionSignIn = connectors.table(
+  'connection_sign_in',
+  {
+    id: uuid('id').primaryKey(),
+    companyId: text('company_id').notNull(),
+    personId: text('person_id').notNull(),
+    connectorId: text('connector_id').notNull(),
+    connectionId: uuid('connection_id'),
+    name: text('name'),
+    connectionRevision: integer('connection_revision'),
+    sealed: bytea('sealed').notNull(),
+    keyId: text('key_id').notNull(),
+    expiresAt: instant('expires_at').notNull(),
+  },
+  (table) => [
+    foreignKey({
+      name: 'connection_sign_in_member_fkey',
+      columns: [table.companyId, table.personId],
+      foreignColumns: [member.organizationId, member.userId],
+    }).onDelete('cascade'),
+    foreignKey({
+      name: 'connection_sign_in_connection_id_fkey',
+      columns: [table.connectionId],
+      foreignColumns: [connection.id],
+    }).onDelete('cascade'),
+    check(
+      'connection_sign_in_target',
+      sql`(${table.connectionId} IS NULL) <> (${table.name} IS NULL)
+        AND (${table.connectionId} IS NULL) = (${table.connectionRevision} IS NULL)`,
+    ),
+    policy(
+      SCOPE_ROLES.COMPANY,
+      'all',
+      sql`company_id = ${scoped.companyId}
+      and (person_id = ${scoped.personId} or ${scoped.personId} is null)`,
+    ),
   ],
 )
