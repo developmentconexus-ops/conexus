@@ -119,8 +119,15 @@ tirar (o Magis5, por exemplo, chama o Mercado Livre para tirar a autorização a
   fora, o Desligar falha ou apaga mesmo assim.
 - Veredito: `Y1` nativo (o Desligar da 19); `Y2` embrulhado, um passo a mais no kit.
 
-**O tamanho.** Cerca de 3.300 linhas de código, abaixo do teto de 4.000 da regra L2. As 27 leituras
-e o Mercado Livre de mentira são mais da metade.
+**O tamanho.** Cerca de 2.650 linhas de código, abaixo do teto de 4.000 da regra L2.
+
+**O que mudou depois da aprovação** (2026-10-30, a opção B do estudo do Sankhya de verdade, decidida
+pelo firstmate sob as suas palavras "Fazer o básico bem feito [...] em vez de querer complicar"):
+cada leitura do Mercado Livre diz só a rota, a entrada, onde está a lista e como pagina, e as linhas
+chegam como o Mercado Livre as mandou, com o envelope conferido; não há um formato campo a campo
+escrito por nós, que o fornecedor de verdade desmentiria (o Sankhya desmentiu). Os dados pessoais do
+comprador continuam saindo. O formato real das páginas do Mercado Livre é medido no seu primeiro uso
+(o roteiro, passo 3), e o dublê passa a ter esse formato. Por isso o código fica menor.
 
 ## As unidades
 
@@ -135,9 +142,9 @@ U0 e U1 correm em paralelo: não dividem pasta. Podem começar logo depois da ap
 (regra L1), porque o kit e o Hub da 19 já estão no `main`; uma unidade cujo arquivo a rodada de
 consertos da 19 tocar espera essa rodada entrar. A U3 espera a U4 da 19 entrar no `main`.
 
-**Orçamento de código alterado.** U0: ~1.950 (kit OAuth ~150, definição e respostas ~120, 27
-leituras ~1.150, dublê ~450, conferência ~80). U1: ~120. U2: ~830. U3: ~380. Total da etapa:
-~3.280. A skill, os testes e os gerados ficam fora da conta.
+**Orçamento de código alterado.** U0: ~1.320 (kit OAuth ~150, definição e respostas ~120, 27
+leituras ~620, dublê ~350, conferência ~80). U1: ~120. U2: ~830. U3: ~380. Total da etapa:
+~2.650. A skill, os testes e os gerados ficam fora da conta.
 
 ## Os critérios de aceite
 
@@ -165,7 +172,7 @@ leituras ~1.150, dublê ~450, conferência ~80). U1: ~120. U2: ~830. U3: ~380. T
 | 20 | U3 | Num navegador de verdade (Chrome e WebKit, 1366 e 390, os dois temas): **Ligar** vai ao consentimento do dublê e volta; a página mostra a conta e testa sozinha; a autorização recusada no dublê mostra a frase e o `native`; a ligação recusada mostra **Conectar de novo** e volta a funcionar; o membro não tem botões | QA (`conexus-qa`), o relatório do pull request da etapa | must |
 | 21 | U0 | Cada leitura tem a sua rota na página da documentação que ela cita, baixada na hora; uma operação cuja rota não está na página falha | `mercado-livre/docs.test.ts` (`MERCADO_LIVRE_DOCS_ONLINE=1`, `npm run test:docs -w @conexus/connectors`) | must |
 | 22 | U0 | `mensagensDoPacote` sempre manda `mark_as_read=false`; tirar o parâmetro faz um teste falhar | `mercado-livre/operations.test.ts`, "não marca como lida" | must |
-| 23 | U0 | Nenhuma saída de leitura leva e-mail, telefone, CPF ou CNPJ do comprador, mesmo quando o dublê os manda | `mercado-livre/operations.test.ts`, "sem dados do comprador" | must |
+| 23 | U0 | Cada leitura devolve as linhas como vieram, com o envelope conferido (`{ linhas, temMais }`): um campo a mais ou de outro tipo numa linha passa; a lista faltando ou de outro tipo é `UNREADABLE`; e nenhuma linha leva e-mail, telefone, CPF ou CNPJ do comprador, mesmo quando o dublê os manda | `mercado-livre/operations.test.ts`, "sem dados do comprador" | must |
 | 24 | U3 | A volta com `state` faltando ou estragado mostra "Esse endereço não é de uma ligação." e não chama o Hub; a volta com `error=access_denied` manda `{ refused: true }` e mostra "Você não autorizou o Conexus no <conector>."; a página troca o seu endereço na história antes de chamar o Hub, então voltar não manda o código de novo | `apps/web/src/hub/connectors/sign-in-return.test.tsx` | must |
 | 25 | U3 | Um conector `oauth2_code` abre a janela só com o nome e **Continuar no <conector>**, nunca campos; um `client_credentials` com `NEEDS_REAUTH` abre a janela das chaves com o nome travado e manda `PUT …/credential` | `apps/web/src/hub/connectors/integrations-oauth.test.tsx` | must |
 | 26 | Fundador | O roteiro, passos 1 a 7, no Hub de verdade com o app e a conta dele (fora da CI, S40) | o uso, no livro de aprovações | must |
@@ -250,7 +257,7 @@ estante tem conector do Mercado Livre.
 | Conectar de novo | U2, U3 | a 19 o prometeu "para todos os tipos" (o seu cartão, "Fica de fora") | Mastra Connect `needs_reauth`; Composio `EXPIRED` | autorizar de novo a mesma ligação | embrulhado: OAuth, uma autorização com `connectionId`; chaves, `PUT …/credential` na mesma ligação | critérios 16, 17, 25 | `V2` | — |
 | Uma conta do fornecedor numa ligação só | U1, U2 | `Connector.account` só `{ kind: 'none' }` (`kernel/definition.ts:14-18`) | Activepieces `getConnectionIdentifier` (`packages/pieces/framework/src/lib/property/authentication/common.ts:23`), sem chave única; o Mercado Livre "Permitimos usar apenas o último REFRESH_TOKEN gerado" | o conector diz de que conta é a chave | embrulhado: `{ kind: 'reported', exclusive: true, who }`; chave única `(connector_id, account_ref)`; o 23505 vira `CONNECTION_ACCOUNT_ELSEWHERE` sem nomear a outra empresa (S10) | critério 18 | `U1` | — |
 | O Testar de uma ligação OAuth | U2 | `hub/connectors/probe.ts:58-143`: `executor.login`, cada leitura em ordem, `TOKEN_EXPIRED` → login de novo uma vez | Airbyte `check`; Nango `verification.endpoints` | — | embrulhado: o login vira "a chave de acesso" (`tokens.ts`), a selada enquanto vive, senão uma renovação com trava; 401 → uma renovação forçada → repete | critérios 14, 19 | não precisa | — |
-| As leituras | U0 | as 23 do Sankhya (`sankhya/operations/*`) | as páginas do Mercado Livre, 2026-10-29 (a lista na U0) | — | nativo: 27 leituras tipadas em 11 assuntos; o id do vendedor chega pelo segundo argumento de `request` | critérios 4, 21 | `T1` | `mercado-livre/operations/{conta,anuncios,vendas,envios,perguntas,mensagens,reclamacoes,promocoes,metricas,faturamento,mercado,index}.ts` |
+| As leituras | U0 | as 23 do Sankhya (`sankhya/operations/*`) | as páginas do Mercado Livre, 2026-10-29 (a lista na U0) | — | nativo: 27 leituras em 11 assuntos, cada uma com a rota, a entrada, a chave da lista e a paginação, e as linhas como vieram com o envelope conferido (a opção B do estudo do Sankhya de verdade, 2026-10-30); o id do vendedor chega pelo segundo argumento de `request` | critérios 4, 21 | `T1` | `mercado-livre/operations/{conta,anuncios,vendas,envios,perguntas,mensagens,reclamacoes,promocoes,metricas,faturamento,mercado,index}.ts` |
 | A conferência com a documentação | U0 | `sankhya/spec-source.ts:4-6`: as páginas baixadas na hora, nunca guardadas | nenhuma faz: o Mercado Livre não publica OpenAPI nem `llms.txt` (`/llms.txt` 404; nenhum `openapi` nas 221 páginas) | — | remendo: um teste baixa, na hora, a página que cada leitura cita e confere que a rota está no texto; mais fraco que o do Sankhya (sem esquema de resposta) | `docs/decisions/0057` (escrita pela U2), critério 21 | a palavra da 19, "não guardar e baixar na hora" | `mercado-livre/docs-source.ts`, `docs.test.ts` |
 | O Mercado Livre de mentira | U0 | `sankhya/fake.ts` (`node:http` em 127.0.0.1) | o Mercado Livre não tem ambiente de testes (`realizacao-de-testes`) | — | embrulhado: `fake.ts` com `/authorization`, `/oauth/token`, `/users/me` e as 27 leituras, com chaves para cada recusa | critérios 4, 5, 11 a 15 | não precisa | `mercado-livre/fake.ts`, `fake-data.ts` |
 | Uma leitura que escreve | U0 | — | o Mercado Livre, `mensagens-post-venda`: "as mensagens serão marcadas como lidas. Caso você não queira … mark_as_read=false" | **documentado** | embrulhado: a leitura manda sempre `mark_as_read=false` | critério 22 | não precisa | — |
@@ -270,6 +277,8 @@ arquivo.
   por isso, ou o executor de tarefas da 20.2.
 - Uma resposta de renovação perdida depois do giro força Conectar de novo. Gatilho: um
   `CONNECTION_REFRESH_UNANSWERED` seguido de `NEEDS_REAUTH` no log.
+- A forma real das páginas do Mercado Livre não foi medida (nenhuma chamada ao Mercado Livre antes
+  do uso). Gatilho: o primeiro uso do fundador, que a mede; o dublê passa a ela.
 - A conferência com a documentação não tem esquema de resposta. Gatilho: uma leitura falhando numa
   conta de verdade; a resposta, sem dado da empresa, vira dado do dublê.
 - A troca do Secret do app: trocar o arquivo e reiniciar dentro dos 7 dias em que o Mercado Livre
@@ -366,8 +375,15 @@ export function requestOf<I>(operation: Operation<I, unknown>, input: unknown, a
   `mercado-livre/definition.ts`; a regra "uma conta numa ligação só" é `exclusive: true`, lida pelo
   Hub (U1, U2), nunca escrita em outro lugar.
 - **O esquema Zod de cada entrada de fora:** `answer` (`access_token`, `refresh_token`,
-  `expires_in`, `user_id` ignorado), `who.answer` (`/users/me`: `id` como texto, `nickname`), e a
-  saída de cada leitura, como as do Sankhya.
+  `expires_in`, `user_id` ignorado), `who.answer` (`/users/me`: `id` como texto, `nickname`), e o
+  envelope de cada leitura: `z.looseObject` com a chave da lista e a paginação; cada linha
+  `z.looseObject({})`, sem esquema por campo; a saída é `{ linhas: Record<string, unknown>[],
+  temMais: boolean | null }`, a mesma das leituras do Sankhya depois da opção B da 19. O ajudante
+  que monta essa saída é um só, no kit (C26): se a correção da 19 o deixou em `sankhya/`, a U0 o
+  move para `kernel/rows.ts` sem mudar o que ele faz. Um objeto único (`/users/me`, `/orders/{id}`)
+  vem como lista de uma linha. Os campos de identidade que um `probe` lê (`id`, `pack_id`,
+  `shipping.id`, `user_product_id`, `key`) são lidos com o seu próprio esquema, com coerção de
+  texto e número.
 - `readGrant` lê o `error` do corpo (texto); 2xx no esquema é `OK`; 2xx fora do esquema é
   `UNREADABLE` com `body: null` (como `readToken`, `auth.ts:91-95`); fora de 2xx, `error` na lista
   `grant` → `GRANT_REFUSED`, na lista `app` → `APP_REFUSED`, senão `UNREADABLE`, sempre com `native`
@@ -446,7 +462,12 @@ sem skill). Leia `pstack:typescript-best-practices` para os tipos.
    `qualidade` de `anuncios`, `estoque` de `anunciosDetalhe`, `estoqueFull` de `anunciosDetalhe`,
    `maisVendidos` e `tarifaDeVenda` de `anunciosDetalhe`). As respostas: 401 → `TOKEN_EXPIRED`; 403
    → `REFUSED`; o 206 com `X-Content-Missing` em pedidos → `UNREADABLE`, nunca lista vazia; 404 de
-   "não encontrado" só onde a página o documenta, como o Sankhya (`answers.ts`).
+   "não encontrado" só onde a página o documenta, como o Sankhya (`answers.ts`). Cada leitura declara
+   a chave da lista (`results`, `orders`, `questions`, `data`… como a página escreve) e a
+   paginação: `paging.total` com `offset` e `limit` (anúncios, pedidos, perguntas, reclamações),
+   `scroll_id` na busca `scan`, ou nenhuma (`temMais: null`). Os dados do comprador saem por uma
+   lista `omit` de chaves da leitura (`buyer.email`, `buyer.phone`, `buyer.billing_info`…), aplicada
+   a cada linha antes de ela sair; o resto da linha passa como veio.
 7. `mercado-livre/fake.ts` e `fake-data.ts`: `node:http` em 127.0.0.1, como `sankhya/fake.ts`;
    `/authorization` responde 302 para o `redirect_uri` com `code` e `state` (chaves: `refuse` →
    `error=access_denied`; `operator` → a troca dá 400 `invalid_operator_user_id`; `account(ref,
@@ -455,14 +476,17 @@ sem skill). Leia `pstack:typescript-best-practices` para os tipos.
    chaves `revoke`, `invalidClient`, `slow(ms)`, `rateLimited`; um contador de renovações);
    `/users/me`; as 27 leituras com dados inventados (S40), um grupo de permissão recusável (403
    `PA_UNAUTHORIZED_RESULT_FROM_POLICIES`), e `expireAccess()` → 401. Os dados do comprador vão no
-   dublê (para o critério 23 provar que saem).
+   dublê (para o critério 23 provar que saem). As linhas do dublê têm a forma das páginas da
+   documentação até o primeiro uso do fundador; nesse uso, a forma real de cada página (as chaves e
+   os tipos, nunca um valor) é medida e o dublê passa a ela, num pull request de conserto (S40).
 8. `mercado-livre/docs-source.ts` e `docs.test.ts`: como `sankhya/spec-source.ts` (as páginas
    públicas baixadas na hora com intervalo, teto de tempo e de bytes; nada guardado), com
    `MERCADO_LIVRE_DOCS_ONLINE=1`; cada leitura tem a sua rota (o método e o caminho, com os `{…}` como
    o texto da página os escreve) no texto da página que cita.
 9. A skill em `mercado-livre/skill/`, `SKILL.md` e uma referência por assunto, como a do Sankhya:
    o que cada leitura responde, os limites de página, as janelas (pedidos 12 meses, perguntas sem
-   resposta 7 meses) e o aviso de que nenhuma escrita existe.
+   resposta 7 meses), que as linhas vêm como o Mercado Livre as manda (o app parseia o que usa na
+   sua fronteira, C27) e o aviso de que nenhuma escrita existe.
 
 ### Como se prova
 
