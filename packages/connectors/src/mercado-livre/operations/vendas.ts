@@ -9,7 +9,7 @@ const BUYER = ['buyer'] as const
 export const pedidos = readOf({
   id: 'pedidos',
   subject: 'vendas',
-  docs: 'gerenciamento-de-vendas',
+  docs: 'pedidos-e-opinioes',
   summary:
     'Lista os pedidos do vendedor (status, datas, valores, itens e o envio), uma página por chamada (até 50). A janela dos pedidos é de 12 meses; use o status e as datas para filtrar.',
   label: 'Pedidos',

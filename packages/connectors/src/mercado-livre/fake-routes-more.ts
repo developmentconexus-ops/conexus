@@ -1,34 +1,65 @@
 import type { Route } from './fake-data.ts'
-import { BUYER, CLAIM, ITEMS, ORDER, PACK, paging, SELLER, SELLER_PATH } from './fake-data.ts'
+import {
+  BUYER,
+  CLAIM,
+  ITEMS,
+  ORDER,
+  PACK,
+  pageOf,
+  paging,
+  SELLER,
+  SELLER_PATH,
+} from './fake-data.ts'
+
+const QUESTIONS = Array.from({ length: 12 }, (_, index) => ({
+  id: 9000000001 + index,
+  text: `Tem na cor azul? (${index + 1})`,
+  status: 'UNANSWERED',
+  date_created: '2026-09-11T09:00:00.000-03:00',
+  item_id: ITEMS[0],
+  seller_id: Number(SELLER.ref),
+  from: {
+    id: BUYER.id,
+    answered_questions: 3,
+    nickname: BUYER.nickname,
+    email: BUYER.email,
+  },
+  answer: null,
+}))
+
+const PERIODS = Array.from({ length: 14 }, (_, index) => {
+  const month = String(index + 1).padStart(2, '0')
+  return {
+    key: `2025-${month}-01`,
+    period: { date_from: `2025-${month}-01`, date_to: `2025-${month}-28` },
+    amount: 120.5 + index,
+    unpaid_amount: 0,
+    expiration_date: `2025-${month}-28`,
+    period_status: 'CLOSED',
+  }
+})
+
+const NEEDS_DOCUMENT_TYPE = {
+  status: 400,
+  body: { message: 'document_type is required', error: 'bad_request', status: 400 },
+}
 
 export const MORE_ROUTES: readonly Route[] = [
   {
     name: 'perguntas',
     group: 'perguntas',
     pattern: /^\/questions\/search$/,
-    answer: ({ query }) => ({
-      body: {
-        total: 1,
-        limit: Number(query.get('limit') ?? 50),
-        questions: [
-          {
-            id: 9000000001,
-            text: 'Tem na cor azul?',
-            status: 'UNANSWERED',
-            date_created: '2026-09-11T09:00:00.000-03:00',
-            item_id: ITEMS[0],
-            seller_id: Number(SELLER.ref),
-            from: {
-              id: BUYER.id,
-              answered_questions: 3,
-              nickname: BUYER.nickname,
-              email: BUYER.email,
-            },
-            answer: null,
-          },
-        ],
-      },
-    }),
+    answer: ({ query }) => {
+      const page = pageOf(QUESTIONS, query, 50)
+      return {
+        body: {
+          total: page.total,
+          limit: page.limit,
+          questions: page.rows,
+          filters: { limit: page.limit, offset: page.offset, api_version: '4' },
+        },
+      }
+    },
   },
   {
     name: 'tempoDeResposta',
@@ -162,35 +193,45 @@ export const MORE_ROUTES: readonly Route[] = [
     name: 'periodosDeFaturamento',
     group: 'faturamento',
     pattern: /^\/billing\/integration\/monthly\/periods$/,
-    answer: () => ({
-      body: {
-        results: [
-          {
-            key: '2026-09-01',
-            period: { date_from: '2026-09-01', date_to: '2026-09-30' },
-            amount: 120.5,
-            unpaid_amount: 0,
-            expiration_date: '2026-10-10',
-          },
-        ],
-      },
-    }),
+    answer: ({ query }) => {
+      if (query.get('document_type') === null) return NEEDS_DOCUMENT_TYPE
+      const page = pageOf(PERIODS, query, 6)
+      return {
+        body: { offset: page.offset, limit: page.limit, total: page.total, results: page.rows },
+      }
+    },
   },
   {
     name: 'cobrancasDoPeriodo',
     group: 'faturamento',
     pattern: /^\/billing\/integration\/periods\/key\/(?<key>[A-Za-z0-9_-]+)\/summary\/details$/,
-    answer: () => ({
-      body: {
-        bill_includes: { total_amount: 120.5 },
-        results: [
-          {
-            legal_document_number: '000000001',
-            charge_info: { detail_amount: 120.5, detail_type: 'CHARGE' },
+    answer: ({ match, query }) =>
+      query.get('document_type') === null
+        ? NEEDS_DOCUMENT_TYPE
+        : {
+            body: {
+              user: { nickname: SELLER.label },
+              period: {
+                date_from: '2025-01-01',
+                date_to: '2025-01-28',
+                expiration_date: '2025-01-28',
+                key: match.groups?.key,
+              },
+              bill_includes: {
+                total_amount: 120.5,
+                total_perceptions: 0,
+                bonuses: [],
+                charges: [{ label: 'Tarifa de venda', amount: 120.5, type: 'CHARGE', groupId: 1 }],
+              },
+              payment_collected: {
+                operation_discount: 0,
+                total_payment: 120.5,
+                total_credit_note: 0,
+                total_collected: 120.5,
+                total_debt: 0,
+              },
+            },
           },
-        ],
-      },
-    }),
   },
   {
     name: 'notaFiscalDoPedido',

@@ -12,7 +12,7 @@ The connection is read only. There is no operation that writes, and a refusal is
 ## Rules for every read
 
 - Every read answers `{ linhas, temMais }`: the rows as Mercado Livre sent them (a field the kit does not know passes, and one object comes as a list of one), and whether another page follows (`temMais` is `null` when the route does not say). The app parses the fields it uses at its own boundary, never the kit.
-- One page per call. A list ends when `offset + limit` reaches `total` (`paging`), or when a `scroll_id` search returns no rows. Read the next page only when the person's question needs it.
+- One page per call. A list ends when `offset + limit` reaches `total` (`paging`, or the same counts at the top of the answer), and `temMais` says so. Read the next page only when the person's question needs it.
 - Each list has its own page size cap and its own window; the part for the subject gives them.
 - A refusal comes with what Mercado Livre answered. A permission the app lacks (`PA_UNAUTHORIZED_RESULT_FROM_POLICIES`) refuses only that group of reads; the others still work.
 - An answer cut by Mercado Livre (a partial `206`) is unreadable, never a shorter list. Say so; do not use it.

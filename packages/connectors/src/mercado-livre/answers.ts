@@ -26,18 +26,36 @@ const Row = z.union([
   z.union([z.string(), z.number()]).transform((id) => ({ id })),
 ])
 
-/** `paging` (or the top level) says `total`, `offset` and `limit`; a `scroll_id` says another page follows while rows keep coming. */
-const Paged = z.looseObject({
-  scroll_id: z.string().nullish(),
-  paging: z.looseObject({ total: z.number(), offset: z.number(), limit: z.number() }).optional(),
+const Counts = z.looseObject({ total: z.number(), offset: z.number(), limit: z.number() })
+
+/** The offset a route that counts at the top level keeps in `filters` (the questions search). */
+const Filtered = z.looseObject({
+  total: z.number(),
+  limit: z.number(),
+  filters: z.looseObject({ offset: z.number() }),
 })
 
-function moreOf(body: unknown, rows: number): boolean | null {
-  const paged = Paged.safeParse(body)
-  if (!paged.success) return null
-  if (typeof paged.data.scroll_id === 'string') return rows > 0
-  const { paging } = paged.data
-  return paging === undefined ? null : paging.offset + paging.limit < paging.total
+/**
+ * Whether another page follows, from the counts as the route sends them: `paging` (orders, claims),
+ * or the top level (billing periods: `total`, `offset`, `limit`; questions: `total`, `limit` and
+ * the offset in `filters`). A route that sends none says null.
+ */
+function moreOf(body: unknown): boolean | null {
+  const nested = z.looseObject({ paging: Counts }).safeParse(body)
+  const flat = Counts.safeParse(body)
+  const filtered = Filtered.safeParse(body)
+  const counts = nested.success
+    ? nested.data.paging
+    : flat.success
+      ? flat.data
+      : filtered.success
+        ? {
+            total: filtered.data.total,
+            limit: filtered.data.limit,
+            offset: filtered.data.filters.offset,
+          }
+        : null
+  return counts === null ? null : counts.offset + counts.limit < counts.total
 }
 
 /** The row without the keys named by dotted path (`buyer`, `from.email`): the buyer's personal data never leaves the kit. */
@@ -74,7 +92,7 @@ export function rows({ list, omit = [] }: { list: string | null; omit?: readonly
     const linhas = parsed.data.map((row) =>
       omit.reduce<unknown>((kept, path) => without(kept, path.split('.')), row),
     )
-    return Rows.safeParse({ linhas, temMais: moreOf(body, linhas.length) })
+    return Rows.safeParse({ linhas, temMais: moreOf(body) })
   }
   const output = z.unknown().transform((body, context): Rows => {
     const built = build(body)

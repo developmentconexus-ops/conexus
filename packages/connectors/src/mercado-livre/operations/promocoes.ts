@@ -5,7 +5,7 @@ import { readOf, sellerOf } from './shared.ts'
 export const promocoes = readOf({
   id: 'promocoes',
   subject: 'promocoes',
-  docs: 'gerenciar-promocoes',
+  docs: 'gerenciar-ofertas',
   summary:
     'Lista as promoções e campanhas a que o vendedor pode aderir: tipo, status, nome e datas.',
   label: 'Promoções',

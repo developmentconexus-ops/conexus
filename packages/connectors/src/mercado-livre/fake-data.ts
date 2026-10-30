@@ -9,7 +9,10 @@ export const REDIRECT_URI = 'https://hub.exemplo.test/integrations/return'
 
 export const SELLER = Object.freeze({ ref: '123456789', label: 'PADARIASOL' })
 
-export const ITEMS = ['MLB1000000001', 'MLB1000000002', 'MLB1000000003']
+export const ITEMS = Array.from(
+  { length: 12 },
+  (_, index) => `MLB10000000${String(index + 1).padStart(2, '0')}`,
+)
 export const ORDER = 2000000000001
 export const PACK = 2000000000099
 export const SHIPMENT = 40000000001
@@ -70,6 +73,13 @@ export function paging(total: number, query: URLSearchParams) {
     offset: Number(query.get('offset') ?? 0),
     limit: Number(query.get('limit') ?? 50),
   }
+}
+
+/** The slice of `rows` a request asks for by `offset` and `limit` (`fallback` when it sends none), with the total. */
+export function pageOf<T>(rows: readonly T[], query: URLSearchParams, fallback: number) {
+  const offset = Number(query.get('offset') ?? 0)
+  const limit = Number(query.get('limit') ?? fallback)
+  return { offset, limit, total: rows.length, rows: rows.slice(offset, offset + limit) }
 }
 
 /** One answer of the fake: its body, and an optional status. */

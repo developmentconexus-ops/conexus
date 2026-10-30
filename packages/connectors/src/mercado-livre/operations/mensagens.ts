@@ -6,7 +6,7 @@ import { pacote } from './vendas.ts'
 export const mensagensNaoLidas = readOf({
   id: 'mensagensNaoLidas',
   subject: 'mensagens',
-  docs: 'mensagens-post-venda',
+  docs: 'mensagens-pendentes',
   summary: 'Conta as mensagens de pós-venda ainda não lidas do vendedor, por pedido ou pacote.',
   label: 'Mensagens não lidas',
   input: z.object({}),
