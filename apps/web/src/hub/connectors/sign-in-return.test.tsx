@@ -149,7 +149,7 @@ test('LINKED: abre a página da ligação, que testa sozinha', async () => {
   server.use(...hub.handlers)
   open(`?code=abc&state=${STATE}`)
   expect(await screen.findByRole('heading', { name: 'Loja 2' })).toBeTruthy()
-  expect(await screen.findByText('conta PADARIASOL')).toBeTruthy()
+  expect(await screen.findByText(/ · conta PADARIASOL/)).toBeTruthy()
   expect(await screen.findByText('Lê 8 de 8 assuntos inteiros')).toBeTruthy()
   expect(hub.sent.map((one) => one.path)).toContain(
     `/api/companies/${COMPANY.id}/connections/${connection.id}/test`,

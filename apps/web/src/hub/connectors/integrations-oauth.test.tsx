@@ -141,5 +141,5 @@ test('a lista e a página mostram a conta do fornecedor', async () => {
   open([one])
   expect(await screen.findByText(/conta PADARIASOL/)).toBeTruthy()
   fireEvent.click(screen.getByRole('link', { name: /Loja 2/ }))
-  expect(await screen.findByText('conta PADARIASOL')).toBeTruthy()
+  expect(await screen.findByText(/ · conta PADARIASOL/)).toBeTruthy()
 })
