@@ -62,7 +62,7 @@ test('testar: a fonte recusada deixa quem depende dela sem ser chamado, com o mo
   const waiting = checks.filter((check) => check.outcome === 'SOURCE_UNREAD')
   assert.ok(waiting.length >= 8)
   assert.equal(checks.find((check) => check.id === 'pedidos')?.source, 'Empresas')
-  assert.equal(checks.find((check) => check.id === 'impostosDoPedido')?.source, 'Pedidos')
+  assert.equal(checks.find((check) => check.id === 'notaFiscal')?.source, 'Notas fiscais')
   const refused = checks.find((check) => check.id === 'empresas')
   assert.equal(refused?.outcome, 'REFUSED')
   assert.equal(Object(refused).native.status, 403)
@@ -85,7 +85,7 @@ test('testar: a fonte que leu vazia deixa o dependente em nada para ler', async 
   const checks = checksOf(tested)
   assert.equal(checks.find((check) => check.id === 'empresas')?.outcome, 'READS')
   assert.equal(checks.find((check) => check.id === 'pedidos')?.outcome, 'NOTHING_TO_READ')
-  assert.equal(checks.find((check) => check.id === 'impostosDoPedido')?.outcome, 'NOTHING_TO_READ')
+  assert.equal(checks.find((check) => check.id === 'notaFiscal')?.outcome, 'NOTHING_TO_READ')
   assert.ok(checks.every((check) => check.outcome !== 'SOURCE_UNREAD'))
 })
 

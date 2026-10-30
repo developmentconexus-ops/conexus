@@ -1,7 +1,8 @@
-import { readdirSync, readFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { z } from 'zod'
 import { clientCredentials } from '../kernel/auth.ts'
 import { defineConnector } from '../kernel/definition.ts'
+import { readSkill } from '../kernel/skill.ts'
 import { sankhyaDoor } from './door.ts'
 import { sankhyaOperations, sankhyaSubjects } from './operations/index.ts'
 
@@ -16,19 +17,6 @@ const INTEGRATION_KEYS = {
   text: 'Gerado na Área do Desenvolvedor do Sankhya, no Componente de Integração (Gerar novas chaves).',
   url: KEYS_GUIDE,
 } as const
-
-/** The skill as its folder holds it: `SKILL.md`, and each part of `references/` by file name. */
-function readSkill() {
-  const references = new URL('references/', SKILL)
-  return {
-    content: readFileSync(new URL('SKILL.md', SKILL), 'utf8'),
-    references: Object.fromEntries(
-      readdirSync(references)
-        .sort()
-        .map((name) => [name, readFileSync(new URL(name, references), 'utf8')]),
-    ),
-  }
-}
 
 export const sankhya = defineConnector({
   id: 'sankhya',
@@ -81,5 +69,5 @@ export const sankhya = defineConnector({
   subjects: { porta: 'Porta de leitura', ...sankhyaSubjects },
   operations: sankhyaOperations,
   readDoor: sankhyaDoor,
-  skill: readSkill(),
+  skill: readSkill(SKILL),
 })

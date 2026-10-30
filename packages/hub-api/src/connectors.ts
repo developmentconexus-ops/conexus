@@ -61,12 +61,22 @@ export const ConnectionList = z.object({
 })
 export type ConnectionList = z.infer<typeof ConnectionList>
 
-/** What the provider said, as it came (founder, 2026-10-29): its status, where its code and message sit, and its body with the request's secrets replaced. */
+/** Why a 2xx did not read, never a value from it: past the Hub's cap, or each path whose type was not the one the kit reads. */
+const Unread = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('TOO_LARGE'), limitBytes: z.number().int() }),
+  z.object({
+    kind: z.literal('SHAPE'),
+    issues: z.array(z.object({ path: z.string(), expected: z.string(), received: z.string() })),
+  }),
+])
+
+/** What the provider said, as it came (founder, 2026-10-29): its status, where its code and message sit, and its body with the request's secrets replaced; `reason` when a 2xx did not read. */
 export const Native = z.object({
   status: z.number().int(),
   code: z.string().nullable(),
   message: z.string().nullable(),
   body: z.unknown(),
+  reason: Unread.optional(),
 })
 export type Native = z.infer<typeof Native>
 

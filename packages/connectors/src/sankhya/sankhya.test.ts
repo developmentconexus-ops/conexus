@@ -10,6 +10,8 @@ import { sankhyaFake } from './fake.ts'
 
 runConformance(sankhya, sankhyaFake())
 
+const NO_ACCOUNT = { ref: null }
+
 function operation(id: string): Operation<unknown, unknown> {
   const found = [...sankhya.operations, ...Object.values(sankhya.readDoor ?? {})].find(
     (candidate) => candidate.id === id,
@@ -25,15 +27,29 @@ function envelope(responseBody: unknown, status = '1') {
   return { serviceName: 'x', status, responseBody }
 }
 
-test('o catálogo tem o Sankhya, achado pelo id', () => {
+test('o catálogo tem o Sankhya e o Mercado Livre, o Sankhya achado pelo id', () => {
   assert.deepEqual(
     CONNECTORS.map((connector) => connector.id),
-    ['sankhya'],
+    ['sankhya', 'mercado-livre'],
   )
   assert.equal(connectorOf('sankhya'), sankhya)
   assert.equal(connectorOf('Sankhya'), undefined)
   assert.equal(connectorOf('nope'), undefined)
 })
+
+const INJECTION = {
+  entidade: 'Empresa',
+  campos: ['CODEMP'],
+  pagina: 0,
+  criterio: { expressao: 'this.CODEMP = 1; DELETE FROM TSIEMP', parametros: [] },
+}
+
+const LOADING = {
+  entidade: 'Empresa',
+  campos: ['CODEMP', 'NOMEFANTASIA'],
+  pagina: 2,
+  criterio: { expressao: 'this.CODEMP = ?', parametros: [{ valor: '1', tipo: 'I' as const }] },
+}
 
 test('a porta de leitura só lê', () => {
   const { consultar, carregar } = sankhyaDoor
@@ -52,22 +68,10 @@ test('a porta de leitura só lê', () => {
   ])
     assert.equal(consultar.input.safeParse({ sql }).success, false, sql)
 
-  assert.throws(() => requestOf(sankhyaDoor.consultar, { sql: 'DELETE FROM T' }))
-  assert.throws(() =>
-    requestOf(sankhyaDoor.carregar, {
-      entidade: 'Empresa',
-      campos: ['CODEMP'],
-      pagina: 0,
-      criterio: { expressao: 'this.CODEMP = 1; DELETE FROM TSIEMP', parametros: [] },
-    }),
-  )
+  assert.throws(() => requestOf(sankhyaDoor.consultar, { sql: 'DELETE FROM T' }, NO_ACCOUNT))
+  assert.throws(() => requestOf(sankhyaDoor.carregar, INJECTION, NO_ACCOUNT))
 
-  const loaded = carregar.request({
-    entidade: 'Empresa',
-    campos: ['CODEMP', 'NOMEFANTASIA'],
-    pagina: 2,
-    criterio: { expressao: 'this.CODEMP = ?', parametros: [{ valor: '1', tipo: 'I' }] },
-  })
+  const loaded = carregar.request(LOADING, NO_ACCOUNT)
   assert.equal(loaded.method, 'POST')
   assert.equal(loaded.path, '/gateway/v1/mge/service.sbr')
   assert.deepEqual(loaded.query, {
@@ -101,8 +105,9 @@ test('a porta de leitura só lê', () => {
     )
 
   const services = [
-    consultar.request(consultar.input.parse(consultar.probe(new Map()))).query.serviceName,
-    carregar.request(carregar.input.parse(carregar.probe(new Map()))).query.serviceName,
+    consultar.request(consultar.input.parse(consultar.probe(new Map())), NO_ACCOUNT).query
+      .serviceName,
+    carregar.request(carregar.input.parse(carregar.probe(new Map())), NO_ACCOUNT).query.serviceName,
   ]
   assert.deepEqual(services.sort(), [
     'CRUDServiceProvider.loadRecords',
@@ -112,24 +117,16 @@ test('a porta de leitura só lê', () => {
   assert.ok(Object.values(sankhyaDoor).every((entry) => entry.class === 'read'))
 })
 
-test('as operações prontas leem o envelope', () => {
-  const empresas = { empresas: [{ codigoEmpresa: 1, nomeFantasia: 'A' }] }
+test('as operações prontas leem o envelope e passam as linhas como vieram', () => {
+  const empresas = { empresas: [{ codigoEmpresa: 1, nomeFantasia: 'A', extra: { x: 1 } }] }
   assert.deepEqual(answer('empresas', 200, empresas), {
     kind: 'OK',
-    value: { empresas: [{ codigoEmpresa: 1, nomeFantasia: 'A', razaoSocial: null }] },
+    value: { linhas: empresas.empresas, temMais: null },
   })
-  assert.deepEqual(
-    answer('empresas', 200, { empresas: [{ codigoEmpresa: 1, extra: 'ignored' }] }).kind,
-    'OK',
-  )
-  assert.partialDeepStrictEqual(answer('empresas', 200, { empresas: [{ nomeFantasia: 'A' }] }), {
+  assert.partialDeepStrictEqual(answer('empresas', 200, { empresas: ['A'] }), {
     kind: 'UNREADABLE',
   })
   assert.partialDeepStrictEqual(answer('empresas', 200, 'text'), { kind: 'UNREADABLE' })
-  assert.deepEqual(answer('empresas', 404, { empresas: [] }), {
-    kind: 'OK',
-    value: { empresas: [] },
-  })
   assert.partialDeepStrictEqual(answer('empresas', 404, { message: 'nada' }), {
     kind: 'REFUSED',
   })
@@ -156,50 +153,22 @@ test('as operações prontas leem o envelope', () => {
   assert.partialDeepStrictEqual(answer('empresas', 503, undefined), { kind: 'UNREADABLE' })
 })
 
-test('os pedidos e os impostos saem dos mesmos registros', () => {
-  const item = {
-    sequencia: 1,
-    codigoProduto: 11,
-    quantidade: 2,
-    valorUnitario: 5,
-    valorTotal: 10,
-    cfop: '5102',
-    impostos: [{ tipo: 'icms', aliquota: 18 }],
-  }
-  const pedido = { codigoNota: 1, codigoEmpresa: 1, itens: [item] }
-  const metadados = { paginaAtual: 1, totalPaginas: 1, possuiMaisPaginas: false }
-  const pedidos = answer('pedidos', 200, { registros: [pedido], metadados })
-  assert.equal(pedidos.kind, 'OK')
-  const taxes = answer('impostosDoPedido', 200, { registros: [pedido] })
-  assert.deepEqual(taxes, {
-    kind: 'OK',
-    value: {
-      itens: [
-        {
-          sequencia: 1,
-          codigoProduto: 11,
-          cfop: '5102',
-          ncm: null,
-          cst: null,
-          valorICMS: null,
-          valorIPI: null,
-          impostos: [
-            { tipo: 'icms', cst: null, aliquota: 18, valorBase: null, valorImposto: null },
-          ],
-        },
-      ],
-    },
-  })
-  assert.deepEqual(answer('impostosDoPedido', 200, { registros: [] }), {
-    kind: 'OK',
-    value: { itens: [] },
-  })
-  assert.partialDeepStrictEqual(answer('impostosDoPedido', 403, undefined), {
-    kind: 'REFUSED',
-  })
-  assert.partialDeepStrictEqual(answer('pedidos', 200, { registros: [pedido] }), {
-    kind: 'UNREADABLE',
-  })
+test('os probes encadeiam o código como veio, número ou texto', () => {
+  const nota = operation('notaFiscal')
+  const fromText = new Map([
+    [operation('notasFiscais').id, { linhas: [{ codigoNota: '201' }], temMais: null }],
+  ])
+  assert.deepEqual(nota.probe(fromText), { codigoNota: 201 })
+  const fromNothing = new Map([
+    [operation('notasFiscais').id, { linhas: [{ codigoNota: null }], temMais: null }],
+  ])
+  assert.equal(nota.probe(fromNothing), null)
+  const pedidos = operation('pedidos')
+  const empresas = new Map([
+    [operation('empresas').id, { linhas: [{ codigoEmpresa: 3 }], temMais: false }],
+  ])
+  assert.deepEqual(pedidos.probe(empresas), { codigoEmpresa: 3, page: 0 })
+  assert.deepEqual(operation('contasAReceber').probe(empresas), { codigoEmpresa: 3, page: 1 })
 })
 
 test('a porta lê o envelope: sucesso, recusa do fornecedor e o que não se lê', () => {

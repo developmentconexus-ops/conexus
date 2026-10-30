@@ -92,7 +92,7 @@ test('testar: cada parte, com a sua resposta', async (t) => {
   const tested = Object(working.json()).connection
   assert.equal(tested.state, 'ACTIVE')
   assert.notEqual(tested.testedAt, null)
-  assert.equal(Object(working.json()).checks.length, 25)
+  assert.equal(Object(working.json()).checks.length, 24)
   assert.deepEqual(Object(working.json()).checks[10], {
     id: 'pedidos',
     label: 'Pedidos',
@@ -105,10 +105,7 @@ test('testar: cada parte, com a sua resposta', async (t) => {
   fake.switches.refuse.add('consultar')
   const refused = await testOf(hub, ana, base, connection.id)
   assert.equal(Object(refused.json()).result, 'WORKING')
-  assert.deepEqual(
-    outcomes(refused),
-    reads({ pedidos: 'REFUSED', consultar: 'REFUSED', impostosDoPedido: 'SOURCE_UNREAD' }),
-  )
+  assert.deepEqual(outcomes(refused), reads({ pedidos: 'REFUSED', consultar: 'REFUSED' }))
 
   fake.switches.refuse.clear()
   fake.switches.malformed = true
@@ -220,11 +217,11 @@ test('a lista: o membro lê, nada da credencial sai', async (t) => {
   const read = await call(hub, carla, 'GET', base)
   assert.equal(read.statusCode, 200)
   const list = Object(read.json())
-  assert.equal(list.connectors.length, 1)
+  assert.equal(list.connectors.length, 2)
   const [entry] = list.connectors
   assert.deepEqual(
     [entry.id, entry.name, entry.version, entry.category, entry.reads],
-    ['sankhya', 'Sankhya', '1.0.0', 'ERP', 25],
+    ['sankhya', 'Sankhya', '1.0.0', 'ERP', 24],
   )
   assert.ok(entry.summary.length > 0 && entry.logo.includes('<svg'))
   assert.deepEqual(

@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { NOT_FOUND } from './answers.ts'
 import { sankhya } from './definition.ts'
 
 function answer(id: string, status: number, body: unknown) {
@@ -53,30 +52,102 @@ test('o 403 no corpo que as seis páginas documentam dá o mesmo que o code do g
   )
 })
 
-test('o 404 no formato que o kit espera é a leitura sem linhas; outro 404 não é', () => {
-  const notFound = {
+function measured(details: string, code = 'RESOURCE_NOT_FOUND') {
+  return {
     statusCode: 404,
-    error: { code: 'NOT_FOUND', message: NOT_FOUND },
+    error: { code, message: 'Recurso solicitado não foi encontrado!', details },
   }
-  // The same two keys with another message: a moved route, not an empty list.
-  const framework = { statusCode: 404, error: { message: 'Cannot GET /v1/x' } }
-  const keysOnly = { statusCode: 404, error: 'Not Found' }
-  for (const id of DOCUMENTED) {
-    assert.equal(answer(id, 404, notFound).kind, 'OK', id)
-    assert.partialDeepStrictEqual(answer(id, 404, { message: 'nada' }), { kind: 'REFUSED' }, id)
+}
+
+test('o 404 que o Sankhya manda para uma página sem linhas lê sem linhas em toda leitura; outro 404 não', () => {
+  const empty = measured('Nenhum registro da entidade CabecalhoNota com o identificador informado!')
+  for (const { id } of sankhya.operations) {
+    assert.deepEqual(
+      answer(id, 404, empty),
+      { kind: 'OK', value: { linhas: [], temMais: false } },
+      id,
+    )
+    assert.partialDeepStrictEqual(
+      answer(id, 404, measured('A rota mudou')),
+      { kind: 'REFUSED' },
+      id,
+    )
+    assert.partialDeepStrictEqual(
+      answer(id, 404, measured(empty.error.details, 'OUTRO')),
+      { kind: 'REFUSED' },
+      id,
+    )
+    // What the pages document for a 404 was never what the gateway sent: it stays a refusal.
+    assert.partialDeepStrictEqual(
+      answer(id, 404, { statusCode: 404, error: { message: 'Dados não encontrados' } }),
+      { kind: 'REFUSED' },
+      id,
+    )
     assert.partialDeepStrictEqual(answer(id, 404, undefined), { kind: 'REFUSED' }, id)
-    assert.partialDeepStrictEqual(answer(id, 404, framework), { kind: 'REFUSED' }, id)
-    assert.partialDeepStrictEqual(answer(id, 404, keysOnly), { kind: 'REFUSED' }, id)
+    // The 200 shape of the list with a 404 status is not a list.
+    assert.partialDeepStrictEqual(answer(id, 404, { empresas: [] }), { kind: 'REFUSED' }, id)
   }
-  assert.deepEqual(answer('clientes', 404, notFound), {
+})
+
+test('as linhas passam como vieram; o objeto único é uma lista de um; a página diz se há outra', () => {
+  const vendedores = {
+    vendedores: [
+      { codigoVendedor: 7, tipo: 1 },
+      { codigoVendedor: 8, tipo: 'G' },
+    ],
+  }
+  assert.deepEqual(answer('vendedores', 200, vendedores), {
     kind: 'OK',
-    value: { clientes: [], temMaisRegistros: false },
+    value: { linhas: vendedores.vendedores, temMais: null },
   })
-  assert.deepEqual(answer('contasAPagar', 404, notFound), {
-    kind: 'OK',
-    value: { financeiros: [], pagination: null },
+  const one = { codigoOrdemCarga: 55, 'campo:': 'x' }
+  assert.deepEqual(
+    answer('ordensCarga', 200, { ordensCarga: one, pagination: { hasMore: 'true' } }),
+    { kind: 'OK', value: { linhas: [one], temMais: true } },
+  )
+  assert.deepEqual(
+    answer('contasAPagar', 200, { financeiros: [], pagination: { page: 1, hasMore: false } }),
+    { kind: 'OK', value: { linhas: [], temMais: false } },
+  )
+  assert.deepEqual(
+    answer('precosDoProduto', 200, { produtos: [{ codigoTabela: 1 }], temMaisRegistros: true }),
+    { kind: 'OK', value: { linhas: [{ codigoTabela: 1 }], temMais: true } },
+  )
+})
+
+test('um 2xx que não encaixa diz onde e que tipo veio, nunca um valor nem a frase de sucesso', () => {
+  const body = { mensagem: 'Consulta realizada com sucesso!', data: { codigo: 'VALOR' } }
+  assert.deepEqual(answer('naturezas', 200, { ...body, data: 'VALOR' }), {
+    kind: 'UNREADABLE',
+    native: {
+      status: 200,
+      code: null,
+      message: null,
+      body: null,
+      reason: { kind: 'SHAPE', issues: [{ path: 'data', expected: 'array', received: 'string' }] },
+    },
   })
-  assert.partialDeepStrictEqual(answer('empresas', 404, notFound), { kind: 'REFUSED' })
+  assert.deepEqual(answer('pedidos', 200, { registros: [] }), {
+    kind: 'UNREADABLE',
+    native: {
+      status: 200,
+      code: null,
+      message: null,
+      body: null,
+      reason: {
+        kind: 'SHAPE',
+        issues: [{ path: 'pedido', expected: 'array', received: 'undefined' }],
+      },
+    },
+  })
+  const paging = answer('empresas', 200, { empresas: [], pagination: { hasMore: 'talvez' } })
+  assert.partialDeepStrictEqual(paging, {
+    kind: 'UNREADABLE',
+    native: {
+      reason: { kind: 'SHAPE', issues: [{ path: 'pagination.hasMore', received: 'string' }] },
+    },
+  })
+  assert.ok(!JSON.stringify(paging).includes('talvez'))
 })
 
 test('a recusa leva o que o Sankhya disse, o corpo como veio', () => {

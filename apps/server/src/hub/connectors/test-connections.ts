@@ -65,7 +65,7 @@ export function sealingWith(...lines: string[]) {
   return (config: Config): Config => ({ ...config, sealKeys: parseSealKeys(lines.join('\n')) })
 }
 
-// The two door entries first, then the 23 operations in the definition's order (criterion 10).
+// The two door entries first, then the 22 operations in the definition's order (criterion 10).
 export const CHECK_IDS = [
   'consultar',
   'carregar',
@@ -78,7 +78,6 @@ export const CHECK_IDS = [
   'produtos',
   'gruposProduto',
   'pedidos',
-  'impostosDoPedido',
   'notasFiscais',
   'notaFiscal',
   'devolucoes',
