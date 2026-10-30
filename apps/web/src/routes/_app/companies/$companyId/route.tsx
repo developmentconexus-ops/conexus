@@ -1,5 +1,5 @@
 import { createFileRoute, Outlet, useMatches } from '@tanstack/react-router'
-import { HouseIcon, SettingsIcon } from 'lucide-react'
+import { HouseIcon, PlugIcon, SettingsIcon } from 'lucide-react'
 import { useEffect } from 'react'
 import {
   AccountMenu,
@@ -52,6 +52,16 @@ function HouseFrame() {
             </SidebarMenu>
           </SidebarGroup>
           <RecentProjects companyId={companyId} personId={person.id} />
+          <SidebarGroup>
+            <SidebarMenu>
+              <FrameLink
+                to="/companies/$companyId/integrations"
+                params={params}
+                icon={PlugIcon}
+                label="Integrações"
+              />
+            </SidebarMenu>
+          </SidebarGroup>
         </>
       }
       footer={

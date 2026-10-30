@@ -59,6 +59,7 @@ const RAIL = [
   'Novo projeto',
   PROJECT_NAME,
   'Todos os projetos',
+  'Integrações',
   'Configurações',
   'Conta de Ana Lima',
 ].map((name) => `${name} solid 2px`)
@@ -94,7 +95,7 @@ test('a gaveta aberta pelo teclado prende o Tab, com contorno em cada parada', a
   const page = await open('/', PHONE, HOUSE)
   await page.getByRole('button', { name: 'Abrir navegação' }).focus()
   assert.deepEqual(
-    [...(await presses(page, 'Enter', 1)), ...(await presses(page, 'Tab', 7))],
+    [...(await presses(page, 'Enter', 1)), ...(await presses(page, 'Tab', 8))],
     [...RAIL, 'Fechar navegação solid 2px', 'Início solid 2px'].map((stop) => `${stop} inside`),
   )
   await page.close()
