@@ -2,7 +2,8 @@ import { setTimeout as sleep } from 'node:timers/promises'
 
 // Mercado Livre's public documentation pages, read at run time and never kept. Only the public
 // pages are fetched; no Mercado Livre API is called. The site answers 403 to a plain HTTP client
-// and 200 to a browser, so the pages are read through one (`inBrowser`). It publishes no OpenAPI and
+// and to headless Chromium, and 200 to a normal browser window, so the pages are read through a
+// headed Chromium (`inBrowser`): run it by hand on a desktop, never in CI. It publishes no OpenAPI and
 // no llms.txt, so the check is weaker than Sankhya's: the route is in the text of the page the read
 // cites, and the shape of the answer is not checked.
 
@@ -65,10 +66,10 @@ export async function downloadPages(
   return pages
 }
 
-/** Runs `use` with a page reader that goes through a real browser (Chromium of `playwright-core`), closed after. */
+/** Runs `use` with a page reader that goes through a real browser window (headed Chromium of `playwright-core`), closed after. */
 export async function inBrowser<T>(use: (fetchPage: FetchPage) => Promise<T>): Promise<T> {
   const { chromium } = await import('playwright-core')
-  const browser = await chromium.launch()
+  const browser = await chromium.launch({ headless: false })
   try {
     const page = await browser.newPage({ locale: 'pt-BR' })
     return await use(async (url) => {

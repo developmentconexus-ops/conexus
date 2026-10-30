@@ -187,7 +187,7 @@ function routed(
     headers: a.request.headers,
   })
   if (route.name === 'pedido' && switches.partialOrders)
-    return json(reply.body, 206, { 'x-content-missing': 'true' })
+    return json(reply.body, 206, { 'x-content-missing': 'buyer, feedback' })
   return json(reply.body, reply.status ?? 200, reply.headers)
 }
 

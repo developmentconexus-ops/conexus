@@ -199,6 +199,18 @@ function refusedGrant(
   return { result, connector: where.connector, native: granted.native }
 }
 
+/** The provider sent an `error` on the redirect instead of a code: read as a refused exchange, with what it sent as the native answer. */
+function refusedRedirect(
+  sent: { error: string; description?: string },
+  connector: OAuthConnector,
+  where: Readonly<{ signInId: ConnectionSignInId; connector: ConnectorId }>,
+  log: FailureLog,
+): Ended {
+  const kind = connector.auth.refusals.app.includes(sent.error) ? 'APP_REFUSED' : 'GRANT_REFUSED'
+  const native = { status: 302, code: sent.error, message: sent.description ?? null, body: null }
+  return refusedGrant({ kind, native }, where, log)
+}
+
 /**
  * Completes an authorization (criteria 7, 8, 16, 18): taken first, then the code exchanged and the
  * account asked with no transaction open (D22), then written in one command, admitted again.
@@ -207,16 +219,17 @@ export async function completeSignIn(
   deps: Deps,
   input: Viewer & {
     signInId: ConnectionSignInId
-    answer: { code: string } | { refused: true }
+    answer: { code: string } | { refused: true } | { error: string; description?: string }
     log: FailureLog
   },
 ): Promise<SignInCompleted> {
   const { target, verifier } = await take(deps, input)
   const { connector } = target
   if ('refused' in input.answer) return { result: 'CANCELLED', connector: connector.id }
+  const where = { signInId: input.signInId, connector: connector.id }
+  if ('error' in input.answer) return refusedRedirect(input.answer, connector, where, input.log)
   const app = appKeysOf(deps.apps, connector)
   const { code } = input.answer
-  const where = { signInId: input.signInId, connector: connector.id }
   const exchange = { code, redirectUri: redirectUriOf(deps), verifier: verifier.reveal() }
   const granted = await deps.executor.grant(
     where,

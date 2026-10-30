@@ -13,7 +13,6 @@ import {
   BACK_TO_INTEGRATIONS,
   connectorName,
   NOT_A_SIGN_IN_TEXT,
-  providerErrorText,
   RETURNING_TEXT,
   signInEndText,
 } from './text.ts'
@@ -29,9 +28,7 @@ type Arrival =
       kind: 'KNOWN'
       companyId: CompanyId
       signInId: ConnectionSignInId
-      body: { code: string } | { refused: true }
-      /** The provider's own refusal, when it was not the person saying no. */
-      said?: { error: string; description: string | undefined }
+      body: { code: string } | { refused: true } | { error: string; description?: string }
     }
 
 /** `state` is the company and the authorization, `<companyId>.<signInId>`; anything else is not one of ours. */
@@ -48,8 +45,11 @@ function arrivalOf(search: {
   const base = { kind: 'KNOWN', companyId: companyId.data, signInId: signInId.data } as const
   if (search.error === 'access_denied') return { ...base, body: { refused: true } }
   if (search.error !== undefined) {
-    const said = { error: search.error, description: search.error_description }
-    return { ...base, body: { refused: true }, said }
+    const { error_description: description } = search
+    return {
+      ...base,
+      body: { error: search.error, ...(description === undefined ? {} : { description }) },
+    }
   }
   if (search.code !== undefined) return { ...base, body: { code: search.code } }
   return { kind: 'UNKNOWN' }
@@ -86,9 +86,8 @@ function Back(props: { companyId: CompanyId | null }) {
 function Ended(props: {
   companyId: CompanyId
   answer: Exclude<SignInCompleted, { result: 'LINKED' }>
-  said: { error: string; description: string | undefined } | undefined
 }) {
-  const { answer, said } = props
+  const { answer } = props
   const catalog = useQuery(connectionsQuery(props.companyId))
   if (catalog.isPending) {
     return (
@@ -109,9 +108,7 @@ function Ended(props: {
   return (
     <>
       <p role="alert" className="text-danger">
-        {said === undefined
-          ? signInEndText(answer, name)
-          : providerErrorText(name, said.error, said.description)}
+        {signInEndText(answer, name)}
       </p>
       {'native' in answer && answer.native !== null && <Said native={answer.native} name={name} />}
       <Back companyId={props.companyId} />
@@ -182,11 +179,7 @@ export function SignInReturn() {
   if (end.data && end.data.result !== 'LINKED' && companyId !== null) {
     return (
       <Page>
-        <Ended
-          companyId={companyId}
-          answer={end.data}
-          said={arrival.kind === 'KNOWN' ? arrival.said : undefined}
-        />
+        <Ended companyId={companyId} answer={end.data} />
       </Page>
     )
   }
