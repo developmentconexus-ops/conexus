@@ -113,10 +113,7 @@ test('depois de recarregar, só o status e o código: nada da mensagem nem da re
 })
 
 test.each([
-  [
-    'AUTH_REFUSED',
-    'As chaves foram recusadas pelo Sankhya. Desligue e ligue de novo com chaves novas.',
-  ],
+  ['AUTH_REFUSED', 'As chaves foram recusadas pelo Sankhya.'],
   ['UNREACHABLE', 'O Sankhya respondeu com erro. Tente de novo em alguns minutos.'],
   ['UNREADABLE', 'Resposta que o Conexus não entendeu'],
 ] as const)('Testar que acaba em %s: a frase e o que o Sankhya disse', async (result, sentence) => {
@@ -199,15 +196,15 @@ test('uma ligação não mexe na outra: o "Testando…" fica na página que test
 
 test('chaves recusadas: a dona lê o que fazer, o membro lê a quem pedir (a frase que o fundador aprovou)', async () => {
   const refused = connectionOf({ state: 'NEEDS_REAUTH', testedAt: TESTED })
-  const owner = 'As chaves foram recusadas pelo Sankhya. Desligue e ligue de novo com chaves novas.'
-  const member =
-    'As chaves foram recusadas pelo Sankhya. Peça ao dono ou a um administrador para ligar de novo.'
+  const owner = 'As chaves foram recusadas pelo Sankhya.'
+  const member = 'As chaves foram recusadas pelo Sankhya. Peça ao dono ou a um administrador.'
   open(viewOf({ mayManage: false, connections: [refused] }))
   expect(await screen.findByText(member)).toBeTruthy()
   expect(screen.queryByText(owner)).toBeNull()
   cleanup()
   open(viewOf({ connections: [refused] }))
   expect(await screen.findByText(owner)).toBeTruthy()
+  expect(screen.getByRole('button', { name: 'Conectar de novo' })).toBeTruthy()
   expect(screen.queryByText(member)).toBeNull()
 })
 

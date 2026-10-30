@@ -1,4 +1,4 @@
-import type { KeptCheck, Native, TestCheck } from '@conexus/hub-api'
+import type { ConnectorEntry, KeptCheck, Native, TestCheck } from '@conexus/hub-api'
 import { ChevronDownIcon } from 'lucide-react'
 import { Badge } from '../../ui/badge.tsx'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../../ui/collapsible.tsx'
@@ -78,11 +78,16 @@ function Item(props: { check: Check; name: string }) {
   )
 }
 
-function Subject(props: { label: string; items: readonly Check[]; name: string }) {
-  const { label, items, name } = props
+function Subject(props: {
+  label: string
+  items: readonly Check[]
+  name: string
+  auth: ConnectorEntry['auth']
+}) {
+  const { label, items, name, auth } = props
   const verdict = verdictOf(items)
   const shown = verdict.whole ? items : items.filter((one) => !reads(one))
-  const hint = hintText(items, name)
+  const hint = hintText(items, name, auth)
   const others = items.filter(reads).map((one) => one.label)
   return (
     <li className="border-b border-line last:border-b-0">
@@ -117,11 +122,15 @@ function Subject(props: { label: string; items: readonly Check[]; name: string }
 }
 
 /** What a test found, one line per subject: the ones that read whole shut, the others open on what did not. */
-export function TestResult(props: { checks: readonly Check[]; name: string }) {
+export function TestResult(props: {
+  checks: readonly Check[]
+  name: string
+  auth: ConnectorEntry['auth']
+}) {
   return (
     <ul aria-label="Resultado do teste" className="flex flex-col border-y border-line">
       {subjectsOf(props.checks).map((subject) => (
-        <Subject key={subject.label} {...subject} name={props.name} />
+        <Subject key={subject.label} {...subject} name={props.name} auth={props.auth} />
       ))}
     </ul>
   )

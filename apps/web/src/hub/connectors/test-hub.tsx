@@ -17,6 +17,8 @@ import { companyRead, memberView, refusal, sessionRead } from '../../platform/te
 import { connectionOf, SANKHYA, workingOf } from './fixtures.ts'
 
 const BASE = `*/api/companies/${COMPANY.id}`
+/** Where the Hub sends the person to authorize: the provider's address. */
+export const AUTHORIZE_URL = 'https://auth.example.test/authorize?state=x'
 
 /** What the Hub holds of the company's connections; a write changes it, a read shows it. */
 export type View = {
@@ -31,7 +33,9 @@ export type View = {
 type Sent = { method: string; path: string; body: unknown; attemptKey: string | null }
 
 /** A reply that replaces the Hub's usual answer to a write; nothing is kept when it is a failure. */
-export type Answers = Partial<Record<'link' | 'test' | 'unlink', () => Response | undefined>>
+export type Answers = Partial<
+  Record<'link' | 'test' | 'unlink' | 'start' | 'end' | 'reconnect', () => Response | undefined>
+>
 
 function reads(view: View): HttpHandler[] {
   return [
@@ -58,6 +62,41 @@ function reads(view: View): HttpHandler[] {
           lastTest: view.lastTests?.[connection.id] ?? null,
         }),
       )
+    }),
+  ]
+}
+
+function signInWrites(
+  view: View,
+  note: (request: Request) => Promise<unknown>,
+  answers: Answers,
+): HttpHandler[] {
+  return [
+    http.post(`${BASE}/connection-sign-ins`, async ({ request }) => {
+      await note(request)
+      return answers.start?.() ?? HttpResponse.json({ url: AUTHORIZE_URL }, { status: 201 })
+    }),
+    http.post(`${BASE}/connection-sign-ins/:signInId`, async ({ request }) => {
+      await note(request)
+      const replaced = answers.end?.()
+      if (replaced) return replaced
+      const connection = connectionOf({
+        connector: 'mercado-livre',
+        account: { label: 'PADARIASOL' },
+      })
+      view.connections.push(connection)
+      return HttpResponse.json({ result: 'LINKED', connection })
+    }),
+    http.put(`${BASE}/connections/:connectionId/credential`, async ({ request, params }) => {
+      await note(request)
+      const replaced = answers.reconnect?.()
+      if (replaced) return replaced
+      const found = view.connections.find((one) => one.id === params.connectionId) ?? connectionOf()
+      const connection = { ...found, state: 'NEW' as const, testedAt: null, testedBy: null }
+      view.connections = view.connections.map((one) =>
+        one.id === connection.id ? connection : one,
+      )
+      return HttpResponse.json({ connection })
     }),
   ]
 }
@@ -107,6 +146,7 @@ function writes(
       }
       return HttpResponse.json(tested)
     }),
+    ...signInWrites(view, note, answers),
     http.delete(`${BASE}/connections/:connectionId`, async ({ request, params }) => {
       await note(request)
       const replaced = answers.unlink?.()

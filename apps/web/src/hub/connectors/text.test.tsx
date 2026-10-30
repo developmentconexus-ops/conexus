@@ -14,10 +14,16 @@ function refused(status: number) {
 }
 
 test('só o status 403 manda liberar a tela; um 404 recusado não', () => {
-  expect(hintText(refused(403), 'Sankhya')).toBe(
+  expect(hintText(refused(403), 'Sankhya', 'client_credentials')).toBe(
     'O usuário de integração não tem acesso a esta parte. Libere a tela no Sankhya e teste de novo.',
   )
-  expect(hintText(refused(404), 'Sankhya')).toBe('')
+  expect(hintText(refused(404), 'Sankhya', 'client_credentials')).toBe('')
+})
+
+test('com OAuth a dica de 403 é do app do Conexus, sem frase do Sankhya', () => {
+  expect(hintText(refused(403), 'Mercado Livre', 'oauth2_code')).toBe(
+    'O app do Conexus não tem permissão para esta parte no Mercado Livre.',
+  )
 })
 
 test('a causa de um 2xx que não leu: onde e que tipo veio, ou o tamanho', () => {

@@ -39,6 +39,19 @@ export const SANKHYA = ConnectorEntry.parse({
   ],
 })
 
+/** A connector that links by a trip to the provider: no fields, and the logo is the symbol alone. */
+export const MERCADO_LIVRE = ConnectorEntry.parse({
+  id: 'mercado-livre',
+  name: 'Mercado Livre',
+  version: '1.0.0',
+  category: 'Marketplace',
+  summary: 'O marketplace da loja: anúncios, vendas, envios e perguntas.',
+  logo: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28"><circle cx="14" cy="14" r="14" fill="#FFE600"/></svg>',
+  reads: 27,
+  auth: 'oauth2_code',
+  fields: [],
+})
+
 let made = 0
 
 /** A connection of the company to the Sankhya, linked by Ana and not yet tested, unless `fields` say otherwise. */
