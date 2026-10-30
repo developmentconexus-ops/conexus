@@ -22,6 +22,7 @@ import { PageTitle, SectionTitle } from '../../ui/list.tsx'
 import { RouteReadFailure } from '../../ui/states.tsx'
 import { ReconnectButton } from './link-dialog.tsx'
 import { ConnectorLogo } from './logo.tsx'
+import { Notebook } from './notes.tsx'
 import { connectionKeys, connectionQuery, connectionsQuery, sendTest } from './queries.ts'
 import { Said } from './said.tsx'
 import {
@@ -334,6 +335,12 @@ export function ConnectionPage() {
         answer={test.data}
       />
       <Facts name={name} connection={connection} />
+      <Notebook
+        companyId={companyId}
+        connectionId={connectionId}
+        notes={detail.notes}
+        mayManage={mayManage}
+      />
       {mayManage && (
         <UnlinkDialog
           companyId={companyId}

@@ -1,7 +1,14 @@
 import type { CompanyId, ProjectId } from '@conexus/hub-api'
 import { useQuery } from '@tanstack/react-query'
 import { getRouteApi, Link, useMatches } from '@tanstack/react-router'
-import { ArrowLeftIcon, ChevronsUpDownIcon, HammerIcon, InfoIcon, UsersIcon } from 'lucide-react'
+import {
+  ArrowLeftIcon,
+  ChevronsUpDownIcon,
+  HammerIcon,
+  InfoIcon,
+  PlugIcon,
+  UsersIcon,
+} from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,6 +36,7 @@ const company = getRouteApi('/_app/companies/$companyId')
 const OTHER_PAGES = [
   '/_app/companies/$companyId/projects/$projectId_/about',
   '/_app/companies/$companyId/projects/$projectId_/access',
+  '/_app/companies/$companyId/projects/$projectId_/integrations',
 ]
 
 type Scope = { companyId: CompanyId; projectId: ProjectId }
@@ -102,7 +110,7 @@ export function ProjectRailHead({ companyId, projectId }: Scope) {
 
 /**
  * The entries of the Projeto's sidebar, in the order of Conexus OS: back to the company, Construir,
- * Sobre, Quem usa o app. Each later one is added by its step, never as "em breve" (web W31). The
+ * Sobre, Quem usa o app, Integrações. Each later one is added by its step, never as "em breve" (web W31). The
  * address of Construir is the Projeto's own, with its conversations below it, so the router cannot
  * tell it from the other pages: it is the current place when no other page is.
  */
@@ -151,6 +159,12 @@ export function ProjectRailNav(scope: Scope) {
           params={params}
           icon={UsersIcon}
           label="Quem usa o app"
+        />
+        <FrameLink
+          to="/companies/$companyId/projects/$projectId/integrations"
+          params={params}
+          icon={PlugIcon}
+          label="Integrações"
         />
       </SidebarMenu>
     </SidebarGroup>

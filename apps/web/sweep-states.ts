@@ -12,6 +12,7 @@ import { INTEGRATIONS_STATES } from './sweep-integrations-states.ts'
 import type { State } from './sweep-kit.ts'
 import { waitFor } from './sweep-kit.ts'
 import { PREVIEW_STATES } from './sweep-preview-states.ts'
+import { PROJECT_INTEGRATIONS_STATES } from './sweep-project-integrations-states.ts'
 import { PROJECT_STATES } from './sweep-project-states.ts'
 import { RECOVERY_STATES } from './sweep-recovery-states.ts'
 import {
@@ -51,6 +52,7 @@ export const STATES: State[] = [
   ...DEFAULT_STATES,
   ...ACCOUNT_STATES,
   ...INTEGRATIONS_STATES,
+  ...PROJECT_INTEGRATIONS_STATES,
   {
     name: 'Central sem clientes',
     path: '/operations/clients',

@@ -25,7 +25,7 @@ async function bar() {
   return within(await screen.findByRole('navigation', { name: 'Navegação' }))
 }
 
-test('dentro do Projeto a barra é a do Projeto: o nome com a troca, a empresa, Construir, Sobre, Quem usa o app', async () => {
+test('dentro do Projeto a barra é a do Projeto: o nome com a troca, a empresa, Construir, Sobre, Quem usa o app, Integrações', async () => {
   open(PROJECT)
   const rail = await bar()
   expect(
@@ -37,6 +37,7 @@ test('dentro do Projeto a barra é a do Projeto: o nome com a troca, a empresa, 
     'Construir',
     'Sobre',
     'Quem usa o app',
+    'Integrações',
     expect.any(String),
   ])
   expect(screen.queryByText(/em breve/i)).toBeNull()
