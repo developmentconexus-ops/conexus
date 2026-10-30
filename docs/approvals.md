@@ -362,3 +362,9 @@ Cartão da etapa 19.1 aprovado em 2026-10-30 (commit cd0452fabbfcba1ea5797b05125
 
 Essa emenda só escreve no cartão a palavra acima: a unidade U4, o critério 19 reescrito, a matriz de estados e a linha da tabela de referência do Testar de uma leitura só, e o que ele vê no roteiro, passos 3 e 6.
 
+
+Em 2026-10-30, sobre os merges: "1. Sim" (o fechamento da 19, https://github.com/developmentconexus-ops/conexus/pull/471, e a 19.1); "1. Pode" (https://github.com/developmentconexus-ops/conexus/pull/484, a espera do 429); "Pode mesclar" (https://github.com/developmentconexus-ops/conexus/pull/486, o Testar de uma leitura só).
+
+Em 2026-10-30, sobre o logotipo do Mercado Livre: "2. Manter". Fica o logotipo como está.
+
+Em 2026-10-30, sobre o que depende dos webhooks: "Isso depois de webhooks, tá? Não vamos fazer isso agora, não."
