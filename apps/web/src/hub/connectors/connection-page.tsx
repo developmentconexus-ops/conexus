@@ -19,6 +19,7 @@ import { connectionKeys, connectionQuery, connectionsQuery, sendTest } from './q
 import type { Check } from './test-result.tsx'
 import { countOf, Said, TestResult } from './test-result.tsx'
 import {
+  appRefusedText,
   connectorName,
   linkedText,
   MEMBER_SENTENCE,
@@ -82,6 +83,7 @@ function TestRefusal(props: { answer: Exclude<Answer, { result: 'WORKING' }>; na
         ? serverErrorText(name)
         : unreachableText(name),
     UNREADABLE: UNREADABLE_TEXT,
+    APP_REFUSED: appRefusedText(name),
   }[answer.result]
   return (
     <div role="alert" className="flex flex-col gap-xs">

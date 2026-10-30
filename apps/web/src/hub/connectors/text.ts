@@ -55,6 +55,11 @@ export function serverErrorText(name: string): string {
   return `O ${name} respondeu com erro. Tente de novo em alguns minutos.`
 }
 
+/** The provider refused the installation's app at a refresh (19.1, the card's state matrix): nothing the company can fix. */
+export function appRefusedText(name: string): string {
+  return `O app do Conexus foi recusado pelo ${name}. Avise o suporte.`
+}
+
 export function testingText(reads: number): string {
   return `Testando as ${reads} leituras, uma por vez…`
 }

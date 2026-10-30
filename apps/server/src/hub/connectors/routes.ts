@@ -1,15 +1,19 @@
 import type { TestCheck } from '@conexus/hub-api'
 import {
+  completeConnectionSignIn,
   getConnection,
   linkConnection,
   listConnections,
+  reconnectConnection,
+  startConnectionSignIn,
   testConnection,
   unlinkConnection,
 } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
 import { answer, serve } from '../../platform/http.ts'
-import { detail, link, list, unlink } from './connections.ts'
+import { detail, link, list, reconnect, unlink } from './connections.ts'
 import type { Deps } from './rows.ts'
+import { completeSignIn, startSignIn } from './sign-ins.ts'
 import { test } from './testing.ts'
 
 /** How many items ended each way. */
@@ -74,6 +78,29 @@ export function registerConnectionRoutes(app: FastifyInstance, deps: Deps): void
     )
     return answer(tested)
   })
+
+  serve(app, reconnectConnection, async ({ person, params, body, log }) => {
+    const connection = await reconnect(deps, { person, ...params, ...body })
+    const fields = {
+      by: person.id,
+      companyId: params.companyId,
+      connectionId: connection.id,
+      connector: connection.connector,
+    }
+    log.info(fields, 'CONNECTION_RECONNECTED')
+    return answer({ connection })
+  })
+
+  serve(app, startConnectionSignIn, async ({ person, params, body, log }) => {
+    const started = await startSignIn(deps, { person, ...params, ...body })
+    const fields = { by: person.id, companyId: params.companyId, connector: started.connector }
+    log.info(fields, 'CONNECTION_SIGN_IN_STARTED')
+    return answer({ url: started.url })
+  })
+
+  serve(app, completeConnectionSignIn, async ({ person, params, body, log }) =>
+    answer(await completeSignIn(deps, { person, ...params, answer: body, log })),
+  )
 
   serve(app, unlinkConnection, async ({ person, params, log }) => {
     const { removed } = await unlink(deps, { person, ...params })

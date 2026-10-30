@@ -4,11 +4,12 @@ import { existsSync } from 'node:fs'
 import { createServer, get } from 'node:http'
 import { join } from 'node:path'
 import type { TestContext } from 'node:test'
-import { sankhyaFake } from '@conexus/connectors'
+import { mercadoLivreFake, sankhyaFake } from '@conexus/connectors'
 import {
   ATTEMPT_KEY_HEADER,
   createProject as createProjectOperation,
   Problem,
+  REDIRECT_PATH,
 } from '@conexus/hub-api'
 import { hashPassword } from 'better-auth/crypto'
 import type { Browser, BrowserContext, Page } from 'playwright-core'
@@ -18,6 +19,7 @@ import { createEdgeHub, createHub, identityOf, subjectsOf } from '../../apps/ser
 import { createCloudflareApps } from '../../apps/server/src/platform/cloudflare.ts'
 import { createCompanyPostgres } from '../../apps/server/src/platform/company-postgres.ts'
 import type { Config } from '../../apps/server/src/platform/config.ts'
+import { ConnectorApps } from '../../apps/server/src/platform/config-connectors.ts'
 import { closeListeners } from '../../apps/server/src/platform/lifecycle.ts'
 import { createNeonProjects } from '../../apps/server/src/platform/neon.ts'
 import { pgTransport } from '../../apps/server/src/platform/test-company-postgres.ts'
@@ -103,10 +105,19 @@ export async function liveHub(
   const sankhya = sankhyaFake()
   const sankhyaServed = await sankhya.serve()
   t.after(() => sankhyaServed.close())
+  const base = { ...testConfig(database.runtimeUrl, mailUrl, neon.url, cloudflareUrl), ...names }
+  // The kit's Mercado Livre double, sending the person back to this Hub's return page, and its
+  // invented app as the installation's apps file holds it (S40): `mercadoLivre.switches` for the QA.
+  const mercadoLivre = mercadoLivreFake({ redirectUri: `${base.publicOrigin}${REDIRECT_PATH}` })
+  const mercadoLivreServed = await mercadoLivre.serve()
+  t.after(() => mercadoLivreServed.close())
   const config = {
-    ...testConfig(database.runtimeUrl, mailUrl, neon.url, cloudflareUrl),
-    ...names,
-    connectorOrigins: new Map([['sankhya', sankhyaServed.origin]]),
+    ...base,
+    connectorOrigins: new Map([
+      ['sankhya', sankhyaServed.origin],
+      ['mercado-livre', mercadoLivreServed.origin],
+    ]),
+    connectorApps: ConnectorApps.parse(JSON.stringify({ 'mercado-livre': mercadoLivre.app })),
   }
   const status = createStatus({ version: config.version, database: database.database })
   const identity = identityOf({ database: database.database, config, log: silent })
@@ -149,6 +160,7 @@ export async function liveHub(
     database,
     neon,
     sankhya,
+    mercadoLivre,
     config,
     machineFolder: folder,
   }

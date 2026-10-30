@@ -1,5 +1,12 @@
 import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto'
-import type { CompanyId, ConnectionId, ModelAccountId, PersonId, SignInId } from '@conexus/hub-api'
+import type {
+  CompanyId,
+  ConnectionId,
+  ConnectionSignInId,
+  ModelAccountId,
+  PersonId,
+  SignInId,
+} from '@conexus/hub-api'
 import { Failure } from './failure.ts'
 import { Secret } from './secret.ts'
 
@@ -40,8 +47,8 @@ export function parseSealKeys(text: string): SealKeys {
  * have their own purpose.
  */
 export type SealContext = {
-  purpose: 'model-account' | 'model-account-sign-in' | 'connection'
-  rowId: ModelAccountId | SignInId | ConnectionId
+  purpose: 'model-account' | 'model-account-sign-in' | 'connection' | 'connection-sign-in'
+  rowId: ModelAccountId | SignInId | ConnectionId | ConnectionSignInId
   companyId: CompanyId
   personId: PersonId | null
   kind: string
