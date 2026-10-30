@@ -131,8 +131,9 @@ test.each([
   server.use(...hub.handlers)
   mount(pageOf(connection))
   fireEvent.click(await screen.findByRole('button', { name: 'Testar' }))
-  const alerts = await screen.findAllByText(sentence)
-  expect(alerts.length).toBeGreaterThan(0)
+  expect(await screen.findByText(sentence)).toBeTruthy()
+  expect(screen.getAllByText(sentence)).toHaveLength(1)
+  if (result === 'AUTH_REFUSED') expect(screen.queryByText('Ainda não testada.')).toBeNull()
   expect(await screen.findByText('Sankhya respondeu 401, código NEGADO')).toBeTruthy()
 })
 
@@ -197,11 +198,11 @@ test('uma ligação não mexe na outra: o "Testando…" fica na página que test
   held.resolve(undefined)
 })
 
-test('chaves recusadas: a dona lê o que fazer, o membro lê a quem pedir', async () => {
+test('chaves recusadas: a dona lê o que fazer, o membro lê a quem pedir (a frase que o fundador aprovou)', async () => {
   const refused = connectionOf({ state: 'NEEDS_REAUTH', testedAt: TESTED })
   const owner = 'As chaves foram recusadas pelo Sankhya. Desligue e ligue de novo com chaves novas.'
   const member =
-    'As chaves foram recusadas pelo Sankhya. Peça à dona ou a um administrador para ligar de novo.'
+    'As chaves foram recusadas pelo Sankhya. Peça ao dono ou a um administrador para ligar de novo.'
   open(viewOf({ mayManage: false, connections: [refused] }))
   expect(await screen.findByText(member)).toBeTruthy()
   expect(screen.queryByText(owner)).toBeNull()
@@ -264,4 +265,24 @@ test('um teste novo que não lê um assunto inteiro abre o assunto que estava fe
   expect(screen.queryByText('Recusada pelo Sankhya')).toBeNull()
   fireEvent.click(screen.getByRole('button', { name: 'Testar' }))
   expect(await screen.findByText('Recusada pelo Sankhya')).toBeTruthy()
+})
+
+test('a página da ligação que não carrega mostra o erro, e "Tentar de novo" lê outra vez', async () => {
+  const connection = connectionOf({ state: 'ACTIVE', testedAt: TESTED })
+  const view = viewOf({ connections: [connection] })
+  let failing = true
+  const hub = connectionsHub(view)
+  server.use(
+    http.get(`*/api/companies/${COMPANY.id}/connections/:id`, () =>
+      failing ? refusal('DATABASE_UNAVAILABLE') : undefined,
+    ),
+    ...hub.handlers,
+  )
+  mount(pageOf(connection))
+  expect((await screen.findByRole('alert')).textContent).toBe(
+    sentenceOfCode('DATABASE_UNAVAILABLE'),
+  )
+  failing = false
+  fireEvent.click(screen.getByRole('button', { name: 'Tentar de novo' }))
+  expect(await screen.findByRole('heading', { name: 'Comercial' })).toBeTruthy()
 })

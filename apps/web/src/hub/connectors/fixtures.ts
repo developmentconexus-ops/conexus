@@ -11,7 +11,7 @@ export const SANKHYA = ConnectorEntry.parse({
   version: '1.0.0',
   category: 'ERP',
   summary: 'O sistema de gestão da empresa: pedidos, estoque, financeiro e cadastros.',
-  logo: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#1a7f4b"/></svg>',
+  logo: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 124 28"><rect width="28" height="28" rx="6" fill="#66CB66"/><rect x="36" y="6" width="88" height="16" rx="3" fill="#2E3C50"/></svg>',
   reads: 25,
   fields: [
     {

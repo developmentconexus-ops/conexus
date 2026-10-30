@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '../../ui/dropdown-menu.tsx'
 import { PageTitle, SectionTitle } from '../../ui/list.tsx'
-import { ReadFailure } from '../../ui/states.tsx'
+import { RouteReadFailure } from '../../ui/states.tsx'
 import { ConnectorLogo } from './logo.tsx'
 import { connectionKeys, connectionQuery, connectionsQuery, sendTest } from './queries.ts'
 import type { Check } from './test-result.tsx'
@@ -67,20 +67,21 @@ export function ConnectionReadFailure(props: { error: unknown; reset: () => void
       </div>
     )
   }
-  return <ReadFailure text={sentenceOf(props.error)} onRetry={props.reset} />
+  return <RouteReadFailure error={props.error} reset={props.reset} />
 }
 
 /** What a Testar that did not reach the reads says, with what the provider answered. */
 function TestRefusal(props: { answer: Exclude<Answer, { result: 'WORKING' }>; name: string }) {
   const { answer, name } = props
+  // The refused keys are the connection's state, said once above; here only what the provider answered.
   const sentence = {
-    AUTH_REFUSED: refusedKeysText(name),
+    AUTH_REFUSED: null,
     UNREACHABLE: unreachableText(name),
     UNREADABLE: UNREADABLE_TEXT,
   }[answer.result]
   return (
     <div role="alert" className="flex flex-col gap-xs">
-      <p className="text-danger">{sentence}</p>
+      {sentence !== null && <p className="text-danger">{sentence}</p>}
       {answer.native !== null && <Said native={answer.native} name={name} />}
     </div>
   )
@@ -121,7 +122,7 @@ function Header(props: {
     : stateBadge(connection)
   return (
     <div className="flex flex-wrap items-start justify-between gap-md">
-      <div className="flex min-w-0 items-center gap-lg">
+      <div className="flex min-w-0 flex-wrap items-center gap-x-lg gap-y-sm">
         {entry && <ConnectorLogo entry={entry} large />}
         <div className="flex min-w-0 flex-col gap-xs">
           <span className="text-text-2">
@@ -167,7 +168,7 @@ function LastTest(props: {
       )}
       {answer && answer.result !== 'WORKING' && <TestRefusal answer={answer} name={name} />}
       {checks === null ? (
-        <p className="text-text-2">{NOT_TESTED_YET}</p>
+        connection.state !== 'NEEDS_REAUTH' && <p className="text-text-2">{NOT_TESTED_YET}</p>
       ) : (
         <>
           <p className="flex flex-wrap items-baseline gap-x-md gap-y-xs">

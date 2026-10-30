@@ -8,7 +8,6 @@ export const NO_CONNECTIONS =
 export const MEMBER_SENTENCE = 'Só o dono ou um administrador liga, testa e desliga.'
 export const NOT_TESTED_YET = 'Ainda não testada.'
 export const UNREADABLE_TEXT = 'Resposta que o Conexus não entendeu'
-export const ALL_LINKED = 'Todos os sistemas que o Conexus liga hoje já estão ligados.'
 
 /** The connector's name, or its id for one the catalog no longer holds. */
 export function connectorName(connectors: readonly ConnectorEntry[], id: string): string {
@@ -45,7 +44,7 @@ export function refusedKeysText(name: string): string {
 
 /** What a reader who may not manage the connections sees for the same refusal. */
 export function refusedKeysMemberText(name: string): string {
-  return `As chaves foram recusadas pelo ${name}. Peça à dona ou a um administrador para ligar de novo.`
+  return `As chaves foram recusadas pelo ${name}. Peça ao dono ou a um administrador para ligar de novo.`
 }
 
 export function unreachableText(name: string): string {

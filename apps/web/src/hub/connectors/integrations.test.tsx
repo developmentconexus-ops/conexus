@@ -49,7 +49,7 @@ test('a primeira vez: a frase, o logotipo e o resumo do conector, e Ligar para q
   expect(screen.queryByText(MEMBER_SENTENCE)).toBeNull()
 })
 
-test('Ligar e testar: a janela monta os campos do catálogo, liga, abre a página e testa', async () => {
+test('a dona liga e testa num toque, e desliga: a janela monta os campos do catálogo, liga, abre a página e testa', async () => {
   const sent = open()
   const form = await openForm()
   expect(within(form).getByRole('region', { name: 'Antes de colar' })).toBeTruthy()
@@ -100,6 +100,22 @@ test('o nome sugerido é o do conector, e vazio quando a empresa já tem uma lig
   fireEvent.click(await screen.findByRole('button', { name: 'Ligar outra ligação do Sankhya' }))
   const form = await screen.findByRole('dialog', { name: 'Ligar Sankhya' })
   expect(within(form).getByLabelText<HTMLInputElement>('Nome da ligação').value).toBe('')
+})
+
+test('um nome já usado por outra pessoa: a lista é lida de novo atrás da janela', async () => {
+  let reads = 0
+  open(viewOf(), { link: () => refusal('CONNECTION_NAME_TAKEN') })
+  server.use(
+    http.get('*/api/companies/*/connections', () => {
+      reads += 1
+      return undefined
+    }),
+  )
+  const form = await openForm()
+  fill('Comercial')
+  const before = reads
+  fireEvent.click(within(form).getByRole('button', { name: 'Ligar e testar' }))
+  await waitFor(() => expect(reads).toBeGreaterThan(before))
 })
 
 test.each([
@@ -181,7 +197,7 @@ test('a ligação nova diz "ainda não testada", sem selo e sem "testada em"', a
   expect(screen.queryByText(/^testada em/)).toBeNull()
 })
 
-test('o membro lê a lista, sem Ligar, e a frase de quem pode', async () => {
+test('o membro lê; vazio e erro: a lista sem Ligar, e a frase de quem pode', async () => {
   const sent = open(
     viewOf({
       mayManage: false,

@@ -5,6 +5,7 @@ import { useNavigate } from '@tanstack/react-router'
 import { ExternalLinkIcon } from 'lucide-react'
 import { z } from 'zod'
 import { useAttemptKey } from '../../platform/attempt-key.ts'
+import { HubFailure } from '../../platform/hub.ts'
 import { Button } from '../../ui/button.tsx'
 import { Dialog, DialogContent } from '../../ui/dialog.tsx'
 import {
@@ -19,6 +20,7 @@ import { connectionsPrefix, sendLink } from './queries.ts'
 
 const UNCONFIRMED = 'Não confirmamos a ligação. Tente de novo.'
 const NAME = 'name'
+const LIST_CHANGED: ReadonlySet<string> = new Set(['CONNECTION_NAME_TAKEN', 'CONNECTOR_UNKNOWN'])
 
 /** The form's schema: the name the company gives the connection, then each of the connector's fields pasted whole. */
 function schemaOf(entry: ConnectorEntry) {
@@ -116,6 +118,10 @@ function LinkForm(props: {
         search: { testar: true },
       })
     } catch (error) {
+      // Someone changed the list meanwhile: it is read again behind the window.
+      if (error instanceof HubFailure && LIST_CHANGED.has(error.code)) {
+        void queryClient.invalidateQueries({ queryKey: connectionsPrefix(companyId) })
+      }
       setWriteError(form, error, UNCONFIRMED, {
         CONNECTION_NAME_INVALID: NAME,
         CONNECTION_NAME_TAKEN: NAME,

@@ -11,7 +11,6 @@ import { LinkDialog } from './link-dialog.tsx'
 import { ConnectorLogo } from './logo.tsx'
 import { connectionsQuery } from './queries.ts'
 import {
-  ALL_LINKED,
   connectionsCount,
   LEAD,
   linkedText,
@@ -133,29 +132,25 @@ export function Integrations() {
       </section>
       <section aria-label="Para ligar" className="flex flex-col gap-md">
         <SectionTitle>Para ligar</SectionTitle>
-        {connectors.length === 0 ? (
-          <Empty>{ALL_LINKED}</Empty>
-        ) : (
-          <List>
-            {connectors.map((entry) => (
-              <Row key={entry.id}>
-                <ConnectorHead
-                  entry={entry}
-                  detail={entry.summary}
-                  action={
-                    mayManage
-                      ? {
-                          ariaLabel: `Ligar ${entry.name}`,
-                          ghost: false,
-                          onLink: () => setLinking(entry),
-                        }
-                      : null
-                  }
-                />
-              </Row>
-            ))}
-          </List>
-        )}
+        <List>
+          {connectors.map((entry) => (
+            <Row key={entry.id}>
+              <ConnectorHead
+                entry={entry}
+                detail={entry.summary}
+                action={
+                  mayManage
+                    ? {
+                        ariaLabel: `Ligar ${entry.name}`,
+                        ghost: false,
+                        onLink: () => setLinking(entry),
+                      }
+                    : null
+                }
+              />
+            </Row>
+          ))}
+        </List>
       </section>
       {linking && (
         <LinkDialog
