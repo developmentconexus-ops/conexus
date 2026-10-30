@@ -3,12 +3,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import { beforeEach, expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
 import { COMPANY } from '../../platform/fixtures.ts'
-import {
-  conversationsNone,
-  hubServer,
-  PEDIDOS,
-  projectsRead,
-} from '../../platform/test-hub.tsx'
+import { conversationsNone, hubServer, PEDIDOS, projectsRead } from '../../platform/test-hub.tsx'
 import { versionsRead } from '../../platform/test-hub-versions.tsx'
 
 const server = hubServer()
@@ -51,9 +46,9 @@ test('dentro do Projeto a barra é a do Projeto: o nome com a troca, a empresa, 
 
 test('um endereço de conversa marca Construir como o lugar atual', async () => {
   open(`${PROJECT}/conversations/${'c'.repeat(32)}`)
-  expect(
-    (await bar()).getByRole('link', { name: 'Construir' }).getAttribute('aria-current'),
-  ).toBe('page')
+  expect((await bar()).getByRole('link', { name: 'Construir' }).getAttribute('aria-current')).toBe(
+    'page',
+  )
 })
 
 test('fora do Projeto, a barra da empresa como hoje', async () => {
