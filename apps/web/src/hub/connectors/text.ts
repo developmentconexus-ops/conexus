@@ -79,6 +79,21 @@ export function serverErrorText(name: string): string {
   return `O ${name} respondeu com erro. Tente de novo em alguns minutos.`
 }
 
+/** The wait a provider asked for, rounded up to whole seconds, or minutes from a minute on. */
+function waitText(waitMs: number): string {
+  const seconds = Math.max(1, Math.ceil(waitMs / 1000))
+  if (seconds < 60) return seconds === 1 ? '1 segundo' : `${seconds} segundos`
+  const minutes = Math.ceil(seconds / 60)
+  return minutes === 1 ? '1 minuto' : `${minutes} minutos`
+}
+
+/** The provider answered 429: it asked for a wait, with the time when it named one. */
+export function busyText(name: string, waitMs: number | null): string {
+  return waitMs === null
+    ? `O ${name} pediu para esperar. Tente de novo em alguns minutos.`
+    : `O ${name} pediu para esperar ${waitText(waitMs)}. Tente de novo depois disso.`
+}
+
 /** The provider refused the installation's app at a refresh (19.1, the card's state matrix): nothing the company can fix. */
 export function appRefusedText(name: string): string {
   return `O app do Conexus foi recusado pelo ${name}. Avise o suporte.`

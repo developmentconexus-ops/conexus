@@ -6,7 +6,7 @@ import { clientCredentials, readToken, tokenRequest } from './auth.ts'
 import { defineConnector, defineReadDoor } from './definition.ts'
 import { LOGO_MAX_BYTES, logoProblems } from './logo.ts'
 import type { ProviderRequest } from './operation.ts'
-import { defineOperation, locateOf, outcomeOf } from './operation.ts'
+import { defineOperation, failedBy, locateOf, outcomeOf } from './operation.ts'
 import { toRequest } from './request.ts'
 
 function get(path: `/${string}`, query: Record<string, string> = {}): ProviderRequest {
@@ -229,8 +229,23 @@ test('a status the connector documents no exception for gets the kernel outcome 
   assert.equal(outcomeOf(401), 'AUTH_REFUSED')
   for (const status of [400, 403, 404, 409, 422])
     assert.equal(outcomeOf(status), 'REFUSED', String(status))
-  for (const status of [300, 402, 429, 500, 503])
+  for (const status of [300, 402, 500, 503])
     assert.equal(outcomeOf(status), 'UNREADABLE', String(status))
+})
+
+test('a 429 is the provider asking to wait, with the wait it named; every other status keeps its kernel outcome', () => {
+  const native = { status: 429, code: null, message: null, body: null }
+  assert.deepEqual(failedBy({ status: 429, body: null, retryAfterMs: 1_500 }, native), {
+    kind: 'BUSY',
+    native,
+    waitMs: 1_500,
+  })
+  assert.deepEqual(failedBy({ status: 429, body: null }, native), {
+    kind: 'BUSY',
+    native,
+    waitMs: null,
+  })
+  assert.equal(failedBy({ status: 403, body: null }, native).kind, 'REFUSED')
 })
 
 test('the login carries what the provider said, and never a 2xx body', () => {

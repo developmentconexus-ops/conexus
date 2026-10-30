@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import type { Answered, Native, ProviderAnswer } from '../kernel/operation.ts'
-import { locateOf, outcomeOf, shapeOf } from '../kernel/operation.ts'
+import { failedBy, locateOf, shapeOf } from '../kernel/operation.ts'
 import { listOf, Rows } from '../kernel/rows.ts'
 
 /** Where a refusal keeps its code: `code` (the permission policies), else the `error` the API names; the message is `message`. */
@@ -126,8 +126,7 @@ export function rows({
       NothingFound.safeParse(answer.body).success
     )
       return { kind: 'OK', value: { linhas: [], temMais: false }, empty: true }
-    if (answer.status < 200 || answer.status >= 300)
-      return { kind: outcomeOf(answer.status), native }
+    if (answer.status < 200 || answer.status >= 300) return failedBy(answer, native)
     const built = build(answer.body, answer.status === 206)
     return built.success
       ? { kind: 'OK', value: built.data }

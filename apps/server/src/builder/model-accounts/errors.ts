@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { causeChain } from '../../platform/failure.ts'
+import { retryAfterMs } from '../../platform/retry-after.ts'
 
 /** What a provider's refusal of one call means for its account (code C52, study D3). */
 export type CallFailure =
@@ -26,21 +27,6 @@ function providerErrorOf(error: unknown) {
     if (parsed.success) return parsed.data
   }
   return undefined
-}
-
-/**
- * The provider's own time, `retry-after-ms` before `retry-after` in seconds or as a date; Mastra's
- * reader (`utils/retry-after.ts`) is not exported, so the header is read here (code C75).
- */
-function retryAfterMs(headers: Record<string, string>, now: number): number | undefined {
-  const lower = new Map(Object.entries(headers).map(([key, value]) => [key.toLowerCase(), value]))
-  const ms = lower.get('retry-after-ms')
-  if (ms !== undefined && /^\d+$/.test(ms)) return Number(ms)
-  const after = lower.get('retry-after')
-  if (after === undefined) return undefined
-  if (/^\d+$/.test(after)) return Number(after) * 1000
-  const date = Date.parse(after)
-  return Number.isNaN(date) || date <= now ? undefined : date - now
 }
 
 export function callFailureOf(error: unknown, now = Date.now()): CallFailure {

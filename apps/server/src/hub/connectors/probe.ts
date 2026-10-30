@@ -9,6 +9,7 @@ export type Probed =
   | Readonly<{ result: 'AUTH_REFUSED'; native: Native }>
   | Readonly<{ result: 'UNREADABLE'; native: Native }>
   | Readonly<{ result: 'UNREACHABLE'; native: Native | null }>
+  | Readonly<{ result: 'BUSY'; native: Native; waitMs: number | null }>
   | Readonly<{ result: 'APP_REFUSED'; native: Native }>
 
 type Deadlines = {
@@ -27,7 +28,8 @@ type Result =
 function endedBy(
   answer:
     | Readonly<{ kind: 'AUTH_REFUSED' | 'UNREADABLE' | 'APP_REFUSED'; native: Native }>
-    | Readonly<{ kind: 'UNREACHABLE'; native: Native | null }>,
+    | Readonly<{ kind: 'UNREACHABLE'; native: Native | null }>
+    | Readonly<{ kind: 'BUSY'; native: Native; waitMs: number | null }>,
 ): Ended {
   switch (answer.kind) {
     case 'AUTH_REFUSED':
@@ -38,6 +40,8 @@ function endedBy(
       return { result: 'UNREADABLE', native: answer.native }
     case 'UNREACHABLE':
       return { result: 'UNREACHABLE', native: answer.native }
+    case 'BUSY':
+      return { result: 'BUSY', native: answer.native, waitMs: answer.waitMs }
     default:
       return answer satisfies never
   }
@@ -65,7 +69,6 @@ function unread(
  * but each item's outcome.
  */
 export async function probed(deps: Deadlines, opened: OpenedConnection): Promise<Probed> {
-  const { executor } = deps
   const { connector } = opened
   const endsAt = performance.now() + deps.testDeadlineMs
   const earlier = new Map<OperationId, unknown>()
@@ -99,12 +102,12 @@ export async function probed(deps: Deadlines, opened: OpenedConnection): Promise
   async function read(operation: Operation<unknown, unknown>): Promise<Result | Ended> {
     const input = operation.probe(earlier)
     if (input === null) return { outcome: 'NOTHING_TO_READ' }
-    let answered = await executor.call(opened, token, operation, input, allowed())
+    let answered = await deps.executor.call(opened, token, operation, input, allowed())
     if (answered.kind === 'TOKEN_EXPIRED') {
       const again = await tokenFor({ force: true, refused: answered.native })
       if (again.kind !== 'TOKEN') return endedBy(again)
       token = again.token
-      answered = await executor.call(opened, token, operation, input, allowed())
+      answered = await deps.executor.call(opened, token, operation, input, allowed())
     }
     switch (answered.kind) {
       case 'OK':
@@ -116,6 +119,8 @@ export async function probed(deps: Deadlines, opened: OpenedConnection): Promise
       case 'AUTH_REFUSED':
       case 'TOKEN_EXPIRED':
         return { result: 'AUTH_REFUSED', native: answered.native }
+      case 'BUSY':
+        return endedBy(answered)
       case 'UNREACHABLE':
         // Judged after the call: the whole test's deadline ending it is an item not reached, any other end is the provider down.
         return spent() ? { outcome: 'NOT_TESTED' } : endedBy(answered)

@@ -78,3 +78,20 @@ test.each([
     expect(screen.queryByText(other)).toBeNull()
   },
 )
+
+test('Testar que o Mercado Livre pediu para esperar: a frase com a espera e a linha do 429', async () => {
+  const connection = connectionOf({ state: 'ACTIVE', testedAt: TESTED })
+  const hub = connectionsHub(viewOf({ connections: [connection] }), {}, (one) => ({
+    result: 'BUSY',
+    native: { status: 429, code: null, message: null, body: null },
+    waitMs: 3_000,
+    connection: one,
+  }))
+  server.use(...hub.handlers)
+  mount(pageOf(connection))
+  fireEvent.click(await screen.findByRole('button', { name: 'Testar' }))
+  expect(
+    await screen.findByText('O Sankhya pediu para esperar 3 segundos. Tente de novo depois disso.'),
+  ).toBeTruthy()
+  expect(screen.getByText('Sankhya respondeu 429')).toBeTruthy()
+})

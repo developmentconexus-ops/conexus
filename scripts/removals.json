@@ -2069,7 +2069,7 @@
   },
   {
     "id": "connector-response-cap",
-    "file": "apps/server/src/hub/connectors/executor.ts",
+    "file": "apps/server/src/hub/connectors/wire.ts",
     "find": "    if (bytes > RESPONSE_CAP_BYTES) {\n      await reader.cancel()\n      return null\n    }\n",
     "replace": "",
     "test": {

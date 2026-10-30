@@ -28,6 +28,7 @@ import { countOf, Said, TestResult } from './test-result.tsx'
 import {
   accountText,
   appRefusedText,
+  busyText,
   connectorName,
   linkedText,
   MEMBER_SENTENCE,
@@ -90,6 +91,7 @@ function TestRefusal(props: { answer: Exclude<Answer, { result: 'WORKING' }>; na
         ? serverErrorText(name)
         : unreachableText(name),
     UNREADABLE: UNREADABLE_TEXT,
+    BUSY: answer.result === 'BUSY' ? busyText(name, answer.waitMs) : null,
     APP_REFUSED: appRefusedText(name),
   }[answer.result]
   return (

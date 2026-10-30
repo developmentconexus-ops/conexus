@@ -22,6 +22,10 @@ type Switches = {
   rateLimited: boolean
   /** The account call (`/users/me`) answers 429. */
   accountRateLimited: boolean
+  /** The next data reads (not the account call) answer 429, this many times; each is counted down. */
+  busyReads: number
+  /** The `Retry-After` header those 429s carry (`retry-after-ms` when it is a number of milliseconds), or none. */
+  busyWait: { header: 'retry-after' | 'retry-after-ms'; value: string } | null
   /** Milliseconds each renewal is held back (`slow(ms)`). */
   slowMilliseconds: number
   /** Permission groups that answer 403 `PA_UNAUTHORIZED_RESULT_FROM_POLICIES`. */
@@ -225,6 +229,15 @@ function read(world: World, request: Request, url: URL): Response {
     return json(me({ ref: given.ref, label: world.switches.account.label }))
   for (const route of ROUTES) {
     const match = route.pattern.exec(url.pathname)
+    if (match && world.switches.busyReads > 0) {
+      const { busyWait } = world.switches
+      world.switches.busyReads -= 1
+      return json(
+        { message: 'too many requests', status: 429 },
+        429,
+        busyWait === null ? {} : { [busyWait.header]: busyWait.value },
+      )
+    }
     if (match) return routed(world, route, { request, url, ref: given.ref, match })
   }
   return json({ message: 'Resource not found', error: 'not_found', status: 404 }, 404)
@@ -273,6 +286,8 @@ export function mercadoLivreFake({
     invalidClient: false,
     rateLimited: false,
     accountRateLimited: false,
+    busyReads: 0,
+    busyWait: null,
     slowMilliseconds: 0,
     refuseGroups: new Set(),
     partialOrders: false,
