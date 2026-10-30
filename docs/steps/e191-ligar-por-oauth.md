@@ -4,7 +4,7 @@
 
 **No fim desta etapa** a Ana liga o Mercado Livre da Padaria Sol em **Integrações** sem colar chave
 nenhuma: toca **Ligar**, entra no Mercado Livre com a conta da loja, autoriza o Conexus e volta
-vendo o que o Conexus lê, assunto por assunto. Quando o Mercado Livre recusa a ligação, ela vê "O
+vendo "Ligado e funcionando.". Quando o Mercado Livre recusa a ligação, ela vê "O
 Mercado Livre pediu para conectar de novo." e um toque em **Conectar de novo** resolve. Por trás, o
 **OAuth vira uma capacidade do kit**, que qualquer conector declara: o pedido de autorização, a
 volta, a chave guardada e renovada uma vez só (mesmo com duas cópias do Hub) e o **Conectar de
@@ -21,10 +21,10 @@ sua conta de vendedor do Mercado Livre (a conta principal, não a de um colabora
    o Conexus. Com a conta de um colaborador, o Mercado Livre recusa, e a volta mostra a frase do
    Conexus e, embaixo, o que o Mercado Livre respondeu, como veio.
 3. Volta ao Conexus, na página da ligação: "Mercado Livre", "conta PADARIASOL", "ligada por Ana em
-   29/10", e o teste começa sozinho: "Testando as 27 leituras, uma por vez…". Aparecem os assuntos:
-   Conta, Anúncios, Vendas, Envios, Perguntas, Mensagens, Reclamações, Promoções, Métricas,
-   Faturamento e Mercado. Uma leitura que o app do Conexus não tem permissão de fazer diz "Recusada
-   pelo Mercado Livre"; um assunto vazio diz "Lê, mas não havia nada para olhar".
+   29/10", e o teste começa sozinho: "Testando a ligação…" e, em seguida, "Ligado e funcionando.".
+   O teste é uma leitura só, a da conta; se o Mercado Livre não deixar ler a conta, a frase diz isso
+   e, embaixo, o que ele respondeu; se ele pedir para esperar, "O Mercado Livre pediu para esperar.
+   Tente de novo em alguns minutos.".
 4. Se você tiver uma segunda conta do Mercado Livre, a Ana toca **Ligar** de novo, dá o nome "Loja
    2" e autoriza com a outra conta: duas ligações do Mercado Livre na mesma empresa. Depois, numa
    segunda empresa sua, tenta ligar a conta da Padaria Sol: o Conexus recusa com "Essa conta já
@@ -33,7 +33,7 @@ sua conta de vendedor do Mercado Livre (a conta principal, não a de um colabora
 5. Você tira a permissão do Conexus na sua conta do Mercado Livre e a Ana toca **Testar**: "O
    Mercado Livre pediu para conectar de novo." com **Conectar de novo**. Um toque, uma autorização,
    e o teste volta a funcionar na mesma ligação, com o mesmo nome.
-6. O Bruno abre **Integrações** e a ligação: vê o estado e o último teste, sem botões, e, com a
+6. O Bruno abre **Integrações** e a ligação: vê o estado e quem testou e quando, sem botões, e, com a
    ligação recusada, "O Mercado Livre pediu para conectar de novo. Peça ao dono ou a um
    administrador."
 7. A Ana toca **Desligar** e confirma: a ligação sai e as chaves saem do Hub.
@@ -74,7 +74,7 @@ sua conta de vendedor do Mercado Livre (a conta principal, não a de um colabora
   meses; uma ligação que ninguém usa nesse tempo pede **Conectar de novo**. Um serviço que acordasse
   só para renovar manteria o banco acordado (regra D27). Volta com o executor de tarefas da 20.2.
 - **Os avisos do Mercado Livre** (tópicos): a 20.2. **O limite de chamadas por app**: a 20, quando os
-  apps chamarem. Nesta etapa só o Testar chama: 27 leituras por teste.
+  apps chamarem. Nesta etapa só o Testar chama: uma leitura (a conta) por teste.
 - **As leituras de `T1` que ficam de fora**: Publicidade (Mercado Ads), os dados pessoais do
   comprador (CPF, e-mail, telefone: a resposta os apaga, como o RH do Sankhya), os pagamentos do
   Mercado Pago (outro app), Flex, Turbo, etiquetas, anexos, imóveis, veículos e serviços. Cada uma
@@ -129,6 +129,16 @@ escrito por nós, que o fornecedor de verdade desmentiria (o Sankhya desmentiu).
 comprador continuam saindo. O formato real das páginas do Mercado Livre é medido no seu primeiro uso
 (o roteiro, passo 3), e o dublê passa a ter esse formato. Por isso o código fica menor.
 
+**O que mudou depois, com a sua palavra** (2026-10-30, à pergunta "O senhor aprova trocar o Testar
+por essa chamada única, dentro da 19.1?": "Aprovado"): o Testar não chama mais cada leitura. Ele
+pega a chave da ligação e faz uma leitura só, a que o conector declara (no Mercado Livre, a conta;
+no Sankhya, o login e Empresas), como fazem o Nango, o Airbyte, o Activepieces, o n8n, o Zapier e o
+Make. Você vê uma frase: "Ligado e funcionando.", ou o motivo (as chaves recusadas, conectar de novo;
+a leitura não liberada, pedir ao responsável; o fornecedor pedindo para esperar; o fornecedor fora).
+Saem a lista por assunto, o último teste guardado item por item (`X2` da 19) e os 80 s. Se cada
+leitura funciona passa a ser trabalho do Conexus: a conformidade com o dublê, a conferência com a
+documentação e, na 20, o erro da própria leitura onde ela é usada. É a unidade U4.
+
 ## As unidades
 
 | Unidade | O que entrega | Pastas | Guia além do de código | Depende de |
@@ -136,6 +146,7 @@ comprador continuam saindo. O formato real das páginas do Mercado Livre é medi
 | U0 | O OAuth no kit (o tipo, a autorização, a troca, a renovação, a leitura da resposta, a conta reportada, a conta no pedido) e o Mercado Livre: a definição, 27 leituras em 11 assuntos, o dublê, a conferência contra a documentação, a skill por assunto | `packages/connectors/` | [testing](../guides/testing.md) | a 19 no `main` (já está: PRs 449 e 453) |
 | U1 | A ligação ganha `revision`, `refresh_until`, `account_ref`, `account_label` e a chave única da conta; a tabela `connectors.connection_sign_in`; as permissões do banco (D11) | `apps/server/migrations/`, `apps/server/src/hub/connectors/tables.ts`, `apps/server/database-grants.sql`, `apps/server/src/platform/catalog.test.ts` | [data](../guides/data.md) | a 19 no `main` |
 | U2 | As rotas da autorização, a chave e a sua renovação com a trava, o executor que troca e renova, o Testar do OAuth, o Conectar de novo dos dois tipos, as chaves do app na configuração, as falhas e a decisão 0057 | `apps/server/src/hub/connectors/`, `apps/server/src/platform/config.ts`, `packages/hub-api/src/`, `tests/e2e/live-hub.ts`, `docs/decisions/` | [security](../guides/security.md) | U0, U1 |
+| U4 | O Testar de uma leitura só (o fundador, 2026-10-30): o `check` do kit, uma chamada no Hub, uma frase na tela; saem o laço de leituras, o resultado guardado por item (`X2`) e os 80 s | `packages/connectors/src/kernel/`, `packages/connectors/src/*/definition.ts`, `apps/server/src/hub/connectors/`, `packages/hub-api/src/connectors.ts`, `apps/web/src/hub/connectors/`, `apps/web/sweep-*.ts`, `docs/` | [testing](../guides/testing.md) | U2, U3 no `main` |
 | U3 | O Ligar sem campos, a página da volta, a conta na ligação, o Conectar de novo dos dois tipos, as frases | `apps/web/src/hub/connectors/`, `apps/web/src/routes/_app/integrations/`, `packages/hub-api/src/pages.ts` | [web](../guides/web.md) | U2; a U4 da 19 (https://github.com/developmentconexus-ops/conexus/pull/454) no `main` |
 
 U0 e U1 correm em paralelo: não dividem pasta. Podem começar logo depois da aprovação desta página
@@ -162,13 +173,13 @@ leituras ~620, dublê ~350, conferência ~80). U1: ~120. U2: ~830. U3: ~380. Tot
 | 10 | U2 | O Hub sobe sem `HUB_CONNECTOR_APPS_FILE`; com o arquivo vazio, ilegível ou fora do formato, não sobe (`CONFIG_INVALID`, S31); com um conector que o kit não tem, ou que não é `oauth2_code`, também não sobe | `apps/server/src/platform/config.test.ts`, "as chaves dos apps" (o formato); `connections.test.ts`, um Hub de `spawnHub` com esse arquivo (os dois conectores) | must |
 | 11 | U2 | Dois Testar ao mesmo tempo com a chave de acesso vencida: o dublê conta **uma** renovação, os dois `WORKING` | `connections-refresh.test.ts`, "uma renovação" | must |
 | 12 | U2 | Dois processos do Hub (`spawnHub` duas vezes, um banco), cada um com um Testar na mesma ligação vencida: o dublê conta **uma** renovação | `connections.test.ts`, "entre cópias do Hub", no molde do seu `spawnHub` (`connections.test.ts:263`): o mesmo ambiente com o dublê e o arquivo de apps nos dois, a sessão e a ligação criadas pelo primeiro | must |
-| 13 | U2 | Quem espera e tem o prazo acabando enquanto a renovação do dublê demora responde `UNREACHABLE` no seu prazo, não nos 30 s da trava; a renovação de quem a tem ainda grava, e a próxima chamada usa a chave nova | `connections-refresh.test.ts`, "o prazo de quem espera": o Hub de teste com `testDeadlineMs` de 1 s e o dublê com `slow(2000)`; a renovação tem o seu próprio prazo de 10 s, então quem a tem grava aos 2 s; um terceiro Testar não renova (o contador fica em 1) | must |
+| 13 | U2 | Quem espera e tem o prazo acabando enquanto a renovação do dublê demora responde `UNREACHABLE` no seu prazo, não nos 30 s da trava; a renovação de quem a tem ainda grava, e a próxima chamada usa a chave nova | `connections-refresh.test.ts`, "o prazo de quem espera": o Hub de teste com o prazo de uma chamada de 1 s e o dublê com `slow(2000)`; a renovação tem o seu próprio prazo de 10 s, então quem a tem grava aos 2 s; um terceiro Testar não renova (o contador fica em 1) | must |
 | 14 | U2 | O dublê tira a autorização: Testar → 401 → uma renovação forçada → `invalid_grant` → `AUTH_REFUSED` com `native`, a ligação `NEEDS_REAUTH`; um segundo Testar recusa sem renovar | `connections-refresh.test.ts`, "recusada pelo fornecedor" | must |
 | 15 | U2 | O dublê responde `invalid_client` à renovação: Testar dá `APP_REFUSED` com `native`, o estado não muda e o log tem `CONNECTOR_APP_REFUSED` em nível de erro; 429 ou 5xx na renovação: `UNREACHABLE`; uma resposta que o kit não lê: `UNREADABLE`; nos dois, estado e chaves sem mudar e a trava solta | `connections-refresh.test.ts`, "o app recusado" | must |
-| 16 | U2 | Conectar de novo numa ligação `NEEDS_REAUTH` troca o selo, sobe `revision`, põe `NEW`, limpa o último teste e mantém o id e o nome. Com outra conta do fornecedor (`V2`), a ligação passa a essa conta; com uma conta já ligada em outra ligação, `CONNECTION_ACCOUNT_ELSEWHERE` e nada muda | `sign-ins.test.ts`, "conectar de novo" | must |
+| 16 | U2 | Conectar de novo numa ligação `NEEDS_REAUTH` troca o selo, sobe `revision`, põe `NEW`, limpa quem testou e quando, e mantém o id e o nome. Com outra conta do fornecedor (`V2`), a ligação passa a essa conta; com uma conta já ligada em outra ligação, `CONNECTION_ACCOUNT_ELSEWHERE` e nada muda | `sign-ins.test.ts`, "conectar de novo" | must |
 | 17 | U2 | Conectar de novo no Sankhya (`PUT …/credential`) troca as chaves da mesma ligação, põe `NEW`, mantém id e nome; chaves fora do esquema: `CONNECTION_CREDENTIAL_INVALID`, nada muda | `connections-reconnect.test.ts` | must |
 | 18 | U1, U2 | A mesma conta do fornecedor ligada por uma segunda empresa, ou uma segunda vez na mesma: `CONNECTION_ACCOUNT_ELSEWHERE`, sem nomear a outra empresa; o banco recusa direto uma segunda linha com a mesma conta | `tables.test.ts`, "a conta numa ligação só"; `sign-ins.test.ts`, "outra empresa" | must |
-| 19 | U2 | Testar com o dublê recusando um grupo de permissão (403 `PA_UNAUTHORIZED_RESULT_FROM_POLICIES`): essas leituras `REFUSED` com `native`, as outras `READS`, o resultado `WORKING` | `connections-refresh.test.ts`, "uma permissão faltando" | must |
+| 19 | U4 | O Testar manda uma leitura só, a que o conector declara (`check`): com as outras leituras recusadas pelo dublê, `WORKING`; a conta recusada (403 `PA_UNAUTHORIZED_RESULT_FROM_POLICIES`) dá `READ_REFUSED` com `read: "Conta"` e `native`; um 429 dá `BUSY`; nos dois, a ligação como estava. O mesmo no Sankhya com Empresas | `connections-refresh.test.ts`, "a conta, uma leitura só"; `connections.test.ts`, "uma leitura só, a das empresas" | must |
 | 20 | U3 | Num navegador de verdade (Chrome e WebKit, 1366 e 390, os dois temas): **Ligar** vai ao consentimento do dublê e volta; a página mostra a conta e testa sozinha; a autorização recusada no dublê mostra a frase e o `native`; a ligação recusada mostra **Conectar de novo** e volta a funcionar; o membro não tem botões | QA (`conexus-qa`), o relatório do pull request da etapa | must |
 | 21 | U0 | Cada leitura tem a sua rota na página da documentação que ela cita, baixada na hora; uma operação cuja rota não está na página falha | `mercado-livre/docs.test.ts` (`MERCADO_LIVRE_DOCS_ONLINE=1`, `npm run test:docs -w @conexus/connectors`) | must |
 | 22 | U0 | `mensagensDoPacote` sempre manda `mark_as_read=false`; tirar o parâmetro faz um teste falhar | `mercado-livre/operations.test.ts`, "não marca como lida" | must |
@@ -184,7 +195,7 @@ leituras ~620, dublê ~350, conferência ~80). U1: ~120. U2: ~830. U3: ~380. Tot
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Janela de ligar, OAuth | o nome com o nome do conector | — | **Continuar no <conector>** ocupado até o `url` chegar | a frase da falha (`CONNECTOR_NOT_CONFIGURED`, `DATABASE_UNAVAILABLE`) na janela; `CONNECTION_NAME_*` no campo | — | o membro não vê **Ligar** | — |
 | A volta (`/integrations/return`) | "Voltando da autorização…" | — | o mesmo, até a resposta | `REFUSED`, `APP_REFUSED`, `UNREACHABLE`: a frase e o `native`, com "Voltar a Integrações" | `state` ruim: "Esse endereço não é de uma ligação." | `NOT_FOUND` da rota (outra empresa): "Esse endereço não é de uma ligação." | `CONNECTION_SIGN_IN_EXPIRED`, `CONNECTION_ACCOUNT_ELSEWHERE`, a recusa da pessoa: a frase, com "Voltar a Integrações" |
-| Página da ligação | `NEW`: "ainda não testada", e o teste começa sozinho quando a tela vem da volta | — | "Testando as 27 leituras, uma por vez…" (da 19) | `APP_REFUSED`: "O app do Conexus foi recusado pelo <conector>. Avise o suporte." e o `native` | da 19 | da 19, mais sem **Conectar de novo** | `NEEDS_REAUTH`: OAuth "O <conector> pediu para conectar de novo."; chaves "As chaves foram recusadas pelo <conector>."; os dois com **Conectar de novo**; o membro, a frase com "Peça ao dono ou a um administrador." |
+| Página da ligação | `NEW`: "ainda não testada", e o teste começa sozinho quando a tela vem da volta | — | "Testando a ligação…" | `APP_REFUSED`: "O app do Conexus foi recusado pelo <conector>. Avise o suporte." e o `native`; `READ_REFUSED`: "O <conector> aceitou a ligação, mas não deixou ler <leitura>. Peça ao responsável pela conta no <conector> para liberar." e o `native`; `BUSY`: "O <conector> pediu para esperar. Tente de novo em alguns minutos." e o `native`; `WORKING`: "Ligado e funcionando." | da 19 | da 19, mais sem **Conectar de novo** | `NEEDS_REAUTH`: OAuth "O <conector> pediu para conectar de novo."; chaves "As chaves foram recusadas pelo <conector>."; os dois com **Conectar de novo**; o membro, a frase com "Peça ao dono ou a um administrador." |
 | Lista | da 19 | da 19 | da 19 | da 19 | — | da 19 | o selo de `NEEDS_REAUTH` por tipo: "Pede para conectar de novo" (OAuth), "Chaves recusadas" (chaves) |
 
 | Campo de contrato | Quem escreve | Quem lê |
@@ -197,6 +208,7 @@ leituras ~620, dublê ~350, conferência ~80). U1: ~120. U2: ~830. U3: ~380. Tot
 | `SignInStarted.url` | U2 | U3: `location.assign` |
 | `SignInCompleted` (`LINKED`, `REFUSED`, `APP_REFUSED`, `UNREACHABLE`, `UNREADABLE`, `CANCELLED`; `connector` nos que não são `LINKED`) | U2 | U3: a página da volta, a frase e o nome do conector |
 | `TestResult` `APP_REFUSED` | U2 | U3: a frase da página da ligação |
+| `TestResult` `READ_REFUSED` (`read`), `BUSY`; `Connector.check` | U4 | U4: a frase da página da ligação |
 
 Uma etapa com tela leva o desenho de caixas. A volta e a janela são novas; a lista e a página são as
 da 19 com duas linhas a mais.
@@ -256,7 +268,8 @@ estante tem conector do Mercado Livre.
 | A recusa do fornecedor → `NEEDS_REAUTH` | U0, U2 | o estado `NEEDS_REAUTH` existe; S34 | os erros do Mercado Livre: `invalid_grant`, `unauthorized_client` (a autorização); `invalid_client`, `unauthorized_application`, `invalid_scope` (o app) | **documentado** | embrulhado: o conector declara as duas listas (`refusals`); a da autorização grava `NEEDS_REAUTH`; a do app não muda o estado e vai ao log como erro | critérios 14, 15 | não precisa | — |
 | Conectar de novo | U2, U3 | a 19 o prometeu "para todos os tipos" (o seu cartão, "Fica de fora") | Mastra Connect `needs_reauth`; Composio `EXPIRED` | autorizar de novo a mesma ligação | embrulhado: OAuth, uma autorização com `connectionId`; chaves, `PUT …/credential` na mesma ligação | critérios 16, 17, 25 | `V2` | — |
 | Uma conta do fornecedor numa ligação só | U1, U2 | `Connector.account` só `{ kind: 'none' }` (`kernel/definition.ts:14-18`) | Activepieces `getConnectionIdentifier` (`packages/pieces/framework/src/lib/property/authentication/common.ts:23`), sem chave única; o Mercado Livre "Permitimos usar apenas o último REFRESH_TOKEN gerado" | o conector diz de que conta é a chave | embrulhado: `{ kind: 'reported', exclusive: true, who }`; chave única `(connector_id, account_ref)`; o 23505 vira `CONNECTION_ACCOUNT_ELSEWHERE` sem nomear a outra empresa (S10) | critério 18 | `U1` | — |
-| O Testar de uma ligação OAuth | U2 | `hub/connectors/probe.ts:58-143`: `executor.login`, cada leitura em ordem, `TOKEN_EXPIRED` → login de novo uma vez | Airbyte `check`; Nango `verification.endpoints` | — | embrulhado: o login vira "a chave de acesso" (`tokens.ts`), a selada enquanto vive, senão uma renovação com trava; 401 → uma renovação forçada → repete | critérios 14, 19 | não precisa | — |
+| O Testar de uma ligação OAuth | U2 | `hub/connectors/probe.ts:58-143`: `executor.login`, cada leitura em ordem, `TOKEN_EXPIRED` → login de novo uma vez | Airbyte `check`; Nango `verification.endpoints` | — | embrulhado: o login vira "a chave de acesso" (`tokens.ts`), a selada enquanto vive, senão uma renovação com trava; 401 → uma renovação forçada → repete | critério 14 | não precisa | — |
+| O Testar de uma leitura só | U4 | `hub/connectors/probe.ts:59-151`: cada leitura da porta e cada operação, uma por vez, com 80 s no todo, guardadas em `last_test` | Airbyte `8aed3123` `CheckStream` com `stream_names` (`source-hubspot/manifest.yaml:5-8`); Nango `e6c6131` `proxy.verification` no provedor, o primeiro 2xx basta (`packages/server/lib/hooks/hooks.ts:467,522-523`); n8n `2e855356` `ICredentialTestRequest` e o veredito aceito, recusado, não verificado (`packages/cli/src/services/credentials-tester.service.ts:41-52,319-375`); Activepieces `f34c43cd` `validate` na autenticação (`packages/pieces/framework/src/lib/property/authentication/common.ts:13-19`) | uma chamada autenticada, declarada pelo conector; a saúde de cada leitura é da plataforma | embrulhado: `Connector.check` nomeia uma das próprias leituras do conector, sem fonte anterior (o `CheckStream` do Airbyte); o executor a manda uma vez com a chave da ligação, e a resposta da própria leitura decide (um 2xx que é recusa no envelope continua recusa); o veredito do n8n com o `native` | critério 19 | o fundador, 2026-10-30: "Aprovado" | `kernel/definition.ts`, `hub/connectors/check.ts` |
 | As leituras | U0 | as 23 do Sankhya (`sankhya/operations/*`) | as páginas do Mercado Livre, 2026-10-29 (a lista na U0) | — | nativo: 27 leituras em 11 assuntos, cada uma com a rota, a entrada, a chave da lista e a paginação, e as linhas como vieram com o envelope conferido (a opção B do estudo do Sankhya de verdade, 2026-10-30); o id do vendedor chega pelo segundo argumento de `request` | critérios 4, 21 | `T1` | `mercado-livre/operations/{conta,anuncios,vendas,envios,perguntas,mensagens,reclamacoes,promocoes,metricas,faturamento,mercado,index}.ts` |
 | A conferência com a documentação | U0 | `sankhya/spec-source.ts:4-6`: as páginas baixadas na hora, nunca guardadas | nenhuma faz: o Mercado Livre não publica OpenAPI nem `llms.txt` (`/llms.txt` 404; nenhum `openapi` nas 221 páginas) | — | remendo: um teste baixa, na hora, a página que cada leitura cita e confere que a rota está no texto; mais fraco que o do Sankhya (sem esquema de resposta) | `docs/decisions/0057` (escrita pela U2), critério 21 | a palavra da 19, "não guardar e baixar na hora" | `mercado-livre/docs-source.ts`, `docs.test.ts` |
 | O Mercado Livre de mentira | U0 | `sankhya/fake.ts` (`node:http` em 127.0.0.1) | o Mercado Livre não tem ambiente de testes (`realizacao-de-testes`) | — | embrulhado: `fake.ts` com `/authorization`, `/oauth/token`, `/users/me` e as 27 leituras, com chaves para cada recusa | critérios 4, 5, 11 a 15 | não precisa | `mercado-livre/fake.ts`, `fake-data.ts` |
@@ -863,3 +876,24 @@ existe.
 
 - A política de conteúdo da página recusa a navegação para a origem de autorização: não afrouxe a
   política; reporte.
+
+## U4 O Testar de uma leitura só
+
+**Base e modelo.** `main` com U2 e U3, e a revogação (https://github.com/developmentconexus-ops/conexus/pull/483). **Opus**: o contrato cruza o kit, o Hub, a tela e os documentos.
+
+### As linhas da tabela
+
+O Testar de uma leitura só.
+
+### O que sai
+
+`hub/connectors/probe.ts` (o laço, `SOURCE_UNREAD`, `NOT_TESTED`, o prazo do teste inteiro); `TestCheck`, `KeptCheck`, `TEST_DEADLINE_MS`, `ConnectorEntry.reads` e `ConnectionDetail.lastTest` do contrato; quem lê e escreve `connection.last_test` (a coluna e a sua permissão ficam até uma migração depois, quando nenhuma imagem no ar a ler, regra D6); `test-result.tsx` e as frases por leitura da tela. `inProbeOrder` e `probe` ficam: a conformidade e a sessão de teste do Mercado Livre os usam.
+
+### O que entra
+
+`Connector.check`: uma das leituras do conector, sem fonte anterior, que `defineConnector` confere (o Sankhya, `empresas`; o Mercado Livre, `conta`; um conector novo declara a sua). `hub/connectors/check.ts`: a chave da ligação e a leitura, cada uma no prazo de uma chamada; 401 → uma chave forçada → repete. O resultado: `WORKING`, `AUTH_REFUSED`, `READ_REFUSED` (com `read`), `BUSY` (429), `UNREACHABLE`, `UNREADABLE`, `APP_REFUSED`; só `WORKING` e `AUTH_REFUSED` mudam o estado. Na tela, uma frase de `text.ts` por resultado (a matriz de estados) e o `native` embaixo.
+
+### Como se prova
+
+Critério 19 no Hub, com os dois dublês; os testes da tela, um por resultado; `npm run quality`.
+
