@@ -193,7 +193,10 @@ churn, not runtime style enforcement; do not extend this check to vendor-generat
   so `max-w-sm` becomes 0.5rem. Use a distinct container name; numeric, intrinsic and zero widths
   remain valid. Failure: a copied hex misses a theme change, or a spacing name makes a column 8px
   wide. The existing GritQL plugin checks only that width collision, not all token semantics.
-  [review]
+  Um diálogo de formulário com vários campos e a ajuda deles usa o tamanho `fields` (janela de
+  48rem, tela inteira abaixo de `sm`): a ajuda ao lado dos campos a partir de `md` e acima no
+  celular, o corpo rola e o rodapé com os botões fica sempre à vista. `form` fica para um pedido
+  curto. [review]
 - **V55.** Destructive actions **should** retain the approved distinction: neutral `button-danger`
   with danger text on the page, full-danger `button-danger-confirm` only at the final confirmation
   instead of ink. Founder, 2026-10-14: "B". Failure: two equally red actions obscure which click
