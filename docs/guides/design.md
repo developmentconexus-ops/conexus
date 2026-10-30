@@ -43,6 +43,7 @@ colors:
   dark-danger: "#F28B9A"
   phone-frame: "#1D2125"
   dark-phone-frame: "#3A4148"
+  logo-plate: "#FFFFFF"
 typography:
   display:
     fontFamily: "Bricolage Grotesque, system-ui, sans-serif"
@@ -123,6 +124,8 @@ most colorful thing on screen. Ipê is the warm gold accent; prose is sans and f
   Tokens let both themes change in one file. The Prévia's drawn phone frame is the color token
   `phone-frame` (`dark-phone-frame` in the dark theme, where `#1d2125` would vanish into the stage)
   rather than a raw value; founder, 2026-10-28, on proposal B, Janela, of the Prévia screen: "1. Sim".
+  A provider's logo sits on the color token `logo-plate`, a light plate in both themes like
+  `phone-frame`, because a wordmark is drawn for a light ground (step 19, the Integrações screen).
   [rule to write]
 - **V5.** Ipê **should** distinguish current activity and choice: focus, caret, selection, active
   lens and working agent, not every resting action or heading. The send hover keeps its current
