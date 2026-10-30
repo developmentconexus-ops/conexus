@@ -169,6 +169,7 @@ leituras ~1.150, dublê ~450, conferência ~80). U1: ~120. U2: ~830. U3: ~380. T
 | 24 | U3 | A volta com `state` faltando ou estragado mostra "Esse endereço não é de uma ligação." e não chama o Hub; a volta com `error=access_denied` manda `{ refused: true }` e mostra "Você não autorizou o Conexus no <conector>."; a página troca o seu endereço na história antes de chamar o Hub, então voltar não manda o código de novo | `apps/web/src/hub/connectors/sign-in-return.test.tsx` | must |
 | 25 | U3 | Um conector `oauth2_code` abre a janela só com o nome e **Continuar no <conector>**, nunca campos; um `client_credentials` com `NEEDS_REAUTH` abre a janela das chaves com o nome travado e manda `PUT …/credential` | `apps/web/src/hub/connectors/integrations-oauth.test.tsx` | must |
 | 26 | Fundador | O roteiro, passos 1 a 7, no Hub de verdade com o app e a conta dele (fora da CI, S40) | o uso, no livro de aprovações | must |
+| 27 | U3 | A volta com a sessão vencida: o `_app` manda ao login com `redirect` igual ao endereço inteiro, com `code` e `state` (`apps/web/src/routes/_app/route.tsx:9`); depois de entrar, a tela volta a esse endereço e completa a ligação; um `redirect` de outra origem é recusado pelo login (`SameOriginPath`, `routes/_public/login.tsx:13`) | `sign-in-return.test.tsx`, "sessão vencida" | must |
 
 ## A matriz de estados
 
@@ -243,7 +244,7 @@ estante tem conector do Mercado Livre.
 | A volta | U2, U3 | `serve()` por tipo de acesso; `page` responde qualquer endereço fora de `/api/` sem olhar o site de origem (`platform/access.ts:141`, S48); `POST …/model-account-sign-ins/{signInId}` completa | o Mercado Livre: `redirect_uri` estático, sem parte variável, o `state` leva o resto | **documentado** | embrulhado: uma página da tela (`/integrations/return`, `page`, sem efeito, C36) lê `code`, `state` e `error`, troca o próprio endereço na história e chama `POST …/connection-sign-ins/{signInId}` (`session`, Origin conferida, S24) | critérios 7, 8, 24 | não precisa | `apps/web/src/routes/_app/integrations/return.tsx` |
 | A sessão na volta | U3 | better-auth 1.7.8, cookie `sameSite: "lax"` (`node_modules/better-auth/dist/cookies/index.mjs:35`) | — | uma navegação de topo vinda do fornecedor leva o cookie Lax | nativo | — | não precisa | — |
 | Onde a chave fica | U1, U2 | `connectors.connection.sealed`, contexto `{ purpose: 'connection', kind, provider }` (`hub/connectors/rows.ts:97`) | o Mercado Livre `gestao-de-identidades-e-acessos-oauth-e-tokens`: criptografada em repouso, nunca em log nem URL | **documentado** | nativo (S32): a mesma coluna guarda `{ access, refresh, expiresAt }` inteiro; a conta em colunas abertas `account_ref` e `account_label` | critério 9 | não precisa | — |
-| A renovação com várias chamadas e várias cópias | U1, U2 | `builder/model-accounts/claude/store.ts:19-20` (`LEASE_MS`, `WAIT_STEP_MS`), `:50-66` (`reserve`), `:68-85` (`store`), `:91-99` (`release`), `:130-142` (quem espera) | Nango `SET NX PX 10000` em Redis (`refresh.ts:445-452`); n8n `leaseTtlMs 30_000` e, no fim do prazo, renova sem coordenar (`oauth.ts:305-309`); Activepieces Redlock 60 s | um só renova; os outros releem depois | nativo do `main`: a mesma forma em `connectors.connection`; quem espera para no menor entre o fim da trava e o próprio prazo. O "renova mesmo assim" do n8n fica de fora: com chave de uso único, derruba a autorização | **provado** no estudo: `claude-refresh.test.ts`, 10 de 10 em `81ca579a`; critérios 11 a 13 | não precisa | `hub/connectors/tokens.ts` |
+| A renovação com várias chamadas e várias cópias | U1, U2 | `builder/model-accounts/claude/store.ts:19-20` (`LEASE_MS`, `WAIT_STEP_MS`), `:50-66` (`reserve`), `:68-85` (`store`), `:91-99` (`release`), `:130-142` (quem espera) | Nango `SET NX PX 10000` em Redis (`packages/server/lib/services/connections/credentials/refresh.ts:445-452`, os 10 s em `:449-451`); n8n `leaseTtlMs 30_000` e, no fim do prazo, renova sem coordenar (`oauth.ts:305-309`); Activepieces Redlock 60 s | um só renova; os outros releem depois | nativo do `main`: a mesma forma em `connectors.connection`; quem espera para no menor entre o fim da trava e o próprio prazo. O "renova mesmo assim" do n8n fica de fora: com chave de uso único, derruba a autorização | **provado** no estudo: `claude-refresh.test.ts`, 10 de 10 em `81ca579a`; critérios 11 a 13 | não precisa | `hub/connectors/tokens.ts` |
 | Quando renovar | U2 | `EARLY_MS = 300_000` (`claude/sign-in.ts:22`) | Nango e Activepieces 15 min; n8n 60 s e no 401; o Mercado Livre "renove … somente quando perder validade" | uma folga antes de vencer, e no 401 | embrulhado: 5 min antes, e uma vez forçada quando uma leitura responde 401 | critérios 11, 14 | não precisa | — |
 | A recusa do fornecedor → `NEEDS_REAUTH` | U0, U2 | o estado `NEEDS_REAUTH` existe; S34 | os erros do Mercado Livre: `invalid_grant`, `unauthorized_client` (a autorização); `invalid_client`, `unauthorized_application`, `invalid_scope` (o app) | **documentado** | embrulhado: o conector declara as duas listas (`refusals`); a da autorização grava `NEEDS_REAUTH`; a do app não muda o estado e vai ao log como erro | critérios 14, 15 | não precisa | — |
 | Conectar de novo | U2, U3 | a 19 o prometeu "para todos os tipos" (o seu cartão, "Fica de fora") | Mastra Connect `needs_reauth`; Composio `EXPIRED` | autorizar de novo a mesma ligação | embrulhado: OAuth, uma autorização com `connectionId`; chaves, `PUT …/credential` na mesma ligação | critérios 16, 17, 25 | `V2` | — |
@@ -380,7 +381,7 @@ sem skill). Leia `pstack:typescript-best-practices` para os tipos.
 ### A ordem do trabalho
 
 1. **Apagar antes de somar:** nada a apagar. O comentário "OAuth comes in 19.1" de `auth.ts:19` e o de
-   `definition.ts:112-113` saem.
+   `definition.ts:16-17` saem.
 2. `kernel/oauth.ts`: os contratos acima. `oauth2Code` congela e confere (`https://`, as duas listas
    sem repetição entre elas). `codeRequest`: `grant_type=authorization_code`, `client_id`,
    `client_secret`, `code`, `redirect_uri`, `code_verifier`, num `TokenRequest` (`form`, `headers:
@@ -774,7 +775,7 @@ U4, "A tela escolhida". `link-dialog.tsx` cumpre C26 (os campos vêm do catálog
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `apps/web/src/hub/connectors/` | Muda `link-dialog.tsx`, `integrations.tsx`, `test-hub.tsx`, `text.ts`, `queries.ts`; cria `sign-in-return.tsx` | as rotas |
+| `apps/web/src/hub/connectors/` | Muda `link-dialog.tsx`, `integrations.tsx`, `connection-page.tsx` (a frase das chaves recusadas e o Conectar de novo), `test-hub.tsx`, `text.ts`, `queries.ts`; cria `sign-in-return.tsx` | as rotas |
 | `apps/web/src/routes/_app/integrations/return.tsx` | Cria | o roteador (`routeTree.gen.ts`, gerado) |
 | `packages/hub-api/src/pages.ts` | Muda: `'/integrations/return'` em `PAGES` (a constante `REDIRECT_PATH` é da U2) | o teste das páginas (W1) |
 
@@ -816,7 +817,7 @@ janela e a volta.
    chamada); `error` → `{ refused: true }`; senão `{ code }`; `LINKED` → navega para a página da
    ligação e chama o Testar, como o Ligar e testar da 19; os outros resultados e falhas → a frase da
    matriz. Regras: W1 (a página na lista), C36 (a página não muda nada sozinha; o POST muda).
-4. `integrations.tsx`, `test-hub.tsx`: a conta ("conta <label>") na lista e na página; o selo e a
+4. `integrations.tsx`, `connection-page.tsx`, `test-hub.tsx`: a conta ("conta <label>") na lista e na página; o selo e a
    frase por `auth`; **Conectar de novo** em `NEEDS_REAUTH` para quem gerencia; `APP_REFUSED` no
    resultado do Testar. `hintText` passa a depender de `auth`: a dica de `REFUSED` com chaves continua
    ("O usuário de integração não tem acesso…"); com OAuth, "O app do Conexus não tem permissão para
@@ -825,14 +826,12 @@ janela e a volta.
 
 ### Como se prova
 
-`sign-in-return.test.tsx` (24) e `integrations-oauth.test.tsx` (25), pela tela de teste da U4
+`sign-in-return.test.tsx` (24, 27) e `integrations-oauth.test.tsx` (25), pela tela de teste da U4
 (`test-hub.tsx`), com as respostas do Hub pelos esquemas de `hub-api` que a U2 deu; o QA do critério 20 depois da
 última unidade, com `tests/e2e/live-hub.ts` e o dublê. Os dois testes falham hoje: a página não
 existe.
 
 ### Parar se
 
-- O `_app` perde a busca (`code`, `state`) ao mandar para o login quando a sessão venceu: a
-  autorização ainda vive 10 minutos; reporte, e a frase de vencida cobre o caso até lá.
 - A política de conteúdo da página recusa a navegação para a origem de autorização: não afrouxe a
   política; reporte.
