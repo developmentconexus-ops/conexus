@@ -17,7 +17,7 @@ import { publishedVersion, versionView } from '../../platform/test-hub-versions.
 
 const server = hubServer()
 const PROJECT = `/companies/${COMPANY.id}/projects/${PEDIDOS.id}`
-const ABOUT = `${PROJECT}?lens=project`
+const ABOUT = `${PROJECT}/about`
 const UNCONFIRMED = 'Não confirmamos a exclusão. Veja a lista.'
 
 beforeEach(() => server.use(conversationsNone))
@@ -58,8 +58,7 @@ function done() {
 test('o Projeto mostra o nome e a data, e o dono vê "Apagar Projeto"', async () => {
   hub(done)
   render(<Conexus conexus={createConexus(createMemoryHistory({ initialEntries: [ABOUT] }))} />)
-  expect(await screen.findAllByRole('heading', { name: 'Pedidos' })).not.toHaveLength(0)
-  expect(screen.getByText('Criado em 17/10/2026')).toBeTruthy()
+  expect(await screen.findByText('Criado em 17/10/2026')).toBeTruthy()
   expect(screen.getByRole('button', { name: 'Apagar Projeto' })).toBeTruthy()
 })
 
@@ -73,15 +72,14 @@ test('o nome do Projeto é um título por largura, com o nome inteiro no title, 
   expect(titles.map((title) => title.nextElementSibling?.getAttribute('aria-label'))).toContain(
     'Projeto',
   )
-  fireEvent.click(screen.getByRole('tab', { name: 'Projeto' }))
-  expect(await screen.findByText('Criado em 17/10/2026')).toBeTruthy()
+  fireEvent.click(screen.getByRole('tab', { name: 'Código' }))
   expect(screen.getAllByRole('heading', { name: 'Pedidos' })).toHaveLength(2)
 })
 
 test('o membro vê o Sobre sem "Apagar Projeto", e quem pode apagar', async () => {
   hub(done, false)
   render(<Conexus conexus={createConexus(createMemoryHistory({ initialEntries: [ABOUT] }))} />)
-  expect(await screen.findAllByRole('heading', { name: 'Pedidos' })).not.toHaveLength(0)
+  expect(await screen.findByText('Criado em 17/10/2026')).toBeTruthy()
   expect(screen.queryByRole('button', { name: 'Apagar Projeto' })).toBeNull()
   expect(
     screen.getByText('Só o dono ou quem administra a empresa pode apagar o Projeto.'),
@@ -100,7 +98,7 @@ for (const role of ['owner', 'admin', 'member'] as const) {
         publishedVersion: 1,
       }),
     )
-    render(<Conexus conexus={createConexus(createMemoryHistory({ initialEntries: [ABOUT] }))} />)
+    render(<Conexus conexus={createConexus(createMemoryHistory({ initialEntries: [PROJECT] }))} />)
     expect(await screen.findByText(PEDIDOS_ADDRESS)).toBeTruthy()
     expect(screen.getByRole('link', { name: 'Abrir app' }).getAttribute('href')).toBe(
       `https://${PEDIDOS_ADDRESS}/`,
@@ -118,7 +116,7 @@ test('Abrir app abre aba nova', async () => {
       publishedVersion: 1,
     }),
   )
-  render(<Conexus conexus={createConexus(createMemoryHistory({ initialEntries: [ABOUT] }))} />)
+  render(<Conexus conexus={createConexus(createMemoryHistory({ initialEntries: [PROJECT] }))} />)
   const link = await screen.findByRole('link', { name: 'Abrir app' })
   expect(link.getAttribute('target')).toBe('_blank')
   expect(link.getAttribute('rel')).toBe('noopener noreferrer')
@@ -126,7 +124,7 @@ test('Abrir app abre aba nova', async () => {
 
 test('antes do primeiro app, o topo não mostra "Abrir app"', async () => {
   server.use(...projectsRead({ projects: [PEDIDOS], databaseReady: true, mayDelete: true }))
-  render(<Conexus conexus={createConexus(createMemoryHistory({ initialEntries: [ABOUT] }))} />)
+  render(<Conexus conexus={createConexus(createMemoryHistory({ initialEntries: [PROJECT] }))} />)
   expect(await screen.findAllByRole('heading', { name: 'Pedidos' })).not.toHaveLength(0)
   expect(screen.queryByRole('link', { name: 'Abrir app' })).toBeNull()
 })
@@ -207,7 +205,7 @@ test('um Projeto sem endereço, feito na 7.x: nem o endereço nem "Abrir app"', 
     ...projectsRead({ projects: [PEDIDOS], databaseReady: true, mayDelete: true, address: null }),
   )
   render(<Conexus conexus={createConexus(createMemoryHistory({ initialEntries: [ABOUT] }))} />)
-  expect(await screen.findAllByRole('heading', { name: 'Pedidos' })).not.toHaveLength(0)
+  expect(await screen.findByText('Criado em 17/10/2026')).toBeTruthy()
   expect(screen.queryByText(/Endereço do app:/)).toBeNull()
   expect(screen.queryByRole('link', { name: 'Abrir app' })).toBeNull()
 })

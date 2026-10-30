@@ -134,7 +134,7 @@ test('Quem usa os apps: a pessoa de fora com o app e o papel, o app leva à seç
     'Carla Souzacarla@example.testPedidos · GerenteTirar de todos',
   ])
   expect(apps.getByRole('link', { name: 'Pedidos · Gerente' }).getAttribute('href')).toBe(
-    `/companies/${COMPANY.id}/projects/${PEDIDOS.id}?lens=project&section=access`,
+    `/companies/${COMPANY.id}/projects/${PEDIDOS.id}/access`,
   )
   fireEvent.click(apps.getByRole('button', { name: 'Tirar de todos os apps: Carla Souza' }))
   const dialog = await screen.findByRole('alertdialog')

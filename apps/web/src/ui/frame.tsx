@@ -118,9 +118,8 @@ function CloseOnNavigation() {
 
 /**
  * The frame of every page with a session (web W30): one sidebar on the left and no top bar. The
- * sidebar holds `header`, `nav` and `footer`; `compact` closes it to icons, and it opens again when
- * `compact` ends, and the page fills the rest of the screen edge to edge, for a Projeto's two
- * regions. On a phone it is a drawer under a top line naming the place (design V56).
+ * sidebar holds `header`, `nav` and `footer`, open until the person collapses it to icons; `compact`
+ * means the page fills the rest of the screen edge to edge, for a Projeto's two regions. On a phone it is a drawer under a top line naming the place (design V56).
  */
 export function Frame(props: {
   header: ReactNode
@@ -129,14 +128,9 @@ export function Frame(props: {
   compact: boolean
   children: ReactNode
 }) {
-  // Ctrl+B or the rail may open it in a Project; leaving the Project opens it again.
-  const [open, setOpen] = useState(!props.compact)
-  const [compact, setCompact] = useState(props.compact)
+  const [open, setOpen] = useState(true)
   const [slot, setSlot] = useState<HTMLElement | null>(null)
-  if (compact !== props.compact) {
-    setCompact(props.compact)
-    setOpen(!props.compact)
-  }
+  const { compact } = props
   return (
     <SidebarProvider open={open} onOpenChange={setOpen} className={cn(compact && 'h-dvh')}>
       <Sidebar label="Navegação">

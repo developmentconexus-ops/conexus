@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, useMatches } from '@tanstack/react-router'
+import { createFileRoute, Outlet, useParams } from '@tanstack/react-router'
 import { HouseIcon, PlugIcon, SettingsIcon } from 'lucide-react'
 import { useEffect } from 'react'
 import {
@@ -7,11 +7,15 @@ import {
   companyEntry,
   enterHouse,
 } from '../../../../hub/identity/public.ts'
-import { projectsQuery, RecentProjects, rememberProject } from '../../../../hub/projects/public.ts'
+import {
+  ProjectRailHead,
+  ProjectRailNav,
+  projectsQuery,
+  RecentProjects,
+  rememberProject,
+} from '../../../../hub/projects/public.ts'
 import { Frame, FrameLink } from '../../../../ui/frame.tsx'
 import { SidebarGroup, SidebarMenu } from '../../../../ui/sidebar.tsx'
-
-const PROJECT = '/_app/companies/$companyId/projects/$projectId'
 
 export const Route = createFileRoute('/_app/companies/$companyId')({
   ...companyEntry,
@@ -24,45 +28,53 @@ export const Route = createFileRoute('/_app/companies/$companyId')({
   component: HouseFrame,
 })
 
-/** The company's frame: its sidebar closes to icons inside a Projeto (web W30). */
+/** The company's frame: inside a Projeto its sidebar is the Projeto's own (web W30). */
 function HouseFrame() {
   const { companyId } = Route.useParams()
   const { person } = Route.useRouteContext()
-  const projectId = useMatches({
-    select: (matches) => matches.find((match) => match.routeId === PROJECT)?.params.projectId,
-  })
+  const projectId = useParams({ strict: false, select: (params) => params.projectId })
   useEffect(() => {
     if (projectId !== undefined) rememberProject({ personId: person.id, companyId, projectId })
   }, [person.id, companyId, projectId])
   const params = { companyId }
   return (
     <Frame
-      header={<CompanySwitcher current={companyId} />}
+      header={
+        projectId === undefined ? (
+          <CompanySwitcher current={companyId} />
+        ) : (
+          <ProjectRailHead companyId={companyId} projectId={projectId} />
+        )
+      }
       nav={
-        <>
-          <SidebarGroup>
-            <SidebarMenu>
-              <FrameLink
-                to="/companies/$companyId"
-                params={params}
-                activeOptions={{ exact: true }}
-                icon={HouseIcon}
-                label="Início"
-              />
-            </SidebarMenu>
-          </SidebarGroup>
-          <RecentProjects companyId={companyId} personId={person.id} />
-          <SidebarGroup>
-            <SidebarMenu>
-              <FrameLink
-                to="/companies/$companyId/integrations"
-                params={params}
-                icon={PlugIcon}
-                label="Integrações"
-              />
-            </SidebarMenu>
-          </SidebarGroup>
-        </>
+        projectId !== undefined ? (
+          <ProjectRailNav companyId={companyId} projectId={projectId} />
+        ) : (
+          <>
+            <SidebarGroup>
+              <SidebarMenu>
+                <FrameLink
+                  to="/companies/$companyId"
+                  params={params}
+                  activeOptions={{ exact: true }}
+                  icon={HouseIcon}
+                  label="Início"
+                />
+              </SidebarMenu>
+            </SidebarGroup>
+            <RecentProjects companyId={companyId} personId={person.id} />
+            <SidebarGroup>
+              <SidebarMenu>
+                <FrameLink
+                  to="/companies/$companyId/integrations"
+                  params={params}
+                  icon={PlugIcon}
+                  label="Integrações"
+                />
+              </SidebarMenu>
+            </SidebarGroup>
+          </>
+        )
       }
       footer={
         <>

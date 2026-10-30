@@ -29,22 +29,30 @@ export function rememberProject(input: {
 }
 
 /**
- * "Projetos recentes": the Projects opened last in this browser that the Hub still lists, then the
- * first of the list, up to five, and "Todos os projetos" (web W30). Only the list's first page
- * counts. While it loads, a skeleton; with a failed read, the group is not shown; with no Projeto
- * it keeps the **+** and says so quietly, since the + is where a person creates the first one.
+ * The Projects opened last in this browser that the Hub still lists, then the first of the list, up
+ * to five. Only the list's first page counts.
  */
-export function RecentProjects(props: { companyId: CompanyId; personId: PersonId }) {
-  const { companyId } = props
+export function useRecentProjects(companyId: CompanyId, personId: PersonId) {
   const read = useQuery(projectsQuery(companyId, undefined))
-  if (read.isError) return null
   const listed = read.data?.projects ?? []
-  const empty = read.isSuccess && listed.length === 0
-  const opened = recall({ list: listOf(companyId), personId: props.personId })
+  const opened = recall({ list: listOf(companyId), personId })
   const recent = [
     ...opened.flatMap((id) => listed.filter((project) => project.id === id)),
     ...listed.filter((project) => !opened.includes(project.id)),
   ].slice(0, SHOWN)
+  return { read, recent }
+}
+
+/**
+ * "Projetos recentes" and "Todos os projetos" (web W30). While the list loads, a skeleton; with a
+ * failed read, the group is not shown; with no Projeto it keeps the **+** and says so quietly, since
+ * the + is where a person creates the first one.
+ */
+export function RecentProjects(props: { companyId: CompanyId; personId: PersonId }) {
+  const { companyId } = props
+  const { read, recent } = useRecentProjects(companyId, props.personId)
+  if (read.isError) return null
+  const empty = read.isSuccess && read.data.projects.length === 0
   return (
     <SidebarGroup>
       <SidebarGroupLabel>Projetos recentes</SidebarGroupLabel>

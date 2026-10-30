@@ -44,9 +44,8 @@ function Apps({ companyId, person }: { companyId: CompanyId; person: Person }) {
       {person.apps.map((app) => (
         <Link
           key={app.projectId}
-          to="/companies/$companyId/projects/$projectId"
+          to="/companies/$companyId/projects/$projectId/access"
           params={{ companyId, projectId: app.projectId }}
-          search={{ lens: 'project', section: 'access' }}
           className="wrap-anywhere underline"
         >
           {app.projectName}

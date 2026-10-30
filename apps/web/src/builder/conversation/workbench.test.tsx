@@ -59,22 +59,15 @@ test('fora da Prévia, o topo guarda só "Abrir app"', async () => {
   expect(screen.queryByRole('button', { name: 'Recarregar' })).toBeNull()
 })
 
-test('a aba Projeto e a seção ficam no endereço, e o Sobre vem primeiro', async () => {
+test('a aba fica no endereço, e a Prévia volta', async () => {
   const { conexus } = openProject()
-  fireEvent.click(await screen.findByRole('tab', { name: 'Projeto' }))
-  expect(await screen.findAllByRole('heading', { name: 'Pedidos' })).not.toHaveLength(0)
-  expect(conexus.router.state.location.search).toMatchObject({ lens: 'project' })
-  fireEvent.click(await screen.findByRole('tab', { name: 'Versões' }))
-  expect(await screen.findByRole('heading', { name: 'Versões' })).toBeTruthy()
-  expect(conexus.router.state.location.search).toMatchObject({
-    lens: 'project',
-    section: 'versions',
-  })
+  fireEvent.click(await screen.findByRole('tab', { name: 'Código' }))
+  await waitFor(() => expect(conexus.router.state.location.search).toMatchObject({ lens: 'code' }))
   fireEvent.click(tab('Prévia'))
   expect(await screen.findByText(NO_PREVIEW)).toBeTruthy()
 })
 
-test('trocar a aba ou a seção mantém a conversa aberta', async () => {
+test('trocar a aba mantém a conversa aberta', async () => {
   const hub = open(
     view({
       conversations: [
@@ -93,16 +86,13 @@ test('trocar a aba ou a seção mantém a conversa aberta', async () => {
   fireEvent.click(await screen.findByRole('tab', { name: 'Código' }))
   await waitFor(() => expect(router.state.location.search).toMatchObject({ lens: 'code' }))
   expect(router.state.location.pathname).toBe(here)
-  fireEvent.click(screen.getByRole('tab', { name: 'Projeto' }))
-  await waitFor(() => expect(router.state.location.search).toMatchObject({ lens: 'project' }))
-  expect(router.state.location.pathname).toBe(here)
-  fireEvent.click(await screen.findByRole('tab', { name: 'Versões' }))
-  await waitFor(() => expect(router.state.location.search).toMatchObject({ section: 'versions' }))
+  fireEvent.click(tab('Prévia'))
+  await waitFor(() => expect(router.state.location.search).toMatchObject({ lens: 'preview' }))
   expect(router.state.location.pathname).toBe(here)
 })
 
-test('abrir pelo endereço da seção mostra as Versões; um valor que não é nosso volta à Prévia', async () => {
-  openProject(`${PROJECT}?lens=project&section=versions`)
+test('abrir pelo endereço de Versões mostra as Versões', async () => {
+  openProject(`${PROJECT}/about?part=versions`)
   expect(await screen.findByRole('heading', { name: 'Versões' })).toBeTruthy()
 })
 
@@ -112,7 +102,7 @@ test('um valor de aba que não existe cai na Prévia', async () => {
 })
 
 test('o membro também vê as Versões (E1)', async () => {
-  openProject(`${PROJECT}?lens=project&section=versions`, { mayDelete: false, role: 'member' })
+  openProject(`${PROJECT}/about?part=versions`, { mayDelete: false, role: 'member' })
   expect(await screen.findByRole('heading', { name: 'Versões' })).toBeTruthy()
 })
 
