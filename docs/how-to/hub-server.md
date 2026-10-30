@@ -6,7 +6,7 @@ Decision: [0035](../decisions/0035-publish-through-a-runner-on-the-server.md).
 
 1. Reinstall the server with Ubuntu LTS; close every inbound port in the provider's firewall.
 2. In the repository's GitHub settings, open Actions, then Runners, and add a self-hosted runner. Copy
-   its registration token and the runner version with its checksum.
+   its registration token, the runner version and its checksum.
 3. As root on the server, save the Cloudflare tunnel token and the runner registration token each in
    a file only root can read (mode 0400 or 0600), then run
    `RUNNER_URL=… RUNNER_VERSION=… RUNNER_SHA256=… TUNNEL_TOKEN_FILE=… RUNNER_TOKEN_FILE=… infra/setup-server.sh`
@@ -14,8 +14,7 @@ Decision: [0035](../decisions/0035-publish-through-a-runner-on-the-server.md).
    `/etc/conexus/secrets/tunnel_token` (0400, folder 0700) and starts the runner as a service of
    `runner`, a user with no login, in the `docker` group. Then set
    [the runner's mirror](apps-edge.md#the-runners-mirror).
-4. Make SSH key-only; run `sshd -T` and read `passwordauthentication no`: the main SSH
-   configuration may lack the `Include` that reads a drop-in.
+4. Make SSH key-only; check `sshd -T` shows `passwordauthentication no`: the main configuration may lack the `Include` that reads a drop-in.
 5. Close SSH last, once the provider's console is proved; without one, ask.
 
 ## Check the GitHub settings
@@ -28,15 +27,13 @@ Decision: [0035](../decisions/0035-publish-through-a-runner-on-the-server.md).
 ## Cloudflare
 
 Firstmate does this with the founder's key, deleted afterwards: a tunnel, the Hub's public name pointing
-to `http://hub:8080`, its DNS record, the token on the server, a Tunnel Health Alert to the
-founder's e-mail, and a configuration rule (phase `http_config_settings`) with `disable_rum` for the
-Hub's host. Without that rule the edge injects the Web Analytics beacon into the page, and the Hub's
-CSP refuses it. Setting the rule needs a key with Zone Config Rules Edit.
+to `http://hub:8080`, its DNS record, the token on the server, a Tunnel Health Alert to the founder, and a configuration rule (phase `http_config_settings`) with `disable_rum` for the
+Hub's host. Without it the edge injects the Web Analytics beacon, which the Hub's CSP refuses. The key needs Zone Config Rules Edit.
 
 ## External monitor
 
 StatusCake, free plan: an HTTP check of `https://<the Hub's name>/api/health` every 5 minutes, e-mailing
-the founder. Read its free terms for commercial use at sign-up; they were not checked.
+the founder. Its free terms for commercial use were not checked; read them at sign-up.
 
 ## Database keys
 
@@ -47,41 +44,43 @@ login, which only `migrate` mounts. `migrate` creates Mastra's database.
 
 ## Git and build machines
 
-The volume `hub_git` holds each app's Git. The founder makes a private R2 bucket and its key; firstmate
+`hub_git` holds each app's Git. The founder makes a private R2 bucket and its key; firstmate
 writes `hub_git_copy_key` (`<key id> <secret>`), `hub_e2b_api_key` and, in `hub.env`,
 `HUB_GIT_COPY_BUCKET` and `HUB_INSTALLATION_ID` (`openssl rand -hex 12`)
-([0051](../decisions/0051-builder-machine-git-and-copy-in-r2.md)). Every installation makes its own id and never copies production's `hub.env`: the id alone keeps
-machines apart.
+([0051](../decisions/0051-builder-machine-git-and-copy-in-r2.md)). Every installation makes its own id and never copies production's `hub.env`.
+
+## Connector app keys
+
+Firstmate writes `hub_connector_apps` beside those keys, uid 1000, mode 0400:
+`{"<connector id>":{"clientId":"...","clientSecret":"..."}}`, one OAuth app per connector
+([0057](../decisions/0057-connections-by-oauth.md)). `deploy.sh` refuses to run without it.
 
 ## Session secret and first person
 
 Firstmate writes `hub_session_secret` beside those keys, 32 random characters or more
-(`openssl rand -base64 48`); `deploy.sh` refuses to run without it. A new one, then Reiniciar o Hub,
-ends every session. The model accounts' seal keys: [seal-keys](seal-keys.md).
+(`openssl rand -base64 48`); `deploy.sh` refuses to run without it. A new one plus Reiniciar o Hub ends every session. The model accounts' seal keys: [seal-keys](seal-keys.md).
 
 ## Para o fundador
 
-- Enquanto o Firstmate grava um segredo no servidor, abra a porta 22 no firewall do provedor e
-  feche-a depois. Convites: [hub-mail](hub-mail.md).
+- Enquanto o Firstmate grava um segredo no servidor, abra a porta 22 no firewall e feche-a depois. Convites: [hub-mail](hub-mail.md).
 - A primeira pessoa: como root no servidor, o Firstmate roda
-  `infra/first-person.sh "<nome>" "<e-mail>"`. O link de uso único, válido por 1 hora, aparece só
-  nesse terminal. Rodar de novo dá outro link enquanto não houver senha.
+  `infra/first-person.sh "<nome>" "<e-mail>"`. O link de uso único, válido por 1 hora, aparece só nesse terminal. Rodar de novo dá outro link enquanto não houver senha.
 
 ## Publish
 
-Merging into `main` publishes nothing. Create a GitHub Release tagged `v<n>.<n>.<n>` on a commit of
+Merging into `main` does not publish. Create a Release tagged `v<n>.<n>.<n>` on a commit of
 `main`. Publish builds the image, keeps the last ten, builds [the Builder's
 template](builder-template.md) from that commit and runs `infra/deploy.sh` with both on the server.
-A tag on another commit or a failed template ends red; the Hub does not change. Keeping ten images needs Admin in the package's Actions access ([apps-edge](apps-edge.md)).
+A tag on another commit or a failed template ends red; the Hub stays. Keeping ten images needs Admin in the package's Actions access ([apps-edge](apps-edge.md)).
 
-Before it starts the new image, `deploy.sh` runs `migrate` for 60 seconds, only when the image
+Before the new image starts, `deploy.sh` runs `migrate` for 60 seconds, only when the image
 carries the label `conexus.migrate=1`. A failed `migrate` leaves the live Hub as it is and ends the
 run red; rerun it once fixed.
 
 ## Restart
 
-Actions, Reiniciar o Hub, Run workflow. It runs `migrate` with the live image and starts the Hub
-again ("Último início" changes). Use it after every database restore:
+Actions, Reiniciar o Hub, Run workflow. It runs `migrate` on the live image and restarts the Hub
+("Último início" changes). Use it after every database restore:
 [hub-database-restore](hub-database-restore.md). If the Hub is not healthy after it, the run ends
 red; run Voltar atrás with an earlier version.
 
@@ -96,5 +95,5 @@ before step 2 has no label, so putting it back skips `migrate`.
 
 ## When it fails
 
-- A release that does not start: `deploy.sh` restores the earlier image; the run ends red.
-- State: `docker compose --file infra/compose.yaml ps`, `docker logs`. Logs carry no secret.
+- A release that does not start: `deploy.sh` restores the earlier image and the run ends red.
+- State: `docker compose --file infra/compose.yaml ps`, `docker logs` (no secret in them).

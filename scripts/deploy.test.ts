@@ -200,6 +200,7 @@ const SECRETS = [
   'hub_mastra_database_url',
   'hub_git_copy_key',
   'hub_e2b_api_key',
+  'hub_connector_apps',
 ]
 
 test('--restart sem Hub rodando termina vermelho', () => {
