@@ -12,7 +12,7 @@ import { BACK_TO_INTEGRATIONS, NOT_A_SIGN_IN_TEXT, RETURNING_TEXT, signInEndText
 
 const route = getRouteApi('/_app/integrations/return')
 
-export const RETURN_PATH = '/integrations/return'
+const RETURN_PATH = '/integrations/return'
 
 /** What the provider's address brought back: the company and the authorization from `state`, then the code or the refusal. */
 type Arrival =

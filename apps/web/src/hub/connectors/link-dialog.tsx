@@ -4,10 +4,12 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { ExternalLinkIcon } from 'lucide-react'
 import { useState } from 'react'
+import { useFormContext } from 'react-hook-form'
 import { z } from 'zod'
 import { useAttemptKey } from '../../platform/attempt-key.ts'
 import { HubFailure, sentenceOf } from '../../platform/hub.ts'
 import { Button } from '../../ui/button.tsx'
+import { cn } from '../../ui/cn.ts'
 import { Dialog, DialogBody, DialogContent, DialogFooter } from '../../ui/dialog.tsx'
 import {
   Form,
@@ -92,6 +94,64 @@ function BeforePasting({ entry }: { entry: ConnectorEntry }) {
   )
 }
 
+/** What the window holds beside the name: the help and the fields of pasted keys, or nothing for a trip to the provider. */
+function Fields(props: { entry: ConnectorEntry; reconnecting: Connection | undefined }) {
+  const { entry, reconnecting } = props
+  return (
+    <>
+      {entry.auth !== 'oauth2_code' && <BeforePasting entry={entry} />}
+      <div className="flex min-w-0 flex-col gap-lg">
+        {reconnecting ? (
+          <p className="font-medium">{reconnecting.name}</p>
+        ) : (
+          <TextField
+            name={NAME}
+            label="Nome da ligação"
+            type="text"
+            autoComplete="off"
+            invalid="Dê um nome à ligação, de até 60 letras."
+          />
+        )}
+        {entry.fields.map((field) => (
+          <TextField
+            key={field.name}
+            name={field.name}
+            label={field.label}
+            type={field.visible ? 'text' : 'password'}
+            autoComplete="off"
+          />
+        ))}
+      </div>
+    </>
+  )
+}
+
+/** The window's buttons: the way on, which busy means the browser is leaving, and Cancelar. */
+function Buttons(props: {
+  entry: ConnectorEntry
+  reconnecting: Connection | undefined
+  leaving: boolean
+  onClose: () => void
+}) {
+  const { entry, reconnecting, leaving } = props
+  const { formState } = useFormContext()
+  const busy = formState.isSubmitting || leaving
+  return (
+    <div className="flex flex-wrap gap-md">
+      {entry.auth === 'oauth2_code' ? (
+        <Button type="submit" variant="primary" disabled={busy}>
+          {continueText(entry.name)}
+        </Button>
+      ) : (
+        <SubmitButton idle={reconnecting ? RECONNECT : 'Ligar e testar'} pending="Ligando…" />
+      )}
+      <Button type="button" disabled={busy} onClick={props.onClose}>
+        Cancelar
+      </Button>
+    </div>
+  )
+}
+
 /**
  * "Ligar e testar": the form builds itself from the catalog's fields, the Client ID to the eye and
  * the others hidden, and the name beside them. The Hub seals what is pasted and answers with the
@@ -108,6 +168,9 @@ function LinkForm(props: {
   const { companyId, entry, reconnecting } = props
   const send = useMutation(sendLink)
   const resend = useMutation(sendReconnect)
+  const go = useSignInStart(companyId)
+  const oauth = entry.auth === 'oauth2_code'
+  const [leaving, setLeaving] = useState(false)
   const attempt = useAttemptKey()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -119,6 +182,12 @@ function LinkForm(props: {
   async function submit(values: Record<string, string>) {
     const { [NAME]: name = '', ...credential } = values
     try {
+      if (oauth) {
+        await go({ connector: entry.id, name })
+        // The window stays as it is, busy: the browser is leaving for the provider.
+        setLeaving(true)
+        return
+      }
       const { connection } = reconnecting
         ? await resend.mutateAsync({
             params: { companyId, connectionId: reconnecting.id },
@@ -158,42 +227,23 @@ function LinkForm(props: {
     <Form form={form} onSubmit={submit} fill>
       <DialogBody>
         <fieldset
-          disabled={form.formState.isSubmitting}
-          className="grid min-w-0 gap-xl md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]"
+          disabled={form.formState.isSubmitting || leaving}
+          className={cn(
+            'grid min-w-0 gap-xl',
+            !oauth && 'md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]',
+          )}
         >
-          <BeforePasting entry={entry} />
-          <div className="flex min-w-0 flex-col gap-lg">
-            {reconnecting ? (
-              <p className="font-medium">{reconnecting.name}</p>
-            ) : (
-              <TextField
-                name={NAME}
-                label="Nome da ligação"
-                type="text"
-                autoComplete="off"
-                invalid="Dê um nome à ligação, de até 60 letras."
-              />
-            )}
-            {entry.fields.map((field) => (
-              <TextField
-                key={field.name}
-                name={field.name}
-                label={field.label}
-                type={field.visible ? 'text' : 'password'}
-                autoComplete="off"
-              />
-            ))}
-          </div>
+          <Fields entry={entry} reconnecting={reconnecting} />
         </fieldset>
       </DialogBody>
       <DialogFooter>
         <FormAlert />
-        <div className="flex flex-wrap gap-md">
-          <SubmitButton idle={reconnecting ? RECONNECT : 'Ligar e testar'} pending="Ligando…" />
-          <Button type="button" disabled={form.formState.isSubmitting} onClick={props.onClose}>
-            Cancelar
-          </Button>
-        </div>
+        <Buttons
+          entry={entry}
+          reconnecting={reconnecting}
+          leaving={leaving}
+          onClose={props.onClose}
+        />
       </DialogFooter>
     </Form>
   )
@@ -208,75 +258,6 @@ function useSignInStart(companyId: CompanyId) {
     const { url } = await start.mutateAsync({ params: { companyId }, body })
     globalThis.location.assign(url)
   }
-}
-
-const NAME_ONLY = z.object({ [NAME]: ConnectionName })
-
-/**
- * A connector that links by a trip to the provider: only the name, then "Continuar no <conector>".
- * The button stays busy from the click until the browser leaves, since the address has to arrive first.
- */
-function SignInForm(props: {
-  companyId: CompanyId
-  entry: ConnectorEntry
-  connections: readonly Connection[]
-  onClose: () => void
-}) {
-  const { companyId, entry } = props
-  const go = useSignInStart(companyId)
-  const queryClient = useQueryClient()
-  const [leaving, setLeaving] = useState(false)
-  const form = useSchemaForm(NAME_ONLY, { [NAME]: suggestedName(entry, props.connections) })
-
-  async function submit(values: { name: string }) {
-    try {
-      await go({ connector: entry.id, name: values.name })
-      // The window stays as it is, busy: the browser is leaving for the provider.
-      setLeaving(true)
-    } catch (error) {
-      if (error instanceof HubFailure && LIST_CHANGED.has(error.code)) {
-        void queryClient.invalidateQueries({ queryKey: connectionsPrefix(companyId) })
-      }
-      setWriteError(form, error, UNCONFIRMED, {
-        CONNECTION_NAME_INVALID: NAME,
-        CONNECTION_NAME_TAKEN: NAME,
-      })
-    }
-  }
-
-  return (
-    <Form form={form} onSubmit={submit} fill>
-      <DialogBody>
-        <fieldset
-          disabled={form.formState.isSubmitting || leaving}
-          className="flex min-w-0 flex-col gap-lg"
-        >
-          <TextField
-            name={NAME}
-            label="Nome da ligação"
-            type="text"
-            autoComplete="off"
-            invalid="Dê um nome à ligação, de até 60 letras."
-          />
-        </fieldset>
-      </DialogBody>
-      <DialogFooter>
-        <FormAlert />
-        <div className="flex flex-wrap gap-md">
-          <Button type="submit" variant="primary" disabled={form.formState.isSubmitting || leaving}>
-            {continueText(entry.name)}
-          </Button>
-          <Button
-            type="button"
-            disabled={form.formState.isSubmitting || leaving}
-            onClick={props.onClose}
-          >
-            Cancelar
-          </Button>
-        </div>
-      </DialogFooter>
-    </Form>
-  )
 }
 
 /** The window "Ligar" opens, in the middle of the screen like "Novo projeto"; with `reconnecting`, the keys of that connection again. */
@@ -299,11 +280,7 @@ export function LinkDialog(props: {
         }
         size="fields"
       >
-        {oauth ? (
-          <SignInForm {...props} />
-        ) : (
-          <LinkForm {...props} reconnecting={props.reconnecting} />
-        )}
+        <LinkForm {...props} reconnecting={props.reconnecting} />
       </DialogContent>
     </Dialog>
   )
