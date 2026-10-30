@@ -73,11 +73,15 @@ export function defineConnector<A extends Auth>(
   for (const subject of Object.keys(connector.subjects))
     if (!named.has(subject)) throw new Error(`Subject without operation: ${subject}`)
   assertSourcesEarlier(all)
+  assertCheckStandsAlone(connector)
+  return Object.freeze({ ...connector, id: ConnectorId.parse(connector.id) })
+}
+
+function assertCheckStandsAlone(connector: Pick<Connector, 'operations' | 'check'>): void {
   const { check } = connector
   if (!connector.operations.includes(check)) throw new Error(`Check ${check.id} is no operation`)
   if (check.from.length > 0 || check.probe(new Map()) === null)
     throw new Error(`Check ${check.id} needs an earlier read`)
-  return Object.freeze({ ...connector, id: ConnectorId.parse(connector.id) })
 }
 
 function assertSourcesEarlier(all: readonly Operation<unknown, unknown>[]): void {

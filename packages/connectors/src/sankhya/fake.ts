@@ -34,7 +34,7 @@ type SankhyaSwitches = {
   redirect: boolean
   /** Never answers a call. */
   silent: boolean
-  /** Every call on a token answers 429, as a gateway asking to wait. */
+  /** Every call but the login answers 429, as a gateway asking to wait. */
   rateLimited: boolean
   /** Milliseconds each answer is held back, for the executor's deadline tests (U3). */
   delayMilliseconds: number
@@ -100,8 +100,6 @@ async function serveCall(request: Request, url: URL, switches: SankhyaSwitches):
   if (switches.refuse.has(name)) {
     return door ? envelope(service, '0') : forbidden(url.pathname, 'NO_ACCESS', 'Sem permissão')
   }
-  if (switches.rateLimited)
-    return json({ statusCode: 429, error: { code: 'TOO_MANY_REQUESTS' } }, 429)
   if (switches.oversize) return json(OVERSIZE)
   if (switches.malformed) return json({ unexpected: true })
   if (switches.notJson) return new Response('<html>valor da empresa</html>', { status: 200 })
@@ -121,6 +119,8 @@ function tokenExpired(url: URL): Response {
 /** The switches that spoil every call, before any session is looked at; null when none is on. */
 function misbehaviour(url: URL, switches: SankhyaSwitches): Response | Promise<Response> | null {
   if (switches.silent) return new Promise<Response>(() => undefined)
+  if (switches.rateLimited)
+    return json({ statusCode: 429, error: { code: 'TOO_MANY_REQUESTS' } }, 429)
   if (switches.redirect && !url.searchParams.has(REDIRECTED)) {
     // 307 keeps the method and body, so a client that follows it reads the same answer.
     const target = new URL(url)
