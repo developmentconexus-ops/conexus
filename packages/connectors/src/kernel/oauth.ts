@@ -1,5 +1,5 @@
 import type { z } from 'zod'
-import type { Native, ProviderAnswer, TokenRequest } from './operation.ts'
+import type { Native, ProviderAnswer, ProviderRequest, TokenRequest } from './operation.ts'
 import { locateOf } from './operation.ts'
 
 /** The installation's app: the Hub reads it from a file (S31) and hands it in; the kit never keeps it (S36). */
@@ -18,6 +18,9 @@ export type OAuth2CodeAuth = Readonly<{
     params: Readonly<Record<string, string>> // fixed extras, `scope` among them
   }>
   token: Readonly<{ path: `/${string}` }> // on the connector's origin, form body
+  // Absent: the provider has no call to take the grant back, and Desligar only forgets the keys.
+  // Sent with the connection's own bearer; `{account}` and `{app}` in the path are the seller's account and the installation's app id.
+  revoke?: Readonly<{ method: 'DELETE' | 'POST'; path: `/${string}` }>
   // refreshToken absent: the provider keeps the old one (RFC 6749 §6), and the Hub keeps it too
   answer: z.ZodType<
     Readonly<{ accessToken: string; refreshToken?: string; expiresInSeconds: number }>
@@ -29,12 +32,15 @@ export type OAuth2CodeAuth = Readonly<{
 export function oauth2Code(auth: Omit<OAuth2CodeAuth, 'kind'>): OAuth2CodeAuth {
   if (!URL.canParse(auth.authorize.url) || new URL(auth.authorize.url).protocol !== 'https:')
     throw new Error('The authorization page must be https')
+  if (auth.revoke !== undefined && !/\{account\}/.test(auth.revoke.path))
+    throw new Error('The revoke path must name the {account}')
   const both = auth.refusals.grant.filter((error) => auth.refusals.app.includes(error))
   if (both.length > 0)
     throw new Error(`Refusal listed as the grant's and the app's: ${both.join(', ')}`)
   return Object.freeze({
     ...auth,
     kind: 'oauth2_code',
+    revoke: auth.revoke === undefined ? undefined : Object.freeze({ ...auth.revoke }),
     authorize: Object.freeze({
       ...auth.authorize,
       params: Object.freeze({ ...auth.authorize.params }),
@@ -107,6 +113,19 @@ export function refreshRequest(
     client_secret: app.clientSecret,
     refresh_token: refreshToken,
   })
+}
+
+/** The call that takes the grant back, for the seller's account and the installation's app; the executor adds the bearer. Null: the connector declares none. */
+export function revokeRequest(
+  auth: OAuth2CodeAuth,
+  a: Readonly<{ accountRef: string; clientId: string }>,
+): ProviderRequest | null {
+  if (auth.revoke === undefined) return null
+  const path = `/${auth.revoke.path
+    .slice(1)
+    .replace('{account}', encodeURIComponent(a.accountRef))
+    .replace('{app}', encodeURIComponent(a.clientId))}` as const
+  return { method: auth.revoke.method, path, query: {}, body: undefined }
 }
 
 /** What the exchange or the renewal answered: tokens, the person's grant refused, the app refused, or a body the kit cannot read. */

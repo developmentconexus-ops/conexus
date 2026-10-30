@@ -172,7 +172,7 @@ test('testar e desligar juntos; um serviço por token', async (t) => {
   const testing = testOf(hub, ana, base, connection.id)
   while (fake.logins() === started) await setTimeout(5)
   const removed = await call(hub, ana, 'DELETE', `${base}/${connection.id}`)
-  assert.equal(removed.statusCode, 204)
+  assert.equal(removed.statusCode, 200)
   const gone = await testing
   assert.deepEqual([gone.statusCode, codeOf(gone)], [404, 'CONNECTION_NOT_FOUND'])
   assert.equal(gone.body.includes('checks'), false)
@@ -185,7 +185,7 @@ test('desligar, e de novo', async (t) => {
   assert.deepEqual([member.statusCode, codeOf(member)], [404, 'NOT_FOUND'])
   for (const _ of [1, 2]) {
     const removed = await call(hub, ana, 'DELETE', `${base}/${connection.id}`)
-    assert.equal(removed.statusCode, 204)
+    assert.equal(removed.statusCode, 200)
   }
   const listed = await call(hub, ana, 'GET', base)
   assert.deepEqual(Object(listed.json()).connections, [])
@@ -202,7 +202,7 @@ test('a dona de outra empresa não testa nem desliga a ligação de Ana', async 
   const own = `/api/companies/${await plantCompany(hub.test, davi.id)}/connections`
   const tested = await testOf(hub, davi, own, connection.id)
   assert.deepEqual([tested.statusCode, codeOf(tested)], [404, 'CONNECTION_NOT_FOUND'])
-  assert.equal((await call(hub, davi, 'DELETE', `${own}/${connection.id}`)).statusCode, 204)
+  assert.equal((await call(hub, davi, 'DELETE', `${own}/${connection.id}`)).statusCode, 200)
   const foreign = await testOf(hub, davi, base, connection.id)
   assert.deepEqual([foreign.statusCode, codeOf(foreign)], [404, 'NOT_FOUND'])
   const removed = await call(hub, davi, 'DELETE', `${base}/${connection.id}`)

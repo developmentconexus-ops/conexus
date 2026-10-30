@@ -1,6 +1,6 @@
 import { FAILURES } from '@conexus/hub-api'
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
-import { http } from 'msw'
+import { HttpResponse, http } from 'msw'
 import { afterEach, expect, test, vi } from 'vitest'
 import { COMPANY } from '../../platform/fixtures.ts'
 import { sentenceOfCode } from '../../platform/hub.ts'
@@ -270,4 +270,21 @@ test('Desligar confirma pelo nome e volta à lista; Cancelar não manda nada', a
   expect(await screen.findByRole('heading', { name: 'Integrações' })).toBeTruthy()
   expect(await screen.findByText('Nenhuma integração ligada ainda.')).toBeTruthy()
   expect(sent.map((one) => one.method)).toEqual(['DELETE'])
+})
+
+test('Desligar que o fornecedor não desfez: a frase diz, e Fechar leva à lista', async () => {
+  const connection = connectionOf({ name: 'Financeiro' })
+  open(viewOf({ connections: [connection] }), {
+    unlink: () => HttpResponse.json({ revocation: 'REFUSED' }),
+  })
+  fireEvent.click(await screen.findByRole('button', { name: 'Mais ações' }))
+  fireEvent.click(await screen.findByRole('menuitem', { name: 'Desligar' }))
+  const dialog = await screen.findByRole('alertdialog')
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Desligar' }))
+  expect(
+    await within(dialog).findByText(/o fornecedor não aceitou retirar a autorização do Conexus/),
+  ).toBeTruthy()
+  expect(screen.queryByRole('heading', { name: 'Integrações' })).toBeNull()
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Fechar' }))
+  expect(await screen.findByRole('heading', { name: 'Integrações' })).toBeTruthy()
 })
