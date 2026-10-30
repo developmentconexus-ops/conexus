@@ -44,7 +44,7 @@ test('state faltando ou estragado: a frase e nenhuma chamada ao Hub', async () =
 
 test('error=access_denied manda { refused: true } e mostra a frase com o nome do conector', async () => {
   const sent = hubOf({
-    end: () => HttpResponse.json({ result: 'CANCELLED', connector: 'Mercado Livre' }),
+    end: () => HttpResponse.json({ result: 'CANCELLED', connector: 'mercado-livre' }),
   })
   open(`?error=access_denied&state=${STATE}`)
   expect(await screen.findByText('Você não autorizou o Conexus no Mercado Livre.')).toBeTruthy()
@@ -69,7 +69,7 @@ test('a página troca o endereço na história antes de chamar o Hub: voltar nã
     http.post(`*/api/companies/${COMPANY.id}/connection-sign-ins/:signInId`, async () => {
       seen = history.location.href
       await held.promise
-      return HttpResponse.json({ result: 'CANCELLED', connector: 'Mercado Livre' })
+      return HttpResponse.json({ result: 'CANCELLED', connector: 'mercado-livre' })
     }),
     ...hub.handlers,
   )
@@ -88,7 +88,7 @@ test.each([
     'REFUSED',
     {
       result: 'REFUSED',
-      connector: 'Mercado Livre',
+      connector: 'mercado-livre',
       native: { status: 400, code: 'invalid_operator_user_id', message: 'sem acesso', body: null },
     },
     'O Mercado Livre recusou a autorização.',
@@ -98,7 +98,7 @@ test.each([
     'APP_REFUSED',
     {
       result: 'APP_REFUSED',
-      connector: 'Mercado Livre',
+      connector: 'mercado-livre',
       native: { status: 401, code: 'invalid_client', message: null, body: null },
     },
     'O app do Conexus foi recusado pelo Mercado Livre. Avise o suporte.',
@@ -106,7 +106,7 @@ test.each([
   ],
   [
     'UNREACHABLE',
-    { result: 'UNREACHABLE', connector: 'Mercado Livre', native: null },
+    { result: 'UNREACHABLE', connector: 'mercado-livre', native: null },
     'O Mercado Livre não respondeu. Tente de novo em alguns minutos.',
     undefined,
   ],

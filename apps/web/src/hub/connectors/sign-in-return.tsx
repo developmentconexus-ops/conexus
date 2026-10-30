@@ -1,14 +1,20 @@
 import type { SignInCompleted } from '@conexus/hub-api'
 import { CompanyId, ConnectionSignInId } from '@conexus/hub-api'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { getRouteApi, Link, useNavigate, useRouter } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
 import { ConexusWordmark } from '../../brand/mark.tsx'
 import { HubFailure, sentenceOf } from '../../platform/hub.ts'
 import { buttonVariants } from '../../ui/button.tsx'
-import { connectionsPrefix, sendSignInEnd } from './queries.ts'
+import { connectionsPrefix, connectionsQuery, sendSignInEnd } from './queries.ts'
 import { Said } from './test-result.tsx'
-import { BACK_TO_INTEGRATIONS, NOT_A_SIGN_IN_TEXT, RETURNING_TEXT, signInEndText } from './text.ts'
+import {
+  BACK_TO_INTEGRATIONS,
+  connectorName,
+  NOT_A_SIGN_IN_TEXT,
+  RETURNING_TEXT,
+  signInEndText,
+} from './text.ts'
 
 const route = getRouteApi('/_app/integrations/return')
 
@@ -63,19 +69,20 @@ function Back(props: { companyId: CompanyId | null }) {
   )
 }
 
+/** The catalog names the connector the Hub's answer carries by id (the Hub leaves the naming to the screen). */
 function Ended(props: {
-  companyId: CompanyId | null
+  companyId: CompanyId
   answer: Exclude<SignInCompleted, { result: 'LINKED' }>
 }) {
   const { answer } = props
+  const catalog = useQuery(connectionsQuery(props.companyId))
+  const name = connectorName(catalog.data?.connectors ?? [], answer.connector)
   return (
     <>
       <p role="alert" className="text-danger">
-        {signInEndText(answer)}
+        {signInEndText(answer, name)}
       </p>
-      {'native' in answer && answer.native !== null && (
-        <Said native={answer.native} name={answer.connector} />
-      )}
+      {'native' in answer && answer.native !== null && <Said native={answer.native} name={name} />}
       <Back companyId={props.companyId} />
     </>
   )
@@ -141,7 +148,7 @@ export function SignInReturn() {
       </Page>
     )
   }
-  if (end.data && end.data.result !== 'LINKED') {
+  if (end.data && end.data.result !== 'LINKED' && companyId !== null) {
     return (
       <Page>
         <Ended companyId={companyId} answer={end.data} />

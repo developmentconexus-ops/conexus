@@ -202,9 +202,11 @@ export function reasonText(reason: NonNullable<Native['reason']>): string {
     .join('; ')
 }
 
-/** What the return page says when the authorization did not link: the provider's word, the person's, or the Hub's. */
-export function signInEndText(answer: Exclude<SignInCompleted, { result: 'LINKED' }>): string {
-  const name = answer.connector
+/** What the return page says when the authorization did not link: the provider's word, the person's, or the Hub's. `name` is the catalog's name of `answer.connector`. */
+export function signInEndText(
+  answer: Exclude<SignInCompleted, { result: 'LINKED' }>,
+  name: string,
+): string {
   switch (answer.result) {
     case 'REFUSED':
     case 'UNREADABLE':
