@@ -21,10 +21,11 @@ const TYPES: Record<string, string> = {
 
 // The policy the edge sends with an app's page, from its one owner: a piece that needs a style
 // element or a data: URI fails here, in the browser, and not after the Release (web W22, testing T23).
-// The Hub's own policy adds `frame-src` for the apps' domain, which the Prévia frames.
+// The Hub's own policy adds `frame-src` for the apps' domain, which the Prévia frames, and `data:`
+// images, which a connector's logo is (apps/server/src/platform/http.ts).
 const APPS_DOMAIN = 'apps.example.test'
 const SECURITY_HEADERS = {
-  'Content-Security-Policy': `${appContentSecurityPolicy("'none'")}; frame-src https://*.${APPS_DOMAIN}`,
+  'Content-Security-Policy': `${appContentSecurityPolicy("'none'").replace("img-src 'self'", "img-src 'self' data:")}; frame-src https://*.${APPS_DOMAIN}`,
 }
 const APP_PAGE = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Encomendas</title><link rel="stylesheet" href="/app.css"></head><body><h1>Encomendas</h1><p>Maria, bolo de cenoura, sexta.</p></body></html>`
 const APP_STYLE =

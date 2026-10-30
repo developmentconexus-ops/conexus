@@ -8,6 +8,7 @@ import { CARD_STATES } from './sweep-card-states.ts'
 import { CONVERSATION_STATES } from './sweep-conversation-states.ts'
 import { DEFAULT_STATES } from './sweep-defaults-states.ts'
 import { HOUSE_STATES } from './sweep-house-states.ts'
+import { INTEGRATIONS_STATES } from './sweep-integrations-states.ts'
 import type { State } from './sweep-kit.ts'
 import { waitFor } from './sweep-kit.ts'
 import { PREVIEW_STATES } from './sweep-preview-states.ts'
@@ -49,6 +50,7 @@ export const STATES: State[] = [
   ...HOUSE_STATES,
   ...DEFAULT_STATES,
   ...ACCOUNT_STATES,
+  ...INTEGRATIONS_STATES,
   {
     name: 'Central sem clientes',
     path: '/operations/clients',
