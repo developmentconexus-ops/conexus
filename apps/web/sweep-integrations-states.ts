@@ -128,7 +128,11 @@ export const INTEGRATIONS_STATES: State[] = [
   },
   testedPage(
     'Página da ligação com o Sankhya pedindo para esperar',
-    { result: 'BUSY', native: { status: 429, code: null, message: null, body: null } },
+    {
+      result: 'BUSY',
+      native: { status: 429, code: null, message: null, body: null },
+      waitMs: null,
+    },
     'O Sankhya pediu para esperar. Tente de novo em alguns minutos.',
   ),
   testedPage(
