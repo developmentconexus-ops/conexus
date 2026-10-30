@@ -125,7 +125,10 @@ most colorful thing on screen. Ipê is the warm gold accent; prose is sans and f
   `phone-frame` (`dark-phone-frame` in the dark theme, where `#1d2125` would vanish into the stage)
   rather than a raw value; founder, 2026-10-28, on proposal B, Janela, of the Prévia screen: "1. Sim".
   A provider's logo sits on the color token `logo-plate`, a light plate in both themes like
-  `phone-frame`, because a wordmark is drawn for a light ground (step 19, the Integrações screen).
+  `phone-frame`, because a provider draws its symbol for a light ground (step 19, the Integrações
+  screen). The logo of every connector is the provider's square symbol without the written name,
+  and the kit refuses a wide one (`packages/connectors/src/kernel/logo.ts`); founder, 2026-10-29:
+  "só a logo mesmo, igual eu te mandei" and "a logo do Mercado Livre é só a logo, sem escrita".
   [rule to write]
 - **V5.** Ipê **should** distinguish current activity and choice: focus, caret, selection, active
   lens and working agent, not every resting action or heading. The send hover keeps its current
