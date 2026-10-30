@@ -18,6 +18,7 @@ connectors and the founder's words of 2026-10-28 on step 19's card (`A1`, `I1`, 
   deadline, a 256 KB cap and no redirect (`N`). A connection is the company's, sealed for
   `connection`, and keeps the connector's version (`L1`).
 - A local double (`HUB_CONNECTOR_ORIGINS`, loopback only) is the only other origin.
+- Testar sends only the connector's `check`.
 
 ## Criterion
 
@@ -25,7 +26,7 @@ connectors and the founder's words of 2026-10-28 on step 19's card (`A1`, `I1`, 
 | --- | --- | --- |
 | 1 | `npm run deps` | The wall holds both ways |
 | 2 | Conformance against the Sankhya double | Each operation has a class and an answered probe |
-| 3 | Testar against the double | Step 19's criteria 10 to 16 |
+| 3 | Testar against the double | Step 19.1's criterion 19 |
 | 4 | Testar with the founder's read-only user | `WORKING` (criterion 21) |
 
 ## Result

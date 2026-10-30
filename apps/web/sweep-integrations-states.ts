@@ -1,4 +1,4 @@
-import { testConnection, unlinkConnection } from '@conexus/hub-api'
+import { TestResult, testConnection, unlinkConnection } from '@conexus/hub-api'
 import { failure, ok } from './layout-harness.ts'
 import { REFUSAL, workingOf } from './src/hub/connectors/fixtures.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
@@ -18,36 +18,6 @@ const WORKING = connectionOf({
 const SECOND = connectionOf({ name: 'Financeiro', state: 'NEEDS_REAUTH', testedAt: TESTED })
 const NEW = connectionOf({ name: 'Matriz' })
 const GONE = connectionOf({ name: 'Antiga' })
-const PARTIAL = {
-  Empresas: { outcome: 'REFUSED', native: REFUSAL },
-  Pedidos: { outcome: 'SOURCE_UNREAD', source: 'Empresas' },
-  Clientes: {
-    outcome: 'UNREADABLE',
-    native: {
-      status: 200,
-      code: null,
-      message: null,
-      body: null,
-      reason: {
-        kind: 'SHAPE',
-        issues: [{ path: 'clientes', expected: 'array', received: 'string' }],
-      },
-    },
-  },
-  Vendedores: {
-    outcome: 'UNREADABLE',
-    native: {
-      status: 200,
-      code: null,
-      message: null,
-      body: null,
-      reason: { kind: 'TOO_LARGE', limitBytes: 2097152 },
-    },
-  },
-  'Locais de estoque': 'NOT_TESTED',
-  'Preços de uma tabela': 'NOTHING_TO_READ',
-}
-
 function pageOf(connection: { id: string }) {
   return `${PAGE}/${connection.id}`
 }
@@ -69,11 +39,24 @@ function owner(connections: ReturnType<typeof connectionOf>[]) {
 }
 
 /** The connection's page as its owner reads it, the list behind it included. */
-function ownerPage(
-  connection: ReturnType<typeof connectionOf>,
-  outcomes?: Record<string, string | Record<string, unknown>>,
-) {
-  return { ...owner([connection]), ...connectionPage(COMPANY.id, connection, outcomes) }
+function ownerPage(connection: ReturnType<typeof connectionOf>) {
+  return { ...owner([connection]), ...connectionPage(COMPANY.id, connection) }
+}
+
+/** The owner's page whose Testar answers `answer`, clicked and settled on `sentence`. */
+function testedPage(name: string, answer: Record<string, unknown>, sentence: string): State {
+  return {
+    name,
+    path: pageOf(WORKING),
+    replies: {
+      ...ownerPage(WORKING),
+      [testOf(WORKING)]: ok(testConnection, TestResult.parse({ ...answer, connection: WORKING })),
+    },
+    settle: async (p) => {
+      await p.getByRole('button', { name: 'Testar', exact: true }).click()
+      await waitFor(p, sentence)
+    },
+  }
 }
 
 // The screens step 19 brings: Integrações, its window to link, the page of a connection and its Desligar.
@@ -109,16 +92,10 @@ export const INTEGRATIONS_STATES: State[] = [
     settle: (p) => waitFor(p, 'Só o dono ou um administrador liga, testa e desliga.'),
   },
   {
-    name: 'Página da ligação que lê tudo',
+    name: 'Página da ligação testada',
     path: pageOf(WORKING),
-    replies: ownerPage(WORKING, {}),
-    settle: (p) => waitFor(p, 'Lê 8 de 8 assuntos inteiros'),
-  },
-  {
-    name: 'Página da ligação que lê em parte',
-    path: pageOf(WORKING),
-    replies: ownerPage(WORKING, PARTIAL),
-    settle: (p) => waitFor(p, 'Lê 5 de 8 assuntos inteiros'),
+    replies: ownerPage(WORKING),
+    settle: (p) => waitFor(p, 'por Ana Lima'),
   },
   {
     name: 'Página da ligação testando',
@@ -129,38 +106,57 @@ export const INTEGRATIONS_STATES: State[] = [
     },
     settle: async (p) => {
       await p.getByRole('button', { name: 'Testar', exact: true }).click()
-      await waitFor(p, 'Testando as 24 leituras, uma por vez…')
+      await waitFor(p, 'Testando a ligação…')
     },
   },
+  testedPage(
+    'Página da ligação com o Testar funcionando',
+    { result: 'WORKING' },
+    'Ligado e funcionando.',
+  ),
   {
-    name: 'Página da ligação com o resultado novo do Testar',
-    path: pageOf(WORKING),
-    replies: {
-      ...ownerPage(WORKING, {}),
-      [testOf(WORKING)]: ok(testConnection, workingOf(WORKING, PARTIAL)),
-    },
+    ...testedPage(
+      'Página da ligação com a leitura recusada',
+      { result: 'READ_REFUSED', read: 'Empresas', native: REFUSAL },
+      'Sankhya respondeu 403, código SEM_ACESSO: Sem acesso à tela',
+    ),
     settle: async (p) => {
       await p.getByRole('button', { name: 'Testar', exact: true }).click()
       await waitFor(p, 'Sankhya respondeu 403, código SEM_ACESSO: Sem acesso à tela')
       await p.getByText('Ver a resposta inteira').first().click()
     },
   },
-  {
-    name: 'Página da ligação com o Sankhya fora do ar',
-    path: pageOf(WORKING),
-    replies: {
-      ...ownerPage(WORKING, {}),
-      [testOf(WORKING)]: ok(testConnection, {
-        result: 'UNREACHABLE',
-        native: null,
-        connection: WORKING,
-      }),
+  testedPage(
+    'Página da ligação com o Sankhya pedindo para esperar',
+    {
+      result: 'BUSY',
+      native: { status: 429, code: null, message: null, body: null },
+      waitMs: null,
     },
-    settle: async (p) => {
-      await p.getByRole('button', { name: 'Testar', exact: true }).click()
-      await waitFor(p, 'O Sankhya não respondeu. Tente de novo em alguns minutos.')
+    'O Sankhya pediu para esperar. Tente de novo em alguns minutos.',
+  ),
+  testedPage(
+    'Página da ligação com o Sankhya fora do ar',
+    { result: 'UNREACHABLE', native: null },
+    'O Sankhya não respondeu. Tente de novo em alguns minutos.',
+  ),
+  testedPage(
+    'Página da ligação com a resposta que o Conexus não entendeu',
+    {
+      result: 'UNREADABLE',
+      native: {
+        status: 200,
+        code: null,
+        message: null,
+        body: null,
+        reason: {
+          kind: 'SHAPE',
+          issues: [{ path: 'empresas', expected: 'array', received: 'string' }],
+        },
+      },
     },
-  },
+    'Resposta que o Conexus não entendeu',
+  ),
   {
     name: 'Página da ligação com as chaves recusadas',
     path: pageOf(SECOND),
@@ -173,7 +169,7 @@ export const INTEGRATIONS_STATES: State[] = [
     replies: {
       ...MEMBER,
       ...connectionsPage(COMPANY.id, false, [WORKING]),
-      ...connectionPage(COMPANY.id, WORKING, PARTIAL),
+      ...connectionPage(COMPANY.id, WORKING),
     },
     settle: (p) => waitFor(p, 'Só o dono ou um administrador liga, testa e desliga.'),
   },
@@ -181,7 +177,7 @@ export const INTEGRATIONS_STATES: State[] = [
     name: 'Página da ligação com o Desligar pedindo confirmação',
     path: pageOf(WORKING),
     replies: {
-      ...ownerPage(WORKING, {}),
+      ...ownerPage(WORKING),
       [`DELETE /api/companies/${COMPANY.id}/connections/${WORKING.id}`]: {
         status: unlinkConnection.success.status,
       },

@@ -1,10 +1,10 @@
 import type { Connection as ConnectionOf } from '@conexus/hub-api'
-import { Connection, ConnectorEntry, TestCheck, TestResult } from '@conexus/hub-api'
+import { Connection, ConnectorEntry, TestResult } from '@conexus/hub-api'
 import { ANA } from '../../platform/fixtures.ts'
 
 const KEYS_GUIDE = 'https://developer.example.test/chaves'
 
-/** The Sankhya as the catalog describes it: a logo, what Testar reads, and each field with its help. */
+/** The Sankhya as the catalog describes it: a logo and each field with its help. */
 export const SANKHYA = ConnectorEntry.parse({
   id: 'sankhya',
   name: 'Sankhya',
@@ -12,7 +12,6 @@ export const SANKHYA = ConnectorEntry.parse({
   category: 'ERP',
   summary: 'O sistema de gestão da empresa: pedidos, estoque, financeiro e cadastros.',
   logo: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28"><rect width="28" height="28" rx="6" fill="#66CB66"/></svg>',
-  reads: 24,
   auth: 'client_credentials',
   fields: [
     {
@@ -47,7 +46,6 @@ export const MERCADO_LIVRE = ConnectorEntry.parse({
   category: 'Marketplace',
   summary: 'O marketplace da loja: anúncios, vendas, envios e perguntas.',
   logo: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28"><circle cx="14" cy="14" r="14" fill="#FFE600"/></svg>',
-  reads: 27,
   auth: 'oauth2_code',
   fields: [],
 })
@@ -72,32 +70,7 @@ export function connectionOf(fields: Partial<ConnectionOf> = {}): ConnectionOf {
   })
 }
 
-/** What one Testar reads, by subject and label: the 24 reads of the Sankhya. */
-const SUBJECTS: readonly (readonly [string, readonly string[]])[] = [
-  ['Porta de leitura', ['Consulta', 'Leitura genérica']],
-  [
-    'Cadastros',
-    [
-      'Empresas',
-      'Clientes',
-      'Vendedores',
-      'Tipos de operação',
-      'Naturezas',
-      'Centros de resultado',
-    ],
-  ],
-  ['Produtos', ['Produtos', 'Grupos de produto']],
-  [
-    'Vendas',
-    ['Pedidos', 'Notas fiscais', 'Nota fiscal com itens', 'Devoluções', 'Notas canceladas'],
-  ],
-  ['Estoque', ['Estoque por produto', 'Locais de estoque']],
-  ['Financeiro', ['Contas a receber', 'Contas a pagar', 'Tipos de pagamento']],
-  ['Preços', ['Preços de um produto', 'Preços de uma tabela']],
-  ['Logística', ['Transportadoras', 'Ordens de carga']],
-]
-
-/** What the provider said, for an item it refused. */
+/** What the provider said when it refused. */
 export const REFUSAL = {
   status: 403,
   code: 'SEM_ACESSO',
@@ -105,29 +78,10 @@ export const REFUSAL = {
   body: { detail: '<b>não</b>' },
 }
 
-/** Every read, in the order the Hub sends them; `outcomes` set one by its label, a word or the whole row. */
-export function checksOf(outcomes: Record<string, string | Record<string, unknown>> = {}) {
-  return SUBJECTS.flatMap(([subject, labels]) =>
-    labels.map((label) => {
-      const set = outcomes[label] ?? 'READS'
-      return TestCheck.parse({
-        id: label,
-        label,
-        subject,
-        ...(typeof set === 'string' ? { outcome: set } : set),
-      })
-    }),
-  )
-}
-
-/** The test's answer: every part reads, unless `outcomes` name another for a part by its label. */
-export function workingOf(
-  connection: ConnectionOf,
-  outcomes: Record<string, string | Record<string, unknown>> = {},
-) {
+/** Testar's answer when its check read worked. */
+export function workingOf(connection: ConnectionOf) {
   return TestResult.parse({
     result: 'WORKING',
-    checks: checksOf(outcomes),
     connection: {
       ...connection,
       state: 'ACTIVE',

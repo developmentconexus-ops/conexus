@@ -10,7 +10,7 @@ import { promocoes } from './promocoes.ts'
 import { devolucao, reclamacao, reclamacoes } from './reclamacoes.ts'
 import { pacote, pedido, pedidos } from './vendas.ts'
 
-/** The order Testar calls them in: each read comes after the ones its probe reads (`from`), and `conta` first. */
+/** The order the probes run in: each read comes after the ones its probe reads (`from`), and `conta` first. */
 export const mercadoLivreOperations = [
   conta,
   anuncios,
@@ -41,7 +41,7 @@ export const mercadoLivreOperations = [
   tarifaDeVenda,
 ] as const
 
-/** The subjects and their labels, in the order Testar shows them. */
+/** The subjects and their labels; each has a part of the skill. */
 export const mercadoLivreSubjects = {
   conta: 'Conta',
   anuncios: 'Anúncios',

@@ -8,7 +8,7 @@ import { HubFailure, sentenceOf } from '../../platform/hub.ts'
 import { buttonVariants } from '../../ui/button.tsx'
 import { ReadFailure } from '../../ui/states.tsx'
 import { connectionsPrefix, connectionsQuery, sendSignInEnd } from './queries.ts'
-import { Said } from './test-result.tsx'
+import { Said } from './said.tsx'
 import {
   BACK_TO_INTEGRATIONS,
   connectorName,

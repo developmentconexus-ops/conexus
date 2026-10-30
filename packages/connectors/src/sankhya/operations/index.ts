@@ -13,7 +13,7 @@ import { precosDaTabela, precosDoProduto } from './precos.ts'
 import { gruposProduto, produtos } from './produtos.ts'
 import { devolucoes, notaFiscal, notasCanceladas, notasFiscais, pedidos } from './vendas.ts'
 
-/** The order Testar calls them in: `empresas` first, since seven probes read it (their `from`); each subject keeps the ready five before the rest. */
+/** The order the probes run in: `empresas` first, since seven probes read it (their `from`); each subject keeps the ready five before the rest. */
 export const sankhyaOperations = [
   empresas,
   clientes,
@@ -39,7 +39,7 @@ export const sankhyaOperations = [
   ordensCarga,
 ] as const
 
-/** The subjects and their labels, in the order Testar shows them after the door. */
+/** The subjects and their labels; each has a part of the skill. */
 export const sankhyaSubjects = {
   cadastros: 'Cadastros',
   produtos: 'Produtos',

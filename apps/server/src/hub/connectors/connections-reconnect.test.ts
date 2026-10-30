@@ -11,7 +11,7 @@ test('conectar de novo no Sankhya: as chaves novas na mesma ligação', async (t
   assert.equal(refused.connection.state, 'NEEDS_REAUTH')
   const credential = `${base}/${connection.id}/credential`
   function read() {
-    return hub.test.asOwner('select sealed, revision, state, last_test from connectors.connection')
+    return hub.test.asOwner('select sealed, revision, state from connectors.connection')
   }
   const before = await read()
 

@@ -26,10 +26,6 @@ test('429 com espera que cabe no prazo: o Hub espera o que o fornecedor pediu, r
   assert.equal(body.result, 'WORKING')
   assert.equal(on.fake.switches.busyReads, 0, 'the 429 was answered once')
   assert.ok(elapsed >= 80, `${elapsed} ms: the wait was kept`)
-  assert.ok(
-    body.checks.every((check: { outcome: string }) => check.outcome !== 'UNREADABLE'),
-    'a 429 is no longer unreadable',
-  )
 })
 
 test('429 com espera maior que o prazo da chamada: BUSY com a espera pedida, sem esperar nem repetir', async (t) => {

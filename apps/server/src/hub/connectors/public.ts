@@ -1,6 +1,6 @@
 import type { ConnectorId } from '@conexus/connectors'
 import { connectorOf } from '@conexus/connectors'
-import { TEST_DEADLINE_MS } from '@conexus/hub-api'
+import { CALL_DEADLINE_MS } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
 import type { Config } from '../../platform/config.ts'
 import type { ConnectorApp } from '../../platform/config-connectors.ts'
@@ -14,11 +14,8 @@ import { createExecutor } from './executor.ts'
 import { reseal } from './reseal.ts'
 import { registerConnectionRoutes } from './routes.ts'
 
-/** How long one call to a provider may take, the login included (the failure table: 10 s). */
-const CALL_DEADLINE_MS = 10_000
-
-/** Tests shorten both deadlines. */
-export type ConnectorDeadlines = { callDeadlineMs?: number; testDeadlineMs?: number }
+/** Tests shorten the deadline. */
+export type ConnectorDeadlines = { callDeadlineMs?: number }
 
 export type Connectors = ReturnType<typeof createConnectors>
 
@@ -26,7 +23,7 @@ export type Connectors = ReturnType<typeof createConnectors>
  * The company's connections to outside systems (decision 0056): the only subject that imports the
  * kit and opens a connection's seal. A double's origin the configuration names for a connector the
  * kit does not have refuses the Hub (criterion 16), and so does an app's keys for a connector the
- * kit does not have or that is not OAuth (19.1, criterion 10). Tests shorten the deadlines.
+ * kit does not have or that is not OAuth (19.1, criterion 10). Tests shorten the deadline.
  */
 export function createConnectors(deps: {
   database: Database
@@ -63,7 +60,6 @@ export function createConnectors(deps: {
     executor,
     log: deps.log,
     callDeadlineMs: deps.deadlines?.callDeadlineMs ?? CALL_DEADLINE_MS,
-    testDeadlineMs: deps.deadlines?.testDeadlineMs ?? TEST_DEADLINE_MS,
   }
   return Object.freeze({
     routes: (app: FastifyInstance) => registerConnectionRoutes(app, routeDeps),
