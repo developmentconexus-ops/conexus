@@ -220,6 +220,17 @@ export function signInEndText(
   }
 }
 
+/** What the provider sent back on the redirect instead of a code, other than the person saying no: its `error` and its `error_description`, as it wrote them. */
+export function providerErrorText(
+  name: string,
+  error: string,
+  description: string | undefined,
+): string {
+  return description === undefined
+    ? `O ${name} recusou a autorização: ${error}.`
+    : `O ${name} recusou a autorização: ${error} (${description}).`
+}
+
 /** The window "Ligar" opens for a connector that links by a trip to the provider. */
 export function signInWindowText(name: string): string {
   return `Você vai ao ${name} entrar com a conta e autorizar o Conexus.`

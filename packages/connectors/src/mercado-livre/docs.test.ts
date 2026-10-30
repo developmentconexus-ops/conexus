@@ -1,14 +1,22 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
-import { downloadPages, routeInPage, textOfPage } from './docs-source.ts'
+import { z } from 'zod'
+import { downloadPages, inBrowser, routeInPage, textOfPage } from './docs-source.ts'
 import { mercadoLivreFake } from './fake.ts'
 import { docsOf } from './operations/shared.ts'
 import { ACCOUNT, probeAll } from './test-session.ts'
 
 // The documentation is read when the check runs and nothing of it is kept. With
-// MERCADO_LIVRE_DOCS_ONLINE=1 (`npm run test:docs -w @conexus/connectors`) every read's route is
-// looked for in the page it cites; without it the online check is skipped. The matcher is proven
+// MERCADO_LIVRE_DOCS_ONLINE=1 (`npm run test:docs:mercado-livre -w @conexus/connectors`) every
+// read's route is looked for in the page it cites, read through a real browser (the site refuses
+// plain HTTP); without it the online check is skipped, and CI never runs it. The matcher is proven
 // below on invented pages either way.
+
+// The site the connector reads, which the pages write as a placeholder (`$SITE`).
+const SITE_ID = 'MLB'
+
+// The reads whose page lists the route in a table that names no method.
+const LISTED_WITHOUT_METHOD = new Set(['anunciosDetalhe'])
 
 const ONLINE =
   // biome-ignore lint/style/noProcessEnv: a switch of this one check, not the app's configuration
@@ -43,6 +51,17 @@ describe('o conferidor de rotas', () => {
     )
   })
 
+  it('uma tabela sem método só vale quando a leitura declara isso, e um valor fixo do site pode ser escrito como o texto da página o nomeia', () => {
+    const table = textOfPage('<td>/items/bulk?ids=$ITEM_IDS</td>')
+    const route = { path: '/items/bulk', variable: [] }
+    assert.equal(routeInPage(table, { ...route, method: 'GET' }), false)
+    assert.equal(routeInPage(table, { ...route, method: null }), true)
+    const fee = textOfPage('<pre>GET https://api.mercadolibre.com/sites/$SITE/listing_prices</pre>')
+    const fees = { method: 'GET', path: '/sites/MLB/listing_prices' }
+    assert.equal(routeInPage(fee, { ...fees, variable: [] }), false)
+    assert.equal(routeInPage(fee, { ...fees, variable: ['MLB'] }), true)
+  })
+
   it('uma operação cuja rota não está na página falha', () => {
     assert.equal(
       routeInPage(textOfPage('<p>Outra página</p>'), {
@@ -59,18 +78,23 @@ describe('a conferência com a documentação', { skip: ONLINE ? false : SKIP },
   it('cada leitura tem a sua rota na página que ela cita, baixada na hora', async () => {
     const sent = await probeAll(mercadoLivreFake())
     assert.equal(sent.length, 27)
-    const pages = await downloadPages(sent.flatMap(({ operation }) => docsOf(operation) ?? []))
-    for (const { operation, request } of sent) {
+    const pages = await inBrowser((fetchPage) =>
+      downloadPages(
+        sent.flatMap(({ operation }) => docsOf(operation) ?? []),
+        fetchPage,
+      ),
+    )
+    for (const { operation, input, request } of sent) {
       const slug = docsOf(operation)
       const text = slug ? pages.get(slug) : undefined
       assert.ok(text, `${operation.id}: page ${slug}`)
-      const variable = [
-        ACCOUNT.ref,
-        ...Object.values(request.query),
-        ...request.path.split('/'),
-      ].filter((part) => /^[0-9]{6,}$|^MLB[A-Z0-9]+$|^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(part))
+      const given = Object.values(z.record(z.string(), z.unknown()).parse(input)).flatMap(
+        (value) => (typeof value === 'string' || typeof value === 'number' ? [String(value)] : []),
+      )
+      const variable = [ACCOUNT.ref, SITE_ID, ...given]
+      const method = LISTED_WITHOUT_METHOD.has(operation.id) ? null : request.method
       assert.equal(
-        routeInPage(text, { method: request.method, path: request.path, variable }),
+        routeInPage(text, { method, path: request.path, variable }),
         true,
         `${operation.id}: ${request.method} ${request.path} in ${slug}`,
       )
