@@ -7,7 +7,7 @@ export const perguntas = readOf({
   subject: 'perguntas',
   docs: 'gerenciamento-perguntas-respostas',
   summary:
-    'Lista as perguntas feitas nos anúncios do vendedor, com a resposta quando há, uma página por chamada (até 50). As sem resposta aparecem por 7 meses.',
+    'Lista as perguntas feitas nos anúncios do vendedor, com a resposta quando há, uma página por chamada (até 50). As sem resposta aparecem por 7 meses. A busca lê no máximo 1000 perguntas (o limite de offset do Mercado Livre); com mais, filtre por status.',
   label: 'Perguntas',
   input: z.object({
     status: z
