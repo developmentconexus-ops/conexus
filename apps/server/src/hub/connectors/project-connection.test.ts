@@ -158,6 +158,10 @@ test('o caderno: nasce vazio, só objeto de até 32 KB; a empresa o lê e o muda
   function note(concept: string) {
     return JSON.stringify({ [concept]: { map: { vendedor: 'TGFCAB.AD_CODVEND' }, rows: 3 } })
   }
+  const sealedBefore = await asOwner(
+    `select encode(sealed, 'hex') as sealed from connectors.connection where id = '${CONNECTION_A}'`,
+  )
+  assert.equal(sealedBefore.length, 1)
   await inA(sql`update connectors.connection set notes = notes || ${note('vendedor')}::jsonb
     where id = ${CONNECTION_A}`)
   await inA(sql`update connectors.connection set notes = notes || ${note('cliente')}::jsonb
@@ -180,7 +184,14 @@ test('o caderno: nasce vazio, só objeto de até 32 KB; a empresa o lê e o muda
     await asOwner(`select 1 from connectors.connection where octet_length(notes::text) = 32768`),
     [],
   )
-  // The notes' grant opens no seal: it stays closed by this path.
+  // The notes' updates left the seal byte-equal, read as the owner.
+  assert.deepEqual(
+    await asOwner(
+      `select encode(sealed, 'hex') as sealed from connectors.connection where id = '${CONNECTION_A}'`,
+    ),
+    sealedBefore,
+  )
+  // The company cannot write the seal at all: the grant covers the notes only.
   await assert.rejects(
     inA(sql`update connectors.connection set sealed = sealed`),
     refusedWith('42501'),
