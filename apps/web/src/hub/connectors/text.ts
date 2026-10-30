@@ -117,13 +117,25 @@ export function hintText(
   name: string,
   auth: Auth,
 ): string {
-  // Only a status that says the user lacks access: a 404 or 409 refused something else.
+  // Only a status that says the user lacks access: a 400, 404 or 409 refused something else.
   if (
     items.some((one) => one.outcome === 'REFUSED' && 'native' in one && one.native.status === 403)
   ) {
     return auth === 'oauth2_code'
       ? `O app do Conexus não tem permissão para esta parte no ${name}.`
       : `O usuário de integração não tem acesso a esta parte. Libere a tela no ${name} e teste de novo.`
+  }
+  // A 400 or 404 that is not an empty page: the provider failed this read (the Sankhya 400 on a TOP its own dictionary lacks), and the door reads the same data.
+  if (
+    auth === 'client_credentials' &&
+    items.some(
+      (one) =>
+        one.outcome === 'REFUSED' &&
+        'native' in one &&
+        (one.native.status === 400 || one.native.status === 404),
+    )
+  ) {
+    return `O ${name} deu erro nesta leitura; não é falta de acesso. Os apps leem estes dados pela porta de leitura.`
   }
   if (items.some((one) => one.outcome === 'NOT_TESTED')) {
     return 'O tempo do teste acabou antes destas leituras. Teste de novo.'
