@@ -1,8 +1,9 @@
 import type { FailureCode } from '@conexus/hub-api'
 import { FAILURES } from '@conexus/hub-api'
-import { Link } from '@tanstack/react-router'
+import { Link, useRouter } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
 import { ConexusWordmark } from '../brand/mark.tsx'
+import { sentenceOf } from '../platform/hub.ts'
 import { useInitialAction } from '../platform/initial.ts'
 import { Button, buttonVariants } from './button.tsx'
 import { useInFrame } from './frame.tsx'
@@ -78,6 +79,14 @@ export function ReadFailure({ text, onRetry }: { text: string; onRetry: () => vo
       </p>
       <Button onClick={onRetry}>Tentar de novo</Button>
     </div>
+  )
+}
+
+/** A route's `errorComponent` for a page whose read failed: the sentence and a way to read again. */
+export function RouteReadFailure({ error, reset }: { error: unknown; reset: () => void }) {
+  const router = useRouter()
+  return (
+    <ReadFailure text={sentenceOf(error)} onRetry={() => void router.invalidate().then(reset)} />
   )
 }
 

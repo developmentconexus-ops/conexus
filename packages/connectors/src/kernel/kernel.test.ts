@@ -205,8 +205,10 @@ test('o logotipo: um SVG sem script, sem on…=, sem endereço de fora e até o 
     SVG.replace('<path', '<path fill="url(https://example.test/a)"'),
     SVG.replace('<path', '<path fill="url( \'x.svg#a\' )"'),
     SVG.replace('</svg>', `<!-- ${'x'.repeat(LOGO_MAX_BYTES)} --></svg>`),
+    SVG.replace('0 0 1 1', '0 0 124 28'),
   ])
     assert.notDeepEqual(logoProblems(bad), [], bad.slice(0, 60))
+  assert.match(String(logoProblems(SVG.replace('0 0 1 1', '0 0 124 28'))), /not square/)
 })
 
 test('o conector sem conta, ou o campo sem ajuda, não compila', () => {

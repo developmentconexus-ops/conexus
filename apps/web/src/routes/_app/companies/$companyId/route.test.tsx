@@ -1,7 +1,8 @@
-import { CompanyId, ProjectSummary } from '@conexus/hub-api'
+import { CompanyId, ConnectionList, ProjectSummary } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import type { BoundFunctions, queries } from '@testing-library/react'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { HttpResponse, http } from 'msw'
 import { beforeEach, expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../../../main.tsx'
 import { ANA, COMPANY } from '../../../../platform/fixtures.ts'
@@ -52,7 +53,7 @@ function linkNames(nav: BoundFunctions<typeof queries>) {
   return nav.getAllByRole('link').map((link) => link.textContent)
 }
 
-test('a barra: empresa, Início, Projetos recentes, Todos os projetos, Configurações e a conta (critério 3)', async () => {
+test('a barra: empresa, Início, Projetos recentes, Todos os projetos, Integrações, Configurações e a conta (critério 3)', async () => {
   open(HOME)
   const nav = await sidebar()
   expect(nav.getByText('Empresa Teste')).toBeTruthy()
@@ -65,6 +66,7 @@ test('a barra: empresa, Início, Projetos recentes, Todos os projetos, Configura
     'Projeto 4',
     'Projeto 5',
     'Todos os projetos',
+    'Integrações',
     'Configurações',
   ])
   expect(nav.getByRole('button', { name: 'Conta de Ana Lima' })).toBeTruthy()
@@ -90,7 +92,7 @@ test('os Projetos recentes: os abertos por último que seguem na lista, completa
   remembered(7, 3, 6)
   open(HOME)
   const nav = await sidebar()
-  expect(linkNames(nav).slice(1, -2)).toEqual([
+  expect(linkNames(nav).slice(1, -3)).toEqual([
     'Projeto 7',
     'Projeto 3',
     'Projeto 6',
@@ -106,7 +108,7 @@ test('um Projeto lembrado que o Hub já não lista fica de fora (critério 3)', 
   )
   open(HOME)
   const nav = await sidebar()
-  expect(linkNames(nav).slice(1, -2)).toEqual([
+  expect(linkNames(nav).slice(1, -3)).toEqual([
     'Projeto 4',
     'Projeto 1',
     'Projeto 2',
@@ -118,7 +120,13 @@ test('um Projeto lembrado que o Hub já não lista fica de fora (critério 3)', 
 test('com um só Projeto, a barra lista só ele (critério 3)', async () => {
   open(HOME, PROJECTS.slice(0, 1))
   const nav = await sidebar()
-  expect(linkNames(nav)).toEqual(['Início', 'Projeto 1', 'Todos os projetos', 'Configurações'])
+  expect(linkNames(nav)).toEqual([
+    'Início',
+    'Projeto 1',
+    'Todos os projetos',
+    'Integrações',
+    'Configurações',
+  ])
 })
 
 test('abrir um Projeto o põe primeiro nos recentes (critério 3)', async () => {
@@ -155,6 +163,28 @@ test('dentro de um Projeto a barra vira ícones, Ctrl+B a abre e, ao sair, volta
   await screen.findByRole('heading', { name: 'O que vamos construir?' })
   expect(router.state.location.pathname).toBe(HOME)
   expect(railLabel()).toBe('Recolher a barra lateral')
+})
+
+test('Integrações na barra: entre os Projetos e as Configurações, ativa na página (critério 19)', async () => {
+  server.use(
+    http.get(`*/api/companies/${COMPANY.id}/connections`, () =>
+      HttpResponse.json(
+        ConnectionList.parse({
+          connectors: [],
+          connections: [],
+          mayManage: false,
+        }),
+      ),
+    ),
+  )
+  open(`${HOME}/integrations`)
+  const nav = await sidebar()
+  const names = linkNames(nav)
+  expect(names.indexOf('Integrações')).toBe(names.indexOf('Configurações') - 1)
+  expect(names.indexOf('Integrações')).toBeGreaterThan(names.indexOf('Todos os projetos'))
+  expect(nav.getByRole('link', { name: 'Integrações' }).getAttribute('aria-current')).toBe('page')
+  expect(nav.getByRole('link', { name: 'Configurações' }).getAttribute('aria-current')).toBeNull()
+  expect(await screen.findByRole('heading', { name: 'Integrações' })).toBeTruthy()
 })
 
 test('fora do Projeto a barra começa aberta (critério 4)', async () => {

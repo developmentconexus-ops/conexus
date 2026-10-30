@@ -19,6 +19,7 @@ import {
 import type { Replies } from './layout-harness.ts'
 import { ok } from './layout-harness.ts'
 import { ANA, COMPANY } from './src/platform/fixtures.ts'
+import { connectionsPage } from './sweep-connections.ts'
 import { modelAccountsPage } from './sweep-model-accounts.ts'
 
 export const INVITATION = 'i'.repeat(32)
@@ -108,6 +109,7 @@ function companyPage(
     ...SIGNED_IN,
     ...projectsPage(id),
     ...modelAccountsPage(id, role !== 'member'),
+    ...connectionsPage(id, role !== 'member'),
     [`GET /api/companies/${id}`]: ok(getCompany, { company, role, mayInviteAs }),
     [`GET /api/companies/${id}/members`]: ok(listMembers, {
       members: people.map((one) => ({ ...one, mayChangeTo: [...one.mayChangeTo] })),

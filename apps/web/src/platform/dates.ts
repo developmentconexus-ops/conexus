@@ -8,9 +8,14 @@ export function dayAndHour(instant: string): string {
 
 const HOUR = new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit', hour12: false })
 
+/** The hour on the clock, as "09:30". */
+export function clockOf(instant: string): string {
+  return HOUR.format(new Date(instant))
+}
+
 /** The hour, as "09h30". */
 export function hourOf(instant: string): string {
-  return HOUR.format(new Date(instant)).replace(':', 'h')
+  return clockOf(instant).replace(':', 'h')
 }
 
 const DAY = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short' })
