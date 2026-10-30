@@ -61,7 +61,7 @@ export const INTEGRATIONS_STATES: State[] = [
     name: 'Integrações vazia do dono',
     path: PAGE,
     replies: owner([]),
-    settle: (p) => waitFor(p, 'Nenhum sistema ligado ainda.'),
+    settle: (p) => waitFor(p, 'Nenhuma integração ligada ainda.'),
   },
   {
     name: 'Integrações com duas ligações do Sankhya',

@@ -37,9 +37,7 @@ test('a primeira vez: a frase, o logotipo e o resumo do conector, e Ligar para q
   open()
   expect(await screen.findByRole('heading', { name: 'Integrações' })).toBeTruthy()
   expect(screen.getByText(/O Conexus só lê\.$/)).toBeTruthy()
-  expect(
-    screen.getByText('Nenhum sistema ligado ainda. Ligue o primeiro abaixo; leva dois minutos.'),
-  ).toBeTruthy()
+  expect(screen.getByText('Nenhuma integração ligada ainda.')).toBeTruthy()
   const toLink = within(screen.getByRole('region', { name: 'Para ligar' }))
   expect(toLink.getByText('Sankhya')).toBeTruthy()
   expect(toLink.getByText('ERP')).toBeTruthy()
@@ -298,11 +296,7 @@ test('Desligar confirma pelo nome e volta à lista; Cancelar não manda nada', a
   dialog = await screen.findByRole('alertdialog')
   fireEvent.click(within(dialog).getByRole('button', { name: 'Desligar' }))
   expect(await screen.findByRole('heading', { name: 'Integrações' })).toBeTruthy()
-  expect(
-    await screen.findByText(
-      'Nenhum sistema ligado ainda. Ligue o primeiro abaixo; leva dois minutos.',
-    ),
-  ).toBeTruthy()
+  expect(await screen.findByText('Nenhuma integração ligada ainda.')).toBeTruthy()
   expect(sent.map((one) => one.method)).toEqual(['DELETE'])
 })
 

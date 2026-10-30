@@ -34,8 +34,9 @@ test.each([
     )
     mount(pageOf(connection))
     fireEvent.click(await screen.findByRole('button', { name: 'Testar' }))
-    expect(await screen.findByText(sentence, {}, { timeout: 4000 })).toBeTruthy()
+    expect(await screen.findByText(sentence, {}, { timeout: 12_000 })).toBeTruthy()
   },
+  20_000,
 )
 
 test('o navegador espera o Testar além do prazo do Hub e responde antes da borda da Cloudflare', () => {

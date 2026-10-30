@@ -3,8 +3,7 @@ import { clockOf, dayAndMonth } from '../../platform/dates.ts'
 
 export const LEAD =
   'Ligue os sistemas da empresa e os apps do Conexus passam a ler os dados deles. O Conexus só lê.'
-export const NO_CONNECTIONS =
-  'Nenhum sistema ligado ainda. Ligue o primeiro abaixo; leva dois minutos.'
+export const NO_CONNECTIONS = 'Nenhuma integração ligada ainda.'
 export const MEMBER_SENTENCE = 'Só o dono ou um administrador liga, testa e desliga.'
 export const NOT_TESTED_YET = 'Ainda não testada.'
 export const UNREADABLE_TEXT = 'Resposta que o Conexus não entendeu'
