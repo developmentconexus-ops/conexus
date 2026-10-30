@@ -113,18 +113,11 @@ chamar ninguém. Com o OAuth, a autorização continua na conta do Mercado Livre
 tirar (o Magis5, por exemplo, chama o Mercado Livre para tirar a autorização ao desligar).
 - **`Y1` (aprovada com a página, 2026-10-29: "Aprovado 19.1"):** o Desligar continua só no Hub, como na 19:
   nunca falha porque o fornecedor está fora, e serve a todo conector igual. Ligar a mesma conta de
-  novo depois funciona. Tirar a autorização no fornecedor entra quando um conector declarar como.
-- **`Y2` (decidida pelo fundador, 2026-10-30: "Ao desligar uma ligação, avisar o Mercado Livre e
-  revogar a autorização?" "Sim"):** o conector OAuth pode declarar a chamada que tira a
-  autorização (`revoke` no `oauth2Code`). O Desligar a manda pelo executor, com a chave viva da
-  ligação, antes de apagar. O Mercado Livre declara `DELETE /users/{conta}/applications/{app}`
-  (`usuarios-e-aplicativos`, "Revogar permissão do aplicativo"). Se o fornecedor recusa ou está
-  fora, a ligação sai do mesmo jeito, o log nomeia o caso (`CONNECTION_REVOKE_REFUSED`,
-  `CONNECTION_REVOKE_UNANSWERED`, `CONNECTION_REVOKE_NOT_SENT`) e a resposta do Desligar traz
-  `revocation` (`REVOKED`, `REFUSED`, `UNREACHABLE`, `NOT_SENT`, ou `NONE` quando o conector não
-  declara). A janela diz à pessoa que a autorização ficou na conta do fornecedor. Um conector sem
-  `revoke` se comporta como na `Y1`.
-- Veredito: `Y2` embrulhado, um passo a mais no kit; a `Y1` vale para todo conector sem `revoke`.
+  novo depois funciona. Tirar a autorização no fornecedor entra quando um conector declarar como (o
+  Mercado Livre tem uma rota para isso, ainda não lida a fundo).
+- **`Y2`:** o Desligar pede ao fornecedor que tire a autorização antes de apagar; com o fornecedor
+  fora, o Desligar falha ou apaga mesmo assim.
+- Veredito: `Y1` nativo (o Desligar da 19); `Y2` embrulhado, um passo a mais no kit.
 
 **O tamanho.** Cerca de 2.650 linhas de código, abaixo do teto de 4.000 da regra L2.
 
@@ -271,7 +264,7 @@ estante tem conector do Mercado Livre.
 | Os dados pessoais do comprador | U0 | o RH do Sankhya ficou de fora | `/questions/{id}` traz e-mail, telefone e nome do comprador; `/orders/billing-info` o CPF/CNPJ | **documentado** | embrulhado: os esquemas de saída não têm esses campos; `billing-info` não é leitura | critério 23 | `T1` | — |
 | A tela Integrações | U3 | U4 da 19 (https://github.com/developmentconexus-ops/conexus/pull/454): `apps/web/src/hub/connectors/link-dialog.tsx`, `text.ts` (`stateBadge` "Chaves recusadas") | o cartão da 19 | — | embrulhado: por `auth`, a janela só com o nome; a conta na ligação; **Conectar de novo** nos dois tipos | critérios 20, 25 | o fundador aprova os textos no fim | `apps/web/src/hub/connectors/*` |
 | Uma biblioteca de OAuth | fica de fora | nenhuma instalada | Nango, ELv2 e preso ao seu servidor; `@n8n/client-oauth2`, licença de uso sustentável | só as chamadas HTTP | embrulhado, rejeitado: o kit já monta os pedidos e o executor os manda; uma biblioteca seria um segundo remetente ao lado do executor (S36) | — | não precisa | — |
-| Tirar a autorização no fornecedor ao desligar | fica de fora | o Desligar da 19 só apaga no Hub (`hub/connectors/connections.ts:142-151`) | Magis5 chama o Mercado Livre ao desligar ("Revogar Acesso"); o Mercado Livre, `usuarios-e-aplicativos`: `DELETE /users/{cust_Id}/applications/{app_id}` com o portador | **documentado** | embrulhado (`Y2`): `revoke` no kit, `executor.revoke` e o Desligar o chama antes de apagar | — | decidido, **`Y2`** | `kernel/oauth.ts`, `hub/connectors/connections.ts`, `executor.ts` |
+| Tirar a autorização no fornecedor ao desligar | fica de fora | o Desligar da 19 só apaga no Hub (`hub/connectors/connections.ts:142-151`) | Magis5 chama o Mercado Livre ao desligar ("Revogar Acesso") | — | nativo, o da 19 (`Y1`) | — | **`Y`** | — |
 
 **A medida do transplante.** Nada vem do código antigo: o OS não tinha OAuth de conector. A forma
 vem do próprio `main` (a autorização e a trava da assinatura do Claude), escrita de novo em

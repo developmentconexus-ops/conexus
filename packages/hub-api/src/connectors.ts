@@ -226,7 +226,7 @@ export const unlinkConnection = defineOperation({
   bodyLimit: 1024,
   input: { params: OfConnection },
   success: { status: 200, body: z.object({ revocation: Revocation }) },
-  failures: [...READ_FAILURES, 'CONNECTOR_NOT_CONFIGURED'],
+  failures: READ_FAILURES,
 })
 
 export const startConnectionSignIn = defineOperation({

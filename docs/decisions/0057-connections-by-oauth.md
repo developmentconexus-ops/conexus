@@ -4,7 +4,8 @@
 
 Step 19.1 links a company to a provider the person authorizes, the Mercado Livre first; its refresh
 token is single use. Basis: the 19.1
-card (`W1`, `V2`, `U1`, `Y1`), approved 2026-10-29, and `Y2`, 2026-10-30.
+card (`W1`, `V2`, `U1`, `Y1`), approved 2026-10-29, and the founder's "Sim" of 2026-10-30 to
+revoking at the provider, in the 19.1 section of `docs/approvals.md`.
 
 ## Decision
 
@@ -27,7 +28,7 @@ card (`W1`, `V2`, `U1`, `Y1`), approved 2026-10-29, and `Y2`, 2026-10-30.
 | 2 | `connections-refresh.test.ts`, `connections-copies.test.ts` | One refresh, two Hubs (11 to 15, 19) |
 | 3 | `connections-oauth-logs.test.ts` | No token, code or secret leaves (9) |
 | 4 | `mercado-livre/docs.test.ts` online | Each route is on its page (21) |
-| 5 | `connections-revoke.test.ts` | Desligar revokes, or removes anyway (`Y2`) |
+| 5 | `connections-revoke.test.ts` | Desligar revokes, or removes anyway |
 
 ## Result
 

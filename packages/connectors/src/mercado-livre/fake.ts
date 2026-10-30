@@ -196,12 +196,20 @@ function routed(
   return json(reply.body, reply.status ?? 200, reply.headers)
 }
 
-function read(world: World, request: Request, url: URL): Response {
+/** The live access a request's bearer holds, or the 401 the provider answers instead. */
+function bearing(world: World, request: Request) {
   const given = world.access.get(
     request.headers.get('authorization')?.replace(/^Bearer /, '') ?? '',
   )
-  if (!given || given.expired)
-    return json({ message: 'invalid_token', error: 'not_found', status: 401, cause: [] }, 401)
+  if (given && !given.expired) return { given }
+  return {
+    refused: json({ message: 'invalid_token', error: 'not_found', status: 401, cause: [] }, 401),
+  }
+}
+
+function read(world: World, request: Request, url: URL): Response {
+  const { given, refused } = bearing(world, request)
+  if (!given) return refused
   if (url.pathname === '/users/me' && world.switches.accountRateLimited)
     return json({ message: 'too many requests', status: 429 }, 429)
   if (url.pathname === '/users/me')
@@ -215,11 +223,8 @@ function read(world: World, request: Request, url: URL): Response {
 
 /** `DELETE /users/{account}/applications/{app}`: the bearer's own account and this app only, then the app's keys stop working. */
 function revoke(world: World, request: Request, url: URL): Response {
-  const given = world.access.get(
-    request.headers.get('authorization')?.replace(/^Bearer /, '') ?? '',
-  )
-  if (!given || given.expired)
-    return json({ message: 'invalid_token', error: 'not_found', status: 401, cause: [] }, 401)
+  const { given, refused } = bearing(world, request)
+  if (!given) return refused
   const match = /^\/users\/(?<account>[^/]+)\/applications\/(?<app>[^/]+)$/.exec(url.pathname)
   if (!match || match.groups?.account !== given.ref || match.groups.app !== APP.clientId)
     return forbidden()

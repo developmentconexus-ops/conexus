@@ -351,3 +351,7 @@ Essa emenda é a opção B do estudo do Sankhya de verdade, aplicada à 19.1 pel
 Cartão da etapa 19.1 aprovado em 2026-10-30 (commit bf11da92fb4dcf9a4e6dfed0e2612553fa8f2c82): "Aprovado 19.1"
 
 Essa emenda vem da revisão da U1, decidida pelo firstmate, sem decisão nova do fundador nem mudança no que ele vê: a linha de autorização em andamento só aponta uma ligação da mesma empresa e do mesmo conector (uma chave composta, como a do acesso a um app), o nome dela tem o mesmo limite do nome da ligação, e a migração de permissões vai numa migração e num commit próprios dentro do pull request da U1, como nas etapas 18 e 19. A palavra D11 do fundador é a mesma, "Aprovado 19.1".
+
+Pergunta do firstmate durante a 19.1, 2026-10-30: "Ao desligar uma ligação, avisar o Mercado Livre e revogar a autorização?"; resposta do fundador, 2026-10-30: "Sim"
+
+Isso muda o Desligar da `Y1` do cartão: o conector OAuth pode declarar a chamada que tira a autorização, o Mercado Livre a declara, e o Desligar a manda com a chave viva antes de apagar; se o fornecedor recusa, está fora ou não há chave viva, a ligação sai do mesmo jeito, o log nomeia o caso e a janela avisa a pessoa. É uma decisão dele no meio da etapa, que entra no livro sem nova aprovação do cartão (L6); o cartão fica como estava. Pull request: https://github.com/developmentconexus-ops/conexus/pull/483

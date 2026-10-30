@@ -75,3 +75,29 @@ test('desligar de novo, e quem não pode: nada é enviado', async (t) => {
   assert.deepEqual((await unlinked(on, id)).body, { revocation: 'NONE' })
   assert.equal(on.fake.revocations().length, 1)
 })
+
+test('o selo não abre: nada é enviado, a ligação sai, a pessoa lê NOT_SENT e o log diz', async (t) => {
+  const on = await mercadoLivreOn(t)
+  const id = await linked(on)
+  await on.hub.test.asOwner(`update connectors.connection set sealed = sealed || '\\x00'::bytea`)
+  const gone = await unlinked(on, id)
+  assert.deepEqual([gone.status, gone.body], [200, { revocation: 'NOT_SENT' }])
+  assert.equal(on.fake.revocations().length, 0)
+  assert.equal((await on.hub.test.asOwner('select 1 from connectors.connection')).length, 0)
+  assert.ok(lineNamed(on, 'CONNECTION_REVOKE_NOT_SENT'))
+  assert.equal(lineNamed(on, 'CONNECTION_REVOKE_REFUSED'), undefined)
+})
+
+test('o vendedor já tirou o Conexus no Mercado Livre: sem chave viva nada é enviado, NOT_SENT', async (t) => {
+  const on = await mercadoLivreOn(t)
+  const id = await linked(on)
+  on.fake.switches.revoke = true
+  on.fake.expireAccess()
+  const gone = await unlinked(on, id)
+  assert.deepEqual([gone.status, gone.body], [200, { revocation: 'NOT_SENT' }])
+  assert.equal(on.fake.revocations().length, 0)
+  assert.equal((await on.hub.test.asOwner('select 1 from connectors.connection')).length, 0)
+  const line = lineNamed(on, 'CONNECTION_REVOKE_NOT_SENT')
+  assert.equal(line?.fields.status, 400)
+  assert.equal(lineNamed(on, 'CONNECTION_REVOKE_REFUSED'), undefined)
+})
