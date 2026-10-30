@@ -42,6 +42,29 @@ test('sem dados do comprador', async () => {
     assert.ok(!text.includes(buyer), `an output carries ${buyer}`)
 })
 
+test('o 404 de um vendedor sem tempo de resposta é uma resposta vazia; outro 404, e o mesmo 404 em outra leitura, é recusa', () => {
+  const tempo = mercadoLivre.operations.find((operation) => operation.id === 'tempoDeResposta')
+  const conta = mercadoLivre.operations.find((operation) => operation.id === 'conta')
+  assert.ok(tempo && conta)
+  const none = {
+    message: 'Response time not found for user id: 1',
+    error: 'not_found',
+    status: 404,
+    cause: [],
+  }
+  assert.deepEqual(tempo.answer({ status: 404, body: none }), {
+    kind: 'OK',
+    value: { linhas: [], temMais: false },
+    empty: true,
+  })
+  assert.equal(
+    tempo.answer({ status: 404, body: { ...none, message: 'Resource not found' } }).kind,
+    'REFUSED',
+  )
+  assert.equal(tempo.answer({ status: 404, body: { ...none, error: 'other' } }).kind, 'REFUSED')
+  assert.equal(conta.answer({ status: 404, body: none }).kind, 'REFUSED')
+})
+
 test('cada resposta que não é 2xx vira o resultado do kit, sem o corpo de um 2xx', () => {
   const conta = mercadoLivre.operations.find((operation) => operation.id === 'conta')
   assert.ok(conta)

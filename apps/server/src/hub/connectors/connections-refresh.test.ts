@@ -22,6 +22,13 @@ async function tested(on: Linked, id: string) {
   return { body: Object(response.json()), elapsed: performance.now() - started }
 }
 
+async function responseTimeCheck(on: Linked, id: string) {
+  const checks: { id: string; outcome: string; native?: { status: number; code: string } }[] = (
+    await tested(on, id)
+  ).body.checks
+  return checks.find((check) => check.id === 'tempoDeResposta')
+}
+
 async function rowOf(on: Linked) {
   const [row] = await on.hub.test.asOwner(
     'select state, revision, refresh_until from connectors.connection',
@@ -136,4 +143,20 @@ test('testar: a conta, uma leitura só; a conta recusada ou o Mercado Livre pedi
   const busy = (await tested(on, id)).body
   assert.deepEqual([busy.result, busy.native.status], ['BUSY', 429])
   assert.deepEqual(busy.connection, working.connection)
+})
+
+test('um vendedor sem tempo de resposta: o 404 que a documentação mostra lê sem nada para olhar; outro 404 é recusa', async (t) => {
+  const on = await mercadoLivreOn(t)
+  const id = String(
+    Object((await linkMercadoLivre(on.hub, on.ana, on.companyId)).json()).connection.id,
+  )
+  assert.equal((await responseTimeCheck(on, id))?.outcome, 'READS')
+
+  on.fake.switches.responseTime = 'none'
+  assert.equal((await responseTimeCheck(on, id))?.outcome, 'NOTHING_TO_READ')
+
+  on.fake.switches.responseTime = 'other'
+  const refused = await responseTimeCheck(on, id)
+  assert.equal(refused?.outcome, 'REFUSED')
+  assert.deepEqual([refused?.native?.status, refused?.native?.code], [404, 'not_found'])
 })

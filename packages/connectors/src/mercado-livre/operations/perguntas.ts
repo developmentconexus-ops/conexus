@@ -45,6 +45,8 @@ export const tempoDeResposta = readOf({
   label: 'Tempo de resposta',
   input: z.object({}),
   list: null,
+  // gerenciamento-perguntas-respostas: a seller with no questions on their items gets this 404
+  emptyNotFound: 'Response time not found for user id',
   probe: () => ({}),
   request: (_input, account) => get(`/users/${sellerOf(account)}/questions/response_time`),
 })
