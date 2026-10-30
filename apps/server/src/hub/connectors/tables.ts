@@ -1,6 +1,7 @@
 import { CONNECTION_STATES } from '@conexus/hub-api'
 import { sql } from 'drizzle-orm'
 import {
+  boolean,
   bytea,
   check,
   foreignKey,
@@ -8,6 +9,7 @@ import {
   jsonb,
   pgPolicy,
   pgSchema,
+  primaryKey,
   text,
   timestamp,
   unique,
@@ -16,6 +18,7 @@ import {
 } from 'drizzle-orm/pg-core'
 import { SCOPE_ROLES, scoped } from '../../platform/database.ts'
 import { company, member, policy } from '../identity/public.ts'
+import { project } from '../projects/public.ts'
 
 // The connectors' own schema in the Hub's database (data D1). A connection belongs to a company and
 // leaves with it; its credential is sealed, and only connectors.sealed_of reads it (Grant A, as builder).
@@ -50,6 +53,9 @@ export const connection = connectors.table(
     // The last working test's items (founder, X2): id, label, subject, outcome, source; never a
     // value read. The Hub parses it with hub-api's TestCheck on read (C27); the database only keeps it.
     lastTest: jsonb('last_test'),
+    // What the Builder proved about this company's system (founder, J1): names and codes, never
+    // values. Not a seal write: it does not bump `revision`.
+    notes: jsonb('notes').notNull().default(sql`'{}'::jsonb`),
     // The creation's Idempotency-Key (code C37).
     attemptKey: text('attempt_key').notNull(),
     // Bumped by every write of `sealed` that other writers must notice: a refresh stores only on
@@ -94,6 +100,10 @@ export const connection = connectors.table(
       'connection_account',
       sql`(${table.accountRef} IS NULL) = (${table.accountLabel} IS NULL)
         AND (${table.accountLabel} IS NULL OR char_length(${table.accountLabel}) BETWEEN 1 AND 120)`,
+    ),
+    check(
+      'connection_notes',
+      sql`jsonb_typeof(${table.notes}) = 'object' AND octet_length(${table.notes}::text) <= 32768`,
     ),
     check('connection_connector_id', sql`${table.connectorId} ~ '^[a-z][a-z0-9-]{1,31}$'`),
     policy(SCOPE_ROLES.COMPANY, 'all', sql`company_id = ${scoped.companyId}`),
@@ -154,5 +164,40 @@ export const connectionSignIn = connectors.table(
       sql`company_id = ${scoped.companyId}
       and (person_id = ${scoped.personId} or ${scoped.personId} is null)`,
     ),
+  ],
+)
+
+/** A Projeto may use a connection (founder, S1, T-A): to read, the whole connection; no ceiling. */
+export const projectConnection = connectors.table(
+  'project_connection',
+  {
+    projectId: text('project_id').notNull(),
+    companyId: text('company_id').notNull(),
+    connectorId: text('connector_id').notNull(),
+    connectionId: uuid('connection_id').notNull(),
+    // The connector's perProject is 'one', copied so the database holds one such grant per Projeto.
+    exclusive: boolean('exclusive').notNull(),
+    // No foreign key to the person, as connection.linked_by.
+    grantedBy: text('granted_by').notNull(),
+    grantedAt: instant('granted_at').notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.projectId, table.connectionId] }),
+    uniqueIndex('project_connection_one_key')
+      .on(table.projectId, table.connectorId)
+      .where(sql`${table.exclusive}`),
+    // The row's company and connector are the connection's, and its company the Projeto's, so no
+    // scope grants across companies (as connection_sign_in and app_access).
+    foreignKey({
+      name: 'project_connection_connection_fkey',
+      columns: [table.companyId, table.connectorId, table.connectionId],
+      foreignColumns: [connection.companyId, connection.connectorId, connection.id],
+    }).onDelete('cascade'),
+    foreignKey({
+      name: 'project_connection_project_fkey',
+      columns: [table.companyId, table.projectId],
+      foreignColumns: [project.companyId, project.id],
+    }).onDelete('cascade'),
+    policy(SCOPE_ROLES.COMPANY, 'all', sql`company_id = ${scoped.companyId}`),
   ],
 )
