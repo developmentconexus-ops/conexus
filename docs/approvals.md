@@ -323,3 +323,7 @@ As edições da revisão 6 só dão palavras às duas decisões já registradas 
 Cartão da etapa 19.1 aprovado em 2026-10-29 (commit ce249b15b7adb7f8cb7e2a6fef9984cf2b4b207a): "Aprovado 19.1"
 
 Ele aprovou a página do cartão com a recomendação `Y1` (o Desligar continua só no Hub, como na 19). O commit citado só escreve essa resposta na página; as decisões `S1`, `T1`, `U1`, `V2` e `W1` vieram antes, ao estudo. A aprovação é também a palavra da regra de dados D11 para as permissões do banco da U1.
+
+Cartão da etapa 19.1 aprovado em 2026-10-30 (commit 2359d27e61b50d36e06e8488f2743c8f89d7b05b): "Aprovado 19.1"; sobre a forma das leituras, "Fazer o básico bem feito [...] em vez de querer complicar"
+
+Essa emenda é a opção B do estudo do Sankhya de verdade, aplicada à 19.1 pelo firstmate sob essas palavras do fundador, sem decisão nova dele: cada leitura do Mercado Livre diz a rota, a entrada, a chave da lista e a paginação, e as linhas passam como vieram, com o envelope conferido; o critério 23 confere o envelope e a saída dos dados do comprador; a forma real das páginas se mede no primeiro uso dele. O que ele vê no roteiro não muda.
