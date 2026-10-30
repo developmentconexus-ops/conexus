@@ -74,7 +74,7 @@ test('testar: a fonte recusada deixa quem depende dela sem ser chamado, com o mo
   assert.ok([...asked].every((path) => !path.includes('/pedidos')))
 })
 
-test('testar: a fonte que leu vazia deixa o dependente em nada para ler', async (t) => {
+test('testar: a fonte que leu vazia fica em nada para olhar e deixa o dependente em nada para ler', async (t) => {
   const { hub, fake, ana, base } = await connectionsOn(
     t,
     standingIn(t, new Set(), (path) => path.startsWith('/v1/empresas')),
@@ -83,7 +83,7 @@ test('testar: a fonte que leu vazia deixa o dependente em nada para ler', async 
   const tested = await testOf(hub, ana, base, connection.id)
   assert.equal(Object(tested.json()).result, 'WORKING')
   const checks = checksOf(tested)
-  assert.equal(checks.find((check) => check.id === 'empresas')?.outcome, 'READS')
+  assert.equal(checks.find((check) => check.id === 'empresas')?.outcome, 'NOTHING_TO_READ')
   assert.equal(checks.find((check) => check.id === 'pedidos')?.outcome, 'NOTHING_TO_READ')
   assert.equal(checks.find((check) => check.id === 'notaFiscal')?.outcome, 'NOTHING_TO_READ')
   assert.ok(checks.every((check) => check.outcome !== 'SOURCE_UNREAD'))

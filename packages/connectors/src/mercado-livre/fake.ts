@@ -20,6 +20,8 @@ type Switches = {
   invalidClient: boolean
   /** Every renewal answers 429. */
   rateLimited: boolean
+  /** The account call (`/users/me`) answers 429. */
+  accountRateLimited: boolean
   /** Milliseconds each renewal is held back (`slow(ms)`). */
   slowMilliseconds: number
   /** Permission groups that answer 403 `PA_UNAUTHORIZED_RESULT_FROM_POLICIES`. */
@@ -195,6 +197,8 @@ function read(world: World, request: Request, url: URL): Response {
   )
   if (!given || given.expired)
     return json({ message: 'invalid_token', error: 'not_found', status: 401, cause: [] }, 401)
+  if (url.pathname === '/users/me' && world.switches.accountRateLimited)
+    return json({ message: 'too many requests', status: 429 }, 429)
   if (url.pathname === '/users/me')
     return json(me({ ref: given.ref, label: world.switches.account.label }))
   for (const route of ROUTES) {
@@ -230,6 +234,7 @@ export function mercadoLivreFake({
     revoke: false,
     invalidClient: false,
     rateLimited: false,
+    accountRateLimited: false,
     slowMilliseconds: 0,
     refuseGroups: new Set(),
     partialOrders: false,

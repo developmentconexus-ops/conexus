@@ -86,7 +86,6 @@ Login social. Arquivos enviados por pessoas para dentro de um app ou da máquina
 | --- | --- | --- | --- |
 | 15 Mudar o app | A 14.1 | Nenhuma | Migrações atômicas de app. O lote |
 | 18 Entrar num app | A 17 | Onde a checagem de sessão vive, pelo teste | Ficha de sessões e passagem. LT1 a LT4 e LT9 |
-| 19 Conectores | A 11 | Nenhuma | Os estudos de conectores (fundador, 2026-10-28: "H okay"). O kit `packages/connectors`. Sankhya: operações prontas para o comum (pedidos, produtos, parceiros, impostos), lidas na API pelo Context7 e no site oficial, e a porta de leitura do DbExplorer para cada empresa. Integrações na barra da empresa |
 | 19.1 Ligar por OAuth | A 19 | Nenhuma | A trava de renovação entre cópias do Hub |
 | 20 App com dados | A 18 e a 19.1 | Nenhuma | A barra do Projeto nasce com Integrações. O caderno da ligação. Banco livre durante a chamada |
 | 20.1 Escrever pelo app | A 20 | Nenhuma | Leitura, escrita, destrutiva. Escrita nova pede nova liberação |
@@ -98,4 +97,4 @@ Login social. Arquivos enviados por pessoas para dentro de um app ou da máquina
 | 16 Atualizar sem cortar | A 14 | Nenhuma | Consertos de execução da auditoria. Testes 9 e 10 |
 | 22 Ensaio geral | A 21.1 | O lugar da cópia fora do Neon | Ensaios das etapas 2, 7, 9, 12 e 13. Teste de carga |
 | 23 Primeira empresa | A 22 | Os riscos aceitos. O plano pago | A seção 11 da arquitetura |
-| 24 Agentes com conectores | A 23 | Nenhuma | Aprovação por classe. Code Mode só em leituras, se medido |
+| 24 Agentes com conectores | A 23 | Nenhuma | Aprovação por classe. Code Mode só em leituras, se medido. O estudo parte dos agentes do Mastra e das referências de sempre, e soma o Open Bots (fundador, 2026-10-29: "eu quero que você adicione Open Bots, que tá agora bem forte"; qual projeto é, a confirmar com ele) |

@@ -14,12 +14,14 @@ const Refusal = z.looseObject({
     ])
     .optional(),
   message: z.string().optional(),
-  error: z.union([z.string(), z.looseObject({ message: z.string().optional() })]).optional(),
+  error: z
+    .union([z.string(), z.looseObject({ code: Text.optional(), message: z.string().optional() })])
+    .optional(),
 })
 
 /**
  * Where a refused call keeps its code and message: `code`, the `mensagem.codigo` six pages document,
- * or a message that starts with `GTW`; the message is the first of `message`, `mensagem` and `error`.
+ * the gateway's `error.code`, or a message that starts with `GTW`; the message is the first of `message`, `mensagem` and `error`.
  */
 function locate(body: unknown): Pick<Native, 'code' | 'message'> {
   const parsed = Refusal.safeParse(body)
@@ -33,6 +35,7 @@ function locate(body: unknown): Pick<Native, 'code' | 'message'> {
   const given =
     code ??
     (typeof mensagem === 'object' ? mensagem.codigo : undefined) ??
+    (typeof error === 'object' ? error.code : undefined) ??
     text?.match(/^GTW\d+/)?.[0]
   return { code: given === undefined ? null : String(given), message: text ?? null }
 }
@@ -103,8 +106,11 @@ export function rows({ list }: { list: string }) {
   )
   function answer(answer: ProviderAnswer): Answered<Rows> {
     if (answer.status === 404 && NothingFound.safeParse(answer.body).success)
-      return { kind: 'OK', value: { linhas: [], temMais: false } }
-    return failureOf(answer) ?? read(output, answer, answer.body)
+      return { kind: 'OK', value: { linhas: [], temMais: false }, empty: true }
+    const result = failureOf(answer) ?? read(output, answer, answer.body)
+    return result.kind === 'OK' && result.value.linhas.length === 0
+      ? { ...result, empty: true }
+      : result
   }
   return { output, answer }
 }

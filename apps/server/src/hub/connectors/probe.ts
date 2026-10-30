@@ -109,7 +109,7 @@ export async function probed(deps: Deadlines, opened: OpenedConnection): Promise
     switch (answered.kind) {
       case 'OK':
         earlier.set(operation.id, answered.value)
-        return { outcome: 'READS' }
+        return { outcome: answered.empty ? 'NOTHING_TO_READ' : 'READS' }
       case 'REFUSED':
       case 'UNREADABLE':
         return { outcome: answered.kind, native: answered.native }

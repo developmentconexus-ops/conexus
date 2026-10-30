@@ -122,3 +122,23 @@ test('um grupo de permissão recusado dá 403 só nas suas leituras', async () =
   )
   assert.equal((await send('/trends/MLB')).status, 200)
 })
+
+test('nenhuma leitura, resumo, habilidade ou pedido nomeia um cursor de varredura', () => {
+  const cursor = /scroll_?id|search_?type/i
+  assert.doesNotMatch(mercadoLivre.skill.content, cursor, 'SKILL.md')
+  for (const [name, text] of Object.entries(mercadoLivre.skill.references)) {
+    assert.doesNotMatch(text, cursor, name)
+  }
+  for (const operation of mercadoLivre.operations) {
+    assert.doesNotMatch(operation.summary, cursor, `${operation.id} summary`)
+    assert.doesNotMatch(
+      JSON.stringify(z.toJSONSchema(operation.input)),
+      cursor,
+      `${operation.id} input`,
+    )
+    const input = operation.probe(new Map())
+    if (input === null) continue
+    const request = requestOf(operation, input, { ref: AccountRef.parse('123456789') })
+    assert.doesNotMatch(JSON.stringify(request), cursor, `${operation.id} request`)
+  }
+})

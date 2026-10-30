@@ -133,6 +133,21 @@ test('recusada: pela pessoa ou pelo Mercado Livre, nada se cria', async (t) => {
   assert.deepEqual(await hub.test.asOwner('select id from connectors.connection'), [])
 })
 
+test('completar: o Mercado Livre limita a chamada da conta, nada se cria e a pessoa tenta de novo', async (t) => {
+  const { hub, fake, ana, companyId } = await mercadoLivreOn(t)
+  fake.switches.accountRateLimited = true
+  const limited = await linkMercadoLivre(hub, ana, companyId)
+  assert.equal(limited.statusCode, 200)
+  const body = Object(limited.json())
+  assert.deepEqual(
+    [body.result, body.connector, body.native.status],
+    ['UNREACHABLE', 'mercado-livre', 429],
+  )
+  assert.deepEqual(await hub.test.asOwner('select id from connectors.connection'), [])
+  fake.switches.accountRateLimited = false
+  assert.equal((await linkMercadoLivre(hub, ana, companyId)).statusCode, 200)
+})
+
 test('conectar de novo: a mesma ligação, outra conta; a conta já ligada em outra', async (t) => {
   const { hub, fake, ana, companyId, base } = await mercadoLivreOn(t)
   const first = Object((await linkMercadoLivre(hub, ana, companyId)).json()).connection

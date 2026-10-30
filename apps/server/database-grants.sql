@@ -25,9 +25,10 @@ ALTER FUNCTION auth.is_installation_administrator(person text) OWNER TO hub_admi
 -- reads five columns of the accounts; hub_company executes the first, hub_runtime the second.
 ALTER FUNCTION builder.companies_with_seals() OWNER TO hub_model_seals;
 ALTER FUNCTION builder.sealed_of(account uuid) OWNER TO hub_model_seals;
--- Step 18 (D11, founder 2026-10-28, "aPROVO PAGINA"): who uses an app and the Projects of one person.
+-- Step 19 (D11, founder 2026-10-29, "Aprovado"): the connections of a company, the role that reads their seals and what each role may do with them.
 ALTER FUNCTION connectors.companies_with_seals() OWNER TO hub_connection_seals;
 ALTER FUNCTION connectors.sealed_of(connection uuid) OWNER TO hub_connection_seals;
+-- Step 18 (D11, founder 2026-10-28, "aPROVO PAGINA"): who uses an app and the Projects of one person.
 ALTER FUNCTION projects.apps_of_person(person text) OWNER TO hub_app_people;
 -- Step 8, founder 2026-10-17 ("Grant A"): a host's Project and company, one SECURITY DEFINER function
 -- owned by a role that cannot log in and reads three columns of the Projects; only hub_runtime
@@ -56,6 +57,7 @@ ALTER TABLE builder.model_account_assignee OWNER TO test_owner;
 ALTER TABLE builder.model_account_sign_in OWNER TO test_owner;
 ALTER TABLE builder.observational_memory_models OWNER TO test_owner;
 ALTER TABLE builder.person_model_default OWNER TO test_owner;
+-- Step 19 (D11, founder 2026-10-29, "Aprovado"): the connections of a company, the role that reads their seals and what each role may do with them.
 ALTER TABLE connectors.connection OWNER TO test_owner;
 ALTER TABLE connectors.connection_sign_in OWNER TO test_owner;
 ALTER TABLE drizzle.__drizzle_migrations OWNER TO test_owner;
@@ -91,6 +93,7 @@ GRANT USAGE ON SCHEMA builder TO hub_operator;
 GRANT USAGE ON SCHEMA builder TO hub_model_seals;
 GRANT USAGE ON SCHEMA builder TO hub_runtime;
 GRANT USAGE ON SCHEMA connectors TO hub_company;
+-- Step 19 (D11, founder 2026-10-29, "Aprovado"): the connections of a company, the role that reads their seals and what each role may do with them.
 GRANT USAGE ON SCHEMA connectors TO hub_connection_seals;
 GRANT USAGE ON SCHEMA connectors TO hub_runtime;
 GRANT USAGE ON SCHEMA drizzle TO hub_runtime;
@@ -112,11 +115,12 @@ REVOKE ALL ON FUNCTION builder.companies_with_seals() FROM PUBLIC;
 GRANT ALL ON FUNCTION builder.companies_with_seals() TO hub_runtime;
 REVOKE ALL ON FUNCTION builder.sealed_of(account uuid) FROM PUBLIC;
 GRANT ALL ON FUNCTION builder.sealed_of(account uuid) TO hub_company;
--- Step 18 (D11, founder 2026-10-28, "aPROVO PAGINA"): who uses an app and the Projects of one person.
+-- Step 19 (D11, founder 2026-10-29, "Aprovado"): the connections of a company, the role that reads their seals and what each role may do with them.
 REVOKE ALL ON FUNCTION connectors.companies_with_seals() FROM PUBLIC;
 GRANT ALL ON FUNCTION connectors.companies_with_seals() TO hub_runtime;
 REVOKE ALL ON FUNCTION connectors.sealed_of(connection uuid) FROM PUBLIC;
 GRANT ALL ON FUNCTION connectors.sealed_of(connection uuid) TO hub_company;
+-- Step 18 (D11, founder 2026-10-28, "aPROVO PAGINA"): who uses an app and the Projects of one person.
 REVOKE ALL ON FUNCTION projects.apps_of_person(person text) FROM PUBLIC;
 GRANT ALL ON FUNCTION projects.apps_of_person(person text) TO hub_runtime;
 REVOKE ALL ON FUNCTION projects.project_of_host(label text) FROM PUBLIC;
@@ -243,6 +247,7 @@ GRANT UPDATE(reflector) ON TABLE builder.observational_memory_models TO hub_comp
 GRANT SELECT,INSERT,DELETE ON TABLE builder.person_model_default TO hub_company;
 GRANT UPDATE(model) ON TABLE builder.person_model_default TO hub_company;
 GRANT UPDATE(effort) ON TABLE builder.person_model_default TO hub_company;
+-- Step 19 (D11, founder 2026-10-29, "Aprovado"): the connections of a company, the role that reads their seals and what each role may do with them.
 GRANT INSERT,DELETE ON TABLE connectors.connection TO hub_company;
 GRANT SELECT(id) ON TABLE connectors.connection TO hub_company;
 GRANT SELECT(id) ON TABLE connectors.connection TO hub_connection_seals;
@@ -323,6 +328,7 @@ ALTER ROLE hub_app_people WITH NOSUPERUSER NOINHERIT NOCREATEROLE NOCREATEDB NOL
 -- Step 5: the scope roles cannot log in, own nothing and pass no row policy.
 CREATE ROLE hub_company;
 ALTER ROLE hub_company WITH NOSUPERUSER NOINHERIT NOCREATEROLE NOCREATEDB NOLOGIN NOREPLICATION NOBYPASSRLS;
+-- Step 19 (D11, founder 2026-10-29, "Aprovado"): the connections of a company, the role that reads their seals and what each role may do with them.
 CREATE ROLE hub_connection_seals;
 ALTER ROLE hub_connection_seals WITH NOSUPERUSER NOINHERIT NOCREATEROLE NOCREATEDB NOLOGIN NOREPLICATION NOBYPASSRLS;
 CREATE ROLE hub_hosts;
@@ -352,6 +358,7 @@ GRANT hub_app_people TO test_owner WITH ADMIN OPTION, INHERIT FALSE, SET FALSE G
 -- The Hub's login switches to a scope role for one transaction and inherits nothing from it.
 GRANT hub_company TO test_owner WITH ADMIN OPTION, INHERIT FALSE, SET FALSE GRANTED BY test_superuser;
 GRANT hub_company TO hub_runtime WITH INHERIT FALSE GRANTED BY test_owner;
+-- Step 19 (D11, founder 2026-10-29, "Aprovado"): the connections of a company, the role that reads their seals and what each role may do with them.
 GRANT hub_connection_seals TO test_owner WITH ADMIN OPTION, INHERIT FALSE, SET FALSE GRANTED BY test_superuser;
 GRANT hub_hosts TO test_owner WITH ADMIN OPTION, INHERIT FALSE, SET FALSE GRANTED BY test_superuser;
 GRANT hub_invitation TO test_owner WITH ADMIN OPTION, INHERIT FALSE, SET FALSE GRANTED BY test_superuser;
