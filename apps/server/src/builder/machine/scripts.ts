@@ -66,7 +66,7 @@ export function syncScript(workdir: string, tmp: string): string {
     `if ! ${sameTree(BASE_REF)}; then`,
     `  git update-ref ${cut} "$(git ${IDENTITY} commit-tree "$tree" -p ${BASE_REF} -m ${quoted(CUT_MESSAGE)})"`,
     // Exit 1 is a merge with conflicts; any other failure ends the script.
-    `  merged=$(git -c core.quotePath=false merge-tree --write-tree --name-only --no-messages --merge-base=${BASE_REF} ${main} ${cut}) || test $? -eq 1`,
+    `  merged=$(git -c core.quotePath=false merge-tree --write-tree --name-only --no-messages ${main} ${cut}) || test $? -eq 1`,
     `  printf '%s\\n' "$merged" | tail -n +2 | sed 's/^/CONFLICT /'`,
     `  target=$(git ${IDENTITY} commit-tree "$(printf '%s\\n' "$merged" | head -n 1)" -p ${main} -m ${quoted(CUT_MESSAGE)})`,
     'fi',
