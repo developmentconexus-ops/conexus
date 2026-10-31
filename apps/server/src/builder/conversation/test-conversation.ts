@@ -117,8 +117,7 @@ export async function hubBeside(t: TestContext, hub: Hub, log: FailureLog = sile
    */
   function close(settleMs?: number) {
     const { settle, close: drain } = subjects.conversations
-    const steps = { settleMs: settleMs ?? 0, settle, drain, release: async () => undefined }
-    closed ??= shutDown([app], steps, settleMs !== undefined)
+    closed ??= shutDown([app], { settle, drain, release: async () => undefined }, settleMs)
     return closed
   }
   t.after(() => close())

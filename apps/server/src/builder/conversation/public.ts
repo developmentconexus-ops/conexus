@@ -11,14 +11,14 @@ import { registerSourceRoutes } from '../git/public.ts'
 import type { openGoogleCalls } from '../model-accounts/public.ts'
 import type { Runs } from '../runs/public.ts'
 import { createBuilder } from './builder.ts'
-import { TURN_SETTLE_MS, watchRuns } from './end.ts'
+import { watchRuns } from './end.ts'
 import { registerBuilderRoutes } from './guard.ts'
 import { TOOL_CLOSURE } from './permissions.ts'
 import { registerConversationRoutes } from './routes.ts'
 import type { ReleaseScope } from './store.ts'
 import { createConversationStore } from './store.ts'
 
-export { TOOL_CLOSURE, TURN_SETTLE_MS }
+export { TOOL_CLOSURE }
 
 /** Deletes the threads, and so the memory, of a Projeto, a person or a company (data D17). */
 type ReleaseConversations = (scope: ReleaseScope) => Promise<void>

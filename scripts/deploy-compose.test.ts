@@ -3,8 +3,11 @@ import { readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { test } from 'node:test'
 import { parse } from 'yaml'
-import { TURN_SETTLE_MS } from '../apps/server/src/builder/conversation/end.ts'
-import { SHUTDOWN_DEADLINE_MS, shutdownDeadlineMs } from '../apps/server/src/platform/lifecycle.ts'
+import {
+  SHUTDOWN_DEADLINE_MS,
+  SHUTDOWN_GRACE_MS,
+  TURN_SETTLE_MS,
+} from '../apps/server/src/platform/lifecycle.ts'
 
 const INFRA = resolve(import.meta.dirname, '../infra')
 
@@ -47,9 +50,8 @@ test('o tempo de parada cobre a espera: o prazo do fim do Hub, a espera das resp
   const compose = parse(readFileSync(join(INFRA, 'compose.yaml'), 'utf8'))
   const grace = /^(\d+)s$/.exec(compose.services.hub.stop_grace_period)
   assert.ok(grace, compose.services.hub.stop_grace_period)
-  const deadline = shutdownDeadlineMs(TURN_SETTLE_MS)
-  assert.equal(deadline, TURN_SETTLE_MS + SHUTDOWN_DEADLINE_MS)
-  assert.ok(Number(grace[1]) * 1000 > deadline)
+  assert.equal(SHUTDOWN_GRACE_MS, TURN_SETTLE_MS + SHUTDOWN_DEADLINE_MS)
+  assert.ok(Number(grace[1]) * 1000 > SHUTDOWN_GRACE_MS)
 })
 
 test('o log de cada serviço gira: json-file, dez megabytes, cinco arquivos (S42)', () => {

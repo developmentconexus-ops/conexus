@@ -3,7 +3,7 @@ import { join } from 'node:path'
 import { FAILURES, getStatus } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
 import type { Conversations } from './builder/conversation/public.ts'
-import { createConversations, TURN_SETTLE_MS } from './builder/conversation/public.ts'
+import { createConversations } from './builder/conversation/public.ts'
 import type { GitCopy } from './builder/git/public.ts'
 import { repositoriesIn } from './builder/git/public.ts'
 import type { ModelAccounts } from './builder/model-accounts/public.ts'
@@ -216,7 +216,6 @@ async function runServer(): Promise<void> {
     const app = await createHub(config, { status, identity, ...subjects })
     const edge = await createEdgeHub(config, { apps, connectors })
     const grace = shutDownOnSignal(app, edge, {
-      settleMs: TURN_SETTLE_MS,
       settle: (bound) => conversations.settle(bound),
       drain: () => conversations.close(),
       // Every live provider token is logged out before the database closes.

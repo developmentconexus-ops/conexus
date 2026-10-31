@@ -21,12 +21,6 @@ import type { Builder } from './builder.ts'
 import { FINISHES, TurnTally, turnLine } from './turn-line.ts'
 import { busyIn, ownerOfResource } from './turn-of.ts'
 
-/**
- * How long the Hub waits for answers in flight at a stop signal before it cuts them (founder E1;
- * Cloudflare Durable Objects defer a code update up to 300 s).
- */
-export const TURN_SETTLE_MS = 180_000
-
 type AgentEnd = NonNullable<Extract<AgentControllerEvent, { type: 'agent_end' }>['reason']>
 
 /**

@@ -6,6 +6,11 @@ import { Failure, logFailure } from './failure.ts'
 
 /** How long the Hub's close takes at most once nothing is waited for (code C62). */
 export const SHUTDOWN_DEADLINE_MS = 15_000
+/**
+ * How long the Hub waits for answers in flight at a stop signal before it cuts them (founder E1;
+ * Cloudflare Durable Objects defer a code update up to 300 s).
+ */
+export const TURN_SETTLE_MS = 180_000
 /** The Mastra deployer's default `drainTimeout` (`deployer/src/server/index.ts:590`, 1.78). */
 const DRAIN_MS = 5_000
 
@@ -31,21 +36,17 @@ export async function listenQuietly(app: FastifyInstance, port: number): Promise
 
 /** What the Hub does when it ends, in this order (`shutDown`). */
 type ShutdownSteps = {
-  /** How long `settle` may wait at a stop signal (`shutdownDeadlineMs`). */
-  settleMs: number
   /** Refuses new work and waits for the live work until `bound` aborts, the listeners open. */
   settle: (bound: AbortSignal) => Promise<void>
   drain: () => Promise<void>
   release: () => Promise<void>
 }
 
-/** The whole shutdown's deadline: the wait at a stop signal, then the close. */
-export function shutdownDeadlineMs(settleMs: number): number {
-  return settleMs + SHUTDOWN_DEADLINE_MS
-}
+/** The whole shutdown's deadline at a stop signal: the wait, then the close. */
+export const SHUTDOWN_GRACE_MS = TURN_SETTLE_MS + SHUTDOWN_DEADLINE_MS
 
 /**
- * The shutdown's order (code C62): at a stop signal (`settles`), `settle` first with the listeners
+ * The shutdown's order (code C62): at a stop signal (`settleMs`), `settle` first with the listeners
  * still open, so answers in flight write and new ones are refused (founder E1); then the listeners
  * close while `drain` stops what is left; then `release` the stores. An unexpected error does not
  * wait: the process is in an unknown state, and no update is coming.
@@ -53,9 +54,9 @@ export function shutdownDeadlineMs(settleMs: number): number {
 export async function shutDown(
   listeners: FastifyInstance[],
   steps: ShutdownSteps,
-  settles: boolean,
+  settleMs?: number,
 ): Promise<void> {
-  if (settles) await steps.settle(AbortSignal.timeout(steps.settleMs))
+  if (settleMs !== undefined) await steps.settle(AbortSignal.timeout(settleMs))
   await closeListeners(listeners, steps.drain)
   await steps.release()
 }
@@ -74,7 +75,7 @@ export function shutDownOnSignal(
   }
   return closeWithGrace(
     {
-      delay: shutdownDeadlineMs(steps.settleMs),
+      delay: SHUTDOWN_GRACE_MS,
       logger: false,
       onSecondSignal: (signal) => app.log.error({ signal }, 'SHUTDOWN_FORCED'),
       onSecondError: unexpected,
@@ -84,7 +85,7 @@ export function shutDownOnSignal(
       if (err) unexpected(err)
       app.log.info(signal === undefined ? {} : { signal }, 'SHUTTING_DOWN')
       try {
-        await shutDown([app, edge], steps, signal !== undefined)
+        await shutDown([app, edge], steps, signal === undefined ? undefined : TURN_SETTLE_MS)
       } catch (error) {
         unexpected(error)
         throw error

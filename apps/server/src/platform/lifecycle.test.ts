@@ -24,7 +24,6 @@ const edge = Fastify()
 await app.listen({ host: '127.0.0.1', port: 0 })
 await edge.listen({ host: '127.0.0.1', port: 0 })
 shutDownOnSignal(app, edge, {
-  settleMs: ${SETTLE_TAKES_MS + 1_000},
   settle: () => new Promise((done) => setTimeout(() => done(app.log.info('SETTLED')), ${SETTLE_TAKES_MS})),
   drain: async () => app.log.info('DRAINED'),
   release: async () => app.log.info('RELEASED'),
