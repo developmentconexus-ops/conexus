@@ -5,6 +5,7 @@ import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import { call } from '../../hub/identity/test-hub.ts'
+import type { StreamEvent } from './test-conversation.ts'
 import {
   answeredOf,
   conversing,
@@ -22,6 +23,7 @@ import { printedOf, routedTo, served } from './test-research.ts'
 
 const PLANTED = /SECRET-PLANTED-TEXT/
 const OBSERVER = /^You are the memory consciousness/
+const REFLECTOR = /memory observation reflections will be the ONLY/
 
 test('um turno: a resposta vem aos poucos, a conversa ganha título e o Mastra guarda a empresa no dono', async (t) => {
   const { hub, ana, companyId, conversations, anthropic } = await conversing(t, (asked) =>
@@ -233,12 +235,18 @@ test('a observação vai pela conta do turno e pede o título em português; um 
   const url = `${conversations}/${await started(hub, ana, conversations)}`
   const stream = await streamOf(hub, ana, url)
   t.after(() => stream.close())
+  const turns: StreamEvent[][] = []
   for (const question of ['Como organizo as encomendas?', 'E os pedidos do balcão?']) {
     assert.equal((await sent(hub, ana, url, question)).statusCode, 200)
-    assert.equal(endOf(await stream.turn()), 'complete')
+    const events = await stream.turn()
+    assert.equal(endOf(events), 'complete')
+    turns.push(events)
   }
   const read = await call(hub, ana, 'GET', url)
-  // The observer buffers in the background past `messageTokens`; the Hub's close waits for it.
+  // Async buffering is off: the Observer runs inside the turn, past `messageTokens`, and never buffers.
+  const types = turns.flat().map((each) => each.type)
+  assert.ok(types.includes('om_observation_start'), 'the observer ran inside a turn')
+  assert.equal(types.includes('om_buffering_start'), false, 'nothing is buffered in the background')
   await hub.close()
   const observed = anthropic.sent.filter((each) => OBSERVER.test(each.system))
   assert.ok(observed.length > 0, 'the second turn, past the threshold, was observed')
@@ -259,4 +267,33 @@ test('a observação vai pela conta do turno e pede o título em português; um 
   for (const text of [JSON.stringify(lines), printed.join(''), stream.seen.raw, read.body]) {
     assert.doesNotMatch(text, PLANTED)
   }
+})
+
+test('o Refletor recusa: om_reflection_failed chega à página só pelo tipo, sem o texto do provedor', async (t) => {
+  const long = 'As encomendas da padaria chegam pelo telefone e pelo balcão. '.repeat(3000)
+  const lines = Array.from(
+    { length: 4000 },
+    (_, at) => `* 🔴 (09:00) A padaria registra a encomenda ${at}.`,
+  )
+  const observed = `<observations>\n${lines.join('\n')}\n</observations>`
+  const { hub, ana, conversations, link } = await conversing(t, (asked) => {
+    if (REFLECTOR.test(asked.system)) return { kind: 'refuse', status: 429 }
+    if (OBSERVER.test(asked.system)) return { kind: 'text', text: observed }
+    if (asked.key === KEY && asked.stream) return { kind: 'refuse', status: 429 }
+    if (!asked.stream) return { kind: 'text', text: 'Encomendas da padaria' }
+    return { kind: 'text', text: asked.texts.length > 2 ? 'Certo.' : long }
+  })
+  await link('Time 2', 'sk-ant-conversation-key-0002')
+  const url = `${conversations}/${await started(hub, ana, conversations)}`
+  const stream = await streamOf(hub, ana, url)
+  t.after(() => stream.close())
+  const turns: StreamEvent[] = []
+  for (const question of ['Como organizo as encomendas?', 'E os pedidos do balcão?']) {
+    assert.equal((await sent(hub, ana, url, question)).statusCode, 200)
+    turns.push(...(await stream.turn()))
+  }
+  const failed = turns.filter((each) => each.type === 'om_reflection_failed')
+  assert.ok(failed.length > 0, 'the Reflector ran and was refused')
+  for (const each of failed) assert.deepEqual(Object.keys(each), ['type'])
+  assert.doesNotMatch(stream.seen.raw, PLANTED)
 })

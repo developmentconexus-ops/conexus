@@ -988,6 +988,28 @@ rows for the five above wait on issue #458.
   `onSessionDeleted`. Proof: `conversation-stream.test.ts`. Revisit when Mastra's server ends its
   streams on shutdown.
 
+## Mastra 1.79.0: the stream sends the screen what it reads (egress, pace)
+
+- **Library line.** `@mastra/core` 1.79.0 `agent-controller/types.d.ts:838-841` makes `error: string`
+  part of the public `om_*_failed` events, with no option to leave it out. `agent-controller/session.ts`
+  sends the session's whole display state after every event (the turn's message and every tool's
+  input and result), which grows with the square of a turn's length. Neither has an option to send
+  less.
+- **Hand-made piece.** `slim` and `paced` in `apps/server/src/builder/conversation/stream.ts`. `slim`
+  keeps of a `display_state_changed` event only what the screen reads (`DISPLAY_READ`) and of a
+  memory failure only its type, so the provider's error text does not reach the browser. `paced`
+  writes each event once the response can take more and ends the stream of a page 8 MiB behind,
+  which reads the transcript and the session again when it opens a new stream.
+- **Why.** The screen draws neither the rest of the display state nor the failure's text; sending
+  them cost the Hub's heap and bytes on a long turn, and carried a provider's message to the browser
+  (S40).
+- **Proof.** `conversation.test.ts` "a observação vai pela conta do turno… um 429 nela" (the
+  Observer's failure, no planted text) and "o Refletor recusa" (the Reflector's, type only);
+  `conversation-stream-paced.test.ts` for the display state and the pace. Each fails without `slim`
+  or `paced`.
+- **Revisit when** Mastra lets a stream send a subset of the display state or leave the error
+  out of `om_*_failed`.
+
 ## Mastra 1.79.0: Parar waits until Mastra keeps an open card's run
 
 - **Library line.** `@mastra/core` 1.79.0, default engine. The controller ends a run at its
