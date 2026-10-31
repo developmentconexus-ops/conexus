@@ -3,7 +3,15 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { test } from 'node:test'
 import { RunId } from '@conexus/hub-api'
-import { COMPANY, CONVERSATION, INSTALLATION, moveMain, PROJECT, world } from './test-machine.ts'
+import {
+  COMPANY,
+  CONVERSATION,
+  INSTALLATION,
+  moveMain,
+  PROJECT,
+  sandboxOf,
+  world,
+} from './test-machine.ts'
 
 // A machine found again after another conversation of the Projeto moved `main`: its folder keeps the
 // cut turn's work merged onto `main`, and the model is told what did not merge.
@@ -122,4 +130,44 @@ test('máquina: a religada cujo main não se integra falha com a causa nomeada e
   })
   assert.deepEqual(here.errors, ['MACHINE_SYNC_FAILED', 'MACHINE_UNAVAILABLE'])
   assert.equal(readFileSync(join(here.folder, 'app', 'a.ts'), 'utf-8'), 'um\n')
+})
+
+test('máquina: o trabalho cortado que o turno seguinte juntou ao main continua na pasta quando esse turno termina sem salvar', async (t) => {
+  const { open, machines, control, folder } = await world(t)
+  await (await open()).filesystem?.writeFile('cut.ts', 'meio\n')
+  moveMain(join(folder, 'git', COMPANY, `${PROJECT}.git`), 'b.ts', 'outra\n')
+  control.outcome = 'connected'
+  const next = await open()
+  assert.equal(await next.filesystem?.exists('cut.ts'), true, 'the sync kept the cut work')
+  await machines.release(CONVERSATION)
+  const third = await open()
+  assert.equal(await third.filesystem?.exists('cut.ts'), true, 'an unsaved turn does not drop it')
+  assert.equal(await third.filesystem?.exists('b.ts'), true)
+})
+
+test('máquina: o trabalho não guardado que o Hub recusaria por tamanho ou por quantidade de arquivos é dito ao modelo, que o enxuga antes de qualquer outra mudança', async (t) => {
+  const { open, machines, control, folder } = await world(t)
+  const first = await sandboxOf(await open())
+  const made = await first.executeCommand('sh', [
+    '-c',
+    `cd ${join(folder, 'app')} && mkdir many && cd many && seq 1 2100 | xargs touch && cd .. && head -c 70000000 /dev/urandom > big.bin`,
+  ])
+  assert.equal(made.exitCode, 0, made.stderr)
+  await machines.release(CONVERSATION)
+  control.outcome = 'connected'
+  const next = await open()
+  assert.equal(await next.filesystem?.exists('big.bin'), true)
+  const told = await next.getInstructionsAsync()
+  assert.match(told, /too many files to save[^.]*remove what the app does not need/)
+  assert.match(told, /too large to save[^.]*remove what the app does not need/)
+})
+
+test('máquina: o trabalho não guardado que cabe no que o Hub aceita não leva aviso de tamanho', async (t) => {
+  const { open, machines, control } = await world(t)
+  await (await open()).filesystem?.writeFile('cut.ts', 'meio\n')
+  await machines.release(CONVERSATION)
+  control.outcome = 'connected'
+  const next = await open()
+  assert.equal(await next.filesystem?.exists('cut.ts'), true)
+  assert.doesNotMatch(await next.getInstructionsAsync(), /too large|too many files/)
 })

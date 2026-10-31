@@ -16,7 +16,7 @@ export type Machines = {
   /**
    * The workspace of one turn of the conversation: its machine, found by the conversation's name, is
    * not touched until a tool needs it. A new one starts from the Hub's `main`; one found again keeps
-   * its folder and brings `main` in, with the work of a turn that never ended kept on it.
+   * its folder and brings `main` in, with the work the Hub has not saved kept on it.
    */
   workspaceFor(input: {
     companyId: CompanyId

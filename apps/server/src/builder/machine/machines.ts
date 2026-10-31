@@ -23,7 +23,6 @@ import {
   collected,
   collectScript,
   conflictsOf,
-  endScript,
   keepScript,
   outFile,
   seedFile,
@@ -144,15 +143,20 @@ class BuilderMachines implements Machines {
   /** The conflicts the start found, as the model reads them at every step of the turn. */
   private conflicted(session: Session, stdout: string) {
     session.conflicts = conflictsOf(stdout)
-    const { markers, deleted, replaced } = session.conflicts
+    const { markers, deleted, replaced, tooManyFiles, tooLarge } = session.conflicts
     const files = markers.length + deleted.length + replaced.length
     if (files > 0)
       this.deps.log.info({ conversationId: session.conversationId, files }, 'MACHINE_CONFLICTS')
+    if (tooManyFiles || tooLarge)
+      this.deps.log.info(
+        { conversationId: session.conversationId, tooManyFiles, tooLarge },
+        'MACHINE_UNSAVED_OVERSIZE',
+      )
   }
 
   /**
    * A machine found again keeps its folder and brings `main` into it (Mastra's `onStart`: a
-   * reconnect only checks once-per-machine setup). The work of a turn that never ended stays, merged
+   * reconnect only checks once-per-machine setup). Work the Hub has not saved stays, merged
    * onto `main`; the files it conflicts in are told to the model. One whose seed never finished is
    * seeded. A sync that fails names its cause and fails the start: the folder is left as it was.
    */
@@ -298,26 +302,17 @@ class BuilderMachines implements Machines {
     return this.sessions.get(conversationId)?.ready !== undefined
   }
 
+  /**
+   * The turn is over and the machine pauses with its folder as the turn left it: what the Hub did
+   * not save stays for the next start to merge (no reference discards a session's unsaved work). A
+   * start still running settles first; its failure was the turn's to hear.
+   */
   async release(conversationId: ConversationId) {
     const session = this.sessions.get(conversationId)
     this.sessions.delete(conversationId)
     if (session?.ready === undefined) return
-    try {
-      await this.end(session)
-    } finally {
-      await session.kit.sandbox.stop?.()
-    }
-  }
-
-  /** The turn is over: its folder goes back to its base. A machine that never came up holds nothing of it. */
-  private async end(session: Session) {
-    const up = await session.ready?.then(
-      () => true,
-      () => false,
-    )
-    if (!up) return
-    const ended = await run(session.kit, endScript(this.workdir))
-    if (ended.exitCode !== 0) throw new Error(`end failed: ${ended.stderr.slice(-500)}`)
+    await Promise.allSettled([session.ready])
+    await session.kit.sandbox.stop?.()
   }
 }
 

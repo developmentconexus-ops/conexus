@@ -79,7 +79,7 @@ export const CONVERSATION_FAILURES = {
     settles: true,
     status: 500,
     phrase: 'Não consegui guardar esta versão.',
-    action: 'A versão anterior continua. Peça de novo ao Builder.',
+    action: 'O trabalho continua na conversa. Peça de novo ao Builder.',
     actionKind: 'NONE',
   },
   GIT_RESTORE_NEEDED: {
