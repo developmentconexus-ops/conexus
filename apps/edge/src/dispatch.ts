@@ -106,7 +106,6 @@ async function redeem(visit: Visit): Promise<Response> {
   if (answer.kind === 'DONE') {
     return redirect(visit, '/', [
       setCookie(APP_SESSION_COOKIE, answer.value.session),
-      setCookie(BINDING_COOKIE, ''),
     ])
   }
   if (answer.kind === 'REFUSED' && answer.code === 'APP_HANDOFF_INVALID') {

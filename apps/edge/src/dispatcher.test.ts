@@ -41,7 +41,7 @@ test('primeira visita com vínculo: o mesmo, sem cookie novo', async () => {
   assert.equal(hashOf(BINDING), '8BtXImJhrjdWuTk24cTmuEn5pbCTP6O5GEO_QZW52WQ')
 })
 
-test('passagem certa: sessão, vínculo apagado e 303 a /', async () => {
+test('passagem certa: sessão, vínculo mantido para a passagem da outra aba e 303 a /', async () => {
   const door = edge({ hub: () => Response.json({ session: SESSION }, { status: 201 }) })
   const response = await door.fetch(`/__conexus/passagem?code=${CODE}`, {
     headers: { Cookie: `__Host-conexus-binding=${BINDING}` },
@@ -50,7 +50,6 @@ test('passagem certa: sessão, vínculo apagado e 303 a /', async () => {
   assert.equal(response.headers.get('Location'), '/')
   assert.deepEqual(response.headers.getSetCookie(), [
     `__Host-conexus-app=${SESSION}; ${COOKIE_ATTRIBUTES}`,
-    `__Host-conexus-binding=; ${COOKIE_ATTRIBUTES}; Max-Age=0`,
   ])
   const [call] = door.hubCalls
   assert.equal(call?.method, 'POST')
