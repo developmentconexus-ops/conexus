@@ -30,10 +30,9 @@ test('máquina: o turno cortado e outra conversa mudaram a mesma linha: as marca
   const after = await open()
   const text = String(await after.filesystem?.readFile('s.ts', { encoding: 'utf-8' }))
   assert.match(text, /^<<<<<<< [^\n]*\noutra\n=======\nmeio\n>>>>>>> /)
-  assert.match(
-    await after.getInstructionsAsync(),
-    /conflict markers; resolve them before any other change: `s\.ts`\./,
-  )
+  const told = await after.getInstructionsAsync()
+  assert.match(told, /conflict markers; resolve them before any other change: `s\.ts`\./)
+  assert.doesNotMatch(told, /could not merge/)
 })
 
 test('máquina: as marcas que um turno salvou são avisadas no turno seguinte, e o arquivo que o Builder resolveu sai do aviso', async (t) => {
@@ -55,6 +54,7 @@ test('máquina: as marcas que um turno salvou são avisadas no turno seguinte, e
   // The turn that got the notice saves the markers as they are.
   const noticed = await open()
   assert.equal(await noticed.filesystem?.exists('s.ts'), true)
+  assert.doesNotMatch(await noticed.getInstructionsAsync(), /could not merge/)
   await save()
   const next = await open()
   assert.match(String(await next.filesystem?.readFile('s.ts', { encoding: 'utf-8' })), /^<<<<<<< /)
@@ -78,6 +78,35 @@ test('máquina: o turno cortado mudou um arquivo que o main novo apagou: a cópi
   const told = await after.getInstructionsAsync()
   assert.match(told, /deleted in the newer version[^.]*: `d\.ts`\./)
   assert.doesNotMatch(told, /conflict markers/)
+})
+
+test('máquina: o turno cortado e outra conversa mudaram o mesmo arquivo binário: a cópia do main fica e o modelo é avisado de refazer a mudança', async (t) => {
+  const { open, control, folder } = await world(t)
+  const gitDir = join(folder, 'git', COMPANY, `${PROJECT}.git`)
+  moveMain(gitDir, 'img.bin', 'um\0\n')
+  await (await open()).filesystem?.writeFile('img.bin', 'meio\0\n')
+  moveMain(gitDir, 'img.bin', 'outra\0\n')
+  control.outcome = 'connected'
+  const after = await open()
+  assert.equal(await after.filesystem?.readFile('img.bin', { encoding: 'utf-8' }), 'outra\0\n')
+  const told = await after.getInstructionsAsync()
+  assert.match(told, /could not merge: redo the change where the app needs it: `img\.bin`\./)
+  assert.doesNotMatch(told, /conflict markers/)
+})
+
+test('máquina: uma máquina nova sobre um main que guarda marcas de conflito: o modelo é avisado dos caminhos', async (t) => {
+  const { open, folder } = await world(t)
+  moveMain(
+    join(folder, 'git', COMPANY, `${PROJECT}.git`),
+    's.ts',
+    '<<<<<<< main\noutra\n=======\nmeio\n>>>>>>> cut\n',
+  )
+  const created = await open()
+  assert.equal(await created.filesystem?.exists('s.ts'), true)
+  assert.match(
+    await created.getInstructionsAsync(),
+    /conflict markers; resolve them before any other change: `s\.ts`\./,
+  )
 })
 
 test('máquina: a religada cujo main não se integra falha com a causa nomeada e deixa a pasta como estava, sem semente', async (t) => {

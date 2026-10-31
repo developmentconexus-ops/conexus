@@ -99,9 +99,9 @@ export function syncScript(workdir: string, tmp: string): string {
 }
 
 /**
- * The turn is over: the folder goes back to its base, the version the turn saved or the one it
- * started from, so a folder that differs from its base at the next start belongs to a turn that
- * never ended. A tree the Hub refused is not kept.
+ * The turn is over: the folder goes back to its base, the `main` its start brought in, so a folder
+ * that differs from its base at the next start belongs to a turn that never ended. What the turn
+ * saved comes back with `main` at the next start; a tree the Hub refused is not kept.
  */
 export function endScript(workdir: string): string {
   return [
