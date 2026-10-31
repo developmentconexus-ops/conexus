@@ -12,27 +12,17 @@ import type { PackRefused, VersionFolder } from './pack.ts'
 /** What Ana is told while the machine gets ready or saves (card, the stream's `machine` part). */
 export type Phase = MachinePhase
 
-/**
- * Keeps what a turn that never ended left in its machine (the process died): `collect` makes the
- * bundle on the `base` the Hub names, its commit marked as of a cut turn; the Hub saves it as a
- * version of the Projeto's `main`. Rejects when the tree cannot be kept, so the new turn does not start on it.
- */
-export type KeepCut = (
-  collect: (base: Sha) => Promise<Bundled | 'unchanged' | 'too-large'>,
-) => Promise<'saved' | 'unchanged'>
-
 export type Machines = {
   /**
    * The workspace of one turn of the conversation: its machine, found by the conversation's name, is
-   * not touched until a tool needs it, and starts from the Hub's `main`, unless the machine holds the
-   * work of a turn that never ended: that is kept (`keepCut`) and the turn goes on from it.
+   * not touched until a tool needs it. A new one starts from the Hub's `main`; one found again keeps
+   * its folder and brings `main` in, with the work of a turn that never ended kept on it.
    */
   workspaceFor(input: {
     companyId: CompanyId
     projectId: ProjectId
     conversationId: ConversationId
     onPhase: (phase: Phase) => void
-    keepCut: KeepCut
   }): Promise<Workspace>
   /**
    * One bundle of the whole tree on `base` with its file counts, or why there is none. A turn that
@@ -56,13 +46,13 @@ export type Machines = {
   pack(input: { conversationId: ConversationId }): Promise<Result<VersionFolder, PackRefused>>
   /** Whether the conversation's turn used the machine: then there may be something to collect. */
   touched(conversationId: ConversationId): boolean
-  /** Ends the turn's use of the machine: it pauses. Safe to repeat. */
+  /** Ends the turn's use of the machine: its folder goes back to its base, and it pauses. Safe to repeat. */
   release(conversationId: ConversationId): Promise<void>
   kill: MachineApi['kill']
 }
 
 /** A turn's tree as one bundle, with how many files the version holds and how many the turn changed. */
-export type Bundled = { bundle: Buffer; files: number; changedFiles: number }
+type Bundled = { bundle: Buffer; files: number; changedFiles: number }
 
 export type MachinesDeps = {
   kit: KitFactory

@@ -52,32 +52,7 @@ export async function saveRun(context: RunsContext, mine: Driven): Promise<Outco
     context.log.error({ ...fields, reason: bundle }, 'SAVE_REFUSED')
     return { kind: 'failed', code: 'SAVE_REFUSED' }
   }
-  const moved = await advanceMain(context, { ...mine, run: mine, base, bundle: bundle.bundle })
-  if (moved === 'gone' || moved.kind === 'failed') return moved
-  const { files, changedFiles } = bundle
-  const counts = { number: moved.number, changed: true, files, changedFiles }
-  const { check } = mine
-  return { kind: 'saved', version: check === undefined ? counts : { ...counts, check } }
-}
-
-/**
- * Moves the Projeto's `main` to the commit of a machine's bundle, from exactly `base`
- * (compare-and-swap), and copies the version out. Whatever fails before `main` moves leaves it as it
- * was; a run a removal stopped on the way is `gone` before it moves.
- */
-export async function advanceMain(
-  context: RunsContext,
-  input: Pick<Driven, 'companyId' | 'projectId' | 'runId'> & {
-    /** Read once the bundle is received: a removal may have stopped the run meanwhile. */
-    run: Pick<Driven, 'stopped'>
-    base: Sha
-    bundle: Uint8Array
-  },
-): Promise<{ kind: 'saved'; number: number } | Extract<Outcome, { kind: 'failed' }> | 'gone'> {
-  const { companyId, projectId, runId, base } = input
-  const fields = { companyId, projectId, runId }
-  const repository = context.repository({ companyId, projectId })
-  const received = await repository.receive({ runId, bundle: input.bundle, base })
+  const received = await repository.receive({ runId, bundle: bundle.bundle, base })
   if (!received.ok) {
     context.log.error({ ...fields, reason: received.error }, 'SAVE_REFUSED')
     return { kind: 'failed', code: 'SAVE_REFUSED' }
@@ -85,7 +60,7 @@ export async function advanceMain(
   const candidate = received.value
   let advanced: 'advanced' | 'stale' | 'gone'
   try {
-    advanced = input.run.stopped ? 'gone' : await repository.advance({ candidate, base })
+    advanced = mine.stopped ? 'gone' : await repository.advance({ candidate, base })
   } finally {
     // Whatever the answer, `main` holds the commit or nobody wants it: the run's ref has no reader left.
     await repository.dropRun(runId)
@@ -95,8 +70,11 @@ export async function advanceMain(
     context.log.error({ ...fields, reason: 'stale' }, 'SAVE_REFUSED')
     return { kind: 'failed', code: 'SAVE_REFUSED' }
   }
-  const number = await repository.versionAt(candidate)
-  context.log.info({ ...fields, version: number }, 'VERSION_SAVED')
+  const version = await repository.versionAt(candidate)
+  context.log.info({ ...fields, version }, 'VERSION_SAVED')
   if (!(await copyVersion(context, { companyId, projectId }))) context.retry.kick()
-  return { kind: 'saved', number }
+  const { files, changedFiles } = bundle
+  const counts = { number: version, changed: true, files, changedFiles }
+  const { check } = mine
+  return { kind: 'saved', version: check === undefined ? counts : { ...counts, check } }
 }
