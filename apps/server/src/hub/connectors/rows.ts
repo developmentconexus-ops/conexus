@@ -1,6 +1,6 @@
 import type { Connector, ConnectorId } from '@conexus/connectors'
 import type { CompanyId, Connection, Person } from '@conexus/hub-api'
-import { CONNECTION_STATES, ConnectionId, PersonId } from '@conexus/hub-api'
+import { CONNECTION_STATES, ConnectionId, PersonId, USABLE_STATE } from '@conexus/hub-api'
 import { and, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { Database, ReadTx, Scope } from '../../platform/database.ts'
@@ -31,6 +31,12 @@ export type Deps = {
 /** Who asks: for a call the app or the Builder makes, the person is only the scope (the id). */
 export type Viewer = { person: Pick<Person, 'id'>; companyId: CompanyId }
 export type OfConnection = Viewer & { connectionId: ConnectionId }
+
+/**
+ * The one rule for "a Projeto can use this connection": it was tested and works. The release, Publicar,
+ * the app's door and the Builder's port all read this predicate, so they cannot disagree.
+ */
+export const usable = eq(connection.state, USABLE_STATE)
 
 // Every column but `sealed`, which the company's role cannot read (U2's grant).
 export const columns = {

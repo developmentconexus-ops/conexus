@@ -123,6 +123,7 @@ export {
   TEST_LONGEST_MS,
   TestResult,
   testConnection,
+  USABLE_STATE,
   unlinkConnection,
 } from './connectors.ts'
 export {

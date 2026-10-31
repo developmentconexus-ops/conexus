@@ -225,3 +225,34 @@ test('a lista da empresa que falha também diz a frase, e não deixa a dona sem 
   expect(screen.getByRole('button', { name: 'Tentar de novo' })).toBeTruthy()
   expect(screen.queryByRole('button', { name: /Liberar|Tirar/ })).toBeNull()
 })
+
+test('uma ligação ainda não testada não tem Liberar: a linha diz para testar e leva à ligação', async () => {
+  const nova = line('Loja 1', { state: 'NEW' })
+  open({ sankhya: [], ml: [nova], mayManage: true })
+  const item = await row('Loja 1')
+  expect(item.queryByRole('button', { name: /Liberar/ })).toBeNull()
+  const way = item.getByRole('link', { name: 'Teste a ligação antes de liberar' })
+  expect(way.getAttribute('href')).toBe(`/companies/${COMPANY.id}/integrations/${nova.id}`)
+})
+
+test('uma ligação que pede para conectar de novo, ainda não liberada, também não tem Liberar', async () => {
+  open({ sankhya: [line('Matriz', { state: 'NEEDS_REAUTH' })], ml: [], mayManage: true })
+  expect((await row('Matriz')).queryByRole('button', { name: /Liberar/ })).toBeNull()
+})
+
+test('a liberação recusada porque a ligação não funciona mais diz a frase na janela', async () => {
+  open({ sankhya: [], ml: [line('Loja 1')], mayManage: true })
+  server.use(
+    http.put(`${API}/projects/${PEDIDOS.id}/connections/:connectionId`, () =>
+      refusal('CONNECTION_NOT_TESTED'),
+    ),
+  )
+  fireEvent.click((await row('Loja 1')).getByRole('button', { name: 'Liberar para ler: Loja 1' }))
+  const dialog = await screen.findByRole('alertdialog')
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Liberar' }))
+  expect(
+    await within(dialog).findByText(
+      'Essa ligação ainda não está funcionando. Teste a ligação antes de liberar.',
+    ),
+  ).toBeTruthy()
+})

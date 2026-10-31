@@ -1,4 +1,5 @@
 import type { CompanyId, ProjectConnections, ProjectId } from '@conexus/hub-api'
+import { USABLE_STATE } from '@conexus/hub-api'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { HubFailure, sentenceOf } from '../../platform/hub.ts'
@@ -24,6 +25,7 @@ import {
   REVOKE,
   sendRevoke,
   stateBadge,
+  TEST_BEFORE_GRANT,
 } from '../connectors/public.ts'
 import { GrantDialog } from './grant-dialog.tsx'
 
@@ -57,12 +59,13 @@ function Revoke({ companyId, projectId, line }: Scope & { line: Line }) {
   )
 }
 
-/** What the person may do on a line: Tirar if it is read; else Liberar, unless a `one` connector already reads another, which it names. */
+/** What the person may do on a line: Tirar if it is read; else Liberar, unless the connection cannot be used yet (the line says why) or a `one` connector already reads another, which it names. */
 function Action(props: Scope & { group: Group; line: Line; mayManage: boolean }) {
   const { group, line } = props
   if (!props.mayManage) return null
   if (line.grant !== null)
     return <Revoke companyId={props.companyId} projectId={props.projectId} line={line} />
+  if (line.state !== USABLE_STATE) return null
   const taken =
     group.perProject === 'one' ? group.connections.find((one) => one.grant !== null) : undefined
   if (taken !== undefined) {
@@ -100,6 +103,15 @@ function Connection(
           {line.grant === null ? NOT_GRANTED_TEXT : GRANTED_TEXT}
           {line.account !== null && ` · conta ${line.account.label}`}
         </span>
+        {line.state === 'NEW' && props.mayManage && (
+          <Link
+            to="/companies/$companyId/integrations/$connectionId"
+            params={{ companyId: props.companyId, connectionId: line.id }}
+            className="w-fit text-text-2 underline underline-offset-2"
+          >
+            {TEST_BEFORE_GRANT}
+          </Link>
+        )}
         {line.state === 'NEEDS_REAUTH' && (
           <Link
             to="/companies/$companyId/integrations/$connectionId"

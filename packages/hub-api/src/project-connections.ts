@@ -61,7 +61,12 @@ export const grantProjectConnection = defineOperation({
   bodyLimit: 1024,
   input: { params: OfGrant },
   success: { status: 200, body: z.object({ grant: Grant }) },
-  failures: [...READ_FAILURES, 'CONNECTION_NOT_FOUND', 'PROJECT_CONNECTION_TAKEN'],
+  failures: [
+    ...READ_FAILURES,
+    'CONNECTION_NOT_FOUND',
+    'CONNECTION_NOT_TESTED',
+    'PROJECT_CONNECTION_TAKEN',
+  ],
 })
 
 export const revokeProjectConnection = defineOperation({

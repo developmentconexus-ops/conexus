@@ -7,6 +7,9 @@ import { defineOperation } from './operation.ts'
 export const CONNECTION_STATES = ['NEW', 'ACTIVE', 'NEEDS_REAUTH'] as const
 export type ConnectionState = (typeof CONNECTION_STATES)[number]
 
+/** The only state a Projeto, the app and the Builder can use a connection in: tested and working. The Hub's release, Publicar, the app's door and the Builder's port, and the screen's Liberar, all ask this one. */
+export const USABLE_STATE = 'ACTIVE' satisfies ConnectionState
+
 export const ConnectionId = z.uuid().brand('ConnectionId')
 export type ConnectionId = z.infer<typeof ConnectionId>
 

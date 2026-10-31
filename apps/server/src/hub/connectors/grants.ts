@@ -8,7 +8,7 @@ import { Failure } from '../../platform/failure.ts'
 import { personNameColumn } from '../identity/public.ts'
 import { liveProjectOf } from '../projects/public.ts'
 import type { Deps, Viewer } from './rows.ts'
-import { admitted, columns, scopeOf, viewOf } from './rows.ts'
+import { admitted, columns, scopeOf, usable, viewOf } from './rows.ts'
 import { connection, projectConnection } from './tables.ts'
 
 type OfGrant = Viewer & OfProject & { connectionId: ConnectionId }
@@ -145,20 +145,22 @@ async function existingGrant(tx: CommandTx, input: OfGrant): Promise<Grant> {
 
 /**
  * Lets the Projeto read the connection, whole (founder, T-A: no ceiling). One row per pair: the
- * second call finds it and answers the same grant. A connector that allows one per Projeto has the
- * database refuse a second.
+ * second call finds it and answers the same grant. A connection not tested yet, or one that asks to
+ * be connected again, is refused (CONNECTION_NOT_TESTED): the app's door would refuse it. A
+ * connector that allows one per Projeto has the database refuse a second.
  */
 export function grant(deps: Deps, input: OfGrant): Promise<Grant> {
   return deps.database.command(scopeOf(input), async (tx) => {
     await admitted(deps, tx, input, 'manageConnections')
     await liveProject(tx, input)
     const [found] = await tx
-      .select({ connector: connection.connectorId })
+      .select({ connector: connection.connectorId, usable: sql<boolean>`${usable}` })
       .from(connection)
       .where(and(eq(connection.id, input.connectionId), eq(connection.companyId, input.companyId)))
     if (found === undefined) throw new Failure('CONNECTION_NOT_FOUND')
     const connector = connectorOf(found.connector)
     if (connector === undefined) throw new Failure('CONNECTOR_UNKNOWN')
+    if (!found.usable) throw new Failure('CONNECTION_NOT_TESTED')
     return (await inserted(tx, input, connector)) ?? (await existingGrant(tx, input))
   })
 }
@@ -183,8 +185,8 @@ export async function revoke(deps: Deps, input: OfGrant): Promise<boolean> {
 
 /**
  * What the declared connectors and operations lack at the Projeto, for Publicar: a connector with
- * no granted connection, or an operation that is not a read of the kit's. Read in the publish's own
- * transaction, so a refusal writes nothing.
+ * no granted connection that is usable, or an operation that is not a read of the kit's. Read in
+ * the publish's own transaction, so a refusal writes nothing.
  */
 export async function ungranted(
   tx: ReadTx,
@@ -194,7 +196,8 @@ export async function ungranted(
   const granted = await tx
     .select({ connector: projectConnection.connectorId })
     .from(projectConnection)
-    .where(eq(projectConnection.projectId, ids.projectId))
+    .innerJoin(connection, eq(connection.id, projectConnection.connectionId))
+    .where(and(eq(projectConnection.projectId, ids.projectId), usable))
   const lacking: { connector: string; operation: string | null }[] = []
   for (const one of declared) {
     const connector = connectorOf(one.connector)
