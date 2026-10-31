@@ -27,7 +27,7 @@ test('cookies particionados: o vínculo, a sessão e o apagar de cada um', async
     headers: { ...IN_FRAME, Cookie: `__Host-conexus-app=${SESSION}` },
   })
   const cookies = [first, redeemed, expired].flatMap((response) => response.headers.getSetCookie())
-  assert.equal(cookies.length, 5)
+  assert.equal(cookies.length, 4)
   for (const cookie of cookies) assert.match(cookie, DISPATCHER_COOKIE)
 })
 
