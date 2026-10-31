@@ -382,3 +382,5 @@ Ele aprovou a página do cartão e escolheu a `A1`: a aba "Projeto" do alto sai,
 Essa emenda muda o cartão da etapa 20 em três pontos, vindos das revisões. Os critérios 9 e 10 citam `project-connection.test.ts`, o esboço da U2 usa `projectId` como `text` e o `catalog.test.ts` deixa de ser arquivo mudado. A linha do corte da leitura cita `builder-tool.ts:89-91` e `sankhya/gateway.ts:34`. A retomada do critério 28 é provada só pelas ferramentas (o Mastra 1.79 não refaz skills nem instruções ao retomar), a metade do rastro do critério 29 vai para a 21.1, e `CONNECTOR_TOOLS` e o caminho passam a `builder/connectors/`.
 
 Cartão da etapa 20 aprovado em 2026-10-30 (commit e84a611647a4816724b76a0f9fc60a69a832594e): "Aprovado"
+
+Etapa 20 usada em https://hub.conexus.fun. À pergunta do firstmate em 2026-10-31, com a v0.20.10 no ar, "liberar uma conexão num Projeto e abrir um app com os dados dela": "Ja fiz deu certo". A resposta cobre o passo 2 do roteiro (liberar uma ligação em Integrações do Projeto) e, no passo 4, o app com os dados de verdade. Ele não relatou os passos 1, 3, 5 e 6, o Caderno do passo 4, o uso no celular nem a aprovação dos textos das telas.

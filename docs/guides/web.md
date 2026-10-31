@@ -131,16 +131,18 @@ tudo". The lines of [screens](../reference/screens.md) say which screen is on wh
   sees only "Seus apps" at `/` and never enters them. [review]
 - **W30.** The frame **should** be one sidebar on the left and no top bar: the company with its
   switcher, Início, up to five recent Projetos with "Todos os projetos", Integrações, Configurações, and the
-  account (name, theme, Central for whoever operates it, Sair). It collapses to icons inside a
-  Projeto and returns on leaving; on a phone it is a drawer opened from the top button (design
-  V56). A person with two companies opens the last one used; "Suas empresas" is the switcher's
+  account (name, theme, Central for whoever operates it, Sair). Inside a Projeto the sidebar is the
+  Projeto's own (founder, 2026-10-30, R2): the Projeto's name with its switcher, ← the company,
+  Construir, Sobre, Quem usa o app and Integrações, then the account; it stays open and collapses to
+  icons on demand. Leaving the Projeto brings the company's sidebar back. On a phone it is a drawer
+  opened from the top button (design V56). A person with two companies opens the last one used; "Suas empresas" is the switcher's
   menu. [review]
 - **W31.** A Projeto **should** open on its Prévia with the latest conversation on the right; a new
-  one focuses the composer. The top line holds Company / Name ▾ on the left, the tabs Prévia,
-  Código, Alterações and Projeto in the middle, and Versão ▾, Abrir app and Publicar on the right.
-  A control appears only when its step exists, never as "em breve". The tab Projeto lists
-  sections, each added by its step: Sobre, Versões, Quem usa o app, Dados da empresa,
-  Publicação. [review]
+  one focuses the composer. The top line holds the tabs Prévia, Código and Alterações, and Versão ▾,
+  Abrir app and Publicar on the right; the Projeto's name heads its sidebar (W30). A control appears
+  only when its step exists, never as "em breve". Sobre lists its parts, each added by its step:
+  Sobre, Versões, Publicação (founder, 2026-10-30, A1). Each other part of a Projeto is an entry of
+  its sidebar, added by its step (Quem usa o app, Integrações, then Dados and Capacidades). [review]
 - **W32.** Configurações **should** swap the sidebar for an index with "← Voltar" and a search, in
   two groups: Você (Minha conta, Contas de modelo, Meus padrões; the theme lives in the account menu) and the company's,
   headed by its name (Geral, Pessoas e convites, Padrões da empresa, Memória observacional); founder,
