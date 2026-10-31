@@ -21,6 +21,8 @@ import { WHO } from './test-questions.ts'
 const TRUNCATED = JSON.stringify({ questions: [WHO] }).slice(0, -12)
 
 test('uma chamada de ferramenta que o Mastra guardou sem argumentos não quebra a conversa: os dois turnos seguintes terminam', async (t) => {
+  // Mastra says an unparseable call on `console.error`, outside any logger; the run's output carries only log lines.
+  const said = t.mock.method(console, 'error', () => undefined)
   const calls: Sent[] = []
   const { hub, ana, conversations } = await conversing(t, (call): Reply => {
     if (title(call) !== undefined) return { kind: 'text', text: 'Título' }
@@ -38,6 +40,7 @@ test('uma chamada de ferramenta que o Mastra guardou sem argumentos não quebra 
     assert.equal(endOf(events), 'complete', content)
     assert.deepEqual(failuresOf(events), [], content)
   }
+  assert.equal(said.mock.calls[0]?.arguments[0], 'Error converting tool call input to JSON')
   const stored = (await answeredOf(hub, ana, url)).flatMap((message) => message.parts)
   const asked = stored.flatMap((part) =>
     part.type === 'tool-invocation' && part.toolInvocation.toolName === 'ask_user'
