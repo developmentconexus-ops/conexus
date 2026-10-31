@@ -97,7 +97,10 @@ test('o processo morreu e outra conversa do Projeto moveu o main enquanto a máq
     // Another conversation saved a version: `main` is a commit the machine never received.
     const main = git('rev-parse', 'main').trim()
     const tree = git('rev-parse', 'main^{tree}').trim()
-    const moved = git('commit-tree', tree, '-p', main, '-m', 'outra conversa').trim()
+    const moved = git(
+      ...['-c', 'user.name=Outra', '-c', 'user.email=outra@conexus.invalid'],
+      ...['commit-tree', tree, '-p', main, '-m', 'outra conversa'],
+    ).trim()
     git('update-ref', 'refs/heads/main', moved, main)
   })
   assert.equal(
