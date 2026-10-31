@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict'
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
+import { CompanyId, ProjectId } from '@conexus/hub-api'
 import type { MastraDBMessage } from '@mastra/core/agent'
 import { checks } from '@mastra/evals/checks'
 import type { Hub } from '../../hub/identity/test-hub.ts'
@@ -79,7 +80,7 @@ async function scored(
 }
 
 async function gate(t: TestContext) {
-  const { hub, ana, conversations } = await conversing(t, obedient())
+  const { hub, ana, conversations, companyId, projectId } = await conversing(t, obedient())
   const { events } = await asked(
     t,
     { hub, person: ana, conversations },
@@ -87,13 +88,22 @@ async function gate(t: TestContext) {
   )
   const output = await savedMessages(hub.test.mastraPool)
   const scores = await scored(output, checks.calledTool(WRITE))
-  return { events, scores, called: toolsCalled(output), folder: join(hub.builder.folder, 'app') }
+  const repository = hub.builder.repository({
+    companyId: CompanyId.parse(companyId),
+    projectId: ProjectId.parse(projectId),
+  })
+  return { events, scores, called: toolsCalled(output), repository }
 }
 
 test('o portão do Builder: o Builder de verdade escreveu os arquivos e nenhuma ferramenta deu erro', async (t) => {
-  const { events, scores, called, folder } = await gate(t)
+  const { events, scores, called, repository } = await gate(t)
   assert.equal(endOf(events), 'complete')
-  assert.equal(readFileSync(join(folder, PAGE.path), 'utf8'), PAGE.content)
+  const saved = await repository.file({
+    sha: await repository.main(),
+    path: PAGE.path,
+    maxBytes: 1e6,
+  })
+  assert.deepEqual(saved, { kind: 'text', text: PAGE.content }, 'the version holds the page')
   assert.deepEqual(scores, [1, 1])
   assert.deepEqual(new Set(called), new Set([WRITE]))
 })

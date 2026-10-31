@@ -67,11 +67,17 @@ test('sem a trava de ler antes de escrever: src/a.ts, /src/a.ts e o caminho da p
   } as const
   const calls: Sent[] = []
   const seen: string[] = []
+  let found: string[] = []
   const { hub, ana, conversations } = await conversing(t, (call): Reply => {
     if (title(call) !== undefined) return { kind: 'text', text: 'Título' }
     calls.push(call)
     const app = join(hub.builder.folder, 'app')
     if (calls.length > 1 && calls.length < 5) seen.push(readFileSync(join(app, 'src/a.ts'), 'utf8'))
+    // Read while the turn holds the machine: once it ends, the folder goes back to its base.
+    if (calls.length === 6)
+      found = readdirSync(hub.builder.folder, { recursive: true })
+        .map(String)
+        .filter((path) => basename(path) === 'a.ts')
     const steps = [
       [write('src/a.ts', 'um\n')],
       [write('/src/a.ts', 'dois\n')],
@@ -83,11 +89,6 @@ test('sem a trava de ler antes de escrever: src/a.ts, /src/a.ts e o caminho da p
     return blocks === undefined ? { kind: 'text', text: 'Pronto.' } : { kind: 'blocks', blocks }
   })
   await asked(t, { hub, person: ana, conversations }, 'Escreva a.ts três vezes')
-  const app = join(hub.builder.folder, 'app')
-  assert.equal(readFileSync(join(app, 'src/a.ts'), 'utf8'), 'tres\n')
-  const found = readdirSync(hub.builder.folder, { recursive: true }).filter(
-    (path) => basename(String(path)) === 'a.ts',
-  )
   assert.deepEqual(found, [join('app', 'src', 'a.ts')], 'one file, not three')
   assert.deepEqual(seen, ['um\n', 'dois\n', 'tres\n'], 'each write landed on the app file')
   assert.equal(existsSync(join(hub.builder.folder, 'fora.ts')), false)
