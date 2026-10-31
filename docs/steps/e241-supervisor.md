@@ -60,10 +60,9 @@ conferência automática sobre os dublês dos conectores: o Assistente responde,
 resposta é conferido contra os dados do dublê e contra o que as leituras e os comandos do turno
 devolveram. A medida das dez perguntas reais sai daqui e vai para a etapa da base de conhecimento.
 
-**O que ainda não foi provado.** A máquina tem Node e nenhuma biblioteca de gráfico, e não tem
-internet para instalar uma. O estudo viu o modelo fazer contas e documentos com código, mas não um
-gráfico sem biblioteca. A prova é a conferência do fim com o modelo de verdade (critério 11b): se ele
-não desenhar o gráfico, a etapa para, e a biblioteca na imagem da máquina sobe da seção "Depois".
+**O que ainda não foi provado.** Que o `pip install` passa pela lista de endereços do E2B com o
+PyPI: o critério 17 prova no E2B de verdade. E que a imagem maior não atrasa a partida da máquina
+do Builder: ninguém mediu.
 
 **Fica de fora.**
 - **A base de conhecimento**: as definições da sua empresa, a calibração e a medida das dez
@@ -95,8 +94,8 @@ com as referências de cada uma, na seção "As referências das decisões".
   OS), e você escolheu `H1`, `W1`, `B-a` e `S-a`:
   - `H1`: o mesmo motor do Builder, um segundo controlador com agente próprio ao lado dele, reusando
     as peças do Builder (banco, memória, fila de contas, guarda, fim do Hub, kit da máquina);
-  - `W1`: uma máquina E2B por conversa, o kit do Builder, sem Git e sem internet; por isso a linha
-    nova no aviso da 0032;
+  - `W1`: uma máquina E2B por conversa, o kit do Builder, sem Git; a rede só alcança o npm e o
+    PyPI; por isso a linha nova no aviso da 0032;
   - `B-a`: `show_file` abre ao lado do chat o arquivo que ele escreveu, para ler e baixar;
   - `S-a`: sai o `supervisor_show`; tabela e gráfico ele faz com código sobre a leitura salva na
     máquina.
@@ -111,10 +110,17 @@ com as referências de cada uma, na seção "As referências das decisões".
 - **As unidades foram redivididas**: a máquina virou uma unidade própria (U3), e as telas vão juntas
   na U4.
 - **O nome**: "Assistente", como você chama.
+- **A máquina, pelo estudo da máquina** (`N-2` e `M-2`, as suas respostas, com hífen porque a
+  conferência dos documentos reserva o N seguido de número a um processo antigo): a rede dela
+  alcança só os repositórios de pacotes (`registry.npmjs.org`, `pypi.org`,
+  `files.pythonhosted.org`), e a pesquisa e a leitura da web continuam ferramentas do Hub; a imagem
+  do Builder ganha o Python com `pip` e as bibliotecas de contas, gráfico, planilha, Word,
+  PowerPoint e PDF, uma imagem só, com a rede e o texto do Builder iguais. O cartão dizia que a máquina não tem Python: a imagem `node:24` tem o
+  Python 3.11, sem `pip` e sem biblioteca nenhuma.
 
-**O tamanho.** Cerca de **3.600 linhas** de código (a U0 já feita, com 170), abaixo do teto de 4.000
+**O tamanho.** Cerca de **3.620 linhas** de código (a U0 já feita, com 170), abaixo do teto de 4.000
 da regra L2. Eram ~3.420: a máquina e o `show_file` entram, o `supervisor_show`, o gráfico na tela e
-as leituras guardadas no Hub saem.
+as leituras guardadas no Hub saem; a lista de endereços e o Python na imagem somam ~20 à U3.
 
 ## As unidades
 
@@ -123,7 +129,7 @@ as leituras guardadas no Hub saem.
 | U0 | **Feita** (pull request https://github.com/developmentconexus-ops/conexus/pull/499, merge `3434d389`, 170 linhas): no aviso de parar, o Hub recusa respostas novas com `HUB_UPDATING`, espera as em andamento por até 180 s, e só então corta (`HUB_UPDATED`) e fecha | `apps/server/src/platform/lifecycle.ts`, `apps/server/src/main.ts`, `apps/server/src/builder/conversation/` (`end.ts`, `guard.ts`, `public.ts`), `packages/hub-api/src/`, `infra/compose.yaml` | [testing](../guides/testing.md) | — |
 | U1 | A porta da empresa aos conectores, pelo escopo da conversa: as ligações escolhidas, cortadas pelo lugar (Início: as `ACTIVE` da empresa; Projeto: as liberadas a ele), só leitura, por quem pode perguntar (`askAssistant`: dono e administradores); cada leitura volta cortada para o modelo e inteira para a máquina; a linha por chamada com `by: 'assistant'` | `apps/server/src/hub/connectors/`, `apps/server/src/hub/identity/` | [security](../guides/security.md) | a aprovação desta página e o pull request da regra `ee` (`Q1`) |
 | U2 | O Assistente sem máquina: o segundo controlador no mesmo `Mastra`, o agente, o texto de ambiente e o bloco da conversa, a skill `conexus`, o contexto da conversa (o Projeto nas marcas do fio, as ligações numa configuração do fio), o turno sem `Runs` na fila de contas, a memória e os processadores do Builder, as ferramentas (`connector_read`, `connector_notes`, `conexus_overview`, a web, as skills), as rotas, o guarda, a remoção, o fim do Hub; a conferência dos números sobre o dublê | `apps/server/src/builder/assistant/`, `apps/server/src/builder/connectors/`, `apps/server/src/builder/conversation/` (`guard.ts`, `turn-of.ts`, `builder.ts`, `stream.ts`, `public.ts`, `end.ts`, `prompt/conexus.md`), `apps/server/src/builder/mastra.ts`, `apps/server/src/main.ts`, `packages/hub-api/src/`, `packages/connectors/src/sankhya/` (as linhas do dublê) | [testing](../guides/testing.md) | U1 e o fechamento da 20 (`Q1`) |
-| U3 | A máquina da conversa (`W1`): uma máquina E2B por conversa pelo kit do Builder, sem Git e sem rede; a leitura salva em `reads/` na máquina; `show_file` e o download de um arquivo; a remoção e o fim do Hub param e matam as máquinas; a linha da 0032 | `apps/server/src/builder/assistant/`, `apps/server/src/builder/machine/` (`kit.ts`, `e2b.ts`, `public.ts`), `apps/server/src/builder/connectors/`, `packages/hub-api/src/`, `docs/decisions/0032-data-leaving-brazil-told.md` | [security](../guides/security.md) | U2 |
+| U3 | A máquina da conversa (`W1`, `N-2`, `M-2`): uma máquina E2B por conversa pelo kit do Builder, sem Git, com a rede só para o npm e o PyPI; a imagem ganha o Python com `pip` e as bibliotecas; a leitura salva em `reads/` na máquina; `show_file` e o download de um arquivo; a remoção e o fim do Hub param e matam as máquinas; a linha da 0032 e a lista da 0051 | `apps/server/src/builder/assistant/`, `apps/server/src/builder/machine/` (`kit.ts`, `e2b.ts`, `public.ts`), `apps/server/src/builder/connectors/`, `packages/hub-api/src/`, `infra/e2b/template.ts`, `docs/decisions/0032-data-leaving-brazil-told.md`, `docs/decisions/0051-builder-machine-git-and-copy-in-r2.md` | [security](../guides/security.md) | U2 |
 | U4 | As telas: o Início do dono e dos administradores (a caixa ao Assistente, a barra, as recentes com a etiqueta do Projeto), Conversas dentro do Projeto, a tela da conversa com as leituras e os comandos ao vivo, o arquivo mostrado ao lado (lido, imagem ou baixar), `propose_app` e **Criar app** só no Início; o membro como hoje | `apps/web/src/builder/assistant/`, `apps/web/src/builder/conversation/` (`session.ts`, `use-session.ts`, `transcript.tsx`, `tool-registry.ts`, `connector-specs.ts`, `start.tsx`), `apps/web/src/hub/projects/` (`home.tsx`, `project-rail.tsx`), `apps/web/src/routes/_app/companies/$companyId/`, `apps/server/src/builder/assistant/` (`propose.ts`), `packages/hub-api/src/`, `docs/reference/screens.md` | [web](../guides/web.md) | U3 |
 
 A U0 já entrou. As outras andam em fila: cada uma lê o contrato da anterior, e todas mudam
@@ -141,14 +147,15 @@ entram antes deste cartão (L20).
 importar `@mastra/core/agent-builder/ee`, `@mastra/core/auth/ee` e `@mastra/editor`, porque o código
 `ee` do Mastra roda em desenvolvimento sem chave e só falha a licença em produção.
 
-**Orçamento de código alterado.** U0: 170 (medido). U1: ~450. U2: ~1.450. U3: ~520. U4: ~1.010.
-Total da etapa: ~3.600. Testes, a skill, o texto do modelo e os gerados ficam fora da conta.
+**Orçamento de código alterado.** U0: 170 (medido). U1: ~450. U2: ~1.450. U3: ~540. U4: ~1.010.
+Total da etapa: ~3.620. Testes, a skill, o texto do modelo e os gerados ficam fora da conta.
 Hipótese para U1 a U4, estimada pelos vizinhos: a porta do Builder da 20 (`builder-port.ts`, ~230),
 a U5 da 20 (~480), o primeiro pedido da 13.1, a U0 medida, o estudo das sessões (4.2) e, para a U3,
 o que ela reusa da máquina do Builder (`machines.ts` tem 326 linhas; a U3 usa o kit, `execIn` e o
 `SandboxFilesystem`, sem a semente, o Git, a checagem e o pacote). A leitura independente somou à U2
 o fim do turno, os dois processadores e o dublê que responde SQL (~100), e à U3 o registro das
-máquinas e a extração de `execIn` (~60).
+máquinas e a extração de `execIn` (~60); a emenda da máquina (`N-2`, `M-2`), a lista de endereços do
+Assistente e as linhas do Python no `template.ts` (~20).
 
 ## Os critérios de aceite
 
@@ -189,12 +196,12 @@ Início e no Projeto).
 | 16a | U2 | Remover a empresa (5) apaga as conversas do Assistente de todas as pessoas dela; tirar uma pessoa (6) apaga as dela; nenhuma de outra empresa | `apps/server/src/builder/assistant/release.test.ts` | must |
 | 16c | U2 | Apagar um Projeto apaga as conversas do Assistente presas a ele, de todas as pessoas, também com mais de 100, e nenhuma do Início nem de outro Projeto; uma falha deixa o Projeto marcado (`PROJECT_DELETION_PENDING`), e a repetição acha as que sobraram | `release.test.ts`, "o Projeto" | must |
 | 16d | U2 | Uma chamada de ferramenta guardada sem argumentos numa conversa do Assistente é refeita como `{}` e a conversa segue (a regra `toolCallInputRequired` pelos `accountErrorProcessors`, pull request https://github.com/developmentconexus-ops/conexus/pull/510) | `assistant.test.ts`, "a chamada sem argumentos" | should |
-| 17 | U3 | Com a máquina, as ferramentas do modelo são as do critério 12 mais `show_file` e as `mastra_workspace_*` que a máquina do Builder dá (a mesma lista, lida do pedido ao modelo nos dois); nenhuma a mais. A primeira ferramenta de arquivo ou comando de uma conversa liga uma máquina com o nome da conversa; o turno seguinte acha a mesma, com os arquivos que ficaram; outra conversa tem outra máquina; a máquina não tem o app nem Git (nenhuma semente); o kit dela recebe `allowOut: []`, e no E2B de verdade um `curl` de dentro dela não chega a nenhum endereço | `apps/server/src/builder/assistant/machine.test.ts` (o kit de teste, `test-machine.ts`); a rede: um caso `opt-in:` (T4) em `apps/server/src/builder/machine/machine-e2b.test.ts` | must |
+| 17 | U3 | Com a máquina, as ferramentas do modelo são as do critério 12 mais `show_file` e as `mastra_workspace_*` que a máquina do Builder dá (a mesma lista, lida do pedido ao modelo nos dois); nenhuma a mais. A primeira ferramenta de arquivo ou comando de uma conversa liga uma máquina com o nome da conversa; o turno seguinte acha a mesma, com os arquivos que ficaram; outra conversa tem outra máquina; a máquina não tem o app nem Git (nenhuma semente); o kit dela recebe `allowOut` com `registry.npmjs.org`, `pypi.org` e `files.pythonhosted.org`, e o do Builder continua só com `registry.npmjs.org`; no E2B de verdade, de dentro dela, `pip install` e `npm install` de um pacote funcionam e o pacote importa, e um `curl` a outro endereço não recebe a resposta dele (o teste olha a resposta da aplicação, não o socket, porque o E2B pode dar o socket como aberto a uma conexão bloqueada) | `apps/server/src/builder/assistant/machine.test.ts` (o kit de teste, `test-machine.ts`); a rede e a imagem: um caso `opt-in:` (T4) em `apps/server/src/builder/machine/machine-e2b.test.ts` | must |
 | 18 | U3 | Com a máquina, uma leitura `OK` grava a resposta inteira em `reads/<turno>-<n>.json` na pasta da conversa (o `<turno>` são os 8 primeiros caracteres da `TurnKey`) e responde ao modelo o corte com o caminho e `complete` (falso quando o conector tem mais páginas, `cut.ts:53`); um código no mesmo turno lê o arquivo; o segundo turno grava outro arquivo e o do primeiro continua; uma máquina que não liga deixa a leitura responder o corte com `saved: false` e a falha da máquina | `machine.test.ts`, "a leitura na máquina" | must |
 | 19 | U3 | `show_file` de um Markdown, texto ou CSV de até 64 KB dá a saída com o conteúdo, e a mensagem relida do armazenamento do Mastra depois do turno ainda tem a linha da ferramenta com a saída inteira; de outro arquivo, a saída com o nome, o tamanho e o tipo; um caminho fora da pasta da conversa ou que não existe: `SHOW_REFUSED` (`OUTSIDE`, `NOT_FOUND`) e nada aparece; o modelo recebe só o resumo (`toModelOutput`), e um turno seguinte não carrega o conteúdo | `apps/server/src/builder/assistant/show-file.test.ts` | must |
 | 20 | U3 | `GET …/assistant/conversations/{id}/files?path=` dá os bytes do arquivo ao dono da conversa, com o tipo, `Content-Disposition`, `X-Content-Type-Options: nosniff` e `Content-Security-Policy: sandbox` (o arquivo foi escrito pelo modelo, S24); de outra pessoa ou pelo membro: `CONVERSATION_NOT_FOUND`; fora da pasta ou inexistente: `FILE_NOT_FOUND`; acima do teto (`MAX_BYTES`): `FILE_TOO_LARGE`; a máquina perdida: `FILE_GONE` | `apps/server/src/builder/assistant/routes.test.ts`, "o arquivo" | must |
 | 21 | U3 | Apagar uma conversa (pela empresa, pela pessoa ou pelo Projeto) mata as máquinas dela; o turno que acaba para a máquina, que dorme até a próxima pergunta; o fim do Hub para as máquinas dos turnos em andamento como o do Builder | `machine.test.ts`, "o fim da máquina"; `release.test.ts`, "a máquina" | must |
-| 22 | U3 | A decisão 0032 diz que as linhas que o Assistente lê para analisar vão à máquina dele no E2B | a revisão (check-docs para o índice) | must |
+| 22 | U3 | A decisão 0032 diz que as linhas que o Assistente lê para analisar vão à máquina dele no E2B; a 0051 dá a lista de endereços do Assistente ao lado da do Builder | a revisão (check-docs para o índice) | must |
 | 23 | U4 | No Início, a dona e a administradora veem a caixa "Pergunte ou peça um app", a barra com as ligações que a empresa oferece já escolhidas e o seletor de Projeto, e as conversas recentes, a de um Projeto com a etiqueta do nome dele; o membro vê "O que vamos construir?" como hoje; a 390 px, o mesmo | `apps/web/src/builder/assistant/home.test.tsx` | must |
 | 23a | U4 | Na conversa, tirar ou pôr uma ligação na barra manda a troca (`PUT …/connections`) e a barra mostra o que o Hub respondeu; uma troca recusada volta à escolha de antes com a frase do código; o Projeto aparece fixo, sem controle | `apps/web/src/builder/assistant/conversation.test.tsx`, "a barra" | must |
 | 23b | U4 | No Projeto, a entrada **Conversas** da barra lateral abre a lista das conversas da pessoa naquele Projeto e a caixa, com a barra só das ligações liberadas ao Projeto; o membro vê a página dizendo que só o dono e os administradores conversam ali (W34) | `apps/web/src/builder/assistant/project.test.tsx` | must |
@@ -319,7 +326,10 @@ de usar.
 | As ferramentas de conector compartilhadas | U2, U3 | `connectorTools(port, granted, who)` (`builder/connectors/connector-tools.ts:70-118`, lido) | `createTool` (`@mastra/core/tools`); `ctx.workspace` numa ferramenta (`NM:tools/types.d.ts:564`, `NMD:docs-sandbox-overview.md:78-104`, lidos) | ferramentas do contexto do pedido | nativo: o módulo recebe um acesso já ligado ao escopo (`ConnectorAccess`); o Builder recebe o mesmo que hoje | critérios 12, 18 | não precisa | — |
 | A visão da empresa | U2 | as listas de Projetos, versões e ligações do Hub; o nome de um Projeto vivo (`hub/projects/hosts.ts:152-171`, lido na emenda anterior) | `factory_overview` (`M:mastracode/factory/src/supervisor/read-tools.ts:187`, lido na emenda anterior) | uma ferramenta de leitura dos registros da plataforma | embrulhado: `conexus_overview` | critério 13 | `E1` da estrutura | `builder/assistant/overview.ts` |
 | Nenhum número inventado | U2 | `builder.eval.test.ts` com um modelo dublê e `@mastra/evals/checks` (`calledTool`, `noToolErrors`), lido | `runEvals` (`NM:evals/run/index.d.ts:178`, lido na emenda anterior); o "todo número vem de um resultado verificado" do `template-genui-data-explorer` (`M:templates/template-genui-data-explorer/src/mastra/agent.ts:21-31`, lido na emenda anterior); a medida do estudo da harness, que conferiu cada número contra o banco (relay) | os números da resposta conferidos contra a fonte | embrulhado: `numbersFromReads`, uma checagem própria sobre as mensagens que o Mastra guarda, ao lado de `calledTool` | critérios 11, 11a, 11b | "Concordo com a troca do aceite da 24.1" | `builder/assistant/numbers.ts` (de teste) |
-| A máquina da conversa | U3 | `machines.workspaceFor` com a semente do app e o Git (`builder/machine/machines.ts:215-255`); o kit E2B com rede só para o npm (`machine/e2b.ts:17-23`, `kit.ts:23,56-75`), lidos | um resolver de `Workspace` com `sandboxCacheKey` por fio; a sandbox do resolver é do app, que a destrói (`NMD:docs-sandbox-overview.md:162-224,264-270,299`); `workspace` do controlador por sessão (`NMD:reference-agent-controller-agent-controller-class.md:97`), lidos | uma máquina por fio, destruída pelo app | embrulhado: o kit do Builder, sem a semente, o Git, a checagem e o pacote; a chave é a conversa; a rede sem nenhum endereço | critérios 17, 21 | `W1` | `builder/assistant/machine.ts` |
+| A máquina da conversa | U3 | `machines.workspaceFor` com a semente do app e o Git (`builder/machine/machines.ts:215-255`); o kit E2B com rede só para o npm (`machine/e2b.ts:17-23`, `kit.ts:23,56-75`), lidos | um resolver de `Workspace` com `sandboxCacheKey` por fio; a sandbox do resolver é do app, que a destrói (`NMD:docs-sandbox-overview.md:162-224,264-270,299`); `workspace` do controlador por sessão (`NMD:reference-agent-controller-agent-controller-class.md:97`), lidos | uma máquina por fio, destruída pelo app | embrulhado: o kit do Builder, sem a semente, o Git, a checagem e o pacote; a chave é a conversa; a rede e a imagem nas duas linhas seguintes | critérios 17, 21 | `W1` | `builder/assistant/machine.ts` |
+| A rede da máquina do Assistente | U3 | `ALLOWED_HOSTS = ['registry.npmjs.org']` (`builder/machine/kit.ts:22-23`) com `denyOut: [ALL_TRAFFIC]` na partida e no `closeNetwork` (`machine/e2b.ts:23,35-36`); a decisão 0051, "a host is added only when `npm install` fails without it" (`0051-builder-machine-git-and-copy-in-r2.md:13-14`), lidos | Claude no app: "Package managers only (default)", com `registry.npmjs.org`, `pypi.org` e `files.pythonhosted.org`; Claude Code na nuvem: "Trusted (padrão)", os repositórios de pacotes; Codex: fechada enquanto trabalha, o preset "Common dependencies"; a API da OpenAI e a da Anthropic: fechada (relay do estudo da máquina, seção 2.2); o E2B: `allowOut` aceita nomes, `denyOut` só CIDR (`node_modules/e2b/dist/index.d.ts:2670-2678`, lido), e com um nome na lista o `8.8.8.8` fica liberado (relay do estudo da máquina, seção 2.3); a Mastra passa `network` direto ao E2B (`M:workspaces/e2b/src/sandbox/index.ts:421`, lido) | a máquina instala pacotes e não alcança o resto; a web pelas ferramentas | nativo: o `allowOut` que o kit recebe de quem monta, com `registry.npmjs.org`, `pypi.org` e `files.pythonhosted.org`, e `denyOut: [ALL_TRAFFIC]` como o Builder | critério 17, no E2B de verdade, pela resposta e não pelo socket | `N-2` | — |
+| O que vem instalado | U3 | `fromNodeImage('24').aptInstall(['git'])` mais a checagem (`infra/e2b/template.ts:52-57`, lido); a `node:24` tem Python 3.11.2 sem `pip` (medido pelo estudo da máquina, seção 2.4, e pelo autor desta emenda: `pip install` sem nada recusa pela PEP 668, e com `PIP_BREAK_SYSTEM_PACKAGES=1` instala como root e como usuário) | Claude API, ferramenta de código: pandas, numpy, matplotlib, openpyxl, xlsxwriter, python-docx, python-pptx, pypdf, reportlab e outras (relay do estudo da máquina, seção 2.2); o modelo "code-interpreter" do E2B (relay, idem); a Mastra: `.aptInstall([...]).pipInstall(['pandas', 'numpy']).npmInstall(['sharp'])` (`M:docs/src/content/en/integrations/sandboxes/e2b.mdx:297-310`, lido); o `pipInstall` do E2B roda `pip install` puro como root (`node_modules/e2b/dist/index.mjs:7859-7868`, lido); Claude Code na nuvem e Codex: uma imagem grande e única (relay, seção 2.2) | as bibliotecas vêm na imagem, instaladas uma vez no preparo | nativo: a mesma imagem ganha `python3-pip` no `aptInstall`, `PIP_BREAK_SYSTEM_PACKAGES=1` no `setEnvs` (o Debian 12 recusa `pip` no Python do sistema sem ela) e um `pipInstall` com pandas, numpy, matplotlib, openpyxl, xlsxwriter, python-docx, python-pptx, pypdf e reportlab, cada uma com a versão presa, como o `wrangler` (`template.ts:43`) | estudo da máquina, seção 2.4 (3): o gráfico SVG e o `.xlsx` nesta base; o critério 17 e o 11b com o modelo de verdade | `M-2` | — |
+| A frase da máquina | U3 | "The conversation's own Linux machine, with Node 24, npm and git ... Its network reaches only ..." (`machineInstructions`, `kit.ts:82-87`, do Builder, lido) | claude.ai e Codex dizem ao modelo o que a máquina tem (relay do estudo da harness, seção 3.3) | o texto diz o que a máquina tem e alcança | nativo: em `assistant.md`, Python e Node, as bibliotecas, instalar o que falta com `pip` ou `npm`, a web por `web_search` e `web_fetch`; o texto do Builder não muda (`R2`) | critérios 13a, 17 | `P1`, `N-2`, `M-2` | — |
 | A alternativa local | fica de fora | nenhum | `LocalSandbox` com `isolation: 'bwrap'` (relay do estudo da harness, provado no WSL, não no contêiner do Hub) | o isolamento do sistema operacional | nativo: fica de fora, gatilho na seção "Depois" | — | `W2` não escolhido (`W1`) | — |
 | A leitura chega ao código | U3 | `connector_read` devolve só o corte (`connector-tools.ts:70-98`, lido) | claude.ai `/mnt/user-data`, ChatGPT `/mnt/data` (relay do estudo da harness); `ctx.workspace.filesystem` (`NMD:reference-workspace-filesystem.md:13-26`, lido) | os dados entram na máquina como arquivo | embrulhado: a leitura grava `reads/<turno>-<n>.json` e responde o corte com o caminho | critério 18; lab do estudo: o Python leu o arquivo | `S-a` | — |
 | Mostrar o que ele fez | U3, U4 | nenhum; a Prévia mostra só o app (`apps/web/src/builder/preview/preview.tsx:126-128`, relay do estudo da harness); o painel e o Markdown da conversa (`apps/web/src/builder/conversation/panel.tsx`, `markdown.tsx`, no `main`) | Cowork `SendUserFile`, claude.ai `present_files` (relay do estudo da harness, vazamentos); `toModelOutput` muda só o que o modelo vê (`NM:tools/types.d.ts:457`, lido na emenda anterior) | uma ferramenta entrega o arquivo à conversa | nativo: a saída de `show_file` desenhada pela linha dela; Markdown e texto lidos, imagem pela rota, o resto baixado; o modelo recebe só o resumo | critérios 19, 20, 27, 29 | `B-a` | `builder/assistant/show-file.ts`, `apps/web/src/builder/assistant/file.tsx` |
@@ -358,6 +368,10 @@ estudo, cuja página não foi reaberta nesta emenda (sem acesso à internet nest
 | `H1` | Anthropic Cowork; OpenAI ChatGPT Work | `Anthropic/claude-cowork/claude-cowork.md:1,5`; `OpenAI/Codex/gpt-6.1-sol-chatgpt-work-local.md:1` (asgeirtj `6adc6e86`) | o mesmo motor do agente de código, com outro texto e outras ferramentas | relay do estudo da harness (vazamentos, nenhum fornecedor confirma) |
 | `W1` | Mastra | `NMD:docs-sandbox-overview.md:162-224,299` | uma sandbox por fio por um resolver; o app a destrói | lido |
 | `B-a` | claude.ai, Cowork | `present_files`, `SendUserFile` (vazamentos) | uma ferramenta entrega o arquivo à conversa | relay do estudo da harness |
+| `N-2` | Claude no app; Claude Code na nuvem | https://support.claude.com/en/articles/12111783-create-and-edit-files-with-claude; https://code.claude.com/docs/en/cloud-environments | a máquina alcança só os repositórios de pacotes por padrão; a web é ferramenta | relay do estudo da máquina, seção 2.2 |
+| `N-2` | E2B | `node_modules/e2b/dist/index.d.ts:2670-2678`; https://docs.e2b.dev/sandbox/internet-access | `allowOut` aceita nomes, `denyOut` só CIDR; a lista não é um muro (o `8.8.8.8`) | lido (os tipos); relay do estudo da máquina, seção 2.3 (a página) |
+| `M-2` | Claude API, ferramenta de código; Mastra | https://platform.claude.com/docs/en/agents-and-tools/tool-use/code-execution-tool; `M:docs/src/content/en/integrations/sandboxes/e2b.mdx:297-310` | as bibliotecas de dados e documentos vêm instaladas; o `pipInstall` no modelo da máquina | relay do estudo da máquina, seção 2.2 (a página); lido (a Mastra) |
+| `M-2` | a imagem do Builder | `infra/e2b/template.ts:52-57`; o estudo da máquina, seção 2.4 | Python 3.11 sem `pip`; o conjunto instalou em 35 s e fez o gráfico e a planilha nesta base | lido; medido pelo estudo (relay) |
 | `S-a`, o aceite | o estudo da harness, seção 4 | as sessões no modelo de verdade e um Sankhya inventado | o modelo fez as contas com código sobre a leitura salva; cada número conferido contra o banco | medido pelo estudo (relay) |
 | `P1`, `L1` | o estudo do prompt | a seção 1 | agente próprio, não modo; o texto em inglês respondeu em português 20 de 20 vezes | medido pelo estudo (relay) |
 | `M1` | Mastra Factory | `M:mastracode/factory/src/factory.ts:1109-1113`, `supervisor/session.ts:19-35` | o lugar escolhe o trabalho, sem seletor | lido na emenda anterior |
@@ -382,7 +396,7 @@ daqui entra na 24.1.
 | **Ajudantes em paralelo** | a 24.4, com os agentes da empresa | uma pergunta sua que uma conversa sozinha não resolve, medida | o campo `agents` ou a ferramenta `subagent` do Mastra, hoje desligada |
 | **Mais ligações** (Bling, Omie, Conta Azul e o resto da fila do molde) | quando cada conector entra | o conector entra no `main` | a porta oferece toda ligação `ACTIVE` do lugar; a skill dela entra sozinha |
 | **Mais ferramentas**: a rotina, a escrita com aprovação, os agentes | 24.2, 24.3, 24.4 | cada etapa | `mastra.schedules`, `requireApproval`, o campo `agents` |
-| **Mais bibliotecas na máquina** (gráfico, planilha, Word, PDF) | etapa própria; o gráfico sobe para a 24.1 se o critério 11b mostrar que ele não sai sem biblioteca | um arquivo que você pedir e a máquina não fizer | a imagem da máquina (`infra/e2b/template.ts`), como o claude.ai e o ChatGPT vêm com elas |
+| **A rede aberta na máquina do Assistente** (`N-3`): os scripts dele baixam dados públicos direto, por exemplo uma série do Banco Central | etapa própria | o primeiro pedido seu que precise disso e que o `web_fetch` não resolva | uma linha: a rede do kit do Assistente sem o `denyOut`, escrita na 0051 |
 | **O contexto da empresa**: metas, pessoas, como a empresa funciona | 24.4, como documentos de um Projeto sem app | o Projeto vira "qualquer assunto" (`J1`) | uma ferramenta de leitura |
 | **Diagramas** | o Mermaid na 24.5 | a 24.5 | um arquivo mostrado, desenhado pela tela |
 | **Favoritas, arquivadas, busca** de conversas | etapa própria | umas 20 conversas, ou o seu pedido | as marcas do fio e o `listThreads` |
@@ -805,7 +819,13 @@ concorrência; o resolver por conversa é o padrão do Mastra.
   `NM:tools/types.d.ts:564` (`ctx.workspace`); `NMD:reference-workspace-filesystem.md:13-26`.
 - **O controlador do Builder.** `builder.ts:232-236` (o `workspace` do controlador por pedido).
 - **A CSP e o tamanho.** `apps/server/src/platform/http.ts:30-49`; `MAX_BYTES` (`git/public.ts:1`).
-- **A decisão 0032** inteira.
+- **A imagem.** `infra/e2b/template.ts:52-80` (`fromNodeImage('24')`, `aptInstall`, `setEnvs`);
+  `node_modules/e2b/dist/index.mjs:7859-7868` (`pipInstall` roda `pip install` puro como root);
+  `M:docs/src/content/en/integrations/sandboxes/e2b.mdx:297-310`.
+- **A rede.** `node_modules/e2b/dist/index.d.ts:2670-2678` (`allowOut` com nomes, `denyOut` só CIDR);
+  a página de rede do E2B pela seção 2.3 do estudo da máquina (o `8.8.8.8`, o socket aberto de uma
+  conexão bloqueada, 10 domínios por máquina).
+- **As decisões 0032 e 0051** inteiras.
 
 ### O raio da mudança
 
@@ -816,7 +836,9 @@ concorrência; o resolver por conversa é o padrão do Mastra.
 | `apps/server/src/builder/connectors/connector-tools.ts` | Muda: com uma máquina no contexto, a leitura grava `whole` e responde o caminho; o Builder não passa máquina e não muda | o Assistente |
 | `apps/server/src/main.ts` | Muda: dá ao Assistente o kit, a API da máquina e o modelo da máquina | — |
 | `packages/hub-api/src/assistant.ts` | Muda: `ShownFile`, a rota do arquivo, `FILE_NOT_FOUND`, `FILE_GONE`, `FILE_TOO_LARGE`, os nomes novos em `ASSISTANT_TOOL` | a U4 |
+| `infra/e2b/template.ts` | Muda: `python3-pip` no `aptInstall`, `PIP_BREAK_SYSTEM_PACKAGES=1` no `setEnvs` e o `pipInstall` das bibliotecas, cada uma com a versão presa; o resto da imagem, a rede e o texto do Builder não mudam | a publicação (o modelo da máquina), o Builder e o Assistente |
 | `docs/decisions/0032-data-leaving-brazil-told.md` | Muda: a frase do contexto (abaixo) | o aviso de cada empresa |
+| `docs/decisions/0051-builder-machine-git-and-copy-in-r2.md` | Muda: a linha da rede ganha a lista do Assistente ao lado da do Builder (abaixo) | quem acrescenta um endereço |
 
 ### Os contratos que a unidade cria
 
@@ -824,7 +846,9 @@ concorrência; o resolver por conversa é o padrão do Mastra.
 // apps/server/src/builder/assistant/machine.ts
 /** Where the conversation's files live on its machine, made at the machine's start. */
 export const WORK_FOLDER = '/home/user/work'
-/** The conversations' machines: the Builder's kit without the app's seed, Git, check or pack; no network. One owner (C26) for start, stop, kill and read. */
+/** The hosts the Assistant's machine may reach: the package registries, for pip and npm (decision 0051). */
+export const ASSISTANT_HOSTS = ['registry.npmjs.org', 'pypi.org', 'files.pythonhosted.org']
+/** The conversations' machines: the Builder's kit without the app's seed, Git, check or pack; the network reaches only ASSISTANT_HOSTS. One owner (C26) for start, stop, kill and read. */
 export type AssistantMachines = {
   /** The controller's workspace resolver; undefined outside a conversation, as the Builder's. */
   workspace(requestContext: RequestContext): Promise<Workspace | undefined>
@@ -858,18 +882,29 @@ export const ShownFile = z.discriminatedUnion('kind', [
   (`template`), `killStale` antes de ligar, as marcas do `MARK` (a do Projeto só se a conversa tiver),
   o nome `conexus-<installation>-<conversationId>`, `sandboxCacheKey` por esse nome, `SandboxFilesystem`
   sobre `execIn`, o `onStart` que só faz `mkdir -p WORK_FOLDER`. Sem semente, sem Git, sem
-  `conexus_check`, sem pacote, e `allowOut: []`: a web é das ferramentas do Hub, nunca da máquina, e
-  nenhuma linha da empresa sai da máquina pela rede.
+  `conexus_check`, sem pacote, e `allowOut: ASSISTANT_HOSTS` com `denyOut: [ALL_TRAFFIC]`, na
+  partida e no `closeNetwork`: a máquina instala pacotes, e a web é das ferramentas do Hub.
+- A imagem é uma só, a do Builder (`M-2`): `python3-pip`, `PIP_BREAK_SYSTEM_PACKAGES=1` (sem ela, o
+  `pip install` puro do `pipInstall` recusa no Python do Debian 12, PEP 668; com ela, o modelo também
+  instala como usuário) e pandas, numpy, matplotlib, openpyxl, xlsxwriter, python-docx,
+  python-pptx, pypdf e reportlab. O Builder carrega o Python sem usar; o `ALLOWED_HOSTS` e o
+  `machineInstructions` dele não mudam.
 - O dono do fato "esta conversa tem máquina" é o `workspace` do controlador (C26), como no Builder
   (`builder.ts:232-236`); as ferramentas leem `ctx.workspace`.
 - A máquina para (`sandbox.stop`) no fim de cada turno e morre (`api.kill`) com a conversa; a do
   Builder segue igual.
-- A frase da máquina em `assistant.md`: "You have a Linux machine for this conversation, with Node.
-  Your files live in /home/user/work. It has no internet; use web_search and web_fetch. Each
-  connector read is saved whole there under reads/, and the tool answers with its first rows and the
-  file's path. The person sees only your messages and the files you show with show_file."
+- A frase da máquina em `assistant.md`: "You have a Linux machine for this conversation, with Python
+  3 and Node 24, and pandas, numpy, matplotlib, openpyxl, xlsxwriter, python-docx, python-pptx,
+  pypdf and reportlab installed. Install what you lack with pip or npm; its network reaches only the
+  package registries, so use web_search and web_fetch for the web. Your files live in
+  /home/user/work. Each connector read is saved whole there under reads/, and the tool answers with
+  its first rows and the file's path. The person sees only your messages and the files you show
+  with show_file."
 - A frase nova da 0032, no contexto: "Rows the Assistant reads from a company's connections go to its
   conversation's machine on E2B, outside Brazil, for as long as the conversation exists."
+- A linha da rede da 0051 ganha: "The Assistant's machine reaches the package registries
+  (`registry.npmjs.org`, `pypi.org`, `files.pythonhosted.org`), for pip and npm; the web is the
+  Hub's tools (founder, 2026-10-31: `N-2` and `M-2` of the machine study)."
 - Modelo: `machines.ts` para o kit e `execIn`; ele cumpre C21 e C26; o que é do app não é modelo.
 
 ### As skills e a leitura
@@ -881,26 +916,28 @@ export const ShownFile = z.discriminatedUnion('kind', [
 ### A ordem do trabalho
 
 1. `kit.ts`, `e2b.ts` e `machines.ts`: `allowOut` vem de quem monta; `execIn` vira função; os testes
-   da máquina do Builder passam sem mudar.
+   da máquina do Builder passam sem mudar. `template.ts`: o Python, o `pip` e as bibliotecas.
 2. `machine.ts`: `AssistantMachines` sobre o kit; o `workspace` do controlador do Assistente.
 3. `connector-tools.ts`: a gravação em `reads/` quando há máquina.
 4. `show-file.ts` e a rota do arquivo (`readCapped`, `containment.ts` para recusar fora da pasta).
-5. `release.ts`, `turn.ts`: matar e parar. `assistant.md`. A 0032.
+5. `release.ts`, `turn.ts`: matar e parar. `assistant.md`. A 0032 e a 0051.
 
 ### Como se prova
 
 Critérios 17 a 22: `machine.test.ts` e `show-file.test.ts` pelo kit local de teste (`localKit`), as
 rotas por `routes.test.ts`, a remoção por `release.test.ts`,
-`npm test -w @conexus/server -- assistant machine`. Hoje falham: o Assistente não tem máquina.
+`npm test -w @conexus/server -- assistant machine`. Hoje falham: o Assistente não tem máquina. A
+rede e a imagem do critério 17 só se provam no E2B de verdade, pelo caso `opt-in:` de
+`machine-e2b.test.ts` (T4) sobre o modelo publicado com o Python; o relatório diz se rodou.
 
 ### Parar se
 
 - O `workspace` do controlador por pedido não chegar ao `ctx.workspace` de uma ferramenta própria
   (só às do Mastra): parar e mostrar.
-- O modelo da máquina não tiver `python3` (a imagem `node:24` de `infra/e2b/template.ts`; não
-  provado): seguir só com Node na frase da máquina e dizer no relatório; uma biblioteca nova na imagem
-  é da seção "Depois".
-- O E2B não aceitar `allowOut: []` com `denyOut` de tudo: parar e mostrar o erro; não abrir rede.
+- No E2B de verdade, o `pip install` não passar pela lista com `pypi.org` e `files.pythonhosted.org`
+  (o critério 17): parar e mostrar a recusa; não acrescentar endereço sem a palavra do fundador
+  (0051).
+- O E2B recusar a lista com `denyOut` de tudo: parar e mostrar o erro; não abrir a rede.
 
 ## U4 As telas
 
