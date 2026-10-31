@@ -4,7 +4,7 @@ import { CompanyId, PersonId } from '@conexus/hub-api'
 import { InMemoryStore } from '@mastra/core/storage'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
 import { Turn, turnContext } from '../model-accounts/public.ts'
-import { conexusCheck } from './processors.ts'
+import { conexusCheck } from './public.ts'
 import {
   answeredOf,
   conversing,
