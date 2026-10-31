@@ -2,9 +2,9 @@ import { randomUUID } from 'node:crypto'
 import { connectorOf } from '@conexus/connectors'
 import { ConnectionId } from '@conexus/hub-api'
 import { z } from 'zod'
+import type { FailureLog } from '../../platform/failure.ts'
 import { Credential } from '../../platform/seal.ts'
 import { Secret } from '../../platform/secret.ts'
-import type { FailureLog } from '../../platform/failure.ts'
 import type { Executor, OpenedConnection } from './executor.ts'
 import { createLimits as createLimitsWith } from './limits.ts'
 
@@ -13,7 +13,6 @@ const SILENT: FailureLog = { info: () => undefined, error: () => undefined }
 export function createLimits(deps: { executor: Executor; log?: FailureLog }) {
   return createLimitsWith({ executor: deps.executor, log: deps.log ?? SILENT })
 }
-
 
 export const A = ConnectionId.parse(randomUUID())
 export const B = ConnectionId.parse(randomUUID())

@@ -174,11 +174,9 @@ async function noteSaved(
     concept: a.concept,
     note: note.data,
   })
+  if (saved === 'GONE') return { kind: 'NOT_GRANTED' }
   if (saved === 'NOTE_INVALID') return { kind: 'NOTE_INVALID' }
-  deps.log.info(
-    { connectionId: a.connectionId, concept: a.concept, rows: provedRows },
-    'CONNECTION_NOTE_SAVED',
-  )
+  deps.log.info({ connectionId: a.connectionId, rows: provedRows }, 'CONNECTION_NOTE_SAVED')
   return { kind: 'SAVED', provedRows }
 }
 

@@ -75,6 +75,20 @@ test('guardar: a consulta que a porta recusa recusa a anotação; o caderno chei
   assert.equal(results.at(-1), 'CALLS_SPENT')
 })
 
+test('guardar: a ligação desligada entre a prova e a gravação não responde SAVED: o modelo ouve NOT_GRANTED', async (t) => {
+  const on = await builderOn(t)
+  on.fake.switches.delayMilliseconds = 300
+  const saving = on.port.saveNote(on.ids, {
+    ...on.who(),
+    concept: 'Empresa',
+    mapping: 'm',
+    provingQuery: QUERY,
+  })
+  await new Promise((later) => setTimeout(later, 100))
+  await on.hub.test.asOwner('delete from connectors.connection')
+  assert.deepEqual(await saving, { kind: 'NOT_GRANTED' })
+})
+
 test('apagar: a dona tira só aquela anotação; o membro 404; a página da ligação mostra as anotações ao membro', async (t) => {
   const on = await builderOn(t)
   for (const concept of ['Empresa', 'Vendedor'])
