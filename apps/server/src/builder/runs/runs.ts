@@ -16,7 +16,7 @@ import { sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { personNameColumn } from '../../hub/identity/public.ts'
 import type { Result } from '../../platform/result.ts'
-import type { CheckPlatformFailed, Phase, VersionFolder } from '../machine/public.ts'
+import type { CheckPlatformFailed, KeepCut, Phase, VersionFolder } from '../machine/public.ts'
 import type {
   Driven,
   Opened,
@@ -31,7 +31,7 @@ import { createCopyRetry } from './copy-retry.ts'
 import { conversationIn } from './keys.ts'
 import type { ReleaseScope } from './removal.ts'
 import { releaseRuns } from './removal.ts'
-import { saveRun } from './save.ts'
+import { advanceMain, saveRun } from './save.ts'
 
 /** The one row `#nameOf` reads: the person's name, null once they are gone. */
 const PersonName = z.object({ name: z.string().nullable() })
@@ -88,7 +88,35 @@ export class Runs {
     return this.#deps.machines.workspaceFor({
       ...ids,
       onPhase: (phase) => this.#phases.get(ids.conversationId)?.(phase),
+      keepCut: (collect) => this.#keepCut(ids, collect),
     })
+  }
+
+  /**
+   * The tree of a turn that never ended (the process died) as a version of the Projeto's `main`,
+   * before the new turn works on it. The new turn holds the Projeto already: nobody else moves
+   * `main`. A tree the Hub cannot keep fails the start, and the machine keeps it for the next try.
+   */
+  async #keepCut(
+    ids: Conversation,
+    collect: Parameters<KeepCut>[0],
+  ): Promise<'saved' | 'unchanged'> {
+    const { companyId, projectId, conversationId } = ids
+    const runId = RunIdSchema.parse(randomUUID())
+    const fields = { companyId, projectId, conversationId, runId }
+    const base = await this.#deps.repository(ids).ensure()
+    const bundle = await collect(base)
+    if (bundle === 'unchanged') return bundle
+    if (bundle === 'too-large') throw new Error('the cut turn left a tree too large to keep')
+    const moved = await advanceMain(this.#context, {
+      ...{ companyId, projectId, runId, base },
+      run: { stopped: false },
+      bundle: bundle.bundle,
+    })
+    if (moved === 'gone' || moved.kind === 'failed')
+      throw new Error('the cut turn left a tree the Hub refused')
+    this.#deps.log.info({ ...fields, version: moved.number }, 'CUT_TURN_KEPT')
+    return 'saved'
   }
 
   /**

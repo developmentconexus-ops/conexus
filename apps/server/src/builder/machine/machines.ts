@@ -7,16 +7,20 @@ import { CHECK_PROGRAM, checkIn } from './check.ts'
 import type { Kit } from './kit.ts'
 import { APP_FOLDER, MARK, machineInstructions, OUTPUT_MAX, readCapped } from './kit.ts'
 import { packIn } from './pack.ts'
-import type { Machines, MachinesDeps, Phase } from './port.ts'
+import type { KeepCut, Machines, MachinesDeps, Phase } from './port.ts'
 import { SandboxFilesystem } from './sandbox-filesystem/filesystem.ts'
 import type { SandboxExec } from './sandbox-filesystem/shell.ts'
 import type { Collected } from './scripts.ts'
 import {
+  CUT_MESSAGE,
   changedScript,
   collected,
   collectScript,
   keepScript,
+  openScript,
   outFile,
+  rebaseScript,
+  sealScript,
   seedFile,
   seedScript,
 } from './scripts.ts'
@@ -26,6 +30,7 @@ type Session = {
   projectId: ProjectId
   conversationId: ConversationId
   onPhase: (phase: Phase) => void
+  keepCut: KeepCut
   /** Built with the workspace: building it asks the provider nothing, and only its start finds the machine. */
   kit: Kit
   /** How many times the machine started in this turn: a second `created` is a machine that died. */
@@ -100,7 +105,10 @@ class BuilderMachines implements Machines {
     } catch (cause) {
       const restore = restoreFailure(cause)
       if (restore !== undefined) throw restore
-      this.deps.log.error({ reason: 'START' }, 'MACHINE_UNAVAILABLE')
+      this.deps.log.error(
+        { reason: 'START', cause: String(cause).slice(0, 500) },
+        'MACHINE_UNAVAILABLE',
+      )
       throw new Failure('MACHINE_UNAVAILABLE', { cause })
     }
     this.deps.log.info({ conversationId: session.conversationId }, 'MACHINE_STARTED')
@@ -116,8 +124,36 @@ class BuilderMachines implements Machines {
     if (seeded.exitCode !== 0) throw new Error(`seed failed: ${seeded.stderr.slice(-500)}`)
   }
 
+  /** The files stay as they are; the repository must still be there. */
+  private async keep(kit: Kit) {
+    const kept = await run(kit, keepScript(this.workdir))
+    if (kept.exitCode !== 0) throw new Error(`the kept tree is gone: ${kept.stderr.slice(-500)}`)
+  }
+
+  /** The machine holds the work of a turn that never ended: its seed's mark was never taken off. */
+  private async cutBefore(kit: Kit): Promise<boolean> {
+    const found = await run(kit, openScript(this.workdir))
+    if (found.exitCode !== 0)
+      throw new Error(`the open mark is unreadable: ${found.stderr.slice(-500)}`)
+    return found.stdout.trim() === 'CUT'
+  }
+
   /**
-   * What the machine holds once it is up. One found by name goes back to the Hub's `main`. A later
+   * A turn that never ended left its files on the paused machine: the Hub saves them as a version,
+   * marked by its commit message, and the machine takes that version as its base, so the new turn
+   * works on them and saves only what it adds. A tree the Hub cannot keep throws.
+   */
+  private async keepCut(kit: Kit, session: Session) {
+    session.onPhase('saving')
+    const kept = await session.keepCut((base) => this.collectIn(kit, base, CUT_MESSAGE))
+    if (kept === 'unchanged') return
+    const rebased = await run(kit, rebaseScript(this.workdir))
+    if (rebased.exitCode !== 0) throw new Error(`rebase failed: ${rebased.stderr.slice(-500)}`)
+  }
+
+  /**
+   * What the machine holds once it is up. One found by name goes back to the Hub's `main`, unless the
+   * turn before it never ended (the process died): its files are kept as a version. A later
    * start in the same turn is Mastra reconnecting a machine that paused or dropped (`retryOnDead`):
    * it keeps what the turn wrote. A new one is seeded; a second new one in the same turn is a
    * machine that died, and what the turn wrote on it is gone.
@@ -127,10 +163,23 @@ class BuilderMachines implements Machines {
     session.starts += 1
     if (outcome === 'connected') {
       await kit.closeNetwork()
-      if (session.starts === 1) return this.seed(kit, session)
-      const kept = await run(kit, keepScript(this.workdir))
-      if (kept.exitCode !== 0) throw new Error(`the kept tree is gone: ${kept.stderr.slice(-500)}`)
-      return
+      if (session.starts === 1) {
+        if (!(await this.cutBefore(kit))) return this.seed(kit, session)
+        this.deps.log.info({ conversationId }, 'MACHINE_CUT_KEPT')
+        await this.keep(kit)
+        try {
+          return await this.keepCut(kit, session)
+        } catch (cause) {
+          // A tree that cannot be kept (`main` moved by another conversation, too large) fails again
+          // at every start: naming the cause and seeding as any ended turn is the way out.
+          this.deps.log.error(
+            { conversationId, cause: String(cause).slice(0, 500) },
+            'CUT_TURN_LOST',
+          )
+          return this.seed(kit, session)
+        }
+      }
+      return this.keep(kit)
     }
     if (session.starts > 1) {
       session.lost = true
@@ -157,7 +206,7 @@ class BuilderMachines implements Machines {
   }
 
   async workspaceFor(input: Parameters<Machines['workspaceFor']>[0]) {
-    const { companyId, projectId, conversationId, onPhase } = input
+    const { companyId, projectId, conversationId, onPhase, keepCut } = input
     const name = `conexus-${this.deps.installation}-${conversationId}`
     const kit = this.deps.kit({
       id: name,
@@ -173,7 +222,7 @@ class BuilderMachines implements Machines {
       onStart: ({ outcome }) => this.onStart(session, outcome),
     })
     const session: Session = {
-      ...{ companyId, projectId, conversationId, onPhase, kit },
+      ...{ companyId, projectId, conversationId, onPhase, keepCut, kit },
       ...{ starts: 0, lost: false, ready: undefined },
     }
     this.sessions.set(conversationId, session)
@@ -203,7 +252,11 @@ class BuilderMachines implements Machines {
     const kit = await this.ensure(session)
     if (session.lost) throw new Error('the machine died in the turn')
     session.onPhase('saving')
-    const result = await run(kit, collectScript(this.workdir, this.tmp, base))
+    return this.collectIn(kit, base)
+  }
+
+  private async collectIn(kit: Kit, base: Sha, message?: string) {
+    const result = await run(kit, collectScript(this.workdir, this.tmp, base, message))
     if (result.exitCode !== 0) throw new Error(`collect failed: ${result.stderr.slice(-500)}`)
     const found: Collected = collected(result.stdout)
     if (found.kind !== 'bundle') return found.kind
@@ -244,7 +297,26 @@ class BuilderMachines implements Machines {
   async release(conversationId: ConversationId) {
     const session = this.sessions.get(conversationId)
     this.sessions.delete(conversationId)
-    if (session?.ready !== undefined) await session.kit.sandbox.stop?.()
+    if (session?.ready === undefined) return
+    try {
+      await this.seal(session)
+    } finally {
+      await session.kit.sandbox.stop?.()
+    }
+  }
+
+  /**
+   * The turn's save is over: its mark comes off, so the next turn on this machine starts from `main`.
+   * A machine that never came up was never seeded, and holds no mark.
+   */
+  private async seal(session: Session) {
+    const up = await session.ready?.then(
+      () => true,
+      () => false,
+    )
+    if (!up) return
+    const sealed = await run(session.kit, sealScript(this.workdir))
+    if (sealed.exitCode !== 0) throw new Error(`seal failed: ${sealed.stderr.slice(-500)}`)
   }
 }
 

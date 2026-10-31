@@ -36,7 +36,33 @@ export function seedScript(workdir: string, tmp: string): string {
     'git checkout --quiet --force -B main refs/conexus/base',
     `git clean -fdq -e node_modules -e ${PLAN_DIR}`,
     `rm -f ${quoted(seed)}`,
+    `: > ${OPEN_MARK}`,
   ].join('\n')
+}
+
+/**
+ * Inside `.git`, so the tree never holds it: written when a turn's seed ran, removed when the turn
+ * has ended and its save is over. A machine found with it still there belongs to a turn that never
+ * ended, because the process died.
+ */
+const OPEN_MARK = '.git/conexus-turn-open'
+
+/** Prints CUT when the machine holds the work of a turn that never ended, else SEALED. */
+export function openScript(workdir: string): string {
+  return `if cd ${quoted(workdir)} 2>/dev/null && test -e ${OPEN_MARK}; then echo CUT; else echo SEALED; fi`
+}
+
+/** The turn has ended and its save is over: what the folder holds is no longer a cut turn's. */
+export function sealScript(workdir: string): string {
+  return `cd ${quoted(workdir)} && rm -f ${OPEN_MARK}`
+}
+
+/** What the commit of a turn that never ended says, the one mark of it on the version. */
+export const CUT_MESSAGE = 'Conexus Builder (turn cut)'
+
+/** The version the Hub saved from a cut turn is the machine's `base` now, as a seed would leave it. */
+export function rebaseScript(workdir: string): string {
+  return `cd ${quoted(workdir)} && git update-ref refs/conexus/base ${CANDIDATE_REF}`
 }
 
 /** A turn the server took over keeps the machine's files as they are; it only needs the repository there. */
@@ -73,14 +99,19 @@ export function changedScript(workdir: string): string {
  * One commit of the whole tree on `base`, bundled in the machine. Prints UNCHANGED when the tree is
  * `base`'s, else the bundle's size. `node_modules` never leaves the machine.
  */
-export function collectScript(workdir: string, tmp: string, base: Sha): string {
+export function collectScript(
+  workdir: string,
+  tmp: string,
+  base: Sha,
+  message = 'Conexus Builder',
+): string {
   const out = outFile(tmp)
   const identity = `-c user.name='Conexus Builder' -c user.email='builder@conexus.invalid'`
   return [
     ...treeOf(workdir, base, 'conexus-index'),
     `echo "files=$(git ls-tree -r --name-only "$tree" | wc -l)"`,
     `echo "changed=$(git diff-tree -r --name-only --no-commit-id ${base} "$tree" -- . ${PLANS_OUT} | wc -l)"`,
-    `commit=$(git ${identity} commit-tree "$tree" -p ${base} -m 'Conexus Builder')`,
+    `commit=$(git ${identity} commit-tree "$tree" -p ${base} -m ${quoted(message)})`,
     `git update-ref ${CANDIDATE_REF} "$commit"`,
     `rm -f ${quoted(out)}`,
     `git bundle create --quiet ${quoted(out)} ${CANDIDATE_REF} ^${base}`,
