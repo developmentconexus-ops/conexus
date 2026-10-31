@@ -11,14 +11,14 @@ import { registerSourceRoutes } from '../git/public.ts'
 import type { openGoogleCalls } from '../model-accounts/public.ts'
 import type { Runs } from '../runs/public.ts'
 import { createBuilder } from './builder.ts'
-import { watchRuns } from './end.ts'
+import { TURN_SETTLE_MS, watchRuns } from './end.ts'
 import { registerBuilderRoutes } from './guard.ts'
 import { TOOL_CLOSURE } from './permissions.ts'
 import { registerConversationRoutes } from './routes.ts'
 import type { ReleaseScope } from './store.ts'
 import { createConversationStore } from './store.ts'
 
-export { TOOL_CLOSURE }
+export { TOOL_CLOSURE, TURN_SETTLE_MS }
 
 /** Deletes the threads, and so the memory, of a Projeto, a person or a company (data D17). */
 type ReleaseConversations = (scope: ReleaseScope) => Promise<void>
@@ -80,7 +80,7 @@ export function createConversations(deps: {
   return Object.freeze({
     routes: (app: FastifyInstance) => {
       registerConversationRoutes(app, { store, builder, queue })
-      registerBuilderRoutes(app, { store, builder, streams })
+      registerBuilderRoutes(app, { store, builder, streams, updating: runs.updating })
       registerSourceRoutes(app, {
         ...{ database, identity, projects: deps.projects },
         repository: (ids) => deps.runs.repositoryOf(ids),
@@ -95,6 +95,10 @@ export function createConversations(deps: {
       }
       await storage.init()
       deps.log.info({}, 'MASTRA_STORAGE_READY')
+    },
+    /** Refuses new turns and waits for the ones in flight, until `bound` aborts (founder E1). */
+    async settle(bound: AbortSignal): Promise<void> {
+      await runs.settle(bound)
     },
     /**
      * Stops the runs in progress, as Parar does, and closes the open streams once each said its end;

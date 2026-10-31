@@ -28,22 +28,42 @@ export async function listenQuietly(app: FastifyInstance, port: number): Promise
   }
 }
 
+/** What the Hub does at a stop signal, in this order (`shutDown`). */
+type ShutdownSteps = {
+  /** How long `settle` may wait; the signal's deadline is this plus `SHUTDOWN_DEADLINE_MS`. */
+  settleMs: number
+  /** Refuses new work and waits for the live work until `bound` aborts, the listeners open. */
+  settle: (bound: AbortSignal) => Promise<void>
+  drain: () => Promise<void>
+  release: () => Promise<void>
+}
+
 /**
- * One shutdown path (code C62): stop accepting, `drain` the live work within the deadline while
- * the listeners close, then `release` the stores; a second signal exits at once. close-with-grace's
- * own lines are prose, so its logger is off and each of its cases logs a code here (C50).
+ * The shutdown's order (code C62, founder E1): `settle` with the listeners still open, so answers
+ * in flight write and new ones are refused; then the listeners close while `drain` stops what is
+ * left; then `release` the stores.
+ */
+export async function shutDown(listeners: FastifyInstance[], steps: ShutdownSteps): Promise<void> {
+  await steps.settle(AbortSignal.timeout(steps.settleMs))
+  await closeListeners(listeners, steps.drain)
+  await steps.release()
+}
+
+/**
+ * One shutdown path (`shutDown`); a second signal exits at once. close-with-grace's own lines are
+ * prose, so its logger is off and each of its cases logs a code here (C50).
  */
 export function shutDownOnSignal(
   app: FastifyInstance,
   edge: FastifyInstance,
-  steps: { drain: () => Promise<void>; release: () => Promise<void> },
+  steps: ShutdownSteps,
 ) {
   function unexpected(cause: unknown) {
     logFailure(app.log, new Failure('INTERNAL_UNEXPECTED', { cause }))
   }
   return closeWithGrace(
     {
-      delay: SHUTDOWN_DEADLINE_MS,
+      delay: steps.settleMs + SHUTDOWN_DEADLINE_MS,
       logger: false,
       onSecondSignal: (signal) => app.log.error({ signal }, 'SHUTDOWN_FORCED'),
       onSecondError: unexpected,
@@ -53,8 +73,7 @@ export function shutDownOnSignal(
       if (err) unexpected(err)
       app.log.info(signal === undefined ? {} : { signal }, 'SHUTTING_DOWN')
       try {
-        await closeListeners([app, edge], steps.drain)
-        await steps.release()
+        await shutDown([app, edge], steps)
       } catch (error) {
         unexpected(error)
         throw error

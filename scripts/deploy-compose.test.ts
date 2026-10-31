@@ -41,6 +41,13 @@ test('a imagem do Hub traz o git e a pasta dos repositórios é um volume do usu
   )
 })
 
+test('o tempo de parada cobre a espera: o Hub espera 180 s pelas respostas e tem 15 s para fechar (E1)', () => {
+  const compose = parse(readFileSync(join(INFRA, 'compose.yaml'), 'utf8'))
+  const grace = /^(\d+)s$/.exec(compose.services.hub.stop_grace_period)
+  assert.ok(grace, compose.services.hub.stop_grace_period)
+  assert.ok(Number(grace[1]) > 180 + 15)
+})
+
 test('o log de cada serviço gira: json-file, dez megabytes, cinco arquivos (S42)', () => {
   const compose = parse(readFileSync(join(INFRA, 'compose.yaml'), 'utf8'))
   for (const [name, service] of Object.entries<{ logging?: unknown }>(compose.services)) {

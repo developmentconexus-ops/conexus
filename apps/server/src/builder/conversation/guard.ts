@@ -55,6 +55,7 @@ const FAILURES = [
   'INTERNAL_UNEXPECTED',
   'DATABASE_UNAVAILABLE',
   'CONVERSATION_NOT_FOUND',
+  'HUB_UPDATING',
 ] as const satisfies readonly FailureCode[]
 
 /**
@@ -95,10 +96,11 @@ function builderRoutes() {
  * A `requestContext` from the browser is refused: Mastra's server copies it into the run's context,
  * and `mastra__messageAuthor` is not one of its reserved keys (measured, prove2 e21-bare). So is
  * `include`, which would read messages of the person's other conversations. So is a file that is
- * not a `data:` URL.
+ * not a `data:` URL. While the Hub settles before it stops, a new message is refused before Mastra
+ * starts a turn (founder E1).
  */
 async function guard(
-  deps: { builder: Builder; store: ConversationStore },
+  deps: { builder: Builder; store: ConversationStore; updating: () => boolean },
   request: FastifyRequest,
 ): Promise<void> {
   if (overreaches(request.body) || overreaches(request.query) || sendsFileUrl(request.body)) {
@@ -120,6 +122,13 @@ async function guard(
     throw new Failure('CONVERSATION_NOT_FOUND')
   }
   await deps.store.mine({ person, companyId: owner.companyId, conversationId })
+  if (
+    deps.updating() &&
+    request.method === 'POST' &&
+    request.routeOptions.url?.endsWith('/messages')
+  ) {
+    throw new Failure('HUB_UPDATING')
+  }
   request.requestContext.setRaw(MASTRA_MESSAGE_AUTHOR_KEY, { id: person.id, name: person.name })
 }
 
@@ -134,7 +143,12 @@ async function guard(
  */
 export function registerBuilderRoutes(
   app: FastifyInstance,
-  deps: { builder: Builder; store: ConversationStore; streams: Set<ServerResponse> },
+  deps: {
+    builder: Builder
+    store: ConversationStore
+    streams: Set<ServerResponse>
+    updating: () => boolean
+  },
 ): void {
   const routes = builderRoutes()
   app.register(async (scope) => {
