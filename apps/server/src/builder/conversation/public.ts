@@ -6,6 +6,7 @@ import type { Database, MastraPool } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { SealKeys } from '../../platform/seal.ts'
+import type { BuilderConnectors } from '../connectors/public.ts'
 import { registerSourceRoutes } from '../git/public.ts'
 import type { openGoogleCalls } from '../model-accounts/public.ts'
 import type { Runs } from '../runs/public.ts'
@@ -35,6 +36,7 @@ export function createConversations(deps: {
   google: ReturnType<typeof openGoogleCalls>
   pool: MastraPool
   runs: Runs
+  connectors: BuilderConnectors
   log: FailureLog
 }) {
   const { database, identity, sealKeys } = deps
@@ -47,7 +49,14 @@ export function createConversations(deps: {
   }
   const store = createConversationStore(deps)
   const builder = createBuilder({
-    ...{ pool: deps.pool, queue, runs: deps.runs, index: store, log: deps.log },
+    ...{
+      pool: deps.pool,
+      queue,
+      runs: deps.runs,
+      index: store,
+      connectors: deps.connectors,
+      log: deps.log,
+    },
     projectName: (ids) =>
       database.read({ kind: 'COMPANY', companyId: ids.companyId, personId: null }, async (tx) => {
         return (await deps.projects.liveProjectOf(tx, ids))?.name

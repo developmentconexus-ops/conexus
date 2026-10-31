@@ -157,9 +157,17 @@ export function subjectsOf(deps: {
     // The apps are made below, after the Projetos the turn's send needs; a turn ends long after.
     send: (version) => apps.sendFromBuilder(version),
   })
+  // The connectors come below, after the apps whose door they read; a turn comes long after.
+  const builderConnectors: Connectors['builder'] = {
+    granted: (ids) => connectors.builder.granted(ids),
+    read: (ids, a) => connectors.builder.read(ids, a),
+    notes: (ids, connectionId) => connectors.builder.notes(ids, connectionId),
+    saveNote: (ids, a) => connectors.builder.saveNote(ids, a),
+  }
   const conversations = createConversations({
     ...{ database, identity, projects: { liveProjectOf }, sealKeys, google, log, runs },
     pool: deps.mastraPool,
+    connectors: builderConnectors,
   })
   const releaseConversations = conversations.release
   const projects = createProjects({

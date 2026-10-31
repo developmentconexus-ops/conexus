@@ -101,6 +101,7 @@ export function projectIn(index: ConversationIndex) {
           companyId: found.companyId,
           projectId: found.projectId,
           conversationId: found.conversationId,
+          personId: found.personId,
         }
   }
 }
