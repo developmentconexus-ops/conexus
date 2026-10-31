@@ -97,7 +97,7 @@ usa o app. Com a `R2`, Sobre e Quem usa o app viram entradas da barra.
 | Unidade | O que entrega | Pastas | Guia além do de código | Depende de |
 | --- | --- | --- | --- | --- |
 | U0 | A barra do Projeto (`R2`): o alto com o nome e a troca de Projeto, "← empresa", Construir, Sobre (com Versões, `A1`), Quem usa o app; os endereços próprios e o antigo que redireciona; o texto novo de W30 e W31 | `apps/web/src/ui/frame.tsx`, `apps/web/src/hub/projects/`, `apps/web/src/routes/_app/companies/$companyId/`, `docs/reference/screens.md` | [web](../guides/web.md) | nada: começa já |
-| U1 | O kit e o contrato do app: o conector declara `perProject`; toda ligação vai uma chamada por vez (sai `oneRequestAtATime`); o logout declarado do Sankhya; as leituras por nome com tipos (`@conexus/connectors/calls`); `AppProps.connectors`, `ConnectorAnswer`, `Manifest.connectors`; `defineConnectors` e o cliente tipado; a máquina recebe o kit; a skill `conexus-data` | `packages/connectors/`, `packages/app-contract/src/`, `packages/app/`, `infra/e2b/template.ts`, `.dependency-cruiser.cjs` | [testing](../guides/testing.md) | nada: começa já |
+| U1 | O kit e o contrato do app: o conector declara `perProject`; toda ligação vai uma chamada por vez (sai `oneRequestAtATime`); o logout declarado do Sankhya; as leituras por nome com tipos (`@conexus/connectors/calls`); `AppProps.connectors`, `ConnectorAnswer`, `Manifest.connectors`; `defineConnectors` e o cliente tipado; a máquina recebe o kit; a skill `conexus-data` | `packages/connectors/`, `packages/app-contract/src/`, `packages/app/`, `infra/e2b/sdk.ts`, `.dependency-cruiser.cjs` | [testing](../guides/testing.md) | nada: começa já |
 | U2 | A tabela `connectors.project_connection` e o campo `connection.notes`; as permissões do banco (D11) | `apps/server/migrations/`, `apps/server/src/hub/connectors/tables.ts`, `apps/server/database-grants.sql` | [data](../guides/data.md) | nada: começa já |
 | U3 | O Hub: a fila de uma chamada por ligação e o dono do token (`limits.ts`), o banco solto durante a chamada e o `max` do pool, as rotas da liberação, a porta da borda para o app, o Publicar que recusa, a linha por chamada, a porta do Builder, o caderno no Hub, as decisões 0058 e 0056 corrigidas | `apps/server/src/hub/connectors/`, `apps/server/src/hub/apps/`, `apps/server/src/platform/database.ts`, `apps/server/src/main.ts`, `packages/hub-api/src/`, `docs/decisions/` | [security](../guides/security.md) | U1, U2 |
 | U4 | O dispatcher: a entrada `Connectors` ao lado de `Db`, `hubOf.callAppConnector` e `listAppConnections` | `apps/edge/src/` | [security](../guides/security.md) | U3 |
@@ -375,7 +375,7 @@ pacotes e a máquina (o kit, o contrato do app, o SDK), com tipos derivados.
   pequeno "o Testar faz logout" já estiver no `main`, esta parte já existe e a unidade só a usa.
 - **O cliente tipado.** `packages/app/src/operations.ts`, `client.ts`, `index.ts`;
   `packages/connectors/src/sankhya/operations/index.ts` (a lista `sankhyaOperations`),
-  `sankhya/door.ts`, `mercado-livre/operations/index.ts`; `infra/e2b/template.ts` (`SDK_FOLDERS`);
+  `sankhya/door.ts`, `mercado-livre/operations/index.ts`; `infra/e2b/sdk.ts:7` (`SDK_FOLDERS`);
   `.dependency-cruiser.cjs:146-153` (`connectors-kit-only-in-the-executor`).
 - **`props.connectors` e a resposta.** `packages/app-contract/src/props.ts:24`, `runtime.ts:7,143-173`
   (`Context`, `serveApp`), `manifest.ts:29-51`, `db.ts` (o molde de um dado de resposta por código).
@@ -392,7 +392,7 @@ pacotes e a máquina (o kit, o contrato do app, o SDK), com tipos derivados.
 | `packages/app-contract/src/` | Cria `connectors.ts`; muda `props.ts`, `runtime.ts`, `manifest.ts`, `index.ts` | `apps/edge`, `packages/app`, `packages/hub-api` |
 | `packages/app/src/` | Cria `connectors.ts`; muda `index.ts`, `check/manifest.ts`, `types.check.ts`; `package.json` ganha `@conexus/connectors` | os apps; a checagem na máquina |
 | `packages/app/skills/conexus-data/` | Muda: a parte dos conectores | o Builder |
-| `infra/e2b/template.ts` | Muda: `packages/connectors` entra em `SDK_FOLDERS` | `infra/e2b/template.ts` |
+| `infra/e2b/sdk.ts` | Muda: `packages/connectors` entra em `SDK_FOLDERS` | `infra/e2b/template.ts` |
 | `.dependency-cruiser.cjs`, `scripts/rules.test.ts` | Muda: a exceção da parede, só tipos | a CI |
 | `apps/server/src/hub/connectors/probe.ts` | Muda: o comentário de `oneRequestAtATime` | — |
 | os testes que montam um conector (`kernel/oauth.test.ts`, `mercado-livre/mercado-livre.test.ts` e os do Hub que usam `defineConnector`) | Muda: `perProject` no lugar de `oneRequestAtATime` | — |
@@ -475,7 +475,7 @@ não tem id).
 
 `zod` (`zod.dev/llms.txt`: `discriminatedUnion`, `strictObject`); `typescript-magician` para
 `ClientOf`; dependency-cruiser (a documentação de `dependencyTypes` e `type-only`); `e2b` (só o
-`template.ts`, nenhuma chamada).
+`sdk.ts`, nenhuma chamada).
 
 ### A ordem do trabalho
 
@@ -500,7 +500,7 @@ não tem id).
    nova `app-reads-kit-types-only` recusa de `^packages/app/` para `^packages/connectors/` todo
    import que não seja `type-only`, e todo alvo que não seja `src/calls.ts`. `scripts/rules.test.ts`
    ganha os dois casos.
-9. `infra/e2b/template.ts`: `packages/connectors` em `SDK_FOLDERS` (o kit não tem segredo; os dublês e os
+9. `infra/e2b/sdk.ts`: `packages/connectors` em `SDK_FOLDERS` (o kit não tem segredo; os dublês e os
    dados de mentira também vão, e não são de empresa nenhuma).
 10. A skill `conexus-data`: como declarar, como chamar, os estados da resposta e as frases da matriz;
     um conector `many` pede `connections()` e percorre, nunca um nome escrito no código.
