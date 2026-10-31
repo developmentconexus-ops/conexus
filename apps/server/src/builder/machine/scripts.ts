@@ -20,10 +20,13 @@ export function quoted(value: string): string {
   return `'${value.replaceAll("'", "'\\''")}'`
 }
 
+const BASE_REF = 'refs/conexus/base'
+const IDENTITY = `-c user.name='Conexus Builder' -c user.email='builder@conexus.invalid'`
+
 /**
- * The app folder holds `main` as the Hub has it: fetched from the seed bundle and checked out. The
- * plans make no version on their own, so a plan the person has still to approve stays for the turn
- * their answer opens.
+ * A new machine's app folder holds `main` as the Hub has it: fetched from the seed bundle and
+ * checked out. The plans make no version on their own, so a plan the person has still to approve
+ * stays for the turn their answer opens.
  */
 export function seedScript(workdir: string, tmp: string): string {
   const seed = seedFile(tmp)
@@ -32,37 +35,63 @@ export function seedScript(workdir: string, tmp: string): string {
     `mkdir -p ${quoted(workdir)}`,
     `cd ${quoted(workdir)}`,
     'test -d .git || git init --quiet -b main',
-    `git fetch --quiet --no-tags ${quoted(seed)} '+refs/heads/main:refs/conexus/base'`,
-    'git checkout --quiet --force -B main refs/conexus/base',
+    `git fetch --quiet --no-tags ${quoted(seed)} '+refs/heads/main:${BASE_REF}'`,
+    `git checkout --quiet --force -B main ${BASE_REF}`,
     `git clean -fdq -e node_modules -e ${PLAN_DIR}`,
     `rm -f ${quoted(seed)}`,
-    `: > ${OPEN_MARK}`,
   ].join('\n')
 }
 
+/** What the commit of a turn that never ended says, on the machine where its work is brought onto `main`. */
+const CUT_MESSAGE = 'Conexus Builder (turn cut)'
+
 /**
- * Inside `.git`, so the tree never holds it: written when a turn's seed ran, removed when the turn
- * has ended and its save is over. A machine found with it still there belongs to a turn that never
- * ended, because the process died.
+ * A reconnected machine keeps its folder and brings the Hub's `main` into it. A tree equal to its
+ * base moves to `main`. A tree that differs is the work of a turn that never ended: it becomes a
+ * commit on its base, merged onto `main`, conflicts and their markers included, and each conflicted
+ * path is printed as `CONFLICT <path>`. `main` is the base after. A folder whose seed never
+ * finished prints UNSEEDED and is left to the seed.
  */
-const OPEN_MARK = '.git/conexus-turn-open'
-
-/** Prints CUT when the machine holds the work of a turn that never ended, else SEALED. */
-export function openScript(workdir: string): string {
-  return `if cd ${quoted(workdir)} 2>/dev/null && test -e ${OPEN_MARK}; then echo CUT; else echo SEALED; fi`
+export function syncScript(workdir: string, tmp: string): string {
+  const seed = seedFile(tmp)
+  const main = 'refs/conexus/main'
+  const cut = 'refs/conexus/cut'
+  return [
+    'set -e',
+    `if ! { cd ${quoted(workdir)} 2>/dev/null && test -d .git && git rev-parse --quiet --verify ${BASE_REF} >/dev/null; }; then echo UNSEEDED; exit 0; fi`,
+    `git fetch --quiet --no-tags ${quoted(seed)} '+refs/heads/main:${main}'`,
+    `rm -f ${quoted(seed)}`,
+    ...treeIn(BASE_REF, 'conexus-sync-index'),
+    `target=${main}`,
+    `if ! ${sameTree(BASE_REF)}; then`,
+    `  git update-ref ${cut} "$(git ${IDENTITY} commit-tree "$tree" -p ${BASE_REF} -m ${quoted(CUT_MESSAGE)})"`,
+    // Exit 1 is a merge with conflicts; any other failure ends the script.
+    `  merged=$(git -c core.quotePath=false merge-tree --write-tree --name-only --no-messages --merge-base=${BASE_REF} ${main} ${cut}) || test $? -eq 1`,
+    `  printf '%s\\n' "$merged" | tail -n +2 | sed 's/^/CONFLICT /'`,
+    `  target=$(git ${IDENTITY} commit-tree "$(printf '%s\\n' "$merged" | head -n 1)" -p ${main} -m ${quoted(CUT_MESSAGE)})`,
+    'fi',
+    'git checkout --quiet --force -B main "$target"',
+    `git update-ref ${BASE_REF} ${main}`,
+  ].join('\n')
 }
 
-/** The turn has ended and its save is over: what the folder holds is no longer a cut turn's. */
-export function sealScript(workdir: string): string {
-  return `cd ${quoted(workdir)} && rm -f ${OPEN_MARK}`
+/** The Hub saved the turn: the version it made of the machine's tree is the machine's base now. */
+export function savedScript(workdir: string): string {
+  return `cd ${quoted(workdir)} && git update-ref ${BASE_REF} ${CANDIDATE_REF}`
 }
 
-/** What the commit of a turn that never ended says, the one mark of it on the version. */
-export const CUT_MESSAGE = 'Conexus Builder (turn cut)'
-
-/** The version the Hub saved from a cut turn is the machine's `base` now, as a seed would leave it. */
-export function rebaseScript(workdir: string): string {
-  return `cd ${quoted(workdir)} && git update-ref refs/conexus/base ${CANDIDATE_REF}`
+/**
+ * The turn is over: the folder goes back to its base, the version the turn saved or the one it
+ * started from, so a folder that differs from its base at the next start belongs to a turn that
+ * never ended. A tree the Hub refused is not kept.
+ */
+export function endScript(workdir: string): string {
+  return [
+    'set -e',
+    `cd ${quoted(workdir)}`,
+    `git checkout --quiet --force -B main ${BASE_REF}`,
+    `git clean -fdq -e node_modules -e ${PLAN_DIR}`,
+  ].join('\n')
 }
 
 /** A turn the server took over keeps the machine's files as they are; it only needs the repository there. */
@@ -70,21 +99,33 @@ export function keepScript(workdir: string): string {
   return `cd ${quoted(workdir)} && git rev-parse --git-dir`
 }
 
-/**
- * The whole tree as `tree`, whatever `HEAD` is (the Builder may have committed or switched branch),
- * in an index of its own; prints UNCHANGED and ends when it is `base`'s apart from the plans.
- * `node_modules` is left out.
- */
-function treeOf(workdir: string, base: string, index: string): string[] {
+/** The whole tree as `tree`, whatever `HEAD` is, in an index of its own; `node_modules` is left out. */
+function treeIn(base: string, index: string): string[] {
   return [
-    'set -e',
-    `cd ${quoted(workdir)}`,
     `export GIT_INDEX_FILE=.git/${index}`,
     'rm -f "$GIT_INDEX_FILE"',
     `git read-tree ${base}`,
     `git add --all -- . ':(exclude,glob)**/node_modules/**'`,
     'tree=$(git write-tree)',
-    `if git diff-tree -r --quiet ${base} "$tree" -- . ${PLANS_OUT}; then echo UNCHANGED; exit 0; fi`,
+    'unset GIT_INDEX_FILE',
+  ]
+}
+
+/** Whether `tree` is `base`'s apart from the plans. */
+function sameTree(base: string): string {
+  return `git diff-tree -r --quiet ${base} "$tree" -- . ${PLANS_OUT}`
+}
+
+/**
+ * The whole tree, whatever `HEAD` is (the Builder may have committed or switched branch); prints
+ * UNCHANGED and ends when it is `base`'s apart from the plans.
+ */
+function treeOf(workdir: string, base: string, index: string): string[] {
+  return [
+    'set -e',
+    `cd ${quoted(workdir)}`,
+    ...treeIn(base, index),
+    `if ${sameTree(base)}; then echo UNCHANGED; exit 0; fi`,
   ]
 }
 
@@ -99,19 +140,13 @@ export function changedScript(workdir: string): string {
  * One commit of the whole tree on `base`, bundled in the machine. Prints UNCHANGED when the tree is
  * `base`'s, else the bundle's size. `node_modules` never leaves the machine.
  */
-export function collectScript(
-  workdir: string,
-  tmp: string,
-  base: Sha,
-  message = 'Conexus Builder',
-): string {
+export function collectScript(workdir: string, tmp: string, base: Sha): string {
   const out = outFile(tmp)
-  const identity = `-c user.name='Conexus Builder' -c user.email='builder@conexus.invalid'`
   return [
     ...treeOf(workdir, base, 'conexus-index'),
     `echo "files=$(git ls-tree -r --name-only "$tree" | wc -l)"`,
     `echo "changed=$(git diff-tree -r --name-only --no-commit-id ${base} "$tree" -- . ${PLANS_OUT} | wc -l)"`,
-    `commit=$(git ${identity} commit-tree "$tree" -p ${base} -m ${quoted(message)})`,
+    `commit=$(git ${IDENTITY} commit-tree "$tree" -p ${base} -m 'Conexus Builder')`,
     `git update-ref ${CANDIDATE_REF} "$commit"`,
     `rm -f ${quoted(out)}`,
     `git bundle create --quiet ${quoted(out)} ${CANDIDATE_REF} ^${base}`,
