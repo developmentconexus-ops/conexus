@@ -9,7 +9,7 @@
     "pretest": "playwright-core install chromium-headless-shell",
     "test": "npm run test:unit && npm run test:browser",
     "test:unit": "vitest run",
-    "test:browser": "node --test --test-concurrency=2 --test-timeout=120000 --test-reporter=../../scripts/test-reporter.ts src/builder/conversation/card-state.test.ts src/builder/conversation/fold.test.ts src/builder/conversation/migration-cause.test.ts src/builder/model-accounts/model-label.test.ts src/ui/cn.test.ts hub.test.ts vite.config.test.ts layout.test.ts tables.layout.test.ts focus.layout.test.ts home.layout.test.ts pieces.layout.test.ts fields.layout.test.ts phone.layout.test.ts new-project.layout.test.ts link-dialog.layout.test.ts logo.layout.test.ts workbench.layout.test.ts conversation.layout.test.ts memory.layout.test.ts sweep.test.ts keyboard.test.ts"
+    "test:browser": "node --test --test-concurrency=2 --test-timeout=120000 --test-reporter=../../scripts/test-reporter.ts src/builder/conversation/card-state.test.ts src/builder/conversation/fold.test.ts src/builder/conversation/migration-cause.test.ts src/builder/model-accounts/model-label.test.ts src/ui/cn.test.ts hub.test.ts vite.config.test.ts layout.test.ts tables.layout.test.ts focus.layout.test.ts home.layout.test.ts pieces.layout.test.ts fields.layout.test.ts phone.layout.test.ts new-project.layout.test.ts link-dialog.layout.test.ts logo.layout.test.ts workbench.layout.test.ts conversation.layout.test.ts older-messages.layout.test.ts memory.layout.test.ts sweep.test.ts keyboard.test.ts"
   },
   "devDependencies": {
     "@tailwindcss/vite": "4.3.3",

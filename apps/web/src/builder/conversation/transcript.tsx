@@ -1,6 +1,5 @@
 import type { ModelId } from '@conexus/hub-api'
-import { useEffect, useLayoutEffect, useRef } from 'react'
-import { Button } from '../../ui/button.tsx'
+import { useEffect, useRef } from 'react'
 import {
   MessageScroller,
   MessageScrollerButton,
@@ -9,7 +8,9 @@ import {
   MessageScrollerProvider,
   MessageScrollerViewport,
   useMessageScroller,
+  useMessageScrollerScrollable,
 } from '../../ui/message-scroller.tsx'
+import { Skeleton } from '../../ui/skeleton.tsx'
 import { BuilderTurn } from './builder-turn.tsx'
 import type { Message } from './messages.ts'
 import { chipOf, messageOf } from './messages.ts'
@@ -17,7 +18,7 @@ import { PersonBubble, PersonTurn } from './person-turn.tsx'
 import type { TranscriptItem } from './rows.ts'
 import { itemsOf } from './rows.ts'
 import type { SessionState, Steer } from './session-state.ts'
-import { LOAD_OLDER, STEER_PENDING } from './text.ts'
+import { LOADING_OLDER, STEER_PENDING } from './text.ts'
 
 type Group = { key: string; person: Message | undefined; builder: Message[] }
 
@@ -80,43 +81,18 @@ export function Transcript(props: {
   onAsk: (text: string) => void
 }) {
   const { turns, older } = props
-  const viewport = useRef<HTMLDivElement>(null)
-  const place = useRef<Place | null>(null)
   return (
     <MessageScrollerProvider autoScroll defaultScrollPosition="end">
       <EndOnSent last={turns.at(-1)?.key} />
-      <KeepPlace first={turns[0]?.key} place={place} />
+      <LoadOlderAtStart older={older} />
       <MessageScroller>
-        <MessageScrollerViewport
-          ref={viewport}
-          aria-label="Rolagem da conversa"
-          className="px-md pt-md"
-        >
+        <MessageScrollerViewport aria-label="Rolagem da conversa" className="px-md pt-md">
           <MessageScrollerContent
             aria-label="Conversa com o Builder"
             className="pb-xl"
             aria-live="polite"
             aria-busy={turns.at(-1)?.streaming === true}
           >
-            {older.has && (
-              <Button
-                variant="ghost"
-                className="self-center"
-                disabled={older.loading}
-                onClick={() => {
-                  const element = viewport.current
-                  if (element !== null)
-                    place.current = {
-                      element,
-                      height: element.scrollHeight,
-                      top: element.scrollTop,
-                    }
-                  older.load()
-                }}
-              >
-                {LOAD_OLDER}
-              </Button>
-            )}
             {turns.map((turn) => (
               <MessageScrollerItem key={turn.key} messageId={turn.key}>
                 {turn.person !== undefined && <PersonTurn message={turn.person} />}
@@ -141,6 +117,15 @@ export function Transcript(props: {
             ))}
           </MessageScrollerContent>
         </MessageScrollerViewport>
+        {older.loading && (
+          <div
+            role="status"
+            aria-label={LOADING_OLDER}
+            className="pointer-events-none absolute inset-x-0 top-md flex justify-center"
+          >
+            <Skeleton className="h-2 w-24" />
+          </div>
+        )}
         <MessageScrollerButton />
       </MessageScroller>
     </MessageScrollerProvider>
@@ -163,22 +148,21 @@ function EndOnSent(props: { last: string | undefined }) {
 }
 
 /**
- * Keeps the place the person was reading when older messages arrive above: the viewport's height
- * and scroll are taken when they ask for them, and when the first turn changes the scroll moves
- * by what the height grew.
+ * Asks for the older messages when the reader reaches the top, as Factory's `onReachStart` does:
+ * the scroller's own `preserveScrollOnPrepend` keeps the place when they arrive. Our scroller has
+ * no `onReachStart`, so this reads `useMessageScrollerScrollable`, armed once the reader has been
+ * away from the top (`start` is also false before the first layout), like `reachStartArmedRef`.
  */
-function KeepPlace(props: { first: string | undefined; place: React.RefObject<Place | null> }) {
-  const { place } = props
-  const first = useRef(props.first)
-  useLayoutEffect(() => {
-    const kept = place.current
-    if (first.current === props.first) return
-    first.current = props.first
-    if (kept === null) return
-    place.current = null
-    kept.element.scrollTop = kept.top + (kept.element.scrollHeight - kept.height)
-  })
+function LoadOlderAtStart(props: { older: { has: boolean; loading: boolean; load: () => void } }) {
+  const { start } = useMessageScrollerScrollable()
+  const { has, loading, load } = props.older
+  const armed = useRef(false)
+  useEffect(() => {
+    if (start) armed.current = true
+    else if (armed.current && has && !loading) {
+      armed.current = false
+      load()
+    }
+  }, [start, has, loading, load])
   return null
 }
-
-type Place = { element: HTMLElement; height: number; top: number }

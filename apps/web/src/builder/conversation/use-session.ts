@@ -20,7 +20,7 @@ type Ids = { companyId: CompanyId; projectId: ProjectId; conversationId: Convers
 const FIRST_RETRY_MS = 1000
 const LAST_RETRY_MS = 15_000
 
-/** The messages a read brings, and the step by which "Carregar mensagens anteriores" widens it (Factory `INITIAL_THREAD_MESSAGE_LIMIT`). */
+/** The messages a read brings, and the step by which reaching the top widens it (Factory `INITIAL_THREAD_MESSAGE_LIMIT`). */
 const TRANSCRIPT_PAGE = 100
 
 /** The transcript Mastra's route serves: the server does not replay what the stream missed. */
@@ -156,11 +156,9 @@ export function useSession(ids: Ids, onGone: () => void) {
   const gone = useEffectEvent(onGone)
   const { companyId, projectId, conversationId } = ids
   const builder = useMemo(() => sessionOf(conversationId), [conversationId])
-  // The window of messages read grows by a page for each "load more"; it resets with the conversation
-  // (Factory `useAgentControllerThreadMessages.ts`: the reset is adjusted during render).
-  const [range, setSpan] = useState({ conversationId, limit: TRANSCRIPT_PAGE })
-  if (range.conversationId !== conversationId) setSpan({ conversationId, limit: TRANSCRIPT_PAGE })
-  const limit = range.conversationId === conversationId ? range.limit : TRANSCRIPT_PAGE
+  // The window of messages read grows by a page for each load of older messages; `Screen` remounts
+  // with the conversation, so each conversation opens on the newest page.
+  const [limit, setLimit] = useState(TRANSCRIPT_PAGE)
   const transcript = useQuery({
     queryKey: [...transcriptKey(conversationId), limit],
     queryFn: () => builder.read(limit),
@@ -171,12 +169,11 @@ export function useSession(ids: Ids, onGone: () => void) {
     placeholderData: keepPreviousData,
   })
   const older = {
-    // A full window means older messages may exist (Factory `hasMore`).
-    has: transcript.isSuccess && transcript.data.length >= limit,
-    loading: transcript.isFetching && limit > TRANSCRIPT_PAGE,
-    load: useCallback(() => {
-      if (!transcript.isFetching) setSpan((was) => ({ ...was, limit: was.limit + TRANSCRIPT_PAGE }))
-    }, [transcript.isFetching]),
+    // A full window means older messages may exist (Factory `hasMore`); while a wider read is in
+    // flight the window on screen is the narrower one, so there is nothing more to ask for.
+    has: transcript.isSuccess && !transcript.isPlaceholderData && transcript.data.length >= limit,
+    loading: transcript.isPlaceholderData,
+    load: useCallback(() => setLimit((was) => was + TRANSCRIPT_PAGE), []),
   }
   useEffect(() => {
     if (transcript.data !== undefined) dispatch({ type: 'loaded', messages: transcript.data })
