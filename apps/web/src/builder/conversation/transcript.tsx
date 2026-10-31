@@ -155,16 +155,16 @@ function EndOnSent(props: { last: string | undefined }) {
  * no `onReachStart`, so this reads `useMessageScrollerScrollable`, armed once the reader has been
  * away from the top (`start` is also false before the first layout), like `reachStartArmedRef`.
  */
-function LoadOlderAtStart(props: { older: { has: boolean; loading: boolean; load: () => void } }) {
+function LoadOlderAtStart(props: { older: { has: boolean; load: () => void } }) {
   const { start } = useMessageScrollerScrollable()
-  const { has, loading, load } = props.older
+  const { has, load } = props.older
   const armed = useRef(false)
   useEffect(() => {
     if (start) armed.current = true
-    else if (armed.current && has && !loading) {
+    else if (armed.current && has) {
       armed.current = false
       load()
     }
-  }, [start, has, loading, load])
+  }, [start, has, load])
   return null
 }

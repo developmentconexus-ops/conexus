@@ -268,9 +268,9 @@ function loaded(state: SessionState, read: readonly Stored[]): SessionState {
   const messages = merged(kept, read)
   const brought = read.filter((message) => !told.has(message.id)).map(wordsOf)
   const steers = state.steers.filter((steer) => {
-    const found = brought.indexOf(steer.content)
-    if (found !== -1) brought.splice(found, 1)
-    return found === -1
+    const at = brought.indexOf(steer.content)
+    if (at !== -1) brought.splice(at, 1)
+    return at === -1
   })
   return { ...state, messages, steers }
 }

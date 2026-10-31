@@ -170,8 +170,8 @@ export function useSession(ids: Ids, onGone: () => void) {
   })
   const older = {
     // A full window means older messages may exist (Factory `hasMore`); while a wider read is in
-    // flight the window on screen is the narrower one, so there is nothing more to ask for.
-    has: transcript.isSuccess && !transcript.isPlaceholderData && transcript.data.length >= limit,
+    // flight the window on screen is the narrower one, which is not full, so nothing more is asked.
+    has: transcript.isSuccess && transcript.data.length >= limit,
     loading: transcript.isPlaceholderData,
     load: useCallback(() => setLimit((was) => was + TRANSCRIPT_PAGE), []),
   }

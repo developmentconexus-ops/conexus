@@ -109,3 +109,11 @@ test('depois de uma reconexão, a leitura que perdeu as mensagens mais antigas n
   const ids = state.messages.map((message) => message.id)
   expect(ids).toEqual(all.slice(-120).map((message) => message.id))
 })
+
+test('uma leitura que reordena as mensagens já mostradas mantém a ordem mostrada e acrescenta só as novas', () => {
+  const all = said(6)
+  let state = session(OPENED, { type: 'loaded', messages: all.slice(0, 4) })
+  const [, b, c, , e, f] = all
+  state = session(state, { type: 'loaded', messages: [c, b, e, f].flatMap((m) => (m ? [m] : [])) })
+  expect(state.messages.map((message) => message.id)).toEqual(all.map((message) => message.id))
+})
