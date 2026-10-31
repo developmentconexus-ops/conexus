@@ -17,8 +17,8 @@ conversa guarda o seu contexto: as ligações que ela lê e, se tiver, o Projeto
 usa o que você mudou. Esta etapa é a base das sessões; depois elas ganham mais ligações, mais
 ferramentas e mais contexto (a seção "Depois", no fim do cartão, com o gatilho de cada um). O
 Supervisor é um agente do Mastra com memória, como o supervisor da Factory: uma conversa com
-ferramentas de leitura. Ele nasce pronto para, na 24.4, coordenar outros agentes pelo campo `agents`
-do Mastra; nesta etapa ele não coordena ninguém.
+ferramentas de leitura. Ele nasce pronto para, na 24.4, coordenar outros agentes pelo jeito nativo do
+Mastra; nesta etapa ele não coordena ninguém.
 
 **O roteiro de uso.** Padaria Sol: Ana (dona) e Bruno (membro). O Sankhya está ligado em duas
 ligações, "Matriz" e "Filial", e o Mercado Livre em "Loja" (19, 19.1). O Projeto "Vendas" recebeu
@@ -36,8 +36,8 @@ só a "Matriz" (20). No computador e no celular.
    com a lista, lembrando do que já foi dito. Ela tira a Loja na barra e pergunta de novo: ele diz
    que o Mercado Livre não está nesta conversa.
 4. Ela abre o Projeto Vendas, entra em **Conversas** e abre uma conversa nova. A barra mostra só a
-   Matriz, a ligação que o Projeto recebeu, e o Projeto fixo. Pedir a Filial ali dá "esta ligação não
-   está disponível neste Projeto". No Início, essa conversa aparece entre as recentes com a etiqueta
+   Matriz, a ligação que o Projeto recebeu, e o Projeto fixo. Pedir a Filial ali: o Supervisor diz que
+   a Filial não está nesta conversa, porque o Projeto não a recebeu. No Início, essa conversa aparece entre as recentes com a etiqueta
    "Vendas".
 5. Numa conversa do Início, ela pede "quero ver isso todo dia numa tela". O Supervisor resume o
    pedido e mostra **Criar app**. Ela toca, dá o nome do Projeto, e a conversa do Builder abre com o
@@ -62,10 +62,10 @@ só a "Matriz" (20). No computador e no celular.
 - **Virar rotina** (o resumo da manhã sozinho): a 24.2, com a agenda do Mastra. Nesta etapa não há
   botão de rotina, nem "em breve" (regra W31), como você decidiu no `C1`.
 - **Escrever em qualquer sistema**: a 24.3, com aprovação.
-- **Coordenar o Builder ou agentes**: o campo `agents` fica reservado para a 24.4; mandar mensagem a
-  uma conversa do Builder, como o `factory_signal_session` da Factory, também. Por isso, numa
+- **Coordenar o Builder ou agentes**: fica para a 24.4; mandar mensagem a
+  uma conversa do Builder, como a Factory faz, também. Por isso, numa
   conversa de Projeto não há **Criar app**: lá ele queria dizer "conte ao Builder deste Projeto", que
-  é da 24.4. Redes de agentes do Mastra (`.network()`) nunca: estão descontinuadas.
+  é da 24.4. As redes de agentes do Mastra nunca: estão descontinuadas.
 - **O Agent Builder do Mastra**: é de licença comercial (Mastra Enterprise), e nunca entra.
 - **Anotar no caderno**: o Supervisor **lê** o caderno da ligação, mas não anota. Quem anota é o
   Builder, que prova cada anotação com uma consulta (20). Gatilho para rever: uma resposta errada da
@@ -82,11 +82,11 @@ só a "Matriz" (20). No computador e no celular.
   #382, #383, #381, #386, #387, #282) mudam a tela que a U3 reusa, mas não o que esta etapa
   acrescenta; cada uma espera a sua etapa. A #470 (o status 4 do Sankhya) foi levada pela 20.
 
-**As decisões suas nesta etapa.** Todas já dadas, nas suas palavras, no registro de aprovações. As
-referências de cada uma estão na seção "As referências das decisões", depois da tabela de
+**As decisões suas nesta etapa.** As já dadas estão abaixo, nas suas palavras, no registro de
+aprovações; duas seguem abertas, `Q` e `R`, no fim desta seção. As referências de cada uma estão na seção "As referências das decisões", depois da tabela de
 referência.
 
-*Em 2026-10-30, ao estudo da estrutura e ao realinhamento:* `E1` e `F4`, um Supervisor só por
+*Em 2026-10-30, ao estudo da estrutura e ao realinhamento:* `E1` da estrutura e `F4`, um Supervisor só por
 empresa, só leitura (um `Agent` e um `AgentController` do Mastra: nativo); `G1`, três tipos de
 conversa, que com as sessões fica assim: **a do Supervisor, que mora no Início ou num Projeto; a do
 Builder (e depois a do Construtor), no Projeto; e a dos agentes que a empresa criar (24.4)**; `J1`,
@@ -106,7 +106,7 @@ nada aqui prende o Projeto a ser um app; `K2`, a ordem do roteiro; `L1`, dono e 
 - **`D1`.** Pelo menos 8 de 10, e nenhum número inventado. Cada pergunta é feita duas vezes, do seu
   jeito e de outro, e só conta quando as duas acertam; um número inventado reprova a etapa com
   qualquer nota; "não consegui" conta como erro, não como mentira.
-- **`E1`.** As atualizações não cortam uma resposta: a U0, **já no ar** (pull request
+- **`E1` das referências.** As atualizações não cortam uma resposta: a U0, **já no ar** (pull request
   https://github.com/developmentconexus-ops/conexus/pull/499).
 
 *Em 2026-10-31, ao estudo das sessões* ("S `S1` / T `T1` por agora começar a base das sessões e depois
@@ -114,24 +114,33 @@ vamos aprimorando com adição de conectores, ferramentas, contextos a mais / U.
 não confundir com as letras de cima, aqui elas levam "das sessões":
 - **`S1` das sessões.** Um assistente só, muitas conversas. A do Início escolhe as ligações e, se
   quiser, um Projeto; a aberta dentro de um Projeto já nasce presa a ele e só lê o que ele recebeu.
-  Nativo: cada conversa é um fio do Mastra, e o Projeto vai nas marcas (`tags`) da sessão gravadas
+  Nativo: cada conversa é um fio do Mastra, e o Projeto vai numa marca da conversa gravada
   ao criar, como a Factory faz com o repositório.
-- **`T1` das sessões.** A conversa escolhe ligações e um Projeto. Arquivos anexos já vêm (a rota da
-  mensagem aceita, como no Builder); a skill de cada ligação entra sozinha.
+- **`T1` das sessões.** A conversa escolhe ligações e um Projeto; a skill de cada ligação escolhida
+  entra sozinha.
 - **`U1` das sessões.** As ligações ligam e desligam a qualquer hora, e a próxima pergunta já usa a
   escolha nova; o Projeto fica fixo desde a criação. Nativo: as ligações numa configuração do fio
   do Mastra, o Projeto na marca de criação.
 - **`V1` das sessões.** Um agente por conversa, sem ajudantes. Medido no modelo de verdade, pela sua
   assinatura: as mesmas respostas certas (8 de 8) que um supervisor com ajudante, por 27% do custo e
-  em 40% do tempo. O campo `agents` fica para a 24.4. O `V1` da medida, acima, continua.
+  em 40% do tempo. Os agentes ajudantes ficam para a 24.4. O `V1` da medida, acima, continua.
 
 As respostas `A`, `B` e `C` ao estudo do ecossistema estão na seção "Depois", com o gatilho de
 cada uma. As respostas `D` e `E` desse estudo não tocam este cartão (o laboratório e o tipo de
 conta).
 
-Duas perguntas suas seguem abertas e estão na descrição do pull request: quando começar a U1
-(`Q`) e o texto do Builder (`R`). O cartão está escrito com as recomendações, `Q1` e `R2`; outra
-resposta muda só a linha "Depende de" da U1 ou o passo 2b da U2.
+**Duas perguntas abertas** (as letras são novas, para não confundir com as de cima):
+- **`Q`, quando começar a U1.** `Q1` (recomendado): logo depois que você aprovar esta emenda e
+  entrar a regra `ee`; a U2, a U3 e a U4 esperam a 20 fechar. `Q2`: a U1 também espera a 20
+  fechar. `Q3`: uma exceção sua para começar também a U2 já (não recomendo: ela mexe nos mesmos
+  arquivos que os consertos da 20).
+- **`R`, o texto do Builder.** `R1`: segue o `M1` como aprovado; o bloco comum sai do texto do
+  Builder, e a frase errada de que os conectores "vêm depois" é corrigida. `R2` (recomendado, pela
+  sua palavra de 2026-10-31 de não mexer no texto do Builder agora): o Supervisor ganha o bloco
+  agora, o texto do Builder fica intocado, e o bloco vira comum numa etapa que mexer no Builder.
+
+O cartão está escrito com `Q1` e `R2`; outra resposta muda só a linha "Depende de" da U1 ou o passo
+2b da U2.
 
 **O que esta emenda mudou (2026-10-31).**
 - O Supervisor passa a ter **conversas com contexto escolhido** (`S1`, `T1`, `U1`, `V1` das
@@ -142,7 +151,7 @@ resposta muda só a linha "Depende de" da U1 ou o passo 2b da U2.
 - **Criar app** só numa conversa do Início.
 - A U0 está feita, no ar, com o contrato real.
 - O Supervisor herda as peças que o Builder ganhou de 30 a 31/10: a memória sem resumo em segundo
-  plano (uma pausa curta a cada ~30 mil palavras-chave, como no Builder), o conserto da chamada de
+  plano (uma pausa curta a cada ~30 mil tokens (pedaços de texto), como no Builder), o conserto da chamada de
   ferramenta quebrada, o fluxo da tela mais leve, as últimas 100 mensagens com mais ao subir, e o
   aviso de falha da memória como o Mastra manda (a sua palavra de 31/10).
 - O arquivo passa a se chamar `e241-supervisor.md`, para a conferência automática achar a 24.1.
@@ -167,8 +176,9 @@ U4 começa ou se a U2 volta para as instruções e a skill. A U4 só muda arquiv
 ferramentas novas; um conserto da U2 pela medida não a atrasa além do próprio conserto.
 
 **Quando cada uma pode começar** (delivery L1). Com `Q1`, a U1 começa assim que esta emenda for
-aprovada e a regra `ee` entrar: ela não mexe em nenhum arquivo que os consertos da 20 mexeram
-(`hub/connectors/`, `hub/identity/`, `packages/hub-api/src/supervisor.ts`). A U2 e a U3 esperam a
+aprovada e a regra `ee` entrar: ela mexe em `hub/connectors/` e `hub/identity/`, e nenhum pull
+request aberto da 20 mexe nesses arquivos (conferido em 2026-10-31). Se um conserto da 20 vier a
+mexer, um dos dois se ajusta. A U2 e a U3 esperam a
 20 fechar: mexem em `builder/conversation/` e em `apps/web/src/builder/conversation/`, os arquivos
 dos consertos da 20. Quando a 20 fechar, as mudanças do método do pull request
 https://github.com/developmentconexus-ops/conexus/pull/511 entram antes deste cartão (L20).
@@ -198,33 +208,35 @@ pedido da 13.1; a U0 medida) mais o que as sessões acrescentam (estudo das sess
 | 6 | U1 | Cada chamada escreve `CONNECTOR_CALLED` com a empresa, a pessoa, `by: 'supervisor'`, o `projectId` só num escopo de Projeto, a operação e o resultado, nunca o corpo nem a entrada SQL (S41) | `supervisor-port.test.ts`, "a linha" | must |
 | 7 | U1, U2 | A fila de uma chamada por ligação (20) vale para o Supervisor: uma leitura do Supervisor e uma do Builder na mesma ligação Sankhya não abrem duas chamadas juntas | `apps/server/src/hub/connectors/limits.test.ts`, "o Supervisor na fila" | must |
 | 8 | U2 | `POST /api/companies/{c}/supervisor/conversations` pela dona, com ou sem `model` e `effort`, com as ligações escolhidas e, se quiser, um `projectId`, cria uma conversa com o modelo pedido ou o padrão dela (Meus padrões, 12.3), guarda só as ligações que o lugar oferece agora e responde com o modelo, o `projectId` e as ligações guardadas; um modelo sem conta: `MODEL_NO_ACCOUNT`, nada criado; um Projeto de outra empresa, apagado ou marcado para apagar: `NOT_FOUND`, nada criado; pelo membro, `NOT_FOUND`; a mesma chave de tentativa duas vezes dá a mesma conversa | `apps/server/src/builder/supervisor/routes.test.ts` | must |
-| 8a | U2 | `PUT …/supervisor/conversations/{id}/connections` troca as ligações da conversa e responde as que ficaram (só as que o lugar oferece); o turno seguinte recebe as ferramentas, as skills e as instruções só delas; numa conversa de outra pessoa, ou pelo membro: `CONVERSATION_NOT_FOUND`; o Projeto da conversa não muda por nenhuma rota | `routes.test.ts`, "trocar as ligações"; `supervisor.test.ts`, "a escolha no turno" | must |
+| 8a | U2 | `PUT …/supervisor/conversations/{id}/connections` troca as ligações da conversa e responde as que ficaram (só as que o lugar oferece); o turno seguinte recebe as ferramentas, as skills e as instruções só delas; numa conversa de outra pessoa, num id que não existe (nenhum fio é criado), ou pelo membro: `CONVERSATION_NOT_FOUND`; o Projeto da conversa não muda por nenhuma rota | `routes.test.ts`, "trocar as ligações"; `supervisor.test.ts`, "a escolha no turno" | must |
 | 9 | U2 | `GET …/supervisor/conversations` dá só as conversas da pessoa, as mais novas primeiro, com o título e o `projectId` (ou nenhum); com `?projectId=`, só as daquele Projeto; nunca as de outra pessoa nem as do Builder | `routes.test.ts`, "a lista" | must |
 | 9a | U2 | `GET …/supervisor/conversations/{id}` dá a conversa com cada ligação que o lugar oferece e se ela está escolhida; `GET /api/companies/{c}/supervisor/connections?projectId=` dá o que uma conversa nova pode escolher naquele lugar; pelo membro, `NOT_FOUND` | `routes.test.ts`, "uma conversa", "o que escolher" | must |
 | 10 | U2 | As rotas do Mastra com `controllerId = supervisor` respondem só ao dono da conversa e só enquanto ele for dono ou administrador; uma conversa do Builder pedida pelo controlador `supervisor` (ou o contrário), uma de outra pessoa, ou a de alguém que virou membro: `CONVERSATION_NOT_FOUND`; um `controllerId` desconhecido: 404 | `apps/server/src/builder/conversation/guard.test.ts`, "o Supervisor" | must |
 | 11 | U2 | Num turno real contra o dublê do Sankhya, numa conversa do Início com a Matriz escolhida, "quanto a Padaria Sol vendeu em setembro por vendedor?" chama `connector_read` com `sankhya.consultar` e responde os totais do dublê; nenhuma ferramenta erra (`calledTool`, `noToolErrors`) | `apps/server/src/builder/supervisor/supervisor.eval.test.ts` | must |
 | 12 | U2 | As ferramentas que o modelo do Supervisor recebe, lidas do pedido ao modelo num turno real, são exatamente `connector_read`, `connector_notes`, `conexus_overview` e as de skill (e na U4 `supervisor_show` e, só sem Projeto, `propose_app`); nenhuma de arquivo, comando, caderno (`connector_note_save`), tarefa (`task_*`), `ask_user`, `submit_plan` ou `subagent`; `agents` não está definido | `apps/server/src/builder/supervisor/supervisor.test.ts`, "as ferramentas" | must |
 | 13 | U2 | `conexus_overview` dá os Projetos da empresa com o app publicado ou não, a versão no ar e as ligações com o estado; nunca chaves, nunca outra empresa | `supervisor.test.ts`, "a visão da empresa" | must |
-| 13a | U2 | O pedido ao modelo do Supervisor começa pelo bloco "quem é o Conexus" (`conexus.md`) e não tem nenhuma frase do trabalho do Builder (Prévia, app, plano, máquina); com `R2`, o pedido do Builder ao modelo fica byte a byte o de hoje; com `R1`, ele começa pelo mesmo `conexus.md` e continua com tudo o que tem hoje, menos a frase de que os conectores "vêm depois" | `apps/server/src/builder/supervisor/instructions.test.ts`; `apps/server/src/builder/conversation/prompt/prompt.test.ts` | must |
+| 13a | U2 | O pedido ao modelo do Supervisor começa pelo bloco "quem é o Conexus" (`conexus.md`) e não tem nenhuma frase do trabalho do Builder (Prévia, app, plano, máquina); com `R2`, o pedido do Builder ao modelo fica byte a byte o de hoje; com `R1`, ele começa pelo mesmo `conexus.md` e continua com tudo o que tem hoje, menos a frase de que os conectores "vêm depois" | `apps/server/src/builder/supervisor/instructions.test.ts`; `apps/server/src/builder/conversation/prompt.test.ts` | must |
 | 13b | U2 | Numa conversa de Projeto, as instruções do Supervisor dizem o nome do Projeto e que ele só lê o que o Projeto recebeu; numa do Início, nenhum Projeto | `instructions.test.ts`, "o Projeto" | must |
+| 13c | U2 | Numa conversa do Projeto Vendas com só a Matriz, "quanto a Filial vendeu ontem?" não chama `connector_read` com a Filial (a ferramenta não a oferece) e a resposta diz que a Filial não está nesta conversa | `supervisor.eval.test.ts`, "a ligação de fora do Projeto" | must |
 | 14 | U2 | Com nenhuma ligação escolhida, ou nenhuma no lugar, o Supervisor diz que a conversa não tem sistema e aponta a barra (ou Integrações), sem chamar `connector_read` | `supervisor.eval.test.ts`, "sem ligação" | should |
 | 15 | U2 | No aviso de parar, um turno do Supervisor entra na espera da U0 como o do Builder (`settle(bound)` e `updating()` contam também os turnos do Supervisor), e uma pergunta nova recebe `HUB_UPDATING`; passado o limite, ele é parado como o do Builder, as suas leituras guardadas são soltas, e o fim acaba dentro do prazo do Hub (C62) | `supervisor.test.ts`, "o fim do Hub" | must |
 | 16 | U2 | A conversa usa a conta de modelo da empresa pela mesma fila do Builder (11), sem `Runs`: um turno do Supervisor e um do Builder da mesma pessoa correm juntos; duas leituras num turno contam na mesma `TurnKey`, e o turno seguinte tem outra; sem conta, o turno termina com a frase de hoje ("As contas … estão indisponíveis …") | `supervisor.test.ts`, "a conta" e "o turno" | must |
 | 16a | U2 | Remover a empresa (5) apaga as conversas do Supervisor de todas as pessoas dela; tirar uma pessoa (6) apaga as dela; nenhuma de outra empresa | `apps/server/src/builder/supervisor/release.test.ts` | must |
-| 16c | U2 | Apagar um Projeto apaga as conversas do Supervisor presas a ele, de todas as pessoas, e nenhuma do Início nem de outro Projeto; uma falha deixa o Projeto marcado (`PROJECT_DELETION_PENDING`), e a repetição acha as que sobraram | `release.test.ts`, "o Projeto" | must |
-| 16e | U2 | Uma chamada de ferramenta guardada sem argumentos numa conversa do Supervisor é refeita como `{}` e a conversa segue (a regra `toolCallInputRequired` pelos `accountErrorProcessors`, do pull request https://github.com/developmentconexus-ops/conexus/pull/510) | `supervisor.test.ts`, "a chamada sem argumentos" | should |
+| 16c | U2 | Apagar um Projeto apaga as conversas do Supervisor presas a ele, de todas as pessoas, também com mais de 100 conversas, e nenhuma do Início nem de outro Projeto; uma falha deixa o Projeto marcado (`PROJECT_DELETION_PENDING`), e a repetição acha as que sobraram | `release.test.ts`, "o Projeto" | must |
+| 16d | U2 | Uma chamada de ferramenta guardada sem argumentos numa conversa do Supervisor é refeita como `{}` e a conversa segue (a regra `toolCallInputRequired` pelos `accountErrorProcessors`, do pull request https://github.com/developmentconexus-ops/conexus/pull/510) | `supervisor.test.ts`, "a chamada sem argumentos" | should |
 | 16b | U4 | Num segundo turno da mesma conversa, o pedido ao modelo não leva as linhas de uma tabela mostrada no primeiro, só o resumo de `supervisor_show` | `apps/server/src/builder/supervisor/show.test.ts`, "o modelo vê o resumo" | must |
 | 17 | U3 | No Início, a dona e a administradora veem a caixa "Pergunte sobre a empresa ou peça um app", a barra com as ligações que a empresa oferece já escolhidas e o seletor de Projeto, e as conversas recentes, a de um Projeto com a etiqueta do nome dele; o membro vê "O que vamos construir?" como hoje; a 390 px, o mesmo | `apps/web/src/builder/supervisor/home.test.tsx` | must |
 | 17a | U3 | Na conversa, tirar ou pôr uma ligação na barra manda a troca (`PUT …/connections`) e a barra mostra o que o Hub respondeu; uma troca recusada volta à escolha de antes com a frase do código; o Projeto aparece fixo, sem controle | `apps/web/src/builder/supervisor/conversation.test.tsx`, "a barra" | must |
 | 17b | U3 | No Projeto, a entrada **Conversas** da barra lateral abre a lista das conversas da pessoa naquele Projeto e a caixa, com a barra só das ligações liberadas ao Projeto; o membro vê a página dizendo que só o dono e os administradores conversam ali (W34) | `apps/web/src/builder/supervisor/project.test.tsx` | must |
 | 18 | U3 | Enviar a primeira pergunta cria a conversa com as ligações e o Projeto da barra e abre, sem Projeto, `/companies/<c>/conversations/<id>` e, com Projeto, `/companies/<c>/projects/<p>/supervisor/<id>`, com a pergunta já enviada uma vez (a mesma passagem do 13.1); voltar ao Início a mostra entre as recentes | `conversation.test.tsx` | must |
 | 19 | U3 | Cada `connector_read` do Supervisor em andamento aparece como "Lendo <conector> · <ligação>" e, no fim, com o número de linhas; uma falha mostra a frase do código (a da 20); no Builder, a linha continua a de hoje | `conversation.test.tsx`, "as leituras" | must |
+| 19a | U3 | A conversa do Supervisor mostra as últimas 100 mensagens e mais 100 ao chegar ao topo, e uma falha da memória (`om_*_failed`) aparece só pelo tipo, como no Builder | `conversation.test.tsx`, "o histórico" | should |
 | 20 | U3 | O endereço de uma conversa de outra pessoa, ou pedido por um membro, mostra a página de não encontrado; o de uma conversa de Projeto aberto no endereço de outro Projeto, também | `conversation.test.tsx`, "não encontrado" | must |
 | 21 | U4 | `supervisor_show` com um `readId` do turno desenha uma tabela, barras, linha ou um número; com um `readId` que não existe (`READ_NOT_FOUND`), uma coluna que a leitura não tem (`COLUMN_NOT_FOUND`), um `y` que não é número (`NOT_NUMERIC`) ou barras e linha sem `x` (`AXIS_MISSING`), a ferramenta responde `SHOW_REFUSED` e nada aparece na tela; o modelo nunca passa números | `apps/server/src/builder/supervisor/show.test.ts` | must |
 | 22 | U4 | A tabela e o gráfico aparecem na resposta ao vivo e de novo depois de recarregar a página; acima de 200 linhas, a tabela mostra 200 e diz "e mais N" | `apps/web/src/builder/supervisor/answer.test.tsx` | must |
 | 23 | U4 | **Criar app** abre o nome do Projeto com o resumo; ao criar, a conversa do Builder do Projeto novo recebe o resumo uma vez; cancelar não cria nada; numa conversa de Projeto, o modelo não recebe `propose_app` | `answer.test.tsx`, "Criar app"; `supervisor.test.ts`, "as ferramentas" | must |
 | 24 | U4 | Nenhuma violação de CSP no console com o gráfico na tela (o Hub tem `style-src 'self'`) | a QA, no console, a 1366 e a 390 | must |
-| 25 | U2 a U4 | A medida de um dia (`V1`, `D1`): no Hub de verdade, numa conversa do Início com as ligações dele, cada uma das dez perguntas do fundador feita duas vezes (do jeito dele e de outro); pelo menos 8 certas nas duas vezes, e nenhum número inventado (um só reprova); o registro guarda os acertos e os inventados separados | o registro de aprovações (só os números) | must |
+| 25 | U2 a U4 | A medida de um dia (`V1` da medida, `D1`): no Hub de verdade, numa conversa do Início com as ligações dele, cada uma das dez perguntas do fundador feita duas vezes (do jeito dele e de outro); pelo menos 8 certas nas duas vezes, e nenhum número inventado (um só reprova); o registro guarda os acertos e os inventados separados | o registro de aprovações (só os números) | must |
 | 26 | U3, U4 | A QA faz o roteiro no computador e no celular, nos dois temas | a QA (T25) | must |
 
 ## A matriz de estados
@@ -295,7 +307,7 @@ Conexus OS: ele não tinha esta conversa.
 | Gravação ou comando, da etapa ou da biblioteca | Duas vezes ao mesmo tempo | Recusada no meio, depois de uma instrução ou de uma chamada | Uma dependência fora (o banco, ou um terceiro) | O que o processo imprime | Critérios |
 | --- | --- | --- | --- | --- | --- |
 | O fim do Hub com respostas em andamento (U0, feita: `settle`, depois o `drain`, depois o fecho dos ouvintes) | um segundo aviso de parar: sai na hora, como hoje (`SHUTDOWN_FORCED`) | a espera acaba quando a última resposta termina ou no limite; no limite, o `drain` para o que sobrou, e cada uma guarda o que escreveu | o banco fora durante a espera: a resposta falha como hoje, e a espera não muda; o Docker manda SIGKILL só depois do `stop_grace_period` | `SHUTDOWN_DRAINING`, `SHUTDOWN_DRAINED` | 0a a 0e, 15 |
-| Criar uma conversa (a conferência do modelo, do Projeto e das ligações; `controller.createSession` do Mastra, get-or-create pelo id que a rota deriva da chave de tentativa, com as marcas `{ companyId, personId, conexusProjectId? }` gravadas no fio novo; `session.thread.setSetting` das ligações; `session.model.switch`, como `routes.ts:33-44`) | a mesma chave: a mesma conversa; duas chaves: duas conversas | um modelo ou Projeto recusado antes de criar: nada criado; um corte depois do `createSession` e antes da configuração ou do `switch`: a repetição com a mesma chave acha a sessão e grava as ligações e o modelo de novo (as duas gravações substituem o valor) | banco do Mastra fora: `DATABASE_UNAVAILABLE` | `SUPERVISOR_CONVERSATION_CREATED` (empresa, pessoa, conversa, se tem Projeto) | 8 |
+| Criar uma conversa (a conferência do modelo, do Projeto e das ligações; `controller.createSession` do Mastra, get-or-create pelo id que a rota deriva da chave de tentativa, com as marcas `{ companyId, personId, conexusProjectId? }` gravadas no fio novo; `session.thread.setSetting` das ligações; `session.model.switch`, como `routes.ts:33-44`) | a mesma chave: a mesma conversa; duas chaves: duas conversas | um modelo ou Projeto recusado antes de criar: nada criado; um corte depois do `createSession` e antes do `switch` ou da configuração (gravada por último): a repetição com a mesma chave acha a sessão e grava o modelo e as ligações só se o fio ainda não tem a configuração, para não desfazer uma troca feita depois; um corpo com outro Projeto que a marca do fio: `IDEMPOTENCY_CONFLICT` | banco do Mastra fora: `DATABASE_UNAVAILABLE` | `SUPERVISOR_CONVERSATION_CREATED` (empresa, pessoa, conversa, se tem Projeto) | 8 |
 | Trocar as ligações (`PUT …/connections`; `session.thread.setSetting({ key: 'conexusConnections' })`) | duas trocas: a última gravada vale, e cada resposta diz o que ficou | durante um turno: o turno segue com as que leu no começo (lidas uma vez por turno), e a próxima pergunta usa as novas | banco do Mastra fora: `DATABASE_UNAVAILABLE`; a barra volta à escolha de antes | `SUPERVISOR_CONNECTIONS_CHANGED` (empresa, conversa, quantas) | 8a, 17a |
 | Apagar as conversas com a empresa (5), a pessoa (6) ou o Projeto (`listThreads` pelas marcas; `deleteSession` e `deleteThread` de cada uma, como `public.ts:68-78`) | duas remoções: cada fio some uma vez; apagar de novo um fio já apagado não falha | um fio por vez, depois da remoção do Builder; uma falha no meio deixa fios que a próxima remoção acha de novo; a do Projeto deixa a marca de apagar (`PROJECT_DELETION_PENDING`, `projects.ts:262-280`) | banco do Mastra fora: o aviso; a remoção da empresa e da pessoa seguem como hoje, a do Projeto fica marcada | `SUPERVISOR_CONVERSATIONS_RELEASED` (empresa, quantas) | 16a, 16c |
 | Uma mensagem (a rota `messages` do Mastra; a mensagem e a resposta vão ao armazenamento do Mastra) | a segunda mensagem durante um turno entra na fila do próprio controlador, como no Builder | o fim do Hub para o turno (C62); a parte já respondida fica guardada; a cortada não volta sozinha | modelo fora: as frases da 11 e da 12; banco fora: o turno falha com `DATABASE_UNAVAILABLE` | da 12 | 15, 16 |
@@ -316,21 +328,21 @@ de usar.
 
 | Peça | Unidade | Hoje no main | Referência | Como a referência faz | Veredito | Prova, se não for nativo | Palavra do fundador | Arquivo novo |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| A espera das respostas no fim do Hub | U0 (feita) | `watchRuns` com `settle(bound)` e `updating()` (`builder/conversation/end.ts:229-281,333-343`, lido); `TURN_SETTLE_MS` em `platform/lifecycle.ts:7-13` (lido); a recusa em `guard.ts:126-132` (lido) | Cloudflare Durable Objects adiam a troca de código até 300 s (relay, `E1`); C62 | esperar o trabalho em andamento, com um limite | nativo | critérios 0a a 0e | `E1` | — |
+| A espera das respostas no fim do Hub | U0 (feita) | `watchRuns` com `settle(bound)` e `updating()` (`builder/conversation/end.ts:229-281,333-343`, lido); `TURN_SETTLE_MS` em `platform/lifecycle.ts:7-13` (lido); a recusa em `guard.ts:126-132` (lido) | Cloudflare Durable Objects adiam a troca de código até 300 s (relay, `E1` das referências); C62 | esperar o trabalho em andamento, com um limite | nativo | critérios 0a a 0e | `E1` das referências | — |
 | O bloco "quem é o Conexus" | U2 | um prompt só, do Builder: a identidade e as regras gerais em `prompt/builder.md:1-3,15-24` (lido), preenchido por `fillPrompt` (`prompt/prompt.ts:41`, lido) | Factory: o lugar escolhe as instruções (`M:mastracode/factory/src/factory.ts:1109-1113`, lido); Mastra Code: uma base e as camadas por cima (`M:mastracode/sdk/src/agents/prompts/index.ts:203-207`, lido); o defeito da Factory: a base "an interactive CLI coding agent" (`NM:coding-agent/index.js:11`, lido) herdada pelo supervisor | uma identidade, um trabalho por camada, escolhido pelo lugar | nativo: `conexus.md` e `supervisor.md`; cada `Agent` com `instructions` função do `requestContext` (`NM:agent/types.d.ts:567`, lido); com `R2`, `builder.md` fica como está | critérios 13a, 13b | `M1`, `R` | `builder/conversation/prompt/conexus.md`, `builder/supervisor/prompt/supervisor.md` |
-| O agente Supervisor | U2 | o Builder é `createCodingAgent` com máquina (`builder/conversation/builder.ts:161-240`, lido) | Factory: uma sessão comum de `AgentController`, instruções fixas, só ferramentas de leitura (`M:mastracode/factory/src/supervisor/session.ts:15-57`, `instructions.ts:1-6`, lidos); o controlador aceita um `Agent` comum (`NM:agent-controller/types.d.ts:216`) e `workspace` opcional (`:244`), lidos | um agente comum, sem máquina, com ferramentas de leitura | nativo: `new Agent` com `instructions`, `model` e `tools` como funções do `requestContext` (`NM:agent/types.d.ts:567,659`, lidos) e um `AgentController` próprio | critérios 11, 12 | `E1`, `V1` das sessões | `builder/supervisor/supervisor.ts` |
+| O agente Supervisor | U2 | o Builder é `createCodingAgent` com máquina (`builder/conversation/builder.ts:161-240`, lido) | Factory: uma sessão comum de `AgentController`, instruções fixas, só ferramentas de leitura (`M:mastracode/factory/src/supervisor/session.ts:15-57`, `instructions.ts:1-6`, lidos); o controlador aceita um `Agent` comum (`NM:agent-controller/types.d.ts:216`) e `workspace` opcional (`:244`), lidos | um agente comum, sem máquina, com ferramentas de leitura | nativo: `new Agent` com `instructions`, `model` e `tools` como funções do `requestContext` (`NM:agent/types.d.ts:567,659`, lidos) e um `AgentController` próprio | critérios 11, 12 | `E1` da estrutura, `V1` das sessões | `builder/supervisor/supervisor.ts` |
 | Um agente por conversa | U2 | — | estudo das sessões 3.3 e 3.5 (medido no dublê e no modelo real); Factory: o supervisor sem ajudantes (`supervisor/session.ts`, lido); `agents` (`NM:agent/types.d.ts:737`, lido) | um agente com ferramentas de leitura | nativo; `agents` fica para a 24.4 | estudo das sessões 3.5 | `V1` das sessões | — |
 | O contexto da conversa | U2 | nenhum: o Builder guarda o Projeto da conversa numa tabela do Hub (`builder/conversation/tables.ts:22-52`, lido) | Factory: o escopo fixo de uma sessão vai nas `tags` do `createSession` (`{ factoryProjectId, projectRepositoryId }`), e o que não é texto vai no estado (`M:mastracode/factory/src/rules/start-coordinator.ts:225-236`, lido); `createSession({ tags })` (`NM:agent-controller/agent-controller.d.ts:119-135`, lido); a sessão grava as marcas em todo fio que cria (`NM:agent-controller-DO6rGsQm.js:4726-4730,4806-4812`, lido); `SessionThread.getSetting`/`setSetting`/`setSettingOn` (`NM:agent-controller/session.d.ts:403-422`, lido); cada pedido lê `getThreadSetting` e `resourceId` do `requestContext.get('controller')` (`NM:agent-controller/types.d.ts:1014-1024`, `NM:agent-controller-DO6rGsQm.js:8688-8727`, lidos), como a Factory lê o escopo (`supervisor/session.ts:43-57`, lido) | o escopo fixo nas marcas da criação; o que muda numa configuração do fio; cada pedido lê | nativo: as marcas `{ companyId, personId, conexusProjectId? }` na criação, a configuração `conexusConnections`, escritas só pelas rotas do Hub; lidas uma vez por turno, como o Builder lê as liberações (`builder.ts:78-98`, lido) | estudo das sessões 3.3 (a configuração, rodada); as marcas, lidas e não rodadas: "Parar se" da U2 | `S1`, `T1`, `U1` das sessões | `builder/supervisor/context.ts` |
 | Dois controladores no mesmo Mastra | U2 | `new Mastra({ agentControllers: { [BUILDER_ID]: controller } })` (`builder.ts:241-245`, lido) | `agentControllers: Record<string, AgentController>` (`NM:mastra/index.d.ts:128`, lido); as rotas acham o controlador pela chave do caminho (`M:packages/server/src/server/handlers/agent-controller.ts:81-90`, lido) | uma chave a mais | nativo: a chave `supervisor` no mesmo `Mastra` | critério 10 | não precisa | — |
-| Subagentes depois | — | nenhum | `agents?: DynamicArgument<Record<string, SubAgent>>` (`NM:agent/types.d.ts:737`); `onDelegationStart` (`NM:agent/agent.types.d.ts:310-316`); redes descontinuadas (`M:docs/src/content/en/docs/agents/networks.mdx:12-14`), lidos | cada subagente vira uma ferramenta `agent-<nome>` | nativo: fica de fora, a 24.4 preenche `agents` | — | `E1`, `V1` das sessões | — |
+| Subagentes depois | — | nenhum | `agents?: DynamicArgument<Record<string, SubAgent>>` (`NM:agent/types.d.ts:737`); `onDelegationStart` (`NM:agent/agent.types.d.ts:310-316`); redes descontinuadas (`M:docs/src/content/en/docs/agents/networks.mdx:12-14`), lidos | cada subagente vira uma ferramenta `agent-<nome>` | nativo: fica de fora, a 24.4 preenche `agents` | — | `E1` da estrutura, `V1` das sessões | — |
 | As conversas, a lista e a memória | U2 | a memória do Builder por conversa, sem resumo em segundo plano (`bufferTokens: false`, `builder.ts:111-159`, lido) | Factory: o `resourceId` `factory-supervisor:<id>` separa as conversas do supervisor (`session.ts:19-35`, lido); `listThreads({ filter: { resourceId, metadata } })` (`NM:memory/memory.d.ts:151-165`, lido) e `queryThreads({ resourceId, metadata })` (`NM:agent-controller/agent-controller.d.ts:289-293`, lido); o `@mastra/pg` filtra `resourceId` por igualdade e cada marca por `metadata::jsonb @>` (`@mastra/pg` 1.32.0 `dist/index.js:12330-12338`, lido) | as conversas são do Mastra, pelo dono e pelas marcas | nativo: `resourceId` `supervisor:company:<c>:person:<p>`; a lista da pessoa e a do Projeto pelo Mastra, sem tabela no Hub; a memória observacional por conversa com a configuração do Builder | critérios 8, 9, 16a | `B1` | — |
 | A remoção com o Projeto | U2 | `finishMarkedProject` já chama a remoção das conversas com `{ companyId, projectId }` (`hub/projects/projects.ts:262-280`, lido); `ReleaseScope` já tem `projectId` (`builder/conversation/store.ts:231`, lido) | o mesmo filtro por marca | listar por `{ conexusProjectId }` e apagar | nativo | critério 16c | não precisa | — |
 | As rotas do Mastra e o guarda | U2 | `controllerId: z.literal(BUILDER_ID)` e a lista fixa (`guard.ts:18-44`, lido); o servidor do Hub sobre o do Mastra, mais leve e espaçado (`BuilderServer`, `stream.ts:17,164-188`, lido) | decisão 0050 | só as rotas da lista, atrás do guarda | embrulhado: o guarda aceita as duas chaves; para `supervisor`, o dono vem do `resourceId` e a admissão é `askSupervisor`, sem o índice do Builder; as rotas do Supervisor andam no mesmo `BuilderServer` | critério 10 | não precisa | — |
-| Os processadores do agente | U2 | os do Builder: o turno e `accountPick(queue)` na entrada, `CyberRefusalHandler` na saída, `accountErrorProcessors(queue)` com a regra `toolCallInputRequired` (`builder.ts:211-218`, `model-accounts/processors.ts:386-397`, lidos) | Mastra Code (`index.ts:1345-1393`, relay pelo comentário de `processors.ts:380-385`) | os processadores da conta e da estabilidade | nativo: o Supervisor recebe os mesmos pelo nome; sem `isTaskComplete` (não há lista de tarefas; o `judge` é do Builder, `conversation/processors.ts:85-91`, lido) | critérios 16, 16e | não precisa | — |
+| Os processadores do agente | U2 | os do Builder: o turno e `accountPick(queue)` na entrada, `CyberRefusalHandler` na saída, `accountErrorProcessors(queue)` com a regra `toolCallInputRequired` (`builder.ts:211-218`, `model-accounts/processors.ts:386-397`, lidos) | Mastra Code (`index.ts:1345-1393`, relay pelo comentário de `processors.ts:380-385`) | os processadores da conta e da estabilidade | nativo: o Supervisor recebe os mesmos pelo nome; sem `isTaskComplete` (não há lista de tarefas; o `judge` é do Builder, `conversation/processors.ts:85-91`, lido) | critérios 16, 16d | não precisa | — |
 | A porta da empresa aos conectores | U1 | a porta do Builder, por Projeto e liberação (`hub/connectors/builder-port.ts:16-32,54-99`, lido) | Factory: as ferramentas só depois de `resolveSupervisorScope` conferir a organização (`M:mastracode/factory/src/supervisor/session.ts:43-57`, `factory.ts:1264-1268`, lidos) | o escopo é conferido no servidor, nunca pelo modelo | embrulhado: `Connectors.supervisor` lê a escolha da conversa e a corta pelo lugar (Início: as `ACTIVE` da empresa; Projeto: as liberadas, `grantedRows`), só `read`, `by: 'supervisor'` | critérios 1 a 4, 6 | `L1`, `S1` das sessões | `hub/connectors/supervisor-port.ts` |
 | Quem pode perguntar | U1 | `manageConnections` com `MANAGE_CONNECTIONS` (`hub/identity/admission.ts:68-71`, lido; `roles.ts:19-24`, relay) | better-auth 1.7.8, controle de acesso | papel → capacidade | nativo: a ação `askSupervisor` com a declaração de `manageConnections` | critérios 1, 10 | `L1` | — |
 | As ferramentas de conector compartilhadas | U2 | `connectorTools(port, granted, who)` com `Asker = OfProject & …` (`builder/connectors/connector-tools.ts:13-17,127-140`, lido) | `createTool` (`@mastra/core/tools`) | ferramentas do contexto do pedido | nativo: o módulo passa a receber um acesso já ligado ao escopo (`ConnectorAccess`), sem mudar o que o Builder recebe | critério 12 | não precisa | — |
-| A visão da empresa | U2 | as listas de Projetos, versões e ligações do Hub; o nome de um Projeto vivo (`hub/projects/hosts.ts:152-171`, lido; não há descrição de Projeto no `main`) | `factory_overview` (`M:mastracode/factory/src/supervisor/read-tools.ts:187`, lido) | uma ferramenta de leitura dos registros da própria plataforma | embrulhado: `conexus_overview` | critério 13 | `E1` | `builder/supervisor/overview.ts` |
+| A visão da empresa | U2 | as listas de Projetos, versões e ligações do Hub; o nome de um Projeto vivo (`hub/projects/hosts.ts:152-171`, lido; não há descrição de Projeto no `main`) | `factory_overview` (`M:mastracode/factory/src/supervisor/read-tools.ts:187`, lido) | uma ferramenta de leitura dos registros da própria plataforma | embrulhado: `conexus_overview` | critério 13 | `E1` da estrutura | `builder/supervisor/overview.ts` |
 | A tabela e o gráfico | U4 | nenhum na tela do Hub; `recharts` 3.10.1 só em `packages/app` (`docs/reference/stack.md`, linha do `recharts`) | `template-genui-data-explorer`: `analyze` com orçamento de chamadas, `compose` que só liga resultados verificados a um catálogo fixo (`M:templates/template-genui-data-explorer/src/mastra/agent.ts:21-31,40-119`, `src/components/catalog.ts:63-153`, lidos no começo de cada faixa) | todo número mostrado vem de um resultado verificado | embrulhado: `supervisor_show({ readId, kind, … })` liga uma leitura guardada a um catálogo de quatro (`table`, `bar`, `line`, `metric`); o Recharts no Hub sem o `ChartStyle` do shadcn, que escreve um `<style>` que a CSP do Hub recusa (`apps/server/src/platform/http.ts:38`, relay) | critérios 21, 22, 24 | `V1` | `builder/supervisor/show.ts`, `apps/web/src/builder/supervisor/answer.tsx` |
 | A parte que a tela desenha | U4 | `data-conexus-*` com `writer.custom`, que o controlador descarta ao vivo (`builder/model-accounts/processors.ts:64-67`, lido) | a saída da ferramenta, ao vivo e guardada; `toModelOutput` muda só o que o modelo vê (`NM:tools/types.d.ts:457`, lido) | — | nativo: a saída de `supervisor_show`, desenhada pela linha da ferramenta; o modelo recebe só o resumo; nenhum `data-*` | critérios 16b, 22 | não precisa | — |
 | Criar app | U4 | o primeiro pedido: `Start`, `Naming`, `useCreated`, a passagem (`apps/web/src/builder/conversation/start.tsx:123-190`, lido; `handoff.ts`, relay) | Factory manda mensagem a outra sessão (`M:mastracode/factory/src/supervisor/session-messaging.ts:15-41`, lido): fica para a 24.4 | — | nativo (13.1): `propose_app({ summary })` responde o resumo; **Criar app** abre o `Naming` com ele; só sem Projeto | critério 23 | `F4`, `A1` | — |
@@ -340,7 +352,7 @@ de usar.
 | Conversas no Projeto | U3 | o Projeto abre o Construir (`projects/$projectId.tsx:55-72`, lido); a barra lateral do Projeto: Construir, Sobre, Quem usa o app, Integrações, cada um acrescentado pela sua etapa (`hub/projects/project-rail.tsx:111-172`, lido) | G4: "Espaços de trabalho para organizar sessões, contexto e marcos" (tela 25, aberta pelo autor); Factory: cada sessão nasce presa ao repositório escolhido (`M:mastracode/factory-ui/src/ui/domains/chat/hooks/useCreateUserSessionFromDraft.ts:20-41`, lido) | o Projeto contém sessões, presas a ele desde a criação | embrulhado: a entrada **Conversas** depois de Construir; páginas fora do Construir como Sobre (`$projectId_.about.tsx`, lido), em `/companies/<c>/projects/<p>/supervisor` e `/supervisor/<id>` (o `conversations/<id>` do Projeto é do Builder) | critérios 17b, 18 | `S1` das sessões | `routes/_app/companies/$companyId/projects/$projectId_.supervisor.index.tsx`, `$projectId_.supervisor.$conversationId.tsx`, `apps/web/src/builder/supervisor/project.tsx` |
 | A tela da conversa | U3 | `workbench.tsx`, `transcript.tsx`, `rows.ts`, `tool-row.tsx`, `tool-registry.ts`; `session.ts` com o controlador fixo do Builder (`apps/web/src/builder/conversation/session.ts:13-34`, lido); `use-session.ts` com `Ids` que levam `projectId` e a janela de 100 (`use-session.ts:18-24,155-177`, lido) | Factory: uma página de chat por Factory (`M:mastracode/factory-ui/src/ui/router.tsx:154`, lido) | a conversa do controlador | nativo: a transcrição e a sessão do Builder com o controlador `supervisor`, sem Prévia; as ferramentas novas no registro | critérios 18, 19 | não precisa | `apps/web/src/builder/supervisor/conversation.tsx` |
 | O aceite pela taxa de acerto | U2, medida | `builder.eval.test.ts` com `calledTool` e `noToolErrors` (relay) | `runEvals` (`NM:evals/run/index.d.ts:178`, lido), `@mastra/evals/checks` | perguntas com resposta conhecida, medidas | nativo: a avaliação sobre o dublê no repositório; as dez perguntas reais fora dele | critérios 11, 25 | `V1`, `D1` | `builder/supervisor/supervisor.eval.test.ts` |
-| O fim do Hub | U2 | `close` com `runs.drain()`, os fluxos destruídos e o `settle` da U0 (`builder/conversation/public.ts:102-120`, lido); `watchRuns` assiste ao controlador do Builder (`end.ts:281`, lido) | C62 | parar dentro do prazo | nativo: o Supervisor assiste aos eventos do seu controlador como `watchRuns`, entra no `settle` e no `updating`, e o seu `close` aborta as sessões em andamento e solta as leituras guardadas | critério 15 | `E1` | — |
+| O fim do Hub | U2 | `close` com `runs.drain()`, os fluxos destruídos e o `settle` da U0 (`builder/conversation/public.ts:102-120`, lido); `watchRuns` assiste ao controlador do Builder (`end.ts:281`, lido) | C62 | parar dentro do prazo | nativo: o Supervisor assiste aos eventos do seu controlador como `watchRuns`, entra no `settle` e no `updating`, e o seu `close` aborta as sessões em andamento e solta as leituras guardadas | critério 15 | `E1` das referências | — |
 | O turno sem `Runs` | U2 | `takeTurn` exige o Projeto da conversa e `Runs.take` (`turn-of.ts:38-76`, lido) | a fila de contas da 11 (`turnOfOwner`, `turn-of.ts:49-55`, lido) | um turno por execução, na fila de contas | nativo: o `takeTurn` do Supervisor faz o `Turn` pelo dono, sem `Runs`, e põe uma `TurnKey` nova no contexto | critérios 4, 16 | não precisa | `builder/supervisor/turn.ts` |
 | A licença | antes da U1 | nenhuma regra contra `ee` (`.dependency-cruiser.cjs`, relay) | `M:LICENSE.md:3-9`, `M:ee/LICENSE:1-5`, lidos | `ee` não pode ir para produção sem contrato | nativo: uma regra do dependency-cruiser, num pull request próprio (L20) | — | `J1` ("licença comercial") | — |
 | Favoritas, arquivadas, busca | fica de fora | nenhum | G4: as abas Recentes, Favoritas, Projetos, Arquivadas (tela 13, aberta pelo autor) | — | nativo: fica de fora, gatilho na seção "Depois" (as marcas do fio e `listThreads`) | — | — | — |
@@ -379,8 +391,8 @@ tarefa).
 | `C1` | Mastra, a agenda | `M:packages/core/src/schedules/types.ts:115,168` | a agenda guarda a pergunta como `prompt` | lido |
 | `D1` | Databricks Genie, Snowflake Cortex Analyst | https://docs.databricks.com/aws/en/genie/benchmarks, https://docs.snowflake.com/user-guide/snowflake-cortex/cortex-analyst-evaluations | perguntas reais com a resposta certa, várias formas da mesma pergunta; nenhuma meta | relay |
 | `D1` | TrustSQL; BIRD, Spider 2.0 | arXiv 2403.15879 (o resumo); https://bird-bench.github.io/, https://spider2-sql.github.io/ | o número errado pesa mais que o "não sei"; os melhores sistemas acertam de 76% a 83% | relay |
-| `E1` | Cloudflare Durable Objects, Containers | https://developers.cloudflare.com/durable-objects/deployments/durable-objects-code-updates/, https://developers.cloudflare.com/containers/platform-details/architecture/ | adiar a troca de código até 300 s; SIGTERM, a espera, depois SIGKILL | relay (já construída na U0) |
-| `E1` | Mastra, depois do reinício | `M:docs/src/content/en/docs/deployment/mastra-server.mdx:173` | uma resposta comum não continua depois que o processo sai | lido |
+| `E1` das referências | Cloudflare Durable Objects, Containers | https://developers.cloudflare.com/durable-objects/deployments/durable-objects-code-updates/, https://developers.cloudflare.com/containers/platform-details/architecture/ | adiar a troca de código até 300 s; SIGTERM, a espera, depois SIGKILL | relay (já construída na U0) |
+| `E1` das referências | Mastra, depois do reinício | `M:docs/src/content/en/docs/deployment/mastra-server.mdx:173` | uma resposta comum não continua depois que o processo sai | lido |
 | `S1` das sessões | G4 OS, Projetos | tela 25 do estudo `conexus-g4os-rea-windows` | "Espaços de trabalho para organizar sessões, contexto e marcos" | lido (a tela) |
 | `S1`, `U1` das sessões | Mastra Factory | `M:mastracode/factory/src/rules/start-coordinator.ts:225-236`; `M:mastracode/factory-ui/src/ui/domains/chat/hooks/useCreateUserSessionFromDraft.ts:20-41` | a sessão nasce presa ao seu repositório e Projeto, gravados como marcas na criação | lido |
 | `V1` das sessões | o estudo das sessões, 3.3 e 3.5 | 24 respostas no Claude Sonnet 4.6 pela assinatura do fundador | um agente por sessão: 8 de 8, US$ 0,010 por resposta, 5,1 s; supervisor com ajudante: 8 de 8, US$ 0,036, 12,3 s | medido pelo estudo (relay da medida) |
@@ -430,8 +442,8 @@ settle(bound: AbortSignal): Promise<void>
 ## U1 A porta da empresa aos conectores
 
 **Base e modelo.** Com `Q1`, `main` depois da aprovação desta emenda e do pull request da regra
-`ee`, sem esperar o fechamento da 20 (delivery L1: a U1 não mexe em nenhum arquivo dos consertos da
-20). Sonnet: a porta copia a do Builder com outro escopo; nenhum desenho novo de concorrência (a
+`ee`, sem esperar o fechamento da 20 (delivery L1: nenhum conserto aberto da 20 mexe nos arquivos da U1;
+conferir de novo no começo). Sonnet: a porta copia a do Builder com outro escopo; nenhum desenho novo de concorrência (a
 fila é da 20).
 
 ### As linhas da tabela
@@ -591,7 +603,7 @@ compartilhado com o Builder.
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `apps/server/src/builder/conversation/prompt/` | Cria `conexus.md` (o bloco comum); com `R1`, muda `builder.md` (perde o que foi para `conexus.md` e a frase dos conectores "depois"), `prompt.ts` (`fillPrompt` junta `conexus.md` e o bloco do trabalho) e `prompt.test.ts`; com `R2`, não muda nada aqui além de `conexus.md` | o Builder, o Supervisor |
+| `apps/server/src/builder/conversation/prompt/` | Cria `conexus.md` (o bloco comum); com `R1`, muda `builder.md` (perde o que foi para `conexus.md` e a frase dos conectores "depois") e `prompt.ts` (`fillPrompt` junta `conexus.md` e o bloco do trabalho), e `builder/conversation/prompt.test.ts`; com `R2`, não muda nada aqui além de `conexus.md` | o Builder, o Supervisor |
 | `apps/server/src/builder/supervisor/` | Cria `prompt/supervisor.md` (o trabalho do Supervisor), `supervisor.ts` (o agente e o controlador), `context.ts` (as marcas, a configuração e o `SessionScope` do turno), `memory.ts`, `turn.ts` (`takeTurn` e o assistente dos eventos), `instructions.ts`, `overview.ts`, `routes.ts`, `release.ts`, `public.ts`, a skill `skills/conexus-analysis/SKILL.md` | `main.ts` |
 | `apps/server/src/builder/connectors/` | Muda `connector-tools.ts`: recebe `ConnectorAccess`; as frases que dizem "Projeto" e "run" vêm de quem monta; o Supervisor não recebe `connector_note_save` | o Builder, o Supervisor |
 | `apps/server/src/builder/mastra.ts` | Cria: o único `new Mastra({ storage, agentControllers: { builder, supervisor } })` | `main.ts`, o Builder, o Supervisor |
@@ -608,7 +620,7 @@ compartilhado com o Builder.
 // packages/hub-api/src/supervisor.ts
 export const SUPERVISOR_CONTROLLER = 'supervisor'
 const BASE = '/api/companies/{companyId}/supervisor/conversations'
-// GET  BASE ?projectId=&page=   -> { conversations: SupervisorConversationSummary[], next }
+// GET  BASE ?projectId=&next=   -> { conversations: SupervisorConversationSummary[], next }
 //      acesso askSupervisor; sem projectId, todas as da pessoa; com ele, só as do Projeto; falhas: NOT_FOUND (empresa ou papel), DATABASE_UNAVAILABLE
 // POST BASE { model?: ModelId, effort?: Effort, projectId?: ProjectId, connections: ConnectionId[] (até 50) }, attemptKey: true
 //      -> 201 { conversation: SupervisorConversation & { model: ModelId } }
@@ -618,7 +630,7 @@ const BASE = '/api/companies/{companyId}/supervisor/conversations'
 //      -> 200 { conversation: SupervisorConversation }; falhas: CONVERSATION_NOT_FOUND e as de leitura
 // GET  /api/companies/{companyId}/supervisor/connections ?projectId=
 //      -> { connections: SessionConnection[] } (o que uma conversa nova pode escolher ali, todas com chosen: true); falhas: NOT_FOUND, DATABASE_UNAVAILABLE
-// o `next` do GET tem a forma do de listConversations (code C44)
+// o `next` do GET é opaco (code C44): o Hub o faz do `page` do `listThreads` do Mastra (`perPage` 30) e o lê de volta
 export const SupervisorConversationSummary = z.object({
   id: ConversationId, title: z.string().nullable(), updatedAt: z.iso.datetime(), projectId: ProjectId.nullable(),
 })
@@ -710,12 +722,16 @@ export function connectorTools(access: ConnectorAccess, include: { noteSave: boo
   no Builder (`builder.ts:54`), e `task_*` fora pelo `availableTools`.
 - **A criação.** A rota confere o modelo como `created` (`routes.ts:83-105`), o Projeto e as
   ligações, e chama `createSession({ id, resourceId: supervisorOwner(owner), threadId: id, tags })`,
-  depois `session.thread.setSetting({ key: CHOSEN_SETTING, value })` e `session.model.switch`
-  (`switchModel`, `routes.ts:33-44`).
-- **A troca.** `PUT …/connections` acha a sessão pelo mesmo `createSession({ id, resourceId,
-  threadId: id })` (get-or-create, como `switchModel`) e grava a configuração.
-- **A remoção.** `release(scope)` lista os fios por `listThreads({ filter: { metadata } })` com
-  `{ companyId }`, mais `{ personId }` para uma pessoa ou `{ conexusProjectId }` para um Projeto, e
+  depois `session.model.switch` (`switchModel`, `routes.ts:33-44`) e, por último,
+  `session.thread.setSetting({ key: CHOSEN_SETTING, value })`. Na repetição com a mesma chave, o fio
+  que já tem a configuração não é regravado, e um `projectId` diferente da marca do fio dá
+  `IDEMPOTENCY_CONFLICT`.
+- **A troca.** `PUT …/connections` acha a sessão com `createSession({ id, resourceId, threadId: id,
+  resumeOnly: true })` (`NM:agent-controller/agent-controller.d.ts:117-142`): só uma sessão viva ou
+  um fio guardado daquele dono, nunca um fio novo; sem fio, `CONVERSATION_NOT_FOUND`. Toda rota que
+  não é a criação acha a sessão assim. Depois grava a configuração.
+- **A remoção.** `release(scope)` lista os fios por `listThreads({ filter: { metadata }, perPage:
+  false })` (a página padrão do `@mastra/pg` é de 100, `dist/index.js:12308`) com `{ companyId }`, mais `{ personId }` para uma pessoa ou `{ conexusProjectId }` para um Projeto, e
   para cada um `deleteSession` e `deleteThread`, como `public.ts:68-78`; chamada pela remoção do
   Builder (`public.ts`), depois da dele, com o mesmo `ReleaseScope`.
 - **O fim.** O `close` do Hub: `supervisor.close()`, o do Builder, `mastra.shutdown()` (em
@@ -732,7 +748,7 @@ export function connectorTools(access: ConnectorAccess, include: { noteSave: boo
   `isTaskComplete` e **sem** `agents` (a 24.4).
 - A memória: a do Builder (`builderMemory`, `builder.ts:111-159`): observacional por conversa,
   `bufferTokens: false` (a troca que o fundador aceitou: uma pausa enquanto o observador roda, a cada
-  ~30 mil palavras-chave; um turno do Supervisor com várias leituras de 16 KB pode chegar a ela
+  ~30 mil tokens; um turno do Supervisor com várias leituras de 16 KB pode chegar a ela
   dentro de uma resposta), com a instrução do observador própria do Supervisor; `generateTitle`.
 - As conversas: `memory.listThreads({ filter: { resourceId: supervisorOwner(owner), metadata? }, orderBy })`;
   o id derivado da chave de tentativa (uuid v5 da empresa, da pessoa e da chave).
@@ -769,7 +785,7 @@ dublê) e T26 (os eventos do controlador numa gravação nativa).
 
 ### Como se prova
 
-Critérios 8 a 16e: `routes.test.ts`, `guard.test.ts` (caso novo), `supervisor.test.ts`,
+Critérios 8 a 16d: `routes.test.ts`, `guard.test.ts` (caso novo), `supervisor.test.ts`,
 `instructions.test.ts`, `release.test.ts`, `supervisor.eval.test.ts`,
 `npm test -w @conexus/server -- supervisor guard prompt`. O primeiro teste a escrever é o do turno
 real que lê duas vezes o Sankhya numa conversa de Projeto (critérios 8a e 16): ele prova que a
@@ -791,6 +807,9 @@ no seguinte. Hoje falham: não há Supervisor. A medida de um dia (critério 25)
 - As rotas do Mastra para a chave `supervisor` exigirem algo que a lista fixa do guarda não tem.
 - Com `R1`, uma regra de `builder.md` que só faz sentido com um Projeto não couber em nenhum dos dois
   blocos sem mudar o que o Builder faz: deixá-la em `builder.md` e dizer qual.
+- O `setSetting` voltar sem gravar (ele não faz nada sem armazenamento ou sem fio,
+  `NM:agent-controller-DO6rGsQm.js:2184-2193`): a rota relê a configuração depois de gravar, e uma
+  leitura diferente é `DATABASE_UNAVAILABLE`; se isso acontecer num teste, parar e mostrar.
 - O contexto perder a `TurnKey` entre o processador de entrada e a ferramenta (o Mastra copia o
   contexto em `buildRequestContext`): parar e mostrar.
 
