@@ -971,6 +971,33 @@ rows for the five above wait on issue #458.
   Mastra's own `goal` judges completion with a model, not the list (`agent/goal/scorer.ts:14-28`), so
   it does not serve. Proof: `conversation-check.test.ts`, criterion 15 of step 14.2.
 
+## Mastra 1.79.0: a tool call the model streamed unparseable (defect after v0.20.8)
+
+- **Library line.** Mastra's in-process loop persists a tool call whose JSON it cannot parse with
+  `args: undefined` (`@mastra/core/dist/stream-Cf2uTBjB.js:813-848`, after `tryRepairJson`, which
+  does not repair truncation), and replays it with `input: invocation.args`
+  (`message-list-Bfir0O2V.js:9061-9068`). `@ai-sdk/anthropic` 3.0.133 writes `input: part.input`
+  (`dist/index.mjs:3062-3069`), `JSON.stringify` drops the undefined field, and Anthropic answers 400
+  `tool_use.input: Field required` to every later request of the conversation. The AI SDK's own loop
+  sends such a call as `{}` (`ai/dist/index.mjs:4392`); Mastra has no such rule in
+  `DEFAULT_COMPAT_RULES` (`trip-wire-C6DhMdZ8.js`), only the extension point
+  `new ProviderHistoryCompat({ additionalRules })`. Mastra's in-process engine also scores an
+  errored iteration through `isTaskComplete` (the durable engine skips it, Mastra issue #21897).
+- **Hand-made piece.** `toolCallInputRequired` in `model-accounts/tool-call-input.ts` (wired in
+  `model-accounts/processors.ts`), a `ProviderHistoryCompat` rule: its `applyToPrompt` sends a
+  `tool-call` with no `input` as `{}` in the outbound prompt only; stored messages are not touched, so a conversation already broken
+  recovers on its next message. And `judge` in `conversation/processors.ts` returns finished once
+  the queue has ended the turn (`turnIn(requestContext)?.outcome`), so a failed turn is not called
+  again and no false `MODEL_NO_ACCOUNT` is stored. Visible change: the version of a failed turn
+  with open tasks has no check verdict, like a turn that stopped on a question; before, it read
+  "unfinished" only because of those false calls.
+- **Why.** One bad tool call must never leave a conversation broken. Proof: in
+  `conversation-tool-input.test.ts`, "guardou sem argumentos" (an `ask_user` call streamed truncated,
+  then two more turns, against a double that answers the 400 and records each replayed `tool_use`
+  input) fails without the rule, and "não volta ao modelo" (a call that fails with tasks open,
+  through the public door) fails without the check. Not done: `toolStreaming: false` (changes card
+  streaming for every call and leaves other providers exposed).
+
 ## Mastra 1.79.0 and @mastra/fastify 1.5.23: session routes behind the Hub's guard (step 14.2)
 
 - **A fixed list, one guard.** `conversation/guard.ts` registers seven of Mastra's own

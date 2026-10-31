@@ -8,6 +8,7 @@ import type { MastraCompositeStore } from '@mastra/core/storage'
 import type { TaskItemSnapshot } from '@mastra/core/tools'
 import { createTool, summarizeTaskCheck, TASK_STATE_TYPE } from '@mastra/core/tools'
 import { z } from 'zod'
+import { turnIn } from '../model-accounts/public.ts'
 import type { Runs } from '../runs/public.ts'
 
 /** Conexus OS `e0353c36` `harness/tools.ts:28-33`, with the steps of this check (decision 0055). */
@@ -86,6 +87,8 @@ async function judge(
   requestContext: RequestContext,
 ): Promise<Verdict> {
   const { runs } = deps
+  // The queue ended the turn (a failed call): Mastra's in-process engine still scores that step, and a model call now would find no account.
+  if (turnIn(requestContext)?.outcome !== undefined) return FINISHED
   const open = await openTasks(deps.storage, requestContext)
   if (open.length === 0 && !(await runs.changed(requestContext))) return FINISHED
   const round = runs.round(requestContext)

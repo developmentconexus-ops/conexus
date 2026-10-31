@@ -12,6 +12,7 @@ import type {
 import {
   CyberRefusalHandler,
   defaultStabilityErrorProcessors,
+  ProviderHistoryCompat,
   StreamErrorRetryProcessor,
 } from '@mastra/core/processors'
 import type { RequestContext } from '@mastra/core/request-context'
@@ -24,6 +25,7 @@ import type { QueueDeps } from './queue.ts'
 import { callModel, markAccount, pickAccount, providerName, providerOf } from './queue.ts'
 import type { ProviderOptions } from './thinking.ts'
 import { providerOptionsOf } from './thinking.ts'
+import { toolCallInputRequired } from './tool-call-input.ts'
 import type { Notice, Picked, Turn } from './turn.ts'
 import { chosenModel, NOTICE_PART, turnIn } from './turn.ts'
 
@@ -385,8 +387,12 @@ export function accountErrorProcessors(deps: QueueDeps): ErrorProcessor[] {
   const defaults = defaultStabilityErrorProcessors({
     retryUnknownErrors: true,
     retryBadRequests: true,
-  }).map((processor) =>
-    processor instanceof StreamErrorRetryProcessor ? accountRetry(processor) : processor,
-  )
+  }).map((processor) => {
+    if (processor instanceof StreamErrorRetryProcessor) return accountRetry(processor)
+    if (processor instanceof ProviderHistoryCompat) {
+      return new ProviderHistoryCompat({ additionalRules: [toolCallInputRequired] })
+    }
+    return processor
+  })
   return [new CyberRefusalHandler(), ...defaults, accountQueue(deps)]
 }
