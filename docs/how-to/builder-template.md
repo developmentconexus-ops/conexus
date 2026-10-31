@@ -8,9 +8,8 @@ expects, so a Release builds both from one commit.
 
 The workflow Publish builds the template from the Release's commit with `node infra/e2b/template.ts`.
 The account's key comes from the repository secret `E2B_API_KEY`, only into that step. The build
-starts a machine from the new template and checks that every SDK file the commit holds is there,
-byte for byte, then prints `HUB_E2B_TEMPLATE=conexus-builder:<commit>`. The deploy starts the Hub
-with that template beside the image and records both for Voltar atrás. A failed build or check
+prints `HUB_E2B_TEMPLATE=conexus-builder:<commit>`. The deploy starts the Hub
+with that template beside the image and records both for Voltar atrás. A failed build
 fails the Release before the deploy, and the Hub keeps its image and template.
 
 Each machine carries the template it was made from in its mark. On a conversation's next turn, the

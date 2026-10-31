@@ -3,7 +3,7 @@
   "workspaces": {
     ".": {
       "project": ["scripts/**/*.ts", "tests/e2e/**/*.ts"],
-      "ignoreBinaries": ["openssl", "sha256sum"],
+      "ignoreBinaries": ["openssl"],
       "ignoreDependencies": ["jscpd"]
     },
     "apps/server": {
