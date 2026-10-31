@@ -1,21 +1,35 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { CompanyId, PersonId } from '@conexus/hub-api'
-import { InMemoryStore } from '@mastra/core/storage'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
-import { Turn, turnContext } from '../model-accounts/public.ts'
-import { conexusCheck } from './public.ts'
 import {
   answeredOf,
+  asked,
   conversing,
   endOf,
+  messagesOf,
   sent,
   started,
   streamOf,
   title,
 } from './test-conversation.ts'
-import { failuresOf } from './test-parts.ts'
+import { failuresOf, partsOf } from './test-parts.ts'
 import { WHO } from './test-questions.ts'
+
+const WRITE = {
+  type: 'tool_use',
+  name: 'mastra_workspace_write_file',
+  input: { path: 'a.ts', content: 'x\n' },
+} as const
+const TASKS = {
+  type: 'tool_use',
+  name: 'task_write',
+  input: {
+    tasks: [
+      { content: 'Tela de encomendas', activeForm: 'Fazendo a tela', status: 'in_progress' },
+      { content: 'Filtro por data', activeForm: 'Filtrando', status: 'pending' },
+    ],
+  },
+} as const
 
 /** The model's JSON for `ask_user`, cut short, as an unvalidated tool stream may deliver it. */
 const TRUNCATED = JSON.stringify({ questions: [WHO] }).slice(0, -12)
@@ -28,7 +42,10 @@ test('uma chamada de ferramenta que o Mastra guardou sem argumentos não quebra 
     if (title(call) !== undefined) return { kind: 'text', text: 'Título' }
     calls.push(call)
     return calls.length === 1
-      ? { kind: 'blocks', blocks: [{ type: 'tool_use', name: 'ask_user', input: TRUNCATED }] }
+      ? {
+          kind: 'blocks',
+          blocks: [WRITE, { type: 'tool_use', name: 'ask_user', input: TRUNCATED }],
+        }
       : { kind: 'text', text: 'Pronto.' }
   })
   const url = `${conversations}/${await started(hub, ana, conversations)}`
@@ -40,7 +57,16 @@ test('uma chamada de ferramenta que o Mastra guardou sem argumentos não quebra 
     assert.equal(endOf(events), 'complete', content)
     assert.deepEqual(failuresOf(events), [], content)
   }
+  assert.equal(said.mock.callCount(), 1)
   assert.equal(said.mock.calls[0]?.arguments[0], 'Error converting tool call input to JSON')
+  const replayed = calls.slice(1).map((call) => call.toolUses)
+  assert.equal(replayed.length, 3)
+  for (const uses of replayed) {
+    assert.deepEqual(uses, [
+      { name: 'mastra_workspace_write_file', input: WRITE.input },
+      { name: 'ask_user', input: {} },
+    ])
+  }
   const stored = (await answeredOf(hub, ana, url)).flatMap((message) => message.parts)
   const asked = stored.flatMap((part) =>
     part.type === 'tool-invocation' && part.toolInvocation.toolName === 'ask_user'
@@ -55,22 +81,28 @@ test('uma chamada de ferramenta que o Mastra guardou sem argumentos não quebra 
   )
 })
 
-test('o turno que a fila encerrou não volta ao modelo: a conferência dá o turno por terminado sem ler as tarefas', async (t) => {
-  const { hub } = await conversing(t, () => ({ kind: 'text', text: 'Pronto.' }))
-  const turn = new Turn({
-    companyId: CompanyId.parse('companyAAAAAAAAAAAAAAAAAAAAAAAAA'),
-    personId: PersonId.parse(crypto.randomUUID()),
+test('uma chamada que falha com tarefas abertas não volta ao modelo: nenhum MODEL_NO_ACCOUNT falso e a versão sem veredito', async (t) => {
+  const calls: Sent[] = []
+  const { hub, ana, conversations } = await conversing(t, (call): Reply => {
+    if (title(call) !== undefined) return { kind: 'text', text: 'Título' }
+    calls.push(call)
+    return calls.length === 1
+      ? { kind: 'blocks', blocks: [TASKS, WRITE] }
+      : { kind: 'refuse', status: 400 }
   })
-  const storage = new InMemoryStore()
-  const read = t.mock.method(storage, 'getStore')
-  const requestContext = Object.fromEntries(turnContext(turn).entries())
-  const scorer = conexusCheck({ runs: hub.runs, storage })
-  turn.finish('failed')
-  const { score } = await scorer.run({
-    input: [],
-    output: [],
-    requestContext: { ...requestContext, controller: { threadId: 'conversa' } },
-  })
-  assert.equal(score, 1)
-  assert.equal(read.mock.callCount(), 0, 'a turn the queue ended is not read for open tasks')
+  const { url, events } = await asked(t, { hub, person: ana, conversations })
+  assert.equal(endOf(events), 'error')
+  const stored = (await messagesOf(hub, ana, url)).flatMap((message) => message.parts)
+  const errors = stored.flatMap((part) => (part.type === 'error' ? [JSON.stringify(part)] : []))
+  assert.ok(errors.length > 0, 'the failure is stored')
+  assert.ok(
+    errors.every((error) => !error.includes('MODEL_NO_ACCOUNT')),
+    'no false MODEL_NO_ACCOUNT',
+  )
+  const version = partsOf(events).find((part) => part.type === 'data-conexus-version')
+  assert.ok(version, 'the turn changed a file, so it made a version')
+  assert.ok(
+    !('check' in Object(Object(version).data)),
+    'a failed turn leaves its version without a verdict',
+  )
 })

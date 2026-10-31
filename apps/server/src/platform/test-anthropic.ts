@@ -94,6 +94,7 @@ function chatSentOf(init: RequestInit | undefined): Sent {
     media: [],
     thinking: null,
     cached: [],
+    toolUses: [],
     unfilled: null,
   }
 }
@@ -241,9 +242,12 @@ function replied(sent: Sent, reply: Reply, signal: AbortSignal | null | undefine
   })
 }
 
-/** The Messages API's 400 for a conversation that holds a `tool_use` with no `input`. */
+/** The Messages API's 400 for a conversation that holds a `tool_use` with no object `input`, or a `tool_result` with no `tool_use`. */
 function unfilledRefused(path: string): Response {
-  const error = { type: 'invalid_request_error', message: `${path}: Field required` }
+  const error = {
+    type: 'invalid_request_error',
+    message: `${path}: ${path.endsWith('tool_use_id') ? 'unexpected `tool_use_id` found in `tool_result` blocks' : 'Field required'}`,
+  }
   return Response.json({ type: 'error', error }, { status: 400 })
 }
 

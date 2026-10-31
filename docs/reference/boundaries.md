@@ -983,18 +983,20 @@ rows for the five above wait on issue #458.
   `DEFAULT_COMPAT_RULES` (`trip-wire-C6DhMdZ8.js`), only the extension point
   `new ProviderHistoryCompat({ additionalRules })`. Mastra's in-process engine also scores an
   errored iteration through `isTaskComplete` (the durable engine skips it, Mastra issue #21897).
-- **Hand-made piece.** `toolCallInputRequired` in `model-accounts/processors.ts`, a
-  `ProviderHistoryCompat` rule: its `applyToPrompt` sends a `tool-call` with no `input` as `{}` in
-  the outbound prompt only; stored messages are not touched, so a conversation already broken
+- **Hand-made piece.** `toolCallInputRequired` in `model-accounts/tool-call-input.ts` (wired in
+  `model-accounts/processors.ts`), a `ProviderHistoryCompat` rule: its `applyToPrompt` sends a
+  `tool-call` with no `input` as `{}` in the outbound prompt only; stored messages are not touched, so a conversation already broken
   recovers on its next message. And `judge` in `conversation/processors.ts` returns finished once
   the queue has ended the turn (`turnIn(requestContext)?.outcome`), so a failed turn is not called
-  again and no false `MODEL_NO_ACCOUNT` is stored.
+  again and no false `MODEL_NO_ACCOUNT` is stored. Visible change: the version of a failed turn
+  with open tasks has no check verdict, like a turn that stopped on a question; before, it read
+  "unfinished" only because of those false calls.
 - **Why.** One bad tool call must never leave a conversation broken. Proof: in
   `conversation-tool-input.test.ts`, "guardou sem argumentos" (an `ask_user` call streamed truncated,
-  then two more turns, against a double that answers the 400) fails without the rule (removal
-  `tool-call-input-rule`), and "a fila encerrou" fails without the check (removal
-  `ended-turn-is-finished`). Not done: `toolStreaming: false` (changes card streaming for every
-  call and leaves other providers exposed).
+  then two more turns, against a double that answers the 400 and records each replayed `tool_use`
+  input) fails without the rule, and "não volta ao modelo" (a call that fails with tasks open,
+  through the public door) fails without the check. Not done: `toolStreaming: false` (changes card
+  streaming for every call and leaves other providers exposed).
 
 ## Mastra 1.79.0 and @mastra/fastify 1.5.23: session routes behind the Hub's guard (step 14.2)
 
