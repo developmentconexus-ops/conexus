@@ -6,6 +6,7 @@ import {
   readdirSync,
   rmSync,
   symlinkSync,
+  unlinkSync,
   writeFileSync,
 } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -18,6 +19,7 @@ import { spawnRunner } from './check/command.ts'
 import { dependencies } from './check/dependencies.ts'
 import { manifesto } from './check/manifest.ts'
 import type { CheckContext, Outcome } from './check/step.ts'
+import { builtPlatform } from './check/test-app.ts'
 import { tipos } from './check/types.ts'
 import { readSkills } from './skills.ts'
 import { STARTER_DIR } from './starter.ts'
@@ -78,11 +80,12 @@ function appOf(t: TestContext, examples: readonly string[], change = (text: stri
 }
 
 /** The check's steps up to the types, as the machine runs them: each must pass for the next to run. */
-async function checked(root: string): Promise<Outcome[]> {
+async function checked(t: TestContext, root: string): Promise<Outcome[]> {
+  unlinkSync(join(root, 'node_modules', '@conexus'))
   const ctx: CheckContext = {
     root,
     tools: MODULES,
-    platform: undefined,
+    platform: builtPlatform(t),
     run: (command, args, options) =>
       command === 'npm'
         ? Promise.resolve({ code: 0, output: '', timedOut: false })
@@ -121,7 +124,7 @@ test('nenhuma skill ensina o caminho conexus/, o runner, o CTE nem a casca do OS
 
 for (const [form, examples] of Object.entries(FORMS)) {
   test(`os exemplos da forma ${form} tipam contra o starter e o SDK`, async (t) => {
-    const outcomes = await checked(appOf(t, examples))
+    const outcomes = await checked(t, appOf(t, examples))
     assert.deepEqual(outcomes, [{ state: 'passed' }, { state: 'passed' }, { state: 'passed' }])
   })
 }
@@ -140,7 +143,7 @@ test('um exemplo quebrado falha na conferência', async (t) => {
   const broken = appOf(t, FORMS.system, (text) =>
     text.replace("accessor('subject'", "accessor('assunto'"),
   )
-  const outcomes = await checked(broken)
+  const outcomes = await checked(t, broken)
   const last = outcomes.at(-1)
   assert.equal(last?.state, 'failed')
   assert.ok(

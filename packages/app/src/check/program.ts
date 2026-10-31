@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 // One TypeScript program of the `tipos` step, in a process of its own so its heap is the one the
-// step gives it and a crash is the step's outcome: it prints the program's diagnostics as JSON.
+// step gives it and a crash is the step's outcome: it writes the program's diagnostics as JSON to
+// the file it is given, so nothing the process prints can be taken for them.
+import { writeFileSync } from 'node:fs'
 import { relative } from 'node:path'
 import { parseArgs } from 'node:util'
 import ts from 'typescript'
@@ -10,7 +12,7 @@ import { WORK_FOLDER } from './report.ts'
 import { problem } from './step.ts'
 
 // The starter's own options (packages/app/starter/tsconfig.json), fixed by the check so the model's
-// tsconfig cannot loosen them; `allowImportingTsExtensions` reads the SDK, which ships its sources.
+// tsconfig cannot loosen them. The SDK reaches them as declarations (check/declarations.ts).
 const BASE = {
   strict: true,
   target: 'ES2022',
@@ -19,14 +21,13 @@ const BASE = {
   noEmit: true,
   skipLibCheck: true,
   isolatedModules: true,
-  allowImportingTsExtensions: true,
 }
 
 /**
  * Two programs from the work folder: the screens against the DOM, and the server and its shared
  * operations against the Worker's globals, so a handler that reaches for `document` fails.
  */
-const PROGRAMS = {
+export const PROGRAMS = {
   screens: {
     compilerOptions: {
       ...BASE,
@@ -45,10 +46,15 @@ const PROGRAMS = {
 
 const PROGRAM_NAMES = ['screens', 'server'] as const
 
-/** One program's diagnostics from TypeScript's own compiler API, located where it says. */
-function diagnosticsOf(root: string, name: keyof typeof PROGRAMS): Problem[] {
+/** One of the programs, built by TypeScript's own compiler API. */
+export function programOf(root: string, name: keyof typeof PROGRAMS): ts.Program {
   const parsed = ts.parseJsonConfigFileContent(PROGRAMS[name], ts.sys, `${root}/${WORK_FOLDER}`)
-  const program = ts.createProgram({ rootNames: parsed.fileNames, options: parsed.options })
+  return ts.createProgram({ rootNames: parsed.fileNames, options: parsed.options })
+}
+
+/** One program's diagnostics, located where the compiler says. */
+function diagnosticsOf(root: string, name: keyof typeof PROGRAMS): Problem[] {
+  const program = programOf(root, name)
   return ts.getPreEmitDiagnostics(program).map((diagnostic) => {
     const code = `TS${diagnostic.code}`
     const message = ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n')
@@ -65,6 +71,10 @@ function diagnosticsOf(root: string, name: keyof typeof PROGRAMS): Problem[] {
   })
 }
 
-const { positionals } = parseArgs({ allowPositionals: true })
-const [name, root] = z.tuple([z.enum(PROGRAM_NAMES), z.string().min(1)]).parse(positionals)
-process.stdout.write(JSON.stringify(diagnosticsOf(root, name)))
+if (import.meta.main) {
+  const { positionals } = parseArgs({ allowPositionals: true })
+  const [name, root, out] = z
+    .tuple([z.enum(PROGRAM_NAMES), z.string().min(1), z.string().min(1)])
+    .parse(positionals)
+  writeFileSync(out, JSON.stringify(diagnosticsOf(root, name)))
+}

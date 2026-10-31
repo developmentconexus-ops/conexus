@@ -5,6 +5,7 @@ import { test } from 'node:test'
 import { MachineTemplate } from '../apps/server/src/platform/config-machine.ts'
 import { TEMPLATE, templateLine, templateName } from '../infra/e2b/name.ts'
 import { digests, sdkFiles } from '../infra/e2b/sdk.ts'
+import { DECLARED } from '../packages/app/src/check/declarations.ts'
 
 const ROOT = resolve(import.meta.dirname, '..')
 
@@ -32,7 +33,7 @@ test('a linha que o build imprime é o nome pedido, uma vez só o commit, e o Hu
 test('a prova do SDK confere o programa da conferência, o contrato e o kit dos tipos, sem os testes que o build deixa fora', () => {
   const files = sdkFiles(ROOT)
   assert.ok(files.includes('packages/app/src/check/main.ts'))
-  assert.ok(files.includes('packages/app-contract/package.json'))
+  assert.ok(files.includes('packages/app-contract/src/index.ts'))
   assert.ok(files.includes('packages/connectors/src/calls.ts'))
   assert.ok(
     files.every((file) => /^packages\/(app|app-contract|connectors)\//.test(file)),
@@ -41,6 +42,18 @@ test('a prova do SDK confere o programa da conferência, o contrato e o kit dos 
   assert.equal(
     files.filter((file) => /\.test\.tsx?$|\/node_modules\/|\/dist\//.test(file)).length,
     0,
+  )
+})
+
+test('os package.json que o build reescreve para os tipos não entram na prova dos arquivos, que a prova confere à parte', () => {
+  const files = sdkFiles(ROOT)
+  assert.deepEqual(
+    files.filter((file) => /^packages\/[^/]+\/package\.json$/.test(file)),
+    [],
+  )
+  assert.deepEqual(
+    DECLARED.map(({ declaration }) => declaration),
+    ['app/dist/index.d.ts', 'app-contract/dist/index.d.ts', 'connectors/dist/calls.d.ts'],
   )
 })
 
