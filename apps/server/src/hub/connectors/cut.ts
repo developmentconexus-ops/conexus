@@ -39,14 +39,16 @@ function shortened(value: unknown): { value: unknown; cut: boolean } {
 
 /**
  * What the model reads of a read (the tool's own paged answer, never a filter over Mastra's
- * output): up to 20 whole rows, long text cut, then rows dropped from the end until the value is at
- * most 16 KB. `complete` is false when either cut took something or the provider said more exists.
- * A value that is no list of rows has its long text cut and nothing else.
+ * output): up to 20 whole rows, long text cut, then rows dropped from the end, the last one too,
+ * until the value is at most 16 KB. `complete` is false when either cut took something or the
+ * provider said more exists. A value that is no list of rows has its long text cut, and is `null`
+ * when it still passes 16 KB.
  */
 export function shaped(value: unknown): { value: unknown; complete: boolean } {
   const listed = Listed.safeParse(value)
   if (!listed.success) {
     const short = shortened(value)
+    if (size(short.value) > CUT_BYTES) return { value: null, complete: false }
     return { value: short.value, complete: !short.cut }
   }
   let rows = listed.data.linhas.slice(0, CUT_ROWS)
@@ -59,7 +61,7 @@ export function shaped(value: unknown): { value: unknown; complete: boolean } {
     if (short.cut) complete = false
     rows = z.array(z.unknown()).parse(short.value)
   }
-  while (rows.length > 1 && size(build(rows)) > CUT_BYTES) {
+  while (rows.length > 0 && size(build(rows)) > CUT_BYTES) {
     rows = rows.slice(0, -1)
     complete = false
   }
