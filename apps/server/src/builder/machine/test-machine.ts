@@ -10,7 +10,8 @@ import { InstallationId, MachineTemplate } from '../../platform/config-machine.t
 import { Failure } from '../../platform/failure.ts'
 import { openRepository } from '../git/public.ts'
 import type { Kit, KitFactory } from './kit.ts'
-import type { Phase } from './public.ts'
+import type { Bundled } from './port.ts'
+import type { KeepCut, Phase } from './public.ts'
 import { createMachines } from './public.ts'
 
 /** A seed the Git refuses to make, because its copy holds a version the disk lost. */
@@ -190,15 +191,23 @@ export async function world(
     ...options,
   })
   const phases: Phase[] = []
+  /** The bundles the Hub was handed for a cut turn; none is saved here, the Hub's side is `runs.test.ts`. */
+  const cuts: (Bundled | 'unchanged' | 'too-large')[] = []
+  const keepCut: KeepCut = async (collect) => {
+    const found = await collect(base)
+    cuts.push(found)
+    return typeof found === 'object' ? 'saved' : 'unchanged'
+  }
   function open(conversationId = CONVERSATION) {
     return machines.workspaceFor({
       companyId: COMPANY,
       projectId: PROJECT,
       conversationId,
       onPhase: (phase) => phases.push(phase),
+      keepCut,
     })
   }
-  return { machines, repository, base, control, phases, open, folder }
+  return { machines, repository, base, control, phases, cuts, open, folder }
 }
 
 /** The workspace's machine, started as a tool's first call starts it. */

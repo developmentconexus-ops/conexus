@@ -98,6 +98,25 @@ test('máquina: a máquina que pausou na hora do turno, ou que o Mastra religa n
   assert.ok(bundle.files > 1, 'the version holds the starter beside the turn')
 })
 
+test('máquina: o turno que não terminou (o processo morreu) deixa os arquivos na máquina, entregues ao Hub; o turno que terminou volta ao main', async (t) => {
+  const { open, machines, control, cuts } = await world(t)
+  const ended = await open()
+  await ended.filesystem?.writeFile('a.ts', 'um\n')
+  await machines.release(CONVERSATION)
+  control.outcome = 'connected'
+  const after = await open()
+  assert.equal(await after.filesystem?.exists('a.ts'), false, 'an ended turn is not kept')
+  assert.equal(cuts.length, 0)
+  await after.filesystem?.writeFile('b.ts', 'dois\n')
+  // The process dies here: no release, and a new process opens the conversation's workspace.
+  const cut = await open()
+  assert.equal(await cut.filesystem?.exists('b.ts'), true, 'the cut turn kept its file')
+  const [kept, ...others] = cuts
+  assert.ok(typeof kept === 'object', `the Hub was handed the tree, not ${String(kept)}`)
+  assert.equal(others.length, 0)
+  assert.equal(kept.changedFiles, 1)
+})
+
 test('máquina: duas ferramentas do Workspace no primeiro passo esperam a semente, pois o running vem antes do onStart', async (t) => {
   const { open, folder, control } = await world(t)
   control.upMs = 300
