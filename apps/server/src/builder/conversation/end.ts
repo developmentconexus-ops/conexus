@@ -15,6 +15,7 @@ import type {
 } from '@mastra/core/agent-controller'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
+import { logMemory } from '../../platform/memory.ts'
 import type { Phase } from '../machine/public.ts'
 import type { Runs, Settled } from '../runs/public.ts'
 import type { Builder } from './builder.ts'
@@ -304,6 +305,7 @@ export function watchRuns(deps: Deps) {
         { ...fields, reason: event.reason ?? 'complete', ...line },
         'CONVERSATION_TURN_ENDED',
       )
+      logMemory(deps.log, { conversationId })
       run.over.resolve()
       running.delete(conversationId)
       run = undefined

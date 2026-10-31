@@ -80,7 +80,10 @@ export function createConversations(deps: {
   return Object.freeze({
     routes: (app: FastifyInstance) => {
       registerConversationRoutes(app, { store, builder, queue })
-      registerBuilderRoutes(app, { store, builder, streams, updating: runs.updating })
+      registerBuilderRoutes(app, {
+        ...{ store, builder, streams, log: deps.log },
+        updating: runs.updating,
+      })
       registerSourceRoutes(app, {
         ...{ database, identity, projects: deps.projects },
         repository: (ids) => deps.runs.repositoryOf(ids),
