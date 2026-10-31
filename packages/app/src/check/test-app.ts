@@ -62,13 +62,8 @@ export const ANY_HANDLERS = `import { operations } from '../shared/operations'
 export const handlers = Object.fromEntries(Object.keys(operations).map((name) => [name, () => ({})]))
 `
 
-/**
- * The app as the machine has it: the SDK built into declarations the way the template builds it,
- * then copied from the platform's folder, never the repository's links.
- */
-export function onTheMachine(t: TestContext, files: Files): CheckContext {
-  const root = appWith(t, files)
-  unlinkSync(join(root, 'node_modules', '@conexus'))
+/** The platform's folder as the template builds it: the SDK copied and built into declarations (check/declarations.ts). */
+export function builtPlatform(t: TestContext): string {
   const opt = mkdtempSync(join(tmpdir(), 'conexus-platform-'))
   t.after(() => rmSync(opt, { recursive: true, force: true }))
   const platform = join(opt, 'packages')
@@ -85,5 +80,12 @@ export function onTheMachine(t: TestContext, files: Files): CheckContext {
   for (const folder of ['app', 'app-contract', 'connectors'])
     symlinkSync(join(platform, folder), join(opt, 'node_modules', '@conexus', folder))
   declare(platform)
-  return { ...contextOf(root), platform }
+  return platform
+}
+
+/** The app as the machine has it: the SDK from the built platform's folder, never the repository's links. */
+export function onTheMachine(t: TestContext, files: Files): CheckContext {
+  const root = appWith(t, files)
+  unlinkSync(join(root, 'node_modules', '@conexus'))
+  return { ...contextOf(root), platform: builtPlatform(t) }
 }
