@@ -13,7 +13,8 @@ services:
     image: ${HUB_IMAGE:?HUB_IMAGE must name the image by digest}
     init: true
     restart: unless-stopped
-    stop_grace_period: 20s
+    # The Hub waits up to 180 s for answers in flight, then has 15 s to close (founder E1, code C62).
+    stop_grace_period: 210s
     secrets:
       - hub_database_url
       - hub_mastra_database_url

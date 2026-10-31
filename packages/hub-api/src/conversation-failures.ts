@@ -58,6 +58,22 @@ export const CONVERSATION_FAILURES = {
     action: 'Tente de novo quando ele terminar.',
     actionKind: 'RETRY',
   },
+  HUB_UPDATING: {
+    category: 'SYSTEM',
+    settles: true,
+    status: 503,
+    phrase: 'O Conexus está sendo atualizado.',
+    action: 'Tente em um minuto.',
+    actionKind: 'RETRY',
+  },
+  HUB_UPDATED: {
+    category: 'SYSTEM',
+    settles: true,
+    status: 503,
+    phrase: 'A atualização do Conexus cortou esta resposta.',
+    action: 'Mande de novo.',
+    actionKind: 'RETRY',
+  },
   SAVE_REFUSED: {
     category: 'SYSTEM',
     settles: true,

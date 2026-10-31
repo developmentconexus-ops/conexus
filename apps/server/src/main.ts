@@ -216,6 +216,7 @@ async function runServer(): Promise<void> {
     const app = await createHub(config, { status, identity, ...subjects })
     const edge = await createEdgeHub(config, { apps, connectors })
     const grace = shutDownOnSignal(app, edge, {
+      settle: (bound) => conversations.settle(bound),
       drain: () => conversations.close(),
       // Every live provider token is logged out before the database closes.
       release: () =>

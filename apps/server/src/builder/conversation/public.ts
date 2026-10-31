@@ -80,7 +80,7 @@ export function createConversations(deps: {
   return Object.freeze({
     routes: (app: FastifyInstance) => {
       registerConversationRoutes(app, { store, builder, queue })
-      registerBuilderRoutes(app, { store, builder, streams })
+      registerBuilderRoutes(app, { store, builder, streams, updating: runs.updating })
       registerSourceRoutes(app, {
         ...{ database, identity, projects: deps.projects },
         repository: (ids) => deps.runs.repositoryOf(ids),
@@ -95,6 +95,10 @@ export function createConversations(deps: {
       }
       await storage.init()
       deps.log.info({}, 'MASTRA_STORAGE_READY')
+    },
+    /** Refuses new turns and waits for the ones in flight, until `bound` aborts (founder E1). */
+    async settle(bound: AbortSignal): Promise<void> {
+      await runs.settle(bound)
     },
     /**
      * Stops the runs in progress, as Parar does, and closes the open streams once each said its end;
