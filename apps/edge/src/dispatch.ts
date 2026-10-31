@@ -104,9 +104,7 @@ async function redeem(visit: Visit): Promise<Response> {
   if (!body.success) return failure(visit, 'APP_HANDOFF_INVALID')
   const answer = await visit.hub.createAppSession(body.data)
   if (answer.kind === 'DONE') {
-    return redirect(visit, '/', [
-      setCookie(APP_SESSION_COOKIE, answer.value.session),
-    ])
+    return redirect(visit, '/', [setCookie(APP_SESSION_COOKIE, answer.value.session)])
   }
   if (answer.kind === 'REFUSED' && answer.code === 'APP_HANDOFF_INVALID') {
     return failure(visit, 'APP_HANDOFF_INVALID')
