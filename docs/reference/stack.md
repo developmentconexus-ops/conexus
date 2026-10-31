@@ -12,10 +12,12 @@ inside `node_modules`, the maintainers' skill, `llms.txt` or `.md` pages, the RE
 read in `node_modules` at the pin, and its own products (Mastra Code, Factory) at the reference shelf's tag for it; Cloudflare's vibesdk (`github.com/cloudflare/vibesdk`), the main reference
 for Cloudflare and the AI build flow, at `9da158d8` from its own checkout; Conexus OS only with `git show e0353c36:<path>`, because a checkout's HEAD
 can be another commit (one was at `729bdc5d`).
+The pull request that bumps a Mastra pin refreshes the reference shelf and this file in the same
+change.
 
 | Piece | Used in | Read first | Skill | Reference | Decides | Trap |
 | --- | --- | --- | --- | --- | --- | --- |
-| `@mastra/core` | `apps/server/src/builder` | `node_modules/@mastra/core/dist/docs/`; skill; `mastra.ai/llms.txt` | `mastra` | Mastra fork `mastracode/factory-ui/src/ui/domains/chat/services/transcript.ts:206`; OS `apps/hub/src/builder/conversation.ts` | 0027, 0050, C75, W7 | The fork is at core 1.69.0 (`packages/core/package.json:3`); we pin 1.78.0 |
+| `@mastra/core` | `apps/server/src/builder` | `node_modules/@mastra/core/dist/docs/`; skill; `mastra.ai/llms.txt` | `mastra` | Mastra fork `mastracode/factory-ui/src/ui/domains/chat/services/transcript.ts:206`; OS `apps/hub/src/builder/conversation.ts` | 0027, 0050, C75, W7 | The fork is at core 1.69.0 (`packages/core/package.json:3`); we pin 1.79.0 |
 | `@mastra/memory` | `apps/server/src/builder` | `node_modules/@mastra/memory/dist/docs/`; skill | `mastra` | OS `apps/hub/src/builder/conversation.ts` | 0010, 0011 | — |
 | `@aws-sdk/client-s3` | `apps/server/src/builder/git/copy` | `node_modules/@aws-sdk/client-s3/README.md`; `developers.cloudflare.com/r2/examples/aws/aws-sdk-js-v3/` | none | — | 0051 | R2 takes `region: 'auto'` and the account's endpoint; each call needs its own `abortSignal` |
 | `e2b` | `apps/server/src/builder/machine`, `infra/e2b` | `node_modules/e2b/dist/index.d.ts`; `e2b.dev/docs` | none | vibesdk `worker/services/sandbox/BaseSandboxService.ts` (9da158d) | 0051 | `Sandbox.list` finds paused machines too; a template build is a paid call |

@@ -382,3 +382,9 @@ Ele aprovou a página do cartão e escolheu a `A1`: a aba "Projeto" do alto sai,
 Essa emenda muda o cartão da etapa 20 em três pontos, vindos das revisões. Os critérios 9 e 10 citam `project-connection.test.ts`, o esboço da U2 usa `projectId` como `text` e o `catalog.test.ts` deixa de ser arquivo mudado. A linha do corte da leitura cita `builder-tool.ts:89-91` e `sankhya/gateway.ts:34`. A retomada do critério 28 é provada só pelas ferramentas (o Mastra 1.79 não refaz skills nem instruções ao retomar), a metade do rastro do critério 29 vai para a 21.1, e `CONNECTOR_TOOLS` e o caminho passam a `builder/connectors/`.
 
 Cartão da etapa 20 aprovado em 2026-10-30 (commit e84a611647a4816724b76a0f9fc60a69a832594e): "Aprovado"
+
+## Mudanças do método
+
+Em 2026-10-31, sobre as correções do método que a auditoria do mesmo dia propôs: "Sim, menos sobre o prompt do builder não vou mexer nisso agora". Entram o passo do nativo no conserto, o conserto que acrescenta uma peça virar unidade de cartão curto, a página do fundador só com células abertas pelo autor do estudo, a atualização da prateleira e do `stack.md` a cada troca do pin do Mastra, o registro da palavra do fundador sobre os eventos `om_*_failed`, a investigação de teste instável em vazamento, recusa ou isolamento e a QA curta num conserto que muda tela. O prompt do Builder fica como está.
+
+Em 2026-10-31, sobre os eventos `om_*_failed` do Mastra, que chegam ao navegador como o Mastra os manda e carregam o texto cru do fornecedor, contra a regra C51 do guia de código: "Pra mim tem que deixar o nativo mesmo". É o conflito que a regra C75 manda registrar para o fechamento; fica na lista de fechamento do pull request que o registra, e o teste de `conversation.test.ts` passa a dizer no nome o que confere.
