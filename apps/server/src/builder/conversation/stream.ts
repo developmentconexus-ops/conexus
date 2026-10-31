@@ -11,7 +11,7 @@ import type { FailureLog, Scalar } from '../../platform/failure.ts'
  * most 18 KB). A page this far behind reads the transcript and the session again when its stream
  * opens again (`apps/web` `use-session.ts` `resync`), which costs less than holding the rest.
  */
-export const STREAM_BEHIND_BYTES = 8 * 1024 * 1024
+const STREAM_BEHIND_BYTES = 8 * 1024 * 1024
 
 /** What the screen reads of the display state (`apps/web` `session-state.ts` `displayed`). */
 const DISPLAY_READ = [
