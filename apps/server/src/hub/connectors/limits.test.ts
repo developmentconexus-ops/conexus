@@ -4,6 +4,7 @@ import { test } from 'node:test'
 import { setTimeout as sleep } from 'node:timers/promises'
 import { CONCURRENT_CALL } from '@conexus/connectors'
 import { z } from 'zod'
+import type { Executor } from './executor.ts'
 import { appCalls } from './test-app-calls.ts'
 import { A, B, createLimits, executorOf, NO_EXECUTOR, OPENED } from './test-limits.ts'
 
@@ -148,4 +149,29 @@ test('o logout do fim espera a vez da ligação: com uma leitura aberta no token
   await reading
   await sleep(100)
   assert.deepEqual(events, ['login1', 'read done', 'logout t1'])
+})
+
+test('o logout do fim com defeito vai ao registro e não derruba o processo', async () => {
+  const lines: string[] = []
+  const executor: Executor = {
+    ...executorOf([], 61),
+    async logout() {
+      throw new TypeError('a defect in the logout')
+    },
+  }
+  const limits = createLimits({
+    executor,
+    log: { info: () => undefined, error: (_, message) => lines.push(message) },
+  })
+  const unhandled: unknown[] = []
+  const hear = (reason: unknown) => unhandled.push(reason)
+  process.on('unhandledRejection', hear)
+  try {
+    await limits.token(OPENED, 1000)
+    await sleep(1300)
+  } finally {
+    process.off('unhandledRejection', hear)
+  }
+  assert.deepEqual(lines, ['INTERNAL_UNEXPECTED'])
+  assert.deepEqual(unhandled, [])
 })

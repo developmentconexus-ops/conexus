@@ -58,7 +58,7 @@ export function createConnectors(deps: {
     apps.set(connector.id, app)
   }
   const executor = createExecutor({ fetch, origins, log: deps.log })
-  const limits = createLimits({ executor })
+  const limits = createLimits({ executor, log: deps.log })
   const routeDeps = {
     ...deps,
     sealKeys: deps.config.sealKeys,
