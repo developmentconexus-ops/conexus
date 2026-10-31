@@ -10,7 +10,6 @@ import { runInNewContext } from 'node:vm'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
 import { TEST_ORIGIN } from '../../platform/test-database.ts'
-import { STREAM_BEHIND_BYTES } from './stream.ts'
 import {
   conversing,
   endOf,
@@ -25,6 +24,9 @@ import { sessionStateOf } from './test-questions.ts'
 
 setFlagsFromString('--expose-gc')
 const gc: () => void = runInNewContext('gc')
+
+/** How far behind a page may fall before the Hub drops its stream (`STREAM_BEHIND_BYTES`). */
+const BEHIND_BYTES = 8 * 1024 * 1024
 
 const OBSERVED = [
   '<observations>',
@@ -198,7 +200,7 @@ test('uma página que lê devagar recebe todos os eventos, na ordem, como a que 
   assert.equal(slow.seen.ended, false)
 })
 
-test(`uma página ${STREAM_BEHIND_BYTES / 1048576} MiB atrás perde o stream, que é registrado; ao reabrir, a sessão e a transcrição a põem em dia`, async (t) => {
+test(`uma página ${BEHIND_BYTES / 1048576} MiB atrás perde o stream, que é registrado; ao reabrir, a sessão e a transcrição a põem em dia`, async (t) => {
   const { hub, ana, conversations, lines } = await conversing(t, longTurn(16, 100_000))
   const path = await served(t, hub)
   const url = `${conversations}/${await started(hub, ana, conversations)}`
@@ -209,7 +211,7 @@ test(`uma página ${STREAM_BEHIND_BYTES / 1048576} MiB atrás perde o stream, qu
   await reading.seed()
   assert.equal((await sent(hub, ana, url, 'Leia os clientes')).statusCode, 200)
   const behind = await lineOf({ lines }, (line) => line.reason === 'BEHIND')
-  assert.ok(Number(behind.bytes) > STREAM_BEHIND_BYTES)
+  assert.ok(Number(behind.bytes) > BEHIND_BYTES)
   stalled.read()
   await stalled.until(() => stalled.seen.ended)
   assert.equal(endOf(await reading.turn()), 'complete')
