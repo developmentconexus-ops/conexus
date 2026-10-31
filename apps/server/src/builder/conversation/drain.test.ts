@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { call } from '../../hub/identity/test-hub.ts'
 import {
+  beside,
   conversing,
   endOf,
   holding,
@@ -16,6 +17,7 @@ import {
   title,
 } from './test-conversation.ts'
 import { failuresIn, failuresOf } from './test-parts.ts'
+import { answerTo, ask, untilCard, WHO } from './test-questions.ts'
 
 /** Whether `promise` settles within `ms`. */
 async function within(promise: Promise<unknown>, ms: number): Promise<'settled' | 'hung'> {
@@ -104,6 +106,59 @@ test('o limite: a resposta que passa da espera é parada como Parar, guardada co
   const parts = answer.flatMap((one) => one.parts)
   assert.deepEqual(failuresIn(parts), ['HUB_UPDATED'])
   assert.ok(parts.some((part) => part.type === 'text' && part.text.startsWith(PARTIAL)))
+})
+
+test('o cartão respondido durante a espera: a resposta retomada termina e é esperada como as outras, e o Hub só fecha depois (0b)', {
+  timeout: 60_000,
+}, async (t) => {
+  const held = holding(t)
+  let call = 0
+  const { hub, ana, conversations } = await conversing(t, (asked) => {
+    const named = title(asked)
+    if (named !== undefined) return named
+    call += 1
+    if (call === 1) return { kind: 'blocks', blocks: [ask(WHO)] }
+    return call === 2 ? held.reply : { kind: 'text', text: 'Pronto.' }
+  })
+  const { log, line } = logged()
+  const stopping = await hubBeside(t, hub, log)
+  const asking = `${conversations}/${await started(stopping, ana, conversations)}`
+  const asked = await streamOf(stopping, ana, asking)
+  t.after(() => asked.close())
+  assert.equal((await sent(stopping, ana, asking, 'Crie o app')).statusCode, 200)
+  const { card } = await untilCard(asked, 'question')
+  // In another Projeto: one Projeto runs one turn at a time (`RUN_BUSY`).
+  const other = await beside({ hub: stopping, person: ana, conversations }, 'Estoque')
+  const holdingUrl = `${other.conversations}/${await started(stopping, ana, other.conversations)}`
+  const holds = await streamOf(stopping, ana, holdingUrl)
+  t.after(() => holds.close())
+  assert.equal((await sent(stopping, ana, holdingUrl, 'Uma pergunta')).statusCode, 200)
+  assert.equal(await holds.text(), PARTIAL)
+  const stopped = stopping.close(30_000)
+  const answers = { kind: 'answers', answers: ['Todos (recomendado)'] }
+  const answered = await answerTo(stopping, ana, asking, card.toolCallId, answers)
+  assert.equal(answered.statusCode, 200, answered.body)
+  const resumed = await asked.turn()
+  assert.equal(endOf(resumed), 'complete')
+  assert.deepEqual(failuresOf(resumed), [])
+  assert.equal(await within(stopped, 300), 'hung', 'the other answer still holds the wait')
+  held.release()
+  assert.equal(endOf(await holds.turn()), 'complete')
+  assert.equal(await within(stopped, 10_000), 'settled')
+  assert.equal(line('SHUTDOWN_DRAINED')?.finished, 2)
+  assert.equal(line('SHUTDOWN_DRAINED')?.left, 0)
+})
+
+test('um erro inesperado não espera: a resposta é parada como antes, sem HUB_UPDATED nem SHUTDOWN_DRAINING', {
+  timeout: 60_000,
+}, async (t) => {
+  const { stopping, stream, line } = await answering(t)
+  const closed = stopping.close()
+  const events = await stream.turn()
+  assert.equal(endOf(events), 'aborted')
+  assert.deepEqual(failuresOf(events), [])
+  assert.equal(await within(closed, 10_000), 'settled')
+  assert.equal(line('SHUTDOWN_DRAINING'), undefined)
 })
 
 test('sem respostas: o fim do Hub não espera nada a mais que hoje (0e)', {

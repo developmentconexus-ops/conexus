@@ -280,7 +280,7 @@ async function settleRuns(
  * the conversation (`onBeforeAgentEnd`, core `agent-controller-DO6rGsQm.js:4836-4859`), and its
  * line in the log at `agent_end` (security S41). At a stop signal `settle` refuses new turns and
  * waits for the runs in flight to end, up to its bound (founder E1); `drain` then stops what is
- * left as Parar does, so each saves what it wrote with `HUB_UPDATED`, and waits for their ends
+ * left as Parar does, so each saves what it wrote, with `HUB_UPDATED` after a `settle`, and waits for their ends
  * (code C62).
  */
 export function watchRuns(deps: Deps) {
@@ -349,7 +349,7 @@ export function watchRuns(deps: Deps) {
       while (running.size > 0) {
         const inFlight = [...running.values()]
         for (const { session, run } of inFlight) {
-          run.failure ??= { code: 'HUB_UPDATED' }
+          if (settling) run.failure ??= { code: 'HUB_UPDATED' }
           session.abort()
         }
         await Promise.all(inFlight.map(({ run }) => run.over.promise))

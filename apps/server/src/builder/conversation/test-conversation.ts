@@ -111,13 +111,14 @@ export async function hubBeside(t: TestContext, hub: Hub, log: FailureLog = sile
   const status = createStatus({ version: config.version, database: test.database })
   const app = await createHub(config, { status, identity, ...subjects, webRoot: testWebRoot(t) })
   let closed: Promise<void> | undefined
-  /** Shuts the Hub down as a stop signal does, waiting up to `settleMs` for the answers in flight. */
-  function close(settleMs = 0) {
-    const { conversations } = subjects
-    closed ??= shutDown([app], {
-      ...{ settleMs, settle: conversations.settle, drain: conversations.close },
-      release: async () => undefined,
-    })
+  /**
+   * Shuts the Hub down as an unexpected error does, or, given `settleMs`, as a stop signal does,
+   * waiting up to `settleMs` for the answers in flight.
+   */
+  function close(settleMs?: number) {
+    const { settle, close: drain } = subjects.conversations
+    const steps = { settleMs: settleMs ?? 0, settle, drain, release: async () => undefined }
+    closed ??= shutDown([app], steps, settleMs !== undefined)
     return closed
   }
   t.after(() => close())
