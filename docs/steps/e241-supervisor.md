@@ -28,8 +28,9 @@ Sankhya está ligado em "Matriz" e "Filial", e o Mercado Livre em "Loja" (19, 19
    Abaixo, as conversas recentes dela e, como hoje, os Projetos.
 2. Ela pergunta "como foram as vendas da semana passada, por vendedor? me mostra num gráfico". O
    Assistente mostra cada leitura que faz ("Lendo Sankhya · Matriz") e cada comando na máquina. A
-   resposta traz o resumo e abre, ao lado do chat, o gráfico e a tabela que ele gerou com código
-   sobre a leitura; ela baixa a tabela. Cada número veio de uma leitura.
+   resposta traz o resumo e abre, ao lado do chat, o gráfico (uma imagem SVG que ele desenha com
+   código) e a tabela que ele gerou sobre a leitura; ela baixa a tabela. Cada número veio de uma
+   leitura.
 3. Ela pede "documente o nosso processo de encomendas, com boas práticas do setor". Ele pesquisa na
    web, lê as encomendas no Sankhya e abre ao lado o documento que escreveu, para ler e baixar.
 4. Ela tira a Loja na barra e pergunta pelas perguntas do Mercado Livre: ele diz que o Mercado Livre
@@ -58,6 +59,11 @@ número vem de uma leitura de verdade; e nenhum número é inventado. "Nenhum n�
 conferência automática sobre os dublês dos conectores: o Assistente responde, e cada número da
 resposta é conferido contra os dados do dublê e contra o que as leituras e os comandos do turno
 devolveram. A medida das dez perguntas reais sai daqui e vai para a etapa da base de conhecimento.
+
+**O que ainda não foi provado.** A máquina tem Node e nenhuma biblioteca de gráfico, e não tem
+internet para instalar uma. O estudo viu o modelo fazer contas e documentos com código, mas não um
+gráfico sem biblioteca. A prova é a conferência do fim com o modelo de verdade (critério 11b): se ele
+não desenhar o gráfico, a etapa para, e a biblioteca na imagem da máquina sobe da seção "Depois".
 
 **Fica de fora.**
 - **A base de conhecimento**: as definições da sua empresa, a calibração e a medida das dez
@@ -106,7 +112,7 @@ com as referências de cada uma, na seção "As referências das decisões".
   na U4.
 - **O nome**: "Assistente", como você chama.
 
-**O tamanho.** Cerca de **3.440 linhas** de código (a U0 já feita, com 170), abaixo do teto de 4.000
+**O tamanho.** Cerca de **3.600 linhas** de código (a U0 já feita, com 170), abaixo do teto de 4.000
 da regra L2. Eram ~3.420: a máquina e o `show_file` entram, o `supervisor_show`, o gráfico na tela e
 as leituras guardadas no Hub saem.
 
@@ -135,12 +141,14 @@ entram antes deste cartão (L20).
 importar `@mastra/core/agent-builder/ee`, `@mastra/core/auth/ee` e `@mastra/editor`, porque o código
 `ee` do Mastra roda em desenvolvimento sem chave e só falha a licença em produção.
 
-**Orçamento de código alterado.** U0: 170 (medido). U1: ~450. U2: ~1.350. U3: ~460. U4: ~1.010.
-Total da etapa: ~3.440. Testes, a skill, o texto do modelo e os gerados ficam fora da conta.
+**Orçamento de código alterado.** U0: 170 (medido). U1: ~450. U2: ~1.450. U3: ~520. U4: ~1.010.
+Total da etapa: ~3.600. Testes, a skill, o texto do modelo e os gerados ficam fora da conta.
 Hipótese para U1 a U4, estimada pelos vizinhos: a porta do Builder da 20 (`builder-port.ts`, ~230),
 a U5 da 20 (~480), o primeiro pedido da 13.1, a U0 medida, o estudo das sessões (4.2) e, para a U3,
 o que ela reusa da máquina do Builder (`machines.ts` tem 326 linhas; a U3 usa o kit, `execIn` e o
-`SandboxFilesystem`, sem a semente, o Git, a checagem e o pacote).
+`SandboxFilesystem`, sem a semente, o Git, a checagem e o pacote). A leitura independente somou à U2
+o fim do turno, os dois processadores e o dublê que responde SQL (~100), e à U3 o registro das
+máquinas e a extração de `execIn` (~60).
 
 ## Os critérios de aceite
 
@@ -153,7 +161,7 @@ Início e no Projeto).
 | 0a a 0e | U0 | Feitos (pull request https://github.com/developmentconexus-ops/conexus/pull/499): a espera, `HUB_UPDATING`, o limite com `HUB_UPDATED`, o `stop_grace_period` de 210 s, e nada a mais sem respostas | `apps/server/src/builder/conversation/drain.test.ts`, `scripts/deploy-compose.test.ts` | must |
 | 1 | U1 | Num escopo do Início, a dona e a administradora leem uma ligação `ACTIVE` da empresa que a conversa escolheu e recebem `OK` com as linhas, sem liberação de Projeto; o membro recebe `NOT_GRANTED`; uma ligação de outra empresa, `NEEDS_REAUTH` ou apagada: `NOT_GRANTED`, a mesma resposta (S10) | `apps/server/src/hub/connectors/assistant-port.test.ts` | must |
 | 1a | U1 | Num escopo de Projeto, uma ligação escolhida e liberada ao Projeto dá `OK`; uma escolhida mas não liberada a ele dá `NOT_GRANTED` | `assistant-port.test.ts`, "o Projeto" | must |
-| 1b | U1 | Uma ligação `ACTIVE` que o lugar oferece mas a conversa não escolheu dá `NOT_GRANTED`; escolhida de novo, dá `OK` na leitura seguinte | `assistant-port.test.ts`, "a escolha" | must |
+| 1b | U1 | Uma ligação `ACTIVE` que o lugar oferece mas a conversa não escolheu dá `NOT_GRANTED`, e o caderno dela (`notes`) dá `null`; escolhida de novo, dá `OK` na leitura seguinte; o caderno de uma ligação que o Projeto não recebeu, também `null` | `assistant-port.test.ts`, "a escolha" | must |
 | 2 | U1 | Uma operação de classe que não é `read` nunca sai pela porta da empresa: `NOT_GRANTED` (o conector de teste com uma escrita, como na 20) | `assistant-port.test.ts`, "só leitura" | must |
 | 3 | U1 | A lista da porta dá, no Início, cada ligação `ACTIVE` da empresa e, num Projeto, só as `ACTIVE` liberadas a ele, com o conector, o nome, as leituras e se a conversa a escolheu; `NEW` e `NEEDS_REAUTH` ficam de fora; outra empresa nunca aparece; para quem não pode perguntar, a lista é vazia | `assistant-port.test.ts`, "a lista" | must |
 | 4 | U1 | A 51ª chamada de um mesmo turno (a mesma `TurnKey`) responde `CALLS_SPENT` sem chamar o fornecedor; outra `TurnKey` começa do zero | `assistant-port.test.ts`, "50 por turno" | must |
@@ -161,28 +169,30 @@ Início e no Projeto).
 | 6 | U1 | Cada chamada escreve `CONNECTOR_CALLED` com a empresa, a pessoa, `by: 'assistant'`, o `projectId` só num escopo de Projeto, a operação e o resultado, nunca o corpo nem a entrada SQL (S41) | `assistant-port.test.ts`, "a linha" | must |
 | 7 | U1, U2 | A fila de uma chamada por ligação (20) vale para o Assistente: uma leitura do Assistente e uma do Builder na mesma ligação Sankhya não abrem duas chamadas juntas | `apps/server/src/hub/connectors/limits.test.ts`, "o Assistente na fila" | must |
 | 8 | U2 | `POST /api/companies/{c}/assistant/conversations` pela dona, com ou sem `model` e `effort`, com as ligações escolhidas e, se quiser, um `projectId`, cria uma conversa com o modelo pedido ou o padrão dela (12.3), guarda só as ligações que o lugar oferece agora e responde com o modelo, o `projectId` e as ligações guardadas; um modelo sem conta: `MODEL_NO_ACCOUNT`, nada criado; um Projeto de outra empresa, apagado ou marcado para apagar: `NOT_FOUND`, nada criado; pelo membro, `NOT_FOUND`; a mesma chave de tentativa duas vezes dá a mesma conversa | `apps/server/src/builder/assistant/routes.test.ts` | must |
-| 8a | U2 | `PUT …/assistant/conversations/{id}/connections` troca as ligações e responde as que ficaram (só as que o lugar oferece); o turno seguinte recebe as ferramentas, as skills e o bloco da conversa só delas; numa conversa de outra pessoa, num id que não existe (nenhum fio é criado), ou pelo membro: `CONVERSATION_NOT_FOUND`; o Projeto da conversa não muda por nenhuma rota | `routes.test.ts`, "trocar as ligações"; `assistant.test.ts`, "a escolha no turno" | must |
-| 9 | U2 | `GET …/assistant/conversations` dá só as conversas da pessoa, as mais novas primeiro, com o título e o `projectId` (ou nenhum); com `?projectId=`, só as daquele Projeto; nunca as de outra pessoa nem as do Builder | `routes.test.ts`, "a lista" | must |
+| 8a | U2 | `PUT …/assistant/conversations/{id}/connections` troca as ligações e responde as que ficaram (só as que o lugar oferece); o turno seguinte recebe as ferramentas, as skills e o bloco da conversa só delas; numa conversa de outra pessoa ou num id que não existe (nenhum fio é criado): `CONVERSATION_NOT_FOUND`; pelo membro: `NOT_FOUND`, como toda rota do Assistente; o Projeto da conversa não muda por nenhuma rota | `routes.test.ts`, "trocar as ligações"; `assistant.test.ts`, "a escolha no turno" | must |
+| 8b | U2 | Depois de o Hub reiniciar (um controlador novo sobre o mesmo banco), uma mensagem a uma conversa de Projeto continua o fio dela, com as marcas e a escolha dela, e a lista e a remoção a acham; nunca abre outro fio | `assistant.test.ts`, "depois do reinício" | must |
+| 9 | U2 | `GET …/assistant/conversations` dá só as conversas da pessoa, as mais novas primeiro, com o título e o `projectId` (ou nenhum); com `?projectId=`, só as daquele Projeto; com mais de 30, o `next` dá a página seguinte sem repetir nem pular, e um `next` adulterado dá `NOT_FOUND`; nunca as de outra pessoa nem as do Builder | `routes.test.ts`, "a lista" | must |
 | 9a | U2 | `GET …/assistant/conversations/{id}` dá a conversa com cada ligação que o lugar oferece e se ela está escolhida; `GET /api/companies/{c}/assistant/connections?projectId=` dá o que uma conversa nova pode escolher ali; pelo membro, `NOT_FOUND` | `routes.test.ts`, "uma conversa", "o que escolher" | must |
 | 10 | U2 | As rotas do Mastra com `controllerId = assistant` respondem só ao dono da conversa e só enquanto ele for dono ou administrador; uma conversa do Builder pedida pelo controlador `assistant` (ou o contrário), uma de outra pessoa, ou a de alguém que virou membro: `CONVERSATION_NOT_FOUND`; um `controllerId` desconhecido: 404 | `apps/server/src/builder/conversation/guard.test.ts`, "o Assistente" | must |
 | 11 | U2 | Num turno pelo controlador contra o dublê do Sankhya, numa conversa do Início com a Matriz escolhida, "quanto a Padaria Sol vendeu em setembro por vendedor?" chama `connector_read` com `sankhya.consultar`, nenhuma ferramenta erra (`calledTool`, `noToolErrors`), e a conferência dos números (`numbersFromReads`) aprova a resposta: cada número dela está nas saídas das ferramentas do turno e bate com os totais do dublê | `apps/server/src/builder/assistant/assistant.eval.test.ts` | must |
-| 11a | U2 | A conferência dos números recusa uma resposta com um número que nenhuma saída de ferramenta do turno traz, ou que não bate com o dublê, e diz qual; aprova "não consegui" sem número; datas, horas e quantidades de linhas da pergunta não contam como número da empresa | `apps/server/src/builder/assistant/numbers.test.ts` | must |
-| 11b | U2 a U4 | A mesma conferência, com o modelo de verdade pela assinatura, sobre o dublê: as perguntas do roteiro (vendas por vendedor, o documento das encomendas, a ligação tirada, a Filial fora do Projeto), cada uma numa conversa nova; nenhuma resposta reprovada; rodada pelo firstmate no fechamento, antes do uso do fundador, com o resultado no pull request | `assistant.eval.test.ts`, "o modelo de verdade" (`opt-in:` T4) | must |
-| 12 | U2 | As ferramentas que o modelo do Assistente recebe, lidas do pedido ao modelo num turno, são exatamente `connector_read`, `connector_notes`, `conexus_overview`, `web_fetch`, `web_search` onde o fornecedor tem busca (como o Builder, `builder.ts:72-76`) e as de skill (a U3 acrescenta as da máquina e `show_file`; a U4, `propose_app` só sem Projeto); nunca `connector_note_save`, `conexus_check`, `task_*`, `ask_user`, `submit_plan` ou `subagent`; `agents` não está definido | `apps/server/src/builder/assistant/assistant.test.ts`, "as ferramentas" | must |
-| 13 | U2 | `conexus_overview` dá os Projetos da empresa com o app publicado ou não, a versão no ar e as ligações com o estado; nunca chaves, nunca outra empresa | `assistant.test.ts`, "a visão da empresa" | must |
+| 11a | U2 | A conferência dos números recusa uma resposta com um número que nenhuma saída de ferramenta do turno traz, ou que não bate com o dublê, e diz qual; aprova "não consegui" sem número; datas, horas e os números da própria pergunta não contam; um número escrito com menos casas ("R$ 258 mil", "26%", "3,4 dias") vale quando um número das saídas, arredondado às casas que a resposta mostra, dá ele; uma porcentagem vale quando a razão de dois números das saídas dá ela | `apps/server/src/builder/assistant/numbers.test.ts`, sobre turnos gravados do Mastra (`nativeRecording`, T26) | must |
+| 11b | U2 a U4 | A mesma conferência, com o modelo de verdade pela assinatura, sobre o dublê: as perguntas do roteiro (vendas por vendedor num gráfico, o documento das encomendas, a ligação tirada, a Filial fora do Projeto), cada uma numa conversa nova; nenhuma resposta reprovada, e a do gráfico mostra por `show_file` uma imagem que ele desenhou com código; rodada pelo firstmate no fechamento, antes do uso do fundador, com o resultado no pull request | `assistant.eval.test.ts`, "o modelo de verdade" (`opt-in:` T4) | must |
+| 12 | U2 | As ferramentas que o modelo do Assistente recebe, lidas do pedido ao modelo num turno, são exatamente `connector_read`, `connector_notes`, `conexus_overview`, `web_fetch`, `web_search` onde o fornecedor tem busca (como o Builder, `builder.ts:72-76`) e as de skill (a U3 acrescenta `show_file` e as ferramentas `mastra_workspace_*` da máquina com a mesma configuração da do Builder, `AST_EDIT` desligada, lidas da lista que o Mastra gera; a U4, `propose_app` só sem Projeto); nunca `connector_note_save`, `conexus_check`, `task_*`, `ask_user`, `submit_plan` ou `subagent`; `agents` não está definido | `apps/server/src/builder/assistant/assistant.test.ts`, "as ferramentas" | must |
+| 13 | U2 | `conexus_overview` dá os Projetos da empresa com o app publicado ou não e a versão no ar, e as ligações que o lugar oferece (`offered(scope)` da U1) com o estado; numa conversa do Projeto Vendas, a Filial não aparece; nunca chaves, nunca outra empresa | `assistant.test.ts`, "a visão da empresa" | must |
 | 13a | U2 | O pedido ao modelo traz, depois da linha que a assinatura exige (`models.ts:100-111`), a mensagem fixa (`conexus.md` e `assistant.md`), byte a byte a mesma em toda conversa de toda empresa, e depois o bloco da conversa; nenhuma frase do trabalho do Builder (Prévia, app, plano, checagem); o pedido do Builder ao modelo fica byte a byte o de hoje (`R2`) | `apps/server/src/builder/assistant/instructions.test.ts`; `apps/server/src/builder/conversation/prompt.test.ts` | must |
 | 13b | U2 | O bloco da conversa diz a empresa, a pessoa e o papel, a data de hoje e o fuso, o lugar (Início, ou o nome do Projeto e que só lê o que ele recebeu) e as ligações escolhidas; nenhuma regra de resposta e nenhum calendário | `instructions.test.ts`, "o bloco da conversa" | must |
 | 13c | U2 | Numa conversa do Projeto Vendas com só a Matriz, "quanto a Filial vendeu ontem?" não chama `connector_read` com a Filial (a ferramenta não a oferece) e a resposta diz que a Filial não está nesta conversa | `assistant.eval.test.ts`, "a ligação de fora do Projeto" | must |
 | 14 | U2 | Com nenhuma ligação escolhida, ou nenhuma no lugar, o Assistente diz que a conversa não tem sistema e aponta a barra (ou Integrações), sem chamar `connector_read` | `assistant.eval.test.ts`, "sem ligação" | should |
 | 15 | U2 | No aviso de parar, um turno do Assistente entra na espera da U0 como o do Builder (`settle(bound)` e `updating()` contam também os turnos dele), e uma pergunta nova recebe `HUB_UPDATING`; passado o limite, ele é parado como o do Builder, e o fim acaba dentro do prazo do Hub (C62) | `assistant.test.ts`, "o fim do Hub" | must |
 | 16 | U2 | A conversa usa a conta de modelo da empresa pela mesma fila do Builder (11), sem `Runs`: um turno do Assistente e um do Builder da mesma pessoa correm juntos; duas leituras num turno contam na mesma `TurnKey`, e o turno seguinte tem outra; sem conta, o turno termina com a frase de hoje | `assistant.test.ts`, "a conta" e "o turno" | must |
+| 16e | U2 | Com uma conta só na fila, um turno que acaba, um que falha, um parado pela pessoa e um cortado pelo fim do Hub soltam a conta: o turno seguinte da mesma pessoa e um do Builder começam sem esperar | `assistant.test.ts`, "o fim do turno solta a conta" | must |
 | 16a | U2 | Remover a empresa (5) apaga as conversas do Assistente de todas as pessoas dela; tirar uma pessoa (6) apaga as dela; nenhuma de outra empresa | `apps/server/src/builder/assistant/release.test.ts` | must |
 | 16c | U2 | Apagar um Projeto apaga as conversas do Assistente presas a ele, de todas as pessoas, também com mais de 100, e nenhuma do Início nem de outro Projeto; uma falha deixa o Projeto marcado (`PROJECT_DELETION_PENDING`), e a repetição acha as que sobraram | `release.test.ts`, "o Projeto" | must |
 | 16d | U2 | Uma chamada de ferramenta guardada sem argumentos numa conversa do Assistente é refeita como `{}` e a conversa segue (a regra `toolCallInputRequired` pelos `accountErrorProcessors`, pull request https://github.com/developmentconexus-ops/conexus/pull/510) | `assistant.test.ts`, "a chamada sem argumentos" | should |
-| 17 | U3 | A primeira ferramenta de arquivo ou comando de uma conversa liga uma máquina com o nome da conversa; o turno seguinte acha a mesma, com os arquivos que ficaram; outra conversa tem outra máquina; a máquina não tem o app nem Git (nenhuma semente) e a rede dela recusa todo endereço | `apps/server/src/builder/assistant/machine.test.ts` (o kit de teste, `test-machine.ts`) | must |
-| 18 | U3 | Com a máquina, uma leitura `OK` grava a resposta inteira em `reads/<n>.json` na pasta da conversa e responde ao modelo o corte com o caminho; um código no mesmo turno lê o arquivo; uma máquina que não liga deixa a leitura responder o corte com `saved: false` e a falha da máquina | `machine.test.ts`, "a leitura na máquina" | must |
-| 19 | U3 | `show_file` de um Markdown, texto ou CSV de até 64 KB dá a saída com o conteúdo; de outro arquivo, a saída com o nome, o tamanho e o tipo; um caminho fora da pasta da conversa ou que não existe: `SHOW_REFUSED` (`OUTSIDE`, `NOT_FOUND`) e nada aparece; o modelo recebe só o resumo (`toModelOutput`), e um turno seguinte não carrega o conteúdo | `apps/server/src/builder/assistant/show-file.test.ts` | must |
-| 20 | U3 | `GET …/assistant/conversations/{id}/files?path=` dá os bytes do arquivo ao dono da conversa, com o tipo e `Content-Disposition`; de outra pessoa ou pelo membro: `CONVERSATION_NOT_FOUND`; fora da pasta ou inexistente: `FILE_NOT_FOUND`; acima do teto (`MAX_BYTES`): `FILE_TOO_LARGE`; a máquina perdida: `FILE_GONE` | `apps/server/src/builder/assistant/routes.test.ts`, "o arquivo" | must |
+| 17 | U3 | Com a máquina, as ferramentas do modelo são as do critério 12 mais `show_file` e as `mastra_workspace_*` que a máquina do Builder dá (a mesma lista, lida do pedido ao modelo nos dois); nenhuma a mais. A primeira ferramenta de arquivo ou comando de uma conversa liga uma máquina com o nome da conversa; o turno seguinte acha a mesma, com os arquivos que ficaram; outra conversa tem outra máquina; a máquina não tem o app nem Git (nenhuma semente); o kit dela recebe `allowOut: []`, e no E2B de verdade um `curl` de dentro dela não chega a nenhum endereço | `apps/server/src/builder/assistant/machine.test.ts` (o kit de teste, `test-machine.ts`); a rede: um caso `opt-in:` (T4) em `apps/server/src/builder/machine/machine-e2b.test.ts` | must |
+| 18 | U3 | Com a máquina, uma leitura `OK` grava a resposta inteira em `reads/<turno>-<n>.json` na pasta da conversa (o `<turno>` são os 8 primeiros caracteres da `TurnKey`) e responde ao modelo o corte com o caminho e `complete` (falso quando o conector tem mais páginas, `cut.ts:53`); um código no mesmo turno lê o arquivo; o segundo turno grava outro arquivo e o do primeiro continua; uma máquina que não liga deixa a leitura responder o corte com `saved: false` e a falha da máquina | `machine.test.ts`, "a leitura na máquina" | must |
+| 19 | U3 | `show_file` de um Markdown, texto ou CSV de até 64 KB dá a saída com o conteúdo, e a mensagem relida do armazenamento do Mastra depois do turno ainda tem a linha da ferramenta com a saída inteira; de outro arquivo, a saída com o nome, o tamanho e o tipo; um caminho fora da pasta da conversa ou que não existe: `SHOW_REFUSED` (`OUTSIDE`, `NOT_FOUND`) e nada aparece; o modelo recebe só o resumo (`toModelOutput`), e um turno seguinte não carrega o conteúdo | `apps/server/src/builder/assistant/show-file.test.ts` | must |
+| 20 | U3 | `GET …/assistant/conversations/{id}/files?path=` dá os bytes do arquivo ao dono da conversa, com o tipo, `Content-Disposition`, `X-Content-Type-Options: nosniff` e `Content-Security-Policy: sandbox` (o arquivo foi escrito pelo modelo, S24); de outra pessoa ou pelo membro: `CONVERSATION_NOT_FOUND`; fora da pasta ou inexistente: `FILE_NOT_FOUND`; acima do teto (`MAX_BYTES`): `FILE_TOO_LARGE`; a máquina perdida: `FILE_GONE` | `apps/server/src/builder/assistant/routes.test.ts`, "o arquivo" | must |
 | 21 | U3 | Apagar uma conversa (pela empresa, pela pessoa ou pelo Projeto) mata as máquinas dela; o turno que acaba para a máquina, que dorme até a próxima pergunta; o fim do Hub para as máquinas dos turnos em andamento como o do Builder | `machine.test.ts`, "o fim da máquina"; `release.test.ts`, "a máquina" | must |
 | 22 | U3 | A decisão 0032 diz que as linhas que o Assistente lê para analisar vão à máquina dele no E2B | a revisão (check-docs para o índice) | must |
 | 23 | U4 | No Início, a dona e a administradora veem a caixa "Pergunte ou peça um app", a barra com as ligações que a empresa oferece já escolhidas e o seletor de Projeto, e as conversas recentes, a de um Projeto com a etiqueta do nome dele; o membro vê "O que vamos construir?" como hoje; a 390 px, o mesmo | `apps/web/src/builder/assistant/home.test.tsx` | must |
@@ -236,13 +246,13 @@ Nenhuma captura do Conexus OS: ele não tinha esta conversa.
 ```text
 1280 px, a conversa da Ana com um arquivo                          390 px, a conversa
  ┌──────────────┬──────────────────────────┬─────────────────────┐  ┌──────────────────────────┐
- │ Padaria Sol ⌄│ vendas da semana passada │ vendas-semana.png   │  │ ☰  Vendas da semana      │
+ │ Padaria Sol ⌄│ vendas da semana passada │ vendas-semana.svg   │  │ ☰  Vendas da semana      │
  │ Início       │ por vendedor, num gráfico│ [Baixar]        [×] │  │ vendas da semana         │
  │ Integrações  │ ✓ Lendo Sankhya · Matriz │ ▇▇▇▇ ▇▇ ▇▇▇         │  │ passada, por vendedor    │
  │ Configurações│   212 linhas             │                     │  │ ✓ Lendo Sankhya · Matriz │
- │              │ ✓ python3 vendas.py      │ vendas-semana.csv   │  │ ✓ python3 vendas.py      │
+ │              │ ✓ node vendas.mjs        │ vendas-semana.csv   │  │ ✓ node vendas.mjs        │
  │              │ A semana fechou em …     │ [Baixar]            │  │ A semana fechou em …     │
- │              │ [vendas-semana.png]      │                     │  │ [vendas-semana.png] ⟶    │
+ │              │ [vendas-semana.svg]      │                     │  │ [vendas-semana.svg] ⟶    │
  │              │ [vendas-semana.csv]      │                     │  │ [ ...                ↑ ] │
  │ (Ana) ⌄      │ [ ...                ↑ ] │                     │  │ Sankhya·Matriz [Ajustar] │
  │              │ Sankhya·Matriz [Ajustar] │                     │  └──────────────────────────┘
@@ -269,9 +279,10 @@ Nenhuma captura do Conexus OS: ele não tinha esta conversa.
 | Trocar as ligações (`PUT …/connections`; `session.thread.setSetting({ key: 'conexusConnections' })`) | duas trocas: a última gravada vale, e cada resposta diz o que ficou | durante um turno: o turno segue com as que leu no começo, e a próxima pergunta usa as novas | banco do Mastra fora: `DATABASE_UNAVAILABLE`; a barra volta à escolha de antes | `ASSISTANT_CONNECTIONS_CHANGED` (empresa, conversa, quantas) | 8a, 23a |
 | Apagar as conversas com a empresa (5), a pessoa (6) ou o Projeto (`listThreads` pelas marcas; `api.kill` das máquinas da conversa; `deleteSession` e `deleteThread`) | duas remoções: cada fio some uma vez; apagar de novo um fio já apagado, ou matar uma máquina que não existe, não falha | um fio por vez, depois da remoção do Builder: máquina primeiro, fio depois; uma falha no meio deixa fios que a próxima remoção acha de novo; a do Projeto deixa a marca de apagar (`PROJECT_DELETION_PENDING`) | banco do Mastra fora: o aviso; o E2B fora: o fio fica e a próxima remoção tenta de novo (a máquina parada não custa minuto); a remoção da empresa e da pessoa seguem como hoje, a do Projeto fica marcada | `ASSISTANT_CONVERSATIONS_RELEASED` (empresa, quantas) | 16a, 16c, 21 |
 | Uma mensagem (a rota `messages` do Mastra) | a segunda mensagem durante um turno entra na fila do próprio controlador | o fim do Hub para o turno (C62); a parte já respondida fica guardada | modelo fora: as frases da 11 e da 12; banco fora: `DATABASE_UNAVAILABLE` | da 12 | 15, 16 |
+| Segurar e soltar a conta do turno (`turnOfOwner` toma; `turn.end()` solta no fim da execução) | dois turnos da mesma pessoa: cada um o seu `Turn` na fila de contas | o Parar, um erro do modelo ou o corte do fim do Hub: o evento de fim da execução chama `turn.end()` do mesmo jeito | o modelo fora: o turno termina com a frase da 11 e solta a conta | da 11 | 16, 16e |
 | Uma leitura pela porta da empresa (tx 1: admissão, a escolha e a ligação pelo lugar; a chamada; tx 2 só para `NEEDS_REAUTH`, como a da 20) | a fila de uma por ligação (20); quem passa do prazo esperando, `DEADLINE` | nenhuma conexão do banco presa durante a chamada (D22); o turno parado corta a espera | o fornecedor fora: `UNREACHABLE`; 429: `BUSY`; banco fora: `DATABASE_UNAVAILABLE` | `CONNECTOR_CALLED` com `by: 'assistant'` | 1 a 7 |
-| Ligar a máquina da conversa (o kit do Builder: `killStale`, `sandbox.start`, `mkdir` da pasta da conversa) | duas ferramentas do mesmo turno: uma partida só (`ensure` por sessão, como `machines.ts:92-95`) | o turno parado no meio da partida: a máquina fica e a próxima pergunta a acha pelo nome | o E2B fora: `MACHINE_UNAVAILABLE` na ferramenta; a leitura responde o corte com `saved: false` | `MACHINE_STARTED` (como o Builder) | 17, 18 |
-| Gravar a leitura na máquina (`reads/<n>.json` por `ctx.workspace.filesystem.writeFile`) | cada leitura o seu arquivo, numerado pelo turno e pela chamada | o turno parado depois da leitura e antes da gravação: a leitura já foi contada; o arquivo não existe, e o modelo do turno seguinte lê de novo | a máquina fora: `saved: false` | nada | 18 |
+| Ligar a máquina da conversa (o kit do Builder: `killStale`, `sandbox.start`, `mkdir` da pasta da conversa) | duas ferramentas do mesmo turno: uma partida só (`ensure` por sessão, como `machines.ts:93-97`) | o turno parado no meio da partida: a máquina fica e a próxima pergunta a acha pelo nome | o E2B fora: `MACHINE_UNAVAILABLE` na ferramenta; a leitura responde o corte com `saved: false` | `MACHINE_STARTED` (como o Builder) | 17, 18 |
+| Gravar a leitura na máquina (`reads/<turno>-<n>.json` por `ctx.workspace.filesystem.writeFile`) | cada leitura o seu arquivo, pela `TurnKey` e pela chamada; nenhum turno sobrescreve outro | o turno parado depois da leitura e antes da gravação: a leitura já foi contada; o arquivo não existe, e o modelo do turno seguinte lê de novo | a máquina fora: `saved: false` | nada | 18 |
 | Mostrar um arquivo (`show_file`; a saída guardada na mensagem pelo Mastra; o modelo recebe só o resumo, por `toModelOutput`) | cada chamada a sua parte | recusada: `SHOW_REFUSED` fica na mensagem e a tela não desenha nada | a máquina fora: `SHOW_REFUSED` com `MACHINE_UNAVAILABLE` | nada | 19, 27 |
 | Baixar um arquivo (a rota lê o arquivo da máquina, acordando-a, por `readCapped`) | dois downloads: duas leituras, nada gravado | o navegador cancela: a leitura da máquina para | o E2B fora: `MACHINE_UNAVAILABLE`; a máquina morta: `FILE_GONE` | `ASSISTANT_FILE_READ` (empresa, conversa, bytes) | 20, 27 |
 | Parar e dormir a máquina no fim do turno (`sandbox.stop`, que o kit do E2B faz pausa) | — | o turno parado: a máquina para do mesmo jeito | o E2B fora: a máquina dorme sozinha no `timeout` do kit (`lifecycle: { onTimeout: 'pause' }`, `e2b.ts:21-22`) | da máquina do Builder | 21 |
@@ -305,12 +316,12 @@ de usar.
 | O turno sem `Runs` | U2 | `takeTurn` exige o Projeto e `Runs.take` (`turn-of.ts:38-76`, lido na emenda de 2026-10-31) | a fila de contas da 11 (`turnOfOwner`, `turn-of.ts:49-55`) | um turno por execução, na fila de contas | nativo: o `takeTurn` do Assistente faz o `Turn` pelo dono, sem `Runs`, e põe uma `TurnKey` nova no contexto | critérios 4, 16 | não precisa | `builder/assistant/turn.ts` |
 | A porta da empresa aos conectores | U1 | a porta do Builder, por Projeto e liberação (`hub/connectors/builder-port.ts:16-40`, lido) | Factory: as ferramentas só depois de conferir a organização (`M:mastracode/factory/src/supervisor/session.ts:43-57`, lido na emenda anterior) | o escopo é conferido no servidor, nunca pelo modelo | embrulhado: `Connectors.assistant` lê a escolha da conversa e a corta pelo lugar, só `read`, `by: 'assistant'` | critérios 1 a 4, 6 | `L1`, `S1` das sessões | `hub/connectors/assistant-port.ts` |
 | Quem pode perguntar | U1 | `manageConnections` com `MANAGE_CONNECTIONS` (`hub/identity/admission.ts:68-71`, lido na emenda anterior) | better-auth 1.7.8, controle de acesso | papel → capacidade | nativo: a ação `askAssistant` com a declaração de `manageConnections` | critérios 1, 10 | `L1` | — |
-| As ferramentas de conector compartilhadas | U2, U3 | `connectorTools(port, granted, who)` (`builder/connectors/connector-tools.ts:70-118`, lido) | `createTool` (`@mastra/core/tools`); `ctx.workspace` numa ferramenta (`NM:tools/types.d.ts:31-32`, `NMD:docs-sandbox-overview.md:78-104`, lidos) | ferramentas do contexto do pedido | nativo: o módulo recebe um acesso já ligado ao escopo (`ConnectorAccess`); o Builder recebe o mesmo que hoje | critérios 12, 18 | não precisa | — |
+| As ferramentas de conector compartilhadas | U2, U3 | `connectorTools(port, granted, who)` (`builder/connectors/connector-tools.ts:70-118`, lido) | `createTool` (`@mastra/core/tools`); `ctx.workspace` numa ferramenta (`NM:tools/types.d.ts:564`, `NMD:docs-sandbox-overview.md:78-104`, lidos) | ferramentas do contexto do pedido | nativo: o módulo recebe um acesso já ligado ao escopo (`ConnectorAccess`); o Builder recebe o mesmo que hoje | critérios 12, 18 | não precisa | — |
 | A visão da empresa | U2 | as listas de Projetos, versões e ligações do Hub; o nome de um Projeto vivo (`hub/projects/hosts.ts:152-171`, lido na emenda anterior) | `factory_overview` (`M:mastracode/factory/src/supervisor/read-tools.ts:187`, lido na emenda anterior) | uma ferramenta de leitura dos registros da plataforma | embrulhado: `conexus_overview` | critério 13 | `E1` da estrutura | `builder/assistant/overview.ts` |
 | Nenhum número inventado | U2 | `builder.eval.test.ts` com um modelo dublê e `@mastra/evals/checks` (`calledTool`, `noToolErrors`), lido | `runEvals` (`NM:evals/run/index.d.ts:178`, lido na emenda anterior); o "todo número vem de um resultado verificado" do `template-genui-data-explorer` (`M:templates/template-genui-data-explorer/src/mastra/agent.ts:21-31`, lido na emenda anterior); a medida do estudo da harness, que conferiu cada número contra o banco (relay) | os números da resposta conferidos contra a fonte | embrulhado: `numbersFromReads`, uma checagem própria sobre as mensagens que o Mastra guarda, ao lado de `calledTool` | critérios 11, 11a, 11b | "Concordo com a troca do aceite da 24.1" | `builder/assistant/numbers.ts` (de teste) |
 | A máquina da conversa | U3 | `machines.workspaceFor` com a semente do app e o Git (`builder/machine/machines.ts:215-255`); o kit E2B com rede só para o npm (`machine/e2b.ts:17-23`, `kit.ts:23,56-75`), lidos | um resolver de `Workspace` com `sandboxCacheKey` por fio; a sandbox do resolver é do app, que a destrói (`NMD:docs-sandbox-overview.md:162-224,264-270,299`); `workspace` do controlador por sessão (`NMD:reference-agent-controller-agent-controller-class.md:97`), lidos | uma máquina por fio, destruída pelo app | embrulhado: o kit do Builder, sem a semente, o Git, a checagem e o pacote; a chave é a conversa; a rede sem nenhum endereço | critérios 17, 21 | `W1` | `builder/assistant/machine.ts` |
 | A alternativa local | fica de fora | nenhum | `LocalSandbox` com `isolation: 'bwrap'` (relay do estudo da harness, provado no WSL, não no contêiner do Hub) | o isolamento do sistema operacional | nativo: fica de fora, gatilho na seção "Depois" | — | `W2` não escolhido (`W1`) | — |
-| A leitura chega ao código | U3 | `connector_read` devolve só o corte (`connector-tools.ts:70-98`, lido) | claude.ai `/mnt/user-data`, ChatGPT `/mnt/data` (relay do estudo da harness); `ctx.workspace.filesystem` (`NMD:reference-workspace-filesystem.md:13-26`, lido) | os dados entram na máquina como arquivo | embrulhado: a leitura grava `reads/<n>.json` e responde o corte com o caminho | critério 18; lab do estudo: o Python leu o arquivo | `S-a` | — |
+| A leitura chega ao código | U3 | `connector_read` devolve só o corte (`connector-tools.ts:70-98`, lido) | claude.ai `/mnt/user-data`, ChatGPT `/mnt/data` (relay do estudo da harness); `ctx.workspace.filesystem` (`NMD:reference-workspace-filesystem.md:13-26`, lido) | os dados entram na máquina como arquivo | embrulhado: a leitura grava `reads/<turno>-<n>.json` e responde o corte com o caminho | critério 18; lab do estudo: o Python leu o arquivo | `S-a` | — |
 | Mostrar o que ele fez | U3, U4 | nenhum; a Prévia mostra só o app (`apps/web/src/builder/preview/preview.tsx:126-128`, relay do estudo da harness); o painel e o Markdown da conversa (`apps/web/src/builder/conversation/panel.tsx`, `markdown.tsx`, no `main`) | Cowork `SendUserFile`, claude.ai `present_files` (relay do estudo da harness, vazamentos); `toModelOutput` muda só o que o modelo vê (`NM:tools/types.d.ts:457`, lido na emenda anterior) | uma ferramenta entrega o arquivo à conversa | nativo: a saída de `show_file` desenhada pela linha dela; Markdown e texto lidos, imagem pela rota, o resto baixado; o modelo recebe só o resumo | critérios 19, 20, 27, 29 | `B-a` | `builder/assistant/show-file.ts`, `apps/web/src/builder/assistant/file.tsx` |
 | A página HTML com scripts | fica de fora | a CSP do Hub: `script-src 'self'`, frames só de `https://*.<domínio dos apps>` (`apps/server/src/platform/http.ts:30-49`, lido) | o host da Prévia no domínio dos apps (relay) | um host isolado para o que roda código | nativo: fica de fora, gatilho na seção "Depois" | — | `B-a` ("HTML com scripts depois") | — |
 | Criar app | U4 | o primeiro pedido: `Start`, `Naming`, a passagem (`apps/web/src/builder/conversation/start.tsx:123-190`, lido na emenda anterior) | Factory manda mensagem a outra sessão (`session-messaging.ts:15-41`): fica para a 24.4 | — | nativo (13.1): `propose_app({ summary })` responde o resumo; **Criar app** abre o `Naming` com ele; só sem Projeto | critério 28 | `F4`, `A1` | `builder/assistant/propose.ts` |
@@ -371,7 +382,7 @@ daqui entra na 24.1.
 | **Ajudantes em paralelo** | a 24.4, com os agentes da empresa | uma pergunta sua que uma conversa sozinha não resolve, medida | o campo `agents` ou a ferramenta `subagent` do Mastra, hoje desligada |
 | **Mais ligações** (Bling, Omie, Conta Azul e o resto da fila do molde) | quando cada conector entra | o conector entra no `main` | a porta oferece toda ligação `ACTIVE` do lugar; a skill dela entra sozinha |
 | **Mais ferramentas**: a rotina, a escrita com aprovação, os agentes | 24.2, 24.3, 24.4 | cada etapa | `mastra.schedules`, `requireApproval`, o campo `agents` |
-| **Mais bibliotecas na máquina** (planilha, Word, PDF) | etapa própria | um arquivo que você pedir e a máquina não fizer | a imagem da máquina (`infra/e2b/template.ts`), como o claude.ai e o ChatGPT vêm com elas |
+| **Mais bibliotecas na máquina** (gráfico, planilha, Word, PDF) | etapa própria; o gráfico sobe para a 24.1 se o critério 11b mostrar que ele não sai sem biblioteca | um arquivo que você pedir e a máquina não fizer | a imagem da máquina (`infra/e2b/template.ts`), como o claude.ai e o ChatGPT vêm com elas |
 | **O contexto da empresa**: metas, pessoas, como a empresa funciona | 24.4, como documentos de um Projeto sem app | o Projeto vira "qualquer assunto" (`J1`) | uma ferramenta de leitura |
 | **Diagramas** | o Mermaid na 24.5 | a 24.5 | um arquivo mostrado, desenhado pela tela |
 | **Favoritas, arquivadas, busca** de conversas | etapa própria | umas 20 conversas, ou o seu pedido | as marcas do fio e o `listThreads` |
@@ -547,7 +558,9 @@ compartilhado com o Builder.
 - **O Projeto.** `apps/server/src/hub/projects/hosts.ts:152-171` (`liveProjectOf`),
   `projects.ts:262-280` (`finishMarkedProject`).
 - **A avaliação.** `builder.eval.test.ts` (o modelo dublê que só age com o que recebe, as mensagens
-  guardadas, `checks`); `packages/connectors/src/sankhya/fake.ts`, `fake-rows.ts`.
+  guardadas, `checks`); `packages/connectors/src/sankhya/fake.ts:179-204` (`sankhyaFake`),
+  `fake-data.ts:102-111` (`executeQuery`), `fake-rest.ts`, `read-only-sql.ts` (a regra de leitura que
+  roda antes do dublê); `node:sqlite` da versão do Node do repositório.
 
 ### O raio da mudança
 
@@ -563,7 +576,7 @@ compartilhado com o Builder.
 | `apps/server/src/builder/conversation/turn-of.ts` | Muda: `ownerOfResource` lê também `assistant:company:<c>:person:<p>` e diz de quem é | o guarda, o Assistente |
 | `apps/server/src/main.ts` | Muda: monta o Assistente, passa-lhe a porta e os Projetos, e o fecha no fim | — |
 | `packages/hub-api/src/assistant.ts` | Cria: rotas, `AssistantConversationSummary`, `AssistantConversation`, `SessionConnection`, `ASSISTANT_CONTROLLER`, `ASSISTANT_TOOL`; muda `index.ts`, o OpenAPI gerado | a U3, a U4 |
-| `packages/connectors/src/sankhya/fake-rows.ts` | Muda: as vendas da Padaria Sol de setembro e outubro de 2026, por vendedor, nas duas ligações, valores inventados (S40), devolvidas pelo `consultar` do dublê | a avaliação |
+| `packages/connectors/src/sankhya/` (`fake.ts`, `fake-data.ts`, um `fake-sales.ts` novo) | Muda: `sankhyaFake({ sales })` aceita um conjunto de vendas; com ele, `executeQuery` (hoje só `SELECT COUNT(*) AS N FROM TSIEMP`, `fake-data.ts:102-111`) roda o SQL de leitura num banco `node:sqlite` em memória com `TGFCAB`, `TGFITE`, `TGFVEN`, `TGFPAR` e `TGFPRO` desse conjunto; sem ele, tudo como hoje. Dois conjuntos inventados (S40) da Padaria Sol, setembro e outubro de 2026: o da Matriz e o da Filial, com totais diferentes | a avaliação, os testes de hoje do dublê (sem mudar) |
 | o registro de remoções (T12) | Muda: as rotas e a ação novas | — |
 
 ### Os contratos que a unidade cria
@@ -579,6 +592,7 @@ const BASE = '/api/companies/{companyId}/assistant/conversations'
 //      falhas: as de leitura, NOT_FOUND (o Projeto), IDEMPOTENCY_CONFLICT, MODEL_UNKNOWN, MODEL_NO_ACCOUNT, EFFORT_UNSUPPORTED
 // GET  BASE/{conversationId}    -> { conversation: AssistantConversation }; falhas: CONVERSATION_NOT_FOUND e as de leitura
 // PUT  BASE/{conversationId}/connections { connections: ConnectionId[] (até 50) } -> 200 { conversation: AssistantConversation }
+//      falhas: NOT_FOUND (empresa ou papel), CONVERSATION_NOT_FOUND, DATABASE_UNAVAILABLE
 // GET  /api/companies/{companyId}/assistant/connections ?projectId= -> { connections: SessionConnection[] }
 // o `next` do GET é opaco (code C44), feito do `page` do `listThreads` (`perPage` 30)
 export const AssistantConversationSummary = z.object({
@@ -587,6 +601,11 @@ export const AssistantConversationSummary = z.object({
 export const SessionConnection = z.object({ connectionId: ConnectionId, connector: z.string(), name: z.string(), chosen: z.boolean() })
 export const AssistantConversation = AssistantConversationSummary.extend({ connections: z.array(SessionConnection) })
 export const ASSISTANT_TOOL = { overview: 'conexus_overview' } as const   // a U3 e a U4 acrescentam
+/** What conexus_overview answers (C21: a list per kind of thing, no free text). */
+export type Overview = {
+  projects: readonly { projectId: ProjectId; name: string; app: { kind: 'PUBLISHED'; version: string } | { kind: 'NOT_PUBLISHED' } }[]
+  connections: readonly { connectionId: ConnectionId; connector: string; name: string; chosen: boolean }[]   // offered(scope) only
+}
 
 // apps/server/src/builder/assistant/context.ts
 /** The thread's marks, stamped by createSession({ tags }) at creation; never changed. */
@@ -621,7 +640,7 @@ export function assistantInstructions(deps: …): (args: { requestContext: Reque
 // apps/server/src/builder/connectors/connector-tools.ts: what a caller binds to its scope
 export type ConnectorAccess = {
   connections: readonly { connectionId: ConnectionId; connector: string; name: string; reads: readonly { operation: string; summary: string }[] }[]
-  read(call: { connectionId: ConnectionId; operation: string; input: unknown }, requestContext: RequestContext): Promise<unknown>
+  read(call: { connectionId: ConnectionId; operation: string; input: unknown }, requestContext: RequestContext): Promise<ShapedRead | Spent>   // the Assistant's whole goes to the machine in U3, never to the model
   notes(connectionId: ConnectionId): Promise<Notes | null>
   wording: { whose: string; limit: string }   // "this Project's owner released" / "this conversation chose"; "50 per run" / "50 per answer"
 }
@@ -674,7 +693,12 @@ export function numbersFromReads(turn: readonly MastraDBMessage[], truth: readon
   uma conversa cujo `kind` não é a chave do caminho (C21).
 - **O turno.** O `takeTurn` do Assistente faz o `Turn` por `turnOfOwner(queue, owner)`, sem
   `index.projectOf` e sem `Runs.take`: o controlador já põe uma mensagem por vez na mesma conversa.
-  Põe no contexto o `Turn` e uma `TurnKey` nova (`randomUUID`).
+  Põe no contexto o `Turn` e uma `TurnKey` nova (`randomUUID`). **O dono do fim do turno é
+  `turn.ts`** (C26): o Builder solta as contas do turno pelo `onEnd: () => turn.end()` de
+  `Runs.take` (`turn-of.ts:65`; `Turn.end()` solta o que o turno segura,
+  `model-accounts/turn.ts:209-211`); o Assistente não tem `Runs`, então `turn.ts` guarda o `Turn` da
+  sessão e chama `turn.end()` no evento de fim da execução do controlador, em toda saída: o fim
+  normal, o erro, o Parar e o corte do fim do Hub (critério 16e).
 - **Os eventos.** `turn.ts` assiste ao controlador como `watchRuns` (`end.ts:281`): guarda as
   sessões em andamento para o `close`; o `settle` e o `updating` da U0 contam os dois controladores.
 - **O modo.** Um modo só, com `availableTools` igual à lista do critério 12 e as de skill;
@@ -691,8 +715,12 @@ export function numbersFromReads(turn: readonly MastraDBMessage[], truth: readon
   Builder (`sessionModel`), `tools: ({ requestContext }) =>` a lista do critério 12 para as
   escolhidas, `skills`: `conexus` e a do conector de cada escolhida. Os processadores do Builder pelo
   nome: `inputProcessors: [turnOf do Assistente, accountPick(queue)]`, `outputProcessors: [new
-  CyberRefusalHandler()]`, `errorProcessors: accountErrorProcessors(queue)`, `maxRetries: 0`,
-  `MODEL_TIMEOUT`. **Sem** `isTaskComplete`, **sem** `agents`, `workspace: undefined` (a U3 dá a
+  CyberRefusalHandler(), workspaceMetadataLive]`, `errorProcessors: accountErrorProcessors(queue)`,
+  `maxRetries: 0`, `maxProcessorRetries: MAX_PROCESSOR_RETRIES` (a troca de conta e o 16d dependem
+  dele), `MODEL_TIMEOUT` (`builder.ts:211-216`). `workspaceMetadataLive`
+  (`conversation/processors.ts:135-146`) protege as partes da mensagem quando uma ferramenta da
+  máquina transmite (o defeito do Mastra que o comentário dele cita); a U2 já o põe, porque a U3 dá a
+  máquina sem mexer nos processadores. **Sem** `isTaskComplete`, **sem** `agents`, `workspace: undefined` (a U3 dá a
   máquina pelo controlador, como no Builder).
 - A memória: a forma do Builder (`bufferTokens: false`, a pausa curta a cada ~30 mil tokens que o
   fundador aceitou), com a instrução do observador e do título escritas para conversa;
@@ -700,7 +728,8 @@ export function numbersFromReads(turn: readonly MastraDBMessage[], truth: readon
 - **A conferência dos números.** `numbersFromReads` lê as mensagens que o Mastra guardou do turno: os
   números da resposta final (no formato brasileiro e no simples), menos as datas, as horas e os da
   própria pergunta; cada um precisa estar nas saídas das ferramentas do turno e na verdade que o
-  teste calcula dos dados do dublê. É uma checagem como `calledTool`, no lugar onde a avaliação do
+  teste calcula dos dados do dublê, com as regras de arredondamento e de porcentagem do critério 11a.
+  É ferramenta de teste: os testes a chamam direto, como chamam `checks.calledTool`. É uma checagem como `calledTool`, no lugar onde a avaliação do
   Builder já as usa, e não um juiz de modelo.
 - Modelo: `builder.ts`, que cumpre C21 e C26; o guarda cumpre C23 (`ConversationId`).
 
@@ -725,7 +754,8 @@ pelo turno, contra o dublê) e T26.
    lê as duas na ferramenta), `turn.ts`, `assistant.ts`, `memory.ts`, `overview.ts`.
 7. `routes.ts`, `release.ts` e a chamada em `public.ts`; `end.ts`; `main.ts` (C62). O registro de
    remoções (T12).
-8. O dublê com as vendas da Padaria Sol; `numbers.ts` e `numbers.test.ts`; `assistant.eval.test.ts`
+8. O dublê com as vendas da Padaria Sol (as duas ligações abrem dois `sankhyaFake({ sales })`, um
+   por conjunto); `numbers.ts` e `numbers.test.ts`; `assistant.eval.test.ts`
    com o modelo dublê e o caso `opt-in:` do modelo de verdade (11b), que lê a credencial da
    assinatura em tempo de execução e nunca a imprime.
 
@@ -749,6 +779,8 @@ com o resultado no pull request do fechamento. Hoje falham: não há Assistente.
 - O `setSetting` voltar sem gravar (`NM:agent-controller-DO6rGsQm.js:2184-2193`): a rota relê a
   configuração, e uma leitura diferente é `DATABASE_UNAVAILABLE`; se acontecer num teste, parar.
 - O contexto perder a `TurnKey` entre o processador de entrada e a ferramenta: parar e mostrar.
+- Uma execução parada ou com erro não emitir o evento de fim que `turn.ts` assiste (o critério 16e
+  mostra): parar e mostrar qual saída fica sem evento; não soltar a conta por tempo.
 - Duas mensagens de sistema nas `instructions` chegarem ao modelo como uma só, ou o `cacheControl` da
   primeira se perder no caminho: parar e mostrar o pedido gravado; não juntar as duas.
 - A conferência dos números precisar de um juiz de modelo para separar número da empresa de número
@@ -770,7 +802,7 @@ concorrência; o resolver por conversa é o padrão do Mastra.
 - **O Mastra.** `NMD:docs-sandbox-overview.md:78-104` (a sandbox numa ferramenta), `:162-224` (um
   resolver por fio, `sandboxCacheKey`, a sandbox do resolver é do app), `:264-270,295-299`;
   `NMD:reference-agent-controller-agent-controller-class.md:97` (`workspace` por sessão);
-  `NM:tools/types.d.ts:31-32` (`ctx.workspace`); `NMD:reference-workspace-filesystem.md:13-26`.
+  `NM:tools/types.d.ts:564` (`ctx.workspace`); `NMD:reference-workspace-filesystem.md:13-26`.
 - **O controlador do Builder.** `builder.ts:232-236` (o `workspace` do controlador por pedido).
 - **A CSP e o tamanho.** `apps/server/src/platform/http.ts:30-49`; `MAX_BYTES` (`git/public.ts:1`).
 - **A decisão 0032** inteira.
@@ -779,8 +811,8 @@ concorrência; o resolver por conversa é o padrão do Mastra.
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `apps/server/src/builder/machine/` | Muda `kit.ts` (`KitOptions` ganha `allowOut: readonly string[]`, o Builder passa `ALLOWED_HOSTS`), `e2b.ts` (a rede e o `closeNetwork` pelo `allowOut` recebido), `public.ts` (exporta o que a U3 usa) | o Builder, o Assistente |
-| `apps/server/src/builder/assistant/` | Cria `machine.ts` (o `Workspace` da conversa), `show-file.ts`, `machine.test.ts`, `show-file.test.ts`; muda `assistant.ts` (o `workspace` do controlador, as ferramentas da máquina e `show_file` no `availableTools`), `routes.ts` (o download), `release.ts` (`api.kill` antes de apagar o fio), `turn.ts` (parar a máquina no fim do turno e no `close`), `prompt/assistant.md` (a frase da máquina) | `main.ts` |
+| `apps/server/src/builder/machine/` | Muda `kit.ts` (`KitOptions` ganha `allowOut: readonly string[]`, o Builder passa `ALLOWED_HOSTS`), `e2b.ts` (a rede e o `closeNetwork` pelo `allowOut` recebido), `machines.ts` (o método privado `execIn`, `machines.ts:199-213`, vira a função `execIn(kit, ensure)`, que o Builder chama igual), `public.ts` (exporta `execIn`, `SandboxFilesystem`, `readCapped`, `Kit`, `KitFactory`, `MachineApi`) | o Builder, o Assistente |
+| `apps/server/src/builder/assistant/` | Cria `machine.ts` (`AssistantMachines`: o `Workspace` da conversa, parar, matar, ler), `show-file.ts`, `machine.test.ts`, `show-file.test.ts`; muda `assistant.ts` (`workspace: machines.workspace` no controlador, as ferramentas da máquina e `show_file` no `availableTools`), `routes.ts` (o download por `machines.read`), `release.ts` (`machines.kill` antes de apagar o fio), `turn.ts` (`machines.stop` no fim do turno, `machines.stopAll` no `close`), `prompt/assistant.md` (a frase da máquina) | `main.ts` |
 | `apps/server/src/builder/connectors/connector-tools.ts` | Muda: com uma máquina no contexto, a leitura grava `whole` e responde o caminho; o Builder não passa máquina e não muda | o Assistente |
 | `apps/server/src/main.ts` | Muda: dá ao Assistente o kit, a API da máquina e o modelo da máquina | — |
 | `packages/hub-api/src/assistant.ts` | Muda: `ShownFile`, a rota do arquivo, `FILE_NOT_FOUND`, `FILE_GONE`, `FILE_TOO_LARGE`, os nomes novos em `ASSISTANT_TOOL` | a U4 |
@@ -792,12 +824,23 @@ concorrência; o resolver por conversa é o padrão do Mastra.
 // apps/server/src/builder/assistant/machine.ts
 /** Where the conversation's files live on its machine, made at the machine's start. */
 export const WORK_FOLDER = '/home/user/work'
-/** The conversation's Workspace: the Builder's kit without the app's seed, Git, check or pack; no network. */
-export function assistantWorkspace(deps: { kit: KitFactory; api: MachineApi; template: string; installation: string; log: Logger }):
-  (requestContext: RequestContext) => Promise<Workspace | undefined>   // undefined outside a conversation, as the Builder's
+/** The conversations' machines: the Builder's kit without the app's seed, Git, check or pack; no network. One owner (C26) for start, stop, kill and read. */
+export type AssistantMachines = {
+  /** The controller's workspace resolver; undefined outside a conversation, as the Builder's. */
+  workspace(requestContext: RequestContext): Promise<Workspace | undefined>
+  /** The turn ended: the machine stops (E2B pauses it); a machine never started is left alone. */
+  stop(conversationId: ConversationId): Promise<void>
+  /** The Hub ends: every machine of a turn in flight stops. */
+  stopAll(): Promise<void>
+  /** The conversation is deleted: every machine it marked is killed (MachineApi.kill). */
+  kill(conversationId: ConversationId): Promise<void>
+  /** The download: wakes the machine and reads one file inside WORK_FOLDER, capped. */
+  read(conversationId: ConversationId, path: string): Promise<{ kind: 'OK'; bytes: Buffer } | { kind: 'FILE_NOT_FOUND' | 'FILE_TOO_LARGE' | 'FILE_GONE' | 'MACHINE_UNAVAILABLE' }>
+}
+export function createAssistantMachines(deps: { kit: KitFactory; api: MachineApi; template: string; installation: string; log: Logger }): AssistantMachines
 
 // packages/hub-api/src/assistant.ts
-export const ShowFileInput = z.object({ path: z.string().min(1).max(500), title: z.string().max(120).optional() })
+export const ShowFileInput = z.object({ path: z.string().min(1).max(500) })
 export const ShownFile = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('TEXT'), path: z.string(), name: z.string(), media: z.enum(['text/markdown', 'text/plain', 'text/csv']), content: z.string().max(65_536) }),
   z.object({ kind: z.literal('FILE'), path: z.string(), name: z.string(), media: z.string(), bytes: z.number().int().nonnegative() }),
@@ -805,9 +848,10 @@ export const ShownFile = z.discriminatedUnion('kind', [
 ])
 // What the model receives (toModelOutput, NM:tools/types.d.ts:457): { shown: path } or the refusal, never the content.
 // GET /api/companies/{companyId}/assistant/conversations/{conversationId}/files ?path=
-//      -> 200 bytes, Content-Type from the name, Content-Disposition: attachment (inline for png, jpg, svg)
+//      -> 200 bytes, Content-Type from the name, Content-Disposition: attachment (inline for png, jpg, svg),
+//         X-Content-Type-Options: nosniff, Content-Security-Policy: sandbox
 //      falhas: CONVERSATION_NOT_FOUND, FILE_NOT_FOUND, FILE_TOO_LARGE, FILE_GONE, MACHINE_UNAVAILABLE
-// connector_read, with a machine: the OK output gains { file: `reads/${n}.json` } or { saved: false, reason }
+// connector_read, with a machine: the OK output keeps { value, complete } and gains { file: `reads/${turn8}-${n}.json` } or { saved: false, reason }
 ```
 
 - A máquina é a do Builder em tudo o que não é do app: o mesmo `E2BSandbox`, o mesmo modelo
@@ -836,9 +880,9 @@ export const ShownFile = z.discriminatedUnion('kind', [
 
 ### A ordem do trabalho
 
-1. `kit.ts` e `e2b.ts`: `allowOut` vem de quem monta; os testes da máquina do Builder passam sem
-   mudar.
-2. `machine.ts`: o `Workspace` da conversa sobre o kit; o `workspace` do controlador do Assistente.
+1. `kit.ts`, `e2b.ts` e `machines.ts`: `allowOut` vem de quem monta; `execIn` vira função; os testes
+   da máquina do Builder passam sem mudar.
+2. `machine.ts`: `AssistantMachines` sobre o kit; o `workspace` do controlador do Assistente.
 3. `connector-tools.ts`: a gravação em `reads/` quando há máquina.
 4. `show-file.ts` e a rota do arquivo (`readCapped`, `containment.ts` para recusar fora da pasta).
 5. `release.ts`, `turn.ts`: matar e parar. `assistant.md`. A 0032.
