@@ -138,8 +138,8 @@ export function ProjectIntegrations(scope: Scope) {
   const read = useQuery(projectConnectionsQuery(companyId, projectId))
   const company = useQuery(connectionsQuery(companyId))
   if (read.error instanceof HubFailure && read.error.code === 'NOT_FOUND') return <NotFound />
-  // The lines say what the Projeto reads and the company's list says who may change it and how each
-  // connector signs in, so the page waits for both and fails with either.
+  // The lines say what the Projeto reads and the company's list says who may change it, so the page
+  // waits for both and fails with either.
   const failure = read.error ?? company.error ?? undefined
   const shown = read.data !== undefined && company.data !== undefined
   const mayManage = company.data?.mayManage === true
@@ -186,10 +186,7 @@ export function ProjectIntegrations(scope: Scope) {
                     group={group}
                     line={line}
                     mayManage={mayManage}
-                    auth={
-                      company.data?.connectors.find((one) => one.id === group.connector.id)?.auth ??
-                      'client_credentials'
-                    }
+                    auth={group.connector.auth}
                   />
                 ))}
               </ul>

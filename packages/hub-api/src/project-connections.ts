@@ -21,7 +21,7 @@ export type Grant = z.infer<typeof Grant>
 export const ProjectConnections = z.object({
   connectors: z.array(
     z.object({
-      connector: ConnectorEntry.pick({ id: true, name: true, logo: true, category: true }),
+      connector: ConnectorEntry.pick({ id: true, name: true, logo: true, category: true, auth: true }),
       perProject: z.enum(['one', 'many']),
       connections: z.array(
         z.object({

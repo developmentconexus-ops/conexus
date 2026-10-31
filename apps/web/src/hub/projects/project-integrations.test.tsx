@@ -178,6 +178,11 @@ test('uma ligação que pede para conectar de novo mostra o selo e o caminho', a
   expect(way.getAttribute('href')).toBe(`/companies/${COMPANY.id}/integrations/${matriz.id}`)
 })
 
+test('o selo de uma ligação diz o login do conector da própria lista do Projeto', async () => {
+  open({ sankhya: [], ml: [line('Loja', { state: 'NEEDS_REAUTH' })], mayManage: true })
+  expect((await row('Loja')).getByText('Pede para conectar de novo')).toBeTruthy()
+})
+
 test('sem nenhuma ligação, a frase e o caminho para a dona; para o membro, quem pede', async () => {
   open({ sankhya: [], ml: [], mayManage: true })
   expect(await screen.findByText('A empresa ainda não ligou nenhum sistema.')).toBeTruthy()

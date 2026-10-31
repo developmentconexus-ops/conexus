@@ -27,7 +27,7 @@ type Line = ReturnType<typeof line>
 
 function listOf(sankhya: Line[], mercadoLivre: Line[]) {
   function entry(one: typeof SANKHYA) {
-    return { id: one.id, name: one.name, logo: one.logo, category: one.category }
+    return { id: one.id, name: one.name, logo: one.logo, category: one.category, auth: one.auth }
   }
   return ok(listProjectConnections, {
     connectors: [
