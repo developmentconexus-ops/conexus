@@ -71,6 +71,20 @@ export function promptCacheMiddleware(scope: PromptCacheScope): LanguageModelMid
   }
 }
 
+/**
+ * Each step's answer without the body of its request. Mastra keeps every step's output, request
+ * included, until the session's next run, so a conversation's last turn held every prompt it sent
+ * (`@mastra/core@1.79.0` `MastraModelOutput` `#bufferedSteps[].request.body`); nothing of ours or
+ * Mastra's reads it back.
+ */
+const bodylessMiddleware: LanguageModelMiddleware = {
+  specificationVersion: 'v3',
+  wrapStream: async ({ doStream }) => {
+    const { request: _request, ...answer } = await doStream()
+    return answer
+  },
+}
+
 // From @mastra/code-sdk 1.14.0, dist/providers/claude-max.js (`opencodeClaudeMaxProvider`,
 // `buildAnthropicOAuthFetch`, `claudeCodeMiddleware`). Changed: TypeScript; the token is the one the
 // queue opened for this call, not a file store; no thinking middleware (the
@@ -125,7 +139,7 @@ export function subscriptionModel(modelName: string, accessToken: string, scope:
   })
   return wrapLanguageModel({
     model: provider(modelName),
-    middleware: [identityMiddleware, promptCacheMiddleware(scope)],
+    middleware: [identityMiddleware, promptCacheMiddleware(scope), bodylessMiddleware],
   })
 }
 
@@ -133,7 +147,7 @@ export function subscriptionModel(modelName: string, accessToken: string, scope:
 export function apiKeyModel(modelName: string, apiKey: string, scope: PromptCacheScope) {
   return wrapLanguageModel({
     model: createAnthropic({ apiKey })(modelName),
-    middleware: promptCacheMiddleware(scope),
+    middleware: [promptCacheMiddleware(scope), bodylessMiddleware],
     providerId: 'anthropic',
   })
 }
