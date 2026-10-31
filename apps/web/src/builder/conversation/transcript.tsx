@@ -81,10 +81,11 @@ export function Transcript(props: {
 }) {
   const { turns, older } = props
   const viewport = useRef<HTMLDivElement>(null)
+  const place = useRef<Place | null>(null)
   return (
     <MessageScrollerProvider autoScroll defaultScrollPosition="end">
       <EndOnSent last={turns.at(-1)?.key} />
-      <KeepPlace first={turns[0]?.key} viewport={viewport} />
+      <KeepPlace first={turns[0]?.key} place={place} />
       <MessageScroller>
         <MessageScrollerViewport
           ref={viewport}
@@ -102,7 +103,16 @@ export function Transcript(props: {
                 variant="ghost"
                 className="self-center"
                 disabled={older.loading}
-                onClick={older.load}
+                onClick={() => {
+                  const element = viewport.current
+                  if (element !== null)
+                    place.current = {
+                      element,
+                      height: element.scrollHeight,
+                      top: element.scrollTop,
+                    }
+                  older.load()
+                }}
               >
                 {LOAD_OLDER}
               </Button>
@@ -154,20 +164,21 @@ function EndOnSent(props: { last: string | undefined }) {
 
 /**
  * Keeps the place the person was reading when older messages arrive above: the viewport's height
- * grows by what was added, and its scroll moves by the same.
+ * and scroll are taken when they ask for them, and when the first turn changes the scroll moves
+ * by what the height grew.
  */
-function KeepPlace(props: {
-  first: string | undefined
-  viewport: React.RefObject<HTMLDivElement | null>
-}) {
-  const seen = useRef<{ first: string; height: number; top: number }>(undefined)
+function KeepPlace(props: { first: string | undefined; place: React.RefObject<Place | null> }) {
+  const { place } = props
+  const first = useRef(props.first)
   useLayoutEffect(() => {
-    const element = props.viewport.current
-    if (element === null || props.first === undefined) return
-    const before = seen.current
-    if (before !== undefined && before.first !== props.first)
-      element.scrollTop = before.top + (element.scrollHeight - before.height)
-    seen.current = { first: props.first, height: element.scrollHeight, top: element.scrollTop }
+    const kept = place.current
+    if (first.current === props.first) return
+    first.current = props.first
+    if (kept === null) return
+    place.current = null
+    kept.element.scrollTop = kept.top + (kept.element.scrollHeight - kept.height)
   })
   return null
 }
+
+type Place = { element: HTMLElement; height: number; top: number }
