@@ -5,6 +5,7 @@ import {
   readdirSync,
   rmSync,
   symlinkSync,
+  unlinkSync,
   writeFileSync,
 } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -59,3 +60,17 @@ export const ANY_HANDLERS = `import { operations } from '../shared/operations'
 
 export const handlers = Object.fromEntries(Object.keys(operations).map((name) => [name, () => ({})]))
 `
+
+/** The app as the machine has it: the SDK copied from the platform's folder, never the repository's links. */
+export function onTheMachine(t: TestContext, files: Files): CheckContext {
+  const root = appWith(t, files)
+  unlinkSync(join(root, 'node_modules', '@conexus'))
+  const platform = mkdtempSync(join(tmpdir(), 'conexus-platform-'))
+  t.after(() => rmSync(platform, { recursive: true, force: true }))
+  for (const folder of ['app', 'app-contract', 'connectors'])
+    cpSync(join(MODULES, '..', 'packages', folder), join(platform, folder), {
+      recursive: true,
+      filter: (path) => !path.includes('node_modules'),
+    })
+  return { ...contextOf(root), platform }
+}
