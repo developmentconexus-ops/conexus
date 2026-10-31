@@ -18,7 +18,7 @@
       "entry": ["scripts/*.ts"]
     },
     "packages/app": {
-      "entry": ["src/**/*.check.ts"],
+      "entry": ["src/**/*.check.ts", "src/check/program.ts"],
       "ignore": ["starter/**", "skills/**"],
       "ignoreDependencies": [
         "@hookform/resolvers",

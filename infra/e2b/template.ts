@@ -10,6 +10,7 @@ import { readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { defaultBuildLogger, Sandbox, Template } from 'e2b'
 import { z } from 'zod'
+import { MACHINE } from '../../packages/app/src/check/machine.ts'
 import { templateLine, templateName } from './name.ts'
 import { digests, IGNORED, SDK_FOLDERS, sdkFiles } from './sdk.ts'
 
@@ -101,6 +102,6 @@ const commit = execFileSync('git', ['rev-parse', '--short', 'HEAD'], {
   encoding: 'utf8',
 }).trim()
 const name = templateName(commit)
-await Template.build(template, name, { onBuildLogs: defaultBuildLogger() })
+await Template.build(template, name, { ...MACHINE, onBuildLogs: defaultBuildLogger() })
 await proveSdk(name)
 console.log(templateLine(name))

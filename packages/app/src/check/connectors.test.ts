@@ -1,15 +1,10 @@
 import assert from 'node:assert/strict'
-import { cpSync, mkdtempSync, readFileSync, rmSync, unlinkSync } from 'node:fs'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
-import type { TestContext } from 'node:test'
+import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
 import { dependencies } from './dependencies.ts'
 import { manifesto } from './manifest.ts'
-import type { CheckContext } from './step.ts'
 import { workOf } from './step.ts'
-import type { Files } from './test-app.ts'
-import { ANY_HANDLERS, appWith, contextOf, MODULES } from './test-app.ts'
+import { ANY_HANDLERS, appWith, contextOf, onTheMachine } from './test-app.ts'
 import { tipos } from './types.ts'
 
 const CONNECTED = `import { defineConnectors, defineOperations } from '@conexus/app'
@@ -27,20 +22,6 @@ export const handlers = defineHandlers(operations, {
   contar: (_input, context) => connectorsOf(context, connectors).sankhya.consultar({ sql: 'SELECT 1 FROM TSIEMP' }),
 })
 `
-
-/** The app as the machine has it: the SDK copied from the platform's folder, never the repository's links. */
-function onTheMachine(t: TestContext, files: Files): CheckContext {
-  const root = appWith(t, files)
-  unlinkSync(join(root, 'node_modules', '@conexus'))
-  const platform = mkdtempSync(join(tmpdir(), 'conexus-platform-'))
-  t.after(() => rmSync(platform, { recursive: true, force: true }))
-  for (const folder of ['app', 'app-contract', 'connectors'])
-    cpSync(join(MODULES, '..', 'packages', folder), join(platform, folder), {
-      recursive: true,
-      filter: (path) => !path.includes('node_modules'),
-    })
-  return { ...contextOf(root), platform }
-}
 
 test('os conectores declarados vão ao manifesto, e o handler os chama tipado pelo kit que a máquina recebe', async (t) => {
   const ctx = onTheMachine(t, {
