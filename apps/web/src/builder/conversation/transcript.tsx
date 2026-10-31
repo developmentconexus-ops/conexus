@@ -1,4 +1,5 @@
 import type { ModelId } from '@conexus/hub-api'
+import { Loader2Icon } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 import {
   MessageScroller,
@@ -10,7 +11,6 @@ import {
   useMessageScroller,
   useMessageScrollerScrollable,
 } from '../../ui/message-scroller.tsx'
-import { Skeleton } from '../../ui/skeleton.tsx'
 import { BuilderTurn } from './builder-turn.tsx'
 import type { Message } from './messages.ts'
 import { chipOf, messageOf } from './messages.ts'
@@ -118,12 +118,14 @@ export function Transcript(props: {
           </MessageScrollerContent>
         </MessageScrollerViewport>
         {older.loading && (
-          <div
-            role="status"
-            aria-label={LOADING_OLDER}
-            className="pointer-events-none absolute inset-x-0 top-md flex justify-center"
-          >
-            <Skeleton className="h-2 w-24" />
+          <div className="pointer-events-none absolute inset-x-0 top-md flex justify-center">
+            <div
+              role="status"
+              aria-label={LOADING_OLDER}
+              className="rounded-pill border border-line bg-surface p-sm text-text-2"
+            >
+              <Loader2Icon aria-hidden="true" className="size-4 motion-safe:animate-spin" />
+            </div>
           </div>
         )}
         <MessageScrollerButton />
