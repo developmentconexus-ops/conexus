@@ -88,28 +88,36 @@ function paced(
       .catch((error: unknown) => ended('FAILED', { during: 'cancel', ...named(error) }))
   }
 
+  /** Keeps one event for the response; false once the page is too far behind to keep more. */
+  function kept(value: unknown): boolean {
+    const event = slim(value)
+    const size = sizeOf(event)
+    pending.push({ event, size })
+    behind += size
+    const unwritten = behind + response.writableLength
+    if (unwritten <= STREAM_BEHIND_BYTES) return true
+    stop('BEHIND', { bytes: unwritten })
+    response.destroy()
+    return false
+  }
+
+  /** Mastra's stream ended; its handler also closes it when the request leaves. */
+  function sourceEnded() {
+    if (!finished) {
+      finished = true
+      ended(response.closed ? 'CLOSED' : 'SESSION_ENDED')
+    }
+    wake?.()
+  }
+
   async function pump() {
     try {
       for (;;) {
         const { done, value } = await reader.read()
-        if (done || finished) break
-        const event = slim(value)
-        const size = sizeOf(event)
-        pending.push({ event, size })
-        behind += size
-        if (behind + response.writableLength > STREAM_BEHIND_BYTES) {
-          stop('BEHIND', { bytes: behind + response.writableLength })
-          response.destroy()
-          return
-        }
+        if (done || finished) return sourceEnded()
+        if (!kept(value)) return
         wake?.()
       }
-      if (!finished) {
-        finished = true
-        // Mastra's handler also closes its stream when the request leaves.
-        ended(response.closed ? 'CLOSED' : 'SESSION_ENDED')
-      }
-      wake?.()
     } catch (error) {
       stop('FAILED', { during: 'read', ...named(error) })
       response.destroy()
