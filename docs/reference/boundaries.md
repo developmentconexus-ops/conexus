@@ -988,6 +988,22 @@ rows for the five above wait on issue #458.
   `onSessionDeleted`. Proof: `conversation-stream.test.ts`. Revisit when Mastra's server ends its
   streams on shutdown.
 
+## Mastra 1.79.0: the stream sends the screen what it reads (memory, pace)
+
+- **Library line.** `@mastra/core` 1.79.0 `agent-controller/session.ts` sends the session's whole
+  display state after every event (the turn's message and every tool's input and result), which grows
+  with the square of a turn's length. The stream route has no option to send a subset.
+- **Hand-made piece.** `slim` and `paced` in `apps/server/src/builder/conversation/stream.ts`. `slim`
+  keeps of a `display_state_changed` event only what the screen reads (`DISPLAY_READ`); every other
+  event goes as Mastra sent it. `paced` writes each event once the response can take more and ends
+  the stream of a page 8 MiB behind, which reads the transcript and the session again when it opens
+  a new stream.
+- **Why.** The screen draws no more than `DISPLAY_READ`; sending the rest cost the Hub's heap and
+  bytes on a long turn.
+- **Proof.** `conversation-stream-paced.test.ts` "um turno de 96 passos…" and "uma página que lê
+  devagar…", which fail without `slim` or `paced`.
+- **Revisit when** Mastra lets a stream send a subset of the display state.
+
 ## Mastra 1.79.0: Parar waits until Mastra keeps an open card's run
 
 - **Library line.** `@mastra/core` 1.79.0, default engine. The controller ends a run at its

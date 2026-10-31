@@ -16,7 +16,7 @@ type Message = Parameters<Transform>[0]['params']['prompt'][number]
 /** A part that can carry a provider's options. */
 type Marked = { providerOptions?: Message['providerOptions'] }
 
-/** The agent's breakpoints' TTL; `activateAfterIdle` names the same for Anthropic (`builder.ts`). */
+/** The agent's breakpoints' TTL. */
 const PROMPT_CACHE_TTL = '1h'
 
 /**

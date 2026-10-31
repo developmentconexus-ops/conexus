@@ -110,8 +110,15 @@ export function memoryOwner(owner: { companyId: CompanyId; personId: PersonId })
 
 /**
  * The Builder's memory: its title and its observation through the turn's account, failing soft,
- * in Mastra's own database, with Mastra Code's idle activation, observer context and titles
- * (`agents/memory.ts:355-417`).
+ * in Mastra's own database, with Mastra Code's observer context and titles
+ * (`agents/memory.ts:355-417`). Async buffering is off (`bufferTokens: false`, Mastra's documented
+ * mode): with it on, each buffer cycle re-read the last 20 messages and each step re-read the
+ * memory record, which held the buffered chunks: 340 to 510 MB per Builder hour by the egress
+ * study's count, 480 MB/h as Neon measured it, and the free transfer ran out in days. Off, it
+ * measured 7 to 9 times fewer bytes, at the cost of a pause while the Observer runs, about every
+ * 30k tokens. The founder accepted that trade. Idle and provider-change activation and both
+ * `bufferActivation` act only on buffered chunks, and `blockAfter` only applies with buffering;
+ * Mastra clears them when it is off, so they went with it.
  */
 function builderMemory(
   storage: ReturnType<typeof createMastraStorage>,
@@ -131,16 +138,12 @@ function builderMemory(
         enabled: true,
         scope: 'thread',
         retrieval: { scope: 'thread' },
-        activateAfterIdle: { default: 'auto', anthropic: '1h' },
-        activateOnProviderChange: true,
         temporalMarkers: true,
         observation: {
           ...failSoft,
           model: accountModel(queue, 'observer', turnFor),
           messageTokens: 30_000,
-          bufferTokens: 1 / 5,
-          bufferActivation: 2000,
-          blockAfter: 2,
+          bufferTokens: false,
           previousObserverTokens: 1000,
           threadTitle: true,
           instruction: OBSERVER_INSTRUCTION,
@@ -149,8 +152,6 @@ function builderMemory(
           ...failSoft,
           model: accountModel(queue, 'reflection', turnFor),
           observationTokens: 40_000,
-          bufferActivation: 1 / 2,
-          blockAfter: 1.1,
         },
       },
     },

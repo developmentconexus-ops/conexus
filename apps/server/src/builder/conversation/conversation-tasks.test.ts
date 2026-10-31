@@ -123,7 +123,7 @@ test('Observador no Groq: a chamada dele chega ao dublê do Groq, e o modelo do 
   assert.equal((await sessionStateOf(hub, ana, url)).model, MODEL)
 })
 
-test('sem conta no modelo escolhido, o Observador segue a conversa, sem aviso, passando de blockAfter (14.2, 36)', async (t) => {
+test('sem conta no modelo escolhido, o Observador segue a conversa, sem aviso, passando do limite de mensagens (14.2, 36)', async (t) => {
   const { hub, ana, conversations, companyId, anthropic } = await conversing(t, (asked) => {
     if (OBSERVER.test(asked.system)) return { kind: 'text', text: OBSERVED }
     return title(asked) ?? { kind: 'text', text: LONG }

@@ -5,6 +5,7 @@ import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import { call } from '../../hub/identity/test-hub.ts'
+import type { StreamEvent } from './test-conversation.ts'
 import {
   answeredOf,
   conversing,
@@ -233,12 +234,18 @@ test('a observação vai pela conta do turno e pede o título em português; um 
   const url = `${conversations}/${await started(hub, ana, conversations)}`
   const stream = await streamOf(hub, ana, url)
   t.after(() => stream.close())
+  const turns: StreamEvent[][] = []
   for (const question of ['Como organizo as encomendas?', 'E os pedidos do balcão?']) {
     assert.equal((await sent(hub, ana, url, question)).statusCode, 200)
-    assert.equal(endOf(await stream.turn()), 'complete')
+    const events = await stream.turn()
+    assert.equal(endOf(events), 'complete')
+    turns.push(events)
   }
   const read = await call(hub, ana, 'GET', url)
-  // The observer buffers in the background past `messageTokens`; the Hub's close waits for it.
+  // Async buffering is off: the Observer runs inside the turn, past `messageTokens`, and never buffers.
+  const types = turns.flat().map((each) => each.type)
+  assert.ok(types.includes('om_observation_start'), 'the observer ran inside a turn')
+  assert.equal(types.includes('om_buffering_start'), false, 'nothing is buffered in the background')
   await hub.close()
   const observed = anthropic.sent.filter((each) => OBSERVER.test(each.system))
   assert.ok(observed.length > 0, 'the second turn, past the threshold, was observed')
@@ -256,7 +263,12 @@ test('a observação vai pela conta do turno e pede o título em português; um 
     )
     assert.match(each.system, /título da conversa em português do Brasil/)
   }
-  for (const text of [JSON.stringify(lines), printed.join(''), stream.seen.raw, read.body]) {
+  // Mastra's own events reach the browser as sent (founder, 2026-10-31); the page draws only the type
+  // of `om_*_failed`, so those frames are excluded from the check, and every other frame is kept.
+  const frames = stream.seen.raw
+    .split('\n\n')
+    .filter((frame) => !/"type":"om_\w+_failed"/.test(frame))
+  for (const text of [JSON.stringify(lines), printed.join(''), frames.join('\n\n'), read.body]) {
     assert.doesNotMatch(text, PLANTED)
   }
 })
