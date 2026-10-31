@@ -78,7 +78,6 @@ Em espera: 19.2 Central de Ajuda. Sai: o pg-boss; a agenda e os workflows do Mas
 | 13 | Uma chave do E2B (a da conta grátis). Um bucket privado no R2 | E2B pago: US$ 150 por mês, se o uso pedir |
 | 19 | Usuário só de leitura no Sankhya de uma empresa | Nenhum |
 | 19.1 | O seu app de desenvolvedor do Mercado Livre | Não lido |
-| 24.1 | Suas perguntas reais ao seu Sankhya | Nenhum |
 | 24.2 | O Neon no plano Launch: a agenda do Mastra mantém o banco acordado | Cerca de US$ 19,35 por mês por banco |
 | 22 | Um lugar de cópia fora do Neon | Não lido |
 | 23 | O aviso do que sai do Brasil, com uma linha: o ditado no Chrome passa pelo Google | Nenhum novo |
@@ -103,7 +102,7 @@ Login social. Arquivos enviados por pessoas para dentro de um app ou da máquina
 | Etapa | O que precisa antes | Decisão sua nela | Conhecimento trazido |
 | --- | --- | --- | --- |
 | 20 App com dados | A 18 e a 19.1 | Nenhuma | A barra do Projeto nasce com Integrações. O caderno da ligação. Banco livre durante a chamada |
-| 24.1 Supervisor | A 20 | Nenhuma | Sessões como as da Factory e do G4. Ferramentas de conector da 20. Aceite pela taxa de acerto. Dono e administradores |
+| 24.1 Supervisor | A 20 | Nenhuma | Sessões como as da Factory e do G4. Ferramentas de conector da 20, máquina por conversa. Aceite: nenhum número inventado. Dono e administradores |
 | 24.2 Rotinas | A 24.1 | Nenhuma | `mastra.schedules`. A 20.4 entra aqui |
 | 24.3 Escrever com aprovação | A 24.2 | Nenhuma | `requireApproval` do Mastra, provada antes a trava da 0053. Escrita nova pede nova liberação |
 | 24.4 Projeto sem app, agentes e Construtor | A 24.3 | Nenhuma | O Projeto como pasta de um assunto. O campo `agents` do Mastra, nunca o Agent Builder pago. O Open Bots (2026-10-29) |
