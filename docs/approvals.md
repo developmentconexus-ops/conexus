@@ -378,3 +378,13 @@ Etapa 19.1 usada em 2026-10-30 em https://hub.conexus.fun (v0.19.7), com a conta
 Cartão da etapa 20 aprovado em 2026-10-30 (commit fa6f160301872fc196efdaae078b1911641d1f00): "1 aprovo / 2 A1"
 
 Ele aprovou a página do cartão e escolheu a `A1`: a aba "Projeto" do alto sai, **Sobre** reúne Sobre e Versões, e o Construir fica com Prévia, Código e Alterações. As decisões `S1`, `R2` e `T-A` com o ajuste vieram antes, ao estudo, no mesmo dia. O commit citado só escreve a `A1` na página. A aprovação é também a palavra da regra de dados D11 para as permissões do banco da U2: a tabela `connectors.project_connection` e o campo `connection.notes`.
+
+## Etapa 24.1
+
+Em 2026-10-30, ao estudo das referências do Supervisor: "M1 / A1 / B1 / `C1` / `D1` / E sua recomendação". Lido como: `M1` (um bloco "quem é o Conexus" e um bloco de trabalho por lugar, escolhido pelo lugar, nunca por um botão), `A1`, `B1`, `C1`, `D1` com o mínimo de 8 em 10 (cada pergunta feita duas vezes; um número inventado reprova a etapa), e o `E` como a recomendação do firstmate: o `E1`, a publicação espera as respostas em andamento, construído antes como a U0 (https://github.com/developmentconexus-ops/conexus/pull/499).
+
+Cartão da etapa 24.1 aprovado em 2026-10-30 (commit a8d82f2c766df0c2022c6642ed3a22a1f787f918): "Aprovado"
+
+O cartão aprovado se chamava `e24-1-supervisor.md`, nome que a conferência automática lê como a etapa 24; a emenda de 2026-10-31 o renomeia para `e241-supervisor.md`.
+
+Em 2026-10-31, ao estudo das sessões do Supervisor e ao do ecossistema: "A. A1 B1 `C1` D A gente não vai usar a chave de api e sim assinatura, eu autorizo ciente E ignora a E, / S `S1` / T `T1` por agora comecar a base das sessoes e depois vamos aprimorando com adicao de conectores, ferramentas, contextos a mais. / U. `U1` / V. `V1`". O `S1`, o `T1`, o `U1` e o `V1` das sessões entram no cartão da 24.1 por emenda: um assistente só com muitas conversas; a conversa do Início escolhe as ligações e, se quiser, um Projeto, e a aberta num Projeto nasce presa a ele; as ligações ligam e desligam a qualquer hora; um agente por conversa. O `A1`, o `B1` e o `C1` respondem ao estudo do ecossistema (o contexto da empresa na 24.4, o Mermaid na 24.5 e o resto num caso real, nenhum ajudante em paralelo antes da 24.4) e entram só na seção "Depois" do cartão, sem mudar o que a 24.1 constrói. O `D` (o laboratório pela assinatura dele) e o `E` não tocam o cartão.

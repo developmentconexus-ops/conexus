@@ -41,7 +41,7 @@ Aprovações e usos: [aprovações](approvals.md).
 
 Sua empresa usa o Conexus desde 2026-11-02, recebendo cada etapa.
 
-- **24.1 Supervisor.** Pergunta no Início aos sistemas da empresa e recebe tabelas e gráficos.
+- **24.1 Supervisor.** Sessões no Início e no Projeto perguntam aos sistemas e mostram tabelas e gráficos.
 - **24.2 Rotinas.** Recebe o resumo da manhã nas notificações e por e-mail.
 - **24.3 Escrever com aprovação.** Um agente ou app pede "Aprovar?" antes de escrever (resposta B, 2026-10-18; leva a 20.1).
 - **24.4 Projeto sem app, agentes e Construtor.** Cria, conversando com o Construtor, um agente num Projeto sem app.
@@ -103,7 +103,7 @@ Login social. Arquivos enviados por pessoas para dentro de um app ou da máquina
 | Etapa | O que precisa antes | Decisão sua nela | Conhecimento trazido |
 | --- | --- | --- | --- |
 | 20 App com dados | A 18 e a 19.1 | Nenhuma | A barra do Projeto nasce com Integrações. O caderno da ligação. Banco livre durante a chamada |
-| 24.1 Supervisor | A 20 | Nenhuma | O supervisor da Mastra Factory. As ferramentas de conector da 20. Aceite pela taxa de acerto nas suas perguntas. Dono e administradores |
+| 24.1 Supervisor | A 20 | Nenhuma | Sessões como as da Factory e do G4. Ferramentas de conector da 20. Aceite pela taxa de acerto. Dono e administradores |
 | 24.2 Rotinas | A 24.1 | Nenhuma | `mastra.schedules`. A 20.4 entra aqui |
 | 24.3 Escrever com aprovação | A 24.2 | Nenhuma | `requireApproval` do Mastra, provada antes a trava da 0053. Escrita nova pede nova liberação |
 | 24.4 Projeto sem app, agentes e Construtor | A 24.3 | Nenhuma | O Projeto como pasta de um assunto. O campo `agents` do Mastra, nunca o Agent Builder pago. O Open Bots (2026-10-29) |
