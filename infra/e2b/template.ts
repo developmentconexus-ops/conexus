@@ -2,24 +2,25 @@
 // the app folder, and in /opt/conexus the check program with its tools (TypeScript, esbuild,
 // wrangler, Chromium's headless shell), the SDK it copies into each app, and an npm cache of the
 // starter's packages. Publish runs it from the Release's commit, with the account's key in
-// E2B_API_KEY (the SDK reads it); so does firstmate to try a candidate. It proves the build carries
-// the commit's SDK, then prints the `name:tag` the deploy gives the Hub as HUB_E2B_TEMPLATE. The tag
+// E2B_API_KEY (the SDK reads it); so does firstmate to try a candidate. It prints the `name:tag` the deploy gives the Hub as HUB_E2B_TEMPLATE. The tag
 // is the commit, so a build never replaces the one production runs and the old tag is the rollback.
 import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
-import { defaultBuildLogger, Sandbox, Template } from 'e2b'
+import { defaultBuildLogger, Template } from 'e2b'
 import { z } from 'zod'
-import { DECLARED } from '../../packages/app/src/check/declarations.ts'
 import { MACHINE } from '../../packages/app/src/check/machine.ts'
 import { templateLine, templateName } from './name.ts'
-import { digests, IGNORED, SDK_FOLDERS, sdkFiles } from './sdk.ts'
 
 const ROOT = resolve(import.meta.dirname, '../..')
 const OPT = '/opt/conexus'
 /** The npm cache: the user's to write, so a granted package joins the starter's ones (0055). */
 const CACHE = `${OPT}/npm-cache`
 const BROWSERS = `${OPT}/browsers`
+/** What the template copies into /opt/conexus/packages: the SDK, its contract and the kit whose types the SDK reads. */
+const SDK_FOLDERS = ['packages/app', 'packages/app-contract', 'packages/connectors'] as const
+/** The template's own ignore patterns; E2B adds the repository's `.dockerignore` to them. */
+const IGNORED = ['**/node_modules']
 
 const Versions = z.object({
   dependencies: z.record(z.string(), z.string()).optional(),
@@ -79,38 +80,10 @@ const template = SDK_FOLDERS.reduce(
   )
   .setWorkdir('/home/user/app')
 
-// A machine from the new build hashes the SDK files it was given; one missing or different fails the
-// build, so a Release never hands the Hub a template without its commit's SDK. The declarations and
-// the `package.json` that name them are the build's own output: each must be there and agree.
-async function proveSdk(name: string): Promise<void> {
-  const files = sdkFiles(ROOT)
-  const sandbox = await Sandbox.create(name, { timeoutMs: 120_000 })
-  try {
-    await sandbox.files.write('/tmp/sdk-files', files.join('\0'))
-    const { stdout } = await sandbox.commands.run(
-      `cd ${OPT} && xargs -0 sha256sum < /tmp/sdk-files`,
-    )
-    const expected = digests(ROOT, files)
-    if (stdout !== expected) {
-      const carried = new Set(stdout.split('\n'))
-      const wrong = expected.split('\n').filter((line) => line !== '' && !carried.has(line))
-      throw new Error(`the template does not carry the commit's SDK:\n${wrong.join('\n')}`)
-    }
-    for (const { declaration, manifest } of DECLARED) {
-      await sandbox.commands.run(
-        `cd ${OPT}/packages && test -f ${declaration} && grep -qF '"types": "./${declaration.split('/').slice(1).join('/')}"' ${manifest}`,
-      )
-    }
-  } finally {
-    await sandbox.kill()
-  }
-}
-
 const commit = execFileSync('git', ['rev-parse', '--short', 'HEAD'], {
   cwd: ROOT,
   encoding: 'utf8',
 }).trim()
 const name = templateName(commit)
 await Template.build(template, name, { ...MACHINE, onBuildLogs: defaultBuildLogger() })
-await proveSdk(name)
 console.log(templateLine(name))

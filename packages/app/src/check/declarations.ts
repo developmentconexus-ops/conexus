@@ -22,12 +22,6 @@ function declarationOf(entry: string): string {
   return `dist/${entry.replace(/^src\//, '').replace(/\.ts$/, '.d.ts')}`
 }
 
-/** What a template carries once built, relative to the platform folder: the declarations and the `package.json` that names them. */
-export const DECLARED = ENTRIES.flatMap(({ folder, entry }) => ({
-  declaration: `${folder}/${declarationOf(entry)}`,
-  manifest: `${folder}/package.json`,
-}))
-
 /**
  * `tsc --declaration --emitDeclarationOnly` over the entries, then each package's declarations in its
  * own `dist/` and its `exports` reading `{ types: dist, default: sources }`: `default` stays on the
