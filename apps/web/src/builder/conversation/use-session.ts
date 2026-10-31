@@ -21,7 +21,7 @@ const FIRST_RETRY_MS = 1000
 const LAST_RETRY_MS = 15_000
 
 /** The messages a read brings, and the step by which "Carregar mensagens anteriores" widens it (Factory `INITIAL_THREAD_MESSAGE_LIMIT`). */
-export const TRANSCRIPT_PAGE = 100
+const TRANSCRIPT_PAGE = 100
 
 /** The transcript Mastra's route serves: the server does not replay what the stream missed. */
 function transcriptKey(conversationId: ConversationId) {
