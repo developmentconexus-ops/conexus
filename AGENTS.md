@@ -33,7 +33,7 @@ The root `package.json` lists every command. Run the tests a change touches befo
   identifier and never restate them.
 - How to use a library is its maintainers' skill at the installed version; the guides decide only
   what it leaves open, and native before custom is code C75.
-- Only the step in [docs/steps/](docs/steps/) is in construction. Work outside it needs a card.
+- Only the step of each track in [docs/steps/](docs/steps/) is in construction (delivery L1). Work outside it needs a card.
 - A missing decision stops the work: report it with evidence. Never invent a product rule, a
   boundary or a value to make a test pass.
 - Delivery L13, L14 and L26 (merge, `main`, shared history); security S40 (no company data,
