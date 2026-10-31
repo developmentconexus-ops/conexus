@@ -80,10 +80,6 @@ test('o stream abre com a semente do estado da sessão; reconectar no meio de um
   t.after(() => again.close())
   const seed = await again.seed()
   assert.equal(seed.isRunning, true)
-  assert.deepEqual(
-    seed.currentMessage?.content.parts.flatMap((part) => (part.type === 'text' ? [part.text] : [])),
-    [PARTIAL],
-  )
   held.release()
   const rest = await again.turn()
   assert.equal(endOf(rest), 'complete')

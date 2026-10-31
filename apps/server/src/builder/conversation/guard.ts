@@ -2,16 +2,17 @@ import type { ServerResponse } from 'node:http'
 import type { FailureCode } from '@conexus/hub-api'
 import { BUILDER_ROUTES, ConversationId } from '@conexus/hub-api'
 import { MASTRA_MESSAGE_AUTHOR_KEY } from '@mastra/core/request-context'
-import { MastraServer } from '@mastra/fastify'
 import { SERVER_ROUTES } from '@mastra/server/server-adapter'
 import type { FastifyInstance, FastifyRequest } from 'fastify'
 import { z } from 'zod'
 import { sessionOf } from '../../platform/access.ts'
+import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { Builder } from './builder.ts'
 import { BUILDER_ID } from './builder.ts'
 import { untilCardsKept } from './parked.ts'
 import type { ConversationStore } from './store.ts'
+import { BuilderServer } from './stream.ts'
 import { ownerOfResource } from './turn-of.ts'
 
 const SESSION = '/agent-controller/:controllerId/sessions/:sessionId'
@@ -138,7 +139,8 @@ async function guard(
  * Mastra's handlers read, and the guard after it. Each route declares the `session` access kind as
  * it is registered, since the Hub's access check refuses at boot a route without one; Mastra's
  * `server.auth` stays off, as the Hub already read the session. Mastra ends a stream only when its
- * request leaves, so the open ones are kept in `streams` for the Hub's close to close. Parar waits
+ * request leaves, so the open ones are kept in `streams` for the Hub's close to close; its stream is
+ * slimmed and paced (`stream.ts`). Parar waits
  * for Mastra to keep an open card's run first (`parked.ts`).
  */
 export function registerBuilderRoutes(
@@ -148,16 +150,18 @@ export function registerBuilderRoutes(
     store: ConversationStore
     streams: Set<ServerResponse>
     updating: () => boolean
+    log: FailureLog
   },
 ): void {
   const routes = builderRoutes()
   app.register(async (scope) => {
     // `onError` is required by the type; the Fastify adapter never calls it, and a body over the
     // limit goes to the Hub's error handler as a 413 (`@mastra/fastify@1.5.23` `dist/index.js:542-571`).
-    const server = new MastraServer({
+    const server = new BuilderServer({
       app: scope,
       mastra: deps.builder.mastra,
       bodyLimitOptions: { maxSize: BODY_LIMIT, onError: (error) => error },
+      log: deps.log,
     })
     server.registerContextMiddleware()
     // Mastra's multipart parser reads no body, so no limit holds it: JSON stays the only one (S25).
