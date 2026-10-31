@@ -1,5 +1,6 @@
 import type { Sha } from '../git/public.ts'
 import { MAX_BYTES } from '../git/public.ts'
+import type { Conflicts } from './kit.ts'
 
 /** Where the Hub puts the bundle of `main` and where the machine leaves the bundle of its turn. */
 export function seedFile(tmp: string): string {
@@ -39,7 +40,20 @@ export function seedScript(workdir: string, tmp: string): string {
     `git checkout --quiet --force -B main ${BASE_REF}`,
     `git clean -fdq -e node_modules -e ${PLAN_DIR}`,
     `rm -f ${quoted(seed)}`,
+    ...markedFiles(),
   ].join('\n')
+}
+
+/**
+ * Every tracked file that holds a Git conflict marker, printed as `MARKERS <path>`, whichever start
+ * or turn left it there: a file the Builder resolved drops out.
+ */
+function markedFiles(): string[] {
+  return [
+    // Exit 1 is no file found; any other failure ends the script.
+    `marked=$(git -c core.quotePath=false grep -l -I -e '^<<<<<<< ') || test $? -eq 1`,
+    `test -z "$marked" || printf '%s\\n' "$marked" | sed 's/^/MARKERS /'`,
+  ]
 }
 
 /** What the commit of a turn that never ended says, on the machine where its work is brought onto `main`. */
@@ -48,9 +62,11 @@ const CUT_MESSAGE = 'Conexus Builder (turn cut)'
 /**
  * A reconnected machine keeps its folder and brings the Hub's `main` into it. A tree equal to its
  * base moves to `main`. A tree that differs is the work of a turn that never ended: it becomes a
- * commit on its base, merged onto `main`, conflicts and their markers included, and each conflicted
- * path is printed as `CONFLICT <path>`. `main` is the base after. A folder whose seed never
- * finished prints UNSEEDED and is left to the seed.
+ * commit on its base, merged onto `main`, conflicts and their markers included. A conflicted file
+ * with no markers is printed as `DELETED <path>` when `main` deleted it and the turn's copy stays,
+ * else as `REPLACED <path>`, `main`'s copy kept over the turn's change. `main` is the base after,
+ * and the files with markers are printed. A folder whose seed never finished prints UNSEEDED and is
+ * left to the seed.
  */
 export function syncScript(workdir: string, tmp: string): string {
   const seed = seedFile(tmp)
@@ -63,21 +79,23 @@ export function syncScript(workdir: string, tmp: string): string {
     `rm -f ${quoted(seed)}`,
     ...treeIn(BASE_REF, 'conexus-sync-index'),
     `target=${main}`,
+    'conflicted=',
     `if ! ${sameTree(BASE_REF)}; then`,
     `  git update-ref ${cut} "$(git ${IDENTITY} commit-tree "$tree" -p ${BASE_REF} -m ${quoted(CUT_MESSAGE)})"`,
     // Exit 1 is a merge with conflicts; any other failure ends the script.
     `  merged=$(git -c core.quotePath=false merge-tree --write-tree --name-only --no-messages ${main} ${cut}) || test $? -eq 1`,
-    `  printf '%s\\n' "$merged" | tail -n +2 | sed 's/^/CONFLICT /'`,
+    `  conflicted=$(printf '%s\\n' "$merged" | tail -n +2)`,
     `  target=$(git ${IDENTITY} commit-tree "$(printf '%s\\n' "$merged" | head -n 1)" -p ${main} -m ${quoted(CUT_MESSAGE)})`,
     'fi',
     'git checkout --quiet --force -B main "$target"',
     `git update-ref ${BASE_REF} ${main}`,
+    ...markedFiles(),
+    `printf '%s\\n' "$conflicted" | while IFS= read -r path; do`,
+    '  test -n "$path" || continue',
+    `  ! printf '%s\\n' "$marked" | grep -qxF -- "$path" || continue`,
+    `  if git cat-file -e "${main}:$path" 2>/dev/null; then echo "REPLACED $path"; else echo "DELETED $path"; fi`,
+    'done',
   ].join('\n')
-}
-
-/** The Hub saved the turn: the version it made of the machine's tree is the machine's base now. */
-export function savedScript(workdir: string): string {
-  return `cd ${quoted(workdir)} && git update-ref ${BASE_REF} ${CANDIDATE_REF}`
 }
 
 /**
@@ -174,4 +192,15 @@ export function collected(stdout: string): Collected {
     files: counted(stdout, 'files'),
     changedFiles: counted(stdout, 'changed'),
   }
+}
+
+/** The conflicts a start script printed, one `MARKERS`, `DELETED` or `REPLACED <path>` per line. */
+export function conflictsOf(stdout: string): Conflicts {
+  const lines = stdout.split('\n')
+  function of(kind: string): string[] {
+    return lines
+      .filter((line) => line.startsWith(`${kind} `))
+      .map((line) => line.slice(kind.length + 1))
+  }
+  return { markers: of('MARKERS'), deleted: of('DELETED'), replaced: of('REPLACED') }
 }

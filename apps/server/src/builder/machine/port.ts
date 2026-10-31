@@ -44,8 +44,6 @@ export type Machines = {
   changed(input: { conversationId: ConversationId }): Promise<boolean>
   /** The version the last passing check left in the machine, read as the send takes it. */
   pack(input: { conversationId: ConversationId }): Promise<Result<VersionFolder, PackRefused>>
-  /** The Hub's `main` moved to the version of the turn's tree: the machine's folder starts from it next. */
-  saved(conversationId: ConversationId): Promise<void>
   /** Whether the conversation's turn used the machine: then there may be something to collect. */
   touched(conversationId: ConversationId): boolean
   /** Ends the turn's use of the machine: its folder goes back to its base, and it pauses. Safe to repeat. */

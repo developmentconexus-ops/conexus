@@ -213,14 +213,16 @@ export async function sandboxOf(workspace: Workspace) {
 
 /**
  * Another conversation of the Projeto saved a version: `main` in the Git at `gitDir` moves to a
- * commit that writes `path`, one no machine of this conversation received.
+ * commit that writes `path`, or deletes it when `content` is null, one no machine of this
+ * conversation received.
  */
-export function moveMain(gitDir: string, path: string, content: string) {
+export function moveMain(gitDir: string, path: string, content: string | null) {
   const work = mkdtempSync(join(tmpdir(), 'conexus-other-'))
   try {
     execFileSync('git', ['clone', '--quiet', gitDir, work])
     mkdirSync(dirname(join(work, path)), { recursive: true })
-    writeFileSync(join(work, path), content)
+    if (content === null) rmSync(join(work, path))
+    else writeFileSync(join(work, path), content)
     function git(...args: string[]) {
       execFileSync('git', ['-C', work, ...args])
     }

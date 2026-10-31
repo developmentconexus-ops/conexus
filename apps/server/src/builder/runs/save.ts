@@ -73,12 +73,6 @@ export async function saveRun(context: RunsContext, mine: Driven): Promise<Outco
   const version = await repository.versionAt(candidate)
   context.log.info({ ...fields, version }, 'VERSION_SAVED')
   if (!(await copyVersion(context, { companyId, projectId }))) context.retry.kick()
-  // A machine left on its old base brings this version in at its next start, as after a crash here.
-  await context.machines
-    .saved(conversationId)
-    .catch((error: unknown) =>
-      context.log.error({ ...fields, error: String(error) }, 'MACHINE_BASE_NOT_MOVED'),
-    )
   const { files, changedFiles } = bundle
   const counts = { number: version, changed: true, files, changedFiles }
   const { check } = mine

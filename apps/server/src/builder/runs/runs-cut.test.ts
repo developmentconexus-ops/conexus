@@ -79,7 +79,7 @@ test('o processo morreu no meio do turno: o turno seguinte acha a máquina com o
   assert.ok(!paths(git, 'main~1').includes('src/cut.ts'))
   assert.ok(paths(git, 'main').includes('src/cut.ts') && paths(git, 'main').includes('src/b.ts'))
   assert.equal(
-    hub.lines.some((line) => line.message === 'MACHINE_SYNC_CONFLICT'),
+    hub.lines.some((line) => line.message === 'MACHINE_CONFLICTS'),
     false,
   )
 })

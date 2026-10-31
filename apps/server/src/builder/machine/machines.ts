@@ -4,8 +4,15 @@ import { Failure } from '../../platform/failure.ts'
 import type { Sha } from '../git/public.ts'
 import type { TimedExec } from './check.ts'
 import { CHECK_PROGRAM, checkIn } from './check.ts'
-import type { Kit } from './kit.ts'
-import { APP_FOLDER, MARK, machineInstructions, OUTPUT_MAX, readCapped } from './kit.ts'
+import type { Conflicts, Kit } from './kit.ts'
+import {
+  APP_FOLDER,
+  MARK,
+  machineInstructions,
+  NO_CONFLICTS,
+  OUTPUT_MAX,
+  readCapped,
+} from './kit.ts'
 import { packIn } from './pack.ts'
 import type { Machines, MachinesDeps, Phase } from './port.ts'
 import { SandboxFilesystem } from './sandbox-filesystem/filesystem.ts'
@@ -15,10 +22,10 @@ import {
   changedScript,
   collected,
   collectScript,
+  conflictsOf,
   endScript,
   keepScript,
   outFile,
-  savedScript,
   seedFile,
   seedScript,
   syncScript,
@@ -35,8 +42,8 @@ type Session = {
   starts: number
   /** The machine died mid-turn, and what the turn wrote on it is gone. */
   lost: boolean
-  /** The files the start left with conflict markers, told to the model for the turn. */
-  conflicted: string[]
+  /** What the start found of work not yet saved meeting a newer version, told to the model for the turn. */
+  conflicts: Conflicts
   ready: Promise<Kit> | undefined
 }
 
@@ -125,12 +132,22 @@ class BuilderMachines implements Machines {
   /** A new machine's app folder holds `main` as the Hub has it. */
   private async seed(kit: Kit, session: Session) {
     await this.sendMain(kit, session)
-    await this.seedSent(kit)
+    await this.seedSent(kit, session)
   }
 
-  private async seedSent(kit: Kit) {
+  private async seedSent(kit: Kit, session: Session) {
     const seeded = await run(kit, seedScript(this.workdir, this.tmp))
     if (seeded.exitCode !== 0) throw new Error(`seed failed: ${seeded.stderr.slice(-500)}`)
+    this.conflicted(session, seeded.stdout)
+  }
+
+  /** The conflicts the start found, as the model reads them at every step of the turn. */
+  private conflicted(session: Session, stdout: string) {
+    session.conflicts = conflictsOf(stdout)
+    const { markers, deleted, replaced } = session.conflicts
+    const files = markers.length + deleted.length + replaced.length
+    if (files > 0)
+      this.deps.log.info({ conversationId: session.conversationId, files }, 'MACHINE_CONFLICTS')
   }
 
   /**
@@ -148,17 +165,8 @@ class BuilderMachines implements Machines {
       this.deps.log.error({ conversationId, cause }, 'MACHINE_SYNC_FAILED')
       throw new Error(`sync failed: ${cause}`)
     }
-    const lines = synced.stdout.split('\n')
-    if (lines.includes('UNSEEDED')) return this.seedSent(kit)
-    const prefix = 'CONFLICT '
-    session.conflicted = lines
-      .filter((line) => line.startsWith(prefix))
-      .map((line) => line.slice(prefix.length))
-    if (session.conflicted.length > 0)
-      this.deps.log.info(
-        { conversationId, files: session.conflicted.length },
-        'MACHINE_SYNC_CONFLICT',
-      )
+    if (synced.stdout.split('\n').includes('UNSEEDED')) return this.seedSent(kit, session)
+    this.conflicted(session, synced.stdout)
   }
 
   /** The files stay as they are; the repository must still be there. */
@@ -222,14 +230,14 @@ class BuilderMachines implements Machines {
     })
     const session: Session = {
       ...{ companyId, projectId, conversationId, onPhase, kit },
-      ...{ starts: 0, lost: false, conflicted: [], ready: undefined },
+      ...{ starts: 0, lost: false, conflicts: NO_CONFLICTS, ready: undefined },
     }
     this.sessions.set(conversationId, session)
     return new Workspace({
       sandbox: async () => (await this.ensure(session)).sandbox,
       sandboxCacheKey: () => name,
       // Read at every step: the conflicts are known once a tool has started the machine.
-      instructions: { dynamicSandbox: () => machineInstructions(this.workdir, session.conflicted) },
+      instructions: { dynamicSandbox: () => machineInstructions(this.workdir, session.conflicts) },
       filesystem: new SandboxFilesystem({
         id: `conexus-fs-${conversationId}`,
         sandbox: this.execIn(session),
@@ -299,14 +307,6 @@ class BuilderMachines implements Machines {
     } finally {
       await session.kit.sandbox.stop?.()
     }
-  }
-
-  async saved(conversationId: ConversationId) {
-    const session = this.sessions.get(conversationId)
-    if (session === undefined) return
-    const kit = await this.ensure(session)
-    const moved = await run(kit, savedScript(this.workdir))
-    if (moved.exitCode !== 0) throw new Error(`base not moved: ${moved.stderr.slice(-500)}`)
   }
 
   /** The turn is over: its folder goes back to its base. A machine that never came up holds nothing of it. */
