@@ -98,10 +98,10 @@ usa o app. Com a `R2`, Sobre e Quem usa o app viram entradas da barra.
 | --- | --- | --- | --- | --- |
 | U0 | A barra do Projeto (`R2`): o alto com o nome e a troca de Projeto, "← empresa", Construir, Sobre (com Versões, `A1`), Quem usa o app; os endereços próprios e o antigo que redireciona; o texto novo de W30 e W31 | `apps/web/src/ui/frame.tsx`, `apps/web/src/hub/projects/`, `apps/web/src/routes/_app/companies/$companyId/`, `docs/reference/screens.md` | [web](../guides/web.md) | nada: começa já |
 | U1 | O kit e o contrato do app: o conector declara `perProject`; toda ligação vai uma chamada por vez (sai `oneRequestAtATime`); o logout declarado do Sankhya; as leituras por nome com tipos (`@conexus/connectors/calls`); `AppProps.connectors`, `ConnectorAnswer`, `Manifest.connectors`; `defineConnectors` e o cliente tipado; a máquina recebe o kit; a skill `conexus-data` | `packages/connectors/`, `packages/app-contract/src/`, `packages/app/`, `infra/e2b/sdk.ts`, `.dependency-cruiser.cjs` | [testing](../guides/testing.md) | nada: começa já |
-| U2 | A tabela `connectors.project_connection` e o campo `connection.notes`; as permissões do banco (D11) | `apps/server/migrations/`, `apps/server/src/hub/connectors/tables.ts`, `apps/server/database-grants.sql`, `apps/server/src/platform/catalog.test.ts` | [data](../guides/data.md) | nada: começa já |
+| U2 | A tabela `connectors.project_connection` e o campo `connection.notes`; as permissões do banco (D11) | `apps/server/migrations/`, `apps/server/src/hub/connectors/tables.ts`, `apps/server/database-grants.sql` | [data](../guides/data.md) | nada: começa já |
 | U3 | O Hub: a fila de uma chamada por ligação e o dono do token (`limits.ts`), o banco solto durante a chamada e o `max` do pool, as rotas da liberação, a porta da borda para o app, o Publicar que recusa, a linha por chamada, a porta do Builder, o caderno no Hub, as decisões 0058 e 0056 corrigidas | `apps/server/src/hub/connectors/`, `apps/server/src/hub/apps/`, `apps/server/src/platform/database.ts`, `apps/server/src/main.ts`, `packages/hub-api/src/`, `docs/decisions/` | [security](../guides/security.md) | U1, U2 |
 | U4 | O dispatcher: a entrada `Connectors` ao lado de `Db`, `hubOf.callAppConnector` e `listAppConnections` | `apps/edge/src/` | [security](../guides/security.md) | U3 |
-| U5 | O Builder: as ferramentas de leitura e do caderno só com a liberação, o corte das leituras, o rastro escondido, a skill do conector por liberação, o bloco das ligações nas instruções, a linha do aviso 0032 | `apps/server/src/builder/conversation/`, `apps/server/src/main.ts`, `packages/hub-api/src/tools.ts`, `docs/decisions/0032-data-leaving-brazil-told.md` | [code](../guides/code.md) (só ele) | U3 |
+| U5 | O Builder: as ferramentas de leitura e do caderno só com a liberação, o corte das leituras, a skill do conector por liberação, o bloco das ligações nas instruções, a linha do aviso 0032 | `apps/server/src/builder/connectors/`, `apps/server/src/builder/conversation/`, `apps/server/src/main.ts`, `packages/hub-api/src/tools.ts`, `docs/decisions/0032-data-leaving-brazil-told.md` | [code](../guides/code.md) (só ele) | U3 |
 | U6 | As telas da liberação e do caderno: Integrações do Projeto (Liberar para ler, Tirar, a escolha pelo nome), a entrada Integrações na barra, o Caderno na página da ligação com Apagar | `apps/web/src/hub/connectors/`, `apps/web/src/hub/projects/`, `apps/web/src/routes/_app/companies/$companyId/`, `packages/hub-api/src/pages.ts`, `docs/reference/screens.md` | [web](../guides/web.md) | U0, U3 |
 
 U0, U1 e U2 correm em paralelo desde a aprovação desta página: não dividem pasta. A U0 não toca
@@ -128,8 +128,8 @@ pelos arquivos vizinhos (a U2 da 19.1 com ~830; o protótipo R2 com +242).
 | 6 | U1 | Num app de exemplo, `connectors.sankhya.consultar({ sql: 'SELECT 1 FROM TSIEMP' })` passa o `tsc` com uma string comum; `connectors.sankhya.pedidos({ dataInicial: 1 })` falha (tipo errado), e `connectors.sankhya.inexistente()` também; uma operação que o app não declarou em `defineConnectors` não existe no cliente | `packages/app/src/types.check.ts` (os casos `@ts-expect-error`) | must |
 | 7 | U1 | O passo do manifesto da checagem leva `connectors` (a lista declarada) ao `manifest.json`; um manifesto sem `connectors` continua válido (0019); `connectors` com conector repetido ou operação vazia é recusado | `packages/app-contract/src/manifest.test.ts`; `packages/app/src/check/check.test.ts`, "os conectores declarados" | must |
 | 8 | U1 | `ConnectorAnswer` de cada tipo chega ao handler pelo cliente como veio; um `OK` leva o valor; nenhum leva `body` do fornecedor | `packages/app/src/runtime.test.ts`, "a resposta do conector" | must |
-| 9 | U2 | Uma segunda liberação de outra ligação Sankhya no mesmo Projeto é recusada pelo banco (23505 em `project_connection_one_key`); duas do Mercado Livre entram; uma liberação de uma ligação de outra empresa é recusada pela chave composta; apagar a ligação apaga as liberações | `apps/server/src/hub/connectors/tables.test.ts`, "a liberação" | must |
-| 10 | U2 | `notes` nasce `{}`; um valor que não é objeto, ou maior que 32 KB, é recusado pelo banco; o papel da empresa lê e muda `notes` e não muda `sealed` por esse caminho | `tables.test.ts`, "o caderno"; `catalog.test.ts` | must |
+| 9 | U2 | Uma segunda liberação de outra ligação Sankhya no mesmo Projeto é recusada pelo banco (23505 em `project_connection_one_key`); duas do Mercado Livre entram; uma liberação de uma ligação de outra empresa é recusada pela chave composta; apagar a ligação apaga as liberações | `apps/server/src/hub/connectors/project-connection.test.ts`, "a liberação" | must |
+| 10 | U2 | `notes` nasce `{}`; um valor que não é objeto, ou maior que 32 KB, é recusado pelo banco; o papel da empresa lê e muda `notes` e não muda `sealed` por esse caminho | `project-connection.test.ts`, "o caderno" | must |
 | 11 | U3 | `PUT …/projects/{projectId}/connections/{connectionId}` pela dona libera e responde a liberação; o membro recebe 404; a segunda ligação Sankhya no mesmo Projeto dá `PROJECT_CONNECTION_TAKEN` e nada muda; `DELETE` tira, e tirar o que não existe responde 204 | `apps/server/src/hub/connectors/grants.test.ts` | must |
 | 12 | U3 | `GET …/projects/{projectId}/connections` dá ao membro cada conector ligado, o seu `perProject` e cada ligação com o nome, o estado e a liberação (quem, quando) ou `null`; outra empresa, 404 | `grants.test.ts`, "a lista" | must |
 | 13 | U3 | Pela porta da borda, um app com sessão válida e a ligação liberada lê com o dublê e recebe `OK` com as linhas; sem liberação, com outra empresa, com uma operação que não é do kit, com uma operação que a versão não declarou ou com a ligação `NEEDS_REAUTH`: `NOT_GRANTED`, a mesma resposta (S10) | `apps/server/src/hub/connectors/app-calls.test.ts` | must |
@@ -147,8 +147,8 @@ pelos arquivos vizinhos (a U2 da 19.1 com ~830; o protótipo R2 com +242).
 | 25 | U4 | Uma chamada depois do fim do prazo do clique não chega ao Hub e dá `DEADLINE`; uma em andamento é cortada no prazo; o prazo mandado ao Hub é o que resta do clique | `dispatcher-connectors.test.ts`, "o prazo" | must |
 | 26 | U4 | A chamada conta no limite de 50 subpedidos do clique, junto com o `db` (0047) | `apps/edge/src/dispatcher-limits.test.ts`, um caso a mais | must |
 | 27 | U4 | Uma resposta do Hub acima do teto, ilegível ou um Hub fora: o app recebe `UNREACHABLE`, e o dispatcher registra a razão sem dados | `dispatcher-connectors.test.ts`, "o Hub fora" | must |
-| 28 | U5 | Uma conversa num Projeto sem liberação não tem ferramenta de conector nem skill de conector; com o Sankhya liberado, tem `connector_read`, `connector_notes` e `connector_note_save` e a skill `conexus-sankhya`; tirar a liberação entre dois turnos tira as duas no turno seguinte; num turno retomado também (premissa do estudo ainda não provada: se falhar, vale o "Parar se" da U5) | `apps/server/src/builder/conversation/conversation-connectors.test.ts` | must |
-| 29 | U5 | `connector_read` com o dublê devolvendo 500 linhas guarda na memória e no rastro só 20 linhas, até 16 KB, com `complete: false`; um valor plantado na resposta não aparece no rastro exportado | `conversation-connectors.test.ts`, "o corte" e "o rastro" | must |
+| 28 | U5 | Uma conversa num Projeto sem liberação não tem ferramenta de conector nem skill de conector; com o Sankhya liberado, tem `connector_read`, `connector_notes` e `connector_note_save` e a skill `conexus-sankhya`; tirar a liberação entre dois turnos tira as duas no turno seguinte; num turno retomado, a ferramenta de conector deixa de ser oferecida, e só as ferramentas são provadas na retomada: o Mastra refaz as ferramentas, mas não as skills nem as instruções (fonte: revisão da PR 495, `@mastra/core` 1.79.0 `dist/agent-tuAMgHe3.js:41105`, `:40997` e `:41078`, `:27606-27629`) | `apps/server/src/builder/conversation/conversation-connectors.test.ts` | must |
+| 29 | U5 | `connector_read` com o dublê devolvendo 500 linhas guarda na memória só 20 linhas, até 16 KB, com `complete: false`; um valor plantado na resposta não aparece na memória (a metade do rastro foi para a 21.1: o `TracingPolicy` do Mastra só tem `internal`, `@mastra/core` 1.79.0 `observability/types/tracing.d.ts:1874-1881`; fonte: revisão da PR 495) | `conversation-connectors.test.ts`, "o corte" | must |
 | 30 | U5, U3 | `connector_note_save` sem consulta é recusado; com consulta, roda a consulta uma vez pela porta de leitura e guarda o mapa, a consulta, a data, o número de linhas e quem, nunca uma linha; uma consulta que a porta recusa recusa a anotação; a 51ª chamada de conector numa mesma execução do Builder (um turno) é recusada; o caderno cheio (acima de 32 KB) recusa a anotação com `NOTE_INVALID` | `conversation-connectors.test.ts`, "o caderno"; `notes.test.ts`, "guardar" | must |
 | 31 | U6 | Num navegador de verdade (Chrome e WebKit, 1366 e 390, os dois temas): a barra do roteiro, Liberar para ler e Tirar, a escolha pelo nome com dois Sankhya, as duas lojas do Mercado Livre liberadas, o Caderno com Apagar, o membro sem botões | QA (`conexus-qa`), o relatório do pull request da etapa | must |
 | 32 | U6 | Integrações do Projeto: a liberação certa por linha; a dona vê **Liberar para ler** e **Tirar**; o membro vê o estado e "Peça ao dono ou a um administrador."; num conector `one` com uma ligação liberada, as outras linhas não têm **Liberar para ler** e dizem qual tirar antes; num `many`, cada linha libera; uma ligação `NEEDS_REAUTH` mostra o selo e o caminho para Integrações da empresa | `apps/web/src/hub/projects/project-integrations.test.tsx` | must |
@@ -248,10 +248,10 @@ são do leitor (relay) e a unidade as reabre antes de usar.
 | O banco solto durante a chamada | U3 | o pool sem `max` (`apps/server/src/platform/database.ts:15-19`) → 10 (`node_modules/pg-pool/index.js:89`) | Nango: `getConnection` e depois a chamada, sem transação aberta (`proxy.service.ts:219-345`, relay) | nenhuma conexão do banco durante a chamada | embrulhado: duas transações curtas (D22), `max` explícito | **provado** no estudo da 20 (seção 4.5: segurando o cliente, 4.817 ms por checagem e 10 falhas; com duas curtas, 1 ms) | não precisa | — |
 | A linha por chamada | U3 | `CONNECTOR_UNREACHABLE` com escalares (`executor.ts:182,215`) | OS spans com ids, passo, resultado, status e bytes (`broker.ts:247-258`, relay) | só escalares | embrulhado: `CONNECTOR_CALLED` (S41) | critério 21 | `T-A` (2) | — |
 | O caderno da ligação | U2, U3, U5, U6 | `connection.last_test` jsonb (`tables.ts:50-52`) como precedente | Nango `docs/getting-started/use-cases/customer-configuration.mdx:7,33`, `docs/guides/auth/connection-tags-configuration-metadata.mdx:17,294-298`, `packages/types/lib/connection/db.ts:35` (lidos) | um JSON por ligação, escrito por quem aprendeu | embrulhado: `connection.notes` jsonb, tipado por Zod no Hub, escrito por `connector_note_save` com a consulta que o provou | critérios 10, 23, 30, 33 | J1, `T-A` (3) | `hub/connectors/notes.ts` |
-| As ferramentas de leitura do Builder | U5 | `tools: ({ requestContext }) => toolsOf(...)` (`builder.ts:166`) | `@mastra/core` `agent.ts:852,3489-3530` (`DynamicArgument`, resolvido a cada execução; um retorno vazio lança), `agent.ts:10560-10568` (a retomada resolve de novo; relay); OS `connector_fetch`, uma ferramenta, 50 chamadas por execução (`e0353c36 apps/hub/src/connectors/builder-tool.ts:15`, lido) | ferramentas do contexto do pedido | nativo: três ferramentas (`connector_read`, `connector_notes`, `connector_note_save`) só com uma liberação; a operação é um parâmetro, como o `connector_fetch` do OS, e não uma ferramenta por leitura (o Sankhya e o Mercado Livre somam mais de 50) | critério 28 | F1 | `builder/conversation/connector-tools.ts` |
+| As ferramentas de leitura do Builder | U5 | `tools: ({ requestContext }) => toolsOf(...)` (`builder.ts:166`) | `@mastra/core` `agent.ts:852,3489-3530` (`DynamicArgument`, resolvido a cada execução; um retorno vazio lança), `agent.ts:10560-10568` (a retomada resolve de novo; relay); OS `connector_fetch`, uma ferramenta, 50 chamadas por execução (`e0353c36 apps/hub/src/connectors/builder-tool.ts:15`, lido) | ferramentas do contexto do pedido | nativo: três ferramentas (`connector_read`, `connector_notes`, `connector_note_save`) só com uma liberação; a operação é um parâmetro, como o `connector_fetch` do OS, e não uma ferramenta por leitura (o Sankhya e o Mercado Livre somam mais de 50) | critério 28 | F1 | `builder/connectors/connector-tools.ts` |
 | A skill do conector por liberação | U5 | `skills: APP_SKILLS` fixo (`builder.ts:164`) | `@mastra/core@1.79.0 dist/coding-agent/index.js:218-228` (lido: passa `skills` ao `Agent`); `skills` como função do `requestContext` (`agent.ts:1735-1767`, relay) | skills resolvidas por pedido | nativo: `skills: async ({ requestContext }) => [...APP_SKILLS, ...dos conectores liberados]`, cada uma com `directoryName` igual ao seu `name` | critério 28 | I1 | — |
-| O corte da leitura antes do modelo | U3, U5 | nenhum | Mastra `toModelOutput` guarda o resultado cru (`tool-result-commit-core.ts:18-77`, relay); OS: só 256 KB (`builder-tool.ts:242-243`, relay) | nenhuma corta linhas | nativo: a porta do Builder devolve o valor já cortado (20 linhas, 16 KB, `complete`); `toModelOutput` rejeitado | critério 29 | F1 | — |
-| O rastro das ferramentas | U5 | spans ao Grafana (0052) | Mastra `TOOL_CALL` com `input` e `output` (`tools/tool-builder/builder.ts:888-949`); `tracingPolicy` por ferramenta (`observability/types/tracing.ts:2028-2096`; relay) | entrada e saída no span por padrão | embrulhado: as ferramentas de conector escondem entrada e saída (S41, S42) | critério 29 | não precisa | — |
+| O corte da leitura antes do modelo | U3, U5 | nenhum | Mastra `toModelOutput` guarda o resultado cru (`tool-result-commit-core.ts:18-77`, relay); OS: só 256 KB (`builder-tool.ts:89-91` e `sankhya/gateway.ts:34`, relay) | nenhuma corta linhas | nativo: a porta do Builder devolve o valor já cortado (20 linhas, 16 KB, `complete`); `toModelOutput` rejeitado | critério 29 | F1 | — |
+| O rastro das ferramentas | 21.1 | spans ao Grafana (0052) | Mastra `TOOL_CALL` com `input` e `output` (`tools/tool-builder/builder.ts:888-949`); o `TracingPolicy` só tem `internal` (`observability/types/tracing.d.ts:1874-1881`, 1.79.0); `hideInput` e `hideOutput` só no rastro todo | entrada e saída no span por padrão | embrulhado, movido para a 21.1 com o exportador de lista permitida (fonte: revisão da PR 495, decisão do firstmate, 2026-10-30) | — | não precisa | — |
 | A barra do Projeto | U0 | abas no alto (`apps/web/src/hub/projects/area.tsx:37-64`); `Section` com `access` (`search.ts:5`); o `Frame` recolhe a ícones no Projeto (`apps/web/src/ui/frame.tsx:125-140`) | OS `e0353c36 apps/web/src/app/shell.tsx:78-106` (lido): no Projeto, a barra é do Projeto: "Voltar para <empresa>", Construir, Sobre, Integrações, e um bloco "Em breve" | a barra do Projeto no lugar da da empresa | embrulhado: `ProjectRail` no `nav` do `Frame` quando há Projeto, aberto; sem "em breve" (W31) | critérios 1 a 3, 31 | `R2` | `apps/web/src/hub/projects/project-rail.tsx` |
 | Integrações do Projeto | U6 | nenhum | OS `/projects/$projectId/integrations` (`shell.tsx:97-98`, lido) | os sistemas da empresa com o estado da liberação | embrulhado: as peças da 19 (`ConnectorLogo`, `List`), **Liberar para ler** e **Tirar** | critérios 31, 32 | `R2`, `S1` | `apps/web/src/hub/projects/project-integrations.tsx` |
 | Quem libera | U3 | `manageConnections` e `readConnections` (`apps/server/src/hub/identity/admission.ts:70-71`) | better-auth 1.7.8, controle de acesso (19) | papel → capacidade | nativo: as capacidades da 19 | critério 11 | D | — |
@@ -536,8 +536,7 @@ Critérios 4 a 8: `npm test -w @conexus/connectors`, `npm test -w @conexus/app`,
 | --- | --- | --- |
 | `apps/server/src/hub/connectors/tables.ts` | Cria `projectConnection`; muda `connection` (`notes`) | U3 |
 | `apps/server/migrations/` | Cria a migração (drizzle-kit) | `migrate` |
-| `apps/server/database-grants.sql` | Muda: a tabela nova e as colunas de `notes` | `catalog.test.ts` |
-| `apps/server/src/platform/catalog.test.ts` | Muda: o retrato | a CI |
+| `apps/server/database-grants.sql` | Muda: a tabela nova e as colunas de `notes` | `platform/catalog.test.ts` (o confere, sem mudar) |
 
 ### Os contratos que a unidade cria
 
@@ -545,7 +544,7 @@ Critérios 4 a 8: `npm test -w @conexus/connectors`, `npm test -w @conexus/app`,
 // tables.ts
 /** A Projeto may use a connection (founder, S1, T-A): to read, the whole connection; no ceiling. */
 export const projectConnection = connectors.table('project_connection', {
-  projectId: uuid('project_id').notNull(),
+  projectId: text('project_id').notNull(),
   companyId: text('company_id').notNull(),
   connectorId: text('connector_id').notNull(),
   connectionId: uuid('connection_id').notNull(),
@@ -584,11 +583,11 @@ em `project_connection` e `SELECT(notes), UPDATE(notes)` em `connection` para o 
    `app_access_company_id_project_id_fkey` (`apps/server/src/hub/projects/tables.ts:93`), com a tabela
    `project` exportada por `hub/projects/public.ts`.
 2. `npm run db:generate -w @conexus/server`; ler o SQL gerado. Regras: D1, D11, D33.
-3. `database-grants.sql` e o retrato de `catalog.test.ts`.
+3. `database-grants.sql`; `platform/catalog.test.ts` o confere.
 
 ### Como se prova
 
-Critérios 9 e 10: `tables.test.ts` (casos novos, pelo banco de teste) e `catalog.test.ts`;
+Critérios 9 e 10: `project-connection.test.ts` (pelo banco de teste), e `platform/catalog.test.ts` confere `database-grants.sql`;
 `npm run check:migrations` (a memória: ele recusa `SET` solto em qualquer `.ts` mudado).
 
 ### Parar se
@@ -860,8 +859,8 @@ Mastra.
 - **A skill.** `builder.ts:164`, `instructions.ts:55-78` (`skillOf`: `validateSkillContent` com
   `directoryName`); a skill do conector vem da porta da U3, com `name` (`conexus-sankhya`) e o
   `directoryName` igual a ele.
-- **O corte e o rastro.** A porta já corta; a ferramenta põe `tracingPolicy` (Mastra
-  `observability/types/tracing.ts:2028-2096`).
+- **O corte.** A porta já corta; a ferramenta devolve a resposta dela. O rastro das ferramentas foi
+  para a 21.1 (fonte: revisão da PR 495).
 - **As instruções.** `instructions.ts` (`builderInstructions`, `fillPrompt`), `prompt/`.
 - **O aviso 0032.** `docs/decisions/0032-data-leaving-brazil-told.md`.
 
@@ -869,7 +868,8 @@ Mastra.
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `apps/server/src/builder/conversation/` | Cria `connector-tools.ts`; muda `builder.ts` (`tools`, `skills`, `createBuilder` recebe a porta), `public.ts` (`createConversations` a passa a `createBuilder`, `public.ts:49`), `permissions.ts` (as três em `READ`), `instructions.ts` e `prompt/` (o bloco das ligações) | `main.ts` |
+| `apps/server/src/builder/connectors/` | Cria `connector-tools.ts` e `public.ts` | `builder/conversation/` |
+| `apps/server/src/builder/conversation/` | Muda `builder.ts` (`tools`, `skills`, `createBuilder` recebe a porta), `public.ts` (`createConversations` a passa a `createBuilder`, `public.ts:49`), `permissions.ts` (as três em `READ`), `instructions.ts` e `prompt/` (o bloco das ligações) | `main.ts` |
 | `apps/server/src/main.ts` | Muda: `createConversations` recebe `connectors.builder` | — |
 | `packages/hub-api/src/tools.ts` | Muda: os três nomes em `BUILDER_TOOL` (a tela mostra a linha da ferramenta) | `apps/web` |
 | `docs/decisions/0032-data-leaving-brazil-told.md` | Muda: uma linha | — |
@@ -877,7 +877,7 @@ Mastra.
 ### Os contratos que a unidade cria
 
 ```ts
-// connector-tools.ts
+// builder/connectors/connector-tools.ts
 export const CONNECTOR_TOOLS = { read: 'connector_read', notes: 'connector_notes', noteSave: 'connector_note_save' } as const
 /** The three tools for a conversation whose Projeto has at least one grant; {} otherwise. */
 export function connectorTools(port: BuilderConnectors, granted: readonly GrantedConnection[], ids: OfProject & { personId: PersonId }): ToolsInput
@@ -887,18 +887,17 @@ export function connectorTools(port: BuilderConnectors, granted: readonly Grante
   a descrição lista cada leitura com o `summary`. A saída é a `ShapedRead` da porta.
 - `connector_notes`: `{ connection }` → as anotações com a consulta de cada uma.
 - `connector_note_save`: `{ connection, concept (1..120), mapping (1..500), provingQuery (1..4000) }`.
-- As três com `tracingPolicy` que esconde entrada e saída.
 - `tools: async ({ requestContext }) => ({ ...toolsOf(...), ...connectorTools(...) })`;
   `skills: async ({ requestContext }) => [...APP_SKILLS, ...granted.map(skillOfConnector)]`.
 
 ### As skills e a leitura
 
 `mastra` (a versão instalada: `node_modules/@mastra/core/dist/docs/`, ferramentas dinâmicas,
-skills por pedido, `tracingPolicy`).
+skills por pedido).
 
 ### A ordem do trabalho
 
-1. `connector-tools.ts` com a porta da U3; os três nomes em `BUILDER_TOOL` e em `READ`.
+1. `builder/connectors/connector-tools.ts` com a porta da U3; os três nomes em `BUILDER_TOOL` e em `READ`.
 2. `builder.ts`: `tools` e `skills` como funções do `requestContext`, lendo o Projeto por `projectOf`
    e as liberações por `port.granted` (uma leitura por turno; o Mastra guarda as skills por
    `RequestContext`, e a retomada traz um novo).
@@ -910,12 +909,13 @@ skills por pedido, `tracingPolicy`).
 
 Critérios 28 a 30: `conversation-connectors.test.ts` (novo, no molde de
 `conversation-tools.test.ts`, pelo Hub de teste e o modelo gravado), `npm test -w @conexus/server --
-conversation-connectors`. O rastro: o exportador de teste, o mesmo do teste de S42. Hoje falham.
+conversation-connectors`. Hoje falham.
 
 ### Parar se
 
-- O Mastra não resolve `skills` de novo num turno retomado (o critério 28 falha só na retomada):
-  parar e mostrar; é a premissa do estudo, ainda não provada.
+- (Retirado, fonte: revisão da PR 495.) O Mastra não resolve `skills` nem as instruções de novo num
+  turno retomado (`@mastra/core` 1.79.0 `dist/agent-tuAMgHe3.js:40997`, `:41078`, `:27606-27629`); a
+  retomada é provada só pelas ferramentas, refeitas a cada execução (`:41105`).
 - O `availableTools` do modo recusa uma ferramenta que nasce por pedido: parar; o fechamento das
   ferramentas é da 14.2.
 
