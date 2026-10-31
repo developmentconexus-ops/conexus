@@ -7,7 +7,7 @@ import { OPENED, session } from './session-state.ts'
 import { AGENT_START, RUNNING, stepStarted, textDelta } from './test-events.ts'
 import { conversationOf, FIRST, say, screens } from './test-hub.tsx'
 import { recordedRun } from './test-recorded.ts'
-import { shownOf, Transcript } from './transcript.tsx'
+import { NO_OLDER, shownOf, Transcript } from './transcript.tsx'
 
 const { openConversation } = screens(hubServer())
 const { events, read } = recordedRun('files')
@@ -37,13 +37,27 @@ test('a bolha mostra o texto e uma etiqueta por arquivo, ao vivo e depois de rec
   let live = OPENED
   for (const event of events) live = session(live, { type: 'event', event })
   const shown = render(
-    <Transcript turns={shownOf(live)} steers={[]} model={MODEL} onAsk={() => undefined} />,
+    <Transcript
+      turns={shownOf(live)}
+      steers={[]}
+      model={MODEL}
+      older={NO_OLDER}
+      onAsk={() => undefined}
+    />,
   )
   expect(bubbles()).toEqual(SENT)
   shown.unmount()
 
   const reread = session(OPENED, { type: 'loaded', messages: read })
-  render(<Transcript turns={shownOf(reread)} steers={[]} model={MODEL} onAsk={() => undefined} />)
+  render(
+    <Transcript
+      turns={shownOf(reread)}
+      steers={[]}
+      model={MODEL}
+      older={NO_OLDER}
+      onAsk={() => undefined}
+    />,
+  )
   expect(bubbles()).toEqual(SENT)
 })
 

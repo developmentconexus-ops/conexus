@@ -1,4 +1,5 @@
 import type { ModelId } from '@conexus/hub-api'
+import { Loader2Icon } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 import {
   MessageScroller,
@@ -8,6 +9,7 @@ import {
   MessageScrollerProvider,
   MessageScrollerViewport,
   useMessageScroller,
+  useMessageScrollerScrollable,
 } from '../../ui/message-scroller.tsx'
 import { BuilderTurn } from './builder-turn.tsx'
 import type { Message } from './messages.ts'
@@ -16,7 +18,7 @@ import { PersonBubble, PersonTurn } from './person-turn.tsx'
 import type { TranscriptItem } from './rows.ts'
 import { itemsOf } from './rows.ts'
 import type { SessionState, Steer } from './session-state.ts'
-import { STEER_PENDING } from './text.ts'
+import { LOADING_OLDER, STEER_PENDING } from './text.ts'
 
 type Group = { key: string; person: Message | undefined; builder: Message[] }
 
@@ -75,12 +77,14 @@ export function Transcript(props: {
   turns: readonly ShownTurn[]
   steers: readonly Steer[]
   model: ModelId
+  older: { has: boolean; loading: boolean; load: () => void }
   onAsk: (text: string) => void
 }) {
-  const { turns } = props
+  const { turns, older } = props
   return (
     <MessageScrollerProvider autoScroll defaultScrollPosition="end">
       <EndOnSent last={turns.at(-1)?.key} />
+      <LoadOlderAtStart older={older} />
       <MessageScroller>
         <MessageScrollerViewport aria-label="Rolagem da conversa" className="px-md pt-md">
           <MessageScrollerContent
@@ -113,11 +117,25 @@ export function Transcript(props: {
             ))}
           </MessageScrollerContent>
         </MessageScrollerViewport>
+        {older.loading && (
+          <div className="pointer-events-none absolute inset-x-0 top-md flex justify-center">
+            <div
+              role="status"
+              aria-label={LOADING_OLDER}
+              className="rounded-pill border border-line bg-surface p-sm text-text-2"
+            >
+              <Loader2Icon aria-hidden="true" className="size-4 motion-safe:animate-spin" />
+            </div>
+          </div>
+        )}
         <MessageScrollerButton />
       </MessageScroller>
     </MessageScrollerProvider>
   )
 }
+
+/** No older messages: the whole conversation is on screen. */
+export const NO_OLDER = { has: false, loading: false, load: () => undefined }
 
 /** Jumps to the end, and follows it again, when a message of the person's opens a turn. */
 function EndOnSent(props: { last: string | undefined }) {
@@ -128,5 +146,25 @@ function EndOnSent(props: { last: string | undefined }) {
     seen.current = props.last
     scrollToEnd()
   }, [props.last, scrollToEnd])
+  return null
+}
+
+/**
+ * Asks for the older messages when the reader reaches the top, as Factory's `onReachStart` does:
+ * the scroller's own `preserveScrollOnPrepend` keeps the place when they arrive. Our scroller has
+ * no `onReachStart`, so this reads `useMessageScrollerScrollable`, armed once the reader has been
+ * away from the top (`start` is also false before the first layout), like `reachStartArmedRef`.
+ */
+function LoadOlderAtStart(props: { older: { has: boolean; load: () => void } }) {
+  const { start } = useMessageScrollerScrollable()
+  const { has, load } = props.older
+  const armed = useRef(false)
+  useEffect(() => {
+    if (start) armed.current = true
+    else if (armed.current && has) {
+      armed.current = false
+      load()
+    }
+  }, [start, has, load])
   return null
 }

@@ -316,15 +316,15 @@ const Listed = z.object({
   ),
 })
 
-/** The whole transcript, oldest first, as the screen asks it. */
+/** The whole transcript, oldest first. */
 const OLDEST_FIRST = new URLSearchParams({
   perPage: 'false',
   orderBy: JSON.stringify({ field: 'createdAt', direction: 'ASC' }),
 })
 
 /**
- * The conversation's transcript, Mastra's own route (`threads/:threadId/messages`) as the screen
- * reads it: the person's messages (`user`, and `signal` for one sent to a run) and the Builder's.
+ * The conversation's transcript, Mastra's own route (`threads/:threadId/messages`): the person's
+ * messages (`user`, and `signal` for one sent to a run) and the Builder's.
  */
 export async function messagesOf(hub: Hub, person: Person, url: string): Promise<Read[]> {
   const id = conversationIdOf(url)
