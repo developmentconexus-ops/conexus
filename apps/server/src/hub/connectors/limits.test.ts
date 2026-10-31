@@ -164,7 +164,9 @@ test('o logout do fim com defeito vai ao registro e não derruba o processo', as
     log: { info: () => undefined, error: (_, message) => lines.push(message) },
   })
   const unhandled: unknown[] = []
-  const hear = (reason: unknown) => unhandled.push(reason)
+  function hear(reason: unknown) {
+    unhandled.push(reason)
+  }
   process.on('unhandledRejection', hear)
   try {
     await limits.token(OPENED, 1000)
