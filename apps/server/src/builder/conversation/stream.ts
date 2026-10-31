@@ -22,16 +22,26 @@ const DISPLAY_READ = [
   'bufferingObservations',
 ] as const satisfies readonly (keyof WireDisplayState)[]
 
+/** The memory's failure events carry the provider's own error text; the screen reads only the type. */
+const MEMORY_FAILED = new Set([
+  'om_observation_failed',
+  'om_reflection_failed',
+  'om_buffering_failed',
+])
+
 type Ended = 'CLOSED' | 'BEHIND' | 'SESSION_ENDED' | 'FAILED'
 
 /**
- * A `display_state_changed` event with only what the screen reads. Mastra sends the session's whole
- * display state after every event (the turn's message and every tool's input and result, core
- * `agent-controller/session.ts`), which grows with the square of a turn's length.
+ * A `display_state_changed` event with only what the screen reads, and a memory failure with only
+ * its type. Mastra sends the session's whole display state after every event (the turn's message
+ * and every tool's input and result, core `agent-controller/session.ts`), which grows with the
+ * square of a turn's length.
  */
 function slim(value: unknown): unknown {
   if (typeof value !== 'object' || value === null) return value
-  if (Reflect.get(value, 'type') !== 'display_state_changed') return value
+  const type: unknown = Reflect.get(value, 'type')
+  if (typeof type === 'string' && MEMORY_FAILED.has(type)) return { type }
+  if (type !== 'display_state_changed') return value
   const display: unknown = Reflect.get(value, 'displayState')
   if (typeof display !== 'object' || display === null) return value
   const read = Object.fromEntries(DISPLAY_READ.map((key) => [key, Reflect.get(display, key)]))
