@@ -20,6 +20,8 @@ export type Sent = {
   thinking: Thinking | null
   /** The prompt-cache marks the call asked for, in body order: where each sits and its TTL. */
   cached: Cached[]
+  /** Where the conversation holds a `tool_use` with no `input`, which the Messages API refuses; none if it holds no such call. */
+  unfilled: string | null
 }
 
 const Thinking = z.object({ type: z.string(), budget_tokens: z.number().optional() })
@@ -84,6 +86,22 @@ function cachedOf(body: z.infer<typeof Body>): Cached[] {
   return [...system, ...messages]
 }
 
+/** The first `tool_use` part with no `input`, named as the API names it in its 400. */
+function unfilledOf(body: z.infer<typeof Body>): string | null {
+  for (const [at, message] of body.messages.entries()) {
+    if (typeof message.content === 'string') continue
+    for (const [index, part] of message.content.entries()) {
+      const call = z
+        .object({ type: z.literal('tool_use') })
+        .loose()
+        .safeParse(part)
+      if (call.success && !('input' in call.data))
+        return `messages.${at}.content.${index}.tool_use.input`
+    }
+  }
+  return null
+}
+
 export function sentOf(init: RequestInit | undefined): Sent {
   const headers = new Headers(init?.headers)
   const body = Body.parse(JSON.parse(String(init?.body)))
@@ -109,5 +127,6 @@ export function sentOf(init: RequestInit | undefined): Sent {
     media,
     thinking: body.thinking ?? null,
     cached: cachedOf(body),
+    unfilled: unfilledOf(body),
   }
 }

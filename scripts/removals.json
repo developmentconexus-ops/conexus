@@ -2099,5 +2099,27 @@
       "file": "src/builder/machine/machine-e2b.test.ts",
       "name": "máquina: depois de um Release, mata só as da conversa de outro template ou sem template, e guarda a do template do Hub"
     }
+  },
+  {
+    "id": "tool-call-input-rule",
+    "file": "apps/server/src/builder/model-accounts/processors.ts",
+    "find": "new ProviderHistoryCompat({ additionalRules: [toolCallInputRequired] })",
+    "replace": "new ProviderHistoryCompat()",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/conversation/conversation-tool-input.test.ts",
+      "name": "guardou sem argumentos"
+    }
+  },
+  {
+    "id": "ended-turn-is-finished",
+    "file": "apps/server/src/builder/conversation/processors.ts",
+    "find": "  if (turnIn(requestContext)?.outcome !== undefined) return FINISHED\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/conversation/conversation-tool-input.test.ts",
+      "name": "a fila encerrou"
+    }
   }
 ]
