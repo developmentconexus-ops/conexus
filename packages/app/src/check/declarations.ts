@@ -22,19 +22,10 @@ function declarationOf(entry: string): string {
   return `dist/${entry.replace(/^src\//, '').replace(/\.ts$/, '.d.ts')}`
 }
 
-/** A package's `package.json` as the template leaves it: `exports[key]` reads `{ types: dist, default: sources }`. The commit's file in, the machine's file out, byte for byte. */
-function declaredManifest(source: string, entry: string, key: string): string {
-  const manifest = Manifest.parse(JSON.parse(source))
-  const types = `./${declarationOf(entry)}`
-  const exports = { ...manifest.exports, [key]: { types, default: manifest.exports[key] } }
-  return `${JSON.stringify({ ...manifest, exports }, null, 2)}\n`
-}
-
-/** What a template carries once built, relative to the platform folder: the declarations, the `package.json` that names them and how the commit's file becomes it. */
-export const DECLARED = ENTRIES.map(({ folder, entry, key }) => ({
+/** What a template carries once built, relative to the platform folder: the declarations and the `package.json` that names them. */
+export const DECLARED = ENTRIES.flatMap(({ folder, entry }) => ({
   declaration: `${folder}/${declarationOf(entry)}`,
   manifest: `${folder}/package.json`,
-  rewrite: (source: string) => declaredManifest(source, entry, key),
 }))
 
 /**
@@ -76,7 +67,10 @@ export function declare(platform: string): void {
     for (const { folder, entry, key } of ENTRIES) {
       cpSync(join(out, folder, 'src'), join(platform, folder, 'dist'), { recursive: true })
       const file = join(platform, folder, 'package.json')
-      writeFileSync(file, declaredManifest(readFileSync(file, 'utf8'), entry, key))
+      const manifest = Manifest.parse(JSON.parse(readFileSync(file, 'utf8')))
+      const types = `./${declarationOf(entry)}`
+      const exports = { ...manifest.exports, [key]: { types, default: manifest.exports[key] } }
+      writeFileSync(file, `${JSON.stringify({ ...manifest, exports }, null, 2)}\n`)
     }
   } finally {
     rmSync(out, { recursive: true, force: true })

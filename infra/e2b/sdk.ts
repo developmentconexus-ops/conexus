@@ -17,7 +17,7 @@ function ignoredBy(root: string): string[] {
   return [...dockerignore, ...IGNORED]
 }
 
-/** The three `package.json` the template rewrites to name the declarations (check/declarations.ts); `manifestDigests` proves them apart from the rest. */
+/** The three `package.json` the template rewrites to name the declarations (check/declarations.ts); `proveSdk` reads them there. */
 const REWRITTEN = DECLARED.map(({ manifest }) => `packages/${manifest}`)
 
 /** The commit's SDK files the template must carry unchanged: the tracked ones the ignore patterns let through. */
@@ -36,20 +36,14 @@ export function sdkFiles(root: string): string[] {
   )
 }
 
-/** One line of `sha256sum`'s output: the digest of the bytes, two spaces, the path as the machine prints it. */
-function digestLine(file: string, bytes: Buffer | string): string {
-  return `${createHash('sha256').update(bytes).digest('hex')}  ${file}\n`
-}
-
 /** `sha256sum`'s lines for the files, each path relative to `root`, as the machine prints them. */
 export function digests(root: string, files: readonly string[]): string {
-  return files.map((file) => digestLine(file, readFileSync(join(root, file)))).join('')
-}
-
-/** The same lines for the three rewritten `package.json`: the commit's file with the template's rewrite applied, which is what the machine must hold byte for byte. */
-export function manifestDigests(root: string): string {
-  return DECLARED.map(({ manifest, rewrite }) => {
-    const file = `packages/${manifest}`
-    return digestLine(file, rewrite(readFileSync(join(root, file), 'utf8')))
-  }).join('')
+  return files
+    .map((file) => {
+      const digest = createHash('sha256')
+        .update(readFileSync(join(root, file)))
+        .digest('hex')
+      return `${digest}  ${file}\n`
+    })
+    .join('')
 }

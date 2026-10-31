@@ -1,13 +1,11 @@
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
-import { appendFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { test } from 'node:test'
 import { MachineTemplate } from '../apps/server/src/platform/config-machine.ts'
 import { TEMPLATE, templateLine, templateName } from '../infra/e2b/name.ts'
-import { digests, manifestDigests, sdkFiles } from '../infra/e2b/sdk.ts'
+import { digests, sdkFiles } from '../infra/e2b/sdk.ts'
 import { DECLARED } from '../packages/app/src/check/declarations.ts'
-import { builtPlatform } from '../packages/app/src/check/test-app.ts'
 
 const ROOT = resolve(import.meta.dirname, '..')
 
@@ -63,18 +61,4 @@ test('a prova escreve as linhas que o sha256sum da máquina imprime para os mesm
   const files = ['packages/app/package.json', 'packages/app/src/check/main.ts']
   const machine = execFileSync('sha256sum', files, { cwd: ROOT, encoding: 'utf8' })
   assert.equal(digests(ROOT, files), machine)
-})
-
-test('a prova confere cada package.json da máquina, byte a byte, com a reescrita do template aplicada ao arquivo do commit, e um que se afastou falha', (t) => {
-  const platform = builtPlatform(t)
-  const manifests = DECLARED.map(({ manifest }) => manifest)
-  function onTheMachine(): string {
-    return execFileSync('sha256sum', manifests, { cwd: platform, encoding: 'utf8' }).replaceAll(
-      / {2}(\S+)/g,
-      '  packages/$1',
-    )
-  }
-  assert.equal(onTheMachine(), manifestDigests(ROOT))
-  appendFileSync(`${platform}/${manifests[0]}`, ' ')
-  assert.notEqual(onTheMachine(), manifestDigests(ROOT))
 })

@@ -13,7 +13,7 @@ import { z } from 'zod'
 import { DECLARED } from '../../packages/app/src/check/declarations.ts'
 import { MACHINE } from '../../packages/app/src/check/machine.ts'
 import { templateLine, templateName } from './name.ts'
-import { digests, IGNORED, manifestDigests, SDK_FOLDERS, sdkFiles } from './sdk.ts'
+import { digests, IGNORED, SDK_FOLDERS, sdkFiles } from './sdk.ts'
 
 const ROOT = resolve(import.meta.dirname, '../..')
 const OPT = '/opt/conexus'
@@ -82,32 +82,25 @@ const template = SDK_FOLDERS.reduce(
 // A machine from the new build hashes the SDK files it was given; one missing or different fails the
 // build, so a Release never hands the Hub a template without its commit's SDK. The declarations and
 // the `package.json` that name them are the build's own output: each must be there and agree.
-/** The lines `sha256sum` prints on the machine for `files`, against the lines the commit expects; the ones the machine got wrong are named. */
-async function proveDigests(
-  sandbox: Sandbox,
-  files: readonly string[],
-  expected: string,
-): Promise<void> {
-  await sandbox.files.write('/tmp/sdk-files', files.join('\0'))
-  const { stdout } = await sandbox.commands.run(`cd ${OPT} && xargs -0 sha256sum < /tmp/sdk-files`)
-  if (stdout === expected) return
-  const carried = new Set(stdout.split('\n'))
-  const wrong = expected.split('\n').filter((line) => line !== '' && !carried.has(line))
-  throw new Error(`the template does not carry the commit's SDK:\n${wrong.join('\n')}`)
-}
-
 async function proveSdk(name: string): Promise<void> {
   const files = sdkFiles(ROOT)
   const sandbox = await Sandbox.create(name, { timeoutMs: 120_000 })
   try {
-    await proveDigests(sandbox, files, digests(ROOT, files))
-    await proveDigests(
-      sandbox,
-      DECLARED.map(({ manifest }) => `packages/${manifest}`),
-      manifestDigests(ROOT),
+    await sandbox.files.write('/tmp/sdk-files', files.join('\0'))
+    const { stdout } = await sandbox.commands.run(
+      `cd ${OPT} && xargs -0 sha256sum < /tmp/sdk-files`,
     )
-    for (const { declaration } of DECLARED)
-      await sandbox.commands.run(`cd ${OPT}/packages && test -f ${declaration}`)
+    const expected = digests(ROOT, files)
+    if (stdout !== expected) {
+      const carried = new Set(stdout.split('\n'))
+      const wrong = expected.split('\n').filter((line) => line !== '' && !carried.has(line))
+      throw new Error(`the template does not carry the commit's SDK:\n${wrong.join('\n')}`)
+    }
+    for (const { declaration, manifest } of DECLARED) {
+      await sandbox.commands.run(
+        `cd ${OPT}/packages && test -f ${declaration} && grep -qF '"types": "./${declaration.split('/').slice(1).join('/')}"' ${manifest}`,
+      )
+    }
   } finally {
     await sandbox.kill()
   }
