@@ -36,6 +36,7 @@ The pull request, its head commit and the card; nothing from the builders' conve
    its line; a remendo row's native candidate runs at the installed version, listed in the verdict's
    Ran, and one that serves is a Bloqueia. A changed file that no row or contract explains is a
    Bloqueia (C75); outside the card's folders it is one unless the build report declares it (L7).
+   A defect fix walks its report's rows the same way.
    When two findings fall on one mechanism, ask whether it should exist and whether a library
    already holds that fact.
 6. Walk the checklist, sweeping each class across the whole diff, and fill its sweep table (a row
