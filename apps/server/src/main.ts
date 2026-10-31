@@ -49,6 +49,7 @@ import { registerHealth } from './platform/health.ts'
 import { answer, createServer, serve } from './platform/http.ts'
 import { bootLog, closeListeners, listenQuietly, shutDownOnSignal } from './platform/lifecycle.ts'
 import { createMail } from './platform/mail.ts'
+import { watchMemory } from './platform/memory.ts'
 import { migrate, migrateExitCode } from './platform/migrate.ts'
 import { loadMigrationRule } from './platform/migration-rule.ts'
 import type { NeonProjects } from './platform/neon.ts'
@@ -228,6 +229,7 @@ async function runServer(): Promise<void> {
       await listenQuietly(edge, config.edgePort)
       await listenQuietly(app, config.port)
       app.log.info('LISTENING')
+      watchMemory(log)
       await status.recordStart()
       // The passes at start run after the Hub answers: a Cloudflare or Neon out never keeps it down.
       void apps.repair().catch((error: unknown) => logFailure(log, databaseFailure(error)))
