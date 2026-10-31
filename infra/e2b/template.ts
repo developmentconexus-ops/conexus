@@ -10,6 +10,7 @@ import { readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { defaultBuildLogger, Sandbox, Template } from 'e2b'
 import { z } from 'zod'
+import { DECLARED } from '../../packages/app/src/check/declarations.ts'
 import { MACHINE } from '../../packages/app/src/check/machine.ts'
 import { templateLine, templateName } from './name.ts'
 import { digests, IGNORED, SDK_FOLDERS, sdkFiles } from './sdk.ts'
@@ -57,6 +58,8 @@ const template = SDK_FOLDERS.reduce(
     [
       `printf '%s' '${TOOLS}' > ${OPT}/package.json`,
       `cd ${OPT} && npm install --omit=dev --no-audit --no-fund`,
+      // The SDK's types as declarations, so no app's type-check re-checks the kit's sources.
+      `cd ${OPT} && node packages/app/src/check/declarations.ts ${OPT}/packages`,
       `cd ${OPT} && PLAYWRIGHT_BROWSERS_PATH=${BROWSERS} npx playwright-core install --with-deps chromium-headless-shell`,
       `printf '%s' '${CHECK}' > ${OPT}/check && chmod 755 ${OPT}/check`,
       `chmod -R a+rX,go-w ${OPT}`,
@@ -77,7 +80,8 @@ const template = SDK_FOLDERS.reduce(
   .setWorkdir('/home/user/app')
 
 // A machine from the new build hashes the SDK files it was given; one missing or different fails the
-// build, so a Release never hands the Hub a template without its commit's SDK.
+// build, so a Release never hands the Hub a template without its commit's SDK. The declarations and
+// the `package.json` that name them are the build's own output: each must be there and agree.
 async function proveSdk(name: string): Promise<void> {
   const files = sdkFiles(ROOT)
   const sandbox = await Sandbox.create(name, { timeoutMs: 120_000 })
@@ -91,6 +95,11 @@ async function proveSdk(name: string): Promise<void> {
       const carried = new Set(stdout.split('\n'))
       const wrong = expected.split('\n').filter((line) => line !== '' && !carried.has(line))
       throw new Error(`the template does not carry the commit's SDK:\n${wrong.join('\n')}`)
+    }
+    for (const { declaration, manifest } of DECLARED) {
+      await sandbox.commands.run(
+        `cd ${OPT}/packages && test -f ${declaration} && grep -qF '"types": "./${declaration.split('/').slice(1).join('/')}"' ${manifest}`,
+      )
     }
   } finally {
     await sandbox.kill()

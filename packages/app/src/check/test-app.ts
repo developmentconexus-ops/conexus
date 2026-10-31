@@ -14,6 +14,7 @@ import type { TestContext } from 'node:test'
 import { STARTER_DIR } from '../starter.ts'
 import { browseInChromium } from './browser.ts'
 import { spawnRunner } from './command.ts'
+import { declare } from './declarations.ts'
 import type { CheckContext, Runner } from './step.ts'
 
 // The repository's node_modules holds every package of the starter at its exact version, so a
@@ -61,16 +62,28 @@ export const ANY_HANDLERS = `import { operations } from '../shared/operations'
 export const handlers = Object.fromEntries(Object.keys(operations).map((name) => [name, () => ({})]))
 `
 
-/** The app as the machine has it: the SDK copied from the platform's folder, never the repository's links. */
+/**
+ * The app as the machine has it: the SDK built into declarations the way the template builds it,
+ * then copied from the platform's folder, never the repository's links.
+ */
 export function onTheMachine(t: TestContext, files: Files): CheckContext {
   const root = appWith(t, files)
   unlinkSync(join(root, 'node_modules', '@conexus'))
-  const platform = mkdtempSync(join(tmpdir(), 'conexus-platform-'))
-  t.after(() => rmSync(platform, { recursive: true, force: true }))
+  const opt = mkdtempSync(join(tmpdir(), 'conexus-platform-'))
+  t.after(() => rmSync(opt, { recursive: true, force: true }))
+  const platform = join(opt, 'packages')
   for (const folder of ['app', 'app-contract', 'connectors'])
     cpSync(join(MODULES, '..', 'packages', folder), join(platform, folder), {
       recursive: true,
       filter: (path) => !path.includes('node_modules'),
     })
+  // The template's /opt/conexus/node_modules: the packages' libraries, and the workspace's links.
+  mkdirSync(join(opt, 'node_modules', '@conexus'), { recursive: true })
+  for (const name of readdirSync(MODULES))
+    if (name !== '@conexus' && name !== '.conexus')
+      symlinkSync(join(MODULES, name), join(opt, 'node_modules', name))
+  for (const folder of ['app', 'app-contract', 'connectors'])
+    symlinkSync(join(platform, folder), join(opt, 'node_modules', '@conexus', folder))
+  declare(platform)
   return { ...contextOf(root), platform }
 }

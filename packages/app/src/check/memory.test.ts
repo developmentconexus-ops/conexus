@@ -3,6 +3,7 @@ import { test } from 'node:test'
 import { dependencies } from './dependencies.ts'
 import { TYPE_HEAP_MB } from './machine.ts'
 import { manifesto } from './manifest.ts'
+import { programOf } from './program.ts'
 import type { CheckContext } from './step.ts'
 import { onTheMachine } from './test-app.ts'
 import { tipos } from './types.ts'
@@ -90,6 +91,14 @@ test(`tipos confere o app com conectores e uma tela rica no ar de ${TYPE_HEAP_MB
   assert.equal((await dependencies(ctx)).state, 'passed')
   assert.equal((await manifesto(ctx)).state, 'passed')
   assert.deepEqual(await tipos(ctx), { state: 'passed' })
+  // The SDK reaches the program as declarations: one of its sources back in costs every app again.
+  for (const name of ['screens', 'server'] as const) {
+    const sources = programOf(ctx.root, name)
+      .getSourceFiles()
+      .map(({ fileName }) => fileName)
+      .filter((fileName) => /\/@conexus\//.test(fileName) && !fileName.endsWith('.d.ts'))
+    assert.deepEqual(sources, [], `${name}: the SDK reached the program as sources`)
+  }
 })
 
 test('um programa que esgota o ar é desfecho do passo, com a sua linha, e não um check morto', async (t) => {
@@ -107,4 +116,35 @@ test('um programa que esgota o ar é desfecho do passo, com a sua linha, e não 
     }),
   }
   assert.deepEqual(await tipos(spent), { state: 'platform', reason: 'tipos ran out of memory' })
+})
+
+test('um filho morto sem código nem palavras do V8 é desfecho da plataforma, não falha do app', async (t) => {
+  const ctx = onTheMachine(t, {
+    'shared/operations.ts': OPERATIONS,
+    'server/handlers.ts': HANDLERS,
+  })
+  const killed: CheckContext = {
+    ...ctx,
+    run: async () => ({ code: null, output: '', timedOut: false }),
+  }
+  assert.deepEqual(await tipos(killed), {
+    state: 'platform',
+    reason: 'tipos ended with no exit code: ',
+  })
+})
+
+test('o que o filho escreve fora do arquivo de resultado não vira diagnóstico nem estouro de ar', async (t) => {
+  const ctx = onTheMachine(t, {
+    'shared/operations.ts': OPERATIONS,
+    'server/handlers.ts': HANDLERS,
+  })
+  assert.equal((await dependencies(ctx)).state, 'passed')
+  const noisy: CheckContext = {
+    ...ctx,
+    run: async (command, args, options) => {
+      const ran = await ctx.run(command, args, options)
+      return { ...ran, output: `(node) warning: heap out of memory is only a word\n${ran.output}` }
+    },
+  }
+  assert.deepEqual(await tipos(noisy), { state: 'passed' })
 })

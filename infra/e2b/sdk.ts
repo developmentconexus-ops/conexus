@@ -2,6 +2,7 @@ import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { join, matchesGlob } from 'node:path'
+import { DECLARED } from '../../packages/app/src/check/declarations.ts'
 
 /** What the template copies into /opt/conexus/packages: the SDK, its contract and the kit whose types the SDK reads. */
 export const SDK_FOLDERS = ['packages/app', 'packages/app-contract', 'packages/connectors'] as const
@@ -16,7 +17,10 @@ function ignoredBy(root: string): string[] {
   return [...dockerignore, ...IGNORED]
 }
 
-/** The commit's SDK files the template must carry: the tracked ones the ignore patterns let through. */
+/** The three `package.json` the template rewrites to name the declarations (check/declarations.ts); `proveSdk` reads them there. */
+const REWRITTEN = DECLARED.map(({ manifest }) => `packages/${manifest}`)
+
+/** The commit's SDK files the template must carry unchanged: the tracked ones the ignore patterns let through. */
 export function sdkFiles(root: string): string[] {
   const patterns = ignoredBy(root)
   const tracked = execFileSync('git', ['ls-files', '-z', '--', ...SDK_FOLDERS], {
@@ -27,6 +31,7 @@ export function sdkFiles(root: string): string[] {
     .filter(Boolean)
   return tracked.filter(
     (file) =>
+      !REWRITTEN.includes(file) &&
       !patterns.some((pattern) => matchesGlob(file, pattern) || matchesGlob(file, `${pattern}/**`)),
   )
 }

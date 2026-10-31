@@ -13,7 +13,7 @@ import { runCheck } from './run.ts'
 import type { CheckContext, Runner } from './step.ts'
 import { workOf } from './step.ts'
 import type { Files } from './test-app.ts'
-import { ANY_HANDLERS, appWith, contextOf } from './test-app.ts'
+import { ANY_HANDLERS, appWith, contextOf, onTheMachine } from './test-app.ts'
 
 async function reportOf(ctx: CheckContext): Promise<CheckReport> {
   const result = await runCheck(ctx)
@@ -54,8 +54,11 @@ export const handlers = defineHandlers(operations, {
 `
 
 test('o handler que devolve { codigo } falha em tipos na linha 13 e pula os passos seguintes', async (t) => {
-  const root = appWith(t, { 'shared/operations.ts': OPERATIONS, 'server/handlers.ts': HANDLERS })
-  const report = await reportOf(contextOf(root))
+  const ctx = onTheMachine(t, {
+    'shared/operations.ts': OPERATIONS,
+    'server/handlers.ts': HANDLERS,
+  })
+  const report = await reportOf(ctx)
   assert.equal(report.ok, false)
   assert.deepEqual(states(report), {
     dependências: 'passed',
