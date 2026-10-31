@@ -107,14 +107,18 @@ test('máquina: o turno que não terminou (o processo morreu) deixa os arquivos 
   const after = await open()
   assert.equal(await after.filesystem?.exists('a.ts'), false, 'an ended turn is not kept')
   assert.equal(cuts.length, 0)
-  await after.filesystem?.writeFile('b.ts', 'dois\n')
-  // The process dies here: no release, and a new process opens the conversation's workspace.
-  const cut = await open()
-  assert.equal(await cut.filesystem?.exists('b.ts'), true, 'the cut turn kept its file')
-  const [kept, ...others] = cuts
-  assert.ok(typeof kept === 'object', `the Hub was handed the tree, not ${String(kept)}`)
-  assert.equal(others.length, 0)
-  assert.equal(kept.changedFiles, 1)
+})
+
+test('máquina: o turno cortado cuja árvore o Hub não consegue guardar registra a causa e a máquina volta ao main, como a de um turno que terminou', async (t) => {
+  const { open, control, cuts, errors } = await world(t)
+  const first = await open()
+  await first.filesystem?.writeFile('a.ts', 'um\n')
+  control.outcome = 'connected'
+  control.refuseCut = true
+  const after = await open()
+  assert.equal(await after.filesystem?.exists('a.ts'), false, 'seeded as any ended turn')
+  assert.deepEqual(errors, ['CUT_TURN_LOST'])
+  assert.equal(cuts.length, 0)
 })
 
 test('máquina: duas ferramentas do Workspace no primeiro passo esperam a semente, pois o running vem antes do onStart', async (t) => {

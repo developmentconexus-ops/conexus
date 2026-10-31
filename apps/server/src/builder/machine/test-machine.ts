@@ -28,6 +28,8 @@ export const OLD_TEMPLATE = MachineTemplate.parse('conexus-builder:0000000')
 /** What the provider does, for a test to choose: the outcome of a start, and how the start goes. */
 export type Control = {
   outcome: 'created' | 'connected'
+  /** The Hub cannot keep a cut turn's tree (`main` moved, too large): its `keepCut` rejects. */
+  refuseCut: boolean
   start: 'ok' | 'hang' | 'unreachable'
   /** The names of the machines the provider holds, which Mastra finds by name. */
   discoverable: string[]
@@ -74,6 +76,7 @@ export function newControl(): Control {
     sandbox: undefined,
     stops: 0,
     killed: false,
+    refuseCut: false,
     afterCommand: () => undefined,
     beforeRead: () => undefined,
   }
@@ -165,6 +168,8 @@ export async function world(
   })
   const base = await repository.ensure()
   const control = newControl()
+  /** What the machines logged as errors, by message. */
+  const errors: string[] = []
   const machines = createMachines({
     kit: localKit(folder, control),
     api: {
@@ -184,7 +189,7 @@ export async function world(
     mark: { conexus_origin: installation },
     installation,
     template: TEMPLATE,
-    log: LOG,
+    log: { info: () => undefined, error: (_fields, message) => errors.push(message) },
     workdir: join(folder, 'app'),
     tmp: folder,
     startMs,
@@ -194,6 +199,7 @@ export async function world(
   /** The bundles the Hub was handed for a cut turn; none is saved here, the Hub's side is `runs.test.ts`. */
   const cuts: (Bundled | 'unchanged' | 'too-large')[] = []
   const keepCut: KeepCut = async (collect) => {
+    if (control.refuseCut) throw new Error('the cut turn left a tree too large to keep')
     const found = await collect(base)
     cuts.push(found)
     return typeof found === 'object' ? 'saved' : 'unchanged'
@@ -207,7 +213,7 @@ export async function world(
       keepCut,
     })
   }
-  return { machines, repository, base, control, phases, cuts, open, folder }
+  return { machines, repository, base, control, phases, cuts, errors, open, folder }
 }
 
 /** The workspace's machine, started as a tool's first call starts it. */

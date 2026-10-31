@@ -105,7 +105,10 @@ class BuilderMachines implements Machines {
     } catch (cause) {
       const restore = restoreFailure(cause)
       if (restore !== undefined) throw restore
-      this.deps.log.error({ reason: 'START' }, 'MACHINE_UNAVAILABLE')
+      this.deps.log.error(
+        { reason: 'START', cause: String(cause).slice(0, 500) },
+        'MACHINE_UNAVAILABLE',
+      )
       throw new Failure('MACHINE_UNAVAILABLE', { cause })
     }
     this.deps.log.info({ conversationId: session.conversationId }, 'MACHINE_STARTED')
@@ -138,7 +141,7 @@ class BuilderMachines implements Machines {
   /**
    * A turn that never ended left its files on the paused machine: the Hub saves them as a version,
    * marked by its commit message, and the machine takes that version as its base, so the new turn
-   * works on them and saves only what it adds.
+   * works on them and saves only what it adds. A tree the Hub cannot keep throws.
    */
   private async keepCut(kit: Kit, session: Session) {
     session.onPhase('saving')
@@ -164,7 +167,17 @@ class BuilderMachines implements Machines {
         if (!(await this.cutBefore(kit))) return this.seed(kit, session)
         this.deps.log.info({ conversationId }, 'MACHINE_CUT_KEPT')
         await this.keep(kit)
-        return this.keepCut(kit, session)
+        try {
+          return await this.keepCut(kit, session)
+        } catch (cause) {
+          // A tree that cannot be kept (`main` moved by another conversation, too large) fails again
+          // at every start: naming the cause and seeding as any ended turn is the way out.
+          this.deps.log.error(
+            { conversationId, cause: String(cause).slice(0, 500) },
+            'CUT_TURN_LOST',
+          )
+          return this.seed(kit, session)
+        }
       }
       return this.keep(kit)
     }

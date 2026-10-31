@@ -24,7 +24,7 @@ function repositoryOf({ hub, companyId, projectId }: Awaited<ReturnType<typeof c
 /** Two turns of one conversation, `between` run while the machine rests after the first. */
 async function twoTurns(
   t: Parameters<typeof conversing>[0],
-  between: (where: { app: string; name: string }) => void,
+  between: (where: { app: string; name: string; git: (...args: string[]) => string }) => void,
 ) {
   const turns = [writing('src/a.ts', 'um\n'), writing('src/b.ts', 'dois\n')]
   let step = 0
@@ -43,16 +43,16 @@ async function twoTurns(
   assert.equal((await sent(hub, ana, url, 'Primeira')).statusCode, 200)
   const first = await stream.turn()
   const name = `conexus-${INSTALLATION}-${id}`
-  between({ app: join(hub.builder.folder, 'app'), name })
+  const dir = join(hub.config.gitRoot, world.companyId, `${world.projectId}.git`)
+  function git(...args: string[]) {
+    return execFileSync('git', ['--git-dir', dir, ...args]).toString()
+  }
+  between({ app: join(hub.builder.folder, 'app'), name, git })
   hub.builder.control.discoverable = [name]
   assert.equal((await sent(hub, ana, url, 'Segunda')).statusCode, 200)
   const second = await stream.turn()
   assert.deepEqual(failuresOf([...first, ...second]), [])
   const repository = repositoryOf(world)
-  const dir = join(hub.config.gitRoot, world.companyId, `${world.projectId}.git`)
-  function git(...args: string[]) {
-    return execFileSync('git', ['--git-dir', dir, ...args]).toString()
-  }
   return { ...world, repository, git }
 }
 
@@ -88,4 +88,23 @@ test('o turno anterior terminou: o seguinte começa do main como sempre, sem gua
     hub.lines.some((line) => line.message === 'CUT_TURN_KEPT'),
     false,
   )
+})
+
+test('o processo morreu e outra conversa do Projeto moveu o main enquanto a máquina descansava: o turno seguinte registra a perda e funciona', async (t) => {
+  const { repository, git } = await twoTurns(t, ({ app, git }) => {
+    writeFileSync(join(app, 'src/cut.ts'), 'meio\n')
+    writeFileSync(join(app, '.git/conexus-turn-open'), '')
+    // Another conversation saved a version: `main` is a commit the machine never received.
+    const main = git('rev-parse', 'main').trim()
+    const tree = git('rev-parse', 'main^{tree}').trim()
+    const moved = git('commit-tree', tree, '-p', main, '-m', 'outra conversa').trim()
+    git('update-ref', 'refs/heads/main', moved, main)
+  })
+  assert.equal(
+    await repository.version(),
+    3,
+    'a, the other conversation, then b (the cut tree is lost, the turn works)',
+  )
+  assert.equal(git('ls-tree', '-r', '--name-only', 'main').includes('src/cut.ts'), false)
+  assert.ok(git('ls-tree', '-r', '--name-only', 'main').includes('src/b.ts'))
 })
