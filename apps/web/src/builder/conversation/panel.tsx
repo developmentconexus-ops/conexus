@@ -220,7 +220,7 @@ function Screen(params: Params) {
   const [gone, setGone] = useState(false)
   const field = useRef<HTMLTextAreaElement>(null)
   const draft = useDraft(conversationId)
-  const { state, dispatch, builder } = useSession(params, () => {
+  const { state, dispatch, builder, older } = useSession(params, () => {
     void queryClient.invalidateQueries({
       queryKey: allConversationsQueryKey(companyId, projectId),
     })
@@ -254,6 +254,7 @@ function Screen(params: Params) {
           turns={turns}
           steers={state.steers}
           model={session.model}
+          older={older}
           onAsk={(text) => {
             draft.append(text)
             field.current?.focus()

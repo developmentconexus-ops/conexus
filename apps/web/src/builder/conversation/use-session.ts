@@ -3,8 +3,8 @@ import { PreviewData } from '@conexus/hub-api'
 import type { AgentControllerEvent, KnownAgentControllerEvent } from '@mastra/client-js'
 import { isKnownAgentControllerEvent, MastraClientError } from '@mastra/client-js'
 import type { QueryClient } from '@tanstack/react-query'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useEffectEvent, useMemo, useReducer } from 'react'
+import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useCallback, useEffect, useEffectEvent, useMemo, useReducer, useState } from 'react'
 import { failureOfProblem } from '../../platform/hub.ts'
 import { previewChanged } from '../preview/public.ts'
 import { sourceChanged } from '../source/public.ts'
@@ -19,6 +19,9 @@ type Ids = { companyId: CompanyId; projectId: ProjectId; conversationId: Convers
 
 const FIRST_RETRY_MS = 1000
 const LAST_RETRY_MS = 15_000
+
+/** The messages a read brings, and the step by which "Carregar mensagens anteriores" widens it (Factory `INITIAL_THREAD_MESSAGE_LIMIT`). */
+export const TRANSCRIPT_PAGE = 100
 
 /** The transcript Mastra's route serves: the server does not replay what the stream missed. */
 function transcriptKey(conversationId: ConversationId) {
@@ -153,7 +156,28 @@ export function useSession(ids: Ids, onGone: () => void) {
   const gone = useEffectEvent(onGone)
   const { companyId, projectId, conversationId } = ids
   const builder = useMemo(() => sessionOf(conversationId), [conversationId])
-  const transcript = useQuery({ queryKey: transcriptKey(conversationId), queryFn: builder.read })
+  // The window of messages read grows by a page for each "load more"; it resets with the conversation
+  // (Factory `useAgentControllerThreadMessages.ts`: the reset is adjusted during render).
+  const [range, setSpan] = useState({ conversationId, limit: TRANSCRIPT_PAGE })
+  if (range.conversationId !== conversationId) setSpan({ conversationId, limit: TRANSCRIPT_PAGE })
+  const limit = range.conversationId === conversationId ? range.limit : TRANSCRIPT_PAGE
+  const transcript = useQuery({
+    queryKey: [...transcriptKey(conversationId), limit],
+    queryFn: () => builder.read(limit),
+    // The stream does not replay a gap: coming back to the tab does not read the window again
+    // (Factory `refetchOnWindowFocus: false`); the stream's own reconnect does.
+    refetchOnWindowFocus: false,
+    // Widening the window keeps the messages on screen while the larger read arrives.
+    placeholderData: keepPreviousData,
+  })
+  const older = {
+    // A full window means older messages may exist (Factory `hasMore`).
+    has: transcript.isSuccess && transcript.data.length >= limit,
+    loading: transcript.isFetching && limit > TRANSCRIPT_PAGE,
+    load: useCallback(() => {
+      if (!transcript.isFetching) setSpan((was) => ({ ...was, limit: was.limit + TRANSCRIPT_PAGE }))
+    }, [transcript.isFetching]),
+  }
   useEffect(() => {
     if (transcript.data !== undefined) dispatch({ type: 'loaded', messages: transcript.data })
   }, [transcript.data])
@@ -169,5 +193,5 @@ export function useSession(ids: Ids, onGone: () => void) {
     void follow(hooks, controller.signal)
     return () => controller.abort()
   }, [queryClient, companyId, projectId, conversationId, builder])
-  return { state, dispatch, builder }
+  return { state, dispatch, builder, older }
 }

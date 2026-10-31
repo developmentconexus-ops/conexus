@@ -23,7 +23,7 @@ import { ANA, COMPANY } from '../../platform/fixtures.ts'
 import { PEDIDOS, projectsRead, refusal } from '../../platform/test-hub.tsx'
 import type { Stored } from './messages.ts'
 import type { Line } from './test-stream.tsx'
-import { displayOf, openLine, personSent } from './test-stream.tsx'
+import { displayOf, newest, openLine, personSent } from './test-stream.tsx'
 
 export const FIRST = ConversationId.parse('11111111-1111-4111-8111-111111111111')
 export const SECOND = ConversationId.parse('22222222-2222-4222-8222-222222222222')
@@ -232,11 +232,11 @@ function conversationHub(view: View, answers: Answers = {}) {
           settings: { thinkingLevel: conversation.effort },
         })
       }),
-      http.get(`${SESSION}/threads/:threadId/messages`, ({ params }) => {
+      http.get(`${SESSION}/threads/:threadId/messages`, ({ params, request }) => {
         const conversation = view.conversations.find((one) => one.id === params.threadId)
         if (!conversation) return refusal('CONVERSATION_NOT_FOUND')
         reads.push(Date.now())
-        return HttpResponse.json({ messages: conversation.messages })
+        return HttpResponse.json({ messages: newest(conversation.messages, request) })
       }),
       http.get(`${BASE}/:id`, ({ params }) => {
         const conversation = view.conversations.find((one) => one.id === params.id)

@@ -125,3 +125,8 @@ export function attach(file: File) {
   if (picker === null) throw new Error('no file picker')
   fireEvent.change(picker, { target: { files: [file] } })
 }
+
+/** Mastra's route: `limit` serves the newest N, oldest first. */
+export function newest(all: Stored[], { url }: Request) {
+  return all.slice(-Number(new URL(url).searchParams.get('limit')))
+}

@@ -1,5 +1,6 @@
 import type { ModelId } from '@conexus/hub-api'
-import { useEffect, useRef } from 'react'
+import { useEffect, useLayoutEffect, useRef } from 'react'
+import { Button } from '../../ui/button.tsx'
 import {
   MessageScroller,
   MessageScrollerButton,
@@ -16,7 +17,7 @@ import { PersonBubble, PersonTurn } from './person-turn.tsx'
 import type { TranscriptItem } from './rows.ts'
 import { itemsOf } from './rows.ts'
 import type { SessionState, Steer } from './session-state.ts'
-import { STEER_PENDING } from './text.ts'
+import { LOAD_OLDER, STEER_PENDING } from './text.ts'
 
 type Group = { key: string; person: Message | undefined; builder: Message[] }
 
@@ -75,20 +76,37 @@ export function Transcript(props: {
   turns: readonly ShownTurn[]
   steers: readonly Steer[]
   model: ModelId
+  older: { has: boolean; loading: boolean; load: () => void }
   onAsk: (text: string) => void
 }) {
-  const { turns } = props
+  const { turns, older } = props
+  const viewport = useRef<HTMLDivElement>(null)
   return (
     <MessageScrollerProvider autoScroll defaultScrollPosition="end">
       <EndOnSent last={turns.at(-1)?.key} />
+      <KeepPlace first={turns[0]?.key} viewport={viewport} />
       <MessageScroller>
-        <MessageScrollerViewport aria-label="Rolagem da conversa" className="px-md pt-md">
+        <MessageScrollerViewport
+          ref={viewport}
+          aria-label="Rolagem da conversa"
+          className="px-md pt-md"
+        >
           <MessageScrollerContent
             aria-label="Conversa com o Builder"
             className="pb-xl"
             aria-live="polite"
             aria-busy={turns.at(-1)?.streaming === true}
           >
+            {older.has && (
+              <Button
+                variant="ghost"
+                className="self-center"
+                disabled={older.loading}
+                onClick={older.load}
+              >
+                {LOAD_OLDER}
+              </Button>
+            )}
             {turns.map((turn) => (
               <MessageScrollerItem key={turn.key} messageId={turn.key}>
                 {turn.person !== undefined && <PersonTurn message={turn.person} />}
@@ -119,6 +137,9 @@ export function Transcript(props: {
   )
 }
 
+/** No older messages: the whole conversation is on screen. */
+export const NO_OLDER = { has: false, loading: false, load: () => undefined }
+
 /** Jumps to the end, and follows it again, when a message of the person's opens a turn. */
 function EndOnSent(props: { last: string | undefined }) {
   const { scrollToEnd } = useMessageScroller()
@@ -128,5 +149,25 @@ function EndOnSent(props: { last: string | undefined }) {
     seen.current = props.last
     scrollToEnd()
   }, [props.last, scrollToEnd])
+  return null
+}
+
+/**
+ * Keeps the place the person was reading when older messages arrive above: the viewport's height
+ * grows by what was added, and its scroll moves by the same.
+ */
+function KeepPlace(props: {
+  first: string | undefined
+  viewport: React.RefObject<HTMLDivElement | null>
+}) {
+  const seen = useRef<{ first: string; height: number; top: number }>(undefined)
+  useLayoutEffect(() => {
+    const element = props.viewport.current
+    if (element === null || props.first === undefined) return
+    const before = seen.current
+    if (before !== undefined && before.first !== props.first)
+      element.scrollTop = before.top + (element.scrollHeight - before.height)
+    seen.current = { first: props.first, height: element.scrollHeight, top: element.scrollTop }
+  })
   return null
 }
