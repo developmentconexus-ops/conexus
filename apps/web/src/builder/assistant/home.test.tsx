@@ -1,9 +1,11 @@
+import { AutomationId } from '@conexus/hub-api'
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { http } from 'msw'
 import { expect, test } from 'vitest'
 import { hubServer, PEDIDOS, refusal } from '../../platform/test-hub.tsx'
 import { choose } from '../conversation/test-hub.tsx'
 import {
+  ASKED,
   assistantConversation,
   assistantScreens,
   COMPANY_ROOT,
@@ -20,6 +22,9 @@ import {
 // Início of the owner: the Assistant's box, its bar and the recent conversations (step 24.1, criteria 23 and 23a).
 const server = hubServer()
 const { at } = assistantScreens(server)
+const AUTOMATION = AutomationId.parse(
+  'schedule_conexus-automation-11111111-1111-4111-8111-111111111111',
+)
 
 async function box() {
   return screen.findByRole('textbox', { name: 'Mensagem para o Assistente' })
@@ -225,4 +230,27 @@ test('as recentes passam de uma página: Ver mais leva à seguinte no endereço,
   expect(conexus.router.state.location.search).toMatchObject({ conversations: '2' })
   fireEvent.click(screen.getByRole('link', { name: 'Primeira página: Conversas' }))
   expect(await screen.findByRole('link', { name: /Gama/ })).toBeTruthy()
+})
+
+test('a etiqueta: a conversa que uma automação abriu mostra Automação · nome nas recentes e no topo da conversa; a outra não', async () => {
+  const { conexus } = at(COMPANY_ROOT, {
+    conversations: [
+      assistantConversation({
+        title: 'Resumo de ontem',
+        automation: { automationId: AUTOMATION, name: 'Resumo de vendas' },
+      }),
+      assistantConversation({ id: ELSEWHERE, title: 'Conversa da pessoa' }),
+    ],
+  })
+  const recent = (await screen.findByRole('link', { name: /Resumo de ontem/ })).closest('li')
+  if (recent === null) throw new Error('the recent conversation has no row')
+  expect(within(recent).getByText('Automação · Resumo de vendas')).toBeTruthy()
+  const other = (await screen.findByRole('link', { name: /Conversa da pessoa/ })).closest('li')
+  if (other === null) throw new Error('the other conversation has no row')
+  expect(within(other).queryByText(/Automação ·/)).toBeNull()
+
+  fireEvent.click(within(recent).getByRole('link', { name: /Resumo de ontem/ }))
+  const header = await screen.findByRole('heading', { name: 'Resumo de ontem' })
+  expect(header.parentElement?.textContent).toContain('Automação · Resumo de vendas')
+  expect(conexus.router.state.location.pathname).toContain(ASKED)
 })

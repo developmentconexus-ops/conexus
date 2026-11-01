@@ -1,5 +1,5 @@
 import { createFileRoute, Outlet, useParams } from '@tanstack/react-router'
-import { HouseIcon, PlugIcon, SettingsIcon } from 'lucide-react'
+import { HouseIcon, PlugIcon, SettingsIcon, TimerIcon } from 'lucide-react'
 import { useEffect } from 'react'
 import {
   AccountMenu,
@@ -7,6 +7,7 @@ import {
   companyEntry,
   enterHouse,
 } from '../../../../hub/identity/public.ts'
+import { NotificationBell } from '../../../../hub/notifications/public.ts'
 import {
   ProjectRailHead,
   ProjectRailNav,
@@ -14,8 +15,9 @@ import {
   RecentProjects,
   rememberProject,
 } from '../../../../hub/projects/public.ts'
-import { Frame, FrameLink } from '../../../../ui/frame.tsx'
+import { Frame, FrameLink, PhoneTopContent } from '../../../../ui/frame.tsx'
 import { SidebarGroup, SidebarMenu } from '../../../../ui/sidebar.tsx'
+import { useIsMobile } from '../../../../ui/use-mobile.ts'
 
 export const Route = createFileRoute('/_app/companies/$companyId')({
   ...companyEntry,
@@ -31,20 +33,24 @@ export const Route = createFileRoute('/_app/companies/$companyId')({
 /** The company's frame: inside a Projeto its sidebar is the Projeto's own (web W30). */
 function HouseFrame() {
   const { companyId } = Route.useParams()
-  const { person } = Route.useRouteContext()
+  const { person, role } = Route.useRouteContext()
   const projectId = useParams({ strict: false, select: (params) => params.projectId })
   useEffect(() => {
     if (projectId !== undefined) rememberProject({ personId: person.id, companyId, projectId })
   }, [person.id, companyId, projectId])
+  const phone = useIsMobile()
   const params = { companyId }
   return (
     <Frame
       header={
-        projectId === undefined ? (
-          <CompanySwitcher current={companyId} />
-        ) : (
-          <ProjectRailHead companyId={companyId} projectId={projectId} />
-        )
+        <>
+          {projectId === undefined ? (
+            <CompanySwitcher current={companyId} />
+          ) : (
+            <ProjectRailHead companyId={companyId} projectId={projectId} />
+          )}
+          {!phone && <NotificationBell companyId={companyId} />}
+        </>
       }
       nav={
         projectId !== undefined ? (
@@ -60,6 +66,14 @@ function HouseFrame() {
                   icon={HouseIcon}
                   label="Início"
                 />
+                {role !== 'member' && (
+                  <FrameLink
+                    to="/companies/$companyId/automations"
+                    params={params}
+                    icon={TimerIcon}
+                    label="Automações"
+                  />
+                )}
               </SidebarMenu>
             </SidebarGroup>
             <RecentProjects companyId={companyId} personId={person.id} />
@@ -91,6 +105,11 @@ function HouseFrame() {
       }
       compact={projectId !== undefined}
     >
+      {phone && (
+        <PhoneTopContent>
+          <NotificationBell companyId={companyId} />
+        </PhoneTopContent>
+      )}
       <Outlet />
     </Frame>
   )

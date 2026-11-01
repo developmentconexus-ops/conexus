@@ -1,0 +1,15 @@
+/** The words of the Automações screens (step 24.2, U3); the founder approves them at the step's end. */
+export const AUTOMATIONS_TITLE = 'Automações'
+export const NO_AUTOMATIONS =
+  'Peça numa conversa, por exemplo: todo dia às 7h me manda o resumo de vendas.'
+export const NEW_CONVERSATION = 'Nova conversa'
+export const ACTIVE = 'Ativa'
+export const PAUSED = 'Pausada'
+export const UNCONFIRMED_ACTION = 'Não confirmamos a mudança. Veja a lista.'
+export const UNCONFIRMED_CREATION = 'Não confirmamos a criação. Toque de novo.'
+export const RUN_REQUESTED = 'Pedido enviado. A execução aparece no histórico.'
+export const NO_RUNS = 'Ainda não rodou.'
+export const BACK_TO_AUTOMATIONS = 'Automações'
+export const OPEN_CONVERSATION = 'Abrir a conversa'
+export const SKIPPED = 'Não rodou: você não pode mais perguntar ao Assistente.'
+export const CREATED = 'Automação criada'

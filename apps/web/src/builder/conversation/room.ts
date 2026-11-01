@@ -1,5 +1,6 @@
-import type { ShownFile } from '@conexus/hub-api'
+import type { ProposedAutomation, ShownFile } from '@conexus/hub-api'
 import { ASSISTANT_CONTROLLER, BUILDER_CONTROLLER } from '@conexus/hub-api'
+import type { ReactNode } from 'react'
 import { createContext, useContext } from 'react'
 import { ASSISTANT_OVERRIDES } from './assistant-specs.ts'
 import type { Controller } from './session.ts'
@@ -25,6 +26,8 @@ export type Room = {
   openedPath?: string
   /** Opens **Criar app** with the proposed summary; none in the Builder's conversation. */
   createApp?: (summary: string) => void
+  /** Draws **Criar automação** for the proposal of the call `toolCallId`; none in the Builder's conversation. */
+  automationCard?: (proposal: { proposed: ProposedAutomation; toolCallId: string }) => ReactNode
   /** The rows this room draws differently from the table. */
   overrides: Partial<Record<RowTool, ToolSpec>>
 }

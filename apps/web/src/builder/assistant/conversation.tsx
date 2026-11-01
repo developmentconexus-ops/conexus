@@ -1,4 +1,4 @@
-import type { CompanyId, ConversationId, ProjectId } from '@conexus/hub-api'
+import type { AssistantConversation, CompanyId, ConversationId, ProjectId } from '@conexus/hub-api'
 import { ASSISTANT_CONTROLLER, listAssistantConversations } from '@conexus/hub-api'
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
@@ -6,6 +6,7 @@ import { hubQueryPrefix } from '../../platform/hub.ts'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '../../ui/resizable.tsx'
 import { NotFound } from '../../ui/states.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
+import { AutomationBadge, ProposalCard } from '../automations/public.ts'
 import type { OpenedFile, Room } from '../conversation/public.ts'
 import { ASSISTANT_ROOM, Chat, RoomContext } from '../conversation/public.ts'
 import { useConnectorCatalog } from './connector-names.ts'
@@ -48,6 +49,36 @@ function Beside(props: { chat: React.ReactNode; file: React.ReactNode | undefine
   )
 }
 
+/** The Assistant's room for a conversation: its connector names, the file beside it and the cards it draws. */
+function useAssistantRoom(held: {
+  companyId: CompanyId
+  conversation: AssistantConversation
+  file: OpenedFile | undefined
+  setFile: (file: OpenedFile) => void
+  setProposal: (summary: string) => void
+}): Room {
+  const { companyId, conversation, file, setFile, setProposal } = held
+  const { name: connectorName } = useConnectorCatalog(companyId)
+  return useMemo(
+    () => ({
+      ...ASSISTANT_ROOM,
+      connectorName,
+      openFile: setFile,
+      openedPath: file?.path,
+      createApp: setProposal,
+      automationCard: ({ proposed, toolCallId }) => (
+        <ProposalCard
+          companyId={companyId}
+          conversation={conversation}
+          proposed={proposed}
+          toolCallId={toolCallId}
+        />
+      ),
+    }),
+    [companyId, connectorName, conversation, file?.path, setFile, setProposal],
+  )
+}
+
 function Conversation(props: Props) {
   const { companyId, conversationId, projectId } = props
   const queryClient = useQueryClient()
@@ -56,23 +87,16 @@ function Conversation(props: Props) {
   ).data
   const [file, setFile] = useState<OpenedFile>()
   const [proposal, setProposal] = useState<string>()
-  const { name: connectorName } = useConnectorCatalog(companyId)
-  const room: Room = useMemo(
-    () => ({
-      ...ASSISTANT_ROOM,
-      connectorName,
-      openFile: setFile,
-      openedPath: file?.path,
-      createApp: setProposal,
-    }),
-    [connectorName, file?.path],
-  )
+  const room = useAssistantRoom({ companyId, conversation, file, setFile, setProposal })
   return (
     <RoomContext.Provider value={room}>
       <div className="flex h-full min-h-0 flex-col">
-        <h1 className="truncate border-b border-line px-md py-sm font-display text-title">
-          {titleOf(conversation)}
-        </h1>
+        <div className="flex min-w-0 items-center gap-sm border-b border-line px-md py-sm">
+          <h1 className="truncate font-display text-title">{titleOf(conversation)}</h1>
+          {conversation.automation !== null && (
+            <AutomationBadge name={conversation.automation.name} />
+          )}
+        </div>
         <div className="min-h-0 flex-1">
           <Beside
             chat={

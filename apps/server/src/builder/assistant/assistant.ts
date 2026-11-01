@@ -49,6 +49,7 @@ import { admitted, asked, openConversation } from './open.ts'
 import { overviewTool } from './overview.ts'
 import type { AssistantProjects } from './ports.ts'
 import { proposeAppTool } from './propose.ts'
+import { proposeAutomationTool } from './propose-automation.ts'
 import { releaseConversations } from './release.ts'
 import { registerAssistantRoutes } from './routes.ts'
 import { showFileTool } from './show-file.ts'
@@ -242,6 +243,7 @@ function assistantAgent(
       })),
   })
   const showFile = showFileTool(parts.machines)
+  const proposeAutomation = proposeAutomationTool({ scopeOf })
   return new Agent({
     id: ASSISTANT_CONTROLLER,
     name: 'Assistant',
@@ -258,6 +260,7 @@ function assistantAgent(
         ...toolsOf(sessionModel(requestContext)),
         [ASSISTANT_TOOL.overview]: overview,
         [ASSISTANT_TOOL.showFile]: showFile,
+        [ASSISTANT_TOOL.proposeAutomation]: proposeAutomation,
         // Creating an app is the company's: a conversation inside a Projeto talks about that Projeto.
         ...(scope?.place.kind === 'COMPANY' ? { [ASSISTANT_TOOL.proposeApp]: proposeAppTool } : {}),
         ...(scope === undefined

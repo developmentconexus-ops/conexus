@@ -17,6 +17,8 @@ L24](../guides/delivery.md)): it grows by one line per screen.
 | Início of a company: the box to the Builder for a member; for the owner and the administrators the box to the Assistant, its bar of connections and the recent conversations | `/companies/<c>` | Empresa | owner, administrator, member |
 | A conversation with the Assistant born on Início, with the file it shows beside the chat | `/companies/<c>/conversations/<id>` | Empresa | owner, administrator |
 | Todos os projetos | `/companies/<c>/projects` | Empresa | owner, administrator, member |
+| Automações of the Início: the person's own, with state, next time and actions | `/companies/<c>/automations` | Empresa | owner, administrator |
+| The history of one automation of the Início, with its runs | `/companies/<c>/automations/<id>` | Empresa | owner, administrator |
 | Integrações: the connectors the company can link and its connections, grouped by connector, with the window to link | `/companies/<c>/integrations` | Empresa | owner, administrator, member (reads) |
 | A connection: its state, who tested it and when, Testar with its one-sentence result, its Caderno with Apagar, and Desligar | `/companies/<c>/integrations/<connectionId>` | Empresa | owner, administrator, member (reads) |
 | Configurações' index: the sections as a list on a phone; a wide screen opens Minha conta | `/companies/<c>/settings` | Empresa | owner, administrator, member |
@@ -27,6 +29,8 @@ L24](../guides/delivery.md)): it grows by one line per screen.
 | A Projeto's conversation, with the tab Prévia or Código (`?lens=`) | `/companies/<c>/projects/<p>/conversations/<id>` | Projeto | owner, administrator, member |
 | Conversas of a Projeto: the box to the Assistant with the Projeto's connections, and its conversations; a member reads who can talk there | `/companies/<c>/projects/<p>/assistant` | Projeto | owner, administrator, member (reads) |
 | A conversation with the Assistant in a Projeto, with the file it shows beside the chat | `/companies/<c>/projects/<p>/assistant/<id>` | Projeto | owner, administrator |
+| Automações of a Projeto: the person's own, with state, next time and actions | `/companies/<c>/projects/<p>/automations` | Projeto | owner, administrator |
+| The history of one automation of a Projeto, with its runs | `/companies/<c>/projects/<p>/automations/<id>` | Projeto | owner, administrator |
 | Sobre, with its parts Sobre and Versões (`?part=`) | `/companies/<c>/projects/<p>/about` | Projeto | owner, administrator, member |
 | Quem usa o app | `/companies/<c>/projects/<p>/access` | Projeto | owner, administrator, member (reads) |
 | Integrações do Projeto: each connected connection with whether the Projeto may read it, Liberar para ler and Tirar | `/companies/<c>/projects/<p>/integrations` | Projeto | owner, administrator, member (reads) |

@@ -107,6 +107,19 @@ export const CreateAutomation = z.object({
 })
 export type CreateAutomation = z.infer<typeof CreateAutomation>
 
+/**
+ * What `propose_automation` answers (step 24.2, U3): an automation as the Assistant wrote it, for the
+ * person to create with one touch; the place is the conversation's. It lives here and not in
+ * `assistant.ts`, which this file already imports.
+ */
+export const ProposedAutomation = z.object({
+  name: AutomationName,
+  prompt: AutomationPrompt,
+  cadence: Cadence,
+  connections: z.array(ConnectionId).max(CONNECTIONS_MAX),
+})
+export type ProposedAutomation = z.infer<typeof ProposedAutomation>
+
 const InCompany = z.object({ companyId: CompanyId })
 const OfAutomation = InCompany.extend({ automationId: AutomationId })
 const BASE = '/api/companies/{companyId}/automations'
