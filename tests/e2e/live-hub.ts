@@ -122,7 +122,7 @@ export async function liveHub(
   const status = createStatus({ version: config.version, database: database.database })
   const identity = identityOf({ database: database.database, config, log: silent })
   const { machinesOf, repository, copy, folder } = testBuilderPorts(config)
-  const { projects, operations, apps, modelAccounts, conversations, connectors } = subjectsOf({
+  const subjects = subjectsOf({
     ...{ machinesOf, repository, copy },
     database: database.database,
     mastraPool: database.mastraPool,
@@ -136,17 +136,8 @@ export async function liveHub(
     cloudflare: createCloudflareApps({ config, log: silent }),
     log: silent,
   })
-  const app = await createHub(config, {
-    status,
-    identity,
-    operations,
-    projects,
-    apps,
-    modelAccounts,
-    conversations,
-    connectors,
-    webRoot: WEB_ROOT,
-  })
+  const { apps, conversations, connectors } = subjects
+  const app = await createHub(config, { status, identity, ...subjects, webRoot: WEB_ROOT })
   closing.hub = function closeHub() {
     return closeListeners([app], () => conversations.close())
   }

@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import type { QueryAnswer } from './fake-sales.ts'
 
 // Invented values only (S40).
 export const CREDENTIAL = Object.freeze({
@@ -99,8 +100,24 @@ export function loadRecords(requestBody: unknown): Response {
   })
 }
 
-export function executeQuery(requestBody: unknown): Response {
+/**
+ * `DbExplorerSP.executeQuery`: with a sales set's `query`, the SQL runs on its tables (`fake-sales.ts`)
+ * and a query it cannot run is refused; without one, only the count of empresas answers.
+ */
+export function executeQuery(
+  requestBody: unknown,
+  query?: (sql: string) => QueryAnswer | undefined,
+): Response {
   const { sql } = z.object({ sql: z.string() }).parse(requestBody)
+  if (query !== undefined) {
+    const answered = query(sql)
+    if (answered === undefined) return envelope('DbExplorerSP.executeQuery', '0')
+    return envelope('DbExplorerSP.executeQuery', '1', {
+      fieldsMetadata: answered.fields.map((name) => ({ name })),
+      rows: answered.rows,
+      burstLimit: false,
+    })
+  }
   if (!/^SELECT COUNT\(\*\) AS N FROM TSIEMP$/i.test(sql.trim()))
     return envelope('DbExplorerSP.executeQuery', '0')
   return envelope('DbExplorerSP.executeQuery', '1', {

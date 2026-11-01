@@ -1,6 +1,7 @@
 import type { ServerResponse } from 'node:http'
-import type { FailureCode } from '@conexus/hub-api'
-import { BUILDER_ROUTES, ConversationId } from '@conexus/hub-api'
+import type { CompanyId, FailureCode, Person } from '@conexus/hub-api'
+import { ASSISTANT_CONTROLLER, BUILDER_ROUTES, ConversationId } from '@conexus/hub-api'
+import type { Mastra } from '@mastra/core/mastra'
 import { MASTRA_MESSAGE_AUTHOR_KEY } from '@mastra/core/request-context'
 import { SERVER_ROUTES } from '@mastra/server/server-adapter'
 import type { FastifyInstance, FastifyRequest } from 'fastify'
@@ -38,7 +39,7 @@ const FIXED_LIST: ReadonlySet<string> = new Set([
 const BODY_LIMIT = 31_457_280
 
 const Params = z.object({
-  controllerId: z.literal(BUILDER_ID),
+  controllerId: z.enum([BUILDER_ID, ASSISTANT_CONTROLLER]),
   sessionId: ConversationId,
   threadId: z.string().optional(),
 })
@@ -91,9 +92,14 @@ function builderRoutes() {
   return found
 }
 
+/** Whether the person may ask the Assistant in the company now; it throws `NOT_FOUND` otherwise. */
+export type AssistantAdmission = (input: { person: Person; companyId: CompanyId }) => Promise<void>
+
 /**
- * The conversation a request to Mastra's routes names, if it is the person's: the thread's resource
- * names its company and person (`memoryOwner`), and the Hub's index and membership decide (S10).
+ * The conversation a request to Mastra's routes names, if it is the person's and of the controller
+ * the path names: the thread's resource names its controller, company and person (`memoryOwner`,
+ * `assistantOwner`), and, for the Builder, the Hub's index and membership decide; for the
+ * Assistant, whether the person may ask it now (`askAssistant`), so a member gets the same 404 (S10).
  * A `requestContext` from the browser is refused: Mastra's server copies it into the run's context,
  * and `mastra__messageAuthor` is not one of its reserved keys (measured, prove2 e21-bare). So is
  * `include`, which would read messages of the person's other conversations. So is a file that is
@@ -101,7 +107,12 @@ function builderRoutes() {
  * starts a turn (founder E1).
  */
 async function guard(
-  deps: { builder: Builder; store: ConversationStore; updating: () => boolean },
+  deps: {
+    builder: Builder
+    store: ConversationStore
+    mayAsk: AssistantAdmission
+    updating: () => boolean
+  },
   request: FastifyRequest,
 ): Promise<void> {
   if (overreaches(request.body) || overreaches(request.query) || sendsFileUrl(request.body)) {
@@ -110,7 +121,7 @@ async function guard(
   const { person } = sessionOf(request)
   const params = Params.safeParse(request.params)
   if (!params.success) throw new Failure('CONVERSATION_NOT_FOUND')
-  const { sessionId: conversationId, threadId } = params.data
+  const { controllerId, sessionId: conversationId, threadId } = params.data
   const asked = Query.safeParse(request.query)
   const queried = asked.success ? asked.data.threadId : undefined
   if (!asked.success) throw new Failure('REQUEST_MALFORMED')
@@ -119,10 +130,12 @@ async function guard(
   }
   const thread = await deps.builder.memory.getThreadById({ threadId: conversationId })
   const owner = ownerOfResource(thread?.resourceId)
-  if (owner === undefined || owner.personId !== person.id) {
+  if (owner === undefined || owner.personId !== person.id || owner.kind !== controllerId) {
     throw new Failure('CONVERSATION_NOT_FOUND')
   }
-  await deps.store.mine({ person, companyId: owner.companyId, conversationId })
+  const { companyId } = owner
+  if (owner.kind === 'builder') await deps.store.mine({ person, companyId, conversationId })
+  else await admittedAsker(deps.mayAsk, { person, companyId })
   if (
     deps.updating() &&
     request.method === 'POST' &&
@@ -131,6 +144,18 @@ async function guard(
     throw new Failure('HUB_UPDATING')
   }
   request.requestContext.setRaw(MASTRA_MESSAGE_AUTHOR_KEY, { id: person.id, name: person.name })
+}
+
+/** A member, or someone no longer in the company, finds no conversation (criterion 10). */
+async function admittedAsker(mayAsk: AssistantAdmission, input: Parameters<AssistantAdmission>[0]) {
+  try {
+    await mayAsk(input)
+  } catch (error) {
+    if (error instanceof Failure && error.code === 'NOT_FOUND') {
+      throw new Failure('CONVERSATION_NOT_FOUND', { cause: error })
+    }
+    throw error
+  }
 }
 
 /**
@@ -146,8 +171,10 @@ async function guard(
 export function registerBuilderRoutes(
   app: FastifyInstance,
   deps: {
+    mastra: Mastra
     builder: Builder
     store: ConversationStore
+    mayAsk: AssistantAdmission
     streams: Set<ServerResponse>
     updating: () => boolean
     log: FailureLog
@@ -159,7 +186,7 @@ export function registerBuilderRoutes(
     // limit goes to the Hub's error handler as a 413 (`@mastra/fastify@1.5.23` `dist/index.js:542-571`).
     const server = new BuilderServer({
       app: scope,
-      mastra: deps.builder.mastra,
+      mastra: deps.mastra,
       bodyLimitOptions: { maxSize: BODY_LIMIT, onError: (error) => error },
       log: deps.log,
     })
@@ -168,8 +195,13 @@ export function registerBuilderRoutes(
     scope.removeContentTypeParser('multipart/form-data')
     scope.addHook('preHandler', async (request, reply) => {
       await guard(deps, request)
-      if (request.method === 'POST' && request.routeOptions.url?.endsWith('/abort')) {
-        const { sessionId } = Params.parse(request.params)
+      const { controllerId, sessionId } = Params.parse(request.params)
+      // Only the Builder parks a card (`ask_user`, `submit_plan`): the Assistant has none.
+      if (
+        controllerId === BUILDER_ID &&
+        request.method === 'POST' &&
+        request.routeOptions.url?.endsWith('/abort')
+      ) {
         await untilCardsKept(
           deps.builder.agent,
           await deps.builder.controller.getSession(sessionId),

@@ -174,7 +174,13 @@ export type Config = BaseConfig & {
  * CLIProxyAPI's program for Google's sign-in, the sha256 it must have to run, and how long it keeps
  * a login open (decision 0049).
  */
-export type CliProxy = Readonly<{ binary: string; sha256: string; loginSeconds: number }>
+export type CliProxy = Readonly<{
+  binary: string
+  sha256: string
+  loginSeconds: number
+  /** How long an account's process runs with no call through it before it stops. */
+  idleSeconds: number
+}>
 
 // v8.0.33 (2422c6b0), as hub.Dockerfile installs it and the step's live proof ran it.
 const CLIPROXY: CliProxy = {
@@ -183,6 +189,7 @@ const CLIPROXY: CliProxy = {
   // An Antigravity login fails after five minutes
   // (internal/api/handlers/management/auth_files_provider_oauth.go:402).
   loginSeconds: 300,
+  idleSeconds: 10 * 60,
 }
 
 type MigrateConfig = BaseConfig & { migrationDatabaseUrl: DatabaseUrl }

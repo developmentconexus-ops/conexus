@@ -9,7 +9,8 @@ import type { Runs } from '../runs/public.ts'
 import { conversationIn } from '../runs/public.ts'
 
 const TURN_PROCESSOR = 'conexus-turn'
-const MEMORY_OWNER = /^company:(?<companyId>[^:]+):person:(?<personId>[^:]+)$/
+const MEMORY_OWNER =
+  /^(?:(?<assistant>assistant):)?company:(?<companyId>[^:]+):person:(?<personId>[^:]+)$/
 const RUN_BUSY = 'RUN_BUSY:'
 
 const Owner = z.object({ companyId: CompanyId, personId: PersonId })
@@ -21,17 +22,24 @@ export type ConversationIndex = {
   projectOf(input: Owner & { conversationId: ConversationId }): Promise<ProjectId | undefined>
 }
 
-/** Whose a thread is, from the resource Mastra keeps it under (`memoryOwner`), or none. */
-export function ownerOfResource(resourceId: unknown): Owner | undefined {
+/** Which controller's a thread is, by the resource it is kept under (C21). */
+export type ResourceOwner = Owner & { kind: 'builder' | 'assistant' }
+
+/**
+ * Whose a thread is, and of which controller, from the resource Mastra keeps it under
+ * (`memoryOwner`, the Assistant's `assistantOwner`), or none.
+ */
+export function ownerOfResource(resourceId: unknown): ResourceOwner | undefined {
   const groups = typeof resourceId === 'string' ? MEMORY_OWNER.exec(resourceId)?.groups : undefined
   const owner = Owner.safeParse(groups)
-  return owner.success ? owner.data : undefined
+  if (!owner.success) return undefined
+  return { kind: groups?.assistant === undefined ? 'builder' : 'assistant', ...owner.data }
 }
 
 const Resource = z.object({ resourceId: z.string() })
 
-/** Whose conversation a Mastra run is: the owner Mastra keeps its thread under. */
-function ownerIn(requestContext: RequestContext): Owner | undefined {
+/** Whose conversation a Mastra run is: the owner Mastra keeps its thread under, of either controller. */
+function ownerIn(requestContext: RequestContext): ResourceOwner | undefined {
   return ownerOfResource(Resource.safeParse(requestContext.get('controller')).data?.resourceId)
 }
 
@@ -41,13 +49,16 @@ async function conversationOf(
 ): Promise<Conversation | undefined> {
   const owner = ownerIn(requestContext)
   const conversationId = conversationIn(requestContext)
-  if (owner === undefined || conversationId === undefined) return undefined
-  const projectId = await index.projectOf({ ...owner, conversationId })
-  return projectId === undefined ? undefined : { ...owner, conversationId, projectId }
+  if (owner?.kind !== 'builder' || conversationId === undefined) return undefined
+  const { companyId, personId } = owner
+  const projectId = await index.projectOf({ companyId, personId, conversationId })
+  return projectId === undefined ? undefined : { companyId, personId, conversationId, projectId }
 }
 
-async function turnOfOwner(queue: QueueDeps, owner: Owner): Promise<Turn> {
-  return new Turn({ ...owner, memoryModels: await memoryModelsFor(queue, owner) })
+/** The turn of a conversation's owner, in the accounts' queue (step 11). */
+export async function turnOfOwner(queue: QueueDeps, owner: Owner): Promise<Turn> {
+  const { companyId, personId } = owner
+  return new Turn({ companyId, personId, memoryModels: await memoryModelsFor(queue, owner) })
 }
 
 type Abort = (reason: string) => never

@@ -72,17 +72,19 @@ function failureOf(error: Error): FailureData | undefined {
 }
 
 /**
+ * How the run's end settled its Projeto: saved (`Settled`), its Projeto gone mid-turn, the save
+ * thrown, or nothing to save, for a controller whose runs hold no Projeto (`unsaved`).
+ */
+type Outcome = Settled | 'gone' | 'threw' | 'unsaved'
+
+/**
  * The run's failure, decided once (the failures table of the card): one its error said first, then
  * the save, then how the model's turn ended, never the provider's text (security S41).
  */
-function decided(
-  run: Run,
-  reason: AgentEnd,
-  outcome: Settled | 'gone' | 'threw',
-): FailureData | undefined {
+function decided(run: Run, reason: AgentEnd, outcome: Outcome): FailureData | undefined {
   if (run.failure !== undefined) return run.failure
   if (outcome === 'threw') return { code: 'INTERNAL_UNEXPECTED' }
-  if (outcome !== 'gone' && outcome.kind === 'failed') return { code: outcome.code }
+  if (typeof outcome === 'object' && outcome.kind === 'failed') return { code: outcome.code }
   if (reason !== 'error') return undefined
   const finish = run.tally.finishReason
   return { code: (finish === undefined ? undefined : FINISHES[finish]) ?? 'MODEL_CALL_FAILED' }
@@ -127,7 +129,19 @@ function heard(run: Run, event: AgentControllerEvent): void {
   }
 }
 
-type Deps = { controller: AgentController; memory: Builder['memory']; runs: Runs; log: FailureLog }
+/**
+ * A controller whose runs the Hub watches: the Builder's settles each run's Projeto
+ * (`Runs.finish`) and tells its machine's steps; the Assistant's holds no Projeto, so it has no
+ * `finish` (step 24.1, U2).
+ */
+export type Watched = {
+  controller: AgentController
+  memory: Builder['memory']
+  finish?: Runs['finish']
+  onPhase?: Runs['onPhase']
+}
+
+type Deps = Pick<Watched, 'memory' | 'finish'> & { log: FailureLog }
 
 /**
  * A message of ours on the conversation, told on its stream as Mastra tells its own: a
@@ -154,10 +168,10 @@ function oursOf(
 }
 
 /** Our parts of the run as it settled, its failure decided once (`run.failed`, for its line). */
-function partsOf(run: Run, reason: AgentEnd, outcome: Settled | 'gone' | 'threw') {
+function partsOf(run: Run, reason: AgentEnd, outcome: Outcome) {
   settleThinking(run)
   const parts = [...run.parts]
-  if (outcome !== 'threw' && outcome !== 'gone') {
+  if (typeof outcome === 'object') {
     run.tally.rounds = outcome.rounds
     if (outcome.kind === 'saved')
       parts.push({ type: 'data-conexus-version', data: outcome.version })
@@ -201,12 +215,13 @@ async function ended(deps: Deps, session: Session, run: Run, reason: AgentEnd): 
   }
   // A save that throws is this run's failure, said and logged here: Mastra would print the
   // listener's error raw, and the run would end without saying why.
-  const outcome = await deps.runs
-    .finish({ conversationId, reason, saved })
-    .catch((cause: unknown) => {
-      logFailure(deps.log, new Failure('INTERNAL_UNEXPECTED', { cause }))
-      return 'threw' as const
-    })
+  const outcome: Outcome =
+    deps.finish === undefined
+      ? 'unsaved'
+      : await deps.finish({ conversationId, reason, saved }).catch((cause: unknown) => {
+          logFailure(deps.log, new Failure('INTERNAL_UNEXPECTED', { cause }))
+          return 'threw' as const
+        })
   await kept
   // Kept and told again only with what the end added: how the send went, or a save that threw.
   if (kept !== undefined && !sending && outcome !== 'threw') return
@@ -278,57 +293,58 @@ async function settleRuns(
  * left as Parar does, so each saves what it wrote, with `HUB_UPDATED` after a `settle`, and waits for their ends
  * (code C62).
  */
-export function watchRuns(deps: Deps) {
+export function watchRuns(deps: { watched: readonly Watched[]; log: FailureLog }) {
   const running: Running = new Map()
   const unheard = new Map<string, () => void>()
   const ends = endsOfRuns()
   let settling = false
-  deps.controller.onSessionCreated((session) => {
-    const conversationId = ConversationIdSchema.parse(session.identity.getId())
-    const owner = ownerOfResource(session.identity.getResourceId())
-    const fields = { ...(owner && { companyId: owner.companyId }), conversationId }
-    let run: Run | undefined
-    session.subscribe((event) => {
-      if (event.type === 'agent_start') {
-        run = newRun(session)
-        running.set(conversationId, { session, run })
-        deps.log.info({ ...fields, runId: run.runId }, 'CONVERSATION_TURN_STARTED')
-      }
-      if (run === undefined) return
-      heard(run, event)
-      if (event.type !== 'agent_end') return
-      const line = turnLine({
-        ...{ runId: run.runId, startedAt: run.startedAt, tally: run.tally },
-        ...{ end: event.reason ?? 'complete', errorCode: run.failed },
+  for (const watched of deps.watched) watchController({ ...watched, log: deps.log })
+  function watchController(each: Watched & { log: FailureLog }) {
+    each.controller.onSessionCreated((session) => {
+      const conversationId = ConversationIdSchema.parse(session.identity.getId())
+      const owner = ownerOfResource(session.identity.getResourceId())
+      const fields = { ...(owner && { companyId: owner.companyId }), conversationId }
+      let run: Run | undefined
+      session.subscribe((event) => {
+        if (event.type === 'agent_start') {
+          run = newRun(session)
+          running.set(conversationId, { session, run })
+          each.log.info({ ...fields, runId: run.runId }, 'CONVERSATION_TURN_STARTED')
+        }
+        if (run === undefined) return
+        heard(run, event)
+        if (event.type !== 'agent_end') return
+        const line = turnLine({
+          ...{ runId: run.runId, startedAt: run.startedAt, tally: run.tally },
+          ...{ end: event.reason ?? 'complete', errorCode: run.failed },
+        })
+        each.log.info(
+          { ...fields, reason: event.reason ?? 'complete', ...line },
+          'CONVERSATION_TURN_ENDED',
+        )
+        logMemory(each.log, { conversationId })
+        run.over.resolve()
+        running.delete(conversationId)
+        run = undefined
+        ends.heard()
       })
-      deps.log.info(
-        { ...fields, reason: event.reason ?? 'complete', ...line },
-        'CONVERSATION_TURN_ENDED',
-      )
-      logMemory(deps.log, { conversationId })
-      run.over.resolve()
+      session.onBeforeAgentEnd(async ({ reason }) => {
+        if (run !== undefined) await ended(each, session, run, reason ?? 'complete')
+      })
+      const unhear = each.onPhase?.(conversationId, (phase) => tellPhase(session, phase))
+      if (unhear !== undefined) unheard.set(conversationId, unhear)
+    })
+    // A deleted session's run ends without an `agent_end` (Mastra's `deleteSession` aborts it locally).
+    each.controller.onSessionDeleted((session) => {
+      const conversationId = session.identity.getId()
+      const gone = running.get(conversationId)
+      gone?.run.over.resolve()
       running.delete(conversationId)
-      run = undefined
-      ends.heard()
+      if (gone !== undefined) ends.heard()
+      unheard.get(conversationId)?.()
+      unheard.delete(conversationId)
     })
-    session.onBeforeAgentEnd(async ({ reason }) => {
-      if (run !== undefined) await ended(deps, session, run, reason ?? 'complete')
-    })
-    unheard.set(
-      conversationId,
-      deps.runs.onPhase(conversationId, (phase) => tellPhase(session, phase)),
-    )
-  })
-  // A deleted session's run ends without an `agent_end` (Mastra's `deleteSession` aborts it locally).
-  deps.controller.onSessionDeleted((session) => {
-    const conversationId = session.identity.getId()
-    const gone = running.get(conversationId)
-    gone?.run.over.resolve()
-    running.delete(conversationId)
-    if (gone !== undefined) ends.heard()
-    unheard.get(conversationId)?.()
-    unheard.delete(conversationId)
-  })
+  }
   return {
     /** True from `settle` on: the guard refuses `POST …/messages` with `HUB_UPDATING`. */
     updating: (): boolean => settling,

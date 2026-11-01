@@ -92,7 +92,8 @@ export class Turn {
   /** The notices said in the turn, in order, for its answer to keep (`keepNotices`). */
   readonly notices: Notice[] = []
   /** What the turn's accounts keep open while it runs, such as a CLIProxy process. */
-  readonly held: Array<() => void> = []
+  readonly #held: Array<() => void> = []
+  #over = false
   #stage: Stage = { name: 'unpicked' }
   readonly #sidePicks = new Map<ModelId, Promise<Picked | undefined>>()
   /**
@@ -205,9 +206,19 @@ export class Turn {
     this.#stage = { name: 'ended', outcome }
   }
 
+  /**
+   * Keeps what an account opened until the turn ends; once it ended, lets it go at once: a run
+   * stopped while it picked its account still finishes the pick after its end.
+   */
+  hold(release: () => void): void {
+    if (this.#over) release()
+    else this.#held.push(release)
+  }
+
   /** Lets go of what the turn's accounts kept open, once its run has ended. */
   end(): void {
-    for (const release of this.held.splice(0)) release()
+    this.#over = true
+    for (const release of this.#held.splice(0)) release()
   }
 }
 

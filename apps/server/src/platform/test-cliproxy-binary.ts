@@ -24,6 +24,7 @@ export function testCliProxy(): Double {
     binary,
     control: dir,
     loginSeconds: 300,
+    idleSeconds: 10 * 60,
     sha256: createHash('sha256').update(text).digest('hex'),
   }
   return cliProxyDouble

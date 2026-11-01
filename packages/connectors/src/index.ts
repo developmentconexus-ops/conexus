@@ -49,3 +49,10 @@ export { toRequest } from './kernel/request.ts'
 export { CONCURRENT_CALL } from './kernel/rows.ts'
 export { mercadoLivreFake } from './mercado-livre/fake.ts'
 export { sankhyaFake } from './sankhya/fake.ts'
+export type { SalesSet } from './sankhya/fake-sales.ts'
+export {
+  PADARIA_SOL_FILIAL,
+  PADARIA_SOL_MATRIZ,
+  salesDatabase,
+  soldBy,
+} from './sankhya/fake-sales.ts'

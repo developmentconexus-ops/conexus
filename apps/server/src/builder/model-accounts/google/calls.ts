@@ -10,8 +10,6 @@ import type { Process, Deps as ProcessDeps } from './google.ts'
 import { end, launch, loginFileOf } from './google.ts'
 import type { GoogleAccount } from './port.ts'
 
-const IDLE_MS = 10 * 60 * 1000
-
 type Running = {
   process: Process
   account: GoogleAccount
@@ -20,7 +18,7 @@ type Running = {
   /** The calls running through the process now; it is idle only at none. */
   calls: number
 }
-type Deps = ProcessDeps & { database: Database; sealKeys: SealKeys; idleMs?: number }
+type Deps = ProcessDeps & { database: Database; sealKeys: SealKeys }
 
 /**
  * The login the process holds, written back sealed when CLIProxy refreshed it, at the revision the
@@ -46,12 +44,12 @@ async function resealed(deps: Deps, running: Running): Promise<void> {
 /**
  * Google's calls of an account through CLIProxyAPI (decision 0049, criterion 29): one process per
  * account, started on its first call and reused, on 127.0.0.1 with a key of its own and its login
- * in a folder only the Hub reads (C57, S36). It stops once no call has run for `idleMs`, counted
+ * in a folder only the Hub reads (C57, S36). It stops once no call has run for `idleSeconds`, counted
  * from the last call's end, and when `stop()` runs at the program's end, the login resealed first
  * (S32), the folder removed.
  */
 export function googleCalls(deps: Deps) {
-  const idleMs = deps.idleMs ?? IDLE_MS
+  const idleMs = deps.cliProxy.idleSeconds * 1000
   const running = new Map<ModelAccountId, Promise<Running>>()
 
   async function close(id: ModelAccountId, found: Promise<Running>) {

@@ -2099,5 +2099,71 @@
       "file": "src/builder/machine/machine-e2b.test.ts",
       "name": "máquina: depois de um Release, mata só as da conversa de outro template ou sem template, e guarda a do template do Hub"
     }
+  },
+  {
+    "id": "assistant-guard-controller-kind",
+    "file": "apps/server/src/builder/conversation/guard.ts",
+    "find": " || owner.kind !== controllerId",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/conversation/guard.test.ts",
+      "name": "o Assistente: as rotas do Mastra"
+    }
+  },
+  {
+    "id": "assistant-guard-asker",
+    "file": "apps/server/src/builder/conversation/guard.ts",
+    "find": "  else await admittedAsker(deps.mayAsk, { person, companyId })\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/conversation/guard.test.ts",
+      "name": "o Assistente: as rotas do Mastra"
+    }
+  },
+  {
+    "id": "assistant-routes-ask",
+    "file": "apps/server/src/builder/assistant/routes.ts",
+    "find": "    await deps.identity.admitMember({ tx, ...owner, action: 'askAssistant' })\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/assistant/routes.test.ts",
+      "name": "criar: um modelo sem conta"
+    }
+  },
+  {
+    "id": "assistant-routes-own-thread",
+    "file": "apps/server/src/builder/assistant/routes.ts",
+    "find": "getThreadById({ threadId: conversationId, resourceId })",
+    "replace": "getThreadById({ threadId: conversationId })",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/assistant/routes.test.ts",
+      "name": "trocar as ligações"
+    }
+  },
+  {
+    "id": "assistant-routes-offered-only",
+    "file": "apps/server/src/builder/assistant/routes.ts",
+    "find": "  return offered.flatMap((each) => (wanted.has(each.connectionId) ? [each.connectionId] : []))\n",
+    "replace": "  return [...wanted]\n",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/assistant/routes.test.ts",
+      "name": "criar: com o modelo padrão"
+    }
+  },
+  {
+    "id": "assistant-release-company-mark",
+    "file": "apps/server/src/builder/assistant/release.ts",
+    "find": "    [SESSION_MARK.company]: scope.companyId,\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/assistant/release.test.ts",
+      "name": "remover a empresa apaga"
+    }
   }
 ]

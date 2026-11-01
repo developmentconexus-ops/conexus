@@ -152,9 +152,13 @@ function conversationIdOf(url: string): string {
   return url.slice(url.lastIndexOf('/') + 1)
 }
 
-/** Where Mastra's routes serve the conversation's session (`guard.ts`). */
+/**
+ * Where Mastra's routes serve the conversation's session (`guard.ts`): under the Assistant's
+ * controller for a conversation of the Assistant's routes, the Builder's for any other.
+ */
 export function sessionUrl(url: string): string {
-  return `/api/builder/agent-controller/builder/sessions/${conversationIdOf(url)}`
+  const controller = url.includes('/assistant/conversations/') ? 'assistant' : 'builder'
+  return `/api/builder/agent-controller/${controller}/sessions/${conversationIdOf(url)}`
 }
 
 /** The person's message, through Mastra's own route, as the screen sends it. */
