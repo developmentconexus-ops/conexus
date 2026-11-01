@@ -32,7 +32,7 @@ Sankhya em "Matriz" e "Filial", Mercado Livre em "Loja"; o Projeto "Vendas" rece
 6. No tema escuro, o mesmo. O Bruno (membro) vê o Início dele, no visual novo.
 
 **O que você faz, e quando.**
-- **No começo:** aprova esta página e responde A e B.
+- **No começo:** aprova esta página. A e B já estão respondidas ("A1 B1", 2026-11-01).
 - **No fim:** faz o roteiro no computador e no celular, diz o que viu e aprova os textos das telas.
 
 **O que muda no cartão da 24.1.** A barra embaixo da caixa sai. A escolha das ferramentas e a do
@@ -62,8 +62,8 @@ que começou.
 
 **As decisões suas nesta etapa.**
 
-**A. Onde a etapa entra no roteiro.**
-- **A1 (recomendo):** logo depois da 24.2. As telas da 24.2 (as Automações e o sino, no pull request
+**A. Onde a etapa entra no roteiro.** Decidida: A1 ("A1 B1", 2026-11-01).
+- **A1 (escolhida):** logo depois da 24.2. As telas da 24.2 (as Automações e o sino, no pull request
   https://github.com/developmentconexus-ops/conexus/pull/533) já estão prontas e mexem nos mesmos
   arquivos que a Pauta troca: a caixa, a barra, o Início e a barra lateral. Com a A1, elas entram
   como estão, e a Pauta leva o sino e as Automações para o trilho uma vez só. As unidades U1 e U2
@@ -73,10 +73,10 @@ que começou.
 - Veredito: nativo nos dois (a regra L1, uma etapa por vez). Exemplo da A1: a 24.2 é usada por você
   no visual de hoje; dias depois, a Pauta troca o visual inteiro, sino incluído.
 
-**B. Onde mora o DESIGN.md.** Hoje o `DESIGN.md` da raiz é só um atalho para o guia de desenho. O
+**B. Onde mora o DESIGN.md.** Decidida: B1 ("A1 B1", 2026-11-01). Hoje o `DESIGN.md` da raiz é só um atalho para o guia de desenho. O
 guia só pode mudar entre duas etapas (regra L20). Mas as cores dele têm de mudar junto com o código
 das cores, e a U1 cria uma conferência que recusa qualquer diferença entre os dois.
-- **B1 (recomendo):** o `DESIGN.md` da raiz vira o documento completo da Pauta, como o Claude
+- **B1 (escolhida):** o `DESIGN.md` da raiz vira o documento completo da Pauta, como o Claude
   Design faz: cores, fontes, medidas, sombras e cada peça. Ele muda junto com o código, conferido.
   O guia fica só com as regras e aponta para ele. A lista de peças de hoje
   (`docs/reference/components.md`) entra no `DESIGN.md` e sai, para haver um lugar só.

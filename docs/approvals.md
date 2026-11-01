@@ -434,3 +434,5 @@ Em 2026-11-01, às capturas da Pauta: "Ficou boa a versão do layout". À linha 
 Em 2026-11-01, à pergunta se o modelo pode ser trocado dentro de uma conversa do Assistente ((a) sim, como no Builder; (b) só para leitura; (c) só no Início): "A".
 
 Em 2026-11-01, à pergunta se aprova a Pauta revisada, para entrar por cartão próprio com os primeiros consertos da auditoria do front-end: "Aprovo". O cartão é `docs/steps/e133-pauta.md`; a aprovação da página dele, com o commit, vem numa linha própria quando ele a ler.
+
+Em 2026-11-01, às duas decisões do cartão da 13.3 (A, onde a etapa entra; B, onde mora o DESIGN.md): "A1 B1". A 13.3 entra logo depois da 24.2, e o `DESIGN.md` da raiz vira o documento completo da Pauta, conferido contra o código, com o guia de desenho só com as regras. A página do cartão ainda não foi aprovada.
