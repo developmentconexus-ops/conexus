@@ -15,7 +15,7 @@ import { HANDOFF_UNCONFIRMED } from './src/builder/conversation/text.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import {
   companies,
-  OWNER,
+  MEMBER,
   PROJECT_ID,
   PROJECT_NAME,
   projectsPage,
@@ -23,8 +23,8 @@ import {
 } from './sweep-replies.ts'
 import { sessionReplies } from './sweep-session.ts'
 
-// Início in a real browser: one company Ana owns, its Início in the company's frame.
-const HOUSE = companies([{ name: 'Empresa Teste', role: 'owner' }], false)
+// Início in a real browser: one company Ana is a member of, whose Início asks the Builder in the company's frame.
+const HOUSE = companies([{ name: 'Empresa Teste', role: 'member' }], false)
 const COMPANY_ID = '0'.repeat(32)
 
 const harness = createHarness(import.meta.dirname)
@@ -113,7 +113,7 @@ const CREATED_AT = '2026-10-27T12:00:00.000Z'
 /** Início creates the Projeto and its conversation, which opens and sends; `sent` holds that send. */
 function starting(sent: Promise<unknown>): Replies {
   return {
-    ...OWNER,
+    ...MEMBER,
     ...projectsPage(COMPANY.id),
     ...startsOn(COMPANY.id),
     [`POST /api/companies/${COMPANY.id}/projects`]: ok(createProject, {

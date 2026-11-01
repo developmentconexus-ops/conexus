@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { ANA } from '../../hub/identity/test-hub.ts'
+import { hubBeside } from './test-beside.ts'
 import {
   conversing,
   endOf,
   holding,
-  hubBeside,
   PARTIAL,
   sent,
   started,

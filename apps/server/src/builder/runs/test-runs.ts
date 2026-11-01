@@ -5,8 +5,16 @@ import type { Config } from '../../platform/config.ts'
 import { silent } from '../../platform/test-database.ts'
 import type { GitCopy, Repository, Sha } from '../git/public.ts'
 import { openRepository, restoreGuarded } from '../git/public.ts'
-import { createMachines } from '../machine/public.ts'
-import { INSTALLATION, localKit, newControl, TEMPLATE } from '../machine/test-machine.ts'
+import type { AssistantMachine } from '../machine/public.ts'
+import { createMachines, MARK } from '../machine/public.ts'
+import {
+  INSTALLATION,
+  killByMark,
+  killStaleOf,
+  localKit,
+  newControl,
+  TEMPLATE,
+} from '../machine/test-machine.ts'
 
 /** A bucket of memory: puts that fail on demand, and what it holds, by key. */
 export function memoryCopy() {
@@ -71,6 +79,34 @@ function withKnobs(real: Repository, knobs: Knobs): Repository {
   }
 }
 
+/**
+ * The Assistant's machines as doubles: a folder of this computer of their own, which a test steers
+ * through `control` and whose killed conversations `killed` lists.
+ */
+function testAssistantMachines(folder: string) {
+  const assistantFolder = join(folder, 'assistant')
+  const control = newControl()
+  const killed: ConversationId[] = []
+  // The installation's marks, as `builderPortsOf` makes them: the machines carry them and the kill looks for them.
+  const mark = { [MARK.origin]: INSTALLATION, conexus_probe: 'marks' }
+  const kill = killByMark(control, mark)
+  const deps: AssistantMachine = {
+    kit: localKit(assistantFolder, control),
+    api: {
+      kill: async (conversationId) => {
+        killed.push(conversationId)
+        return kill(conversationId)
+      },
+      killStale: killStaleOf(control),
+    },
+    template: TEMPLATE,
+    installation: INSTALLATION,
+    mark,
+    workFolder: join(assistantFolder, 'work'),
+  }
+  return { deps, control, killed, folder: assistantFolder }
+}
+
 /** The Builder's Git and machines as doubles (T14): the repository is real, on the test config's
  * folder; the machine is a folder of this computer (`localKit`), whose start and outcome a test
  * sets through `control`; the bucket is `memoryCopy`.
@@ -129,8 +165,11 @@ export function testBuilderPorts(
     }
     return machines
   }
+  const assistantMachines = testAssistantMachines(folder)
   return {
     machinesOf,
+    assistantMachine: assistantMachines.deps,
+    assistantMachines,
     repository,
     copy: bucket.copy,
     bucket,

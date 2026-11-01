@@ -17,7 +17,8 @@ import { ACCEPT, useAttachments } from './attachments.ts'
 import type { Draft } from './draft.ts'
 import { chipOf } from './messages.ts'
 import { FileChip } from './person-turn.tsx'
-import { dictationText, NO_SECRETS, REFUSALS, STEER_PLACEHOLDER } from './text.ts'
+import { useRoom } from './room.ts'
+import { dictationText, NO_SECRETS, REFUSALS, steerPlaceholderText } from './text.ts'
 
 /** The form sticks to the bottom and clears the home indicator. */
 const FORM =
@@ -167,6 +168,17 @@ function useDictation(draft: Draft, setPhrase: (phrase: string | null) => void) 
   }
 }
 
+/** What the empty box says: the steering words while the agent answers, else the screen's own or the conversation's. */
+function usePlaceholder(answering: boolean, own: string | undefined): string {
+  const { agent } = useRoom()
+  return answering ? steerPlaceholderText(agent) : (own ?? 'Escreva sua mensagem')
+}
+
+/** The box's name for a screen reader: whom the message goes to. */
+function Subject() {
+  return `Mensagem para o ${useRoom().agent}`
+}
+
 /**
  * The field and its action row, at every width: on the left **+**, the model's button and the memory
  * ring, and on the right the microphone and the round button, which is **Parar** while the Builder
@@ -206,6 +218,7 @@ export function Composer(props: {
   const sending = useRef(false)
   const { phrase, setPhrase, addFiles, removeFile } = usePhrase(attachments)
   const dictation = useDictation(draft, setPhrase)
+  const placeholder = usePlaceholder(props.answering, props.placeholder)
 
   /** One send at a time: a second Enter or click before the route answers would send it again (Factory clears its field before sending). */
   async function send() {
@@ -246,16 +259,14 @@ export function Composer(props: {
         className="rounded-composer data-busy:working-ring"
       >
         <Label htmlFor="message" className="sr-only">
-          Mensagem para o Builder
+          <Subject />
         </Label>
         <Attached attachments={attachments} onRemove={removeFile} />
         <InputGroupTextarea
           id="message"
           ref={props.field}
           value={dictation.shown}
-          placeholder={
-            props.answering ? STEER_PLACEHOLDER : (props.placeholder ?? 'Escreva sua mensagem')
-          }
+          placeholder={placeholder}
           readOnly={dictation.listening}
           onChange={(event) => draft.change(event.target.value)}
           onKeyDown={onKeyDown}

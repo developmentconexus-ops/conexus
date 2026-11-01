@@ -28,11 +28,13 @@ type Phase =
 
 const FRAME = 'mx-auto flex w-full max-w-[46rem] flex-col'
 
+type Example = { readonly label: string; readonly text: string }
+
 /** A chip under the box: a tap puts its words in the box and sends nothing. */
-function Examples(props: { onPick: (text: string) => void }) {
+function Examples(props: { examples: readonly Example[]; onPick: (text: string) => void }) {
   return (
     <ul aria-label="Exemplos" className="flex flex-wrap justify-center gap-sm">
-      {EXAMPLES.map((example) => (
+      {props.examples.map((example) => (
         <li key={example.label}>
           <Button
             onClick={() => props.onPick(example.text)}
@@ -126,6 +128,7 @@ function Naming(props: {
   picked: { model: ModelId; effort: Effort }
   onPhase: (phase: Phase) => void
   onOpened: () => void
+  back?: string
 }) {
   const { companyId, phase } = props
   const { outgoing } = phase
@@ -142,7 +145,7 @@ function Naming(props: {
           databaseReady={databaseReady}
           locked={phase.kind === 'STARTING' ? phase.project.name : null}
           idle="Criar e começar"
-          back="Voltar"
+          back={props.back ?? 'Voltar'}
           onCreated={async (project) => {
             props.onPhase({ kind: 'STARTING', outgoing, project })
             await created(project, outgoing)
@@ -162,6 +165,71 @@ function Naming(props: {
 }
 
 /**
+ * The box of a first request, with the model's button and no memory, and examples under it: the
+ * Builder's Início, and the Assistant's. `onSend` takes the request out of the box; the words stay
+ * in the draft until its conversation opens (criterion 12).
+ */
+export function StartBox(props: {
+  draft: ReturnType<typeof useDraft>
+  placeholder: string
+  /** Chips under the bar; none draws nothing. */
+  examples: readonly Example[]
+  picked: { model: ModelId; effort: Effort }
+  onPick: (picked: { model: ModelId; effort: Effort }) => void
+  providers: ReturnType<typeof usePicked>['providers']
+  /** False while something the request needs has not arrived: **Enviar** waits. */
+  canSend?: boolean
+  onSend: (outgoing: Outgoing) => Promise<boolean>
+  /** Under the box, before the examples. */
+  bar?: ReactNode
+}): ReactNode {
+  const { draft } = props
+  const field = useRef<HTMLTextAreaElement>(null)
+  return (
+    <div className={`${FRAME} gap-md`}>
+      <div className="md:[&_textarea]:min-h-20 [&_textarea]:min-h-16">
+        <Composer
+          answering={false}
+          canSend={props.canSend ?? true}
+          draft={draft}
+          field={field}
+          placeholder={props.placeholder}
+          onSend={props.onSend}
+          onStop={() => undefined}
+          picker={
+            <ComposerModelPicker
+              providers={props.providers}
+              value={props.picked}
+              heading="Modelo do pedido"
+              onChange={props.onPick}
+            />
+          }
+        />
+      </div>
+      {props.bar}
+      {props.examples.length > 0 && (
+        <Examples
+          examples={props.examples}
+          onPick={(text) => {
+            draft.change(text)
+            field.current?.focus()
+          }}
+        />
+      )}
+    </div>
+  )
+}
+
+/** The notice that takes the box's place when the person has no model account to ask with. */
+export function StartWithoutAccount({ companyId }: { companyId: CompanyId }): ReactNode {
+  return (
+    <div className={`${FRAME} rounded-composer border border-line bg-surface p-lg`}>
+      <NoAccount companyId={companyId} text={START_NO_ACCOUNT} action="button" />
+    </div>
+  )
+}
+
+/**
  * "O que vamos construir?" at work: the conversation's box, with the model's button and no memory,
  * and three examples under it. **Enviar** puts the request in the box's place with the name of its
  * Projeto; **Criar e começar** creates the Projeto, then its conversation, which opens and sends the
@@ -170,15 +238,9 @@ function Naming(props: {
 export function Start({ companyId }: { companyId: CompanyId }): ReactNode {
   const { picked, setPicked, providers } = usePicked(companyId)
   const draft = useDraft(`start:${companyId}`)
-  const field = useRef<HTMLTextAreaElement>(null)
   const [phase, setPhase] = useState<Phase>({ kind: 'WRITING' })
 
-  if (picked === null)
-    return (
-      <div className={`${FRAME} rounded-composer border border-line bg-surface p-lg`}>
-        <NoAccount companyId={companyId} text={START_NO_ACCOUNT} action="button" />
-      </div>
-    )
+  if (picked === null) return <StartWithoutAccount companyId={companyId} />
 
   if (phase.kind !== 'WRITING')
     return (
@@ -192,37 +254,48 @@ export function Start({ companyId }: { companyId: CompanyId }): ReactNode {
     )
 
   return (
-    <div className={`${FRAME} gap-md`}>
-      <div className="md:[&_textarea]:min-h-20 [&_textarea]:min-h-16">
-        <Composer
-          answering={false}
-          canSend
-          draft={draft}
-          field={field}
-          placeholder={START_PLACEHOLDER}
-          onSend={(outgoing) => {
-            // The request stays in the draft until its conversation opens (criterion 12).
-            draft.restore(outgoing)
-            setPhase({ kind: 'NAMING', outgoing })
-            return Promise.resolve(true)
-          }}
-          onStop={() => undefined}
-          picker={
-            <ComposerModelPicker
-              providers={providers}
-              value={picked}
-              heading="Modelo do pedido"
-              onChange={setPicked}
-            />
-          }
-        />
-      </div>
-      <Examples
-        onPick={(text) => {
-          draft.change(text)
-          field.current?.focus()
-        }}
-      />
-    </div>
+    <StartBox
+      draft={draft}
+      placeholder={START_PLACEHOLDER}
+      examples={EXAMPLES}
+      picked={picked}
+      onPick={setPicked}
+      providers={providers}
+      onSend={(outgoing) => {
+        // The request stays in the draft until its conversation opens (criterion 12).
+        draft.restore(outgoing)
+        setPhase({ kind: 'NAMING', outgoing })
+        return Promise.resolve(true)
+      }}
+    />
+  )
+}
+
+/**
+ * **Criar app** (step 24.1, U4): the Assistant's summary of a need, with the name of the new Projeto
+ * under it. **Criar e começar** makes the Projeto and opens its Builder's conversation with the
+ * summary sent once; **Cancelar** creates nothing.
+ */
+export function CreateApp(props: {
+  companyId: CompanyId
+  summary: string
+  onClose: () => void
+}): ReactNode {
+  const { companyId } = props
+  const { picked } = usePicked(companyId)
+  const [phase, setPhase] = useState<Sent>({
+    kind: 'NAMING',
+    outgoing: { content: props.summary, files: [] },
+  })
+  if (picked === null) return <StartWithoutAccount companyId={companyId} />
+  return (
+    <Naming
+      companyId={companyId}
+      phase={phase}
+      picked={picked}
+      back="Cancelar"
+      onPhase={(next) => (next.kind === 'WRITING' ? props.onClose() : setPhase(next))}
+      onOpened={props.onClose}
+    />
   )
 }

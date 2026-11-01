@@ -3,6 +3,7 @@ import { BUILDER_TOOL } from '@conexus/hub-api'
 import type { ToolsInput } from '@mastra/core/agent'
 import type { RequestContext } from '@mastra/core/request-context'
 import { createTool } from '@mastra/core/tools'
+import type { WorkspaceFilesystem } from '@mastra/core/workspace'
 import { z } from 'zod'
 import type { Connectors } from '../../hub/connectors/public.ts'
 import { Failure } from '../../platform/failure.ts'
@@ -11,6 +12,8 @@ export type BuilderConnectors = Connectors['builder']
 export type GrantedConnection = Awaited<ReturnType<BuilderConnectors['granted']>>[number]
 type Notes = Awaited<ReturnType<BuilderConnectors['notes']>>
 type Answer = Awaited<ReturnType<BuilderConnectors['read']>>
+/** An OK read that also carries the connector's answer before the cut: the Assistant's, for its machine. */
+type WholeAnswer = Extract<Answer, { kind: 'OK' }> & { whole: unknown }
 type Saved = Awaited<ReturnType<BuilderConnectors['saveNote']>>
 
 /** Who asks, and the run the port counts the 50 calls by, known only when a tool runs. */
@@ -29,7 +32,9 @@ export type ConnectorAccess = {
   read(
     call: { connectionId: ConnectionId; operation: string; input: unknown },
     requestContext: RequestContext,
-  ): Promise<Answer>
+  ): Promise<Answer | WholeAnswer>
+  /** With a machine, the path (inside its folder) the turn's next read is saved whole at. */
+  savedAt?(requestContext: RequestContext): string
   notes(connectionId: ConnectionId): Promise<Notes>
   wording: { whose: string; limit: string }
 }
@@ -104,6 +109,28 @@ function describeReads(connections: readonly Connection[]): string {
     .join('\n')
 }
 
+/**
+ * With a machine, the read's whole answer is written at `path` for the model's code to read, and
+ * the model gets the cut with that path; a machine that does not start leaves the cut with the
+ * failure (`saved: false`), for the model to say.
+ */
+async function saveWhole<T extends object>(
+  files: WorkspaceFilesystem,
+  path: string,
+  whole: unknown,
+  cut: T,
+) {
+  try {
+    await files.writeFile(path, JSON.stringify(whole), { recursive: true })
+  } catch (error) {
+    if (error instanceof Failure && error.code === 'MACHINE_UNAVAILABLE') {
+      return { ...cut, saved: false, reason: error.code }
+    }
+    throw error
+  }
+  return { ...cut, file: path }
+}
+
 function readTool(access: ConnectorAccess): ToolsInput {
   const { connections } = access
   const operations = [
@@ -125,14 +152,18 @@ function readTool(access: ConnectorAccess): ToolsInput {
         operation: z.enum([first, ...rest]),
         input: z.record(z.string(), z.unknown()),
       }),
-      execute: async ({ connection, operation, input }, { requestContext }) => {
+      execute: async ({ connection, operation, input }, { requestContext, workspace }) => {
         const [connector, ...id] = operation.split('.')
         const found = named(connections, connection, connector)
         if (found === undefined || requestContext === undefined) return NOT_GRANTED
-        return access.read(
+        const answered = await access.read(
           { connectionId: found.connectionId, operation: id.join('.'), input },
           requestContext,
         )
+        if (answered.kind !== 'OK' || !('whole' in answered)) return answered
+        const { whole, ...cut } = answered
+        if (workspace?.filesystem === undefined || access.savedAt === undefined) return cut
+        return saveWhole(workspace.filesystem, access.savedAt(requestContext), whole, cut)
       },
     }),
   }

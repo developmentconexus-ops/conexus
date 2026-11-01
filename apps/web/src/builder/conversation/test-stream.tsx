@@ -1,4 +1,4 @@
-import { fireEvent } from '@testing-library/react'
+import { act, fireEvent, screen } from '@testing-library/react'
 import { HttpResponse } from 'msw'
 import { z } from 'zod'
 import type { Stored } from './messages.ts'
@@ -129,4 +129,34 @@ export function attach(file: File) {
 /** Mastra's route: `limit` serves the newest N, oldest first. */
 export function newest(all: Stored[], { url }: Request) {
   return all.slice(-Number(new URL(url).searchParams.get('limit')))
+}
+
+/** jsdom lays nothing out: the viewport is given a height, and the reader a place, to scroll from. */
+function scrollerAt(top: number) {
+  const viewport = screen.getByLabelText('Rolagem da conversa')
+  let at = top
+  Object.defineProperties(viewport, {
+    scrollHeight: { value: 1000, configurable: true },
+    clientHeight: { value: 100, configurable: true },
+    scrollTop: {
+      get: () => at,
+      set: (to: number) => {
+        at = to
+      },
+      configurable: true,
+    },
+  })
+  return (to: number) => {
+    act(() => {
+      at = to
+      fireEvent.scroll(viewport)
+    })
+  }
+}
+
+/** The reader scrolls up from the middle of the conversation to its top. */
+export function reachTop() {
+  const scrollTo = scrollerAt(500)
+  scrollTo(500)
+  scrollTo(0)
 }

@@ -1,6 +1,12 @@
 import { readFileSync } from 'node:fs'
 import type { ConversationId, Overview } from '@conexus/hub-api'
-import { ASSISTANT_CONTROLLER, ASSISTANT_TOOL, BUILDER_TOOL, SKILL_TOOLS } from '@conexus/hub-api'
+import {
+  ASSISTANT_CONTROLLER,
+  ASSISTANT_TOOL,
+  BUILDER_TOOL,
+  SKILL_TOOLS,
+  WORKSPACE_TOOL,
+} from '@conexus/hub-api'
 import { Agent } from '@mastra/core/agent'
 import type { BuiltinToolId } from '@mastra/core/agent-controller'
 import { AgentController } from '@mastra/core/agent-controller'
@@ -23,6 +29,7 @@ import {
   toolsOf,
   workspaceMetadataLive,
 } from '../conversation/public.ts'
+import type { AssistantMachine } from '../machine/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import {
   accountErrorProcessors,
@@ -34,13 +41,17 @@ import type { Owner, ScopeOf } from './context.ts'
 import { sessionScopes } from './context.ts'
 import type { Speakers } from './instructions.ts'
 import { assistantInstructions } from './instructions.ts'
+import type { AssistantMachines } from './machine.ts'
+import { createAssistantMachines } from './machine.ts'
 import { assistantMemory } from './memory.ts'
 import type { OpenDeps } from './open.ts'
 import { admitted, asked, openConversation } from './open.ts'
 import { overviewTool } from './overview.ts'
 import type { AssistantProjects } from './ports.ts'
+import { proposeAppTool } from './propose.ts'
 import { releaseConversations } from './release.ts'
 import { registerAssistantRoutes } from './routes.ts'
+import { showFileTool } from './show-file.ts'
 import { assistantTurns, turnEnd, turnKeyIn } from './turn.ts'
 
 type AssistantConnectors = Connectors['assistant']
@@ -62,9 +73,10 @@ const BUILTIN_TOOLS: BuiltinToolId[] = [
  * controller filters the agent's tools by it; `noteSave: false` below only leaves the save unbuilt.
  */
 const AVAILABLE_TOOLS = [
+  ...Object.values(WORKSPACE_TOOL),
   BUILDER_TOOL.connectorRead,
   BUILDER_TOOL.connectorNotes,
-  ASSISTANT_TOOL.overview,
+  ...Object.values(ASSISTANT_TOOL),
   BUILDER_TOOL.webFetch,
   BUILDER_TOOL.webSearch,
   ...SKILL_TOOLS,
@@ -86,6 +98,8 @@ type Deps = {
   connectors: AssistantConnectors
   projects: AssistantProjects
   queue: QueueDeps
+  /** The conversations' machines at the provider (step 24.1, U3): the Builder's kit and API, its template and installation. */
+  machine: AssistantMachine
   log: FailureLog
 }
 
@@ -152,6 +166,7 @@ function accessOf(
 ): ConnectorAccess {
   return {
     connections: chosen,
+    savedAt: (requestContext) => readsFileOf(requestContext),
     async read(call, requestContext) {
       const turn = turnKeyIn(requestContext)
       if (turn === undefined) {
@@ -159,14 +174,24 @@ function accessOf(
           details: { reason: 'CONNECTOR_TOOL_WITHOUT_TURN' },
         })
       }
-      const answered = await deps.connectors.read(scope, { ...call, turn })
-      if (answered.kind !== 'OK') return answered
-      const { whole: _whole, ...cut } = answered
-      return cut
+      return deps.connectors.read(scope, { ...call, turn })
     },
     notes: (connectionId) => deps.connectors.notes(scope, connectionId),
     wording: { whose: 'this conversation chose', limit: '50 connector calls per answer' },
   }
+}
+
+const readsOfRun = new WeakMap<RequestContext, number>()
+
+/** `reads/<turn>-<n>.json`: the turn's first 8 characters and the read's number in the run, so one turn never writes over another. */
+function readsFileOf(requestContext: RequestContext): string {
+  const turn = turnKeyIn(requestContext)
+  if (turn === undefined) {
+    throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'CONNECTOR_TOOL_WITHOUT_TURN' } })
+  }
+  const n = (readsOfRun.get(requestContext) ?? 0) + 1
+  readsOfRun.set(requestContext, n)
+  return `reads/${turn.slice(0, 8)}-${n}.json`
 }
 
 type Offered = (requestContext: RequestContext) => Promise<readonly AssistantConnection[]>
@@ -196,6 +221,7 @@ function assistantAgent(
     memory: ReturnType<typeof assistantMemory>
     turns: ReturnType<typeof assistantTurns>
     scopeOf: ScopeOf
+    machines: AssistantMachines
   },
 ) {
   const { queue } = deps
@@ -215,6 +241,7 @@ function assistantAgent(
         chosen,
       })),
   })
+  const showFile = showFileTool(parts.machines)
   return new Agent({
     id: ASSISTANT_CONTROLLER,
     name: 'Assistant',
@@ -230,6 +257,9 @@ function assistantAgent(
       return {
         ...toolsOf(sessionModel(requestContext)),
         [ASSISTANT_TOOL.overview]: overview,
+        [ASSISTANT_TOOL.showFile]: showFile,
+        // Creating an app is the company's: a conversation inside a Projeto talks about that Projeto.
+        ...(scope?.place.kind === 'COMPANY' ? { [ASSISTANT_TOOL.proposeApp]: proposeAppTool } : {}),
         ...(scope === undefined
           ? {}
           : connectorTools(accessOf(deps, scope, chosen), { noteSave: false })),
@@ -263,14 +293,17 @@ export function createAssistant(deps: Deps) {
   const memory = assistantMemory({ storage, queue })
   const chosen = chosenConnections(deps.database)
   const scopeOf = sessionScopes({ chosenOf: chosen.of })
-  const turns = assistantTurns({ queue, scopeOf })
-  const agent = assistantAgent(deps, { memory, turns, scopeOf })
+  const machines = createAssistantMachines({ ...deps.machine, scopeOf, log: deps.log })
+  const turns = assistantTurns({ queue, scopeOf, machines, log: deps.log })
+  const agent = assistantAgent(deps, { memory, turns, scopeOf, machines })
   const controller = new AgentController({
     id: ASSISTANT_CONTROLLER,
     storage,
     memory,
     agent,
     modes: [{ id: MODE, availableTools: AVAILABLE_TOOLS }],
+    // The conversation's machine (Factory `session-sandbox.ts:29-36`); none outside a conversation.
+    workspace: ({ requestContext }) => machines.workspace(requestContext),
     disableBuiltinTools: BUILTIN_TOOLS,
     // Decision 0053: nothing waits to be approved; the systems get no write.
     initialState: { yolo: true },
@@ -290,11 +323,12 @@ export function createAssistant(deps: Deps) {
     /** Whether the conversation already holds a question (`open.ts`). */
     asked: (owner: Owner, conversationId: ConversationId) => asked(memory, owner, conversationId),
     routes: (app: FastifyInstance) =>
-      registerAssistantRoutes(app, { ...deps, controller, memory, chosen }),
+      registerAssistantRoutes(app, { ...deps, controller, memory, chosen, machines }),
     release: (scope: ReleaseScope) =>
-      releaseConversations({ controller, memory, log: deps.log }, scope),
+      releaseConversations({ controller, memory, machines, log: deps.log }, scope),
     /** The memory's work after the runs, which `drain` stopped, before Mastra stops. */
     async close(): Promise<void> {
+      await machines.stopAll()
       await memory.settled()
     },
   })

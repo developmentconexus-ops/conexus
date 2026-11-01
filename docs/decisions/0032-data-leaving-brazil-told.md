@@ -2,7 +2,7 @@
 
 ## Context
 
-Data of the apps and the Hub stay in São Paulo; conversations go to the model vendor and code under construction to E2B. Excerpts read from the integrations a Projeto released go to the model vendor.
+Data of the apps and the Hub stay in São Paulo; conversations go to the model vendor and code under construction to E2B. Excerpts read from the integrations a Projeto released go to the model vendor. Rows the Assistant reads from a company's connections go to its conversation's machine on E2B, outside Brazil, for as long as the conversation exists.
 
 ## Decision
 

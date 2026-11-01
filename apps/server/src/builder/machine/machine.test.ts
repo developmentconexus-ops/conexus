@@ -20,6 +20,12 @@ import {
 
 const OWN = `conexus-${INSTALLATION}-${CONVERSATION}`
 
+test('máquina: a do Builder recebe só o registro do npm na lista de endereços, ao ligar e ao religar (17)', async (t) => {
+  const { open, control } = await world(t)
+  await (await open()).filesystem?.writeFile('a.ts', 'um\n')
+  assert.deepEqual(control.allowOut, [['registry.npmjs.org']])
+})
+
 test('máquina: a conversa sem máquina liga e copia o main; a achada pelo nome traz o main com a rede fechada e guarda o que o turno anterior não salvou; a que sumiu entre turnos volta nova, do main, sem frase', async (t) => {
   const { open, phases, control, machines, base } = await world(t)
   const first = await open()

@@ -124,9 +124,9 @@ export async function liveHub(
   const status = createStatus({ version: config.version, database: database.database })
   const sendMail = createMail({ config, log: silent })
   const identity = createIdentity({ database: database.database, config, log: silent, sendMail })
-  const { machinesOf, repository, copy, folder } = testBuilderPorts(config)
+  const { machinesOf, assistantMachine, repository, copy, folder } = testBuilderPorts(config)
   const subjects = subjectsOf({
-    ...{ machinesOf, repository, copy },
+    ...{ machinesOf, assistantMachine, repository, copy },
     database: database.database,
     mastraPool: database.mastraPool,
     config,
@@ -216,9 +216,11 @@ export async function signIn(page: Page, email: string, password: string) {
   await page.getByRole('button', { name: 'Entrar' }).click()
 }
 
-/** Início, once the company's page has opened (its title; the sidebar and the cards come with it). */
+/** Início, once the company's page has opened (its title, the Builder's for a member and the Assistant's for the rest; the sidebar and the cards come with it). */
 export async function waitForHome(page: Page) {
-  await page.getByRole('heading', { name: 'O que vamos construir?', exact: true }).waitFor()
+  await page
+    .getByRole('heading', { name: /^(O que vamos construir\?|Pergunte ou peça um app)$/ })
+    .waitFor()
 }
 
 /** Welcome step 1: the first owner of a company the Central made keeps the suggested nickname. */

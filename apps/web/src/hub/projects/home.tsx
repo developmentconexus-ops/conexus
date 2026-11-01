@@ -7,11 +7,16 @@ import { ProjectCards } from './project-cards.tsx'
 import { projectsQuery } from './queries.ts'
 
 /**
- * A company's Início (web W29): `aside` first, for what the company still needs, then "O que vamos
- * construir?" centred over `start`, the box that starts a Projeto, and the Projects below at the
- * page's width.
+ * A company's Início (web W29): `aside` first, for what the company still needs, then `title`
+ * centred over `start`, the box that starts a Projeto or a conversation, and the Projects below at
+ * the page's width.
  */
-export function Home(props: { companyId: CompanyId; aside?: ReactNode; start: ReactNode }) {
+export function Home(props: {
+  companyId: CompanyId
+  aside?: ReactNode
+  title: string
+  start: ReactNode
+}) {
   const { companyId } = props
   const { projects, next } = useSuspenseQuery(projectsQuery(companyId, undefined)).data
   return (
@@ -19,7 +24,7 @@ export function Home(props: { companyId: CompanyId; aside?: ReactNode; start: Re
       {props.aside}
       <section aria-labelledby="start-title" className="flex flex-col gap-lg">
         <PageTitle className="text-balance text-center text-display max-md:text-display-narrow">
-          <span id="start-title">O que vamos construir?</span>
+          <span id="start-title">{props.title}</span>
         </PageTitle>
         {props.start}
       </section>

@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { setTimeout as sleep } from 'node:timers/promises'
+import { hubBeside } from './test-beside.ts'
 import {
   conversing,
   endOf,
   holding,
-  hubBeside,
   PARTIAL,
   rolesAndParts,
   sent,

@@ -9,6 +9,7 @@ import {
   CLIENT_ID,
   central,
   companies,
+  MEMBER,
   OWNER,
   PROJECT_ID,
   PROJECT_NAME,
@@ -24,6 +25,12 @@ const SOURCE = `/api/companies/${COMPANY.id}/projects/${PROJECT_ID}/source`
 const VERSIONS = `${ABOUT}?part=versions`
 const OF_OWNER = { ...OWNER, ...projectsPage(COMPANY.id) }
 const NOBODY = { ...OWNER, ...projectsPage(COMPANY.id, { empty: true }), ...startsOn(COMPANY.id) }
+// Início of a member asks the Builder: the owner's asks the Assistant.
+const MEMBER_START = {
+  ...MEMBER,
+  ...projectsPage(COMPANY.id, { empty: true }),
+  ...startsOn(COMPANY.id),
+}
 const OF_MEMBER = { ...OWNER, ...projectsPage(COMPANY.id, { mayDelete: false }) }
 
 /** A file with a keyword, a string, a comment and a function, over four lines. */
@@ -96,7 +103,7 @@ export const PROJECT_STATES: State[] = [
     name: 'criar Projeto, nome repetido',
     path: HOME,
     replies: {
-      ...NOBODY,
+      ...MEMBER_START,
       [`POST /api/companies/${COMPANY.id}/projects`]: failure('PROJECT_NAME_TAKEN'),
     },
     settle: (p) => createRefused(p, 'Já existe um Projeto com esse nome nesta empresa.'),
@@ -105,7 +112,7 @@ export const PROJECT_STATES: State[] = [
     name: 'criar Projeto, banco em preparo',
     path: HOME,
     replies: {
-      ...NOBODY,
+      ...MEMBER_START,
       [`POST /api/companies/${COMPANY.id}/projects`]: failure('COMPANY_DATABASE_PREPARING'),
     },
     settle: async (page) => {

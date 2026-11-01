@@ -1,4 +1,4 @@
-import { CARD_TOOLS, CLOSED_TOOLS, TASK_TOOLS } from '@conexus/hub-api'
+import { ASSISTANT_TOOL, CARD_TOOLS, CLOSED_TOOLS, TASK_TOOLS } from '@conexus/hub-api'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, expect, test, vi } from 'vitest'
 import type { ToolItem } from './rows.ts'
@@ -173,10 +173,13 @@ test('escrever abre no arquivo escrito, cortado em 800 (Critério 8)', async () 
   )
 })
 
-test('cada ferramenta do conjunto fechado tem frase e abre no corpo da tabela (Critério 8)', () => {
+test('cada ferramenta do conjunto fechado e do Assistente tem frase e abre no corpo da tabela (Critério 8)', () => {
   const cards: readonly string[] = Object.values(CARD_TOOLS)
   const tasks: readonly string[] = TASK_TOOLS
-  const drawn = CLOSED_TOOLS.filter((name) => !cards.includes(name) && !tasks.includes(name))
+  const drawn = [
+    ...CLOSED_TOOLS.filter((name) => !cards.includes(name) && !tasks.includes(name)),
+    ...Object.values(ASSISTANT_TOOL),
+  ]
   expect(Object.keys(TOOLS).sort()).toEqual([...drawn].sort())
   for (const name of drawn) {
     const spec = specOf(name)

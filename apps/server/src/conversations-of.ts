@@ -7,7 +7,7 @@ import {
 } from './builder/automations/public.ts'
 import { createConversations, createMastraStorage } from './builder/conversation/public.ts'
 import type { openGoogleCalls } from './builder/model-accounts/public.ts'
-import type { Runs } from './builder/runs/public.ts'
+import type { AssistantMachine, Runs } from './builder/runs/public.ts'
 import { versionNumbersOf } from './hub/apps/public.ts'
 import type { Connectors } from './hub/connectors/public.ts'
 import type { IdentityPorts } from './hub/identity/public.ts'
@@ -33,6 +33,7 @@ export function conversationsOf(deps: {
   google: ReturnType<typeof openGoogleCalls>
   mastraPool: MastraPool
   runs: Runs
+  machine: AssistantMachine
   connectors: () => Connectors
   notify: Notify
   automationClock: Config['automationClock']
@@ -49,6 +50,7 @@ export function conversationsOf(deps: {
   }
   const assistant = createAssistant({
     ...{ storage, database, identity, queue, log },
+    machine: deps.machine,
     connectors: {
       connections: (scope) => deps.connectors().assistant.connections(scope),
       read: (scope, call) => deps.connectors().assistant.read(scope, call),

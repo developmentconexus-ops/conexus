@@ -16,8 +16,10 @@ test('a escolha no turno: numa conversa de Projeto, as duas leituras do Sankhya 
   const first = on.calls.at(2)
   const result = first?.texts.find((text) => text.includes('"kind":"OK"'))
   assert.ok(result !== undefined, first?.texts.join('\n'))
-  // The model reads the cut of the answer, never the door's whole answer beside it.
-  assert.deepEqual(Object.keys(JSON.parse(result)).sort(), ['complete', 'kind', 'value'])
+  // The model reads the cut of the answer and the file it was saved in, never the door's whole answer beside it.
+  const answered = JSON.parse(result)
+  assert.deepEqual(Object.keys(answered).sort(), ['complete', 'file', 'kind', 'value'])
+  assert.match(answered.file, /^reads\/[0-9a-f]{8}-1\.json$/)
   assert.equal(on.reads.length, 2)
   for (const read of on.reads) {
     assert.equal(read.connectionId, on.matriz)
@@ -35,7 +37,7 @@ test('a escolha no turno: numa conversa de Projeto, as duas leituras do Sankhya 
   assert.notEqual(on.reads[2]?.turn, on.reads[0]?.turn)
 })
 
-test('as ferramentas: o modelo do Assistente recebe só as de conector de leitura, a visão da empresa, as da web e as de skill', async (t) => {
+test('as ferramentas: o modelo do Assistente recebe as de conector de leitura, a visão da empresa, as da web, as de skill, a de mostrar arquivo e as da máquina do Builder, nenhuma a mais', async (t) => {
   const on = await assisting(t)
   const url = await created(on.hub, on.ana, on.assistant, { connections: [on.matriz] })
   const { say } = await talking(t, on.hub, on.ana, url)
@@ -46,12 +48,39 @@ test('as ferramentas: o modelo do Assistente recebe só as de conector de leitur
     'conexus_overview',
     'connector_notes',
     'connector_read',
+    'mastra_workspace_delete',
+    'mastra_workspace_edit_file',
+    'mastra_workspace_execute_command',
+    'mastra_workspace_file_stat',
+    'mastra_workspace_get_process_output',
+    'mastra_workspace_grep',
+    'mastra_workspace_kill_process',
+    'mastra_workspace_list_files',
+    'mastra_workspace_mkdir',
+    'mastra_workspace_read_file',
+    'mastra_workspace_write_file',
+    'propose_app',
+    'show_file',
     'skill',
     'skill_read',
     'skill_search',
     'web_fetch',
     'web_search',
   ])
+})
+
+test('as ferramentas: numa conversa de Projeto o modelo não recebe propose_app', async (t) => {
+  const on = await assisting(t)
+  const url = await created(on.hub, on.ana, on.assistant, {
+    projectId: on.projectId,
+    connections: [on.matriz],
+  })
+  const { say } = await talking(t, on.hub, on.ana, url)
+
+  assert.equal(endOf(await say('O que você pode fazer?')), 'complete')
+  const tools = [...(on.calls.at(0)?.tools ?? [])]
+  assert.equal(tools.includes('propose_app'), false)
+  assert.equal(tools.includes('show_file'), true)
 })
 
 test('a visão da empresa: os Projetos com o app, e as ligações que o lugar oferece com a escolha; numa conversa do Projeto a Filial não aparece', async (t) => {

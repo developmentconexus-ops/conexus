@@ -25,7 +25,7 @@ async function bar() {
   return within(await screen.findByRole('navigation', { name: 'Navegação' }))
 }
 
-test('dentro do Projeto a barra é a do Projeto: o nome com a troca, a empresa, Construir, Sobre, Quem usa o app, Integrações', async () => {
+test('dentro do Projeto a barra é a do Projeto: o nome com a troca, a empresa, Construir, Conversas, Sobre, Quem usa o app, Integrações', async () => {
   open(PROJECT)
   const rail = await bar()
   expect(
@@ -35,6 +35,7 @@ test('dentro do Projeto a barra é a do Projeto: o nome com a troca, a empresa, 
   expect(entries).toEqual([
     COMPANY.name,
     'Construir',
+    'Conversas',
     'Sobre',
     'Quem usa o app',
     'Integrações',

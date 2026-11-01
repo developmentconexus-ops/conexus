@@ -153,7 +153,7 @@ export const STATES: State[] = [
       ],
       true,
     ),
-    settle: (p) => waitFor(p, 'O que vamos construir?'),
+    settle: (p) => waitFor(p, 'Pergunte ou peça um app'),
   },
   {
     name: 'dono',

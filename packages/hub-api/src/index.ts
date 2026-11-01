@@ -50,20 +50,7 @@ export {
   publishAppVersion,
   VersionFileInput,
 } from './apps.ts'
-export {
-  ASSISTANT_CONTROLLER,
-  ASSISTANT_TOOL,
-  AssistantConversation,
-  AssistantConversationSummary,
-  AutomationId,
-  createAssistantConversation,
-  listAssistantConnections,
-  listAssistantConversations,
-  type Overview,
-  readAssistantConversation,
-  SessionConnection,
-  setAssistantConnections,
-} from './assistant.ts'
+export * from './assistant.ts'
 export * from './automations.ts'
 export { CAPACITY } from './capacity.ts'
 export {

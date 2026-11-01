@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { call } from '../../hub/identity/test-hub.ts'
+import { hubBeside } from './test-beside.ts'
 import {
   beside,
   conversing,
   endOf,
   holding,
-  hubBeside,
   messagesOf,
   PARTIAL,
   sent,

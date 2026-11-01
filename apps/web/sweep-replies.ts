@@ -6,6 +6,8 @@ import {
   getProject,
   getSession,
   getStatus,
+  listAssistantConnections,
+  listAssistantConversations,
   listClients,
   listCompanies,
   listCompanyAppAccess,
@@ -111,6 +113,14 @@ function companyPage(
     ...projectsPage(id),
     ...modelAccountsPage(id, role !== 'member'),
     ...connectionsPage(id, role !== 'member'),
+    // Início of the owner and the administrators asks the Assistant: the connections it offers and its conversations.
+    [`GET /api/companies/${id}/assistant/connections`]: ok(listAssistantConnections, {
+      connections: [],
+    }),
+    [`GET /api/companies/${id}/assistant/conversations`]: ok(listAssistantConversations, {
+      conversations: [],
+      next: { kind: 'END' },
+    }),
     [`GET /api/companies/${id}`]: ok(getCompany, { company, role, mayInviteAs }),
     [`GET /api/companies/${id}/members`]: ok(listMembers, {
       members: people.map((one) => ({ ...one, mayChangeTo: [...one.mayChangeTo] })),

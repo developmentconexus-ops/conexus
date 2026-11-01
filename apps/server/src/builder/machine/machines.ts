@@ -6,6 +6,7 @@ import type { TimedExec } from './check.ts'
 import { CHECK_PROGRAM, checkIn } from './check.ts'
 import type { Conflicts, Kit } from './kit.ts'
 import {
+  ALLOWED_HOSTS,
   APP_FOLDER,
   MARK,
   machineInstructions,
@@ -55,7 +56,7 @@ function restoreFailure(error: unknown): Failure | undefined {
   return undefined
 }
 
-async function within<T>(work: Promise<T>, ms: number): Promise<T> {
+export async function within<T>(work: Promise<T>, ms: number): Promise<T> {
   const budget = AbortSignal.timeout(ms)
   return Promise.race([
     work,
@@ -63,6 +64,26 @@ async function within<T>(work: Promise<T>, ms: number): Promise<T> {
       budget.addEventListener('abort', () => reject(new Error('machine start timed out'))),
     ),
   ])
+}
+
+/**
+ * The file tools' view of a machine: its commands, which wake it first (`ensure`), and its own file
+ * API. The Builder's machines and the Assistant's both build their `SandboxFilesystem` on it.
+ */
+export function execIn(kit: Kit, ensure: () => Promise<unknown>): SandboxExec {
+  const { sandbox } = kit
+  return {
+    id: sandbox.id,
+    get filesystem() {
+      return sandbox.filesystem
+    },
+    executeCommand: async (command, args, options) => {
+      await ensure()
+      const result = await sandbox.executeCommand?.(command, args, options)
+      if (result === undefined) throw new Error('the machine cannot run commands')
+      return result
+    },
+  }
 }
 
 class BuilderMachines implements Machines {
@@ -203,28 +224,12 @@ class BuilderMachines implements Machines {
     await this.seed(kit, session)
   }
 
-  /** The file tools' view of the machine: its commands, which wake it first, and its own file API. */
-  private execIn(session: Session): SandboxExec {
-    const { sandbox } = session.kit
-    return {
-      id: sandbox.id,
-      get filesystem() {
-        return sandbox.filesystem
-      },
-      executeCommand: async (command, args, options) => {
-        await this.ensure(session)
-        const result = await sandbox.executeCommand?.(command, args, options)
-        if (result === undefined) throw new Error('the machine cannot run commands')
-        return result
-      },
-    }
-  }
-
   async workspaceFor(input: Parameters<Machines['workspaceFor']>[0]) {
     const { companyId, projectId, conversationId, onPhase } = input
     const name = `conexus-${this.deps.installation}-${conversationId}`
     const kit = this.deps.kit({
       id: name,
+      allowOut: ALLOWED_HOSTS,
       metadata: {
         ...this.deps.mark,
         [MARK.company]: companyId,
@@ -248,7 +253,7 @@ class BuilderMachines implements Machines {
       instructions: { dynamicSandbox: () => machineInstructions(this.workdir, session.conflicts) },
       filesystem: new SandboxFilesystem({
         id: `conexus-fs-${conversationId}`,
-        sandbox: this.execIn(session),
+        sandbox: execIn(session.kit, () => this.ensure(session)),
         workdir: this.workdir,
       }),
       tools: {

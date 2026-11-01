@@ -14,7 +14,7 @@ import {
   resealModelAccounts,
   signInFlows,
 } from './builder/model-accounts/public.ts'
-import type { MachinesOf, RepositoryOf } from './builder/runs/public.ts'
+import type { AssistantMachine, MachinesOf, RepositoryOf } from './builder/runs/public.ts'
 import { builderPortsOf, createRuns } from './builder/runs/public.ts'
 import { conversationsOf } from './conversations-of.ts'
 import { firstPersonArguments } from './first-person-arguments.ts'
@@ -134,6 +134,7 @@ export function subjectsOf(deps: {
   cloudflare: CloudflareApps
   mastraPool: MastraPool
   machinesOf: MachinesOf
+  assistantMachine: AssistantMachine
   repository: RepositoryOf
   copy: GitCopy
   log: FailureLog
@@ -156,6 +157,7 @@ export function subjectsOf(deps: {
   const notifications = notificationsOf({ ...deps, identity, publicOrigin: config.publicOrigin })
   const { conversations, assistant, automations } = conversationsOf({
     ...{ database, identity, sealKeys, google, log, runs, mastraPool: deps.mastraPool },
+    machine: deps.assistantMachine,
     connectors: () => connectors,
     notify: notifications.notify,
     automationClock: config.automationClock,
