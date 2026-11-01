@@ -216,7 +216,7 @@ export function createBuilder(deps: {
       const web = toolsOf(sessionModel(requestContext))
       // The order of step 20 (criterion 13a): the model's request stays byte for byte the same.
       return {
-        web_fetch: web.web_fetch,
+        web_fetch: webFetchTool,
         [BUILDER_TOOL.check]: check,
         ...web,
         ...(ids === undefined
