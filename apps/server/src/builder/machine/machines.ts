@@ -25,6 +25,7 @@ import {
   conflictsOf,
   keepScript,
   outFile,
+  savedScript,
   seedFile,
   seedScript,
   syncScript,
@@ -265,7 +266,7 @@ class BuilderMachines implements Machines {
     const session = this.sessions.get(conversationId)
     if (session?.ready === undefined) return 'unchanged'
     const kit = await this.ensure(session)
-    if (session.lost) throw new Error('the machine died in the turn')
+    if (session.lost) throw new Failure('MACHINE_LOST')
     session.onPhase('saving')
     const result = await this.run(kit, collectScript(this.workdir, this.tmp, base))
     if (result.exitCode !== 0) throw new Error(`collect failed: ${result.stderr.slice(-500)}`)
@@ -283,6 +284,14 @@ class BuilderMachines implements Machines {
     const program = this.deps.checkProgram ?? CHECK_PROGRAM
     const exec: TimedExec = (script, timeoutMs) => this.run(kit, script, timeoutMs)
     return checkIn({ exec, program, workdir: this.workdir, log: this.deps.log })
+  }
+
+  async saved({ conversationId, version }: Parameters<Machines['saved']>[0]) {
+    const session = this.sessions.get(conversationId)
+    if (session === undefined) throw new Error('no turn holds the machine that saved')
+    const kit = await this.ensure(session)
+    const moved = await this.run(kit, savedScript(this.workdir, version))
+    if (moved.exitCode !== 0) throw new Error(`base not moved: ${moved.stderr.slice(-500)}`)
   }
 
   /** A machine whose comparison fails is taken as changed: the check that follows says why it cannot run. */

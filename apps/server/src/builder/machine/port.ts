@@ -40,13 +40,18 @@ export type Machines = {
   check(input: {
     conversationId: ConversationId
   }): Promise<Result<CheckReport, CheckPlatformFailed>>
+  /**
+   * The Hub saved `version`, the commit `collect` bundled: the machine's folder is measured from it
+   * from now on, so work another conversation saved after it is never taken for this machine's.
+   */
+  saved(input: { conversationId: ConversationId; version: Sha }): Promise<void>
   /** Whether the turn changed the app folder from the `main` it started from; a machine the turn never woke did not. */
   changed(input: { conversationId: ConversationId }): Promise<boolean>
   /** The version the last passing check left in the machine, read as the send takes it. */
   pack(input: { conversationId: ConversationId }): Promise<Result<VersionFolder, PackRefused>>
   /** Whether the conversation's turn used the machine: then there may be something to collect. */
   touched(conversationId: ConversationId): boolean
-  /** Ends the turn's use of the machine: its folder goes back to its base, and it pauses. Safe to repeat. */
+  /** Ends the turn's use of the machine: it pauses with its folder as the turn left it. Safe to repeat. */
   release(conversationId: ConversationId): Promise<void>
   kill: MachineApi['kill']
 }

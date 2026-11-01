@@ -198,6 +198,29 @@ test('máquina: um index.lock que um git morto deixou na pasta não prende a con
   assert.equal(await after.filesystem?.exists('b.ts'), true)
 })
 
+test('máquina: o lock do índice próprio da junção, que um git morto deixou, não prende a conversa: a religada o tira e junta o trabalho não guardado', async (t) => {
+  const { open, control, folder } = await world(t)
+  await (await open()).filesystem?.writeFile('cut.ts', 'meio\n')
+  writeFileSync(join(folder, 'app', '.git', 'conexus-sync-index.lock'), '')
+  moveMain(join(folder, 'git', COMPANY, `${PROJECT}.git`), 'b.ts', 'outra\n')
+  control.outcome = 'connected'
+  const after = await open()
+  assert.equal(await after.filesystem?.exists('cut.ts'), true)
+  assert.equal(await after.filesystem?.exists('b.ts'), true)
+})
+
+test('máquina: o lock do índice de um guardar que o prazo cortou não impede o guardar seguinte', async (t) => {
+  const { open, machines, repository, folder } = await world(t)
+  await (await open()).filesystem?.writeFile('cut.ts', 'meio\n')
+  writeFileSync(join(folder, 'app', '.git', 'conexus-index.lock'), '')
+  const bundle = await machines.collect({
+    conversationId: CONVERSATION,
+    base: await repository.ensure(),
+  })
+  assert.ok(typeof bundle === 'object', `the turn is collected, not ${String(bundle)}`)
+  assert.equal(bundle.changedFiles, 1)
+})
+
 test('máquina: um arquivo com uma linha que só começa como marca de conflito não é conflito: o modelo não é mandado resolvê-lo', async (t) => {
   const { open, folder } = await world(t)
   moveMain(

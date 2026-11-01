@@ -46,3 +46,15 @@ test('o corte: uma linha que sozinha passa de 16 KB, e um valor sem linhas que p
   const short = shaped({ total: 3 })
   assert.deepEqual(short, { value: { total: 3 }, complete: true })
 })
+
+test('o corte: uma leitura cujos campos fora das linhas passam de 16 KB não chega ao modelo, nem sem nenhuma linha', () => {
+  const colunas = Array.from({ length: 4_000 }, (_, n) => `coluna ${n}`)
+  assert.deepEqual(shaped({ linhas: [row(1)], temMais: false, colunas }), {
+    value: null,
+    complete: false,
+  })
+  assert.deepEqual(shaped({ linhas: [], temMais: false, colunas }), {
+    value: null,
+    complete: false,
+  })
+})

@@ -40,6 +40,8 @@ test('guardar: roda a consulta uma vez pela porta e guarda o mapa, a consulta, a
   for (const value of Object.values(Object(answered.value?.linhas?.[0] ?? {})))
     assert.ok(!JSON.stringify(note).includes(String(value)) || String(value).length < 3)
   assert.deepEqual(await on.port.notes(on.ids, on.connectionId), Object(row).notes)
+  const logged = on.hub.lines.find((line) => line.message === 'CONNECTION_NOTE_SAVED')
+  assert.deepEqual(Object.keys(logged?.fields ?? {}).sort(), ['connectionId', 'rows'])
 })
 
 test('guardar: a consulta que a porta recusa recusa a anotação; o caderno cheio é NOTE_INVALID; a 51ª chamada da execução é recusada', async (t) => {

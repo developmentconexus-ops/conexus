@@ -106,6 +106,21 @@ export function syncScript(workdir: string, tmp: string): string {
   ].join('\n')
 }
 
+/**
+ * The Hub saved `version`, the commit this machine bundled: the folder is as a seed leaves it, on
+ * `main` at that version, which is the base the next start measures its unsaved work from. The files
+ * the turn wrote are the version's, so the checkout changes none of them; what it does is let a
+ * later checkout remove a file another conversation deleted.
+ */
+export function savedScript(workdir: string, version: Sha): string {
+  return [
+    'set -e',
+    `cd ${quoted(workdir)}`,
+    `git update-ref ${BASE_REF} ${quoted(version)}`,
+    `git checkout --quiet --force -B main ${BASE_REF}`,
+  ].join('\n')
+}
+
 /** A turn the server took over keeps the machine's files as they are; it only needs the repository there. */
 export function keepScript(workdir: string): string {
   return `cd ${quoted(workdir)} && git rev-parse --git-dir`
@@ -115,7 +130,8 @@ export function keepScript(workdir: string): string {
 function treeIn(base: string, index: string): string[] {
   return [
     `export GIT_INDEX_FILE=.git/${index}`,
-    'rm -f "$GIT_INDEX_FILE"',
+    // A git killed on its timeout leaves the lock of its index, which would fail every later command that builds this tree.
+    'rm -f "$GIT_INDEX_FILE" "$GIT_INDEX_FILE.lock"',
     `git read-tree ${base}`,
     `git add --all -- . ':(exclude,glob)**/node_modules/**'`,
     'tree=$(git write-tree)',

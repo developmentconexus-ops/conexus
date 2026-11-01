@@ -41,8 +41,8 @@ function shortened(value: unknown): { value: unknown; cut: boolean } {
  * What the model reads of a read (the tool's own paged answer, never a filter over Mastra's
  * output): up to 20 whole rows, long text cut, then rows dropped from the end, the last one too,
  * until the value is at most 16 KB. `complete` is false when either cut took something or the
- * provider said more exists. A value that is no list of rows has its long text cut, and is `null`
- * when it still passes 16 KB.
+ * provider said more exists. A value that is no list of rows has its long text cut, and so is a
+ * list's other fields once no row is left; either is `null` when it still passes 16 KB.
  */
 export function shaped(value: unknown): { value: unknown; complete: boolean } {
   const listed = Listed.safeParse(value)
@@ -65,5 +65,7 @@ export function shaped(value: unknown): { value: unknown; complete: boolean } {
     rows = rows.slice(0, -1)
     complete = false
   }
+  // The fields besides the rows are the model's too: past 16 KB without a single row, nothing of it passes.
+  if (size(build(rows)) > CUT_BYTES) return { value: null, complete: false }
   return { value: build(rows), complete }
 }
