@@ -197,3 +197,15 @@ test('máquina: um index.lock que um git morto deixou na pasta não prende a con
   assert.equal(await after.filesystem?.exists('cut.ts'), true)
   assert.equal(await after.filesystem?.exists('b.ts'), true)
 })
+
+test('máquina: um arquivo com uma linha que só começa como marca de conflito não é conflito: o modelo não é mandado resolvê-lo', async (t) => {
+  const { open, folder } = await world(t)
+  moveMain(
+    join(folder, 'git', COMPANY, `${PROJECT}.git`),
+    'doc.md',
+    '<<<<<<< é só o exemplo de uma marca\ntexto\n',
+  )
+  const created = await open()
+  assert.equal(await created.filesystem?.exists('doc.md'), true)
+  assert.doesNotMatch(await created.getInstructionsAsync(), /conflict/)
+})

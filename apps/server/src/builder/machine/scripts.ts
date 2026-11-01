@@ -45,13 +45,14 @@ export function seedScript(workdir: string, tmp: string): string {
 }
 
 /**
- * Every tracked file that holds a Git conflict marker, printed as `MARKERS <path>`, whichever start
- * or turn left it there: a file the Builder resolved drops out.
+ * Every tracked file that holds the three lines Git writes around a conflict (`<<<<<<< `, `=======`,
+ * `>>>>>>> `), printed as `MARKERS <path>`, whichever start or turn left it there: a file the
+ * Builder resolved drops out, and one with a lone line that only looks like a marker never enters.
  */
 function markedFiles(): string[] {
   return [
     // Exit 1 is no file found; any other failure ends the script.
-    `marked=$(git -c core.quotePath=false grep -l -I -e '^<<<<<<< ') || test $? -eq 1`,
+    `marked=$(git -c core.quotePath=false grep -l -I --all-match -e '^<<<<<<< ' -e '^=======$' -e '^>>>>>>> ') || test $? -eq 1`,
     `test -z "$marked" || printf '%s\\n' "$marked" | sed 's/^/MARKERS /'`,
   ]
 }
