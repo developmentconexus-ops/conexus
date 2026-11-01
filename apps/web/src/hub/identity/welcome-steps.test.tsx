@@ -129,7 +129,8 @@ for (const role of ['admin', 'member'] as const) {
     test(`${role} em welcome/${step} cai no Início`, async () => {
       server.use(...companyHub(ready({ role })).handlers)
       const router = openAt(`${WELCOME}/${step}`)
-      expect(await screen.findByRole('heading', { name: 'O que vamos construir?' })).toBeTruthy()
+      const title = role === 'member' ? 'O que vamos construir?' : 'Pergunte ou peça um app'
+      expect(await screen.findByRole('heading', { name: title })).toBeTruthy()
       expect(router.state.location.pathname).toBe(COMPANY_PATH)
     })
   }

@@ -14,8 +14,8 @@ function inicio(fields: Parameters<typeof companyView>[0]) {
   openAt(COMPANY_PATH)
 }
 
-async function ready() {
-  await screen.findByRole('heading', { name: 'O que vamos construir?' })
+async function ready(title = 'Pergunte ou peça um app') {
+  await screen.findByRole('heading', { name: title })
   await screen.findByRole('heading', { name: 'Projetos' })
 }
 
@@ -73,7 +73,7 @@ test('um convite vencido não conta como equipe', async () => {
 
 test('o membro nunca vê o cartão', async () => {
   inicio({ role: 'member' })
-  await ready()
+  await ready('O que vamos construir?')
   expect(screen.queryByRole('region', { name: CARD })).toBeNull()
   expect(screen.queryByRole('link', { name: 'Continuar' })).toBeNull()
 })

@@ -34,6 +34,12 @@ test('o primeiro pedido pelo Início: a caixa, o nome, e a conversa abre com o p
     await linkKey(page, 'Time 1', KEYS.first)
     await page.getByText('Time 1', { exact: true }).first().waitFor()
     await chooseDefaultModel(page, ids.companyA)
+    // Início asks the Builder only for a member: the owner's asks the Assistant.
+    await database.asOwner(
+      `update auth.member set role = 'member'
+        where company_id = $1 and user_id = (select id from auth.user where email = $2)`,
+      [ids.companyA, ANA.email],
+    )
     await page.goto(`${TEST_ORIGIN}/companies/${ids.companyA}`)
     await waitForHome(page)
     await ask(page, REQUEST)

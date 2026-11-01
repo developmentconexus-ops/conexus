@@ -11,6 +11,7 @@ import { Markdown } from './markdown.tsx'
 import { PlanCard } from './plan-card.tsx'
 import { PreviewLine } from './preview-line.tsx'
 import { QuestionCard } from './question-card.tsx'
+import { useRoom } from './room.ts'
 import type { TranscriptItem } from './rows.ts'
 import { ThinkingLine } from './thinking-line.tsx'
 import { ToolGroup } from './tool-group.tsx'
@@ -96,13 +97,14 @@ export function BuilderTurn(props: {
   onAsk: (text: string) => void
 }) {
   const rows = fold(props.items)
+  const { agent } = useRoom()
 
   return (
     <Message>
       <MessageContent>
         <MessageHeader>
           <ConexusMark size={16} />
-          <span className="font-semibold text-text">Conexus</span>
+          <span className="font-semibold text-text">{agent === 'Builder' ? 'Conexus' : agent}</span>
           {props.model !== null && (
             <span className="min-w-0 truncate rounded-pill bg-surface-3 px-sm py-xs">
               {modelLabel(props.model)}

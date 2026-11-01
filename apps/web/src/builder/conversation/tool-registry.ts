@@ -1,6 +1,4 @@
-import type { CARD_TOOLS, ClosedTool, TASK_TOOLS } from '@conexus/hub-api'
 import { BUILDER_TOOL, SKILL_TOOLS, WORKSPACE_TOOL } from '@conexus/hub-api'
-import type { LucideIcon } from 'lucide-react'
 import {
   BookOpenIcon,
   CircleAlertIcon,
@@ -15,18 +13,15 @@ import {
   TrashIcon,
   WrenchIcon,
 } from 'lucide-react'
+import { ASSISTANT_SPECS } from './assistant-specs.ts'
 import { CONNECTOR_SPECS } from './connector-specs.ts'
+import type { Room } from './room.ts'
+import { BUILDER_ROOM } from './room.ts'
 import type { ToolItem } from './rows.ts'
 import { stringArg } from './tool-args.ts'
-import type { ToolSpec } from './tool-spec.ts'
+import type { Presented, RowTool, ToolSpec, ToolStatus } from './tool-spec.ts'
 
-export type { ToolBody, ToolSpec } from './tool-spec.ts'
-
-/** The tools that draw a row: the cards draw a card and the task tools the panel. */
-type RowTool = Exclude<
-  ClosedTool,
-  (typeof CARD_TOOLS)[keyof typeof CARD_TOOLS] | (typeof TASK_TOOLS)[number]
->
+export type { ToolBody, ToolSpec, ToolStatus } from './tool-spec.ts'
 
 const {
   readFile,
@@ -194,6 +189,7 @@ export const TOOLS: Record<RowTool, ToolSpec> = {
     groups: true,
   },
   ...CONNECTOR_SPECS,
+  ...ASSISTANT_SPECS,
   [skill]: {
     icon: BookOpenIcon,
     running: 'Usando a skill',
@@ -226,22 +222,28 @@ export const TOOLS: Record<RowTool, ToolSpec> = {
   },
 }
 
-export type ToolStatus = 'running' | 'done' | 'error' | 'denied'
-
 /** The spec of a tool of the closed set, or none for a name outside it. */
 function isRowTool(toolName: string): toolName is RowTool {
   return Object.hasOwn(TOOLS, toolName)
 }
 
-export function specOf(toolName: string): ToolSpec | undefined {
-  return isRowTool(toolName) ? TOOLS[toolName] : undefined
+/** The one lookup of how a tool's row reads, in the room that draws it. */
+export function specOf(toolName: string, room: Room = BUILDER_ROOM): ToolSpec | undefined {
+  if (!isRowTool(toolName)) return undefined
+  return room.overrides[toolName] ?? TOOLS[toolName]
 }
 
 /** One status per call (Factory `terminalInvocationStatus`); a command that exited non-zero is an error. */
-export function toolStatus(tool: Pick<ToolItem, 'state' | 'isError'>): ToolStatus {
+export function toolStatus(
+  tool: Pick<ToolItem, 'toolName' | 'state' | 'isError' | 'result'>,
+  room: Room = BUILDER_ROOM,
+): ToolStatus {
   switch (tool.state) {
     case 'result':
-      return tool.isError === true ? 'error' : 'done'
+      return tool.isError === true ||
+        specOf(tool.toolName, room)?.refusal?.(tool.result) !== undefined
+        ? 'error'
+        : 'done'
     case 'output-error':
       return 'error'
     case 'output-denied':
@@ -257,25 +259,31 @@ export function readable(toolName: string): string {
   return words ? words.charAt(0).toUpperCase() + words.slice(1) : toolName
 }
 
+/** The row of a tool outside the set: its readable name, by status. */
+function unknownTool(toolName: string, status: ToolStatus) {
+  const name = readable(toolName)
+  const sentence =
+    status === 'denied'
+      ? `Não pôde usar ${name}`
+      : status === 'error'
+        ? `Não conseguiu usar ${name}`
+        : status === 'running'
+          ? `Usando ${name}`
+          : `Usou ${name}`
+  const icon = status === 'error' || status === 'denied' ? CircleAlertIcon : WrenchIcon
+  return { icon, sentence, beside: false }
+}
+
 /** The row's icon and sentence by its status; the readable name for a tool outside the set. */
 export function presentTool(
-  tool: Pick<ToolItem, 'toolName' | 'args'>,
+  tool: Pick<ToolItem, 'toolName' | 'args'> & { result?: unknown },
   status: ToolStatus,
-): { icon: LucideIcon; sentence: string; detail?: string; beside: boolean } {
-  const spec = specOf(tool.toolName)
+  room: Room = BUILDER_ROOM,
+): Presented {
+  const spec = specOf(tool.toolName, room)
   const failed = status === 'error' || status === 'denied'
-  if (spec === undefined) {
-    const name = readable(tool.toolName)
-    const sentence =
-      status === 'denied'
-        ? `Não pôde usar ${name}`
-        : status === 'error'
-          ? `Não conseguiu usar ${name}`
-          : status === 'running'
-            ? `Usando ${name}`
-            : `Usou ${name}`
-    return { icon: failed ? CircleAlertIcon : WrenchIcon, sentence, beside: false }
-  }
+  if (spec === undefined) return unknownTool(tool.toolName, status)
+  if (spec.present !== undefined) return spec.present(tool, status, room.connectorName)
   const detail = spec.detailKey === undefined ? undefined : stringArg(tool.args, spec.detailKey)
   const head =
     status === 'denied'

@@ -6,6 +6,7 @@ import {
   ChevronsUpDownIcon,
   HammerIcon,
   InfoIcon,
+  MessagesSquareIcon,
   PlugIcon,
   UsersIcon,
 } from 'lucide-react'
@@ -145,6 +146,12 @@ export function ProjectRailNav(scope: Scope) {
             <span>Construir</span>
           </SidebarMenuButton>
         </SidebarMenuItem>
+        <FrameLink
+          to="/companies/$companyId/projects/$projectId/assistant"
+          params={params}
+          icon={MessagesSquareIcon}
+          label="Conversas"
+        />
         <FrameLink
           to="/companies/$companyId/projects/$projectId/about"
           params={params}

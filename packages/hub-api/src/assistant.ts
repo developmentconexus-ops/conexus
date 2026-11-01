@@ -10,7 +10,11 @@ import { ProjectId } from './projects.ts'
 export const ASSISTANT_CONTROLLER = 'assistant'
 
 /** The Assistant's own tools, by name; the units after U2 add theirs. */
-export const ASSISTANT_TOOL = { overview: 'conexus_overview', showFile: 'show_file' } as const
+export const ASSISTANT_TOOL = {
+  overview: 'conexus_overview',
+  showFile: 'show_file',
+  proposeApp: 'propose_app',
+} as const
 
 /** The most connections a conversation may choose at once. */
 const CHOSEN_MAX = 50
@@ -64,6 +68,19 @@ export const ShownFile = z.discriminatedUnion('kind', [
   }),
 ])
 export type ShownFile = z.infer<typeof ShownFile>
+
+/** The file of a conversation's machine, as a download: `GET`, the bytes with their type, for the owner alone. */
+export function assistantFilePath(ids: {
+  companyId: string
+  conversationId: string
+  path: string
+}): string {
+  return `/api/companies/${ids.companyId}/assistant/conversations/${ids.conversationId}/files?${new URLSearchParams({ path: ids.path })}`
+}
+
+/** What `propose_app` answers: the request, summarized, that **Criar app** hands to the Builder of a new Projeto. */
+export const ProposedApp = z.object({ summary: z.string().min(1).max(4000) })
+export type ProposedApp = z.infer<typeof ProposedApp>
 
 /** What `conexus_overview` answers (code C21: a list per kind of thing, no free text). */
 export type Overview = {

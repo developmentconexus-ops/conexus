@@ -1,11 +1,17 @@
 import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
-import { BUILDER_CONTROLLER, BUILDER_ROUTES } from '@conexus/hub-api'
-import { createHarness, DESKTOP, PHONE } from './layout-harness.ts'
+import {
+  ASSISTANT_CONTROLLER,
+  BUILDER_CONTROLLER,
+  BUILDER_ROUTES,
+  listAssistantConnections,
+  readAssistantConversation,
+} from '@conexus/hub-api'
+import { createHarness, DESKTOP, ok, PHONE } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import { WITH_CONVERSATIONS } from './sweep-conversation-states.ts'
-import { PROJECT_ID } from './sweep-replies.ts'
-import { storedOf } from './sweep-session.ts'
+import { OWNER, PROJECT_ID } from './sweep-replies.ts'
+import { sessionReplies, storedOf } from './sweep-session.ts'
 
 // The older messages of a long conversation, measured in the browser: jsdom lays nothing out and
 // scrolls nothing (testing T23).
@@ -16,6 +22,8 @@ after(() => harness.stop())
 const PROJECT = `/companies/${COMPANY.id}/projects/${PROJECT_ID}`
 const FIRST = '11111111-1111-4111-8111-111111111111'
 const THREAD = `${BUILDER_ROUTES}/agent-controller/${BUILDER_CONTROLLER}/sessions/${FIRST}/threads/${FIRST}/messages`
+
+const ASSISTANT_THREAD = `${BUILDER_ROUTES}/agent-controller/${ASSISTANT_CONTROLLER}/sessions/${FIRST}/threads/${FIRST}/messages`
 
 const LONG_CONVERSATION = Array.from({ length: 250 }, (_, index) =>
   storedOf({
@@ -85,4 +93,56 @@ test('ao chegar ao topo as 100 mensagens anteriores chegam sem mexer no ponto da
     assert.deepEqual(page.problems, [])
     await page.close()
   }
+})
+
+test('uma conversa do Início com mais de 100 mensagens abre no fim, rola dentro da caixa e pede a página anterior ao chegar ao topo', async () => {
+  const page = await harness.open(`/companies/${COMPANY.id}/conversations/${FIRST}`, {
+    viewport: DESKTOP,
+    replies: {
+      ...OWNER,
+      [`GET /api/companies/${COMPANY.id}/assistant/connections`]: ok(listAssistantConnections, {
+        connections: [],
+      }),
+      [`GET /api/companies/${COMPANY.id}/assistant/conversations/${FIRST}`]: ok(
+        readAssistantConversation,
+        {
+          conversation: {
+            id: FIRST,
+            title: 'Vendas da semana',
+            updatedAt: '2026-10-19T12:00:00.000Z',
+            projectId: null,
+            connections: [],
+          },
+        },
+      ),
+      ...sessionReplies(FIRST, { controller: ASSISTANT_CONTROLLER }),
+    },
+  })
+  const limits: number[] = []
+  await page.route(`**${ASSISTANT_THREAD}*`, async (route) => {
+    const limit = Number(new URL(route.request().url()).searchParams.get('limit'))
+    limits.push(limit)
+    return route.fulfill({ json: { messages: LONG_CONVERSATION.slice(-limit) } })
+  })
+  await page.reload()
+  await page.getByText('Resposta 249', { exact: true }).waitFor()
+  const scroller = page.getByLabel('Rolagem da conversa')
+  const room = await scroller.evaluate((el) => ({
+    scrolls: el.scrollHeight > el.clientHeight,
+    page: document.documentElement.scrollHeight - innerHeight,
+  }))
+  assert.ok(room.scrolls, 'the conversation does not scroll inside its box')
+  assert.ok(room.page <= 0, `the page grew ${room.page}px past the screen`)
+  const box = await scroller.boundingBox()
+  assert.ok(box)
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+  for (let wheel = 0; wheel < 80 && !limits.some((limit) => limit > 100); wheel++) {
+    await page.mouse.wheel(0, -2000)
+    await page.waitForTimeout(30)
+  }
+  assert.ok(
+    limits.some((limit) => limit > 100),
+    'reaching the top asked for no older page',
+  )
+  await page.close()
 })

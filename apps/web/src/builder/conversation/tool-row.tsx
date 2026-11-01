@@ -1,4 +1,8 @@
-import { useState } from 'react'
+import { ProposedApp, ShownFile } from '@conexus/hub-api'
+import { Link, useParams } from '@tanstack/react-router'
+import { FileTextIcon } from 'lucide-react'
+import { useEffect, useEffectEvent, useState } from 'react'
+import { Button } from '../../ui/button.tsx'
 import { cn } from '../../ui/cn.ts'
 import {
   TraceCollapsible,
@@ -10,6 +14,8 @@ import {
   TraceTitle,
 } from '../../ui/trace.tsx'
 import { useSecondsSince } from './elapsed.ts'
+import type { Room } from './room.ts'
+import { useRoom } from './room.ts'
 import type { ToolItem } from './rows.ts'
 import { durationOf } from './text.ts'
 import type { Edit } from './tool-args.ts'
@@ -49,7 +55,10 @@ function Since({ at }: { at: number | undefined }) {
   )
 }
 
-function opens(tool: ToolItem, status: ToolStatus): boolean {
+function opens(tool: ToolItem, status: ToolStatus, room: Room): boolean {
+  // A refusal the Assistant's tool answered is said by its line; only a connection to link again has more to say.
+  const refusal = specOf(tool.toolName, room)?.refusal?.(tool.result)
+  if (refusal !== undefined) return refusal === 'RECONNECT'
   if (status === 'error' || status === 'denied') return true
   if (tool.output !== undefined && tool.output.length > 0) return true
   if (tool.result !== undefined && tool.result !== null) return true
@@ -171,8 +180,63 @@ function Block({ tool, body }: { tool: ToolItem; body: ToolBody }) {
   }
 }
 
+/** Where a connection that asks to be linked again is linked: Integrações. */
+function Reconnect() {
+  const companyId = useParams({ strict: false, select: (params) => params.companyId })
+  if (companyId === undefined) return null
+  return (
+    <Link
+      to="/companies/$companyId/integrations"
+      params={{ companyId }}
+      className="w-fit text-label underline"
+    >
+      Abrir Integrações
+    </Link>
+  )
+}
+
+/** The Assistant's shown file, a button that opens it beside the chat. */
+function ShownLine(props: {
+  file: Extract<ShownFile, { kind: 'TEXT' | 'FILE' }>
+  /** The screen heard the call as it ran: the file opens by itself, once; a conversation read afterwards waits for the click. */
+  live: boolean
+}) {
+  const { file } = props
+  const room = useRoom()
+  const open = useEffectEvent(() => room.openFile?.(file))
+  useEffect(() => {
+    if (props.live) open()
+  }, [props.live])
+  return (
+    <Button
+      aria-label={`Abrir ${file.name}`}
+      aria-pressed={room.openedPath === file.path}
+      onClick={() => room.openFile?.(file)}
+      className="w-fit max-w-full"
+    >
+      <FileTextIcon aria-hidden="true" />
+      <span className="truncate">{file.name}</span>
+    </Button>
+  )
+}
+
+/** The Assistant's proposal: the request it summarized, and **Criar app**. */
+function ProposalCard({ summary }: { summary: string }) {
+  const room = useRoom()
+  return (
+    <div className="flex flex-col items-start gap-sm rounded-card border border-line bg-surface p-md">
+      <p className="whitespace-pre-wrap break-words text-text">{summary}</p>
+      <Button variant="primary" onClick={() => room.createApp?.(summary)}>
+        Criar app
+      </Button>
+    </div>
+  )
+}
+
 function Body({ tool, status }: { tool: ToolItem; status: ToolStatus }) {
-  const body = specOf(tool.toolName)?.body ?? 'generic'
+  const spec = specOf(tool.toolName, useRoom())
+  if (spec?.refusal?.(tool.result) === 'RECONNECT') return <Reconnect />
+  const body = spec?.body ?? 'generic'
   const edit = editOf(body, tool.args)
   const failed = status === 'error' || status === 'denied'
   return (
@@ -183,13 +247,25 @@ function Body({ tool, status }: { tool: ToolItem; status: ToolStatus }) {
   )
 }
 
+/** The rows that are not a line: the file the Assistant showed, and the app it proposed. */
+function specialRow(tool: ToolItem, status: ToolStatus) {
+  const body = specOf(tool.toolName)?.body
+  if (status !== 'done') return undefined
+  const shown = body === 'shown' ? ShownFile.safeParse(tool.result).data : undefined
+  if (shown !== undefined && shown.kind !== 'SHOW_REFUSED')
+    return <ShownLine file={shown} live={tool.startedAt !== undefined} />
+  const proposed = body === 'proposal' ? ProposedApp.safeParse(tool.result).data : undefined
+  return proposed === undefined ? undefined : <ProposalCard summary={proposed.summary} />
+}
+
 /**
  * A line of tool invocation (Criterion 8).
  * Opens on the body its tool's row in the table names.
  */
 export function ToolRow({ tool }: { tool: ToolItem }) {
-  const status = toolStatus(tool)
-  const shownTool = presentTool(tool, status)
+  const room = useRoom()
+  const status = toolStatus(tool, room)
+  const shownTool = presentTool(tool, status, room)
   // Only a command that is still saying its output shows it as it comes; the person's click rules after.
   const [chosen, setChosen] = useState<boolean>()
   const open = chosen ?? (status === 'running' && tool.output !== undefined)
@@ -212,7 +288,10 @@ export function ToolRow({ tool }: { tool: ToolItem }) {
     </TraceLine>
   )
 
-  if (!opens(tool, status)) return line
+  const special = specialRow(tool, status)
+  if (special !== undefined) return special
+
+  if (!opens(tool, status, room)) return line
 
   return (
     <TraceCollapsible open={open} onOpenChange={setChosen}>

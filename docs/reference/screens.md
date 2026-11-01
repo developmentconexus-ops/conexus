@@ -14,7 +14,8 @@ L24](../guides/delivery.md)): it grows by one line per screen.
 | Accept an invitation | `/invitations/<id>` | Entrada | the person invited |
 | An app refuses a pass | `/apps/open` | Entrada | the person the app refused |
 | The way in: the last company opened, else the first, else the Central, else "Seus apps" for a person who only uses apps, or "Nenhuma empresa" | `/` | Empresa | every signed-in person |
-| Início of a company | `/companies/<c>` | Empresa | owner, administrator, member |
+| Início of a company: the box to the Builder for a member; for the owner and the administrators the box to the Assistant, its bar of connections and the recent conversations | `/companies/<c>` | Empresa | owner, administrator, member |
+| A conversation with the Assistant born on Início, with the file it shows beside the chat | `/companies/<c>/conversations/<id>` | Empresa | owner, administrator |
 | Todos os projetos | `/companies/<c>/projects` | Empresa | owner, administrator, member |
 | Integrações: the connectors the company can link and its connections, grouped by connector, with the window to link | `/companies/<c>/integrations` | Empresa | owner, administrator, member (reads) |
 | A connection: its state, who tested it and when, Testar with its one-sentence result, its Caderno with Apagar, and Desligar | `/companies/<c>/integrations/<connectionId>` | Empresa | owner, administrator, member (reads) |
@@ -24,6 +25,8 @@ L24](../guides/delivery.md)): it grows by one line per screen.
 | The owner's first entry, steps 1 to 4 | `/companies/<c>/welcome/company`, `model-account`, `team`, `build` | Empresa | owner |
 | A Projeto, on its latest conversation | `/companies/<c>/projects/<p>` | Projeto | owner, administrator, member |
 | A Projeto's conversation, with the tab Prévia or Código (`?lens=`) | `/companies/<c>/projects/<p>/conversations/<id>` | Projeto | owner, administrator, member |
+| Conversas of a Projeto: the box to the Assistant with the Projeto's connections, and its conversations; a member reads who can talk there | `/companies/<c>/projects/<p>/assistant` | Projeto | owner, administrator, member (reads) |
+| A conversation with the Assistant in a Projeto, with the file it shows beside the chat | `/companies/<c>/projects/<p>/assistant/<id>` | Projeto | owner, administrator |
 | Sobre, with its parts Sobre and Versões (`?part=`) | `/companies/<c>/projects/<p>/about` | Projeto | owner, administrator, member |
 | Quem usa o app | `/companies/<c>/projects/<p>/access` | Projeto | owner, administrator, member (reads) |
 | Integrações do Projeto: each connected connection with whether the Projeto may read it, Liberar para ler and Tirar | `/companies/<c>/projects/<p>/integrations` | Projeto | owner, administrator, member (reads) |

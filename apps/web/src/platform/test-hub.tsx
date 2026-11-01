@@ -203,6 +203,12 @@ export function hubServer() {
         }),
       ),
     ),
+    http.get('*/api/companies/:companyId/assistant/connections', () =>
+      HttpResponse.json({ connections: [] }),
+    ),
+    http.get('*/api/companies/:companyId/assistant/conversations', () =>
+      HttpResponse.json({ conversations: [], next: { kind: 'END' } }),
+    ),
     http.get('*/api/companies/:companyId/projects/:projectId/conversations', () =>
       HttpResponse.json(
         listConversations.success.body.parse({ conversations: [], next: { kind: 'END' } }),
