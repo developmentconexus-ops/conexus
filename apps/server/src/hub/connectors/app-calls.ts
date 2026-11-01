@@ -8,7 +8,7 @@ import type { ConnectorCall } from '../apps/public.ts'
 import { readOf } from './grants.ts'
 import { readThrough } from './read.ts'
 import type { Deps } from './rows.ts'
-import { scopeOf } from './rows.ts'
+import { scopeOf, usable } from './rows.ts'
 import { connection, projectConnection } from './tables.ts'
 import { openedIn } from './testing.ts'
 
@@ -42,7 +42,7 @@ function grantedTo(call: ConnectorCall, connector: string) {
         and(
           eq(projectConnection.projectId, projectId),
           eq(projectConnection.connectorId, connector),
-          eq(connection.state, 'ACTIVE'),
+          usable,
         ),
       )
       .orderBy(asc(connection.linkedAt))
