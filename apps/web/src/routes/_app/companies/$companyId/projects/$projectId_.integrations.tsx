@@ -1,10 +1,12 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { connectionsQuery, projectConnectionsQuery } from '../../../../../hub/connectors/public.ts'
 import {
   ProjectIntegrations,
   projectParams,
   projectQuery,
 } from '../../../../../hub/projects/public.ts'
 import { readOrNotFound } from '../../../../../platform/hub.ts'
+import { RouteReadFailure } from '../../../../../ui/states.tsx'
 
 // Like Sobre and Quem usa o app, a page of its own beside the Construir's workbench.
 export const Route = createFileRoute(
@@ -12,10 +14,19 @@ export const Route = createFileRoute(
 )({
   staticData: { place: 'Integrações' },
   params: projectParams,
-  loader: ({ context, params }) =>
-    readOrNotFound(
-      context.queryClient.ensureQueryData(projectQuery(params.companyId, params.projectId)),
-    ),
+  // The page's three reads, started together: the Projeto, what it reads, and the company's list.
+  loader: ({ context, params }) => {
+    const { queryClient } = context
+    const { companyId, projectId } = params
+    return readOrNotFound(
+      Promise.all([
+        queryClient.ensureQueryData(projectQuery(companyId, projectId)),
+        queryClient.ensureQueryData(projectConnectionsQuery(companyId, projectId)),
+        queryClient.ensureQueryData(connectionsQuery(companyId)),
+      ]),
+    )
+  },
+  errorComponent: RouteReadFailure,
   component: IntegrationsPage,
 })
 

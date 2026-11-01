@@ -5,8 +5,11 @@ import type { Driven, Outcome, RunsContext } from './context.ts'
 import { copyVersion } from './copy.ts'
 
 /**
- * The turn's tree as a bundle. A machine that never came up for the turn (`MACHINE_UNAVAILABLE`) is
- * told as that, with the conversation kept; one that died on the way, as lost.
+ * The turn's tree as a bundle. The machine says why there is none when it is gone: one that never
+ * came up for the turn (`MACHINE_UNAVAILABLE`) keeps the conversation, one that died on the way
+ * (`MACHINE_LOST`) lost what it held. Any other failure of a machine that is up (a script that
+ * failed, a command past its budget) leaves the work on it, so the save is refused and the next
+ * turn merges that work.
  */
 async function collectOf(
   context: RunsContext,
@@ -18,9 +21,34 @@ async function collectOf(
       base: input.base,
     })
   } catch (error) {
-    const unavailable = error instanceof Failure && error.code === 'MACHINE_UNAVAILABLE'
-    context.log.error({ ...input.fields, error: String(error) }, 'MACHINE_LOST')
-    return { failed: unavailable ? 'MACHINE_UNAVAILABLE' : 'MACHINE_LOST' } as const
+    if (
+      error instanceof Failure &&
+      (error.code === 'MACHINE_UNAVAILABLE' || error.code === 'MACHINE_LOST')
+    ) {
+      context.log.error({ ...input.fields, error: String(error) }, 'MACHINE_LOST')
+      return { failed: error.code } as const
+    }
+    context.log.error({ ...input.fields, reason: String(error) }, 'SAVE_REFUSED')
+    return { failed: 'SAVE_REFUSED' } as const
+  }
+}
+
+/**
+ * Tells the machine that `main` holds its bundle's commit, so the next start measures its unsaved
+ * work from it. The version is saved either way: a machine that cannot hear it is told in the log,
+ * and a new machine seeds from `main`.
+ */
+async function machineSaved(
+  context: RunsContext,
+  input: { conversationId: ConversationId; candidate: Sha; fields: Record<string, string> },
+) {
+  try {
+    await context.machines.saved({
+      conversationId: input.conversationId,
+      version: input.candidate,
+    })
+  } catch (error) {
+    context.log.error({ ...input.fields, error: String(error) }, 'MACHINE_BASE_NOT_MOVED')
   }
 }
 
@@ -70,6 +98,7 @@ export async function saveRun(context: RunsContext, mine: Driven): Promise<Outco
     context.log.error({ ...fields, reason: 'stale' }, 'SAVE_REFUSED')
     return { kind: 'failed', code: 'SAVE_REFUSED' }
   }
+  await machineSaved(context, { conversationId, candidate, fields })
   const version = await repository.versionAt(candidate)
   context.log.info({ ...fields, version }, 'VERSION_SAVED')
   if (!(await copyVersion(context, { companyId, projectId }))) context.retry.kick()

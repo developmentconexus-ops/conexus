@@ -1,5 +1,6 @@
-import { FailureData, NoticeData } from '@conexus/hub-api'
+import { FailureData, NoticeData, VersionCheck } from '@conexus/hub-api'
 import type { AgentControllerWireEvent, MastraMessagePart } from '@mastra/core/agent-controller'
+import { z } from 'zod'
 
 type StreamEvent = AgentControllerWireEvent
 
@@ -85,4 +86,26 @@ export function messagesIn(events: StreamEvent[]): Map<string, Said> {
 /** Every part of the messages the events said, each message as its last telling left it, as the screen shows them. */
 export function shownPartsOf(events: StreamEvent[]): MastraMessagePart[] {
   return [...messagesIn(events).values()].flatMap((message) => message.parts)
+}
+
+const Version = z.object({
+  number: z.number(),
+  changedFiles: z.number(),
+  check: VersionCheck.optional(),
+})
+
+/** The versions the parts say, by number, files changed and what the check said; the starter's files vary. */
+export function versionsOf(parts: MastraMessagePart[]) {
+  return parts.flatMap((part) => {
+    const read = part.type === 'data-conexus-version' ? Version.safeParse(part.data) : undefined
+    return read?.success
+      ? [
+          {
+            number: read.data.number,
+            changedFiles: read.data.changedFiles,
+            check: read.data.check ?? 'none',
+          },
+        ]
+      : []
+  })
 }

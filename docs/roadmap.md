@@ -101,13 +101,12 @@ Login social. Arquivos enviados por pessoas para dentro de um app ou da máquina
 
 | Etapa | O que precisa antes | Decisão sua nela | Conhecimento trazido |
 | --- | --- | --- | --- |
-| 20 App com dados | A 18 e a 19.1 | Nenhuma | A barra do Projeto nasce com Integrações. O caderno da ligação. Banco livre durante a chamada |
 | 24.1 Supervisor | A 20 | Nenhuma | Sessões como as da Factory e do G4. Ferramentas de conector da 20, máquina por conversa. Aceite: nenhum número inventado. Dono e administradores |
 | 24.2 Rotinas | A 24.1 | Nenhuma | `mastra.schedules`. A 20.4 entra aqui |
 | 24.3 Escrever com aprovação | A 24.2 | Nenhuma | `requireApproval` do Mastra, provada antes a trava da 0053. Escrita nova pede nova liberação |
 | 24.4 Projeto sem app, agentes e Construtor | A 24.3 | Nenhuma | O Projeto como pasta de um assunto. O campo `agents` do Mastra, nunca o Agent Builder pago. O Open Bots (2026-10-29) |
 | 24.5 Workflows visuais | A 24.4 | Nenhuma | Workflows do Mastra; um protótipo de um dia decide o motor. Seu orçamento é o aceite |
-| 21.1 Ver o que acontece | A 24.5 | Grafana no Brasil, provado | Um só caminho OTel (0052). O uso por empresa |
+| 21.1 Ver o que acontece | A 24.5 | Grafana no Brasil, provado | Um só caminho OTel (0052). O uso por empresa. O rastro por ferramenta: as ferramentas de conector (`connector_read`, `connector_notes`, `connector_note_save`) escondem entrada e saída no span, com o exportador de lista permitida, porque o `TracingPolicy` do Mastra só tem `internal` (veio da 20, critério 29) |
 | 16 Atualizar sem cortar | A 21.1 | Nenhuma | Consertos de execução da auditoria. Testes 9 e 10 |
 | 22 Ensaio geral | A 16 | O lugar da cópia fora do Neon | Ensaios das etapas 2, 7, 9, 12 e 13. Carga de um painel e de uma rotina |
 | 23 As outras empresas | A 22 | Os riscos aceitos. O plano pago | A seção 11 da arquitetura |

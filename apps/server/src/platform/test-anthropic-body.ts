@@ -20,7 +20,13 @@ export type Sent = {
   thinking: Thinking | null
   /** The prompt-cache marks the call asked for, in body order: where each sits and its TTL. */
   cached: Cached[]
+  /** The `tool_use` parts of the conversation's messages, in order, with the `input` each went out with. */
+  toolUses: ToolUse[]
+  /** Where the conversation holds a `tool_use` whose `input` is not an object, or a `tool_result` with no `tool_use`, which the Messages API refuses; none if it holds neither. */
+  unfilled: string | null
 }
+
+export type ToolUse = { name: string; input: unknown }
 
 const Thinking = z.object({ type: z.string(), budget_tokens: z.number().optional() })
 type Thinking = z.infer<typeof Thinking>
@@ -84,6 +90,47 @@ function cachedOf(body: z.infer<typeof Body>): Cached[] {
   return [...system, ...messages]
 }
 
+const ToolUsePart = z
+  .object({ type: z.literal('tool_use'), id: z.string(), name: z.string() })
+  .loose()
+const ToolResultPart = z.object({ type: z.literal('tool_result'), tool_use_id: z.string() }).loose()
+
+/** The `tool_use` parts of a body, in order, with their `input` as sent (absent is `undefined`). */
+function toolUsesOf(body: z.infer<typeof Body>): ToolUse[] {
+  return body.messages.flatMap((message) =>
+    typeof message.content === 'string'
+      ? []
+      : message.content.flatMap((part) => {
+          const call = ToolUsePart.safeParse(part)
+          return call.success ? [{ name: call.data.name, input: call.data.input }] : []
+        }),
+  )
+}
+
+/** The first `tool_use` whose `input` is not an object, or `tool_result` that answers no `tool_use`, named as the API names it in its 400. */
+function unfilledOf(body: z.infer<typeof Body>): string | null {
+  const known = new Set<string>()
+  for (const [at, message] of body.messages.entries()) {
+    if (typeof message.content === 'string') continue
+    for (const [index, part] of message.content.entries()) {
+      const where = `messages.${at}.content.${index}`
+      const call = ToolUsePart.safeParse(part)
+      if (call.success) {
+        known.add(call.data.id)
+        const { input } = call.data
+        if (typeof input !== 'object' || input === null || Array.isArray(input)) {
+          return `${where}.tool_use.input`
+        }
+      }
+      const result = ToolResultPart.safeParse(part)
+      if (result.success && !known.has(result.data.tool_use_id)) {
+        return `${where}.tool_result.tool_use_id`
+      }
+    }
+  }
+  return null
+}
+
 export function sentOf(init: RequestInit | undefined): Sent {
   const headers = new Headers(init?.headers)
   const body = Body.parse(JSON.parse(String(init?.body)))
@@ -109,5 +156,7 @@ export function sentOf(init: RequestInit | undefined): Sent {
     media,
     thinking: body.thinking ?? null,
     cached: cachedOf(body),
+    toolUses: toolUsesOf(body),
+    unfilled: unfilledOf(body),
   }
 }

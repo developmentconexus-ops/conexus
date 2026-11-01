@@ -1,4 +1,6 @@
 import type { ConnectionId } from '@conexus/hub-api'
+import type { FailureLog } from '../../platform/failure.ts'
+import { Failure, logFailure } from '../../platform/failure.ts'
 import type { BearerToken, Executor, Login, OpenedConnection } from './executor.ts'
 
 // A token this close to its end is renewed before a call, with room left for the old one's logout:
@@ -100,6 +102,7 @@ function createEndings(
   held: Map<ConnectionId, Held>,
   executor: Executor,
   inTurn: Limits['inTurn'],
+  log: FailureLog,
 ) {
   const timers = new Map<ConnectionId, NodeJS.Timeout>()
 
@@ -120,12 +123,17 @@ function createEndings(
           timers.delete(opened.id)
           // In the connection's turn, like every call: a logout on a token with a read open is refused.
           // A turn not had in time leaves the token to the next call's renewal, which logs out first.
-          void inTurn(opened.id, ENDING_TURN_MS, async () => {
+          // No one awaits it: a defect in it is logged, never an unhandled rejection that ends the Hub.
+          inTurn(opened.id, ENDING_TURN_MS, async () => {
             const now = held.get(opened.id)?.state
             if (now?.kind !== 'LIVE' || now.token !== token) return
             held.set(opened.id, { seat: opened, state: NONE })
             await executor.logout(opened, token, LOGOUT_DEADLINE_MS)
-          })
+          }).catch((error: unknown) =>
+            logFailure(log, new Failure('INTERNAL_UNEXPECTED', { cause: error }), {
+              connection: opened.id,
+            }),
+          )
         },
         Math.max(0, expiresAt - EARLY_MS - Date.now()),
       )
@@ -136,9 +144,13 @@ function createEndings(
 }
 
 /** The one token of each pasted-key connection: reused while it lives, renewed with the old one's logout first. */
-function createTokens(executor: Executor, inTurn: Limits['inTurn']): Omit<Limits, 'inTurn'> {
+function createTokens(
+  executor: Executor,
+  inTurn: Limits['inTurn'],
+  log: FailureLog,
+): Omit<Limits, 'inTurn'> {
   const held = new Map<ConnectionId, Held>()
-  const endings = createEndings(held, executor, inTurn)
+  const endings = createEndings(held, executor, inTurn, log)
 
   async function login(opened: OpenedConnection, deadlineMs: number): Promise<Login> {
     const answered = await executor.login(opened, deadlineMs)
@@ -205,7 +217,7 @@ function createTokens(executor: Executor, inTurn: Limits['inTurn']): Omit<Limits
   }
 }
 
-export function createLimits(deps: { executor: Executor }): Limits {
+export function createLimits(deps: { executor: Executor; log: FailureLog }): Limits {
   const lanes = createLanes()
-  return { ...lanes, ...createTokens(deps.executor, lanes.inTurn) }
+  return { ...lanes, ...createTokens(deps.executor, lanes.inTurn, deps.log) }
 }

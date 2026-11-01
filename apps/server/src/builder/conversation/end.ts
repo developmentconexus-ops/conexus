@@ -15,6 +15,7 @@ import type {
 } from '@mastra/core/agent-controller'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
+import { logMemory } from '../../platform/memory.ts'
 import type { Phase } from '../machine/public.ts'
 import type { Runs, Settled } from '../runs/public.ts'
 import type { Builder } from './builder.ts'
@@ -223,15 +224,65 @@ function tellPhase(session: Session, phase: Phase): void {
   tell(session, { ...oursOf(session, conversationId, [part]), id: `${conversationId}:machine` })
 }
 
+type Running = Map<string, { session: Session; run: Run }>
+
+/** The runs' ends, counted, so `settle` can wait for the ones in flight. */
+function endsOfRuns() {
+  let count = 0
+  let next = Promise.withResolvers<void>()
+  return {
+    heard(): void {
+      count += 1
+      next.resolve()
+      next = Promise.withResolvers<void>()
+    },
+    count: () => count,
+    next: () => next.promise,
+  }
+}
+
+/**
+ * Waits until no run is in flight or `bound` aborts, never aborting a run, and logs how many ended
+ * meanwhile and how many are left for `drain` to cut (founder E1).
+ */
+async function settleRuns(
+  running: Running,
+  ends: ReturnType<typeof endsOfRuns>,
+  bound: AbortSignal,
+  log: FailureLog,
+): Promise<{ finished: number; left: number; waitedMs: number }> {
+  const since = Date.now()
+  const before = ends.count()
+  log.info({ inFlight: running.size }, 'SHUTDOWN_DRAINING')
+  const bounded = new Promise<'bound'>((done) => {
+    if (bound.aborted) done('bound')
+    bound.addEventListener('abort', () => done('bound'), { once: true })
+  })
+  while (running.size > 0) {
+    if ((await Promise.race([ends.next(), bounded])) === 'bound') break
+  }
+  const settled = {
+    finished: ends.count() - before,
+    left: running.size,
+    waitedMs: Date.now() - since,
+  }
+  log.info(settled, 'SHUTDOWN_DRAINED')
+  return settled
+}
+
 /**
  * Every Mastra run of every conversation, from the session Mastra makes for it: its end saved by
  * the conversation (`onBeforeAgentEnd`, core `agent-controller-DO6rGsQm.js:4836-4859`), and its
- * line in the log at `agent_end` (security S41). `drain` stops the runs in flight as Parar does,
- * so each saves what it wrote, and waits for their ends (code C62).
+ * line in the log at `agent_end` (security S41). At a stop signal `settle` refuses new turns and
+ * waits for the runs in flight to end, up to its bound (founder E1); `drain` then stops what is
+ * left as Parar does, so each saves what it wrote, with `HUB_UPDATED` after a `settle`, and waits for their ends
+ * (code C62).
  */
 export function watchRuns(deps: Deps) {
-  const running = new Map<string, { session: Session; run: Run }>()
+  const running: Running = new Map()
   const unheard = new Map<string, () => void>()
+  const ends = endsOfRuns()
+  let settling = false
   deps.controller.onSessionCreated((session) => {
     const conversationId = ConversationIdSchema.parse(session.identity.getId())
     const owner = ownerOfResource(session.identity.getResourceId())
@@ -254,9 +305,11 @@ export function watchRuns(deps: Deps) {
         { ...fields, reason: event.reason ?? 'complete', ...line },
         'CONVERSATION_TURN_ENDED',
       )
+      logMemory(deps.log, { conversationId })
       run.over.resolve()
       running.delete(conversationId)
       run = undefined
+      ends.heard()
     })
     session.onBeforeAgentEnd(async ({ reason }) => {
       if (run !== undefined) await ended(deps, session, run, reason ?? 'complete')
@@ -269,17 +322,32 @@ export function watchRuns(deps: Deps) {
   // A deleted session's run ends without an `agent_end` (Mastra's `deleteSession` aborts it locally).
   deps.controller.onSessionDeleted((session) => {
     const conversationId = session.identity.getId()
-    running.get(conversationId)?.run.over.resolve()
+    const gone = running.get(conversationId)
+    gone?.run.over.resolve()
     running.delete(conversationId)
+    if (gone !== undefined) ends.heard()
     unheard.get(conversationId)?.()
     unheard.delete(conversationId)
   })
   return {
+    /** True from `settle` on: the guard refuses `POST …/messages` with `HUB_UPDATING`. */
+    updating: (): boolean => settling,
+    /**
+     * Refuses new turns from now on and resolves when no run is in flight or at `bound`; never
+     * aborts. A card answered meanwhile resumes its run, which is waited for like the others.
+     */
+    settle(bound: AbortSignal) {
+      settling = true
+      return settleRuns(running, ends, bound, deps.log)
+    },
     async drain(): Promise<void> {
       // Mastra starts a run of its own at an abort with a message still unread: it is stopped too.
       while (running.size > 0) {
         const inFlight = [...running.values()]
-        for (const { session } of inFlight) session.abort()
+        for (const { session, run } of inFlight) {
+          if (settling) run.failure ??= { code: 'HUB_UPDATED' }
+          session.abort()
+        }
         await Promise.all(inFlight.map(({ run }) => run.over.promise))
       }
     },

@@ -379,6 +379,26 @@ Cartão da etapa 20 aprovado em 2026-10-30 (commit fa6f160301872fc196efdaae078b1
 
 Ele aprovou a página do cartão e escolheu a `A1`: a aba "Projeto" do alto sai, **Sobre** reúne Sobre e Versões, e o Construir fica com Prévia, Código e Alterações. As decisões `S1`, `R2` e `T-A` com o ajuste vieram antes, ao estudo, no mesmo dia. O commit citado só escreve a `A1` na página. A aprovação é também a palavra da regra de dados D11 para as permissões do banco da U2: a tabela `connectors.project_connection` e o campo `connection.notes`.
 
+Essa emenda muda o cartão da etapa 20 em três pontos, vindos das revisões. Os critérios 9 e 10 citam `project-connection.test.ts`, o esboço da U2 usa `projectId` como `text` e o `catalog.test.ts` deixa de ser arquivo mudado. A linha do corte da leitura cita `builder-tool.ts:89-91` e `sankhya/gateway.ts:34`. A retomada do critério 28 é provada só pelas ferramentas (o Mastra 1.79 não refaz skills nem instruções ao retomar), a metade do rastro do critério 29 vai para a 21.1, e `CONNECTOR_TOOLS` e o caminho passam a `builder/connectors/`.
+
+Cartão da etapa 20 aprovado em 2026-10-30 (commit e84a611647a4816724b76a0f9fc60a69a832594e): "Aprovado"
+
+Etapa 20 usada em https://hub.conexus.fun. À pergunta do firstmate em 2026-10-31, com a v0.20.10 no ar, "liberar uma conexão num Projeto e abrir um app com os dados dela": "Ja fiz deu certo". A resposta cobre o passo 2 do roteiro (liberar uma ligação em Integrações do Projeto) e, no passo 4, o app com os dados de verdade. Ele não relatou os passos 1, 3, 5 e 6, o Caderno do passo 4, o uso no celular nem a aprovação dos textos das telas.
+
+Decisões do fundador na revisão da etapa 20 e nos consertos do fechamento, registradas no fechamento. Cada linha traz as palavras dele; a data é a do dia em que o firstmate as recebeu.
+
+Correção da PR 515 (https://github.com/developmentconexus-ops/conexus/pull/515), em 2026-10-31. Ao achado de que uma ligação liberada que deixou de funcionar continuava dizendo "lê": "A". À forma das duas capturas (liberada que parou de funcionar, e ligação nova não liberada): "2.B".
+
+Consertos do lote de fechamento (https://github.com/developmentconexus-ops/conexus/pull/520), em 2026-10-31. Ao fim do turno que apagava o que o Hub não guardou, e à falha do compilador de tipos: "2A 3OKAY" (as chamadas 2 e 3 da revisão da etapa). Ao texto da recusa de gravar uma versão (`SAVE_REFUSED`, "O trabalho continua na conversa. Peça de novo ao Builder."): "1 sim".
+
+Regra do `MACHINE_LOST`, em 2026-11-01: só uma máquina que o provedor diz perdida (`session.lost`) é `MACHINE_LOST`; qualquer outra coleta que falha é `SAVE_REFUSED`.
+
+## Mudanças do método
+
+Em 2026-10-31, sobre as correções do método que a auditoria do mesmo dia propôs: "Sim, menos sobre o prompt do builder não vou mexer nisso agora". Entram o passo do nativo no conserto, o conserto que acrescenta uma peça virar unidade de cartão curto, a página do fundador só com células abertas pelo autor do estudo, a atualização da prateleira e do `stack.md` a cada troca do pin do Mastra, o registro da palavra do fundador sobre os eventos `om_*_failed`, a investigação de teste instável em vazamento, recusa ou isolamento e a QA curta num conserto que muda tela. O prompt do Builder fica como está.
+
+Em 2026-10-31, sobre os eventos `om_*_failed` do Mastra, que chegam ao navegador como o Mastra os manda e carregam o texto cru do fornecedor, contra a regra C51 do guia de código: "Pra mim tem que deixar o nativo mesmo". É o conflito que a regra C75 manda registrar para o fechamento; fica na lista de fechamento do pull request que o registra, e o teste de `conversation.test.ts` passa a dizer no nome o que confere.
+
 ## Etapa 24.1
 
 Em 2026-10-30, ao estudo das referências do Supervisor: "M1 / A1 / B1 / `C1` / `D1` / E sua recomendação". Lido como: `M1` (um bloco "quem é o Conexus" e um bloco de trabalho por lugar, escolhido pelo lugar, nunca por um botão), `A1`, `B1`, `C1`, `D1` com o mínimo de 8 em 10 (cada pergunta feita duas vezes; um número inventado reprova a etapa), e o `E` como a recomendação do firstmate: o `E1`, a publicação espera as respostas em andamento, construído antes como a U0 (https://github.com/developmentconexus-ops/conexus/pull/499).

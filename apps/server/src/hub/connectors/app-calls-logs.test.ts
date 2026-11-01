@@ -18,6 +18,7 @@ test('cada chamada deixa uma linha CONNECTOR_CALLED com escalares; um valor da e
     'connector',
     'ms',
     'operation',
+    'personId',
     'projectId',
     'queuedMs',
     'result',

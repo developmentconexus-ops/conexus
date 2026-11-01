@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process'
 import { createReadStream, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
@@ -41,6 +42,11 @@ export type Control = {
   upMs: number
   /** Starts the latest machine again as the provider does after it died: its `onStart` runs once more. */
   restart: () => Promise<void>
+  /**
+   * The provider finds the machine dead at the next command and starts it again first, awaited, as
+   * Mastra's reconnect does: the command runs only once the new machine is up and seeded.
+   */
+  restartBeforeNextCommand: boolean
   /** The name of each machine started: the provider finds an existing one by it alone. */
   names: string[]
   /** The mark each machine started carries. */
@@ -68,6 +74,7 @@ export function newControl(): Control {
     networkClosed: 0,
     upMs: 0,
     restart: async () => undefined,
+    restartBeforeNextCommand: false,
     names: [],
     marks: [],
     sandbox: undefined,
@@ -97,6 +104,10 @@ export function localKit(folder: string, control: Control): KitFactory {
     const execute = sandbox.executeCommand?.bind(sandbox)
     if (execute !== undefined) {
       sandbox.executeCommand = async (...args) => {
+        if (control.restartBeforeNextCommand) {
+          control.restartBeforeNextCommand = false
+          await control.restart()
+        }
         const result = await execute(...args)
         control.afterCommand()
         return result
@@ -152,7 +163,7 @@ export async function world(
   startMs = 5_000,
   installation = INSTALLATION,
   seedOf?: () => Promise<Buffer>,
-  options: Readonly<{ checkProgram?: string }> = {},
+  options: Readonly<{ checkProgram?: string; commandMs?: number }> = {},
 ) {
   const folder = mkdtempSync(join(tmpdir(), 'conexus-machine-'))
   t.after(() => rmSync(folder, { recursive: true, force: true }))
@@ -164,6 +175,8 @@ export async function world(
   })
   const base = await repository.ensure()
   const control = newControl()
+  /** What the machines logged as errors, by message. */
+  const errors: string[] = []
   const machines = createMachines({
     kit: localKit(folder, control),
     api: {
@@ -183,7 +196,7 @@ export async function world(
     mark: { conexus_origin: installation },
     installation,
     template: TEMPLATE,
-    log: LOG,
+    log: { info: () => undefined, error: (_fields, message) => errors.push(message) },
     workdir: join(folder, 'app'),
     tmp: folder,
     startMs,
@@ -198,7 +211,7 @@ export async function world(
       onPhase: (phase) => phases.push(phase),
     })
   }
-  return { machines, repository, base, control, phases, open, folder }
+  return { machines, repository, base, control, phases, errors, open, folder }
 }
 
 /** The workspace's machine, started as a tool's first call starts it. */
@@ -206,4 +219,27 @@ export async function sandboxOf(workspace: Workspace) {
   const sandbox = await workspace.resolveSandbox({ requestContext: new RequestContext() })
   if (sandbox?.executeCommand === undefined) throw new Error('the machine cannot run commands')
   return { executeCommand: sandbox.executeCommand.bind(sandbox) }
+}
+
+/**
+ * Another conversation of the Projeto saved a version: `main` in the Git at `gitDir` moves to a
+ * commit that writes `path`, or deletes it when `content` is null, one no machine of this
+ * conversation received.
+ */
+export function moveMain(gitDir: string, path: string, content: string | null) {
+  const work = mkdtempSync(join(tmpdir(), 'conexus-other-'))
+  try {
+    execFileSync('git', ['clone', '--quiet', gitDir, work])
+    mkdirSync(dirname(join(work, path)), { recursive: true })
+    if (content === null) rmSync(join(work, path))
+    else writeFileSync(join(work, path), content)
+    function git(...args: string[]) {
+      execFileSync('git', ['-C', work, ...args])
+    }
+    git('add', '--all')
+    git('-c', 'user.name=Outra', '-c', 'user.email=outra@conexus.invalid', 'commit', '-qm', 'outra')
+    git('push', '--quiet', 'origin', 'HEAD:main')
+  } finally {
+    rmSync(work, { recursive: true, force: true })
+  }
 }

@@ -4,6 +4,7 @@ import type { DictationError } from '../../ui/speech-input.tsx'
 import type { Refusal } from './attachments.ts'
 import { LIMITS } from './attachments.ts'
 
+export const LOADING_OLDER = 'Carregando mensagens anteriores'
 export const WORKING = 'Builder trabalhando'
 export const STILL_WORKING = 'Ainda trabalhando…'
 export const EMPTY_CONVERSATION = 'Descreva o aplicativo que você quer criar.'

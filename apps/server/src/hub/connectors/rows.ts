@@ -32,6 +32,13 @@ export type Deps = {
 export type Viewer = { person: Pick<Person, 'id'>; companyId: CompanyId }
 export type OfConnection = Viewer & { connectionId: ConnectionId }
 
+/**
+ * The one rule for "a Projeto can use this connection": it was tested and works. Publicar, the app's
+ * door, the Builder's port, the release and the list's `access` all read this predicate; a screen
+ * renders the list's answer.
+ */
+export const usable = eq(connection.state, 'ACTIVE')
+
 // Every column but `sealed`, which the company's role cannot read (U2's grant).
 export const columns = {
   id: connection.id,

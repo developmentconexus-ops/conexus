@@ -11,7 +11,7 @@ import { OPENED } from './session-state.ts'
 import { conversationOf, FIRST, screens } from './test-hub.tsx'
 import { builderSaid, personSaid } from './test-stream.tsx'
 import type { ShownTurn } from './transcript.tsx'
-import { shownOf, Transcript } from './transcript.tsx'
+import { NO_OLDER, shownOf, Transcript } from './transcript.tsx'
 
 const { openConversation } = screens(hubServer())
 const MODEL = ModelId.parse('anthropic/claude-sonnet-4')
@@ -62,6 +62,7 @@ test('raciocínio: "Pensando…", depois "Pensou por N s", fechado por padrão, 
       turns={[turnOf([reasoningItemRunning], true)]}
       steers={[]}
       model={MODEL}
+      older={NO_OLDER}
       onAsk={() => undefined}
     />,
   )
@@ -80,6 +81,7 @@ test('raciocínio: "Pensando…", depois "Pensou por N s", fechado por padrão, 
       turns={[turnOf([reasoningItemDone], false)]}
       steers={[]}
       model={MODEL}
+      older={NO_OLDER}
       onAsk={() => undefined}
     />,
   )
@@ -109,6 +111,7 @@ test('relido, o raciocínio do passo diz "Pensou por N s" com o tempo guardado n
       turns={shownOf({ ...OPENED, messages })}
       steers={[]}
       model={MODEL}
+      older={NO_OLDER}
       onAsk={() => undefined}
     />,
   )
@@ -129,6 +132,7 @@ test('raciocínio sem tempo diz só "Pensou" e abre no texto (Critério 9)', asy
       turns={[turnOf([reasoningWithoutSeconds], false)]}
       steers={[]}
       model={MODEL}
+      older={NO_OLDER}
       onAsk={() => undefined}
     />,
   )
@@ -149,6 +153,7 @@ test('uma ou duas ferramentas são linhas; três ou mais viram um grupo fechado 
       turns={[turnOf(twoTools, false)]}
       steers={[]}
       model={MODEL}
+      older={NO_OLDER}
       onAsk={() => undefined}
     />,
   )
@@ -168,6 +173,7 @@ test('uma ou duas ferramentas são linhas; três ou mais viram um grupo fechado 
       turns={[turnOf(fourTools, false)]}
       steers={[]}
       model={MODEL}
+      older={NO_OLDER}
       onAsk={() => undefined}
     />,
   )
@@ -204,6 +210,7 @@ test('skill, ask_user e submit_plan nunca se agrupam mesmo com 3 ou mais ferrame
       turns={[turnOf(itemsWithUngroupables, false)]}
       steers={[]}
       model={MODEL}
+      older={NO_OLDER}
       onAsk={() => undefined}
     />,
   )
@@ -227,6 +234,7 @@ test('task_* tools não têm linha na conversa (Critério 9)', () => {
       turns={[turnOf(itemsWithTasks, false)]}
       steers={[]}
       model={MODEL}
+      older={NO_OLDER}
       onAsk={() => undefined}
     />,
   )

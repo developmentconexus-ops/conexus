@@ -25,12 +25,18 @@ export const WORKSPACE_TOOL = {
   killProcess: 'mastra_workspace_kill_process',
 } as const
 
-/** The Builder's own tools besides the workspace's: the web, the memory's recall and the check. */
+/**
+ * The Builder's own tools besides the workspace's: the web, the memory's recall, the check and the
+ * three of a Projeto's granted connections (the server proves them equal to its own, code C27).
+ */
 export const BUILDER_TOOL = {
   webSearch: 'web_search',
   webFetch: 'web_fetch',
   recall: 'recall',
   check: 'conexus_check',
+  connectorRead: 'connector_read',
+  connectorNotes: 'connector_notes',
+  connectorNoteSave: 'connector_note_save',
 } as const
 
 /** Every tool the Builder's closure offers (`TOOL_CLOSURE.availableTools`), each named once. */

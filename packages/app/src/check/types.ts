@@ -1,67 +1,52 @@
-import { existsSync } from 'node:fs'
-import { join, relative } from 'node:path'
-import ts from 'typescript'
-import type { Problem } from './report.ts'
+import { existsSync, mkdirSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { z } from 'zod'
+import { TYPE_HEAP_MB } from './machine.ts'
+import { CHECK_LIMITS, Problem } from './report.ts'
 import type { CheckContext, Outcome } from './step.ts'
-import { PASSED, problem, workOf } from './step.ts'
+import { overran, PASSED, workOf } from './step.ts'
 
-// The starter's own options (packages/app/starter/tsconfig.json), fixed by the check so the model's
-// tsconfig cannot loosen them; `allowImportingTsExtensions` reads the SDK, which ships its sources.
-const BASE = {
-  strict: true,
-  target: 'ES2022',
-  module: 'ESNext',
-  moduleResolution: 'bundler',
-  noEmit: true,
-  skipLibCheck: true,
-  isolatedModules: true,
-  allowImportingTsExtensions: true,
-}
+const PROGRAM = join(import.meta.dirname, 'program.ts')
+
+// The child's words are whole; `firstProblems` clips them when the report is made.
+const Problems = z.array(Problem.extend({ message: z.string() }))
 
 /**
- * Two programs from the work folder: the screens against the DOM, and the server and its shared
- * operations against the Worker's globals, so a handler that reaches for `document` fails.
+ * Each program runs in a child with the heap `TYPE_HEAP_MB` gives it, so a program that does not
+ * fit is this step's outcome, never a dead check.
  */
-const PROGRAMS = {
-  screens: {
-    compilerOptions: {
-      ...BASE,
-      jsx: 'react-jsx',
-      lib: ['ES2022', 'DOM', 'DOM.Iterable'],
-      types: ['vite/client'],
-      paths: { '@/*': ['../../src/*'] },
-    },
-    include: ['../../src'],
-  },
-  server: {
-    compilerOptions: { ...BASE, lib: ['ES2022', 'WebWorker'], types: [] },
-    include: ['../../server', '../../shared'],
-  },
-}
-
-/** One program's diagnostics from TypeScript's own compiler API, located where it says. */
-function diagnosticsOf(ctx: CheckContext, name: keyof typeof PROGRAMS): Problem[] {
-  const parsed = ts.parseJsonConfigFileContent(PROGRAMS[name], ts.sys, workOf(ctx))
-  const program = ts.createProgram({ rootNames: parsed.fileNames, options: parsed.options })
-  return ts.getPreEmitDiagnostics(program).map((diagnostic) => {
-    const code = `TS${diagnostic.code}`
-    const message = ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n')
-    const { file, start } = diagnostic
-    if (file === undefined || start === undefined) return problem({ code, message })
-    const { line, character } = file.getLineAndCharacterOfPosition(start)
-    return problem({
-      code,
-      message,
-      file: relative(ctx.root, file.fileName),
-      line: line + 1,
-      column: character + 1,
-    })
-  })
+async function diagnosticsOf(
+  ctx: CheckContext,
+  name: 'screens' | 'server',
+): Promise<Problem[] | Outcome> {
+  mkdirSync(workOf(ctx), { recursive: true })
+  const result = workOf(ctx, `tipos-${name}.json`)
+  const ran = await ctx.run(
+    process.execPath,
+    [`--max-old-space-size=${TYPE_HEAP_MB}`, PROGRAM, name, ctx.root, result],
+    { cwd: ctx.root, timeoutMs: CHECK_LIMITS.stepMs },
+  )
+  const late = overran('tipos', ran)
+  if (late !== undefined) return late
+  // The child's one verdict is its result file, written before it exits 0: a child that ended
+  // without it (spent heap, killed, a TypeScript crash) gave none, and that is the platform's.
+  if (ran.code !== 0) {
+    return {
+      state: 'platform',
+      reason: `tipos ended without its diagnostics: code ${ran.code ?? 'none'}: ${ran.output.trim()}`,
+    }
+  }
+  return Problems.parse(JSON.parse(readFileSync(result, 'utf8')))
 }
 
 export async function tipos(ctx: CheckContext): Promise<Outcome> {
   const serverSide = ['server', 'shared'].some((folder) => existsSync(join(ctx.root, folder)))
   const names = serverSide ? (['screens', 'server'] as const) : (['screens'] as const)
-  const problems = names.flatMap((name) => diagnosticsOf(ctx, name))
+  const problems: Problem[] = []
+  for (const name of names) {
+    const found = await diagnosticsOf(ctx, name)
+    if (!Array.isArray(found)) return found
+    problems.push(...found)
+  }
   return problems.length > 0 ? { state: 'failed', problems } : PASSED
 }

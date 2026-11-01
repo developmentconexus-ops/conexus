@@ -5,8 +5,8 @@ import { messageOf, sentOf } from './messages.ts'
 
 type Display = Extract<KnownAgentControllerEvent, { type: 'display_state_changed' }>['displayState']
 export type OMProgress = Display['omProgress']
-type OMPhase = 'idle' | 'buffering' | 'observing' | 'reflecting'
-type MemoryFailure = 'observation' | 'reflection' | 'buffering'
+type OMPhase = 'idle' | 'observing' | 'reflecting'
+type MemoryFailure = 'observation' | 'reflection'
 
 /** A message the person sent while the Builder worked, until the stream says Mastra read it. */
 export type Steer = { id: string; content: string; files: readonly MessageFile[] }
@@ -98,21 +98,13 @@ function byCall(pending: Display['pendingSuspensions']): Record<string, Suspende
   return Object.fromEntries(Object.values(pending).map((one) => [one.toolCallId, one]))
 }
 
-/** The memory's progress as the display state holds it; its buffering shows as the phase. */
+/** The memory's progress as the display state holds it. */
 function displayed(state: SessionState, display: Display): SessionState {
-  const buffering = display.bufferingMessages || display.bufferingObservations
-  const omPhase =
-    state.omPhase === 'idle' && buffering
-      ? 'buffering'
-      : state.omPhase === 'buffering' && !buffering
-        ? 'idle'
-        : state.omPhase
   return {
     ...state,
     running: display.isRunning,
     suspended: byCall(display.pendingSuspensions),
     memory: display.omProgress,
-    omPhase,
   }
 }
 
@@ -125,9 +117,6 @@ const OM_PHASES: Partial<
   om_reflection_start: { omPhase: 'reflecting' },
   om_reflection_end: { omPhase: 'idle', memoryFailed: null },
   om_reflection_failed: { omPhase: 'idle', memoryFailed: 'reflection' },
-  om_buffering_start: { omPhase: 'buffering' },
-  om_buffering_end: { omPhase: 'idle', memoryFailed: null },
-  om_buffering_failed: { omPhase: 'idle', memoryFailed: 'buffering' },
 }
 
 function heard(state: SessionState, event: KnownAgentControllerEvent): SessionState {
@@ -224,25 +213,55 @@ function drawnBy(read: readonly Stored[], message: Stored): boolean {
 }
 
 /**
- * The read takes the place of what the stream told, joined by id: a message the stream told and
- * the read does not hold yet stays after it, as Mastra may save it a moment later, unless the read
- * already draws all of it (Factory `mergeServerWindow`). A person's message only the read brings,
- * as after a gap in the stream, confirms the pending steer with its words (Factory
- * `confirmPendingUserMessages`).
+ * The held messages and the read as one list, held ones keeping their place as Factory's
+ * `mergeServerWindow` does: the read's messages the screen lacks go in front of the next one it
+ * has, and those after the last it has go at the end. A read with nothing in common is newer than
+ * what the stream told, so what the stream told stays behind it.
+ */
+function merged(held: readonly Stored[], read: readonly Stored[]): Stored[] {
+  const readById = new Map(read.map((message) => [message.id, message]))
+  const at = new Map(held.map((message, index) => [message.id, index]))
+  if (!read.some((message) => at.has(message.id))) return [...read, ...held]
+  const messages: Stored[] = []
+  let cursor = 0
+  let missing: Stored[] = []
+  for (const message of read) {
+    const anchor = at.get(message.id)
+    if (anchor === undefined) {
+      missing.push(message)
+      continue
+    }
+    if (anchor < cursor) continue
+    messages.push(...held.slice(cursor, anchor), ...missing)
+    missing = []
+    cursor = anchor
+  }
+  messages.push(...held.slice(cursor), ...missing)
+  return messages.map((each) => readById.get(each.id) ?? each)
+}
+
+/**
+ * The read takes the place of what the stream told, joined by id, as Factory's `mergeServerWindow`
+ * does: the read is the newest window of the thread, so a message held that the read does not
+ * bring stays where it was, in front of the read when it came before the read's first message and
+ * behind it when it came after, unless the read already draws all of it. A person's message only
+ * the read brings, as after a gap in the stream, confirms the pending steer with its words
+ * (Factory `confirmPendingUserMessages`).
  */
 function loaded(state: SessionState, read: readonly Stored[]): SessionState {
-  const held = new Set(read.map((message) => message.id))
+  const readById = new Map(read.map((message) => [message.id, message]))
   const told = new Set(state.messages.map((message) => message.id))
-  const arriving = state.messages.filter(
-    (message) => !held.has(message.id) && !drawnBy(read, message),
+  const kept = state.messages.filter(
+    (message) => readById.has(message.id) || !drawnBy(read, message),
   )
+  const messages = merged(kept, read)
   const brought = read.filter((message) => !told.has(message.id)).map(wordsOf)
   const steers = state.steers.filter((steer) => {
     const at = brought.indexOf(steer.content)
     if (at !== -1) brought.splice(at, 1)
     return at === -1
   })
-  return { ...state, messages: [...read, ...arriving], steers }
+  return { ...state, messages, steers }
 }
 
 export function session(state: SessionState, action: Action): SessionState {

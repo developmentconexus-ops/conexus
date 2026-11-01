@@ -41,7 +41,9 @@ for brought code, the entry sheets and the old code at its frozen commit.
 6. **Recommend** what you would write from zero (pstack `poteto-mode`), and list what of `main` it
    deletes. Where references diverge, the options are theirs, each with its how
    ([report](references/report.md), section 4); without it, it is not brought.
-7. **Verify.** Reopen every line a reader reported, or label it relay.
+7. **Verify.** Reopen every line a reader reported, or label it relay. Every cell that reaches the
+   founder's page or an option table is opened by the study's author, never left as a subagent
+   relay.
 
 **The study rule**: a decision whose only basis is "implemented so",
 "only tested so" or "decided before" is dropped, or defended in writing with a reason of its own. A

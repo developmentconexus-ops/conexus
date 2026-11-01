@@ -94,6 +94,8 @@ function chatSentOf(init: RequestInit | undefined): Sent {
     media: [],
     thinking: null,
     cached: [],
+    toolUses: [],
+    unfilled: null,
   }
 }
 
@@ -240,6 +242,15 @@ function replied(sent: Sent, reply: Reply, signal: AbortSignal | null | undefine
   })
 }
 
+/** The Messages API's 400 for a conversation that holds a `tool_use` with no object `input`, or a `tool_result` with no `tool_use`. */
+function unfilledRefused(path: string): Response {
+  const error = {
+    type: 'invalid_request_error',
+    message: `${path}: ${path.endsWith('tool_use_id') ? 'unexpected `tool_use_id` found in `tool_result` blocks' : 'Field required'}`,
+  }
+  return Response.json({ type: 'error', error }, { status: 400 })
+}
+
 /**
  * Stands in for Anthropic at `fetch` (testing T14): the Messages API in its documented stream and
  * JSON shapes, its error body, and the subscription's token endpoint. Every call is recorded.
@@ -280,6 +291,7 @@ export function plantAnthropic(t: Lifetime, answer: Anthropic['answer']): Anthro
     }
     const sent = sentOf(init)
     anthropic.sent.push(sent)
+    if (sent.unfilled !== null) return unfilledRefused(sent.unfilled)
     const unidentified = sent.bearer !== null && !sent.system.startsWith(SUBSCRIPTION_LINE)
     const reply = unidentified
       ? { kind: 'refuse' as const, status: 429 as const }
