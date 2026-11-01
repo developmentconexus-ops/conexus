@@ -1,9 +1,9 @@
-/** How an automation's run ended, for the person who owns it. */
-export type AutomationMailKind = 'DONE' | 'FAILED' | 'PAUSED'
+import type { NotificationRow } from '@conexus/hub-api'
 
 export type AutomationMailProps = {
   name: string
-  kind: AutomationMailKind
+  /** How the automation's run ended: the kind of the notification it comes with. */
+  kind: NotificationRow['kind']
   link: string
   to: string
 }

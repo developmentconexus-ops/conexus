@@ -2234,7 +2234,7 @@
   },
   {
     "id": "notifications-policy-own-person",
-    "file": "apps/server/migrations/20261101075514_e242_notification/migration.sql",
+    "file": "apps/server/migrations/20261101085955_e242_notification/migration.sql",
     "find": " and person_id = nullif(current_setting('conexus.person_id', true), '')) WITH CHECK",
     "replace": ") WITH CHECK",
     "test": {

@@ -1,3 +1,4 @@
+import { AutomationFailureCode } from '@conexus/hub-api'
 import { sql } from 'drizzle-orm'
 import {
   check,
@@ -13,6 +14,8 @@ import { SCOPE_ROLES, scoped } from '../../platform/database.ts'
 import { company, member, policy } from '../identity/public.ts'
 
 export const notifications = pgSchema('notifications')
+
+const FAILURE_CODES = sql.raw(AutomationFailureCode.options.map((code) => `'${code}'`).join(', '))
 
 // A notification is its person's alone: the company's routes reach only their own rows.
 const OWN = sql`company_id = ${scoped.companyId} and person_id = ${scoped.personId}`
@@ -54,6 +57,19 @@ export const notification = notifications.table(
     check(
       'notification_kind',
       sql`${table.kind} in ('AUTOMATION_DONE', 'AUTOMATION_FAILED', 'AUTOMATION_PAUSED')`,
+    ),
+    // What each kind carries, as `NotificationRow` reads it: one bad row would fail the whole bell.
+    check(
+      'notification_done',
+      sql`${table.kind} <> 'AUTOMATION_DONE' or (${table.conversationId} is not null and ${table.failureCode} is null)`,
+    ),
+    check(
+      'notification_failed',
+      sql`${table.kind} <> 'AUTOMATION_FAILED' or (${table.failureCode} is not null and ${table.failureCode} in (${FAILURE_CODES}))`,
+    ),
+    check(
+      'notification_paused',
+      sql`${table.kind} <> 'AUTOMATION_PAUSED' or (${table.conversationId} is null and ${table.failureCode} is null)`,
     ),
     unique('notification_run_key').on(table.companyId, table.runId),
     index('notification_person_created').on(

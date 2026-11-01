@@ -91,8 +91,11 @@ test('a conversa continua: a conversa da execução está na lista com a automa�
   )
   const conversation = `${on.assistant}/${String(run.state.conversationId)}`
   const { say } = await talking(t, on.hub, on.ana, conversation)
-  const manual = on.lines.find((line) => line.message === 'AUTOMATION_RAN')
-  assert.deepEqual([manual?.fields.trigger, manual?.fields.kind], ['MANUAL', 'DONE'])
+  assert.deepEqual(
+    (await bellOf(on.hub, on.ana, on.company)).notifications.map((each) => each.kind),
+    ['AUTOMATION_DONE'],
+  )
+  assert.deepEqual(on.mail.sent, [], 'Rodar agora never mails')
   assert.equal(endOf(await say('E por região?')), 'complete')
   assert.deepEqual(await questionsIn(on.hub, on.ana, conversation), [PROMPT, 'E por região?'])
 })

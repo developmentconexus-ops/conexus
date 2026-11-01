@@ -115,3 +115,42 @@ test('a política: cada pessoa lê e marca só as suas, na sua empresa; nenhuma 
     )
   }
 })
+
+test('o que cada tipo carrega: a conversa no pronta, um código conhecido no falhou, nenhum dos dois na pausa; o mais o banco recusa', async (t) => {
+  const { asOwner } = await seeded(t)
+  function insert(kind: string, conversation: string | null, code: string | null) {
+    return asOwner(
+      `insert into notifications.notification
+         (id, company_id, person_id, kind, automation_id, automation_name, conversation_id, failure_code, run_id, created_at)
+       values ($1::uuid, $2, $3, $4, 'automation', 'Resumo', $5::uuid, $6, $1::text, now())`,
+      [randomUUID(), A, ANA, kind, conversation, code],
+    )
+  }
+  function checked(name: string) {
+    return (error: unknown) => {
+      assert.ok(error instanceof Error && 'constraint' in error)
+      assert.equal(error.constraint, name)
+      return true
+    }
+  }
+  const conversation = randomUUID()
+  await assert.rejects(insert('AUTOMATION_DONE', null, null), checked('notification_done'))
+  await assert.rejects(
+    insert('AUTOMATION_DONE', conversation, 'MODEL_CALL_FAILED'),
+    checked('notification_done'),
+  )
+  await assert.rejects(insert('AUTOMATION_FAILED', null, null), checked('notification_failed'))
+  await assert.rejects(insert('AUTOMATION_FAILED', null, 'NOPE'), checked('notification_failed'))
+  await assert.rejects(
+    insert('AUTOMATION_PAUSED', conversation, null),
+    checked('notification_paused'),
+  )
+  await assert.rejects(
+    insert('AUTOMATION_PAUSED', null, 'MODEL_CALL_FAILED'),
+    checked('notification_paused'),
+  )
+  await insert('AUTOMATION_DONE', conversation, null)
+  await insert('AUTOMATION_FAILED', null, 'MODEL_CALL_FAILED')
+  await insert('AUTOMATION_FAILED', conversation, 'MACHINE_LOST')
+  await insert('AUTOMATION_PAUSED', null, null)
+})

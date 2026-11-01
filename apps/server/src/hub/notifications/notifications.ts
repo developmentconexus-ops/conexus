@@ -15,13 +15,12 @@ import { and, desc, eq, inArray, isNull, lt, or, sql } from 'drizzle-orm'
 import type { PublicOrigin } from '../../platform/config.ts'
 import type { Database, ReadTx, Scope } from '../../platform/database.ts'
 import { databaseFailure } from '../../platform/database.ts'
-import type { FailureLog } from '../../platform/failure.ts'
+import type { FailureLog, Scalar } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
 import type { SendMail } from '../../platform/mail.ts'
 import { pageOf } from '../../platform/pages.ts'
 import type { IdentityPorts } from '../identity/public.ts'
 import { automationMail } from './mail.ts'
-import type { AutomationMailKind } from './notification-render.mjs'
 import { notification } from './tables.ts'
 
 /** A run that ended, for the person who owns its automation. */
@@ -38,7 +37,7 @@ export type AutomationRan = {
 
 /** What the Hub tells a person when an automation's run ends (step 24.2). */
 export type Notify = {
-  /** One notification per run; mails the owner only for a new one fired by the schedule. */
+  /** One notification per run; mails the owner only for a new one fired by the schedule, or a pause. */
   automationRan(ran: AutomationRan): Promise<void>
 }
 
@@ -56,21 +55,18 @@ function summaryOf(outcome: RunOutcome) {
     case 'DONE':
       return {
         kind: 'AUTOMATION_DONE',
-        mail: 'DONE',
         conversationId: outcome.conversationId,
         failureCode: null,
       } as const
     case 'FAILED':
       return {
         kind: 'AUTOMATION_FAILED',
-        mail: 'FAILED',
         conversationId: outcome.conversationId,
         failureCode: outcome.code,
       } as const
     case 'SKIPPED':
       return {
         kind: 'AUTOMATION_PAUSED',
-        mail: 'PAUSED',
         conversationId: null,
         failureCode: null,
       } as const
@@ -134,25 +130,46 @@ function mails(ran: AutomationRan): boolean {
 }
 
 /**
- * The e-mail never undoes the notification or the run: a refusal is printed without the address
- * (security S40) and the run ends as it did.
+ * A refused e-mail, printed under the one message the process has for it, with the failure's own
+ * fields: its causes and frames, and never the address (security S40).
  */
+function mailRefused(deps: Deps, ran: AutomationRan, failure: Failure): void {
+  const { companyId, automationId, runId } = ran
+  function print(fields: Record<string, Scalar>): void {
+    deps.log.error(fields, 'AUTOMATION_MAIL_FAILED')
+  }
+  logFailure({ info: print, error: print }, failure, {
+    companyId,
+    automationId,
+    runId,
+    failure: failure.code,
+  })
+}
+
+/** The e-mail never undoes the notification or the run: a refusal is printed and the run ends as it did. */
 async function mailed(
   deps: Deps,
   ran: AutomationRan,
   scope: Scope,
   summary: ReturnType<typeof summaryOf>,
 ): Promise<void> {
-  const { companyId, automationId, runId, personId } = ran
   try {
-    const named = await deps.database.read(scope, (tx) => deps.identity.peopleNamed(tx, [personId]))
-    const to = named.get(personId)?.email
-    if (to === undefined) throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'OWNER' } })
-    const kind: AutomationMailKind = summary.mail
-    await deps.sendMail(await automationMail({ to, name: ran.name, kind, link: linkOf(deps, ran) }))
+    const named = await deps.database.read(scope, (tx) =>
+      deps.identity.peopleNamed(tx, [ran.personId]),
+    )
+    const to = named.get(ran.personId)?.email
+    if (to === undefined) {
+      return mailRefused(
+        deps,
+        ran,
+        new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'OWNER' } }),
+      )
+    }
+    await deps.sendMail(
+      await automationMail({ to, name: ran.name, kind: summary.kind, link: linkOf(deps, ran) }),
+    )
   } catch (error) {
-    const failure = databaseFailure(error)
-    deps.log.error({ companyId, automationId, runId, code: failure.code }, 'AUTOMATION_MAIL_FAILED')
+    mailRefused(deps, ran, databaseFailure(error))
   }
 }
 

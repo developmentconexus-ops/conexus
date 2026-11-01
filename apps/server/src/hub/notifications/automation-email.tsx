@@ -1,21 +1,40 @@
 import { render, toPlainText } from '@react-email/render'
-import { Button, Heading, Hr, Link, Section, Text } from 'react-email'
-import { COLORS, MailFrame } from '../identity/mail/public.tsx'
+import { Heading, Text } from 'react-email'
+import {
+  COLORS,
+  MailAction,
+  MailCard,
+  MailFallbackLink,
+  MailFrame,
+} from '../identity/mail/public.tsx'
 import type {
-  AutomationMailKind,
   AutomationMailProps,
   renderAutomation as RenderAutomation,
 } from './notification-render.mjs'
 
 /** The sentence of the e-mail, the same in the preview and in the body; it carries no answer and no figure. */
-function sentenceOf(kind: AutomationMailKind, name: string): string {
+function sentenceOf(kind: AutomationMailProps['kind'], name: string): string {
   switch (kind) {
-    case 'DONE':
+    case 'AUTOMATION_DONE':
       return `A automação ${name} terminou e a resposta está esperando por você.`
-    case 'FAILED':
+    case 'AUTOMATION_FAILED':
       return `A automação ${name} não conseguiu terminar.`
-    case 'PAUSED':
+    case 'AUTOMATION_PAUSED':
       return `A automação ${name} foi pausada: você não pode mais perguntar ao Assistente da empresa.`
+    default:
+      return kind satisfies never
+  }
+}
+
+/** Why the e-mail came, in forms that do not name a gender; a paused automation is not asked to be paused again. */
+function noteOf(kind: AutomationMailProps['kind'], to: string): string {
+  const why = `Este aviso foi enviado para ${to} porque a automação é sua.`
+  switch (kind) {
+    case 'AUTOMATION_DONE':
+    case 'AUTOMATION_FAILED':
+      return `${why} Se você não quer mais recebê-lo, pause ou apague a automação no Conexus.`
+    case 'AUTOMATION_PAUSED':
+      return why
     default:
       return kind satisfies never
   }
@@ -24,19 +43,8 @@ function sentenceOf(kind: AutomationMailKind, name: string): string {
 function AutomationEmail(props: AutomationMailProps) {
   const sentence = sentenceOf(props.kind, props.name)
   return (
-    <MailFrame
-      preview={sentence}
-      note={`Este aviso foi enviado para ${props.to}, dono da automação. Se você não quer mais recebê-lo, pause ou apague a automação no Conexus.`}
-    >
-      <Section
-        className="content"
-        style={{
-          backgroundColor: COLORS.surface,
-          border: `1px solid ${COLORS.line}`,
-          borderRadius: 14,
-          padding: 24,
-        }}
-      >
+    <MailFrame preview={sentence} note={noteOf(props.kind, props.to)}>
+      <MailCard>
         <Heading
           className="text"
           style={{
@@ -60,37 +68,9 @@ function AutomationEmail(props: AutomationMailProps) {
         >
           {sentence}
         </Text>
-        <Button
-          className="action"
-          href={props.link}
-          style={{
-            backgroundColor: COLORS.text,
-            color: COLORS.surface,
-            borderRadius: 6,
-            padding: '14px 24px',
-            fontSize: 15,
-            fontWeight: 600,
-          }}
-        >
-          Abrir no Conexus
-        </Button>
-        <Hr className="line" style={{ borderColor: COLORS.line, margin: '24px 0 16px' }} />
-        <Text className="muted" style={{ color: COLORS.muted, fontSize: 13, lineHeight: '20px' }}>
-          Se o botão não abrir, copie este endereço no navegador:
-        </Text>
-        <Link
-          className="muted"
-          href={props.link}
-          style={{
-            color: COLORS.muted,
-            fontFamily: 'Consolas, monospace',
-            fontSize: 12,
-            wordBreak: 'break-all',
-          }}
-        >
-          {props.link}
-        </Link>
-      </Section>
+        <MailAction href={props.link}>Abrir no Conexus</MailAction>
+        <MailFallbackLink href={props.link} />
+      </MailCard>
     </MailFrame>
   )
 }

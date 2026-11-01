@@ -1,4 +1,4 @@
-import type { ConversationId, FailureCode } from '@conexus/hub-api'
+import type { ConversationId, FailureCode, RunTrigger } from '@conexus/hub-api'
 import {
   AutomationFailureCode,
   AutomationId,

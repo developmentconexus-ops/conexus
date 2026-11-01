@@ -1,8 +1,8 @@
 {
-  "id": "f45898a2-a18b-488f-a134-0677356e87c0",
-  "prevIds": ["a62719e0-6e75-45fc-a389-729ae417e05d"],
   "version": "8",
   "dialect": "postgres",
+  "id": "d0e25590-60c2-4e3e-8af3-5e4a6eb0650a",
+  "prevIds": ["10107d96-bfa7-4ec7-a7a9-aff646ef053e"],
   "ddl": [
     {
       "name": "builder",
@@ -4963,6 +4963,27 @@
     {
       "value": "\"kind\" in ('AUTOMATION_DONE', 'AUTOMATION_FAILED', 'AUTOMATION_PAUSED')",
       "name": "notification_kind",
+      "entityType": "checks",
+      "schema": "notifications",
+      "table": "notification"
+    },
+    {
+      "value": "\"kind\" <> 'AUTOMATION_DONE' or (\"conversation_id\" is not null and \"failure_code\" is null)",
+      "name": "notification_done",
+      "entityType": "checks",
+      "schema": "notifications",
+      "table": "notification"
+    },
+    {
+      "value": "\"kind\" <> 'AUTOMATION_FAILED' or (\"failure_code\" is not null and \"failure_code\" in ('MODEL_NO_ACCOUNT', 'MODEL_CALL_FAILED', 'MODEL_REFUSED', 'MODEL_ANSWER_CUT', 'MACHINE_UNAVAILABLE', 'MACHINE_LOST', 'HUB_UPDATED', 'INTERNAL_UNEXPECTED', 'DATABASE_UNAVAILABLE', 'INTERRUPTED', 'SCHEDULE_PUBLISH_FAILED'))",
+      "name": "notification_failed",
+      "entityType": "checks",
+      "schema": "notifications",
+      "table": "notification"
+    },
+    {
+      "value": "\"kind\" <> 'AUTOMATION_PAUSED' or (\"conversation_id\" is null and \"failure_code\" is null)",
+      "name": "notification_paused",
       "entityType": "checks",
       "schema": "notifications",
       "table": "notification"

@@ -52,6 +52,12 @@ test('o e-mail: pronta, falhou e pausada, cada um com o seu endereço; Rodar ago
     assert.ok(sent?.html.includes(each.link))
   }
   assert.ok(on.mail.sent[2]?.text.includes('Abrir no Conexus'))
+  for (const sent of on.mail.sent) {
+    assert.ok(sent.text.includes('porque a automação é sua'), 'sem gênero: a automação é "sua"')
+    assert.ok(!/\bdon[oa]\b/.test(sent.text))
+  }
+  assert.ok(on.mail.sent[0]?.text.includes('pause ou apague a automação'))
+  assert.ok(!on.mail.sent[2]?.text.includes('pause'), 'a pausa não pede para pausar')
   assert.ok(
     !on.mail.sent[2]?.text.includes('/automations/'),
     'a pausa não leva a página da automação',
@@ -71,6 +77,7 @@ test('o e-mail fora: a notificação fica, o processo imprime AUTOMATION_MAIL_FA
   const failed = on.lines.filter((line) => line.message === 'AUTOMATION_MAIL_FAILED')
   assert.equal(failed.length, 1)
   assert.equal(failed[0]?.fields.automationId, ran.automationId)
+  assert.equal(failed[0]?.fields.failure, 'MAIL_UNAVAILABLE')
   assert.ok(!JSON.stringify(on.lines).includes('ana@example.test'), 'nenhuma linha traz o endereço')
   on.mail.state.mode = 'DELIVER'
   await on.hub.notify.automationRan(ran)
