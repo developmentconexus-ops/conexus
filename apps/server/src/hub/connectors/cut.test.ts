@@ -36,3 +36,25 @@ test('o corte: passa de 16 KB, o texto longo é cortado com reticências antes d
   assert.ok(Object(many.value).linhas.length < 20 && Object(many.value).linhas.length > 0)
   assert.equal(many.complete, false)
 })
+
+test('o corte: uma linha que sozinha passa de 16 KB, e um valor sem linhas que passa, não chegam ao modelo; ele lê complete falso', () => {
+  const wide = Object.fromEntries(Array.from({ length: 100 }, (_, n) => [`c${n}`, 'x'.repeat(500)]))
+  const row = shaped({ linhas: [wide], temMais: false })
+  assert.deepEqual(row, { value: { linhas: [], temMais: false }, complete: false })
+  const many = shaped(Array.from({ length: 4_000 }, (_, n) => `valor ${n}`))
+  assert.deepEqual(many, { value: null, complete: false })
+  const short = shaped({ total: 3 })
+  assert.deepEqual(short, { value: { total: 3 }, complete: true })
+})
+
+test('o corte: uma leitura cujos campos fora das linhas passam de 16 KB não chega ao modelo, nem sem nenhuma linha', () => {
+  const colunas = Array.from({ length: 4_000 }, (_, n) => `coluna ${n}`)
+  assert.deepEqual(shaped({ linhas: [row(1)], temMais: false, colunas }), {
+    value: null,
+    complete: false,
+  })
+  assert.deepEqual(shaped({ linhas: [], temMais: false, colunas }), {
+    value: null,
+    complete: false,
+  })
+})

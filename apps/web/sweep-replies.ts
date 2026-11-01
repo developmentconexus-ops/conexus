@@ -14,6 +14,7 @@ import {
   listMembers,
   listModelAccounts,
   listMyApps,
+  listProjectConnections,
   listProjects,
 } from '@conexus/hub-api'
 import type { Replies } from './layout-harness.ts'
@@ -206,6 +207,10 @@ export function projectsPage(
     [`GET /api/companies/${id}/projects/${PROJECT.id}/conversations`]: ok(listConversations, {
       conversations: [],
       next: { kind: 'END' },
+    }),
+    // The rail's Integrações link preloads its page, whose loader reads what the Projeto may read.
+    [`GET /api/companies/${id}/projects/${PROJECT.id}/connections`]: ok(listProjectConnections, {
+      connectors: [],
     }),
   }
 }

@@ -8,7 +8,15 @@ import { CompanyId, ConnectionId, PersonId, ProjectId, RunId } from '@conexus/hu
 import { z } from 'zod'
 import { TurnKey } from './public.ts'
 import { appCalls } from './test-app-calls.ts'
-import { A, B, createLimits, executorOf, NO_EXECUTOR, OPENED } from './test-limits.ts'
+import {
+  A,
+  B,
+  createLimits,
+  executorOf,
+  executorWithBrokenLogout,
+  NO_EXECUTOR,
+  OPENED,
+} from './test-limits.ts'
 
 test('uma por vez: dez leituras na mesma ligação fazem um login e nunca duas chamadas abertas; outra ligação anda ao lado', async (t) => {
   const on = await appCalls(t)
@@ -151,6 +159,27 @@ test('o logout do fim espera a vez da ligação: com uma leitura aberta no token
   await reading
   await sleep(100)
   assert.deepEqual(events, ['login1', 'read done', 'logout t1'])
+})
+
+test('o logout do fim com defeito vai ao registro e não derruba o processo', async () => {
+  const lines: string[] = []
+  const limits = createLimits({
+    executor: executorWithBrokenLogout(),
+    log: { info: () => undefined, error: (_, message) => lines.push(message) },
+  })
+  const unhandled: unknown[] = []
+  function hear(reason: unknown) {
+    unhandled.push(reason)
+  }
+  process.on('unhandledRejection', hear)
+  try {
+    await limits.token(OPENED, 1000)
+    await sleep(1300)
+  } finally {
+    process.off('unhandledRejection', hear)
+  }
+  assert.deepEqual(lines, ['INTERNAL_UNEXPECTED'])
+  assert.deepEqual(unhandled, [])
 })
 
 test('o Assistente na fila: uma leitura do Assistente e uma do Builder na mesma ligação não abrem duas chamadas juntas', async (t) => {

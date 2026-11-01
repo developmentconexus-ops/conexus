@@ -1,4 +1,4 @@
-export { MAX_BYTES, Sha } from './context.ts'
+export { MAX_BYTES, MAX_FILES, Sha } from './context.ts'
 export type { GitCopy } from './copy/copy.ts'
 export { copyKey, createGitCopy } from './copy/copy.ts'
 export { restoreGuarded } from './guard.ts'

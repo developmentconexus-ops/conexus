@@ -33,11 +33,8 @@ import { useRecentProjects } from './recent-projects.tsx'
 
 const company = getRouteApi('/_app/companies/$companyId')
 
-const OTHER_PAGES = [
-  '/_app/companies/$companyId/projects/$projectId_/about',
-  '/_app/companies/$companyId/projects/$projectId_/access',
-  '/_app/companies/$companyId/projects/$projectId_/integrations',
-]
+/** The route Construir and its conversations live under: the other pages of the Projeto sit beside it, not below. */
+const BUILD_ROUTE = '/_app/companies/$companyId/projects/$projectId'
 
 type Scope = { companyId: CompanyId; projectId: ProjectId }
 
@@ -111,15 +108,15 @@ export function ProjectRailHead({ companyId, projectId }: Scope) {
 /**
  * The entries of the Projeto's sidebar, in the order of Conexus OS: back to the company, Construir,
  * Sobre, Quem usa o app, Integrações. Each later one is added by its step, never as "em breve" (web W31). The
- * address of Construir is the Projeto's own, with its conversations below it, so the router cannot
- * tell it from the other pages: it is the current place when no other page is.
+ * address of Construir is the Projeto's own, with its conversations below it: it is the current
+ * place while the route it lives under is among the matches.
  */
 export function ProjectRailNav(scope: Scope) {
   const { companyId } = scope
   const params = scope
   const { company: house } = useQuery(companyQuery(companyId)).data ?? {}
   const building = useMatches({
-    select: (matches) => !OTHER_PAGES.includes(matches.at(-1)?.routeId ?? ''),
+    select: (matches) => matches.some((match) => match.routeId === BUILD_ROUTE),
   })
   return (
     <SidebarGroup>
