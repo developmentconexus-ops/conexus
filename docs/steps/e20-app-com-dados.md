@@ -712,7 +712,7 @@ exporta.
 Cada estado é união por `kind` (C21). `ConnectionId`, `ProjectId`, `CompanyId` com a marca do
 `hub-api`, conferidos na entrada da rota (C23); `OfProject` é `{ companyId: CompanyId; projectId: ProjectId }`,
 exportado pelo `hub-api` (hoje é local em `projects.ts:213` e `versions.ts:94`: a U3 o move). Os donos (C26): `ConnectorAnswer` (`app-contract`),
-`Notes` (`notes.ts`), o teto de 50 chamadas por conversa (`builder-port.ts`, `CONNECTOR_CALLS_PER_TURN`),
+`Notes` (`notes.ts`), o teto de 50 chamadas por conversa (`builder-port.ts`, `BUILDER_CALLS_PER_RUN`),
 o corte (`builder-port.ts`, 20 linhas e 16 KB), o teto da resposta da borda (`hub-api`,
 `APP_CONNECTOR_REPLY_BYTES = 2 MiB`, o mesmo número de `wire.ts`). Esquemas de entrada externa (C27):
 o corpo da rota da borda, a entrada da operação (o Zod do kit, `requestOf`), `notes` lido do banco.
