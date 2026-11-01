@@ -6,9 +6,10 @@ import { CompanyId, ConnectionId, PersonId, ProjectId } from '@conexus/hub-api'
 import { call, plantCompany } from '../identity/test-hub.ts'
 import type { SessionScope } from './public.ts'
 import { TurnKey } from './public.ts'
-import { appCalls, CONNECTOR_CALLS_PER_TURN, shaped } from './test-app-calls.ts'
+import { appCalls, CONNECTOR_CALLS_PER_TURN } from './test-app-calls.ts'
 import { linkSankhya, testOf } from './test-connections.ts'
 
+const TURNS_KEPT = 1000
 const QUERY = 'SELECT COUNT(*) AS N FROM TSIEMP'
 
 async function assistantOn(t: Parameters<typeof appCalls>[0]) {
@@ -160,18 +161,76 @@ test('50 por turno: a 51ª chamada do mesmo turno é CALLS_SPENT sem chamar o fo
   assert.equal((await on.ask(on.ana, { turn: randomUUID() })).kind, 'OK')
 })
 
-test('o corte e o inteiro: OK dá ao modelo o corte do Builder e, em whole, a resposta como veio; nada fica guardado entre chamadas', async (t) => {
+test('o corte e o inteiro: uma leitura de 25 linhas dá ao modelo as 20 do corte, complete falso, e em whole as 25 como vieram', async (t) => {
   const on = await assistantOn(t)
-  const answered = await on.ask(on.ana, {}, 'consultar', { sql: QUERY })
-  assert.equal(answered.kind, 'OK')
+  const sankhya = connectorOf('sankhya')
+  const index = sankhya?.operations.findIndex((operation) => operation.id === 'empresas') ?? -1
+  const original = sankhya?.operations[index]
+  assert.ok(sankhya && original)
+  const rows = Array.from({ length: 25 }, (_, n) => ({ N: n }))
+  Reflect.set(sankhya.operations, index, {
+    ...original,
+    answer: () => ({ kind: 'OK', value: { linhas: rows, temMais: false } }),
+  })
+  t.after(() => Reflect.set(sankhya.operations, index, original))
+  const answered = await on.ask(on.ana)
   assert.ok(answered.kind === 'OK')
-  assert.deepEqual(answered.value, shaped(answered.whole).value)
-  assert.equal(answered.complete, shaped(answered.whole).complete)
-  assert.deepEqual(answered.whole, { completo: true, linhas: [{ N: 2 }] })
-  const tables = await on.hub.test.asOwner(
-    "select table_schema, table_name from information_schema.columns where column_name in ('whole', 'reads') and table_schema not in ('pg_catalog', 'information_schema')",
+  assert.deepEqual(answered.whole, { linhas: rows, temMais: false })
+  assert.deepEqual(answered.value, { linhas: rows.slice(0, 20), temMais: false })
+  assert.equal(answered.complete, false)
+})
+
+test('uma falha do fornecedor volta como veio, sem corte nem whole', async (t) => {
+  const on = await assistantOn(t)
+  on.fake.switches.refuse.add('empresas')
+  const answered = await on.ask(on.ana)
+  assert.equal(answered.kind, 'REFUSED')
+  assert.ok(!('whole' in answered))
+})
+
+test('duas liberadas ao Projeto: o caderno e a leitura são da escolhida, não da primeira liberada', async (t) => {
+  const on = await assistantOn(t)
+  const filial = ConnectionId.parse(await on.connect('Filial', false))
+  assert.equal((await call(on.hub, on.ana, 'PUT', on.routes.grant(on.matriz))).statusCode, 200)
+  // Sankhya is one per Projeto, so the second release is planted where a many connector would have it.
+  await on.hub.test.asOwner(
+    'insert into connectors.project_connection (project_id, company_id, connector_id, connection_id, exclusive, granted_by, granted_at) select project_id, company_id, connector_id, $1, false, granted_by, granted_at from connectors.project_connection where connection_id = $2',
+    [filial, on.matriz],
   )
-  assert.deepEqual(tables, [])
+  const note = {
+    mapping: 'TGFPAR.CODPARC',
+    provingQuery: QUERY,
+    provedAt: new Date().toISOString(),
+    provedRows: 1,
+    writtenBy: on.ana.id,
+  }
+  await on.hub.test.asOwner('update connectors.connection set notes = $1::jsonb where id = $2', [
+    JSON.stringify({ cliente: note }),
+    filial,
+  ])
+  const chose = on.scope(on.ana, { project: true, chosen: [filial] })
+  assert.deepEqual(await on.port.notes(chose, filial), { cliente: note })
+  assert.equal(await on.port.notes(chose, on.matriz), null)
+})
+
+test('50 por turno: passado o limite de turnos lembrados o mais antigo é esquecido e começa do zero', async (t) => {
+  const on = await assistantOn(t)
+  const first = randomUUID()
+  for (let n = 0; n < CONNECTOR_CALLS_PER_TURN; n += 1)
+    assert.equal((await on.ask(on.ana, { turn: first })).kind, 'OK')
+  assert.equal((await on.ask(on.ana, { turn: first })).kind, 'CALLS_SPENT')
+  for (let n = 0; n < TURNS_KEPT - 1; n += 1) await on.ask(on.ana, { turn: randomUUID() })
+  assert.equal((await on.ask(on.ana, { turn: first })).kind, 'CALLS_SPENT', 'still remembered')
+  await on.ask(on.ana, { turn: randomUUID() })
+  assert.equal((await on.ask(on.ana, { turn: first })).kind, 'OK', 'forgotten')
+})
+
+test('quem saiu da empresa recebe a lista vazia e NOT_GRANTED, como quem não pode perguntar', async (t) => {
+  const on = await assistantOn(t)
+  const outsider = { id: randomUUID() }
+  assert.deepEqual(await on.port.connections(on.scope(outsider)), [])
+  assert.deepEqual(await on.ask(outsider), { kind: 'NOT_GRANTED' })
+  assert.equal(await on.port.notes(on.scope(outsider), on.matriz), null)
 })
 
 test('a linha: CONNECTOR_CALLED com empresa, pessoa, by assistant, o projectId só num Projeto, a operação e o resultado; nunca o corpo nem o SQL', async (t) => {
@@ -184,10 +243,20 @@ test('a linha: CONNECTOR_CALLED com empresa, pessoa, by assistant, o projectId s
   const [home, project] = lines.map((line) => line.fields)
   assert.equal(lines.length, 2)
   assert.deepEqual(
-    [home?.by, home?.companyId, home?.operation, home?.result, 'projectId' in (home ?? {})],
-    ['assistant', on.companyId, 'consultar', 'OK', false],
+    [
+      home?.by,
+      home?.companyId,
+      home?.personId,
+      home?.operation,
+      home?.result,
+      'projectId' in (home ?? {}),
+    ],
+    ['assistant', on.companyId, on.ana.id, 'consultar', 'OK', false],
   )
-  assert.deepEqual([project?.by, project?.projectId], ['assistant', on.projectId])
+  assert.deepEqual(
+    [project?.by, project?.personId, project?.projectId],
+    ['assistant', on.ana.id, on.projectId],
+  )
   const logged = JSON.stringify(on.hub.lines)
   assert.ok(!logged.includes(QUERY))
   for (const value of JSON.stringify(answered.whole).match(/[A-Za-z]{5,}/g) ?? [])

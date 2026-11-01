@@ -70,7 +70,7 @@ function needsReauth(deps: Deps, a: ReadRequest) {
   )
 }
 
-/** The Projeto of the line, only where the reader works in one. */
+/** The Projeto of the line, only where the reader works in one: a log field is a scalar, never `undefined`. */
 function projectOf(ids: ReadRequest['ids']): Record<string, string> {
   return ids.projectId === undefined ? {} : { projectId: ids.projectId }
 }
@@ -124,6 +124,7 @@ export async function readThrough(deps: Deps, a: ReadRequest): Promise<Connector
     {
       companyId: a.ids.companyId,
       ...projectOf(a.ids),
+      personId: a.viewer.person.id,
       connectionId: a.opened.id,
       connector: a.opened.connector.id,
       operation: a.operation.id,

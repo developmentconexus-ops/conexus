@@ -1,17 +1,16 @@
-import type { CompanyId, PersonId, ProjectId } from '@conexus/hub-api'
-import { CALL_DEADLINE_MS, ConnectionId } from '@conexus/hub-api'
-import { and, asc, eq } from 'drizzle-orm'
+import type { CompanyId, ConnectionId, PersonId, ProjectId } from '@conexus/hub-api'
+import { CALL_DEADLINE_MS } from '@conexus/hub-api'
 import { z } from 'zod'
 import type { ReadTx } from '../../platform/database.ts'
+import { Failure } from '../../platform/failure.ts'
 import type { GrantedConnection, ShapedRead, Spent } from './builder-port.ts'
-import { createSpending, described, grantedIn } from './builder-port.ts'
+import { createSpending, described, offeredIn } from './builder-port.ts'
 import { shaped } from './cut.ts'
 import { readOf } from './grants.ts'
 import { Notes } from './notes.ts'
 import { readThrough } from './read.ts'
 import type { Deps } from './rows.ts'
 import { admitted, scopeOf } from './rows.ts'
-import { connection } from './tables.ts'
 import { openedIn } from './testing.ts'
 
 /** Where a conversation lives: it decides which connections it may choose (C21). */
@@ -45,7 +44,7 @@ type AssistantRead =
   | Spent
 
 export type AssistantConnectors = {
-  /** What the place offers (company: ACTIVE; Projeto: ACTIVE and granted), each with chosen; [] for a person who may not ask. */
+  /** What the place offers (company: usable; Projeto: usable and released to it), each with chosen; [] for a person who may not ask, a removed one included. */
   connections(scope: SessionScope): Promise<readonly AssistantConnection[]>
   /** One read of a chosen, offered connection, read class only. */
   read(
@@ -56,66 +55,57 @@ export type AssistantConnectors = {
   notes(scope: SessionScope, connectionId: ConnectionId): Promise<Notes | null>
 }
 
-/** The company's ACTIVE connections: the Início offers all of them, no Projeto's grant in between. */
-function companyIn(tx: ReadTx, companyId: CompanyId, connectionId?: ConnectionId) {
-  return tx
-    .select({
-      id: connection.id,
-      connector: connection.connectorId,
-      name: connection.name,
-      notes: connection.notes,
-    })
-    .from(connection)
-    .where(
-      and(
-        eq(connection.companyId, companyId),
-        eq(connection.state, 'ACTIVE'),
-        connectionId === undefined ? undefined : eq(connection.id, connectionId),
-      ),
-    )
-    .orderBy(asc(connection.connectorId), asc(connection.linkedAt))
-}
-
-/**
- * What the conversation's place offers to a person who may ask now (their role, read on every call,
- * S10), whether chosen or not: the owner of "what a conversation may read" (C26). The list, the
- * notebook and every read go through it, in one short transaction.
- */
-function offered(deps: Deps, scope: SessionScope, connectionId?: ConnectionId) {
-  const viewer = { person: { id: scope.personId }, companyId: scope.companyId }
-  return deps.database.read(scopeOf(viewer), async (tx) => {
-    const member = await admitted(deps, tx, viewer, 'readConnections')
-    if (!deps.identity.allows(member.role, 'askAssistant')) return []
-    return scope.place.kind === 'PROJECT'
-      ? grantedIn(
-          tx,
-          { companyId: scope.companyId, projectId: scope.place.projectId },
-          connectionId,
-        )
-      : companyIn(tx, scope.companyId, connectionId)
-  })
-}
-
-/** The one connection the conversation chose and its place offers; none gives NOT_GRANTED or a null notebook whatever the reason (S10). */
-async function readable(deps: Deps, scope: SessionScope, connectionId: ConnectionId) {
-  if (!scope.chosen.includes(connectionId)) return undefined
-  const [row] = await offered(deps, scope, connectionId)
-  return row
-}
-
-/** The ids of the line: the Projeto only where the conversation lives in one. */
+/** The ids of the line and of the query: the Projeto only where the conversation lives in one. */
 function idsOf(scope: SessionScope) {
   return scope.place.kind === 'PROJECT'
     ? { companyId: scope.companyId, projectId: scope.place.projectId }
     : { companyId: scope.companyId }
 }
 
-/** The connection opened by a short read; the provider is called after it ends (D22). */
-function opened(deps: Deps, scope: SessionScope, id: string) {
-  const viewer = { person: { id: scope.personId }, companyId: scope.companyId }
-  return deps.database.read(scopeOf(viewer), (tx) =>
-    openedIn(deps, tx, { companyId: scope.companyId, connectionId: ConnectionId.parse(id) }),
+/** Whether the person may ask now: their role is read on every call (S10); a person no longer in the company may not either. */
+async function mayAsk(deps: Deps, tx: ReadTx, scope: SessionScope) {
+  try {
+    const member = await admitted(
+      deps,
+      tx,
+      { person: { id: scope.personId }, companyId: scope.companyId },
+      'readConnections',
+    )
+    return deps.identity.allows(member.role, 'askAssistant')
+  } catch (error) {
+    if (error instanceof Failure && error.code === 'NOT_FOUND') return false
+    throw error
+  }
+}
+
+/** What the conversation's place offers to a person who may ask now, whether chosen or not, in one short transaction. */
+function offered(deps: Deps, scope: SessionScope) {
+  return deps.database.read(scopeOf(viewerOf(scope)), async (tx) =>
+    (await mayAsk(deps, tx, scope)) ? offeredIn(tx, idsOf(scope)) : [],
   )
+}
+
+/**
+ * The one connection the conversation chose and its place offers, handed to `use` in the same
+ * transaction that decided it (D22, S8); none gives undefined whatever the reason (S10). The owner of
+ * "what a conversation may read" (C26): the notebook and every read go through it.
+ */
+async function readable<T>(
+  deps: Deps,
+  scope: SessionScope,
+  connectionId: ConnectionId,
+  use: (tx: ReadTx, row: { notes: unknown }) => Promise<T>,
+) {
+  if (!scope.chosen.includes(connectionId)) return undefined
+  return deps.database.read(scopeOf(viewerOf(scope)), async (tx) => {
+    if (!(await mayAsk(deps, tx, scope))) return undefined
+    const [row] = await offeredIn(tx, idsOf(scope), connectionId)
+    return row === undefined ? undefined : use(tx, row)
+  })
+}
+
+function viewerOf(scope: SessionScope) {
+  return { person: { id: scope.personId }, companyId: scope.companyId }
 }
 
 /** The company's door for the Assistant (step 24.1, U1): the chosen connections its place offers, read only, `by: 'assistant'`. */
@@ -137,16 +127,17 @@ export function createAssistantConnectors(deps: Deps): AssistantConnectors {
     },
 
     async read(scope, call) {
-      const found = await readable(deps, scope, call.connectionId)
-      if (found === undefined) return { kind: 'NOT_GRANTED' }
-      const open = await opened(deps, scope, found.id)
+      const open = await readable(deps, scope, call.connectionId, (tx) =>
+        openedIn(deps, tx, { companyId: scope.companyId, connectionId: call.connectionId }),
+      )
+      if (open === undefined) return { kind: 'NOT_GRANTED' }
       const operation = readOf(open.connector, call.operation)
       if (operation === undefined) return { kind: 'NOT_GRANTED' }
       if (!spend(call.turn)) return { kind: 'CALLS_SPENT' }
       const answered = await readThrough(deps, {
         by: 'assistant',
         ids: idsOf(scope),
-        viewer: { person: { id: scope.personId }, companyId: scope.companyId },
+        viewer: viewerOf(scope),
         opened: open,
         operation,
         input: call.input,
@@ -158,8 +149,10 @@ export function createAssistantConnectors(deps: Deps): AssistantConnectors {
     },
 
     async notes(scope, connectionId) {
-      const found = await readable(deps, scope, connectionId)
-      return found === undefined ? null : Notes.parse(found.notes)
+      return (
+        (await readable(deps, scope, connectionId, async (_, row) => Notes.parse(row.notes))) ??
+        null
+      )
     },
   }
 }

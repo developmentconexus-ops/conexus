@@ -1,9 +1,9 @@
 import type { ConnectorAnswer } from '@conexus/app-contract'
 import type { Operation } from '@conexus/connectors'
 import { connectorOf } from '@conexus/connectors'
-import type { OfProject, PersonId, RunId } from '@conexus/hub-api'
+import type { CompanyId, OfProject, PersonId, ProjectId, RunId } from '@conexus/hub-api'
 import { CALL_DEADLINE_MS, ConnectionId } from '@conexus/hub-api'
-import { and, asc, eq } from 'drizzle-orm'
+import { and, asc, eq, inArray } from 'drizzle-orm'
 import type { ReadTx } from '../../platform/database.ts'
 import { Listed, shaped } from './cut.ts'
 import type { OpenedConnection } from './executor.ts'
@@ -66,8 +66,15 @@ export function createSpending(): (key: string) => boolean {
   }
 }
 
-/** The Projeto's ACTIVE granted connections: the company's, so no person asks. */
-export function grantedIn(tx: ReadTx, ids: OfProject, connectionId?: ConnectionId) {
+/**
+ * The company's usable connections in the order the model is told of them. Where the reader works in a
+ * Projeto only those released to it are offered: the place decides the join, the row is one shape (C26).
+ */
+export function offeredIn(
+  tx: ReadTx,
+  ids: Readonly<{ companyId: CompanyId; projectId?: ProjectId }>,
+  connectionId?: ConnectionId,
+) {
   return tx
     .select({
       id: connection.id,
@@ -75,12 +82,20 @@ export function grantedIn(tx: ReadTx, ids: OfProject, connectionId?: ConnectionI
       name: connection.name,
       notes: connection.notes,
     })
-    .from(projectConnection)
-    .innerJoin(connection, eq(connection.id, projectConnection.connectionId))
+    .from(connection)
     .where(
       and(
-        eq(projectConnection.projectId, ids.projectId),
+        eq(connection.companyId, ids.companyId),
         usable,
+        ids.projectId === undefined
+          ? undefined
+          : inArray(
+              connection.id,
+              tx
+                .select({ id: projectConnection.connectionId })
+                .from(projectConnection)
+                .where(eq(projectConnection.projectId, ids.projectId)),
+            ),
         connectionId === undefined ? undefined : eq(connection.id, connectionId),
       ),
     )
@@ -89,7 +104,7 @@ export function grantedIn(tx: ReadTx, ids: OfProject, connectionId?: ConnectionI
 
 function grantedRows(deps: Deps, ids: OfProject, connectionId?: ConnectionId) {
   const scope = { kind: 'COMPANY', companyId: ids.companyId, personId: null } as const
-  return deps.database.read(scope, (tx) => grantedIn(tx, ids, connectionId))
+  return deps.database.read(scope, (tx) => offeredIn(tx, ids, connectionId))
 }
 
 /** The connection opened when the Projeto may read it now; none otherwise (NOT_GRANTED to the caller). */
@@ -124,7 +139,7 @@ function callThrough(
 }
 
 /** What the model is told of each row; a row of a connector the kit no longer has is left out. */
-export function described(rows: Awaited<ReturnType<typeof grantedIn>>): GrantedConnection[] {
+export function described(rows: Awaited<ReturnType<typeof offeredIn>>): GrantedConnection[] {
   return rows.flatMap((row) => {
     const connector = connectorOf(row.connector)
     if (connector === undefined) return []
