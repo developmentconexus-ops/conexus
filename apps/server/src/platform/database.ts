@@ -114,7 +114,17 @@ export type Database = Readonly<{
   close(): Promise<void>
 }>
 
-/** A database error is mapped by its SQLSTATE (code C52); any other error is the program's. */
+// Mastra's storage adapter wraps every failure of its database in an error with these stable fields.
+const MastraStorageFailure = z.object({
+  domain: z.literal('STORAGE'),
+  category: z.literal('THIRD_PARTY'),
+})
+
+/**
+ * A database error is mapped by its SQLSTATE (code C52); any other error is the program's. Mastra's
+ * storage failure with no SQLSTATE in its causes is a connection that was refused, cut or timed
+ * out, because pg raises an error without a SQLSTATE only when it loses the connection.
+ */
 export function databaseFailure(error: unknown): Failure {
   if (error instanceof Failure) return error
   for (let cause = error; cause instanceof Error; cause = cause.cause) {
@@ -123,7 +133,8 @@ export function databaseFailure(error: unknown): Failure {
       return new Failure(unavailable ? 'DATABASE_UNAVAILABLE' : 'INTERNAL_UNEXPECTED', { cause })
     }
   }
-  return new Failure('INTERNAL_UNEXPECTED', { cause: error })
+  const unreachable = MastraStorageFailure.safeParse(error).success
+  return new Failure(unreachable ? 'DATABASE_UNAVAILABLE' : 'INTERNAL_UNEXPECTED', { cause: error })
 }
 
 /** The constraint a unique violation (23505) names, read by SQLSTATE and name (code C52). */
