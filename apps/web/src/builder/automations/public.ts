@@ -1,5 +1,5 @@
 export { Automations } from './automations.tsx'
 export { AutomationBadge } from './badge.tsx'
-export { automationParams, loadAutomationRuns, loadAutomations, RunsSearch } from './loader.ts'
+export { automationParams, loadAutomations, RunsSearch, runsDeps, runsLoader } from './loader.ts'
 export { ProposalCard } from './proposal.tsx'
 export { AutomationRuns } from './runs.tsx'

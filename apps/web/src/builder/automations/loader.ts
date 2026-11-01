@@ -51,7 +51,7 @@ export function automationOf(
 }
 
 /** What a history reads before it opens: the place's list, its automation among them, and its runs. */
-export async function loadAutomationRuns(
+async function loadAutomationRuns(
   queryClient: QueryClient,
   open: { companyId: CompanyId; projectId?: ProjectId; automationId: AutomationId; page?: string },
 ) {
@@ -61,4 +61,18 @@ export async function loadAutomationRuns(
   await readOrNotFound(
     queryClient.ensureQueryData(automationRunsQuery(companyId, automationId, page)),
   )
+}
+
+/** The page of the runs in the address is a loader dependency of both history routes. */
+export function runsDeps({ search }: { search: z.infer<typeof RunsSearch> }) {
+  return { page: search.page }
+}
+
+/** What both history routes read before they open: the place's list and the runs of the page. */
+export function runsLoader(open: {
+  context: { queryClient: QueryClient }
+  params: { companyId: CompanyId; projectId?: ProjectId; automationId: AutomationId }
+  deps: { page: string | undefined }
+}) {
+  return loadAutomationRuns(open.context.queryClient, { ...open.params, page: open.deps.page })
 }

@@ -2,8 +2,9 @@ import { createFileRoute } from '@tanstack/react-router'
 import {
   AutomationRuns,
   automationParams,
-  loadAutomationRuns,
   RunsSearch,
+  runsDeps,
+  runsLoader,
 } from '../../../../builder/automations/public.ts'
 import { RouteReadFailure } from '../../../../ui/states.tsx'
 
@@ -12,9 +13,8 @@ export const Route = createFileRoute('/_app/companies/$companyId/automations/$au
   staticData: { place: 'Automações' },
   params: automationParams,
   validateSearch: RunsSearch,
-  loaderDeps: ({ search }) => ({ page: search.page }),
-  loader: ({ context, params, deps }) =>
-    loadAutomationRuns(context.queryClient, { ...params, page: deps.page }),
+  loaderDeps: runsDeps,
+  loader: (open) => runsLoader(open),
   errorComponent: RouteReadFailure,
   component: RunsPage,
 })
