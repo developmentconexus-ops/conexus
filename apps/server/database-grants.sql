@@ -48,6 +48,7 @@ ALTER TABLE auth.rate_limit OWNER TO test_owner;
 ALTER TABLE auth.session OWNER TO test_owner;
 ALTER TABLE auth."user" OWNER TO test_owner;
 ALTER TABLE auth.verification OWNER TO test_owner;
+ALTER TABLE builder.assistant_conversation OWNER TO test_owner;
 ALTER TABLE builder.company_account_kind OWNER TO test_owner;
 ALTER TABLE builder.company_model OWNER TO test_owner;
 ALTER TABLE builder.company_model_fallback OWNER TO test_owner;
@@ -195,6 +196,10 @@ GRANT SELECT,INSERT,DELETE ON TABLE auth.verification TO hub_invitation;
 -- Step 11, founder 2026-10-19 ("2. a", Grant A): a company's routes link, read, order, change, give
 -- and remove its model accounts and set its default model, and never read `sealed`; the Central
 -- chooses the company's sign-in kinds.
+-- Step 24.1, U2, waiting for the founder's word (D11): the Assistant's routes keep a conversation's
+-- chosen connections and its turn reads them; the row leaves by cascade, never by the Hub.
+GRANT SELECT,INSERT ON TABLE builder.assistant_conversation TO hub_company;
+GRANT UPDATE(connections) ON TABLE builder.assistant_conversation TO hub_company;
 GRANT SELECT ON TABLE builder.company_account_kind TO hub_company;
 GRANT SELECT,INSERT,DELETE ON TABLE builder.company_account_kind TO hub_operator;
 GRANT SELECT,INSERT ON TABLE builder.company_model TO hub_company;
