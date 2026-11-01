@@ -1,5 +1,6 @@
+import { ProjectId } from '@conexus/hub-api'
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
-import { http } from 'msw'
+import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { hubServer, PEDIDOS, refusal } from '../../platform/test-hub.tsx'
 import { choose } from '../conversation/test-hub.tsx'
@@ -148,6 +149,32 @@ test('escolher um Projeto no seletor cria a conversa nele, com as ligações del
     expect(conexus.router.state.location.pathname).toContain(`/projects/${PEDIDOS_ID}/assistant/`),
   )
   expect(writes()[0]?.body).toMatchObject({ projectId: PEDIDOS_ID })
+})
+
+test('com 31 Projetos, o seletor oferece os 30 da primeira página e, em "Mais Projetos", o 31º', async () => {
+  const projects = Array.from({ length: 31 }, (_, n) => ({
+    id: ProjectId.parse(`${'q'.repeat(29)}${String(n).padStart(3, '0')}`),
+    name: `Projeto ${n + 1}`,
+    createdAt: '2026-10-17T12:00:00.000Z',
+  }))
+  const { writes, asked } = at(COMPANY_ROOT)
+  server.use(
+    http.get('*/api/companies/:companyId/projects', ({ request }) => {
+      const more = new URL(request.url).searchParams.has('page')
+      return HttpResponse.json({
+        projects: more ? projects.slice(30) : projects.slice(0, 30),
+        next: more ? { kind: 'END' } : { kind: 'MORE', page: 'segunda' },
+        databaseReady: true,
+      })
+    }),
+  )
+  await barOf()
+  fireEvent.click(await screen.findByRole('button', { name: 'Mais Projetos' }))
+  await waitFor(() => expect(screen.queryByRole('button', { name: 'Mais Projetos' })).toBeNull())
+  await choose(screen.getByRole('combobox', { name: 'Projeto da conversa' }), 'Projeto 31')
+  await waitFor(() => expect(asked.at(-1)).toContain(`projectId=${projects[30]?.id}`))
+  await ask('Como foram as vendas?')
+  await waitFor(() => expect(writes()[0]?.body).toMatchObject({ projectId: projects[30]?.id }))
 })
 
 test('sem ligação no lugar, a barra diz onde ligar um sistema', async () => {

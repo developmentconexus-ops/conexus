@@ -1,10 +1,6 @@
 import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
-import {
-  listAssistantConnections,
-  listAssistantConversations,
-  listProjects,
-} from '@conexus/hub-api'
+import { listAssistantConnections, listAssistantConversations } from '@conexus/hub-api'
 import type { Replies } from './layout-harness.ts'
 import { createHarness, DESKTOP, ok, PHONE } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
@@ -21,7 +17,9 @@ after(async () => {
   assert.deepEqual(harness.unanswered, [], 'the page asked the Hub for something no reply covers')
 })
 
-function assistant(conversations: { id: string; title: string; projectId: string | null }[]) {
+function assistant(
+  conversations: { id: string; title: string; project: { id: string; name: string } | null }[],
+) {
   return {
     ...BASE,
     [`GET ${API}/connections`]: ok(listAssistantConnections, { connections: [] }),
@@ -37,7 +35,11 @@ function assistant(conversations: { id: string; title: string; projectId: string
 
 test('no celular, a conversa recente de um Projeto de nome comprido mantém o título e a data na tela', async () => {
   const replies = assistant([
-    { id: '44444444-4444-4444-8444-444444444444', title: 'Pedidos do mês', projectId: PROJECT_ID },
+    {
+      id: '44444444-4444-4444-8444-444444444444',
+      title: 'Pedidos do mês',
+      project: { id: PROJECT_ID, name: 'Pedidos' },
+    },
   ])
   const page = await harness.open(`/companies/${COMPANY.id}`, { viewport: PHONE, replies })
   const row = page.getByRole('link', { name: /Pedidos do mês/ })
@@ -56,20 +58,13 @@ test('no celular, a conversa recente de um Projeto de nome comprido mantém o t�
 
 test('no computador, a conversa recente mostra o nome inteiro de um Projeto de nome médio', async () => {
   const name = 'Pedidos e entregas da filial'
-  const replies = {
-    ...assistant([
-      {
-        id: '44444444-4444-4444-8444-444444444444',
-        title: 'Pedidos do mês',
-        projectId: PROJECT_ID,
-      },
-    ]),
-    [`GET /api/companies/${COMPANY.id}/projects`]: ok(listProjects, {
-      projects: [{ id: PROJECT_ID, name, createdAt: '2026-10-17T12:00:00.000Z' }],
-      next: { kind: 'END' },
-      databaseReady: true,
-    }),
-  }
+  const replies = assistant([
+    {
+      id: '44444444-4444-4444-8444-444444444444',
+      title: 'Pedidos do mês',
+      project: { id: PROJECT_ID, name },
+    },
+  ])
   const page = await harness.open(`/companies/${COMPANY.id}`, { viewport: DESKTOP, replies })
   const badge = page.getByRole('link', { name: /Pedidos do mês/ }).locator('[data-slot="badge"]')
   await badge.waitFor()

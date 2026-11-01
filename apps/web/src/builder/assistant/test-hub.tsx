@@ -134,7 +134,12 @@ function readsOf(held: Held, asked: string[]) {
       const all = held.conversations
         .map(({ conversation }) => conversation)
         .filter((one) => project === null || one.projectId === project)
-        .map(({ id, title, updatedAt, projectId }) => ({ id, title, updatedAt, projectId }))
+        .map(({ id, title, updatedAt, projectId }) => ({
+          id,
+          title,
+          updatedAt,
+          project: projectId === null ? null : { id: projectId, name: PEDIDOS.name },
+        }))
       const listed = all.slice(from, from + held.pageSize)
       const more = from + held.pageSize < all.length
       return HttpResponse.json({

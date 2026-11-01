@@ -200,6 +200,29 @@ function pageOf(token: string | undefined): number {
   return read.data
 }
 
+/** The live Projetos the page's conversations were born in, by id, with their names. */
+async function projectNames(deps: Deps, owner: Owner, marks: readonly (ProjectId | null)[]) {
+  const ids = new Set(marks.flatMap((mark) => (mark === null ? [] : [mark])))
+  const found = await deps.database.read({ kind: 'COMPANY', ...owner }, (tx) =>
+    Promise.all(
+      [...ids].map(async (projectId) => {
+        const live = await deps.projects.liveProjectOf(tx, {
+          companyId: owner.companyId,
+          projectId,
+        })
+        return [projectId, live?.name] as const
+      }),
+    ),
+  )
+  return new Map(found)
+}
+
+/** A conversation's Projeto as the list shows it: its name while the Projeto is live, else none. */
+function projectShown(mark: ProjectId | null, names: ReadonlyMap<ProjectId, string | undefined>) {
+  const name = mark === null ? undefined : names.get(mark)
+  return mark === null || name === undefined ? null : { id: mark, name }
+}
+
 /** The reads: the person's conversations, one conversation, and what a new one would be offered. */
 function registerReads(app: FastifyInstance, deps: Deps): void {
   serve(app, listAssistantConversations, async (input) => {
@@ -216,11 +239,15 @@ function registerReads(app: FastifyInstance, deps: Deps): void {
       perPage: PER_PAGE,
       orderBy: { field: 'updatedAt', direction: 'DESC' },
     })
-    const conversations = listed.threads.map((thread) => ({
+    const marks = listed.threads.map((thread) =>
+      ProjectIdSchema.nullable().parse(thread.metadata?.[SESSION_MARK.project] ?? null),
+    )
+    const names = await projectNames(deps, owner, marks)
+    const conversations = listed.threads.map((thread, at) => ({
       id: ConversationId.parse(thread.id),
       title: thread.title || null,
       updatedAt: thread.updatedAt.toISOString(),
-      projectId: ProjectIdSchema.nullable().parse(thread.metadata?.[SESSION_MARK.project] ?? null),
+      project: projectShown(marks[at] ?? null, names),
     }))
     return answer({ conversations, next: nextOf(page, listed.hasMore) })
   })
