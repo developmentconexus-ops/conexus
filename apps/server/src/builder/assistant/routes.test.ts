@@ -37,6 +37,13 @@ test('criar: com o modelo padrão, só as ligações que o lugar oferece, no Pro
   assert.equal(conversation.model, MODEL)
   assert.equal(conversation.projectId, on.projectId)
   assert.deepEqual(choiceOf(made), [['Matriz', true]])
+  // The Filial released after the creation (a Projeto reads one connection per system) was not kept
+  // as chosen: the conversation keeps only what its place offered then.
+  const grants = `${on.company}/projects/${on.projectId}/connections`
+  assert.equal((await call(on.hub, on.ana, 'DELETE', `${grants}/${on.matriz}`)).statusCode, 204)
+  assert.equal((await call(on.hub, on.ana, 'PUT', `${grants}/${on.filial}`)).statusCode, 200)
+  const read = await call(on.hub, on.ana, 'GET', `${on.assistant}/${conversation.id}`)
+  assert.deepEqual(choiceOf(read), [['Filial', false]])
   const again = await post(on.hub, on.ana, on.assistant, body, key)
   assert.equal(again.statusCode, 201, again.body)
   assert.equal(conversationOf(again).id, conversation.id)
