@@ -228,8 +228,8 @@ function ConversationLink(props: {
   )
   const content = (
     <>
-      <span className="flex min-w-0 items-center gap-sm">
-        <span className="truncate">{titleOf(conversation)}</span>
+      <span className="flex min-w-0 flex-wrap items-center gap-x-sm gap-y-xs">
+        <span className="max-w-full truncate">{titleOf(conversation)}</span>
         {props.projectName !== undefined && <Badge>{props.projectName}</Badge>}
         {conversation.automation !== null && (
           <AutomationBadge name={conversation.automation.name} />
