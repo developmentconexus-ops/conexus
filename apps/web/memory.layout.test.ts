@@ -35,11 +35,11 @@ const MEMORY = {
 }
 
 /** The first conversation open at `viewport`, its memory at 70%, on the tab that holds the box. */
-async function opened(viewport: typeof DESKTOP, display: Record<string, unknown> = {}) {
+async function opened(viewport: typeof DESKTOP, events: unknown[] = []) {
   const replies: Replies = { ...WITH_CONVERSATIONS }
   Object.assign(
     replies,
-    sessionReplies(FIRST, { messages: MESSAGES, display: { omProgress: MEMORY, ...display } }),
+    sessionReplies(FIRST, { messages: MESSAGES, display: { omProgress: MEMORY }, events }),
   )
   const page = await harness.open(`${PROJECT}/conversations/${FIRST}`, { viewport, replies })
   if (viewport.width < 768)
@@ -209,7 +209,7 @@ for (const [reducedMotion, sweeps] of [
   ['reduce', false],
 ] as const) {
   test(`a luz do anel ${sweeps ? 'corre' : 'fica parada com prefers-reduced-motion'} enquanto a memória trabalha`, async () => {
-    const page = await opened(DESKTOP, { bufferingMessages: true })
+    const page = await opened(DESKTOP, [{ type: 'om_observation_start' }])
     await page.emulateMedia({ reducedMotion })
     const light = page
       .getByRole('button', { name: /Memória da conversa/ })

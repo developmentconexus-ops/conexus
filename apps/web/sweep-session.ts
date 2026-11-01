@@ -32,8 +32,6 @@ function displayOf(fields: Record<string, unknown> = {}) {
       pendingSuspensions: {},
       tasks: [],
       omProgress: null,
-      bufferingMessages: false,
-      bufferingObservations: false,
       ...fields,
     },
   }
