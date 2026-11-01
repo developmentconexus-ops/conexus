@@ -214,6 +214,7 @@ test('uma escolha guardada que não se lê não escolhe nada: a conversa fica se
     ['Matriz', false],
     ['Filial', false],
   ])
+})
 
 const FILE_TURN = [[write('relatorio.csv', 'a;b\n1;2\n')], [said('Escrevi.')]]
 
