@@ -13,7 +13,7 @@ import type { MastraPool } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { BuilderConnectors, GrantedConnection } from '../connectors/public.ts'
-import { connectorTools } from '../connectors/public.ts'
+import { builderAccess, connectorTools } from '../connectors/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import {
   accountErrorProcessors,
@@ -95,6 +95,12 @@ function grantedFor(
     }
     return granted
   }
+}
+
+/** The Builder's three connector tools, its notebook's write included. */
+function builderConnectorTools(...bound: Parameters<typeof builderAccess>): ToolsInput {
+  const { access, save } = builderAccess(...bound)
+  return connectorTools(access, { noteSave: true, save })
 }
 
 /**
@@ -202,7 +208,7 @@ export function createBuilder(deps: {
         ...toolsOf(sessionModel(requestContext), check),
         ...(ids === undefined
           ? {}
-          : connectorTools(deps.connectors, await granted(requestContext), {
+          : builderConnectorTools(deps.connectors, await granted(requestContext), {
               ...ids,
               runIdOf: (context) => deps.runs.runIdOf(context),
             })),
