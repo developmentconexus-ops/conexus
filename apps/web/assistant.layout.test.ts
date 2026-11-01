@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
-import { listAssistantConnections, listAssistantConversations } from '@conexus/hub-api'
+import {
+  listAssistantConnections,
+  listAssistantConversations,
+  listProjects,
+} from '@conexus/hub-api'
 import type { Replies } from './layout-harness.ts'
 import { createHarness, DESKTOP, ok, PHONE } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
@@ -48,6 +52,32 @@ test('no celular, a conversa recente de um Projeto de nome comprido mantém o t�
   assert.ok(badge.x + badge.width <= date.x, 'the Projeto label runs over the date')
   assert.ok(date.x + date.width <= line.x + line.width + 1, 'the date leaves the row')
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), PHONE.width)
+  await page.close()
+})
+
+test('no computador, a conversa recente mostra o nome inteiro de um Projeto de nome médio', async () => {
+  const name = 'Pedidos e entregas da filial'
+  const replies = {
+    ...assistant([
+      {
+        id: '44444444-4444-4444-8444-444444444444',
+        title: 'Pedidos do mês',
+        projectId: PROJECT_ID,
+      },
+    ]),
+    [`GET /api/companies/${COMPANY.id}/projects`]: ok(listProjects, {
+      projects: [{ id: PROJECT_ID, name, createdAt: '2026-10-17T12:00:00.000Z' }],
+      next: { kind: 'END' },
+      databaseReady: true,
+    }),
+  }
+  const page = await harness.open(`/companies/${COMPANY.id}`, { viewport: DESKTOP, replies })
+  const badge = page.getByRole('link', { name: /Pedidos do mês/ }).locator('[data-slot="badge"]')
+  await badge.waitFor()
+  const label = badge.locator('span.truncate')
+  const cut = await label.evaluate((one) => one.scrollWidth - one.clientWidth)
+  assert.equal(await label.textContent(), name)
+  assert.ok(cut <= 0, `the Projeto label is cut by ${cut}px while the row has room`)
   await page.close()
 })
 
