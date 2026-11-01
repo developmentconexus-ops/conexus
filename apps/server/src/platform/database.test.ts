@@ -246,7 +246,7 @@ test('o armazenamento do Mastra que recusa a conexão vira DATABASE_UNAVAILABLE,
   const pool = openMastraPool({ url: await unreachableDatabaseUrl(), log: silent })
   t.after(() => pool.end())
   const storage = new PostgresStore({ id: 'down', pool, schemaName: 'mastra' })
-  const { schedules } = new Mastra({ storage })
+  const { schedules } = new Mastra({ storage, logger: false })
   for (const read of [schedules.get('none'), schedules.list({ workflowId: 'none' })]) {
     const refused = await read.then(
       () => undefined,

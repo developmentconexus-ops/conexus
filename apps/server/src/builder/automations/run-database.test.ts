@@ -8,8 +8,8 @@ import { InMemoryStore } from '@mastra/core/storage'
 import pg from 'pg'
 import type { Notify } from '../../hub/notifications/public.ts'
 import { silent } from '../../platform/test-database.ts'
+import type { AutomationInput } from './public.ts'
 import { AUTOMATION_WORKFLOW, automationRun } from './public.ts'
-import type { AutomationInput } from './run.ts'
 
 /** The Hub's database going away under the owner's check, as Postgres says it (SQLSTATE 57P01). */
 function shutdown() {
