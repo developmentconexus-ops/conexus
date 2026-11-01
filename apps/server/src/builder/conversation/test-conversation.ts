@@ -110,6 +110,7 @@ export async function hubBeside(t: TestContext, hub: Hub, log: FailureLog = sile
   })
   const status = createStatus({ version: config.version, database: test.database })
   const app = await createHub(config, { status, identity, ...subjects, webRoot: testWebRoot(t) })
+  await subjects.conversations.start()
   let closed: Promise<void> | undefined
   /**
    * Shuts the Hub down as an unexpected error does, or, given `settleMs`, as a stop signal does,
@@ -127,7 +128,7 @@ export async function hubBeside(t: TestContext, hub: Hub, log: FailureLog = sile
     control: ports.control,
     knobs: ports.knobs,
   }
-  return { ...hub, app, runs: subjects.runs, builder, close }
+  return { ...hub, app, runs: subjects.runs, mastra: subjects.conversations.mastra, builder, close }
 }
 
 export async function started(hub: Hub, person: Person, conversations: string, body: object = {}) {

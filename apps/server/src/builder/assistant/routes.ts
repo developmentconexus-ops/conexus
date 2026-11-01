@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto'
 import type {
   CompanyId,
   ConnectionId,
@@ -13,7 +12,6 @@ import {
   createAssistantConversation,
   listAssistantConnections,
   listAssistantConversations,
-  ModelId as ModelIdSchema,
   ProjectId as ProjectIdSchema,
   readAssistantConversation,
   setAssistantConnections,
@@ -29,11 +27,11 @@ import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import { answer, serve } from '../../platform/http.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
-import { conversationStart, effortsOf } from '../model-accounts/public.ts'
 import type { ChosenConnections } from './chosen.ts'
 import type { Owner } from './context.ts'
 import { assistantOwner, SESSION_MARK, scopeOn } from './context.ts'
 import type { assistantMemory } from './memory.ts'
+import { admitted, automationOf, conversationIdOf, offeredOnly, openConversation } from './open.ts'
 import type { AssistantProjects } from './ports.ts'
 
 /** A page of the person's conversations (code C44): a page number the token carries, never authority. */
@@ -61,22 +59,6 @@ function placeOf(projectId: ProjectId | undefined | null): Place {
   return projectId == null ? { kind: 'COMPANY' } : { kind: 'PROJECT', projectId }
 }
 
-/**
- * The person may ask the Assistant in the company now (`askAssistant`), and the Projeto named is
- * live; else the same `NOT_FOUND` (security S10).
- */
-async function admitted(deps: Deps, owner: Owner, place: Place): Promise<void> {
-  await deps.database.read({ kind: 'COMPANY', ...owner }, async (tx) => {
-    await deps.identity.admitMember({ tx, ...owner, action: 'askAssistant' })
-    if (place.kind === 'COMPANY') return
-    const live = await deps.projects.liveProjectOf(tx, {
-      companyId: owner.companyId,
-      projectId: place.projectId,
-    })
-    if (live === undefined) throw new Failure('NOT_FOUND', { details: { reason: 'PROJECT' } })
-  })
-}
-
 /** The person's own thread of the Assistant, or `CONVERSATION_NOT_FOUND`; another's and one that does not exist answer the same (S10). */
 async function ownThread(deps: Deps, owner: Owner, conversationId: ConversationId) {
   const resourceId = assistantOwner(owner)
@@ -101,6 +83,7 @@ async function conversationOf(deps: Deps, thread: StorageThreadType, scope: Sess
     title: thread.title || null,
     updatedAt: thread.updatedAt.toISOString(),
     projectId: scope.place.kind === 'PROJECT' ? scope.place.projectId : null,
+    automation: automationOf(thread.metadata),
     connections: connections.map(({ connectionId, connector, name, chosen }) => ({
       connectionId,
       connector,
@@ -110,24 +93,6 @@ async function conversationOf(deps: Deps, thread: StorageThreadType, scope: Sess
   }
 }
 
-/** Of the connections asked, only those the place offers now, in the place's order. */
-async function offeredOnly(deps: Deps, scope: SessionScope, asked: readonly ConnectionId[]) {
-  const wanted = new Set(asked)
-  const offered = await deps.connectors.connections({ ...scope, chosen: [] })
-  return offered.flatMap((each) => (wanted.has(each.connectionId) ? [each.connectionId] : []))
-}
-
-/** The conversation an attempt names: one id per company, person and key, so a repeat finds the same thread (code C37). */
-function conversationIdOf(owner: Owner, attemptKey: string): ConversationId {
-  const hex = createHash('sha256')
-    .update(`assistant:${owner.companyId}:${owner.personId}:${attemptKey}`)
-    .digest('hex')
-  const variant = ((Number.parseInt(hex.slice(16, 17), 16) & 0x3) | 0x8).toString(16)
-  return ConversationId.parse(
-    `${hex.slice(0, 8)}-${hex.slice(8, 12)}-8${hex.slice(13, 16)}-${variant}${hex.slice(17, 20)}-${hex.slice(20, 32)}`,
-  )
-}
-
 type Asked = {
   model?: ModelId | undefined
   effort?: Effort | undefined
@@ -135,36 +100,18 @@ type Asked = {
   connections: ConnectionId[]
 }
 
-/**
- * A conversation's creation, keyed by its attempt (code C37): the model, the Projeto and the
- * connections are checked first, nothing made on a refusal; the choice is kept first, once per
- * attempt, another place refused; `createSession` is get-or-create on the id the key derives,
- * stamping the thread's marks; then the model, only if the thread does not hold one yet, so a
- * repeat after a cut finishes the first attempt.
- */
+/** A conversation's creation, keyed by its attempt (code C37): the person and the place admitted first, nothing made on a refusal. */
 async function created(deps: Deps, owner: Owner, input: { attemptKey: string; body: Asked }) {
   const place = placeOf(input.body.projectId)
   await admitted(deps, owner, place)
   const id = conversationIdOf(owner, input.attemptKey)
-  const resourceId = assistantOwner(owner)
-  const earlier = await deps.memory.getThreadById({ threadId: id, resourceId })
-  const start = await conversationStart(deps.queue, owner, input.body.model)
-  const effort = input.body.effort ?? start.effort
-  if (!effortsOf(start.model).includes(effort)) throw new Failure('EFFORT_UNSUPPORTED')
-  const scope: SessionScope = { ...owner, place, chosen: [] }
-  const chosen = await offeredOnly(deps, scope, input.body.connections)
-  const { projectId } = input.body
-  await deps.chosen.keep(owner, { conversationId: id, projectId, connections: chosen })
-  const tags = {
-    [SESSION_MARK.company]: owner.companyId,
-    [SESSION_MARK.person]: owner.personId,
-    ...(place.kind === 'PROJECT' ? { [SESSION_MARK.project]: place.projectId } : {}),
-  }
-  const session = await deps.controller.createSession({ id, resourceId, threadId: id, tags })
-  const kept = ModelIdSchema.optional().parse(earlier?.metadata?.currentModelId)
-  if (kept === undefined) await session.model.switch(start.model, { thinkingLevel: effort })
+  const { body } = input
+  const opened = await openConversation(deps, {
+    ...{ owner, place, id, connections: body.connections },
+    ...{ model: body.model, effort: body.effort },
+  })
   const thread = await ownThread(deps, owner, id)
-  return { created: earlier === null, thread, model: kept ?? start.model }
+  return { created: opened.created, thread, model: opened.model }
 }
 
 function nextOf(page: number, hasMore: boolean): Next {
@@ -204,6 +151,7 @@ function registerReads(app: FastifyInstance, deps: Deps): void {
       title: thread.title || null,
       updatedAt: thread.updatedAt.toISOString(),
       projectId: ProjectIdSchema.nullable().parse(thread.metadata?.[SESSION_MARK.project] ?? null),
+      automation: automationOf(thread.metadata),
     }))
     return answer({ conversations, next: nextOf(page, listed.hasMore) })
   })

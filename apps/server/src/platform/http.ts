@@ -217,7 +217,7 @@ export function answer<T>(
 }
 
 type Body<O extends Operation> = O['success'] extends {
-  status: 200 | 201
+  status: 200 | 201 | 202
   body: infer S extends z.ZodType
 }
   ? z.input<S>

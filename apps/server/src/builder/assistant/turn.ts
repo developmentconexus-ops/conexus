@@ -1,11 +1,12 @@
 import { randomUUID } from 'node:crypto'
+import type { FailureCode } from '@conexus/hub-api'
 import { ConversationId } from '@conexus/hub-api'
-import type { AgentController } from '@mastra/core/agent-controller'
+import type { AgentController, Session as ControllerSession } from '@mastra/core/agent-controller'
 import type { InputProcessor } from '@mastra/core/processors'
 import type { RequestContext } from '@mastra/core/request-context'
 import { z } from 'zod'
 import { TurnKey } from '../../hub/connectors/public.ts'
-import { turnOfOwner } from '../conversation/public.ts'
+import { failureOf, modelFailure, TurnTally, turnOfOwner } from '../conversation/public.ts'
 import type { QueueDeps, Turn } from '../model-accounts/public.ts'
 import { setTurn } from '../model-accounts/public.ts'
 import type { ScopeOf } from './context.ts'
@@ -72,4 +73,37 @@ export function assistantTurns(deps: { queue: QueueDeps; scopeOf: ScopeOf }) {
   }
 
   return { processor, watch }
+}
+
+export type TurnEnd = { kind: 'DONE' } | { kind: 'FAILED'; code: FailureCode }
+
+/**
+ * How the next turn of `session` ends, by the Builder's map. Subscribe before sending: a model's
+ * failure comes as an event and `sendMessage` returns without throwing. A session deleted mid-run
+ * ends with no `agent_end` (Mastra's `deleteSession`).
+ */
+export function turnEnd(controller: AgentController, session: ControllerSession): Promise<TurnEnd> {
+  const id = session.identity.getId()
+  return new Promise((resolve) => {
+    const tally = new TurnTally()
+    let failure: FailureCode | undefined
+    function done(end: TurnEnd): void {
+      stopHearing()
+      stopWatching()
+      resolve(end)
+    }
+    const stopHearing = session.subscribe((event) => {
+      tally.heard(event)
+      if (event.type === 'error') failure ??= failureOf(event.error)?.code
+      if (event.type !== 'agent_end') return
+      const reason = event.reason ?? 'complete'
+      if (reason === 'aborted') return done({ kind: 'FAILED', code: 'INTERRUPTED' })
+      if (reason === 'suspended') return done({ kind: 'FAILED', code: 'INTERNAL_UNEXPECTED' })
+      const code = failure ?? modelFailure(reason, tally)
+      done(code === undefined ? { kind: 'DONE' } : { kind: 'FAILED', code })
+    })
+    const stopWatching = controller.onSessionDeleted((deleted) => {
+      if (deleted.identity.getId() === id) done({ kind: 'FAILED', code: 'INTERRUPTED' })
+    })
+  })
 }

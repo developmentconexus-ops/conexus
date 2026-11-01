@@ -1,6 +1,7 @@
 import type { ServerResponse } from 'node:http'
 import { ASSISTANT_CONTROLLER } from '@conexus/hub-api'
 import type { AgentController } from '@mastra/core/agent-controller'
+import type { AnyWorkflow } from '@mastra/core/workflows'
 import type { PostgresStore } from '@mastra/pg'
 import type { FastifyInstance } from 'fastify'
 import type { IdentityPorts } from '../../hub/identity/public.ts'
@@ -29,11 +30,14 @@ export {
   sessionModel,
   toolsOf,
 } from './builder.ts'
+export { failureOf, modelFailure } from './end.ts'
 export { skillOf } from './instructions.ts'
 export { workspaceMetadataLive } from './processors.ts'
 export { turnDate } from './prompt/prompt.ts'
 export { createMastraStorage } from './storage.ts'
 export type { ReleaseScope } from './store.ts'
+export { bodyHashOf } from './store.ts'
+export { TurnTally } from './turn-line.ts'
 export { ownerOfResource, turnOfOwner } from './turn-of.ts'
 export { TOOL_CLOSURE }
 
@@ -48,6 +52,16 @@ export type AssistantPart = {
   close(): Promise<void>
 }
 
+/**
+ * What the automations hand the conversations (step 24.2): their workflows on the one `Mastra`, a
+ * test's short scheduler tick, and their removal, which runs before the conversations'.
+ */
+export type AutomationPart = {
+  workflows: Readonly<Record<string, AnyWorkflow>>
+  schedulerTickMs: number | undefined
+  release(scope: ReleaseScope): Promise<void>
+}
+
 /** Deletes the threads, and so the memory, of a Projeto, a person or a company (data D17). */
 type ReleaseConversations = (scope: ReleaseScope) => Promise<void>
 export type Conversations = ReturnType<typeof createConversations>
@@ -58,6 +72,33 @@ function askerAdmission(database: Database, identity: IdentityPorts): AssistantA
     database.read({ kind: 'COMPANY', companyId, personId: person.id }, async (tx) => {
       await identity.admitMember({ tx, personId: person.id, companyId, action: 'askAssistant' })
     })
+}
+
+/**
+ * The removal of a Projeto's, a person's or a company's conversations, after their automations.
+ * The runs first: a turn the removal aborts then finds its run gone and writes nothing. Its Mastra
+ * run is aborted before the kill (`deleteSession` aborts it and denies its cards), so no tool starts
+ * the machine again; a thread goes only once its machine is killed.
+ */
+function releaseOf(deps: {
+  store: ReturnType<typeof createConversationStore>
+  builder: Builder
+  runs: Runs
+  assistant: AssistantPart
+  automation: AutomationPart
+  log: FailureLog
+}): ReleaseConversations {
+  const { store, builder, assistant } = deps
+  return async (scope) => {
+    await deps.automation.release(scope)
+    const ids = await store.releasedIds(scope)
+    await deps.runs.stopWriting(scope)
+    for (const id of ids) await builder.controller.deleteSession({ sessionId: id })
+    await deps.runs.release(scope, ids)
+    for (const id of ids) await builder.memory.deleteThread(id)
+    deps.log.info({ companyId: scope.companyId, count: ids.length }, 'CONVERSATIONS_RELEASED')
+    await assistant.release(scope)
+  }
 }
 
 /**
@@ -74,9 +115,10 @@ export function createConversations(deps: {
   runs: Runs
   connectors: BuilderConnectors
   assistant: AssistantPart
+  automation: AutomationPart
   log: FailureLog
 }) {
-  const { database, identity, queue, assistant } = deps
+  const { database, identity, queue, assistant, automation } = deps
   const store = createConversationStore(deps)
   const builder = createBuilder({
     ...{
@@ -95,6 +137,8 @@ export function createConversations(deps: {
     storage: deps.storage,
     log: deps.log,
     controllers: { [BUILDER_ID]: builder.controller, [ASSISTANT_CONTROLLER]: assistant.controller },
+    workflows: automation.workflows,
+    schedulerTickMs: automation.schedulerTickMs,
   })
   const runs = watchRuns({
     watched: [
@@ -111,20 +155,13 @@ export function createConversations(deps: {
   const mayAsk = askerAdmission(database, identity)
   const streams = new Set<ServerResponse>()
 
-  const release: ReleaseConversations = async (scope) => {
-    const ids = await store.releasedIds(scope)
-    // The runs first: a turn the removal aborts then finds its run gone and writes nothing. Its
-    // Mastra run is aborted before the kill (`deleteSession` aborts it and denies its cards), so no
-    // tool starts the machine again; a thread goes only once its machine is killed.
-    await deps.runs.stopWriting(scope)
-    for (const id of ids) await builder.controller.deleteSession({ sessionId: id })
-    await deps.runs.release(scope, ids)
-    for (const id of ids) await builder.memory.deleteThread(id)
-    deps.log.info({ companyId: scope.companyId, count: ids.length }, 'CONVERSATIONS_RELEASED')
-    await assistant.release(scope)
-  }
+  const release = releaseOf({ ...deps, store, builder })
 
   return Object.freeze({
+    /** The one `Mastra`, which the automations schedule on (step 24.2). */
+    mastra,
+    /** True from `settle` on: nothing new starts (the guard's `HUB_UPDATING`, an automation's run). */
+    updating: runs.updating,
     routes: (app: FastifyInstance) => {
       registerConversationRoutes(app, { store, builder, queue })
       registerBuilderRoutes(app, {
@@ -146,8 +183,19 @@ export function createConversations(deps: {
       await storage.init()
       deps.log.info({}, 'MASTRA_STORAGE_READY')
     },
-    /** Refuses new turns and waits for the ones in flight, until `bound` aborts (founder E1). */
+    /**
+     * Mastra's workers, after every subject is made: the orchestration that runs the workflows,
+     * and the scheduler only if a schedule row exists (`NM:mastra-Da0Czfte.js:5037-5049`).
+     */
+    async start(): Promise<void> {
+      await mastra.startWorkers()
+    },
+    /**
+     * Stops the scheduler, so no automation fires after the signal, then refuses new turns and
+     * waits for the ones in flight, until `bound` aborts (founder E1).
+     */
     async settle(bound: AbortSignal): Promise<void> {
+      await mastra.getWorker('scheduler')?.stop()
       await runs.settle(bound)
     },
     /**

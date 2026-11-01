@@ -15,11 +15,22 @@ export const ASSISTANT_TOOL = { overview: 'conexus_overview' } as const
 /** The most connections a conversation may choose at once. */
 const CHOSEN_MAX = 50
 
+/** An automation's id: Mastra's schedule id of the row (`schedule_<slug>`), its uuid derived from the creation's attempt (step 24.2). */
+export const AutomationId = z
+  .string()
+  .regex(
+    /^schedule_conexus-automation-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
+  )
+  .brand('AutomationId')
+export type AutomationId = z.infer<typeof AutomationId>
+
 export const AssistantConversationSummary = z.object({
   id: ConversationId,
   title: z.string().nullable(),
   updatedAt: z.iso.datetime(),
   projectId: ProjectId.nullable(),
+  /** The automation whose run opened the conversation, with its name at that run; kept after the automation goes. */
+  automation: z.object({ automationId: AutomationId, name: z.string() }).nullable(),
 })
 export type AssistantConversationSummary = z.infer<typeof AssistantConversationSummary>
 

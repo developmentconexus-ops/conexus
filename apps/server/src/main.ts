@@ -3,6 +3,8 @@ import { join } from 'node:path'
 import { FAILURES, getStatus } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
 import type { Assistant } from './builder/assistant/public.ts'
+import type { AutomationsPart } from './builder/automations/public.ts'
+import { loggedNotify } from './builder/automations/public.ts'
 import type { Conversations } from './builder/conversation/public.ts'
 import type { GitCopy } from './builder/git/public.ts'
 import { repositoriesIn } from './builder/git/public.ts'
@@ -13,7 +15,7 @@ import {
   resealModelAccounts,
   signInFlows,
 } from './builder/model-accounts/public.ts'
-import type { MachinesOf, RepositoryOf, Runs } from './builder/runs/public.ts'
+import type { MachinesOf, RepositoryOf } from './builder/runs/public.ts'
 import { builderPortsOf, createRuns } from './builder/runs/public.ts'
 import { conversationsOf } from './conversations-of.ts'
 import { firstPersonArguments } from './first-person-arguments.ts'
@@ -72,6 +74,7 @@ export async function createHub(
     modelAccounts: ModelAccounts
     conversations: Conversations
     assistant: Assistant
+    automations: AutomationsPart
     connectors: Connectors
     webRoot?: string
   },
@@ -92,6 +95,7 @@ export async function createHub(
   deps.modelAccounts.routes(app)
   deps.conversations.routes(app)
   deps.assistant.routes(app)
+  deps.automations.routes(app)
   deps.connectors.routes(app)
   await app.ready()
   return app
@@ -138,16 +142,7 @@ export function subjectsOf(deps: {
   copy: GitCopy
   log: FailureLog
   deadlines?: ConnectorDeadlines
-}): {
-  runs: Runs
-  projects: Projects
-  operations: Operations
-  apps: Apps
-  modelAccounts: ModelAccounts
-  conversations: Conversations
-  assistant: Assistant
-  connectors: Connectors
-} {
+}) {
   const { database, config, log, neon } = deps
   const identity = deps.identity.ports
   const appsDomain = config.appsDomain
@@ -162,9 +157,11 @@ export function subjectsOf(deps: {
     // The apps are made below, after the Projetos the turn's send needs; a turn ends long after.
     send: (version) => apps.sendFromBuilder(version),
   })
-  const { conversations, assistant } = conversationsOf({
+  const { conversations, assistant, automations } = conversationsOf({
     ...{ database, identity, sealKeys, google, log, runs, mastraPool: deps.mastraPool },
     connectors: () => connectors,
+    notify: loggedNotify(log),
+    automationClock: config.automationClock,
   })
   const releaseConversations = conversations.release
   const projects = createProjects({
@@ -183,7 +180,10 @@ export function subjectsOf(deps: {
     ...{ database, identity, sealKeys, flows, log, googleCalls: google.googleCalls },
   })
   const connectors = createConnectors({ ...deps, identity, door: apps.connectorCall })
-  return { runs, projects, operations, apps, modelAccounts, conversations, assistant, connectors }
+  return {
+    ...{ runs, projects, operations, apps, modelAccounts },
+    ...{ conversations, assistant, automations, connectors },
+  }
 }
 
 async function runServer(): Promise<void> {
@@ -211,6 +211,7 @@ async function runServer(): Promise<void> {
     const { projects, apps, conversations, modelAccounts, runs, connectors } = subjects
     await conversations.prepare()
     const app = await createHub(config, { status, identity, ...subjects })
+    await conversations.start()
     const edge = await createEdgeHub(config, { apps, connectors })
     const grace = shutDownOnSignal(app, edge, {
       settle: (bound) => conversations.settle(bound),

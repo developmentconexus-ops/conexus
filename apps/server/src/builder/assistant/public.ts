@@ -1,2 +1,5 @@
 export type { Assistant } from './assistant.ts'
 export { createAssistant } from './assistant.ts'
+export type { Owner } from './context.ts'
+export { assistantOwner } from './context.ts'
+export { conversationIdOf, offeredOnly } from './open.ts'

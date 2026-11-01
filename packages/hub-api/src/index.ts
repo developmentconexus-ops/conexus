@@ -55,6 +55,7 @@ export {
   ASSISTANT_TOOL,
   AssistantConversation,
   AssistantConversationSummary,
+  AutomationId,
   createAssistantConversation,
   listAssistantConnections,
   listAssistantConversations,
@@ -63,6 +64,7 @@ export {
   SessionConnection,
   setAssistantConnections,
 } from './assistant.ts'
+export * from './automations.ts'
 export { CAPACITY } from './capacity.ts'
 export {
   acceptInvitation,

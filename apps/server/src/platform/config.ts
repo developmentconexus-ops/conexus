@@ -166,6 +166,11 @@ export type Config = BaseConfig & {
   connectorOrigins?: ReadonlyMap<string, string>
   /** The installation's app at each OAuth connector; none, and no OAuth connector can be linked. */
   connectorApps?: ReadonlyMap<string, ConnectorApp>
+  /**
+   * A shorter clock for the automations, for tests and the local Hub; never in production, where
+   * Mastra's scheduler ticks every 10 s and a run's turn has 15 minutes (step 24.2).
+   */
+  automationClock?: Readonly<{ schedulerTickMs: number; turnMs: number }>
   e2bApiKey: E2bApiKey
   machineTemplate: MachineTemplate
   installationId: InstallationId

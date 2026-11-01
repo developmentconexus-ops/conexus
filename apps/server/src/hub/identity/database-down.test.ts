@@ -32,15 +32,23 @@ const UNAVAILABLE = {
 async function hubOn(t: TestContext, database: TestDatabase['database'], config: Config) {
   const status = createStatus({ version: config.version, database })
   const identity = identityOf({ database, config, log: silent })
-  const { projects, operations, apps, modelAccounts, conversations, assistant, connectors } =
-    subjectsOf({
-      mastraPool: testMastraPool(t, config),
-      database,
-      config,
-      identity,
-      ...testAppPorts(config),
-      log: silent,
-    })
+  const {
+    projects,
+    operations,
+    apps,
+    modelAccounts,
+    conversations,
+    assistant,
+    automations,
+    connectors,
+  } = subjectsOf({
+    mastraPool: testMastraPool(t, config),
+    database,
+    config,
+    identity,
+    ...testAppPorts(config),
+    log: silent,
+  })
   const webRoot = testWebRoot(t)
   const app = await createHub(config, {
     status,
@@ -51,6 +59,7 @@ async function hubOn(t: TestContext, database: TestDatabase['database'], config:
     modelAccounts,
     conversations,
     assistant,
+    automations,
     connectors,
     webRoot,
   })

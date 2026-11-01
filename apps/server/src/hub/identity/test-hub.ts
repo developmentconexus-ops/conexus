@@ -75,6 +75,7 @@ async function hubServing(
   const { projects, apps, conversations, runs } = subjects
   const webRoot = testWebRoot(t)
   const app = await createHub(config, { status, identity, ...subjects, webRoot })
+  await conversations.start()
   // Once, whichever comes first: a test that waits for the Hub's background work, or the test's end.
   let closed: Promise<void> | undefined
   function close() {
@@ -106,6 +107,7 @@ async function hubServing(
       folder: ports.folder,
     },
     connectors: subjects.connectors,
+    mastra: conversations.mastra,
     repair: apps.repair,
     readUnserved: subjects.modelAccounts.readUnserved,
     close,
