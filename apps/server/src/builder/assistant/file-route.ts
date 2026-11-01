@@ -63,7 +63,7 @@ export function registerFile(app: FastifyInstance, deps: FileDeps): void {
         untilClientLeaves(reply),
       )
       // The browser left: nobody reads the answer, and the machine's read stopped.
-      if (read.kind === 'CANCELLED') return reply.code(499).send()
+      if (read.kind === 'CANCELLED') return reply.send()
       if (read.kind !== 'OK') throw new Failure(FILE_FAILURE[read.kind])
       deps.log.info(
         { companyId: owner.companyId, conversationId, bytes: read.bytes.length },

@@ -2,7 +2,7 @@
 // in THIRD_PARTY_LICENSE.txt beside this file.
 // From @mastra/code-sdk 1.15.0, src/agents/sandbox-filesystem.ts (mastra-ai/mastra), split by
 // concern: the containment checks and `execOk` (source :299-390). Changed: functions that take the
-// filesystem (`Host`) in place of private methods; no `!`.
+// filesystem (`Host`) in place of private methods; no `!`; `PathEscapesError` for a path that leaves the root.
 
 import { posix as posixPath } from 'node:path'
 import type { Host, SandboxCommandResult } from './shell.ts'
