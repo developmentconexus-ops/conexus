@@ -20,7 +20,7 @@ Sankhya em "Matriz" e "Filial", Mercado Livre em "Loja"; o Projeto "Vendas" rece
 1. A Ana abre o Início no computador. À esquerda, o trilho (Início, Projetos, Integrações,
    Configurações, ela) e a lista Conversas, em Hoje, Ontem, Esta semana e Antes. No meio, numa
    coluna: a saudação, a caixa, Continuar, e Projetos ao lado de Ligações, cada estado em palavras
-   ("Publicado · v3", "Conectar de novo").
+   ("Publicado · v3", "Pede para conectar de novo").
 2. Ela toca no "+": Anexar arquivo e as três ferramentas, ligadas. Desliga a Loja. Na pasta, escolhe
    Vendas: o menu passa a mostrar só a Matriz. Pergunta, e a conversa abre no Projeto.
 3. Na conversa, a linha da caixa é a mesma: "+", a pasta "Vendas" fixa, "1 ferramenta"; à direita o
@@ -37,7 +37,7 @@ Sankhya em "Matriz" e "Filial", Mercado Livre em "Loja"; o Projeto "Vendas" rece
 
 **O que muda no cartão da 24.1.** A barra embaixo da caixa sai. A escolha das ferramentas e a do
 Projeto passam para o "+" e para a pasta, dentro da caixa. No cartão da 24.1, cada trecho da barra
-ganha um aviso apontando para este cartão: a matriz, os critérios 23 e 23a, a linha "A barra", os
+ganha um aviso apontando para este cartão: a matriz, os critérios 23 a 24, a linha "A barra", os
 passos 1, 4 e 5 do roteiro e a regra W30. O cartão da 24.1 não perde o que dizia. O que a 24.1
 exige da barra continua valendo no "+": liga e desliga por ferramenta, tudo começa ligado, e na
 conversa de Projeto aparecem só as ferramentas liberadas a ele.
@@ -54,7 +54,11 @@ que começou.
 - Peças da AffectUI que esta etapa não usa (aprovação, plano, aviso flutuante). Cada uma entra com
   a sua etapa, sempre redesenhada sobre as nossas peças, nunca copiada.
 - Um aviso flutuante (toast). O Hub ainda não tem nenhum; fica especificado no DESIGN.md.
-- **Das pendências marcadas para o próximo cartão:** nenhuma toca o visual da casa.
+- **Das pendências marcadas para o próximo cartão:** a #272 (a resposta livre de uma pergunta tem
+  uma linha só) entra na U9, que troca justamente essa caixa. A #384 (no celular, um Projeto sem
+  conversa não mostra a caixa), a #382 (a fila de anexos esconde arquivos) e a #513 (o carregador
+  das mensagens antigas sem palavras) são da conversa do Builder, que a Pauta não redesenha; cada
+  uma espera a etapa dessa conversa.
 
 **As decisões suas nesta etapa.**
 
@@ -94,21 +98,24 @@ e a ordem da linha da caixa. Estão no registro de aprovações, seção "Etapa 
 | U1 | Os tokens com uma fonte: `tokens.css` igual ao `DESIGN.md`, com um teste que recusa a diferença; o escuro escrito uma vez; os valores da Pauta; Hanken Grotesk em 7 tamanhos, a Bricolage sai (auditoria U1) | `apps/web/src/brand/` | [web](../guides/web.md) | U0 |
 | U2 | Os tokens de medida: controle 32 e 28, a linha 32, o celular 390; as peças os usam (auditoria U2) | `apps/web/src/brand/`, `apps/web/src/ui/`, `apps/web/src/builder/preview/`, `apps/web/src/hub/projects/recent-projects.tsx`, `DESIGN.md` | [web](../guides/web.md) | U1 |
 | U3 | A moldura da Pauta: o trilho de ícones e a lista Conversas por dia, o eixo de 720/880, os blocos do Início (Continuar, Projetos, Ligações) com o estado em palavras; `ProjectSummary` com as versões | `apps/web/src/ui/` (`sidebar.tsx`, `frame.tsx`), `apps/web/src/routes/_app/companies/$companyId/`, `apps/web/src/builder/assistant/`, `apps/web/src/hub/projects/`, `apps/web/src/hub/identity/account-menu.tsx`, `packages/hub-api/src/projects.ts`, `apps/server/src/hub/projects/` | [web](../guides/web.md) | U2 |
-| U4 | A linha da caixa: uma peça, uma ordem, nas três telas; `useComposerTools` como a única fonte; a memória ausente no Início; a pasta apagada sem Projeto; as regras do celular; a barra de hoje sai | `apps/web/src/builder/conversation/` (`composer.tsx`, `memory-status.tsx`, `public.ts`, `start.tsx`, `chat.tsx`), `apps/web/src/builder/assistant/`, `apps/web/src/builder/model-accounts/model-picker.tsx` | [web](../guides/web.md) | U3 |
+| U4 | A linha da caixa: uma peça, uma ordem, nas três telas; `useComposerTools` como a única fonte; a memória ausente no Início; a pasta apagada sem Projeto; as regras do celular; a barra de hoje sai, e a escolha das ferramentas e do Projeto continua funcionando pela contagem e pela pasta | `apps/web/src/builder/conversation/` (`composer.tsx`, `memory-status.tsx`, `public.ts`, `start.tsx`, `chat.tsx`), `apps/web/src/builder/assistant/`, `apps/web/src/builder/model-accounts/model-picker.tsx` | [web](../guides/web.md) | U3 |
 | U5 | O menu "+": Anexar arquivo, um interruptor por ferramenta, a busca a partir de 7, "Conectar outra ferramenta"; a pasta do Projeto no Início; "N ferramentas" | `apps/web/src/builder/assistant/` | [web](../guides/web.md) | U4 |
-| U6 | O modelo dentro da conversa do Assistente: a rota de troca, como a do Builder, e o botão do modelo na linha da caixa | `packages/hub-api/src/assistant.ts`, `apps/server/src/builder/assistant/`, `apps/web/src/builder/assistant/` | [testing](../guides/testing.md) | U4 |
+| U6 | O modelo dentro da conversa do Assistente: a rota de troca, como a do Builder, e o botão do modelo na linha da caixa | `packages/hub-api/src/assistant.ts`, `apps/server/src/builder/assistant/`, `apps/web/src/builder/assistant/` | [testing](../guides/testing.md) | o servidor, nenhuma; a tela, U5 |
 | U7 | A peça Alerta: os 30 erros escritos à mão passam a ela (auditoria U3) | `apps/web/src/ui/`, as telas com `role="alert"` | [web](../guides/web.md) | U5 |
 | U8 | O seletor da barra lateral numa peça só, para empresa, Central e Projeto, e `useCompanies` (auditoria U4) | `apps/web/src/ui/`, `apps/web/src/hub/identity/`, `apps/web/src/hub/operations/`, `apps/web/src/hub/projects/project-rail.tsx` | [web](../guides/web.md) | U3 |
 | U9 | O `Card` e a `Textarea` de `ui/` onde hoje se desenha à mão (auditoria U5) | `apps/web/src/builder/conversation/`, `apps/web/src/hub/projects/`, `apps/web/src/hub/identity/`, `apps/web/src/builder/model-accounts/` | [web](../guides/web.md) | U3 |
 
-A fila é U0, U1, U2, U3, U4, U5. A U6 começa pelo servidor ao mesmo tempo que a U5 (não dividem
-pasta) e termina a tela depois da U4. A U8 e a U9 correm juntas depois da U3; a U7, depois da U5,
+A fila é U0, U1, U2, U3, U4, U5. O servidor da U6 não depende de nenhuma e pode ser feito a
+qualquer momento; a tela da U6 vem depois da U5, porque as duas mudam `builder/assistant/` e
+`conversation.test.tsx`. A U8 e a U9 correm juntas depois da U3; a U7, depois da U5,
 porque troca o erro da caixa.
 
 **Quando cada uma pode começar** (delivery L1, L20). A U0 é só de documentos e muda guias: entra na
 janela em que nenhum cartão do trilho de fronteira está em `docs/steps/`, entre o fechamento da etapa
-de antes e a entrada deste cartão. A U1 e a U2 não tocam nenhum arquivo da 24.1 nem da 24.2
-(conferido em 2026-11-01 contra os pull requests 532, 533 e 535): constroem-se nos seus ramos assim
+de antes e a entrada deste cartão. A U1 e a U2 não tocam nenhum arquivo de código da 24.1 nem da 24.2
+(conferido em 2026-11-01 contra os pull requests 532, 533 e 535); como a 533 muda
+`apps/web/layout.test.ts` e `apps/web/phone.layout.test.ts`, os casos da U1 vão num arquivo novo,
+`apps/web/tokens.layout.test.ts`, e os da U2 em `pieces.layout.test.ts`, que nenhuma delas toca: constroem-se nos seus ramos assim
 que esta página for aprovada, e entram depois da U0.
 
 **Orçamento de código alterado.** U0: 0 (só documentos). U1: ~150. U2: ~60. U3: ~660. U4: ~350, mais
@@ -125,33 +132,33 @@ O aceite da etapa: o roteiro, a 1366 e a 390 px, nos dois temas, com as medidas 
 | # | Unidade | Critério, observável de fora, com a recusa | Teste que o prova | Nível |
 | --- | --- | --- | --- | --- |
 | 1 | U1 | Cada cor, raio, espaço, largura e tipo do `DESIGN.md` é o mesmo valor em `tokens.css`; mudar um só dos lados faz o teste falhar com o nome do token; um token de `tokens.css` que o `DESIGN.md` não tem também falha (os `code-*` entram no `DESIGN.md`) | `apps/web/src/brand/tokens.test.ts` | must |
-| 2 | U1 | O tema escuro está escrito uma vez: com `data-theme="dark"`, e com o sistema escuro sem `data-theme="light"`, o fundo da moldura é `#121417` e a folha `#181b1f`; com `data-theme="light"` num sistema escuro, `#f5f6f7` e `#ffffff` | `apps/web/layout.test.ts`, "o tema" | must |
+| 2 | U1 | O tema escuro está escrito uma vez: com `data-theme="dark"`, e com o sistema escuro sem `data-theme="light"`, o fundo da moldura é `#121417` e a folha `#181b1f`; com `data-theme="light"` num sistema escuro, `#f5f6f7` e `#ffffff` | `apps/web/tokens.layout.test.ts`, "o tema" (novo) | must |
 | 3 | U1 | Nenhuma fonte além de Hanken Grotesk e JetBrains Mono é declarada ou baixada; a saudação do Início tem 28 px com linha de 36 (24/32 abaixo de 640 px), e toda altura de linha de texto é múltipla de 4 | `apps/web/pieces.layout.test.ts`, "a fonte" | must |
-| 4 | U2 | Um botão tem 32 px de altura e o de uma linha 28; um item de menu, de seleção e de barra lateral, 32; num toque (`pointer: coarse`) cada um alcança 44 × 44 sem desenhar maior (V32); o celular desenhado da Prévia mede 390 | `pieces.layout.test.ts`, `phone.layout.test.ts` | must |
+| 4 | U2 | Um botão tem 32 px de altura e o de uma linha 28; um item de menu, de seleção e de barra lateral, 32; num toque (`pointer: coarse`) cada um alcança 44 × 44 sem desenhar maior (V32); o celular desenhado da Prévia mede 390 | `pieces.layout.test.ts` | must |
 | 5 | U3 | A 1366 px, a dona vê o trilho de 56 px (Início, Projetos, Integrações, Configurações no alto; ela no pé) e a lista de 272 px com "Nova conversa" e "Conversas"; cada linha da lista mede 32; o lugar atual tem o traço dourado de 2 px no trilho e na lista, com `aria-current="page"` | `apps/web/home.layout.test.ts`, "a moldura" | must |
-| 6 | U3 | A lista agrupa as conversas da pessoa por dia, no fuso do Hub: Hoje, Ontem, Esta semana (até 7 dias), Antes; cada linha com a idade à direita; uma conversa de Projeto leva o nome dele; sem conversas, só "Nova conversa"; o membro vê na lista os Projetos recentes, como hoje | `apps/web/src/builder/assistant/sidebar-conversations.test.tsx` | must |
+| 6 | U3 | A lista agrupa as conversas da pessoa por dia, no fuso do navegador, como toda data da tela (`platform/dates.ts:1`): Hoje, Ontem, Esta semana (até 7 dias), Antes; cada linha com a idade à direita; uma conversa de Projeto leva o nome dele; sem conversas, só "Nova conversa"; a lista mostra a primeira página (50) e o `Pager` de hoje para as seguintes; o membro vê na lista os Projetos recentes, como hoje | `apps/web/src/builder/assistant/sidebar-conversations.test.tsx`, com o relógio e o fuso fixados (`vi.setSystemTime`, `TZ=America/Sao_Paulo`) | must |
 | 7 | U3 | No Início, a saudação, a caixa, Continuar e o par Projetos e Ligações têm o mesmo centro e a mesma largura: 720 px a 1366 (cada metade 352, vão 16) e 880 a 1920 (432) | `home.layout.test.ts`, "o eixo" | must |
-| 8 | U3 | Os blocos do Início: Continuar com as 5 últimas conversas; Projetos com o estado em palavras ("Publicado · v3", "Em construção · v2", "Ainda sem app"); Ligações com "Funcionando", "Conectar de novo" ou "Não testada"; no máximo 5 linhas e "Mais N"; cada bloco vazio com a sua frase; uma falha de leitura com a frase do código e Tentar de novo | `apps/web/src/builder/assistant/day.test.tsx` | must |
+| 8 | U3 | Os blocos do Início: Continuar com as 5 últimas conversas; Projetos com o estado em palavras ("Publicado · v3", "Em construção · v2", "Ainda sem app"); Ligações com a palavra de `stateBadge` (`hub/connectors/text.ts:34-44`: "Funcionando", "Pede para conectar de novo", "Chaves recusadas"), sem palavra para uma ainda não testada, como em Integrações; no máximo 5 linhas e "Mais N"; cada bloco vazio com a sua frase; uma falha de leitura com a frase do código e Tentar de novo | `apps/web/src/builder/assistant/day.test.tsx` | must |
 | 9 | U3 | `GET /api/companies/{c}/projects` dá, em cada Projeto, `appVersion` e `publishedVersion`, `null` antes da primeira versão e da primeira publicação, os mesmos números que `getProject` | `apps/server/src/hub/projects/projects.test.ts`, "as versões na lista" | must |
 | 10 | U3 | A 390 px, o trilho e a lista abrem juntos na gaveta de "Abrir navegação"; a barra do topo tem 52 px; nada rola de lado a 390 nem a 200% de zoom (V18, V56) | `phone.layout.test.ts`, "a gaveta" | must |
 | 11 | U3 | Dentro de um Projeto o trilho continua, e a lista é a do Projeto (o nome com o seletor, Construir, Conversas, Sobre, Quem usa o app, Integrações); sair do Projeto devolve a lista de Conversas | `apps/web/workbench.layout.test.ts`, "o trilho no Projeto" | must |
 | 12 | U3 | O dourado aparece só no traço do lugar, no foco, no cursor de texto, na aba ativa e na marca: o enviar, ao passar o mouse, fica no cinza de destaque (`surface-3`), não dourado | `apps/web/focus.layout.test.ts`, "o dourado" | should |
-| 13 | U4 | A linha da caixa tem a mesma ordem no Início, na conversa e na conversa de Projeto: à esquerda "+", pasta, ferramentas; à direita modelo, memória (onde existe conversa), microfone, enviar. A 1366, medido da borda da caixa, "+" em 13, pasta em 49, ferramentas em 85, enviar em 675; a 390, os mesmos três da esquerda | `apps/web/assistant.layout.test.ts`, "a linha da caixa" | must |
+| 13 | U4 | A linha da caixa tem a mesma ordem no Início, na conversa e na conversa de Projeto: à esquerda "+", pasta, ferramentas; à direita modelo, memória (onde existe conversa), microfone, enviar. Sem Projeto, a 1366, medido da borda da caixa, "+" em 13, pasta em 49, ferramentas em 85, enviar em 675, e a 390 os mesmos três da esquerda; com o nome do Projeto na pasta, a mesma ordem, com as ferramentas depois do nome. Até a U6, na conversa do Assistente o modelo aparece só para leitura (o botão desabilitado com o modelo da sessão) | `apps/web/assistant.layout.test.ts`, "a linha da caixa" | must |
 | 14 | U4 | No Início a memória não aparece; na conversa, "Memória N%" aparece no mesmo lugar | `apps/web/src/builder/assistant/home.test.tsx`, `conversation.test.tsx`, "a memória" | must |
 | 15 | U4 | Numa conversa sem Projeto, a pasta fica apagada, com o nome acessível "Conversa sem Projeto", e não abre nada; numa conversa de Projeto, a pasta mostra o nome dele e não abre nada | `conversation.test.tsx`, "a pasta" | must |
 | 16 | U4 | Abaixo de 416 px saem as palavras, nunca os controles, nesta ordem: "N ferramentas" vira o número, o nome do Projeto vira a pasta, "Memória" vira o anel e a porcentagem, o modelo perde "Claude "; abaixo de 320 px o grupo da esquerda ganha uma linha própria; nenhum controle troca de lado | `phone.layout.test.ts`, "a linha no celular" | must |
 | 17 | U4 | A barra embaixo da caixa (as etiquetas, **Ajustar**, "Sem Projeto") não aparece mais em nenhuma tela; a caixa do Builder mostra o modelo à direita e nada mais muda nela | `home.test.tsx`, `apps/web/src/builder/conversation/composer.test.tsx` | must |
-| 18 | U5 | O "+" abre, a partir de 768 px num menu e abaixo numa folha de baixo para cima ("Anexar e ferramentas"): Anexar arquivo; "Ferramentas da conversa" com "N de M ligadas"; um interruptor por ferramenta que o lugar oferece, todos ligados ao abrir uma conversa nova; e "Conectar outra ferramenta" (Integrações) ou, num Projeto, "Liberar outra ferramenta ao Projeto" (Integrações do Projeto) | `apps/web/src/builder/assistant/composer-tools.test.tsx`, "o menu" | must |
+| 18 | U5 | O "+" abre, a partir de 768 px num menu e abaixo numa folha de baixo para cima ("Anexar e ferramentas"): Anexar arquivo; "Ferramentas da conversa" com "N de M ligadas"; um interruptor por ferramenta que o lugar oferece, todos ligados ao abrir uma conversa nova (a contagem e a pasta da U4 passam a abrir este menu); e "Conectar outra ferramenta" (Integrações) ou, num Projeto, "Liberar outra ferramenta ao Projeto" (Integrações do Projeto) | `apps/web/src/builder/assistant/composer-tools.test.tsx`, "o menu" | must |
 | 19 | U5 | Com 7 ferramentas ou mais aparece a busca; "loja" filtra pelo nome; sem resultado, "Nenhuma ferramenta com esse nome."; com 6, nenhuma busca | `composer-tools.test.tsx`, "a busca" (com 11 e com 6) | must |
 | 20 | U5 | Antes da primeira pergunta, um interruptor muda só o rascunho; depois, cada um manda `PUT …/connections` e mostra o que o Hub respondeu; os interruptores ficam parados enquanto a troca anda; uma troca recusada volta à escolha de antes, com a frase do código num alerta (o 23a da 24.1, agora no "+") | `conversation.test.tsx`, "o +" | must |
 | 21 | U5 | No Início, a pasta abre "Sem Projeto" e os Projetos (busca a partir de 7); escolher Vendas faz o "+" mostrar só as ferramentas liberadas a ele; enviar cria a conversa com o Projeto e as ferramentas escolhidas e abre o endereço do Projeto (o 23 e o 24 da 24.1) | `home.test.tsx`, "a pasta" | must |
 | 22 | U5 | "N ferramentas" mostra até 3 logos e o número; com nenhuma, "Sem ferramentas"; tocar nele abre o "+"; sem ferramenta no lugar, o menu diz "Nenhuma ferramenta ligada à empresa" (Início) ou a frase do Projeto da 24.1, com o caminho | `composer-tools.test.tsx`, "a contagem" | must |
-| 23 | U6 | `PUT /api/companies/{c}/assistant/conversations/{id}/model` pela dona da conversa, com `model` e `effort`, responde 200 com o modelo e o esforço guardados; um modelo sem conta: `MODEL_NO_ACCOUNT`; um modelo que o Hub não serve: `MODEL_UNKNOWN`; um esforço que o modelo não tem: `EFFORT_UNSUPPORTED`; nada muda numa recusa; a conversa de outra pessoa, ou pedida por um membro: a mesma resposta de `readAssistantConversation` | `apps/server/src/builder/assistant/routes.test.ts`, "o modelo" | must |
-| 24 | U6 | Depois da troca, a resposta seguinte usa o modelo novo; uma resposta em andamento termina no modelo em que começou (V54); ler a conversa depois mostra o modelo novo; a criação continua como o critério 8 da 24.1 | `apps/server/src/builder/assistant/assistant.test.ts`, "a troca do modelo" | must |
-| 25 | U6 | Na conversa do Assistente, o botão do modelo troca o modelo pela rota; uma recusa mostra a frase do código embaixo e volta ao de antes; depois de recarregar, o botão mostra o modelo guardado | `conversation.test.tsx`, "o modelo" | must |
+| 23 | U6 | `PUT /api/companies/{c}/assistant/conversations/{id}/model` pela dona da conversa, com `model` e `effort`, responde 200 com o modelo e o esforço guardados; um modelo sem conta: `MODEL_NO_ACCOUNT`; um modelo que o Hub não serve: `MODEL_UNKNOWN`; um esforço que o modelo não tem: `EFFORT_UNSUPPORTED`; nada muda numa recusa; a conversa de outra pessoa, ou pedida por um membro: a mesma resposta de `readAssistantConversation`; duas trocas seguidas: a segunda vale; o log `ASSISTANT_MODEL_SET` sai uma vez por troca aceita; o banco do Mastra fora: `DATABASE_UNAVAILABLE` | `apps/server/src/builder/assistant/routes.test.ts`, "o modelo" | must |
+| 24 | U6 | Depois da troca, a resposta seguinte usa o modelo novo; uma resposta em andamento termina no modelo em que começou (V54); a leitura da sessão (`sessionReadQuery` com `ASSISTANT_CONTROLLER`, a rota de estado do Mastra) mostra o modelo novo; a criação continua como o critério 8 da 24.1 | `apps/server/src/builder/assistant/assistant.test.ts`, "a troca do modelo" | must |
+| 25 | U6 | Na conversa do Assistente, o botão do modelo troca o modelo pela rota; uma recusa mostra a frase do código embaixo e volta ao de antes; depois de recarregar, o botão mostra o modelo que a leitura da sessão dá | `conversation.test.tsx`, "o modelo" | must |
 | 26 | U7 | O erro da caixa, o de um formulário e o de uma leitura são a mesma peça Alerta, no mesmo tamanho e cor; cada tela que lia `getByRole('alert')` continua lendo | `apps/web/src/ui/alert.test.tsx`; os testes das telas tocadas | must |
-| 27 | U8 | Trocar de empresa, abrir a Central e trocar de Projeto funcionam como hoje, por uma peça só; a lista de empresas é lida uma vez por tela | `company-switcher.test.tsx`, `apps/web/src/hub/projects/project-bar.test.tsx`, `workbench.layout.test.ts` | must |
-| 28 | U9 | O cartão do plano, os de Projeto, o de preparação e o da troca automática são o `Card` de `ui/`; a resposta livre de uma pergunta é a `Textarea` de `ui/`, com o foco na borda (V28) | `focus.layout.test.ts`, "a resposta livre"; os testes das telas tocadas | must |
+| 27 | U8 | Trocar de empresa, abrir a Central e trocar de Projeto funcionam como hoje, por uma peça só; a lista de empresas é lida uma vez por tela | `apps/web/src/hub/identity/company-switcher.test.tsx`, `apps/web/src/hub/projects/project-bar.test.tsx`, `workbench.layout.test.ts` | must |
+| 28 | U9 | O cartão do plano, os de Projeto, o de preparação e o da troca automática são o `Card` de `ui/`; a resposta livre de uma pergunta é a `Textarea` de `ui/`, com o foco na borda (V28), e cresce em várias linhas (a #272) | `focus.layout.test.ts`, "a resposta livre"; os testes das telas tocadas | must |
 | 29 | U3 a U6 | A QA faz o roteiro no computador e no celular, nos dois temas, e abre cada captura ao lado das capturas da Pauta (T25) | a QA | must |
 | 30 | U3 a U9 | `impeccable detect` nos arquivos mudados não acha nada novo, ou cada achado tem o veredito da regra L12 no pull request | a unidade, no seu pull request | should |
 
@@ -160,7 +167,7 @@ O aceite da etapa: o roteiro, a 1366 e a 390 px, nos dois temas, com as medidas 
 | Tela | Primeira vez | Vazio | Carregando | Erro | Não encontrado | Sem permissão | Vencido ou recusado |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | A moldura (trilho e lista) | a lista com "Nova conversa" e "Conversas" vazia | sem conversas: só "Nova conversa" | a lista em esqueleto, nas linhas de 32 | a frase da falha (`DATABASE_UNAVAILABLE`) com Tentar de novo, na lista | — | o membro: a lista dos Projetos recentes, como hoje | — |
-| O Início da dona e da administradora | a saudação, a caixa, os três exemplos da 24.1, e os blocos vazios | Continuar: "Nenhuma conversa ainda."; Projetos: a frase de hoje; Ligações: "Ligue um sistema em Integrações." | cada bloco em esqueleto de 96 px | a frase do código com Tentar de novo, por bloco | — | o membro: o Início dele, no visual novo | uma ligação que pede para conectar de novo: "Conectar de novo" no bloco |
+| O Início da dona e da administradora | a saudação, a caixa, os três exemplos da 24.1, e os blocos vazios | Continuar: "Nenhuma conversa ainda."; Projetos: a frase de hoje; Ligações: "Ligue um sistema em Integrações." | cada bloco em esqueleto de 96 px | a frase do código com Tentar de novo, por bloco | — | o membro: o Início dele, no visual novo | uma ligação que pede para conectar de novo: a palavra de `stateBadge` no bloco |
 | A linha da caixa | Início: "+", pasta vazia, "N ferramentas", modelo, microfone, enviar | sem ferramenta: "Sem ferramentas" | as ferramentas: "Lendo as ferramentas…" | — (cada parte mostra o seu erro) | — | — (o membro não chega a ela) | sem conta de modelo: a frase da 11 no lugar do modelo |
 | O menu "+" | as ferramentas que o lugar oferece, ligadas | "Nenhuma ferramenta ligada à empresa" (Início) ou a frase do Projeto da 24.1, com o caminho | "Lendo as ferramentas…"; um interruptor parado enquanto a troca anda | a troca recusada volta à escolha de antes, com a frase do código | busca sem resultado: "Nenhuma ferramenta com esse nome." | — | uma ferramenta que pede para conectar de novo, ou deixou de ser liberada, sai do menu (critério 3 da 24.1) |
 | A pasta do Projeto (Início) | "Sem Projeto" escolhido | sem Projetos: só "Sem Projeto" | a lista em esqueleto | a frase do código | um Projeto apagado some da lista | — | — |
@@ -212,7 +219,7 @@ revisão. Medidas do laboratório a 1366: trilho 56, lista 271 + 1 de linha, lin
 
 | Gravação ou comando, da etapa ou da biblioteca | Duas vezes ao mesmo tempo | Recusada no meio, depois de uma instrução ou de uma chamada | Uma dependência fora (o banco, ou um terceiro) | O que o processo imprime | Critérios |
 | --- | --- | --- | --- | --- | --- |
-| Trocar o modelo da conversa do Assistente (U6: a conferência da conversa, `conversationModel`, `effortsOf`, `session.model.switch` no fio) | duas trocas: a última gravada vale, e cada resposta diz o que ficou | uma recusa antes do `switch`: nada muda; um corte depois do `switch`: o fio já tem o modelo novo, e repetir a troca grava o mesmo | banco do Mastra fora: `DATABASE_UNAVAILABLE`, o botão volta ao de antes | `ASSISTANT_MODEL_SET` (empresa, conversa) | 23, 24, 25 |
+| Trocar o modelo da conversa do Assistente (U6: a conferência da conversa, `conversationModel`, `effortsOf`, `session.model.switch` no fio) | duas trocas: a última gravada vale, e cada resposta diz o que ficou (23) | uma recusa antes do `switch`: nada muda (23); um corte depois do `switch`: o fio já tem o modelo novo, e repetir a troca grava o mesmo (24) | banco do Mastra fora: `DATABASE_UNAVAILABLE`, o botão volta ao de antes (23, 25) | `ASSISTANT_MODEL_SET` (empresa, conversa) (23) | 23, 24, 25 |
 | Trocar as ferramentas pelo "+" (`PUT …/connections`, a rota da 24.1, sem mudança) | a da 24.1 | a da 24.1 | a da 24.1; o interruptor volta | `ASSISTANT_CONNECTIONS_CHANGED` (24.1) | 20 |
 | Criar a conversa com o Projeto da pasta (a rota da 24.1, sem mudança) | a da 24.1 | a da 24.1 | a da 24.1 | `ASSISTANT_CONVERSATION_CREATED` (24.1) | 21 |
 
@@ -243,9 +250,9 @@ lido); o shadcn `base-nova` pela skill `shadcn`; o Conexus em `main` `fed480c3`.
 | A memória só onde há conversa | U4 | o anel com a porcentagem (`builder/conversation/memory-status.tsx`) | Claude e ChatGPT mostram o uso do contexto só dentro da conversa (relay, não verificado nesta rodada) | sem conversa, nada a medir | nativo: o encaixe vazio no Início | critério 14 | "Aprovo" à Pauta revisada | — |
 | A pasta sem Projeto | U4 | `FixedProject` na conversa de Projeto (`context-bar.tsx:154`) | G4, telas 13 e 15: a pasta na caixa | a pasta sempre no mesmo lugar | embrulhado: `NoProjectChip` apagado, `FixedProjectChip` com o nome | critério 15 | "Aprovo" à Pauta revisada | — |
 | A linha no celular | U4 | o modelo e o anel encolhem sem ordem | Open WebUI `MessageInput.svelte:2791`; Vercel `multimodal-input.tsx:815`: só limitam a largura do modelo; nenhuma esconde controle | as palavras saem, os controles ficam | nativo: `max-[26rem]` e `max-[20rem]` do Tailwind | critério 16 | "Aprovo" à Pauta revisada | — |
-| O menu "+" com interruptores | U5 | **Ajustar** abre um `Popover` com uma chave por ligação (`context-bar.tsx:59-94`) | Claude: os conectores no "+" (página pública); LibreChat: ferramentas dentro do "+" (`Bar.tsx:397-439`); AffectUI `integration-picker`, só o padrão | um menu no "+", uma chave por ferramenta | embrulhado: `Popover`, `Drawer` e `Switch` de `ui/` | critério 18 | "Aprovo" à Pauta | — |
+| O menu "+" com interruptores | U5 | **Ajustar** abre um `Popover` com uma chave por ligação (`context-bar.tsx:59-94` em `fed480c3`) | Claude: os conectores no "+" (página pública); LibreChat: ferramentas dentro do "+" (`Bar.tsx:397-439`); AffectUI `integration-picker`, só o padrão | um menu no "+", uma chave por ferramenta | embrulhado: `Popover`, `Drawer` e `Switch` de `ui/` | critério 18 | "Aprovo" à Pauta | — |
 | A busca a partir de 7 | U5 | nenhuma | AffectUI `integration-picker` (busca na lista); a lista do menu tem até 256 px, 8 linhas de 32 | busca quando a lista passa da altura | nativo: um `InputGroup` local ao menu | critério 19 | "Aprovo" à Pauta revisada, que diz 7, testada com 11 | — |
-| "N ferramentas" | U5 | uma etiqueta por ligação (`context-bar.tsx:94-143`) | G4, tela 13: a linha de ferramentas na caixa; AffectUI `chat-composer` (a pilha de logos) | o que está ligado, numa peça | embrulhado: um botão com até 3 logos sobre `logo-plate` | critério 22 | "Aprovo" à Pauta | — |
+| "N ferramentas" | U4, U5 | uma etiqueta por ligação (`context-bar.tsx:94-143` em `fed480c3`) | G4, tela 13: a linha de ferramentas na caixa; AffectUI `chat-composer` (a pilha de logos) | o que está ligado, numa peça | embrulhado: um botão com até 3 logos sobre `logo-plate` | critério 22 | "Aprovo" à Pauta | — |
 | O modelo na conversa do Assistente | U6 | o Builder troca: `setConversationModel` (`packages/hub-api/src/conversations.ts:132-142`), `switchModel` (`apps/server/src/builder/conversation/routes.ts:33-44,121-134`), `ModelChoice` (`apps/web/src/builder/conversation/model-choice.tsx:57-100`); o Assistente só escolhe ao nascer (`apps/server/src/builder/assistant/routes.ts:160-187`) | `AgentController`, `session.model.switch` (os dois controladores já o usam); Mastra Studio: o seletor de modelo na caixa (`M:packages/playground/src/lib/ai-ui/thread.tsx:302-307`, `hideModelSwitcher`) | o modelo troca no fio, para as próximas respostas | nativo: `session.model.switch` do controlador `assistant` | critérios 23, 24 | "A" | — |
 | O Alerta | U7 | 30 `role="alert"` à mão em 4 estilos (auditoria A2) | shadcn `alert` do `base-nova`; cal.com `packages/ui/components/alert/Alert.tsx:9`; Documenso `packages/ui/primitives/alert.tsx:7`; Mastra `ds/components/Notice/notice-root.tsx:8` (relay da auditoria) | uma peça para o aviso e o erro | nativo: `alert` do shadcn em `ui/` | critério 26 | — | `apps/web/src/ui/alert.tsx` |
 | O seletor da barra lateral | U8 | `hub/identity/company-switcher.tsx:30-83`, `hub/operations/central-header.tsx:18-72`, `hub/projects/project-rail.tsx:60-80`, quase iguais (auditoria A5) | shadcn, o bloco `sidebar-07` (o seletor de times no topo da barra) | uma peça de seletor no cabeçalho da barra | embrulhado: um `SidebarSelector` em `ui/`, o conteúdo de cada um por quem chama | critério 27 | — | — |
@@ -361,7 +368,8 @@ um leitor só (L9).
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
 | `apps/web/src/brand/` | Muda `tokens.css`; apaga `fonts/BricolageGrotesque-latin.woff2`; cria `tokens.test.ts` | todo o `apps/web` |
-| `apps/web/src/platform/theme.test.tsx`, `apps/web/layout.test.ts` | Muda: o tema escuro pelo `color-scheme` | — |
+| `apps/web/package.json`, `package-lock.json` | Muda: `yaml` em `devDependencies` | — |
+| `apps/web/src/platform/theme.test.tsx`; `apps/web/tokens.layout.test.ts` | Muda o primeiro (o tema pelo `color-scheme`); cria o segundo (critério 2) | — |
 
 ### Os contratos que a unidade cria
 
@@ -373,8 +381,11 @@ um leitor só (L9).
   `spacing` 4 a 64 com `2xl` 32, `3xl` 48, `4xl` 64, `row` 32; larguras `sidebar` 20,5rem,
   `sidebar-icon` 3,5rem, `list` 17rem, `axis` 45rem, `axis-wide` 55rem, `half` 22rem; sombras
   `float` e `composer`.
-- `tokens.test.ts`: lê a frente do `DESIGN.md` com `yaml` (já no repositório) e os tokens de
-  `tokens.css` com um leitor de CSS do próprio teste; compara nome a nome, nos dois sentidos.
+- `tokens.test.ts`: lê a frente do `DESIGN.md` com `yaml` e os tokens de `tokens.css` com um leitor
+  de CSS do próprio teste; compara nome a nome, nos dois sentidos. O `yaml` está só no
+  `package.json` da raiz: a U1 o declara em `devDependencies` de `apps/web`, na mesma versão, com o
+  `package-lock.json` (knip). É um teste do Vitest ao lado do dono, não uma conferência nova da
+  regra L20.
 
 ### As skills e a leitura
 
@@ -431,7 +442,7 @@ linha da barra lateral passam de 34 a 32 (`h-row`).
 
 ### Como se prova
 
-Critério 4: `pieces.layout.test.ts`, `phone.layout.test.ts`.
+Critério 4: `pieces.layout.test.ts`.
 
 ### Parar se
 
@@ -464,6 +475,7 @@ Critério 4: `pieces.layout.test.ts`, `phone.layout.test.ts`.
 | `apps/web/src/hub/projects/` | Muda `home.tsx` (o eixo, o encaixe `below`), `project-rail.tsx` (a lista do Projeto ao lado do trilho) | `index.tsx`, a moldura do Projeto |
 | `apps/web/src/hub/identity/account-menu.tsx` | Muda: o avatar compacto no pé do trilho | `route.tsx` |
 | `packages/hub-api/src/projects.ts`, `apps/server/src/hub/projects/` | Muda: `ProjectSummary` com as duas versões; a lista as lê | a tela, `getProject` |
+| `apps/server/src/hub/apps/` (`versionNumbersOf`), `apps/server/src/hub/projects/ports.ts`, `apps/server/src/main.ts` | Muda: uma porta em lote, `appVersionsOfMany(tx, ids)`, uma consulta para a página de até 50 Projetos, sem uma por Projeto (`appVersionsOf` hoje é por Projeto, `projects.ts:22,157,296`) | `listProjects` |
 
 ### Os contratos que a unidade cria
 
@@ -474,10 +486,12 @@ Critério 4: `pieces.layout.test.ts`, `phone.layout.test.ts`.
   `ui/sidebar.tsx`; o traço e `aria-current` vêm de `current`.
 - `SidebarConversations(props: { companyId })` e `NewConversation(props: { companyId })`; o grupo
   é `type DayGroup = 'TODAY' | 'YESTERDAY' | 'WEEK' | 'BEFORE'`, calculado por uma função de
-  `platform/dates.ts` no fuso do Hub.
+  `platform/dates.ts` no fuso do navegador, como as outras datas da tela (`dates.ts:1`).
 - `AssistantDay(props: { companyId })` com `Block` e `Stamp`; o estado do Projeto é uma união
   (C21): `{ kind: 'PUBLISHED'; version } | { kind: 'BUILDING'; version } | { kind: 'NO_APP' }`.
-- O modelo de arquivo: `builder/assistant/home.tsx` cumpre C21 e C26 (as frases em `text.ts`).
+- O modelo de arquivo: `builder/assistant/home.tsx` cumpre C21 e C26 (as frases em `text.ts`) e
+  C23 (os ids são as marcas `CompanyId` e `ProjectId` de `@conexus/hub-api`). As palavras das
+  ligações são de `stateBadge` (`hub/connectors/text.ts:34-44`), pela `public.ts` (C26).
 
 ### As skills e a leitura
 
@@ -523,7 +537,7 @@ Critérios 5 a 12: `sidebar-conversations.test.tsx`, `day.test.tsx`, `projects.t
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
 | `apps/web/src/builder/conversation/` | Muda `composer.tsx` (os grupos), `memory-status.tsx` (a palavra sai abaixo de 416), `start.tsx`, `chat.tsx`, `public.ts` (exporta `ComposerModelPicker`) | o Builder, o Assistente |
-| `apps/web/src/builder/assistant/` | Cria `composer-tools.tsx` (`useComposerTools`, `ToolsCount`, `ProjectControl` fechado, `FixedProjectChip`, `NoProjectChip`); muda `home.tsx`, `conversation.tsx`, `project.tsx`; apaga de `context-bar.tsx` o `ContextBar`, o `DraftBar`, o `Bar` e o `Adjust`, e os testes deles | as rotas |
+| `apps/web/src/builder/assistant/` | Cria `composer-tools.tsx` (`useComposerTools`, `ToolsCount`, `ProjectControl` com a lista simples, `FixedProjectChip`, `NoProjectChip`); muda `home.tsx`, `conversation.tsx`, `project.tsx`; apaga de `context-bar.tsx` o `ContextBar`, o `DraftBar`, o `Bar`, o `FixedProject` e os testes deles; o `Adjust` vira o conteúdo do popover de `ToolsCount`; ficam `useDraftChoice`, `CutBadge` e o tipo `DraftChoice` | as rotas |
 | `apps/web/src/builder/model-accounts/model-picker.tsx` | Muda: o rótulo curto abaixo de 768 | o `Composer` |
 
 ### Os contratos que a unidade cria
@@ -533,7 +547,14 @@ Critérios 5 a 12: `sidebar-conversations.test.tsx`, `day.test.tsx`, `projects.t
   microfone e enviar; o modelo trunca no espaço livre.
 - `useComposerTools(place: ComposerPlace): { plus: ReactNode; context: ReactNode }`, com
   `type ComposerPlace = { kind: 'HOME'; draft: DraftChoice } | { kind: 'CONVERSATION';
-  conversation: AssistantConversation }` (C21). É a única fonte do "+", da pasta e da contagem; a
+  conversation: AssistantConversation }` (C21), com `export type DraftChoice =
+  ReturnType<typeof useDraftChoice>` em `context-bar.tsx`.
+- Entre a U4 e a U5 a escolha continua: tocar em "N ferramentas" abre a lista de interruptores de
+  hoje (o `Adjust`), e a pasta do Início abre "Sem Projeto" e os Projetos, sem busca; a U5 leva a
+  lista para o "+" e acrescenta a busca, a folha e os caminhos.
+- Até a U6, na conversa do Assistente, `ComposerModelPicker` aparece desabilitado com o modelo de
+  `sessionReadQuery(id, ASSISTANT_CONTROLLER)`.
+- O modelo de arquivo: `builder/assistant/home.tsx` (C21, C23, C26, como na U3). É a única fonte do "+", da pasta e da contagem; a
   pasta é a única parte que varia (menu no Início, fixa ou apagada na conversa).
 
 ### As skills e a leitura
@@ -543,7 +564,8 @@ Critérios 5 a 12: `sidebar-conversations.test.tsx`, `day.test.tsx`, `projects.t
 ### A ordem do trabalho
 
 1. `composer.tsx`: os dois grupos; o Builder passa o mesmo.
-2. `composer-tools.tsx` com a contagem e as pastas; o "+" ainda o anexo de hoje (o menu é a U5).
+2. `composer-tools.tsx` com a contagem (abre o `Adjust`) e as pastas; o "+" ainda o anexo de hoje
+   (o menu é a U5).
 3. `home.tsx`, `conversation.tsx`, `project.tsx` pelo `useComposerTools`; apagar a barra e os
    testes dela antes de escrever os novos.
 4. `memory-status.tsx`, `model-picker.tsx`; os testes de layout.
@@ -555,8 +577,7 @@ Critérios 13 a 17: `assistant.layout.test.ts`, `phone.layout.test.ts`, `home.te
 
 ### Parar se
 
-- Na conversa do Assistente o modelo aparecer antes da U6: ele aparece só para leitura até a U6
-  ligar a rota; nunca uma troca só na tela.
+- Alguém pedir uma troca de modelo só na tela antes da U6: nunca; o botão fica desabilitado.
 - `memory-status.test.tsx` achar "Memória" duas vezes (o laboratório viu): o teste lê o nome
   acessível, não o texto.
 
@@ -566,8 +587,8 @@ Critérios 13 a 17: `assistant.layout.test.ts`, `phone.layout.test.ts`, `home.te
 
 ### As linhas da tabela
 
-- **O menu "+"; a busca; "N ferramentas".** `builder/assistant/context-bar.tsx` no `main` de hoje
-  (`Adjust`, `:59-94`; a troca ao vivo); `queries.ts` (`setAssistantConnections`,
+- **O menu "+"; a busca; "N ferramentas".** `builder/assistant/context-bar.tsx` em `fed480c3`
+  (`Adjust`, `:59-94`; a troca ao vivo), que a U4 move para `composer-tools.tsx`; `queries.ts` (`setAssistantConnections`,
   `listAssistantConnections`); `ui/popover.tsx`, `ui/drawer.tsx`, `ui/switch.tsx`,
   `ui/input-group.tsx`; `hub/connectors/` (o logo e o catálogo pela `public.ts`); AffectUI
   `integration-picker`, só o padrão.
@@ -585,6 +606,7 @@ Critérios 13 a 17: `assistant.layout.test.ts`, `phone.layout.test.ts`, `home.te
   comentário); a lista com no máximo 256 px.
 - `useLiveChoice(conversation)`: a troca de uma ferramenta por `PUT …/connections`, pelo
   `queries.ts` (W10) e pelo `MutationCache` (W12); a resposta do Hub é o que o interruptor mostra.
+- O modelo de arquivo: `builder/assistant/home.tsx` (C21, C23, C26); `SEARCH_FROM` tem um dono só.
 - As frases em `text.ts`: "Anexar e ferramentas", "Ferramentas da conversa", "N de M ligadas",
   "Conectar outra ferramenta", "Liberar outra ferramenta ao Projeto", "Nenhuma ferramenta com esse
   nome.", "Nenhuma ferramenta ligada à empresa", "Sem ferramentas", "Conversa sem Projeto".
@@ -612,7 +634,7 @@ Critérios 18 a 22: `composer-tools.test.tsx`, `conversation.test.tsx`, `home.te
 
 ## U6 O modelo dentro da conversa do Assistente
 
-**Base e modelo.** `main` depois da U4 para a tela; o servidor desde a U3. Sonnet.
+**Base e modelo.** O servidor, sobre `main` a qualquer momento; a tela, depois da U5. Sonnet.
 
 ### As linhas da tabela
 
@@ -649,8 +671,17 @@ export const setAssistantModel = defineOperation({
 ```
 
 A rota: `admitted` (o `askAssistant` da 24.1), `ownThread`, `conversationModel(deps.queue, owner,
-body.model)`, `effortsOf`, `createSession` (get-or-create pelo id) e `session.model.switch`, como
-`switchModel` do Builder; o log `ASSISTANT_MODEL_SET`. A criação (critério 8 da 24.1) não muda.
+body.model)`, `effortsOf`, depois `createSession({ id, resourceId: assistantOwner(owner), threadId:
+id, tags })`, com as mesmas marcas `SESSION_MARK` da criação (`assistant/routes.ts:172-178`,
+`context.ts:8,19`), e `session.model.switch(model, { thinkingLevel: effort })`; o log
+`ASSISTANT_MODEL_SET`. É uma função local de `assistant/routes.ts`, escrita como o `switchModel`
+privado do Builder (`conversation/routes.ts:33-44`), que não é exportado. O `@mastra/core` instalado
+(1.79.0) aceita `resumeOnly` no `createSession` (`agent-controller-DO6rGsQm.js:7311`); a unidade
+escolhe entre os dois lendo esse código, e uma sessão nunca nasce sem marcas. A criação (critério 8
+da 24.1) não muda.
+
+O modelo de arquivo: `apps/server/src/builder/assistant/routes.ts` (C21 nos `Failure`, C23 com
+`ConversationId`, C26 com `READ_FAILURES` de `hub-api`).
 
 ### As skills e a leitura
 
@@ -661,7 +692,9 @@ body.model)`, `effortsOf`, `createSession` (get-or-create pelo id) e `session.mo
 
 1. `setAssistantModel` e o teste da rota (critério 23), que falha hoje.
 2. A rota.
-3. O teste do turno (critério 24): uma troca durante um turno não muda o turno.
+3. Antes do critério 24, a prova: ler no `@mastra/core` 1.79.0 instalado o `switch`
+   (`agent-controller-DO6rGsQm.js:3436-3460`, onde o `switch` aplica o modelo e o esforço à sessão) e escrever o
+   teste com o modelo dublê: uma troca durante um turno não muda o turno.
 4. `ModelChoice` com a mutação de quem chama; `conversation.tsx` (critério 25).
 
 ### Como se prova
