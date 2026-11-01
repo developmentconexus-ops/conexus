@@ -32,6 +32,8 @@ declare module '@tanstack/react-router' {
     section?: SectionMeta
     /** A step of the owner's first entry, which its frame shows as "Passo n de 4" (web W33). */
     step?: 1 | 2 | 3 | 4
+    /** The page bounds its own height, as a conversation does: the frame is the compact one. */
+    bounded?: true
   }
 }
 declare module '@tanstack/history' {
