@@ -25,7 +25,9 @@ Sankhya está ligado em "Matriz" e "Filial", e o Mercado Livre em "Loja" (19, 19
 
 1. A Ana abre o Início. No alto, a caixa "Pergunte ou peça um app"; embaixo dela, a barra da
    conversa, com as três ligações já escolhidas, o botão **Ajustar** e, se ela quiser, um Projeto.
-   Abaixo, as conversas recentes dela e, como hoje, os Projetos.
+   Abaixo, as conversas recentes dela e, como hoje, os Projetos. *Substituído pela Pauta (2026-11-01,
+   "Aprovo"; cartão `docs/steps/e133-pauta.md`): a barra sai, e ela abre o "+" da caixa para ver as três ferramentas
+   ligadas; o Projeto é a pasta da caixa.*
 2. Ela pergunta "como foram as vendas da semana passada, por vendedor? me mostra num gráfico". O
    Assistente mostra cada leitura que faz ("Lendo Sankhya · Matriz") e cada comando na máquina. A
    resposta traz o resumo e abre, ao lado do chat, o gráfico (uma imagem SVG que ele desenha com
@@ -34,10 +36,12 @@ Sankhya está ligado em "Matriz" e "Filial", e o Mercado Livre em "Loja" (19, 19
 3. Ela pede "documente o nosso processo de encomendas, com boas práticas do setor". Ele pesquisa na
    web, lê as encomendas no Sankhya e abre ao lado o documento que escreveu, para ler e baixar.
 4. Ela tira a Loja na barra e pergunta pelas perguntas do Mercado Livre: ele diz que o Mercado Livre
-   não está nesta conversa. Ela põe de volta, e a próxima pergunta já lê a Loja.
+   não está nesta conversa. Ela põe de volta, e a próxima pergunta já lê a Loja. *Substituído pela
+   Pauta (`docs/steps/e133-pauta.md`): ela desliga a Loja no menu "+" dentro da conversa.*
 5. Ela abre o Projeto Vendas, entra em **Conversas** e abre uma conversa nova: a barra mostra só a
    Matriz e o Projeto fixo; pedir a Filial ali dá "a Filial não está nesta conversa". No Início,
-   essa conversa aparece entre as recentes com a etiqueta "Vendas".
+   essa conversa aparece entre as recentes com a etiqueta "Vendas". *Substituído pela Pauta
+   (`docs/steps/e133-pauta.md`): o "+" mostra só a Matriz, e a pasta mostra "Vendas" fixa.*
 6. A Bia, numa conversa do Início, pergunta "como eu automatizo o pagamento de contas?". Ele diz o
    que o Conexus monta hoje e o que ainda não existe, resume o pedido e mostra **Criar app**. Ela
    toca, dá o nome do Projeto, e a conversa do Builder abre com o resumo já enviado.
@@ -130,7 +134,7 @@ as leituras guardadas no Hub saem; a lista de endereços e o Python na imagem so
 | U1 | A porta da empresa aos conectores, pelo escopo da conversa: as ligações escolhidas, cortadas pelo lugar (Início: as `ACTIVE` da empresa; Projeto: as liberadas a ele), só leitura, por quem pode perguntar (`askAssistant`: dono e administradores); cada leitura volta cortada para o modelo e inteira para a máquina; a linha por chamada com `by: 'assistant'` | `apps/server/src/hub/connectors/`, `apps/server/src/hub/identity/` | [security](../guides/security.md) | a aprovação desta página e o pull request da regra `ee` (`Q1`) |
 | U2 | O Assistente sem máquina: o segundo controlador no mesmo `Mastra`, o agente, o texto de ambiente e o bloco da conversa, a skill `conexus`, o contexto da conversa (o Projeto nas marcas do fio, as ligações numa configuração do fio), o turno sem `Runs` na fila de contas, a memória e os processadores do Builder, as ferramentas (`connector_read`, `connector_notes`, `conexus_overview`, a web, as skills), as rotas, o guarda, a remoção, o fim do Hub; a conferência dos números sobre o dublê | `apps/server/src/builder/assistant/`, `apps/server/src/builder/connectors/`, `apps/server/src/builder/conversation/` (`guard.ts`, `turn-of.ts`, `builder.ts`, `stream.ts`, `public.ts`, `end.ts`, `prompt/conexus.md`), `apps/server/src/builder/conversation/mastra.ts`, `apps/server/src/main.ts`, `packages/hub-api/src/`, `packages/connectors/src/sankhya/` (as linhas do dublê) | [testing](../guides/testing.md) | U1 e o fechamento da 20 (`Q1`) |
 | U3 | A máquina da conversa (`W1`, `N-2`, `M-2`): uma máquina E2B por conversa pelo kit do Builder, sem Git, com a rede só para o npm e o PyPI; a imagem ganha o Python com `pip` e as bibliotecas; a leitura salva em `reads/` na máquina; `show_file` e o download de um arquivo; a remoção e o fim do Hub param e matam as máquinas; a linha da 0032 e a decisão 0059, com a lista do Assistente | `apps/server/src/builder/assistant/`, `apps/server/src/builder/machine/` (`kit.ts`, `e2b.ts`, `public.ts`), `apps/server/src/builder/connectors/`, `packages/hub-api/src/`, `infra/e2b/template.ts`, `docs/decisions/0032-data-leaving-brazil-told.md`, `docs/decisions/0059-assistant-machine-reaches-package-registries.md` | [security](../guides/security.md) | U2 |
-| U4 | As telas: o Início do dono e dos administradores (a caixa ao Assistente, a barra, as recentes com a etiqueta do Projeto), Conversas dentro do Projeto, a tela da conversa com as leituras e os comandos ao vivo, o arquivo mostrado ao lado (lido, imagem ou baixar), `propose_app` e **Criar app** só no Início; o membro como hoje | `apps/web/src/builder/assistant/`, `apps/web/src/builder/conversation/` (`session.ts`, `use-session.ts`, `transcript.tsx`, `tool-registry.ts`, `connector-specs.ts`, `start.tsx`), `apps/web/src/hub/projects/` (`home.tsx`, `project-rail.tsx`), `apps/web/src/routes/_app/companies/$companyId/`, `apps/server/src/builder/assistant/` (`propose.ts`), `packages/hub-api/src/`, `docs/reference/screens.md` | [web](../guides/web.md) | U3 |
+| U4 | As telas: o Início do dono e dos administradores (a caixa ao Assistente, a barra, as recentes com a etiqueta do Projeto), Conversas dentro do Projeto, a tela da conversa com as leituras e os comandos ao vivo, o arquivo mostrado ao lado (lido, imagem ou baixar), `propose_app` e **Criar app** só no Início; o membro como hoje *Na parte da barra, substituído pela Pauta (`docs/steps/e133-pauta.md`).* | `apps/web/src/builder/assistant/`, `apps/web/src/builder/conversation/` (`session.ts`, `use-session.ts`, `transcript.tsx`, `tool-registry.ts`, `connector-specs.ts`, `start.tsx`), `apps/web/src/hub/projects/` (`home.tsx`, `project-rail.tsx`), `apps/web/src/routes/_app/companies/$companyId/`, `apps/server/src/builder/assistant/` (`propose.ts`), `packages/hub-api/src/`, `docs/reference/screens.md` | [web](../guides/web.md) | U3 |
 
 A U0 já entrou. As outras andam em fila: cada uma lê o contrato da anterior, e todas mudam
 `packages/hub-api/src/assistant.ts`.
@@ -202,10 +206,10 @@ Início e no Projeto).
 | 20 | U3 | `GET …/assistant/conversations/{id}/files?path=` dá os bytes do arquivo ao dono da conversa, com o tipo, `Content-Disposition`, `X-Content-Type-Options: nosniff` e `Content-Security-Policy: sandbox` (o arquivo foi escrito pelo modelo, S24); de outra pessoa: `CONVERSATION_NOT_FOUND`; pelo membro: `NOT_FOUND`; fora da pasta ou inexistente: `FILE_NOT_FOUND`; acima do teto (`MAX_BYTES`): `FILE_TOO_LARGE`; a máquina perdida: `FILE_GONE` | `apps/server/src/builder/assistant/file.test.ts`, "o arquivo" | must |
 | 21 | U3 | Apagar uma conversa (pela empresa, pela pessoa ou pelo Projeto) mata as máquinas dela; o turno que acaba para a máquina, que dorme até a próxima pergunta; o fim do Hub para as máquinas dos turnos em andamento como o do Builder | `machine.test.ts`, "o fim da máquina"; `release.test.ts`, "a máquina" | must |
 | 22 | U3 | A decisão 0032 diz que as linhas que o Assistente lê para analisar vão à máquina dele no E2B; a 0059 dá a lista de endereços do Assistente, e a 0051 fica como foi aprovada | a revisão (check-docs para o índice) | must |
-| 23 | U4 | No Início, a dona e a administradora veem a caixa "Pergunte ou peça um app", a barra com as ligações que a empresa oferece já escolhidas e o seletor de Projeto, e as conversas recentes, a de um Projeto com a etiqueta do nome dele; o membro vê "O que vamos construir?" como hoje; a 390 px, o mesmo | `apps/web/src/builder/assistant/home.test.tsx` | must |
-| 23a | U4 | Na conversa, tirar ou pôr uma ligação na barra manda a troca (`PUT …/connections`) e a barra mostra o que o Hub respondeu; uma troca recusada volta à escolha de antes com a frase do código; o Projeto aparece fixo, sem controle | `apps/web/src/builder/assistant/conversation.test.tsx`, "a barra" | must |
-| 23b | U4 | No Projeto, a entrada **Conversas** da barra lateral abre a lista das conversas da pessoa naquele Projeto e a caixa, com a barra só das ligações liberadas ao Projeto; o membro vê a página dizendo que só o dono e os administradores conversam ali (W34) | `apps/web/src/builder/assistant/project.test.tsx` | must |
-| 24 | U4 | Enviar a primeira pergunta cria a conversa com as ligações e o Projeto da barra e abre, sem Projeto, `/companies/<c>/conversations/<id>` e, com Projeto, `/companies/<c>/projects/<p>/assistant/<id>`, com a pergunta enviada uma vez (a passagem do 13.1); voltar ao Início a mostra entre as recentes | `conversation.test.tsx` | must |
+| 23 | U4 | No Início, a dona e a administradora veem a caixa "Pergunte ou peça um app", a barra com as ligações que a empresa oferece já escolhidas e o seletor de Projeto, e as conversas recentes, a de um Projeto com a etiqueta do nome dele; o membro vê "O que vamos construir?" como hoje; a 390 px, o mesmo *Substituído pela Pauta (`docs/steps/e133-pauta.md`, critérios 18 a 22): a barra vira o menu "+" e a pasta da caixa; o que este critério exige da barra vale para o "+".* | `apps/web/src/builder/assistant/home.test.tsx` | must |
+| 23a | U4 | Na conversa, tirar ou pôr uma ligação na barra manda a troca (`PUT …/connections`) e a barra mostra o que o Hub respondeu; uma troca recusada volta à escolha de antes com a frase do código; o Projeto aparece fixo, sem controle *Substituído pela Pauta (`docs/steps/e133-pauta.md`, critérios 18 a 22): a barra vira o menu "+" e a pasta da caixa; o que este critério exige da barra vale para o "+".* | `apps/web/src/builder/assistant/conversation.test.tsx`, "a barra" | must |
+| 23b | U4 | No Projeto, a entrada **Conversas** da barra lateral abre a lista das conversas da pessoa naquele Projeto e a caixa, com a barra só das ligações liberadas ao Projeto; o membro vê a página dizendo que só o dono e os administradores conversam ali (W34) *Substituído pela Pauta (`docs/steps/e133-pauta.md`, critérios 18 a 22): a barra vira o menu "+" e a pasta da caixa; o que este critério exige da barra vale para o "+".* | `apps/web/src/builder/assistant/project.test.tsx` | must |
+| 24 | U4 | Enviar a primeira pergunta cria a conversa com as ligações e o Projeto da barra e abre, sem Projeto, `/companies/<c>/conversations/<id>` e, com Projeto, `/companies/<c>/projects/<p>/assistant/<id>`, com a pergunta enviada uma vez (a passagem do 13.1); voltar ao Início a mostra entre as recentes *Substituído pela Pauta (`docs/steps/e133-pauta.md`, critérios 18 a 22): a barra vira o menu "+" e a pasta da caixa; o que este critério exige da barra vale para o "+".* | `conversation.test.tsx` | must |
 | 25 | U4 | Cada `connector_read` em andamento aparece como "Lendo <conector> · <ligação>" e, no fim, com o número de linhas; cada comando na máquina, como a linha de comando do Builder; uma falha mostra a frase do código; no Builder, as linhas continuam as de hoje | `conversation.test.tsx`, "as leituras e os comandos" | must |
 | 25a | U4 | A conversa mostra as últimas 100 mensagens e mais 100 ao chegar ao topo, e uma falha da memória (`om_*_failed`) aparece só pelo tipo, como no Builder | `conversation.test.tsx`, "o histórico" | should |
 | 26 | U4 | O endereço de uma conversa de outra pessoa, ou pedido por um membro, mostra a página de não encontrado; o de uma conversa de Projeto aberto no endereço de outro Projeto, também | `conversation.test.tsx`, "não encontrado" | must |
@@ -218,9 +222,9 @@ Início e no Projeto).
 
 | Tela | Primeira vez | Vazio | Carregando | Erro | Não encontrado | Sem permissão | Vencido ou recusado |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| O Início (dono e administrador) | a caixa, a barra e três exemplos ("Como foram as vendas da semana?", "Documente o processo de encomendas", "Como automatizo o pagamento de contas?") | sem conversas: só a caixa, a barra e os exemplos | as recentes em esqueleto | a frase da falha (`DATABASE_UNAVAILABLE`) com Tentar de novo | — | o membro vê o Início de hoje | — |
-| A barra da conversa (Início, Projeto e a conversa) | todas as ligações que o lugar oferece, já escolhidas; no Início, "Sem Projeto" no seletor | sem ligação no lugar: "Ligue um sistema em Integrações para perguntar sobre ele." (Início) ou "Este Projeto não recebeu nenhuma ligação. Libere uma em Integrações do Projeto." (Projeto), com o caminho; todas tiradas: "Nenhuma ligação escolhida" | as ligações em esqueleto; a troca em andamento deixa a ligação ocupada | a troca recusada volta à escolha de antes, com a frase do código | — | — (o membro não chega a ela) | uma ligação que pede para conectar de novo, ou deixou de ser liberada ao Projeto, sai da barra (critério 3) |
-| Conversas do Projeto | a caixa com a barra do Projeto, e "Nenhuma conversa neste Projeto ainda." | o mesmo | a lista em esqueleto | a frase da falha (`DATABASE_UNAVAILABLE`) com Tentar de novo | o Projeto apagado: a página de não encontrado da casa | o membro: "Só o dono e os administradores conversam sobre o Projeto." (W34) | — |
+| O Início (dono e administrador) *Substituído pela Pauta (`docs/steps/e133-pauta.md`): a barra vira o "+" e a pasta dentro da caixa; a matriz de lá vale.* | a caixa, a barra e três exemplos ("Como foram as vendas da semana?", "Documente o processo de encomendas", "Como automatizo o pagamento de contas?") | sem conversas: só a caixa, a barra e os exemplos | as recentes em esqueleto | a frase da falha (`DATABASE_UNAVAILABLE`) com Tentar de novo | — | o membro vê o Início de hoje | — |
+| A barra da conversa (Início, Projeto e a conversa) *Substituído pela Pauta (`docs/steps/e133-pauta.md`): a barra vira o "+" e a pasta dentro da caixa; a matriz de lá vale.* | todas as ligações que o lugar oferece, já escolhidas; no Início, "Sem Projeto" no seletor | sem ligação no lugar: "Ligue um sistema em Integrações para perguntar sobre ele." (Início) ou "Este Projeto não recebeu nenhuma ligação. Libere uma em Integrações do Projeto." (Projeto), com o caminho; todas tiradas: "Nenhuma ligação escolhida" | as ligações em esqueleto; a troca em andamento deixa a ligação ocupada | a troca recusada volta à escolha de antes, com a frase do código | — | — (o membro não chega a ela) | uma ligação que pede para conectar de novo, ou deixou de ser liberada ao Projeto, sai da barra (critério 3) |
+| Conversas do Projeto *Na parte da barra, substituído pela Pauta (`docs/steps/e133-pauta.md`).* | a caixa com a barra do Projeto, e "Nenhuma conversa neste Projeto ainda." | o mesmo | a lista em esqueleto | a frase da falha (`DATABASE_UNAVAILABLE`) com Tentar de novo | o Projeto apagado: a página de não encontrado da casa | o membro: "Só o dono e os administradores conversam sobre o Projeto." (W34) | — |
 | A conversa do Assistente | a pergunta enviada, o Assistente trabalhando | — | as leituras e os comandos ao vivo, uma linha cada; "Ligando a máquina" na primeira ferramenta da máquina (a linha do Builder); as últimas 100 mensagens, mais 100 ao chegar ao topo | a frase da falha do turno (as da 12: conta, modelo); `MACHINE_UNAVAILABLE`: a frase do Builder; uma falha da memória (`om_*_failed`) só pelo tipo (palavra do fundador de 2026-10-31, C51 na lista de fechamento) | a página de não encontrado da casa | não encontrado (não diz que existe) | sem conta de modelo: a frase da 11; `HUB_UPDATING` e `HUB_UPDATED`: as frases da U0 |
 | Uma leitura dentro da resposta | — | `OK` sem linhas: "Nenhuma linha." | "Lendo <conector> · <ligação>" | `BUSY`, `UNREACHABLE`, `DEADLINE`, `CALLS_SPENT`: a frase do código | — | `NOT_GRANTED`: "Esta ligação não está disponível nesta conversa." | `AUTH_REFUSED`: "O <conector> pediu para conectar de novo." com o caminho para Integrações |
 | O arquivo mostrado (painel) | o arquivo aberto ao lado, com o nome e **Baixar** | um arquivo vazio: "Arquivo vazio." com **Baixar** | o painel em esqueleto enquanto a imagem ou o download chega | `SHOW_REFUSED`: nada aparece, o Assistente diz o que não conseguiu mostrar; o download falhou: a frase do código com Tentar de novo | `FILE_NOT_FOUND`: "Este arquivo não está mais na máquina da conversa." | — (só o dono vê a conversa) | `FILE_GONE`: "A máquina desta conversa não guarda mais este arquivo."; `FILE_TOO_LARGE`: "O arquivo passa do tamanho que o Hub entrega." |
@@ -237,13 +241,14 @@ Início e no Projeto).
 | `CONNECTOR_CALLED.by = 'assistant'`, `projectId` | U1 | quem opera |
 | `askAssistant` | U1 (`admission.ts`) | U1 (a porta); U2 (rotas e guarda); U4 (pelo `role` da rota, só para escolher a tela; a recusa é do servidor) |
 | `AssistantConversationSummary` (com `projectId`) | U2 | U4 (as recentes, a etiqueta, o endereço) |
-| `AssistantConversation.connections` | U2 | U4 (a barra) |
+| `AssistantConversation.connections` | U2 | U4 (a barra) | *Na parte da barra, substituído pela Pauta (`docs/steps/e133-pauta.md`).*
 | `ASSISTANT_TOOL` (os nomes) | U2, U3, U4 | U4 (as linhas da conversa) |
 | `ShownFile` (a saída de `show_file`) | U3 (servidor) | U4 (o painel) |
 | `ProposedApp` (a saída de `propose_app`) | U4 (servidor) | U4 (tela, Criar app) |
 
-O desenho de caixas. O Início segue o de hoje (`home.tsx:14-50`) com a caixa no alto e a barra
-embaixo dela, como a do G4 (tela 13, "Nenhuma ferramenta conectada", aberta pelo autor da emenda de
+O desenho de caixas. *Substituído pela Pauta (`docs/steps/e133-pauta.md`, o desenho de caixas de
+lá) no que toca a barra, a barra lateral e o Início, os desenhos abaixo inclusive.* O Início segue o de hoje (`home.tsx:14-50`) com
+a caixa no alto e a barra embaixo dela, como a do G4 (tela 13, "Nenhuma ferramenta conectada", aberta pelo autor da emenda de
 2026-10-31); a conversa segue a tela do Builder, com o painel do arquivo no lugar da Prévia
 (`panel.tsx`, `react-resizable-panels`, já no `main`), como o claude.ai e o Cowork mostram o arquivo
 entregue ao lado da conversa (`present_files`, `SendUserFile`, relay do estudo da harness);
@@ -336,7 +341,7 @@ de usar.
 | A página HTML com scripts | fica de fora | a CSP do Hub: `script-src 'self'`, frames só de `https://*.<domínio dos apps>` (`apps/server/src/platform/http.ts:30-49`, lido) | o host da Prévia no domínio dos apps (relay) | um host isolado para o que roda código | nativo: fica de fora, gatilho na seção "Depois" | — | `B-a` ("HTML com scripts depois") | — |
 | Criar app | U4 | o primeiro pedido: `Start`, `Naming`, a passagem (`apps/web/src/builder/conversation/start.tsx:123-190`, lido na emenda anterior) | Factory manda mensagem a outra sessão (`session-messaging.ts:15-41`): fica para a 24.4 | — | nativo (13.1): `propose_app({ summary })` responde o resumo; **Criar app** abre o `Naming` com ele; só sem Projeto | critério 28 | `F4`, `A1` | `builder/assistant/propose.ts` |
 | O Início | U4 | `Home` com `aside` e `start` (`apps/web/src/hub/projects/home.tsx:9-50`, lido na emenda anterior) | G4: a página de nova sessão com a caixa, a barra e as recentes (tela 13) | a conversa é a casa; as recentes embaixo | embrulhado: `start` passa a ser a caixa do Assistente quando o `role` não é `member` | critério 23 | `F4`, `A1`, `B1` | `apps/web/src/builder/assistant/home.tsx` |
-| A barra da conversa | U4 | as peças `ui/badge.tsx`, `ui/popover.tsx`, `ui/switch.tsx`, `ui/select.tsx` (no `main`) | G4: a barra embaixo da caixa com o botão de ajuste (tela 13) | as ligações da sessão à vista | embrulhado: as escolhidas como etiquetas, **Ajustar** abre um `Popover` com uma chave por ligação; o Projeto num `Select` só antes da primeira pergunta no Início | critérios 23, 23a | `T1`, `U1` das sessões | `apps/web/src/builder/assistant/context-bar.tsx` |
+| A barra da conversa *Substituída pela Pauta (`docs/steps/e133-pauta.md`, linhas "A linha da caixa" e a do menu "+").* | U4 | as peças `ui/badge.tsx`, `ui/popover.tsx`, `ui/switch.tsx`, `ui/select.tsx` (no `main`) | G4: a barra embaixo da caixa com o botão de ajuste (tela 13) | as ligações da sessão à vista | embrulhado: as escolhidas como etiquetas, **Ajustar** abre um `Popover` com uma chave por ligação; o Projeto num `Select` só antes da primeira pergunta no Início | critérios 23, 23a | `T1`, `U1` das sessões | `apps/web/src/builder/assistant/context-bar.tsx` |
 | Conversas no Projeto | U4 | a barra lateral do Projeto (`hub/projects/project-rail.tsx:111-172`, lido na emenda anterior) | G4, tela 25; Factory: a sessão nasce presa ao repositório (`useCreateUserSessionFromDraft.ts:20-41`, lido na emenda anterior) | o Projeto contém sessões | embrulhado: a entrada **Conversas** depois de Construir, em `/companies/<c>/projects/<p>/assistant[/<id>]` (o `conversations/<id>` do Projeto é do Builder) | critérios 23b, 24 | `S1` das sessões | as duas rotas, `apps/web/src/builder/assistant/project.tsx` |
 | A tela da conversa | U4 | `session.ts` com o controlador fixo do Builder (`apps/web/src/builder/conversation/session.ts:13-34`); `use-session.ts` com `Ids` que levam `projectId` e a janela de 100 (`:18-24,155-177`), lidos na emenda anterior | Factory: uma página de chat (`M:mastracode/factory-ui/src/ui/router.tsx:154`) | a conversa do controlador | nativo: a transcrição e a sessão do Builder com o controlador `assistant`, o painel do arquivo no lugar da Prévia | critérios 24, 25 | não precisa | `apps/web/src/builder/assistant/conversation.tsx` |
 | Subagentes, rotina, escrita | fica de fora | nenhum | `agents` (`NM:agent/types.d.ts:737`); `mastra.schedules` (`M:packages/core/src/schedules/types.ts:115,168`); `requireApproval`, lidos na emenda anterior | — | nativo: a 24.4, a 24.2 e a 24.3 | — | `C1`, `E1` da estrutura | — |
@@ -987,13 +992,14 @@ rede e a imagem do critério 17 só se provam no E2B de verdade, pelo caso `opt-
   `use-session.ts:18-24,96-100,155-177`, `handoff.ts`, `start.tsx:123-190`, `panel.tsx`,
   `markdown.tsx`.
 - **A barra.** `apps/web/src/ui/` `badge.tsx`, `popover.tsx`, `switch.tsx`, `select.tsx`; G4, tela 13.
+  *Substituída pela Pauta (`docs/steps/e133-pauta.md`, U4 e U5).*
 - **A CSP.** `apps/server/src/platform/http.ts:30-49`.
 
 ### O raio da mudança
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `apps/web/src/builder/assistant/` | Cria `home.tsx`, `context-bar.tsx`, `project.tsx`, `conversation.tsx`, `file.tsx` (o painel), `propose.tsx` (Criar app), `queries.ts`, `public.ts` | as rotas |
+| `apps/web/src/builder/assistant/` | Cria `home.tsx`, `context-bar.tsx`, `project.tsx`, `conversation.tsx`, `file.tsx` (o painel), `propose.tsx` (Criar app), `queries.ts`, `public.ts` *Na parte da barra, substituído pela Pauta (`docs/steps/e133-pauta.md`).* | as rotas |
 | `apps/web/src/builder/conversation/` | Muda `tool-registry.ts` (as ferramentas do Assistente), `connector-specs.ts` (a linha "Lendo <conector> · <ligação>", só no Assistente), `session.ts` (o controlador como parâmetro), `use-session.ts` (os `Ids` sem Projeto obrigatório; os ganchos da Prévia só no Builder), `transcript.tsx` (o painel do arquivo no lugar da Prévia quando o controlador é o Assistente), `start.tsx` (o `Naming` aceita um texto pronto) | o Builder, o Assistente |
 | `apps/web/src/hub/projects/` | Muda `home.tsx` (o título e a caixa vêm de quem chama) e `project-rail.tsx` (a entrada Conversas depois de Construir) | `index.tsx`, a moldura do Projeto |
 | `apps/web/src/routes/_app/companies/$companyId/` | Muda `index.tsx`; cria `conversations/$conversationId.tsx`, `projects/$projectId_.assistant.index.tsx`, `projects/$projectId_.assistant.$conversationId.tsx`; muda `routeTree.gen.ts` (gerado) | o roteador |
@@ -1031,9 +1037,9 @@ W10, W12, W18, W29 a W31, W34.
 
 1. `session.ts` e `use-session.ts`: o controlador como parâmetro; o Builder passa `builder` e o seu
    Projeto, e nada muda para ele.
-2. `context-bar.tsx`, `queries.ts`.
+2. `context-bar.tsx`, `queries.ts`. *A barra: substituída pela Pauta (`docs/steps/e133-pauta.md`).*
 3. `home.tsx` do Assistente e `index.tsx`: a escolha pelo `role`; a caixa reusa `Start` sem o
-   `Naming`, com a barra embaixo; as recentes com a etiqueta do Projeto.
+   `Naming`, com a barra embaixo; as recentes com a etiqueta do Projeto. *A barra: substituída pela Pauta (`docs/steps/e133-pauta.md`).*
 4. `project.tsx`, as duas rotas do Projeto e a entrada em `project-rail.tsx` (W34 para o membro).
 5. `conversation.tsx` e `file.tsx`: a transcrição do Builder com o painel do arquivo; as linhas das
    leituras e dos comandos pelo registro.
@@ -1052,5 +1058,7 @@ fundador.
 - A transcrição do Builder não separar a Prévia da conversa sem mudar o que o Builder mostra: mostrar
   e parar.
 - A entrada Conversas na barra lateral do Projeto pedir mudar a regra W30 ou W31: mostrar e parar.
+  *A Pauta emenda a W30 (`docs/steps/e133-pauta.md`, U0): dentro de um Projeto o trilho de ícones
+  fica, e a lista ao lado é a do Projeto.*
 - Uma imagem ou um SVG pela rota do arquivo gerar uma violação de CSP: mostrar e parar; não afrouxar
   a CSP.
