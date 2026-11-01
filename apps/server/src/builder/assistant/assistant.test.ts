@@ -59,6 +59,7 @@ test('as ferramentas: o modelo do Assistente recebe as de conector de leitura, a
     'mastra_workspace_mkdir',
     'mastra_workspace_read_file',
     'mastra_workspace_write_file',
+    'propose_app',
     'show_file',
     'skill',
     'skill_read',
@@ -66,6 +67,20 @@ test('as ferramentas: o modelo do Assistente recebe as de conector de leitura, a
     'web_fetch',
     'web_search',
   ])
+})
+
+test('as ferramentas: numa conversa de Projeto o modelo não recebe propose_app', async (t) => {
+  const on = await assisting(t)
+  const url = await created(on.hub, on.ana, on.assistant, {
+    projectId: on.projectId,
+    connections: [on.matriz],
+  })
+  const { say } = await talking(t, on.hub, on.ana, url)
+
+  assert.equal(endOf(await say('O que você pode fazer?')), 'complete')
+  const tools = [...(on.calls.at(0)?.tools ?? [])]
+  assert.equal(tools.includes('propose_app'), false)
+  assert.equal(tools.includes('show_file'), true)
 })
 
 test('a visão da empresa: os Projetos com o app, e as ligações que o lugar oferece com a escolha; numa conversa do Projeto a Filial não aparece', async (t) => {

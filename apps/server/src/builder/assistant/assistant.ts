@@ -42,6 +42,7 @@ import { createAssistantMachines } from './machine.ts'
 import { assistantMemory } from './memory.ts'
 import { overviewTool } from './overview.ts'
 import type { AssistantProjects } from './ports.ts'
+import { proposeAppTool } from './propose.ts'
 import { releaseConversations } from './release.ts'
 import { registerAssistantRoutes } from './routes.ts'
 import { showFileTool } from './show-file.ts'
@@ -249,6 +250,8 @@ function assistantAgent(
         ...toolsOf(sessionModel(requestContext)),
         [ASSISTANT_TOOL.overview]: overview,
         [ASSISTANT_TOOL.showFile]: showFile,
+        // Creating an app is the company's: a conversation inside a Projeto talks about that Projeto.
+        ...(scope?.place.kind === 'COMPANY' ? { [ASSISTANT_TOOL.proposeApp]: proposeAppTool } : {}),
         ...(scope === undefined
           ? {}
           : connectorTools(accessOf(deps, scope, chosen), { noteSave: false })),

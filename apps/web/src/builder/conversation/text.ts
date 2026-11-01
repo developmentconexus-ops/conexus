@@ -5,12 +5,19 @@ import type { Refusal } from './attachments.ts'
 import { LIMITS } from './attachments.ts'
 
 export const LOADING_OLDER = 'Carregando mensagens anteriores'
-export const WORKING = 'Builder trabalhando'
+/** The words that name who answers (the Builder in a Projeto, the Assistant in a conversation of Início). */
+export function workingText(agent: string): string {
+  return `${agent} trabalhando`
+}
+export function steerPendingText(agent: string): string {
+  return `Vai ao ${agent} no próximo passo`
+}
+export function steerPlaceholderText(agent: string): string {
+  return `Escreva para orientar o ${agent}`
+}
 export const STILL_WORKING = 'Ainda trabalhando…'
 export const EMPTY_CONVERSATION = 'Descreva o aplicativo que você quer criar.'
 export const UNCONFIRMED_SEND = 'Não confirmamos o envio. Envie de novo.'
-export const STEER_PENDING = 'Vai ao Builder no próximo passo'
-export const STEER_PLACEHOLDER = 'Escreva para orientar o Builder'
 /** Where a person may put a secret by habit: said under the field on a computer, and on a phone in the first-time state and the model sheet. */
 export const NO_SECRETS = 'Não cole senhas ou chaves na conversa.'
 export const START_PLACEHOLDER = 'Descreva o app que você quer…'

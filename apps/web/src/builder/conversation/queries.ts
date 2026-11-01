@@ -1,5 +1,6 @@
 import type { CompanyId, ConversationId, ProjectId } from '@conexus/hub-api'
 import {
+  BUILDER_CONTROLLER,
   createConversation,
   Effort,
   listConversations,
@@ -10,6 +11,7 @@ import {
 } from '@conexus/hub-api'
 import { z } from 'zod'
 import { hubMutation, hubQuery, hubQueryPrefix } from '../../platform/hub.ts'
+import type { Controller } from './session.ts'
 import { sessionOf } from './session.ts'
 
 export function conversationsQuery(
@@ -35,11 +37,14 @@ export function conversationQuery(
 export const SessionRead = z.object({ model: ModelId, effort: Effort, tasks: z.array(Task) })
 export type SessionRead = z.infer<typeof SessionRead>
 
-export function sessionReadQuery(conversationId: ConversationId) {
+export function sessionReadQuery(
+  conversationId: ConversationId,
+  controller: Controller = BUILDER_CONTROLLER,
+) {
   return {
     queryKey: ['builder', 'session-state', conversationId] as const,
     queryFn: async () => {
-      const state = await sessionOf(conversationId).state()
+      const state = await sessionOf(conversationId, controller).state()
       return SessionRead.parse({
         model: state.modelId,
         effort: state.settings?.thinkingLevel ?? 'off',

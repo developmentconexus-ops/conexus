@@ -61,6 +61,7 @@ export {
   listAssistantConnections,
   listAssistantConversations,
   type Overview,
+  ProposedApp,
   readAssistantConversation,
   SessionConnection,
   SHOWN_TEXT_MAX,

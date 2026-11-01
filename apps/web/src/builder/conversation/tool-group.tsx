@@ -9,6 +9,7 @@ import {
   TraceLine,
   TraceTitle,
 } from '../../ui/trace.tsx'
+import { useRoom } from './room.ts'
 import type { ToolItem } from './rows.ts'
 import { presentTool, summaryOfTools, toolStatus } from './tool-registry.ts'
 import { ToolRow } from './tool-row.tsx'
@@ -20,18 +21,21 @@ import { ToolRow } from './tool-row.tsx'
  */
 export function ToolGroup(props: { tools: ToolItem[]; working: boolean }) {
   const { tools, working } = props
+  const room = useRoom()
   const [chosen, setChosen] = useState<boolean>()
-  const active = tools.findLast((t) => toolStatus(t) === 'running') ?? tools.at(-1)
+  const active = tools.findLast((t) => toolStatus(t, room) === 'running') ?? tools.at(-1)
   const failed = tools.some((t) => {
-    const status = toolStatus(t)
+    const status = toolStatus(t, room)
     return status === 'error' || status === 'denied'
   })
 
-  const activePresentation = active ? presentTool(active, toolStatus(active)) : undefined
+  const activePresentation = active
+    ? presentTool(active, toolStatus(active, room), room)
+    : undefined
 
   const summary = summaryOfTools(tools)
 
-  const completedCount = tools.filter((t) => toolStatus(t) !== 'running').length
+  const completedCount = tools.filter((t) => toolStatus(t, room) !== 'running').length
 
   return (
     <TraceCollapsible open={chosen ?? working} onOpenChange={setChosen}>

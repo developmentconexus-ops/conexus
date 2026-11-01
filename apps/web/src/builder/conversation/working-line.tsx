@@ -1,10 +1,13 @@
 import { useState } from 'react'
 import { ConexusMark } from '../../brand/mark.tsx'
 import { useEverySecond } from './elapsed.ts'
-import { durationOf, STILL_WORKING, WORKING } from './text.ts'
+import { useRoom } from './room.ts'
+import { durationOf, STILL_WORKING, workingText } from './text.ts'
 
 /** The line while a question or a plan waits on the person (founder, 2026-10-22, "Aprovo"). */
-const WAITING = 'Builder esperando sua resposta.'
+function waitingText(agent: string): string {
+  return `${agent} esperando sua resposta.`
+}
 
 /** How long the Builder may go without saying anything before the line says it is still at work. */
 const QUIET_MS = 60_000
@@ -30,6 +33,7 @@ export function WorkingLine({
   waiting: boolean
 }) {
   useEverySecond()
+  const { agent } = useRoom()
   const [last, setLast] = useState({ heard, at: Date.now() })
   if (last.heard !== heard) setLast({ heard, at: Date.now() })
   const quiet = Date.now() - last.at >= QUIET_MS
@@ -38,7 +42,7 @@ export function WorkingLine({
     return (
       <div role="status" className="flex items-center gap-sm px-md py-sm text-label text-text-2">
         <ConexusMark size={16} />
-        <p>{WAITING}</p>
+        <p>{waitingText(agent)}</p>
       </div>
     )
   }
@@ -46,7 +50,7 @@ export function WorkingLine({
     <div role="status" className="flex items-center gap-sm px-md py-sm text-label text-text-2">
       <ConexusMark working size={16} />
       <p>
-        {quiet ? STILL_WORKING : WORKING}
+        {quiet ? STILL_WORKING : workingText(agent)}
         {seconds !== null && (
           <span aria-hidden="true">
             {quiet ? ' ' : ' · '}há {durationOf(seconds)}

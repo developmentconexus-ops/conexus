@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
+import { AssistantHome } from '../../../../builder/assistant/public.ts'
 import { readStart, Start } from '../../../../builder/conversation/public.ts'
 import { accountsQuery } from '../../../../builder/model-accounts/public.ts'
 import { PreparationCard } from '../../../../hub/identity/public.ts'
@@ -20,7 +21,14 @@ function HomePage() {
     <Home
       companyId={companyId}
       aside={role === 'member' ? undefined : <Preparation />}
-      start={<Start companyId={companyId} />}
+      title={role === 'member' ? 'O que vamos construir?' : 'Pergunte ou peça um app'}
+      start={
+        role === 'member' ? (
+          <Start companyId={companyId} />
+        ) : (
+          <AssistantHome companyId={companyId} />
+        )
+      }
     />
   )
 }
