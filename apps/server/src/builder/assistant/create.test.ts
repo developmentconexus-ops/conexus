@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
-import { codeOf, post } from '../../hub/identity/test-hub.ts'
+import { call, codeOf, post } from '../../hub/identity/test-hub.ts'
 import { hubBeside, MODEL } from '../conversation/test-conversation.ts'
 import { sessionStateOf } from '../conversation/test-questions.ts'
 import { assisting } from './test-assistant.ts'
@@ -102,4 +102,21 @@ test('criar com um raciocínio que o modelo não tem: EFFORT_UNSUPPORTED, e nada
     'select count(*)::int as n from builder.assistant_conversation',
   )
   assert.deepEqual(kept, [{ n: 0 }])
+})
+
+test('o lugar da conversa vem da linha do Hub: a marca do Mastra estragada não muda a leitura nem a esconde (F15)', async (t) => {
+  const on = await assisting(t)
+  const made = await post(on.hub, on.ana, on.assistant, {
+    projectId: on.projectId,
+    connections: [on.matriz],
+  })
+  assert.equal(made.statusCode, 201, made.body)
+  const { id } = conversationOf(made)
+  await on.hub.test.mastraPool.query(
+    `update mastra.mastra_threads set metadata = metadata || '{"conexusProjectId": "nao-e-um-id"}' where id = $1`,
+    [id],
+  )
+  const read = await call(on.hub, on.ana, 'GET', `${on.assistant}/${id}`)
+  assert.equal(read.statusCode, 200, read.body)
+  assert.equal(conversationOf(read).projectId, on.projectId)
 })

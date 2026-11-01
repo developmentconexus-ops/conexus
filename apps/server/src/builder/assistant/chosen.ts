@@ -1,10 +1,10 @@
-import type { CompanyId, ConversationId, PersonId, ProjectId } from '@conexus/hub-api'
-import { ConnectionId } from '@conexus/hub-api'
+import type { CompanyId, ConversationId, PersonId } from '@conexus/hub-api'
+import { ConnectionId, ProjectId } from '@conexus/hub-api'
 import { eq } from 'drizzle-orm'
 import { z } from 'zod'
 import type { Database } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
-import type { Owner } from './context.ts'
+import type { Kept, Owner } from './context.ts'
 import { assistantConversation } from './tables.ts'
 
 const Chosen = z.array(ConnectionId)
@@ -73,11 +73,14 @@ export function chosenConnections(database: Database) {
       })
     },
 
-    /** The conversation's choice as the Hub keeps it. */
-    of(owner: Owner, conversationId: ConversationId): Promise<readonly ConnectionId[]> {
+    /** The conversation's place and choice as the Hub keeps them: only the Hub writes the row. */
+    of(owner: Owner, conversationId: ConversationId): Promise<Kept> {
       return database.read(scopeOf(owner), async (tx) => {
         const [row] = await tx
-          .select({ connections: assistantConversation.connections })
+          .select({
+            projectId: assistantConversation.projectId,
+            connections: assistantConversation.connections,
+          })
           .from(assistantConversation)
           .where(eq(assistantConversation.id, conversationId))
         if (row === undefined) {
@@ -85,7 +88,10 @@ export function chosenConnections(database: Database) {
             details: { reason: 'ASSISTANT_CHOICE_MISSING' },
           })
         }
-        return Chosen.parse(row.connections)
+        return {
+          projectId: ProjectId.nullable().parse(row.projectId),
+          connections: Chosen.parse(row.connections),
+        }
       })
     },
   }

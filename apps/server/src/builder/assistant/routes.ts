@@ -88,12 +88,9 @@ async function ownThread(deps: Deps, owner: Owner, conversationId: ConversationI
   return thread
 }
 
-/** The thread's scope: its mark, read with no session (a `GET` starts nothing), and the choice the Hub keeps. */
+/** The thread's scope, read with no session (a `GET` starts nothing): its place and choice as the Hub keeps them. */
 async function scopeOfThread(deps: Deps, owner: Owner, thread: StorageThreadType) {
-  const chosen = await deps.chosen.of(owner, ConversationId.parse(thread.id))
-  const scope = scopeOn({ owner, mark: thread.metadata?.[SESSION_MARK.project], chosen })
-  if (scope === undefined) throw new Failure('CONVERSATION_NOT_FOUND')
-  return scope
+  return scopeOn(owner, await deps.chosen.of(owner, ConversationId.parse(thread.id)))
 }
 
 /** What the conversation answers: its summary and each connection its place offers, with whether it chose it. */
