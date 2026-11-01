@@ -13,9 +13,6 @@ export const UNCONFIRMED_CREATION = 'Não confirmamos a criação da conversa. T
 export const UNCONFIRMED_CHOICE =
   'Não confirmamos a troca das ligações. Confira a barra e tente de novo.'
 export const FILE_EMPTY = 'Arquivo vazio.'
-export const FILE_NOT_THERE = 'Este arquivo não está mais na máquina da conversa.'
-export const FILE_MACHINE_GONE = 'A máquina desta conversa não guarda mais este arquivo.'
-export const FILE_TOO_LARGE_TEXT = 'O arquivo passa do tamanho que o Hub entrega.'
 
 /** What a conversation is called until it is titled: the moment it was last written, the contract's only date. */
 export function titleOf(conversation: { title: string | null; updatedAt: string }): string {

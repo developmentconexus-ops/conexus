@@ -1,6 +1,7 @@
-import { BUILDER_TOOL, WORKSPACE_TOOL } from '@conexus/hub-api'
+import { BUILDER_TOOL, CompanyId, WORKSPACE_TOOL } from '@conexus/hub-api'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, test } from 'vitest'
+import { COMPANY } from '../../platform/fixtures.ts'
 import { hubServer, PEDIDOS, refusal } from '../../platform/test-hub.tsx'
 import {
   observationFailed,
@@ -9,6 +10,7 @@ import {
   updatePart,
 } from '../conversation/test-events.ts'
 import { personSaid, reachTop } from '../conversation/test-stream.tsx'
+import { assistantConversationsQuery } from './queries.ts'
 import {
   ASKED,
   assistantConversation,
@@ -203,6 +205,18 @@ describe('as leituras e os comandos', () => {
     expect(await screen.findByText('O sistema demorou demais para responder.')).toBeTruthy()
     expect(screen.queryByRole('link', { name: 'Abrir Integrações' })).toBeNull()
   })
+})
+
+test('a conversa sumir do Hub marca as recentes para serem lidas de novo', async () => {
+  const { conexus } = at(OPEN, {
+    conversations: [assistantConversation()],
+    answers: { stream: () => refusal('CONVERSATION_NOT_FOUND') },
+  })
+  const recents = assistantConversationsQuery(CompanyId.parse(COMPANY.id), undefined, undefined)
+  await conexus.queryClient.fetchQuery(recents)
+  await waitFor(() =>
+    expect(conexus.queryClient.getQueryState(recents.queryKey)?.isInvalidated).toBe(true),
+  )
 })
 
 describe('os comandos', () => {

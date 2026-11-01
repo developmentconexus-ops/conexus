@@ -57,6 +57,8 @@ export type Answers = {
   hold?: Promise<void>
   /** What the read of the connections a place offers answers instead of the Hub's success. */
   offer?: () => Promise<Response | undefined> | Response | undefined
+  /** What the stream of the conversation's session answers instead of opening. */
+  stream?: () => Response | undefined
   /** What the route of a conversation's files answers instead of the file. */
   file?: () => Response | undefined
 }
@@ -99,7 +101,7 @@ function chosenOf(body: unknown): ConnectionId[] {
 
 const BASE = `*/api/companies/${COMPANY.id}/assistant`
 
-const SANKHYA = {
+export const SANKHYA = {
   id: 'sankhya',
   name: 'Sankhya',
   version: '1',
@@ -189,11 +191,14 @@ function writesOf(held: Held, note: (request: Request) => Promise<unknown>) {
 /** Mastra's session of the `assistant` controller: its stream, state, transcript and messages. */
 function sessionOf(
   conversations: Opened[],
+  answers: Answers,
   lines: ReturnType<typeof openLine>['line'][],
   note: (request: Request) => Promise<unknown>,
 ) {
   return [
     http.get(`${ASSISTANT_SESSION}/stream`, ({ request }) => {
+      const replaced = answers.stream?.()
+      if (replaced) return replaced
       const { line, response } = openLine(displayOf())
       lines.push(line)
       // A screen that remounts drops its stream: closing it after the drop breaks the fake socket.
@@ -263,7 +268,7 @@ export function assistantScreens(server: ReturnType<typeof setupServer>) {
     server.use(
       ...readsOf(held, asked),
       ...writesOf(held, note),
-      ...sessionOf(conversations, lines, note),
+      ...sessionOf(conversations, answers, lines, note),
     )
     const hub = open(view({ start: START, role }), path)
     return {

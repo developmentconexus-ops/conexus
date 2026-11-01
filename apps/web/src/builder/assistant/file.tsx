@@ -1,4 +1,4 @@
-import type { CompanyId, ConversationId, FailureCode, ShownFile } from '@conexus/hub-api'
+import type { CompanyId, ConversationId, ShownFile } from '@conexus/hub-api'
 import { assistantFilePath, Problem } from '@conexus/hub-api'
 import { useMutation } from '@tanstack/react-query'
 import { DownloadIcon, XIcon } from 'lucide-react'
@@ -9,25 +9,18 @@ import { cn } from '../../ui/cn.ts'
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { ReadFailure } from '../../ui/states.tsx'
 import { Markdown } from '../conversation/public.ts'
-import { FILE_EMPTY, FILE_MACHINE_GONE, FILE_NOT_THERE, FILE_TOO_LARGE_TEXT } from './text.ts'
+import { FILE_EMPTY } from './text.ts'
 
 type Shown = Extract<ShownFile, { kind: 'TEXT' | 'FILE' }>
 
 /** The images the Hub's CSP lets the page draw from its own address; every other file is saved. */
 const DRAWN = ['image/png', 'image/jpeg', 'image/svg+xml']
 
-/** What the Hub said of a file the page could not draw, in the person's words. */
-const SAID: Partial<Record<FailureCode, string>> = {
-  FILE_NOT_FOUND: FILE_NOT_THERE,
-  FILE_GONE: FILE_MACHINE_GONE,
-  FILE_TOO_LARGE: FILE_TOO_LARGE_TEXT,
-}
-
 /** The Hub's refusal of the file route, in the person's words. */
 async function refusalOf(response: Response): Promise<string> {
   try {
     const problem = Problem.parse(await response.json())
-    return SAID[problem.code] ?? sentenceOfCode(problem.code)
+    return sentenceOfCode(problem.code)
   } catch {
     // An answer that is not the Hub's problem body names no failure of ours to say.
     return sentenceOfCode('INTERNAL_UNEXPECTED')
