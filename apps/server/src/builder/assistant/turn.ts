@@ -5,10 +5,12 @@ import type { InputProcessor } from '@mastra/core/processors'
 import type { RequestContext } from '@mastra/core/request-context'
 import { z } from 'zod'
 import { TurnKey } from '../../hub/connectors/public.ts'
+import type { FailureLog } from '../../platform/failure.ts'
 import { turnOfOwner } from '../conversation/public.ts'
 import type { QueueDeps, Turn } from '../model-accounts/public.ts'
 import { setTurn } from '../model-accounts/public.ts'
 import type { ScopeOf } from './context.ts'
+import type { AssistantMachines } from './machine.ts'
 
 const TURN_PROCESSOR = 'conexus-assistant-turn'
 /** Where the run's context holds the turn's key, which the company's door counts the 50 calls by. */
@@ -30,12 +32,27 @@ export function turnKeyIn(requestContext: RequestContext): TurnKey | undefined {
  * the controller says the run ended (`agent_end`), for every end: done, failed, stopped by Parar
  * or by the Hub's end; a deleted session's run ends without one, so its deletion lets go too.
  */
-export function assistantTurns(deps: { queue: QueueDeps; scopeOf: ScopeOf }) {
+export function assistantTurns(deps: {
+  queue: QueueDeps
+  scopeOf: ScopeOf
+  machines: AssistantMachines
+  log: FailureLog
+}) {
   const held = new Map<ConversationId, Turn>()
 
   function letGo(sessionId: ConversationId): void {
     held.get(sessionId)?.end()
     held.delete(sessionId)
+  }
+
+  /** The turn ended: the conversation's machine sleeps until the next question. A failure to pause it is logged; the provider's own timeout pauses it. */
+  function sleep(sessionId: ConversationId): void {
+    deps.machines.stop(sessionId).catch((error: unknown) => {
+      deps.log.error(
+        { conversationId: sessionId, cause: String(error).slice(0, 500) },
+        'ASSISTANT_MACHINE_STOP_FAILED',
+      )
+    })
   }
 
   async function take(
@@ -65,7 +82,9 @@ export function assistantTurns(deps: { queue: QueueDeps; scopeOf: ScopeOf }) {
     controller.onSessionCreated((session) => {
       const sessionId = ConversationId.parse(session.identity.getId())
       session.subscribe((event) => {
-        if (event.type === 'agent_end') letGo(sessionId)
+        if (event.type !== 'agent_end') return
+        letGo(sessionId)
+        sleep(sessionId)
       })
     })
     controller.onSessionDeleted((session) => letGo(ConversationId.parse(session.identity.getId())))

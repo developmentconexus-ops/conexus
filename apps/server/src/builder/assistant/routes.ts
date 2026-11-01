@@ -33,6 +33,8 @@ import { conversationStart, effortsOf } from '../model-accounts/public.ts'
 import type { ChosenConnections } from './chosen.ts'
 import type { Owner } from './context.ts'
 import { assistantOwner, SESSION_MARK, scopeOn } from './context.ts'
+import { registerFile } from './file-route.ts'
+import type { AssistantMachines } from './machine.ts'
 import type { assistantMemory } from './memory.ts'
 import type { AssistantProjects } from './ports.ts'
 
@@ -48,6 +50,7 @@ type Deps = {
   queue: QueueDeps
   controller: AgentController
   memory: ReturnType<typeof assistantMemory>
+  machines: AssistantMachines
   chosen: ChosenConnections
   log: FailureLog
 }
@@ -273,4 +276,12 @@ function registerWrites(app: FastifyInstance, deps: Deps): void {
 export function registerAssistantRoutes(app: FastifyInstance, deps: Deps): void {
   registerReads(app, deps)
   registerWrites(app, deps)
+  registerFile(app, {
+    machines: deps.machines,
+    log: deps.log,
+    ownConversation: async (owner, conversationId) => {
+      await admitted(deps, owner, { kind: 'COMPANY' })
+      await ownThread(deps, owner, conversationId)
+    },
+  })
 }
