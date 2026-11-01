@@ -2213,7 +2213,7 @@
   {
     "id": "automations-run-may-ask",
     "file": "apps/server/src/builder/automations/run.ts",
-    "find": "      if (!(await mayAsk(deps, input))) {\n",
+    "find": "      if (asking.kind === 'MAY_NOT') {\n",
     "replace": "      if (false) {\n",
     "test": {
       "cwd": "apps/server",

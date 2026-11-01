@@ -8,7 +8,7 @@ import { registerAutomationRoutes } from './routes.ts'
 import { automationRuns } from './runs.ts'
 
 export { AUTOMATION_TIMEZONE, cronOf } from './cadence.ts'
-export type { Notify } from './run.ts'
+export type { AutomationInput, Notify } from './run.ts'
 export { AUTOMATION_TURN_MS, AUTOMATION_WORKFLOW, automationRun, loggedNotify } from './run.ts'
 
 /**
