@@ -1027,9 +1027,29 @@ rows for the five above wait on issue #458.
   a new stream.
 - **Why.** The screen draws no more than `DISPLAY_READ`; sending the rest cost the Hub's heap and
   bytes on a long turn.
-- **Proof.** `conversation-stream-paced.test.ts` "um turno de 96 passos…" and "uma página que lê
-  devagar…", which fail without `slim` or `paced`.
+- **Memory failure events go as Mastra sends them.** `om_observation_failed` and
+  `om_reflection_failed` reach the browser with Mastra's own `error`; `slim` does not touch them
+  (founder, 2026-10-31, "manter original"). The text is the library's output and is not rewritten
+  here.
+- **Proof.** `conversation-stream-paced.test.ts`: "um turno de 96 passos…" fails without `slim`;
+  "uma página 8 MiB atrás perde o stream…" fails without `paced`. "uma página que lê devagar…" holds
+  the order of events for a slow page and passes with Mastra's own adapter too, so it proves neither.
 - **Revisit when** Mastra lets a stream send a subset of the display state.
+
+## Mastra 1.79.0: a step's answer without the body of its request
+
+- **Library line.** `@mastra/core` 1.79.0 keeps every step's output, `request.body` included, until
+  the session's next run (`MastraModelOutput` `#bufferedSteps[].request`), so a conversation's last
+  turn holds every prompt it sent. Nothing of ours or Mastra's reads the body back. The AI SDK's
+  own `experimental_include.requestBody: false` (`ai@6.0.309` `generateText` and `streamText`) is
+  not reachable here: Mastra's loop reads the provider's `stream.request` itself and takes no
+  such option.
+- **Hand-made piece.** `bodylessMiddleware` in
+  `apps/server/src/builder/model-accounts/claude/models.ts`, a `wrapStream` that drops `request`
+  from `doStream()`'s answer.
+- **Why.** The Hub's heap grew with the prompts of the last turn of every open conversation.
+- **Proof.** `prompt-cache.test.ts` "cada passo do modelo da conta volta sem o corpo do pedido…".
+- **Revisit when** Mastra passes an include option to its loop, or stops keeping the request.
 
 ## Mastra 1.79.0: Parar waits until Mastra keeps an open card's run
 
