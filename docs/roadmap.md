@@ -42,10 +42,10 @@ Aprovações e usos: [aprovações](approvals.md).
 Sua empresa usa o Conexus desde 2026-11-02, recebendo cada etapa.
 
 - **24.1 Supervisor.** Sessões no Início e no Projeto perguntam aos sistemas e mostram tabelas e gráficos.
-- **24.2 Rotinas.** Recebe o resumo da manhã nas notificações e por e-mail.
-- **24.3 Escrever com aprovação.** Um agente ou app pede "Aprovar?" antes de escrever (resposta B, 2026-10-18; leva a 20.1).
-- **24.4 Projeto sem app, agentes e Construtor.** Cria, conversando com o Construtor, um agente num Projeto sem app.
-- **24.5 Workflows visuais.** Monta conversando o fluxo do orçamento do Sankhya e o vê como trem de balões.
+- **24.2 Automações: o Assistente na agenda.** Pede "todo dia às 7h me manda o resumo" e recebe cada execução numa conversa nova, com aviso.
+- **24.3 Agentes do Projeto, com o Construtor.** Conversando com o Construtor, cria num Projeto um agente que lê.
+- **24.4 Os agentes escrevem, com aprovação.** Um agente ou app pede "Aprovar?" antes de escrever (resposta B, 2026-10-18; leva a 20.1).
+- **24.5 Workflows.** Monta conversando o fluxo do orçamento do Sankhya e o vê como trem de balões.
 - **21.1 Ver o que acontece.** Vê a Atividade, o painel e o uso por empresa.
 - **16 Atualizar sem cortar.** Conversa enquanto o Conexus é atualizado.
 - **22 Ensaio geral.** Restaura tudo junto, pelo procedimento.
@@ -62,7 +62,7 @@ O que tem molde anda numa segunda fila, de método leve (2026-10-30: "1. Sim 2. 
 4. Shopee, Nuvemshop, Google Sheets, NF-e recebida, extratos de banco; a Jet (20.3) quando alguém a usar.
 5. **21 Outras contas.** Liga a da OpenAI, se os termos confirmarem.
 
-Em espera: 19.2 Central de Ajuda. Sai: o pg-boss; a agenda e os workflows do Mastra o substituem.
+Em espera: 19.2 Central de Ajuda. Sai: o pg-boss; a agenda do Mastra, gatilho de toda automação, e os workflows o substituem.
 
 ### O que você fornece, e quando
 
@@ -78,7 +78,7 @@ Em espera: 19.2 Central de Ajuda. Sai: o pg-boss; a agenda e os workflows do Mas
 | 13 | Uma chave do E2B (a da conta grátis). Um bucket privado no R2 | E2B pago: US$ 150 por mês, se o uso pedir |
 | 19 | Usuário só de leitura no Sankhya de uma empresa | Nenhum |
 | 19.1 | O seu app de desenvolvedor do Mercado Livre | Não lido |
-| 24.2 | O Neon no plano Launch: a agenda do Mastra mantém o banco acordado | Cerca de US$ 19,35 por mês por banco |
+| 24.2 | O Neon Launch no projeto do Hub, quando a primeira automação ligar: a agenda mantém o banco acordado | Cerca de US$ 19,35 por mês, uma conta só |
 | 22 | Um lugar de cópia fora do Neon | Não lido |
 | 23 | O aviso do que sai do Brasil, com uma linha: o ditado no Chrome passa pelo Google | Nenhum novo |
 
@@ -88,14 +88,14 @@ Login social. Arquivos enviados por pessoas para dentro de um app ou da máquina
 
 ### As suas respostas de 2026-10-13
 
-1. **Código antigo só entra com os consertos médios e grandes feitos.** "2. A": "ele não manter decisões antigas só porque elas já foram
-   feitas." Vive na regra do estudo, no `conexus-study`.
-2. **A 16 vai para depois da 21.1, antes da 22, com o número que tem.** Em 2026-10-22: "Cara, então vamos mudar esse roadmap aí, velho. Porque essa 16 pra mim não faz sentido entrar agora ... Deixarei ela mais pro final mesmo." e, à posição antes da 22, "Sim". Nenhuma etapa depende dela; os consertos de execução da auditoria e os testes 9 e 10 vão com ela.
+1. **Código antigo só entra com os consertos médios e grandes feitos.** "2. A". Vive no `conexus-study`.
+2. **A 16 vai para depois da 21.1, antes da 22, com o número que tem.** Em 2026-10-22: "essa 16 pra mim não faz sentido entrar agora ... Deixarei ela mais pro final mesmo." e, à posição antes da 22, "Sim". Nenhuma etapa depende dela.
 3. **Arquivos e voz entram como a 14.3, depois da 14.1.** "A1 sim B1 okay ... C sim", "B1 por agora".
 4. **O Início que você planeja vem depois da Prévia e da 14.3.** A ordem é 14.1, 14.3, 13.1: "Concordo documente tudo isso para ser registrado".
-5. **O roadmap perde o detalhe das etapas fechadas.** Em 2026-10-29: "Roadmap pode ir removendo o que foi de etapas passadas se tiver detalhes ou algo assim, se não vamos ter que aumentar ele para não perder informação". A linha de uma etapa fechada sai da tabela; o que ficou é nas [aprovações](approvals.md). O teto de 1.600 palavras não sobe.
+5. **O roadmap perde o detalhe das etapas fechadas.** Em 2026-10-29: "Roadmap pode ir removendo o que foi de etapas passadas ... se não vamos ter que aumentar ele". A linha de uma etapa fechada sai da tabela; o que ficou é nas [aprovações](approvals.md). O teto de 1.600 palavras não sobe.
 
 6. **Depois da 20, Supervisor, agentes e workflows, antes das outras empresas.** Em 2026-10-30, ao estudo da estrutura dos agentes: "eu vou começar na minha empresa ... depois disso ... eu vou jogar para as outras empresas".
+7. **Uma Automação, e a ordem da 24.2 à 24.5.** Em 2026-11-01: "1 confirmado 2. Okay 3.okay".
 
 ## 2. As etapas
 
@@ -103,10 +103,10 @@ Login social. Arquivos enviados por pessoas para dentro de um app ou da máquina
 | --- | --- | --- | --- |
 | 20 App com dados | A 18 e a 19.1 | Nenhuma | A barra do Projeto nasce com Integrações. O caderno da ligação. Banco livre durante a chamada |
 | 24.1 Supervisor | A 20 | Nenhuma | Sessões como as da Factory e do G4. Ferramentas de conector da 20, máquina por conversa. Aceite: nenhum número inventado. Dono e administradores |
-| 24.2 Rotinas | A 24.1 | Nenhuma | `mastra.schedules`. A 20.4 entra aqui |
-| 24.3 Escrever com aprovação | A 24.2 | Nenhuma | `requireApproval` do Mastra, provada antes a trava da 0053. Escrita nova pede nova liberação |
-| 24.4 Projeto sem app, agentes e Construtor | A 24.3 | Nenhuma | O Projeto como pasta de um assunto. O campo `agents` do Mastra, nunca o Agent Builder pago. O Open Bots (2026-10-29) |
-| 24.5 Workflows visuais | A 24.4 | Nenhuma | Workflows do Mastra; um protótipo de um dia decide o motor. Seu orçamento é o aceite |
+| 24.2 Automações | A U2 a U4 da 24.1 | Nenhuma | Automação: gatilho, o que roda, o lugar, por `mastra.schedules`. A 20.4 entra aqui |
+| 24.3 Agentes do Projeto | A 24.2 | Onde roda o código que o Construtor escreve | Projeto como assunto. Agentes como linhas nossas, nunca o Agent Builder pago. O Open Bots (2026-10-29) |
+| 24.4 Escrita com aprovação | A 24.3 | Nenhuma | `requireApproval` do Mastra, provada antes a trava da 0053. Escrita nova pede nova liberação |
+| 24.5 Workflows | A 24.4 | O gatilho de um orçamento do Sankhya | Workflows do Mastra como dados; um protótipo de um dia decide o motor. Seu orçamento é o aceite |
 | 21.1 Ver o que acontece | A 24.5 | Grafana no Brasil, provado | Um só caminho OTel (0052). O uso por empresa |
 | 16 Atualizar sem cortar | A 21.1 | Nenhuma | Consertos de execução da auditoria. Testes 9 e 10 |
 | 22 Ensaio geral | A 16 | O lugar da cópia fora do Neon | Ensaios das etapas 2, 7, 9, 12 e 13. Carga de um painel e de uma rotina |
