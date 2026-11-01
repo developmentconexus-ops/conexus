@@ -384,7 +384,12 @@ function accountRetry(retry: StreamErrorRetryProcessor): ErrorProcessor {
  * queue, last, as in Mastra Code (`index.ts:1345-1393`).
  */
 export function accountErrorProcessors(deps: QueueDeps): ErrorProcessor[] {
-  const defaults = defaultStabilityErrorProcessors({
+  return [new CyberRefusalHandler(), ...stabilityProcessors(), accountQueue(deps)]
+}
+
+/** Mastra's stability defaults, each kept as it is but the retry, which spares an account's failure, and the history rules, which gain the one of ours. */
+export function stabilityProcessors(): ErrorProcessor[] {
+  return defaultStabilityErrorProcessors({
     retryUnknownErrors: true,
     retryBadRequests: true,
   }).map((processor) => {
@@ -394,5 +399,4 @@ export function accountErrorProcessors(deps: QueueDeps): ErrorProcessor[] {
     }
     return processor
   })
-  return [new CyberRefusalHandler(), ...defaults, accountQueue(deps)]
 }
