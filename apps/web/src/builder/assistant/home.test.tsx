@@ -226,3 +226,47 @@ test('as recentes passam de uma página: Ver mais leva à seguinte no endereço,
   fireEvent.click(screen.getByRole('link', { name: 'Primeira página: Conversas' }))
   expect(await screen.findByRole('link', { name: /Gama/ })).toBeTruthy()
 })
+
+test('voltar ao Início depois de perguntar mostra a conversa nova entre as recentes', async () => {
+  const { conexus } = at(COMPANY_ROOT)
+  await barOf()
+  await ask('Como foram as vendas?')
+  await waitFor(() =>
+    expect(conexus.router.state.location.pathname).toMatch(
+      new RegExp(`${COMPANY_ROOT}/conversations/`),
+    ),
+  )
+  await screen.findByRole('textbox', { name: 'Mensagem para o Assistente' })
+  act(() => conexus.router.history.back())
+  expect(await screen.findByRole('link', { name: /Conversa de/ })).toBeTruthy()
+  expect(screen.getByRole('heading', { name: 'Conversas recentes' })).toBeTruthy()
+})
+
+test('enquanto as recentes não chegam, o Início mostra um esqueleto no lugar delas', async () => {
+  let arrive: () => void = () => undefined
+  const held = new Promise<void>((resolve) => {
+    arrive = resolve
+  })
+  at(COMPANY_ROOT, {
+    conversations: [assistantConversation()],
+    answers: { list: async () => void (await held) },
+  })
+  await barOf()
+  expect(screen.queryByRole('link', { name: /Vendas da semana/ })).toBeNull()
+  expect(document.querySelector('[data-slot="skeleton"]')).not.toBeNull()
+  arrive()
+  expect(await screen.findByRole('link', { name: /Vendas da semana/ })).toBeTruthy()
+})
+
+test('se as recentes falham, o Início diz a frase com Tentar de novo, que as lê de novo', async () => {
+  let failing = true
+  at(COMPANY_ROOT, {
+    conversations: [assistantConversation()],
+    answers: { list: () => (failing ? refusal('DATABASE_UNAVAILABLE') : undefined) },
+  })
+  const retry = await screen.findByRole('button', { name: 'Tentar de novo' })
+  expect(screen.queryByRole('link', { name: /Vendas da semana/ })).toBeNull()
+  failing = false
+  fireEvent.click(retry)
+  expect(await screen.findByRole('link', { name: /Vendas da semana/ })).toBeTruthy()
+})

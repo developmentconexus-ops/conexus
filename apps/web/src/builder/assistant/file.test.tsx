@@ -6,6 +6,7 @@ import { hubServer, refusal } from '../../platform/test-hub.tsx'
 import {
   agentEnd,
   stepStarted,
+  textDelta,
   toolCall,
   toolStarted,
   updatePart,
@@ -184,6 +185,27 @@ test('Baixar um arquivo que a máquina não guarda mais diz a frase do FILE_GONE
   expect(screen.getByRole('button', { name: 'Tentar de novo' })).toBeTruthy()
 })
 
+test('Baixar com a sessão vencida volta à entrada, como todo o resto do Hub', async () => {
+  const files = saved()
+  const hub = showing('grafico.svg', CHART, { file: () => refusal('SESSION_REQUIRED') })
+  fireEvent.click(await screen.findByRole('button', { name: 'Abrir grafico.svg' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Baixar' }))
+  await waitFor(() => expect(hub.conexus.router.state.location.pathname).toBe('/login'))
+  expect(files).toHaveLength(0)
+})
+
+test('Baixar com uma resposta que não é do Hub diz a frase de falha inesperada e não salva nada', async () => {
+  const files = saved()
+  showing('grafico.svg', CHART, {
+    file: () => new Response('<html>bad gateway</html>', { status: 502 }),
+  })
+  fireEvent.click(await screen.findByRole('button', { name: 'Abrir grafico.svg' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Baixar' }))
+  expect(await screen.findByText(/Algo deu errado dentro do Conexus\./)).toBeTruthy()
+  expect(screen.getByRole('button', { name: 'Tentar de novo' })).toBeTruthy()
+  expect(files).toHaveLength(0)
+})
+
 test('um arquivo mostrado ao vivo abre sozinho, sem clique', async () => {
   const hub = at(OPEN, { conversations: [assistantConversation()] })
   const line = await running(hub)
@@ -208,6 +230,11 @@ test('um arquivo mostrado ao vivo abre sozinho, sem clique', async () => {
     ),
   )
   expect(await screen.findByRole('region', { name: 'relatorio.md' })).toBeTruthy()
+  // The chat beside the file is the same chat: the stream goes on and the next words arrive in it.
+  line.emit(stepStarted('step-2'))
+  line.emit(textDelta('Pronto, o relatório está ao lado.', 'step-2'))
+  expect(await screen.findByText('Pronto, o relatório está ao lado.')).toBeTruthy()
+  expect(screen.getByRole('region', { name: 'relatorio.md' })).toBeTruthy()
   line.emit(agentEnd())
   await waitFor(() => expect(screen.queryByRole('button', { name: 'Parar' })).toBeNull())
   await waitFor(() => expect(hub.conexus.queryClient.isFetching()).toBe(0))

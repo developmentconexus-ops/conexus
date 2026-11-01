@@ -35,6 +35,13 @@ test('o dono vê a caixa, a barra do Projeto e só as conversas deste Projeto', 
   )
 })
 
+test('a lista do Projeto se chama Conversas, sob o título da página', async () => {
+  at(CONVERSAS, { conversations: [assistantConversation({ projectId: PEDIDOS_ID })] })
+  await screen.findByRole('link', { name: /Vendas da semana/ })
+  expect(screen.getAllByRole('heading', { name: 'Conversas' })).toHaveLength(2)
+  expect(screen.queryByRole('heading', { name: 'Conversas recentes' })).toBeNull()
+})
+
 test('a barra mostra o Projeto fixo ao lado de Ajustar, sem controle para trocá-lo', async () => {
   at(CONVERSAS)
   const bar = await screen.findByRole('group', { name: 'Ligações da conversa' })

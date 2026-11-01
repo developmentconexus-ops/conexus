@@ -13,7 +13,6 @@ import { projectsQuery } from '../../hub/projects/public.ts'
 import { useAttemptKey } from '../../platform/attempt-key.ts'
 import { dayOf } from '../../platform/dates.ts'
 import { sentenceOf, writeFailureText } from '../../platform/hub.ts'
-import { Badge } from '../../ui/badge.tsx'
 import { cn } from '../../ui/cn.ts'
 import { Pager } from '../../ui/pager.tsx'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select.tsx'
@@ -22,18 +21,20 @@ import { ReadFailure } from '../../ui/states.tsx'
 import {
   ASSISTANT_ROOM,
   RoomContext,
+  START_COLUMN,
   StartBox,
   StartWithoutAccount,
   stashHandoffFiles,
   useDraft,
   usePicked,
 } from '../conversation/public.ts'
-import { DraftBar, FixedProject, useDraftChoice } from './context-bar.tsx'
+import { CutBadge, DraftBar, FixedProject, useDraftChoice } from './context-bar.tsx'
 import { assistantConversationsQuery, sendAssistantCreation } from './queries.ts'
 import {
   ASSISTANT_EXAMPLES,
   HOME_PLACEHOLDER,
   NO_CONVERSATIONS,
+  PROJECT_LIST_TITLE,
   RECENT_TITLE,
   titleOf,
   UNCONFIRMED_CREATION,
@@ -229,7 +230,9 @@ function ConversationLink(props: {
     <>
       <span className="flex min-w-0 items-center gap-sm">
         <span className="truncate">{titleOf(conversation)}</span>
-        {props.projectName !== undefined && <Badge>{props.projectName}</Badge>}
+        {props.projectName !== undefined && (
+          <CutBadge className="max-w-[40%]">{props.projectName}</CutBadge>
+        )}
       </span>
       <span className="shrink-0 text-label text-text-2">{dayOf(conversation.updatedAt)}</span>
     </>
@@ -271,14 +274,13 @@ export function Recent(props: {
     return <ReadFailure text={sentenceOf(read.error)} onRetry={() => void read.refetch()} />
   const { conversations, next } = read.data
   if (conversations.length === 0)
-    return projectId === undefined ? null : <p className="text-text-2">{NO_CONVERSATIONS}</p>
+    return projectId === undefined ? null : (
+      <p className={cn(START_COLUMN, 'text-text-2')}>{NO_CONVERSATIONS}</p>
+    )
   return (
-    <section
-      aria-labelledby="recent-title"
-      className="mx-auto flex w-full max-w-[46rem] flex-col gap-sm"
-    >
+    <section aria-labelledby="recent-title" className={cn(START_COLUMN, 'gap-sm')}>
       <h2 id="recent-title" className="font-display text-title">
-        {RECENT_TITLE}
+        {projectId === undefined ? RECENT_TITLE : PROJECT_LIST_TITLE}
       </h2>
       <ul className="flex flex-col">
         {conversations.map((conversation) => (

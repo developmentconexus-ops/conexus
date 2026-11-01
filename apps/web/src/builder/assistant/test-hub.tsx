@@ -57,6 +57,8 @@ export type Answers = {
   hold?: Promise<void>
   /** What the read of the connections a place offers answers instead of the Hub's success. */
   offer?: () => Promise<Response | undefined> | Response | undefined
+  /** What the read of the conversations list answers instead of the Hub's success. */
+  list?: () => Promise<Response | undefined> | Response | undefined
   /** What the stream of the conversation's session answers instead of opening. */
   stream?: () => Response | undefined
   /** What the route of a conversation's files answers instead of the file. */
@@ -123,7 +125,9 @@ function readsOf(held: Held, asked: string[]) {
       const replaced = await held.answers.offer?.()
       return replaced ?? HttpResponse.json({ connections: held.offered })
     }),
-    http.get(`${BASE}/conversations`, ({ request }) => {
+    http.get(`${BASE}/conversations`, async ({ request }) => {
+      const replaced = await held.answers.list?.()
+      if (replaced) return replaced
       const { searchParams } = new URL(request.url)
       const project = searchParams.get('projectId')
       const from = Number(searchParams.get('page') ?? 0)

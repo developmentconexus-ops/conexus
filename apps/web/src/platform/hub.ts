@@ -41,7 +41,7 @@ async function bodyOf(response: Response): Promise<unknown> {
  * A Hub Problem whose failure row `settles` says what the Hub did, which can be a change that
  * stands, such as an invitation whose e-mail failed; any other leaves the outcome unknown.
  */
-async function failureOf(response: Response): Promise<HubFailure> {
+export async function failureOf(response: Response): Promise<HubFailure> {
   return failureOfProblem(await bodyOf(response))
 }
 
