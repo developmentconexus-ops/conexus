@@ -416,3 +416,5 @@ Em 2026-10-31, ao laboratório: "isso é coisa que a gente vai no knowledge base
 Em 2026-10-31, ao estudo do prompt do Assistente: o `P1` (agente próprio), sem o calendário (`D`) e sem regras de como responder (`A`), e o `L1` (inglês): "o que a gente vai construir é meio que o em volta dela, a harness dela ... Começa simples, funcional e vai acrescentando ... First Make it Work as intended". Ele descreveu o Assistente como uma sessão livre, usada como hoje se usa um assistente de IA, em que os conectores e depois o "cérebro" da empresa são contexto e acesso, e a harness conhece o que o Conexus constrói e guia a pessoa.
 
 Em 2026-10-31, ao estudo da harness da sessão: "H1 / W1 / Ba / Sa". Um segundo controlador do Mastra ao lado do Builder, com agente próprio; uma máquina E2B por conversa, sem Git, com a linha nova no aviso da decisão 0032; `show_file` mostra ao lado do chat o arquivo que ele escreveu (HTML com scripts depois); sai o `supervisor_show`, e tabela e gráfico ele faz com código sobre a leitura salva na máquina.
+
+Cartão da etapa 24.1 aprovado em 2026-10-31 (commit cc7c83de7a55bd521e0b4ee940e911a915dc01e2): "APROVO CARTAO E CONFIRMO"
