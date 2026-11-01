@@ -1,9 +1,11 @@
-import { AutomationId, ProjectId } from '@conexus/hub-api'
 import { createFileRoute } from '@tanstack/react-router'
-import { z } from 'zod'
-import { AutomationRuns, automationsQuery } from '../../../../../builder/automations/public.ts'
-import { projectQuery } from '../../../../../hub/projects/public.ts'
-import { idOrNotFound, readOrNotFound } from '../../../../../platform/hub.ts'
+import {
+  AutomationRuns,
+  automationParams,
+  loadAutomations,
+  RunsSearch,
+} from '../../../../../builder/automations/public.ts'
+import { projectParams } from '../../../../../hub/projects/public.ts'
 import { RouteReadFailure } from '../../../../../ui/states.tsx'
 
 // The history of one automation of a Projeto; one of the company's Início opened here is not found.
@@ -12,20 +14,11 @@ export const Route = createFileRoute(
 )({
   staticData: { place: 'Automações' },
   params: {
-    parse: (raw) => ({
-      projectId: idOrNotFound(ProjectId, raw.projectId),
-      automationId: idOrNotFound(AutomationId, raw.automationId),
-    }),
+    parse: (raw) => ({ ...projectParams.parse(raw), ...automationParams.parse(raw) }),
     stringify: (p) => p,
   },
-  validateSearch: z.object({ page: z.string().optional().catch(undefined) }),
-  loader: ({ context, params }) =>
-    readOrNotFound(
-      Promise.all([
-        context.queryClient.ensureQueryData(projectQuery(params.companyId, params.projectId)),
-        context.queryClient.ensureQueryData(automationsQuery(params.companyId, params.projectId)),
-      ]),
-    ),
+  validateSearch: RunsSearch,
+  loader: ({ context, params }) => loadAutomations(context.queryClient, params),
   errorComponent: RouteReadFailure,
   component: RunsPage,
 })
