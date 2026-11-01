@@ -15,14 +15,23 @@ import {
 import { KEY, MODEL } from '../conversation/test-conversation.ts'
 import { assisting, created } from './test-assistant.ts'
 
-/** Whether Mastra still holds the thread of the conversation at `url`. */
+/**
+ * Whether the conversation at `url` is still kept: Mastra's thread and the Hub's row of its choice
+ * leave together (data D17).
+ */
 async function kept(hub: Hub, url: string): Promise<boolean> {
   const id = url.slice(url.lastIndexOf('/') + 1)
   const found = await hub.test.mastraPool.query(
     'select count(*)::int as n from mastra.mastra_threads where id = $1',
     [id],
   )
-  return found.rows[0]?.n === 1
+  const [row] = await hub.test.asOwner(
+    'select count(*)::int as n from builder.assistant_conversation where id = $1',
+    [id],
+  )
+  const thread = found.rows[0]?.n === 1
+  assert.equal(Object(row).n === 1, thread, `the thread and the choice of ${id} leave together`)
+  return thread
 }
 
 /** Another company, owned by `person`, with a model account and the default model; its Assistant's conversations. */

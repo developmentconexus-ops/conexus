@@ -36,7 +36,9 @@ import {
   accountPick,
   MAX_PROCESSOR_RETRIES,
 } from '../model-accounts/public.ts'
-import { sessionScope } from './context.ts'
+import { chosenConnections } from './chosen.ts'
+import type { ScopeOf } from './context.ts'
+import { sessionScopes } from './context.ts'
 import type { Speakers } from './instructions.ts'
 import { assistantInstructions } from './instructions.ts'
 import type { AssistantMachines } from './machine.ts'
@@ -192,13 +194,13 @@ function readsFileOf(requestContext: RequestContext): string {
 
 type Offered = (requestContext: RequestContext) => Promise<readonly AssistantConnection[]>
 
-/** What the run's place offers, each with whether the conversation chose it, read once per run (as `sessionScope`). */
-function offeredFor(deps: Deps): Offered {
+/** What the run's place offers, each with whether the conversation chose it, read once per run (as `scopeOf`). */
+function offeredFor(deps: Deps, scopeOf: ScopeOf): Offered {
   const read = new WeakMap<RequestContext, Promise<readonly AssistantConnection[]>>()
   return (requestContext) => {
     let found = read.get(requestContext)
     if (found === undefined) {
-      found = sessionScope(requestContext).then((scope) =>
+      found = scopeOf(requestContext).then((scope) =>
         scope === undefined ? [] : deps.connectors.connections(scope),
       )
       read.set(requestContext, found)
@@ -217,15 +219,17 @@ function assistantAgent(
     memory: ReturnType<typeof assistantMemory>
     turns: ReturnType<typeof assistantTurns>
     machines: AssistantMachines
+    scopeOf: ScopeOf
   },
 ) {
   const { queue } = deps
-  const offeredOf = offeredFor(deps)
+  const { scopeOf } = parts
+  const offeredOf = offeredFor(deps, scopeOf)
   async function chosenOf(requestContext: RequestContext) {
     return (await offeredOf(requestContext)).filter((each) => each.chosen)
   }
   const overview = overviewTool({
-    scopeOf: sessionScope,
+    scopeOf,
     projectsOf: (scope) => projectsOf(deps, scope),
     connectionsOf: async (requestContext) =>
       (await offeredOf(requestContext)).map(({ connectionId, connector, name, chosen }) => ({
@@ -240,13 +244,13 @@ function assistantAgent(
     id: ASSISTANT_CONTROLLER,
     name: 'Assistant',
     instructions: assistantInstructions({
-      scopeOf: sessionScope,
+      scopeOf,
       chosenOf: offeredOf,
       speakersOf: (scope) => speakersOf(deps, scope),
     }),
     model: ({ requestContext }) => sessionModel(requestContext),
     tools: async ({ requestContext }) => {
-      const scope = await sessionScope(requestContext)
+      const scope = await scopeOf(requestContext)
       const chosen = await chosenOf(requestContext)
       return {
         ...toolsOf(sessionModel(requestContext)),
@@ -278,16 +282,18 @@ function assistantAgent(
 /**
  * The Assistant (step 24.1, U2, `H1`): one agent beside the Builder in the same `Mastra`, its own
  * controller, every conversation a thread under its owner (`assistantOwner`) with its place in the
- * thread's marks and its choice in a thread setting (`context.ts`). Its instructions, tools and
+ * thread's marks and its choice in the Hub's table (`chosen.ts`). Its instructions, tools and
  * skills come from the run's scope; its turn takes the owner's accounts without a Projeto; its
  * processors and memory are the Builder's.
  */
 export function createAssistant(deps: Deps) {
   const { storage, queue } = deps
   const memory = assistantMemory({ storage, queue })
-  const machines = createAssistantMachines({ ...deps.machine, log: deps.log })
-  const turns = assistantTurns({ queue, machines, log: deps.log })
-  const agent = assistantAgent(deps, { memory, turns, machines })
+  const chosen = chosenConnections(deps.database)
+  const scopeOf = sessionScopes({ chosenOf: chosen.of })
+  const machines = createAssistantMachines({ ...deps.machine, log: deps.log, scopeOf })
+  const turns = assistantTurns({ queue, scopeOf, machines, log: deps.log })
+  const agent = assistantAgent(deps, { memory, turns, scopeOf, machines })
   const controller = new AgentController({
     id: ASSISTANT_CONTROLLER,
     storage,
@@ -306,7 +312,7 @@ export function createAssistant(deps: Deps) {
     controller,
     memory,
     routes: (app: FastifyInstance) =>
-      registerAssistantRoutes(app, { ...deps, controller, memory, machines }),
+      registerAssistantRoutes(app, { ...deps, controller, memory, chosen, machines }),
     release: (scope: ReleaseScope) =>
       releaseConversations({ controller, memory, machines, log: deps.log }, scope),
     /** The memory's work after the runs, which `drain` stopped, before Mastra stops. */

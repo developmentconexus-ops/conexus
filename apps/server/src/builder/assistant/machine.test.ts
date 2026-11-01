@@ -224,6 +224,7 @@ test('o download cancelado: o navegador que sai faz a leitura da máquina parar,
   const machines = createAssistantMachines({
     ...deps,
     log: { info: () => undefined, error: () => undefined },
+    scopeOf: async () => undefined,
   })
   const id = ConversationId.parse(url.slice(url.lastIndexOf('/') + 1))
   const left = new AbortController()
