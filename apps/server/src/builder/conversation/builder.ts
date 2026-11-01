@@ -213,9 +213,12 @@ export function createBuilder(deps: {
     model: ({ requestContext }) => sessionModel(requestContext),
     tools: async ({ requestContext }) => {
       const ids = await projectOf(requestContext)
+      const web = toolsOf(sessionModel(requestContext))
+      // The order of step 20 (criterion 13a): the model's request stays byte for byte the same.
       return {
-        ...toolsOf(sessionModel(requestContext)),
+        web_fetch: web.web_fetch,
         [BUILDER_TOOL.check]: check,
+        ...web,
         ...(ids === undefined
           ? {}
           : builderConnectorTools(deps.connectors, await granted(requestContext), {
