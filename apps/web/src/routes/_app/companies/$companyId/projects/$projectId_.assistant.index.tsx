@@ -1,3 +1,4 @@
+import { listAssistantConversations } from '@conexus/hub-api'
 import { createFileRoute } from '@tanstack/react-router'
 import { AssistantProject } from '../../../../../builder/assistant/public.ts'
 import { projectParams, projectQuery } from '../../../../../hub/projects/public.ts'
@@ -7,6 +8,7 @@ import { readOrNotFound } from '../../../../../platform/hub.ts'
 export const Route = createFileRoute('/_app/companies/$companyId/projects/$projectId_/assistant/')({
   staticData: { place: 'Conversas' },
   params: projectParams,
+  validateSearch: listAssistantConversations.input.query.pick({ page: true }).catch({}),
   loader: ({ context, params }) =>
     readOrNotFound(
       context.queryClient.ensureQueryData(projectQuery(params.companyId, params.projectId)),
@@ -16,5 +18,6 @@ export const Route = createFileRoute('/_app/companies/$companyId/projects/$proje
 
 function Conversations() {
   const { companyId, projectId } = Route.useParams()
-  return <AssistantProject companyId={companyId} projectId={projectId} />
+  const { page } = Route.useSearch()
+  return <AssistantProject companyId={companyId} projectId={projectId} page={page} />
 }

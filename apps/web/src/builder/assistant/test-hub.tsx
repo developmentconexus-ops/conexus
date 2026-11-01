@@ -7,25 +7,29 @@ import {
   ConversationId,
   ProjectId,
 } from '@conexus/hub-api'
+import { screen, waitFor } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import type { setupServer } from 'msw/node'
-import { afterEach } from 'vitest'
+import { afterEach, expect } from 'vitest'
 import { COMPANY } from '../../platform/fixtures.ts'
 import { PEDIDOS, refusal } from '../../platform/test-hub.tsx'
 import type { Stored } from '../conversation/messages.ts'
-import { screens, view } from '../conversation/test-hub.tsx'
+import { AGENT_START, RUNNING, signalStarted } from '../conversation/test-events.ts'
+import { say, screens, view } from '../conversation/test-hub.tsx'
 import { START } from '../conversation/test-start.tsx'
 import { displayOf, newest, openLine } from '../conversation/test-stream.tsx'
 
+export const LOJA = ConnectionId.parse('cccccccc-cccc-4ccc-8ccc-cccccccccccc')
 export const SALES = ConnectionId.parse('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa')
 export const STOCK = ConnectionId.parse('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb')
 export const ASKED = ConversationId.parse('33333333-3333-4333-8333-333333333333')
 export const ELSEWHERE = ConversationId.parse('44444444-4444-4444-8444-444444444444')
+export const THIRD = ConversationId.parse('55555555-5555-4555-8555-555555555555')
 export const PEDIDOS_ID = PEDIDOS.id
 export const COMPANY_ROOT = `/companies/${COMPANY.id}`
 const ASSISTANT_SESSION = `*${BUILDER_ROUTES}/agent-controller/${ASSISTANT_CONTROLLER}/sessions/:id`
 
-const OFFERED: SessionConnection[] = [
+export const OFFERED: SessionConnection[] = [
   { connectionId: SALES, connector: 'sankhya', name: 'Vendas', chosen: true },
   { connectionId: STOCK, connector: 'sankhya', name: 'Estoque', chosen: true },
 ]
@@ -49,7 +53,17 @@ type Opened = ReturnType<typeof assistantConversation>
 export type Answers = {
   /** What a write of the chosen connections answers instead of the Hub's success. */
   choose?: () => Response | undefined
+  /** Holds the write of the chosen connections in the air until it is released. */
+  hold?: Promise<void>
+  /** What the read of the connections a place offers answers instead of the Hub's success. */
+  offer?: () => Promise<Response | undefined> | Response | undefined
+  /** What the route of a conversation's files answers instead of the file. */
+  file?: () => Response | undefined
 }
+
+/** The file the fake machine keeps: a chart as a small SVG. */
+const CHART_SVG =
+  '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="32"><rect width="64" height="32" fill="#c08a12"/></svg>'
 
 /** A tool call of the Assistant as Mastra stores it, answered. */
 export function toolSaid(toolName: string, args: unknown, result: unknown, id = 'tool-1'): Stored {
@@ -70,7 +84,12 @@ export function toolSaid(toolName: string, args: unknown, result: unknown, id = 
 }
 
 type Sent = { method: string; path: string; body: unknown; key: string | null }
-type Held = { conversations: Opened[]; offered: SessionConnection[]; answers: Answers }
+type Held = {
+  conversations: Opened[]
+  offered: SessionConnection[]
+  answers: Answers
+  pageSize: number
+}
 
 function chosenOf(body: unknown): ConnectionId[] {
   return typeof body === 'object' && body !== null && 'connections' in body
@@ -97,18 +116,32 @@ function readsOf(held: Held, asked: string[]) {
     http.get('*/api/companies/:companyId/connections', () =>
       HttpResponse.json({ connectors: [SANKHYA], connections: [], mayManage: false }),
     ),
-    http.get(`${BASE}/connections`, ({ request }) => {
+    http.get(`${BASE}/connections`, async ({ request }) => {
       asked.push(new URL(request.url).search)
-      return HttpResponse.json({ connections: held.offered })
+      const replaced = await held.answers.offer?.()
+      return replaced ?? HttpResponse.json({ connections: held.offered })
     }),
     http.get(`${BASE}/conversations`, ({ request }) => {
-      const project = new URL(request.url).searchParams.get('projectId')
-      const listed = held.conversations
+      const { searchParams } = new URL(request.url)
+      const project = searchParams.get('projectId')
+      const from = Number(searchParams.get('page') ?? 0)
+      const all = held.conversations
         .map(({ conversation }) => conversation)
         .filter((one) => project === null || one.projectId === project)
         .map(({ id, title, updatedAt, projectId }) => ({ id, title, updatedAt, projectId }))
-      return HttpResponse.json({ conversations: listed, next: { kind: 'END' } })
+      const listed = all.slice(from, from + held.pageSize)
+      const more = from + held.pageSize < all.length
+      return HttpResponse.json({
+        conversations: listed,
+        next: more ? { kind: 'MORE', page: String(from + held.pageSize) } : { kind: 'END' },
+      })
     }),
+    http.get(
+      `${BASE}/conversations/:id/files`,
+      () =>
+        held.answers.file?.() ??
+        new HttpResponse(CHART_SVG, { headers: { 'content-type': 'image/svg+xml' } }),
+    ),
     http.get(`${BASE}/conversations/:id`, ({ params }) => {
       const found = held.conversations.find(({ conversation }) => conversation.id === params.id)
       if (!found) return refusal('CONVERSATION_NOT_FOUND')
@@ -135,6 +168,7 @@ function writesOf(held: Held, note: (request: Request) => Promise<unknown>) {
     }),
     http.put(`${BASE}/conversations/:id/connections`, async ({ request, params }) => {
       const body = await note(request)
+      await held.answers.hold
       const replaced = held.answers.choose?.()
       if (replaced) return replaced
       const found = held.conversations.find(({ conversation }) => conversation.id === params.id)
@@ -159,9 +193,13 @@ function sessionOf(
   note: (request: Request) => Promise<unknown>,
 ) {
   return [
-    http.get(`${ASSISTANT_SESSION}/stream`, () => {
+    http.get(`${ASSISTANT_SESSION}/stream`, ({ request }) => {
       const { line, response } = openLine(displayOf())
       lines.push(line)
+      // A screen that remounts drops its stream: closing it after the drop breaks the fake socket.
+      request.signal.addEventListener('abort', () => lines.splice(lines.indexOf(line), 1), {
+        once: true,
+      })
       return response
     }),
     http.get(ASSISTANT_SESSION, ({ params }) =>
@@ -203,9 +241,11 @@ export function assistantScreens(server: ReturnType<typeof setupServer>) {
       offered?: SessionConnection[]
       role?: string
       answers?: Answers
+      /** The conversations a list answers at a time; all of them by default. */
+      pageSize?: number
     } = {},
   ) {
-    const { conversations = [], offered = OFFERED, role, answers = {} } = options
+    const { conversations = [], offered = OFFERED, role, answers = {}, pageSize = 30 } = options
     const sent: Sent[] = []
     const asked: string[] = []
     async function note(request: Request) {
@@ -219,14 +259,25 @@ export function assistantScreens(server: ReturnType<typeof setupServer>) {
       })
       return body
     }
-    const held: Held = { conversations, offered, answers }
+    const held: Held = { conversations, offered, answers, pageSize }
     server.use(
       ...readsOf(held, asked),
       ...writesOf(held, note),
       ...sessionOf(conversations, lines, note),
     )
     const hub = open(view({ start: START, role }), path)
-    return { ...hub, sent, asked, writes: () => sent.filter((one) => one.method !== 'GET') }
+    return {
+      ...hub,
+      sent,
+      asked,
+      /** The stream the conversation's screen opened, to send it events as Mastra would. */
+      stream: () => lines.at(-1),
+      /** What the place offers from now on. */
+      offering: (next: SessionConnection[]) => {
+        held.offered = next
+      },
+      writes: () => sent.filter((one) => one.method !== 'GET'),
+    }
   }
 
   return { at }
@@ -234,4 +285,34 @@ export function assistantScreens(server: ReturnType<typeof setupServer>) {
 
 function ConnectionIds(value: unknown): ConnectionId[] {
   return Array.isArray(value) ? value.map((one) => ConnectionId.parse(one)) : []
+}
+
+/** A connection the place offers besides Vendas and Estoque, for a read of the offer that changed. */
+export const LOJA_OFFER: SessionConnection = {
+  connectionId: LOJA,
+  connector: 'sankhya',
+  name: 'Loja',
+  chosen: true,
+}
+
+/**
+ * The question sent in an open conversation and the run going, as Mastra's stream tells them: the
+ * point from which the rows the Assistant makes arrive live.
+ */
+export async function running(
+  hub: ReturnType<ReturnType<typeof assistantScreens>['at']>,
+  text = 'Compare',
+) {
+  say(await screen.findByRole('textbox', { name: 'Mensagem para o Assistente' }), text)
+  await waitFor(() =>
+    expect(hub.writes().filter((one) => one.path.endsWith('/messages'))).toHaveLength(1),
+  )
+  await waitFor(() => expect(hub.stream()).toBeDefined())
+  const line = hub.stream()
+  if (line === undefined) throw new Error('the Assistant opened no stream')
+  line.emit(AGENT_START)
+  line.emit(RUNNING)
+  line.emit(signalStarted('person-1', text))
+  await screen.findByText('Pensando…')
+  return line
 }

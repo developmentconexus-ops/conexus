@@ -1,31 +1,34 @@
 import type { CompanyId, ConversationId, ProjectId } from '@conexus/hub-api'
-import { ASSISTANT_CONTROLLER } from '@conexus/hub-api'
+import { ASSISTANT_CONTROLLER, listAssistantConversations } from '@conexus/hub-api'
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
-import { dayAndHour } from '../../platform/dates.ts'
+import { hubQueryPrefix } from '../../platform/hub.ts'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '../../ui/resizable.tsx'
 import { NotFound } from '../../ui/states.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
 import type { OpenedFile, Room } from '../conversation/public.ts'
-import { Chat, RoomContext } from '../conversation/public.ts'
-import { useConnectorNames } from './connector-names.ts'
-import { ContextBar } from './context-bar.tsx'
+import { ASSISTANT_ROOM, Chat, RoomContext } from '../conversation/public.ts'
+import { useConnectorCatalog } from './connector-names.ts'
+import { ContextBar, FixedProject } from './context-bar.tsx'
 import { FilePanel } from './file.tsx'
 import { Propose } from './propose.tsx'
 import { assistantConversationQuery } from './queries.ts'
-import { EMPTY_ASSISTANT } from './text.ts'
+import { EMPTY_ASSISTANT, titleOf } from './text.ts'
 
 type Props = { companyId: CompanyId; conversationId: ConversationId; projectId?: ProjectId }
 
-/** The conversation and, when the Assistant showed a file, the file beside it (or over it, on a phone). */
+/**
+ * The conversation and, when the Assistant showed a file, the file beside it (or over it, on a
+ * phone). The chat keeps its place in the tree, so showing a file does not remount it and drop its
+ * stream.
+ */
 function Beside(props: { chat: React.ReactNode; file: React.ReactNode | undefined }) {
   const phone = useIsMobile()
-  if (props.file === undefined) return <div className="h-full min-h-0">{props.chat}</div>
   if (phone)
     return (
       <div className="relative h-full min-h-0">
         {props.chat}
-        <div className="absolute inset-0 z-10">{props.file}</div>
+        {props.file !== undefined && <div className="absolute inset-0 z-10">{props.file}</div>}
       </div>
     )
   return (
@@ -33,10 +36,14 @@ function Beside(props: { chat: React.ReactNode; file: React.ReactNode | undefine
       <ResizablePanel id="chat" minSize="320px">
         {props.chat}
       </ResizablePanel>
-      <ResizableHandle aria-label="Redimensionar o arquivo" />
-      <ResizablePanel id="file" defaultSize="45%" minSize="280px">
-        {props.file}
-      </ResizablePanel>
+      {props.file !== undefined && (
+        <>
+          <ResizableHandle aria-label="Redimensionar o arquivo" />
+          <ResizablePanel id="file" defaultSize="45%" minSize="280px">
+            {props.file}
+          </ResizablePanel>
+        </>
+      )}
     </ResizablePanelGroup>
   )
 }
@@ -49,11 +56,10 @@ function Conversation(props: Props) {
   ).data
   const [file, setFile] = useState<OpenedFile>()
   const [proposal, setProposal] = useState<string>()
-  const connectorName = useConnectorNames(companyId)
+  const { name: connectorName } = useConnectorCatalog(companyId)
   const room: Room = useMemo(
     () => ({
-      controller: ASSISTANT_CONTROLLER,
-      agent: 'Assistente',
+      ...ASSISTANT_ROOM,
       connectorName,
       openFile: setFile,
       openedPath: file?.path,
@@ -65,7 +71,7 @@ function Conversation(props: Props) {
     <RoomContext.Provider value={room}>
       <div className="flex h-full min-h-0 flex-col">
         <h1 className="truncate border-b border-line px-md py-sm font-display text-title">
-          {conversation.title ?? `Conversa de ${dayAndHour(conversation.updatedAt)}`}
+          {titleOf(conversation)}
         </h1>
         <div className="min-h-0 flex-1">
           <Beside
@@ -76,7 +82,11 @@ function Conversation(props: Props) {
                   conversationId={conversationId}
                   place={{ controller: ASSISTANT_CONTROLLER }}
                   conversationKey={assistantConversationQuery(companyId, conversationId).queryKey}
-                  onGone={() => void queryClient.invalidateQueries({ queryKey: ['assistant'] })}
+                  onGone={() =>
+                    void queryClient.invalidateQueries({
+                      queryKey: hubQueryPrefix(listAssistantConversations, { companyId }),
+                    })
+                  }
                   empty={EMPTY_ASSISTANT}
                   bar={
                     <div className="px-md pb-sm">
@@ -84,6 +94,11 @@ function Conversation(props: Props) {
                         companyId={companyId}
                         projectId={projectId}
                         conversation={conversation}
+                        trailing={
+                          projectId !== undefined && (
+                            <FixedProject companyId={companyId} projectId={projectId} />
+                          )
+                        }
                       />
                     </div>
                   }

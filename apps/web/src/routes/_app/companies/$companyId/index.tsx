@@ -1,5 +1,7 @@
+import { listAssistantConversations } from '@conexus/hub-api'
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
+import { z } from 'zod'
 import { AssistantHome } from '../../../../builder/assistant/public.ts'
 import { readStart, Start } from '../../../../builder/conversation/public.ts'
 import { accountsQuery } from '../../../../builder/model-accounts/public.ts'
@@ -17,6 +19,7 @@ function Preparation() {
 function HomePage() {
   const { companyId } = Route.useParams()
   const { role } = Route.useRouteContext()
+  const { conversations } = Route.useSearch()
   return (
     <Home
       companyId={companyId}
@@ -26,7 +29,7 @@ function HomePage() {
         role === 'member' ? (
           <Start companyId={companyId} />
         ) : (
-          <AssistantHome companyId={companyId} />
+          <AssistantHome companyId={companyId} page={conversations} />
         )
       }
     />
@@ -35,6 +38,9 @@ function HomePage() {
 
 export const Route = createFileRoute('/_app/companies/$companyId/')({
   staticData: { place: 'Início' },
+  validateSearch: z
+    .object({ conversations: listAssistantConversations.input.query.shape.page })
+    .catch({}),
   loader: ({ context, params }) => readStart(context.queryClient, params.companyId),
   component: HomePage,
 })

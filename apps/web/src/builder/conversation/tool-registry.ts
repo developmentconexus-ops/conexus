@@ -1,5 +1,4 @@
-import { ASSISTANT_CONTROLLER, BUILDER_TOOL, SKILL_TOOLS, WORKSPACE_TOOL } from '@conexus/hub-api'
-import type { LucideIcon } from 'lucide-react'
+import { BUILDER_TOOL, SKILL_TOOLS, WORKSPACE_TOOL } from '@conexus/hub-api'
 import {
   BookOpenIcon,
   CircleAlertIcon,
@@ -14,15 +13,15 @@ import {
   TrashIcon,
   WrenchIcon,
 } from 'lucide-react'
-import { ASSISTANT_SPECS, refusedResult } from './assistant-specs.ts'
-import { CONNECTOR_SPECS, presentRead } from './connector-specs.ts'
+import { ASSISTANT_SPECS } from './assistant-specs.ts'
+import { CONNECTOR_SPECS } from './connector-specs.ts'
 import type { Room } from './room.ts'
 import { BUILDER_ROOM } from './room.ts'
 import type { ToolItem } from './rows.ts'
 import { stringArg } from './tool-args.ts'
-import type { RowTool, ToolSpec } from './tool-spec.ts'
+import type { Presented, RowTool, ToolSpec, ToolStatus } from './tool-spec.ts'
 
-export type { ToolBody, ToolSpec } from './tool-spec.ts'
+export type { ToolBody, ToolSpec, ToolStatus } from './tool-spec.ts'
 
 const {
   readFile,
@@ -223,15 +222,15 @@ export const TOOLS: Record<RowTool, ToolSpec> = {
   },
 }
 
-export type ToolStatus = 'running' | 'done' | 'error' | 'denied'
-
 /** The spec of a tool of the closed set, or none for a name outside it. */
 function isRowTool(toolName: string): toolName is RowTool {
   return Object.hasOwn(TOOLS, toolName)
 }
 
-export function specOf(toolName: string): ToolSpec | undefined {
-  return isRowTool(toolName) ? TOOLS[toolName] : undefined
+/** The one lookup of how a tool's row reads, in the room that draws it. */
+export function specOf(toolName: string, room: Room = BUILDER_ROOM): ToolSpec | undefined {
+  if (!isRowTool(toolName)) return undefined
+  return room.overrides[toolName] ?? TOOLS[toolName]
 }
 
 /** One status per call (Factory `terminalInvocationStatus`); a command that exited non-zero is an error. */
@@ -241,7 +240,10 @@ export function toolStatus(
 ): ToolStatus {
   switch (tool.state) {
     case 'result':
-      return tool.isError === true || refusedResult(tool, room) !== undefined ? 'error' : 'done'
+      return tool.isError === true ||
+        specOf(tool.toolName, room)?.refusal?.(tool.result) !== undefined
+        ? 'error'
+        : 'done'
     case 'output-error':
       return 'error'
     case 'output-denied':
@@ -277,12 +279,11 @@ export function presentTool(
   tool: Pick<ToolItem, 'toolName' | 'args'> & { result?: unknown },
   status: ToolStatus,
   room: Room = BUILDER_ROOM,
-): { icon: LucideIcon; sentence: string; detail?: string; beside: boolean } {
-  if (room.controller === ASSISTANT_CONTROLLER && tool.toolName === BUILDER_TOOL.connectorRead)
-    return presentRead(tool, status, room)
-  const spec = specOf(tool.toolName)
+): Presented {
+  const spec = specOf(tool.toolName, room)
   const failed = status === 'error' || status === 'denied'
   if (spec === undefined) return unknownTool(tool.toolName, status)
+  if (spec.present !== undefined) return spec.present(tool, status, room.connectorName)
   const detail = spec.detailKey === undefined ? undefined : stringArg(tool.args, spec.detailKey)
   const head =
     status === 'denied'

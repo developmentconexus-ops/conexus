@@ -42,7 +42,7 @@ export function sessionReadQuery(
   controller: Controller = BUILDER_CONTROLLER,
 ) {
   return {
-    queryKey: ['builder', 'session-state', conversationId] as const,
+    queryKey: ['builder', 'session-state', controller, conversationId] as const,
     queryFn: async () => {
       const state = await sessionOf(conversationId, controller).state()
       return SessionRead.parse({

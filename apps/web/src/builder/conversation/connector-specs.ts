@@ -1,10 +1,9 @@
 import { BUILDER_TOOL } from '@conexus/hub-api'
 import { CircleAlertIcon, DatabaseIcon, NotebookPenIcon, NotebookTextIcon } from 'lucide-react'
 import { z } from 'zod'
-import type { Room } from './room.ts'
 import type { ToolItem } from './rows.ts'
 import { stringArg } from './tool-args.ts'
-import type { ToolSpec } from './tool-spec.ts'
+import type { Presented, Refusal, ToolSpec, ToolStatus } from './tool-spec.ts'
 
 const { connectorRead, connectorNotes, connectorNoteSave } = BUILDER_TOOL
 
@@ -43,7 +42,7 @@ export const CONNECTOR_SPECS: Record<
 }
 
 /** What a read answered, as the Assistant's row says it: the rows it brought, or why it brought none. */
-export type ReadOutcome =
+type ReadOutcome =
   | { kind: 'ROWS'; rows: number; complete: boolean }
   | { kind: 'EMPTY' }
   | { kind: 'REAUTH' }
@@ -75,7 +74,7 @@ const Cut = z.object({
 const Kind = z.object({ kind: z.string() })
 
 /** The answer of a `connector_read`, from the result Mastra stored; none while the call has no result. */
-export function readOutcome(result: unknown): ReadOutcome | undefined {
+function readOutcome(result: unknown): ReadOutcome | undefined {
   const kind = Kind.safeParse(result)
   if (!kind.success) return undefined
   const cut = Cut.safeParse(result)
@@ -88,6 +87,13 @@ export function readOutcome(result: unknown): ReadOutcome | undefined {
   if (kind.data.kind === 'AUTH_REFUSED') return { kind: 'REAUTH' }
   const refused = kind.data.kind
   return { kind: 'REFUSED', sentence: isRefusal(refused) ? REFUSALS[refused] : TOOL_FAILED }
+}
+
+/** A read the connection refused, or asked to be linked again: the Assistant's row says it. */
+export function readRefusal(result: unknown): Refusal | undefined {
+  const kind = readOutcome(result)?.kind
+  if (kind === 'REAUTH') return 'RECONNECT'
+  return kind === 'REFUSED' ? 'SAID' : undefined
 }
 
 /** The connector a read's operation names ("sankhya.consultar" is Sankhya's). */
@@ -106,21 +112,21 @@ function rowsText(outcome: ReadOutcome | undefined): string | undefined {
 /** The sentence of an Assistant's read: "Lendo Sankhya · Matriz" while it runs, "Leu …" after. */
 export function presentRead(
   tool: Pick<ToolItem, 'args' | 'result'>,
-  status: 'running' | 'done' | 'error' | 'denied',
-  room: Room,
-) {
+  status: ToolStatus,
+  connectorName: (connector: string) => string,
+): Presented {
   const connector = connectorOf(tool.args)
   const connection = stringArg(tool.args, 'connection')
   const named =
     connector === undefined || connection === undefined
       ? 'um sistema da empresa'
-      : `${room.connectorName(connector)} · ${connection}`
+      : `${connectorName(connector)} · ${connection}`
   const outcome = readOutcome(tool.result)
   const refused = status === 'error' || status === 'denied' || outcome?.kind === 'REFUSED'
   if (outcome?.kind === 'REAUTH')
     return {
       icon: CircleAlertIcon,
-      sentence: `O ${connector === undefined ? 'sistema' : room.connectorName(connector)} pediu para conectar de novo.`,
+      sentence: `O ${connector === undefined ? 'sistema' : connectorName(connector)} pediu para conectar de novo.`,
       detail: undefined,
       beside: false,
     }

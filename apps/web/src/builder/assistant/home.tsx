@@ -11,27 +11,31 @@ import { Link, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { projectsQuery } from '../../hub/projects/public.ts'
 import { useAttemptKey } from '../../platform/attempt-key.ts'
-import { dayAndHour, dayOf } from '../../platform/dates.ts'
+import { dayOf } from '../../platform/dates.ts'
 import { sentenceOf, writeFailureText } from '../../platform/hub.ts'
 import { Badge } from '../../ui/badge.tsx'
 import { cn } from '../../ui/cn.ts'
+import { Pager } from '../../ui/pager.tsx'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select.tsx'
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { ReadFailure } from '../../ui/states.tsx'
 import {
+  ASSISTANT_ROOM,
+  RoomContext,
   StartBox,
   StartWithoutAccount,
   stashHandoffFiles,
   useDraft,
   usePicked,
 } from '../conversation/public.ts'
-import { ContextBar } from './context-bar.tsx'
+import { DraftBar, FixedProject, useDraftChoice } from './context-bar.tsx'
 import { assistantConversationsQuery, sendAssistantCreation } from './queries.ts'
 import {
   ASSISTANT_EXAMPLES,
   HOME_PLACEHOLDER,
   NO_CONVERSATIONS,
   RECENT_TITLE,
+  titleOf,
   UNCONFIRMED_CREATION,
 } from './text.ts'
 
@@ -43,28 +47,38 @@ function ProjectSelect(props: {
   value: ProjectId | undefined
   onChange: (projectId: ProjectId | undefined) => void
 }) {
-  const projects = useQuery(projectsQuery(props.companyId, undefined)).data?.projects ?? []
+  const read = useQuery(projectsQuery(props.companyId, undefined))
+  const projects = read.data?.projects ?? []
   const items = [
     { value: NO_PROJECT, label: 'Sem Projeto' },
     ...projects.map((project) => ({ value: project.id, label: project.name })),
   ]
   return (
-    <Select
-      value={props.value ?? NO_PROJECT}
-      items={items}
-      onValueChange={(next) => props.onChange(projects.find((project) => project.id === next)?.id)}
-    >
-      <SelectTrigger aria-label="Projeto da conversa" className="h-7 w-auto min-w-36">
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        {items.map((item) => (
-          <SelectItem key={item.value} value={item.value}>
-            {item.label}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <>
+      <Select
+        value={props.value ?? NO_PROJECT}
+        items={items}
+        onValueChange={(next) =>
+          props.onChange(projects.find((project) => project.id === next)?.id)
+        }
+      >
+        <SelectTrigger aria-label="Projeto da conversa" className="h-7 w-auto min-w-36">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {items.map((item) => (
+            <SelectItem key={item.value} value={item.value}>
+              {item.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      {read.isError && (
+        <p role="alert" className="text-danger">
+          {sentenceOf(read.error)}
+        </p>
+      )}
+    </>
   )
 }
 
@@ -80,7 +94,8 @@ function useBegin(
   held: {
     model: { model: ModelId; effort: Effort }
     projectId: ProjectId | undefined
-    connections: readonly ConnectionId[]
+    /** What the box chose; none while the offer has not arrived, when nothing is sent. */
+    connections: readonly ConnectionId[] | undefined
   },
 ) {
   const [error, setError] = useState<string>()
@@ -88,12 +103,14 @@ function useBegin(
   const attempt = useAttemptKey()
   const navigate = useNavigate()
   async function begin(question: Begun): Promise<boolean> {
+    const { connections } = held
+    if (connections === undefined) return false
     setError(undefined)
     try {
       const { conversation } = await attempt((attemptKey) =>
         create.mutateAsync({
           params: { companyId },
-          body: { ...held.model, projectId: held.projectId, connections: [...held.connections] },
+          body: { ...held.model, projectId: held.projectId, connections: [...connections] },
           attemptKey,
         }),
       )
@@ -131,7 +148,11 @@ export function Ask(props: {
 }) {
   const { picked, setPicked, providers } = usePicked(props.companyId)
   if (picked === null) return <StartWithoutAccount companyId={props.companyId} />
-  return <AskBox {...props} picked={picked} onPick={setPicked} providers={providers} />
+  return (
+    <RoomContext.Provider value={ASSISTANT_ROOM}>
+      <AskBox {...props} picked={picked} onPick={setPicked} providers={providers} />
+    </RoomContext.Provider>
+  )
 }
 
 function AskBox(props: {
@@ -145,38 +166,42 @@ function AskBox(props: {
   const { companyId, picked } = props
   const [chosenProject, setChosenProject] = useState<ProjectId>()
   const projectId = props.chooseProject ? chosenProject : props.projectId
-  const [chosen, setChosen] = useState<readonly ConnectionId[]>([])
+  const choice = useDraftChoice(companyId, projectId)
   const draft = useDraft(
     props.projectId === undefined ? `start:${companyId}` : `assistant:${props.projectId}`,
   )
   const { begin, error } = useBegin(companyId, {
     model: picked,
     projectId,
-    connections: chosen,
+    connections: choice.connections,
   })
   return (
     <StartBox
       draft={draft}
       placeholder={HOME_PLACEHOLDER}
-      examples={ASSISTANT_EXAMPLES}
+      examples={props.chooseProject ? ASSISTANT_EXAMPLES : []}
+      canSend={choice.connections !== undefined}
       picked={picked}
       onPick={props.onPick}
       providers={props.providers}
       onSend={begin}
       bar={
         <div className="flex flex-col gap-sm">
-          <ContextBar
-            key={projectId ?? NO_PROJECT}
+          <DraftBar
             companyId={companyId}
             projectId={projectId}
-            onDraftChange={setChosen}
+            choice={choice}
             trailing={
-              props.chooseProject && (
+              props.chooseProject ? (
                 <ProjectSelect
                   companyId={companyId}
                   value={projectId}
                   onChange={setChosenProject}
                 />
+              ) : (
+                projectId !== undefined && (
+                  <FixedProject companyId={companyId} projectId={projectId} />
+                )
               )
             }
           />
@@ -189,10 +214,6 @@ function AskBox(props: {
       }
     />
   )
-}
-
-function titleOf(conversation: AssistantConversationSummary): string {
-  return conversation.title ?? `Conversa de ${dayAndHour(conversation.updatedAt)}`
 }
 
 function ConversationLink(props: {
@@ -232,15 +253,23 @@ function ConversationLink(props: {
   )
 }
 
-/** The person's conversations with the Assistant, newest first: all of them on Início, one Projeto's in its Conversas. */
-export function Recent(props: { companyId: CompanyId; projectId?: ProjectId }) {
-  const { companyId, projectId } = props
-  const read = useQuery(assistantConversationsQuery(companyId, projectId, undefined))
+/**
+ * The person's conversations with the Assistant, newest first, a page at a time with the page in
+ * the address under `param` (web W18): all of them on Início, one Projeto's in its Conversas.
+ */
+export function Recent(props: {
+  companyId: CompanyId
+  projectId?: ProjectId
+  page: string | undefined
+  param: string
+}) {
+  const { companyId, projectId, page } = props
+  const read = useQuery(assistantConversationsQuery(companyId, projectId, page))
   const projects = useQuery(projectsQuery(companyId, undefined)).data?.projects ?? []
   if (read.isPending) return <Skeleton className="h-20 w-full" />
   if (read.isError)
     return <ReadFailure text={sentenceOf(read.error)} onRetry={() => void read.refetch()} />
-  const { conversations } = read.data
+  const { conversations, next } = read.data
   if (conversations.length === 0)
     return projectId === undefined ? null : <p className="text-text-2">{NO_CONVERSATIONS}</p>
   return (
@@ -266,16 +295,18 @@ export function Recent(props: { companyId: CompanyId; projectId?: ProjectId }) {
           </li>
         ))}
       </ul>
+      <Pager next={next} param={props.param} page={page} list="Conversas" />
     </section>
   )
 }
 
 /** Início of an owner or an administrator: the box, the bar and, under them, the recent conversations. */
-export function AssistantHome({ companyId }: { companyId: CompanyId }) {
+export function AssistantHome(props: { companyId: CompanyId; page: string | undefined }) {
+  const { companyId } = props
   return (
     <div className="flex flex-col gap-xl">
       <Ask companyId={companyId} chooseProject />
-      <Recent companyId={companyId} />
+      <Recent companyId={companyId} page={props.page} param="conversations" />
     </div>
   )
 }

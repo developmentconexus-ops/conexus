@@ -1,13 +1,21 @@
 import type { ShownFile } from '@conexus/hub-api'
 import { ASSISTANT_TOOL } from '@conexus/hub-api'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
-import { expect, test } from 'vitest'
-import { hubServer } from '../../platform/test-hub.tsx'
+import { afterEach, expect, test, vi } from 'vitest'
+import { hubServer, refusal } from '../../platform/test-hub.tsx'
+import {
+  agentEnd,
+  stepStarted,
+  toolCall,
+  toolStarted,
+  updatePart,
+} from '../conversation/test-events.ts'
 import {
   ASKED,
   assistantConversation,
   assistantScreens,
   COMPANY_ROOT,
+  running,
   toolSaid,
 } from './test-hub.tsx'
 
@@ -16,14 +24,37 @@ const server = hubServer()
 const { at } = assistantScreens(server)
 const OPEN = `${COMPANY_ROOT}/conversations/${ASKED}`
 
-function showing(path: string, shown: ShownFile) {
-  at(OPEN, {
+afterEach(() => vi.restoreAllMocks())
+
+function showing(path: string, shown: ShownFile, answers = {}) {
+  return at(OPEN, {
     conversations: [
       assistantConversation({
         messages: [toolSaid(ASSISTANT_TOOL.showFile, { path }, shown)],
       }),
     ],
+    answers,
   })
+}
+
+/** What the browser is asked to save: the page has no download manager here, only the anchor it clicks. */
+function saved() {
+  const files: { href: string; download: string }[] = []
+  Object.assign(URL, { createObjectURL: () => 'blob:arquivo', revokeObjectURL: () => undefined })
+  vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function save(
+    this: HTMLAnchorElement,
+  ) {
+    files.push({ href: this.href, download: this.download })
+  })
+  return files
+}
+
+const CHART: ShownFile = {
+  kind: 'FILE',
+  path: 'grafico.svg',
+  name: 'grafico.svg',
+  media: 'image/svg+xml',
+  bytes: 200,
 }
 
 test('um Markdown abre ao lado, formatado, com Baixar e Fechar', async () => {
@@ -39,10 +70,7 @@ test('um Markdown abre ao lado, formatado, com Baixar e Fechar', async () => {
   expect(within(panel).getByText('Vendas')).toBeTruthy()
   expect(within(panel).getByRole('listitem').textContent).toBe('Total da semana')
   expect(panel.textContent).not.toContain('# Vendas')
-  const download = within(panel).getByRole('link', { name: 'Baixar' })
-  expect(download.getAttribute('href')).toContain('/assistant/conversations/')
-  expect(download.getAttribute('href')).toContain('relatorio.md')
-  expect(download.hasAttribute('download')).toBe(true)
+  expect(within(panel).getByRole('button', { name: 'Baixar' })).toBeTruthy()
   fireEvent.click(within(panel).getByRole('button', { name: 'Fechar' }))
   await waitFor(() => expect(screen.queryByRole('region', { name: 'relatorio.md' })).toBeNull())
 })
@@ -106,5 +134,81 @@ test('um arquivo recusado não desenha painel nenhum', async () => {
   showing('../segredo', { kind: 'SHOW_REFUSED', reason: 'OUTSIDE' })
   await screen.findByRole('textbox', { name: 'Mensagem para o Assistente' })
   await screen.findByText(/Não conseguiu mostrar o arquivo/)
-  expect(screen.queryByRole('link', { name: 'Baixar' })).toBeNull()
+  expect(screen.queryByRole('button', { name: 'Baixar' })).toBeNull()
+})
+
+test('um SVG é desenhado pela rota de arquivos, como as outras imagens', async () => {
+  showing('grafico.svg', CHART)
+  fireEvent.click(await screen.findByRole('button', { name: 'Abrir grafico.svg' }))
+  const image = await screen.findByRole('img', { name: 'grafico.svg' })
+  expect(image.getAttribute('src')).toContain('files?path=grafico.svg')
+})
+
+test('uma imagem que a máquina não guarda mais diz a frase do FILE_GONE e deixa tentar de novo', async () => {
+  showing('grafico.svg', CHART, { file: () => refusal('FILE_GONE') })
+  fireEvent.click(await screen.findByRole('button', { name: 'Abrir grafico.svg' }))
+  fireEvent.error(await screen.findByRole('img', { name: 'grafico.svg' }))
+  expect(
+    await screen.findByText(/A máquina desta conversa não guarda mais este arquivo\./),
+  ).toBeTruthy()
+  expect(screen.getByRole('button', { name: 'Tentar de novo' })).toBeTruthy()
+})
+
+test('Baixar lê a rota pelo fetch do Hub e salva o arquivo recebido', async () => {
+  const files = saved()
+  showing('grafico.svg', CHART)
+  fireEvent.click(await screen.findByRole('button', { name: 'Abrir grafico.svg' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Baixar' }))
+  await waitFor(() => expect(files).toEqual([{ href: 'blob:arquivo', download: 'grafico.svg' }]))
+})
+
+test('Baixar um arquivo que a máquina não guarda mais diz a frase do FILE_GONE e não salva nada', async () => {
+  const files = saved()
+  showing(
+    'planilha.xlsx',
+    {
+      kind: 'FILE',
+      path: 'planilha.xlsx',
+      name: 'planilha.xlsx',
+      media: 'application/vnd.ms-excel',
+      bytes: 4096,
+    },
+    { file: () => refusal('FILE_GONE') },
+  )
+  fireEvent.click(await screen.findByRole('button', { name: 'Abrir planilha.xlsx' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Baixar' }))
+  expect(
+    await screen.findByText(/A máquina desta conversa não guarda mais este arquivo\./),
+  ).toBeTruthy()
+  expect(files).toHaveLength(0)
+  expect(screen.getByRole('button', { name: 'Tentar de novo' })).toBeTruthy()
+})
+
+test('um arquivo mostrado ao vivo abre sozinho, sem clique', async () => {
+  const hub = at(OPEN, { conversations: [assistantConversation()] })
+  const line = await running(hub)
+  const call = toolCall(ASSISTANT_TOOL.showFile, { path: 'relatorio.md' })
+  line.emit(toolStarted(ASSISTANT_TOOL.showFile, { path: 'relatorio.md' }))
+  line.emit(stepStarted('step-1', [call]))
+  line.emit(
+    updatePart(
+      toolCall(
+        ASSISTANT_TOOL.showFile,
+        { path: 'relatorio.md' },
+        {
+          kind: 'TEXT',
+          path: 'relatorio.md',
+          name: 'relatorio.md',
+          media: 'text/markdown',
+          content: '# Vendas',
+        },
+      ),
+      0,
+      'step-1',
+    ),
+  )
+  expect(await screen.findByRole('region', { name: 'relatorio.md' })).toBeTruthy()
+  line.emit(agentEnd())
+  await waitFor(() => expect(screen.queryByRole('button', { name: 'Parar' })).toBeNull())
+  await waitFor(() => expect(hub.conexus.queryClient.isFetching()).toBe(0))
 })

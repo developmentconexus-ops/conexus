@@ -9,15 +9,17 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { SlidersHorizontalIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
-import { useEffect, useEffectEvent, useState } from 'react'
+import { useState } from 'react'
+import { projectQuery } from '../../hub/projects/public.ts'
 import { sentenceOf, writeFailureText } from '../../platform/hub.ts'
 import { Badge } from '../../ui/badge.tsx'
 import { buttonVariants } from '../../ui/button.tsx'
 import { cn } from '../../ui/cn.ts'
 import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover.tsx'
 import { Skeleton } from '../../ui/skeleton.tsx'
+import { ReadFailure } from '../../ui/states.tsx'
 import { Switch } from '../../ui/switch.tsx'
-import { useConnectorNames } from './connector-names.ts'
+import { useConnectorCatalog } from './connector-names.ts'
 import {
   assistantConnectionsQuery,
   assistantConversationQuery,
@@ -29,18 +31,6 @@ import {
   NO_CONNECTIONS_PROJECT,
   UNCONFIRMED_CHOICE,
 } from './text.ts'
-
-type Props = {
-  companyId: CompanyId
-  /** The Projeto the conversation lives in; none on Início. Fixed once the conversation exists. */
-  projectId?: ProjectId
-  /** The conversation begun; without it the bar holds the choice of the one about to begin. */
-  conversation?: AssistantConversation
-  /** The choice of the conversation not yet begun, on mount and at each change. */
-  onDraftChange?: (chosen: readonly ConnectionId[]) => void
-  /** What sits beside **Ajustar**: Início's Projeto selector. */
-  trailing?: ReactNode
-}
 
 /** The bar's empty state: where to link a system, by the place. */
 function NoConnections({ companyId, projectId }: { companyId: CompanyId; projectId?: ProjectId }) {
@@ -110,9 +100,9 @@ function Bar(props: {
   onToggle: (connectionId: ConnectionId, chosen: boolean) => void
   trailing?: ReactNode
 }) {
-  const names = useConnectorNames(props.companyId)
+  const catalog = useConnectorCatalog(props.companyId)
   function label(connection: SessionConnection): string {
-    return `${names(connection.connector)} · ${connection.name}`
+    return `${catalog.name(connection.connector)} · ${connection.name}`
   }
   const chosen = props.offered.filter((one) => one.chosen)
   return (
@@ -142,77 +132,92 @@ function Bar(props: {
         )}
         {props.trailing}
       </fieldset>
-      {props.error !== undefined && (
+      {(props.error ?? catalog.failure) !== undefined && (
         <p role="alert" className="text-danger">
-          {props.error}
+          {props.error ?? catalog.failure}
         </p>
       )}
     </div>
   )
 }
 
-/**
- * The bar of the conversation (web W10, W12): the connections it reads as labels and **Ajustar**,
- * a switch for each one the place offers. Before the first question the choice is a draft that the
- * request creating the conversation carries; after it, each switch is a `PUT` and the bar shows
- * what the Hub answered, going back to the choice before when the Hub refuses.
- */
-export function ContextBar(props: Props) {
-  const { companyId, projectId, conversation } = props
-  return conversation === undefined ? (
-    <DraftBar {...props} />
-  ) : (
-    <ChosenBar
-      companyId={companyId}
-      projectId={projectId}
-      conversation={conversation}
-      trailing={props.trailing}
-    />
-  )
+/** The Projeto a conversation lives in, fixed beside **Ajustar**: its name once the Hub has answered. */
+export function FixedProject(props: { companyId: CompanyId; projectId: ProjectId }) {
+  const project = useQuery(projectQuery(props.companyId, props.projectId)).data?.project
+  return project === undefined ? null : <Badge>Projeto · {project.name}</Badge>
 }
 
-function DraftBar(props: Props) {
-  const { companyId, projectId } = props
+const NONE: ReadonlySet<ConnectionId> = new Set()
+
+/**
+ * The choice of the conversation not yet begun, with one owner: what the place offers, read from
+ * the Hub, and what the person turned off. What the request creating the conversation carries is
+ * the offer minus the turned-off ones at the moment of sending, so a new read of the offer never
+ * undoes a switch. Without the offer read, `connections` is undefined and nothing may be sent.
+ */
+export function useDraftChoice(companyId: CompanyId, projectId: ProjectId | undefined) {
   const read = useQuery(assistantConnectionsQuery(companyId, projectId))
-  const [unchosen, setUnchosen] = useState<ReadonlySet<ConnectionId>>(new Set())
-  const reported = useEffectEvent((chosen: readonly ConnectionId[]) =>
-    props.onDraftChange?.(chosen),
-  )
-  // What the place offers is all chosen at first: the parent learns it when the read arrives.
-  useEffect(() => {
-    if (read.data !== undefined) reported(read.data.connections.map((one) => one.connectionId))
-  }, [read.data])
-  if (read.isPending) return <Skeleton className="h-8 w-64" />
-  if (read.isError)
-    return (
-      <p role="alert" className="text-danger">
-        {sentenceOf(read.error)}
-      </p>
-    )
-  const offered = read.data.connections.map((one) => ({
+  const [held, setHeld] = useState({ project: projectId, unchosen: NONE })
+  const unchosen = held.project === projectId ? held.unchosen : NONE
+  const offered = read.data?.connections.map((one) => ({
     ...one,
     chosen: !unchosen.has(one.connectionId),
   }))
-  function toggle(connectionId: ConnectionId, chosen: boolean) {
-    const next = new Set(unchosen)
-    if (chosen) next.delete(connectionId)
-    else next.add(connectionId)
-    setUnchosen(next)
-    reported(offered.filter((one) => !next.has(one.connectionId)).map((one) => one.connectionId))
+  return {
+    read,
+    offered,
+    connections: offered?.filter((one) => one.chosen).map((one) => one.connectionId),
+    toggle: (connectionId: ConnectionId, chosen: boolean) =>
+      setHeld((was) => {
+        const next = new Set(was.project === projectId ? was.unchosen : NONE)
+        if (chosen) next.delete(connectionId)
+        else next.add(connectionId)
+        return { project: projectId, unchosen: next }
+      }),
   }
+}
+
+/** The bar before the first question: it draws the choice that `useDraftChoice` holds and changes it. */
+export function DraftBar(props: {
+  companyId: CompanyId
+  projectId?: ProjectId
+  choice: ReturnType<typeof useDraftChoice>
+  /** What sits beside **Ajustar**: Início's Projeto selector, or the Projeto fixed. */
+  trailing?: ReactNode
+}) {
+  const { choice } = props
+  if (choice.offered === undefined)
+    return (
+      <div className="flex flex-wrap items-center gap-sm">
+        {choice.read.isError ? (
+          <ReadFailure
+            text={sentenceOf(choice.read.error)}
+            onRetry={() => void choice.read.refetch()}
+          />
+        ) : (
+          <Skeleton className="h-8 w-64" />
+        )}
+        {props.trailing}
+      </div>
+    )
   return (
     <Bar
-      companyId={companyId}
-      projectId={projectId}
-      offered={offered}
+      companyId={props.companyId}
+      projectId={props.projectId}
+      offered={choice.offered}
       busy={false}
       trailing={props.trailing}
-      onToggle={toggle}
+      onToggle={choice.toggle}
     />
   )
 }
 
-function ChosenBar(props: {
+/**
+ * The bar of the conversation begun (web W10, W12): the connections it reads as labels and
+ * **Ajustar**, a switch for each one the place offers. Each switch is a `PUT`, and the bar shows
+ * what the Hub answered, going back to the choice before when the Hub refuses.
+ */
+export function ContextBar(props: {
   companyId: CompanyId
   projectId?: ProjectId
   conversation: AssistantConversation

@@ -11,7 +11,11 @@ const company = getRouteApi('/_app/companies/$companyId')
  * with the bar of the connections released to it, and the person's conversations there. A member
  * reads that only the owner and the administrators talk here; the Hub refuses them all the same.
  */
-export function AssistantProject(props: { companyId: CompanyId; projectId: ProjectId }) {
+export function AssistantProject(props: {
+  companyId: CompanyId
+  projectId: ProjectId
+  page: string | undefined
+}) {
   const { companyId, projectId } = props
   const { role } = company.useRouteContext()
   return (
@@ -22,7 +26,7 @@ export function AssistantProject(props: { companyId: CompanyId; projectId: Proje
       ) : (
         <>
           <Ask companyId={companyId} projectId={projectId} chooseProject={false} />
-          <Recent companyId={companyId} projectId={projectId} />
+          <Recent companyId={companyId} projectId={projectId} page={props.page} param="page" />
         </>
       )}
     </div>

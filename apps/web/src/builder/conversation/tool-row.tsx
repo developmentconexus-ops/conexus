@@ -13,8 +13,6 @@ import {
   TraceLine,
   TraceTitle,
 } from '../../ui/trace.tsx'
-import { refusedResult } from './assistant-specs.ts'
-import { readOutcome } from './connector-specs.ts'
 import { useSecondsSince } from './elapsed.ts'
 import type { Room } from './room.ts'
 import { useRoom } from './room.ts'
@@ -59,7 +57,8 @@ function Since({ at }: { at: number | undefined }) {
 
 function opens(tool: ToolItem, status: ToolStatus, room: Room): boolean {
   // A refusal the Assistant's tool answered is said by its line; only a connection to link again has more to say.
-  if (refusedResult(tool, room) !== undefined) return readOutcome(tool.result)?.kind === 'REAUTH'
+  const refusal = specOf(tool.toolName, room)?.refusal?.(tool.result)
+  if (refusal !== undefined) return refusal === 'RECONNECT'
   if (status === 'error' || status === 'denied') return true
   if (tool.output !== undefined && tool.output.length > 0) return true
   if (tool.result !== undefined && tool.result !== null) return true
@@ -235,9 +234,9 @@ function ProposalCard({ summary }: { summary: string }) {
 }
 
 function Body({ tool, status }: { tool: ToolItem; status: ToolStatus }) {
-  const room = useRoom()
-  if (refusedResult(tool, room) !== undefined) return <Reconnect />
-  const body = specOf(tool.toolName)?.body ?? 'generic'
+  const spec = specOf(tool.toolName, useRoom())
+  if (spec?.refusal?.(tool.result) === 'RECONNECT') return <Reconnect />
+  const body = spec?.body ?? 'generic'
   const edit = editOf(body, tool.args)
   const failed = status === 'error' || status === 'denied'
   return (

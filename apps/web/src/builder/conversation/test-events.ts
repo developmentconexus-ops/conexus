@@ -1,4 +1,4 @@
-import type { MastraMessagePart } from '@mastra/client-js'
+import type { KnownAgentControllerEvent, MastraMessagePart } from '@mastra/client-js'
 import {
   AgentEnd,
   AgentStart,
@@ -64,4 +64,28 @@ export function readPage(url: string, title?: string): MastraMessagePart {
       result: title ? { title } : undefined,
     },
   }
+}
+
+/** A tool call of any tool, running (no result) or answered. */
+export function toolCall(toolName: string, args: unknown, result?: unknown): MastraMessagePart {
+  return {
+    type: 'tool-invocation',
+    toolInvocation: {
+      toolCallId: 'tool-1',
+      toolName,
+      state: result === undefined ? 'call' : 'result',
+      args,
+      result,
+    },
+  }
+}
+
+/** The memory's observation failing, typed by Mastra's own event (no recording holds one). */
+export function observationFailed(): KnownAgentControllerEvent {
+  return { type: 'om_observation_failed', cycleId: 'cycle-1', error: 'ECONNRESET', durationMs: 5 }
+}
+
+/** The screen hearing a tool call begin, as Mastra tells it (`tool_start`): the row then counts as live. */
+export function toolStarted(toolName: string, args: unknown): KnownAgentControllerEvent {
+  return { type: 'tool_start', toolCallId: 'tool-1', toolName, args }
 }

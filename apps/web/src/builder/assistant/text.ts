@@ -1,3 +1,5 @@
+import { dayAndHour } from '../../platform/dates.ts'
+
 /** The words of the Assistant's screens (step 24.1, U4); the founder approves them at the step's end. */
 export const HOME_PLACEHOLDER = 'Pergunte, peça uma análise ou um documento…'
 export const RECENT_TITLE = 'Conversas recentes'
@@ -14,6 +16,11 @@ export const FILE_EMPTY = 'Arquivo vazio.'
 export const FILE_NOT_THERE = 'Este arquivo não está mais na máquina da conversa.'
 export const FILE_MACHINE_GONE = 'A máquina desta conversa não guarda mais este arquivo.'
 export const FILE_TOO_LARGE_TEXT = 'O arquivo passa do tamanho que o Hub entrega.'
+
+/** What a conversation is called until it is titled: the moment it was last written, the contract's only date. */
+export function titleOf(conversation: { title: string | null; updatedAt: string }): string {
+  return conversation.title ?? `Conversa de ${dayAndHour(conversation.updatedAt)}`
+}
 
 /** Início's examples: the chip's words, and what a tap puts in the box. */
 export const ASSISTANT_EXAMPLES = [

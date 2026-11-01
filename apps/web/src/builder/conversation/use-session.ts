@@ -1,5 +1,5 @@
 import type { CompanyId, ConversationId } from '@conexus/hub-api'
-import { ASSISTANT_CONTROLLER, BUILDER_CONTROLLER, PreviewData } from '@conexus/hub-api'
+import { BUILDER_CONTROLLER, PreviewData } from '@conexus/hub-api'
 import type { AgentControllerEvent, KnownAgentControllerEvent } from '@mastra/client-js'
 import { isKnownAgentControllerEvent, MastraClientError } from '@mastra/client-js'
 import type { QueryClient } from '@tanstack/react-query'
@@ -165,8 +165,7 @@ export function useSession(
   const [state, dispatch] = useReducer(session, OPENED)
   const gone = useEffectEvent(on.gone)
   const ended = useEffectEvent(on.ended)
-  const { companyId, conversationId, controller } = ids
-  const projectId = ids.controller === BUILDER_CONTROLLER ? ids.projectId : undefined
+  const { conversationId, controller } = ids
   const builder = useMemo(() => sessionOf(conversationId, controller), [conversationId, controller])
   // The window of messages read grows by a page for each load of older messages; `Screen` remounts
   // with the conversation, so each conversation opens on the newest page.
@@ -190,15 +189,14 @@ export function useSession(
   useEffect(() => {
     if (transcript.data !== undefined) dispatch({ type: 'loaded', messages: transcript.data })
   }, [transcript.data])
+  // `builder` is the conversation's identity (its id and its controller): the follow starts over
+  // with it, and reads `ids` as the render that starts it has them.
+  const currentIds = useEffectEvent(() => ids)
   useEffect(() => {
     const stop = new AbortController()
-    const place =
-      controller === BUILDER_CONTROLLER && projectId !== undefined
-        ? ({ controller, projectId } as const)
-        : ({ controller: ASSISTANT_CONTROLLER } as const)
     const hooks = {
       queryClient,
-      ids: { companyId, conversationId, ...place },
+      ids: currentIds(),
       builder,
       dispatch,
       onGone: gone,
@@ -206,6 +204,6 @@ export function useSession(
     }
     void follow(hooks, stop.signal)
     return () => stop.abort()
-  }, [queryClient, companyId, conversationId, controller, projectId, builder])
+  }, [queryClient, builder])
   return { state, dispatch, builder, older }
 }

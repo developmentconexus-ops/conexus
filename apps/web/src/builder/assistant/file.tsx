@@ -1,12 +1,13 @@
 import type { CompanyId, ConversationId, FailureCode, ShownFile } from '@conexus/hub-api'
 import { assistantFilePath, Problem } from '@conexus/hub-api'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
 import { DownloadIcon, XIcon } from 'lucide-react'
 import { useState } from 'react'
 import { hubClientFetch, sentenceOfCode } from '../../platform/hub.ts'
-import { Button, buttonVariants } from '../../ui/button.tsx'
+import { Button } from '../../ui/button.tsx'
 import { cn } from '../../ui/cn.ts'
 import { Skeleton } from '../../ui/skeleton.tsx'
+import { ReadFailure } from '../../ui/states.tsx'
 import { Markdown } from '../conversation/public.ts'
 import { FILE_EMPTY, FILE_MACHINE_GONE, FILE_NOT_THERE, FILE_TOO_LARGE_TEXT } from './text.ts'
 
@@ -22,10 +23,8 @@ const SAID: Partial<Record<FailureCode, string>> = {
   FILE_TOO_LARGE: FILE_TOO_LARGE_TEXT,
 }
 
-/** Reads the route again to learn why the image did not come: the image tag says only that it failed. */
-async function whyNot(url: string): Promise<string> {
-  const response = await hubClientFetch(url)
-  if (response.ok) return sentenceOfCode('INTERNAL_UNEXPECTED')
+/** The Hub's refusal of the file route, in the person's words. */
+async function refusalOf(response: Response): Promise<string> {
   try {
     const problem = Problem.parse(await response.json())
     return SAID[problem.code] ?? sentenceOfCode(problem.code)
@@ -35,30 +34,43 @@ async function whyNot(url: string): Promise<string> {
   }
 }
 
+/** Reads the route again to learn why the image did not come: the image tag says only that it failed. */
+async function whyNot(url: string): Promise<string> {
+  const response = await hubClientFetch(url)
+  return response.ok ? sentenceOfCode('INTERNAL_UNEXPECTED') : refusalOf(response)
+}
+
+/**
+ * Saves the file the route answers (web W9: the Hub's own fetch, so a refusal is read, not left to
+ * the browser's download manager): the bytes become a blob that an `<a download>` saves. Answers
+ * the refusal's sentence, or nothing once saved.
+ */
+async function save(file: { url: string; name: string }): Promise<string | undefined> {
+  const response = await hubClientFetch(file.url)
+  if (!response.ok) return refusalOf(response)
+  const href = URL.createObjectURL(await response.blob())
+  const link = document.createElement('a')
+  link.href = href
+  link.download = file.name
+  link.click()
+  URL.revokeObjectURL(href)
+  return undefined
+}
+
 function Picture(props: { url: string; name: string }) {
   const [state, setState] = useState<'LOADING' | 'DRAWN' | 'FAILED'>('LOADING')
   const [attempt, setAttempt] = useState(0)
-  const why = useQuery({
-    queryKey: ['assistant', 'file-failure', props.url, attempt],
-    queryFn: () => whyNot(props.url),
-    enabled: state === 'FAILED',
-    retry: false,
-  })
+  const why = useMutation({ mutationFn: whyNot, meta: { keepCache: true } })
   if (state === 'FAILED')
     return (
-      <div className="flex flex-col items-start gap-md">
-        <p role="alert" className="text-danger">
-          {why.data ?? sentenceOfCode('INTERNAL_UNEXPECTED')}
-        </p>
-        <Button
-          onClick={() => {
-            setState('LOADING')
-            setAttempt(attempt + 1)
-          }}
-        >
-          Tentar de novo
-        </Button>
-      </div>
+      <ReadFailure
+        text={why.data ?? sentenceOfCode('INTERNAL_UNEXPECTED')}
+        onRetry={() => {
+          setState('LOADING')
+          setAttempt(attempt + 1)
+          why.reset()
+        }}
+      />
     )
   return (
     <>
@@ -72,7 +84,10 @@ function Picture(props: { url: string; name: string }) {
         src={props.url}
         alt={props.name}
         onLoad={() => setState('DRAWN')}
-        onError={() => setState('FAILED')}
+        onError={() => {
+          setState('FAILED')
+          why.mutate(props.url)
+        }}
         className={cn('max-w-full', state === 'LOADING' && 'hidden')}
       />
     </>
@@ -109,8 +124,9 @@ function bytesText(bytes: number): string {
 /**
  * The file the Assistant showed, beside the chat (web W31's panel in the Prévia's place): a text as
  * Markdown or as plain text, an image drawn from the conversation's file route (same origin,
- * `img-src 'self'`), any other file by its name, size and type. Every file has **Baixar**, a link to
- * the route: the Hub answers it with the headers that keep the browser from running it (S24).
+ * `img-src 'self'`), any other file by its name, size and type. Every file has **Baixar**, which
+ * reads the route with the Hub's fetch and saves the bytes, or says why it could not; the Hub
+ * answers the route with the headers that keep the browser from running it (S24).
  */
 export function FilePanel(props: {
   companyId: CompanyId
@@ -120,19 +136,23 @@ export function FilePanel(props: {
 }) {
   const { shown } = props
   const url = assistantFilePath({ ...props, path: shown.path })
+  const download = useMutation({ mutationFn: save, meta: { keepCache: true } })
+  const refusal =
+    download.data ?? (download.isError ? sentenceOfCode('INTERNAL_UNEXPECTED') : undefined)
   return (
     <section aria-label={shown.name} className="flex h-full min-h-0 flex-col bg-canvas">
       <header className="flex items-center justify-between gap-sm border-b border-line px-md py-sm">
         <h2 className="min-w-0 truncate font-medium">{shown.name}</h2>
         <div className="flex shrink-0 items-center gap-xs">
-          <a
-            href={url}
-            download={shown.name}
-            className={cn(buttonVariants({ size: 'sm' }), 'gap-xs')}
+          <Button
+            size="sm"
+            className="gap-xs"
+            disabled={download.isPending}
+            onClick={() => download.mutate({ url, name: shown.name })}
           >
             <DownloadIcon aria-hidden="true" />
             Baixar
-          </a>
+          </Button>
           {props.onClose !== undefined && (
             <Button size="icon" variant="ghost" aria-label="Fechar" onClick={props.onClose}>
               <XIcon aria-hidden="true" />
@@ -140,7 +160,10 @@ export function FilePanel(props: {
           )}
         </div>
       </header>
-      <div className="min-h-0 flex-1 overflow-auto p-md">
+      <div className="flex min-h-0 flex-1 flex-col gap-md overflow-auto p-md">
+        {refusal !== undefined && (
+          <ReadFailure text={refusal} onRetry={() => download.mutate({ url, name: shown.name })} />
+        )}
         <Body companyId={props.companyId} conversationId={props.conversationId} shown={shown} />
       </div>
     </section>

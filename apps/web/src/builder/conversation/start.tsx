@@ -172,10 +172,13 @@ function Naming(props: {
 export function StartBox(props: {
   draft: ReturnType<typeof useDraft>
   placeholder: string
+  /** Chips under the bar; none draws nothing. */
   examples: readonly Example[]
   picked: { model: ModelId; effort: Effort }
   onPick: (picked: { model: ModelId; effort: Effort }) => void
   providers: ReturnType<typeof usePicked>['providers']
+  /** False while something the request needs has not arrived: **Enviar** waits. */
+  canSend?: boolean
   onSend: (outgoing: Outgoing) => Promise<boolean>
   /** Under the box, before the examples. */
   bar?: ReactNode
@@ -187,7 +190,7 @@ export function StartBox(props: {
       <div className="md:[&_textarea]:min-h-20 [&_textarea]:min-h-16">
         <Composer
           answering={false}
-          canSend
+          canSend={props.canSend ?? true}
           draft={draft}
           field={field}
           placeholder={props.placeholder}
@@ -204,13 +207,15 @@ export function StartBox(props: {
         />
       </div>
       {props.bar}
-      <Examples
-        examples={props.examples}
-        onPick={(text) => {
-          draft.change(text)
-          field.current?.focus()
-        }}
-      />
+      {props.examples.length > 0 && (
+        <Examples
+          examples={props.examples}
+          onPick={(text) => {
+            draft.change(text)
+            field.current?.focus()
+          }}
+        />
+      )}
     </div>
   )
 }
