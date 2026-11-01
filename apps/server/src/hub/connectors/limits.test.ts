@@ -1,9 +1,12 @@
 import assert from 'node:assert/strict'
+import { randomUUID } from 'node:crypto'
 import { createServer } from 'node:http'
 import { test } from 'node:test'
 import { setTimeout as sleep } from 'node:timers/promises'
 import { CONCURRENT_CALL } from '@conexus/connectors'
+import { CompanyId, ConnectionId, PersonId, ProjectId, RunId } from '@conexus/hub-api'
 import { z } from 'zod'
+import { TurnKey } from './public.ts'
 import { appCalls } from './test-app-calls.ts'
 import {
   A,
@@ -177,4 +180,42 @@ test('o logout do fim com defeito vai ao registro e não derruba o processo', as
   }
   assert.deepEqual(lines, ['INTERNAL_UNEXPECTED'])
   assert.deepEqual(unhandled, [])
+})
+
+test('o Assistente na fila: uma leitura do Assistente e uma do Builder na mesma ligação não abrem duas chamadas juntas', async (t) => {
+  const on = await appCalls(t)
+  const connectionId = ConnectionId.parse(await on.connect('Matriz'))
+  const companyId = CompanyId.parse(on.companyId)
+  const personId = PersonId.parse(on.ana.id)
+  on.fake.switches.delayMilliseconds = 150
+  const [assistant, builder] = await Promise.all([
+    on.hub.connectors.assistant.read(
+      { companyId, personId, place: { kind: 'COMPANY' }, chosen: [connectionId] },
+      {
+        connectionId,
+        turn: TurnKey.parse(randomUUID()),
+        operation: 'empresas',
+        input: { page: 0 },
+      },
+    ),
+    on.hub.connectors.builder.read(
+      { companyId, projectId: ProjectId.parse(on.projectId) },
+      {
+        connectionId,
+        personId,
+        runId: RunId.parse(randomUUID()),
+        operation: 'empresas',
+        input: { page: 0 },
+      },
+    ),
+  ])
+  assert.deepEqual([assistant.kind, builder.kind], ['OK', 'OK'])
+  const waits = on.hub.lines
+    .filter((line) => line.message === 'CONNECTOR_CALLED')
+    .map((line) => [line.fields.by, Number(line.fields.queuedMs)] as const)
+    .sort((a, b) => a[1] - b[1])
+  assert.equal(waits.length, 2)
+  assert.ok(Number(waits[0]?.[1]) < 100, 'the first call did not wait')
+  assert.ok(Number(waits[1]?.[1]) >= 100, 'the second waited for the first')
+  assert.deepEqual(waits.map(([by]) => by).sort(), ['assistant', 'builder'])
 })

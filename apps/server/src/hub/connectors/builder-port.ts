@@ -1,9 +1,10 @@
 import type { ConnectorAnswer } from '@conexus/app-contract'
 import type { Operation } from '@conexus/connectors'
 import { connectorOf } from '@conexus/connectors'
-import type { OfProject, PersonId, RunId } from '@conexus/hub-api'
+import type { CompanyId, OfProject, PersonId, ProjectId, RunId } from '@conexus/hub-api'
 import { CALL_DEADLINE_MS, ConnectionId } from '@conexus/hub-api'
-import { and, asc, eq } from 'drizzle-orm'
+import { and, asc, eq, inArray } from 'drizzle-orm'
+import type { ReadTx } from '../../platform/database.ts'
 import { Listed, shaped } from './cut.ts'
 import type { OpenedConnection } from './executor.ts'
 import { readOf } from './grants.ts'
@@ -14,11 +15,11 @@ import { usable } from './rows.ts'
 import { connection, projectConnection } from './tables.ts'
 import { openedIn } from './testing.ts'
 
-/** One conversation turn reads and saves at most this many times (the OS's `connector_fetch`: 50 per run). */
-export const BUILDER_CALLS_PER_RUN = 50
-const RUNS_KEPT = 1000
+/** One conversation turn reads and saves at most this many times (the OS's `connector_fetch`: 50 per run); the Builder counts by run, the Assistant by turn. */
+export const CONNECTOR_CALLS_PER_TURN = 50
+const TURNS_KEPT = 1000
 
-type GrantedConnection = Readonly<{
+export type GrantedConnection = Readonly<{
   connectionId: ConnectionId
   connector: string
   name: string
@@ -27,10 +28,10 @@ type GrantedConnection = Readonly<{
   reads: readonly Readonly<{ operation: string; summary: string }>[]
   notes: readonly string[]
 }>
-type ShapedRead =
+export type ShapedRead =
   | Readonly<{ kind: 'OK'; value: unknown; complete: boolean }>
   | Exclude<ConnectorAnswer, { kind: 'OK' }>
-type Spent = Readonly<{ kind: 'CALLS_SPENT' }>
+export type Spent = Readonly<{ kind: 'CALLS_SPENT' }>
 type Of = Readonly<{ connectionId: ConnectionId; personId: PersonId; runId: RunId }>
 
 export type BuilderConnectors = {
@@ -51,42 +52,59 @@ export type BuilderConnectors = {
   >
 }
 
-/** The runs' call counts, the oldest forgotten past `RUNS_KEPT`; false once a run has spent its 50. */
-function createSpending(): (runId: RunId) => boolean {
+/** The call counts by key (a run, a turn), the oldest forgotten past `TURNS_KEPT`; false once a key has spent its 50. */
+export function createSpending(): (key: string) => boolean {
   const spent = new Map<string, number>()
-  return (runId) => {
-    const used = (spent.get(runId) ?? 0) + 1
-    if (used > BUILDER_CALLS_PER_RUN) return false
-    spent.delete(runId)
-    spent.set(runId, used)
+  return (key) => {
+    const used = (spent.get(key) ?? 0) + 1
+    if (used > CONNECTOR_CALLS_PER_TURN) return false
+    spent.delete(key)
+    spent.set(key, used)
     const [oldest] = spent.keys()
-    if (spent.size > RUNS_KEPT && oldest !== undefined) spent.delete(oldest)
+    if (spent.size > TURNS_KEPT && oldest !== undefined) spent.delete(oldest)
     return true
   }
 }
 
-/** The Projeto's ACTIVE granted connections: the company's, so no person asks. */
+/**
+ * The company's usable connections in the order the model is told of them. Where the reader works in a
+ * Projeto only those released to it are offered: the place decides the join, the row is one shape (C26).
+ */
+export function offeredIn(
+  tx: ReadTx,
+  ids: Readonly<{ companyId: CompanyId; projectId?: ProjectId }>,
+  connectionId?: ConnectionId,
+) {
+  return tx
+    .select({
+      id: connection.id,
+      connector: connection.connectorId,
+      name: connection.name,
+      notes: connection.notes,
+    })
+    .from(connection)
+    .where(
+      and(
+        eq(connection.companyId, ids.companyId),
+        usable,
+        ids.projectId === undefined
+          ? undefined
+          : inArray(
+              connection.id,
+              tx
+                .select({ id: projectConnection.connectionId })
+                .from(projectConnection)
+                .where(eq(projectConnection.projectId, ids.projectId)),
+            ),
+        connectionId === undefined ? undefined : eq(connection.id, connectionId),
+      ),
+    )
+    .orderBy(asc(connection.connectorId), asc(connection.linkedAt))
+}
+
 function grantedRows(deps: Deps, ids: OfProject, connectionId?: ConnectionId) {
   const scope = { kind: 'COMPANY', companyId: ids.companyId, personId: null } as const
-  return deps.database.read(scope, (tx) =>
-    tx
-      .select({
-        id: connection.id,
-        connector: connection.connectorId,
-        name: connection.name,
-        notes: connection.notes,
-      })
-      .from(projectConnection)
-      .innerJoin(connection, eq(connection.id, projectConnection.connectionId))
-      .where(
-        and(
-          eq(projectConnection.projectId, ids.projectId),
-          usable,
-          connectionId === undefined ? undefined : eq(connection.id, connectionId),
-        ),
-      )
-      .orderBy(asc(connection.connectorId), asc(connection.linkedAt)),
-  )
+  return deps.database.read(scope, (tx) => offeredIn(tx, ids, connectionId))
 }
 
 /** The connection opened when the Projeto may read it now; none otherwise (NOT_GRANTED to the caller). */
@@ -120,8 +138,8 @@ function callThrough(
   })
 }
 
-async function grantedConnections(deps: Deps, ids: OfProject): Promise<GrantedConnection[]> {
-  const rows = await grantedRows(deps, ids)
+/** What the model is told of each row; a row of a connector the kit no longer has is left out. */
+export function described(rows: Awaited<ReturnType<typeof offeredIn>>): GrantedConnection[] {
   return rows.flatMap((row) => {
     const connector = connectorOf(row.connector)
     if (connector === undefined) return []
@@ -185,7 +203,7 @@ async function noteSaved(
 export function createBuilderConnectors(deps: Deps): BuilderConnectors {
   const spend = createSpending()
   return {
-    granted: (ids) => grantedConnections(deps, ids),
+    granted: async (ids) => described(await grantedRows(deps, ids)),
 
     async read(ids, a) {
       const opened = await admit(deps, ids, a)

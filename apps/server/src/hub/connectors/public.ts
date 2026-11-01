@@ -12,12 +12,16 @@ import type { IdentityPorts } from '../identity/public.ts'
 import type { AppDoorPort } from './app-calls.ts'
 import { createAppCalls } from './app-calls.ts'
 import { isOAuth } from './apps.ts'
+import { createAssistantConnectors } from './assistant-port.ts'
 import { createBuilderConnectors } from './builder-port.ts'
 import { createExecutor } from './executor.ts'
 import { ungranted } from './grants.ts'
 import { createLimits } from './limits.ts'
 import { reseal } from './reseal.ts'
 import { registerAppCallRoutes, registerConnectionRoutes } from './routes.ts'
+
+export type { SessionScope } from './assistant-port.ts'
+export { TurnKey } from './assistant-port.ts'
 
 /** Tests shorten the deadline. */
 export type ConnectorDeadlines = { callDeadlineMs?: number }
@@ -78,6 +82,8 @@ export function createConnectors(deps: {
     ungranted,
     /** What the Builder's tools and instructions read; the Builder wires it in U5. */
     builder: createBuilderConnectors(routeDeps),
+    /** What the Assistant's tools and conversation scope read: the chosen connections of its place, read only (step 24.1, U1). */
+    assistant: createAssistantConnectors(routeDeps),
     /** The Hub's end: every live token logged out before the database closes. */
     closeAll: limits.closeAll,
   })

@@ -69,6 +69,9 @@ const ACTIONS = {
   // and removes one (step 19, D).
   readConnections: { by: 'MEMBER', statement: undefined, locks: false },
   manageConnections: { by: 'MEMBER', statement: MANAGE_CONNECTIONS, locks: true },
+  // Whoever manages the company's connections asks the Assistant about them: an owner or an
+  // administrator (step 24.1, U1). Reading holds no row.
+  askAssistant: { by: 'MEMBER', statement: MANAGE_CONNECTIONS, locks: false },
   readMembers: { by: 'COMPANY', statement: undefined, locks: false },
   readInvitations: { by: 'COMPANY', statement: INVITE, locks: false },
   invite: { by: 'COMPANY', statement: INVITE, locks: true },
