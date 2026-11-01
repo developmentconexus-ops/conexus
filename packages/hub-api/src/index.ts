@@ -234,6 +234,7 @@ export {
   grantProjectConnection,
   listAppConnections,
   listProjectConnections,
+  ProjectAccess,
   ProjectConnections,
   revokeProjectConnection,
 } from './project-connections.ts'

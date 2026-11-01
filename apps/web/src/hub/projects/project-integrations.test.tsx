@@ -1,4 +1,4 @@
-import type { ProjectConnections } from '@conexus/hub-api'
+import type { ProjectAccess, ProjectConnections } from '@conexus/hub-api'
 import { ConnectionList, ConnectorEntry, ProjectConnections as ListShape } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
@@ -40,11 +40,15 @@ function line(name: string, fields: Partial<Line> = {}): Line {
     name,
     state: 'ACTIVE',
     account: null,
-    grant: null,
+    access: NOT_RELEASED,
     ...fields,
   })
 }
 const GRANT = { by: 'Ana', at: '2026-10-30T12:00:00.000Z' }
+const NOT_RELEASED: ProjectAccess = { kind: 'NOT_RELEASED' }
+const READS: ProjectAccess = { kind: 'READS', grant: GRANT }
+const RELEASED_NOT_WORKING: ProjectAccess = { kind: 'RELEASED_NOT_WORKING', grant: GRANT }
+const NOT_RELEASED_NOT_WORKING: ProjectAccess = { kind: 'NOT_RELEASED_NOT_WORKING' }
 
 type View = { sankhya: Line[]; ml: Line[]; mayManage: boolean }
 const sent: { method: string; path: string }[] = []
@@ -72,15 +76,15 @@ function hub(view: View) {
     http.put(`${API}/projects/${PEDIDOS.id}/connections/:connectionId`, ({ params, request }) => {
       sent.push({ method: request.method, path: new URL(request.url).pathname })
       const found = lines().find((one) => one.id === params.connectionId)
-      if (found) found.grant = GRANT
-      return HttpResponse.json({ grant: GRANT })
+      if (found) found.access = READS
+      return HttpResponse.json({ access: READS })
     }),
     http.delete(
       `${API}/projects/${PEDIDOS.id}/connections/:connectionId`,
       ({ params, request }) => {
         sent.push({ method: request.method, path: new URL(request.url).pathname })
         const found = lines().find((one) => one.id === params.connectionId)
-        if (found) found.grant = null
+        if (found) found.access = NOT_RELEASED
         return new HttpResponse(null, { status: 204 })
       },
     ),
@@ -112,7 +116,7 @@ async function row(name: string) {
 
 test('a dona libera a ligação certa e a linha passa a ler', async () => {
   const loja = line('Loja 2')
-  open({ sankhya: [], ml: [line('Loja 1', { grant: GRANT }), loja], mayManage: true })
+  open({ sankhya: [], ml: [line('Loja 1', { access: READS }), loja], mayManage: true })
   expect(await screen.findByRole('heading', { name: 'Integrações deste Projeto' })).toBeTruthy()
   expect((await row('Loja 1')).getByRole('button', { name: 'Tirar: Loja 1' })).toBeTruthy()
   fireEvent.click((await row('Loja 2')).getByRole('button', { name: 'Liberar para ler: Loja 2' }))
@@ -134,7 +138,7 @@ test('a dona libera a ligação certa e a linha passa a ler', async () => {
 })
 
 test('Tirar tira a liberação e a linha volta a "não liberado"', async () => {
-  const matriz = line('Matriz', { grant: GRANT })
+  const matriz = line('Matriz', { access: READS })
   open({ sankhya: [matriz], ml: [], mayManage: true })
   fireEvent.click((await row('Matriz')).getByRole('button', { name: 'Tirar: Matriz' }))
   expect(
@@ -145,7 +149,7 @@ test('Tirar tira a liberação e a linha volta a "não liberado"', async () => {
 
 test('num conector de uma ligação por Projeto, as outras linhas dizem qual tirar e não liberam', async () => {
   open({
-    sankhya: [line('Matriz', { grant: GRANT }), line('Filial')],
+    sankhya: [line('Matriz', { access: READS }), line('Filial')],
     ml: [line('Loja 1'), line('Loja 2')],
     mayManage: true,
   })
@@ -162,7 +166,7 @@ test('num conector de uma ligação por Projeto, as outras linhas dizem qual tir
 })
 
 test('o membro vê o estado e a frase, sem botões', async () => {
-  open({ sankhya: [line('Matriz', { grant: GRANT })], ml: [line('Loja 1')], mayManage: false })
+  open({ sankhya: [line('Matriz', { access: READS })], ml: [line('Loja 1')], mayManage: false })
   expect(await screen.findByText(ASK)).toBeTruthy()
   expect((await row('Matriz')).getByText('lê')).toBeTruthy()
   expect((await row('Loja 1')).getByText('não liberado')).toBeTruthy()
@@ -170,7 +174,7 @@ test('o membro vê o estado e a frase, sem botões', async () => {
 })
 
 test('uma ligação que pede para conectar de novo mostra o selo e o caminho', async () => {
-  const matriz = line('Matriz', { state: 'NEEDS_REAUTH' })
+  const matriz = line('Matriz', { state: 'NEEDS_REAUTH', access: NOT_RELEASED_NOT_WORKING })
   open({ sankhya: [matriz], ml: [], mayManage: true })
   const item = await row('Matriz')
   expect(item.getByText('Chaves recusadas')).toBeTruthy()
@@ -224,4 +228,93 @@ test('a lista da empresa que falha também diz a frase, e não deixa a dona sem 
   expect(await screen.findByText(sentenceOfCode('DATABASE_UNAVAILABLE'))).toBeTruthy()
   expect(screen.getByRole('button', { name: 'Tentar de novo' })).toBeTruthy()
   expect(screen.queryByRole('button', { name: /Liberar|Tirar/ })).toBeNull()
+})
+
+test('uma ligação ainda não testada não tem Liberar: a linha diz para testar e leva à ligação', async () => {
+  const nova = line('Loja 1', { state: 'NEW', access: NOT_RELEASED_NOT_WORKING })
+  open({ sankhya: [], ml: [nova], mayManage: true })
+  const item = await row('Loja 1')
+  expect(item.queryByRole('button', { name: /Liberar/ })).toBeNull()
+  const way = item.getByRole('link', { name: 'Teste a ligação antes de liberar' })
+  expect(way.getAttribute('href')).toBe(`/companies/${COMPANY.id}/integrations/${nova.id}`)
+})
+
+test('uma ligação que pede para conectar de novo, ainda não liberada, também não tem Liberar', async () => {
+  open({
+    sankhya: [line('Matriz', { state: 'NEEDS_REAUTH', access: NOT_RELEASED_NOT_WORKING })],
+    ml: [],
+    mayManage: true,
+  })
+  expect((await row('Matriz')).queryByRole('button', { name: /Liberar/ })).toBeNull()
+})
+
+test('a liberação recusada porque a ligação não funciona mais diz a frase na janela', async () => {
+  open({ sankhya: [], ml: [line('Loja 1')], mayManage: true })
+  server.use(
+    http.put(`${API}/projects/${PEDIDOS.id}/connections/:connectionId`, () =>
+      refusal('CONNECTION_NOT_WORKING'),
+    ),
+  )
+  fireEvent.click((await row('Loja 1')).getByRole('button', { name: 'Liberar para ler: Loja 1' }))
+  const dialog = await screen.findByRole('alertdialog')
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Liberar' }))
+  expect(
+    await within(dialog).findByText(
+      'Essa ligação não está funcionando. Teste a ligação, ou conecte de novo, antes de liberar.',
+    ),
+  ).toBeTruthy()
+})
+
+test('o membro vê a ligação não testada sem o caminho, e uma que funciona não leva link', async () => {
+  open({
+    sankhya: [],
+    ml: [line('Loja 1', { state: 'NEW', access: NOT_RELEASED_NOT_WORKING }), line('Loja 2')],
+    mayManage: false,
+  })
+  expect((await row('Loja 1')).getByText('não liberado')).toBeTruthy()
+  expect((await row('Loja 1')).queryByRole('link')).toBeNull()
+  expect((await row('Loja 2')).queryByRole('link')).toBeNull()
+})
+
+test('uma ligação que funciona não leva link de teste, para a dona', async () => {
+  open({ sankhya: [], ml: [line('Loja 1'), line('Loja 2', { access: READS })], mayManage: true })
+  expect((await row('Loja 1')).queryByRole('link')).toBeNull()
+  expect((await row('Loja 2')).queryByRole('link')).toBeNull()
+})
+
+test('uma ligação liberada que deixou de funcionar diz que não lê, leva a testá-la e deixa Tirar', async () => {
+  const matriz = line('Matriz', { state: 'NEW', access: RELEASED_NOT_WORKING })
+  open({ sankhya: [matriz], ml: [], mayManage: true })
+  const item = await row('Matriz')
+  expect(item.getByText('liberado, mas não lê até a ligação funcionar')).toBeTruthy()
+  expect(item.queryByText('lê')).toBeNull()
+  const way = item.getByRole('link', { name: 'Testar em Integrações da empresa' })
+  expect(way.getAttribute('href')).toBe(`/companies/${COMPANY.id}/integrations/${matriz.id}`)
+  expect(item.getByRole('button', { name: 'Tirar: Matriz' })).toBeTruthy()
+  expect(item.queryByRole('button', { name: /Liberar/ })).toBeNull()
+})
+
+test('uma ligação liberada que pede para conectar de novo leva a conectar de novo, não a testar', async () => {
+  open({
+    sankhya: [line('Matriz', { state: 'NEEDS_REAUTH', access: RELEASED_NOT_WORKING })],
+    ml: [],
+    mayManage: true,
+  })
+  const item = await row('Matriz')
+  expect(item.getByText('liberado, mas não lê até a ligação funcionar')).toBeTruthy()
+  expect(
+    item.getByRole('link', { name: 'Conectar de novo em Integrações da empresa' }),
+  ).toBeTruthy()
+  expect(item.queryByRole('link', { name: 'Testar em Integrações da empresa' })).toBeNull()
+})
+
+test('num conector de uma ligação por Projeto, a liberada que não funciona ainda ocupa o lugar', async () => {
+  open({
+    sankhya: [line('Matriz', { state: 'NEW', access: RELEASED_NOT_WORKING }), line('Filial')],
+    ml: [],
+    mayManage: true,
+  })
+  expect(
+    (await row('Filial')).getByText('O Sankhya lê uma ligação por Projeto. Tire a Matriz antes.'),
+  ).toBeTruthy()
 })
