@@ -4,7 +4,6 @@ import { join } from 'node:path'
 import { test } from 'node:test'
 import { RunId } from '@conexus/hub-api'
 import { createWorkspaceTools, WORKSPACE_TOOLS } from '@mastra/core/workspace'
-import { Failure } from '../../platform/failure.ts'
 import {
   COMPANY,
   CONVERSATION,
@@ -88,10 +87,9 @@ test('máquina: a máquina que cai no meio do turno é refeita, e o turno não g
   await workspace.filesystem?.writeFile('a.ts', 'um\n')
   control.outcome = 'created'
   await control.restart()
-  await assert.rejects(
-    machines.collect({ conversationId: CONVERSATION, base }),
-    (error) => error instanceof Failure && error.code === 'MACHINE_LOST',
-  )
+  await assert.rejects(machines.collect({ conversationId: CONVERSATION, base }), {
+    code: 'MACHINE_LOST',
+  })
 })
 
 test('máquina: a máquina que pausou na hora do turno, ou que o Mastra religa no meio dele, guarda o que o turno escreveu', async (t) => {
