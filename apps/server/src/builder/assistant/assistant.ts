@@ -57,7 +57,7 @@ type AssistantConnection = Awaited<ReturnType<AssistantConnectors['connections']
 
 const MODE = 'conversa'
 /** The controller's own tools are all off: the Assistant asks no card, keeps no task list and calls no subagent. */
-const BUILTIN_TOOLS: BuiltinToolId[] = [
+const BUILTIN_TOOLS: readonly BuiltinToolId[] = [
   'ask_user',
   'submit_plan',
   'task_write',
@@ -70,7 +70,7 @@ const BUILTIN_TOOLS: BuiltinToolId[] = [
  * The closed set the mode offers the model (criterion 12): the layer that enforces it, as the
  * controller filters the agent's tools by it; `noteSave: false` below only leaves the save unbuilt.
  */
-const AVAILABLE_TOOLS = [
+const AVAILABLE_TOOLS: readonly string[] = [
   ...Object.values(WORKSPACE_TOOL),
   BUILDER_TOOL.connectorRead,
   BUILDER_TOOL.connectorNotes,
@@ -137,20 +137,22 @@ function speakersOf(deps: Deps, scope: SessionScope): Promise<Speakers> {
   })
 }
 
-/** Each live Projeto of the company with its app, published or not. */
-function projectsOf(deps: Deps, scope: SessionScope): Promise<Overview['projects']> {
+/** The live Projetos of the company with their app, published or not, a page of them and whether there are more. */
+function projectsOf(deps: Deps, scope: SessionScope): Promise<Omit<Overview, 'connections'>> {
   return deps.database.read(readerScope(scope), async (tx) => {
     await admitAsker(deps, tx, scope)
-    const projects: Overview['projects'][number][] = []
-    for (const each of await deps.projects.liveProjectsOf(tx, scope.companyId)) {
-      const { publishedVersion } = await deps.projects.versionNumbersOf(tx, each.projectId)
+    const live = await deps.projects.liveProjectsOf(tx, scope.companyId)
+    const ids = live.projects.map((each) => each.projectId)
+    const published = await deps.projects.publishedVersionsOf(tx, ids)
+    const projects = live.projects.map((each) => {
+      const version = published.get(each.projectId)
       const app =
-        publishedVersion === null
+        version === undefined
           ? ({ kind: 'NOT_PUBLISHED' } as const)
-          : ({ kind: 'PUBLISHED', version: String(publishedVersion) } as const)
-      projects.push({ ...each, app })
-    }
-    return projects
+          : ({ kind: 'PUBLISHED', version: String(version) } as const)
+      return { ...each, app }
+    })
+    return { projects, moreProjects: live.more }
   })
 }
 
@@ -162,10 +164,11 @@ function accessOf(
   deps: Deps,
   scope: SessionScope,
   chosen: readonly AssistantConnection[],
+  savedAt: (requestContext: RequestContext) => string,
 ): ConnectorAccess {
   return {
     connections: chosen,
-    saving: { at: (requestContext) => readsFileOf(requestContext), log: deps.log },
+    saving: { at: savedAt, log: deps.log },
     async read(call, requestContext) {
       const turn = turnKeyIn(requestContext)
       if (turn === undefined) {
@@ -180,17 +183,23 @@ function accessOf(
   }
 }
 
-const readsOfRun = new WeakMap<RequestContext, number>()
-
-/** `reads/<turn>-<n>.json`: the turn's first 8 characters and the read's number in the run, so one turn never writes over another. */
-function readsFileOf(requestContext: RequestContext): string {
-  const turn = turnKeyIn(requestContext)
-  if (turn === undefined) {
-    throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'CONNECTOR_TOOL_WITHOUT_TURN' } })
+/**
+ * `reads/<turn>-<n>.json`: the turn's first 8 characters and the read's number in the run, so one
+ * turn never writes over another; the count lives with the agent, one per run.
+ */
+function readsFiles(): (requestContext: RequestContext) => string {
+  const readsOfRun = new WeakMap<RequestContext, number>()
+  return (requestContext) => {
+    const turn = turnKeyIn(requestContext)
+    if (turn === undefined) {
+      throw new Failure('INTERNAL_UNEXPECTED', {
+        details: { reason: 'CONNECTOR_TOOL_WITHOUT_TURN' },
+      })
+    }
+    const n = (readsOfRun.get(requestContext) ?? 0) + 1
+    readsOfRun.set(requestContext, n)
+    return `reads/${turn.slice(0, 8)}-${n}.json`
   }
-  const n = (readsOfRun.get(requestContext) ?? 0) + 1
-  readsOfRun.set(requestContext, n)
-  return `reads/${turn.slice(0, 8)}-${n}.json`
 }
 
 type Offered = (requestContext: RequestContext) => Promise<readonly AssistantConnection[]>
@@ -226,6 +235,7 @@ function assistantAgent(
   const { queue } = deps
   const { scopeOf } = parts
   const offeredOf = offeredFor(deps, scopeOf)
+  const savedAt = readsFiles()
   async function chosenOf(requestContext: RequestContext) {
     return (await offeredOf(requestContext)).filter((each) => each.chosen)
   }
@@ -246,7 +256,7 @@ function assistantAgent(
     name: 'Assistant',
     instructions: assistantInstructions({
       scopeOf,
-      chosenOf: offeredOf,
+      offeredOf,
       speakersOf: (scope) => speakersOf(deps, scope),
     }),
     model: ({ requestContext }) => sessionModel(requestContext),
@@ -261,7 +271,7 @@ function assistantAgent(
         ...(scope?.place.kind === 'COMPANY' ? { [ASSISTANT_TOOL.proposeApp]: proposeAppTool } : {}),
         ...(scope === undefined
           ? {}
-          : connectorTools(accessOf(deps, scope, chosen), { noteSave: false })),
+          : connectorTools(accessOf(deps, scope, chosen, savedAt), { noteSave: false })),
       }
     },
     skills: async ({ requestContext }) => [
@@ -303,10 +313,10 @@ export function createAssistant(deps: Deps) {
     storage,
     memory,
     agent,
-    modes: [{ id: MODE, availableTools: AVAILABLE_TOOLS }],
+    modes: [{ id: MODE, availableTools: [...AVAILABLE_TOOLS] }],
     // The conversation's machine (Factory `session-sandbox.ts:29-36`); none outside a conversation.
     workspace: ({ requestContext }) => machines.workspace(requestContext),
-    disableBuiltinTools: BUILTIN_TOOLS,
+    disableBuiltinTools: [...BUILTIN_TOOLS],
     // Decision 0053: nothing waits to be approved; the systems get no write.
     initialState: { yolo: true },
   })

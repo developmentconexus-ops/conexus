@@ -89,6 +89,8 @@ export type Overview = {
     name: string
     app: { kind: 'PUBLISHED'; version: string } | { kind: 'NOT_PUBLISHED' }
   }[]
+  /** The company has more live Projetos than the page `projects` holds. */
+  moreProjects: boolean
   connections: readonly SessionConnection[]
 }
 

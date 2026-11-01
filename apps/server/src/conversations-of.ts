@@ -3,7 +3,7 @@ import { createAssistant } from './builder/assistant/public.ts'
 import { createConversations, createMastraStorage } from './builder/conversation/public.ts'
 import type { openGoogleCalls } from './builder/model-accounts/public.ts'
 import type { AssistantMachine, Runs } from './builder/runs/public.ts'
-import { versionNumbersOf } from './hub/apps/public.ts'
+import { publishedVersionsOf } from './hub/apps/public.ts'
 import type { Connectors } from './hub/connectors/public.ts'
 import type { IdentityPorts } from './hub/identity/public.ts'
 import { liveProjectOf, liveProjectsOf } from './hub/projects/public.ts'
@@ -48,7 +48,7 @@ export function conversationsOf(deps: {
       read: (scope, call) => deps.connectors().assistant.read(scope, call),
       notes: (scope, connectionId) => deps.connectors().assistant.notes(scope, connectionId),
     },
-    projects: { liveProjectOf, liveProjectsOf, versionNumbersOf },
+    projects: { liveProjectOf, liveProjectsOf, publishedVersionsOf },
   })
   const conversations = createConversations({
     ...{ database, identity, projects: { liveProjectOf }, google: deps.google, log },
