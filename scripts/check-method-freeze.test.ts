@@ -23,12 +23,12 @@ function write(dir: string, path: string, content: string) {
   writeFileSync(join(dir, path), content)
 }
 
-function branch(changed: string, card: boolean): string {
+function branch(changed: string, card: boolean | string): string {
   const dir = mkdtempSync(join(tmpdir(), 'conexus-freeze-'))
   dirs.push(dir)
   git(dir, 'init', '-q', '-b', 'main')
   write(dir, 'README.md', 'x\n')
-  if (card) write(dir, 'docs/steps/e01-x.md', 'card\n')
+  if (card) write(dir, `docs/steps/${card === true ? 'e01-x.md' : card}`, 'card\n')
   git(dir, 'add', '.')
   git(dir, 'commit', '-q', '-m', 'base')
   git(dir, 'checkout', '-q', '-b', 'topic')
@@ -58,6 +58,20 @@ test('recusa mudança em skill com cartão em docs/steps', () => {
 
 test('aceita com o rótulo emergência', () => {
   assert.equal(run(branch('docs/guides/code.md', true), 'bug,emergência').status, 0)
+})
+
+test('recusa guia com cartão da trilha padrão', () => {
+  assert.equal(run(branch('docs/guides/code.md', 'pattern-e01-x.md')).status, 1)
+})
+
+test('aceita o modelo do cartão padrão com só um cartão da fronteira', () => {
+  const path = '.agents/skills/conexus-scope/references/pattern-card.md'
+  assert.equal(run(branch(path, 'e01-x.md')).status, 0)
+})
+
+test('recusa o modelo do cartão padrão com cartão da trilha padrão', () => {
+  const path = '.agents/skills/conexus-scope/references/pattern-card.md'
+  assert.equal(run(branch(path, 'pattern-e01-x.md')).status, 1)
 })
 
 test('aceita sem cartão em docs/steps', () => {
