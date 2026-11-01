@@ -56,7 +56,10 @@ type AssistantConnectors = Connectors['assistant']
 type AssistantConnection = Awaited<ReturnType<AssistantConnectors['connections']>>[number]
 
 const MODE = 'conversa'
-/** The controller's own tools are all off: the Assistant asks no card, keeps no task list and calls no subagent. */
+/**
+ * The controller's own tools are all off: the Assistant asks no card, keeps no task list and calls
+ * no subagent.
+ */
 const BUILTIN_TOOLS: readonly BuiltinToolId[] = [
   'ask_user',
   'submit_plan',
@@ -96,7 +99,10 @@ type Deps = {
   connectors: AssistantConnectors
   projects: AssistantProjects
   queue: QueueDeps
-  /** The conversations' machines at the provider (step 24.1, U3): the Builder's kit and API, its template and installation. */
+  /**
+   * The conversations' machines at the provider (step 24.1, U3): the Builder's kit and API, its
+   * template and installation.
+   */
   machine: AssistantMachine
   machineTuning?: MachineTuning
   log: FailureLog
@@ -116,7 +122,10 @@ function admitAsker(deps: Deps, tx: ReadTx, scope: SessionScope) {
   })
 }
 
-/** The company, the person with their role, and the Projeto the conversation lives in, for its block. */
+/**
+ * The company, the person with their role, and the Projeto the conversation lives in, for its
+ * block.
+ */
 function speakersOf(deps: Deps, scope: SessionScope): Promise<Speakers> {
   return deps.database.read(readerScope(scope), async (tx) => {
     const admitted = await admitAsker(deps, tx, scope)
@@ -137,7 +146,10 @@ function speakersOf(deps: Deps, scope: SessionScope): Promise<Speakers> {
   })
 }
 
-/** The live Projetos of the company with their app, published or not, a page of them and whether there are more. */
+/**
+ * The live Projetos of the company with their app, published or not, a page of them and whether
+ * there are more.
+ */
 function projectsOf(deps: Deps, scope: SessionScope): Promise<Omit<Overview, 'connections'>> {
   return deps.database.read(readerScope(scope), async (tx) => {
     await admitAsker(deps, tx, scope)
@@ -204,7 +216,10 @@ function readsFiles(): (requestContext: RequestContext) => string {
 
 type Offered = (requestContext: RequestContext) => Promise<readonly AssistantConnection[]>
 
-/** What the run's place offers, each with whether the conversation chose it, read once per run (as `scopeOf`). */
+/**
+ * What the run's place offers, each with whether the conversation chose it, read once per run (as
+ * `scopeOf`).
+ */
 function offeredFor(deps: Deps, scopeOf: ScopeOf): Offered {
   const read = new WeakMap<RequestContext, Promise<readonly AssistantConnection[]>>()
   return (requestContext) => {
@@ -267,7 +282,8 @@ function assistantAgent(
         ...toolsOf(sessionModel(requestContext)),
         [ASSISTANT_TOOL.overview]: overview,
         [ASSISTANT_TOOL.showFile]: showFile,
-        // Creating an app is the company's: a conversation inside a Projeto talks about that Projeto.
+        // Creating an app is the company's: a conversation inside a Projeto talks about that
+        // Projeto.
         ...(scope?.place.kind === 'COMPANY' ? { [ASSISTANT_TOOL.proposeApp]: proposeAppTool } : {}),
         ...(scope === undefined
           ? {}

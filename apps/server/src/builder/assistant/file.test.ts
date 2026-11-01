@@ -208,3 +208,16 @@ test('o download que o navegador abandona, num soquete de verdade: sair no meio 
     false,
   )
 })
+
+test("o arquivo com ' e parênteses no nome: filename* os codifica, como o cabeçalho pede (RFC 8187)", async (t) => {
+  const on = await assisting(t, [[write("d'água (1).csv", 'a;b\n')], [said('Escrevi.')]])
+  const url = await created(on.hub, on.ana, on.assistant, { connections: [] })
+  assert.equal(endOf(await (await talking(t, on.hub, on.ana, url)).say('Escreva')), 'complete')
+  provided(on, url)
+  const got = await call(on.hub, on.ana, 'GET', fileOf(url, "d'água (1).csv"))
+  assert.equal(got.statusCode, 200, got.body)
+  assert.equal(
+    got.headers['content-disposition'],
+    `attachment; filename="d'_gua (1).csv"; filename*=UTF-8''d%27%C3%A1gua%20%281%29.csv`,
+  )
+})

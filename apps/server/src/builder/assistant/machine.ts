@@ -21,7 +21,10 @@ import type { ScopeOf } from './context.ts'
 /** Where the conversation's files live on its machine, made at the machine's start. */
 const WORK_FOLDER = '/home/user/work'
 
-/** The hosts the Assistant's machine may reach: the package registries, for pip and npm (decision 0059). */
+/**
+ * The hosts the Assistant's machine may reach: the package registries, for pip and npm (decision
+ * 0059).
+ */
 export const ASSISTANT_HOSTS = ['registry.npmjs.org', 'pypi.org', 'files.pythonhosted.org']
 
 const START_MS = 120_000
@@ -54,7 +57,10 @@ export type AssistantMachines = {
   stopAll(): Promise<void>
   /** The conversation is deleted: every machine it marked is killed (`MachineApi.kill`). */
   kill(conversationId: ConversationId): Promise<void>
-  /** The filesystem `show_file` locates a file in: a short-lived instance, so a link made after a first look is looked at again. */
+  /**
+   * The filesystem `show_file` locates a file in: a short-lived instance, so a link made after a
+   * first look is looked at again.
+   */
   serving(requestContext: RequestContext): WorkspaceFilesystem | undefined
   /**
    * The download: the machine the turn holds, or the one the provider has under the
@@ -73,7 +79,10 @@ const ON_E2B: MachineTuning = { workFolder: WORK_FOLDER, startMs: START_MS }
 
 type Deps = AssistantMachine & { log: FailureLog; scopeOf: ScopeOf }
 
-/** Where a path the model or the person names lands in the conversation's folder, or why it does not. */
+/**
+ * Where a path the model or the person names lands in the conversation's folder, or why it does
+ * not.
+ */
 export type Located =
   | { kind: 'FILE'; path: string; name: string; bytes: number }
   | { kind: 'OUTSIDE' | 'NOT_FOUND' }
@@ -103,13 +112,21 @@ type Session = {
   name: string
   kit: Kit
   files: SandboxFilesystem
-  /** The conversation's workspace for the turn: the controller asks for it at every step, and the machine is one. */
+  /**
+   * The conversation's workspace for the turn: the controller asks for it at every step, and the
+   * machine is one.
+   */
   workspace: Workspace | undefined
-  /** Built with the workspace: building it asks the provider nothing, and only its start finds the machine. */
+  /**
+   * Built with the workspace: building it asks the provider nothing, and only its start finds the
+   * machine.
+   */
   ready: Promise<Kit> | undefined
   /** The provider's start, kept past the start's deadline: the pause waits for it (code C57). */
   starting: Promise<unknown> | undefined
-  /** The provider's id of the machine a download found: its start reattaches it, never makes one. */
+  /**
+   * The provider's id of the machine a download found: its start reattaches it, never makes one.
+   */
   found: string | undefined
 }
 
@@ -129,7 +146,10 @@ class Machines implements AssistantMachines {
   private readonly lanes = new Map<ConversationId, Promise<unknown>>()
   private readonly phases = new Map<ConversationId, (phase: Phase) => void>()
 
-  /** What the model is told of the machine in place of the provider's own words; its files and its network are in the fixed message (`assistant.md`). */
+  /**
+   * What the model is told of the machine in place of the provider's own words; its files and its
+   * network are in the fixed message (`assistant.md`).
+   */
   private readonly told: string
 
   constructor(deps: Deps, tuning: MachineTuning) {
@@ -150,7 +170,10 @@ class Machines implements AssistantMachines {
     return run
   }
 
-  /** Wakes or creates the machine, once per session; a machine from another template is killed first. */
+  /**
+   * Wakes or creates the machine, once per session; a machine from another template is killed
+   * first.
+   */
   private ensure(session: Session): Promise<Kit> {
     session.ready ??= this.boot(session)
     return session.ready
@@ -180,7 +203,8 @@ class Machines implements AssistantMachines {
   }
 
   /**
-   * Mastra's `onStart`: the folder exists, and a machine found again has the network narrowed again.
+   * Mastra's `onStart`: the folder exists, and a machine found again has the network narrowed
+   * again.
    * The folder is where commands start, and the template does not make it: the `mkdir` starts at
    * the root, for E2B refuses a command whose folder does not exist.
    */
@@ -192,7 +216,10 @@ class Machines implements AssistantMachines {
     if (made === undefined || made.exitCode !== 0) throw new Error(MKDIR_FAILED)
   }
 
-  /** The conversation's files, through its machine; the symlink check also starts the machine for the first native write. */
+  /**
+   * The conversation's files, through its machine; the symlink check also starts the machine for
+   * the first native write.
+   */
   private filesystem(
     conversationId: ConversationId,
     kit: Kit,
@@ -206,7 +233,10 @@ class Machines implements AssistantMachines {
     })
   }
 
-  /** A filesystem that has checked nothing yet, to serve one file: the check is made once per instance, so a long-lived one would not see a link made later. */
+  /**
+   * A filesystem that has checked nothing yet, to serve one file: the check is made once per
+   * instance, so a long-lived one would not see a link made later.
+   */
   private shortLived(session: Session): SandboxFilesystem {
     return this.filesystem(session.conversationId, session.kit, () => this.ensure(session))
   }
@@ -282,7 +312,10 @@ class Machines implements AssistantMachines {
     })
   }
 
-  /** Pauses the machine once its start has settled, a start past its deadline included; one that failed made none. */
+  /**
+   * Pauses the machine once its start has settled, a start past its deadline included; one that
+   * failed made none.
+   */
   private async pause(session: Session): Promise<void> {
     if (session.starting === undefined) return
     const [start] = await Promise.allSettled([session.starting])
@@ -381,7 +414,9 @@ class Machines implements AssistantMachines {
   }
 }
 
-/** The conversations' machines; `tuning` is a test's, which runs them as folders of this computer. */
+/**
+ * The conversations' machines; `tuning` is a test's, which runs them as folders of this computer.
+ */
 export function createAssistantMachines(
   deps: Deps,
   tuning: MachineTuning = ON_E2B,

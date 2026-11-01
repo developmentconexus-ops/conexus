@@ -38,7 +38,10 @@ import type { AssistantMachines } from './machine.ts'
 import type { assistantMemory } from './memory.ts'
 import type { AssistantProjects } from './ports.ts'
 
-/** A page of the person's conversations (code C44): a page number the token carries, never authority. */
+/**
+ * A page of the person's conversations (code C44): a page number the token carries, never
+ * authority.
+ */
 const PER_PAGE = 30
 const PageNumber = z.coerce.number().int().min(1).max(100_000)
 
@@ -80,7 +83,10 @@ async function admitted(deps: Deps, owner: Owner, place: Place): Promise<void> {
   })
 }
 
-/** The person's own thread of the Assistant, or `CONVERSATION_NOT_FOUND`; another's and one that does not exist answer the same (S10). */
+/**
+ * The person's own thread of the Assistant, or `CONVERSATION_NOT_FOUND`; another's and one that
+ * does not exist answer the same (S10).
+ */
 async function ownThread(deps: Deps, owner: Owner, conversationId: ConversationId) {
   const resourceId = assistantOwner(owner)
   const thread = await deps.memory.getThreadById({ threadId: conversationId, resourceId })
@@ -88,12 +94,18 @@ async function ownThread(deps: Deps, owner: Owner, conversationId: ConversationI
   return thread
 }
 
-/** The thread's scope, read with no session (a `GET` starts nothing): its place and choice as the Hub keeps them. */
+/**
+ * The thread's scope, read with no session (a `GET` starts nothing): its place and choice as the
+ * Hub keeps them.
+ */
 async function scopeOfThread(deps: Deps, owner: Owner, thread: StorageThreadType) {
   return scopeOn(owner, await deps.chosen.of(owner, ConversationId.parse(thread.id)))
 }
 
-/** What the conversation answers: its summary and each connection its place offers, with whether it chose it. */
+/**
+ * What the conversation answers: its summary and each connection its place offers, with whether it
+ * chose it.
+ */
 async function conversationOf(deps: Deps, thread: StorageThreadType, scope: SessionScope) {
   const connections = await deps.connectors.connections(scope)
   return {
@@ -117,7 +129,10 @@ async function offeredOnly(deps: Deps, scope: SessionScope, asked: readonly Conn
   return offered.flatMap((each) => (wanted.has(each.connectionId) ? [each.connectionId] : []))
 }
 
-/** The conversation an attempt names: one id per company, person and key, so a repeat finds the same thread (code C37). */
+/**
+ * The conversation an attempt names: one id per company, person and key, so a repeat finds the same
+ * thread (code C37).
+ */
 function conversationIdOf(owner: Owner, attemptKey: string): ConversationId {
   const hex = createHash('sha256')
     .update(`assistant:${owner.companyId}:${owner.personId}:${attemptKey}`)
@@ -164,7 +179,8 @@ async function created(deps: Deps, owner: Owner, input: { attemptKey: string; bo
   const kept = ModelIdSchema.optional().parse(earlier?.metadata?.currentModelId)
   if (kept === undefined) await session.model.switch(start.model, { thinkingLevel: effort })
   const thread = await ownThread(deps, owner, id)
-  // The attempt that kept the choice made the conversation: a repeat, or a race on the key, did not.
+  // The attempt that kept the choice made the conversation: a repeat, or a race on the key, did
+  // not.
   return { made, thread, model: kept ?? start.model }
 }
 
@@ -270,7 +286,10 @@ function registerWrites(app: FastifyInstance, deps: Deps): void {
   })
 }
 
-/** The Assistant's conversations (step 24.1, U2): every route admits the person who may ask now (`askAssistant`). */
+/**
+ * The Assistant's conversations (step 24.1, U2): every route admits the person who may ask now
+ * (`askAssistant`).
+ */
 export function registerAssistantRoutes(app: FastifyInstance, deps: Deps): void {
   registerReads(app, deps)
   registerWrites(app, deps)

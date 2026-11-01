@@ -27,7 +27,10 @@ const MEDIA: Record<string, string> = {
   '.pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
 }
 
-/** The type a file's name says, for the download and for the screen; `application/octet-stream` when it says none. */
+/**
+ * The type a file's name says, for the download and for the screen; `application/octet-stream` when
+ * it says none.
+ */
 export function mediaOf(name: string): string {
   return MEDIA[posix.extname(name).toLowerCase()] ?? 'application/octet-stream'
 }
@@ -39,7 +42,9 @@ function refused(reason: 'OUTSIDE' | 'NOT_FOUND' | 'MACHINE_UNAVAILABLE') {
   return { kind: 'SHOW_REFUSED', reason } as const
 }
 
-/** What the model reads of `show_file`'s answer: the path shown, or the refusal; never the content. */
+/**
+ * What the model reads of `show_file`'s answer: the path shown, or the refusal; never the content.
+ */
 const ToModel = z.union([
   z.object({ kind: z.literal('SHOW_REFUSED'), reason: z.string() }),
   z.object({ kind: z.enum(['TEXT', 'FILE']), path: z.string() }),
@@ -88,7 +93,8 @@ export function showFileTool(machines: Pick<AssistantMachines, 'folder' | 'servi
         throw error
       }
     },
-    // Only the path or the refusal, whatever else the output holds; an output of another shape throws.
+    // Only the path or the refusal, whatever else the output holds; an output of another shape
+    // throws.
     toModelOutput: (output) => {
       const shown = ToModel.parse(output)
       return { type: 'json', value: shown.kind === 'SHOW_REFUSED' ? shown : { shown: shown.path } }

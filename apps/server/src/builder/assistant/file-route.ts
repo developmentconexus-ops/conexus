@@ -12,7 +12,10 @@ import { INLINE_MEDIA, mediaOf } from './show-file.ts'
 type FileDeps = {
   machines: AssistantMachines
   log: FailureLog
-  /** The person may ask the Assistant now and owns the conversation, else the same `NOT_FOUND` or `CONVERSATION_NOT_FOUND` (security S10). */
+  /**
+   * The person may ask the Assistant now and owns the conversation, else the same `NOT_FOUND` or
+   * `CONVERSATION_NOT_FOUND` (security S10).
+   */
   ownConversation(
     owner: { companyId: CompanyId; personId: Person['id'] },
     conversationId: ConversationId,
@@ -27,20 +30,39 @@ const FILE_FAILURE = {
   MACHINE_UNAVAILABLE: 'MACHINE_UNAVAILABLE',
 } as const
 
-/** The name for clients that read only `filename=`: what is not printable ASCII, and the quote and the backslash, become `_`. */
+/**
+ * The name for clients that read only `filename=`: what is not printable ASCII, and the quote and
+ * the backslash, become `_`.
+ */
 function asciiOf(name: string): string {
   return name.replaceAll(/[^\x20-\x7e]|["\\]/g, '_')
 }
 
-/** The Hub's own policy with `sandbox` added: the file may not run, and the policy that keeps the Hub from being framed stays (security S24). */
+/**
+ * The name as `filename*` takes it (RFC 8187): percent-encoded UTF-8, the characters
+ * `encodeURIComponent` leaves but the header does not take, `'` among them, encoded too.
+ */
+function extendedOf(name: string): string {
+  return encodeURIComponent(name).replaceAll(
+    /['()*]/g,
+    (char) => `%${char.charCodeAt(0).toString(16).toUpperCase()}`,
+  )
+}
+
+/**
+ * The Hub's own policy with `sandbox` added: the file may not run, and the policy that keeps the
+ * Hub from being framed stays (security S24).
+ */
 function sandboxed(policy: unknown): string {
   return typeof policy === 'string' && policy !== '' ? `${policy}; sandbox` : 'sandbox'
 }
 
 /**
  * The file the Assistant wrote, for the conversation's owner (criterion 20). The model wrote it, so
- * the browser is told not to run it: the type from the name, saved unless an image, `nosniff`, and the
- * Hub's Content-Security-Policy with `sandbox` (security S24). Each file served is logged (code C54).
+ * the browser is told not to run it: the type from the name, saved unless an image, `nosniff`, and
+ * the
+ * Hub's Content-Security-Policy with `sandbox` (security S24). Each file served is logged (code
+ * C54).
  */
 export function registerFile(app: FastifyInstance, deps: FileDeps): void {
   app.route({
@@ -76,7 +98,7 @@ export function registerFile(app: FastifyInstance, deps: FileDeps): void {
         .header('content-type', media)
         .header(
           'content-disposition',
-          `${disposition}; filename="${asciiOf(name)}"; filename*=UTF-8''${encodeURIComponent(name)}`,
+          `${disposition}; filename="${asciiOf(name)}"; filename*=UTF-8''${extendedOf(name)}`,
         )
         .header('x-content-type-options', 'nosniff')
         .header('content-security-policy', sandboxed(reply.getHeader('content-security-policy')))

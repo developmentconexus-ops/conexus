@@ -12,7 +12,10 @@ export const SESSION_MARK = {
   project: 'conexusProjectId',
 } as const
 
-/** The owner Mastra keeps an Assistant's conversation under: the company with the person, apart from the Builder's. */
+/**
+ * The owner Mastra keeps an Assistant's conversation under: the company with the person, apart from
+ * the Builder's.
+ */
 export function assistantOwner(owner: {
   companyId: SessionScope['companyId']
   personId: SessionScope['personId']

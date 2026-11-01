@@ -15,7 +15,10 @@ function scopeOf(owner: Owner) {
 
 export type ChosenConnections = ReturnType<typeof chosenConnections>
 
-/** The connections each Assistant conversation chose, which only the Hub's routes write (`tables.ts`). */
+/**
+ * The connections each Assistant conversation chose, which only the Hub's routes write
+ * (`tables.ts`).
+ */
 export function chosenConnections(database: Database) {
   return {
     /**
@@ -64,7 +67,8 @@ export function chosenConnections(database: Database) {
           .set({ connections: [...connections] })
           .where(eq(assistantConversation.id, conversationId))
           .returning({ id: assistantConversation.id })
-        // The creation keeps the row before the thread: a thread of the person's without one is ours.
+        // The creation keeps the row before the thread: a thread of the person's without one is
+        // ours.
         if (changed === undefined) {
           throw new Failure('INTERNAL_UNEXPECTED', {
             details: { reason: 'ASSISTANT_CHOICE_MISSING' },

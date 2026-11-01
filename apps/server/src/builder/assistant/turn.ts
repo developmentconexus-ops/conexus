@@ -12,7 +12,9 @@ import type { ScopeOf } from './context.ts'
 import type { AssistantMachines } from './machine.ts'
 
 const TURN_PROCESSOR = 'conexus-assistant-turn'
-/** Where the run's context holds the turn's key, which the company's door counts the 50 calls by. */
+/**
+ * Where the run's context holds the turn's key, which the company's door counts the 50 calls by.
+ */
 const TURN_KEY = 'conexus-assistant-turn-key'
 
 const Session = z.object({ sessionId: ConversationId })
@@ -43,7 +45,10 @@ export function assistantTurns(deps: {
     held.delete(sessionId)
   }
 
-  /** The turn ended: the conversation's machine sleeps until the next question; a failed pause is logged there. */
+  /**
+   * The turn ended: the conversation's machine sleeps until the next question; a failed pause is
+   * logged there.
+   */
   function sleep(sessionId: ConversationId): void {
     void deps.machines.stop(sessionId)
   }
