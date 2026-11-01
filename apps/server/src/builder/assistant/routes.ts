@@ -157,7 +157,7 @@ async function created(deps: Deps, owner: Owner, input: { attemptKey: string; bo
   const scope: SessionScope = { ...owner, place, chosen: [] }
   const chosen = await offeredOnly(deps, scope, input.body.connections)
   const { projectId } = input.body
-  await deps.chosen.keep(owner, { conversationId: id, projectId, connections: chosen })
+  const made = await deps.chosen.keep(owner, { conversationId: id, projectId, connections: chosen })
   const tags = {
     [SESSION_MARK.company]: owner.companyId,
     [SESSION_MARK.person]: owner.personId,
@@ -167,7 +167,8 @@ async function created(deps: Deps, owner: Owner, input: { attemptKey: string; bo
   const kept = ModelIdSchema.optional().parse(earlier?.metadata?.currentModelId)
   if (kept === undefined) await session.model.switch(start.model, { thinkingLevel: effort })
   const thread = await ownThread(deps, owner, id)
-  return { created: earlier === null, thread, model: kept ?? start.model }
+  // The attempt that kept the choice made the conversation: a repeat, or a race on the key, did not.
+  return { made, thread, model: kept ?? start.model }
 }
 
 function nextOf(page: number, hasMore: boolean): Next {
@@ -238,13 +239,13 @@ function registerReads(app: FastifyInstance, deps: Deps): void {
 function registerWrites(app: FastifyInstance, deps: Deps): void {
   serve(app, createAssistantConversation, async (input) => {
     const owner = ownerOf(input)
-    const attemptKey = z.string().parse(input.attemptKey)
-    const made = await created(deps, owner, { attemptKey, body: input.body })
+    const made = await created(deps, owner, { attemptKey: input.attemptKey, body: input.body })
     const scope = await scopeOfThread(deps, owner, made.thread)
-    if (made.created) {
+    if (made.made) {
       deps.log.info(
         {
-          companyId: owner.companyId,
+          ...owner,
+          traceId: input.traceId,
           conversationId: made.thread.id,
           inProject: scope.place.kind === 'PROJECT',
         },
@@ -264,7 +265,7 @@ function registerWrites(app: FastifyInstance, deps: Deps): void {
     const chosen = await offeredOnly(deps, scope, input.body.connections)
     await deps.chosen.change(owner, conversationId, chosen)
     deps.log.info(
-      { companyId: owner.companyId, conversationId, count: chosen.length },
+      { companyId: owner.companyId, traceId: input.traceId, conversationId, count: chosen.length },
       'ASSISTANT_CONNECTIONS_CHANGED',
     )
     const conversation = await conversationOf(deps, thread, { ...scope, chosen })

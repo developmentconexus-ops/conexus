@@ -29,7 +29,7 @@ export function chosenConnections(database: Database) {
         projectId: ProjectId | undefined
         connections: readonly ConnectionId[]
       },
-    ): Promise<void> {
+    ): Promise<boolean> {
       return database.command(scopeOf(owner), async (tx) => {
         const projectId = input.projectId ?? null
         const [made] = await tx
@@ -42,12 +42,13 @@ export function chosenConnections(database: Database) {
           })
           .onConflictDoNothing({ target: assistantConversation.id })
           .returning({ id: assistantConversation.id })
-        if (made !== undefined) return
+        if (made !== undefined) return true
         const [kept] = await tx
           .select({ projectId: assistantConversation.projectId })
           .from(assistantConversation)
           .where(eq(assistantConversation.id, input.conversationId))
         if (kept?.projectId !== projectId) throw new Failure('IDEMPOTENCY_CONFLICT')
+        return false
       })
     },
 
