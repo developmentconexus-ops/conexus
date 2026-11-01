@@ -8,6 +8,7 @@ import type { Person } from '../../hub/identity/test-hub.ts'
 import { CARLA, call, memberOn, post } from '../../hub/identity/test-hub.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
 import { testCliProxy } from '../../platform/test-cliproxy-binary.ts'
+import { queued, withOwnerLock } from '../../platform/test-database.ts'
 import {
   answeredOf,
   asked,
@@ -210,7 +211,7 @@ async function googleOnly(t: TestContext) {
     t.after(() => rmSync(hold, { force: true }))
     return { go: () => rmSync(hold), started: () => lines('runs') }
   }
-  return { ...on, asking, opening, holdingStart }
+  return { ...on, asking, opening, holdingStart, runs: () => lines('runs') }
 }
 
 test('o fim do turno solta o processo do Google: depois de um turno que acaba, de um parado pela pessoa e de uma conversa apagada no meio, o processo sai', async (t) => {
@@ -249,4 +250,26 @@ test('Parar enquanto o turno escolhe a conta: a escolha que termina depois do fi
   assert.equal(endOf(await ana.stream.turn()), 'aborted')
   before.go()
   assert.ok(await within(5_000, () => !alive(pid)), 'the pick that ended after the turn lets go')
+})
+
+test('Parar enquanto o turno é tomado: o Mastra só termina o run depois que o turno foi tomado, a escolha não roda, nenhum processo fica, e a pergunta seguinte responde (F16)', async (t) => {
+  const on = await googleOnly(t)
+  const ana = await on.opening(on.ana)
+  assert.ok(await within(5_000, () => !alive(ana.pid)))
+  const before = on.runs().length
+  // The turn is taken from the company's memory models: while they are locked, `take` waits.
+  const lock = 'lock table builder.observational_memory_models in access exclusive mode'
+  await withOwnerLock(on.hub.test, lock, [], async (release) => {
+    assert.equal((await sent(on.hub, on.ana, ana.url, 'Pare antes')).statusCode, 200)
+    await queued(on.hub.test, 1)
+    const stopped = await post(on.hub, on.ana, `${sessionUrl(ana.url)}/abort`, {})
+    assert.equal(stopped.statusCode, 200, stopped.body)
+    // Mastra ends the run only once its input processors return: the take finishes after Parar.
+    await release()
+  })
+  assert.equal(endOf(await ana.stream.turn()), 'aborted')
+  assert.equal(on.runs().length, before, 'the stopped run picked no account')
+  const next = await on.asking(on.ana, ana.url, 'google-thinking')
+  assert.equal(endOf(await ana.stream.turn()), 'complete')
+  assert.ok(await within(5_000, () => !alive(next)), 'and the next turn lets go of its own')
 })
