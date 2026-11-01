@@ -1,5 +1,4 @@
 import type { CompanyId, ProjectConnections, ProjectId } from '@conexus/hub-api'
-import { USABLE_STATE } from '@conexus/hub-api'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { HubFailure, sentenceOf } from '../../platform/hub.ts'
@@ -12,20 +11,18 @@ import {
   ASK_MANAGER,
   ConnectorLogo,
   connectionsQuery,
-  GRANTED_TEXT,
   LINK_IN_COMPANY,
   LOADING_PROJECT_CONNECTIONS,
   NO_COMPANY_CONNECTIONS,
-  NOT_GRANTED_TEXT,
   oneAtATimeText,
   PROJECT_LEAD,
   projectConnectionsKey,
   projectConnectionsQuery,
-  RECONNECT_IN_COMPANY,
   REVOKE,
+  readingText,
+  remedyText,
   sendRevoke,
   stateBadge,
-  TEST_BEFORE_GRANT,
 } from '../connectors/public.ts'
 import { GrantDialog } from './grant-dialog.tsx'
 
@@ -59,15 +56,15 @@ function Revoke({ companyId, projectId, line }: Scope & { line: Line }) {
   )
 }
 
-/** What the person may do on a line: Tirar if it is read; else Liberar, unless the connection cannot be used yet (the line says why) or a `one` connector already reads another, which it names. */
+/** What the person may do on a line, by what the server says the Projeto does with it: Tirar if released; else Liberar, unless the connection does not work (the line says how to fix it) or a `one` connector already releases another, which it names. */
 function Action(props: Scope & { group: Group; line: Line; mayManage: boolean }) {
   const { group, line } = props
   if (!props.mayManage) return null
-  if (line.grant !== null)
+  if (line.access.kind === 'READS' || line.access.kind === 'RELEASED_NOT_WORKING')
     return <Revoke companyId={props.companyId} projectId={props.projectId} line={line} />
-  if (line.state !== USABLE_STATE) return null
+  if (line.access.kind === 'NOT_RELEASED_NOT_WORKING') return null
   const taken =
-    group.perProject === 'one' ? group.connections.find((one) => one.grant !== null) : undefined
+    group.perProject === 'one' ? group.connections.find((one) => 'grant' in one.access) : undefined
   if (taken !== undefined) {
     return <span className="text-text-2">{oneAtATimeText(group.connector.name, taken.name)}</span>
   }
@@ -92,6 +89,7 @@ function Connection(
 ) {
   const { line, group } = props
   const badge = stateBadge({ state: line.state }, props.auth)
+  const remedy = remedyText(line.access, line.state)
   return (
     <li className="flex flex-wrap items-center justify-between gap-x-md gap-y-sm border-b border-line px-sm py-md last:border-b-0">
       <span className="flex min-w-0 flex-col gap-xs">
@@ -100,25 +98,16 @@ function Connection(
           {badge && <Badge tone={badge.tone}>{badge.text}</Badge>}
         </span>
         <span className="text-text-2">
-          {line.grant === null ? NOT_GRANTED_TEXT : GRANTED_TEXT}
+          {readingText(line.access)}
           {line.account !== null && ` · conta ${line.account.label}`}
         </span>
-        {line.state === 'NEW' && props.mayManage && (
+        {remedy !== null && props.mayManage && (
           <Link
             to="/companies/$companyId/integrations/$connectionId"
             params={{ companyId: props.companyId, connectionId: line.id }}
             className="w-fit text-text-2 underline underline-offset-2"
           >
-            {TEST_BEFORE_GRANT}
-          </Link>
-        )}
-        {line.state === 'NEEDS_REAUTH' && (
-          <Link
-            to="/companies/$companyId/integrations/$connectionId"
-            params={{ companyId: props.companyId, connectionId: line.id }}
-            className="w-fit text-text-2 underline underline-offset-2"
-          >
-            {RECONNECT_IN_COMPANY}
+            {remedy}
           </Link>
         )}
       </span>

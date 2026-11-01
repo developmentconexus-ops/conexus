@@ -123,7 +123,6 @@ export {
   TEST_LONGEST_MS,
   TestResult,
   testConnection,
-  USABLE_STATE,
   unlinkConnection,
 } from './connectors.ts'
 export {
@@ -235,6 +234,7 @@ export {
   grantProjectConnection,
   listAppConnections,
   listProjectConnections,
+  ProjectAccess,
   ProjectConnections,
   revokeProjectConnection,
 } from './project-connections.ts'

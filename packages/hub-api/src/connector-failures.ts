@@ -67,12 +67,12 @@ export const CONNECTOR_FAILURES = {
     action: '',
     actionKind: 'NONE',
   },
-  CONNECTION_NOT_TESTED: {
+  CONNECTION_NOT_WORKING: {
     category: 'USER',
     settles: true,
     status: 409,
-    phrase: 'Essa ligação ainda não está funcionando.',
-    action: 'Teste a ligação antes de liberar.',
+    phrase: 'Essa ligação não está funcionando.',
+    action: 'Teste a ligação, ou conecte de novo, antes de liberar.',
     actionKind: 'NONE',
   },
   PROJECT_CONNECTION_TAKEN: {

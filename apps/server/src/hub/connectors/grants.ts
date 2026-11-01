@@ -1,6 +1,12 @@
 import type { Connector, Operation } from '@conexus/connectors'
 import { CONNECTORS, connectorOf } from '@conexus/connectors'
-import type { ConnectionId, Grant, OfProject, ProjectConnections } from '@conexus/hub-api'
+import type {
+  ConnectionId,
+  Grant,
+  OfProject,
+  ProjectAccess,
+  ProjectConnections,
+} from '@conexus/hub-api'
 import { and, asc, eq, sql } from 'drizzle-orm'
 import type { CommandTx, ReadTx } from '../../platform/database.ts'
 import { violatedConstraint, violatedReference } from '../../platform/database.ts'
@@ -43,13 +49,26 @@ function grantOf(row: { grantedByName: string | null; grantedAt: Date }): Grant 
   return { by: row.grantedByName, at: row.grantedAt.toISOString() }
 }
 
-/** The company's connections by connector, each with the Projeto's grant: every member reads it. */
+/** What the Projeto can do with the connection now: the grant is kept, and reads only while `usable`. */
+function accessOf(row: {
+  grantedByName: string | null
+  grantedAt: Date | null
+  usable: boolean
+}): ProjectAccess {
+  if (row.grantedAt === null) {
+    return { kind: row.usable ? 'NOT_RELEASED' : 'NOT_RELEASED_NOT_WORKING' }
+  }
+  const grant = grantOf({ grantedByName: row.grantedByName, grantedAt: row.grantedAt })
+  return { kind: row.usable ? 'READS' : 'RELEASED_NOT_WORKING', grant }
+}
+
+/** The company's connections by connector, each with what the Projeto can do with it: every member reads it. */
 export function list(deps: Deps, input: Viewer & OfProject): Promise<ProjectConnections> {
   return deps.database.read(scopeOf(input), async (tx) => {
     await admitted(deps, tx, input, 'readConnections')
     await liveProject(tx, input)
     const rows = await tx
-      .select({ ...columns, ...GRANT_COLUMNS })
+      .select({ ...columns, ...GRANT_COLUMNS, usable: sql<boolean>`${usable}` })
       .from(connection)
       .leftJoin(
         projectConnection,
@@ -71,16 +90,12 @@ export function list(deps: Deps, input: Viewer & OfProject): Promise<ProjectConn
             perProject,
             connections: own.map((row) => {
               const view = viewOf(row)
-              const grant =
-                row.grantedAt === null
-                  ? null
-                  : grantOf({ grantedByName: row.grantedByName, grantedAt: row.grantedAt })
               return {
                 id: view.id,
                 name: view.name,
                 state: view.state,
                 account: view.account,
-                grant,
+                access: accessOf(row),
               }
             }),
           },
@@ -145,9 +160,10 @@ async function existingGrant(tx: CommandTx, input: OfGrant): Promise<Grant> {
 
 /**
  * Lets the Projeto read the connection, whole (founder, T-A: no ceiling). One row per pair: the
- * second call finds it and answers the same grant. A connection not tested yet, or one that asks to
- * be connected again, is refused (CONNECTION_NOT_TESTED): the app's door would refuse it. A
- * connector that allows one per Projeto has the database refuse a second.
+ * second call finds it and answers the same grant. A connection that does not work (not tested yet,
+ * or asking to be connected again) is refused first (CONNECTION_NOT_WORKING), even when released
+ * before: the app's door would refuse it. A connector that allows one per Projeto has the database
+ * refuse a second.
  */
 export function grant(deps: Deps, input: OfGrant): Promise<Grant> {
   return deps.database.command(scopeOf(input), async (tx) => {
@@ -160,7 +176,7 @@ export function grant(deps: Deps, input: OfGrant): Promise<Grant> {
     if (found === undefined) throw new Failure('CONNECTION_NOT_FOUND')
     const connector = connectorOf(found.connector)
     if (connector === undefined) throw new Failure('CONNECTOR_UNKNOWN')
-    if (!found.usable) throw new Failure('CONNECTION_NOT_TESTED')
+    if (!found.usable) throw new Failure('CONNECTION_NOT_WORKING')
     return (await inserted(tx, input, connector)) ?? (await existingGrant(tx, input))
   })
 }
