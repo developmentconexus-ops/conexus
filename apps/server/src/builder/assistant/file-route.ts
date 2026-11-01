@@ -59,10 +59,9 @@ function sandboxed(policy: unknown): string {
 
 /**
  * The file the Assistant wrote, for the conversation's owner (criterion 20). The model wrote it, so
- * the browser is told not to run it: the type from the name, saved unless an image, `nosniff`, and
- * the
- * Hub's Content-Security-Policy with `sandbox` (security S24). Each file served is logged (code
- * C54).
+ * the browser is told not to run it: the type from the name, saved unless an image, and the Hub's
+ * Content-Security-Policy with `sandbox` (security S24); helmet's `nosniff` is on every reply.
+ * Each file served is logged (code C54).
  */
 export function registerFile(app: FastifyInstance, deps: FileDeps): void {
   app.route({
@@ -100,7 +99,6 @@ export function registerFile(app: FastifyInstance, deps: FileDeps): void {
           'content-disposition',
           `${disposition}; filename="${asciiOf(name)}"; filename*=UTF-8''${extendedOf(name)}`,
         )
-        .header('x-content-type-options', 'nosniff')
         .header('content-security-policy', sandboxed(reply.getHeader('content-security-policy')))
         .send(read.bytes)
     },
