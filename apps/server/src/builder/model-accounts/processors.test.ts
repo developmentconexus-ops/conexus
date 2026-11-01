@@ -6,7 +6,7 @@ import {
   ProviderHistoryCompat,
   UnsupportedFileHandler,
 } from '@mastra/core/processors'
-import { stabilityProcessors } from './processors.ts'
+import { stabilityProcessors } from './public.ts'
 
 test('os padrões de estabilidade do Mastra seguem na ordem deles: o de prefill e o de arquivo recusado ficam os do Mastra, e só o de histórico ganha a regra nossa', () => {
   const ours = stabilityProcessors()

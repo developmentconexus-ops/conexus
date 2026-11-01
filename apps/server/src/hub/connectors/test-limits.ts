@@ -50,6 +50,16 @@ export function executorOf(events: string[], expiresInSeconds: number): Executor
   }
 }
 
+/** An executor whose logout has a defect of its own, which its promise never to throw does not cover. */
+export function executorWithBrokenLogout(): Executor {
+  return {
+    ...executorOf([], 61),
+    async logout() {
+      throw new TypeError('a defect in the logout')
+    },
+  }
+}
+
 const connector = z
   .custom<NonNullable<ReturnType<typeof connectorOf>>>()
   .parse(connectorOf('sankhya'))

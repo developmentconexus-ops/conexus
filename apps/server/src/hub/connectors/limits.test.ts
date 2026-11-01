@@ -4,9 +4,16 @@ import { test } from 'node:test'
 import { setTimeout as sleep } from 'node:timers/promises'
 import { CONCURRENT_CALL } from '@conexus/connectors'
 import { z } from 'zod'
-import type { Executor } from './executor.ts'
 import { appCalls } from './test-app-calls.ts'
-import { A, B, createLimits, executorOf, NO_EXECUTOR, OPENED } from './test-limits.ts'
+import {
+  A,
+  B,
+  createLimits,
+  executorOf,
+  executorWithBrokenLogout,
+  NO_EXECUTOR,
+  OPENED,
+} from './test-limits.ts'
 
 test('uma por vez: dez leituras na mesma ligação fazem um login e nunca duas chamadas abertas; outra ligação anda ao lado', async (t) => {
   const on = await appCalls(t)
@@ -153,14 +160,8 @@ test('o logout do fim espera a vez da ligação: com uma leitura aberta no token
 
 test('o logout do fim com defeito vai ao registro e não derruba o processo', async () => {
   const lines: string[] = []
-  const executor: Executor = {
-    ...executorOf([], 61),
-    async logout() {
-      throw new TypeError('a defect in the logout')
-    },
-  }
   const limits = createLimits({
-    executor,
+    executor: executorWithBrokenLogout(),
     log: { info: () => undefined, error: (_, message) => lines.push(message) },
   })
   const unhandled: unknown[] = []
