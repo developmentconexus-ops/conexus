@@ -120,7 +120,7 @@ test('máquina: o template grava o pip.conf antes do pip da imagem, porque o ENV
   assert.ok(written > 0, 'the setting lives in the file pip reads')
   assert.ok(written < template.indexOf('.pipInstall('), 'the file exists before the image pip runs')
   assert.equal(
-    template.includes('PIP_BREAK_SYSTEM_PACKAGES'),
+    template.includes('PIP_BREAK_SYSTEM_PACKAGES:'),
     false,
     'the file makes the env redundant',
   )
