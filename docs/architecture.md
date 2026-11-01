@@ -51,8 +51,8 @@ flowchart LR
 
 | Outside system | What crosses | Leaves Brazil |
 | --- | --- | --- |
-| Model vendors (Anthropic, OpenAI, Google) | The conversation with the Builder and the code it reads | Yes [0032] |
-| E2B | The code under construction, while it is compiled and tested | Yes [0032] |
+| Model vendors (Anthropic, OpenAI, Google) | The conversation with the Builder or the Assistant, and what it reads | Yes [0032] |
+| E2B | The code under construction; the rows the Assistant analyses, while its conversation exists | Yes [0032] |
 | Neon | Every row: the Hub's, the Builder's, Mastra's and each company's | No |
 | Cloudflare | Each request to the Hub and to an app; the apps' code | Request path only |
 | E-mail service | Invitation e-mails [0017] | Yes |
@@ -95,7 +95,7 @@ flowchart TB
 
 | Container | Responsibility | Owns |
 | --- | --- | --- |
-| Server program | The Hub: screens' API, sign-in, companies, invitations, Projects, connectors, publishing. The Builder: the agent, conversations, runs, the build machine, the Git of each app, model accounts [0006] | Nothing on disk but the Git |
+| Server program | The Hub: screens' API, sign-in, companies, invitations, Projects, connectors, publishing. The Builder: the agent, the Assistant, conversations, runs, the machines, the Git of each app, model accounts [0006] | Nothing on disk but the Git |
 | Web | The Hub's screens, served by the server program | Nothing |
 | Dispatcher | Checks the session, hands the app a `db` capability bound to that app's login, calls the app [0019] [0043] | The key app passwords derive from |
 | Outbound wall | Refuses every network call from an app | Nothing |
@@ -103,7 +103,7 @@ flowchart TB
 | Hub database | Companies, people, sessions, Projects; the Builder's space holds runs and model accounts [0011] | Company column on every table [0012] |
 | Mastra database | Mastra's own tables: threads, memory, traces, under a login of its own [0010] | Nothing of the Hub |
 | Company project | One schema and two logins per app and environment: one runs the app, one applies its migrations [0021] | The company's app data |
-| E2B machine | Compiles and tests the app the agent writes [0028] | Nothing after the run |
+| E2B machine | Compiles and tests the app; runs the Assistant's code on what it read [0028] [0059] | Nothing after the run or the conversation |
 
 **The Hub and the Builder.** One program, two modules, written boundaries [0006]. The Builder
 calls the Hub through named ports: admit, read a connector, store an app version,
@@ -141,7 +141,7 @@ and tests, and a `public.ts` with what others may use. The import law is
 | A rented server in São Paulo | The server program, from an image built by GitHub Actions and run with Compose, behind the Cloudflare Tunnel. The server opens no port | [0007] |
 | Cloudflare | Tunnel, dispatcher, outbound wall, and a Workers for Platforms namespace for the apps, on a second domain, one host per app | [0018] [0023] [0024] |
 | Neon | Two organizations of Conexus's own: the Hub's, one project with two databases; the companies', one project each, under a key that cannot reach the Hub's | [0008] [0009] [0021] [0040] |
-| E2B | Build machines behind a list of domains, under the founder's free-account key | [0028] [0051] |
+| E2B | Build and Assistant machines behind a list of domains, under the founder's free-account key | [0028] [0051] [0059] |
 
 **Publish.** A GitHub Release of a commit on `main` builds the image and puts it live, with no
 command on the server; a merge alone publishes nothing [0035] [0044]. Migrations run before the

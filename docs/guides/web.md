@@ -125,15 +125,17 @@ tudo". The lines of [screens](../reference/screens.md) say which screen is on wh
 
 - **W29.** Every screen **must** live on one floor, and `docs/reference/screens.md` **must** carry
   its line: Entrada (`/login`, `/set-password`, `/invitations/…`, one centred column); Primeira
-  entrada (`/companies/<e>/welcome/<step>`, the owner, once); Empresa (`/companies/<e>`: Início and
-  its Projetos); Projeto (`/companies/<e>/projects/<p>/<tab>`); Configurações
+  entrada (`/companies/<e>/welcome/<step>`, the owner, once); Empresa (`/companies/<e>`: Início, its
+  conversations with the Assistant and its Projetos); Projeto (`/companies/<e>/projects/<p>/<tab>`,
+  with its conversations with the Assistant); Configurações
   (`/companies/<e>/settings/<section>`); Central (`/operations/…`). A person who only uses an app
   sees only "Seus apps" at `/` and never enters them. [review]
 - **W30.** The frame **should** be one sidebar on the left and no top bar: the company with its
   switcher, Início, up to five recent Projetos with "Todos os projetos", Integrações, Configurações, and the
   account (name, theme, Central for whoever operates it, Sair). Inside a Projeto the sidebar is the
   Projeto's own (founder, 2026-10-30, R2): the Projeto's name with its switcher, ← the company,
-  Construir, Sobre, Quem usa o app and Integrações, then the account; it stays open and collapses to
+  Construir, Conversas (with the Assistant, step 24.1), Sobre, Quem usa o app and Integrações, then
+  the account; it stays open and collapses to
   icons on demand. Leaving the Projeto brings the company's sidebar back. On a phone it is a drawer
   opened from the top button (design V56). A person with two companies opens the last one used; "Suas empresas" is the switcher's
   menu. [review]
