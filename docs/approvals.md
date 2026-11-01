@@ -383,6 +383,16 @@ Essa emenda muda o cartão da etapa 20 em três pontos, vindos das revisões. Os
 
 Cartão da etapa 20 aprovado em 2026-10-30 (commit e84a611647a4816724b76a0f9fc60a69a832594e): "Aprovado"
 
+Etapa 20 usada em https://hub.conexus.fun. À pergunta do firstmate em 2026-10-31, com a v0.20.10 no ar, "liberar uma conexão num Projeto e abrir um app com os dados dela": "Ja fiz deu certo". A resposta cobre o passo 2 do roteiro (liberar uma ligação em Integrações do Projeto) e, no passo 4, o app com os dados de verdade. Ele não relatou os passos 1, 3, 5 e 6, o Caderno do passo 4, o uso no celular nem a aprovação dos textos das telas.
+
+Decisões do fundador na revisão da etapa 20 e nos consertos do fechamento, registradas no fechamento. Cada linha traz as palavras dele; a data é a do dia em que o firstmate as recebeu.
+
+Correção da PR 515 (https://github.com/developmentconexus-ops/conexus/pull/515), em 2026-10-31. Ao achado de que uma ligação liberada que deixou de funcionar continuava dizendo "lê": "A". À forma das duas capturas (liberada que parou de funcionar, e ligação nova não liberada): "2.B".
+
+Consertos do lote de fechamento (https://github.com/developmentconexus-ops/conexus/pull/520), em 2026-10-31. Ao fim do turno que apagava o que o Hub não guardou, e à falha do compilador de tipos: "2A 3OKAY" (as chamadas 2 e 3 da revisão da etapa). Ao texto da recusa de gravar uma versão (`SAVE_REFUSED`, "O trabalho continua na conversa. Peça de novo ao Builder."): "1 sim".
+
+Regra do `MACHINE_LOST`, em 2026-11-01: só uma máquina que o provedor diz perdida (`session.lost`) é `MACHINE_LOST`; qualquer outra coleta que falha é `SAVE_REFUSED`.
+
 ## Mudanças do método
 
 Em 2026-10-31, sobre as correções do método que a auditoria do mesmo dia propôs: "Sim, menos sobre o prompt do builder não vou mexer nisso agora". Entram o passo do nativo no conserto, o conserto que acrescenta uma peça virar unidade de cartão curto, a página do fundador só com células abertas pelo autor do estudo, a atualização da prateleira e do `stack.md` a cada troca do pin do Mastra, o registro da palavra do fundador sobre os eventos `om_*_failed`, a investigação de teste instável em vazamento, recusa ou isolamento e a QA curta num conserto que muda tela. O prompt do Builder fica como está.

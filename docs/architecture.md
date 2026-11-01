@@ -245,5 +245,3 @@ too.
 - A refresh lost after the key turned, or 6 idle months, forces a reconnect. Trigger: `CONNECTION_REFRESH_UNANSWERED` then `NEEDS_REAUTH`.
 - Mercado Livre's page shapes are unmeasured. Trigger: a read failing on a real account.
 - `connection.last_test` stays until a later migration (D6); no unit owns the drop yet.
-- Sankhya Testar never logs out; a logged-out token's 401 is unnamed: step 20 U1 and U3.
-- Decision 0058's "fair queue" wording: step 20 U3.

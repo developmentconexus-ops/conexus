@@ -1,5 +1,5 @@
 import { createMemoryHistory } from '@tanstack/react-router'
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { beforeEach, expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
 import { COMPANY } from '../../platform/fixtures.ts'
@@ -50,6 +50,15 @@ test('um endereço de conversa marca Construir como o lugar atual', async () => 
   expect((await bar()).getByRole('link', { name: 'Construir' }).getAttribute('aria-current')).toBe(
     'page',
   )
+})
+
+test('as outras páginas do Projeto não marcam Construir como o lugar atual', async () => {
+  for (const page of ['about', 'access']) {
+    cleanup()
+    open(`${PROJECT}/${page}`)
+    const construir = (await bar()).getByRole('link', { name: 'Construir' })
+    expect(construir.getAttribute('aria-current')).toBeNull()
+  }
 })
 
 test('fora do Projeto, a barra da empresa como hoje', async () => {

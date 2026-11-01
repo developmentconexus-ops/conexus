@@ -16,7 +16,7 @@ export type Machines = {
   /**
    * The workspace of one turn of the conversation: its machine, found by the conversation's name, is
    * not touched until a tool needs it. A new one starts from the Hub's `main`; one found again keeps
-   * its folder and brings `main` in, with the work of a turn that never ended kept on it.
+   * its folder and brings `main` in, with the work the Hub has not saved kept on it.
    */
   workspaceFor(input: {
     companyId: CompanyId
@@ -40,13 +40,18 @@ export type Machines = {
   check(input: {
     conversationId: ConversationId
   }): Promise<Result<CheckReport, CheckPlatformFailed>>
+  /**
+   * The Hub saved `version`, the commit `collect` bundled: the machine's folder is measured from it
+   * from now on, so work another conversation saved after it is never taken for this machine's.
+   */
+  saved(input: { conversationId: ConversationId; version: Sha }): Promise<void>
   /** Whether the turn changed the app folder from the `main` it started from; a machine the turn never woke did not. */
   changed(input: { conversationId: ConversationId }): Promise<boolean>
   /** The version the last passing check left in the machine, read as the send takes it. */
   pack(input: { conversationId: ConversationId }): Promise<Result<VersionFolder, PackRefused>>
   /** Whether the conversation's turn used the machine: then there may be something to collect. */
   touched(conversationId: ConversationId): boolean
-  /** Ends the turn's use of the machine: its folder goes back to its base, and it pauses. Safe to repeat. */
+  /** Ends the turn's use of the machine: it pauses with its folder as the turn left it. Safe to repeat. */
   release(conversationId: ConversationId): Promise<void>
   kill: MachineApi['kill']
 }
@@ -73,4 +78,6 @@ export type MachinesDeps = {
   checkProgram?: string
   /** The external budget of waking or creating a machine (code C57). */
   startMs?: number
+  /** The budget of each command the Hub runs in the machine, the check's own aside (code C57). */
+  commandMs?: number
 }

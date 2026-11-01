@@ -14,20 +14,29 @@ import { MEMBER, OWNER, PROJECT_ID, projectsPage } from './sweep-replies.ts'
 
 const PAGE = `/companies/${COMPANY.id}/projects/${PROJECT_ID}/integrations`
 const GRANT = { by: 'Ana Lima', at: '2026-10-30T12:00:00.000Z' }
+const NOT_RELEASED = { kind: 'NOT_RELEASED' }
+const READS = { kind: 'READS', grant: GRANT }
 const CATALOG = [SANKHYA, MERCADO_LIVRE]
 
 const LineShape = ProjectConnections.shape.connectors.element.shape.connections.element
 
 function line(name: string, fields: Record<string, unknown> = {}) {
   const { id } = connectionOf()
-  return LineShape.parse({ id, name, state: 'ACTIVE', account: null, grant: null, ...fields })
+  return LineShape.parse({
+    id,
+    name,
+    state: 'ACTIVE',
+    account: null,
+    access: NOT_RELEASED,
+    ...fields,
+  })
 }
 
 type Line = ReturnType<typeof line>
 
 function listOf(sankhya: Line[], mercadoLivre: Line[]) {
   function entry(one: typeof SANKHYA) {
-    return { id: one.id, name: one.name, logo: one.logo, category: one.category }
+    return { id: one.id, name: one.name, logo: one.logo, category: one.category, auth: one.auth }
   }
   return ok(listProjectConnections, {
     connectors: [
@@ -53,11 +62,19 @@ function page(who: typeof OWNER, mayManage: boolean, sankhya: Line[], mercadoLiv
   }
 }
 
-const MATRIZ = line('Matriz', { grant: GRANT, account: { label: 'PADARIASOL' } })
+const MATRIZ = line('Matriz', { access: READS, account: { label: 'PADARIASOL' } })
 const FILIAL = line('Filial')
-const LOJA_1 = line('Loja 1', { grant: GRANT })
+const LOJA_1 = line('Loja 1', { access: READS })
 const LOJA_2 = line('Loja 2')
-const BROKEN = line('Financeiro', { state: 'NEEDS_REAUTH' })
+const STOPPED = line('Matriz', {
+  state: 'NEW',
+  access: { kind: 'RELEASED_NOT_WORKING', grant: GRANT },
+})
+const UNTESTED = line('Loja 3', { state: 'NEW', access: { kind: 'NOT_RELEASED_NOT_WORKING' } })
+const BROKEN = line('Financeiro', {
+  state: 'NEEDS_REAUTH',
+  access: { kind: 'NOT_RELEASED_NOT_WORKING' },
+})
 
 const NOTE = {
   concept: 'Vendedor do pedido',
@@ -99,6 +116,31 @@ export const PROJECT_INTEGRATIONS_STATES: State[] = [
       await p.getByRole('button', { name: 'Liberar para ler: Loja 2' }).click()
       await waitFor(p, 'Quem usa o app vê o que o app mostrar.')
     },
+  },
+  {
+    name: 'Integrações do Projeto, uma ligação liberada que deixou de funcionar',
+    path: PAGE,
+    replies: {
+      ...page(OWNER, true, [STOPPED], []),
+      // The link to the connection's page is preloaded when it takes focus.
+      [`GET /api/companies/${COMPANY.id}/connections/${STOPPED.id}`]: ok(getConnection, {
+        connection: connectionOf({ id: STOPPED.id, name: STOPPED.name, state: 'NEW' }),
+        notes: [],
+      }),
+    },
+    settle: (p) => waitFor(p, 'liberado, mas não lê até a ligação funcionar'),
+  },
+  {
+    name: 'Integrações do Projeto, uma ligação nova ainda não testada',
+    path: PAGE,
+    replies: {
+      ...page(OWNER, true, [], [UNTESTED]),
+      [`GET /api/companies/${COMPANY.id}/connections/${UNTESTED.id}`]: ok(getConnection, {
+        connection: connectionOf({ id: UNTESTED.id, name: UNTESTED.name, state: 'NEW' }),
+        notes: [],
+      }),
+    },
+    settle: (p) => waitFor(p, 'Teste a ligação antes de liberar'),
   },
   {
     name: 'Integrações do Projeto, o membro',

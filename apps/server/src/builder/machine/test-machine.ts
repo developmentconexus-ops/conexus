@@ -153,7 +153,7 @@ export async function world(
   startMs = 5_000,
   installation = INSTALLATION,
   seedOf?: () => Promise<Buffer>,
-  options: Readonly<{ checkProgram?: string }> = {},
+  options: Readonly<{ checkProgram?: string; commandMs?: number }> = {},
 ) {
   const folder = mkdtempSync(join(tmpdir(), 'conexus-machine-'))
   t.after(() => rmSync(folder, { recursive: true, force: true }))

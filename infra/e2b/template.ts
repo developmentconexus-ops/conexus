@@ -2,8 +2,9 @@
 // the app folder, and in /opt/conexus the check program with its tools (TypeScript, esbuild,
 // wrangler, Chromium's headless shell), the SDK it copies into each app, and an npm cache of the
 // starter's packages. Publish runs it from the Release's commit, with the account's key in
-// E2B_API_KEY (the SDK reads it); so does firstmate to try a candidate. It prints the `name:tag` the deploy gives the Hub as HUB_E2B_TEMPLATE. The tag
-// is the commit, so a build never replaces the one production runs and the old tag is the rollback.
+// E2B_API_KEY (the SDK reads it); so does firstmate to try a candidate. It prints the `name:tag` the
+// deploy gives the Hub as HUB_E2B_TEMPLATE. The tag is the commit, so a build never replaces the one
+// production runs and the old tag is the rollback.
 import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'

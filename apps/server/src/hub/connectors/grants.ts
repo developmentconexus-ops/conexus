@@ -1,6 +1,12 @@
 import type { Connector, Operation } from '@conexus/connectors'
 import { CONNECTORS, connectorOf } from '@conexus/connectors'
-import type { ConnectionId, Grant, OfProject, ProjectConnections } from '@conexus/hub-api'
+import type {
+  ConnectionId,
+  Grant,
+  OfProject,
+  ProjectAccess,
+  ProjectConnections,
+} from '@conexus/hub-api'
 import { and, asc, eq, sql } from 'drizzle-orm'
 import type { CommandTx, ReadTx } from '../../platform/database.ts'
 import { violatedConstraint, violatedReference } from '../../platform/database.ts'
@@ -8,7 +14,7 @@ import { Failure } from '../../platform/failure.ts'
 import { personNameColumn } from '../identity/public.ts'
 import { liveProjectOf } from '../projects/public.ts'
 import type { Deps, Viewer } from './rows.ts'
-import { admitted, columns, scopeOf, viewOf } from './rows.ts'
+import { admitted, columns, scopeOf, usable, viewOf } from './rows.ts'
 import { connection, projectConnection } from './tables.ts'
 
 type OfGrant = Viewer & OfProject & { connectionId: ConnectionId }
@@ -43,13 +49,26 @@ function grantOf(row: { grantedByName: string | null; grantedAt: Date }): Grant 
   return { by: row.grantedByName, at: row.grantedAt.toISOString() }
 }
 
-/** The company's connections by connector, each with the Projeto's grant: every member reads it. */
+/** What the Projeto can do with the connection now: the grant is kept, and reads only while `usable`. */
+function accessOf(row: {
+  grantedByName: string | null
+  grantedAt: Date | null
+  usable: boolean
+}): ProjectAccess {
+  if (row.grantedAt === null) {
+    return { kind: row.usable ? 'NOT_RELEASED' : 'NOT_RELEASED_NOT_WORKING' }
+  }
+  const grant = grantOf({ grantedByName: row.grantedByName, grantedAt: row.grantedAt })
+  return { kind: row.usable ? 'READS' : 'RELEASED_NOT_WORKING', grant }
+}
+
+/** The company's connections by connector, each with what the Projeto can do with it: every member reads it. */
 export function list(deps: Deps, input: Viewer & OfProject): Promise<ProjectConnections> {
   return deps.database.read(scopeOf(input), async (tx) => {
     await admitted(deps, tx, input, 'readConnections')
     await liveProject(tx, input)
     const rows = await tx
-      .select({ ...columns, ...GRANT_COLUMNS })
+      .select({ ...columns, ...GRANT_COLUMNS, usable: sql<boolean>`${usable}` })
       .from(connection)
       .leftJoin(
         projectConnection,
@@ -64,23 +83,19 @@ export function list(deps: Deps, input: Viewer & OfProject): Promise<ProjectConn
       connectors: CONNECTORS.flatMap((connector) => {
         const own = rows.filter((row) => row.connector === connector.id)
         if (own.length === 0) return []
-        const { id, name, logo, category, perProject } = connector
+        const { id, name, logo, category, perProject, auth } = connector
         return [
           {
-            connector: { id, name, logo, category },
+            connector: { id, name, logo, category, auth: auth.kind },
             perProject,
             connections: own.map((row) => {
               const view = viewOf(row)
-              const grant =
-                row.grantedAt === null
-                  ? null
-                  : grantOf({ grantedByName: row.grantedByName, grantedAt: row.grantedAt })
               return {
                 id: view.id,
                 name: view.name,
                 state: view.state,
                 account: view.account,
-                grant,
+                access: accessOf(row),
               }
             }),
           },
@@ -145,20 +160,23 @@ async function existingGrant(tx: CommandTx, input: OfGrant): Promise<Grant> {
 
 /**
  * Lets the Projeto read the connection, whole (founder, T-A: no ceiling). One row per pair: the
- * second call finds it and answers the same grant. A connector that allows one per Projeto has the
- * database refuse a second.
+ * second call finds it and answers the same grant. A connection that does not work (not tested yet,
+ * or asking to be connected again) is refused first (CONNECTION_NOT_WORKING), even when released
+ * before: the app's door would refuse it. A connector that allows one per Projeto has the database
+ * refuse a second.
  */
 export function grant(deps: Deps, input: OfGrant): Promise<Grant> {
   return deps.database.command(scopeOf(input), async (tx) => {
     await admitted(deps, tx, input, 'manageConnections')
     await liveProject(tx, input)
     const [found] = await tx
-      .select({ connector: connection.connectorId })
+      .select({ connector: connection.connectorId, usable: sql<boolean>`${usable}` })
       .from(connection)
       .where(and(eq(connection.id, input.connectionId), eq(connection.companyId, input.companyId)))
     if (found === undefined) throw new Failure('CONNECTION_NOT_FOUND')
     const connector = connectorOf(found.connector)
     if (connector === undefined) throw new Failure('CONNECTOR_UNKNOWN')
+    if (!found.usable) throw new Failure('CONNECTION_NOT_WORKING')
     return (await inserted(tx, input, connector)) ?? (await existingGrant(tx, input))
   })
 }
@@ -183,8 +201,8 @@ export async function revoke(deps: Deps, input: OfGrant): Promise<boolean> {
 
 /**
  * What the declared connectors and operations lack at the Projeto, for Publicar: a connector with
- * no granted connection, or an operation that is not a read of the kit's. Read in the publish's own
- * transaction, so a refusal writes nothing.
+ * no granted connection that is usable, or an operation that is not a read of the kit's. Read in
+ * the publish's own transaction, so a refusal writes nothing.
  */
 export async function ungranted(
   tx: ReadTx,
@@ -194,7 +212,8 @@ export async function ungranted(
   const granted = await tx
     .select({ connector: projectConnection.connectorId })
     .from(projectConnection)
-    .where(eq(projectConnection.projectId, ids.projectId))
+    .innerJoin(connection, eq(connection.id, projectConnection.connectionId))
+    .where(and(eq(projectConnection.projectId, ids.projectId), usable))
   const lacking: { connector: string; operation: string | null }[] = []
   for (const one of declared) {
     const connector = connectorOf(one.connector)

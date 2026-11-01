@@ -50,10 +50,16 @@ test('ao chegar ao topo as 100 mensagens anteriores chegam sem mexer no ponto da
     // Up to the middle of what is read, where the reader is still away from the top.
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
     await page.mouse.wheel(0, -1200)
+    // The fake stream ends and reopens by itself, and each reopening reads the window again, so
+    // the number of reads races it; what the person is owed is that none asks for more than the window.
     await page.waitForTimeout(300)
-    assert.deepEqual(limits, [100], `${viewport.width}px: reading the middle asks for nothing more`)
+    assert.deepEqual(
+      [...new Set(limits)],
+      [100],
+      `${viewport.width}px: reading the middle asks for nothing more than the window`,
+    )
     const anchor = page.getByText('Resposta 151', { exact: true })
-    for (let wheel = 0; wheel < 80 && limits.length < 2; wheel++) {
+    for (let wheel = 0; wheel < 80 && !limits.some((limit) => limit > 100); wheel++) {
       await page.mouse.wheel(0, -2000)
       await page.waitForTimeout(30)
     }
@@ -71,7 +77,6 @@ test('ao chegar ao topo as 100 mensagens anteriores chegam sem mexer no ponto da
       Math.abs(after - before) <= 1,
       `${viewport.width}px: the place moved ${after - before}px`,
     )
-    // The fake stream ends and reopens, and each reopening reads the window again.
     assert.deepEqual([...new Set(limits)], [100, 200])
     assert.equal(
       await page.getByRole('status', { name: 'Carregando mensagens anteriores' }).count(),

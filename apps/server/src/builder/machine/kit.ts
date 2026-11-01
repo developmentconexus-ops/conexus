@@ -85,9 +85,17 @@ export function machineInstructions(workdir: string, conflicts: Conflicts = NO_C
     `the app folder: work there and nowhere else. Its network reaches only ${ALLOWED_HOSTS.join(', ')}.`,
     'Conexus keeps its check in /opt/conexus, read only: run it with the tool conexus_check, never by hand.',
   ]
-  const { markers, deleted, replaced } = conflicts
+  const { markers, deleted, replaced, tooManyFiles, tooLarge } = conflicts
   if (markers.length + deleted.length + replaced.length > 0)
     lines.push('Work not yet saved met a newer saved version of the app.')
+  if (tooManyFiles)
+    lines.push(
+      'The work not yet saved has too many files to save: remove what the app does not need before any other change.',
+    )
+  if (tooLarge)
+    lines.push(
+      'The work not yet saved is too large to save: remove what the app does not need before any other change.',
+    )
   if (markers.length > 0)
     lines.push(
       `These files hold Git conflict markers; resolve them before any other change: ${listed(markers)}.`,
@@ -112,15 +120,24 @@ function listed(paths: readonly string[]): string {
 /**
  * What a machine's start found of work not yet saved meeting a newer saved version: the files with
  * conflict markers, read from the tree at every start, and, at the start that merged, the files the
- * newer version deleted and the ones whose change it replaced.
+ * newer version deleted and the ones whose change it replaced. `tooManyFiles` and `tooLarge` say
+ * the work not yet saved is past what the Hub takes, so the next save would be refused again.
  */
 export type Conflicts = {
   markers: readonly string[]
   deleted: readonly string[]
   replaced: readonly string[]
+  tooManyFiles: boolean
+  tooLarge: boolean
 }
 
-export const NO_CONFLICTS: Conflicts = { markers: [], deleted: [], replaced: [] }
+export const NO_CONFLICTS: Conflicts = {
+  markers: [],
+  deleted: [],
+  replaced: [],
+  tooManyFiles: false,
+  tooLarge: false,
+}
 
 export type KitFactory = (options: KitOptions) => Kit
 

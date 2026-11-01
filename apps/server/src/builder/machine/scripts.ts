@@ -1,5 +1,5 @@
 import type { Sha } from '../git/public.ts'
-import { MAX_BYTES } from '../git/public.ts'
+import { MAX_BYTES, MAX_FILES } from '../git/public.ts'
 import type { Conflicts } from './kit.ts'
 
 /** Where the Hub puts the bundle of `main` and where the machine leaves the bundle of its turn. */
@@ -45,24 +45,28 @@ export function seedScript(workdir: string, tmp: string): string {
 }
 
 /**
- * Every tracked file that holds a Git conflict marker, printed as `MARKERS <path>`, whichever start
- * or turn left it there: a file the Builder resolved drops out.
+ * Every tracked file that holds the three lines Git writes around a conflict (`<<<<<<< `, `=======`,
+ * `>>>>>>> `), printed as `MARKERS <path>`, whichever start or turn left it there: a file the
+ * Builder resolved drops out, and one with a lone line that only looks like a marker never enters.
  */
 function markedFiles(): string[] {
   return [
     // Exit 1 is no file found; any other failure ends the script.
-    `marked=$(git -c core.quotePath=false grep -l -I -e '^<<<<<<< ') || test $? -eq 1`,
+    `marked=$(git -c core.quotePath=false grep -l -I --all-match -e '^<<<<<<< ' -e '^=======$' -e '^>>>>>>> ') || test $? -eq 1`,
     `test -z "$marked" || printf '%s\\n' "$marked" | sed 's/^/MARKERS /'`,
   ]
 }
 
-/** What the commit of a turn that never ended says, on the machine where its work is brought onto `main`. */
-const CUT_MESSAGE = 'Conexus Builder (turn cut)'
+/** What the commit of work the Hub has not saved says, on the machine where it is brought onto `main`. */
+const UNSAVED_MESSAGE = 'Conexus Builder (not saved)'
 
 /**
  * A reconnected machine keeps its folder and brings the Hub's `main` into it. A tree equal to its
- * base moves to `main`. A tree that differs is the work of a turn that never ended: it becomes a
- * commit on its base, merged onto `main`, conflicts and their markers included. A conflicted file
+ * base moves to `main`. A tree that differs is work the Hub has not saved (a turn that never ended,
+ * or one whose save the Hub refused): it becomes a commit on its base, merged onto `main`, conflicts
+ * and their markers included, and `TOO_MANY_FILES` or `TOO_LARGE` is printed when the merged tree is
+ * past what the Hub takes in a version (the rule of `inspectTree`), which the next save would refuse
+ * again. A conflicted file
  * with no markers is printed as `DELETED <path>` when `main` deleted it and the turn's copy stays,
  * else as `REPLACED <path>`, `main`'s copy kept over the turn's change. `main` is the base after,
  * and the files with markers are printed. A folder whose seed never finished prints UNSEEDED and is
@@ -71,21 +75,25 @@ const CUT_MESSAGE = 'Conexus Builder (turn cut)'
 export function syncScript(workdir: string, tmp: string): string {
   const seed = seedFile(tmp)
   const main = 'refs/conexus/main'
-  const cut = 'refs/conexus/cut'
+  const unsaved = 'refs/conexus/unsaved'
   return [
     'set -e',
     `if ! { cd ${quoted(workdir)} 2>/dev/null && test -d .git && git rev-parse --quiet --verify ${BASE_REF} >/dev/null; }; then echo UNSEEDED; exit 0; fi`,
+    // No git of an earlier turn lives at a start: a lock one left (killed on its timeout) would fail every checkout below, for ever.
+    'rm -f .git/index.lock',
     `git fetch --quiet --no-tags ${quoted(seed)} '+refs/heads/main:${main}'`,
     `rm -f ${quoted(seed)}`,
     ...treeIn(BASE_REF, 'conexus-sync-index'),
     `target=${main}`,
     'conflicted=',
     `if ! ${sameTree(BASE_REF)}; then`,
-    `  git update-ref ${cut} "$(git ${IDENTITY} commit-tree "$tree" -p ${BASE_REF} -m ${quoted(CUT_MESSAGE)})"`,
+    `  git update-ref ${unsaved} "$(git ${IDENTITY} commit-tree "$tree" -p ${BASE_REF} -m ${quoted(UNSAVED_MESSAGE)})"`,
     // Exit 1 is a merge with conflicts; any other failure ends the script.
-    `  merged=$(git -c core.quotePath=false merge-tree --write-tree --name-only --no-messages ${main} ${cut}) || test $? -eq 1`,
+    `  merged=$(git -c core.quotePath=false merge-tree --write-tree --name-only --no-messages ${main} ${unsaved}) || test $? -eq 1`,
     `  conflicted=$(printf '%s\\n' "$merged" | tail -n +2)`,
-    `  target=$(git ${IDENTITY} commit-tree "$(printf '%s\\n' "$merged" | head -n 1)" -p ${main} -m ${quoted(CUT_MESSAGE)})`,
+    `  target=$(git ${IDENTITY} commit-tree "$(printf '%s\\n' "$merged" | head -n 1)" -p ${main} -m ${quoted(UNSAVED_MESSAGE)})`,
+    // The tree's size and count as the Hub reads them: a tree it refuses stays refused until it is smaller.
+    `  git ls-tree -r -l "$target" | awk -v files=${MAX_FILES} -v bytes=${MAX_BYTES} '{ n++; size += $4 } END { if (n > files) print "TOO_MANY_FILES"; if (size > bytes) print "TOO_LARGE" }'`,
     'fi',
     'git checkout --quiet --force -B main "$target"',
     `git update-ref ${BASE_REF} ${main}`,
@@ -99,16 +107,17 @@ export function syncScript(workdir: string, tmp: string): string {
 }
 
 /**
- * The turn is over: the folder goes back to its base, the `main` its start brought in, so a folder
- * that differs from its base at the next start belongs to a turn that never ended. What the turn
- * saved comes back with `main` at the next start; a tree the Hub refused is not kept.
+ * The Hub saved `version`, the commit this machine bundled: the folder is as a seed leaves it, on
+ * `main` at that version, which is the base the next start measures its unsaved work from. The files
+ * the turn wrote are the version's, so the checkout changes none of them; what it does is let a
+ * later checkout remove a file another conversation deleted.
  */
-export function endScript(workdir: string): string {
+export function savedScript(workdir: string, version: Sha): string {
   return [
     'set -e',
     `cd ${quoted(workdir)}`,
+    `git update-ref ${BASE_REF} ${quoted(version)}`,
     `git checkout --quiet --force -B main ${BASE_REF}`,
-    `git clean -fdq -e node_modules -e ${PLAN_DIR}`,
   ].join('\n')
 }
 
@@ -121,7 +130,8 @@ export function keepScript(workdir: string): string {
 function treeIn(base: string, index: string): string[] {
   return [
     `export GIT_INDEX_FILE=.git/${index}`,
-    'rm -f "$GIT_INDEX_FILE"',
+    // A git killed on its timeout leaves the lock of its index, which would fail every later command that builds this tree.
+    'rm -f "$GIT_INDEX_FILE" "$GIT_INDEX_FILE.lock"',
     `git read-tree ${base}`,
     `git add --all -- . ':(exclude,glob)**/node_modules/**'`,
     'tree=$(git write-tree)',
@@ -194,7 +204,7 @@ export function collected(stdout: string): Collected {
   }
 }
 
-/** The conflicts a start script printed, one `MARKERS`, `DELETED` or `REPLACED <path>` per line. */
+/** The conflicts a start script printed, one `MARKERS`, `DELETED` or `REPLACED <path>` per line, and its size verdicts. */
 export function conflictsOf(stdout: string): Conflicts {
   const lines = stdout.split('\n')
   function of(kind: string): string[] {
@@ -202,5 +212,11 @@ export function conflictsOf(stdout: string): Conflicts {
       .filter((line) => line.startsWith(`${kind} `))
       .map((line) => line.slice(kind.length + 1))
   }
-  return { markers: of('MARKERS'), deleted: of('DELETED'), replaced: of('REPLACED') }
+  return {
+    markers: of('MARKERS'),
+    deleted: of('DELETED'),
+    replaced: of('REPLACED'),
+    tooManyFiles: lines.includes('TOO_MANY_FILES'),
+    tooLarge: lines.includes('TOO_LARGE'),
+  }
 }

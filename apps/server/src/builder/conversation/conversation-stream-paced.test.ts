@@ -162,8 +162,6 @@ test('um turno de 96 passos com uma página que não lê não enche o heap do Hu
   const reading = await streamOf(hub, ana, url)
   t.after(() => reading.close())
   assert.deepEqual(Object.keys(await reading.seed()).toSorted(), [
-    'bufferingMessages',
-    'bufferingObservations',
     'isRunning',
     'omProgress',
     'pendingSuspensions',

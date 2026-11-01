@@ -90,7 +90,7 @@ test('nada guardado, nada sobe: um turno sem mudança e um que falhou ao guardar
     partsOf(lost.events).flatMap((part) =>
       part.type === 'data-conexus-failure' ? [Object(part.data).code] : [],
     ),
-    ['MACHINE_LOST'],
+    ['SAVE_REFUSED'],
   )
   assert.deepEqual(lost.previews, [])
   assert.deepEqual(await versionsOf(subject), [])

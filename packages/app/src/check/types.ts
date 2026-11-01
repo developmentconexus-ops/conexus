@@ -4,12 +4,9 @@ import { z } from 'zod'
 import { TYPE_HEAP_MB } from './machine.ts'
 import { CHECK_LIMITS, Problem } from './report.ts'
 import type { CheckContext, Outcome } from './step.ts'
-import { outputProblem, overran, PASSED, workOf } from './step.ts'
+import { overran, PASSED, workOf } from './step.ts'
 
 const PROGRAM = join(import.meta.dirname, 'program.ts')
-
-/** What V8 prints before it aborts a process that spent its heap. */
-const OUT_OF_MEMORY = /heap out of memory/
 
 // The child's words are whole; `firstProblems` clips them when the report is made.
 const Problems = z.array(Problem.extend({ message: z.string() }))
@@ -31,16 +28,13 @@ async function diagnosticsOf(
   )
   const late = overran('tipos', ran)
   if (late !== undefined) return late
+  // The child's one verdict is its result file, written before it exits 0: a child that ended
+  // without it (spent heap, killed, a TypeScript crash) gave none, and that is the platform's.
   if (ran.code !== 0) {
-    // V8 aborts a spent heap with a signal, so the exit code is null and only its words say why.
-    if (OUT_OF_MEMORY.test(ran.output)) {
-      return { state: 'platform', reason: 'tipos ran out of memory' }
+    return {
+      state: 'platform',
+      reason: `tipos ended without its diagnostics: code ${ran.code ?? 'none'}: ${ran.output.trim()}`,
     }
-    // No exit code and no V8 words: the system killed the child or it never started, not the app's fault.
-    if (ran.code === null) {
-      return { state: 'platform', reason: `tipos ended with no exit code: ${ran.output.trim()}` }
-    }
-    return { state: 'failed', problems: [outputProblem('TYPES_CRASHED', ran)] }
   }
   return Problems.parse(JSON.parse(readFileSync(result, 'utf8')))
 }

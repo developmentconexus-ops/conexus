@@ -4,12 +4,12 @@ import { join } from 'node:path'
 import { test } from 'node:test'
 import type { CheckReport } from '@conexus/app/check'
 import { CHECK_LIMITS, STEP_NAMES } from '@conexus/app/check'
-import { CompanyId, ProjectId, VersionCheck } from '@conexus/hub-api'
+import { CompanyId, ProjectId } from '@conexus/hub-api'
 import type { MastraMessagePart } from '@mastra/core/agent-controller'
 import { z } from 'zod'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
 import { asked, conversing, endOf, messagesOf, title } from './test-conversation.ts'
-import { partsOf, shownPartsOf } from './test-parts.ts'
+import { partsOf, shownPartsOf, versionsOf } from './test-parts.ts'
 import { ask, conversingWith, tool, untilCard, WHO } from './test-questions.ts'
 
 const WRITE = {
@@ -91,28 +91,6 @@ function turnOf(blocks: Blocks, fix?: Blocks) {
     return { kind: 'text', text: 'Pronto.' }
   }
   return { asked, answer }
-}
-
-const Version = z.object({
-  number: z.number(),
-  changedFiles: z.number(),
-  check: VersionCheck.optional(),
-})
-
-/** The versions the parts say, by number, files changed and what the check said; the starter's files vary. */
-function versionsOf(parts: MastraMessagePart[]) {
-  return parts.flatMap((part) => {
-    const read = part.type === 'data-conexus-version' ? Version.safeParse(part.data) : undefined
-    return read?.success
-      ? [
-          {
-            number: read.data.number,
-            changedFiles: read.data.changedFiles,
-            check: read.data.check ?? 'none',
-          },
-        ]
-      : []
-  })
 }
 
 /** The reports the model read in one call: a tool's result, or the words of a failed end of the turn. */

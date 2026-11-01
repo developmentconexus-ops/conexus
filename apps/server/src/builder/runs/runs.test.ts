@@ -197,21 +197,38 @@ test('erro depois de escrever: a versão é guardada', async (t) => {
   assert.equal(await repositoryOf({ hub, companyId, projectId }).version(), 1)
 })
 
-test('a máquina cai antes de guardar: failed, MACHINE_LOST, e o main como era', async (t) => {
-  const remove = { name: COMMAND, input: { command: 'rm -rf .git' } }
-  const { hub, ana, conversations, companyId, projectId } = await conversing(
-    t,
-    working(writing('a.ts', 'x\n'), remove),
-  )
+test('a máquina cai no meio do turno: failed, MACHINE_LOST, e o main como era', async (t) => {
+  let step = 0
+  let died: () => void = () => undefined
+  const { hub, ana, conversations, companyId, projectId } = await conversing(t, (call) => {
+    if (title(call) !== undefined) return { kind: 'text', text: 'Título' }
+    step += 1
+    if (step === 1)
+      return { kind: 'blocks', blocks: [{ type: 'tool_use', ...writing('a.ts', 'x\n') }] }
+    died()
+    return { kind: 'text', text: 'Pronto.' }
+  })
+  // The provider made a second new machine in the turn: Mastra's reconnect found the first one dead.
+  died = () => {
+    hub.builder.control.outcome = 'created'
+    void hub.builder.control.restart()
+  }
   const { events } = await asked(t, { hub, person: ana, conversations })
   assert.deepEqual(failuresOf(events), ['MACHINE_LOST'])
   assert.equal(hub.builder.bucket.held.size, 0)
-  assert.equal(
-    await hub.builder
-      .repository({ companyId: CompanyId.parse(companyId), projectId: ProjectId.parse(projectId) })
-      .version(),
-    0,
+  assert.equal(await repositoryOf({ hub, companyId, projectId }).version(), 0)
+})
+
+test('o guardar falha numa máquina viva: failed, SAVE_REFUSED, e o main como era', async (t) => {
+  const lock = { name: COMMAND, input: { command: 'mkdir .git/conexus-index.lock' } }
+  const { hub, ana, conversations, companyId, projectId } = await conversing(
+    t,
+    working(writing('a.ts', 'x\n'), lock),
   )
+  const { events } = await asked(t, { hub, person: ana, conversations })
+  assert.deepEqual(failuresOf(events), ['SAVE_REFUSED'])
+  assert.equal(hub.builder.bucket.held.size, 0)
+  assert.equal(await repositoryOf({ hub, companyId, projectId }).version(), 0)
 })
 
 test('a máquina não liga na primeira ferramenta: o aviso de que não ligou, não o de que caiu; nada é guardado', async (t) => {

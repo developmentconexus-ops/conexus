@@ -35,6 +35,7 @@ async function twoTurns(
     first: [writing('src/a.ts', 'um\n')],
     second: [writing('src/b.ts', 'dois\n')],
   },
+  failures: string[] = [],
 ) {
   const script: (Tool | 'end')[] = [...turns.first, 'end', ...turns.second, 'end']
   const seen: Sent[] = []
@@ -62,7 +63,7 @@ async function twoTurns(
   hub.builder.control.discoverable = [name]
   assert.equal((await sent(hub, ana, url, 'Segunda')).statusCode, 200)
   const second = await stream.turn()
-  assert.deepEqual(failuresOf([...first, ...second]), [])
+  assert.deepEqual(failuresOf([...first, ...second]), failures)
   return { ...world, repository: repositoryOf(world), git, seen }
 }
 
@@ -121,4 +122,59 @@ test('o processo morreu depois de mover o main e antes de a máquina saber: o tu
   })
   assert.equal(await repository.version(), 2, 'a, then b, and nothing between them')
   assert.ok(paths(git, 'main~1').includes('src/a.ts') && !paths(git, 'main~1').includes('src/b.ts'))
+})
+
+test('a conversa guardou um arquivo e outra conversa o apagou: o turno seguinte da primeira não o traz de volta, nem o guarda de novo', async (t) => {
+  const { repository, git, hub } = await twoTurns(t, ({ dir }) => {
+    moveMain(dir, 'src/a.ts', null)
+  })
+  assert.equal(await repository.version(), 3, 'a, the deletion by the other conversation, then b')
+  assert.ok(!paths(git, 'main').includes('src/a.ts'), 'the other conversation deleted it')
+  assert.ok(paths(git, 'main').includes('src/b.ts'))
+  assert.equal(
+    hub.lines.some((line) => line.message === 'MACHINE_CONFLICTS'),
+    false,
+  )
+})
+
+test('a conversa guardou uma linha e outra conversa a mudou depois: o turno seguinte da primeira não recebe conflito, e o main guarda a linha da outra', async (t) => {
+  const reading = { name: 'mastra_workspace_read_file', input: { path: 'src/s.ts' } }
+  const { repository, git, seen, hub } = await twoTurns(
+    t,
+    ({ dir }) => moveMain(dir, 'src/s.ts', 'outra\n'),
+    { first: [writing('src/s.ts', 'um\n')], second: [reading] },
+  )
+  const after = seen.at(-1)
+  assert.ok(after)
+  assert.doesNotMatch(after.system, /conflict markers; resolve them/)
+  assert.ok(after.texts.some((text) => text.includes('outra')))
+  assert.ok(!after.texts.some((text) => text.includes('<<<<<<<')))
+  assert.equal(git('show', 'main:src/s.ts'), 'outra\n')
+  assert.equal(await repository.version(), 2, 'one, then the other conversation: nothing unsaved')
+  assert.equal(
+    hub.lines.some((line) => line.message === 'MACHINE_CONFLICTS'),
+    false,
+  )
+})
+
+test('o guardar falhou numa máquina viva: o turno seguinte ainda tem o trabalho, e a versão dele o leva', async (t) => {
+  function command(line: string): Tool {
+    return { name: 'mastra_workspace_execute_command', input: { command: line } }
+  }
+  const { repository, git } = await twoTurns(
+    t,
+    () => undefined,
+    {
+      // A directory where the save's index lock goes: the collect fails with the machine up and the files in place.
+      first: [writing('src/a.ts', 'um\n'), command('mkdir .git/conexus-index.lock')],
+      second: [command('rmdir .git/conexus-index.lock'), writing('src/b.ts', 'dois\n')],
+    },
+    ['SAVE_REFUSED'],
+  )
+  assert.equal(
+    await repository.version(),
+    1,
+    'nothing at the first turn, one version at the second',
+  )
+  assert.ok(paths(git, 'main').includes('src/a.ts') && paths(git, 'main').includes('src/b.ts'))
 })

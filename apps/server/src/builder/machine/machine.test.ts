@@ -20,7 +20,7 @@ import {
 
 const OWN = `conexus-${INSTALLATION}-${CONVERSATION}`
 
-test('máquina: a conversa sem máquina liga e copia o main; a achada pelo nome traz o main com a rede fechada; a que sumiu entre turnos volta nova, do main, sem frase', async (t) => {
+test('máquina: a conversa sem máquina liga e copia o main; a achada pelo nome traz o main com a rede fechada e guarda o que o turno anterior não salvou; a que sumiu entre turnos volta nova, do main, sem frase', async (t) => {
   const { open, phases, control, machines, base } = await world(t)
   const first = await open()
   assert.deepEqual(phases, [], 'building the workspace touches no machine')
@@ -30,7 +30,11 @@ test('máquina: a conversa sem máquina liga e copia o main; a achada pelo nome 
   phases.length = 0
   control.discoverable = [OWN]
   const found = await open()
-  assert.equal(await found.filesystem?.exists('a.ts'), false, 'a fresh turn starts from main')
+  assert.equal(
+    await found.filesystem?.exists('a.ts'),
+    true,
+    'a turn that saved nothing leaves its work',
+  )
   assert.deepEqual(phases, ['starting', 'copying'])
   assert.deepEqual(control.attached, [OWN])
   assert.equal(control.networkClosed, 1)
@@ -83,7 +87,9 @@ test('máquina: a máquina que cai no meio do turno é refeita, e o turno não g
   await workspace.filesystem?.writeFile('a.ts', 'um\n')
   control.outcome = 'created'
   await control.restart()
-  await assert.rejects(machines.collect({ conversationId: CONVERSATION, base }), /died/)
+  await assert.rejects(machines.collect({ conversationId: CONVERSATION, base }), {
+    code: 'MACHINE_LOST',
+  })
 })
 
 test('máquina: a máquina que pausou na hora do turno, ou que o Mastra religa no meio dele, guarda o que o turno escreveu', async (t) => {
@@ -99,14 +105,18 @@ test('máquina: a máquina que pausou na hora do turno, ou que o Mastra religa n
   assert.ok(bundle.files > 1, 'the version holds the starter beside the turn')
 })
 
-test('máquina: o turno que não terminou (o processo morreu) deixa os arquivos na máquina; religada, a mesma pasta os guarda e o turno seguinte os salva; o turno que terminou não deixa sobra', async (t) => {
+test('máquina: o turno que não terminou (o processo morreu) deixa os arquivos na máquina; religada, a mesma pasta os guarda e o turno seguinte os salva; o turno que terminou sem salvar também os deixa', async (t) => {
   const { open, machines, control, base } = await world(t)
   const ended = await open()
   await ended.filesystem?.writeFile('stray.ts', 'sobra\n')
   await machines.release(CONVERSATION)
   control.outcome = 'connected'
   const cut = await open()
-  assert.equal(await cut.filesystem?.exists('stray.ts'), false, 'an ended turn leaves its base')
+  assert.equal(
+    await cut.filesystem?.exists('stray.ts'),
+    true,
+    'an ended turn keeps what it did not save',
+  )
   await cut.filesystem?.writeFile('a.ts', 'um\n')
   // The process died: no save, no end. The next turn finds the machine by its name.
   const after = await open()
@@ -114,7 +124,7 @@ test('máquina: o turno que não terminou (o processo morreu) deixa os arquivos 
   assert.equal(await machines.changed({ conversationId: CONVERSATION }), true)
   const bundle = await machines.collect({ conversationId: CONVERSATION, base })
   assert.ok(typeof bundle === 'object', `the cut turn is saved, not ${String(bundle)}`)
-  assert.equal(bundle.changedFiles, 1)
+  assert.equal(bundle.changedFiles, 2, 'the ended turn left its file beside the cut one')
 })
 
 test('máquina: duas ferramentas do Workspace no primeiro passo esperam a semente, pois o running vem antes do onStart', async (t) => {
