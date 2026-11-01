@@ -121,7 +121,7 @@ O exemplo: **a análise de orçamento**.
 | "primeiro eu analiso tudo que ativaria ela" | o Construtor lê o Projeto, as ligações e o caderno delas, pesquisa na web e propõe os gatilhos: orçamento novo, cancelado, perdido | um agente com as ferramentas de leitura da 24.1 (`connector_read`, `connector_notes`, `web_search`) e uma ferramenta que propõe, como `propose_automation` | 24.3 (agentes), 24.5 (workflows) |
 | o gatilho: um horário | "todo dia às 7h" | `mastra.schedules.create` com `workflowId` (`dist/schedules/schedules.d.ts:178-194`) | **24.2** |
 | o gatilho: "rodar agora" | o botão | `mastra.schedules.run` (`schedules.d.ts:189-193`) | **24.2** |
-| o gatilho: um orçamento novo, cancelado ou perdido no Sankhya | uma automação que olha o Sankhya a cada poucos minutos e compara com o que viu da última vez, porque o Sankhya não avisa (pergunta (a)) | a mesma agenda, com um workflow que lê o que mudou e dá `run.start` num workflow por orçamento (`dist/workflows/workflow.d.ts:769`) | 24.5 |
+| o gatilho: um orçamento novo, cancelado ou perdido no Sankhya | uma automação que olha o Sankhya a cada poucos minutos e compara com o que viu da última vez, porque o Sankhya não avisa (pergunta (a)) | a mesma agenda, com um workflow que lê o que mudou e dá `run.start` num workflow por orçamento (`dist/workflows/workflow.d.ts:642`) | 24.5 |
 | o gatilho: um aviso de um fornecedor que avisa | o Mercado Livre e os outros que mandam aviso chamam uma rota nossa | a rota dá `run.start`; o Mastra não tem gatilho de evento genérico | 20.2, depois da 24.5 |
 | "um workflow que processaria os dados, importaria" | passos de código que são ferramentas nossas | `createStepFromTool` (`dist/workflows/step-factories.d.ts:28`) | 24.5 |
 | "depois entraria um agente" que tria e confere o cliente | um passo que é um agente do Projeto | `createStepFromAgent` (`step-factories.d.ts:14`) | 24.3 (o agente), 24.5 (o passo) |
@@ -190,7 +190,7 @@ aprovada.
 
 **Antes da U1**, uma regra muda e duas já valem. As duas que valem: a do `ee`
 (https://github.com/developmentconexus-ops/conexus/pull/518) e a `mastra-only-in-builder` (W7); a
-agenda mora em `builder/`. A que muda é a **D27** de `docs/guides/data.md:84`, que o cartão contradiz
+agenda mora em `builder/`. A que muda é a **D27** de `docs/guides/data.md:83-84`, que o cartão contradiz
 (a agenda consulta o banco a cada 10 s enquanto houver uma automação, pelo `D1`). Um guia só muda num
 pull request de fechamento (L20), então a exceção entra **no fechamento da 24.1, antes do merge da U1
 desta etapa**, com este texto:
@@ -225,7 +225,7 @@ por e-mail (critérios 1, 6, 8, 12, 19, 21).
 | 6a | U1 | A conversa aberta pela execução é uma conversa do Assistente como as da 24.1: aparece no `GET …/assistant/conversations` do dono com `automation: { automationId, name }`, abre pela rota da conversa, e uma segunda pergunta nela é respondida | `run.test.ts`, "a conversa continua" | must |
 | 6b | U1 | A conversa aberta pela execução tem só as ligações que o lugar ainda oferece: uma ligação que o Projeto perdeu depois da criação fica fora de `connections` (nem chega à conversa, como o critério 13c da 24.1), e a execução termina `DONE` | `run.test.ts`, "as ligações de hoje" | must |
 | 7 | U1 | `POST …/automations/{id}/run` responde 202 com o id da execução; o histórico mostra `MANUAL`; um segundo pedido enquanto a primeira está `RUNNING` dá `AUTOMATION_RUNNING`; numa automação pausada, roda do mesmo jeito | `routes.test.ts`, "rodar agora" | must |
-| 8 | U1 | `GET …/automations/{id}/runs` devolve as execuções da mais nova para a mais velha, cada uma com `firedAt`, `trigger` (`SCHEDULED` ou `MANUAL`) e o estado (`RUNNING`, `DONE` com a conversa, `FAILED` com o código e a conversa se houver, `SKIPPED` com o motivo), 20 por página com `next` opaco | `routes.test.ts`, "o histórico" | must |
+| 8 | U1 | `GET …/automations/{id}/runs` devolve as execuções da mais nova para a mais velha, cada uma com `firedAt`, `trigger` (`SCHEDULED` ou `MANUAL`) e o estado (`RUNNING`, `DONE` com a conversa, `FAILED` com o código e a conversa se houver, `SKIPPED` com o motivo), 20 por página, com `page` e `next: Next` | `routes.test.ts`, "o histórico" | must |
 | 9 | U1 | Um turno que falha (a conta do modelo esgotada, o modelo fora) termina a execução `FAILED` com o código do turno (os da 11 e da 12, pelo mapa do Builder que `turnEnd` usa) e a conversa, que mostra a frase da falha; um turno que passa de `AUTOMATION_TURN_MS` (15 minutos) é abortado (`session.abort()`) e termina `FAILED` com `INTERRUPTED`; uma falha antes do turno (o modelo padrão sem conta, `MODEL_NO_ACCOUNT`; o banco fora) termina `FAILED` com o código e `conversationId: null`; nos dois casos a U2 avisa | `run.test.ts`, "a falha do turno" | must |
 | 10 | U1 | Se o dono não pode mais perguntar (virou membro), o disparo não abre conversa: a execução é `SKIPPED` com `OWNER_CANNOT_ASK`, a automação fica `PAUSED`, e a U2 avisa; a notificação e o e-mail dessa pausa não levam o caminho da automação (o dono virou membro e a página dá "não encontrado"): o botão abre o Início | `run.test.ts`, "o dono virou membro" | must |
 | 11 | U1 | Apagar responde 204: a linha some do Mastra, a lista não a mostra, as conversas já abertas ficam; apagar de novo dá `AUTOMATION_NOT_FOUND` | `routes.test.ts`, "apagar" | must |
@@ -233,7 +233,7 @@ por e-mail (critérios 1, 6, 8, 12, 19, 21).
 | 11b | U1 | Sem automação nenhuma, a agenda não liga: depois de `startWorkers()` o trabalhador `scheduler` não existe (`getWorker('scheduler')` é `undefined`), a única consulta a `mastra_schedules` é a leitura da partida (`NM:mastra-Da0Czfte.js:4355-4362`), e o pool do Mastra chega a zero conexões em 15 s e fica em zero (o teste de D27 de `conversation-pool.test.ts`); a primeira automação criada com o Hub no ar liga a agenda e dispara no horário; com uma já guardada, a partida a acha e liga; com uma linha, o pool nunca chega a zero (o custo do `D1`, a exceção de D27) | `apps/server/src/builder/automations/scheduler.test.ts` | must |
 | 11c | U1 | O fim do Hub (U0 da 24.1) para a agenda primeiro: nenhum disparo começa depois do aviso de parar; uma execução em andamento tem o turno esperado como os outros; a que o corte interrompe, ou a que ficou `running` porque o processo morreu, aparece `FAILED` com `INTERRUPTED` no histórico, e "Rodar agora" volta a funcionar nela; um `POST …/run`, um `POST …/automations` e um `POST …/resume` durante o `settle` recebem `HUB_UPDATING` e a agenda continua parada; um disparo publicado antes do aviso termina `FAILED` com `INTERRUPTED`, sem conversa | `scheduler.test.ts`, "o fim do Hub" | must |
 | 11d | U1 | Um horário perdido com o Hub parado roda **uma** vez quando o Hub volta, e o próximo volta ao horário normal | `scheduler.test.ts`, "o horário perdido" | should |
-| 11e | U1 | Uma execução repetida (o mesmo `runId`; o Hub não roda a varredura de recuperação, que é do deployer, então o teste provoca a repetição por `run.restart()` no mesmo `runId`) não manda o pedido duas vezes: a conversa dela tem uma pergunta só | `run.test.ts`, "uma pergunta só" | must |
+| 11e | U1 | Uma execução repetida (o mesmo `runId`; o Hub não roda a varredura de recuperação, que é do deployer, então o teste provoca a repetição por `run.restart()` no mesmo `runId`: o run fica `running` sem dono, com um Mastra A parado no meio do passo e desligado; o Mastra B, depois do arrendamento do run, `MASTRA_AGENT_THREAD_LEASE_TTL_MS`, 15 s por padrão, `NM:storage-3afzHmR7.js:232`, lido na carga do módulo, faz `createRun({ runId }).restart()`, que refaz só o passo em andamento) não manda o pedido duas vezes: a conversa dela tem uma pergunta só | `run.test.ts`, "uma pergunta só" | must |
 | 12 | U2 | Ao fim de cada execução, o dono recebe uma notificação: `AUTOMATION_DONE` com a conversa, `AUTOMATION_FAILED` com a conversa se houver, `AUTOMATION_PAUSED` no caso do critério 10; uma por execução, mesmo se o passo repetir | `apps/server/src/hub/notifications/notifications.test.ts` | must |
 | 13 | U2 | `GET /api/companies/{c}/notifications` devolve só as da pessoa, da mais nova para a mais velha, 30 por página, com `unread`; `POST …/notifications/read` com ids marca essas, com `all: true` marca todas; a de outra pessoa ou empresa não aparece nem é marcada (a política `OWN`) | `notifications.test.ts`, "o sino" | must |
 | 14 | U2 | Um disparo do horário manda um e-mail ao endereço do dono: o assunto "Automação <nome>: pronta", "Automação <nome>: falhou" ou "Automação <nome>: pausada", o nome, o botão **Abrir no Conexus** com o endereço da conversa pelo lugar dela (Início ou Projeto, como o critério 24 da 24.1) ou o da automação (a pausa por `OWNER_CANNOT_ASK`: o Início), e nenhum número da empresa (`G1`); "Rodar agora" não manda e-mail | `apps/server/src/hub/notifications/mail.test.ts` | must |
@@ -301,11 +301,11 @@ tela; os botões que não cabem vão para o menu **⋯**.
 
 | Gravação ou comando, da etapa ou da biblioteca | Duas vezes ao mesmo tempo | Recusada no meio, depois de uma instrução ou de uma chamada | Uma dependência fora (o banco, ou um terceiro) | O que o processo imprime | Critérios |
 | --- | --- | --- | --- | --- | --- |
-| Criar a automação (`schedules.get` pelo id derivado da empresa, da pessoa e da chave; se não há, `schedules.create`; só a repetição em série dá `SCHEDULES_ID_EXISTS`, `NM:schedules-BfNkiF4x.js:470-478`) | a mesma chave: o `get` acha a linha, ou o `create` perde a corrida; **qualquer** falha do `create` relê `schedules.get(id)`: a linha existe → a corrida perdida; não existe → a falha segue para o tradutor (`DATABASE_UNAVAILABLE`); nunca se decide pela frase nem pelo `id` do erro (C52): na corrida o `@mastra/pg` 1.32.0 recusa com um `Error` sem `id` (`dist/index.js:22862`) ou com a chave primária (`:3195-3208`); o `bodyHash` do `metadata` decide entre a mesma automação e `IDEMPOTENCY_CONFLICT`; duas chaves: duas linhas; o limite de 30 é conferido antes, e dois pedidos ao mesmo tempo podem passar dele por um, o que se aceita | a conferência (papel, Projeto, cadência, limite) antes de criar: nada gravado; um corte depois do `create`: a repetição com a mesma chave acha a linha | banco do Mastra fora: `DATABASE_UNAVAILABLE`, nada criado | `AUTOMATION_CREATED` (empresa, automação, cadência) | 1, 1a, 2 |
+| Criar a automação (`schedules.get` pelo id derivado da empresa, da pessoa e da chave; se não há, `schedules.create`; só a repetição em série dá `SCHEDULES_ID_EXISTS`, `NM:schedules-BfNkiF4x.js:470-478`) | a mesma chave: o `get` acha a linha, ou o `create` perde a corrida; **qualquer** falha do `create` relê `schedules.get(id)`: a linha existe → a corrida perdida; não existe → a falha segue para o tradutor (`DATABASE_UNAVAILABLE`); nunca se decide pela frase nem pelo `id` do erro (C52): na corrida o `@mastra/pg` 1.32.0 recusa com um `Error` sem `id` (`dist/index.js:22862`) ou com um `MastraError` genérico de `insert` (`:3195-3208`); o `bodyHash` do `metadata` decide entre a mesma automação e `IDEMPOTENCY_CONFLICT`; duas chaves: duas linhas; o limite de 30 é conferido antes, e dois pedidos ao mesmo tempo podem passar dele por um, o que se aceita | a conferência (papel, Projeto, cadência, limite) antes de criar: nada gravado; um corte depois do `create`: a repetição com a mesma chave acha a linha | banco do Mastra fora: `DATABASE_UNAVAILABLE`, nada criado | `AUTOMATION_CREATED` (empresa, automação, cadência) | 1, 1a, 2 |
 | Pausar, retomar (`schedules.pause`, `resume`) | os dois últimos valem; cada resposta diz o estado | uma linha só, sem passo no meio | `DATABASE_UNAVAILABLE`; a tela volta ao estado de antes | `AUTOMATION_PAUSED`, `AUTOMATION_RESUMED` | 5 |
 | Apagar (`schedules.delete`, que apaga a linha e os gatilhos mas deixa os runs do workflow com o `inputData`; depois, os runs dela: `listWorkflowRuns` filtrado pelo prefixo `sched_<automationId>_` do `runId` e `deleteWorkflowRunById`) | o segundo dá `AUTOMATION_NOT_FOUND` | uma execução em andamento termina e avisa; a linha já não volta; uma falha no meio dos runs deixa runs que a remoção seguinte acha | `DATABASE_UNAVAILABLE`; a linha fica | `AUTOMATION_DELETED` | 11, 11a |
-| Rodar agora (`schedules.run`, publica `workflow.start` com `sched_<id>_<agora>`, `NM:schedules-BfNkiF4x.js:638-704`, relay) | a rota recusa com `AUTOMATION_RUNNING` se a última execução está `RUNNING` (uma `running` de antes da partida deste processo conta como `INTERRUPTED`); dois toques no mesmo instante podem passar, e a tela desliga o botão no primeiro; durante o `settle` a rota responde `HUB_UPDATING` (o guarda da 24.1 só cobre as rotas do controlador, e `schedules.run` publica mesmo com a agenda parada) | a publicação é uma gravação só; o Mastra grava o gatilho do manual num `try {} catch {}` vazio depois de publicar (`NM:schedules-BfNkiF4x.js:686-698`): uma falha do banco nesse instante deixa uma execução real sem linha no histórico (a dívida) | `DATABASE_UNAVAILABLE` | `AUTOMATION_RUN_REQUESTED` | 7 |
-| O disparo do horário (o Mastra reivindica a janela por comparação e troca de `nextFireAt`, `NM:storage/domains/schedules/base.d.ts:208,237`, publica `workflow.start` com `sched_<id>_<nextFireAt>`, e o trabalhador de orquestração faz `createRun` e `start`, pulando um run que já existe, `NM:resolve-agent-CMSnjTVM.js:2993-3016`) | uma janela, uma reivindicação: duas instâncias não disparam duas vezes; o mesmo run não começa duas vezes | a janela reivindicada e uma publicação que falha: o Mastra grava `failed` no gatilho e a janela se perde; a próxima roda (um processo que morre antes de publicar não grava nada: a janela se perde do mesmo jeito, `NM:scheduler-3IjINScC.js:290-319`) | banco fora: o tique falha e tenta no próximo (10 s) | do Mastra; a U1 imprime `AUTOMATION_FIRED` no primeiro passo | 6, 11c, 11d |
+| Rodar agora (`schedules.run`, publica `workflow.start` com `sched_<id>_<agora>`, `NM:schedules-BfNkiF4x.js:638-704`, relay) | a rota recusa com `AUTOMATION_RUNNING` se a última execução está `RUNNING` (uma `running` de antes da partida deste processo conta como `INTERRUPTED`); dois toques no mesmo instante podem passar, e a tela desliga o botão no primeiro; durante o `settle` a rota responde `HUB_UPDATING` (o guarda da 24.1 só cobre as rotas do controlador, e `schedules.run` publica mesmo com a agenda parada) | a publicação é uma gravação só; o Mastra grava o gatilho do manual num `try {} catch {}` vazio depois de publicar (`NM:schedules-BfNkiF4x.js:690-699`): uma falha do banco nesse instante deixa uma execução real sem linha no histórico (a dívida) | `DATABASE_UNAVAILABLE` | `AUTOMATION_RUN_REQUESTED` | 7 |
+| O disparo do horário (o Mastra reivindica a janela por comparação e troca de `nextFireAt`, `NM:storage/domains/schedules/base.d.ts:208,237`, publica `workflow.start` com `sched_<id>_<nextFireAt>`, e o trabalhador de orquestração faz `createRun` e `start`, pulando um run que já existe, `NM:resolve-agent-CMSnjTVM.js:2996-3015`) | uma janela, uma reivindicação: duas instâncias não disparam duas vezes; o mesmo run não começa duas vezes | a janela reivindicada e uma publicação que falha: o Mastra grava `failed` no gatilho e a janela se perde; a próxima roda (um processo que morre antes de publicar não grava nada: a janela se perde do mesmo jeito, `NM:scheduler-3IjINScC.js:290-319`) | banco fora: o tique falha e tenta no próximo (10 s) | do Mastra; a U1 imprime `AUTOMATION_FIRED` no primeiro passo | 6, 11c, 11d |
 | Abrir a conversa da execução (`controller.createSession` get-or-create pelo id derivado do id da execução, com as marcas de texto `conexusAutomation` e `conexusAutomationName`; `session.model.switch`; `setSetting` das ligações) | o passo repetido acha a mesma conversa pelo id | o corte depois do `createSession`: a repetição acha a sessão e grava o que falta, como a criação da 24.1; `updating()` verdadeiro antes de abrir: `FAILED` com `INTERRUPTED`, sem conversa e sem mandar o pedido | banco do Mastra fora, o modelo padrão sem conta: o passo devolve `FAILED` com o código e `conversationId: null`, nunca lança, e o aviso sai | `AUTOMATION_CONVERSATION_OPENED`; cada erro que vira `FAILED`: `AUTOMATION_RUN_FAILED` (empresa, automação, `runId`, código), sem o pedido (C50, C53) | 6, 6a, 9 |
 | O turno da execução (`session.sendMessage({ content })`, que espera o fim e não lança numa falha do modelo, que sai como evento, `NM:agent-controller/session.d.ts:1761-1779`, `NM:agent-controller-DO6rGsQm.js:5581-5612`, relay; o fim vem de `turnEnd(session)`, e a sessão não é apagada: `deleteSession` abortaria o run vivo da conversa se a pessoa já perguntou de novo, `end.ts:322`, `public.ts:71-74`) | uma execução por conversa; o passo repetido acha a pergunta já no fio e não manda de novo | o fim do Hub corta o turno (C62): `FAILED` com `INTERRUPTED`; a parte respondida fica na conversa; um turno que passa de `AUTOMATION_TURN_MS` é abortado (C57): `FAILED` com `INTERRUPTED` | modelo fora, conta esgotada: `turnEnd` dá `FAILED` com o código da 11 ou da 12 | da 24.1 | 9, 11c, 11e |
 | O `schedules.pause` do passo `check` (o dono virou membro) | pausar uma já pausada devolve o estado, sem erro | uma linha só | banco do Mastra fora: a pausa não grava, o passo `converse` não roda, e o disparo seguinte acha o dono ainda sem papel e tenta a pausa de novo | `AUTOMATION_PAUSED` | 10 |
@@ -327,18 +327,18 @@ cartão dela, porque ainda não foram construídas. "Lido" é linha reaberta pel
 | Peça | Unidade | Hoje no main | Referência | Como a referência faz | Veredito | Prova, se não for nativo | Palavra do fundador | Arquivo novo |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | A linha da automação | U1 | nada; o `new Mastra` sem agenda (`builder/conversation/builder.ts:241-245`, lido) | `NM:schedules/schedules.d.ts:178-194` (`create`, `get`, `list`, `update`, `delete`, `pause`, `resume`, `run`), lido; a Factory guarda a sua agenda "in core Schedules (one row per project) rather than a factory column: the scheduler owns firing, claims and the run trigger log" (`M:mastracode/factory/src/environment/build-schedule.ts:1-6`), lido | uma linha da agenda do Mastra por automação; o app só cria, pausa, retoma e lê | nativo: `mastra.schedules`, sem tabela no Hub; o que a automação é vai no `inputData` e no `metadata` da linha | critérios 1, 4, 5, 11 | `A1` | `builder/automations/automations.ts` |
-| O que a agenda dispara | U1 | — | o alvo agente chama `agent.generate` ou `sendSignal` direto, sem sessão do controlador (`NM:worker-5hzgCU_T.js:160-448`, relay do ajudante); `agentControllers` não registra o agente em `mastra.agents` (`NM:mastra-Da0Czfte.js:1273-1295`, relay); o alvo ausente é apagado depois de 3 faltas (`NM:scheduler-3IjINScC.js:9,146-186`, relay); o alvo workflow: a agenda publica `workflow.start` (`NM:scheduler-3IjINScC.js:280,343-369`, lido em 263-300) e o trabalhador de orquestração faz `createRun` e `start`, pulando um run que já existe (`NM:resolve-agent-CMSnjTVM.js:2993-3016`, lido); a Factory dispara um workflow (`M:mastracode/factory/src/environment/build-workflow.ts:10,68-79`, lido pelos nomes) | a agenda aponta para um workflow registrado no código | nativo: um workflow `conexus-automation-run`, registrado no `new Mastra({ workflows })`, que abre a conversa pelo controlador do Assistente; nunca o alvo agente, que pularia o controlador da 24.1 (o modo, a conta, o turno) | critérios 6, 6a | `A1`, `C1` | `builder/automations/run.ts` |
-| A cadência e o fuso | U1 | — | `validateCron` e `computeNextFireAt(cron, { timezone, after })` (`@mastra/core/workflows`, `NM:workflows/index.js:3,74`; `NM:cron-WgPqG6lD.js:9-42`), usados pela Factory (`M:mastracode/factory/src/environment/build-schedule.ts:9,55`, lido); o cron pelo `croner` e o erro `SCHEDULES_INVALID_TIMING` (`NM:cron-WgPqG6lD.js:1,9-23`, relay); ChatGPT Tasks e Claude Code oferecem diário, dias úteis, semanal e mensal (relay do estudo da ordem) | um cron com fuso; o produto oferece cadências prontas | embrulhado: a união `Cadence` da tela vira cron por `cronOf`, um dono só, e o próximo horário vem de `computeNextFireAt`; o fuso é sempre `America/Sao_Paulo` | critério 3 | `F1` (pré-aprovação de 2026-11-01, recomendação) | `builder/automations/cadence.ts` |
+| O que a agenda dispara | U1 | — | o alvo agente chama `agent.generate` ou `sendSignal` direto, sem sessão do controlador (`NM:worker-5hzgCU_T.js:160-448`, relay do ajudante); `agentControllers` não registra o agente em `mastra.agents` (`NM:mastra-Da0Czfte.js:1273-1295`, relay); o alvo ausente é apagado depois de 3 faltas (`NM:scheduler-3IjINScC.js:9,146-186`, relay); o alvo workflow: a agenda publica `workflow.start` (`NM:scheduler-3IjINScC.js:280,343-369`, lido em 263-300) e o trabalhador de orquestração faz `createRun` e `start`, pulando um run que já existe (`NM:resolve-agent-CMSnjTVM.js:2996-3015`, lido); a Factory dispara um workflow (`M:mastracode/factory/src/environment/build-workflow.ts:10,68-79`, lido pelos nomes) | a agenda aponta para um workflow registrado no código | nativo: um workflow `conexus-automation-run`, registrado no `new Mastra({ workflows })`, que abre a conversa pelo controlador do Assistente; nunca o alvo agente, que pularia o controlador da 24.1 (o modo, a conta, o turno) | critérios 6, 6a | `A1`, `C1` | `builder/automations/run.ts` |
+| A cadência e o fuso | U1 | — | `validateCron` e `computeNextFireAt(cron, { timezone, after })` (`@mastra/core/workflows`, `NM:workflows/index.js:3,74`; `NM:cron-WgPqG6lD.js:9-42`), a Factory usa só `validateCron` (`M:mastracode/factory/src/environment/build-schedule.ts:9,55`, lido); `computeNextFireAt` é nosso; o cron pelo `croner` e o erro `SCHEDULES_INVALID_TIMING`, montado em `invalidTiming` (`NM:schedules-BfNkiF4x.js:299`, relay); ChatGPT Tasks e Claude Code oferecem diário, dias úteis, semanal e mensal (relay do estudo da ordem) | um cron com fuso; o produto oferece cadências prontas | embrulhado: a união `Cadence` da tela vira cron por `cronOf`, um dono só, e o próximo horário vem de `computeNextFireAt`; o fuso é sempre `America/Sao_Paulo` | critério 3 | `F1` (pré-aprovação de 2026-11-01, recomendação) | `builder/automations/cadence.ts` |
 | A conversa de cada execução | U1 | a criação da conversa do Assistente (cartão da 24.1, U2: `createSession({ id, resourceId, threadId: id, tags })`, `session.model.switch`, `setSetting`) | `createSession` com `tags`, um `Record<string, string>` (`NM:agent-controller/agent-controller.d.ts:119-142`, lido pela assinatura); `session.sendMessage` "Send a message to this session's current agent and await the run" (`NM:agent-controller/session.d.ts:1761-1779`, lido); o despachante de regras da Factory entrega um sinal a uma sessão com `requireDelivery` (`M:mastracode/factory/src/rules/dispatcher.ts:1024-1028`, lido pela linha) | um gatilho abre uma sessão e manda a mensagem por ela | nativo: o passo do workflow chama a mesma função de criação da 24.1, com as marcas `conexusAutomation` e `conexusAutomationName`, e `sendMessage` | critérios 6, 6a, 6b | `C1` | `builder/assistant/open.ts` (a criação da 24.1 sai da rota para uma função) |
 | Rodar agora | U1 | — | `schedules.run(id)` publica o mesmo início com `triggerKind: 'manual'` (`NM:schedules-BfNkiF4x.js:638-704`, relay) | o mesmo caminho do horário | nativo | critério 7 | `C1` | — |
 | O histórico | U1 | — | `listTriggers(scheduleId, { limit, fromActualFireAt, toActualFireAt })` no domínio de armazenamento, não em `mastra.schedules` (`NM:storage/domains/schedules/base.d.ts:194-200,243`, relay), a linha `{ scheduleId, runId, scheduledFireAt, actualFireAt, outcome, triggerKind }` (`:160-183`, relay); o gatilho de workflow fica `published` e não muda no fim (relay do ajudante); `workflow.getWorkflowRunById` com `fields` para o resultado (`NM:workflows/workflow.d.ts:498-501`, lido) | os gatilhos dizem quando e como; o run diz como terminou | embrulhado: `runsOf` junta o gatilho e o estado do run, e lê a conversa da saída do run | critério 8 | `C1` | `builder/automations/runs.ts` |
 | A janela perdida | U1 | — | `computeNextFire(schedule, after)` calcula a próxima a partir de agora (`NM:cron-WgPqG6lD.js:46-56`, lido) | um horário perdido roda uma vez, e o resto volta ao normal | nativo | critério 11d | não precisa | — |
 | Ligar a agenda no Hub | U1 | o Hub usa o Mastra sem servidor, e nada chama `startWorkers` (grep em `apps/server/src`, lido) | "The scheduler is auto-enabled when ... schedule rows exist in storage ... Apps that never schedule anything never poll storage" (`NM:mastra/index.d.ts:311-321`, lido); `startWorkers()` procura as linhas guardadas e liga a agenda só se houver (`NM:mastra-Da0Czfte.js:5037-5049`, lido); o tique a cada `1e4` ms (`NM:scheduler-3IjINScC.js:7`, relay; `tickIntervalMs`, `NM:workflows/scheduler/types.d.ts:71`, relay) | o app chama `startWorkers` na partida; a agenda acorda o banco a cada tique só quando há linhas, e `startWorkers()` lê a tabela uma vez na partida (`NM:mastra-Da0Czfte.js:4355-4362`) | nativo: `mastra.startWorkers()` em `main.ts`, o tique padrão de 10 s (`D1` paga o banco acordado); `startWorkers` também liga o trabalhador de orquestração, que o workflow precisa; a agenda é parada pelo `getWorker('scheduler')` no aviso de parar | critérios 11b, 11c | `D1` | — |
 | Os ganchos `prepare`, `onFinish`, `onError` | fica de fora | — | valem só para a agenda de agente (`NM:schedules/types.d.ts:157-218,235-259`, relay) | — | nativo: fica de fora, porque o alvo é um workflow; o fim da execução é o último passo dele | não precisa | não precisa | — |
-| A notificação para a pessoa | U2 | nenhuma notificação no Hub (grep, relay do ajudante) | as notificações do Mastra são a caixa de entrada de um agente, entregue ao fio como sinal e lida pela ferramenta `notification-inbox` (`NM:notifications/workflow.d.ts:6-10`, `NM:notifications/tool.d.ts`, relay); a tabela do Hub com a política `OWN` (`builder/conversation/tables.ts:13-15`, lido) | — | embrulhado: uma tabela do Hub pelo Drizzle, com a política `OWN`, porque a do Mastra é para agentes e não para pessoas | critérios 12, 13 | a 20.4 (2026-10-29) | `hub/notifications/tables.ts` |
-| O e-mail | U2 | `createMail` (`platform/mail.ts:34`), `MailMessage` (`:8`), ligado só à identidade (`main.ts:114`); `MailFrame` (`hub/identity/mail-frame.tsx:27`), lidos | o convite: `invitation-email.tsx` renderizado pelo `@react-email/render` 2.1.0 num pacote do `esbuild` (`apps/server/package.json:9`), lido | uma moldura, um modelo por e-mail | nativo: o mesmo `SendMail`, passado também às notificações; um segundo ponto de entrada do `esbuild` | critérios 14, 15 | `C1`, `G1` (pré-aprovação de 2026-11-01, recomendação) | `hub/notifications/automation-email.tsx` |
+| A notificação para a pessoa | U2 | nenhuma notificação no Hub (grep, relay do ajudante) | as notificações do Mastra são a caixa de entrada de um agente, entregue ao fio como sinal e lida pela ferramenta `notification-inbox` (`NM:notifications/tool.d.ts:3-14`, relay); a tabela do Hub com a política `OWN` (`builder/conversation/tables.ts:13-15`, lido) | — | embrulhado: uma tabela do Hub pelo Drizzle, com a política `OWN`, porque a do Mastra é para agentes e não para pessoas | critérios 12, 13 | a 20.4 (2026-10-29) | `hub/notifications/tables.ts` |
+| O e-mail | U2 | `createMail` (`platform/mail.ts:34`), `MailMessage` (`:8`), ligado só à identidade (`main.ts:115`); `MailFrame` (`hub/identity/mail-frame.tsx:27`), lidos | o convite: `invitation-email.tsx` renderizado pelo `@react-email/render` 2.1.0 num pacote do `esbuild` (`apps/server/package.json:9`), lido | uma moldura, um modelo por e-mail | nativo: o mesmo `SendMail`, passado também às notificações; um segundo ponto de entrada do `esbuild` | critérios 14, 15 | `C1`, `G1` (pré-aprovação de 2026-11-01, recomendação) | `hub/notifications/automation-email.tsx` |
 | Criar pela conversa | U3 | `propose_app` e **Criar app** (cartão da 24.1, U4: `ProposedApp`, critério 28) | o mesmo da 24.1 | a ferramenta só propõe; a pessoa grava num toque | nativo: `propose_automation` devolve a proposta; o cartão chama a criação | critérios 17, 18 | `E1` (pré-aprovação de 2026-11-01, recomendação) | `builder/assistant/propose-automation.ts`, `apps/web/src/builder/automations/proposal.tsx` |
-| A página Automações | U3 | a barra lateral (`routes/_app/companies/$companyId/route.tsx:57-86`), o trilho do Projeto (`hub/projects/project-rail.tsx:111-172`), lidos | Claude Code: as tarefas agendadas, cada uma com as execuções (https://code.claude.com/docs/en/routines, relay do estudo da ordem); Gumloop: o histórico das execuções (relay) | uma lista com o estado, a próxima, as ações e o histórico | nativo: as peças de `apps/web/src/ui/` | critérios 19, 20, 23 | `A1` | `apps/web/src/builder/automations/` |
+| A página Automações | U3 | a barra lateral (`routes/_app/companies/$companyId/route.tsx:54-77`), o trilho do Projeto (`hub/projects/project-rail.tsx:111-172`), lidos | Claude Code: as tarefas agendadas, cada uma com as execuções (https://code.claude.com/docs/en/routines, relay do estudo da ordem); Gumloop: o histórico das execuções (relay) | uma lista com o estado, a próxima, as ações e o histórico | nativo: as peças de `apps/web/src/ui/` | critérios 19, 20, 23 | `A1` | `apps/web/src/builder/automations/` |
 | O sino | U3 | — | Claude, ChatGPT e Gumloop avisam no produto e por e-mail (relay do estudo da ordem) | um contador e um painel | nativo: `Popover` de `apps/web/src/ui/` | critério 21 | `C1` | `apps/web/src/hub/notifications/bell.tsx` |
 | A etiqueta Automação | U3 | as recentes com a etiqueta do Projeto (cartão da 24.1, U4) | o resumo da conversa ganha `automation` | — | nativo: um `Badge` como o do Projeto | critério 22 | `C1` | — |
 
@@ -373,7 +373,7 @@ Assistente se cruzam, e o fim do Hub é concorrência.
 
 - **A agenda.** `NM:schedules/schedules.d.ts:12-60` (as visões), `:64-115` (as entradas de criação),
   `:151-176` (`ListSchedulesFilter`: `workflowId`, `resourceId`, `status`), `:178-194` (a classe);
-  `NM:schedules-BfNkiF4x.js:470-478` (`SCHEDULES_ID_EXISTS`); `NM:storage/domains/schedules/base.d.ts:89`
+  `NM:schedules-BfNkiF4x.js:470-478` (`SCHEDULES_ID_EXISTS`); `NM:storage/domains/schedules/base.d.ts:90`
   (status `active`, `paused`, `completed`), `:107-123` (`Schedule`: `nextFireAt`, `lastFireAt`,
   `lastRunId`, `metadata`), `:160-183,194-200,243` (`listTriggers`).
   A Factory como modelo de uso: `M:mastracode/factory/src/environment/build-schedule.ts` inteiro (o id
@@ -381,7 +381,7 @@ Assistente se cruzam, e o fim do Hub é concorrência.
 - **O workflow.** `createWorkflow`, `createStep` (`@mastra/core/workflows`); a Factory:
   `M:mastracode/factory/src/environment/build-workflow.ts:10,68-90`. O disparo:
   `NM:scheduler-3IjINScC.js:263-300` (a reivindicação e o `runId`), `:343-369` (a publicação);
-  `NM:resolve-agent-CMSnjTVM.js:2993-3016` (o trabalhador de orquestração: `createRun`, `start`, e o
+  `NM:resolve-agent-CMSnjTVM.js:2996-3015` (o trabalhador de orquestração: `createRun`, `start`, e o
   run já existente pulado).
 - **A conversa.** O cartão da 24.1, U2: a criação, `SESSION_MARK`, `CHOSEN_SETTING`,
   `assistantOwner`, `sessionScope`, o turno e `turnEnd`; `NM:agent-controller/session.d.ts:1761-1779`.
@@ -398,12 +398,12 @@ Nada sai do `main`.
 | --- | --- | --- |
 | `apps/server/src/builder/automations/` | Cria `automations.ts` (o serviço sobre `mastra.schedules`), `cadence.ts` (`cronOf`), `run.ts` (o workflow), `runs.ts` (o histórico), `routes.ts`, `release.ts`, `public.ts` | `mastra.ts`, `main.ts`, as rotas |
 | `apps/server/src/builder/assistant/` | Cria `open.ts`: a criação da conversa sai da rota da 24.1 para `openConversation`, usada pela rota e pelo workflow; muda `context.ts` (`SESSION_MARK` ganha `automation: 'conexusAutomation'`, o id da automação, e `automationName: 'conexusAutomationName'`, o nome no momento da execução: duas marcas de texto, porque as marcas do `createSession` são `Record<string, string>`, gravadas só por `openConversation`), `turn.ts` (cria `turnEnd`, abaixo) e o resumo da conversa (`automation: { automationId, name } | null`, lido das duas marcas; uma automação apagada deixa as conversas com o nome que tinham) | a rota de conversas, o workflow |
-| `apps/server/src/builder/conversation/` | Muda `end.ts`: exporta o mapa do código de falha do turno (`failureOf` e `FINISHES`, `end.ts:63,80-89,108`), um dono só (C26), que `turnEnd` usa | `turn.ts` |
+| `apps/server/src/builder/conversation/` | Muda `end.ts`: exporta o mapa do código de falha do turno (`failureOf`, `end.ts:63`; `FINISHES` já é exportado por `turn-line.ts:6`), um dono só (C26), que `turnEnd` usa | `turn.ts` |
 | `apps/server/src/builder/mastra.ts` | Muda: `workflows: { [AUTOMATION_WORKFLOW]: automationRun }` no único `new Mastra`; recebe `schedulerTickMs?` (o padrão do Mastra em produção; curto só nos testes) e o passa como `scheduler: { tickIntervalMs }` | `main.ts`, os testes |
 | `apps/server/src/main.ts` | Muda: monta as automações, chama `mastra.startWorkers()` depois de montar tudo; no aviso de parar, para o trabalhador `scheduler` antes da espera da U0; passa `updating` (da U0) às automações; no fim, `assistant.close()`, o do Builder, `mastra.shutdown()` | — |
 | `packages/hub-api/src/automations.ts` | Cria: rotas, `Cadence`, `AutomationSummary`, `AutomationRun`; muda `index.ts`, `failures.ts` (`AUTOMATION_LIMIT`, `AUTOMATION_NOT_FOUND`, `AUTOMATION_RUNNING`, `INTERRUPTED`, `SCHEDULE_PUBLISH_FAILED`, com as frases), `assistant.ts` (`automation` no resumo), o OpenAPI gerado | a U2, a U3 |
 | `apps/server/src/hub/identity/admission.ts` | Não muda: as rotas usam `askAssistant` | — |
-| `scripts/removals.json` (o registro de remoções, T12) | Muda: as rotas novas | — |
+| `scripts/removals.json` (o registro de remoções, T12: entradas `{id, file, find, replace, test}` de mutação de fonte, não um registro de rotas) | Muda: as proteções novas: o dono da automação conferido em cada rota (S10) e o `company_all` da notificação, cada uma com o teste que a pega | — |
 
 ### Os contratos que a unidade cria
 
@@ -417,7 +417,7 @@ const BASE = '/api/companies/{companyId}/automations'
 // POST   BASE/{automationId}/resume        -> 200 { automation }
 // POST   BASE/{automationId}/run           -> 202 { runId: AutomationRunId }   (sched_<id>_<scheduledFireAt> da resposta de schedules.run); falhas: AUTOMATION_RUNNING, AUTOMATION_NOT_FOUND
 // DELETE BASE/{automationId}               -> 204; falhas: AUTOMATION_NOT_FOUND
-// GET    BASE/{automationId}/runs ?next=   -> { runs: AutomationRun[], next: string | null }   (20 por página, `next` opaco, code C44)
+// GET    BASE/{automationId}/runs ?page=   -> { runs: AutomationRun[], next: Next }   (20 por página, `Page` e `Next` de `companies.ts:102-115`, code C44)
 export const AutomationId = z.string().regex(/^schedule_conexus-automation-[0-9a-f-]{36}$/).brand('AutomationId')
 export const HourMinute = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/)
 export const Weekday = z.enum(['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'])
@@ -432,10 +432,12 @@ export const AutomationSummary = z.object({
   projectId: ProjectId.nullable(), connections: z.array(SessionConnection),   // SessionConnection da 24.1
   state: z.enum(['ACTIVE', 'PAUSED']), nextRunAt: z.iso.datetime().nullable(), createdAt: z.iso.datetime(),
 })
+/** C21: um conjunto fechado. Os códigos do turno (`TurnFailureCode`, `conversations.ts:47-59`) sem os do Builder (`RUN_BUSY`, `SAVE_REFUSED`, `GIT_RESTORE_NEEDED`), mais os novos; o `NotificationRow` da U2 usa o mesmo. */
+export const AutomationFailureCode = z.enum(['MODEL_NO_ACCOUNT','MODEL_CALL_FAILED','MODEL_REFUSED','MODEL_ANSWER_CUT','MACHINE_UNAVAILABLE','MACHINE_LOST','HUB_UPDATED','INTERNAL_UNEXPECTED','DATABASE_UNAVAILABLE','INTERRUPTED','SCHEDULE_PUBLISH_FAILED'] as const satisfies readonly FailureCode[])   // FailureCode: failures.ts:235
 export const RunState = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('RUNNING'), conversationId: ConversationId.nullable() }),
   z.object({ kind: z.literal('DONE'), conversationId: ConversationId }),
-  z.object({ kind: z.literal('FAILED'), code: FailureCodeSchema, conversationId: ConversationId.nullable() }),   // FailureCode de failures.ts, com INTERRUPTED e SCHEDULE_PUBLISH_FAILED novos
+  z.object({ kind: z.literal('FAILED'), code: AutomationFailureCode, conversationId: ConversationId.nullable() }),   // INTERRUPTED e SCHEDULE_PUBLISH_FAILED são códigos novos de failures.ts
   z.object({ kind: z.literal('SKIPPED'), reason: z.literal('OWNER_CANNOT_ASK') }),
 ])
 export const AutomationRunId = z.string().regex(/^sched_schedule_conexus-automation-/).brand('AutomationRunId')
@@ -460,12 +462,13 @@ export const AutomationInput = z.object({
 /** The workflow's output, one per run (C21). */
 export type RunOutcome =
   | { kind: 'DONE'; conversationId: ConversationId }
-  | { kind: 'FAILED'; code: FailureCode; conversationId: ConversationId | null }
+  | { kind: 'FAILED'; code: AutomationFailureCode; conversationId: ConversationId | null }
   | { kind: 'SKIPPED'; reason: 'OWNER_CANNOT_ASK' }
 export function automationRun(deps: { assistant: Assistant; notify: Notify }): Workflow   // Notify: U2; até lá, um que só imprime
 
 // apps/server/src/builder/assistant/turn.ts (muda; a 24.1 o cria)
-/** How one turn of this session ended, heard from agent_end and the error before it; subscribe before sending. */
+/** How one turn of this session ended, heard from agent_end and the error before it; subscribe before sending.
+ *  A sessão apagada no meio também acaba o turno: `INTERRUPTED`, pelo `onSessionDeleted` do controlador (o `deleteSession` do Mastra acaba o run sem `agent_end`, `end.ts:322`). */
 export function turnEnd(session: AgentControllerSession): Promise<
   | { kind: 'DONE' }
   | { kind: 'FAILED'; code: FailureCode }   // reason 'error': the code the Builder maps (end.ts failureOf and FINISHES); 'aborted': INTERRUPTED; 'suspended': INTERNAL_UNEXPECTED
@@ -487,7 +490,7 @@ export type Automations = {
   resume(scope, id: AutomationId): Promise<AutomationSummary>
   runNow(scope, id: AutomationId): Promise<{ runId: string }>
   remove(scope, id: AutomationId): Promise<void>
-  runs(scope, id: AutomationId, next: string | null): Promise<{ runs: readonly AutomationRun[]; next: string | null }>
+  runs(scope, id: AutomationId, page: Page | null): Promise<{ runs: readonly AutomationRun[]; next: Next }>
   /** Deletes the automations of a company, a person of it or a Projeto of it (the Hub's ReleaseScope). */
   release(scope: ReleaseScope): Promise<void>
 }
@@ -508,7 +511,7 @@ export function openConversation(input: {
   corrida perdida, e o `bodyHash` do `metadata` decide entre a mesma automação e
   `IDEMPOTENCY_CONFLICT`; a linha não existe → a falha segue para o tradutor
   (`DATABASE_UNAVAILABLE`). Nunca se decide pela frase nem pelo `id` do erro (C52): na corrida, o
-  `@mastra/pg` 1.32.0 recusa com um `Error` sem `id` (`dist/index.js:22862`) ou com a chave primária
+  `@mastra/pg` 1.32.0 recusa com um `Error` sem `id` (`dist/index.js:22862`) ou com um `MastraError` genérico de `insert`
   (`:3195-3208`), e só a repetição em série dá `SCHEDULES_ID_EXISTS`
   (`NM:schedules-BfNkiF4x.js:470-478`). O `metadata` guarda `bodyHash` (o do corpo, como `builder/conversation/store.ts:68-90`); a rota o
   compara quando a linha já existe. Conferido pela
@@ -523,8 +526,10 @@ export function openConversation(input: {
   poucas linhas por Hub, na escala do cartão.
 - **O id da conversa da execução.** Deriva do `runId` (`sched_<id>_<nextFireAt>` ou do manual),
   pela mesma derivação: o passo repetido acha a mesma conversa (critério 6).
-- **O workflow, três passos.** (1) `check`: `AutomationInput.parse`; o dono pode perguntar
-  (`askAssistant`)? Se não, `schedules.pause` e `SKIPPED`. Um Projeto apagado não chega aqui: a
+- **O workflow, três passos.** (1) `check`: `AutomationInput.parse`; um `inputData` que não passa no
+  Zod é `FAILED` com `INTERNAL_UNEXPECTED`, sem conversa (`conversationId: null`), e a notificação sai
+  só se o dono é conhecido: assim `SKIPPED` quer dizer exatamente "o dono não pode perguntar". O dono
+  pode perguntar (`askAssistant`)? Se não, `schedules.pause` e `SKIPPED`. Um Projeto apagado não chega aqui: a
   remoção do Projeto apaga a linha antes (critério 11a). (2) `converse`: nunca lança; todo erro vira
   `FAILED` com o código e `conversationId: null` se a conversa não abriu, e imprime
   `AUTOMATION_RUN_FAILED` (empresa, automação, `runId`, código), sem o pedido (C50, C53). Confere
@@ -539,7 +544,9 @@ export function openConversation(input: {
   apaga a sessão: o id é o da conversa, o mesmo que a página da pessoa usa pelas rotas do Mastra, e
   `deleteSession` abortaria o run vivo dela (`end.ts:322`, `public.ts:71-74`); a 24.1 também não a
   apaga depois de um turno. (3) `notify`: `notify.automationRan({ outcome, trigger, place, … })`,
-  sempre.
+  sempre; o passo lê o gatilho do seu `runId` em `listTriggers` (o passo recebe só o `inputData`,
+  `NM:resolve-agent-CMSnjTVM.js:3006-3010`, e as duas formas de `runId` não se distinguem); sem
+  linha (a dívida do manual), `MANUAL`.
 - **O dono do fato "esta conversa é de uma automação"** são as marcas `conexusAutomation` e
   `conexusAutomationName` no fio (C26), escritas só por `openConversation`; o resumo da conversa as
   lê.
@@ -553,7 +560,8 @@ export function openConversation(input: {
   só, no `compose`).
 - **O histórico.** `runs.ts` chega a `listTriggers` pelo domínio (`mastra.getStorage()` e o
   domínio `schedules`), 20 por vez; o estado e o resultado vêm de `getWorkflowRunById(runId, { fields:
-  ['status', 'result', 'steps'] })`. O mapa:
+  ['result', 'steps'] })` (`status` e `createdAt` vêm sempre; `status` não é um `WorkflowStateField`,
+  `NM:workflows/types.d.ts:289`). O mapa:
 
   | O que o Mastra tem | O estado da execução |
   | --- | --- |
@@ -562,15 +570,25 @@ export function openConversation(input: {
   | run `running` começado antes desta partida | `FAILED` com `INTERRUPTED` |
   | gatilho `failed` sem run (a publicação falhou) | `FAILED` com `SCHEDULE_PUBLISH_FAILED` |
 
-  Um run que lança grava um segundo gatilho `failed` com o mesmo `runId` (`NM:resolve-agent-CMSnjTVM.js:3016-3040`):
-  o histórico agrupa por `runId`. O `toActualFireAt` é exclusivo e não desempata
-  (`NM:storage/domains/schedules/base.d.ts:192-199`): o `next` opaco leva o `actualFireAt` do último e os
-  `runId` já vistos nesse instante (C44).
+  Um `run.start` que lança grava um segundo gatilho `failed` com o mesmo `runId`
+  (`NM:resolve-agent-CMSnjTVM.js:3010-3040`); um passo que falha deixa o run `failed` com um gatilho
+  só: o histórico agrupa por `runId`. O `toActualFireAt` é exclusivo e não desempata
+  (`NM:storage/domains/schedules/base.d.ts:198-199`): o `page` leva `{ at, seen }` em base64url
+  (o `actualFireAt` do último e os `runId` já vistos nesse instante), lido com Zod (C27); um `page`
+  adulterado dá `REQUEST_MALFORMED` (C44). Na lista, `?page=` e `next: Next` são os de `main`
+  (`packages/hub-api/src/companies.ts:102-115`: `{ kind: 'END' } | { kind: 'MORE'; page }`, com os
+  auxiliares de `apps/server/src/platform/pages.ts:10-35`); a 24.1 U2 já fixa a mesma forma: siga-a.
 - **A remoção.** `release.ts` e o `remove` apagam a linha (`schedules.delete`, que apaga os
   gatilhos) e os runs dela: `workflow.listWorkflowRuns({ workflowName: AUTOMATION_WORKFLOW, perPage:
   false })` filtrado pelo prefixo `sched_<automationId>_` do `runId`, e `deleteWorkflowRunById`
   (`NM:workflows/workflow.d.ts:478,484`), porque o run guarda o `inputData` (o pedido, o nome, as
   ligações).
+- **A conferir na construção** (não são decisões; o estudo de preparação não as provou). (i) A
+  assinatura do `recall` e do `listMessages` da memória do Assistente para "o fio já tem a pergunta"
+  no `converse`: leia-a no Mastra instalado antes de escrever o passo. (ii) Que o `settle` e o
+  `updating` da U2 da 24.1 contam as sessões que o workflow cria: devem contar, porque assinam por
+  `controller.onSessionCreated` como `end.ts:286`, mas a U2 da 24.1 ainda não foi construída; se não
+  contarem, relate (Parar se).
 - Modelo: `build-schedule.ts` e `build-workflow.ts` da Factory para a agenda; as rotas do Assistente
   da 24.1, que cumprem C21, C23 e C26, para as rotas.
 
@@ -612,7 +630,7 @@ O teste que falha hoje: `run.test.ts`, "o horário". Comando: os testes tocados,
 - `startWorkers()` muda o que o Builder faz (o trabalhador de orquestração ou a recuperação de
   runs, `recovery.workflows` `auto` por padrão, `NM:mastra-Da0Czfte.js:1084`, mexem nos turnos dele):
   para e relata. As alavancas do Mastra são a opção `workers` e `MASTRA_WORKERS`
-  (`NM:mastra-Da0Czfte.js:1094-1119`, relay); `startWorkers('scheduler')` não serve, porque com nome
+  (`NM:mastra-Da0Czfte.js:1097-1119`, relay); `startWorkers('scheduler')` não serve, porque com nome
   ele não injeta a agenda (`:5039-5058`, relay).
 - As notificações adiadas do próprio Mastra criam a linha `__mastra_notification_dispatch`
   (`NM:mastra-Da0Czfte.js:4375-4405`, relay) e ligariam a agenda sem automação: o critério 11b a
@@ -649,7 +667,7 @@ Nada sai do `main`.
 | `.gitignore` | Muda: a linha do `notification-render.mjs` gerado (`invitation-render.mjs` está em `.gitignore:11`) | o Git |
 | `scripts/removals.ts` | Muda: copia os dois renderizadores gerados, por uma lista (`:113-114` copia hoje só o `invitation-render.mjs`, pelo nome); sem isso, toda linha de remoção que carrega o servidor falha ao carregar | o CI (T12) |
 | `scripts/removals.test.ts` | Muda o caso de `:125` para a lista | o CI |
-| `apps/server/src/main.ts` | Muda: um `SendMail` só, passado à identidade e às notificações; `Notify` passado às automações | — |
+| `apps/server/src/main.ts` | Muda: um `SendMail` só, passado à identidade e às notificações; `Notify` passado às automações. Nota ao construtor: `createMail` mora hoje dentro de `identityOf` (`main.ts:109-116`), que o `first-person` também usa (`:279`); monte `const sendMail = createMail({ config, log })` em `runServer`, passe-o a `identityOf({ …, sendMail })` e a `createNotifications`; o `runFirstPerson` monta o seu | — |
 | `apps/server/src/builder/automations/` | Muda `run.ts`: o `Notify` de verdade | — |
 | `packages/hub-api/src/notifications.ts` | Cria: rotas, tipos e `conversationPath(companyId, projectId, conversationId)`, o dono do endereço de uma conversa no Hub; muda `index.ts`, o OpenAPI | a U3, o e-mail |
 
@@ -675,10 +693,10 @@ export type Notify = {
     projectId: ProjectId | null; runId: AutomationRunId; trigger: 'SCHEDULED' | 'MANUAL'; outcome: RunOutcome
   }): Promise<void>
 }
-export function createNotifications(deps: { db: Database; sendMail: SendMail; hubUrl: URL; log: Logger }): { notify: Notify; routes: FastifyPluginAsync }
+export function createNotifications(deps: { db: Database; sendMail: SendMail; publicOrigin: PublicOrigin; log: Logger }): { notify: Notify; routes: FastifyPluginAsync }
 
 // packages/hub-api/src/notifications.ts
-// GET  /api/companies/{companyId}/notifications ?next=   -> { notifications: NotificationRow[], unread: number, next: string | null }  (30 por página)
+// GET  /api/companies/{companyId}/notifications ?page=   -> { notifications: NotificationRow[], unread: number, next: Next }  (30 por página)
 //      acesso useConversations (todo membro lê as suas; só dono e administradores recebem nesta etapa)
 // POST /api/companies/{companyId}/notifications/read { ids: NotificationId[] (até 100) } | { all: true } -> 204
 export const NotificationId = z.uuid().brand('NotificationId')
@@ -686,16 +704,20 @@ export const NotificationRow = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('AUTOMATION_DONE'), id: NotificationId, createdAt: z.iso.datetime(), read: z.boolean(),
              automation: z.object({ id: AutomationId, name: z.string() }), projectId: ProjectId.nullable(), conversationId: ConversationId }),
   z.object({ kind: z.literal('AUTOMATION_FAILED'), id: NotificationId, createdAt: z.iso.datetime(), read: z.boolean(),
-             automation: z.object({ id: AutomationId, name: z.string() }), projectId: ProjectId.nullable(), code: FailureCodeSchema, conversationId: ConversationId.nullable() }),
+             automation: z.object({ id: AutomationId, name: z.string() }), projectId: ProjectId.nullable(), code: AutomationFailureCode, conversationId: ConversationId.nullable() }),
   z.object({ kind: z.literal('AUTOMATION_PAUSED'), id: NotificationId, createdAt: z.iso.datetime(), read: z.boolean(),
              automation: z.object({ id: AutomationId, name: z.string() }), projectId: ProjectId.nullable() }),
 ])
 ```
 
-- **A gravação.** `Notify` grava com `database.write({ kind: 'COMPANY', companyId, personId })`, a
+- **A gravação.** `Notify` grava com `database.command({ kind: 'COMPANY', companyId, personId }, …)`
+  (`platform/database.ts:85-117,271`), a
   política `OWN` de `builder/conversation/tables.ts:13-15`.
 - **O dono do e-mail da pessoa** é a identidade (o endereço do membro); `Notify` o lê por uma função
   pública da identidade, sem ler a tabela dela.
+- **A conferir na construção** (não é decisão): se o `hub_company` lê o e-mail de um membro por
+  `peopleNamed` sob o escopo `COMPANY`. Se não ler, vale o "Parar se" abaixo (a função pública da
+  identidade).
 - **O e-mail (`G1`).** `automationMail({ to, name, outcome, link })`: o assunto "Automação <nome>:
   pronta", "Automação <nome>: falhou" ou "Automação <nome>: pausada" (a forma não mistura gênero;
   fica para a aprovação dos textos); o corpo com o nome e o botão **Abrir no
@@ -745,8 +767,10 @@ request. O teste que falha hoje: `notifications.test.ts`.
 ### As linhas da tabela
 
 - **A proposta.** O cartão da 24.1, U4: `propose.ts`, `ProposedApp`, `propose.tsx`, o critério 28;
-  `tool-registry.ts`.
-- **As páginas.** `apps/web/src/routes/_app/companies/$companyId/route.tsx:57-86` (a barra lateral);
+  em `main` os cartões não estão no `tool-registry.ts` (`TOOLS` guarda só ferramentas de linha,
+  `:19-24,46`): são `CARD_TOOLS` (`packages/hub-api/src/tools.ts:2,47-50`), um ramo de `rows.ts`
+  (`:152-195`) e um componente.
+- **As páginas.** `apps/web/src/routes/_app/companies/$companyId/route.tsx:54-77` (a barra lateral);
   `apps/web/src/hub/projects/project-rail.tsx:111-172`; as telas do Assistente da 24.1
   (`apps/web/src/builder/assistant/`).
 - **As peças.** `apps/web/src/ui/` (`badge.tsx`, `popover.tsx`, `button.tsx`, o diálogo de
@@ -762,7 +786,7 @@ Nada sai do `main`.
 | `packages/hub-api/src/assistant.ts` | Muda: `ProposedAutomation`, o nome em `ASSISTANT_TOOL` | a tela |
 | `apps/web/src/builder/automations/` | Cria `automations.tsx` (a lista e as ações), `runs.tsx` (o histórico), `proposal.tsx` (o cartão), `cadence-text.ts` (`cadenceText`), `queries.ts`, `public.ts` | as rotas, a conversa |
 | `apps/web/src/builder/assistant/` | Muda: a etiqueta **Automação** nas recentes e no topo da conversa | — |
-| `apps/web/src/builder/conversation/` | Muda `tool-registry.ts`, onde mora o registro das ferramentas da 24.1: o cartão da proposta | a conversa |
+| `apps/web/src/builder/conversation/` | Muda `rows.ts` (o cartão da proposta, pelo `toolCallId`), pelo mesmo caminho que a U4 da 24.1 der ao `propose_app` | a conversa |
 | `apps/web/src/hub/notifications/` | Cria `bell.tsx`, `queries.ts`, `public.ts` | a moldura |
 | `apps/web/src/hub/projects/project-rail.tsx` | Muda: a entrada Automações, para o dono e os administradores, com o "Parar se" de W30 e W31 que a 24.1 tem para Conversas | a moldura do Projeto |
 | `apps/web/src/routes/_app/companies/$companyId/` | Muda `route.tsx` (a entrada Automações e o sino); cria `automations.index.tsx`, `automations.$automationId.tsx`, `projects/$projectId_.automations.index.tsx`, `projects/$projectId_.automations.$automationId.tsx`; muda `apps/web/src/routeTree.gen.ts` (gerado, o caminho inteiro) | o roteador |
@@ -800,7 +824,10 @@ export function NotificationBell(props: { companyId: CompanyId }): JSX.Element
 - **O cartão.** O lugar vem da conversa; **Criar automação** chama a criação com uma chave de
   tentativa que deriva do id da conversa e do `toolCallId` da chamada, estável depois de recarregar:
   a parte da mensagem é gravada pelo Mastra e o navegador não tem rota para escrever nela
-  (`e241-supervisor.md:695-696`). Recarregar e tocar de novo dá a mesma automação.
+  (o guarda não expõe nenhuma, `guard.ts:25-32`). A chave é um UUID (`operation.ts:6`): os 16
+  primeiros bytes do SHA-256 de `<conversa>:<toolCallId>`, com a versão 8 e a variante RFC, por
+  `crypto.subtle`; não por `useAttemptKey`, que sorteia uma por montagem. Recarregar e tocar de novo
+  dá a mesma automação.
 - **Endereços (W1, W29).** `/companies/<c>/automations` e `/companies/<c>/automations/<id>` (andar
   Empresa); `/companies/<c>/projects/<p>/automations` e `…/automations/<id>` (andar Projeto). Uma
   automação de Projeto aberta pelo endereço da empresa, ou o contrário, é "não encontrado".
