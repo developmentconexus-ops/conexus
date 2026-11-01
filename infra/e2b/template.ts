@@ -50,6 +50,14 @@ export PLAYWRIGHT_BROWSERS_PATH=${BROWSERS} npm_config_cache=${CACHE}
 exec node ${OPT}/packages/app/src/check/main.ts --tools ${OPT}/node_modules --platform ${OPT}/packages "$@"
 `
 
+/**
+ * Debian 12's Python refuses a plain `pip install` (PEP 668); the template's build and the model's
+ * commands both need it. With PIP_BREAK_SYSTEM_PACKAGES set as a template ENV, pip in the live
+ * Assistant machine still refused; pip's own file holds for every user and shell, so the ENV is
+ * redundant and gone.
+ */
+const PIP_CONFIG = '[global]\nbreak-system-packages = true\n'
+
 const PYTHON_LIBRARIES = [
   'pandas==2.3.3',
   'numpy==2.3.4',
@@ -70,6 +78,7 @@ const template = SDK_FOLDERS.reduce(
 )
   .runCmd(
     [
+      `printf '${PIP_CONFIG.replace(/\n/g, '\\n')}' > /etc/pip.conf`,
       `printf '%s' '${TOOLS}' > ${OPT}/package.json`,
       `cd ${OPT} && npm install --omit=dev --no-audit --no-fund`,
       // The SDK's types as declarations, so no app's type-check re-checks the kit's sources.
@@ -84,8 +93,6 @@ const template = SDK_FOLDERS.reduce(
   .setEnvs({
     npm_config_cache: CACHE,
     PLAYWRIGHT_BROWSERS_PATH: BROWSERS,
-    // Debian 12's Python refuses a plain `pip install` (PEP 668); the template's and the model's both need it.
-    PIP_BREAK_SYSTEM_PACKAGES: '1',
   })
   // The Assistant's libraries (step 24.1, U3), pinned: the Builder's machine carries them unused.
   .pipInstall(PYTHON_LIBRARIES)
