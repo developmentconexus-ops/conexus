@@ -1,6 +1,8 @@
 import { posix } from 'node:path'
-import { ASSISTANT_TOOL, SHOWN_TEXT_MAX, ShowFileInput, ShownFile } from '@conexus/hub-api'
+import type { ShownFile } from '@conexus/hub-api'
+import { ASSISTANT_TOOL, SHOWN_TEXT_MAX, ShowFileInput } from '@conexus/hub-api'
 import { createTool } from '@mastra/core/tools'
+import { z } from 'zod'
 import { Failure } from '../../platform/failure.ts'
 import type { AssistantMachines } from './machine.ts'
 import { locate } from './machine.ts'
@@ -25,7 +27,10 @@ const MEDIA: Record<string, string> = {
   '.pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
 }
 
-/** The type a file's name says, for the download and for the screen; `application/octet-stream` when it says none. */
+/**
+ * The type a file's name says, for the download and for the screen; `application/octet-stream` when
+ * it says none.
+ */
 export function mediaOf(name: string): string {
   return MEDIA[posix.extname(name).toLowerCase()] ?? 'application/octet-stream'
 }
@@ -36,6 +41,14 @@ export const INLINE_MEDIA = ['image/png', 'image/jpeg', 'image/svg+xml']
 function refused(reason: 'OUTSIDE' | 'NOT_FOUND' | 'MACHINE_UNAVAILABLE') {
   return { kind: 'SHOW_REFUSED', reason } as const
 }
+
+/**
+ * What the model reads of `show_file`'s answer: the path shown, or the refusal; never the content.
+ */
+const ToModel = z.union([
+  z.object({ kind: z.literal('SHOW_REFUSED'), reason: z.string() }),
+  z.object({ kind: z.enum(['TEXT', 'FILE']), path: z.string() }),
+])
 
 /**
  * `show_file` (step 24.1, `B-a`): opens beside the chat a file the Assistant wrote in the
@@ -80,13 +93,11 @@ export function showFileTool(machines: Pick<AssistantMachines, 'folder' | 'servi
         throw error
       }
     },
+    // Only the path or the refusal, whatever else the output holds; an output of another shape
+    // throws.
     toModelOutput: (output) => {
-      const shown = ShownFile.safeParse(output)
-      if (!shown.success) return undefined
-      return {
-        type: 'json',
-        value: shown.data.kind === 'SHOW_REFUSED' ? shown.data : { shown: shown.data.path },
-      }
+      const shown = ToModel.parse(output)
+      return { type: 'json', value: shown.kind === 'SHOW_REFUSED' ? shown : { shown: shown.path } }
     },
   })
 }

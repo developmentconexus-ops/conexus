@@ -1,8 +1,11 @@
-import { ProposedApp, ShownFile } from '@conexus/hub-api'
+import type { FailureCode } from '@conexus/hub-api'
+import { FAILURES, ProposedApp, ShownFile } from '@conexus/hub-api'
 import { Link, useParams } from '@tanstack/react-router'
 import { FileTextIcon } from 'lucide-react'
 import { useEffect, useEffectEvent, useState } from 'react'
+import { sentenceOfCode } from '../../platform/hub.ts'
 import { Button } from '../../ui/button.tsx'
+import { Card, CardContent, CardFooter } from '../../ui/card.tsx'
 import { cn } from '../../ui/cn.ts'
 import {
   TraceCollapsible,
@@ -70,10 +73,20 @@ function opens(tool: ToolItem, status: ToolStatus, room: Room): boolean {
   )
 }
 
+function isFailureCode(code: string): code is FailureCode {
+  return Object.hasOwn(FAILURES, code)
+}
+
+/** A tool that failed with the Hub's own code (the machine that would not start) says the code's sentence, not the code. */
+function reasonOf(tool: ToolItem): string {
+  const text = tool.errorText ?? textOf(tool.result)
+  if (text === undefined) return 'Ocorreu um erro ao executar a ferramenta.'
+  const code = text.trim()
+  return isFailureCode(code) ? sentenceOfCode(code) : text
+}
+
 function Reason({ tool }: { tool: ToolItem }) {
-  const reason =
-    tool.errorText ?? textOf(tool.result) ?? 'Ocorreu um erro ao executar a ferramenta.'
-  return <pre className={cn(BLOCK, 'text-danger')}>{shown(reason)}</pre>
+  return <pre className={cn(BLOCK, 'text-danger')}>{shown(reasonOf(tool))}</pre>
 }
 
 function Side(props: { sign: '-' | '+'; text: string; className: string }) {
@@ -114,7 +127,7 @@ function Change({ edit }: { edit: Edit }) {
 }
 
 function Block({ tool, body }: { tool: ToolItem; body: ToolBody }) {
-  const detail = presentTool(tool, 'done').detail
+  const detail = presentTool(tool, 'done', useRoom()).detail
   switch (body) {
     case 'command': {
       const output = tool.output ?? textOf(tool.result)
@@ -224,12 +237,16 @@ function ShownLine(props: {
 function ProposalCard({ summary }: { summary: string }) {
   const room = useRoom()
   return (
-    <div className="flex flex-col items-start gap-sm rounded-card border border-line bg-surface p-md">
-      <p className="whitespace-pre-wrap break-words text-text">{summary}</p>
-      <Button variant="primary" onClick={() => room.createApp?.(summary)}>
-        Criar app
-      </Button>
-    </div>
+    <Card>
+      <CardContent>
+        <p className="whitespace-pre-wrap break-words text-text">{summary}</p>
+      </CardContent>
+      <CardFooter>
+        <Button variant="primary" onClick={() => room.createApp?.(summary)}>
+          Criar app
+        </Button>
+      </CardFooter>
+    </Card>
   )
 }
 
@@ -248,14 +265,49 @@ function Body({ tool, status }: { tool: ToolItem; status: ToolStatus }) {
 }
 
 /** The rows that are not a line: the file the Assistant showed, and the app it proposed. */
-function specialRow(tool: ToolItem, status: ToolStatus) {
-  const body = specOf(tool.toolName)?.body
+function specialRow(tool: ToolItem, status: ToolStatus, room: Room) {
+  const body = specOf(tool.toolName, room)?.body
   if (status !== 'done') return undefined
   const shown = body === 'shown' ? ShownFile.safeParse(tool.result).data : undefined
   if (shown !== undefined && shown.kind !== 'SHOW_REFUSED')
     return <ShownLine file={shown} live={tool.startedAt !== undefined} />
   const proposed = body === 'proposal' ? ProposedApp.safeParse(tool.result).data : undefined
   return proposed === undefined ? undefined : <ProposalCard summary={proposed.summary} />
+}
+
+/** The line itself: the tool's icon, its sentence and, beside, its detail or the time it has run. */
+function ToolLine({
+  presented,
+  status,
+  startedAt,
+}: {
+  presented: ReturnType<typeof presentTool>
+  status: ToolStatus
+  startedAt: ToolItem['startedAt']
+}) {
+  const failed = status === 'error' || status === 'denied'
+  const lineStatus = failed ? 'error' : status === 'running' ? 'running' : undefined
+  const side = presented.beside ? (
+    <TraceDescription className="min-w-0 max-w-1/2 truncate">{presented.detail}</TraceDescription>
+  ) : status === 'running' ? (
+    <Since at={startedAt} />
+  ) : null
+  return (
+    <TraceLine status={lineStatus} className={failed ? 'items-start' : undefined}>
+      <TraceIcon className={failed ? 'mt-1' : undefined}>
+        <presented.icon />
+      </TraceIcon>
+      <TraceTitle
+        className={cn(
+          presented.beside && 'flex-1',
+          (presented.beside || failed) && 'whitespace-normal',
+        )}
+      >
+        {presented.sentence}
+      </TraceTitle>
+      {side}
+    </TraceLine>
+  )
 }
 
 /**
@@ -265,30 +317,18 @@ function specialRow(tool: ToolItem, status: ToolStatus) {
 export function ToolRow({ tool }: { tool: ToolItem }) {
   const room = useRoom()
   const status = toolStatus(tool, room)
-  const shownTool = presentTool(tool, status, room)
   // Only a command that is still saying its output shows it as it comes; the person's click rules after.
   const [chosen, setChosen] = useState<boolean>()
   const open = chosen ?? (status === 'running' && tool.output !== undefined)
-  const failed = status === 'error' || status === 'denied'
-  const lineStatus = failed ? 'error' : status === 'running' ? 'running' : undefined
-  const side = shownTool.beside ? (
-    <TraceDescription className="min-w-0 max-w-1/2 truncate">{shownTool.detail}</TraceDescription>
-  ) : status === 'running' ? (
-    <Since at={tool.startedAt} />
-  ) : null
   const line = (
-    <TraceLine status={lineStatus}>
-      <TraceIcon>
-        <shownTool.icon />
-      </TraceIcon>
-      <TraceTitle className={shownTool.beside ? 'flex-1 whitespace-normal' : undefined}>
-        {shownTool.sentence}
-      </TraceTitle>
-      {side}
-    </TraceLine>
+    <ToolLine
+      presented={presentTool(tool, status, room)}
+      status={status}
+      startedAt={tool.startedAt}
+    />
   )
 
-  const special = specialRow(tool, status)
+  const special = specialRow(tool, status, room)
   if (special !== undefined) return special
 
   if (!opens(tool, status, room)) return line

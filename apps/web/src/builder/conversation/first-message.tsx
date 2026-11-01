@@ -48,7 +48,7 @@ export function FirstMessage(props: { companyId: CompanyId; projectId: ProjectId
       await navigate({
         to: '/companies/$companyId/projects/$projectId/conversations/$conversationId',
         params: { ...params, conversationId: conversation.id },
-        state: { handoff: { content: outgoing.content } },
+        state: { handoff: { conversationId: conversation.id, content: outgoing.content } },
       })
       return true
     } catch (error) {

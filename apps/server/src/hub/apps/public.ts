@@ -19,7 +19,7 @@ import { publishedRolesOf } from './versions.ts'
 /** How long a send's answer waits for its prune: a test of the send names it. */
 export { PRUNE_BUDGET_MS } from './prune.ts'
 /** What a Projeto's page reads of its app: the Prévia's and the published version (step 17). */
-export { versionNumbersOf } from './versions.ts'
+export { publishedVersionsOf, versionNumbersOf } from './versions.ts'
 
 export type Apps = ReturnType<typeof createApps>
 export type { ConnectorCall } from './handoff.ts'

@@ -28,14 +28,14 @@ export type Deps = {
   /** The Hub's address as the browser sees it: the provider sends the person back to it. */
   publicOrigin: string
 }
-/** Who asks: for a call the app or the Builder makes, the person is only the scope (the id). */
+/** Who asks: for a call the app, the Builder or the Assistant makes, the person is only the scope (the id). */
 export type Viewer = { person: Pick<Person, 'id'>; companyId: CompanyId }
 export type OfConnection = Viewer & { connectionId: ConnectionId }
 
 /**
  * The one rule for "a Projeto can use this connection": it was tested and works. Publicar, the app's
- * door, the Builder's port, the release and the list's `access` all read this predicate; a screen
- * renders the list's answer.
+ * door, the Builder's port, the Assistant's door (at the Início, the company's own list), the release
+ * and the list's `access` all read this predicate; a screen renders the list's answer.
  */
 export const usable = eq(connection.state, 'ACTIVE')
 

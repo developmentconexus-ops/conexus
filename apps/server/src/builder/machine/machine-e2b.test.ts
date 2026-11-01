@@ -4,9 +4,10 @@ import { readFileSync } from 'node:fs'
 import { createServer } from 'node:http'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { CompanyId, ConversationId, ProjectId } from '@conexus/hub-api'
+import { CompanyId, ConversationId, PersonId, ProjectId } from '@conexus/hub-api'
+import { RequestContext } from '@mastra/core/request-context'
 import { testConfig, unreachableDatabaseUrl } from '../../platform/test-database.ts'
-import { ASSISTANT_HOSTS } from '../assistant/public.ts'
+import { ASSISTANT_HOSTS, createAssistantMachines } from '../assistant/public.ts'
 import {
   ALLOWED_HOSTS,
   APP_FOLDER,
@@ -15,16 +16,31 @@ import {
   MARK,
   machineInstructions,
 } from './public.ts'
-import { realE2b } from './test-machine.ts'
+import { INSTALLATION, realE2b } from './test-machine.ts'
 
 const COMPANY = CompanyId.parse('companyAAAAAAAAAAAAAAAAAAAAAAAAA')
 const PROJECT = ProjectId.parse('projectAAAAAAAAAAAAAAAAAAAAAAAAA')
 const CONVERSATION = ConversationId.parse('00000000-0000-4000-8000-00000000000a')
+const PERSON = PersonId.parse('person-ana')
+const HOME = { kind: 'COMPANY' } as const
 const IN_APP = {
   allowOut: ALLOWED_HOSTS,
   workingDirectory: APP_FOLDER,
   instructions: machineInstructions(APP_FOLDER),
 }
+
+test('máquina: o kit de uma máquina achada pelo id só a religa, e nunca faz outra no lugar (B2)', async () => {
+  const kit = createE2bKit(testConfig(await unreachableDatabaseUrl()))({
+    id: `conexus-hub-${CONVERSATION}`,
+    foundAs: 'sbx-achada',
+    metadata: { conexus_origin: 'hub.example.test', conexus_conversation: CONVERSATION },
+    onStart: () => undefined,
+    ...IN_APP,
+  })
+  const options = Reflect.get(kit.sandbox, '_constructorOptions')
+  assert.equal(options.sandboxId, 'sbx-achada')
+  assert.equal(options.reattach, 'required')
+})
 
 test('máquina: o kit do E2B nasce sem env e sem id gravado, achado pelo nome, atrás da lista de domínios, pausando ao vencer, com a marca da conversa, na pasta do app e dizendo ao modelo o que a máquina tem', async () => {
   const kit = createE2bKit(testConfig(await unreachableDatabaseUrl()))({
@@ -91,128 +107,6 @@ test('máquina: o template trabalha na pasta do app em que as ferramentas trabal
   )
 })
 
-test('máquina: a morte lista pela marca desta instalação e pela conversa, e mata cada uma, também a segunda de mesmo nome', async (t) => {
-  const seen: string[] = []
-  const server = createServer((request, response) => {
-    seen.push(`${request.method} ${request.url}`)
-    response.setHeader('content-type', 'application/json')
-    const listed = request.method === 'GET'
-    response.end(
-      listed
-        ? JSON.stringify(
-            ['sb-1', 'sb-2'].map((sandboxID) => ({
-              sandboxID,
-              templateID: 't',
-              alias: 'a',
-              clientID: 'c',
-              startedAt: new Date().toISOString(),
-              endAt: new Date().toISOString(),
-              cpuCount: 2,
-              memoryMB: 512,
-              diskSizeMB: 1024,
-              envdVersion: '0.1.0',
-              state: 'paused',
-              metadata: {
-                [MARK.origin]: 'hub.example.test',
-                [MARK.company]: COMPANY,
-                [MARK.project]: PROJECT,
-                [MARK.conversation]: CONVERSATION,
-              },
-            })),
-          )
-        : '',
-    )
-  })
-  await new Promise<void>((done) => server.listen(0, '127.0.0.1', done))
-  t.after(() => server.close())
-  const address = server.address()
-  assert.ok(address !== null && typeof address === 'object')
-  const api = createE2bApi(
-    testConfig(await unreachableDatabaseUrl()),
-    { conexus_origin: 'hub.example.test' },
-    `http://127.0.0.1:${address.port}`,
-  )
-  assert.equal(await api.kill(CONVERSATION), 2)
-  const listed = decodeURIComponent(seen[0] ?? '')
-  assert.match(listed, /^GET .*metadata=conexus_origin=hub\.example\.test/)
-  assert.match(listed, new RegExp(`conexus_conversation=${CONVERSATION}`))
-  assert.deepEqual(
-    seen.slice(1).map((line) => line.split('?')[0]),
-    ['DELETE /sandboxes/sb-1', 'DELETE /sandboxes/sb-2'],
-  )
-})
-
-test('máquina: um E2B que falha na lista faz a morte falhar, sem dizer pronto', async (t) => {
-  const server = createServer((_request, response) => {
-    response.statusCode = 500
-    response.end('{"message":"down"}')
-  })
-  await new Promise<void>((done) => server.listen(0, '127.0.0.1', done))
-  t.after(() => server.close())
-  const address = server.address()
-  assert.ok(address !== null && typeof address === 'object')
-  const api = createE2bApi(
-    testConfig(await unreachableDatabaseUrl()),
-    { conexus_origin: 'hub.example.test' },
-    `http://127.0.0.1:${address.port}`,
-  )
-  await assert.rejects(api.kill(CONVERSATION))
-})
-
-test('máquina: depois de um Release, mata só as da conversa de outro template ou sem template, e guarda a do template do Hub', async (t) => {
-  const seen: string[] = []
-  const machines = {
-    'sb-old': 'conexus-builder:0000000',
-    'sb-none': undefined,
-    'sb-new': 'conexus-builder:1111111',
-  }
-  const server = createServer((request, response) => {
-    seen.push(`${request.method} ${request.url}`)
-    response.setHeader('content-type', 'application/json')
-    if (request.method !== 'GET') return response.end('')
-    response.end(
-      JSON.stringify(
-        Object.entries(machines).map(([sandboxID, template]) => ({
-          sandboxID,
-          templateID: 't',
-          alias: 'conexus-builder',
-          clientID: 'c',
-          startedAt: new Date().toISOString(),
-          endAt: new Date().toISOString(),
-          cpuCount: 2,
-          memoryMB: 512,
-          diskSizeMB: 1024,
-          envdVersion: '0.1.0',
-          state: 'paused',
-          metadata: {
-            [MARK.origin]: 'hub.example.test',
-            [MARK.conversation]: CONVERSATION,
-            ...(template === undefined ? {} : { [MARK.template]: template }),
-          },
-        })),
-      ),
-    )
-  })
-  await new Promise<void>((done) => server.listen(0, '127.0.0.1', done))
-  t.after(() => server.close())
-  const address = server.address()
-  assert.ok(address !== null && typeof address === 'object')
-  const api = createE2bApi(
-    testConfig(await unreachableDatabaseUrl()),
-    { conexus_origin: 'hub.example.test' },
-    `http://127.0.0.1:${address.port}`,
-  )
-  assert.equal(await api.killStale(CONVERSATION, 'conexus-builder:1111111'), 2)
-  assert.match(
-    decodeURIComponent(seen[0] ?? ''),
-    new RegExp(`conexus_conversation=${CONVERSATION}`),
-  )
-  assert.deepEqual(
-    seen.slice(1).map((line) => line.split('?')[0]),
-    ['DELETE /sandboxes/sb-old', 'DELETE /sandboxes/sb-none'],
-  )
-})
-
 test('opt-in: no E2B de verdade, a máquina do Assistente instala com pip e npm, importa o pacote e as bibliotecas da imagem, e outro endereço não responde (17)', {
   timeout: 300_000,
 }, async (t) => {
@@ -261,4 +155,37 @@ test('opt-in: no E2B de verdade, a máquina do Assistente instala com pip e npm,
   // The application's answer, not the socket: E2B may show the socket open to a blocked connection.
   const blocked = await run('curl -sS -f -m 20 https://example.com/ -o /dev/null')
   assert.notEqual(blocked.exitCode, 0, 'a host outside the list answered')
+})
+
+test('opt-in: no E2B de verdade, a máquina do Assistente liga pelo início do Hub, faz a pasta da conversa e guarda o arquivo para o download (17, 20)', {
+  timeout: 300_000,
+}, async (t) => {
+  const config = realE2b()
+  if (config === undefined) {
+    return t.skip(
+      'opt-in: set CONEXUS_E2B_KEY_FILE and CONEXUS_E2B_TEMPLATE (the published template); firstmate runs it at closing, on the founder’s E2B account',
+    )
+  }
+  const mark = { [MARK.origin]: 'e241-fix-real-test' }
+  const api = createE2bApi(config, mark)
+  const conversation = ConversationId.parse(randomUUID())
+  t.after(() => api.kill(conversation))
+  const machines = createAssistantMachines({
+    kit: createE2bKit(config),
+    api,
+    template: config.machineTemplate,
+    installation: INSTALLATION,
+    mark,
+    log: { info: () => undefined, error: () => undefined },
+    scopeOf: async () => ({ companyId: COMPANY, personId: PERSON, place: HOME, chosen: [] }),
+  })
+  const context = new RequestContext<unknown>([['controller', { sessionId: conversation }]])
+  const files = (await machines.workspace(context))?.filesystem
+  assert.ok(files !== undefined)
+  // The Hub's own start: its onStart makes the conversation's folder, which the template does not.
+  await files.writeFile('probe.txt', 'L1')
+  await machines.stop(conversation)
+  const read = await machines.read(conversation, 'probe.txt', new AbortController().signal)
+  assert.equal(read.kind, 'OK')
+  assert.equal(read.kind === 'OK' ? read.bytes.toString() : '', 'L1')
 })

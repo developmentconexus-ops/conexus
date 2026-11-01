@@ -35,7 +35,8 @@ export const OUTPUT_MAX = Math.ceil(READ_MAX / 3) * 4 + 4096
 /** How bytes cross to and from the machine for the Hub's own files, by the provider's upload and download. */
 export type Transport = {
   write(path: string, bytes: Uint8Array): Promise<void>
-  read(path: string): Promise<AsyncIterable<Uint8Array>>
+  /** With a `signal`, the provider's stream is cut when it aborts. */
+  read(path: string, signal?: AbortSignal): Promise<AsyncIterable<Uint8Array>>
 }
 
 /**
@@ -55,11 +56,17 @@ export async function readCapped(
 ): Promise<Buffer | 'too-large' | 'cancelled'> {
   const chunks: Uint8Array[] = []
   let length = 0
-  for await (const chunk of await transport.read(path)) {
+  try {
+    for await (const chunk of await transport.read(path, signal)) {
+      if (signal?.aborted === true) return 'cancelled'
+      length += chunk.byteLength
+      if (length > READ_MAX) return 'too-large'
+      chunks.push(chunk)
+    }
+  } catch (error) {
+    // The provider's stream cut by the signal: the browser left.
     if (signal?.aborted === true) return 'cancelled'
-    length += chunk.byteLength
-    if (length > READ_MAX) return 'too-large'
-    chunks.push(chunk)
+    throw error
   }
   return Buffer.concat(chunks)
 }
@@ -76,6 +83,8 @@ export type Kit = {
 type KitOptions = {
   /** `conexus-<installation>-<conversationId>`: the provider finds the conversation's machine by it. */
   id: string
+  /** The provider's id of a machine found before: the start reattaches it and never makes another. */
+  foundAs?: string
   /** The hosts the machine may reach, and nothing else (decision 0051): at its start and in `closeNetwork`. */
   allowOut: readonly string[]
   metadata: Record<string, string>
@@ -163,19 +172,23 @@ export type MachineApi = {
 }
 
 /**
+ * The Assistant's API also finds the conversation's machine of `template` by the same marks, and
+ * says its provider id, or none; throws when the provider fails, so a failed list is never "none".
+ */
+export type AssistantMachineApi = MachineApi & {
+  find(conversationId: ConversationId, template: string): Promise<string | undefined>
+}
+
+/**
  * What the Assistant's machines are made of, one spelling for the ports, the Assistant and the
- * machines: the Builder's kit and API, its template, installation and mark (the mark the kill looks
- * for, which the machine carries too: code C26). `workFolder` and `startMs` are the test double's,
- * as the Builder's `Machines` takes `startMs`.
+ * machines: the Builder's kit, its API with the find, its template, installation and mark (the
+ * mark the kill and the find look for, which the machine carries too: code C26).
  */
 export type AssistantMachine = {
   kit: KitFactory
-  api: MachineApi
+  api: AssistantMachineApi
   template: MachineTemplate
   installation: InstallationId
   /** The marks every machine of this installation carries, with which `api.kill` finds them (security S36). */
   mark: Record<string, string>
-  /** Where the files live; `WORK_FOLDER` on E2B. */
-  workFolder?: string
-  startMs?: number
 }

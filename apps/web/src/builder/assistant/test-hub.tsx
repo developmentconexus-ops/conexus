@@ -134,7 +134,12 @@ function readsOf(held: Held, asked: string[]) {
       const all = held.conversations
         .map(({ conversation }) => conversation)
         .filter((one) => project === null || one.projectId === project)
-        .map(({ id, title, updatedAt, projectId }) => ({ id, title, updatedAt, projectId }))
+        .map(({ id, title, updatedAt, projectId }) => ({
+          id,
+          title,
+          updatedAt,
+          project: projectId === null ? null : { id: projectId, name: PEDIDOS.name },
+        }))
       const listed = all.slice(from, from + held.pageSize)
       const more = from + held.pageSize < all.length
       return HttpResponse.json({
@@ -249,12 +254,21 @@ export function assistantScreens(server: ReturnType<typeof setupServer>) {
       conversations?: Opened[]
       offered?: SessionConnection[]
       role?: string
+      /** The providers the person may answer with; both by default, none for a person with no account. */
+      usable?: string[]
       answers?: Answers
       /** The conversations a list answers at a time; all of them by default. */
       pageSize?: number
     } = {},
   ) {
-    const { conversations = [], offered = OFFERED, role, answers = {}, pageSize = 30 } = options
+    const {
+      conversations = [],
+      offered = OFFERED,
+      role,
+      usable,
+      answers = {},
+      pageSize = 30,
+    } = options
     const sent: Sent[] = []
     const asked: string[] = []
     async function note(request: Request) {
@@ -274,7 +288,7 @@ export function assistantScreens(server: ReturnType<typeof setupServer>) {
       ...writesOf(held, note),
       ...sessionOf(conversations, answers, lines, note),
     )
-    const hub = open(view({ start: START, role }), path)
+    const hub = open(view({ start: START, role, usable }), path)
     return {
       ...hub,
       sent,

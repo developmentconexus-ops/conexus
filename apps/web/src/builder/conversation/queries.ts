@@ -1,6 +1,5 @@
 import type { CompanyId, ConversationId, ProjectId } from '@conexus/hub-api'
 import {
-  BUILDER_CONTROLLER,
   createConversation,
   Effort,
   listConversations,
@@ -37,10 +36,7 @@ export function conversationQuery(
 export const SessionRead = z.object({ model: ModelId, effort: Effort, tasks: z.array(Task) })
 export type SessionRead = z.infer<typeof SessionRead>
 
-export function sessionReadQuery(
-  conversationId: ConversationId,
-  controller: Controller = BUILDER_CONTROLLER,
-) {
+export function sessionReadQuery(conversationId: ConversationId, controller: Controller) {
   return {
     queryKey: ['builder', 'session-state', controller, conversationId] as const,
     queryFn: async () => {

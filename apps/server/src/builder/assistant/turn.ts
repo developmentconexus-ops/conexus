@@ -5,7 +5,6 @@ import type { InputProcessor } from '@mastra/core/processors'
 import type { RequestContext } from '@mastra/core/request-context'
 import { z } from 'zod'
 import { TurnKey } from '../../hub/connectors/public.ts'
-import type { FailureLog } from '../../platform/failure.ts'
 import { turnOfOwner } from '../conversation/public.ts'
 import type { QueueDeps, Turn } from '../model-accounts/public.ts'
 import { setTurn } from '../model-accounts/public.ts'
@@ -13,7 +12,9 @@ import type { ScopeOf } from './context.ts'
 import type { AssistantMachines } from './machine.ts'
 
 const TURN_PROCESSOR = 'conexus-assistant-turn'
-/** Where the run's context holds the turn's key, which the company's door counts the 50 calls by. */
+/**
+ * Where the run's context holds the turn's key, which the company's door counts the 50 calls by.
+ */
 const TURN_KEY = 'conexus-assistant-turn-key'
 
 const Session = z.object({ sessionId: ConversationId })
@@ -36,7 +37,6 @@ export function assistantTurns(deps: {
   queue: QueueDeps
   scopeOf: ScopeOf
   machines: AssistantMachines
-  log: FailureLog
 }) {
   const held = new Map<ConversationId, Turn>()
 
@@ -45,14 +45,12 @@ export function assistantTurns(deps: {
     held.delete(sessionId)
   }
 
-  /** The turn ended: the conversation's machine sleeps until the next question. A failure to pause it is logged; the provider's own timeout pauses it. */
+  /**
+   * The turn ended: the conversation's machine sleeps until the next question; a failed pause is
+   * logged there.
+   */
   function sleep(sessionId: ConversationId): void {
-    deps.machines.stop(sessionId).catch((error: unknown) => {
-      deps.log.error(
-        { conversationId: sessionId, cause: String(error).slice(0, 500) },
-        'ASSISTANT_MACHINE_STOP_FAILED',
-      )
-    })
+    void deps.machines.stop(sessionId)
   }
 
   async function take(

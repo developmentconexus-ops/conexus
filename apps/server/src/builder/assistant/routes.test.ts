@@ -13,7 +13,10 @@ import {
 import { MODEL, started } from '../conversation/test-conversation.ts'
 import { assisting, created } from './test-assistant.ts'
 
-type Listed = { conversations: { id: string; projectId: string | null }[]; next: Next }
+type Listed = {
+  conversations: { id: string; project: { id: string; name: string } | null }[]
+  next: Next
+}
 type Next = { kind: 'END' } | { kind: 'MORE'; page: string }
 
 function conversationOf(response: { json(): unknown }) {
@@ -158,7 +161,12 @@ test('a lista: só as da pessoa, as mais novas primeiro, por Projeto; mais de 30
     (await call(on.hub, on.ana, 'GET', `${on.assistant}?projectId=${on.projectId}`)).json(),
   )
   assert.equal(inProject.conversations.length, 16)
-  assert.ok(inProject.conversations.every((each) => each.projectId === on.projectId))
+  assert.ok(inProject.conversations.every((each) => each.project?.id === on.projectId))
+  assert.ok(inProject.conversations.every((each) => each.project?.name === 'Encomendas'))
+  const inCompany = [...first.conversations, ...second.conversations].filter(
+    (each) => each.project === null,
+  )
+  assert.equal(inCompany.length, 16)
 
   const tampered = await call(on.hub, on.ana, 'GET', `${on.assistant}?page=${page}x`)
   assert.equal(codeOf(tampered), 'NOT_FOUND')

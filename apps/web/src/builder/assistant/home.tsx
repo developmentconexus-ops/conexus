@@ -6,13 +6,14 @@ import type {
   ModelId,
   ProjectId,
 } from '@conexus/hub-api'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
-import { projectsQuery } from '../../hub/projects/public.ts'
+import { projectsPagedQuery } from '../../hub/projects/public.ts'
 import { useAttemptKey } from '../../platform/attempt-key.ts'
 import { dayOf } from '../../platform/dates.ts'
 import { sentenceOf, writeFailureText } from '../../platform/hub.ts'
+import { Button } from '../../ui/button.tsx'
 import { cn } from '../../ui/cn.ts'
 import { Pager } from '../../ui/pager.tsx'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select.tsx'
@@ -48,8 +49,8 @@ function ProjectSelect(props: {
   value: ProjectId | undefined
   onChange: (projectId: ProjectId | undefined) => void
 }) {
-  const read = useQuery(projectsQuery(props.companyId, undefined))
-  const projects = read.data?.projects ?? []
+  const read = useInfiniteQuery(projectsPagedQuery(props.companyId))
+  const projects = read.data?.pages.flatMap((page) => page.projects) ?? []
   const items = [
     { value: NO_PROJECT, label: 'Sem Projeto' },
     ...projects.map((project) => ({ value: project.id, label: project.name })),
@@ -74,6 +75,16 @@ function ProjectSelect(props: {
           ))}
         </SelectContent>
       </Select>
+      {read.hasNextPage && (
+        <Button
+          size="sm"
+          variant="ghost"
+          disabled={read.isFetchingNextPage}
+          onClick={() => void read.fetchNextPage()}
+        >
+          Mais Projetos
+        </Button>
+      )}
       {read.isError && (
         <p role="alert" className="text-danger">
           {sentenceOf(read.error)}
@@ -116,7 +127,7 @@ function useBegin(
         }),
       )
       stashHandoffFiles(conversation.id, question.files)
-      const state = { handoff: { content: question.content } }
+      const state = { handoff: { conversationId: conversation.id, content: question.content } }
       const { id: conversationId, projectId } = conversation
       await (projectId === null
         ? navigate({
@@ -220,7 +231,8 @@ function AskBox(props: {
 function ConversationLink(props: {
   companyId: CompanyId
   conversation: AssistantConversationSummary
-  projectName: string | undefined
+  /** Início names each conversation's Projeto; the Projeto's own list does not. */
+  showProject: boolean
 }) {
   const { companyId, conversation } = props
   const row = cn(
@@ -230,14 +242,14 @@ function ConversationLink(props: {
     <>
       <span className="flex min-w-0 flex-1 items-center gap-sm">
         <span className="truncate">{titleOf(conversation)}</span>
-        {props.projectName !== undefined && (
-          <CutBadge className="max-w-[40%]">{props.projectName}</CutBadge>
+        {props.showProject && conversation.project !== null && (
+          <CutBadge className="max-w-[40%]">{conversation.project.name}</CutBadge>
         )}
       </span>
       <span className="shrink-0 text-label text-text-2">{dayOf(conversation.updatedAt)}</span>
     </>
   )
-  return conversation.projectId === null ? (
+  return conversation.project === null ? (
     <Link
       to="/companies/$companyId/conversations/$conversationId"
       params={{ companyId, conversationId: conversation.id }}
@@ -248,7 +260,7 @@ function ConversationLink(props: {
   ) : (
     <Link
       to="/companies/$companyId/projects/$projectId/assistant/$conversationId"
-      params={{ companyId, projectId: conversation.projectId, conversationId: conversation.id }}
+      params={{ companyId, projectId: conversation.project.id, conversationId: conversation.id }}
       className={row}
     >
       {content}
@@ -268,7 +280,6 @@ export function Recent(props: {
 }) {
   const { companyId, projectId, page } = props
   const read = useQuery(assistantConversationsQuery(companyId, projectId, page))
-  const projects = useQuery(projectsQuery(companyId, undefined)).data?.projects ?? []
   if (read.isPending) return <Skeleton className="h-20 w-full" />
   if (read.isError)
     return <ReadFailure text={sentenceOf(read.error)} onRetry={() => void read.refetch()} />
@@ -278,21 +289,23 @@ export function Recent(props: {
       <p className={cn(START_COLUMN, 'text-text-2')}>{NO_CONVERSATIONS}</p>
     )
   return (
-    <section aria-labelledby="recent-title" className={cn(START_COLUMN, 'gap-sm')}>
-      <h2 id="recent-title" className="font-display text-title">
-        {projectId === undefined ? RECENT_TITLE : PROJECT_LIST_TITLE}
-      </h2>
+    <section
+      aria-labelledby={projectId === undefined ? 'recent-title' : undefined}
+      aria-label={projectId === undefined ? undefined : PROJECT_LIST_TITLE}
+      className={cn(START_COLUMN, 'gap-sm')}
+    >
+      {projectId === undefined && (
+        <h2 id="recent-title" className="font-display text-title">
+          {RECENT_TITLE}
+        </h2>
+      )}
       <ul className="flex flex-col">
         {conversations.map((conversation) => (
           <li key={conversation.id}>
             <ConversationLink
               companyId={companyId}
               conversation={conversation}
-              projectName={
-                projectId === undefined
-                  ? projects.find((project) => project.id === conversation.projectId)?.name
-                  : undefined
-              }
+              showProject={projectId === undefined}
             />
           </li>
         ))}

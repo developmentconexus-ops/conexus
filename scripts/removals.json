@@ -2096,7 +2096,7 @@
     "replace": "() => true",
     "test": {
       "cwd": "apps/server",
-      "file": "src/builder/machine/machine-e2b.test.ts",
+      "file": "src/builder/machine/e2b-api.test.ts",
       "name": "máquina: depois de um Release, mata só as da conversa de outro template ou sem template, e guarda a do template do Hub"
     }
   },
@@ -2213,8 +2213,8 @@
   {
     "id": "assistant-download-cancel",
     "file": "apps/server/src/builder/machine/kit.ts",
-    "find": "    if (signal?.aborted === true) return 'cancelled'\n",
-    "replace": "",
+    "find": "      if (signal?.aborted === true) return 'cancelled'\n      length",
+    "replace": "      length",
     "test": {
       "cwd": "apps/server",
       "file": "src/builder/assistant/machine.test.ts",
@@ -2224,7 +2224,7 @@
   {
     "id": "assistant-stop-all-waits",
     "file": "apps/server/src/builder/assistant/machine.ts",
-    "find": "    await Promise.allSettled([...this.pausing])\n",
+    "find": "    await Promise.all([...this.pausing])\n",
     "replace": "",
     "test": {
       "cwd": "apps/server",
@@ -2246,8 +2246,8 @@
   {
     "id": "assistant-machine-stale-killed",
     "file": "apps/server/src/builder/assistant/machine.ts",
-    "find": "api.killStale(conversationId, template).then(() => session.kit.sandbox.start?.())",
-    "replace": "Promise.resolve().then(() => session.kit.sandbox.start?.())",
+    "find": "session.found === undefined ? api.killStale(conversationId, template) : undefined",
+    "replace": "undefined",
     "test": {
       "cwd": "apps/server",
       "file": "src/builder/assistant/machine.test.ts",
@@ -2257,8 +2257,8 @@
   {
     "id": "assistant-read-saves-whole",
     "file": "apps/server/src/builder/connectors/connector-tools.ts",
-    "find": "access.savedAt(requestContext), whole, cut)",
-    "replace": "access.savedAt(requestContext), cut, cut)",
+    "find": "saveWhole(workspace.filesystem, save, whole, cut)",
+    "replace": "saveWhole(workspace.filesystem, save, cut, cut)",
     "test": {
       "cwd": "apps/server",
       "file": "src/builder/assistant/machine.test.ts",
@@ -2307,6 +2307,50 @@
       "cwd": "apps/server",
       "file": "src/builder/machine/machine-e2b.test.ts",
       "name": "lista de endereços"
+    }
+  },
+  {
+    "id": "assistant-file-sandbox",
+    "file": "apps/server/src/builder/assistant/file-route.ts",
+    "find": "sandboxed(reply.getHeader('content-security-policy'))",
+    "replace": "String(reply.getHeader('content-security-policy'))",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/assistant/file.test.ts",
+      "name": "nosniff e CSP sandbox"
+    }
+  },
+  {
+    "id": "assistant-release-kills-machines",
+    "file": "apps/server/src/builder/assistant/release.ts",
+    "find": "    await deps.machines.kill(ConversationId.parse(thread.id))\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/assistant/release.test.ts",
+      "name": "pela pessoa, pelo Projeto e pela empresa"
+    }
+  },
+  {
+    "id": "assistant-download-makes-no-machine",
+    "file": "apps/server/src/builder/assistant/machine.ts",
+    "find": "      if (found === undefined) return { kind: 'FILE_GONE' }\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/assistant/file.test.ts",
+      "name": "a máquina perdida, FILE_GONE"
+    }
+  },
+  {
+    "id": "assistant-download-reattach-required",
+    "file": "apps/server/src/builder/machine/e2b.ts",
+    "find": "reattach: 'required' as const",
+    "replace": "reattach: 'optional' as const",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/machine/machine-e2b.test.ts",
+      "name": "achada pelo id"
     }
   }
 ]

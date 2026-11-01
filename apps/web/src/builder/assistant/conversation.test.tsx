@@ -3,6 +3,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, test } from 'vitest'
 import { COMPANY } from '../../platform/fixtures.ts'
 import { hubServer, PEDIDOS, refusal } from '../../platform/test-hub.tsx'
+import { START_NO_ACCOUNT } from '../conversation/public.ts'
 import {
   observationFailed,
   stepStarted,
@@ -114,6 +115,14 @@ describe('a barra', () => {
   })
 })
 
+test('na conversa da empresa, o Início da barra lateral está marcado como o lugar atual (K28)', async () => {
+  at(OPEN, { conversations: [assistantConversation()] })
+  await field()
+  const nav = within(screen.getByRole('navigation', { name: 'Navegação' }))
+  expect(nav.getByRole('link', { name: 'Início' }).getAttribute('aria-current')).toBe('page')
+  expect(nav.getByRole('link', { name: 'Integrações' }).getAttribute('aria-current')).toBeNull()
+})
+
 describe('não encontrado', () => {
   test('a conversa de um Projeto no endereço da empresa não é encontrada', async () => {
     at(OPEN, { conversations: [assistantConversation({ projectId: PEDIDOS_ID })] })
@@ -180,7 +189,7 @@ describe('as leituras e os comandos', () => {
     expect(await screen.findByText('Nenhuma linha.')).toBeTruthy()
   })
 
-  test('uma leitura que o sistema recusou pede para conectar de novo, com o caminho para Integrações', async () => {
+  test('uma leitura que o sistema recusou diz que as chaves foram recusadas, com o caminho para Integrações', async () => {
     at(OPEN, {
       conversations: [
         assistantConversation({
@@ -188,8 +197,8 @@ describe('as leituras e os comandos', () => {
         }),
       ],
     })
-    expect(await screen.findByText(/Sankhya pediu para conectar de novo/)).toBeTruthy()
-    fireEvent.click(screen.getByText(/Sankhya pediu para conectar de novo/))
+    expect(await screen.findByText(/As chaves foram recusadas pelo Sankhya\./)).toBeTruthy()
+    fireEvent.click(screen.getByText(/As chaves foram recusadas pelo Sankhya\./))
     const link = await screen.findByRole('link', { name: 'Abrir Integrações' })
     expect(link.getAttribute('href')).toBe(`${COMPANY_ROOT}/integrations`)
   })
@@ -249,6 +258,27 @@ describe('o histórico', () => {
     expect(screen.queryByText('mensagem 49')).toBeNull()
     reachTop()
     expect(await screen.findByText('mensagem 0')).toBeTruthy()
+  })
+
+  test('a máquina ligando aparece como "Ligando a máquina…", a linha do Builder (QA F1)', async () => {
+    const line = await running(at(OPEN, { conversations: [assistantConversation()] }))
+    line.emit(
+      stepStarted(`${ASKED}:machine`, [
+        { type: 'data-conexus-machine', data: { phase: 'starting' } },
+      ]),
+    )
+    expect(await screen.findByText('Ligando a máquina…')).toBeTruthy()
+  })
+
+  test('o turno sem conta de modelo diz a frase do Início, sem mandar escolher outro modelo (QA F6)', async () => {
+    const line = await running(at(OPEN, { conversations: [assistantConversation()] }))
+    line.emit(
+      stepStarted(`${ASKED}:failure`, [
+        { type: 'data-conexus-failure', data: { code: 'MODEL_NO_ACCOUNT' } },
+      ]),
+    )
+    expect(await screen.findByText(START_NO_ACCOUNT)).toBeTruthy()
+    expect(screen.queryByText(/Escolha outro modelo/)).toBeNull()
   })
 
   test('uma falha da memória aparece pelo tipo, sem o texto do fornecedor', async () => {

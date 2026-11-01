@@ -1,4 +1,5 @@
 export { Chat } from './chat.tsx'
+export { wordsOf } from './connector-words.ts'
 export { useDraft } from './draft.ts'
 export { stashHandoffFiles } from './handoff.ts'
 export { Markdown } from './markdown.tsx'
@@ -15,4 +16,5 @@ export {
   usePicked,
 } from './start.tsx'
 export { readStart } from './start-reads.ts'
+export { START_NO_ACCOUNT } from './text.ts'
 export { Workbench } from './workbench.tsx'

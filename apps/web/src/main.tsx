@@ -1,6 +1,7 @@
 import './platform/jitless.ts'
 import './brand/tokens.css'
 import { CSPProvider } from '@base-ui/react/csp-provider'
+import type { ConversationId } from '@conexus/hub-api'
 import { QueryClientProvider } from '@tanstack/react-query'
 import type { RouterHistory } from '@tanstack/react-router'
 import { createRouter, RouterProvider, useRouter } from '@tanstack/react-router'
@@ -39,8 +40,12 @@ declare module '@tanstack/react-router' {
 declare module '@tanstack/history' {
   /** What a navigation carries (TanStack Router `navigate({ state })`). */
   interface HistoryState {
-    /** Início's request for the conversation to send now, the words only (Factory `promptHandoffState`). */
-    handoff?: { content: string }
+    /**
+     * Início's request for the conversation to send now, the words only (Factory
+     * `promptHandoffState`), addressed to that conversation: another conversation's screen still
+     * mounted while the navigation loads leaves it alone.
+     */
+    handoff?: { conversationId: ConversationId; content: string }
     /** The Projeto was created and the Hub refused the model of its conversation. */
     refused?: ModelRefusal
   }

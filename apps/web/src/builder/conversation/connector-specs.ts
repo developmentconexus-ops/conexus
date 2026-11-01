@@ -1,9 +1,9 @@
-import { BUILDER_TOOL } from '@conexus/hub-api'
+import { BUILDER_TOOL, ReadBusy, ReadCut, ReadRows } from '@conexus/hub-api'
 import { CircleAlertIcon, DatabaseIcon, NotebookPenIcon, NotebookTextIcon } from 'lucide-react'
 import { z } from 'zod'
 import type { ToolItem } from './rows.ts'
 import { stringArg } from './tool-args.ts'
-import type { Presented, Refusal, ToolSpec, ToolStatus } from './tool-spec.ts'
+import type { ConnectorWords, Presented, Refusal, ToolSpec, ToolStatus } from './tool-spec.ts'
 
 const { connectorRead, connectorNotes, connectorNoteSave } = BUILDER_TOOL
 
@@ -41,52 +41,61 @@ export const CONNECTOR_SPECS: Record<
   },
 }
 
+/** Why a read brought nothing: what the connection or the Hub's limits said. */
+type Refused = 'BUSY' | 'UNREACHABLE' | 'DEADLINE' | 'CALLS_SPENT' | 'NOT_GRANTED' | 'OTHER'
+
 /** What a read answered, as the Assistant's row says it: the rows it brought, or why it brought none. */
 type ReadOutcome =
   | { kind: 'ROWS'; rows: number; complete: boolean }
+  /** Read, with no count to say: the value is no list, or the cut left no row of one. */
+  | { kind: 'READ' }
   | { kind: 'EMPTY' }
   | { kind: 'REAUTH' }
-  | { kind: 'REFUSED'; sentence: string }
+  | { kind: 'REFUSED'; why: Refused; waitMs: number | null }
 
 const TOOL_FAILED = 'Não conseguiu ler o sistema da empresa.'
 
-const REFUSALS = {
-  BUSY: 'O sistema pediu para esperar. Tente de novo em instantes.',
-  UNREACHABLE: 'Não foi possível falar com o sistema agora.',
+/** The words of a room that has read no catalog and draws no conversation: ids for names, the plain failure for refusals. */
+export const PLAIN_WORDS: ConnectorWords = {
+  name: (connector) => connector,
+  refusal: () => TOOL_FAILED,
+}
+
+/** The refusals that are the Hub's own, not a connection's: the connection's are said by its words. */
+const LOCAL_REFUSALS = {
   DEADLINE: 'O sistema demorou demais para responder.',
   CALLS_SPENT: 'Esta resposta já usou as 50 leituras que cabem em uma resposta.',
   NOT_GRANTED: 'Esta ligação não está disponível nesta conversa.',
 } as const
 
-function isRefusal(kind: string): kind is keyof typeof REFUSALS {
-  return Object.hasOwn(REFUSALS, kind)
+const Kind = z.object({ kind: z.string() })
+const REFUSED: readonly string[] = ['BUSY', 'UNREACHABLE', 'DEADLINE', 'CALLS_SPENT', 'NOT_GRANTED']
+
+function isRefused(kind: string): kind is Refused {
+  return REFUSED.includes(kind)
 }
 
-const Cut = z.object({
-  kind: z.literal('OK'),
-  value: z
-    .looseObject({ linhas: z.array(z.unknown()) })
-    .nullable()
-    .optional(),
-  complete: z.boolean().optional(),
-  empty: z.boolean().optional(),
-})
-const Kind = z.object({ kind: z.string() })
+/** What a read that was done says: its rows when it is a list, nothing of a count when it is not. */
+function doneOutcome(cut: ReadCut): ReadOutcome {
+  if (cut.empty === true) return { kind: 'EMPTY' }
+  const rows = ReadRows.safeParse(cut.value)
+  if (!rows.success) return { kind: 'READ' }
+  const count = rows.data.linhas.length
+  // No row of a list the cut emptied is not "no row": a row passed the bytes the model reads.
+  if (count === 0) return cut.complete === false ? { kind: 'READ' } : { kind: 'EMPTY' }
+  return { kind: 'ROWS', rows: count, complete: cut.complete !== false }
+}
 
 /** The answer of a `connector_read`, from the result Mastra stored; none while the call has no result. */
 function readOutcome(result: unknown): ReadOutcome | undefined {
   const kind = Kind.safeParse(result)
   if (!kind.success) return undefined
-  const cut = Cut.safeParse(result)
-  if (cut.success) {
-    const rows = cut.data.value?.linhas.length ?? 0
-    return rows === 0 || cut.data.empty === true
-      ? { kind: 'EMPTY' }
-      : { kind: 'ROWS', rows, complete: cut.data.complete !== false }
-  }
+  const cut = ReadCut.safeParse(result)
+  if (cut.success) return doneOutcome(cut.data)
   if (kind.data.kind === 'AUTH_REFUSED') return { kind: 'REAUTH' }
-  const refused = kind.data.kind
-  return { kind: 'REFUSED', sentence: isRefusal(refused) ? REFUSALS[refused] : TOOL_FAILED }
+  const busy = ReadBusy.safeParse(result)
+  const why = isRefused(kind.data.kind) ? kind.data.kind : 'OTHER'
+  return { kind: 'REFUSED', why, waitMs: busy.success ? busy.data.waitMs : null }
 }
 
 /** A read the connection refused, or asked to be linked again: the Assistant's row says it. */
@@ -109,38 +118,51 @@ function rowsText(outcome: ReadOutcome | undefined): string | undefined {
   return outcome?.kind === 'EMPTY' ? 'Nenhuma linha.' : undefined
 }
 
+/** The sentence of a refusal: the connections' own words (the Integrações screen's) or the Hub's. */
+function refusedSentence(
+  outcome: Extract<ReadOutcome, { kind: 'REFUSED' }>,
+  connector: string | undefined,
+  words: ConnectorWords,
+): string {
+  switch (outcome.why) {
+    case 'BUSY':
+      return words.refusal(connector, { kind: 'BUSY', waitMs: outcome.waitMs })
+    case 'UNREACHABLE':
+      return words.refusal(connector, { kind: 'UNREACHABLE' })
+    case 'OTHER':
+      return TOOL_FAILED
+    default:
+      return LOCAL_REFUSALS[outcome.why]
+  }
+}
+
+function said(sentence: string): Presented {
+  return { icon: CircleAlertIcon, sentence, detail: undefined, beside: false }
+}
+
 /** The sentence of an Assistant's read: "Lendo Sankhya · Matriz" while it runs, "Leu …" after. */
 export function presentRead(
   tool: Pick<ToolItem, 'args' | 'result'>,
   status: ToolStatus,
-  connectorName: (connector: string) => string,
+  words: ConnectorWords,
 ): Presented {
   const connector = connectorOf(tool.args)
   const connection = stringArg(tool.args, 'connection')
   const named =
     connector === undefined || connection === undefined
       ? 'um sistema da empresa'
-      : `${connectorName(connector)} · ${connection}`
+      : `${words.name(connector)} · ${connection}`
   const outcome = readOutcome(tool.result)
-  const refused = status === 'error' || status === 'denied' || outcome?.kind === 'REFUSED'
-  if (outcome?.kind === 'REAUTH')
-    return {
-      icon: CircleAlertIcon,
-      sentence: `O ${connector === undefined ? 'sistema' : connectorName(connector)} pediu para conectar de novo.`,
-      detail: undefined,
-      beside: false,
-    }
-  if (refused)
-    return {
-      icon: CircleAlertIcon,
-      sentence: outcome?.kind === 'REFUSED' ? outcome.sentence : TOOL_FAILED,
-      detail: undefined,
-      beside: false,
-    }
+  if (outcome?.kind === 'REAUTH') return said(words.refusal(connector, { kind: 'REAUTH' }))
+  if (outcome?.kind === 'REFUSED') {
+    return said(refusedSentence(outcome, connector, words))
+  }
+  if (status === 'error' || status === 'denied') return said(TOOL_FAILED)
+  const detail = rowsText(outcome)
   return {
     icon: CONNECTOR_SPECS[BUILDER_TOOL.connectorRead].icon,
     sentence: status === 'running' ? `Lendo ${named}` : `Leu ${named}`,
-    detail: rowsText(outcome),
-    beside: status !== 'running' && outcome !== undefined,
+    detail,
+    beside: status !== 'running' && detail !== undefined,
   }
 }

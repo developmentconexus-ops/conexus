@@ -9,8 +9,8 @@ import type { assistantMemory } from './memory.ts'
 /**
  * Deletes the Assistant's threads of a company, of one person of it, or of one Projeto of it, found
  * by the marks every thread carries (`listThreads` by metadata, every page), after the Builder's:
- * each session first, so its run is aborted, then its machines (S36), then its thread (data D17). A thread deleted twice, or
- * a failure halfway, leaves what the next removal finds again.
+ * each session first, so its run is aborted, then its machines (S36), then its thread (data D17).
+ * A thread deleted twice, or a failure halfway, leaves what the next removal finds again.
  */
 export async function releaseConversations(
   deps: {

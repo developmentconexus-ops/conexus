@@ -3,17 +3,21 @@ import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
 import { connectorOf } from '@conexus/connectors'
 import { CompanyId, ConnectionId, PersonId, ProjectId } from '@conexus/hub-api'
+import { z } from 'zod'
 import { call, plantCompany } from '../identity/test-hub.ts'
 import type { SessionScope } from './public.ts'
 import { TurnKey } from './public.ts'
-import { appCalls, CONNECTOR_CALLS_PER_TURN } from './test-app-calls.ts'
+import { appCalls, CONNECTOR_CALLS_PER_TURN, TURNS_KEPT } from './test-app-calls.ts'
 import { linkSankhya, testOf } from './test-connections.ts'
+import { withRows } from './test-rows.ts'
 
-const TURNS_KEPT = 1000
 const QUERY = 'SELECT COUNT(*) AS N FROM TSIEMP'
 
-async function assistantOn(t: Parameters<typeof appCalls>[0]) {
-  const on = await appCalls(t)
+async function assistantOn(
+  t: Parameters<typeof appCalls>[0],
+  a: Parameters<typeof appCalls>[1] = {},
+) {
+  const on = await appCalls(t, a)
   const matriz = ConnectionId.parse(await on.connect('Matriz', false))
   const companyId = CompanyId.parse(on.companyId)
   const projectId = ProjectId.parse(on.projectId)
@@ -41,7 +45,20 @@ async function assistantOn(t: Parameters<typeof appCalls>[0]) {
       input,
     })
   }
-  return { ...on, matriz, companyId, projectId, scope, ask, port: on.hub.connectors.assistant }
+  /** How many reads reached the provider's door: one `CONNECTOR_CALLED` line each. */
+  function called() {
+    return on.hub.lines.filter((line) => line.message === 'CONNECTOR_CALLED').length
+  }
+  return {
+    ...on,
+    matriz,
+    companyId,
+    projectId,
+    scope,
+    ask,
+    called,
+    port: on.hub.connectors.assistant,
+  }
 }
 
 test('o Início: a dona e a administradora leem uma ligação ACTIVE escolhida, sem liberação de Projeto; o membro, NEEDS_REAUTH, outra empresa e uma apagada dão a mesma resposta', async (t) => {
@@ -100,9 +117,8 @@ test('só leitura: uma operação que não é read nunca sai pela porta da empre
   assert.ok(sankhya && original)
   Reflect.set(sankhya.operations, index, { ...original, class: 'write' })
   t.after(() => Reflect.set(sankhya.operations, index, original))
-  const logins = on.fake.logins()
   assert.deepEqual(await on.ask(on.ana), { kind: 'NOT_GRANTED' })
-  assert.equal(on.fake.logins(), logins, 'nothing reached the provider')
+  assert.equal(on.called(), 0, 'nothing reached the provider')
 })
 
 test('a lista: no Início cada ACTIVE da empresa, num Projeto só as liberadas, com a escolha; NEW, NEEDS_REAUTH e outra empresa ficam de fora; quem não pode perguntar recebe vazia', async (t) => {
@@ -122,7 +138,12 @@ test('a lista: no Início cada ACTIVE da empresa, num Projeto só as liberadas, 
     'Nova',
   )
   assert.equal(Object(fresh.json()).connection.state, 'NEW')
-  await plantCompany(on.hub.test, on.carla.id, 'Empresa B', 'empresa-b')
+  const otherCompany = await plantCompany(on.hub.test, on.carla.id, 'Empresa B', 'empresa-b')
+  const otherRoute = `/api/companies/${otherCompany}/connections`
+  const other = await linkSankhya(on.hub, on.carla, otherRoute, on.fake.credential, undefined, 'B')
+  const otherId = String(Object(other.json()).connection.id)
+  const tested = await testOf(on.hub, on.carla, otherRoute, otherId)
+  assert.equal(Object(tested.json()).result, 'WORKING', 'company B has a connection that works')
 
   const home = await on.port.connections(on.scope(on.ana))
   assert.deepEqual(
@@ -155,28 +176,24 @@ test('50 por turno: a 51ª chamada do mesmo turno é CALLS_SPENT sem chamar o fo
     kinds.push((await on.ask(on.ana, { turn })).kind)
   assert.equal(kinds.filter((kind) => kind === 'OK').length, CONNECTOR_CALLS_PER_TURN)
   assert.equal(kinds.at(-1), 'CALLS_SPENT')
-  const logins = on.fake.logins()
+  assert.equal(on.called(), CONNECTOR_CALLS_PER_TURN, 'the 51st never reached the provider')
   assert.equal((await on.ask(on.ana, { turn })).kind, 'CALLS_SPENT')
-  assert.equal(on.fake.logins(), logins)
+  assert.equal(on.called(), CONNECTOR_CALLS_PER_TURN, 'nor the 52nd')
   assert.equal((await on.ask(on.ana, { turn: randomUUID() })).kind, 'OK')
 })
 
 test('o corte e o inteiro: uma leitura de 25 linhas dá ao modelo as 20 do corte, complete falso, e em whole as 25 como vieram', async (t) => {
-  const on = await assistantOn(t)
-  const sankhya = connectorOf('sankhya')
-  const index = sankhya?.operations.findIndex((operation) => operation.id === 'empresas') ?? -1
-  const original = sankhya?.operations[index]
-  assert.ok(sankhya && original)
-  const rows = Array.from({ length: 25 }, (_, n) => ({ N: n }))
-  Reflect.set(sankhya.operations, index, {
-    ...original,
-    answer: () => ({ kind: 'OK', value: { linhas: rows, temMais: false } }),
-  })
-  t.after(() => Reflect.set(sankhya.operations, index, original))
-  const answered = await on.ask(on.ana)
+  const on = await assistantOn(t, { through: (origin) => withRows(t, origin, 25) })
+  const answered = await on.ask(on.ana, {}, 'consultar', { sql: QUERY })
   assert.ok(answered.kind === 'OK')
-  assert.deepEqual(answered.whole, { linhas: rows, temMais: false })
-  assert.deepEqual(answered.value, { linhas: rows.slice(0, 20), temMais: false })
+  const { whole, value } = z
+    .object({
+      whole: z.object({ linhas: z.array(z.unknown()) }),
+      value: z.object({ linhas: z.array(z.unknown()) }),
+    })
+    .parse(answered)
+  assert.equal(whole.linhas.length, 25)
+  assert.equal(value.linhas.length, 20)
   assert.equal(answered.complete, false)
 })
 
@@ -211,6 +228,16 @@ test('duas liberadas ao Projeto: o caderno e a leitura são da escolhida, não d
   const chose = on.scope(on.ana, { project: true, chosen: [filial] })
   assert.deepEqual(await on.port.notes(chose, filial), { cliente: note })
   assert.equal(await on.port.notes(chose, on.matriz), null)
+  function read(connectionId: ConnectionId) {
+    return on.port.read(chose, {
+      connectionId,
+      turn: TurnKey.parse(randomUUID()),
+      operation: 'empresas',
+      input: { page: 0 },
+    })
+  }
+  assert.equal((await read(filial)).kind, 'OK')
+  assert.deepEqual(await read(on.matriz), { kind: 'NOT_GRANTED' })
 })
 
 test('50 por turno: passado o limite de turnos lembrados o mais antigo é esquecido e começa do zero', async (t) => {
@@ -227,10 +254,17 @@ test('50 por turno: passado o limite de turnos lembrados o mais antigo é esquec
 
 test('quem saiu da empresa recebe a lista vazia e NOT_GRANTED, como quem não pode perguntar', async (t) => {
   const on = await assistantOn(t)
-  const outsider = { id: randomUUID() }
-  assert.deepEqual(await on.port.connections(on.scope(outsider)), [])
-  assert.deepEqual(await on.ask(outsider), { kind: 'NOT_GRANTED' })
-  assert.equal(await on.port.notes(on.scope(outsider), on.matriz), null)
+  assert.equal((await on.ask(on.bruno)).kind, 'OK', 'Bruno reads while he is a member')
+  const left = await call(
+    on.hub,
+    on.ana,
+    'DELETE',
+    `/api/companies/${on.companyId}/members/${on.bruno.id}`,
+  )
+  assert.equal(left.statusCode, 204, left.body)
+  assert.deepEqual(await on.port.connections(on.scope(on.bruno)), [])
+  assert.deepEqual(await on.ask(on.bruno), { kind: 'NOT_GRANTED' })
+  assert.equal(await on.port.notes(on.scope(on.bruno), on.matriz), null)
 })
 
 test('a linha: CONNECTOR_CALLED com empresa, pessoa, by assistant, o projectId só num Projeto, a operação e o resultado; nunca o corpo nem o SQL', async (t) => {

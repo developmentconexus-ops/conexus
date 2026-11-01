@@ -63,7 +63,7 @@ function blockOf(
  */
 export function assistantInstructions(deps: {
   scopeOf: (requestContext: RequestContext) => Promise<SessionScope | undefined>
-  chosenOf: (
+  offeredOf: (
     requestContext: RequestContext,
   ) => Promise<readonly { name: string; connector: string; chosen: boolean }[]>
   speakersOf: (scope: SessionScope) => Promise<Speakers>
@@ -77,7 +77,7 @@ export function assistantInstructions(deps: {
     }
     const [speakers, offered] = await Promise.all([
       deps.speakersOf(scope),
-      deps.chosenOf(requestContext),
+      deps.offeredOf(requestContext),
     ])
     const chosen = offered.filter((each) => each.chosen)
     return [

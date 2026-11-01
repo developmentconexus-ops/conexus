@@ -41,7 +41,7 @@ import type { ScopeOf } from './context.ts'
 import { sessionScopes } from './context.ts'
 import type { Speakers } from './instructions.ts'
 import { assistantInstructions } from './instructions.ts'
-import type { AssistantMachines } from './machine.ts'
+import type { AssistantMachines, MachineTuning } from './machine.ts'
 import { createAssistantMachines } from './machine.ts'
 import { assistantMemory } from './memory.ts'
 import { overviewTool } from './overview.ts'
@@ -56,8 +56,11 @@ type AssistantConnectors = Connectors['assistant']
 type AssistantConnection = Awaited<ReturnType<AssistantConnectors['connections']>>[number]
 
 const MODE = 'conversa'
-/** The controller's own tools are all off: the Assistant asks no card, keeps no task list and calls no subagent. */
-const BUILTIN_TOOLS: BuiltinToolId[] = [
+/**
+ * The controller's own tools are all off: the Assistant asks no card, keeps no task list and calls
+ * no subagent.
+ */
+const BUILTIN_TOOLS: readonly BuiltinToolId[] = [
   'ask_user',
   'submit_plan',
   'task_write',
@@ -70,7 +73,7 @@ const BUILTIN_TOOLS: BuiltinToolId[] = [
  * The closed set the mode offers the model (criterion 12): the layer that enforces it, as the
  * controller filters the agent's tools by it; `noteSave: false` below only leaves the save unbuilt.
  */
-const AVAILABLE_TOOLS = [
+const AVAILABLE_TOOLS: readonly string[] = [
   ...Object.values(WORKSPACE_TOOL),
   BUILDER_TOOL.connectorRead,
   BUILDER_TOOL.connectorNotes,
@@ -96,8 +99,12 @@ type Deps = {
   connectors: AssistantConnectors
   projects: AssistantProjects
   queue: QueueDeps
-  /** The conversations' machines at the provider (step 24.1, U3): the Builder's kit and API, its template and installation. */
+  /**
+   * The conversations' machines at the provider (step 24.1, U3): the Builder's kit and API, its
+   * template and installation.
+   */
   machine: AssistantMachine
+  machineTuning?: MachineTuning
   log: FailureLog
 }
 
@@ -115,7 +122,10 @@ function admitAsker(deps: Deps, tx: ReadTx, scope: SessionScope) {
   })
 }
 
-/** The company, the person with their role, and the Projeto the conversation lives in, for its block. */
+/**
+ * The company, the person with their role, and the Projeto the conversation lives in, for its
+ * block.
+ */
 function speakersOf(deps: Deps, scope: SessionScope): Promise<Speakers> {
   return deps.database.read(readerScope(scope), async (tx) => {
     const admitted = await admitAsker(deps, tx, scope)
@@ -136,20 +146,25 @@ function speakersOf(deps: Deps, scope: SessionScope): Promise<Speakers> {
   })
 }
 
-/** Each live Projeto of the company with its app, published or not. */
-function projectsOf(deps: Deps, scope: SessionScope): Promise<Overview['projects']> {
+/**
+ * The live Projetos of the company with their app, published or not, a page of them and whether
+ * there are more.
+ */
+function projectsOf(deps: Deps, scope: SessionScope): Promise<Omit<Overview, 'connections'>> {
   return deps.database.read(readerScope(scope), async (tx) => {
     await admitAsker(deps, tx, scope)
-    const projects: Overview['projects'][number][] = []
-    for (const each of await deps.projects.liveProjectsOf(tx, scope.companyId)) {
-      const { publishedVersion } = await deps.projects.versionNumbersOf(tx, each.projectId)
+    const live = await deps.projects.liveProjectsOf(tx, scope.companyId)
+    const ids = live.projects.map((each) => each.projectId)
+    const published = await deps.projects.publishedVersionsOf(tx, ids)
+    const projects = live.projects.map((each) => {
+      const version = published.get(each.projectId)
       const app =
-        publishedVersion === null
+        version === undefined
           ? ({ kind: 'NOT_PUBLISHED' } as const)
-          : ({ kind: 'PUBLISHED', version: String(publishedVersion) } as const)
-      projects.push({ ...each, app })
-    }
-    return projects
+          : ({ kind: 'PUBLISHED', version: String(version) } as const)
+      return { ...each, app }
+    })
+    return { projects, moreProjects: live.more }
   })
 }
 
@@ -161,10 +176,12 @@ function accessOf(
   deps: Deps,
   scope: SessionScope,
   chosen: readonly AssistantConnection[],
+  savedAt: (requestContext: RequestContext) => string,
 ): ConnectorAccess {
   return {
     connections: chosen,
-    savedAt: (requestContext) => readsFileOf(requestContext),
+    savedAt,
+    log: deps.log,
     async read(call, requestContext) {
       const turn = turnKeyIn(requestContext)
       if (turn === undefined) {
@@ -179,22 +196,31 @@ function accessOf(
   }
 }
 
-const readsOfRun = new WeakMap<RequestContext, number>()
-
-/** `reads/<turn>-<n>.json`: the turn's first 8 characters and the read's number in the run, so one turn never writes over another. */
-function readsFileOf(requestContext: RequestContext): string {
-  const turn = turnKeyIn(requestContext)
-  if (turn === undefined) {
-    throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'CONNECTOR_TOOL_WITHOUT_TURN' } })
+/**
+ * `reads/<turn>-<n>.json`: the turn's first 8 characters and the read's number in the run, so one
+ * turn never writes over another; the count lives with the agent, one per run.
+ */
+function readsFiles(): (requestContext: RequestContext) => string {
+  const readsOfRun = new WeakMap<RequestContext, number>()
+  return (requestContext) => {
+    const turn = turnKeyIn(requestContext)
+    if (turn === undefined) {
+      throw new Failure('INTERNAL_UNEXPECTED', {
+        details: { reason: 'CONNECTOR_TOOL_WITHOUT_TURN' },
+      })
+    }
+    const n = (readsOfRun.get(requestContext) ?? 0) + 1
+    readsOfRun.set(requestContext, n)
+    return `reads/${turn.slice(0, 8)}-${n}.json`
   }
-  const n = (readsOfRun.get(requestContext) ?? 0) + 1
-  readsOfRun.set(requestContext, n)
-  return `reads/${turn.slice(0, 8)}-${n}.json`
 }
 
 type Offered = (requestContext: RequestContext) => Promise<readonly AssistantConnection[]>
 
-/** What the run's place offers, each with whether the conversation chose it, read once per run (as `scopeOf`). */
+/**
+ * What the run's place offers, each with whether the conversation chose it, read once per run (as
+ * `scopeOf`).
+ */
 function offeredFor(deps: Deps, scopeOf: ScopeOf): Offered {
   const read = new WeakMap<RequestContext, Promise<readonly AssistantConnection[]>>()
   return (requestContext) => {
@@ -225,6 +251,7 @@ function assistantAgent(
   const { queue } = deps
   const { scopeOf } = parts
   const offeredOf = offeredFor(deps, scopeOf)
+  const savedAt = readsFiles()
   async function chosenOf(requestContext: RequestContext) {
     return (await offeredOf(requestContext)).filter((each) => each.chosen)
   }
@@ -245,7 +272,7 @@ function assistantAgent(
     name: 'Assistant',
     instructions: assistantInstructions({
       scopeOf,
-      chosenOf: offeredOf,
+      offeredOf,
       speakersOf: (scope) => speakersOf(deps, scope),
     }),
     model: ({ requestContext }) => sessionModel(requestContext),
@@ -256,11 +283,12 @@ function assistantAgent(
         ...toolsOf(sessionModel(requestContext)),
         [ASSISTANT_TOOL.overview]: overview,
         [ASSISTANT_TOOL.showFile]: showFile,
-        // Creating an app is the company's: a conversation inside a Projeto talks about that Projeto.
+        // Creating an app is the company's: a conversation inside a Projeto talks about that
+        // Projeto.
         ...(scope?.place.kind === 'COMPANY' ? { [ASSISTANT_TOOL.proposeApp]: proposeAppTool } : {}),
         ...(scope === undefined
           ? {}
-          : connectorTools(accessOf(deps, scope, chosen), { noteSave: false })),
+          : connectorTools(accessOf(deps, scope, chosen, savedAt), { noteSave: false })),
       }
     },
     skills: async ({ requestContext }) => [
@@ -291,18 +319,21 @@ export function createAssistant(deps: Deps) {
   const memory = assistantMemory({ storage, queue })
   const chosen = chosenConnections(deps.database)
   const scopeOf = sessionScopes({ chosenOf: chosen.of })
-  const machines = createAssistantMachines({ ...deps.machine, log: deps.log, scopeOf })
-  const turns = assistantTurns({ queue, scopeOf, machines, log: deps.log })
+  const machines = createAssistantMachines(
+    { ...deps.machine, log: deps.log, scopeOf },
+    deps.machineTuning,
+  )
+  const turns = assistantTurns({ queue, scopeOf, machines })
   const agent = assistantAgent(deps, { memory, turns, scopeOf, machines })
   const controller = new AgentController({
     id: ASSISTANT_CONTROLLER,
     storage,
     memory,
     agent,
-    modes: [{ id: MODE, availableTools: AVAILABLE_TOOLS }],
+    modes: [{ id: MODE, availableTools: [...AVAILABLE_TOOLS] }],
     // The conversation's machine (Factory `session-sandbox.ts:29-36`); none outside a conversation.
     workspace: ({ requestContext }) => machines.workspace(requestContext),
-    disableBuiltinTools: BUILTIN_TOOLS,
+    disableBuiltinTools: [...BUILTIN_TOOLS],
     // Decision 0053: nothing waits to be approved; the systems get no write.
     initialState: { yolo: true },
   })
@@ -311,6 +342,8 @@ export function createAssistant(deps: Deps) {
   return Object.freeze({
     controller,
     memory,
+    /** Where a conversation hears its machine start (QA F1), as the Builder's hears its steps. */
+    onPhase: machines.onPhase.bind(machines),
     routes: (app: FastifyInstance) =>
       registerAssistantRoutes(app, { ...deps, controller, memory, chosen, machines }),
     release: (scope: ReleaseScope) =>

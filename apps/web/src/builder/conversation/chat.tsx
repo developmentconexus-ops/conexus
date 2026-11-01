@@ -36,6 +36,8 @@ export type ChatProps = {
   /** The conversation is gone: the caller reads again what lists it. */
   onGone: () => void
   empty: string
+  /** What a person with no account to answer with reads, where the model is not changed here; the table's sentence by default. */
+  noAccount?: string
   /** The model's button of the composer, for a person who can answer; none where the model is not changed here. */
   picker?: (control: {
     session: SessionRead
@@ -126,12 +128,17 @@ function ChatComposer(props: {
   )
 }
 
-function Notices(props: { companyId: CompanyId; canAnswer: boolean; empty: string | undefined }) {
+function Notices(props: {
+  companyId: CompanyId
+  canAnswer: boolean
+  empty: string | undefined
+  noAccount: string | undefined
+}) {
   const phone = useIsMobile()
   if (props.canAnswer && props.empty === undefined) return null
   return (
     <div className="flex flex-col gap-md px-md py-md">
-      {!props.canAnswer && <NoAccount companyId={props.companyId} />}
+      {!props.canAnswer && <NoAccount companyId={props.companyId} text={props.noAccount} />}
       {props.empty !== undefined && (
         <Empty>
           {props.empty}
@@ -205,6 +212,7 @@ export function Chat(props: ChatProps) {
         companyId={companyId}
         canAnswer={canAnswer}
         empty={empty ? props.empty : undefined}
+        noAccount={props.noAccount}
       />
       <div className="min-h-24 flex-1 md:min-h-40">
         <Transcript

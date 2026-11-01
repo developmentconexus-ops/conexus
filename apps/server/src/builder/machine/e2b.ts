@@ -2,7 +2,7 @@ import type { ConversationId } from '@conexus/hub-api'
 import { E2BSandbox } from '@mastra/e2b'
 import { ALL_TRAFFIC, Sandbox } from 'e2b'
 import type { Config } from '../../platform/config.ts'
-import type { Kit, KitFactory, MachineApi } from './kit.ts'
+import type { AssistantMachineApi, Kit, KitFactory } from './kit.ts'
 import { MARK } from './kit.ts'
 
 /** E2B's free plan keeps a machine up an hour at most; it pauses then, and the next start resumes it. */
@@ -20,6 +20,10 @@ export function createE2bKit(config: Credentials): KitFactory {
       apiKey: config.e2bApiKey.reveal(),
       timeout: TIMEOUT_MS,
       lifecycle: { onTimeout: 'pause' },
+      // A machine found by its id is reattached or refused, never replaced by a new one.
+      ...(options.foundAs === undefined
+        ? {}
+        : { sandboxId: options.foundAs, reattach: 'required' as const }),
       network: { allowOut: [...options.allowOut], denyOut: [ALL_TRAFFIC] },
       metadata: options.metadata,
       onStart: options.onStart,
@@ -30,7 +34,11 @@ export function createE2bKit(config: Credentials): KitFactory {
       sandbox,
       transport: {
         write: (path, bytes) => sandbox.writeFiles([{ path, content: Buffer.from(bytes) }]),
-        read: (path) => sandbox.e2b.files.read(path, { format: 'stream' }),
+        read: (path, signal) =>
+          sandbox.e2b.files.read(path, {
+            format: 'stream',
+            ...(signal === undefined ? {} : { signal }),
+          }),
       },
       closeNetwork: () =>
         sandbox.e2b.updateNetwork({ allowOut: [...options.allowOut], denyOut: [ALL_TRAFFIC] }),
@@ -47,7 +55,7 @@ export function createE2bApi(
   config: Credentials,
   mark: Record<string, string>,
   apiUrl?: string,
-): MachineApi {
+): AssistantMachineApi {
   const apiKey = config.e2bApiKey.reveal()
   const where = { apiKey, ...(apiUrl === undefined ? {} : { apiUrl }), requestTimeoutMs: CALL_MS }
   async function killWhere(
@@ -66,7 +74,22 @@ export function createE2bApi(
     }
     return killed
   }
+  /** The first machine of the conversation and `template`, running or paused; a failed list throws. */
+  async function find(conversationId: ConversationId, template: string) {
+    const pages = Sandbox.list({
+      ...where,
+      query: {
+        metadata: { ...mark, [MARK.conversation]: conversationId, [MARK.template]: template },
+      },
+    })
+    while (pages.hasNext) {
+      const [first] = await pages.nextItems()
+      if (first !== undefined) return first.sandboxId
+    }
+    return undefined
+  }
   return {
+    find,
     kill: (conversationId) => killWhere(conversationId, () => true),
     killStale: (conversationId, template) =>
       killWhere(conversationId, (metadata) => metadata[MARK.template] !== template),

@@ -33,6 +33,8 @@ test('Criar app abre o nome do Projeto com o pedido resumido, e Cancelar fecha s
   const dialog = await screen.findByRole('dialog')
   expect(within(dialog).getByText(SUMMARY)).toBeTruthy()
   expect(within(dialog).getByLabelText('Nome do projeto')).toBeTruthy()
+  // The dialog is the frame: the naming does not draw a second one inside it (K28).
+  expect(dialog.querySelector('.rounded-composer')).toBeNull()
   fireEvent.click(within(dialog).getByRole('button', { name: 'Cancelar' }))
   await waitFor(() => expect(screen.queryByLabelText('Nome do projeto')).toBeNull())
   expect(screen.queryByRole('dialog')).toBeNull()
@@ -43,8 +45,13 @@ test('Criar app abre o nome do Projeto com o pedido resumido, e Cancelar fecha s
 
 test('Criar e começar cria o Projeto e abre o Builder com o pedido resumido enviado uma vez', async () => {
   const created: unknown[] = []
+  const handed: { path: string; body: unknown }[] = []
   const { conexus, writes } = proposing()
   server.use(
+    http.post('*/agent-controller/builder/sessions/:id/messages', async ({ request }) => {
+      handed.push({ path: new URL(request.url).pathname, body: await request.json() })
+      return HttpResponse.json({ ok: true })
+    }),
     http.post('*/api/companies/:companyId/projects', async ({ request }) => {
       created.push(await request.json())
       return HttpResponse.json(
@@ -73,10 +80,10 @@ test('Criar e começar cria o Projeto e abre o Builder com o pedido resumido env
     ),
   )
   expect(created).toHaveLength(1)
-  await waitFor(() =>
-    expect(writes().filter((one) => one.path.endsWith('/messages'))).toHaveLength(1),
-  )
-  expect(JSON.stringify(writes().find((one) => one.path.endsWith('/messages'))?.body)).toContain(
-    SUMMARY,
-  )
+  await waitFor(() => expect(handed).toHaveLength(1))
+  expect(JSON.stringify(handed[0]?.body)).toContain(SUMMARY)
+  // The Assistant's own conversation, opened directly, is still mounted while the navigation
+  // loads: the summary goes to the new Builder conversation alone, never to it (QA F5).
+  expect(writes().filter((one) => one.path.endsWith('/messages'))).toHaveLength(0)
+  expect(handed[0]?.path).not.toContain(ASKED)
 })

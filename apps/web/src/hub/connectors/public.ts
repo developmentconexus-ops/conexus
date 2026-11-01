@@ -12,6 +12,7 @@ export {
 export { SignInReturn } from './sign-in-return.tsx'
 export {
   ASK_MANAGER,
+  busyText,
   GRANT,
   grantText,
   LINK_IN_COMPANY,
@@ -21,6 +22,8 @@ export {
   PROJECT_LEAD,
   REVOKE,
   readingText,
+  reauthText,
   remedyText,
   stateBadge,
+  unreachableText,
 } from './text.ts'
