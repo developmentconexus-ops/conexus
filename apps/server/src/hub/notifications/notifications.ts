@@ -273,9 +273,10 @@ export function createNotifications(deps: Deps) {
       try {
         summary = await recorded(deps, ran, scope)
       } catch (error) {
-        const failure = databaseFailure(error)
-        logFailure(deps.log, failure, { companyId, automationId, runId })
-        throw failure
+        // The Hub's database is the one that failed, so the owner stays unannounced; the run's
+        // outcome is already the history's, and a throw here would only fail the step (card, failure table).
+        logFailure(deps.log, databaseFailure(error), { companyId, automationId, runId })
+        return
       }
       if (summary === undefined) return
       deps.log.info({ companyId, automationId, kind: summary.kind }, 'NOTIFICATION_CREATED')
