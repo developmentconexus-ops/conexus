@@ -24,13 +24,13 @@ test('sem memória o anel está vazio e diz 0% (Critério 15, matriz de estados)
   expect(screen.getByText('0%')).toBeTruthy()
 })
 
-test('o anel não gira: enquanto guarda, observa ou reorganiza a luz corre sobre o arco (Critério 15)', () => {
+test('o anel não gira: enquanto observa ou reorganiza a luz corre sobre o arco (Critério 15)', () => {
   const { rerender } = render(<MemoryStatus memory={MEMORY} />)
   function ring() {
     return screen.getByRole('button').querySelector('svg')
   }
   expect(ring()?.hasAttribute('data-working')).toBe(false)
-  for (const omPhase of ['buffering', 'observing', 'reflecting'] as const) {
+  for (const omPhase of ['observing', 'reflecting'] as const) {
     rerender(<MemoryStatus memory={MEMORY} omPhase={omPhase} />)
     expect(ring()?.hasAttribute('data-working')).toBe(true)
   }

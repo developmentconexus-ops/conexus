@@ -5,8 +5,8 @@ import { messageOf, sentOf } from './messages.ts'
 
 type Display = Extract<KnownAgentControllerEvent, { type: 'display_state_changed' }>['displayState']
 export type OMProgress = Display['omProgress']
-type OMPhase = 'idle' | 'buffering' | 'observing' | 'reflecting'
-type MemoryFailure = 'observation' | 'reflection' | 'buffering'
+type OMPhase = 'idle' | 'observing' | 'reflecting'
+type MemoryFailure = 'observation' | 'reflection'
 
 /** A message the person sent while the Builder worked, until the stream says Mastra read it. */
 export type Steer = { id: string; content: string; files: readonly MessageFile[] }
@@ -98,21 +98,13 @@ function byCall(pending: Display['pendingSuspensions']): Record<string, Suspende
   return Object.fromEntries(Object.values(pending).map((one) => [one.toolCallId, one]))
 }
 
-/** The memory's progress as the display state holds it; its buffering shows as the phase. */
+/** The memory's progress as the display state holds it. */
 function displayed(state: SessionState, display: Display): SessionState {
-  const buffering = display.bufferingMessages || display.bufferingObservations
-  const omPhase =
-    state.omPhase === 'idle' && buffering
-      ? 'buffering'
-      : state.omPhase === 'buffering' && !buffering
-        ? 'idle'
-        : state.omPhase
   return {
     ...state,
     running: display.isRunning,
     suspended: byCall(display.pendingSuspensions),
     memory: display.omProgress,
-    omPhase,
   }
 }
 
@@ -125,9 +117,6 @@ const OM_PHASES: Partial<
   om_reflection_start: { omPhase: 'reflecting' },
   om_reflection_end: { omPhase: 'idle', memoryFailed: null },
   om_reflection_failed: { omPhase: 'idle', memoryFailed: 'reflection' },
-  om_buffering_start: { omPhase: 'buffering' },
-  om_buffering_end: { omPhase: 'idle', memoryFailed: null },
-  om_buffering_failed: { omPhase: 'idle', memoryFailed: 'buffering' },
 }
 
 function heard(state: SessionState, event: KnownAgentControllerEvent): SessionState {
