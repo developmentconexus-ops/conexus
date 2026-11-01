@@ -3,6 +3,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, test } from 'vitest'
 import { COMPANY } from '../../platform/fixtures.ts'
 import { hubServer, PEDIDOS, refusal } from '../../platform/test-hub.tsx'
+import { START_NO_ACCOUNT } from '../conversation/public.ts'
 import {
   observationFailed,
   stepStarted,
@@ -267,6 +268,17 @@ describe('o histórico', () => {
       ]),
     )
     expect(await screen.findByText('Ligando a máquina…')).toBeTruthy()
+  })
+
+  test('o turno sem conta de modelo diz a frase do Início, sem mandar escolher outro modelo (QA F6)', async () => {
+    const line = await running(at(OPEN, { conversations: [assistantConversation()] }))
+    line.emit(
+      stepStarted(`${ASKED}:failure`, [
+        { type: 'data-conexus-failure', data: { code: 'MODEL_NO_ACCOUNT' } },
+      ]),
+    )
+    expect(await screen.findByText(START_NO_ACCOUNT)).toBeTruthy()
+    expect(screen.queryByText(/Escolha outro modelo/)).toBeNull()
   })
 
   test('uma falha da memória aparece pelo tipo, sem o texto do fornecedor', async () => {

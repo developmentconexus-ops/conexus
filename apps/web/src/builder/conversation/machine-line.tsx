@@ -9,6 +9,7 @@ import { CheckIcon, CircleAlertIcon, CogIcon, InfoIcon } from 'lucide-react'
 import { sentenceOfCode } from '../../platform/hub.ts'
 import { Marker, MarkerContent, MarkerIcon } from '../../ui/marker.tsx'
 import { useSecondsShown } from './elapsed.ts'
+import { useRoom } from './room.ts'
 import { durationOf } from './text.ts'
 
 const PHASES: Record<MachinePhase, string> = {
@@ -80,12 +81,15 @@ export function VersionLine({ data }: { data: VersionData }) {
 }
 
 export function FailureLine({ data }: { data: FailureData }) {
+  const room = useRoom()
   return (
     <Marker role="alert" className="text-danger">
       <MarkerIcon>
         <CircleAlertIcon />
       </MarkerIcon>
-      <MarkerContent>{sentenceOfCode(data.code, data.person)}</MarkerContent>
+      <MarkerContent>
+        {room.failures[data.code] ?? sentenceOfCode(data.code, data.person)}
+      </MarkerContent>
     </Marker>
   )
 }

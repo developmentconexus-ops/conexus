@@ -1,7 +1,8 @@
-import type { ShownFile } from '@conexus/hub-api'
+import type { FailureCode, ShownFile } from '@conexus/hub-api'
 import { createContext, useContext } from 'react'
 import { ASSISTANT_OVERRIDES } from './assistant-specs.ts'
 import { PLAIN_WORDS } from './connector-specs.ts'
+import { START_NO_ACCOUNT } from './text.ts'
 import type { ConnectorWords, RowTool, ToolSpec } from './tool-spec.ts'
 
 /** A file the Assistant shows beside the chat: the text to read, or the file to download. */
@@ -25,12 +26,15 @@ export type Room = {
   createApp?: (summary: string) => void
   /** The rows this room draws differently from the table. */
   overrides: Partial<Record<RowTool, ToolSpec>>
+  /** A turn's failures this room says in its own sentence: the Assistant has no model to choose. */
+  failures: Partial<Record<FailureCode, string>>
 }
 
 export const BUILDER_ROOM: Room = {
   agent: 'Builder',
   connectors: PLAIN_WORDS,
   overrides: {},
+  failures: {},
 }
 
 /** The Assistant's conversation before a connector catalog is read: its box and its rows say "Assistente". */
@@ -38,6 +42,7 @@ export const ASSISTANT_ROOM: Room = {
   agent: 'Assistente',
   connectors: PLAIN_WORDS,
   overrides: ASSISTANT_OVERRIDES,
+  failures: { MODEL_NO_ACCOUNT: START_NO_ACCOUNT },
 }
 
 export const RoomContext = createContext<Room>(BUILDER_ROOM)
