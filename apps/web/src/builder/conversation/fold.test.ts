@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { fold } from './fold.ts'
+import { BUILDER_ROOM } from './room.ts'
 import type { ToolItem, TranscriptItem } from './rows.ts'
-import { summaryOfTools } from './tool-registry.ts'
+import { summaryOfTools } from './tool-summary.ts'
 
 function tool(id: string, toolName = 'mastra_workspace_read_file'): ToolItem {
   return {
@@ -26,14 +27,14 @@ const thoughtItem: TranscriptItem = {
 }
 
 test('one or two tools in a row stay as individual rows', () => {
-  const rows = fold([tool('a'), tool('b')])
+  const rows = fold([tool('a'), tool('b')], BUILDER_ROOM)
   assert.equal(rows.length, 2)
   assert.equal(rows[0]?.kind, 'item')
   assert.equal(rows[1]?.kind, 'item')
 })
 
 test('three or more tools in a row fold into one group, in their order', () => {
-  const rows = fold([tool('a'), tool('b'), tool('c'), tool('d')])
+  const rows = fold([tool('a'), tool('b'), tool('c'), tool('d')], BUILDER_ROOM)
   assert.equal(rows.length, 1)
   assert.equal(rows[0]?.kind, 'group')
   if (rows[0]?.kind === 'group') {
@@ -70,35 +71,40 @@ const planCard: TranscriptItem = {
 }
 
 test('skill and the cards never group into tool groups (Criterion 9)', () => {
-  const rows = fold([
-    tool('1', 'mastra_workspace_read_file'),
-    tool('2', 'mastra_workspace_read_file'),
-    tool('3', 'skill'),
-    tool('4', 'mastra_workspace_read_file'),
-    tool('5', 'mastra_workspace_read_file'),
-  ])
+  const rows = fold(
+    [
+      tool('1', 'mastra_workspace_read_file'),
+      tool('2', 'mastra_workspace_read_file'),
+      tool('3', 'skill'),
+      tool('4', 'mastra_workspace_read_file'),
+      tool('5', 'mastra_workspace_read_file'),
+    ],
+    BUILDER_ROOM,
+  )
   assert.equal(
     rows.every((row) => row.kind === 'item'),
     true,
   )
   assert.equal(rows.length, 5)
 
-  const askRows = fold([
-    tool('1', 'mastra_workspace_read_file'),
-    tool('2', 'mastra_workspace_read_file'),
-    questionCard,
-    tool('4', 'mastra_workspace_read_file'),
-  ])
+  const askRows = fold(
+    [
+      tool('1', 'mastra_workspace_read_file'),
+      tool('2', 'mastra_workspace_read_file'),
+      questionCard,
+      tool('4', 'mastra_workspace_read_file'),
+    ],
+    BUILDER_ROOM,
+  )
   assert.equal(
     askRows.every((row) => row.kind === 'item'),
     true,
   )
 
-  const planRows = fold([
-    tool('1', 'mastra_workspace_read_file'),
-    tool('2', 'mastra_workspace_read_file'),
-    planCard,
-  ])
+  const planRows = fold(
+    [tool('1', 'mastra_workspace_read_file'), tool('2', 'mastra_workspace_read_file'), planCard],
+    BUILDER_ROOM,
+  )
   assert.equal(
     planRows.every((row) => row.kind === 'item'),
     true,
@@ -106,16 +112,10 @@ test('skill and the cards never group into tool groups (Criterion 9)', () => {
 })
 
 test('a text or a thought ends the run, and each run folds on its own', () => {
-  const rows = fold([
-    tool('a'),
-    tool('b'),
-    textItem,
-    tool('c'),
-    tool('d'),
-    tool('e'),
-    thoughtItem,
-    tool('f'),
-  ])
+  const rows = fold(
+    [tool('a'), tool('b'), textItem, tool('c'), tool('d'), tool('e'), thoughtItem, tool('f')],
+    BUILDER_ROOM,
+  )
   assert.deepEqual(
     rows.map((row) => row.kind),
     ['item', 'item', 'item', 'group', 'item', 'item'],
@@ -129,18 +129,21 @@ test('a machine step passes once anything follows it', () => {
     partType: 'data-conexus-machine',
     data: { phase: 'starting' },
   }
-  assert.equal(fold([machine]).length, 1)
-  const dropped = fold([machine, tool('a')])
+  assert.equal(fold([machine], BUILDER_ROOM).length, 1)
+  const dropped = fold([machine, tool('a')], BUILDER_ROOM)
   assert.equal(dropped.length, 1)
   assert.equal(dropped[0]?.kind === 'item' && dropped[0].item.kind, 'tool')
 })
 
 test('the summary counts by tool in order and formats correctly', () => {
-  const summary = summaryOfTools([
-    tool('1', 'mastra_workspace_list_files'),
-    tool('2', 'mastra_workspace_grep'),
-    tool('3', 'mastra_workspace_read_file'),
-  ])
+  const summary = summaryOfTools(
+    [
+      tool('1', 'mastra_workspace_list_files'),
+      tool('2', 'mastra_workspace_grep'),
+      tool('3', 'mastra_workspace_read_file'),
+    ],
+    BUILDER_ROOM,
+  )
   assert.equal(summary.short, '3 ferramentas')
   assert.equal(summary.full, '3 ferramentas: listou, procurou, leu')
 })

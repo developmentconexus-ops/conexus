@@ -11,8 +11,9 @@ import {
 } from '../../ui/trace.tsx'
 import { useRoom } from './room.ts'
 import type { ToolItem } from './rows.ts'
-import { presentTool, summaryOfTools, toolStatus } from './tool-registry.ts'
+import { presentTool, toolStatus } from './tool-registry.ts'
 import { ToolRow } from './tool-row.tsx'
+import { summaryOfTools } from './tool-summary.ts'
 
 /**
  * Three tools or more in a row, as one line (Criterion 9). While the answer still works it names the tool in
@@ -33,7 +34,7 @@ export function ToolGroup(props: { tools: ToolItem[]; working: boolean }) {
     ? presentTool(active, toolStatus(active, room), room)
     : undefined
 
-  const summary = summaryOfTools(tools)
+  const summary = summaryOfTools(tools, room)
 
   const completedCount = tools.filter((t) => toolStatus(t, room) !== 'running').length
 

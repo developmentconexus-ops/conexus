@@ -114,7 +114,7 @@ function Change({ edit }: { edit: Edit }) {
 }
 
 function Block({ tool, body }: { tool: ToolItem; body: ToolBody }) {
-  const detail = presentTool(tool, 'done').detail
+  const detail = presentTool(tool, 'done', useRoom()).detail
   switch (body) {
     case 'command': {
       const output = tool.output ?? textOf(tool.result)
@@ -248,8 +248,8 @@ function Body({ tool, status }: { tool: ToolItem; status: ToolStatus }) {
 }
 
 /** The rows that are not a line: the file the Assistant showed, and the app it proposed. */
-function specialRow(tool: ToolItem, status: ToolStatus) {
-  const body = specOf(tool.toolName)?.body
+function specialRow(tool: ToolItem, status: ToolStatus, room: Room) {
+  const body = specOf(tool.toolName, room)?.body
   if (status !== 'done') return undefined
   const shown = body === 'shown' ? ShownFile.safeParse(tool.result).data : undefined
   if (shown !== undefined && shown.kind !== 'SHOW_REFUSED')
@@ -288,7 +288,7 @@ export function ToolRow({ tool }: { tool: ToolItem }) {
     </TraceLine>
   )
 
-  const special = specialRow(tool, status)
+  const special = specialRow(tool, status, room)
   if (special !== undefined) return special
 
   if (!opens(tool, status, room)) return line

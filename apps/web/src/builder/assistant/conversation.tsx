@@ -4,7 +4,6 @@ import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 import { hubQueryPrefix } from '../../platform/hub.ts'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '../../ui/resizable.tsx'
-import { NotFound } from '../../ui/states.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
 import type { OpenedFile, Room } from '../conversation/public.ts'
 import { ASSISTANT_ROOM, Chat, RoomContext } from '../conversation/public.ts'
@@ -126,12 +125,8 @@ function Conversation(props: Props) {
 /**
  * A conversation with the Assistant (criteria 24 to 27): the Builder's transcript and box over the
  * Assistant's session, its bar of connections above the box and the file it showed beside. A
- * conversation lives at one address, its Projeto's or the company's: at the other, it is not found.
+ * conversation lives at one address, its Projeto's or the company's: the loader finds the other not found.
  */
 export function AssistantChat(props: Props) {
-  const { conversation } = useSuspenseQuery(
-    assistantConversationQuery(props.companyId, props.conversationId),
-  ).data
-  if (conversation.projectId !== (props.projectId ?? null)) return <NotFound />
   return <Conversation key={props.conversationId} {...props} />
 }

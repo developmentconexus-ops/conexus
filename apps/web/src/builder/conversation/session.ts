@@ -1,5 +1,11 @@
-import type { Answer, ASSISTANT_CONTROLLER, ConversationId, ProjectId } from '@conexus/hub-api'
-import { BUILDER_CONTROLLER, BUILDER_ROUTES } from '@conexus/hub-api'
+import type {
+  Answer,
+  ASSISTANT_CONTROLLER,
+  BUILDER_CONTROLLER,
+  ConversationId,
+  ProjectId,
+} from '@conexus/hub-api'
+import { BUILDER_ROUTES } from '@conexus/hub-api'
 import type { PlanResume } from '@mastra/client-js'
 import { MastraClient, MastraClientError } from '@mastra/client-js'
 import { failureOfProblem, HubFailure, hubClientFetch } from '../../platform/hub.ts'
@@ -21,10 +27,7 @@ export type Place =
   | { controller: typeof BUILDER_CONTROLLER; projectId: ProjectId }
   | { controller: typeof ASSISTANT_CONTROLLER }
 
-export function sessionOf(
-  conversationId: ConversationId,
-  controller: Controller = BUILDER_CONTROLLER,
-) {
+export function sessionOf(conversationId: ConversationId, controller: Controller) {
   const client = new MastraClient({
     baseUrl: BUILDER_ROUTES,
     apiPrefix: '',

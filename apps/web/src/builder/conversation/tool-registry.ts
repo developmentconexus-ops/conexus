@@ -16,7 +16,6 @@ import {
 import { ASSISTANT_SPECS } from './assistant-specs.ts'
 import { CONNECTOR_SPECS } from './connector-specs.ts'
 import type { Room } from './room.ts'
-import { BUILDER_ROOM } from './room.ts'
 import type { ToolItem } from './rows.ts'
 import { stringArg } from './tool-args.ts'
 import type { Presented, RowTool, ToolSpec, ToolStatus } from './tool-spec.ts'
@@ -228,7 +227,7 @@ function isRowTool(toolName: string): toolName is RowTool {
 }
 
 /** The one lookup of how a tool's row reads, in the room that draws it. */
-export function specOf(toolName: string, room: Room = BUILDER_ROOM): ToolSpec | undefined {
+export function specOf(toolName: string, room: Room): ToolSpec | undefined {
   if (!isRowTool(toolName)) return undefined
   return room.overrides[toolName] ?? TOOLS[toolName]
 }
@@ -236,7 +235,7 @@ export function specOf(toolName: string, room: Room = BUILDER_ROOM): ToolSpec | 
 /** One status per call (Factory `terminalInvocationStatus`); a command that exited non-zero is an error. */
 export function toolStatus(
   tool: Pick<ToolItem, 'toolName' | 'state' | 'isError' | 'result'>,
-  room: Room = BUILDER_ROOM,
+  room: Room,
 ): ToolStatus {
   switch (tool.state) {
     case 'result':
@@ -278,7 +277,7 @@ function unknownTool(toolName: string, status: ToolStatus) {
 export function presentTool(
   tool: Pick<ToolItem, 'toolName' | 'args'> & { result?: unknown },
   status: ToolStatus,
-  room: Room = BUILDER_ROOM,
+  room: Room,
 ): Presented {
   const spec = specOf(tool.toolName, room)
   const failed = status === 'error' || status === 'denied'
@@ -296,21 +295,4 @@ export function presentTool(
   const beside = spec.detailBeside === true && !failed && detail !== undefined
   const sentence = detail === undefined || beside ? head : `${head} ${detail}`
   return { icon: failed ? CircleAlertIcon : spec.icon, sentence, detail, beside }
-}
-
-export function summaryOfTools(tools: readonly ToolItem[]): { short: string; full: string } {
-  const count = tools.length
-  const verbs: string[] = []
-  for (const tool of tools) {
-    const verb = specOf(tool.toolName)?.verb ?? 'usou'
-    if (!verbs.includes(verb)) verbs.push(verb)
-  }
-  const failed = tools.filter((tool) => {
-    const status = toolStatus(tool)
-    return status === 'error' || status === 'denied'
-  }).length
-  const baseFull = `${count} ferramentas: ${verbs.join(', ')}`
-  const full =
-    failed > 0 ? `${baseFull} · ${failed} ${failed === 1 ? 'falhou' : 'falharam'}` : baseFull
-  return { short: `${count} ferramentas`, full }
 }
