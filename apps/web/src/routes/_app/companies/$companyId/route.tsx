@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, useParams } from '@tanstack/react-router'
+import { createFileRoute, Outlet, useMatches, useParams } from '@tanstack/react-router'
 import { HouseIcon, PlugIcon, SettingsIcon, TimerIcon } from 'lucide-react'
 import { useEffect } from 'react'
 import {
@@ -38,6 +38,7 @@ function HouseFrame() {
   useEffect(() => {
     if (projectId !== undefined) rememberProject({ personId: person.id, companyId, projectId })
   }, [person.id, companyId, projectId])
+  const bounded = useMatches({ select: (matches) => matches.at(-1)?.staticData.bounded === true })
   const phone = useIsMobile()
   const params = { companyId }
   return (
@@ -103,7 +104,7 @@ function HouseFrame() {
           <AccountMenu person={person} />
         </>
       }
-      compact={projectId !== undefined}
+      compact={projectId !== undefined || bounded}
     >
       {phone && (
         <PhoneTopContent>
