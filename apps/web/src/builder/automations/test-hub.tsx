@@ -84,12 +84,6 @@ export function automationsHub(
     await answers.hold
     return body
   }
-  function change(id: unknown, fields: Partial<AutomationSummary>) {
-    const found = held.automations.find((one) => one.id === id)
-    if (found === undefined) return undefined
-    Object.assign(found, fields)
-    return found
-  }
   server.use(
     http.get(BASE, ({ request }) => {
       const project = new URL(request.url).searchParams.get('projectId')
@@ -108,14 +102,17 @@ export function automationsHub(
       await note(request)
       const replaced = answers.write?.()
       if (replaced) return replaced
-      const found = change(params.id, { state: 'PAUSED', nextRunAt: null })
+      const found = changed(held.automations, params.id, { state: 'PAUSED', nextRunAt: null })
       return found ? HttpResponse.json({ automation: found }) : refusal('AUTOMATION_NOT_FOUND')
     }),
     http.post(`${BASE}/:id/resume`, async ({ request, params }) => {
       await note(request)
       const replaced = answers.write?.()
       if (replaced) return replaced
-      const found = change(params.id, { state: 'ACTIVE', nextRunAt: '2026-11-02T10:00:00.000Z' })
+      const found = changed(held.automations, params.id, {
+        state: 'ACTIVE',
+        nextRunAt: '2026-11-02T10:00:00.000Z',
+      })
       return found ? HttpResponse.json({ automation: found }) : refusal('AUTOMATION_NOT_FOUND')
     }),
     http.post(`${BASE}/:id/run`, async ({ request }) => {
@@ -142,6 +139,17 @@ export function automationsHub(
     /** How many times the history's runs were read. */
     runReads: () => runReads,
   }
+}
+
+function changed(
+  automations: AutomationSummary[],
+  id: unknown,
+  fields: Partial<AutomationSummary>,
+) {
+  const found = automations.find((one) => one.id === id)
+  if (found === undefined) return undefined
+  Object.assign(found, fields)
+  return found
 }
 
 function madeFrom(body: CreateAutomation): Partial<AutomationSummary> {
