@@ -16,12 +16,12 @@ import {
   DropdownMenuTrigger,
 } from '../../ui/dropdown-menu.tsx'
 import { List, PageTitle, Row } from '../../ui/list.tsx'
-import { PathLink } from '../../ui/path-link.tsx'
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { Empty, ReadFailure } from '../../ui/states.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
 import { cadenceText } from './cadence-text.ts'
-import { readNames, usePlaceName } from './place.ts'
+import { Page } from './page.tsx'
+import { PlaceName, readNames } from './place.tsx'
 import {
   automationsQuery,
   sendAutomationDeletion,
@@ -56,6 +56,12 @@ export function ScheduleLine({ automation }: { automation: AutomationSummary }) 
       {next}
     </>
   )
+}
+
+/** The word of the button that pauses an active automation or resumes a paused one, and what it says while the Hub answers. */
+function toggleWords(state: AutomationSummary['state'], pending: boolean): string {
+  if (state === 'ACTIVE') return pending ? 'Pausando…' : 'Pausar'
+  return pending ? 'Retomando…' : 'Retomar'
 }
 
 function ConfirmDelete(props: {
@@ -134,13 +140,13 @@ export function Actions(props: {
       },
     )
   }
-  const toggleLabel = automation.state === 'ACTIVE' ? 'Pausar' : 'Retomar'
+  const toggleText = toggleWords(automation.state, toggle.isPending)
 
   return (
     <div className="flex flex-col gap-xs">
       <div className="flex flex-wrap items-center gap-sm">
         <Button size="sm" disabled={busy} onClick={asRun}>
-          Rodar agora
+          {run.isPending ? 'Pedindo…' : 'Rodar agora'}
         </Button>
         {phone ? (
           <DropdownMenu>
@@ -157,9 +163,13 @@ export function Actions(props: {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem disabled={busy} onClick={asToggle}>
-                {toggleLabel}
+                {toggleText}
               </DropdownMenuItem>
-              <DropdownMenuItem disabled={busy} onClick={() => setConfirming(true)}>
+              <DropdownMenuItem
+                className="text-danger"
+                disabled={busy}
+                onClick={() => setConfirming(true)}
+              >
                 Apagar
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -167,7 +177,7 @@ export function Actions(props: {
         ) : (
           <>
             <Button size="sm" disabled={busy} onClick={asToggle}>
-              {toggleLabel}
+              {toggleText}
             </Button>
             <Button size="sm" variant="danger" disabled={busy} onClick={() => setConfirming(true)}>
               Apagar
@@ -201,23 +211,23 @@ function AutomationRow({
   companyId: CompanyId
   automation: AutomationSummary
 }) {
-  const place = usePlaceName(companyId, automation.projectId)
   const reads = readNames(automation)
   return (
     <Row>
       <div className="flex min-w-0 flex-1 flex-col gap-sm px-sm py-md">
         <div className="flex min-w-0 items-center justify-between gap-md">
-          <PathLink
-            href={automationPath(companyId, automation.projectId, automation.id)}
+          <Link
+            to={automationPath(companyId, automation.projectId, automation.id)}
             className="truncate font-display text-title hover:underline"
           >
             {automation.name}
-          </PathLink>
+          </Link>
           <StateBadge state={automation.state} />
         </div>
         <p className="text-text-2">
           <ScheduleLine automation={automation} />
-          {` · ${place}`}
+          {' · '}
+          <PlaceName companyId={companyId} projectId={automation.projectId} />
           {reads !== '' && ` · ${reads}`}
         </p>
         <Actions companyId={companyId} automation={automation} />
@@ -234,7 +244,7 @@ export function Automations(props: Place) {
   const { companyId, projectId } = props
   const read = useQuery(automationsQuery(companyId, projectId))
   return (
-    <div className="mx-auto flex min-h-0 w-full max-w-page flex-1 flex-col gap-xl overflow-y-auto p-xl">
+    <Page projectId={projectId} gap="xl">
       <PageTitle>{AUTOMATIONS_TITLE}</PageTitle>
       {read.isPending && <Skeleton className="h-24 w-full" />}
       {read.isError && (
@@ -253,7 +263,7 @@ export function Automations(props: Place) {
             ))}
           </List>
         ))}
-    </div>
+    </Page>
   )
 }
 

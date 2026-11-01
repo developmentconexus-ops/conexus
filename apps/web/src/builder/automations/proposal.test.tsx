@@ -131,3 +131,30 @@ test('a resposta cortada não diz que criou: o cartão pede outro toque, com a m
   await waitFor(() => expect(hub.writes()).toHaveLength(2))
   expect(hub.writes()[1]?.key).toBe(hub.writes()[0]?.key)
 })
+
+test('enquanto a criação não responde o botão diz Criando…, e depois vira "Automação criada"', async () => {
+  let release: () => void = () => undefined
+  const hold = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  automationsHub(server, { automations: [], answers: { hold } })
+  at(OPEN, { conversations: [proposing()] })
+  fireEvent.click(await screen.findByRole('button', { name: 'Criar automação' }))
+  const busy = await screen.findByRole('button', { name: 'Criando…' })
+  expect(busy.hasAttribute('disabled')).toBe(true)
+  release()
+  expect(await screen.findByText('Automação criada')).toBeTruthy()
+})
+
+test('o Projeto apagado: a criação dá a frase de não encontrado no cartão', async () => {
+  automationsHub(server, { automations: [], answers: { write: () => refusal('NOT_FOUND') } })
+  server.use(...projectsRead({ projects: [PEDIDOS], databaseReady: true, mayDelete: true }))
+  at(`${COMPANY_ROOT}/projects/${PEDIDOS.id}/assistant/${ASKED}`, {
+    conversations: [proposing(PEDIDOS.id)],
+  })
+  fireEvent.click(await screen.findByRole('button', { name: 'Criar automação' }))
+  expect((await screen.findByRole('alert')).textContent).toContain(
+    'Não encontramos o que você procurou.',
+  )
+  expect(screen.queryByText('Automação criada')).toBeNull()
+})

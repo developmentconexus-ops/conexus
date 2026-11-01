@@ -9,17 +9,24 @@ import { Badge } from '../../ui/badge.tsx'
 import { buttonVariants } from '../../ui/button.tsx'
 import { List, PageTitle, Row } from '../../ui/list.tsx'
 import { Pager } from '../../ui/pager.tsx'
-import { PathLink } from '../../ui/path-link.tsx'
 import { Skeleton } from '../../ui/skeleton.tsx'
-import { NotFound, ReadFailure } from '../../ui/states.tsx'
+import { ReadFailure } from '../../ui/states.tsx'
 import { Actions, ScheduleLine, StateBadge } from './automations.tsx'
-import { readNames, usePlaceName } from './place.ts'
+import { automationOf } from './loader.ts'
+import { Page } from './page.tsx'
+import { PlaceName, readNames } from './place.tsx'
 import { automationRunsQuery, automationsQuery } from './queries.ts'
-import { BACK_TO_AUTOMATIONS, NO_RUNS, OPEN_CONVERSATION, SKIPPED } from './text.ts'
+import {
+  BACK_TO_AUTOMATIONS,
+  NO_RUNS,
+  NOT_RUN,
+  OPEN_CONVERSATION,
+  SKIPPED_BECAUSE,
+} from './text.ts'
 
 type Opened = { companyId: CompanyId; projectId: ProjectId | null }
 
-/** How a run stands, in the words of the state matrix: running, done, failed with the code's phrase, or not run. */
+/** How a run stands, in the words of the state matrix: a state word (design V35), and, failed or not run, why. */
 function Outcome({ run }: { run: AutomationRun }) {
   const { state } = run
   switch (state.kind) {
@@ -28,15 +35,24 @@ function Outcome({ run }: { run: AutomationRun }) {
     case 'DONE':
       return <Badge tone="success">Pronta</Badge>
     case 'FAILED':
-      return <span className="text-danger">{`Falhou: ${phraseOf(state.code)}`}</span>
+      return (
+        <>
+          <Badge tone="danger">Falhou</Badge>
+          <span className="text-text-2">{phraseOf(state.code)}</span>
+        </>
+      )
     case 'SKIPPED':
-      return <span className="text-text-2">{SKIPPED}</span>
+      return (
+        <>
+          <Badge>{NOT_RUN}</Badge>
+          <span className="text-text-2">{SKIPPED_BECAUSE}</span>
+        </>
+      )
   }
 }
 
 function RunRow({ run, opened }: { run: AutomationRun; opened: Opened }) {
-  const conversationId =
-    run.state.kind === 'DONE' || run.state.kind === 'FAILED' ? run.state.conversationId : null
+  const conversationId = run.state.kind === 'SKIPPED' ? null : run.state.conversationId
   return (
     <Row>
       <div className="flex flex-wrap items-center gap-x-md gap-y-xs px-sm py-md">
@@ -44,12 +60,12 @@ function RunRow({ run, opened }: { run: AutomationRun; opened: Opened }) {
         <span>{run.trigger === 'SCHEDULED' ? 'Horário' : 'Manual'}</span>
         <Outcome run={run} />
         {conversationId !== null && (
-          <PathLink
-            href={conversationPath(opened.companyId, opened.projectId, conversationId)}
+          <Link
+            to={conversationPath(opened.companyId, opened.projectId, conversationId)}
             className={buttonVariants({ size: 'sm' })}
           >
             {OPEN_CONVERSATION}
-          </PathLink>
+          </Link>
         )}
       </div>
     </Row>
@@ -83,8 +99,8 @@ function Runs(props: {
 
 /**
  * The history of one automation (criterion 19; web W29, W34): what it is, its actions and its runs,
- * newest first. The Hub keeps no read of one automation, so its header is its row of the place's list; an automation the
- * place does not list (another person's, the other floor's, a deleted one) is not found.
+ * newest first. The Hub keeps no read of one automation, so its header is its row of the place's
+ * list (`automationOf`; the route's loader has already refused one the place does not list).
  */
 export function AutomationRuns(props: {
   companyId: CompanyId
@@ -94,13 +110,11 @@ export function AutomationRuns(props: {
 }) {
   const { companyId, automationId, projectId } = props
   const read = useQuery(automationsQuery(companyId, projectId))
-  const place = usePlaceName(companyId, projectId ?? null)
   const navigate = useNavigate()
-  if (read.isPending) return <Skeleton className="m-xl h-24" />
+  if (read.isPending) return <Skeleton className="h-24 w-full" />
   if (read.isError)
     return <ReadFailure text={sentenceOf(read.error)} onRetry={() => void read.refetch()} />
-  const automation = read.data.automations.find((each) => each.id === automationId)
-  if (automation === undefined) return <NotFound />
+  const automation = automationOf(read.data.automations, automationId)
   const opened = { companyId, projectId: projectId ?? null }
   const reads = readNames(automation)
   function leave() {
@@ -112,7 +126,7 @@ export function AutomationRuns(props: {
         })
   }
   return (
-    <div className="mx-auto flex min-h-0 w-full max-w-page flex-1 flex-col gap-lg overflow-y-auto p-xl">
+    <Page projectId={projectId} gap="lg">
       <div>
         {projectId === undefined ? (
           <Link
@@ -140,7 +154,8 @@ export function AutomationRuns(props: {
       </div>
       <p className="text-text-2">
         <ScheduleLine automation={automation} />
-        {` · ${place}`}
+        {' · '}
+        <PlaceName companyId={companyId} projectId={projectId ?? null} />
         {reads !== '' && ` · ${reads}`}
       </p>
       <p className="whitespace-pre-wrap break-words">{automation.prompt}</p>
@@ -155,6 +170,6 @@ export function AutomationRuns(props: {
             : NO_RUNS
         }
       />
-    </div>
+    </Page>
   )
 }

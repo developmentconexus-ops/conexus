@@ -55,6 +55,8 @@ export function run(fields: Partial<AutomationRun> = {}): AutomationRun {
 export type Answers = {
   /** What a write of one automation answers instead of the Hub's success. */
   write?: () => Response | undefined
+  /** Holds every write in the air until it is released. */
+  hold?: Promise<void>
 }
 
 type Sent = { method: string; path: string; body: unknown; key: string | null }
@@ -68,6 +70,7 @@ export function automationsHub(
   held: { automations: AutomationSummary[]; runs?: AutomationRun[]; answers?: Answers },
 ) {
   const sent: Sent[] = []
+  let runReads = 0
   const { answers = {} } = held
   async function note(request: Request) {
     const text = await request.text()
@@ -78,6 +81,7 @@ export function automationsHub(
       body,
       key: request.headers.get(ATTEMPT_KEY_HEADER),
     })
+    await answers.hold
     return body
   }
   function change(id: unknown, fields: Partial<AutomationSummary>) {
@@ -127,11 +131,17 @@ export function automationsHub(
       held.automations = held.automations.filter((one) => one.id !== params.id)
       return new HttpResponse(null, { status: 204 })
     }),
-    http.get(`${BASE}/:id/runs`, () =>
-      HttpResponse.json({ runs: held.runs ?? [], next: { kind: 'END' } }),
-    ),
+    http.get(`${BASE}/:id/runs`, () => {
+      runReads += 1
+      return HttpResponse.json({ runs: held.runs ?? [], next: { kind: 'END' } })
+    }),
   )
-  return { sent, writes: () => sent.filter((one) => one.method !== 'GET') }
+  return {
+    sent,
+    writes: () => sent.filter((one) => one.method !== 'GET'),
+    /** How many times the history's runs were read. */
+    runReads: () => runReads,
+  }
 }
 
 function madeFrom(body: CreateAutomation): Partial<AutomationSummary> {

@@ -24,6 +24,7 @@ function assistant(conversations: { id: string; title: string; projectId: string
     [`GET ${API}/conversations`]: ok(listAssistantConversations, {
       conversations: conversations.map((one) => ({
         ...one,
+        automation: null,
         updatedAt: '2026-10-19T12:00:00.000Z',
       })),
       next: { kind: 'END' },

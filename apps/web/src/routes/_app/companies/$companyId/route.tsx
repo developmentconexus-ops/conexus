@@ -107,7 +107,9 @@ function HouseFrame() {
     >
       {phone && (
         <PhoneTopContent>
-          <NotificationBell companyId={companyId} />
+          <div className="order-3 shrink-0">
+            <NotificationBell companyId={companyId} />
+          </div>
         </PhoneTopContent>
       )}
       <Outlet />

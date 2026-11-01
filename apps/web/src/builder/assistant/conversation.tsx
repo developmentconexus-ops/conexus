@@ -91,8 +91,8 @@ function Conversation(props: Props) {
   return (
     <RoomContext.Provider value={room}>
       <div className="flex h-full min-h-0 flex-col">
-        <div className="flex min-w-0 items-center gap-sm border-b border-line px-md py-sm">
-          <h1 className="truncate font-display text-title">{titleOf(conversation)}</h1>
+        <div className="flex min-w-0 flex-wrap items-center gap-x-sm gap-y-xs border-b border-line px-md py-sm">
+          <h1 className="max-w-full truncate font-display text-title">{titleOf(conversation)}</h1>
           {conversation.automation !== null && (
             <AutomationBadge name={conversation.automation.name} />
           )}

@@ -1,8 +1,18 @@
 import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
+import { listNotifications } from '@conexus/hub-api'
 import type { Locator, Page } from 'playwright-core'
 import type { Viewport } from './layout-harness.ts'
-import { createHarness, PHONE, reachOf, SMALL_PHONE, stolenBy, touching } from './layout-harness.ts'
+import {
+  createHarness,
+  ok,
+  PHONE,
+  reachOf,
+  SMALL_PHONE,
+  stolenBy,
+  touching,
+} from './layout-harness.ts'
+import { COMPANY } from './src/platform/fixtures.ts'
 import { ACCOUNT_STATES, LONG_WORD } from './sweep-accounts-states.ts'
 import { CONVERSATION_STATES } from './sweep-conversation-states.ts'
 import { PREVIEW_STATES } from './sweep-preview-states.ts'
@@ -60,6 +70,40 @@ for (const viewport of [PHONE, SMALL_PHONE]) {
     assert.ok(opener.x + opener.width <= title.x, 'the title overlaps the opener')
     assert.ok(title.x + title.width <= toggle.x, 'the toggle overlaps the title')
     assert.ok(toggle.x + toggle.width <= viewport.width, 'the toggle leaves the screen')
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), viewport.width)
+    await page.close()
+  })
+
+  test(`o sino com não lidas fica na linha do topo de um Projeto, à vista e sem quebrá-la, em ${viewport.width}px`, async () => {
+    const state = conversationState('Prévia vazia com a conversa mais recente')
+    const unread = ok(listNotifications, {
+      notifications: [],
+      unread: 12,
+      next: { kind: 'END' },
+    })
+    const replies = {
+      ...state.replies,
+      [`GET /api/companies/${COMPANY.id}/notifications`]: unread,
+    }
+    const page = await harness.open(state.path, { viewport, replies })
+    await state.settle(page)
+    const bell = page.getByRole('button', { name: 'Notificações: 12 não lidas' })
+    await bell.waitFor()
+    const [opener, box, title, toggle] = await Promise.all(
+      [
+        page.getByRole('button', { name: 'Abrir navegação' }),
+        bell,
+        page.locator('[data-slot=drawer-trigger]'),
+        page.getByRole('group', { name: 'Parte do Projeto' }),
+      ].map((each) => each.boundingBox()),
+    )
+    assert.ok(opener && box && title && toggle, 'the top line lacks one of its parts')
+    for (const part of [box, title, toggle]) {
+      const apart = Math.abs(part.y + part.height / 2 - (opener.y + opener.height / 2))
+      assert.ok(apart <= 2, 'the top line breaks into two rows')
+    }
+    assert.ok(box.x + box.width <= viewport.width, 'the bell leaves the screen')
+    assert.ok(toggle.x + toggle.width <= box.x, 'the bell overlaps the toggle')
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), viewport.width)
     await page.close()
   })

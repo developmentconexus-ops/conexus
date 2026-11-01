@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import {
   AssistantChat,
+  ConversationGone,
   conversationParams,
   loadAssistantConversation,
 } from '../../../../../builder/assistant/public.ts'
@@ -17,6 +18,7 @@ export const Route = createFileRoute(
     stringify: (p) => p,
   },
   loader: ({ context, params }) => loadAssistantConversation(context.queryClient, params),
+  notFoundComponent: ConversationGone,
   component: Chat,
 })
 

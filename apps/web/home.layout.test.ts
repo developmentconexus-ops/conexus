@@ -260,3 +260,18 @@ test('sem conta de modelo, o botão Minhas contas de modelo tem 32 px a 390 px e
   )
   await zoomed.close()
 })
+
+test('no celular, a página Automações começa na mesma margem do Início, sem uma segunda moldura de espaço', async () => {
+  const replies = companies([{ name: 'Empresa Teste', role: 'owner' }], false)
+  const page = await harness.open(`/companies/${COMPANY_ID}/automations`, {
+    viewport: PHONE,
+    replies,
+  })
+  const title = page.getByRole('heading', { name: 'Automações' })
+  await title.waitFor()
+  const box = await title.boundingBox()
+  assert.ok(box, 'the title is not laid out')
+  assert.ok(box.x <= 24, `the title starts ${box.x}px from the edge, past the frame's own margin`)
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), PHONE.width)
+  await page.close()
+})

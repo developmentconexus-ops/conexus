@@ -107,7 +107,12 @@ test('as ferramentas: propose_automation, numa conversa de Projeto, devolve a pr
   const seen = on.calls.at(1)?.texts.findLast((text) => text.includes('Resumo de vendas'))
   assert.ok(seen !== undefined, on.calls.at(1)?.texts.join('\n'))
   assert.deepEqual(JSON.parse(seen), { ...proposal, connections: [on.matriz] })
-  const listed = await call(on.hub, on.ana, 'GET', `${on.company}/automations`)
+  const listed = await call(
+    on.hub,
+    on.ana,
+    'GET',
+    `${on.company}/automations?projectId=${on.projectId}`,
+  )
   assert.deepEqual(Object(listed.json()).automations, [])
 })
 

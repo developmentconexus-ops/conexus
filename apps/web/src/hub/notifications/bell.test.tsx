@@ -1,7 +1,7 @@
 import type { NotificationRow } from '@conexus/hub-api'
 import { AutomationId, ConversationId, listNotifications, NotificationId } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { beforeEach, expect, test, vi } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
@@ -99,7 +99,7 @@ test('o sino mostra o número de não lidas; o painel lista, e tocar numa abre a
     ),
   )
   await waitFor(() => expect(sent).toEqual([{ body: { ids: [rows[0]?.id] } }]))
-  expect(await screen.findByRole('button', { name: 'Notificações: 1 não lidas' })).toBeTruthy()
+  expect(await screen.findByRole('button', { name: 'Notificações: 1 não lida' })).toBeTruthy()
 })
 
 test('Marcar todas como lidas zera o número', async () => {
@@ -130,6 +130,24 @@ test('a leitura que falha mostra a frase do código e Tentar de novo no painel',
   expect(await screen.findByRole('button', { name: 'Tentar de novo' })).toBeTruthy()
 })
 
+async function onPhone(run: () => Promise<void>) {
+  const phone = vi.spyOn(globalThis, 'matchMedia').mockImplementation((media: string) =>
+    Object.assign(new EventTarget(), {
+      matches: media.includes('767'),
+      media,
+      onchange: null,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+      dispatchEvent: () => true,
+    }),
+  )
+  try {
+    await run()
+  } finally {
+    phone.mockRestore()
+  }
+}
+
 function later(ms: number) {
   return new Promise((done) => setTimeout(done, ms))
 }
@@ -141,15 +159,75 @@ test('o número é lido de novo a cada 60 segundos com a janela visível, e abri
     const { reads } = bell([notification(1)])
     await later(300)
     const before = reads()
-    expect(screen.getByRole('button', { name: 'Notificações: 1 não lidas' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Notificações: 1 não lida' })).toBeTruthy()
     await vi.advanceTimersByTimeAsync(60_000)
     await later(300)
     expect(reads()).toBeGreaterThan(before)
     const afterTick = reads()
-    fireEvent.click(screen.getByRole('button', { name: 'Notificações: 1 não lidas' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Notificações: 1 não lida' }))
     await later(300)
     expect(reads()).toBeGreaterThan(afterTick)
   } finally {
+    vi.useRealTimers()
+  }
+})
+
+test('o número de não lidas aparece no sino, à vista, e some quando tudo foi lido', async () => {
+  bell([notification(1), notification(2), notification(3, { read: true })])
+  const trigger = await screen.findByRole('button', { name: 'Notificações: 2 não lidas' })
+  expect(within(trigger).getByText('2')).toBeTruthy()
+  fireEvent.click(trigger)
+  fireEvent.click(await screen.findByRole('button', { name: 'Marcar todas como lidas' }))
+  const quiet = await screen.findByRole('button', { name: 'Notificações' })
+  expect(within(quiet).queryByText('2')).toBeNull()
+})
+
+test('sem não lidas o painel não oferece Marcar todas como lidas', async () => {
+  bell([notification(1, { read: true })])
+  fireEvent.click(await screen.findByRole('button', { name: 'Notificações' }))
+  expect(await screen.findByRole('link', { name: /Resumo de vendas está pronta/ })).toBeTruthy()
+  expect(screen.queryByRole('button', { name: 'Marcar todas como lidas' })).toBeNull()
+})
+
+test('no computador o sino fica na barra lateral, e no celular na linha do topo', async () => {
+  bell([notification(1)])
+  const desktop = await screen.findByRole('button', { name: 'Notificações: 1 não lida' })
+  expect(desktop.closest('header')).toBeNull()
+  cleanup()
+  await onPhone(async () => {
+    bell([notification(1)])
+    const phone = await screen.findByRole('button', { name: 'Notificações: 1 não lida' })
+    expect(screen.getAllByRole('button', { name: /^Notificações/ })).toHaveLength(1)
+    expect(phone.closest('header')).not.toBeNull()
+  })
+})
+
+test('uma notificação de uma conversa que o Hub não tem mais abre "Esta conversa não existe mais."', async () => {
+  server.use(
+    http.get('*/api/companies/:companyId/assistant/conversations/:conversationId', () =>
+      refusal('CONVERSATION_NOT_FOUND'),
+    ),
+  )
+  bell([notification(1)])
+  fireEvent.click(await screen.findByRole('button', { name: 'Notificações: 1 não lida' }))
+  fireEvent.click(await screen.findByRole('link', { name: /Resumo de vendas está pronta/ }))
+  expect(await screen.findByText('Esta conversa não existe mais.')).toBeTruthy()
+})
+
+test('com a janela escondida o número não é lido de novo', async () => {
+  vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] })
+  const visibility = vi.spyOn(document, 'visibilityState', 'get')
+  try {
+    visibility.mockReturnValue('hidden')
+    document.dispatchEvent(new Event('visibilitychange'))
+    const { reads } = bell([notification(1)])
+    await later(300)
+    const before = reads()
+    await vi.advanceTimersByTimeAsync(120_000)
+    await later(300)
+    expect(reads()).toBe(before)
+  } finally {
+    visibility.mockRestore()
     vi.useRealTimers()
   }
 })

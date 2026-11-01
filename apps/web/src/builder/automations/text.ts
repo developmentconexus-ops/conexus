@@ -11,5 +11,6 @@ export const RUN_REQUESTED = 'Pedido enviado. A execução aparece no histórico
 export const NO_RUNS = 'Ainda não rodou.'
 export const BACK_TO_AUTOMATIONS = 'Automações'
 export const OPEN_CONVERSATION = 'Abrir a conversa'
-export const SKIPPED = 'Não rodou: você não pode mais perguntar ao Assistente.'
+export const NOT_RUN = 'Não rodou'
+export const SKIPPED_BECAUSE = 'você não pode mais perguntar ao Assistente.'
 export const CREATED = 'Automação criada'
