@@ -15,7 +15,7 @@ One line per document (`check-docs`).
 - [how-to/hub-database-restore.md](how-to/hub-database-restore.md): restaurar o banco; [Git](how-to/hub-git-restore.md).
 - [how-to/hub-company-databases.md](how-to/hub-company-databases.md): companies' Neon key.
 - [how-to/local-database.md](how-to/local-database.md): test PostgreSQL 18; [Builder](how-to/builder-builds.md).
-- [steps/](steps/): the cards in construction.
+- [steps/](steps/): cards in construction.
 - [reference/boundaries.md](reference/boundaries.md): mechanisms written over libraries'.
 - [reference/stack.md](reference/stack.md): sources, skill, trap per package.
 - [reference/components.md](reference/components.md): screen pieces and their tokens (design V23).
