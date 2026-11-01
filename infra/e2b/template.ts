@@ -52,9 +52,9 @@ exec node ${OPT}/packages/app/src/check/main.ts --tools ${OPT}/node_modules --pl
 
 /**
  * Debian 12's Python refuses a plain `pip install` (PEP 668); the template's build and the model's
- * commands both need it. A template ENV does not reach the commands a started sandbox runs (the SDK
- * only records it as an ENV instruction, e2b dist/index.mjs setEnvs), so pip reads the setting
- * from its own file, which holds for every user and every command.
+ * commands both need it. With PIP_BREAK_SYSTEM_PACKAGES set as a template ENV, pip in the live
+ * Assistant machine still refused; pip's own file holds for every user and shell, so the ENV is
+ * redundant and gone.
  */
 const PIP_CONFIG = '[global]\nbreak-system-packages = true\n'
 

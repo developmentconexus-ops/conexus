@@ -107,7 +107,7 @@ test('máquina: o template trabalha na pasta do app em que as ferramentas trabal
   )
 })
 
-test('máquina: o template grava o pip.conf antes do pip da imagem, porque o ENV do template não chega aos comandos da máquina (17)', () => {
+test('máquina: o template grava o pip.conf antes do pip da imagem, porque o ENV sozinho não bastou na máquina viva (17)', () => {
   const template = readFileSync(
     join(import.meta.dirname, '../../../../..', 'infra', 'e2b', 'template.ts'),
     'utf8',
@@ -119,7 +119,11 @@ test('máquina: o template grava o pip.conf antes do pip da imagem, porque o ENV
   const written = template.indexOf('> /etc/pip.conf')
   assert.ok(written > 0, 'the setting lives in the file pip reads')
   assert.ok(written < template.indexOf('.pipInstall('), 'the file exists before the image pip runs')
-  assert.equal(template.includes('PIP_BREAK_SYSTEM_PACKAGES'), false, 'no env that never arrives')
+  assert.equal(
+    template.includes('PIP_BREAK_SYSTEM_PACKAGES'),
+    false,
+    'the file makes the env redundant',
+  )
 })
 
 test('opt-in: no E2B de verdade, a máquina do Assistente instala com pip e npm, importa o pacote e as bibliotecas da imagem, e outro endereço não responde (17)', {
