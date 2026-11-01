@@ -182,7 +182,7 @@ export async function subscribed(t: TestContext, folder: string) {
     return readBy(scope, a)
   }
   const ana = await personOn(hub, ANA_OWNER)
-  const companyId = await plantCompany(hub.test, ana.id)
+  const companyId = await plantCompany(hub.test, ana.id, 'Padaria Sol')
   const company = `/api/companies/${companyId}`
   await hub.test.asOwner(
     `insert into builder.company_account_kind (company_id, kind) values ($1, 'claude_subscription')`,
