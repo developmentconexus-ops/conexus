@@ -11,51 +11,22 @@ import {
   toolStarted,
   updatePart,
 } from '../conversation/test-events.ts'
-import {
-  ASKED,
-  assistantConversation,
-  assistantScreens,
-  COMPANY_ROOT,
-  running,
-  toolSaid,
-} from './test-hub.tsx'
+import { CHART, OPEN, savedWith, showingOn } from './test-file.tsx'
+import { ASKED, assistantConversation, assistantScreens, running } from './test-hub.tsx'
 
 // The file the Assistant shows beside the chat (step 24.1, criterion 27).
 const server = hubServer()
 const { at } = assistantScreens(server)
-const OPEN = `${COMPANY_ROOT}/conversations/${ASKED}`
+const showing = showingOn(at)
 
 afterEach(() => vi.restoreAllMocks())
 
-function showing(path: string, shown: ShownFile, answers = {}) {
-  return at(OPEN, {
-    conversations: [
-      assistantConversation({
-        messages: [toolSaid(ASSISTANT_TOOL.showFile, { path }, shown)],
-      }),
-    ],
-    answers,
-  })
+function clicks(impl: (this: HTMLAnchorElement) => void) {
+  vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(impl)
 }
 
-/** What the browser is asked to save: the page has no download manager here, only the anchor it clicks. */
 function saved() {
-  const files: { href: string; download: string }[] = []
-  Object.assign(URL, { createObjectURL: () => 'blob:arquivo', revokeObjectURL: () => undefined })
-  vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function save(
-    this: HTMLAnchorElement,
-  ) {
-    files.push({ href: this.href, download: this.download })
-  })
-  return files
-}
-
-const CHART: ShownFile = {
-  kind: 'FILE',
-  path: 'grafico.svg',
-  name: 'grafico.svg',
-  media: 'image/svg+xml',
-  bytes: 200,
+  return savedWith(clicks).files
 }
 
 test('um Markdown abre ao lado, formatado, com Baixar e Fechar', async () => {

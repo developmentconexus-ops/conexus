@@ -83,7 +83,10 @@ export function assistantFilePath(ids: {
   conversationId: string
   path: string
 }): string {
-  return `/api/companies/${ids.companyId}/assistant/conversations/${ids.conversationId}/files?${new URLSearchParams({ path: ids.path })}`
+  const url = ASSISTANT_FILE.url
+    .replace(':companyId', encodeURIComponent(ids.companyId))
+    .replace(':conversationId', encodeURIComponent(ids.conversationId))
+  return `${url}?${new URLSearchParams({ path: ids.path })}`
 }
 
 /**

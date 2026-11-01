@@ -32,54 +32,85 @@ async function whyNot(url: string): Promise<void> {
   await readFile(url)
 }
 
+/** How long the saved file's address lives: Firefox reads the blob after the click returns. */
+const REVOKE_AFTER_MS = 40_000
+
 /** Saves the file the route answers: the bytes become a blob that an `<a download>` saves. */
 async function save(file: { url: string; name: string }): Promise<void> {
   const href = URL.createObjectURL(await (await readFile(file.url)).blob())
   const link = document.createElement('a')
   link.href = href
   link.download = file.name
+  document.body.append(link)
   link.click()
-  URL.revokeObjectURL(href)
+  link.remove()
+  setTimeout(() => URL.revokeObjectURL(href), REVOKE_AFTER_MS)
 }
 
-function Picture(props: { url: string; name: string }) {
-  const [state, setState] = useState<'LOADING' | 'DRAWN' | 'FAILED'>('LOADING')
+type PictureState = 'LOADING' | 'DRAWN' | 'FAILED'
+
+/**
+ * The image's own state, held by the panel so that its failure and the download's are one block
+ * when they say the same thing. A failed image reads the route again to learn why: the image tag
+ * says only that it failed.
+ */
+function usePicture() {
+  const [state, setState] = useState<PictureState>('LOADING')
   const [attempt, setAttempt] = useState(0)
   const why = useMutation({ mutationFn: whyNot, meta: { keepCache: true } })
-  if (state === 'FAILED')
-    return (
-      <ReadFailure
-        text={why.isError ? sentenceOf(why.error) : sentenceOfCode('INTERNAL_UNEXPECTED')}
-        onRetry={() => {
-          setState('LOADING')
-          setAttempt(attempt + 1)
-          why.reset()
-        }}
-      />
-    )
+  return {
+    state,
+    attempt,
+    drawn: () => setState('DRAWN'),
+    failed: (url: string) => {
+      setState('FAILED')
+      why.mutate(url)
+    },
+    text:
+      state === 'FAILED'
+        ? why.isError
+          ? sentenceOf(why.error)
+          : sentenceOfCode('INTERNAL_UNEXPECTED')
+        : undefined,
+    again: () => {
+      setState('LOADING')
+      setAttempt(attempt + 1)
+      why.reset()
+    },
+  }
+}
+
+type Picture = ReturnType<typeof usePicture>
+
+function Image(props: { url: string; name: string; picture: Picture }) {
+  const { picture } = props
   return (
     <>
-      {state === 'LOADING' && (
+      {picture.state === 'LOADING' && (
         <div role="status" aria-label="Carregando">
           <Skeleton className="h-48 w-full" />
         </div>
       )}
-      <img
-        key={attempt}
-        src={props.url}
-        alt={props.name}
-        onLoad={() => setState('DRAWN')}
-        onError={() => {
-          setState('FAILED')
-          why.mutate(props.url)
-        }}
-        className={cn('max-w-full', state === 'LOADING' && 'hidden')}
-      />
+      {picture.state !== 'FAILED' && (
+        <img
+          key={picture.attempt}
+          src={props.url}
+          alt={props.name}
+          onLoad={picture.drawn}
+          onError={() => picture.failed(props.url)}
+          className={cn('max-w-full', picture.state === 'LOADING' && 'hidden')}
+        />
+      )}
     </>
   )
 }
 
-function Body(props: { companyId: CompanyId; conversationId: ConversationId; shown: Shown }) {
+function Body(props: {
+  companyId: CompanyId
+  conversationId: ConversationId
+  shown: Shown
+  picture: Picture
+}) {
   const { shown } = props
   if (shown.kind === 'TEXT') {
     if (shown.content === '') return <p className="text-text-2">{FILE_EMPTY}</p>
@@ -91,7 +122,13 @@ function Body(props: { companyId: CompanyId; conversationId: ConversationId; sho
   }
   if (shown.bytes === 0) return <p className="text-text-2">{FILE_EMPTY}</p>
   if (DRAWN.includes(shown.media)) {
-    return <Picture url={assistantFilePath({ ...props, path: shown.path })} name={shown.name} />
+    return (
+      <Image
+        url={assistantFilePath({ ...props, path: shown.path })}
+        name={shown.name}
+        picture={props.picture}
+      />
+    )
   }
   return (
     <p className="text-text-2">
@@ -122,6 +159,9 @@ export function FilePanel(props: {
   const { shown } = props
   const url = assistantFilePath({ ...props, path: shown.path })
   const download = useMutation({ mutationFn: save, meta: { keepCache: true } })
+  const picture = usePicture()
+  // The image and Baixar read the same route: when they fail the same way, the person reads it once.
+  const downloadText = download.isError ? sentenceOf(download.error) : undefined
   return (
     <section aria-label={shown.name} className="flex h-full min-h-0 flex-col bg-canvas">
       <header className="flex items-center justify-between gap-sm border-b border-line px-md py-sm">
@@ -144,13 +184,27 @@ export function FilePanel(props: {
         </div>
       </header>
       <div className="flex min-h-0 flex-1 flex-col gap-md overflow-auto p-md">
-        {download.isError && (
+        {picture.text !== undefined && (
           <ReadFailure
-            text={sentenceOf(download.error)}
+            text={picture.text}
+            onRetry={() => {
+              picture.again()
+              if (downloadText === picture.text) download.reset()
+            }}
+          />
+        )}
+        {downloadText !== undefined && downloadText !== picture.text && (
+          <ReadFailure
+            text={downloadText}
             onRetry={() => download.mutate({ url, name: shown.name })}
           />
         )}
-        <Body companyId={props.companyId} conversationId={props.conversationId} shown={shown} />
+        <Body
+          companyId={props.companyId}
+          conversationId={props.conversationId}
+          shown={shown}
+          picture={picture}
+        />
       </div>
     </section>
   )
