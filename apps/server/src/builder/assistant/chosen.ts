@@ -1,4 +1,4 @@
-import type { CompanyId, ConversationId, PersonId } from '@conexus/hub-api'
+import type { ConversationId } from '@conexus/hub-api'
 import { ConnectionId, ProjectId } from '@conexus/hub-api'
 import { eq } from 'drizzle-orm'
 import { z } from 'zod'

@@ -140,8 +140,10 @@ class Machines implements AssistantMachines {
   /** The pauses in flight, which the Hub's end waits for (code C62). */
   private readonly pausing = new Set<Promise<void>>()
   /**
-   * Each conversation's line (code C65): a turn's start, its pause and a download run one after
-   * another, so a download never starts a machine beside the turn's, nor reads one being paused.
+   * Each conversation's line (code C65): a turn's opening of its workspace, its pause and a
+   * download run one after another, so neither a download nor the next turn starts a machine
+   * while one is being paused. The turn's start itself is not in the line: a download during the
+   * turn reads the turn's own session, whose start it shares.
    */
   private readonly lanes = new Map<ConversationId, Promise<unknown>>()
   private readonly phases = new Map<ConversationId, (phase: Phase) => void>()
