@@ -23,6 +23,8 @@ export type ReadRequest = Readonly<{
   operation: Operation<unknown, unknown, 'read'>
   input: unknown
   deadlineMs: number
+  /** The reader's turn stopped: a read still in the connection's line leaves it, and one not begun is not made. */
+  signal?: AbortSignal
 }>
 
 /** What of the provider's answer an app may see: never its body (S41). */
@@ -103,6 +105,19 @@ async function once(deps: Deps, a: ReadRequest, input: unknown, endsAt: number) 
   return deps.executor.call(a.opened, again.token, a.operation, input, left())
 }
 
+function isStopped(a: ReadRequest): boolean {
+  return a.signal?.aborted === true
+}
+
+/** A read the reader stopped before it reached the provider: no call was made, so no `CONNECTOR_CALLED` line. */
+function stopped(deps: Deps, a: ReadRequest): ConnectorAnswer {
+  deps.log.info(
+    { connectionId: a.opened.id, operation: a.operation.id, by: a.by },
+    'CONNECTOR_READ_STOPPED',
+  )
+  return { kind: 'DEADLINE' }
+}
+
 /**
  * One read of a provider for the app, the Builder or the Assistant (at a Projeto or at the Início): the connection's turn, the token, the call, one
  * repeat on a token the provider ended. No database connection is held meanwhile (D22). Each call
@@ -110,6 +125,7 @@ async function once(deps: Deps, a: ReadRequest, input: unknown, endsAt: number) 
  * its own error line (#470).
  */
 export async function readThrough(deps: Deps, a: ReadRequest): Promise<ConnectorAnswer> {
+  if (isStopped(a)) return stopped(deps, a)
   const started = performance.now()
   const parsed = a.operation.input.safeParse(a.input)
   // The kit's own schema judges what the caller wrote: nothing reaches the provider when it refuses,
@@ -123,11 +139,17 @@ export async function readThrough(deps: Deps, a: ReadRequest): Promise<Connector
     return { kind: 'REFUSED', native: { status: 400, code: 'INPUT_INVALID', message } }
   }
   let queuedMs = a.deadlineMs
-  const turn = await deps.limits.inTurn(a.opened.id, a.deadlineMs, (waitedMs) => {
-    queuedMs = Math.round(waitedMs)
-    return once(deps, a, parsed.data, performance.now() + a.deadlineMs - waitedMs)
-  })
+  const turn = await deps.limits.inTurn(
+    a.opened.id,
+    a.deadlineMs,
+    (waitedMs) => {
+      queuedMs = Math.round(waitedMs)
+      return once(deps, a, parsed.data, performance.now() + a.deadlineMs - waitedMs)
+    },
+    a.signal,
+  )
   const answered = 'kind' in turn && turn.kind === 'DEADLINE' ? null : turn
+  if (answered === null && isStopped(a)) return stopped(deps, a)
   const result: ConnectorAnswer = answered === null ? { kind: 'DEADLINE' } : answerOf(answered)
   if (answered?.kind === 'UNREADABLE' && answered.native.code === CONCURRENT_CALL)
     deps.log.error(

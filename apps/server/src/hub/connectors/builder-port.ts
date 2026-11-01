@@ -38,7 +38,7 @@ export type BuilderConnectors = {
   granted(ids: OfProject): Promise<readonly GrantedConnection[]>
   read(
     ids: OfProject,
-    a: Of & Readonly<{ operation: string; input: unknown }>,
+    a: Of & Readonly<{ operation: string; input: unknown; signal?: AbortSignal }>,
   ): Promise<ShapedRead | Spent>
   notes(ids: OfProject, connectionId: ConnectionId): Promise<Notes | null>
   saveNote(
@@ -125,6 +125,7 @@ function callThrough(
     opened: OpenedConnection
     operation: Operation<unknown, unknown, 'read'>
     input: unknown
+    signal?: AbortSignal
   }>,
 ) {
   return readThrough(deps, {
@@ -135,6 +136,7 @@ function callThrough(
     operation: a.operation,
     input: a.input,
     deadlineMs: CALL_DEADLINE_MS,
+    signal: a.signal,
   })
 }
 

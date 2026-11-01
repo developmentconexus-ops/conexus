@@ -49,7 +49,14 @@ export type AssistantConnectors = {
   /** One read of a chosen, offered connection, read class only. */
   read(
     scope: SessionScope,
-    call: { connectionId: ConnectionId; turn: TurnKey; operation: string; input: unknown },
+    call: {
+      connectionId: ConnectionId
+      turn: TurnKey
+      operation: string
+      input: unknown
+      /** The turn's stop: a read waiting in its connection's line leaves it at once. */
+      signal?: AbortSignal
+    },
   ): Promise<AssistantRead>
   /** The connection's caderno, read only, under the same check as read. */
   notes(scope: SessionScope, connectionId: ConnectionId): Promise<Notes | null>
@@ -168,6 +175,7 @@ export function createAssistantConnectors(deps: Deps): AssistantConnectors {
         operation,
         input: call.input,
         deadlineMs: CALL_DEADLINE_MS,
+        signal: call.signal,
       })
       return answered.kind === 'OK'
         ? { kind: 'OK', ...shaped(answered.value), whole: answered.value }

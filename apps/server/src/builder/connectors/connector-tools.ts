@@ -6,7 +6,8 @@ import { createTool } from '@mastra/core/tools'
 import type { WorkspaceFilesystem } from '@mastra/core/workspace'
 import { z } from 'zod'
 import type { Connectors } from '../../hub/connectors/public.ts'
-import { Failure } from '../../platform/failure.ts'
+import type { FailureLog } from '../../platform/failure.ts'
+import { Failure, logFailure } from '../../platform/failure.ts'
 
 export type BuilderConnectors = Connectors['builder']
 export type GrantedConnection = Awaited<ReturnType<BuilderConnectors['granted']>>[number]
@@ -30,11 +31,13 @@ export type Asker = OfProject & {
 export type ConnectorAccess = {
   connections: readonly Pick<GrantedConnection, 'connectionId' | 'connector' | 'name' | 'reads'>[]
   read(
-    call: { connectionId: ConnectionId; operation: string; input: unknown },
+    call: { connectionId: ConnectionId; operation: string; input: unknown; signal?: AbortSignal },
     requestContext: RequestContext,
   ): Promise<Answer | WholeAnswer>
   /** With a machine, the path (inside its folder) the turn's next read is saved whole at. */
   savedAt?(requestContext: RequestContext): string
+  /** Where a failed save of the whole answer is logged; the caller that gives `savedAt` gives it too. */
+  log?: FailureLog
   notes(connectionId: ConnectionId): Promise<Notes>
   wording: { whose: string; limit: string }
 }
@@ -127,19 +130,23 @@ function describeReads(connections: readonly Connection[]): string {
  */
 async function saveWhole<T extends object>(
   files: WorkspaceFilesystem,
-  path: string,
+  save: { path: string; log: FailureLog | undefined },
   whole: unknown,
   cut: T,
 ) {
   try {
-    await files.writeFile(path, JSON.stringify(whole), { recursive: true })
+    await files.writeFile(save.path, JSON.stringify(whole), { recursive: true })
   } catch (error) {
-    if (error instanceof Failure && error.code === 'MACHINE_UNAVAILABLE') {
-      return { ...cut, saved: false, reason: error.code }
-    }
-    throw error
+    // A machine that did not start says so; one that started and lost the write is the same to the
+    // model: the cut stands, the file does not. The reason is logged, typed, with scalars alone.
+    const failure =
+      error instanceof Failure
+        ? error
+        : new Failure('MACHINE_UNAVAILABLE', { cause: error, details: { reason: 'READS_WRITE' } })
+    if (save.log !== undefined) logFailure(save.log, failure)
+    return { ...cut, saved: false, reason: failure.code }
   }
-  return { ...cut, file: path }
+  return { ...cut, file: save.path }
 }
 
 function readTool(access: ConnectorAccess): ToolsInput {
@@ -163,20 +170,24 @@ function readTool(access: ConnectorAccess): ToolsInput {
         operation: z.enum([first, ...rest]),
         input: z.record(z.string(), z.unknown()),
       }),
-      execute: async ({ connection, operation, input }, { requestContext, workspace }) => {
+      execute: async (
+        { connection, operation, input },
+        { requestContext, workspace, abortSignal },
+      ) => {
         const [connector, ...id] = operation.split('.')
         // The name is the schema's: an operation of another system goes to the named connection's
         // door, which refuses it and logs why.
         const found = named(connections, connection, connector) ?? named(connections, connection)
         if (found === undefined || requestContext === undefined) return NOT_GRANTED
         const answered = await access.read(
-          { connectionId: found.connectionId, operation: id.join('.'), input },
+          { connectionId: found.connectionId, operation: id.join('.'), input, signal: abortSignal },
           requestContext,
         )
         if (answered.kind !== 'OK' || !('whole' in answered)) return answered
         const { whole, ...cut } = answered
         if (workspace?.filesystem === undefined || access.savedAt === undefined) return cut
-        return saveWhole(workspace.filesystem, access.savedAt(requestContext), whole, cut)
+        const save = { path: access.savedAt(requestContext), log: access.log }
+        return saveWhole(workspace.filesystem, save, whole, cut)
       },
     }),
   }
