@@ -392,3 +392,9 @@ Correção da PR 515 (https://github.com/developmentconexus-ops/conexus/pull/515
 Consertos do lote de fechamento (https://github.com/developmentconexus-ops/conexus/pull/520), em 2026-10-31. Ao fim do turno que apagava o que o Hub não guardou, e à falha do compilador de tipos: "2A 3OKAY" (as chamadas 2 e 3 da revisão da etapa). Ao texto da recusa de gravar uma versão (`SAVE_REFUSED`, "O trabalho continua na conversa. Peça de novo ao Builder."): "1 sim".
 
 Regra do `MACHINE_LOST`, em 2026-11-01: só uma máquina que o provedor diz perdida (`session.lost`) é `MACHINE_LOST`; qualquer outra coleta que falha é `SAVE_REFUSED`.
+
+## Mudanças do método
+
+Em 2026-10-31, sobre as correções do método que a auditoria do mesmo dia propôs: "Sim, menos sobre o prompt do builder não vou mexer nisso agora". Entram o passo do nativo no conserto, o conserto que acrescenta uma peça virar unidade de cartão curto, a página do fundador só com células abertas pelo autor do estudo, a atualização da prateleira e do `stack.md` a cada troca do pin do Mastra, o registro da palavra do fundador sobre os eventos `om_*_failed`, a investigação de teste instável em vazamento, recusa ou isolamento e a QA curta num conserto que muda tela. O prompt do Builder fica como está.
+
+Em 2026-10-31, sobre os eventos `om_*_failed` do Mastra, que chegam ao navegador como o Mastra os manda e carregam o texto cru do fornecedor, contra a regra C51 do guia de código: "Pra mim tem que deixar o nativo mesmo". É o conflito que a regra C75 manda registrar para o fechamento; fica na lista de fechamento do pull request que o registra, e o teste de `conversation.test.ts` passa a dizer no nome o que confere.
