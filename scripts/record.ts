@@ -1,6 +1,6 @@
 // Defect: every 14.2 screen passed on controller events and stored rows typed by hand in the shape
 // the screen wanted, orders Mastra never produces (testing T24; method study, diff 6).
-// `npm run record -- <scenario>` (cited, thinking, abort, plan, files or tasks) runs the native flow once: Mastra's
+// `npm run record -- <scenario>` (cited, thinking, abort, plan, files, tasks or reads) runs the native flow once: Mastra's
 // real AgentController, with the Builder's model and web tools, on Mastra's in-memory store, answering
 // from the provider recording `apps/server/src/platform/recordings/anthropic-<scenario>.sse` through
 // a fake `fetch`, as `scripts/record-provider.ts` made it. `plan` has no provider recording: it needs
@@ -10,7 +10,9 @@
 // a markdown file, a PDF and a PNG, and a second one with a PDF while the run works. It saves
 // every event the session emitted and every row Mastra stored, with the library, its version and the
 // date in the first line, in apps/server/src/platform/recordings/mastra/<scenario>.jsonl. No service
-// is called and no credential is read; every prompt is invented (security S40). `tool-error` is not a scenario: its
+// is called and no credential is read; every prompt is invented (security S40). `reads` is the
+// Assistant's turn: a `connector_read` that runs its SQL on the Sankhya double's Padaria Sol (Matriz),
+// then an answer with its numbers, for the numbers' check (step 24.1, criterion 11a). `tool-error` is not a scenario: its
 // recording holds one model call and the turn asks a second.
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -26,6 +28,7 @@ import {
 } from '@mastra/core/tools'
 import { Memory } from '@mastra/memory'
 import { z } from 'zod'
+import { PADARIA_SOL_MATRIZ, salesDatabase } from '../apps/server/src/hub/connectors/test-sales.ts'
 import type { Block } from '../apps/server/src/platform/test-anthropic-stream.ts'
 import { events as streamed } from '../apps/server/src/platform/test-anthropic-stream.ts'
 import type { NativeHeader } from '../apps/server/src/platform/test-recordings.ts'
@@ -51,7 +54,7 @@ const PROMPTS = {
     'Uma padaria inventada vende 120 pães por dia a R$ 0,80 cada. Quanto ela fatura em 30 dias? Pense antes de responder.',
   abort: 'Escreva uma lista de 60 nomes inventados de padarias, um por linha, sem comentários.',
 }
-const Scenario = z.enum(['cited', 'thinking', 'abort', 'plan', 'files', 'tasks'])
+const Scenario = z.enum(['cited', 'thinking', 'abort', 'plan', 'files', 'tasks', 'reads'])
 
 const PLAN_FILE = '.conexus/plans/encomendas.md'
 const PLAN_PROMPT = 'Planeje um app de encomendas para uma padaria inventada.'
@@ -114,6 +117,31 @@ const TASKS_CALLS: Block[][] = [
   [{ type: 'text', text: 'Falta conferir o app.' }],
 ]
 
+const READS_PROMPT = 'Quanto a Padaria Sol vendeu em setembro de 2026 por vendedor?'
+const SOLD_BY_SELLER =
+  "SELECT V.APELIDO, ROUND(SUM(I.VLRTOT), 2) AS TOTAL FROM TGFCAB C JOIN TGFITE I ON I.NUNOTA = C.NUNOTA JOIN TGFVEN V ON V.CODVEND = C.CODVEND WHERE C.DTNEG BETWEEN '2026-09-01' AND '2026-09-30' GROUP BY V.APELIDO ORDER BY TOTAL DESC"
+/** What the model does in the `reads` scenario: read the Matriz by seller, then answer with what it read. */
+const READS_CALLS: Block[][] = [
+  [
+    {
+      type: 'tool_use',
+      name: 'connector_read',
+      input: {
+        connection: 'Matriz',
+        operation: 'sankhya.consultar',
+        input: { sql: SOLD_BY_SELLER },
+      },
+    },
+  ],
+  [
+    {
+      type: 'text',
+      text: 'Em setembro de 2026, na Matriz: JOAO vendeu R$ 8.072,70, RITA R$ 7.951,50 e MARCIA R$ 7.726,50.',
+    },
+  ],
+]
+const matriz = salesDatabase(PADARIA_SOL_MATRIZ)
+
 const Package = z.object({ version: z.string() })
 function versionOf(name: string): string {
   const path = join(ROOT, 'node_modules', name, 'package.json')
@@ -146,7 +174,7 @@ function replaying(answers: Answer[]): () => void {
 type Session = Awaited<ReturnType<AgentController['createSession']>>
 
 const TASK_TOOLS = { task_write: taskWriteTool, task_complete: taskCompleteTool }
-const CALLS = { plan: PLAN_CALLS, files: FILES_CALLS, tasks: TASKS_CALLS }
+const CALLS = { plan: PLAN_CALLS, files: FILES_CALLS, tasks: TASKS_CALLS, reads: READS_CALLS }
 
 /** Plays the scenario on the session, with the model calls answered from the recording; the events it emitted. */
 async function run(session: Session, scenario: z.infer<typeof Scenario>): Promise<unknown[]> {
@@ -165,7 +193,10 @@ async function run(session: Session, scenario: z.infer<typeof Scenario>): Promis
       void session.sendMessage({ content: STEER })
     if (scenario === 'files' && event.type === 'tool_start' && event.toolName === 'anotar')
       void session.sendMessage({ content: MORE_FILES_PROMPT, files: [MORE_FILE] })
-    if ((scenario === 'files' || scenario === 'tasks') && event.type === 'agent_end')
+    if (
+      (scenario === 'files' || scenario === 'tasks' || scenario === 'reads') &&
+      event.type === 'agent_end'
+    )
       ended.resolve()
     if (scenario === 'plan' && event.type === 'agent_end') {
       ends += 1
@@ -173,7 +204,7 @@ async function run(session: Session, scenario: z.infer<typeof Scenario>): Promis
     }
   })
   const answers: Answer[] =
-    scenario === 'plan' || scenario === 'files' || scenario === 'tasks'
+    scenario === 'plan' || scenario === 'files' || scenario === 'tasks' || scenario === 'reads'
       ? CALLS[scenario].map(
           (blocks, at, calls) => () =>
             new Response(
@@ -187,8 +218,8 @@ async function run(session: Session, scenario: z.infer<typeof Scenario>): Promis
     if (scenario === 'files') {
       await session.sendMessage({ content: FILES_PROMPT, files: FILES })
       await ended.promise
-    } else if (scenario === 'tasks') {
-      await session.sendMessage({ content: TASKS_PROMPT })
+    } else if (scenario === 'tasks' || scenario === 'reads') {
+      await session.sendMessage({ content: scenario === 'tasks' ? TASKS_PROMPT : READS_PROMPT })
       await ended.promise
     } else {
       await session.sendMessage({ content: scenario === 'plan' ? PLAN_PROMPT : PROMPTS[scenario] })
@@ -205,6 +236,36 @@ async function run(session: Session, scenario: z.infer<typeof Scenario>): Promis
     restore()
   }
   return events
+}
+
+/** The tools the recorded agent has: the Builder's task and web tools, and two invented ones. */
+const RECORDED_TOOLS = {
+  ...TASK_TOOLS,
+  web_fetch: webFetchTool,
+  web_search: webSearchTool,
+  connector_read: createTool({
+    id: 'connector_read',
+    description: 'Reads a connection the conversation chose.',
+    inputSchema: z.object({
+      connection: z.string(),
+      operation: z.string(),
+      input: z.object({ sql: z.string() }),
+    }),
+    execute: async ({ input }) => {
+      const answered = matriz(input.sql)
+      if (answered === undefined) return { kind: 'REFUSED' }
+      const linhas = answered.rows.map((row) =>
+        Object.fromEntries(answered.fields.map((name, at) => [name, row[at] ?? null])),
+      )
+      return { kind: 'OK', value: { linhas, completo: true }, complete: true }
+    },
+  }),
+  anotar: createTool({
+    id: 'anotar',
+    description: 'Anota uma nota.',
+    inputSchema: z.object({ nota: z.string() }),
+    execute: async () => 'Anotado.',
+  }),
 }
 
 async function record(scenario: z.infer<typeof Scenario>) {
@@ -225,17 +286,7 @@ async function record(scenario: z.infer<typeof Scenario>) {
     name: 'Builder',
     instructions: 'Answer in Brazilian Portuguese.',
     model: `anthropic/${CLAUDE}`,
-    tools: {
-      ...TASK_TOOLS,
-      web_fetch: webFetchTool,
-      web_search: webSearchTool,
-      anotar: createTool({
-        id: 'anotar',
-        description: 'Anota uma nota.',
-        inputSchema: z.object({ nota: z.string() }),
-        execute: async () => 'Anotado.',
-      }),
-    },
+    tools: RECORDED_TOOLS,
     maxRetries: 0,
     memory,
   })

@@ -5,7 +5,7 @@ import type { SessionScope, TurnKey } from '../../hub/connectors/public.ts'
 import { linkSankhya, servedSankhya, testOf } from '../../hub/connectors/test-connections.ts'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import { call, post } from '../../hub/identity/test-hub.ts'
-import type { Sent } from '../../platform/test-anthropic.ts'
+import type { Anthropic, Sent } from '../../platform/test-anthropic.ts'
 import { conversing, sent, streamOf } from '../conversation/test-conversation.ts'
 import { stepping, tool } from '../conversation/test-questions.ts'
 
@@ -19,6 +19,12 @@ export function reading(connection = 'Matriz', sql = COUNT): Block {
   return tool(READ, { connection, operation: 'sankhya.consultar', input: { sql } })
 }
 
+/** The kit's Sankhya double, both connections on it with the same credential. */
+async function kitSankhya(t: TestContext): Promise<Sankhyas> {
+  const fake = await servedSankhya(t)
+  return { origin: fake.origin, matriz: fake.credential, filial: fake.credential }
+}
+
 /** A text the model answers. */
 export function said(text: string): Block {
   return { type: 'text', text }
@@ -27,27 +33,41 @@ export function said(text: string): Block {
 /** One read the company's door received from the Assistant: the scope and the turn it came under. */
 export type DoorRead = { scope: SessionScope; turn: TurnKey; connectionId: string }
 
+/** Where the Sankhya connections are served, and the credential each is linked with. */
+type Sankhyas = { origin: string; matriz: Record<string, string>; filial: Record<string, string> }
+
 /**
  * Empresa Teste with Ana its owner and a model account, the Projeto Encomendas, and two Sankhya
- * connections on the kit's double: Matriz, released to the Projeto, and Filial, not. The model
- * answers `steps` in order, then `Pronto.`; every call to it is in `calls`, every read the door
- * receives from the Assistant in `reads`.
+ * connections, on the kit's double or on `sankhya`: Matriz, released to the Projeto, and Filial,
+ * not. The model answers `model`'s steps in order, then `Pronto.`, or as `model` answers; every
+ * streamed call to it is in `calls`, every read the door receives from the Assistant in `reads`.
  */
-export async function assisting(t: TestContext, steps: Block[][] = []) {
+export async function assisting(
+  t: TestContext,
+  model: Block[][] | Anthropic['answer'] = [],
+  sankhya?: Sankhyas,
+) {
   const calls: Sent[] = []
-  const fake = await servedSankhya(t)
-  const on = await conversing(t, stepping(steps, calls), (config) => ({
+  const served = sankhya ?? (await kitSankhya(t))
+  const answer = Array.isArray(model)
+    ? stepping(model, calls)
+    : (asked: Sent) => {
+        if (asked.stream) calls.push(asked)
+        return model(asked)
+      }
+  const on = await conversing(t, answer, (config) => ({
     ...config,
-    connectorOrigins: new Map([['sankhya', fake.origin]]),
+    connectorOrigins: new Map([['sankhya', served.origin]]),
   }))
   const { hub, ana, companyId, projectId } = on
   const company = `/api/companies/${companyId}`
-  async function link(name: string) {
+  async function link(name: 'Matriz' | 'Filial') {
+    const credential = name === 'Matriz' ? served.matriz : served.filial
     const linked = await linkSankhya(
       hub,
       ana,
       `${company}/connections`,
-      fake.credential,
+      credential,
       undefined,
       name,
     )
