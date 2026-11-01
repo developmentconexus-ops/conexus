@@ -1,9 +1,9 @@
 import type { CompanyId, ConversationId, ShownFile } from '@conexus/hub-api'
-import { assistantFilePath, Problem } from '@conexus/hub-api'
+import { assistantFilePath } from '@conexus/hub-api'
 import { useMutation } from '@tanstack/react-query'
 import { DownloadIcon, XIcon } from 'lucide-react'
 import { useState } from 'react'
-import { hubClientFetch, sentenceOfCode } from '../../platform/hub.ts'
+import { failureOf, hubClientFetch, sentenceOf, sentenceOfCode } from '../../platform/hub.ts'
 import { Button } from '../../ui/button.tsx'
 import { cn } from '../../ui/cn.ts'
 import { Skeleton } from '../../ui/skeleton.tsx'
@@ -16,38 +16,30 @@ type Shown = Extract<ShownFile, { kind: 'TEXT' | 'FILE' }>
 /** The images the Hub's CSP lets the page draw from its own address; every other file is saved. */
 const DRAWN = ['image/png', 'image/jpeg', 'image/svg+xml']
 
-/** The Hub's refusal of the file route, in the person's words. */
-async function refusalOf(response: Response): Promise<string> {
-  try {
-    const problem = Problem.parse(await response.json())
-    return sentenceOfCode(problem.code)
-  } catch {
-    // An answer that is not the Hub's problem body names no failure of ours to say.
-    return sentenceOfCode('INTERNAL_UNEXPECTED')
-  }
+/**
+ * Reads the conversation's file route with the Hub's fetch (web W9: a refusal is read, not left to
+ * the browser's download manager). A refusal is thrown as the Hub's one failure, so a lapsed
+ * session returns to sign-in like every other call (W15).
+ */
+async function readFile(url: string): Promise<Response> {
+  const response = await hubClientFetch(url)
+  if (!response.ok) throw await failureOf(response)
+  return response
 }
 
 /** Reads the route again to learn why the image did not come: the image tag says only that it failed. */
-async function whyNot(url: string): Promise<string> {
-  const response = await hubClientFetch(url)
-  return response.ok ? sentenceOfCode('INTERNAL_UNEXPECTED') : refusalOf(response)
+async function whyNot(url: string): Promise<void> {
+  await readFile(url)
 }
 
-/**
- * Saves the file the route answers (web W9: the Hub's own fetch, so a refusal is read, not left to
- * the browser's download manager): the bytes become a blob that an `<a download>` saves. Answers
- * the refusal's sentence, or nothing once saved.
- */
-async function save(file: { url: string; name: string }): Promise<string | undefined> {
-  const response = await hubClientFetch(file.url)
-  if (!response.ok) return refusalOf(response)
-  const href = URL.createObjectURL(await response.blob())
+/** Saves the file the route answers: the bytes become a blob that an `<a download>` saves. */
+async function save(file: { url: string; name: string }): Promise<void> {
+  const href = URL.createObjectURL(await (await readFile(file.url)).blob())
   const link = document.createElement('a')
   link.href = href
   link.download = file.name
   link.click()
   URL.revokeObjectURL(href)
-  return undefined
 }
 
 function Picture(props: { url: string; name: string }) {
@@ -57,7 +49,7 @@ function Picture(props: { url: string; name: string }) {
   if (state === 'FAILED')
     return (
       <ReadFailure
-        text={why.data ?? sentenceOfCode('INTERNAL_UNEXPECTED')}
+        text={why.isError ? sentenceOf(why.error) : sentenceOfCode('INTERNAL_UNEXPECTED')}
         onRetry={() => {
           setState('LOADING')
           setAttempt(attempt + 1)
@@ -130,8 +122,6 @@ export function FilePanel(props: {
   const { shown } = props
   const url = assistantFilePath({ ...props, path: shown.path })
   const download = useMutation({ mutationFn: save, meta: { keepCache: true } })
-  const refusal =
-    download.data ?? (download.isError ? sentenceOfCode('INTERNAL_UNEXPECTED') : undefined)
   return (
     <section aria-label={shown.name} className="flex h-full min-h-0 flex-col bg-canvas">
       <header className="flex items-center justify-between gap-sm border-b border-line px-md py-sm">
@@ -154,8 +144,11 @@ export function FilePanel(props: {
         </div>
       </header>
       <div className="flex min-h-0 flex-1 flex-col gap-md overflow-auto p-md">
-        {refusal !== undefined && (
-          <ReadFailure text={refusal} onRetry={() => download.mutate({ url, name: shown.name })} />
+        {download.isError && (
+          <ReadFailure
+            text={sentenceOf(download.error)}
+            onRetry={() => download.mutate({ url, name: shown.name })}
+          />
         )}
         <Body companyId={props.companyId} conversationId={props.conversationId} shown={shown} />
       </div>

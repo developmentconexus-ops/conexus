@@ -119,7 +119,7 @@ function Bar(props: {
               <span className="text-text-2">{NO_CHOICE}</span>
             ) : (
               chosen.map((connection) => (
-                <Badge key={connection.connectionId}>{label(connection)}</Badge>
+                <CutBadge key={connection.connectionId}>{label(connection)}</CutBadge>
               ))
             )}
             <Adjust
@@ -141,14 +141,19 @@ function Bar(props: {
   )
 }
 
+/** A Badge whose text is cut with an ellipsis when its line is narrower, instead of running off a phone. */
+export function CutBadge(props: { className?: string; children: ReactNode }) {
+  return (
+    <Badge className={cn('max-w-full shrink', props.className)}>
+      <span className="truncate">{props.children}</span>
+    </Badge>
+  )
+}
+
 /** The Projeto a conversation lives in, fixed beside **Ajustar**: its name once the Hub has answered. */
 export function FixedProject(props: { companyId: CompanyId; projectId: ProjectId }) {
   const project = useQuery(projectQuery(props.companyId, props.projectId)).data?.project
-  return project === undefined ? null : (
-    <Badge className="max-w-full shrink">
-      <span className="truncate">Projeto · {project.name}</span>
-    </Badge>
-  )
+  return project === undefined ? null : <CutBadge>Projeto · {project.name}</CutBadge>
 }
 
 const NONE: ReadonlySet<ConnectionId> = new Set()

@@ -26,7 +26,8 @@ type Phase =
   /** The Projeto exists; its conversation does not yet. */
   | { kind: 'STARTING'; outgoing: Outgoing; project: Project }
 
-const FRAME = 'mx-auto flex w-full max-w-[46rem] flex-col'
+/** The column the box, its bar and the lists under it share. */
+export const START_COLUMN = 'mx-auto flex w-full max-w-[46rem] flex-col'
 
 type Example = { readonly label: string; readonly text: string }
 
@@ -137,7 +138,7 @@ function Naming(props: {
   const navigate = useNavigate()
   const created = useCreated(companyId, props.picked, props.onOpened)
   return (
-    <div className={`${FRAME} rounded-composer border border-line bg-surface`}>
+    <div className={`${START_COLUMN} rounded-composer border border-line bg-surface`}>
       <Request outgoing={outgoing} />
       <div className="border-t border-line px-lg pt-md pb-lg">
         <NameStep
@@ -186,7 +187,7 @@ export function StartBox(props: {
   const { draft } = props
   const field = useRef<HTMLTextAreaElement>(null)
   return (
-    <div className={`${FRAME} gap-md`}>
+    <div className={`${START_COLUMN} gap-md`}>
       <div className="md:[&_textarea]:min-h-20 [&_textarea]:min-h-16">
         <Composer
           answering={false}
@@ -223,7 +224,7 @@ export function StartBox(props: {
 /** The notice that takes the box's place when the person has no model account to ask with. */
 export function StartWithoutAccount({ companyId }: { companyId: CompanyId }): ReactNode {
   return (
-    <div className={`${FRAME} rounded-composer border border-line bg-surface p-lg`}>
+    <div className={`${START_COLUMN} rounded-composer border border-line bg-surface p-lg`}>
       <NoAccount companyId={companyId} text={START_NO_ACCOUNT} action="button" />
     </div>
   )
