@@ -31,6 +31,7 @@ import { answer, serve } from '../../platform/http.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import { conversationStart, effortsOf } from '../model-accounts/public.ts'
 import type { ChosenConnections } from './chosen.ts'
+import type { Owner } from './context.ts'
 import { assistantOwner, SESSION_MARK, scopeOn } from './context.ts'
 import type { assistantMemory } from './memory.ts'
 import type { AssistantProjects } from './ports.ts'
@@ -50,7 +51,6 @@ type Deps = {
   chosen: ChosenConnections
   log: FailureLog
 }
-type Owner = { companyId: CompanyId; personId: Person['id'] }
 type Place = SessionScope['place']
 
 function ownerOf(input: { person: Person; params: { companyId: CompanyId } }): Owner {

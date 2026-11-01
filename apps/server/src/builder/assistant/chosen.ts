@@ -4,9 +4,8 @@ import { eq } from 'drizzle-orm'
 import { z } from 'zod'
 import type { Database } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
+import type { Owner } from './context.ts'
 import { assistantConversation } from './tables.ts'
-
-type Owner = { companyId: CompanyId; personId: PersonId }
 
 const Chosen = z.array(ConnectionId)
 

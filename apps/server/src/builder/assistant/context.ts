@@ -22,7 +22,8 @@ export function assistantOwner(owner: {
 
 const ProjectMark = ProjectId.optional()
 
-type Owner = { companyId: SessionScope['companyId']; personId: SessionScope['personId'] }
+/** The person an Assistant conversation belongs to, in a company. */
+export type Owner = { companyId: SessionScope['companyId']; personId: SessionScope['personId'] }
 
 /** The connections a conversation chose, as the Hub keeps them (`chosen.ts`). */
 export type ChosenOf = (

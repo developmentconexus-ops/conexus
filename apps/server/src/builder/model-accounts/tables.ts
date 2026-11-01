@@ -8,7 +8,6 @@ import {
   foreignKey,
   integer,
   pgPolicy,
-  pgSchema,
   primaryKey,
   text,
   timestamp,
@@ -17,11 +16,10 @@ import {
 } from 'drizzle-orm/pg-core'
 import { ADMINISTRATOR, company, member, policy } from '../../hub/identity/public.ts'
 import { SCOPE_ROLES, scoped } from '../../platform/database.ts'
+import { builder } from '../schema/public.ts'
 
-// The Builder's own schema in the Hub's database (decision 0011, data D1). Every row belongs to a
-// company and leaves with it, and a person's rows leave with their membership: the foreign keys
-// say so, and their cascade runs as the tables' owner (data D17).
-export const builder = pgSchema('builder')
+// Every row belongs to a company and leaves with it, and a person's rows leave with their
+// membership: the foreign keys say so, and their cascade runs as the tables' owner (data D17).
 
 function instant(name: string) {
   return timestamp(name, { withTimezone: true })

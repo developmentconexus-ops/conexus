@@ -1,17 +1,8 @@
-import { sql } from 'drizzle-orm'
-import { foreignKey, pgSchema, text, uuid } from 'drizzle-orm/pg-core'
+import { foreignKey, text, uuid } from 'drizzle-orm/pg-core'
 import { company, member, policy } from '../../hub/identity/public.ts'
 import { project } from '../../hub/projects/public.ts'
-import { SCOPE_ROLES, scoped } from '../../platform/database.ts'
-
-// The Builder's schema in the Hub's database (decision 0011); the Assistant's conversation lives in
-// Mastra's database (decision 0010), and this row holds what only the Hub writes of it.
-const builder = pgSchema('builder')
-
-// A conversation is its starter's alone (step 24.1, criterion 8). A company scope with no person is
-// the Hub's own work on the company.
-const OWN = sql`company_id = ${scoped.companyId}
-  and (person_id = ${scoped.personId} or ${scoped.personId} is null)`
+import { SCOPE_ROLES } from '../../platform/database.ts'
+import { builder, OWN } from '../schema/public.ts'
 
 /**
  * The connections an Assistant conversation chose, one row per Mastra thread, whose id is this
