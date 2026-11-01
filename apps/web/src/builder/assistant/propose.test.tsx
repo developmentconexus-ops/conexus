@@ -33,6 +33,8 @@ test('Criar app abre o nome do Projeto com o pedido resumido, e Cancelar fecha s
   const dialog = await screen.findByRole('dialog')
   expect(within(dialog).getByText(SUMMARY)).toBeTruthy()
   expect(within(dialog).getByLabelText('Nome do projeto')).toBeTruthy()
+  // The dialog is the frame: the naming does not draw a second one inside it (K28).
+  expect(dialog.querySelector('.rounded-composer')).toBeNull()
   fireEvent.click(within(dialog).getByRole('button', { name: 'Cancelar' }))
   await waitFor(() => expect(screen.queryByLabelText('Nome do projeto')).toBeNull())
   expect(screen.queryByRole('dialog')).toBeNull()

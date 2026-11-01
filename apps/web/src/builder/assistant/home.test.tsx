@@ -177,6 +177,20 @@ test('com 31 Projetos, o seletor oferece os 30 da primeira página e, em "Mais P
   await waitFor(() => expect(writes()[0]?.body).toMatchObject({ projectId: projects[30]?.id }))
 })
 
+test('a ligação tirada sem Projeto volta ligada ao escolher um Projeto: a escolha é do lugar (K28)', async () => {
+  const { asked } = at(COMPANY_ROOT)
+  const bar = await barOf()
+  await turnOff(bar, 'Sankhya · Estoque')
+  await waitFor(() => expect(within(bar).queryByText('Sankhya · Estoque')).toBeNull())
+  await choose(screen.getByRole('combobox', { name: 'Projeto da conversa' }), PEDIDOS.name)
+  await waitFor(() => expect(asked.at(-1)).toContain(`projectId=${PEDIDOS_ID}`))
+  const placed = await barOf()
+  fireEvent.click(within(placed).getByRole('button', { name: 'Ajustar' }))
+  expect(
+    (await screen.findByRole('switch', { name: 'Sankhya · Estoque' })).getAttribute('aria-checked'),
+  ).toBe('true')
+})
+
 test('sem ligação no lugar, a barra diz onde ligar um sistema', async () => {
   at(COMPANY_ROOT, { offered: [] })
   expect(

@@ -114,6 +114,14 @@ describe('a barra', () => {
   })
 })
 
+test('na conversa da empresa, o Início da barra lateral está marcado como o lugar atual (K28)', async () => {
+  at(OPEN, { conversations: [assistantConversation()] })
+  await field()
+  const nav = within(screen.getByRole('navigation', { name: 'Navegação' }))
+  expect(nav.getByRole('link', { name: 'Início' }).getAttribute('aria-current')).toBe('page')
+  expect(nav.getByRole('link', { name: 'Integrações' }).getAttribute('aria-current')).toBeNull()
+})
+
 describe('não encontrado', () => {
   test('a conversa de um Projeto no endereço da empresa não é encontrada', async () => {
     at(OPEN, { conversations: [assistantConversation({ projectId: PEDIDOS_ID })] })
