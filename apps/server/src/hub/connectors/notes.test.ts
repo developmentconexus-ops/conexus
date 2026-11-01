@@ -40,6 +40,8 @@ test('guardar: roda a consulta uma vez pela porta e guarda o mapa, a consulta, a
   for (const value of Object.values(Object(answered.value?.linhas?.[0] ?? {})))
     assert.ok(!JSON.stringify(note).includes(String(value)) || String(value).length < 3)
   assert.deepEqual(await on.port.notes(on.ids, on.connectionId), Object(row).notes)
+  const logged = on.hub.lines.find((line) => line.message === 'CONNECTION_NOTE_SAVED')
+  assert.deepEqual(Object.keys(logged?.fields ?? {}).sort(), ['connectionId', 'rows'])
 })
 
 test('guardar: a consulta que a porta recusa recusa a anotação; o caderno cheio é NOTE_INVALID; a 51ª chamada da execução é recusada', async (t) => {
@@ -73,6 +75,20 @@ test('guardar: a consulta que a porta recusa recusa a anotação; o caderno chei
     )
   assert.equal(results.filter((kind) => kind === 'OK').length, CONNECTOR_CALLS_PER_TURN)
   assert.equal(results.at(-1), 'CALLS_SPENT')
+})
+
+test('guardar: a ligação desligada entre a prova e a gravação não responde SAVED: o modelo ouve NOT_GRANTED', async (t) => {
+  const on = await builderOn(t)
+  on.fake.switches.delayMilliseconds = 300
+  const saving = on.port.saveNote(on.ids, {
+    ...on.who(),
+    concept: 'Empresa',
+    mapping: 'm',
+    provingQuery: QUERY,
+  })
+  await new Promise((later) => setTimeout(later, 100))
+  await on.hub.test.asOwner('delete from connectors.connection')
+  assert.deepEqual(await saving, { kind: 'NOT_GRANTED' })
 })
 
 test('apagar: a dona tira só aquela anotação; o membro 404; a página da ligação mostra as anotações ao membro', async (t) => {

@@ -383,6 +383,16 @@ Essa emenda muda o cartão da etapa 20 em três pontos, vindos das revisões. Os
 
 Cartão da etapa 20 aprovado em 2026-10-30 (commit e84a611647a4816724b76a0f9fc60a69a832594e): "Aprovado"
 
+Etapa 20 usada em https://hub.conexus.fun. À pergunta do firstmate em 2026-10-31, com a v0.20.10 no ar, "liberar uma conexão num Projeto e abrir um app com os dados dela": "Ja fiz deu certo". A resposta cobre o passo 2 do roteiro (liberar uma ligação em Integrações do Projeto) e, no passo 4, o app com os dados de verdade. Ele não relatou os passos 1, 3, 5 e 6, o Caderno do passo 4, o uso no celular nem a aprovação dos textos das telas.
+
+Decisões do fundador na revisão da etapa 20 e nos consertos do fechamento, registradas no fechamento. Cada linha traz as palavras dele; a data é a do dia em que o firstmate as recebeu.
+
+Correção da PR 515 (https://github.com/developmentconexus-ops/conexus/pull/515), em 2026-10-31. Ao achado de que uma ligação liberada que deixou de funcionar continuava dizendo "lê": "A". À forma das duas capturas (liberada que parou de funcionar, e ligação nova não liberada): "2.B".
+
+Consertos do lote de fechamento (https://github.com/developmentconexus-ops/conexus/pull/520), em 2026-10-31. Ao fim do turno que apagava o que o Hub não guardou, e à falha do compilador de tipos: "2A 3OKAY" (as chamadas 2 e 3 da revisão da etapa). Ao texto da recusa de gravar uma versão (`SAVE_REFUSED`, "O trabalho continua na conversa. Peça de novo ao Builder."): "1 sim".
+
+Regra do `MACHINE_LOST`, em 2026-11-01: só uma máquina que o provedor diz perdida (`session.lost`) é `MACHINE_LOST`; qualquer outra coleta que falha é `SAVE_REFUSED`.
+
 ## Etapa 24.1
 
 Em 2026-10-30, ao estudo das referências do Supervisor: "M1 / A1 / B1 / `C1` / `D1` / E sua recomendação". Lido como: `M1` (um bloco "quem é o Conexus" e um bloco de trabalho por lugar, escolhido pelo lugar, nunca por um botão), `A1`, `B1`, `C1`, `D1` com o mínimo de 8 em 10 (cada pergunta feita duas vezes; um número inventado reprova a etapa), e o `E` como a recomendação do firstmate: o `E1`, a publicação espera as respostas em andamento, construído antes como a U0 (https://github.com/developmentconexus-ops/conexus/pull/499).

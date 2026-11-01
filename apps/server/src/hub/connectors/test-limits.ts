@@ -2,11 +2,17 @@ import { randomUUID } from 'node:crypto'
 import { connectorOf } from '@conexus/connectors'
 import { ConnectionId } from '@conexus/hub-api'
 import { z } from 'zod'
+import type { FailureLog } from '../../platform/failure.ts'
 import { Credential } from '../../platform/seal.ts'
 import { Secret } from '../../platform/secret.ts'
 import type { Executor, OpenedConnection } from './executor.ts'
+import { createLimits as createLimitsWith } from './limits.ts'
 
-export { createLimits } from './limits.ts'
+const SILENT: FailureLog = { info: () => undefined, error: () => undefined }
+
+export function createLimits(deps: { executor: Executor; log?: FailureLog }) {
+  return createLimitsWith({ executor: deps.executor, log: deps.log ?? SILENT })
+}
 
 export const A = ConnectionId.parse(randomUUID())
 export const B = ConnectionId.parse(randomUUID())
@@ -40,6 +46,16 @@ export function executorOf(events: string[], expiresInSeconds: number): Executor
     async logout(_, live) {
       events.push(`logout ${live.reveal()}`)
       return 'LOGGED_OUT'
+    },
+  }
+}
+
+/** An executor whose logout has a defect of its own, which its promise never to throw does not cover. */
+export function executorWithBrokenLogout(): Executor {
+  return {
+    ...executorOf([], 61),
+    async logout() {
+      throw new TypeError('a defect in the logout')
     },
   }
 }

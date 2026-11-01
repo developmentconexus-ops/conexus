@@ -29,48 +29,55 @@ export async function notesOf(tx: ReadTx, input: OfConnection): Promise<Connecti
     .from(connection)
     .where(ofCompany(input, input.connectionId))
   const notes = Notes.parse(row?.notes ?? {})
-  return Promise.all(
-    Object.entries(notes)
-      .sort(([, a], [, b]) => b.provedAt.localeCompare(a.provedAt))
-      .map(async ([concept, note]) => {
-        const [writer] = await tx
-          .select({ name: personNameColumn(sql`${note.writtenBy}::text`) })
-          .from(connection)
-          .where(ofCompany(input, input.connectionId))
-        return {
-          concept,
-          mapping: note.mapping,
-          provedAt: note.provedAt,
-          provedRows: note.provedRows,
-          writtenBy: writer?.name ?? null,
-        }
-      }),
-  )
+  const writers = [...new Set(Object.values(notes).map((note) => note.writtenBy))]
+  const names = new Map<string, string | null>()
+  if (writers.length > 0) {
+    // One read for every writer, through the identity's own name column.
+    const listed = sql.join(
+      writers.map((id) => sql`${id}`),
+      sql`, `,
+    )
+    const read = await tx
+      .select({ id: sql<string>`writer.id`, name: personNameColumn(sql`writer.id`) })
+      .from(sql`unnest(array[${listed}]::text[]) as writer(id)`)
+    for (const { id, name } of read) names.set(id, name)
+  }
+  return Object.entries(notes)
+    .sort(([, a], [, b]) => b.provedAt.localeCompare(a.provedAt))
+    .map(([concept, note]) => ({
+      concept,
+      mapping: note.mapping,
+      provedAt: note.provedAt,
+      provedRows: note.provedRows,
+      writtenBy: names.get(note.writtenBy) ?? null,
+    }))
 }
 
 /**
  * Writes one concept in one instruction (the row's lock): the same concept again is the last
- * writer's, two different both stay. The notebook above 32 KB is the database's refusal (23514).
+ * writer's, two different both stay. The notebook above 32 KB is the database's refusal (23514). A
+ * connection taken off between the admission and this write is `GONE`, never `SAVED`.
  */
 export async function save(
   deps: Deps,
   input: Viewer & { connectionId: OfConnection['connectionId']; concept: string; note: Note },
-): Promise<'SAVED' | 'NOTE_INVALID'> {
+): Promise<'SAVED' | 'NOTE_INVALID' | 'GONE'> {
   const note = Note.parse(input.note)
   try {
-    await deps.database.command(scopeOf(input), (tx) =>
+    const written = await deps.database.command(scopeOf(input), (tx) =>
       tx
         .update(connection)
         .set({
           notes: sql`${connection.notes} || jsonb_build_object(${input.concept}::text, ${JSON.stringify(note)}::jsonb)`,
         })
-        .where(ofCompany(input, input.connectionId)),
+        .where(ofCompany(input, input.connectionId))
+        .returning({ id: connection.id }),
     )
+    return written.length === 0 ? 'GONE' : 'SAVED'
   } catch (error) {
     if (violatedCheck(error) === 'connection_notes') return 'NOTE_INVALID'
     throw error
   }
-  return 'SAVED'
 }
 
 /** Erases one concept; erasing one already gone answers the same. */

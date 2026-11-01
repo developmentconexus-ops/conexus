@@ -83,10 +83,10 @@ export function list(deps: Deps, input: Viewer & OfProject): Promise<ProjectConn
       connectors: CONNECTORS.flatMap((connector) => {
         const own = rows.filter((row) => row.connector === connector.id)
         if (own.length === 0) return []
-        const { id, name, logo, category, perProject } = connector
+        const { id, name, logo, category, perProject, auth } = connector
         return [
           {
-            connector: { id, name, logo, category },
+            connector: { id, name, logo, category, auth: auth.kind },
             perProject,
             connections: own.map((row) => {
               const view = viewOf(row)

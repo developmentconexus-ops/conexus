@@ -113,8 +113,8 @@ function Budget(props: {
  */
 export function MemoryStatus(props: {
   memory: MemoryGauge | null
-  omPhase?: 'idle' | 'buffering' | 'observing' | 'reflecting'
-  failed?: 'observation' | 'reflection' | 'buffering' | null
+  omPhase?: 'idle' | 'observing' | 'reflecting'
+  failed?: 'observation' | 'reflection' | null
 }) {
   const { memory, omPhase = 'idle', failed = null } = props
 
@@ -155,7 +155,7 @@ export function MemoryStatus(props: {
           threshold={threshold}
           tone="text-accent"
           description={
-            failed === 'observation' || failed === 'buffering'
+            failed === 'observation'
               ? 'Não foi possível guardar as mensagens na memória.'
               : 'Quando encher, o Builder resume a conversa para lembrar do que importa.'
           }

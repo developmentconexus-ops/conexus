@@ -18,8 +18,6 @@ const DISPLAY_READ = [
   'isRunning',
   'pendingSuspensions',
   'omProgress',
-  'bufferingMessages',
-  'bufferingObservations',
 ] as const satisfies readonly (keyof WireDisplayState)[]
 
 type Ended = 'CLOSED' | 'BEHIND' | 'SESSION_ENDED' | 'FAILED'

@@ -8,6 +8,10 @@ import type { CheckContext } from './step.ts'
 import { onTheMachine } from './test-app.ts'
 import { tipos } from './types.ts'
 
+/** What V8 prints before it aborts a process that spent its heap. */
+const HEAP_WORDS =
+  'FATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory'
+
 const OPERATIONS = `import { defineConnectors, defineOperations } from '@conexus/app'
 import { z } from 'zod'
 
@@ -110,12 +114,14 @@ test('um programa que esgota o ar é desfecho do passo, com a sua linha, e não 
     ...ctx,
     run: async () => ({
       code: null,
-      output:
-        'FATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory',
+      output: HEAP_WORDS,
       timedOut: false,
     }),
   }
-  assert.deepEqual(await tipos(spent), { state: 'platform', reason: 'tipos ran out of memory' })
+  assert.deepEqual(await tipos(spent), {
+    state: 'platform',
+    reason: `tipos ended without its diagnostics: code none: ${HEAP_WORDS}`,
+  })
 })
 
 test('um filho morto sem código nem palavras do V8 é desfecho da plataforma, não falha do app', async (t) => {
@@ -129,7 +135,22 @@ test('um filho morto sem código nem palavras do V8 é desfecho da plataforma, n
   }
   assert.deepEqual(await tipos(killed), {
     state: 'platform',
-    reason: 'tipos ended with no exit code: ',
+    reason: 'tipos ended without its diagnostics: code none: ',
+  })
+})
+
+test('um filho que sai com código sem escrever os seus erros não deu veredito: é desfecho da plataforma, com o código e as palavras', async (t) => {
+  const ctx = onTheMachine(t, {
+    'shared/operations.ts': OPERATIONS,
+    'server/handlers.ts': HANDLERS,
+  })
+  const crashed: CheckContext = {
+    ...ctx,
+    run: async () => ({ code: 1, output: 'TypeError: compiler crashed\n', timedOut: false }),
+  }
+  assert.deepEqual(await tipos(crashed), {
+    state: 'platform',
+    reason: 'tipos ended without its diagnostics: code 1: TypeError: compiler crashed',
   })
 })
 

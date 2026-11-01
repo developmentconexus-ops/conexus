@@ -23,9 +23,9 @@ import {
   collected,
   collectScript,
   conflictsOf,
-  endScript,
   keepScript,
   outFile,
+  savedScript,
   seedFile,
   seedScript,
   syncScript,
@@ -65,20 +65,12 @@ async function within<T>(work: Promise<T>, ms: number): Promise<T> {
   ])
 }
 
-async function run(kit: Kit, script: string, timeoutMs?: number) {
-  const result = await kit.sandbox.executeCommand?.('sh', ['-c', script], {
-    maxRetainedBytes: OUTPUT_MAX,
-    ...(timeoutMs === undefined ? {} : { timeout: timeoutMs }),
-  })
-  if (result === undefined) throw new Error('the machine cannot run commands')
-  return result
-}
-
 class BuilderMachines implements Machines {
   private readonly deps: MachinesDeps
   private readonly workdir: string
   private readonly tmp: string
   private readonly startMs: number
+  private readonly commandMs: number
   private readonly sessions = new Map<ConversationId, Session>()
 
   constructor(deps: MachinesDeps) {
@@ -86,6 +78,17 @@ class BuilderMachines implements Machines {
     this.workdir = deps.workdir ?? APP_FOLDER
     this.tmp = deps.tmp ?? '/tmp'
     this.startMs = deps.startMs ?? 120_000
+    this.commandMs = deps.commandMs ?? 120_000
+  }
+
+  /** Every command the Hub runs in the machine has a budget, whatever the machine's own life: a stuck one must not hold the Projeto (code C57). */
+  private async run(kit: Kit, script: string, timeoutMs: number = this.commandMs) {
+    const result = await kit.sandbox.executeCommand?.('sh', ['-c', script], {
+      maxRetainedBytes: OUTPUT_MAX,
+      timeout: timeoutMs,
+    })
+    if (result === undefined) throw new Error('the machine cannot run commands')
+    return result
   }
 
   kill = (conversationId: ConversationId) => this.deps.api.kill(conversationId)
@@ -136,7 +139,7 @@ class BuilderMachines implements Machines {
   }
 
   private async seedSent(kit: Kit, session: Session) {
-    const seeded = await run(kit, seedScript(this.workdir, this.tmp))
+    const seeded = await this.run(kit, seedScript(this.workdir, this.tmp))
     if (seeded.exitCode !== 0) throw new Error(`seed failed: ${seeded.stderr.slice(-500)}`)
     this.conflicted(session, seeded.stdout)
   }
@@ -144,22 +147,27 @@ class BuilderMachines implements Machines {
   /** The conflicts the start found, as the model reads them at every step of the turn. */
   private conflicted(session: Session, stdout: string) {
     session.conflicts = conflictsOf(stdout)
-    const { markers, deleted, replaced } = session.conflicts
+    const { markers, deleted, replaced, tooManyFiles, tooLarge } = session.conflicts
     const files = markers.length + deleted.length + replaced.length
     if (files > 0)
       this.deps.log.info({ conversationId: session.conversationId, files }, 'MACHINE_CONFLICTS')
+    if (tooManyFiles || tooLarge)
+      this.deps.log.info(
+        { conversationId: session.conversationId, tooManyFiles, tooLarge },
+        'MACHINE_UNSAVED_OVERSIZE',
+      )
   }
 
   /**
    * A machine found again keeps its folder and brings `main` into it (Mastra's `onStart`: a
-   * reconnect only checks once-per-machine setup). The work of a turn that never ended stays, merged
+   * reconnect only checks once-per-machine setup). Work the Hub has not saved stays, merged
    * onto `main`; the files it conflicts in are told to the model. One whose seed never finished is
    * seeded. A sync that fails names its cause and fails the start: the folder is left as it was.
    */
   private async sync(kit: Kit, session: Session) {
     const { conversationId } = session
     await this.sendMain(kit, session)
-    const synced = await run(kit, syncScript(this.workdir, this.tmp))
+    const synced = await this.run(kit, syncScript(this.workdir, this.tmp))
     if (synced.exitCode !== 0) {
       const cause = synced.stderr.slice(-500)
       this.deps.log.error({ conversationId, cause }, 'MACHINE_SYNC_FAILED')
@@ -171,7 +179,7 @@ class BuilderMachines implements Machines {
 
   /** The files stay as they are; the repository must still be there. */
   private async keep(kit: Kit) {
-    const kept = await run(kit, keepScript(this.workdir))
+    const kept = await this.run(kit, keepScript(this.workdir))
     if (kept.exitCode !== 0) throw new Error(`the kept tree is gone: ${kept.stderr.slice(-500)}`)
   }
 
@@ -258,9 +266,9 @@ class BuilderMachines implements Machines {
     const session = this.sessions.get(conversationId)
     if (session?.ready === undefined) return 'unchanged'
     const kit = await this.ensure(session)
-    if (session.lost) throw new Error('the machine died in the turn')
+    if (session.lost) throw new Failure('MACHINE_LOST')
     session.onPhase('saving')
-    const result = await run(kit, collectScript(this.workdir, this.tmp, base))
+    const result = await this.run(kit, collectScript(this.workdir, this.tmp, base))
     if (result.exitCode !== 0) throw new Error(`collect failed: ${result.stderr.slice(-500)}`)
     const found: Collected = collected(result.stdout)
     if (found.kind !== 'bundle') return found.kind
@@ -274,8 +282,16 @@ class BuilderMachines implements Machines {
     if (session === undefined) return { ok: false, error: 'CHECK_PLATFORM_FAILED' } as const
     const kit = await this.ensure(session)
     const program = this.deps.checkProgram ?? CHECK_PROGRAM
-    const exec: TimedExec = (script, timeoutMs) => run(kit, script, timeoutMs)
+    const exec: TimedExec = (script, timeoutMs) => this.run(kit, script, timeoutMs)
     return checkIn({ exec, program, workdir: this.workdir, log: this.deps.log })
+  }
+
+  async saved({ conversationId, version }: Parameters<Machines['saved']>[0]) {
+    const session = this.sessions.get(conversationId)
+    if (session === undefined) throw new Error('no turn holds the machine that saved')
+    const kit = await this.ensure(session)
+    const moved = await this.run(kit, savedScript(this.workdir, version))
+    if (moved.exitCode !== 0) throw new Error(`base not moved: ${moved.stderr.slice(-500)}`)
   }
 
   /** A machine whose comparison fails is taken as changed: the check that follows says why it cannot run. */
@@ -283,7 +299,7 @@ class BuilderMachines implements Machines {
     const session = this.sessions.get(conversationId)
     if (session === undefined || !this.touched(conversationId)) return false
     const kit = await this.ensure(session)
-    const result = await run(kit, changedScript(this.workdir))
+    const result = await this.run(kit, changedScript(this.workdir))
     return result.exitCode !== 0 || result.stdout.trim() !== 'UNCHANGED'
   }
 
@@ -291,33 +307,24 @@ class BuilderMachines implements Machines {
     const session = this.sessions.get(conversationId)
     if (session === undefined) throw new Error('no turn holds the machine to pack')
     const kit = await this.ensure(session)
-    return packIn((script) => run(kit, script), this.workdir)
+    return packIn((script) => this.run(kit, script), this.workdir)
   }
 
   touched(conversationId: ConversationId) {
     return this.sessions.get(conversationId)?.ready !== undefined
   }
 
+  /**
+   * The turn is over and the machine pauses with its folder as the turn left it: what the Hub did
+   * not save stays for the next start to merge (no reference discards a session's unsaved work). A
+   * start still running settles first; its failure was the turn's to hear.
+   */
   async release(conversationId: ConversationId) {
     const session = this.sessions.get(conversationId)
     this.sessions.delete(conversationId)
     if (session?.ready === undefined) return
-    try {
-      await this.end(session)
-    } finally {
-      await session.kit.sandbox.stop?.()
-    }
-  }
-
-  /** The turn is over: its folder goes back to its base. A machine that never came up holds nothing of it. */
-  private async end(session: Session) {
-    const up = await session.ready?.then(
-      () => true,
-      () => false,
-    )
-    if (!up) return
-    const ended = await run(session.kit, endScript(this.workdir))
-    if (ended.exitCode !== 0) throw new Error(`end failed: ${ended.stderr.slice(-500)}`)
+    await Promise.allSettled([session.ready])
+    await session.kit.sandbox.stop?.()
   }
 }
 

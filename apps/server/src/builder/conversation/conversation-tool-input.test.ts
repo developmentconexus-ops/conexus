@@ -12,7 +12,7 @@ import {
   streamOf,
   title,
 } from './test-conversation.ts'
-import { failuresOf, partsOf } from './test-parts.ts'
+import { failuresOf, partsOf, versionsOf } from './test-parts.ts'
 import { WHO } from './test-questions.ts'
 
 const WRITE = {
@@ -99,10 +99,9 @@ test('uma chamada que falha com tarefas abertas não volta ao modelo: nenhum MOD
     errors.every((error) => !error.includes('MODEL_NO_ACCOUNT')),
     'no false MODEL_NO_ACCOUNT',
   )
-  const version = partsOf(events).find((part) => part.type === 'data-conexus-version')
-  assert.ok(version, 'the turn changed a file, so it made a version')
-  assert.ok(
-    !('check' in Object(Object(version).data)),
-    'a failed turn leaves its version without a verdict',
+  assert.deepEqual(
+    versionsOf(partsOf(events)),
+    [{ number: 1, changedFiles: 1, check: 'none' }],
+    'the turn changed a file, so it made version 1, and a failed turn leaves it without a verdict',
   )
 })
