@@ -34,8 +34,10 @@ export type ConnectorAccess = {
     call: { connectionId: ConnectionId; operation: string; input: unknown; signal?: AbortSignal },
     requestContext: RequestContext,
   ): Promise<Answer | WholeAnswer>
-  /** With a machine: the path (inside its folder) the turn's next read is saved whole at, and where a failed save is logged. */
-  saving?: { at(requestContext: RequestContext): string; log: FailureLog }
+  /** With a machine: the path (inside its folder) the turn's next read is saved whole at. */
+  savedAt?: (requestContext: RequestContext) => string
+  /** Where a refused call and a failed save are logged. */
+  log: FailureLog
   notes(connectionId: ConnectionId): Promise<Notes>
   wording: { whose: string; limit: string }
 }
@@ -63,9 +65,11 @@ export function builderAccess(
   port: BuilderConnectors,
   granted: readonly GrantedConnection[],
   who: Asker,
+  log: FailureLog,
 ): { access: ConnectorAccess; save: NoteSave } {
   const access: ConnectorAccess = {
     connections: granted,
+    log,
     read: (call, requestContext) =>
       port.read(who, {
         ...call,
@@ -147,6 +151,27 @@ async function saveWhole<T extends object>(
   return { ...cut, file: save.path }
 }
 
+/**
+ * The named connection is of another system than the operation's: the schema let both through,
+ * each from its own list, and the tool refuses the pair, saying whose each one is.
+ */
+function otherSystem(access: ConnectorAccess, connection: string, operation: string) {
+  const of = access.connections.filter((each) => each.name === connection)
+  const systems = of.map((each) => each.connector).join(', ')
+  access.log.info(
+    {
+      connectionIds: of.map((each) => each.connectionId).join(','),
+      operation,
+      reason: 'OTHER_SYSTEM',
+    },
+    'CONNECTOR_READ_REFUSED',
+  )
+  return {
+    ...NOT_GRANTED,
+    reason: `The connection "${connection}" is of ${systems}; the operation ${operation} is of another system. Read it through a connection of that system.`,
+  }
+}
+
 function readTool(access: ConnectorAccess): ToolsInput {
   const { connections } = access
   const operations = [
@@ -173,18 +198,17 @@ function readTool(access: ConnectorAccess): ToolsInput {
         { requestContext, workspace, abortSignal },
       ) => {
         const [connector, ...id] = operation.split('.')
-        // The name is the schema's: an operation of another system goes to the named connection's
-        // door, which refuses it and logs why.
-        const found = named(connections, connection, connector) ?? named(connections, connection)
-        if (found === undefined || requestContext === undefined) return NOT_GRANTED
+        const found = named(connections, connection, connector)
+        if (found === undefined) return otherSystem(access, connection, operation)
+        if (requestContext === undefined) return NOT_GRANTED
         const answered = await access.read(
           { connectionId: found.connectionId, operation: id.join('.'), input, signal: abortSignal },
           requestContext,
         )
         if (answered.kind !== 'OK' || !('whole' in answered)) return answered
         const { whole, ...cut } = answered
-        if (workspace?.filesystem === undefined || access.saving === undefined) return cut
-        const save = { path: access.saving.at(requestContext), log: access.saving.log }
+        if (workspace?.filesystem === undefined || access.savedAt === undefined) return cut
+        const save = { path: access.savedAt(requestContext), log: access.log }
         return saveWhole(workspace.filesystem, save, whole, cut)
       },
     }),

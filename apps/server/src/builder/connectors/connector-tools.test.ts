@@ -9,11 +9,15 @@ const SANKHYA = ConnectionId.parse('11111111-1111-4111-8111-111111111111')
 const LOJA = ConnectionId.parse('22222222-2222-4222-8222-222222222222')
 const RUN = RunId.parse('33333333-3333-4333-8333-333333333333')
 
-function granted(connector: string, connectionId: ConnectionId): GrantedConnection {
+function granted(
+  connector: string,
+  connectionId: ConnectionId,
+  name = 'Matriz',
+): GrantedConnection {
   return {
     connectionId,
     connector,
-    name: 'Matriz',
+    name,
     perProject: 'many',
     skill: { name: `conexus-${connector}`, content: '', references: {} },
     reads: [{ operation: 'consultar', summary: 'consulta' }],
@@ -47,6 +51,7 @@ function tools() {
       personId: PersonId.parse('66666666-6666-4666-8666-666666666666'),
       runIdOf: () => RUN,
     },
+    { info: () => undefined, error: () => undefined },
   )
   const set = connectorTools(access, { noteSave: true, save })
   function run(name: string, input: object) {
@@ -98,12 +103,10 @@ function savingTo(files: { writeFile(path: string, content: string): Promise<voi
       signals.push(call.signal)
       return { kind: 'OK', value: { linhas: [] }, complete: true, whole: { linhas: [] } }
     },
-    saving: {
-      at: () => 'reads/aaaa-1.json',
-      log: {
-        info: (fields, message) => logged.push({ fields, message }),
-        error: (fields, message) => logged.push({ fields, message }),
-      },
+    savedAt: () => 'reads/aaaa-1.json',
+    log: {
+      info: (fields, message) => logged.push({ fields, message }),
+      error: (fields, message) => logged.push({ fields, message }),
     },
     notes: async () => null,
     wording: { whose: 'x', limit: 'y' },
@@ -146,4 +149,40 @@ test('a leitura leva o sinal do turno da ferramenta: Parar chega à porta', asyn
   const on = savingTo({ writeFile: async () => undefined })
   await on.run()
   assert.equal(on.signals[0], on.stop.signal)
+})
+
+test('a ligação de um sistema com a leitura de outro: a ferramenta recusa dizendo de quem é cada uma, fica no registro, e nenhuma porta é chamada (F-A)', async () => {
+  const logged: { fields: Record<string, unknown>; message: string }[] = []
+  const reads: unknown[] = []
+  const access: ConnectorAccess = {
+    connections: [granted('sankhya', SANKHYA, 'Sankhya'), granted('mercado-livre', LOJA, 'Loja')],
+    read: async (call) => {
+      reads.push(call)
+      return { kind: 'OK', value: {}, complete: true }
+    },
+    log: {
+      info: (fields, message) => logged.push({ fields, message }),
+      error: (fields, message) => logged.push({ fields, message }),
+    },
+    notes: async () => null,
+    wording: { whose: 'x', limit: 'y' },
+  }
+  const set = connectorTools(access, { noteSave: false })
+  const refused = await Object(set).connector_read.execute(
+    { connection: 'Sankhya', operation: 'mercado-livre.consultar', input: {} },
+    { requestContext: new RequestContext() },
+  )
+  assert.equal(refused.kind, 'NOT_GRANTED')
+  assert.match(refused.reason, /"Sankhya" is of sankhya; the operation mercado-livre\.consultar/)
+  assert.deepEqual(reads, [], 'the Sankhya connection was not asked for a Mercado Livre read')
+  assert.deepEqual(logged, [
+    {
+      message: 'CONNECTOR_READ_REFUSED',
+      fields: {
+        connectionIds: SANKHYA,
+        operation: 'mercado-livre.consultar',
+        reason: 'OTHER_SYSTEM',
+      },
+    },
+  ])
 })

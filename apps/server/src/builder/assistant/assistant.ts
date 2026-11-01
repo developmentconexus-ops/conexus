@@ -180,7 +180,8 @@ function accessOf(
 ): ConnectorAccess {
   return {
     connections: chosen,
-    saving: { at: savedAt, log: deps.log },
+    savedAt,
+    log: deps.log,
     async read(call, requestContext) {
       const turn = turnKeyIn(requestContext)
       if (turn === undefined) {
