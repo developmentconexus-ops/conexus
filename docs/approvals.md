@@ -398,3 +398,23 @@ Regra do `MACHINE_LOST`, em 2026-11-01: só uma máquina que o provedor diz perd
 Em 2026-10-31, sobre as correções do método que a auditoria do mesmo dia propôs: "Sim, menos sobre o prompt do builder não vou mexer nisso agora". Entram o passo do nativo no conserto, o conserto que acrescenta uma peça virar unidade de cartão curto, a página do fundador só com células abertas pelo autor do estudo, a atualização da prateleira e do `stack.md` a cada troca do pin do Mastra, o registro da palavra do fundador sobre os eventos `om_*_failed`, a investigação de teste instável em vazamento, recusa ou isolamento e a QA curta num conserto que muda tela. O prompt do Builder fica como está.
 
 Em 2026-10-31, sobre os eventos `om_*_failed` do Mastra, que chegam ao navegador como o Mastra os manda e carregam o texto cru do fornecedor, contra a regra C51 do guia de código: "Pra mim tem que deixar o nativo mesmo". É o conflito que a regra C75 manda registrar para o fechamento; fica na lista de fechamento do pull request que o registra, e o teste de `conversation.test.ts` passa a dizer no nome o que confere.
+
+## Etapa 24.1
+
+Em 2026-10-30, ao estudo das referências do Supervisor: "M1 / A1 / B1 / `C1` / `D1` / E sua recomendação". Lido como: `M1` (um bloco "quem é o Conexus" e um bloco de trabalho por lugar, escolhido pelo lugar, nunca por um botão), `A1`, `B1`, `C1`, `D1` com o mínimo de 8 em 10 (cada pergunta feita duas vezes; um número inventado reprova a etapa), e o `E` como a recomendação do firstmate: o `E1`, a publicação espera as respostas em andamento, construído antes como a U0 (https://github.com/developmentconexus-ops/conexus/pull/499).
+
+Cartão da etapa 24.1 aprovado em 2026-10-30 (commit a8d82f2c766df0c2022c6642ed3a22a1f787f918): "Aprovado"
+
+O cartão aprovado se chamava `e24-1-supervisor.md`, nome que a conferência automática lê como a etapa 24; a emenda de 2026-10-31 o renomeia para `e241-supervisor.md`.
+
+Em 2026-10-31, ao estudo das sessões do Supervisor e ao do ecossistema: "A. A1 B1 `C1` D A gente não vai usar a chave de api e sim assinatura, eu autorizo ciente E ignora a E, / S `S1` / T `T1` por agora comecar a base das sessoes e depois vamos aprimorando com adicao de conectores, ferramentas, contextos a mais. / U. `U1` / V. `V1`". O `S1`, o `T1`, o `U1` e o `V1` das sessões entram no cartão da 24.1 por emenda: um assistente só com muitas conversas; a conversa do Início escolhe as ligações e, se quiser, um Projeto, e a aberta num Projeto nasce presa a ele; as ligações ligam e desligam a qualquer hora; um agente por conversa. O `A1`, o `B1` e o `C1` respondem ao estudo do ecossistema (o contexto da empresa na 24.4, o Mermaid na 24.5 e o resto num caso real, nenhum ajudante em paralelo antes da 24.4) e entram só na seção "Depois" do cartão, sem mudar o que a 24.1 constrói. O `D` (o laboratório pela assinatura dele) e o `E` não tocam o cartão.
+
+Em 2026-10-31, às perguntas abertas do cartão da 24.1: "Q1, R2, O Assistente tem que ter outro system prompt ...". A U1 começa depois da aprovação do cartão, e a U2 em diante depois que a 20 fechar; o texto do Builder fica intocado.
+
+Em 2026-10-31, ao laboratório: "isso é coisa que a gente vai no knowledge base, a gente vai definindo. O foco agora é outro ... é fazer funcionar corretamente, isso de acertar calibrar é depois, igual o builder", e depois: "Concordo com a troca do aceite da 24.1". A 24.1 é aceita quando as conversas funcionam no Início e dentro de um Projeto, o Assistente lê só as ligações escolhidas, todo número vem de uma leitura de verdade e nenhum número é inventado; a medida das dez perguntas (o `V1` e o `D1` da medida) vai para a etapa da base de conhecimento.
+
+Em 2026-10-31, ao estudo do prompt do Assistente: o `P1` (agente próprio), sem o calendário (`D`) e sem regras de como responder (`A`), e o `L1` (inglês): "o que a gente vai construir é meio que o em volta dela, a harness dela ... Começa simples, funcional e vai acrescentando ... First Make it Work as intended". Ele descreveu o Assistente como uma sessão livre, usada como hoje se usa um assistente de IA, em que os conectores e depois o "cérebro" da empresa são contexto e acesso, e a harness conhece o que o Conexus constrói e guia a pessoa.
+
+Em 2026-10-31, ao estudo da harness da sessão: "H1 / W1 / Ba / Sa". Um segundo controlador do Mastra ao lado do Builder, com agente próprio; uma máquina E2B por conversa, sem Git, com a linha nova no aviso da decisão 0032; `show_file` mostra ao lado do chat o arquivo que ele escreveu (HTML com scripts depois); sai o `supervisor_show`, e tabela e gráfico ele faz com código sobre a leitura salva na máquina.
+
+Cartão da etapa 24.1 aprovado em 2026-10-31 (commit cc7c83de7a55bd521e0b4ee940e911a915dc01e2): "APROVO CARTAO E CONFIRMO"
