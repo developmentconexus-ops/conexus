@@ -9,7 +9,7 @@ import { assisting } from './test-assistant.ts'
 /** The lines a Hub logs, as the tests read them. */
 function capture() {
   const lines: { message: string; fields: Record<string, unknown> }[] = []
-  const push = (fields: Record<string, unknown>, message: string) => {
+  function push(fields: Record<string, unknown>, message: string) {
     lines.push({ message, fields })
   }
   return { lines, log: { info: push, error: push } }
