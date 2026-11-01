@@ -211,7 +211,7 @@ test('a máquina cai no meio do turno: failed, MACHINE_LOST, e o main como era',
   // The provider made a second new machine in the turn: Mastra's reconnect found the first one dead.
   died = () => {
     hub.builder.control.outcome = 'created'
-    void hub.builder.control.restart()
+    hub.builder.control.restartBeforeNextCommand = true
   }
   const { events } = await asked(t, { hub, person: ana, conversations })
   assert.deepEqual(failuresOf(events), ['MACHINE_LOST'])
