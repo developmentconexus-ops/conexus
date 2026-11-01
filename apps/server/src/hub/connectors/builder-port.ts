@@ -10,6 +10,7 @@ import { readOf } from './grants.ts'
 import { Note, Notes, save } from './notes.ts'
 import { readThrough } from './read.ts'
 import type { Deps } from './rows.ts'
+import { usable } from './rows.ts'
 import { connection, projectConnection } from './tables.ts'
 import { openedIn } from './testing.ts'
 
@@ -80,7 +81,7 @@ function grantedRows(deps: Deps, ids: OfProject, connectionId?: ConnectionId) {
       .where(
         and(
           eq(projectConnection.projectId, ids.projectId),
-          eq(connection.state, 'ACTIVE'),
+          usable,
           connectionId === undefined ? undefined : eq(connection.id, connectionId),
         ),
       )

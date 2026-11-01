@@ -5,6 +5,7 @@ const SERVER = '^apps/server/src'
 const WEB = '^apps/web/src'
 const PUBLIC_DOOR = '(^|/)public\\.tsx?$'
 const TEST_DATABASE = `${SERVER}/(platform/(test-database|test-neon|test-bucket|test-mail|test-hub-process|test-cloudflare|test-company-postgres|test-migration-cases|test-app-ports|test-cliproxy-binary|test-seal|test-mastra-database|test-migrate|test-anthropic|test-recordings)|hub/identity/test-hub|hub/apps/test-versions|hub/connectors/test-connections|hub/connectors/test-app-calls|hub/connectors/test-limits|hub/apps/test-handoff|builder/conversation/test-conversation|builder/model-accounts/test-defaults|builder/conversation/test-research|builder/conversation/test-prompt|builder/conversation/test-questions|builder/conversation/test-parts|builder/conversation/test-preview|builder/conversation/test-gemini|builder/machine/test-machine|builder/runs/test-runs)\\.ts$`
+const MASTRA_EE = 'node_modules/@mastra/(core/dist/(agent-builder|auth)/ee|editor)'
 const DRIVER_MODULES = `${SERVER}/platform/(database|migrate|test-database|test-mastra-database)\\.ts$`
 
 /** @type {import('dependency-cruiser').IConfiguration} */
@@ -133,6 +134,16 @@ module.exports = {
       to: { path: '(^|node_modules/)@mastra/' },
     },
     {
+      name: 'no-mastra-ee',
+      comment:
+        "Mastra's ee code runs in development without a key and fails its license only in production (M:LICENSE.md:3-9, M:ee/LICENSE:1-5): nothing imports it. L20.",
+      severity: 'error',
+      from: {},
+      to: {
+        path: `(^|/)${MASTRA_EE}(/|$)|^@mastra/(core/(agent-builder|auth)/ee|editor)(/|$)`,
+      },
+    },
+    {
       name: 'connectors-kit-stands-alone',
       comment:
         'The connector kit knows no Hub, no other program and no driver, so it can leave (K1).',
@@ -208,6 +219,7 @@ module.exports = {
       conditionNames: ['import', 'node', 'default', 'types'],
       mainFields: ['module', 'main', 'types'],
     },
-    exclude: { path: '(^|/)(node_modules|dist|coverage)/' },
+    // Packages stay out of the graph except Mastra's ee code, so no-mastra-ee sees an import that resolves.
+    exclude: { path: `^(?!.*${MASTRA_EE}/).*(^|/)(node_modules|dist|coverage)/` },
   },
 }

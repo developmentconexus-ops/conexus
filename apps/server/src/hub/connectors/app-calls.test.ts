@@ -5,6 +5,7 @@ import { connectorOf } from '@conexus/connectors'
 import { CompanyId, PersonId, ProjectId, RunId } from '@conexus/hub-api'
 import { call } from '../identity/test-hub.ts'
 import { appCalls, readOf } from './test-app-calls.ts'
+import { testOf } from './test-connections.ts'
 
 test('a porta da borda: com sessão e a ligação liberada o app lê e recebe OK com as linhas', async (t) => {
   const on = await appCalls(t)
@@ -70,4 +71,18 @@ test('só leitura nas duas portas: uma operação de escrita no kit nunca é lid
     input: { page: 0 },
   })
   assert.equal(built.kind, 'NOT_GRANTED')
+})
+
+test('o Builder segue a regra das outras portas: a ligação liberada que deixou de funcionar sai do que ele lê, e volta quando funciona', async (t) => {
+  const on = await appCalls(t)
+  const id = await on.connect('Matriz')
+  const ids = { companyId: CompanyId.parse(on.companyId), projectId: ProjectId.parse(on.projectId) }
+  assert.equal((await on.hub.connectors.builder.granted(ids)).length, 1)
+  await on.hub.test.asOwner("update connectors.connection set state = 'NEEDS_REAUTH'")
+  assert.deepEqual(await on.hub.connectors.builder.granted(ids), [])
+  assert.equal(
+    Object((await testOf(on.hub, on.ana, on.routes.connections, id)).json()).result,
+    'WORKING',
+  )
+  assert.equal((await on.hub.connectors.builder.granted(ids)).length, 1)
 })
