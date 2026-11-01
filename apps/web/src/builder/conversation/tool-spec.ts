@@ -38,7 +38,7 @@ export type ConnectorWords = {
 }
 
 /** The refusals a connector's own answer carries: to connect again, to wait, or not reached. */
-export type ConnectorRefusal =
+type ConnectorRefusal =
   | { kind: 'REAUTH' }
   | { kind: 'BUSY'; waitMs: number | null }
   | { kind: 'UNREACHABLE' }

@@ -275,6 +275,41 @@ function specialRow(tool: ToolItem, status: ToolStatus, room: Room) {
   return proposed === undefined ? undefined : <ProposalCard summary={proposed.summary} />
 }
 
+/** The line itself: the tool's icon, its sentence and, beside, its detail or the time it has run. */
+function ToolLine({
+  presented,
+  status,
+  startedAt,
+}: {
+  presented: ReturnType<typeof presentTool>
+  status: ToolStatus
+  startedAt: ToolItem['startedAt']
+}) {
+  const failed = status === 'error' || status === 'denied'
+  const lineStatus = failed ? 'error' : status === 'running' ? 'running' : undefined
+  const side = presented.beside ? (
+    <TraceDescription className="min-w-0 max-w-1/2 truncate">{presented.detail}</TraceDescription>
+  ) : status === 'running' ? (
+    <Since at={startedAt} />
+  ) : null
+  return (
+    <TraceLine status={lineStatus} className={failed ? 'items-start' : undefined}>
+      <TraceIcon className={failed ? 'mt-1' : undefined}>
+        <presented.icon />
+      </TraceIcon>
+      <TraceTitle
+        className={cn(
+          presented.beside && 'flex-1',
+          (presented.beside || failed) && 'whitespace-normal',
+        )}
+      >
+        {presented.sentence}
+      </TraceTitle>
+      {side}
+    </TraceLine>
+  )
+}
+
 /**
  * A line of tool invocation (Criterion 8).
  * Opens on the body its tool's row in the table names.
@@ -282,32 +317,15 @@ function specialRow(tool: ToolItem, status: ToolStatus, room: Room) {
 export function ToolRow({ tool }: { tool: ToolItem }) {
   const room = useRoom()
   const status = toolStatus(tool, room)
-  const shownTool = presentTool(tool, status, room)
   // Only a command that is still saying its output shows it as it comes; the person's click rules after.
   const [chosen, setChosen] = useState<boolean>()
   const open = chosen ?? (status === 'running' && tool.output !== undefined)
-  const failed = status === 'error' || status === 'denied'
-  const lineStatus = failed ? 'error' : status === 'running' ? 'running' : undefined
-  const side = shownTool.beside ? (
-    <TraceDescription className="min-w-0 max-w-1/2 truncate">{shownTool.detail}</TraceDescription>
-  ) : status === 'running' ? (
-    <Since at={tool.startedAt} />
-  ) : null
   const line = (
-    <TraceLine status={lineStatus} className={failed ? 'items-start' : undefined}>
-      <TraceIcon className={failed ? 'mt-1' : undefined}>
-        <shownTool.icon />
-      </TraceIcon>
-      <TraceTitle
-        className={cn(
-          shownTool.beside && 'flex-1',
-          (shownTool.beside || failed) && 'whitespace-normal',
-        )}
-      >
-        {shownTool.sentence}
-      </TraceTitle>
-      {side}
-    </TraceLine>
+    <ToolLine
+      presented={presentTool(tool, status, room)}
+      status={status}
+      startedAt={tool.startedAt}
+    />
   )
 
   const special = specialRow(tool, status, room)

@@ -2096,7 +2096,7 @@
     "replace": "() => true",
     "test": {
       "cwd": "apps/server",
-      "file": "src/builder/machine/machine-e2b.test.ts",
+      "file": "src/builder/machine/e2b-api.test.ts",
       "name": "máquina: depois de um Release, mata só as da conversa de outro template ou sem template, e guarda a do template do Hub"
     }
   },
