@@ -4,7 +4,7 @@ import { connect, createServer } from 'node:net'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { call, codeOf, post } from '../../hub/identity/test-hub.ts'
-import { mastraPoolAt } from '../../platform/test-database.ts'
+import { mastraPoolAt } from '../../platform/test-mastra-database.ts'
 import { hubBeside, sent } from '../conversation/test-conversation.ts'
 import { assisting, created } from './test-assistant.ts'
 

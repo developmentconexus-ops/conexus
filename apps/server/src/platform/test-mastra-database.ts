@@ -43,3 +43,11 @@ export function testMastraPool(
   t.after(() => pool.end())
   return pool
 }
+
+/** A pool of Mastra's own login at `address`, the database behind a test's door (`database-down.test.ts`). */
+export function mastraPoolAt(address: string): MastraPool {
+  return openMastraPool({
+    url: DatabaseUrl.parse(address),
+    log: { info: () => undefined, error: () => undefined },
+  })
+}
