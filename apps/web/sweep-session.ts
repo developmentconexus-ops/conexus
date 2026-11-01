@@ -37,6 +37,9 @@ function displayOf(fields: Record<string, unknown> = {}) {
   }
 }
 
+/** The observer starts, as Mastra says it (`om_observation_start`): the memory ring's light runs until it ends. No recording holds one yet, so it is typed here, beside the display state (testing T24's known blind spot: a literal in a helper). */
+export const OBSERVING = { type: 'om_observation_start' }
+
 /**
  * The calls waiting for the person as Mastra's display state holds them: keyed by resource, thread,
  * run and call (measured on Mastra 1.79's stream), each naming its call.

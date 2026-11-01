@@ -13,7 +13,7 @@ import {
 import { COMPANY } from './src/platform/fixtures.ts'
 import { MESSAGES, WITH_CONVERSATIONS } from './sweep-conversation-states.ts'
 import { PROJECT_ID } from './sweep-replies.ts'
-import { sessionReplies } from './sweep-session.ts'
+import { OBSERVING, sessionReplies } from './sweep-session.ts'
 
 // The memory ring in the composer's action row, measured in the browser: jsdom lays nothing out
 // and runs no media query (testing T23).
@@ -209,7 +209,7 @@ for (const [reducedMotion, sweeps] of [
   ['reduce', false],
 ] as const) {
   test(`a luz do anel ${sweeps ? 'corre' : 'fica parada com prefers-reduced-motion'} enquanto a memória trabalha`, async () => {
-    const page = await opened(DESKTOP, [{ type: 'om_observation_start' }])
+    const page = await opened(DESKTOP, [OBSERVING])
     await page.emulateMedia({ reducedMotion })
     const light = page
       .getByRole('button', { name: /Memória da conversa/ })
