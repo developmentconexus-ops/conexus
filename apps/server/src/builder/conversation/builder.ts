@@ -128,6 +128,8 @@ export function conversationMemory(deps: {
   /** The title's instructions and the observer's, in the words of the conversation's kind. */
   title: string
   observer: string
+  /** Whether the model may recall the messages the observation folded (Mastra's `recall` tool and its instructions). */
+  recall: boolean
 }): Memory {
   const { storage, queue } = deps
   const modelSettings = { timeout: MODEL_TIMEOUT }
@@ -143,7 +145,7 @@ export function conversationMemory(deps: {
       observationalMemory: {
         enabled: true,
         scope: 'thread',
-        retrieval: { scope: 'thread' },
+        ...(deps.recall ? { retrieval: { scope: 'thread' } } : {}),
         temporalMarkers: true,
         observation: {
           ...failSoft,
@@ -163,6 +165,13 @@ export function conversationMemory(deps: {
     },
   })
 }
+
+/** The Builder's memory words, and its recall of what the observation folded. */
+const BUILDER_MEMORY = {
+  title: TITLE_INSTRUCTIONS,
+  observer: OBSERVER_INSTRUCTION,
+  recall: true,
+} as const
 
 /**
  * The Builder (decision 0050): one agent shared by every conversation, its keyless model taken
@@ -184,12 +193,8 @@ export function createBuilder(deps: {
   const projectOf = projectIn(deps.index)
   const granted = grantedFor(deps.connectors, projectOf)
   const modelSettings = { timeout: MODEL_TIMEOUT }
-  const memory = conversationMemory({
-    storage,
-    queue: deps.queue,
-    title: TITLE_INSTRUCTIONS,
-    observer: OBSERVER_INSTRUCTION,
-  })
+  const { queue } = deps
+  const memory = conversationMemory({ storage, queue, ...BUILDER_MEMORY })
   const agent = createCodingAgent({
     id: BUILDER_ID,
     name: 'Builder',

@@ -7,7 +7,15 @@ const TITLE_INSTRUCTIONS =
 const OBSERVER_INSTRUCTION =
   'Escreva o título da conversa em português do Brasil, sobre o que a pessoa pergunta, analisa ou pede.'
 
-/** The Assistant's memory: the Builder's shape (`conversationMemory`), with its title and observer written for a conversation. */
+/**
+ * The Assistant's memory: the Builder's shape (`conversationMemory`), with its title and observer
+ * written for a conversation, and no recall: its model's tools are the closed set of criterion 12.
+ */
 export function assistantMemory(deps: { storage: PostgresStore; queue: QueueDeps }) {
-  return conversationMemory({ ...deps, title: TITLE_INSTRUCTIONS, observer: OBSERVER_INSTRUCTION })
+  return conversationMemory({
+    ...deps,
+    title: TITLE_INSTRUCTIONS,
+    observer: OBSERVER_INSTRUCTION,
+    recall: false,
+  })
 }

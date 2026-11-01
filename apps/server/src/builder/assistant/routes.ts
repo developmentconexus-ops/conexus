@@ -25,6 +25,7 @@ import { z } from 'zod'
 import type { Connectors, SessionScope } from '../../hub/connectors/public.ts'
 import type { IdentityPorts } from '../../hub/identity/public.ts'
 import type { Database } from '../../platform/database.ts'
+import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import { answer, serve } from '../../platform/http.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
@@ -45,6 +46,7 @@ type Deps = {
   queue: QueueDeps
   controller: AgentController
   memory: ReturnType<typeof assistantMemory>
+  log: FailureLog
 }
 type Owner = { companyId: CompanyId; personId: Person['id'] }
 type Place = SessionScope['place']
@@ -252,7 +254,7 @@ function registerWrites(app: FastifyInstance, deps: Deps): void {
     const made = await created(deps, owner, { attemptKey, body: input.body })
     const scope = await scopeOfThread(owner, made.thread)
     if (made.created) {
-      input.log.info(
+      deps.log.info(
         {
           companyId: owner.companyId,
           conversationId: made.thread.id,
@@ -279,7 +281,7 @@ function registerWrites(app: FastifyInstance, deps: Deps): void {
       resumeOnly: true,
     })
     await choose(session, chosen)
-    input.log.info(
+    deps.log.info(
       { companyId: owner.companyId, conversationId, count: chosen.length },
       'ASSISTANT_CONNECTIONS_CHANGED',
     )
