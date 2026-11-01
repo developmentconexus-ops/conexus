@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
 import { CompanyId, ConnectionId, PersonId, ProjectId, RunId } from '@conexus/hub-api'
 import { call } from '../identity/test-hub.ts'
-import { appCalls, BUILDER_CALLS_PER_RUN } from './test-app-calls.ts'
+import { appCalls, CONNECTOR_CALLS_PER_TURN } from './test-app-calls.ts'
 
 const QUERY = 'SELECT COUNT(*) AS N FROM TSIEMP'
 
@@ -67,11 +67,11 @@ test('guardar: a consulta que a porta recusa recusa a anotação; o caderno chei
   assert.deepEqual(full, { kind: 'NOTE_INVALID' })
   const same = on.who()
   const results = []
-  for (let n = 0; n < BUILDER_CALLS_PER_RUN + 1; n += 1)
+  for (let n = 0; n < CONNECTOR_CALLS_PER_TURN + 1; n += 1)
     results.push(
       (await on.port.read(on.ids, { ...same, operation: 'empresas', input: { page: 0 } })).kind,
     )
-  assert.equal(results.filter((kind) => kind === 'OK').length, BUILDER_CALLS_PER_RUN)
+  assert.equal(results.filter((kind) => kind === 'OK').length, CONNECTOR_CALLS_PER_TURN)
   assert.equal(results.at(-1), 'CALLS_SPENT')
 })
 
