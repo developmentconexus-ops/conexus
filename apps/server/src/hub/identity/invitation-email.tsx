@@ -1,6 +1,6 @@
 import { render, toPlainText } from '@react-email/render'
-import { Button, Heading, Hr, Link, Section, Text } from 'react-email'
-import { COLORS, MailFrame } from './mail-frame.tsx'
+import { Heading, Text } from 'react-email'
+import { COLORS, MailAction, MailCard, MailFallbackLink, MailFrame } from './mail-frame.tsx'
 
 export { renderPasswordRecovery } from './password-recovery-email.tsx'
 
@@ -53,15 +53,7 @@ function InvitationText(props: InvitationMailProps) {
 
 function InvitationContent(props: InvitationMailProps) {
   return (
-    <Section
-      className="content"
-      style={{
-        backgroundColor: COLORS.surface,
-        border: `1px solid ${COLORS.line}`,
-        borderRadius: 14,
-        padding: 24,
-      }}
-    >
+    <MailCard>
       <Heading
         className="text"
         style={{
@@ -79,20 +71,7 @@ function InvitationContent(props: InvitationMailProps) {
       <Text className="text" style={{ color: COLORS.text, fontSize: 16, lineHeight: '25px' }}>
         <InvitationText {...props} />
       </Text>
-      <Button
-        className="action"
-        href={props.link}
-        style={{
-          backgroundColor: COLORS.text,
-          color: COLORS.surface,
-          borderRadius: 6,
-          padding: '14px 24px',
-          fontSize: 15,
-          fontWeight: 600,
-        }}
-      >
-        Ver convite
-      </Button>
+      <MailAction href={props.link}>Ver convite</MailAction>
       <Text
         className="muted"
         style={{ color: COLORS.muted, fontSize: 14, lineHeight: '22px', marginTop: 24 }}
@@ -100,23 +79,8 @@ function InvitationContent(props: InvitationMailProps) {
         Na página do convite você cria sua senha, se ainda não tiver uma, e decide se entra. O
         convite vale até {props.expiresOn}.
       </Text>
-      <Hr className="line" style={{ borderColor: COLORS.line, margin: '24px 0 16px' }} />
-      <Text className="muted" style={{ color: COLORS.muted, fontSize: 13, lineHeight: '20px' }}>
-        Se o botão não abrir, copie este endereço no navegador:
-      </Text>
-      <Link
-        className="muted"
-        href={props.link}
-        style={{
-          color: COLORS.muted,
-          fontFamily: 'Consolas, monospace',
-          fontSize: 12,
-          wordBreak: 'break-all',
-        }}
-      >
-        {props.link}
-      </Link>
-    </Section>
+      <MailFallbackLink href={props.link} />
+    </MailCard>
   )
 }
 
