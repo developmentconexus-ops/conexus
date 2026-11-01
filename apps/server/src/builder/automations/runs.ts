@@ -7,7 +7,7 @@ import { z } from 'zod'
 import { Failure } from '../../platform/failure.ts'
 import { conversationIdOf } from '../assistant/public.ts'
 import type { AutomationInput } from './run.ts'
-import { AUTOMATION_WORKFLOW } from './run.ts'
+import { AUTOMATION_WORKFLOW, triggerOfRows } from './run.ts'
 
 /** Runs per page of the history (code C44). */
 const RUNS_PER_PAGE = 20
@@ -71,7 +71,7 @@ function firedOf(rows: readonly ScheduleTrigger[]): Fired[] {
  * How a run stands, from Mastra's run and its trigger rows (the card's map): a run that ended
  * gives its outcome; one still `running` from before this process started was cut, since one Hub
  * runs at a time, and names the conversation it `opened`, if any; one not started yet, or whose
- * publish failed, has only its rows.
+ * publish failed, has only its rows (and is cut too if its process died before creating it).
  */
 function stateOf(
   fired: Fired,
@@ -80,8 +80,12 @@ function stateOf(
   opened: ConversationId | null,
 ): RunState {
   if (run === null) {
-    return fired.triggers.some((each) => each.outcome === 'failed')
-      ? { kind: 'FAILED', code: 'SCHEDULE_PUBLISH_FAILED', conversationId: null }
+    if (fired.triggers.some((each) => each.outcome === 'failed')) {
+      return { kind: 'FAILED', code: 'SCHEDULE_PUBLISH_FAILED', conversationId: null }
+    }
+    // Published by a process that died before it created the run: nothing will ever start it.
+    return fired.firedAt < bootedAt
+      ? { kind: 'FAILED', code: 'INTERRUPTED', conversationId: null }
       : { kind: 'RUNNING', conversationId: null }
   }
   switch (run.status) {
@@ -147,11 +151,10 @@ export function automationRuns(deps: { mastra: Mastra; bootedAt: number }) {
     const ongoing =
       run?.status === 'running' || run?.status === 'pending' || run?.status === 'waiting'
     const opened = ongoing ? await openedOf(input, fired.runId) : null
-    const kinds = fired.triggers.map((each) => each.triggerKind)
     return {
       runId: fired.runId,
       firedAt: new Date(fired.firedAt).toISOString(),
-      trigger: kinds.includes('manual') ? 'MANUAL' : 'SCHEDULED',
+      trigger: triggerOfRows(fired.triggers),
       state: stateOf(fired, run, deps.bootedAt, opened),
     }
   }

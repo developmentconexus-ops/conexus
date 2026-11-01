@@ -8,7 +8,7 @@ import { databaseFailure } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { Assistant, Owner } from '../assistant/public.ts'
-import { assistantOwner, conversationIdOf, offeredOnly } from '../assistant/public.ts'
+import { assistantOwner, conversationIdOf, offeredOnly, placeOf } from '../assistant/public.ts'
 import { bodyHashOf } from '../conversation/public.ts'
 import { ACTIVE_AUTOMATIONS_PER_COMPANY, AUTOMATION_TIMEZONE, cronOf } from './cadence.ts'
 import { deleteRunsOf, stored } from './release.ts'
@@ -33,10 +33,6 @@ export type AutomationsDeps = {
   runs: AutomationRuns
   updating: () => boolean
   log: FailureLog
-}
-
-function placeOf(projectId: ProjectId | undefined | null): Place {
-  return projectId == null ? { kind: 'COMPANY' } : { kind: 'PROJECT', projectId }
 }
 
 function samePlace(a: Place, b: Place): boolean {
@@ -208,11 +204,11 @@ async function runNow(deps: AutomationsDeps, owner: Owner, id: AutomationId) {
   return { runId }
 }
 
-/** Deletes the row, its triggers with it, then its runs, which keep its `inputData`; the conversations stay. */
+/** Deletes the runs, which keep its `inputData`, then the row, its triggers with it: a repeat finds the row; the conversations stay. */
 async function remove(deps: AutomationsDeps, owner: Owner, id: AutomationId): Promise<void> {
   const { input } = await owned(deps, owner, id)
-  await stored(deps.mastra.schedules.delete(id))
   await deleteRunsOf(deps.mastra, input)
+  await stored(deps.mastra.schedules.delete(id))
   deps.log.info({ companyId: owner.companyId, automationId: id }, 'AUTOMATION_DELETED')
 }
 

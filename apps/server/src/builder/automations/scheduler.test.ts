@@ -143,6 +143,23 @@ test('o processo que morreu: a execução que ficou running aparece FAILED com I
   assert.equal(again.state.kind, 'DONE')
 })
 
+test('o processo que morreu entre publicar e criar a execução: a linha da agenda sem execução aparece FAILED com INTERRUPTED, e rodar agora funciona', async (t) => {
+  const on = await automating(t)
+  const automation = await created(on.hub, on.ana, on.automations, salesSummary([]))
+  const url = `${on.automations}/${automation.id}`
+  const store = await on.hub.mastra.getStorage()?.getStore('schedules')
+  assert.ok(store, 'the schedules store')
+  const firedAt = Date.now() - 60_000
+  await store.recordTrigger({
+    ...{ scheduleId: automation.id, scheduledFireAt: firedAt, actualFireAt: firedAt },
+    ...{ runId: `sched_${automation.id}_${firedAt}`, outcome: 'published', triggerKind: 'manual' },
+  })
+  const [cut] = (await runsOf(on.hub, on.ana, url)).runs
+  assert.deepEqual(cut?.state, { kind: 'FAILED', code: 'INTERRUPTED', conversationId: null })
+  const again = await ended(on.hub, on.ana, url, await ranNow(on.hub, on.ana, url))
+  assert.equal(again.state.kind, 'DONE')
+})
+
 test('o horário perdido: com o Hub parado, roda uma vez quando ele volta, e o próximo volta ao horário', {
   timeout: 90_000,
 }, async (t) => {

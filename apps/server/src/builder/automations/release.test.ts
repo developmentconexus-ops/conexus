@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
+import { setTimeout as sleep } from 'node:timers/promises'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import {
   CARLA,
@@ -10,8 +11,17 @@ import {
   personOn,
   plantCompany,
 } from '../../hub/identity/test-hub.ts'
+import { holding } from '../conversation/test-conversation.ts'
 import { AUTOMATION_WORKFLOW } from './public.ts'
-import { automating, created, ended, ranNow, salesSummary } from './test-automations.ts'
+import {
+  answering,
+  automating,
+  conversing,
+  created,
+  ended,
+  ranNow,
+  salesSummary,
+} from './test-automations.ts'
 
 /** Whether the automation still has its schedule row, and how many runs of it are kept. */
 async function keptOf(hub: Hub, automationId: string) {
@@ -136,4 +146,71 @@ test('o Projeto: apagá-lo apaga as automações presas a ele; a agenda fora dei
   })
   await on.noRunsOfGone()
   on.automationsFirst()
+})
+
+/** Mastra's schedule delete, made to fail as a database that went away would. */
+function refusingDelete(t: TestContext, hub: Hub) {
+  const refused = Object.assign(new Error('connect ECONNREFUSED'), { code: 'ECONNREFUSED' })
+  return t.mock.method(hub.mastra.schedules, 'delete', () => Promise.reject(refused))
+}
+
+test('apagar: o banco que falha entre os runs e a linha deixa a linha, a repetição a acha, e os runs de outra automação ficam', async (t) => {
+  const on = await spread(t)
+  const url = `${on.automations}/${on.ids.anaHome}`
+  const refusing = refusingDelete(t, on.hub)
+  const failed = await call(on.hub, on.ana, 'DELETE', url)
+  assert.deepEqual([failed.statusCode, codeOf(failed)], [503, 'DATABASE_UNAVAILABLE'])
+  assert.deepEqual(await keptOf(on.hub, on.ids.anaHome), { row: true, runs: 0 })
+  refusing.mock.restore()
+  const repeated = await call(on.hub, on.ana, 'DELETE', url)
+  assert.equal(repeated.statusCode, 204, repeated.body)
+  assert.deepEqual(await keptOf(on.hub, on.ids.anaHome), { row: false, runs: 0 })
+  const sibling = await keptOf(on.hub, on.ids.anaProject)
+  assert.ok(sibling.row && sibling.runs > 0, 'the other automation of the person kept its runs')
+})
+
+test('o Projeto: o banco que falha entre os runs e a linha deixa a automação, e a repetição a acha', async (t) => {
+  const on = await spread(t)
+  const project = `${on.company}/projects/${on.projectId}`
+  const refusing = refusingDelete(t, on.hub)
+  const pending = await call(on.hub, on.ana, 'DELETE', project, { name: 'Encomendas' })
+  assert.deepEqual([pending.statusCode, codeOf(pending)], [503, 'PROJECT_DELETION_PENDING'])
+  const stopped = await Promise.all(
+    [on.ids.anaProject, on.ids.carlaProject].map((id) => keptOf(on.hub, id)),
+  )
+  assert.ok(
+    stopped.every((each) => each.row),
+    'the rows stay',
+  )
+  assert.ok(
+    stopped.some((each) => each.runs === 0),
+    'the runs went first',
+  )
+  refusing.mock.restore()
+  const resumed = await call(on.hub, on.ana, 'DELETE', project, { name: 'Encomendas' })
+  assert.equal(resumed.statusCode, 204, resumed.body)
+  await on.noRunsOfGone()
+  assert.deepEqual((await on.left()).anaProject, false)
+})
+
+test('tirar a pessoa no meio do turno da execução: a conversa apagada termina o turno INTERRUPTED, sem esperar o orçamento', {
+  timeout: 150_000,
+}, async (t) => {
+  const held = holding(t)
+  const on = await automating(t, answering([held.reply]))
+  const carla = await memberOn(on.hub, on.companyId, CARLA, 'admin')
+  const automation = await created(on.hub, carla, on.automations, salesSummary([]))
+  const url = `${on.automations}/${automation.id}`
+  const runId = await ranNow(on.hub, carla, url)
+  await conversing(on.hub, carla, url, runId)
+  while (on.calls.length < 1) await sleep(50)
+  const removed = await call(on.hub, on.ana, 'DELETE', `${on.company}/members/${carla.id}`)
+  assert.equal(removed.statusCode, 204, removed.body)
+  // The turn's budget is a minute; the deleted conversation must end it long before.
+  const deadline = Date.now() + 15_000
+  function failed() {
+    return on.lines.find((line) => line.message === 'AUTOMATION_RUN_FAILED')
+  }
+  while (failed() === undefined && Date.now() < deadline) await sleep(100)
+  assert.equal(failed()?.fields.code, 'INTERRUPTED')
 })

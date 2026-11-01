@@ -90,14 +90,20 @@ function failed(code: FailureCode, conversationId: ConversationId | null): RunOu
   }
 }
 
-/** Whether the owner may still ask the Assistant in the company; a refusal is `NOT_FOUND` (S10). */
-async function mayAsk(deps: Deps, input: AutomationInput): Promise<boolean> {
+/**
+ * Whether the owner may still ask the Assistant in the company (a refusal is `NOT_FOUND`, S10), or
+ * the failure that kept the Hub from knowing: that one ends the run, it never throws.
+ */
+async function mayAsk(
+  deps: Deps,
+  input: AutomationInput,
+): Promise<{ kind: 'MAY' } | { kind: 'MAY_NOT' } | { kind: 'UNKNOWN'; failure: Failure }> {
   try {
     await deps.assistant.admit(input, { kind: 'COMPANY' })
-    return true
+    return { kind: 'MAY' }
   } catch (error) {
-    if (error instanceof Failure && error.code === 'NOT_FOUND') return false
-    throw error
+    if (error instanceof Failure && error.code === 'NOT_FOUND') return { kind: 'MAY_NOT' }
+    return { kind: 'UNKNOWN', failure: databaseFailure(error) }
   }
 }
 
@@ -130,7 +136,7 @@ async function conversed(
     deps.log.info({ ...fields, conversationId: id }, 'AUTOMATION_CONVERSATION_OPENED')
     // A repeated step (the run restarted) finds its question already asked: never twice.
     if (await deps.assistant.asked(input, id)) return ended(failed('INTERRUPTED', id))
-    const end = deps.assistant.turnEnd(session)
+    const heard = deps.assistant.turnEnd(session)
     const budget = AbortSignal.timeout(deps.turnMs)
     function stop(): void {
       session.abort()
@@ -138,11 +144,12 @@ async function conversed(
     budget.addEventListener('abort', stop, { once: true })
     try {
       await session.sendMessage({ content: input.prompt })
-      const turn = await end
+      const turn = await heard.ended
       return ended(
         turn.kind === 'DONE' ? { kind: 'DONE', conversationId: id } : failed(turn.code, id),
       )
     } finally {
+      heard.stop()
       budget.removeEventListener('abort', stop)
     }
   } catch (error) {
@@ -153,11 +160,16 @@ async function conversed(
 }
 
 /**
- * How the run was fired, read from its trigger row: the step gets only the row's `inputData`
- * (`NM:resolve-agent-CMSnjTVM.js:3006-3010`) and both kinds of `runId` look alike. Mastra writes a
- * manual run's row after publishing it, in an empty `catch` (`NM:schedules-BfNkiF4x.js:690-699`):
- * a run without one is a manual run.
+ * How a run was fired, from its trigger rows (the one owner, read by the history too): Mastra
+ * writes a manual run's row after publishing it, in an empty `catch`
+ * (`NM:schedules-BfNkiF4x.js:690-699`), so a run without a row is a manual run.
  */
+export function triggerOfRows(rows: readonly { triggerKind?: string | null }[]): RunTrigger {
+  const kinds = rows.map((each) => each.triggerKind)
+  return rows.length > 0 && !kinds.includes('manual') ? 'SCHEDULED' : 'MANUAL'
+}
+
+/** The trigger rows of a run: the step gets only the row's `inputData`, and both kinds of `runId` look alike. */
 async function triggerOf(mastra: Mastra, input: AutomationInput, runId: AutomationRunId) {
   const store = await mastra.getStorage()?.getStore('schedules')
   if (store === undefined) {
@@ -168,8 +180,7 @@ async function triggerOf(mastra: Mastra, input: AutomationInput, runId: Automati
     fromActualFireAt: firedAt,
     limit: 10,
   })
-  const row = rows.find((each) => each.runId === runId)
-  return row?.triggerKind === 'schedule-fire' ? 'SCHEDULED' : 'MANUAL'
+  return triggerOfRows(rows.filter((each) => each.runId === runId))
 }
 
 /**
@@ -195,7 +206,12 @@ export function automationRun(deps: Deps) {
       }
       const input = read.data
       const fields = { companyId: input.companyId, automationId: input.automationId, runId }
-      if (!(await mayAsk(deps, input))) {
+      const asking = await mayAsk(deps, input)
+      if (asking.kind === 'UNKNOWN') {
+        logFailure(deps.log, asking.failure, fields)
+        return { kind: 'ENDED', input, outcome: failed(asking.failure.code, null) }
+      }
+      if (asking.kind === 'MAY_NOT') {
         await mastra.schedules.pause(input.automationId)
         deps.log.info(fields, 'AUTOMATION_PAUSED')
         const outcome = { kind: 'SKIPPED', reason: 'OWNER_CANNOT_ASK' } as const

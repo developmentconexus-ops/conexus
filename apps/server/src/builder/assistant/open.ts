@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import type { AutomationId, ConnectionId, Effort, ModelId } from '@conexus/hub-api'
+import type { AutomationId, ConnectionId, Effort, ModelId, ProjectId } from '@conexus/hub-api'
 import {
   AutomationId as AutomationIdSchema,
   ConversationId,
@@ -20,6 +20,11 @@ import type { assistantMemory } from './memory.ts'
 import type { AssistantProjects } from './ports.ts'
 
 type Place = SessionScope['place']
+
+/** The place a request names: the Início, or one Projeto. */
+export function placeOf(projectId: ProjectId | undefined | null): Place {
+  return projectId == null ? { kind: 'COMPANY' } : { kind: 'PROJECT', projectId }
+}
 
 export type OpenDeps = {
   connectors: Pick<Connectors['assistant'], 'connections'>
