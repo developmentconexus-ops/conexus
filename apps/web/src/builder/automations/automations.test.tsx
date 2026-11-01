@@ -143,7 +143,7 @@ test('o histórico mostra cada execução, da mais nova à mais velha: rodando, 
   expect(within(running).getByText('Rodando')).toBeTruthy()
   expect(within(running).queryByRole('link', { name: 'Abrir a conversa' })).toBeNull()
   expect(within(skipped).getByText('Não rodou')).toBeTruthy()
-  expect(within(skipped).getByText('você não pode mais perguntar ao Assistente.')).toBeTruthy()
+  expect(within(skipped).getByText('Você não pode mais perguntar ao Assistente.')).toBeTruthy()
   expect(within(failed).getByText('Falhou')).toBeTruthy()
   expect(
     within(failed).getByText('Nenhuma conta que você pode usar atende a este modelo.'),
