@@ -1,4 +1,11 @@
-import type { Connection, ConnectorEntry, Native, SignInCompleted } from '@conexus/hub-api'
+import type {
+  Connection,
+  ConnectionState,
+  ConnectorEntry,
+  Native,
+  ProjectAccess,
+  SignInCompleted,
+} from '@conexus/hub-api'
 import { clockOf, dayAndMonth } from '../../platform/dates.ts'
 
 export const LEAD =
@@ -170,11 +177,40 @@ export function continueText(name: string): string {
 export const PROJECT_LEAD = 'Integrações deste Projeto'
 export const NO_COMPANY_CONNECTIONS = 'A empresa ainda não ligou nenhum sistema.'
 export const LINK_IN_COMPANY = 'Ligar em Integrações da empresa'
-export const GRANTED_TEXT = 'lê'
-export const NOT_GRANTED_TEXT = 'não liberado'
+const GRANTED_TEXT = 'lê'
+const NOT_GRANTED_TEXT = 'não liberado'
 export const GRANT = 'Liberar para ler'
+const RELEASED_NOT_READING_TEXT = 'liberado, mas não lê até a ligação funcionar'
+const TEST_BEFORE_GRANT = 'Teste a ligação antes de liberar'
+const TEST_IN_COMPANY = 'Testar em Integrações da empresa'
+
+/** What the line says the Projeto does with the connection; the server decided it (`ProjectAccess`). */
+export function readingText(access: ProjectAccess): string {
+  switch (access.kind) {
+    case 'READS':
+      return GRANTED_TEXT
+    case 'RELEASED_NOT_WORKING':
+      return RELEASED_NOT_READING_TEXT
+    case 'NOT_RELEASED':
+    case 'NOT_RELEASED_NOT_WORKING':
+      return NOT_GRANTED_TEXT
+  }
+}
+
+/** The way to make a connection that does not work work again, by how it stopped; none for one that works. */
+export function remedyText(access: ProjectAccess, state: ConnectionState): string | null {
+  switch (access.kind) {
+    case 'READS':
+    case 'NOT_RELEASED':
+      return null
+    case 'RELEASED_NOT_WORKING':
+      return state === 'NEEDS_REAUTH' ? RECONNECT_IN_COMPANY : TEST_IN_COMPANY
+    case 'NOT_RELEASED_NOT_WORKING':
+      return state === 'NEEDS_REAUTH' ? RECONNECT_IN_COMPANY : TEST_BEFORE_GRANT
+  }
+}
 export const REVOKE = 'Tirar'
-export const RECONNECT_IN_COMPANY = 'Conectar de novo em Integrações da empresa'
+const RECONNECT_IN_COMPANY = 'Conectar de novo em Integrações da empresa'
 export const LOADING_PROJECT_CONNECTIONS = 'Carregando as integrações…'
 
 /** The confirmation of "Liberar para ler": whole connection, app and Builder (the founder's S1). */

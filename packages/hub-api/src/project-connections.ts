@@ -17,7 +17,20 @@ import { ProjectId } from './projects.ts'
 export const Grant = z.object({ by: z.string().nullable(), at: z.iso.datetime() })
 export type Grant = z.infer<typeof Grant>
 
-/** The company's connections by connector, each with its grant to the Projeto; `perProject` is the connector's. */
+/**
+ * What the Projeto can do with a connection right now, decided by the server alone (the one rule of
+ * `usable`): the release is the Projeto's permission and stays; whether it reads depends on the
+ * connection working. A screen renders the kind and never decides it.
+ */
+export const ProjectAccess = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('READS'), grant: Grant }),
+  z.object({ kind: z.literal('RELEASED_NOT_WORKING'), grant: Grant }),
+  z.object({ kind: z.literal('NOT_RELEASED') }),
+  z.object({ kind: z.literal('NOT_RELEASED_NOT_WORKING') }),
+])
+export type ProjectAccess = z.infer<typeof ProjectAccess>
+
+/** The company's connections by connector, each with what the Projeto may do with it; `perProject` is the connector's. */
 export const ProjectConnections = z.object({
   connectors: z.array(
     z.object({
@@ -29,7 +42,7 @@ export const ProjectConnections = z.object({
           name: z.string(),
           state: z.enum(CONNECTION_STATES),
           account: z.object({ label: z.string() }).nullable(),
-          grant: Grant.nullable(),
+          access: ProjectAccess,
         }),
       ),
     }),
@@ -61,7 +74,12 @@ export const grantProjectConnection = defineOperation({
   bodyLimit: 1024,
   input: { params: OfGrant },
   success: { status: 200, body: z.object({ grant: Grant }) },
-  failures: [...READ_FAILURES, 'CONNECTION_NOT_FOUND', 'PROJECT_CONNECTION_TAKEN'],
+  failures: [
+    ...READ_FAILURES,
+    'CONNECTION_NOT_FOUND',
+    'CONNECTION_NOT_WORKING',
+    'PROJECT_CONNECTION_TAKEN',
+  ],
 })
 
 export const revokeProjectConnection = defineOperation({
