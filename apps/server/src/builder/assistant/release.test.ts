@@ -126,3 +126,47 @@ test('o Projeto: apagá-lo apaga as conversas presas a ele, de todas as pessoas,
   })
   for (const url of many) assert.equal(await kept(on.hub, url), false, url)
 })
+
+function idOf(url: string) {
+  return url.slice(url.lastIndexOf('/') + 1)
+}
+
+test('a máquina: apagar as conversas — pela pessoa, pelo Projeto e pela empresa — mata as máquinas delas, e de nenhuma outra (21)', async (t) => {
+  const on = await spread(t)
+  const { killed } = on.hub.assistantMachines
+  const removed = await call(on.hub, on.ana, 'DELETE', `${on.company}/members/${on.carla.id}`)
+  assert.equal(removed.statusCode, 204, removed.body)
+  assert.deepEqual(
+    [...killed].sort(),
+    [idOf(on.urls.carlaHome), idOf(on.urls.carlaProject)].sort(),
+    'the person’s',
+  )
+
+  killed.length = 0
+  const project = `${on.company}/projects/${on.projectId}`
+  const deleted = await call(on.hub, on.ana, 'DELETE', project, { name: 'Encomendas' })
+  assert.equal(deleted.statusCode, 204, deleted.body)
+  assert.deepEqual(killed, [idOf(on.urls.anaProject)], 'the Projeto’s')
+})
+
+test('a máquina: remover a empresa mata as máquinas de todas as conversas dela (21)', async (t) => {
+  const on = await spread(t)
+  const operator = await personOn(on.hub, {
+    name: 'Olga Souza',
+    email: 'olga@example.test',
+    role: 'admin',
+  })
+  await on.hub.test.asOwner(
+    `insert into operations.client (company_id, cnpj, legal_name, attempt_key, registered_at)
+     values ($1, '00000000000001', 'Empresa Teste Ltda', $1, now())`,
+    [on.companyId],
+  )
+  const body = { name: 'Empresa Teste', revision: 0 }
+  const deleted = await call(on.hub, operator, 'DELETE', `/api/clients/${on.companyId}`, body)
+  assert.equal(deleted.statusCode, 204, deleted.body)
+  const { anaHome, anaProject, carlaHome, carlaProject } = on.urls
+  assert.deepEqual(
+    [...on.hub.assistantMachines.killed].sort(),
+    [anaHome, anaProject, carlaHome, carlaProject].map(idOf).sort(),
+  )
+})

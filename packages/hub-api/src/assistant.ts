@@ -10,7 +10,7 @@ import { ProjectId } from './projects.ts'
 export const ASSISTANT_CONTROLLER = 'assistant'
 
 /** The Assistant's own tools, by name; the units after U2 add theirs. */
-export const ASSISTANT_TOOL = { overview: 'conexus_overview' } as const
+export const ASSISTANT_TOOL = { overview: 'conexus_overview', showFile: 'show_file' } as const
 
 /** The most connections a conversation may choose at once. */
 const CHOSEN_MAX = 50
@@ -36,6 +36,43 @@ export const AssistantConversation = AssistantConversationSummary.extend({
   connections: z.array(SessionConnection),
 })
 export type AssistantConversation = z.infer<typeof AssistantConversation>
+
+/** The most a text file shown beside the chat carries in its output: a larger one is a file to download. */
+export const SHOWN_TEXT_MAX = 65_536
+
+export const ShowFileInput = z.object({ path: z.string().min(1).max(500) })
+
+/** What `show_file` answers the screen: the text to read, a file to download, or why nothing is shown. */
+export const ShownFile = z.discriminatedUnion('kind', [
+  z.object({
+    kind: z.literal('TEXT'),
+    path: z.string(),
+    name: z.string(),
+    media: z.enum(['text/markdown', 'text/plain', 'text/csv']),
+    content: z.string().max(SHOWN_TEXT_MAX),
+  }),
+  z.object({
+    kind: z.literal('FILE'),
+    path: z.string(),
+    name: z.string(),
+    media: z.string(),
+    bytes: z.number().int().nonnegative(),
+  }),
+  z.object({
+    kind: z.literal('SHOW_REFUSED'),
+    reason: z.enum(['OUTSIDE', 'NOT_FOUND', 'MACHINE_UNAVAILABLE']),
+  }),
+])
+export type ShownFile = z.infer<typeof ShownFile>
+
+/** The file of a conversation's machine, as a download: `GET`, the bytes with their type, for the owner alone. */
+export function assistantFilePath(ids: {
+  companyId: string
+  conversationId: string
+  path: string
+}): string {
+  return `/api/companies/${ids.companyId}/assistant/conversations/${ids.conversationId}/files?${new URLSearchParams({ path: ids.path })}`
+}
 
 /** What `conexus_overview` answers (code C21: a list per kind of thing, no free text). */
 export type Overview = {
@@ -141,3 +178,24 @@ export const listAssistantConnections = defineOperation({
   success: { status: 200, body: z.object({ connections: z.array(SessionConnection) }) },
   failures: READ_FAILURES,
 })
+
+/**
+ * The route that gives the bytes of a file of the conversation's machine, `GET` with the file's
+ * `path` in the query, to the conversation's owner alone. It answers bytes, which an operation
+ * (JSON bodies) does not declare: the server registers it beside the operations.
+ */
+export const ASSISTANT_FILE = {
+  url: '/api/companies/:companyId/assistant/conversations/:conversationId/files',
+  params: OfConversation,
+  query: z.object({ path: z.string().min(1).max(500) }),
+  failures: [
+    ...READ_FAILURES,
+    'REQUEST_MALFORMED',
+    'REQUEST_ORIGIN_REFUSED',
+    'CONVERSATION_NOT_FOUND',
+    'FILE_NOT_FOUND',
+    'FILE_TOO_LARGE',
+    'FILE_GONE',
+    'MACHINE_UNAVAILABLE',
+  ] as const satisfies readonly FailureCode[],
+}

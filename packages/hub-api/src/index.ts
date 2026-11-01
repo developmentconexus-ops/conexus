@@ -52,15 +52,20 @@ export {
 } from './apps.ts'
 export {
   ASSISTANT_CONTROLLER,
+  ASSISTANT_FILE,
   ASSISTANT_TOOL,
   AssistantConversation,
   AssistantConversationSummary,
+  assistantFilePath,
   createAssistantConversation,
   listAssistantConnections,
   listAssistantConversations,
   type Overview,
   readAssistantConversation,
   SessionConnection,
+  SHOWN_TEXT_MAX,
+  ShowFileInput,
+  ShownFile,
   setAssistantConnections,
 } from './assistant.ts'
 export { CAPACITY } from './capacity.ts'

@@ -29,7 +29,7 @@ test('a mensagem fixa: a mesma em toda conversa, com a sua marca de cache, antes
     assert.ok(block?.text.startsWith('Company: Empresa Teste.'), block?.text)
     assert.doesNotMatch(fixed.text, /Prévia|preview|plan|conexus_check|ask_user/i)
     assert.ok(
-      mastra.every((each) => /skill/i.test(each.text) && !/recall/i.test(each.text)),
+      mastra.every((each) => /skill|machine/i.test(each.text) && !/recall/i.test(each.text)),
       JSON.stringify(mastra),
     )
     assert.equal(asked.cached.filter((mark) => mark.at === 'system').length, 2)

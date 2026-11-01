@@ -35,7 +35,7 @@ test('a escolha no turno: numa conversa de Projeto, as duas leituras do Sankhya 
   assert.notEqual(on.reads[2]?.turn, on.reads[0]?.turn)
 })
 
-test('as ferramentas: o modelo do Assistente recebe só as de conector de leitura, a visão da empresa, as da web e as de skill', async (t) => {
+test('as ferramentas: o modelo do Assistente recebe as de conector de leitura, a visão da empresa, as da web, as de skill, a de mostrar arquivo e as da máquina do Builder, nenhuma a mais', async (t) => {
   const on = await assisting(t)
   const url = await created(on.hub, on.ana, on.assistant, { connections: [on.matriz] })
   const { say } = await talking(t, on.hub, on.ana, url)
@@ -46,6 +46,18 @@ test('as ferramentas: o modelo do Assistente recebe só as de conector de leitur
     'conexus_overview',
     'connector_notes',
     'connector_read',
+    'mastra_workspace_delete',
+    'mastra_workspace_edit_file',
+    'mastra_workspace_execute_command',
+    'mastra_workspace_file_stat',
+    'mastra_workspace_get_process_output',
+    'mastra_workspace_grep',
+    'mastra_workspace_kill_process',
+    'mastra_workspace_list_files',
+    'mastra_workspace_mkdir',
+    'mastra_workspace_read_file',
+    'mastra_workspace_write_file',
+    'show_file',
     'skill',
     'skill_read',
     'skill_search',

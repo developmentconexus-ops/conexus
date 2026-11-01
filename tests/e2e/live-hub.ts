@@ -121,9 +121,9 @@ export async function liveHub(
   }
   const status = createStatus({ version: config.version, database: database.database })
   const identity = identityOf({ database: database.database, config, log: silent })
-  const { machinesOf, repository, copy, folder } = testBuilderPorts(config)
+  const { machinesOf, assistantMachine, repository, copy, folder } = testBuilderPorts(config)
   const subjects = subjectsOf({
-    ...{ machinesOf, repository, copy },
+    ...{ machinesOf, assistantMachine, repository, copy },
     database: database.database,
     mastraPool: database.mastraPool,
     config,

@@ -71,6 +71,32 @@ function withKnobs(real: Repository, knobs: Knobs): Repository {
   }
 }
 
+/**
+ * The Assistant's machines as doubles: a folder of this computer of their own, which a test steers
+ * through `control` and whose killed conversations `killed` lists.
+ */
+function testAssistantMachines(folder: string) {
+  const assistantFolder = join(folder, 'assistant')
+  const control = newControl()
+  const killed: ConversationId[] = []
+  const deps = {
+    kit: localKit(assistantFolder, control),
+    api: {
+      kill: async (conversationId: ConversationId) => {
+        killed.push(conversationId)
+        const started = control.names.includes(`conexus-${INSTALLATION}-${conversationId}`)
+        if (started) control.killed = true
+        return started ? 1 : 0
+      },
+      killStale: async () => 0,
+    },
+    template: TEMPLATE,
+    installation: INSTALLATION,
+    workFolder: join(assistantFolder, 'work'),
+  }
+  return { deps, control, killed, folder: assistantFolder }
+}
+
 /** The Builder's Git and machines as doubles (T14): the repository is real, on the test config's
  * folder; the machine is a folder of this computer (`localKit`), whose start and outcome a test
  * sets through `control`; the bucket is `memoryCopy`.
@@ -129,8 +155,11 @@ export function testBuilderPorts(
     }
     return machines
   }
+  const assistantMachines = testAssistantMachines(folder)
   return {
     machinesOf,
+    assistantMachine: assistantMachines.deps,
+    assistantMachines,
     repository,
     copy: bucket.copy,
     bucket,
