@@ -2,7 +2,7 @@ import { appendFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { FAILURES, getStatus } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
-import type { Assistant } from './builder/assistant/public.ts'
+import type { Assistant, MachineTuning } from './builder/assistant/public.ts'
 import type { Conversations } from './builder/conversation/public.ts'
 import type { GitCopy } from './builder/git/public.ts'
 import { repositoriesIn } from './builder/git/public.ts'
@@ -135,6 +135,8 @@ export function subjectsOf(deps: {
   mastraPool: MastraPool
   machinesOf: MachinesOf
   assistantMachine: AssistantMachine
+  /** The tests' folder and start deadline for the Assistant's machines (`test-runs.ts`). */
+  assistantTuning?: MachineTuning
   repository: RepositoryOf
   copy: GitCopy
   log: FailureLog
@@ -166,6 +168,7 @@ export function subjectsOf(deps: {
   const { conversations, assistant } = conversationsOf({
     ...{ database, identity, sealKeys, google, log, runs, mastraPool: deps.mastraPool },
     machine: deps.assistantMachine,
+    machineTuning: deps.assistantTuning,
     connectors: () => connectors,
   })
   const releaseConversations = conversations.release

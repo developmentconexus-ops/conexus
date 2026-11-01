@@ -41,7 +41,7 @@ import type { ScopeOf } from './context.ts'
 import { sessionScopes } from './context.ts'
 import type { Speakers } from './instructions.ts'
 import { assistantInstructions } from './instructions.ts'
-import type { AssistantMachines } from './machine.ts'
+import type { AssistantMachines, MachineTuning } from './machine.ts'
 import { createAssistantMachines } from './machine.ts'
 import { assistantMemory } from './memory.ts'
 import { overviewTool } from './overview.ts'
@@ -98,6 +98,7 @@ type Deps = {
   queue: QueueDeps
   /** The conversations' machines at the provider (step 24.1, U3): the Builder's kit and API, its template and installation. */
   machine: AssistantMachine
+  machineTuning?: MachineTuning
   log: FailureLog
 }
 
@@ -291,8 +292,11 @@ export function createAssistant(deps: Deps) {
   const memory = assistantMemory({ storage, queue })
   const chosen = chosenConnections(deps.database)
   const scopeOf = sessionScopes({ chosenOf: chosen.of })
-  const machines = createAssistantMachines({ ...deps.machine, log: deps.log, scopeOf })
-  const turns = assistantTurns({ queue, scopeOf, machines, log: deps.log })
+  const machines = createAssistantMachines(
+    { ...deps.machine, log: deps.log, scopeOf },
+    deps.machineTuning,
+  )
+  const turns = assistantTurns({ queue, scopeOf, machines })
   const agent = assistantAgent(deps, { memory, turns, scopeOf, machines })
   const controller = new AgentController({
     id: ASSISTANT_CONTROLLER,
@@ -311,6 +315,8 @@ export function createAssistant(deps: Deps) {
   return Object.freeze({
     controller,
     memory,
+    /** Where a conversation hears its machine start (QA F1), as the Builder's hears its steps. */
+    onPhase: machines.onPhase.bind(machines),
     routes: (app: FastifyInstance) =>
       registerAssistantRoutes(app, { ...deps, controller, memory, chosen, machines }),
     release: (scope: ReleaseScope) =>

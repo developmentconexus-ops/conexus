@@ -8,6 +8,7 @@ import { openRepository, restoreGuarded } from '../git/public.ts'
 import type { AssistantMachine } from '../machine/public.ts'
 import { createMachines, MARK } from '../machine/public.ts'
 import {
+  findOf,
   INSTALLATION,
   killByMark,
   killStaleOf,
@@ -83,7 +84,7 @@ function withKnobs(real: Repository, knobs: Knobs): Repository {
  * The Assistant's machines as doubles: a folder of this computer of their own, which a test steers
  * through `control` and whose killed conversations `killed` lists.
  */
-function testAssistantMachines(folder: string) {
+export function testAssistantMachines(folder: string) {
   const assistantFolder = join(folder, 'assistant')
   const control = newControl()
   const killed: ConversationId[] = []
@@ -98,13 +99,14 @@ function testAssistantMachines(folder: string) {
         return kill(conversationId)
       },
       killStale: killStaleOf(control),
+      find: findOf(control),
     },
     template: TEMPLATE,
     installation: INSTALLATION,
     mark,
-    workFolder: join(assistantFolder, 'work'),
   }
-  return { deps, control, killed, folder: assistantFolder }
+  const tuning = { workFolder: join(assistantFolder, 'work'), startMs: 5_000 }
+  return { deps, tuning, control, killed, folder: assistantFolder }
 }
 
 /** The Builder's Git and machines as doubles (T14): the repository is real, on the test config's
@@ -169,6 +171,7 @@ export function testBuilderPorts(
   return {
     machinesOf,
     assistantMachine: assistantMachines.deps,
+    assistantTuning: assistantMachines.tuning,
     assistantMachines,
     repository,
     copy: bucket.copy,

@@ -221,11 +221,14 @@ test('o download cancelado: o navegador que sai faz a leitura da máquina parar,
   assert.equal(endOf(await say('Escreva')), 'complete')
   const { control, deps } = on.hub.assistantMachines
   control.discoverable.push(nameOf(url))
-  const machines = createAssistantMachines({
-    ...deps,
-    log: { info: () => undefined, error: () => undefined },
-    scopeOf: async () => undefined,
-  })
+  const machines = createAssistantMachines(
+    {
+      ...deps,
+      log: { info: () => undefined, error: () => undefined },
+      scopeOf: async () => undefined,
+    },
+    on.hub.assistantMachines.tuning,
+  )
   const id = ConversationId.parse(url.slice(url.lastIndexOf('/') + 1))
   const left = new AbortController()
   left.abort()

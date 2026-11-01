@@ -251,6 +251,16 @@ describe('o histórico', () => {
     expect(await screen.findByText('mensagem 0')).toBeTruthy()
   })
 
+  test('a máquina ligando aparece como "Ligando a máquina…", a linha do Builder (QA F1)', async () => {
+    const line = await running(at(OPEN, { conversations: [assistantConversation()] }))
+    line.emit(
+      stepStarted(`${ASKED}:machine`, [
+        { type: 'data-conexus-machine', data: { phase: 'starting' } },
+      ]),
+    )
+    expect(await screen.findByText('Ligando a máquina…')).toBeTruthy()
+  })
+
   test('uma falha da memória aparece pelo tipo, sem o texto do fornecedor', async () => {
     const line = await running(at(OPEN, { conversations: [assistantConversation()] }))
     line.emit(observationFailed())

@@ -5,9 +5,9 @@ import type { WorkspaceFilesystem } from '@mastra/core/workspace'
 import { FileNotFoundError, WORKSPACE_TOOLS, Workspace } from '@mastra/core/workspace'
 import { z } from 'zod'
 import type { FailureLog } from '../../platform/failure.ts'
-import { Failure } from '../../platform/failure.ts'
+import { Failure, logFailure } from '../../platform/failure.ts'
 import { MAX_BYTES } from '../git/public.ts'
-import type { AssistantMachine, Kit } from '../machine/public.ts'
+import type { AssistantMachine, Kit, Phase } from '../machine/public.ts'
 import {
   execIn,
   MARK,
@@ -27,6 +27,9 @@ export const ASSISTANT_HOSTS = ['registry.npmjs.org', 'pypi.org', 'files.pythonh
 const START_MS = 120_000
 const MKDIR_FAILED = 'the conversation folder could not be made'
 
+/** What a start that must reattach a machine found by its id throws when E2B no longer has it. */
+const ReattachFailed = z.object({ code: z.literal('SANDBOX_REATTACH_FAILED') })
+
 type FileRead =
   | { kind: 'OK'; bytes: Buffer }
   | {
@@ -42,17 +45,31 @@ export type AssistantMachines = {
   readonly folder: string
   /** The controller's workspace resolver; undefined outside a conversation, as the Builder's. */
   workspace(requestContext: RequestContext): Promise<Workspace | undefined>
-  /** The turn ended: the machine stops (E2B pauses it); a machine never started is left alone. */
+  /**
+   * The turn ended: the machine stops (E2B pauses it); a machine never started is left alone. It
+   * never rejects: a pause that fails is logged, and the provider's own timeout pauses the machine.
+   */
   stop(conversationId: ConversationId): Promise<void>
-  /** The Hub ends: every machine of a turn in flight stops. */
+  /** The Hub ends: every machine of a turn in flight stops, each failure logged. */
   stopAll(): Promise<void>
   /** The conversation is deleted: every machine it marked is killed (`MachineApi.kill`). */
   kill(conversationId: ConversationId): Promise<void>
   /** The filesystem `show_file` locates a file in: a short-lived instance, so a link made after a first look is looked at again. */
   serving(requestContext: RequestContext): WorkspaceFilesystem | undefined
-  /** The download: wakes the machine and reads one file inside `WORK_FOLDER`, capped; `signal` stops the read when the browser leaves. */
+  /**
+   * The download: the machine the turn holds, or the one the provider has under the
+   * conversation's mark, woken and paused again; it never makes a machine. One file inside
+   * `WORK_FOLDER`, capped; `signal` stops the read when the browser leaves.
+   */
   read(conversationId: ConversationId, path: string, signal: AbortSignal): Promise<FileRead>
+  /** Where the conversation hears its machine's phases, until the returned function. */
+  onPhase(conversationId: ConversationId, listener: (phase: Phase) => void): () => void
 }
+
+/** What a test changes of the machines: the folder on this computer, and a shorter start. */
+export type MachineTuning = { workFolder: string; startMs: number }
+
+const ON_E2B: MachineTuning = { workFolder: WORK_FOLDER, startMs: START_MS }
 
 type Deps = AssistantMachine & { log: FailureLog; scopeOf: ScopeOf }
 
@@ -90,8 +107,10 @@ type Session = {
   workspace: Workspace | undefined
   /** Built with the workspace: building it asks the provider nothing, and only its start finds the machine. */
   ready: Promise<Kit> | undefined
-  /** The first start made a new machine: whatever the conversation wrote before is gone. */
-  created: boolean | undefined
+  /** The provider's start, kept past the start's deadline: the pause waits for it (code C57). */
+  starting: Promise<unknown> | undefined
+  /** The provider's id of the machine a download found: its start reattaches it, never makes one. */
+  found: string | undefined
 }
 
 const Controller = z.object({ sessionId: ConversationIdSchema })
@@ -99,17 +118,36 @@ const Controller = z.object({ sessionId: ConversationIdSchema })
 class Machines implements AssistantMachines {
   private readonly deps: Deps
   readonly folder: string
+  private readonly startMs: number
   private readonly sessions = new Map<ConversationId, Session>()
   /** The pauses in flight, which the Hub's end waits for (code C62). */
   private readonly pausing = new Set<Promise<void>>()
+  /**
+   * Each conversation's line (code C65): a turn's start, its pause and a download run one after
+   * another, so a download never starts a machine beside the turn's, nor reads one being paused.
+   */
+  private readonly lanes = new Map<ConversationId, Promise<unknown>>()
+  private readonly phases = new Map<ConversationId, (phase: Phase) => void>()
 
   /** What the model is told of the machine in place of the provider's own words; its files and its network are in the fixed message (`assistant.md`). */
   private readonly told: string
 
-  constructor(deps: Deps) {
+  constructor(deps: Deps, tuning: MachineTuning) {
     this.deps = deps
-    this.folder = deps.workFolder ?? WORK_FOLDER
+    this.folder = tuning.workFolder
+    this.startMs = tuning.startMs
     this.told = `The conversation's own Linux machine. Commands start in ${this.folder}.`
+  }
+
+  /** Runs `work` once every earlier step of the conversation's line has settled. */
+  private inLane<T>(conversationId: ConversationId, work: () => Promise<T>): Promise<T> {
+    const run = Promise.allSettled([this.lanes.get(conversationId)]).then(work)
+    const settled = Promise.allSettled([run])
+    this.lanes.set(conversationId, settled)
+    void settled.then(() => {
+      if (this.lanes.get(conversationId) === settled) this.lanes.delete(conversationId)
+    })
+    return run
   }
 
   /** Wakes or creates the machine, once per session; a machine from another template is killed first. */
@@ -121,14 +159,20 @@ class Machines implements AssistantMachines {
   private async boot(session: Session): Promise<Kit> {
     const { conversationId } = session
     const { api, template, log } = this.deps
+    this.phases.get(conversationId)?.('starting')
+    // A machine found by its id is of the Hub's template: only a turn's start clears an older one.
+    const stale = session.found === undefined ? api.killStale(conversationId, template) : undefined
+    const starting = Promise.resolve(stale).then(() => session.kit.sandbox.start?.())
+    session.starting = starting
     try {
-      await within(
-        api.killStale(conversationId, template).then(() => session.kit.sandbox.start?.()),
-        this.deps.startMs ?? START_MS,
-      )
+      await within(starting, this.startMs)
     } catch (cause) {
       session.ready = undefined
-      log.error({ reason: 'START', cause: String(cause).slice(0, 500) }, 'MACHINE_UNAVAILABLE')
+      if (ReattachFailed.safeParse(cause).success) throw new Failure('FILE_GONE', { cause })
+      log.error(
+        { conversationId, reason: 'START', cause: String(cause).slice(0, 500) },
+        'MACHINE_UNAVAILABLE',
+      )
       throw new Failure('MACHINE_UNAVAILABLE', { cause })
     }
     log.info({ conversationId }, 'MACHINE_STARTED')
@@ -141,7 +185,6 @@ class Machines implements AssistantMachines {
    * the root, for E2B refuses a command whose folder does not exist.
    */
   private async started(session: Session, outcome: string | undefined): Promise<void> {
-    session.created ??= outcome !== 'connected'
     if (outcome === 'connected') await session.kit.closeNetwork()
     const made = await session.kit.sandbox.executeCommand?.('mkdir', ['-p', this.folder], {
       cwd: '/',
@@ -168,12 +211,20 @@ class Machines implements AssistantMachines {
     return this.filesystem(session.conversationId, session.kit, () => this.ensure(session))
   }
 
-  /** The conversation's machine, built and not touched: the provider finds it by name when a tool needs it. */
-  private open(conversationId: ConversationId, marks: Record<string, string>): Session {
+  /**
+   * The conversation's machine, built and not touched: the provider finds it by name when a tool
+   * needs it, or, `found`, by the id a download found it at.
+   */
+  private open(
+    conversationId: ConversationId,
+    marks: Record<string, string>,
+    found?: string,
+  ): Session {
     const { installation, template, mark } = this.deps
     const name = `conexus-${installation}-${conversationId}`
     const kit: Kit = this.deps.kit({
       id: name,
+      ...(found === undefined ? {} : { foundAs: found }),
       allowOut: ASSISTANT_HOSTS,
       metadata: {
         ...mark,
@@ -190,7 +241,8 @@ class Machines implements AssistantMachines {
       name,
       kit,
       ready: undefined,
-      created: undefined,
+      starting: undefined,
+      found,
       workspace: undefined,
       files: this.filesystem(conversationId, kit, () => this.ensure(session)),
     }
@@ -204,51 +256,63 @@ class Machines implements AssistantMachines {
     const { sessionId: conversationId } = controller.data
     const held = this.sessions.get(conversationId)?.workspace
     if (held !== undefined) return held
-    const session = this.open(conversationId, {
-      [MARK.company]: scope.companyId,
-      ...(scope.place.kind === 'PROJECT' ? { [MARK.project]: scope.place.projectId } : {}),
-    })
-    this.sessions.set(conversationId, session)
-    session.workspace = new Workspace({
-      sandbox: async () => (await this.ensure(session)).sandbox,
-      sandboxCacheKey: () => session.name,
-      instructions: { dynamicSandbox: () => this.told },
-      filesystem: session.files,
-      tools: {
-        hooks: {
-          beforeToolCall: async () => {
-            await this.ensure(session)
+    return this.inLane(conversationId, async () => {
+      const opened = this.sessions.get(conversationId)?.workspace
+      if (opened !== undefined) return opened
+      const session = this.open(conversationId, {
+        [MARK.company]: scope.companyId,
+        ...(scope.place.kind === 'PROJECT' ? { [MARK.project]: scope.place.projectId } : {}),
+      })
+      this.sessions.set(conversationId, session)
+      session.workspace = new Workspace({
+        sandbox: async () => (await this.ensure(session)).sandbox,
+        sandboxCacheKey: () => session.name,
+        instructions: { dynamicSandbox: () => this.told },
+        filesystem: session.files,
+        tools: {
+          hooks: {
+            beforeToolCall: async () => {
+              await this.ensure(session)
+            },
           },
+          [WORKSPACE_TOOLS.FILESYSTEM.AST_EDIT]: { enabled: false },
         },
-        [WORKSPACE_TOOLS.FILESYSTEM.AST_EDIT]: { enabled: false },
-      },
+      })
+      return session.workspace
     })
-    return session.workspace
   }
 
+  /** Pauses the machine once its start has settled, a start past its deadline included; one that failed made none. */
   private async pause(session: Session): Promise<void> {
-    if (session.ready === undefined) return
-    await Promise.allSettled([session.ready])
+    if (session.starting === undefined) return
+    const [start] = await Promise.allSettled([session.starting])
+    if (start.status === 'rejected') return
     await session.kit.sandbox.stop?.()
   }
 
-  async stop(conversationId: ConversationId): Promise<void> {
-    const session = this.sessions.get(conversationId)
-    this.sessions.delete(conversationId)
-    if (session === undefined) return
-    const pausing = this.pause(session)
-    this.pausing.add(pausing)
+  /** The pause, its failure logged: the provider's own timeout pauses the machine then. */
+  private async pauseLogged(session: Session): Promise<void> {
     try {
-      await pausing
-    } finally {
-      this.pausing.delete(pausing)
+      await this.pause(session)
+    } catch (cause) {
+      const failure = new Failure('MACHINE_UNAVAILABLE', { cause, details: { reason: 'STOP' } })
+      logFailure(this.deps.log, failure, { conversationId: session.conversationId })
     }
   }
 
-  /** Stops every machine of a turn in flight and waits for the pauses already begun, whose own callers log their failures. */
+  stop(conversationId: ConversationId): Promise<void> {
+    const session = this.sessions.get(conversationId)
+    this.sessions.delete(conversationId)
+    if (session === undefined) return Promise.resolve()
+    const pausing = this.inLane(conversationId, () => this.pauseLogged(session))
+    this.pausing.add(pausing)
+    return pausing.finally(() => this.pausing.delete(pausing))
+  }
+
+  /** Stops every machine of a turn in flight and waits for the pauses already begun. */
   async stopAll(): Promise<void> {
     await Promise.all([...this.sessions.keys()].map((each) => this.stop(each)))
-    await Promise.allSettled([...this.pausing])
+    await Promise.all([...this.pausing])
   }
 
   serving(requestContext: RequestContext): WorkspaceFilesystem | undefined {
@@ -262,36 +326,65 @@ class Machines implements AssistantMachines {
     await this.deps.api.kill(conversationId)
   }
 
-  async read(conversationId: ConversationId, path: string, signal: AbortSignal): Promise<FileRead> {
-    // A turn in flight holds the conversation's machine; else the download wakes it by name and lets it sleep again.
-    const held = this.sessions.get(conversationId)
-    const session = held ?? this.open(conversationId, {})
+  read(conversationId: ConversationId, path: string, signal: AbortSignal): Promise<FileRead> {
+    return this.inLane(conversationId, async () => {
+      // A turn in flight holds the conversation's machine: the download reads it there.
+      const held = this.sessions.get(conversationId)
+      if (held !== undefined) return this.readFrom(held, path, signal)
+      const found = await this.found(conversationId)
+      if (found === 'UNAVAILABLE') return { kind: 'MACHINE_UNAVAILABLE' }
+      if (found === undefined) return { kind: 'FILE_GONE' }
+      const session = this.open(conversationId, {}, found)
+      try {
+        return await this.readFrom(session, path, signal)
+      } finally {
+        await this.pauseLogged(session)
+      }
+    })
+  }
+
+  /** The machine the provider has for the conversation, by its mark; a failed list is no answer. */
+  private async found(conversationId: ConversationId): Promise<string | 'UNAVAILABLE' | undefined> {
+    try {
+      return await this.deps.api.find(conversationId, this.deps.template)
+    } catch (cause) {
+      const failure = new Failure('MACHINE_UNAVAILABLE', { cause, details: { reason: 'FIND' } })
+      logFailure(this.deps.log, failure, { conversationId })
+      return 'UNAVAILABLE'
+    }
+  }
+
+  private async readFrom(session: Session, path: string, signal: AbortSignal): Promise<FileRead> {
     try {
       await this.ensure(session)
     } catch (error) {
-      if (error instanceof Failure && error.code === 'MACHINE_UNAVAILABLE') {
-        return { kind: 'MACHINE_UNAVAILABLE' }
+      if (error instanceof Failure) {
+        if (error.code === 'MACHINE_UNAVAILABLE' || error.code === 'FILE_GONE') {
+          return { kind: error.code }
+        }
       }
       throw error
     }
-    // A new machine under a download is not the one the files were written on: it is not kept.
-    if (held === undefined && session.created === true) {
-      await this.deps.api.kill(conversationId)
-      return { kind: 'FILE_GONE' }
-    }
-    try {
-      const found = await locate(this.shortLived(session), path)
-      if (found.kind !== 'FILE') return { kind: 'FILE_NOT_FOUND' }
-      if (found.bytes > MAX_BYTES) return { kind: 'FILE_TOO_LARGE' }
-      const bytes = await readCapped(session.kit.transport, found.path, signal)
-      if (bytes === 'cancelled') return { kind: 'CANCELLED' }
-      return bytes === 'too-large' ? { kind: 'FILE_TOO_LARGE' } : { kind: 'OK', bytes }
-    } finally {
-      if (held === undefined) await this.pause(session)
+    const found = await locate(this.shortLived(session), path)
+    if (found.kind !== 'FILE') return { kind: 'FILE_NOT_FOUND' }
+    if (found.bytes > MAX_BYTES) return { kind: 'FILE_TOO_LARGE' }
+    const bytes = await readCapped(session.kit.transport, found.path, signal)
+    if (bytes === 'cancelled') return { kind: 'CANCELLED' }
+    return bytes === 'too-large' ? { kind: 'FILE_TOO_LARGE' } : { kind: 'OK', bytes }
+  }
+
+  onPhase(conversationId: ConversationId, listener: (phase: Phase) => void): () => void {
+    this.phases.set(conversationId, listener)
+    return () => {
+      if (this.phases.get(conversationId) === listener) this.phases.delete(conversationId)
     }
   }
 }
 
-export function createAssistantMachines(deps: Deps): AssistantMachines {
-  return new Machines(deps)
+/** The conversations' machines; `tuning` is a test's, which runs them as folders of this computer. */
+export function createAssistantMachines(
+  deps: Deps,
+  tuning: MachineTuning = ON_E2B,
+): AssistantMachines {
+  return new Machines(deps, tuning)
 }

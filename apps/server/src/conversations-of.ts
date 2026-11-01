@@ -1,3 +1,4 @@
+import type { MachineTuning } from './builder/assistant/public.ts'
 import { createAssistant } from './builder/assistant/public.ts'
 import { createConversations, createMastraStorage } from './builder/conversation/public.ts'
 import type { openGoogleCalls } from './builder/model-accounts/public.ts'
@@ -24,6 +25,8 @@ export function conversationsOf(deps: {
   mastraPool: MastraPool
   runs: Runs
   machine: AssistantMachine
+  /** The tests' folder and start deadline for the Assistant's machines; E2B's when absent. */
+  machineTuning?: MachineTuning
   connectors: () => Connectors
   log: FailureLog
 }) {
@@ -39,6 +42,7 @@ export function conversationsOf(deps: {
   const assistant = createAssistant({
     ...{ storage, database, identity, queue, log },
     machine: deps.machine,
+    machineTuning: deps.machineTuning,
     connectors: {
       connections: (scope) => deps.connectors().assistant.connections(scope),
       read: (scope, call) => deps.connectors().assistant.read(scope, call),
