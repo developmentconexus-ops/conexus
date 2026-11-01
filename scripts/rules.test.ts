@@ -103,6 +103,11 @@ const BAD_IMPORTS: Record<string, [string, string, Record<string, string>]> = {
     { 'apps/web/src/hub/a/inner.ts': PUBLIC },
   ],
 }
+const MASTRA_EE = {
+  'apps/server/src/builder/a/ee-agent-builder.ts': '@mastra/core/agent-builder/ee',
+  'apps/server/src/builder/a/ee-auth.ts': '@mastra/core/auth/ee',
+  'apps/server/src/builder/a/ee-editor.ts': '@mastra/editor',
+}
 const GOOD_IMPORTS: Record<string, string> = {
   'apps/server/src/hub/a/ok.ts': '../b/public.ts',
   'apps/server/src/hub/a/ok.test.ts': './public.ts',
@@ -147,6 +152,7 @@ before(() => {
   files[TYPES_FROM_THE_KIT] =
     "import type { x } from '@conexus/connectors/calls'\nexport type y = typeof x\n"
   for (const [file, target] of Object.entries(GOOD_IMPORTS)) files[file] = importing(target)
+  for (const [file, target] of Object.entries(MASTRA_EE)) files[file] = importing(target)
   for (const file of [
     'apps/server/src/hub/b/public.ts',
     'apps/server/src/platform/health.ts',
@@ -167,6 +173,17 @@ for (const [rule, [file]] of Object.entries(BAD_IMPORTS)) {
     assert.ok(
       violations.some((violation) => violation.rule.name === rule && violation.from === file),
       `${rule} did not fire on ${file}; got ${JSON.stringify(violations.map((v) => `${v.rule.name} ${v.from}`))}`,
+    )
+  })
+}
+
+for (const [file, target] of Object.entries(MASTRA_EE)) {
+  test(`dependency-cruiser recusa no-mastra-ee em ${target}`, () => {
+    assert.ok(
+      violations.some(
+        (violation) => violation.rule.name === 'no-mastra-ee' && violation.from === file,
+      ),
+      `no-mastra-ee did not fire on ${file}; got ${JSON.stringify(violations.map((v) => `${v.rule.name} ${v.from}`))}`,
     )
   })
 }
