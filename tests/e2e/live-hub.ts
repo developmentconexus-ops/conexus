@@ -212,9 +212,11 @@ export async function signIn(page: Page, email: string, password: string) {
   await page.getByRole('button', { name: 'Entrar' }).click()
 }
 
-/** Início, once the company's page has opened (its title; the sidebar and the cards come with it). */
+/** Início, once the company's page has opened (its title, the Builder's for a member and the Assistant's for the rest; the sidebar and the cards come with it). */
 export async function waitForHome(page: Page) {
-  await page.getByRole('heading', { name: 'O que vamos construir?', exact: true }).waitFor()
+  await page
+    .getByRole('heading', { name: /^(O que vamos construir\?|Pergunte ou peça um app)$/ })
+    .waitFor()
 }
 
 /** Welcome step 1: the first owner of a company the Central made keeps the suggested nickname. */

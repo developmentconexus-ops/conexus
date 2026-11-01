@@ -108,7 +108,7 @@ test('no Projeto a barra é a do Projeto e abre com 256px; Ctrl+B a recolhe para
   await page.keyboard.press('Control+b')
   await page.waitForTimeout(250)
   await nav.getByRole('link').first().click()
-  await page.getByRole('heading', { name: 'O que vamos construir?' }).waitFor()
+  await page.getByRole('heading', { name: 'Pergunte ou peça um app' }).waitFor()
   await nav.getByRole('link', { name: 'Início' }).waitFor()
   await page.waitForTimeout(250)
   assert.deepEqual(
