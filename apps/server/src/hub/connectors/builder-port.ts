@@ -17,7 +17,7 @@ import { openedIn } from './testing.ts'
 
 /** One conversation turn reads and saves at most this many times (the OS's `connector_fetch`: 50 per run); the Builder counts by run, the Assistant by turn. */
 export const CONNECTOR_CALLS_PER_TURN = 50
-const TURNS_KEPT = 1000
+export const TURNS_KEPT = 1000
 
 export type GrantedConnection = Readonly<{
   connectionId: ConnectionId

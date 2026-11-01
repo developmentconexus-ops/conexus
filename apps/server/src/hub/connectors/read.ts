@@ -104,7 +104,7 @@ async function once(deps: Deps, a: ReadRequest, input: unknown, endsAt: number) 
 }
 
 /**
- * One read of a provider for the app or the Builder: the connection's turn, the token, the call, one
+ * One read of a provider for the app, the Builder or the Assistant (at a Projeto or at the Início): the connection's turn, the token, the call, one
  * repeat on a token the provider ended. No database connection is held meanwhile (D22). Each call
  * leaves one `CONNECTOR_CALLED` line with scalars alone, and the envelope "4" (ours, never repeated)
  * its own error line (#470).

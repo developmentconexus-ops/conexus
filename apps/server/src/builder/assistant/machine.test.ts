@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { test } from 'node:test'
 import { ConversationId } from '@conexus/hub-api'
 import { servedSankhya } from '../../hub/connectors/test-connections.ts'
-import { PLANTED, withRows } from '../connectors/test-rows.ts'
+import { PLANTED, withRows } from '../../hub/connectors/test-rows.ts'
 import {
   asked,
   conversing,
