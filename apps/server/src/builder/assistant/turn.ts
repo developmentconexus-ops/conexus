@@ -26,9 +26,9 @@ export function turnKeyIn(requestContext: RequestContext): TurnKey | undefined {
  * conversation takes its owner's turn in the accounts' queue (step 11) as Mastra reads its input,
  * with a new `TurnKey`, and no Projeto (`Runs`): the controller already sends one message at a time
  * to a conversation. Every run reads its input: Mastra skips it only on a resume, and nothing in
- * the Assistant suspends (no card, no plan, no approval). The turn lets go of its accounts when the controller says the run ended
- * (`agent_end`), for every end: done, failed, stopped by Parar or by the Hub's end; a deleted
- * session's run ends without one, so its deletion lets go too.
+ * the Assistant suspends (no card, no plan, no approval). The turn lets go of its accounts when
+ * the controller says the run ended (`agent_end`), for every end: done, failed, stopped by Parar
+ * or by the Hub's end; a deleted session's run ends without one, so its deletion lets go too.
  */
 export function assistantTurns(deps: { queue: QueueDeps; scopeOf: ScopeOf }) {
   const held = new Map<ConversationId, Turn>()
