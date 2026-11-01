@@ -42,6 +42,11 @@ export type Control = {
   upMs: number
   /** Starts the latest machine again as the provider does after it died: its `onStart` runs once more. */
   restart: () => Promise<void>
+  /**
+   * The provider finds the machine dead at the next command and starts it again first, awaited, as
+   * Mastra's reconnect does: the command runs only once the new machine is up and seeded.
+   */
+  restartBeforeNextCommand: boolean
   /** The name of each machine started: the provider finds an existing one by it alone. */
   names: string[]
   /** The mark each machine started carries. */
@@ -69,6 +74,7 @@ export function newControl(): Control {
     networkClosed: 0,
     upMs: 0,
     restart: async () => undefined,
+    restartBeforeNextCommand: false,
     names: [],
     marks: [],
     sandbox: undefined,
@@ -98,6 +104,10 @@ export function localKit(folder: string, control: Control): KitFactory {
     const execute = sandbox.executeCommand?.bind(sandbox)
     if (execute !== undefined) {
       sandbox.executeCommand = async (...args) => {
+        if (control.restartBeforeNextCommand) {
+          control.restartBeforeNextCommand = false
+          await control.restart()
+        }
         const result = await execute(...args)
         control.afterCommand()
         return result
