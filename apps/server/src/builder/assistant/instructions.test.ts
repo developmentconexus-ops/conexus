@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
+import { MemoryPG } from '@mastra/pg'
 import { call } from '../../hub/identity/test-hub.ts'
 import { turnDate } from '../conversation/public.ts'
 import { endOf } from '../conversation/test-conversation.ts'
@@ -66,4 +67,53 @@ test('o bloco da conversa: a empresa, a pessoa e o papel, hoje e o fuso, o lugar
   assert.match(String(after?.systems.at(1)?.text), /Connections in this conversation: none\.$/)
   assert.ok(!after?.tools.includes('connector_read'))
   assert.doesNotMatch(String(after?.system), /<name>conexus-sankhya<\/name>/)
+})
+
+test('trocar a escolha enquanto o Mastra grava o título: o turno seguinte lê só a escolha nova, e o título fica', async (t) => {
+  const on = await assisting(t)
+  const url = await created(on.hub, on.ana, on.assistant, {
+    projectId: on.projectId,
+    connections: [on.matriz],
+  })
+  const id = url.slice(url.lastIndexOf('/') + 1)
+  // The title's write, as @mastra/pg's updateThread does it (index.js:12438-12470), with the gap
+  // between its read of the thread and its write held open: the merge writes what it read.
+  const read = Promise.withResolvers<void>()
+  const held = Promise.withResolvers<void>()
+  const written = Promise.withResolvers<void>()
+  t.after(() => held.resolve())
+  const update = MemoryPG.prototype.updateThread
+  t.mock.method(
+    MemoryPG.prototype,
+    'updateThread',
+    async function (this: MemoryPG, args: Parameters<MemoryPG['updateThread']>[0]) {
+      if (args.id !== id || args.title === undefined) return update.call(this, args)
+      const before = await this.getThreadById({ threadId: id })
+      read.resolve()
+      await held.promise
+      const done = await update.call(this, { ...args, metadata: before?.metadata ?? {} })
+      written.resolve()
+      return done
+    },
+  )
+  const conversation = await talking(t, on.hub, on.ana, url)
+  assert.equal(endOf(await conversation.say('Oi')), 'complete')
+  await read.promise
+
+  const changed = await call(on.hub, on.ana, 'PUT', `${url}/connections`, { connections: [] })
+  assert.equal(changed.statusCode, 200, changed.body)
+  held.resolve()
+  await written.promise
+
+  assert.equal(endOf(await conversation.say('E agora?')), 'complete')
+  const after = on.calls.at(-1)
+  assert.match(String(after?.systems.at(1)?.text), /Connections in this conversation: none\.$/)
+  assert.ok(!after?.tools.includes('connector_read'))
+  assert.doesNotMatch(String(after?.system), /<name>conexus-sankhya<\/name>/)
+  const now = Object((await call(on.hub, on.ana, 'GET', url)).json()).conversation
+  assert.equal(now.title, 'Título')
+  assert.deepEqual(
+    now.connections.map((each: { name: string; chosen: boolean }) => [each.name, each.chosen]),
+    [['Matriz', false]],
+  )
 })

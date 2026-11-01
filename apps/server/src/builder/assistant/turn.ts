@@ -8,7 +8,7 @@ import { TurnKey } from '../../hub/connectors/public.ts'
 import { turnOfOwner } from '../conversation/public.ts'
 import type { QueueDeps, Turn } from '../model-accounts/public.ts'
 import { setTurn } from '../model-accounts/public.ts'
-import { sessionScope } from './context.ts'
+import type { ScopeOf } from './context.ts'
 
 const TURN_PROCESSOR = 'conexus-assistant-turn'
 /** Where the run's context holds the turn's key, which the company's door counts the 50 calls by. */
@@ -30,7 +30,7 @@ export function turnKeyIn(requestContext: RequestContext): TurnKey | undefined {
  * (`agent_end`), for every end: done, failed, stopped by Parar or by the Hub's end; a deleted
  * session's run ends without one, so its deletion lets go too.
  */
-export function assistantTurns(deps: { queue: QueueDeps }) {
+export function assistantTurns(deps: { queue: QueueDeps; scopeOf: ScopeOf }) {
   const held = new Map<ConversationId, Turn>()
 
   function letGo(sessionId: ConversationId): void {
@@ -42,7 +42,7 @@ export function assistantTurns(deps: { queue: QueueDeps }) {
     requestContext: RequestContext | undefined,
     abort: (reason: string) => never,
   ): Promise<void> {
-    const scope = requestContext === undefined ? undefined : await sessionScope(requestContext)
+    const scope = requestContext === undefined ? undefined : await deps.scopeOf(requestContext)
     const session = Session.safeParse(requestContext?.get('controller'))
     if (requestContext === undefined || scope === undefined || !session.success) {
       return abort('CONVERSATION_NOT_FOUND')
