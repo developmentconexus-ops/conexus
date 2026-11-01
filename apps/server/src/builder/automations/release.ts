@@ -43,7 +43,7 @@ function released(input: AutomationInput, scope: ReleaseScope): boolean {
 
 /**
  * Deletes the automations of a company, of one person of it, or of one Projeto of it, and their
- * runs (data D17), before the conversations, so no run opens one the removal misses; one at a
+ * runs (data D17) the runs first, then the row, so a failure between them leaves a row the next removal finds; before the conversations, so no run opens one the removal misses; one at a
  * time, and a failure halfway leaves what the next removal finds again.
  */
 export async function releaseAutomations(
@@ -58,8 +58,8 @@ export async function releaseAutomations(
       row.workflowId === AUTOMATION_WORKFLOW ? row.inputData : null,
     )
     if (!input.success || !released(input.data, scope)) continue
-    await stored(schedules.delete(row.id))
     await deleteRunsOf(deps.mastra, input.data)
+    await stored(schedules.delete(row.id))
     count += 1
   }
   deps.log.info({ companyId: scope.companyId, count }, 'AUTOMATIONS_RELEASED')

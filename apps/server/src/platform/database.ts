@@ -26,6 +26,8 @@ export const POOL_LIMITS = {
 const READ_DEADLINE_MS = 15_000
 
 const UNAVAILABLE_SQLSTATES = /^(08.{3}|57P0[123]|57014)$/
+/** What Node says of a connection that did not happen: a pool Mastra's storage uses, refused or lost. */
+const UNAVAILABLE_SOCKET_CODES = /^(ECONNREFUSED|ECONNRESET|ETIMEDOUT|EPIPE|ENOTFOUND|EAI_AGAIN)$/
 
 export type DatabaseUrl = Secret<'DatabaseUrl'>
 export const DatabaseUrl = {
@@ -114,13 +116,20 @@ export type Database = Readonly<{
   close(): Promise<void>
 }>
 
-/** A database error is mapped by its SQLSTATE (code C52); any other error is the program's. */
+/**
+ * A database error is mapped by its SQLSTATE, and a connection that never happened by its socket
+ * code, which is how a Mastra store's pool says it (code C52); any other error is the program's.
+ */
 export function databaseFailure(error: unknown): Failure {
   if (error instanceof Failure) return error
   for (let cause = error; cause instanceof Error; cause = cause.cause) {
     if (cause instanceof pg.DatabaseError) {
       const unavailable = UNAVAILABLE_SQLSTATES.test(cause.code ?? '')
       return new Failure(unavailable ? 'DATABASE_UNAVAILABLE' : 'INTERNAL_UNEXPECTED', { cause })
+    }
+    const socket = 'code' in cause && typeof cause.code === 'string' ? cause.code : ''
+    if (UNAVAILABLE_SOCKET_CODES.test(socket)) {
+      return new Failure('DATABASE_UNAVAILABLE', { cause })
     }
   }
   return new Failure('INTERNAL_UNEXPECTED', { cause: error })

@@ -4,8 +4,10 @@ import { connect, createServer } from 'node:net'
 import { test } from 'node:test'
 import { setTimeout } from 'node:timers/promises'
 import { CompanyId, PersonId } from '@conexus/hub-api'
+import { Mastra } from '@mastra/core/mastra'
+import { PostgresStore } from '@mastra/pg'
 import { sql } from 'drizzle-orm'
-import { DatabaseUrl, openDatabase } from './database.ts'
+import { DatabaseUrl, databaseFailure, openDatabase, openMastraPool } from './database.ts'
 import {
   createTestDatabase,
   silent,
@@ -237,5 +239,20 @@ test('uma consulta da biblioteca sem resposta cai no prazo de 15 s como conexão
   } finally {
     proxy.close()
     await database.close()
+  }
+})
+
+test('o armazenamento do Mastra que recusa a conexão vira DATABASE_UNAVAILABLE, na leitura e na lista da agenda', async (t) => {
+  const pool = openMastraPool({ url: await unreachableDatabaseUrl(), log: silent })
+  t.after(() => pool.end())
+  const storage = new PostgresStore({ id: 'down', pool, schemaName: 'mastra' })
+  const { schedules } = new Mastra({ storage })
+  for (const read of [schedules.get('none'), schedules.list({ workflowId: 'none' })]) {
+    const refused = await read.then(
+      () => undefined,
+      (error: unknown) => error,
+    )
+    assert.ok(refused instanceof Error, 'the read was refused')
+    assert.equal(databaseFailure(refused).code, 'DATABASE_UNAVAILABLE')
   }
 })

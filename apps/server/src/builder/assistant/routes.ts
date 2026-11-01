@@ -31,7 +31,14 @@ import type { ChosenConnections } from './chosen.ts'
 import type { Owner } from './context.ts'
 import { assistantOwner, SESSION_MARK, scopeOn } from './context.ts'
 import type { assistantMemory } from './memory.ts'
-import { admitted, automationOf, conversationIdOf, offeredOnly, openConversation } from './open.ts'
+import {
+  admitted,
+  automationOf,
+  conversationIdOf,
+  offeredOnly,
+  openConversation,
+  placeOf,
+} from './open.ts'
 import type { AssistantProjects } from './ports.ts'
 
 /** A page of the person's conversations (code C44): a page number the token carries, never authority. */
@@ -49,14 +56,9 @@ type Deps = {
   chosen: ChosenConnections
   log: FailureLog
 }
-type Place = SessionScope['place']
 
 function ownerOf(input: { person: Person; params: { companyId: CompanyId } }): Owner {
   return { companyId: input.params.companyId, personId: input.person.id }
-}
-
-function placeOf(projectId: ProjectId | undefined | null): Place {
-  return projectId == null ? { kind: 'COMPANY' } : { kind: 'PROJECT', projectId }
 }
 
 /** The person's own thread of the Assistant, or `CONVERSATION_NOT_FOUND`; another's and one that does not exist answer the same (S10). */
