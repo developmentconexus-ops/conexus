@@ -2,7 +2,6 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { ConnectionId, PersonId, RunId } from '@conexus/hub-api'
 import { RequestContext } from '@mastra/core/request-context'
-import type { Scalar } from '../../platform/failure.ts'
 import type { BuilderConnectors, ConnectorAccess, GrantedConnection } from './public.ts'
 import { builderAccess, connectorTools } from './public.ts'
 
@@ -91,7 +90,7 @@ test('um nome que nenhuma ligação liberada tem é recusado pelo esquema da fer
 })
 
 function savingTo(files: { writeFile(path: string, content: string): Promise<void> }) {
-  const logged: { fields: Record<string, Scalar>; message: string }[] = []
+  const logged: { fields: Record<string, unknown>; message: string }[] = []
   const signals: (AbortSignal | undefined)[] = []
   const access: ConnectorAccess = {
     connections: [granted('sankhya', SANKHYA)],

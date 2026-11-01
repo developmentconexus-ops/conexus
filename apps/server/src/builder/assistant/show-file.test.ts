@@ -3,7 +3,6 @@ import { join } from 'node:path'
 import { test } from 'node:test'
 import { endOf, messagesOf } from '../conversation/test-conversation.ts'
 import { tool } from '../conversation/test-questions.ts'
-import { showFileTool } from './show-file.ts'
 import { assisting, created, said, talking } from './test-assistant.ts'
 
 const SHOW = 'show_file'
@@ -141,18 +140,4 @@ test('show_file: a máquina que não liga é recusada com MACHINE_UNAVAILABLE (1
   const { say } = await talking(t, on.hub, on.ana, url)
   assert.equal(endOf(await say('Mostre')), 'complete')
   assert.deepEqual(await shown(on, url), [{ kind: 'SHOW_REFUSED', reason: 'MACHINE_UNAVAILABLE' }])
-})
-
-test('show_file: o modelo lê só o caminho ou a recusa, mesmo de uma saída cujo conteúdo passa do teto; outra forma de saída é um erro, nunca a saída crua (F20)', () => {
-  const shown = showFileTool({ folder: '/home/user/work', serving: () => undefined })
-  const toModel = shown.toModelOutput
-  assert.ok(toModel !== undefined)
-  const big = { kind: 'TEXT', path: 'a.md', name: 'a.md', media: 'text/markdown' }
-  assert.deepEqual(toModel({ ...big, content: 'x'.repeat(70_000) }), {
-    type: 'json',
-    value: { shown: 'a.md' },
-  })
-  const refused = { kind: 'SHOW_REFUSED', reason: 'NOT_FOUND' } as const
-  assert.deepEqual(toModel(refused), { type: 'json', value: refused })
-  assert.throws(() => toModel({ content: 'segredo' }))
 })

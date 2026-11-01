@@ -4,8 +4,7 @@ import { connect, createServer } from 'node:net'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { call, codeOf, post } from '../../hub/identity/test-hub.ts'
-import { DatabaseUrl, openMastraPool } from '../../platform/database.ts'
-import { silent } from '../../platform/test-database.ts'
+import { mastraPoolAt } from '../../platform/test-database.ts'
 import { hubBeside, sent } from '../conversation/test-conversation.ts'
 import { assisting, created } from './test-assistant.ts'
 
@@ -15,7 +14,7 @@ type Outage = 'REFUSED' | 'SILENT'
  * Mastra's database behind a door of this test: shut, the port refuses (`REFUSED`) or accepts and
  * never answers (`SILENT`); opened, it reaches the database, so the Hub's end can close Mastra.
  */
-async function doorTo(url: DatabaseUrl, outage: Outage) {
+async function doorTo(url: { reveal(): string }, outage: Outage) {
   const target = new URL(url.reveal())
   const sockets = new Set<Socket>()
   let reaching = false
@@ -42,7 +41,7 @@ async function doorTo(url: DatabaseUrl, outage: Outage) {
   const through = new URL(url.reveal())
   through.host = `127.0.0.1:${port}`
   return {
-    url: DatabaseUrl.parse(through.toString()),
+    address: through.toString(),
     async open() {
       for (const socket of sockets) socket.destroy()
       if (outage === 'REFUSED') server = await listening()
@@ -64,7 +63,7 @@ async function everyRouteUnavailable(t: TestContext, outage: Outage) {
   const on = await assisting(t)
   const url = await created(on.hub, on.ana, on.assistant, { connections: [on.matriz] })
   const door = await doorTo(on.hub.config.mastraDatabaseUrl, outage)
-  const mastraPool = openMastraPool({ url: door.url, log: silent })
+  const mastraPool = mastraPoolAt(door.address)
   const down = await hubBeside(t, { ...on.hub, test: { ...on.hub.test, mastraPool } })
   t.after(() => door.close())
   const answers = {
