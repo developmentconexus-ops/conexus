@@ -1,14 +1,16 @@
 import { execFileSync } from 'node:child_process'
 import {
   createReadStream,
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  rmdirSync,
   rmSync,
   writeFileSync,
 } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { dirname, join } from 'node:path'
+import { basename, dirname, join } from 'node:path'
 import type { TestContext } from 'node:test'
 import { CompanyId, ConversationId, ProjectId } from '@conexus/hub-api'
 import { RequestContext } from '@mastra/core/request-context'
@@ -18,6 +20,7 @@ import { E2bApiKey, InstallationId, MachineTemplate } from '../../platform/confi
 import { Failure } from '../../platform/failure.ts'
 import { openRepository } from '../git/public.ts'
 import type { Kit, KitFactory, MachineApi } from './kit.ts'
+import { APP_FOLDER } from './kit.ts'
 import type { Phase } from './public.ts'
 import { createMachines } from './public.ts'
 
@@ -107,10 +110,16 @@ export function newControl(): Control {
  */
 export function localKit(folder: string, control: Control): KitFactory {
   return (options): Kit => {
+    let made = false
     const sandbox = new LocalSandbox({
       workingDirectory: options.workingDirectory,
       instructions: options.instructions,
       onStart: async (started) => {
+        // E2B's template makes the app folder and no other: a working folder this start made is
+        // taken away again, so a command run there before anything makes it fails as on E2B.
+        if (made && basename(options.workingDirectory) !== basename(APP_FOLDER)) {
+          rmdirSync(options.workingDirectory)
+        }
         await new Promise((up) => setTimeout(up, control.upMs))
         const outcome = control.discoverable.includes(options.id) ? 'connected' : control.outcome
         if (outcome === 'connected') control.attached.push(options.id)
@@ -136,6 +145,7 @@ export function localKit(folder: string, control: Control): KitFactory {
     const start = sandbox.start.bind(sandbox)
     sandbox.start = async (...args) => {
       mkdirSync(folder, { recursive: true })
+      made = !existsSync(options.workingDirectory)
       control.names.push(options.id)
       control.marks.push(options.metadata)
       control.allowOut.push(options.allowOut)

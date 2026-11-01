@@ -4,9 +4,10 @@ import { readFileSync } from 'node:fs'
 import { createServer } from 'node:http'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { CompanyId, ConversationId, ProjectId } from '@conexus/hub-api'
+import { CompanyId, ConversationId, PersonId, ProjectId } from '@conexus/hub-api'
+import { RequestContext } from '@mastra/core/request-context'
 import { testConfig, unreachableDatabaseUrl } from '../../platform/test-database.ts'
-import { ASSISTANT_HOSTS } from '../assistant/public.ts'
+import { ASSISTANT_HOSTS, createAssistantMachines } from '../assistant/public.ts'
 import {
   ALLOWED_HOSTS,
   APP_FOLDER,
@@ -15,11 +16,13 @@ import {
   MARK,
   machineInstructions,
 } from './public.ts'
-import { realE2b } from './test-machine.ts'
+import { INSTALLATION, realE2b } from './test-machine.ts'
 
 const COMPANY = CompanyId.parse('companyAAAAAAAAAAAAAAAAAAAAAAAAA')
 const PROJECT = ProjectId.parse('projectAAAAAAAAAAAAAAAAAAAAAAAAA')
 const CONVERSATION = ConversationId.parse('00000000-0000-4000-8000-00000000000a')
+const PERSON = PersonId.parse('person-ana')
+const HOME = { kind: 'COMPANY' } as const
 const IN_APP = {
   allowOut: ALLOWED_HOSTS,
   workingDirectory: APP_FOLDER,
@@ -261,4 +264,37 @@ test('opt-in: no E2B de verdade, a máquina do Assistente instala com pip e npm,
   // The application's answer, not the socket: E2B may show the socket open to a blocked connection.
   const blocked = await run('curl -sS -f -m 20 https://example.com/ -o /dev/null')
   assert.notEqual(blocked.exitCode, 0, 'a host outside the list answered')
+})
+
+test('opt-in: no E2B de verdade, a máquina do Assistente liga pelo início do Hub, faz a pasta da conversa e guarda o arquivo para o download (17, 20)', {
+  timeout: 300_000,
+}, async (t) => {
+  const config = realE2b()
+  if (config === undefined) {
+    return t.skip(
+      'opt-in: set CONEXUS_E2B_KEY_FILE and CONEXUS_E2B_TEMPLATE (the published template); firstmate runs it at closing, on the founder’s E2B account',
+    )
+  }
+  const mark = { [MARK.origin]: 'e241-fix-real-test' }
+  const api = createE2bApi(config, mark)
+  const conversation = ConversationId.parse(randomUUID())
+  t.after(() => api.kill(conversation))
+  const machines = createAssistantMachines({
+    kit: createE2bKit(config),
+    api,
+    template: config.machineTemplate,
+    installation: INSTALLATION,
+    mark,
+    log: { info: () => undefined, error: () => undefined },
+    scopeOf: async () => ({ companyId: COMPANY, personId: PERSON, place: HOME, chosen: [] }),
+  })
+  const context = new RequestContext<unknown>([['controller', { sessionId: conversation }]])
+  const files = (await machines.workspace(context))?.filesystem
+  assert.ok(files !== undefined)
+  // The Hub's own start: its onStart makes the conversation's folder, which the template does not.
+  await files.writeFile('probe.txt', 'L1')
+  await machines.stop(conversation)
+  const read = await machines.read(conversation, 'probe.txt', new AbortController().signal)
+  assert.equal(read.kind, 'OK')
+  assert.equal(read.kind === 'OK' ? read.bytes.toString() : '', 'L1')
 })

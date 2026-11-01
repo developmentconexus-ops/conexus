@@ -135,11 +135,17 @@ class Machines implements AssistantMachines {
     return session.kit
   }
 
-  /** Mastra's `onStart`: the folder exists, and a machine found again has the network narrowed again. */
+  /**
+   * Mastra's `onStart`: the folder exists, and a machine found again has the network narrowed again.
+   * The folder is where commands start, and the template does not make it: the `mkdir` starts at
+   * the root, for E2B refuses a command whose folder does not exist.
+   */
   private async started(session: Session, outcome: string | undefined): Promise<void> {
     session.created ??= outcome !== 'connected'
     if (outcome === 'connected') await session.kit.closeNetwork()
-    const made = await session.kit.sandbox.executeCommand?.('mkdir', ['-p', this.folder])
+    const made = await session.kit.sandbox.executeCommand?.('mkdir', ['-p', this.folder], {
+      cwd: '/',
+    })
     if (made === undefined || made.exitCode !== 0) throw new Error(MKDIR_FAILED)
   }
 
