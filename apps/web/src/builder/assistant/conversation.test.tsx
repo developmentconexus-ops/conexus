@@ -180,7 +180,7 @@ describe('as leituras e os comandos', () => {
     expect(await screen.findByText('Nenhuma linha.')).toBeTruthy()
   })
 
-  test('uma leitura que o sistema recusou pede para conectar de novo, com o caminho para Integrações', async () => {
+  test('uma leitura que o sistema recusou diz que as chaves foram recusadas, com o caminho para Integrações', async () => {
     at(OPEN, {
       conversations: [
         assistantConversation({
@@ -188,8 +188,8 @@ describe('as leituras e os comandos', () => {
         }),
       ],
     })
-    expect(await screen.findByText(/Sankhya pediu para conectar de novo/)).toBeTruthy()
-    fireEvent.click(screen.getByText(/Sankhya pediu para conectar de novo/))
+    expect(await screen.findByText(/As chaves foram recusadas pelo Sankhya\./)).toBeTruthy()
+    fireEvent.click(screen.getByText(/As chaves foram recusadas pelo Sankhya\./))
     const link = await screen.findByRole('link', { name: 'Abrir Integrações' })
     expect(link.getAttribute('href')).toBe(`${COMPANY_ROOT}/integrations`)
   })

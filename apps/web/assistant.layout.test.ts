@@ -4,6 +4,7 @@ import { listAssistantConnections, listAssistantConversations } from '@conexus/h
 import type { Replies } from './layout-harness.ts'
 import { createHarness, DESKTOP, ok, PHONE } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
+import { ASSISTANT_PATH, ASSISTANT_REPLIES } from './sweep-assistant-states.ts'
 import { OWNER, PROJECT_ID, projectsPage, startsOn } from './sweep-replies.ts'
 
 // The Assistant's Início and Conversas do Projeto in a real browser (step 24.1, criterion 23).
@@ -98,5 +99,29 @@ test('em Conversas do Projeto, o título, a caixa e a frase de vazio ficam na me
     1,
     `lefts differ: ${lefts}`,
   )
+  await page.close()
+})
+
+test('no celular, a linha de uma leitura recusada diz a frase inteira, sem cortar (QA F3)', async () => {
+  const page = await harness.open(ASSISTANT_PATH, { viewport: PHONE, replies: ASSISTANT_REPLIES })
+  await page.getByRole('button', { name: /4 ferramentas/ }).click()
+  const sentence = page.getByText(/pediu para esperar/)
+  await sentence.waitFor()
+  const cut = await sentence.evaluate((one) => one.scrollWidth - one.clientWidth)
+  assert.ok(cut <= 0, `the refusal is cut by ${cut}px`)
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), PHONE.width)
+  await page.close()
+})
+
+test('no celular, o arquivo abre numa folha que fecha com Esc e devolve o foco ao botão (U4)', async () => {
+  const page = await harness.open(ASSISTANT_PATH, { viewport: PHONE, replies: ASSISTANT_REPLIES })
+  const open = page.getByRole('button', { name: /^Abrir relatorio/ })
+  await open.waitFor()
+  await open.click()
+  const sheet = page.getByRole('dialog', { name: /^relatorio/ })
+  await sheet.waitFor()
+  assert.equal(await sheet.getAttribute('aria-modal'), null)
+  await page.keyboard.press('Escape')
+  await sheet.waitFor({ state: 'detached' })
   await page.close()
 })

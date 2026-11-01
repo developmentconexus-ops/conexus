@@ -289,10 +289,16 @@ export function Recent(props: {
       <p className={cn(START_COLUMN, 'text-text-2')}>{NO_CONVERSATIONS}</p>
     )
   return (
-    <section aria-labelledby="recent-title" className={cn(START_COLUMN, 'gap-sm')}>
-      <h2 id="recent-title" className="font-display text-title">
-        {projectId === undefined ? RECENT_TITLE : PROJECT_LIST_TITLE}
-      </h2>
+    <section
+      aria-labelledby={projectId === undefined ? 'recent-title' : undefined}
+      aria-label={projectId === undefined ? undefined : PROJECT_LIST_TITLE}
+      className={cn(START_COLUMN, 'gap-sm')}
+    >
+      {projectId === undefined && (
+        <h2 id="recent-title" className="font-display text-title">
+          {RECENT_TITLE}
+        </h2>
+      )}
       <ul className="flex flex-col">
         {conversations.map((conversation) => (
           <li key={conversation.id}>

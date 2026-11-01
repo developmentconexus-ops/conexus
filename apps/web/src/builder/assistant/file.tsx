@@ -155,6 +155,8 @@ export function FilePanel(props: {
   conversationId: ConversationId
   shown: Shown
   onClose?: () => void
+  /** The sheet that holds the panel on a phone has the name as its title and its own **Fechar**. */
+  inSheet?: boolean
 }) {
   const { shown } = props
   const url = assistantFilePath({ ...props, path: shown.path })
@@ -165,7 +167,7 @@ export function FilePanel(props: {
   return (
     <section aria-label={shown.name} className="flex h-full min-h-0 flex-col bg-canvas">
       <header className="flex items-center justify-between gap-sm border-b border-line px-md py-sm">
-        <h2 className="min-w-0 truncate font-medium">{shown.name}</h2>
+        {props.inSheet !== true && <h2 className="min-w-0 truncate font-medium">{shown.name}</h2>}
         <div className="flex shrink-0 items-center gap-xs">
           <Button
             size="sm"

@@ -1,7 +1,8 @@
 import type { ShownFile } from '@conexus/hub-api'
 import { createContext, useContext } from 'react'
 import { ASSISTANT_OVERRIDES } from './assistant-specs.ts'
-import type { RowTool, ToolSpec } from './tool-spec.ts'
+import { PLAIN_WORDS } from './connector-specs.ts'
+import type { ConnectorWords, RowTool, ToolSpec } from './tool-spec.ts'
 
 /** A file the Assistant shows beside the chat: the text to read, or the file to download. */
 export type OpenedFile = Extract<ShownFile, { kind: 'TEXT' | 'FILE' }>
@@ -14,8 +15,8 @@ export type OpenedFile = Extract<ShownFile, { kind: 'TEXT' | 'FILE' }>
 export type Room = {
   /** Who answers, as the screen's words name it. */
   agent: 'Builder' | 'Assistente'
-  /** The connector's name as the person knows it ("Sankhya"), from its id. */
-  connectorName: (connector: string) => string
+  /** The connector's name as the person knows it ("Sankhya"), and its refusals, from its id. */
+  connectors: ConnectorWords
   /** Opens a file beside the chat; none in the Builder's conversation. */
   openFile?: (file: OpenedFile) => void
   /** The path of the file now open, for its row to say so. */
@@ -28,14 +29,14 @@ export type Room = {
 
 export const BUILDER_ROOM: Room = {
   agent: 'Builder',
-  connectorName: (id) => id,
+  connectors: PLAIN_WORDS,
   overrides: {},
 }
 
 /** The Assistant's conversation before a connector catalog is read: its box and its rows say "Assistente". */
 export const ASSISTANT_ROOM: Room = {
   agent: 'Assistente',
-  connectorName: (id) => id,
+  connectors: PLAIN_WORDS,
   overrides: ASSISTANT_OVERRIDES,
 }
 

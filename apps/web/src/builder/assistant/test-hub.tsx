@@ -254,12 +254,21 @@ export function assistantScreens(server: ReturnType<typeof setupServer>) {
       conversations?: Opened[]
       offered?: SessionConnection[]
       role?: string
+      /** The providers the person may answer with; both by default, none for a person with no account. */
+      usable?: string[]
       answers?: Answers
       /** The conversations a list answers at a time; all of them by default. */
       pageSize?: number
     } = {},
   ) {
-    const { conversations = [], offered = OFFERED, role, answers = {}, pageSize = 30 } = options
+    const {
+      conversations = [],
+      offered = OFFERED,
+      role,
+      usable,
+      answers = {},
+      pageSize = 30,
+    } = options
     const sent: Sent[] = []
     const asked: string[] = []
     async function note(request: Request) {
@@ -279,7 +288,7 @@ export function assistantScreens(server: ReturnType<typeof setupServer>) {
       ...writesOf(held, note),
       ...sessionOf(conversations, answers, lines, note),
     )
-    const hub = open(view({ start: START, role }), path)
+    const hub = open(view({ start: START, role, usable }), path)
     return {
       ...hub,
       sent,

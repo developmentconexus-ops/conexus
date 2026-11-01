@@ -282,7 +282,7 @@ export function presentTool(
   const spec = specOf(tool.toolName, room)
   const failed = status === 'error' || status === 'denied'
   if (spec === undefined) return unknownTool(tool.toolName, status)
-  if (spec.present !== undefined) return spec.present(tool, status, room.connectorName)
+  if (spec.present !== undefined) return spec.present(tool, status, room.connectors)
   const detail = spec.detailKey === undefined ? undefined : stringArg(tool.args, spec.detailKey)
   const head =
     status === 'denied'

@@ -1,8 +1,11 @@
-import { ProposedApp, ShownFile } from '@conexus/hub-api'
+import type { FailureCode } from '@conexus/hub-api'
+import { FAILURES, ProposedApp, ShownFile } from '@conexus/hub-api'
 import { Link, useParams } from '@tanstack/react-router'
 import { FileTextIcon } from 'lucide-react'
 import { useEffect, useEffectEvent, useState } from 'react'
+import { sentenceOfCode } from '../../platform/hub.ts'
 import { Button } from '../../ui/button.tsx'
+import { Card, CardContent, CardFooter } from '../../ui/card.tsx'
 import { cn } from '../../ui/cn.ts'
 import {
   TraceCollapsible,
@@ -70,10 +73,20 @@ function opens(tool: ToolItem, status: ToolStatus, room: Room): boolean {
   )
 }
 
+function isFailureCode(code: string): code is FailureCode {
+  return Object.hasOwn(FAILURES, code)
+}
+
+/** A tool that failed with the Hub's own code (the machine that would not start) says the code's sentence, not the code. */
+function reasonOf(tool: ToolItem): string {
+  const text = tool.errorText ?? textOf(tool.result)
+  if (text === undefined) return 'Ocorreu um erro ao executar a ferramenta.'
+  const code = text.trim()
+  return isFailureCode(code) ? sentenceOfCode(code) : text
+}
+
 function Reason({ tool }: { tool: ToolItem }) {
-  const reason =
-    tool.errorText ?? textOf(tool.result) ?? 'Ocorreu um erro ao executar a ferramenta.'
-  return <pre className={cn(BLOCK, 'text-danger')}>{shown(reason)}</pre>
+  return <pre className={cn(BLOCK, 'text-danger')}>{shown(reasonOf(tool))}</pre>
 }
 
 function Side(props: { sign: '-' | '+'; text: string; className: string }) {
@@ -224,12 +237,16 @@ function ShownLine(props: {
 function ProposalCard({ summary }: { summary: string }) {
   const room = useRoom()
   return (
-    <div className="flex flex-col items-start gap-sm rounded-card border border-line bg-surface p-md">
-      <p className="whitespace-pre-wrap break-words text-text">{summary}</p>
-      <Button variant="primary" onClick={() => room.createApp?.(summary)}>
-        Criar app
-      </Button>
-    </div>
+    <Card>
+      <CardContent>
+        <p className="whitespace-pre-wrap break-words text-text">{summary}</p>
+      </CardContent>
+      <CardFooter>
+        <Button variant="primary" onClick={() => room.createApp?.(summary)}>
+          Criar app
+        </Button>
+      </CardFooter>
+    </Card>
   )
 }
 
@@ -277,11 +294,16 @@ export function ToolRow({ tool }: { tool: ToolItem }) {
     <Since at={tool.startedAt} />
   ) : null
   const line = (
-    <TraceLine status={lineStatus}>
-      <TraceIcon>
+    <TraceLine status={lineStatus} className={failed ? 'items-start' : undefined}>
+      <TraceIcon className={failed ? 'mt-1' : undefined}>
         <shownTool.icon />
       </TraceIcon>
-      <TraceTitle className={shownTool.beside ? 'flex-1 whitespace-normal' : undefined}>
+      <TraceTitle
+        className={cn(
+          shownTool.beside && 'flex-1',
+          (shownTool.beside || failed) && 'whitespace-normal',
+        )}
+      >
         {shownTool.sentence}
       </TraceTitle>
       {side}
