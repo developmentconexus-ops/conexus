@@ -208,7 +208,13 @@ export function createBuilderConnectors(deps: Deps): BuilderConnectors {
     async read(ids, a) {
       const opened = await admit(deps, ids, a)
       const operation = opened && readOf(opened.connector, a.operation)
-      if (opened === undefined || !operation) return { kind: 'NOT_GRANTED' }
+      if (opened === undefined || !operation) {
+        const reason = opened === undefined ? 'NOT_GRANTED_TO_PROJECT' : 'NOT_A_READ'
+        const { connectionId } = a
+        const about = { ...ids, connectionId, operation: a.operation, reason }
+        deps.log.info(about, 'BUILDER_READ_REFUSED')
+        return { kind: 'NOT_GRANTED' }
+      }
       if (!spend(a.runId)) return { kind: 'CALLS_SPENT' }
       const answered = await callThrough(deps, { ids, ...a, opened, operation })
       return answered.kind === 'OK' ? { kind: 'OK', ...shaped(answered.value) } : answered

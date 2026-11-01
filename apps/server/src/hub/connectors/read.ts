@@ -3,6 +3,7 @@ import type { Answered, Native, Operation } from '@conexus/connectors'
 import { CONCURRENT_CALL } from '@conexus/connectors'
 import type { CompanyId, ProjectId } from '@conexus/hub-api'
 import { and, eq, sql } from 'drizzle-orm'
+import type { z } from 'zod'
 import type { Login, OpenedConnection } from './executor.ts'
 import type { Deps, Viewer } from './rows.ts'
 import { scopeOf } from './rows.ts'
@@ -54,6 +55,14 @@ function answerOf(
   }
 }
 
+const ISSUES_MAX = 1000
+
+/** The schema's refusal as the caller can act on it: each path with the schema's message, no value. */
+function issuesOf(error: z.ZodError): string {
+  const each = error.issues.map((issue) => `${issue.path.join('.') || '(input)'}: ${issue.message}`)
+  return each.join('; ').slice(0, ISSUES_MAX)
+}
+
 /** The key the provider refused is the company's to connect again: the next call is NOT_GRANTED until they do. */
 function needsReauth(deps: Deps, a: ReadRequest) {
   return deps.database.command(scopeOf(a.viewer), (tx) =>
@@ -103,9 +112,16 @@ async function once(deps: Deps, a: ReadRequest, input: unknown, endsAt: number) 
 export async function readThrough(deps: Deps, a: ReadRequest): Promise<ConnectorAnswer> {
   const started = performance.now()
   const parsed = a.operation.input.safeParse(a.input)
-  // The kit's own schema judges what the app wrote: nothing reaches the provider when it refuses.
-  if (!parsed.success)
-    return { kind: 'REFUSED', native: { status: 400, code: 'INPUT_INVALID', message: null } }
+  // The kit's own schema judges what the caller wrote: nothing reaches the provider when it refuses,
+  // and the caller is told each field the schema refused, by path and the schema's words.
+  if (!parsed.success) {
+    deps.log.info(
+      { connectionId: a.opened.id, operation: a.operation.id, by: a.by, reason: 'INPUT_INVALID' },
+      'CONNECTOR_INPUT_REFUSED',
+    )
+    const message = issuesOf(parsed.error)
+    return { kind: 'REFUSED', native: { status: 400, code: 'INPUT_INVALID', message } }
+  }
   let queuedMs = a.deadlineMs
   const turn = await deps.limits.inTurn(a.opened.id, a.deadlineMs, (waitedMs) => {
     queuedMs = Math.round(waitedMs)

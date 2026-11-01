@@ -95,6 +95,17 @@ function inNotebook(connections: readonly Connection[], name: string, connector?
   return named(connections, name, connector)
 }
 
+/**
+ * The connection's name, one of the names this scope offers: a name the model makes up, such as
+ * the connector's id for the connection's name, is refused by the tool's own schema, which tells
+ * the model the names there are.
+ */
+function connectionField(connections: readonly Connection[]) {
+  const [first, ...rest] = [...new Set(connections.map((each) => each.name))]
+  if (first === undefined) return z.never()
+  return z.enum([first, ...rest]).describe("The connection's name, exactly as listed")
+}
+
 const CONNECTOR_FIELD = z
   .string()
   .optional()
@@ -148,13 +159,15 @@ function readTool(access: ConnectorAccess): ToolsInput {
         describeReads(connections),
       ].join('\n'),
       inputSchema: z.object({
-        connection: z.string().describe("The connection's name"),
+        connection: connectionField(connections),
         operation: z.enum([first, ...rest]),
         input: z.record(z.string(), z.unknown()),
       }),
       execute: async ({ connection, operation, input }, { requestContext, workspace }) => {
         const [connector, ...id] = operation.split('.')
-        const found = named(connections, connection, connector)
+        // The name is the schema's: an operation of another system goes to the named connection's
+        // door, which refuses it and logs why.
+        const found = named(connections, connection, connector) ?? named(connections, connection)
         if (found === undefined || requestContext === undefined) return NOT_GRANTED
         const answered = await access.read(
           { connectionId: found.connectionId, operation: id.join('.'), input },
@@ -175,7 +188,10 @@ function notesTool(access: ConnectorAccess) {
       id: BUILDER_TOOL.connectorNotes,
       description:
         'The notebook of a connection: each concept the Builder proved before, with its mapping and the query that proved it. Read it before you ask the person what a code means.',
-      inputSchema: z.object({ connection: z.string(), connector: CONNECTOR_FIELD }),
+      inputSchema: z.object({
+        connection: connectionField(access.connections),
+        connector: CONNECTOR_FIELD,
+      }),
       execute: async ({ connection, connector }) => {
         const found = inNotebook(access.connections, connection, connector)
         if (found === undefined) return NOT_GRANTED
@@ -193,7 +209,7 @@ function noteSaveTool(connections: readonly Connection[], save: NoteSave) {
       description:
         "Saves in a connection's notebook what a code or a field means in this company. It runs `provingQuery` once through the connection's read door and keeps the mapping, the query, the date and the number of rows it returned, never a row. Names and codes only, never a value.",
       inputSchema: z.object({
-        connection: z.string(),
+        connection: connectionField(connections),
         connector: CONNECTOR_FIELD,
         concept: z.string().min(1).max(120),
         mapping: z.string().min(1).max(500),

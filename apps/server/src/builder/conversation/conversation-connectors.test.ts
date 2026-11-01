@@ -216,7 +216,13 @@ test('connector_notes devolve as anotações da ligação com a consulta de cada
   assert.equal(listed[0].Empresa.provingQuery, COUNT)
 })
 
-test('o bloco das ligações mostra o conceito salvo no turno seguinte; um nome que não é de ligação liberada responde NOT_GRANTED', async (t) => {
+/** A tool's answer: its kind, or the refusal of its input by Mastra's check of the tool's schema. */
+function answerOf(result: unknown) {
+  const answer = Object(result)
+  return answer.kind ?? (answer.error === true ? 'TOOL_INPUT_REFUSED' : undefined)
+}
+
+test('o bloco das ligações mostra o conceito salvo no turno seguinte; um nome que não é de ligação liberada é recusado pelo esquema da ferramenta', async (t) => {
   const missing = { connection: 'Filial', connector: 'sankhya' }
   const on = await connecting(t, [
     [
@@ -237,13 +243,13 @@ test('o bloco das ligações mostra o conceito salvo no turno seguinte; um nome 
     .flatMap((message) => message.parts)
     .flatMap((part) =>
       part.type === 'tool-invocation' && part.toolInvocation.toolName !== SAVE
-        ? [[part.toolInvocation.toolName, Object(part.toolInvocation.result).kind]]
+        ? [[part.toolInvocation.toolName, answerOf(part.toolInvocation.result)]]
         : [],
     )
     .filter(([name]) => [READ, NOTES].includes(String(name)))
   assert.deepEqual(refused, [
-    [READ, 'NOT_GRANTED'],
-    [NOTES, 'NOT_GRANTED'],
+    [READ, 'TOOL_INPUT_REFUSED'],
+    [NOTES, 'TOOL_INPUT_REFUSED'],
   ])
   assert.equal(endOf(await on.say()), 'complete')
   assert.ok(on.calls.at(-1)?.system.includes('Notebook: Empresa.'))
@@ -251,8 +257,8 @@ test('o bloco das ligações mostra o conceito salvo no turno seguinte; um nome 
     .flatMap((message) => message.parts)
     .flatMap((part) =>
       part.type === 'tool-invocation' && part.toolInvocation.toolName === SAVE
-        ? [Object(part.toolInvocation.result).kind]
+        ? [answerOf(part.toolInvocation.result)]
         : [],
     )
-  assert.deepEqual(saves, ['SAVED', 'NOT_GRANTED'])
+  assert.deepEqual(saves, ['SAVED', 'TOOL_INPUT_REFUSED'])
 })

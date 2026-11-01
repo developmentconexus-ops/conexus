@@ -76,10 +76,15 @@ test('sem o conector, o nome que duas ligações têm é ambíguo e nada é cham
   assert.deepEqual([seen.notes, seen.saved], [[], []])
 })
 
-test('um nome que nenhuma ligação liberada tem responde NOT_GRANTED', async () => {
+test('um nome que nenhuma ligação liberada tem é recusado pelo esquema da ferramenta, que diz os nomes, e nada é chamado', async () => {
   const { run, seen } = tools()
   const note = { connection: 'Filial', concept: 'C', mapping: 'm', provingQuery: 'q' }
-  assert.equal((await run('connector_notes', { connection: 'Filial' })).kind, 'NOT_GRANTED')
-  assert.equal((await run('connector_note_save', note)).kind, 'NOT_GRANTED')
+  for (const refused of [
+    await run('connector_notes', { connection: 'Filial' }),
+    await run('connector_note_save', note),
+  ]) {
+    assert.equal(refused.error, true)
+    assert.match(refused.message, /connection: Invalid input: expected "Matriz"/)
+  }
   assert.deepEqual([seen.notes, seen.saved], [[], []])
 })
