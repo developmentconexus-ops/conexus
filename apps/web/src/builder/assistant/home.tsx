@@ -228,7 +228,7 @@ function ConversationLink(props: {
   )
   const content = (
     <>
-      <span className="flex min-w-0 items-center gap-sm">
+      <span className="flex min-w-0 flex-1 items-center gap-sm">
         <span className="truncate">{titleOf(conversation)}</span>
         {props.projectName !== undefined && (
           <CutBadge className="max-w-[40%]">{props.projectName}</CutBadge>
