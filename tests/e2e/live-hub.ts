@@ -14,13 +14,15 @@ import {
 import { hashPassword } from 'better-auth/crypto'
 import type { Browser, BrowserContext, Page } from 'playwright-core'
 import { testBuilderPorts } from '../../apps/server/src/builder/runs/test-runs.ts'
+import { createIdentity } from '../../apps/server/src/hub/identity/public.ts'
 import { createStatus } from '../../apps/server/src/hub/status/public.ts'
-import { createEdgeHub, createHub, identityOf, subjectsOf } from '../../apps/server/src/main.ts'
+import { createEdgeHub, createHub, subjectsOf } from '../../apps/server/src/main.ts'
 import { createCloudflareApps } from '../../apps/server/src/platform/cloudflare.ts'
 import { createCompanyPostgres } from '../../apps/server/src/platform/company-postgres.ts'
 import type { Config } from '../../apps/server/src/platform/config.ts'
 import { ConnectorApps } from '../../apps/server/src/platform/config-connectors.ts'
 import { closeListeners } from '../../apps/server/src/platform/lifecycle.ts'
+import { createMail } from '../../apps/server/src/platform/mail.ts'
 import { createNeonProjects } from '../../apps/server/src/platform/neon.ts'
 import { pgTransport } from '../../apps/server/src/platform/test-company-postgres.ts'
 import {
@@ -120,7 +122,8 @@ export async function liveHub(
     connectorApps: ConnectorApps.parse(JSON.stringify({ 'mercado-livre': mercadoLivre.app })),
   }
   const status = createStatus({ version: config.version, database: database.database })
-  const identity = identityOf({ database: database.database, config, log: silent })
+  const sendMail = createMail({ config, log: silent })
+  const identity = createIdentity({ database: database.database, config, log: silent, sendMail })
   const { machinesOf, repository, copy, folder } = testBuilderPorts(config)
   const subjects = subjectsOf({
     ...{ machinesOf, repository, copy },
@@ -128,6 +131,7 @@ export async function liveHub(
     mastraPool: database.mastraPool,
     config,
     identity,
+    sendMail,
     neon: createNeonProjects({ config, log: silent }),
     companyPostgres: createCompanyPostgres({
       transport: pgTransport,

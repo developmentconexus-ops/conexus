@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { Version } from '@conexus/hub-api'
-import { createHub, identityOf, subjectsOf } from '../../main.ts'
+import { createHub, subjectsOf } from '../../main.ts'
 import { testAppPorts } from '../../platform/test-app-ports.ts'
 import {
   createTestDatabase,
@@ -12,7 +12,9 @@ import {
   unreachableDatabaseUrl,
 } from '../../platform/test-database.ts'
 import { spawnHub } from '../../platform/test-hub-process.ts'
+import { testMail } from '../../platform/test-mail.ts'
 import { testMastraPool } from '../../platform/test-mastra-database.ts'
+import { createIdentity } from '../identity/public.ts'
 import { createStatus } from './public.ts'
 
 const VERSION = Version.parse('v0.1.0')
@@ -21,7 +23,8 @@ async function hubOn(t: Parameters<typeof createTestDatabase>[0]) {
   const test = await createTestDatabase(t)
   const status = createStatus({ version: VERSION, database: test.database })
   const config = testConfig(test.runtimeUrl)
-  const identity = identityOf({ database: test.database, config, log: silent })
+  const sendMail = testMail(config)
+  const identity = createIdentity({ database: test.database, config, log: silent, sendMail })
   const {
     projects,
     operations,
@@ -30,12 +33,14 @@ async function hubOn(t: Parameters<typeof createTestDatabase>[0]) {
     conversations,
     assistant,
     automations,
+    notifications,
     connectors,
   } = subjectsOf({
     mastraPool: test.mastraPool,
     database: test.database,
     config,
     identity,
+    sendMail,
     ...testAppPorts(config),
     log: silent,
   })
@@ -49,6 +54,7 @@ async function hubOn(t: Parameters<typeof createTestDatabase>[0]) {
     conversations,
     assistant,
     automations,
+    notifications,
     connectors,
   })
   t.after(() => app.close())
@@ -116,7 +122,8 @@ test('com o banco fora, /api/status responde 503 e /api/health continua 200', as
   const database = await unreachableDatabase(t)
   const status = createStatus({ version: VERSION, database })
   const config = testConfig(await unreachableDatabaseUrl())
-  const identity = identityOf({ database, config, log: silent })
+  const sendMail = testMail(config)
+  const identity = createIdentity({ database, config, log: silent, sendMail })
   const {
     projects,
     operations,
@@ -125,12 +132,14 @@ test('com o banco fora, /api/status responde 503 e /api/health continua 200', as
     conversations,
     assistant,
     automations,
+    notifications,
     connectors,
   } = subjectsOf({
     mastraPool: testMastraPool(t, config),
     database,
     config,
     identity,
+    sendMail,
     ...testAppPorts(config),
     log: silent,
   })
@@ -144,6 +153,7 @@ test('com o banco fora, /api/status responde 503 e /api/health continua 200', as
     conversations,
     assistant,
     automations,
+    notifications,
     connectors,
   })
   t.after(() => app.close())

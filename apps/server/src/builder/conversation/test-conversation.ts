@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto'
 import type { TestContext } from 'node:test'
 import type { AgentControllerWireEvent, MastraMessagePart } from '@mastra/core/agent-controller'
 import { z } from 'zod'
+import { createIdentity } from '../../hub/identity/public.ts'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import {
   ANA_OWNER,
@@ -13,7 +14,7 @@ import {
   post,
 } from '../../hub/identity/test-hub.ts'
 import { createStatus } from '../../hub/status/public.ts'
-import { createHub, identityOf, subjectsOf } from '../../main.ts'
+import { createHub, subjectsOf } from '../../main.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { shutDown } from '../../platform/lifecycle.ts'
 import type { Anthropic, Reply, Sent } from '../../platform/test-anthropic.ts'
@@ -97,7 +98,8 @@ export async function conversing(
  */
 export async function hubBeside(t: TestContext, hub: Hub, log: FailureLog = silent) {
   const { test, config } = hub
-  const identity = identityOf({ database: test.database, config, log: silent })
+  const { sendMail } = hub
+  const identity = createIdentity({ database: test.database, config, log: silent, sendMail })
   const postgres = heldCompanyPostgres(config)
   const ports = testAppPorts(
     config,
@@ -105,7 +107,7 @@ export async function hubBeside(t: TestContext, hub: Hub, log: FailureLog = sile
     hub.builder.folder,
   )
   const subjects = subjectsOf({
-    ...{ mastraPool: test.mastraPool, database: test.database, config, identity },
+    ...{ mastraPool: test.mastraPool, database: test.database, config, identity, sendMail },
     ...{ ...ports, log },
   })
   const status = createStatus({ version: config.version, database: test.database })

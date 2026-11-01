@@ -9,3 +9,4 @@
 **/secrets
 docs
 **/invitation-render.mjs
+**/notification-render.mjs

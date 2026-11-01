@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { Email } from '@conexus/hub-api'
-import { createHub, identityOf, subjectsOf } from '../../main.ts'
+import { createHub, subjectsOf } from '../../main.ts'
 import { testAppPorts } from '../../platform/test-app-ports.ts'
 import {
   createTestDatabase,
@@ -10,7 +10,9 @@ import {
   testConfig,
   WRITE_HEADERS,
 } from '../../platform/test-database.ts'
+import { testMail } from '../../platform/test-mail.ts'
 import { createStatus } from '../status/public.ts'
+import { createIdentity } from './public.ts'
 import { codeOf, companyOn, INVITEE } from './test-hub.ts'
 
 const LEAKED = '123456789'
@@ -22,7 +24,8 @@ async function linked(t: TestContext) {
   const test = await createTestDatabase(t)
   const config = testConfig(test.runtimeUrl)
   const status = createStatus({ version: config.version, database: test.database })
-  const identity = identityOf({ database: test.database, config, log: silent })
+  const sendMail = testMail(config)
+  const identity = createIdentity({ database: test.database, config, log: silent, sendMail })
   const {
     projects,
     operations,
@@ -31,12 +34,14 @@ async function linked(t: TestContext) {
     conversations,
     assistant,
     automations,
+    notifications,
     connectors,
   } = subjectsOf({
     mastraPool: test.mastraPool,
     database: test.database,
     config,
     identity,
+    sendMail,
     ...testAppPorts(config),
     log: silent,
   })
@@ -50,6 +55,7 @@ async function linked(t: TestContext) {
     conversations,
     assistant,
     automations,
+    notifications,
     connectors,
   })
   t.after(() => app.close())

@@ -244,11 +244,7 @@ test('rodar agora: 202 com o id da execução, MANUAL no histórico; um segundo 
   assert.equal(done.trigger, 'MANUAL')
   assert.equal(done.state.kind, 'DONE')
   assert.ok(on.lines.some((line) => line.message === 'AUTOMATION_RUN_REQUESTED'))
-  const ran = on.lines.filter((line) => line.message === 'AUTOMATION_RAN')
-  assert.deepEqual(
-    ran.map((line) => line.fields.trigger),
-    ['MANUAL', 'MANUAL'],
-  )
+  assert.deepEqual(on.mail.sent, [], 'Rodar agora never mails')
 })
 
 test('o histórico: da mais nova para a mais velha, 20 por página com next; um page adulterado dá REQUEST_MALFORMED', {

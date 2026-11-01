@@ -4,9 +4,11 @@ import type { TestContext } from 'node:test'
 import { setTimeout as sleep } from 'node:timers/promises'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import { call, post } from '../../hub/identity/test-hub.ts'
+import { MailApiUrl } from '../../platform/config.ts'
 import { openMastraPool } from '../../platform/database.ts'
 import type { Anthropic, Reply, Sent } from '../../platform/test-anthropic.ts'
 import { silent } from '../../platform/test-database.ts'
+import { mailServer } from '../../platform/test-mail.ts'
 import { assisting } from '../assistant/test-assistant.ts'
 import { hubBeside, title } from '../conversation/test-conversation.ts'
 import type { tool } from '../conversation/test-questions.ts'
@@ -37,17 +39,22 @@ export type Run = {
 }
 type Next = { kind: 'END' } | { kind: 'MORE'; page: string }
 
-/** The Assistant's test company (`assisting`), with the automations' clock of `turnMs`. */
+/**
+ * The Assistant's test company (`assisting`), with the automations' clock of `turnMs`, and its mail
+ * going to a fake of the provider (`mail`).
+ */
 export async function automating(
   t: TestContext,
   model: Block[][] | Anthropic['answer'] = [],
   turnMs = TEST_CLOCK.turnMs,
 ) {
+  const mail = await mailServer(t)
   const on = await assisting(t, model, undefined, (config) => ({
     ...config,
+    mailApiUrl: MailApiUrl.parse(mail.url),
     automationClock: { ...TEST_CLOCK, turnMs },
   }))
-  return { ...on, automations: `${on.company}/automations` }
+  return { ...on, mail, automations: `${on.company}/automations` }
 }
 
 /** A model answering the title call, and the Assistant's calls with `next`'s replies in order, then `Pronto.`. */

@@ -567,13 +567,16 @@ rows for the five above wait on issue #458.
 - **Native reference.** Documenso `cd0cc5febcbb76ec7e5ecb75c0b8c65ab8432198`,
   `packages/email/render.tsx:6,65,92` renders React Email at send time. Installing that runtime
   directly is the measured alternative of 117 packages/68,136,787 bytes, including CLI tools.
-- **Packaging.** Native esbuild 0.28.2 bundles, for us, only `invitation-email.tsx` (which also exports the
-  recovery template of `password-recovery-email.tsx`; both sit in the page of `mail-frame.tsx`) as an ignored ESM
-  artifact, with React/DOM 19.2.4 pinned independently from the web. Native aliases resolve those
+- **Packaging.** Native esbuild 0.28.2 bundles, for us, `invitation-email.tsx` (which also exports the
+  recovery template of `password-recovery-email.tsx`; both sit in the page of `mail-frame.tsx`) and
+  `automation-email.tsx` of the notifications (step 24.2, in the same page through
+  `identity/mail/public.tsx`, the frame's door) as two ignored ESM artifacts, one command each, with
+  React/DOM 19.2.4 pinned independently from the web. Native aliases resolve those
   versions; the build replaces the dependencies' development-mode constant. No runtime environment
-  branch or template substitution is added. `invitation-render.d.mts` owns the port used by source
-  and consumer. Local prestart/pretest, pree2e/preremovals and the image build generate the same
-  artifact; removal scratch copies carry this generated input as well as source.
+  branch or template substitution is added. `invitation-render.d.mts` and `notification-render.d.mts`
+  own the ports used by source and consumer. Local prestart/pretest, pree2e/preremovals and the image
+  build generate the same artifacts; removal scratch copies carry these generated inputs as well as
+  source.
 - **Why.** The approved 4.1 packaging decision keeps send-time escaping and native HTML-to-text
   conversion without the CLI runtime installation. The generated module measures 745,905 bytes.
   `invitation-email.test.ts` sends through the Hub and HTTP provider fake;

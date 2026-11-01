@@ -213,6 +213,14 @@ export {
 } from './model-defaults.ts'
 export { setCompanyNickname } from './nickname.ts'
 export {
+  automationPath,
+  conversationPath,
+  listNotifications,
+  markNotificationsRead,
+  NotificationId,
+  NotificationRow,
+} from './notifications.ts'
+export {
   ObservationalMemoryModels,
   ObservationalMemoryRole,
   readObservationalMemoryModels,

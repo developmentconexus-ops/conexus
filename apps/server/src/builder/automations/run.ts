@@ -1,4 +1,4 @@
-import type { ConversationId, FailureCode, RunTrigger } from '@conexus/hub-api'
+import type { ConversationId, FailureCode } from '@conexus/hub-api'
 import {
   AutomationFailureCode,
   AutomationId,
@@ -12,6 +12,7 @@ import {
 import type { Mastra } from '@mastra/core/mastra'
 import { createStep, createWorkflow } from '@mastra/core/workflows'
 import { z } from 'zod'
+import type { Notify } from '../../hub/notifications/public.ts'
 import { databaseFailure } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
@@ -47,25 +48,6 @@ export const AutomationInput = z.object({
   connections: z.array(ConnectionId).max(50),
 })
 export type AutomationInput = z.infer<typeof AutomationInput>
-
-/** What a run tells its owner when it ends. */
-type AutomationRan = {
-  input: AutomationInput
-  runId: AutomationRunId
-  trigger: RunTrigger
-  outcome: RunOutcome
-}
-export type Notify = { automationRan(ran: AutomationRan): Promise<void> }
-
-/** The end of each run, in the log. */
-export function loggedNotify(log: FailureLog): Notify {
-  return {
-    async automationRan({ input, runId, trigger, outcome }) {
-      const { companyId, automationId } = input
-      log.info({ companyId, automationId, runId, trigger, kind: outcome.kind }, 'AUTOMATION_RAN')
-    },
-  }
-}
 
 const Checked = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('GO'), input: AutomationInput }),
@@ -224,7 +206,12 @@ export function automationRun(deps: Deps) {
       if (input === null) return outcome
       const id = AutomationRunId.parse(runId)
       const trigger = await triggerOf(mastra, input, id)
-      await deps.notify.automationRan({ input, runId: id, trigger, outcome })
+      await deps.notify.automationRan({
+        ...{ companyId: input.companyId, personId: input.personId },
+        ...{ automationId: input.automationId, name: input.name },
+        projectId: input.place.kind === 'PROJECT' ? input.place.projectId : null,
+        ...{ runId: id, trigger, outcome },
+      })
       return outcome
     },
   })

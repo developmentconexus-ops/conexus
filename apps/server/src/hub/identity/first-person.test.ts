@@ -7,7 +7,7 @@ import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { promisify } from 'node:util'
 import { Email } from '@conexus/hub-api'
-import { createHub, identityOf, subjectsOf } from '../../main.ts'
+import { createHub, subjectsOf } from '../../main.ts'
 import { testAppPorts } from '../../platform/test-app-ports.ts'
 import type { TestDatabase } from '../../platform/test-database.ts'
 import {
@@ -17,7 +17,9 @@ import {
   testConfig,
   WRITE_HEADERS,
 } from '../../platform/test-database.ts'
+import { testMail } from '../../platform/test-mail.ts'
 import { createStatus } from '../status/public.ts'
+import { createIdentity } from './public.ts'
 
 const run = promisify(execFile)
 const _ROOT = join(import.meta.dirname, '..', '..', '..', '..', '..')
@@ -66,9 +68,10 @@ async function hubOn(t: TestContext, test: TestDatabase) {
   const config = testConfig(test.runtimeUrl)
   const status = createStatus({ version: config.version, database: test.database })
   const { database } = test
-  const identity = identityOf({ database, config, log: silent })
-  const ports = { ...testAppPorts(config), log: silent }
-  const subjects = subjectsOf({ database, config, identity, ...ports, mastraPool: test.mastraPool })
+  const sendMail = testMail(config)
+  const identity = createIdentity({ database, config, log: silent, sendMail })
+  const ports = { ...testAppPorts(config), log: silent, mastraPool: test.mastraPool }
+  const subjects = subjectsOf({ database, config, identity, sendMail, ...ports })
   const app = await createHub(config, { status, identity, ...subjects })
   t.after(() => app.close())
   return app
@@ -263,11 +266,9 @@ test('mídia: JSON inválido 400 e corpo acima de 4 KiB 413 em PUT /api/password
 })
 
 function identityOn(test: TestDatabase) {
-  return identityOf({
-    database: test.database,
-    config: testConfig(test.runtimeUrl),
-    log: silent,
-  })
+  const config = testConfig(test.runtimeUrl)
+  const sendMail = testMail(config)
+  return createIdentity({ database: test.database, config, log: silent, sendMail })
 }
 
 test('ao mesmo tempo, com dois e-mails: uma pessoa só, e a outra chamada recusa FIRST_PERSON_EXISTS', async (t) => {
