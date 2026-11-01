@@ -221,7 +221,7 @@ test('o título nasce na primeira mensagem, pela conta do turno, e fica guardado
   )
 })
 
-test('a observação vai pela conta do turno e pede o título em português; um 429 nela: o turno termina, sem texto cru', async (t) => {
+test('a observação vai pela conta do turno e pede o título em português; um 429 nela: o turno termina e nenhum quadro, fora os om_*_failed do Mastra, leva o texto cru', async (t) => {
   const printed = printedOf(t)
   const long = 'As encomendas da padaria chegam pelo telefone e pelo balcão. '.repeat(3000)
   const { hub, ana, conversations, anthropic, link, lines } = await conversing(t, (asked) => {

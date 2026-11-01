@@ -16,7 +16,7 @@ import {
   SandboxFilesystem,
   within,
 } from '../machine/public.ts'
-import { sessionScope } from './context.ts'
+import type { ScopeOf } from './context.ts'
 
 /** Where the conversation's files live on its machine, made at the machine's start. */
 const WORK_FOLDER = '/home/user/work'
@@ -54,7 +54,7 @@ export type AssistantMachines = {
   read(conversationId: ConversationId, path: string, signal: AbortSignal): Promise<FileRead>
 }
 
-type Deps = AssistantMachine & { log: FailureLog }
+type Deps = AssistantMachine & { log: FailureLog; scopeOf: ScopeOf }
 
 /** Where a path the model or the person names lands in the conversation's folder, or why it does not. */
 export type Located =
@@ -192,7 +192,7 @@ class Machines implements AssistantMachines {
   }
 
   async workspace(requestContext: RequestContext): Promise<Workspace | undefined> {
-    const scope = await sessionScope(requestContext)
+    const scope = await this.deps.scopeOf(requestContext)
     const controller = Controller.safeParse(requestContext.get('controller'))
     if (scope === undefined || !controller.success) return undefined
     const { sessionId: conversationId } = controller.data

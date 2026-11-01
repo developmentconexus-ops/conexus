@@ -9,7 +9,7 @@ import type { FailureLog } from '../../platform/failure.ts'
 import { turnOfOwner } from '../conversation/public.ts'
 import type { QueueDeps, Turn } from '../model-accounts/public.ts'
 import { setTurn } from '../model-accounts/public.ts'
-import { sessionScope } from './context.ts'
+import type { ScopeOf } from './context.ts'
 import type { AssistantMachines } from './machine.ts'
 
 const TURN_PROCESSOR = 'conexus-assistant-turn'
@@ -28,12 +28,13 @@ export function turnKeyIn(requestContext: RequestContext): TurnKey | undefined {
  * conversation takes its owner's turn in the accounts' queue (step 11) as Mastra reads its input,
  * with a new `TurnKey`, and no Projeto (`Runs`): the controller already sends one message at a time
  * to a conversation. Every run reads its input: Mastra skips it only on a resume, and nothing in
- * the Assistant suspends (no card, no plan, no approval). The turn lets go of its accounts when the controller says the run ended
- * (`agent_end`), for every end: done, failed, stopped by Parar or by the Hub's end; a deleted
- * session's run ends without one, so its deletion lets go too.
+ * the Assistant suspends (no card, no plan, no approval). The turn lets go of its accounts when
+ * the controller says the run ended (`agent_end`), for every end: done, failed, stopped by Parar
+ * or by the Hub's end; a deleted session's run ends without one, so its deletion lets go too.
  */
 export function assistantTurns(deps: {
   queue: QueueDeps
+  scopeOf: ScopeOf
   machines: AssistantMachines
   log: FailureLog
 }) {
@@ -58,7 +59,7 @@ export function assistantTurns(deps: {
     requestContext: RequestContext | undefined,
     abort: (reason: string) => never,
   ): Promise<void> {
-    const scope = requestContext === undefined ? undefined : await sessionScope(requestContext)
+    const scope = requestContext === undefined ? undefined : await deps.scopeOf(requestContext)
     const session = Session.safeParse(requestContext?.get('controller'))
     if (requestContext === undefined || scope === undefined || !session.success) {
       return abort('CONVERSATION_NOT_FOUND')

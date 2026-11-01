@@ -192,23 +192,3 @@ test('uma conversa e o que escolher: cada ligação do lugar com a escolha; uma 
     assert.equal(codeOf(await call(on.hub, bruno, 'GET', at)), 'NOT_FOUND', at)
   }
 })
-
-test('uma escolha guardada que não se lê não escolhe nada: a conversa fica sem ligação escolhida', async (t) => {
-  const on = await assisting(t)
-  const url = await created(on.hub, on.ana, on.assistant, { connections: [on.matriz] })
-  const id = url.slice(url.lastIndexOf('/') + 1)
-  const threads = 'mastra.mastra_threads'
-  const [row] = (
-    await on.hub.test.mastraPool.query(`select metadata from ${threads} where id = $1`, [id])
-  ).rows
-  const metadata = typeof row.metadata === 'string' ? JSON.parse(row.metadata) : row.metadata
-  const broken = JSON.stringify({ ...metadata, conexusConnections: [on.matriz, 42] })
-  await on.hub.test.mastraPool.query(`update ${threads} set metadata = $2 where id = $1`, [
-    id,
-    broken,
-  ])
-  assert.deepEqual(choiceOf(await call(on.hub, on.ana, 'GET', url)), [
-    ['Matriz', false],
-    ['Filial', false],
-  ])
-})

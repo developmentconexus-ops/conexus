@@ -30,7 +30,9 @@ import { Failure } from '../../platform/failure.ts'
 import { answer, serve } from '../../platform/http.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import { conversationStart, effortsOf } from '../model-accounts/public.ts'
-import { assistantOwner, CHOSEN_SETTING, SESSION_MARK, scopeOn } from './context.ts'
+import type { ChosenConnections } from './chosen.ts'
+import type { Owner } from './context.ts'
+import { assistantOwner, SESSION_MARK, scopeOn } from './context.ts'
 import { registerFile } from './file-route.ts'
 import type { AssistantMachines } from './machine.ts'
 import type { assistantMemory } from './memory.ts'
@@ -49,9 +51,9 @@ type Deps = {
   controller: AgentController
   memory: ReturnType<typeof assistantMemory>
   machines: AssistantMachines
+  chosen: ChosenConnections
   log: FailureLog
 }
-type Owner = { companyId: CompanyId; personId: Person['id'] }
 type Place = SessionScope['place']
 
 function ownerOf(input: { person: Person; params: { companyId: CompanyId } }): Owner {
@@ -86,9 +88,10 @@ async function ownThread(deps: Deps, owner: Owner, conversationId: ConversationI
   return thread
 }
 
-/** The thread's scope as its metadata holds it: the mark and the setting, read with no session (a `GET` starts nothing). */
-async function scopeOfThread(owner: Owner, thread: StorageThreadType) {
-  const scope = await scopeOn({ owner, setting: async (key) => thread.metadata?.[key] })
+/** The thread's scope: its mark, read with no session (a `GET` starts nothing), and the choice the Hub keeps. */
+async function scopeOfThread(deps: Deps, owner: Owner, thread: StorageThreadType) {
+  const chosen = await deps.chosen.of(owner, ConversationId.parse(thread.id))
+  const scope = scopeOn({ owner, mark: thread.metadata?.[SESSION_MARK.project], chosen })
   if (scope === undefined) throw new Failure('CONVERSATION_NOT_FOUND')
   return scope
 }
@@ -117,21 +120,6 @@ async function offeredOnly(deps: Deps, scope: SessionScope, asked: readonly Conn
   return offered.flatMap((each) => (wanted.has(each.connectionId) ? [each.connectionId] : []))
 }
 
-/**
- * Writes the choice on the thread and reads it back: Mastra's `setSetting` returns without writing
- * when the session holds no thread, so a choice that did not land is the store's failure.
- */
-async function choose(
-  session: Awaited<ReturnType<AgentController['createSession']>>,
-  chosen: readonly ConnectionId[],
-): Promise<void> {
-  await session.thread.setSetting({ key: CHOSEN_SETTING, value: chosen })
-  const kept = await session.thread.getSetting({ key: CHOSEN_SETTING })
-  if (JSON.stringify(kept) !== JSON.stringify(chosen)) {
-    throw new Failure('DATABASE_UNAVAILABLE', { details: { reason: 'SETTING_NOT_KEPT' } })
-  }
-}
-
 /** The conversation an attempt names: one id per company, person and key, so a repeat finds the same thread (code C37). */
 function conversationIdOf(owner: Owner, attemptKey: string): ConversationId {
   const hex = createHash('sha256')
@@ -152,9 +140,10 @@ type Asked = {
 
 /**
  * A conversation's creation, keyed by its attempt (code C37): the model, the Projeto and the
- * connections are checked first, nothing made on a refusal; `createSession` is get-or-create on the
- * id the key derives, stamping the thread's marks; then the model and, last, the choice, each only
- * if the thread does not hold it yet, so a repeat after a cut finishes the first attempt.
+ * connections are checked first, nothing made on a refusal; the choice is kept first, once per
+ * attempt, another place refused; `createSession` is get-or-create on the id the key derives,
+ * stamping the thread's marks; then the model, only if the thread does not hold one yet, so a
+ * repeat after a cut finishes the first attempt.
  */
 async function created(deps: Deps, owner: Owner, input: { attemptKey: string; body: Asked }) {
   const place = placeOf(input.body.projectId)
@@ -162,15 +151,13 @@ async function created(deps: Deps, owner: Owner, input: { attemptKey: string; bo
   const id = conversationIdOf(owner, input.attemptKey)
   const resourceId = assistantOwner(owner)
   const earlier = await deps.memory.getThreadById({ threadId: id, resourceId })
-  const marked = earlier?.metadata?.[SESSION_MARK.project] ?? null
-  if (earlier !== null && marked !== (input.body.projectId ?? null)) {
-    throw new Failure('IDEMPOTENCY_CONFLICT')
-  }
   const start = await conversationStart(deps.queue, owner, input.body.model)
   const effort = input.body.effort ?? start.effort
   if (!effortsOf(start.model).includes(effort)) throw new Failure('EFFORT_UNSUPPORTED')
   const scope: SessionScope = { ...owner, place, chosen: [] }
   const chosen = await offeredOnly(deps, scope, input.body.connections)
+  const { projectId } = input.body
+  await deps.chosen.keep(owner, { conversationId: id, projectId, connections: chosen })
   const tags = {
     [SESSION_MARK.company]: owner.companyId,
     [SESSION_MARK.person]: owner.personId,
@@ -179,7 +166,6 @@ async function created(deps: Deps, owner: Owner, input: { attemptKey: string; bo
   const session = await deps.controller.createSession({ id, resourceId, threadId: id, tags })
   const kept = ModelIdSchema.optional().parse(earlier?.metadata?.currentModelId)
   if (kept === undefined) await session.model.switch(start.model, { thinkingLevel: effort })
-  if (earlier?.metadata?.[CHOSEN_SETTING] === undefined) await choose(session, chosen)
   const thread = await ownThread(deps, owner, id)
   return { created: earlier === null, thread, model: kept ?? start.model }
 }
@@ -229,7 +215,7 @@ function registerReads(app: FastifyInstance, deps: Deps): void {
     const owner = ownerOf(input)
     await admitted(deps, owner, { kind: 'COMPANY' })
     const thread = await ownThread(deps, owner, input.params.conversationId)
-    const scope = await scopeOfThread(owner, thread)
+    const scope = await scopeOfThread(deps, owner, thread)
     return answer({ conversation: await conversationOf(deps, thread, scope) })
   })
 
@@ -254,7 +240,7 @@ function registerWrites(app: FastifyInstance, deps: Deps): void {
     const owner = ownerOf(input)
     const attemptKey = z.string().parse(input.attemptKey)
     const made = await created(deps, owner, { attemptKey, body: input.body })
-    const scope = await scopeOfThread(owner, made.thread)
+    const scope = await scopeOfThread(deps, owner, made.thread)
     if (made.created) {
       deps.log.info(
         {
@@ -274,15 +260,9 @@ function registerWrites(app: FastifyInstance, deps: Deps): void {
     const { conversationId } = input.params
     await admitted(deps, owner, { kind: 'COMPANY' })
     const thread = await ownThread(deps, owner, conversationId)
-    const scope = await scopeOfThread(owner, thread)
+    const scope = await scopeOfThread(deps, owner, thread)
     const chosen = await offeredOnly(deps, scope, input.body.connections)
-    const session = await deps.controller.createSession({
-      id: conversationId,
-      resourceId: assistantOwner(owner),
-      threadId: conversationId,
-      resumeOnly: true,
-    })
-    await choose(session, chosen)
+    await deps.chosen.change(owner, conversationId, chosen)
     deps.log.info(
       { companyId: owner.companyId, conversationId, count: chosen.length },
       'ASSISTANT_CONNECTIONS_CHANGED',
