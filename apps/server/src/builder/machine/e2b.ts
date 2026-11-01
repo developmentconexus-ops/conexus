@@ -3,7 +3,7 @@ import { E2BSandbox } from '@mastra/e2b'
 import { ALL_TRAFFIC, Sandbox } from 'e2b'
 import type { Config } from '../../platform/config.ts'
 import type { Kit, KitFactory, MachineApi } from './kit.ts'
-import { ALLOWED_HOSTS, MARK } from './kit.ts'
+import { MARK } from './kit.ts'
 
 /** E2B's free plan keeps a machine up an hour at most; it pauses then, and the next start resumes it. */
 const TIMEOUT_MS = 60 * 60 * 1000
@@ -20,7 +20,7 @@ export function createE2bKit(config: Credentials): KitFactory {
       apiKey: config.e2bApiKey.reveal(),
       timeout: TIMEOUT_MS,
       lifecycle: { onTimeout: 'pause' },
-      network: { allowOut: ALLOWED_HOSTS, denyOut: [ALL_TRAFFIC] },
+      network: { allowOut: [...options.allowOut], denyOut: [ALL_TRAFFIC] },
       metadata: options.metadata,
       onStart: options.onStart,
       workingDirectory: options.workingDirectory,
@@ -33,7 +33,7 @@ export function createE2bKit(config: Credentials): KitFactory {
         read: (path) => sandbox.e2b.files.read(path, { format: 'stream' }),
       },
       closeNetwork: () =>
-        sandbox.e2b.updateNetwork({ allowOut: ALLOWED_HOSTS, denyOut: [ALL_TRAFFIC] }),
+        sandbox.e2b.updateNetwork({ allowOut: [...options.allowOut], denyOut: [ALL_TRAFFIC] }),
     }
   }
 }

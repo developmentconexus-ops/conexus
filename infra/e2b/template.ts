@@ -50,11 +50,23 @@ export PLAYWRIGHT_BROWSERS_PATH=${BROWSERS} npm_config_cache=${CACHE}
 exec node ${OPT}/packages/app/src/check/main.ts --tools ${OPT}/node_modules --platform ${OPT}/packages "$@"
 `
 
+const PYTHON_LIBRARIES = [
+  'pandas==2.3.3',
+  'numpy==2.3.4',
+  'matplotlib==3.10.7',
+  'openpyxl==3.1.5',
+  'xlsxwriter==3.2.9',
+  'python-docx==1.2.0',
+  'python-pptx==1.0.2',
+  'pypdf==6.1.3',
+  'reportlab==4.4.4',
+]
+
 const template = SDK_FOLDERS.reduce(
   (built, folder) => built.copy(folder, `${OPT}/${folder}`, { user: 'root' }),
   Template({ fileContextPath: ROOT, fileIgnorePatterns: IGNORED })
     .fromNodeImage('24')
-    .aptInstall(['git']),
+    .aptInstall(['git', 'python3-pip']),
 )
   .runCmd(
     [
@@ -69,7 +81,14 @@ const template = SDK_FOLDERS.reduce(
     ],
     { user: 'root' },
   )
-  .setEnvs({ npm_config_cache: CACHE, PLAYWRIGHT_BROWSERS_PATH: BROWSERS })
+  .setEnvs({
+    npm_config_cache: CACHE,
+    PLAYWRIGHT_BROWSERS_PATH: BROWSERS,
+    // Debian 12's Python refuses a plain `pip install` (PEP 668); the template's and the model's both need it.
+    PIP_BREAK_SYSTEM_PACKAGES: '1',
+  })
+  // The Assistant's libraries (step 24.1, U3), pinned: the Builder's machine carries them unused.
+  .pipInstall(PYTHON_LIBRARIES)
   // The cache is filled from the starter's own lockfile, the way the check installs (0055).
   .runCmd(
     [

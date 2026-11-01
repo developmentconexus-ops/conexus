@@ -64,6 +64,8 @@ export type Kit = {
 type KitOptions = {
   /** `conexus-<installation>-<conversationId>`: the provider finds the conversation's machine by it. */
   id: string
+  /** The hosts the machine may reach, and nothing else (decision 0051): at its start and in `closeNetwork`. */
+  allowOut: readonly string[]
   metadata: Record<string, string>
   onStart: SandboxStartHook
   /** Where a command starts when it names no folder: the app folder. */
