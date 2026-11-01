@@ -1,12 +1,10 @@
-import { ConversationId } from '@conexus/hub-api'
 import { createFileRoute } from '@tanstack/react-router'
 import {
   AssistantChat,
-  assistantConversationQuery,
+  conversationParams,
+  loadAssistantConversation,
 } from '../../../../../builder/assistant/public.ts'
-import { sessionReadQuery } from '../../../../../builder/conversation/public.ts'
 import { projectParams } from '../../../../../hub/projects/public.ts'
-import { idOrNotFound, readOrNotFound } from '../../../../../platform/hub.ts'
 
 // A conversation with the Assistant born in a Projeto, at that Projeto's address; opened under
 // another Projeto, or on the company's floor, it is not found.
@@ -15,21 +13,10 @@ export const Route = createFileRoute(
 )({
   staticData: { place: 'Conversas' },
   params: {
-    parse: (raw) => ({
-      ...projectParams.parse(raw),
-      conversationId: idOrNotFound(ConversationId, raw.conversationId),
-    }),
+    parse: (raw) => ({ ...projectParams.parse(raw), ...conversationParams.parse(raw) }),
     stringify: (p) => p,
   },
-  loader: ({ context, params }) =>
-    readOrNotFound(
-      Promise.all([
-        context.queryClient.ensureQueryData(
-          assistantConversationQuery(params.companyId, params.conversationId),
-        ),
-        context.queryClient.ensureQueryData(sessionReadQuery(params.conversationId, 'assistant')),
-      ]),
-    ),
+  loader: ({ context, params }) => loadAssistantConversation(context.queryClient, params),
   component: Chat,
 })
 

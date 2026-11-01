@@ -257,6 +257,21 @@ export function readable(toolName: string): string {
   return words ? words.charAt(0).toUpperCase() + words.slice(1) : toolName
 }
 
+/** The row of a tool outside the set: its readable name, by status. */
+function unknownTool(toolName: string, status: ToolStatus) {
+  const name = readable(toolName)
+  const sentence =
+    status === 'denied'
+      ? `Não pôde usar ${name}`
+      : status === 'error'
+        ? `Não conseguiu usar ${name}`
+        : status === 'running'
+          ? `Usando ${name}`
+          : `Usou ${name}`
+  const icon = status === 'error' || status === 'denied' ? CircleAlertIcon : WrenchIcon
+  return { icon, sentence, beside: false }
+}
+
 /** The row's icon and sentence by its status; the readable name for a tool outside the set. */
 export function presentTool(
   tool: Pick<ToolItem, 'toolName' | 'args'> & { result?: unknown },
@@ -267,18 +282,7 @@ export function presentTool(
     return presentRead(tool, status, room)
   const spec = specOf(tool.toolName)
   const failed = status === 'error' || status === 'denied'
-  if (spec === undefined) {
-    const name = readable(tool.toolName)
-    const sentence =
-      status === 'denied'
-        ? `Não pôde usar ${name}`
-        : status === 'error'
-          ? `Não conseguiu usar ${name}`
-          : status === 'running'
-            ? `Usando ${name}`
-            : `Usou ${name}`
-    return { icon: failed ? CircleAlertIcon : WrenchIcon, sentence, beside: false }
-  }
+  if (spec === undefined) return unknownTool(tool.toolName, status)
   const detail = spec.detailKey === undefined ? undefined : stringArg(tool.args, spec.detailKey)
   const head =
     status === 'denied'

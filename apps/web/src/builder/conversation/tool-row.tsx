@@ -248,6 +248,17 @@ function Body({ tool, status }: { tool: ToolItem; status: ToolStatus }) {
   )
 }
 
+/** The rows that are not a line: the file the Assistant showed, and the app it proposed. */
+function specialRow(tool: ToolItem, status: ToolStatus) {
+  const body = specOf(tool.toolName)?.body
+  if (status !== 'done') return undefined
+  const shown = body === 'shown' ? ShownFile.safeParse(tool.result).data : undefined
+  if (shown !== undefined && shown.kind !== 'SHOW_REFUSED')
+    return <ShownLine file={shown} live={tool.startedAt !== undefined} />
+  const proposed = body === 'proposal' ? ProposedApp.safeParse(tool.result).data : undefined
+  return proposed === undefined ? undefined : <ProposalCard summary={proposed.summary} />
+}
+
 /**
  * A line of tool invocation (Criterion 8).
  * Opens on the body its tool's row in the table names.
@@ -278,19 +289,8 @@ export function ToolRow({ tool }: { tool: ToolItem }) {
     </TraceLine>
   )
 
-  const shownFile = ShownFile.safeParse(tool.result).data
-  if (
-    specOf(tool.toolName)?.body === 'shown' &&
-    status === 'done' &&
-    shownFile?.kind !== 'SHOW_REFUSED' &&
-    shownFile !== undefined
-  )
-    return <ShownLine file={shownFile} live={tool.startedAt !== undefined} />
-  const proposed =
-    specOf(tool.toolName)?.body === 'proposal' && status === 'done'
-      ? ProposedApp.safeParse(tool.result).data
-      : undefined
-  if (proposed !== undefined) return <ProposalCard summary={proposed.summary} />
+  const special = specialRow(tool, status)
+  if (special !== undefined) return special
 
   if (!opens(tool, status, room)) return line
 
