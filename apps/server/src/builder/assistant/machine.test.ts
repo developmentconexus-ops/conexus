@@ -2,6 +2,9 @@ import assert from 'node:assert/strict'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { test } from 'node:test'
+import { ConversationId } from '@conexus/hub-api'
+import { servedSankhya } from '../../hub/connectors/test-connections.ts'
+import { PLANTED, withRows } from '../connectors/test-rows.ts'
 import {
   asked,
   conversing,
@@ -13,7 +16,8 @@ import {
   streamOf,
 } from '../conversation/test-conversation.ts'
 import { tool } from '../conversation/test-questions.ts'
-import { INSTALLATION, TEMPLATE } from '../machine/test-machine.ts'
+import { INSTALLATION, OLD_TEMPLATE, TEMPLATE } from '../machine/test-machine.ts'
+import { createAssistantMachines } from './public.ts'
 import { assisting, COUNT, created, reading, said, talking } from './test-assistant.ts'
 
 const WRITE = 'mastra_workspace_write_file'
@@ -85,7 +89,6 @@ test('a máquina da conversa: a primeira ferramenta de arquivo liga uma com o no
 test('a leitura na máquina: grava a resposta inteira em reads/<turno>-<n>.json, responde o corte com o caminho, um código lê o arquivo; o segundo turno grava outro e o primeiro fica (18)', async (t) => {
   const on = await assisting(t, [
     [reading('Matriz', COUNT)],
-    [tool(READ_FILE, { path: 'reads/placeholder' })],
     [said('Uma.')],
     [reading('Matriz', COUNT)],
   ])
@@ -97,8 +100,6 @@ test('a leitura na máquina: grava a resposta inteira em reads/<turno>-<n>.json,
   assert.ok(turn !== undefined)
   const first = `${turn.turn.slice(0, 8)}-1.json`
   assert.deepEqual(readdirSync(reads), [first])
-  const whole = JSON.parse(readFileSync(join(reads, first), 'utf8'))
-  assert.ok(Array.isArray(whole.linhas) || typeof whole === 'object')
   const answered = on.calls[1]?.texts.findLast((text) => text.includes('"kind":"OK"'))
   assert.ok(answered?.includes(`reads/${first}`), answered)
   assert.ok(answered?.includes('"complete"'), answered)
@@ -135,6 +136,101 @@ test('o fim da máquina: o turno que acaba para a máquina, e o seguinte a acord
   assert.equal(control.stops, 1, 'the machine sleeps when the turn ends')
   assert.equal(endOf(await say('Escreva b.txt')), 'complete')
   assert.equal(control.names.length, 2, 'the next question woke it')
+})
+
+test('a leitura grande: o arquivo guarda a resposta inteira e um código do mesmo turno lê a linha que o corte deixou fora; o modelo recebe só o corte (18)', async (t) => {
+  const fake = await servedSankhya(t)
+  const origin = await withRows(t, fake.origin, 500)
+  const on = await assisting(
+    t,
+    [
+      [reading('Matriz', 'SELECT N, NOME FROM TSIEMP')],
+      [tool('mastra_workspace_execute_command', { command: `grep -o '${PLANTED}' reads/*.json` })],
+      [said('Achei.')],
+    ],
+    { origin, matriz: fake.credential, filial: fake.credential },
+  )
+  const url = await created(on.hub, on.ana, on.assistant, { connections: [on.matriz] })
+  const { say } = await talking(t, on.hub, on.ana, url)
+  assert.equal(endOf(await say('Liste as empresas')), 'complete')
+  assert.equal(on.calls[1]?.texts.join('\n').includes(PLANTED), false, 'the cut leaves it out')
+  assert.ok(on.calls[2]?.texts.join('\n').includes(PLANTED), 'the code read it in the saved file')
+})
+
+test('a leitura: cada leitura do turno grava o seu arquivo, numerado na ordem, e nenhuma sobrescreve outra (18)', async (t) => {
+  const on = await assisting(t, [
+    [reading('Matriz', COUNT), reading('Matriz', COUNT)],
+    [reading('Matriz', COUNT)],
+    [reading('Matriz', COUNT)],
+    [said('Quatro.')],
+  ])
+  const url = await created(on.hub, on.ana, on.assistant, { connections: [on.matriz] })
+  const { say } = await talking(t, on.hub, on.ana, url)
+  assert.equal(endOf(await say('Conte quatro vezes')), 'complete')
+  const [turn] = on.reads
+  assert.ok(turn !== undefined)
+  const reads = join(on.hub.assistantMachines.folder, 'work', 'reads')
+  const prefix = turn.turn.slice(0, 8)
+  assert.deepEqual(
+    readdirSync(reads).sort(),
+    [1, 2, 3, 4].map((n) => `${prefix}-${n}.json`),
+  )
+})
+
+test('a marca: a máquina leva a marca que a morte procura, e a morte a acha; a de outra instalação ou conversa não (21)', async (t) => {
+  const on = await assisting(t, [[write('a.txt', 'um')], [said('Escrevi.')]])
+  const url = await created(on.hub, on.ana, on.assistant, { connections: [] })
+  const { say } = await talking(t, on.hub, on.ana, url)
+  assert.equal(endOf(await say('Escreva')), 'complete')
+  const { control, deps } = on.hub.assistantMachines
+  const other = ConversationId.parse('00000000-0000-4000-8000-0000000000ff')
+  assert.equal(await deps.api.kill(other), 0, 'another conversation’s mark finds nothing')
+  assert.equal(control.killed, false)
+  const id = ConversationId.parse(url.slice(url.lastIndexOf('/') + 1))
+  assert.equal(
+    await deps.api.kill(id),
+    1,
+    'the conversation’s machine carries the mark it is killed by',
+  )
+  assert.equal(control.killed, true)
+})
+
+test('antes de ligar: a máquina da conversa feita de outro template é morta, e a do template do Hub fica (17)', async (t) => {
+  const on = await assisting(t, [[write('a.txt', 'um')], [said('Escrevi.')]])
+  const url = await created(on.hub, on.ana, on.assistant, { connections: [] })
+  const { control } = on.hub.assistantMachines
+  control.discoverable.push(nameOf(url))
+  control.templates[nameOf(url)] = OLD_TEMPLATE
+  const { say } = await talking(t, on.hub, on.ana, url)
+  assert.equal(endOf(await say('Escreva')), 'complete')
+  assert.deepEqual(control.replaced, [nameOf(url)])
+  assert.deepEqual(control.attached, [], 'the machine of the old template was not attached')
+})
+
+test('o download cancelado: o navegador que sai faz a leitura da máquina parar, e nenhum arquivo é entregue (20)', async (t) => {
+  const on = await assisting(t, [
+    [
+      tool('mastra_workspace_execute_command', {
+        command: 'head -c 3000000 /dev/zero > grande.bin',
+      }),
+    ],
+    [said('Escrevi.')],
+  ])
+  const url = await created(on.hub, on.ana, on.assistant, { connections: [] })
+  const { say } = await talking(t, on.hub, on.ana, url)
+  assert.equal(endOf(await say('Escreva')), 'complete')
+  const { control, deps } = on.hub.assistantMachines
+  control.discoverable.push(nameOf(url))
+  const machines = createAssistantMachines({
+    ...deps,
+    log: { info: () => undefined, error: () => undefined },
+  })
+  const id = ConversationId.parse(url.slice(url.lastIndexOf('/') + 1))
+  const left = new AbortController()
+  left.abort()
+  assert.equal((await machines.read(id, 'grande.bin', left.signal)).kind, 'CANCELLED')
+  const stays = await machines.read(id, 'grande.bin', new AbortController().signal)
+  assert.equal(stays.kind, 'OK')
 })
 
 const ASSISTANT_PROMPT = 'You are the Conexus assistant.'
@@ -174,10 +270,11 @@ test('o fim do Hub: a máquina do turno em andamento para quando o Hub é parado
   assert.equal((await sent(stopping, ana, url, 'Escreva')).statusCode, 200)
   assert.equal(await stream.text(), PARTIAL)
   const { control } = stopping.assistantMachines
+  control.stopMs = 150
   assert.equal(control.names.length, 1, 'the turn started the machine')
   assert.equal(control.stops, 0, 'and it runs')
   const stopped = stopping.close(300)
   assert.equal(endOf(await stream.turn()), 'aborted')
   await stopped
-  assert.equal(control.stops, 1, 'the Hub ending stopped it')
+  assert.equal(control.stops, 1, 'the Hub ending stopped it, and its close waited for the pause')
 })

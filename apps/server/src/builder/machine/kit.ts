@@ -4,6 +4,7 @@ import type {
   WorkspaceFilesystem,
   WorkspaceSandbox,
 } from '@mastra/core/workspace'
+import type { InstallationId, MachineTemplate } from '../../platform/config-machine.ts'
 import { MAX_BYTES } from '../git/public.ts'
 
 /** The machine's app folder, which the template makes, the file tools root in and the Builder is told of. */
@@ -37,14 +38,25 @@ export type Transport = {
   read(path: string): Promise<AsyncIterable<Uint8Array>>
 }
 
-/** The file's bytes, or `too-large` once more than `READ_MAX` of them have come. */
+/**
+ * The file's bytes, or `too-large` once more than `READ_MAX` of them have come; with a `signal`,
+ * `cancelled` once it aborts (the browser left), and the stream is let go (code C57).
+ */
+export async function readCapped(transport: Transport, path: string): Promise<Buffer | 'too-large'>
 export async function readCapped(
   transport: Transport,
   path: string,
-): Promise<Buffer | 'too-large'> {
+  signal: AbortSignal,
+): Promise<Buffer | 'too-large' | 'cancelled'>
+export async function readCapped(
+  transport: Transport,
+  path: string,
+  signal?: AbortSignal,
+): Promise<Buffer | 'too-large' | 'cancelled'> {
   const chunks: Uint8Array[] = []
   let length = 0
   for await (const chunk of await transport.read(path)) {
+    if (signal?.aborted === true) return 'cancelled'
     length += chunk.byteLength
     if (length > READ_MAX) return 'too-large'
     chunks.push(chunk)
@@ -148,4 +160,22 @@ export type MachineApi = {
   kill(conversationId: ConversationId): Promise<number>
   /** The same, only the machines whose mark names a template other than `template`, or none. */
   killStale(conversationId: ConversationId, template: string): Promise<number>
+}
+
+/**
+ * What the Assistant's machines are made of, one spelling for the ports, the Assistant and the
+ * machines: the Builder's kit and API, its template, installation and mark (the mark the kill looks
+ * for, which the machine carries too: code C26). `workFolder` and `startMs` are the test double's,
+ * as the Builder's `Machines` takes `startMs`.
+ */
+export type AssistantMachine = {
+  kit: KitFactory
+  api: MachineApi
+  template: MachineTemplate
+  installation: InstallationId
+  /** The marks every machine of this installation carries, with which `api.kill` finds them (security S36). */
+  mark: Record<string, string>
+  /** Where the files live; `WORK_FOLDER` on E2B. */
+  workFolder?: string
+  startMs?: number
 }

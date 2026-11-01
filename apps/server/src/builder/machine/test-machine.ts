@@ -13,11 +13,11 @@ import type { TestContext } from 'node:test'
 import { CompanyId, ConversationId, ProjectId } from '@conexus/hub-api'
 import { RequestContext } from '@mastra/core/request-context'
 import type { Workspace, WorkspaceSandbox } from '@mastra/core/workspace'
-import { LocalSandbox } from '@mastra/core/workspace'
+import { LocalFilesystem, LocalSandbox } from '@mastra/core/workspace'
 import { E2bApiKey, InstallationId, MachineTemplate } from '../../platform/config-machine.ts'
 import { Failure } from '../../platform/failure.ts'
 import { openRepository } from '../git/public.ts'
-import type { Kit, KitFactory } from './kit.ts'
+import type { Kit, KitFactory, MachineApi } from './kit.ts'
 import type { Phase } from './public.ts'
 import { createMachines } from './public.ts'
 
@@ -64,6 +64,10 @@ export type Control = {
   sandbox: WorkspaceSandbox | undefined
   /** How many times a machine was paused. */
   stops: number
+  /** How long a pause takes, as the provider's. */
+  stopMs: number
+  /** The machine has its own file API that follows links, as E2B's: the file tools go through it, not through the shell. */
+  native: boolean
   /** The provider killed the machine: pausing it fails as E2B's does, until a start makes a new one. */
   killed: boolean
   /** What another process in the machine does right after each command the Hub runs there. */
@@ -89,6 +93,8 @@ export function newControl(): Control {
     marks: [],
     sandbox: undefined,
     stops: 0,
+    stopMs: 0,
+    native: false,
     killed: false,
     afterCommand: () => undefined,
     beforeRead: () => undefined,
@@ -111,6 +117,10 @@ export function localKit(folder: string, control: Control): KitFactory {
         await options.onStart({ ...started, outcome })
       },
     })
+    if (control.native) {
+      const filesystem = new LocalFilesystem({ basePath: '/', contained: false })
+      Object.defineProperty(sandbox, 'filesystem', { value: filesystem })
+    }
     const execute = sandbox.executeCommand?.bind(sandbox)
     if (execute !== undefined) {
       sandbox.executeCommand = async (...args) => {
@@ -140,6 +150,7 @@ export function localKit(folder: string, control: Control): KitFactory {
     const stop = sandbox.stop.bind(sandbox)
     sandbox.stop = async () => {
       if (control.killed) throw new Error('Sandbox local-machine not found')
+      await new Promise((done) => setTimeout(done, control.stopMs))
       control.stops += 1
       return stop()
     }
@@ -159,6 +170,31 @@ export function localKit(folder: string, control: Control): KitFactory {
         control.networkClosed += 1
       },
     }
+  }
+}
+
+/**
+ * The provider's kill by the marks, as E2B's: `api.kill` takes the machines whose metadata holds
+ * every mark of the installation and the conversation's id, and only those (security S36).
+ */
+export function killByMark(control: Control, mark: Record<string, string>): MachineApi['kill'] {
+  return async (conversationId) => {
+    const wanted = Object.entries({ ...mark, conexus_conversation: conversationId })
+    const found = control.marks.some((held) => wanted.every(([key, value]) => held[key] === value))
+    if (found) control.killed = true
+    return found ? 1 : 0
+  }
+}
+
+/** The provider's list by the conversation's mark: every machine of another template goes. */
+export function killStaleOf(control: Control): MachineApi['killStale'] {
+  return async (conversationId, template) => {
+    const stale = control.discoverable.filter(
+      (name) => name.endsWith(conversationId) && (control.templates[name] ?? TEMPLATE) !== template,
+    )
+    control.discoverable = control.discoverable.filter((name) => !stale.includes(name))
+    control.replaced.push(...stale)
+    return stale.length
   }
 }
 
@@ -193,15 +229,7 @@ export async function world(
     api: {
       kill: async () => 0,
       // The provider's list by the conversation's mark, as E2B's: every machine of another template goes.
-      killStale: async (conversationId, template) => {
-        const stale = control.discoverable.filter(
-          (name) =>
-            name.endsWith(conversationId) && (control.templates[name] ?? TEMPLATE) !== template,
-        )
-        control.discoverable = control.discoverable.filter((name) => !stale.includes(name))
-        control.replaced.push(...stale)
-        return stale.length
-      },
+      killStale: killStaleOf(control),
     },
     seedOf: seedOf ?? (() => repository.bundleOfMain()),
     mark: { conexus_origin: installation },

@@ -1,5 +1,4 @@
 import { createHash } from 'node:crypto'
-import { posix } from 'node:path'
 import type {
   CompanyId,
   ConnectionId,
@@ -10,7 +9,6 @@ import type {
   ProjectId,
 } from '@conexus/hub-api'
 import {
-  ASSISTANT_FILE,
   ConversationId,
   createAssistantConversation,
   listAssistantConnections,
@@ -26,7 +24,6 @@ import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import type { Connectors, SessionScope } from '../../hub/connectors/public.ts'
 import type { IdentityPorts } from '../../hub/identity/public.ts'
-import { sessionOf } from '../../platform/access.ts'
 import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
@@ -34,10 +31,10 @@ import { answer, serve } from '../../platform/http.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import { conversationStart, effortsOf } from '../model-accounts/public.ts'
 import { assistantOwner, CHOSEN_SETTING, SESSION_MARK, scopeOn } from './context.ts'
+import { registerFile } from './file-route.ts'
 import type { AssistantMachines } from './machine.ts'
 import type { assistantMemory } from './memory.ts'
 import type { AssistantProjects } from './ports.ts'
-import { INLINE_MEDIA, mediaOf } from './show-file.ts'
 
 /** A page of the person's conversations (code C44): a page number the token carries, never authority. */
 const PER_PAGE = 30
@@ -295,55 +292,16 @@ function registerWrites(app: FastifyInstance, deps: Deps): void {
   })
 }
 
-/** What a failed read of the machine's file answers (the codes of `ASSISTANT_FILE`). */
-const FILE_FAILURE = {
-  FILE_NOT_FOUND: 'FILE_NOT_FOUND',
-  FILE_TOO_LARGE: 'FILE_TOO_LARGE',
-  FILE_GONE: 'FILE_GONE',
-  MACHINE_UNAVAILABLE: 'MACHINE_UNAVAILABLE',
-} as const
-
-/**
- * The file the Assistant wrote, for the conversation's owner (criterion 20). The model wrote it, so
- * the browser is told not to run it: the type from the name, saved unless an image, `nosniff`, and a
- * sandboxed Content-Security-Policy (security S24).
- */
-function registerFile(app: FastifyInstance, deps: Deps): void {
-  app.route({
-    method: 'GET',
-    url: ASSISTANT_FILE.url,
-    config: { access: 'session', failures: ASSISTANT_FILE.failures },
-    handler: async (request, reply) => {
-      const params = ASSISTANT_FILE.params.safeParse(request.params)
-      if (!params.success) {
-        throw new Failure('NOT_FOUND', { details: { reason: 'MALFORMED' }, cause: params.error })
-      }
-      const query = ASSISTANT_FILE.query.safeParse(request.query)
-      if (!query.success) throw new Failure('REQUEST_MALFORMED', { cause: query.error })
-      const owner = { companyId: params.data.companyId, personId: sessionOf(request).person.id }
-      await admitted(deps, owner, { kind: 'COMPANY' })
-      await ownThread(deps, owner, params.data.conversationId)
-      const read = await deps.machines.read(params.data.conversationId, query.data.path)
-      if (read.kind !== 'OK') throw new Failure(FILE_FAILURE[read.kind])
-      const name = posix.basename(query.data.path)
-      const media = mediaOf(name)
-      const disposition = INLINE_MEDIA.includes(media) ? 'inline' : 'attachment'
-      return reply
-        .header('content-type', media)
-        .header(
-          'content-disposition',
-          `${disposition}; filename*=UTF-8''${encodeURIComponent(name)}`,
-        )
-        .header('x-content-type-options', 'nosniff')
-        .header('content-security-policy', 'sandbox')
-        .send(read.bytes)
-    },
-  })
-}
-
 /** The Assistant's conversations (step 24.1, U2): every route admits the person who may ask now (`askAssistant`). */
 export function registerAssistantRoutes(app: FastifyInstance, deps: Deps): void {
   registerReads(app, deps)
   registerWrites(app, deps)
-  registerFile(app, deps)
+  registerFile(app, {
+    machines: deps.machines,
+    log: deps.log,
+    ownConversation: async (owner, conversationId) => {
+      await admitted(deps, owner, { kind: 'COMPANY' })
+      await ownThread(deps, owner, conversationId)
+    },
+  })
 }

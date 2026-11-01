@@ -27,6 +27,7 @@ import {
   assertContainedDest,
   assertContainedRealpath,
   execOk,
+  PathEscapesError,
   verifyNative,
 } from './containment.ts'
 import { copyShell, moveShell } from './copy.ts'
@@ -152,7 +153,7 @@ export class SandboxFilesystem implements WorkspaceFilesystem, Host {
             : inputPath
     const resolved = posixPath.normalize(posixPath.join(base, rel))
     if (resolved !== base && !resolved.startsWith(`${base}/`)) {
-      throw new Error(`Path escapes workspace root: ${inputPath}`)
+      throw new PathEscapesError(`Path escapes workspace root: ${inputPath}`)
     }
     return resolved
   }

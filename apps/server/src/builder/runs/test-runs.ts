@@ -5,8 +5,16 @@ import type { Config } from '../../platform/config.ts'
 import { silent } from '../../platform/test-database.ts'
 import type { GitCopy, Repository, Sha } from '../git/public.ts'
 import { openRepository, restoreGuarded } from '../git/public.ts'
-import { createMachines } from '../machine/public.ts'
-import { INSTALLATION, localKit, newControl, TEMPLATE } from '../machine/test-machine.ts'
+import type { AssistantMachine } from '../machine/public.ts'
+import { createMachines, MARK } from '../machine/public.ts'
+import {
+  INSTALLATION,
+  killByMark,
+  killStaleOf,
+  localKit,
+  newControl,
+  TEMPLATE,
+} from '../machine/test-machine.ts'
 
 /** A bucket of memory: puts that fail on demand, and what it holds, by key. */
 export function memoryCopy() {
@@ -79,19 +87,21 @@ function testAssistantMachines(folder: string) {
   const assistantFolder = join(folder, 'assistant')
   const control = newControl()
   const killed: ConversationId[] = []
-  const deps = {
+  // The installation's marks, as `builderPortsOf` makes them: the machines carry them and the kill looks for them.
+  const mark = { [MARK.origin]: INSTALLATION, conexus_probe: 'marks' }
+  const kill = killByMark(control, mark)
+  const deps: AssistantMachine = {
     kit: localKit(assistantFolder, control),
     api: {
-      kill: async (conversationId: ConversationId) => {
+      kill: async (conversationId) => {
         killed.push(conversationId)
-        const started = control.names.includes(`conexus-${INSTALLATION}-${conversationId}`)
-        if (started) control.killed = true
-        return started ? 1 : 0
+        return kill(conversationId)
       },
-      killStale: async () => 0,
+      killStale: killStaleOf(control),
     },
     template: TEMPLATE,
     installation: INSTALLATION,
+    mark,
     workFolder: join(assistantFolder, 'work'),
   }
   return { deps, control, killed, folder: assistantFolder }
