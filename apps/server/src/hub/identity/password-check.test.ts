@@ -23,14 +23,15 @@ async function linked(t: TestContext) {
   const config = testConfig(test.runtimeUrl)
   const status = createStatus({ version: config.version, database: test.database })
   const identity = identityOf({ database: test.database, config, log: silent })
-  const { projects, operations, apps, modelAccounts, conversations, connectors } = subjectsOf({
-    mastraPool: test.mastraPool,
-    database: test.database,
-    config,
-    identity,
-    ...testAppPorts(config),
-    log: silent,
-  })
+  const { projects, operations, apps, modelAccounts, conversations, assistant, connectors } =
+    subjectsOf({
+      mastraPool: test.mastraPool,
+      database: test.database,
+      config,
+      identity,
+      ...testAppPorts(config),
+      log: silent,
+    })
   const app = await createHub(config, {
     status,
     identity,
@@ -39,6 +40,7 @@ async function linked(t: TestContext) {
     apps,
     modelAccounts,
     conversations,
+    assistant,
     connectors,
   })
   t.after(() => app.close())

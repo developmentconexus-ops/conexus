@@ -12,6 +12,8 @@ export type Sent = {
   stream: boolean
   tools: string[]
   system: string
+  /** The system's blocks as the body sends them, each with whether it carries a cache mark. */
+  systems: { text: string; cached: boolean }[]
   /** The text of the conversation's messages, in order, so a test sees what the model was given. */
   texts: string[]
   /** The documents and images of the conversation's messages, in order. */
@@ -138,6 +140,13 @@ export function sentOf(init: RequestInit | undefined): Sent {
     typeof body.system === 'string'
       ? body.system
       : (body.system ?? []).map((part) => part.text).join('\n')
+  const systems =
+    typeof body.system === 'string'
+      ? [{ text: body.system, cached: false }]
+      : (body.system ?? []).map((part) => ({
+          text: part.text,
+          cached: part.cache_control !== undefined,
+        }))
   const texts = body.messages.flatMap((message) =>
     typeof message.content === 'string' ? [message.content] : message.content.flatMap(textOf),
   )
@@ -152,6 +161,7 @@ export function sentOf(init: RequestInit | undefined): Sent {
     // `tool_choice: none` offers the model no tool, as the router's model asked it with an empty list.
     tools: body.tool_choice?.type === 'none' ? [] : (body.tools ?? []).map((tool) => tool.name),
     system,
+    systems,
     texts,
     media,
     thinking: body.thinking ?? null,

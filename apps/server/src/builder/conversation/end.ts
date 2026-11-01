@@ -127,7 +127,18 @@ function heard(run: Run, event: AgentControllerEvent): void {
   }
 }
 
-type Deps = { controller: AgentController; memory: Builder['memory']; runs: Runs; log: FailureLog }
+/**
+ * A controller whose runs the Hub watches: the Builder's settles each run's Projeto
+ * (`Runs.finish`) and tells its machine's steps; the Assistant's holds no Projeto (step 24.1, U2).
+ */
+export type Watched = {
+  controller: AgentController
+  memory: Builder['memory']
+  finish: Runs['finish']
+  onPhase?: Runs['onPhase']
+}
+
+type Deps = Pick<Watched, 'memory' | 'finish'> & { log: FailureLog }
 
 /**
  * A message of ours on the conversation, told on its stream as Mastra tells its own: a
@@ -201,12 +212,10 @@ async function ended(deps: Deps, session: Session, run: Run, reason: AgentEnd): 
   }
   // A save that throws is this run's failure, said and logged here: Mastra would print the
   // listener's error raw, and the run would end without saying why.
-  const outcome = await deps.runs
-    .finish({ conversationId, reason, saved })
-    .catch((cause: unknown) => {
-      logFailure(deps.log, new Failure('INTERNAL_UNEXPECTED', { cause }))
-      return 'threw' as const
-    })
+  const outcome = await deps.finish({ conversationId, reason, saved }).catch((cause: unknown) => {
+    logFailure(deps.log, new Failure('INTERNAL_UNEXPECTED', { cause }))
+    return 'threw' as const
+  })
   await kept
   // Kept and told again only with what the end added: how the send went, or a save that threw.
   if (kept !== undefined && !sending && outcome !== 'threw') return
@@ -278,57 +287,58 @@ async function settleRuns(
  * left as Parar does, so each saves what it wrote, with `HUB_UPDATED` after a `settle`, and waits for their ends
  * (code C62).
  */
-export function watchRuns(deps: Deps) {
+export function watchRuns(deps: { watched: readonly Watched[]; log: FailureLog }) {
   const running: Running = new Map()
   const unheard = new Map<string, () => void>()
   const ends = endsOfRuns()
   let settling = false
-  deps.controller.onSessionCreated((session) => {
-    const conversationId = ConversationIdSchema.parse(session.identity.getId())
-    const owner = ownerOfResource(session.identity.getResourceId())
-    const fields = { ...(owner && { companyId: owner.companyId }), conversationId }
-    let run: Run | undefined
-    session.subscribe((event) => {
-      if (event.type === 'agent_start') {
-        run = newRun(session)
-        running.set(conversationId, { session, run })
-        deps.log.info({ ...fields, runId: run.runId }, 'CONVERSATION_TURN_STARTED')
-      }
-      if (run === undefined) return
-      heard(run, event)
-      if (event.type !== 'agent_end') return
-      const line = turnLine({
-        ...{ runId: run.runId, startedAt: run.startedAt, tally: run.tally },
-        ...{ end: event.reason ?? 'complete', errorCode: run.failed },
+  for (const watched of deps.watched) watchController({ ...watched, log: deps.log })
+  function watchController(each: Watched & { log: FailureLog }) {
+    each.controller.onSessionCreated((session) => {
+      const conversationId = ConversationIdSchema.parse(session.identity.getId())
+      const owner = ownerOfResource(session.identity.getResourceId())
+      const fields = { ...(owner && { companyId: owner.companyId }), conversationId }
+      let run: Run | undefined
+      session.subscribe((event) => {
+        if (event.type === 'agent_start') {
+          run = newRun(session)
+          running.set(conversationId, { session, run })
+          each.log.info({ ...fields, runId: run.runId }, 'CONVERSATION_TURN_STARTED')
+        }
+        if (run === undefined) return
+        heard(run, event)
+        if (event.type !== 'agent_end') return
+        const line = turnLine({
+          ...{ runId: run.runId, startedAt: run.startedAt, tally: run.tally },
+          ...{ end: event.reason ?? 'complete', errorCode: run.failed },
+        })
+        each.log.info(
+          { ...fields, reason: event.reason ?? 'complete', ...line },
+          'CONVERSATION_TURN_ENDED',
+        )
+        logMemory(each.log, { conversationId })
+        run.over.resolve()
+        running.delete(conversationId)
+        run = undefined
+        ends.heard()
       })
-      deps.log.info(
-        { ...fields, reason: event.reason ?? 'complete', ...line },
-        'CONVERSATION_TURN_ENDED',
-      )
-      logMemory(deps.log, { conversationId })
-      run.over.resolve()
+      session.onBeforeAgentEnd(async ({ reason }) => {
+        if (run !== undefined) await ended(each, session, run, reason ?? 'complete')
+      })
+      const unhear = each.onPhase?.(conversationId, (phase) => tellPhase(session, phase))
+      if (unhear !== undefined) unheard.set(conversationId, unhear)
+    })
+    // A deleted session's run ends without an `agent_end` (Mastra's `deleteSession` aborts it locally).
+    each.controller.onSessionDeleted((session) => {
+      const conversationId = session.identity.getId()
+      const gone = running.get(conversationId)
+      gone?.run.over.resolve()
       running.delete(conversationId)
-      run = undefined
-      ends.heard()
+      if (gone !== undefined) ends.heard()
+      unheard.get(conversationId)?.()
+      unheard.delete(conversationId)
     })
-    session.onBeforeAgentEnd(async ({ reason }) => {
-      if (run !== undefined) await ended(deps, session, run, reason ?? 'complete')
-    })
-    unheard.set(
-      conversationId,
-      deps.runs.onPhase(conversationId, (phase) => tellPhase(session, phase)),
-    )
-  })
-  // A deleted session's run ends without an `agent_end` (Mastra's `deleteSession` aborts it locally).
-  deps.controller.onSessionDeleted((session) => {
-    const conversationId = session.identity.getId()
-    const gone = running.get(conversationId)
-    gone?.run.over.resolve()
-    running.delete(conversationId)
-    if (gone !== undefined) ends.heard()
-    unheard.get(conversationId)?.()
-    unheard.delete(conversationId)
-  })
+  }
   return {
     /** True from `settle` on: the guard refuses `POST …/messages` with `HUB_UPDATING`. */
     updating: (): boolean => settling,
