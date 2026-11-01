@@ -1,8 +1,11 @@
 import type { AppProps } from '@conexus/app-contract'
 import { FAILURES } from '@conexus/hub-api'
+import type { ConnectorsProps } from './connectors.ts'
+import { connectorsOf } from './connectors.ts'
 import type { DbProps } from './db.ts'
 import type { Exports } from './dispatch.ts'
 import { serveDispatch } from './dispatch.ts'
+import { hubOf } from './hub.ts'
 
 // Doubles of the two bindings, answering as the contract does: the Hub through its VPC service and
 // the namespace that holds the apps' Workers.
@@ -64,6 +67,7 @@ export function edge(doubles: { hub?: Hub; app?: App; missingScript?: boolean } 
     request: Request
   }[] = []
   const dbBindings: DbProps[] = []
+  const connectorBindings: ConnectorsProps[] = []
   const exports: Exports = {
     Db({ props }) {
       dbBindings.push(props)
@@ -76,15 +80,9 @@ export function edge(doubles: { hub?: Hub; app?: App; missingScript?: boolean } 
         },
       }
     },
-    Connectors() {
-      return {
-        async call() {
-          return { kind: 'NOT_GRANTED' }
-        },
-        async connections() {
-          return []
-        },
-      }
+    Connectors({ props }) {
+      connectorBindings.push(props)
+      return connectorsOf(hubOf(env), props)
     },
   }
   const env = {
@@ -123,6 +121,7 @@ export function edge(doubles: { hub?: Hub; app?: App; missingScript?: boolean } 
     hubCalls,
     appCalls,
     dbBindings,
+    connectorBindings,
     fetch(path: string, init: RequestInit = {}, origin = APP_ORIGIN): Promise<Response> {
       return serveDispatch(new Request(`${origin}${path}`, init), env, exports)
     },

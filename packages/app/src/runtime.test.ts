@@ -21,7 +21,10 @@ const PROPS: AppProps = {
     access: { kind: 'BUILDER' },
   },
   db: DB,
-  connectors: { call: async () => ({ kind: 'NOT_GRANTED' }), connections: async () => [] },
+  connectors: {
+    call: async () => ({ kind: 'NOT_GRANTED' }),
+    connections: async () => ({ kind: 'OK', names: [] }),
+  },
 }
 
 const app = serveApp({
@@ -155,14 +158,15 @@ test('a resposta do conector chega ao handler pelo cliente como veio, e nenhuma 
         sent.push(args)
         return given
       },
-      connections: async (connector) => [`${connector} loja 1`],
+      connections: async (connector) => ({ kind: 'OK', names: [`${connector} loja 1`] }),
     }
     const served = serveApp({
       operations: reading,
       handlers: defineHandlers(reading, {
         ler: async (_input, context) => {
           const client = connectorsOf(context, declared)
-          const [loja = ''] = await client['mercado-livre'].connections()
+          const stores = await client['mercado-livre'].connections()
+          const [loja = ''] = stores.kind === 'OK' ? stores.names : []
           await client['mercado-livre'].perguntas({ offset: 0, limit: 50 }, loja)
           return client.sankhya.consultar({ sql: 'SELECT 1 FROM TSIEMP' })
         },

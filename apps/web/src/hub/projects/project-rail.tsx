@@ -1,7 +1,14 @@
 import type { CompanyId, ProjectId } from '@conexus/hub-api'
 import { useQuery } from '@tanstack/react-query'
 import { getRouteApi, Link, useMatches } from '@tanstack/react-router'
-import { ArrowLeftIcon, ChevronsUpDownIcon, HammerIcon, InfoIcon, UsersIcon } from 'lucide-react'
+import {
+  ArrowLeftIcon,
+  ChevronsUpDownIcon,
+  HammerIcon,
+  InfoIcon,
+  PlugIcon,
+  UsersIcon,
+} from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,10 +33,8 @@ import { useRecentProjects } from './recent-projects.tsx'
 
 const company = getRouteApi('/_app/companies/$companyId')
 
-const OTHER_PAGES = [
-  '/_app/companies/$companyId/projects/$projectId_/about',
-  '/_app/companies/$companyId/projects/$projectId_/access',
-]
+/** The route Construir and its conversations live under: the other pages of the Projeto sit beside it, not below. */
+const BUILD_ROUTE = '/_app/companies/$companyId/projects/$projectId'
 
 type Scope = { companyId: CompanyId; projectId: ProjectId }
 
@@ -102,16 +107,16 @@ export function ProjectRailHead({ companyId, projectId }: Scope) {
 
 /**
  * The entries of the Projeto's sidebar, in the order of Conexus OS: back to the company, Construir,
- * Sobre, Quem usa o app. Each later one is added by its step, never as "em breve" (web W31). The
- * address of Construir is the Projeto's own, with its conversations below it, so the router cannot
- * tell it from the other pages: it is the current place when no other page is.
+ * Sobre, Quem usa o app, Integrações. Each later one is added by its step, never as "em breve" (web W31). The
+ * address of Construir is the Projeto's own, with its conversations below it: it is the current
+ * place while the route it lives under is among the matches.
  */
 export function ProjectRailNav(scope: Scope) {
   const { companyId } = scope
   const params = scope
   const { company: house } = useQuery(companyQuery(companyId)).data ?? {}
   const building = useMatches({
-    select: (matches) => !OTHER_PAGES.includes(matches.at(-1)?.routeId ?? ''),
+    select: (matches) => matches.some((match) => match.routeId === BUILD_ROUTE),
   })
   return (
     <SidebarGroup>
@@ -151,6 +156,12 @@ export function ProjectRailNav(scope: Scope) {
           params={params}
           icon={UsersIcon}
           label="Quem usa o app"
+        />
+        <FrameLink
+          to="/companies/$companyId/projects/$projectId/integrations"
+          params={params}
+          icon={PlugIcon}
+          label="Integrações"
         />
       </SidebarMenu>
     </SidebarGroup>

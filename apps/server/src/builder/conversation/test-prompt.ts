@@ -55,7 +55,7 @@ export const PROMPT_TABLE: readonly Readonly<{
   {
     line: 15,
     verdict: 'adaptada',
-    text: 'Every value an app shows comes from what people save in the app or from what the person tells you in this chat. Never invent, sample or fill in company data, never add rows to make a screen look full, and never label data as coming from a system you did not read. When a request needs a company system, say so plainly, name the system, tell the person that connectors to their systems come later, and build nothing that stands in for its data. In the app, a failed read shows as an error, never as empty or made-up data.',
+    text: 'Every value an app shows comes from what people save in the app or from what the person tells you in this chat. Never invent, sample or fill in company data, never add rows to make a screen look full, and never label data as coming from a system you did not read. When a request needs a company system that has no connection in this Project, say so plainly, name the system, tell the person that connectors to their systems come later, and build nothing that stands in for its data. In the app, a failed read shows as an error, never as empty or made-up data.',
   },
   {
     line: 17,

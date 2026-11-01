@@ -32,3 +32,15 @@ test('os conectores: Publicar recusa o conector sem liberação e a operação f
   assert.equal((await call(on.hub, on.ana, 'PUT', route, { number: 1 })).statusCode, 200)
   assert.notEqual(await published(on), null)
 })
+
+test('os conectores: uma liberação cuja ligação deixou de estar ACTIVE não conta no Publicar, como não conta na porta do app', async (t) => {
+  const on = await appCalls(t)
+  await on.connect('Matriz')
+  await on.hub.test.asOwner("update connectors.connection set state = 'NEEDS_REAUTH'")
+  assert.deepEqual((await on.read()).json(), { kind: 'NOT_GRANTED' })
+  await on.hub.test.asOwner('update apps.app set published_version_id = null')
+  const route = `/api/companies/${on.companyId}/projects/${on.projectId}/published-version`
+  const refused = await call(on.hub, on.ana, 'PUT', route, { number: 1 })
+  assert.equal(refused.statusCode, 409)
+  assert.equal(Object(refused.json()).code, 'CONNECTOR_NOT_GRANTED')
+})

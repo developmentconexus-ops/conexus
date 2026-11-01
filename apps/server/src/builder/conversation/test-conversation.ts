@@ -14,7 +14,8 @@ import {
 } from '../../hub/identity/test-hub.ts'
 import { createStatus } from '../../hub/status/public.ts'
 import { createHub, identityOf, subjectsOf } from '../../main.ts'
-import { closeListeners } from '../../platform/lifecycle.ts'
+import type { FailureLog } from '../../platform/failure.ts'
+import { shutDown } from '../../platform/lifecycle.ts'
 import type { Anthropic, Reply, Sent } from '../../platform/test-anthropic.ts'
 import { plantAnthropic } from '../../platform/test-anthropic.ts'
 import { heldCompanyPostgres, testAppPorts } from '../../platform/test-app-ports.ts'
@@ -36,14 +37,6 @@ export function holding(t: TestContext) {
   t.after(() => hold.resolve())
   const reply: Reply = { kind: 'hold', until: hold.promise, text: PARTIAL }
   return { reply, release: () => hold.resolve() }
-}
-
-/** A provider answer that sends nothing until released, at the test's end at the latest. */
-export function stalling(t: TestContext) {
-  const stall = Promise.withResolvers<void>()
-  t.after(() => stall.resolve())
-  const reply: Reply = { kind: 'hold', until: stall.promise }
-  return { reply, release: () => stall.resolve() }
 }
 
 /** The title call's answer; every other call is the test's. */
@@ -100,9 +93,9 @@ export async function conversing(
 
 /**
  * A second Hub on the same databases, as after a restart or beside a process that stopped: its
- * own Builder and sessions, nothing shared in memory. `close` drains it as shutdown does.
+ * own Builder and sessions, nothing shared in memory, its lines in `log`.
  */
-export async function hubBeside(t: TestContext, hub: Hub) {
+export async function hubBeside(t: TestContext, hub: Hub, log: FailureLog = silent) {
   const { test, config } = hub
   const identity = identityOf({ database: test.database, config, log: silent })
   const postgres = heldCompanyPostgres(config)
@@ -113,16 +106,21 @@ export async function hubBeside(t: TestContext, hub: Hub) {
   )
   const subjects = subjectsOf({
     ...{ mastraPool: test.mastraPool, database: test.database, config, identity },
-    ...{ ...ports, log: silent },
+    ...{ ...ports, log },
   })
   const status = createStatus({ version: config.version, database: test.database })
   const app = await createHub(config, { status, identity, ...subjects, webRoot: testWebRoot(t) })
   let closed: Promise<void> | undefined
-  function close() {
-    closed ??= closeListeners([app], () => subjects.conversations.close())
+  /**
+   * Shuts the Hub down as an unexpected error does, or, given `settleMs`, as a stop signal does,
+   * waiting up to `settleMs` for the answers in flight.
+   */
+  function close(settleMs?: number) {
+    const { settle, close: drain } = subjects.conversations
+    closed ??= shutDown([app], { settle, drain, release: async () => undefined }, settleMs)
     return closed
   }
-  t.after(close)
+  t.after(() => close())
   const builder = {
     ...hub.builder,
     bucket: ports.bucket,
@@ -318,15 +316,15 @@ const Listed = z.object({
   ),
 })
 
-/** The whole transcript, oldest first, as the screen asks it. */
+/** The whole transcript, oldest first. */
 const OLDEST_FIRST = new URLSearchParams({
   perPage: 'false',
   orderBy: JSON.stringify({ field: 'createdAt', direction: 'ASC' }),
 })
 
 /**
- * The conversation's transcript, Mastra's own route (`threads/:threadId/messages`) as the screen
- * reads it: the person's messages (`user`, and `signal` for one sent to a run) and the Builder's.
+ * The conversation's transcript, Mastra's own route (`threads/:threadId/messages`): the person's
+ * messages (`user`, and `signal` for one sent to a run) and the Builder's.
  */
 export async function messagesOf(hub: Hub, person: Person, url: string): Promise<Read[]> {
   const id = conversationIdOf(url)

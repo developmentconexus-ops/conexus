@@ -27,6 +27,9 @@ const READ = new Set<string>([
   BUILDER_TOOL.webSearch,
   BUILDER_TOOL.webFetch,
   BUILDER_TOOL.recall,
+  BUILDER_TOOL.connectorRead,
+  BUILDER_TOOL.connectorNotes,
+  BUILDER_TOOL.connectorNoteSave,
   ...SKILL_TOOLS,
 ])
 // The controller's tools that talk to the person: the questions, the plan and the task list.

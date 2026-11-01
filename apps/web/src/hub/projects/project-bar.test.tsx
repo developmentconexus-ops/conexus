@@ -1,5 +1,5 @@
 import { createMemoryHistory } from '@tanstack/react-router'
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { beforeEach, expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
 import { COMPANY } from '../../platform/fixtures.ts'
@@ -25,7 +25,7 @@ async function bar() {
   return within(await screen.findByRole('navigation', { name: 'Navegação' }))
 }
 
-test('dentro do Projeto a barra é a do Projeto: o nome com a troca, a empresa, Construir, Sobre, Quem usa o app', async () => {
+test('dentro do Projeto a barra é a do Projeto: o nome com a troca, a empresa, Construir, Sobre, Quem usa o app, Integrações', async () => {
   open(PROJECT)
   const rail = await bar()
   expect(
@@ -37,6 +37,7 @@ test('dentro do Projeto a barra é a do Projeto: o nome com a troca, a empresa, 
     'Construir',
     'Sobre',
     'Quem usa o app',
+    'Integrações',
     expect.any(String),
   ])
   expect(screen.queryByText(/em breve/i)).toBeNull()
@@ -49,6 +50,15 @@ test('um endereço de conversa marca Construir como o lugar atual', async () => 
   expect((await bar()).getByRole('link', { name: 'Construir' }).getAttribute('aria-current')).toBe(
     'page',
   )
+})
+
+test('as outras páginas do Projeto não marcam Construir como o lugar atual', async () => {
+  for (const page of ['about', 'access']) {
+    cleanup()
+    open(`${PROJECT}/${page}`)
+    const construir = (await bar()).getByRole('link', { name: 'Construir' })
+    expect(construir.getAttribute('aria-current')).toBeNull()
+  }
 })
 
 test('fora do Projeto, a barra da empresa como hoje', async () => {

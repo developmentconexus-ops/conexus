@@ -1,4 +1,11 @@
-import type { Connection, ConnectorEntry, Native, SignInCompleted } from '@conexus/hub-api'
+import type {
+  Connection,
+  ConnectionState,
+  ConnectorEntry,
+  Native,
+  ProjectAccess,
+  SignInCompleted,
+} from '@conexus/hub-api'
 import { clockOf, dayAndMonth } from '../../platform/dates.ts'
 
 export const LEAD =
@@ -7,7 +14,7 @@ export const NO_CONNECTIONS = 'Nenhuma integração ligada ainda.'
 export const MEMBER_SENTENCE = 'Só o dono ou um administrador liga, testa e desliga.'
 export const UNREADABLE_TEXT = 'Resposta que o Conexus não entendeu'
 export const RECONNECT = 'Conectar de novo'
-const ASK_MANAGER = 'Peça ao dono ou a um administrador.'
+export const ASK_MANAGER = 'Peça ao dono ou a um administrador.'
 export const RETURNING_TEXT = 'Voltando da autorização…'
 export const NOT_A_SIGN_IN_TEXT = 'Esse endereço não é de uma ligação.'
 export const BACK_TO_INTEGRATIONS = 'Voltar a Integrações'
@@ -25,7 +32,7 @@ export function connectionsCount(count: number): string {
 
 /** The state as a badge, in words and a tone (design V35); a connection never tested has none. What a refusal means depends on how the connector links. */
 export function stateBadge(
-  connection: Connection,
+  connection: Pick<Connection, 'state'>,
   auth: Auth,
 ): { text: string; tone: 'success' | 'danger' } | null {
   if (connection.state === 'ACTIVE') return { text: 'Funcionando', tone: 'success' }
@@ -165,4 +172,68 @@ export function signInWindowText(name: string): string {
 
 export function continueText(name: string): string {
   return `Continuar no ${name}`
+}
+
+export const PROJECT_LEAD = 'Integrações deste Projeto'
+export const NO_COMPANY_CONNECTIONS = 'A empresa ainda não ligou nenhum sistema.'
+export const LINK_IN_COMPANY = 'Ligar em Integrações da empresa'
+const GRANTED_TEXT = 'lê'
+const NOT_GRANTED_TEXT = 'não liberado'
+export const GRANT = 'Liberar para ler'
+const RELEASED_NOT_READING_TEXT = 'liberado, mas não lê até a ligação funcionar'
+const TEST_BEFORE_GRANT = 'Teste a ligação antes de liberar'
+const TEST_IN_COMPANY = 'Testar em Integrações da empresa'
+
+/** What the line says the Projeto does with the connection; the server decided it (`ProjectAccess`). */
+export function readingText(access: ProjectAccess): string {
+  switch (access.kind) {
+    case 'READS':
+      return GRANTED_TEXT
+    case 'RELEASED_NOT_WORKING':
+      return RELEASED_NOT_READING_TEXT
+    case 'NOT_RELEASED':
+    case 'NOT_RELEASED_NOT_WORKING':
+      return NOT_GRANTED_TEXT
+  }
+}
+
+/** The way to make a connection that does not work work again, by how it stopped; none for one that works. */
+export function remedyText(access: ProjectAccess, state: ConnectionState): string | null {
+  switch (access.kind) {
+    case 'READS':
+    case 'NOT_RELEASED':
+      return null
+    case 'RELEASED_NOT_WORKING':
+      return state === 'NEEDS_REAUTH' ? RECONNECT_IN_COMPANY : TEST_IN_COMPANY
+    case 'NOT_RELEASED_NOT_WORKING':
+      return state === 'NEEDS_REAUTH' ? RECONNECT_IN_COMPANY : TEST_BEFORE_GRANT
+  }
+}
+export const REVOKE = 'Tirar'
+const RECONNECT_IN_COMPANY = 'Conectar de novo em Integrações da empresa'
+export const LOADING_PROJECT_CONNECTIONS = 'Carregando as integrações…'
+
+/** The confirmation of "Liberar para ler": whole connection, app and Builder (the founder's S1). */
+export function grantText(name: string): string {
+  return `O app e o Builder poderão ler o ${name} da empresa. Quem usa o app vê o que o app mostrar.`
+}
+
+/** A connector that serves one connection per Projeto, and another of it already read: which to take away first. */
+export function oneAtATimeText(connector: string, taken: string): string {
+  return `O ${connector} lê uma ligação por Projeto. Tire a ${taken} antes.`
+}
+
+export const NOTEBOOK = 'Caderno'
+export const EMPTY_NOTEBOOK = 'O Builder ainda não anotou nada desta ligação.'
+export const ERASE = 'Apagar'
+
+/** "provado em 30/10 por Bruno, com 20 linhas": what an entry of the notebook says about its proof. */
+export function provedText(note: {
+  provedAt: string
+  provedRows: number
+  writtenBy: string | null
+}) {
+  const by = note.writtenBy === null ? 'quem já saiu da empresa' : note.writtenBy
+  const rows = note.provedRows === 1 ? '1 linha' : `${note.provedRows} linhas`
+  return `provado em ${dayAndMonth(note.provedAt)} por ${by}, com ${rows}`
 }

@@ -60,4 +60,6 @@ COPY --from=cliproxy /opt/cliproxy /opt/cliproxy
 COPY --from=build /app/apps/server/src/hub/identity/invitation-render.mjs apps/server/src/hub/identity/invitation-render.mjs
 USER node
 EXPOSE 8080
-CMD ["node", "apps/server/src/main.ts"]
+# 4096 MiB of heap: half the 8 GB host, beside the kernel, Docker, cloudflared and CLIProxyAPI. V8's
+# default there is about 2 GB, which a long Builder turn reached (2026-10-31).
+CMD ["node", "--max-old-space-size=4096", "apps/server/src/main.ts"]

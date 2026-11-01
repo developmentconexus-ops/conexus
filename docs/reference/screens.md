@@ -17,7 +17,7 @@ L24](../guides/delivery.md)): it grows by one line per screen.
 | Início of a company | `/companies/<c>` | Empresa | owner, administrator, member |
 | Todos os projetos | `/companies/<c>/projects` | Empresa | owner, administrator, member |
 | Integrações: the connectors the company can link and its connections, grouped by connector, with the window to link | `/companies/<c>/integrations` | Empresa | owner, administrator, member (reads) |
-| A connection: its state, who tested it and when, Testar with its one-sentence result, and Desligar | `/companies/<c>/integrations/<connectionId>` | Empresa | owner, administrator, member (reads) |
+| A connection: its state, who tested it and when, Testar with its one-sentence result, its Caderno with Apagar, and Desligar | `/companies/<c>/integrations/<connectionId>` | Empresa | owner, administrator, member (reads) |
 | Configurações' index: the sections as a list on a phone; a wide screen opens Minha conta | `/companies/<c>/settings` | Empresa | owner, administrator, member |
 | Configurações: Minha conta, Contas de modelo, Meus padrões | `/companies/<c>/settings/account`, `model-accounts`, `my-defaults` | Empresa | owner, administrator, member |
 | Configurações: Geral, Pessoas e convites (with Quem usa os apps), Padrões da empresa | `/companies/<c>/settings/general`, `people`, `defaults` | Empresa | owner, administrator, member (reads) |
@@ -26,6 +26,7 @@ L24](../guides/delivery.md)): it grows by one line per screen.
 | A Projeto's conversation, with the tab Prévia or Código (`?lens=`) | `/companies/<c>/projects/<p>/conversations/<id>` | Projeto | owner, administrator, member |
 | Sobre, with its parts Sobre and Versões (`?part=`) | `/companies/<c>/projects/<p>/about` | Projeto | owner, administrator, member |
 | Quem usa o app | `/companies/<c>/projects/<p>/access` | Projeto | owner, administrator, member (reads) |
+| Integrações do Projeto: each connected connection with whether the Projeto may read it, Liberar para ler and Tirar | `/companies/<c>/projects/<p>/integrations` | Projeto | owner, administrator, member (reads) |
 | Central, Clientes | `/operations/clients` | Central | whoever operates the installation |
 | Estado do Hub | `/operations/status` | Central | whoever operates the installation |
 | Cadastrar cliente | `/operations/clients/new` | Central | whoever operates the installation |

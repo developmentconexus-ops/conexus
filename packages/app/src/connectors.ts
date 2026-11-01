@@ -1,4 +1,4 @@
-import type { ConnectorAnswer, Context } from '@conexus/app-contract'
+import type { ConnectionsAnswer, ConnectorAnswer, Context } from '@conexus/app-contract'
 import type { ConnectorReads, PerProject } from '@conexus/connectors/calls'
 
 type Connector = keyof ConnectorReads
@@ -23,7 +23,7 @@ type Read<C extends Connector, R> =
 
 /** The names of a connector's connections released to the Projeto, for a connector that allows many. */
 type Listed<C extends Connector> = PerProject[C] extends 'many'
-  ? Readonly<{ connections(): Promise<readonly string[]> }>
+  ? Readonly<{ connections(): Promise<ConnectionsAnswer> }>
   : unknown
 
 type ClientOf<D extends Declared> = {

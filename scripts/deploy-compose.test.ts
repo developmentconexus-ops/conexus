@@ -3,6 +3,11 @@ import { readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { test } from 'node:test'
 import { parse } from 'yaml'
+import {
+  SHUTDOWN_DEADLINE_MS,
+  SHUTDOWN_GRACE_MS,
+  TURN_SETTLE_MS,
+} from '../apps/server/src/platform/lifecycle.ts'
 
 const INFRA = resolve(import.meta.dirname, '../infra')
 
@@ -39,6 +44,14 @@ test('a imagem do Hub traz o git e a pasta dos repositórios é um volume do usu
     compose.services.hub.environment.HUB_E2B_TEMPLATE,
     ['$', "{HUB_E2B_TEMPLATE:?HUB_E2B_TEMPLATE must name the Builder's template}"].join(''),
   )
+})
+
+test('o tempo de parada cobre a espera: o prazo do fim do Hub, a espera das respostas mais o fecho, cabe nele (E1)', () => {
+  const compose = parse(readFileSync(join(INFRA, 'compose.yaml'), 'utf8'))
+  const grace = /^(\d+)s$/.exec(compose.services.hub.stop_grace_period)
+  assert.ok(grace, compose.services.hub.stop_grace_period)
+  assert.equal(SHUTDOWN_GRACE_MS, TURN_SETTLE_MS + SHUTDOWN_DEADLINE_MS)
+  assert.ok(Number(grace[1]) * 1000 > SHUTDOWN_GRACE_MS)
 })
 
 test('o log de cada serviço gira: json-file, dez megabytes, cinco arquivos (S42)', () => {

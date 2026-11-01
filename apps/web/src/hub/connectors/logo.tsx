@@ -6,7 +6,7 @@ import { cn } from '../../ui/cn.ts'
  * a square symbol without the written name (the name stays as text beside it). It sits in a square
  * tile on the `logo-plate` token, light in both themes (design V3), so it reads on the dark surface.
  */
-export function ConnectorLogo(props: { entry: ConnectorEntry; large?: boolean }) {
+export function ConnectorLogo(props: { entry: Pick<ConnectorEntry, 'logo'>; large?: boolean }) {
   return (
     <span
       className={cn(

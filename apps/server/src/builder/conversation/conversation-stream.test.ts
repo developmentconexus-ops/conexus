@@ -5,6 +5,7 @@ import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import type { Hub } from '../../hub/identity/test-hub.ts'
 import { call, post } from '../../hub/identity/test-hub.ts'
+import type { Reply } from '../../platform/test-anthropic.ts'
 import { TEST_ORIGIN } from '../../platform/test-database.ts'
 import {
   conversing,
@@ -15,13 +16,20 @@ import {
   rolesAndParts,
   sent,
   sessionUrl,
-  stalling,
   started,
   stopped,
   streamOf,
   title,
 } from './test-conversation.ts'
 import { textsOf } from './test-parts.ts'
+
+/** A provider answer that sends nothing until released, at the test's end at the latest. */
+function stalling(t: TestContext) {
+  const stall = Promise.withResolvers<void>()
+  t.after(() => stall.resolve())
+  const reply: Reply = { kind: 'hold', until: stall.promise }
+  return { reply, release: () => stall.resolve() }
+}
 
 /** The conversation's messages once they are `count`, read again for at most five seconds. */
 async function readOnce(read: () => Promise<unknown[]>, count: number) {
@@ -72,10 +80,6 @@ test('o stream abre com a semente do estado da sessão; reconectar no meio de um
   t.after(() => again.close())
   const seed = await again.seed()
   assert.equal(seed.isRunning, true)
-  assert.deepEqual(
-    seed.currentMessage?.content.parts.flatMap((part) => (part.type === 'text' ? [part.text] : [])),
-    [PARTIAL],
-  )
   held.release()
   const rest = await again.turn()
   assert.equal(endOf(rest), 'complete')

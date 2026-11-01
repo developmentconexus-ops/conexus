@@ -3,7 +3,7 @@
   "workspaces": {
     ".": {
       "project": ["scripts/**/*.ts", "tests/e2e/**/*.ts"],
-      "ignoreBinaries": ["openssl", "sha256sum"],
+      "ignoreBinaries": ["openssl"],
       "ignoreDependencies": ["jscpd"]
     },
     "apps/server": {
@@ -18,7 +18,7 @@
       "entry": ["scripts/*.ts"]
     },
     "packages/app": {
-      "entry": ["src/**/*.check.ts"],
+      "entry": ["src/**/*.check.ts", "src/check/program.ts"],
       "ignore": ["starter/**", "skills/**"],
       "ignoreDependencies": [
         "@hookform/resolvers",

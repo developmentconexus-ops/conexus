@@ -86,13 +86,12 @@ Login social. Arquivos enviados por pessoas para dentro de um app ou da máquina
 | --- | --- | --- | --- |
 | 15 Mudar o app | A 14.1 | Nenhuma | Migrações atômicas de app. O lote |
 | 18 Entrar num app | A 17 | Onde a checagem de sessão vive, pelo teste | Ficha de sessões e passagem. LT1 a LT4 e LT9 |
-| 20 App com dados | A 18 e a 19.1 | Nenhuma | A barra do Projeto nasce com Integrações. O caderno da ligação. Banco livre durante a chamada |
 | 20.1 Escrever pelo app | A 20 | Nenhuma | Leitura, escrita, destrutiva. Escrita nova pede nova liberação |
 | 20.2 App que se atualiza | A 20 | Nenhuma | Avisos do fornecedor (S48) |
 | 20.3 Jet | A 20 | Quem pede o ambiente de teste | Fornecedor com documentação fina |
 | 20.4 Notificações | A 20 | Nenhuma | O estudo do portal de eventos. Fundador, 2026-10-29: "podemos ir depois da 20 as notificações" |
 | 21 Outras contas | A 12 | Nenhuma | A leitura dos termos da OpenAI |
-| 21.1 Ver o que acontece | A 20 | Grafana no Brasil, provado | Um só caminho OTel (0052) |
+| 21.1 Ver o que acontece | A 20 | Grafana no Brasil, provado | Um só caminho OTel (0052). O rastro por ferramenta: as ferramentas de conector (`connector_read`, `connector_notes`, `connector_note_save`) escondem entrada e saída no span, com o exportador de lista permitida, porque o `TracingPolicy` do Mastra só tem `internal` (veio da 20, critério 29) |
 | 16 Atualizar sem cortar | A 14 | Nenhuma | Consertos de execução da auditoria. Testes 9 e 10 |
 | 22 Ensaio geral | A 21.1 | O lugar da cópia fora do Neon | Ensaios das etapas 2, 7, 9, 12 e 13. Teste de carga |
 | 23 Primeira empresa | A 22 | Os riscos aceitos. O plano pago | A seção 11 da arquitetura |
