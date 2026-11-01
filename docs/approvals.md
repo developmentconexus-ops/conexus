@@ -422,3 +422,15 @@ Cartão da etapa 24.1 aprovado em 2026-10-31 (commit cc7c83de7a55bd521e0b4ee940e
 Cartão da etapa 24.1 aprovado em 2026-11-01 (commit d8fae7ecaf733ae6522a7a5d4f99614152f4c820): "APROVO CARTAO E CONFIRMO"; a palavra D11 do B1, "Aprovo as permissoes do b1"
 
 Essa emenda vem da revisão da U2 (B1) e do plano de fechamento, decidida pelo firstmate, sem decisão nova do fundador nem mudança no que ele vê: as ligações escolhidas da conversa vivem na tabela do Hub `builder.assistant_conversation`, que só o Hub escreve, porque as escritas do próprio Mastra nos metadados da conversa (título, memória observacional) desfaziam a escolha; o caminho do arquivo do Mastra é `builder/conversation/mastra.ts`; a lista de endereços da máquina do Assistente está na decisão 0059, e a 0051 fica como foi aprovada; o critério 20 e o contrato AssistantMachines passam a bater com o código. A palavra D11 do fundador para as permissões de `builder.assistant_conversation` (SELECT, INSERT e UPDATE da coluna `connections` para `hub_company`), em 2026-11-01: "Aprovo as permissoes do b1". A linha sai por cascata, sem permissão de DELETE.
+
+Em 2026-11-01, ao aprovar a Pauta ("Aprovo", seção "Etapa 13.3"), decisão do meio da etapa (L6): a barra embaixo da caixa sai. A escolha das ligações e a do Projeto passam para o "+" e para a pasta dentro da caixa, pelo cartão da 13.3. O cartão da 24.1 marca como substituídos os passos 1, 4 e 5 do roteiro, os critérios 23 a 24, as linhas da barra na matriz e na tabela de referência, o desenho de caixas e a nota sobre a W30, sem apagar o que dizia.
+
+## Etapa 13.3
+
+Em 2026-11-01, ao pedir o visual novo do Hub: "não é para você utilizar e tentar melhorar o que a gente tem hoje ... A gente pode mudar o que a gente hoje em estrutura, em visual ... ele tem simetria, ele tem matemática dentro do design"; "Isso é para a gente definir o design.md completo, igual o Cloud Design faz, que traz até os componentes, fonte, métricas, estilos ... pode refatorar, mudar tudo, desde que seja mais coeso"; "sempre seguindo o nosso ... o que a gente tem de front-end nos nossos guias e metodologias ... se a gente está realmente não repetindo, se a gente está seguindo uma arquitetura ... reutilização de componentes, em bibliotecas e padronização"; e, sobre a AffectUI (https://www.affectui.com/components/agent-handoff): "Esse cara faz muita coisa inter que podemos copiar ou fazer para nosso sistema no que for viavel".
+
+Em 2026-11-01, às capturas da Pauta: "Ficou boa a versão do layout". À linha da caixa, que deve ser uma peça com a mesma ordem em toda tela: "mais, depois o símbolo de pasta, ferramentas ... e aí o modelo e o símbolo de ... memória tá mais à direita".
+
+Em 2026-11-01, à pergunta se o modelo pode ser trocado dentro de uma conversa do Assistente ((a) sim, como no Builder; (b) só para leitura; (c) só no Início): "A".
+
+Em 2026-11-01, à pergunta se aprova a Pauta revisada, para entrar por cartão próprio com os primeiros consertos da auditoria do front-end: "Aprovo". O cartão é `docs/steps/e133-pauta.md`; a aprovação da página dele, com o commit, vem numa linha própria quando ele a ler.

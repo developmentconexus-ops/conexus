@@ -43,6 +43,7 @@ Sua empresa usa o Conexus desde 2026-11-02, recebendo cada etapa.
 
 - **24.1 Supervisor.** Sessões no Início e no Projeto perguntam aos sistemas e mostram tabelas e gráficos.
 - **24.2 Rotinas.** Recebe o resumo da manhã nas notificações e por e-mail.
+- **13.3 A Pauta.** Vê o Hub no visual novo, com a caixa igual em toda tela.
 - **24.3 Escrever com aprovação.** Um agente ou app pede "Aprovar?" antes de escrever (resposta B, 2026-10-18; leva a 20.1).
 - **24.4 Projeto sem app, agentes e Construtor.** Cria, conversando com o Construtor, um agente num Projeto sem app.
 - **24.5 Workflows visuais.** Monta conversando o fluxo do orçamento do Sankhya e o vê como trem de balões.
@@ -91,11 +92,9 @@ Login social. Arquivos enviados por pessoas para dentro de um app ou da máquina
 1. **Código antigo só entra com os consertos médios e grandes feitos.** "2. A": "ele não manter decisões antigas só porque elas já foram
    feitas." Vive na regra do estudo, no `conexus-study`.
 2. **A 16 vai para depois da 21.1, antes da 22, com o número que tem.** Em 2026-10-22: "Cara, então vamos mudar esse roadmap aí, velho. Porque essa 16 pra mim não faz sentido entrar agora ... Deixarei ela mais pro final mesmo." e, à posição antes da 22, "Sim". Nenhuma etapa depende dela; os consertos de execução da auditoria e os testes 9 e 10 vão com ela.
-3. **Arquivos e voz entram como a 14.3, depois da 14.1.** "A1 sim B1 okay ... C sim", "B1 por agora".
-4. **O Início que você planeja vem depois da Prévia e da 14.3.** A ordem é 14.1, 14.3, 13.1: "Concordo documente tudo isso para ser registrado".
-5. **O roadmap perde o detalhe das etapas fechadas.** Em 2026-10-29: "Roadmap pode ir removendo o que foi de etapas passadas se tiver detalhes ou algo assim, se não vamos ter que aumentar ele para não perder informação". A linha de uma etapa fechada sai da tabela; o que ficou é nas [aprovações](approvals.md). O teto de 1.600 palavras não sobe.
+3. **O roadmap perde o detalhe das etapas fechadas.** Em 2026-10-29: "Roadmap pode ir removendo o que foi de etapas passadas se tiver detalhes ou algo assim, se não vamos ter que aumentar ele para não perder informação". A linha de uma etapa fechada sai da tabela; o que ficou é nas [aprovações](approvals.md). O teto de 1.600 palavras não sobe.
 
-6. **Depois da 20, Supervisor, agentes e workflows, antes das outras empresas.** Em 2026-10-30, ao estudo da estrutura dos agentes: "eu vou começar na minha empresa ... depois disso ... eu vou jogar para as outras empresas".
+4. **Depois da 20, Supervisor, agentes e workflows, antes das outras empresas.** Em 2026-10-30, ao estudo da estrutura dos agentes: "eu vou começar na minha empresa ... depois disso ... eu vou jogar para as outras empresas".
 
 ## 2. As etapas
 
@@ -103,6 +102,7 @@ Login social. Arquivos enviados por pessoas para dentro de um app ou da máquina
 | --- | --- | --- | --- |
 | 24.1 Supervisor | A 20 | Nenhuma | Sessões como as da Factory e do G4. Ferramentas de conector da 20, máquina por conversa. Aceite: nenhum número inventado. Dono e administradores |
 | 24.2 Rotinas | A 24.1 | Nenhuma | `mastra.schedules`. A 20.4 entra aqui |
+| 13.3 A Pauta | A 24.2 (A1) | O lugar e o DESIGN.md | G4 OS, Linear, AffectUI. A auditoria do front-end |
 | 24.3 Escrever com aprovação | A 24.2 | Nenhuma | `requireApproval` do Mastra, provada antes a trava da 0053. Escrita nova pede nova liberação |
 | 24.4 Projeto sem app, agentes e Construtor | A 24.3 | Nenhuma | O Projeto como pasta de um assunto. O campo `agents` do Mastra, nunca o Agent Builder pago. O Open Bots (2026-10-29) |
 | 24.5 Workflows visuais | A 24.4 | Nenhuma | Workflows do Mastra; um protótipo de um dia decide o motor. Seu orçamento é o aceite |
