@@ -165,7 +165,7 @@ function accessOf(
 ): ConnectorAccess {
   return {
     connections: chosen,
-    savedAt: (requestContext) => readsFileOf(requestContext),
+    saving: { at: (requestContext) => readsFileOf(requestContext), log: deps.log },
     async read(call, requestContext) {
       const turn = turnKeyIn(requestContext)
       if (turn === undefined) {

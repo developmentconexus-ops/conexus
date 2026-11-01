@@ -99,10 +99,12 @@ function savingTo(files: { writeFile(path: string, content: string): Promise<voi
       signals.push(call.signal)
       return { kind: 'OK', value: { linhas: [] }, complete: true, whole: { linhas: [] } }
     },
-    savedAt: () => 'reads/aaaa-1.json',
-    log: {
-      info: (fields, message) => logged.push({ fields, message }),
-      error: (fields, message) => logged.push({ fields, message }),
+    saving: {
+      at: () => 'reads/aaaa-1.json',
+      log: {
+        info: (fields, message) => logged.push({ fields, message }),
+        error: (fields, message) => logged.push({ fields, message }),
+      },
     },
     notes: async () => null,
     wording: { whose: 'x', limit: 'y' },

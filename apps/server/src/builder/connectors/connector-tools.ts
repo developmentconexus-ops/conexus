@@ -34,10 +34,8 @@ export type ConnectorAccess = {
     call: { connectionId: ConnectionId; operation: string; input: unknown; signal?: AbortSignal },
     requestContext: RequestContext,
   ): Promise<Answer | WholeAnswer>
-  /** With a machine, the path (inside its folder) the turn's next read is saved whole at. */
-  savedAt?(requestContext: RequestContext): string
-  /** Where a failed save of the whole answer is logged; the caller that gives `savedAt` gives it too. */
-  log?: FailureLog
+  /** With a machine: the path (inside its folder) the turn's next read is saved whole at, and where a failed save is logged. */
+  saving?: { at(requestContext: RequestContext): string; log: FailureLog }
   notes(connectionId: ConnectionId): Promise<Notes>
   wording: { whose: string; limit: string }
 }
@@ -130,7 +128,7 @@ function describeReads(connections: readonly Connection[]): string {
  */
 async function saveWhole<T extends object>(
   files: WorkspaceFilesystem,
-  save: { path: string; log: FailureLog | undefined },
+  save: { path: string; log: FailureLog },
   whole: unknown,
   cut: T,
 ) {
@@ -143,7 +141,7 @@ async function saveWhole<T extends object>(
       error instanceof Failure
         ? error
         : new Failure('MACHINE_UNAVAILABLE', { cause: error, details: { reason: 'READS_WRITE' } })
-    if (save.log !== undefined) logFailure(save.log, failure)
+    logFailure(save.log, failure)
     return { ...cut, saved: false, reason: failure.code }
   }
   return { ...cut, file: save.path }
@@ -185,8 +183,8 @@ function readTool(access: ConnectorAccess): ToolsInput {
         )
         if (answered.kind !== 'OK' || !('whole' in answered)) return answered
         const { whole, ...cut } = answered
-        if (workspace?.filesystem === undefined || access.savedAt === undefined) return cut
-        const save = { path: access.savedAt(requestContext), log: access.log }
+        if (workspace?.filesystem === undefined || access.saving === undefined) return cut
+        const save = { path: access.saving.at(requestContext), log: access.saving.log }
         return saveWhole(workspace.filesystem, save, whole, cut)
       },
     }),
