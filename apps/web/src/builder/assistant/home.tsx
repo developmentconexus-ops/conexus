@@ -116,7 +116,7 @@ function useBegin(
         }),
       )
       stashHandoffFiles(conversation.id, question.files)
-      const state = { handoff: { content: question.content } }
+      const state = { handoff: { conversationId: conversation.id, content: question.content } }
       const { id: conversationId, projectId } = conversation
       await (projectId === null
         ? navigate({

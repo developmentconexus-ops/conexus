@@ -106,7 +106,7 @@ function useCreated(
       await navigate({
         to: '/companies/$companyId/projects/$projectId/conversations/$conversationId',
         params: { ...params, conversationId: conversation.id },
-        state: { handoff: { content: outgoing.content } },
+        state: { handoff: { conversationId: conversation.id, content: outgoing.content } },
       })
     } catch (error) {
       if (!(error instanceof HubFailure && isModelRefusal(error.code))) throw error
