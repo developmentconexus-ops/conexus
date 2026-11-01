@@ -28,7 +28,6 @@ test('a mensagem fixa: a mesma em toda conversa, com a sua marca de cache, antes
     assert.equal(fixed?.cached, true)
     assert.ok(block?.text.startsWith('Company: Empresa Teste.'), block?.text)
     assert.doesNotMatch(fixed.text, /Prévia|preview|plan|conexus_check|ask_user/i)
-    // After the two, only Mastra's own: the skills it lists; never the recall it does not offer.
     assert.ok(
       mastra.every((each) => /skill/i.test(each.text) && !/recall/i.test(each.text)),
       JSON.stringify(mastra),

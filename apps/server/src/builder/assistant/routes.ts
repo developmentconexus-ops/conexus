@@ -234,7 +234,6 @@ function registerReads(app: FastifyInstance, deps: Deps): void {
     const owner = ownerOf(input)
     const place = placeOf(input.query.projectId)
     await admitted(deps, owner, place)
-    // A new conversation starts with everything its place offers chosen.
     const offered = await deps.connectors.connections({ ...owner, place, chosen: [] })
     const connections = offered.map(({ connectionId, connector, name }) => ({
       connectionId,
