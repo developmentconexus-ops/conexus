@@ -1,7 +1,7 @@
 import type { ConnectorAnswer } from '@conexus/app-contract'
 import type { Answered, Native, Operation } from '@conexus/connectors'
 import { CONCURRENT_CALL } from '@conexus/connectors'
-import type { OfProject } from '@conexus/hub-api'
+import type { CompanyId, ProjectId } from '@conexus/hub-api'
 import { and, eq, sql } from 'drizzle-orm'
 import type { Login, OpenedConnection } from './executor.ts'
 import type { Deps, Viewer } from './rows.ts'
@@ -10,12 +10,13 @@ import { connection } from './tables.ts'
 import type { AppRefused } from './tokens.ts'
 import { accessFor } from './tokens.ts'
 
-/** Who asked for the read: the app of a click, or the Builder's tool. */
-type ReadBy = 'app' | 'builder'
+/** Who asked for the read: the app of a click, the Builder's tool, or the Assistant's. */
+type ReadBy = 'app' | 'builder' | 'assistant'
 
 export type ReadRequest = Readonly<{
   by: ReadBy
-  ids: OfProject
+  /** The Projeto only where the reader works in one: the Assistant at the Início has none. */
+  ids: Readonly<{ companyId: CompanyId; projectId?: ProjectId }>
   viewer: Viewer
   opened: OpenedConnection
   operation: Operation<unknown, unknown, 'read'>
@@ -69,6 +70,11 @@ function needsReauth(deps: Deps, a: ReadRequest) {
   )
 }
 
+/** The Projeto of the line, only where the reader works in one. */
+function projectOf(ids: ReadRequest['ids']): Record<string, string> {
+  return ids.projectId === undefined ? {} : { projectId: ids.projectId }
+}
+
 /** A token, the read, and when the provider ended the token, one new token and one repeat; the deadline is one for all. */
 async function once(deps: Deps, a: ReadRequest, input: unknown, endsAt: number) {
   const access = accessFor(deps, a.viewer)
@@ -117,7 +123,7 @@ export async function readThrough(deps: Deps, a: ReadRequest): Promise<Connector
   deps.log.info(
     {
       companyId: a.ids.companyId,
-      projectId: a.ids.projectId,
+      ...projectOf(a.ids),
       connectionId: a.opened.id,
       connector: a.opened.connector.id,
       operation: a.operation.id,
