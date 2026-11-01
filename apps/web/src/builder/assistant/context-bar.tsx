@@ -144,7 +144,11 @@ function Bar(props: {
 /** The Projeto a conversation lives in, fixed beside **Ajustar**: its name once the Hub has answered. */
 export function FixedProject(props: { companyId: CompanyId; projectId: ProjectId }) {
   const project = useQuery(projectQuery(props.companyId, props.projectId)).data?.project
-  return project === undefined ? null : <Badge>Projeto · {project.name}</Badge>
+  return project === undefined ? null : (
+    <Badge className="max-w-full shrink">
+      <span className="truncate">Projeto · {project.name}</span>
+    </Badge>
+  )
 }
 
 const NONE: ReadonlySet<ConnectionId> = new Set()
