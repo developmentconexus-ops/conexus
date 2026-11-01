@@ -1,26 +1,24 @@
 import assert from 'node:assert/strict'
-import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
-import { setTimeout as sleep } from 'node:timers/promises'
 import type { MastraDBMessage } from '@mastra/core/agent'
 import type { MastraMessagePart } from '@mastra/core/agent-controller'
 import { checks } from '@mastra/evals/checks'
-import { linkSankhya, testOf } from '../../hub/connectors/test-connections.ts'
 import { PADARIA_SOL_MATRIZ, salesSankhya, soldBy } from '../../hub/connectors/test-sales.ts'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
-import {
-  ANA_OWNER,
-  call,
-  hubWithLog,
-  personOn,
-  plantCompany,
-  post,
-} from '../../hub/identity/test-hub.ts'
+import { call } from '../../hub/identity/test-hub.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
-import { endOf, MODEL, messagesOf, title } from '../conversation/test-conversation.ts'
-import { assisting, created, READ, talking } from './test-assistant.ts'
+import { endOf, messagesOf, title } from '../conversation/test-conversation.ts'
+import {
+  assisting,
+  created,
+  described,
+  READ,
+  returnedNumbers,
+  shownFiles,
+  subscribed,
+  talking,
+} from './test-assistant.ts'
 import { numbersFromReads } from './test-numbers.ts'
 
 const QUESTION = 'Quanto a Padaria Sol vendeu em setembro por vendedor?'
@@ -147,60 +145,52 @@ test('sem ligação: a conversa sem sistema escolhido diz isso e aponta a barra,
 // biome-ignore lint/style/noProcessEnv: the switch of this one opt-in case, not the app's configuration
 const REAL_MODEL = process.env.CONEXUS_EVAL_REAL_MODEL
 
-/** The sign-in code firstmate writes after opening the link, read once and deleted; never printed. */
-async function codeFrom(folder: string): Promise<string> {
-  const path = join(folder, 'code.txt')
-  for (let waited = 0; waited < 600; waited += 1) {
-    if (existsSync(path)) {
-      const code = readFileSync(path, 'utf8').trim()
-      rmSync(path)
-      return code
-    }
-    await sleep(1000)
+const IMAGES = ['image/svg+xml', 'image/png']
+const DOCUMENTS = ['text/markdown', 'text/plain', 'application/pdf', 'text/html']
+const DOCUMENTS_OFFICE = /\.(docx|pptx|xlsx)$/
+
+type Subscribed = Awaited<ReturnType<typeof subscribed>>
+
+/** One new conversation per question: the verdict on its numbers and the files `show_file` showed, printed, and the verdict asserted. */
+function asking(t: TestContext, on: Subscribed) {
+  return async (
+    name: string,
+    body: object,
+    question: string,
+    truth: readonly number[] | 'READS',
+  ) => {
+    const url = await created(on.hub, on.ana, on.assistant, body)
+    on.track(url)
+    assert.equal(endOf(await (await talking(t, on.hub, on.ana, url)).say(question)), 'complete')
+    const parts = await answerParts(on.hub, on.ana, url)
+    const given = truth === 'READS' ? returnedNumbers(parts) : truth
+    const verdict = numbersFromReads({ question, parts, truth: given })
+    const files = shownFiles(parts)
+    t.diagnostic(`${name}: ${JSON.stringify(verdict)}; show_file: ${described(files)}`)
+    assert.deepEqual(verdict, { ok: true }, `${question}\n${textOf(parts)}`)
+    return files
   }
-  throw new Error('No sign-in code arrived in ten minutes.')
 }
 
-/** A Hub that calls the real model, through a Claude subscription signed in by the routes, as a person signs in. */
-async function subscribed(t: TestContext, folder: string) {
-  const sankhya = await salesSankhya(t)
-  const hub = await hubWithLog(t, (config) => ({
-    ...config,
-    connectorOrigins: new Map([['sankhya', sankhya.origin]]),
-  }))
-  const ana = await personOn(hub, ANA_OWNER)
-  const companyId = await plantCompany(hub.test, ana.id)
-  const company = `/api/companies/${companyId}`
-  await hub.test.asOwner(
-    `insert into builder.company_account_kind (company_id, kind) values ($1, 'claude_subscription')`,
-    [companyId],
+/** The connection read, taken out with `PUT …/connections`, the same question asked again: nothing more is read. */
+async function removing(t: TestContext, on: Subscribed) {
+  const url = await created(on.hub, on.ana, on.assistant, { connections: [on.matriz] })
+  on.track(url)
+  const { say } = await talking(t, on.hub, on.ana, url)
+  assert.equal(endOf(await say(QUESTION)), 'complete')
+  const before = on.reads.length
+  assert.ok(before > 0, 'the first question did not read the connection')
+  const taken = await call(on.hub, on.ana, 'PUT', `${url}/connections`, { connections: [] })
+  assert.equal(taken.statusCode, 200, taken.body)
+  assert.equal(endOf(await say(QUESTION)), 'complete')
+  const parts = await answerParts(on.hub, on.ana, url)
+  const verdict = numbersFromReads({ question: QUESTION, parts, truth: [] })
+  t.diagnostic(
+    `ligação tirada: ${JSON.stringify(verdict)}; reads after: ${on.reads.length - before}`,
   )
-  const body = { owner: 'company', kind: 'claude_subscription', label: 'Assinatura' }
-  const opened = await post(hub, ana, `${company}/model-account-sign-ins`, body)
-  assert.equal(opened.statusCode, 201, opened.body)
-  const { url, signInId } = Object(opened.json())
-  writeFileSync(join(folder, 'authorize-url.txt'), `${url}\n`)
-  const code = await codeFrom(folder)
-  const linked = await post(hub, ana, `${company}/model-account-sign-ins/${signInId}`, { code })
-  assert.equal(linked.statusCode, 201, linked.body)
-  const model = { model: MODEL, effort: 'off' }
-  assert.equal((await call(hub, ana, 'PUT', `${company}/default-model`, model)).statusCode, 200)
-  const connections = `${company}/connections`
-  const ids = []
-  for (const [name, credential] of [
-    ['Matriz', sankhya.matriz],
-    ['Filial', sankhya.filial],
-  ] as const) {
-    const made = await linkSankhya(hub, ana, connections, credential, undefined, name)
-    const id = String(Object(made.json()).connection.id)
-    assert.equal(Object((await testOf(hub, ana, connections, id)).json()).result, 'WORKING')
-    ids.push(id)
-  }
-  const projected = await post(hub, ana, `${company}/projects`, { name: 'Vendas' })
-  const projectId = String(Object(projected.json()).project.id)
-  const grant = `${company}/projects/${projectId}/connections/${ids[0]}`
-  assert.equal((await call(hub, ana, 'PUT', grant)).statusCode, 200)
-  return { hub, ana, assistant: `${company}/assistant/conversations`, matriz: ids[0], projectId }
+  assert.equal(on.reads.length, before, 'the Assistant read the connection after it was removed')
+  assert.ok(parts.every((part) => Object(part).toolInvocation?.toolName !== READ))
+  assert.deepEqual(verdict, { ok: true }, textOf(parts))
 }
 
 test('o modelo de verdade: as perguntas do roteiro sobre o dublê, cada uma numa conversa nova, e nenhuma resposta reprovada', {
@@ -208,28 +198,32 @@ test('o modelo de verdade: as perguntas do roteiro sobre o dublê, cada uma numa
 }, async (t) => {
   if (REAL_MODEL === undefined) {
     t.skip(
-      'opt-in: set CONEXUS_EVAL_REAL_MODEL to a folder; firstmate opens the link the test writes there and writes back the sign-in code (step 24.1, criterion 11b)',
+      'opt-in: set CONEXUS_EVAL_REAL_MODEL to a folder; firstmate opens the link the test writes there and writes back the sign-in code (step 24.1, criterion 11b). The machine is the real E2B template when CONEXUS_E2B_KEY_FILE and CONEXUS_E2B_TEMPLATE are set, the local kit otherwise; the result prints which ran, and per question the verdict and the file show_file showed',
     )
     return
   }
   const on = await subscribed(t, REAL_MODEL)
-  const asks = [
-    { body: { connections: [on.matriz] }, question: QUESTION, truth: SEPTEMBER },
-    { body: { connections: [] }, question: QUESTION, truth: [] },
-    {
-      body: { projectId: on.projectId, connections: [on.matriz] },
-      question: 'Quanto a Filial vendeu em setembro?',
-      truth: [],
-    },
-  ]
-  for (const each of asks) {
-    const url = await created(on.hub, on.ana, on.assistant, each.body)
-    assert.equal(
-      endOf(await (await talking(t, on.hub, on.ana, url)).say(each.question)),
-      'complete',
-    )
-    const parts = await answerParts(on.hub, on.ana, url)
-    const verdict = numbersFromReads({ question: each.question, parts, truth: each.truth })
-    assert.deepEqual(verdict, { ok: true }, `${each.question}\n${textOf(parts)}`)
-  }
+  const ask = asking(t, on)
+  const matriz = { connections: [on.matriz] }
+  await ask('vendas por vendedor', matriz, QUESTION, SEPTEMBER)
+  await ask('sem ligação', { connections: [] }, QUESTION, [])
+  const outside = { projectId: on.projectId, ...matriz }
+  await ask('Filial fora do Projeto', outside, 'Quanto a Filial vendeu em setembro?', [])
+
+  const chart = await ask('gráfico', matriz, `${QUESTION} Me mostra num gráfico.`, SEPTEMBER)
+  const drawn = chart.filter((file) => file.kind === 'FILE' && IMAGES.includes(file.media))
+  assert.ok(drawn.length > 0, `show_file showed no image file: ${described(chart)}`)
+  assert.ok(
+    drawn.every((file) => Number(file.bytes) > 0),
+    'the image the machine drew is empty',
+  )
+
+  const ordering = 'Documente o nosso processo de encomendas, com boas práticas do setor.'
+  const orders = await ask('documento das encomendas', matriz, ordering, 'READS')
+  const written = orders.filter(
+    (file) => DOCUMENTS.includes(file.media) || DOCUMENTS_OFFICE.test(file.name),
+  )
+  assert.ok(written.length > 0, `show_file showed no document: ${described(orders)}`)
+
+  await removing(t, on)
 })

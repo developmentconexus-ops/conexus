@@ -36,6 +36,7 @@ export const CARLA = { name: 'Carla Dias', email: 'carla@example.test' }
 export const INVITEE = 'davi@example.test'
 
 type Change = (config: Config) => Config
+type AssistantMachine = ReturnType<typeof testAppPorts>['assistantMachine']
 
 /** A connector call's deadline in tests: a silent double is given up on quickly (criterion 11), and a Testar waiting on another's refresh still sees the double's refresh land. */
 const TEST_CALL_DEADLINE_MS = 1_000
@@ -48,6 +49,7 @@ async function hubServing(
   mailApiUrl?: string,
   log: FailureLog = silent,
   change?: Change,
+  machine?: (local: AssistantMachine) => AssistantMachine,
 ) {
   // Registered before the database's own cleanup, so it runs first (node:test runs them in order):
   // the Builder's turns drain and end their streams while the server closes, as at shutdown.
@@ -69,7 +71,7 @@ async function hubServing(
   const ports = testAppPorts(config, { neon, cloudflare, postgres })
   const subjects = subjectsOf({
     ...{ database: test.database, mastraPool: test.mastraPool, config, identity },
-    ...{ ...ports, log },
+    ...{ ...ports, assistantMachine: (machine ?? ((local) => local))(ports.assistantMachine), log },
     deadlines: { callDeadlineMs: TEST_CALL_DEADLINE_MS },
   })
   const { projects, apps, conversations, runs } = subjects
@@ -121,14 +123,18 @@ export function hubOn(t: TestContext) {
 export type Hub = Awaited<ReturnType<typeof hubOn>>
 export type MailHub = Hub & { mail: Awaited<ReturnType<typeof mailServer>> }
 
-/** A Hub logging into `lines`, fields and message; `change` sets its config apart from the test one. */
-export async function hubWithLog(t: TestContext, change?: Change) {
+/** A Hub logging into `lines`, fields and message; `change` sets its config apart from the test one, `machine` the Assistant's machine apart from the local kit (the opt-in cases that run the real E2B). */
+export async function hubWithLog(
+  t: TestContext,
+  change?: Change,
+  machine?: (local: AssistantMachine) => AssistantMachine,
+) {
   const lines: { fields: Record<string, unknown>; message: string }[] = []
   const log = {
     info: (fields: Record<string, unknown>, message: string) => lines.push({ fields, message }),
     error: (fields: Record<string, unknown>, message: string) => lines.push({ fields, message }),
   }
-  return { ...(await hubServing(t, undefined, log, change)), lines }
+  return { ...(await hubServing(t, undefined, log, change, machine)), lines }
 }
 
 /** A Hub whose mail goes to a fake of the provider. */
