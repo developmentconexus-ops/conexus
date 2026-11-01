@@ -11,7 +11,7 @@ Basis: the machine study of step 24.1, `N-2` and `M-2`.
 The Assistant's machine reaches the package registries (`registry.npmjs.org`, `pypi.org`,
 `files.pythonhosted.org`), for pip and npm; the web is the Hub's tools (founder, 2026-10-31: `N-2`
 and `M-2` of the machine study). The list is the Assistant's alone: the Builder's stays as 0051
-holds it. A host is added to either list only with the founder's word, written in its record.
+holds it.
 
 ## Criterion
 

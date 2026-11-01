@@ -32,6 +32,10 @@ test('a mensagem fixa: a mesma em toda conversa, com a sua marca de cache, antes
       mastra.every((each) => /skill|machine/i.test(each.text) && !/recall/i.test(each.text)),
       JSON.stringify(mastra),
     )
+    assert.ok(
+      mastra.every((each) => !/npmjs|pypi|pythonhosted/i.test(each.text)),
+      JSON.stringify(mastra),
+    )
     assert.equal(asked.cached.filter((mark) => mark.at === 'system').length, 2)
     assert.ok(asked.cached.every((mark) => mark.at !== 'system' || mark.ttl === '1h'))
   }
