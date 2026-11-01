@@ -178,7 +178,7 @@ async function enter(s: Scenario, browser: Jar) {
   const redeemed = await s.visit(browser, pass)
   assert.equal(redeemed.status, 303)
   assert.equal(redeemed.headers.get('location'), '/')
-  assert.match(browser.header(), /^__Host-conexus-app=[\w-]{43}$/)
+  assert.match(browser.header(), /__Host-conexus-app=[\w-]{43}/)
   return pass
 }
 
@@ -211,6 +211,17 @@ test('app: sem a pessoa na empresa o app diz que não há acesso, e o código us
   const refused = await s.visit(browser, '/')
   assert.equal(refused.status, 403)
   assert.match(refused.text, /Você não tem acesso a este app\./)
+})
+
+test('app: duas abas do mesmo navegador entram, e a passagem da segunda ainda vale', async (t) => {
+  const s = await scenario(t)
+  const browser = new Jar()
+  const front = await getPass(s, browser)
+  const back = await getPass(s, browser)
+  assert.equal((await s.visit(browser, back)).status, 303)
+  assert.equal((await s.visit(browser, front)).status, 303)
+  const page = await s.visit(browser, '/')
+  assert.equal(page.status, 200)
 })
 
 test('app: o Projeto apagado deixa o app sem existir', async (t) => {

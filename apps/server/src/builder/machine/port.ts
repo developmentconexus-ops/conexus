@@ -15,7 +15,8 @@ export type Phase = MachinePhase
 export type Machines = {
   /**
    * The workspace of one turn of the conversation: its machine, found by the conversation's name, is
-   * not touched until a tool needs it, and starts from the Hub's `main`.
+   * not touched until a tool needs it. A new one starts from the Hub's `main`; one found again keeps
+   * its folder and brings `main` in, with the work of a turn that never ended kept on it.
    */
   workspaceFor(input: {
     companyId: CompanyId
@@ -45,7 +46,7 @@ export type Machines = {
   pack(input: { conversationId: ConversationId }): Promise<Result<VersionFolder, PackRefused>>
   /** Whether the conversation's turn used the machine: then there may be something to collect. */
   touched(conversationId: ConversationId): boolean
-  /** Ends the turn's use of the machine: it pauses. Safe to repeat. */
+  /** Ends the turn's use of the machine: its folder goes back to its base, and it pauses. Safe to repeat. */
   release(conversationId: ConversationId): Promise<void>
   kill: MachineApi['kill']
 }

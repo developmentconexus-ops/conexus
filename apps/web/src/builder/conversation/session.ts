@@ -27,16 +27,11 @@ export function sessionOf(conversationId: ConversationId) {
     stop: () => said(session.abort()),
     /** The model, effort and tasks the conversation is on, as Factory UI hydrates (`session.state`). */
     state: () => said(session.state({ threadId: conversationId })),
-    /** The transcript, oldest first, as Mastra's route serves it. */
-    read: async () => {
-      const { messages } = await said(
-        session.listMessages(conversationId, {
-          perPage: false,
-          orderBy: { field: 'createdAt', direction: 'ASC' },
-        }),
-      )
-      return messages
-    },
+    /**
+     * The newest `limit` messages, oldest first: Mastra's own paging, as the Factory UI reads a
+     * thread (`useAgentControllerThreadMessages.ts`, `session.listMessages(threadId, limit)`).
+     */
+    read: (limit: number) => said(session.listMessages(conversationId, limit)),
     /**
      * A card's answer: the answers of `ask_user`, one per question (ours takes a list for a
      * multiple choice, which the client's type does not say), or the plan's decision.

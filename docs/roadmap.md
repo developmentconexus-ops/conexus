@@ -42,7 +42,7 @@ Aprovações e usos: [aprovações](approvals.md).
 Sua empresa usa o Conexus desde 2026-11-02, recebendo cada etapa.
 
 - **24.1 Supervisor.** Sessões no Início e no Projeto perguntam aos sistemas e mostram tabelas e gráficos.
-- **24.2 Automações: o Assistente na agenda.** Pede "todo dia às 7h me manda o resumo" e recebe cada execução numa conversa nova, com aviso.
+- **24.2 Automações: o Assistente na agenda.** Pede "todo dia às 7h, o resumo" e recebe cada execução numa conversa nova, com aviso.
 - **24.3 Agentes do Projeto, com o Construtor.** Conversando com o Construtor, cria num Projeto um agente que lê.
 - **24.4 Os agentes escrevem, com aprovação.** Um agente ou app pede "Aprovar?" antes de escrever (resposta B, 2026-10-18; leva a 20.1).
 - **24.5 Workflows.** Monta conversando o fluxo do orçamento do Sankhya e o vê como trem de balões.
@@ -78,7 +78,7 @@ Em espera: 19.2 Central de Ajuda. Sai: o pg-boss; a agenda do Mastra, gatilho de
 | 13 | Uma chave do E2B (a da conta grátis). Um bucket privado no R2 | E2B pago: US$ 150 por mês, se o uso pedir |
 | 19 | Usuário só de leitura no Sankhya de uma empresa | Nenhum |
 | 19.1 | O seu app de desenvolvedor do Mercado Livre | Não lido |
-| 24.2 | O Neon Launch no projeto do Hub, quando a primeira automação ligar: a agenda mantém o banco acordado | Cerca de US$ 19,35 por mês, uma conta só |
+| 24.2 | O Neon Launch no projeto do Hub, com a primeira automação: a agenda o mantém acordado | Cerca de US$ 19,35 por mês, uma conta só |
 | 22 | Um lugar de cópia fora do Neon | Não lido |
 | 23 | O aviso do que sai do Brasil, com uma linha: o ditado no Chrome passa pelo Google | Nenhum novo |
 
@@ -104,10 +104,10 @@ Login social. Arquivos enviados por pessoas para dentro de um app ou da máquina
 | 20 App com dados | A 18 e a 19.1 | Nenhuma | A barra do Projeto nasce com Integrações. O caderno da ligação. Banco livre durante a chamada |
 | 24.1 Supervisor | A 20 | Nenhuma | Sessões como as da Factory e do G4. Ferramentas de conector da 20, máquina por conversa. Aceite: nenhum número inventado. Dono e administradores |
 | 24.2 Automações | A U2 a U4 da 24.1 | Nenhuma | Automação: gatilho, o que roda, o lugar, por `mastra.schedules`. A 20.4 entra aqui |
-| 24.3 Agentes do Projeto | A 24.2 | Onde roda o código que o Construtor escreve | Projeto como assunto. Agentes como linhas nossas, nunca o Agent Builder pago. O Open Bots (2026-10-29) |
+| 24.3 Agentes do Projeto | A 24.2 | Onde roda o código do Construtor | Projeto como assunto. Agentes como linhas nossas, nunca o Agent Builder pago. O Open Bots |
 | 24.4 Escrita com aprovação | A 24.3 | Nenhuma | `requireApproval` do Mastra, provada antes a trava da 0053. Escrita nova pede nova liberação |
-| 24.5 Workflows | A 24.4 | O gatilho de um orçamento do Sankhya | Workflows do Mastra como dados; um protótipo de um dia decide o motor. Seu orçamento é o aceite |
-| 21.1 Ver o que acontece | A 24.5 | Grafana no Brasil, provado | Um só caminho OTel (0052). O uso por empresa |
+| 24.5 Workflows | A 24.4 | O gatilho do Sankhya | Workflows do Mastra como dados; um protótipo de um dia decide o motor. Seu orçamento é o aceite |
+| 21.1 Ver o que acontece | A 24.5 | Grafana no Brasil, provado | Um só caminho OTel (0052). O uso por empresa. Rastro sem entrada e saída das ferramentas de conector (20, critério 29) |
 | 16 Atualizar sem cortar | A 21.1 | Nenhuma | Consertos de execução da auditoria. Testes 9 e 10 |
 | 22 Ensaio geral | A 16 | O lugar da cópia fora do Neon | Ensaios das etapas 2, 7, 9, 12 e 13. Carga de um painel e de uma rotina |
 | 23 As outras empresas | A 22 | Os riscos aceitos. O plano pago | A seção 11 da arquitetura |

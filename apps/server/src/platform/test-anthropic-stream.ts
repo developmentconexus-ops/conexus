@@ -11,7 +11,7 @@ type Cited = { url: string; title: string }
 export type Block =
   | { type: 'thinking'; thinking: string }
   | { type: 'text'; text: string; cites?: Cited[] }
-  | { type: 'tool_use'; name: string; input: object }
+  | { type: 'tool_use'; name: string; input: object | string }
   | { type: 'search'; query: string; results: { url: string; title: string }[] }
 
 /** One block as the Messages API streams it: its start, its deltas, its stop. */
@@ -53,7 +53,8 @@ function framesOf(block: Block, index: number): [string, object][] {
     }
     case 'tool_use': {
       const call = { type: 'tool_use', id: `toolu_${randomUUID()}`, name: block.name, input: {} }
-      const input = JSON.stringify(block.input)
+      // A string is the call's raw JSON, as a model may stream it unparseable.
+      const input = typeof block.input === 'string' ? block.input : JSON.stringify(block.input)
       return [start(call), delta({ type: 'input_json_delta', partial_json: input }), stop]
     }
     case 'search':

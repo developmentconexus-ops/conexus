@@ -49,6 +49,7 @@ import { registerHealth } from './platform/health.ts'
 import { answer, createServer, serve } from './platform/http.ts'
 import { bootLog, closeListeners, listenQuietly, shutDownOnSignal } from './platform/lifecycle.ts'
 import { createMail } from './platform/mail.ts'
+import { watchMemory } from './platform/memory.ts'
 import { migrate, migrateExitCode } from './platform/migrate.ts'
 import { loadMigrationRule } from './platform/migration-rule.ts'
 import type { NeonProjects } from './platform/neon.ts'
@@ -157,9 +158,17 @@ export function subjectsOf(deps: {
     // The apps are made below, after the Projetos the turn's send needs; a turn ends long after.
     send: (version) => apps.sendFromBuilder(version),
   })
+  // The connectors come below, after the apps whose door they read; a turn comes long after.
+  const builderConnectors: Connectors['builder'] = {
+    granted: (ids) => connectors.builder.granted(ids),
+    read: (ids, a) => connectors.builder.read(ids, a),
+    notes: (ids, connectionId) => connectors.builder.notes(ids, connectionId),
+    saveNote: (ids, a) => connectors.builder.saveNote(ids, a),
+  }
   const conversations = createConversations({
     ...{ database, identity, projects: { liveProjectOf }, sealKeys, google, log, runs },
     pool: deps.mastraPool,
+    connectors: builderConnectors,
   })
   const releaseConversations = conversations.release
   const projects = createProjects({
@@ -208,6 +217,7 @@ async function runServer(): Promise<void> {
     const app = await createHub(config, { status, identity, ...subjects })
     const edge = await createEdgeHub(config, { apps, connectors })
     const grace = shutDownOnSignal(app, edge, {
+      settle: (bound) => conversations.settle(bound),
       drain: () => conversations.close(),
       // Every live provider token is logged out before the database closes.
       release: () =>
@@ -219,6 +229,7 @@ async function runServer(): Promise<void> {
       await listenQuietly(edge, config.edgePort)
       await listenQuietly(app, config.port)
       app.log.info('LISTENING')
+      watchMemory(log)
       await status.recordStart()
       // The passes at start run after the Hub answers: a Cloudflare or Neon out never keeps it down.
       void apps.repair().catch((error: unknown) => logFailure(log, databaseFailure(error)))

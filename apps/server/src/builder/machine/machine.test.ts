@@ -20,7 +20,7 @@ import {
 
 const OWN = `conexus-${INSTALLATION}-${CONVERSATION}`
 
-test('máquina: a conversa sem máquina liga e copia o main; a achada pelo nome volta ao main com a rede fechada; a que sumiu entre turnos volta nova, do main, sem frase', async (t) => {
+test('máquina: a conversa sem máquina liga e copia o main; a achada pelo nome traz o main com a rede fechada; a que sumiu entre turnos volta nova, do main, sem frase', async (t) => {
   const { open, phases, control, machines, base } = await world(t)
   const first = await open()
   assert.deepEqual(phases, [], 'building the workspace touches no machine')
@@ -43,7 +43,7 @@ test('máquina: a conversa sem máquina liga e copia o main; a achada pelo nome 
   assert.equal(await machines.collect({ conversationId: CONVERSATION, base }), 'unchanged')
 })
 
-test('máquina: o turno seguinte volta ao main, e um commit em outro ramo não apaga a versão anterior', async (t) => {
+test('máquina: religada no turno seguinte, a mesma pasta segue no main que o turno salvou, e um commit em outro ramo não apaga a versão anterior', async (t) => {
   const { open, machines, repository, base, control, folder } = await world(t)
   const first = await open()
   const git = `git -c user.name=B -c user.email=b@x.test`
@@ -67,11 +67,12 @@ test('máquina: o turno seguinte volta ao main, e um commit em outro ramo não a
   await machines.release(CONVERSATION)
   control.outcome = 'connected'
   const next = await open()
-  assert.equal(
-    await next.filesystem?.exists('a.ts'),
-    true,
-    'the next turn starts from main, which holds a.ts',
-  )
+  assert.equal(await next.filesystem?.exists('a.ts'), true, 'the saved version is the folder')
+  const head = await (await sandboxOf(next)).executeCommand('sh', [
+    '-c',
+    `cd ${join(folder, 'app')} && git symbolic-ref HEAD`,
+  ])
+  assert.equal(head.stdout.trim(), 'refs/heads/main')
   const second = await machines.collect({ conversationId: CONVERSATION, base: received.value })
   assert.equal(second, 'unchanged')
 })
@@ -96,6 +97,24 @@ test('máquina: a máquina que pausou na hora do turno, ou que o Mastra religa n
   assert.ok(typeof bundle === 'object', `the turn's work is saved, not ${String(bundle)}`)
   assert.equal(bundle.changedFiles, 1)
   assert.ok(bundle.files > 1, 'the version holds the starter beside the turn')
+})
+
+test('máquina: o turno que não terminou (o processo morreu) deixa os arquivos na máquina; religada, a mesma pasta os guarda e o turno seguinte os salva; o turno que terminou não deixa sobra', async (t) => {
+  const { open, machines, control, base } = await world(t)
+  const ended = await open()
+  await ended.filesystem?.writeFile('stray.ts', 'sobra\n')
+  await machines.release(CONVERSATION)
+  control.outcome = 'connected'
+  const cut = await open()
+  assert.equal(await cut.filesystem?.exists('stray.ts'), false, 'an ended turn leaves its base')
+  await cut.filesystem?.writeFile('a.ts', 'um\n')
+  // The process died: no save, no end. The next turn finds the machine by its name.
+  const after = await open()
+  assert.equal(await after.filesystem?.exists('a.ts'), true, 'the cut turn is kept')
+  assert.equal(await machines.changed({ conversationId: CONVERSATION }), true)
+  const bundle = await machines.collect({ conversationId: CONVERSATION, base })
+  assert.ok(typeof bundle === 'object', `the cut turn is saved, not ${String(bundle)}`)
+  assert.equal(bundle.changedFiles, 1)
 })
 
 test('máquina: duas ferramentas do Workspace no primeiro passo esperam a semente, pois o running vem antes do onStart', async (t) => {

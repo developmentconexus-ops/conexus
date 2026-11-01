@@ -4,8 +4,15 @@ import { Failure } from '../../platform/failure.ts'
 import type { Sha } from '../git/public.ts'
 import type { TimedExec } from './check.ts'
 import { CHECK_PROGRAM, checkIn } from './check.ts'
-import type { Kit } from './kit.ts'
-import { APP_FOLDER, MARK, machineInstructions, OUTPUT_MAX, readCapped } from './kit.ts'
+import type { Conflicts, Kit } from './kit.ts'
+import {
+  APP_FOLDER,
+  MARK,
+  machineInstructions,
+  NO_CONFLICTS,
+  OUTPUT_MAX,
+  readCapped,
+} from './kit.ts'
 import { packIn } from './pack.ts'
 import type { Machines, MachinesDeps, Phase } from './port.ts'
 import { SandboxFilesystem } from './sandbox-filesystem/filesystem.ts'
@@ -15,10 +22,13 @@ import {
   changedScript,
   collected,
   collectScript,
+  conflictsOf,
+  endScript,
   keepScript,
   outFile,
   seedFile,
   seedScript,
+  syncScript,
 } from './scripts.ts'
 
 type Session = {
@@ -32,6 +42,8 @@ type Session = {
   starts: number
   /** The machine died mid-turn, and what the turn wrote on it is gone. */
   lost: boolean
+  /** What the start found of work not yet saved meeting a newer version, told to the model for the turn. */
+  conflicts: Conflicts
   ready: Promise<Kit> | undefined
 }
 
@@ -100,37 +112,81 @@ class BuilderMachines implements Machines {
     } catch (cause) {
       const restore = restoreFailure(cause)
       if (restore !== undefined) throw restore
-      this.deps.log.error({ reason: 'START' }, 'MACHINE_UNAVAILABLE')
+      this.deps.log.error(
+        { reason: 'START', cause: String(cause).slice(0, 500) },
+        'MACHINE_UNAVAILABLE',
+      )
       throw new Failure('MACHINE_UNAVAILABLE', { cause })
     }
     this.deps.log.info({ conversationId: session.conversationId }, 'MACHINE_STARTED')
     return session.kit
   }
 
-  /** The app folder holds `main` as the Hub has it: its bundle crosses, then the seed script runs. */
-  private async seed(kit: Kit, session: Session) {
+  /** The Hub's `main` crosses as a bundle, for the seed or the sync. */
+  private async sendMain(kit: Kit, session: Session) {
     const { onPhase, companyId, projectId } = session
     onPhase('copying')
     await kit.transport.write(seedFile(this.tmp), await this.deps.seedOf({ companyId, projectId }))
+  }
+
+  /** A new machine's app folder holds `main` as the Hub has it. */
+  private async seed(kit: Kit, session: Session) {
+    await this.sendMain(kit, session)
+    await this.seedSent(kit, session)
+  }
+
+  private async seedSent(kit: Kit, session: Session) {
     const seeded = await run(kit, seedScript(this.workdir, this.tmp))
     if (seeded.exitCode !== 0) throw new Error(`seed failed: ${seeded.stderr.slice(-500)}`)
+    this.conflicted(session, seeded.stdout)
+  }
+
+  /** The conflicts the start found, as the model reads them at every step of the turn. */
+  private conflicted(session: Session, stdout: string) {
+    session.conflicts = conflictsOf(stdout)
+    const { markers, deleted, replaced } = session.conflicts
+    const files = markers.length + deleted.length + replaced.length
+    if (files > 0)
+      this.deps.log.info({ conversationId: session.conversationId, files }, 'MACHINE_CONFLICTS')
   }
 
   /**
-   * What the machine holds once it is up. One found by name goes back to the Hub's `main`. A later
-   * start in the same turn is Mastra reconnecting a machine that paused or dropped (`retryOnDead`):
-   * it keeps what the turn wrote. A new one is seeded; a second new one in the same turn is a
-   * machine that died, and what the turn wrote on it is gone.
+   * A machine found again keeps its folder and brings `main` into it (Mastra's `onStart`: a
+   * reconnect only checks once-per-machine setup). The work of a turn that never ended stays, merged
+   * onto `main`; the files it conflicts in are told to the model. One whose seed never finished is
+   * seeded. A sync that fails names its cause and fails the start: the folder is left as it was.
+   */
+  private async sync(kit: Kit, session: Session) {
+    const { conversationId } = session
+    await this.sendMain(kit, session)
+    const synced = await run(kit, syncScript(this.workdir, this.tmp))
+    if (synced.exitCode !== 0) {
+      const cause = synced.stderr.slice(-500)
+      this.deps.log.error({ conversationId, cause }, 'MACHINE_SYNC_FAILED')
+      throw new Error(`sync failed: ${cause}`)
+    }
+    if (synced.stdout.split('\n').includes('UNSEEDED')) return this.seedSent(kit, session)
+    this.conflicted(session, synced.stdout)
+  }
+
+  /** The files stay as they are; the repository must still be there. */
+  private async keep(kit: Kit) {
+    const kept = await run(kit, keepScript(this.workdir))
+    if (kept.exitCode !== 0) throw new Error(`the kept tree is gone: ${kept.stderr.slice(-500)}`)
+  }
+
+  /**
+   * What the machine holds once it is up. One found by name keeps its folder and brings `main` in.
+   * A later start in the same turn is Mastra reconnecting a machine that paused or dropped
+   * (`retryOnDead`): it keeps what the turn wrote. A new one is seeded; a second new one in the same
+   * turn is a machine that died, and what the turn wrote on it is gone.
    */
   private async onStart(session: Session, outcome: string | undefined) {
     const { conversationId, kit } = session
     session.starts += 1
     if (outcome === 'connected') {
       await kit.closeNetwork()
-      if (session.starts === 1) return this.seed(kit, session)
-      const kept = await run(kit, keepScript(this.workdir))
-      if (kept.exitCode !== 0) throw new Error(`the kept tree is gone: ${kept.stderr.slice(-500)}`)
-      return
+      return session.starts === 1 ? this.sync(kit, session) : this.keep(kit)
     }
     if (session.starts > 1) {
       session.lost = true
@@ -174,13 +230,14 @@ class BuilderMachines implements Machines {
     })
     const session: Session = {
       ...{ companyId, projectId, conversationId, onPhase, kit },
-      ...{ starts: 0, lost: false, ready: undefined },
+      ...{ starts: 0, lost: false, conflicts: NO_CONFLICTS, ready: undefined },
     }
     this.sessions.set(conversationId, session)
     return new Workspace({
       sandbox: async () => (await this.ensure(session)).sandbox,
       sandboxCacheKey: () => name,
-      instructions: { dynamicSandbox: () => machineInstructions(this.workdir) },
+      // Read at every step: the conflicts are known once a tool has started the machine.
+      instructions: { dynamicSandbox: () => machineInstructions(this.workdir, session.conflicts) },
       filesystem: new SandboxFilesystem({
         id: `conexus-fs-${conversationId}`,
         sandbox: this.execIn(session),
@@ -244,7 +301,23 @@ class BuilderMachines implements Machines {
   async release(conversationId: ConversationId) {
     const session = this.sessions.get(conversationId)
     this.sessions.delete(conversationId)
-    if (session?.ready !== undefined) await session.kit.sandbox.stop?.()
+    if (session?.ready === undefined) return
+    try {
+      await this.end(session)
+    } finally {
+      await session.kit.sandbox.stop?.()
+    }
+  }
+
+  /** The turn is over: its folder goes back to its base. A machine that never came up holds nothing of it. */
+  private async end(session: Session) {
+    const up = await session.ready?.then(
+      () => true,
+      () => false,
+    )
+    if (!up) return
+    const ended = await run(session.kit, endScript(this.workdir))
+    if (ended.exitCode !== 0) throw new Error(`end failed: ${ended.stderr.slice(-500)}`)
   }
 }
 

@@ -6,6 +6,7 @@ import type {
   PersonId,
   PreviewData,
   ProjectId,
+  RunId,
   VersionCheck,
 } from '@conexus/hub-api'
 import { RunId as RunIdSchema } from '@conexus/hub-api'
@@ -183,6 +184,11 @@ export class Runs {
   /** The run of the conversation Mastra's run is, while it holds the Projeto. */
   #mine(requestContext: RequestContext): Driven | undefined {
     return this.#writingFor(conversationIn(requestContext))
+  }
+
+  /** The id of the run the Mastra run is, while it holds the Projeto: what a tool counts its calls by. */
+  runIdOf(requestContext: RequestContext): RunId | undefined {
+    return this.#mine(requestContext)?.runId
   }
 
   /** Whether the turn changed its app folder; one that never woke the machine did not. */
