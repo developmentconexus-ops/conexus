@@ -199,7 +199,7 @@ Início e no Projeto).
 | 17 | U3 | Com a máquina, as ferramentas do modelo são as do critério 12 mais `show_file` e as `mastra_workspace_*` que a máquina do Builder dá (a mesma lista, lida do pedido ao modelo nos dois); nenhuma a mais. A primeira ferramenta de arquivo ou comando de uma conversa liga uma máquina com o nome da conversa; o turno seguinte acha a mesma, com os arquivos que ficaram; outra conversa tem outra máquina; a máquina não tem o app nem Git (nenhuma semente); o kit dela recebe `allowOut` com `registry.npmjs.org`, `pypi.org` e `files.pythonhosted.org`, e o do Builder continua só com `registry.npmjs.org`; no E2B de verdade, de dentro dela, `pip install` e `npm install` de um pacote funcionam e o pacote importa, e um `curl` a outro endereço não recebe a resposta dele (o teste olha a resposta da aplicação, não o socket, porque o E2B pode dar o socket como aberto a uma conexão bloqueada) | `apps/server/src/builder/assistant/machine.test.ts` (o kit de teste, `test-machine.ts`); a rede e a imagem: um caso `opt-in:` (T4) em `apps/server/src/builder/machine/machine-e2b.test.ts` | must |
 | 18 | U3 | Com a máquina, uma leitura `OK` grava a resposta inteira em `reads/<turno>-<n>.json` na pasta da conversa (o `<turno>` são os 8 primeiros caracteres da `TurnKey`) e responde ao modelo o corte com o caminho e `complete` (falso quando o conector tem mais páginas, `cut.ts:53`); um código no mesmo turno lê o arquivo; o segundo turno grava outro arquivo e o do primeiro continua; uma máquina que não liga deixa a leitura responder o corte com `saved: false` e a falha da máquina | `machine.test.ts`, "a leitura na máquina" | must |
 | 19 | U3 | `show_file` de um Markdown, texto ou CSV de até 64 KB dá a saída com o conteúdo, e a mensagem relida do armazenamento do Mastra depois do turno ainda tem a linha da ferramenta com a saída inteira; de outro arquivo, a saída com o nome, o tamanho e o tipo; um caminho fora da pasta da conversa ou que não existe: `SHOW_REFUSED` (`OUTSIDE`, `NOT_FOUND`) e nada aparece; o modelo recebe só o resumo (`toModelOutput`), e um turno seguinte não carrega o conteúdo | `apps/server/src/builder/assistant/show-file.test.ts` | must |
-| 20 | U3 | `GET …/assistant/conversations/{id}/files?path=` dá os bytes do arquivo ao dono da conversa, com o tipo, `Content-Disposition`, `X-Content-Type-Options: nosniff` e `Content-Security-Policy: sandbox` (o arquivo foi escrito pelo modelo, S24); de outra pessoa: `CONVERSATION_NOT_FOUND`; pelo membro: `NOT_FOUND`; fora da pasta ou inexistente: `FILE_NOT_FOUND`; acima do teto (`MAX_BYTES`): `FILE_TOO_LARGE`; a máquina perdida: `FILE_GONE` | `apps/server/src/builder/assistant/routes.test.ts`, "o arquivo" | must |
+| 20 | U3 | `GET …/assistant/conversations/{id}/files?path=` dá os bytes do arquivo ao dono da conversa, com o tipo, `Content-Disposition`, `X-Content-Type-Options: nosniff` e `Content-Security-Policy: sandbox` (o arquivo foi escrito pelo modelo, S24); de outra pessoa: `CONVERSATION_NOT_FOUND`; pelo membro: `NOT_FOUND`; fora da pasta ou inexistente: `FILE_NOT_FOUND`; acima do teto (`MAX_BYTES`): `FILE_TOO_LARGE`; a máquina perdida: `FILE_GONE` | `apps/server/src/builder/assistant/file.test.ts`, "o arquivo" | must |
 | 21 | U3 | Apagar uma conversa (pela empresa, pela pessoa ou pelo Projeto) mata as máquinas dela; o turno que acaba para a máquina, que dorme até a próxima pergunta; o fim do Hub para as máquinas dos turnos em andamento como o do Builder | `machine.test.ts`, "o fim da máquina"; `release.test.ts`, "a máquina" | must |
 | 22 | U3 | A decisão 0032 diz que as linhas que o Assistente lê para analisar vão à máquina dele no E2B; a 0059 dá a lista de endereços do Assistente, e a 0051 fica como foi aprovada | a revisão (check-docs para o índice) | must |
 | 23 | U4 | No Início, a dona e a administradora veem a caixa "Pergunte ou peça um app", a barra com as ligações que a empresa oferece já escolhidas e o seletor de Projeto, e as conversas recentes, a de um Projeto com a etiqueta do nome dele; o membro vê "O que vamos construir?" como hoje; a 390 px, o mesmo | `apps/web/src/builder/assistant/home.test.tsx` | must |
@@ -706,7 +706,7 @@ export function numbersFromReads(turn: readonly MastraDBMessage[], truth: readon
 
   O bloco da conversa: "Company: <nome>. Person: <nome> (<papel>). Today: <data de `turnDate()`>,
   America/Sao_Paulo. Place: Início | Projeto "<nome>", which reads only the connections it received.
-  Connections in this conversation: <ligação> (<conector>), …" — de `sessionScope` e da porta.
+  Connections in this conversation: <ligação> (<conector>), …" — de `sessionScopes` e da porta.
 - **A skill `conexus`.** O que o Conexus faz hoje (Projetos, apps, ligações, escrita só com
   liberação), o que ainda não faz (rotina na 24.2, escrita com aprovação na 24.3, agentes e fluxos
   na 24.4) e como passar uma necessidade ao Builder (na U4, `propose_app`). Em inglês, validada por
@@ -874,10 +874,12 @@ concorrência; o resolver por conversa é o padrão do Mastra.
 // apps/server/src/builder/assistant/machine.ts
 /** Where the conversation's files live on its machine, made at the machine's start. */
 export const WORK_FOLDER = '/home/user/work'
-/** The hosts the Assistant's machine may reach: the package registries, for pip and npm (decision 0051). */
+/** The hosts the Assistant's machine may reach: the package registries, for pip and npm (decision 0059). */
 export const ASSISTANT_HOSTS = ['registry.npmjs.org', 'pypi.org', 'files.pythonhosted.org']
 /** The conversations' machines: the Builder's kit without the app's seed, Git, check or pack; the network reaches only ASSISTANT_HOSTS. One owner (C26) for start, stop, kill and read. */
 export type AssistantMachines = {
+  /** Where the conversation's files are on its machine. */
+  readonly folder: string
   /** The controller's workspace resolver; undefined outside a conversation, as the Builder's. */
   workspace(requestContext: RequestContext): Promise<Workspace | undefined>
   /** The turn ended: the machine stops (E2B pauses it); a machine never started is left alone. */
@@ -892,7 +894,7 @@ export type AssistantMachines = {
   read(conversationId: ConversationId, path: string, signal: AbortSignal): Promise<{ kind: 'OK'; bytes: Buffer } | { kind: 'FILE_NOT_FOUND' | 'FILE_TOO_LARGE' | 'FILE_GONE' | 'MACHINE_UNAVAILABLE' | 'CANCELLED' }>
 }
 /** What a machine needs: the Builder's `AssistantMachine` deps (kit, api, template, installation) plus `mark`; `workFolder?` and `startMs?` are for tests. */
-export function createAssistantMachines(deps: AssistantMachine & { log: Logger }): AssistantMachines
+export function createAssistantMachines(deps: AssistantMachine & { log: FailureLog }): AssistantMachines
 
 // packages/hub-api/src/assistant.ts
 export const ShowFileInput = z.object({ path: z.string().min(1).max(500) })
@@ -951,7 +953,7 @@ export const ShownFile = z.discriminatedUnion('kind', [
 2. `machine.ts`: `AssistantMachines` sobre o kit; o `workspace` do controlador do Assistente.
 3. `connector-tools.ts`: a gravação em `reads/` quando há máquina.
 4. `show-file.ts` e a rota do arquivo (`readCapped`, `containment.ts` para recusar fora da pasta).
-5. `release.ts`, `turn.ts`: matar e parar. `assistant.md`. A 0032 e a 0051.
+5. `release.ts`, `turn.ts`: matar e parar. `assistant.md`. A 0032 e a 0059.
 
 ### Como se prova
 
@@ -967,7 +969,7 @@ rede e a imagem do critério 17 só se provam no E2B de verdade, pelo caso `opt-
   (só às do Mastra): parar e mostrar.
 - No E2B de verdade, o `pip install` não passar pela lista com `pypi.org` e `files.pythonhosted.org`
   (o critério 17): parar e mostrar a recusa; não acrescentar endereço sem a palavra do fundador
-  (0051).
+  (0059).
 - O E2B recusar a lista com `denyOut` de tudo: parar e mostrar o erro; não abrir a rede.
 
 ## U4 As telas
