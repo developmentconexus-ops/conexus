@@ -99,6 +99,11 @@ e no celular.
 
 "Rodar agora" avisa só no sino, sem e-mail: você está na tela.
 
+**Enquanto você não responde.** Você pré-aprovou este cartão em 2026-11-01, para ser construído e
+testado antes da sua leitura; a construção segue as recomendações `E1`, `F1` e `G1`, e uma resposta
+diferente sua muda a unidade que a toca. O Agent Builder pago do Mastra serve só de leitura de
+lógica, nunca de importação.
+
 ### O mapa da visão: o seu orçamento de ponta a ponta
 
 A sua visão de 2026-11-01: "um builder em que é visual ... o construtor ... é proativo ... cron,
