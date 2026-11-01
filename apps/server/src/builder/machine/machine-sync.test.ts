@@ -186,3 +186,14 @@ test('máquina: um comando da máquina que não termina no prazo falha a religad
   assert.ok(Date.now() - started < 4_000, 'the sync gave up at its own budget')
   assert.deepEqual(here.errors, ['MACHINE_SYNC_FAILED', 'MACHINE_UNAVAILABLE'])
 })
+
+test('máquina: um index.lock que um git morto deixou na pasta não prende a conversa: a religada o tira e junta o trabalho não guardado', async (t) => {
+  const { open, control, folder } = await world(t)
+  await (await open()).filesystem?.writeFile('cut.ts', 'meio\n')
+  writeFileSync(join(folder, 'app', '.git', 'index.lock'), '')
+  moveMain(join(folder, 'git', COMPANY, `${PROJECT}.git`), 'b.ts', 'outra\n')
+  control.outcome = 'connected'
+  const after = await open()
+  assert.equal(await after.filesystem?.exists('cut.ts'), true)
+  assert.equal(await after.filesystem?.exists('b.ts'), true)
+})

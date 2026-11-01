@@ -78,6 +78,8 @@ export function syncScript(workdir: string, tmp: string): string {
   return [
     'set -e',
     `if ! { cd ${quoted(workdir)} 2>/dev/null && test -d .git && git rev-parse --quiet --verify ${BASE_REF} >/dev/null; }; then echo UNSEEDED; exit 0; fi`,
+    // No git of an earlier turn lives at a start: a lock one left (killed on its timeout) would fail every checkout below, for ever.
+    'rm -f .git/index.lock',
     `git fetch --quiet --no-tags ${quoted(seed)} '+refs/heads/main:${main}'`,
     `rm -f ${quoted(seed)}`,
     ...treeIn(BASE_REF, 'conexus-sync-index'),
