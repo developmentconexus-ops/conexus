@@ -50,8 +50,8 @@ function alive(pid: number): boolean {
 
 async function setup(
   t: TestContext,
-  idleMs?: number,
-  cliProxy: Omit<ReturnType<typeof testCliProxy>, 'control'> = testCliProxy(),
+  idleSeconds?: number,
+  given: Omit<ReturnType<typeof testCliProxy>, 'control'> = testCliProxy(),
 ) {
   const double = testCliProxy()
   rmSync(join(double.control, 'runs'), { force: true })
@@ -118,7 +118,8 @@ async function setup(
     error: (fields: Record<string, unknown>, message: string) =>
       lines.push(JSON.stringify([fields, message])),
   }
-  const calls = openGoogleCalls({ cliProxy, log, database, sealKeys, idleMs })
+  const cliProxy = idleSeconds === undefined ? given : { ...given, idleSeconds }
+  const calls = openGoogleCalls({ cliProxy, log, database, sealKeys })
   t.after(() => calls.stop())
   return { double, calls, plant, row, asOwner, lines }
 }
@@ -150,7 +151,7 @@ test('uma conta, um processo em 127.0.0.1, chave aleatória, pasta 0700 com o lo
 })
 
 test('10 minutos sem chamada: o processo sai e a pasta some; a chamada seguinte abre outro', async (t) => {
-  const { double, calls, plant } = await setup(t, 400)
+  const { double, calls, plant } = await setup(t, 0.4)
   const account = await plant()
   await calls.googleCalls(account, SCOPE)
   const [run] = runsOf(double.control)
@@ -167,7 +168,7 @@ test('10 minutos sem chamada: o processo sai e a pasta some; a chamada seguinte 
 })
 
 test('uma chamada mais longa que o tempo parado: o processo fica até ela acabar, e sai depois do tempo parado', async (t) => {
-  const { double, calls, plant } = await setup(t, 400)
+  const { double, calls, plant } = await setup(t, 0.4)
   const account = await plant()
   const opened = await calls.googleCalls(account, SCOPE)
   const release = opened.hold()
@@ -226,6 +227,7 @@ test('binário diferente do sha256: não inicia; processo que não sobe: CLIPROX
     binary,
     sha256: createHash('sha256').update(text).digest('hex'),
     loginSeconds: 300,
+    idleSeconds: 10 * 60,
   })
   const planted = await broken.plant()
   for (const _attempt of [1, 2]) {

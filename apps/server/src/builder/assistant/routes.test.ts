@@ -27,7 +27,7 @@ function choiceOf(response: { json(): unknown }) {
   ])
 }
 
-test('criar: com o modelo padrão, só as ligações que o lugar oferece, no Projeto; a mesma chave dá a mesma conversa', async (t) => {
+test('criar: com o modelo padrão, só as ligações que o lugar oferece, no Projeto; a mesma chave dá a mesma conversa, e com outro lugar IDEMPOTENCY_CONFLICT', async (t) => {
   const on = await assisting(t)
   const key = randomUUID()
   const body = { projectId: on.projectId, connections: [on.matriz, on.filial] }
@@ -47,6 +47,10 @@ test('criar: com o modelo padrão, só as ligações que o lugar oferece, no Pro
   const again = await post(on.hub, on.ana, on.assistant, body, key)
   assert.equal(again.statusCode, 201, again.body)
   assert.equal(conversationOf(again).id, conversation.id)
+  // The same key with another place is another attempt: refused, the conversation as it was.
+  const elsewhere = await post(on.hub, on.ana, on.assistant, { connections: [] }, key)
+  assert.equal(elsewhere.statusCode, 409, elsewhere.body)
+  assert.equal(codeOf(elsewhere), 'IDEMPOTENCY_CONFLICT')
   const listed: Listed = Object((await call(on.hub, on.ana, 'GET', on.assistant)).json())
   assert.deepEqual(
     listed.conversations.map((each) => each.id),
@@ -187,4 +191,24 @@ test('uma conversa e o que escolher: cada ligação do lugar com a escolha; uma 
   for (const at of [url, offered, on.assistant]) {
     assert.equal(codeOf(await call(on.hub, bruno, 'GET', at)), 'NOT_FOUND', at)
   }
+})
+
+test('uma escolha guardada que não se lê não escolhe nada: a conversa fica sem ligação escolhida', async (t) => {
+  const on = await assisting(t)
+  const url = await created(on.hub, on.ana, on.assistant, { connections: [on.matriz] })
+  const id = url.slice(url.lastIndexOf('/') + 1)
+  const threads = 'mastra.mastra_threads'
+  const [row] = (
+    await on.hub.test.mastraPool.query(`select metadata from ${threads} where id = $1`, [id])
+  ).rows
+  const metadata = typeof row.metadata === 'string' ? JSON.parse(row.metadata) : row.metadata
+  const broken = JSON.stringify({ ...metadata, conexusConnections: [on.matriz, 42] })
+  await on.hub.test.mastraPool.query(`update ${threads} set metadata = $2 where id = $1`, [
+    id,
+    broken,
+  ])
+  assert.deepEqual(choiceOf(await call(on.hub, on.ana, 'GET', url)), [
+    ['Matriz', false],
+    ['Filial', false],
+  ])
 })

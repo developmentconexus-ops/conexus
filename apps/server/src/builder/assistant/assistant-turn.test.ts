@@ -1,8 +1,13 @@
 import assert from 'node:assert/strict'
+import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
-import { post } from '../../hub/identity/test-hub.ts'
+import { setTimeout as sleep } from 'node:timers/promises'
+import type { Person } from '../../hub/identity/test-hub.ts'
+import { CARLA, call, memberOn, post } from '../../hub/identity/test-hub.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
+import { testCliProxy } from '../../platform/test-cliproxy-binary.ts'
 import {
   answeredOf,
   asked,
@@ -12,6 +17,7 @@ import {
   PARTIAL,
   sent,
   sessionUrl,
+  streamOf,
   title,
 } from '../conversation/test-conversation.ts'
 import { failuresOf } from '../conversation/test-parts.ts'
@@ -111,4 +117,136 @@ test('a chamada sem argumentos: uma ferramenta guardada sem argumentos é refeit
   assert.deepEqual(replayed?.toolUses, [{ name: 'conexus_overview', input: {} }])
   const stored = (await answeredOf(on.hub, on.ana, on.url)).at(-1)
   assert.equal(stored?.role, 'builder')
+})
+
+/** Whether the process `pid` still runs. */
+function alive(pid: number): boolean {
+  try {
+    process.kill(pid, 0)
+    return true
+  } catch {
+    return false
+  }
+}
+
+/** Waits, at most `ms`, until `done` holds; whether it did. */
+async function within(ms: number, done: () => boolean | Promise<boolean>): Promise<boolean> {
+  for (const stop = Date.now() + ms; Date.now() < stop; await sleep(20)) {
+    if (await done()) return true
+  }
+  return done()
+}
+
+/**
+ * A company whose only conversation account is Google's, through the CLIProxy double, whose process
+ * stops 50 ms after its last call ends; Anthropic answers only the titles.
+ */
+async function googleOnly(t: TestContext) {
+  const on = await conversing(
+    t,
+    (call) => title(call) ?? { kind: 'refuse', status: 500 },
+    (config) => ({ ...config, cliProxy: { ...config.cliProxy, idleSeconds: 0.05 } }),
+  )
+  await on.hub.test.asOwner(
+    `insert into builder.company_account_kind (company_id, kind) values ($1, 'google_cliproxy')`,
+    [on.companyId],
+  )
+  const double = testCliProxy()
+  for (const file of ['mode', 'runs', 'asked']) rmSync(join(double.control, file), { force: true })
+  t.after(() => rmSync(join(double.control, 'recording'), { force: true }))
+  const signIns = `/api/companies/${on.companyId}/model-account-sign-ins`
+  const opened = await post(on.hub, on.ana, signIns, {
+    owner: 'company',
+    kind: 'google_cliproxy',
+    label: 'Google',
+  })
+  assert.equal(opened.statusCode, 201, opened.body)
+  const { url: address, signInId } = Object(opened.json())
+  const state = String(new URL(address).searchParams.get('state'))
+  const code = `http://localhost:51121/oauth-callback?state=${state}&code=c-1`
+  const linked = await post(on.hub, on.ana, `${signIns}/${signInId}`, { code })
+  assert.equal(linked.statusCode, 201, linked.body)
+  const assistant = `/api/companies/${on.companyId}/assistant/conversations`
+  function lines(file: string): string[] {
+    const path = join(double.control, file)
+    return existsSync(path) ? readFileSync(path, 'utf8').trim().split('\n') : []
+  }
+  /**
+   * The person's question on the conversation at `url`, answered with the recording `name`, whole or
+   * cut and left open, once no process of the account runs: the pid of the process its turn opened,
+   * once its model call reached it, so the turn holds the account.
+   */
+  async function asking(
+    person: Person,
+    url: string,
+    name: 'google-thinking' | 'google-abort',
+  ): Promise<number> {
+    const pids = lines('runs').map((run) => Number(run.split(' ')[0]))
+    assert.ok(await within(5_000, () => pids.every((pid) => !alive(pid))), 'no process runs')
+    writeFileSync(join(double.control, 'recording'), name)
+    const before = { runs: lines('runs').length, asked: lines('asked').length }
+    const asked = await sent(on.hub, person, url, 'Quanto vendemos?')
+    assert.equal(asked.statusCode, 200, asked.body)
+    const reached = await within(10_000, () => {
+      return lines('runs').length > before.runs && lines('asked').length > before.asked
+    })
+    assert.ok(reached, 'the turn opened a process and called through it')
+    return Number(lines('runs').at(-1)?.split(' ')[0])
+  }
+  /** A new conversation of `person` on Gemini, its first answer whole, its stream open. */
+  async function opening(person: Person) {
+    const body = { model: 'google/gemini-3.5-flash-lite', connections: [] }
+    const url = await created(on.hub, person, assistant, body)
+    const stream = await streamOf(on.hub, person, url)
+    t.after(() => stream.close())
+    const pid = await asking(person, url, 'google-thinking')
+    assert.equal(endOf(await stream.turn()), 'complete')
+    return { url, stream, pid }
+  }
+  /** The account's next process lists no model, so a turn waits for it as it picks the account, until `go`. */
+  function holdingStart() {
+    const hold = join(double.control, 'hold')
+    writeFileSync(hold, '')
+    t.after(() => rmSync(hold, { force: true }))
+    return { go: () => rmSync(hold), started: () => lines('runs') }
+  }
+  return { ...on, asking, opening, holdingStart }
+}
+
+test('o fim do turno solta o processo do Google: depois de um turno que acaba, de um parado pela pessoa e de uma conversa apagada no meio, o processo sai', async (t) => {
+  const on = await googleOnly(t)
+  const ana = await on.opening(on.ana)
+  assert.ok(await within(5_000, () => !alive(ana.pid)), 'a turn that ended lets it go')
+
+  const running = await on.asking(on.ana, ana.url, 'google-abort')
+  const stopped = await post(on.hub, on.ana, `${sessionUrl(ana.url)}/abort`, {})
+  assert.equal(stopped.statusCode, 200, stopped.body)
+  assert.equal(endOf(await ana.stream.turn()), 'aborted')
+  assert.ok(await within(5_000, () => !alive(running)), 'a turn stopped by Parar lets it go')
+
+  const carla = await memberOn(on.hub, on.companyId, CARLA, 'admin')
+  const hers = await on.opening(carla)
+  const deleted = await on.asking(carla, hers.url, 'google-abort')
+  const members = `/api/companies/${on.companyId}/members`
+  assert.equal((await call(on.hub, on.ana, 'DELETE', `${members}/${carla.id}`)).statusCode, 204)
+  assert.ok(
+    await within(5_000, () => !alive(deleted)),
+    'a conversation deleted mid-turn lets it go',
+  )
+})
+
+test('Parar enquanto o turno escolhe a conta: a escolha que termina depois do fim não segura o processo do Google', async (t) => {
+  const on = await googleOnly(t)
+  const ana = await on.opening(on.ana)
+  assert.ok(await within(5_000, () => !alive(ana.pid)))
+  const before = on.holdingStart()
+  const runs = before.started().length
+  assert.equal((await sent(on.hub, on.ana, ana.url, 'Pare antes')).statusCode, 200)
+  assert.ok(await within(10_000, () => before.started().length > runs), 'the pick opened a process')
+  const pid = Number(before.started().at(-1)?.split(' ')[0])
+  const stopped = await post(on.hub, on.ana, `${sessionUrl(ana.url)}/abort`, {})
+  assert.equal(stopped.statusCode, 200, stopped.body)
+  assert.equal(endOf(await ana.stream.turn()), 'aborted')
+  before.go()
+  assert.ok(await within(5_000, () => !alive(pid)), 'the pick that ended after the turn lets go')
 })

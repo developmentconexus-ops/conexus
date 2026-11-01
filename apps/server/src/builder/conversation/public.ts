@@ -104,7 +104,7 @@ export function createConversations(deps: {
         onPhase: (conversationId, listener) => deps.runs.onPhase(conversationId, listener),
       },
       // The Assistant's turn writes in no Projeto: its end saves only the failure it said.
-      { ...assistant, finish: async () => 'gone' },
+      assistant,
     ],
     log: deps.log,
   })

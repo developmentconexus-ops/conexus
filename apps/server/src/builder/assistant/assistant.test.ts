@@ -14,10 +14,10 @@ test('a escolha no turno: numa conversa de Projeto, as duas leituras do Sankhya 
 
   assert.equal(endOf(await say('Quantas empresas há na Matriz?')), 'complete')
   const first = on.calls.at(2)
-  assert.ok(
-    first?.texts.some((text) => text.includes('"kind":"OK"')),
-    first?.texts.join('\n'),
-  )
+  const result = first?.texts.find((text) => text.includes('"kind":"OK"'))
+  assert.ok(result !== undefined, first?.texts.join('\n'))
+  // The model reads the cut of the answer, never the door's whole answer beside it.
+  assert.deepEqual(Object.keys(JSON.parse(result)).sort(), ['complete', 'kind', 'value'])
   assert.equal(on.reads.length, 2)
   for (const read of on.reads) {
     assert.equal(read.connectionId, on.matriz)

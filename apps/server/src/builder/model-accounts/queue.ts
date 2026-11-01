@@ -160,7 +160,7 @@ async function pickedOf(
       { ...row, companyId: turn.companyId, credential },
       scopeOf(turn),
     )
-    turn.held.push(hold())
+    turn.hold(hold())
     const model = await callModel({ ...target, url, apiKey })
     return { ...base, models: { conversation: model, system: model } }
   }

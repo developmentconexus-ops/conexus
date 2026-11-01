@@ -72,17 +72,19 @@ function failureOf(error: Error): FailureData | undefined {
 }
 
 /**
+ * How the run's end settled its Projeto: saved (`Settled`), its Projeto gone mid-turn, the save
+ * thrown, or nothing to save, for a controller whose runs hold no Projeto (`unsaved`).
+ */
+type Outcome = Settled | 'gone' | 'threw' | 'unsaved'
+
+/**
  * The run's failure, decided once (the failures table of the card): one its error said first, then
  * the save, then how the model's turn ended, never the provider's text (security S41).
  */
-function decided(
-  run: Run,
-  reason: AgentEnd,
-  outcome: Settled | 'gone' | 'threw',
-): FailureData | undefined {
+function decided(run: Run, reason: AgentEnd, outcome: Outcome): FailureData | undefined {
   if (run.failure !== undefined) return run.failure
   if (outcome === 'threw') return { code: 'INTERNAL_UNEXPECTED' }
-  if (outcome !== 'gone' && outcome.kind === 'failed') return { code: outcome.code }
+  if (typeof outcome === 'object' && outcome.kind === 'failed') return { code: outcome.code }
   if (reason !== 'error') return undefined
   const finish = run.tally.finishReason
   return { code: (finish === undefined ? undefined : FINISHES[finish]) ?? 'MODEL_CALL_FAILED' }
@@ -129,12 +131,13 @@ function heard(run: Run, event: AgentControllerEvent): void {
 
 /**
  * A controller whose runs the Hub watches: the Builder's settles each run's Projeto
- * (`Runs.finish`) and tells its machine's steps; the Assistant's holds no Projeto (step 24.1, U2).
+ * (`Runs.finish`) and tells its machine's steps; the Assistant's holds no Projeto, so it has no
+ * `finish` (step 24.1, U2).
  */
 export type Watched = {
   controller: AgentController
   memory: Builder['memory']
-  finish: Runs['finish']
+  finish?: Runs['finish']
   onPhase?: Runs['onPhase']
 }
 
@@ -165,10 +168,10 @@ function oursOf(
 }
 
 /** Our parts of the run as it settled, its failure decided once (`run.failed`, for its line). */
-function partsOf(run: Run, reason: AgentEnd, outcome: Settled | 'gone' | 'threw') {
+function partsOf(run: Run, reason: AgentEnd, outcome: Outcome) {
   settleThinking(run)
   const parts = [...run.parts]
-  if (outcome !== 'threw' && outcome !== 'gone') {
+  if (typeof outcome === 'object') {
     run.tally.rounds = outcome.rounds
     if (outcome.kind === 'saved')
       parts.push({ type: 'data-conexus-version', data: outcome.version })
@@ -212,10 +215,13 @@ async function ended(deps: Deps, session: Session, run: Run, reason: AgentEnd): 
   }
   // A save that throws is this run's failure, said and logged here: Mastra would print the
   // listener's error raw, and the run would end without saying why.
-  const outcome = await deps.finish({ conversationId, reason, saved }).catch((cause: unknown) => {
-    logFailure(deps.log, new Failure('INTERNAL_UNEXPECTED', { cause }))
-    return 'threw' as const
-  })
+  const outcome: Outcome =
+    deps.finish === undefined
+      ? 'unsaved'
+      : await deps.finish({ conversationId, reason, saved }).catch((cause: unknown) => {
+          logFailure(deps.log, new Failure('INTERNAL_UNEXPECTED', { cause }))
+          return 'threw' as const
+        })
   await kept
   // Kept and told again only with what the end added: how the send went, or a save that threw.
   if (kept !== undefined && !sending && outcome !== 'threw') return

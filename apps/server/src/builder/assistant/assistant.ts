@@ -53,7 +53,10 @@ const BUILTIN_TOOLS: BuiltinToolId[] = [
   'task_check',
   'subagent',
 ]
-/** The closed set the mode offers the model (criterion 12), which the controller enforces as it calls it. */
+/**
+ * The closed set the mode offers the model (criterion 12): the layer that enforces it, as the
+ * controller filters the agent's tools by it; `noteSave: false` below only leaves the save unbuilt.
+ */
 const AVAILABLE_TOOLS = [
   BUILDER_TOOL.connectorRead,
   BUILDER_TOOL.connectorNotes,
