@@ -73,4 +73,6 @@ export type MachinesDeps = {
   checkProgram?: string
   /** The external budget of waking or creating a machine (code C57). */
   startMs?: number
+  /** The budget of each command the Hub runs in the machine, the check's own aside (code C57). */
+  commandMs?: number
 }
