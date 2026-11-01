@@ -128,8 +128,8 @@ as leituras guardadas no Hub saem; a lista de endereços e o Python na imagem so
 | --- | --- | --- | --- | --- |
 | U0 | **Feita** (pull request https://github.com/developmentconexus-ops/conexus/pull/499, merge `3434d389`, 170 linhas): no aviso de parar, o Hub recusa respostas novas com `HUB_UPDATING`, espera as em andamento por até 180 s, e só então corta (`HUB_UPDATED`) e fecha | `apps/server/src/platform/lifecycle.ts`, `apps/server/src/main.ts`, `apps/server/src/builder/conversation/` (`end.ts`, `guard.ts`, `public.ts`), `packages/hub-api/src/`, `infra/compose.yaml` | [testing](../guides/testing.md) | — |
 | U1 | A porta da empresa aos conectores, pelo escopo da conversa: as ligações escolhidas, cortadas pelo lugar (Início: as `ACTIVE` da empresa; Projeto: as liberadas a ele), só leitura, por quem pode perguntar (`askAssistant`: dono e administradores); cada leitura volta cortada para o modelo e inteira para a máquina; a linha por chamada com `by: 'assistant'` | `apps/server/src/hub/connectors/`, `apps/server/src/hub/identity/` | [security](../guides/security.md) | a aprovação desta página e o pull request da regra `ee` (`Q1`) |
-| U2 | O Assistente sem máquina: o segundo controlador no mesmo `Mastra`, o agente, o texto de ambiente e o bloco da conversa, a skill `conexus`, o contexto da conversa (o Projeto nas marcas do fio, as ligações numa configuração do fio), o turno sem `Runs` na fila de contas, a memória e os processadores do Builder, as ferramentas (`connector_read`, `connector_notes`, `conexus_overview`, a web, as skills), as rotas, o guarda, a remoção, o fim do Hub; a conferência dos números sobre o dublê | `apps/server/src/builder/assistant/`, `apps/server/src/builder/connectors/`, `apps/server/src/builder/conversation/` (`guard.ts`, `turn-of.ts`, `builder.ts`, `stream.ts`, `public.ts`, `end.ts`, `prompt/conexus.md`), `apps/server/src/builder/mastra.ts`, `apps/server/src/main.ts`, `packages/hub-api/src/`, `packages/connectors/src/sankhya/` (as linhas do dublê) | [testing](../guides/testing.md) | U1 e o fechamento da 20 (`Q1`) |
-| U3 | A máquina da conversa (`W1`, `N-2`, `M-2`): uma máquina E2B por conversa pelo kit do Builder, sem Git, com a rede só para o npm e o PyPI; a imagem ganha o Python com `pip` e as bibliotecas; a leitura salva em `reads/` na máquina; `show_file` e o download de um arquivo; a remoção e o fim do Hub param e matam as máquinas; a linha da 0032 e a lista da 0051 | `apps/server/src/builder/assistant/`, `apps/server/src/builder/machine/` (`kit.ts`, `e2b.ts`, `public.ts`), `apps/server/src/builder/connectors/`, `packages/hub-api/src/`, `infra/e2b/template.ts`, `docs/decisions/0032-data-leaving-brazil-told.md`, `docs/decisions/0051-builder-machine-git-and-copy-in-r2.md` | [security](../guides/security.md) | U2 |
+| U2 | O Assistente sem máquina: o segundo controlador no mesmo `Mastra`, o agente, o texto de ambiente e o bloco da conversa, a skill `conexus`, o contexto da conversa (o Projeto nas marcas do fio, as ligações numa configuração do fio), o turno sem `Runs` na fila de contas, a memória e os processadores do Builder, as ferramentas (`connector_read`, `connector_notes`, `conexus_overview`, a web, as skills), as rotas, o guarda, a remoção, o fim do Hub; a conferência dos números sobre o dublê | `apps/server/src/builder/assistant/`, `apps/server/src/builder/connectors/`, `apps/server/src/builder/conversation/` (`guard.ts`, `turn-of.ts`, `builder.ts`, `stream.ts`, `public.ts`, `end.ts`, `prompt/conexus.md`), `apps/server/src/builder/conversation/mastra.ts`, `apps/server/src/main.ts`, `packages/hub-api/src/`, `packages/connectors/src/sankhya/` (as linhas do dublê) | [testing](../guides/testing.md) | U1 e o fechamento da 20 (`Q1`) |
+| U3 | A máquina da conversa (`W1`, `N-2`, `M-2`): uma máquina E2B por conversa pelo kit do Builder, sem Git, com a rede só para o npm e o PyPI; a imagem ganha o Python com `pip` e as bibliotecas; a leitura salva em `reads/` na máquina; `show_file` e o download de um arquivo; a remoção e o fim do Hub param e matam as máquinas; a linha da 0032 e a decisão 0059, com a lista do Assistente | `apps/server/src/builder/assistant/`, `apps/server/src/builder/machine/` (`kit.ts`, `e2b.ts`, `public.ts`), `apps/server/src/builder/connectors/`, `packages/hub-api/src/`, `infra/e2b/template.ts`, `docs/decisions/0032-data-leaving-brazil-told.md`, `docs/decisions/0059-assistant-machine-reaches-package-registries.md` | [security](../guides/security.md) | U2 |
 | U4 | As telas: o Início do dono e dos administradores (a caixa ao Assistente, a barra, as recentes com a etiqueta do Projeto), Conversas dentro do Projeto, a tela da conversa com as leituras e os comandos ao vivo, o arquivo mostrado ao lado (lido, imagem ou baixar), `propose_app` e **Criar app** só no Início; o membro como hoje | `apps/web/src/builder/assistant/`, `apps/web/src/builder/conversation/` (`session.ts`, `use-session.ts`, `transcript.tsx`, `tool-registry.ts`, `connector-specs.ts`, `start.tsx`), `apps/web/src/hub/projects/` (`home.tsx`, `project-rail.tsx`), `apps/web/src/routes/_app/companies/$companyId/`, `apps/server/src/builder/assistant/` (`propose.ts`), `packages/hub-api/src/`, `docs/reference/screens.md` | [web](../guides/web.md) | U3 |
 
 A U0 já entrou. As outras andam em fila: cada uma lê o contrato da anterior, e todas mudam
@@ -199,9 +199,9 @@ Início e no Projeto).
 | 17 | U3 | Com a máquina, as ferramentas do modelo são as do critério 12 mais `show_file` e as `mastra_workspace_*` que a máquina do Builder dá (a mesma lista, lida do pedido ao modelo nos dois); nenhuma a mais. A primeira ferramenta de arquivo ou comando de uma conversa liga uma máquina com o nome da conversa; o turno seguinte acha a mesma, com os arquivos que ficaram; outra conversa tem outra máquina; a máquina não tem o app nem Git (nenhuma semente); o kit dela recebe `allowOut` com `registry.npmjs.org`, `pypi.org` e `files.pythonhosted.org`, e o do Builder continua só com `registry.npmjs.org`; no E2B de verdade, de dentro dela, `pip install` e `npm install` de um pacote funcionam e o pacote importa, e um `curl` a outro endereço não recebe a resposta dele (o teste olha a resposta da aplicação, não o socket, porque o E2B pode dar o socket como aberto a uma conexão bloqueada) | `apps/server/src/builder/assistant/machine.test.ts` (o kit de teste, `test-machine.ts`); a rede e a imagem: um caso `opt-in:` (T4) em `apps/server/src/builder/machine/machine-e2b.test.ts` | must |
 | 18 | U3 | Com a máquina, uma leitura `OK` grava a resposta inteira em `reads/<turno>-<n>.json` na pasta da conversa (o `<turno>` são os 8 primeiros caracteres da `TurnKey`) e responde ao modelo o corte com o caminho e `complete` (falso quando o conector tem mais páginas, `cut.ts:53`); um código no mesmo turno lê o arquivo; o segundo turno grava outro arquivo e o do primeiro continua; uma máquina que não liga deixa a leitura responder o corte com `saved: false` e a falha da máquina | `machine.test.ts`, "a leitura na máquina" | must |
 | 19 | U3 | `show_file` de um Markdown, texto ou CSV de até 64 KB dá a saída com o conteúdo, e a mensagem relida do armazenamento do Mastra depois do turno ainda tem a linha da ferramenta com a saída inteira; de outro arquivo, a saída com o nome, o tamanho e o tipo; um caminho fora da pasta da conversa ou que não existe: `SHOW_REFUSED` (`OUTSIDE`, `NOT_FOUND`) e nada aparece; o modelo recebe só o resumo (`toModelOutput`), e um turno seguinte não carrega o conteúdo | `apps/server/src/builder/assistant/show-file.test.ts` | must |
-| 20 | U3 | `GET …/assistant/conversations/{id}/files?path=` dá os bytes do arquivo ao dono da conversa, com o tipo, `Content-Disposition`, `X-Content-Type-Options: nosniff` e `Content-Security-Policy: sandbox` (o arquivo foi escrito pelo modelo, S24); de outra pessoa ou pelo membro: `CONVERSATION_NOT_FOUND`; fora da pasta ou inexistente: `FILE_NOT_FOUND`; acima do teto (`MAX_BYTES`): `FILE_TOO_LARGE`; a máquina perdida: `FILE_GONE` | `apps/server/src/builder/assistant/routes.test.ts`, "o arquivo" | must |
+| 20 | U3 | `GET …/assistant/conversations/{id}/files?path=` dá os bytes do arquivo ao dono da conversa, com o tipo, `Content-Disposition`, `X-Content-Type-Options: nosniff` e `Content-Security-Policy: sandbox` (o arquivo foi escrito pelo modelo, S24); de outra pessoa: `CONVERSATION_NOT_FOUND`; pelo membro: `NOT_FOUND`; fora da pasta ou inexistente: `FILE_NOT_FOUND`; acima do teto (`MAX_BYTES`): `FILE_TOO_LARGE`; a máquina perdida: `FILE_GONE` | `apps/server/src/builder/assistant/file.test.ts`, "o arquivo" | must |
 | 21 | U3 | Apagar uma conversa (pela empresa, pela pessoa ou pelo Projeto) mata as máquinas dela; o turno que acaba para a máquina, que dorme até a próxima pergunta; o fim do Hub para as máquinas dos turnos em andamento como o do Builder | `machine.test.ts`, "o fim da máquina"; `release.test.ts`, "a máquina" | must |
-| 22 | U3 | A decisão 0032 diz que as linhas que o Assistente lê para analisar vão à máquina dele no E2B; a 0051 dá a lista de endereços do Assistente ao lado da do Builder | a revisão (check-docs para o índice) | must |
+| 22 | U3 | A decisão 0032 diz que as linhas que o Assistente lê para analisar vão à máquina dele no E2B; a 0059 dá a lista de endereços do Assistente, e a 0051 fica como foi aprovada | a revisão (check-docs para o índice) | must |
 | 23 | U4 | No Início, a dona e a administradora veem a caixa "Pergunte ou peça um app", a barra com as ligações que a empresa oferece já escolhidas e o seletor de Projeto, e as conversas recentes, a de um Projeto com a etiqueta do nome dele; o membro vê "O que vamos construir?" como hoje; a 390 px, o mesmo | `apps/web/src/builder/assistant/home.test.tsx` | must |
 | 23a | U4 | Na conversa, tirar ou pôr uma ligação na barra manda a troca (`PUT …/connections`) e a barra mostra o que o Hub respondeu; uma troca recusada volta à escolha de antes com a frase do código; o Projeto aparece fixo, sem controle | `apps/web/src/builder/assistant/conversation.test.tsx`, "a barra" | must |
 | 23b | U4 | No Projeto, a entrada **Conversas** da barra lateral abre a lista das conversas da pessoa naquele Projeto e a caixa, com a barra só das ligações liberadas ao Projeto; o membro vê a página dizendo que só o dono e os administradores conversam ali (W34) | `apps/web/src/builder/assistant/project.test.tsx` | must |
@@ -232,7 +232,7 @@ Início e no Projeto).
 | `SessionScope` (empresa, pessoa, lugar, escolhidas) | U2 (`context.ts`, do fio) | U1 (a porta, em cada chamada); U3 (o nome e as marcas da máquina) |
 | `AssistantRead.whole` | U1 | U3 (`connector_read` grava em `reads/`) |
 | as marcas do fio `companyId`, `personId`, `conexusProjectId` | U2 (a criação) | U2 (o contexto, a lista por Projeto, a remoção) |
-| a configuração do fio `conexusConnections` | U2 (a criação e `PUT …/connections`) | U2 (o contexto do turno) |
+| a escolha da conversa, `builder.assistant_conversation.connections` (uma linha por fio, no banco do Hub) | U2 (a criação e `PUT …/connections`) | U2 (o contexto do turno; as rotas que respondem a barra) |
 | `TurnKey` no contexto do turno | U2 (`takeTurn` do Assistente) | U1 (o contador de 50) |
 | `CONNECTOR_CALLED.by = 'assistant'`, `projectId` | U1 | quem opera |
 | `askAssistant` | U1 (`admission.ts`) | U1 (a porta); U2 (rotas e guarda); U4 (pelo `role` da rota, só para escolher a tela; a recusa é do servidor) |
@@ -282,8 +282,8 @@ Nenhuma captura do Conexus OS: ele não tinha esta conversa.
 | Gravação ou comando, da etapa ou da biblioteca | Duas vezes ao mesmo tempo | Recusada no meio, depois de uma instrução ou de uma chamada | Uma dependência fora (o banco, ou um terceiro) | O que o processo imprime | Critérios |
 | --- | --- | --- | --- | --- | --- |
 | O fim do Hub com respostas em andamento (U0, feita) | um segundo aviso de parar: sai na hora (`SHUTDOWN_FORCED`) | a espera acaba quando a última resposta termina ou no limite; no limite, o `drain` para o que sobrou | o banco fora durante a espera: a resposta falha como hoje; o Docker manda SIGKILL só depois do `stop_grace_period` | `SHUTDOWN_DRAINING`, `SHUTDOWN_DRAINED` | 0a a 0e, 15, 21 |
-| Criar uma conversa (a conferência do modelo, do Projeto e das ligações; `controller.createSession` get-or-create pelo id que a rota deriva da chave de tentativa, com as marcas gravadas no fio novo; `session.model.switch`; `session.thread.setSetting` das ligações, por último) | a mesma chave: a mesma conversa; duas chaves: duas conversas | um modelo ou Projeto recusado antes de criar: nada criado; um corte depois do `createSession`: a repetição com a mesma chave acha a sessão e grava o modelo e as ligações só se o fio ainda não tem a configuração; um corpo com outro Projeto que a marca do fio: `IDEMPOTENCY_CONFLICT` | banco do Mastra fora: `DATABASE_UNAVAILABLE` | `ASSISTANT_CONVERSATION_CREATED` (empresa, pessoa, conversa, se tem Projeto) | 8 |
-| Trocar as ligações (`PUT …/connections`; `session.thread.setSetting({ key: 'conexusConnections' })`) | duas trocas: a última gravada vale, e cada resposta diz o que ficou | durante um turno: o turno segue com as que leu no começo, e a próxima pergunta usa as novas | banco do Mastra fora: `DATABASE_UNAVAILABLE`; a barra volta à escolha de antes | `ASSISTANT_CONNECTIONS_CHANGED` (empresa, conversa, quantas) | 8a, 23a |
+| Criar uma conversa (a conferência do modelo, do Projeto e das ligações; a linha da escolha em `builder.assistant_conversation`, com o id que a rota deriva da chave de tentativa, antes do fio; `controller.createSession` get-or-create pelo mesmo id, com as marcas gravadas no fio novo; `session.model.switch`) | a mesma chave: a mesma conversa; duas chaves: duas conversas | um modelo ou Projeto recusado antes de criar: nada criado; um corte depois da linha ou do `createSession`: a repetição com a mesma chave acha a linha, guarda a primeira escolha, acha a sessão e grava o modelo só se o fio ainda não o tem; um corpo com outro Projeto que o da linha: `IDEMPOTENCY_CONFLICT` | banco do Hub ou do Mastra fora: `DATABASE_UNAVAILABLE` | `ASSISTANT_CONVERSATION_CREATED` (empresa, pessoa, conversa, se tem Projeto) | 8 |
+| Trocar as ligações (`PUT …/connections`; a linha da conversa em `builder.assistant_conversation`, sem abrir sessão) | duas trocas: a última gravada vale, e cada resposta diz o que ficou | durante um turno: o turno segue com as que leu no começo, e a próxima pergunta usa as novas; uma gravação do próprio Mastra no fio (o título, a observação da memória) não desfaz a troca | banco do Hub fora: `DATABASE_UNAVAILABLE`; a barra volta à escolha de antes | `ASSISTANT_CONNECTIONS_CHANGED` (empresa, conversa, quantas) | 8a, 23a |
 | Apagar as conversas com a empresa (5), a pessoa (6) ou o Projeto (`listThreads` pelas marcas; `api.kill` das máquinas da conversa; `deleteSession` e `deleteThread`) | duas remoções: cada fio some uma vez; apagar de novo um fio já apagado, ou matar uma máquina que não existe, não falha | um fio por vez, depois da remoção do Builder: máquina primeiro, fio depois; uma falha no meio deixa fios que a próxima remoção acha de novo; a do Projeto deixa a marca de apagar (`PROJECT_DELETION_PENDING`) | banco do Mastra fora: o aviso; o E2B fora: o fio fica e a próxima remoção tenta de novo (a máquina parada não custa minuto); a remoção da empresa e da pessoa seguem como hoje, a do Projeto fica marcada | `ASSISTANT_CONVERSATIONS_RELEASED` (empresa, quantas) | 16a, 16c, 21 |
 | Uma mensagem (a rota `messages` do Mastra) | a segunda mensagem durante um turno entra na fila do próprio controlador | o fim do Hub para o turno (C62); a parte já respondida fica guardada | modelo fora: as frases da 11 e da 12; banco fora: `DATABASE_UNAVAILABLE` | da 12 | 15, 16 |
 | Segurar e soltar a conta do turno (`turnOfOwner` toma; `turn.end()` solta no fim da execução) | dois turnos da mesma pessoa: cada um o seu `Turn` na fila de contas | o Parar, um erro do modelo ou o corte do fim do Hub: o evento de fim da execução chama `turn.end()` do mesmo jeito | o modelo fora: o turno termina com a frase da 11 e solta a conta | da 11 | 16, 16e |
@@ -310,12 +310,12 @@ de usar.
 | A espera das respostas no fim do Hub | U0 (feita) | `watchRuns` com `settle(bound)` e `updating()` (`builder/conversation/end.ts:229-281,333-343`); `TURN_SETTLE_MS` (`platform/lifecycle.ts:7-13`); a recusa (`guard.ts:126-132`), lidos | Cloudflare Durable Objects adiam a troca de código até 300 s (relay); C62 | esperar o trabalho em andamento, com um limite | nativo | critérios 0a a 0e | `E1` das referências | — |
 | A forma da sessão | U2 | um controlador, o do Builder, registrado no `Mastra` (`builder/conversation/builder.ts:226-245`, lido) | `AgentController` "a shared runtime host for interactive agent applications" (`NMD:docs-harness-agent-controller.md:7`, lido); `Harness` é apelido do `AgentController` (`NM:harness/index.d.ts:1-34`, relay do estudo da harness); a Factory: o mesmo motor com outras `hostInstructions` (`M:mastracode/factory/src/factory.ts:1109-1113`, lido na emenda de 2026-10-31) | um motor, uma configuração por produto | nativo: um segundo `AgentController`, chave `assistant`, no mesmo `Mastra`; nenhum modo nem dono que desvie o Builder | critério 10 | `H1` | `builder/assistant/assistant.ts` |
 | O agente | U2 | o Builder é `createCodingAgent` com `workspace: undefined`, porque o controlador empresta a máquina (`builder.ts:183-225`, lido) | `template-agent-harness`, "A general-purpose assistant that can research, manage tasks, work with local files, run approved commands" (`M:templates/template-agent-harness/src/mastra/agents/agent.ts:33-37`), texto curto (`:45-54`), memória com título e observação (`:60-67`), web (`:69-75`), lidos | um `Agent` comum com máquina, memória e web | nativo: `new Agent` com `instructions`, `model`, `tools` e `skills` funções do `requestContext` (`NM:agent/types.d.ts:567`, lido) | critérios 11, 12 | `P1`, `H1` | — |
-| Dois controladores no mesmo Mastra | U2 | `agentControllers: { [BUILDER_ID]: controller }` (`builder.ts:241-245`, lido) | `agentControllers: Record<string, AgentController>` (`NM:mastra/index.d.ts:128`); as rotas acham o controlador pela chave do caminho (`M:packages/server/src/server/handlers/agent-controller.ts:81-90`), lidos na emenda de 2026-10-31 | uma chave a mais | nativo: `builder/mastra.ts` com as duas chaves | critério 10 | `H1` | `builder/mastra.ts` |
+| Dois controladores no mesmo Mastra | U2 | `agentControllers: { [BUILDER_ID]: controller }` (`builder.ts:241-245`, lido) | `agentControllers: Record<string, AgentController>` (`NM:mastra/index.d.ts:128`); as rotas acham o controlador pela chave do caminho (`M:packages/server/src/server/handlers/agent-controller.ts:81-90`), lidos na emenda de 2026-10-31 | uma chave a mais | nativo: `builder/conversation/mastra.ts` com as duas chaves | critério 10 | `H1` | `builder/conversation/mastra.ts` |
 | Um agente por conversa | U2 | — | Factory: o supervisor sem ajudantes (`M:mastracode/factory/src/supervisor/session.ts`, lido na emenda anterior); `agents` (`NM:agent/types.d.ts:737`) | um agente | nativo; `agents` fica para a 24.4 | estudo das sessões 3.5 | `V1` das sessões | — |
 | O texto de abertura | U2 | `builder.md`, 1.728 palavras, montado por `fillPrompt` (`prompt/prompt.ts:41`, lido); a linha da assinatura antes de tudo (`model-accounts/claude/models.ts:100-111`, lido) | `template-agent-harness:45-54` (lido); claude.ai, Codex e Cowork: identidade, data e ambiente, o resto em ferramentas e skills (relay do estudo da harness, seção 3.3); `instructions` aceita uma lista de mensagens de sistema (`NM:llm/index.d.ts:79`, `NM:agent/types.d.ts:78`, lidos) | identidade, data e ambiente; nenhuma regra de resposta | nativo: `instructions: ({ requestContext }) =>` duas mensagens de sistema, a fixa (`conexus.md` + `assistant.md`, com `cacheControl`) e o bloco da conversa por último, que o Hub já marca (`models.ts:62-69`, lido) | critérios 13a, 13b | `P1`, `L1`, `A`, `D`, `M1`, `R2` | `builder/conversation/prompt/conexus.md`, `builder/assistant/prompt/assistant.md` |
 | O que ele sabe do Conexus | U2 | nenhum | `skillOf` e `createSkill` (`builder/conversation/instructions.ts:68-83`, lido); as skills listadas com "leia o SKILL.md" nos assistentes publicados (relay do estudo da harness) | uma skill lida quando a tarefa pede | nativo: a skill `conexus`, ao lado da de cada ligação escolhida | critério 12; lab do estudo: as duas sessões do financeiro leram a skill | a moldura do fundador (a harness conhece o que o Conexus constrói) | `builder/assistant/skills/conexus/SKILL.md` |
 | Busca e página da web | U2 | `toolsOf` do Builder: `web_fetch` sempre, `web_search` onde o fornecedor busca (`builder.ts:72-76`, lido) | `webFetchTool`, `webSearchTool` (`@mastra/core/tools`); `template-agent-harness:69-75` (lido) | ferramentas do Mastra | nativo: a mesma `toolsOf`, sem a checagem | critério 12 | a moldura do fundador (pesquisa na web) | — |
-| O contexto da conversa | U2 | nenhum: o Builder guarda o Projeto numa tabela do Hub (`builder/conversation/tables.ts:22-52`) | Factory: o escopo fixo nas `tags` do `createSession` (`M:mastracode/factory/src/rules/start-coordinator.ts:225-236`); `createSession({ tags })` (`NM:agent-controller/agent-controller.d.ts:119-135`); a sessão grava as marcas em todo fio que cria (`NM:agent-controller-DO6rGsQm.js:4726-4730,4806-4812`); `SessionThread.getSetting`/`setSetting` (`NM:agent-controller/session.d.ts:403-422`); cada pedido lê `getThreadSetting` e `resourceId` (`NM:agent-controller/types.d.ts:1014-1024`), lidos na emenda de 2026-10-31 | o escopo fixo nas marcas; o que muda numa configuração do fio | nativo: as marcas `{ companyId, personId, conexusProjectId? }` na criação, a configuração `conexusConnections`, escritas só pelas rotas do Hub, lidas uma vez por turno, como o Builder lê as liberações (`grantedFor`, `builder.ts:83-98`, lido) | estudo das sessões 3.3 (a configuração, rodada); as marcas: "Parar se" da U2 | `S1`, `T1`, `U1` das sessões | `builder/assistant/context.ts` |
+| O contexto da conversa | U2 | nenhum: o Builder guarda o Projeto numa tabela do Hub (`builder/conversation/tables.ts:22-52`) | Factory: o escopo fixo nas `tags` do `createSession` (`M:mastracode/factory/src/rules/start-coordinator.ts:225-236`); `createSession({ tags })` (`NM:agent-controller/agent-controller.d.ts:119-135`); a sessão grava as marcas em todo fio que cria (`NM:agent-controller-DO6rGsQm.js:4726-4730,4806-4812`); cada pedido lê `getThreadSetting` e `resourceId` (`NM:agent-controller/types.d.ts:1014-1024`), lidos na emenda de 2026-10-31; o título e a observação regravam o metadata do fio a partir de uma leitura velha (`NM:agent-tuAMgHe3.js:47014-47024`, `@mastra/pg` `index.js:12438-12470`, `@mastra/memory` `src-DxZ7N8nO.js:35742-35762`), medido na revisão da PR 527 | o escopo fixo nas marcas; o que muda fora do fio, onde só o Hub escreve | nativo nas marcas `{ companyId, personId, conexusProjectId? }`, gravadas na criação; a escolha numa tabela do Hub, `builder.assistant_conversation`, como o Builder guarda o Projeto, escrita só pelas rotas do Hub e lida uma vez por turno, como o Builder lê as liberações (`grantedFor`, `builder.ts:83-98`, lido) | estudo das sessões 3.3; as marcas: "Parar se" da U2; a escolha: o B1 da revisão da PR 527 | `S1`, `T1`, `U1` das sessões | `builder/assistant/context.ts`, `chosen.ts`, `tables.ts` |
 | As conversas, a lista e a memória | U2 | a memória do Builder por conversa, sem resumo em segundo plano (`builderMemory`, `builder.ts:123-159,182`, lido) | Factory: o `resourceId` `factory-supervisor:<id>` (`session.ts:19-35`); `listThreads({ filter: { resourceId, metadata } })` (`NM:memory/memory.d.ts:151-165`); o `@mastra/pg` filtra cada marca por `metadata::jsonb @>` (`dist/index.js:12330-12338`), lidos na emenda de 2026-10-31 | as conversas são do Mastra, pelo dono e pelas marcas | nativo: `resourceId` `assistant:company:<c>:person:<p>`; a lista pelo Mastra, sem tabela no Hub; a memória do Builder com o título e o observador escritos para conversa | critérios 8, 9, 16a | `B1` | — |
 | A remoção com o Projeto | U2 | `finishMarkedProject` chama a remoção das conversas com `{ companyId, projectId }` (`hub/projects/projects.ts:262-280`); `ReleaseScope` com `projectId` (`builder/conversation/store.ts:231`), lidos na emenda de 2026-10-31 | o mesmo filtro por marca | listar por `{ conexusProjectId }` e apagar | nativo | critério 16c | não precisa | — |
 | As rotas do Mastra e o guarda | U2 | `controllerId: z.literal(BUILDER_ID)` e a lista fixa (`guard.ts:18-44`); `BuilderServer` e `DISPLAY_READ` (`stream.ts:15-40,164-188`), lidos | decisão 0050 | só as rotas da lista, atrás do guarda | embrulhado: o guarda aceita as duas chaves; para `assistant`, o dono vem do `resourceId` e a admissão é `askAssistant`; as rotas no mesmo `BuilderServer` | critério 10 | não precisa | — |
@@ -327,7 +327,7 @@ de usar.
 | A visão da empresa | U2 | as listas de Projetos, versões e ligações do Hub; o nome de um Projeto vivo (`hub/projects/hosts.ts:152-171`, lido na emenda anterior) | `factory_overview` (`M:mastracode/factory/src/supervisor/read-tools.ts:187`, lido na emenda anterior) | uma ferramenta de leitura dos registros da plataforma | embrulhado: `conexus_overview` | critério 13 | `E1` da estrutura | `builder/assistant/overview.ts` |
 | Nenhum número inventado | U2 | `builder.eval.test.ts` com um modelo dublê e `@mastra/evals/checks` (`calledTool`, `noToolErrors`), lido | `runEvals` (`NM:evals/run/index.d.ts:178`, lido na emenda anterior); o "todo número vem de um resultado verificado" do `template-genui-data-explorer` (`M:templates/template-genui-data-explorer/src/mastra/agent.ts:21-31`, lido na emenda anterior); a medida do estudo da harness, que conferiu cada número contra o banco (relay) | os números da resposta conferidos contra a fonte | embrulhado: `numbersFromReads`, uma checagem própria sobre as mensagens que o Mastra guarda, ao lado de `calledTool` | critérios 11, 11a, 11b | "Concordo com a troca do aceite da 24.1" | `builder/assistant/numbers.ts` (de teste) |
 | A máquina da conversa | U3 | `machines.workspaceFor` com a semente do app e o Git (`builder/machine/machines.ts:215-255`); o kit E2B com rede só para o npm (`machine/e2b.ts:17-23`, `kit.ts:23,56-75`), lidos | um resolver de `Workspace` com `sandboxCacheKey` por fio; a sandbox do resolver é do app, que a destrói (`NMD:docs-sandbox-overview.md:162-224,264-270,299`); `workspace` do controlador por sessão (`NMD:reference-agent-controller-agent-controller-class.md:97`), lidos | uma máquina por fio, destruída pelo app | embrulhado: o kit do Builder, sem a semente, o Git, a checagem e o pacote; a chave é a conversa; a rede e a imagem nas duas linhas seguintes | critérios 17, 21 | `W1` | `builder/assistant/machine.ts` |
-| A rede da máquina do Assistente | U3 | `ALLOWED_HOSTS = ['registry.npmjs.org']` (`builder/machine/kit.ts:22-23`) com `denyOut: [ALL_TRAFFIC]` na partida e no `closeNetwork` (`machine/e2b.ts:23,35-36`); a decisão 0051, "a host is added only when `npm install` fails without it" (`0051-builder-machine-git-and-copy-in-r2.md:13-14`), lidos | Claude no app: "Package managers only (default)", com `registry.npmjs.org`, `pypi.org` e `files.pythonhosted.org`; Claude Code na nuvem: "Trusted (padrão)", os repositórios de pacotes; Codex: fechada enquanto trabalha, o preset "Common dependencies"; a API da OpenAI e a da Anthropic: fechada (relay do estudo da máquina, seção 2.2); o E2B: `allowOut` aceita nomes, `denyOut` só CIDR (`node_modules/e2b/dist/index.d.ts:2670-2678`, lido), e com um nome na lista o `8.8.8.8` fica liberado (relay do estudo da máquina, seção 2.3); a Mastra passa `network` direto ao E2B (`M:workspaces/e2b/src/sandbox/index.ts:421`, lido) | a máquina instala pacotes e não alcança o resto; a web pelas ferramentas | nativo: o `allowOut` que o kit recebe de quem monta, com `registry.npmjs.org`, `pypi.org` e `files.pythonhosted.org`, e `denyOut: [ALL_TRAFFIC]` como o Builder | critério 17, no E2B de verdade, pela resposta e não pelo socket | `N-2` | — |
+| A rede da máquina do Assistente | U3 | `ALLOWED_HOSTS = ['registry.npmjs.org']` (`builder/machine/kit.ts:22-23`) com `denyOut: [ALL_TRAFFIC]` na partida e no `closeNetwork` (`machine/e2b.ts:23,35-36`); a decisão 0051, "a host is added only when `npm install` fails without it" (`0051-builder-machine-git-and-copy-in-r2.md:13-14`), lidos | Claude no app: "Package managers only (default)", com `registry.npmjs.org`, `pypi.org` e `files.pythonhosted.org`; Claude Code na nuvem: "Trusted (padrão)", os repositórios de pacotes; Codex: fechada enquanto trabalha, o preset "Common dependencies"; a API da OpenAI e a da Anthropic: fechada (relay do estudo da máquina, seção 2.2); o E2B: `allowOut` aceita nomes, `denyOut` só CIDR (`node_modules/e2b/dist/index.d.ts:2670-2678`, lido), e com um nome na lista o `8.8.8.8` fica liberado (relay do estudo da máquina, seção 2.3); a Mastra passa `network` direto ao E2B (`M:workspaces/e2b/src/sandbox/index.ts:421`, lido) | a máquina instala pacotes e não alcança o resto; a web pelas ferramentas | nativo: o `allowOut` que o kit recebe de quem monta, com `registry.npmjs.org`, `pypi.org` e `files.pythonhosted.org`, e `denyOut: [ALL_TRAFFIC]` como o Builder; a lista do Assistente fica na decisão 0059 | critério 17, no E2B de verdade, pela resposta e não pelo socket | `N-2` | — |
 | O que vem instalado | U3 | `fromNodeImage('24').aptInstall(['git'])` mais a checagem (`infra/e2b/template.ts:52-57`, lido); a `node:24` tem Python 3.11.2 sem `pip` (medido pelo estudo da máquina, seção 2.4, e pelo autor desta emenda: `pip install` sem nada recusa pela PEP 668, e com `PIP_BREAK_SYSTEM_PACKAGES=1` instala como root e como usuário) | Claude API, ferramenta de código: pandas, numpy, matplotlib, openpyxl, xlsxwriter, python-docx, python-pptx, pypdf, reportlab e outras (relay do estudo da máquina, seção 2.2); o modelo "code-interpreter" do E2B (relay, idem); a Mastra: `.aptInstall([...]).pipInstall(['pandas', 'numpy']).npmInstall(['sharp'])` (`M:docs/src/content/en/integrations/sandboxes/e2b.mdx:297-310`, lido); o `pipInstall` do E2B roda `pip install` puro como root (`node_modules/e2b/dist/index.mjs:7859-7868`, lido); Claude Code na nuvem e Codex: uma imagem grande e única (relay, seção 2.2) | as bibliotecas vêm na imagem, instaladas uma vez no preparo | nativo: a mesma imagem ganha `python3-pip` no `aptInstall`, `PIP_BREAK_SYSTEM_PACKAGES=1` no `setEnvs` (o Debian 12 recusa `pip` no Python do sistema sem ela) e um `pipInstall` com pandas, numpy, matplotlib, openpyxl, xlsxwriter, python-docx, python-pptx, pypdf e reportlab, cada uma com a versão presa, como o `wrangler` (`template.ts:43`) | estudo da máquina, seção 2.4 (3): o gráfico SVG e o `.xlsx` nesta base; o critério 17 e o 11b com o modelo de verdade | `M-2` | — |
 | A frase da máquina | U3 | "The conversation's own Linux machine, with Node 24, npm and git ... Its network reaches only ..." (`machineInstructions`, `kit.ts:82-87`, do Builder, lido) | claude.ai e Codex dizem ao modelo o que a máquina tem (relay do estudo da harness, seção 3.3) | o texto diz o que a máquina tem e alcança | nativo: em `assistant.md`, Python e Node, as bibliotecas, instalar o que falta com `pip` ou `npm`, a web por `web_search` e `web_fetch`; o texto do Builder não muda (`R2`) | critérios 13a, 17 | `P1`, `N-2`, `M-2` | — |
 | A alternativa local | fica de fora | nenhum | `LocalSandbox` com `isolation: 'bwrap'` (relay do estudo da harness, provado no WSL, não no contêiner do Hub) | o isolamento do sistema operacional | nativo: fica de fora, gatilho na seção "Depois" | — | `W2` não escolhido (`W1`) | — |
@@ -581,9 +581,10 @@ compartilhado com o Builder.
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
 | `apps/server/src/builder/conversation/prompt/` | Cria `conexus.md` (o bloco comum); `builder.md` e `prompt.ts` não mudam (`R2`) | o Assistente |
-| `apps/server/src/builder/assistant/` | Cria `prompt/assistant.md`, `assistant.ts` (o agente e o controlador), `context.ts`, `memory.ts`, `turn.ts`, `instructions.ts` (as duas mensagens de sistema), `overview.ts`, `routes.ts`, `release.ts`, `public.ts`, `skills/conexus/SKILL.md`, `numbers.ts` (de teste) | `main.ts` |
+| `apps/server/src/builder/assistant/` | Cria `prompt/assistant.md`, `assistant.ts` (o agente e o controlador), `context.ts`, `tables.ts` (a tabela da escolha), `chosen.ts` (quem a escreve e a lê), `memory.ts`, `turn.ts`, `instructions.ts` (as duas mensagens de sistema), `overview.ts`, `routes.ts`, `release.ts`, `public.ts`, `skills/conexus/SKILL.md`, `numbers.ts` (de teste) | `main.ts` |
+| `apps/server/migrations/`, `apps/server/database-grants.sql` | Cria a migração gerada de `builder.assistant_conversation` e uma migração própria com as permissões de `hub_company` (`SELECT`, `INSERT`, `UPDATE (connections)`); muda o instantâneo. A lista de permissões muda: pede a palavra D11 do fundador | `migrate`, `catalog.test.ts` |
 | `apps/server/src/builder/connectors/` | Muda `connector-tools.ts`: recebe `ConnectorAccess`; as frases de "Projeto" e "run" vêm de quem monta; o Assistente não recebe `connector_note_save` | o Builder, o Assistente |
-| `apps/server/src/builder/mastra.ts` | Cria: o único `new Mastra({ logger, storage, agentControllers: { builder, assistant } })`, com o `__setLogger` dos domínios (`builder.ts:246-248`) | `main.ts` |
+| `apps/server/src/builder/conversation/mastra.ts` | Cria: o único `new Mastra({ logger, storage, agentControllers: { builder, assistant } })`, com o `__setLogger` dos domínios (`builder.ts:246-248`) | `main.ts` |
 | `apps/server/src/builder/conversation/builder.ts` | Muda: entrega o controlador, o agente e a memória e deixa de criar o `Mastra`; exporta `toolsOf` sem a checagem e a forma da memória | `mastra.ts`, o Assistente |
 | `apps/server/src/builder/conversation/end.ts`, `public.ts` | Muda: `settle` e `updating` contam também os turnos do Assistente; a remoção da empresa, da pessoa e do Projeto chama também a dele; o `close` na ordem abaixo | `main.ts`, a remoção |
 | `apps/server/src/builder/conversation/guard.ts`, `stream.ts` | Muda: `controllerId` aceita as duas chaves; a regra de dono por chave; as rotas do Assistente no mesmo `BuilderServer` | as rotas do Mastra |
@@ -624,13 +625,34 @@ export type Overview = {
 // apps/server/src/builder/assistant/context.ts
 /** The thread's marks, stamped by createSession({ tags }) at creation; never changed. */
 export const SESSION_MARK = { company: 'companyId', person: 'personId', project: 'conexusProjectId' } as const
-/** The thread setting that holds the chosen connections; written only by the Hub's routes. */
-export const CHOSEN_SETTING = 'conexusConnections'
-/** The scope for this turn: owner from the resourceId, place from the mark, choice from the setting, parsed with Zod once per RequestContext. */
-export function sessionScope(requestContext: RequestContext): Promise<SessionScope | undefined>
+/** The connections a conversation chose, as the Hub keeps them (chosen.ts). */
+export type ChosenOf = (owner: Owner, conversationId: ConversationId) => Promise<readonly ConnectionId[]>
+export type ScopeOf = (requestContext: RequestContext) => Promise<SessionScope | undefined>
+/** The Assistant's owner string for a thread: the resourceId of its company and person. */
+export function assistantOwner(owner: { companyId: CompanyId; personId: PersonId }): `assistant:company:${string}:person:${string}`
+/** The scope for each turn: owner from the resourceId, place from the mark, choice as the Hub keeps it, read once per RequestContext. */
+export function sessionScopes(deps: { chosenOf: ChosenOf }): ScopeOf
+
+// apps/server/src/builder/assistant/tables.ts
+/** One row per Assistant thread, its id the thread's; only the Hub's routes write it; it leaves by cascade with its company, its person or its Projeto (data D17). */
+export const assistantConversation = builder.table('assistant_conversation', {
+  id: uuid('id').primaryKey(),
+  companyId: text('company_id').notNull(),
+  personId: text('person_id').notNull(),
+  projectId: text('project_id'),                    // the thread's place; none on the Início
+  connections: uuid('connections').array().notNull(),
+}) // FKs to auth.company, auth.member (company, person) and projects.project, ON DELETE CASCADE; COMPANY-scope OWN policy
+
+// apps/server/src/builder/assistant/chosen.ts
+export function chosenConnections(database: Database): {
+  /** At creation, before the thread: once per attempt; another place is IDEMPOTENCY_CONFLICT. */
+  keep(owner: Owner, input: { conversationId: ConversationId; projectId: ProjectId | undefined; connections: readonly ConnectionId[] }): Promise<void>
+  /** PUT …/connections: the last one written holds. */
+  change(owner: Owner, conversationId: ConversationId, connections: readonly ConnectionId[]): Promise<void>
+  of(owner: Owner, conversationId: ConversationId): Promise<readonly ConnectionId[]>
+}
 
 // apps/server/src/builder/assistant/assistant.ts
-export function assistantOwner(owner: { companyId: CompanyId; personId: PersonId }): `assistant:company:${string}:person:${string}`
 export type Assistant = {
   controller: AgentController
   /** Aborts the runs in flight; before mastra.shutdown(). */
@@ -684,7 +706,7 @@ export function numbersFromReads(turn: readonly MastraDBMessage[], truth: readon
 
   O bloco da conversa: "Company: <nome>. Person: <nome> (<papel>). Today: <data de `turnDate()`>,
   America/Sao_Paulo. Place: Início | Projeto "<nome>", which reads only the connections it received.
-  Connections in this conversation: <ligação> (<conector>), …" — de `sessionScope` e da porta.
+  Connections in this conversation: <ligação> (<conector>), …" — de `sessionScopes` e da porta.
 - **A skill `conexus`.** O que o Conexus faz hoje (Projetos, apps, ligações, escrita só com
   liberação), o que ainda não faz (rotina na 24.2, escrita com aprovação na 24.3, agentes e fluxos
   na 24.4) e como passar uma necessidade ao Builder (na U4, `propose_app`). Em inglês, validada por
@@ -692,12 +714,13 @@ export function numbersFromReads(turn: readonly MastraDBMessage[], truth: readon
 - **O contexto (`S1`, `T1`, `U1` das sessões).** A conversa é um fio do Mastra sob
   `assistantOwner`. O lugar é **fixo**: a criação passa `tags: { companyId, personId,
   conexusProjectId? }` ao `createSession`, e o Mastra as grava no fio novo. A escolha **muda**: fica
-  na configuração `conexusConnections`, escrita só pela criação e pelo `PUT …/connections`, nunca
-  pelo navegador (o guarda não expõe rota de metadados, `guard.ts:25-32`) nem por ferramenta.
-  `sessionScope` lê as duas pelo `requestContext.get('controller')`, uma vez por `RequestContext`
-  (como `grantedFor`), e o texto, as ferramentas e as skills usam o mesmo valor. Os nomes têm um dono
-  só, `SESSION_MARK` e `CHOSEN_SETTING` (C26). O valor lido passa por Zod (C27): um fio que não parse
-  não recebe ligação nenhuma.
+  numa tabela do Hub, `builder.assistant_conversation`, uma linha por fio, escrita só pela criação
+  e pelo `PUT …/connections`, nunca pelo navegador nem por ferramenta. Fora do fio, nenhuma gravação
+  do próprio Mastra no metadata (o título, a observação da memória) a desfaz. `sessionScopes` lê a
+  marca pelo `requestContext.get('controller')` e a escolha pela tabela, uma vez por
+  `RequestContext` (como `grantedFor`), e o texto, as ferramentas e as skills usam o mesmo valor. Os
+  nomes das marcas têm um dono só, `SESSION_MARK` (C26); a escolha lida passa por Zod (C27), e uma
+  marca que não parse não dá escopo.
 - **As ligações oferecidas.** As rotas respondem a barra pela porta. A criação e o `PUT` guardam só
   as escolhidas que o lugar oferece agora; a resposta diz o que ficou. Uma conversa nova começa com
   tudo o que o lugar oferece escolhido.
@@ -719,12 +742,16 @@ export function numbersFromReads(turn: readonly MastraDBMessage[], truth: readon
   `initialState: { yolo: true }` (decisão 0053; os sistemas não recebem escrita); `BUILTIN_TOOLS`
   desligadas como no Builder.
 - **A criação, a troca, a remoção e o fim**, como a emenda anterior os provou na leitura: a criação
-  confere o modelo como `created` (`routes.ts:83-105`), chama `createSession({ id, resourceId,
-  threadId: id, tags })`, depois `session.model.switch` e, por último, `setSetting`; toda rota que
-  não é a criação acha a sessão com `resumeOnly: true` (`agent-controller.d.ts:117-142`), sem criar
-  fio; a remoção lista por `listThreads({ filter: { metadata }, perPage: false })` e apaga cada um,
+  confere o modelo como `created` (`routes.ts:83-105`), guarda a escolha na linha da tabela, chama
+  `createSession({ id, resourceId, threadId: id, tags })` e depois `session.model.switch`; nenhuma
+  outra rota do Hub cria sessão; as rotas do Mastra acham a sessão com `resumeOnly: true`
+  (`agent-controller.d.ts:117-142`), sem criar fio; a leitura acha o fio pela memória e a troca
+  grava só a linha;
+  a remoção lista por `listThreads({ filter: { metadata }, perPage: false })` e apaga cada um,
   depois da do Builder, com o mesmo `ReleaseScope`; o fim: `assistant.close()`, o do Builder,
   `mastra.shutdown()`, o pool.
+  A linha da escolha sai pelas chaves estrangeiras quando sai a empresa, a pessoa ou o Projeto; na
+  U2 nenhuma rota apaga uma conversa sozinha, e a que a U4 trouxer apaga a linha com o fio.
 - O `Agent`: `id: 'assistant'`, `instructions: assistantInstructions(…)`, `model` pela função do
   Builder (`sessionModel`), `tools: ({ requestContext }) =>` a lista do critério 12 para as
   escolhidas, `skills`: `conexus` e a do conector de cada escolhida. Os processadores do Builder pelo
@@ -790,8 +817,9 @@ com o resultado no pull request do fechamento. Hoje falham: não há Assistente.
 - O filtro por marca do `listThreads` não funcionar no `@mastra/pg` instalado: parar; a saída é um
   índice no banco do Hub, que pede a palavra D11 do fundador.
 - As rotas do Mastra para a chave `assistant` exigirem algo que a lista fixa do guarda não tem.
-- O `setSetting` voltar sem gravar (`NM:agent-controller-DO6rGsQm.js:2184-2193`): a rota relê a
-  configuração, e uma leitura diferente é `DATABASE_UNAVAILABLE`; se acontecer num teste, parar.
+- Uma marca do fio mudar depois da criação, ou uma gravação do Mastra no metadata do fio apagar uma
+  marca: parar e mostrar; a saída é levar o Projeto também para a linha da tabela, e quem decide é o
+  firstmate.
 - O contexto perder a `TurnKey` entre o processador de entrada e a ferramenta: parar e mostrar.
 - Uma execução parada ou com erro não emitir o evento de fim que `turn.ts` assiste (o critério 16e
   mostra): parar e mostrar qual saída fica sem evento; não soltar a conta por tempo.
@@ -838,7 +866,7 @@ concorrência; o resolver por conversa é o padrão do Mastra.
 | `packages/hub-api/src/assistant.ts` | Muda: `ShownFile`, a rota do arquivo, `FILE_NOT_FOUND`, `FILE_GONE`, `FILE_TOO_LARGE`, os nomes novos em `ASSISTANT_TOOL` | a U4 |
 | `infra/e2b/template.ts` | Muda: `python3-pip` no `aptInstall`, `PIP_BREAK_SYSTEM_PACKAGES=1` no `setEnvs` e o `pipInstall` das bibliotecas, cada uma com a versão presa; o resto da imagem, a rede e o texto do Builder não mudam | a publicação (o modelo da máquina), o Builder e o Assistente |
 | `docs/decisions/0032-data-leaving-brazil-told.md` | Muda: a frase do contexto (abaixo) | o aviso de cada empresa |
-| `docs/decisions/0051-builder-machine-git-and-copy-in-r2.md` | Muda: a linha da rede ganha a lista do Assistente ao lado da do Builder (abaixo) | quem acrescenta um endereço |
+| `docs/decisions/0059-assistant-machine-reaches-package-registries.md` | Cria: a lista de endereços do Assistente, com a frase abaixo; a 0051 fica como foi aprovada | quem acrescenta um endereço |
 
 ### Os contratos que a unidade cria
 
@@ -846,10 +874,12 @@ concorrência; o resolver por conversa é o padrão do Mastra.
 // apps/server/src/builder/assistant/machine.ts
 /** Where the conversation's files live on its machine, made at the machine's start. */
 export const WORK_FOLDER = '/home/user/work'
-/** The hosts the Assistant's machine may reach: the package registries, for pip and npm (decision 0051). */
+/** The hosts the Assistant's machine may reach: the package registries, for pip and npm (decision 0059). */
 export const ASSISTANT_HOSTS = ['registry.npmjs.org', 'pypi.org', 'files.pythonhosted.org']
 /** The conversations' machines: the Builder's kit without the app's seed, Git, check or pack; the network reaches only ASSISTANT_HOSTS. One owner (C26) for start, stop, kill and read. */
 export type AssistantMachines = {
+  /** Where the conversation's files are on its machine. */
+  readonly folder: string
   /** The controller's workspace resolver; undefined outside a conversation, as the Builder's. */
   workspace(requestContext: RequestContext): Promise<Workspace | undefined>
   /** The turn ended: the machine stops (E2B pauses it); a machine never started is left alone. */
@@ -858,10 +888,13 @@ export type AssistantMachines = {
   stopAll(): Promise<void>
   /** The conversation is deleted: every machine it marked is killed (MachineApi.kill). */
   kill(conversationId: ConversationId): Promise<void>
-  /** The download: wakes the machine and reads one file inside WORK_FOLDER, capped. */
-  read(conversationId: ConversationId, path: string): Promise<{ kind: 'OK'; bytes: Buffer } | { kind: 'FILE_NOT_FOUND' | 'FILE_TOO_LARGE' | 'FILE_GONE' | 'MACHINE_UNAVAILABLE' }>
+  /** The filesystem `show_file` locates a file in: a short-lived instance, so a link made after a first look is looked at again. */
+  serving(requestContext: RequestContext): WorkspaceFilesystem | undefined
+  /** The download: wakes the machine and reads one file inside WORK_FOLDER, capped; `signal` stops the read when the browser leaves. */
+  read(conversationId: ConversationId, path: string, signal: AbortSignal): Promise<{ kind: 'OK'; bytes: Buffer } | { kind: 'FILE_NOT_FOUND' | 'FILE_TOO_LARGE' | 'FILE_GONE' | 'MACHINE_UNAVAILABLE' | 'CANCELLED' }>
 }
-export function createAssistantMachines(deps: { kit: KitFactory; api: MachineApi; template: string; installation: string; log: Logger }): AssistantMachines
+/** What a machine needs: the Builder's `AssistantMachine` deps (kit, api, template, installation) plus `mark`; `workFolder?` and `startMs?` are for tests. */
+export function createAssistantMachines(deps: AssistantMachine & { log: FailureLog }): AssistantMachines
 
 // packages/hub-api/src/assistant.ts
 export const ShowFileInput = z.object({ path: z.string().min(1).max(500) })
@@ -902,7 +935,7 @@ export const ShownFile = z.discriminatedUnion('kind', [
   with show_file."
 - A frase nova da 0032, no contexto: "Rows the Assistant reads from a company's connections go to its
   conversation's machine on E2B, outside Brazil, for as long as the conversation exists."
-- A linha da rede da 0051 ganha: "The Assistant's machine reaches the package registries
+- A decisão 0059 (nova; a 0051 fica como foi aprovada) diz: "The Assistant's machine reaches the package registries
   (`registry.npmjs.org`, `pypi.org`, `files.pythonhosted.org`), for pip and npm; the web is the
   Hub's tools (founder, 2026-10-31: `N-2` and `M-2` of the machine study)."
 - Modelo: `machines.ts` para o kit e `execIn`; ele cumpre C21 e C26; o que é do app não é modelo.
@@ -920,7 +953,7 @@ export const ShownFile = z.discriminatedUnion('kind', [
 2. `machine.ts`: `AssistantMachines` sobre o kit; o `workspace` do controlador do Assistente.
 3. `connector-tools.ts`: a gravação em `reads/` quando há máquina.
 4. `show-file.ts` e a rota do arquivo (`readCapped`, `containment.ts` para recusar fora da pasta).
-5. `release.ts`, `turn.ts`: matar e parar. `assistant.md`. A 0032 e a 0051.
+5. `release.ts`, `turn.ts`: matar e parar. `assistant.md`. A 0032 e a 0059.
 
 ### Como se prova
 
@@ -936,7 +969,7 @@ rede e a imagem do critério 17 só se provam no E2B de verdade, pelo caso `opt-
   (só às do Mastra): parar e mostrar.
 - No E2B de verdade, o `pip install` não passar pela lista com `pypi.org` e `files.pythonhosted.org`
   (o critério 17): parar e mostrar a recusa; não acrescentar endereço sem a palavra do fundador
-  (0051).
+  (0059).
 - O E2B recusar a lista com `denyOut` de tudo: parar e mostrar o erro; não abrir a rede.
 
 ## U4 As telas
