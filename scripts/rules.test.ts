@@ -14,6 +14,10 @@ function cruise(dir: string): Violation[] {
   mkdirSync(join(dir, 'node_modules/@conexus'), { recursive: true })
   symlinkSync(join(dir, 'packages/hub-api'), join(dir, 'node_modules/@conexus/hub-api'))
   symlinkSync(join(dir, 'packages/connectors'), join(dir, 'node_modules/@conexus/connectors'))
+  // `@mastra/core` is a real, resolving package, so its ee files are reached by their resolved path;
+  // `@mastra/editor` stays the bare case: it is not installed, and the import cannot resolve.
+  mkdirSync(join(dir, 'node_modules/@mastra'), { recursive: true })
+  symlinkSync(join(ROOT, 'node_modules/@mastra/core'), join(dir, 'node_modules/@mastra/core'))
   const run = spawnSync(
     join(ROOT, 'node_modules/.bin/depcruise'),
     ['.', '--config', join(ROOT, '.dependency-cruiser.cjs'), '--output-type', 'json'],
@@ -73,7 +77,8 @@ const BAD_IMPORTS: Record<string, [string, string, Record<string, string>]> = {
     { 'apps/server/src/hub/a/mapper.ts': importing('drizzle-orm/node-postgres') },
   ],
   'neon-sdk-only-in-the-neon-adapter': ['apps/server/src/hub/a/vendor.ts', '@neon/sdk', {}],
-  'mastra-only-in-builder': ['apps/web/src/hub/a/agent.ts', '@mastra/core/agent', {}],
+  // A bare package: the cruise's exclude drops a resolved @mastra/core from the graph, so this rule sees only what does not resolve.
+  'mastra-only-in-builder': ['apps/web/src/hub/a/agent.ts', '@mastra/memory', {}],
   'e2b-only-in-the-machine': ['apps/server/src/builder/runs/sandbox.ts', 'e2b', {}],
   's3-only-in-the-git-copy': ['apps/server/src/builder/git/bucket.ts', '@aws-sdk/client-s3', {}],
   'connectors-kit-stands-alone': ['packages/connectors/src/x.ts', 'pg', {}],
