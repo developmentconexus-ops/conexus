@@ -93,6 +93,7 @@ One line per document (`check-docs`).
 - [0056](decisions/0056-connectors-kit-and-one-executor.md) connectors kit.
 - [0057](decisions/0057-connections-by-oauth.md) OAuth.
 - [0058](decisions/0058-provider-limits-and-queues.md) provider limits.
+- [0059](decisions/0059-assistant-machine-reaches-package-registries.md) Assistant registries.
 
 ## Skills
 

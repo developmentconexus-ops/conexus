@@ -32,6 +32,7 @@ test('show_file: um Markdown, texto ou CSV de até 64 KB sai com o conteúdo, e 
     [write('relatorio.md', '# Vendas\n\nTotal: 10')],
     [show('relatorio.md')],
     [said('Aqui está.')],
+    [said('De nada.')],
   ])
   const url = await created(on.hub, on.ana, on.assistant, { connections: [] })
   const { say } = await talking(t, on.hub, on.ana, url)
@@ -48,6 +49,10 @@ test('show_file: um Markdown, texto ou CSV de até 64 KB sai com o conteúdo, e 
   const next = on.calls.at(2)?.texts.join('\n') ?? ''
   assert.match(next, /"shown":"[^"]*relatorio\.md"/)
   assert.equal(next.includes('Total: 10'), false, 'the content is not carried to the model')
+  assert.equal(endOf(await say('Obrigado')), 'complete')
+  const later = on.calls.at(-1)?.texts.join('\n') ?? ''
+  assert.match(later, /"shown":"[^"]*relatorio\.md"/, 'the next turn still has the summary')
+  assert.equal(later.includes('Total: 10'), false, 'and not the content')
 })
 
 test('show_file: um arquivo que não é texto, ou um texto acima de 64 KB, sai com o nome, o tamanho e o tipo, sem conteúdo (19)', async (t) => {
@@ -89,10 +94,43 @@ test('show_file: um caminho fora da pasta da conversa (também por um link) ou q
   assert.deepEqual(await shown(on, url), [
     { kind: 'SHOW_REFUSED', reason: 'OUTSIDE' },
     { kind: 'SHOW_REFUSED', reason: 'OUTSIDE' },
-    { kind: 'SHOW_REFUSED', reason: 'OUTSIDE' },
+    { kind: 'SHOW_REFUSED', reason: 'NOT_FOUND' },
     { kind: 'SHOW_REFUSED', reason: 'NOT_FOUND' },
     { kind: 'SHOW_REFUSED', reason: 'NOT_FOUND' },
   ])
+})
+
+test('show_file: o caminho que a ferramenta de escrita aceitou, também com / inicial, é o que ele mostra (19)', async (t) => {
+  const on = await assisting(t, [
+    [write('/relatorio.md', '# Vendas')],
+    [show('/relatorio.md')],
+    [said('Aqui está.')],
+  ])
+  const url = await created(on.hub, on.ana, on.assistant, { connections: [] })
+  const { say } = await talking(t, on.hub, on.ana, url)
+  assert.equal(endOf(await say('Documente')), 'complete')
+  const [output] = await shown(on, url)
+  assert.deepEqual(
+    [output?.kind, output?.name, output?.content],
+    ['TEXT', 'relatorio.md', '# Vendas'],
+  )
+})
+
+test('show_file: na máquina com API de arquivos própria, o link para fora feito depois de um arquivo mostrado não é mostrado (19)', async (t) => {
+  const on = await assisting(t, [
+    [write('a.md', 'dentro')],
+    [show('a.md')],
+    [tool('mastra_workspace_execute_command', { command: 'rm a.md && ln -s /etc/hostname a.md' })],
+    [show('a.md')],
+    [said('Pronto.')],
+  ])
+  on.hub.assistantMachines.control.native = true
+  const url = await created(on.hub, on.ana, on.assistant, { connections: [] })
+  const { say } = await talking(t, on.hub, on.ana, url)
+  assert.equal(endOf(await say('Mostre')), 'complete')
+  const [first, second] = await shown(on, url)
+  assert.equal(first?.kind, 'TEXT')
+  assert.deepEqual(second, { kind: 'SHOW_REFUSED', reason: 'OUTSIDE' })
 })
 
 test('show_file: a máquina que não liga é recusada com MACHINE_UNAVAILABLE (19)', async (t) => {

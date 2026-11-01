@@ -65,15 +65,6 @@ export const ShownFile = z.discriminatedUnion('kind', [
 ])
 export type ShownFile = z.infer<typeof ShownFile>
 
-/** The file of a conversation's machine, as a download: `GET`, the bytes with their type, for the owner alone. */
-export function assistantFilePath(ids: {
-  companyId: string
-  conversationId: string
-  path: string
-}): string {
-  return `/api/companies/${ids.companyId}/assistant/conversations/${ids.conversationId}/files?${new URLSearchParams({ path: ids.path })}`
-}
-
 /** What `conexus_overview` answers (code C21: a list per kind of thing, no free text). */
 export type Overview = {
   projects: readonly {

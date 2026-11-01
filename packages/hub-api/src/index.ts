@@ -56,7 +56,6 @@ export {
   ASSISTANT_TOOL,
   AssistantConversation,
   AssistantConversationSummary,
-  assistantFilePath,
   createAssistantConversation,
   listAssistantConnections,
   listAssistantConversations,

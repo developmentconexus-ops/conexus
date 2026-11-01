@@ -10,9 +10,8 @@ hosts, its filesystem and where a version is kept.
 - Amended 2026-10-24 (founder: "é uma por conversa", "3aproco"): one machine per conversation,
   found by its name `conexus-<installation>-<conversation>`, no id stored, no idle sweep. Releasing
   a conversation kills its machines first.
-- The network is a list of domains (`denyOut: [ALL_TRAFFIC]`, `allowOut`): `registry.npmjs.org`,
-  and the Assistant's pip adds `pypi.org` and `files.pythonhosted.org` (founder, 2026-10-31); a host
-  is added only when an install fails without it, written here.
+- The network is a list of domains (`denyOut: [ALL_TRAFFIC]`, `allowOut`), starting with
+  `registry.npmjs.org`; a host is added only when `npm install` fails without it, written here.
 - The Git is ours: a bare repository on the server, `main` moved by `update-ref` against the base
   read, one `git bundle` per changed turn checked by `transfer.fsckObjects` into a candidate ref
   first. Each version's bundle goes to a private R2 bucket, never mounted (founder: "1 A").
@@ -38,4 +37,5 @@ hosts, its filesystem and where a version is kept.
 
 ## State
 
-Proposed 2026-10-21. Founder: "Aprovo", "13 sim". Results: 1 ok; 2 one copy; 3 ok on the real bucket; 4 terms ban nothing here.
+Proposed 2026-10-21. Founder: "Aprovo", "13 sim". Results: 1 ok; 2 one copy (1.78.0); 3 ok on the real
+bucket (region automatic), three versions, one second; 4 terms ban nothing here.

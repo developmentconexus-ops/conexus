@@ -2,7 +2,8 @@ import { posix } from 'node:path'
 import { ASSISTANT_TOOL, SHOWN_TEXT_MAX, ShowFileInput, ShownFile } from '@conexus/hub-api'
 import { createTool } from '@mastra/core/tools'
 import { Failure } from '../../platform/failure.ts'
-import { locate, WORK_FOLDER } from './machine.ts'
+import type { AssistantMachines } from './machine.ts'
+import { locate } from './machine.ts'
 
 const TEXT_MEDIA: Record<string, 'text/markdown' | 'text/plain' | 'text/csv'> = {
   '.md': 'text/markdown',
@@ -43,16 +44,16 @@ function refused(reason: 'OUTSIDE' | 'NOT_FOUND' | 'MACHINE_UNAVAILABLE') {
  * `{ shown: path }` or the refusal (`toModelOutput`), never the content; Mastra stores the whole
  * output, which the screen reads back (criterion 19).
  */
-export function showFileTool(folder: string = WORK_FOLDER) {
+export function showFileTool(machines: Pick<AssistantMachines, 'folder' | 'serving'>) {
   return createTool({
     id: ASSISTANT_TOOL.showFile,
-    description: `Shows the person a file you wrote in ${folder} beside the chat, to read or download. Show the table, chart or document you made; the person sees nothing of your machine otherwise.`,
+    description: `Shows the person a file you wrote in ${machines.folder} beside the chat, to read or download. Show the table, chart or document you made; the person sees nothing of your machine otherwise.`,
     inputSchema: ShowFileInput,
-    execute: async ({ path }, { workspace }): Promise<ShownFile> => {
-      const files = workspace?.filesystem
+    execute: async ({ path }, { requestContext }): Promise<ShownFile> => {
+      const files = requestContext === undefined ? undefined : machines.serving(requestContext)
       if (files === undefined) return refused('MACHINE_UNAVAILABLE')
       try {
-        const found = await locate(files, folder, path)
+        const found = await locate(files, path)
         if (found.kind !== 'FILE') return refused(found.kind)
         const media = TEXT_MEDIA[posix.extname(found.name).toLowerCase()]
         if (media !== undefined && found.bytes <= SHOWN_TEXT_MAX) {

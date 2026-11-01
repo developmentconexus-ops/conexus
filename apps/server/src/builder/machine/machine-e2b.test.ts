@@ -48,6 +48,26 @@ test('máquina: o kit do E2B nasce sem env e sem id gravado, achado pelo nome, a
   assert.equal(told.includes('Cloud sandbox'), false)
 })
 
+test('máquina: a lista de endereços que quem monta passa é a que o E2B recebe, a do Builder só o npm e a do Assistente também o PyPI (17)', async () => {
+  const config = testConfig(await unreachableDatabaseUrl())
+  function networkOf(allowOut: readonly string[]) {
+    const kit = createE2bKit(config)({
+      id: `conexus-hub-${CONVERSATION}`,
+      metadata: {},
+      onStart: () => undefined,
+      allowOut,
+      workingDirectory: APP_FOLDER,
+      instructions: 'The test machine.',
+    })
+    return Reflect.get(kit.sandbox, '_constructorOptions').network
+  }
+  assert.deepEqual(networkOf(ALLOWED_HOSTS).allowOut, ['registry.npmjs.org'])
+  assert.deepEqual(networkOf(ASSISTANT_HOSTS), {
+    allowOut: ['registry.npmjs.org', 'pypi.org', 'files.pythonhosted.org'],
+    denyOut: ['0.0.0.0/0'],
+  })
+})
+
 test('máquina: o E2B a mantém uma hora, a mais longa do plano, e então a pausa; o turno não tem prazo próprio', async () => {
   const kit = createE2bKit(testConfig(await unreachableDatabaseUrl()))({
     id: `conexus-hub-${CONVERSATION}`,
@@ -232,6 +252,12 @@ test('opt-in: no E2B de verdade, a máquina do Assistente instala com pip e npm,
     "cd /tmp && npm install --silent --no-audit --no-fund left-pad@1.3.0 && node -e \"console.log(require('left-pad')('x', 3))\"",
   )
   assert.equal(npm.exitCode, 0, npm.stderr)
+  const curl = await run('command -v curl')
+  assert.equal(
+    curl.exitCode,
+    0,
+    'the image has no curl: the blocked host below would prove nothing',
+  )
   // The application's answer, not the socket: E2B may show the socket open to a blocked connection.
   const blocked = await run('curl -sS -f -m 20 https://example.com/ -o /dev/null')
   assert.notEqual(blocked.exitCode, 0, 'a host outside the list answered')

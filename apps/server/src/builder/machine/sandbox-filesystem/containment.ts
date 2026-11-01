@@ -8,6 +8,9 @@ import { posix as posixPath } from 'node:path'
 import type { Host, SandboxCommandResult } from './shell.ts'
 import { EXIT_NOT_FOUND, shellQuote } from './shell.ts'
 
+/** A path that leaves the workspace root, by `..`, another root or a symlink: a guard's refusal, not a failure of the machine. */
+export class PathEscapesError extends Error {}
+
 export type ContainmentCheck = 'target' | 'dest' | 'parent'
 
 /** The filesystem as the native-path check needs it: the symlink switch and what already passed. */
@@ -53,7 +56,7 @@ export async function assertContainedRealpath(
     throw new Error(`Unable to verify path stays within workspace root: ${inputPath}`)
   }
   if (real !== root && !real.startsWith(`${root}/`)) {
-    throw new Error(`Path escapes workspace root (symlink): ${inputPath}`)
+    throw new PathEscapesError(`Path escapes workspace root (symlink): ${inputPath}`)
   }
   return true
 }

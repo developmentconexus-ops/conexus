@@ -29,6 +29,7 @@ import {
   toolsOf,
   workspaceMetadataLive,
 } from '../conversation/public.ts'
+import type { AssistantMachine } from '../machine/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import {
   accountErrorProcessors,
@@ -38,6 +39,7 @@ import {
 import { sessionScope } from './context.ts'
 import type { Speakers } from './instructions.ts'
 import { assistantInstructions } from './instructions.ts'
+import type { AssistantMachines } from './machine.ts'
 import { createAssistantMachines } from './machine.ts'
 import { assistantMemory } from './memory.ts'
 import { overviewTool } from './overview.ts'
@@ -92,7 +94,7 @@ type Deps = {
   projects: AssistantProjects
   queue: QueueDeps
   /** The conversations' machines at the provider (step 24.1, U3): the Builder's kit and API, its template and installation. */
-  machine: Omit<Parameters<typeof createAssistantMachines>[0], 'log'>
+  machine: AssistantMachine
   log: FailureLog
 }
 
@@ -213,7 +215,7 @@ function assistantAgent(
   parts: {
     memory: ReturnType<typeof assistantMemory>
     turns: ReturnType<typeof assistantTurns>
-    folder: string
+    machines: AssistantMachines
   },
 ) {
   const { queue } = deps
@@ -232,7 +234,7 @@ function assistantAgent(
         chosen,
       })),
   })
-  const showFile = showFileTool(parts.folder)
+  const showFile = showFileTool(parts.machines)
   return new Agent({
     id: ASSISTANT_CONTROLLER,
     name: 'Assistant',
@@ -282,7 +284,7 @@ export function createAssistant(deps: Deps) {
   const memory = assistantMemory({ storage, queue })
   const machines = createAssistantMachines({ ...deps.machine, log: deps.log })
   const turns = assistantTurns({ queue, machines, log: deps.log })
-  const agent = assistantAgent(deps, { memory, turns, folder: machines.folder })
+  const agent = assistantAgent(deps, { memory, turns, machines })
   const controller = new AgentController({
     id: ASSISTANT_CONTROLLER,
     storage,
