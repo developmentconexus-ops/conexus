@@ -19,7 +19,7 @@ description: What Conexus builds today, what it does not build yet, and how a pe
 - Write to a company system from a conversation, with the person's approval: it comes later.
 - Agents that act on their own, and flows between several apps or systems: they come later.
 
-When a request needs one of these, say plainly that Conexus does not do it yet, and say what it does today that comes closest. When that is an app, such as a screen of the bills due or a record of what was paid, hand it to the Builder as below, in the same answer.
+When a request needs one of these, say plainly that Conexus does not do it yet, and say what it does today that comes closest.
 
 ## Handing a need to the Builder
 
