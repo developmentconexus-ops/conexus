@@ -496,3 +496,7 @@ Em 2026-11-01, à pergunta se aprova a Pauta revisada, para entrar por cartão p
 Em 2026-11-01, às duas decisões do cartão da 13.3 (A, onde a etapa entra; B, onde mora o DESIGN.md): "A1 B1". A 13.3 entra logo depois da 24.2, e o `DESIGN.md` da raiz vira o documento completo da Pauta, conferido contra o código, com o guia de desenho só com as regras. A página do cartão ainda não foi aprovada.
 
 Cartão da etapa 13.3 aprovado em 2026-11-01 (commit 4e04581c6878ace0512df2cb26f6c1536746e038): "Aprovo pode mesclar"
+
+Cartão da etapa 13.3 aprovado em 2026-11-02 (commit f7ce6c22590c3574b73668aad28b04939b738b4e): "APROVO O MARCADRO DE PAUTA"
+
+Lido pelo firstmate como a aprovação do cartão com a linha `Trilho: desenho`, que faz da Pauta o trilho de desenho (L1, L5); o resto do cartão está como foi aprovado no commit 4e04581c, "Aprovo pode mesclar".
