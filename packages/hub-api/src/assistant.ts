@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { CompanyId, Next, Page } from './companies.ts'
 import { CONNECTIONS_MAX, ConnectionId } from './connectors.ts'
-import { ConversationId, Effort, ModelId } from './conversations.ts'
+import { ConversationId, Effort, ModelChoice, ModelId } from './conversations.ts'
 import type { FailureCode } from './failures.ts'
 import { ATTEMPT_KEY_HEADER, defineOperation } from './operation.ts'
 import { ProjectId } from './projects.ts'
@@ -216,6 +216,24 @@ export const setAssistantConnections = defineOperation({
   input: { params: OfConversation, body: z.object({ connections: Chosen }) },
   success: { status: 200, body: z.object({ conversation: AssistantConversation }) },
   failures: [...READ_FAILURES, 'CONVERSATION_NOT_FOUND'],
+})
+
+export const setAssistantModel = defineOperation({
+  id: 'setAssistantModel',
+  summary: 'Changes the model of an Assistant conversation and its effort, for its next answers.',
+  access: 'session',
+  method: 'PUT',
+  path: `${BASE}/{conversationId}/model`,
+  bodyLimit: 1024,
+  input: { params: OfConversation, body: ModelChoice },
+  success: { status: 200, body: ModelChoice },
+  failures: [
+    ...READ_FAILURES,
+    'CONVERSATION_NOT_FOUND',
+    'MODEL_UNKNOWN',
+    'MODEL_NO_ACCOUNT',
+    'EFFORT_UNSUPPORTED',
+  ],
 })
 
 export const listAssistantConnections = defineOperation({

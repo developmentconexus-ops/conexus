@@ -90,6 +90,25 @@ export async function offeredOnly(
   return offered.flatMap((each) => (wanted.has(each.connectionId) ? [each.connectionId] : []))
 }
 
+/** The marks a conversation's thread is stamped with (`createSession({ tags })`), one rule for opening and for resuming. */
+export function marksOf(
+  owner: Owner,
+  opened: { projectId?: ProjectId | undefined; automation?: ConversationAutomation | undefined },
+): Record<string, string> {
+  const { projectId, automation } = opened
+  return {
+    [SESSION_MARK.company]: owner.companyId,
+    [SESSION_MARK.person]: owner.personId,
+    ...(projectId === undefined ? {} : { [SESSION_MARK.project]: projectId }),
+    ...(automation === undefined
+      ? {}
+      : {
+          [SESSION_MARK.automation]: automation.automationId,
+          [SESSION_MARK.automationName]: automation.name,
+        }),
+  }
+}
+
 /**
  * Opens a conversation of the Assistant, or finds the one its id names (`openSession`): its choice
  * kept in the Hub before the thread, the thread stamped with its marks. The caller admits the
@@ -109,17 +128,7 @@ export async function openConversation(
 ) {
   const { owner, place, id, automation } = input
   const projectId = place.kind === 'PROJECT' ? place.projectId : undefined
-  const tags = {
-    [SESSION_MARK.company]: owner.companyId,
-    [SESSION_MARK.person]: owner.personId,
-    ...(projectId === undefined ? {} : { [SESSION_MARK.project]: projectId }),
-    ...(automation === undefined
-      ? {}
-      : {
-          [SESSION_MARK.automation]: automation.automationId,
-          [SESSION_MARK.automationName]: automation.name,
-        }),
-  }
+  const tags = marksOf(owner, { projectId, automation })
   return openSession(deps, {
     ...{ kind: 'assistant', owner, id, tags, model: input.model, effort: input.effort },
     keep: async () => {
