@@ -24,6 +24,7 @@ ALTER FUNCTION auth.is_installation_administrator(person text) OWNER TO hub_admi
 -- Step 11, founder 2026-10-19 ("2. a", Grant A): a model account's sealed credential, and the
 -- companies that hold one, two SECURITY DEFINER functions owned by a role that cannot log in and
 -- reads five columns of the accounts; hub_company executes the first, hub_runtime the second.
+ALTER FUNCTION builder.companies_with_agents() OWNER TO hub_agent_companies;
 ALTER FUNCTION builder.companies_with_seals() OWNER TO hub_model_seals;
 ALTER FUNCTION builder.sealed_of(account uuid) OWNER TO hub_model_seals;
 -- Step 19 (D11, founder 2026-10-29, "Aprovado"): the connections of a company, the role that reads their seals and what each role may do with them.
@@ -49,6 +50,10 @@ ALTER TABLE auth.rate_limit OWNER TO test_owner;
 ALTER TABLE auth.session OWNER TO test_owner;
 ALTER TABLE auth."user" OWNER TO test_owner;
 ALTER TABLE auth.verification OWNER TO test_owner;
+ALTER TABLE builder.agent OWNER TO test_owner;
+ALTER TABLE builder.agent_tool OWNER TO test_owner;
+ALTER TABLE builder.agent_version OWNER TO test_owner;
+ALTER TABLE builder.agent_version_tool OWNER TO test_owner;
 ALTER TABLE builder.assistant_conversation OWNER TO test_owner;
 ALTER TABLE builder.company_account_kind OWNER TO test_owner;
 ALTER TABLE builder.company_model OWNER TO test_owner;
@@ -60,6 +65,8 @@ ALTER TABLE builder.model_account_sign_in OWNER TO test_owner;
 ALTER TABLE builder.observational_memory_models OWNER TO test_owner;
 ALTER TABLE builder.person_model_default OWNER TO test_owner;
 -- Step 19 (D11, founder 2026-10-29, "Aprovado"): the connections of a company, the role that reads their seals and what each role may do with them.
+ALTER TABLE builder.tool OWNER TO test_owner;
+ALTER TABLE builder.tool_version OWNER TO test_owner;
 ALTER TABLE connectors.connection OWNER TO test_owner;
 ALTER TABLE connectors.connection_sign_in OWNER TO test_owner;
 ALTER TABLE connectors.project_connection OWNER TO test_owner;
@@ -96,6 +103,7 @@ GRANT USAGE ON SCHEMA builder TO hub_company;
 GRANT USAGE ON SCHEMA builder TO hub_operator;
 GRANT USAGE ON SCHEMA builder TO hub_model_seals;
 GRANT USAGE ON SCHEMA builder TO hub_runtime;
+GRANT USAGE ON SCHEMA builder TO hub_agent_companies;
 GRANT USAGE ON SCHEMA connectors TO hub_company;
 -- Step 19 (D11, founder 2026-10-29, "Aprovado"): the connections of a company, the role that reads their seals and what each role may do with them.
 GRANT USAGE ON SCHEMA connectors TO hub_connection_seals;
@@ -116,6 +124,8 @@ REVOKE ALL ON FUNCTION apps.companies_with_apps() FROM PUBLIC;
 GRANT ALL ON FUNCTION apps.companies_with_apps() TO hub_runtime;
 REVOKE ALL ON FUNCTION auth.is_installation_administrator(person text) FROM PUBLIC;
 GRANT ALL ON FUNCTION auth.is_installation_administrator(person text) TO hub_operator;
+REVOKE ALL ON FUNCTION builder.companies_with_agents() FROM PUBLIC;
+GRANT ALL ON FUNCTION builder.companies_with_agents() TO hub_runtime;
 REVOKE ALL ON FUNCTION builder.companies_with_seals() FROM PUBLIC;
 GRANT ALL ON FUNCTION builder.companies_with_seals() TO hub_runtime;
 REVOKE ALL ON FUNCTION builder.sealed_of(account uuid) FROM PUBLIC;
@@ -202,6 +212,13 @@ GRANT SELECT,INSERT,DELETE ON TABLE auth.verification TO hub_invitation;
 -- Step 24.1, U2, founder 2026-11-01 ("Aprovo as permissoes do b1"): the Assistant's routes keep a
 -- conversation's chosen connections and its turn reads them; the row leaves by cascade, never by
 -- the Hub.
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE builder.agent TO hub_company;
+GRANT SELECT(company_id) ON TABLE builder.agent TO hub_agent_companies;
+GRANT SELECT(active_version) ON TABLE builder.agent TO hub_agent_companies;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE builder.agent_tool TO hub_company;
+GRANT SELECT,INSERT,DELETE ON TABLE builder.agent_version TO hub_company;
+GRANT UPDATE(published_by) ON TABLE builder.agent_version TO hub_company;
+GRANT SELECT,INSERT,DELETE ON TABLE builder.agent_version_tool TO hub_company;
 GRANT SELECT,INSERT ON TABLE builder.assistant_conversation TO hub_company;
 GRANT UPDATE(connections) ON TABLE builder.assistant_conversation TO hub_company;
 GRANT SELECT ON TABLE builder.company_account_kind TO hub_company;
@@ -258,6 +275,9 @@ GRANT SELECT,INSERT,DELETE ON TABLE builder.person_model_default TO hub_company;
 GRANT UPDATE(model) ON TABLE builder.person_model_default TO hub_company;
 GRANT UPDATE(effort) ON TABLE builder.person_model_default TO hub_company;
 -- Step 19 (D11, founder 2026-10-29, "Aprovado"): the connections of a company, the role that reads their seals and what each role may do with them.
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE builder.tool TO hub_company;
+GRANT SELECT,INSERT,DELETE ON TABLE builder.tool_version TO hub_company;
+GRANT UPDATE(created_by) ON TABLE builder.tool_version TO hub_company;
 GRANT INSERT,DELETE ON TABLE connectors.connection TO hub_company;
 GRANT SELECT(id) ON TABLE connectors.connection TO hub_company;
 GRANT SELECT(id) ON TABLE connectors.connection TO hub_connection_seals;
@@ -339,6 +359,8 @@ GRANT TEMPORARY ON DATABASE mastra_database TO PUBLIC;
 GRANT CREATE,CONNECT ON DATABASE mastra_database TO mastra_runtime;
 CREATE ROLE hub_administrators;
 ALTER ROLE hub_administrators WITH NOSUPERUSER NOINHERIT NOCREATEROLE NOCREATEDB NOLOGIN NOREPLICATION NOBYPASSRLS;
+CREATE ROLE hub_agent_companies;
+ALTER ROLE hub_agent_companies WITH NOSUPERUSER NOINHERIT NOCREATEROLE NOCREATEDB NOLOGIN NOREPLICATION NOBYPASSRLS;
 CREATE ROLE hub_app_companies;
 ALTER ROLE hub_app_companies WITH NOSUPERUSER NOINHERIT NOCREATEROLE NOCREATEDB NOLOGIN NOREPLICATION NOBYPASSRLS;
 -- Step 18 (D11, founder 2026-10-28, "aPROVO PAGINA"): who uses an app and the Projects of one person.
@@ -371,6 +393,7 @@ ALTER ROLE hub_runtime SET idle_in_transaction_session_timeout TO '10s';
 ALTER ROLE mastra_runtime SET statement_timeout TO '10s';
 ALTER ROLE mastra_runtime SET idle_in_transaction_session_timeout TO '10s';
 GRANT hub_administrators TO test_owner WITH ADMIN OPTION, INHERIT FALSE, SET FALSE GRANTED BY test_superuser;
+GRANT hub_agent_companies TO test_owner WITH ADMIN OPTION, INHERIT FALSE, SET FALSE GRANTED BY test_superuser;
 GRANT hub_app_companies TO test_owner WITH ADMIN OPTION, INHERIT FALSE, SET FALSE GRANTED BY test_superuser;
 -- Step 18 (D11, founder 2026-10-28, "aPROVO PAGINA"): who uses an app and the Projects of one person.
 GRANT hub_app_people TO test_owner WITH ADMIN OPTION, INHERIT FALSE, SET FALSE GRANTED BY test_superuser;
