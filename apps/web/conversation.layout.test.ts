@@ -252,7 +252,7 @@ test('o compositor vazio não esmaece; o foco do compositor e do título é a bo
   await title.focus()
   assert.deepEqual(
     { ...(await frame(title)), focus: (await focusDrawn(page)).replace(/^.* (\S+)$/, '$1') },
-    { opacity: '1', radius: '6px', focus: 'halo' },
+    { opacity: '1', radius: '8px', focus: 'halo' },
   )
   assert.deepEqual(page.problems, [])
   await page.close()
