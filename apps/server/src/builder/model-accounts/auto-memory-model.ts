@@ -12,10 +12,11 @@ const AUTO_MODELS = { anthropic: 'anthropic/claude-haiku-5-5' }
 
 /**
  * The model Mastra's `'auto'` picks for a conversation on `main`: the main provider's cheap model,
- * or `main` itself for a provider it does not know. None when the pick is not a model the picker
- * offers, so the call follows the conversation's model.
+ * or `main` itself for a provider it does not know. `canUseProvider` (`@mastra/memory` 1.39.0)
+ * keeps the server's environment out of it, so Gemini never outranks the conversation's provider.
+ * None when the pick is not a model the picker offers, so the call follows the conversation's model.
  */
 export function autoMemoryModel(main: ModelId): ModelId | null {
-  const pick = resolveAutoModelId(main, { autoModels: AUTO_MODELS })
+  const pick = resolveAutoModelId(main, { autoModels: AUTO_MODELS, canUseProvider: () => false })
   return pick !== undefined && isChoosable(pick) ? ParsedModelId.parse(pick) : null
 }
