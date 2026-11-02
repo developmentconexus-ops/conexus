@@ -3,6 +3,7 @@ import { ASSISTANT_TOOL } from '@conexus/hub-api'
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse } from 'msw'
 import { expect, test } from 'vitest'
+import { COMPANY } from '../../platform/fixtures.ts'
 import { hubServer, PEDIDOS, projectsRead, refusal } from '../../platform/test-hub.tsx'
 import {
   ASKED,
@@ -13,6 +14,7 @@ import {
   toolSaid,
 } from '../assistant/test-hub.tsx'
 import { cadenceText } from './cadence-text.ts'
+import { automationsQuery } from './queries.ts'
 import { automationsHub } from './test-hub.tsx'
 
 // Criar automação: the automation the Assistant proposed, created by one touch (step 24.2, criterion 18).
@@ -71,6 +73,7 @@ test('Criar automação cria com uma chave de tentativa, vira "Automação criad
     prompt: 'Resuma as vendas de ontem, por vendedor.',
     cadence: { kind: 'DAILY', time: '07:00' },
     connections: [SALES],
+    origin: { conversationId: ASKED, toolCallId: expect.any(String) },
   })
   const link = screen.getByRole('link', { name: 'Ver automação' })
   expect(link.getAttribute('href')).toMatch(
@@ -78,16 +81,59 @@ test('Criar automação cria com uma chave de tentativa, vira "Automação criad
   )
 })
 
-test('recarregar a conversa e tocar de novo manda a mesma chave de tentativa', async () => {
+test('recarregar a conversa depois de criar mostra "Automação criada" e não escreve de novo', async () => {
   const hub = automationsHub(server, { automations: [] })
   at(OPEN, { conversations: [proposing()] })
   fireEvent.click(await screen.findByRole('button', { name: 'Criar automação' }))
   await screen.findByText('Automação criada')
   cleanup()
   at(OPEN, { conversations: [proposing()] })
+  expect(await screen.findByText('Automação criada')).toBeTruthy()
+  expect(screen.queryByRole('button', { name: 'Criar automação' })).toBeNull()
+  expect(screen.getByRole('link', { name: 'Ver automação' })).toBeTruthy()
+  expect(hub.writes()).toHaveLength(1)
+})
+
+test('a automação apagada devolve o cartão a "Criar automação", com a mesma chave de tentativa', async () => {
+  const hub = automationsHub(server, { automations: [] })
+  at(OPEN, { conversations: [proposing()] })
+  fireEvent.click(await screen.findByRole('button', { name: 'Criar automação' }))
+  await screen.findByText('Automação criada')
+  cleanup()
+  hub.forget()
+  at(OPEN, { conversations: [proposing()] })
   fireEvent.click(await screen.findByRole('button', { name: 'Criar automação' }))
   await waitFor(() => expect(hub.writes()).toHaveLength(2))
   expect(hub.writes()[1]?.key).toBe(hub.writes()[0]?.key)
+})
+
+test('com a lista das automações já no cache antes da criação, Ver automação abre o histórico da nova', async () => {
+  automationsHub(server, { automations: [] })
+  const { conexus } = at(OPEN, { conversations: [proposing()] })
+  await conexus.queryClient.prefetchQuery(automationsQuery(COMPANY.id, undefined))
+  fireEvent.click(await screen.findByRole('button', { name: 'Criar automação' }))
+  await screen.findByText('Automação criada')
+  fireEvent.click(screen.getByRole('link', { name: 'Ver automação' }))
+  expect(await screen.findByText('Resumo de vendas')).toBeTruthy()
+  await waitFor(() => expect(screen.queryByText('Não encontramos o que você procurou.')).toBeNull())
+  expect(conexus.router.state.location.pathname).toMatch(
+    /\/automations\/schedule_conexus-automation-/,
+  )
+})
+
+test('voltar à conversa depois de criar mostra "Automação criada" e nenhum Criar automação', async () => {
+  const hub = automationsHub(server, { automations: [] })
+  const { conexus } = at(OPEN, { conversations: [proposing()] })
+  fireEvent.click(await screen.findByRole('button', { name: 'Criar automação' }))
+  await screen.findByText('Automação criada')
+  fireEvent.click(screen.getByRole('link', { name: 'Ver automação' }))
+  await waitFor(() => expect(conexus.router.state.location.pathname).toMatch(/automations\//))
+  conexus.router.history.back()
+  await waitFor(() => expect(conexus.router.state.location.pathname).toBe(OPEN))
+  expect(await screen.findByText('Resuma as vendas de ontem, por vendedor.')).toBeTruthy()
+  expect(screen.queryByRole('button', { name: 'Criar automação' })).toBeNull()
+  expect(screen.getByText('Automação criada')).toBeTruthy()
+  expect(hub.writes()).toHaveLength(1)
 })
 
 test('numa conversa de Projeto, o cartão diz o Projeto e a criação o leva', async () => {

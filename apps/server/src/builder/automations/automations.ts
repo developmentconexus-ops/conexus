@@ -1,5 +1,11 @@
 import type { AutomationSummary, CreateAutomation, ProjectId } from '@conexus/hub-api'
-import { AutomationId, AutomationRunId, Cadence, CompanyId } from '@conexus/hub-api'
+import {
+  AutomationId,
+  AutomationOrigin,
+  AutomationRunId,
+  Cadence,
+  CompanyId,
+} from '@conexus/hub-api'
 import type { Mastra } from '@mastra/core/mastra'
 import type { WorkflowSchedule } from '@mastra/core/schedules'
 import { z } from 'zod'
@@ -17,11 +23,12 @@ import type { AutomationRuns } from './runs.ts'
 
 type Place = SessionScope['place']
 
-/** What the row's `metadata` keeps beside its `inputData`: the cadence the person chose and the creation's hash (code C37). */
+/** What the row's `metadata` keeps beside its `inputData`: the cadence the person chose, the proposal it came from and the creation's hash (code C37). */
 const Metadata = z.object({
   companyId: CompanyId,
   cadence: Cadence,
   bodyHash: z.string(),
+  origin: AutomationOrigin.optional(),
 })
 
 type Owned = { view: WorkflowSchedule; input: AutomationInput }
@@ -77,7 +84,7 @@ async function summaryOf(
   deps: AutomationsDeps,
   { view, input }: Owned,
 ): Promise<AutomationSummary> {
-  const { cadence } = Metadata.parse(view.metadata)
+  const { cadence, origin } = Metadata.parse(view.metadata)
   const offered = await deps.connectors.connections({ ...input, chosen: input.connections })
   const paused = view.status !== 'active'
   return {
@@ -89,6 +96,7 @@ async function summaryOf(
     connections: offered.map(({ connectionId, connector, name, chosen }) => ({
       ...{ connectionId, connector, name, chosen },
     })),
+    origin: origin ?? null,
     state: paused ? 'PAUSED' : 'ACTIVE',
     nextRunAt: paused ? null : new Date(view.nextFireAt).toISOString(),
     createdAt: new Date(view.createdAt).toISOString(),
@@ -142,7 +150,12 @@ async function create(
     await schedules.create({
       ...{ id, workflowId: AUTOMATION_WORKFLOW, cron: cronOf(body.cadence) },
       ...{ timezone: AUTOMATION_TIMEZONE, inputData: input, resourceId: assistantOwner(owner) },
-      metadata: { companyId: owner.companyId, cadence: body.cadence, bodyHash },
+      metadata: {
+        companyId: owner.companyId,
+        cadence: body.cadence,
+        bodyHash,
+        origin: body.origin,
+      },
     })
   } catch (error) {
     const raced = ownedOf(await stored(schedules.get(id)))

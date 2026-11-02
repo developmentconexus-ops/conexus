@@ -8,7 +8,9 @@ import {
   resumeAutomation,
   runAutomation,
 } from '@conexus/hub-api'
-import { queryOptions } from '@tanstack/react-query'
+import { queryOptions, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useEffect, useRef } from 'react'
+import { refreshNotifications } from '../../hub/notifications/public.ts'
 import { hubMutation, hubQuery } from '../../platform/hub.ts'
 
 const WHILE_RUNNING = 5_000
@@ -29,6 +31,28 @@ export function automationRunsQuery(
     refetchInterval: (query) =>
       query.state.data?.runs.some((run) => run.state.kind === 'RUNNING') ? WHILE_RUNNING : false,
   })
+}
+
+/**
+ * The runs of one automation, followed while one runs. When the person is looking and a run ends,
+ * the notification it makes is read at once, so the bell does not wait for its next poll (step 24.2,
+ * criterion 21). `enabled: false` reads nothing: the list page follows only after **Rodar agora**.
+ */
+export function useFollowedRuns(
+  companyId: CompanyId,
+  automationId: AutomationId,
+  page: string | undefined,
+  enabled = true,
+) {
+  const queryClient = useQueryClient()
+  const read = useQuery({ ...automationRunsQuery(companyId, automationId, page), enabled })
+  const running = read.data?.runs.some((run) => run.state.kind === 'RUNNING')
+  const was = useRef(false)
+  useEffect(() => {
+    if (was.current && running === false) void refreshNotifications(queryClient, companyId)
+    if (running !== undefined) was.current = running
+  }, [running, queryClient, companyId])
+  return read
 }
 
 export const sendAutomationCreation = hubMutation(createAutomation)

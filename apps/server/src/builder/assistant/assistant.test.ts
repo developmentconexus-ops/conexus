@@ -87,7 +87,7 @@ test('as ferramentas: numa conversa de Projeto o modelo não recebe propose_app'
   assert.equal(tools.includes('propose_automation'), true)
 })
 
-test('as ferramentas: propose_automation, numa conversa de Projeto, devolve a proposta só com as ligações que a conversa escolheu, e não grava nada (17)', async (t) => {
+test('as ferramentas: propose_automation, numa conversa de Projeto, recebe as ligações pelo nome que o modelo vê e devolve os ids das que a conversa escolheu, sem gravar nada (17)', async (t) => {
   const steps: ReturnType<typeof said>[][] = []
   const on = await assisting(t, steps)
   const proposal = {
@@ -96,7 +96,7 @@ test('as ferramentas: propose_automation, numa conversa de Projeto, devolve a pr
     cadence: { kind: 'DAILY', time: '07:00' },
   }
   steps.push(
-    [tool('propose_automation', { ...proposal, connections: [on.matriz, on.filial] })],
+    [tool('propose_automation', { ...proposal, connections: ['Matriz'] })],
     [said('Pronto.')],
   )
   const url = await created(on.hub, on.ana, on.assistant, {
@@ -115,6 +115,31 @@ test('as ferramentas: propose_automation, numa conversa de Projeto, devolve a pr
     `${on.company}/automations?projectId=${on.projectId}`,
   )
   assert.deepEqual(Object(listed.json()).automations, [])
+})
+
+test('as ferramentas: propose_automation recusa uma ligação que a conversa não escolheu e diz os nomes que há (17)', async (t) => {
+  const steps: ReturnType<typeof said>[][] = []
+  const on = await assisting(t, steps)
+  steps.push(
+    [
+      tool('propose_automation', {
+        name: 'Resumo de vendas',
+        prompt: 'Resuma as vendas de ontem.',
+        cadence: { kind: 'DAILY', time: '07:00' },
+        connections: ['Filial'],
+      }),
+    ],
+    [said('Vou corrigir.')],
+  )
+  const url = await created(on.hub, on.ana, on.assistant, {
+    projectId: on.projectId,
+    connections: [on.matriz],
+  })
+  const { say } = await talking(t, on.hub, on.ana, url)
+  assert.equal(endOf(await say('Todo dia às 7h me manda o resumo de vendas')), 'complete')
+  const refused = on.calls.at(1)?.texts.join('\n') ?? ''
+  assert.match(refused, /validation failed for propose_automation/)
+  assert.match(refused, /Matriz/)
 })
 
 test('a visão da empresa: os Projetos com o app, e as ligações que o lugar oferece com a escolha; numa conversa do Projeto a Filial não aparece', async (t) => {
