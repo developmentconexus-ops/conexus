@@ -221,3 +221,14 @@ test('recusa o segundo cartão mudado depois da aprovação, nomeando-o', () => 
   assert.equal(result.status, 1)
   assert.match(result.stderr, /^card-changed-after-approval: .*e122-b\.md/)
 })
+
+test('recusa o cartão do trilho de desenho sem aprovação, ao lado de um da fronteira aprovado', () => {
+  const { dir, card } = repository()
+  write(dir, 'docs/approvals.md', approval(card))
+  write(dir, 'docs/steps/e133-pauta.md', '# Pauta\n\nTrilho: desenho\n')
+  git(dir, 'add', '.')
+  git(dir, 'commit', '-qam', 'design card')
+  const result = run(dir)
+  assert.equal(result.status, 1)
+  assert.match(result.stderr, /^approval-missing: .*e133-pauta\.md/)
+})

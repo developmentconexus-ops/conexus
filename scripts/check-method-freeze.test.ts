@@ -23,12 +23,12 @@ function write(dir: string, path: string, content: string) {
   writeFileSync(join(dir, path), content)
 }
 
-function branch(changed: string, card: boolean | string): string {
+function branch(changed: string, card: boolean | string, body = 'card\n'): string {
   const dir = mkdtempSync(join(tmpdir(), 'conexus-freeze-'))
   dirs.push(dir)
   git(dir, 'init', '-q', '-b', 'main')
   write(dir, 'README.md', 'x\n')
-  if (card) write(dir, `docs/steps/${card === true ? 'e01-x.md' : card}`, 'card\n')
+  if (card) write(dir, `docs/steps/${card === true ? 'e01-x.md' : card}`, body)
   git(dir, 'add', '.')
   git(dir, 'commit', '-q', '-m', 'base')
   git(dir, 'checkout', '-q', '-b', 'topic')
@@ -100,4 +100,14 @@ test('recusa guia que sai de docs/guides por renomeação', () => {
   const result = run(dir)
   assert.equal(result.status, 1)
   assert.match(result.stderr, /^method-frozen-during-step: docs\/guides\/security\.md/)
+})
+
+test('recusa guia com cartão do trilho de desenho', () => {
+  const dir = branch('docs/guides/code.md', 'e01-x.md', '# x\n\nTrilho: desenho\n')
+  assert.equal(run(dir).status, 1)
+})
+
+test('aceita o modelo do cartão padrão com só um cartão do trilho de desenho', () => {
+  const path = '.agents/skills/conexus-scope/references/pattern-card.md'
+  assert.equal(run(branch(path, 'e01-x.md', '# x\n\nTrilho: desenho\n')).status, 0)
 })
