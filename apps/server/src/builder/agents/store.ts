@@ -3,8 +3,7 @@ import type {
   AgentState,
   AgentSummary,
   AgentVersionSummary,
-  CompanyId,
-  ProjectId,
+  OfProject,
   ToolId,
 } from '@conexus/hub-api'
 import {
@@ -44,20 +43,23 @@ function withActive(tx: ReadTx) {
 
 type Listed = Awaited<ReturnType<ReturnType<typeof withActive>['where']>>[number]
 
+/** The agent of this id in the Projeto: one of another Projeto is none (security S10). */
+export function ofProject(ids: OfProject, agentId: AgentId) {
+  return and(
+    eq(agent.id, agentId),
+    eq(agent.companyId, ids.companyId),
+    eq(agent.projectId, ids.projectId),
+  )
+}
+
 /** The agent of this Projeto, or `AGENT_NOT_FOUND` for one of another Projeto or none (S10). */
 export async function agentIn(tx: ReadTx, scope: InProject, agentId: AgentId): Promise<Listed> {
-  const [found] = await withActive(tx).where(
-    and(
-      eq(agent.id, agentId),
-      eq(agent.companyId, scope.companyId),
-      eq(agent.projectId, scope.projectId),
-    ),
-  )
+  const [found] = await withActive(tx).where(ofProject(scope, agentId))
   if (found === undefined) throw new Failure('AGENT_NOT_FOUND')
   return found
 }
 
-export function agentsIn(tx: ReadTx, ids: { companyId: CompanyId; projectId: ProjectId }) {
+export function agentsIn(tx: ReadTx, ids: OfProject) {
   return withActive(tx)
     .where(and(eq(agent.companyId, ids.companyId), eq(agent.projectId, ids.projectId)))
     .orderBy(asc(agent.createdAt), asc(agent.id))
@@ -151,7 +153,7 @@ export async function versionsOf(tx: ReadTx, row: AgentRow): Promise<AgentVersio
  * The agents that use each tool, by a draft's choice or a published version's: what the library
  * shows and what `TOOL_IN_USE` names, by the agents' names.
  */
-export const usedBy: UsedBy = async (tx, toolIds) => {
+export async function usedBy(tx: ReadTx, toolIds: readonly ToolId[]): ReturnType<UsedBy> {
   const versions = await toolVersionsOf(tx, toolIds)
   const toolOf = new Map(versions.map((each) => [each.id, ToolIdSchema.parse(each.toolId)]))
   const ids = [...toolOf.keys()]

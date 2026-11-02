@@ -7,7 +7,7 @@ import type {
   ToolVersionId,
 } from '@conexus/hub-api'
 import { AgentConfig, AgentId as AgentIdSchema, ToolVersionId as VersionId } from '@conexus/hub-api'
-import { and, eq, max, sql } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
 import type { CommandTx, ReadTx } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
@@ -21,14 +21,23 @@ import type {
 } from '../tools/public.ts'
 import {
   admitted,
+  databaseScopeOf,
   derivedUuid,
   sessionScopeOf,
-  slugTaken,
   versionsWithTools,
 } from '../tools/public.ts'
 import type { AgentEvent } from './events.ts'
-import { agentIn, agentsIn, chosenIds, detailOf, summaryOf, versionsOf } from './store.ts'
-import { agent, agentTool, agentVersion, agentVersionTool } from './tables.ts'
+import { makeActive, published } from './publish.ts'
+import {
+  agentIn,
+  agentsIn,
+  chosenIds,
+  detailOf,
+  ofProject,
+  summaryOf,
+  versionsOf,
+} from './store.ts'
+import { agent, agentTool, agentVersion } from './tables.ts'
 
 export type AgentsDeps = Pick<ToolsDeps, 'database' | 'identity' | 'liveProjectOf'> & {
   connectors: ToolConnectors
@@ -39,17 +48,8 @@ export type AgentsDeps = Pick<ToolsDeps, 'database' | 'identity' | 'liveProjectO
   log: FailureLog
 }
 
-function dbScope(scope: InProject) {
-  return { kind: 'COMPANY', companyId: scope.companyId, personId: scope.personId } as const
-}
-
 function offered(deps: AgentsDeps, scope: InProject) {
   return deps.connectors.connections(sessionScopeOf(scope))
-}
-
-function ofProject(scope: InProject, agentId: AgentId) {
-  const { companyId, projectId } = scope
-  return and(eq(agent.id, agentId), eq(agent.companyId, companyId), eq(agent.projectId, projectId))
 }
 
 function defaults(body: CreateAgent): AgentConfig {
@@ -73,7 +73,7 @@ async function create(deps: AgentsDeps, scope: InProject, body: CreateAgent, att
   const id = AgentIdSchema.parse(derivedUuid('agent', scope.companyId, scope.personId, attemptKey))
   const bodyHash = bodyHashOf({ ...body, projectId: scope.projectId })
   const around = await offered(deps, scope)
-  const made = await deps.database.command(dbScope(scope), async (tx) => {
+  const made = await deps.database.command(databaseScopeOf(scope), async (tx) => {
     await admitted(deps, tx, scope, 'manageAgents')
     const [inserted] = await tx
       .insert(agent)
@@ -81,7 +81,7 @@ async function create(deps: AgentsDeps, scope: InProject, body: CreateAgent, att
         ...{ id, companyId: scope.companyId, projectId: scope.projectId, draft: defaults(body) },
         ...{ createdBy: scope.personId, bodyHash },
       })
-      .onConflictDoNothing({ target: agent.id })
+      .onConflictDoNothing()
       .returning({ id: agent.id })
     const [row] = await tx.select({ bodyHash: agent.bodyHash }).from(agent).where(eq(agent.id, id))
     if (row?.bodyHash !== bodyHash) throw new Failure('IDEMPOTENCY_CONFLICT')
@@ -92,7 +92,7 @@ async function create(deps: AgentsDeps, scope: InProject, body: CreateAgent, att
 }
 
 async function list(deps: AgentsDeps, scope: InProject) {
-  return deps.database.read(dbScope(scope), async (tx) => {
+  return deps.database.read(databaseScopeOf(scope), async (tx) => {
     await admitted(deps, tx, scope, 'readAgents')
     return (await agentsIn(tx, scope)).map(summaryOf)
   })
@@ -100,7 +100,7 @@ async function list(deps: AgentsDeps, scope: InProject) {
 
 async function get(deps: AgentsDeps, scope: InProject, agentId: AgentId) {
   const around = await offered(deps, scope)
-  return deps.database.read(dbScope(scope), async (tx) => {
+  return deps.database.read(databaseScopeOf(scope), async (tx) => {
     await admitted(deps, tx, scope, 'readAgents')
     return detail(tx, scope, agentId, around)
   })
@@ -171,95 +171,43 @@ async function saveDraft(deps: AgentsDeps, scope: InProject, agentId: AgentId, p
   const around = await offered(deps, scope)
   checked(deps, patch, around)
   const ready = await deps.tools.readyOf(scope, patch.ready ?? [])
-  const saved = await deps.database
-    .command(dbScope(scope), async (tx) => {
-      await admitted(deps, tx, scope, 'manageAgents')
-      const { row } = await agentIn(tx, scope, agentId)
-      const [changed] = await tx
-        .update(agent)
-        .set({
-          draft: merged(AgentConfig.parse(row.draft), patch),
-          revision: sql`${agent.revision} + 1`,
-          updatedAt: sql`now()`,
-        })
-        .where(and(eq(agent.id, agentId), eq(agent.revision, patch.revision)))
-        .returning({ revision: agent.revision })
-      if (changed === undefined) throw new Failure('AGENT_DRAFT_STALE')
-      if (patch.tools !== undefined || ready.length > 0) {
-        await choose(deps, tx, { scope, agentId, patch, around }, ready)
-      }
-      return { revision: changed.revision, agent: await detail(tx, scope, agentId, around) }
-    })
-    .catch(slugTaken)
+  const saved = await deps.database.command(databaseScopeOf(scope), async (tx) => {
+    await admitted(deps, tx, scope, 'manageAgents')
+    const { row } = await agentIn(tx, scope, agentId)
+    const [changed] = await tx
+      .update(agent)
+      .set({
+        draft: merged(AgentConfig.parse(row.draft), patch),
+        revision: sql`${agent.revision} + 1`,
+        updatedAt: sql`now()`,
+      })
+      .where(and(eq(agent.id, agentId), eq(agent.revision, patch.revision)))
+      .returning({ revision: agent.revision })
+    if (changed === undefined) throw new Failure('AGENT_DRAFT_STALE')
+    if (patch.tools !== undefined || ready.length > 0) {
+      await choose(deps, tx, { scope, agentId, patch, around }, ready)
+    }
+    return { revision: changed.revision, agent: await detail(tx, scope, agentId, around) }
+  })
   const { companyId } = scope
   deps.log.info({ companyId, agentId, revision: saved.revision, by: 'PERSON' }, 'AGENT_DRAFT_SAVED')
   return saved.agent
 }
 
-/** What publishing needs of the draft: instructions, and only connections the Projeto still offers. */
-async function invalid(
-  tx: ReadTx,
-  draft: AgentConfig,
-  agentId: AgentId,
-  around: readonly OfferedConnection[],
-) {
-  if (draft.instructions.trim() === '') return 'instructions'
-  const ids = new Set<string>(around.map((each) => each.connectionId))
-  if (draft.connections.some((each) => !ids.has(each))) return 'connections'
-  const tools = await versionsWithTools(tx, await chosenIds(tx, agentId))
-  if (tools.some((each) => !ids.has(each.tool.connectionId))) return 'tools'
-  return undefined
-}
-
-/**
- * Freezes the draft of the revision read as the next version, with the version of each chosen
- * tool, and makes it active. The agent's row is held first, which waits for a draft change in
- * flight; the same revision again finds the version it made.
- */
+/** Publishes the draft of the revision read (`published`), then says so once it committed. */
 async function publish(deps: AgentsDeps, scope: InProject, agentId: AgentId, body: Publish) {
   const around = await offered(deps, scope)
-  const done = await deps.database.command(dbScope(scope), async (tx) => {
+  const done = await deps.database.command(databaseScopeOf(scope), async (tx) => {
     await admitted(deps, tx, scope, 'publishAgent')
-    const [row] = await tx.select().from(agent).where(ofProject(scope, agentId)).for('update')
-    if (row === undefined) throw new Failure('AGENT_NOT_FOUND')
-    const [earlier] = await tx
-      .select({ number: agentVersion.number })
-      .from(agentVersion)
-      .where(and(eq(agentVersion.agentId, agentId), eq(agentVersion.sourceRevision, body.revision)))
-    if (earlier !== undefined) return { number: earlier.number, fresh: false }
-    if (row.revision !== body.revision) throw new Failure('AGENT_DRAFT_STALE')
-    const draft = AgentConfig.parse(row.draft)
-    const field = await invalid(tx, draft, agentId, around)
-    if (field !== undefined) throw new Failure('AGENT_DRAFT_INVALID', { named: { field } })
-    const [last] = await tx
-      .select({ number: max(agentVersion.number) })
-      .from(agentVersion)
-      .where(eq(agentVersion.agentId, agentId))
-    const number = (last?.number ?? 0) + 1
-    await tx.insert(agentVersion).values({
-      ...{ agentId, number, companyId: scope.companyId, config: draft },
-      ...{ sourceRevision: body.revision, message: body.message, publishedBy: scope.personId },
-    })
-    const chosen = await tx.select().from(agentTool).where(eq(agentTool.agentId, agentId))
-    if (chosen.length > 0) {
-      await tx.insert(agentVersionTool).values(
-        chosen.map((each) => ({
-          ...{ agentId, number, toolVersionId: each.toolVersionId, companyId: scope.companyId },
-        })),
-      )
-    }
-    await tx
-      .update(agent)
-      .set({ activeVersion: number, updatedAt: sql`now()` })
-      .where(eq(agent.id, agentId))
-    return { number, fresh: true }
+    return published(tx, scope, { agentId, body, around })
   })
-  if (done.fresh) {
+  if (done.did !== 'NONE') {
     const { companyId } = scope
-    deps.log.info({ companyId, agentId, version: done.number }, 'AGENT_PUBLISHED')
+    const line = done.did === 'PUBLISHED' ? 'AGENT_PUBLISHED' : 'AGENT_ACTIVATED'
+    deps.log.info({ companyId, agentId, version: done.number }, line)
     await deps.emit({ kind: 'ACTIVATED', companyId, agentId, version: done.number })
   }
-  return deps.database.read(dbScope(scope), async (tx) => {
+  return deps.database.read(databaseScopeOf(scope), async (tx) => {
     const listed = await agentIn(tx, scope, agentId)
     const versions = await versionsOf(tx, listed.row)
     const version = versions.find((each) => each.number === done.number)
@@ -269,7 +217,7 @@ async function publish(deps: AgentsDeps, scope: InProject, agentId: AgentId, bod
 }
 
 async function versions(deps: AgentsDeps, scope: InProject, agentId: AgentId) {
-  return deps.database.read(dbScope(scope), async (tx) => {
+  return deps.database.read(databaseScopeOf(scope), async (tx) => {
     await admitted(deps, tx, scope, 'readAgents')
     return versionsOf(tx, (await agentIn(tx, scope, agentId)).row)
   })
@@ -278,7 +226,7 @@ async function versions(deps: AgentsDeps, scope: InProject, agentId: AgentId) {
 /** Makes a published version the active one; the draft does not change. The last one written wins. */
 async function activate(deps: AgentsDeps, scope: InProject, agentId: AgentId, number: number) {
   const around = await offered(deps, scope)
-  const made = await deps.database.command(dbScope(scope), async (tx) => {
+  const made = await deps.database.command(databaseScopeOf(scope), async (tx) => {
     await admitted(deps, tx, scope, 'publishAgent')
     await agentIn(tx, scope, agentId)
     const [version] = await tx
@@ -286,10 +234,7 @@ async function activate(deps: AgentsDeps, scope: InProject, agentId: AgentId, nu
       .from(agentVersion)
       .where(and(eq(agentVersion.agentId, agentId), eq(agentVersion.number, number)))
     if (version === undefined) throw new Failure('AGENT_VERSION_NOT_FOUND')
-    await tx
-      .update(agent)
-      .set({ activeVersion: number, updatedAt: sql`now()` })
-      .where(eq(agent.id, agentId))
+    await makeActive(tx, agentId, number)
     return detail(tx, scope, agentId, around)
   })
   const { companyId } = scope
@@ -303,7 +248,7 @@ async function activate(deps: AgentsDeps, scope: InProject, agentId: AgentId, nu
  * library. Its conversations join the removal with step 24.3's U2.
  */
 async function remove(deps: AgentsDeps, scope: InProject, agentId: AgentId): Promise<void> {
-  await deps.database.command(dbScope(scope), async (tx) => {
+  await deps.database.command(databaseScopeOf(scope), async (tx) => {
     await admitted(deps, tx, scope, 'manageAgents')
     const gone = await tx.delete(agent).where(ofProject(scope, agentId)).returning({ id: agent.id })
     if (gone.length === 0) throw new Failure('AGENT_NOT_FOUND')

@@ -1,21 +1,8 @@
 import { sql } from 'drizzle-orm'
-import {
-  check,
-  foreignKey,
-  integer,
-  jsonb,
-  text,
-  timestamp,
-  unique,
-  uuid,
-} from 'drizzle-orm/pg-core'
+import { check, foreignKey, integer, jsonb, text, unique, uuid } from 'drizzle-orm/pg-core'
 import { company, policy } from '../../hub/identity/public.ts'
 import { SCOPE_ROLES } from '../../platform/database.ts'
-import { builder, OWN_COMPANY } from '../schema/public.ts'
-
-function instant(name: string) {
-  return timestamp(name, { withTimezone: true })
-}
+import { authored, builder, instant, OWN_COMPANY } from '../schema/public.ts'
 
 /**
  * A tool of the company's library (step 24.3, `T1`): one read of one connection, the same in every
@@ -34,9 +21,7 @@ export const tool = builder.table(
     operation: text('operation').notNull(),
     slug: text('slug').notNull(),
     currentVersion: integer('current_version').notNull().default(1),
-    createdBy: text('created_by'),
-    bodyHash: text('body_hash').notNull(),
-    createdAt: instant('created_at').notNull().defaultNow(),
+    ...authored(),
     updatedAt: instant('updated_at').notNull().defaultNow(),
   },
   (table) => [
@@ -64,9 +49,7 @@ export const toolVersion = builder.table(
     companyId: text('company_id').notNull(),
     number: integer('number').notNull(),
     config: jsonb('config').notNull(),
-    createdBy: text('created_by'),
-    bodyHash: text('body_hash').notNull(),
-    createdAt: instant('created_at').notNull().defaultNow(),
+    ...authored(),
   },
   (table) => [
     // A version is of its tool's company.

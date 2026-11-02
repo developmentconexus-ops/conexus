@@ -50,7 +50,7 @@ export function toolsOn(tx: ReadTx, companyId: CompanyId, connections: readonly 
     .orderBy(asc(tool.slug))
 }
 
-export function versionsOf(tx: ReadTx, toolIds: readonly string[]) {
+export function versionsOf(tx: ReadTx, toolIds: readonly ToolId[]) {
   if (toolIds.length === 0) return Promise.resolve([])
   return tx
     .select()
@@ -60,7 +60,7 @@ export function versionsOf(tx: ReadTx, toolIds: readonly string[]) {
 }
 
 /** The versions named, each with its tool, of the company only (the row policy). */
-export function versionsWithTools(tx: ReadTx, versionIds: readonly string[]) {
+export function versionsWithTools(tx: ReadTx, versionIds: readonly ToolVersionId[]) {
   if (versionIds.length === 0) return Promise.resolve([])
   return tx
     .select({ version: toolVersion, tool })
@@ -121,11 +121,14 @@ export async function detailsOf(
 }
 
 /** The chosen versions as an agent shows them: each with its tool's newest one. */
-export async function chosenOf(tx: ReadTx, versionIds: readonly string[]): Promise<AgentTool[]> {
+export async function chosenOf(
+  tx: ReadTx,
+  versionIds: readonly ToolVersionId[],
+): Promise<AgentTool[]> {
   const found = await versionsWithTools(tx, versionIds)
   const latest = await versionsOf(
     tx,
-    found.map((each) => each.tool.id),
+    found.map((each) => ToolId.parse(each.tool.id)),
   )
   return found
     .map(({ version, tool: row }): AgentTool => {
@@ -150,15 +153,22 @@ type Insert = {
   createdBy: PersonId | null
 }
 
-/** The tool and its version 1 in the caller's transaction, or nothing if its id is already there. */
+/**
+ * The tool and its version 1 in the caller's transaction, or nothing if its id is already there.
+ * Every unique key arbitrates, so a twin written at once waits and then finds that row; no row of
+ * this id after it is the slug another tool holds (`TOOL_REFUSED`).
+ */
 export async function inserted(tx: CommandTx, a: Insert): Promise<boolean> {
   const { companyId } = a.scope
   const [made] = await tx
     .insert(tool)
     .values({ id: a.id, companyId, ...a.target, createdBy: a.createdBy, bodyHash: a.bodyHash })
-    .onConflictDoNothing({ target: tool.id })
+    .onConflictDoNothing()
     .returning({ id: tool.id })
-  if (made === undefined) return false
+  if (made === undefined) {
+    if ((await toolOf(tx, companyId, a.id)) !== undefined) return false
+    throw new Failure('TOOL_REFUSED', { named: { field: 'slug', reason: 'SLUG_TAKEN' } })
+  }
   await tx.insert(toolVersion).values({
     ...{ id: derivedUuid('tool-version', a.id, '1'), toolId: a.id, companyId, number: 1 },
     ...{ config: a.config, createdBy: a.createdBy, bodyHash: a.bodyHash },

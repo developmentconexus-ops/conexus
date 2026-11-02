@@ -1,6 +1,6 @@
 import type {
   CompanyId,
-  ConnectionId,
+  OfferedConnection as Offered,
   PersonId,
   ProjectId,
   ToolTarget,
@@ -16,18 +16,20 @@ import { derivedUuid } from './derived.ts'
 /** Who acts, in which Projeto: the session's person, the route's ids (security S8). */
 export type InProject = { companyId: CompanyId; projectId: ProjectId; personId: PersonId }
 
+/** The database scope of the person acting in the company. */
+export function databaseScopeOf(scope: InProject) {
+  return { kind: 'COMPANY', companyId: scope.companyId, personId: scope.personId } as const
+}
+
 export function sessionScopeOf(scope: InProject): SessionScope {
   const { companyId, personId, projectId } = scope
   return { companyId, personId, place: { kind: 'PROJECT', projectId }, chosen: [] }
 }
 
 /** A connection the Projeto received, with its reads, as the connectors' door describes it. */
-export type OfferedConnection = Readonly<{
-  connectionId: ConnectionId
-  connector: string
-  name: string
-  reads: readonly Readonly<{ operation: string; summary: string }>[]
-}>
+export type OfferedConnection = Readonly<
+  Omit<Offered, 'reads'> & { reads: readonly Readonly<Offered['reads'][number]>[] }
+>
 
 /** What the tools read of the connectors' door: what the Projeto offers, and one read's input. */
 export type ToolConnectors = {

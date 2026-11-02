@@ -17,7 +17,14 @@ import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import { bodyHashOf } from '../conversation/public.ts'
 import type { InProject, ToolConnectors } from './check.ts'
-import { fitting, readyIdOf, readySlug, sessionScopeOf, targetOf } from './check.ts'
+import {
+  databaseScopeOf,
+  fitting,
+  readyIdOf,
+  readySlug,
+  sessionScopeOf,
+  targetOf,
+} from './check.ts'
 import { readyOf, saveReady, usable } from './choice.ts'
 import { derivedUuid } from './derived.ts'
 import type { UsedBy } from './store.ts'
@@ -34,10 +41,6 @@ export type ToolsDeps = {
   connectors: ToolConnectors
   usedBy: UsedBy
   log: FailureLog
-}
-
-function dbScope(scope: InProject) {
-  return { kind: 'COMPANY', companyId: scope.companyId, personId: scope.personId } as const
 }
 
 /**
@@ -83,38 +86,25 @@ async function detailOf(deps: ToolsDeps, tx: ReadTx, row: typeof tool.$inferSele
   return detail
 }
 
-/** A unique violation of the slug is the slug refused; any other database failure goes on. */
-export function slugTaken(error: unknown): never {
-  if (violatedConstraint(error) === 'tool_company_id_slug_key') {
-    throw new Failure('TOOL_REFUSED', {
-      named: { field: 'slug', reason: 'SLUG_TAKEN' },
-      cause: error,
-    })
-  }
-  throw error
-}
-
 /** A new tool of the library at version 1, keyed by its attempt (code C37). */
 async function save(deps: ToolsDeps, scope: InProject, body: ToolInput, attemptKey: string) {
   const id = ToolId.parse(derivedUuid('tool', scope.companyId, scope.personId, attemptKey))
   const bodyHash = bodyHashOf(body)
   const { slug, connectionId, operation, ...config } = body
   const target = await targetOf(deps.connectors, sessionScopeOf(scope), { connectionId, operation })
-  const detail = await deps.database
-    .command(dbScope(scope), async (tx) => {
-      await admitted(deps, tx, scope, 'manageAgents')
-      const earlier = await toolOf(tx, scope.companyId, id)
-      if (earlier === undefined) {
-        fitting(target, config)
-        const row = { slug, connectionId, operation }
-        const made = { id, scope, target: row, config, bodyHash, createdBy: scope.personId }
-        if (await inserted(tx, made)) return detailOf(deps, tx, await found(tx, scope, id))
-      }
-      const row = await found(tx, scope, id)
-      if (row.bodyHash !== bodyHash) throw new Failure('IDEMPOTENCY_CONFLICT')
-      return detailOf(deps, tx, row)
-    })
-    .catch(slugTaken)
+  const detail = await deps.database.command(databaseScopeOf(scope), async (tx) => {
+    await admitted(deps, tx, scope, 'manageAgents')
+    const earlier = await toolOf(tx, scope.companyId, id)
+    if (earlier === undefined) {
+      fitting(target, config)
+      const row = { slug, connectionId, operation }
+      const made = { id, scope, target: row, config, bodyHash, createdBy: scope.personId }
+      if (await inserted(tx, made)) return detailOf(deps, tx, await found(tx, scope, id))
+    }
+    const row = await found(tx, scope, id)
+    if (row.bodyHash !== bodyHash) throw new Failure('IDEMPOTENCY_CONFLICT')
+    return detailOf(deps, tx, row)
+  })
   deps.log.info({ companyId: scope.companyId, toolId: id, version: 1 }, 'TOOL_SAVED')
   return detail
 }
@@ -166,11 +156,11 @@ async function addVersion(
     return { detail: await detailOf(deps, tx, await found(tx, scope, toolId)), number: next.number }
   }
   const { detail, number } = await deps.database
-    .command(dbScope(scope), write)
+    .command(databaseScopeOf(scope), write)
     .catch((error: unknown) => {
       // The same attempt at once: the second insert meets the first's id; it reads that one.
       if (violatedConstraint(error) !== 'tool_version_pkey') throw error
-      return deps.database.command(dbScope(scope), write)
+      return deps.database.command(databaseScopeOf(scope), write)
     })
   deps.log.info({ companyId: scope.companyId, toolId, version: number }, 'TOOL_SAVED')
   return detail
@@ -182,7 +172,7 @@ async function addVersion(
  */
 async function list(deps: ToolsDeps, scope: InProject) {
   const offered = await deps.connectors.connections(sessionScopeOf(scope))
-  return deps.database.read(dbScope(scope), async (tx) => {
+  return deps.database.read(databaseScopeOf(scope), async (tx) => {
     await admitted(deps, tx, scope, 'readAgents')
     const ids = offered.map((each) => ConnectionId.parse(each.connectionId))
     const rows = await toolsOn(tx, scope.companyId, ids)
@@ -206,7 +196,7 @@ async function list(deps: ToolsDeps, scope: InProject) {
 
 async function get(deps: ToolsDeps, scope: InProject, toolId: ToolId) {
   const offered = await offeredIds(deps, scope)
-  return deps.database.read(dbScope(scope), async (tx) => {
+  return deps.database.read(databaseScopeOf(scope), async (tx) => {
     await admitted(deps, tx, scope, 'readAgents')
     return detailOf(deps, tx, await usableTool(tx, scope, offered, toolId))
   })
@@ -219,7 +209,7 @@ async function get(deps: ToolsDeps, scope: InProject, toolId: ToolId) {
 async function remove(deps: ToolsDeps, scope: InProject, toolId: ToolId): Promise<void> {
   const offered = await offeredIds(deps, scope)
   await deps.database
-    .command(dbScope(scope), async (tx) => {
+    .command(databaseScopeOf(scope), async (tx) => {
       await admitted(deps, tx, scope, 'manageAgents')
       await usableTool(tx, scope, offered, toolId)
       const gone = await tx.delete(tool).where(eq(tool.id, toolId)).returning({ id: tool.id })
@@ -227,7 +217,9 @@ async function remove(deps: ToolsDeps, scope: InProject, toolId: ToolId): Promis
     })
     .catch(async (error: unknown) => {
       if (violatedReference(error) === undefined) throw error
-      const users = await deps.database.read(dbScope(scope), (tx) => deps.usedBy(tx, [toolId]))
+      const users = await deps.database.read(databaseScopeOf(scope), (tx) =>
+        deps.usedBy(tx, [toolId]),
+      )
       const agents = [...(users.get(toolId) ?? [])]
       throw new Failure('TOOL_IN_USE', { named: { agents }, cause: error })
     })

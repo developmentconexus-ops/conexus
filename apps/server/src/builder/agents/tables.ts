@@ -1,4 +1,5 @@
 import { sql } from 'drizzle-orm'
+import type { PgTableExtraConfigValue } from 'drizzle-orm/pg-core'
 import {
   check,
   foreignKey,
@@ -7,21 +8,16 @@ import {
   pgPolicy,
   primaryKey,
   text,
-  timestamp,
   unique,
   uuid,
 } from 'drizzle-orm/pg-core'
 import { company, policy } from '../../hub/identity/public.ts'
 import { project } from '../../hub/projects/public.ts'
 import { SCOPE_ROLES } from '../../platform/database.ts'
-import { builder, OWN_COMPANY } from '../schema/public.ts'
+import { authored, builder, instant, OWN_COMPANY } from '../schema/public.ts'
 import { toolVersion } from '../tools/public.ts'
 
 const AGENT_COMPANIES = 'hub_agent_companies'
-
-function instant(name: string) {
-  return timestamp(name, { withTimezone: true })
-}
 
 /**
  * An agent of a Projeto (step 24.3, `A1`): its draft, which people and the Construtor change at the
@@ -38,12 +34,11 @@ export const agent = builder.table(
     draft: jsonb('draft').notNull(),
     revision: integer('revision').notNull().default(1),
     activeVersion: integer('active_version'),
-    createdBy: text('created_by'),
-    bodyHash: text('body_hash').notNull(),
-    createdAt: instant('created_at').notNull().defaultNow(),
+    ...authored(),
     updatedAt: instant('updated_at').notNull().defaultNow(),
   },
-  (table) => [
+  // Typed, because the agent and its versions name each other.
+  (table): PgTableExtraConfigValue[] => [
     foreignKey({
       name: 'agent_company_id_fkey',
       columns: [table.companyId],
@@ -55,6 +50,12 @@ export const agent = builder.table(
       foreignColumns: [project.companyId, project.id],
     }).onDelete('cascade'),
     unique('agent_company_id_id_key').on(table.companyId, table.id),
+    // The active version is one of the agent's own (data D15); none before the first publish.
+    foreignKey({
+      name: 'agent_active_version_fkey',
+      columns: [table.companyId, table.id, table.activeVersion],
+      foreignColumns: [agentVersion.companyId, agentVersion.agentId, agentVersion.number],
+    }),
     check('agent_revision_positive', sql`${table.revision} > 0`),
     policy(SCOPE_ROLES.COMPANY, 'all', OWN_COMPANY),
     // The function behind the start's load reads the companies with a published agent (migration

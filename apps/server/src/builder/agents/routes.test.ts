@@ -167,6 +167,8 @@ test('as recusas: o membro e um Projeto de outra empresa dão NOT_FOUND; o agent
   const on = await agentsOn(t)
   const made = await madeAgent(on.hub, on.ana, on.agents)
   const url = `${on.agents}/${made.id}`
+  const tool = await madeTool(on.hub, on.ana, on.tools, ordersOf(on.matriz))
+  const toolUrl = `${on.tools}/${tool.id}`
   const bia = await memberOn(on.hub, on.companyId, BIA, 'member')
   const asked = [
     await call(on.hub, bia, 'GET', on.listed),
@@ -175,8 +177,13 @@ test('as recusas: o membro e um Projeto de outra empresa dão NOT_FOUND; o agent
     await patch(on.hub, bia, `${url}/draft`, { revision: 1, name: 'Dela' }),
     await post(on.hub, bia, `${url}/publish`, { revision: 1, message: '' }),
     await call(on.hub, bia, 'GET', `${url}/versions`),
+    await post(on.hub, bia, `${url}/versions/1/activate`, {}),
     await call(on.hub, bia, 'DELETE', url),
     await call(on.hub, bia, 'GET', on.tools),
+    await post(on.hub, bia, on.tools, ordersOf(on.matriz, { slug: 'dela' })),
+    await call(on.hub, bia, 'GET', toolUrl),
+    await post(on.hub, bia, `${toolUrl}/versions`, { description: 'Dela.', bound: {}, open: [] }),
+    await call(on.hub, bia, 'DELETE', toolUrl),
   ]
   assert.deepEqual(
     asked.map((each) => [each.statusCode, codeOf(each)]),
@@ -196,6 +203,9 @@ test('as recusas: o membro e um Projeto de outra empresa dão NOT_FOUND; o agent
   const crossed = [
     await call(on.hub, on.ana, 'GET', there),
     await patch(on.hub, on.ana, `${there}/draft`, { revision: 1, name: 'Lá' }),
+    await post(on.hub, on.ana, `${there}/publish`, { revision: 1, message: '' }),
+    await call(on.hub, on.ana, 'GET', `${there}/versions`),
+    await post(on.hub, on.ana, `${there}/versions/1/activate`, {}),
     await call(on.hub, on.ana, 'DELETE', there),
   ]
   assert.deepEqual(

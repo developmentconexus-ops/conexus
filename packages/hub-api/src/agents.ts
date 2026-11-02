@@ -11,7 +11,7 @@ import { ToolSummary, ToolTarget, ToolVersionDetail } from './tools.ts'
 
 /** An automation's limit: the same line in the lists. */
 export const AGENT_NAME_MAX = 80
-/** Twice an automation's prompt: the starter agent's system text of Mastra passes 4,000 (the card's debt). */
+/** Twice an automation's prompt, as the card sets it. */
 export const AGENT_INSTRUCTIONS_MAX = 8000
 export const AGENT_DESCRIPTION_MAX = 280
 
@@ -99,6 +99,7 @@ export const OfferedConnection = z.object({
   name: z.string(),
   reads: z.array(z.object({ operation: z.string(), summary: z.string() })),
 })
+export type OfferedConnection = z.infer<typeof OfferedConnection>
 
 export const AgentDetail = AgentSummary.extend({
   draft: AgentConfig,

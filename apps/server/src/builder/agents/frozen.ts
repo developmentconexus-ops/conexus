@@ -5,6 +5,7 @@ import type {
   ToolSlug,
   ToolTarget,
   ToolVersionConfig,
+  ToolVersionId,
 } from '@conexus/hub-api'
 import {
   AgentConfig as AgentConfigSchema,
@@ -17,10 +18,11 @@ import {
   ToolVersionConfig as ToolVersionConfigSchema,
 } from '@conexus/hub-api'
 import { and, eq, isNotNull, sql } from 'drizzle-orm'
+import { z } from 'zod'
 import type { Database, ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import { versionsWithTools } from '../tools/public.ts'
-import { chosenIds, pinnedIds } from './store.ts'
+import { chosenIds, ofProject, pinnedIds } from './store.ts'
 import { agent, agentVersion } from './tables.ts'
 
 /** The configuration a version or the draft becomes an agent with, its tools as their versions hold them. */
@@ -29,11 +31,17 @@ export type FrozenVersion = AgentConfig & {
   source: { kind: 'VERSION'; number: number } | { kind: 'DRAFT'; revision: number }
 }
 
+// A row of `builder.companies_with_agents()`.
+const WithAgents = z.object({ company_id: CompanyIdSchema })
+
 function hubScope(companyId: CompanyId) {
   return { kind: 'COMPANY', companyId, personId: null } as const
 }
 
-async function toolsOf(tx: ReadTx, versionIds: readonly string[]): Promise<FrozenVersion['tools']> {
+async function toolsOf(
+  tx: ReadTx,
+  versionIds: readonly ToolVersionId[],
+): Promise<FrozenVersion['tools']> {
   const rows = await versionsWithTools(tx, versionIds)
   return rows
     .map(({ version, tool }) => ({
@@ -43,14 +51,6 @@ async function toolsOf(tx: ReadTx, versionIds: readonly string[]): Promise<Froze
       ...ToolVersionConfigSchema.parse(version.config),
     }))
     .sort((a, b) => a.slug.localeCompare(b.slug))
-}
-
-function ofProject(ids: OfProject, agentId: AgentId) {
-  return and(
-    eq(agent.id, agentId),
-    eq(agent.companyId, ids.companyId),
-    eq(agent.projectId, ids.projectId),
-  )
 }
 
 /** The active version of an agent of the Projeto, as it was published; none before the first. */
@@ -93,7 +93,7 @@ export async function publishedAll(database: Database) {
   )
   const all: (FrozenVersion & OfProject & { agentId: AgentId })[] = []
   for (const found of companies.rows) {
-    const companyId = CompanyIdSchema.parse(Object(found).company_id)
+    const { company_id: companyId } = WithAgents.parse(found)
     const rows = await database.read(hubScope(companyId), (tx) =>
       tx
         .select({ id: agent.id, projectId: agent.projectId })
