@@ -1,4 +1,5 @@
 # Etapa 13.3: a Pauta
+Trilho: desenho
 
 O visual novo do Hub, "Pauta", e as primeiras unidades da auditoria do front-end. O número segue as
 telas da casa (12.2 a casa, 13.1 o primeiro pedido, 13.2 as configurações); o lugar no roteiro é a
