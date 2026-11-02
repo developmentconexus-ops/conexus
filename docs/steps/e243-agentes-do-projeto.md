@@ -39,7 +39,7 @@ vendedor. No computador e no celular.
    qualquer pessoa que o rodam vão junto. Ele some da lista e a automação some da página Automações.
 
 **O que você faz, e quando.**
-- **No começo:** responde as decisões **A** e **B** abaixo e aprova esta página. A aprovação é também a sua
+- **No começo:** responde a decisão **B** abaixo e aprova esta página (a **A** você já respondeu). A aprovação é também a sua
   palavra para as permissões da tabela nova dos agentes (regra D11), como nas etapas 18, 20 e 24.2.
 - **No fim:** faz o roteiro no computador e no celular, diz o que viu e aprova os textos das telas.
 
@@ -112,7 +112,8 @@ só para **Automações**.
   encontrado". A exceção da W34 do fechamento da 24.2 passa a nomear as duas entradas.
 - **A2.** **Agentes** aparece para o membro com "Só donos e administradores usam agentes."
 
-Esta pergunta fica aberta até a sua resposta; o critério 16 e a matriz seguem A1 até lá.
+Sua resposta, em 2026-11-02: "3.A". **Agentes** some para o membro, como Automações; o critério 16
+e a matriz são A1, e a exceção da W34 no fechamento da 24.2 nomeia as duas entradas.
 
 **Enquanto você não responde.** A construção segue a recomendação **B1**, que não constrói nada a
 mais; uma resposta B2 ou B3 só acrescenta a U5.
