@@ -34,6 +34,7 @@ async function linked(t: TestContext) {
     conversations,
     assistant,
     automations,
+    agents,
     notifications,
     connectors,
   } = subjectsOf({
@@ -55,6 +56,7 @@ async function linked(t: TestContext) {
     conversations,
     assistant,
     automations,
+    agents,
     notifications,
     connectors,
   })

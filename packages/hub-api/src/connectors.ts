@@ -10,6 +10,9 @@ export type ConnectionState = (typeof CONNECTION_STATES)[number]
 export const ConnectionId = z.uuid().brand('ConnectionId')
 export type ConnectionId = z.infer<typeof ConnectionId>
 
+/** The most connections one conversation, automation or agent reads at once. */
+export const CONNECTIONS_MAX = 50
+
 /** An OAuth authorization between its start and its return; it travels only in the provider's `state`. */
 export const ConnectionSignInId = z.uuid().brand('ConnectionSignInId')
 export type ConnectionSignInId = z.infer<typeof ConnectionSignInId>

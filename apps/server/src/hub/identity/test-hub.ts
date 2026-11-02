@@ -110,6 +110,7 @@ async function hubServing(
     },
     assistantMachines: ports.assistantMachines,
     connectors: subjects.connectors,
+    agents: subjects.agents,
     sendMail,
     notify: subjects.notifications.notify,
     mastra: conversations.mastra,

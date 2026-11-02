@@ -2429,5 +2429,60 @@
       "file": "src/hub/notifications/tables.test.ts",
       "name": "a política"
     }
+  },
+  {
+    "id": "agents-member-refused",
+    "file": "apps/server/src/builder/tools/tools.ts",
+    "find": "  await deps.identity.admitMember({ tx, companyId, personId, action })\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/agents/routes.test.ts",
+      "name": "as recusas"
+    }
+  },
+  {
+    "id": "agent-of-another-project",
+    "file": "apps/server/src/builder/agents/store.ts",
+    "find": "    eq(agent.projectId, ids.projectId),\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/agents/routes.test.ts",
+      "name": "as recusas"
+    }
+  },
+  {
+    "id": "agent-draft-stale-revision",
+    "file": "apps/server/src/builder/agents/agents.ts",
+    "find": ".where(and(eq(agent.id, agentId), eq(agent.revision, patch.revision)))",
+    "replace": ".where(eq(agent.id, agentId))",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/agents/routes.test.ts",
+      "name": "o rascunho"
+    }
+  },
+  {
+    "id": "tool-operation-not-a-read",
+    "file": "apps/server/src/builder/tools/check.ts",
+    "find": "  if (input === undefined) {\n    return { kind: 'REFUSED', named: { field: 'operation', reason: 'NOT_A_READ' } }\n  }\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/tools/routes.test.ts",
+      "name": "gravar"
+    }
+  },
+  {
+    "id": "tool-in-use-kept",
+    "file": "apps/server/migrations/20261102160332_e243_agents/migration.sql",
+    "find": "ALTER TABLE \"builder\".\"agent_tool\" ADD CONSTRAINT \"agent_tool_tool_version_fkey\" FOREIGN KEY (\"tool_id\",\"tool_version_id\") REFERENCES \"builder\".\"tool_version\"(\"tool_id\",\"id\");--> statement-breakpoint\nALTER TABLE \"builder\".\"agent_tool\" ADD CONSTRAINT \"agent_tool_company_tool_version_fkey\" FOREIGN KEY (\"company_id\",\"tool_version_id\") REFERENCES \"builder\".\"tool_version\"(\"company_id\",\"id\");",
+    "replace": "ALTER TABLE \"builder\".\"agent_tool\" ADD CONSTRAINT \"agent_tool_tool_version_fkey\" FOREIGN KEY (\"tool_id\",\"tool_version_id\") REFERENCES \"builder\".\"tool_version\"(\"tool_id\",\"id\") ON DELETE CASCADE;--> statement-breakpoint\nALTER TABLE \"builder\".\"agent_tool\" ADD CONSTRAINT \"agent_tool_company_tool_version_fkey\" FOREIGN KEY (\"company_id\",\"tool_version_id\") REFERENCES \"builder\".\"tool_version\"(\"company_id\",\"id\") ON DELETE CASCADE;",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/tools/routes.test.ts",
+      "name": "apagar"
+    }
   }
 ]

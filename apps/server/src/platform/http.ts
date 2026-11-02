@@ -15,7 +15,7 @@ import type { SessionReader } from './access.ts'
 import { enforceAccess, headersOf, optionalSessionOf, sessionOf } from './access.ts'
 import type { AppsDomain, Config } from './config.ts'
 import { databaseFailure } from './database.ts'
-import type { FailureLog } from './failure.ts'
+import type { FailureLog, Named } from './failure.ts'
 import { Failure, logFailure } from './failure.ts'
 import { untilClientLeaves, whenReplyEnds } from './reply-lifetime.ts'
 import { partsOf } from './request-parts.ts'
@@ -64,7 +64,7 @@ export function statusOf(error: unknown): number {
 // stack a second file stream on one reply.
 const NOT_A_PAGE = /^\/(api|assets)(\/|\?|$)/
 
-function problemOf(code: FailureCode, traceId: string, person?: string): Problem {
+function problemOf(code: FailureCode, traceId: string, person?: string, named?: Named): Problem {
   const row = FAILURES[code]
   return Problem.parse({
     type: `urn:conexus:problem:${code}`,
@@ -73,6 +73,7 @@ function problemOf(code: FailureCode, traceId: string, person?: string): Problem
     code,
     traceId,
     ...(person === undefined ? {} : { person }),
+    ...named,
   })
 }
 
@@ -125,7 +126,7 @@ function replyWithFailure(request: FastifyRequest, reply: FastifyReply, failure:
   return reply
     .code(FAILURES[failure.code].status)
     .type(PROBLEM_MEDIA_TYPE)
-    .send(problemOf(failure.code, request.id, failure.person))
+    .send(problemOf(failure.code, request.id, failure.person, failure.named))
 }
 
 function logServed(request: FastifyRequest, reply: FastifyReply): void {

@@ -1,3 +1,4 @@
+import { connectorOf } from '@conexus/connectors'
 import type { CompanyId, ConnectionId, PersonId, ProjectId } from '@conexus/hub-api'
 import { CALL_DEADLINE_MS } from '@conexus/hub-api'
 import { z } from 'zod'
@@ -60,6 +61,15 @@ export type AssistantConnectors = {
   ): Promise<AssistantRead>
   /** The connection's caderno, read only, under the same check as read. */
   notes(scope: SessionScope, connectionId: ConnectionId): Promise<Notes | null>
+  /**
+   * The input of one read of a connection the place offers, whose top-level fields an agent's tool
+   * fixes or leaves to the model (step 24.3, U1); none for a connection not offered, an operation
+   * that is not a read, or one whose input is not an object.
+   */
+  operationOf(
+    scope: SessionScope,
+    target: { connectionId: ConnectionId; operation: string },
+  ): Promise<z.ZodObject | undefined>
 }
 
 /** The ids of the line and of the query: the Projeto only where the conversation lives in one. */
@@ -180,6 +190,13 @@ export function createAssistantConnectors(deps: Deps): AssistantConnectors {
       return answered.kind === 'OK'
         ? { kind: 'OK', ...shaped(answered.value), whole: answered.value }
         : answered
+    },
+
+    async operationOf(scope, target) {
+      const [row] = (await offered(deps, scope)).filter((each) => each.id === target.connectionId)
+      const connector = row === undefined ? undefined : connectorOf(row.connector)
+      const input = connector && readOf(connector, target.operation)?.input
+      return input instanceof z.ZodObject ? input : undefined
     },
 
     async notes(scope, connectionId) {

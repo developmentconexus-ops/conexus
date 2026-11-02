@@ -10,6 +10,9 @@ export {
   RESERVED_NICKNAMES,
   suggestedNickname,
 } from './address.ts'
+export { ProblemAgents, ProblemField, ProblemReason } from './agent-failures.ts'
+export * from './agent-ids.ts'
+export * from './agents.ts'
 export {
   AppAccessInvitation,
   AppAccessList,
@@ -289,12 +292,4 @@ export {
   SourceFile,
 } from './source.ts'
 export { getStatus, HubStatus, Start, Version } from './status.ts'
-export type { ClosedTool } from './tools.ts'
-export {
-  BUILDER_TOOL,
-  CARD_TOOLS,
-  CLOSED_TOOLS,
-  SKILL_TOOLS,
-  TASK_TOOLS,
-  WORKSPACE_TOOL,
-} from './tools.ts'
+export * from './tools.ts'

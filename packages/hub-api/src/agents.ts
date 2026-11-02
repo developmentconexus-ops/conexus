@@ -1,0 +1,247 @@
+import { z } from 'zod'
+import { AgentId, ToolVersionId } from './agent-ids.ts'
+import { CompanyId } from './companies.ts'
+import { CONNECTIONS_MAX, ConnectionId } from './connectors.ts'
+import { ModelId } from './conversations.ts'
+import type { FailureCode } from './failures.ts'
+import { PersonId } from './identity.ts'
+import { ATTEMPT_KEY_HEADER, defineOperation } from './operation.ts'
+import { ProjectId } from './projects.ts'
+import { ToolSummary, ToolTarget, ToolVersionDetail } from './tools.ts'
+
+/** An automation's limit: the same line in the lists. */
+export const AGENT_NAME_MAX = 80
+/** Twice an automation's prompt, as the card sets it. */
+export const AGENT_INSTRUCTIONS_MAX = 8000
+export const AGENT_DESCRIPTION_MAX = 280
+
+export const AgentMemory = z.object({ observational: z.boolean() })
+
+/** An agent's configuration (step 24.3), the draft's and each published version's, field by field Mastra's own version shape. */
+export const AgentConfig = z.object({
+  name: z.string().trim().min(1).max(AGENT_NAME_MAX),
+  description: z.string().trim().max(AGENT_DESCRIPTION_MAX),
+  /** Empty only in a draft: publishing needs instructions (`AGENT_DRAFT_INVALID`). */
+  instructions: z.string().max(AGENT_INSTRUCTIONS_MAX),
+  /** `null`: the model of whoever converses with the agent. */
+  model: ModelId.nullable(),
+  memory: AgentMemory,
+  /** The Projeto's connections whose reads and notebook the agent gets; a tool needs none of them. */
+  connections: z
+    .array(ConnectionId)
+    .max(CONNECTIONS_MAX)
+    .refine((ids) => new Set(ids).size === ids.length),
+  web: z.boolean(),
+  appData: z.boolean(),
+})
+export type AgentConfig = z.infer<typeof AgentConfig>
+
+export const CreateAgent = z.object({
+  name: AgentConfig.shape.name,
+  description: AgentConfig.shape.description.optional(),
+})
+export type CreateAgent = z.infer<typeof CreateAgent>
+
+/**
+ * A change of the draft at the revision the writer read (code C38). `tools` replaces the chosen
+ * versions whole; `ready` adds ready reads, which the service saves in the library first.
+ */
+export const DraftPatch = AgentConfig.partial().extend({
+  revision: z.int().positive(),
+  tools: z
+    .array(ToolVersionId)
+    .refine((ids) => new Set(ids).size === ids.length)
+    .optional(),
+  ready: z.array(ToolTarget).max(CONNECTIONS_MAX).optional(),
+})
+export type DraftPatch = z.infer<typeof DraftPatch>
+
+export const Publish = z.object({
+  revision: z.int().positive(),
+  message: z.string().trim().max(AGENT_DESCRIPTION_MAX),
+})
+export type Publish = z.infer<typeof Publish>
+
+/** Never published, or a version is active; `changed` says the draft moved past it (code C21). */
+export const AgentState = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('DRAFT') }),
+  z.object({ kind: z.literal('PUBLISHED'), version: z.int().positive(), changed: z.boolean() }),
+])
+export type AgentState = z.infer<typeof AgentState>
+
+const Author = z.object({ personId: PersonId, name: z.string() }).nullable()
+
+export const AgentSummary = z.object({
+  id: AgentId,
+  projectId: ProjectId,
+  name: z.string(),
+  description: z.string(),
+  state: AgentState,
+  updatedAt: z.iso.datetime(),
+})
+export type AgentSummary = z.infer<typeof AgentSummary>
+
+/** A chosen tool: the version the draft holds, and the newest of the library. */
+export const AgentTool = ToolSummary.pick({
+  id: true,
+  slug: true,
+  connectionId: true,
+  operation: true,
+  effect: true,
+  latest: true,
+}).extend({ version: ToolVersionDetail })
+export type AgentTool = z.infer<typeof AgentTool>
+
+/** A connection the Projeto offers now, with its reads, for the panel to choose from. */
+export const OfferedConnection = z.object({
+  connectionId: ConnectionId,
+  connector: z.string(),
+  name: z.string(),
+  reads: z.array(z.object({ operation: z.string(), summary: z.string() })),
+})
+export type OfferedConnection = z.infer<typeof OfferedConnection>
+
+export const AgentDetail = AgentSummary.extend({
+  draft: AgentConfig,
+  revision: z.int().positive(),
+  tools: z.array(AgentTool),
+  offered: z.array(OfferedConnection),
+  createdBy: Author,
+})
+export type AgentDetail = z.infer<typeof AgentDetail>
+
+export const AgentVersionSummary = z.object({
+  number: z.int().positive(),
+  message: z.string(),
+  active: z.boolean(),
+  publishedAt: z.iso.datetime(),
+  publishedBy: Author,
+})
+export type AgentVersionSummary = z.infer<typeof AgentVersionSummary>
+
+const InCompany = z.object({ companyId: CompanyId })
+const InProject = InCompany.extend({ projectId: ProjectId })
+const OfAgent = InProject.extend({ agentId: AgentId })
+const BASE = '/api/companies/{companyId}/projects/{projectId}/agents'
+const READ_FAILURES = [
+  'NOT_FOUND',
+  'SESSION_REQUIRED',
+  'DATABASE_UNAVAILABLE',
+] as const satisfies readonly FailureCode[]
+const ONE_FAILURES = [...READ_FAILURES, 'AGENT_NOT_FOUND'] as const
+const OneAgent = z.object({ agent: AgentDetail })
+/** A version's number as the path carries it. */
+const PathNumber = z
+  .string()
+  .regex(/^[1-9][0-9]{0,8}$/)
+  .transform(Number)
+
+export const listAgents = defineOperation({
+  id: 'listAgents',
+  summary: 'Lists the agents of one Projeto of the company.',
+  access: 'session',
+  method: 'GET',
+  path: '/api/companies/{companyId}/agents',
+  bodyLimit: 1024,
+  input: { params: InCompany, query: z.object({ projectId: ProjectId }) },
+  success: { status: 200, body: z.object({ agents: z.array(AgentSummary) }) },
+  failures: READ_FAILURES,
+})
+
+export const createAgent = defineOperation({
+  id: 'createAgent',
+  summary: `Creates an agent of the Projeto as a draft with the default configuration, keyed by ${ATTEMPT_KEY_HEADER}.`,
+  access: 'session',
+  method: 'POST',
+  path: BASE,
+  bodyLimit: 4096,
+  input: { params: InProject, body: CreateAgent },
+  attemptKey: true,
+  success: { status: 201, body: OneAgent },
+  failures: [...READ_FAILURES, 'IDEMPOTENCY_CONFLICT'],
+})
+
+export const getAgent = defineOperation({
+  id: 'getAgent',
+  summary:
+    'Reads one agent of the Projeto: its draft, its chosen tools and what the Projeto offers.',
+  access: 'session',
+  method: 'GET',
+  path: `${BASE}/{agentId}`,
+  bodyLimit: 1024,
+  input: { params: OfAgent },
+  success: { status: 200, body: OneAgent },
+  failures: ONE_FAILURES,
+})
+
+export const saveAgentDraft = defineOperation({
+  id: 'saveAgentDraft',
+  summary:
+    'Changes the fields of an agent’s draft sent, at the revision read, and its chosen tools.',
+  access: 'session',
+  method: 'PATCH',
+  path: `${BASE}/{agentId}/draft`,
+  bodyLimit: 65_536,
+  input: { params: OfAgent, body: DraftPatch },
+  success: { status: 200, body: OneAgent },
+  failures: [
+    ...ONE_FAILURES,
+    'AGENT_DRAFT_STALE',
+    'AGENT_TOOL_REFUSED',
+    'TOOL_REFUSED',
+    'REQUEST_MALFORMED',
+  ],
+})
+
+export const publishAgent = defineOperation({
+  id: 'publishAgent',
+  summary:
+    'Freezes the draft of the revision read as the agent’s next version, with the version of each tool, and makes it active.',
+  access: 'session',
+  method: 'POST',
+  path: `${BASE}/{agentId}/publish`,
+  bodyLimit: 4096,
+  input: { params: OfAgent, body: Publish },
+  success: {
+    status: 200,
+    body: z.object({ agent: AgentDetail, version: AgentVersionSummary }),
+  },
+  failures: [...ONE_FAILURES, 'AGENT_DRAFT_INVALID', 'AGENT_DRAFT_STALE'],
+})
+
+export const listAgentVersions = defineOperation({
+  id: 'listAgentVersions',
+  summary: 'Lists the published versions of an agent, newest first, and which one is active.',
+  access: 'session',
+  method: 'GET',
+  path: `${BASE}/{agentId}/versions`,
+  bodyLimit: 1024,
+  input: { params: OfAgent },
+  success: { status: 200, body: z.object({ versions: z.array(AgentVersionSummary) }) },
+  failures: ONE_FAILURES,
+})
+
+export const activateAgentVersion = defineOperation({
+  id: 'activateAgentVersion',
+  summary: 'Makes one published version of an agent the active one; the draft does not change.',
+  access: 'session',
+  method: 'POST',
+  path: `${BASE}/{agentId}/versions/{number}/activate`,
+  bodyLimit: 1024,
+  input: { params: OfAgent.extend({ number: PathNumber }) },
+  success: { status: 200, body: OneAgent },
+  failures: [...ONE_FAILURES, 'AGENT_VERSION_NOT_FOUND'],
+})
+
+export const deleteAgent = defineOperation({
+  id: 'deleteAgent',
+  summary:
+    'Deletes an agent, its versions and its choices of tools; the tools stay in the library.',
+  access: 'session',
+  method: 'DELETE',
+  path: `${BASE}/{agentId}`,
+  bodyLimit: 1024,
+  input: { params: OfAgent },
+  success: { status: 204 },
+  failures: ONE_FAILURES,
+})

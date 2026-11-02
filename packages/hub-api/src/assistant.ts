@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { CompanyId, Next, Page } from './companies.ts'
-import { ConnectionId } from './connectors.ts'
+import { CONNECTIONS_MAX, ConnectionId } from './connectors.ts'
 import { ConversationId, Effort, ModelId } from './conversations.ts'
 import type { FailureCode } from './failures.ts'
 import { ATTEMPT_KEY_HEADER, defineOperation } from './operation.ts'
@@ -16,9 +16,6 @@ export const ASSISTANT_TOOL = {
   proposeApp: 'propose_app',
   proposeAutomation: 'propose_automation',
 } as const
-
-/** The most connections a conversation may choose at once. */
-const CHOSEN_MAX = 50
 
 /** An automation's id: Mastra's schedule id of the row (`schedule_<slug>`), its uuid derived from the creation's attempt (step 24.2). */
 export const AutomationId = z
@@ -141,7 +138,7 @@ export type Overview = {
 
 const InCompany = z.object({ companyId: CompanyId })
 const OfConversation = InCompany.extend({ conversationId: ConversationId })
-const Chosen = z.array(ConnectionId).max(CHOSEN_MAX)
+const Chosen = z.array(ConnectionId).max(CONNECTIONS_MAX)
 const BASE = '/api/companies/{companyId}/assistant/conversations'
 const READ_FAILURES = [
   'NOT_FOUND',

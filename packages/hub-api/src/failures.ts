@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { AGENT_FAILURES, ProblemAgents, ProblemField, ProblemReason } from './agent-failures.ts'
 import { APP_FAILURES, APP_VERSION_FAILURES } from './app-failures.ts'
 import { ASSISTANT_FAILURES } from './assistant-failures.ts'
 import { AUTOMATION_FAILURES } from './automation-failures.ts'
@@ -234,6 +235,7 @@ export const FAILURES = {
   ...MODEL_ACCOUNT_FAILURES,
   ...CONNECTOR_FAILURES,
   ...ASSISTANT_FAILURES,
+  ...AGENT_FAILURES,
 } as const satisfies Record<string, FailureRow>
 
 export type FailureCode = keyof typeof FAILURES
@@ -249,6 +251,10 @@ export const Problem = z.object({
   traceId: z.string(),
   /** The person a failure names in its phrase, where the row has `{person}` (`RUN_BUSY`). */
   person: z.string().optional(),
+  /** RFC 9457 extension members, each written only by the refusal that owns it (step 24.3). */
+  field: ProblemField.optional(),
+  reason: ProblemReason.optional(),
+  agents: ProblemAgents.optional(),
 })
 export type Problem = z.infer<typeof Problem>
 

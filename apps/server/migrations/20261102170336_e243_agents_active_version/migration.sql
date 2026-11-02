@@ -1,0 +1,1 @@
+ALTER TABLE "builder"."agent" ADD CONSTRAINT "agent_active_version_fkey" FOREIGN KEY ("company_id","id","active_version") REFERENCES "builder"."agent_version"("company_id","agent_id","number");
