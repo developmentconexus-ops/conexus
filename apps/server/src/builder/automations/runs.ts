@@ -5,7 +5,7 @@ import type { ScheduleTrigger } from '@mastra/core/storage'
 import type { WorkflowState } from '@mastra/core/workflows'
 import { z } from 'zod'
 import { Failure } from '../../platform/failure.ts'
-import { conversationIdOf } from '../assistant/public.ts'
+import { attemptIdOf } from '../controller-kit/public.ts'
 import type { AutomationInput } from './run.ts'
 import { AUTOMATION_WORKFLOW, triggerOfRows } from './run.ts'
 
@@ -140,7 +140,7 @@ export function automationRuns(deps: { mastra: Mastra; bootedAt: number }) {
 
   /** The conversation of a run not ended, once its `converse` opened it; none before. */
   async function openedOf(input: AutomationInput, runId: AutomationRunId) {
-    const threadId = conversationIdOf(input, runId)
+    const threadId = attemptIdOf('assistant', input, runId)
     const thread = await (await storeOf('memory')).getThreadById({ threadId })
     return thread === null ? null : threadId
   }

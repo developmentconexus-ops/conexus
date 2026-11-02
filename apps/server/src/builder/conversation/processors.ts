@@ -2,7 +2,6 @@ import type { CheckReport } from '@conexus/app/check'
 import { CHECK_LIMITS } from '@conexus/app/check'
 import { BUILDER_TOOL } from '@conexus/hub-api'
 import { createScorer } from '@mastra/core/evals'
-import type { OutputProcessor } from '@mastra/core/processors'
 import { RequestContext } from '@mastra/core/request-context'
 import type { MastraCompositeStore } from '@mastra/core/storage'
 import type { TaskItemSnapshot } from '@mastra/core/tools'
@@ -130,17 +129,4 @@ export function conexusCheck(deps: { runs: Runs; storage: MastraCompositeStore }
     })
     .generateScore(({ results }) => results.preprocessStepResult.score)
     .generateReason(({ results }) => results.preprocessStepResult.reason)
-}
-
-/**
- * Mastra saves a workspace tool's `data-workspace-metadata` chunk under the run's first message id,
- * over the sealed row a task signal left behind (Mastra issue #21940), and the row loses its
- * reasoning, text and tool parts. Nothing reads the chunk, so it is only streamed.
- */
-export const workspaceMetadataLive: OutputProcessor = {
-  id: 'conexus-workspace-metadata-live',
-  processDataParts: true,
-  async processOutputStream({ part }) {
-    return part.type === 'data-workspace-metadata' ? { ...part, transient: true } : part
-  },
 }

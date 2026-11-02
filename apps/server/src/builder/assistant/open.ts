@@ -1,21 +1,23 @@
-import { createHash } from 'node:crypto'
-import type { AutomationId, ConnectionId, Effort, ModelId, ProjectId } from '@conexus/hub-api'
-import {
-  AutomationId as AutomationIdSchema,
+import type {
+  AutomationId,
+  ConnectionId,
   ConversationId,
-  ModelId as ModelIdSchema,
+  Effort,
+  ModelId,
+  ProjectId,
 } from '@conexus/hub-api'
+import { AutomationId as AutomationIdSchema } from '@conexus/hub-api'
 import type { AgentController } from '@mastra/core/agent-controller'
 import { z } from 'zod'
 import type { Connectors, SessionScope } from '../../hub/connectors/public.ts'
 import type { IdentityPorts } from '../../hub/identity/public.ts'
 import type { Database } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
+import { admitAsker, openSession, resourceOf } from '../controller-kit/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
-import { conversationStart, effortsOf } from '../model-accounts/public.ts'
 import type { ChosenConnections } from './chosen.ts'
 import type { Owner } from './context.ts'
-import { assistantOwner, SESSION_MARK } from './context.ts'
+import { SESSION_MARK } from './context.ts'
 import type { assistantMemory } from './memory.ts'
 import type { AssistantProjects } from './ports.ts'
 
@@ -48,7 +50,7 @@ export async function admitted(
   place: Place,
 ): Promise<void> {
   await deps.database.read({ kind: 'COMPANY', ...owner }, async (tx) => {
-    await deps.identity.admitMember({ tx, ...owner, action: 'askAssistant' })
+    await admitAsker(deps.identity, tx, owner)
     if (place.kind === 'COMPANY') return
     const live = await deps.projects.liveProjectOf(tx, {
       companyId: owner.companyId,
@@ -77,20 +79,6 @@ export function automationOf(metadata: Record<string, unknown> | undefined) {
   return AutomationMarks.parse(metadata)
 }
 
-/**
- * One conversation id per company, person and key, so a repeat of the same attempt, or of the same
- * automation run, finds the same thread (code C37).
- */
-export function conversationIdOf(owner: Owner, key: string): ConversationId {
-  const hex = createHash('sha256')
-    .update(`assistant:${owner.companyId}:${owner.personId}:${key}`)
-    .digest('hex')
-  const variant = ((Number.parseInt(hex.slice(16, 17), 16) & 0x3) | 0x8).toString(16)
-  return ConversationId.parse(
-    `${hex.slice(0, 8)}-${hex.slice(8, 12)}-8${hex.slice(13, 16)}-${variant}${hex.slice(17, 20)}-${hex.slice(20, 32)}`,
-  )
-}
-
 /** Of the connections asked, only those the place offers now, in the place's order. */
 export async function offeredOnly(
   deps: Pick<OpenDeps, 'connectors'>,
@@ -103,10 +91,9 @@ export async function offeredOnly(
 }
 
 /**
- * Opens a conversation of the Assistant, or finds the one its id names (code C37). `createSession`
- * is get-or-create on the id and stamps the thread's marks; the model is set only if the thread
- * holds none, so a repeat after a cut finishes the first attempt. The caller admits the person and
- * the place first.
+ * Opens a conversation of the Assistant, or finds the one its id names (`openSession`): its choice
+ * kept in the Hub before the thread, the thread stamped with its marks. The caller admits the
+ * person and the place first.
  */
 export async function openConversation(
   deps: OpenDeps,
@@ -120,16 +107,8 @@ export async function openConversation(
     automation?: ConversationAutomation
   },
 ) {
-  const { owner, place, id } = input
-  const resourceId = assistantOwner(owner)
-  const earlier = await deps.memory.getThreadById({ threadId: id, resourceId })
-  const start = await conversationStart(deps.queue, owner, input.model)
-  const effort = input.effort ?? start.effort
-  if (!effortsOf(start.model).includes(effort)) throw new Failure('EFFORT_UNSUPPORTED')
-  const chosen = await offeredOnly(deps, { ...owner, place, chosen: [] }, input.connections)
+  const { owner, place, id, automation } = input
   const projectId = place.kind === 'PROJECT' ? place.projectId : undefined
-  const made = await deps.chosen.keep(owner, { conversationId: id, projectId, connections: chosen })
-  const { automation } = input
   const tags = {
     [SESSION_MARK.company]: owner.companyId,
     [SESSION_MARK.person]: owner.personId,
@@ -141,12 +120,13 @@ export async function openConversation(
           [SESSION_MARK.automationName]: automation.name,
         }),
   }
-  const session = await deps.controller.createSession({ id, resourceId, threadId: id, tags })
-  const kept = ModelIdSchema.optional().parse(earlier?.metadata?.currentModelId)
-  if (kept === undefined) await session.model.switch(start.model, { thinkingLevel: effort })
-  // The attempt that kept the choice made the conversation: a repeat, or a race on the key, did
-  // not.
-  return { made, session, model: kept ?? start.model }
+  return openSession(deps, {
+    ...{ kind: 'assistant', owner, id, tags, model: input.model, effort: input.effort },
+    keep: async () => {
+      const chosen = await offeredOnly(deps, { ...owner, place, chosen: [] }, input.connections)
+      return deps.chosen.keep(owner, { conversationId: id, projectId, connections: chosen })
+    },
+  })
 }
 
 /**
@@ -161,7 +141,7 @@ export async function asked(
 ): Promise<boolean> {
   const { messages } = await memory.recall({
     threadId: conversationId,
-    resourceId: assistantOwner(owner),
+    resourceId: resourceOf('assistant', owner),
     perPage: 1,
   })
   return messages.length > 0

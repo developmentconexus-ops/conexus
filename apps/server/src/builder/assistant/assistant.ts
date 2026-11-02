@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs'
-import type { ConversationId, Overview } from '@conexus/hub-api'
+import type { CompanyId, ConversationId, Overview, Person } from '@conexus/hub-api'
 import {
   ASSISTANT_CONTROLLER,
   ASSISTANT_TOOL,
@@ -8,34 +8,21 @@ import {
   WORKSPACE_TOOL,
 } from '@conexus/hub-api'
 import { Agent } from '@mastra/core/agent'
-import type { BuiltinToolId } from '@mastra/core/agent-controller'
-import { AgentController } from '@mastra/core/agent-controller'
-import { CyberRefusalHandler } from '@mastra/core/processors'
 import type { RequestContext } from '@mastra/core/request-context'
 import type { PostgresStore } from '@mastra/pg'
 import type { FastifyInstance } from 'fastify'
 import type { Connectors, SessionScope } from '../../hub/connectors/public.ts'
 import type { IdentityPorts } from '../../hub/identity/public.ts'
-import type { Database, ReadTx } from '../../platform/database.ts'
+import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { ConnectorAccess } from '../connectors/public.ts'
 import { connectorTools } from '../connectors/public.ts'
-import type { ReleaseScope } from '../conversation/public.ts'
-import {
-  MODEL_TIMEOUT,
-  sessionModel,
-  skillOf,
-  toolsOf,
-  workspaceMetadataLive,
-} from '../conversation/public.ts'
+import type { ReleaseScope } from '../controller-kit/public.ts'
+import { admitAsker, agentDefaults, controllerOf, oncePerRun } from '../controller-kit/public.ts'
+import { sessionModel, skillOf, toolsOf } from '../conversation/public.ts'
 import type { AssistantMachine } from '../machine/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
-import {
-  accountErrorProcessors,
-  accountPick,
-  MAX_PROCESSOR_RETRIES,
-} from '../model-accounts/public.ts'
 import { chosenConnections } from './chosen.ts'
 import type { Owner, ScopeOf } from './context.ts'
 import { sessionScopes } from './context.ts'
@@ -60,21 +47,10 @@ type AssistantConnection = Awaited<ReturnType<AssistantConnectors['connections']
 
 const MODE = 'conversa'
 /**
- * The controller's own tools are all off: the Assistant asks no card, keeps no task list and calls
- * no subagent.
- */
-const BUILTIN_TOOLS: readonly BuiltinToolId[] = [
-  'ask_user',
-  'submit_plan',
-  'task_write',
-  'task_update',
-  'task_complete',
-  'task_check',
-  'subagent',
-]
-/**
  * The closed set the mode offers the model (criterion 12): the layer that enforces it, as the
  * controller filters the agent's tools by it; `noteSave: false` below only leaves the save unbuilt.
+ * It holds none of the controller's own tools, so all are off: the Assistant asks no card, keeps no
+ * task list and calls no subagent.
  */
 const AVAILABLE_TOOLS: readonly string[] = [
   ...Object.values(WORKSPACE_TOOL),
@@ -115,23 +91,13 @@ function readerScope(scope: SessionScope) {
   return { kind: 'COMPANY', companyId: scope.companyId, personId: scope.personId } as const
 }
 
-/** Admits the person who may ask now, or `NOT_FOUND` (S10). */
-function admitAsker(deps: Deps, tx: ReadTx, scope: SessionScope) {
-  return deps.identity.admitMember({
-    tx,
-    personId: scope.personId,
-    companyId: scope.companyId,
-    action: 'askAssistant',
-  })
-}
-
 /**
  * The company, the person with their role, and the Projeto the conversation lives in, for its
  * block.
  */
 function speakersOf(deps: Deps, scope: SessionScope): Promise<Speakers> {
   return deps.database.read(readerScope(scope), async (tx) => {
-    const admitted = await admitAsker(deps, tx, scope)
+    const admitted = await admitAsker(deps.identity, tx, scope)
     const { companyId } = scope
     const company = await deps.identity.companyNameOf(tx, { admitted, companyId })
     const person = await deps.identity.personNameOf(tx, scope.personId)
@@ -155,7 +121,7 @@ function speakersOf(deps: Deps, scope: SessionScope): Promise<Speakers> {
  */
 function projectsOf(deps: Deps, scope: SessionScope): Promise<Omit<Overview, 'connections'>> {
   return deps.database.read(readerScope(scope), async (tx) => {
-    await admitAsker(deps, tx, scope)
+    await admitAsker(deps.identity, tx, scope)
     const live = await deps.projects.liveProjectsOf(tx, scope.companyId)
     const ids = live.projects.map((each) => each.projectId)
     const published = await deps.projects.publishedVersionsOf(tx, ids)
@@ -225,17 +191,10 @@ type Offered = (requestContext: RequestContext) => Promise<readonly AssistantCon
  * `scopeOf`).
  */
 function offeredFor(deps: Deps, scopeOf: ScopeOf): Offered {
-  const read = new WeakMap<RequestContext, Promise<readonly AssistantConnection[]>>()
-  return (requestContext) => {
-    let found = read.get(requestContext)
-    if (found === undefined) {
-      found = scopeOf(requestContext).then((scope) =>
-        scope === undefined ? [] : deps.connectors.connections(scope),
-      )
-      read.set(requestContext, found)
-    }
-    return found
-  }
+  return oncePerRun(async (requestContext) => {
+    const scope = await scopeOf(requestContext)
+    return scope === undefined ? [] : deps.connectors.connections(scope)
+  })
 }
 
 /**
@@ -301,19 +260,14 @@ function assistantAgent(
         skillOf({ directory: each.skill.name, ...each.skill }),
       ),
     ],
-    inputProcessors: [parts.turns.processor, accountPick(queue)],
-    outputProcessors: [new CyberRefusalHandler(), workspaceMetadataLive],
-    errorProcessors: accountErrorProcessors(queue),
-    maxRetries: 0,
-    maxProcessorRetries: MAX_PROCESSOR_RETRIES,
-    defaultOptions: { modelSettings: { timeout: MODEL_TIMEOUT } },
+    ...agentDefaults(queue, parts.turns.processor),
     memory: parts.memory,
   })
 }
 
 /**
  * The Assistant (step 24.1, U2, `H1`): one agent beside the Builder in the same `Mastra`, its own
- * controller, every conversation a thread under its owner (`assistantOwner`) with its place in the
+ * controller, every conversation a thread under its owner (`resourceOf`) with its place in the
  * thread's marks and its choice in the Hub's table (`chosen.ts`). Its instructions, tools and
  * skills come from the run's scope; its turn takes the owner's accounts without a Projeto; its
  * processors and memory are the Builder's.
@@ -329,15 +283,11 @@ export function createAssistant(deps: Deps) {
   )
   const turns = assistantTurns({ queue, scopeOf, machines })
   const agent = assistantAgent(deps, { memory, turns, scopeOf, machines })
-  const controller = new AgentController({
-    id: ASSISTANT_CONTROLLER,
-    storage,
-    memory,
-    agent,
-    modes: [{ id: MODE, availableTools: [...AVAILABLE_TOOLS] }],
+  const controller = controllerOf({
+    ...{ kind: 'assistant', storage, memory, agent },
+    mode: { id: MODE, availableTools: AVAILABLE_TOOLS },
     // The conversation's machine (Factory `session-sandbox.ts:29-36`); none outside a conversation.
     workspace: ({ requestContext }) => machines.workspace(requestContext),
-    disableBuiltinTools: [...BUILTIN_TOOLS],
     // Decision 0053: nothing waits to be approved; the systems get no write.
     initialState: { yolo: true },
   })
@@ -345,10 +295,26 @@ export function createAssistant(deps: Deps) {
   const opening: OpenDeps = { ...deps, controller, memory, chosen }
 
   return Object.freeze({
-    controller,
-    memory,
-    /** Where a conversation hears its machine start (QA F1), as the Builder's hears its steps. */
-    onPhase: machines.onPhase.bind(machines),
+    /** Its controller on the one `Mastra` (`builder/mastra/`), beside the Builder's. */
+    part: {
+      kind: 'assistant',
+      controller,
+      memory,
+      /** Whether the person may ask the Assistant in the company now (`askAssistant`). */
+      async admit(input: { person: Person; companyId: CompanyId }): Promise<void> {
+        const owner = { companyId: input.companyId, personId: input.person.id }
+        await deps.database.read({ kind: 'COMPANY', ...owner }, async (tx) => {
+          await admitAsker(deps.identity, tx, owner)
+        })
+      },
+      release: (scope: ReleaseScope) =>
+        releaseConversations({ controller, memory, machines, log: deps.log }, scope),
+      // Its turn writes in no Projeto: its end saves only the failure it said, and tells where its
+      // machine starts (QA F1), as the Builder's tells its steps.
+      ends: { onPhase: machines.onPhase.bind(machines) },
+      /** The machines, after the runs `drain` stopped, before Mastra stops. */
+      close: () => machines.stopAll(),
+    },
     /** Admits the person who may ask now, in the place; else `NOT_FOUND` (S10). */
     admit: (owner: Owner, place: SessionScope['place']) => admitted(deps, owner, place),
     /** Opens a conversation, or finds the one its id names (`open.ts`). */
@@ -359,12 +325,5 @@ export function createAssistant(deps: Deps) {
     asked: (owner: Owner, conversationId: ConversationId) => asked(memory, owner, conversationId),
     routes: (app: FastifyInstance) =>
       registerAssistantRoutes(app, { ...deps, controller, memory, chosen, machines }),
-    release: (scope: ReleaseScope) =>
-      releaseConversations({ controller, memory, machines, log: deps.log }, scope),
-    /** The memory's work after the runs, which `drain` stopped, before Mastra stops. */
-    async close(): Promise<void> {
-      await machines.stopAll()
-      await memory.settled()
-    },
-  })
+  } as const)
 }

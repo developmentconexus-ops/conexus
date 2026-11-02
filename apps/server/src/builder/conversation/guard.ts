@@ -1,6 +1,6 @@
 import type { ServerResponse } from 'node:http'
 import type { CompanyId, FailureCode, Person } from '@conexus/hub-api'
-import { ASSISTANT_CONTROLLER, BUILDER_ROUTES, ConversationId } from '@conexus/hub-api'
+import { BUILDER_ROUTES, ConversationId } from '@conexus/hub-api'
 import type { Mastra } from '@mastra/core/mastra'
 import { MASTRA_MESSAGE_AUTHOR_KEY } from '@mastra/core/request-context'
 import { SERVER_ROUTES } from '@mastra/server/server-adapter'
@@ -9,12 +9,11 @@ import { z } from 'zod'
 import { sessionOf } from '../../platform/access.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
+import type { ControllerKind } from '../controller-kit/public.ts'
+import { CONTROLLER_KINDS, ownerOfResource } from '../controller-kit/public.ts'
 import type { Builder } from './builder.ts'
-import { BUILDER_ID } from './builder.ts'
 import { untilCardsKept } from './parked.ts'
-import type { ConversationStore } from './store.ts'
 import { BuilderServer } from './stream.ts'
-import { ownerOfResource } from './turn-of.ts'
 
 const SESSION = '/agent-controller/:controllerId/sessions/:sessionId'
 
@@ -38,8 +37,9 @@ const FIXED_LIST: ReadonlySet<string> = new Set([
  */
 const BODY_LIMIT = 31_457_280
 
+const CONTROLLER_IDS = Object.values(CONTROLLER_KINDS).map((each) => each.id)
 const Params = z.object({
-  controllerId: z.enum([BUILDER_ID, ASSISTANT_CONTROLLER]),
+  controllerId: z.enum(CONTROLLER_IDS),
   sessionId: ConversationId,
   threadId: z.string().optional(),
 })
@@ -92,14 +92,25 @@ function builderRoutes() {
   return found
 }
 
-/** Whether the person may ask the Assistant in the company now; it throws `NOT_FOUND` otherwise. */
-export type AssistantAdmission = (input: { person: Person; companyId: CompanyId }) => Promise<void>
+/** What the guard asks of the controller a thread is of: whether the person may hold it now. */
+type Admission = (input: {
+  person: Person
+  companyId: CompanyId
+  conversationId: ConversationId
+}) => Promise<void>
+
+/** The controllers on the one `Mastra`, as the guard consults them (`builder/mastra/`). */
+export type GuardedMastra = {
+  mastra: Mastra
+  part(kind: ControllerKind): { admit: Admission } | undefined
+  updating(): boolean
+}
 
 /**
  * The conversation a request to Mastra's routes names, if it is the person's and of the controller
- * the path names: the thread's resource names its controller, company and person (`memoryOwner`,
- * `assistantOwner`), and, for the Builder, the Hub's index and membership decide; for the
- * Assistant, whether the person may ask it now (`askAssistant`), so a member gets the same 404 (S10).
+ * the path names: the thread's resource names its controller, company and person (`resourceOf`),
+ * and that controller admits the person now (the Builder by the Hub's index and membership, the
+ * Assistant by `askAssistant`); a refusal is the same 404 (S10).
  * A `requestContext` from the browser is refused: Mastra's server copies it into the run's context,
  * and `mastra__messageAuthor` is not one of its reserved keys (measured, prove2 e21-bare). So is
  * `include`, which would read messages of the person's other conversations. So is a file that is
@@ -107,12 +118,7 @@ export type AssistantAdmission = (input: { person: Person; companyId: CompanyId 
  * starts a turn (founder E1).
  */
 async function guard(
-  deps: {
-    builder: Builder
-    store: ConversationStore
-    mayAsk: AssistantAdmission
-    updating: () => boolean
-  },
+  deps: { builder: Builder; hub: GuardedMastra },
   request: FastifyRequest,
 ): Promise<void> {
   if (overreaches(request.body) || overreaches(request.query) || sendsFileUrl(request.body)) {
@@ -130,14 +136,18 @@ async function guard(
   }
   const thread = await deps.builder.memory.getThreadById({ threadId: conversationId })
   const owner = ownerOfResource(thread?.resourceId)
-  if (owner === undefined || owner.personId !== person.id || owner.kind !== controllerId) {
+  const part = owner === undefined ? undefined : deps.hub.part(owner.kind)
+  if (
+    owner === undefined ||
+    part === undefined ||
+    owner.personId !== person.id ||
+    CONTROLLER_KINDS[owner.kind].id !== controllerId
+  ) {
     throw new Failure('CONVERSATION_NOT_FOUND')
   }
-  const { companyId } = owner
-  if (owner.kind === 'builder') await deps.store.mine({ person, companyId, conversationId })
-  else await admittedAsker(deps.mayAsk, { person, companyId })
+  await admittedBy(part.admit, { person, companyId: owner.companyId, conversationId })
   if (
-    deps.updating() &&
+    deps.hub.updating() &&
     request.method === 'POST' &&
     request.routeOptions.url?.endsWith('/messages')
   ) {
@@ -147,9 +157,9 @@ async function guard(
 }
 
 /** A member, or someone no longer in the company, finds no conversation (criterion 10). */
-async function admittedAsker(mayAsk: AssistantAdmission, input: Parameters<AssistantAdmission>[0]) {
+async function admittedBy(admit: Admission, input: Parameters<Admission>[0]) {
   try {
-    await mayAsk(input)
+    await admit(input)
   } catch (error) {
     if (error instanceof Failure && error.code === 'NOT_FOUND') {
       throw new Failure('CONVERSATION_NOT_FOUND', { cause: error })
@@ -171,12 +181,9 @@ async function admittedAsker(mayAsk: AssistantAdmission, input: Parameters<Assis
 export function registerBuilderRoutes(
   app: FastifyInstance,
   deps: {
-    mastra: Mastra
+    hub: GuardedMastra
     builder: Builder
-    store: ConversationStore
-    mayAsk: AssistantAdmission
     streams: Set<ServerResponse>
-    updating: () => boolean
     log: FailureLog
   },
 ): void {
@@ -186,7 +193,7 @@ export function registerBuilderRoutes(
     // limit goes to the Hub's error handler as a 413 (`@mastra/fastify@1.5.23` `dist/index.js:542-571`).
     const server = new BuilderServer({
       app: scope,
-      mastra: deps.mastra,
+      mastra: deps.hub.mastra,
       bodyLimitOptions: { maxSize: BODY_LIMIT, onError: (error) => error },
       log: deps.log,
     })
@@ -198,7 +205,7 @@ export function registerBuilderRoutes(
       const { controllerId, sessionId } = Params.parse(request.params)
       // Only the Builder parks a card (`ask_user`, `submit_plan`): the Assistant has none.
       if (
-        controllerId === BUILDER_ID &&
+        controllerId === CONTROLLER_KINDS.builder.id &&
         request.method === 'POST' &&
         request.routeOptions.url?.endsWith('/abort')
       ) {

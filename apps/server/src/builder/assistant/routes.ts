@@ -26,21 +26,15 @@ import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import { answer, serve } from '../../platform/http.ts'
+import { attemptIdOf, resourceOf } from '../controller-kit/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import type { ChosenConnections } from './chosen.ts'
 import type { Owner } from './context.ts'
-import { assistantOwner, SESSION_MARK, scopeOn } from './context.ts'
+import { SESSION_MARK, scopeOn } from './context.ts'
 import { registerFile } from './file-route.ts'
 import type { AssistantMachines } from './machine.ts'
 import type { assistantMemory } from './memory.ts'
-import {
-  admitted,
-  automationOf,
-  conversationIdOf,
-  offeredOnly,
-  openConversation,
-  placeOf,
-} from './open.ts'
+import { admitted, automationOf, offeredOnly, openConversation, placeOf } from './open.ts'
 import type { AssistantProjects } from './ports.ts'
 
 /**
@@ -72,7 +66,7 @@ function ownerOf(input: { person: Person; params: { companyId: CompanyId } }): O
  * does not exist answer the same (S10).
  */
 async function ownThread(deps: Deps, owner: Owner, conversationId: ConversationId) {
-  const resourceId = assistantOwner(owner)
+  const resourceId = resourceOf('assistant', owner)
   const thread = await deps.memory.getThreadById({ threadId: conversationId, resourceId })
   if (thread === null) throw new Failure('CONVERSATION_NOT_FOUND')
   return thread
@@ -121,7 +115,7 @@ type Asked = {
 async function created(deps: Deps, owner: Owner, input: { attemptKey: string; body: Asked }) {
   const place = placeOf(input.body.projectId)
   await admitted(deps, owner, place)
-  const id = conversationIdOf(owner, input.attemptKey)
+  const id = attemptIdOf('assistant', owner, input.attemptKey)
   const { body } = input
   const opened = await openConversation(deps, {
     ...{ owner, place, id, connections: body.connections },
@@ -179,7 +173,7 @@ function registerReads(app: FastifyInstance, deps: Deps): void {
     const page = pageOf(token)
     const listed = await deps.memory.listThreads({
       filter: {
-        resourceId: assistantOwner(owner),
+        resourceId: resourceOf('assistant', owner),
         ...(projectId === undefined ? {} : { metadata: { [SESSION_MARK.project]: projectId } }),
       },
       page,

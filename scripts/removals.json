@@ -2103,8 +2103,8 @@
   {
     "id": "assistant-guard-controller-kind",
     "file": "apps/server/src/builder/conversation/guard.ts",
-    "find": " || owner.kind !== controllerId",
-    "replace": "",
+    "find": " ||\n    CONTROLLER_KINDS[owner.kind].id !== controllerId\n",
+    "replace": "\n",
     "test": {
       "cwd": "apps/server",
       "file": "src/builder/conversation/guard.test.ts",
@@ -2113,8 +2113,8 @@
   },
   {
     "id": "assistant-guard-asker",
-    "file": "apps/server/src/builder/conversation/guard.ts",
-    "find": "  else await admittedAsker(deps.mayAsk, { person, companyId })\n",
+    "file": "apps/server/src/builder/assistant/assistant.ts",
+    "find": "          await admitAsker(deps.identity, tx, owner)\n",
     "replace": "",
     "test": {
       "cwd": "apps/server",
@@ -2125,7 +2125,7 @@
   {
     "id": "assistant-routes-ask",
     "file": "apps/server/src/builder/assistant/open.ts",
-    "find": "    await deps.identity.admitMember({ tx, ...owner, action: 'askAssistant' })\n",
+    "find": "    await admitAsker(deps.identity, tx, owner)\n",
     "replace": "",
     "test": {
       "cwd": "apps/server",
@@ -2235,7 +2235,7 @@
   {
     "id": "assistant-close-stops-machines",
     "file": "apps/server/src/builder/assistant/assistant.ts",
-    "find": "      await machines.stopAll()\n",
+    "find": "      close: () => machines.stopAll(),\n",
     "replace": "",
     "test": {
       "cwd": "apps/server",
@@ -2323,8 +2323,8 @@
   {
     "id": "assistant-release-kills-machines",
     "file": "apps/server/src/builder/assistant/release.ts",
-    "find": "    await deps.machines.kill(ConversationId.parse(thread.id))\n",
-    "replace": "",
+    "find": "releaseThreads(deps, ids, (id) => deps.machines.kill(id))",
+    "replace": "releaseThreads(deps, ids)",
     "test": {
       "cwd": "apps/server",
       "file": "src/builder/assistant/release.test.ts",

@@ -1,13 +1,13 @@
-import { createHash, randomUUID } from 'node:crypto'
+import { createHash } from 'node:crypto'
 import type { CompanyId, Person, PersonId } from '@conexus/hub-api'
 import { ConversationId, PAGE_SIZE, ProjectId } from '@conexus/hub-api'
 import { and, desc, eq, lt, or, sql } from 'drizzle-orm'
 import type { IdentityPorts } from '../../hub/identity/public.ts'
 import type { ProjectPorts } from '../../hub/projects/public.ts'
 import type { Database, Scope } from '../../platform/database.ts'
-import { transactionLock } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import { pageOf } from '../../platform/pages.ts'
+import type { ReleaseScope } from '../controller-kit/public.ts'
 import { conversation } from './tables.ts'
 
 type Deps = {
@@ -66,57 +66,20 @@ async function ownedConversation(deps: Deps, tx: ReadTx, input: OfConversation) 
 }
 
 /**
- * The conversation an attempt made already, if any: the same key and body answer it, another body
- * or Projeto is `IDEMPOTENCY_CONFLICT` (code C37).
+ * The index row of a new conversation, written before its thread (data D17), under the id its
+ * attempt derives (code C37). With no conflict target, the attempt's unique key holds too: a second
+ * attempt waits on the index until the first is written, then writes nothing and reads that row, as
+ * does a key a row of random id kept before the controller kit (step 24.3, U1b). The same body and
+ * Projeto answer that row's id; another, `IDEMPOTENCY_CONFLICT` (`openSession`).
  */
-async function attemptOf(tx: ReadTx, input: Attempt) {
-  const [found] = await tx
-    .select({
-      id: conversation.id,
-      projectId: conversation.projectId,
-      bodyHash: conversation.bodyHash,
-      createdAt: conversation.createdAt,
-    })
-    .from(conversation)
-    .where(
-      and(
-        eq(conversation.companyId, input.companyId),
-        eq(conversation.personId, input.person.id),
-        eq(conversation.attemptKey, input.attemptKey),
-      ),
-    )
-  if (found === undefined) return undefined
-  if (found.bodyHash !== input.bodyHash || found.projectId !== input.projectId) {
-    throw new Failure('IDEMPOTENCY_CONFLICT')
-  }
-  // The column is a uuid; the contract's id narrows it once, here (code C27).
-  return { id: ConversationId.parse(found.id), createdAt: found.createdAt }
-}
-
-/** The conversation an earlier attempt with this key made, with no lock: a repeat's first look. */
-async function attempted(deps: Deps, input: Attempt) {
-  return deps.database.read(scopeOf(input), async (tx) => {
-    await admitted(deps, tx, input)
-    return attemptOf(tx, input)
-  })
-}
-
-/**
- * The index row of a new conversation, written before its thread (data D17), under its attempt's
- * lock: the same key and body answer the same conversation, another body `IDEMPOTENCY_CONFLICT`.
- */
-async function create(deps: Deps, input: Attempt) {
+async function keep(deps: Deps, input: Attempt & { id: ConversationId }) {
   return deps.database.command(scopeOf(input), async (tx: Tx) => {
     const { companyId, person } = input
-    await transactionLock(tx, `conexus.conversation:${companyId}:${person.id}:${input.attemptKey}`)
     await admitted(deps, tx, input)
-    const found = await attemptOf(tx, input)
-    if (found !== undefined) return { ...found, created: false }
-    const id = ConversationId.parse(randomUUID())
     const [made] = await tx
       .insert(conversation)
       .values({
-        id,
+        id: input.id,
         companyId,
         projectId: input.projectId,
         personId: person.id,
@@ -124,9 +87,31 @@ async function create(deps: Deps, input: Attempt) {
         bodyHash: input.bodyHash,
         createdAt: sql`statement_timestamp()`,
       })
+      .onConflictDoNothing()
       .returning({ createdAt: conversation.createdAt })
-    if (made === undefined) throw new Failure('INTERNAL_UNEXPECTED')
-    return { id, createdAt: made.createdAt, created: true }
+    if (made !== undefined) return { kept: { made: true } as const, createdAt: made.createdAt }
+    const [found] = await tx
+      .select({
+        id: conversation.id,
+        projectId: conversation.projectId,
+        bodyHash: conversation.bodyHash,
+        createdAt: conversation.createdAt,
+      })
+      .from(conversation)
+      .where(
+        and(
+          eq(conversation.companyId, companyId),
+          eq(conversation.personId, person.id),
+          eq(conversation.attemptKey, input.attemptKey),
+        ),
+      )
+    if (found === undefined) {
+      throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'CONVERSATION_ID_TAKEN' } })
+    }
+    const same = found.bodyHash === input.bodyHash && found.projectId === input.projectId
+    // The column is a uuid; the contract's id narrows it once, here (code C27).
+    const kept = { made: false, same, id: ConversationId.parse(found.id) } as const
+    return { kept, createdAt: found.createdAt }
   })
 }
 
@@ -227,9 +212,6 @@ async function projectOf(
   return row === undefined ? undefined : ProjectId.parse(row.projectId)
 }
 
-/** What a release names: a company, and maybe one of its Projetos or one of its people. */
-export type ReleaseScope = { companyId: CompanyId; projectId?: ProjectId; personId?: PersonId }
-
 /** The conversations a release deletes the threads of, read with the Hub's own company scope. */
 async function releasedIds(deps: Deps, scope: ReleaseScope): Promise<ConversationId[]> {
   const hub: Scope = { kind: 'COMPANY', companyId: scope.companyId, personId: null }
@@ -250,8 +232,10 @@ async function releasedIds(deps: Deps, scope: ReleaseScope): Promise<Conversatio
 
 export function createConversationStore(deps: Deps) {
   return Object.freeze({
-    attempted: (input: Attempt) => attempted(deps, input),
-    create: (input: Attempt) => create(deps, input),
+    /** The person may converse in this company, and the Projeto is live; else the same 404. */
+    admit: (input: InProject) =>
+      deps.database.read(scopeOf(input), (tx) => admitted(deps, tx, input)),
+    keep: (input: Parameters<typeof keep>[1]) => keep(deps, input),
     list: (input: Parameters<typeof list>[1]) => list(deps, input),
     owned: (input: OfConversation) =>
       deps.database.read(scopeOf(input), (tx) => ownedConversation(deps, tx, input)),

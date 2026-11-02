@@ -1,10 +1,7 @@
-import type { CompanyId, ModelId, PersonId } from '@conexus/hub-api'
+import type { ModelId } from '@conexus/hub-api'
 import { BUILDER_CONTROLLER, BUILDER_TOOL } from '@conexus/hub-api'
 import type { ToolsInput } from '@mastra/core/agent'
-import type { BuiltinToolId } from '@mastra/core/agent-controller'
-import { AgentController } from '@mastra/core/agent-controller'
 import { createCodingAgent } from '@mastra/core/coding-agent'
-import { CyberRefusalHandler } from '@mastra/core/processors'
 import type { RequestContext } from '@mastra/core/request-context'
 import { webFetchTool, webSearchTool } from '@mastra/core/tools'
 import { Memory } from '@mastra/memory'
@@ -13,15 +10,9 @@ import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { BuilderConnectors, GrantedConnection } from '../connectors/public.ts'
 import { builderAccess, connectorTools } from '../connectors/public.ts'
+import { agentDefaults, controllerOf, MODEL_TIMEOUT, oncePerRun } from '../controller-kit/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
-import {
-  accountErrorProcessors,
-  accountModel,
-  accountPick,
-  chosenModel,
-  MAX_PROCESSOR_RETRIES,
-  providerOf,
-} from '../model-accounts/public.ts'
+import { accountModel, chosenModel, providerOf } from '../model-accounts/public.ts'
 import type { Runs } from '../runs/public.ts'
 import { APP_SKILLS, builderInstructions, skillOf } from './instructions.ts'
 import { TOOL_CLOSURE } from './permissions.ts'
@@ -31,12 +22,10 @@ import {
   createSubmitPlanTool,
   SUBMIT_PLAN_TOOL,
 } from './plan-tools.ts'
-import { checkTool, conexusCheck, workspaceMetadataLive } from './processors.ts'
+import { checkTool, conexusCheck } from './processors.ts'
 import type { ConversationIndex } from './turn-of.ts'
 import { projectIn, sideTurn, turnOf } from './turn-of.ts'
 
-/** The Builder's controller, as Mastra's routes name it (`/agent-controller/builder/…`). */
-export const BUILDER_ID = BUILDER_CONTROLLER
 const CONVERSATION_MODE = 'conversa'
 
 const TITLE_INSTRUCTIONS =
@@ -47,8 +36,6 @@ const OBSERVER_INSTRUCTION =
 // The providers whose native search Mastra resolves (`webSearchTool`); Google through CLIProxy
 // stays out until the live proof of criterion 3 passes.
 const SEARCH_PROVIDERS = new Set(['anthropic', 'openai', 'xai'])
-// `ask_user` and `submit_plan` are ours, under the native ids (`plan-tools.ts`); `subagent` stays off.
-const BUILTIN_TOOLS: BuiltinToolId[] = ['ask_user', 'submit_plan', 'subagent']
 
 function isRouterId(modelId: ModelId): modelId is ModelId & `${string}/${string}` {
   return modelId.includes('/')
@@ -81,17 +68,10 @@ function grantedFor(
   port: BuilderConnectors,
   projectOf: ReturnType<typeof projectIn>,
 ): (requestContext: RequestContext) => Promise<readonly GrantedConnection[]> {
-  const read = new WeakMap<RequestContext, Promise<readonly GrantedConnection[]>>()
-  return (requestContext) => {
-    let granted = read.get(requestContext)
-    if (granted === undefined) {
-      granted = projectOf(requestContext).then((ids) =>
-        ids === undefined ? [] : port.granted(ids),
-      )
-      read.set(requestContext, granted)
-    }
-    return granted
-  }
+  return oncePerRun(async (requestContext) => {
+    const ids = await projectOf(requestContext)
+    return ids === undefined ? [] : port.granted(ids)
+  })
 }
 
 /** The Builder's three connector tools, its notebook's write included. */
@@ -103,17 +83,6 @@ function builderConnectorTools(
   const who = { ...ids, runIdOf: (context: RequestContext) => deps.runs.runIdOf(context) }
   const { access, save } = builderAccess(deps.connectors, granted, who, deps.log)
   return connectorTools(access, { noteSave: true, save })
-}
-
-/**
- * Each model call's budget (code C57): a provider that sends nothing for a minute, or holds one
- * call ten minutes, fails the call instead of holding the turn and the shutdown's drain.
- */
-export const MODEL_TIMEOUT = { firstChunkMs: 60_000, stepMs: 600_000 }
-
-/** The owner Mastra keeps a conversation under: the company with the person (criterion 8). */
-export function memoryOwner(owner: { companyId: CompanyId; personId: PersonId }): string {
-  return `company:${owner.companyId}:person:${owner.personId}`
 }
 
 /**
@@ -199,11 +168,11 @@ export function createBuilder(deps: {
   const check = checkTool(deps.runs)
   const projectOf = projectIn(deps.index)
   const granted = grantedFor(deps.connectors, projectOf)
-  const modelSettings = { timeout: MODEL_TIMEOUT }
   const { queue } = deps
+  const defaults = agentDefaults(queue, turnOf(deps))
   const memory = conversationMemory({ storage, queue, ...BUILDER_MEMORY })
   const agent = createCodingAgent({
-    id: BUILDER_ID,
+    id: BUILDER_CONTROLLER,
     name: 'Builder',
     instructions: builderInstructions({
       runs: deps.runs,
@@ -231,14 +200,10 @@ export function createBuilder(deps: {
           : builderConnectorTools(deps, await granted(requestContext), ids)),
       }
     },
-    inputProcessors: [turnOf(deps), accountPick(deps.queue)],
+    ...defaults,
     workspace: undefined,
-    outputProcessors: [new CyberRefusalHandler(), workspaceMetadataLive],
-    errorProcessors: accountErrorProcessors(deps.queue),
-    maxRetries: 0,
-    maxProcessorRetries: MAX_PROCESSOR_RETRIES,
     defaultOptions: {
-      modelSettings,
+      ...defaults.defaultOptions,
       isTaskComplete: {
         scorers: [conexusCheck({ runs: deps.runs, storage })],
         strategy: 'all',
@@ -246,18 +211,15 @@ export function createBuilder(deps: {
     },
     memory,
   })
-  const controller = new AgentController({
-    id: BUILDER_ID,
-    storage,
-    memory,
-    agent,
-    modes: [{ id: CONVERSATION_MODE, availableTools: TOOL_CLOSURE.availableTools }],
+  const controller = controllerOf({
+    ...{ kind: 'builder', storage, memory, agent },
+    mode: { id: CONVERSATION_MODE, availableTools: TOOL_CLOSURE.availableTools },
     // The conversation's machine (Factory `session-sandbox.ts:29-36`); none outside a conversation.
     workspace: async ({ requestContext, mastra }) => {
       const ids = await projectOf(requestContext)
       return ids === undefined ? undefined : deps.runs.workspaceOf(ids, mastra)
     },
-    disableBuiltinTools: BUILTIN_TOOLS,
+    // `ask_user` and `submit_plan` are ours, under the native ids (`plan-tools.ts`).
     tools: { [ASK_USER_TOOL]: createAskUserTool(), [SUBMIT_PLAN_TOOL]: createSubmitPlanTool() },
     initialState: TOOL_CLOSURE.initialState,
   })

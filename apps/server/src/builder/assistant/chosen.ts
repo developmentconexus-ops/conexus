@@ -4,6 +4,7 @@ import { eq } from 'drizzle-orm'
 import { z } from 'zod'
 import type { Database } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
+import type { Kept as Opened } from '../controller-kit/public.ts'
 import type { Kept, Owner } from './context.ts'
 import { assistantConversation } from './tables.ts'
 
@@ -23,7 +24,7 @@ export function chosenConnections(database: Database) {
   return {
     /**
      * The creation's choice, kept before its thread exists: a repeat of the attempt finds the first
-     * and keeps it, and one with another place is `IDEMPOTENCY_CONFLICT` (code C37).
+     * and keeps it, the same when its place is the first's (code C37, `openSession`).
      */
     keep(
       owner: Owner,
@@ -32,7 +33,7 @@ export function chosenConnections(database: Database) {
         projectId: ProjectId | undefined
         connections: readonly ConnectionId[]
       },
-    ): Promise<boolean> {
+    ): Promise<Opened> {
       return database.command(scopeOf(owner), async (tx) => {
         const projectId = input.projectId ?? null
         const [made] = await tx
@@ -45,13 +46,12 @@ export function chosenConnections(database: Database) {
           })
           .onConflictDoNothing({ target: assistantConversation.id })
           .returning({ id: assistantConversation.id })
-        if (made !== undefined) return true
+        if (made !== undefined) return { made: true }
         const [kept] = await tx
           .select({ projectId: assistantConversation.projectId })
           .from(assistantConversation)
           .where(eq(assistantConversation.id, input.conversationId))
-        if (kept?.projectId !== projectId) throw new Failure('IDEMPOTENCY_CONFLICT')
-        return false
+        return { made: false, same: kept?.projectId === projectId, id: input.conversationId }
       })
     },
 

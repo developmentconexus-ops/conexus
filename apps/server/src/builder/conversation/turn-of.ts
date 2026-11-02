@@ -1,39 +1,22 @@
 import type { ConversationId, ProjectId } from '@conexus/hub-api'
-import { CompanyId, PersonId } from '@conexus/hub-api'
 import type { InputProcessor } from '@mastra/core/processors'
 import type { RequestContext } from '@mastra/core/request-context'
 import { z } from 'zod'
+import type { Owner, ResourceOwner } from '../controller-kit/public.ts'
+import { ownerOfResource } from '../controller-kit/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import { memoryModelsFor, setTurn, Turn, turnIn } from '../model-accounts/public.ts'
 import type { Runs } from '../runs/public.ts'
 import { conversationIn } from '../runs/public.ts'
 
 const TURN_PROCESSOR = 'conexus-turn'
-const MEMORY_OWNER =
-  /^(?:(?<assistant>assistant):)?company:(?<companyId>[^:]+):person:(?<personId>[^:]+)$/
 const RUN_BUSY = 'RUN_BUSY:'
 
-const Owner = z.object({ companyId: CompanyId, personId: PersonId })
-type Owner = z.infer<typeof Owner>
 type Conversation = Owner & { conversationId: ConversationId; projectId: ProjectId }
 
 /** The Hub's index, as a run finds its conversation in it. */
 export type ConversationIndex = {
   projectOf(input: Owner & { conversationId: ConversationId }): Promise<ProjectId | undefined>
-}
-
-/** Which controller's a thread is, by the resource it is kept under (C21). */
-export type ResourceOwner = Owner & { kind: 'builder' | 'assistant' }
-
-/**
- * Whose a thread is, and of which controller, from the resource Mastra keeps it under
- * (`memoryOwner`, the Assistant's `assistantOwner`), or none.
- */
-export function ownerOfResource(resourceId: unknown): ResourceOwner | undefined {
-  const groups = typeof resourceId === 'string' ? MEMORY_OWNER.exec(resourceId)?.groups : undefined
-  const owner = Owner.safeParse(groups)
-  if (!owner.success) return undefined
-  return { kind: groups?.assistant === undefined ? 'builder' : 'assistant', ...owner.data }
 }
 
 const Resource = z.object({ resourceId: z.string() })

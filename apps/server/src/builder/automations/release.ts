@@ -1,8 +1,8 @@
 import type { Mastra } from '@mastra/core/mastra'
 import { databaseFailure } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
-import { assistantOwner } from '../assistant/public.ts'
-import type { ReleaseScope } from '../conversation/public.ts'
+import type { ReleaseScope } from '../controller-kit/public.ts'
+import { resourceOf } from '../controller-kit/public.ts'
 import { AUTOMATION_WORKFLOW, AutomationInput } from './run.ts'
 
 /** A call to Mastra's storage, its failure read by the database's map (code C52). */
@@ -24,7 +24,7 @@ export async function deleteRunsOf(mastra: Mastra, input: AutomationInput): Prom
   const { runs } = await stored(
     workflow.listWorkflowRuns({
       workflowName: AUTOMATION_WORKFLOW,
-      resourceId: assistantOwner(input),
+      resourceId: resourceOf('assistant', input),
       perPage: false,
     }),
   )

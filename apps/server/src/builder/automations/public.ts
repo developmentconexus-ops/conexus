@@ -1,6 +1,6 @@
 import type { Mastra } from '@mastra/core/mastra'
 import type { FastifyInstance } from 'fastify'
-import type { ReleaseScope } from '../conversation/public.ts'
+import type { ReleaseScope } from '../controller-kit/public.ts'
 import type { AutomationsDeps } from './automations.ts'
 import { createAutomations } from './automations.ts'
 import { releaseAutomations } from './release.ts'

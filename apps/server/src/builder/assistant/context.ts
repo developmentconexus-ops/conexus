@@ -3,7 +3,7 @@ import { ConversationId } from '@conexus/hub-api'
 import type { RequestContext } from '@mastra/core/request-context'
 import { z } from 'zod'
 import type { SessionScope } from '../../hub/connectors/public.ts'
-import { ownerOfResource } from '../conversation/public.ts'
+import { oncePerRun, ownerOfResource } from '../controller-kit/public.ts'
 
 /**
  * The thread's marks, stamped by `createSession({ tags })` at creation; never changed. A
@@ -17,17 +17,6 @@ export const SESSION_MARK = {
   automation: 'conexusAutomation',
   automationName: 'conexusAutomationName',
 } as const
-
-/**
- * The owner Mastra keeps an Assistant's conversation under: the company with the person, apart from
- * the Builder's.
- */
-export function assistantOwner(owner: {
-  companyId: SessionScope['companyId']
-  personId: SessionScope['personId']
-}): `assistant:company:${string}:person:${string}` {
-  return `assistant:company:${owner.companyId}:person:${owner.personId}`
-}
 
 /** The person an Assistant conversation belongs to, in a company. */
 export type Owner = { companyId: SessionScope['companyId']; personId: SessionScope['personId'] }
@@ -64,7 +53,7 @@ export type ScopeOf = (requestContext: RequestContext) => Promise<SessionScope |
  * context.
  */
 export function sessionScopes(deps: { chosenOf: ChosenOf }): ScopeOf {
-  async function readScope(requestContext: RequestContext): Promise<SessionScope | undefined> {
+  return oncePerRun(async (requestContext) => {
     const controller = Controller.safeParse(requestContext.get('controller'))
     if (!controller.success) return undefined
     const owner = ownerOfResource(controller.data.resourceId)
@@ -72,14 +61,5 @@ export function sessionScopes(deps: { chosenOf: ChosenOf }): ScopeOf {
     const { companyId, personId } = owner
     const owned = { companyId, personId }
     return scopeOn(owned, await deps.chosenOf(owned, controller.data.sessionId))
-  }
-  const read = new WeakMap<RequestContext, Promise<SessionScope | undefined>>()
-  return (requestContext) => {
-    let scope = read.get(requestContext)
-    if (scope === undefined) {
-      scope = readScope(requestContext)
-      read.set(requestContext, scope)
-    }
-    return scope
-  }
+  })
 }
