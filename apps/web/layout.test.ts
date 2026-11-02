@@ -92,6 +92,24 @@ test('de 768px para cima não há barra no topo: a barra lateral aberta tem 328p
   await page.close()
 })
 
+test('abaixo de 1024px a barra lateral abre nos ícones, de 56px, e a pessoa a expande; de 1024px ela abre inteira', async () => {
+  const page = await open('/', { width: 800, height: 900 }, HOUSE)
+  const nav = page.getByRole('navigation', { name: 'Navegação' })
+  await nav.getByRole('link', { name: 'Início' }).waitFor()
+  await page.waitForTimeout(250)
+  const closed = await widthOf(nav)
+  await page.keyboard.press('Control+b')
+  await page.waitForTimeout(250)
+  assert.deepEqual([closed, await widthOf(nav)], [56, 328])
+  await page.close()
+  const wide = await open('/', { width: 1024, height: 900 }, HOUSE)
+  const wideNav = wide.getByRole('navigation', { name: 'Navegação' })
+  await wideNav.getByRole('link', { name: 'Início' }).waitFor()
+  await wide.waitForTimeout(250)
+  assert.equal(await widthOf(wideNav), 328)
+  await wide.close()
+})
+
 test('no Projeto a barra é a do Projeto e abre com 328px; Ctrl+B a recolhe para ícones com dica e, ao sair do Projeto, a da empresa volta', async () => {
   const page = await open(PROJECT, DESKTOP, HOUSE)
   const nav = page.getByRole('navigation', { name: 'Navegação' })

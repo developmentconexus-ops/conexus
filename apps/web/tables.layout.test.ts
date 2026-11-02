@@ -68,6 +68,8 @@ test('a coluna do nome das tabelas de Configurações segue legível a 800px', a
   const people = stateNamed('dono')
   const page = await harness.open(people.path, { viewport: TABLE_WIDTHS, replies: people.replies })
   await people.settle(page)
+  // The sidebar opens as its 56px rail below 1024px, which is what leaves the name its width.
+  assert.equal(await widthOf(page.getByRole('navigation', { name: 'Navegação' })), 56)
   const name = page.getByRole('table', { name: 'Pessoas' }).locator('tbody tr td:first-child')
   assert.ok((await widthOf(name.first())) >= 150, 'the name column of Pessoas is squeezed')
   await page.close()

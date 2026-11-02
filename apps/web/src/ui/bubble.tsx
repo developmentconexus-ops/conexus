@@ -44,7 +44,7 @@ export function BubbleContent({ className, render, ...props }: useRender.Compone
     props: mergeProps<'div'>(
       {
         className: cn(
-          'w-fit max-w-full min-w-0 overflow-hidden rounded-object border border-transparent px-md py-sm text-body wrap-break-word group-data-[align=end]/bubble:self-end',
+          'w-fit max-w-full min-w-0 overflow-hidden rounded-object border border-transparent px-md py-sm text-reading wrap-break-word group-data-[align=end]/bubble:self-end',
           className,
         ),
       },

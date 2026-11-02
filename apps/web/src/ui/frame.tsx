@@ -126,6 +126,12 @@ function CloseOnNavigation() {
   return null
 }
 
+// Below Tailwind's `lg` the sidebar opens as its icon rail, so a 768 to 1023px page keeps its width
+// (founder, 2026-11-02); the person can still expand it, and from 1024px it opens as before.
+function opensWide(): boolean {
+  return !globalThis.matchMedia('(max-width: 1023px)').matches
+}
+
 /**
  * The frame of every page with a session (web W30): one sidebar on the left and no top bar. The
  * sidebar holds `header`, `nav` and `footer`, open until the person collapses it to icons; `compact`
@@ -138,7 +144,7 @@ export function Frame(props: {
   compact: boolean
   children: ReactNode
 }) {
-  const [open, setOpen] = useState(true)
+  const [open, setOpen] = useState(opensWide)
   const [slot, setSlot] = useState<HTMLElement | null>(null)
   const { compact } = props
   return (

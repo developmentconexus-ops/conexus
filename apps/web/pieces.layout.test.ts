@@ -207,3 +207,18 @@ test('a fonte: Hanken Grotesk e JetBrains Mono, a saudação em 28 e 24, toda li
     await page.close()
   }
 })
+
+test('a prosa das mensagens usa o tipo reading, 15px com linha de 24, ', async () => {
+  const page = await harness.open('/pieces', { viewport: DESKTOP, replies: {} })
+  for (const text of ['Compare dois apps de encomenda', 'Resposta']) {
+    const prose = await page
+      .locator('[data-slot=bubble-content]', { hasText: text })
+      .first()
+      .evaluate((element) => {
+        const style = getComputedStyle(element)
+        return [style.fontSize, style.lineHeight]
+      })
+    assert.deepEqual(prose, ['15px', '24px'], text)
+  }
+  await page.close()
+})
