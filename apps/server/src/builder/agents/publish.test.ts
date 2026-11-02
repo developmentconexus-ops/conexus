@@ -164,6 +164,18 @@ test('publicar de novo o rascunho de uma versão depois de voltar a outra a torn
     activated.map((line) => line.fields),
     [1, 2].map((version) => ({ companyId: on.companyId, agentId: made.id, version })),
   )
+
+  await drafted(on.hub, on.ana, on.agents, agentOf(again), { instructions: 'Mais uma.' })
+  const returned = await post(on.hub, on.ana, `${url}/versions/1/activate`, {})
+  assert.deepEqual(agentOf(returned).state, { kind: 'PUBLISHED', version: 1, changed: true })
+  const late = await post(on.hub, on.ana, `${url}/publish`, {
+    revision: two.revision,
+    message: 'Atrasado',
+  })
+  assert.equal(late.statusCode, 200, late.body)
+  assert.deepEqual([versionOf(late).number, versionOf(late).active], [2, false])
+  const after = agentOf(await call(on.hub, on.ana, 'GET', url))
+  assert.deepEqual(after.state, { kind: 'PUBLISHED', version: 1, changed: true })
 })
 
 test('as versões: a lista diz número, quem publicou, a mensagem e a ativa; voltar à 1 não muda o rascunho; uma versão que não existe dá AGENT_VERSION_NOT_FOUND', async (t) => {

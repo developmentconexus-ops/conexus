@@ -40,8 +40,9 @@ type Published = { number: number; did: 'PUBLISHED' | 'ACTIVATED' | 'NONE' }
 type AgentRow = typeof agent.$inferSelect
 
 /**
- * The version the same revision made before, if any: made active again when a return to another
- * version moved the agent off it, so publishing the same draft twice leaves it active.
+ * The version the same revision made before, if any. It is made active again only while the draft
+ * is still that revision, after a return to another version; once the draft moved on, a late
+ * publish of the old revision returns the version and changes nothing.
  */
 async function republished(
   tx: CommandTx,
@@ -53,7 +54,9 @@ async function republished(
     .from(agentVersion)
     .where(and(eq(agentVersion.agentId, row.id), eq(agentVersion.sourceRevision, revision)))
   if (earlier === undefined) return undefined
-  if (row.activeVersion === earlier.number) return { number: earlier.number, did: 'NONE' }
+  if (row.activeVersion === earlier.number || row.revision !== revision) {
+    return { number: earlier.number, did: 'NONE' }
+  }
   await makeActive(tx, AgentIdSchema.parse(row.id), earlier.number)
   return { number: earlier.number, did: 'ACTIVATED' }
 }
@@ -88,7 +91,7 @@ async function frozen(
 /**
  * Freezes the draft of the revision read as the next version, with the version of each chosen
  * tool, and makes it active. The agent's row is held first, which waits for a draft change in
- * flight; the same revision again finds the version it made and makes it active.
+ * flight; the same revision again finds the version it made (see `republished`).
  */
 export async function published(
   tx: CommandTx,
