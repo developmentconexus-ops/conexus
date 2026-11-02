@@ -16,7 +16,8 @@ agente do Mastra Studio que você mandou: instruções, modelo, memória, ligaç
 ele lê. Você muda o que quiser ali mesmo, conversa com o rascunho, toca **Publicar** e o agente passa
 a atender como versão 1. Mudou, publica a 2; não gostou, volta para a 1. Logo depois, na **24.3.1**,
 o agente lê os dados do app do Projeto, uma automação da 24.2 pode rodá-lo, as ferramentas ganham a
-aba delas e a área mostra as **Ideias do Construtor** quando ele vê uma falta de verdade.
+aba delas, a área mostra as **Ideias do Construtor** quando ele vê uma falta de verdade, e o Início
+ganha a página **Agentes**, com todos os agentes da empresa.
 
 **O roteiro de uso.** Padaria Sol: Ana (dona), Bia (administradora) e Bruno (membro). O Projeto
 "Vendas" recebeu a ligação "Matriz" do Sankhya e tem o app "Metas", com a meta de cada vendedor. No
@@ -53,7 +54,7 @@ computador e no celular.
   o próprio nome, como o editor do Mastra faz), **`C1`** (o Construtor cria, muda e testa rascunhos
   sozinho; publicar é sempre um toque seu), **`E1`** (a ordem do roteiro abaixo), "3.A" (agentes
   escondidos do membro), a **B** de 2026-11-02 ("Okay aprovado vamos seguir assim então") e as
-  respostas ao protótipo do Construtor, "1A 2A 3A 4A" (2026-11-02). A
+  respostas ao protótipo do Construtor, "1A 2A 3A 4A" e "`V1`" (2026-11-02). A
   aprovação é também a sua palavra para as permissões das tabelas novas e da função que lê, ao ligar
   o Hub, as empresas com agentes publicados (regra D11), como nas etapas 9, 18, 19 e 24.2.
 - **No fim:** faz o roteiro no computador e no celular, diz o que viu e aprova os textos das telas.
@@ -83,12 +84,19 @@ computador e no celular.
 - **Workflows, o desenho em balões e as automações na mesma área** (24.6). As automações continuam
   na página delas; só ganham o alvo agente.
 - **Canais**, Telegram primeiro pelos Channels do Mastra (24.7, a sua resposta `D1`).
-- **Agentes no Início**: a sua `J1` põe os agentes no Projeto.
+- **Agentes fora de um Projeto**: a sua `J1` põe os agentes no Projeto; a página do Início (`V1`) só os
+  mostra.
 - **Ideias do Construtor** na área (a sua 4A) entram na **24.3.1**, na U8, porque a 24.3 já está no
   teto de tamanho (regra L2). Uma ideia só aparece quando vem de uma falta que o Construtor vê nos
   dados: um agente publicado preso a uma versão velha de uma ferramenta, ou um agente que usa uma
   ligação que o Projeto não oferece mais. Sem falta, o bloco não aparece. A falta "grava sem
   aprovação" entra com a 24.5, quando houver ferramentas que gravam.
+- **Agentes no Início** (a sua `V1`) entra na **24.3.1**, na U9, ao lado da aba Ferramentas. Uma página
+  **Agentes** no Início lista todos os agentes da empresa, com o filtro por Projeto e, de cada um, a
+  versão, o estado e a última vez que rodou. Ela só mostra: um toque abre a página do agente dentro do
+  Projeto dele, onde se muda. **Novo agente** pergunta em qual Projeto, porque um agente sempre nasce
+  num Projeto. O membro não vê essa página também (3.A). É a mesma forma das Automações da 24.2, que
+  têm uma página no Início e uma em cada Projeto: uma lista e uma leitura só.
 - **Comparar versões lado a lado**: a lista de versões mostra quem publicou, quando e a mensagem;
   comparar entra quando você pedir.
 - **"Ver código" e o desenho do que o agente usa** (o estudo, §3.6): o `agent.ts` equivalente, só de
@@ -103,7 +111,8 @@ computador e no celular.
 `C1`, `E1`, 3.A), a da biblioteca de ferramentas também, **`T1`** (2026-11-02), e as quatro do
 protótipo: **1A** (o Construtor mora dentro do Projeto, na área **Agentes**, não numa área à parte),
 **2A** (os nomes, acima), **3A** (quem muda uma ferramenta da biblioteca, abaixo) e **4A** (as
-ideias só de faltas de verdade, na 24.3.1). O que os estudos
+ideias só de faltas de verdade, na 24.3.1). E a **`V1`** (a página Agentes no Início, só para ver, na
+24.3.1). O que os estudos
 deixaram como engenharia (a forma de conversar com o agente registrado, abaixo, e onde rodará o
 código, na 24.4) não é decisão sua.
 
@@ -159,9 +168,11 @@ escolhe e cria ferramentas.
 | U6 (24.3.1) | A automação roda um agente: o alvo da automação ganha o agente publicado; o cartão da automação na conversa do agente; apagar o agente leva as automações dele | `apps/server/src/builder/automations/`, `apps/server/src/builder/agents/` (`agent.ts`), `packages/hub-api/src/` (`automations.ts`), `apps/web/src/builder/automations/` | [testing](../guides/testing.md) | U2 |
 | U7 (24.3.1) | A aba **Ferramentas** da área: a lista das ferramentas que o Projeto pode usar, as versões de cada uma, a versão nova pelo formulário, apagar com `TOOL_IN_USE`, e no painel do agente o aviso "Versão nova" com **Usar a versão n** | `apps/web/src/builder/tools/`, `apps/web/src/builder/agents/` (`config-panel.tsx`), `apps/web/src/routes/_app/companies/$companyId/projects/`, `docs/reference/screens.md` | [web](../guides/web.md) | U5 |
 | U8 (24.3.1) | As **Ideias do Construtor** na área (a 4A): a leitura das faltas que os dados mostram (um agente publicado preso a uma versão velha de uma ferramenta, um agente publicado que usa uma ligação que o Projeto não oferece mais), o bloco que some sem falta e **Pedir ao Construtor** | `apps/server/src/builder/agents/` (`ideas.ts`, `routes.ts`), `packages/hub-api/src/` (`agents.ts`), `apps/web/src/builder/agents/` (`area.tsx`, `ideas.tsx`) | [web](../guides/web.md) | U4, U7 |
+| U9 (24.3.1) | A página **Agentes** do Início (a `V1`): a mesma lista da área com todos os agentes da empresa, o filtro por Projeto, a versão, o estado e a última vez que rodou; um toque abre o agente no Projeto dele; **Novo agente** pergunta o Projeto; a entrada no Início, escondida do membro | `apps/server/src/builder/agents/` (`agents.ts`, `agent.ts`), `apps/server/migrations/`, `packages/hub-api/src/` (`agents.ts`), `apps/web/src/builder/agents/` (`agent-list.tsx`, `new-agent.tsx`), `apps/web/src/routes/_app/companies/$companyId/` (`route.tsx`, `agents.index.tsx`) | [web](../guides/web.md) | U5, U6 |
 
 Na 24.3, a U4 anda depois da U2, e a U5 espera a U4, porque o cartão do rascunho é o resultado das
-ferramentas do Construtor. Na 24.3.1, a U7 só toca a web, a U8 anda depois dela (o bloco fica na mesma área), e a U3 e a U6 andam em paralelo: mudam o mesmo arquivo do agente
+ferramentas do Construtor. Na 24.3.1, a U7 só toca a web, a U8 anda depois dela (o bloco fica na mesma área), a U9 depois da U6 (a última execução conta as
+automações), e a U3 e a U6 andam em paralelo: mudam o mesmo arquivo do agente
 (`builder/agents/agent.ts`, uma ferramenta cada) num ponto só, e a segunda a entrar refaz a fusão;
 `packages/hub-api/src/failures.ts` é o outro ponto de fusão.
 
@@ -176,15 +187,17 @@ dos agentes guardados do Mastra) e a `mastra-only-in-builder` (W7): os agentes m
 por agente: +~100, a tabela das versões, a lista e `TOOL_IN_USE`). U2: ~1.000. U3: ~400. U4: ~750
 (`tool_search` e `tool_save` no lugar das duas dos recortes). U5: ~1.150 (o painel escolhe e cria
 ferramentas; mudar e apagar uma vão para a U7). U6: ~200. U7: ~350 (uma lista, as versões e o
-aviso, sobre o formulário da U5). U8: ~300 (uma consulta sobre as tabelas da U1, uma rota e o bloco). Testes, gerados e o OpenAPI ficam fora. Hipótese pelos vizinhos: a U1 da 24.2 (~850, rotas
+aviso, sobre o formulário da U5). U8: ~300 (uma consulta sobre as tabelas da U1, uma rota e o bloco). U9: ~350 (uma coluna, a
+gravação dela a cada turno, o filtro na rota da lista; a rota do Início, a entrada, o filtro e
+**Novo agente** sobre a lista da U5, como a página das Automações). Testes, gerados e o OpenAPI ficam fora. Hipótese pelos vizinhos: a U1 da 24.2 (~850, rotas
 sobre um serviço), a U3 da 24.2 (~950, um cartão e duas páginas; a U5 tem a área, a página, o
 painel de seis seções, o formulário da ferramenta e as versões), a tabela da conversa da 24.1
 (`chosen.ts`, 102 linhas), o login do app da 9 e o controlador do Assistente (`assistant.ts`, 371
-linhas, só uma parte da U2). O total, ~5.250, passa do teto da regra L2, então a etapa se divide
+linhas, só uma parte da U2). O total, ~5.600, passa do teto da regra L2, então a etapa se divide
 antes da construção: a **24.3** é a U1, a U2, a U4 e a U5 (~4.000), o que a Ana faz nos passos 1 a 4
-e 6 do roteiro; a **24.3.1**, logo depois e com este mesmo cartão, é a U3, a U6, a U7 e a U8 (~1.250), os
-dados do app, o passo 5, a aba Ferramentas e as Ideias do Construtor. As ideias não cabem na 24.3,
-que já está nos ~4.000 da L2. A 24.3.1 não pede página nova: a aprovação desta vale para as duas, e a sua
+e 6 do roteiro; a **24.3.1**, logo depois e com este mesmo cartão, é a U3, a U6, a U7, a U8 e a U9 (~1.600), os
+dados do app, o passo 5, a aba Ferramentas, as Ideias do Construtor e a página Agentes do Início.
+As ideias e a página do Início não cabem na 24.3, que já está nos ~4.000 da L2. A 24.3.1 não pede página nova: a aprovação desta vale para as duas, e a sua
 abertura só confere a base.
 
 ## Os critérios de aceite
@@ -193,7 +206,7 @@ O aceite da 24.3: a Ana pede um agente ao Construtor, recebe ideias, vê o rascu
 por ele, muda o modelo e as instruções na página, conversa com o rascunho, publica a versão 1,
 publica a 2, volta para a 1 e conversa com o publicado (critérios 1, 5, 6, 9, 12, 13, 22, 24, 25, 26,
 27). O da 24.3.1: o agente lê os dados do app, roda numa automação, a Ana muda uma ferramenta pela aba
-dela e a área mostra a ideia de trocar o agente para a versão nova (critérios 18, 30, 32, 33, 34).
+dela e a área mostra a ideia de trocar o agente para a versão nova e o Início lista os agentes da empresa (critérios 18, 30, 32, 33, 34, 35, 36).
 
 | # | Unidade | Critério, observável de fora, com a recusa | Teste que o prova | Nível |
 | --- | --- | --- | --- | --- |
@@ -236,6 +249,8 @@ dela e a área mostra a ideia de trocar o agente para a versão nova (critérios
 | 32 | U7 | A aba **Ferramentas** da área lista as ferramentas que o Projeto pode usar, com o que cada uma lê, a versão e os agentes que a usam; **Nova versão** abre o formulário com a versão de agora e grava a `n+1`; **Apagar** de uma usada mostra "Usada por <agentes>." e não apaga; no painel do agente, uma ferramenta com versão nova mostra "Versão n disponível" e **Usar a versão n**, que grava o rascunho | `apps/web/src/builder/tools/tools-tab.test.tsx`; `apps/web/src/builder/agents/agent-page.test.tsx`, "versão nova" | must |
 | 33 | U8 | `GET /api/companies/{c}/projects/{p}/agent-ideas` devolve, de cada agente publicado do Projeto, `TOOL_VERSION_BEHIND` para cada ferramenta da versão ativa cuja versão presa é mais velha que a mais nova, e `CONNECTION_LOST` para cada ligação da versão ativa (em `connections` ou numa ferramenta presa) que o Projeto não oferece mais; sem falta, `{ ideas: [] }`; um rascunho nunca publicado não gera ideia (a página dele já marca); o membro, `NOT_FOUND`; a leitura não chama modelo nem grava nada | `apps/server/src/builder/agents/ideas.test.ts` | must |
 | 34 | U8 | A área mostra o bloco **Ideias do Construtor** só com uma ideia ou mais, uma linha por ideia com o agente e a falta; sem ideia, ou com a leitura falhando, o bloco não aparece e o resto da área funciona; **Pedir ao Construtor** abre uma conversa nova do Construtor com o pedido escrito na caixa, sem mandar: quem manda é a pessoa | `apps/web/src/builder/agents/area.test.tsx`, "as ideias" | must |
+| 35 | U9 | `GET /api/companies/{c}/agents` sem `projectId` lista os agentes de todos os Projetos vivos da empresa, com `projectId`, só os daquele Projeto; cada `AgentSummary` traz `lastRunAt`, o início do último turno de uma conversa com a versão publicada (de qualquer pessoa, também a aberta por uma automação), `null` sem nenhum; um turno da conversa de teste não muda `lastRunAt`; o membro, `NOT_FOUND`; um `projectId` de outra empresa, `NOT_FOUND` | `apps/server/src/builder/agents/routes.test.ts`, "a lista da empresa"; `conversation.test.ts`, "a última execução" | must |
+| 36 | U9 | A página **Agentes** do Início lista os agentes com o Projeto, o estado e a última execução, e filtra por Projeto; o nome abre a página do agente no Projeto dele; a página não tem nenhum botão de mudar; **Novo agente** pede o Projeto e abre a área **Agentes** dele com a conversa do Construtor; o membro não vê a entrada, e o endereço dá "não encontrado" | `apps/web/src/builder/agents/agent-list.test.tsx` | must |
 
 ## A matriz de estados
 
@@ -246,6 +261,7 @@ dela e a área mostra a ideia de trocar o agente para a versão nova (critérios
 | O cartão do rascunho (na conversa do Construtor) | o cartão com **Rascunho**, **Abrir** e **Publicar** | — | **Publicar** ocupado | a frase do código; `AGENT_DRAFT_INVALID`: "Falta <campo> para publicar." | o agente apagado: "Este agente foi apagado." sem botões | — | `AGENT_DRAFT_STALE` (o cartão manda o `revision` que mostrou): "O rascunho mudou. Abra o agente para ver." |
 | A página do agente | "Ainda não há conversas com este agente." com **Nova conversa** (publicado) e **Testar rascunho** | o mesmo | a página em esqueleto | a frase do código com Tentar de novo | `AGENT_NOT_FOUND`: a página de não encontrado | o membro: não encontrado | `AGENT_DRAFT_STALE`: a frase de recarregar; uma ligação que o Projeto não oferece mais: "O Projeto não oferece mais" ao lado dela, e **Publicar** recusado com o campo |
 | Uma seção do painel | os valores do rascunho, cada um editável; ferramentas: as escolhidas, **Escolher** (a lista das que o Projeto pode usar) e **Criar** (o formulário) | ferramentas: "Nenhuma ferramenta. Peça ao Construtor, escolha ou crie aqui." | a seção ocupada ao gravar | `TOOL_REFUSED` e `AGENT_TOOL_REFUSED`: o motivo ao lado do campo | — | — | `MODEL_NO_ACCOUNT` ao abrir a conversa: a frase da 24.1 com o caminho das contas |
+| A página **Agentes** do Início (U9) | "Nenhum agente ainda. Os agentes nascem num Projeto." com **Novo agente** | o filtro sem agentes: "Nenhum agente neste Projeto." | a lista em esqueleto | `DATABASE_UNAVAILABLE`: a frase com Tentar de novo | — | o membro não vê a entrada; o endereço dá "não encontrado" (S10) | um Projeto apagado some do filtro |
 | As **Ideias do Construtor** na área (U8) | o bloco não aparece | o bloco não aparece | o bloco não aparece até a leitura voltar | o bloco não aparece | — | o membro não vê a área | — |
 | A aba **Ferramentas** (U7) | "Nenhuma ferramenta ainda. O Construtor faz as primeiras quando monta um agente." | o mesmo | a lista em esqueleto | a frase do código com Tentar de novo | `TOOL_NOT_FOUND`: a lista recarrega | o membro: não encontrado | `TOOL_IN_USE`: "Usada por <agentes>." |
 | **Versões** | "Ainda não publicado." | o mesmo | a lista em esqueleto | a frase do código | `AGENT_VERSION_NOT_FOUND`: a lista recarrega | — | — |
@@ -309,6 +325,7 @@ por duas (**Conversas** e **Configuração**); uma conversa aberta ocupa a tela,
 | `AgentRun` no `requestContext` | U2 (o escopo da conversa de agente) | U2 (o agente do controlador), U3 (`app_data_read`), U6 (`propose_automation`) |
 | `ConstrutorResult` | U4 | U5 (o cartão) |
 | `AgentIdea` (as faltas, `GET …/agent-ideas`) | U8 | U8 (o bloco) |
+| `AgentSummary.lastRunAt` e a coluna `builder.agent.last_run_at` | U9 (o turno com a versão publicada) | U9 (a lista) |
 | `AutomationTarget` (no `inputData`, versão 2) | U6 | U6 |
 | O login `app_<projeto>_read` | U3 | U3 |
 
@@ -361,6 +378,7 @@ a unidade a reabre antes de usar. Os estudos: o do Construtor (2026-11-02, a arq
 | O alvo da automação | U6 | `AutomationInput` versão 1 (`builder/automations/run.ts:37-50`, lido; o comentário diz que a versão deixa um alvo novo entrar); `conversed` abre a conversa (`run.ts:96-142`, lido) | a agenda com alvo agente chama o agente direto (`dist/docs/references/reference-schedules-overview.md:43,57`) | o alvo agente da agenda pula a conversa | nativo: o mesmo workflow da 24.2, que abre a conversa do agente; nunca o alvo agente da agenda, que pularia a conversa marcada (`C1` da 24.2) | — | `A1`, `C1` da 24.2 | — |
 | As telas | U5 | a conversa do Assistente no Projeto (`routes/_app/companies/$companyId/projects/$projectId_.assistant.*`); a barra (`hub/projects/project-rail.tsx:111-175`, lido) | a página de agente do Studio: conversas, conversa, painel Config (`agent-page-config-panel.jpg`; `M:packages/playground-ui/.../agent-overview-panel.tsx:134-240`, relay) | estrutura e fluxo | nativo: as peças da 24.1; nenhum estilo do Studio | — | "estrutura e fluxo, nunca o estilo" (2026-11-01) | `apps/web/src/builder/agents/` |
 | As Ideias do Construtor | U8 | `agent_read` diz de cada ferramenta do rascunho se há versão nova (U4); a página marca a ligação que o Projeto não oferece mais (U5) | nenhuma referência tem o bloco; a tela 1 do protótipo do Construtor (2026-11-02) dá o lugar, e o próprio protótipo avisa que ideias genéricas viram ruído | uma leitura das faltas, nunca uma sugestão gerada | nativo: uma consulta às tabelas da U1 (`builder.agent_version_tool` contra `builder.tool.current_version`, as ligações da versão ativa contra `connectors.connections(scope)`); nenhuma chamada de modelo ao abrir a área, e o Construtor entra só quando a pessoa pede | — | "4A" (2026-11-02) | `builder/agents/ideas.ts`, `apps/web/src/builder/agents/ideas.tsx` |
+| A página Agentes do Início | U9 | as Automações: uma rota com `projectId` opcional (`packages/hub-api/src/automations.ts:137,149-155`; `apps/server/src/builder/automations/routes.ts:23`, lidos), um componente `Automations({ companyId, projectId? })` (`apps/web/src/builder/automations/automations.tsx:245-259`, lido) com o lugar de cada linha (`PlaceName`, `place.tsx:10`, lido), duas rotas finas (`routes/_app/companies/$companyId/automations.index.tsx` e `projects/$projectId_.automations.index.tsx`, lidas) e a entrada do Início escondida do membro (`routes/_app/companies/$companyId/route.tsx:75-82`, lido) | a lista do Studio, todos os agentes, um clique abre a página do agente (`REF:mastra-studio`, a lista de agentes) | uma lista, o lugar em cada linha, a edição na página do agente | nativo: a mesma rota e o mesmo componente com o filtro, como as Automações; nenhuma segunda lógica, nenhuma edição no Início | — | "`V1`" (2026-11-02) | `apps/web/src/builder/agents/agent-list.tsx`, `new-agent.tsx`, `routes/_app/companies/$companyId/agents.index.tsx` |
 
 **A medida do transplante.** Nada vem do repositório antigo: ele não tinha agentes de Projeto. Do
 cartão anterior deste pull request ficam a U2 dele (os dados do app, agora a U3), a remoção em
@@ -447,7 +465,8 @@ Nada sai do `main`.
 ```ts
 // packages/hub-api/src/agents.ts
 const BASE = '/api/companies/{companyId}/projects/{projectId}/agents'
-// GET    BASE                                      -> { agents: AgentSummary[] }        acesso manageAgents
+// GET    /api/companies/{companyId}/agents?projectId= -> { agents: AgentSummary[] }   acesso manageAgents; uma rota só para a área do
+//        Projeto (com `projectId`, obrigatório na 24.3) e para a página do Início da U9 (sem: a U9 o deixa opcional), como `listAutomations` (`packages/hub-api/src/automations.ts:137,149-155`)
 // POST   BASE  CreateAgent, attemptKey: true       -> 201 { agent: AgentDetail }
 // GET    BASE/{agentId}                            -> { agent: AgentDetail }
 // PATCH  BASE/{agentId}/draft  DraftPatch          -> { agent: AgentDetail }            AGENT_DRAFT_STALE (409), REQUEST_MALFORMED, AGENT_TOOL_REFUSED
@@ -1135,3 +1154,81 @@ servidor dublê; larguras e temas pelo QA da etapa. Comando: os testes tocados, 
   nunca uma segunda caixa.
 - Aparece uma terceira falta que os dados mostram: relata; ela entra com a palavra do fundador, não
   pela unidade.
+
+## U9 A página Agentes do Início
+
+**Base e modelo.** `main` depois da U6, na 24.3.1. Sonnet: uma coluna, um filtro numa rota que já
+existe e uma página que repete a das Automações.
+
+### As linhas da tabela
+
+- A palavra do fundador, a `V1` (2026-11-02): no Início, uma página **Agentes** com todos os agentes da
+  empresa, o filtro por Projeto e, de cada um, a versão, o estado e a última execução; só para ver;
+  um toque abre a página do agente no Projeto dele; **Novo agente** pergunta o Projeto; nenhum
+  agente fora de um Projeto; o membro não vê (3.A).
+- A forma a repetir, a das Automações da 24.2: a rota `listAutomations` com `projectId` opcional
+  (`packages/hub-api/src/automations.ts:137,149-155`, lido), o componente único
+  `Automations({ companyId, projectId? })` (`apps/web/src/builder/automations/automations.tsx:245-259`,
+  lido), o lugar de cada linha por `PlaceName` (`apps/web/src/builder/automations/place.tsx:10`,
+  lido), as duas rotas finas que só passam ou não o `projectId`
+  (`apps/web/src/routes/_app/companies/$companyId/automations.index.tsx` e
+  `.../projects/$projectId_.automations.index.tsx`, lidas) e a entrada do Início com
+  `role !== 'member'` (`apps/web/src/routes/_app/companies/$companyId/route.tsx:75-82`, lido). Uma
+  diferença: a lista das Automações sem `projectId` mostra as do Início; a dos agentes sem `projectId`
+  mostra as de todos os Projetos, porque nenhum agente mora no Início.
+- A última execução: o processador do turno do controlador "agentes" (U2, `builder/agents/agent.ts`)
+  grava `last_run_at = now()` na linha do agente no começo de um turno com a versão publicada; a
+  conversa aberta por uma automação (U6) passa pelo mesmo turno. A conversa de teste não grava.
+
+### O raio da mudança
+
+| Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
+| --- | --- | --- |
+| `apps/server/migrations/` | Cria `<data>_e2431_agent_last_run` (a coluna `last_run_at timestamptz null`; as permissões não mudam: `hub_company` já tem `UPDATE` em `builder.agent`) | `npm run check-migrations` |
+| `apps/server/src/builder/agents/` | Muda `agents.ts` (a lista com `projectId` opcional, só Projetos vivos; `lastRunAt` no resumo) e `agent.ts` (a gravação no começo do turno publicado) | a web |
+| `packages/hub-api/src/agents.ts` | Muda: `projectId` opcional na lista; `AgentSummary.lastRunAt: z.iso.datetime().nullable()`; o OpenAPI gerado | a web |
+| `apps/web/src/builder/agents/` | Cria `agent-list.tsx` (a lista que sai de `area.tsx`, com o Projeto em cada linha quando não há filtro) e `new-agent.tsx` (a escolha do Projeto); muda `area.tsx` (usa `agent-list.tsx`) e `queries.ts` (`agentsQuery(companyId, projectId?)`) | as duas rotas |
+| `apps/web/src/routes/_app/companies/$companyId/` | Cria `agents.index.tsx` (passa nenhum `projectId`; o filtro é um parâmetro de busca do endereço); muda `route.tsx` (a entrada **Agentes** ao lado de **Automações**, com `role !== 'member'`) | — |
+| `docs/reference/screens.md` | Muda: a página do Início | — |
+
+### Os contratos que a unidade cria
+
+```ts
+// packages/hub-api/src/agents.ts
+// GET /api/companies/{companyId}/agents?projectId=   projectId passa a opcional: sem ele, os agentes de todos os Projetos vivos
+export const AgentSummary = /* o da U1 */ .extend({ lastRunAt: z.iso.datetime().nullable() })   // null: nunca rodou publicado
+// apps/web/src/builder/agents/queries.ts
+export function agentsQuery(companyId: CompanyId, projectId: ProjectId | undefined)   // como automationsQuery
+// apps/web/src/builder/agents/agent-list.tsx
+export function AgentList(props: { companyId: CompanyId; projectId?: ProjectId })     // um componente, as duas páginas
+```
+
+A página do Início não muda nada: a linha leva à página do agente no Projeto dele, e **Novo agente**
+leva à área **Agentes** do Projeto escolhido, onde o Construtor começa a conversa.
+
+### As skills e a leitura
+
+`shadcn`, `impeccable`, `pstack:tdd`; as linhas de `docs/reference/stack.md` para `apps/web/src/`.
+[web](../guides/web.md) W7, W29, W30, W34; [data](../guides/data.md) D11; [testing](../guides/testing.md) T5.
+
+### A ordem do trabalho
+
+1. **A prova primeiro.** `routes.test.ts`, "a lista da empresa": dois Projetos com um agente cada; a
+   lista sem `projectId` traz os dois, com `projectId`, um; falha hoje.
+2. A migração; `lastRunAt` e a gravação no turno (`conversation.test.ts`, "a última execução").
+3. `agent-list.tsx` tirado de `area.tsx`, sem mudar a área; a rota do Início, o filtro, **Novo
+   agente** e a entrada.
+4. `docs/reference/screens.md`. Regras: W7, W29, W34, C21, C26.
+
+### Como se prova
+
+O critério 35 pelo servidor de teste e o Postgres de teste; o 36 pelos testes de `apps/web` com o
+servidor dublê; larguras e temas pelo QA da etapa. Comando: os testes tocados, `npm run typecheck`,
+`npm run lint`, `npm run check-migrations`.
+
+### Parar se
+
+- A página do Início parece precisar de uma segunda leitura ou de um segundo componente de lista:
+  para; a `V1` pede a forma das Automações, uma de cada.
+- Gravar `last_run_at` a cada turno aparece no atraso do laço do `HUB_MEMORY`: relata o número; não
+  inventar um intervalo.
