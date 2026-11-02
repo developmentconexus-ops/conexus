@@ -423,6 +423,8 @@ Cartão da etapa 24.1 aprovado em 2026-11-01 (commit d8fae7ecaf733ae6522a7a5d4f9
 
 Essa emenda vem da revisão da U2 (B1) e do plano de fechamento, decidida pelo firstmate, sem decisão nova do fundador nem mudança no que ele vê: as ligações escolhidas da conversa vivem na tabela do Hub `builder.assistant_conversation`, que só o Hub escreve, porque as escritas do próprio Mastra nos metadados da conversa (título, memória observacional) desfaziam a escolha; o caminho do arquivo do Mastra é `builder/conversation/mastra.ts`; a lista de endereços da máquina do Assistente está na decisão 0059, e a 0051 fica como foi aprovada; o critério 20 e o contrato AssistantMachines passam a bater com o código. A palavra D11 do fundador para as permissões de `builder.assistant_conversation` (SELECT, INSERT e UPDATE da coluna `connections` para `hub_company`), em 2026-11-01: "Aprovo as permissoes do b1". A linha sai por cascata, sem permissão de DELETE.
 
+Em 2026-11-01, ao aprovar a Pauta ("Aprovo", seção "Etapa 13.3"), decisão do meio da etapa (L6): a barra embaixo da caixa sai. A escolha das ligações e a do Projeto passam para o "+" e para a pasta dentro da caixa, pelo cartão da 13.3. O cartão da 24.1 marca como substituídos os passos 1, 4 e 5 do roteiro, os critérios 23 a 24, as linhas da barra na matriz e na tabela de referência, o desenho de caixas e a nota sobre a W30, sem apagar o que dizia.
+
 Decisões do fundador na revisão da etapa 24.1, no passeio ao vivo e na rodada de correção, registradas no fechamento. Cada linha traz as palavras dele; a data é a do dia em que o firstmate as recebeu.
 
 Em 2026-11-01, a permissão de merge das unidades da 24.1, na noite: "depois de passar por todo o nosso processo de QA inteiro de revisão e ser aprovado". Cada merge seguiu a revisão aprovada e a CI verde do mesmo commit (L13).
@@ -482,3 +484,21 @@ Em 2026-11-02, a linha de uso da etapa 24.2, depois de o fundador passar pelos q
 Em 2026-11-02, aos textos de tela novos que a 24.2 escreveu e ele ainda não tinha aprovado (a lista no corpo da pull request do fechamento), em duas mensagens. À pergunta do sino, se ele lê "Automação <nome>: pronta", como o assunto do e-mail, em vez de "<nome> está pronta": "A". Depois: "Aprovo os textos". Os textos da lista estão aprovados, com a frase do sino trocada pela opção A; a troca do código da frase do sino vem em uma pull request pequena própria logo depois deste fechamento, porque um fechamento guarda só documentos (L20).
 
 Em 2026-11-02, como mudança de método (L20), à pergunta de como as etapas 13.3 (a Pauta, o sistema de desenho) e 24.3 (os agentes e o Construtor), ambas da fronteira, andam juntas, já que o guia permite uma etapa em construção por trilho: "A". A opção A: a Pauta vira um trilho próprio, o de desenho, ao lado da fronteira e do padrão, e as duas andam em paralelo (L1). Depois, à pergunta de como os dois trilhos dividem um arquivo que as duas tocam: "a". A opção a: uma unidade que toca arquivo do outro trilho só constrói quando nenhuma unidade em andamento desse trilho o toca, e o inverso (L1). Depois, ao marcador que diz o trilho do cartão: "APROVO O MARCADRO DE PAUTA". Depois, ao teto de palavras do guia de entrega, que o texto novo do trilho estoura: "A". O teto de `docs/guides/delivery.md` sobe de 1.900 para 1.950 palavras.
+
+## Etapa 13.3
+
+Em 2026-11-01, ao pedir o visual novo do Hub: "não é para você utilizar e tentar melhorar o que a gente tem hoje ... A gente pode mudar o que a gente hoje em estrutura, em visual ... ele tem simetria, ele tem matemática dentro do design"; "Isso é para a gente definir o design.md completo, igual o Cloud Design faz, que traz até os componentes, fonte, métricas, estilos ... pode refatorar, mudar tudo, desde que seja mais coeso"; "sempre seguindo o nosso ... o que a gente tem de front-end nos nossos guias e metodologias ... se a gente está realmente não repetindo, se a gente está seguindo uma arquitetura ... reutilização de componentes, em bibliotecas e padronização"; e, sobre a AffectUI (https://www.affectui.com/components/agent-handoff): "Esse cara faz muita coisa inter que podemos copiar ou fazer para nosso sistema no que for viavel".
+
+Em 2026-11-01, às capturas da Pauta: "Ficou boa a versão do layout". À linha da caixa, que deve ser uma peça com a mesma ordem em toda tela: "mais, depois o símbolo de pasta, ferramentas ... e aí o modelo e o símbolo de ... memória tá mais à direita".
+
+Em 2026-11-01, à pergunta se o modelo pode ser trocado dentro de uma conversa do Assistente ((a) sim, como no Builder; (b) só para leitura; (c) só no Início): "A".
+
+Em 2026-11-01, à pergunta se aprova a Pauta revisada, para entrar por cartão próprio com os primeiros consertos da auditoria do front-end: "Aprovo". O cartão é `docs/steps/e133-pauta.md`; a aprovação da página dele, com o commit, vem numa linha própria quando ele a ler.
+
+Em 2026-11-01, às duas decisões do cartão da 13.3 (A, onde a etapa entra; B, onde mora o DESIGN.md): "A1 B1". A 13.3 entra logo depois da 24.2, e o `DESIGN.md` da raiz vira o documento completo da Pauta, conferido contra o código, com o guia de desenho só com as regras. A página do cartão ainda não foi aprovada.
+
+Cartão da etapa 13.3 aprovado em 2026-11-01 (commit 4e04581c6878ace0512df2cb26f6c1536746e038): "Aprovo pode mesclar"
+
+Cartão da etapa 13.3 aprovado em 2026-11-02 (commit f7ce6c22590c3574b73668aad28b04939b738b4e): "APROVO O MARCADRO DE PAUTA"
+
+Lido pelo firstmate como a aprovação do cartão com a linha `Trilho: desenho`, que faz da Pauta o trilho de desenho (L1, L5); o resto do cartão está como foi aprovado no commit 4e04581c, "Aprovo pode mesclar".
