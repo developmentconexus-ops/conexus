@@ -124,5 +124,8 @@
   "src/platform/recordings.test.ts": 0.1,
   "src/platform/seal.test.ts": 0.1,
   "src/platform/secret.test.ts": 0.1,
-  "src/platform/test-database.test.ts": 8.2
+  "src/platform/test-database.test.ts": 8.2,
+  "src/builder/assistant/file-media.test.ts": 4.3,
+  "src/builder/connectors/connector-tools-scope.test.ts": 0.1,
+  "src/hub/connectors/assistant-port-failure.test.ts": 1.8
 }
