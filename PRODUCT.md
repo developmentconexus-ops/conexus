@@ -31,7 +31,7 @@ founder go through firstmate, never a direct interview.
 
 ## Brand Commitments
 
-"Grafite e Ipê" and the Encaixe mark, as DESIGN.md (docs/guides/design.md) records. Voice: V39.
+"Pauta" and the Encaixe mark: DESIGN.md holds the values and the pieces, docs/guides/design.md the rules. Voice: V39.
 
 ## Evidence on Hand
 

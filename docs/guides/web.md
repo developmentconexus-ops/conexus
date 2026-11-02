@@ -130,15 +130,15 @@ tudo". The lines of [screens](../reference/screens.md) say which screen is on wh
   with its conversations with the Assistant); Configurações
   (`/companies/<e>/settings/<section>`); Central (`/operations/…`). A person who only uses an app
   sees only "Seus apps" at `/` and never enters them. [review]
-- **W30.** The frame **should** be one sidebar on the left and no top bar: the company with its
-  switcher, Início, up to five recent Projetos with "Todos os projetos", Integrações, Configurações, and the
-  account (name, theme, Central for whoever operates it, Sair). Inside a Projeto the sidebar is the
-  Projeto's own (founder, 2026-10-30, R2): the Projeto's name with its switcher, ← the company,
-  Construir, Conversas (with the Assistant, step 24.1), Sobre, Quem usa o app and Integrações, then
-  the account; it stays open and collapses to
-  icons on demand. Leaving the Projeto brings the company's sidebar back. On a phone it is a drawer
-  opened from the top button (design V56). A person with two companies opens the last one used; "Suas empresas" is the switcher's
-  menu. [review]
+- **W30.** The frame **should** be an icon rail (Início, Projetos, Integrações, Configurações and the
+  account) with the place's list beside it. In the company the list is Nova conversa and Conversas
+  by day (a member sees the recent Projetos instead). Inside a Projeto the rail stays and the list
+  is the Projeto's: its name with the switcher, Construir, Conversas (with the Assistant, step
+  24.1), Sobre, Quem usa o app and Integrações (founder, 2026-10-30, R2). The account menu holds the
+  name, theme, Central for whoever operates it, and Sair. On a phone the rail and the list go
+  together into a drawer opened from the top button (design V56). A person with two companies
+  opens the last one used; "Suas empresas" is the switcher's menu. Founder, 2026-11-01: "Ficou boa a
+  versão do layout". [review]
 - **W31.** A Projeto **should** open on its Prévia with the latest conversation on the right; a new
   one focuses the composer. The top line holds the tabs Prévia, Código and Alterações, and Versão ▾,
   Abrir app and Publicar on the right; the Projeto's name heads its sidebar (W30). A control appears
