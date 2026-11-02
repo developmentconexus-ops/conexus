@@ -14,6 +14,7 @@ import { z } from 'zod'
 import type { SessionReader } from './access.ts'
 import { enforceAccess, headersOf, optionalSessionOf, sessionOf } from './access.ts'
 import type { AppsDomain, Config } from './config.ts'
+import { databaseFailure } from './database.ts'
 import type { FailureLog } from './failure.ts'
 import { Failure, logFailure } from './failure.ts'
 import { untilClientLeaves, whenReplyEnds } from './reply-lifetime.ts'
@@ -81,14 +82,14 @@ const CLIENT_ERRORS: Partial<Record<number, FailureCode>> = {
   415: 'REQUEST_MEDIA_TYPE_REFUSED',
 }
 
-/** Maps by the status a library error carries, never by its text (code C50, C52). */
+/** Maps by the status or SQLSTATE a library error carries, never by its text (code C50, C52). */
 function failureOf(error: unknown): Failure {
   if (error instanceof Failure) return error
   const status = statusOf(error)
   if (status >= 400 && status < 500) {
     return new Failure(CLIENT_ERRORS[status] ?? 'REQUEST_MALFORMED', { cause: error })
   }
-  return new Failure('INTERNAL_UNEXPECTED', { cause: error })
+  return databaseFailure(error)
 }
 
 type SecurityHeaders = ReturnType<typeof helmet>

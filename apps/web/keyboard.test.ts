@@ -33,7 +33,7 @@ const CHOSEN: Replies = {
 /** Opens Início, then reloads it: the company switcher reads the company list on each load. */
 async function menuRead(replies: Replies) {
   const page = await harness.open(`/companies/${COMPANY.id}`, { viewport: DESKTOP, replies })
-  await waitFor(page, 'O que vamos construir?')
+  await waitFor(page, 'Pergunte ou peça um app')
   const read = page.waitForResponse((response) => new URL(response.url()).pathname === COMPANIES)
   await page.reload()
   return { page, response: await read }

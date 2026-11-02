@@ -26,8 +26,6 @@ export const POOL_LIMITS = {
 const READ_DEADLINE_MS = 15_000
 
 const UNAVAILABLE_SQLSTATES = /^(08.{3}|57P0[123]|57014)$/
-/** What Node says of a connection that did not happen: a pool Mastra's storage uses, refused or lost. */
-const UNAVAILABLE_SOCKET_CODES = /^(ECONNREFUSED|ECONNRESET|ETIMEDOUT|EPIPE|ENOTFOUND|EAI_AGAIN)$/
 
 export type DatabaseUrl = Secret<'DatabaseUrl'>
 export const DatabaseUrl = {
@@ -116,9 +114,35 @@ export type Database = Readonly<{
   close(): Promise<void>
 }>
 
+// Mastra's storage adapter wraps every failure of its database in an error with these stable
+// fields, its own defects too ("Thread … not found", a row that is not JSON).
+const MastraStorageFailure = z.object({
+  domain: z.literal('STORAGE'),
+  category: z.literal('THIRD_PARTY'),
+})
+
+// A socket that would not open or was cut: Node's system error names its call and code.
+const SocketFailure = z.object({ syscall: z.string(), code: z.string().regex(/^E[A-Z]+$/) })
+
+// pg-pool's two timeouts: no free connection in time, and a connection that did not open in time.
+const POOL_TIMEOUTS = new Set([
+  'timeout exceeded when trying to connect',
+  'Connection terminated due to connection timeout',
+])
+
+/** The causes hold a connection pg or pg-pool lost: a socket failure, or one of the pool's timeouts. */
+function lostConnection(error: unknown): boolean {
+  for (let cause = error; cause instanceof Error; cause = cause.cause) {
+    if (POOL_TIMEOUTS.has(cause.message) || SocketFailure.safeParse(cause).success) return true
+    if (cause instanceof AggregateError && cause.errors.some(lostConnection)) return true
+  }
+  return false
+}
+
 /**
- * A database error is mapped by its SQLSTATE, and a connection that never happened by its socket
- * code, which is how a Mastra store's pool says it (code C52); any other error is the program's.
+ * A database error is mapped by its SQLSTATE (code C52); any other error is the program's. Mastra's
+ * storage failure is the database unavailable only when its causes hold a lost connection; its
+ * other failures are the program's, since trying again does not mend them.
  */
 export function databaseFailure(error: unknown): Failure {
   if (error instanceof Failure) return error
@@ -127,12 +151,9 @@ export function databaseFailure(error: unknown): Failure {
       const unavailable = UNAVAILABLE_SQLSTATES.test(cause.code ?? '')
       return new Failure(unavailable ? 'DATABASE_UNAVAILABLE' : 'INTERNAL_UNEXPECTED', { cause })
     }
-    const socket = 'code' in cause && typeof cause.code === 'string' ? cause.code : ''
-    if (UNAVAILABLE_SOCKET_CODES.test(socket)) {
-      return new Failure('DATABASE_UNAVAILABLE', { cause })
-    }
   }
-  return new Failure('INTERNAL_UNEXPECTED', { cause: error })
+  const unreachable = MastraStorageFailure.safeParse(error).success && lostConnection(error)
+  return new Failure(unreachable ? 'DATABASE_UNAVAILABLE' : 'INTERNAL_UNEXPECTED', { cause: error })
 }
 
 /** The constraint a unique violation (23505) names, read by SQLSTATE and name (code C52). */

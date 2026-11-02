@@ -7,6 +7,9 @@ import { cn } from '../../ui/cn.ts'
 import { preparationOf, teamDone } from './preparation.ts'
 import { everyMemberQuery, invitationsQuery } from './queries.ts'
 
+export const NO_SHARED_ACCOUNT =
+  'A empresa ainda não tem conta de modelo compartilhada. Só quem ligou a própria conta consegue conversar.'
+
 /** The company's people and its first page of invitations, once both are read. */
 function useTeamReads(companyId: CompanyId) {
   const members = useQuery(everyMemberQuery(companyId))
@@ -50,14 +53,18 @@ export function PreparationCard(props: { companyId: CompanyId; companyAccounts: 
       aria-label="Termine de preparar a empresa"
       className="flex flex-wrap items-center justify-between gap-md rounded-object border border-line px-lg py-sm max-md:py-md"
     >
-      <div className="flex flex-col gap-sm lg:flex-row lg:items-center lg:gap-xl">
-        <h2 className="font-semibold text-label">Termine de preparar a empresa</h2>
-        <ul className="flex flex-wrap gap-x-lg gap-y-xs">
-          {/* Início opens only once the nickname is saved, so step 1 is always done here. */}
-          <Step done label="Empresa" />
-          <Step done={done.modelAccount} label="Conta de modelo" />
-          <Step done={done.team} label="Convidar equipe" />
-        </ul>
+      <div className="flex flex-col gap-xs">
+        <div className="flex flex-col gap-sm lg:flex-row lg:items-center lg:gap-xl">
+          <h2 className="font-semibold text-label">Termine de preparar a empresa</h2>
+          <ul className="flex flex-wrap gap-x-lg gap-y-xs">
+            {/* Início opens only once the nickname is saved, so step 1 is always done here. */}
+            <Step done label="Empresa" />
+            <Step done={done.modelAccount} label="Conta de modelo" />
+            <Step done={done.team} label="Convidar equipe" />
+          </ul>
+        </div>
+        {/* A person's own account does not count (W33): whoever linked one can talk all the same. */}
+        {done.modelAccount ? null : <p className="text-label text-text-2">{NO_SHARED_ACCOUNT}</p>}
       </div>
       <Link
         to={missing}

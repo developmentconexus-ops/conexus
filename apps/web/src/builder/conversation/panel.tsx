@@ -1,39 +1,17 @@
-import type { CompanyId, ConversationId, ProjectId, Provider } from '@conexus/hub-api'
-import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
+import type { CompanyId, ConversationId, ProjectId } from '@conexus/hub-api'
+import { BUILDER_CONTROLLER } from '@conexus/hub-api'
+import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi, useLocation } from '@tanstack/react-router'
-import type { ReactNode, RefObject } from 'react'
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { HubFailure, sentenceOfCode, writeFailureText } from '../../platform/hub.ts'
+import type { ReactNode } from 'react'
+import { sentenceOfCode } from '../../platform/hub.ts'
 import { Notice } from '../../ui/notice.tsx'
-import { Empty, NotFound } from '../../ui/states.tsx'
-import { useIsMobile } from '../../ui/use-mobile.ts'
-import { accountsQuery } from '../model-accounts/public.ts'
-import type { Outgoing } from './attachments.ts'
-import { Composer } from './composer.tsx'
+import { Chat } from './chat.tsx'
 import type { Item } from './conversation-switch.tsx'
 import { ConversationSwitch } from './conversation-switch.tsx'
-import { useDraft } from './draft.ts'
 import { FirstMessage } from './first-message.tsx'
-import { useHandoff } from './handoff.ts'
-import { MemoryStatus } from './memory-status.tsx'
-import { ModelChoice, NoAccount } from './model-choice.tsx'
-import type { SessionRead } from './queries.ts'
-import { allConversationsQueryKey, conversationQuery, sessionReadQuery } from './queries.ts'
-import type { BuilderSession } from './session.ts'
-import type { Action, SessionState } from './session-state.ts'
-import { TaskPanel } from './task-panel.tsx'
-import {
-  EMPTY_CONVERSATION,
-  HANDOFF_UNCONFIRMED,
-  NO_SECRETS,
-  REQUEST_NOT_SENT,
-  titleOf,
-  UNCONFIRMED_SEND,
-  WRITE_AGAIN,
-} from './text.ts'
-import { shownOf, Transcript } from './transcript.tsx'
-import { useSession } from './use-session.ts'
-import { WorkingLine } from './working-line.tsx'
+import { ModelChoice } from './model-choice.tsx'
+import { allConversationsQueryKey, conversationQuery } from './queries.ts'
+import { EMPTY_CONVERSATION, REQUEST_NOT_SENT, titleOf, WRITE_AGAIN } from './text.ts'
 
 const route = getRouteApi(
   '/_app/companies/$companyId/projects/$projectId/conversations/$conversationId',
@@ -50,10 +28,40 @@ function PanelFrame(props: { current: Item | undefined; children: ReactNode }) {
   )
 }
 
+type Params = { companyId: CompanyId; projectId: ProjectId; conversationId: ConversationId }
+
+/** The Builder's conversation: the screen of `chat.tsx` on the Builder's controller, with the model's button. */
+function BuilderChat(params: Params) {
+  const { companyId, projectId, conversationId } = params
+  const queryClient = useQueryClient()
+  return (
+    <Chat
+      companyId={companyId}
+      conversationId={conversationId}
+      place={{ controller: BUILDER_CONTROLLER, projectId }}
+      conversationKey={conversationQuery(companyId, projectId, conversationId).queryKey}
+      onGone={() =>
+        void queryClient.invalidateQueries({
+          queryKey: allConversationsQueryKey(companyId, projectId),
+        })
+      }
+      empty={EMPTY_CONVERSATION}
+      picker={({ session, providers, onError }) => (
+        <ModelChoice
+          ids={params}
+          conversationId={conversationId}
+          session={session}
+          providers={providers}
+          onError={onError}
+        />
+      )}
+    />
+  )
+}
+
 /**
  * One conversation of the panel: the model, the transcript with the answer arriving, and the field.
- * The session is Mastra's, on its own routes behind the Hub's guard, read by `use-session.ts`. A switch
- * of conversation starts the screen over, and what was typed comes back from its draft.
+ * A switch of conversation starts the screen over.
  */
 export function Panel() {
   const { companyId, projectId, conversationId } = route.useParams()
@@ -62,7 +70,7 @@ export function Panel() {
   ).data
   return (
     <PanelFrame current={{ value: conversationId, label: titleOf(conversation) }}>
-      <Screen
+      <BuilderChat
         key={conversationId}
         companyId={companyId}
         projectId={projectId}
@@ -87,201 +95,5 @@ export function EmptyPanel() {
       )}
       <FirstMessage companyId={companyId} projectId={projectId} />
     </PanelFrame>
-  )
-}
-
-type Params = { companyId: CompanyId; projectId: ProjectId; conversationId: ConversationId }
-
-function useSending(
-  params: Params,
-  builder: BuilderSession,
-  field: RefObject<HTMLTextAreaElement | null>,
-  dispatch: (action: Action) => void,
-  onGone: () => void,
-) {
-  const queryClient = useQueryClient()
-  const [error, setError] = useState<string>()
-
-  /**
-   * Mastra's `sendMessage` opens a run, or enters the running one, or waits on the open card: a
-   * message sent while the Builder works shows pinned first, until the stream says Mastra took it.
-   */
-  async function send(outgoing: Outgoing, running: boolean): Promise<boolean> {
-    setError(undefined)
-    const steer = running ? { id: crypto.randomUUID(), ...outgoing } : undefined
-    if (steer !== undefined) dispatch({ type: 'steer', steer })
-    try {
-      await builder.send(outgoing)
-    } catch (failure) {
-      if (steer !== undefined) dispatch({ type: 'unsteered', id: steer.id })
-      if (failure instanceof HubFailure && failure.code === 'CONVERSATION_NOT_FOUND') onGone()
-      else setError(writeFailureText(failure, UNCONFIRMED_SEND))
-      return false
-    }
-    void queryClient.invalidateQueries({
-      queryKey: conversationQuery(params.companyId, params.projectId, params.conversationId)
-        .queryKey,
-    })
-    void queryClient.invalidateQueries({
-      queryKey: sessionReadQuery(params.conversationId).queryKey,
-    })
-    field.current?.focus()
-    return true
-  }
-
-  const stop = useMutation({ mutationFn: builder.stop, meta: { keepCache: true } })
-
-  function halt() {
-    field.current?.focus()
-    stop.mutate()
-  }
-
-  return { error, setError, send, halt }
-}
-
-function PanelComposer(props: {
-  params: Params
-  session: SessionRead
-  accounts: { choices: { mine: readonly Provider[] } }
-  state: SessionState
-  draft: ReturnType<typeof useDraft>
-  field: RefObject<HTMLTextAreaElement | null>
-  onSend: (outgoing: Outgoing) => Promise<boolean>
-  onStop: () => void
-  onError: (error: string | undefined) => void
-  canAnswer: boolean
-  waiting: boolean
-}) {
-  const {
-    params,
-    session,
-    accounts,
-    state,
-    draft,
-    field,
-    onSend,
-    onStop,
-    onError,
-    canAnswer,
-    waiting,
-  } = props
-  return (
-    <div className="px-md">
-      <Composer
-        answering={state.running || waiting}
-        canSend={canAnswer}
-        draft={draft}
-        field={field}
-        onSend={onSend}
-        onStop={onStop}
-        taskPanel={<TaskPanel tasks={session.tasks} streaming={state.running} />}
-        memory={
-          <MemoryStatus memory={state.memory} omPhase={state.omPhase} failed={state.memoryFailed} />
-        }
-        picker={
-          canAnswer && (
-            <ModelChoice
-              ids={params}
-              conversationId={params.conversationId}
-              session={session}
-              providers={accounts.choices.mine}
-              onError={onError}
-            />
-          )
-        }
-      />
-    </div>
-  )
-}
-
-function Notices(props: { companyId: CompanyId; canAnswer: boolean; empty: boolean }) {
-  const phone = useIsMobile()
-  if (props.canAnswer && !props.empty) return null
-  return (
-    <div className="flex flex-col gap-md px-md py-md">
-      {!props.canAnswer && <NoAccount companyId={props.companyId} />}
-      {props.empty && (
-        <Empty>
-          {EMPTY_CONVERSATION}
-          {phone && <span className="mt-sm block text-fact text-text-2">{NO_SECRETS}</span>}
-        </Empty>
-      )}
-    </div>
-  )
-}
-
-function Screen(params: Params) {
-  const { companyId, projectId, conversationId } = params
-  const queryClient = useQueryClient()
-  const session = useSuspenseQuery(sessionReadQuery(conversationId)).data
-  const accounts = useSuspenseQuery(accountsQuery(companyId)).data
-  const usable = useMemo(() => new Set(accounts.usableProviders), [accounts.usableProviders])
-  const canAnswer = usable.size > 0
-  const [gone, setGone] = useState(false)
-  const field = useRef<HTMLTextAreaElement>(null)
-  const draft = useDraft(conversationId)
-  const { state, dispatch, builder, older } = useSession(params, () => {
-    void queryClient.invalidateQueries({
-      queryKey: allConversationsQueryKey(companyId, projectId),
-    })
-    setGone(true)
-  })
-  const { error, setError, send, halt } = useSending(params, builder, field, dispatch, () =>
-    setGone(true),
-  )
-
-  useEffect(() => field.current?.focus(), [])
-  useHandoff(conversationId, {
-    send: async (outgoing) => {
-      if (!(await send(outgoing, false))) draft.restore(outgoing)
-    },
-    recover: (text) => {
-      draft.restore({ content: text, files: [] })
-      setError(HANDOFF_UNCONFIRMED)
-    },
-  })
-
-  const turns = useMemo(() => shownOf(state), [state])
-  const waiting = Object.keys(state.suspended).length > 0
-  const phone = useIsMobile()
-  if (gone) return <NotFound />
-  const empty = state.messages.length === 0 && !state.running
-  return (
-    <>
-      <Notices companyId={companyId} canAnswer={canAnswer} empty={empty} />
-      <div className="min-h-24 flex-1 md:min-h-40">
-        <Transcript
-          turns={turns}
-          steers={state.steers}
-          model={session.model}
-          older={older}
-          onAsk={(text) => {
-            draft.append(text)
-            field.current?.focus()
-          }}
-        />
-      </div>
-      {error !== undefined && (
-        <p role="alert" className="px-md">
-          {error}
-        </p>
-      )}
-      {(state.running || waiting) && !(phone && waiting) && (
-        <WorkingLine startedAt={state.startedAt} heard={state.messages} waiting={waiting} />
-      )}
-      <PanelComposer
-        params={params}
-        session={session}
-        accounts={accounts}
-        state={state}
-        draft={draft}
-        field={field}
-        onSend={(outgoing) => send(outgoing, state.running || waiting)}
-        onStop={halt}
-        onError={setError}
-        canAnswer={canAnswer}
-        waiting={waiting}
-      />
-    </>
   )
 }

@@ -97,8 +97,7 @@ export async function conversing(
  * own Builder and sessions, nothing shared in memory, its lines in `log`.
  */
 export async function hubBeside(t: TestContext, hub: Hub, log: FailureLog = silent) {
-  const { test, config } = hub
-  const { sendMail } = hub
+  const { test, config, sendMail } = hub
   const identity = createIdentity({ database: test.database, config, log: silent, sendMail })
   const postgres = heldCompanyPostgres(config)
   const ports = testAppPorts(
@@ -126,11 +125,11 @@ export async function hubBeside(t: TestContext, hub: Hub, log: FailureLog = sile
   t.after(() => close())
   const builder = {
     ...hub.builder,
-    bucket: ports.bucket,
-    control: ports.control,
-    knobs: ports.knobs,
+    ...{ bucket: ports.bucket, control: ports.control, knobs: ports.knobs },
   }
-  return { ...hub, app, runs: subjects.runs, mastra: subjects.conversations.mastra, builder, close }
+  const { assistantMachines } = ports
+  const mastra = subjects.conversations.mastra
+  return { ...hub, app, runs: subjects.runs, mastra, builder, assistantMachines, close }
 }
 
 export async function started(hub: Hub, person: Person, conversations: string, body: object = {}) {

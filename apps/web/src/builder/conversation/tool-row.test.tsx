@@ -1,6 +1,7 @@
-import { CARD_TOOLS, CLOSED_TOOLS, TASK_TOOLS } from '@conexus/hub-api'
+import { ASSISTANT_TOOL, CARD_TOOLS, CLOSED_TOOLS, TASK_TOOLS } from '@conexus/hub-api'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, expect, test, vi } from 'vitest'
+import { BUILDER_ROOM } from './room.ts'
 import type { ToolItem } from './rows.ts'
 import { invocationToItem } from './rows.ts'
 import type { Invocation } from './tool-fixtures.ts'
@@ -173,22 +174,27 @@ test('escrever abre no arquivo escrito, cortado em 800 (Critério 8)', async () 
   )
 })
 
-test('cada ferramenta do conjunto fechado tem frase e abre no corpo da tabela (Critério 8)', () => {
+test('cada ferramenta do conjunto fechado e do Assistente tem frase e abre no corpo da tabela (Critério 8)', () => {
   const cards: readonly string[] = Object.values(CARD_TOOLS)
   const tasks: readonly string[] = TASK_TOOLS
-  const drawn = CLOSED_TOOLS.filter((name) => !cards.includes(name) && !tasks.includes(name))
+  const drawn = [
+    ...CLOSED_TOOLS.filter((name) => !cards.includes(name) && !tasks.includes(name)),
+    ...Object.values(ASSISTANT_TOOL),
+  ]
   expect(Object.keys(TOOLS).sort()).toEqual([...drawn].sort())
   for (const name of drawn) {
-    const spec = specOf(name)
+    const spec = specOf(name, BUILDER_ROOM)
     expect(spec, name).toBeDefined()
-    const done = presentTool({ toolName: name, args: {} }, 'done')
+    const done = presentTool({ toolName: name, args: {} }, 'done', BUILDER_ROOM)
     expect(done.sentence, name).toBe(spec?.done)
-    expect(presentTool({ toolName: name, args: {} }, 'running').sentence, name).toBe(spec?.running)
+    expect(presentTool({ toolName: name, args: {} }, 'running', BUILDER_ROOM).sentence, name).toBe(
+      spec?.running,
+    )
   }
-  expect(specOf('github_create_issue')).toBeUndefined()
-  expect(presentTool({ toolName: 'github_create_issue', args: {} }, 'done').sentence).toBe(
-    'Usou Github create issue',
-  )
+  expect(specOf('github_create_issue', BUILDER_ROOM)).toBeUndefined()
+  expect(
+    presentTool({ toolName: 'github_create_issue', args: {} }, 'done', BUILDER_ROOM).sentence,
+  ).toBe('Usou Github create issue')
 })
 
 test('o relógio conta desde que a tela ouviu a chamada (Critério 8)', () => {

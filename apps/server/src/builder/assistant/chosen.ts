@@ -1,10 +1,10 @@
-import type { CompanyId, ConversationId, PersonId, ProjectId } from '@conexus/hub-api'
-import { ConnectionId } from '@conexus/hub-api'
+import type { ConversationId } from '@conexus/hub-api'
+import { ConnectionId, ProjectId } from '@conexus/hub-api'
 import { eq } from 'drizzle-orm'
 import { z } from 'zod'
 import type { Database } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
-import type { Owner } from './context.ts'
+import type { Kept, Owner } from './context.ts'
 import { assistantConversation } from './tables.ts'
 
 const Chosen = z.array(ConnectionId)
@@ -15,7 +15,10 @@ function scopeOf(owner: Owner) {
 
 export type ChosenConnections = ReturnType<typeof chosenConnections>
 
-/** The connections each Assistant conversation chose, which only the Hub's routes write (`tables.ts`). */
+/**
+ * The connections each Assistant conversation chose, which only the Hub's routes write
+ * (`tables.ts`).
+ */
 export function chosenConnections(database: Database) {
   return {
     /**
@@ -29,7 +32,7 @@ export function chosenConnections(database: Database) {
         projectId: ProjectId | undefined
         connections: readonly ConnectionId[]
       },
-    ): Promise<void> {
+    ): Promise<boolean> {
       return database.command(scopeOf(owner), async (tx) => {
         const projectId = input.projectId ?? null
         const [made] = await tx
@@ -42,12 +45,13 @@ export function chosenConnections(database: Database) {
           })
           .onConflictDoNothing({ target: assistantConversation.id })
           .returning({ id: assistantConversation.id })
-        if (made !== undefined) return
+        if (made !== undefined) return true
         const [kept] = await tx
           .select({ projectId: assistantConversation.projectId })
           .from(assistantConversation)
           .where(eq(assistantConversation.id, input.conversationId))
         if (kept?.projectId !== projectId) throw new Failure('IDEMPOTENCY_CONFLICT')
+        return false
       })
     },
 
@@ -63,7 +67,8 @@ export function chosenConnections(database: Database) {
           .set({ connections: [...connections] })
           .where(eq(assistantConversation.id, conversationId))
           .returning({ id: assistantConversation.id })
-        // The creation keeps the row before the thread: a thread of the person's without one is ours.
+        // The creation keeps the row before the thread: a thread of the person's without one is
+        // ours.
         if (changed === undefined) {
           throw new Failure('INTERNAL_UNEXPECTED', {
             details: { reason: 'ASSISTANT_CHOICE_MISSING' },
@@ -72,11 +77,14 @@ export function chosenConnections(database: Database) {
       })
     },
 
-    /** The conversation's choice as the Hub keeps it. */
-    of(owner: Owner, conversationId: ConversationId): Promise<readonly ConnectionId[]> {
+    /** The conversation's place and choice as the Hub keeps them: only the Hub writes the row. */
+    of(owner: Owner, conversationId: ConversationId): Promise<Kept> {
       return database.read(scopeOf(owner), async (tx) => {
         const [row] = await tx
-          .select({ connections: assistantConversation.connections })
+          .select({
+            projectId: assistantConversation.projectId,
+            connections: assistantConversation.connections,
+          })
           .from(assistantConversation)
           .where(eq(assistantConversation.id, conversationId))
         if (row === undefined) {
@@ -84,7 +92,10 @@ export function chosenConnections(database: Database) {
             details: { reason: 'ASSISTANT_CHOICE_MISSING' },
           })
         }
-        return Chosen.parse(row.connections)
+        return {
+          projectId: ProjectId.nullable().parse(row.projectId),
+          connections: Chosen.parse(row.connections),
+        }
       })
     },
   }

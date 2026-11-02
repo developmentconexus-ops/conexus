@@ -16,33 +16,30 @@ merge.
 
 ## 1. One step at a time
 
-- **L1.** Product work **should** have one step in construction; study/scope of the next step and
-  a draft method change can run beside it without product code. A sibling step (12.1, 12.2) builds
-  only after the previous one merges, but once a card is approved (L6), its units that touch none of
-  the files of the previous step's fixes may start, built from that card's pull request, while the
-  use, fixes and closing of the previous step run beside them. Founder, 2026-10-27: "1. Sim". Failure: two stages approve incompatible forms of one
-  contract before anyone uses it. [review]
+- **L1.** Product work **should** have one step in construction per track: **frontier** (the
+  Builder, agents, data in apps, platform) and **pattern** (connectors through the kit and other
+  work with a template, L27). Study/scope of the next step and a draft method change can run beside
+  it without product code. A sibling step builds only after the previous one merges, but once a
+  card is approved (L6), its units that touch none of the files of the previous step's fixes may
+  start, built from that card's pull request, while the use, fixes and closing of the previous step
+  run beside them. Founder, 2026-10-27: "1. Sim"; 2026-10-30: "1. Sim". [review]
 - **L2.** A step **should** be usable within a few days, with about 4,000 changed code lines excluding
   tests/generated files, calibrated at step 5; split before build when it exceeds that budget.
-  Founder, 2026-10-12: "A"; 2026-10-16: "Concordo". Failure: a 161-file step multiplies the possible
-  samples of review. This is a planning budget, not another merge gate. [review]
+  [review]
 - **L4.** A production defect **should** become an explicit fix at the queue's front rather than
-  hide in the next scope. Failure: an authorization fix inside an unrelated step makes the release
-  that corrected access untraceable. [review]
+  hide in the next scope. [review]
 
 ## 2. The card
 
-- **L5.** `docs/steps/` **must** hold one file: the card of the step in construction. The next card
-  waits in its own draft pull request, its units built on their branches once approved, and enters
-  when the current step closes. [check-docs]
+- **L5.** `docs/steps/` **must** hold one file per track: the card of the step in construction. The
+  next card of a track waits in its own draft pull request, its units built on their branches once
+  approved, and enters when that track's step closes. [check-docs]
 - **L6.** The founder **must** approve the card's page in Portuguese, recorded in the approvals
   ledger with his words, the date and the card's commit. A mid-step decision of his goes straight into the ledger, with no new card approval. Founder,
   2026-10-27: "3. Sim". [CI]
 - **L7.** A unit **should** follow its card's folders and contract owners, declaring direct
   consequences of an approved contract/guard in the build report rather than stopping for a missing
-  path. A change to visible behavior or scope returns to the card and founder. Founder,
-  2026-10-15: "EA"; 2026-10-16: "Concordo". Failure: omitting a contract owner from the file list
-  makes every necessary fix a restart. The radius report lists paths, not semantic permission.
+  path. A change to visible behavior or scope returns to the card and founder.  
   [review]
 
 ## 3. Build and review
@@ -57,16 +54,13 @@ merge.
   pull request into `main`; a Bloqueia that needs a contract the card lacks follows L7, then is one
   more front with its own delta. One reader checks each front's delta for closed Bloqueia and new
   defects, while QA reruns the screens it touched. The card's reader checks the reference table
-  before any build. Founder, 2026-10-24: "CI é só quando for fazer o PR";
-  2026-10-25: "2. A", "3. A".
+  before any build. Founder, 2026-10-25: "2. A", "3. A".
   Documents-only changes get check-docs and one reader once; a card gets one whole reading, then
-  deltas. Founder, 2026-10-12, firstmate's uncontested reading; 2026-10-16: "Concordo"; 2026-10-21:
-  "nao podemos adicionar gargalo". Failure: rereading everything after each fix samples new rules
-  forever. [review]
+  deltas. Founder, 2026-10-16: "Concordo"; 2026-10-21: "nao podemos adicionar gargalo". Failure:
+  rereading everything after each fix samples new rules forever. [review]
 - **L11.** Findings **should** cite evidence, file, line and broken rule; fixes address the cause
   and sweep its class through the whole diff. A third delta check blocking on the same premise
-  returns to the card and founder. Failure: fixing one logger key per round leads to six reviews
-  of one mechanism. [review]
+  returns to the card and founder. [review]
 - **L12.** Findings **should** be classified by reachable cost, not preference. **Bloqueia** holds
   merge and says "Se for assim para produção, <quem> perde <o quê> quando <situação>"; without that,
   the finding is **Fechamento**. Bloqueia includes a security failure; lost data; a limit hit at the
@@ -76,23 +70,21 @@ merge.
   scale with a written trigger, development tool) goes to a next-card or method issue. A trigger
   that the step's use script or its first live turn reaches is not future: that finding is Bloqueia
   unless the step proves it does not happen. With neither broken rule nor shown defect, start with
-  `Nit:`, as Fechamento. On the border, a loss in the use script or operation, or a wrong first file
-  of its kind, is Bloqueia; a loss only after a later code change is Fechamento unless two owners
-  can diverge. Founder, 2026-10-16: "Concordo". Failure: a stale line citation blocks like a
-  password leak. [review]
+  `Nit:`, as Fechamento. On the border, a loss in the use script or operation is Bloqueia; a loss only after a later code change is Fechamento unless two owners
+  can diverge. Failure: a stale line citation blocks like a password leak. [review]
 
 ## 4. Merge and use
 
 - **L13.** Each unit **must** enter `main` as its own merge, by firstmate, after the tests pass and
-  its review approves the same commit. Founder, 2026-10-13: "1 ok"; 2026-10-25: "3. A". The card's
-  pull request and a proof's decision record carry documents only; the closing pull request adds
-  the founder's text review and the reviews' follow-ups, as 14.1 and 14.2 did. One founder merge word covers a step's units; review and CI still gate each.
-  Founder, 2026-10-27: "2. Sim".
+  its review approves the same commit. The card's pull request and a proof's decision record carry
+  documents only; the closing pull request adds the founder's text review and the reviews'
+  follow-ups. One founder merge word covers a step's units; review and CI still gate each.
+  Founder, 2026-10-25: "3. A"; 2026-10-27: "2. Sim".
   The merge **must** keep the commits, so a cited commit exists on `main`. [firstmate's merge script]
 - **L14.** GitHub does not protect `main` in this repository. Nobody but firstmate **may** merge into
   `main`, always through firstmate's merge script, and only after the CI job reported green on that
   exact commit. After the opening commit nobody **may** push to `main` directly. Risk: nothing on
-  GitHub refuses a direct push. Founder, 2026-10-13, declining GitHub Pro: "3. Nao vou".
+  GitHub refuses a direct push.
   [firstmate's merge script, review]
 - **L15.** CI **must** have one check that fails when any job fails, is skipped or is cancelled.
   Before waiting on CI, the pull request **must not** be CONFLICTING: a conflicting pull request
@@ -102,7 +94,7 @@ merge.
 - **L17.** After the merge, the step **must** be published on the cloud installation, checked live by
   firstmate, item by item through the card's use script, before the founder is told, and used by
   the founder through the card's use script. His words, the date and the address go in the
-  approvals ledger, and only then **may** the next step start, but for the units of L1. Founder, 2026-10-12. Publishing is a GitHub Release firstmate creates after the merge, with CI green and a
+  approvals ledger, and only then **may** the next step start, but for the units of L1. Publishing is a GitHub Release firstmate creates after the merge, with CI green and a
   note of what the step delivers: `v0.N.0` for step N, `v0.N.P` for a fix of it, `v1.0.0` with
   the first company [0035]. A proof **must not** spend a name of this scheme; the card names the
   releases its proof creates. Failed use leaves the step open for a fix. [CI]
@@ -113,9 +105,10 @@ merge.
   learned rules that change the next action, confirm acceptance tests, settle the Fechamento list,
   remove taken items from next-card issues, move each remendo row of the reference table into
   [boundaries](../reference/boundaries.md) with its package version, and delete the card. Failure:
-  deleting the card also erases an administrator decision nobody preserved. [review]
-- **L20.** Skills and guides **must** change only in a closing pull request, when no step is in
-  construction. A new check **must** land in a pull request of its own before the step that needs
+  deleting the card erases a decision nobody preserved. [review]
+- **L20.** Skills and guides **must** change only in a closing pull request, or in a documents-only
+  pull request of their own with the founder's word, between two steps of the track it affects; a
+  step in flight keeps the rules it started with. Founder, 2026-10-30: "2. Sim". A new check **must** land in a pull request of its own before the step that needs
   it, as native configuration first (Biome, TypeScript, knip, dependency-cruiser), a script only
   when none serves. A finding that asks for a change waits in the method queue, an issue with the
   method label. The exception is an emergency label only the founder applies, counted on the step's
@@ -130,15 +123,14 @@ merge.
 - **L23.** What a person uses or decides **should** be in Portuguese: README, roadmap, cards,
   founder's page, operational how-tos and all visible text, accessible names and placeholders,
   with Brazilian presentation of dates/numbers. AGENTS.md, guides, architecture, decisions, skills
-  and other how-tos stay in English. Founder, 2026-10-15: "2. A". Failure: an English recovery
-  instruction prevents the person following the use script without translation. [review]
+  and other how-tos stay in English. [review]
 - **L24.** A file in `docs/` or `.agents/skills/` **must** have a line in `docs/index.md` and stay
   under its ceiling below, when it has one; links **must** resolve; rule identifiers **must** be
   unique and every cited one exist; a rule **must** live in one file; retired process names **must
   not** appear. They are: wave, N0 to N5, receipts, Factory as the old review robot, Codex review,
   `conexus-spec`, `conexus-prove`, `conexus-development`, dossier; they appear nowhere else. A step
   card and `docs/approvals.md` have no word ceiling, and L21 guards them: keep only what changes
-  what the next agent does. Founder, 2026-10-24: "Pode seguir". [check-docs, review]
+  what the next agent does.  [check-docs, review]
 
 | File | Ceiling, in words |
 | --- | ---: |
@@ -159,10 +151,19 @@ merge.
 | `.agents/skills/*/SKILL.md`, body | 600 |
 | `.agents/skills/*/references/*.md` | 1,500 |
 
-## 7. Git
+## 7. The pattern track
+
+- **L27.** The pattern track **must** use the light method of
+  [the pattern card](../../.agents/skills/conexus-scope/references/pattern-card.md): a card from
+  that template (2,000 words at most, no separate card reader), one Opus unit review launched on
+  green CI, one delta at most, one step review with QA for screens, the closing folded into the
+  last unit's pull request. The tracks keep apart by file: the pattern track owns
+  `packages/connectors/src/<provider>/` and its fakes, and a change to a shared contract
+  (`packages/hub-api`, migrations, `docs/index.md`, guides) **must** be read by the frontier track.
+  Founder, 2026-10-30: "3. Sim", "4. Sim". [review]
+
+## 8. Git
 
 - **L26.** Work and commits belonging to others **should** be preserved, with the operational
-  prohibitions of AGENTS.md and merge authority of L13/L14 still binding. Failure: a force-push
-  removes the commit cited by an approval and invalidates its evidence. This guidance never permits
-  reset, clean, stash, force-push or discarding another's work; a local hook cannot protect main.
+  prohibitions of AGENTS.md and merge authority of L13/L14 still binding.  This never permits reset, clean, stash, force-push or discarding another's work.
   [review]

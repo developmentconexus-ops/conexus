@@ -1,5 +1,11 @@
-import type { Answer, ConversationId } from '@conexus/hub-api'
-import { BUILDER_CONTROLLER, BUILDER_ROUTES } from '@conexus/hub-api'
+import type {
+  Answer,
+  ASSISTANT_CONTROLLER,
+  BUILDER_CONTROLLER,
+  ConversationId,
+  ProjectId,
+} from '@conexus/hub-api'
+import { BUILDER_ROUTES } from '@conexus/hub-api'
 import type { PlanResume } from '@mastra/client-js'
 import { MastraClient, MastraClientError } from '@mastra/client-js'
 import { failureOfProblem, HubFailure, hubClientFetch } from '../../platform/hub.ts'
@@ -8,9 +14,20 @@ import type { Outgoing } from './attachments.ts'
 /**
  * The conversation's session on Mastra's own routes, behind the Hub's guard (decision 0050), as the
  * Factory UI opens it (`agentControllerClient.ts`): the Hub's prefix, no prefix of Mastra's, and no
- * retry of the client's own, since a write retried would say a message twice.
+ * retry of the client's own, since a write retried would say a message twice. The Builder's and the
+ * Assistant's conversations are the same session on two controllers (step 24.1, `H1`).
  */
-export function sessionOf(conversationId: ConversationId) {
+export type Controller = typeof BUILDER_CONTROLLER | typeof ASSISTANT_CONTROLLER
+
+/**
+ * Whose conversation it is: the Builder's, with the Projeto whose Prévia and files its runs change,
+ * or the Assistant's, which has none (step 24.1, U4).
+ */
+export type Place =
+  | { controller: typeof BUILDER_CONTROLLER; projectId: ProjectId }
+  | { controller: typeof ASSISTANT_CONTROLLER }
+
+export function sessionOf(conversationId: ConversationId, controller: Controller) {
   const client = new MastraClient({
     baseUrl: BUILDER_ROUTES,
     apiPrefix: '',
@@ -18,8 +35,8 @@ export function sessionOf(conversationId: ConversationId) {
     retries: 0,
     fetch: hubClientFetch,
   })
-  const session = client.getAgentController(BUILDER_CONTROLLER).session(conversationId)
-  const path = `/agent-controller/${BUILDER_CONTROLLER}/sessions/${conversationId}`
+  const session = client.getAgentController(controller).session(conversationId)
+  const path = `/agent-controller/${controller}/sessions/${conversationId}`
   return {
     session,
     send: (outgoing: Outgoing) =>

@@ -52,19 +52,27 @@ export {
 } from './apps.ts'
 export {
   ASSISTANT_CONTROLLER,
+  ASSISTANT_FILE,
   ASSISTANT_TOOL,
   AssistantConversation,
   AssistantConversationSummary,
-  AutomationId,
+  assistantFilePath,
   createAssistantConversation,
   listAssistantConnections,
   listAssistantConversations,
   type Overview,
+  ProposedApp,
+  ReadBusy,
+  ReadCut,
+  ReadRows,
   readAssistantConversation,
   SessionConnection,
+  SHOWN_TEXT_MAX,
+  ShowFileInput,
+  ShownFile,
   setAssistantConnections,
 } from './assistant.ts'
-export * from './automations.ts'
+export * from './automation-api.ts'
 export { CAPACITY } from './capacity.ts'
 export {
   acceptInvitation,
@@ -212,14 +220,6 @@ export {
   setMyModelDefault,
 } from './model-defaults.ts'
 export { setCompanyNickname } from './nickname.ts'
-export {
-  automationPath,
-  conversationPath,
-  listNotifications,
-  markNotificationsRead,
-  NotificationId,
-  NotificationRow,
-} from './notifications.ts'
 export {
   ObservationalMemoryModels,
   ObservationalMemoryRole,

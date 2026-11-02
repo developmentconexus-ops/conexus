@@ -10,9 +10,12 @@ import { failureOf, modelFailure, TurnTally, turnOfOwner } from '../conversation
 import type { QueueDeps, Turn } from '../model-accounts/public.ts'
 import { setTurn } from '../model-accounts/public.ts'
 import type { ScopeOf } from './context.ts'
+import type { AssistantMachines } from './machine.ts'
 
 const TURN_PROCESSOR = 'conexus-assistant-turn'
-/** Where the run's context holds the turn's key, which the company's door counts the 50 calls by. */
+/**
+ * Where the run's context holds the turn's key, which the company's door counts the 50 calls by.
+ */
 const TURN_KEY = 'conexus-assistant-turn-key'
 
 const Session = z.object({ sessionId: ConversationId })
@@ -27,16 +30,28 @@ export function turnKeyIn(requestContext: RequestContext): TurnKey | undefined {
  * conversation takes its owner's turn in the accounts' queue (step 11) as Mastra reads its input,
  * with a new `TurnKey`, and no Projeto (`Runs`): the controller already sends one message at a time
  * to a conversation. Every run reads its input: Mastra skips it only on a resume, and nothing in
- * the Assistant suspends (no card, no plan, no approval). The turn lets go of its accounts when the controller says the run ended
- * (`agent_end`), for every end: done, failed, stopped by Parar or by the Hub's end; a deleted
- * session's run ends without one, so its deletion lets go too.
+ * the Assistant suspends (no card, no plan, no approval). The turn lets go of its accounts when
+ * the controller says the run ended (`agent_end`), for every end: done, failed, stopped by Parar
+ * or by the Hub's end; a deleted session's run ends without one, so its deletion lets go too.
  */
-export function assistantTurns(deps: { queue: QueueDeps; scopeOf: ScopeOf }) {
+export function assistantTurns(deps: {
+  queue: QueueDeps
+  scopeOf: ScopeOf
+  machines: AssistantMachines
+}) {
   const held = new Map<ConversationId, Turn>()
 
   function letGo(sessionId: ConversationId): void {
     held.get(sessionId)?.end()
     held.delete(sessionId)
+  }
+
+  /**
+   * The turn ended: the conversation's machine sleeps until the next question; a failed pause is
+   * logged there.
+   */
+  function sleep(sessionId: ConversationId): void {
+    void deps.machines.stop(sessionId)
   }
 
   async function take(
@@ -66,7 +81,9 @@ export function assistantTurns(deps: { queue: QueueDeps; scopeOf: ScopeOf }) {
     controller.onSessionCreated((session) => {
       const sessionId = ConversationId.parse(session.identity.getId())
       session.subscribe((event) => {
-        if (event.type === 'agent_end') letGo(sessionId)
+        if (event.type !== 'agent_end') return
+        letGo(sessionId)
+        sleep(sessionId)
       })
     })
     controller.onSessionDeleted((session) => letGo(ConversationId.parse(session.identity.getId())))

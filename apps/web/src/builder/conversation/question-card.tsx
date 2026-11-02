@@ -1,5 +1,5 @@
 import type { Answer, Question } from '@conexus/hub-api'
-import { ToolCallId } from '@conexus/hub-api'
+import { BUILDER_CONTROLLER, ToolCallId } from '@conexus/hub-api'
 import type { PlanResume } from '@mastra/client-js'
 import { getRouteApi } from '@tanstack/react-router'
 import { MessageCircleQuestionIcon } from 'lucide-react'
@@ -68,7 +68,7 @@ export function WaitingCaption() {
  */
 export function useAnswer(toolCallId: ToolCallId) {
   const { conversationId } = route.useParams()
-  const builder = useMemo(() => sessionOf(conversationId), [conversationId])
+  const builder = useMemo(() => sessionOf(conversationId, BUILDER_CONTROLLER), [conversationId])
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string>()
   const sent = useRef(false)

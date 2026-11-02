@@ -108,6 +108,7 @@ async function hubServing(
       killed: ports.killed,
       folder: ports.folder,
     },
+    assistantMachines: ports.assistantMachines,
     connectors: subjects.connectors,
     sendMail,
     notify: subjects.notifications.notify,

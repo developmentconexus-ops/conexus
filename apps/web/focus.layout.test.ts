@@ -73,7 +73,7 @@ test('o Tab passa pela barra com contorno de 2px numa tela de 1366px, antes do c
 
 test('numa tela de 390px o Tab começa em Abrir navegação e não entra na gaveta fechada', async () => {
   const page = await open('/', PHONE, HOUSE)
-  await page.getByRole('heading', { name: 'O que vamos construir?' }).waitFor()
+  await page.getByRole('heading', { name: 'Pergunte ou peça um app' }).waitFor()
   // The owner's Início opens with the preparation card, whose Continuar is the first of the content.
   // The card is not shown while its reads load, so Tab waits for it.
   await page.getByRole('link', { name: 'Continuar' }).waitFor()

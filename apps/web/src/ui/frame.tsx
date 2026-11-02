@@ -58,12 +58,22 @@ export function FrameLink(
   props: Pick<LinkProps, 'to' | 'params' | 'search' | 'activeOptions'> & {
     icon?: LucideIcon
     label: string
+    /** The place is current though the address is a deeper one (Início holds the Assistant's conversations). */
+    current?: boolean
   },
 ) {
-  const { icon: Icon, label, ...link } = props
+  const { icon: Icon, label, current, ...link } = props
   return (
     <SidebarMenuItem>
-      <SidebarMenuButton tooltip={label} render={<Link {...link} />}>
+      <SidebarMenuButton
+        tooltip={label}
+        render={
+          <Link
+            {...link}
+            inactiveProps={current ? { 'aria-current': 'page', 'data-status': 'active' } : {}}
+          />
+        }
+      >
         {Icon && <Icon aria-hidden="true" />}
         <span>{label}</span>
       </SidebarMenuButton>

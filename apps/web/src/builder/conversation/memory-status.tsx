@@ -5,6 +5,7 @@ import { touchArea } from '../../ui/button.tsx'
 import { cn } from '../../ui/cn.ts'
 import { Meter, MeterLabel } from '../../ui/meter.tsx'
 import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover.tsx'
+import { useRoom } from './room.ts'
 import type { OMProgress } from './session-state.ts'
 
 export type MemoryGauge = Pick<
@@ -117,6 +118,7 @@ export function MemoryStatus(props: {
   failed?: 'observation' | 'reflection' | null
 }) {
   const { memory, omPhase = 'idle', failed = null } = props
+  const { agent } = useRoom()
 
   const pending = memory?.pendingTokens ?? 0
   const threshold = memory?.threshold ?? 30_000
@@ -157,7 +159,7 @@ export function MemoryStatus(props: {
           description={
             failed === 'observation'
               ? 'Não foi possível guardar as mensagens na memória.'
-              : 'Quando encher, o Builder resume a conversa para lembrar do que importa.'
+              : `Quando encher, o ${agent} resume a conversa para lembrar do que importa.`
           }
         />
         <Budget
@@ -170,7 +172,7 @@ export function MemoryStatus(props: {
           description={
             failed === 'reflection'
               ? 'Não foi possível reorganizar as observações.'
-              : 'Quando encher, o Builder junta as observações num resumo mais curto.'
+              : `Quando encher, o ${agent} junta as observações num resumo mais curto.`
           }
         />
       </PopoverContent>

@@ -4,6 +4,7 @@ import { failure, ok } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import { ACCOUNT_STATES } from './sweep-accounts-states.ts'
 import { APP_STATES } from './sweep-app-states.ts'
+import { ASSISTANT_STATES } from './sweep-assistant-states.ts'
 import { CARD_STATES } from './sweep-card-states.ts'
 import { CONVERSATION_STATES } from './sweep-conversation-states.ts'
 import { DEFAULT_STATES } from './sweep-defaults-states.ts'
@@ -46,6 +47,7 @@ export const STATES: State[] = [
   ...PROJECT_STATES,
   ...PREVIEW_STATES,
   ...CONVERSATION_STATES,
+  ...ASSISTANT_STATES,
   ...CARD_STATES,
   ...APP_STATES,
   ...HOUSE_STATES,
@@ -153,7 +155,7 @@ export const STATES: State[] = [
       ],
       true,
     ),
-    settle: (p) => waitFor(p, 'O que vamos construir?'),
+    settle: (p) => waitFor(p, 'Pergunte ou peça um app'),
   },
   {
     name: 'dono',

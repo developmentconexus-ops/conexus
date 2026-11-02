@@ -1,4 +1,11 @@
-import { useState } from 'react'
+import type { FailureCode } from '@conexus/hub-api'
+import { FAILURES, ProposedApp, ShownFile } from '@conexus/hub-api'
+import { Link, useParams } from '@tanstack/react-router'
+import { FileTextIcon } from 'lucide-react'
+import { useEffect, useEffectEvent, useState } from 'react'
+import { sentenceOfCode } from '../../platform/hub.ts'
+import { Button } from '../../ui/button.tsx'
+import { Card, CardContent, CardFooter } from '../../ui/card.tsx'
 import { cn } from '../../ui/cn.ts'
 import {
   TraceCollapsible,
@@ -10,6 +17,8 @@ import {
   TraceTitle,
 } from '../../ui/trace.tsx'
 import { useSecondsSince } from './elapsed.ts'
+import type { Room } from './room.ts'
+import { useRoom } from './room.ts'
 import type { ToolItem } from './rows.ts'
 import { durationOf } from './text.ts'
 import type { Edit } from './tool-args.ts'
@@ -49,7 +58,10 @@ function Since({ at }: { at: number | undefined }) {
   )
 }
 
-function opens(tool: ToolItem, status: ToolStatus): boolean {
+function opens(tool: ToolItem, status: ToolStatus, room: Room): boolean {
+  // A refusal the Assistant's tool answered is said by its line; only a connection to link again has more to say.
+  const refusal = specOf(tool.toolName, room)?.refusal?.(tool.result)
+  if (refusal !== undefined) return refusal === 'RECONNECT'
   if (status === 'error' || status === 'denied') return true
   if (tool.output !== undefined && tool.output.length > 0) return true
   if (tool.result !== undefined && tool.result !== null) return true
@@ -61,10 +73,20 @@ function opens(tool: ToolItem, status: ToolStatus): boolean {
   )
 }
 
+function isFailureCode(code: string): code is FailureCode {
+  return Object.hasOwn(FAILURES, code)
+}
+
+/** A tool that failed with the Hub's own code (the machine that would not start) says the code's sentence, not the code. */
+function reasonOf(tool: ToolItem): string {
+  const text = tool.errorText ?? textOf(tool.result)
+  if (text === undefined) return 'Ocorreu um erro ao executar a ferramenta.'
+  const code = text.trim()
+  return isFailureCode(code) ? sentenceOfCode(code) : text
+}
+
 function Reason({ tool }: { tool: ToolItem }) {
-  const reason =
-    tool.errorText ?? textOf(tool.result) ?? 'Ocorreu um erro ao executar a ferramenta.'
-  return <pre className={cn(BLOCK, 'text-danger')}>{shown(reason)}</pre>
+  return <pre className={cn(BLOCK, 'text-danger')}>{shown(reasonOf(tool))}</pre>
 }
 
 function Side(props: { sign: '-' | '+'; text: string; className: string }) {
@@ -105,7 +127,7 @@ function Change({ edit }: { edit: Edit }) {
 }
 
 function Block({ tool, body }: { tool: ToolItem; body: ToolBody }) {
-  const detail = presentTool(tool, 'done').detail
+  const detail = presentTool(tool, 'done', useRoom()).detail
   switch (body) {
     case 'command': {
       const output = tool.output ?? textOf(tool.result)
@@ -171,8 +193,67 @@ function Block({ tool, body }: { tool: ToolItem; body: ToolBody }) {
   }
 }
 
+/** Where a connection that asks to be linked again is linked: Integrações. */
+function Reconnect() {
+  const companyId = useParams({ strict: false, select: (params) => params.companyId })
+  if (companyId === undefined) return null
+  return (
+    <Link
+      to="/companies/$companyId/integrations"
+      params={{ companyId }}
+      className="w-fit text-label underline"
+    >
+      Abrir Integrações
+    </Link>
+  )
+}
+
+/** The Assistant's shown file, a button that opens it beside the chat. */
+function ShownLine(props: {
+  file: Extract<ShownFile, { kind: 'TEXT' | 'FILE' }>
+  /** The screen heard the call as it ran: the file opens by itself, once; a conversation read afterwards waits for the click. */
+  live: boolean
+}) {
+  const { file } = props
+  const room = useRoom()
+  const open = useEffectEvent(() => room.openFile?.(file))
+  useEffect(() => {
+    if (props.live) open()
+  }, [props.live])
+  return (
+    <Button
+      aria-label={`Abrir ${file.name}`}
+      aria-pressed={room.openedPath === file.path}
+      onClick={() => room.openFile?.(file)}
+      className="w-fit max-w-full"
+    >
+      <FileTextIcon aria-hidden="true" />
+      <span className="truncate">{file.name}</span>
+    </Button>
+  )
+}
+
+/** The Assistant's proposal: the request it summarized, and **Criar app**. */
+function ProposalCard({ summary }: { summary: string }) {
+  const room = useRoom()
+  return (
+    <Card>
+      <CardContent>
+        <p className="whitespace-pre-wrap break-words text-text">{summary}</p>
+      </CardContent>
+      <CardFooter>
+        <Button variant="primary" onClick={() => room.createApp?.(summary)}>
+          Criar app
+        </Button>
+      </CardFooter>
+    </Card>
+  )
+}
+
 function Body({ tool, status }: { tool: ToolItem; status: ToolStatus }) {
-  const body = specOf(tool.toolName)?.body ?? 'generic'
+  const spec = specOf(tool.toolName, useRoom())
+  if (spec?.refusal?.(tool.result) === 'RECONNECT') return <Reconnect />
+  const body = spec?.body ?? 'generic'
   const edit = editOf(body, tool.args)
   const failed = status === 'error' || status === 'denied'
   return (
@@ -183,36 +264,74 @@ function Body({ tool, status }: { tool: ToolItem; status: ToolStatus }) {
   )
 }
 
+/** The rows that are not a line: the file the Assistant showed, and the app it proposed. */
+function specialRow(tool: ToolItem, status: ToolStatus, room: Room) {
+  const body = specOf(tool.toolName, room)?.body
+  if (status !== 'done') return undefined
+  const shown = body === 'shown' ? ShownFile.safeParse(tool.result).data : undefined
+  if (shown !== undefined && shown.kind !== 'SHOW_REFUSED')
+    return <ShownLine file={shown} live={tool.startedAt !== undefined} />
+  const proposed = body === 'proposal' ? ProposedApp.safeParse(tool.result).data : undefined
+  return proposed === undefined ? undefined : <ProposalCard summary={proposed.summary} />
+}
+
+/** The line itself: the tool's icon, its sentence and, beside, its detail or the time it has run. */
+function ToolLine({
+  presented,
+  status,
+  startedAt,
+}: {
+  presented: ReturnType<typeof presentTool>
+  status: ToolStatus
+  startedAt: ToolItem['startedAt']
+}) {
+  const failed = status === 'error' || status === 'denied'
+  const lineStatus = failed ? 'error' : status === 'running' ? 'running' : undefined
+  const side = presented.beside ? (
+    <TraceDescription className="min-w-0 max-w-1/2 truncate">{presented.detail}</TraceDescription>
+  ) : status === 'running' ? (
+    <Since at={startedAt} />
+  ) : null
+  return (
+    <TraceLine status={lineStatus} className={failed ? 'items-start' : undefined}>
+      <TraceIcon className={failed ? 'mt-1' : undefined}>
+        <presented.icon />
+      </TraceIcon>
+      <TraceTitle
+        className={cn(
+          presented.beside && 'flex-1',
+          (presented.beside || failed) && 'whitespace-normal',
+        )}
+      >
+        {presented.sentence}
+      </TraceTitle>
+      {side}
+    </TraceLine>
+  )
+}
+
 /**
  * A line of tool invocation (Criterion 8).
  * Opens on the body its tool's row in the table names.
  */
 export function ToolRow({ tool }: { tool: ToolItem }) {
-  const status = toolStatus(tool)
-  const shownTool = presentTool(tool, status)
+  const room = useRoom()
+  const status = toolStatus(tool, room)
   // Only a command that is still saying its output shows it as it comes; the person's click rules after.
   const [chosen, setChosen] = useState<boolean>()
   const open = chosen ?? (status === 'running' && tool.output !== undefined)
-  const failed = status === 'error' || status === 'denied'
-  const lineStatus = failed ? 'error' : status === 'running' ? 'running' : undefined
-  const side = shownTool.beside ? (
-    <TraceDescription className="min-w-0 max-w-1/2 truncate">{shownTool.detail}</TraceDescription>
-  ) : status === 'running' ? (
-    <Since at={tool.startedAt} />
-  ) : null
   const line = (
-    <TraceLine status={lineStatus}>
-      <TraceIcon>
-        <shownTool.icon />
-      </TraceIcon>
-      <TraceTitle className={shownTool.beside ? 'flex-1 whitespace-normal' : undefined}>
-        {shownTool.sentence}
-      </TraceTitle>
-      {side}
-    </TraceLine>
+    <ToolLine
+      presented={presentTool(tool, status, room)}
+      status={status}
+      startedAt={tool.startedAt}
+    />
   )
 
-  if (!opens(tool, status)) return line
+  const special = specialRow(tool, status, room)
+  if (special !== undefined) return special
+
+  if (!opens(tool, status, room)) return line
 
   return (
     <TraceCollapsible open={open} onOpenChange={setChosen}>

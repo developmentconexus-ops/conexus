@@ -86,7 +86,7 @@ const CONVERSATION = readConversation.success.body.parse({
   },
 })
 
-const WITH_ACCOUNT = {
+export const WITH_ACCOUNT = {
   ...OWNER,
   [`GET /api/companies/${COMPANY.id}/model-accounts`]: ok(listModelAccounts, {
     company: [],
