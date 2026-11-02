@@ -61,7 +61,9 @@ behavior and [testing T6](testing.md) tests beside the owner; no second file tre
 - **W12.** Cache updates after writes **should** be centralized in `MutationCache`, retaining the
   current invalidate-all policy with explicit `meta` exceptions and the conversation outside it.
   Failure: saving in one screen leaves another displaying an old version. TanStack does not
-  invalidate that data automatically. [review]
+  invalidate that data automatically. A loader that decides whether an item exists **must** read
+  fresh (`queryClient.query`), never `ensureQueryData`, which returns data a write marked stale.
+  [review]
 - **W13.** `platform/hub.ts` **must not** know a subject. [dependency-cruiser]
 
 One declaration supplies address, schema and query identity. Better Auth's own session atom is a
