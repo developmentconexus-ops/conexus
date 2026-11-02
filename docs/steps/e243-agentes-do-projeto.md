@@ -1,329 +1,344 @@
-# Etapa 24.3: Agentes do Projeto, com o Construtor
+# Etapa 24.3: O Construtor e o agente de verdade
 
 Este cartão espera a 24.2. Pela regra L5, entra em `docs/steps/` quando o cartão da 24.2 sair no
-fechamento dela; até lá vive no seu pull request. Ele usa o que a 24.1 e a 24.2 construíram: o
-Assistente, a porta da empresa aos conectores, a máquina da conversa, as automações e o sino.
+fechamento dela; até lá vive no seu pull request. Ele usa o que a 24.1 e a 24.2 construíram: os
+controladores do Mastra com a porta das seis rotas, a porta da empresa aos conectores, as contas de
+modelo, as automações e o sino. É a primeira etapa da área nova do Projeto que o estudo do
+Construtor desenhou (agentes, ferramentas, workflows, automações e canais, um ciclo só: rascunho,
+teste, publicar uma versão, rodar, acompanhar).
 
 ## A página do fundador
 
-**No fim desta etapa** a Ana, no Projeto Vendas, conversa com o Construtor e pede um agente que
-confere as vendas do dia contra as metas do app. O Construtor olha o Projeto (as ligações, as
-tabelas do app), escreve o agente e mostra um cartão; ela toca **Criar agente**. O agente aparece em
-**Agentes**, na barra do Projeto. Ela abre a página dele, vê o que ele lê e as instruções dele, e
-conversa com ele. Ele lê o Sankhya, os dados do app do Projeto e, se ela quiser, a web; não grava
-nada. Ela pede "todo dia às 7h me manda isso", e a automação da 24.2 passa a rodar **esse agente**.
+**No fim desta etapa** você abre, num Projeto, a área **Agentes**, conversa com o **Construtor**, e
+ele te traz ideias de agentes a partir do que o Projeto tem. Você escolhe uma, ele monta o rascunho
+do agente sozinho e o testa; a página do agente se monta ao lado, com a estrutura da página de
+agente do Mastra Studio que você mandou: instruções, modelo, memória, ligações, ferramentas e o que
+ele lê. Você muda o que quiser ali mesmo, conversa com o rascunho, toca **Publicar** e o agente passa
+a atender como versão 1. Mudou, publica a 2; não gostou, volta para a 1. E uma automação da 24.2
+pode rodar esse agente.
 
-**O roteiro de uso.** Padaria Sol: Ana (dona), Bia (financeiro, administradora) e Bruno (membro). O
-Projeto "Vendas" recebeu a ligação "Matriz" do Sankhya e tem o app "Metas", com a meta de cada
-vendedor. No computador e no celular.
+**O roteiro de uso.** Padaria Sol: Ana (dona), Bia (administradora) e Bruno (membro). O Projeto
+"Vendas" recebeu a ligação "Matriz" do Sankhya e tem o app "Metas", com a meta de cada vendedor. No
+computador e no celular.
 
-1. A Ana abre o Projeto Vendas, em **Construir**, e escreve "quero um agente que confere as vendas de
-   ontem contra as metas e me diz quem ficou abaixo". O Construtor lê o Projeto e responde com o
-   cartão: o nome ("Conferente de metas"), o que ele faz, em duas linhas, e o que ele lê (**Sankhya ·
-   Matriz**, **Dados do app Metas**; web: não). Ela toca **Criar agente**; o cartão vira "Agente
-   criado", com **Abrir agente**.
-2. Na barra do Projeto ela abre **Agentes**: o "Conferente de metas" está lá, com o que ele lê. Ela o
-   abre. À esquerda, as conversas dela com ele (nenhuma ainda) e **Nova conversa**; ao lado, o
-   painel **Como ele é**: o que lê, as instruções inteiras e quem o criou.
-3. Ela pergunta "quem ficou abaixo da meta ontem?". O agente mostra as leituras ("Lendo Sankhya ·
-   Matriz", "Lendo dados do app") e responde com a tabela. A conversa aparece em **Conversas** com
-   a etiqueta **Agente · Conferente de metas**.
-4. Ela escreve "apaga as metas de outubro". O agente diz que só lê; gravar vem na 24.4.
-5. Ela escreve "todo dia às 7h me manda isso". O agente mostra o cartão da automação, que agora diz
-   **Roda: Conferente de metas**. Ela toca **Criar automação**, e depois **Rodar agora** na página
-   Automações: a execução abre uma conversa nova com o agente, marcada "Automação", e o sino avisa.
-6. A Bia abre o Projeto: vê o agente e conversa com ele; as conversas da Ana não aparecem para ela. O
-   Bruno (membro) não vê **Agentes**, e o endereço de um agente dá "não encontrado".
-7. A Ana apaga o agente (qualquer dono ou administrador pode, como as automações, pela sua resposta
-   "3" de 2026-11-01). A confirmação diz que as conversas de todas as pessoas com ele e as automações de
-   qualquer pessoa que o rodam vão junto. Ele some da lista e a automação some da página Automações.
+1. A Ana abre o Projeto Vendas, entra em **Agentes** e escreve ao Construtor "quero um agente de
+   vendas". O Construtor lê o Projeto (a ligação Matriz e o que ela lê, as tabelas do app Metas) e
+   responde com duas ou três ideias, cada uma com o que o agente faria, por exemplo "um conferente
+   que compara as vendas de ontem com as metas e diz quem ficou abaixo". Ela escolhe a primeira.
+2. O Construtor cria o rascunho e, sem perguntar, faz as ferramentas dele (por exemplo "vendas de
+   ontem por vendedor", um recorte de uma leitura do Sankhya), escreve as instruções e testa o
+   rascunho com uma pergunta. Na conversa aparece o cartão do agente, **Rascunho**, com **Abrir** e
+   **Publicar**.
+3. Ela toca **Abrir**. A página do agente tem, à esquerda, as conversas dela com ele; no meio, a
+   conversa; à direita, o painel da configuração: instruções, modelo, memória, ligações (só as que o
+   Projeto recebeu), ferramentas (cada uma com o que lê e os valores fixos), "Lê a web" e "Lê os
+   dados do app". Ela muda o modelo e uma frase das instruções no painel, e conversa com o
+   **rascunho**: "quem ficou abaixo da meta ontem?". O agente mostra as leituras e responde.
+4. Ela toca **Publicar**. O cartão e a página mostram **Versão 1 · publicada**. Uma conversa nova
+   agora fala com a versão 1. Ela pede ao Construtor "deixa ele mais curto nas respostas"; o
+   Construtor muda o rascunho, e a página mostra "Rascunho com mudanças"; ela publica a versão 2,
+   não gosta, e em **Versões** toca **Voltar para a versão 1**.
+5. Na conversa com o agente ela escreve "todo dia às 7h me manda isso". O cartão da automação diz
+   **Roda: Conferente de metas**. Ela toca **Criar automação** e, na página Automações, **Rodar
+   agora**: a execução abre uma conversa nova com o agente, marcada "Automação", e o sino avisa.
+6. A Bia abre o Projeto: vê o agente, conversa com ele e com o Construtor; as conversas da Ana não
+   aparecem para ela. O Bruno (membro) não vê **Agentes**, e o endereço de um agente dá "não
+   encontrado". A Ana apaga o agente: a confirmação diz que as conversas de todas as pessoas com ele
+   e as automações que o rodam vão junto.
 
 **O que você faz, e quando.**
-- **No começo:** responde a decisão **B** abaixo e aprova esta página (a **A** você já respondeu). A aprovação é também a sua
-  palavra para as permissões da tabela nova dos agentes (regra D11), como nas etapas 18, 20 e 24.2.
-- **No fim:** faz o roteiro no computador e no celular, diz o que viu e aprova os textos das telas.
+- **No começo:** aprova esta página. As suas respostas já decidiram a forma: **`A1`** (o agente
+  guardado como dados com versões, e cada versão publicada é um `new Agent` do Mastra registrado com
+  o próprio nome, como o editor do Mastra faz), **`C1`** (o Construtor cria, muda e testa rascunhos
+  sozinho; publicar é sempre um toque seu), **`E1`** (a ordem do roteiro abaixo), "3.A" (agentes
+  escondidos do membro) e a **B** de 2026-11-02 ("Okay aprovado vamos seguir assim então"). A
+  aprovação é também a sua palavra para as permissões das tabelas novas e da função que lê, ao ligar
+  o Hub, as empresas com agentes publicados (regra D11), como nas etapas 9, 18, 19 e 24.2.
+- **No fim:** faz o roteiro no computador e no celular, diz o que viu e aprova os textos das telas,
+  inclusive o nome da entrada **Agentes** (a outra opção é **Construtor**; **Construir** continua
+  sendo o Builder dos apps).
 
-**Fica de fora.**
-- **Agentes que gravam** (24.4): as ferramentas dos agentes só leem. Pedir para gravar recebe "só
-  leio", como no passo 4.
-- **Editar um agente.** Para mudar, apaga e pede de novo ao Construtor, como uma automação na 24.2. A
-  edição pela conversa entra quando você pedir.
-- **Escolher o modelo do agente.** O agente usa o modelo da conversa, como o Assistente: quem
-  conversa paga com a conta dele, e um modelo preso no agente falharia para quem não tem conta
-  daquele fornecedor.
-- **Agentes no Início** (fora de um Projeto): a sua decisão J1 de 2026-10-30 põe os agentes no
-  Projeto.
-- **Membros com agentes**: como as conversas e as automações, só o dono e os administradores. A
-  etapa de papéis e pedidos vem logo depois desta (a sua resposta "2" de 2026-11-01).
-- **Workflows e o agente como passo deles** (24.5).
-- **Das pendências marcadas para o próximo cartão:** entra a frase velha do texto do Construtor que
-  diz que os conectores "vêm depois" (a #540), porque a U3 muda esse texto. As outras esperam a
-  etapa delas: as da 14.3, 17, 18, 19 e 20 não tocam agentes; a "conversa enviada ao Construtor" e
-  os "ajudantes em paralelo" da #541 esperam o primeiro pedido seu; a #339 (o fim do Hub no meio
-  de um turno) espera a 16.
+**Fica de fora, e onde entra.**
+- **Ferramentas em código** (24.4). Nesta etapa as ferramentas do agente são **recortes**: uma
+  leitura que o conector já tem, com valores fixos e uma descrição mais estreita. Onde roda o código
+  que o Construtor escrever **não está decidido aqui**: o cartão da 24.4 decide por um protótipo de
+  um dia que compara um Worker do Workers for Platforms com um comando na máquina E2B da área de
+  trabalho, como o Mastra Factory faz (a sua resposta B). A máquina na conversa do agente entra com
+  essa etapa.
+- **Pedir para publicar** (a etapa de papéis e pedidos, logo depois desta, pela sua resposta "2"
+  de 2026-11-01). Aqui só dono e administrador usam agentes. Lá o membro ganha a área, e o
+  **Publicar** dele vira um pedido que qualquer dono ou administrador aprova (a sua resposta "3"):
+  publicar e voltar já nascem com a sua própria ação de admissão, `publishAgent`, que aquela etapa
+  troca por "pode publicar ou pode pedir".
+- **Agentes que gravam** (24.5): toda ferramenta desta etapa só lê. Pedir para gravar recebe "só
+  leio".
+- **Workflows, o desenho em balões e as automações na mesma área** (24.6). As automações continuam
+  na página delas; só ganham o alvo agente.
+- **Canais**, Telegram primeiro pelos Channels do Mastra (24.7, a sua resposta `D1`).
+- **Agentes no Início**: a sua `J1` põe os agentes no Projeto.
+- **Comparar versões lado a lado**: a lista de versões mostra quem publicou, quando e a mensagem;
+  comparar entra quando você pedir.
+- **Das pendências marcadas para o próximo cartão:** entra a frase velha do texto do Builder que diz
+  que os conectores "vêm depois" (a #540), porque a U4 escreve o texto do Construtor ao lado. As
+  outras esperam a etapa delas: as da 14.3, 17, 18, 19 e 20 não tocam agentes; a #541 espera o seu
+  pedido; a #339 (o fim do Hub no meio de um turno) espera a 16.
 
-### O que muda do mapa da 24.2
+**As decisões suas nesta etapa.** Nenhuma nova. As do cartão anterior foram respondidas (`A1`, B, `C1`,
+`E1`, 3.A). O que os estudos deixaram como engenharia (a forma de conversar com o agente registrado,
+abaixo, e onde rodará o código, na 24.4) não é decisão sua.
 
-O mapa dizia que cada agente vira um `new Agent` registrado por `mastra.addAgent`. O estudo desta
-etapa abriu o Mastra 1.79.0 e achou um caminho mais simples e mais nativo **para o que esta etapa
-usa**: a conversa. A conversa do Conexus roda no controlador de agentes do Mastra, e um controlador
-tem **um** agente, fixo na partida; trocar o agente por conversa não existe nele. O que existe, e é
-como o próprio Mastra Code faz, é um agente cujas instruções, ferramentas e modelo são lidos a cada
-pedido. Então o agente do Projeto é **uma linha nossa** que o motor do Assistente lê a cada pedido:
-as telas, a conversa, a máquina, a automação e a porta das rotas da 24.1 e da 24.2 servem sem
-nada novo no meio. Registrar agentes no Mastra só serve quando um workflow chamar um agente pelo
-id; a 24.5 decide como, comparando registrar o motor uma vez (como o Mastra Code) com um registro
-por linha, que vive só na memória de um processo. Nada do que você vê muda.
+### Como funciona por dentro
 
-### As decisões suas nesta etapa
-
-**B. Onde roda o código que o Construtor escrever.** Hoje nenhum agente desta etapa precisa de
-código: ele lê pelas ferramentas que nós registramos. A pergunta é para o dia em que o Construtor
-quiser escrever uma conta própria, por exemplo "a curva ABC dos clientes com a fórmula da empresa".
-Código de uma empresa **nunca** roda dentro do Hub, que guarda as chaves e os dados de todas.
-
-- **B1 (recomendo agora).** O Construtor não escreve código: monta o agente como **dados** (o que
-  ele lê, as instruções) e, na 24.5, os workflows como dados, ligando ferramentas que nós
-  escrevemos. Exemplo: "confere vendas contra metas" é um agente com duas leituras e instruções.
-  Nativo: o agente lido a cada pedido (acima) e, na 24.5, o workflow guardado como dados do Mastra
-  (`addDynamicWorkflow`, código aberto, fora do `ee`).
-- **B2 (recomendo para a conta pesada, quando ela aparecer).** O código roda na **máquina E2B** da
-  conversa, onde o Assistente já roda Python e Node para tabelas e gráficos. O Construtor guarda o
-  script no agente, e o agente o roda na máquina dele. Exemplo: a curva ABC com pandas sobre a
-  leitura do Sankhya. A máquina não guarda chave nenhuma e só alcança os repositórios de pacotes
-  (decisão 0059); acorda em segundos e fica fora do Brasil (o aviso da 0032). Nativo: a ferramenta
-  de comando da área de trabalho do Mastra, que o Assistente já usa.
-- **B3.** O código vira um **Worker** no mesmo lugar dos apps (Workers for Platforms, decisão 0018),
-  sem chave nenhuma, chamado por uma ferramenta nossa. Rápido e barato, mas só JavaScript, com 50 ms
-  de processador por chamada, e o Hub ainda não tem porta para chamar um Worker fora de uma página.
-  Exemplo: uma conferência de CPF. Nativo: o envio de versões dos apps; ou o carregador de Workers
-  do Code Mode da Cloudflare, que roda o código sem guardar nada.
-
-**O que esta etapa constrói em cada resposta.** Com **B1**, as unidades U1 a U4 abaixo, como
-estão (cerca de 2.600 linhas). Com **B2**, as mesmas e mais a U5 (o script do agente na máquina,
-cerca de 450 linhas a mais). Com **B3**, as mesmas e mais a U5' (o Worker do agente e a porta do Hub
-até ele, cerca de 1.000 linhas a mais). As U1 a U4 servem às três respostas, então começam no dia
-em que você aprovar, e a U5 começa quando você responder.
-
-**A. Agentes para o membro.** A regra W34 do guia da web manda mostrar uma página a quem não pode
-usá-la, dizendo quem pode, e nunca escondê-la. A sua resposta "1 A" de 2026-11-01 abriu a exceção
-só para **Automações**.
-- **A1 (recomendo).** **Agentes** some para o membro, como Automações; o endereço dá "não
-  encontrado". A exceção da W34 do fechamento da 24.2 passa a nomear as duas entradas.
-- **A2.** **Agentes** aparece para o membro com "Só donos e administradores usam agentes."
-
-Sua resposta, em 2026-11-02: "3.A". **Agentes** some para o membro, como Automações; o critério 16
-e a matriz são A1, e a exceção da W34 no fechamento da 24.2 nomeia as duas entradas.
-
-**Enquanto você não responde.** A construção segue a recomendação **B1**, que não constrói nada a
-mais; uma resposta B2 ou B3 só acrescenta a U5.
-
-**O tamanho.** Cerca de **2.600 linhas** de código com B1 (3.050 com B2, 3.600 com B3), abaixo do
-teto de 4.000 da regra L2.
+- **O agente é dados com versões.** A linha do agente guarda o **rascunho**, que você e o Construtor
+  editam; cada **Publicar** congela o rascunho numa versão nova, que nunca muda. A forma dos campos
+  segue a tabela de versões do próprio Mastra, campo por campo.
+- **Cada agente publicado é um `new Agent` registrado no Mastra do Hub**, com o id dele, pela
+  `mastra.addAgent`, como o editor do Mastra faz com os agentes da tela. Publicar ou voltar troca o
+  registrado (`removeAgent` e `addAgent`). Ao ligar, o Hub registra **todos** os agentes publicados
+  antes de acordar a agenda do Mastra, porque a agenda apaga, depois de três tiques, o que aponta
+  para um agente que não acha (medido no estudo de carga).
+- **Conversar com o agente** passa pela mesma porta das seis rotas da 24.1: um controlador "agentes",
+  cujo único agente pega, a cada pedido, as instruções, o modelo, as ferramentas e a memória do
+  agente registrado que a conversa nomeia (ou do rascunho, na conversa de teste). Nenhuma rota nova
+  do Mastra se abre.
+- **O cérebro roda no Hub; nenhum código da empresa roda nele.** As ferramentas são as leituras que
+  já existem, chamadas pela porta dos conectores, que confere a ligação a cada chamada. O estudo de
+  carga mediu 1.000 agentes registrados em cerca de 50 MiB; o registro do Hub passa a dizer, a cada
+  minuto, o atraso do laço e o processador, os sinais de quando mudar.
 
 ## As unidades
 
 | Unidade | O que entrega | Pastas | Guia além do de código | Depende de |
 | --- | --- | --- | --- | --- |
-| U1 | Os agentes e a conversa com eles: a tabela `builder.project_agent`, a migração e as permissões; as rotas (criar, listar, ler, apagar); a conversa do Assistente que roda um agente (a linha lida a cada pedido); a remoção com o agente, o Projeto, a pessoa e a empresa | `apps/server/src/builder/agents/`, `apps/server/src/builder/assistant/`, `apps/server/migrations/`, `apps/server/database-grants.sql`, `apps/server/src/conversations-of.ts`, `packages/hub-api/src/` | [data](../guides/data.md) | a 24.2 fechada |
-| U2 | Os dados do app: a ferramenta `app_data_read`, que consulta o banco do app do Projeto por um login só de leitura | `apps/server/src/platform/` (`company-postgres.ts`), `apps/server/src/hub/apps/`, `apps/server/src/hub/connectors/` (`public.ts`), `apps/server/src/builder/agents/`, `apps/server/src/builder/assistant/` (`assistant.ts`), `apps/web/src/builder/conversation/`, `packages/hub-api/src/` (`app-login.ts`, `assistant.ts`) | [security](../guides/security.md) | U1 |
-| U3 | O Construtor propõe e as telas: `propose_agent` no Construtor e o cartão **Criar agente**; a entrada **Agentes** na barra do Projeto, a lista e a página do agente; a conversa com o agente e a etiqueta | `apps/server/src/builder/conversation/` (`builder.ts`, `prompt/builder.md`, `propose-agent.ts`), `apps/web/src/builder/agents/`, `apps/web/src/builder/conversation/`, `apps/web/src/builder/assistant/`, `apps/web/src/hub/projects/` (`project-rail.tsx`), `apps/web/src/routes/_app/companies/$companyId/projects/`, `packages/hub-api/src/`, `docs/reference/screens.md` | [web](../guides/web.md) | U2 |
-| U4 | A automação roda um agente: o alvo da automação ganha o agente; o cartão da automação na conversa do agente; a remoção do agente leva as automações dele | `apps/server/src/builder/automations/`, `apps/server/src/builder/assistant/` (`propose-automation.ts`), `apps/web/src/builder/automations/`, `packages/hub-api/src/` (`automations.ts`) | [testing](../guides/testing.md) | U1 |
-| U5 (só com B2) | O script do agente na máquina | `apps/server/src/builder/agents/`, `apps/server/src/builder/assistant/` (`machine.ts`), `apps/server/src/builder/conversation/` (`propose-agent.ts`), `apps/web/src/builder/agents/`, `packages/hub-api/src/` | [security](../guides/security.md) | U3 |
+| U1 | O agente como dados: as tabelas `builder.agent`, `builder.agent_version` e `builder.agent_tool` (os recortes), as migrações, as permissões e a função das empresas com agentes; as rotas do rascunho, dos recortes, de publicar, das versões, de voltar e de apagar; a remoção com o Projeto, a pessoa e a empresa | `apps/server/src/builder/agents/`, `apps/server/migrations/`, `apps/server/database-grants.sql`, `apps/server/src/hub/identity/` (`admission.ts`), `apps/server/src/builder/conversation/` (`public.ts`), `packages/hub-api/src/`, `scripts/removals.json` | [data](../guides/data.md) | a 24.2 fechada |
+| U2 | O agente vivo: o registro (`addAgent` por agente publicado, ao ligar antes da agenda, ao publicar, ao voltar e ao apagar); o `new Agent` de uma versão, com os recortes; o controlador "agentes", a tabela `builder.agent_conversation` e a conversa com o publicado e com o rascunho; a porta das rotas com os dois controladores novos; o atraso do laço e o processador no `HUB_MEMORY` | `apps/server/src/builder/agents/`, `apps/server/migrations/`, `apps/server/database-grants.sql`, `apps/server/src/builder/conversation/` (`public.ts`, `mastra.ts`, `guard.ts`), `apps/server/src/platform/` (`memory.ts`), `apps/server/src/conversations-of.ts`, `packages/hub-api/src/` | [testing](../guides/testing.md) | U1 |
+| U3 | Os dados do app: `app_data_read` por um login só de leitura do banco do app | `apps/server/src/platform/` (`company-postgres.ts`), `apps/server/src/hub/apps/`, `apps/server/src/hub/connectors/` (`public.ts`), `apps/server/src/builder/agents/`, `packages/hub-api/src/` (`app-login.ts`, `agents.ts`) | [security](../guides/security.md) | U2 |
+| U4 | O Construtor: o terceiro controlador, as instruções dele e as ferramentas que leem o Projeto, criam, mudam e testam o rascunho; as conversas dele no Projeto | `apps/server/src/builder/construtor/`, `apps/server/src/builder/conversation/` (`public.ts`, `mastra.ts`, `guard.ts`, `prompt/builder.md`), `apps/server/src/conversations-of.ts`, `packages/hub-api/src/` (`construtor.ts`) | [code](../guides/code.md) C75 | U2 |
+| U5 | As telas: a entrada **Agentes** do Projeto, a conversa com o Construtor e o cartão do rascunho, a lista dos agentes, a página do agente com o painel editável, a conversa de teste, as versões, publicar, voltar e apagar | `apps/web/src/builder/agents/`, `apps/web/src/builder/conversation/`, `apps/web/src/hub/projects/` (`project-rail.tsx`), `apps/web/src/routes/_app/companies/$companyId/projects/`, `docs/reference/screens.md` | [web](../guides/web.md) | U2, U4 |
+| U6 | A automação roda um agente: o alvo da automação ganha o agente publicado; o cartão da automação na conversa do agente; apagar o agente leva as automações dele | `apps/server/src/builder/automations/`, `apps/server/src/builder/agents/` (`agent.ts`), `packages/hub-api/src/` (`automations.ts`), `apps/web/src/builder/automations/` | [testing](../guides/testing.md) | U2 |
 
-A U2 e a U4 andam em paralelo depois da U1: não dividem arquivo (a U2 muda `assistant.ts` do
-servidor e do `hub-api`; a U4, `propose-automation.ts` e `automations.ts`). A U3 espera a U2 porque as duas mudam o
-registro das ferramentas da web (`apps/web/src/builder/conversation/`). A U5' de B3 está descrita na seção de B3, no fim.
+A U3, a U4 e a U6 andam em paralelo depois da U2. A U3 e a U6 mudam o mesmo arquivo do agente
+(`builder/agents/agent.ts`, uma ferramenta cada), num ponto só: a segunda a entrar refaz a fusão. A U4
+cria `builder/construtor/` e muda `conversation/` (`mastra.ts`, `guard.ts`), que a U2 deixou. As três
+mudam `packages/hub-api/src/` em arquivos diferentes; `failures.ts`, que todas tocam, é o outro ponto
+de fusão. A U5 espera a U4, porque o cartão do rascunho é o resultado das ferramentas do Construtor.
 
-**Quando começa** (delivery L1). A U1 muda `builder/assistant/`, que a 24.2 mudou; ela começa
-quando a 24.2 fechar e esta página for aprovada, na ordem que o firstmate der entre esta etapa e a
-13.3 (a Pauta), cujo cartão espera a sua resposta A1 ou A2.
+**Quando começa** (delivery L1). A U1 começa quando a 24.2 fechar e esta página for aprovada, na
+ordem que o firstmate der entre esta etapa e a 13.3 (a Pauta).
 
 **Antes da U1**, nenhuma regra muda. Valem a do `ee`
-(https://github.com/developmentconexus-ops/conexus/pull/518: nada do Agent Builder, do editor nem dos
-agentes guardados do Mastra) e a `mastra-only-in-builder` (W7): os agentes moram em `builder/`.
+(https://github.com/developmentconexus-ops/conexus/pull/518: nada do Agent Builder, do editor nem
+dos agentes guardados do Mastra) e a `mastra-only-in-builder` (W7): os agentes moram em `builder/`.
 
-**Orçamento de código alterado.** U1: ~1.000. U2: ~400. U3: ~950. U4: ~250. Total: ~2.600. Com B2,
-U5: ~450; com B3, U5': ~1.000. Testes, gerados e o OpenAPI ficam fora. Hipótese pelos vizinhos: a
-U1 da 24.2 (~850, rotas sobre um serviço e o motor do Assistente), a U3 da 24.2 (~950, cartão e
-duas páginas), a tabela da conversa da 24.1 (`chosen.ts`, 102 linhas) e o login do app da 9.
+**Orçamento de código alterado.** U1: ~1.000. U2: ~800. U3: ~400. U4: ~650. U5: ~950. U6: ~200.
+Total: **~4.000**, no teto da regra L2. Testes, gerados e o OpenAPI ficam fora. Hipótese pelos
+vizinhos: a U1 da 24.2 (~850, rotas sobre um serviço), a U3 da 24.2 (~950, cartão e duas páginas),
+a tabela da conversa da 24.1 (`chosen.ts`, 102 linhas), o login do app da 9 e o controlador do
+Assistente (`assistant.ts`, 371 linhas). **A divisão, se passar:** se a U1 e a U2 medirem juntas mais
+de 2.000 linhas, a conversa de teste com o rascunho e a lista de versões da U5 saem para uma etapa
+24.3.1 logo depois desta, e a página volta ao fundador antes da U5; a visão não é cortada.
 
 ## Os critérios de aceite
 
-O aceite da etapa: a Ana cria pelo Construtor um agente que lê, o vê no Projeto, conversa com ele
-e o põe numa automação (critérios 1, 7, 9, 15, 17, 19, 20, 21).
+O aceite da etapa: a Ana pede um agente ao Construtor, recebe ideias, vê o rascunho feito e testado
+por ele, muda o modelo e as instruções na página, conversa com o rascunho, publica a versão 1,
+publica a 2, volta para a 1, conversa com o publicado e o põe numa automação (critérios 1, 5, 6, 12,
+13, 22, 24, 26, 27, 30).
 
 | # | Unidade | Critério, observável de fora, com a recusa | Teste que o prova | Nível |
 | --- | --- | --- | --- | --- |
-| 1 | U1 | `POST /api/companies/{c}/projects/{p}/agents` com nome, instruções, ligações, `web` e `appData`, pela dona ou administradora, responde 201 com o agente; `GET …/agents` o lista a qualquer dono ou administrador da empresa; `GET …/agents/{id}` o devolve com as ligações e se o Projeto ainda as oferece | `apps/server/src/builder/agents/routes.test.ts`, "criar" | must |
-| 1a | U1 | A mesma chave de tentativa com o mesmo corpo devolve o mesmo agente, também com os dois pedidos ao mesmo tempo; com outro corpo, `IDEMPOTENCY_CONFLICT`; duas chaves, dois agentes | `routes.test.ts`, "a tentativa" | must |
-| 2 | U1 | Recusas: o membro, `NOT_FOUND` em todas as rotas (S10); um Projeto de outra empresa ou apagado, `NOT_FOUND`; o nome vazio ou com mais de 80 caracteres, as instruções vazias ou com mais de 4.000, `REQUEST_MALFORMED`; um agente de outro Projeto ou empresa, `AGENT_NOT_FOUND`; uma ligação que o Projeto não oferece não é gravada (a criação guarda só as que o Projeto oferece agora, como a conversa da 24.1) | `routes.test.ts`, "as recusas" | must |
-| 3 | U1 | `POST …/assistant/conversations` com `agentId` abre uma conversa do Assistente que roda o agente: o lugar é o Projeto do agente (um `projectId` diferente dá `NOT_FOUND`), as ligações são as do agente que o Projeto ainda oferece, e o resumo da conversa traz `agent: { agentId, name }`; um `agentId` de outro Projeto ou apagado dá `AGENT_NOT_FOUND` | `apps/server/src/builder/assistant/assistant.test.ts`, "a conversa do agente" | must |
-| 4 | U1 | Num turno da conversa do agente, o modelo recebe as instruções do Conexus, depois as do agente, e só as ferramentas de leitura: `connector_read` e `connector_notes` sobre as ligações do agente, `web_search` e `web_fetch` só com `web`, `show_file` e as da máquina; nunca `propose_app`, `conexus_overview` nem uma ferramenta que grava; uma ligação que o Projeto perdeu depois da criação sai das ferramentas no turno seguinte | `assistant.test.ts`, "as ferramentas do agente" (o modelo dublê da 12 lê a lista de ferramentas e o texto do sistema da chamada) | must |
-| 5 | U1 | `PUT …/conversations/{id}/connections` numa conversa de agente responde 409 `AGENT_CONNECTIONS_FIXED`, e as ligações ficam as do agente | `assistant.test.ts`, "as ligações do agente" | must |
-| 6 | U1 | `DELETE …/agents/{id}` responde 204: o agente some da lista; as conversas com ele somem para todas as pessoas (a linha do Hub e o fio do Mastra), também uma aberta no mesmo instante, nas três ordens (a linha da abertura gravada antes da primeira varredura, entre ela e o `delete`, e depois do `delete`): nenhum fio fica sem a linha do Hub; apagar de novo dá `AGENT_NOT_FOUND`; a remoção do Projeto e da empresa leva os agentes antes das conversas (a ordem da 24.1); a da pessoa deixa os agentes que ela criou no Projeto, com `createdBy: null` | `apps/server/src/builder/agents/release.test.ts` | must |
-| 7 | U1 | A lista das conversas do Projeto mostra a do agente com `agent`; `GET …/assistant/conversations?agentId=` devolve só as conversas da pessoa com aquele agente | `assistant.test.ts`, "a lista do agente" | must |
-| 8 | U1 | Os agentes saem com o Projeto e a empresa (as chaves estrangeiras), a conversa de agente sai com o agente, a política da empresa recusa ler o agente de outra empresa, e o catálogo das permissões e das políticas fecha (`database-grants.sql`) | `apps/server/src/platform/catalog.test.ts`; `release.test.ts`, "as chaves" | must |
-| 9 | U2 | Numa conversa de agente com `appData`, `app_data_read` com um `SELECT` devolve as linhas da tabela do app, cortadas como `connector_read`; o login que a roda é o `app_<projeto>_read`, e a consulta não chama a API do Neon; uma resposta acima de 1 MB volta `APP_DATA_TOO_LARGE` ("A consulta trouxe dados demais. Peça menos linhas.") | `apps/server/src/builder/agents/app-data.test.ts`, "lê" (o Postgres de teste no lugar do Neon, pela porta `CompanyPostgres`) | must |
-| 10 | U2 | `app_data_read` com `INSERT`, `UPDATE`, `DELETE`, `CREATE`, `SET ROLE` ou dois comandos juntos é recusado pelo banco, nunca por um filtro de texto nosso: o resultado é `APP_DATA_REFUSED`, e a tabela não muda; depois de um `SET default_transaction_read_only = off`, de um `set_config(...)` ou de um `SET TRANSACTION READ WRITE` sozinhos (que o Postgres aceita), um `DELETE` na chamada seguinte continua recusado; uma tabela fora do esquema do app e a tabela do livro das migrações também | `app-data.test.ts`, "não grava" | must |
-| 11 | U2 | O login de leitura nasce na primeira chamada de um Projeto que já existia antes da U2 e na criação do app de um novo; nos dois, o livro das migrações é recusado a ele; repetir não falha; a consulta passa do tempo do app (`APP_CALL_LIMITS`) e volta `APP_DATA_TIMEOUT` | `app-data.test.ts`, "o login" e "o tempo" | must |
-| 12 | U2 | Sem app no Projeto (nenhuma versão), a ferramenta não é oferecida, e um agente com `appData` responde pelas outras; o banco da empresa fora dá `APP_DATA_UNAVAILABLE` sem derrubar o turno | `app-data.test.ts`, "sem app" | must |
-| 13 | U3 | Numa conversa do Construtor num Projeto, o modelo recebe `propose_agent` depois das ferramentas que já tinha (o pedido do modelo igual byte a byte até elas, o critério 13a da 20, comparado pelo objeto `tools` de `builder.ts`; a lista do modo, `TOOL_CLOSURE` de `permissions.ts`, ganha o nome em `TALK`, e isso não muda o pedido); a conversa do Construtor de um membro não recebe `propose_agent`; a saída é a proposta, com só as ligações que o Projeto oferece e `appData` falso sem app; nada é gravado sem o toque | `apps/server/src/builder/conversation/builder.test.ts`, "propor um agente" | must |
-| 14 | U3 | O cartão mostra o nome, o que o agente faz, o que ele lê ("Sankhya · Matriz", "Dados do app Metas", "Web"); **Criar agente** chama a criação com uma chave de tentativa e vira "Agente criado" com **Abrir agente**; tocar duas vezes cria um; uma recusa mostra a frase do código | `apps/web/src/builder/agents/proposal.test.tsx` | must |
-| 15 | U3 | A página Agentes do Projeto lista os agentes; a página de um agente mostra as conversas da pessoa com ele, **Nova conversa** e o painel **Como ele é** (o que lê, com a ligação perdida marcada "O Projeto não oferece mais", as instruções inteiras, quem criou e quando); **Apagar** pede confirmação com o aviso das conversas e das automações | `apps/web/src/builder/agents/agents.test.tsx` | must |
-| 16 | U3 | O membro não vê **Agentes**; o endereço de um agente apagado ou de outro Projeto dá a página de não encontrado | `agents.test.tsx`, "o membro" | must |
-| 17 | U3 | A conversa com o agente é a conversa do Assistente: o título com **Agente · <nome>**, sem o escolhedor de ligações; a mesma etiqueta nas recentes e em Conversas | `apps/web/src/builder/assistant/home.test.tsx`, "a etiqueta do agente" | must |
-| 18 | U3 | As telas novas a 1366 e a 390 px, nos dois temas, sem rolagem lateral (W34 e o QA) | o QA da etapa (testing T25) | must |
-| 19 | U4 | Numa conversa de agente, `propose_automation` sai com `agentId` do agente da conversa, posto pela ferramenta e nunca pelo modelo; o cartão mostra **Roda: <nome>**; a criação grava o alvo, e `AutomationSummary.agent` o devolve | `apps/server/src/builder/automations/routes.test.ts`, "o alvo agente" | must |
-| 20 | U4 | `POST …/automations` com `agentId` de outro Projeto, de outro lugar que o da automação, ou apagado dá `AGENT_NOT_FOUND`; sem `agentId`, a automação roda o Assistente, como na 24.2 | `routes.test.ts`, "as recusas do alvo" | must |
-| 21 | U4 | Com o tique curto do teste, a automação de um agente dispara: a execução abre **uma** conversa de agente do dono, marcada "Automação" e com `agent`, manda o pedido e termina `DONE`; uma linha da agenda gravada pela 24.2 (sem alvo) roda o Assistente como antes | `apps/server/src/builder/automations/run.test.ts`, "o agente" e "a linha antiga" | must |
-| 22 | U4 | Apagar o agente apaga as automações que o rodam (e os runs delas) antes das conversas; um disparo que chegar a um agente apagado no meio termina `SKIPPED` com `AGENT_GONE`, sem conversa e sem pausar (a linha da agenda já saiu; se ainda existir, `check` a pausa) | `apps/server/src/builder/agents/release.test.ts`, "as automações"; `run.test.ts`, "o agente apagado" | must |
+| 1 | U1 | `POST /api/companies/{c}/projects/{p}/agents` com nome, pela dona ou administradora, responde 201 com o agente em rascunho (`state: DRAFT`, `draft` com os padrões: instruções vazias, `model: null`, memória observacional ligada, nenhuma ligação, nenhum recorte, `web` e `appData` falsos, `revision: 1`); a mesma chave de tentativa com o mesmo corpo devolve o mesmo agente, também ao mesmo tempo; com outro corpo, `IDEMPOTENCY_CONFLICT` | `apps/server/src/builder/agents/routes.test.ts`, "criar" | must |
+| 2 | U1 | `PATCH …/agents/{id}/draft` com `revision` igual à da linha grava os campos mandados e devolve o rascunho com `revision + 1`; com `revision` velha, 409 `AGENT_DRAFT_STALE` e nada muda; uma ligação que o Projeto não oferece, um modelo que o seletor não lista, instruções acima de 8.000 caracteres: `REQUEST_MALFORMED` com o campo | `routes.test.ts`, "o rascunho" | must |
+| 3 | U1 | `POST …/agents/{id}/tools` cria um recorte do agente: uma ligação do rascunho, uma operação de leitura dessa ligação (`class: 'read'`), os valores fixos válidos pelo esquema da operação, os campos que o modelo preenche e a descrição; uma operação de escrita ou destrutiva, uma ligação fora do rascunho, um valor fixo que o esquema recusa ou um `slug` repetido dão `AGENT_TOOL_REFUSED` com o motivo; `PATCH` e `DELETE` mudam o recorte e sobem o `revision` do rascunho | `routes.test.ts`, "os recortes" | must |
+| 4 | U1 | Recusas de todas as rotas: o membro, `NOT_FOUND` (S10, a resposta "3.A"); um Projeto de outra empresa ou apagado, `NOT_FOUND`; um agente de outro Projeto, `AGENT_NOT_FOUND`; nome vazio ou acima de 80, `REQUEST_MALFORMED` | `routes.test.ts`, "as recusas" | must |
+| 5 | U1 | `POST …/agents/{id}/publish` com `revision` e `message` grava a versão `n+1` com uma cópia do rascunho e dos recortes e a torna ativa; publicar de novo o mesmo `revision` devolve a mesma versão; um rascunho sem instruções ou com uma ligação que o Projeto perdeu dá `AGENT_DRAFT_INVALID` com o campo; a versão gravada não muda quando o rascunho muda depois | `routes.test.ts`, "publicar" | must |
+| 6 | U1 | `GET …/agents/{id}/versions` lista as versões (número, quem publicou, quando, mensagem, qual está ativa); `POST …/agents/{id}/versions/{n}/activate` torna a `n` ativa; uma versão que não existe dá `AGENT_VERSION_NOT_FOUND`; o rascunho não muda ao voltar | `routes.test.ts`, "as versões" | must |
+| 7 | U1 | `DELETE …/agents/{id}` responde 204: o agente, as versões e os recortes somem; as conversas com ele somem para todas as pessoas (a linha do Hub e o fio do Mastra), também uma aberta no mesmo instante, nas três ordens (a linha gravada antes da primeira varredura, entre ela e o `delete`, e depois): nenhum fio fica sem a linha; apagar de novo dá `AGENT_NOT_FOUND`; a remoção do Projeto e da empresa leva os agentes antes das conversas; a da pessoa deixa os agentes com `createdBy: null` e as versões com `publishedBy: null` | `apps/server/src/builder/agents/release.test.ts` (as conversas entram com a U2: o teste das três ordens nasce na U2) | must |
+| 8 | U1 | As tabelas saem com o Projeto e a empresa, a política da empresa recusa ler o agente de outra empresa, `builder.companies_with_agents()` só é executável por `hub_runtime` e devolve só os ids das empresas com um agente publicado, e o catálogo das permissões fecha (`database-grants.sql`) | `apps/server/src/platform/catalog.test.ts`; `release.test.ts`, "as chaves" | must |
+| 9 | U2 | Depois de publicar, `mastra.getAgentById(agentKey(id))` devolve um `Agent` com as instruções, o modelo e as ferramentas da versão ativa; voltar troca o registrado; apagar o tira; um `Agent` de código (`builder`, `assistant`) nunca é trocado | `apps/server/src/builder/agents/registry.test.ts`, "publicar registra" | must |
+| 10 | U2 | Ao ligar o Hub, todo agente publicado de toda empresa está registrado antes de `startWorkers`: uma linha da agenda com `agentId` de um agente publicado continua na agenda depois de quatro tiques curtos; sem a carga, ela some (a prova de que a ordem importa) | `registry.test.ts`, "ao ligar" (o Hub de teste com o tique curto) | must |
+| 11 | U2 | O registro falhar depois de gravar a versão não perde a versão: o próximo turno que pede o agente o registra pela linha (`AGENT_REGISTERED` com `lazy: true`) | `registry.test.ts`, "o registro atrasado" | must |
+| 12 | U2 | `POST …/agents/{id}/conversations` abre uma conversa do controlador "agentes" com o agente publicado; `{ draft: true }` abre a conversa de teste com o rascunho; a conversa nasce com o modelo da versão (ou o da pessoa, com `model: null`), e um modelo sem conta da pessoa dá `MODEL_NO_ACCOUNT`; um agente sem versão publicada e sem `draft` dá `AGENT_NOT_PUBLISHED` | `apps/server/src/builder/agents/conversation.test.ts`, "abrir" | must |
+| 13 | U2 | Num turno da conversa com o publicado, o modelo recebe as instruções do Conexus, depois as da versão ativa, e só as ferramentas da versão: cada recorte (`tool_<slug>`), `connector_read` e `connector_notes` sobre as ligações da versão que o Projeto ainda oferece, `web_search` e `web_fetch` só com `web`; nunca `propose_app`, `conexus_overview`, uma ferramenta da máquina ou uma que grava; na conversa de teste, as do rascunho, relidas a cada turno, então uma mudança no painel vale no turno seguinte | `conversation.test.ts`, "as ferramentas" (o modelo dublê da 12 lê a lista e o texto do sistema da chamada) | must |
+| 14 | U2 | Um recorte chama a operação pela porta da empresa com os valores fixos por cima do que o modelo mandou (o modelo não troca um valor fixo), contado nas 50 chamadas do turno; uma ligação que o Projeto perdeu responde `NOT_GRANTED` | `conversation.test.ts`, "o recorte" (o dublê do Sankhya da 24.1 grava a entrada que recebeu) | must |
+| 15 | U2 | Com a memória observacional desligada na versão, o turno não chama o observador e lembra as últimas 10 mensagens (o padrão do Mastra); ligada, como a 24.1 | `conversation.test.ts`, "a memória" | must |
+| 16 | U2 | As seis rotas da porta servem os controladores `agents` e `construtor` com o dono conferido a cada pedido, e continuam seis (`FIXED_LIST`); uma conversa de agente de outra pessoa dá `CONVERSATION_NOT_FOUND` | `apps/server/src/builder/conversation/guard.test.ts`, "os controladores novos" | must |
+| 17 | U2 | A linha `HUB_MEMORY` traz `loopDelayP99Ms` e `cpuPercent` do minuto | `apps/server/src/platform/memory.test.ts` | must |
+| 18 | U3 | Numa conversa de agente com `appData`, `app_data_read` com um `SELECT` devolve as linhas da tabela do app, cortadas como `connector_read`; o login que a roda é o `app_<projeto>_read`, e a consulta não chama a API do Neon; uma resposta acima de 1 MB volta `APP_DATA_TOO_LARGE` ("A consulta trouxe dados demais. Peça menos linhas.") | `apps/server/src/builder/agents/app-data.test.ts`, "lê" | must |
+| 19 | U3 | `app_data_read` com `INSERT`, `UPDATE`, `DELETE`, `CREATE`, `SET ROLE` ou dois comandos juntos é recusado pelo banco, nunca por um filtro de texto nosso: `APP_DATA_REFUSED`, e a tabela não muda; depois de um `SET default_transaction_read_only = off`, de um `set_config(...)` ou de um `SET TRANSACTION READ WRITE` sozinhos, um `DELETE` na chamada seguinte continua recusado; uma tabela fora do esquema do app e o livro das migrações também | `app-data.test.ts`, "não grava" | must |
+| 20 | U3 | O login de leitura nasce na primeira chamada de um Projeto de antes da U3 e na criação do app de um novo; repetir não falha; a consulta passa do tempo do app (`APP_CALL_LIMITS`) e volta `APP_DATA_TIMEOUT`; sem app no Projeto, a ferramenta não é oferecida; o banco da empresa fora dá `APP_DATA_UNAVAILABLE` sem derrubar o turno | `app-data.test.ts`, "o login", "o tempo", "sem app" | must |
+| 21 | U4 | `POST /api/companies/{c}/projects/{p}/construtor/conversations` abre uma conversa do Construtor da pessoa naquele Projeto; `GET` lista as dela, só daquele Projeto; o membro, `NOT_FOUND` | `apps/server/src/builder/construtor/routes.test.ts` | must |
+| 22 | U4 | Num turno do Construtor, o modelo recebe as instruções do Construtor (ler o Projeto, propor ideias antes de construir, criar e testar o rascunho sozinho, nunca publicar) e só as ferramentas `project_read`, `connector_read`, `connector_notes` (sobre as ligações que o Projeto recebeu), `agent_draft`, `agent_set`, `agent_tool_save`, `agent_tool_delete`, `agent_test`, `web_search` e `web_fetch`; nenhuma ferramenta publica nem grava num sistema | `apps/server/src/builder/construtor/construtor.test.ts`, "as ferramentas" | must |
+| 23 | U4 | `project_read` devolve o nome do Projeto, as ligações recebidas com as leituras de cada uma, se há app e as tabelas dele (nome e colunas, nunca uma linha), e os agentes do Projeto com o estado | `construtor.test.ts`, "ler o Projeto" | must |
+| 24 | U4 | `agent_draft`, `agent_set`, `agent_tool_save` e `agent_tool_delete` gravam pelo mesmo serviço da U1 (as mesmas recusas, como resultado ao modelo, nunca uma exceção) e devolvem o rascunho gravado com `revision`; um passo repetido de `agent_draft` acha o mesmo agente | `construtor.test.ts`, "o rascunho pelo Construtor" | must |
+| 25 | U4 | `agent_test` roda uma pergunta contra o rascunho, sem conversa guardada, pela conta de modelo da pessoa, e devolve a resposta e as ferramentas chamadas; um rascunho inválido devolve `AGENT_DRAFT_INVALID` ao modelo | `construtor.test.ts`, "testar" | must |
+| 26 | U5 | A entrada **Agentes** do Projeto abre a área: a conversa com o Construtor (e as anteriores) e a lista dos agentes com o estado (**Rascunho**, **Versão n · publicada**, **Rascunho com mudanças**); o cartão do rascunho na conversa mostra nome, o que faz, o que lê e o estado, com **Abrir** e **Publicar** | `apps/web/src/builder/agents/area.test.tsx` | must |
+| 27 | U5 | A página do agente mostra as conversas da pessoa com ele, a conversa e o painel com as seções (Instruções, Modelo, Memória, Ligações, Ferramentas, Lê); cada seção grava pelo `PATCH` com o `revision` e, no `AGENT_DRAFT_STALE`, mostra "Outra pessoa ou o Construtor mudou este rascunho. Recarregue."; **Testar rascunho** abre a conversa de teste; **Publicar** pede a mensagem e mostra a versão; **Versões** lista e volta | `apps/web/src/builder/agents/agent-page.test.tsx` | must |
+| 28 | U5 | O membro não vê **Agentes**; o endereço de um agente apagado ou de outro Projeto dá a página de não encontrado; **Apagar** pede confirmação com o aviso das conversas e das automações | `agent-page.test.tsx`, "o membro" e "apagar" | must |
+| 29 | U5 | As telas novas a 1366 e a 390 px, nos dois temas, sem rolagem lateral (W34 e o QA) | o QA da etapa (testing T25) | must |
+| 30 | U6 | Numa conversa com o agente publicado, `propose_automation` sai com `agentId` posto pela ferramenta, nunca pelo modelo; o cartão mostra **Roda: <nome>**; a criação grava o alvo, e `AutomationSummary.agent` o devolve; com o tique curto, a execução abre **uma** conversa do agente do dono, marcada "Automação", com a versão ativa naquele instante, e termina `DONE`; uma linha da 24.2 (a versão 1 do `inputData`) roda o Assistente como antes | `apps/server/src/builder/automations/run.test.ts`, "o agente" e "a linha antiga"; `routes.test.ts`, "o alvo agente" | must |
+| 31 | U6 | `POST …/automations` com `agentId` de outro Projeto, de um agente sem versão publicada ou apagado dá `AGENT_NOT_FOUND`; um disparo que chegar a um agente apagado no meio termina `SKIPPED` com `AGENT_GONE`, sem conversa; apagar o agente apaga as automações dele antes das conversas | `run.test.ts`, "o agente apagado"; `apps/server/src/builder/agents/release.test.ts`, "as automações" | must |
 
 ## A matriz de estados
 
 | Tela | Primeira vez | Vazio | Carregando | Erro | Não encontrado | Sem permissão | Vencido ou recusado |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Agentes (no Projeto) | "Peça um agente ao Construtor, por exemplo: um agente que confere as vendas contra as metas." com **Ir para Construir** | o mesmo | a lista em esqueleto | `DATABASE_UNAVAILABLE`: a frase com Tentar de novo | o Projeto apagado: a página de não encontrado da casa | o membro não vê a entrada; o endereço dá "não encontrado" (S10) | — |
-| A página de um agente | "Ainda não há conversas com este agente." com **Nova conversa** | o mesmo | a página em esqueleto | a frase do código com Tentar de novo | `AGENT_NOT_FOUND`: a página de não encontrado | o membro: não encontrado | uma ligação que o Projeto não oferece mais: "O Projeto não oferece mais" ao lado dela |
-| O cartão **Criar agente** | o cartão | — | **Criar agente** ocupado | a frase do código | o Projeto apagado: `NOT_FOUND` com a frase da 24.1 | o membro não recebe o cartão | criado: "Agente criado", com **Abrir agente** |
-| A conversa com o agente | a caixa com "Pergunte a <nome>…" | — | como a da 24.1 | como a da 24.1; depois do agente apagado o fio some, e mandar dá `CONVERSATION_NOT_FOUND` da porta (`guard.ts:123-134`) com a frase dele | o agente apagado: a página de não encontrado | como a da 24.1 | como a da 24.1 |
-| O cartão da automação na conversa do agente | o cartão da 24.2 com **Roda: <nome>** | — | como na 24.2 | como na 24.2; `AGENT_NOT_FOUND`: "Este agente foi apagado." | como na 24.2 | — | como na 24.2 |
+| A área **Agentes** | a conversa com o Construtor aberta, com "Conte o que você quer que um agente faça. Eu olho o Projeto e trago ideias."; a lista: "Nenhum agente ainda." | o mesmo | a lista e as conversas em esqueleto | `DATABASE_UNAVAILABLE`: a frase com Tentar de novo | o Projeto apagado: a página de não encontrado | o membro não vê a entrada; o endereço dá "não encontrado" (S10) | — |
+| O cartão do rascunho (na conversa do Construtor) | o cartão com **Rascunho**, **Abrir** e **Publicar** | — | **Publicar** ocupado | a frase do código; `AGENT_DRAFT_INVALID`: "Falta <campo> para publicar." | o agente apagado: "Este agente foi apagado." sem botões | — | `AGENT_DRAFT_STALE` (o cartão manda o `revision` que mostrou): "O rascunho mudou. Abra o agente para ver." |
+| A página do agente | "Ainda não há conversas com este agente." com **Nova conversa** (publicado) e **Testar rascunho** | o mesmo | a página em esqueleto | a frase do código com Tentar de novo | `AGENT_NOT_FOUND`: a página de não encontrado | o membro: não encontrado | `AGENT_DRAFT_STALE`: a frase de recarregar; uma ligação que o Projeto não oferece mais: "O Projeto não oferece mais" ao lado dela, e **Publicar** recusado com o campo |
+| Uma seção do painel | os valores do rascunho, cada um editável | ferramentas: "Nenhuma ferramenta. Peça ao Construtor ou crie aqui." | a seção ocupada ao gravar | `AGENT_TOOL_REFUSED`: o motivo ao lado do campo | — | — | `MODEL_NO_ACCOUNT` ao abrir a conversa: a frase da 24.1 com o caminho das contas |
+| **Versões** | "Ainda não publicado." | o mesmo | a lista em esqueleto | a frase do código | `AGENT_VERSION_NOT_FOUND`: a lista recarrega | — | — |
+| A conversa com o agente (publicada ou de teste) | a caixa com "Pergunte a <nome>…"; a de teste com a faixa "Conversa de teste com o rascunho" | — | como a da 24.1 | como a da 24.1; depois do agente apagado o fio some, e mandar dá `CONVERSATION_NOT_FOUND` da porta | o agente apagado: a página de não encontrado | como a da 24.1 | sem versão publicada, **Nova conversa** não aparece (`AGENT_NOT_PUBLISHED` só por chamada direta) |
+| O cartão da automação na conversa do agente | o cartão da 24.2 com **Roda: <nome>** | — | como na 24.2 | `AGENT_NOT_FOUND`: "Este agente foi apagado." | como na 24.2 | — | como na 24.2 |
 | Uma linha de Automações | — | — | como na 24.2 | como na 24.2 | como na 24.2 | — | `SKIPPED` com `AGENT_GONE`: "Não rodou: o agente foi apagado." |
 
 **O desenho das telas** (a caixa só fixa onde fica cada peça; o fundador aprova os textos no fim;
-sem captura do Conexus OS, que não tinha agentes). A estrutura da página do agente segue a página
-de agente do Mastra Studio, capturada pelo fundador em 2026-11-01 (as conversas à esquerda, a
-conversa no meio, o painel da configuração à direita: ferramentas, memória, o texto do sistema);
-só a estrutura e o fluxo, nunca o estilo (as palavras dele na biblioteca de referências).
+sem captura do Conexus OS, que não tinha agentes). A página do agente segue a estrutura da página de
+agente do Mastra Studio capturada pelo fundador em 2026-11-01 (`agent-page-config-panel.jpg`): as
+conversas à esquerda, a conversa no meio, o painel **Config** à direita, com Ferramentas, Memória e o
+texto do sistema; aqui o painel é editável. Só a estrutura e o fluxo, nunca o estilo.
 
 ```text
-1280 px, Agentes (no Projeto)                              390 px, Agentes
- ┌──────────────┬───────────────────────────────────────┐  ┌──────────────────────────┐
- │ Vendas      ⌄│ Agentes                                │  │ ☰  Agentes           🔔1 │
- │ Construir    │  Conferente de metas                   │  │ Conferente de metas      │
- │ Conversas    │  Lê: Sankhya · Matriz, Dados do app    │  │ Lê: Sankhya · Matriz,    │
- │ Agentes      │  Criado por Ana · 02/11                │  │ Dados do app             │
- │ Automações   │  Resumo de estoque                     │  │ Resumo de estoque        │
- │ Sobre        │  Lê: Sankhya · Matriz, Web             │  │ Lê: Sankhya, Web         │
- └──────────────┴───────────────────────────────────────┘  └──────────────────────────┘
+1280 px, a área Agentes                                     390 px, a área Agentes
+ ┌──────────────┬──────────────────────────┬─────────────┐  ┌──────────────────────────┐
+ │ Vendas      ⌄│ Construtor               │ Agentes     │  │ ☰  Agentes           🔔1 │
+ │ Construir    │ [Nova conversa]          │ Conferente  │  │ [Construtor][Agentes]    │
+ │ Conversas    │ ideias… cartão:          │  Versão 1 · │  │ ideias… cartão:          │
+ │ Agentes      │ ┌──────────────────────┐ │  publicada  │  │ ┌──────────────────────┐ │
+ │ Automações   │ │Conferente · Rascunho │ │ Resumo de   │  │ │Conferente · Rascunho │ │
+ │ Sobre        │ │Lê: Sankhya · Matriz  │ │  estoque    │  │ │[Abrir] [Publicar]    │ │
+ │              │ │[Abrir] [Publicar]    │ │  Rascunho   │  │ └──────────────────────┘ │
+ │              │ └──────────────────────┘ │             │  │ [Peça ao Construtor…]    │
+ │              │ [Peça ao Construtor…]    │             │  │                          │
+ └──────────────┴──────────────────────────┴─────────────┘  └──────────────────────────┘
 1280 px, a página de um agente                              390 px, a página de um agente
  ┌────────────┬──────────────────────────┬──────────────┐  ┌──────────────────────────┐
- │ ← Agentes  │ Conferente de metas      │ Como ele é   │  │ ← Conferente de metas [⋯]│
- │ [Nova      │                          │ Lê           │  │ [Conversas][Como ele é]  │
- │  conversa] │  (a conversa da 24.1)    │ Sankhya ·    │  │ [Nova conversa]          │
- │ Quem ficou │                          │  Matriz      │  │ Quem ficou abaixo… 02/11 │
- │  abaixo…   │                          │ Dados do app │  │                          │
- │            │                          │ Instruções   │  │                          │
- │            │ [Pergunte a Conferente…] │ Criado por   │  │                          │
- │            │                          │ [Apagar]     │  │                          │
+ │ ← Agentes  │ Conferente · Versão 1    │ Configuração │  │ ← Conferente        [⋯]  │
+ │ [Nova      │                          │ Instruções ✎ │  │ [Conversas][Configuração]│
+ │  conversa] │  (a conversa da 24.1)    │ Modelo     ✎ │  │ [Nova conversa]          │
+ │ [Testar    │                          │ Memória    ✎ │  │ [Testar rascunho]        │
+ │  rascunho] │                          │ Ligações   ✎ │  │ Quem ficou abaixo… 02/11 │
+ │ Quem ficou │                          │ Ferramentas✎ │  │                          │
+ │  abaixo…   │ [Pergunte a Conferente…] │ Lê         ✎ │  │                          │
+ │            │                          │ [Publicar]   │  │                          │
+ │            │                          │ Versões      │  │                          │
  └────────────┴──────────────────────────┴──────────────┘  └──────────────────────────┘
-1280 px, o cartão na conversa do Construtor
- ┌───────────────────────────────────────────────┐
- │ Conferente de metas                           │
- │ Confere as vendas de ontem contra as metas    │
- │ e diz quem ficou abaixo.                      │
- │ Lê: Sankhya · Matriz · Dados do app Metas     │
- │ [Criar agente]                                │
- └───────────────────────────────────────────────┘
 ```
 
-A 390 px, a página do agente troca as três colunas por duas abas (**Conversas** e **Como ele é**), e
-uma conversa aberta ocupa a tela, como as da 24.1; **Apagar** vai para o menu **⋯**.
+A 390 px a área troca as colunas por duas abas (**Construtor** e **Agentes**), e a página do agente
+por duas (**Conversas** e **Configuração**); uma conversa aberta ocupa a tela, como as da 24.1;
+**Apagar** e **Versões** vão para o menu **⋯**.
 
 | Campo de contrato | Quem escreve | Quem lê |
 | --- | --- | --- |
-| A linha `builder.project_agent` | U1 (a criação) | U1 (as rotas, o motor do Assistente, a remoção); U2 (`appData`); U4 (o alvo) |
-| `AgentSummary` | U1 (as rotas) | U3 (as telas) |
-| A coluna `builder.assistant_conversation.agent_id` | U1 (`openConversation`) | U1 (o escopo da conversa, o resumo); U4 (a abertura pela execução) |
-| A marca `conexusAgent` do fio | U1 (`openConversation`) | U1 (o filtro `agentId` da lista); U3 (pela lista) |
-| `AgentScope` (o agente no escopo da conversa) | U1 (`sessionScopes`) | U1 (instruções e ferramentas); U2 (`app_data_read`); U4 (`propose_automation`) |
-| `ProposedAgent` (a saída de `propose_agent`) | U3 (servidor) | U3 (o cartão) |
-| `AutomationTarget` (no `inputData`, versão 2) | U4 (a criação) | U4 (o workflow, a lista) |
-| O login `app_<projeto>_read` | U2 (`ensureApp`, `ensureReadLogin`) | U2 (`app_data_read`) |
+| A linha `builder.agent` (o rascunho, `revision`, `active_version`) | U1 (as rotas); U4 (as ferramentas do Construtor, pelo serviço da U1) | U1, U2 (o registro, a conversa de teste), U4 (`project_read`), U5, U6 |
+| A linha `builder.agent_version` (`config` congelada) | U1 (publicar) | U2 (`agentOf`), U1 (versões), U6 |
+| A linha `builder.agent_tool` (o recorte do rascunho) | U1; U4 (pelo serviço) | U1 (a cópia ao publicar), U2 (a conversa de teste), U5 |
+| `AgentConfig` (o rascunho e cada versão) | U1 | U2, U3 (`appData`), U5 |
+| `AgentSummary`, `AgentDetail`, `AgentVersionSummary` | U1 | U5; U4 (`ConstrutorResult`) |
+| `agentKey(id)` (a chave e o id no Mastra) | U2 | U2 (o registro, o resolvedor) |
+| A linha `builder.agent_conversation` (a conversa, de quem é, `draft`) | U2 (abrir) | U2 (o escopo, a lista, a remoção), U6 (a abertura pela execução) |
+| As marcas `conexusAgent` e `conexusAgentDraft` do fio | U2 | U2 (a varredura da remoção pela marca, de todas as pessoas) |
+| `AgentRun` no `requestContext` | U2 (o escopo da conversa de agente) | U2 (o agente do controlador), U3 (`app_data_read`), U6 (`propose_automation`) |
+| `ConstrutorResult` | U4 | U5 (o cartão) |
+| `AutomationTarget` (no `inputData`, versão 2) | U6 | U6 |
+| O login `app_<projeto>_read` | U3 | U3 |
 
 ## A tabela de falhas
 
 | Gravação ou comando, da etapa ou da biblioteca | Duas vezes ao mesmo tempo | Recusada no meio, depois de uma instrução ou de uma chamada | Uma dependência fora (o banco, ou um terceiro) | O que o processo imprime | Critérios |
 | --- | --- | --- | --- | --- | --- |
-| Criar o agente (`insert` com o id derivado da empresa, da pessoa e da chave de tentativa, `on conflict (id) do nothing`, e reler) | a mesma chave: uma linha; o `bodyHash` decide entre o mesmo agente e `IDEMPOTENCY_CONFLICT`; duas chaves, duas linhas | a conferência (papel, Projeto, ligações) antes: nada gravado; a gravação é uma só | banco do Hub fora: `DATABASE_UNAVAILABLE`, nada criado | `AGENT_CREATED` (empresa, Projeto, agente) | 1, 1a, 2 |
-| Abrir a conversa do agente (`openConversation` com `agentId`: a linha do Hub com `agent_id`, depois `createSession` com a marca `conexusAgent`, como a 24.1) | a mesma chave acha a mesma conversa (a 24.1) | a linha do Hub antes do fio: um corte deixa a linha, e a repetição acha e cria o fio, como a 24.1 | banco fora: `DATABASE_UNAVAILABLE`; o agente apagado entre a leitura e a gravação: a chave estrangeira recusa, e a rota responde `AGENT_NOT_FOUND` | da 24.1 | 3 |
-| O turno da conversa do agente (as instruções e as ferramentas lidas da linha a cada pedido) | o turno da 24.1 | o agente apagado no meio do turno: a varredura chama `deleteSession`, que aborta o run (`assistant/release.ts:9-12`), e a conversa some | banco fora na leitura da linha: o turno falha como a leitura do escopo da 24.1 (`DATABASE_UNAVAILABLE`) | da 24.1 | 4, 5 |
-| Apagar o agente, sem trava atravessando chamada de fora (D22): (1) as automações dele (U4, o `schedules.delete` da 24.2) e os fios do Mastra das conversas dele, de todas as pessoas, pela marca `{ companyId, conexusAgent }` (`releaseConversations`); (2) numa transação curta do Hub, o `delete` da linha, que leva as `assistant_conversation` por cascata; dali em diante a chave estrangeira recusa a linha de uma conversa nova (`23503` na `assistant_conversation_agent_id_fkey` → `AGENT_NOT_FOUND`, C52); (3) a varredura de (1) de novo, que acha o fio de uma abertura que gravou a linha antes de (2) | `openConversation` de uma conversa de agente, depois do `createSession`, relê a sua linha do Hub; ausente, apaga o próprio fio (`deleteSession`, `deleteThread`) e responde `AGENT_NOT_FOUND`; duas remoções ao mesmo tempo: a segunda acha a linha apagada e responde `AGENT_NOT_FOUND` depois de varrer pela marca (repetir limpa o que um corte deixou) | um corte entre os passos: a linha sai só em (2), e a próxima remoção varre de novo | banco do Mastra fora em (1): para antes da linha, `DATABASE_UNAVAILABLE`, nada perdido; em (3): a linha já saiu, e a próxima remoção do Projeto ou da empresa acha os fios pela marca da empresa | `AGENT_DELETED` (empresa, Projeto, agente, quantas conversas e automações) | 6, 22 |
-| A remoção da pessoa (`update builder.project_agent set created_by = null where company_id = $1 and created_by = $2`) | idempotente | uma gravação | `DATABASE_UNAVAILABLE`: a remoção da pessoa falha como a da 24.1 | nada | 6, 8 |
-| A remoção do Projeto e da empresa | apagar de novo não falha | os agentes antes das conversas (a ordem da 24.1); um corte deixa o que a próxima acha | como a da 24.1 | `AGENTS_RELEASED` (quantos) | 6, 8 |
-| O login de leitura ausente (o Postgres recusa a entrada com `28P01` ou `28000`) | duas consultas: as duas criam, e a segunda acha o login (abaixo) | — | recusado de novo depois de criar: `APP_DATA_UNAVAILABLE` | `APP_READ_LOGIN_MISSING` (Projeto) | 11 |
-| A resposta grande demais (passa de `REPLY_CAP_BYTES`) | — | — | — | `APP_DATA_READ` com `APP_DATA_TOO_LARGE` | 9 |
-| Criar o login de leitura (`CREATE ROLE … LOGIN PASSWORD` e as permissões, numa transação, como `ensureApp`, pelo dono que `openAppDatabase` abre só nessa hora) | dois turnos ao mesmo tempo: um cria, o outro recebe "already exists" e relê a lista dos logins (a mesma senha derivada, decisão 0043) | uma transação só: nada pela metade | Neon fora: `APP_DATA_UNAVAILABLE` ao modelo, o turno segue | `APP_READ_LOGIN_CREATED` (Projeto) | 11 |
-| A consulta `app_data_read` (`neonTransport` como `app_<projeto>_read`, numa transação `readOnly`) | consultas independentes | o banco recusa a escrita: `APP_DATA_REFUSED`, nada muda | Neon fora: `APP_DATA_UNAVAILABLE`; o tempo do app: `APP_DATA_TIMEOUT` | `APP_DATA_READ` (Projeto, linhas, ms), nunca o SQL nem as linhas (C50) | 9, 10, 12 |
-| Criar a automação com alvo agente (a da 24.2, com `agentId` no `inputData`) | a da 24.2 | a da 24.2; o agente conferido antes | a da 24.2 | `AUTOMATION_CREATED` com `agentId` | 19, 20 |
-| O passo `check` com alvo agente (a linha lida; ausente: `schedules.pause` e `SKIPPED`) | pausar uma pausada devolve o estado | uma linha só | banco do Hub fora: o passo falha como o `check` da 24.2 | `AUTOMATION_PAUSED` com `AGENT_GONE` | 22 |
+| Criar o agente (`insert` com o id derivado da empresa, da pessoa e da chave de tentativa, `on conflict (id) do nothing`, e reler) | a mesma chave: uma linha; o `body_hash` decide entre o mesmo agente e `IDEMPOTENCY_CONFLICT` | a conferência (papel, Projeto) antes: nada gravado | banco do Hub fora: `DATABASE_UNAVAILABLE` | `AGENT_CREATED` | 1, 4, 24 |
+| Mudar o rascunho ou um recorte (`update … set …, revision = revision + 1 where id = $1 and revision = $2`, com a conferência das ligações, da operação e do modelo na mesma transação) | dois com o mesmo `revision`: um grava, o outro acha zero linhas e responde `AGENT_DRAFT_STALE` | uma transação só | `DATABASE_UNAVAILABLE`, nada muda | `AGENT_DRAFT_SAVED` (agente, `revision`, por quem: pessoa ou Construtor) | 2, 3, 24 |
+| Publicar (numa transação: reler o rascunho com `revision`, conferir, `insert` da versão `n+1` com `on conflict (agent_id, source_revision) do nothing` e reler, `update agent set active_version`) e depois registrar (U2) | duas do mesmo `revision`: uma versão; de `revision` diferentes: duas, a última ativa | o registro falhar depois do `commit`: a versão fica; o resolvedor registra no próximo turno | banco fora: nada publicado; o registro não é chamado | `AGENT_PUBLISHED` (agente, versão); `AGENT_REGISTER_FAILED` com o código | 5, 9, 11 |
+| Voltar a uma versão (`update agent set active_version` e registrar) | duas: a última vence, e o registro relê a linha antes de trocar | como publicar | como publicar | `AGENT_ACTIVATED` | 6, 9 |
+| `mastra.addAgent` e `removeAgent` (o registro, só em memória) | `replace` em fila por agente, num processo só (C63) | `removeAgent` antes de `addAgent`, porque `addAgent` ignora a chave repetida em silêncio (`NM:mastra-Da0Czfte.js:1873`); um run em andamento segue com o `Agent` antigo (`removeAgent` não o para, `:2142-2158`) | — | `AGENT_REGISTERED` (agente, versão, `lazy`) | 9, 11 |
+| A carga ao ligar (`builder.companies_with_agents()`, depois as versões ativas por empresa, e `addAgent` de cada) antes de `startWorkers` | uma vez por processo | um agente que falha ao montar fica no log e não para os outros; o Hub liga | banco fora ao ligar: o Hub não liga, como `prepare` (`main.ts:214`) | `AGENTS_HYDRATED` (quantos, ms); `AGENT_REGISTER_FAILED` | 10 |
+| Abrir a conversa com o agente (a linha `builder.agent_conversation`, depois `createSession` com as marcas e `model.switch`, como a 24.1) | a mesma chave acha a mesma conversa | a linha antes do fio: um corte deixa a linha, e a repetição cria o fio | o agente apagado entre a leitura e a gravação: a chave estrangeira recusa (`23503` → `AGENT_NOT_FOUND`); sem conta: `MODEL_NO_ACCOUNT` antes de gravar | da 24.1 | 12 |
+| O turno com o agente (a configuração do registrado ou do rascunho, a cada pedido) | o turno da 24.1 | o agente apagado no meio: a varredura chama `deleteSession`, que aborta o run | banco fora ao ler o rascunho: o turno falha `DATABASE_UNAVAILABLE` | da 24.1 | 13, 14, 15 |
+| Apagar o agente, sem trava atravessando chamada de fora (D22): (1) as automações dele (U6) e os fios das conversas dele, de todas as pessoas, pela marca `{ companyId, conexusAgent }`; (2) numa transação curta, o `delete` da linha, que leva versões, recortes e `agent_conversation` por cascata; (3) `removeAgent`; (4) a varredura de (1) de novo | a abertura, depois do `createSession`, relê a sua linha; ausente, apaga o próprio fio e responde `AGENT_NOT_FOUND`; a segunda remoção acha a linha apagada, varre e responde `AGENT_NOT_FOUND` | um corte entre os passos: a linha sai só em (2), e a próxima remoção varre de novo | banco do Mastra fora em (1): para antes da linha, nada perdido | `AGENT_DELETED` (quantas conversas e automações) | 7, 31 |
+| A remoção da pessoa (`created_by = null` nos agentes, `published_by = null` nas versões; as conversas dela pela marca da pessoa, como a 24.1) | idempotente | uma transação | como a da 24.1 | nada | 7 |
+| A remoção do Projeto e da empresa (as automações, os agentes, depois as conversas; `removeAgent` de cada) | não falha de novo | a ordem da 24.1 | como a da 24.1 | `AGENTS_RELEASED` (quantos) | 7, 8 |
+| `agent_test` (um `Agent` montado do rascunho, sem registro, `generate` sem memória) | dois testes, dois `generate` | o modelo falha: a falha como resultado ao Construtor | a conta de modelo fora: `MODEL_*` da 24.1 | `AGENT_TESTED` (agente, ms, ferramentas chamadas) | 25 |
+| O login de leitura e `app_data_read` | dois turnos criam, o segundo acha "already exists" e relê | uma transação | Neon fora: `APP_DATA_UNAVAILABLE`; o tempo: `APP_DATA_TIMEOUT` | `APP_READ_LOGIN_CREATED`, `APP_DATA_READ` (nunca o SQL nem as linhas, C50) | 18, 19, 20 |
+| Criar a automação com alvo agente e o passo `check` | a da 24.2 | o agente conferido antes | a da 24.2 | `AUTOMATION_CREATED` com `agentId`; `AUTOMATION_PAUSED` com `AGENT_GONE` | 30, 31 |
 
 ## A tabela de referência
 
-Referências: Mastra como instalado (`@mastra/core` 1.79.0, `@mastra/pg` 1.32.0, `@mastra/e2b`
-0.15.0; `NM:` é `node_modules/@mastra/core/dist`); o fonte do Mastra, com o Mastra Code e a Factory,
-na estante `mastra-1.79` `4c22623e`, a tag `@mastra/core@1.79.0` (`M:`); o agents da Cloudflare
-`786d30e3` (`CF:`), com `@cloudflare/codemode` 0.5.5; o vibesdk `9da158d` (`V:`). O Conexus é lido
-no `main` `c3eb253e`. "Lido" é linha reaberta pelo autor deste cartão; "relay" é de um ajudante do
-estudo, e a unidade a reabre antes de usar.
+Referências: Mastra como instalado (`@mastra/core` 1.79.0, `@mastra/memory` 1.39.0, `@mastra/pg`
+1.32.0; `NM:` é `node_modules/@mastra/core/dist`); o fonte do Mastra, com o Mastra Code e a Factory,
+na estante `mastra-1.79` `4c22623e`, a tag `@mastra/core@1.79.0` (`M:`). O Conexus é lido no `main`
+`a2b7f58d`. "Lido" é linha reaberta pelo autor deste cartão; "relay" é de um ajudante dos estudos, e
+a unidade a reabre antes de usar. Os estudos: o do Construtor (2026-11-02, a arquitetura, §1.2 a
+§3.7), o de onde rodam os agentes (§3, `A1` reconferido) e o de carga (B4).
 
 | Peça | Unidade | Hoje no main | Referência | Como a referência faz | Veredito | Prova, se não for nativo | Palavra do fundador | Arquivo novo |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| A linha do agente | U1 | nada; nenhum agente registrado (`builder/conversation/mastra.ts:20-28`, relay) | os agentes guardados do Mastra são do editor (`M:packages/editor`, `NM:storage/domains/agents`, `editor?` em `NM:mastra/index.d.ts:286`), relay; recusados desde o pull request 518 | o editor guarda o agente como versão numa tabela dele | nativo: uma tabela nossa no Hub (`builder.project_agent`), como `builder.assistant_conversation` da 24.1; nunca o editor | — | A da 24.2 ("um agente do Projeto"); J1 | `builder/agents/agents.ts`, `builder/agents/tables.ts` |
-| Como a linha vira agente | U1 | o Assistente: um `new Agent` com `instructions`, `model` e `tools` lidos a cada pedido (`builder/assistant/assistant.ts:274-298`, lido) | `DynamicArgument` (`NM:types/dynamic-argument.d.ts:3-6`); `instructions`, `model`, `tools`, `memory` dinâmicos (`NM:agent/types.d.ts:567,650,659,745`); o controlador tem um agente só, que cada modo bifurca (`NM:agent-controller/types.d.ts:213-216`), sem trocar agente por sessão; o Mastra Code: um agente com `instructions: async ({ requestContext })` e o modelo dinâmico (`M:mastracode/sdk/src/index.ts:1307-1336`); `addAgent` ignora a chave repetida em silêncio (`NM:mastra-Da0Czfte.js:1871-1873`) e `removeAgent` não para um run em andamento (`:2142-2158`), todos relay | um agente cujo comportamento sai do contexto do pedido | nativo: o agente do Assistente lê a linha pelo escopo da conversa; `addAgent` por linha fica para a 24.5, o primeiro consumidor (um passo `{ type: 'agent', agentId }` de workflow, `NM:workflows/types.d.ts:758-770`, relay) | — | — | `builder/assistant/context.ts` (muda) |
-| A conversa com o agente | U1 | a conversa do Assistente (`open.ts:109-150`, relay; `routes.ts:175-200`, lido) | a sessão do controlador (`NM:agent-controller/agent-controller.d.ts:119`, relay) | a sessão leva o contexto do pedido | nativo: a conversa do Assistente com `agent_id` na linha do Hub e a marca `conexusAgent` no fio | — | — | `builder/assistant/open.ts` (muda) |
-| As ferramentas do agente | U1 | `connectorTools`, `toolsOf`, `show_file` (`assistant.ts:283-298`, lido) | `tools` dinâmico (`NM:agent/types.d.ts:659`, relay); `requireApproval` ausente quer dizer sem aprovação (`NM:tools/types.d.ts:650-658`, relay) | ferramentas por pedido | nativo: o mesmo construtor de ferramentas, com o conjunto de leitura do agente | — | — | — |
-| Os dados do app | U2 | o login do app e o de migração (`packages/hub-api/src/app-login.ts:8-15`, lido); as permissões do esquema (`apps/server/src/platform/company-postgres.ts:148-170`, lido); o envio pelo Neon (`company-postgres.ts:65-81`, relay) | Postgres: `default_transaction_read_only`, `GRANT SELECT`, `ALTER DEFAULT PRIVILEGES` (documentação do PostgreSQL 17, `ALTER ROLE`, `GRANT`); decisão 0043 (a senha derivada) | um login só de leitura, com as permissões no banco | nativo: um terceiro login `app_<projeto>_read`, só `USAGE` e `SELECT` (a barreira), cada consulta numa transação de leitura e `default_transaction_read_only = on` (profundidade, porque a sessão pode desligá-lo); a recusa vem do banco | — | — | `builder/agents/app-data.ts` |
-| A proposta do Construtor | U3 | `propose_automation` (`builder/assistant/propose-automation.ts:12-29`, lido); as ferramentas do Construtor (`builder/conversation/builder.ts:221-232`, lido) | a ferramenta que só devolve a proposta (o `E1` da 24.2) | o modelo propõe, a tela desenha, a pessoa grava | nativo: `propose_agent`, como `propose_automation` | — | E1 da 24.2 | `builder/conversation/propose-agent.ts` |
-| A página do agente | U3 | a conversa do Assistente no Projeto (`$projectId_.assistant.$conversationId.tsx`, relay) | a página de agente do Mastra Studio (captura do fundador, 2026-11-01): conversas, conversa e o painel da configuração | estrutura e fluxo | nativo: as telas da 24.1 e o painel **Como ele é**; nenhum estilo do Studio | — | "estrutura e fluxo, nunca o estilo" (2026-11-01) | `apps/web/src/builder/agents/agent-page.tsx` |
-| O alvo da automação | U4 | `AutomationInput` versão 1 (`builder/automations/run.ts:37-50`, relay: o comentário diz que a versão deixa um alvo novo entrar); `conversed` abre a conversa do Assistente (`run.ts:113-117`, lido) | a agenda com alvo agente chama o agente direto, sem sessão do controlador (`NM:worker-5hzgCU_T.js:161-167`, relay), e apaga a linha cujo agente sumiu (`:137-148,182-188`, relay) | o alvo agente da agenda pula a conversa | nativo: o mesmo workflow da 24.2, que abre a conversa do agente; nunca o alvo agente da agenda, que pularia a conversa marcada (`C1`) e a apagaria sozinho | — | `A1`, `C1` da 24.2 | — |
-| B1: agentes e workflows como dados | — | — | `addDynamicWorkflow` (`NM:mastra/index.d.ts:2038`), `rehydrateWorkflow` (`NM:workflows/dynamic/rehydrate.d.ts:50`), os passos (`NM:workflows/dynamic/validate/types.d.ts:89-113`), as recusas `missing-reference` (`:12`); fora do `ee` (só `./auth/ee` e `./agent-builder/ee` são `ee`, `package.json:104,114`); todos relay | o grafo como dados aponta ferramentas e agentes registrados pelo id | nativo; o agente desta etapa já é B1 | — | a resposta B | — |
-| B2: o código na máquina | U5 | a máquina do Assistente (`builder/assistant/machine.ts:296-312`, relay) e a ferramenta de comando do Mastra (`NM:workspace/tools/execute-command.d.ts:3-59`, relay); o E2B sem chave e com a lista de endereços (`builder/machine/e2b.ts:17-27`, relay; decisão 0059) | — | o código roda na área de trabalho do agente | nativo | — | a resposta B | `builder/agents/scripts.ts` |
-| B3: o código num Worker | U5' | o envio de versões dos apps (`platform/cloudflare.ts:200-241,284`, relay); o despacho (`apps/edge/src/dispatch.ts:151-152`, relay) | o vibesdk envia e despacha pelo mesmo caminho (`V:worker/index.ts:202-206`, `V:worker/services/deployer/api/cloudflare-api.ts:40,131-132`, relay) e usa o carregador de Workers só nas prévias (`V:wrangler.jsonc:153-155`, `V:space/src/space/durable-object.ts:752`, relay); o Code Mode roda o código num Worker carregado (`CF:packages/codemode/src/executor.ts:264,294,312-319`, relay), só JavaScript (`CF:packages/codemode/README.md:718-723`, relay) | o código sem chave, num isolado | nativo, com a porta do Hub ao despacho nova | — | a resposta B | — |
+| O agente como dados com versões | U1 | nada | `AGENTS_SCHEMA` (id, status, `activeVersionId`) e `AGENT_VERSIONS_SCHEMA` (número, instruções, modelo, ferramentas, memória, `changeMessage`) (`M:packages/core/src/storage/constants.ts:224-266`, relay); as rotas de versões listar, criar, ativar (`M:packages/server/src/server/handlers/agent-versions.ts:63,119,259`, relay) | o rascunho e as versões imutáveis, uma ativa | embrulhado: tabelas nossas com a forma do Mastra campo por campo, sob a política da empresa (0039); o `@mastra/editor` fica de fora (o 518; as linhas dele não têm empresa) | o estudo do Construtor §3.1 | `A1` | `builder/agents/tables.ts`, `builder/agents/agents.ts` |
+| O recorte (ferramenta preset) | U1, U2 | as leituras do kit com `class` (`packages/connectors/src/kernel/operation.ts:140-154`, lido); `connector_read` pela porta (`builder/connectors/connector-tools.ts:175-215`, lido) | `createTool` (`M:packages/core/src/tools/tool.ts:750`, relay); o editor resolve as ferramentas por id (`M:packages/editor/src/namespaces/agent.ts:1329-1352`, relay) | uma ferramenta registrada que chama o que já existe | nativo: `createTool` cujo `execute` chama `access.read` com os valores fixos por cima | — | "ferramentas específicas por agente" (2026-11-02) | `builder/agents/tools.ts` |
+| O `new Agent` de uma versão e o registro | U2 | os agentes de código no construtor do `Mastra` (`builder/conversation/mastra.ts:13-33`, lido) | o editor: `new Agent({ id, … })` e `addAgent(agent, storedAgent.id, { source: 'stored' })` (`M:packages/editor/src/namespaces/agent.ts:1169,1197-1198`), `removeAgent` ao trocar (`:443-446`); `addAgent` (`NM:mastra/index.d.ts:974`), a chave repetida ignorada (`NM:mastra-Da0Czfte.js:1873`), `removeAgent` (`NM:mastra/index.d.ts:1078`; `NM:mastra-Da0Czfte.js:2142-2158`), `getAgentById` (`:1613`) | um `Agent` registrado por agente guardado, trocado ao mudar | nativo | — | `A1`; a B de 2026-11-02 | `builder/agents/registry.ts`, `builder/agents/agent.ts` |
+| Registrar antes da agenda | U2 | `prepare`, `createHub` e `start` (`main.ts:214-216`, lido); `startWorkers` (`builder/conversation/public.ts:185-187`, lido) | `isTargetReady` resolve o agente pelo id e apaga depois de 3 faltas (`NM:worker-BgnTmeB6.js:347-356`, `NM:scheduler-3IjINScC.js:9,146-186`); `startWorkers` (`NM:mastra-Da0Czfte.js:5037`) | a agenda só fala com o que está registrado | nativo: a carga antes de `startWorkers` | — | — | — |
+| Ler as empresas com agentes ao ligar | U1 | `apps.companies_with_apps()`, a função da 9 para o conserto ao ligar (`database-grants.sql:19-22`, lido) | — | uma função `SECURITY DEFINER` de um papel sem login, executada só por `hub_runtime` | nativo (o padrão da 9) | — | a aprovação desta página (D11) | a migração |
+| Conversar com o agente registrado | U2 | o controlador do Assistente: um agente com instruções, modelo e ferramentas em função do `requestContext` (`builder/assistant/assistant.ts:245-313`, lido) | o controlador tem um agente de apoio (`NM:agent-controller/types.d.ts:216`); controladores só no construtor do `Mastra` (`M:packages/core/src/mastra/index.ts:2042-2049`, relay); os campos dinâmicos (`NM:agent/types.d.ts:567,650,659,745`); `getInstructions` (`NM:agent/agent.d.ts:720`), `getModel` (`:910`), `listTools` (`:840`), `getMemory` (`:589`); um modo sem `availableTools` não filtra (`NM:agent-controller-DO6rGsQm.js:8390-8391`) | um controlador "agentes" cujo agente delega, a cada pedido, ao registrado | nativo: a forma (i) do estudo §3.4; a (ii), `agent.stream` direto, abriria rotas fora das seis | — | — | `builder/agents/controller.ts` |
+| A memória por agente | U2 | a memória da conversa com a observacional sempre ligada (`builder/conversation/builder.ts:131-172`, lido) | `memory` dinâmico no agente (`NM:agent/types.d.ts:745`); o controlador passa a dele só a um agente sem memória própria (`M:packages/core/src/agent-controller/agent-controller.ts:1622-1625`, relay); `observationalMemory` (`NM:memory/types.d.ts:956`); `lastMessages` 10 por padrão (`node_modules/@mastra/core/dist/agent-tuAMgHe3.js:21615`) e obsoleto (`NM:memory/types.d.ts:870-875`) | a memória escolhida pelo agente | nativo: duas `Memory` no mesmo armazenamento, com e sem a observacional, escolhidas pela versão; nenhum `lastMessages` na tela (obsoleto) | — | "memória editável" (2026-11-02) | — |
+| O modelo por agente | U2 | `openConversation` com `model` e `conversationStart` (`builder/assistant/open.ts:111-150`; `builder/model-accounts/defaults.ts:86-111`, lidos) | `session.model.switch` (`open.ts:146`, lido) | o modelo da sessão | nativo: o modelo da versão vira o `model` da abertura; sem conta, `MODEL_NO_ACCOUNT` | — | "modelo por agente" (2026-11-02) | — |
+| A porta das rotas | U2, U4 | `FIXED_LIST` e `Params.controllerId` (`builder/conversation/guard.ts:20-41`, lido) | `@mastra/fastify` `registerRoute` com `access: 'session'` (a 14.2) | as rotas dos controladores, parametrizadas pela chave | nativo: o `enum` ganha `agents` e `construtor`; as rotas continuam seis | — | "okay sibre auth" (2026-11-01) | — |
+| O atraso do laço e o processador | U2 | `logMemory` (`platform/memory.ts:10-26`, lido) | `monitorEventLoopDelay` e `process.cpuUsage` do Node (o `bench/measure.ts` do estudo de carga) | medir no próprio processo | nativo | — | — | — |
+| O Construtor | U4 | o Builder e o Assistente, dois controladores (`builder/conversation/public.ts:131-137`, lido) | o agente aberto que monta workflows e o seu manual (`M:packages/core/src/workflows/builder/agent.ts:13-24`, `authoring-playbook.ts:37-40`, relay); a ferramenta que grava e confere o que voltou (`M:mastracode/sdk/src/tools/workflows/create-workflow.ts:61-120`, relay) | um agente com ferramentas pequenas e validadas, nunca regenerar tudo | nativo: um terceiro controlador no construtor do `Mastra` | — | `C1` | `builder/construtor/construtor.ts`, `builder/construtor/prompt/construtor.md` |
+| Testar o rascunho | U4 | — | `Agent.generate` (`NM:agent/agent.d.ts`; a U4 reabre a linha) | o agente montado e chamado uma vez | nativo | — | `C1` | `builder/construtor/test-draft.ts` |
+| Os dados do app | U3 | o login do app e o de migração (`packages/hub-api/src/app-login.ts:8-15`, lido); as permissões do esquema (`apps/server/src/platform/company-postgres.ts:148-170`, lido) | Postgres 17: `default_transaction_read_only`, `GRANT SELECT`, `ALTER DEFAULT PRIVILEGES`; a senha derivada (0043) | um login só de leitura, a recusa no banco | nativo | — | — | `builder/agents/app-data.ts` |
+| O alvo da automação | U6 | `AutomationInput` versão 1 (`builder/automations/run.ts:37-50`, lido; o comentário diz que a versão deixa um alvo novo entrar); `conversed` abre a conversa (`run.ts:96-142`, lido) | a agenda com alvo agente chama o agente direto (`dist/docs/references/reference-schedules-overview.md:43,57`) | o alvo agente da agenda pula a conversa | nativo: o mesmo workflow da 24.2, que abre a conversa do agente; nunca o alvo agente da agenda, que pularia a conversa marcada (`C1` da 24.2) | — | `A1`, `C1` da 24.2 | — |
+| As telas | U5 | a conversa do Assistente no Projeto (`routes/_app/companies/$companyId/projects/$projectId_.assistant.*`); a barra (`hub/projects/project-rail.tsx:111-175`, lido) | a página de agente do Studio: conversas, conversa, painel Config (`agent-page-config-panel.jpg`; `M:packages/playground-ui/.../agent-overview-panel.tsx:134-240`, relay) | estrutura e fluxo | nativo: as peças da 24.1; nenhum estilo do Studio | — | "estrutura e fluxo, nunca o estilo" (2026-11-01) | `apps/web/src/builder/agents/` |
 
-**A medida do transplante.** Nada vem do repositório antigo: ele não tinha agentes de Projeto.
+**A medida do transplante.** Nada vem do repositório antigo: ele não tinha agentes de Projeto. Do
+cartão anterior deste pull request ficam a U2 dele (os dados do app, agora a U3), a remoção em
+passos sem trava e o alvo da automação (agora a U6).
 
 **A dívida.**
-- Os agentes não têm teto por Projeto: nenhuma referência ou medida dá um número. A lista lê todos os
-  agentes do Projeto numa leitura só. Gatilho: um Projeto com mais de 50 agentes.
-- As instruções do agente vão inteiras ao modelo a cada turno, até 4.000 caracteres (o teto do pedido
-  da automação, `AUTOMATION_PROMPT_MAX`, que tem a mesma razão: o modelo lê o texto inteiro).
-- Apagar o agente no meio de um turno aborta o turno: a varredura chama `deleteSession`, que aborta o
-  run (`assistant/release.ts:9-12`), e a resposta pela metade some com a conversa. O cartão aceita: a
-  confirmação avisa.
+- Os agentes não têm teto por Projeto: nenhuma referência ou medida dá um número; a lista lê todos os
+  agentes do Projeto. Gatilho: um Projeto com mais de 50 agentes.
+- As instruções vão inteiras ao modelo a cada turno, até 8.000 caracteres: o dobro do pedido da
+  automação (`AUTOMATION_PROMPT_MAX`), porque o texto do sistema do starter do Mastra que o fundador
+  capturou passa de 4.000 (a U1 mede o arquivo `templates/template-starter-agent` na estante e
+  grava o número no teste). Gatilho: uma recusa de tamanho no uso.
+- Um recorte fixa valores de primeiro nível da entrada da operação. A consulta do Sankhya
+  (`consultar`, `packages/connectors/src/sankhya/door.ts:123-131`, lido) só tem `sql`, então um
+  recorte dela é uma consulta fixa: "pedidos do cliente X" com o cliente variável espera parâmetros
+  no kit ou uma ferramenta em código (24.4). Nunca montar SQL por texto.
+- Apagar o agente no meio de um turno aborta o turno. A confirmação avisa.
+- O registro é por processo (C63). Gatilho: um segundo processo do Hub.
 
 **Issues futuras** (a abrir no fechamento).
-- A 24.5 compara registrar o motor uma vez, como o Mastra Code
-  (`M:mastracode/sdk/src/workflows/register-primitives.ts:66-68`), com um `addAgent` por linha, que é
-  por processo (C63) e cujo agendamento se apaga sozinho em outro processo
-  (`NM:worker-5hzgCU_T.js:182-188`); o id de cada agente nos rastros fica para a 21.1.
-- O login de leitura pode tomar travas consultivas da sessão (`pg_advisory_lock`); o HTTP do Neon
-  fecha a sessão a cada pedido. Gatilho: o transporte manter conexões.
-- A leitura `db.query` do edge (decisão 0045) conta só com a transação de leitura, e o login do app
-  grava; o Postgres aceita `SET TRANSACTION READ WRITE` como primeira instrução dela. Gatilho: a
-  prova de que o HTTP do Neon aceita várias instruções num texto.
-- Editar um agente pela conversa com o Construtor.
+- O id de cada agente nos rastros fica para a 21.1.
+- O login de leitura pode tomar travas consultivas da sessão; o HTTP do Neon fecha a sessão a cada
+  pedido. Gatilho: o transporte manter conexões.
+- Espalhar as automações das 7h por alguns minutos (o estudo de carga, B4: a agenda dispara até 600
+  por minuto). Gatilho: mais de 100 disparos no mesmo minuto.
 
-## U1 Os agentes e a conversa com eles
+## U1 O agente como dados
 
-**Base e modelo.** `main` depois do fechamento da 24.2. Opus: o escopo da conversa do Assistente, a
-remoção e a ordem dela cruzam três módulos, e a tabela nova pede a palavra D11.
+**Base e modelo.** `main` depois do fechamento da 24.2. Opus: três tabelas novas com a palavra D11,
+a concorrência do rascunho e a remoção.
 
 ### As linhas da tabela
 
-- **A linha.** O modelo é `builder.assistant_conversation`
-  (`apps/server/src/builder/assistant/tables.ts:10-32`, lido): uma tabela de `builder`, só o Hub
-  escreve, as chaves estrangeiras que levam a linha com a empresa e o Projeto. Ele cumpre C21 (o
-  lugar é união no escopo, `context.ts:42-50`, lido), C23 (os ids com marca do `hub-api`) e C26 (um
-  dono por fato).
-- **O motor.** `assistantAgent` (`assistant.ts:245-313`; lido em `:270-300`): `instructions` por
-  `assistantInstructions` (`instructions.ts`, relay), `tools` por pedido. `sessionScopes`
-  (`context.ts:66-85`, relay) lê o escopo pelo `requestContext`; `scopeOn` (`context.ts:42-50`,
-  lido) monta o lugar. `chosenConnections` lê a linha do Hub (`chosen.ts:28`, relay).
-- **A conversa.** `openConversation` (`open.ts:109-150`, relay); a marca do fio
-  `SESSION_MARK` (`context.ts:13-19`, relay); o filtro por marca da lista (`routes.ts:183`, lido).
-- **A remoção.** A ordem da 24.1 e da 24.2: `release.ts` das automações (`builder/automations/release.ts`,
-  66 linhas, relay) é o modelo; os agentes saem depois das automações e antes das conversas.
+- **O modelo de tabela.** `builder.assistant_conversation` (`apps/server/src/builder/assistant/tables.ts:14`,
+  lido): tabela de `builder`, só o Hub escreve, chaves estrangeiras com a empresa e o Projeto. Cumpre
+  C21, C23 e C26. A política é a da empresa, sem pessoa, como `OWN_COMPANY` de
+  `hub/projects/tables.ts:23,56` (lido); nunca a regra por pessoa das conversas.
+- **A forma do Mastra.** `AGENT_VERSIONS_SCHEMA` (`M:packages/core/src/storage/constants.ts:236-266`,
+  relay): os campos que esta etapa usa (instruções, modelo, ferramentas, memória, `changeMessage`);
+  os outros (scorers, processors, skills, workspace) não entram até um consumidor (D18).
+- **A função ao ligar.** `apps.companies_with_apps()` (`database-grants.sql:19-22`, lido) e a sua
+  migração da 9: o mesmo desenho, `builder.companies_with_agents()`, de um papel sem login que lê só
+  `company_id` e `active_version` de `builder.agent`.
+- **A remoção.** `builder/automations/release.ts` (66 linhas, relay) e `releaseOf`
+  (`builder/conversation/public.ts:83-104`, lido): os agentes saem depois das automações e antes das
+  conversas.
+- **A admissão.** `hub/identity/admission.ts:71-74` (lido): `manageConnections` trava; `askAssistant`
+  não.
+- **A operação do kit.** `Operation` (`packages/connectors/src/kernel/operation.ts:140-154`, lido):
+  `id`, `class` e `input` (Zod), que conferem o recorte.
 
 ### O raio da mudança
 
@@ -331,174 +346,261 @@ Nada sai do `main`.
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `apps/server/src/builder/agents/` | Cria `tables.ts` (`projectAgent`), `agents.ts` (o serviço: criar, listar, ler, apagar), `routes.ts`, `release.ts`, `public.ts` | `conversations-of.ts`, o Assistente, a U2, a U4 |
-| `apps/server/migrations/` | Cria `<data>_e243_project_agent` (a tabela e a coluna `agent_id`) e `<data>_e243_project_agent_grants`, num commit próprio (D11) | `npm run check-migrations` |
-| `apps/server/database-grants.sql` | Muda: `hub_company` com `SELECT, INSERT, DELETE` e `UPDATE(created_by)` em `builder.project_agent`; `INSERT` de `agent_id` em `builder.assistant_conversation` vem com o `INSERT` que já existe | `catalog.test.ts` |
-| `apps/server/src/builder/assistant/` | Muda `tables.ts` (`agent_id uuid null`, chave estrangeira para `builder.project_agent` com `on delete cascade`); `context.ts` (`SESSION_MARK.agent = 'conexusAgent'`; o escopo ganha `agent: AgentScope | null`); `chosen.ts` (lê `agent_id` com o lugar e a escolha); `open.ts` (`agentId`); `instructions.ts` (as instruções do agente depois das do Conexus); `assistant.ts` (o conjunto de ferramentas do agente); `routes.ts` (a criação com `agentId`, o filtro `agentId`, a recusa do `PUT` das ligações, `agent` no resumo) | as rotas, o workflow da 24.2 |
-| `apps/server/src/builder/assistant/release.ts` | Muda: `releaseConversations` ganha o alvo por agente (`{ companyId, conexusAgent }`, de todas as pessoas, sempre com a marca da empresa, como `:24-28`) além de empresa, pessoa e Projeto | `builder/agents/release.ts` |
-| `apps/server/src/conversations-of.ts` | Muda: monta os agentes e passa a sua leitura ao Assistente | `main.ts` |
-| `apps/server/src/builder/conversation/public.ts` | Muda `releaseOf` (`:91-101`), o único dono da ordem da remoção: `agents.release` depois das automações e antes das conversas; na empresa e no Projeto ele apaga as linhas, na pessoa só anula `created_by` | as remoções da empresa, da pessoa e do Projeto |
-| `packages/hub-api/src/agents.ts` | Cria: rotas, `AgentId`, `AgentSummary`, `CreateAgent`; muda `index.ts`, `failures.ts` (`AGENT_NOT_FOUND`, `AGENT_CONNECTIONS_FIXED`, com as frases), `assistant.ts` (`agentId` na criação e no filtro, `agent` no resumo), o OpenAPI gerado | a U2, a U3, a U4 |
-| `scripts/removals.json` | Muda: as proteções novas (o membro recusado nas rotas dos agentes, S10; o agente de outro Projeto; a recusa do `PUT` das ligações), cada uma com o teste que a pega | — |
+| `apps/server/src/builder/agents/` | Cria `tables.ts`, `agents.ts` (o serviço: criar, ler, listar, mudar o rascunho, os recortes, publicar, versões, ativar, apagar), `routes.ts`, `release.ts`, `public.ts` | a U2, a U4, a U6 |
+| `apps/server/migrations/` | Cria `<data>_e243_agents` (as três tabelas) e, num commit próprio, `<data>_e243_agents_grants` (as permissões e a função) (D11) | `npm run check-migrations` |
+| `apps/server/database-grants.sql` | Muda: `hub_company` com `SELECT, INSERT, UPDATE, DELETE` em `builder.agent` e `builder.agent_tool`, `SELECT, INSERT, DELETE` e `UPDATE(published_by)` em `builder.agent_version`; a função e o seu papel sem login; `EXECUTE` só a `hub_runtime` | `catalog.test.ts` |
+| `apps/server/src/hub/identity/admission.ts` | Muda: as ações `manageAgents` e `publishAgent`, as duas com `MANAGE_CONNECTIONS` e trava nas gravações, como `manageConnections` (a etapa de papéis troca a declaração de `publishAgent`) | `builder/agents/` |
+| `apps/server/src/builder/conversation/public.ts` | Muda `releaseOf`: `agents.release` depois das automações e antes das conversas | as remoções |
+| `packages/hub-api/src/agents.ts` | Cria os contratos abaixo; muda `index.ts`, `failures.ts` (os códigos e as frases), o OpenAPI gerado | a U2, a U4, a U5, a U6 |
+| `scripts/removals.json` | Muda: as proteções novas (o membro recusado, o agente de outro Projeto, o `revision` velho, a operação de escrita num recorte), cada uma com o teste que a pega | — |
 
 ### Os contratos que a unidade cria
 
 ```ts
 // packages/hub-api/src/agents.ts
 const BASE = '/api/companies/{companyId}/projects/{projectId}/agents'
-// GET    BASE                    -> { agents: AgentSummary[] }   acesso askAssistant; falhas: NOT_FOUND, SESSION_REQUIRED, DATABASE_UNAVAILABLE
-// POST   BASE CreateAgent, attemptKey: true -> 201 { agent: AgentSummary }; falhas: as de leitura, REQUEST_MALFORMED, IDEMPOTENCY_CONFLICT
-// GET    BASE/{agentId}          -> { agent: AgentSummary }; falhas: as de leitura, AGENT_NOT_FOUND
-// DELETE BASE/{agentId}          -> 204; falhas: as de leitura, AGENT_NOT_FOUND
-export const AGENT_NAME_MAX = 80                 // o mesmo da automação: a mesma linha nas listas
-export const AGENT_INSTRUCTIONS_MAX = 4000       // a razão de AUTOMATION_PROMPT_MAX (a dívida)
-export const AgentId = z.uuid().brand('AgentId') // conferido em agents.ts pela empresa e o Projeto (C23)
-export const AgentName = z.string().trim().min(1).max(AGENT_NAME_MAX)
-export const AgentInstructions = z.string().trim().min(1).max(AGENT_INSTRUCTIONS_MAX)
-export const CreateAgent = z.object({
-  name: AgentName, instructions: AgentInstructions,
-  connections: z.array(ConnectionId).max(CONNECTIONS_MAX),   // CONNECTIONS_MAX sai de automations.ts para um dono só, exportado (C26)
+// GET    BASE                                      -> { agents: AgentSummary[] }        acesso manageAgents
+// POST   BASE  CreateAgent, attemptKey: true       -> 201 { agent: AgentDetail }
+// GET    BASE/{agentId}                            -> { agent: AgentDetail }
+// PATCH  BASE/{agentId}/draft  DraftPatch          -> { agent: AgentDetail }            AGENT_DRAFT_STALE (409), REQUEST_MALFORMED
+// POST   BASE/{agentId}/tools  ToolInput           -> 201 { agent: AgentDetail }        AGENT_TOOL_REFUSED, AGENT_DRAFT_STALE
+// PATCH  BASE/{agentId}/tools/{toolId}  ToolPatch  -> { agent: AgentDetail }
+// DELETE BASE/{agentId}/tools/{toolId}?revision=   -> { agent: AgentDetail }
+// POST   BASE/{agentId}/publish  Publish           -> { agent: AgentDetail, version: AgentVersionSummary }   acesso publishAgent; AGENT_DRAFT_INVALID, AGENT_DRAFT_STALE
+// GET    BASE/{agentId}/versions                   -> { versions: AgentVersionSummary[] }
+// POST   BASE/{agentId}/versions/{number}/activate -> { agent: AgentDetail }           acesso publishAgent; AGENT_VERSION_NOT_FOUND
+// DELETE BASE/{agentId}                            -> 204
+// falhas de todas: NOT_FOUND, SESSION_REQUIRED, DATABASE_UNAVAILABLE, AGENT_NOT_FOUND
+export const AGENT_NAME_MAX = 80                   // o da automação: a mesma linha nas listas
+export const AGENT_INSTRUCTIONS_MAX = 8000         // a dívida
+export const AGENT_TOOLS_MAX = 20                  // hipótese: a U1 conta as leituras do kit do Sankhya; acima de 20, o número volta ao cartão
+export const AgentId = z.uuid().brand('AgentId')            // conferido em agents.ts pela empresa e o Projeto (C23)
+export const AgentToolId = z.uuid().brand('AgentToolId')    // conferido pelo agente
+export const ToolSlug = z.string().regex(/^[a-z][a-z0-9_]{0,39}$/)   // o nome que o modelo vê: `tool_<slug>`
+export const AgentMemory = z.object({ observational: z.boolean() })
+export const AgentConfig = z.object({
+  name: z.string().trim().min(1).max(AGENT_NAME_MAX),
+  description: z.string().trim().max(280),                     // as duas linhas do cartão e da lista
+  instructions: z.string().max(AGENT_INSTRUCTIONS_MAX),        // vazio só no rascunho; publicar exige (AGENT_DRAFT_INVALID)
+  model: ModelId.nullable(),                                   // null: o modelo de quem conversa
+  memory: AgentMemory,
+  connections: z.array(ConnectionId).max(CONNECTIONS_MAX),     // um subconjunto das ligações do Projeto; CONNECTIONS_MAX sai de automations.ts para um dono só (C26)
   web: z.boolean(), appData: z.boolean(),
 })
-export const AgentConnection = z.object({ connectionId: ConnectionId, connector: z.string(), name: z.string(), offered: z.boolean() })
-export const AgentSummary = z.object({
-  id: AgentId, projectId: ProjectId, name: AgentName, instructions: AgentInstructions,
-  connections: z.array(AgentConnection), web: z.boolean(), appData: z.boolean(),
-  createdBy: z.object({ personId: PersonId, name: z.string() }).nullable(),   // null: a pessoa saiu da empresa
-  createdAt: z.iso.datetime(),
+export const AgentToolConfig = z.object({
+  slug: ToolSlug, description: z.string().trim().min(1).max(500),
+  connectionId: ConnectionId, operation: z.string(),           // uma leitura do kit (class 'read'), conferida no serviço
+  bound: z.record(z.string(), z.unknown()),                    // os valores fixos, conferidos pelo esquema da operação
+  open: z.array(z.string()).max(20),                           // os campos de primeiro nível que o modelo preenche
 })
-// packages/hub-api/src/assistant.ts (muda)
-const OpenedFor = z.object({ agentId: AgentId, name: z.string() }).nullable()   // o agente apagado leva a conversa: nunca um nome sem agente
-// AssistantConversationSummary e AssistantConversation ganham `agent: OpenedFor`
-// createAssistantConversation: body ganha `agentId: AgentId.optional()`; falha nova AGENT_NOT_FOUND
-// listAssistantConversations: query ganha `agentId: AgentId.optional()`
-// setAssistantConnections: falha nova AGENT_CONNECTIONS_FIXED (409)
+export const CreateAgent = z.object({ name: AgentConfig.shape.name, description: AgentConfig.shape.description.optional() })
+export const DraftPatch = AgentConfig.partial().extend({ revision: z.int().positive() })
+export const ToolInput = AgentToolConfig.extend({ revision: z.int().positive() })
+export const ToolPatch = AgentToolConfig.partial().extend({ revision: z.int().positive() })
+export const Publish = z.object({ revision: z.int().positive(), message: z.string().trim().max(280) })
+export const AgentState = z.discriminatedUnion('kind', [                                  // C21
+  z.object({ kind: z.literal('DRAFT') }),                                                  // nunca publicado
+  z.object({ kind: z.literal('PUBLISHED'), version: z.int(), changed: z.boolean() }),     // changed: o rascunho difere da ativa
+])
+export const AgentSummary = z.object({ id: AgentId, projectId: ProjectId, name: z.string(), description: z.string(), state: AgentState, updatedAt: z.iso.datetime() })
+export const AgentDetail = AgentSummary.extend({
+  draft: AgentConfig, revision: z.int(), tools: z.array(AgentToolConfig.extend({ id: AgentToolId })),
+  offered: z.array(z.object({ connectionId: ConnectionId, connector: z.string(), name: z.string(), reads: z.array(z.object({ operation: z.string(), summary: z.string() })) })),
+  createdBy: z.object({ personId: PersonId, name: z.string() }).nullable(),
+})
+export const AgentVersionSummary = z.object({ number: z.int(), message: z.string(), active: z.boolean(), publishedAt: z.iso.datetime(), publishedBy: z.object({ personId: PersonId, name: z.string() }).nullable() })
 ```
 
 ```ts
-// apps/server/src/builder/agents/tables.ts
-// builder.project_agent: id uuid pk; company_id text not null -> companies (cascade);
-// project_id text not null -> projects (cascade); created_by text null, sem chave estrangeira (D17: a pessoa sair não
-// apaga o agente; a remoção da pessoa anula a coluna por agents.release);
-// name text not null; instructions text not null; connections uuid[] not null;
-// web boolean not null; app_data boolean not null; body_hash text not null; created_at timestamptz not null default now()
-// a política da empresa, sem pessoa: policy(SCOPE_ROLES.COMPANY, 'all', sql`company_id = ${scoped.companyId}`),
-// como OWN_COMPANY de hub/projects/tables.ts:23,56; nunca OWN, a regra por pessoa das conversas (builder/schema/tables.ts:9-13)
-// (as chaves para as tabelas reais `company` e `project`)
-// apps/server/src/builder/assistant/context.ts (muda)
-/** O agente que a conversa roda: a linha lida a cada pedido, um dono só (C26). */
-export type AgentScope = Readonly<{
-  agentId: AgentId; name: string; instructions: string
-  connections: readonly ConnectionId[]; web: boolean; appData: boolean
-}>
-// SessionScope (hub/connectors/public.ts) não muda; o escopo do Assistente vira:
-export type AssistantScope = SessionScope & { agent: AgentScope | null }
+// apps/server/src/builder/agents/tables.ts (a política da empresa em todas, como OWN_COMPANY)
+// builder.agent: id uuid pk; company_id -> companies (cascade); project_id -> projects (cascade);
+//   draft jsonb not null (AgentConfig); revision int not null default 1; active_version int null;
+//   created_by text null, sem chave estrangeira (D17); body_hash text not null; created_at, updated_at
+// builder.agent_tool: id uuid pk; agent_id -> builder.agent (cascade); company_id; config jsonb not null
+//   (AgentToolConfig); unique (agent_id, (config->>'slug'))
+// builder.agent_version: agent_id -> builder.agent (cascade); number int; company_id; config jsonb not null
+//   (AgentConfig & { tools: AgentToolConfig[] }); source_revision int not null; message text not null;
+//   published_by text null; published_at; primary key (agent_id, number); unique (agent_id, source_revision)
 // apps/server/src/builder/agents/public.ts
+export type FrozenVersion = AgentConfig & { tools: readonly AgentToolConfig[]; version: number | 'DRAFT' }
+export type AgentEvent =
+  | { kind: 'ACTIVATED'; companyId: CompanyId; agentId: AgentId; version: number }   // publicar e voltar
+  | { kind: 'DELETED'; companyId: CompanyId; agentId: AgentId }
 export type Agents = {
   routes: (app: FastifyInstance) => void
-  scopeOf: (owner: Owner, agentId: AgentId) => Promise<AgentScope>       // AGENT_NOT_FOUND
-  release: (scope: { companyId: CompanyId; projectId?: ProjectId; personId?: PersonId }) => Promise<number>   // empresa e Projeto: apaga; pessoa: anula created_by
-  onDelete: (hook: (agent: { companyId: CompanyId; agentId: AgentId }) => Promise<void>) => void   // a U4 registra as automações
+  service: AgentService                                   // o que a U4 chama, com as mesmas recusas
+  activeOf: (scope: OfProject, agentId: AgentId) => Promise<FrozenVersion | null>   // a U2 e a U6
+  draftOf: (scope: OfProject, agentId: AgentId) => Promise<FrozenVersion>          // a conversa de teste e agent_test
+  publishedAll: () => Promise<readonly (FrozenVersion & OfProject & { agentId: AgentId })[]>   // a carga ao ligar
+  release: (scope: { companyId: CompanyId; projectId?: ProjectId; personId?: PersonId }) => Promise<number>
+  onChange: (hook: (event: AgentEvent) => Promise<void>) => void   // a U2 (o registro) e a U6 (as automações)
 }
 ```
 
-O id do agente nasce de `uuidv5(companyId:personId:attemptKey)`, como o id derivado da automação da
-24.2; o `body_hash` decide `IDEMPOTENCY_CONFLICT`. As ligações gravadas são as pedidas que o
-Projeto oferece na criação (`connectors.connections(scope)`); a cada turno, as do agente que o
-Projeto ainda oferece (C26: o Projeto é o dono da oferta, o agente da escolha). Numa conversa de
-agente, `sessionScopes` troca o `chosen` do escopo pelas ligações do agente, e a coluna
-`connections` da linha da conversa é gravada vazia (`[]`), porque ninguém a lê (D18). As ferramentas, as
-skills de cada ligação e o bloco das ligações nas instruções seguem o mesmo `chosen`.
-
-As instruções do turno: a mensagem fixa da 24.1 (`conexus.md` e `assistant.md`, `instructions.ts:9-21`)
-e o bloco da conversa (a empresa, a pessoa, a data, o lugar e as ligações), iguais byte a byte; numa
-conversa de agente, uma terceira mensagem do sistema com `"Você é o agente <nome> deste Projeto.
-Siga estas instruções:"`, as instruções do agente e uma frase fixa de que o agente só lê e diz isso
-quando pedirem para gravar (o critério 4 e o passo 4 do roteiro). A mensagem fixa continua uma
-entrada só do cache para todas as conversas.
-
-A admissão (S8): `askAssistant` não trava (`admission.ts:74`); a criação e a remoção do agente gravam
-no banco do Hub, então a admissão entra na transação da gravação com a conferência do papel, como
-`manageConnections` (`:71`); a leitura das rotas usa `askAssistant`.
-
-O conjunto de ferramentas do agente: `toolsOf(model)` só com `web`; `show_file`; as da máquina
-(`AVAILABLE_TOOLS` como a 24.1); `connectorTools(accessOf(...), { noteSave: false })` sobre as
-ligações do agente; `propose_automation` (a U4 lhe dá o alvo); nunca `propose_app` nem
-`conexus_overview`. A U2 acrescenta `app_data_read`.
+O serviço confere numa transação só, com a admissão (S8): as ligações do rascunho contra as que o
+Projeto oferece agora (`connectors.connections(scope)`); a operação de um recorte contra as leituras
+da ligação e a classe pela definição do kit; `bound` pelo esquema da operação (`input.partial()`); o
+modelo por `isChoosable`. Uma ligação que o Projeto perdeu depois fica no rascunho e recusa só
+publicar (`AGENT_DRAFT_INVALID`), para a página marcá-la. Publicar copia o rascunho e os recortes do
+mesmo `revision` para `config`; `state.changed` compara o `revision` do rascunho com o
+`source_revision` da ativa.
 
 ### As skills e a leitura
 
-`mastra` (o agente dinâmico e o controlador na versão instalada), `fastify-best-practices`,
-`pstack:tdd`; as linhas de `docs/reference/stack.md` para `apps/server/src/builder/` e
-`apps/server/migrations/`. [data](../guides/data.md) D11, D17; [testing](../guides/testing.md) T5,
-T12.
+`mastra` (a forma das versões), `fastify-best-practices`, `pstack:tdd`; as linhas de
+`docs/reference/stack.md` para `apps/server/src/builder/` e `apps/server/migrations/`.
+[data](../guides/data.md) D11, D17, D18, D22; [testing](../guides/testing.md) T5, T12.
 
 ### A ordem do trabalho
 
-1. **A prova primeiro.** `assistant.test.ts`, "as ferramentas do agente": cria um agente pela rota,
-   abre a conversa com `agentId`, manda uma pergunta ao modelo dublê e lê as ferramentas e o texto do
-   sistema da chamada; falha hoje.
-2. A migração da tabela e da coluna; num commit próprio, a das permissões e `database-grants.sql`
+1. **A prova primeiro.** `routes.test.ts`, "publicar": cria, muda o rascunho, publica, muda de novo,
+   lê a versão 1 igual; falha hoje.
+2. A migração das tabelas; num commit próprio, a das permissões, da função e `database-grants.sql`
    (D11). `npm run check-migrations`.
-3. `agents.ts`, `routes.ts`, os contratos do `hub-api`, o OpenAPI.
-4. O escopo: `chosen.ts` lê `agent_id`; `sessionScopes` lê a linha do agente por `scopeOf`;
-   `instructions.ts` e `assistant.ts` com o ramo do agente. Regras: C21, C23, C26, C27.
-5. `open.ts` e `routes.ts` do Assistente: `agentId` na criação (o lugar e as ligações do agente), o
-   filtro, a recusa do `PUT`, `agent` no resumo.
-6. `release.ts` e `onDelete`; a ordem nas remoções da empresa, da pessoa e do Projeto. Regras: D17,
-   S10, T12.
+3. `agents.ts` e `routes.ts`, com o `revision`; os contratos do `hub-api` e o OpenAPI. Regras: C21,
+   C23, C26, C27, S8, S10.
+4. `release.ts`, `onChange` e a ordem em `releaseOf`. Regras: D17, D22, T12.
 
 ### Como se prova
 
-Cada critério da U1 pelo teste da sua linha, pela porta pública: as rotas pelo servidor de teste,
-o turno pelo modelo dublê da 12 e o dublê do Sankhya da 24.1, o Postgres de teste com os dois
-bancos (o do Hub e o do Mastra). O teste que falha hoje: `assistant.test.ts`, "as ferramentas do
-agente". Comando: os testes tocados, `npm run typecheck`, `npm run lint`, `npm run check-migrations`.
+Cada critério da U1 pelo teste da sua linha, pelo servidor de teste e o Postgres de teste com os
+dois bancos. O teste que falha hoje: "publicar". Comando: os testes tocados, `npm run typecheck`,
+`npm run lint`, `npm run check-migrations`.
 
 ### Parar se
 
-- O escopo da conversa não alcança a linha do agente dentro do `requestContext` sem uma leitura por
-  chamada de ferramenta (o `scopeOf` da 24.1 já guarda o escopo por `RequestContext`): relata, com a
-  contagem de leituras do teste.
-- O ramo do agente muda o pedido do modelo de uma conversa do Assistente sem agente (o texto do
-  sistema ou a ordem das ferramentas): para; as conversas da 24.1 ficam iguais byte a byte.
-- A chave estrangeira com `on delete cascade` de `assistant_conversation.agent_id` pede uma permissão
-  que a D11 do cartão não deu: para e relata.
+- Conferir `bound` pelo esquema da operação pede o kit dentro de `builder/` de um jeito que a regra
+  das pastas recusa: relata o caminho que a porta dos conectores oferece.
+- A função ao ligar precisa ler mais que `company_id` e `active_version`: para; a palavra D11 é
+  dessa forma.
 
-## U2 Os dados do app
+## U2 O agente vivo
 
-**Base e modelo.** `main` depois da U1. Sonnet: um login e uma ferramenta, sobre o login do app da
-9, com a regra de segurança escrita aqui.
+**Base e modelo.** `main` depois da U1. Opus: o registro, a ordem ao ligar e o controlador que
+delega cruzam quatro módulos.
 
 ### As linhas da tabela
 
-- `appLogin` (`packages/hub-api/src/app-login.ts:8-15`, lido) e `appLoginPassword` (`:24-36`,
-  lido; decisão 0043).
-- `schemaStatements` e `ensureApp` (`apps/server/src/platform/company-postgres.ts:148-187`, lido):
-  os logins nascem se faltam, as permissões repetem sem erro, `APP_CALL_LIMITS` nos tempos do login
-  que roda.
-- `neonTransport` (`company-postgres.ts:65-81`, relay) e `asLogin` (`:~118`, relay); o banco do
-  Projeto pela empresa (`projects.readyDatabaseOf`, `company-database.ts:103`, relay).
-- O corte das linhas ao modelo: o mesmo de `connector_read` (`CUT_ROWS`, `CUT_BYTES`,
-  `hub/connectors/cut.ts:4-6`); a U2 os exporta de `hub/connectors/public.ts` e os importa, nunca
-  copia o número (C26).
-- O endereço do login sem a API do Neon: o edge monta o do login do app pelo `host` gravado e a senha
-  derivada (`apps/edge/src/db.ts:35-60`); o `host` e o banco vêm de `readyDatabaseOf` e
-  `COMPANY_DATABASE` (`hub/apps/handoff.ts:271-282`). `openAppDatabase` (`hub/apps/app-database.ts:24-55`)
-  chama a API do Neon a cada ato (`:37`), então só serve para criar o login que falta.
+- **O editor do Mastra**, a forma a seguir: `M:packages/editor/src/namespaces/agent.ts:1169-1199`
+  (`new Agent`, `addAgent` com `source: 'stored'`, só se não houver agente de código com o id) e
+  `:438-446` (`removeAgent` ao trocar). Escrito por nós sobre o core aberto; o editor não é
+  instalado.
+- **O controlador do Assistente**, o modelo do controlador "agentes": `assistant.ts:245-371` (lido):
+  `BUILTIN_TOOLS` desligadas, `yolo: true` (0053), a memória, `accountPick` e os processadores. O
+  modo dos agentes **não** lista `availableTools`: a lista fechada é a da versão, que só o nosso
+  código monta (`NM:agent-controller-DO6rGsQm.js:8390-8391`).
+- **O escopo por pedido.** `sessionScopes` e `SESSION_MARK` (`builder/assistant/context.ts:13-19,60-85`,
+  lido em parte): a conversa de agente tem o seu par, com `agentId` e `draft`.
+- **A abertura.** `openConversation` (`open.ts:111-150`, lido): a abertura do agente repete a forma
+  (a linha do Hub, `createSession` com as marcas, `model.switch` só num fio novo) com o modelo da
+  versão.
+- **A ordem ao ligar.** `main.ts:214-216` (lido) e `start` (`builder/conversation/public.ts:185-187`,
+  lido): a carga entra em `start`, antes de `startWorkers`.
 
 ### O raio da mudança
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `packages/hub-api/src/app-login.ts` | Muda: `readLogin: app_<projeto>_read` | `company-postgres.ts`, `apps/edge` (não usa) |
-| `packages/hub-api/src/assistant.ts` | Muda: `ASSISTANT_TOOL.appDataRead = 'app_data_read'`, que entra no conjunto fechado do controlador do Assistente (`AVAILABLE_TOOLS`, `assistant.ts:79-87`); nunca em `CLOSED_TOOLS` de `tools.ts`, que é o do Construtor | o Assistente, a web (a linha da ferramenta) |
-| `apps/server/src/platform/company-postgres.ts` | Muda: `ensureApp` cria os três logins; `schemaStatements` dá ao de leitura só `USAGE` no esquema e `SELECT` (nenhum `CREATE`, nenhuma sequência, nenhum `EXECUTE` além do `PUBLIC`): nas tabelas futuras pelo `ALTER DEFAULT PRIVILEGES` que já roda como o login de migração (depois do `SET LOCAL ROLE`), nas que existem tabela por tabela, menos o livro das migrações (ou `GRANT … ON ALL TABLES` seguido de `REVOKE` no livro); mais `default_transaction_read_only = on` e os tempos do app, como profundidade; cria na porta `CompanyPostgres` `readApp(read: DatabaseUrl, sql, signal)`, que manda cada consulta como `sql.transaction([…], { readOnly: true })` (o `BEGIN READ ONLY` explícito do `@neondatabase/serverless`, `index.d.ts:491-496`, relay; como `apps/edge/src/db.ts:48-60`), e `ensureReadLogin(owner: DatabaseUrl, projectId)`; a porta recebe o endereço, nunca a empresa (C7), como `ensureApp` (`:86-93`) | `hub/apps/` |
-| `apps/server/src/hub/apps/` | Muda `app-database.ts` e `public.ts`: `readAppData`, o dono do banco do app, monta o endereço do login de leitura e chama `readApp`; cria o login que falta | `builder/agents/app-data.ts` |
-| `apps/server/src/hub/connectors/public.ts` | Muda: exporta `CUT_ROWS` e `CUT_BYTES` de `cut.ts` | `builder/agents/app-data.ts` |
-| `apps/server/src/builder/agents/` | Cria `app-data.ts` (a ferramenta) | `assistant.ts` |
-| `apps/server/src/builder/assistant/assistant.ts` | Muda: `app_data_read` no conjunto do agente com `appData`, só quando o Projeto tem app | — |
-| `apps/web/src/builder/conversation/` | Muda: a linha da ferramenta ("Lendo dados do app") no registro das ferramentas | — |
+| `apps/server/src/builder/agents/` | Cria `agent.ts` (`agentOf`: o `Agent` de uma versão), `tools.ts` (os recortes), `registry.ts`, `controller.ts` (o controlador "agentes" e o seu agente que delega), `open.ts`, `conversation-routes.ts`; muda `tables.ts` (`builder.agent_conversation`) | `conversation/public.ts`, a U3, a U6 |
+| `apps/server/migrations/`, `apps/server/database-grants.sql` | Cria a tabela `builder.agent_conversation` (id, empresa, pessoa, agente com `on delete cascade`, `draft`); as permissões num commit próprio (D11) | `catalog.test.ts` |
+| `apps/server/src/builder/conversation/` | Muda `mastra.ts` (o controlador novo), `public.ts` (o `AgentsPart` ao lado do `AssistantPart`; `start` chama `agents.hydrate()` antes de `startWorkers`; a remoção), `guard.ts` (`Params.controllerId` com `agents`; o dono de cada controlador) | `main.ts` |
+| `apps/server/src/conversations-of.ts` | Muda: monta os agentes | `main.ts` |
+| `apps/server/src/platform/memory.ts` | Muda: `loopDelayP99Ms` e `cpuPercent` na linha | — |
+| `packages/hub-api/src/agents.ts` | Muda: `AGENTS_CONTROLLER = 'agents'`, as rotas da conversa, `AgentConversationSummary` | a U5 |
+
+### Os contratos que a unidade cria
+
+```ts
+// packages/hub-api/src/agents.ts (U2)
+export const AGENTS_CONTROLLER = 'agents'
+// POST BASE/{agentId}/conversations { draft?: boolean }, attemptKey: true -> 201 { conversation: AgentConversationSummary }
+//      falhas: AGENT_NOT_FOUND, AGENT_NOT_PUBLISHED, MODEL_NO_ACCOUNT, MODEL_UNKNOWN
+// GET  BASE/{agentId}/conversations -> { conversations: AgentConversationSummary[] }   só as da pessoa
+export const AgentConversationSummary = z.object({ id: ConversationId, agentId: AgentId, draft: z.boolean(), title: z.string(), updatedAt: z.iso.datetime() })
+// apps/server/src/builder/agents/agent.ts
+/** A chave e o id no Mastra: nunca colide com `builder`, `assistant`, `agents` nem `construtor`. */
+export function agentKey(id: AgentId): `agent-${string}`
+export function agentOf(deps: AgentDeps, frozen: FrozenVersion & OfProject & { agentId: AgentId }): Agent
+// apps/server/src/builder/agents/registry.ts
+export type Registry = {
+  hydrate(): Promise<{ count: number }>              // antes de startWorkers; nunca lança por um agente só
+  replace(agentId: AgentId, companyId: CompanyId): Promise<void>   // relê a ativa; removeAgent e addAgent; em fila por agente
+  remove(agentId: AgentId): void
+  resolve(run: AgentRun): Promise<Agent>             // o registrado (registra se faltar: `lazy`), ou o do rascunho, montado por turno
+}
+/** O que a conversa roda, no requestContext (C21). */
+export type AgentRun =
+  | { kind: 'PUBLISHED'; scope: OfProject & { personId: PersonId }; agentId: AgentId }
+  | { kind: 'DRAFT'; scope: OfProject & { personId: PersonId }; agentId: AgentId }
+```
+
+O agente do controlador: `instructions`, `model`, `tools` e `memory` são funções do
+`requestContext` que chamam `registry.resolve(run)` (uma vez por pedido, guardado por
+`RequestContext` como `offeredFor` em `assistant.ts:227-240`) e devolvem `getInstructions`,
+`getModel`, `listTools` e `getMemory` do resolvido. As instruções de `agentOf` são a mensagem fixa do
+Conexus (o mesmo `conexus.md` da 24.1), o bloco da conversa (empresa, pessoa, data, Projeto,
+ligações) e as instruções da versão, com uma frase fixa: o agente só lê e diz isso quando pedirem
+para gravar. As ferramentas de `agentOf`: os recortes (`tool_<slug>`), `connectorTools` sobre as
+ligações da versão que o Projeto ainda oferece, com `noteSave: false` e sem `savedAt` (sem máquina),
+e `toolsOf(model)` só com `web`. A memória: a `conversationMemory` da 24.1, com a observacional, ou
+uma `new Memory({ storage })` sem ela, as duas criadas uma vez.
+
+### As skills e a leitura
+
+`mastra` (o registro, o controlador e a agenda na versão instalada), `pstack:tdd`, `node`
+(`perf_hooks`). [testing](../guides/testing.md) T5, T12, T26; [code](../guides/code.md) C63.
+
+### A ordem do trabalho
+
+1. **A prova primeiro.** `registry.test.ts`, "ao ligar": publica um agente, cria uma linha da agenda
+   com o `agentId` dele, reinicia o Hub de teste e conta a linha depois de quatro tiques; falha hoje.
+2. `agent.ts`, `tools.ts`, `registry.ts`; o `onChange` da U1 chama `replace` e `remove`.
+3. `controller.ts`, `open.ts`, as rotas; a migração da `agent_conversation`; a porta; o teste das
+   três ordens de `release.test.ts` (critério 7). Regras: C21, C26, S10, S39.
+4. A carga em `start`; `HUB_MEMORY`.
+
+### Como se prova
+
+O Hub de teste com o tique curto e o modelo dublê da 12; o dublê do Sankhya da 24.1. O teste que
+falha hoje: "ao ligar". Comando: os testes tocados, `npm run typecheck`, `npm run lint`,
+`npm run check-migrations`.
+
+### Parar se
+
+- O controlador não passa ao agente que delega a memória escolhida pela versão (o fio lido por uma
+  `Memory` e gravado por outra): para e relata com o teste "a memória"; a saída é uma memória só por
+  controlador e a escolha por chamada (`AgentMemoryOption.options`, `NM:agent/types.d.ts:969-974`).
+- `getModel` do registrado não leva a conta da pessoa (o `accountPick` precisa da sessão do
+  controlador): o modelo fica na sessão (`model.switch`), e o agente registrado guarda só o id;
+  relata.
+- A carga de 1.000 agentes passa de 1 s no Hub de teste (o estudo mediu 230 ms): relata o número.
+
+## U3 Os dados do app
+
+**Base e modelo.** `main` depois da U2. Sonnet: um login e uma ferramenta, sobre o login do app da
+9, com a regra de segurança escrita aqui.
+
+### As linhas da tabela
+
+- `appLogin` e `appLoginPassword` (`packages/hub-api/src/app-login.ts:8-36`, lido; decisão 0043).
+- `schemaStatements` e `ensureApp` (`apps/server/src/platform/company-postgres.ts:148-187`, lido).
+- `neonTransport` e `asLogin` (`company-postgres.ts:65-118`, relay); o endereço do login sem a API do
+  Neon, como o edge (`apps/edge/src/db.ts:35-60`), com o `host` de `readyDatabaseOf` e
+  `COMPANY_DATABASE` (`hub/apps/handoff.ts:271-282`). `openAppDatabase`
+  (`hub/apps/app-database.ts:24-55`) chama a API do Neon, então só cria o login que falta.
+- O corte: `CUT_ROWS` e `CUT_BYTES` (`hub/connectors/cut.ts:4-6`), exportados por
+  `hub/connectors/public.ts`, nunca copiados (C26).
+
+### O raio da mudança
+
+| Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
+| --- | --- | --- |
+| `packages/hub-api/src/app-login.ts` | Muda: `readLogin: app_<projeto>_read` | `company-postgres.ts` |
+| `apps/server/src/platform/company-postgres.ts` | Muda: `ensureApp` cria os três logins; o de leitura só com `USAGE` e `SELECT` (sem o livro das migrações), `default_transaction_read_only = on` e os tempos do app; a porta ganha `readApp` (cada consulta em `sql.transaction([…], { readOnly: true })`) e `ensureReadLogin`, recebendo o endereço, nunca a empresa (C7) | `hub/apps/` |
+| `apps/server/src/hub/apps/` | Muda `app-database.ts` e `public.ts`: `readAppData` | `builder/agents/app-data.ts` |
+| `apps/server/src/hub/connectors/public.ts` | Muda: exporta `CUT_ROWS` e `CUT_BYTES` | `builder/agents/app-data.ts` |
+| `apps/server/src/builder/agents/` | Cria `app-data.ts`; muda `agent.ts` (a ferramenta com `appData` e app no Projeto) | — |
+| `packages/hub-api/src/agents.ts` | Muda: `AGENT_TOOL.appDataRead = 'app_data_read'` | a web (a linha "Lendo dados do app") |
 
 ### Os contratos que a unidade cria
 
@@ -507,149 +609,199 @@ agente". Comando: os testes tocados, `npm run typecheck`, `npm run lint`, `npm r
 readApp(read: DatabaseUrl, sql: string, signal: AbortSignal): Promise<AppRead>
 ensureReadLogin(owner: DatabaseUrl, projectId: ProjectId): Promise<SqlAnswer>
 // apps/server/src/hub/apps/public.ts
-/** O endereço do login `app_<projeto>_read` montado do `host` de `readyDatabaseOf` e de `COMPANY_DATABASE`
- *  com `appLoginPassword`, sem a API do Neon; só quando o Postgres recusa o login (28P01 ou 28000) abre o
- *  dono por `openAppDatabase`, roda `ensureReadLogin` e repete a consulta uma vez. */
 readAppData(input: { scope: SessionScope; projectId: ProjectId; sql: string; signal: AbortSignal }): Promise<AppRead>
 export type AppRead =
   | { kind: 'ROWS'; columns: readonly string[]; rows: readonly unknown[][] }
-  | { kind: 'REFUSED'; code: 'APP_DATA_REFUSED' }       // a recusa do Postgres: 25006 (transação de leitura), 42501 (sem permissão), 42601 (vários comandos, se o protocolo estendido os recusa)
-  | { kind: 'FAILED'; code: 'APP_DATA_UNAVAILABLE' | 'APP_DATA_TIMEOUT' | 'APP_DATA_NO_APP' | 'APP_DATA_TOO_LARGE' }   // TOO_LARGE: a resposta passou de REPLY_CAP_BYTES, 1 MB (company-postgres.ts:49-58), C59
+  | { kind: 'REFUSED'; code: 'APP_DATA_REFUSED' }     // 25006, 42501, 42601
+  | { kind: 'FAILED'; code: 'APP_DATA_UNAVAILABLE' | 'APP_DATA_TIMEOUT' | 'APP_DATA_NO_APP' | 'APP_DATA_TOO_LARGE' }   // TOO_LARGE: acima de REPLY_CAP_BYTES, 1 MB (company-postgres.ts:49-58), C59
 // apps/server/src/builder/agents/app-data.ts
-export const AppDataInput = z.object({ sql: z.string().trim().min(1).max(4000) })   // a mesma razão de AGENT_INSTRUCTIONS_MAX
+export const AppDataInput = z.object({ sql: z.string().trim().min(1).max(4000) })
 ```
 
-A barreira é a permissão: o login só tem `SELECT`, então nenhum `SET` da sessão o faz gravar; a
-transação de leitura e o padrão do login são profundidade. A ferramenta devolve ao modelo as colunas e as linhas cortadas, ou a frase do código em português
-("Só leio os dados do app.", "O banco do app não respondeu.", "A consulta passou do tempo."). O SQL
-e as linhas nunca vão ao registro do processo (C50).
+A barreira é a permissão: o login só tem `SELECT`; a transação de leitura e o padrão do login são
+profundidade. O SQL e as linhas nunca vão ao registro do processo (C50).
 
 ### As skills e a leitura
 
-`node`, `pstack:tdd`; a documentação do PostgreSQL 17 para `ALTER ROLE … SET`,
-`ALTER DEFAULT PRIVILEGES` e `GRANT`; as linhas de `docs/reference/stack.md` para
-`apps/server/src/platform/`. [security](../guides/security.md) para o login e a recusa no banco.
+`node`, `pstack:tdd`; o PostgreSQL 17 para `ALTER ROLE … SET`, `ALTER DEFAULT PRIVILEGES` e `GRANT`.
+[security](../guides/security.md).
 
 ### A ordem do trabalho
 
-1. **A prova primeiro.** `app-data.test.ts`, "não grava": um esquema de app com uma tabela no
-   Postgres de teste, a consulta `DELETE` pela ferramenta, a tabela inteira depois; falha hoje (a
-   ferramenta não existe).
-2. `readLogin` em `app-login.ts`; os três logins em `ensureApp`; as permissões do login de leitura,
-   sem o livro das migrações (o critério 11 o confere num Projeto novo e num de antes).
-3. `ensureReadLogin` (o mesmo `ensureApp`, só a parte do login, para um Projeto de antes), `readApp`
-   e `readAppData` em `hub/apps`.
-4. `app-data.ts` e o seu lugar no conjunto do agente; a linha da ferramenta na web.
+1. **A prova primeiro.** `app-data.test.ts`, "não grava": um `DELETE` pela ferramenta e a tabela
+   inteira depois; falha hoje.
+2. `readLogin`; os três logins em `ensureApp`; as permissões do de leitura.
+3. `ensureReadLogin`, `readApp`, `readAppData`.
+4. `app-data.ts` em `agentOf`.
 
 ### Como se prova
 
-O Postgres de teste no lugar do Neon pela porta `CompanyPostgres` (como os testes da 9 e da 15);
-cada recusa do critério 10 é uma consulta e a releitura da tabela. O teste que falha hoje: "não
-grava". Comando: os testes tocados, `npm run typecheck`, `npm run lint`.
+O Postgres de teste no lugar do Neon pela porta `CompanyPostgres`; cada recusa do critério 19 é uma
+consulta e a releitura da tabela. Comando: os testes tocados, `npm run typecheck`, `npm run lint`.
 
 ### Parar se
 
-- Um comando de escrita passa pelo login de leitura em qualquer forma: para; a recusa é do banco ou
-  não há ferramenta.
-- O primeiro teste manda `SELECT 1; SELECT 2` por `readApp` e grava o código que volta: se o
-  transporte do Neon por HTTP usa o protocolo simples e roda os dois, o critério 10 diz 42501 para a
-  escrita (a permissão), não 42601; relata o código e ajusta a frase do critério, nunca um filtro.
-- O transporte não aceita `readOnly` na transação: para e relata; a permissão continua a barreira.
-- O login de leitura precisa de uma permissão que o dono do banco não pode dar sem a palavra D11 do
-  fundador para o banco das empresas: para e relata.
+- Um comando de escrita passa pelo login de leitura em qualquer forma: para.
+- `SELECT 1; SELECT 2` por `readApp` volta um código diferente de 42601: relata o código e ajusta a
+  frase do critério, nunca um filtro.
+- O transporte não aceita `readOnly` na transação: relata; a permissão continua a barreira.
+- O login de leitura pede uma permissão que o dono do banco não pode dar sem a palavra D11: para.
 
-## U3 O Construtor propõe e as telas
+## U4 O Construtor
 
-**Base e modelo.** `main` depois da U2. Sonnet: uma ferramenta que propõe e telas sobre contratos
-prontos.
+**Base e modelo.** `main` depois da U2. Sonnet: um controlador com a forma dos dois que existem e
+ferramentas sobre o serviço da U1.
 
 ### As linhas da tabela
 
-- `propose_automation` como modelo (`builder/assistant/propose-automation.ts:12-29`, lido): a
-  ferramenta só devolve a proposta, e o fio a guarda com a chamada.
-- As ferramentas do Construtor (`builder/conversation/builder.ts:221-232`, lido): `propose_agent`
-  entra **depois** das que já existem, porque o critério 13a da 20 guarda o pedido do modelo igual
-  byte a byte.
-- O cartão da 24.2 (`apps/web/src/builder/automations/proposal.tsx`, 93 linhas, relay;
-  `ASSISTANT_OVERRIDES` em `assistant-specs.ts`, lido em `:6-57`) e o registro das ferramentas do
-  Construtor (`tool-registry.ts`, `tool-spec.ts`, relay).
-- A barra do Projeto (`apps/web/src/hub/projects/project-rail.tsx:150-163`, lido): **Agentes** entra
-  entre **Conversas** e **Automações**, escondida do membro como **Automações**.
-- As páginas da conversa do Assistente no Projeto
-  (`routes/_app/companies/$companyId/projects/$projectId_.assistant.*`, relay).
+- **O controlador.** O do Assistente (`assistant.ts:333-344`, lido): um modo, a lista fechada de
+  ferramentas, `BUILTIN_TOOLS` desligadas, `yolo: true` (`C1`: o rascunho sem perguntar; nenhuma
+  ferramenta publica). Sem máquina nesta etapa.
+- **O manual.** O do agente de workflows do Mastra (`M:packages/core/src/workflows/builder/agent.ts:13-24`,
+  `authoring-playbook.ts:37-40`, relay): ler o que existe, propor, montar por operações pequenas,
+  conferir o que voltou. Escrito por nós, em português, em `prompt/construtor.md`.
+- **Conferir o que voltou.** `create-workflow` do Mastra Code
+  (`M:mastracode/sdk/src/tools/workflows/create-workflow.ts:61-120`, relay).
+- **As conversas.** As do Assistente, listadas pela marca (`builder/assistant/routes.ts:173-200`,
+  lido em parte), com o dono `construtor:company:<c>:person:<p>` e a marca do Projeto; nenhuma
+  tabela do Hub (o Construtor não escolhe ligações: vê as que o Projeto recebeu).
+- **A #540.** A linha do texto do Builder que diz que os conectores "vêm depois"
+  (`builder/conversation/prompt/builder.md`), corrigida.
 
 ### O raio da mudança
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `apps/server/src/builder/conversation/` | Cria `propose-agent.ts`; muda `builder.ts` (a ferramenta no fim da lista, com o Projeto, só quando a pessoa pode `askAssistant`, lido uma vez por `RequestContext` como `grantedFor`; para o membro ela não existe e o Construtor diz que agentes são de donos e administradores), `permissions.ts` (`BUILDER_TOOL.proposeAgent` em `TALK` de `TOOL_CLOSURE`, `:22-60`; `permissions.test.ts:254` confere a igualdade) e `prompt/builder.md` (quando propor um agente; a linha 15, que diz que os conectores "vêm depois", corrigida: a #540) | — |
-| `packages/hub-api/src/` | Muda `tools.ts` (`BUILDER_TOOL.proposeAgent = 'propose_agent'`), `agents.ts` (`ProposedAgent`) | a web |
-| `apps/web/src/builder/agents/` | Cria `proposal.tsx` (o cartão), `agents.tsx` (a lista), `agent-page.tsx` (a página e o painel), `queries.ts`, `text.ts` | as rotas |
-| `apps/web/src/builder/conversation/` | Muda o registro das ferramentas do Construtor (o cartão de `propose_agent`) | — |
-| `apps/web/src/builder/assistant/` | Muda: a etiqueta **Agente · <nome>**, o título da conversa e a caixa sem o escolhedor de ligações numa conversa de agente | — |
-| `apps/web/src/hub/projects/project-rail.tsx` | Muda: a entrada **Agentes** | — |
-| `apps/web/src/routes/_app/companies/$companyId/projects/` | Cria `$projectId_.agents.index.tsx` e `$projectId_.agents.$agentId.tsx` | — |
-| `docs/reference/screens.md` | Muda: as duas telas novas | — |
+| `apps/server/src/builder/construtor/` | Cria `construtor.ts` (o agente e o controlador), `tools.ts`, `test-draft.ts`, `open.ts`, `routes.ts`, `prompt/construtor.md` | `conversation/public.ts` |
+| `apps/server/src/builder/conversation/` | Muda `public.ts` e `mastra.ts` (o terceiro controlador), `guard.ts` (`construtor` no `enum` e o seu dono), `prompt/builder.md` (a #540) | — |
+| `apps/server/src/conversations-of.ts` | Muda: monta o Construtor com o serviço dos agentes | — |
+| `packages/hub-api/src/construtor.ts` | Cria: `CONSTRUTOR_CONTROLLER = 'construtor'`, `CONSTRUTOR_TOOL`, as rotas, `ConstrutorResult` | a U5 |
 
 ### Os contratos que a unidade cria
 
 ```ts
-// packages/hub-api/src/agents.ts (U3)
-export const ProposedAgent = CreateAgent.extend({ summary: z.string().trim().min(1).max(280) })   // as duas linhas do cartão; não é gravado
-// apps/server/src/builder/conversation/propose-agent.ts
-export function proposeAgentTool(deps: {
-  offeredOf: (requestContext: RequestContext) => Promise<readonly ConnectionId[]>   // as ligações do Projeto da conversa
-  hasAppOf: (requestContext: RequestContext) => Promise<boolean>
-}): Tool<ProposedAgent, ProposedAgent>   // filtra as ligações e põe appData falso sem app; não grava
+// packages/hub-api/src/construtor.ts
+export const CONSTRUTOR_CONTROLLER = 'construtor'
+export const CONSTRUTOR_TOOL = {
+  projectRead: 'project_read', agentDraft: 'agent_draft', agentSet: 'agent_set',
+  agentToolSave: 'agent_tool_save', agentToolDelete: 'agent_tool_delete', agentTest: 'agent_test',
+} as const
+// POST /api/companies/{c}/projects/{p}/construtor/conversations, attemptKey: true -> 201 { conversation }   acesso manageAgents
+// GET  /api/companies/{c}/projects/{p}/construtor/conversations -> { conversations }
+/** O que agent_draft, agent_set e as dos recortes devolvem: o rascunho gravado, ou a recusa (C21). */
+export const ConstrutorResult = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('SAVED'), agent: AgentDetail }),
+  z.object({ kind: z.literal('REFUSED'), code: FailureCode, field: z.string().optional() }),
+])
+// agent_draft:       { name, description }                 -> ConstrutorResult  (cria pelo serviço; a chave de tentativa sai do toolCallId)
+// agent_set:         DraftPatch & { agentId }              -> ConstrutorResult
+// agent_tool_save:   ToolInput & { agentId, toolId? }      -> ConstrutorResult
+// agent_tool_delete: { agentId, toolId, revision }         -> ConstrutorResult
+// agent_test:        { agentId, question: string(1..2000) } -> { kind: 'ANSWERED', text, tools: string[] } | { kind: 'REFUSED', code }
+// project_read:      {}                                    -> { project, offered, app: { tables } | null, agents: AgentSummary[] }
 ```
+
+Toda ferramenta recebe a pessoa e o Projeto do escopo da conversa, nunca do modelo (C23), e um
+`agentId` de outro Projeto volta `AGENT_NOT_FOUND`.
 
 ### As skills e a leitura
 
-`shadcn`, `impeccable` (as telas), `pstack:tdd`; as linhas de `docs/reference/stack.md` para
-`apps/web/src/` e `apps/server/src/builder/`. [web](../guides/web.md) W7, W30, W34;
-[design](../guides/design.md) e [Impeccable](../reference/impeccable.md) para as telas.
+`mastra` (o controlador, `Agent.generate`), `pstack:tdd`. [code](../guides/code.md) C75.
 
 ### A ordem do trabalho
 
-1. **A prova primeiro.** `builder.test.ts`, "propor um agente": o modelo dublê pede `propose_agent`
-   numa conversa do Construtor; a saída é a proposta filtrada; falha hoje.
-2. `propose-agent.ts`, a sua entrada em `builder.ts`, a frase em `builder.md`.
-3. O cartão e o seu teste; as rotas e as páginas; a entrada na barra; a etiqueta na conversa.
-4. `docs/reference/screens.md`. Regras: W7, W30, W34, C21.
+1. **A prova primeiro.** `construtor.test.ts`, "o rascunho pelo Construtor": o modelo dublê chama
+   `agent_draft` e `agent_set`; a rota da U1 lê o rascunho; falha hoje.
+2. `construtor.ts` e o controlador; `guard.ts`.
+3. `tools.ts` e `test-draft.ts` sobre `agents.service` e `agentOf` com `draftOf`.
+4. `prompt/construtor.md` (ideias antes de construir; recortes estreitos; testar; nunca publicar,
+   dizer à pessoa para tocar **Publicar**); a #540.
 
 ### Como se prova
 
-O servidor pelo modelo dublê; as telas pelos testes de `apps/web` com o servidor dublê de cada tela,
-e o QA da etapa para as larguras e os temas. O teste que falha hoje: "propor um agente". Comando:
-os testes tocados, `npm run typecheck`, `npm run lint`.
+O modelo dublê da 12 com as chamadas de ferramenta roteirizadas; o dublê do Sankhya da 24.1.
+Comando: os testes tocados, `npm run typecheck`, `npm run lint`.
 
 ### Parar se
 
-- A ferramenta nova muda o pedido do modelo antes das ferramentas que já existiam: para (o critério
-  13a da 20).
-- A conversa do agente não cabe na tela da conversa do Assistente sem um segundo componente de
-  conversa: para e relata; a página do agente reusa a conversa, nunca a copia.
+- `agent_test` precisa de uma sessão do controlador para pegar a conta de modelo: relata; a saída é
+  abrir uma conversa de teste da U2 e mandar a pergunta nela.
+- O Construtor precisa de uma ferramenta que grava num sistema da empresa: para; é a 24.5.
 
-## U4 A automação roda um agente
+## U5 As telas
 
-**Base e modelo.** `main` depois da U1. Sonnet: um campo novo num contrato que já tem a sua versão.
+**Base e modelo.** `main` depois da U4. Sonnet: telas sobre contratos prontos.
 
 ### As linhas da tabela
 
-- `AutomationInput` (`builder/automations/run.ts:37-50`, relay) com `version: z.literal(1)`; a
-  criação (`automations.ts:137-145`, relay); `ownedOf` lê o `inputData` (`automations.ts:~52`,
-  relay).
-- `conversed` (`run.ts:96-142`, lido em `:90-130`): a conversa aberta por `deps.assistant.open`.
-- `propose_automation` (`propose-automation.ts:12-29`, lido).
+- A barra do Projeto (`apps/web/src/hub/projects/project-rail.tsx:111-175`, lido): **Agentes** entra
+  depois de **Conversas**, escondida do membro como **Automações** (`role !== 'member'`).
+- As conversas da 24.1 (`apps/web/src/builder/assistant/`, `apps/web/src/builder/conversation/`) e o
+  registro das ferramentas (`tool-registry.ts`, `tool-spec.ts`, relay): o cartão do rascunho é o
+  desenho do `ConstrutorResult` de `agent_draft` e `agent_set`.
+- A página de agente do Studio, só a estrutura (a captura; `agent-overview-panel.tsx:134-240`, relay).
 
 ### O raio da mudança
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `apps/server/src/builder/automations/` | Muda `run.ts` (`AutomationInput` como união das versões 1 e 2; `target`; `check` lê o agente; `conversed` abre a conversa com `agentId`), `automations.ts` (a criação com `agentId`, a conferência), `release.ts` (as automações de um agente, pelo `onDelete` da U1) | — |
-| `apps/server/src/builder/assistant/propose-automation.ts` | Muda: a entrada é `ProposedAutomation` sem `agentId` (o modelo não o escreve); a saída é `ProposedAutomation.extend({ agentId })`, sempre com `agentId: scope.agent?.agentId ?? null` | — |
-| `packages/hub-api/src/automations.ts` | Muda: `CreateAutomation.agentId?`, a saída da proposta com `agentId` (posto pela ferramenta, nunca na entrada), `AutomationSummary.agent`, `RunOutcome` `SKIPPED` com `AGENT_GONE` | a web |
-| `apps/web/src/builder/automations/` | Muda: **Roda: <nome>** no cartão e na linha da lista; "Não rodou: o agente foi apagado." | — |
+| `apps/web/src/builder/agents/` | Cria `area.tsx`, `agent-page.tsx`, `config-panel.tsx` (as seções), `tool-form.tsx`, `versions.tsx`, `draft-card.tsx`, `queries.ts`, `text.ts` | as rotas |
+| `apps/web/src/builder/conversation/` | Muda o registro das ferramentas: o cartão do rascunho e as linhas de `tool_<slug>` e `app_data_read` | — |
+| `apps/web/src/hub/projects/project-rail.tsx` | Muda: a entrada | — |
+| `apps/web/src/routes/_app/companies/$companyId/projects/` | Cria `$projectId_.agents.index.tsx`, `$projectId_.agents.construtor.$conversationId.tsx`, `$projectId_.agents.$agentId.tsx`, `$projectId_.agents.$agentId.$conversationId.tsx` | — |
+| `docs/reference/screens.md` | Muda: as telas novas | — |
+
+### Os contratos que a unidade cria
+
+Nenhum contrato novo do servidor. Na web: `agentQuery`, `agentsQuery`, `versionsQuery` em
+`queries.ts`; o `revision` lido vai em toda gravação, e `AGENT_DRAFT_STALE` invalida `agentQuery`.
+
+### As skills e a leitura
+
+`shadcn`, `impeccable`, `pstack:tdd`; as linhas de `docs/reference/stack.md` para `apps/web/src/`.
+[web](../guides/web.md) W7, W30, W31, W34; [design](../guides/design.md) e
+[Impeccable](../reference/impeccable.md).
+
+### A ordem do trabalho
+
+1. **A prova primeiro.** `agent-page.test.tsx`: muda o modelo no painel, recebe `AGENT_DRAFT_STALE`
+   do servidor dublê e mostra a frase; falha hoje.
+2. A área e a entrada; o cartão do rascunho.
+3. A página, o painel, os recortes, as versões, publicar e voltar, apagar.
+4. `docs/reference/screens.md`. Regras: W7, W30, W34, C21.
+
+### Como se prova
+
+Os testes de `apps/web` com o servidor dublê de cada tela; o QA da etapa para larguras e temas.
+Comando: os testes tocados, `npm run typecheck`, `npm run lint`.
+
+### Parar se
+
+- A conversa com o agente não cabe nas peças da conversa da 24.1 sem uma segunda conversa: para; a
+  página reusa a conversa, nunca a copia.
+- O painel precisa de um campo que a U1 não devolve: relata; nunca ler outra rota para montá-lo.
+
+## U6 A automação roda um agente
+
+**Base e modelo.** `main` depois da U2. Sonnet: um campo novo num contrato que já tem a sua versão.
+
+### As linhas da tabela
+
+- `AutomationInput` versão 1 (`builder/automations/run.ts:37-50`, lido) e `AUTOMATION_WORKFLOW`
+  (`:21-27`: renomear apaga as linhas).
+- `conversed` (`run.ts:96-142`, lido): a conversa aberta por `deps.assistant.open`; o alvo agente a
+  abre pela abertura da U2, com a mesma chave `conversationIdOf`.
+- `propose_automation` (`builder/assistant/propose-automation.ts:12-29`, lido): o controlador
+  "agentes" também a oferece, com o `agentId` posto pela ferramenta.
+
+### O raio da mudança
+
+| Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
+| --- | --- | --- |
+| `apps/server/src/builder/automations/` | Muda `run.ts` (a união das versões, `targetOf`, `check` e `conversed` com o alvo), `automations.ts` (a criação com `agentId`), `release.ts` (as automações de um agente, pelo `onChange` `DELETED`) | — |
+| `apps/server/src/builder/agents/` | Muda `agent.ts`: `propose_automation` no conjunto, com o alvo | — |
+| `packages/hub-api/src/automations.ts` | Muda: `CreateAutomation.agentId?`, `AutomationSummary.agent`, `RunOutcome` `SKIPPED` com `AGENT_GONE` | a web |
+| `apps/web/src/builder/automations/` | Muda: **Roda: <nome>** no cartão e na linha; "Não rodou: o agente foi apagado." | — |
 
 ### Os contratos que a unidade cria
 
@@ -659,20 +811,17 @@ export const AutomationTarget = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('ASSISTANT') }),
   z.object({ kind: z.literal('AGENT'), agentId: AgentId }),
 ])
-const V1 = AutomationInputV1                                    // o de hoje, sem mudar
-const V2 = V1.extend({ version: z.literal(2), target: AutomationTarget })
-export const AutomationInput = z.discriminatedUnion('version', [V1, V2])
+const V2 = AutomationInputV1.extend({ version: z.literal(2), target: AutomationTarget })
+export const AutomationInput = z.discriminatedUnion('version', [AutomationInputV1, V2])
 export function targetOf(input: AutomationInput): AutomationTarget   // V1: ASSISTANT; um dono só (C26)
 // packages/hub-api/src/automations.ts
 // RunOutcome SKIPPED: reason: z.enum(['OWNER_CANNOT_ASK', 'AGENT_GONE'])
 // AutomationSummary: agent: z.object({ agentId: AgentId, name: z.string() }).nullable()
 ```
 
-Uma automação com alvo agente é do Projeto do agente: a versão 2 com `AGENT` e o lugar `COMPANY`, ou
-outro Projeto, é recusada na criação (`AGENT_NOT_FOUND`) e, se aparecer no `inputData`, o `check` a
-termina `SKIPPED` com `AGENT_GONE`, como o agente apagado. Ela grava `connections: []` (D18:
-numa conversa de agente as ligações vêm do agente); o pedido roda nele. O nome do agente no resumo é lido da linha (nenhum nome
-guardado na automação).
+Uma automação com alvo agente é do Projeto do agente e grava `connections: []` (as ligações vêm da
+versão ativa); o nome no resumo é lido da linha do agente. A execução roda a versão ativa no
+instante do disparo.
 
 ### As skills e a leitura
 
@@ -680,49 +829,17 @@ guardado na automação).
 
 ### A ordem do trabalho
 
-1. **A prova primeiro.** `run.test.ts`, "a linha antiga": uma linha da agenda gravada com o
-   `inputData` da versão 1 roda o Assistente; e "o agente": falha hoje.
-2. `AutomationInput` como união e `targetOf`; `check` e `conversed`.
-3. A criação, a recusa, o resumo; `propose_automation`.
-4. `release.ts` pelo `onDelete` da U1; as telas.
+1. **A prova primeiro.** `run.test.ts`, "a linha antiga" e "o agente"; o segundo falha hoje.
+2. A união e `targetOf`; `check` e `conversed`.
+3. A criação, a recusa, o resumo, `propose_automation`; `release.ts`; as telas.
 
 ### Como se prova
 
-A agenda de verdade num Postgres de teste com o tique curto (o modelo da 24.2), o modelo dublê. O
-teste que falha hoje: `run.test.ts`, "o agente". Comando: os testes tocados, `npm run typecheck`,
-`npm run lint`.
+A agenda de verdade num Postgres de teste com o tique curto, o modelo dublê. Comando: os testes
+tocados, `npm run typecheck`, `npm run lint`.
 
 ### Parar se
 
 - Uma linha da agenda da 24.2 deixa de ser lida (a versão 1): para; mudar `AUTOMATION_WORKFLOW`
-  apagaria todas as linhas (`run.ts:27`).
-- O nome do agente precisa ser guardado na automação para a lista: relata; o cartão quer a linha
-  como dona.
-
-## U5 O script do agente na máquina (só com B2)
-
-**Base e modelo.** `main` depois da U3. Sonnet.
-
-- **A linha.** `builder.project_agent` ganha `scripts jsonb not null default '[]'`: até 5 scripts
-  `{ name, language: 'python' | 'node', source }`, cada um até 20.000 caracteres (a medida de um
-  script de análise do Assistente na 24.1 a fazer na U5; sem medida, o número volta ao cartão).
-- **A máquina.** Na abertura do turno de um agente, `machine.ts` grava os scripts em `scripts/` da
-  área de trabalho (o `SandboxFilesystem` da 24.1); o agente os roda com
-  `mastra_workspace_execute_command` sobre os arquivos que as leituras gravaram. Nenhuma chave na
-  máquina, a lista de endereços da 0059.
-- **O Construtor.** `propose_agent` aceita `scripts`; o cartão mostra os nomes.
-- **Critérios.** Um script do agente roda sobre a leitura do Sankhya e devolve a tabela; um script
-  que tenta um endereço fora da 0059 é recusado pela rede da máquina; a máquina não tem variável de
-  ambiente com chave.
-
-## U5' O Worker do agente (só com B3)
-
-**Base e modelo.** `main` depois da U3. Opus: uma porta nova do Hub ao despacho.
-
-- O script do agente, só JavaScript, vira uma versão `t-<agente>-<n>` no namespace dos apps, sem
-  ligação nenhuma e com `cpu_ms` de `APP_CALL_LIMITS`, pelo `upload` de `platform/cloudflare.ts`.
-- A ferramenta `agent_script` chama o Worker pelo dispatcher com a entrada em JSON; o Worker não
-  alcança o Hub nem o banco (as ligações vazias) e a saída de rede passa pelo `conexus-outbound`.
-- A porta nova: o Hub chama o dispatcher por um endereço do edge com um segredo do Hub; hoje só o
-  edge chama o Hub (`platform/edge-server.ts:7`). O cartão volta ao fundador se a porta pedir um
-  produto pago.
+  apagaria todas as linhas.
+- O nome do agente precisa ser guardado na automação: relata; a linha do agente é a dona.
