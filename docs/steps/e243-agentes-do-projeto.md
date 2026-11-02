@@ -35,11 +35,11 @@ vendedor. No computador e no celular.
 6. A Bia abre o Projeto: vê o agente e conversa com ele; as conversas da Ana não aparecem para ela. O
    Bruno (membro) não vê **Agentes**, e o endereço de um agente dá "não encontrado".
 7. A Ana apaga o agente (qualquer dono ou administrador pode, como as automações, pela sua resposta
-   "3" de 2026-11-01). A confirmação diz que as conversas com ele e as automações que o rodam vão
-   junto. Ele some da lista e a automação some da página Automações.
+   "3" de 2026-11-01). A confirmação diz que as conversas de todas as pessoas com ele e as automações de
+   qualquer pessoa que o rodam vão junto. Ele some da lista e a automação some da página Automações.
 
 **O que você faz, e quando.**
-- **No começo:** responde a decisão **B** abaixo e aprova esta página. A aprovação é também a sua
+- **No começo:** responde as decisões **A** e **B** abaixo e aprova esta página. A aprovação é também a sua
   palavra para as permissões da tabela nova dos agentes (regra D11), como nas etapas 18, 20 e 24.2.
 - **No fim:** faz o roteiro no computador e no celular, diz o que viu e aprova os textos das telas.
 
@@ -71,8 +71,9 @@ tem **um** agente, fixo na partida; trocar o agente por conversa não existe nel
 como o próprio Mastra Code faz, é um agente cujas instruções, ferramentas e modelo são lidos a cada
 pedido. Então o agente do Projeto é **uma linha nossa** que o motor do Assistente lê a cada pedido:
 as telas, a conversa, a máquina, a automação e a porta das rotas da 24.1 e da 24.2 servem sem
-nada novo no meio. O `addAgent` por linha entra na 24.5, quando o primeiro workflow chamar um
-agente pelo id. Nada do que você vê muda.
+nada novo no meio. Registrar agentes no Mastra só serve quando um workflow chamar um agente pelo
+id; a 24.5 decide como, comparando registrar o motor uma vez (como o Mastra Code) com um registro
+por linha, que vive só na memória de um processo. Nada do que você vê muda.
 
 ### As decisões suas nesta etapa
 
@@ -104,6 +105,15 @@ cerca de 450 linhas a mais). Com **B3**, as mesmas e mais a U5' (o Worker do age
 até ele, cerca de 1.000 linhas a mais). As U1 a U4 servem às três respostas, então começam no dia
 em que você aprovar, e a U5 começa quando você responder.
 
+**A. Agentes para o membro.** A regra W34 do guia da web manda mostrar uma página a quem não pode
+usá-la, dizendo quem pode, e nunca escondê-la. A sua resposta "1 A" de 2026-11-01 abriu a exceção
+só para **Automações**.
+- **A1 (recomendo).** **Agentes** some para o membro, como Automações; o endereço dá "não
+  encontrado". A exceção da W34 do fechamento da 24.2 passa a nomear as duas entradas.
+- **A2.** **Agentes** aparece para o membro com "Só donos e administradores usam agentes."
+
+Esta pergunta fica aberta até a sua resposta; o critério 16 e a matriz seguem A1 até lá.
+
 **Enquanto você não responde.** A construção segue a recomendação **B1**, que não constrói nada a
 mais; uma resposta B2 ou B3 só acrescenta a U5.
 
@@ -115,7 +125,7 @@ teto de 4.000 da regra L2.
 | Unidade | O que entrega | Pastas | Guia além do de código | Depende de |
 | --- | --- | --- | --- | --- |
 | U1 | Os agentes e a conversa com eles: a tabela `builder.project_agent`, a migração e as permissões; as rotas (criar, listar, ler, apagar); a conversa do Assistente que roda um agente (a linha lida a cada pedido); a remoção com o agente, o Projeto, a pessoa e a empresa | `apps/server/src/builder/agents/`, `apps/server/src/builder/assistant/`, `apps/server/migrations/`, `apps/server/database-grants.sql`, `apps/server/src/conversations-of.ts`, `packages/hub-api/src/` | [data](../guides/data.md) | a 24.2 fechada |
-| U2 | Os dados do app: a ferramenta `app_data_read`, que consulta o banco do app do Projeto por um login só de leitura | `apps/server/src/platform/` (`company-postgres.ts`), `apps/server/src/builder/agents/`, `apps/server/src/builder/assistant/` (`assistant.ts`), `apps/web/src/builder/conversation/`, `packages/hub-api/src/` (`app-login.ts`, `assistant.ts`) | [security](../guides/security.md) | U1 |
+| U2 | Os dados do app: a ferramenta `app_data_read`, que consulta o banco do app do Projeto por um login só de leitura | `apps/server/src/platform/` (`company-postgres.ts`), `apps/server/src/hub/apps/`, `apps/server/src/hub/connectors/` (`public.ts`), `apps/server/src/builder/agents/`, `apps/server/src/builder/assistant/` (`assistant.ts`), `apps/web/src/builder/conversation/`, `packages/hub-api/src/` (`app-login.ts`, `assistant.ts`) | [security](../guides/security.md) | U1 |
 | U3 | O Construtor propõe e as telas: `propose_agent` no Construtor e o cartão **Criar agente**; a entrada **Agentes** na barra do Projeto, a lista e a página do agente; a conversa com o agente e a etiqueta | `apps/server/src/builder/conversation/` (`builder.ts`, `prompt/builder.md`, `propose-agent.ts`), `apps/web/src/builder/agents/`, `apps/web/src/builder/conversation/`, `apps/web/src/builder/assistant/`, `apps/web/src/hub/projects/` (`project-rail.tsx`), `apps/web/src/routes/_app/companies/$companyId/projects/`, `packages/hub-api/src/`, `docs/reference/screens.md` | [web](../guides/web.md) | U2 |
 | U4 | A automação roda um agente: o alvo da automação ganha o agente; o cartão da automação na conversa do agente; a remoção do agente leva as automações dele | `apps/server/src/builder/automations/`, `apps/server/src/builder/assistant/` (`propose-automation.ts`), `apps/web/src/builder/automations/`, `packages/hub-api/src/` (`automations.ts`) | [testing](../guides/testing.md) | U1 |
 | U5 (só com B2) | O script do agente na máquina | `apps/server/src/builder/agents/`, `apps/server/src/builder/assistant/` (`machine.ts`), `apps/server/src/builder/conversation/` (`propose-agent.ts`), `apps/web/src/builder/agents/`, `packages/hub-api/src/` | [security](../guides/security.md) | U3 |
@@ -150,14 +160,14 @@ e o põe numa automação (critérios 1, 7, 9, 15, 17, 19, 20, 21).
 | 3 | U1 | `POST …/assistant/conversations` com `agentId` abre uma conversa do Assistente que roda o agente: o lugar é o Projeto do agente (um `projectId` diferente dá `NOT_FOUND`), as ligações são as do agente que o Projeto ainda oferece, e o resumo da conversa traz `agent: { agentId, name }`; um `agentId` de outro Projeto ou apagado dá `AGENT_NOT_FOUND` | `apps/server/src/builder/assistant/assistant.test.ts`, "a conversa do agente" | must |
 | 4 | U1 | Num turno da conversa do agente, o modelo recebe as instruções do Conexus, depois as do agente, e só as ferramentas de leitura: `connector_read` e `connector_notes` sobre as ligações do agente, `web_search` e `web_fetch` só com `web`, `show_file` e as da máquina; nunca `propose_app`, `conexus_overview` nem uma ferramenta que grava; uma ligação que o Projeto perdeu depois da criação sai das ferramentas no turno seguinte | `assistant.test.ts`, "as ferramentas do agente" (o modelo dublê da 12 lê a lista de ferramentas e o texto do sistema da chamada) | must |
 | 5 | U1 | `PUT …/conversations/{id}/connections` numa conversa de agente responde 409 `AGENT_CONNECTIONS_FIXED`, e as ligações ficam as do agente | `assistant.test.ts`, "as ligações do agente" | must |
-| 6 | U1 | `DELETE …/agents/{id}` responde 204: o agente some da lista; as conversas com ele somem para todas as pessoas (a linha do Hub e o fio do Mastra), também uma aberta no mesmo instante que a remoção (nenhum fio fica sem a linha do Hub); apagar de novo dá `AGENT_NOT_FOUND`; a remoção do Projeto, da pessoa e da empresa leva os agentes antes das conversas (a ordem da 24.1); um agente criado por uma pessoa que sai fica no Projeto | `apps/server/src/builder/agents/release.test.ts` | must |
+| 6 | U1 | `DELETE …/agents/{id}` responde 204: o agente some da lista; as conversas com ele somem para todas as pessoas (a linha do Hub e o fio do Mastra), também uma aberta no mesmo instante, nas três ordens (a linha da abertura gravada antes da primeira varredura, entre ela e o `delete`, e depois do `delete`): nenhum fio fica sem a linha do Hub; apagar de novo dá `AGENT_NOT_FOUND`; a remoção do Projeto e da empresa leva os agentes antes das conversas (a ordem da 24.1); a da pessoa deixa os agentes que ela criou no Projeto, com `createdBy: null` | `apps/server/src/builder/agents/release.test.ts` | must |
 | 7 | U1 | A lista das conversas do Projeto mostra a do agente com `agent`; `GET …/assistant/conversations?agentId=` devolve só as conversas da pessoa com aquele agente | `assistant.test.ts`, "a lista do agente" | must |
 | 8 | U1 | Os agentes saem com o Projeto e a empresa (as chaves estrangeiras), a conversa de agente sai com o agente, a política da empresa recusa ler o agente de outra empresa, e o catálogo das permissões e das políticas fecha (`database-grants.sql`) | `apps/server/src/platform/catalog.test.ts`; `release.test.ts`, "as chaves" | must |
-| 9 | U2 | Numa conversa de agente com `appData`, `app_data_read` com um `SELECT` devolve as linhas da tabela do app, cortadas como `connector_read`; o login que a roda é o `app_<projeto>_read` | `apps/server/src/builder/agents/app-data.test.ts`, "lê" (o Postgres de teste no lugar do Neon, pela porta `CompanyPostgres`) | must |
+| 9 | U2 | Numa conversa de agente com `appData`, `app_data_read` com um `SELECT` devolve as linhas da tabela do app, cortadas como `connector_read`; o login que a roda é o `app_<projeto>_read`, e a consulta não chama a API do Neon; uma resposta acima de 1 MB volta `APP_DATA_TOO_LARGE` ("A consulta trouxe dados demais. Peça menos linhas.") | `apps/server/src/builder/agents/app-data.test.ts`, "lê" (o Postgres de teste no lugar do Neon, pela porta `CompanyPostgres`) | must |
 | 10 | U2 | `app_data_read` com `INSERT`, `UPDATE`, `DELETE`, `CREATE`, `SET ROLE` ou dois comandos juntos é recusado pelo banco, nunca por um filtro de texto nosso: o resultado é `APP_DATA_REFUSED`, e a tabela não muda; depois de um `SET default_transaction_read_only = off`, de um `set_config(...)` ou de um `SET TRANSACTION READ WRITE` sozinhos (que o Postgres aceita), um `DELETE` na chamada seguinte continua recusado; uma tabela fora do esquema do app e a tabela do livro das migrações também | `app-data.test.ts`, "não grava" | must |
 | 11 | U2 | O login de leitura nasce na primeira chamada de um Projeto que já existia antes da U2 e na criação do app de um novo; nos dois, o livro das migrações é recusado a ele; repetir não falha; a consulta passa do tempo do app (`APP_CALL_LIMITS`) e volta `APP_DATA_TIMEOUT` | `app-data.test.ts`, "o login" e "o tempo" | must |
 | 12 | U2 | Sem app no Projeto (nenhuma versão), a ferramenta não é oferecida, e um agente com `appData` responde pelas outras; o banco da empresa fora dá `APP_DATA_UNAVAILABLE` sem derrubar o turno | `app-data.test.ts`, "sem app" | must |
-| 13 | U3 | Numa conversa do Construtor num Projeto, o modelo recebe `propose_agent` depois das ferramentas que já tinha (o pedido do modelo igual byte a byte até elas, o critério 13a da 20, comparado pelo objeto `tools` de `builder.ts`; a lista fechada `CLOSED_TOOLS` ganha o nome no meio, e isso não muda o pedido); a saída é a proposta, com só as ligações que o Projeto oferece e `appData` falso sem app; nada é gravado sem o toque | `apps/server/src/builder/conversation/builder.test.ts`, "propor um agente" | must |
+| 13 | U3 | Numa conversa do Construtor num Projeto, o modelo recebe `propose_agent` depois das ferramentas que já tinha (o pedido do modelo igual byte a byte até elas, o critério 13a da 20, comparado pelo objeto `tools` de `builder.ts`; a lista do modo, `TOOL_CLOSURE` de `permissions.ts`, ganha o nome em `TALK`, e isso não muda o pedido); a conversa do Construtor de um membro não recebe `propose_agent`; a saída é a proposta, com só as ligações que o Projeto oferece e `appData` falso sem app; nada é gravado sem o toque | `apps/server/src/builder/conversation/builder.test.ts`, "propor um agente" | must |
 | 14 | U3 | O cartão mostra o nome, o que o agente faz, o que ele lê ("Sankhya · Matriz", "Dados do app Metas", "Web"); **Criar agente** chama a criação com uma chave de tentativa e vira "Agente criado" com **Abrir agente**; tocar duas vezes cria um; uma recusa mostra a frase do código | `apps/web/src/builder/agents/proposal.test.tsx` | must |
 | 15 | U3 | A página Agentes do Projeto lista os agentes; a página de um agente mostra as conversas da pessoa com ele, **Nova conversa** e o painel **Como ele é** (o que lê, com a ligação perdida marcada "O Projeto não oferece mais", as instruções inteiras, quem criou e quando); **Apagar** pede confirmação com o aviso das conversas e das automações | `apps/web/src/builder/agents/agents.test.tsx` | must |
 | 16 | U3 | O membro não vê **Agentes**; o endereço de um agente apagado ou de outro Projeto dá a página de não encontrado | `agents.test.tsx`, "o membro" | must |
@@ -166,7 +176,7 @@ e o põe numa automação (critérios 1, 7, 9, 15, 17, 19, 20, 21).
 | 19 | U4 | Numa conversa de agente, `propose_automation` sai com `agentId` do agente da conversa, posto pela ferramenta e nunca pelo modelo; o cartão mostra **Roda: <nome>**; a criação grava o alvo, e `AutomationSummary.agent` o devolve | `apps/server/src/builder/automations/routes.test.ts`, "o alvo agente" | must |
 | 20 | U4 | `POST …/automations` com `agentId` de outro Projeto, de outro lugar que o da automação, ou apagado dá `AGENT_NOT_FOUND`; sem `agentId`, a automação roda o Assistente, como na 24.2 | `routes.test.ts`, "as recusas do alvo" | must |
 | 21 | U4 | Com o tique curto do teste, a automação de um agente dispara: a execução abre **uma** conversa de agente do dono, marcada "Automação" e com `agent`, manda o pedido e termina `DONE`; uma linha da agenda gravada pela 24.2 (sem alvo) roda o Assistente como antes | `apps/server/src/builder/automations/run.test.ts`, "o agente" e "a linha antiga" | must |
-| 22 | U4 | Apagar o agente apaga as automações que o rodam (e os runs delas) antes das conversas; um disparo que chegar a um agente apagado no meio termina `SKIPPED` com `AGENT_GONE` e pausa a automação, sem conversa | `apps/server/src/builder/agents/release.test.ts`, "as automações"; `run.test.ts`, "o agente apagado" | must |
+| 22 | U4 | Apagar o agente apaga as automações que o rodam (e os runs delas) antes das conversas; um disparo que chegar a um agente apagado no meio termina `SKIPPED` com `AGENT_GONE`, sem conversa e sem pausar (a linha da agenda já saiu; se ainda existir, `check` a pausa) | `apps/server/src/builder/agents/release.test.ts`, "as automações"; `run.test.ts`, "o agente apagado" | must |
 
 ## A matriz de estados
 
@@ -174,8 +184,8 @@ e o põe numa automação (critérios 1, 7, 9, 15, 17, 19, 20, 21).
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Agentes (no Projeto) | "Peça um agente ao Construtor, por exemplo: um agente que confere as vendas contra as metas." com **Ir para Construir** | o mesmo | a lista em esqueleto | `DATABASE_UNAVAILABLE`: a frase com Tentar de novo | o Projeto apagado: a página de não encontrado da casa | o membro não vê a entrada; o endereço dá "não encontrado" (S10) | — |
 | A página de um agente | "Ainda não há conversas com este agente." com **Nova conversa** | o mesmo | a página em esqueleto | a frase do código com Tentar de novo | `AGENT_NOT_FOUND`: a página de não encontrado | o membro: não encontrado | uma ligação que o Projeto não oferece mais: "O Projeto não oferece mais" ao lado dela |
-| O cartão **Criar agente** | o cartão | — | **Criar agente** ocupado | a frase do código | o Projeto apagado: `NOT_FOUND` com a frase da 24.1 | — | criado: "Agente criado", com **Abrir agente** |
-| A conversa com o agente | a caixa com "Pergunte a <nome>…" | — | como a da 24.1 | como a da 24.1; `AGENT_NOT_FOUND` ao mandar: "Este agente foi apagado." | o agente apagado: a página de não encontrado | como a da 24.1 | como a da 24.1 |
+| O cartão **Criar agente** | o cartão | — | **Criar agente** ocupado | a frase do código | o Projeto apagado: `NOT_FOUND` com a frase da 24.1 | o membro não recebe o cartão | criado: "Agente criado", com **Abrir agente** |
+| A conversa com o agente | a caixa com "Pergunte a <nome>…" | — | como a da 24.1 | como a da 24.1; depois do agente apagado o fio some, e mandar dá `CONVERSATION_NOT_FOUND` da porta (`guard.ts:123-134`) com a frase dele | o agente apagado: a página de não encontrado | como a da 24.1 | como a da 24.1 |
 | O cartão da automação na conversa do agente | o cartão da 24.2 com **Roda: <nome>** | — | como na 24.2 | como na 24.2; `AGENT_NOT_FOUND`: "Este agente foi apagado." | como na 24.2 | — | como na 24.2 |
 | Uma linha de Automações | — | — | como na 24.2 | como na 24.2 | como na 24.2 | — | `SKIPPED` com `AGENT_GONE`: "Não rodou: o agente foi apagado." |
 
@@ -236,10 +246,13 @@ uma conversa aberta ocupa a tela, como as da 24.1; **Apagar** vai para o menu **
 | --- | --- | --- | --- | --- | --- |
 | Criar o agente (`insert` com o id derivado da empresa, da pessoa e da chave de tentativa, `on conflict (id) do nothing`, e reler) | a mesma chave: uma linha; o `bodyHash` decide entre o mesmo agente e `IDEMPOTENCY_CONFLICT`; duas chaves, duas linhas | a conferência (papel, Projeto, ligações) antes: nada gravado; a gravação é uma só | banco do Hub fora: `DATABASE_UNAVAILABLE`, nada criado | `AGENT_CREATED` (empresa, Projeto, agente) | 1, 1a, 2 |
 | Abrir a conversa do agente (`openConversation` com `agentId`: a linha do Hub com `agent_id`, depois `createSession` com a marca `conexusAgent`, como a 24.1) | a mesma chave acha a mesma conversa (a 24.1) | a linha do Hub antes do fio: um corte deixa a linha, e a repetição acha e cria o fio, como a 24.1 | banco fora: `DATABASE_UNAVAILABLE`; o agente apagado entre a leitura e a gravação: a chave estrangeira recusa, e a rota responde `AGENT_NOT_FOUND` | da 24.1 | 3 |
-| O turno da conversa do agente (as instruções e as ferramentas lidas da linha a cada pedido) | o turno da 24.1 | o agente apagado no meio do turno: o turno em andamento termina com o que já tinha; o seguinte dá `AGENT_NOT_FOUND` | banco fora na leitura da linha: o turno falha como a leitura do escopo da 24.1 (`DATABASE_UNAVAILABLE`) | da 24.1 | 4, 5 |
-| Apagar o agente (numa transação do Hub, `select … for update` da linha do agente, que `openConversation` também trava ao gravar a linha da conversa; depois as automações dele, U4, pelo `schedules.delete` da 24.2; os fios do Mastra das conversas dele, de todas as pessoas, pela marca; por último a linha, que leva as `assistant_conversation` por cascata) | o segundo dá `AGENT_NOT_FOUND`; dois ao mesmo tempo: a trava faz um esperar, e ele acha a linha apagada e responde `AGENT_NOT_FOUND`; uma conversa aberta no mesmo instante: ou a abertura passa antes e a varredura acha o fio dela, ou espera a trava e recebe `AGENT_NOT_FOUND`; nunca um fio sem a linha do Hub | uma por vez; uma falha no meio deixa fios que a próxima tentativa acha, porque a linha sai por último | banco do Mastra fora: para antes da linha, `DATABASE_UNAVAILABLE`, nada perdido | `AGENT_DELETED` (empresa, Projeto, agente, quantas conversas e automações) | 6, 22 |
-| A remoção do Projeto, da pessoa e da empresa | apagar de novo não falha | os agentes antes das conversas (a ordem da 24.1); um corte deixa o que a próxima acha | como a da 24.1 | `AGENTS_RELEASED` (quantos) | 6, 8 |
-| Criar o login de leitura (`CREATE ROLE … LOGIN PASSWORD` e as permissões, numa transação, como `ensureApp`) | dois turnos ao mesmo tempo: um cria, o outro recebe "already exists" e relê a lista dos logins (a mesma senha derivada, decisão 0043) | uma transação só: nada pela metade | Neon fora: `APP_DATA_UNAVAILABLE` ao modelo, o turno segue | `APP_READ_LOGIN_CREATED` (Projeto) | 11 |
+| O turno da conversa do agente (as instruções e as ferramentas lidas da linha a cada pedido) | o turno da 24.1 | o agente apagado no meio do turno: a varredura chama `deleteSession`, que aborta o run (`assistant/release.ts:9-12`), e a conversa some | banco fora na leitura da linha: o turno falha como a leitura do escopo da 24.1 (`DATABASE_UNAVAILABLE`) | da 24.1 | 4, 5 |
+| Apagar o agente, sem trava atravessando chamada de fora (D22): (1) as automações dele (U4, o `schedules.delete` da 24.2) e os fios do Mastra das conversas dele, de todas as pessoas, pela marca `{ companyId, conexusAgent }` (`releaseConversations`); (2) numa transação curta do Hub, o `delete` da linha, que leva as `assistant_conversation` por cascata; dali em diante a chave estrangeira recusa a linha de uma conversa nova (`23503` na `assistant_conversation_agent_id_fkey` → `AGENT_NOT_FOUND`, C52); (3) a varredura de (1) de novo, que acha o fio de uma abertura que gravou a linha antes de (2) | `openConversation` de uma conversa de agente, depois do `createSession`, relê a sua linha do Hub; ausente, apaga o próprio fio (`deleteSession`, `deleteThread`) e responde `AGENT_NOT_FOUND`; duas remoções ao mesmo tempo: a segunda acha a linha apagada e responde `AGENT_NOT_FOUND` depois de varrer pela marca (repetir limpa o que um corte deixou) | um corte entre os passos: a linha sai só em (2), e a próxima remoção varre de novo | banco do Mastra fora em (1): para antes da linha, `DATABASE_UNAVAILABLE`, nada perdido; em (3): a linha já saiu, e a próxima remoção do Projeto ou da empresa acha os fios pela marca da empresa | `AGENT_DELETED` (empresa, Projeto, agente, quantas conversas e automações) | 6, 22 |
+| A remoção da pessoa (`update builder.project_agent set created_by = null where company_id = $1 and created_by = $2`) | idempotente | uma gravação | `DATABASE_UNAVAILABLE`: a remoção da pessoa falha como a da 24.1 | nada | 6, 8 |
+| A remoção do Projeto e da empresa | apagar de novo não falha | os agentes antes das conversas (a ordem da 24.1); um corte deixa o que a próxima acha | como a da 24.1 | `AGENTS_RELEASED` (quantos) | 6, 8 |
+| O login de leitura ausente (o Postgres recusa a entrada com `28P01` ou `28000`) | duas consultas: as duas criam, e a segunda acha o login (abaixo) | — | recusado de novo depois de criar: `APP_DATA_UNAVAILABLE` | `APP_READ_LOGIN_MISSING` (Projeto) | 11 |
+| A resposta grande demais (passa de `REPLY_CAP_BYTES`) | — | — | — | `APP_DATA_READ` com `APP_DATA_TOO_LARGE` | 9 |
+| Criar o login de leitura (`CREATE ROLE … LOGIN PASSWORD` e as permissões, numa transação, como `ensureApp`, pelo dono que `openAppDatabase` abre só nessa hora) | dois turnos ao mesmo tempo: um cria, o outro recebe "already exists" e relê a lista dos logins (a mesma senha derivada, decisão 0043) | uma transação só: nada pela metade | Neon fora: `APP_DATA_UNAVAILABLE` ao modelo, o turno segue | `APP_READ_LOGIN_CREATED` (Projeto) | 11 |
 | A consulta `app_data_read` (`neonTransport` como `app_<projeto>_read`, numa transação `readOnly`) | consultas independentes | o banco recusa a escrita: `APP_DATA_REFUSED`, nada muda | Neon fora: `APP_DATA_UNAVAILABLE`; o tempo do app: `APP_DATA_TIMEOUT` | `APP_DATA_READ` (Projeto, linhas, ms), nunca o SQL nem as linhas (C50) | 9, 10, 12 |
 | Criar a automação com alvo agente (a da 24.2, com `agentId` no `inputData`) | a da 24.2 | a da 24.2; o agente conferido antes | a da 24.2 | `AUTOMATION_CREATED` com `agentId` | 19, 20 |
 | O passo `check` com alvo agente (a linha lida; ausente: `schedules.pause` e `SKIPPED`) | pausar uma pausada devolve o estado | uma linha só | banco do Hub fora: o passo falha como o `check` da 24.2 | `AUTOMATION_PAUSED` com `AGENT_GONE` | 22 |
@@ -257,7 +270,7 @@ estudo, e a unidade a reabre antes de usar.
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | A linha do agente | U1 | nada; nenhum agente registrado (`builder/conversation/mastra.ts:20-28`, relay) | os agentes guardados do Mastra são do editor (`M:packages/editor`, `NM:storage/domains/agents`, `editor?` em `NM:mastra/index.d.ts:286`), relay; recusados desde o pull request 518 | o editor guarda o agente como versão numa tabela dele | nativo: uma tabela nossa no Hub (`builder.project_agent`), como `builder.assistant_conversation` da 24.1; nunca o editor | — | A da 24.2 ("um agente do Projeto"); J1 | `builder/agents/agents.ts`, `builder/agents/tables.ts` |
 | Como a linha vira agente | U1 | o Assistente: um `new Agent` com `instructions`, `model` e `tools` lidos a cada pedido (`builder/assistant/assistant.ts:274-298`, lido) | `DynamicArgument` (`NM:types/dynamic-argument.d.ts:3-6`); `instructions`, `model`, `tools`, `memory` dinâmicos (`NM:agent/types.d.ts:567,650,659,745`); o controlador tem um agente só, que cada modo bifurca (`NM:agent-controller/types.d.ts:213-216`), sem trocar agente por sessão; o Mastra Code: um agente com `instructions: async ({ requestContext })` e o modelo dinâmico (`M:mastracode/sdk/src/index.ts:1307-1336`); `addAgent` ignora a chave repetida em silêncio (`NM:mastra-Da0Czfte.js:1871-1873`) e `removeAgent` não para um run em andamento (`:2142-2158`), todos relay | um agente cujo comportamento sai do contexto do pedido | nativo: o agente do Assistente lê a linha pelo escopo da conversa; `addAgent` por linha fica para a 24.5, o primeiro consumidor (um passo `{ type: 'agent', agentId }` de workflow, `NM:workflows/types.d.ts:758-770`, relay) | — | — | `builder/assistant/context.ts` (muda) |
-| A conversa com o agente | U1 | a conversa do Assistente (`open.ts:12-51`, lido; `routes.ts:175-200`, lido) | a sessão do controlador (`NM:agent-controller/agent-controller.d.ts:119`, relay) | a sessão leva o contexto do pedido | nativo: a conversa do Assistente com `agent_id` na linha do Hub e a marca `conexusAgent` no fio | — | — | `builder/assistant/open.ts` (muda) |
+| A conversa com o agente | U1 | a conversa do Assistente (`open.ts:109-150`, relay; `routes.ts:175-200`, lido) | a sessão do controlador (`NM:agent-controller/agent-controller.d.ts:119`, relay) | a sessão leva o contexto do pedido | nativo: a conversa do Assistente com `agent_id` na linha do Hub e a marca `conexusAgent` no fio | — | — | `builder/assistant/open.ts` (muda) |
 | As ferramentas do agente | U1 | `connectorTools`, `toolsOf`, `show_file` (`assistant.ts:283-298`, lido) | `tools` dinâmico (`NM:agent/types.d.ts:659`, relay); `requireApproval` ausente quer dizer sem aprovação (`NM:tools/types.d.ts:650-658`, relay) | ferramentas por pedido | nativo: o mesmo construtor de ferramentas, com o conjunto de leitura do agente | — | — | — |
 | Os dados do app | U2 | o login do app e o de migração (`packages/hub-api/src/app-login.ts:8-15`, lido); as permissões do esquema (`apps/server/src/platform/company-postgres.ts:148-170`, lido); o envio pelo Neon (`company-postgres.ts:65-81`, relay) | Postgres: `default_transaction_read_only`, `GRANT SELECT`, `ALTER DEFAULT PRIVILEGES` (documentação do PostgreSQL 17, `ALTER ROLE`, `GRANT`); decisão 0043 (a senha derivada) | um login só de leitura, com as permissões no banco | nativo: um terceiro login `app_<projeto>_read`, só `USAGE` e `SELECT` (a barreira), cada consulta numa transação de leitura e `default_transaction_read_only = on` (profundidade, porque a sessão pode desligá-lo); a recusa vem do banco | — | — | `builder/agents/app-data.ts` |
 | A proposta do Construtor | U3 | `propose_automation` (`builder/assistant/propose-automation.ts:12-29`, lido); as ferramentas do Construtor (`builder/conversation/builder.ts:221-232`, lido) | a ferramenta que só devolve a proposta (o `E1` da 24.2) | o modelo propõe, a tela desenha, a pessoa grava | nativo: `propose_agent`, como `propose_automation` | — | E1 da 24.2 | `builder/conversation/propose-agent.ts` |
@@ -274,12 +287,20 @@ estudo, e a unidade a reabre antes de usar.
   agentes do Projeto numa leitura só. Gatilho: um Projeto com mais de 50 agentes.
 - As instruções do agente vão inteiras ao modelo a cada turno, até 4.000 caracteres (o teto do pedido
   da automação, `AUTOMATION_PROMPT_MAX`, que tem a mesma razão: o modelo lê o texto inteiro).
-- O agente apagado no meio de um turno não para o turno em andamento (o `removeAgent` também não
-  pararia, `NM:mastra-Da0Czfte.js:2142-2158`): a resposta já pedida termina.
+- Apagar o agente no meio de um turno aborta o turno: a varredura chama `deleteSession`, que aborta o
+  run (`assistant/release.ts:9-12`), e a resposta pela metade some com a conversa. O cartão aceita: a
+  confirmação avisa.
 
 **Issues futuras** (a abrir no fechamento).
-- O `addAgent` por linha e o id de cada agente nos rastros: entram na 24.5 (o passo de workflow) e na
-  21.1 (o rastro por agente).
+- A 24.5 compara registrar o motor uma vez, como o Mastra Code
+  (`M:mastracode/sdk/src/workflows/register-primitives.ts:66-68`), com um `addAgent` por linha, que é
+  por processo (C63) e cujo agendamento se apaga sozinho em outro processo
+  (`NM:worker-5hzgCU_T.js:182-188`); o id de cada agente nos rastros fica para a 21.1.
+- O login de leitura pode tomar travas consultivas da sessão (`pg_advisory_lock`); o HTTP do Neon
+  fecha a sessão a cada pedido. Gatilho: o transporte manter conexões.
+- A leitura `db.query` do edge (decisão 0045) conta só com a transação de leitura, e o login do app
+  grava; o Postgres aceita `SET TRANSACTION READ WRITE` como primeira instrução dela. Gatilho: a
+  prova de que o HTTP do Neon aceita várias instruções num texto.
 - Editar um agente pela conversa com o Construtor.
 
 ## U1 Os agentes e a conversa com eles
@@ -296,10 +317,10 @@ remoção e a ordem dela cruzam três módulos, e a tabela nova pede a palavra D
   dono por fato).
 - **O motor.** `assistantAgent` (`assistant.ts:245-313`; lido em `:270-300`): `instructions` por
   `assistantInstructions` (`instructions.ts`, relay), `tools` por pedido. `sessionScopes`
-  (`context.ts:95-114`, relay) lê o escopo pelo `requestContext`; `scopeOn` (`context.ts:42-50`,
+  (`context.ts:66-85`, relay) lê o escopo pelo `requestContext`; `scopeOn` (`context.ts:42-50`,
   lido) monta o lugar. `chosenConnections` lê a linha do Hub (`chosen.ts:28`, relay).
-- **A conversa.** `openConversation` (`open.ts:12-51`, lido em `:1-51`); a marca do fio
-  `SESSION_MARK` (`context.ts:42-48`, relay); o filtro por marca da lista (`routes.ts:183`, lido).
+- **A conversa.** `openConversation` (`open.ts:109-150`, relay); a marca do fio
+  `SESSION_MARK` (`context.ts:13-19`, relay); o filtro por marca da lista (`routes.ts:183`, lido).
 - **A remoção.** A ordem da 24.1 e da 24.2: `release.ts` das automações (`builder/automations/release.ts`,
   66 linhas, relay) é o modelo; os agentes saem depois das automações e antes das conversas.
 
@@ -311,11 +332,11 @@ Nada sai do `main`.
 | --- | --- | --- |
 | `apps/server/src/builder/agents/` | Cria `tables.ts` (`projectAgent`), `agents.ts` (o serviço: criar, listar, ler, apagar), `routes.ts`, `release.ts`, `public.ts` | `conversations-of.ts`, o Assistente, a U2, a U4 |
 | `apps/server/migrations/` | Cria `<data>_e243_project_agent` (a tabela e a coluna `agent_id`) e `<data>_e243_project_agent_grants`, num commit próprio (D11) | `npm run check-migrations` |
-| `apps/server/database-grants.sql` | Muda: `hub_company` com `SELECT, INSERT, DELETE` em `builder.project_agent`; `INSERT` de `agent_id` em `builder.assistant_conversation` vem com o `INSERT` que já existe | `catalog.test.ts` |
+| `apps/server/database-grants.sql` | Muda: `hub_company` com `SELECT, INSERT, DELETE` e `UPDATE(created_by)` em `builder.project_agent`; `INSERT` de `agent_id` em `builder.assistant_conversation` vem com o `INSERT` que já existe | `catalog.test.ts` |
 | `apps/server/src/builder/assistant/` | Muda `tables.ts` (`agent_id uuid null`, chave estrangeira para `builder.project_agent` com `on delete cascade`); `context.ts` (`SESSION_MARK.agent = 'conexusAgent'`; o escopo ganha `agent: AgentScope | null`); `chosen.ts` (lê `agent_id` com o lugar e a escolha); `open.ts` (`agentId`); `instructions.ts` (as instruções do agente depois das do Conexus); `assistant.ts` (o conjunto de ferramentas do agente); `routes.ts` (a criação com `agentId`, o filtro `agentId`, a recusa do `PUT` das ligações, `agent` no resumo) | as rotas, o workflow da 24.2 |
-| `apps/server/src/builder/assistant/release.ts` | Muda: `releaseConversations` ganha o alvo por agente (a marca `conexusAgent`, de todas as pessoas) além de empresa, pessoa e Projeto | `builder/agents/release.ts` |
+| `apps/server/src/builder/assistant/release.ts` | Muda: `releaseConversations` ganha o alvo por agente (`{ companyId, conexusAgent }`, de todas as pessoas, sempre com a marca da empresa, como `:24-28`) além de empresa, pessoa e Projeto | `builder/agents/release.ts` |
 | `apps/server/src/conversations-of.ts` | Muda: monta os agentes e passa a sua leitura ao Assistente | `main.ts` |
-| A remoção da empresa, da pessoa e do Projeto (os chamadores do `release` da 24.1 e da 24.2) | Muda: chama o `release` dos agentes depois das automações e antes das conversas | — |
+| `apps/server/src/builder/conversation/public.ts` | Muda `releaseOf` (`:91-101`), o único dono da ordem da remoção: `agents.release` depois das automações e antes das conversas; na empresa e no Projeto ele apaga as linhas, na pessoa só anula `created_by` | as remoções da empresa, da pessoa e do Projeto |
 | `packages/hub-api/src/agents.ts` | Cria: rotas, `AgentId`, `AgentSummary`, `CreateAgent`; muda `index.ts`, `failures.ts` (`AGENT_NOT_FOUND`, `AGENT_CONNECTIONS_FIXED`, com as frases), `assistant.ts` (`agentId` na criação e no filtro, `agent` no resumo), o OpenAPI gerado | a U2, a U3, a U4 |
 | `scripts/removals.json` | Muda: as proteções novas (o membro recusado nas rotas dos agentes, S10; o agente de outro Projeto; a recusa do `PUT` das ligações), cada uma com o teste que a pega | — |
 
@@ -356,11 +377,13 @@ const OpenedFor = z.object({ agentId: AgentId, name: z.string() }).nullable()   
 ```ts
 // apps/server/src/builder/agents/tables.ts
 // builder.project_agent: id uuid pk; company_id text not null -> companies (cascade);
-// project_id text not null -> projects (cascade); created_by text null -> people (set null);
+// project_id text not null -> projects (cascade); created_by text null, sem chave estrangeira (D17: a pessoa sair não
+// apaga o agente; a remoção da pessoa anula a coluna por agents.release);
 // name text not null; instructions text not null; connections uuid[] not null;
 // web boolean not null; app_data boolean not null; body_hash text not null; created_at timestamptz not null default now()
-// a política da empresa como a de assistant_conversation: policy(SCOPE_ROLES.COMPANY, 'all', OWN) por company_id
-// (os nomes reais das tabelas das chaves: os de `company`, `project` e da pessoa em `hub/identity`)
+// a política da empresa, sem pessoa: policy(SCOPE_ROLES.COMPANY, 'all', sql`company_id = ${scoped.companyId}`),
+// como OWN_COMPANY de hub/projects/tables.ts:23,56; nunca OWN, a regra por pessoa das conversas (builder/schema/tables.ts:9-13)
+// (as chaves para as tabelas reais `company` e `project`)
 // apps/server/src/builder/assistant/context.ts (muda)
 /** O agente que a conversa roda: a linha lida a cada pedido, um dono só (C26). */
 export type AgentScope = Readonly<{
@@ -373,7 +396,7 @@ export type AssistantScope = SessionScope & { agent: AgentScope | null }
 export type Agents = {
   routes: (app: FastifyInstance) => void
   scopeOf: (owner: Owner, agentId: AgentId) => Promise<AgentScope>       // AGENT_NOT_FOUND
-  release: (scope: { companyId: CompanyId; projectId?: ProjectId; personId?: PersonId }) => Promise<number>
+  release: (scope: { companyId: CompanyId; projectId?: ProjectId; personId?: PersonId }) => Promise<number>   // empresa e Projeto: apaga; pessoa: anula created_by
   onDelete: (hook: (agent: { companyId: CompanyId; agentId: AgentId }) => Promise<void>) => void   // a U4 registra as automações
 }
 ```
@@ -382,15 +405,20 @@ O id do agente nasce de `uuidv5(companyId:personId:attemptKey)`, como o id deriv
 24.2; o `body_hash` decide `IDEMPOTENCY_CONFLICT`. As ligações gravadas são as pedidas que o
 Projeto oferece na criação (`connectors.connections(scope)`); a cada turno, as do agente que o
 Projeto ainda oferece (C26: o Projeto é o dono da oferta, o agente da escolha). Numa conversa de
-agente, `sessionScopes` troca o `chosen` do escopo pelas ligações do agente; a coluna
-`connections` da linha da conversa é só a foto da abertura e ninguém a lê. As ferramentas, as
+agente, `sessionScopes` troca o `chosen` do escopo pelas ligações do agente, e a coluna
+`connections` da linha da conversa é gravada vazia (`[]`), porque ninguém a lê (D18). As ferramentas, as
 skills de cada ligação e o bloco das ligações nas instruções seguem o mesmo `chosen`.
 
-As instruções do turno: o texto do Conexus (`conexus.md`) e o bloco da conversa que a 24.1 já
-monta (a empresa, a pessoa, a data, o lugar e as ligações), depois `"Você é o agente <nome> deste
-Projeto. Siga estas instruções:"` e as instruções do agente, depois uma frase fixa de que o agente só
-lê e diz isso quando pedirem para gravar (o critério 4 e o passo 4 do roteiro). O texto do Assistente
-(`assistant.md`) não entra numa conversa de agente.
+As instruções do turno: a mensagem fixa da 24.1 (`conexus.md` e `assistant.md`, `instructions.ts:9-21`)
+e o bloco da conversa (a empresa, a pessoa, a data, o lugar e as ligações), iguais byte a byte; numa
+conversa de agente, uma terceira mensagem do sistema com `"Você é o agente <nome> deste Projeto.
+Siga estas instruções:"`, as instruções do agente e uma frase fixa de que o agente só lê e diz isso
+quando pedirem para gravar (o critério 4 e o passo 4 do roteiro). A mensagem fixa continua uma
+entrada só do cache para todas as conversas.
+
+A admissão (S8): `askAssistant` não trava (`admission.ts:74`); a criação e a remoção do agente gravam
+no banco do Hub, então a admissão entra na transação da gravação com a conferência do papel, como
+`manageConnections` (`:71`); a leitura das rotas usa `askAssistant`.
 
 O conjunto de ferramentas do agente: `toolsOf(model)` só com `web`; `show_file`; as da máquina
 (`AVAILABLE_TOOLS` como a 24.1); `connectorTools(accessOf(...), { noteSave: false })` sobre as
@@ -450,8 +478,13 @@ agente". Comando: os testes tocados, `npm run typecheck`, `npm run lint`, `npm r
   que roda.
 - `neonTransport` (`company-postgres.ts:65-81`, relay) e `asLogin` (`:~118`, relay); o banco do
   Projeto pela empresa (`projects.readyDatabaseOf`, `company-database.ts:103`, relay).
-- O corte das linhas ao modelo: o mesmo de `connector_read` (20 linhas, 16 KB); a U2 importa o dono
-  dele, nunca copia o número (C26).
+- O corte das linhas ao modelo: o mesmo de `connector_read` (`CUT_ROWS`, `CUT_BYTES`,
+  `hub/connectors/cut.ts:4-6`); a U2 os exporta de `hub/connectors/public.ts` e os importa, nunca
+  copia o número (C26).
+- O endereço do login sem a API do Neon: o edge monta o do login do app pelo `host` gravado e a senha
+  derivada (`apps/edge/src/db.ts:35-60`); o `host` e o banco vêm de `readyDatabaseOf` e
+  `COMPANY_DATABASE` (`hub/apps/handoff.ts:271-282`). `openAppDatabase` (`hub/apps/app-database.ts:24-55`)
+  chama a API do Neon a cada ato (`:37`), então só serve para criar o login que falta.
 
 ### O raio da mudança
 
@@ -459,7 +492,9 @@ agente". Comando: os testes tocados, `npm run typecheck`, `npm run lint`, `npm r
 | --- | --- | --- |
 | `packages/hub-api/src/app-login.ts` | Muda: `readLogin: app_<projeto>_read` | `company-postgres.ts`, `apps/edge` (não usa) |
 | `packages/hub-api/src/assistant.ts` | Muda: `ASSISTANT_TOOL.appDataRead = 'app_data_read'`, que entra no conjunto fechado do controlador do Assistente (`AVAILABLE_TOOLS`, `assistant.ts:79-87`); nunca em `CLOSED_TOOLS` de `tools.ts`, que é o do Construtor | o Assistente, a web (a linha da ferramenta) |
-| `apps/server/src/platform/company-postgres.ts` | Muda: `ensureApp` cria os três logins; `schemaStatements` dá ao de leitura só `USAGE` no esquema e `SELECT` (nenhum `CREATE`, nenhuma sequência, nenhum `EXECUTE` além do `PUBLIC`): nas tabelas futuras pelo `ALTER DEFAULT PRIVILEGES` que já roda como o login de migração (depois do `SET LOCAL ROLE`), nas que existem tabela por tabela, menos o livro das migrações (ou `GRANT … ON ALL TABLES` seguido de `REVOKE` no livro); mais `default_transaction_read_only = on` e os tempos do app, como profundidade; cria `readApp(projectId, sql)`, que manda cada consulta como `sql.transaction([…], { readOnly: true })` (o `BEGIN READ ONLY` explícito do `@neondatabase/serverless`, `index.d.ts:491-496`, relay), e `ensureReadLogin(projectId)` na porta `CompanyPostgres` | `builder/agents/app-data.ts` |
+| `apps/server/src/platform/company-postgres.ts` | Muda: `ensureApp` cria os três logins; `schemaStatements` dá ao de leitura só `USAGE` no esquema e `SELECT` (nenhum `CREATE`, nenhuma sequência, nenhum `EXECUTE` além do `PUBLIC`): nas tabelas futuras pelo `ALTER DEFAULT PRIVILEGES` que já roda como o login de migração (depois do `SET LOCAL ROLE`), nas que existem tabela por tabela, menos o livro das migrações (ou `GRANT … ON ALL TABLES` seguido de `REVOKE` no livro); mais `default_transaction_read_only = on` e os tempos do app, como profundidade; cria na porta `CompanyPostgres` `readApp(read: DatabaseUrl, sql, signal)`, que manda cada consulta como `sql.transaction([…], { readOnly: true })` (o `BEGIN READ ONLY` explícito do `@neondatabase/serverless`, `index.d.ts:491-496`, relay; como `apps/edge/src/db.ts:48-60`), e `ensureReadLogin(owner: DatabaseUrl, projectId)`; a porta recebe o endereço, nunca a empresa (C7), como `ensureApp` (`:86-93`) | `hub/apps/` |
+| `apps/server/src/hub/apps/` | Muda `app-database.ts` e `public.ts`: `readAppData`, o dono do banco do app, monta o endereço do login de leitura e chama `readApp`; cria o login que falta | `builder/agents/app-data.ts` |
+| `apps/server/src/hub/connectors/public.ts` | Muda: exporta `CUT_ROWS` e `CUT_BYTES` de `cut.ts` | `builder/agents/app-data.ts` |
 | `apps/server/src/builder/agents/` | Cria `app-data.ts` (a ferramenta) | `assistant.ts` |
 | `apps/server/src/builder/assistant/assistant.ts` | Muda: `app_data_read` no conjunto do agente com `appData`, só quando o Projeto tem app | — |
 | `apps/web/src/builder/conversation/` | Muda: a linha da ferramenta ("Lendo dados do app") no registro das ferramentas | — |
@@ -468,11 +503,17 @@ agente". Comando: os testes tocados, `npm run typecheck`, `npm run lint`, `npm r
 
 ```ts
 // apps/server/src/platform/company-postgres.ts (porta CompanyPostgres)
-readApp(input: { companyId: CompanyId; projectId: ProjectId; sql: string; signal: AbortSignal }): Promise<AppRead>
+readApp(read: DatabaseUrl, sql: string, signal: AbortSignal): Promise<AppRead>
+ensureReadLogin(owner: DatabaseUrl, projectId: ProjectId): Promise<SqlAnswer>
+// apps/server/src/hub/apps/public.ts
+/** O endereço do login `app_<projeto>_read` montado do `host` de `readyDatabaseOf` e de `COMPANY_DATABASE`
+ *  com `appLoginPassword`, sem a API do Neon; só quando o Postgres recusa o login (28P01 ou 28000) abre o
+ *  dono por `openAppDatabase`, roda `ensureReadLogin` e repete a consulta uma vez. */
+readAppData(input: { scope: SessionScope; projectId: ProjectId; sql: string; signal: AbortSignal }): Promise<AppRead>
 export type AppRead =
   | { kind: 'ROWS'; columns: readonly string[]; rows: readonly unknown[][] }
   | { kind: 'REFUSED'; code: 'APP_DATA_REFUSED' }       // a recusa do Postgres: 25006 (transação de leitura), 42501 (sem permissão), 42601 (vários comandos, se o protocolo estendido os recusa)
-  | { kind: 'FAILED'; code: 'APP_DATA_UNAVAILABLE' | 'APP_DATA_TIMEOUT' | 'APP_DATA_NO_APP' }
+  | { kind: 'FAILED'; code: 'APP_DATA_UNAVAILABLE' | 'APP_DATA_TIMEOUT' | 'APP_DATA_NO_APP' | 'APP_DATA_TOO_LARGE' }   // TOO_LARGE: a resposta passou de REPLY_CAP_BYTES, 1 MB (company-postgres.ts:49-58), C59
 // apps/server/src/builder/agents/app-data.ts
 export const AppDataInput = z.object({ sql: z.string().trim().min(1).max(4000) })   // a mesma razão de AGENT_INSTRUCTIONS_MAX
 ```
@@ -495,7 +536,8 @@ e as linhas nunca vão ao registro do processo (C50).
    ferramenta não existe).
 2. `readLogin` em `app-login.ts`; os três logins em `ensureApp`; as permissões do login de leitura,
    sem o livro das migrações (o critério 11 o confere num Projeto novo e num de antes).
-3. `ensureReadLogin` (o mesmo `ensureApp`, só a parte do login, para um Projeto de antes) e `readApp`.
+3. `ensureReadLogin` (o mesmo `ensureApp`, só a parte do login, para um Projeto de antes), `readApp`
+   e `readAppData` em `hub/apps`.
 4. `app-data.ts` e o seu lugar no conjunto do agente; a linha da ferramenta na web.
 
 ### Como se prova
@@ -539,7 +581,7 @@ prontos.
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `apps/server/src/builder/conversation/` | Cria `propose-agent.ts`; muda `builder.ts` (a ferramenta no fim da lista, com o Projeto) e `prompt/builder.md` (quando propor um agente; a linha 15, que diz que os conectores "vêm depois", corrigida: a #540) | — |
+| `apps/server/src/builder/conversation/` | Cria `propose-agent.ts`; muda `builder.ts` (a ferramenta no fim da lista, com o Projeto, só quando a pessoa pode `askAssistant`, lido uma vez por `RequestContext` como `grantedFor`; para o membro ela não existe e o Construtor diz que agentes são de donos e administradores), `permissions.ts` (`BUILDER_TOOL.proposeAgent` em `TALK` de `TOOL_CLOSURE`, `:22-60`; `permissions.test.ts:254` confere a igualdade) e `prompt/builder.md` (quando propor um agente; a linha 15, que diz que os conectores "vêm depois", corrigida: a #540) | — |
 | `packages/hub-api/src/` | Muda `tools.ts` (`BUILDER_TOOL.proposeAgent = 'propose_agent'`), `agents.ts` (`ProposedAgent`) | a web |
 | `apps/web/src/builder/agents/` | Cria `proposal.tsx` (o cartão), `agents.tsx` (a lista), `agent-page.tsx` (a página e o painel), `queries.ts`, `text.ts` | as rotas |
 | `apps/web/src/builder/conversation/` | Muda o registro das ferramentas do Construtor (o cartão de `propose_agent`) | — |
@@ -604,8 +646,8 @@ os testes tocados, `npm run typecheck`, `npm run lint`.
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
 | `apps/server/src/builder/automations/` | Muda `run.ts` (`AutomationInput` como união das versões 1 e 2; `target`; `check` lê o agente; `conversed` abre a conversa com `agentId`), `automations.ts` (a criação com `agentId`, a conferência), `release.ts` (as automações de um agente, pelo `onDelete` da U1) | — |
-| `apps/server/src/builder/assistant/propose-automation.ts` | Muda: numa conversa de agente, a proposta sai com `agentId` do escopo | — |
-| `packages/hub-api/src/automations.ts` | Muda: `CreateAutomation.agentId?`, `ProposedAutomation.agentId?` (posto pela ferramenta), `AutomationSummary.agent`, `RunOutcome` `SKIPPED` com `AGENT_GONE` | a web |
+| `apps/server/src/builder/assistant/propose-automation.ts` | Muda: a entrada é `ProposedAutomation` sem `agentId` (o modelo não o escreve); a saída é `ProposedAutomation.extend({ agentId })`, sempre com `agentId: scope.agent?.agentId ?? null` | — |
+| `packages/hub-api/src/automations.ts` | Muda: `CreateAutomation.agentId?`, a saída da proposta com `agentId` (posto pela ferramenta, nunca na entrada), `AutomationSummary.agent`, `RunOutcome` `SKIPPED` com `AGENT_GONE` | a web |
 | `apps/web/src/builder/automations/` | Muda: **Roda: <nome>** no cartão e na linha da lista; "Não rodou: o agente foi apagado." | — |
 
 ### Os contratos que a unidade cria
@@ -627,8 +669,8 @@ export function targetOf(input: AutomationInput): AutomationTarget   // V1: ASSI
 
 Uma automação com alvo agente é do Projeto do agente: a versão 2 com `AGENT` e o lugar `COMPANY`, ou
 outro Projeto, é recusada na criação (`AGENT_NOT_FOUND`) e, se aparecer no `inputData`, o `check` a
-termina `SKIPPED` com `AGENT_GONE`, como o agente apagado. Ela grava as ligações do
-agente; o pedido roda nele. O nome do agente no resumo é lido da linha (nenhum nome
+termina `SKIPPED` com `AGENT_GONE`, como o agente apagado. Ela grava `connections: []` (D18:
+numa conversa de agente as ligações vêm do agente); o pedido roda nele. O nome do agente no resumo é lido da linha (nenhum nome
 guardado na automação).
 
 ### As skills e a leitura
