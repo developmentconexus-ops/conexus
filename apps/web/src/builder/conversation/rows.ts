@@ -229,7 +229,13 @@ function fromParts(
     const id = `${message.id}-${index}`
     // Mastra opens a step with an empty text part: it says nothing and must not split a run of tools.
     if (part.type === 'text') {
-      if (part.text.trim() !== '') items.push({ kind: 'text', id, text: part.text })
+      if (part.text.trim() === '') continue
+      // Anthropic's web search cuts one answer into text blocks around each citation (a source
+      // part sits between them); a run of text with no row between is one text, or a sentence or
+      // a list item would break across bubbles.
+      const last = items.at(-1)
+      if (last?.kind === 'text') items[items.length - 1] = { ...last, text: last.text + part.text }
+      else items.push({ kind: 'text', id, text: part.text })
     } else if (part.type === 'reasoning')
       items.push({
         kind: 'reasoning',
