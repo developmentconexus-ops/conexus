@@ -6,6 +6,7 @@ One line per document (`check-docs`).
 
 - [AGENTS.md](../AGENTS.md): read first; skill per stage.
 - [README.md](../README.md): this repository.
+- [DESIGN.md](../DESIGN.md): the Pauta, values and pieces.
 - [roadmap.md](roadmap.md): steps.
 - [approvals.md](approvals.md): approvals.
 - [architecture.md](architecture.md): goals, parts, deployment, risks, debt.
@@ -18,7 +19,6 @@ One line per document (`check-docs`).
 - [steps/](steps/): cards in construction.
 - [reference/boundaries.md](reference/boundaries.md): mechanisms written over libraries'.
 - [reference/stack.md](reference/stack.md): sources, skill, trap per package.
-- [reference/components.md](reference/components.md): screen pieces and their tokens (design V23).
 - [reference/checklist.md](reference/checklist.md): readers' questions.
 - [reference/screens.md](reference/screens.md): screens, floors; [prompt](reference/builder-prompt.md).
 - [reference/impeccable.md](reference/impeccable.md): Impeccable's files, commands.
