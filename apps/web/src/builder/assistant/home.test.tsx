@@ -13,10 +13,9 @@ import {
   PEDIDOS_ID,
   SALES,
   STOCK,
-  THIRD,
 } from './test-hub.tsx'
 
-// Início of the owner: the Assistant's box, its bar and the recent conversations (step 24.1, criteria 23 and 23a).
+// Início of the owner: the Assistant's box and its bar (step 24.1, criteria 23 and 23a).
 const server = hubServer()
 const { at } = assistantScreens(server)
 
