@@ -128,6 +128,8 @@ spacing:
   2xl: "32px"
   3xl: "48px"
   4xl: "64px"
+  control: "32px"
+  control-sm: "28px"
   row: "32px"
 containers:
   drawer: "20.5rem"
@@ -141,6 +143,7 @@ containers:
   axis: "45rem"
   axis-wide: "55rem"
   half: "22rem"
+  phone: "390px"
 shadows:
   float: "0 1px 2px rgb(18 21 24 / 0.04), 0 8px 24px -8px rgb(18 21 24 / 0.14)"
   composer: "0 1px 2px rgb(18 21 24 / 0.04), 0 6px 20px -10px rgb(18 21 24 / 0.12)"

@@ -1,10 +1,20 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
+import { setTimeout as sleep } from 'node:timers/promises'
 import { call, plantCompany } from '../../hub/identity/test-hub.ts'
-import { endOf } from '../conversation/test-conversation.ts'
-import { tool } from '../conversation/test-questions.ts'
+import type { Sent } from '../../platform/test-anthropic.ts'
+import { endOf, holding, MODEL, sent, title } from '../conversation/test-conversation.ts'
+import { sessionStateOf, tool } from '../conversation/test-questions.ts'
 import { assisting, created, reading, said, talking } from './test-assistant.ts'
+
+const OTHER_MODEL = 'anthropic/claude-haiku-4-5'
+
+/** Waits, up to five seconds, for `done`. */
+async function until(done: () => boolean) {
+  for (let waited = 0; !done() && waited < 5000; waited += 20) await sleep(20)
+  assert.ok(done(), 'it did not happen in time')
+}
 
 test('a escolha no turno: numa conversa de Projeto, as duas leituras do Sankhya vão na escolha e no Projeto dela, com a mesma chave; o turno seguinte tem outra', async (t) => {
   const on = await assisting(t, [[reading()], [reading()], [said('Uma empresa.')], [reading()]])
@@ -215,4 +225,34 @@ test('a visão da empresa com 51 Projetos: 50 pelo nome e moreProjects; o app pu
     false,
     'another company’s Projeto, first by name, never appears',
   )
+})
+
+test('a troca do modelo: uma resposta em andamento termina no modelo em que começou, a seguinte usa o novo (V54)', async (t) => {
+  const held = holding(t)
+  const used: (string | null)[] = []
+  const on = await assisting(t, (asked: Sent) => {
+    const titled = title(asked)
+    if (titled !== undefined) return titled
+    used.push(asked.model)
+    return used.length === 1 ? held.reply : { kind: 'text', text: 'Pronto.' }
+  })
+  const url = await created(on.hub, on.ana, on.assistant, { connections: [] })
+  const { stream, say } = await talking(t, on.hub, on.ana, url)
+  const first = await sent(on.hub, on.ana, url, 'Primeira')
+  assert.equal(first.statusCode, 200, first.body)
+  await until(() => used.length === 1)
+  const switched = await call(on.hub, on.ana, 'PUT', `${url}/model`, {
+    model: OTHER_MODEL,
+    effort: 'off',
+  })
+  assert.equal(switched.statusCode, 200, switched.body)
+  held.release()
+  assert.equal(endOf(await stream.turn()), 'complete')
+  assert.equal(used.length, 1, 'the turn in flight made no call on the new model')
+  assert.equal(endOf(await say('Segunda')), 'complete')
+  assert.deepEqual(
+    used.map((model) => `anthropic/${model}`),
+    [MODEL, OTHER_MODEL],
+  )
+  assert.equal((await sessionStateOf(on.hub, on.ana, url)).model, OTHER_MODEL)
 })

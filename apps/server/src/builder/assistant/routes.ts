@@ -15,6 +15,7 @@ import {
   ProjectId as ProjectIdSchema,
   readAssistantConversation,
   setAssistantConnections,
+  setAssistantModel,
 } from '@conexus/hub-api'
 import type { AgentController } from '@mastra/core/agent-controller'
 import type { StorageThreadType } from '@mastra/core/memory'
@@ -28,13 +29,14 @@ import { Failure } from '../../platform/failure.ts'
 import { answer, serve } from '../../platform/http.ts'
 import { attemptIdOf, resourceOf } from '../controller-kit/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
+import { conversationModel, effortsOf } from '../model-accounts/public.ts'
 import type { ChosenConnections } from './chosen.ts'
 import type { Owner } from './context.ts'
 import { SESSION_MARK, scopeOn } from './context.ts'
 import { registerFile } from './file-route.ts'
 import type { AssistantMachines } from './machine.ts'
 import type { assistantMemory } from './memory.ts'
-import { admitted, automationOf, offeredOnly, openConversation, placeOf } from './open.ts'
+import { admitted, automationOf, marksOf, offeredOnly, openConversation, placeOf } from './open.ts'
 import type { AssistantProjects } from './ports.ts'
 
 /**
@@ -217,7 +219,32 @@ function registerReads(app: FastifyInstance, deps: Deps): void {
   })
 }
 
-/** The writes: a new conversation, and its choice of connections. */
+/**
+ * Puts the conversation on a model and an effort, kept together on its thread (`switch`), for its
+ * next turns. The session is found or recovered by `createSession` with the marks the creation
+ * stamped, so one is never born without them; a `switch` in a turn applies to the next one.
+ */
+async function switchModel(
+  deps: Deps,
+  input: { owner: Owner; thread: StorageThreadType; model: ModelId; effort: Effort },
+) {
+  const { owner, thread } = input
+  const id = ConversationId.parse(thread.id)
+  const { place } = await scopeOfThread(deps, owner, thread)
+  const tags = marksOf(owner, {
+    projectId: place.kind === 'PROJECT' ? place.projectId : undefined,
+    automation: automationOf(thread.metadata) ?? undefined,
+  })
+  const session = await deps.controller.createSession({
+    id,
+    resourceId: resourceOf('assistant', owner),
+    threadId: id,
+    tags,
+  })
+  await session.model.switch(input.model, { thinkingLevel: input.effort })
+}
+
+/** The writes: a new conversation, its choice of connections and its model. */
 function registerWrites(app: FastifyInstance, deps: Deps): void {
   serve(app, createAssistantConversation, async (input) => {
     const owner = ownerOf(input)
@@ -252,6 +279,22 @@ function registerWrites(app: FastifyInstance, deps: Deps): void {
     )
     const conversation = await conversationOf(deps, thread, { ...scope, chosen })
     return answer({ conversation })
+  })
+
+  serve(app, setAssistantModel, async (input) => {
+    const owner = ownerOf(input)
+    const { conversationId } = input.params
+    await admitted(deps, owner, { kind: 'COMPANY' })
+    const thread = await ownThread(deps, owner, conversationId)
+    const model = await conversationModel(deps.queue, owner, input.body.model)
+    const { effort } = input.body
+    if (!effortsOf(model).includes(effort)) throw new Failure('EFFORT_UNSUPPORTED')
+    await switchModel(deps, { owner, thread, model, effort })
+    deps.log.info(
+      { companyId: owner.companyId, traceId: input.traceId, conversationId },
+      'ASSISTANT_MODEL_SET',
+    )
+    return answer({ model, effort })
   })
 }
 
