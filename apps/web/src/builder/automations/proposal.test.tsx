@@ -1,5 +1,5 @@
 import type { ProjectId } from '@conexus/hub-api'
-import { ASSISTANT_TOOL } from '@conexus/hub-api'
+import { ASSISTANT_TOOL, CompanyId } from '@conexus/hub-api'
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse } from 'msw'
 import { expect, test } from 'vitest'
@@ -110,7 +110,7 @@ test('a automação apagada devolve o cartão a "Criar automação", com a mesma
 test('com a lista das automações já no cache antes da criação, Ver automação abre o histórico da nova', async () => {
   automationsHub(server, { automations: [] })
   const { conexus } = at(OPEN, { conversations: [proposing()] })
-  await conexus.queryClient.prefetchQuery(automationsQuery(COMPANY.id, undefined))
+  await conexus.queryClient.prefetchQuery(automationsQuery(CompanyId.parse(COMPANY.id), undefined))
   fireEvent.click(await screen.findByRole('button', { name: 'Criar automação' }))
   await screen.findByText('Automação criada')
   fireEvent.click(screen.getByRole('link', { name: 'Ver automação' }))
