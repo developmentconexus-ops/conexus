@@ -21,6 +21,8 @@ export const RunsSearch = z.object({ page: z.string().optional().catch(undefined
 /**
  * What an Automações page reads before it opens: the person's automations of the place and, in a
  * Projeto, the Projeto, so a deleted one is not found; a member's read is not found too (S10).
+ * It reads fresh: a loader that decides existence never takes it from data a write marked stale
+ * (web W12), which `ensureQueryData` would hand back.
  */
 export function loadAutomations(
   queryClient: QueryClient,
@@ -29,10 +31,8 @@ export function loadAutomations(
   const { companyId, projectId } = place
   return readOrNotFound(
     Promise.all([
-      queryClient.ensureQueryData(automationsQuery(companyId, projectId)),
-      ...(projectId === undefined
-        ? []
-        : [queryClient.ensureQueryData(projectQuery(companyId, projectId))]),
+      queryClient.query(automationsQuery(companyId, projectId)),
+      ...(projectId === undefined ? [] : [queryClient.query(projectQuery(companyId, projectId))]),
     ]),
   )
 }

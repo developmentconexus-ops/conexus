@@ -270,7 +270,6 @@ function assistantAgent(
       })),
   })
   const showFile = showFileTool(parts.machines)
-  const proposeAutomation = proposeAutomationTool({ scopeOf })
   return new Agent({
     id: ASSISTANT_CONTROLLER,
     name: 'Assistant',
@@ -287,7 +286,7 @@ function assistantAgent(
         ...toolsOf(sessionModel(requestContext)),
         [ASSISTANT_TOOL.overview]: overview,
         [ASSISTANT_TOOL.showFile]: showFile,
-        [ASSISTANT_TOOL.proposeAutomation]: proposeAutomation,
+        [ASSISTANT_TOOL.proposeAutomation]: proposeAutomationTool(chosen),
         // Creating an app is the company's: a conversation inside a Projeto talks about that
         // Projeto.
         ...(scope?.place.kind === 'COMPANY' ? { [ASSISTANT_TOOL.proposeApp]: proposeAppTool } : {}),

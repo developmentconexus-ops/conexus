@@ -28,6 +28,7 @@ import {
   sendAutomationPause,
   sendAutomationResume,
   sendAutomationRun,
+  useFollowedRuns,
 } from './queries.ts'
 import {
   ACTIVE,
@@ -109,6 +110,7 @@ export function Actions(props: {
   const pause = useMutation(sendAutomationPause)
   const resume = useMutation(sendAutomationResume)
   const run = useMutation(sendAutomationRun)
+  useFollowedRuns(companyId, automation.id, undefined, run.isSuccess)
   const remove = useMutation(sendAutomationDeletion)
   const busy = pause.isPending || resume.isPending || run.isPending || remove.isPending
   const toggle = automation.state === 'ACTIVE' ? pause : resume

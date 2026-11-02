@@ -34,6 +34,7 @@ export function automation(fields: Partial<AutomationSummary> = {}): AutomationS
     cadence: { kind: 'DAILY', time: '07:00' },
     projectId: null,
     connections: [{ connectionId: MATRIZ, connector: 'sankhya', name: 'Matriz', chosen: true }],
+    origin: null,
     state: 'ACTIVE',
     nextRunAt: '2026-11-02T10:00:00.000Z',
     createdAt: '2026-11-01T12:00:00.000Z',
@@ -138,6 +139,10 @@ export function automationsHub(
     writes: () => sent.filter((one) => one.method !== 'GET'),
     /** How many times the history's runs were read. */
     runReads: () => runReads,
+    /** The Hub loses every automation, as when they are all deleted. */
+    forget: () => {
+      held.automations = []
+    },
   }
 }
 
@@ -158,5 +163,6 @@ function madeFrom(body: CreateAutomation): Partial<AutomationSummary> {
     prompt: body.prompt,
     cadence: body.cadence,
     projectId: body.projectId ?? null,
+    origin: body.origin ?? null,
   }
 }

@@ -1,23 +1,23 @@
 import type { AssistantConversation, CompanyId, ProposedAutomation } from '@conexus/hub-api'
 import { automationPath } from '@conexus/hub-api'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { useRef, useState } from 'react'
 import { derivedAttemptKey } from '../../platform/attempt-key.ts'
-import { writeFailureText } from '../../platform/hub.ts'
+import { sentenceOf, writeFailureText } from '../../platform/hub.ts'
 import { Button, buttonVariants } from '../../ui/button.tsx'
+import { ReadFailure } from '../../ui/states.tsx'
 import { cadenceText } from './cadence-text.ts'
 import { PlaceName } from './place.tsx'
-import { sendAutomationCreation } from './queries.ts'
-import { CREATED, UNCONFIRMED_CREATION } from './text.ts'
-
-type Created = { path: string }
+import { automationsQuery, sendAutomationCreation } from './queries.ts'
+import { CREATED, READS_NO_SYSTEM, UNCONFIRMED_CREATION } from './text.ts'
 
 /**
  * **Criar automação** (step 24.2, U3, `E1`): the automation the Assistant proposed, with the place
  * of the conversation. The key of the attempt derives from the conversation and the call, which
  * Mastra stored with the message, so a reload and a second touch create one automation (code C37,
- * web W24); nothing is made before the touch.
+ * web W24); nothing is made before the touch. Whether it was created is the Hub's to say: the
+ * automation of the place that names this call as its origin, so leaving and returning keeps it.
  */
 export function ProposalCard(props: {
   companyId: CompanyId
@@ -27,7 +27,12 @@ export function ProposalCard(props: {
   toolCallId: string
 }) {
   const { companyId, conversation, proposed } = props
-  const [created, setCreated] = useState<Created>()
+  const automations = useQuery(automationsQuery(companyId, conversation.projectId ?? undefined))
+  const created = automations.data?.automations.find(
+    (each) =>
+      each.origin?.conversationId === conversation.id &&
+      each.origin.toolCallId === props.toolCallId,
+  )
   const [error, setError] = useState<string>()
   const inFlight = useRef(false)
   const send = useMutation(sendAutomationCreation)
@@ -41,7 +46,7 @@ export function ProposalCard(props: {
     setError(undefined)
     try {
       const attemptKey = await derivedAttemptKey(`${conversation.id}:${props.toolCallId}`)
-      const { automation } = await send.mutateAsync({
+      await send.mutateAsync({
         params: { companyId },
         body: {
           name: proposed.name,
@@ -49,10 +54,10 @@ export function ProposalCard(props: {
           cadence: proposed.cadence,
           projectId: conversation.projectId ?? undefined,
           connections: proposed.connections,
+          origin: { conversationId: conversation.id, toolCallId: props.toolCallId },
         },
         attemptKey,
       })
-      setCreated({ path: automationPath(companyId, automation.projectId, automation.id) })
     } catch (failure) {
       setError(writeFailureText(failure, UNCONFIRMED_CREATION))
     } finally {
@@ -66,23 +71,33 @@ export function ProposalCard(props: {
       <p className="text-text-2">
         {cadenceText(proposed.cadence)} ·{' '}
         <PlaceName companyId={companyId} projectId={conversation.projectId} />
-        {names.length > 0 && ` · ${names.join(', ')}`}
+        {` · ${names.length > 0 ? names.join(', ') : READS_NO_SYSTEM}`}
       </p>
       <p className="whitespace-pre-wrap break-words text-text">{proposed.prompt}</p>
-      {created === undefined ? (
-        <Button variant="primary" disabled={send.isPending} onClick={() => void create()}>
-          {send.isPending ? 'Criando…' : 'Criar automação'}
-        </Button>
-      ) : (
-        <div className="flex flex-wrap items-center gap-md">
-          <p role="status" className="text-success">
-            {CREATED}
-          </p>
-          <Link to={created.path} className={buttonVariants()}>
-            Ver automação
-          </Link>
-        </div>
+      {automations.isError && (
+        <ReadFailure
+          text={sentenceOf(automations.error)}
+          onRetry={() => void automations.refetch()}
+        />
       )}
+      {automations.isSuccess &&
+        (created === undefined ? (
+          <Button variant="primary" disabled={send.isPending} onClick={() => void create()}>
+            {send.isPending ? 'Criando…' : 'Criar automação'}
+          </Button>
+        ) : (
+          <div className="flex flex-wrap items-center gap-md">
+            <p role="status" className="text-success">
+              {CREATED}
+            </p>
+            <Link
+              to={automationPath(companyId, created.projectId, created.id)}
+              className={buttonVariants()}
+            >
+              Ver automação
+            </Link>
+          </div>
+        ))}
       {error !== undefined && (
         <p role="alert" className="text-danger">
           {error}
