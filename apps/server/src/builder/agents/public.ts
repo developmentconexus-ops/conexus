@@ -5,8 +5,14 @@ import type { ToolsDeps } from '../tools/public.ts'
 import { createTools, registerToolRoutes } from '../tools/public.ts'
 import type { AgentsDeps } from './agents.ts'
 import { createAgentService } from './agents.ts'
+import { createAgentConversations } from './controller.ts'
+import { registerAgentConversationRoutes } from './conversation-routes.ts'
+import { openAgentConversation } from './open.ts'
+
+export { agentKey, agentRunContext } from './agent.ts'
+
 import { agentEvents } from './events.ts'
-import { activeOf, draftOf, publishedAll } from './frozen.ts'
+import { activeOf, draftOf, liveOf, publishedAll } from './frozen.ts'
 import { releaseAgents } from './release.ts'
 import { registerAgentRoutes } from './routes.ts'
 import { usedBy } from './store.ts'
@@ -31,6 +37,8 @@ export function agentsOf(deps: Omit<ToolsDeps, 'usedBy'> & Pick<AgentsDeps, 'isC
       activeOf(database, ids, agentId),
     draftOf: (ids: OfProject, agentId: Parameters<typeof draftOf>[2]) =>
       draftOf(database, ids, agentId),
+    liveOf: (companyId: Parameters<typeof liveOf>[1], agentId: Parameters<typeof liveOf>[2]) =>
+      liveOf(database, companyId, agentId),
     publishedAll: () => publishedAll(database),
     release: (scope: ReleaseScope) =>
       releaseAgents({ database, tools, emit: events.emit, log: deps.log }, scope),
@@ -39,3 +47,26 @@ export function agentsOf(deps: Omit<ToolsDeps, 'usedBy'> & Pick<AgentsDeps, 'isC
 }
 
 export type Agents = ReturnType<typeof agentsOf>
+
+/**
+ * The agents of `agentsOf` alive (step 24.3, U2): the agents' conversations, whose part joins the
+ * one `Mastra` after the Assistant's, and their routes beside the agents'.
+ */
+export function agentsAlive(
+  deps: Parameters<typeof agentsOf>[0] &
+    Omit<Parameters<typeof createAgentConversations>[0], 'agents'>,
+) {
+  const agents = agentsOf(deps)
+  const live = createAgentConversations({ ...deps, agents })
+  return Object.freeze({
+    ...agents,
+    part: live.part,
+    /** Opens a conversation with the agent, as its route does, past the admission (U6's run). */
+    open: (input: Parameters<typeof openAgentConversation>[1]) =>
+      openAgentConversation({ ...deps, ...live }, input),
+    routes: (app: FastifyInstance) => {
+      agents.routes(app)
+      registerAgentConversationRoutes(app, { ...deps, agents, conversations: live })
+    },
+  })
+}

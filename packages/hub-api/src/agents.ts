@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { AgentId, ToolVersionId } from './agent-ids.ts'
 import { CompanyId } from './companies.ts'
 import { CONNECTIONS_MAX, ConnectionId } from './connectors.ts'
-import { ModelId } from './conversations.ts'
+import { ConversationId, ModelId } from './conversations.ts'
 import type { FailureCode } from './failures.ts'
 import { PersonId } from './identity.ts'
 import { ATTEMPT_KEY_HEADER, defineOperation } from './operation.ts'
@@ -118,6 +118,19 @@ export const AgentVersionSummary = z.object({
   publishedBy: Author,
 })
 export type AgentVersionSummary = z.infer<typeof AgentVersionSummary>
+
+/** The key of the agents' controller in Mastra's routes (`/agent-controller/agents/…`), step 24.3. */
+export const AGENTS_CONTROLLER = 'agents'
+
+/** A conversation of the person's with an agent: with its published version, or the test one with its draft. */
+export const AgentConversationSummary = z.object({
+  id: ConversationId,
+  agentId: AgentId,
+  draft: z.boolean(),
+  title: z.string(),
+  updatedAt: z.iso.datetime(),
+})
+export type AgentConversationSummary = z.infer<typeof AgentConversationSummary>
 
 const InCompany = z.object({ companyId: CompanyId })
 const InProject = InCompany.extend({ projectId: ProjectId })
@@ -243,5 +256,37 @@ export const deleteAgent = defineOperation({
   bodyLimit: 1024,
   input: { params: OfAgent },
   success: { status: 204 },
+  failures: ONE_FAILURES,
+})
+
+export const createAgentConversation = defineOperation({
+  id: 'createAgentConversation',
+  summary: `Opens a conversation of the person's with the agent's published version, or with its draft (\`draft\`), keyed by ${ATTEMPT_KEY_HEADER}.`,
+  access: 'session',
+  method: 'POST',
+  path: `${BASE}/{agentId}/conversations`,
+  bodyLimit: 1024,
+  input: { params: OfAgent, body: z.object({ draft: z.boolean().optional() }) },
+  attemptKey: true,
+  success: { status: 201, body: z.object({ conversation: AgentConversationSummary }) },
+  failures: [
+    ...ONE_FAILURES,
+    'AGENT_NOT_PUBLISHED',
+    'IDEMPOTENCY_CONFLICT',
+    'MODEL_UNKNOWN',
+    'MODEL_NO_ACCOUNT',
+    'EFFORT_UNSUPPORTED',
+  ],
+})
+
+export const listAgentConversations = defineOperation({
+  id: 'listAgentConversations',
+  summary: "Lists the person's own conversations with the agent, newest first.",
+  access: 'session',
+  method: 'GET',
+  path: `${BASE}/{agentId}/conversations`,
+  bodyLimit: 1024,
+  input: { params: OfAgent },
+  success: { status: 200, body: z.object({ conversations: z.array(AgentConversationSummary) }) },
   failures: ONE_FAILURES,
 })

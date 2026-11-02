@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { CARLA, call, codeOf, memberOn, post } from '../../hub/identity/test-hub.ts'
+import { agentsOn, publishedAgent, talkedTo } from '../agents/test-agents.ts'
 import { assisting, created } from '../assistant/test-assistant.ts'
 import { sessionUrl, started } from './test-conversation.ts'
 
 /** The conversation's transcript route under `controller`, as Mastra serves it. */
-function transcript(url: string, controller: 'builder' | 'assistant' | 'other') {
+function transcript(url: string, controller: 'builder' | 'assistant' | 'agents' | 'other') {
   const id = url.slice(url.lastIndexOf('/') + 1)
   const session = sessionUrl(url).replace(
     /\/agent-controller\/[^/]+\//,
@@ -44,4 +45,29 @@ test('o Assistente: as rotas do Mastra com a chave assistant respondem só ao do
   assert.equal(codeOf(demoted), 'CONVERSATION_NOT_FOUND')
   const asked = await post(on.hub, carla, `${sessionUrl(hers)}/messages`, { message: 'Oi' })
   assert.equal(codeOf(asked), 'CONVERSATION_NOT_FOUND')
+})
+
+test('os controladores novos: as seis rotas servem o controlador agents ao dono da conversa enquanto ele gerencia agentes; a de outra pessoa, a de outro controlador e a de quem virou membro dão CONVERSATION_NOT_FOUND', async (t) => {
+  const on = await agentsOn(t)
+  const agent = await publishedAgent(on.hub, on.ana, on.agents, { instructions: 'Responda.' })
+  const mine = await talkedTo(on.hub, on.ana, on.agents, agent.id)
+  const read = await call(on.hub, on.ana, 'GET', sessionUrl(mine))
+  assert.equal(read.statusCode, 200, read.body)
+  assert.equal((await call(on.hub, on.ana, 'GET', transcript(mine, 'agents'))).statusCode, 200)
+  for (const crossed of [transcript(mine, 'assistant'), transcript(mine, 'builder')]) {
+    assert.equal(codeOf(await call(on.hub, on.ana, 'GET', crossed)), 'CONVERSATION_NOT_FOUND')
+  }
+  const elsewhere = await call(on.hub, on.ana, 'GET', `${sessionUrl(mine)}/tasks`)
+  assert.equal(elsewhere.statusCode, 404, 'the routes stay six')
+
+  const carla = await memberOn(on.hub, on.companyId, CARLA, 'admin')
+  const hers = await talkedTo(on.hub, carla, on.agents, agent.id)
+  const foreign = await post(on.hub, on.ana, `${sessionUrl(hers)}/messages`, { message: 'Oi' })
+  assert.equal(codeOf(foreign), 'CONVERSATION_NOT_FOUND')
+  await on.hub.test.asOwner(
+    `update auth.member set role = 'member' where user_id = $1 and company_id = $2`,
+    [carla.id, on.companyId],
+  )
+  const demoted = await call(on.hub, carla, 'GET', transcript(hers, 'agents'))
+  assert.deepEqual([demoted.statusCode, codeOf(demoted)], [404, 'CONVERSATION_NOT_FOUND'])
 })

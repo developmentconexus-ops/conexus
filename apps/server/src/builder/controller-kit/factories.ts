@@ -77,12 +77,14 @@ export function controllerOf(input: {
   storage: PostgresStore
   memory: MastraMemory
   agent: Agent
-  mode: { id: string; availableTools: readonly string[] }
+  /** A mode without `availableTools` filters nothing: its agent's tools are the closed set. */
+  mode: { id: string; availableTools?: readonly string[] }
   workspace?: AgentControllerConfig['workspace']
   tools?: AgentControllerConfig['tools']
   initialState: Record<string, unknown>
 }): AgentController {
-  const offered = new Set(input.mode.availableTools)
+  const { availableTools } = input.mode
+  const offered = new Set(availableTools)
   const own = new Set(Object.keys(input.tools ?? {}))
   const off = Object.keys(BUILTIN).filter(
     (id): id is BuiltinToolId => Object.hasOwn(BUILTIN, id) && (!offered.has(id) || own.has(id)),
@@ -92,7 +94,11 @@ export function controllerOf(input: {
     storage: input.storage,
     memory: input.memory,
     agent: input.agent,
-    modes: [{ id: input.mode.id, availableTools: [...input.mode.availableTools] }],
+    modes: [
+      availableTools === undefined
+        ? { id: input.mode.id }
+        : { id: input.mode.id, availableTools: [...availableTools] },
+    ],
     ...(input.workspace === undefined ? {} : { workspace: input.workspace }),
     disableBuiltinTools: off,
     ...(input.tools === undefined ? {} : { tools: input.tools }),

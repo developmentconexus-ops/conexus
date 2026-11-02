@@ -1,16 +1,24 @@
 import type { CompanyId as CompanyIdType, PersonId as PersonIdType } from '@conexus/hub-api'
-import { ASSISTANT_CONTROLLER, BUILDER_CONTROLLER, CompanyId, PersonId } from '@conexus/hub-api'
+import {
+  AGENTS_CONTROLLER,
+  ASSISTANT_CONTROLLER,
+  BUILDER_CONTROLLER,
+  CompanyId,
+  PersonId,
+} from '@conexus/hub-api'
 import { z } from 'zod'
 import { Failure } from '../../platform/failure.ts'
 
 /**
  * Each conversation controller: its key in Mastra (`/agent-controller/<id>/…`) and the prefix of
  * the resource its threads are kept under. The owners of today do not change: the Builder's is
- * `company:<c>:person:<p>`, the Assistant's `assistant:company:<c>:person:<p>`.
+ * `company:<c>:person:<p>`, the Assistant's `assistant:company:<c>:person:<p>`; the agents' (step
+ * 24.3) `agents:company:<c>:person:<p>`.
  */
 export const CONTROLLER_KINDS = {
   builder: { id: BUILDER_CONTROLLER, prefix: '' },
   assistant: { id: ASSISTANT_CONTROLLER, prefix: 'assistant:' },
+  agents: { id: AGENTS_CONTROLLER, prefix: 'agents:' },
 } as const satisfies Record<string, { id: string; prefix: string }>
 
 export type ControllerKind = keyof typeof CONTROLLER_KINDS
