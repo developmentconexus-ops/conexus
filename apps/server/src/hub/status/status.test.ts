@@ -22,15 +22,23 @@ async function hubOn(t: Parameters<typeof createTestDatabase>[0]) {
   const status = createStatus({ version: VERSION, database: test.database })
   const config = testConfig(test.runtimeUrl)
   const identity = identityOf({ database: test.database, config, log: silent })
-  const { projects, operations, apps, modelAccounts, conversations, assistant, connectors } =
-    subjectsOf({
-      mastraPool: test.mastraPool,
-      database: test.database,
-      config,
-      identity,
-      ...testAppPorts(config),
-      log: silent,
-    })
+  const {
+    projects,
+    operations,
+    apps,
+    modelAccounts,
+    conversations,
+    assistant,
+    automations,
+    connectors,
+  } = subjectsOf({
+    mastraPool: test.mastraPool,
+    database: test.database,
+    config,
+    identity,
+    ...testAppPorts(config),
+    log: silent,
+  })
   const app = await createHub(config, {
     status,
     identity,
@@ -40,6 +48,7 @@ async function hubOn(t: Parameters<typeof createTestDatabase>[0]) {
     modelAccounts,
     conversations,
     assistant,
+    automations,
     connectors,
   })
   t.after(() => app.close())
@@ -108,15 +117,23 @@ test('com o banco fora, /api/status responde 503 e /api/health continua 200', as
   const status = createStatus({ version: VERSION, database })
   const config = testConfig(await unreachableDatabaseUrl())
   const identity = identityOf({ database, config, log: silent })
-  const { projects, operations, apps, modelAccounts, conversations, assistant, connectors } =
-    subjectsOf({
-      mastraPool: testMastraPool(t, config),
-      database,
-      config,
-      identity,
-      ...testAppPorts(config),
-      log: silent,
-    })
+  const {
+    projects,
+    operations,
+    apps,
+    modelAccounts,
+    conversations,
+    assistant,
+    automations,
+    connectors,
+  } = subjectsOf({
+    mastraPool: testMastraPool(t, config),
+    database,
+    config,
+    identity,
+    ...testAppPorts(config),
+    log: silent,
+  })
   const app = await createHub(config, {
     status,
     identity,
@@ -126,6 +143,7 @@ test('com o banco fora, /api/status responde 503 e /api/health continua 200', as
     modelAccounts,
     conversations,
     assistant,
+    automations,
     connectors,
   })
   t.after(() => app.close())

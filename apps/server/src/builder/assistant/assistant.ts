@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs'
-import type { Overview } from '@conexus/hub-api'
+import type { ConversationId, Overview } from '@conexus/hub-api'
 import {
   ASSISTANT_CONTROLLER,
   ASSISTANT_TOOL,
@@ -37,20 +37,22 @@ import {
   MAX_PROCESSOR_RETRIES,
 } from '../model-accounts/public.ts'
 import { chosenConnections } from './chosen.ts'
-import type { ScopeOf } from './context.ts'
+import type { Owner, ScopeOf } from './context.ts'
 import { sessionScopes } from './context.ts'
 import type { Speakers } from './instructions.ts'
 import { assistantInstructions } from './instructions.ts'
 import type { AssistantMachines, MachineTuning } from './machine.ts'
 import { createAssistantMachines } from './machine.ts'
 import { assistantMemory } from './memory.ts'
+import type { OpenDeps } from './open.ts'
+import { admitted, asked, openConversation } from './open.ts'
 import { overviewTool } from './overview.ts'
 import type { AssistantProjects } from './ports.ts'
 import { proposeAppTool } from './propose.ts'
 import { releaseConversations } from './release.ts'
 import { registerAssistantRoutes } from './routes.ts'
 import { showFileTool } from './show-file.ts'
-import { assistantTurns, turnKeyIn } from './turn.ts'
+import { assistantTurns, turnEnd, turnKeyIn } from './turn.ts'
 
 type AssistantConnectors = Connectors['assistant']
 type AssistantConnection = Awaited<ReturnType<AssistantConnectors['connections']>>[number]
@@ -338,12 +340,21 @@ export function createAssistant(deps: Deps) {
     initialState: { yolo: true },
   })
   turns.watch(controller)
+  const opening: OpenDeps = { ...deps, controller, memory, chosen }
 
   return Object.freeze({
     controller,
     memory,
     /** Where a conversation hears its machine start (QA F1), as the Builder's hears its steps. */
     onPhase: machines.onPhase.bind(machines),
+    /** Admits the person who may ask now, in the place; else `NOT_FOUND` (S10). */
+    admit: (owner: Owner, place: SessionScope['place']) => admitted(deps, owner, place),
+    /** Opens a conversation, or finds the one its id names (`open.ts`). */
+    open: (input: Parameters<typeof openConversation>[1]) => openConversation(opening, input),
+    /** How the session's next turn ends (`turn.ts`). */
+    turnEnd: (session: Parameters<typeof turnEnd>[1]) => turnEnd(controller, session),
+    /** Whether the conversation already holds a question (`open.ts`). */
+    asked: (owner: Owner, conversationId: ConversationId) => asked(memory, owner, conversationId),
     routes: (app: FastifyInstance) =>
       registerAssistantRoutes(app, { ...deps, controller, memory, chosen, machines }),
     release: (scope: ReleaseScope) =>

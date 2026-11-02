@@ -2124,7 +2124,7 @@
   },
   {
     "id": "assistant-routes-ask",
-    "file": "apps/server/src/builder/assistant/routes.ts",
+    "file": "apps/server/src/builder/assistant/open.ts",
     "find": "    await deps.identity.admitMember({ tx, ...owner, action: 'askAssistant' })\n",
     "replace": "",
     "test": {
@@ -2146,7 +2146,7 @@
   },
   {
     "id": "assistant-routes-offered-only",
-    "file": "apps/server/src/builder/assistant/routes.ts",
+    "file": "apps/server/src/builder/assistant/open.ts",
     "find": "  return offered.flatMap((each) => (wanted.has(each.connectionId) ? [each.connectionId] : []))\n",
     "replace": "  return [...wanted]\n",
     "test": {
@@ -2351,6 +2351,61 @@
       "cwd": "apps/server",
       "file": "src/builder/machine/machine-e2b.test.ts",
       "name": "achada pelo id"
+    }
+  },
+  {
+    "id": "automations-own",
+    "file": "apps/server/src/builder/automations/automations.ts",
+    "find": "  if (found === undefined || !isOwner(found.input, owner)) {\n",
+    "replace": "  if (found === undefined) {\n",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/automations/routes.test.ts",
+      "name": "pausar e retomar"
+    }
+  },
+  {
+    "id": "automations-admit-each",
+    "file": "apps/server/src/builder/automations/automations.ts",
+    "find": "  await deps.assistant.admit(owner, { kind: 'COMPANY' })\n  const found",
+    "replace": "  const found",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/automations/run.test.ts",
+      "name": "o dono virou membro"
+    }
+  },
+  {
+    "id": "automations-create-admit",
+    "file": "apps/server/src/builder/automations/automations.ts",
+    "find": "  await deps.assistant.admit(owner, place)\n  const id = automationIdOf",
+    "replace": "  const id = automationIdOf",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/automations/routes.test.ts",
+      "name": "as recusas"
+    }
+  },
+  {
+    "id": "automations-offered-only",
+    "file": "apps/server/src/builder/automations/automations.ts",
+    "find": "await offeredOnly(deps, { ...owner, place, chosen: [] }, body.connections)",
+    "replace": "body.connections",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/automations/routes.test.ts",
+      "name": "as recusas"
+    }
+  },
+  {
+    "id": "automations-run-may-ask",
+    "file": "apps/server/src/builder/automations/run.ts",
+    "find": "      if (asking.kind === 'MAY_NOT') {\n",
+    "replace": "      if (false) {\n",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/automations/run.test.ts",
+      "name": "o dono virou membro"
     }
   }
 ]

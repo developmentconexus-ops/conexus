@@ -72,6 +72,7 @@ export {
   ShownFile,
   setAssistantConnections,
 } from './assistant.ts'
+export * from './automations.ts'
 export { CAPACITY } from './capacity.ts'
 export {
   acceptInvitation,
