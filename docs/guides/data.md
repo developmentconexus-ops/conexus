@@ -81,8 +81,11 @@ Neon's owner login joins `neon_superuser`; the Hub's runtime login does not [003
   the `migrate` connection, on the direct address, opens with its limits in `options`, so
   PostgreSQL itself cancels a stuck migration and frees its locks; killing the client does not.
   Founder, 2026-10-22: "1 sim 2 A". [CI search]
-- **D27.** Nothing **may** keep a connection or send a statement while nobody uses Conexus.
-  [sleeping-database test]
+- **D27.** Nothing **may** keep a connection or send a statement while nobody uses Conexus, except
+  Mastra's scheduler while a schedule row exists: it reads its table on every tick (10 s), and the
+  founder pays the awake database for it (step 24.2, `D1`; founder, 2026-11-01: "3. Okay, mas vou
+  depois por agora no gratuito", the free Neon plan for now). With no row, `startWorkers()` reads
+  the table once at start and never again. [sleeping-database test]
 
 ## 5. Generated apps
 
