@@ -1263,21 +1263,21 @@ Comando: os testes tocados, `npm run typecheck`, `npm run lint`.
 
 ## U6 A automação roda um agente
 
-**Base e modelo.** `main` depois da U2 e da https://github.com/developmentconexus-ops/conexus/pull/556
-(a "R1"), que muda `run.ts:128` e deve entrar antes da U1b, que muda `run.ts:112`; se entrar depois,
-a segunda refaz a fusão nesse arquivo. Sonnet: um campo novo num contrato que já tem a sua versão.
+**Base e modelo.** `main` depois da U2. A "R1" já está no `main`
+(https://github.com/developmentconexus-ops/conexus/pull/556, o sinal em `run.ts:132-138`). Sonnet: um campo novo num contrato que já tem a sua versão.
 
 ### As linhas da tabela
 
 - `AutomationInput` versão 1 (`builder/automations/run.ts:37-50`, lido) e `AUTOMATION_WORKFLOW`
   (`:21-27`: renomear apaga as linhas).
-- `conversed` (`run.ts:96-142`, lido): a conversa aberta por `deps.assistant.open`; o alvo agente a
+- `conversed` (`run.ts:96-156`, lido): a conversa aberta por `deps.assistant.open`; o alvo agente a
   abre pela abertura da U2, com o mesmo id derivado do `runId` (`attemptIdOf`, U1b).
 - **O pedido marcado** (a resposta "R1" do fundador, 2026-11-02, do estudo da execução das
   automações; https://github.com/developmentconexus-ops/conexus/pull/556): a execução manda o pedido
   como sinal `{ type: 'user', tagName: 'user', contents, attributes: { source: 'automation',
-  automationName } }` com `requireDelivery: true`; a do agente manda o mesmo sinal pela sessão do
-  agente, com a mesma marca.
+  automationName } }` com `requireDelivery: true`, e um sinal aceito que não acorda nem entra num
+  turno termina `FAILED` com `INTERRUPTED` (`run.ts:128-145`, lido); a do agente manda o mesmo sinal
+  pela sessão do agente, com a mesma marca e a mesma conferência.
 - `propose_automation` (`builder/assistant/propose-automation.ts:12-29`, lido): o controlador
   "agentes" também a oferece, com o `agentId` posto pela ferramenta.
 
@@ -1330,8 +1330,8 @@ tocados, `npm run typecheck`, `npm run lint`.
 - Uma linha da agenda da 24.2 deixa de ser lida (a versão 1): para; mudar `AUTOMATION_WORKFLOW`
   apagaria todas as linhas.
 - O nome do agente precisa ser guardado na automação: relata; a linha do agente é a dona.
-- A https://github.com/developmentconexus-ops/conexus/pull/556 ainda não entrou no `main`: para; a
-  marca `source="automation"` é dela, e a U6 a reusa.
+- A execução do agente precisa de outra marca que não a `source="automation"` da 24.2: para; a marca
+  é uma só para as duas.
 
 ## U7 A aba Ferramentas
 
