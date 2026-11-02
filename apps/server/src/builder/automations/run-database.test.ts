@@ -76,7 +76,7 @@ test('o banco do Hub fora no primeiro passo: a execução termina FAILED com DAT
 test('a pergunta que não sai: o envio que falha solta os ouvintes do fim do turno e a execução termina FAILED', async () => {
   let letGo = 0
   const session: Session = Object.assign(Object.create(null), {
-    sendMessage: () => Promise.reject(shutdown()),
+    sendSignal: () => ({ accepted: Promise.reject(shutdown()) }),
     abort: () => undefined,
   })
   const { outcome } = await ran(
@@ -95,4 +95,31 @@ test('a pergunta que não sai: o envio que falha solta os ouvintes do fim do tur
   )
   assert.equal(letGo, 1)
   assert.equal(outcome.kind, 'FAILED')
+})
+
+test('o envio aceito que não chega ao modelo: um sinal bloqueado solta os ouvintes e a execução termina FAILED INTERRUPTED, sem esperar o fim de um turno que não começou', async () => {
+  let letGo = 0
+  const session: Session = Object.assign(Object.create(null), {
+    sendSignal: () => ({
+      accepted: Promise.resolve({ action: 'blocked', reason: 'thread-blocked', runId: 'run_1' }),
+    }),
+    abort: () => undefined,
+  })
+  const { outcome } = await ran(
+    {
+      admit: () => Promise.resolve(),
+      open: () => Promise.resolve(Object.assign(Object.create(null), { session })),
+      turnEnd: () => ({
+        ended: new Promise<never>(() => undefined),
+        stop: () => {
+          letGo += 1
+        },
+      }),
+      asked: () => Promise.resolve(false),
+    },
+    anInput(),
+  )
+  assert.equal(letGo, 1)
+  assert.equal(outcome.kind, 'FAILED')
+  assert.equal(outcome.kind === 'FAILED' ? outcome.code : null, 'INTERRUPTED')
 })

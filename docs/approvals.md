@@ -82,6 +82,8 @@ Etapa 12 usada em 2026-10-19 em https://hub.conexus.fun (v0.12.0 a v0.12.2), com
 Cartão da etapa 12.1 aprovado em 2026-10-19 (commit bae3907092629491aef6edf2d704623506fc1c71): "Eu aprovo o cartão do 12.1"; "Eu autorizo os dois turnos reais pela assinatura Claude"
 Etapa 12.1 usada em 2026-10-20 em https://hub.conexus.fun (v0.12.4 a v0.12.7); consertos de "Desligado", ferramenta cortada, citação, tabelas (#188, #191, #192): "Deu certo"
 
+Em 2026-11-01, ao título da conversa: "2A". O observador continua atualizando o título (`threadTitle`, nativo, como no Mastra Code), e um nome que a pessoa der ao renomear fica travado pelo `titlePinned` do Mastra. Substitui a resposta "C" de 2026-10-20 (o título feito uma vez na primeira mensagem, com o `threadTitle` desligado); o cartão que trouxer o renomear cita as duas.
+
 ## Etapa 12.2
 
 Cartão da etapa 12.2 aprovado em 2026-10-20 (commit d4fcae61430a89e03e515c4cd16beba1aaf6300e): "Aprovo o cartão da 12.2"
@@ -215,6 +217,8 @@ Em 2026-10-27, sobre a linha de ações do compositor, no celular: "Ó, no celul
 Em 2026-10-27, sobre a faixa de cima do Hub na tela de início do iPhone, que parecia embaçada: "Corrija." É o bug 301994 do WebKit (iOS 26.1 ou mais novo), sem correção no DOM; ficou como problema externo conhecido, na issue #387.
 
 Etapa 14.3 usada em 2026-10-27 em https://hub.conexus.fun (v0.14.11 e v0.14.12): "Ah, eu usei a 14.3, tá top, finalizada." Pendências: #381 a #389.
+
+Em 2026-11-01, à frase do arquivo que não se lê no compositor: "1A". "Não conseguimos ler este arquivo. Escolha de novo." fica como está.
 
 ## Etapa 13.1
 
@@ -423,6 +427,8 @@ Cartão da etapa 24.1 aprovado em 2026-11-01 (commit d8fae7ecaf733ae6522a7a5d4f9
 
 Essa emenda vem da revisão da U2 (B1) e do plano de fechamento, decidida pelo firstmate, sem decisão nova do fundador nem mudança no que ele vê: as ligações escolhidas da conversa vivem na tabela do Hub `builder.assistant_conversation`, que só o Hub escreve, porque as escritas do próprio Mastra nos metadados da conversa (título, memória observacional) desfaziam a escolha; o caminho do arquivo do Mastra é `builder/conversation/mastra.ts`; a lista de endereços da máquina do Assistente está na decisão 0059, e a 0051 fica como foi aprovada; o critério 20 e o contrato AssistantMachines passam a bater com o código. A palavra D11 do fundador para as permissões de `builder.assistant_conversation` (SELECT, INSERT e UPDATE da coluna `connections` para `hub_company`), em 2026-11-01: "Aprovo as permissoes do b1". A linha sai por cascata, sem permissão de DELETE.
 
+Em 2026-11-01, ao aprovar a Pauta ("Aprovo", seção "Etapa 13.3"), decisão do meio da etapa (L6): a barra embaixo da caixa sai. A escolha das ligações e a do Projeto passam para o "+" e para a pasta dentro da caixa, pelo cartão da 13.3. O cartão da 24.1 marca como substituídos os passos 1, 4 e 5 do roteiro, os critérios 23 a 24, as linhas da barra na matriz e na tabela de referência, o desenho de caixas e a nota sobre a W30, sem apagar o que dizia.
+
 Decisões do fundador na revisão da etapa 24.1, no passeio ao vivo e na rodada de correção, registradas no fechamento. Cada linha traz as palavras dele; a data é a do dia em que o firstmate as recebeu.
 
 Em 2026-11-01, a permissão de merge das unidades da 24.1, na noite: "depois de passar por todo o nosso processo de QA inteiro de revisão e ser aprovado". Cada merge seguiu a revisão aprovada e a CI verde do mesmo commit (L13).
@@ -480,3 +486,53 @@ Etapa 24.2 no ar em https://hub.conexus.fun (v0.24.7), sem a linha de uso do fun
 Em 2026-11-02, a linha de uso da etapa 24.2, depois de o fundador passar pelos quatro pontos dos consertos no Hub no ar (https://hub.conexus.fun, v0.24.7): "Olha, deu certo, tipo assim, tudo rodou sem esses defeitos".
 
 Em 2026-11-02, aos textos de tela novos que a 24.2 escreveu e ele ainda não tinha aprovado (a lista no corpo da pull request do fechamento), em duas mensagens. À pergunta do sino, se ele lê "Automação <nome>: pronta", como o assunto do e-mail, em vez de "<nome> está pronta": "A". Depois: "Aprovo os textos". Os textos da lista estão aprovados, com a frase do sino trocada pela opção A; a troca do código da frase do sino vem em uma pull request pequena própria logo depois deste fechamento, porque um fechamento guarda só documentos (L20).
+
+Em 2026-11-02, como mudança de método (L20), à pergunta de como as etapas 13.3 (a Pauta, o sistema de desenho) e 24.3 (os agentes e o Construtor), ambas da fronteira, andam juntas, já que o guia permite uma etapa em construção por trilho: "A". A opção A: a Pauta vira um trilho próprio, o de desenho, ao lado da fronteira e do padrão, e as duas andam em paralelo (L1). Depois, à pergunta de como os dois trilhos dividem um arquivo que as duas tocam: "a". A opção a: uma unidade que toca arquivo do outro trilho só constrói quando nenhuma unidade em andamento desse trilho o toca, e o inverso (L1). Depois, ao marcador que diz o trilho do cartão: "APROVO O MARCADRO DE PAUTA". Depois, ao teto de palavras do guia de entrega, que o texto novo do trilho estoura: "A". O teto de `docs/guides/delivery.md` sobe de 1.900 para 1.950 palavras.
+
+## Etapa 13.3
+
+Em 2026-11-01, ao pedir o visual novo do Hub: "não é para você utilizar e tentar melhorar o que a gente tem hoje ... A gente pode mudar o que a gente hoje em estrutura, em visual ... ele tem simetria, ele tem matemática dentro do design"; "Isso é para a gente definir o design.md completo, igual o Cloud Design faz, que traz até os componentes, fonte, métricas, estilos ... pode refatorar, mudar tudo, desde que seja mais coeso"; "sempre seguindo o nosso ... o que a gente tem de front-end nos nossos guias e metodologias ... se a gente está realmente não repetindo, se a gente está seguindo uma arquitetura ... reutilização de componentes, em bibliotecas e padronização"; e, sobre a AffectUI (https://www.affectui.com/components/agent-handoff): "Esse cara faz muita coisa inter que podemos copiar ou fazer para nosso sistema no que for viavel".
+
+Em 2026-11-01, às capturas da Pauta: "Ficou boa a versão do layout". À linha da caixa, que deve ser uma peça com a mesma ordem em toda tela: "mais, depois o símbolo de pasta, ferramentas ... e aí o modelo e o símbolo de ... memória tá mais à direita".
+
+Em 2026-11-01, à pergunta se o modelo pode ser trocado dentro de uma conversa do Assistente ((a) sim, como no Builder; (b) só para leitura; (c) só no Início): "A".
+
+Em 2026-11-01, à pergunta se aprova a Pauta revisada, para entrar por cartão próprio com os primeiros consertos da auditoria do front-end: "Aprovo". O cartão é `docs/steps/e133-pauta.md`; a aprovação da página dele, com o commit, vem numa linha própria quando ele a ler.
+
+Em 2026-11-01, às duas decisões do cartão da 13.3 (A, onde a etapa entra; B, onde mora o DESIGN.md): "A1 B1". A 13.3 entra logo depois da 24.2, e o `DESIGN.md` da raiz vira o documento completo da Pauta, conferido contra o código, com o guia de desenho só com as regras. A página do cartão ainda não foi aprovada.
+
+Cartão da etapa 13.3 aprovado em 2026-11-01 (commit 4e04581c6878ace0512df2cb26f6c1536746e038): "Aprovo pode mesclar"
+
+Cartão da etapa 13.3 aprovado em 2026-11-02 (commit f7ce6c22590c3574b73668aad28b04939b738b4e): "APROVO O MARCADRO DE PAUTA"
+
+Lido pelo firstmate como a aprovação do cartão com a linha `Trilho: desenho`, que faz da Pauta o trilho de desenho (L1, L5); o resto do cartão está como foi aprovado no commit 4e04581c, "Aprovo pode mesclar".
+
+Em 2026-11-02, na revisão da unidade U0 da 13.3 (a Pauta), à decisão sobre a regra V5 (o ipê marca "só" o lugar atual, o foco, o cursor e a marca, contra a V57, "Dourado", e a V28, o arco do compositor ocupado), com as opções A e B: "B". Opção B: a V5 mantém o "só" e nomeia duas exceções, a marca do item que a pessoa escolheu (o ícone do toggle da V57 e o check do Projeto escolhido) e o arco do compositor ocupado (V28). O critério 12 do cartão (pull request 538, congelado) ganha as duas exceções; a emenda vai no corpo da pull request da U0, para o fechamento. Palavra de meio de etapa, vai direto para este livro (L6).
+
+## Decisões fora de uma etapa
+
+Em 2026-11-02, ao buffer da memória observacional (o estudo A/B do buffer, B1 ou B2): "1. Sem buffer". Fica o B1 de hoje: `bufferTokens: false`, sem o buffer do Mastra Code.
+
+Em 2026-11-01, ao estudo do auth do Mastra (se a porta das rotas do Mastra passa ao auth nativo dele, com a integração Better Auth): "okay sibre auth". Fica como está: o login é o Better Auth, e a porta das rotas do Mastra é a nossa, a lista fixa de `guard.ts` com o dono de cada conversa conferido a cada pedido; a decisão 0050 vale.
+
+## Etapa 24.3
+
+Em 2026-11-02, à pergunta A do cartão da 24.3 (a entrada Agentes para o membro, contra a regra W34 do guia da web): "3.A". **Agentes** some para o membro, como **Automações** pela resposta "1 A" de 2026-11-01; a exceção da W34 que o fechamento da 24.2 escreve nomeia as duas entradas. Palavra antes da aprovação do cartão, que ainda espera a decisão B.
+
+Em 2026-11-02, ao estudo do Construtor (`data/conexus-construtor-study/report.md`, as decisões A a E): "A. A1 Para mim é um, se isso realmente for como a gente viu nos repositórios de referências e como eles realmente fazem." "C. `C1`" "D. D1 Mas aí verificar como que é o jeito certo de fazer realmente, pra gente verificar como as pessoas que integram. Porque o Master já tem integração com o Telegram, né? Ele já tem no Channels, então sempre usar nativo, seguindo nossos guias e metodologia." "E. E1". Lido pelo firstmate como: o `A1` (o agente guardado como dados com versões, cada versão publicada um `new Agent` registrado com `addAgent`), com a condição conferida no estudo seguinte (o editor do Mastra faz assim, `namespaces/agent.ts`, fora do `ee`); o `C1` (o Construtor cria, muda e testa rascunhos sozinho; publicar é sempre um toque da pessoa); o `D1` (o Telegram primeiro, pelos Channels do Mastra, na 24.7); o `E1` (a ordem 24.3 o Construtor e o agente, a etapa de papéis e pedidos, 24.4 ferramentas em código, 24.5 escrita com aprovação, 24.6 workflows e automações, 24.7 canais, depois 21.1, 16, 22, 23 e 20.2). A resposta B ficou aberta para um estudo de onde roda o agente e o código.
+
+Em 2026-11-02, à decisão B, depois do estudo de carga e da comparação com o Mastra Platform e o Agent Builder (o agente no Hub, um `new Agent` registrado por versão publicada, com ferramentas de recorte; onde roda o código das ferramentas, decidido no cartão da 24.4 por um protótipo que compara um Worker do Workers for Platforms com um comando na máquina E2B da área de trabalho, como o Mastra Factory): "Okay aprovado vamos seguir assim então". O cartão da 24.3 foi reescrito sobre essas respostas.
+
+Em 2026-11-02, à pergunta T (de quem é uma ferramenta: `T1` a biblioteca da empresa, recomendada, ou `T2` as ferramentas de cada Projeto, como no estudo do Construtor): "`T1`". Lido pelo firstmate como: uma biblioteca de ferramentas da empresa (`builder.tool` e `builder.tool_version` da empresa, sem Projeto); cada conector traz as suas leituras como ferramentas prontas, e o agente escolhe só as que precisa; as ferramentas que o Construtor faz entram na mesma biblioteca e servem a vários agentes; cada ferramenta diz o que lê e o que faz, e só entra num agente cujo Projeto recebeu aquelas ligações; cada versão do agente prende a versão de cada ferramenta, então uma ferramenta nova não muda um agente publicado, e o Construtor propõe a troca; o Construtor procura na biblioteca e nos workflows que existem antes de propor uma ferramenta nova. As ferramentas em código continuam na 24.4.
+
+Em 2026-11-02, às quatro perguntas do protótipo do Construtor (as nove telas clicáveis): "1A 2A 3A 4A". Lido pelo firstmate como: o 1A, o Construtor mora dentro do Projeto, na área de agentes dele, não numa área à parte; o 2A, a entrada do menu é **Agentes**, com as abas dentro, **Construtor** é o nome do agente com quem se conversa ali, e **Construir** continua sendo o Builder dos apps; o 3A, uma ferramenta da biblioteca é mudada por dono e administrador agora, e pelo desenvolvedor quando a etapa de papéis e pedidos chegar, cada mudança grava uma versão nova, os agentes publicados continuam na versão que prenderam, e o Construtor propõe a troca; o 4A, as **Ideias do Construtor** aparecem só quando vêm de uma falta de verdade que o Construtor vê (uma escrita sem aprovação, uma ligação de que o agente precisa e que o Projeto não tem), e sem falta o bloco não aparece. O cartão da 24.3 tira a pergunta do nome e põe as ideias na 24.3.1, na U8, porque a 24.3 já está no teto da regra L2.
+
+Em 2026-11-02, à página dos agentes no Início: "`V1`". Lido pelo firstmate como: no Início (o nível da empresa), uma página **Agentes** lista todos os agentes da empresa, com o filtro por Projeto e, de cada agente, a versão, o estado e a última execução; ela só mostra, e um toque abre a página do agente dentro do Projeto dele, onde se muda; **Novo agente** nessa página pergunta em qual Projeto criar; um agente sempre nasce dentro de um Projeto, nunca fora; o membro também não vê os agentes ali ("3.A"). A forma é a das Automações da 24.2, que têm uma página no Início e uma em cada Projeto: uma lista e uma leitura só, a página do Projeto passa o filtro do Projeto e a do Início não passa nenhum. O cartão da 24.3 a põe na 24.3.1, na U9, ao lado da aba Ferramentas, porque a 24.3 já está no teto da regra L2.
+
+Cartão da etapa 24.3 aprovado em 2026-11-02 (commit bbbbf0c380ad095fba2ffd00642572640aa81c41): "Aprovo a pagina"
+
+Lido pelo firstmate como a aprovação da página da 24.3 e da 24.3.1 como o commit citado a traz, com as respostas `A1`, B, `C1`, `E1`, 3.A, `T1`, 1A, 2A, 3A, 4A e `V1`. A aprovação é também a palavra da regra de dados D11 para as permissões das tabelas novas e da função `builder.companies_with_agents()`.
+
+Cartão da etapa 24.3 aprovado em 2026-11-02 (commit 07d1e66f702bc250d4af3fd38fef184510dc1df9): "Aprova a emenda da 24.3, né? Sempre seguindo os repositórios, referências, para a gente implementar conforme esperado. Correto?"
+
+Lido pelo firstmate como a aprovação da emenda da 24.3 como o commit citado a traz: as respostas "P1. A" (o kit dos controladores na U1b, entre a U1 e a U2, com a U2 e a U4 sobre ele) e "R1" (o pedido de uma automação marcado `source="automation"`, também quando ela roda um agente, na U6), sob a condição que ele pôs: seguir os repositórios de referência.

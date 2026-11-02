@@ -1,140 +1,41 @@
----
-version: alpha
-name: Conexus
-description: Governed enterprise workbench where an AI agent builds and evolves business applications under explicit authority.
-colors:
-  canvas: "#F6F7F8"
-  surface: "#FFFFFF"
-  surface-3: "#EFF1F3"
-  surface-4: "#E6E9EC"
-  line: "#DDE1E5"
-  line-strong: "#8A939C"
-  text: "#121518"
-  text-2: "#59616A"
-  ink: "#121518"
-  on-ink: "#FFFFFF"
-  accent: "#B07A0C"
-  accent-text: "#9A6A08"
-  accent-soft: "#FBF1D9"
-  mark: "#C08A12"
-  memory: "#903BDB"
-  success: "#1A7F4B"
-  warning: "#B54708"
-  danger: "#C0283D"
-  on-accent: "#FFFFFF"
-  preview-paper: "#FFFFFF"
-  dark-canvas: "#0E1012"
-  dark-surface: "#16191C"
-  dark-surface-3: "#1D2125"
-  dark-surface-4: "#262B30"
-  dark-line: "#2C3237"
-  dark-line-strong: "#6E7780"
-  dark-text: "#EEF0F2"
-  dark-text-2: "#A3ABB3"
-  dark-ink: "#EEF0F2"
-  dark-on-ink: "#121518"
-  dark-accent: "#F2B53A"
-  dark-accent-text: "#F2B53A"
-  dark-accent-soft: "#3A2E12"
-  dark-mark: "#F2B53A"
-  dark-memory: "#B979FF"
-  dark-success: "#6FD39A"
-  dark-warning: "#F5A25B"
-  dark-danger: "#F28B9A"
-  phone-frame: "#1D2125"
-  dark-phone-frame: "#3A4148"
-  logo-plate: "#FFFFFF"
-typography:
-  display:
-    fontFamily: "Bricolage Grotesque, system-ui, sans-serif"
-    fontSize: "2.1rem"
-    fontWeight: 600
-    lineHeight: 1.15
-    letterSpacing: "-0.02em"
-  title:
-    fontFamily: "Bricolage Grotesque, system-ui, sans-serif"
-    fontSize: "1.05rem"
-    fontWeight: 600
-    lineHeight: 1.3
-    letterSpacing: "-0.01em"
-  body:
-    fontFamily: "Hanken Grotesk, system-ui, sans-serif"
-    fontSize: "0.9375rem"
-    fontWeight: 400
-    lineHeight: 1.55
-  label:
-    fontFamily: "Hanken Grotesk, system-ui, sans-serif"
-    fontSize: "0.8125rem"
-    fontWeight: 500
-    lineHeight: 1
-  eyebrow:
-    fontFamily: "Hanken Grotesk, system-ui, sans-serif"
-    fontSize: "0.6875rem"
-    fontWeight: 700
-    lineHeight: 1
-    letterSpacing: "0.08em"
-  fact:
-    fontFamily: "JetBrains Mono, ui-monospace, monospace"
-    fontSize: "0.75rem"
-    fontWeight: 400
-    lineHeight: 1.4
-rounded:
-  control: "6px"
-  object: "10px"
-  card: "14px"
-  composer: "16px"
-  pill: "999px"
-  phone: "36px"
-spacing:
-  xs: "0.25rem"
-  sm: "0.5rem"
-  md: "0.75rem"
-  lg: "1rem"
-  xl: "1.5rem"
-  2xl: "2.5rem"
-containers:
-  drawer: "20rem"
-  column: "24rem"
-  message: "28rem"
----
-
 # Design guide
 
-How Conexus looks, moves and speaks. It follows the
-[DESIGN.md format](https://github.com/google-labs-code/design.md). The front matter records the
-current visual reference; the web's brand tokens and shared pieces own implementation values, not
-an obligatory second hand-maintained table here. The format's `components` live in
-[the components list](../reference/components.md).
+How Conexus looks, moves and speaks. The [DESIGN.md](../../DESIGN.md) at the root, in the
+[DESIGN.md format](https://github.com/google-labs-code/design.md), owns the values (colors, type,
+radii, spacing, containers, shadows) and the pieces; this guide owns the rules and quotes a value
+only where the founder's word names it.
 
 Rules read as the opening of the [delivery guide](delivery.md) says. [Web](web.md) owns
 organization and styles. [Delivery L23](delivery.md) owns visible language.
 
-The design was accepted from the old product before a new study; the founder can reopen a screen's
-choices. This method change does not redesign the product.
+The founder can reopen a screen's choices.
 
 ## Overview
 
-**Grafite e Ipê.** Graphite neutrals, flat and separated by hairlines, keep the person's app the
-most colorful thing on screen. Ipê is the warm gold accent; prose is sans and facts are mono.
+**Pauta.** Graphite neutrals, flat and separated by hairlines, keep the person's app the most
+colorful thing on screen. Ipê is the warm gold accent; prose is sans and facts are mono. Founder,
+2026-11-01: "Aprovo".
 
 ## Colors
 
 - **V3.** Every color is a token; only the brand folder holds a raw value, shadows and overlays
   included. Outbound e-mail HTML is an exception: e-mail clients require inline color values [0017].
   Tokens let both themes change in one file. The Prévia's drawn phone frame is the color token
-  `phone-frame` (`dark-phone-frame` in the dark theme, where `#1d2125` would vanish into the stage)
-  rather than a raw value; founder, 2026-10-28, on proposal B, Janela, of the Prévia screen: "1. Sim".
+  `phone-frame` (`dark-phone-frame` in the dark theme, where the light value would vanish into the
+  stage) rather than a raw value; founder, 2026-10-28, on proposal B, Janela, of the Prévia screen: "1. Sim".
   A provider's logo sits on the color token `logo-plate`, a light plate in both themes like
   `phone-frame`, because a provider draws its symbol for a light ground (step 19, the Integrações
   screen). The logo of every connector is the provider's square symbol without the written name,
   and the kit refuses a wide one (`packages/connectors/src/kernel/logo.ts`); founder, 2026-10-29:
   "só a logo mesmo, igual eu te mandei" and "a logo do Mercado Livre é só a logo, sem escrita".
   [rule to write]
-- **V5.** Ipê **should** distinguish current activity and choice: focus, caret, selection, active
-  lens and working agent, not every resting action or heading. The send hover keeps its current
-  accent. Failure: making everything gold hides the difference between focus and decoration. The
-  one other hue is violet, `memory`: it colors only the Memória budget beside Ipê's Mensagens.
-  [review]
+- **V5.** Ipê **should** mark only the current place (the tick of the rail and of the list, the
+  active tab), the focus, the caret and the mark, not every resting action, hover or heading. Two
+  exceptions: the mark of the item the person chose (V57's toggle icon, the chosen Projeto's check)
+  and the busy composer's arc (V28). Founder, 2026-11-01: "Aprovo"; 2026-11-02, on the two
+  exceptions: "B". Failure: making everything gold hides the difference between focus and
+  decoration. The one other hue is violet, `memory`: it colors only the Memória budget beside Ipê's
+  Mensagens. [review]
 - **V8.** Text **should** remain readable in both themes, with 4.5:1 as its contrast reference.
   Failure: a pale subtitle disappears on the light background. Syntax lint does not measure
   rendered contrast. [review]
@@ -147,13 +48,15 @@ most colorful thing on screen. Ipê is the warm gold accent; prose is sans and f
 - **V11.** Mono **should** mark exact facts to copy or compare, not the main prose of a message.
   Failure: an internal error code becomes the only explanation, leaving no understandable next
   step. [review]
-- **V13.** Text **should** stay legible on narrow screens, retaining the reference minima of 12px
-  prose and 11px mono stamps/group labels; display titles adapt from 2.1rem to 1.6rem. Failure:
+- **V13.** Text **should** stay legible on narrow screens, retaining the reference minimum of 12px
+  for prose and for stamps and group labels; the display title adapts from 28/36 to 24/32 below
+  640px. Founder, 2026-11-01: "Aprovo". Failure:
   shrinking body copy to fit a list makes the reader zoom to understand it. [review]
 
 ## Layout
 
-- **V16.** Spacing comes from the `spacing` scale. [rule to write]
+- **V16.** Spacing comes from the `spacing` scale, and every height, line height, gap and inset is
+  a multiple of 4px. Founder, 2026-11-01: "Aprovo". [rule to write]
 - **V17.** Conexus's own web pieces **must not** use an inline `style` attribute, except in
   outbound e-mail HTML. [Biome `nursery.noInlineStyles`]
 
@@ -166,29 +69,40 @@ churn, not runtime style enforcement; do not extend this check to vendor-generat
   does not zoom the page into it, and the page stays zoomable. Founder, 2026-10-20: "é coisa
   básica". [`layout.test.ts`, `fields.layout.test.ts`, review]
 - **V56.** Narrow navigation **should** retain every destination and the account, with the approved
-  top-bar drawer ("Abrir navegação"), mark and current place. Failure: a frame overflows at 320px
+  top-bar drawer ("Abrir navegação"), mark and current place; the drawer holds the rail and the
+  list together. Founder, 2026-11-01: "Aprovo". Failure: a frame overflows at 320px
   and puts "Sair" outside the screen. A future layout need not copy the drawer's DOM to retain
   access. [review]
+- **V58.** Every list row **should** be 32px on a pointer and 44px on touch; lists side by side
+  share the height, so their rules align. Founder, 2026-11-01: "Aprovo". Failure: two lists with
+  34 and 40px rows drift apart across the page. [`home.layout.test.ts`, review]
+- **V59.** On Início and in a conversation, every block **should** take the center and width of the
+  composer (720px, 880px from 1600px wide); a secondary block is half of it less the gutter.
+  Founder, 2026-11-01: "Aprovo". Failure: a block with a free width breaks the one axis the eye
+  follows. [`home.layout.test.ts`, review]
 
 ## Elevation and depth
 
-- **V19.** Grafite e Ipê **should** use flat regions separated by hairlines, leaving the frame quiet
-  and the Preview as content. Resting cards do not float; hover/popover/menu elevation uses shared
-  tokens when useful. Failure: shadows on every panel look like overlapping windows competing
+- **V19.** Pauta **should** use two flat regions separated by a line: the frame (chrome) and the
+  white sheet, leaving the frame quiet and the Preview as content. Resting cards do not float;
+  only what floats has a shadow: the menu, the popover and the composer. Founder, 2026-11-01:
+  "Aprovo". Failure: shadows on every panel look like overlapping windows competing
   with the Preview. [review]
 
 ## Shapes
 
-- **V22.** Every radius comes from `rounded`: `control` for buttons and inputs, `object` for windows,
-  popovers and panels, `card` for Project cards, `composer` for the composer, `pill` for chips.
+- **V22.** Every radius comes from `rounded`: `control` (8) for buttons and inputs, `object` (12) for windows,
+  popovers and panels, `card` (12) for Project cards, `composer` (16) for the composer, `pill` for
+  chips. Founder, 2026-11-01: "Aprovo".
   Regions and panes take none. One more radius, 36 px, is for the Prévia's drawn phone frame only,
   as its own token, `rounded.phone`; founder, 2026-10-28: "1. Sim". [rule to write]
 
 ## Components
 
 - **V23.** Shared pieces **should** own appearance through brand tokens for color, radius and
-  typography, retaining the current ink/on-ink primary action, Bricolage headings, Hanken prose
-  and tabular mono facts. The piece owns its icon set, sizing and state styling. Tailwind named
+  typography, retaining the current ink/on-ink primary action, Hanken Grotesk for display and prose
+  and tabular mono facts; every figure that can change (ages, counts, versions, percentages) is set
+  in tabular figures. Founder, 2026-11-01: "Aprovo". The piece owns its icon set, sizing and state styling. Tailwind named
   widths avoid brand spacing names (`xs` to `2xl`): Tailwind 4 resolves spacing before containers,
   so `max-w-sm` becomes 0.5rem. Use a distinct container name; numeric, intrinsic and zero widths
   remain valid. Failure: a copied hex misses a theme change, or a spacing name makes a column 8px
@@ -203,8 +117,17 @@ churn, not runtime style enforcement; do not extend this check to vendor-generat
   actually removes the item. [review]
 - **V57.** The selected item of a toggle (the Prévia's Computador and Celular) has the gold
   `accent-text` icon in both themes; in the dark theme its background is neutral, not the filled
-  gold block (V5: the choice is shown, not shouted). Founder, 2026-10-28, on proposal B: "2.
+  gold block (the choice is shown, not shouted; one of V5's two exceptions). Founder, 2026-10-28, on proposal B: "2.
   Aprovado"; 2026-10-28, on the icon in the light theme, which was dark grey: "Dourado". [review]
+- **V60.** The composer's row **should** be one piece with one order on every screen: on the left
+  what the message carries ("+", the Projeto folder, the tools), on the right who answers and how
+  (model, memory, microphone, send); a place stays empty only when there is no fact to show, and
+  below 416px words leave, never controls. Founder, 2026-11-01, the order of the row. Failure: the
+  model sits left on one screen and right on another, and the person looks for it each time.
+  [`assistant.layout.test.ts`, review]
+- **V61.** The `eyebrow` **should** label a group or a fact (a day group, an age, a stamp), never
+  announce a title, and carries no case change. Founder, 2026-11-01: "Aprovo". Failure: a small
+  label above a heading reads as a second title and the heading loses its place. [review]
 
 ## Motion
 
@@ -244,8 +167,8 @@ The brand piece retains Encaixe, the mark's pieces separating and fitting while 
 
 ## Iconography
 
-- **V34.** Size follows the neighbour: 14px in toolbars, 16px inline, 18px in the rail.
-  [`layout.test.ts`, review]
+- **V34.** Size follows the neighbour: 14px in toolbars, 16px beside a label, 20px in the rail.
+  Founder, 2026-11-01: "Aprovo". [`layout.test.ts`, review]
 - **V35.** Status **should** have words, not only a color or icon, and decorative icons stay out of
   the accessible name. Failure: a green circle without a word is undecipherable to someone who
   cannot distinguish its color. The filled Stop remains a detail of its piece. [review]
