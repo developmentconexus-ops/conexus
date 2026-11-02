@@ -6,7 +6,7 @@ import type {
   PersonId,
 } from '@conexus/hub-api'
 import {
-  ObservationalMemoryChoice,
+  ObservationalMemoryModels,
   readObservationalMemoryModels,
   setObservationalMemoryModel,
 } from '@conexus/hub-api'
@@ -40,8 +40,8 @@ async function rowOf(tx: Parameters<typeof hasAccount>[0], companyId: CompanyId)
   return row === undefined
     ? { observer: 'auto' as const, reflector: 'auto' as const }
     : {
-        observer: ObservationalMemoryChoice.parse(row.observer),
-        reflector: ObservationalMemoryChoice.parse(row.reflector),
+        observer: ObservationalMemoryModels.shape.observer.parse(row.observer),
+        reflector: ObservationalMemoryModels.shape.reflector.parse(row.reflector),
       }
 }
 
@@ -88,7 +88,9 @@ async function readModels(deps: Deps, input: InCompany) {
 /** Admits the manager, checks the model like a conversation's change, and saves, in one transaction. */
 async function setModel(
   deps: Deps,
-  input: InCompany & { body: { role: ObservationalMemoryRole; model: ObservationalMemoryChoice } },
+  input: InCompany & {
+    body: { role: ObservationalMemoryRole; model: ObservationalMemoryModels['observer'] }
+  },
 ) {
   const { person, params, body } = input
   await deps.database.command(scopeOf(input), async (tx) => {
