@@ -502,3 +502,5 @@ Cartão da etapa 13.3 aprovado em 2026-11-01 (commit 4e04581c6878ace0512df2cb26f
 Cartão da etapa 13.3 aprovado em 2026-11-02 (commit f7ce6c22590c3574b73668aad28b04939b738b4e): "APROVO O MARCADRO DE PAUTA"
 
 Lido pelo firstmate como a aprovação do cartão com a linha `Trilho: desenho`, que faz da Pauta o trilho de desenho (L1, L5); o resto do cartão está como foi aprovado no commit 4e04581c, "Aprovo pode mesclar".
+
+Em 2026-11-02, na revisão da unidade U0 da 13.3 (a Pauta), à decisão sobre a regra V5 (o ipê marca "só" o lugar atual, o foco, o cursor e a marca, contra a V57, "Dourado", e a V28, o arco do compositor ocupado), com as opções A e B: "B". Opção B: a V5 mantém o "só" e nomeia duas exceções, a marca do item que a pessoa escolheu (o ícone do toggle da V57 e o check do Projeto escolhido) e o arco do compositor ocupado (V28). O critério 12 do cartão (pull request 538, congelado) ganha as duas exceções; a emenda vai no corpo da pull request da U0, para o fechamento. Palavra de meio de etapa, vai direto para este livro (L6).

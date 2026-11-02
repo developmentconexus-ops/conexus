@@ -7,12 +7,13 @@ what is allowed. Founder, 2026-10-19: "Aprovado tudo" on the structure study, ca
 
 ## What the repository holds
 
-- `DESIGN.md` at the root is a symbolic link to `docs/guides/design.md`, which already follows the
-  DESIGN.md format. Impeccable reads our guide through it; the guide has one owner.
+- `DESIGN.md` at the root holds the values and the pieces, in the DESIGN.md format; the design
+  guide holds the rules. Impeccable reads the root file; each fact has one owner.
 - `PRODUCT.md` at the root is short and cites the document that owns each section.
 - `.impeccable/config.json`: `buildPath` is `code`; the age check is off; `kicker-above-heading` is
-  ignored, because the guide has an `eyebrow` token. Its craft floor also calls a grey screen with
-  one accent the dull default: "Grafite e Ipê" ([design](../guides/design.md)) decides, so that
+  ignored for now: the `eyebrow` token of `DESIGN.md` exists, and the guide (V61) already forbids the
+  kicker the detector looks for, so turning it on is a future issue. Its craft floor also calls a grey screen with
+  one accent the dull default: "Pauta" ([design](../guides/design.md)) decides, so that
   advice yields.
 - The hooks are in `.claude/settings.json` of this repository only (`SessionStart`, `PostToolUse` on
   `Edit|Write`, `Stop`), never in a person's global settings. Each one does nothing when
@@ -30,7 +31,7 @@ Allowed:
 | `conexus-review` | `critique` and `audit`, as one more lens |
 
 Forbidden until the founder opens a visual phase: `document` and `extract` (they write
-`DESIGN.md`, which here would overwrite our guide); any path that redesigns and replaces the
+`DESIGN.md`, which here would overwrite the Pauta); any path that redesigns and replaces the
 visual world; `bolder`, `colorize`, `overdrive`, `delight`, `live` and `generate`.
 
 ## Rules
