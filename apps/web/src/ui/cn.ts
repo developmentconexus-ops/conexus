@@ -8,9 +8,19 @@ import { extendTailwindMerge } from 'tailwind-merge'
 const merge = extendTailwindMerge({
   extend: {
     theme: {
-      text: ['display', 'display-narrow', 'title', 'body', 'label', 'eyebrow', 'fact'],
+      text: [
+        'display',
+        'display-narrow',
+        'heading',
+        'title',
+        'reading',
+        'body',
+        'label',
+        'eyebrow',
+        'fact',
+      ],
       radius: ['control', 'object', 'card', 'composer', 'pill', 'phone'],
-      spacing: ['xs', 'sm', 'md', 'lg', 'xl', '2xl'],
+      spacing: ['xs', 'sm', 'md', 'lg', 'xl', '2xl', '3xl', '4xl', 'row'],
     },
   },
 })
