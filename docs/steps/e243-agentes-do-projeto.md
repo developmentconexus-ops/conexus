@@ -15,7 +15,8 @@ do agente sozinho e o testa; a página do agente se monta ao lado, com a estrutu
 agente do Mastra Studio que você mandou: instruções, modelo, memória, ligações, ferramentas e o que
 ele lê. Você muda o que quiser ali mesmo, conversa com o rascunho, toca **Publicar** e o agente passa
 a atender como versão 1. Mudou, publica a 2; não gostou, volta para a 1. Logo depois, na **24.3.1**,
-o agente lê os dados do app do Projeto e uma automação da 24.2 pode rodá-lo.
+o agente lê os dados do app do Projeto, uma automação da 24.2 pode rodá-lo e as ferramentas ganham a
+aba delas.
 
 **O roteiro de uso.** Padaria Sol: Ana (dona), Bia (administradora) e Bruno (membro). O Projeto
 "Vendas" recebeu a ligação "Matriz" do Sankhya e tem o app "Metas", com a meta de cada vendedor. No
@@ -59,8 +60,10 @@ computador e no celular.
   sendo o Builder dos apps).
 
 **Fica de fora, e onde entra.**
-- **Ferramentas em código** (24.4). Nesta etapa as ferramentas do agente são **recortes**: uma
-  leitura que o conector já tem, com valores fixos e uma descrição mais estreita. Onde roda o código
+- **Ferramentas em código** (24.4). Nesta etapa as ferramentas são **recortes**: uma
+  leitura que o conector já tem, com valores fixos e uma descrição mais estreita. Cada ferramenta tem
+  versões, e cada versão do agente guarda a versão de cada ferramenta que usa; as ferramentas moram na
+  biblioteca da empresa (a sua `T1`). Onde roda o código
   que o Construtor escrever **não está decidido aqui**: o cartão da 24.4 decide por um protótipo de
   um dia que compara um Worker do Workers for Platforms com um comando na máquina E2B da área de
   trabalho, como o Mastra Factory faz (a sua resposta B). A máquina na conversa do agente entra com
@@ -88,9 +91,25 @@ computador e no celular.
   outras esperam a etapa delas: as da 14.3, 17, 18, 19 e 20 não tocam agentes; a #541 espera o seu
   pedido; a #339 (o fim do Hub no meio de um turno) espera a 16.
 
-**As decisões suas nesta etapa.** Nenhuma nova. As do cartão anterior foram respondidas (`A1`, B, `C1`,
-`E1`, 3.A). O que os estudos deixaram como engenharia (a forma de conversar com o agente registrado,
-abaixo, e onde rodará o código, na 24.4) não é decisão sua.
+**As decisões suas nesta etapa.** Nenhuma nova. As do cartão anterior foram respondidas (`A1`, B,
+`C1`, `E1`, 3.A), e a da biblioteca de ferramentas também: **`T1`** (2026-11-02). O que os estudos
+deixaram como engenharia (a forma de conversar com o agente registrado, abaixo, e onde rodará o
+código, na 24.4) não é decisão sua.
+
+**A biblioteca de ferramentas (a sua `T1`).** As ferramentas são da empresa, não de um Projeto. Cada
+conector traz as leituras dele como ferramentas prontas, e o agente usa só as que precisa. A
+ferramenta que o Construtor faz entra na mesma biblioteca e serve a vários agentes. Cada ferramenta
+diz o que lê e o que faz (nesta etapa, só ler), e só entra num agente cujo Projeto recebeu aquela
+ligação. Cada versão publicada do agente guarda a versão de cada ferramenta, então mudar uma
+ferramenta nunca muda um agente publicado; o Construtor propõe a troca para a versão nova. Antes de
+fazer uma ferramenta, ele procura na biblioteca e nas automações do Projeto (os workflows que
+existem hoje). É o que as referências fazem: o Mastra registra cada ferramenta uma vez e o agente a
+pega pelo id (`M:packages/editor/src/namespaces/agent.ts:1329-1352`, relay); o Agent Builder pago do
+Mastra escolhe o menor conjunto de ferramentas que já existem
+(`M:packages/editor/src/ee/agent-builder-agent.ts:30-32`, relay, lido só pelo comportamento: nenhum
+código vem dele); o Composio e o Arcade dão ao agente ferramentas avulsas de um kit. Até a 24.3.1,
+que traz a aba **Ferramentas**, uma ferramenta só ganha versão nova pelo Construtor; no painel você
+escolhe e cria ferramentas.
 
 ### Como funciona por dentro
 
@@ -119,15 +138,16 @@ abaixo, e onde rodará o código, na 24.4) não é decisão sua.
 
 | Unidade | O que entrega | Pastas | Guia além do de código | Depende de |
 | --- | --- | --- | --- | --- |
-| U1 | O agente como dados: as tabelas `builder.agent`, `builder.agent_version` e `builder.agent_tool` (os recortes), as migrações, as permissões e a função das empresas com agentes; as rotas do rascunho, dos recortes, de publicar, das versões, de voltar e de apagar; a remoção com o Projeto, a pessoa e a empresa | `apps/server/src/builder/agents/`, `apps/server/migrations/`, `apps/server/database-grants.sql`, `apps/server/src/hub/identity/` (`admission.ts`), `apps/server/src/builder/conversation/` (`public.ts`), `packages/hub-api/src/`, `scripts/removals.json` | [data](../guides/data.md) | a 24.2 fechada |
+| U1 | O agente e as ferramentas como dados: as tabelas `builder.agent`, `builder.agent_version`, `builder.tool` e `builder.tool_version` (os recortes, com versões), `builder.agent_tool` e `builder.agent_version_tool` (a versão de cada ferramenta que o rascunho e cada versão usam), as migrações, as permissões e a função das empresas com agentes; as rotas do rascunho, das ferramentas, de publicar, das versões, de voltar e de apagar; a remoção com o Projeto, a pessoa e a empresa | `apps/server/src/builder/agents/`, `apps/server/src/builder/tools/`, `apps/server/migrations/`, `apps/server/database-grants.sql`, `apps/server/src/hub/identity/` (`admission.ts`), `apps/server/src/builder/conversation/` (`public.ts`), `packages/hub-api/src/`, `scripts/removals.json` | [data](../guides/data.md) | a 24.2 fechada |
 | U2 | O agente vivo: o registro (`addAgent` por agente publicado, ao ligar antes da agenda, ao publicar, ao voltar e ao apagar); o `new Agent` de uma versão, com os recortes; o controlador "agentes", a tabela `builder.agent_conversation` e a conversa com o publicado e com o rascunho; a porta das rotas com os dois controladores novos; o fim dos turnos na atualização e a remoção das conversas; o atraso do laço e o processador no `HUB_MEMORY` | `apps/server/src/builder/agents/`, `apps/server/migrations/`, `apps/server/database-grants.sql`, `apps/server/src/builder/conversation/` (`public.ts`, `mastra.ts`, `guard.ts`, `end.ts`), `apps/server/src/builder/model-accounts/` (`turn.ts`), `apps/server/src/platform/` (`memory.ts`), `apps/server/src/conversations-of.ts`, `packages/hub-api/src/` | [testing](../guides/testing.md) | U1 |
 | U3 (24.3.1) | Os dados do app: `app_data_read` por um login só de leitura do banco do app | `apps/server/src/platform/` (`company-postgres.ts`), `apps/server/src/hub/apps/`, `apps/server/src/hub/connectors/` (`public.ts`), `apps/server/src/builder/agents/`, `packages/hub-api/src/` (`app-login.ts`, `agents.ts`) | [security](../guides/security.md) | U2 |
-| U4 | O Construtor: o terceiro controlador, as instruções dele e as ferramentas que leem o Projeto, leem, criam, mudam e testam o rascunho; as conversas dele no Projeto, a remoção delas e o fim delas na atualização | `apps/server/src/builder/construtor/`, `apps/server/src/builder/conversation/` (`public.ts`, `mastra.ts`, `guard.ts`, `prompt/builder.md`), `apps/server/src/conversations-of.ts`, `packages/hub-api/src/` (`construtor.ts`) | [code](../guides/code.md) C75 | U2 |
+| U4 | O Construtor: o terceiro controlador, as instruções dele e as ferramentas que leem o Projeto, procuram e gravam ferramentas, leem, criam, mudam e testam o rascunho; as conversas dele no Projeto, a remoção delas e o fim delas na atualização | `apps/server/src/builder/construtor/`, `apps/server/src/builder/conversation/` (`public.ts`, `mastra.ts`, `guard.ts`, `prompt/builder.md`), `apps/server/src/conversations-of.ts`, `packages/hub-api/src/` (`construtor.ts`) | [code](../guides/code.md) C75 | U2 |
 | U5 | As telas: a entrada **Agentes** do Projeto, a conversa com o Construtor e o cartão do rascunho, a lista dos agentes, a página do agente com o painel editável, a conversa de teste, as versões, publicar, voltar e apagar | `apps/web/src/builder/agents/`, `apps/web/src/builder/conversation/`, `apps/web/src/hub/projects/` (`project-rail.tsx`), `apps/web/src/routes/_app/companies/$companyId/projects/`, `docs/reference/screens.md` | [web](../guides/web.md) | U2, U4 |
 | U6 (24.3.1) | A automação roda um agente: o alvo da automação ganha o agente publicado; o cartão da automação na conversa do agente; apagar o agente leva as automações dele | `apps/server/src/builder/automations/`, `apps/server/src/builder/agents/` (`agent.ts`), `packages/hub-api/src/` (`automations.ts`), `apps/web/src/builder/automations/` | [testing](../guides/testing.md) | U2 |
+| U7 (24.3.1) | A aba **Ferramentas** da área: a lista das ferramentas que o Projeto pode usar, as versões de cada uma, a versão nova pelo formulário, apagar com `TOOL_IN_USE`, e no painel do agente o aviso "Versão nova" com **Usar a versão n** | `apps/web/src/builder/tools/`, `apps/web/src/builder/agents/` (`config-panel.tsx`), `apps/web/src/routes/_app/companies/$companyId/projects/`, `docs/reference/screens.md` | [web](../guides/web.md) | U5 |
 
 Na 24.3, a U4 anda depois da U2, e a U5 espera a U4, porque o cartão do rascunho é o resultado das
-ferramentas do Construtor. Na 24.3.1, a U3 e a U6 andam em paralelo: mudam o mesmo arquivo do agente
+ferramentas do Construtor. Na 24.3.1, a U7 só toca a web, e a U3 e a U6 andam em paralelo: mudam o mesmo arquivo do agente
 (`builder/agents/agent.ts`, uma ferramenta cada) num ponto só, e a segunda a entrar refaz a fusão;
 `packages/hub-api/src/failures.ts` é o outro ponto de fusão.
 
@@ -138,15 +158,18 @@ ordem que o firstmate der entre esta etapa e a 13.3 (a Pauta).
 (https://github.com/developmentconexus-ops/conexus/pull/518: nada do Agent Builder, do editor nem
 dos agentes guardados do Mastra) e a `mastra-only-in-builder` (W7): os agentes moram em `builder/`.
 
-**Orçamento de código alterado.** U1: ~1.000. U2: ~1.000. U3: ~400. U4: ~700. U5: ~1.250. U6:
-~200. Testes, gerados e o OpenAPI ficam fora. Hipótese pelos vizinhos: a U1 da 24.2 (~850, rotas
+**Orçamento de código alterado.** U1: ~1.100 (as ferramentas com versões tomam o lugar dos recortes
+por agente: +~100, a tabela das versões, a lista e `TOOL_IN_USE`). U2: ~1.000. U3: ~400. U4: ~750
+(`tool_search` e `tool_save` no lugar das duas dos recortes). U5: ~1.150 (o painel escolhe e cria
+ferramentas; mudar e apagar uma vão para a U7). U6: ~200. U7: ~350 (uma lista, as versões e o
+aviso, sobre o formulário da U5). Testes, gerados e o OpenAPI ficam fora. Hipótese pelos vizinhos: a U1 da 24.2 (~850, rotas
 sobre um serviço), a U3 da 24.2 (~950, um cartão e duas páginas; a U5 tem a área, a página, o
-painel de seis seções, o formulário do recorte e as versões), a tabela da conversa da 24.1
+painel de seis seções, o formulário da ferramenta e as versões), a tabela da conversa da 24.1
 (`chosen.ts`, 102 linhas), o login do app da 9 e o controlador do Assistente (`assistant.ts`, 371
-linhas, só uma parte da U2). O total, ~4.550, passa do teto da regra L2, então a etapa se divide
-antes da construção: a **24.3** é a U1, a U2, a U4 e a U5 (~3.950), o que a Ana faz nos passos 1 a 4
-e 6 do roteiro; a **24.3.1**, logo depois e com este mesmo cartão, é a U3 e a U6 (~600), os dados do
-app e o passo 5. A 24.3.1 não pede página nova: a aprovação desta vale para as duas, e a sua
+linhas, só uma parte da U2). O total, ~4.950, passa do teto da regra L2, então a etapa se divide
+antes da construção: a **24.3** é a U1, a U2, a U4 e a U5 (~4.000), o que a Ana faz nos passos 1 a 4
+e 6 do roteiro; a **24.3.1**, logo depois e com este mesmo cartão, é a U3, a U6 e a U7 (~950), os
+dados do app, o passo 5 e a aba Ferramentas. A 24.3.1 não pede página nova: a aprovação desta vale para as duas, e a sua
 abertura só confere a base.
 
 ## Os critérios de aceite
@@ -154,26 +177,29 @@ abertura só confere a base.
 O aceite da 24.3: a Ana pede um agente ao Construtor, recebe ideias, vê o rascunho feito e testado
 por ele, muda o modelo e as instruções na página, conversa com o rascunho, publica a versão 1,
 publica a 2, volta para a 1 e conversa com o publicado (critérios 1, 5, 6, 9, 12, 13, 22, 24, 25, 26,
-27). O da 24.3.1: o agente lê os dados do app e roda numa automação (critérios 18, 30).
+27). O da 24.3.1: o agente lê os dados do app, roda numa automação e a Ana muda uma ferramenta pela aba
+dela (critérios 18, 30, 32).
 
 | # | Unidade | Critério, observável de fora, com a recusa | Teste que o prova | Nível |
 | --- | --- | --- | --- | --- |
-| 1 | U1 | `POST /api/companies/{c}/projects/{p}/agents` com nome, pela dona ou administradora, responde 201 com o agente em rascunho (`state: DRAFT`, `draft` com os padrões: instruções vazias, `model: null`, memória observacional ligada, nenhuma ligação, nenhum recorte, `web` e `appData` falsos, `revision: 1`); a mesma chave de tentativa com o mesmo corpo devolve o mesmo agente, também ao mesmo tempo; com outro corpo, `IDEMPOTENCY_CONFLICT` | `apps/server/src/builder/agents/routes.test.ts`, "criar" | must |
+| 1 | U1 | `POST /api/companies/{c}/projects/{p}/agents` com nome, pela dona ou administradora, responde 201 com o agente em rascunho (`state: DRAFT`, `draft` com os padrões: instruções vazias, `model: null`, memória observacional ligada, nenhuma ligação, nenhuma ferramenta, `web` e `appData` falsos, `revision: 1`); a mesma chave de tentativa com o mesmo corpo devolve o mesmo agente, também ao mesmo tempo; com outro corpo, `IDEMPOTENCY_CONFLICT` | `apps/server/src/builder/agents/routes.test.ts`, "criar" | must |
 | 2 | U1 | `PATCH …/agents/{id}/draft` com `revision` igual à da linha grava os campos mandados e devolve o rascunho com `revision + 1`; com `revision` velha, 409 `AGENT_DRAFT_STALE` e nada muda; uma ligação que o Projeto não oferece, um modelo que o seletor não lista, instruções acima de 8.000 caracteres: `REQUEST_MALFORMED` com o campo | `routes.test.ts`, "o rascunho" | must |
-| 3 | U1 | `POST …/agents/{id}/tools` cria um recorte do agente: uma ligação do rascunho, uma operação de leitura dessa ligação (`class: 'read'`), os valores fixos válidos pelo esquema da operação, os campos que o modelo preenche e a descrição; os campos fixos e os abertos não se repetem e cobrem juntos os obrigatórios da operação; uma operação de escrita ou destrutiva, uma ligação fora do rascunho, um valor fixo que o esquema recusa, um campo nos dois lados, um obrigatório de fora ou um `slug` repetido dão `AGENT_TOOL_REFUSED` com o motivo; `PATCH` e `DELETE` mudam o recorte e sobem o `revision` do rascunho | `routes.test.ts`, "os recortes" | must |
+| 3 | U1 | `POST /api/companies/{c}/projects/{p}/tools` grava uma ferramenta na versão 1: uma ligação que o Projeto recebeu, uma operação de leitura dessa ligação (`class: 'read'`), os valores fixos válidos pelo esquema da operação, os campos que o modelo preenche e a descrição; os campos fixos e os abertos não se repetem e cobrem juntos os obrigatórios da operação; uma operação de escrita ou destrutiva, uma ligação que o Projeto não recebeu, um valor fixo que o esquema recusa, um campo nos dois lados, um obrigatório de fora ou um `slug` repetido dão `TOOL_REFUSED` com o motivo; a mesma chave de tentativa com o mesmo corpo devolve a mesma ferramenta, com outro corpo `IDEMPOTENCY_CONFLICT`; a ferramenta e a versão 1 nascem numa transação só; `POST …/tools/{id}/versions`, com chave de tentativa, grava a versão `n+1` com outra descrição, outros valores fixos ou outros campos abertos (a ligação e a operação são da ferramenta e não mudam) e não muda as anteriores; `GET …/tools` lista as da biblioteca da empresa que o Projeto pode usar (a ligação recebida), com o efeito, a versão mais nova e os agentes que usam cada uma, e as leituras prontas das ligações dele que ainda não estão nela; uma ferramenta gravada pelo Projeto A aparece no Projeto B que recebeu a mesma ligação, e não no C, que não recebeu | `apps/server/src/builder/tools/routes.test.ts`, "gravar" e "versões" | must |
+| 3a | U1 | `PATCH …/agents/{id}/draft` com `tools` (ids de versões de ferramenta) troca as ferramentas do rascunho e sobe o `revision`; a versão de uma ferramenta que este Projeto não pode usar (de outra empresa, ou de uma ligação que o Projeto não recebeu) ou duas versões da mesma ferramenta dão `AGENT_TOOL_REFUSED`; `AgentDetail.tools` traz de cada uma a versão escolhida e a mais nova | `routes.test.ts`, "as ferramentas do rascunho" | must |
+| 3b | U1 | `DELETE …/tools/{id}` responde 204 com a ferramenta sem uso; usada por um rascunho ou por uma versão publicada de algum agente, 409 `TOOL_IN_USE` com os nomes dos agentes, e nada muda; uma ferramenta de outra empresa, ou da empresa mas de uma ligação que este Projeto não recebeu, dá `TOOL_NOT_FOUND` no `GET`, em `versions` e no `DELETE`, que passam todos por `usable(scope)` | `apps/server/src/builder/tools/routes.test.ts`, "apagar" | must |
 | 4 | U1 | Recusas de todas as rotas: o membro, `NOT_FOUND` (S10, a resposta "3.A"); um Projeto de outra empresa ou apagado, `NOT_FOUND`; um agente de outro Projeto, `AGENT_NOT_FOUND`; nome vazio ou acima de 80, `REQUEST_MALFORMED` | `routes.test.ts`, "as recusas" | must |
-| 5 | U1 | `POST …/agents/{id}/publish` com `revision` e `message` grava a versão `n+1` com uma cópia do rascunho e dos recortes e a torna ativa; publicar de novo o mesmo `revision` devolve a mesma versão; um rascunho sem instruções ou com uma ligação que o Projeto perdeu dá `AGENT_DRAFT_INVALID` com o campo; a versão gravada não muda quando o rascunho muda depois | `routes.test.ts`, "publicar" | must |
+| 5 | U1 | `POST …/agents/{id}/publish` com `revision` e `message` grava a versão `n+1` com uma cópia do rascunho e a versão de cada ferramenta dele, e a torna ativa; publicar de novo o mesmo `revision` devolve a mesma versão; um rascunho sem instruções ou com uma ligação que o Projeto perdeu dá `AGENT_DRAFT_INVALID` com o campo; a versão gravada não muda quando o rascunho ou uma ferramenta dele ganha versão nova depois | `routes.test.ts`, "publicar" | must |
 | 6 | U1 | `GET …/agents/{id}/versions` lista as versões (número, quem publicou, quando, mensagem, qual está ativa); `POST …/agents/{id}/versions/{n}/activate` torna a `n` ativa; uma versão que não existe dá `AGENT_VERSION_NOT_FOUND`; o rascunho não muda ao voltar | `routes.test.ts`, "as versões" | must |
-| 7 | U1 | `DELETE …/agents/{id}` responde 204: o agente, as versões e os recortes somem; as conversas com ele somem para todas as pessoas (a linha do Hub e o fio do Mastra), também uma aberta no mesmo instante, nas três ordens (a linha gravada antes da primeira varredura, entre ela e o `delete`, e depois): nenhum fio fica sem a linha; apagar de novo dá `AGENT_NOT_FOUND`; a remoção do Projeto e da empresa leva os agentes antes das conversas; a da pessoa deixa os agentes com `createdBy: null` e as versões com `publishedBy: null` | `apps/server/src/builder/agents/release.test.ts` (as conversas entram com a U2: o teste das três ordens nasce na U2) | must |
-| 8 | U1 | As tabelas saem com o Projeto e a empresa, a política da empresa recusa ler o agente de outra empresa, `builder.companies_with_agents()` só é executável por `hub_runtime` e devolve só os ids das empresas com um agente publicado, e o catálogo das permissões fecha (`database-grants.sql`) | `apps/server/src/platform/catalog.test.ts`; `release.test.ts`, "as chaves" | must |
+| 7 | U1 | `DELETE …/agents/{id}` responde 204: o agente, as versões e as escolhas de ferramentas dele somem, e as ferramentas ficam; as conversas com ele somem para todas as pessoas (a linha do Hub e o fio do Mastra), também uma aberta no mesmo instante, nas três ordens (a linha gravada antes da primeira varredura, entre ela e o `delete`, e depois): nenhum fio fica sem a linha; apagar de novo dá `AGENT_NOT_FOUND`; a remoção do Projeto e da empresa leva os agentes antes das conversas; a da pessoa deixa os agentes com `createdBy: null`, as versões com `publishedBy: null` e as ferramentas e as versões delas com o autor vazio | `apps/server/src/builder/agents/release.test.ts` (as conversas entram com a U2: o teste das três ordens nasce na U2) | must |
+| 8 | U1 | As tabelas dos agentes saem com o Projeto e a empresa, as das ferramentas só com a empresa (`releaseOf` apaga os agentes da empresa, `agents.release`, antes da linha da empresa, então nenhuma escolha prende uma ferramenta), a política da empresa recusa ler o agente de outra empresa, `builder.companies_with_agents()` só é executável por `hub_runtime` e devolve só os ids das empresas com um agente publicado, e o catálogo das permissões fecha (`database-grants.sql`) | `apps/server/src/platform/catalog.test.ts`; `release.test.ts`, "as chaves" | must |
 | 9 | U2 | Numa conversa com o publicado, o turno depois de publicar a versão 2 recebe as instruções, as ferramentas e o modelo da 2 (o modelo dublê lê o texto do sistema e o modelo pedido); o turno depois de voltar para a 1, os da 1; depois de apagar, a conversa some (critério 7); um id que colidisse com um agente de código (`builder`, `assistant`, `agents`, `construtor`) não existe, porque a chave é `agent-<uuid>` | `apps/server/src/builder/agents/registry.test.ts`, "publicar troca" | must |
 | 9a | U2 | O agente registrado roda sem controlador: `generate` com o dono no `requestContext` chama o modelo da versão (ou o primeiro da pessoa, com `model: null`) pela conta de modelo da pessoa, contado na fila dela; sem conta, `MODEL_NO_ACCOUNT` | `registry.test.ts`, "roda sozinho" | must |
 | 9b | U2 | Um agente que falta no registro nunca imprime as chaves dos outros: o registro procura pela nossa lista (`listAgents()`), nunca pelo erro de `getAgent` ou `getAgentById`, que lista todas as chaves (`NM:mastra-Da0Czfte.js:1566-1580`); a linha do processo traz só o id pedido | `registry.test.ts`, "sem as chaves dos outros" (lê o registro do processo do teste) | must |
 | 10 | U2 | Ao ligar o Hub, todo agente publicado de toda empresa é registrado antes de `startWorkers`: a linha `AGENTS_HYDRATED` (quantos) sai antes de `MASTRA_WORKERS_STARTED`, que `start` passa a imprimir depois de `startWorkers`, e a primeira conversa com um agente depois de ligar não imprime `AGENT_REGISTERED` com `lazy: true`. Nenhuma linha da agenda aponta para um agente nesta etapa (a U6 passa pelo workflow da 24.2); a ordem serve à 24.6 e à 24.7 | `registry.test.ts`, "ao ligar" (o Hub de teste, reiniciado, e o registro do processo) | must |
 | 11 | U2 | O registro falhar depois de gravar a versão não perde a versão: o próximo turno que pede o agente o registra pela linha (`AGENT_REGISTERED` com `lazy: true`) | `registry.test.ts`, "o registro atrasado" | must |
 | 12 | U2 | `POST …/agents/{id}/conversations` abre uma conversa do controlador "agentes" com o agente publicado; `{ draft: true }` abre a conversa de teste com o rascunho; a conversa nasce com o modelo da versão (ou o da pessoa, com `model: null`), e um modelo sem conta da pessoa dá `MODEL_NO_ACCOUNT`; com o modelo fixado na versão, a caixa não oferece trocar o modelo; um agente sem versão publicada e sem `draft` dá `AGENT_NOT_PUBLISHED` | `apps/server/src/builder/agents/conversation.test.ts`, "abrir" | must |
-| 13 | U2 | Num turno da conversa com o publicado, o modelo recebe as instruções do Conexus, depois as da versão ativa, e só as ferramentas da versão: cada recorte (`tool_<slug>`), `connector_read` e `connector_notes` sobre as ligações da versão que o Projeto ainda oferece, `web_search` e `web_fetch` só com `web`, e mais tarde `app_data_read` com `appData` (U3) e `propose_automation` (U6); nunca `propose_app`, `conexus_overview`, uma ferramenta da máquina ou uma que grava; na conversa de teste, as do rascunho e o modelo do rascunho, relidos a cada turno, então uma mudança no painel vale no turno seguinte | `conversation.test.ts`, "as ferramentas" (o modelo dublê da 12 lê a lista e o texto do sistema da chamada) | must |
-| 14 | U2 | Um recorte chama a operação pela porta da empresa com os valores fixos por cima do que o modelo mandou (o modelo não troca um valor fixo), contado nas 50 chamadas do turno; uma ligação que o Projeto perdeu responde `NOT_GRANTED` | `conversation.test.ts`, "o recorte" (o dublê do Sankhya da 24.1 grava a entrada que recebeu) | must |
+| 13 | U2 | Num turno da conversa com o publicado, o modelo recebe as instruções do Conexus, depois as da versão ativa, e só as ferramentas da versão: cada ferramenta na versão escolhida (`tool_<slug>`), `connector_read` e `connector_notes` sobre as ligações da versão que o Projeto ainda oferece, `web_search` e `web_fetch` só com `web`, e mais tarde `app_data_read` com `appData` (U3) e `propose_automation` (U6); nunca `propose_app`, `conexus_overview`, uma ferramenta da máquina ou uma que grava; na conversa de teste, as do rascunho e o modelo do rascunho, relidos a cada turno, então uma mudança no painel vale no turno seguinte | `conversation.test.ts`, "as ferramentas" (o modelo dublê da 12 lê a lista e o texto do sistema da chamada) | must |
+| 14 | U2 | Uma ferramenta chama a operação pela porta da empresa com os valores fixos por cima do que o modelo mandou (o modelo não troca um valor fixo), contado nas 50 chamadas do turno; uma ligação que o Projeto perdeu responde `NOT_GRANTED` | `conversation.test.ts`, "o recorte" (o dublê do Sankhya da 24.1 grava a entrada que recebeu); uma versão nova da ferramenta não muda o que a versão publicada do agente chama | must |
 | 15 | U2 | Com a memória observacional desligada na versão, o turno não chama o observador e lembra as últimas 10 mensagens (o padrão do Mastra); ligada, como a 24.1 | `conversation.test.ts`, "a memória" | must |
 | 16 | U2 | As seis rotas da porta servem os controladores `agents` e `construtor` com o dono e a ação `manageAgents` conferidos a cada pedido, e continuam seis (`FIXED_LIST`); uma conversa de agente ou do Construtor de outra pessoa dá `CONVERSATION_NOT_FOUND`; uma administradora rebaixada a membro recebe `CONVERSATION_NOT_FOUND` no pedido seguinte | `apps/server/src/builder/conversation/guard.test.ts`, "os controladores novos" | must |
 | 16a | U2 | No `settle` da atualização, um turno de agente em andamento termina antes do fim, como os do Builder e do Assistente, e uma conversa nova recebe `HUB_UPDATING`; a remoção da pessoa, do Projeto e da empresa leva as conversas de agente dela | `apps/server/src/builder/agents/conversation.test.ts`, "a atualização" e "a remoção" | must |
@@ -182,9 +208,9 @@ publica a 2, volta para a 1 e conversa com o publicado (critérios 1, 5, 6, 9, 1
 | 19 | U3 | `app_data_read` com `INSERT`, `UPDATE`, `DELETE`, `CREATE`, `SET ROLE` ou dois comandos juntos é recusado pelo banco, nunca por um filtro de texto nosso: `APP_DATA_REFUSED`, e a tabela não muda; depois de um `SET default_transaction_read_only = off`, de um `set_config(...)` ou de um `SET TRANSACTION READ WRITE` sozinhos, um `DELETE` na chamada seguinte continua recusado; uma tabela fora do esquema do app e o livro das migrações também | `app-data.test.ts`, "não grava" | must |
 | 20 | U3 | O login de leitura nasce na primeira chamada de um Projeto de antes da U3 e na criação do app de um novo; repetir não falha; a consulta passa do tempo do app (`APP_CALL_LIMITS`) e volta `APP_DATA_TIMEOUT`; sem app no Projeto, a ferramenta não é oferecida; o banco da empresa fora dá `APP_DATA_UNAVAILABLE` sem derrubar o turno | `app-data.test.ts`, "o login", "o tempo", "sem app" | must |
 | 21 | U4 | `POST /api/companies/{c}/projects/{p}/construtor/conversations` abre uma conversa do Construtor da pessoa naquele Projeto; `GET` lista as dela, só daquele Projeto; o membro, `NOT_FOUND`; sem conta de modelo, `MODEL_NO_ACCOUNT`; a remoção da pessoa, do Projeto e da empresa leva as conversas do Construtor, e o `settle` espera o turno dele | `apps/server/src/builder/construtor/routes.test.ts` | must |
-| 22 | U4 | Num turno do Construtor, o modelo recebe as instruções do Construtor (ler o Projeto, propor ideias antes de construir, criar e testar o rascunho sozinho, nunca publicar) e só as ferramentas `project_read`, `connector_read`, `connector_notes` (sobre as ligações que o Projeto recebeu), `agent_read`, `agent_draft`, `agent_set`, `agent_tool_save`, `agent_tool_delete`, `agent_test`, `web_search` e `web_fetch`; nenhuma ferramenta publica nem grava num sistema | `apps/server/src/builder/construtor/construtor.test.ts`, "as ferramentas" | must |
+| 22 | U4 | Num turno do Construtor, o modelo recebe as instruções do Construtor (ler o Projeto, propor ideias antes de construir, criar e testar o rascunho sozinho, nunca publicar) e só as ferramentas `project_read`, `connector_read`, `connector_notes` (sobre as ligações que o Projeto recebeu), `tool_search`, `tool_save`, `agent_read`, `agent_draft`, `agent_set`, `agent_test`, `web_search` e `web_fetch`; nenhuma ferramenta publica nem grava num sistema | `apps/server/src/builder/construtor/construtor.test.ts`, "as ferramentas" | must |
 | 23 | U4 | `project_read` devolve o nome do Projeto, as ligações recebidas com as leituras de cada uma, se há app e as tabelas dele (nome e colunas, nunca uma linha), e os agentes do Projeto com o estado | `construtor.test.ts`, "ler o Projeto" | must |
-| 24 | U4 | `agent_draft`, `agent_set`, `agent_tool_save` e `agent_tool_delete` gravam pelo mesmo serviço da U1 (as mesmas recusas, como resultado ao modelo, nunca uma exceção) e devolvem o rascunho gravado com `revision`; um passo repetido de `agent_draft` acha o mesmo agente; depois que a pessoa muda o painel, `agent_set` com o `revision` velho volta `AGENT_DRAFT_STALE` com o rascunho atual, e o Construtor grava de novo sobre ele (`agent_read` também o lê) | `construtor.test.ts`, "o rascunho pelo Construtor" | must |
+| 24 | U4 | `tool_search` acha pelo `slug` e pela descrição as ferramentas da biblioteca que o Projeto pode usar e as prontas, com a versão mais nova e quem as usa, e as automações do Projeto (nome e pedido); `agent_read` diz de cada ferramenta do rascunho se há versão nova. `tool_save`, `agent_draft` e `agent_set` gravam pelo mesmo serviço da U1 (as mesmas recusas, como resultado ao modelo, nunca uma exceção) e devolvem o rascunho gravado com `revision`; um passo repetido de `agent_draft` acha o mesmo agente; depois que a pessoa muda o painel, `agent_set` com o `revision` velho volta `AGENT_DRAFT_STALE` com o rascunho atual, e o Construtor grava de novo sobre ele (`agent_read` também o lê) | `construtor.test.ts`, "o rascunho pelo Construtor" | must |
 | 25 | U4 | `agent_test` roda uma pergunta contra o `Agent` do rascunho (o mesmo `agentOf` do critério 9a), sem controlador e sem conversa guardada, pela conta de modelo da pessoa (contado na fila dela), e devolve a resposta e as ferramentas chamadas; um rascunho inválido devolve `AGENT_DRAFT_INVALID` ao modelo | `construtor.test.ts`, "testar" | must |
 | 26 | U5 | A entrada **Agentes** do Projeto abre a área: a conversa com o Construtor (e as anteriores) e a lista dos agentes com o estado (**Rascunho**, **Versão n · publicada**, **Rascunho com mudanças**); o cartão do rascunho na conversa mostra nome, o que faz, o que lê e o estado, com **Abrir** e **Publicar** | `apps/web/src/builder/agents/area.test.tsx` | must |
 | 27 | U5 | A página do agente mostra as conversas da pessoa com ele, a conversa e o painel com as seções (Instruções, Modelo, Memória, Ligações, Ferramentas, Lê); cada seção grava pelo `PATCH` com o `revision`, numa fila por agente (duas gravações seguidas da mesma pessoa nunca se recusam uma à outra) e, no `AGENT_DRAFT_STALE` de outra pessoa ou do Construtor, mostra "Outra pessoa ou o Construtor mudou este rascunho. Recarregue."; **Testar rascunho** abre a conversa de teste; **Publicar** pede a mensagem e mostra a versão; **Versões** lista e volta | `apps/web/src/builder/agents/agent-page.test.tsx` | must |
@@ -192,6 +218,7 @@ publica a 2, volta para a 1 e conversa com o publicado (critérios 1, 5, 6, 9, 1
 | 29 | U5 | As telas novas a 1366 e a 390 px, nos dois temas, sem rolagem lateral (W34 e o QA) | o QA da etapa (testing T25) | must |
 | 30 | U6 | Numa conversa com o agente publicado, `propose_automation` sai com `agentId` posto pela ferramenta, nunca pelo modelo; o cartão mostra **Roda: <nome>**; a criação grava o alvo, e `AutomationSummary.agent` o devolve; com o tique curto, a execução abre **uma** conversa do agente do dono, marcada "Automação", com a versão ativa naquele instante, e termina `DONE`; uma linha da 24.2 (a versão 1 do `inputData`) roda o Assistente como antes | `apps/server/src/builder/automations/run.test.ts`, "o agente" e "a linha antiga"; `routes.test.ts`, "o alvo agente" | must |
 | 31 | U6 | `POST …/automations` com `agentId` de outro Projeto, de um agente sem versão publicada ou apagado dá `AGENT_NOT_FOUND`; um disparo que chegar a um agente apagado no meio termina `SKIPPED` com `AGENT_GONE`, sem conversa; apagar o agente apaga as automações dele antes das conversas | `run.test.ts`, "o agente apagado"; `apps/server/src/builder/agents/release.test.ts`, "as automações" | must |
+| 32 | U7 | A aba **Ferramentas** da área lista as ferramentas que o Projeto pode usar, com o que cada uma lê, a versão e os agentes que a usam; **Nova versão** abre o formulário com a versão de agora e grava a `n+1`; **Apagar** de uma usada mostra "Usada por <agentes>." e não apaga; no painel do agente, uma ferramenta com versão nova mostra "Versão n disponível" e **Usar a versão n**, que grava o rascunho | `apps/web/src/builder/tools/tools-tab.test.tsx`; `apps/web/src/builder/agents/agent-page.test.tsx`, "versão nova" | must |
 
 ## A matriz de estados
 
@@ -201,7 +228,8 @@ publica a 2, volta para a 1 e conversa com o publicado (critérios 1, 5, 6, 9, 1
 | A conversa com o Construtor | a caixa com "Peça ao Construtor…" e a frase da primeira vez da área | — | como a da 24.1 | como a da 24.1; `MODEL_NO_ACCOUNT`: a frase da 24.1 com o caminho das contas | a conversa de outra pessoa ou apagada: a página de não encontrado (`CONVERSATION_NOT_FOUND`) | o membro: não encontrado | `HUB_UPDATING`: a frase da 24.1 |
 | O cartão do rascunho (na conversa do Construtor) | o cartão com **Rascunho**, **Abrir** e **Publicar** | — | **Publicar** ocupado | a frase do código; `AGENT_DRAFT_INVALID`: "Falta <campo> para publicar." | o agente apagado: "Este agente foi apagado." sem botões | — | `AGENT_DRAFT_STALE` (o cartão manda o `revision` que mostrou): "O rascunho mudou. Abra o agente para ver." |
 | A página do agente | "Ainda não há conversas com este agente." com **Nova conversa** (publicado) e **Testar rascunho** | o mesmo | a página em esqueleto | a frase do código com Tentar de novo | `AGENT_NOT_FOUND`: a página de não encontrado | o membro: não encontrado | `AGENT_DRAFT_STALE`: a frase de recarregar; uma ligação que o Projeto não oferece mais: "O Projeto não oferece mais" ao lado dela, e **Publicar** recusado com o campo |
-| Uma seção do painel | os valores do rascunho, cada um editável | ferramentas: "Nenhuma ferramenta. Peça ao Construtor ou crie aqui." | a seção ocupada ao gravar | `AGENT_TOOL_REFUSED`: o motivo ao lado do campo | — | — | `MODEL_NO_ACCOUNT` ao abrir a conversa: a frase da 24.1 com o caminho das contas |
+| Uma seção do painel | os valores do rascunho, cada um editável; ferramentas: as escolhidas, **Escolher** (a lista das que o Projeto pode usar) e **Criar** (o formulário) | ferramentas: "Nenhuma ferramenta. Peça ao Construtor, escolha ou crie aqui." | a seção ocupada ao gravar | `TOOL_REFUSED` e `AGENT_TOOL_REFUSED`: o motivo ao lado do campo | — | — | `MODEL_NO_ACCOUNT` ao abrir a conversa: a frase da 24.1 com o caminho das contas |
+| A aba **Ferramentas** (U7) | "Nenhuma ferramenta ainda. O Construtor faz as primeiras quando monta um agente." | o mesmo | a lista em esqueleto | a frase do código com Tentar de novo | `TOOL_NOT_FOUND`: a lista recarrega | o membro: não encontrado | `TOOL_IN_USE`: "Usada por <agentes>." |
 | **Versões** | "Ainda não publicado." | o mesmo | a lista em esqueleto | a frase do código | `AGENT_VERSION_NOT_FOUND`: a lista recarrega | — | — |
 | A conversa com o agente (publicada ou de teste) | a caixa com "Pergunte a <nome>…"; a de teste com a faixa "Conversa de teste com o rascunho" | — | como a da 24.1 | como a da 24.1; depois do agente apagado o fio some, e mandar dá `CONVERSATION_NOT_FOUND` da porta | o agente apagado: a página de não encontrado | como a da 24.1 | sem versão publicada, **Nova conversa** não aparece (`AGENT_NOT_PUBLISHED` só por chamada direta) |
 | O cartão da automação na conversa do agente | o cartão da 24.2 com **Roda: <nome>** | — | como na 24.2 | `AGENT_NOT_FOUND`: "Este agente foi apagado." | como na 24.2 | — | como na 24.2 |
@@ -248,7 +276,9 @@ por duas (**Conversas** e **Configuração**); uma conversa aberta ocupa a tela,
 | --- | --- | --- |
 | A linha `builder.agent` (o rascunho, `revision`, `active_version`) | U1 (as rotas); U4 (as ferramentas do Construtor, pelo serviço da U1) | U1, U2 (o registro, a conversa de teste), U4 (`project_read`), U5, U6 |
 | A linha `builder.agent_version` (`config` congelada) | U1 (publicar) | U2 (`agentOf`), U1 (versões), U6 |
-| A linha `builder.agent_tool` (o recorte do rascunho) | U1; U4 (pelo serviço) | U1 (a cópia ao publicar), U2 (a conversa de teste), U5 |
+| As linhas `builder.tool` e `builder.tool_version` (a ferramenta da biblioteca da empresa e as suas versões imutáveis) | U1; U4 (`tool_save`, pelo serviço) | U1 (conferir a escolha, `TOOL_IN_USE`), U2 (`agentOf`), U4 (`tool_search`), U5, U7 |
+| As linhas `builder.agent_tool` (as versões escolhidas pelo rascunho) e `builder.agent_version_tool` (as presas a cada versão publicada) | U1 (o rascunho; publicar copia uma para a outra); U4 (`agent_set`, pelo serviço) | U1 (`TOOL_IN_USE`), U2 (`agentOf`), U5, U7 |
+| `ToolTarget`, `ToolVersionConfig`, `ToolSummary`, `ToolDetail`, `ReadyTool` | U1 | U2 (`agentOf`), U4, U5, U7 |
 | `AgentConfig` (o rascunho e cada versão) | U1 | U2, U3 (`appData`), U5 |
 | `AgentSummary`, `AgentDetail`, `AgentVersionSummary` | U1 | U5; U4 (`ConstrutorResult`) |
 | `agentKey(id)` (a chave e o id no Mastra) | U2 | U2 (o registro, o resolvedor) |
@@ -268,16 +298,19 @@ por duas (**Conversas** e **Configuração**); uma conversa aberta ocupa a tela,
 | Gravação ou comando, da etapa ou da biblioteca | Duas vezes ao mesmo tempo | Recusada no meio, depois de uma instrução ou de uma chamada | Uma dependência fora (o banco, ou um terceiro) | O que o processo imprime | Critérios |
 | --- | --- | --- | --- | --- | --- |
 | Criar o agente (`insert` com o id derivado da empresa, da pessoa e da chave de tentativa, `on conflict (id) do nothing`, e reler) | a mesma chave: uma linha; o `body_hash` decide entre o mesmo agente e `IDEMPOTENCY_CONFLICT` | a conferência (papel, Projeto) antes: nada gravado | banco do Hub fora: `DATABASE_UNAVAILABLE` | `AGENT_CREATED` | 1, 4, 24 |
-| Mudar o rascunho ou um recorte (numa transação: primeiro `update builder.agent set …, revision = revision + 1 where id = $1 and revision = $2`, depois, para um recorte, a gravação em `builder.agent_tool`, com a conferência das ligações, da operação e do modelo) | dois com o mesmo `revision`: um grava, o outro acha zero linhas e responde `AGENT_DRAFT_STALE` | uma transação só | `DATABASE_UNAVAILABLE`, nada muda | `AGENT_DRAFT_SAVED` (agente, `revision`, por quem: pessoa ou Construtor) | 2, 3, 24 |
-| Publicar (numa transação: `select … from builder.agent where id = $1 for update`, que espera a mudança de um recorte em andamento, porque toda mudança grava a linha do agente primeiro; conferir o `revision`, ler os recortes, conferir, `insert` da versão `n+1` com `on conflict (agent_id, source_revision) do nothing` e reler, `update agent set active_version`) e depois registrar (U2) | duas do mesmo `revision`: uma versão; de `revision` diferentes: duas, a última ativa | o registro falhar depois do `commit`: a versão fica; o resolvedor registra no próximo turno | banco fora: nada publicado; o registro não é chamado | `AGENT_PUBLISHED` (agente, versão); `AGENT_REGISTER_FAILED` com o código | 5, 9, 11 |
+| Mudar o rascunho (numa transação: primeiro `update builder.agent set …, revision = revision + 1 where id = $1 and revision = $2`, depois, com `tools`, trocar as linhas de `builder.agent_tool`, com a conferência das ligações, das ferramentas e do modelo) | dois com o mesmo `revision`: um grava, o outro acha zero linhas e responde `AGENT_DRAFT_STALE` | uma transação só | `DATABASE_UNAVAILABLE`, nada muda | `AGENT_DRAFT_SAVED` (agente, `revision`, por quem: pessoa ou Construtor) | 2, 3a, 24 |
+| Gravar uma ferramenta (numa transação: `insert` com o id derivado da empresa, da pessoa e da chave de tentativa, `on conflict (id) do nothing`, reler, e o `insert` da versão 1) ou uma versão nova (numa transação: o id da versão derivado da ferramenta, da pessoa e da chave de tentativa, que acha a mesma versão ao repetir; senão `update builder.tool set current_version = current_version + 1 where id = $1 returning current_version`, depois o `insert` da versão) | a mesma chave: uma ferramenta ou uma versão, e o `body_hash` decide entre a mesma e `IDEMPOTENCY_CONFLICT`; duas versões ao mesmo tempo: a trava da linha as enfileira, `n+1` e `n+2`; o mesmo `slug` no mesmo lugar: a chave única recusa (`23505` → `TOOL_REFUSED`, `slug`) | uma transação só | `DATABASE_UNAVAILABLE`, nada muda | `TOOL_SAVED` (ferramenta, versão, por quem) | 3, 24 |
+| Gravar uma ferramenta pronta, ao escolhê-la (o mesmo `insert` da ferramenta e da versão 1, com `bound: {}` e todos os campos em `open`, mas o id derivado só da empresa, da ligação e da operação, nunca da pessoa, e o `slug` pela regra de `readySlug`) | duas pessoas ao mesmo tempo, ou a pessoa e o Construtor: uma linha, e as duas releem a mesma; a mesma operação de duas ligações (Matriz e Filial): dois `slug`, pelo id da ligação | o `slug` já usado por uma ferramenta feita à mão: `23505` → `TOOL_REFUSED` com `slug`, e a pronta não entra | `DATABASE_UNAVAILABLE` | `TOOL_SAVED` (`ready: true`) | 3, 24 |
+| Apagar uma ferramenta (`delete from builder.tool where id = $1`, depois de `usable(scope)`, que leva as versões por cascata; as escolhas apontam para a versão com `on delete no action`, então uma usada recusa com `23503`) | duas: uma apaga, a outra acha zero linhas e responde `TOOL_NOT_FOUND` | uma transação; `23503` → `TOOL_IN_USE` com os agentes, relidos depois | `DATABASE_UNAVAILABLE` | `TOOL_DELETED` | 3b |
+| Publicar (numa transação: `select … from builder.agent where id = $1 for update`, que espera uma mudança do rascunho em andamento, porque toda mudança grava a linha do agente primeiro; conferir o `revision`, ler as escolhas, conferir, `insert` da versão `n+1` com `on conflict (agent_id, source_revision) do nothing` e reler, a cópia de `builder.agent_tool` para `builder.agent_version_tool`, `update agent set active_version`) e depois registrar (U2) | duas do mesmo `revision`: uma versão; de `revision` diferentes: duas, a última ativa | o registro falhar depois do `commit`: a versão fica; o resolvedor registra no próximo turno | banco fora: nada publicado; o registro não é chamado | `AGENT_PUBLISHED` (agente, versão); `AGENT_REGISTER_FAILED` com o código | 5, 9, 11 |
 | Voltar a uma versão (`update agent set active_version` e registrar) | duas: a última vence, e o registro relê a linha antes de trocar | como publicar | como publicar | `AGENT_ACTIVATED` | 6, 9 |
 | `mastra.addAgent` e `removeAgent` (o registro, só em memória; a procura por `listAgents()`, nunca pelo erro de `getAgent`, que lista as chaves de todas as empresas) | `replace` em fila por agente, num processo só (C63) | `removeAgent` antes de `addAgent`, porque `addAgent` ignora a chave repetida em silêncio (`NM:mastra-Da0Czfte.js:1873`); um run em andamento segue com o `Agent` antigo (`removeAgent` não o para, `:2142-2158`) | — | `AGENT_REGISTERED` (agente, versão, `lazy`); nunca a lista das chaves | 9, 9b, 11 |
 | A carga ao ligar (`builder.companies_with_agents()`, depois as versões ativas por empresa, e `addAgent` de cada) antes de `startWorkers` | uma vez por processo | um agente que falha ao montar fica no log e não para os outros; o Hub liga | banco fora ao ligar: o Hub não liga, como `prepare` (`main.ts:214`) | `AGENTS_HYDRATED` (quantos, ms); `AGENT_REGISTER_FAILED` | 10 |
 | Abrir a conversa com o agente (a linha `builder.agent_conversation`, depois `createSession` com as marcas e `model.switch`, como a 24.1) | a mesma chave acha a mesma conversa | a linha antes do fio: um corte deixa a linha, e a repetição cria o fio | o agente apagado entre a leitura e a gravação: a chave estrangeira recusa (`23503` → `AGENT_NOT_FOUND`); sem conta: `MODEL_NO_ACCOUNT` antes de gravar | da 24.1 | 12 |
 | O turno com o agente (a configuração do registrado ou do rascunho, a cada pedido) | o turno da 24.1 | o agente apagado no meio: a varredura chama `deleteSession`, que aborta o run | banco fora ao ler o rascunho: o turno falha `DATABASE_UNAVAILABLE` | da 24.1 | 13, 14, 15 |
-| Apagar o agente, sem trava atravessando chamada de fora (D22): (1) as automações dele (U6) e os fios das conversas dele, de todas as pessoas, pela marca `{ companyId, conexusAgent }`; (2) numa transação curta, o `delete` da linha, que leva versões, recortes e `agent_conversation` por cascata; (3) `removeAgent`; (4) a varredura de (1) de novo | a abertura, depois do `createSession`, relê a sua linha; ausente, apaga o próprio fio e responde `AGENT_NOT_FOUND`; a segunda remoção acha a linha apagada, varre e responde `AGENT_NOT_FOUND` | um corte entre os passos: a linha sai só em (2), e a próxima remoção varre de novo | banco do Mastra fora em (1): para antes da linha, nada perdido | `AGENT_DELETED` (quantas conversas e automações) | 7, 31 |
-| A remoção da pessoa (`created_by = null` nos agentes, `published_by = null` nas versões; as conversas dela pela marca da pessoa, como a 24.1) | idempotente | uma transação | como a da 24.1 | nada | 7 |
-| A remoção do Projeto e da empresa (as automações, os agentes, depois as conversas; `removeAgent` de cada) | não falha de novo | a ordem da 24.1 | como a da 24.1 | `AGENTS_RELEASED` (quantos) | 7, 8 |
+| Apagar o agente, sem trava atravessando chamada de fora (D22): (1) as automações dele (U6) e os fios das conversas dele, de todas as pessoas, pela marca `{ companyId, conexusAgent }`; (2) numa transação curta, o `delete` da linha, que leva versões, escolhas de ferramentas e `agent_conversation` por cascata; (3) `removeAgent`; (4) a varredura de (1) de novo | a abertura, depois do `createSession`, relê a sua linha; ausente, apaga o próprio fio e responde `AGENT_NOT_FOUND`; a segunda remoção acha a linha apagada, varre e responde `AGENT_NOT_FOUND` | um corte entre os passos: a linha sai só em (2), e a próxima remoção varre de novo | banco do Mastra fora em (1): para antes da linha, nada perdido | `AGENT_DELETED` (quantas conversas e automações) | 7, 31 |
+| A remoção da pessoa (`created_by = null` nos agentes, nas ferramentas e nas versões de ferramenta, `published_by = null` nas versões do agente; as conversas dela pela marca da pessoa, como a 24.1) | idempotente | uma transação | como a da 24.1 | nada | 7 |
+| A remoção do Projeto e da empresa (as automações, os agentes, depois as conversas; `removeAgent` de cada; as ferramentas ficam com a empresa e saem com a linha dela, depois dos agentes) | não falha de novo | a ordem da 24.1 | como a da 24.1 | `AGENTS_RELEASED` (quantos) | 7, 8 |
 | `agent_test` (o `Agent` do rascunho por `agentOf`, sem registro, `generate` sem memória, com o dono no `requestContext`) | dois testes, dois `generate` | o modelo falha: a falha como resultado ao Construtor | a conta de modelo fora: `MODEL_*` da 24.1 | `AGENT_TESTED` (agente, ms, ferramentas chamadas) | 9a, 25 |
 | O login de leitura e `app_data_read` | dois turnos criam, o segundo acha "already exists" e relê | uma transação | Neon fora: `APP_DATA_UNAVAILABLE`; o tempo: `APP_DATA_TIMEOUT` | `APP_READ_LOGIN_CREATED`, `APP_DATA_READ` (nunca o SQL nem as linhas, C50) | 18, 19, 20 |
 | Criar a automação com alvo agente e o passo `check` | a da 24.2 | o agente conferido antes | a da 24.2 | `AUTOMATION_CREATED` com `agentId`; `AUTOMATION_PAUSED` com `AGENT_GONE` | 30, 31 |
@@ -294,7 +327,7 @@ a unidade a reabre antes de usar. Os estudos: o do Construtor (2026-11-02, a arq
 | Peça | Unidade | Hoje no main | Referência | Como a referência faz | Veredito | Prova, se não for nativo | Palavra do fundador | Arquivo novo |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | O agente como dados com versões | U1 | nada | `AGENTS_SCHEMA` (id, status, `activeVersionId`) e `AGENT_VERSIONS_SCHEMA` (número, instruções, modelo, ferramentas, memória, `changeMessage`) (`M:packages/core/src/storage/constants.ts:224-266`, relay); as rotas de versões listar, criar, ativar (`M:packages/server/src/server/handlers/agent-versions.ts:63,119,259`, relay) | o rascunho e as versões imutáveis, uma ativa | embrulhado: tabelas nossas com a forma do Mastra campo por campo, sob a política da empresa (0039); o `@mastra/editor` fica de fora (o 518; as linhas dele não têm empresa) | o estudo do Construtor §3.1 | `A1` | `builder/agents/tables.ts`, `builder/agents/agents.ts` |
-| O recorte (ferramenta preset) | U1, U2 | as leituras do kit com `class` (`packages/connectors/src/kernel/operation.ts:140-154`, lido); `connector_read` pela porta (`builder/connectors/connector-tools.ts:175-215`, lido) | `createTool` (`M:packages/core/src/tools/tool.ts:750`, relay); o editor resolve as ferramentas por id (`M:packages/editor/src/namespaces/agent.ts:1329-1352`, relay) | uma ferramenta registrada que chama o que já existe | nativo: `createTool` cujo `execute` chama `access.read` com os valores fixos por cima. O recorte é do agente (`builder.agent_tool`, congelado na versão), não uma `tool` do Projeto com versões como no estudo §3.2, pela palavra do fundador; a 24.4 soma as ferramentas em código como uma coluna `kind` (`PRESET` ou `CODE`) nesta tabela, sem migrar as linhas | — | "ferramentas específicas por agente" (2026-11-02) | `builder/agents/tools.ts` |
+| A ferramenta preset (o recorte), com versões | U1, U2 | as leituras do kit com `class` (`packages/connectors/src/kernel/operation.ts:140-154`, lido); `connector_read` pela porta (`builder/connectors/connector-tools.ts:175-215`, lido) | `createTool` (`M:packages/core/src/tools/tool.ts:750`, relay); o editor resolve as ferramentas por id (`M:packages/editor/src/namespaces/agent.ts:1329-1352`, relay) | a ferramenta existe uma vez, e o agente a pega pelo id | nativo: `createTool` cujo `execute` chama `access.read` com os valores fixos por cima. A ferramenta é uma linha com versões imutáveis (o estudo §3.2), e o agente escolhe as suas e prende a versão de cada uma em cada versão dele. A ferramenta é da empresa, numa biblioteca só (`T1`); o estudo a punha no Projeto. As leituras do kit são as ferramentas prontas. A 24.4 soma as ferramentas em código como o valor `CODE` da coluna `kind` de `builder.tool` (hoje só `PRESET`), sem migrar as linhas | — | "ferramentas específicas por agente" (2026-11-02), lido sob o `T1` do mesmo dia: o agente escolhe as suas na biblioteca da empresa | `builder/tools/tools.ts`, `builder/agents/tools.ts` |
 | O `new Agent` de uma versão e o registro | U2 | os agentes de código no construtor do `Mastra` (`builder/conversation/mastra.ts:13-33`, lido) | o editor: `new Agent({ id, … })` e `addAgent(agent, storedAgent.id, { source: 'stored' })` (`M:packages/editor/src/namespaces/agent.ts:1169,1197-1198`), `removeAgent` ao trocar (`:443-446`); `addAgent` (`NM:mastra/index.d.ts:974`), a chave repetida ignorada (`NM:mastra-Da0Czfte.js:1873`), `removeAgent` (`NM:mastra/index.d.ts:1078`; `NM:mastra-Da0Czfte.js:2142-2158`), `listAgents` (`NM:mastra/index.d.ts:894`); o erro de `getAgent` lista todas as chaves (`NM:mastra-Da0Czfte.js:1566-1580`); a chave é o id do agente, um lugar por agente com a versão ativa (o estudo de onde rodam os agentes, §3, correção 1), não `co<c>_ag<a>@v<n>` | um `Agent` registrado por agente guardado, trocado ao mudar | nativo | — | `A1`; a B de 2026-11-02 | `builder/agents/registry.ts`, `builder/agents/agent.ts` |
 | Registrar antes da agenda | U2 | `prepare`, `createHub` e `start` (`main.ts:214-216`, lido); `startWorkers` (`builder/conversation/public.ts:185-187`, lido) | `isTargetReady` resolve o agente pelo id e apaga depois de 3 faltas (`NM:worker-BgnTmeB6.js:347-356`, `NM:scheduler-3IjINScC.js:9,146-186`); `startWorkers` (`NM:mastra-Da0Czfte.js:5037`) | a agenda só fala com o que está registrado | nativo: a carga antes de `startWorkers` | — | — | — |
 | Ler as empresas com agentes ao ligar | U1 | `apps.companies_with_apps()`, a função da 9 para o conserto ao ligar (`database-grants.sql:19-22`, lido) | — | uma função `SECURITY DEFINER` de um papel sem login, executada só por `hub_runtime` | nativo (o padrão da 9) | — | a aprovação desta página (D11) | a migração |
@@ -320,15 +353,20 @@ passos sem trava e o alvo da automação (agora a U6).
   automação (`AUTOMATION_PROMPT_MAX`), porque o texto do sistema do starter do Mastra que o fundador
   capturou passa de 4.000 (a U1 mede o arquivo `templates/template-starter-agent` na estante e
   grava o número no teste). Gatilho: uma recusa de tamanho no uso.
-- Um recorte fixa valores de primeiro nível da entrada da operação. "Pedidos do cliente X" é um
-  recorte de `pedidos`, com `codigoCliente` aberto
+- Uma ferramenta preset fixa valores de primeiro nível da entrada da operação. "Pedidos do cliente
+  X" é um recorte de `pedidos`, com `codigoCliente` aberto
   (`packages/connectors/src/sankhya/operations/vendas.ts:8-14`, lido). O limite são os valores
   relativos ("ontem", "últimos 90 dias"): um valor fixo é literal, então uma data relativa fica aberta
   (o modelo a preenche pela data do bloco da conversa) ou é uma consulta fixa de `consultar` com
   `CURRENT_DATE` (`packages/connectors/src/sankhya/door.ts:123-131`, lido). Nunca montar SQL por
   texto. Gatilho: o fundador pedir datas relativas fixas.
-- Os recortes não têm teto por agente: nenhuma referência dá um número. Gatilho: um agente com mais
-  de 30 recortes.
+- As ferramentas não têm teto por agente nem por empresa: nenhuma referência dá um número; a lista e
+  `tool_search` leem todas as que o Projeto pode usar. Gatilho: um agente com mais de 30 ferramentas,
+  ou uma lista com mais de 200.
+- Uma ferramenta presa a uma versão publicada não sai enquanto o agente existir (`TOOL_IN_USE`), porque
+  voltar para aquela versão precisa dela. Gatilho: o fundador pedir para limpar ferramentas velhas.
+- `tool_search` procura por texto no `slug` e na descrição, sem busca semântica. Gatilho: o Construtor
+  refazer uma ferramenta que já existia.
 - Apagar o agente no meio de um turno aborta o turno. A confirmação avisa.
 - O registro é por processo (C63). Gatilho: um segundo processo do Hub.
 
@@ -341,8 +379,8 @@ passos sem trava e o alvo da automação (agora a U6).
 
 ## U1 O agente como dados
 
-**Base e modelo.** `main` depois do fechamento da 24.2. Opus: três tabelas novas com a palavra D11,
-a concorrência do rascunho e a remoção.
+**Base e modelo.** `main` depois do fechamento da 24.2. Opus: seis tabelas novas
+com a palavra D11, a concorrência do rascunho e das versões de ferramenta, e a remoção.
 
 ### As linhas da tabela
 
@@ -362,7 +400,10 @@ a concorrência do rascunho e a remoção.
 - **A admissão.** `hub/identity/admission.ts:71-74` (lido): `manageConnections` trava; `askAssistant`
   não.
 - **A operação do kit.** `Operation` (`packages/connectors/src/kernel/operation.ts:140-154`, lido):
-  `id`, `class` e `input` (Zod), que conferem o recorte.
+  `id`, `class` e `input` (Zod), que conferem a ferramenta.
+- **A ferramenta pelo id.** O editor do Mastra resolve as ferramentas de um agente pelo id
+  (`M:packages/editor/src/namespaces/agent.ts:1329-1352`, relay): aqui o agente guarda ids de versões
+  de ferramenta, nunca uma cópia da configuração.
 
 ### O raio da mudança
 
@@ -370,13 +411,14 @@ Nada sai do `main`.
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `apps/server/src/builder/agents/` | Cria `tables.ts`, `agents.ts` (o serviço: criar, ler, listar, mudar o rascunho, os recortes, publicar, versões, ativar, apagar), `routes.ts`, `release.ts`, `public.ts` | a U2, a U4, a U6 |
-| `apps/server/migrations/` | Cria `<data>_e243_agents` (as três tabelas) e, num commit próprio, `<data>_e243_agents_grants` (as permissões e a função) (D11) | `npm run check-migrations` |
-| `apps/server/database-grants.sql` | Muda: `hub_company` com `SELECT, INSERT, UPDATE, DELETE` em `builder.agent` e `builder.agent_tool`, `SELECT, INSERT, DELETE` e `UPDATE(published_by)` em `builder.agent_version`; a função e o seu papel sem login; `EXECUTE` só a `hub_runtime` | `catalog.test.ts` |
+| `apps/server/src/builder/agents/` | Cria `tables.ts`, `agents.ts` (o serviço: criar, ler, listar, mudar o rascunho e as escolhas de ferramentas, publicar, versões, ativar, apagar), `routes.ts`, `release.ts`, `public.ts` | a U2, a U4, a U6 |
+| `apps/server/src/builder/tools/` | Cria `tables.ts`, `tools.ts` (o serviço: gravar, versão nova, listar as que um Projeto pode usar, procurar, apagar, e `usable(scope, versionIds)`, que o serviço dos agentes chama), `routes.ts`, `public.ts` | `builder/agents/`, a U4 |
+| `apps/server/migrations/` | Cria `<data>_e243_agents` (as seis tabelas) e, num commit próprio, `<data>_e243_agents_grants` (as permissões e a função) (D11) | `npm run check-migrations` |
+| `apps/server/database-grants.sql` | Muda: `hub_company` com `SELECT, INSERT, UPDATE, DELETE` em `builder.agent`, `builder.tool` e `builder.agent_tool`, `SELECT, INSERT, DELETE` e `UPDATE(published_by)` em `builder.agent_version`, `SELECT, INSERT, DELETE` e `UPDATE(created_by)` em `builder.tool_version` (a remoção da pessoa), `SELECT, INSERT, DELETE` em `builder.agent_version_tool`; a função e o seu papel sem login; `EXECUTE` só a `hub_runtime` | `catalog.test.ts` |
 | `apps/server/src/hub/identity/admission.ts` | Muda: as ações `manageAgents` e `publishAgent`, as duas com `MANAGE_CONNECTIONS` e trava nas gravações, como `manageConnections` (a etapa de papéis troca a declaração de `publishAgent`) | `builder/agents/` |
 | `apps/server/src/builder/conversation/public.ts` | Muda `releaseOf`: `agents.release` depois das automações e antes das conversas | as remoções |
-| `packages/hub-api/src/agents.ts` | Cria os contratos abaixo; muda `index.ts`, `failures.ts` (os códigos e as frases), o OpenAPI gerado | a U2, a U4, a U5, a U6 |
-| `scripts/removals.json` | Muda: as proteções novas (o membro recusado, o agente de outro Projeto, o `revision` velho, a operação de escrita num recorte), cada uma com o teste que a pega | — |
+| `packages/hub-api/src/agents.ts`, `packages/hub-api/src/tools.ts`, `packages/hub-api/src/agent-ids.ts` | Cria os contratos abaixo; muda `index.ts`, `failures.ts` (os códigos e as frases), o OpenAPI gerado | a U2, a U4, a U5, a U6, a U7 |
+| `scripts/removals.json` | Muda: as proteções novas (o membro recusado, o agente de outro Projeto, o `revision` velho, a operação de escrita numa ferramenta, a ferramenta usada que não sai), cada uma com o teste que a pega | — |
 
 ### Os contratos que a unidade cria
 
@@ -386,10 +428,7 @@ const BASE = '/api/companies/{companyId}/projects/{projectId}/agents'
 // GET    BASE                                      -> { agents: AgentSummary[] }        acesso manageAgents
 // POST   BASE  CreateAgent, attemptKey: true       -> 201 { agent: AgentDetail }
 // GET    BASE/{agentId}                            -> { agent: AgentDetail }
-// PATCH  BASE/{agentId}/draft  DraftPatch          -> { agent: AgentDetail }            AGENT_DRAFT_STALE (409), REQUEST_MALFORMED
-// POST   BASE/{agentId}/tools  ToolInput           -> 201 { agent: AgentDetail }        AGENT_TOOL_REFUSED, AGENT_DRAFT_STALE
-// PATCH  BASE/{agentId}/tools/{toolId}  ToolPatch  -> { agent: AgentDetail }
-// DELETE BASE/{agentId}/tools/{toolId}?revision=   -> { agent: AgentDetail }
+// PATCH  BASE/{agentId}/draft  DraftPatch          -> { agent: AgentDetail }            AGENT_DRAFT_STALE (409), REQUEST_MALFORMED, AGENT_TOOL_REFUSED
 // POST   BASE/{agentId}/publish  Publish           -> { agent: AgentDetail, version: AgentVersionSummary }   acesso publishAgent; AGENT_DRAFT_INVALID, AGENT_DRAFT_STALE
 // GET    BASE/{agentId}/versions                   -> { versions: AgentVersionSummary[] }
 // POST   BASE/{agentId}/versions/{number}/activate -> { agent: AgentDetail }           acesso publishAgent; AGENT_VERSION_NOT_FOUND
@@ -397,9 +436,7 @@ const BASE = '/api/companies/{companyId}/projects/{projectId}/agents'
 // falhas de todas: NOT_FOUND, SESSION_REQUIRED, DATABASE_UNAVAILABLE, AGENT_NOT_FOUND
 export const AGENT_NAME_MAX = 80                   // o da automação: a mesma linha nas listas
 export const AGENT_INSTRUCTIONS_MAX = 8000         // a dívida
-export const AgentId = z.uuid().brand('AgentId')            // conferido em agents.ts pela empresa e o Projeto (C23)
-export const AgentToolId = z.uuid().brand('AgentToolId')    // conferido pelo agente
-export const ToolSlug = z.string().regex(/^[a-z][a-z0-9_]{0,39}$/)   // o nome que o modelo vê: `tool_<slug>`
+// AgentId, de agent-ids.ts: conferido em agents.ts pela empresa e o Projeto (C23)
 export const AgentMemory = z.object({ observational: z.boolean() })
 export const AgentConfig = z.object({
   name: z.string().trim().min(1).max(AGENT_NAME_MAX),
@@ -411,18 +448,12 @@ export const AgentConfig = z.object({
     .refine((ids) => new Set(ids).size === ids.length),        // sem repetidas
   web: z.boolean(), appData: z.boolean(),
 })
-export const AgentToolConfig = z.object({
-  slug: ToolSlug, description: z.string().trim().min(1).max(500),
-  connectionId: ConnectionId, operation: OperationId,          // a marca do kit (`kernel/operation.ts`); uma leitura (class 'read'), conferida no serviço
-  bound: z.record(z.string(), z.unknown()),                    // os valores fixos, conferidos pelo esquema da operação
-  open: z.array(z.string()),                                   // os campos de primeiro nível que o modelo preenche; fora de `bound`
-})
-// O esquema que o modelo vê: `operation.input.pick(open)`; a entrada que a operação recebe:
-// `{ ...doModelo, ...bound }`. `bound` e `open` não se cruzam e cobrem os obrigatórios (AGENT_TOOL_REFUSED).
 export const CreateAgent = z.object({ name: AgentConfig.shape.name, description: AgentConfig.shape.description.optional() })
-export const DraftPatch = AgentConfig.partial().extend({ revision: z.int().positive() })
-export const ToolInput = AgentToolConfig.extend({ revision: z.int().positive() })
-export const ToolPatch = AgentToolConfig.partial().extend({ revision: z.int().positive() })
+export const DraftPatch = AgentConfig.partial().extend({
+  revision: z.int().positive(),
+  tools: z.array(ToolVersionId).refine((ids) => new Set(ids).size === ids.length).optional(),   // troca as escolhas inteiras
+  ready: z.array(ToolTarget).optional(),                       // prontas a somar: o serviço as grava na biblioteca (a regra das prontas)
+})
 export const Publish = z.object({ revision: z.int().positive(), message: z.string().trim().max(280) })
 export const AgentState = z.discriminatedUnion('kind', [                                  // C21
   z.object({ kind: z.literal('DRAFT') }),                                                  // nunca publicado
@@ -430,7 +461,8 @@ export const AgentState = z.discriminatedUnion('kind', [                        
 ])
 export const AgentSummary = z.object({ id: AgentId, projectId: ProjectId, name: z.string(), description: z.string(), state: AgentState, updatedAt: z.iso.datetime() })
 export const AgentDetail = AgentSummary.extend({
-  draft: AgentConfig, revision: z.int(), tools: z.array(AgentToolConfig.extend({ id: AgentToolId })),
+  draft: AgentConfig, revision: z.int(),
+  tools: z.array(ToolSummary.pick({ id: true, slug: true, connectionId: true, operation: true, effect: true, latest: true }).extend({ version: ToolVersionDetail })),   // a escolhida e a mais nova
   offered: z.array(z.object({ connectionId: ConnectionId, connector: z.string(), name: z.string(), reads: z.array(z.object({ operation: z.string(), summary: z.string() })) })),
   createdBy: z.object({ personId: PersonId, name: z.string() }).nullable(),
 })
@@ -438,18 +470,71 @@ export const AgentVersionSummary = z.object({ number: z.int().positive(), messag
 ```
 
 ```ts
+// packages/hub-api/src/tools.ts (a biblioteca é da empresa, `T1`; a rota pelo Projeto devolve o que ele pode usar)
+const TOOLS = '/api/companies/{companyId}/projects/{projectId}/tools'
+// GET    TOOLS                                -> { tools: ToolSummary[], ready: ReadyTool[] }   acesso manageAgents; as da biblioteca que este Projeto pode usar e as leituras prontas das ligações dele ainda fora dela
+// POST   TOOLS  ToolInput, attemptKey: true   -> 201 { tool: ToolDetail }    TOOL_REFUSED
+// GET    TOOLS/{toolId}                       -> { tool: ToolDetail }        TOOL_NOT_FOUND
+// POST   TOOLS/{toolId}/versions  ToolVersionConfig, attemptKey: true -> 201 { tool: ToolDetail }   TOOL_REFUSED, TOOL_NOT_FOUND, IDEMPOTENCY_CONFLICT
+// DELETE TOOLS/{toolId}                       -> 204                         TOOL_IN_USE (409, { agents: { id, name }[] }), TOOL_NOT_FOUND
+// GET, versions e DELETE passam por `usable(scope)`: uma ferramenta que este Projeto não pode usar é TOOL_NOT_FOUND.
+// Os ids moram em `packages/hub-api/src/agent-ids.ts` (`AgentId`, `ToolId`, `ToolVersionId`): `agents.ts` importa
+// `tools.ts` e `agent-ids.ts`; `tools.ts` importa só `agent-ids.ts`, nunca `agents.ts` (sem ciclo entre constantes Zod).
+export const ToolSlug = z.string().regex(/^[a-z][a-z0-9_]{0,39}$/)   // o nome que o modelo vê: `tool_<slug>`; não muda entre versões
+export const ToolTarget = z.object({                          // da ferramenta; não muda entre versões
+  connectionId: ConnectionId, operation: OperationId,          // a marca do kit (`kernel/operation.ts`); uma leitura (class 'read'), conferida no serviço
+})
+export const ToolVersionConfig = z.object({                   // de cada versão
+  description: z.string().trim().min(1).max(500),
+  bound: z.record(z.string(), z.unknown()),                    // os valores fixos, conferidos pelo esquema da operação
+  open: z.array(z.string()),                                   // os campos de primeiro nível que o modelo preenche; fora de `bound`
+})
+// O esquema que o modelo vê: `operation.input.pick(open)`; a entrada que a operação recebe:
+// `{ ...doModelo, ...bound }`. `bound` e `open` não se cruzam e cobrem os obrigatórios (TOOL_REFUSED).
+// Uma leitura do kit como está é `bound: {}` com todos os campos em `open`: a ferramenta pronta do conector.
+// Escolher uma pronta grava-a na biblioteca (o id derivado da empresa, da ligação e da operação, nunca da
+// pessoa) e depois no rascunho. `readySlug`: a operação em minúsculas, com `.` e `-` trocados por `_`,
+// mais `_` e os seis primeiros caracteres do id da ligação, cortado em 40 (Matriz e Filial dão dois).
+export const ToolInput = ToolTarget.extend(ToolVersionConfig.shape).extend({ slug: ToolSlug })
+export const ToolEffect = z.enum(['READ'])                     // o que a ferramenta faz, pela `class` da operação; a 24.5 soma as que gravam
+export const ReadyTool = z.object({ connectionId: ConnectionId, operation: OperationId, summary: z.string(), slug: ToolSlug })
+export const ToolVersionDetail = ToolVersionConfig.extend({ id: ToolVersionId, number: z.int().positive() })
+export const ToolSummary = ToolTarget.extend({
+  id: ToolId, slug: ToolSlug, description: z.string(), effect: ToolEffect,   // o que lê (a ligação e a operação) e o que faz
+  latest: z.object({ id: ToolVersionId, number: z.int().positive() }),
+  usedBy: z.array(z.object({ id: AgentId, name: z.string() })),   // rascunhos e versões publicadas
+})
+export const ToolDetail = ToolSummary.extend({ versions: z.array(ToolVersionDetail) })
+```
+
+```ts
 // apps/server/src/builder/agents/tables.ts (a política da empresa em todas, como OWN_COMPANY)
 // builder.agent: id uuid pk; company_id -> companies (cascade); project_id -> projects (cascade);
 //   draft jsonb not null (AgentConfig); revision int not null default 1; active_version int null;
 //   created_by text null, sem chave estrangeira (D17); body_hash text not null; created_at, updated_at
-// builder.agent_tool: id uuid pk; agent_id -> builder.agent (cascade); company_id; config jsonb not null
-//   (AgentToolConfig); unique (agent_id, (config->>'slug'))
 // builder.agent_version: agent_id -> builder.agent (cascade); number int; company_id; config jsonb not null
-//   (AgentConfig & { tools: AgentToolConfig[] }); source_revision int not null; message text not null;
+//   (AgentConfig); source_revision int not null; message text not null;
 //   published_by text null; published_at; primary key (agent_id, number); unique (agent_id, source_revision)
+// apps/server/src/builder/tools/tables.ts
+// builder.tool: id uuid pk; company_id -> companies (cascade), sem Projeto (`T1`: a biblioteca da empresa);
+//   kind text not null default 'PRESET'; connection_id uuid not null e operation text not null (ToolTarget,
+//   sem chave estrangeira: a ligação perdida recusa no uso, como no rascunho); slug text; current_version int not null default 1; created_by
+//   text null (D17); body_hash text; created_at, updated_at; unique (company_id, slug)
+// builder.tool_version: id uuid pk; tool_id -> builder.tool (cascade); company_id; number int; config jsonb
+//   not null (ToolVersionConfig); created_by text null; body_hash text; created_at; unique (tool_id, number);
+//   unique (tool_id, id); unique (company_id, id)
+// builder.agent_tool: agent_id -> builder.agent (cascade); tool_id; tool_version_id; company_id;
+//   (tool_id, tool_version_id) -> builder.tool_version (tool_id, id) e (company_id, tool_version_id) ->
+//   builder.tool_version (company_id, id), as duas `no action`; primary key (agent_id, tool_version_id);
+//   unique (agent_id, tool_id)
+// builder.agent_version_tool: (agent_id, number) -> builder.agent_version (cascade); tool_version_id;
+//   company_id; (company_id, tool_version_id) -> builder.tool_version (company_id, id) `no action`;
+//   primary key (agent_id, number, tool_version_id)
+// Uma ferramenta usada recusa sair (23503 -> TOOL_IN_USE). A remoção da empresa não depende da ordem das
+// cascatas: `releaseOf` apaga os agentes (`agents.release`) antes da linha da empresa.
 // apps/server/src/builder/agents/public.ts
 export type FrozenVersion = AgentConfig & {
-  tools: readonly AgentToolConfig[]
+  tools: readonly (ToolTarget & ToolVersionConfig & { slug: ToolSlug })[]   // lidas pelas versões presas, que nunca mudam
   source: { kind: 'VERSION'; number: number } | { kind: 'DRAFT'; revision: number }   // C21
 }
 export type AgentEvent =
@@ -467,11 +552,14 @@ export type Agents = {
 ```
 
 O serviço confere numa transação só, com a admissão (S8): as ligações do rascunho contra as que o
-Projeto oferece agora (`connectors.connections(scope)`); a operação de um recorte contra as leituras
-da ligação e a classe pela definição do kit; `bound` pelo esquema da operação (`input.partial()`); o
-modelo por `isChoosable`. Uma ligação que o Projeto perdeu depois fica no rascunho e recusa só
-publicar (`AGENT_DRAFT_INVALID`), para a página marcá-la. Publicar copia o rascunho e os recortes do
-mesmo `revision` para `config`; `state.changed` compara o `revision` do rascunho com o
+Projeto oferece agora (`connectors.connections(scope)`); a operação de uma ferramenta contra as
+leituras da ligação e a classe pela definição do kit; `bound` pelo esquema da operação
+(`input.partial()`); cada versão de ferramenta escolhida por `tools.usable`: da empresa e de uma ligação que
+o Projeto recebeu. A ligação de uma ferramenta escolhida não precisa estar em `draft.connections`: a
+ferramenta basta; `draft.connections` decide só `connector_read` e `connector_notes`. O modelo por
+`isChoosable`. Uma ligação que o Projeto perdeu depois fica no rascunho, e numa ferramenta escolhida,
+e recusa só publicar (`AGENT_DRAFT_INVALID`), para a página marcá-la. Publicar copia o rascunho do
+mesmo `revision` para `config` e as escolhas para `builder.agent_version_tool`; `state.changed` compara o `revision` do rascunho com o
 `source_revision` da ativa.
 
 ### As skills e a leitura
@@ -482,11 +570,13 @@ mesmo `revision` para `config`; `state.changed` compara o `revision` do rascunho
 
 ### A ordem do trabalho
 
-1. **A prova primeiro.** `routes.test.ts`, "publicar": cria, muda o rascunho, publica, muda de novo,
-   lê a versão 1 igual; falha hoje.
+1. **A prova primeiro.** `routes.test.ts`, "publicar": cria uma ferramenta e um agente, escolhe a
+   ferramenta, publica, grava a versão 2 da ferramenta e muda o rascunho, lê a versão 1 do agente igual,
+   com a versão 1 da ferramenta; falha hoje.
 2. A migração das tabelas; num commit próprio, a das permissões, da função e `database-grants.sql`
    (D11). `npm run check-migrations`.
-3. `agents.ts` e `routes.ts`, com o `revision`; os contratos do `hub-api` e o OpenAPI. Regras: C21,
+3. `tools/tools.ts` e as rotas das ferramentas; `agents.ts` e `routes.ts`, com o `revision`; os
+   contratos do `hub-api` e o OpenAPI. Regras: C21,
    C23, C26, C27, S8, S10.
 4. `release.ts`, `onChange` e a ordem em `releaseOf`. Regras: D17, D22, T12.
 
@@ -530,7 +620,7 @@ delega cruzam quatro módulos.
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `apps/server/src/builder/agents/` | Cria `agent.ts` (`agentOf`: o `Agent` de uma versão), `tools.ts` (os recortes), `registry.ts`, `controller.ts` (o controlador "agentes" e o seu agente que delega), `open.ts`, `conversation-routes.ts`; muda `tables.ts` (`builder.agent_conversation`) | `conversation/public.ts`, a U3, a U6 |
+| `apps/server/src/builder/agents/` | Cria `agent.ts` (`agentOf`: o `Agent` de uma versão), `tools.ts` (as ferramentas preset de uma versão), `registry.ts`, `controller.ts` (o controlador "agentes" e o seu agente que delega), `open.ts`, `conversation-routes.ts`; muda `tables.ts` (`builder.agent_conversation`) | `conversation/public.ts`, a U3, a U6 |
 | `apps/server/migrations/`, `apps/server/database-grants.sql` | Cria a tabela `builder.agent_conversation` (id, empresa, pessoa, agente com `on delete cascade`, `draft`); as permissões num commit próprio (D11) | `catalog.test.ts` |
 | `apps/server/src/builder/conversation/` | Muda `mastra.ts` (o controlador novo), `public.ts` (o `AgentsPart` ao lado do `AssistantPart`; `start` chama `agents.hydrate()` antes de `startWorkers`; `watchRuns` ganha o controlador `agents` em `watched`, como o do Assistente, `:139-150`; `releaseOf` leva as conversas de agente da pessoa, do Projeto e da empresa), `guard.ts` (`Params.controllerId` com `agents`; o dono e a ação `manageAgents` a cada pedido, como `askAssistant` em `:102,138`) | `main.ts` |
 | `apps/server/src/builder/model-accounts/turn.ts` | Muda: `Turn` aceita um modelo fixo (`model?: { id: ModelId; effort: Effort }`), lido por `modelId` antes do da sessão (`chosenModel`, `:64-71`), porque um agente fora de um controlador não tem sessão | `accountPick` |
@@ -583,7 +673,7 @@ sempre por `mastra.listAgents()[agentKey(id)]` (`NM:mastra/index.d.ts:894`), nun
 (`NM:mastra-Da0Czfte.js:1566-1580`; o estudo de carga, B1; S40). As instruções de `agentOf` são a mensagem fixa do
 Conexus (o mesmo `conexus.md` da 24.1), o bloco da conversa (empresa, pessoa, data, Projeto,
 ligações) e as instruções da versão, com uma frase fixa: o agente só lê e diz isso quando pedirem
-para gravar. As ferramentas de `agentOf`: os recortes (`tool_<slug>`), `connectorTools` sobre as
+para gravar. As ferramentas de `agentOf`: as preset, pela versão presa de cada uma (`tool_<slug>`), `connectorTools` sobre as
 ligações da versão que o Projeto ainda oferece, com `noteSave: false` e sem `savedAt` (sem máquina),
 e `toolsOf(model)` só com `web`. A memória: a `conversationMemory` da 24.1, com a observacional, ou
 uma `new Memory({ storage })` sem ela, as duas criadas uma vez.
@@ -716,7 +806,7 @@ ferramentas sobre o serviço da U1.
 | --- | --- | --- |
 | `apps/server/src/builder/construtor/` | Cria `construtor.ts` (o agente e o controlador), `tools.ts`, `test-draft.ts`, `open.ts`, `routes.ts`, `prompt/construtor.md` | `conversation/public.ts` |
 | `apps/server/src/builder/conversation/` | Muda `public.ts` e `mastra.ts` (o terceiro controlador; `watchRuns` o vigia; `releaseOf` leva as conversas do Construtor pelas marcas da empresa, da pessoa e do Projeto), `guard.ts` (`construtor` no `enum`, o dono e `manageAgents` a cada pedido), `prompt/builder.md` (a #540) | — |
-| `apps/server/src/conversations-of.ts` | Muda: monta o Construtor com o serviço dos agentes | — |
+| `apps/server/src/conversations-of.ts` | Muda: monta o Construtor com o serviço dos agentes, o das ferramentas e a lista das automações do Projeto (para `tool_search`) | — |
 | `packages/hub-api/src/construtor.ts` | Cria: `CONSTRUTOR_CONTROLLER = 'construtor'`, `CONSTRUTOR_TOOL`, as rotas, `ConstrutorResult` | a U5 |
 
 ### Os contratos que a unidade cria
@@ -725,12 +815,12 @@ ferramentas sobre o serviço da U1.
 // packages/hub-api/src/construtor.ts
 export const CONSTRUTOR_CONTROLLER = 'construtor'
 export const CONSTRUTOR_TOOL = {
-  projectRead: 'project_read', agentRead: 'agent_read', agentDraft: 'agent_draft', agentSet: 'agent_set',
-  agentToolSave: 'agent_tool_save', agentToolDelete: 'agent_tool_delete', agentTest: 'agent_test',
+  projectRead: 'project_read', toolSearch: 'tool_search', toolSave: 'tool_save',
+  agentRead: 'agent_read', agentDraft: 'agent_draft', agentSet: 'agent_set', agentTest: 'agent_test',
 } as const
 // POST /api/companies/{c}/projects/{p}/construtor/conversations, attemptKey: true -> 201 { conversation }   acesso manageAgents
 // GET  /api/companies/{c}/projects/{p}/construtor/conversations -> { conversations }
-/** O que agent_draft, agent_set e as dos recortes devolvem: o rascunho gravado, ou a recusa (C21). */
+/** O que agent_read, agent_draft e agent_set devolvem: o rascunho gravado, ou a recusa (C21). */
 export const ConstrutorResult = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('SAVED'), agent: AgentDetail }),
   z.object({ kind: z.literal('REFUSED'), code: FailureCode, field: z.string().optional(),
@@ -738,9 +828,14 @@ export const ConstrutorResult = z.discriminatedUnion('kind', [
 ])
 // agent_read:        { agentId }                           -> ConstrutorResult  (SAVED com o rascunho de agora)
 // agent_draft:       { name, description }                 -> ConstrutorResult  (cria pelo serviço; a chave de tentativa sai do toolCallId)
-// agent_set:         DraftPatch & { agentId }              -> ConstrutorResult
-// agent_tool_save:   ToolInput & { agentId, toolId? }      -> ConstrutorResult
-// agent_tool_delete: { agentId, toolId, revision }         -> ConstrutorResult
+// agent_set:         DraftPatch & { agentId }              -> ConstrutorResult  (`tools` escolhe as versões)
+// tool_search:       { query?: string(..200) }             -> { tools: ToolSummary[], ready: ReadyTool[], automations: { id, name, prompt }[] }
+//                    (a biblioteca que o Projeto pode usar, as prontas e os workflows que existem hoje, as automações da 24.2)
+// tool_save:         (ToolInput & { toolId?: never }) | (ToolVersionConfig & { toolId })   -> { kind: 'SAVED', tool: ToolDetail } | { kind: 'REFUSED', code, field? }
+//                    (sem toolId cria, com toolId grava a versão n+1; nos dois, a chave de tentativa sai do toolCallId,
+//                    então um passo repetido acha a mesma ferramenta ou a mesma versão)
+// escolher uma pronta: agent_set com `ready: { connectionId, operation }[]` ao lado de `tools`; o serviço a grava
+//                    na biblioteca pela regra das prontas e a soma às escolhas
 // agent_test:        { agentId, question: string(1..2000) } -> { kind: 'ANSWERED', text, tools: string[] } | { kind: 'REFUSED', code }
 // project_read:      {}                                    -> { project, offered, app: { tables } | null, agents: AgentSummary[] }
 ```
@@ -758,8 +853,10 @@ Toda ferramenta recebe a pessoa e o Projeto do escopo da conversa, nunca do mode
    `agent_draft` e `agent_set`; a rota da U1 lê o rascunho; falha hoje.
 2. `construtor.ts` e o controlador; `guard.ts`.
 3. `tools.ts` e `test-draft.ts` sobre `agents.service` e `agentOf` com `draftOf`.
-4. `prompt/construtor.md` (ideias antes de construir; recortes estreitos; testar; nunca publicar,
-   dizer à pessoa para tocar **Publicar**); a #540.
+4. `prompt/construtor.md` (ideias antes de construir; `tool_search` antes de fazer uma ferramenta, e
+   uma pronta ou da biblioteca antes de uma nova;
+   recortes estreitos; uma ferramenta com versão nova: dizer à pessoa, trocar no rascunho e testar;
+   nunca publicar, dizer à pessoa para tocar **Publicar**); a #540.
 
 ### Como se prova
 
@@ -789,7 +886,7 @@ Comando: os testes tocados, `npm run typecheck`, `npm run lint`.
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `apps/web/src/builder/agents/` | Cria `area.tsx`, `agent-page.tsx`, `config-panel.tsx` (as seções), `tool-form.tsx`, `versions.tsx`, `draft-card.tsx`, `queries.ts`, `text.ts` | as rotas |
+| `apps/web/src/builder/agents/` | Cria `area.tsx`, `agent-page.tsx`, `config-panel.tsx` (as seções; ferramentas: escolher e criar), `tool-form.tsx` (a U7 o usa para a versão nova), `versions.tsx`, `draft-card.tsx`, `queries.ts`, `text.ts` | as rotas |
 | `apps/web/src/builder/conversation/` | Muda o registro das ferramentas: o cartão do rascunho e as linhas de `tool_<slug>` e `app_data_read` | — |
 | `apps/web/src/hub/projects/project-rail.tsx` | Muda: a entrada | — |
 | `apps/web/src/routes/_app/companies/$companyId/projects/` | Cria `$projectId_.agents.index.tsx`, `$projectId_.agents.construtor.$conversationId.tsx`, `$projectId_.agents.$agentId.tsx`, `$projectId_.agents.$agentId.$conversationId.tsx` | — |
@@ -797,7 +894,7 @@ Comando: os testes tocados, `npm run typecheck`, `npm run lint`.
 
 ### Os contratos que a unidade cria
 
-Nenhum contrato novo do servidor. Na web: `agentQuery`, `agentsQuery`, `versionsQuery` em
+Nenhum contrato novo do servidor. Na web: `agentQuery`, `agentsQuery`, `versionsQuery`, `toolsQuery` em
 `queries.ts`; as gravações do rascunho de um agente andam numa fila (uma por vez, cada uma com o
 `revision` que a anterior devolveu), e só um `AGENT_DRAFT_STALE` vindo de fora invalida `agentQuery`.
 
@@ -812,7 +909,7 @@ Nenhum contrato novo do servidor. Na web: `agentQuery`, `agentsQuery`, `versions
 1. **A prova primeiro.** `agent-page.test.tsx`: muda o modelo no painel, recebe `AGENT_DRAFT_STALE`
    do servidor dublê e mostra a frase; falha hoje.
 2. A área e a entrada; o cartão do rascunho.
-3. A página, o painel, os recortes, as versões, publicar e voltar, apagar.
+3. A página, o painel (escolher e criar ferramentas), as versões, publicar e voltar, apagar.
 4. `docs/reference/screens.md`. Regras: W7, W30, W34, C21.
 
 ### Como se prova
@@ -888,3 +985,57 @@ tocados, `npm run typecheck`, `npm run lint`.
 - Uma linha da agenda da 24.2 deixa de ser lida (a versão 1): para; mudar `AUTOMATION_WORKFLOW`
   apagaria todas as linhas.
 - O nome do agente precisa ser guardado na automação: relata; a linha do agente é a dona.
+
+## U7 A aba Ferramentas
+
+**Base e modelo.** `main` depois da U5, na 24.3.1. Sonnet: uma aba sobre as rotas da U1 e o
+formulário da U5.
+
+### As linhas da tabela
+
+- A ferramenta preset com versões (a linha da tabela de referência): a web só lê e grava pelas rotas
+  `TOOLS` da U1; nenhum contrato novo.
+- A área da U5 (`apps/web/src/builder/agents/area.tsx`): a aba entra ao lado de **Construtor** e
+  **Agentes**, a 390 px também.
+- O formulário da U5 (`apps/web/src/builder/agents/tool-form.tsx`): na versão nova, a ligação e a
+  operação aparecem só para ler (são da ferramenta), e a descrição, os valores fixos e os campos
+  abertos vêm da versão mais nova.
+
+### O raio da mudança
+
+| Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
+| --- | --- | --- |
+| `apps/web/src/builder/tools/` | Cria `tools-tab.tsx` (a lista: o `slug`, a descrição, o que lê, o efeito, a versão, os agentes que usam), `tool-page.tsx` (as versões e **Nova versão**), `queries.ts` (`toolQuery`; `toolsQuery` vem da U5) | as rotas |
+| `apps/web/src/builder/agents/` | Muda `config-panel.tsx`: uma ferramenta escolhida com `latest.number > version.number` mostra "Versão n disponível" e **Usar a versão n**, que grava pelo `PATCH …/draft` com `tools` trocando o id da versão, na fila de gravação da U5; muda `area.tsx`: a aba | — |
+| `apps/web/src/routes/_app/companies/$companyId/projects/` | Cria `$projectId_.agents.tools.tsx`, `$projectId_.agents.tools.$toolId.tsx` | — |
+| `docs/reference/screens.md` | Muda: a aba e a página da ferramenta | — |
+
+### Os contratos que a unidade cria
+
+Nenhum do servidor. **Nova versão** manda `ToolVersionConfig` a `POST TOOLS/{toolId}/versions` com uma
+chave de tentativa por envio do formulário. **Apagar** manda `DELETE TOOLS/{toolId}`; no 409
+`TOOL_IN_USE`, o corpo `{ agents: { id, name }[] }` vira "Usada por <nomes>." com um link para cada
+agente, e nada sai da lista. `TOOL_NOT_FOUND` recarrega a lista.
+
+### As skills e a leitura
+
+`shadcn`, `impeccable`, `pstack:tdd`; as linhas de `docs/reference/stack.md` para `apps/web/src/`.
+[web](../guides/web.md) W7, W30, W34; [design](../guides/design.md).
+
+### A ordem do trabalho
+
+1. **A prova primeiro.** `tools-tab.test.tsx`: **Apagar** uma ferramenta usada recebe `TOOL_IN_USE`
+   do servidor dublê e mostra os nomes; falha hoje.
+2. A aba e a lista; a página da ferramenta e **Nova versão**.
+3. "Versão n disponível" e **Usar a versão n** no painel (`agent-page.test.tsx`, "versão nova").
+4. `docs/reference/screens.md`. Regras: W7, W30, W34, C21.
+
+### Como se prova
+
+O critério 32 pelos testes de `apps/web` com o servidor dublê; larguras e temas pelo QA da etapa.
+Comando: os testes tocados, `npm run typecheck`, `npm run lint`.
+
+### Parar se
+
+- A lista precisa de um campo que `ToolSummary` não traz: relata; nunca ler outra rota para montá-la.
+- Mudar a ligação ou a operação de uma ferramenta parece necessário: para; é uma ferramenta nova.
