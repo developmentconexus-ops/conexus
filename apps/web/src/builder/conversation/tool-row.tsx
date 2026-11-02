@@ -288,7 +288,7 @@ function ToolLine({
   const failed = status === 'error' || status === 'denied'
   const lineStatus = failed ? 'error' : status === 'running' ? 'running' : undefined
   const side = presented.beside ? (
-    <TraceDescription className="min-w-0 shrink flex-1 truncate text-right max-md:hidden">
+    <TraceDescription className="min-w-0 shrink flex-1 truncate text-right">
       {presented.detail}
     </TraceDescription>
   ) : status === 'running' ? (
