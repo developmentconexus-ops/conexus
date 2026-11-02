@@ -64,7 +64,8 @@ async function everyRouteUnavailable(t: TestContext, outage: Outage) {
   const url = await created(on.hub, on.ana, on.assistant, { connections: [on.matriz] })
   const door = await doorTo(on.hub.config.mastraDatabaseUrl, outage)
   const mastraPool = mastraPoolAt(door.address)
-  const down = await hubBeside(t, { ...on.hub, test: { ...on.hub.test, mastraPool } })
+  const broken = { ...on.hub, test: { ...on.hub.test, mastraPool } }
+  const down = await hubBeside(t, broken, undefined, false)
   t.after(() => door.close())
   const answers = {
     list: await call(down, on.ana, 'GET', on.assistant),
