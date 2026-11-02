@@ -81,7 +81,7 @@ Em espera: 19.2 Central de Ajuda. Sai: o pg-boss; a agenda do Mastra, gatilho de
 | 13 | Uma chave do E2B (a da conta grátis). Um bucket privado no R2 | E2B pago: US$ 150 por mês, se o uso pedir |
 | 19 | Usuário só de leitura no Sankhya de uma empresa | Nenhum |
 | 19.1 | O seu app de desenvolvedor do Mercado Livre | Não lido |
-| 24.2 | O Neon Launch no projeto do Hub, com a primeira automação: a agenda o mantém acordado | Cerca de US$ 19,35 por mês, uma conta só |
+| 24.2 | O Neon Launch no projeto do Hub: a agenda das automações o mantém acordado. Por agora fica no plano grátis (2026-11-01) | Cerca de US$ 19,35 por mês, uma conta só |
 | 22 | Um lugar de cópia fora do Neon | Não lido |
 | 23 | O aviso do que sai do Brasil, com uma linha: o ditado no Chrome passa pelo Google | Nenhum novo |
 
@@ -104,7 +104,6 @@ Login social. Arquivos enviados por pessoas para dentro de um app ou da máquina
 
 | Etapa | O que precisa antes | Decisão sua nela | Conhecimento trazido |
 | --- | --- | --- | --- |
-| 24.2 Automações | A U2 a U4 da 24.1 | Nenhuma | Automação: gatilho, o que roda, o lugar, por `mastra.schedules`. A 20.4 entra aqui |
 | 24.3 O Construtor | A 24.2 | Nenhuma | `addAgent` por agente |
 | Papéis e pedidos | A 24.3.1 | Nenhuma | — |
 | 24.4 Ferramentas em código | Os pedidos | Nenhuma | Protótipo: Workers ou E2B |

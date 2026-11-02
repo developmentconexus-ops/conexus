@@ -477,6 +477,14 @@ Lido pelo firstmate como a aprovação do cartão com a mudança dos critérios 
 
 Em 2026-11-02, à frase do cartão da proposta quando a automação não lê nenhum sistema (a pergunta deixada aberta na PR da correção dos defeitos do uso da 24.2): "A". A opção A: o cartão mostra "Não lê nenhum sistema." no mesmo lugar em que lista os sistemas que a automação lê, ao lado do lugar. Palavra de meio de etapa, vai direto para este livro (L6).
 
+Em 2026-11-02, à regra de horário para publicar, quando a v0.24.7 levou ao ar os quatro consertos do uso da 24.2: "Publica agora, tira essa regra." A regra de horário sai; publicar continua sendo o que a L17 diz.
+
+Etapa 24.2 no ar em https://hub.conexus.fun (v0.24.7), sem a linha de uso do fundador: ela entra aqui, com as palavras dele, depois do passeio dele pelos quatro pontos dos consertos.
+
+Em 2026-11-02, a linha de uso da etapa 24.2, depois de o fundador passar pelos quatro pontos dos consertos no Hub no ar (https://hub.conexus.fun, v0.24.7): "Olha, deu certo, tipo assim, tudo rodou sem esses defeitos".
+
+Em 2026-11-02, aos textos de tela novos que a 24.2 escreveu e ele ainda não tinha aprovado (a lista no corpo da pull request do fechamento), em duas mensagens. À pergunta do sino, se ele lê "Automação <nome>: pronta", como o assunto do e-mail, em vez de "<nome> está pronta": "A". Depois: "Aprovo os textos". Os textos da lista estão aprovados, com a frase do sino trocada pela opção A; a troca do código da frase do sino vem em uma pull request pequena própria logo depois deste fechamento, porque um fechamento guarda só documentos (L20).
+
 ## Decisões fora de uma etapa
 
 Em 2026-11-02, ao buffer da memória observacional (o estudo A/B do buffer, B1 ou B2): "1. Sem buffer". Fica o B1 de hoje: `bufferTokens: false`, sem o buffer do Mastra Code.
