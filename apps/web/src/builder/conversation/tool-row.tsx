@@ -295,11 +295,16 @@ function ToolLine({
     <Since at={startedAt} />
   ) : null
   return (
-    <TraceLine status={lineStatus}>
-      <TraceIcon>
+    <TraceLine status={lineStatus} className={failed ? 'items-start' : undefined}>
+      <TraceIcon className={failed ? 'mt-1' : undefined}>
         <presented.icon />
       </TraceIcon>
-      <TraceTitle className={cn(presented.beside && 'shrink-0 whitespace-nowrap')}>
+      <TraceTitle
+        className={cn(
+          presented.beside && 'shrink-0 whitespace-nowrap',
+          failed && 'whitespace-normal',
+        )}
+      >
         {presented.sentence}
       </TraceTitle>
       {side}

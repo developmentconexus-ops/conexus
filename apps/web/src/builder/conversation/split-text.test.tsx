@@ -1,67 +1,62 @@
 import type { MastraMessagePart } from '@mastra/client-js'
 import { expect, test } from 'vitest'
 import type { Message } from './messages.ts'
+import { messageOf } from './messages.ts'
 import { itemsOf } from './rows.ts'
+import { recordedRun } from './test-recorded.ts'
 
 const view = { suspended: {}, running: {}, heard: {}, live: false }
 
-function source(id: string) {
-  return {
-    type: 'source' as const,
-    source: { sourceType: 'url' as const, id, url: `https://example.org/${id}`, title: id },
+/** The Builder's answer after Anthropic's native web search, as Mastra stored it (recorded 2026-10-24). */
+const cited = recordedRun('cited')
+  .read.map(messageOf)
+  .find((message): message is Message => message?.role === 'builder')
+
+function textsOf(parts: readonly MastraMessagePart[]) {
+  const message: Message = {
+    id: 'm1',
+    role: 'builder',
+    model: null,
+    createdAt: '2026-11-02T00:39:37.000Z',
+    parts,
   }
+  return itemsOf([message], view).flatMap((item) => (item.kind === 'text' ? [item.text] : []))
 }
 
-const search: MastraMessagePart = {
-  type: 'tool-invocation',
-  toolInvocation: {
-    state: 'result',
-    toolCallId: 'toolu_search_1',
-    toolName: 'web_search',
-    args: { query: 'previsão do tempo no fim de semana' },
-    result: [],
-  },
-}
-
-/** The shape of an answer after Anthropic's native web search: text blocks cut around each citation. */
-const message: Message = {
-  id: 'm1',
-  role: 'builder',
-  model: null,
-  createdAt: '2026-11-02T00:39:37.000Z',
-  parts: [
-    search,
-    source('a'),
-    source('b'),
-    { type: 'text', text: 'Para o fim de semana:\n\n- ' },
-    source('c'),
-    { type: 'text', text: 'O serviço A' },
-    { type: 'text', text: ' dá 8% de chance de chuva.\n- ' },
-    source('d'),
-    { type: 'text', text: 'O serviço B' },
-    { type: 'text', text: ' dá 52%, e a página nova' },
-    source('e'),
-    { type: 'text', text: ' dá 36%. Leve um guarda-chuva.' },
-  ],
-}
-
-test('o texto cortado em volta das citações é um só texto, com a frase e o item inteiros', () => {
-  const texts = itemsOf([message], view).filter((item) => item.kind === 'text')
-  expect(texts.map((item) => item.text)).toEqual([
-    'Para o fim de semana:\n\n- O serviço A dá 8% de chance de chuva.\n- O serviço B dá 52%, e a página nova dá 36%. Leve um guarda-chuva.',
-  ])
+test('o texto cortado em volta das citações é um só texto, com o espaço entre os blocos citados', () => {
+  expect(cited).toBeDefined()
+  const texts = textsOf(cited?.parts ?? [])
+  expect(texts).toHaveLength(1)
+  expect(texts[0]).toContain('mussarela**. O diferencial')
 })
 
-test('uma ferramenta entre dois textos os mantém separados', () => {
-  const apart: Message = {
-    ...message,
-    parts: [
+test('uma tarefa anotada entre dois textos os mantém separados, como antes', () => {
+  expect(
+    textsOf([
+      { type: 'text', text: 'Vou anotar as tarefas.' },
+      {
+        type: 'tool-invocation',
+        toolInvocation: {
+          state: 'result',
+          toolCallId: 'toolu_task_1',
+          toolName: 'task_write',
+          args: { tasks: [] },
+          result: 'ok',
+        },
+      },
+      { type: 'text', text: 'Agora começo pela tela.' },
+    ]),
+  ).toEqual(['Vou anotar as tarefas.', 'Agora começo pela tela.'])
+})
+
+test('uma ferramenta que aparece entre dois textos os mantém separados', () => {
+  const [call] = cited?.parts.filter((part) => part.type === 'tool-invocation') ?? []
+  expect(call).toBeDefined()
+  expect(
+    textsOf([
       { type: 'text', text: 'Antes.' },
-      search,
-      source('a'),
+      ...(call ? [call] : []),
       { type: 'text', text: 'Depois.' },
-    ],
-  }
-  const kinds = itemsOf([apart], view).map((item) => item.kind)
-  expect(kinds).toEqual(['text', 'tool', 'text'])
+    ]),
+  ).toEqual(['Antes.', 'Depois.'])
 })
