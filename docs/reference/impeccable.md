@@ -11,7 +11,8 @@ what is allowed. Founder, 2026-10-19: "Aprovado tudo" on the structure study, ca
   guide holds the rules. Impeccable reads the root file; each fact has one owner.
 - `PRODUCT.md` at the root is short and cites the document that owns each section.
 - `.impeccable/config.json`: `buildPath` is `code`; the age check is off; `kicker-above-heading` is
-  ignored, because the guide has an `eyebrow` token. Its craft floor also calls a grey screen with
+  ignored for now: the `eyebrow` token of `DESIGN.md` exists, and the guide (V61) already forbids the
+  kicker the detector looks for, so turning it on is a future issue. Its craft floor also calls a grey screen with
   one accent the dull default: "Pauta" ([design](../guides/design.md)) decides, so that
   advice yields.
 - The hooks are in `.claude/settings.json` of this repository only (`SessionStart`, `PostToolUse` on

@@ -2,8 +2,8 @@
 
 How Conexus looks, moves and speaks. The [DESIGN.md](../../DESIGN.md) at the root, in the
 [DESIGN.md format](https://github.com/google-labs-code/design.md), owns the values (colors, type,
-radii, spacing, containers, shadows) and the pieces; this guide owns the rules and never restates a
-value.
+radii, spacing, containers, shadows) and the pieces; this guide owns the rules and quotes a value
+only where the founder's word names it.
 
 Rules read as the opening of the [delivery guide](delivery.md) says. [Web](web.md) owns
 organization and styles. [Delivery L23](delivery.md) owns visible language.
@@ -21,8 +21,8 @@ colorful thing on screen. Ipê is the warm gold accent; prose is sans and facts 
 - **V3.** Every color is a token; only the brand folder holds a raw value, shadows and overlays
   included. Outbound e-mail HTML is an exception: e-mail clients require inline color values [0017].
   Tokens let both themes change in one file. The Prévia's drawn phone frame is the color token
-  `phone-frame` (`dark-phone-frame` in the dark theme, where `#1d2125` would vanish into the stage)
-  rather than a raw value; founder, 2026-10-28, on proposal B, Janela, of the Prévia screen: "1. Sim".
+  `phone-frame` (`dark-phone-frame` in the dark theme, where the light value would vanish into the
+  stage) rather than a raw value; founder, 2026-10-28, on proposal B, Janela, of the Prévia screen: "1. Sim".
   A provider's logo sits on the color token `logo-plate`, a light plate in both themes like
   `phone-frame`, because a provider draws its symbol for a light ground (step 19, the Integrações
   screen). The logo of every connector is the provider's square symbol without the written name,
@@ -30,10 +30,12 @@ colorful thing on screen. Ipê is the warm gold accent; prose is sans and facts 
   "só a logo mesmo, igual eu te mandei" and "a logo do Mercado Livre é só a logo, sem escrita".
   [rule to write]
 - **V5.** Ipê **should** mark only the current place (the tick of the rail and of the list, the
-  active tab), the focus, the caret and the mark, not every resting action, hover or heading.
-  Founder, 2026-11-01: "Aprovo". Failure: making everything gold hides the difference between focus and decoration. The
-  one other hue is violet, `memory`: it colors only the Memória budget beside Ipê's Mensagens.
-  [review]
+  active tab), the focus, the caret and the mark, not every resting action, hover or heading. Two
+  exceptions: the mark of the item the person chose (V57's toggle icon, the chosen Projeto's check)
+  and the busy composer's arc (V28). Founder, 2026-11-01: "Aprovo"; 2026-11-02, on the two
+  exceptions: "B". Failure: making everything gold hides the difference between focus and
+  decoration. The one other hue is violet, `memory`: it colors only the Memória budget beside Ipê's
+  Mensagens. [review]
 - **V8.** Text **should** remain readable in both themes, with 4.5:1 as its contrast reference.
   Failure: a pale subtitle disappears on the light background. Syntax lint does not measure
   rendered contrast. [review]
@@ -53,7 +55,8 @@ colorful thing on screen. Ipê is the warm gold accent; prose is sans and facts 
 
 ## Layout
 
-- **V16.** Spacing comes from the `spacing` scale. [rule to write]
+- **V16.** Spacing comes from the `spacing` scale, and every height, line height, gap and inset is
+  a multiple of 4px. Founder, 2026-11-01: "Aprovo". [rule to write]
 - **V17.** Conexus's own web pieces **must not** use an inline `style` attribute, except in
   outbound e-mail HTML. [Biome `nursery.noInlineStyles`]
 
@@ -98,7 +101,8 @@ churn, not runtime style enforcement; do not extend this check to vendor-generat
 
 - **V23.** Shared pieces **should** own appearance through brand tokens for color, radius and
   typography, retaining the current ink/on-ink primary action, Hanken Grotesk for display and prose
-  and tabular mono facts. Founder, 2026-11-01: "Aprovo". The piece owns its icon set, sizing and state styling. Tailwind named
+  and tabular mono facts; every figure that can change (ages, counts, versions, percentages) is set
+  in tabular figures. Founder, 2026-11-01: "Aprovo". The piece owns its icon set, sizing and state styling. Tailwind named
   widths avoid brand spacing names (`xs` to `2xl`): Tailwind 4 resolves spacing before containers,
   so `max-w-sm` becomes 0.5rem. Use a distinct container name; numeric, intrinsic and zero widths
   remain valid. Failure: a copied hex misses a theme change, or a spacing name makes a column 8px
@@ -113,7 +117,7 @@ churn, not runtime style enforcement; do not extend this check to vendor-generat
   actually removes the item. [review]
 - **V57.** The selected item of a toggle (the Prévia's Computador and Celular) has the gold
   `accent-text` icon in both themes; in the dark theme its background is neutral, not the filled
-  gold block (V5: the choice is shown, not shouted). Founder, 2026-10-28, on proposal B: "2.
+  gold block (the choice is shown, not shouted; one of V5's two exceptions). Founder, 2026-10-28, on proposal B: "2.
   Aprovado"; 2026-10-28, on the icon in the light theme, which was dark grey: "Dourado". [review]
 - **V60.** The composer's row **should** be one piece with one order on every screen: on the left
   what the message carries ("+", the Projeto folder, the tools), on the right who answers and how
@@ -121,6 +125,9 @@ churn, not runtime style enforcement; do not extend this check to vendor-generat
   below 416px words leave, never controls. Founder, 2026-11-01, the order of the row. Failure: the
   model sits left on one screen and right on another, and the person looks for it each time.
   [`assistant.layout.test.ts`, review]
+- **V61.** The `eyebrow` **should** label a group or a fact (a day group, an age, a stamp), never
+  announce a title, and carries no case change. Founder, 2026-11-01: "Aprovo". Failure: a small
+  label above a heading reads as a second title and the heading loses its place. [review]
 
 ## Motion
 
