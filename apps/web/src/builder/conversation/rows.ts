@@ -219,29 +219,35 @@ export type View = {
   live: boolean
 }
 
+/**
+ * Anthropic's web search cuts one answer into text blocks around each citation, a `source` part
+ * between them and sometimes a block of one space: the blocks are one text, or a sentence or a
+ * list item breaks across bubbles. Returns whether a run of text is open after this part; only a
+ * `source` carries it on, and Mastra's empty text part that opens a step says nothing.
+ */
+function addText(items: TranscriptItem[], id: string, text: string, run: boolean): boolean {
+  const last = items.at(-1)
+  if (run && last?.kind === 'text') {
+    items[items.length - 1] = { ...last, text: last.text + text }
+    return true
+  }
+  if (text.trim() === '') return false
+  items.push({ kind: 'text', id, text })
+  return true
+}
+
 function fromParts(
   message: Message,
   thoughts: ReadonlyMap<string, number>,
   view: View,
 ): TranscriptItem[] {
   const items: TranscriptItem[] = []
-  // Anthropic's web search cuts one answer into text blocks around each citation, a `source` part
-  // between them and sometimes a block of one space: the blocks are one text, or a sentence or a
-  // list item breaks across bubbles. Only a `source` carries the run on; any other part ends it.
   let run = false
   for (const [index, part] of message.parts.entries()) {
     const id = `${message.id}-${index}`
-    if (part.type !== 'source' && part.type !== 'text') run = false
-    // Mastra opens a step with an empty text part: it says nothing and must not split a run of tools.
-    if (part.type === 'text') {
-      const last = items.at(-1)
-      if (run && last?.kind === 'text')
-        items[items.length - 1] = { ...last, text: last.text + part.text }
-      else if (part.text.trim() !== '') {
-        items.push({ kind: 'text', id, text: part.text })
-        run = true
-      }
-    } else if (part.type === 'reasoning')
+    if (part.type === 'text') run = addText(items, id, part.text, run)
+    else if (part.type !== 'source') run = false
+    if (part.type === 'reasoning')
       items.push({
         kind: 'reasoning',
         id,

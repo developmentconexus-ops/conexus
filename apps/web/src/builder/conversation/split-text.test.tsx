@@ -30,20 +30,20 @@ test('o texto cortado em volta das citações é um só texto, com o espaço ent
   expect(texts[0]).toContain('mussarela**. O diferencial')
 })
 
+/** The Builder's turn that notes its tasks, as Mastra stored it: `task_write`, `task_complete`, then its words. */
+const tasked = recordedRun('tasks')
+  .read.map(messageOf)
+  .find((message) => message?.parts.some((part) => part.type === 'tool-invocation'))
+
 test('uma tarefa anotada entre dois textos os mantém separados, como antes', () => {
+  const note = tasked?.parts.find(
+    (part) => part.type === 'tool-invocation' && part.toolInvocation.toolName === 'task_write',
+  )
+  expect(note).toBeDefined()
   expect(
     textsOf([
       { type: 'text', text: 'Vou anotar as tarefas.' },
-      {
-        type: 'tool-invocation',
-        toolInvocation: {
-          state: 'result',
-          toolCallId: 'toolu_task_1',
-          toolName: 'task_write',
-          args: { tasks: [] },
-          result: 'ok',
-        },
-      },
+      ...(note ? [note] : []),
       { type: 'text', text: 'Agora começo pela tela.' },
     ]),
   ).toEqual(['Vou anotar as tarefas.', 'Agora começo pela tela.'])
