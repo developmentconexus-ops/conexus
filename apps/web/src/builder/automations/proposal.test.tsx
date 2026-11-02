@@ -121,6 +121,19 @@ test('depois de criar, Ver automação abre o histórico da nova', async () => {
   )
 })
 
+test('uma proposta sem ligações diz que não lê nenhum sistema, onde as outras listam os sistemas', async () => {
+  const none = { ...PROPOSAL, connections: [] }
+  automationsHub(server, { automations: [] })
+  at(OPEN, {
+    conversations: [
+      assistantConversation({ messages: [toolSaid(ASSISTANT_TOOL.proposeAutomation, none, none)] }),
+    ],
+  })
+  expect(
+    await screen.findByText(/Todo dia às 07:00 · Início · Não lê nenhum sistema\./),
+  ).toBeTruthy()
+})
+
 test('com a lista das automações no cache e sem ninguém a observar, a automação criada depois abre o histórico', async () => {
   const held: { automations: AutomationSummary[] } = { automations: [] }
   automationsHub(server, held)

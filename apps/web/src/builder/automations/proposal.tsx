@@ -10,7 +10,7 @@ import { ReadFailure } from '../../ui/states.tsx'
 import { cadenceText } from './cadence-text.ts'
 import { PlaceName } from './place.tsx'
 import { automationsQuery, sendAutomationCreation } from './queries.ts'
-import { CREATED, UNCONFIRMED_CREATION } from './text.ts'
+import { CREATED, READS_NO_SYSTEM, UNCONFIRMED_CREATION } from './text.ts'
 
 /**
  * **Criar automação** (step 24.2, U3, `E1`): the automation the Assistant proposed, with the place
@@ -71,7 +71,7 @@ export function ProposalCard(props: {
       <p className="text-text-2">
         {cadenceText(proposed.cadence)} ·{' '}
         <PlaceName companyId={companyId} projectId={conversation.projectId} />
-        {names.length > 0 && ` · ${names.join(', ')}`}
+        {` · ${names.length > 0 ? names.join(', ') : READS_NO_SYSTEM}`}
       </p>
       <p className="whitespace-pre-wrap break-words text-text">{proposed.prompt}</p>
       {automations.isError && (

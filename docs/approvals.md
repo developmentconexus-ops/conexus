@@ -470,3 +470,5 @@ Em 2026-11-02, à mudança do cartão da 24.2 nos critérios 17, 18 e 21 e nas l
 Cartão da etapa 24.2 aprovado em 2026-11-02 (commit 0c35dc59b9f94d32c21c882d9495ea5228e43f99): "É, eu aprovo essas mudanças se realmente não for patch, não for gambiarra, segue nossos guias, metodologia, repositórios nativos, realmente uma referência e ser funcional. Eu não quero criar coisa específica, mas mal implementada."
 
 Lido pelo firstmate como a aprovação do cartão com a mudança dos critérios 17, 18 e 21 e das linhas da U3 sobre o commit que a traz, sob a condição que ele pôs; o resto do cartão e as recomendações `E1`, `F1` e `G1` ficam como estavam.
+
+Em 2026-11-02, à frase do cartão da proposta quando a automação não lê nenhum sistema (a pergunta deixada aberta na PR da correção dos defeitos do uso da 24.2): "A". A opção A: o cartão mostra "Não lê nenhum sistema." no mesmo lugar em que lista os sistemas que a automação lê, ao lado do lugar. Palavra de meio de etapa, vai direto para este livro (L6).
