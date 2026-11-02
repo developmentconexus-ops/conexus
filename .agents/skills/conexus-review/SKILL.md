@@ -19,8 +19,9 @@ The pull request, its head commit and the card; nothing from the builders' conve
 
 1. Read the rules from `main`: `AGENTS.md`, this skill, [the
    checklist](../../../docs/reference/checklist.md), the card, [code](../../../docs/guides/code.md)
-   and the card's guides. Record the files and skills read and the commit; a skill that did not
-   load is read from its `stack.md` docs column, and said so.
+   and the card's guides; load pstack `poteto-mode` and, for code, `typescript-best-practices`.
+   Record the reads and the commit; an unloaded skill is read from its `stack.md` docs column,
+   said so.
 2. Read the step's whole diff, `main` at the last unit's merge against the step's first commit, and
    against each unit's section, at the exact commit. For a unit review, read the unit's pull
    request diff.
