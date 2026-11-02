@@ -1,9 +1,9 @@
 import { z } from 'zod'
 
 // Mastra Factory's record-read default is 20 rows with a "has older" flag; 20 whole rows show the variation in real Sankhya rows.
-const CUT_ROWS = 20
+export const CUT_ROWS = 20
 // A 50-column read measured 33 KB for 20 rows; 16 KB is about 4-5k tokens, between Mastra's 2k and Codex's 10k per tool output.
-const CUT_BYTES = 16 * 1024
+export const CUT_BYTES = 16 * 1024
 // A single row over the bytes loses its long text before any row is dropped: Mastra Factory read-tools.ts MAX_TEXT = 600 (:53, :57-59).
 const MAX_TEXT = 600
 

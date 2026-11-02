@@ -10,6 +10,7 @@ test('o esquema e os logins levam o id do Projeto como ele é', () => {
     schema: 'app_Ab3dEf6hIj9kLm2nOp5qRs8tUv1wXy4z',
     runLogin: 'app_Ab3dEf6hIj9kLm2nOp5qRs8tUv1wXy4z_run',
     migrateLogin: 'app_Ab3dEf6hIj9kLm2nOp5qRs8tUv1wXy4z_migrate',
+    readLogin: 'app_Ab3dEf6hIj9kLm2nOp5qRs8tUv1wXy4z_read',
   })
   for (const name of Object.values(appLogin(PROJECT))) assert.ok(name.length <= 63)
 })
