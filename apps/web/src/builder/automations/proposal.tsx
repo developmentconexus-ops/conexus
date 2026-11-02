@@ -4,8 +4,9 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { useRef, useState } from 'react'
 import { derivedAttemptKey } from '../../platform/attempt-key.ts'
-import { writeFailureText } from '../../platform/hub.ts'
+import { sentenceOf, writeFailureText } from '../../platform/hub.ts'
 import { Button, buttonVariants } from '../../ui/button.tsx'
+import { ReadFailure } from '../../ui/states.tsx'
 import { cadenceText } from './cadence-text.ts'
 import { PlaceName } from './place.tsx'
 import { automationsQuery, sendAutomationCreation } from './queries.ts'
@@ -73,23 +74,30 @@ export function ProposalCard(props: {
         {names.length > 0 && ` · ${names.join(', ')}`}
       </p>
       <p className="whitespace-pre-wrap break-words text-text">{proposed.prompt}</p>
-      {created === undefined ? (
-        <Button variant="primary" disabled={send.isPending} onClick={() => void create()}>
-          {send.isPending ? 'Criando…' : 'Criar automação'}
-        </Button>
-      ) : (
-        <div className="flex flex-wrap items-center gap-md">
-          <p role="status" className="text-success">
-            {CREATED}
-          </p>
-          <Link
-            to={automationPath(companyId, created.projectId, created.id)}
-            className={buttonVariants()}
-          >
-            Ver automação
-          </Link>
-        </div>
+      {automations.isError && (
+        <ReadFailure
+          text={sentenceOf(automations.error)}
+          onRetry={() => void automations.refetch()}
+        />
       )}
+      {automations.isSuccess &&
+        (created === undefined ? (
+          <Button variant="primary" disabled={send.isPending} onClick={() => void create()}>
+            {send.isPending ? 'Criando…' : 'Criar automação'}
+          </Button>
+        ) : (
+          <div className="flex flex-wrap items-center gap-md">
+            <p role="status" className="text-success">
+              {CREATED}
+            </p>
+            <Link
+              to={automationPath(companyId, created.projectId, created.id)}
+              className={buttonVariants()}
+            >
+              Ver automação
+            </Link>
+          </div>
+        ))}
       {error !== undefined && (
         <p role="alert" className="text-danger">
           {error}

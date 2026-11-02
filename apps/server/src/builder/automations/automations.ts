@@ -112,12 +112,26 @@ async function atLimit(deps: AutomationsDeps, companyId: CompanyId): Promise<boo
   return count >= ACTIVE_AUTOMATIONS_PER_COMPANY
 }
 
-/** A repeated attempt finds its row: the same body answers it, another is `IDEMPOTENCY_CONFLICT`. */
-function repeated(deps: AutomationsDeps, found: Owned, bodyHash: string) {
-  if (Metadata.parse(found.view.metadata).bodyHash !== bodyHash) {
-    throw new Failure('IDEMPOTENCY_CONFLICT')
-  }
-  return summaryOf(deps, found)
+/**
+ * A repeated attempt finds its row: the same body answers it, another is `IDEMPOTENCY_CONFLICT`.
+ * The origin is not part of that body: the attempt key already derives from the same conversation
+ * and call. A row made before the origin existed takes it on the repeat, so the card that made it
+ * reads it as created.
+ */
+async function repeated(
+  deps: AutomationsDeps,
+  found: Owned,
+  attempt: { bodyHash: string; origin: CreateAutomation['origin'] },
+) {
+  const metadata = Metadata.parse(found.view.metadata)
+  if (metadata.bodyHash !== attempt.bodyHash) throw new Failure('IDEMPOTENCY_CONFLICT')
+  if (metadata.origin !== undefined || attempt.origin === undefined) return summaryOf(deps, found)
+  const view = await stored(
+    deps.mastra.schedules.update(found.input.automationId, {
+      metadata: { ...metadata, origin: attempt.origin },
+    }),
+  )
+  return summaryOf(deps, changed(view))
 }
 
 /**
@@ -135,9 +149,10 @@ async function create(
   const place = placeOf(body.projectId)
   await deps.assistant.admit(owner, place)
   const id = automationIdOf(owner, attemptKey)
-  const bodyHash = bodyHashOf(body)
+  const { origin, ...deduplicated } = body
+  const attempt = { bodyHash: bodyHashOf(deduplicated), origin }
   const earlier = ownedOf(await stored(schedules.get(id)))
-  if (earlier !== undefined) return repeated(deps, earlier, bodyHash)
+  if (earlier !== undefined) return repeated(deps, earlier, attempt)
   if (await atLimit(deps, owner.companyId)) throw new Failure('AUTOMATION_LIMIT')
   // A `create` after the scheduler stopped would start it again.
   if (deps.updating()) throw new Failure('HUB_UPDATING')
@@ -153,14 +168,14 @@ async function create(
       metadata: {
         companyId: owner.companyId,
         cadence: body.cadence,
-        bodyHash,
-        origin: body.origin,
+        bodyHash: attempt.bodyHash,
+        origin,
       },
     })
   } catch (error) {
     const raced = ownedOf(await stored(schedules.get(id)))
     if (raced === undefined) throw databaseFailure(error)
-    return repeated(deps, raced, bodyHash)
+    return repeated(deps, raced, attempt)
   }
   const { companyId } = owner
   deps.log.info({ companyId, automationId: id, cadence: body.cadence.kind }, 'AUTOMATION_CREATED')

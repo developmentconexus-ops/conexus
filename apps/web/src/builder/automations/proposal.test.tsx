@@ -1,7 +1,7 @@
-import type { ProjectId } from '@conexus/hub-api'
-import { ASSISTANT_TOOL, CompanyId } from '@conexus/hub-api'
+import type { AutomationSummary, ProjectId } from '@conexus/hub-api'
+import { ASSISTANT_TOOL, automationPath, CompanyId } from '@conexus/hub-api'
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
-import { HttpResponse } from 'msw'
+import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { COMPANY } from '../../platform/fixtures.ts'
 import { hubServer, PEDIDOS, projectsRead, refusal } from '../../platform/test-hub.tsx'
@@ -15,7 +15,7 @@ import {
 } from '../assistant/test-hub.tsx'
 import { cadenceText } from './cadence-text.ts'
 import { automationsQuery } from './queries.ts'
-import { automationsHub } from './test-hub.tsx'
+import { automation, automationsHub, RESUMO } from './test-hub.tsx'
 
 // Criar automação: the automation the Assistant proposed, created by one touch (step 24.2, criterion 18).
 const server = hubServer()
@@ -107,7 +107,7 @@ test('a automação apagada devolve o cartão a "Criar automação", com a mesma
   expect(hub.writes()[1]?.key).toBe(hub.writes()[0]?.key)
 })
 
-test('com a lista das automações já no cache antes da criação, Ver automação abre o histórico da nova', async () => {
+test('depois de criar, Ver automação abre o histórico da nova', async () => {
   automationsHub(server, { automations: [] })
   const { conexus } = at(OPEN, { conversations: [proposing()] })
   await conexus.queryClient.prefetchQuery(automationsQuery(CompanyId.parse(COMPANY.id), undefined))
@@ -119,6 +119,30 @@ test('com a lista das automações já no cache antes da criação, Ver automaç
   expect(conexus.router.state.location.pathname).toMatch(
     /\/automations\/schedule_conexus-automation-/,
   )
+})
+
+test('com a lista das automações no cache e sem ninguém a observar, a automação criada depois abre o histórico', async () => {
+  const held: { automations: AutomationSummary[] } = { automations: [] }
+  automationsHub(server, held)
+  const { conexus } = at(COMPANY_ROOT)
+  const key = automationsQuery(CompanyId.parse(COMPANY.id), undefined)
+  await conexus.queryClient.prefetchQuery(key)
+  expect(conexus.queryClient.getQueryData(key.queryKey)).toEqual({ automations: [] })
+  held.automations.push(automation())
+  await conexus.queryClient.invalidateQueries()
+  await conexus.router.navigate({ to: automationPath(CompanyId.parse(COMPANY.id), null, RESUMO) })
+  expect(await screen.findByText('Resumo de vendas')).toBeTruthy()
+  expect(screen.queryByText('Não encontramos o que você procurou.')).toBeNull()
+})
+
+test('com a lista ainda lendo ou que falhou, o cartão não oferece Criar automação', async () => {
+  const hub = automationsHub(server, { automations: [] })
+  server.use(http.get('*/api/companies/:companyId/automations', () => refusal('NOT_FOUND')))
+  at(OPEN, { conversations: [proposing()] })
+  expect(await screen.findByText('Resumo de vendas')).toBeTruthy()
+  expect(await screen.findByRole('button', { name: 'Tentar de novo' })).toBeTruthy()
+  expect(screen.queryByRole('button', { name: 'Criar automação' })).toBeNull()
+  expect(hub.writes()).toHaveLength(0)
 })
 
 test('voltar à conversa depois de criar mostra "Automação criada" e nenhum Criar automação', async () => {
@@ -143,7 +167,7 @@ test('numa conversa de Projeto, o cartão diz o Projeto e a criação o leva', a
     conversations: [proposing(PEDIDOS.id)],
   })
   expect(await screen.findByText(/Todo dia às 07:00 · Pedidos/)).toBeTruthy()
-  fireEvent.click(screen.getByRole('button', { name: 'Criar automação' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Criar automação' }))
   await screen.findByText('Automação criada')
   expect(Object(hub.writes()[0]?.body).projectId).toBe(PEDIDOS.id)
 })
