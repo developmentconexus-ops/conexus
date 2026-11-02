@@ -62,10 +62,20 @@ function themeDeclarations(): Map<string, string> {
 }
 
 /** What DESIGN.md says each theme variable is, keyed by the variable's name. */
-function expectedDeclarations(front: Front): Map<string, string> {
+function expectedDeclarations(front: Front) {
   const expected = new Map<string, string>()
   function put(name: string, value: string | number) {
     expected.set(name, plain(value))
+  }
+  const families = new Map<string, { type: string; family: string }>()
+  const clashes: string[] = []
+  function putFamily(variable: string, type: string, family: string) {
+    const first = families.get(variable)
+    if (first && plain(first.family) !== plain(family)) {
+      clashes.push(`${variable}: ${first.type} says "${first.family}", ${type} says "${family}"`)
+    }
+    families.set(variable, first ?? { type, family })
+    put(variable, first?.family ?? family)
   }
   for (const name of Object.keys(front.colors)) {
     if (name.startsWith('dark-')) continue
@@ -76,9 +86,10 @@ function expectedDeclarations(front: Front): Map<string, string> {
     if (name === 'fact') {
       put('--font-mono', type.fontFamily ?? '')
       put('--text-fact--font-feature-settings', type.fontFeature ?? '')
+    } else if (name.startsWith('display')) {
+      putFamily('--font-display', name, String(type.fontFamily ?? ''))
     } else {
-      put('--font-display', type.fontFamily ?? '')
-      put('--font-body', type.fontFamily ?? '')
+      putFamily('--font-body', name, String(type.fontFamily ?? ''))
     }
     put(`--text-${name}`, type.fontSize ?? '')
     put(`--text-${name}--line-height`, type.lineHeight ?? '')
@@ -89,18 +100,18 @@ function expectedDeclarations(front: Front): Map<string, string> {
   for (const [name, value] of Object.entries(front.spacing)) put(`--spacing-${name}`, value)
   for (const [name, value] of Object.entries(front.containers)) put(`--container-${name}`, value)
   for (const [name, value] of Object.entries(front.shadows)) put(`--shadow-${name}`, value)
-  return expected
+  return { expected, clashes }
 }
 
 // The scales DESIGN.md owns; an animation, an easing or a keyframe is not one of its tokens.
 const OWNED = /^--(color|text|font|radius|spacing|container|shadow)-/
 
 test('cada token do DESIGN.md é o mesmo valor em tokens.css, e tokens.css não tem um que o DESIGN.md não tem', () => {
-  const expected = expectedDeclarations(frontMatter())
+  const { expected, clashes } = expectedDeclarations(frontMatter())
   const actual = new Map(
     [...themeDeclarations()].filter(([name]) => OWNED.test(name) && name !== '--color-*'),
   )
-  const differences: string[] = []
+  const differences: string[] = [...clashes]
   for (const [name, value] of expected) {
     const written = actual.get(name)
     if (written === undefined) differences.push(`${name}: DESIGN.md has it, tokens.css does not`)

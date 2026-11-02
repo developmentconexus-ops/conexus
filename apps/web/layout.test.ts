@@ -57,7 +57,7 @@ for (const [viewport, field] of [
 
 for (const [viewport, drawer] of [
   [PHONE, 292.5],
-  [WIDE_PHONE, 320],
+  [WIDE_PHONE, 328],
 ] as const) {
   test(`a gaveta tem ${drawer}px numa tela de ${viewport.width}px`, async () => {
     const page = await open('/', viewport, HOUSE)
@@ -78,7 +78,7 @@ test('a mensagem de falha tem 448px de largura numa tela de 1366px', async () =>
   await page.close()
 })
 
-test('de 768px para cima não há barra no topo: a barra lateral aberta tem 256px', async () => {
+test('de 768px para cima não há barra no topo: a barra lateral aberta tem 328px', async () => {
   const page = await open('/', DESKTOP, HOUSE)
   const nav = page.getByRole('navigation', { name: 'Navegação' })
   await nav.getByRole('link', { name: 'Início' }).waitFor()
@@ -87,12 +87,12 @@ test('de 768px para cima não há barra no topo: a barra lateral aberta tem 256p
       nav: await widthOf(nav),
       opener: await page.getByRole('button', { name: 'Abrir navegação' }).isVisible(),
     },
-    { nav: 256, opener: false },
+    { nav: 328, opener: false },
   )
   await page.close()
 })
 
-test('no Projeto a barra é a do Projeto e abre com 256px; Ctrl+B a recolhe para ícones com dica e, ao sair do Projeto, a da empresa volta', async () => {
+test('no Projeto a barra é a do Projeto e abre com 328px; Ctrl+B a recolhe para ícones com dica e, ao sair do Projeto, a da empresa volta', async () => {
   const page = await open(PROJECT, DESKTOP, HOUSE)
   const nav = page.getByRole('navigation', { name: 'Navegação' })
   const construir = nav.getByRole('link', { name: 'Construir' })
@@ -113,7 +113,7 @@ test('no Projeto a barra é a do Projeto e abre com 256px; Ctrl+B a recolhe para
   await page.waitForTimeout(250)
   assert.deepEqual(
     { opened, collapsed, tip, after: await widthOf(nav) },
-    { opened: 256, collapsed: 52, tip: 'Construir', after: 256 },
+    { opened: 328, collapsed: 56, tip: 'Construir', after: 328 },
   )
   await page.close()
 })
