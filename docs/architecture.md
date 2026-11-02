@@ -210,7 +210,7 @@ a scale that does not exist. Every job but the automations' lets the database sl
 | Expired sessions, handoffs, invitations | Expiry checked on read; cleanup once a day |
 | Idle conversations, idle machines, traces | Touch nothing when there is nothing; daily otherwise |
 | The lease | Renewed by activity, not by clock |
-| Automations' schedule | Not asleep: Mastra reads its table every 10 s while a schedule exists (step 24.2) |
+| Automations' schedule | Awake: Mastra reads its table every 10 s, from the first schedule until a restart without one (step 24.2) |
 
 **Shutdown.** The program waits for live Builder turns before exiting; an update waits
 too.

@@ -163,9 +163,9 @@ tudo". The lines of [screens](../reference/screens.md) say which screen is on wh
   permissão' beside its other states. Loading shows the frame at once and a skeleton only in the
   content; an error stays in the content area with "Tentar de novo"; not found offers "Voltar ao
   início" ([code C48](code.md); founder, 2026-10-20: "2. A"); a missing permission shows the page
-  and says who can (design V29), and never hides it. The one exception: the Automações entry is
-  hidden from the member and its address answers not found (S10), because the member never creates
-  automations (founder, 2026-11-01: "1 A"). Failure: a screen that hides what a person may not do
+  and says who can (design V29), and never hides it. The exceptions: the Automações and Agentes
+  entries are hidden from the member and their addresses answer not found (S10), because the member
+  never creates them (founder, 2026-11-01: "1 A"; 2026-11-02: "3.A"). Failure: a screen that hides what a person may not do
   leaves them guessing. [review]
 - **W35.** The Hub added to the iPhone home screen (iOS 26.1 or newer) draws a blurred band under
   the status bar: WebKit bug 301994, with no fix in the page. The page **must not** carry a

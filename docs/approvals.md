@@ -476,3 +476,5 @@ Em 2026-11-02, à frase do cartão da proposta quando a automação não lê nen
 Em 2026-11-02, à regra de horário para publicar, quando a v0.24.7 levou ao ar os quatro consertos do uso da 24.2: "Publica agora, tira essa regra." A regra de horário sai; publicar continua sendo o que a L17 diz.
 
 Etapa 24.2 no ar em https://hub.conexus.fun (v0.24.7), sem a linha de uso do fundador: ela entra aqui, com as palavras dele, depois do passeio dele pelos quatro pontos dos consertos.
+
+Em 2026-11-02, a linha de uso da etapa 24.2, depois de o fundador passar pelos quatro pontos dos consertos no Hub no ar (https://hub.conexus.fun, v0.24.7): "Olha, deu certo, tipo assim, tudo rodou sem esses defeitos".
