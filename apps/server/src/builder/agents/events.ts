@@ -1,9 +1,11 @@
 import type { AgentId, CompanyId } from '@conexus/hub-api'
 
-/** What changes an agent's live version, after its transaction commits: publishing and going back, or deleting. */
+/** What changes an agent's live version: publishing and going back, or deleting, after the transaction commits; and the start of a deletion. */
 export type AgentEvent =
   | { kind: 'ACTIVATED'; companyId: CompanyId; agentId: AgentId; version: number }
   | { kind: 'DELETED'; companyId: CompanyId; agentId: AgentId }
+  /** Before the row goes, the person admitted: its conversations leave first (data D22). */
+  | { kind: 'DELETING'; companyId: CompanyId; agentId: AgentId }
 
 type Hook = (event: AgentEvent) => Promise<void>
 

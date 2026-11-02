@@ -17,7 +17,7 @@ import { TOOL_CLOSURE } from './permissions.ts'
 import { registerConversationRoutes } from './routes.ts'
 import { createConversationStore } from './store.ts'
 
-export { conversationMemory, sessionModel, toolsOf } from './builder.ts'
+export { conversationMemory, routedModel, sessionModel, toolsOf } from './builder.ts'
 export type { Watched } from './end.ts'
 export { failureOf, modelFailure, watchRuns } from './end.ts'
 export type { GuardedMastra } from './guard.ts'

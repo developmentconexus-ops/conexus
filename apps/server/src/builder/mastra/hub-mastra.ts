@@ -96,6 +96,7 @@ export function createHubMastra(deps: {
     async start(): Promise<void> {
       for (const part of parts) await part.beforeWorkers?.()
       await mastra.startWorkers()
+      log.info({}, 'MASTRA_WORKERS_STARTED')
     },
     /**
      * Stops the scheduler, so no automation fires after the signal, then refuses new turns and

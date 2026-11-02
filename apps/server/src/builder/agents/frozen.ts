@@ -82,6 +82,20 @@ export function draftOf(database: Database, ids: OfProject, agentId: AgentId) {
   })
 }
 
+/** The active version of an agent of the company, wherever its Projeto is; none when gone or never published. */
+export async function liveOf(database: Database, companyId: CompanyId, agentId: AgentId) {
+  const [row] = await database.read(hubScope(companyId), (tx) =>
+    tx
+      .select({ projectId: agent.projectId })
+      .from(agent)
+      .where(and(eq(agent.companyId, companyId), eq(agent.id, agentId))),
+  )
+  if (row === undefined) return null
+  const ids = { companyId, projectId: ProjectId.parse(row.projectId) }
+  const version = await activeOf(database, ids, agentId)
+  return version === null ? null : { ...version, ...ids, agentId }
+}
+
 /**
  * Every published agent of every company, as each active version holds it: the companies come
  * from the one function the Hub's login runs before any company is known (D11), then each

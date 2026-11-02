@@ -43,7 +43,11 @@ function isRouterId(modelId: ModelId): modelId is ModelId & `${string}/${string}
 
 /** The conversation's model, as its controller session holds it (`session.model.switch`). */
 export function sessionModel(requestContext: RequestContext): ModelId & `${string}/${string}` {
-  const modelId = chosenModel(requestContext)
+  return routedModel(chosenModel(requestContext))
+}
+
+/** A model as Mastra's router names it, `provider/model`; any other is the Hub's defect. */
+export function routedModel(modelId: ModelId): ModelId & `${string}/${string}` {
   if (!isRouterId(modelId)) {
     throw new Failure('INTERNAL_UNEXPECTED', {
       details: { reason: 'CONVERSATION_MODEL_NOT_ROUTED' },

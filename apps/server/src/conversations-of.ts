@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify'
-import { agentsOf } from './builder/agents/public.ts'
+import { agentsAlive } from './builder/agents/public.ts'
 import type { MachineTuning } from './builder/assistant/public.ts'
-import { createAssistant } from './builder/assistant/public.ts'
+import { createAssistant, speakersOf } from './builder/assistant/public.ts'
 import {
   AUTOMATION_TURN_MS,
   AUTOMATION_WORKFLOW,
@@ -25,7 +25,7 @@ import type { SealKeys } from './platform/seal.ts'
 
 /**
  * The Builder's conversations, the Assistant beside them (step 24.1, U2, `H1`), its automations
- * (step 24.2) and a Projeto's agents (step 24.3): one Mastra store on the pool of Mastra's own login (0010) and one account queue,
+ * (step 24.2) and a Projeto's agents with their conversations (step 24.3): one Mastra store on the pool of Mastra's own login (0010) and one account queue,
  * shared by both controllers. The connectors are made after the apps whose door they read, and a
  * turn comes long after: each door is reached when called. The automations' run is made before the
  * one `Mastra` it is registered on, and the automations after it, on its schedules; a run and a
@@ -55,26 +55,25 @@ export function conversationsOf(deps: {
     googleCalls: deps.google.googleCalls,
     log,
   }
+  const door: Connectors['assistant'] = {
+    connections: (scope) => deps.connectors().assistant.connections(scope),
+    read: (scope, call) => deps.connectors().assistant.read(scope, call),
+    notes: (scope, connectionId) => deps.connectors().assistant.notes(scope, connectionId),
+    operationOf: (scope, target) => deps.connectors().assistant.operationOf(scope, target),
+  }
   const assistant = createAssistant({
     ...{ storage, database, identity, queue, log },
     machine: deps.machine,
     machineTuning: deps.machineTuning,
-    connectors: {
-      connections: (scope) => deps.connectors().assistant.connections(scope),
-      read: (scope, call) => deps.connectors().assistant.read(scope, call),
-      notes: (scope, connectionId) => deps.connectors().assistant.notes(scope, connectionId),
-      operationOf: (scope, target) => deps.connectors().assistant.operationOf(scope, target),
-    },
+    connectors: door,
     projects: { liveProjectOf, liveProjectsOf, publishedVersionsOf },
   })
-  // A Projeto's agents and the company's tools (step 24.3): the connectors' door is reached when a
-  // route calls it, long after the connectors are made.
-  const agents = agentsOf({
-    ...{ database, identity, liveProjectOf, isChoosable, log },
-    connectors: {
-      connections: (scope) => deps.connectors().assistant.connections(scope),
-      operationOf: (scope, target) => deps.connectors().assistant.operationOf(scope, target),
-    },
+  // A Projeto's agents and the company's tools (step 24.3), each published one alive on the one
+  // `Mastra`, made below: the connectors' door is reached when a route or a turn calls it.
+  const agents = agentsAlive({
+    ...{ storage, database, identity, queue, liveProjectOf, isChoosable, log, connectors: door },
+    speakersOf: (scope) => speakersOf({ database, identity, projects: { liveProjectOf } }, scope),
+    mastra: () => hub.mastra,
   })
   const clock = deps.automationClock
   const run = automationRun({
@@ -92,10 +91,11 @@ export function conversationsOf(deps: {
       saveNote: (ids, a) => deps.connectors().builder.saveNote(ids, a),
     },
   })
-  // The order of removal: the automations, the agents, then the Builder's conversations and the
-  // Assistant's; the Builder's part closes first, as it owns the open streams and the runs.
+  // The order of removal: the automations, the agents, then the Builder's conversations, the
+  // Assistant's and the agents'; the Builder's part closes first, as it owns the open streams and
+  // the runs.
   const hub = createHubMastra({
-    ...{ storage, log, parts: [builder.part, assistant.part] },
+    ...{ storage, log, parts: [builder.part, assistant.part, agents.part] },
     workflows: { [AUTOMATION_WORKFLOW]: run },
     schedulerTickMs: clock?.schedulerTickMs,
     releaseFirst: [

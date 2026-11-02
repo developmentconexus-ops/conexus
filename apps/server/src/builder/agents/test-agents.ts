@@ -41,8 +41,12 @@ export type Agent = {
  * The Assistant's test company (`assisting`): Matriz given to the Projeto, Filial not, and the
  * addresses of the Projeto's agents and tools.
  */
-export async function agentsOn(t: TestContext) {
-  const on = await assisting(t)
+export async function agentsOn(
+  t: TestContext,
+  model: Parameters<typeof assisting>[1] = [],
+  change?: Parameters<typeof assisting>[3],
+) {
+  const on = await assisting(t, model, undefined, change)
   const project = `${on.company}/projects/${on.projectId}`
   return {
     ...on,
@@ -122,6 +126,38 @@ export async function plantedTool(hub: Hub, companyId: string, connectionId: str
     [versionId, toolId, companyId, JSON.stringify(config)],
   )
   return { toolId, versionId }
+}
+
+/** The draft published at its current revision; the agent after. */
+export async function publishedNow(hub: Hub, person: Person, url: string, agent: Agent) {
+  const done = await post(hub, person, `${url}/${agent.id}/publish`, {
+    revision: agent.revision,
+    message: '',
+  })
+  assert.equal(done.statusCode, 200, done.body)
+  return agentOf(done)
+}
+
+/** A new agent of `person`, its draft set by `body`, published as version 1. */
+export async function publishedAgent(hub: Hub, person: Person, url: string, body: object) {
+  const made = await madeAgent(hub, person, url)
+  return publishedNow(hub, person, url, await drafted(hub, person, url, made, body))
+}
+
+/**
+ * A new conversation of `person` with the agent, `{ draft: true }` the test one; its test address,
+ * which `sessionUrl` maps to the agents' controller.
+ */
+export async function talkedTo(
+  hub: Hub,
+  person: Person,
+  url: string,
+  agentId: string,
+  body: object = {},
+) {
+  const made = await post(hub, person, `${url}/${agentId}/conversations`, body, randomUUID())
+  assert.equal(made.statusCode, 201, made.body)
+  return `${url}/${agentId}/conversations/${String(Object(made.json()).conversation.id)}`
 }
 
 /** Another Projeto of the company, named `name`, given `connections`. */

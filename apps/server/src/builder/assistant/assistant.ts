@@ -95,7 +95,12 @@ function readerScope(scope: SessionScope) {
  * The company, the person with their role, and the Projeto the conversation lives in, for its
  * block.
  */
-function speakersOf(deps: Deps, scope: SessionScope): Promise<Speakers> {
+export function speakersOf(
+  deps: Pick<Deps, 'database' | 'identity'> & {
+    projects: Pick<AssistantProjects, 'liveProjectOf'>
+  },
+  scope: SessionScope,
+): Promise<Speakers> {
   return deps.database.read(readerScope(scope), async (tx) => {
     const admitted = await admitAsker(deps.identity, tx, scope)
     const { companyId } = scope

@@ -1,0 +1,260 @@
+import type { CompanyId, Person } from '@conexus/hub-api'
+import {
+  AGENTS_CONTROLLER,
+  AgentId as AgentIdSchema,
+  ConversationId,
+  ProjectId,
+} from '@conexus/hub-api'
+import { Agent } from '@mastra/core/agent'
+import type { AgentController } from '@mastra/core/agent-controller'
+import type { Mastra } from '@mastra/core/mastra'
+import type { InputProcessor } from '@mastra/core/processors'
+import type { RequestContext } from '@mastra/core/request-context'
+import { Memory } from '@mastra/memory'
+import type { PostgresStore } from '@mastra/pg'
+import { eq } from 'drizzle-orm'
+import { z } from 'zod'
+import type { Connectors, SessionScope } from '../../hub/connectors/public.ts'
+import type { IdentityPorts } from '../../hub/identity/public.ts'
+import type { Database } from '../../platform/database.ts'
+import type { FailureLog } from '../../platform/failure.ts'
+import { Failure } from '../../platform/failure.ts'
+import type { Speakers } from '../assistant/public.ts'
+import type { Owner, ReleaseScope } from '../controller-kit/public.ts'
+import {
+  agentDefaults,
+  controllerOf,
+  oncePerRun,
+  ownerOfResource,
+  releaseThreads,
+  threadsByMarks,
+} from '../controller-kit/public.ts'
+import { conversationMemory, routedModel } from '../conversation/public.ts'
+import type { QueueDeps, Turn } from '../model-accounts/public.ts'
+import type { AgentRun } from './agent.ts'
+import { agentOf, planOf, setAgentRun, takeAgentTurn } from './agent.ts'
+import type { Agents } from './public.ts'
+import { createRegistry } from './registry.ts'
+import { agent, agentConversation } from './tables.ts'
+
+const MODE = 'conversa'
+const TITLE =
+  'Dê à conversa um título curto em português, de até seis palavras, sobre o que a pessoa pergunta ou pede, sem aspas nem ponto final.'
+const OBSERVER =
+  'Escreva o título da conversa em português do Brasil, sobre o que a pessoa pergunta, analisa ou pede.'
+
+/**
+ * The marks of an agent's thread, stamped by `createSession({ tags })`: its own keys, so the
+ * Assistant's sweep by `companyId` never takes an agent's thread, nor this one an Assistant's.
+ */
+export const AGENT_MARK = {
+  company: 'conexusAgentCompany',
+  person: 'conexusAgentPerson',
+  project: 'conexusAgentProject',
+  agent: 'conexusAgent',
+  draft: 'conexusAgentDraft',
+} as const
+
+const Controller = z.object({ resourceId: z.string(), sessionId: ConversationId })
+const Session = z.object({ sessionId: ConversationId })
+
+/** Which agent a conversation of the owner's runs, and whether its draft, as the Hub keeps it. */
+export async function keptRun(database: Database, owner: Owner, id: ConversationId) {
+  const [row] = await database.read({ kind: 'COMPANY', ...owner }, (tx) =>
+    tx
+      .select({
+        agentId: agentConversation.agentId,
+        draft: agentConversation.draft,
+        projectId: agent.projectId,
+      })
+      .from(agentConversation)
+      .innerJoin(agent, eq(agent.id, agentConversation.agentId))
+      .where(eq(agentConversation.id, id)),
+  )
+  if (row === undefined) return undefined
+  const scope = { ...owner, projectId: ProjectId.parse(row.projectId) }
+  const agentId = AgentIdSchema.parse(row.agentId)
+  return { kind: row.draft ? 'DRAFT' : 'PUBLISHED', scope, agentId } satisfies AgentRun
+}
+
+/** The run a conversation of the agents' controller is: its owner by the thread, its agent by the Hub's row. */
+function runsOf(database: Database) {
+  return oncePerRun(async (requestContext): Promise<AgentRun | undefined> => {
+    const controller = Controller.safeParse(requestContext.get('controller'))
+    if (!controller.success) return undefined
+    const owner = ownerOfResource(controller.data.resourceId)
+    if (owner?.kind !== 'agents') return undefined
+    const { companyId, personId } = owner
+    return keptRun(database, { companyId, personId }, controller.data.sessionId)
+  })
+}
+
+type Resolved = (requestContext: RequestContext) => Promise<Agent>
+
+/**
+ * The turns of the agents' conversations, and the one owner of their end (code C26): a run takes
+ * its person's turn as Mastra reads its input, with the model of the version it runs held, and
+ * lets go of it when the controller says the run ended, or its session was deleted.
+ */
+function agentTurns(queue: QueueDeps, runOf: ReturnType<typeof runsOf>, resolvedOf: Resolved) {
+  const held = new Map<ConversationId, Turn>()
+  function letGo(sessionId: ConversationId): void {
+    held.get(sessionId)?.end()
+    held.delete(sessionId)
+  }
+  const processor: InputProcessor = {
+    id: 'conexus-agents-turn',
+    async processInput({ requestContext, messages, abort }) {
+      const run = requestContext === undefined ? undefined : await runOf(requestContext)
+      const session = Session.safeParse(requestContext?.get('controller'))
+      if (requestContext === undefined || run === undefined || !session.success) {
+        return abort('CONVERSATION_NOT_FOUND')
+      }
+      const { start } = await planOf(await resolvedOf(requestContext), requestContext)
+      const model = { id: start.model, effort: start.effort }
+      held.set(session.data.sessionId, await takeAgentTurn(queue, requestContext, { run, model }))
+      return messages
+    },
+  }
+  function watch(controller: AgentController): void {
+    controller.onSessionCreated((session) => {
+      const sessionId = ConversationId.parse(session.identity.getId())
+      session.subscribe((event) => {
+        if (event.type === 'agent_end') letGo(sessionId)
+      })
+    })
+    controller.onSessionDeleted((session) => letGo(ConversationId.parse(session.identity.getId())))
+  }
+  return { processor, watch }
+}
+
+/**
+ * The controller's one agent, which delegates at each request to the agent the conversation names:
+ * its instructions, tools and memory, read once per run, and the version's model; the registered
+ * agent's own processors do not run here, the turn below takes their place.
+ */
+function delegatingAgent(queue: QueueDeps, resolvedOf: Resolved, turn: InputProcessor): Agent {
+  return new Agent({
+    id: AGENTS_CONTROLLER,
+    name: 'Agents',
+    instructions: async ({ requestContext }) =>
+      (await resolvedOf(requestContext)).getInstructions({ requestContext }),
+    model: async ({ requestContext }) =>
+      routedModel((await planOf(await resolvedOf(requestContext), requestContext)).start.model),
+    tools: async ({ requestContext }) =>
+      (await resolvedOf(requestContext)).listTools({ requestContext }),
+    memory: async ({ requestContext }) => {
+      const chosen = await (await resolvedOf(requestContext)).getMemory({ requestContext })
+      if (chosen === undefined) {
+        throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'AGENT_WITHOUT_MEMORY' } })
+      }
+      return chosen
+    },
+    ...agentDefaults(queue, turn),
+  })
+}
+
+type Deps = {
+  storage: PostgresStore
+  database: Database
+  identity: IdentityPorts
+  queue: QueueDeps
+  connectors: Connectors['assistant']
+  speakersOf: (scope: SessionScope) => Promise<Speakers>
+  agents: Pick<Agents, 'activeOf' | 'draftOf' | 'liveOf' | 'publishedAll' | 'onChange'>
+  /** The one `Mastra` the registry adds the agents to, made after the parts. */
+  mastra: () => Mastra
+  log: FailureLog
+}
+
+/**
+ * The agents' conversations (step 24.3, U2): the registry of every published agent, and the
+ * controller "agentes" on the kit, whose one agent delegates, at each request, to the agent the
+ * conversation names (the registered one, or the draft's): its instructions, tools and memory, and
+ * the version's model for the turn. Its sessions are the 24.1 ones; its processors are its own
+ * agent's, the turn by the session with the version's model held, then the account's pick.
+ */
+export function createAgentConversations(deps: Deps) {
+  const { storage, database, queue, log } = deps
+  const memory = conversationMemory({
+    ...{ storage, queue, recall: false },
+    title: TITLE,
+    observer: OBSERVER,
+  })
+  const memories = { observational: memory, plain: new Memory({ storage }) }
+  const registry = createRegistry({
+    ...deps.agents,
+    ...{ mastra: deps.mastra, log },
+    build: (live) => agentOf({ ...deps, memories }, live),
+  })
+  const runOf = runsOf(database)
+  const resolvedOf = oncePerRun(async (requestContext) => {
+    const run = await runOf(requestContext)
+    if (run === undefined) throw new Failure('CONVERSATION_NOT_FOUND')
+    setAgentRun(requestContext, run)
+    return registry.resolve(run)
+  })
+  const turns = agentTurns(queue, runOf, resolvedOf)
+  // Decision 0053: nothing waits to be approved; the version's tools only read. The mode lists no
+  // tools: the closed set is the version's, which only this code builds.
+  const controller = controllerOf({
+    ...{
+      kind: 'agents',
+      storage,
+      memory,
+      agent: delegatingAgent(queue, resolvedOf, turns.processor),
+    },
+    mode: { id: MODE },
+    initialState: { yolo: true },
+  })
+  turns.watch(controller)
+
+  async function sweep(marks: Record<string, string>): Promise<number> {
+    return releaseThreads({ controller, memory }, await threadsByMarks(memory, marks))
+  }
+  deps.agents.onChange(async (event) => {
+    if (event.kind === 'ACTIVATED') return registry.replace(event.agentId, event.companyId)
+    if (event.kind === 'DELETED') registry.remove(event.agentId)
+    const count = await sweep({
+      [AGENT_MARK.company]: event.companyId,
+      [AGENT_MARK.agent]: event.agentId,
+    })
+    log.info(
+      { companyId: event.companyId, agentId: event.agentId, count },
+      'AGENT_CONVERSATIONS_SWEPT',
+    )
+  })
+
+  return Object.freeze({
+    registry,
+    controller,
+    memory,
+    /** Its controller on the one `Mastra` (`builder/mastra/`), after the Assistant's. */
+    part: {
+      kind: 'agents',
+      controller,
+      memory,
+      /** Whether the person may talk to the Projeto's agents now (`manageAgents`). */
+      async admit(input: { person: Person; companyId: CompanyId }): Promise<void> {
+        const owner = { companyId: input.companyId, personId: input.person.id }
+        await database.command({ kind: 'COMPANY', ...owner }, async (tx) => {
+          await deps.identity.admitMember({ tx, ...owner, action: 'manageAgents' })
+        })
+      },
+      async release(scope: ReleaseScope): Promise<void> {
+        const count = await sweep({
+          [AGENT_MARK.company]: scope.companyId,
+          ...(scope.personId === undefined ? {} : { [AGENT_MARK.person]: scope.personId }),
+          ...(scope.projectId === undefined ? {} : { [AGENT_MARK.project]: scope.projectId }),
+        })
+        log.info({ companyId: scope.companyId, count }, 'AGENT_CONVERSATIONS_RELEASED')
+      },
+      /** Every published agent before the scheduler wakes, which drops what it cannot find. */
+      async beforeWorkers(): Promise<void> {
+        await registry.hydrate()
+      },
+    },
+  } as const)
+}
+
+export type AgentConversations = ReturnType<typeof createAgentConversations>

@@ -103,10 +103,19 @@ export class Turn {
    */
   #model: { id: ModelId; effort: Effort; switched: boolean } | undefined
 
-  constructor(owner: { companyId: CompanyId; personId: PersonId; memoryModels?: MemoryModels }) {
+  /** An agent's model (step 24.3), which holds instead of the session's: an agent alone has no session. */
+  readonly #fixed: { id: ModelId; effort: Effort } | undefined
+
+  constructor(owner: {
+    companyId: CompanyId
+    personId: PersonId
+    memoryModels?: MemoryModels
+    model?: { id: ModelId; effort: Effort }
+  }) {
     this.companyId = owner.companyId
     this.personId = owner.personId
     this.memoryModels = owner.memoryModels ?? FOLLOW_CONVERSATION
+    this.#fixed = owner.model
   }
 
   /**
@@ -138,7 +147,9 @@ export class Turn {
   }
 
   #chosen(context: RequestContext | undefined) {
-    this.#model ??= { id: chosenModel(context), effort: chosenEffort(context), switched: false }
+    this.#model ??= this.#fixed
+      ? { ...this.#fixed, switched: false }
+      : { id: chosenModel(context), effort: chosenEffort(context), switched: false }
     return this.#model
   }
 
