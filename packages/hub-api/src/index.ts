@@ -220,6 +220,7 @@ export {
 } from './model-defaults.ts'
 export { setCompanyNickname } from './nickname.ts'
 export {
+  ObservationalMemoryChoice,
   ObservationalMemoryModels,
   ObservationalMemoryRole,
   readObservationalMemoryModels,

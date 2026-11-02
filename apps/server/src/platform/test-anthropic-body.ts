@@ -8,6 +8,8 @@ export type Media = { type: 'document' | 'image'; mediaType: string }
 /** One call the Hub made to the Messages API, as the double read it. */
 export type Sent = {
   key: string | null
+  /** The model the body names. */
+  model: string | null
   bearer: string | null
   stream: boolean
   tools: string[]
@@ -36,6 +38,7 @@ type Thinking = z.infer<typeof Thinking>
 const CacheControl = z.object({ type: z.literal('ephemeral'), ttl: z.string().optional() })
 
 const Body = z.object({
+  model: z.string().optional(),
   stream: z.boolean().optional(),
   thinking: Thinking.optional(),
   tools: z.array(z.object({ name: z.string() })).optional(),
@@ -156,6 +159,7 @@ export function sentOf(init: RequestInit | undefined): Sent {
   const bearer = headers.get('authorization')?.replace(/^Bearer /, '') ?? null
   return {
     key: headers.get('x-api-key'),
+    model: body.model ?? null,
     bearer,
     stream: body.stream === true,
     // `tool_choice: none` offers the model no tool, as the router's model asked it with an empty list.

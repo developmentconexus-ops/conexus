@@ -242,7 +242,10 @@ export const companyModelFallback = builder.table(
   ],
 )
 
-/** One company-wide Observer and Reflector selection; null follows the conversation's model. */
+/**
+ * One company-wide Observer and Reflector selection: null follows the conversation's model, 'auto'
+ * is the cheap model of its provider, and a company with no row never chose, which reads 'auto'.
+ */
 export const observationalMemoryModels = builder.table(
   'observational_memory_models',
   {
