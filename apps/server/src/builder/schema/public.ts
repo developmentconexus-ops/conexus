@@ -1,1 +1,1 @@
-export { builder, OWN } from './tables.ts'
+export { builder, OWN, OWN_COMPANY } from './tables.ts'

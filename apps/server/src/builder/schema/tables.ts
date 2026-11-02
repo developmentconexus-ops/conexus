@@ -11,3 +11,7 @@ export const builder = pgSchema('builder')
 // conversations of a Projeto, a person or the company.
 export const OWN = sql`company_id = ${scoped.companyId}
   and (person_id = ${scoped.personId} or ${scoped.personId} is null)`
+
+// A row every person of the company with the action reaches, as a Projeto's (step 24.3: agents and
+// the tool library are the company's, not a person's).
+export const OWN_COMPANY = sql`company_id = ${scoped.companyId}`
