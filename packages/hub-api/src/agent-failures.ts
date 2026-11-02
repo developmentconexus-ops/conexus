@@ -39,6 +39,14 @@ export const AGENT_FAILURES = {
     action: '',
     actionKind: 'NONE',
   },
+  AGENT_NOT_PUBLISHED: {
+    category: 'USER',
+    settles: true,
+    status: 409,
+    phrase: 'Este agente ainda não foi publicado.',
+    action: 'Publique uma versão ou converse com o rascunho.',
+    actionKind: 'NONE',
+  },
   AGENT_VERSION_NOT_FOUND: {
     category: 'USER',
     settles: true,

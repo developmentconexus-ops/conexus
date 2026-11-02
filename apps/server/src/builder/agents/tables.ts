@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm'
 import type { PgTableExtraConfigValue } from 'drizzle-orm/pg-core'
 import {
+  boolean,
   check,
   foreignKey,
   integer,
@@ -11,10 +12,10 @@ import {
   unique,
   uuid,
 } from 'drizzle-orm/pg-core'
-import { company, policy } from '../../hub/identity/public.ts'
+import { company, member, policy } from '../../hub/identity/public.ts'
 import { project } from '../../hub/projects/public.ts'
 import { SCOPE_ROLES } from '../../platform/database.ts'
-import { authored, builder, instant, OWN_COMPANY } from '../schema/public.ts'
+import { authored, builder, instant, OWN, OWN_COMPANY } from '../schema/public.ts'
 import { toolVersion } from '../tools/public.ts'
 
 const AGENT_COMPANIES = 'hub_agent_companies'
@@ -155,5 +156,39 @@ export const agentVersionTool = builder.table(
       foreignColumns: [toolVersion.companyId, toolVersion.id],
     }),
     policy(SCOPE_ROLES.COMPANY, 'all', OWN_COMPANY),
+  ],
+)
+
+/**
+ * A person's conversation with an agent (step 24.3, U2), one row per Mastra thread, whose id is this
+ * row's: which agent, and whether it runs the draft. Written before the thread, and never changed;
+ * it leaves with its agent, its person or its company, after their removal deleted the thread.
+ */
+export const agentConversation = builder.table(
+  'agent_conversation',
+  {
+    id: uuid('id').primaryKey(),
+    companyId: text('company_id').notNull(),
+    personId: text('person_id').notNull(),
+    agentId: uuid('agent_id').notNull(),
+    draft: boolean('draft').notNull(),
+  },
+  (table) => [
+    foreignKey({
+      name: 'agent_conversation_company_id_fkey',
+      columns: [table.companyId],
+      foreignColumns: [company.id],
+    }).onDelete('cascade'),
+    foreignKey({
+      name: 'agent_conversation_agent_fkey',
+      columns: [table.companyId, table.agentId],
+      foreignColumns: [agent.companyId, agent.id],
+    }).onDelete('cascade'),
+    foreignKey({
+      name: 'agent_conversation_member_fkey',
+      columns: [table.companyId, table.personId],
+      foreignColumns: [member.organizationId, member.userId],
+    }).onDelete('cascade'),
+    policy(SCOPE_ROLES.COMPANY, 'all', OWN),
   ],
 )

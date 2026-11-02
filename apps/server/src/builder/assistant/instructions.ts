@@ -36,7 +36,7 @@ export type Speakers = {
 }
 
 /** The conversation's block: the company, the person, today, the place and the chosen connections; no rule of how to answer. */
-function blockOf(
+export function blockOf(
   speakers: Speakers,
   chosen: readonly { name: string; connector: string }[],
 ): string {
