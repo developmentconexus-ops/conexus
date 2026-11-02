@@ -200,6 +200,35 @@ test('num toque as linhas e os itens têm 44 px; com o mouse ficam em 32 (V58)',
   const item = await page.getByRole('menuitem', { name: 'Sair do Conexus' }).boundingBox()
   assert.equal(item?.height, 44, 'a menu item is not 44 px under touch')
   await page.close()
+
+  const mouse = await harness.open(home.path, { viewport: DESKTOP, replies: home.replies })
+  await home.settle(mouse)
+  const fine = await mouse
+    .locator('[data-slot=sidebar-menu-item] > *')
+    .evaluateAll((all) => all.map((one) => one.getBoundingClientRect().height))
+  assert.ok(fine.includes(32), 'no sidebar row is 32 px with a mouse')
+  assert.ok(!fine.includes(44), 'a sidebar row is 44 px with a mouse')
+  await mouse.getByRole('button', { name: /^Conta de / }).click()
+  const fineItem = await mouse.getByRole('menuitem', { name: 'Sair do Conexus' }).boundingBox()
+  assert.equal(fineItem?.height, 32, 'a menu item is not 32 px with a mouse')
+  await mouse.close()
+
+  const rail = await harness.open(home.path, {
+    viewport: { width: 800, height: 900 },
+    replies: home.replies,
+  })
+  await home.settle(rail)
+  const railFine = await rail
+    .locator('[data-slot=sidebar-menu-item] > *')
+    .evaluateAll((all) => all.map((one) => one.getBoundingClientRect().height))
+  assert.ok(railFine.includes(32), 'the collapsed rail has no 32 px square with a mouse')
+  await touching(rail)
+  const railTouch = await rail
+    .locator('[data-slot=sidebar-menu-item] > *')
+    .evaluateAll((all) => all.map((one) => one.getBoundingClientRect().height))
+  assert.ok(railTouch.includes(44), 'the collapsed rail has no 44 px square under touch')
+  assert.ok(!railTouch.includes(32), 'a collapsed rail square stayed 32 px under touch')
+  await rail.close()
 })
 
 /** The line height of every element that holds text of its own, as the browser computes it. */

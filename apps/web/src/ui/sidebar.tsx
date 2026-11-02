@@ -254,7 +254,7 @@ export function SidebarMenuItem({ className, ...props }: ComponentProps<'li'>) {
 
 // The router marks the current place `data-status="active"`; a menu marks its open trigger.
 const menuButton = cva(
-  'peer/menu-button flex w-full items-center gap-sm overflow-hidden rounded-control px-[0.6rem] text-left font-body text-label text-text-2 hover:bg-accent-soft hover:text-text data-popup-open:bg-surface-3 data-[status=active]:bg-surface-3 data-[status=active]:text-text group-data-[collapsible=icon]:size-row! group-data-[collapsible=icon]:p-sm! [&_svg]:size-[18px] [&_svg]:shrink-0 [&>span:last-child]:truncate',
+  'peer/menu-button flex w-full items-center gap-sm overflow-hidden rounded-control px-[0.6rem] text-left font-body text-label text-text-2 hover:bg-accent-soft hover:text-text data-popup-open:bg-surface-3 data-[status=active]:bg-surface-3 data-[status=active]:text-text group-data-[collapsible=icon]:size-row! group-data-[collapsible=icon]:pointer-coarse:size-11! group-data-[collapsible=icon]:p-sm! [&_svg]:size-[18px] [&_svg]:shrink-0 [&>span:last-child]:truncate',
   {
     variants: {
       size: {
