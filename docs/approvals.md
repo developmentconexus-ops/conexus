@@ -82,6 +82,8 @@ Etapa 12 usada em 2026-10-19 em https://hub.conexus.fun (v0.12.0 a v0.12.2), com
 Cartão da etapa 12.1 aprovado em 2026-10-19 (commit bae3907092629491aef6edf2d704623506fc1c71): "Eu aprovo o cartão do 12.1"; "Eu autorizo os dois turnos reais pela assinatura Claude"
 Etapa 12.1 usada em 2026-10-20 em https://hub.conexus.fun (v0.12.4 a v0.12.7); consertos de "Desligado", ferramenta cortada, citação, tabelas (#188, #191, #192): "Deu certo"
 
+Em 2026-11-01, ao título da conversa: "2A". O observador continua atualizando o título (`threadTitle`, nativo, como no Mastra Code), e um nome que a pessoa der ao renomear fica travado pelo `titlePinned` do Mastra. Substitui a resposta "C" de 2026-10-20 (o título feito uma vez na primeira mensagem, com o `threadTitle` desligado); o cartão que trouxer o renomear cita as duas.
+
 ## Etapa 12.2
 
 Cartão da etapa 12.2 aprovado em 2026-10-20 (commit d4fcae61430a89e03e515c4cd16beba1aaf6300e): "Aprovo o cartão da 12.2"
@@ -215,6 +217,8 @@ Em 2026-10-27, sobre a linha de ações do compositor, no celular: "Ó, no celul
 Em 2026-10-27, sobre a faixa de cima do Hub na tela de início do iPhone, que parecia embaçada: "Corrija." É o bug 301994 do WebKit (iOS 26.1 ou mais novo), sem correção no DOM; ficou como problema externo conhecido, na issue #387.
 
 Etapa 14.3 usada em 2026-10-27 em https://hub.conexus.fun (v0.14.11 e v0.14.12): "Ah, eu usei a 14.3, tá top, finalizada." Pendências: #381 a #389.
+
+Em 2026-11-01, à frase do arquivo que não se lê no compositor: "1A". "Não conseguimos ler este arquivo. Escolha de novo." fica como está.
 
 ## Etapa 13.1
 
@@ -460,3 +464,7 @@ Lido pelo firstmate como a mesma pré-aprovação, agora sobre o commit que traz
 Em 2026-11-01, depois do cartão, ao estudo dos papéis e das aprovações (`data/conexus-roles-approvals-study/report.md`, seção 6): "1 A", "2 Sua rewcomendação", "3 Por agora qualquer dono ou admnistrador", "4 Confirmo", "5 Sua recomendacao". Lido pelo firstmate como: o `1 A` mantém a entrada Automações escondida do membro, como o cartão a constrói (S10); a exceção ao guia da web (W34, que manda mostrar a página com quem pode) entra no fechamento da 24.2, porque um guia só muda num fechamento (L20); a `2` é a recomendação do firstmate, uma etapa de papéis e pedidos logo depois da 24.3 e antes da 24.4; a `3` deixa, por agora, qualquer dono ou administrador criar e apagar automações; a `4` confirma e a `5` segue a recomendação do firstmate, como o estudo as propõe. Palavra de meio de etapa, vai direto para este livro, sem nova aprovação do cartão (L6).
 
 Em 2026-11-01, à exceção da regra D27 que a agenda desta etapa pede (o banco acordado enquanto houver uma automação, o `D1` do Neon Launch), já registrada na 24.1: "3. Okay, mas vou depois por agora no gratuito". Ele concorda com o custo e fica, por agora, no plano gratuito do Neon.
+
+## Decisões fora de uma etapa
+
+Em 2026-11-01, ao estudo do auth do Mastra (se a porta das rotas do Mastra passa ao auth nativo dele, com a integração Better Auth): "okay sibre auth". Fica como está: o login é o Better Auth, e a porta das rotas do Mastra é a nossa, a lista fixa de `guard.ts` com o dono de cada conversa conferido a cada pedido; a decisão 0050 vale.
