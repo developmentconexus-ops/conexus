@@ -216,6 +216,7 @@
         "apps/web/src/platform/test-hub-versions.tsx",
         "apps/web/src/builder/model-accounts/test-hub.tsx",
         "apps/web/src/builder/model-accounts/test-writes.tsx",
+        "apps/web/src/builder/assistant/test-hub.tsx",
         "apps/web/src/builder/conversation/test-hub.tsx",
         "apps/web/src/builder/conversation/test-start.tsx",
         "apps/web/src/builder/conversation/test-stream.tsx",

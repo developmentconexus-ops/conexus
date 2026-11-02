@@ -1,4 +1,4 @@
-import { ConversationId } from '@conexus/hub-api'
+import { BUILDER_CONTROLLER, ConversationId } from '@conexus/hub-api'
 import { createFileRoute } from '@tanstack/react-router'
 import {
   conversationQuery,
@@ -21,7 +21,9 @@ export const Route = createFileRoute(
         context.queryClient.ensureQueryData(
           conversationQuery(params.companyId, params.projectId, params.conversationId),
         ),
-        context.queryClient.ensureQueryData(sessionReadQuery(params.conversationId)),
+        context.queryClient.ensureQueryData(
+          sessionReadQuery(params.conversationId, BUILDER_CONTROLLER),
+        ),
       ]),
     ),
   component: Panel,

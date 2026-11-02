@@ -1,5 +1,5 @@
-import type { CompanyId, ConversationId, ProjectId } from '@conexus/hub-api'
-import { PreviewData } from '@conexus/hub-api'
+import type { CompanyId, ConversationId } from '@conexus/hub-api'
+import { BUILDER_CONTROLLER, PreviewData } from '@conexus/hub-api'
 import type { AgentControllerEvent, KnownAgentControllerEvent } from '@mastra/client-js'
 import { isKnownAgentControllerEvent, MastraClientError } from '@mastra/client-js'
 import type { QueryClient } from '@tanstack/react-query'
@@ -9,13 +9,13 @@ import { failureOfProblem } from '../../platform/hub.ts'
 import { previewChanged } from '../preview/public.ts'
 import { sourceChanged } from '../source/public.ts'
 import type { SessionRead } from './queries.ts'
-import { conversationQuery, sessionReadQuery } from './queries.ts'
-import type { BuilderSession } from './session.ts'
+import { sessionReadQuery } from './queries.ts'
+import type { BuilderSession, Place } from './session.ts'
 import { sessionOf } from './session.ts'
 import type { Action } from './session-state.ts'
 import { OPENED, session } from './session-state.ts'
 
-type Ids = { companyId: CompanyId; projectId: ProjectId; conversationId: ConversationId }
+type Ids = { companyId: CompanyId; conversationId: ConversationId } & Place
 
 const FIRST_RETRY_MS = 1000
 const LAST_RETRY_MS = 15_000
@@ -34,6 +34,7 @@ type Hooks = {
   builder: BuilderSession
   dispatch: (action: Action) => void
   onGone: () => void
+  onEnded: () => void
 }
 
 function sleep(ms: number, signal: AbortSignal): Promise<void> {
@@ -59,7 +60,7 @@ function reread(hooks: Hooks): void {
  */
 function tasksHeard(hooks: Hooks, tasks: SessionRead['tasks']): void {
   const { queryClient, ids } = hooks
-  const { queryKey } = sessionReadQuery(ids.conversationId)
+  const { queryKey } = sessionReadQuery(ids.conversationId, ids.controller)
   void queryClient.cancelQueries({ queryKey }).then(() => {
     queryClient.setQueryData<SessionRead>(queryKey, (read) => read && { ...read, tasks })
   })
@@ -69,7 +70,7 @@ function tasksHeard(hooks: Hooks, tasks: SessionRead['tasks']): void {
 function resync(hooks: Hooks): void {
   reread(hooks)
   void hooks.queryClient.invalidateQueries({
-    queryKey: sessionReadQuery(hooks.ids.conversationId).queryKey,
+    queryKey: sessionReadQuery(hooks.ids.conversationId, hooks.ids.controller).queryKey,
   })
 }
 
@@ -97,9 +98,13 @@ function heard(hooks: Hooks, event: AgentControllerEvent): void {
   if (!isKnownAgentControllerEvent(event)) return
   hooks.dispatch({ type: 'event', event })
   if (event.type === 'task_updated') tasksHeard(hooks, event.tasks)
-  const { companyId, projectId } = hooks.ids
-  if (savesVersion(event)) void sourceChanged(hooks.queryClient, { companyId, projectId })
-  if (readiesPreview(event)) void previewChanged(hooks.queryClient, { companyId, projectId })
+  const { ids, queryClient } = hooks
+  // Only the Builder's runs change a Projeto's files and Prévia.
+  if (ids.controller === BUILDER_CONTROLLER) {
+    const { companyId, projectId } = ids
+    if (savesVersion(event)) void sourceChanged(queryClient, { companyId, projectId })
+    if (readiesPreview(event)) void previewChanged(queryClient, { companyId, projectId })
+  }
   // Mastra saves an errored run's messages a moment after its end: the read catches them up.
   if (event.type === 'agent_end') reread(hooks)
 }
@@ -112,10 +117,7 @@ async function refused(hooks: Hooks, error: unknown): Promise<boolean> {
     return true
   }
   if (failure?.code !== 'SESSION_REQUIRED') return false
-  const { companyId, projectId, conversationId } = hooks.ids
-  await hooks.queryClient.invalidateQueries({
-    queryKey: conversationQuery(companyId, projectId, conversationId).queryKey,
-  })
+  hooks.onEnded()
   return true
 }
 
@@ -150,12 +152,21 @@ async function follow(hooks: Hooks, signal: AbortSignal): Promise<void> {
 }
 
 /** The conversation's session: its state from Mastra's stream and its transcript, and its calls. */
-export function useSession(ids: Ids, onGone: () => void) {
+export function useSession(
+  ids: Ids,
+  on: {
+    /** The conversation is gone: the Hub says it does not exist. */
+    gone: () => void
+    /** The person's session ended: the caller reads again what it keeps of the conversation. */
+    ended: () => void
+  },
+) {
   const queryClient = useQueryClient()
   const [state, dispatch] = useReducer(session, OPENED)
-  const gone = useEffectEvent(onGone)
-  const { companyId, projectId, conversationId } = ids
-  const builder = useMemo(() => sessionOf(conversationId), [conversationId])
+  const gone = useEffectEvent(on.gone)
+  const ended = useEffectEvent(on.ended)
+  const { conversationId, controller } = ids
+  const builder = useMemo(() => sessionOf(conversationId, controller), [conversationId, controller])
   // The window of messages read grows by a page for each load of older messages; `Screen` remounts
   // with the conversation, so each conversation opens on the newest page.
   const [limit, setLimit] = useState(TRANSCRIPT_PAGE)
@@ -178,17 +189,21 @@ export function useSession(ids: Ids, onGone: () => void) {
   useEffect(() => {
     if (transcript.data !== undefined) dispatch({ type: 'loaded', messages: transcript.data })
   }, [transcript.data])
+  // `builder` is the conversation's identity (its id and its controller): the follow starts over
+  // with it, and reads `ids` as the render that starts it has them.
+  const currentIds = useEffectEvent(() => ids)
   useEffect(() => {
-    const controller = new AbortController()
+    const stop = new AbortController()
     const hooks = {
       queryClient,
-      ids: { companyId, projectId, conversationId },
+      ids: currentIds(),
       builder,
       dispatch,
       onGone: gone,
+      onEnded: ended,
     }
-    void follow(hooks, controller.signal)
-    return () => controller.abort()
-  }, [queryClient, companyId, projectId, conversationId, builder])
+    void follow(hooks, stop.signal)
+    return () => stop.abort()
+  }, [queryClient, builder])
   return { state, dispatch, builder, older }
 }

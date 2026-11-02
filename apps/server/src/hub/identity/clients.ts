@@ -4,7 +4,7 @@ import { and, asc, eq, inArray, min, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { CommandTx, ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
-import type { OperatorProof } from './admission.ts'
+import type { MemberProof, OperatorProof } from './admission.ts'
 import type { Auth } from './auth.ts'
 import { organizationAdapter, storedAddress } from './auth.ts'
 import { companyById } from './companies.ts'
@@ -127,10 +127,13 @@ export async function markCompanyDeleting(
   await tx.delete(invitation).where(eq(invitation.organizationId, input.companyId))
 }
 
-/** The company's name, read under the locks the caller holds, for a deletion that needs no more (issue 73). */
+/**
+ * The company's name, read under the locks the caller holds, for a deletion that needs no more
+ * (issue 73), or for a member the caller admitted, such as the Assistant's (step 24.1).
+ */
 export async function companyNameOf(
   tx: ReadTx,
-  input: { admitted: OperatorProof; companyId: CompanyId },
+  input: { admitted: OperatorProof | MemberProof; companyId: CompanyId },
 ): Promise<string | undefined> {
   const [row] = await tx
     .select({ name: company.name })

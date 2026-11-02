@@ -114,7 +114,36 @@ export type Database = Readonly<{
   close(): Promise<void>
 }>
 
-/** A database error is mapped by its SQLSTATE (code C52); any other error is the program's. */
+// Mastra's storage adapter wraps every failure of its database in an error with these stable
+// fields, its own defects too ("Thread … not found", a row that is not JSON).
+const MastraStorageFailure = z.object({
+  domain: z.literal('STORAGE'),
+  category: z.literal('THIRD_PARTY'),
+})
+
+// A socket that would not open or was cut: Node's system error names its call and code.
+const SocketFailure = z.object({ syscall: z.string(), code: z.string().regex(/^E[A-Z]+$/) })
+
+// pg-pool's two timeouts: no free connection in time, and a connection that did not open in time.
+const POOL_TIMEOUTS = new Set([
+  'timeout exceeded when trying to connect',
+  'Connection terminated due to connection timeout',
+])
+
+/** The causes hold a connection pg or pg-pool lost: a socket failure, or one of the pool's timeouts. */
+function lostConnection(error: unknown): boolean {
+  for (let cause = error; cause instanceof Error; cause = cause.cause) {
+    if (POOL_TIMEOUTS.has(cause.message) || SocketFailure.safeParse(cause).success) return true
+    if (cause instanceof AggregateError && cause.errors.some(lostConnection)) return true
+  }
+  return false
+}
+
+/**
+ * A database error is mapped by its SQLSTATE (code C52); any other error is the program's. Mastra's
+ * storage failure is the database unavailable only when its causes hold a lost connection; its
+ * other failures are the program's, since trying again does not mend them.
+ */
 export function databaseFailure(error: unknown): Failure {
   if (error instanceof Failure) return error
   for (let cause = error; cause instanceof Error; cause = cause.cause) {
@@ -123,7 +152,8 @@ export function databaseFailure(error: unknown): Failure {
       return new Failure(unavailable ? 'DATABASE_UNAVAILABLE' : 'INTERNAL_UNEXPECTED', { cause })
     }
   }
-  return new Failure('INTERNAL_UNEXPECTED', { cause: error })
+  const unreachable = MastraStorageFailure.safeParse(error).success && lostConnection(error)
+  return new Failure(unreachable ? 'DATABASE_UNAVAILABLE' : 'INTERNAL_UNEXPECTED', { cause: error })
 }
 
 /** The constraint a unique violation (23505) names, read by SQLSTATE and name (code C52). */

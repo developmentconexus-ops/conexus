@@ -65,14 +65,17 @@ export function sessionReplies(
     events?: unknown[]
     /** The session state's tasks, which the screen paints before the stream says its own. */
     tasks?: readonly unknown[]
+    /** The controller that owns the session: the Builder's unless the conversation is the Assistant's. */
+    controller?: string
   },
 ): Replies {
-  const session = `${BUILDER_ROUTES}/agent-controller/${BUILDER_CONTROLLER}/sessions/${conversationId}`
+  const controller = options.controller ?? BUILDER_CONTROLLER
+  const session = `${BUILDER_ROUTES}/agent-controller/${controller}/sessions/${conversationId}`
   return {
     [`GET ${session}`]: {
       status: 200,
       json: {
-        controllerId: BUILDER_CONTROLLER,
+        controllerId: controller,
         sessionId: conversationId,
         resourceId: 'company:c1:person:p1',
         threadId: conversationId,

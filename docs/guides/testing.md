@@ -9,7 +9,10 @@ choice of test tools.
 
 - **T3.** Every run **must** have a global timeout. [CI]
 - **T4.** A skipped test **must** state why, starting with `opt-in:`; a suite that ran zero tests
-  **must** fail; and a test **must not** pass silently when the service it needs is missing. [CI]
+  **must** fail; and a test **must not** pass silently when the service it needs is missing. A
+  flake on a leak, refusal or isolation assertion **must** be investigated as a defect, never
+  skipped or rerun until green. Why: issues #388 and #423 logged the same leak of the provider's
+  text as flakes. [CI, review]
 
 ## 2. What a test asserts
 
@@ -104,7 +107,8 @@ choice of test tools.
   agent that did not build the step, following
   [`conexus-qa`](../../.agents/skills/conexus-qa/SKILL.md). Horizontal overflow and a phone field
   under 16px are the browser checks' (`layout.test.ts`, `fields.layout.test.ts`), not captures to
-  read; a new screen state joins their sweep. [review]
+  read; a new screen state joins their sweep. A fix pull request that changes a screen gets a short
+  QA pass on the changed states. [review]
 - **T27.** Lines a change adds in a package with a Stryker configuration (server and web) **must**
   be mutation-tested with the tests that own them, and every
   surviving mutant accounted for: a test that kills it, or a line in the report naming it

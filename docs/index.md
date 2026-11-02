@@ -15,7 +15,7 @@ One line per document (`check-docs`).
 - [how-to/hub-database-restore.md](how-to/hub-database-restore.md): restaurar o banco; [Git](how-to/hub-git-restore.md).
 - [how-to/hub-company-databases.md](how-to/hub-company-databases.md): companies' Neon key.
 - [how-to/local-database.md](how-to/local-database.md): test PostgreSQL 18; [Builder](how-to/builder-builds.md).
-- [steps/](steps/): the card in construction.
+- [steps/](steps/): cards in construction.
 - [reference/boundaries.md](reference/boundaries.md): mechanisms written over libraries'.
 - [reference/stack.md](reference/stack.md): sources, skill, trap per package.
 - [reference/components.md](reference/components.md): screen pieces and their tokens (design V23).
@@ -93,11 +93,12 @@ One line per document (`check-docs`).
 - [0056](decisions/0056-connectors-kit-and-one-executor.md) connectors kit.
 - [0057](decisions/0057-connections-by-oauth.md) OAuth.
 - [0058](decisions/0058-provider-limits-and-queues.md) provider limits.
+- [0059](decisions/0059-assistant-machine-reaches-package-registries.md) Assistant registries.
 
 ## Skills
 
 - [conexus-study](../.agents/skills/conexus-study/SKILL.md), with [report](../.agents/skills/conexus-study/references/report.md), [proof](../.agents/skills/conexus-study/references/proof.md), [screens](../.agents/skills/conexus-study/references/screens.md), [sources](../.agents/skills/conexus-study/references/sources.md): the study; report; proof; screens; libraries.
-- [conexus-scope](../.agents/skills/conexus-scope/SKILL.md), with [card](../.agents/skills/conexus-scope/references/card.md), [screens](../.agents/skills/conexus-scope/references/screens.md): the card; a screen's card.
+- [conexus-scope](../.agents/skills/conexus-scope/SKILL.md), with [card](../.agents/skills/conexus-scope/references/card.md), [pattern card](../.agents/skills/conexus-scope/references/pattern-card.md), [screens](../.agents/skills/conexus-scope/references/screens.md): the card; pattern card; screen card.
 - [conexus-build](../.agents/skills/conexus-build/SKILL.md), with [bring](../.agents/skills/conexus-build/references/bring.md), [bug](../.agents/skills/conexus-build/references/bug.md), [screen](../.agents/skills/conexus-build/references/screen.md): building a unit; old code; a defect; a screen.
 - [conexus-qa](../.agents/skills/conexus-qa/SKILL.md): QA of a step's screens.
 - [conexus-review](../.agents/skills/conexus-review/SKILL.md), [screen](../.agents/skills/conexus-review/references/screen.md): a step's review; a screen.

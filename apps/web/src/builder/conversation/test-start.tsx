@@ -20,7 +20,7 @@ export const PDF = new File(['%PDF-1.4'], 'tabela.pdf', { type: 'application/pdf
 
 type Sent = { key: string | null; body: unknown }
 
-/** Início's screen on `server`. */
+/** Início's screen on `server`, as a member sees it: the owner and the administrators ask the Assistant there. */
 export function startHub(server: ReturnType<typeof setupServer>) {
   const { open } = screens(server)
 
@@ -36,9 +36,14 @@ export function startHub(server: ReturnType<typeof setupServer>) {
       start?: typeof START | null
       /** Where the screen opens, Início by default. */
       at?: string
+      /** The person's role: a member on Início, who asks the Builder there; the owner elsewhere. */
+      role?: string
     } = {},
   ) {
-    const shown = view({ start: options.start === null ? undefined : START })
+    const shown = view({
+      start: options.start === null ? undefined : START,
+      role: options.role ?? (options.at === undefined ? 'member' : undefined),
+    })
     const hub = open(shown, options.at ?? HOME, options.answers)
     const projects: Sent[] = []
     server.use(

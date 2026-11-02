@@ -1,7 +1,47 @@
+import type { ASSISTANT_TOOL, CARD_TOOLS, ClosedTool, TASK_TOOLS } from '@conexus/hub-api'
 import type { LucideIcon } from 'lucide-react'
+import type { ToolItem } from './rows.ts'
+
+/** The tools that draw a row: the cards draw a card and the task tools the panel; the Assistant's own add three. */
+export type RowTool =
+  | Exclude<ClosedTool, (typeof CARD_TOOLS)[keyof typeof CARD_TOOLS] | (typeof TASK_TOOLS)[number]>
+  | (typeof ASSISTANT_TOOL)[keyof typeof ASSISTANT_TOOL]
 
 /** What a row opens on (Factory `ToolBody`, `ToolCard.tsx:32-67`). */
-export type ToolBody = 'file' | 'list' | 'command' | 'edit' | 'write' | 'skill' | 'generic'
+export type ToolBody =
+  | 'file'
+  | 'list'
+  | 'command'
+  | 'edit'
+  | 'write'
+  | 'skill'
+  | 'shown'
+  | 'proposal'
+  | 'generic'
+
+export type ToolStatus = 'running' | 'done' | 'error' | 'denied'
+
+/** The icon and words of a row's line. */
+export type Presented = { icon: LucideIcon; sentence: string; detail?: string; beside: boolean }
+
+/**
+ * What a result that is a refusal asks of the row: `SAID` is all the line says, `RECONNECT` adds the
+ * way to link the connection again.
+ */
+export type Refusal = 'SAID' | 'RECONNECT'
+
+/** What a row says of a connector, from the catalog the screen read; the id's own words until it arrives. */
+export type ConnectorWords = {
+  name: (connector: string) => string
+  /** What a connector's refusal says, in the words of the screen that links it (Integrações). */
+  refusal: (connector: string | undefined, why: ConnectorRefusal) => string
+}
+
+/** The refusals a connector's own answer carries: to connect again, to wait, or not reached. */
+type ConnectorRefusal =
+  | { kind: 'REAUTH' }
+  | { kind: 'BUSY'; waitMs: number | null }
+  | { kind: 'UNREACHABLE' }
 
 /** How one tool of the closed set reads on the screen: the one owner of its words (code C26). */
 export type ToolSpec = {
@@ -19,4 +59,12 @@ export type ToolSpec = {
   body: ToolBody
   /** Joins a run of three or more as one group (criterion 9). */
   groups: boolean
+  /** The Assistant's tools answer a refusal as a result, not as an error of the call: the row reads it. */
+  refusal?: (result: unknown) => Refusal | undefined
+  /** The row's own icon and words, instead of the table's by status. */
+  present?: (
+    tool: Pick<ToolItem, 'args' | 'result'>,
+    status: ToolStatus,
+    words: ConnectorWords,
+  ) => Presented
 }

@@ -1,9 +1,8 @@
 import assert from 'node:assert/strict'
-import { createServer } from 'node:http'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
-import { z } from 'zod'
 import { linkSankhya, servedSankhya, testOf } from '../../hub/connectors/test-connections.ts'
+import { PLANTED, withRows } from '../../hub/connectors/test-rows.ts'
 import { call } from '../../hub/identity/test-hub.ts'
 import type { Sent } from '../../platform/test-anthropic.ts'
 import { conversing, endOf, messagesOf, sent, started, streamOf } from './test-conversation.ts'
@@ -15,59 +14,11 @@ const SAVE = 'connector_note_save'
 /** How Mastra lists a skill the model may load. */
 const SKILL = '<name>conexus-sankhya</name>'
 const COUNT = 'SELECT COUNT(*) AS N FROM TSIEMP'
-const PLANTED = 'VALOR-PLANTADO-NA-RESPOSTA'
 
 type Block = ReturnType<typeof tool>
 
 function reading(sql = COUNT): Block {
   return tool(READ, { connection: 'Matriz', operation: 'sankhya.consultar', input: { sql } })
-}
-
-/** The double's executeQuery answering `rows` rows of two columns, the row 400 carrying `PLANTED`; the rest as the double does. */
-async function withRows(t: TestContext, origin: string, rows: number) {
-  const server = createServer(async (incoming, outgoing) => {
-    const chunks: Buffer[] = []
-    for await (const chunk of incoming) chunks.push(z.instanceof(Buffer).parse(chunk))
-    const body = Buffer.concat(chunks)
-    if (body.includes('DbExplorerSP.executeQuery')) {
-      const table = Array.from({ length: rows }, (_, n) => [
-        n,
-        n === 400 ? PLANTED : `Empresa ${n}`,
-      ])
-      outgoing.writeHead(200, { 'content-type': 'application/json' }).end(
-        JSON.stringify({
-          serviceName: 'DbExplorerSP.executeQuery',
-          status: '1',
-          pendingPrinting: 'false',
-          responseBody: {
-            fieldsMetadata: [{ name: 'N' }, { name: 'NOME' }],
-            rows: table,
-            burstLimit: false,
-          },
-        }),
-      )
-      return
-    }
-    const headers = Object.entries(incoming.headers).flatMap(([name, value]) =>
-      typeof value === 'string' && name !== 'host'
-        ? [[name, value] satisfies [string, string]]
-        : [],
-    )
-    const answered = await fetch(`${origin}${incoming.url}`, {
-      method: incoming.method,
-      headers,
-      redirect: 'manual',
-      ...(incoming.method === 'GET' ? {} : { body }),
-    })
-    outgoing.writeHead(answered.status, Object.fromEntries(answered.headers))
-    outgoing.end(Buffer.from(await answered.arrayBuffer()))
-  })
-  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
-  t.after(() => {
-    server.closeAllConnections()
-    server.close()
-  })
-  return `http://127.0.0.1:${z.object({ port: z.number() }).parse(server.address()).port}`
 }
 
 /** A conversation whose Projeto may read the company's Sankhya double (`rows` rows when it answers a query), and the model's steps. */
@@ -265,7 +216,13 @@ test('connector_notes devolve as anotações da ligação com a consulta de cada
   assert.equal(listed[0].Empresa.provingQuery, COUNT)
 })
 
-test('o bloco das ligações mostra o conceito salvo no turno seguinte; um nome que não é de ligação liberada responde NOT_GRANTED', async (t) => {
+/** A tool's answer: its kind, or the refusal of its input by Mastra's check of the tool's schema. */
+function answerOf(result: unknown) {
+  const answer = Object(result)
+  return answer.kind ?? (answer.error === true ? 'TOOL_INPUT_REFUSED' : undefined)
+}
+
+test('o bloco das ligações mostra o conceito salvo no turno seguinte; um nome que não é de ligação liberada é recusado pelo esquema da ferramenta', async (t) => {
   const missing = { connection: 'Filial', connector: 'sankhya' }
   const on = await connecting(t, [
     [
@@ -286,13 +243,13 @@ test('o bloco das ligações mostra o conceito salvo no turno seguinte; um nome 
     .flatMap((message) => message.parts)
     .flatMap((part) =>
       part.type === 'tool-invocation' && part.toolInvocation.toolName !== SAVE
-        ? [[part.toolInvocation.toolName, Object(part.toolInvocation.result).kind]]
+        ? [[part.toolInvocation.toolName, answerOf(part.toolInvocation.result)]]
         : [],
     )
     .filter(([name]) => [READ, NOTES].includes(String(name)))
   assert.deepEqual(refused, [
-    [READ, 'NOT_GRANTED'],
-    [NOTES, 'NOT_GRANTED'],
+    [READ, 'TOOL_INPUT_REFUSED'],
+    [NOTES, 'TOOL_INPUT_REFUSED'],
   ])
   assert.equal(endOf(await on.say()), 'complete')
   assert.ok(on.calls.at(-1)?.system.includes('Notebook: Empresa.'))
@@ -300,8 +257,8 @@ test('o bloco das ligações mostra o conceito salvo no turno seguinte; um nome 
     .flatMap((message) => message.parts)
     .flatMap((part) =>
       part.type === 'tool-invocation' && part.toolInvocation.toolName === SAVE
-        ? [Object(part.toolInvocation.result).kind]
+        ? [answerOf(part.toolInvocation.result)]
         : [],
     )
-  assert.deepEqual(saves, ['SAVED', 'NOT_GRANTED'])
+  assert.deepEqual(saves, ['SAVED', 'TOOL_INPUT_REFUSED'])
 })

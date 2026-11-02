@@ -126,7 +126,7 @@ test('com o banco da empresa: "Criando…"; sem ele: "Preparando o banco da empr
   const held = Promise.withResolvers<void>()
   home({ project: () => undefined })
   server.use(
-    ...projectsRead({ projects: [], databaseReady: false, mayDelete: true }),
+    ...projectsRead({ projects: [], databaseReady: false, mayDelete: true, role: 'member' }),
     http.post(`*/api/companies/${COMPANY.id}/projects`, async () => {
       await held.promise
       return refusal('PROJECT_NAME_TAKEN')
@@ -198,7 +198,7 @@ test('Passo 4: sem conta, o aviso do Início no lugar da caixa', async () => {
 test('Passo 4: Ir para o início sem pedir nada', async () => {
   const { conexus, projects } = home({ at: STEP_FOUR })
   fireEvent.click(await screen.findByRole('link', { name: 'Ir para o início sem pedir nada' }))
-  expect(await screen.findByRole('heading', { name: 'O que vamos construir?' })).toBeTruthy()
+  expect(await screen.findByRole('heading', { name: 'Pergunte ou peça um app' })).toBeTruthy()
   expect(conexus.router.state.location.pathname).toBe(HOME)
   expect(projects).toHaveLength(0)
 })

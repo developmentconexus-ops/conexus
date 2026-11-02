@@ -286,7 +286,7 @@ test('acceptance does not flash the joined invitation while the company is still
     await waitFor(() => expect(accepted).toBe(true))
     expect(screen.getByRole('button', { name: 'Aceitando…' })).toBeTruthy()
     release()
-    expect(await screen.findByRole('heading', { name: 'O que vamos construir?' })).toBeTruthy()
+    expect(await screen.findByRole('heading', { name: 'Pergunte ou peça um app' })).toBeTruthy()
     expect(flashed).toBe(false)
   } finally {
     release()

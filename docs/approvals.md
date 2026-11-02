@@ -393,6 +393,12 @@ Consertos do lote de fechamento (https://github.com/developmentconexus-ops/conex
 
 Regra do `MACHINE_LOST`, em 2026-11-01: só uma máquina que o provedor diz perdida (`session.lost`) é `MACHINE_LOST`; qualquer outra coleta que falha é `SAVE_REFUSED`.
 
+## Mudanças do método
+
+Em 2026-10-31, sobre as correções do método que a auditoria do mesmo dia propôs: "Sim, menos sobre o prompt do builder não vou mexer nisso agora". Entram o passo do nativo no conserto, o conserto que acrescenta uma peça virar unidade de cartão curto, a página do fundador só com células abertas pelo autor do estudo, a atualização da prateleira e do `stack.md` a cada troca do pin do Mastra, o registro da palavra do fundador sobre os eventos `om_*_failed`, a investigação de teste instável em vazamento, recusa ou isolamento e a QA curta num conserto que muda tela. O prompt do Builder fica como está.
+
+Em 2026-10-31, sobre os eventos `om_*_failed` do Mastra, que chegam ao navegador como o Mastra os manda e carregam o texto cru do fornecedor, contra a regra C51 do guia de código: "Pra mim tem que deixar o nativo mesmo". É o conflito que a regra C75 manda registrar para o fechamento; fica na lista de fechamento do pull request que o registra, e o teste de `conversation.test.ts` passa a dizer no nome o que confere.
+
 ## Etapa 24.1
 
 Em 2026-10-30, ao estudo das referências do Supervisor: "M1 / A1 / B1 / `C1` / `D1` / E sua recomendação". Lido como: `M1` (um bloco "quem é o Conexus" e um bloco de trabalho por lugar, escolhido pelo lugar, nunca por um botão), `A1`, `B1`, `C1`, `D1` com o mínimo de 8 em 10 (cada pergunta feita duas vezes; um número inventado reprova a etapa), e o `E` como a recomendação do firstmate: o `E1`, a publicação espera as respostas em andamento, construído antes como a U0 (https://github.com/developmentconexus-ops/conexus/pull/499).
@@ -411,6 +417,34 @@ Em 2026-10-31, ao estudo do prompt do Assistente: o `P1` (agente próprio), sem 
 
 Em 2026-10-31, ao estudo da harness da sessão: "H1 / W1 / Ba / Sa". Um segundo controlador do Mastra ao lado do Builder, com agente próprio; uma máquina E2B por conversa, sem Git, com a linha nova no aviso da decisão 0032; `show_file` mostra ao lado do chat o arquivo que ele escreveu (HTML com scripts depois); sai o `supervisor_show`, e tabela e gráfico ele faz com código sobre a leitura salva na máquina.
 
+Cartão da etapa 24.1 aprovado em 2026-10-31 (commit cc7c83de7a55bd521e0b4ee940e911a915dc01e2): "APROVO CARTAO E CONFIRMO"
+
+Cartão da etapa 24.1 aprovado em 2026-11-01 (commit d8fae7ecaf733ae6522a7a5d4f99614152f4c820): "APROVO CARTAO E CONFIRMO"; a palavra D11 do B1, "Aprovo as permissoes do b1"
+
+Essa emenda vem da revisão da U2 (B1) e do plano de fechamento, decidida pelo firstmate, sem decisão nova do fundador nem mudança no que ele vê: as ligações escolhidas da conversa vivem na tabela do Hub `builder.assistant_conversation`, que só o Hub escreve, porque as escritas do próprio Mastra nos metadados da conversa (título, memória observacional) desfaziam a escolha; o caminho do arquivo do Mastra é `builder/conversation/mastra.ts`; a lista de endereços da máquina do Assistente está na decisão 0059, e a 0051 fica como foi aprovada; o critério 20 e o contrato AssistantMachines passam a bater com o código. A palavra D11 do fundador para as permissões de `builder.assistant_conversation` (SELECT, INSERT e UPDATE da coluna `connections` para `hub_company`), em 2026-11-01: "Aprovo as permissoes do b1". A linha sai por cascata, sem permissão de DELETE.
+
+Decisões do fundador na revisão da etapa 24.1, no passeio ao vivo e na rodada de correção, registradas no fechamento. Cada linha traz as palavras dele; a data é a do dia em que o firstmate as recebeu.
+
+Em 2026-11-01, a permissão de merge das unidades da 24.1, na noite: "depois de passar por todo o nosso processo de QA inteiro de revisão e ser aprovado". Cada merge seguiu a revisão aprovada e a CI verde do mesmo commit (L13).
+
+Em 2026-11-01, à revisão da etapa que pedia apertar a conferência "nenhum número inventado" (o B3, e o F12 que a embrulhava no `createScorer`): "não tem que limitar ele ainda ... a gente tem que fazer ele funcionar ... depois a gente vai melhorando". Um número pode vir de uma pesquisa na web; a precisão, o contexto do Sankhya, o texto do Assistente e os workflows vêm depois, com evals. `test-numbers.ts` ficou como entrou na v0.24.1, e nenhuma regra limita os números que o Assistente diz.
+
+Em 2026-11-01, ao aviso "Conta de modelo: falta" no Início de uma empresa só com contas pessoais (L4 do passeio ao vivo): "B". A regra W33 fica; o cartão de preparo diz "A empresa ainda não tem conta de modelo compartilhada. Só quem ligou a própria conta consegue conversar."
+
+Rodada de correção da 24.1 (https://github.com/developmentconexus-ops/conexus/pull/536), em 2026-11-01. Aos sete textos novos da tabela "Textos para o fundador" daquele pull request (o cartão de preparo; as leituras `BUSY`, `UNREACHABLE` e chaves recusadas; a máquina que não ligou; a falta de conta no Assistente; "Mais Projetos"): "1 okay". Ao merge: "2. Aprovado".
+
+Conserto do `pip` (https://github.com/developmentconexus-ops/conexus/pull/537), em 2026-11-01, ao merge com a CI verde e à v0.24.3: "Sim".
+
+Em 2026-11-01, ao critério 11b e ao https://github.com/developmentconexus-ops/conexus/pull/535: "1 A". O 535 fecha sem merge. O 11b é provado pelo passeio do firstmate como dono no Hub no ar, com o modelo de verdade pela assinatura e o Sankhya de verdade da empresa dele (só leitura), e não sobre o dublê; o caso automático melhora depois, com as evals.
+
+Em 2026-11-01, à mutação (Stryker) da 24.1: "2 A". Roda só sobre os arquivos centrais do Assistente, em segundo plano, e a ferramenta `quality` ganha um conserto para rodar sobre uma etapa inteira.
+
+Em 2026-11-01, à exceção da regra D27 que a agenda da 24.2 pede (o banco acordado enquanto houver uma rotina, o `D1` do Neon Launch): "3. Okay, mas vou depois por agora no gratuito". Ele concorda com o custo e fica, por agora, no plano gratuito do Neon.
+
+Em 2026-11-01, às cinco perguntas do pull request do fechamento (https://github.com/developmentconexus-ops/conexus/pull/539): "1 okay 2. Okay 3. Okay 4.nao precisa 5 depois faco quando finalizar tudo". O "1 okay" aprova os textos das telas listados ali (o prazo e o limite de leituras, a ligação fora da conversa, "Nenhuma linha.", a caixa e os exemplos do Início, a barra, Conversas do Projeto, as falhas de criar e de trocar as ligações, e as frases do arquivo). O "2. Okay" aprova a entrada Conversas na barra lateral do Projeto (W30). O "3. Okay" aprova a exceção da regra C51 para os eventos `om_*_failed`. O "4.nao precisa" recusa mandar o aviso escrito da decisão 0032 com a linha do E2B; nenhum aviso foi mandado à empresa.
+
+Etapa 24.1 no ar em https://hub.conexus.fun (v0.24.3), sem a linha de uso do fundador: "5 depois faco quando finalizar tudo". Ele adia o próprio uso do roteiro; a linha de uso entra num pull request de documentos quando ele o fizer. O passeio do firstmate como dono (L17) está no pull request do fechamento.
+
 ## Etapa 24.2
 
 Em 2026-11-01, ao estudo da ordem das automações: "1 confirmado 2. Okay 3.okay". Lido pelo firstmate como: o `A1` (uma Automação: um gatilho e o que roda, o Assistente, um agente do Projeto ou um workflow, na empresa ou num Projeto); o `B1` (a ordem 24.2 Automações, 24.3 Agentes do Projeto com o Construtor, 24.4 escrita com aprovação, 24.5 Workflows); o `C1` (cada execução abre uma conversa nova do Assistente, marcada "Automação", com aviso nas notificações e por e-mail); o `D1` (o plano Launch do Neon no projeto do Hub quando a primeira automação ligar, uma conta só); o cartão da 24.2 leva o mapa da visão inteira, e o nome vem depois. A visão, na mesma noite: "eu não quero só um Agent Builder ... um builder em que e visual ... o construtor, ele pega, por exemplo, seja o projeto, seja o contexto, seja o que ele pesquisa na internet, seja o que ele tem como treinamento e oferece, ele é proativo ... cron, com schedule, com workflows, com agentes ... É esse que é o meu objetivo e é isso que eu quero construir com Conexus."
@@ -422,3 +456,7 @@ Lido pelo firstmate como a pré-aprovação da página, construída com as recom
 Cartão da etapa 24.2 aprovado em 2026-11-01 (commit 98956b55d932b8e9dea731600cd65d7cb3743cb8): "eu aprovo o cartão da 24.2, né? Eu não vou estar acordado, mas aí se no outro dia eu discordar de alguma coisa, a gente altera isso. Mas pra isso, pra eu não precisar, faça o estudo completo, teste, valide, mude o que você julgar necessário"
 
 Lido pelo firstmate como a mesma pré-aprovação, agora sobre o commit que traz as correções de fato de código do estudo de preparação da construção, sob a licença "mude o que você julgar necessário": as paginações como `?page=` e `next: Next` de `main`, o conjunto fechado `AutomationFailureCode`, `database.command`, `publicOrigin`, o `toolCallId` do cartão, o caminho do cartão por `rows.ts`, o `inputData` inválido, o gatilho lido de `listTriggers`, as proteções de `removals.json`, o teste do critério 11e, os pontos a conferir e as citações. Nenhuma é decisão do fundador: as recomendações `E1`, `F1` e `G1` e as unidades ficam como estavam.
+
+Em 2026-11-01, depois do cartão, ao estudo dos papéis e das aprovações (`data/conexus-roles-approvals-study/report.md`, seção 6): "1 A", "2 Sua rewcomendação", "3 Por agora qualquer dono ou admnistrador", "4 Confirmo", "5 Sua recomendacao". Lido pelo firstmate como: o `1 A` mantém a entrada Automações escondida do membro, como o cartão a constrói (S10); a exceção ao guia da web (W34, que manda mostrar a página com quem pode) entra no fechamento da 24.2, porque um guia só muda num fechamento (L20); a `2` é a recomendação do firstmate, uma etapa de papéis e pedidos logo depois da 24.3 e antes da 24.4; a `3` deixa, por agora, qualquer dono ou administrador criar e apagar automações; a `4` confirma e a `5` segue a recomendação do firstmate, como o estudo as propõe. Palavra de meio de etapa, vai direto para este livro, sem nova aprovação do cartão (L6).
+
+Em 2026-11-01, à exceção da regra D27 que a agenda desta etapa pede (o banco acordado enquanto houver uma automação, o `D1` do Neon Launch), já registrada na 24.1: "3. Okay, mas vou depois por agora no gratuito". Ele concorda com o custo e fica, por agora, no plano gratuito do Neon.

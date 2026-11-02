@@ -4,9 +4,10 @@ import {
   appHostOf,
   CompanyId as CompanyIdSchema,
   HostLabel as HostLabelSchema,
+  PAGE_SIZE,
   ProjectId,
 } from '@conexus/hub-api'
-import { and, eq, isNull, sql } from 'drizzle-orm'
+import { and, asc, eq, isNull, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { Database, ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
@@ -168,4 +169,24 @@ export async function liveProjectOf(
       ),
     )
   return row
+}
+
+/**
+ * The company's live Projetos by name, at most a page of them, and whether it has more: what the
+ * Assistant tells of the company (step 24.1).
+ */
+export async function liveProjectsOf(
+  tx: ReadTx,
+  companyId: CompanyId,
+): Promise<{ projects: { projectId: ProjectId; name: string }[]; more: boolean }> {
+  const rows = await tx
+    .select({ id: project.id, name: project.name })
+    .from(project)
+    .where(and(eq(project.companyId, companyId), isNull(project.deletingSince)))
+    .orderBy(asc(project.name), asc(project.id))
+    .limit(PAGE_SIZE + 1)
+  const projects = rows
+    .slice(0, PAGE_SIZE)
+    .map((row) => ({ projectId: ProjectId.parse(row.id), name: row.name }))
+  return { projects, more: rows.length > PAGE_SIZE }
 }

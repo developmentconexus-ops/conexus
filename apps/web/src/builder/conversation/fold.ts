@@ -1,3 +1,4 @@
+import type { Room } from './room.ts'
 import type { ToolItem, TranscriptItem } from './rows.ts'
 import { specOf } from './tool-registry.ts'
 
@@ -9,7 +10,7 @@ function isMachine(item: TranscriptItem): boolean {
   return item.kind === 'conexus' && item.partType === 'data-conexus-machine'
 }
 
-export function fold(items: readonly TranscriptItem[]): Row[] {
+export function fold(items: readonly TranscriptItem[], room: Room): Row[] {
   const rows: Row[] = []
   let run: ToolItem[] = []
 
@@ -32,7 +33,7 @@ export function fold(items: readonly TranscriptItem[]): Row[] {
     }
 
     if (item.kind === 'tool') {
-      if (specOf(item.toolName)?.groups ?? true) {
+      if (specOf(item.toolName, room)?.groups ?? true) {
         run.push(item)
       } else {
         close()

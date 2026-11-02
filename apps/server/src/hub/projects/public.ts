@@ -26,7 +26,7 @@ import { registerProjectRoutes } from './routes.ts'
 /** For the apps' removal, which Projects and the Central call before Projects exist to hand it. */
 export { readyDatabaseOf } from './company-database.ts'
 /** For the Builder's conversations, made before Projects to hand Projects their release. */
-export { liveProjectOf } from './hosts.ts'
+export { liveProjectOf, liveProjectsOf } from './hosts.ts'
 export { projectIdsOf } from './ids.ts'
 export type {
   AppRemoval,

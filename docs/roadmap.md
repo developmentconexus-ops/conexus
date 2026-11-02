@@ -41,7 +41,7 @@ Aprovações e usos: [aprovações](approvals.md).
 
 Sua empresa usa o Conexus desde 2026-11-02, recebendo cada etapa.
 
-- **24.1 Supervisor.** Sessões no Início e no Projeto perguntam aos sistemas e mostram tabelas e gráficos.
+- **24.1 O Assistente.** Conversas no Início e no Projeto perguntam aos sistemas e mostram tabelas e gráficos.
 - **24.2 Automações: o Assistente na agenda.** Pede "todo dia às 7h, o resumo" e recebe cada execução numa conversa nova, com aviso.
 - **24.3 Agentes do Projeto, com o Construtor.** Conversando com o Construtor, cria num Projeto um agente que lê.
 - **24.4 Os agentes escrevem, com aprovação.** Um agente ou app pede "Aprovar?" antes de escrever (resposta B, 2026-10-18; leva a 20.1).
@@ -101,12 +101,11 @@ Login social. Arquivos enviados por pessoas para dentro de um app ou da máquina
 
 | Etapa | O que precisa antes | Decisão sua nela | Conhecimento trazido |
 | --- | --- | --- | --- |
-| 24.1 Supervisor | A 20 | Nenhuma | Sessões como as da Factory e do G4. Ferramentas de conector da 20, máquina por conversa. Aceite: nenhum número inventado. Dono e administradores |
 | 24.2 Automações | A U2 a U4 da 24.1 | Nenhuma | Automação: gatilho, o que roda, o lugar, por `mastra.schedules`. A 20.4 entra aqui |
 | 24.3 Agentes do Projeto | A 24.2 | Onde roda o código do Construtor | Projeto como assunto. Agentes como linhas nossas, nunca o Agent Builder pago. O Open Bots |
 | 24.4 Escrita com aprovação | A 24.3 | Nenhuma | `requireApproval` do Mastra, provada antes a trava da 0053. Escrita nova pede nova liberação |
 | 24.5 Workflows | A 24.4 | O gatilho do Sankhya | Workflows do Mastra como dados; um protótipo de um dia decide o motor. Seu orçamento é o aceite |
-| 21.1 Ver o que acontece | A 24.5 | Grafana no Brasil, provado | Um só caminho OTel (0052). O uso por empresa. Rastro sem entrada e saída das ferramentas de conector (20, critério 29) |
+| 21.1 Ver o que acontece | A 24.5 | Grafana no Brasil, provado | Um só caminho OTel (0052). O uso por empresa. O rastro por ferramenta: as ferramentas de conector (`connector_read`, `connector_notes`, `connector_note_save`) escondem entrada e saída no span, com o exportador de lista permitida, porque o `TracingPolicy` do Mastra só tem `internal` (veio da 20, critério 29) |
 | 16 Atualizar sem cortar | A 21.1 | Nenhuma | Consertos de execução da auditoria. Testes 9 e 10 |
 | 22 Ensaio geral | A 16 | O lugar da cópia fora do Neon | Ensaios das etapas 2, 7, 9, 12 e 13. Carga de um painel e de uma rotina |
 | 23 As outras empresas | A 22 | Os riscos aceitos. O plano pago | A seção 11 da arquitetura |

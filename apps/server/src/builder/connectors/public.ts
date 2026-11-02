@@ -1,2 +1,2 @@
-export type { BuilderConnectors, GrantedConnection } from './connector-tools.ts'
-export { connectorTools } from './connector-tools.ts'
+export type { BuilderConnectors, ConnectorAccess, GrantedConnection } from './connector-tools.ts'
+export { builderAccess, connectorTools } from './connector-tools.ts'

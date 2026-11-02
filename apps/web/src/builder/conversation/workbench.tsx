@@ -9,7 +9,7 @@ import { PageTitle } from '../../ui/list.tsx'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '../../ui/resizable.tsx'
 import { ToggleGroup, ToggleGroupItem } from '../../ui/toggle-group.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
-import { hasInterruptedHandoff } from './handoff.ts'
+import { handoffTo, hasInterruptedHandoff } from './handoff.ts'
 
 const PhoneView = createContext<'app' | 'chat'>('app')
 
@@ -37,8 +37,10 @@ const PHONE_REGIONS =
 export function Workbench(props: { title: string; area: ReactNode; panel: ReactNode }) {
   // Início's request opens its conversation in view, the person's message and the Builder at work;
   // so does a reload in the middle of that send, which gives the request back in the box.
-  const handedOver = useLocation({ select: (location) => location.state.handoff !== undefined })
   const conversationId = useParams({ strict: false, select: (params) => params.conversationId })
+  const handedOver = useLocation({
+    select: (location) => handoffTo(location.state, conversationId) !== undefined,
+  })
   const [view, setView] = useState<'app' | 'chat'>(
     handedOver || (conversationId !== undefined && hasInterruptedHandoff(conversationId))
       ? 'chat'

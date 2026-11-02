@@ -5,8 +5,12 @@ import type { MessageFile, Outgoing } from './attachments.ts'
 
 /** Storage only mirrors the text: where the browser refuses it, the draft still holds. */
 const mirror = pageStorage('session')
-/** A conversation's draft, or the one of a company's Início. */
-export type DraftKey = ConversationId | `start:${CompanyId}` | `first:${ProjectId}`
+/** A conversation's draft, or the one of a company's Início or of a Projeto's Conversas. */
+export type DraftKey =
+  | ConversationId
+  | `start:${CompanyId}`
+  | `first:${ProjectId}`
+  | `assistant:${ProjectId}`
 
 const texts = new Map<DraftKey, string>()
 /** Files stay in the page's memory: storage holds ~5 MB, and a reload drops them, as in Factory. */

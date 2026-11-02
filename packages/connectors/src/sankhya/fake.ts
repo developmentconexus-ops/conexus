@@ -15,6 +15,8 @@ import {
   SERVICE_PATH,
 } from './fake-data.ts'
 import { forbidden, routeOf } from './fake-rest.ts'
+import type { SalesSet } from './fake-sales.ts'
+import { salesDatabase } from './fake-sales.ts'
 
 /** What the fake can be told to do wrong, per service: the executor's tests (U3) and the QA flip these. */
 type SankhyaSwitches = {
@@ -105,7 +107,14 @@ function restAnswer(route: ReturnType<typeof routeOf>, url: URL, switches: Sankh
   return switches.nothingFound ? nothingFound(route.entity) : route.answer(url.searchParams)
 }
 
-async function serveCall(request: Request, url: URL, switches: SankhyaSwitches): Promise<Response> {
+type Query = ReturnType<typeof salesDatabase> | undefined
+
+async function serveCall(
+  request: Request,
+  url: URL,
+  switches: SankhyaSwitches,
+  query: Query,
+): Promise<Response> {
   const door = url.pathname === SERVICE_PATH
   const service = door ? (url.searchParams.get('serviceName') ?? '') : ''
   const route = door ? null : routeOf(url.pathname)
@@ -120,7 +129,7 @@ async function serveCall(request: Request, url: URL, switches: SankhyaSwitches):
   const { requestBody } = DoorBody.parse(await request.json())
   if (service === 'CRUDServiceProvider.loadRecords') return loadRecords(requestBody)
   return service === 'DbExplorerSP.executeQuery'
-    ? executeQuery(requestBody)
+    ? executeQuery(requestBody, query)
     : envelope(service, '0')
 }
 
@@ -175,8 +184,10 @@ function sessionAnswer(url: URL, token: string, sessions: Sessions): Response | 
 /**
  * A Sankhya that answers in the shapes the real gateway sent, with invented rows. One token is one session: a
  * second call on a token while the first is unanswered gets the gateway's envelope "4" (409 on REST).
+ * With `sales`, its read queries run on that set's tables.
  */
-export function sankhyaFake(): SankhyaFake {
+export function sankhyaFake(options: { sales?: SalesSet } = {}): SankhyaFake {
+  const query = options.sales === undefined ? undefined : salesDatabase(options.sales)
   const switches: SankhyaSwitches = {
     refuse: new Set(),
     expireToken: false,
@@ -223,7 +234,7 @@ export function sankhyaFake(): SankhyaFake {
     sessions.busy.add(token)
     try {
       await sleep(SERVICE_MILLISECONDS + switches.delayMilliseconds)
-      return await serveCall(request, url, switches)
+      return await serveCall(request, url, switches, query)
     } finally {
       sessions.busy.delete(token)
     }

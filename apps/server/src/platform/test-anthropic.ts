@@ -90,6 +90,7 @@ function chatSentOf(init: RequestInit | undefined): Sent {
     stream: body.stream === true,
     tools: (body.tools ?? []).map((tool) => tool.function.name),
     system: body.messages.find((message) => message.role === 'system')?.content?.toString() ?? '',
+    systems: [],
     texts,
     media: [],
     thinking: null,

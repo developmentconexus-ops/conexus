@@ -22,6 +22,7 @@ import { Conexus, createConexus } from '../../main.tsx'
 import { ANA, COMPANY } from '../../platform/fixtures.ts'
 import { PEDIDOS, projectsRead, refusal } from '../../platform/test-hub.tsx'
 import type { Stored } from './messages.ts'
+import { PROVIDERS } from './test-providers.ts'
 import type { Line } from './test-stream.tsx'
 import { displayOf, newest, openLine, personSent } from './test-stream.tsx'
 
@@ -32,21 +33,6 @@ const BASE = `*/api/companies/${COMPANY.id}/projects/${PEDIDOS.id}/conversations
 const SESSION = `*${BUILDER_ROUTES}/agent-controller/${BUILDER_CONTROLLER}/sessions/:id`
 const MODEL = ModelId.parse('anthropic/claude-sonnet-4')
 const COMPANY_DEFAULT = { model: MODEL, effort: 'off' }
-
-const EFFORTS: Record<string, string[]> = {
-  'claude-sonnet-4': ['off', 'low', 'high'],
-  'gpt-5': ['low', 'medium', 'high'],
-  'gemini-2.5-flash': ['off', 'medium', 'high'],
-}
-
-const PROVIDERS = [
-  { id: 'anthropic', name: 'Anthropic', models: ['claude-sonnet-4', 'claude-opus-4'] },
-  { id: 'google', name: 'Google', models: ['gemini-2.5-pro', 'gemini-2.5-flash'] },
-  { id: 'openai', name: 'OpenAI', models: ['gpt-5'] },
-].map((p) => ({
-  ...p,
-  models: p.models.map((name) => ({ id: `${p.id}/${name}`, efforts: EFFORTS[name] ?? ['off'] })),
-}))
 
 /** A conversation as the fake Hub keeps it: the Hub's read, Mastra's session state and its transcript. */
 export type Opened = ConversationSummary & {
@@ -72,6 +58,8 @@ export type View = {
   start?: ConversationStart
   /** What the stream's first display state says, past an idle session's. */
   display?: Record<string, unknown>
+  /** The person's role in the company; the owner by default. */
+  role?: string
 }
 
 type Sent = { method: string; path: string; body: unknown; attemptKey: string | null }
@@ -179,6 +167,21 @@ export type Answers = Partial<
   >
 >
 
+function listRead(view: View) {
+  return http.get(BASE, () =>
+    HttpResponse.json(
+      listConversations.success.body.parse({
+        conversations: view.conversations.map(({ id, title, createdAt }) => ({
+          id,
+          title,
+          createdAt,
+        })),
+        next: { kind: 'END' },
+      }),
+    ),
+  )
+}
+
 function conversationHub(view: View, answers: Answers = {}) {
   const sent: Sent[] = []
   const lines: Line[] = []
@@ -196,20 +199,14 @@ function conversationHub(view: View, answers: Answers = {}) {
     reads,
     conversationReads,
     handlers: [
-      ...projectsRead({ projects: [PEDIDOS], databaseReady: true, mayDelete: true }),
+      ...projectsRead({
+        projects: [PEDIDOS],
+        databaseReady: true,
+        mayDelete: true,
+        role: view.role,
+      }),
       ...accountsRead(view),
-      http.get(BASE, () =>
-        HttpResponse.json(
-          listConversations.success.body.parse({
-            conversations: view.conversations.map(({ id, title, createdAt }) => ({
-              id,
-              title,
-              createdAt,
-            })),
-            next: { kind: 'END' },
-          }),
-        ),
-      ),
+      listRead(view),
       http.get(`${SESSION}/stream`, async () => {
         const replaced = await answers.stream?.()
         if (replaced) return replaced

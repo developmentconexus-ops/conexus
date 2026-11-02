@@ -1,7 +1,7 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { Manifest } from '@conexus/app-contract'
 import type { AppVersion, OfProject, PersonId, ProjectId, VersionFileInput } from '@conexus/hub-api'
-import { AppVersionFailure, AppVersionId } from '@conexus/hub-api'
+import { AppVersionFailure, AppVersionId, ProjectId as ProjectIdSchema } from '@conexus/hub-api'
 import { and, desc, eq, inArray, sql } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
 import { z } from 'zod'
@@ -239,6 +239,20 @@ export async function versionNumbersOf(
     .leftJoin(published, eq(published.id, app.publishedVersionId))
     .where(eq(app.projectId, projectId))
   return { appVersion: row?.appVersion ?? null, publishedVersion: row?.publishedVersion ?? null }
+}
+
+/** The published version of each of `projectIds` that has one, in one query (step 24.1's overview). */
+export async function publishedVersionsOf(
+  tx: ReadTx,
+  projectIds: readonly ProjectId[],
+): Promise<ReadonlyMap<ProjectId, number>> {
+  if (projectIds.length === 0) return new Map()
+  const rows = await tx
+    .select({ projectId: app.projectId, number: appVersion.number })
+    .from(app)
+    .innerJoin(appVersion, eq(appVersion.id, app.publishedVersionId))
+    .where(inArray(app.projectId, [...projectIds]))
+  return new Map(rows.map((row) => [ProjectIdSchema.parse(row.projectId), row.number]))
 }
 
 /**

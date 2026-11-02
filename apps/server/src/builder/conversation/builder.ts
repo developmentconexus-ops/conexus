@@ -4,16 +4,15 @@ import type { ToolsInput } from '@mastra/core/agent'
 import type { BuiltinToolId } from '@mastra/core/agent-controller'
 import { AgentController } from '@mastra/core/agent-controller'
 import { createCodingAgent } from '@mastra/core/coding-agent'
-import { Mastra } from '@mastra/core/mastra'
 import { CyberRefusalHandler } from '@mastra/core/processors'
 import type { RequestContext } from '@mastra/core/request-context'
 import { webFetchTool, webSearchTool } from '@mastra/core/tools'
 import { Memory } from '@mastra/memory'
-import type { MastraPool } from '../../platform/database.ts'
+import type { PostgresStore } from '@mastra/pg'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { BuilderConnectors, GrantedConnection } from '../connectors/public.ts'
-import { connectorTools } from '../connectors/public.ts'
+import { builderAccess, connectorTools } from '../connectors/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import {
   accountErrorProcessors,
@@ -25,7 +24,6 @@ import {
 } from '../model-accounts/public.ts'
 import type { Runs } from '../runs/public.ts'
 import { APP_SKILLS, builderInstructions, skillOf } from './instructions.ts'
-import { BuilderLogger } from './logger.ts'
 import { TOOL_CLOSURE } from './permissions.ts'
 import {
   ASK_USER_TOOL,
@@ -34,7 +32,6 @@ import {
   SUBMIT_PLAN_TOOL,
 } from './plan-tools.ts'
 import { checkTool, conexusCheck, workspaceMetadataLive } from './processors.ts'
-import { createMastraStorage } from './storage.ts'
 import type { ConversationIndex } from './turn-of.ts'
 import { projectIn, sideTurn, turnOf } from './turn-of.ts'
 
@@ -58,7 +55,7 @@ function isRouterId(modelId: ModelId): modelId is ModelId & `${string}/${string}
 }
 
 /** The conversation's model, as its controller session holds it (`session.model.switch`). */
-function sessionModel(requestContext: RequestContext): ModelId & `${string}/${string}` {
+export function sessionModel(requestContext: RequestContext): ModelId & `${string}/${string}` {
   const modelId = chosenModel(requestContext)
   if (!isRouterId(modelId)) {
     throw new Failure('INTERNAL_UNEXPECTED', {
@@ -68,9 +65,9 @@ function sessionModel(requestContext: RequestContext): ModelId & `${string}/${st
   return modelId
 }
 
-/** `web_fetch` and the check always; `web_search` only where Mastra resolves the provider's own search. */
-function toolsOf(modelId: ModelId, check: ToolsInput[string]): ToolsInput {
-  const tools: ToolsInput = { web_fetch: webFetchTool, [BUILDER_TOOL.check]: check }
+/** `web_fetch` always; `web_search` only where Mastra resolves the provider's own search. */
+export function toolsOf(modelId: ModelId): ToolsInput {
+  const tools: ToolsInput = { web_fetch: webFetchTool }
   if (SEARCH_PROVIDERS.has(providerOf(modelId))) tools.web_search = webSearchTool
   return tools
 }
@@ -97,11 +94,22 @@ function grantedFor(
   }
 }
 
+/** The Builder's three connector tools, its notebook's write included. */
+function builderConnectorTools(
+  deps: { connectors: BuilderConnectors; runs: Runs; log: FailureLog },
+  granted: readonly GrantedConnection[],
+  ids: Omit<Parameters<typeof builderAccess>[2], 'runIdOf'>,
+): ToolsInput {
+  const who = { ...ids, runIdOf: (context: RequestContext) => deps.runs.runIdOf(context) }
+  const { access, save } = builderAccess(deps.connectors, granted, who, deps.log)
+  return connectorTools(access, { noteSave: true, save })
+}
+
 /**
  * Each model call's budget (code C57): a provider that sends nothing for a minute, or holds one
  * call ten minutes, fails the call instead of holding the turn and the shutdown's drain.
  */
-const MODEL_TIMEOUT = { firstChunkMs: 60_000, stepMs: 600_000 }
+export const MODEL_TIMEOUT = { firstChunkMs: 60_000, stepMs: 600_000 }
 
 /** The owner Mastra keeps a conversation under: the company with the person (criterion 8). */
 export function memoryOwner(owner: { companyId: CompanyId; personId: PersonId }): string {
@@ -120,11 +128,17 @@ export function memoryOwner(owner: { companyId: CompanyId; personId: PersonId })
  * `bufferActivation` act only on buffered chunks, and `blockAfter` only applies with buffering;
  * Mastra clears them when it is off, so they went with it.
  */
-function builderMemory(
-  storage: ReturnType<typeof createMastraStorage>,
-  queue: QueueDeps,
-  modelSettings: { timeout: typeof MODEL_TIMEOUT },
-): Memory {
+export function conversationMemory(deps: {
+  storage: PostgresStore
+  queue: QueueDeps
+  /** The title's instructions and the observer's, in the words of the conversation's kind. */
+  title: string
+  observer: string
+  /** Whether the model may recall the messages the observation folded (Mastra's `recall` tool and its instructions). */
+  recall: boolean
+}): Memory {
+  const { storage, queue } = deps
+  const modelSettings = { timeout: MODEL_TIMEOUT }
   const failSoft = { modelSettings, maxRetries: 0, failurePolicy: 'continue' as const }
   const turnFor = sideTurn(queue)
   return new Memory({
@@ -132,12 +146,12 @@ function builderMemory(
     options: {
       generateTitle: {
         model: accountModel(queue, 'title', turnFor),
-        instructions: TITLE_INSTRUCTIONS,
+        instructions: deps.title,
       },
       observationalMemory: {
         enabled: true,
         scope: 'thread',
-        retrieval: { scope: 'thread' },
+        ...(deps.recall ? { retrieval: { scope: 'thread' } } : {}),
         temporalMarkers: true,
         observation: {
           ...failSoft,
@@ -146,7 +160,7 @@ function builderMemory(
           bufferTokens: false,
           previousObserverTokens: 1000,
           threadTitle: true,
-          instruction: OBSERVER_INSTRUCTION,
+          instruction: deps.observer,
         },
         reflection: {
           ...failSoft,
@@ -158,6 +172,13 @@ function builderMemory(
   })
 }
 
+/** The Builder's memory words, and its recall of what the observation folded. */
+const BUILDER_MEMORY = {
+  title: TITLE_INSTRUCTIONS,
+  observer: OBSERVER_INSTRUCTION,
+  recall: true,
+} as const
+
 /**
  * The Builder (decision 0050): one agent shared by every conversation, its keyless model taken
  * from the session and given its account by the queue's processors, its memory, its title and its
@@ -166,7 +187,7 @@ function builderMemory(
  * machine, and the task list's signal with `memory`.
  */
 export function createBuilder(deps: {
-  pool: MastraPool
+  storage: PostgresStore
   queue: QueueDeps
   runs: Runs
   index: ConversationIndex
@@ -174,12 +195,13 @@ export function createBuilder(deps: {
   log: FailureLog
   projectName: Parameters<typeof builderInstructions>[0]['projectName']
 }) {
-  const storage = createMastraStorage(deps.pool)
+  const { storage } = deps
   const check = checkTool(deps.runs)
   const projectOf = projectIn(deps.index)
   const granted = grantedFor(deps.connectors, projectOf)
   const modelSettings = { timeout: MODEL_TIMEOUT }
-  const memory = builderMemory(storage, deps.queue, modelSettings)
+  const { queue } = deps
+  const memory = conversationMemory({ storage, queue, ...BUILDER_MEMORY })
   const agent = createCodingAgent({
     id: BUILDER_ID,
     name: 'Builder',
@@ -198,14 +220,15 @@ export function createBuilder(deps: {
     model: ({ requestContext }) => sessionModel(requestContext),
     tools: async ({ requestContext }) => {
       const ids = await projectOf(requestContext)
+      const web = toolsOf(sessionModel(requestContext))
+      // The order of step 20 (criterion 13a): the model's request stays byte for byte the same.
       return {
-        ...toolsOf(sessionModel(requestContext), check),
+        web_fetch: webFetchTool,
+        [BUILDER_TOOL.check]: check,
+        ...web,
         ...(ids === undefined
           ? {}
-          : connectorTools(deps.connectors, await granted(requestContext), {
-              ...ids,
-              runIdOf: (context) => deps.runs.runIdOf(context),
-            })),
+          : builderConnectorTools(deps, await granted(requestContext), ids)),
       }
     },
     inputProcessors: [turnOf(deps), accountPick(deps.queue)],
@@ -238,15 +261,7 @@ export function createBuilder(deps: {
     tools: { [ASK_USER_TOOL]: createAskUserTool(), [SUBMIT_PLAN_TOOL]: createSubmitPlanTool() },
     initialState: TOOL_CLOSURE.initialState,
   })
-  const mastra = new Mastra({
-    logger: new BuilderLogger(deps.log),
-    storage,
-    agentControllers: { [BUILDER_ID]: controller },
-  })
-  // Mastra 1.79.0 gives its logger to the store but not to the store's domains, which log their own
-  // failures; each domain takes it by the same `__setLogger` (code C50). Revisit on an upgrade.
-  for (const domain of Object.values(storage.stores)) domain?.__setLogger(mastra.getLogger())
-  return { controller, memory, mastra, agent, queue: deps.queue }
+  return { controller, memory, agent, queue: deps.queue }
 }
 
 export type Builder = ReturnType<typeof createBuilder>

@@ -68,8 +68,6 @@ export function openGoogleCalls(deps: {
   log: FailureLog
   database: Database
   sealKeys: SealKeys
-  /** Idle time before a process stops; ten minutes when absent. */
-  idleMs?: number
 }) {
   const calls = googleCalls(deps)
   return { googleCalls: calls.open, stop: calls.stop }

@@ -1,5 +1,8 @@
+import { listAssistantConversations } from '@conexus/hub-api'
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
+import { z } from 'zod'
+import { AssistantHome } from '../../../../builder/assistant/public.ts'
 import { readStart, Start } from '../../../../builder/conversation/public.ts'
 import { accountsQuery } from '../../../../builder/model-accounts/public.ts'
 import { PreparationCard } from '../../../../hub/identity/public.ts'
@@ -16,17 +19,28 @@ function Preparation() {
 function HomePage() {
   const { companyId } = Route.useParams()
   const { role } = Route.useRouteContext()
+  const { conversations } = Route.useSearch()
   return (
     <Home
       companyId={companyId}
       aside={role === 'member' ? undefined : <Preparation />}
-      start={<Start companyId={companyId} />}
+      title={role === 'member' ? 'O que vamos construir?' : 'Pergunte ou peça um app'}
+      start={
+        role === 'member' ? (
+          <Start companyId={companyId} />
+        ) : (
+          <AssistantHome companyId={companyId} page={conversations} />
+        )
+      }
     />
   )
 }
 
 export const Route = createFileRoute('/_app/companies/$companyId/')({
   staticData: { place: 'Início' },
+  validateSearch: z
+    .object({ conversations: listAssistantConversations.input.query.shape.page })
+    .catch({}),
   loader: ({ context, params }) => readStart(context.queryClient, params.companyId),
   component: HomePage,
 })

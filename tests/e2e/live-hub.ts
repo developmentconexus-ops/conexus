@@ -121,9 +121,9 @@ export async function liveHub(
   }
   const status = createStatus({ version: config.version, database: database.database })
   const identity = identityOf({ database: database.database, config, log: silent })
-  const { machinesOf, repository, copy, folder } = testBuilderPorts(config)
-  const { projects, operations, apps, modelAccounts, conversations, connectors } = subjectsOf({
-    ...{ machinesOf, repository, copy },
+  const { machinesOf, assistantMachine, repository, copy, folder } = testBuilderPorts(config)
+  const subjects = subjectsOf({
+    ...{ machinesOf, assistantMachine, repository, copy },
     database: database.database,
     mastraPool: database.mastraPool,
     config,
@@ -136,17 +136,8 @@ export async function liveHub(
     cloudflare: createCloudflareApps({ config, log: silent }),
     log: silent,
   })
-  const app = await createHub(config, {
-    status,
-    identity,
-    operations,
-    projects,
-    apps,
-    modelAccounts,
-    conversations,
-    connectors,
-    webRoot: WEB_ROOT,
-  })
+  const { apps, conversations, connectors } = subjects
+  const app = await createHub(config, { status, identity, ...subjects, webRoot: WEB_ROOT })
   closing.hub = function closeHub() {
     return closeListeners([app], () => conversations.close())
   }
@@ -221,9 +212,11 @@ export async function signIn(page: Page, email: string, password: string) {
   await page.getByRole('button', { name: 'Entrar' }).click()
 }
 
-/** Início, once the company's page has opened (its title; the sidebar and the cards come with it). */
+/** Início, once the company's page has opened (its title, the Builder's for a member and the Assistant's for the rest; the sidebar and the cards come with it). */
 export async function waitForHome(page: Page) {
-  await page.getByRole('heading', { name: 'O que vamos construir?', exact: true }).waitFor()
+  await page
+    .getByRole('heading', { name: /^(O que vamos construir\?|Pergunte ou peça um app)$/ })
+    .waitFor()
 }
 
 /** Welcome step 1: the first owner of a company the Central made keeps the suggested nickname. */

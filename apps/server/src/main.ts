@@ -2,8 +2,8 @@ import { appendFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { FAILURES, getStatus } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
+import type { Assistant, MachineTuning } from './builder/assistant/public.ts'
 import type { Conversations } from './builder/conversation/public.ts'
-import { createConversations } from './builder/conversation/public.ts'
 import type { GitCopy } from './builder/git/public.ts'
 import { repositoriesIn } from './builder/git/public.ts'
 import type { ModelAccounts } from './builder/model-accounts/public.ts'
@@ -13,8 +13,9 @@ import {
   resealModelAccounts,
   signInFlows,
 } from './builder/model-accounts/public.ts'
-import type { MachinesOf, RepositoryOf, Runs } from './builder/runs/public.ts'
+import type { AssistantMachine, MachinesOf, RepositoryOf, Runs } from './builder/runs/public.ts'
 import { builderPortsOf, createRuns } from './builder/runs/public.ts'
+import { conversationsOf } from './conversations-of.ts'
 import { firstPersonArguments } from './first-person-arguments.ts'
 import type { Apps, Ungranted } from './hub/apps/public.ts'
 import { appAccessOf, createAppRemoval, createApps, versionNumbersOf } from './hub/apps/public.ts'
@@ -25,7 +26,7 @@ import { createIdentity, passwordLinkText } from './hub/identity/public.ts'
 import type { Operations } from './hub/operations/public.ts'
 import { createOperations } from './hub/operations/public.ts'
 import type { Projects } from './hub/projects/public.ts'
-import { createProjects, liveProjectOf } from './hub/projects/public.ts'
+import { createProjects } from './hub/projects/public.ts'
 import type { Status } from './hub/status/public.ts'
 import { createStatus } from './hub/status/public.ts'
 import type { CloudflareApps } from './platform/cloudflare.ts'
@@ -70,6 +71,7 @@ export async function createHub(
     apps: Apps
     modelAccounts: ModelAccounts
     conversations: Conversations
+    assistant: Assistant
     connectors: Connectors
     webRoot?: string
   },
@@ -89,6 +91,7 @@ export async function createHub(
   deps.apps.routes(app)
   deps.modelAccounts.routes(app)
   deps.conversations.routes(app)
+  deps.assistant.routes(app)
   deps.connectors.routes(app)
   await app.ready()
   return app
@@ -131,6 +134,9 @@ export function subjectsOf(deps: {
   cloudflare: CloudflareApps
   mastraPool: MastraPool
   machinesOf: MachinesOf
+  assistantMachine: AssistantMachine
+  /** The tests' folder and start deadline for the Assistant's machines (`test-runs.ts`). */
+  assistantTuning?: MachineTuning
   repository: RepositoryOf
   copy: GitCopy
   log: FailureLog
@@ -142,6 +148,7 @@ export function subjectsOf(deps: {
   apps: Apps
   modelAccounts: ModelAccounts
   conversations: Conversations
+  assistant: Assistant
   connectors: Connectors
 } {
   const { database, config, log, neon } = deps
@@ -158,17 +165,11 @@ export function subjectsOf(deps: {
     // The apps are made below, after the Projetos the turn's send needs; a turn ends long after.
     send: (version) => apps.sendFromBuilder(version),
   })
-  // The connectors come below, after the apps whose door they read; a turn comes long after.
-  const builderConnectors: Connectors['builder'] = {
-    granted: (ids) => connectors.builder.granted(ids),
-    read: (ids, a) => connectors.builder.read(ids, a),
-    notes: (ids, connectionId) => connectors.builder.notes(ids, connectionId),
-    saveNote: (ids, a) => connectors.builder.saveNote(ids, a),
-  }
-  const conversations = createConversations({
-    ...{ database, identity, projects: { liveProjectOf }, sealKeys, google, log, runs },
-    pool: deps.mastraPool,
-    connectors: builderConnectors,
+  const { conversations, assistant } = conversationsOf({
+    ...{ database, identity, sealKeys, google, log, runs, mastraPool: deps.mastraPool },
+    machine: deps.assistantMachine,
+    machineTuning: deps.assistantTuning,
+    connectors: () => connectors,
   })
   const releaseConversations = conversations.release
   const projects = createProjects({
@@ -187,7 +188,7 @@ export function subjectsOf(deps: {
     ...{ database, identity, sealKeys, flows, log, googleCalls: google.googleCalls },
   })
   const connectors = createConnectors({ ...deps, identity, door: apps.connectorCall })
-  return { runs, projects, operations, apps, modelAccounts, conversations, connectors }
+  return { runs, projects, operations, apps, modelAccounts, conversations, assistant, connectors }
 }
 
 async function runServer(): Promise<void> {
