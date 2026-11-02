@@ -128,7 +128,9 @@ export async function hubBeside(t: TestContext, hub: Hub, log: FailureLog = sile
     control: ports.control,
     knobs: ports.knobs,
   }
-  return { ...hub, app, runs: subjects.runs, mastra: subjects.conversations.mastra, builder, close }
+  const { assistantMachines } = ports
+  const mastra = subjects.conversations.mastra
+  return { ...hub, app, runs: subjects.runs, mastra, builder, assistantMachines, close }
 }
 
 export async function started(hub: Hub, person: Person, conversations: string, body: object = {}) {

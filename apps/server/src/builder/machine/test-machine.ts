@@ -1,16 +1,27 @@
 import { execFileSync } from 'node:child_process'
-import { createReadStream, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  createReadStream,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmdirSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs'
 import { tmpdir } from 'node:os'
-import { dirname, join } from 'node:path'
+import { basename, dirname, join } from 'node:path'
 import type { TestContext } from 'node:test'
+import { setTimeout as sleep } from 'node:timers/promises'
 import { CompanyId, ConversationId, ProjectId } from '@conexus/hub-api'
 import { RequestContext } from '@mastra/core/request-context'
 import type { Workspace, WorkspaceSandbox } from '@mastra/core/workspace'
-import { LocalSandbox } from '@mastra/core/workspace'
-import { InstallationId, MachineTemplate } from '../../platform/config-machine.ts'
+import { LocalFilesystem, LocalSandbox } from '@mastra/core/workspace'
+import { E2bApiKey, InstallationId, MachineTemplate } from '../../platform/config-machine.ts'
 import { Failure } from '../../platform/failure.ts'
 import { openRepository } from '../git/public.ts'
-import type { Kit, KitFactory } from './kit.ts'
+import type { AssistantMachineApi, Kit, KitFactory, MachineApi } from './kit.ts'
+import { APP_FOLDER } from './kit.ts'
 import type { Phase } from './public.ts'
 import { createMachines } from './public.ts'
 
@@ -49,18 +60,30 @@ export type Control = {
   restartBeforeNextCommand: boolean
   /** The name of each machine started: the provider finds an existing one by it alone. */
   names: string[]
+  /** The hosts each machine started may reach. */
+  allowOut: (readonly string[])[]
   /** The mark each machine started carries. */
   marks: Record<string, string>[]
   /** The latest machine started, to watch its status as a test needs. */
   sandbox: WorkspaceSandbox | undefined
   /** How many times a machine was paused. */
   stops: number
+  /** How long a pause takes, as the provider's. */
+  stopMs: number
+  /** The machine has its own file API that follows links, as E2B's: the file tools go through it, not through the shell. */
+  native: boolean
   /** The provider killed the machine: pausing it fails as E2B's does, until a start makes a new one. */
   killed: boolean
   /** What another process in the machine does right after each command the Hub runs there. */
   afterCommand: () => void
   /** What another process in the machine does to a file just before the Hub reads it. */
   beforeRead: (path: string) => void
+  /** How many of the next finds fail as a provider that does not answer its list. */
+  findFails: number
+  /** How long the provider takes for each chunk of a file the Hub reads; it stops when the read's signal aborts. */
+  chunkMs: number
+  /** The reads whose signal aborted while the provider was still sending. */
+  readsCut: number
 }
 
 export function newControl(): Control {
@@ -76,12 +99,18 @@ export function newControl(): Control {
     restart: async () => undefined,
     restartBeforeNextCommand: false,
     names: [],
+    allowOut: [],
     marks: [],
     sandbox: undefined,
     stops: 0,
+    stopMs: 0,
+    native: false,
     killed: false,
     afterCommand: () => undefined,
     beforeRead: () => undefined,
+    findFails: 0,
+    chunkMs: 0,
+    readsCut: 0,
   }
 }
 
@@ -91,16 +120,26 @@ export function newControl(): Control {
  */
 export function localKit(folder: string, control: Control): KitFactory {
   return (options): Kit => {
+    let made = false
     const sandbox = new LocalSandbox({
       workingDirectory: options.workingDirectory,
       instructions: options.instructions,
       onStart: async (started) => {
+        // E2B's template makes the app folder and no other: a working folder this start made is
+        // taken away again, so a command run there before anything makes it fails as on E2B.
+        if (made && basename(options.workingDirectory) !== basename(APP_FOLDER)) {
+          rmdirSync(options.workingDirectory)
+        }
         await new Promise((up) => setTimeout(up, control.upMs))
         const outcome = control.discoverable.includes(options.id) ? 'connected' : control.outcome
         if (outcome === 'connected') control.attached.push(options.id)
         await options.onStart({ ...started, outcome })
       },
     })
+    if (control.native) {
+      const filesystem = new LocalFilesystem({ basePath: '/', contained: false })
+      Object.defineProperty(sandbox, 'filesystem', { value: filesystem })
+    }
     const execute = sandbox.executeCommand?.bind(sandbox)
     if (execute !== undefined) {
       sandbox.executeCommand = async (...args) => {
@@ -115,9 +154,15 @@ export function localKit(folder: string, control: Control): KitFactory {
     }
     const start = sandbox.start.bind(sandbox)
     sandbox.start = async (...args) => {
+      // E2B's reattach of a machine found by its id (`reattach: 'required'`): gone, it makes none.
+      if (options.foundAs !== undefined && !heldBy(control, options.foundAs)) {
+        throw Object.assign(new Error('reattach failed'), { code: 'SANDBOX_REATTACH_FAILED' })
+      }
       mkdirSync(folder, { recursive: true })
+      made = !existsSync(options.workingDirectory)
       control.names.push(options.id)
       control.marks.push(options.metadata)
+      control.allowOut.push(options.allowOut)
       control.sandbox = sandbox
       control.restart = () =>
         Promise.resolve(options.onStart({ sandbox, outcome: control.outcome }))
@@ -129,6 +174,7 @@ export function localKit(folder: string, control: Control): KitFactory {
     const stop = sandbox.stop.bind(sandbox)
     sandbox.stop = async () => {
       if (control.killed) throw new Error('Sandbox local-machine not found')
+      await new Promise((done) => setTimeout(done, control.stopMs))
       control.stops += 1
       return stop()
     }
@@ -139,15 +185,77 @@ export function localKit(folder: string, control: Control): KitFactory {
           mkdirSync(dirname(path), { recursive: true })
           writeFileSync(path, bytes)
         },
-        read: async (path) => {
+        read: async (path, signal) => {
           control.beforeRead(path)
-          return createReadStream(path)
+          return control.chunkMs === 0 ? createReadStream(path) : slowly(control, path, signal)
         },
       },
       closeNetwork: async () => {
         control.networkClosed += 1
       },
     }
+  }
+}
+
+/** Whether the provider holds the machine of this name: found by a turn before, and not killed. */
+function heldBy(control: Control, name: string): boolean {
+  return control.discoverable.includes(name) && !control.killed
+}
+
+/** A file sent in 64 KiB chunks, `chunkMs` apart, until the read's signal aborts it. */
+async function* slowly(control: Control, path: string, signal: AbortSignal | undefined) {
+  for await (const chunk of createReadStream(path, { highWaterMark: 65_536 })) {
+    try {
+      await sleep(control.chunkMs, undefined, { signal })
+    } catch (error) {
+      control.readsCut += 1
+      throw error
+    }
+    yield chunk
+  }
+}
+
+/**
+ * The provider's find by the marks, as E2B's list: the conversation's machine of `template` it
+ * holds, by its name, which this double uses as the provider's id; `findFails` lists that fail.
+ */
+export function findOf(control: Control): AssistantMachineApi['find'] {
+  return async (conversationId, template) => {
+    if (control.findFails > 0) {
+      control.findFails -= 1
+      throw new Error('502 Bad Gateway')
+    }
+    return control.discoverable.find(
+      (name) =>
+        name.endsWith(conversationId) &&
+        heldBy(control, name) &&
+        (control.templates[name] ?? TEMPLATE) === template,
+    )
+  }
+}
+
+/**
+ * The provider's kill by the marks, as E2B's: `api.kill` takes the machines whose metadata holds
+ * every mark of the installation and the conversation's id, and only those (security S36).
+ */
+export function killByMark(control: Control, mark: Record<string, string>): MachineApi['kill'] {
+  return async (conversationId) => {
+    const wanted = Object.entries({ ...mark, conexus_conversation: conversationId })
+    const found = control.marks.some((held) => wanted.every(([key, value]) => held[key] === value))
+    if (found) control.killed = true
+    return found ? 1 : 0
+  }
+}
+
+/** The provider's list by the conversation's mark: every machine of another template goes. */
+export function killStaleOf(control: Control): MachineApi['killStale'] {
+  return async (conversationId, template) => {
+    const stale = control.discoverable.filter(
+      (name) => name.endsWith(conversationId) && (control.templates[name] ?? TEMPLATE) !== template,
+    )
+    control.discoverable = control.discoverable.filter((name) => !stale.includes(name))
+    control.replaced.push(...stale)
+    return stale.length
   }
 }
 
@@ -182,15 +290,7 @@ export async function world(
     api: {
       kill: async () => 0,
       // The provider's list by the conversation's mark, as E2B's: every machine of another template goes.
-      killStale: async (conversationId, template) => {
-        const stale = control.discoverable.filter(
-          (name) =>
-            name.endsWith(conversationId) && (control.templates[name] ?? TEMPLATE) !== template,
-        )
-        control.discoverable = control.discoverable.filter((name) => !stale.includes(name))
-        control.replaced.push(...stale)
-        return stale.length
-      },
+      killStale: killStaleOf(control),
     },
     seedOf: seedOf ?? (() => repository.bundleOfMain()),
     mark: { conexus_origin: installation },
@@ -241,5 +341,17 @@ export function moveMain(gitDir: string, path: string, content: string | null) {
     git('push', '--quiet', 'origin', 'HEAD:main')
   } finally {
     rmSync(work, { recursive: true, force: true })
+  }
+}
+
+// biome-ignore lint/style/noProcessEnv: the switches of the real-E2B opt-in cases, not the app's configuration
+const { CONEXUS_E2B_KEY_FILE: KEY_FILE, CONEXUS_E2B_TEMPLATE: REAL_TEMPLATE } = process.env
+
+/** The founder's E2B account and the published template, for the opt-in cases that need the real provider; none unless both are set. */
+export function realE2b() {
+  if (KEY_FILE === undefined || REAL_TEMPLATE === undefined) return undefined
+  return {
+    e2bApiKey: E2bApiKey.parse(readFileSync(KEY_FILE, 'utf8').trim()),
+    machineTemplate: MachineTemplate.parse(REAL_TEMPLATE),
   }
 }

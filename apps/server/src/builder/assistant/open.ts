@@ -128,7 +128,7 @@ export async function openConversation(
   if (!effortsOf(start.model).includes(effort)) throw new Failure('EFFORT_UNSUPPORTED')
   const chosen = await offeredOnly(deps, { ...owner, place, chosen: [] }, input.connections)
   const projectId = place.kind === 'PROJECT' ? place.projectId : undefined
-  await deps.chosen.keep(owner, { conversationId: id, projectId, connections: chosen })
+  const made = await deps.chosen.keep(owner, { conversationId: id, projectId, connections: chosen })
   const { automation } = input
   const tags = {
     [SESSION_MARK.company]: owner.companyId,
@@ -144,7 +144,9 @@ export async function openConversation(
   const session = await deps.controller.createSession({ id, resourceId, threadId: id, tags })
   const kept = ModelIdSchema.optional().parse(earlier?.metadata?.currentModelId)
   if (kept === undefined) await session.model.switch(start.model, { thinkingLevel: effort })
-  return { created: earlier === null, session, model: kept ?? start.model }
+  // The attempt that kept the choice made the conversation: a repeat, or a race on the key, did
+  // not.
+  return { made, session, model: kept ?? start.model }
 }
 
 /**

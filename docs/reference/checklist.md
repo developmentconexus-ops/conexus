@@ -28,6 +28,7 @@ walk ([code C75](../guides/code.md)), not a question here.
     Is there a write in the diff, the step's or a library's, with no row in the card's failure table
     ([card template](../../.agents/skills/conexus-scope/references/card.md))?
 12. Did the step add something that runs alone? Then the sleeping-database test ran again (D27).
+13. Does the diff bump a Mastra pin? Then the reference shelf and [stack](stack.md) moved with it.
 
 ## The sweep table
 

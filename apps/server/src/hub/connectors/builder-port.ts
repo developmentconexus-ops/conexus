@@ -17,7 +17,7 @@ import { openedIn } from './testing.ts'
 
 /** One conversation turn reads and saves at most this many times (the OS's `connector_fetch`: 50 per run); the Builder counts by run, the Assistant by turn. */
 export const CONNECTOR_CALLS_PER_TURN = 50
-const TURNS_KEPT = 1000
+export const TURNS_KEPT = 1000
 
 export type GrantedConnection = Readonly<{
   connectionId: ConnectionId
@@ -38,7 +38,7 @@ export type BuilderConnectors = {
   granted(ids: OfProject): Promise<readonly GrantedConnection[]>
   read(
     ids: OfProject,
-    a: Of & Readonly<{ operation: string; input: unknown }>,
+    a: Of & Readonly<{ operation: string; input: unknown; signal?: AbortSignal }>,
   ): Promise<ShapedRead | Spent>
   notes(ids: OfProject, connectionId: ConnectionId): Promise<Notes | null>
   saveNote(
@@ -125,6 +125,7 @@ function callThrough(
     opened: OpenedConnection
     operation: Operation<unknown, unknown, 'read'>
     input: unknown
+    signal?: AbortSignal
   }>,
 ) {
   return readThrough(deps, {
@@ -135,6 +136,7 @@ function callThrough(
     operation: a.operation,
     input: a.input,
     deadlineMs: CALL_DEADLINE_MS,
+    signal: a.signal,
   })
 }
 
@@ -208,7 +210,13 @@ export function createBuilderConnectors(deps: Deps): BuilderConnectors {
     async read(ids, a) {
       const opened = await admit(deps, ids, a)
       const operation = opened && readOf(opened.connector, a.operation)
-      if (opened === undefined || !operation) return { kind: 'NOT_GRANTED' }
+      if (opened === undefined || !operation) {
+        const reason = opened === undefined ? 'NOT_GRANTED_TO_PROJECT' : 'NOT_A_READ'
+        const { connectionId } = a
+        const about = { ...ids, connectionId, operation: a.operation, reason }
+        deps.log.info(about, 'BUILDER_READ_REFUSED')
+        return { kind: 'NOT_GRANTED' }
+      }
       if (!spend(a.runId)) return { kind: 'CALLS_SPENT' }
       const answered = await callThrough(deps, { ids, ...a, opened, operation })
       return answered.kind === 'OK' ? { kind: 'OK', ...shaped(answered.value) } : answered

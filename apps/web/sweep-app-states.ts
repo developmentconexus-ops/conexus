@@ -9,6 +9,7 @@ import {
   INVITATION_DETAILS,
   LONG_EMAIL,
   LONG_NAME,
+  MEMBER,
   NO_COMPANIES,
   OWNER,
   PROJECT_ID,
@@ -97,7 +98,7 @@ export const APP_STATES: State[] = [
     name: 'criar Projeto, nome sem endereço',
     path: `/companies/${COMPANY.id}`,
     replies: {
-      ...OWNER,
+      ...MEMBER,
       ...projectsPage(COMPANY.id, { empty: true }),
       ...startsOn(COMPANY.id),
       [`POST /api/companies/${COMPANY.id}/projects`]: failure('PROJECT_NAME_NO_ADDRESS'),

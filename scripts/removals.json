@@ -2096,7 +2096,7 @@
     "replace": "() => true",
     "test": {
       "cwd": "apps/server",
-      "file": "src/builder/machine/machine-e2b.test.ts",
+      "file": "src/builder/machine/e2b-api.test.ts",
       "name": "máquina: depois de um Release, mata só as da conversa de outro template ou sem template, e guarda a do template do Hub"
     }
   },
@@ -2164,6 +2164,193 @@
       "cwd": "apps/server",
       "file": "src/builder/assistant/release.test.ts",
       "name": "remover a empresa apaga"
+    }
+  },
+  {
+    "id": "assistant-file-read-logged",
+    "file": "apps/server/src/builder/assistant/file-route.ts",
+    "find": "        'ASSISTANT_FILE_READ',",
+    "replace": "        'ASSISTANT_FILE_SERVED',",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/assistant/file.test.ts",
+      "name": "o dono baixa os bytes"
+    }
+  },
+  {
+    "id": "assistant-machine-mark",
+    "file": "apps/server/src/builder/assistant/machine.ts",
+    "find": "        ...mark,\n        ...marks,",
+    "replace": "        [MARK.origin]: installation,\n        ...marks,",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/assistant/machine.test.ts",
+      "name": "a marca"
+    }
+  },
+  {
+    "id": "assistant-serving-short-lived",
+    "file": "apps/server/src/builder/assistant/machine.ts",
+    "find": "return session === undefined ? undefined : this.shortLived(session)",
+    "replace": "return session?.files",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/assistant/show-file.test.ts",
+      "name": "link para fora feito depois"
+    }
+  },
+  {
+    "id": "assistant-file-links-checked",
+    "file": "apps/server/src/builder/assistant/machine.ts",
+    "find": "      workdir: this.folder,\n      verifySymlinks: true,",
+    "replace": "      workdir: this.folder,\n      verifySymlinks: false,",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/assistant/show-file.test.ts",
+      "name": "link para fora feito depois"
+    }
+  },
+  {
+    "id": "assistant-download-cancel",
+    "file": "apps/server/src/builder/machine/kit.ts",
+    "find": "      if (signal?.aborted === true) return 'cancelled'\n      length",
+    "replace": "      length",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/assistant/machine.test.ts",
+      "name": "o download cancelado"
+    }
+  },
+  {
+    "id": "assistant-stop-all-waits",
+    "file": "apps/server/src/builder/assistant/machine.ts",
+    "find": "    await Promise.all([...this.pausing])\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/assistant/machine.test.ts",
+      "name": "o fim do Hub"
+    }
+  },
+  {
+    "id": "assistant-close-stops-machines",
+    "file": "apps/server/src/builder/assistant/assistant.ts",
+    "find": "      await machines.stopAll()\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/assistant/machine.test.ts",
+      "name": "o fim do Hub"
+    }
+  },
+  {
+    "id": "assistant-machine-stale-killed",
+    "file": "apps/server/src/builder/assistant/machine.ts",
+    "find": "session.found === undefined ? api.killStale(conversationId, template) : undefined",
+    "replace": "undefined",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/assistant/machine.test.ts",
+      "name": "antes de ligar"
+    }
+  },
+  {
+    "id": "assistant-read-saves-whole",
+    "file": "apps/server/src/builder/connectors/connector-tools.ts",
+    "find": "saveWhole(workspace.filesystem, save, whole, cut)",
+    "replace": "saveWhole(workspace.filesystem, save, cut, cut)",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/assistant/machine.test.ts",
+      "name": "a leitura grande"
+    }
+  },
+  {
+    "id": "assistant-read-numbered",
+    "file": "apps/server/src/builder/assistant/assistant.ts",
+    "find": "const n = (readsOfRun.get(requestContext) ?? 0) + 1",
+    "replace": "const n = 1",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/assistant/machine.test.ts",
+      "name": "cada leitura do turno"
+    }
+  },
+  {
+    "id": "assistant-file-phrase-card",
+    "file": "packages/hub-api/src/assistant-failures.ts",
+    "find": "phrase: 'A máquina desta conversa não guarda mais este arquivo.',",
+    "replace": "phrase: 'Os arquivos desta conversa não estão mais na máquina dela.',",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/assistant/file.test.ts",
+      "name": "acima do teto"
+    }
+  },
+  {
+    "id": "assistant-locate-where-tools-put-it",
+    "file": "apps/server/src/builder/assistant/machine.ts",
+    "find": "const found = await files.stat(path)",
+    "replace": "const found = await files.stat(path.startsWith('/') ? `..${path}` : path)",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/assistant/locate.test.ts",
+      "name": "o caminho cai na pasta"
+    }
+  },
+  {
+    "id": "machine-network-from-caller",
+    "file": "apps/server/src/builder/machine/e2b.ts",
+    "find": "network: { allowOut: [...options.allowOut], denyOut: [ALL_TRAFFIC] },",
+    "replace": "network: { allowOut: ['registry.npmjs.org'], denyOut: [ALL_TRAFFIC] },",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/machine/machine-e2b.test.ts",
+      "name": "lista de endereços"
+    }
+  },
+  {
+    "id": "assistant-file-sandbox",
+    "file": "apps/server/src/builder/assistant/file-route.ts",
+    "find": "sandboxed(reply.getHeader('content-security-policy'))",
+    "replace": "String(reply.getHeader('content-security-policy'))",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/assistant/file.test.ts",
+      "name": "nosniff e CSP sandbox"
+    }
+  },
+  {
+    "id": "assistant-release-kills-machines",
+    "file": "apps/server/src/builder/assistant/release.ts",
+    "find": "    await deps.machines.kill(ConversationId.parse(thread.id))\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/assistant/release.test.ts",
+      "name": "pela pessoa, pelo Projeto e pela empresa"
+    }
+  },
+  {
+    "id": "assistant-download-makes-no-machine",
+    "file": "apps/server/src/builder/assistant/machine.ts",
+    "find": "      if (found === undefined) return { kind: 'FILE_GONE' }\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/assistant/file.test.ts",
+      "name": "a máquina perdida, FILE_GONE"
+    }
+  },
+  {
+    "id": "assistant-download-reattach-required",
+    "file": "apps/server/src/builder/machine/e2b.ts",
+    "find": "reattach: 'required' as const",
+    "replace": "reattach: 'optional' as const",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/machine/machine-e2b.test.ts",
+      "name": "achada pelo id"
     }
   },
   {

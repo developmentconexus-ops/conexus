@@ -30,6 +30,8 @@ import type { QueueDeps } from '../model-accounts/public.ts'
 import type { ChosenConnections } from './chosen.ts'
 import type { Owner } from './context.ts'
 import { assistantOwner, SESSION_MARK, scopeOn } from './context.ts'
+import { registerFile } from './file-route.ts'
+import type { AssistantMachines } from './machine.ts'
 import type { assistantMemory } from './memory.ts'
 import {
   admitted,
@@ -41,7 +43,10 @@ import {
 } from './open.ts'
 import type { AssistantProjects } from './ports.ts'
 
-/** A page of the person's conversations (code C44): a page number the token carries, never authority. */
+/**
+ * A page of the person's conversations (code C44): a page number the token carries, never
+ * authority.
+ */
 const PER_PAGE = 30
 const PageNumber = z.coerce.number().int().min(1).max(100_000)
 
@@ -53,6 +58,7 @@ type Deps = {
   queue: QueueDeps
   controller: AgentController
   memory: ReturnType<typeof assistantMemory>
+  machines: AssistantMachines
   chosen: ChosenConnections
   log: FailureLog
 }
@@ -61,7 +67,10 @@ function ownerOf(input: { person: Person; params: { companyId: CompanyId } }): O
   return { companyId: input.params.companyId, personId: input.person.id }
 }
 
-/** The person's own thread of the Assistant, or `CONVERSATION_NOT_FOUND`; another's and one that does not exist answer the same (S10). */
+/**
+ * The person's own thread of the Assistant, or `CONVERSATION_NOT_FOUND`; another's and one that
+ * does not exist answer the same (S10).
+ */
 async function ownThread(deps: Deps, owner: Owner, conversationId: ConversationId) {
   const resourceId = assistantOwner(owner)
   const thread = await deps.memory.getThreadById({ threadId: conversationId, resourceId })
@@ -69,15 +78,18 @@ async function ownThread(deps: Deps, owner: Owner, conversationId: ConversationI
   return thread
 }
 
-/** The thread's scope: its mark, read with no session (a `GET` starts nothing), and the choice the Hub keeps. */
+/**
+ * The thread's scope, read with no session (a `GET` starts nothing): its place and choice as the
+ * Hub keeps them.
+ */
 async function scopeOfThread(deps: Deps, owner: Owner, thread: StorageThreadType) {
-  const chosen = await deps.chosen.of(owner, ConversationId.parse(thread.id))
-  const scope = scopeOn({ owner, mark: thread.metadata?.[SESSION_MARK.project], chosen })
-  if (scope === undefined) throw new Failure('CONVERSATION_NOT_FOUND')
-  return scope
+  return scopeOn(owner, await deps.chosen.of(owner, ConversationId.parse(thread.id)))
 }
 
-/** What the conversation answers: its summary and each connection its place offers, with whether it chose it. */
+/**
+ * What the conversation answers: its summary and each connection its place offers, with whether it
+ * chose it.
+ */
 async function conversationOf(deps: Deps, thread: StorageThreadType, scope: SessionScope) {
   const connections = await deps.connectors.connections(scope)
   return {
@@ -102,7 +114,10 @@ type Asked = {
   connections: ConnectionId[]
 }
 
-/** A conversation's creation, keyed by its attempt (code C37): the person and the place admitted first, nothing made on a refusal. */
+/**
+ * A conversation's creation, keyed by its attempt (code C37): the person and the place admitted
+ * first, nothing made on a refusal (`openConversation` keeps the rest).
+ */
 async function created(deps: Deps, owner: Owner, input: { attemptKey: string; body: Asked }) {
   const place = placeOf(input.body.projectId)
   await admitted(deps, owner, place)
@@ -113,7 +128,7 @@ async function created(deps: Deps, owner: Owner, input: { attemptKey: string; bo
     ...{ model: body.model, effort: body.effort },
   })
   const thread = await ownThread(deps, owner, id)
-  return { created: opened.created, thread, model: opened.model }
+  return { made: opened.made, thread, model: opened.model }
 }
 
 function nextOf(page: number, hasMore: boolean): Next {
@@ -132,6 +147,29 @@ function pageOf(token: string | undefined): number {
   return read.data
 }
 
+/** The live Projetos the page's conversations were born in, by id, with their names. */
+async function projectNames(deps: Deps, owner: Owner, marks: readonly (ProjectId | null)[]) {
+  const ids = new Set(marks.flatMap((mark) => (mark === null ? [] : [mark])))
+  const found = await deps.database.read({ kind: 'COMPANY', ...owner }, (tx) =>
+    Promise.all(
+      [...ids].map(async (projectId) => {
+        const live = await deps.projects.liveProjectOf(tx, {
+          companyId: owner.companyId,
+          projectId,
+        })
+        return [projectId, live?.name] as const
+      }),
+    ),
+  )
+  return new Map(found)
+}
+
+/** A conversation's Projeto as the list shows it: its name while the Projeto is live, else none. */
+function projectShown(mark: ProjectId | null, names: ReadonlyMap<ProjectId, string | undefined>) {
+  const name = mark === null ? undefined : names.get(mark)
+  return mark === null || name === undefined ? null : { id: mark, name }
+}
+
 /** The reads: the person's conversations, one conversation, and what a new one would be offered. */
 function registerReads(app: FastifyInstance, deps: Deps): void {
   serve(app, listAssistantConversations, async (input) => {
@@ -148,11 +186,15 @@ function registerReads(app: FastifyInstance, deps: Deps): void {
       perPage: PER_PAGE,
       orderBy: { field: 'updatedAt', direction: 'DESC' },
     })
-    const conversations = listed.threads.map((thread) => ({
+    const marks = listed.threads.map((thread) =>
+      ProjectIdSchema.nullable().parse(thread.metadata?.[SESSION_MARK.project] ?? null),
+    )
+    const names = await projectNames(deps, owner, marks)
+    const conversations = listed.threads.map((thread, at) => ({
       id: ConversationId.parse(thread.id),
       title: thread.title || null,
       updatedAt: thread.updatedAt.toISOString(),
-      projectId: ProjectIdSchema.nullable().parse(thread.metadata?.[SESSION_MARK.project] ?? null),
+      project: projectShown(marks[at] ?? null, names),
       automation: automationOf(thread.metadata),
     }))
     return answer({ conversations, next: nextOf(page, listed.hasMore) })
@@ -185,13 +227,13 @@ function registerReads(app: FastifyInstance, deps: Deps): void {
 function registerWrites(app: FastifyInstance, deps: Deps): void {
   serve(app, createAssistantConversation, async (input) => {
     const owner = ownerOf(input)
-    const attemptKey = z.string().parse(input.attemptKey)
-    const made = await created(deps, owner, { attemptKey, body: input.body })
+    const made = await created(deps, owner, { attemptKey: input.attemptKey, body: input.body })
     const scope = await scopeOfThread(deps, owner, made.thread)
-    if (made.created) {
+    if (made.made) {
       deps.log.info(
         {
-          companyId: owner.companyId,
+          ...owner,
+          traceId: input.traceId,
           conversationId: made.thread.id,
           inProject: scope.place.kind === 'PROJECT',
         },
@@ -211,7 +253,7 @@ function registerWrites(app: FastifyInstance, deps: Deps): void {
     const chosen = await offeredOnly(deps, scope, input.body.connections)
     await deps.chosen.change(owner, conversationId, chosen)
     deps.log.info(
-      { companyId: owner.companyId, conversationId, count: chosen.length },
+      { companyId: owner.companyId, traceId: input.traceId, conversationId, count: chosen.length },
       'ASSISTANT_CONNECTIONS_CHANGED',
     )
     const conversation = await conversationOf(deps, thread, { ...scope, chosen })
@@ -219,8 +261,19 @@ function registerWrites(app: FastifyInstance, deps: Deps): void {
   })
 }
 
-/** The Assistant's conversations (step 24.1, U2): every route admits the person who may ask now (`askAssistant`). */
+/**
+ * The Assistant's conversations (step 24.1, U2): every route admits the person who may ask now
+ * (`askAssistant`).
+ */
 export function registerAssistantRoutes(app: FastifyInstance, deps: Deps): void {
   registerReads(app, deps)
   registerWrites(app, deps)
+  registerFile(app, {
+    machines: deps.machines,
+    log: deps.log,
+    ownConversation: async (owner, conversationId) => {
+      await admitted(deps, owner, { kind: 'COMPANY' })
+      await ownThread(deps, owner, conversationId)
+    },
+  })
 }

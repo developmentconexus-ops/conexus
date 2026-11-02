@@ -121,13 +121,8 @@ export function createConversations(deps: {
   const { database, identity, queue, assistant, automation } = deps
   const store = createConversationStore(deps)
   const builder = createBuilder({
-    ...{
-      storage: deps.storage,
-      queue,
-      runs: deps.runs,
-      index: store,
-      connectors: deps.connectors,
-    },
+    ...{ storage: deps.storage, queue, runs: deps.runs, log: deps.log },
+    ...{ index: store, connectors: deps.connectors },
     projectName: (ids) =>
       database.read({ kind: 'COMPANY', companyId: ids.companyId, personId: null }, async (tx) => {
         return (await deps.projects.liveProjectOf(tx, ids))?.name

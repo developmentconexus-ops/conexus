@@ -7,6 +7,9 @@ import type { FailureCode } from './failures.ts'
 import { ATTEMPT_KEY_HEADER, defineOperation } from './operation.ts'
 import { ProjectId } from './projects.ts'
 
+/** The id the Assistant's conversations carry for the automation that opened them, re-exported with the automation's own shapes. */
+export { AutomationId }
+
 /** The most connections an automation reads, as a conversation chooses at most. */
 const CONNECTIONS_MAX = 50
 export const AUTOMATION_NAME_MAX = 80

@@ -47,7 +47,7 @@ async function handedOver(answers: Parameters<typeof open>[2] = {}) {
       projectId: PEDIDOS.id,
       conversationId: FIRST,
     },
-    state: { handoff: { content: REQUEST } },
+    state: { handoff: { conversationId: FIRST, content: REQUEST } },
   })
   await screen.findByRole('log', { name: 'Conversa com o Builder' })
   const field = await screen.findByRole('textbox', { name: 'Mensagem para o Builder' })

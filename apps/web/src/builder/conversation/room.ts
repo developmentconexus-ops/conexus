@@ -1,0 +1,52 @@
+import type { FailureCode, ShownFile } from '@conexus/hub-api'
+import { createContext, useContext } from 'react'
+import { ASSISTANT_OVERRIDES } from './assistant-specs.ts'
+import { PLAIN_WORDS } from './connector-specs.ts'
+import { START_NO_ACCOUNT } from './text.ts'
+import type { ConnectorWords, RowTool, ToolSpec } from './tool-spec.ts'
+
+/** A file the Assistant shows beside the chat: the text to read, or the file to download. */
+export type OpenedFile = Extract<ShownFile, { kind: 'TEXT' | 'FILE' }>
+
+/**
+ * Whose conversation the rows are drawn in (step 24.1, U4): the Builder's, which every row was
+ * written for, or the Assistant's, whose rows name the connection read and open the file shown or
+ * the app proposed in the screen that holds them. Whose session it is, is the chat's `Place`.
+ */
+export type Room = {
+  /** Who answers, as the screen's words name it. */
+  agent: 'Builder' | 'Assistente'
+  /** The connector's name as the person knows it ("Sankhya"), and its refusals, from its id. */
+  connectors: ConnectorWords
+  /** Opens a file beside the chat; none in the Builder's conversation. */
+  openFile?: (file: OpenedFile) => void
+  /** The path of the file now open, for its row to say so. */
+  openedPath?: string
+  /** Opens **Criar app** with the proposed summary; none in the Builder's conversation. */
+  createApp?: (summary: string) => void
+  /** The rows this room draws differently from the table. */
+  overrides: Partial<Record<RowTool, ToolSpec>>
+  /** A turn's failures this room says in its own sentence: the Assistant has no model to choose. */
+  failures: Partial<Record<FailureCode, string>>
+}
+
+export const BUILDER_ROOM: Room = {
+  agent: 'Builder',
+  connectors: PLAIN_WORDS,
+  overrides: {},
+  failures: {},
+}
+
+/** The Assistant's conversation before a connector catalog is read: its box and its rows say "Assistente". */
+export const ASSISTANT_ROOM: Room = {
+  agent: 'Assistente',
+  connectors: PLAIN_WORDS,
+  overrides: ASSISTANT_OVERRIDES,
+  failures: { MODEL_NO_ACCOUNT: START_NO_ACCOUNT },
+}
+
+export const RoomContext = createContext<Room>(BUILDER_ROOM)
+
+export function useRoom(): Room {
+  return useContext(RoomContext)
+}

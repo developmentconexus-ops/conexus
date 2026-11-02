@@ -1,6 +1,6 @@
 export type { Settled } from './context.ts'
 export { conversationIn } from './keys.ts'
-export type { MachinesOf, RepositoryOf } from './ports.ts'
+export type { AssistantMachine, MachinesOf, RepositoryOf } from './ports.ts'
 export { builderPortsOf } from './ports.ts'
 export type { Runs } from './runs.ts'
 export { createRuns } from './runs.ts'

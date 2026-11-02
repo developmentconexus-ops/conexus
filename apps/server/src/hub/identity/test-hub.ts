@@ -106,6 +106,7 @@ async function hubServing(
       killed: ports.killed,
       folder: ports.folder,
     },
+    assistantMachines: ports.assistantMachines,
     connectors: subjects.connectors,
     mastra: conversations.mastra,
     repair: apps.repair,

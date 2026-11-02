@@ -15,10 +15,11 @@ import { BuilderTurn } from './builder-turn.tsx'
 import type { Message } from './messages.ts'
 import { chipOf, messageOf } from './messages.ts'
 import { PersonBubble, PersonTurn } from './person-turn.tsx'
+import { useRoom } from './room.ts'
 import type { TranscriptItem } from './rows.ts'
 import { itemsOf } from './rows.ts'
 import type { SessionState, Steer } from './session-state.ts'
-import { LOADING_OLDER, STEER_PENDING } from './text.ts'
+import { LOADING_OLDER, steerPendingText } from './text.ts'
 
 type Group = { key: string; person: Message | undefined; builder: Message[] }
 
@@ -81,6 +82,7 @@ export function Transcript(props: {
   onAsk: (text: string) => void
 }) {
   const { turns, older } = props
+  const { agent } = useRoom()
   return (
     <MessageScrollerProvider autoScroll defaultScrollPosition="end">
       <EndOnSent last={turns.at(-1)?.key} />
@@ -88,7 +90,7 @@ export function Transcript(props: {
       <MessageScroller>
         <MessageScrollerViewport aria-label="Rolagem da conversa" className="px-md pt-md">
           <MessageScrollerContent
-            aria-label="Conversa com o Builder"
+            aria-label={`Conversa com o ${agent}`}
             className="pb-xl"
             aria-live="polite"
             aria-busy={turns.at(-1)?.streaming === true}
@@ -111,7 +113,7 @@ export function Transcript(props: {
                 <PersonBubble
                   text={steer.content}
                   files={steer.files.map(chipOf)}
-                  footer={<span>{STEER_PENDING}</span>}
+                  footer={<span>{steerPendingText(agent)}</span>}
                 />
               </MessageScrollerItem>
             ))}

@@ -38,16 +38,31 @@ Aprovações e usos: [aprovações](approvals.md).
 19. **Conectores: o kit e a primeira ligação.** Liga o Sankhya em Integrações, na barra lateral, e testa.
     19.1 **Ligar por OAuth.** Liga o Mercado Livre e o vê pedir para conectar de novo.
 20. **App com dados de um conector.** Libera uma ligação num Projeto e abre um app com os dados dela.
-    20.1 **Escrever pelo app.** Responde pelo app uma pergunta do Mercado Livre.
-    20.2 **App que se atualiza.** Vê o app mudar sozinho com um aviso do fornecedor.
-    20.3 **Jet.** Liga a Jet, feita com o kit.
-    20.4 **Notificações.** Vê um convite chegar como evento na lista de notificações.
-21. **Outras contas.** Liga a da OpenAI, se os termos confirmarem.
-    21.1 **Ver o que acontece.** Vê a Atividade da empresa e o painel.
-16. **Atualizar sem cortar.** Conversa enquanto o Conexus é atualizado.
-22. **Ensaio geral.** Restaura tudo junto, pelo procedimento.
-23. **Primeira empresa.** Uma empresa de verdade usa um app.
-24. **Agentes com conectores.** Um agente usa as ligações e pede "Aprovar?" antes de escrever (resposta B, 2026-10-18).
+
+Sua empresa usa o Conexus desde 2026-11-02, recebendo cada etapa.
+
+- **24.1 O Assistente.** Conversas no Início e no Projeto perguntam aos sistemas e mostram tabelas e gráficos.
+- **24.2 Rotinas.** Recebe o resumo da manhã nas notificações e por e-mail.
+- **24.3 Escrever com aprovação.** Um agente ou app pede "Aprovar?" antes de escrever (resposta B, 2026-10-18; leva a 20.1).
+- **24.4 Projeto sem app, agentes e Construtor.** Cria, conversando com o Construtor, um agente num Projeto sem app.
+- **24.5 Workflows visuais.** Monta conversando o fluxo do orçamento do Sankhya e o vê como trem de balões.
+- **21.1 Ver o que acontece.** Vê a Atividade, o painel e o uso por empresa.
+- **16 Atualizar sem cortar.** Conversa enquanto o Conexus é atualizado.
+- **22 Ensaio geral.** Restaura tudo junto, pelo procedimento.
+- **23 As outras empresas.** Empresas além da sua usam o Conexus.
+- **20.2 App que se atualiza.** Vê o app mudar com um aviso do fornecedor, depois dos webhooks.
+
+### A fila do molde, ao lado
+
+O que tem molde anda numa segunda fila, de método leve (2026-10-30: "1. Sim 2. Sim 3. Sim"):
+
+1. **Fábrica de conectores.** O esqueleto sai da documentação do fornecedor.
+2. **Os sistemas das quatro empresas.**
+3. **Bling**, **Omie** (login por chave fixa) e **Conta Azul**.
+4. Shopee, Nuvemshop, Google Sheets, NF-e recebida, extratos de banco; a Jet (20.3) quando alguém a usar.
+5. **21 Outras contas.** Liga a da OpenAI, se os termos confirmarem.
+
+Em espera: 19.2 Central de Ajuda. Sai: o pg-boss; a agenda e os workflows do Mastra o substituem.
 
 ### O que você fornece, e quando
 
@@ -63,9 +78,9 @@ Aprovações e usos: [aprovações](approvals.md).
 | 13 | Uma chave do E2B (a da conta grátis). Um bucket privado no R2 | E2B pago: US$ 150 por mês, se o uso pedir |
 | 19 | Usuário só de leitura no Sankhya de uma empresa | Nenhum |
 | 19.1 | O seu app de desenvolvedor do Mercado Livre | Não lido |
-| 20.3 | O ambiente de teste da Jet, por você ou um cliente (em aberto) | Não lido |
+| 24.2 | O Neon no plano Launch: a agenda do Mastra mantém o banco acordado | Cerca de US$ 19,35 por mês por banco |
 | 22 | Um lugar de cópia fora do Neon | Não lido |
-| 23 | O Neon no plano Launch. O aviso do que sai do Brasil, com uma linha: o ditado no Chrome passa pelo Google | Cerca de US$ 19,35 por mês por banco sempre acordado |
+| 23 | O aviso do que sai do Brasil, com uma linha: o ditado no Chrome passa pelo Google | Nenhum novo |
 
 ### O que fica fora do lançamento
 
@@ -80,19 +95,19 @@ Login social. Arquivos enviados por pessoas para dentro de um app ou da máquina
 4. **O Início que você planeja vem depois da Prévia e da 14.3.** A ordem é 14.1, 14.3, 13.1: "Concordo documente tudo isso para ser registrado".
 5. **O roadmap perde o detalhe das etapas fechadas.** Em 2026-10-29: "Roadmap pode ir removendo o que foi de etapas passadas se tiver detalhes ou algo assim, se não vamos ter que aumentar ele para não perder informação". A linha de uma etapa fechada sai da tabela; o que ficou é nas [aprovações](approvals.md). O teto de 1.600 palavras não sobe.
 
+6. **Depois da 20, Supervisor, agentes e workflows, antes das outras empresas.** Em 2026-10-30, ao estudo da estrutura dos agentes: "eu vou começar na minha empresa ... depois disso ... eu vou jogar para as outras empresas".
+
 ## 2. As etapas
 
 | Etapa | O que precisa antes | Decisão sua nela | Conhecimento trazido |
 | --- | --- | --- | --- |
-| 15 Mudar o app | A 14.1 | Nenhuma | Migrações atômicas de app. O lote |
-| 18 Entrar num app | A 17 | Onde a checagem de sessão vive, pelo teste | Ficha de sessões e passagem. LT1 a LT4 e LT9 |
-| 20.1 Escrever pelo app | A 20 | Nenhuma | Leitura, escrita, destrutiva. Escrita nova pede nova liberação |
-| 20.2 App que se atualiza | A 20 | Nenhuma | Avisos do fornecedor (S48) |
-| 20.3 Jet | A 20 | Quem pede o ambiente de teste | Fornecedor com documentação fina |
-| 20.4 Notificações | A 20 | Nenhuma | O estudo do portal de eventos. Fundador, 2026-10-29: "podemos ir depois da 20 as notificações" |
-| 21 Outras contas | A 12 | Nenhuma | A leitura dos termos da OpenAI |
-| 21.1 Ver o que acontece | A 20 | Grafana no Brasil, provado | Um só caminho OTel (0052). O rastro por ferramenta: as ferramentas de conector (`connector_read`, `connector_notes`, `connector_note_save`) escondem entrada e saída no span, com o exportador de lista permitida, porque o `TracingPolicy` do Mastra só tem `internal` (veio da 20, critério 29) |
-| 16 Atualizar sem cortar | A 14 | Nenhuma | Consertos de execução da auditoria. Testes 9 e 10 |
-| 22 Ensaio geral | A 21.1 | O lugar da cópia fora do Neon | Ensaios das etapas 2, 7, 9, 12 e 13. Teste de carga |
-| 23 Primeira empresa | A 22 | Os riscos aceitos. O plano pago | A seção 11 da arquitetura |
-| 24 Agentes com conectores | A 23 | Nenhuma | Aprovação por classe. Code Mode só em leituras, se medido. O estudo parte dos agentes do Mastra e das referências de sempre, e soma o Open Bots (fundador, 2026-10-29: "eu quero que você adicione Open Bots, que tá agora bem forte"; qual projeto é, a confirmar com ele) |
+| 24.2 Rotinas | A 24.1 | Nenhuma | `mastra.schedules`. A 20.4 entra aqui |
+| 24.3 Escrever com aprovação | A 24.2 | Nenhuma | `requireApproval` do Mastra, provada antes a trava da 0053. Escrita nova pede nova liberação |
+| 24.4 Projeto sem app, agentes e Construtor | A 24.3 | Nenhuma | O Projeto como pasta de um assunto. O campo `agents` do Mastra, nunca o Agent Builder pago. O Open Bots (2026-10-29) |
+| 24.5 Workflows visuais | A 24.4 | Nenhuma | Workflows do Mastra; um protótipo de um dia decide o motor. Seu orçamento é o aceite |
+| 21.1 Ver o que acontece | A 24.5 | Grafana no Brasil, provado | Um só caminho OTel (0052). O uso por empresa. O rastro por ferramenta: as ferramentas de conector (`connector_read`, `connector_notes`, `connector_note_save`) escondem entrada e saída no span, com o exportador de lista permitida, porque o `TracingPolicy` do Mastra só tem `internal` (veio da 20, critério 29) |
+| 16 Atualizar sem cortar | A 21.1 | Nenhuma | Consertos de execução da auditoria. Testes 9 e 10 |
+| 22 Ensaio geral | A 16 | O lugar da cópia fora do Neon | Ensaios das etapas 2, 7, 9, 12 e 13. Carga de um painel e de uma rotina |
+| 23 As outras empresas | A 22 | Os riscos aceitos. O plano pago | A seção 11 da arquitetura |
+| 20.2 App que se atualiza | A 23 e os webhooks | Nenhuma | Avisos do fornecedor (S48), num workflow do Mastra |
+| 21 Outras contas | Fila do molde | Nenhuma | A leitura dos termos da OpenAI |

@@ -219,3 +219,42 @@ test('o Assistente na fila: uma leitura do Assistente e uma do Builder na mesma 
   assert.ok(Number(waits[1]?.[1]) >= 100, 'the second waited for the first')
   assert.deepEqual(waits.map(([by]) => by).sort(), ['assistant', 'builder'])
 })
+
+test('o turno parado corta a espera: a leitura na fila sai na hora, sem chamar o fornecedor; a que já tinha a vez termina', async (t) => {
+  const on = await appCalls(t)
+  const connectionId = ConnectionId.parse(await on.connect('Matriz'))
+  const companyId = CompanyId.parse(on.companyId)
+  const personId = PersonId.parse(on.ana.id)
+  on.fake.switches.delayMilliseconds = 600
+  const first = on.hub.connectors.assistant.read(
+    { companyId, personId, place: { kind: 'COMPANY' }, chosen: [connectionId] },
+    {
+      connectionId,
+      turn: TurnKey.parse(randomUUID()),
+      operation: 'empresas',
+      input: { page: 0 },
+    },
+  )
+  const stop = new AbortController()
+  const queued = on.hub.connectors.builder.read(
+    { companyId, projectId: ProjectId.parse(on.projectId) },
+    {
+      connectionId,
+      personId,
+      runId: RunId.parse(randomUUID()),
+      operation: 'empresas',
+      input: { page: 0 },
+      signal: stop.signal,
+    },
+  )
+  await sleep(250)
+  const stoppedAt = performance.now()
+  stop.abort()
+  assert.deepEqual(await queued, { kind: 'DEADLINE' })
+  assert.ok(performance.now() - stoppedAt < 100, 'it left the line when the turn stopped')
+  assert.equal((await first).kind, 'OK', 'the read that had the turn finished')
+  const called = on.hub.lines.filter((line) => line.message === 'CONNECTOR_CALLED')
+  assert.equal(called.length, 1, 'the stopped read never reached the provider')
+  assert.equal(called[0]?.fields.by, 'assistant')
+  assert.equal(on.hub.lines.filter((line) => line.message === 'CONNECTOR_READ_STOPPED').length, 1)
+})

@@ -4,6 +4,7 @@ import type {
   WorkspaceFilesystem,
   WorkspaceSandbox,
 } from '@mastra/core/workspace'
+import type { InstallationId, MachineTemplate } from '../../platform/config-machine.ts'
 import { MAX_BYTES } from '../git/public.ts'
 
 /** The machine's app folder, which the template makes, the file tools root in and the Builder is told of. */
@@ -34,20 +35,38 @@ export const OUTPUT_MAX = Math.ceil(READ_MAX / 3) * 4 + 4096
 /** How bytes cross to and from the machine for the Hub's own files, by the provider's upload and download. */
 export type Transport = {
   write(path: string, bytes: Uint8Array): Promise<void>
-  read(path: string): Promise<AsyncIterable<Uint8Array>>
+  /** With a `signal`, the provider's stream is cut when it aborts. */
+  read(path: string, signal?: AbortSignal): Promise<AsyncIterable<Uint8Array>>
 }
 
-/** The file's bytes, or `too-large` once more than `READ_MAX` of them have come. */
+/**
+ * The file's bytes, or `too-large` once more than `READ_MAX` of them have come; with a `signal`,
+ * `cancelled` once it aborts (the browser left), and the stream is let go (code C57).
+ */
+export async function readCapped(transport: Transport, path: string): Promise<Buffer | 'too-large'>
 export async function readCapped(
   transport: Transport,
   path: string,
-): Promise<Buffer | 'too-large'> {
+  signal: AbortSignal,
+): Promise<Buffer | 'too-large' | 'cancelled'>
+export async function readCapped(
+  transport: Transport,
+  path: string,
+  signal?: AbortSignal,
+): Promise<Buffer | 'too-large' | 'cancelled'> {
   const chunks: Uint8Array[] = []
   let length = 0
-  for await (const chunk of await transport.read(path)) {
-    length += chunk.byteLength
-    if (length > READ_MAX) return 'too-large'
-    chunks.push(chunk)
+  try {
+    for await (const chunk of await transport.read(path, signal)) {
+      if (signal?.aborted === true) return 'cancelled'
+      length += chunk.byteLength
+      if (length > READ_MAX) return 'too-large'
+      chunks.push(chunk)
+    }
+  } catch (error) {
+    // The provider's stream cut by the signal: the browser left.
+    if (signal?.aborted === true) return 'cancelled'
+    throw error
   }
   return Buffer.concat(chunks)
 }
@@ -64,6 +83,10 @@ export type Kit = {
 type KitOptions = {
   /** `conexus-<installation>-<conversationId>`: the provider finds the conversation's machine by it. */
   id: string
+  /** The provider's id of a machine found before: the start reattaches it and never makes another. */
+  foundAs?: string
+  /** The hosts the machine may reach, and nothing else (decision 0051): at its start and in `closeNetwork`. */
+  allowOut: readonly string[]
   metadata: Record<string, string>
   onStart: SandboxStartHook
   /** Where a command starts when it names no folder: the app folder. */
@@ -146,4 +169,26 @@ export type MachineApi = {
   kill(conversationId: ConversationId): Promise<number>
   /** The same, only the machines whose mark names a template other than `template`, or none. */
   killStale(conversationId: ConversationId, template: string): Promise<number>
+}
+
+/**
+ * The Assistant's API also finds the conversation's machine of `template` by the same marks, and
+ * says its provider id, or none; throws when the provider fails, so a failed list is never "none".
+ */
+export type AssistantMachineApi = MachineApi & {
+  find(conversationId: ConversationId, template: string): Promise<string | undefined>
+}
+
+/**
+ * What the Assistant's machines are made of, one spelling for the ports, the Assistant and the
+ * machines: the Builder's kit, its API with the find, its template, installation and mark (the
+ * mark the kill and the find look for, which the machine carries too: code C26).
+ */
+export type AssistantMachine = {
+  kit: KitFactory
+  api: AssistantMachineApi
+  template: MachineTemplate
+  installation: InstallationId
+  /** The marks every machine of this installation carries, with which `api.kill` finds them (security S36). */
+  mark: Record<string, string>
 }

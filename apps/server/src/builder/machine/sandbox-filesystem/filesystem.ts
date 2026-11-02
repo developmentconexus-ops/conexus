@@ -3,7 +3,8 @@
 // From @mastra/code-sdk 1.15.0, src/agents/sandbox-filesystem.ts (mastra-ai/mastra), split by
 // concern: the class (source :1-45, 201-298, 391-482, 575-614, 755-784, 1045-1116). Changed: `type` for
 // `interface`; no `!` and no assignment in an expression; the shell parts are in the files beside
-// this one and take the class as `Host`; `exec` and the symlink fields are public for them.
+// this one and take the class as `Host`; `exec` and the symlink fields are public for them; a path that leaves the root throws
+// `PathEscapesError`.
 
 import { posix as posixPath } from 'node:path'
 import type {
@@ -27,6 +28,7 @@ import {
   assertContainedDest,
   assertContainedRealpath,
   execOk,
+  PathEscapesError,
   verifyNative,
 } from './containment.ts'
 import { copyShell, moveShell } from './copy.ts'
@@ -152,7 +154,7 @@ export class SandboxFilesystem implements WorkspaceFilesystem, Host {
             : inputPath
     const resolved = posixPath.normalize(posixPath.join(base, rel))
     if (resolved !== base && !resolved.startsWith(`${base}/`)) {
-      throw new Error(`Path escapes workspace root: ${inputPath}`)
+      throw new PathEscapesError(`Path escapes workspace root: ${inputPath}`)
     }
     return resolved
   }
