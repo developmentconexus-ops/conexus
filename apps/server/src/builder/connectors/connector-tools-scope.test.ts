@@ -231,10 +231,12 @@ test('a escrita do caderno recusa o vazio e o que passa dos limites do conceito,
 })
 
 test('a leitura com a máquina: o arquivo inteiro é gravado criando a pasta reads/, uma recusa passa intacta, e sem máquina ou sem caminho volta o corte', async () => {
-  const written: { path: string; recursive: unknown }[] = []
+  const written: string[] = []
   const files = {
     writeFile: async (path: string, _content: string, options?: { recursive?: boolean }) => {
-      written.push({ path, recursive: options?.recursive })
+      if (path.includes('/') && options?.recursive !== true)
+        throw new Error('ENOENT: no such folder')
+      written.push(path)
     },
   }
   const whole = {
@@ -250,7 +252,7 @@ test('a leitura com a máquina: o arquivo inteiro é gravado criando a pasta rea
   })
   const set = connectorTools(withMachine.access, { noteSave: false })
   const saved = await runOn(set, 'connector_read', read, { workspace: { filesystem: files } })
-  assert.deepEqual(written, [{ path: 'reads/aaaa-1.json', recursive: true }])
+  assert.deepEqual(written, ['reads/aaaa-1.json'])
   assert.equal(saved.file, 'reads/aaaa-1.json')
   assert.equal('whole' in saved, false)
 
