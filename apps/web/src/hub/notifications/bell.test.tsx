@@ -87,9 +87,9 @@ test('o sino mostra o número de não lidas; o painel lista, e tocar numa abre a
   fireEvent.click(await screen.findByRole('button', { name: 'Notificações: 2 não lidas' }))
   const panel = await screen.findByRole('dialog')
   expect(within(panel).getByText(/Resumo de vendas falhou: /)).toBeTruthy()
-  expect(within(panel).getAllByText(/Resumo de vendas está pronta/)).toHaveLength(2)
+  expect(within(panel).getAllByText(/Automação Resumo de vendas: pronta/)).toHaveLength(2)
   const [first] = within(panel).getAllByRole('link', {
-    name: /Resumo de vendas está pronta/,
+    name: /Automação Resumo de vendas: pronta/,
   })
   if (first === undefined) throw new Error('the unread notification has no link')
   fireEvent.click(first)
@@ -185,7 +185,9 @@ test('o número de não lidas aparece no sino, à vista, e some quando tudo foi 
 test('sem não lidas o painel não oferece Marcar todas como lidas', async () => {
   bell([notification(1, { read: true })])
   fireEvent.click(await screen.findByRole('button', { name: 'Notificações' }))
-  expect(await screen.findByRole('link', { name: /Resumo de vendas está pronta/ })).toBeTruthy()
+  expect(
+    await screen.findByRole('link', { name: /Automação Resumo de vendas: pronta/ }),
+  ).toBeTruthy()
   expect(screen.queryByRole('button', { name: 'Marcar todas como lidas' })).toBeNull()
 })
 
@@ -210,7 +212,7 @@ test('uma notificação de uma conversa que o Hub não tem mais abre "Esta conve
   )
   bell([notification(1)])
   fireEvent.click(await screen.findByRole('button', { name: 'Notificações: 1 não lida' }))
-  fireEvent.click(await screen.findByRole('link', { name: /Resumo de vendas está pronta/ }))
+  fireEvent.click(await screen.findByRole('link', { name: /Automação Resumo de vendas: pronta/ }))
   expect(await screen.findByText('Esta conversa não existe mais.')).toBeTruthy()
 })
 
