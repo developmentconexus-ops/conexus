@@ -125,7 +125,21 @@ async function conversed(
     }
     budget.addEventListener('abort', stop, { once: true })
     try {
-      await session.sendMessage({ content: input.prompt })
+      // A signal marked as an automation's run, as Mastra's schedulers send it: the model learns
+      // nobody typed this. `requireDelivery` makes a routing failure reject, caught below; a signal
+      // accepted without waking or joining a turn (as Mastra's Factory checks) starts no turn, so
+      // `heard.ended` would never settle.
+      const sent = session.sendSignal(
+        {
+          type: 'user',
+          tagName: 'user',
+          contents: input.prompt,
+          attributes: { source: 'automation', automationName: input.name },
+        },
+        { requireDelivery: true },
+      )
+      const { action } = await sent.accepted
+      if (action !== 'wake' && action !== 'deliver') return ended(failed('INTERRUPTED', id))
       const turn = await heard.ended
       return ended(
         turn.kind === 'DONE' ? { kind: 'DONE', conversationId: id } : failed(turn.code, id),

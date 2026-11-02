@@ -78,6 +78,26 @@ test('o horário: a agenda dispara no minuto; uma conversa do dono com o pedido,
   )
 })
 
+test('o pedido chega ao modelo marcado como execução de uma automação, com o nome dela, e a tela mostra só o texto', async (t) => {
+  const on = await automating(t)
+  const automation = await created(on.hub, on.ana, on.automations, salesSummary([on.matriz]))
+  const url = `${on.automations}/${automation.id}`
+  const run = await ended(on.hub, on.ana, url, await ranNow(on.hub, on.ana, url))
+  assert.equal(run.state.kind, 'DONE')
+  const asked = on.calls.map((each) => each.texts.at(-1) ?? '')
+  assert.ok(
+    asked.some(
+      (text) =>
+        text.includes('source="automation"') &&
+        text.includes('Resumo de vendas') &&
+        text.includes(PROMPT),
+    ),
+    `the model saw: ${JSON.stringify(asked)}`,
+  )
+  const conversation = `${on.assistant}/${String(run.state.conversationId)}`
+  assert.deepEqual(await questionsIn(on.hub, on.ana, conversation), [PROMPT])
+})
+
 test('a conversa continua: a conversa da execução está na lista com a automação, abre pela rota e responde uma segunda pergunta', async (t) => {
   const on = await automating(t)
   const automation = await created(on.hub, on.ana, on.automations, salesSummary([on.matriz]))
