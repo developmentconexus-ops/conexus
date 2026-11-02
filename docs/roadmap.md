@@ -43,6 +43,7 @@ Sua empresa usa o Conexus desde 2026-11-02, recebendo cada etapa.
 
 - **24.1 O Assistente.** Conversas no Início e no Projeto perguntam aos sistemas e mostram tabelas e gráficos.
 - **24.2 Automações: o Assistente na agenda.** Pede "todo dia às 7h, o resumo" e recebe cada execução numa conversa nova, com aviso.
+- **13.3 A Pauta.** Vê o Hub no visual novo, com a caixa igual em toda tela.
 - **24.3 Agentes do Projeto, com o Construtor.** Conversando com o Construtor, cria num Projeto um agente que lê.
 - **24.4 Os agentes escrevem, com aprovação.** Um agente ou app pede "Aprovar?" antes de escrever (resposta B, 2026-10-18; leva a 20.1).
 - **24.5 Workflows.** Monta conversando o fluxo do orçamento do Sankhya e o vê como trem de balões.
@@ -101,6 +102,7 @@ Login social. Arquivos enviados por pessoas para dentro de um app ou da máquina
 
 | Etapa | O que precisa antes | Decisão sua nela | Conhecimento trazido |
 | --- | --- | --- | --- |
+| 13.3 A Pauta | A 24.2 (A1) | O lugar e o DESIGN.md | G4 OS, Linear, AffectUI. A auditoria do front-end |
 | 24.3 Agentes do Projeto | A 24.2 | Onde roda o código do Construtor | Projeto como assunto. Agentes como linhas nossas, nunca o Agent Builder pago. O Open Bots |
 | 24.4 Escrita com aprovação | A 24.3 | Nenhuma | `requireApproval` do Mastra, provada antes a trava da 0053. Escrita nova pede nova liberação |
 | 24.5 Workflows | A 24.4 | O gatilho do Sankhya | Workflows do Mastra como dados; um protótipo de um dia decide o motor. Seu orçamento é o aceite |
