@@ -465,7 +465,10 @@ white sheet (W30).
   Ontem, Esta semana, Antes) as `eyebrow` rows and conversation rows of `spacing.row` with the age
   at the end. The current row has the selected fill and a shorter tick.
 - **Header bar.** Title centred, bottom hairline, desktop only. **Phone top bar:** chrome, bottom
-  hairline, the safe-area inset: menu, mark, place title.
+  hairline, the safe-area inset: menu, mark, place title. While a notification is unread the menu
+  button carries a small `danger` dot, the colour of the bell's count (ipê marks no attention, it
+  is held for the current place and focus), and its name adds the count (founder, 2026-11-02,
+  "2B", emergência).
 - **The axis (V59).** `axis`, and `axis-wide` from 1600px wide. A secondary block is `half`: the
   axis less the gutter, divided by two. In a conversation the transcript, notices and composer share
   the axis.

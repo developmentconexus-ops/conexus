@@ -9,7 +9,7 @@ import {
   companyEntry,
   enterHouse,
 } from '../../../../hub/identity/public.ts'
-import { NotificationBell } from '../../../../hub/notifications/public.ts'
+import { NotificationBell, unreadNote, useUnread } from '../../../../hub/notifications/public.ts'
 import {
   ProjectRailHead,
   ProjectRailNav,
@@ -82,6 +82,7 @@ function HouseFrame() {
     if (projectId !== undefined) rememberProject({ personId: person.id, companyId, projectId })
   }, [person.id, companyId, projectId])
   const bounded = useMatches({ select: (matches) => matches.at(-1)?.staticData.bounded === true })
+  const menuNote = unreadNote(useUnread(companyId))
   const foot = (
     <>
       <SidebarRailButton
@@ -104,6 +105,7 @@ function HouseFrame() {
         )
       }
       rail={{ top: <RailPlaces companyId={companyId} role={role} />, foot }}
+      menuNote={menuNote}
       nav={
         projectId !== undefined ? (
           <ProjectRailNav companyId={companyId} projectId={projectId} />

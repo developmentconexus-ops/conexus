@@ -17,9 +17,9 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarProvider,
-  SidebarTrigger,
   useSidebar,
 } from './sidebar.tsx'
+import { SidebarTrigger } from './sidebar-trigger.tsx'
 
 /** The centred column under the arriving wordmark, for the pages without a session. */
 export function Column({ children }: { children: ReactNode }) {
@@ -85,7 +85,7 @@ export function FrameLink(
  * The phone's top line: the button that opens the drawer, the mark and the current place (V56), its
  * route's `staticData.place`, or the section's label for a section of Configurações.
  */
-function PhoneTop(props: { slot: (element: HTMLElement | null) => void }) {
+function PhoneTop(props: { slot: (element: HTMLElement | null) => void; menuNote?: string }) {
   const place = useMatches({
     select: (matches) => {
       const shown = matches.at(-1)?.staticData
@@ -94,7 +94,7 @@ function PhoneTop(props: { slot: (element: HTMLElement | null) => void }) {
   })
   return (
     <header className="flex min-h-[calc(3.25rem+env(safe-area-inset-top))] items-center gap-sm border-b border-line bg-canvas px-md pt-[env(safe-area-inset-top)] md:hidden">
-      <SidebarTrigger label="Abrir navegação">
+      <SidebarTrigger label="Abrir navegação" note={props.menuNote}>
         <MenuIcon aria-hidden="true" />
       </SidebarTrigger>
       <span className="max-[22rem]:hidden">
@@ -144,6 +144,8 @@ export function Frame(props: {
   footer?: ReactNode
   /** The icon rail beside the list; without it the sidebar is the list alone, closing to icons. */
   rail?: RailContent
+  /** Words for what waits in the drawer, shown as a dot on the phone's menu button (the unread notifications). */
+  menuNote?: string
   compact: boolean
   children: ReactNode
 }) {
@@ -170,7 +172,7 @@ export function Frame(props: {
       </Sidebar>
       <CloseOnNavigation />
       <SidebarInset>
-        <PhoneTop slot={setSlot} />
+        <PhoneTop slot={setSlot} menuNote={props.menuNote} />
         <PhoneSlot.Provider value={slot}>
           <InFrame.Provider value={true}>
             <div className={cn('flex min-w-0 flex-1 flex-col', compact ? 'min-h-0' : 'p-xl')}>

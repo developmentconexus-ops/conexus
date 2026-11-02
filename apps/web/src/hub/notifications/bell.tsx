@@ -30,6 +30,17 @@ function unreadText(count: number): string {
   return count === 1 ? '1 não lida' : `${count} não lidas`
 }
 
+/** The count of notifications not yet read, the one reading the bell and the phone's menu button share. */
+export function useUnread(companyId: CompanyId): number {
+  return useQuery(polled(companyId)).data?.unread ?? 0
+}
+
+/** What the phone's menu button adds to its name while something is unread; nothing when all is read. */
+export function unreadNote(count: number): string | undefined {
+  if (count === 0) return undefined
+  return count === 1 ? '1 notificação não lida' : `${count} notificações não lidas`
+}
+
 /** What a notification says, in the words of the state matrix. */
 function textOf(notification: NotificationRow): string {
   const { name } = notification.automation
@@ -144,8 +155,7 @@ function Panel(props: { companyId: CompanyId; onTap: () => void }) {
  */
 export function NotificationBell({ companyId }: { companyId: CompanyId }) {
   const [open, setOpen] = useState(false)
-  const count = useQuery(polled(companyId))
-  const unread = count.data?.unread ?? 0
+  const unread = useUnread(companyId)
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger

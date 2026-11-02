@@ -4,7 +4,6 @@ import type { VariantProps } from 'class-variance-authority'
 import { cva } from 'class-variance-authority'
 import type { ComponentProps, ReactNode } from 'react'
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
-import { touchArea } from './button.tsx'
 import { cn } from './cn.ts'
 import { Input } from './input.tsx'
 import { Sheet, SheetContent } from './sheet.tsx'
@@ -348,23 +347,5 @@ export function SidebarMenuSkeleton() {
     >
       <Skeleton className="h-4 w-3/4" />
     </div>
-  )
-}
-
-export function SidebarTrigger(props: { label: string; children: ReactNode }) {
-  const { toggleSidebar } = useSidebar()
-  return (
-    <button
-      type="button"
-      data-sidebar="trigger"
-      aria-label={props.label}
-      onClick={toggleSidebar}
-      className={cn(
-        touchArea,
-        'inline-flex size-control shrink-0 items-center justify-center rounded-control text-text-2 hover:bg-surface-3 hover:text-text [&_svg]:size-3.5',
-      )}
-    >
-      {props.children}
-    </button>
   )
 }
