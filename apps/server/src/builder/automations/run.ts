@@ -125,7 +125,18 @@ async function conversed(
     }
     budget.addEventListener('abort', stop, { once: true })
     try {
-      await session.sendMessage({ content: input.prompt })
+      // A signal marked as an automation's run, as Mastra's schedulers send it: the model learns
+      // nobody typed this. `requireDelivery` makes a failed delivery reject, caught below.
+      const sent = session.sendSignal(
+        {
+          type: 'user',
+          tagName: 'user',
+          contents: input.prompt,
+          attributes: { source: 'automation', automationName: input.name },
+        },
+        { requireDelivery: true },
+      )
+      await sent.accepted
       const turn = await heard.ended
       return ended(
         turn.kind === 'DONE' ? { kind: 'DONE', conversationId: id } : failed(turn.code, id),

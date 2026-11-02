@@ -35,7 +35,7 @@ function textOf(notification: NotificationRow): string {
   const { name } = notification.automation
   switch (notification.kind) {
     case 'AUTOMATION_DONE':
-      return `${name} está pronta`
+      return `Automação ${name}: pronta`
     case 'AUTOMATION_FAILED':
       return `${name} falhou: ${phraseOf(notification.code)}`
     case 'AUTOMATION_PAUSED':
