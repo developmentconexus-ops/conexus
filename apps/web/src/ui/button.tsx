@@ -24,14 +24,14 @@ const buttonClasses = cva(
       size: {
         // shadcn base-nova's heights. Icons follow their neighbour: 16px beside a label, 14px in a
         // toolbar (design V34). `sm` is a row's own action.
-        default: 'h-8 px-3 [&_svg]:size-4',
-        sm: 'h-7 px-2.5 [&_svg]:size-3.5',
-        icon: 'size-8 [&_svg]:size-3.5',
-        'icon-sm': 'size-7 [&_svg]:size-3.5',
+        default: 'h-control px-3 [&_svg]:size-4',
+        sm: 'h-control-sm px-2.5 [&_svg]:size-3.5',
+        icon: 'size-control [&_svg]:size-3.5',
+        'icon-sm': 'size-control-sm [&_svg]:size-3.5',
       },
       // A link that is a labelled button from `md` and the quiet icon button (`ghost`, `icon`) under it.
       phoneIcon: {
-        true: 'max-md:size-8 max-md:border-transparent max-md:bg-transparent max-md:px-0 max-md:text-text-2 max-md:hover:bg-surface-3 max-md:hover:text-text max-md:[&_svg]:size-3.5',
+        true: 'max-md:size-control max-md:border-transparent max-md:bg-transparent max-md:px-0 max-md:text-text-2 max-md:hover:bg-surface-3 max-md:hover:text-text max-md:[&_svg]:size-3.5',
       },
     },
     defaultVariants: { variant: 'default', size: 'default' },

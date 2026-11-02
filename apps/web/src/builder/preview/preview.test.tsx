@@ -98,13 +98,13 @@ test('janela: o app num iframe do endereço do Projeto, com Recarregar, o endere
   expect(sandbox).not.toContain('allow-top-navigation')
   const computer = screen.getByRole('button', { name: 'Computador' })
   expect(computer.getAttribute('aria-pressed')).toBe('true')
-  expect(frame.className).not.toContain('390px')
+  expect(frame.className).not.toContain('w-phone')
   const bar = screen.getByRole('region', { name: 'Prévia' })
   expect(within(bar).getByText(PEDIDOS_ADDRESS).className).toContain('font-mono')
   expect(within(bar).getByText('versão 1')).toBeTruthy()
   expect(computer.textContent).toBe('')
   fireEvent.click(screen.getByRole('button', { name: 'Celular' }))
-  await waitFor(() => expect(iframe().className).toContain('w-[390px]'))
+  await waitFor(() => expect(iframe().className).toContain('w-phone'))
   expect(screen.getByRole('button', { name: 'Celular' }).getAttribute('aria-pressed')).toBe('true')
   expect(screen.getAllByRole('button', { name: 'Recarregar' })).toHaveLength(1)
   expect(screen.queryByText(NO_PREVIEW)).toBeNull()
@@ -128,7 +128,7 @@ test('Celular: a visão fica no endereço e volta com Computador', async () => {
   await waitFor(() =>
     expect(conexus.router.state.location.search).toMatchObject({ view: 'computer' }),
   )
-  expect(iframe().className).not.toContain('390px')
+  expect(iframe().className).not.toContain('w-phone')
 })
 
 test('celular de verdade: Recarregar, o endereço e Abrir app na barra; sem Computador e Celular', async () => {
@@ -158,7 +158,7 @@ test('Celular: tocar no item já escolhido não troca a visão', async () => {
   fireEvent.click(screen.getByRole('button', { name: 'Celular' }))
   await new Promise((resolve) => setTimeout(resolve, 50))
   expect(conexus.router.state.location.search).toMatchObject({ view: 'phone' })
-  expect(iframe().className).toContain('390px')
+  expect(iframe().className).toContain('w-phone')
 })
 
 test('recarga: a versão nova do app recarrega o iframe', async () => {

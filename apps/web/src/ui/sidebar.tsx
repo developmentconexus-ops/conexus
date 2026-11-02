@@ -157,7 +157,7 @@ export function SidebarInset({ className, ...props }: ComponentProps<'main'>) {
 }
 
 export function SidebarInput({ className, ...props }: ComponentProps<typeof Input>) {
-  return <Input data-slot="sidebar-input" className={cn('h-8', className)} {...props} />
+  return <Input data-slot="sidebar-input" className={cn('h-control', className)} {...props} />
 }
 
 export function SidebarHeader({ className, ...props }: ComponentProps<'div'>) {
@@ -208,7 +208,7 @@ export function SidebarGroupLabel({ className, ...props }: ComponentProps<'h2'>)
     <h2
       data-slot="sidebar-group-label"
       className={cn(
-        'flex min-h-8 shrink-0 items-center px-[0.6rem] py-xs text-eyebrow text-text-2 uppercase group-data-[collapsible=icon]:hidden',
+        'flex min-h-row shrink-0 items-center px-[0.6rem] py-xs text-eyebrow text-text-2 uppercase group-data-[collapsible=icon]:hidden',
         className,
       )}
       {...props}
@@ -224,7 +224,7 @@ export function SidebarGroupAction({ className, ...props }: ComponentProps<'butt
       type="button"
       data-slot="sidebar-group-action"
       className={cn(
-        'absolute top-[0.625rem] right-sm flex size-7 items-center justify-center rounded-control text-text-2 hover:bg-surface-3 hover:text-text group-data-[collapsible=icon]:hidden pointer-coarse:after:absolute pointer-coarse:after:top-1/2 pointer-coarse:after:left-1/2 pointer-coarse:after:size-11 pointer-coarse:after:-translate-1/2 [&_svg]:size-3.5 [&_svg]:shrink-0',
+        'absolute top-[0.625rem] right-sm flex size-control-sm items-center justify-center rounded-control text-text-2 hover:bg-surface-3 hover:text-text group-data-[collapsible=icon]:hidden pointer-coarse:after:absolute pointer-coarse:after:top-1/2 pointer-coarse:after:left-1/2 pointer-coarse:after:size-11 pointer-coarse:after:-translate-1/2 [&_svg]:size-3.5 [&_svg]:shrink-0',
         className,
       )}
       {...props}
@@ -254,11 +254,11 @@ export function SidebarMenuItem({ className, ...props }: ComponentProps<'li'>) {
 
 // The router marks the current place `data-status="active"`; a menu marks its open trigger.
 const menuButton = cva(
-  'peer/menu-button flex w-full items-center gap-sm overflow-hidden rounded-control px-[0.6rem] text-left font-body text-label text-text-2 hover:bg-accent-soft hover:text-text data-popup-open:bg-surface-3 data-[status=active]:bg-surface-3 data-[status=active]:text-text group-data-[collapsible=icon]:size-[34px]! group-data-[collapsible=icon]:p-sm! [&_svg]:size-[18px] [&_svg]:shrink-0 [&>span:last-child]:truncate',
+  'peer/menu-button flex w-full items-center gap-sm overflow-hidden rounded-control px-[0.6rem] text-left font-body text-label text-text-2 hover:bg-accent-soft hover:text-text data-popup-open:bg-surface-3 data-[status=active]:bg-surface-3 data-[status=active]:text-text group-data-[collapsible=icon]:size-row! group-data-[collapsible=icon]:p-sm! [&_svg]:size-[18px] [&_svg]:shrink-0 [&>span:last-child]:truncate',
   {
     variants: {
       size: {
-        default: 'h-[34px]',
+        default: 'h-row',
         lg: 'h-12 group-data-[collapsible=icon]:p-0!',
       },
     },
@@ -296,7 +296,7 @@ export function SidebarMenuButton({
 /** A place still loading: a line of skeleton the width of a short name (web W17). */
 export function SidebarMenuSkeleton() {
   return (
-    <div data-slot="sidebar-menu-skeleton" className="flex h-[34px] items-center px-[0.6rem]">
+    <div data-slot="sidebar-menu-skeleton" className="flex h-row items-center px-[0.6rem]">
       <Skeleton className="h-4 w-3/4" />
     </div>
   )
@@ -312,7 +312,7 @@ export function SidebarTrigger(props: { label: string; children: ReactNode }) {
       onClick={toggleSidebar}
       className={cn(
         touchArea,
-        'inline-flex size-8 shrink-0 items-center justify-center rounded-control text-text-2 hover:bg-surface-3 hover:text-text [&_svg]:size-3.5',
+        'inline-flex size-control shrink-0 items-center justify-center rounded-control text-text-2 hover:bg-surface-3 hover:text-text [&_svg]:size-3.5',
       )}
     >
       {props.children}

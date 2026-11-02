@@ -84,7 +84,7 @@ export function SelectItem({ className, children, ...props }: SelectPrimitive.It
     <SelectPrimitive.Item
       data-slot="select-item"
       className={cn(
-        'relative flex h-[34px] w-full cursor-default items-center gap-sm rounded-control pr-8 pl-sm font-body text-label select-none data-highlighted:bg-surface-3 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg]:size-4',
+        'relative flex h-row w-full cursor-default items-center gap-sm rounded-control pr-8 pl-sm font-body text-label select-none data-highlighted:bg-surface-3 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg]:size-4',
         className,
       )}
       {...props}

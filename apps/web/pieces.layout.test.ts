@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
 import type { Locator, Page } from 'playwright-core'
-import { createHarness, DESKTOP, PHONE } from './layout-harness.ts'
+import { createHarness, DESKTOP, PHONE, reachOf, touching } from './layout-harness.ts'
 import { STATES } from './sweep-states.ts'
 
 // The chat pieces on their fixture page (pieces.html), under the Hub's policy in a real browser.
@@ -136,7 +136,7 @@ test('a escala dos botões, no computador e no celular', async () => {
   }
 })
 
-test('o que não muda: itens de menu e linhas da barra de 34 px, campos de 36 px, a 1366 e a 390 px', async () => {
+test('a medida: itens de menu e linhas da barra de 32 px, campos de 36 px, a 1366 e a 390 px', async () => {
   const home = STATES.find((each) => each.name === 'Início, a primeira de duas empresas')
   assert.ok(home, 'the sweep lacks Início')
   for (const viewport of [DESKTOP, PHONE]) {
@@ -151,11 +151,36 @@ test('o que não muda: itens de menu e linhas da barra de 34 px, campos de 36 px
     .locator('[data-slot=sidebar-menu-item] > *')
     .evaluateAll((all) => all.map((one) => one.getBoundingClientRect().height))
   assert.ok(rows.length > 0, 'the sidebar has no rows')
-  assert.ok(rows.includes(34), 'no sidebar row is 34 px')
-  assert.ok(!rows.includes(32), 'a sidebar row follows the button scale')
+  assert.ok(rows.includes(32), 'no sidebar row is 32 px')
+  assert.ok(!rows.includes(34), 'a sidebar row is still 34 px')
   await page.getByRole('button', { name: /^Conta de / }).click()
   const item = await page.getByRole('menuitem', { name: 'Sair do Conexus' }).boundingBox()
-  assert.equal(item?.height, 34, 'a menu item is not 34 px')
+  assert.equal(item?.height, 32, 'a menu item is not 32 px')
+  await page.close()
+})
+
+test('o toque alcança 44 × 44 sem desenhar o botão maior', async () => {
+  const page = await harness.open('/pieces', { viewport: PHONE, replies: {} })
+  await touching(page)
+  for (const name of ['Padrão', 'Pequeno', 'Ícone', 'Ícone pequeno']) {
+    const button = page.getByRole('button', { name, exact: true })
+    const box = await button.boundingBox()
+    const reach = await reachOf(button)
+    assert.ok(box, `${name} is not laid out`)
+    assert.ok(box.height <= 32, `${name} is drawn larger under touch: ${box.height}`)
+    assert.ok(box.height + reach.up + reach.down >= 44, `${name} reaches less than 44 high`)
+    assert.ok(box.width + reach.left + reach.right >= 44, `${name} reaches less than 44 wide`)
+  }
+  await page.close()
+})
+
+test('o celular desenhado da Prévia mede 390', async () => {
+  const state = STATES.find((each) => each.name === 'Projeto, Prévia no Celular')
+  assert.ok(state, 'the sweep lacks the Prévia no Celular')
+  const page = await harness.open(state.path, { viewport: DESKTOP, replies: state.replies })
+  await state.settle(page)
+  const frame = await page.locator('iframe').first().boundingBox()
+  assert.equal(frame?.width, 390, 'the drawn phone is not 390 wide')
   await page.close()
 })
 

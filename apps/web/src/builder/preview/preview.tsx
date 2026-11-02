@@ -128,7 +128,7 @@ function Frame(props: { address: string; view: FrameView }) {
         sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox"
         className={cn(
           'h-full border-0 bg-surface',
-          props.view === 'phone' ? 'w-full md:w-[390px]' : 'w-full',
+          props.view === 'phone' ? 'w-full md:w-phone' : 'w-full',
         )}
       />
     </div>
@@ -173,7 +173,7 @@ export function Preview({
           className={cn(
             'grid h-11 shrink-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-sm border-b border-line bg-canvas px-sm md:grid-cols-[1fr_minmax(0,26rem)_1fr] md:bg-transparent',
             phone &&
-              'md:w-[390px] md:self-center md:border-0 md:px-0 md:grid-cols-[auto_minmax(0,1fr)_auto]',
+              'md:w-phone md:self-center md:border-0 md:px-0 md:grid-cols-[auto_minmax(0,1fr)_auto]',
           )}
         >
           <Tip label="Recarregar">
@@ -211,7 +211,7 @@ export function Preview({
             role="status"
             className={cn(
               'flex flex-wrap items-center gap-md border-b border-line bg-accent-soft px-md py-xs text-label',
-              phone && 'md:w-[390px] md:max-w-full md:self-center md:rounded-control md:border',
+              phone && 'md:w-phone md:max-w-full md:self-center md:rounded-control md:border',
             )}
           >
             <TriangleAlertIcon className="size-4 shrink-0 text-warning" aria-hidden="true" />

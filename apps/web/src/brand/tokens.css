@@ -119,6 +119,8 @@
   --spacing-2xl: 32px;
   --spacing-3xl: 48px;
   --spacing-4xl: 64px;
+  --spacing-control: 32px;
+  --spacing-control-sm: 28px;
   --spacing-row: 32px;
 
   /* Widths take names the spacing scale does not use: max-w-* reads --spacing-* before
@@ -134,6 +136,7 @@
   --container-axis: 45rem;
   --container-axis-wide: 55rem;
   --container-half: 22rem;
+  --container-phone: 390px;
 
   --shadow-float: 0 1px 2px rgb(18 21 24 / 0.04), 0 8px 24px -8px rgb(18 21 24 / 0.14);
   --shadow-composer: 0 1px 2px rgb(18 21 24 / 0.04), 0 6px 20px -10px rgb(18 21 24 / 0.12);
