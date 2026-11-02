@@ -184,6 +184,24 @@ test('o celular desenhado da Prévia mede 390', async () => {
   await page.close()
 })
 
+test('num toque as linhas e os itens têm 44 px; com o mouse ficam em 32 (V58)', async () => {
+  const home = STATES.find((each) => each.name === 'Início, a primeira de duas empresas')
+  assert.ok(home, 'the sweep lacks Início')
+  const page = await harness.open(home.path, { viewport: DESKTOP, replies: home.replies })
+  await home.settle(page)
+  await page.getByRole('button', { name: /^Conta de / }).click()
+  await touching(page)
+  const rows = await page
+    .locator('[data-slot=sidebar-menu-item] > *')
+    .evaluateAll((all) => all.map((one) => one.getBoundingClientRect().height))
+  assert.ok(rows.length > 0, 'the sidebar has no rows')
+  assert.ok(rows.includes(44), 'no sidebar row is 44 px under touch')
+  assert.ok(!rows.includes(32), 'a sidebar row stayed 32 px under touch')
+  const item = await page.getByRole('menuitem', { name: 'Sair do Conexus' }).boundingBox()
+  assert.equal(item?.height, 44, 'a menu item is not 44 px under touch')
+  await page.close()
+})
+
 /** The line height of every element that holds text of its own, as the browser computes it. */
 function textLineHeights(page: Page) {
   return page.evaluate(() => {

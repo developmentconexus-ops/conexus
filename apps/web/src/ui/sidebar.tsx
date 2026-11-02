@@ -258,7 +258,7 @@ const menuButton = cva(
   {
     variants: {
       size: {
-        default: 'h-row',
+        default: 'h-row pointer-coarse:h-11',
         lg: 'h-12 group-data-[collapsible=icon]:p-0!',
       },
     },
@@ -296,7 +296,10 @@ export function SidebarMenuButton({
 /** A place still loading: a line of skeleton the width of a short name (web W17). */
 export function SidebarMenuSkeleton() {
   return (
-    <div data-slot="sidebar-menu-skeleton" className="flex h-row items-center px-[0.6rem]">
+    <div
+      data-slot="sidebar-menu-skeleton"
+      className="flex h-row pointer-coarse:h-11 items-center px-[0.6rem]"
+    >
       <Skeleton className="h-4 w-3/4" />
     </div>
   )
