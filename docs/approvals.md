@@ -508,3 +508,7 @@ Em 2026-11-02, à página dos agentes no Início: "`V1`". Lido pelo firstmate co
 Cartão da etapa 24.3 aprovado em 2026-11-02 (commit bbbbf0c380ad095fba2ffd00642572640aa81c41): "Aprovo a pagina"
 
 Lido pelo firstmate como a aprovação da página da 24.3 e da 24.3.1 como o commit citado a traz, com as respostas `A1`, B, `C1`, `E1`, 3.A, `T1`, 1A, 2A, 3A, 4A e `V1`. A aprovação é também a palavra da regra de dados D11 para as permissões das tabelas novas e da função `builder.companies_with_agents()`.
+
+Cartão da etapa 24.3 aprovado em 2026-11-02 (commit 07d1e66f702bc250d4af3fd38fef184510dc1df9): "Aprova a emenda da 24.3, né? Sempre seguindo os repositórios, referências, para a gente implementar conforme esperado. Correto?"
+
+Lido pelo firstmate como a aprovação da emenda da 24.3 como o commit citado a traz: as respostas "P1. A" (o kit dos controladores na U1b, entre a U1 e a U2, com a U2 e a U4 sobre ele) e "R1" (o pedido de uma automação marcado `source="automation"`, também quando ela roda um agente, na U6), sob a condição que ele pôs: seguir os repositórios de referência.
