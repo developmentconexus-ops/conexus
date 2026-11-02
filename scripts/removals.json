@@ -2444,7 +2444,7 @@
   {
     "id": "agent-of-another-project",
     "file": "apps/server/src/builder/agents/store.ts",
-    "find": "      eq(agent.projectId, scope.projectId),\n",
+    "find": "    eq(agent.projectId, ids.projectId),\n",
     "replace": "",
     "test": {
       "cwd": "apps/server",
