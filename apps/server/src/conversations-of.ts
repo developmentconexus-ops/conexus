@@ -1,6 +1,5 @@
 import type { MachineTuning } from './builder/assistant/public.ts'
 import { createAssistant } from './builder/assistant/public.ts'
-import type { Notify } from './builder/automations/public.ts'
 import {
   AUTOMATION_TURN_MS,
   AUTOMATION_WORKFLOW,
@@ -13,6 +12,7 @@ import type { AssistantMachine, Runs } from './builder/runs/public.ts'
 import { publishedVersionsOf } from './hub/apps/public.ts'
 import type { Connectors } from './hub/connectors/public.ts'
 import type { IdentityPorts } from './hub/identity/public.ts'
+import type { Notify } from './hub/notifications/public.ts'
 import { liveProjectOf, liveProjectsOf } from './hub/projects/public.ts'
 import type { Config } from './platform/config.ts'
 import type { Database, MastraPool } from './platform/database.ts'

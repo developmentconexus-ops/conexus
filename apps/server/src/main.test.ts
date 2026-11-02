@@ -6,8 +6,9 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { after, before, test } from 'node:test'
 import type { FastifyInstance } from 'fastify'
+import { createIdentity } from './hub/identity/public.ts'
 import { createStatus } from './hub/status/public.ts'
-import { createHub, identityOf, subjectsOf } from './main.ts'
+import { createHub, subjectsOf } from './main.ts'
 import { testAppPorts } from './platform/test-app-ports.ts'
 import type { TestDatabase } from './platform/test-database.ts'
 import {
@@ -18,6 +19,7 @@ import {
   testConfig,
 } from './platform/test-database.ts'
 import { spawnHub, startHub } from './platform/test-hub-process.ts'
+import { testMail } from './platform/test-mail.ts'
 
 const apps: FastifyInstance[] = []
 const dirs: string[] = []
@@ -35,7 +37,8 @@ after(async () => {
 async function hub(webRoot?: string) {
   const config = testConfig(shared.runtimeUrl)
   const status = createStatus({ version: config.version, database: shared.database })
-  const identity = identityOf({ database: shared.database, config, log: silent })
+  const sendMail = testMail(config)
+  const identity = createIdentity({ database: shared.database, config, log: silent, sendMail })
   const {
     projects,
     operations,
@@ -44,12 +47,14 @@ async function hub(webRoot?: string) {
     conversations,
     assistant,
     automations,
+    notifications,
     connectors,
   } = subjectsOf({
     mastraPool: shared.mastraPool,
     database: shared.database,
     config,
     identity,
+    sendMail,
     ...testAppPorts(config),
     log: silent,
   })
@@ -63,6 +68,7 @@ async function hub(webRoot?: string) {
     conversations,
     assistant,
     automations,
+    notifications,
     connectors,
     webRoot,
   })

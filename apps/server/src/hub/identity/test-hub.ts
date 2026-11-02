@@ -4,7 +4,7 @@ import type { TestContext } from 'node:test'
 import { setTimeout } from 'node:timers/promises'
 import { ATTEMPT_KEY_HEADER } from '@conexus/hub-api'
 import { hashPassword } from 'better-auth/crypto'
-import { createEdgeHub, createHub, identityOf, subjectsOf } from '../../main.ts'
+import { createEdgeHub, createHub, subjectsOf } from '../../main.ts'
 import type { Config } from '../../platform/config.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { closeListeners } from '../../platform/lifecycle.ts'
@@ -19,9 +19,10 @@ import {
   testWebRoot,
   WRITE_HEADERS,
 } from '../../platform/test-database.ts'
-import { mailServer } from '../../platform/test-mail.ts'
+import { mailServer, testMail } from '../../platform/test-mail.ts'
 import { fakeNeon } from '../../platform/test-neon.ts'
 import { createStatus } from '../status/public.ts'
+import { createIdentity } from './public.ts'
 
 export const PASSWORD = 'senha-certa-1'
 export const SESSIONS = '/api/sessions/current'
@@ -63,12 +64,13 @@ async function hubServing(
   const config = (change ?? ((same) => same))(testConfig(test.runtimeUrl, mailApiUrl))
   const status = createStatus({ version: config.version, database: test.database })
   const neon = fakeNeon()
-  const identity = identityOf({ database: test.database, config, log: silent })
+  const sendMail = testMail(config)
+  const identity = createIdentity({ database: test.database, config, log: silent, sendMail })
   const cloudflare = fakeCloudflare()
   const postgres = heldCompanyPostgres(config)
   const ports = testAppPorts(config, { neon, cloudflare, postgres })
   const subjects = subjectsOf({
-    ...{ database: test.database, mastraPool: test.mastraPool, config, identity },
+    ...{ database: test.database, mastraPool: test.mastraPool, config, identity, sendMail },
     ...{ ...ports, log },
     deadlines: { callDeadlineMs: TEST_CALL_DEADLINE_MS },
   })
@@ -108,6 +110,8 @@ async function hubServing(
     },
     assistantMachines: ports.assistantMachines,
     connectors: subjects.connectors,
+    sendMail,
+    notify: subjects.notifications.notify,
     mastra: conversations.mastra,
     repair: apps.repair,
     readUnserved: subjects.modelAccounts.readUnserved,

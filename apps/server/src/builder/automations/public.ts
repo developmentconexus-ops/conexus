@@ -8,8 +8,8 @@ import { registerAutomationRoutes } from './routes.ts'
 import { automationRuns } from './runs.ts'
 
 export { AUTOMATION_TIMEZONE, cronOf } from './cadence.ts'
-export type { AutomationInput, Notify } from './run.ts'
-export { AUTOMATION_TURN_MS, AUTOMATION_WORKFLOW, automationRun, loggedNotify } from './run.ts'
+export type { AutomationInput } from './run.ts'
+export { AUTOMATION_TURN_MS, AUTOMATION_WORKFLOW, automationRun } from './run.ts'
 
 /**
  * The Assistant's automations (step 24.2) on the Hub's one `Mastra`: the routes, and the removal

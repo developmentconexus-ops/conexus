@@ -3,6 +3,7 @@ import { test } from 'node:test'
 import { setTimeout as sleep } from 'node:timers/promises'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import { call, codeOf, memberOn, post } from '../../hub/identity/test-hub.ts'
+import { bellOf } from '../../hub/notifications/test-notifications.ts'
 import type { Reply } from '../../platform/test-anthropic.ts'
 import { reading, talking } from '../assistant/test-assistant.ts'
 import {
@@ -70,8 +71,11 @@ test('o horário: a agenda dispara no minuto; uma conversa do dono com o pedido,
   const listed = Object((await call(on.hub, on.ana, 'GET', on.assistant)).json()).conversations
   assert.equal(listed.length, 1)
   assert.deepEqual((await runsOf(on.hub, on.ana, siblingUrl)).runs, [])
-  const ran = on.lines.find((line) => line.message === 'AUTOMATION_RAN')
-  assert.deepEqual([ran?.fields.trigger, ran?.fields.kind], ['SCHEDULED', 'DONE'])
+  const bell = await bellOf(on.hub, on.ana, on.company)
+  assert.deepEqual(
+    bell.notifications.map((each) => [each.kind, each.conversationId]),
+    [['AUTOMATION_DONE', run.state.conversationId]],
+  )
 })
 
 test('a conversa continua: a conversa da execução está na lista com a automação, abre pela rota e responde uma segunda pergunta', async (t) => {
@@ -87,8 +91,11 @@ test('a conversa continua: a conversa da execução está na lista com a automa�
   )
   const conversation = `${on.assistant}/${String(run.state.conversationId)}`
   const { say } = await talking(t, on.hub, on.ana, conversation)
-  const manual = on.lines.find((line) => line.message === 'AUTOMATION_RAN')
-  assert.deepEqual([manual?.fields.trigger, manual?.fields.kind], ['MANUAL', 'DONE'])
+  assert.deepEqual(
+    (await bellOf(on.hub, on.ana, on.company)).notifications.map((each) => each.kind),
+    ['AUTOMATION_DONE'],
+  )
+  assert.deepEqual(on.mail.sent, [], 'Rodar agora never mails')
   assert.equal(endOf(await say('E por região?')), 'complete')
   assert.deepEqual(await questionsIn(on.hub, on.ana, conversation), [PROMPT, 'E por região?'])
 })
@@ -174,16 +181,12 @@ test('o dono virou membro: o disparo não abre conversa, SKIPPED com OWNER_CANNO
   const asMember = await post(on.hub, bia, `${on.automations}/${automation.id}/run`, {})
   assert.deepEqual([asMember.statusCode, codeOf(asMember)], [404, 'NOT_FOUND'])
   const deadline = Date.now() + 90_000
-  function skipped() {
-    return on.lines.some(
-      (line) =>
-        line.message === 'AUTOMATION_RAN' &&
-        line.fields.automationId === automation.id &&
-        line.fields.kind === 'SKIPPED',
-    )
+  async function paused() {
+    const { notifications } = await bellOf(on.hub, bia, on.company)
+    return notifications.some((each) => each.kind === 'AUTOMATION_PAUSED')
   }
-  while (!skipped() && Date.now() < deadline) await sleep(200)
-  assert.ok(skipped(), 'the run ended SKIPPED')
+  while (!(await paused()) && Date.now() < deadline) await sleep(200)
+  assert.ok(await paused(), 'the run ended SKIPPED and told its owner')
   assert.equal((await role('admin', 'member')).statusCode, 200)
   const [run] = (await runsOf(on.hub, bia, `${on.automations}/${automation.id}`)).runs
   assert.equal(run?.trigger, 'SCHEDULED')

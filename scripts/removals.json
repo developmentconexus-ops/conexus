@@ -2407,5 +2407,27 @@
       "file": "src/builder/automations/run.test.ts",
       "name": "o dono virou membro"
     }
+  },
+  {
+    "id": "notifications-admit-member",
+    "file": "apps/server/src/hub/notifications/notifications.ts",
+    "find": "  await deps.identity.admitMember({\n",
+    "replace": "  await Promise.resolve({\n",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/notifications/notifications.test.ts",
+      "name": "quem não é da empresa"
+    }
+  },
+  {
+    "id": "notifications-policy-own-person",
+    "file": "apps/server/migrations/20261101085955_e242_notification/migration.sql",
+    "find": " and person_id = nullif(current_setting('conexus.person_id', true), '')) WITH CHECK",
+    "replace": ") WITH CHECK",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/notifications/tables.test.ts",
+      "name": "a política"
+    }
   }
 ]

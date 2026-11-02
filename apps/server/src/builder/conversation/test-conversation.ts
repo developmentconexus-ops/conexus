@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto'
 import type { TestContext } from 'node:test'
 import type { AgentControllerWireEvent, MastraMessagePart } from '@mastra/core/agent-controller'
 import { z } from 'zod'
+import { createIdentity } from '../../hub/identity/public.ts'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import {
   ANA_OWNER,
@@ -13,7 +14,7 @@ import {
   post,
 } from '../../hub/identity/test-hub.ts'
 import { createStatus } from '../../hub/status/public.ts'
-import { createHub, identityOf, subjectsOf } from '../../main.ts'
+import { createHub, subjectsOf } from '../../main.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { shutDown } from '../../platform/lifecycle.ts'
 import type { Anthropic, Reply, Sent } from '../../platform/test-anthropic.ts'
@@ -97,8 +98,8 @@ export async function conversing(
  * Mastra storage unopened, for a Hub beside a database that is down.
  */
 export async function hubBeside(t: TestContext, hub: Hub, log: FailureLog = silent, start = true) {
-  const { test, config } = hub
-  const identity = identityOf({ database: test.database, config, log: silent })
+  const { test, config, sendMail } = hub
+  const identity = createIdentity({ database: test.database, config, log: silent, sendMail })
   const postgres = heldCompanyPostgres(config)
   const ports = testAppPorts(
     config,
@@ -106,7 +107,7 @@ export async function hubBeside(t: TestContext, hub: Hub, log: FailureLog = sile
     hub.builder.folder,
   )
   const subjects = subjectsOf({
-    ...{ mastraPool: test.mastraPool, database: test.database, config, identity },
+    ...{ mastraPool: test.mastraPool, database: test.database, config, identity, sendMail },
     ...{ ...ports, log },
   })
   const status = createStatus({ version: config.version, database: test.database })
@@ -125,9 +126,7 @@ export async function hubBeside(t: TestContext, hub: Hub, log: FailureLog = sile
   t.after(() => close())
   const builder = {
     ...hub.builder,
-    bucket: ports.bucket,
-    control: ports.control,
-    knobs: ports.knobs,
+    ...{ bucket: ports.bucket, control: ports.control, knobs: ports.knobs },
   }
   const { assistantMachines } = ports
   const mastra = subjects.conversations.mastra
