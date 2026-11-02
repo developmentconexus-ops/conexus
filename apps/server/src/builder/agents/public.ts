@@ -7,8 +7,8 @@ import type { AgentsDeps } from './agents.ts'
 import { createAgentService } from './agents.ts'
 import { createAgentConversations } from './controller.ts'
 import { registerAgentConversationRoutes } from './conversation-routes.ts'
+import { openAgentConversation } from './open.ts'
 
-export type { AgentRun } from './agent.ts'
 export { agentKey, agentRunContext } from './agent.ts'
 
 import { agentEvents } from './events.ts'
@@ -61,6 +61,9 @@ export function agentsAlive(
   return Object.freeze({
     ...agents,
     part: live.part,
+    /** Opens a conversation with the agent, as its route does, past the admission (U6's run). */
+    open: (input: Parameters<typeof openAgentConversation>[1]) =>
+      openAgentConversation({ ...deps, ...live }, input),
     routes: (app: FastifyInstance) => {
       agents.routes(app)
       registerAgentConversationRoutes(app, { ...deps, agents, conversations: live })

@@ -33,7 +33,8 @@ import { conversationMemory, routedModel } from '../conversation/public.ts'
 import type { QueueDeps, Turn } from '../model-accounts/public.ts'
 import type { AgentRun } from './agent.ts'
 import { agentOf, planOf, setAgentRun, takeAgentTurn } from './agent.ts'
-import type { Agents } from './public.ts'
+import type { AgentEvents } from './events.ts'
+import type { AgentReads } from './registry.ts'
 import { createRegistry } from './registry.ts'
 import { agent, agentConversation } from './tables.ts'
 
@@ -161,7 +162,7 @@ type Deps = {
   queue: QueueDeps
   connectors: Connectors['assistant']
   speakersOf: (scope: SessionScope) => Promise<Speakers>
-  agents: Pick<Agents, 'activeOf' | 'draftOf' | 'liveOf' | 'publishedAll' | 'onChange'>
+  agents: AgentReads & Pick<AgentEvents, 'onChange'>
   /** The one `Mastra` the registry adds the agents to, made after the parts. */
   mastra: () => Mastra
   log: FailureLog

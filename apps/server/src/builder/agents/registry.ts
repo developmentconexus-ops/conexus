@@ -9,6 +9,14 @@ import type { FrozenVersion } from './frozen.ts'
 
 type Live = FrozenVersion & OfProject & { agentId: AgentId }
 
+/** How the registry reads the versions an agent runs (`frozen.ts`, over the Hub's database). */
+export type AgentReads = {
+  activeOf: (ids: OfProject, agentId: AgentId) => Promise<FrozenVersion | null>
+  draftOf: (ids: OfProject, agentId: AgentId) => Promise<FrozenVersion>
+  liveOf: (companyId: CompanyId, agentId: AgentId) => Promise<Live | null>
+  publishedAll: () => Promise<Live[]>
+}
+
 export type Registry = {
   /** Before `startWorkers`; never throws for one agent alone. */
   hydrate(): Promise<{ count: number }>
@@ -43,15 +51,9 @@ function lineUp() {
  * looks an agent up only by `listAgents()`, never by `getAgent`, whose error lists every company's
  * keys (security S40). A swap and a lazy registration of the same agent wait in one line (C63).
  */
-export function createRegistry(deps: {
-  mastra: () => Mastra
-  build: (live: Live) => Agent
-  activeOf: (ids: OfProject, agentId: AgentId) => Promise<FrozenVersion | null>
-  draftOf: (ids: OfProject, agentId: AgentId) => Promise<FrozenVersion>
-  liveOf: (companyId: CompanyId, agentId: AgentId) => Promise<Live | null>
-  publishedAll: () => Promise<Live[]>
-  log: FailureLog
-}): Registry {
+export function createRegistry(
+  deps: AgentReads & { mastra: () => Mastra; build: (live: Live) => Agent; log: FailureLog },
+): Registry {
   const inLine = lineUp()
 
   function found(agentId: AgentId): Agent | undefined {

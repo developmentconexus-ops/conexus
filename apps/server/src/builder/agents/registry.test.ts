@@ -4,30 +4,23 @@ import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { setTimeout as sleep } from 'node:timers/promises'
 import { AgentId, CompanyId, PersonId, ProjectId } from '@conexus/hub-api'
+import type { Agent } from '@mastra/core/agent'
 import type { Hub } from '../../hub/identity/test-hub.ts'
 import { CARLA, call, codeOf, memberOn, post } from '../../hub/identity/test-hub.ts'
-import type { Scalar } from '../../platform/failure.ts'
-import { Failure } from '../../platform/failure.ts'
 import { talking } from '../assistant/test-assistant.ts'
 import { endOf, hubBeside, KEY, MODEL, sent } from '../conversation/test-conversation.ts'
-import { agentKey, agentRunContext } from './agent.ts'
-import {
-  agentsOn,
-  drafted,
-  publishedAgent,
-  publishedNow,
-  talkedTo,
-} from './test-agents.ts'
+import { agentKey, agentRunContext } from './public.ts'
+import { agentsOn, drafted, publishedAgent, publishedNow, talkedTo } from './test-agents.ts'
 
 const CLOCK = { schedulerTickMs: 200, turnMs: 60_000 }
 const HAIKU = 'anthropic/claude-haiku-4-5'
 
-type Line = { fields: Record<string, Scalar>; message: string }
+type Line = { fields: Record<string, unknown>; message: string }
 
 /** A log that keeps its lines, for a second Hub's start and turns. */
 function recording() {
   const lines: Line[] = []
-  const keep = (fields: Record<string, Scalar>, message: string) => {
+  function keep(fields: Record<string, unknown>, message: string) {
     lines.push({ fields, message })
   }
   return { lines, log: { info: keep, error: keep } }
@@ -35,8 +28,7 @@ function recording() {
 
 /** The Hub's registered agent of `agentId`, as the registry keeps it. */
 function registered(hub: Hub, agentId: string) {
-  const agents: Record<string, ReturnType<Hub['mastra']['getAgentById']> | undefined> =
-    hub.mastra.listAgents()
+  const agents: Record<string, Agent | undefined> = hub.mastra.listAgents()
   return agents[agentKey(AgentId.parse(agentId))]
 }
 
@@ -153,7 +145,7 @@ test('roda sozinho: o agente registrado, com o dono no requestContext, chama o m
   const refused = other.generate('Oi', {
     requestContext: agentRunContext({ ...run, agentId: AgentId.parse(gpt.id) }),
   })
-  await assert.rejects(refused, (error) => error instanceof Failure && error.code === 'MODEL_NO_ACCOUNT')
+  await assert.rejects(refused, { code: 'MODEL_NO_ACCOUNT' })
 })
 
 test('o registro atrasado: um agente que falta no registro é registrado pela linha no próximo turno', async (t) => {

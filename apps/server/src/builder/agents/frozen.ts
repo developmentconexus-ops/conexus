@@ -16,14 +16,15 @@ import {
   ProjectId,
   ToolSlug as ToolSlugSchema,
   ToolVersionConfig as ToolVersionConfigSchema,
+  ToolVersionId as ToolVersionIdSchema,
 } from '@conexus/hub-api'
-import { and, eq, isNotNull, sql } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { Database, ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import { versionsWithTools } from '../tools/public.ts'
 import { chosenIds, ofProject, pinnedIds } from './store.ts'
-import { agent, agentVersion } from './tables.ts'
+import { agent, agentVersion, agentVersionTool } from './tables.ts'
 
 /** The configuration a version or the draft becomes an agent with, its tools as their versions hold them. */
 export type FrozenVersion = AgentConfig & {
@@ -38,19 +39,30 @@ function hubScope(companyId: CompanyId) {
   return { kind: 'COMPANY', companyId, personId: null } as const
 }
 
-async function toolsOf(
-  tx: ReadTx,
-  versionIds: readonly ToolVersionId[],
-): Promise<FrozenVersion['tools']> {
+type Tools = FrozenVersion['tools']
+
+/** The tools of the versions named, by version, as each version holds it. */
+async function toolsBy(tx: ReadTx, versionIds: readonly ToolVersionId[]) {
   const rows = await versionsWithTools(tx, versionIds)
-  return rows
-    .map(({ version, tool }) => ({
-      connectionId: ConnectionId.parse(tool.connectionId),
-      operation: OperationId.parse(tool.operation),
-      slug: ToolSlugSchema.parse(tool.slug),
-      ...ToolVersionConfigSchema.parse(version.config),
-    }))
-    .sort((a, b) => a.slug.localeCompare(b.slug))
+  return new Map(
+    rows.map(({ version, tool }) => [
+      version.id,
+      {
+        connectionId: ConnectionId.parse(tool.connectionId),
+        operation: OperationId.parse(tool.operation),
+        slug: ToolSlugSchema.parse(tool.slug),
+        ...ToolVersionConfigSchema.parse(version.config),
+      },
+    ]),
+  )
+}
+
+function sorted(tools: Tools[number][]): Tools {
+  return tools.sort((a, b) => a.slug.localeCompare(b.slug))
+}
+
+async function toolsOf(tx: ReadTx, versionIds: readonly ToolVersionId[]): Promise<Tools> {
+  return sorted([...(await toolsBy(tx, versionIds)).values()])
 }
 
 /** The active version of an agent of the Projeto, as it was published; none before the first. */
@@ -96,6 +108,46 @@ export async function liveOf(database: Database, companyId: CompanyId, agentId: 
   return version === null ? null : { ...version, ...ids, agentId }
 }
 
+/** Every published agent of one company, in three reads: the active versions, their pins, the tools. */
+async function publishedOf(tx: ReadTx, companyId: CompanyId) {
+  const active = and(
+    eq(agentVersion.agentId, agent.id),
+    eq(agentVersion.number, agent.activeVersion),
+  )
+  const rows = await tx
+    .select({
+      id: agent.id,
+      projectId: agent.projectId,
+      config: agentVersion.config,
+      number: agentVersion.number,
+    })
+    .from(agent)
+    .innerJoin(agentVersion, active)
+    .where(eq(agent.companyId, companyId))
+  const pins = await tx
+    .select({ agentId: agentVersionTool.agentId, id: agentVersionTool.toolVersionId })
+    .from(agentVersionTool)
+    .innerJoin(agent, eq(agent.id, agentVersionTool.agentId))
+    .where(and(eq(agent.companyId, companyId), eq(agentVersionTool.number, agent.activeVersion)))
+  const tools = await toolsBy(
+    tx,
+    pins.map((pin) => ToolVersionIdSchema.parse(pin.id)),
+  )
+  return rows.map((row) => {
+    const own = pins
+      .filter((pin) => pin.agentId === row.id)
+      .flatMap((pin) => tools.get(pin.id) ?? [])
+    const ids = { companyId, projectId: ProjectId.parse(row.projectId) }
+    return {
+      ...AgentConfigSchema.parse(row.config),
+      tools: sorted(own),
+      source: { kind: 'VERSION', number: row.number } as const,
+      ...ids,
+      agentId: AgentId.parse(row.id),
+    }
+  })
+}
+
 /**
  * Every published agent of every company, as each active version holds it: the companies come
  * from the one function the Hub's login runs before any company is known (D11), then each
@@ -108,18 +160,7 @@ export async function publishedAll(database: Database) {
   const all: (FrozenVersion & OfProject & { agentId: AgentId })[] = []
   for (const found of companies.rows) {
     const { company_id: companyId } = WithAgents.parse(found)
-    const rows = await database.read(hubScope(companyId), (tx) =>
-      tx
-        .select({ id: agent.id, projectId: agent.projectId })
-        .from(agent)
-        .where(and(eq(agent.companyId, companyId), isNotNull(agent.activeVersion))),
-    )
-    for (const row of rows) {
-      const ids = { companyId, projectId: ProjectId.parse(row.projectId) }
-      const agentId = AgentId.parse(row.id)
-      const version = await activeOf(database, ids, agentId)
-      if (version !== null) all.push({ ...version, ...ids, agentId })
-    }
+    all.push(...(await database.read(hubScope(companyId), (tx) => publishedOf(tx, companyId))))
   }
   return all
 }

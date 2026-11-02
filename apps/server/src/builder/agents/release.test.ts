@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict'
+import { randomUUID } from 'node:crypto'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
-import { CompanyId } from '@conexus/hub-api'
+import { AgentId, CompanyId, ConversationId, PersonId, ProjectId } from '@conexus/hub-api'
 import { sql } from 'drizzle-orm'
-import type { Person } from '../../hub/identity/test-hub.ts'
+import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import {
   CARLA,
   call,
@@ -13,7 +14,16 @@ import {
   plantCompany,
   post,
 } from '../../hub/identity/test-hub.ts'
-import { agentOf, agentsOn, drafted, madeAgent, madeTool, ordersOf, toolOf } from './test-agents.ts'
+import {
+  agentOf,
+  agentsOn,
+  drafted,
+  madeAgent,
+  madeTool,
+  ordersOf,
+  talkedTo,
+  toolOf,
+} from './test-agents.ts'
 
 type Event = { kind: string; agentId: string }
 
@@ -181,4 +191,44 @@ test('as chaves: a política da empresa não lê o agente de outra; companies_wi
       [on.companyId, on.ids.carla],
     ].sort(),
   )
+})
+
+/** Whether a conversation's thread and its row are kept, as a pair: never a thread without its row. */
+async function pairOf(hub: Hub, id: string) {
+  const threads = await hub.test.mastraPool.query(
+    'select count(*)::int as n from mastra.mastra_threads where id = $1',
+    [id],
+  )
+  const [row] = await hub.test.asOwner(
+    'select count(*)::int as n from builder.agent_conversation where id = $1',
+    [id],
+  )
+  return [threads.rows[0]?.n, Object(row).n]
+}
+
+test('as conversas: apagar o agente leva as de todas as pessoas nas três ordens, a linha antes da primeira varredura, entre ela e o delete, e depois; nenhum fio fica sem a linha', async (t) => {
+  const on = await spread(t)
+  const agentId = AgentId.parse(on.ids.ana)
+  const before = await talkedTo(on.hub, on.carla, on.agents, agentId)
+  const scope = {
+    companyId: CompanyId.parse(on.companyId),
+    projectId: ProjectId.parse(on.projectId),
+    personId: PersonId.parse(on.ana.id),
+  }
+  const frozen = await on.hub.agents.draftOf(scope, agentId)
+  const between: string[] = []
+  on.hub.agents.onChange(async (event) => {
+    if (event.kind !== 'DELETING') return
+    between.push(await talkedTo(on.hub, on.ana, on.agents, agentId, { draft: true }))
+  })
+  const gone = await call(on.hub, on.ana, 'DELETE', `${on.agents}/${agentId}`)
+  assert.equal(gone.statusCode, 204, gone.body)
+  const after = ConversationId.parse(randomUUID())
+  await assert.rejects(
+    on.hub.agents.open({ scope, agentId, draft: true, frozen, id: after }),
+    { code: 'AGENT_NOT_FOUND' },
+  )
+  const ids = [before, ...between].map((url) => url.slice(url.lastIndexOf('/') + 1))
+  assert.equal(ids.length, 2)
+  for (const id of [...ids, after]) assert.deepEqual(await pairOf(on.hub, id), [0, 0], id)
 })

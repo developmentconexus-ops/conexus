@@ -1,12 +1,11 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import type { Scalar } from './failure.ts'
 import { watchMemory } from './memory.ts'
 
 test('a linha HUB_MEMORY do minuto traz o atraso do laço e o processador', async (t) => {
-  const lines: { fields: Record<string, Scalar>; message: string }[] = []
+  const lines: { fields: Record<string, unknown>; message: string }[] = []
   const log = {
-    info: (fields: Record<string, Scalar>, message: string) => lines.push({ fields, message }),
+    info: (fields: Record<string, unknown>, message: string) => lines.push({ fields, message }),
     error: () => undefined,
   }
   t.mock.timers.enable({ apis: ['setInterval'] })

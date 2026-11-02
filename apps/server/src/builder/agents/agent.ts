@@ -48,7 +48,7 @@ export function agentKey(id: AgentIdType): `agent-${string}` {
 }
 
 /** The run a request context carries, or none. */
-export function agentRunIn(requestContext: RequestContext): AgentRun | undefined {
+function agentRunIn(requestContext: RequestContext): AgentRun | undefined {
   return AgentRunSchema.safeParse(requestContext.get(RUN)).data
 }
 
@@ -64,7 +64,7 @@ export function agentRunContext(run: AgentRun): RequestContext {
 }
 
 /** The turn's key, which the company's door counts the 50 calls by. */
-export function agentTurnKeyIn(requestContext: RequestContext): TurnKey {
+function agentTurnKeyIn(requestContext: RequestContext): TurnKey {
   const turn = TurnKey.safeParse(requestContext.get(TURN_KEY))
   if (!turn.success) {
     throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'CONNECTOR_TOOL_WITHOUT_TURN' } })

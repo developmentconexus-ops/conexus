@@ -161,11 +161,7 @@ function conversationIdOf(url: string): string {
  * Builder's for any other.
  */
 export function sessionUrl(url: string): string {
-  const controller = url.includes('/assistant/conversations/')
-    ? 'assistant'
-    : /\/agents\/[^/]+\/conversations\//.test(url)
-      ? 'agents'
-      : 'builder'
+  const controller = /\/(assistant|agents)\/(?:[^/]+\/)?conversations\//.exec(url)?.[1] ?? 'builder'
   return `/api/builder/agent-controller/${controller}/sessions/${conversationIdOf(url)}`
 }
 

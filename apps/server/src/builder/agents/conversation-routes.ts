@@ -13,13 +13,13 @@ import { admitted, databaseScopeOf, inProjectOf } from '../tools/public.ts'
 import type { AgentConversations } from './controller.ts'
 import { AGENT_MARK } from './controller.ts'
 import { openAgentConversation } from './open.ts'
-import type { Agents } from './public.ts'
+import type { AgentReads } from './registry.ts'
 
 type Deps = Pick<ToolsDeps, 'identity' | 'liveProjectOf'> & {
   database: Database
   queue: QueueDeps
   conversations: AgentConversations
-  agents: Pick<Agents, 'activeOf' | 'draftOf'>
+  agents: Pick<AgentReads, 'activeOf' | 'draftOf'>
   log: FailureLog
 }
 
