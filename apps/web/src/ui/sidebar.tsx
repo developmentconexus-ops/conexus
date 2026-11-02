@@ -90,15 +90,49 @@ export function SidebarProvider({
   )
 }
 
-/** The sidebar: a column that becomes icons when closed, or the drawer on a phone. */
-export function Sidebar({ label, children }: { label: string; children: ReactNode }) {
-  const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
+/** The rail's two ends: the places at the top, the account and what sits above it at the foot. */
+export type RailContent = { top: ReactNode; foot: ReactNode }
 
+function RailColumn({ rail }: { rail: RailContent }) {
+  return (
+    <div
+      data-slot="sidebar-rail-column"
+      className="flex w-sidebar-icon shrink-0 flex-col items-center gap-xs border-r border-line p-sm"
+    >
+      {rail.top}
+      <div className="mt-auto flex flex-col items-center gap-xs">{rail.foot}</div>
+    </div>
+  )
+}
+
+/**
+ * The sidebar (web W30): from 768px the rail of places beside the place's list, both fixed on the
+ * chrome ground, and only the rail once closed; on a phone the two go together into the drawer. A
+ * sidebar with no `rail` is the list alone, which closes to icons.
+ */
+export function Sidebar({
+  label,
+  rail,
+  children,
+}: {
+  label: string
+  rail?: RailContent
+  children: ReactNode
+}) {
+  const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
   if (isMobile) {
     return (
       <Sheet open={openMobile} onOpenChange={setOpenMobile}>
-        <SheetContent title={label} data-sidebar="sidebar" data-mobile="true">
-          <div className="flex min-h-0 flex-1 flex-col">{children}</div>
+        <SheetContent
+          title={label}
+          data-sidebar="sidebar"
+          data-mobile="true"
+          className="max-w-drawer gap-0 bg-canvas p-0"
+        >
+          <div className="flex min-h-0 flex-1">
+            {rail && <RailColumn rail={rail} />}
+            <div className="flex min-h-0 min-w-0 flex-1 flex-col">{children}</div>
+          </div>
         </SheetContent>
       </Sheet>
     )
@@ -119,18 +153,29 @@ export function Sidebar({ label, children }: { label: string; children: ReactNod
       <nav
         aria-label={label}
         data-slot="sidebar-container"
-        className="fixed inset-y-0 left-0 z-10 hidden h-dvh w-sidebar border-r border-line bg-surface transition-[width] duration-200 ease-linear group-data-[collapsible=icon]:w-sidebar-icon motion-reduce:transition-none md:flex"
+        className={cn(
+          'fixed inset-y-0 left-0 z-10 hidden h-dvh w-sidebar bg-canvas transition-[width] duration-200 ease-linear group-data-[collapsible=icon]:w-sidebar-icon motion-reduce:transition-none md:flex',
+          !rail && 'border-r border-line',
+        )}
       >
-        <div data-sidebar="sidebar" className="flex size-full flex-col">
+        {rail && <RailColumn rail={rail} />}
+        <div
+          data-sidebar="sidebar"
+          className={cn(
+            'flex min-w-0 flex-1 flex-col',
+            rail && 'border-r border-line group-data-[collapsible=icon]:hidden',
+          )}
+        >
           {children}
         </div>
+        <SidebarRail />
       </nav>
     </div>
   )
 }
 
 /** The thin edge beside the sidebar that opens and closes it with the mouse. */
-export function SidebarRail() {
+function SidebarRail() {
   const { toggleSidebar, open } = useSidebar()
   const label = open ? 'Recolher a barra lateral' : 'Abrir a barra lateral'
   return (
@@ -150,7 +195,7 @@ export function SidebarInset({ className, ...props }: ComponentProps<'main'>) {
   return (
     <main
       data-slot="sidebar-inset"
-      className={cn('relative flex w-full min-w-0 flex-1 flex-col bg-canvas', className)}
+      className={cn('relative flex w-full min-w-0 flex-1 flex-col bg-surface', className)}
       {...props}
     />
   )
@@ -254,7 +299,7 @@ export function SidebarMenuItem({ className, ...props }: ComponentProps<'li'>) {
 
 // The router marks the current place `data-status="active"`; a menu marks its open trigger.
 const menuButton = cva(
-  'peer/menu-button flex w-full items-center gap-sm overflow-hidden rounded-control px-[0.6rem] text-left font-body text-label text-text-2 hover:bg-accent-soft hover:text-text data-popup-open:bg-surface-3 data-[status=active]:bg-surface-3 data-[status=active]:text-text group-data-[collapsible=icon]:size-row! group-data-[collapsible=icon]:pointer-coarse:size-11! group-data-[collapsible=icon]:p-sm! [&_svg]:size-[18px] [&_svg]:shrink-0 [&>span:last-child]:truncate',
+  'peer/menu-button flex w-full items-center gap-sm overflow-hidden rounded-control px-[0.6rem] text-left font-body text-label text-text-2 relative hover:bg-surface-3 hover:text-text data-popup-open:bg-surface-4 data-[status=active]:bg-surface-4 data-[status=active]:text-text data-[status=active]:before:absolute data-[status=active]:before:top-1/2 data-[status=active]:before:left-0 data-[status=active]:before:h-4 data-[status=active]:before:w-[2px] data-[status=active]:before:-translate-y-1/2 data-[status=active]:before:rounded-pill data-[status=active]:before:bg-accent group-data-[collapsible=icon]:size-row! group-data-[collapsible=icon]:pointer-coarse:size-11! group-data-[collapsible=icon]:p-sm! [&_svg]:size-[18px] [&_svg]:shrink-0 [&>span:last-child]:truncate',
   {
     variants: {
       size: {

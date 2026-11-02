@@ -13,15 +13,15 @@ import {
   releaseCompanyDatabase,
 } from './company-deletion.ts'
 import { admitToApp, liveProjectOf, projectOfHost } from './hosts.ts'
+import { finishMarkedProject, markedProjectsOf } from './marked.ts'
 import type {
   AppRemoval,
   AppSessionsEnd,
   AppVersionsOf,
-  AppVersionsOfMany,
   ProjectConversationRelease,
   PublishedRolesOf,
 } from './ports.ts'
-import { createProjectStore, finishMarkedProject, markedProjectsOf } from './projects.ts'
+import { createProjectStore } from './projects.ts'
 import { registerProjectRoutes } from './routes.ts'
 
 /** For the apps' removal, which Projects and the Central call before Projects exist to hand it. */
@@ -53,7 +53,6 @@ export function createProjects(deps: {
   appsDomain: AppsDomain
   appRemoval: AppRemoval
   appVersionsOf: AppVersionsOf
-  appVersionsOfMany: AppVersionsOfMany
   releaseConversations: ProjectConversationRelease
   publishedRolesOf: PublishedRolesOf
   endAppSessions: AppSessionsEnd

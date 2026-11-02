@@ -103,7 +103,9 @@ test('erro: na área, com a barra, o título da página e "Tentar de novo" lê o
   expect(screen.getByRole('heading', { name: 'Não foi possível abrir esta página' })).toBeTruthy()
   failing = false
   fireEvent.click(screen.getByRole('button', { name: 'Tentar de novo' }))
-  expect(await screen.findByRole('heading', { name: 'O que vamos construir?' })).toBeTruthy()
+  expect(
+    await screen.findByRole('heading', { name: /^(Bom dia|Boa tarde|Boa noite)/ }),
+  ).toBeTruthy()
 })
 
 test('não encontrado dentro da moldura: na área, com "Voltar ao início", sem um main dentro do outro (critério 9)', async () => {

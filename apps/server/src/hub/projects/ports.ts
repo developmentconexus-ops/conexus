@@ -17,14 +17,8 @@ export type AppRemoval = {
   }): Promise<'DONE' | 'LEFT'>
 }
 
-/** The numbers of the Prévia's and the published version of a Projeto's app; null before each first. */
+/** The numbers of the Prévia's and the published version of each Projeto's app; a Projeto with no app is absent. */
 export type AppVersionsOf = (
-  tx: ReadTx,
-  projectId: ProjectId,
-) => Promise<{ appVersion: number | null; publishedVersion: number | null }>
-
-/** The same numbers for a page of Projetos in one read; a Projeto with no app is absent. */
-export type AppVersionsOfMany = (
   tx: ReadTx,
   projectIds: readonly ProjectId[],
 ) => Promise<ReadonlyMap<ProjectId, { appVersion: number | null; publishedVersion: number | null }>>

@@ -206,6 +206,9 @@ export function hubServer() {
     http.get('*/api/companies/:companyId/notifications', () =>
       HttpResponse.json({ notifications: [], unread: 0, next: { kind: 'END' } }),
     ),
+    http.get('*/api/companies/:companyId/connections', () =>
+      HttpResponse.json({ connectors: [], connections: [], mayManage: true }),
+    ),
     http.get('*/api/companies/:companyId/assistant/connections', () =>
       HttpResponse.json({ connections: [] }),
     ),
@@ -258,6 +261,8 @@ export const PEDIDOS = ProjectSummary.parse({
   id: 'p'.repeat(32),
   name: 'Pedidos',
   createdAt: '2026-10-17T12:00:00.000Z',
+  appVersion: null,
+  publishedVersion: null,
 })
 
 /** The Projeto's panel asks for the person's conversations; for a test that has none to speak of. */

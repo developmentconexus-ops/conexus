@@ -35,7 +35,7 @@ test('no Projeto a barra do Projeto fica aberta e a da empresa volta ao sair', a
   await page.waitForTimeout(250)
   const inProject = await widthOf(nav)
   await nav.getByRole('link').first().click()
-  await page.getByRole('heading', { name: 'Pergunte ou peça um app' }).waitFor()
+  await page.getByRole('heading', { name: /^(Bom dia|Boa tarde|Boa noite)/ }).waitFor()
   await page.waitForTimeout(250)
   assert.deepEqual([inProject, await widthOf(nav)], [328, 328])
   assert.deepEqual(page.problems, [])

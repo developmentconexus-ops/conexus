@@ -225,24 +225,8 @@ export async function listVersions(tx: ReadTx, ids: OfProject): Promise<AppVersi
   return rows.map((row) => versionView(row, pointers))
 }
 
-/** The numbers of the Prévia's and the published version, in one read; null before each first. */
+/** The numbers of the Prévia's and the published version of each of `projectIds`, in one query; null before each first, and a Projeto with no app is absent. */
 export async function versionNumbersOf(
-  tx: ReadTx,
-  projectId: ProjectId,
-): Promise<{ appVersion: number | null; publishedVersion: number | null }> {
-  const preview = alias(appVersion, 'preview_version')
-  const published = alias(appVersion, 'published_version')
-  const [row] = await tx
-    .select({ appVersion: preview.number, publishedVersion: published.number })
-    .from(app)
-    .leftJoin(preview, eq(preview.id, app.liveVersionId))
-    .leftJoin(published, eq(published.id, app.publishedVersionId))
-    .where(eq(app.projectId, projectId))
-  return { appVersion: row?.appVersion ?? null, publishedVersion: row?.publishedVersion ?? null }
-}
-
-/** The same numbers for each of `projectIds`, in one query: the list's page of up to 50 Projetos. */
-export async function versionNumbersOfMany(
   tx: ReadTx,
   projectIds: readonly ProjectId[],
 ): Promise<ReadonlyMap<ProjectId, { appVersion: number | null; publishedVersion: number | null }>> {

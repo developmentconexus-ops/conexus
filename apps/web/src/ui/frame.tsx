@@ -5,8 +5,9 @@ import { MenuIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { createContext, useContext, useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { ConexusWordmark } from '../brand/mark.tsx'
+import { ConexusMark, ConexusWordmark } from '../brand/mark.tsx'
 import { cn } from './cn.ts'
+import type { RailContent } from './sidebar.tsx'
 import {
   Sidebar,
   SidebarContent,
@@ -16,7 +17,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarProvider,
-  SidebarRail,
   SidebarTrigger,
   useSidebar,
 } from './sidebar.tsx'
@@ -93,7 +93,7 @@ function PhoneTop(props: { slot: (element: HTMLElement | null) => void }) {
     },
   })
   return (
-    <header className="flex min-h-[calc(3.5rem+env(safe-area-inset-top))] items-center gap-sm border-b border-line bg-canvas px-md pt-[env(safe-area-inset-top)] md:hidden">
+    <header className="flex min-h-[calc(3.25rem+env(safe-area-inset-top))] items-center gap-sm border-b border-line bg-canvas px-md pt-[env(safe-area-inset-top)] md:hidden">
       <SidebarTrigger label="Abrir navegação">
         <MenuIcon aria-hidden="true" />
       </SidebarTrigger>
@@ -134,26 +134,39 @@ function opensWide(): boolean {
 
 /**
  * The frame of every page with a session (web W30): one sidebar on the left and no top bar. The
- * sidebar holds `header`, `nav` and `footer`, open until the person collapses it to icons; `compact`
+ * sidebar holds the `rail` of places and the list (`header`, `nav` and `footer`), open until the
+ * person collapses it to the rail; `compact`
  * means the page fills the rest of the screen edge to edge, for a Projeto's two regions. On a phone it is a drawer under a top line naming the place (design V56).
  */
 export function Frame(props: {
   header: ReactNode
   nav: ReactNode
-  footer: ReactNode
+  footer?: ReactNode
+  /** The icon rail beside the list; without it the sidebar is the list alone, closing to icons. */
+  rail?: RailContent
   compact: boolean
   children: ReactNode
 }) {
   const [open, setOpen] = useState(opensWide)
   const [slot, setSlot] = useState<HTMLElement | null>(null)
   const { compact } = props
+  const rail = props.rail && {
+    top: (
+      <>
+        <span aria-hidden="true" className="flex size-10 shrink-0 items-center justify-center">
+          <ConexusMark size={24} />
+        </span>
+        {props.rail.top}
+      </>
+    ),
+    foot: props.rail.foot,
+  }
   return (
     <SidebarProvider open={open} onOpenChange={setOpen} className={cn(compact && 'h-dvh')}>
-      <Sidebar label="Navegação">
+      <Sidebar label="Navegação" rail={rail}>
         <SidebarHeader>{props.header}</SidebarHeader>
         <SidebarContent>{props.nav}</SidebarContent>
-        <SidebarFooter>{props.footer}</SidebarFooter>
-        <SidebarRail />
+        {props.footer && <SidebarFooter>{props.footer}</SidebarFooter>}
       </Sidebar>
       <CloseOnNavigation />
       <SidebarInset>

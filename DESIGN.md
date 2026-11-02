@@ -458,8 +458,9 @@ fixed, chrome ground, each with its right hairline. Closed, only the rail stays.
 white sheet (W30).
 
 - **Rail.** The mark tile and the place tiles are 40px with the rail icon size (V34), 4px apart;
-  Início, Projetos, Integrações at the top, then Configurações and the account (`avatar`) at the
-  foot. The current tile has the selected fill and a 2px-wide ipê tick on the rail's left edge (V5).
+  Início, Projetos, Integrações at the top, then Automações right after Integrações (only for an
+  owner or an administrator; founder, 2026-11-02, "Opção 1"); Configurações, the bell just above the
+  account, and the account (`avatar`) at the foot. The current tile has the selected fill and a 2px-wide ipê tick on the rail's left edge (V5).
 - **List.** The company switcher, "Nova conversa" (bordered), then "Conversas" in day groups (Hoje,
   Ontem, Esta semana, Antes) as `eyebrow` rows and conversation rows of `spacing.row` with the age
   at the end. The current row has the selected fill and a shorter tick.

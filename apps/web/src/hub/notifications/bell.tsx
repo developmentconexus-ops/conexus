@@ -153,7 +153,7 @@ export function NotificationBell({ companyId }: { companyId: CompanyId }) {
           <Button
             variant="ghost"
             size="icon"
-            className="relative"
+            className="relative size-10"
             aria-label={unread === 0 ? 'Notificações' : `Notificações: ${unreadText(unread)}`}
           />
         }
@@ -168,7 +168,7 @@ export function NotificationBell({ companyId }: { companyId: CompanyId }) {
           </span>
         )}
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-80 max-w-[calc(100vw-2rem)]">
+      <PopoverContent align="end" side="right" className="w-80 max-w-[calc(100vw-2rem)]">
         <h2 className="font-display text-title">Notificações</h2>
         <Panel companyId={companyId} onTap={() => setOpen(false)} />
       </PopoverContent>

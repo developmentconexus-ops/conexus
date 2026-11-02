@@ -216,7 +216,9 @@ test('o membro convidado aceita e cai no Início, sem passos nem cartão; a empr
   )
   const router = open()
   fireEvent.click(await screen.findByRole('button', { name: 'Aceitar convite' }))
-  expect(await screen.findByRole('heading', { name: 'O que vamos construir?' })).toBeTruthy()
+  expect(
+    await screen.findByRole('heading', { name: /^(Bom dia|Boa tarde|Boa noite)/ }),
+  ).toBeTruthy()
   expect(router.state.location.pathname).toBe(`/companies/${COMPANY.id}`)
   expect(screen.queryByText(/Passo \d de 4/)).toBeNull()
   expect(screen.queryByText('Termine de preparar a empresa')).toBeNull()
@@ -286,7 +288,9 @@ test('acceptance does not flash the joined invitation while the company is still
     await waitFor(() => expect(accepted).toBe(true))
     expect(screen.getByRole('button', { name: 'Aceitando…' })).toBeTruthy()
     release()
-    expect(await screen.findByRole('heading', { name: 'Pergunte ou peça um app' })).toBeTruthy()
+    expect(
+      await screen.findByRole('heading', { name: /^(Bom dia|Boa tarde|Boa noite)/ }),
+    ).toBeTruthy()
     expect(flashed).toBe(false)
   } finally {
     release()

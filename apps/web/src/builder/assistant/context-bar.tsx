@@ -142,7 +142,7 @@ function Bar(props: {
 }
 
 /** A Badge whose text is cut with an ellipsis when its line is narrower, instead of running off a phone. */
-export function CutBadge(props: { className?: string; children: ReactNode }) {
+function CutBadge(props: { className?: string; children: ReactNode }) {
   return (
     <Badge className={cn('max-w-full shrink', props.className)}>
       <span className="truncate">{props.children}</span>

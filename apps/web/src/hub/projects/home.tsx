@@ -1,55 +1,27 @@
-import type { CompanyId } from '@conexus/hub-api'
-import { useSuspenseQuery } from '@tanstack/react-query'
-import { Link } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
 import { PageTitle } from '../../ui/list.tsx'
-import { ProjectCards } from './project-cards.tsx'
-import { projectsQuery } from './queries.ts'
 
 /**
- * A company's Início (web W29): `aside` first, for what the company still needs, then `title`
- * centred over `start`, the box that starts a Projeto or a conversation, and the Projects below at
- * the page's width.
+ * A company's Início (web W29), on one axis (design V59): `aside` first, for what the company still
+ * needs, then the greeting `title` centred over `start`, the box that starts a Projeto or a
+ * conversation, and `below`, the blocks the person's role reads.
  */
 export function Home(props: {
-  companyId: CompanyId
   aside?: ReactNode
   title: string
   start: ReactNode
+  below?: ReactNode
 }) {
-  const { companyId } = props
-  const { projects, next } = useSuspenseQuery(projectsQuery(companyId, undefined)).data
   return (
-    <div className="flex w-full max-w-page flex-col gap-2xl pb-2xl">
+    <div className="mx-auto flex w-full max-w-axis flex-col gap-3xl pb-2xl min-[1600px]:max-w-axis-wide">
       {props.aside}
-      <section aria-labelledby="start-title" className="flex flex-col gap-lg">
+      <section aria-labelledby="start-title" className="flex flex-col gap-xl">
         <PageTitle className="text-balance text-center text-display max-md:text-display-narrow">
           <span id="start-title">{props.title}</span>
         </PageTitle>
         {props.start}
       </section>
-      <section aria-labelledby="projects-title" className="flex flex-col gap-md">
-        <div className="flex items-baseline justify-between gap-md">
-          <h2 id="projects-title" className="flex items-baseline gap-sm font-display text-title">
-            Projetos
-            {projects.length > 0 && next.kind !== 'MORE' && (
-              <span className="font-body text-label font-normal tabular-nums text-text-2">
-                {projects.length}
-              </span>
-            )}
-          </h2>
-          {next.kind === 'MORE' && (
-            <Link
-              to="/companies/$companyId/projects"
-              params={{ companyId }}
-              className="text-label text-text-2 underline-offset-4 hover:text-text hover:underline"
-            >
-              Todos os projetos
-            </Link>
-          )}
-        </div>
-        <ProjectCards companyId={companyId} page={undefined} />
-      </section>
+      {props.below}
     </div>
   )
 }

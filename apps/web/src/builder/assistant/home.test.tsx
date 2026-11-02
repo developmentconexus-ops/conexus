@@ -5,10 +5,8 @@ import { expect, test } from 'vitest'
 import { hubServer, PEDIDOS, refusal } from '../../platform/test-hub.tsx'
 import { choose } from '../conversation/test-hub.tsx'
 import {
-  assistantConversation,
   assistantScreens,
   COMPANY_ROOT,
-  ELSEWHERE,
   LOJA,
   LOJA_OFFER,
   OFFERED,
@@ -38,6 +36,17 @@ async function turnOff(bar: HTMLElement, name: string) {
   fireEvent.keyDown(document.activeElement ?? document.body, { key: 'Escape' })
 }
 
+/** An alert that is not the one of a block of Início, which reads the same list on its own. */
+async function alertOutside(block: string) {
+  return waitFor(() => {
+    const found = screen
+      .getAllByRole('alert')
+      .find((alert) => alert.closest(`section[aria-label="${block}"]`) === null)
+    if (found === undefined) throw new Error('no alert outside the block')
+    return found
+  })
+}
+
 async function ask(question: string) {
   fireEvent.change(await box(), { target: { value: question } })
   fireEvent.click(screen.getByRole('button', { name: 'Enviar' }))
@@ -45,7 +54,9 @@ async function ask(question: string) {
 
 test('o dono vê a caixa do Assistente com as ligações todas escolhidas e o seletor de Projeto', async () => {
   at(COMPANY_ROOT)
-  expect(await screen.findByRole('heading', { name: 'Pergunte ou peça um app' })).toBeTruthy()
+  expect(
+    await screen.findByRole('heading', { name: /^(Bom dia|Boa tarde|Boa noite)/ }),
+  ).toBeTruthy()
   const bar = await barOf()
   expect(within(bar).getByText('Sankhya · Vendas')).toBeTruthy()
   expect(within(bar).getByRole('combobox', { name: 'Projeto da conversa' })).toBeTruthy()
@@ -156,6 +167,8 @@ test('com 31 Projetos, o seletor oferece os 30 da primeira página e, em "Mais P
     id: ProjectId.parse(`${'q'.repeat(29)}${String(n).padStart(3, '0')}`),
     name: `Projeto ${n + 1}`,
     createdAt: '2026-10-17T12:00:00.000Z',
+    appVersion: null,
+    publishedVersion: null,
   }))
   const { writes, asked } = at(COMPANY_ROOT)
   server.use(
@@ -215,7 +228,7 @@ test('se o catálogo dos sistemas falha, a barra diz a frase e mostra o nome que
   )
   const bar = await screen.findByRole('group', { name: 'Ligações da conversa' })
   await waitFor(() => expect(within(bar).getByText('sankhya · Vendas')).toBeTruthy())
-  expect(await screen.findByRole('alert')).toBeTruthy()
+  expect(await alertOutside('Ligações')).toBeTruthy()
 })
 
 test('se a lista dos Projetos falha depois de lida, o seletor diz a frase', async () => {
@@ -223,49 +236,14 @@ test('se a lista dos Projetos falha depois de lida, o seletor diz a frase', asyn
   await barOf()
   server.use(http.get('*/api/companies/:companyId/projects', () => refusal('DATABASE_UNAVAILABLE')))
   await act(() => conexus.queryClient.invalidateQueries())
-  expect(await screen.findByRole('alert')).toBeTruthy()
+  expect(await alertOutside('Projetos')).toBeTruthy()
 })
 
-test('as conversas recentes abrem a conversa e a de um Projeto leva a etiqueta dele', async () => {
-  const { conexus } = at(COMPANY_ROOT, {
-    conversations: [
-      assistantConversation({ id: ELSEWHERE, projectId: PEDIDOS_ID, title: 'Pedidos do mês' }),
-      assistantConversation(),
-    ],
-  })
-  const company = await screen.findByRole('link', { name: /Vendas da semana/ })
-  const project = screen.getByRole('link', { name: /Pedidos do mês/ })
-  expect(within(project).getByText(PEDIDOS.name)).toBeTruthy()
-  expect(within(company).queryByText(PEDIDOS.name)).toBeNull()
-  fireEvent.click(company)
-  await waitFor(() =>
-    expect(conexus.router.state.location.pathname).toMatch(/\/conversations\/3{8}-/),
-  )
-})
-
-test('sem conversas, o Início mostra só a caixa, a barra e os exemplos', async () => {
+test('sem conversas, o Início mostra a caixa, a barra e os exemplos, e a lista só tem Nova conversa', async () => {
   at(COMPANY_ROOT)
   await barOf()
-  expect(screen.queryByRole('heading', { name: 'Conversas recentes' })).toBeNull()
+  expect(screen.queryByRole('heading', { name: 'Conversas' })).toBeNull()
   expect(screen.getByRole('list', { name: 'Exemplos' })).toBeTruthy()
-})
-
-test('as recentes passam de uma página: Ver mais leva à seguinte no endereço, e Primeira página volta', async () => {
-  const { conexus } = at(COMPANY_ROOT, {
-    pageSize: 2,
-    conversations: [
-      assistantConversation({ id: ELSEWHERE, title: 'Gama' }),
-      assistantConversation({ title: 'Beta' }),
-      assistantConversation({ id: THIRD, title: 'Alfa' }),
-    ],
-  })
-  expect(await screen.findByRole('link', { name: /Gama/ })).toBeTruthy()
-  expect(screen.queryByRole('link', { name: /Alfa/ })).toBeNull()
-  fireEvent.click(screen.getByRole('link', { name: 'Ver mais: Conversas' }))
-  expect(await screen.findByRole('link', { name: /Alfa/ })).toBeTruthy()
-  expect(conexus.router.state.location.search).toMatchObject({ conversations: '2' })
-  fireEvent.click(screen.getByRole('link', { name: 'Primeira página: Conversas' }))
-  expect(await screen.findByRole('link', { name: /Gama/ })).toBeTruthy()
 })
 
 test('voltar ao Início depois de perguntar mostra a conversa nova entre as recentes', async () => {
@@ -279,35 +257,5 @@ test('voltar ao Início depois de perguntar mostra a conversa nova entre as rece
   )
   await screen.findByRole('textbox', { name: 'Mensagem para o Assistente' })
   act(() => conexus.router.history.back())
-  expect(await screen.findByRole('link', { name: /Conversa de/ })).toBeTruthy()
-  expect(screen.getByRole('heading', { name: 'Conversas recentes' })).toBeTruthy()
-})
-
-test('enquanto as recentes não chegam, o Início mostra um esqueleto no lugar delas', async () => {
-  let arrive: () => void = () => undefined
-  const held = new Promise<void>((resolve) => {
-    arrive = resolve
-  })
-  at(COMPANY_ROOT, {
-    conversations: [assistantConversation()],
-    answers: { list: async () => void (await held) },
-  })
-  await barOf()
-  expect(screen.queryByRole('link', { name: /Vendas da semana/ })).toBeNull()
-  expect(document.querySelector('[data-slot="skeleton"]')).not.toBeNull()
-  arrive()
-  expect(await screen.findByRole('link', { name: /Vendas da semana/ })).toBeTruthy()
-})
-
-test('se as recentes falham, o Início diz a frase com Tentar de novo, que as lê de novo', async () => {
-  let failing = true
-  at(COMPANY_ROOT, {
-    conversations: [assistantConversation()],
-    answers: { list: () => (failing ? refusal('DATABASE_UNAVAILABLE') : undefined) },
-  })
-  const retry = await screen.findByRole('button', { name: 'Tentar de novo' })
-  expect(screen.queryByRole('link', { name: /Vendas da semana/ })).toBeNull()
-  failing = false
-  fireEvent.click(retry)
-  expect(await screen.findByRole('link', { name: /Vendas da semana/ })).toBeTruthy()
+  expect((await screen.findAllByRole('link', { name: /Conversa de/ })).length).toBeGreaterThan(0)
 })

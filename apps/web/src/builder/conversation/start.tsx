@@ -27,7 +27,7 @@ type Phase =
   | { kind: 'STARTING'; outgoing: Outgoing; project: Project }
 
 /** The column the box, its bar and the lists under it share. */
-export const START_COLUMN = 'mx-auto flex w-full max-w-[46rem] flex-col'
+export const START_COLUMN = 'mx-auto flex w-full max-w-axis min-[1600px]:max-w-axis-wide flex-col'
 
 type Example = { readonly label: string; readonly text: string }
 
