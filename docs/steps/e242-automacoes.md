@@ -239,11 +239,11 @@ por e-mail (critérios 1, 6, 8, 12, 19, 21).
 | 14 | U2 | Um disparo do horário manda um e-mail ao endereço do dono: o assunto "Automação <nome>: pronta", "Automação <nome>: falhou" ou "Automação <nome>: pausada", o nome, o botão **Abrir no Conexus** com o endereço da conversa pelo lugar dela (Início ou Projeto, como o critério 24 da 24.1) ou o da automação (a pausa por `OWNER_CANNOT_ASK`: o Início), e nenhum número da empresa (`G1`); "Rodar agora" não manda e-mail | `apps/server/src/hub/notifications/mail.test.ts` | must |
 | 15 | U2 | O e-mail recusado (`MAIL_UNAVAILABLE`) não desfaz a notificação nem a execução; o processo imprime `AUTOMATION_MAIL_FAILED` sem o endereço | `mail.test.ts`, "o e-mail fora" | must |
 | 16 | U2 | As notificações saem com a pessoa e a empresa (as chaves estrangeiras), e o catálogo das permissões fecha (`database-grants.sql`) | `apps/server/src/platform/catalog.test.ts`; `notifications.test.ts`, "a remoção" | must |
-| 17 | U3 | Numa conversa do Início **e numa de Projeto**, o modelo recebe `propose_automation`, além das ferramentas do critério 12 da 24.1; numa de Projeto, a proposta sai com o Projeto da conversa e só as ligações dela; a saída é a proposta, e nada é gravado sem o toque | `apps/server/src/builder/assistant/assistant.test.ts`, "as ferramentas" | must |
-| 18 | U3 | O cartão da proposta mostra o nome, a cadência em português ("Todo dia às 07:00", "Segunda e quinta às 08:00"), o lugar, as ligações e o pedido; **Criar automação** chama a criação com uma chave de tentativa e vira "Automação criada" com o caminho; uma recusa mostra a frase do código; tocar duas vezes cria uma | `apps/web/src/builder/automations/proposal.test.tsx` | must |
+| 17 | U3 | Numa conversa do Início **e numa de Projeto**, o modelo recebe `propose_automation`, além das ferramentas do critério 12 da 24.1; numa de Projeto, a proposta sai com o Projeto da conversa e só as ligações dela; a saída é a proposta, e nada é gravado sem o toque; o modelo nomeia as ligações pelo nome que vê, o servidor as traduz em ids contra as escolhidas, e um nome fora da escolha é recusado pelo esquema da ferramenta, que diz os nomes que há; o dublê do modelo só usa nos argumentos o que a chamada ao modelo mostrou (T28) | `apps/server/src/builder/assistant/assistant.test.ts`, "as ferramentas" | must |
+| 18 | U3 | O cartão da proposta mostra o nome, a cadência em português ("Todo dia às 07:00", "Segunda e quinta às 08:00"), o lugar, as ligações e o pedido; **Criar automação** chama a criação com uma chave de tentativa e vira "Automação criada" com o caminho; uma recusa mostra a frase do código; tocar duas vezes cria uma; sair da conversa e voltar, ou recarregar, mantém "Automação criada" e o caminho, porque o cartão lê a automação do lugar que guarda a conversa e a chamada de onde nasceu (`origin`); apagada a automação, o cartão volta a **Criar automação** com a mesma chave | `apps/web/src/builder/automations/proposal.test.tsx` | must |
 | 19 | U3 | A página Automações (Início e Projeto) lista as da pessoa com o estado e a próxima; **Pausar**, **Retomar**, **Rodar agora** e **Apagar** (com confirmação) mudam a linha; o histórico mostra cada execução com **Abrir a conversa** | `apps/web/src/builder/automations/automations.test.tsx` | must |
 | 20 | U3 | O membro não vê a entrada Automações; o endereço de uma automação de outra pessoa dá a página de não encontrado | `automations.test.tsx`, "o membro" | must |
-| 21 | U3 | O sino mostra o número de não lidas; abrir o painel lista as notificações, tocar numa abre a conversa e a marca lida; **Marcar todas como lidas** zera o número | `apps/web/src/hub/notifications/bell.test.tsx` | must |
+| 21 | U3 | O sino mostra o número de não lidas; abrir o painel lista as notificações, tocar numa abre a conversa e a marca lida; **Marcar todas como lidas** zera o número; depois de **Rodar agora**, o fim da execução faz o sino ler de novo na hora, sem clique e sem esperar o minuto | `apps/web/src/hub/notifications/bell.test.tsx` | must |
 | 22 | U3 | Uma conversa aberta por uma automação mostra **Automação · <nome>** nas recentes e no topo da conversa | `apps/web/src/builder/assistant/home.test.tsx`, "a etiqueta" | must |
 | 23 | U3 | As telas novas a 1366 e a 390 px, nos dois temas, sem rolagem lateral (W34 e o QA) | o QA da etapa (testing T25) | must |
 
@@ -817,8 +817,8 @@ export function NotificationBell(props: { companyId: CompanyId }): JSX.Element
 ```
 
 - **A ferramenta.** `propose_automation(ProposedAutomation)`, numa conversa do Início e numa de Projeto, devolve a
-  proposta como veio, depois de conferir as ligações contra as escolhidas da conversa (as que não
-  estão saem); o lugar é o da conversa, e a de Projeto sai só com as ligações dela. A frase em `assistant.md`: quando a pessoa pede algo que se repete num horário, propor a
+  proposta, com as ligações em nomes (uma enumeração, por pedido, dos nomes escolhidos
+  na conversa, como `connector_read`) traduzidas em ids no servidor; um nome fora da escolha é recusado pelo esquema; o lugar é o da conversa, e a de Projeto sai só com as ligações dela. A frase em `assistant.md`: quando a pessoa pede algo que se repete num horário, propor a
   automação com o pedido escrito para ser entendido sozinho. A skill `conexus` diz o que a automação
   faz e o que ainda não faz (evento, agente, workflow).
 - **O cartão.** O lugar vem da conversa; **Criar automação** chama a criação com uma chave de
@@ -826,14 +826,18 @@ export function NotificationBell(props: { companyId: CompanyId }): JSX.Element
   a parte da mensagem é gravada pelo Mastra e o navegador não tem rota para escrever nela
   (o guarda não expõe nenhuma, `guard.ts:25-32`). A chave é um UUID (`operation.ts:6`): os 16
   primeiros bytes do SHA-256 de `<conversa>:<toolCallId>`, com a versão 8 e a variante RFC, por
-  `crypto.subtle`; não por `useAttemptKey`, que sorteia uma por montagem. Recarregar e tocar de novo
-  dá a mesma automação.
+  `crypto.subtle`; não por `useAttemptKey`, que sorteia uma por montagem. A automação guarda de onde
+  nasceu (`origin: { conversationId, toolCallId }`, no `metadata` da linha e no `AutomationSummary`),
+  e o cartão lê a lista do lugar: se acha a automação com a sua chamada, desenha "Automação criada"
+  com o caminho, também depois de sair e voltar; o estado não fica em React. Uma automação apagada
+  devolve o cartão a **Criar automação**, e tocar de novo dá a mesma chave.
 - **Endereços (W1, W29).** `/companies/<c>/automations` e `/companies/<c>/automations/<id>` (andar
   Empresa); `/companies/<c>/projects/<p>/automations` e `…/automations/<id>` (andar Projeto). Uma
   automação de Projeto aberta pelo endereço da empresa, ou o contrário, é "não encontrado".
 - **Os endereços das conversas** no sino, no histórico e no cartão vêm de `conversationPath` (U2).
 - **O sino.** No alto da barra lateral, com o número de não lidas (`unread`), lido de novo ao abrir
-  o painel e a cada 60 s com a janela visível (W10); o painel marca lida a que a pessoa toca.
+  o painel e a cada 60 s com a janela visível; as telas das automações acompanham a execução que
+  **Rodar agora** pediu, e o fim dela lê o sino na hora (`refreshNotifications`); o painel marca lida a que a pessoa toca.
 
 ### As skills e a leitura
 
