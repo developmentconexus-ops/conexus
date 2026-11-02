@@ -24,12 +24,15 @@ export function SheetTrigger(props: SheetPrimitive.Trigger.Props) {
 export function SheetContent({
   className,
   title,
+  titleClassName,
   closeLabel = 'Fechar navegação',
   side = 'left',
   children,
   ...props
 }: SheetPrimitive.Popup.Props & {
   title: string
+  /** Hides the visible title (`sr-only`) when the content brings its own layout, like the drawer's rail. */
+  titleClassName?: string
   closeLabel?: string
   side?: keyof typeof SIDES
   children: ReactNode
@@ -49,7 +52,9 @@ export function SheetContent({
         )}
         {...props}
       >
-        <SheetPrimitive.Title className="pt-[env(safe-area-inset-top)] font-display text-title">
+        <SheetPrimitive.Title
+          className={cn('pt-[env(safe-area-inset-top)] font-display text-title', titleClassName)}
+        >
           {title}
         </SheetPrimitive.Title>
         {children}

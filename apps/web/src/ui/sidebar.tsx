@@ -125,6 +125,7 @@ export function Sidebar({
       <Sheet open={openMobile} onOpenChange={setOpenMobile}>
         <SheetContent
           title={label}
+          titleClassName="sr-only"
           data-sidebar="sidebar"
           data-mobile="true"
           className="max-w-drawer gap-0 bg-canvas p-0"

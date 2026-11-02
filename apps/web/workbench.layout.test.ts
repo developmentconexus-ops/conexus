@@ -43,6 +43,7 @@ test('o trilho no Projeto: o trilho continua com Projetos marcado, a lista é a 
     await nav.getByRole('link', { name: 'Projetos' }).getAttribute('aria-current'),
     'page',
   )
+  assert.equal(await nav.locator('[data-slot=sidebar-rail-column] [aria-current]').count(), 1)
   await list.getByRole('button', { name: /^Trocar de Projeto/ }).waitFor()
   for (const name of ['Construir', 'Conversas', 'Sobre', 'Quem usa o app', 'Integrações']) {
     await list.getByRole('link', { name }).waitFor()

@@ -1,5 +1,5 @@
 import type { CompanyId } from '@conexus/hub-api'
-import { createFileRoute, Outlet, useLocation, useMatches, useParams } from '@tanstack/react-router'
+import { createFileRoute, Outlet, useMatches, useParams } from '@tanstack/react-router'
 import { FolderIcon, HouseIcon, PlugIcon, SettingsIcon, TimerIcon } from 'lucide-react'
 import { useEffect } from 'react'
 import { NewConversation, SidebarConversations } from '../../../../builder/assistant/public.ts'
@@ -32,24 +32,12 @@ export const Route = createFileRoute('/_app/companies/$companyId')({
   component: HouseFrame,
 })
 
-/** Which place of the rail the address is in (web W30); Início holds the Assistant's conversations. */
-function useCurrentPlace(companyId: string) {
-  const { pathname } = useLocation()
-  function inside(segment: string) {
-    return pathname.startsWith(`/companies/${companyId}/${segment}`)
-  }
-  return {
-    inicio: pathname === `/companies/${companyId}` || inside('conversations'),
-    projetos: inside('projects'),
-    integracoes: inside('integrations'),
-    automacoes: inside('automations'),
-  }
-}
-
 /** The rail's places at the top: Automações follows Integrações and is for whoever may ask the Assistant. */
 function RailPlaces(props: { companyId: CompanyId; role: string }) {
   const { companyId } = props
-  const current = useCurrentPlace(companyId)
+  const inInicio = useMatches({
+    select: (matches) => matches.at(-1)?.staticData.place === 'Início',
+  })
   const params = { companyId }
   return (
     <>
@@ -58,21 +46,20 @@ function RailPlaces(props: { companyId: CompanyId; role: string }) {
         params={params}
         icon={HouseIcon}
         label="Início"
-        current={current.inicio}
+        activeOptions={{ exact: true }}
+        alsoCurrent={inInicio}
       />
       <SidebarRailButton
         to="/companies/$companyId/projects"
         params={params}
         icon={FolderIcon}
         label="Projetos"
-        current={current.projetos}
       />
       <SidebarRailButton
         to="/companies/$companyId/integrations"
         params={params}
         icon={PlugIcon}
         label="Integrações"
-        current={current.integracoes}
       />
       {props.role !== 'member' && (
         <SidebarRailButton
@@ -80,7 +67,6 @@ function RailPlaces(props: { companyId: CompanyId; role: string }) {
           params={params}
           icon={TimerIcon}
           label="Automações"
-          current={current.automacoes}
         />
       )}
     </>
@@ -103,7 +89,6 @@ function HouseFrame() {
         params={{ companyId }}
         icon={SettingsIcon}
         label="Configurações"
-        current={false}
       />
       <NotificationBell companyId={companyId} />
       <AccountMenu person={person} compact />

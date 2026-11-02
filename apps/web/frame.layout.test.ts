@@ -6,6 +6,7 @@ import type { Replies, Viewport } from './layout-harness.ts'
 import { createHarness, DESKTOP, ok, PHONE, ZOOMED_PHONE } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import { ASSISTANT_PATH, ASSISTANT_REPLIES } from './sweep-assistant-states.ts'
+import { INTEGRATIONS_STATES } from './sweep-integrations-states.ts'
 import { OWNER, projectsPage, startsOn } from './sweep-replies.ts'
 
 // The company's frame in a real browser: the rail and the list, the axis of Início, the drawer
@@ -112,6 +113,19 @@ test('a moldura: a 1366 px o trilho tem 56, a lista 272, as linhas 32, e o lugar
   assert.equal(await row.getAttribute('aria-current'), 'page')
   assert.deepEqual(await row.evaluate(tickOf), { width: '2px', drawn: true })
   await opened.close()
+})
+
+test('o lugar atual é um só: em Integrações o trilho marca só Integrações, e Nova conversa não é atual', async () => {
+  const state = INTEGRATIONS_STATES.find((one) => one.name === 'Integrações vazia do dono')
+  if (state === undefined) throw new Error('the empty Integrações state is gone')
+  const page = await open(state.path, DESKTOP, { ...owner([]), ...state.replies })
+  const nav = page.getByRole('navigation', { name: 'Navegação' })
+  await page.getByText('Nenhuma integração ligada ainda.').waitFor()
+  const current = await nav
+    .locator('[aria-current]')
+    .evaluateAll((all) => all.map((one) => one.getAttribute('aria-label') ?? one.textContent))
+  assert.deepEqual(current, ['Integrações'])
+  await page.close()
 })
 
 for (const [viewport, axis, half] of [

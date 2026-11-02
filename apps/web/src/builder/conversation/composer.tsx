@@ -22,7 +22,7 @@ import { dictationText, NO_SECRETS, REFUSALS, steerPlaceholderText } from './tex
 
 /** The form sticks to the bottom and clears the home indicator. */
 const FORM =
-  'sticky bottom-0 flex flex-col gap-xs bg-canvas pb-[max(0.5rem,env(safe-area-inset-bottom))]'
+  'sticky bottom-0 flex flex-col gap-xs bg-surface pb-[max(0.5rem,env(safe-area-inset-bottom))]'
 
 /** A finger's keyboard has a Return that means a new line; the button is what sends. */
 function isTouch(): boolean {

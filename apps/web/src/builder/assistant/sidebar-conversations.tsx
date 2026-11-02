@@ -27,6 +27,7 @@ export function NewConversation({ companyId }: { companyId: CompanyId }) {
     <Link
       to="/companies/$companyId"
       params={{ companyId }}
+      activeOptions={{ exact: true }}
       className={`${buttonVariants()} w-full justify-start`}
     >
       <PlusIcon aria-hidden="true" />
