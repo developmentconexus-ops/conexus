@@ -61,7 +61,9 @@ behavior and [testing T6](testing.md) tests beside the owner; no second file tre
 - **W12.** Cache updates after writes **should** be centralized in `MutationCache`, retaining the
   current invalidate-all policy with explicit `meta` exceptions and the conversation outside it.
   Failure: saving in one screen leaves another displaying an old version. TanStack does not
-  invalidate that data automatically. [review]
+  invalidate that data automatically. A loader that decides whether an item exists **must** read
+  fresh (`queryClient.query`), never `ensureQueryData`, which returns data a write marked stale.
+  [review]
 - **W13.** `platform/hub.ts` **must not** know a subject. [dependency-cruiser]
 
 One declaration supplies address, schema and query identity. Better Auth's own session atom is a
@@ -125,15 +127,17 @@ tudo". The lines of [screens](../reference/screens.md) say which screen is on wh
 
 - **W29.** Every screen **must** live on one floor, and `docs/reference/screens.md` **must** carry
   its line: Entrada (`/login`, `/set-password`, `/invitations/…`, one centred column); Primeira
-  entrada (`/companies/<e>/welcome/<step>`, the owner, once); Empresa (`/companies/<e>`: Início and
-  its Projetos); Projeto (`/companies/<e>/projects/<p>/<tab>`); Configurações
+  entrada (`/companies/<e>/welcome/<step>`, the owner, once); Empresa (`/companies/<e>`: Início, its
+  conversations with the Assistant and its Projetos); Projeto (`/companies/<e>/projects/<p>/<tab>`,
+  with its conversations with the Assistant); Configurações
   (`/companies/<e>/settings/<section>`); Central (`/operations/…`). A person who only uses an app
   sees only "Seus apps" at `/` and never enters them. [review]
 - **W30.** The frame **should** be one sidebar on the left and no top bar: the company with its
   switcher, Início, up to five recent Projetos with "Todos os projetos", Integrações, Configurações, and the
   account (name, theme, Central for whoever operates it, Sair). Inside a Projeto the sidebar is the
   Projeto's own (founder, 2026-10-30, R2): the Projeto's name with its switcher, ← the company,
-  Construir, Sobre, Quem usa o app and Integrações, then the account; it stays open and collapses to
+  Construir, Conversas (with the Assistant, step 24.1), Sobre, Quem usa o app and Integrações, then
+  the account; it stays open and collapses to
   icons on demand. Leaving the Projeto brings the company's sidebar back. On a phone it is a drawer
   opened from the top button (design V56). A person with two companies opens the last one used; "Suas empresas" is the switcher's
   menu. [review]
@@ -159,8 +163,10 @@ tudo". The lines of [screens](../reference/screens.md) say which screen is on wh
   permissão' beside its other states. Loading shows the frame at once and a skeleton only in the
   content; an error stays in the content area with "Tentar de novo"; not found offers "Voltar ao
   início" ([code C48](code.md); founder, 2026-10-20: "2. A"); a missing permission shows the page
-  and says who can (design V29), and never hides it. Failure: a screen that hides what a person may
-  not do leaves them guessing. [review]
+  and says who can (design V29), and never hides it. The exceptions: the Automações and Agentes
+  entries are hidden from the member and their addresses answer not found (S10), because the member
+  never creates them (founder, 2026-11-01: "1 A"; 2026-11-02: "3.A"). Failure: a screen that hides what a person may not do
+  leaves them guessing. [review]
 - **W35.** The Hub added to the iPhone home screen (iOS 26.1 or newer) draws a blurred band under
   the status bar: WebKit bug 301994, with no fix in the page. The page **must not** carry a
   workaround for it, such as a fixed padding or a status-bar style, and each iOS release is

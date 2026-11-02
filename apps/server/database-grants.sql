@@ -10,6 +10,7 @@ ALTER SCHEMA builder OWNER TO test_owner;
 ALTER SCHEMA connectors OWNER TO test_owner;
 ALTER SCHEMA drizzle OWNER TO test_owner;
 ALTER SCHEMA hub OWNER TO test_owner;
+ALTER SCHEMA notifications OWNER TO test_owner;
 ALTER SCHEMA operations OWNER TO test_owner;
 ALTER SCHEMA projects OWNER TO test_owner;
 -- Step 5, provisional until the founder's word (firstmate, 2026-10-17): the operator's administrator
@@ -65,6 +66,7 @@ ALTER TABLE connectors.project_connection OWNER TO test_owner;
 ALTER TABLE drizzle.__drizzle_migrations OWNER TO test_owner;
 ALTER SEQUENCE drizzle.__drizzle_migrations_id_seq OWNER TO test_owner;
 ALTER TABLE hub.starts OWNER TO test_owner;
+ALTER TABLE notifications.notification OWNER TO test_owner;
 ALTER TABLE operations.client OWNER TO test_owner;
 -- Step 18 (D11, founder 2026-10-28, "aPROVO PAGINA"): who uses an app and the Projects of one person.
 ALTER TABLE projects.app_access OWNER TO test_owner;
@@ -100,6 +102,7 @@ GRANT USAGE ON SCHEMA connectors TO hub_connection_seals;
 GRANT USAGE ON SCHEMA connectors TO hub_runtime;
 GRANT USAGE ON SCHEMA drizzle TO hub_runtime;
 GRANT USAGE ON SCHEMA hub TO hub_runtime;
+GRANT USAGE ON SCHEMA notifications TO hub_company;
 GRANT USAGE ON SCHEMA operations TO hub_runtime;
 GRANT USAGE ON SCHEMA operations TO hub_operator;
 GRANT USAGE ON SCHEMA projects TO hub_company;
@@ -287,6 +290,11 @@ GRANT SELECT,INSERT,DELETE ON TABLE connectors.connection_sign_in TO hub_company
 GRANT SELECT,INSERT,DELETE ON TABLE connectors.project_connection TO hub_company;
 GRANT SELECT ON TABLE drizzle.__drizzle_migrations TO hub_runtime;
 GRANT SELECT,INSERT ON TABLE hub.starts TO hub_runtime;
+-- Step 24.2, U2, the founder's word on the card (D11, docs/approvals.md): an automation's run tells its
+-- owner, so a company's routes write a notification, list the person's own and mark them read; the row
+-- leaves by cascade, never by the Hub.
+GRANT SELECT,INSERT ON TABLE notifications.notification TO hub_company;
+GRANT UPDATE(read_at) ON TABLE notifications.notification TO hub_company;
 -- Step 4.2, founder 2026-10-16 ("Aprovo", option A): the Hub never deletes a client.
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE operations.client TO hub_operator;
 -- Step 18 (D11, founder 2026-10-28, "aPROVO PAGINA"): who uses an app and the Projects of one person.

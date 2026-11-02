@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { Email } from '@conexus/hub-api'
-import { identityOf } from '../../main.ts'
 import {
   createTestDatabase,
   serveEnvironment,
@@ -10,6 +9,8 @@ import {
   WRITE_HEADERS,
 } from '../../platform/test-database.ts'
 import { spawnHub } from '../../platform/test-hub-process.ts'
+import { testMail } from '../../platform/test-mail.ts'
+import { createIdentity } from './public.ts'
 
 import {
   codeOf,
@@ -214,10 +215,10 @@ test('all invitation writes refuse absent or foreign origins and form media; rev
 
 test('senha que não grava: 503, nenhuma senha, o link continua valendo, e a saída não traz o erro do banco', async (t) => {
   const test = await createTestDatabase(t)
-  const identity = identityOf({
-    database: test.database,
-    config: testConfig(test.runtimeUrl),
-    log: silent,
+  const config = testConfig(test.runtimeUrl)
+  const identity = createIdentity({
+    ...{ database: test.database, config, log: silent },
+    sendMail: testMail(config),
   })
   const { link } = await identity.firstPerson({
     name: 'Ana Lima',

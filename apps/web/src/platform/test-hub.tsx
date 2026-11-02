@@ -203,6 +203,9 @@ export function hubServer() {
         }),
       ),
     ),
+    http.get('*/api/companies/:companyId/notifications', () =>
+      HttpResponse.json({ notifications: [], unread: 0, next: { kind: 'END' } }),
+    ),
     http.get('*/api/companies/:companyId/assistant/connections', () =>
       HttpResponse.json({ connections: [] }),
     ),

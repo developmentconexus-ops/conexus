@@ -11,9 +11,10 @@ const TURN_KEY = 'conexus.turn'
 /**
  * The models the company chose for Mastra's own memory calls, read once as the turn opens, as
  * Factory hydrates them into the request (`memory-settings-hydration.ts:49-53`). `null` follows
- * the conversation's model.
+ * the conversation's model; `'auto'` is the cheap model of the conversation's provider.
  */
-export type MemoryModels = { observer: ModelId | null; reflector: ModelId | null }
+export type MemoryChoice = ModelId | 'auto' | null
+export type MemoryModels = { observer: MemoryChoice; reflector: MemoryChoice }
 export const FOLLOW_CONVERSATION: MemoryModels = { observer: null, reflector: null }
 
 /** The data part a queue notice is kept as in the answer, and the shape of its data. */

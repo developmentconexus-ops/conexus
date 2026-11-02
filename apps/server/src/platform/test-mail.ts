@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict'
 import { createServer } from 'node:http'
 import type { TestContext } from 'node:test'
+import type { Config } from './config.ts'
+import type { SendMail } from './mail.ts'
+import { createMail } from './mail.ts'
+import { silent } from './test-database.ts'
 
 export type Mail = {
   to: string
@@ -63,4 +67,9 @@ export async function mailServer(t: TestContext) {
       for (const reply of heldReplies.splice(0)) reply()
     },
   }
+}
+
+/** The mail adapter of a test Hub, over the provider its configuration names (the fake above, T15). */
+export function testMail(config: Config): SendMail {
+  return createMail({ config, log: silent })
 }

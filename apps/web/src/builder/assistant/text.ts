@@ -28,3 +28,4 @@ export const ASSISTANT_EXAMPLES = [
   { label: 'Pagamento de contas', text: 'Como automatizo o pagamento de contas?' },
 ] as const
 export const EMPTY_ASSISTANT = 'Pergunte, peça uma análise ou um documento.'
+export const CONVERSATION_GONE = 'Esta conversa não existe mais.'

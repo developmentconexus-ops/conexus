@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { FAILURES, getStatus } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
 import type { Assistant, MachineTuning } from './builder/assistant/public.ts'
+import type { AutomationsPart } from './builder/automations/public.ts'
 import type { Conversations } from './builder/conversation/public.ts'
 import type { GitCopy } from './builder/git/public.ts'
 import { repositoriesIn } from './builder/git/public.ts'
@@ -13,7 +14,7 @@ import {
   resealModelAccounts,
   signInFlows,
 } from './builder/model-accounts/public.ts'
-import type { AssistantMachine, MachinesOf, RepositoryOf, Runs } from './builder/runs/public.ts'
+import type { AssistantMachine, MachinesOf, RepositoryOf } from './builder/runs/public.ts'
 import { builderPortsOf, createRuns } from './builder/runs/public.ts'
 import { conversationsOf } from './conversations-of.ts'
 import { firstPersonArguments } from './first-person-arguments.ts'
@@ -23,6 +24,8 @@ import type { ConnectorDeadlines, Connectors } from './hub/connectors/public.ts'
 import { createConnectors, resealConnections } from './hub/connectors/public.ts'
 import type { Identity } from './hub/identity/public.ts'
 import { createIdentity, passwordLinkText } from './hub/identity/public.ts'
+import type { NotificationsPart } from './hub/notifications/public.ts'
+import { notificationsOf } from './hub/notifications/public.ts'
 import type { Operations } from './hub/operations/public.ts'
 import { createOperations } from './hub/operations/public.ts'
 import type { Projects } from './hub/projects/public.ts'
@@ -49,6 +52,7 @@ import { Failure, logFailure } from './platform/failure.ts'
 import { registerHealth } from './platform/health.ts'
 import { answer, createServer, serve } from './platform/http.ts'
 import { bootLog, closeListeners, listenQuietly, shutDownOnSignal } from './platform/lifecycle.ts'
+import type { SendMail } from './platform/mail.ts'
 import { createMail } from './platform/mail.ts'
 import { watchMemory } from './platform/memory.ts'
 import { migrate, migrateExitCode } from './platform/migrate.ts'
@@ -72,6 +76,8 @@ export async function createHub(
     modelAccounts: ModelAccounts
     conversations: Conversations
     assistant: Assistant
+    automations: AutomationsPart
+    notifications: NotificationsPart
     connectors: Connectors
     webRoot?: string
   },
@@ -92,6 +98,8 @@ export async function createHub(
   deps.modelAccounts.routes(app)
   deps.conversations.routes(app)
   deps.assistant.routes(app)
+  deps.automations.routes(app)
+  deps.notifications.routes(app)
   deps.connectors.routes(app)
   await app.ready()
   return app
@@ -109,15 +117,6 @@ export async function createEdgeHub(
   return edge
 }
 
-/** The identity subject, sending its mail through the provider the configuration names. */
-export function identityOf(deps: {
-  database: Database
-  config: Config
-  log: FailureLog
-}): Identity {
-  return createIdentity({ ...deps, sendMail: createMail(deps) })
-}
-
 /**
  * The subjects past identity, each reaching another only through its ports (code C4), and Neon,
  * the companies' databases and Cloudflare only through the ports it is given (C56). Deleting a
@@ -129,6 +128,7 @@ export function subjectsOf(deps: {
   database: Database
   config: Config
   identity: Identity
+  sendMail: SendMail
   neon: NeonProjects
   companyPostgres: CompanyPostgres
   cloudflare: CloudflareApps
@@ -141,16 +141,7 @@ export function subjectsOf(deps: {
   copy: GitCopy
   log: FailureLog
   deadlines?: ConnectorDeadlines
-}): {
-  runs: Runs
-  projects: Projects
-  operations: Operations
-  apps: Apps
-  modelAccounts: ModelAccounts
-  conversations: Conversations
-  assistant: Assistant
-  connectors: Connectors
-} {
+}) {
   const { database, config, log, neon } = deps
   const identity = deps.identity.ports
   const appsDomain = config.appsDomain
@@ -165,11 +156,12 @@ export function subjectsOf(deps: {
     // The apps are made below, after the Projetos the turn's send needs; a turn ends long after.
     send: (version) => apps.sendFromBuilder(version),
   })
-  const { conversations, assistant } = conversationsOf({
+  const notifications = notificationsOf({ ...deps, identity, publicOrigin: config.publicOrigin })
+  const { conversations, assistant, automations } = conversationsOf({
     ...{ database, identity, sealKeys, google, log, runs, mastraPool: deps.mastraPool },
-    machine: deps.assistantMachine,
-    machineTuning: deps.assistantTuning,
+    ...{ machine: deps.assistantMachine, machineTuning: deps.assistantTuning },
     connectors: () => connectors,
+    ...{ notify: notifications.notify, automationClock: config.automationClock },
   })
   const releaseConversations = conversations.release
   const projects = createProjects({
@@ -188,7 +180,10 @@ export function subjectsOf(deps: {
     ...{ database, identity, sealKeys, flows, log, googleCalls: google.googleCalls },
   })
   const connectors = createConnectors({ ...deps, identity, door: apps.connectorCall })
-  return { runs, projects, operations, apps, modelAccounts, conversations, assistant, connectors }
+  return {
+    ...{ runs, projects, operations, apps, modelAccounts },
+    ...{ conversations, assistant, automations, notifications, connectors },
+  }
 }
 
 async function runServer(): Promise<void> {
@@ -201,7 +196,9 @@ async function runServer(): Promise<void> {
     await assertMigrated(database)
     await loadMigrationRule()
     const status = createStatus({ version: config.version, database })
-    const identity = identityOf({ database, config, log })
+    // One mail adapter for the identity's invitations and the notifications' e-mail (step 24.2).
+    const sendMail = createMail({ config, log })
+    const identity = createIdentity({ database, config, log, sendMail })
     const neon = createNeonProjects({ config, log })
     const companyPostgres = createCompanyPostgres({
       transport: neonTransport,
@@ -209,13 +206,14 @@ async function runServer(): Promise<void> {
     })
     const cloudflare = createCloudflareApps({ config, log })
     const subjects = subjectsOf({
-      ...{ database, config, identity },
+      ...{ database, config, identity, sendMail },
       ...{ neon, companyPostgres, cloudflare, mastraPool, log },
       ...builderPortsOf({ config, log }),
     })
     const { projects, apps, conversations, modelAccounts, runs, connectors } = subjects
     await conversations.prepare()
     const app = await createHub(config, { status, identity, ...subjects })
+    await conversations.start()
     const edge = await createEdgeHub(config, { apps, connectors })
     const grace = shutDownOnSignal(app, edge, {
       settle: (bound) => conversations.settle(bound),
@@ -277,7 +275,8 @@ async function runFirstPerson(args: string[]): Promise<void> {
   try {
     await assertRuntimeLogin(database)
     await assertMigrated(database)
-    const identity = identityOf({ database, config, log })
+    const sendMail = createMail({ config, log })
+    const identity = createIdentity({ database, config, log, sendMail })
     const { link } = await identity.firstPerson({ name: input.name, email: input.email })
     appendFileSync(input.summary, passwordLinkText(input.name, link))
     log.info({}, 'FIRST_PERSON_LINK_GIVEN')

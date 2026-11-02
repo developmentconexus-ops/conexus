@@ -144,8 +144,11 @@ Owners next door: [architecture](../architecture.md) for concepts and compositio
   prints a database error containing a password hash to stderr. A log-format guard alone cannot
   prove all control paths reach it. [review]
 - **C51.** Public errors **should** expose only `type`, `title`, `status`, `code` and trace id as
-  `application/problem+json`, without a stack, provider message or parsed `detail`. Failure: a
-  malformed URL receives Fastify's private JSON shape instead of the contract. [review]
+  `application/problem+json`, without a stack, provider message or parsed `detail`. The one
+  exception: Mastra's memory failure events (`om_*_failed`) reach the browser as Mastra sends them,
+  and the screen draws them by type only (founder, 2026-10-31: "Pra mim tem que deixar o nativo
+  mesmo"). Failure: a malformed URL receives Fastify's private JSON shape instead of the contract.
+  [review]
 - **C52.** Failure mapping **should** branch on stable fields: status, code, SQLSTATE and constraint
   name where needed, not message text. Failure: a refused database connection becomes
   `INTERNAL_UNEXPECTED` because the translator misses its class. [review]

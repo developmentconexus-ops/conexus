@@ -123,6 +123,46 @@ test('Observador no Groq: a chamada dele chega ao dublê do Groq, e o modelo do 
   assert.equal((await sessionStateOf(hub, ana, url)).model, MODEL)
 })
 
+const HAIKU = 'claude-haiku-5-5'
+
+test('sem escolha, o Observador chama o modelo mais barato da conta; quem segue a conversa ou escolheu um modelo não o recebe (Automático)', async (t) => {
+  const { hub, ana, conversations, companyId, anthropic } = await conversing(t, (asked) => {
+    if (OBSERVER.test(asked.system)) return { kind: 'text', text: OBSERVED }
+    return title(asked) ?? { kind: 'text', text: LONG }
+  })
+  const settings = `/api/companies/${companyId}/observational-memory-models`
+  assert.deepEqual((await call(hub, ana, 'GET', settings)).json(), {
+    observer: 'auto',
+    reflector: 'auto',
+  })
+  const url = `${conversations}/${await started(hub, ana, conversations)}`
+  const turns = await twoLongTurns(t, { hub, person: ana, url })
+  for (const events of turns) assert.equal(endOf(events), 'complete')
+  const models = new Set(observed(anthropic.sent).map((each) => each.model))
+  assert.deepEqual([...models], [HAIKU], 'the Observer called the cheap model')
+  assert.ok(
+    anthropic.sent.some((each) => each.stream && each.model !== HAIKU),
+    'the turns ran on the conversation’s model',
+  )
+})
+
+test('Segue o modelo da conversa: o Observador chama o modelo da conversa, não o mais barato', async (t) => {
+  const { hub, ana, conversations, companyId, anthropic } = await conversing(t, (asked) => {
+    if (OBSERVER.test(asked.system)) return { kind: 'text', text: OBSERVED }
+    return title(asked) ?? { kind: 'text', text: LONG }
+  })
+  const settings = `/api/companies/${companyId}/observational-memory-models`
+  assert.equal(
+    (await call(hub, ana, 'PUT', settings, { role: 'observer', model: null })).statusCode,
+    200,
+  )
+  const url = `${conversations}/${await started(hub, ana, conversations)}`
+  const turns = await twoLongTurns(t, { hub, person: ana, url })
+  for (const events of turns) assert.equal(endOf(events), 'complete')
+  const models = new Set(observed(anthropic.sent).map((each) => each.model))
+  assert.deepEqual([...models], [MODEL.replace('anthropic/', '')])
+})
+
 test('sem conta no modelo escolhido, o Observador segue a conversa, sem aviso, passando do limite de mensagens (14.2, 36)', async (t) => {
   const { hub, ana, conversations, companyId, anthropic } = await conversing(t, (asked) => {
     if (OBSERVER.test(asked.system)) return { kind: 'text', text: OBSERVED }

@@ -1,6 +1,6 @@
 // Stryker over the lines a change adds, one run per package that has a Stryker configuration.
-import { existsSync, readFileSync, rmSync } from 'node:fs'
-import { join, relative } from 'node:path'
+import { existsSync, readdirSync, readFileSync, rmSync } from 'node:fs'
+import { dirname, join, relative } from 'node:path'
 import { z } from 'zod'
 import { spawnCommand } from './command.ts'
 import type { Changed } from './quality-changes.ts'
@@ -36,7 +36,42 @@ function packageOf(file: string): string {
   return top === 'apps' || top === 'packages' ? `${top}/${name}` : (top ?? '')
 }
 
-/** The test files that own a package's changed code: the tests the change touches, and the one beside each file. */
+const RELATIVE_IMPORT = /\bfrom\s+['"](\.{1,2}\/[^'"]+)['"]/g
+
+function importsOf(root: string, file: string): string[] {
+  const text = readFileSync(join(root, file), 'utf8')
+  return [...text.matchAll(RELATIVE_IMPORT)]
+    .map((match) => join(dirname(file), match[1] ?? '').replace(/\.js$/, '.ts'))
+    .filter((target) => existsSync(join(root, target)))
+}
+
+/** The files a test reaches the source through: its own folder's code, never another folder's. */
+function stepsInto(args: { from: string; target: string }): boolean {
+  const { from, target } = args
+  return dirname(target) === dirname(from)
+}
+
+/** Whether `test` reaches `source` through relative imports, so a test that goes through the folder's `public.ts` or a `test-*.ts` helper counts. */
+function reaches(args: { root: string; test: string; source: string }): boolean {
+  const { root, test, source } = args
+  const seen = new Set([test])
+  const queue = [test]
+  for (let file = queue.pop(); file !== undefined; file = queue.pop()) {
+    for (const target of importsOf(root, file)) {
+      if (target === source) return true
+      if (!seen.has(target) && stepsInto({ from: test, target })) {
+        seen.add(target)
+        queue.push(target)
+      }
+    }
+  }
+  return false
+}
+
+/**
+ * The test files that own a package's changed code: the tests the change touches, the one beside each file,
+ * and every other test in the file's folder that reaches it through its imports.
+ */
 export function owners(args: {
   root: string
   changed: Changed
@@ -45,11 +80,17 @@ export function owners(args: {
 }): string[] {
   const { root, changed, sources, pkg } = args
   const touched = [...changed.keys()].filter((file) => packageOf(file) === pkg && isTest(file))
-  const beside = [...sources.keys()]
-    .filter((file) => packageOf(file) === pkg)
+  const files = [...sources.keys()].filter((file) => packageOf(file) === pkg)
+  const reaching = files.flatMap((source) =>
+    readdirSync(join(root, dirname(source)))
+      .filter((name) => /\.test\.tsx?$/.test(name))
+      .map((name) => join(dirname(source), name))
+      .filter((test) => reaches({ root, test, source })),
+  )
+  const beside = files
     .map((file) => file.replace(/\.tsx?$/, '.test.ts'))
     .filter((file) => existsSync(join(root, file)))
-  return [...new Set([...touched, ...beside])]
+  return [...new Set([...touched, ...beside, ...reaching])]
 }
 
 /** Runs Stryker in `pkg` on the added lines of `sources`; the server's command runner gets the owning `tests`. */

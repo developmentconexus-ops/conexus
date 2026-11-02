@@ -9,6 +9,7 @@ coverage/
 *.key
 secrets/
 /apps/server/src/hub/identity/invitation-render.mjs
+/apps/server/src/hub/notifications/notification-render.mjs
 .wrangler/
 .stryker-tmp/
 .stryker-report/

@@ -119,19 +119,22 @@ function removals(...args: string[]) {
   return removalsAt(repo, ...args)
 }
 
-test('ignored mail renderer is carried into the baseline and mutated scratch trees', (t) => {
+test('ignored mail renderers are carried into the baseline and mutated scratch trees', (t) => {
   const dir = mkdtempSync(join(tmpdir(), 'conexus-removals-renderer-'))
   t.after(() => rmSync(dir, { recursive: true, force: true }))
-  const renderer = 'apps/server/src/hub/identity/invitation-render.mjs'
+  const invitation = 'apps/server/src/hub/identity/invitation-render.mjs'
+  const notification = 'apps/server/src/hub/notifications/notification-render.mjs'
   const files = {
-    '.gitignore': renderer,
+    '.gitignore': `${invitation}\n${notification}`,
     'scripts/removals.json': JSON.stringify([{ ...ROWS[0], test: { ...TEST, name: 'renderer' } }]),
     'limit.ts': 'export const LIMIT = 10\n',
-    [renderer]: 'export const expected = 10\n',
+    [invitation]: 'export const expected = 10\n',
+    [notification]: 'export const other = 10\n',
     'apps/server/src/hub/identity/port.ts': 'export {}\n',
     'limit.test.ts': `import { test } from 'node:test'; import assert from 'node:assert/strict';
-      import { LIMIT } from './limit.ts'; import { expected } from './${renderer}';
-      test('renderer', () => assert.equal(LIMIT, expected));`,
+      import { LIMIT } from './limit.ts'; import { expected } from './${invitation}';
+      import { other } from './${notification}';
+      test('renderer', () => assert.equal(LIMIT, expected + other - 10));`,
   }
   for (const [file, content] of Object.entries(files)) {
     mkdirSync(dirname(join(dir, file)), { recursive: true })

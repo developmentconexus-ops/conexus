@@ -17,7 +17,8 @@ operates the installation, for a handful of invited companies at launch.
    data. Generated code holds no secret and reaches no network.
 2. **Recoverable by one person.** Every part can be published, rolled back and restored by the
    founder, without a terminal.
-3. **Cheap at rest.** Idle, Conexus leaves its databases asleep [0009].
+3. **Cheap at rest.** Idle, Conexus leaves its databases asleep [0009], the Hub's apart while an
+   automation exists (data D27).
 4. **Native first.** A platform or library feature comes before Conexus code. Each exception names
    the line where the library does less.
 5. **Readable.** One language, one tree, and walls checked by a machine, so a person or an agent
@@ -51,11 +52,11 @@ flowchart LR
 
 | Outside system | What crosses | Leaves Brazil |
 | --- | --- | --- |
-| Model vendors (Anthropic, OpenAI, Google) | The conversation with the Builder and the code it reads | Yes [0032] |
-| E2B | The code under construction, while it is compiled and tested | Yes [0032] |
+| Model vendors (Anthropic, OpenAI, Google) | The conversation with the Builder or the Assistant, and what it reads | Yes [0032] |
+| E2B | The code under construction; the rows the Assistant analyses, while its conversation exists | Yes [0032] |
 | Neon | Every row: the Hub's, the Builder's, Mastra's and each company's | No |
 | Cloudflare | Each request to the Hub and to an app; the apps' code | Request path only |
-| E-mail service | Invitation e-mails [0017] | Yes |
+| E-mail service | Invitation and automation e-mails [0017] | Yes |
 | Company system | Read-only queries through a connector [0031] | Depends on the company |
 | R2 bucket | Each app's Git bundle [0051] | Request path only |
 
@@ -95,7 +96,7 @@ flowchart TB
 
 | Container | Responsibility | Owns |
 | --- | --- | --- |
-| Server program | The Hub: screens' API, sign-in, companies, invitations, Projects, connectors, publishing. The Builder: the agent, conversations, runs, the build machine, the Git of each app, model accounts [0006] | Nothing on disk but the Git |
+| Server program | The Hub: screens' API, sign-in, companies, invitations, Projects, connectors, publishing. The Builder: the agent, the Assistant, its automations, conversations, runs, the machines, the Git of each app, model accounts [0006] | Nothing on disk but the Git |
 | Web | The Hub's screens, served by the server program | Nothing |
 | Dispatcher | Checks the session, hands the app a `db` capability bound to that app's login, calls the app [0019] [0043] | The key app passwords derive from |
 | Outbound wall | Refuses every network call from an app | Nothing |
@@ -103,12 +104,12 @@ flowchart TB
 | Hub database | Companies, people, sessions, Projects; the Builder's space holds runs and model accounts [0011] | Company column on every table [0012] |
 | Mastra database | Mastra's own tables: threads, memory, traces, under a login of its own [0010] | Nothing of the Hub |
 | Company project | One schema and two logins per app and environment: one runs the app, one applies its migrations [0021] | The company's app data |
-| E2B machine | Compiles and tests the app the agent writes [0028] | Nothing after the run |
+| E2B machine | Compiles and tests the app; runs the Assistant's code on what it read [0028] [0059] | Nothing after the run or the conversation |
 
 **The Hub and the Builder.** One program, two modules, written boundaries [0006]. The Builder
 calls the Hub through named ports: admit, read a connector, store an app version,
 delete what belongs to a Project, a company or a person. A port may run inside the caller's
-transaction, so creating a run and delivering the app stay one step. The Hub never imports the
+transaction, so a run and its delivery stay one step. The Hub never imports the
 Builder; `main.ts` wires both.
 
 **The tree.** "Package" is a folder with its own `package.json`; "subject" is a folder holding one
@@ -141,7 +142,7 @@ and tests, and a `public.ts` with what others may use. The import law is
 | A rented server in São Paulo | The server program, from an image built by GitHub Actions and run with Compose, behind the Cloudflare Tunnel. The server opens no port | [0007] |
 | Cloudflare | Tunnel, dispatcher, outbound wall, and a Workers for Platforms namespace for the apps, on a second domain, one host per app | [0018] [0023] [0024] |
 | Neon | Two organizations of Conexus's own: the Hub's, one project with two databases; the companies', one project each, under a key that cannot reach the Hub's | [0008] [0009] [0021] [0040] |
-| E2B | Build machines behind a list of domains, under the founder's free-account key | [0028] [0051] |
+| E2B | Build and Assistant machines behind a list of domains, under the founder's free-account key | [0028] [0051] [0059] |
 
 **Publish.** A GitHub Release of a commit on `main` builds the image and puts it live, with no
 command on the server; a merge alone publishes nothing [0035] [0044]. Migrations run before the
@@ -149,16 +150,15 @@ program starts ([data D9](guides/data.md)).
 
 **Roll back.** One button restores an earlier release's image. Every migration only adds, so
 an earlier image runs on the migrated database ([data D6](guides/data.md)). Exceptions: step 4.2's
-P6 B deleted old test companies, unrecoverably; from v0.5.1 none before v0.5.0 runs [0039]. Step 14.2 drops `run_event` (D30), `builder.run`, `companies_with_runs()`, `hub_runs`: no image before its release runs. The edge goes back first.
+P6 B deleted old test companies; none before v0.5.0 runs [0039]. Step 14.2 drops `run_event` (D30), `builder.run`, `companies_with_runs()`, `hub_runs`: no image before its release runs. The edge goes back first.
 
 **Restore.** Neon restores a branch to a moment: 6 hours on the free plan, 7 days on the
 paid. Both Hub databases return to one instant. It then sets every login password
 again, invalidates sessions; the Hub's start recreates app logins, and missing
-Workers from the built files it keeps [0043]. A company's project restores alone. Restoring is
-rehearsed where each thing is created: Hub in step 2, the Git in step 13, a company and
-its Workers in steps 7 and 9, everything together in step 22.
+Workers from the built files it keeps [0043]. A company's project restores alone. Steps 2, 7, 9 and 13
+rehearse it by part, step 22 everything together.
 
-**The Hub reaches its database** by the direct address, because a long-lived server keeps connections. Basis: only tested so; the pooled address serves callers that do not.
+**The Hub reaches its database** by the direct address, because a long-lived server keeps connections. Basis: only tested so.
 
 **Down alerts.** Cloudflare's Tunnel health notification and a free external monitor of the health
 route e-mail the founder; the route skips the database, so a hung program shows
@@ -202,7 +202,7 @@ program, for one attempt, by Mastra's processors.
 
 **Work that runs alone.** Scheduled jobs run on timers in the program, with a lease row naming the
 copy that owns them. Basis: implemented so; accepted because queues and Redis serve
-a scale that does not exist. Every job lets the database sleep:
+a scale that does not exist. Every job but the automations' lets the database sleep:
 
 | Job | Shape that lets the database sleep |
 | --- | --- |
@@ -210,6 +210,7 @@ a scale that does not exist. Every job lets the database sleep:
 | Expired sessions, handoffs, invitations | Expiry checked on read; cleanup once a day |
 | Idle conversations, idle machines, traces | Touch nothing when there is nothing; daily otherwise |
 | The lease | Renewed by activity, not by clock |
+| Automations' schedule | Awake: Mastra reads its table every 10 s, from the first schedule until a restart without one (step 24.2) |
 
 **Shutdown.** The program waits for live Builder turns before exiting; an update waits
 too.

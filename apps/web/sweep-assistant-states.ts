@@ -79,6 +79,7 @@ export const ASSISTANT_REPLIES = {
         title: 'Vendas da semana',
         updatedAt: '2026-10-19T12:00:00.000Z',
         projectId: null,
+        automation: null,
         connections: [
           {
             connectionId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',

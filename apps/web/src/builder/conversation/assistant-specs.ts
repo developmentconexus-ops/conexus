@@ -1,5 +1,5 @@
 import { ASSISTANT_TOOL, BUILDER_TOOL, ShownFile } from '@conexus/hub-api'
-import { BuildingIcon, PresentationIcon, RocketIcon } from 'lucide-react'
+import { BuildingIcon, PresentationIcon, RocketIcon, TimerIcon } from 'lucide-react'
 import { CONNECTOR_SPECS, presentRead, readRefusal } from './connector-specs.ts'
 import type { RowTool, ToolSpec } from './tool-spec.ts'
 
@@ -36,6 +36,15 @@ export const ASSISTANT_SPECS: Record<
     failed: 'Não conseguiu propor o app',
     verb: 'propôs',
     body: 'proposal',
+    groups: false,
+  },
+  [ASSISTANT_TOOL.proposeAutomation]: {
+    icon: TimerIcon,
+    running: 'Preparando a automação',
+    done: 'Propôs uma automação',
+    failed: 'Não conseguiu propor a automação',
+    verb: 'propôs',
+    body: 'automation',
     groups: false,
   },
 }

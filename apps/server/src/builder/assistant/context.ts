@@ -5,11 +5,17 @@ import { z } from 'zod'
 import type { SessionScope } from '../../hub/connectors/public.ts'
 import { ownerOfResource } from '../conversation/public.ts'
 
-/** The thread's marks, stamped by `createSession({ tags })` at creation; never changed. */
+/**
+ * The thread's marks, stamped by `createSession({ tags })` at creation; never changed. A
+ * conversation an automation's run opened carries the automation's id and its name at that run
+ * (step 24.2), text marks because `tags` are `Record<string, string>`.
+ */
 export const SESSION_MARK = {
   company: 'companyId',
   person: 'personId',
   project: 'conexusProjectId',
+  automation: 'conexusAutomation',
+  automationName: 'conexusAutomationName',
 } as const
 
 /**

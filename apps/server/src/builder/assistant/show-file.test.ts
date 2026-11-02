@@ -141,3 +141,29 @@ test('show_file: a máquina que não liga é recusada com MACHINE_UNAVAILABLE (1
   assert.equal(endOf(await say('Mostre')), 'complete')
   assert.deepEqual(await shown(on, url), [{ kind: 'SHOW_REFUSED', reason: 'MACHINE_UNAVAILABLE' }])
 })
+
+test('show_file: o modelo recebe o motivo da recusa (19)', async (t) => {
+  const on = await assisting(t, [[show('nao-existe.md')], [said('Não.')]])
+  const url = await created(on.hub, on.ana, on.assistant, { connections: [] })
+  const { say } = await talking(t, on.hub, on.ana, url)
+  assert.equal(endOf(await say('Mostre')), 'complete')
+  assert.match(on.calls.at(-1)?.texts.join('\n') ?? '', /"reason":"NOT_FOUND"/)
+})
+
+test('show_file: um arquivo que existe mas não pode ser lido não vira MACHINE_UNAVAILABLE (19)', async (t) => {
+  const on = await assisting(t, [
+    [
+      tool('mastra_workspace_execute_command', {
+        command: 'printf oi > travado.md && chmod 000 travado.md',
+      }),
+    ],
+    [show('travado.md')],
+    [said('Pronto.')],
+  ])
+  const url = await created(on.hub, on.ana, on.assistant, { connections: [] })
+  const { say } = await talking(t, on.hub, on.ana, url)
+  assert.equal(endOf(await say('Mostre')), 'complete')
+  assert.notDeepEqual(await shown(on, url), [
+    { kind: 'SHOW_REFUSED', reason: 'MACHINE_UNAVAILABLE' },
+  ])
+})

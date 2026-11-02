@@ -54,15 +54,19 @@ test('o contorno não vai ao título focado pelo programa', async () => {
   await page.close()
 })
 
-const RAIL = [
+// The bell sits at the top of the sidebar on a computer and in the phone's top line, so the drawer lacks it.
+const NAV = [
   'Início',
+  'Automações',
   'Novo projeto',
   PROJECT_NAME,
   'Todos os projetos',
   'Integrações',
   'Configurações',
   'Conta de Ana Lima',
-].map((name) => `${name} solid 2px`)
+]
+const RAIL = ['Notificações', ...NAV].map((name) => `${name} solid 2px`)
+const DRAWER = NAV.map((name) => `${name} solid 2px`)
 
 test('o Tab passa pela barra com contorno de 2px numa tela de 1366px, antes do conteúdo', async () => {
   const page = await open('/', DESKTOP, HOUSE)
@@ -77,8 +81,9 @@ test('numa tela de 390px o Tab começa em Abrir navegação e não entra na gave
   // The owner's Início opens with the preparation card, whose Continuar is the first of the content.
   // The card is not shown while its reads load, so Tab waits for it.
   await page.getByRole('link', { name: 'Continuar' }).waitFor()
-  assert.deepEqual(await presses(page, 'Tab', 2), [
+  assert.deepEqual(await presses(page, 'Tab', 3), [
     'Abrir navegação solid 2px',
+    'Notificações solid 2px',
     'Continuar solid 2px',
   ])
   await page.close()
@@ -95,8 +100,8 @@ test('a gaveta aberta pelo teclado prende o Tab, com contorno em cada parada', a
   const page = await open('/', PHONE, HOUSE)
   await page.getByRole('button', { name: 'Abrir navegação' }).focus()
   assert.deepEqual(
-    [...(await presses(page, 'Enter', 1)), ...(await presses(page, 'Tab', 8))],
-    [...RAIL, 'Fechar navegação solid 2px', 'Início solid 2px'].map((stop) => `${stop} inside`),
+    [...(await presses(page, 'Enter', 1)), ...(await presses(page, 'Tab', 9))],
+    [...DRAWER, 'Fechar navegação solid 2px', 'Início solid 2px'].map((stop) => `${stop} inside`),
   )
   await page.close()
 })

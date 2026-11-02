@@ -9,10 +9,14 @@ import { Failure } from './failure.ts'
  * One row more than a page tells whether another page follows. Its token is the last row's id in
  * base64url, which the client sends back and never reads (code C44).
  */
-export function pageOf<T>(rows: T[], idOf: (row: T) => string): { rows: T[]; next: Next } {
-  const shown = rows.slice(0, PAGE_SIZE)
+export function pageOf<T>(
+  rows: T[],
+  idOf: (row: T) => string,
+  size = PAGE_SIZE,
+): { rows: T[]; next: Next } {
+  const shown = rows.slice(0, size)
   const last = shown.at(-1)
-  if (rows.length <= PAGE_SIZE || last === undefined) return { rows: shown, next: { kind: 'END' } }
+  if (rows.length <= size || last === undefined) return { rows: shown, next: { kind: 'END' } }
   return {
     rows: shown,
     next: { kind: 'MORE', page: Buffer.from(idOf(last)).toString('base64url') },

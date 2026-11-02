@@ -5,6 +5,7 @@ import type { SessionScope, TurnKey } from '../../hub/connectors/public.ts'
 import { linkSankhya, servedSankhya, testOf } from '../../hub/connectors/test-connections.ts'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import { call, post } from '../../hub/identity/test-hub.ts'
+import type { Config } from '../../platform/config.ts'
 import type { Anthropic, Sent } from '../../platform/test-anthropic.ts'
 import { conversing, sent, streamOf } from '../conversation/test-conversation.ts'
 import { stepping, tool } from '../conversation/test-questions.ts'
@@ -41,11 +42,13 @@ type Sankhyas = { origin: string; matriz: Record<string, string>; filial: Record
  * connections, on the kit's double or on `sankhya`: Matriz, released to the Projeto, and Filial,
  * not. The model answers `model`'s steps in order, then `Pronto.`, or as `model` answers; every
  * streamed call to it is in `calls`, every read the door receives from the Assistant in `reads`.
+ * `change` sets the Hub's config apart from the test one.
  */
 export async function assisting(
   t: TestContext,
   model: Block[][] | Anthropic['answer'] = [],
   sankhya?: Sankhyas,
+  change: (config: Config) => Config = (same) => same,
 ) {
   const calls: Sent[] = []
   const served = sankhya ?? (await kitSankhya(t))
@@ -56,7 +59,7 @@ export async function assisting(
         return model(asked)
       }
   const on = await conversing(t, answer, (config) => ({
-    ...config,
+    ...change(config),
     connectorOrigins: new Map([['sankhya', served.origin]]),
   }))
   const { hub, ana, companyId, projectId } = on

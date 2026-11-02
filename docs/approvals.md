@@ -425,6 +425,64 @@ Essa emenda vem da revisão da U2 (B1) e do plano de fechamento, decidida pelo f
 
 Em 2026-11-01, ao aprovar a Pauta ("Aprovo", seção "Etapa 13.3"), decisão do meio da etapa (L6): a barra embaixo da caixa sai. A escolha das ligações e a do Projeto passam para o "+" e para a pasta dentro da caixa, pelo cartão da 13.3. O cartão da 24.1 marca como substituídos os passos 1, 4 e 5 do roteiro, os critérios 23 a 24, as linhas da barra na matriz e na tabela de referência, o desenho de caixas e a nota sobre a W30, sem apagar o que dizia.
 
+Decisões do fundador na revisão da etapa 24.1, no passeio ao vivo e na rodada de correção, registradas no fechamento. Cada linha traz as palavras dele; a data é a do dia em que o firstmate as recebeu.
+
+Em 2026-11-01, a permissão de merge das unidades da 24.1, na noite: "depois de passar por todo o nosso processo de QA inteiro de revisão e ser aprovado". Cada merge seguiu a revisão aprovada e a CI verde do mesmo commit (L13).
+
+Em 2026-11-01, à revisão da etapa que pedia apertar a conferência "nenhum número inventado" (o B3, e o F12 que a embrulhava no `createScorer`): "não tem que limitar ele ainda ... a gente tem que fazer ele funcionar ... depois a gente vai melhorando". Um número pode vir de uma pesquisa na web; a precisão, o contexto do Sankhya, o texto do Assistente e os workflows vêm depois, com evals. `test-numbers.ts` ficou como entrou na v0.24.1, e nenhuma regra limita os números que o Assistente diz.
+
+Em 2026-11-01, ao aviso "Conta de modelo: falta" no Início de uma empresa só com contas pessoais (L4 do passeio ao vivo): "B". A regra W33 fica; o cartão de preparo diz "A empresa ainda não tem conta de modelo compartilhada. Só quem ligou a própria conta consegue conversar."
+
+Rodada de correção da 24.1 (https://github.com/developmentconexus-ops/conexus/pull/536), em 2026-11-01. Aos sete textos novos da tabela "Textos para o fundador" daquele pull request (o cartão de preparo; as leituras `BUSY`, `UNREACHABLE` e chaves recusadas; a máquina que não ligou; a falta de conta no Assistente; "Mais Projetos"): "1 okay". Ao merge: "2. Aprovado".
+
+Conserto do `pip` (https://github.com/developmentconexus-ops/conexus/pull/537), em 2026-11-01, ao merge com a CI verde e à v0.24.3: "Sim".
+
+Em 2026-11-01, ao critério 11b e ao https://github.com/developmentconexus-ops/conexus/pull/535: "1 A". O 535 fecha sem merge. O 11b é provado pelo passeio do firstmate como dono no Hub no ar, com o modelo de verdade pela assinatura e o Sankhya de verdade da empresa dele (só leitura), e não sobre o dublê; o caso automático melhora depois, com as evals.
+
+Em 2026-11-01, à mutação (Stryker) da 24.1: "2 A". Roda só sobre os arquivos centrais do Assistente, em segundo plano, e a ferramenta `quality` ganha um conserto para rodar sobre uma etapa inteira.
+
+Em 2026-11-01, à exceção da regra D27 que a agenda da 24.2 pede (o banco acordado enquanto houver uma rotina, o `D1` do Neon Launch): "3. Okay, mas vou depois por agora no gratuito". Ele concorda com o custo e fica, por agora, no plano gratuito do Neon.
+
+Em 2026-11-01, às cinco perguntas do pull request do fechamento (https://github.com/developmentconexus-ops/conexus/pull/539): "1 okay 2. Okay 3. Okay 4.nao precisa 5 depois faco quando finalizar tudo". O "1 okay" aprova os textos das telas listados ali (o prazo e o limite de leituras, a ligação fora da conversa, "Nenhuma linha.", a caixa e os exemplos do Início, a barra, Conversas do Projeto, as falhas de criar e de trocar as ligações, e as frases do arquivo). O "2. Okay" aprova a entrada Conversas na barra lateral do Projeto (W30). O "3. Okay" aprova a exceção da regra C51 para os eventos `om_*_failed`. O "4.nao precisa" recusa mandar o aviso escrito da decisão 0032 com a linha do E2B; nenhum aviso foi mandado à empresa.
+
+Etapa 24.1 no ar em https://hub.conexus.fun (v0.24.3), sem a linha de uso do fundador: "5 depois faco quando finalizar tudo". Ele adia o próprio uso do roteiro; a linha de uso entra num pull request de documentos quando ele o fizer. O passeio do firstmate como dono (L17) está no pull request do fechamento.
+
+## Etapa 24.2
+
+Em 2026-11-01, ao estudo da ordem das automações: "1 confirmado 2. Okay 3.okay". Lido pelo firstmate como: o `A1` (uma Automação: um gatilho e o que roda, o Assistente, um agente do Projeto ou um workflow, na empresa ou num Projeto); o `B1` (a ordem 24.2 Automações, 24.3 Agentes do Projeto com o Construtor, 24.4 escrita com aprovação, 24.5 Workflows); o `C1` (cada execução abre uma conversa nova do Assistente, marcada "Automação", com aviso nas notificações e por e-mail); o `D1` (o plano Launch do Neon no projeto do Hub quando a primeira automação ligar, uma conta só); o cartão da 24.2 leva o mapa da visão inteira, e o nome vem depois. A visão, na mesma noite: "eu não quero só um Agent Builder ... um builder em que e visual ... o construtor, ele pega, por exemplo, seja o projeto, seja o contexto, seja o que ele pesquisa na internet, seja o que ele tem como treinamento e oferece, ele é proativo ... cron, com schedule, com workflows, com agentes ... É esse que é o meu objetivo e é isso que eu quero construir com Conexus."
+
+Cartão da etapa 24.2 aprovado em 2026-11-01 (commit dabc470dfdd5bb73bff2206802296be956fd79cc): "eu aprovo o cartão da 24.2, né? Eu não vou estar acordado, mas aí se no outro dia eu discordar de alguma coisa, a gente altera isso. Mas pra isso, pra eu não precisar, faça o estudo completo, teste, valide, mude o que você julgar necessário"
+
+Lido pelo firstmate como a pré-aprovação da página, construída com as recomendações `E1`, `F1` e `G1`, que o firstmate escolheu em nome do fundador pela regra da noite; uma resposta diferente dele muda a unidade que a toca. O commit citado traz o cartão depois da revisão do Opus (dez pontos que mudavam o cartão e os acertos menores). A aprovação é também a palavra da regra de dados D11 para as permissões da U2 (`notifications.notification`), numa migração e num commit próprios dentro do pull request da U2, como nas etapas 18, 19.1 e 20.
+
+Cartão da etapa 24.2 aprovado em 2026-11-01 (commit 98956b55d932b8e9dea731600cd65d7cb3743cb8): "eu aprovo o cartão da 24.2, né? Eu não vou estar acordado, mas aí se no outro dia eu discordar de alguma coisa, a gente altera isso. Mas pra isso, pra eu não precisar, faça o estudo completo, teste, valide, mude o que você julgar necessário"
+
+Lido pelo firstmate como a mesma pré-aprovação, agora sobre o commit que traz as correções de fato de código do estudo de preparação da construção, sob a licença "mude o que você julgar necessário": as paginações como `?page=` e `next: Next` de `main`, o conjunto fechado `AutomationFailureCode`, `database.command`, `publicOrigin`, o `toolCallId` do cartão, o caminho do cartão por `rows.ts`, o `inputData` inválido, o gatilho lido de `listTriggers`, as proteções de `removals.json`, o teste do critério 11e, os pontos a conferir e as citações. Nenhuma é decisão do fundador: as recomendações `E1`, `F1` e `G1` e as unidades ficam como estavam.
+
+Em 2026-11-01, depois do cartão, ao estudo dos papéis e das aprovações (`data/conexus-roles-approvals-study/report.md`, seção 6): "1 A", "2 Sua rewcomendação", "3 Por agora qualquer dono ou admnistrador", "4 Confirmo", "5 Sua recomendacao". Lido pelo firstmate como: o `1 A` mantém a entrada Automações escondida do membro, como o cartão a constrói (S10); a exceção ao guia da web (W34, que manda mostrar a página com quem pode) entra no fechamento da 24.2, porque um guia só muda num fechamento (L20); a `2` é a recomendação do firstmate, uma etapa de papéis e pedidos logo depois da 24.3 e antes da 24.4; a `3` deixa, por agora, qualquer dono ou administrador criar e apagar automações; a `4` confirma e a `5` segue a recomendação do firstmate, como o estudo as propõe. Palavra de meio de etapa, vai direto para este livro, sem nova aprovação do cartão (L6).
+
+Em 2026-11-01, à exceção da regra D27 que a agenda desta etapa pede (o banco acordado enquanto houver uma automação, o `D1` do Neon Launch), já registrada na 24.1: "3. Okay, mas vou depois por agora no gratuito". Ele concorda com o custo e fica, por agora, no plano gratuito do Neon.
+
+Em 2026-11-01, ao estudo da memória observacional (qual modelo roda o observador e o refletor): "2A". Opção A: "Automático (o mais barato da conta)" entra nas configurações da Memória observacional e é o padrão de quem nunca escolheu; cada empresa ainda escolhe outro modelo ou "Segue o modelo da conversa". Ele acrescentou: "Mas se já tiver tipo uma configuração do master nativo, ou ver como usa o master factor no master code de ele automaticamente utilizar o modelo mais barato, vale a pena pensar". Feito pelo nativo: o `'auto'` da memória observacional do Mastra (`resolveAutoModelId`), com a Anthropic fixada no Haiku que o seletor lista; o Builder e o Assistente usam o mesmo.
+
+Em 2026-11-02, ao diagnóstico dos quatro defeitos do uso da 24.2 (`data/conexus-e242-use-bugs/report.md`, a decisão H, o que a automação leva): "H1". A automação continua levando a pessoa e as ligações escolhidas na conversa, com o defeito 4 corrigido e o cartão mostrando quais sistemas ela lê; a H2 (agente, com a 24.3) e a H3 (workflow, com a 24.5 e a decisão do dono do workflow) ficam para as suas etapas. Palavra de meio de etapa, vai direto para este livro (L6).
+
+Em 2026-11-02, à mudança do cartão da 24.2 nos critérios 17, 18 e 21 e nas linhas da U3 (as ligações da proposta por nome, o cartão que lê a criação da automação guardada e o sino que lê de novo quando a execução termina): "É, eu aprovo essas mudanças se realmente não for patch, não for gambiarra, segue nossos guias, metodologia, repositórios nativos, realmente uma referência e ser funcional. Eu não quero criar coisa específica, mas mal implementada." Lido pelo firstmate como a aprovação da mudança sob a condição de que ela siga as referências nativas; a evidência está no corpo da pull request.
+
+Cartão da etapa 24.2 aprovado em 2026-11-02 (commit 0c35dc59b9f94d32c21c882d9495ea5228e43f99): "É, eu aprovo essas mudanças se realmente não for patch, não for gambiarra, segue nossos guias, metodologia, repositórios nativos, realmente uma referência e ser funcional. Eu não quero criar coisa específica, mas mal implementada."
+
+Lido pelo firstmate como a aprovação do cartão com a mudança dos critérios 17, 18 e 21 e das linhas da U3 sobre o commit que a traz, sob a condição que ele pôs; o resto do cartão e as recomendações `E1`, `F1` e `G1` ficam como estavam.
+
+Em 2026-11-02, à frase do cartão da proposta quando a automação não lê nenhum sistema (a pergunta deixada aberta na PR da correção dos defeitos do uso da 24.2): "A". A opção A: o cartão mostra "Não lê nenhum sistema." no mesmo lugar em que lista os sistemas que a automação lê, ao lado do lugar. Palavra de meio de etapa, vai direto para este livro (L6).
+
+Em 2026-11-02, à regra de horário para publicar, quando a v0.24.7 levou ao ar os quatro consertos do uso da 24.2: "Publica agora, tira essa regra." A regra de horário sai; publicar continua sendo o que a L17 diz.
+
+Etapa 24.2 no ar em https://hub.conexus.fun (v0.24.7), sem a linha de uso do fundador: ela entra aqui, com as palavras dele, depois do passeio dele pelos quatro pontos dos consertos.
+
+Em 2026-11-02, a linha de uso da etapa 24.2, depois de o fundador passar pelos quatro pontos dos consertos no Hub no ar (https://hub.conexus.fun, v0.24.7): "Olha, deu certo, tipo assim, tudo rodou sem esses defeitos".
+
+Em 2026-11-02, aos textos de tela novos que a 24.2 escreveu e ele ainda não tinha aprovado (a lista no corpo da pull request do fechamento), em duas mensagens. À pergunta do sino, se ele lê "Automação <nome>: pronta", como o assunto do e-mail, em vez de "<nome> está pronta": "A". Depois: "Aprovo os textos". Os textos da lista estão aprovados, com a frase do sino trocada pela opção A; a troca do código da frase do sino vem em uma pull request pequena própria logo depois deste fechamento, porque um fechamento guarda só documentos (L20).
+
 ## Etapa 13.3
 
 Em 2026-11-01, ao pedir o visual novo do Hub: "não é para você utilizar e tentar melhorar o que a gente tem hoje ... A gente pode mudar o que a gente hoje em estrutura, em visual ... ele tem simetria, ele tem matemática dentro do design"; "Isso é para a gente definir o design.md completo, igual o Cloud Design faz, que traz até os componentes, fonte, métricas, estilos ... pode refatorar, mudar tudo, desde que seja mais coeso"; "sempre seguindo o nosso ... o que a gente tem de front-end nos nossos guias e metodologias ... se a gente está realmente não repetindo, se a gente está seguindo uma arquitetura ... reutilização de componentes, em bibliotecas e padronização"; e, sobre a AffectUI (https://www.affectui.com/components/agent-handoff): "Esse cara faz muita coisa inter que podemos copiar ou fazer para nosso sistema no que for viavel".

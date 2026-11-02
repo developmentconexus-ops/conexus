@@ -105,7 +105,7 @@ function inNotebook(connections: readonly Connection[], name: string, connector?
  * the connector's id for the connection's name, is refused by the tool's own schema, which tells
  * the model the names there are.
  */
-function connectionField(connections: readonly Connection[]) {
+export function connectionField(connections: readonly { name: string }[]) {
   const [first, ...rest] = [...new Set(connections.map((each) => each.name))]
   if (first === undefined) return z.never()
   return z.enum([first, ...rest]).describe("The connection's name, exactly as listed")

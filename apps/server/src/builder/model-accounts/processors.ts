@@ -18,6 +18,7 @@ import {
 import type { RequestContext } from '@mastra/core/request-context'
 import { z } from 'zod'
 import { Failure } from '../../platform/failure.ts'
+import { autoMemoryModel } from './auto-memory-model.ts'
 import type { AccountFailure } from './errors.ts'
 import { callFailureOf } from './errors.ts'
 import { nextModels } from './fallback.ts'
@@ -351,8 +352,9 @@ async function modelOf(
   turn: Turn,
   requestContext: RequestContext | undefined,
 ) {
-  const chosen =
+  const choice =
     call === 'title' ? null : turn.memoryModels[call === 'observer' ? 'observer' : 'reflector']
+  const chosen = choice === 'auto' ? autoMemoryModel(turn.modelId(requestContext)) : choice
   const side =
     chosen === null || chosen === turn.modelId(requestContext)
       ? undefined

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Body, Container, Head, Html, Preview, Text } from 'react-email'
+import { Body, Button, Container, Head, Hr, Html, Link, Preview, Section, Text } from 'react-email'
 
 export const COLORS = {
   canvas: '#F6F7F8',
@@ -62,5 +62,66 @@ export function MailFrame(props: { preview: string; note: string; children: Reac
         </Container>
       </Body>
     </Html>
+  )
+}
+
+/** The card the content of an e-mail sits in. */
+export function MailCard(props: { children: ReactNode }) {
+  return (
+    <Section
+      className="content"
+      style={{
+        backgroundColor: COLORS.surface,
+        border: `1px solid ${COLORS.line}`,
+        borderRadius: 14,
+        padding: 24,
+      }}
+    >
+      {props.children}
+    </Section>
+  )
+}
+
+/** The one button of an e-mail. */
+export function MailAction(props: { href: string; children: ReactNode }) {
+  return (
+    <Button
+      className="action"
+      href={props.href}
+      style={{
+        backgroundColor: COLORS.text,
+        color: COLORS.surface,
+        borderRadius: 6,
+        padding: '14px 24px',
+        fontSize: 15,
+        fontWeight: 600,
+      }}
+    >
+      {props.children}
+    </Button>
+  )
+}
+
+/** The rule and the address to copy, for the mail client that does not open the button. */
+export function MailFallbackLink(props: { href: string }) {
+  return (
+    <>
+      <Hr className="line" style={{ borderColor: COLORS.line, margin: '24px 0 16px' }} />
+      <Text className="muted" style={{ color: COLORS.muted, fontSize: 13, lineHeight: '20px' }}>
+        Se o botão não abrir, copie este endereço no navegador:
+      </Text>
+      <Link
+        className="muted"
+        href={props.href}
+        style={{
+          color: COLORS.muted,
+          fontFamily: 'Consolas, monospace',
+          fontSize: 12,
+          wordBreak: 'break-all',
+        }}
+      >
+        {props.href}
+      </Link>
+    </>
   )
 }

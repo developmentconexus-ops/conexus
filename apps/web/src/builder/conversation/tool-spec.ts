@@ -17,6 +17,7 @@ export type ToolBody =
   | 'skill'
   | 'shown'
   | 'proposal'
+  | 'automation'
   | 'generic'
 
 export type ToolStatus = 'running' | 'done' | 'error' | 'denied'

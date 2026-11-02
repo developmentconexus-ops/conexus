@@ -14,10 +14,23 @@ export const ASSISTANT_TOOL = {
   overview: 'conexus_overview',
   showFile: 'show_file',
   proposeApp: 'propose_app',
+  proposeAutomation: 'propose_automation',
 } as const
 
 /** The most connections a conversation may choose at once. */
 const CHOSEN_MAX = 50
+
+/** An automation's id: Mastra's schedule id of the row (`schedule_<slug>`), its uuid derived from the creation's attempt (step 24.2). */
+export const AutomationId = z
+  .string()
+  .regex(
+    /^schedule_conexus-automation-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
+  )
+  .brand('AutomationId')
+export type AutomationId = z.infer<typeof AutomationId>
+
+/** The automation whose run opened the conversation, with its name at that run; kept after the automation goes. */
+const OpenedBy = z.object({ automationId: AutomationId, name: z.string() }).nullable()
 
 const ConversationHead = z.object({
   id: ConversationId,
@@ -31,6 +44,7 @@ const ConversationHead = z.object({
  */
 export const AssistantConversationSummary = ConversationHead.extend({
   project: z.object({ id: ProjectId, name: z.string() }).nullable(),
+  automation: OpenedBy,
 })
 export type AssistantConversationSummary = z.infer<typeof AssistantConversationSummary>
 
@@ -45,6 +59,7 @@ export type SessionConnection = z.infer<typeof SessionConnection>
 
 export const AssistantConversation = ConversationHead.extend({
   projectId: ProjectId.nullable(),
+  automation: OpenedBy,
   connections: z.array(SessionConnection),
 })
 export type AssistantConversation = z.infer<typeof AssistantConversation>

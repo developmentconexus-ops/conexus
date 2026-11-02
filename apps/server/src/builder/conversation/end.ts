@@ -22,7 +22,7 @@ import type { Builder } from './builder.ts'
 import { FINISHES, TurnTally, turnLine } from './turn-line.ts'
 import { busyIn, ownerOfResource } from './turn-of.ts'
 
-type AgentEnd = NonNullable<Extract<AgentControllerEvent, { type: 'agent_end' }>['reason']>
+export type AgentEnd = NonNullable<Extract<AgentControllerEvent, { type: 'agent_end' }>['reason']>
 
 /**
  * What this process knows of a Mastra run of a conversation, from its `agent_start` to its
@@ -60,7 +60,7 @@ function newRun(session: Session): Run {
  * The failure a run's error is the run's: the Projeto busy (`turnOf`), or one of ours the queue
  * said (`MODEL_NO_ACCOUNT`); none for the model's own.
  */
-function failureOf(error: Error): FailureData | undefined {
+export function failureOf(error: Error): FailureData | undefined {
   const busy = busyIn(error)
   if (busy !== undefined)
     return busy.person === undefined
@@ -85,9 +85,15 @@ function decided(run: Run, reason: AgentEnd, outcome: Outcome): FailureData | un
   if (run.failure !== undefined) return run.failure
   if (outcome === 'threw') return { code: 'INTERNAL_UNEXPECTED' }
   if (typeof outcome === 'object' && outcome.kind === 'failed') return { code: outcome.code }
+  const code = modelFailure(reason, run.tally)
+  return code === undefined ? undefined : { code }
+}
+
+/** How the model's turn ended when nothing of ours said a failure: its finish's code on an error, else none. */
+export function modelFailure(reason: AgentEnd, tally: TurnTally): TurnFailureCode | undefined {
   if (reason !== 'error') return undefined
-  const finish = run.tally.finishReason
-  return { code: (finish === undefined ? undefined : FINISHES[finish]) ?? 'MODEL_CALL_FAILED' }
+  const finish = tally.finishReason
+  return (finish === undefined ? undefined : FINISHES[finish]) ?? 'MODEL_CALL_FAILED'
 }
 
 /** The thinking in progress ends with the first part after it: how long it took, by our clock. */

@@ -567,13 +567,16 @@ rows for the five above wait on issue #458.
 - **Native reference.** Documenso `cd0cc5febcbb76ec7e5ecb75c0b8c65ab8432198`,
   `packages/email/render.tsx:6,65,92` renders React Email at send time. Installing that runtime
   directly is the measured alternative of 117 packages/68,136,787 bytes, including CLI tools.
-- **Packaging.** Native esbuild 0.28.2 bundles, for us, only `invitation-email.tsx` (which also exports the
-  recovery template of `password-recovery-email.tsx`; both sit in the page of `mail-frame.tsx`) as an ignored ESM
-  artifact, with React/DOM 19.2.4 pinned independently from the web. Native aliases resolve those
+- **Packaging.** Native esbuild 0.28.2 bundles, for us, `invitation-email.tsx` (which also exports the
+  recovery template of `password-recovery-email.tsx`; both sit in the page of `mail-frame.tsx`) and
+  `automation-email.tsx` of the notifications (step 24.2, in the same page through
+  `identity/mail/public.tsx`, the frame's door) as two ignored ESM artifacts, one command each, with
+  React/DOM 19.2.4 pinned independently from the web. Native aliases resolve those
   versions; the build replaces the dependencies' development-mode constant. No runtime environment
-  branch or template substitution is added. `invitation-render.d.mts` owns the port used by source
-  and consumer. Local prestart/pretest, pree2e/preremovals and the image build generate the same
-  artifact; removal scratch copies carry this generated input as well as source.
+  branch or template substitution is added. `invitation-render.d.mts` and `notification-render.d.mts`
+  own the ports used by source and consumer. Local prestart/pretest, pree2e/preremovals and the image
+  build generate the same artifacts; removal scratch copies carry these generated inputs as well as
+  source.
 - **Why.** The approved 4.1 packaging decision keeps send-time escaping and native HTML-to-text
   conversion without the CLI runtime installation. The generated module measures 745,905 bytes.
   `invitation-email.test.ts` sends through the Hub and HTTP provider fake;
@@ -1175,3 +1178,21 @@ reference tool checks a read against its documentation.
   needs the live site.
 - **Revisit when** Mercado Livre publishes an OpenAPI document, or a read fails on a real account
   (then its answer, without company data, becomes the double's data).
+
+## Mastra 1.79.0: a conversation's changing state lives in a Hub table (step 24.1)
+
+- **Library line.** At `@mastra/pg` version 1.32.0 and `@mastra/memory` version 1.39.0 (the lockfile's),
+  `@mastra/pg` `updateThread` (`dist/index.js:12438-12472`) reads the thread,
+  merges the new metadata over what it read and writes the whole object, with no lock. Observational
+  memory writes the thread title through `patchThread` with the full metadata it read earlier
+  (`@mastra/memory` `dist/src-DxZ7N8nO.js:35742-35762`). Either write can put back a value that
+  another request changed in between. Reported to Mastra (feedback, 2026-11-01).
+- **Hand-made piece.** The Assistant's chosen connections and its place live in
+  `builder.assistant_conversation`, which only the Hub writes (`apps/server/src/builder/assistant/chosen.ts`,
+  `context.ts`; founder's D11 word, 2026-11-01: "Aprovo as permissoes do b1"). The thread's metadata
+  keeps only marks set once at `createSession({ tags })`.
+- **Why.** The step's B1: a change of connections made while Mastra saved the title came back on
+  the next turn. The Builder's own metadata has the same exposure; per-conversation state that
+  changes after creation goes in a Hub table, never in the thread's metadata.
+- **Proof.** `instructions.test.ts` "trocar a escolha enquanto o Mastra grava o título": the next
+  turn reads only the new choice, and the title stays.

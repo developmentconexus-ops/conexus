@@ -1,14 +1,16 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, truncateSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { CompanyId, ConversationId, PersonId } from '@conexus/hub-api'
 import { RequestContext } from '@mastra/core/request-context'
+import { WORKSPACE_TOOLS } from '@mastra/core/workspace'
+import { MAX_BYTES } from '../git/public.ts'
 import type { AssistantMachineApi, KitFactory } from '../machine/public.ts'
-import { INSTALLATION } from '../machine/test-machine.ts'
+import { INSTALLATION, OLD_TEMPLATE } from '../machine/test-machine.ts'
 import { testAssistantMachines } from '../runs/test-runs.ts'
 import { createAssistantMachines } from './public.ts'
 
@@ -151,4 +153,114 @@ test('a fila da conversa: o turno seguinte que abre a máquina logo depois do fi
   await files.writeFile('c.txt', 'três')
   await stopping
   assert.deepEqual(on.startedAfter, [0, 1], 'the next turn started after the pause ended')
+})
+
+test('a rede só fecha na máquina achada; a pasta que o mkdir não fez derruba a partida; o link para fora da pasta não é entregue (S)', async (t) => {
+  const connected = machinesOf(t)
+  await turnOf(connected)
+  assert.equal(connected.control.networkClosed, 1)
+  const created = machinesOf(t)
+  created.control.discoverable.length = 0
+  await turnOf(created)
+  assert.equal(created.control.networkClosed, 0)
+  for (const executeCommand of [
+    undefined,
+    async () => ({ exitCode: 1, stdout: '', stderr: '', success: false, executionTimeMs: 0 }),
+  ]) {
+    const on = machinesOf(t, {
+      kit: (kit) => (options) =>
+        Object.assign(kit(options), {
+          sandbox: Object.assign(kit(options).sandbox, { executeCommand }),
+        }),
+    })
+    assert.equal((await on.machines.read(on.id, 'a.txt', kept())).kind, 'MACHINE_UNAVAILABLE')
+  }
+  const on = machinesOf(t)
+  on.control.native = true
+  const outside = join(on.tuning.workFolder, '..', 'segredo.txt')
+  writeFileSync(outside, 'SECRET OUTSIDE')
+  symlinkSync(outside, join(on.tuning.workFolder, 'link.txt'))
+  assert.equal((await on.machines.read(on.id, 'link.txt', kept())).kind, 'FILE_NOT_FOUND')
+})
+
+test('o workspace do modelo tem a edição por AST desligada (S)', async (t) => {
+  const on = machinesOf(t)
+  const context = new RequestContext<unknown>([['controller', { sessionId: on.id }]])
+  const workspace = await on.machines.workspace(context)
+  // The tool exists only where @ast-grep/napi is installed, which no package of Conexus carries
+  // today: the switch is what keeps it off the day one does.
+  assert.equal(workspace?.getToolsConfig()?.[WORKSPACE_TOOLS.FILESYSTEM.AST_EDIT]?.enabled, false)
+})
+
+test('a máquina do turno: serving só existe com sessão, o download lê a máquina do turno, kill apaga a sessão, e o ouvinte da fase recebe starting até ser cancelado (S)', async (t) => {
+  const on = machinesOf(t)
+  const context = new RequestContext<unknown>([['controller', { sessionId: on.id }]])
+  assert.equal(on.machines.serving(context), undefined)
+  const phases: string[] = []
+  on.machines.onPhase(on.id, (phase) => phases.push(phase))
+  await turnOf(on)
+  assert.deepEqual(phases, ['starting'])
+  assert.notEqual(on.machines.serving(context), undefined)
+  assert.equal((await on.machines.read(on.id, 'b.txt', kept())).kind, 'OK')
+  assert.equal(on.control.names.length, 1, 'the download used the turn’s machine')
+  await on.machines.kill(on.id)
+  assert.equal(on.machines.serving(context), undefined)
+})
+
+test('o fim do turno: stop pausa só a máquina que ligou, e stopAll para todas as conversas (S)', async (t) => {
+  const idle = machinesOf(t)
+  await idle.machines.workspace(
+    new RequestContext<unknown>([['controller', { sessionId: idle.id }]]),
+  )
+  await idle.machines.stop(idle.id)
+  assert.equal(idle.control.stops, 0, 'no machine was started')
+  const broken = machinesOf(t)
+  broken.control.start = 'unreachable'
+  const files = (
+    await broken.machines.workspace(
+      new RequestContext<unknown>([['controller', { sessionId: broken.id }]]),
+    )
+  )?.filesystem
+  await assert.rejects(async () => files?.writeFile('b.txt', 'x'))
+  await broken.machines.stop(broken.id)
+  assert.equal(broken.control.stops, 0, 'a start that failed made nothing to pause')
+  const many = machinesOf(t)
+  await turnOf(many)
+  const other = ConversationId.parse(randomUUID())
+  many.control.discoverable.push(`conexus-${INSTALLATION}-${other}`)
+  const second = new RequestContext<unknown>([['controller', { sessionId: other }]])
+  await (await many.machines.workspace(second))?.filesystem?.writeFile('c.txt', 'x')
+  await many.machines.stopAll()
+  assert.equal(many.control.stops, 2)
+})
+
+test('o download achado pelo id religa pelo id e não mata a de outro modelo; o limite é MAX_BYTES (S)', async (t) => {
+  const on = machinesOf(t)
+  on.control.discoverable.push(`conexus-${INSTALLATION}-old-${on.id}`)
+  on.control.templates[`conexus-${INSTALLATION}-old-${on.id}`] = OLD_TEMPLATE
+  for (const [name, size] of [
+    ['exato.bin', MAX_BYTES],
+    ['passou.bin', MAX_BYTES + 1],
+  ] as const) {
+    writeFileSync(join(on.tuning.workFolder, name), '')
+    truncateSync(join(on.tuning.workFolder, name), size)
+  }
+  mkdirSync(join(on.tuning.workFolder, 'pasta'))
+  assert.equal((await on.machines.read(on.id, 'exato.bin', kept())).kind, 'OK')
+  assert.equal((await on.machines.read(on.id, 'passou.bin', kept())).kind, 'FILE_TOO_LARGE')
+  assert.equal((await on.machines.read(on.id, 'pasta', kept())).kind, 'FILE_NOT_FOUND')
+  assert.deepEqual(
+    on.control.attached.map((name) => name.endsWith(on.id)),
+    [true, true, true],
+  )
+  assert.deepEqual(on.control.replaced, [], 'a download never kills')
+})
+
+test('o ouvinte da fase cancelado não ouve a partida seguinte (S)', async (t) => {
+  const on = machinesOf(t)
+  const phases: string[] = []
+  const unlisten = on.machines.onPhase(on.id, (phase) => phases.push(phase))
+  unlisten()
+  await turnOf(on)
+  assert.deepEqual(phases, [])
 })

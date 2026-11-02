@@ -68,6 +68,11 @@ type Outcome = 'caught' | 'survived' | 'stale' | 'unreachable' | 'broken-baselin
 type Run = 'failed' | 'passed' | 'none'
 
 const ROW_DEADLINE_MS = 600_000
+/** The generated mail renderers (apps/server `build`): ignored by Git, and every server test loads them. */
+const RENDERERS = [
+  'apps/server/src/hub/identity/invitation-render.mjs',
+  'apps/server/src/hub/notifications/notification-render.mjs',
+]
 
 function loadRemovals(root: string): Removal[] {
   const parsed = Removals.safeParse(
@@ -110,8 +115,9 @@ function scratchCopy(root: string): string {
       symlinkSync(readlinkSync(source), join(copy, file))
     } else cpSync(source, join(copy, file))
   }
-  const renderer = 'apps/server/src/hub/identity/invitation-render.mjs'
-  if (existsSync(join(root, renderer))) cpSync(join(root, renderer), join(copy, renderer))
+  for (const renderer of RENDERERS) {
+    if (existsSync(join(root, renderer))) cpSync(join(root, renderer), join(copy, renderer))
+  }
   for (const manifest of files.filter((file) => file.endsWith('package.json'))) {
     const modules = join(dirname(manifest), 'node_modules')
     if (existsSync(join(root, modules))) linkModules(join(root, modules), join(copy, modules))

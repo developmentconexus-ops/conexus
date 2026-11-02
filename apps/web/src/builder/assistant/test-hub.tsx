@@ -42,7 +42,7 @@ export function assistantConversation(
     id: ASKED,
     title: 'Vendas da semana',
     updatedAt: '2026-10-19T12:00:00.000Z',
-    projectId: null,
+    ...{ projectId: null, automation: null },
     connections: OFFERED,
     ...rest,
   }
@@ -134,10 +134,8 @@ function readsOf(held: Held, asked: string[]) {
       const all = held.conversations
         .map(({ conversation }) => conversation)
         .filter((one) => project === null || one.projectId === project)
-        .map(({ id, title, updatedAt, projectId }) => ({
-          id,
-          title,
-          updatedAt,
+        .map(({ id, title, updatedAt, projectId, automation }) => ({
+          ...{ id, title, updatedAt, automation },
           project: projectId === null ? null : { id: projectId, name: PEDIDOS.name },
         }))
       const listed = all.slice(from, from + held.pageSize)
