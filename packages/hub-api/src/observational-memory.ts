@@ -4,9 +4,17 @@ import { ModelId } from './conversations.ts'
 import type { FailureCode } from './failures.ts'
 import { defineOperation } from './operation.ts'
 
+/**
+ * One role's choice: `null` follows the conversation's model, `'auto'` is the company's cheapest
+ * model (Mastra's `'auto'` for observational memory), and a model id is that model. A company that
+ * never chose reads `'auto'`.
+ */
+const ObservationalMemoryChoice = z.union([z.literal('auto'), ModelId]).nullable()
+type ObservationalMemoryChoice = z.infer<typeof ObservationalMemoryChoice>
+
 export const ObservationalMemoryModels = z.object({
-  observer: ModelId.nullable(),
-  reflector: ModelId.nullable(),
+  observer: ObservationalMemoryChoice,
+  reflector: ObservationalMemoryChoice,
 })
 export type ObservationalMemoryModels = z.infer<typeof ObservationalMemoryModels>
 
@@ -41,7 +49,7 @@ export const setObservationalMemoryModel = defineOperation({
   bodyLimit: 1024,
   input: {
     params: InCompany,
-    body: z.object({ role: ObservationalMemoryRole, model: ModelId.nullable() }),
+    body: z.object({ role: ObservationalMemoryRole, model: ObservationalMemoryChoice }),
   },
   success: { status: 200, body: ObservationalMemoryModels },
   failures: [...READ_FAILURES, 'MODEL_UNKNOWN', 'MODEL_NO_ACCOUNT'],

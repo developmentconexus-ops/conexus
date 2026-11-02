@@ -1,13 +1,12 @@
 import type {
   CompanyId,
   ModelAccountId,
-  ModelId,
   ObservationalMemoryRole,
   Person,
   PersonId,
 } from '@conexus/hub-api'
 import {
-  ModelId as ParsedModelId,
+  ObservationalMemoryModels,
   readObservationalMemoryModels,
   setObservationalMemoryModel,
 } from '@conexus/hub-api'
@@ -19,7 +18,7 @@ import { isChoosable } from './providers.ts'
 import type { QueueDeps } from './queue.ts'
 import { admitted, hasAccount } from './queue.ts'
 import { observationalMemoryModels } from './tables.ts'
-import type { MemoryModels } from './turn.ts'
+import type { MemoryChoice, MemoryModels } from './turn.ts'
 import { FOLLOW_CONVERSATION } from './turn.ts'
 
 type Deps = Pick<QueueDeps, 'database' | 'identity' | 'log'>
@@ -37,12 +36,13 @@ async function rowOf(tx: Parameters<typeof hasAccount>[0], companyId: CompanyId)
     })
     .from(observationalMemoryModels)
     .where(eq(observationalMemoryModels.companyId, companyId))
-  return {
-    observer:
-      row?.observer === null || row === undefined ? null : ParsedModelId.parse(row.observer),
-    reflector:
-      row?.reflector === null || row === undefined ? null : ParsedModelId.parse(row.reflector),
-  }
+  // A company with no row never chose: Automatic. A stored null is its choice to follow.
+  return row === undefined
+    ? { observer: 'auto' as const, reflector: 'auto' as const }
+    : {
+        observer: ObservationalMemoryModels.shape.observer.parse(row.observer),
+        reflector: ObservationalMemoryModels.shape.reflector.parse(row.reflector),
+      }
 }
 
 /**
@@ -59,10 +59,10 @@ export async function memoryModelsFor(
       const who = { ...owner, tried: new Set<ModelAccountId>() }
       await admitted(deps, tx, who)
       const chosen = await rowOf(tx, owner.companyId)
-      async function usable(model: ModelId | null) {
-        return model !== null && isChoosable(model) && (await hasAccount(tx, who, model))
-          ? model
-          : null
+      // Automatic is checked per call, against the cheap model of the conversation's provider.
+      async function usable(choice: MemoryChoice) {
+        if (choice === null || choice === 'auto') return choice
+        return isChoosable(choice) && (await hasAccount(tx, who, choice)) ? choice : null
       }
       return { observer: await usable(chosen.observer), reflector: await usable(chosen.reflector) }
     })
@@ -88,7 +88,9 @@ async function readModels(deps: Deps, input: InCompany) {
 /** Admits the manager, checks the model like a conversation's change, and saves, in one transaction. */
 async function setModel(
   deps: Deps,
-  input: InCompany & { body: { role: ObservationalMemoryRole; model: ModelId | null } },
+  input: InCompany & {
+    body: { role: ObservationalMemoryRole; model: ObservationalMemoryModels['observer'] }
+  },
 ) {
   const { person, params, body } = input
   await deps.database.command(scopeOf(input), async (tx) => {
@@ -98,7 +100,7 @@ async function setModel(
       companyId: params.companyId,
       action: 'manageModelAccounts',
     })
-    if (body.model !== null) {
+    if (body.model !== null && body.model !== 'auto') {
       if (!isChoosable(body.model)) throw new Failure('MODEL_UNKNOWN')
       const who = {
         companyId: params.companyId,
@@ -109,7 +111,14 @@ async function setModel(
     }
     await tx
       .insert(observationalMemoryModels)
-      .values({ companyId: params.companyId, [body.role]: body.model })
+      // The other role of a new row is Automatic, as it read before the row: only the existing
+      // rows' null is a choice to follow.
+      .values({
+        companyId: params.companyId,
+        observer: 'auto',
+        reflector: 'auto',
+        [body.role]: body.model,
+      })
       .onConflictDoUpdate({
         target: observationalMemoryModels.companyId,
         set: { [body.role]: body.model },

@@ -66,6 +66,7 @@ export type Anthropic = {
 }
 
 const ChatBody = z.object({
+  model: z.string().optional(),
   stream: z.boolean().optional(),
   tools: z.array(z.object({ function: z.object({ name: z.string() }) })).optional(),
   messages: z.array(
@@ -86,6 +87,7 @@ function chatSentOf(init: RequestInit | undefined): Sent {
   })
   return {
     key: null,
+    model: body.model ?? null,
     bearer: headers.get('authorization')?.replace(/^Bearer /, '') ?? null,
     stream: body.stream === true,
     tools: (body.tools ?? []).map((tool) => tool.function.name),
