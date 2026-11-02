@@ -478,3 +478,5 @@ Em 2026-11-02, à regra de horário para publicar, quando a v0.24.7 levou ao ar 
 Etapa 24.2 no ar em https://hub.conexus.fun (v0.24.7), sem a linha de uso do fundador: ela entra aqui, com as palavras dele, depois do passeio dele pelos quatro pontos dos consertos.
 
 Em 2026-11-02, a linha de uso da etapa 24.2, depois de o fundador passar pelos quatro pontos dos consertos no Hub no ar (https://hub.conexus.fun, v0.24.7): "Olha, deu certo, tipo assim, tudo rodou sem esses defeitos".
+
+Em 2026-11-02, aos textos de tela novos que a 24.2 escreveu e ele ainda não tinha aprovado (a lista no corpo da pull request do fechamento), em duas mensagens. À pergunta do sino, se ele lê "Automação <nome>: pronta", como o assunto do e-mail, em vez de "<nome> está pronta": "A". Depois: "Aprovo os textos". Os textos da lista estão aprovados, com a frase do sino trocada pela opção A; a troca do código da frase do sino vem em uma pull request pequena própria logo depois deste fechamento, porque um fechamento guarda só documentos (L20).
