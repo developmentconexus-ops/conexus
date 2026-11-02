@@ -1,6 +1,8 @@
 import { execFileSync, spawnSync } from 'node:child_process'
 
 const DEFAULT_DEADLINE_MS = 30_000
+// `git diff` of a whole step and Stryker's output pass the 1 MiB default of execFileSync and spawnSync.
+const MAX_BUFFER = 256 * 1024 * 1024
 
 function deadlineMs(): number {
   const override = Number(process.env.CONEXUS_COMMAND_DEADLINE_MS)
@@ -26,6 +28,7 @@ export function runCommand(
       stdio: ['ignore', 'pipe', options.stderr ?? 'ignore'],
       timeout: deadline,
       killSignal: 'SIGKILL',
+      maxBuffer: MAX_BUFFER,
     })
   } catch (error) {
     if (error instanceof Error && Reflect.get(error, 'code') === 'ETIMEDOUT') {
@@ -45,6 +48,7 @@ export function spawnCommand(
     encoding: 'utf8',
     timeout: options.deadline,
     killSignal: 'SIGKILL',
+    maxBuffer: MAX_BUFFER,
   })
   if (run.error !== undefined && Reflect.get(run.error, 'code') === 'ETIMEDOUT') {
     timedOut(file, options.deadline)
