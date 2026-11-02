@@ -74,9 +74,9 @@ roteiro:
   agente vivo) e a U4 (o Construtor) já nascem usando o kit e ficam menores. Também passa a haver um
   jeito só, em vez de dois, de não criar a mesma conversa duas vezes quando um clique se repete.
   Você não vê diferença nenhuma na tela: a prova são os testes que já existem das duas conversas,
-  que passam sem mudar. Tamanho: a U1b tem ~400 linhas, a U2 cai de ~1.000 para ~780 e a U4 de ~750
-  para ~600; a 24.3 fica em ~4.030, no teto da regra L2, porque a U1b é quase toda código movido de
-  lugar.
+  que passam sem mudar. Tamanho: a U1b tem de ~400 a ~700 linhas, a U2 cai de ~1.000 para ~780 e a U4 de ~750
+  para ~600; a 24.3 fica perto do limite de ~4.000 linhas por etapa. Se a U1b sair maior que o
+  previsto, o que passar do limite vai para a 24.3.1, e eu te aviso.
 - **"R1"** (do estudo da execução das automações). A execução de uma automação manda o pedido ao
   modelo marcado como "vindo de uma automação", para ele não oferecer criar a automação que já
   existe. Quando uma automação rodar um agente (U6, na 24.3.1), o pedido vai com a mesma marca.
@@ -209,8 +209,8 @@ ordem que o firstmate der entre esta etapa e a 13.3 (a Pauta).
 dos agentes guardados do Mastra) e a `mastra-only-in-builder` (W7): os agentes moram em `builder/`.
 
 **Orçamento de código alterado.** U1: ~1.100 (as ferramentas com versões tomam o lugar dos recortes
-por agente: +~100, a tabela das versões, a lista e `TOOL_IN_USE`). U1b: ~400 (o estudo de arquitetura, §3.1: as ~250 linhas de mesma forma
-nas duas conversas, movidas para o kit, ~125 a menos no fim). U2: ~780 (era ~1.000; o kit tira o
+por agente: +~100, a tabela das versões, a lista e `TOOL_IN_USE`). U1b: ~400 a ~700 (o estudo de arquitetura, §3.1, mediu ~400; código movido conta duas
+vezes, tirado e somado, então o teto é ~700; ~125 a menos no fim). U2: ~780 (era ~1.000; o kit tira o
 controlador montado à mão, a abertura, a remoção, o `enum` e o `if` da porta e a parte em
 `conversation/public.ts`, ~220 das ~370 que o estudo diz que a U2 e a U4 não escrevem). U3: ~400. U4: ~600
 (era ~750, com `tool_search` e `tool_save` no lugar das duas dos recortes; o kit tira ~150). U5: ~1.150 (o painel escolhe e cria
@@ -221,9 +221,9 @@ gravação dela a cada turno, o filtro na rota da lista; a rota do Início, a en
 sobre um serviço), a U3 da 24.2 (~950, um cartão e duas páginas; a U5 tem a área, a página, o
 painel de seis seções, o formulário da ferramenta e as versões), a tabela da conversa da 24.1
 (`chosen.ts`, 102 linhas), o login do app da 9 e o controlador do Assistente (`assistant.ts`, 371
-linhas, só uma parte da U2). O total, ~5.630, passa do teto da regra L2, então a etapa se divide
-antes da construção: a **24.3** é a U1, a U1b, a U2, a U4 e a U5 (~4.030, no teto: a U1b é quase toda
-código movido, e tira mais do que soma), o que a Ana faz nos passos 1 a 4
+linhas, só uma parte da U2). O total, ~5.630 a ~5.930, passa do teto da regra L2, então a etapa se divide
+antes da construção: a **24.3** é a U1, a U1b, a U2, a U4 e a U5 (~4.030 a ~4.330, no teto; a U1b
+tira mais do que soma, e o "Parar se" dela manda o que passar para a 24.3.1), o que a Ana faz nos passos 1 a 4
 e 6 do roteiro; a **24.3.1**, logo depois e com este mesmo cartão, é a U3, a U6, a U7, a U8 e a U9 (~1.600), os
 dados do app, o passo 5, a aba Ferramentas, as Ideias do Construtor e a página Agentes do Início.
 As ideias e a página do Início não cabem na 24.3, que já está nos ~4.000 da L2.
@@ -282,7 +282,7 @@ dela e a área mostra a ideia de trocar o agente para a versão nova e o Início
 | 34 | U8 | A área mostra o bloco **Ideias do Construtor** só com uma ideia ou mais, uma linha por ideia com o agente e a falta; sem ideia, ou com a leitura falhando, o bloco não aparece e o resto da área funciona; **Pedir ao Construtor** abre uma conversa nova do Construtor com o pedido escrito na caixa, sem mandar: quem manda é a pessoa | `apps/web/src/builder/agents/area.test.tsx`, "as ideias" | must |
 | 35 | U9 | `GET /api/companies/{c}/agents` sem `projectId` lista os agentes de todos os Projetos vivos da empresa, com `projectId`, só os daquele Projeto; cada `AgentSummary` traz `lastRunAt`, o início do último turno de uma conversa com a versão publicada (de qualquer pessoa, também a aberta por uma automação), `null` sem nenhum; um turno da conversa de teste não muda `lastRunAt`; o membro, `NOT_FOUND`; um `projectId` de outra empresa, `NOT_FOUND` | `apps/server/src/builder/agents/routes.test.ts`, "a lista da empresa"; `conversation.test.ts`, "a última execução" | must |
 | 36 | U9 | A página **Agentes** do Início lista os agentes com o Projeto, o estado e a última execução, e filtra por Projeto; o nome abre a página do agente no Projeto dele; a página não tem nenhum botão de mudar; **Novo agente** pede o Projeto e abre a área **Agentes** dele com a conversa do Construtor; o membro não vê a entrada, e o endereço dá "não encontrado" | `apps/web/src/builder/agents/agent-list.test.tsx` | must |
-| 37 | U1b | Nada muda para quem usa: os testes das conversas do Builder, do Assistente e das automações, `boot.test.ts` e `main.test.ts` passam sem mudar o que afirmam; criar uma conversa do Builder duas vezes com a mesma chave, também ao mesmo tempo, dá uma conversa, e com outro corpo `IDEMPOTENCY_CONFLICT`; uma chave usada antes da U1b (a linha de id aleatório) acha a mesma conversa; o id de uma conversa do Assistente e de uma execução de automação é o de antes, byte a byte | `apps/server/src/builder/controller-kit/open.test.ts`, "o id do Assistente" e "a tentativa antiga"; `conversation-routes.test.ts` e `assistant/routes.test.ts`, sem mudança | must |
+| 37 | U1b | Nada muda para quem usa: os testes das conversas do Builder, do Assistente e das automações, `boot.test.ts` e `main.test.ts` passam sem mudar o que afirmam; criar uma conversa do Builder duas vezes com a mesma chave, também ao mesmo tempo, dá uma conversa, e com outro corpo `IDEMPOTENCY_CONFLICT`; uma chave usada antes da U1b (a linha de id aleatório), uma vez ou duas ao mesmo tempo, devolve o id dessa linha e deixa um fio só no Mastra; o id de uma conversa do Assistente, de uma execução de automação e de uma automação é o de antes, byte a byte | `apps/server/src/builder/controller-kit/open.test.ts`, "o id do Assistente" e "a tentativa antiga"; `conversation-routes.test.ts` e `assistant/routes.test.ts`, sem mudança | must |
 
 ## A matriz de estados
 
@@ -404,7 +404,7 @@ a unidade a reabre antes de usar. Os estudos: o do Construtor (2026-11-02, a arq
 | Conversar com o agente registrado | U2 | o controlador do Assistente: um agente com instruções, modelo e ferramentas em função do `requestContext` (`builder/assistant/assistant.ts:245-313`, lido) | o controlador tem um agente de apoio (`NM:agent-controller/types.d.ts:216`); controladores só no construtor do `Mastra` (`M:packages/core/src/mastra/index.ts:2042-2049`, relay); os campos dinâmicos (`NM:agent/types.d.ts:567,650,659,745`); `getInstructions` (`NM:agent/agent.d.ts:720`), `getModel` (`:910`), `listTools` (`:840`), `getMemory` (`:589`); um modo sem `availableTools` não filtra (`NM:agent-controller-DO6rGsQm.js:8390-8391`) | um controlador "agentes" cujo agente delega, a cada pedido, ao registrado | nativo: a forma (i) do estudo §3.4, que guarda as sessões da 0050 e as telas da 24.1; a (ii), rotas nossas que chamam `agent.stream`, refaria as duas. A prova de que a aprovação passa pelo controlador é da 24.5 (o primeiro que precisa) | — | — | `builder/agents/controller.ts` |
 | A memória por agente | U2 | a memória da conversa com a observacional sempre ligada (`builder/conversation/builder.ts:131-172`, lido) | `memory` dinâmico no agente (`NM:agent/types.d.ts:745`); o controlador passa a dele só a um agente sem memória própria (`M:packages/core/src/agent-controller/agent-controller.ts:1622-1625`, relay); `observationalMemory` (`NM:memory/types.d.ts:956`); `lastMessages` 10 por padrão (`node_modules/@mastra/core/dist/agent-tuAMgHe3.js:21615`) e obsoleto (`NM:memory/types.d.ts:870-875`) | a memória escolhida pelo agente | nativo: duas `Memory` no mesmo armazenamento, com e sem a observacional, escolhidas pela versão; nenhum `lastMessages` na tela (obsoleto) | — | "memória editável" (2026-11-02) | — |
 | O modelo por agente | U2 | `openConversation` com `model` e `conversationStart` (`builder/assistant/open.ts:111-150`; `builder/model-accounts/defaults.ts:86-111`, lidos) | `session.model.switch` (`open.ts:146`, lido) | o modelo da sessão | nativo: o modelo da versão vira o `model` da abertura; sem conta, `MODEL_NO_ACCOUNT` | — | "modelo por agente" (2026-11-02) | — |
-| A porta das rotas | U1b, U2, U4 | `FIXED_LIST` e `Params.controllerId` (`builder/conversation/guard.ts:20-45`, lido), com o `if` por tipo (`:133-138`, lido) | `@mastra/fastify` `registerRoute` com `access: 'session'` (a 14.2); as rotas de sessão do Mastra acham a sessão só pelo id, sem dono (`node_modules/@mastra/server/dist/server/handlers/agent-controller.js:84-104`, relay); a Factory guarda um controlador só (`M:mastracode/factory/src/routes/session-access.ts`, relay) | as rotas dos controladores, parametrizadas pela chave | embrulhado: a U1b tira o `enum` de `CONTROLLER_KINDS` e troca o `if` por `part.admit`; a U2 e a U4 só somam um tipo; as rotas continuam seis | sem referência para um guarda de vários controladores; o dono é nosso (o estudo de arquitetura, §3.1) | "okay sibre auth" (2026-11-01) | — |
+| A porta das rotas | U1b, U2, U4 | `FIXED_LIST` e `Params.controllerId` (`builder/conversation/guard.ts:20-44`, lido), com o `if` por tipo (`:137-138`, lido) | `@mastra/fastify` `registerRoute` com `access: 'session'` (a 14.2); as rotas de sessão do Mastra acham a sessão só pelo id, sem dono (`node_modules/@mastra/server/dist/server/handlers/agent-controller.js:84-104`, relay); a Factory guarda um controlador só (`M:mastracode/factory/src/routes/session-access.ts`, relay) | as rotas dos controladores, parametrizadas pela chave | embrulhado: a U1b tira o `enum` de `CONTROLLER_KINDS` e troca o `if` por `part.admit`; a U2 e a U4 só somam um tipo; as rotas continuam seis | sem referência para um guarda de vários controladores; o dono é nosso (o estudo de arquitetura, §3.1) | "okay sibre auth" (2026-11-01) | — |
 | O único `Mastra` e as partes | U1b | `conversation/public.ts` dono do `Mastra`, do ciclo e da remoção, com `AssistantPart` e `AutomationPart` (`:48-63,83-102,131-211`, lido) | `new Mastra({ agentControllers, workflows })` (`builder/conversation/mastra.ts:13-33`, lido); o registro de módulos do n8n (`packages/cli/src/modules/modules.manifest.ts:6-17` em `2e855356`) e do activepieces (`packages/server/api/src/app/app.ts:236-250` em `f34c43cd`), relay | um registro próprio, nunca um assunto que é o registro dos outros | embrulhado: o Mastra registra; a ordem de ligar, parar e remover é nossa (`mastra.shutdown` não drena controladores, `NM:mastra-Da0Czfte.js:5521-5551`, relay) | o estudo de arquitetura, §3.1 | "P1. A" | `builder/mastra/hub-mastra.ts` |
 | O que toda conversa repete | U1b | o dono, a leitura por pedido, a admissão, a abertura e a remoção, nos dois controladores (a tabela do estudo, §3.1; as linhas na U1b, lidas) | `createSession({ tags })` e `listThreads({ filter: { metadata } })` (`NM:agent-controller/agent-controller.d.ts:119-146,289-293`, relay) | o nativo, chamado de um lugar só | embrulhado: um kit nosso sobre as peças nativas | as ~250 linhas de mesma forma (o estudo, §2.2 e §3.1) | "P1. A" | `builder/controller-kit/` |
 | Não duplicar a conversa | U1b | dois jeitos: a linha do Builder com `attempt_key` sob `transactionLock` (`conversation/store.ts:72-131`, lido) e o id derivado do Assistente (`assistant/open.ts:84-92`, `chosen.ts:28-56`, lidos) | `createSession` acha ou cria pelo id (`conversation/routes.ts:28-44`, lido) | o id da conversa decide a repetição | nativo: o id derivado da tentativa e o `createSession` do Mastra; a linha do Hub guarda o que a primeira tentativa mandou (C37, D17) | — | — | `builder/controller-kit/open.ts` |
@@ -493,7 +493,7 @@ Nada sai do `main`.
 | `apps/server/migrations/` | Cria `<data>_e243_agents` (as seis tabelas) e, num commit próprio, `<data>_e243_agents_grants` (as permissões e a função) (D11) | `npm run check-migrations` |
 | `apps/server/database-grants.sql` | Muda: `hub_company` com `SELECT, INSERT, UPDATE, DELETE` em `builder.agent`, `builder.tool` e `builder.agent_tool`, `SELECT, INSERT, DELETE` e `UPDATE(published_by)` em `builder.agent_version`, `SELECT, INSERT, DELETE` e `UPDATE(created_by)` em `builder.tool_version` (a remoção da pessoa), `SELECT, INSERT, DELETE` em `builder.agent_version_tool`; a função e o seu papel sem login; `EXECUTE` só a `hub_runtime` | `catalog.test.ts` |
 | `apps/server/src/hub/identity/admission.ts` | Muda: as ações `manageAgents` e `publishAgent`, as duas com `MANAGE_CONNECTIONS` e trava nas gravações, como `manageConnections` (a etapa de papéis troca a declaração de `publishAgent`) | `builder/agents/` |
-| `apps/server/src/builder/conversation/public.ts` | Muda `releaseOf`: `agents.release` depois das automações e antes das conversas | as remoções |
+| `apps/server/src/builder/conversation/public.ts` | Muda `releaseOf`: `agents.release` depois das automações e antes das conversas (a U1b move a remoção para `builder/mastra/hub-mastra.ts`, com `agents.release` em `releaseFirst`) | as remoções |
 | `packages/hub-api/src/agents.ts`, `packages/hub-api/src/tools.ts`, `packages/hub-api/src/agent-ids.ts` | Cria os contratos abaixo; muda `index.ts`, `failures.ts` (os códigos e as frases), o OpenAPI gerado | a U2, a U4, a U5, a U6, a U7 |
 | `scripts/removals.json` | Muda: as proteções novas (o membro recusado, o agente de outro Projeto, o `revision` velho, a operação de escrita numa ferramenta, a ferramenta usada que não sai), cada uma com o teste que a pega | — |
 
@@ -692,14 +692,19 @@ mesmo dia (§3.1, §6, §7): a U2 e a U4 nascem sobre o kit.
 - **O dono do fio.** `memoryOwner` (`builder/conversation/builder.ts:115-117`, lido),
   `assistantOwner` (`builder/assistant/context.ts:25-30`, lido) e o regex que decodifica os dois
   (`builder/conversation/turn-of.ts:12-13,26-37`, lido), com os dois tipos fixos.
-- **A porta das seis rotas.** `Params.controllerId` com os dois ids (`guard.ts:41-45`, lido) e o `if`
-  por tipo (`guard.ts:133-138`, lido): o Builder confere o índice do Hub (`store.mine`), o
+- **A porta das seis rotas.** `Params.controllerId` com os dois ids (`guard.ts:41-44`, o `enum` em `:42`, lido) e o `if`
+  por tipo (`guard.ts:137-138`, lido): o Builder confere o índice do Hub (`store.mine`), o
   Assistente a ação `askAssistant`.
 - **A admissão escrita uma vez.** `askAssistant` em três lugares de `builder/`
   (`conversation/public.ts:73`, `assistant/assistant.ts:124`, `assistant/open.ts:51`, lidos); o
   quarto, `hub/connectors/assistant-port.ts:82`, é de outro assunto e fica.
-- **Uma leitura por pedido.** Quatro `WeakMap<RequestContext, …>` à mão
-  (`conversation/builder.ts:84`, `assistant/context.ts:76`, `assistant/assistant.ts:207,228`, lidos).
+- **Uma leitura por pedido.** Três `WeakMap<RequestContext, Promise<…>>` à mão
+  (`conversation/builder.ts:84`, `assistant/context.ts:76`, `assistant/assistant.ts:228`, lidos); o
+  de `assistant.ts:207` (`readsOfRun`) é um contador e fica.
+- **As fábricas.** A configuração do agente (`inputProcessors`, `outputProcessors`,
+  `errorProcessors`, `maxRetries: 0`, `maxProcessorRetries`, o tempo do modelo, a memória) e o
+  `new AgentController` (id, storage, memory, agent, um modo, `disableBuiltinTools`, `initialState`)
+  escritos duas vezes (`conversation/builder.ts:234-263`, `assistant/assistant.ts:304-343`, lidos).
 - **Não duplicar a conversa (C37), hoje de dois jeitos.** O Builder: um id aleatório, a chave de
   tentativa e o `body_hash` na linha, sob `transactionLock` (`conversation/store.ts:72-131`,
   `tables.ts:20-21,40`, lidos). O Assistente: o id derivado da empresa, da pessoa e da chave
@@ -711,6 +716,8 @@ mesmo dia (§3.1, §6, §7): a U2 e a U4 nascem sobre o kit.
 - **A remoção por marcas.** `releaseConversations` do Assistente (`assistant/release.ts:15-39`,
   lido): `listThreads` pela marca, e por fio `deleteSession`, a máquina, `deleteThread`.
 
+Os números de linha acima são do `main` antes da U1; a U1 muda `releaseOf`, e a U1b os reabre.
+
 **O jeito único de não duplicar.** O estudo recomenda a linha de tentativa do Hub; este cartão a
 escreve com o id derivado, que é o caso dela onde a chave decide o id. Fica o id derivado, porque já é
 o jeito deste cartão para o agente e a ferramenta (a tabela de falhas: o `insert` com o id derivado,
@@ -719,8 +726,21 @@ porque o `createSession` do Mastra já acha o fio pelo id (nativo, C75). A linha
 primeira tentativa mandou (o `body_hash` ou o Projeto), escrita antes do fio (D17). O Builder passa a
 ele: a linha nova recebe o id derivado e continua com `attempt_key` e `body_hash` (nenhuma migração);
 o `insert` sem alvo de conflito e a releitura pela chave acham também uma linha de antes da U1b, de id
-aleatório; a `transactionLock` sai, porque a chave primária enfileira as duas tentativas. Os ids do
-Assistente não mudam: o derivado com o tipo `assistant` é, byte a byte, o de `conversationIdOf`.
+aleatório, e o `keep` devolve o id da linha, que `openSession` usa no `createSession`, no
+`model.switch` e na resposta (nunca o id derivado de uma linha que já existia). A `transactionLock`
+sai: no READ COMMITTED, o segundo `insert` espera no índice único até o primeiro gravar, não faz
+nada, e a releitura vê a linha gravada; a admissão, o `insert` e a releitura ficam no mesmo
+`database.command`. Os ids do
+Assistente não mudam: `attemptIdOf` copia `conversationIdOf` inteiro, o sha256 e a forma de uuid
+versão 8 (os pedaços 8-4-`8`xxx-variante-12, com os bits da variante), e com o tipo `assistant` dá o
+mesmo id byte a byte. As três chaves de hoje continuam: a da rota (`attemptKey`), a da execução
+(`runId`, `run.ts:112` e `runs.ts:143`) e a do id da automação (`automation:<chave>`,
+`automations.ts:53`, que o embrulha num `AutomationId`).
+
+**As fábricas entram** (o estudo, §3.1): `agentDefaults(queue, turn)` dá a configuração comum do
+agente e `controllerOf(...)` o `new AgentController` com os padrões, e cada conversa passa só o que é
+dela (instruções, ferramentas, modo, máquina, `initialState`). Sem elas a U2 e a U4 refariam essas
+linhas, e a economia que o estudo mediu não viria.
 
 **Fica de fora.** O turno de cada conversa (`turn-of.ts:59-103`, `assistant/turn.ts:15-93`): o do
 Builder trava o Projeto e lê o índice, o do Assistente não; a U2 escreve o do agente sobre
@@ -736,10 +756,10 @@ Nada visível muda; nenhuma migração, nenhuma rota, nenhum contrato do `hub-ap
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
 | `apps/server/src/builder/mastra/` | Cria `mastra.ts` (o `createMastra` de `conversation/mastra.ts`, movido com o `BuilderLogger`), `hub-mastra.ts` (as partes registradas, `prepare`, `start`, `settle`, `close` e a remoção em cadeia, de `conversation/public.ts:83-102,131-211`), `public.ts` | `conversations-of.ts`, `main.ts` (pela mesma forma de hoje), a U2, a U4, a U6 |
-| `apps/server/src/builder/controller-kit/` | Cria `kinds.ts` (`CONTROLLER_KINDS`, `resourceOf`, `ownerOfResource`), `once.ts` (`oncePerRun`), `admission.ts` (`admitAsker`), `open.ts` (`attemptIdOf`, `openSession`), `release.ts` (`releaseThreads`, `threadsByMarks`), `public.ts` | `conversation/`, `assistant/`, `automations/`, a U2, a U4 |
+| `apps/server/src/builder/controller-kit/` | Cria `kinds.ts` (`CONTROLLER_KINDS`, `resourceOf`, `ownerOfResource`), `once.ts` (`oncePerRun`), `factories.ts` (`agentDefaults`, `controllerOf`), `admission.ts` (`admitAsker`), `open.ts` (`attemptIdOf`, `openSession`), `release.ts` (`releaseThreads`, `threadsByMarks`), `public.ts` | `conversation/`, `assistant/`, `automations/`, a U2, a U4 |
 | `apps/server/src/builder/conversation/` | Muda `public.ts` (só a conversa do Builder: a sua parte, as rotas), `guard.ts` (o `enum` de `CONTROLLER_KINDS`, `part.admit` no lugar do `if`), `store.ts` (o `keep` pelo id derivado; sai `transactionLock`), `routes.ts` (`created` por `openSession`), `builder.ts` (`resourceOf`, `oncePerRun`), `turn-of.ts` (o regex sai para o kit); apaga `mastra.ts` | `builder/mastra/` |
 | `apps/server/src/builder/assistant/` | Muda `open.ts` (`openSession`; sai `conversationIdOf`), `context.ts`, `assistant.ts` (`resourceOf`, `oncePerRun`, `admitAsker`), `release.ts` (`threadsByMarks` e `releaseThreads`), `public.ts` (a parte dele) | `builder/mastra/` |
-| `apps/server/src/builder/automations/` | Muda `run.ts`, `runs.ts`, `automations.ts`: `attemptIdOf('assistant', …)` no lugar de `conversationIdOf`, o mesmo id | — |
+| `apps/server/src/builder/automations/` | Muda `run.ts:112` e `runs.ts:143` (a chave `runId`) e `automations.ts:53` (a chave `automation:<chave>`, embrulhada num `AutomationId`): `attemptIdOf('assistant', …)` no lugar de `conversationIdOf`, o mesmo id | — |
 | `apps/server/src/conversations-of.ts` | Muda: monta as partes e as passa ao `createHubMastra`, na ordem da remoção | `main.ts` |
 
 ### Os contratos que a unidade cria
@@ -771,7 +791,7 @@ export function admitAsker(identity: IdentityPorts, tx: ReadTx, owner: Owner): P
 /** O id de uma conversa pela tentativa (C37): sha256 de `${kind}:${companyId}:${personId}:${key}`. */
 export function attemptIdOf(kind: ControllerKind, owner: Owner, key: string): ConversationId
 /** O que a primeira tentativa guardou no Hub, antes do fio (D17). */
-export type Kept = { made: true } | { made: false; same: boolean }
+export type Kept = { made: true } | { made: false; same: boolean; id: ConversationId }   // `id`: o da linha que já existia
 export function openSession(
   deps: { controller: AgentController; memory: MastraMemory; queue: QueueDeps },
   input: {
@@ -782,7 +802,18 @@ export function openSession(
   },
 ): Promise<{ made: boolean; session: AgentControllerSession; model: ModelId }>
 // `same: false` → IDEMPOTENCY_CONFLICT; um esforço que o modelo não tem → EFFORT_UNSUPPORTED;
-// `createSession` acha ou cria pelo id; `model.switch` só num fio que ainda não tem modelo.
+// `createSession` acha ou cria pelo id (o da linha, quando `made: false`); `model.switch` só num fio sem modelo.
+
+// apps/server/src/builder/controller-kit/factories.ts
+/** O comum dos agentes de conversa: o turno e a conta, `maxRetries: 0`, `maxProcessorRetries`, o tempo do modelo. */
+export function agentDefaults(queue: QueueDeps, turn: InputProcessor): Pick<AgentConfig,
+  'inputProcessors' | 'outputProcessors' | 'errorProcessors' | 'maxRetries' | 'maxProcessorRetries' | 'defaultOptions'>
+/** O `new AgentController` com `storage`, um modo e `disableBuiltinTools`; a conversa passa o resto. */
+export function controllerOf(input: {
+  kind: ControllerKind; storage: PostgresStore; memory: MastraMemory; agent: Agent
+  mode: { id: string; availableTools?: string[] }; workspace?: AgentControllerConfig['workspace']
+  tools?: Record<string, Tool>; initialState: Record<string, unknown>
+}): AgentController
 
 // apps/server/src/builder/controller-kit/release.ts
 /** Por fio: `deleteSession` (aborta o run), o passo do dono (a máquina do Assistente), `deleteThread` (D17). */
@@ -804,6 +835,8 @@ export type Part = {
   release(scope: ReleaseScope): Promise<void>
   /** O fim do turno do Builder (`finish`, `onPhase`); sem ele, `watchRuns` só guarda a falha dita. */
   ends?: Pick<Watched, 'finish' | 'onPhase'>
+  /** O que tem de existir antes de a agenda acordar; a U2 põe aqui `agents.hydrate()`. */
+  beforeWorkers?(): Promise<void>
   close?(): Promise<void>
 }
 export function createHubMastra(deps: {
@@ -812,6 +845,8 @@ export function createHubMastra(deps: {
   workflows: Readonly<Record<string, AnyWorkflow>>; schedulerTickMs: number | undefined
   /** O que sai antes das conversas: as automações (24.2) e, depois da U1, os agentes. */
   releaseFirst: readonly ((scope: ReleaseScope) => Promise<void>)[]
+  /** O que para depois do `Mastra`: as chamadas do Google (C62). */
+  closeLast: readonly (() => Promise<void>)[]
 }): {
   mastra: Mastra
   part(kind: ControllerKind): Part | undefined              // o que a porta consulta
@@ -821,10 +856,16 @@ export function createHubMastra(deps: {
 }
 ```
 
-`ReleaseScope` muda de `conversation/store.ts` para `builder/mastra/`. O `keep` do Builder:
+`start`: todos os `beforeWorkers`, depois `startWorkers`. `close`, na ordem de hoje
+(`conversation/public.ts:202-211`): drenar os runs, fechar os fluxos abertos e `runs.stop()` (o
+`close` da parte do Builder, dona dos fluxos e das execuções), o `close` das outras partes (o
+Assistente), `memory.settled()`, `mastra.shutdown()` e por fim `closeLast` (`google.stop()`).
+`releaseFirst` e `Part.ends` não são forma nova: são a ordem e o fim do turno que o `releaseOf` e o
+`watchRuns` de hoje já fazem, ditos no contrato. `ReleaseScope` muda de `conversation/store.ts` para
+`builder/mastra/`. O `keep` do Builder:
 `insert … on conflict do nothing` (sem alvo, então a chave única de `attempt_key` também segura uma
 tentativa de antes da U1b) e reler pela empresa, pessoa e `attempt_key`; `same` quando o `body_hash`
-e o Projeto são os da linha. O do Assistente: o `keep` de `chosen.ts` de hoje, `same` quando o Projeto
+e o Projeto são os da linha, e `id` o da linha. O do Assistente: o `keep` de `chosen.ts` de hoje, `same` quando o Projeto
 é o da linha. As linhas de log de hoje (`CONVERSATIONS_RELEASED`, `ASSISTANT_CONVERSATIONS_RELEASED`,
 `MASTRA_STORAGE_READY`) não mudam.
 
@@ -837,18 +878,20 @@ e o Projeto são os da linha. O do Assistente: o `keep` de `chosen.ts` de hoje, 
 ### A ordem do trabalho
 
 1. **A prova primeiro.** `controller-kit/open.test.ts`: "o id do Assistente", um vetor fixo
-   (empresa, pessoa, chave) com o id que `conversationIdOf` dá hoje, gravado antes de mover; "a
-   tentativa antiga", uma linha do Builder de id aleatório e a mesma `attempt_key` acha a mesma
-   conversa; falha hoje (o kit não existe).
+   (empresa, pessoa) com as três formas de chave de hoje (`attemptKey`, `runId` e
+   `automation:<chave>`) e o id que `conversationIdOf` dá a cada uma, gravados antes de mover; "a
+   tentativa antiga", uma linha do Builder de id aleatório e a mesma `attempt_key`, uma vez e duas ao
+   mesmo tempo: a resposta traz o id da linha antiga e o Mastra tem um fio só; falha hoje (o kit não
+   existe).
 2. **`builder/mastra/`** (o K1 do estudo): mover `createMastra`, `prepare`/`start`/`settle`/`close`,
    `watchRuns` e a remoção em cadeia; `conversations-of.ts` monta as partes. Os testes de
    `builder/conversation`, `builder/assistant` e `builder/automations`, `boot.test.ts` e
    `main.test.ts` passam sem mudar. Um commit.
-3. **O kit e o Assistente** (o K2): `kinds.ts`, `once.ts`, `admission.ts`, `release.ts`; o Assistente
-   usa os quatro. Um commit.
+3. **O kit e o Assistente** (o K2): `kinds.ts`, `once.ts`, `admission.ts`, `factories.ts`,
+   `release.ts`; o Assistente usa os cinco. Um commit.
 4. **O Builder no kit e um só "não duplicar"** (o K3): `attemptIdOf` e `openSession`; o Builder e o
-   Assistente abrem por eles; as automações chamam `attemptIdOf`; `guard.ts` consulta `part`. Um
-   commit.
+   Assistente abrem por eles e o Builder usa `factories.ts`; as automações chamam `attemptIdOf`;
+   `guard.ts` consulta `part`. Um commit.
 
 ### Como se prova
 
@@ -869,7 +912,9 @@ tipo; `conversation/public.ts` não importa `Mastra`. Comando: os testes tocados
 - O id derivado do Assistente difere de `conversationIdOf` num vetor: para; as execuções das
   automações já gravadas perderiam o fio.
 - O `keep` do Builder pede uma migração: para; a unidade não muda o catálogo.
-- O diff passa de ~500 linhas alteradas: relata; o estudo mediu ~400.
+- O diff passa de ~700 linhas alteradas (somadas e tiradas, `git diff --stat`, sem testes): relata
+  antes da U2; a U2 e a U4 refazem a conta, e o que levar a 24.3 acima de ~4.000 vai para a 24.3.1
+  por uma emenda deste cartão.
 
 ## U2 O agente vivo
 
@@ -889,7 +934,8 @@ a abertura, a remoção nem a porta.
   código monta (`NM:agent-controller-DO6rGsQm.js:8390-8391`).
 - **O kit (U1b).** `agents` em `CONTROLLER_KINDS` (o dono `agents:company:<c>:person:<p>`, o `enum`
   da porta); a parte dos agentes em `createHubMastra` (`admit` com o dono e `manageAgents`, `release`,
-  o fim dos turnos); `oncePerRun` para a leitura por pedido; `openSession` com `attemptIdOf('agents', …)`
+  o fim dos turnos, `beforeWorkers` com `agents.hydrate()`); `agentDefaults` e `controllerOf` para o
+  agente que delega e o controlador; `oncePerRun` para a leitura por pedido; `openSession` com `attemptIdOf('agents', …)`
   e o `keep` da linha `builder.agent_conversation`; `threadsByMarks` e `releaseThreads` na remoção.
 - **O escopo por pedido.** `sessionScopes` e `SESSION_MARK` (`builder/assistant/context.ts:13-19,60-85`,
   lido em parte): a conversa de agente tem o seu par, com `agentId` e `draft`.
@@ -906,7 +952,7 @@ a abertura, a remoção nem a porta.
 | `apps/server/src/builder/agents/` | Cria `agent.ts` (`agentOf`: o `Agent` de uma versão), `tools.ts` (as ferramentas preset de uma versão), `registry.ts`, `controller.ts` (o controlador "agentes", o seu agente que delega e a sua `Part`), `open.ts` (o `keep` da linha e `openSession`), `conversation-routes.ts`; muda `tables.ts` (`builder.agent_conversation`) | `conversations-of.ts`, a U3, a U6 |
 | `apps/server/migrations/`, `apps/server/database-grants.sql` | Cria a tabela `builder.agent_conversation` (id, empresa, pessoa, agente com `on delete cascade`, `draft`); as permissões num commit próprio (D11) | `catalog.test.ts` |
 | `apps/server/src/builder/controller-kit/kinds.ts` | Muda: `agents` em `CONTROLLER_KINDS`, que dá à porta o `enum` e o dono | `guard.ts`, `ownerOfResource` |
-| `apps/server/src/builder/mastra/hub-mastra.ts` | Muda: `Part` ganha `beforeWorkers?(): Promise<void>`, e `start` o chama em cada parte antes de `startWorkers` (aqui `agents.hydrate()`) | `main.ts` |
+| `apps/server/src/builder/mastra/hub-mastra.ts` | Muda: `start` imprime `MASTRA_WORKERS_STARTED` depois de `startWorkers` (critério 10) | `main.ts` |
 | `apps/server/src/builder/model-accounts/turn.ts` | Muda: `Turn` aceita um modelo fixo (`model?: { id: ModelId; effort: Effort }`), lido por `modelId` antes do da sessão (`chosenModel`, `:64-71`), porque um agente fora de um controlador não tem sessão | `accountPick` |
 | `apps/server/src/conversations-of.ts` | Muda: monta os agentes e passa a parte deles ao `createHubMastra`, depois da do Assistente (a ordem da remoção) | `main.ts` |
 | `apps/server/src/platform/memory.ts` | Muda: `loopDelayP99Ms` e `cpuPercent` na linha | — |
@@ -974,7 +1020,7 @@ uma `new Memory({ storage })` sem ela, as duas criadas uma vez.
 3. `controller.ts` e a parte no kit (`agents` em `CONTROLLER_KINDS`), `open.ts` sobre `openSession`,
    as rotas; a migração da `agent_conversation`; o teste das três ordens de `release.test.ts`
    (critério 7). Regras: C21, C26, S10, S39.
-4. A carga em `start` (`beforeWorkers`); `HUB_MEMORY`.
+4. A carga pela `beforeWorkers` da parte, que o `start` da U1b chama; `HUB_MEMORY`.
 
 ### Como se prova
 
@@ -1082,7 +1128,7 @@ sobre o serviço da U1.
   (`M:mastracode/sdk/src/tools/workflows/create-workflow.ts:61-120`, relay).
 - **O kit (U1b).** `construtor` em `CONTROLLER_KINDS` (o dono `construtor:company:<c>:person:<p>`, o
   `enum` da porta); a parte do Construtor em `createHubMastra` (`admit` com o dono e `manageAgents`,
-  `release` por `threadsByMarks` e `releaseThreads`, o fim dos turnos); `openSession` com
+  `release` por `threadsByMarks` e `releaseThreads`, o fim dos turnos); `agentDefaults` e `controllerOf`; `openSession` com
   `attemptIdOf('construtor', …)` e sem `keep`: uma repetição acha o mesmo fio, e uma com outro Projeto
   dá `IDEMPOTENCY_CONFLICT` pelas marcas.
 - **As conversas.** As do Assistente, listadas pela marca (`builder/assistant/routes.ts:173-200`,
@@ -1217,7 +1263,9 @@ Comando: os testes tocados, `npm run typecheck`, `npm run lint`.
 
 ## U6 A automação roda um agente
 
-**Base e modelo.** `main` depois da U2. Sonnet: um campo novo num contrato que já tem a sua versão.
+**Base e modelo.** `main` depois da U2 e da https://github.com/developmentconexus-ops/conexus/pull/556
+(a "R1"), que muda `run.ts:128` e deve entrar antes da U1b, que muda `run.ts:112`; se entrar depois,
+a segunda refaz a fusão nesse arquivo. Sonnet: um campo novo num contrato que já tem a sua versão.
 
 ### As linhas da tabela
 
@@ -1282,6 +1330,8 @@ tocados, `npm run typecheck`, `npm run lint`.
 - Uma linha da agenda da 24.2 deixa de ser lida (a versão 1): para; mudar `AUTOMATION_WORKFLOW`
   apagaria todas as linhas.
 - O nome do agente precisa ser guardado na automação: relata; a linha do agente é a dona.
+- A https://github.com/developmentconexus-ops/conexus/pull/556 ainda não entrou no `main`: para; a
+  marca `source="automation"` é dela, e a U6 a reusa.
 
 ## U7 A aba Ferramentas
 
