@@ -20,7 +20,7 @@ const merge = extendTailwindMerge({
         'fact',
       ],
       radius: ['control', 'object', 'card', 'composer', 'pill', 'phone'],
-      spacing: ['xs', 'sm', 'md', 'lg', 'xl', '2xl', '3xl', '4xl', 'row'],
+      spacing: ['xs', 'sm', 'md', 'lg', 'xl', '2xl', '3xl', '4xl', 'row', 'control', 'control-sm'],
     },
   },
 })
