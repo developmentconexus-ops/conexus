@@ -218,6 +218,24 @@ export const setAssistantConnections = defineOperation({
   failures: [...READ_FAILURES, 'CONVERSATION_NOT_FOUND'],
 })
 
+export const setAssistantModel = defineOperation({
+  id: 'setAssistantModel',
+  summary: 'Changes the model of an Assistant conversation and its effort, for its next answers.',
+  access: 'session',
+  method: 'PUT',
+  path: `${BASE}/{conversationId}/model`,
+  bodyLimit: 1024,
+  input: { params: OfConversation, body: z.object({ model: ModelId, effort: Effort }) },
+  success: { status: 200, body: z.object({ model: ModelId, effort: Effort }) },
+  failures: [
+    ...READ_FAILURES,
+    'CONVERSATION_NOT_FOUND',
+    'MODEL_UNKNOWN',
+    'MODEL_NO_ACCOUNT',
+    'EFFORT_UNSUPPORTED',
+  ],
+})
+
 export const listAssistantConnections = defineOperation({
   id: 'listAssistantConnections',
   summary:
