@@ -23,6 +23,12 @@ export type AppVersionsOf = (
   projectId: ProjectId,
 ) => Promise<{ appVersion: number | null; publishedVersion: number | null }>
 
+/** The same numbers for a page of Projetos in one read; a Projeto with no app is absent. */
+export type AppVersionsOfMany = (
+  tx: ReadTx,
+  projectIds: readonly ProjectId[],
+) => Promise<ReadonlyMap<ProjectId, { appVersion: number | null; publishedVersion: number | null }>>
+
 /**
  * What deleting a Projeto asks of the Builder (code C4): its conversations' threads and memory go
  * before its row, which takes their index with it (data D17).

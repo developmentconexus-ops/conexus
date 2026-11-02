@@ -17,6 +17,7 @@ import type {
   AppRemoval,
   AppSessionsEnd,
   AppVersionsOf,
+  AppVersionsOfMany,
   ProjectConversationRelease,
   PublishedRolesOf,
 } from './ports.ts'
@@ -52,6 +53,7 @@ export function createProjects(deps: {
   appsDomain: AppsDomain
   appRemoval: AppRemoval
   appVersionsOf: AppVersionsOf
+  appVersionsOfMany: AppVersionsOfMany
   releaseConversations: ProjectConversationRelease
   publishedRolesOf: PublishedRolesOf
   endAppSessions: AppSessionsEnd

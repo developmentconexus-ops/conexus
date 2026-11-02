@@ -12,7 +12,12 @@ import type { NeonProjects } from '../../platform/neon.ts'
 import { after, pageKey, pageOf } from '../../platform/pages.ts'
 import type { IdentityPorts } from '../identity/public.ts'
 import { claimDatabase, markReady, prepareDatabase, releaseClaim } from './company-database.ts'
-import type { AppRemoval, AppVersionsOf, ProjectConversationRelease } from './ports.ts'
+import type {
+  AppRemoval,
+  AppVersionsOf,
+  AppVersionsOfMany,
+  ProjectConversationRelease,
+} from './ports.ts'
 import { companyDatabase, project } from './tables.ts'
 
 type Deps = {
@@ -20,6 +25,7 @@ type Deps = {
   identity: IdentityPorts
   appRemoval: AppRemoval
   appVersionsOf: AppVersionsOf
+  appVersionsOfMany: AppVersionsOfMany
   releaseConversations: ProjectConversationRelease
   neon: NeonProjects
   log: FailureLog
@@ -47,8 +53,11 @@ function scopeOf(person: Person, companyId: CompanyId): Scope {
   return { kind: 'COMPANY', companyId, personId: person.id }
 }
 
-function summaryOf(row: ProjectRow) {
-  return { id: row.id, name: row.name, createdAt: row.createdAt.toISOString() }
+type Versions = Pick<Project, 'appVersion' | 'publishedVersion'>
+const NO_VERSIONS: Versions = { appVersion: null, publishedVersion: null }
+
+function summaryOf(row: ProjectRow, versions: Versions = NO_VERSIONS) {
+  return { id: row.id, name: row.name, createdAt: row.createdAt.toISOString(), ...versions }
 }
 
 /** What a viewer with this role may do to a Project: the Hub's answer, never the screen's (code C26). */
@@ -57,8 +66,6 @@ function rightsOf(deps: Deps, role: Role) {
 }
 
 type Rights = ReturnType<typeof rightsOf>
-type Versions = Pick<Project, 'appVersion' | 'publishedVersion'>
-
 function viewOf(
   deps: Deps,
   input: { row: ProjectRow; rights: Rights; versions?: Versions },
@@ -66,8 +73,7 @@ function viewOf(
   const { hostLabel } = input.row
   const address =
     hostLabel === null ? null : appHostOf({ label: hostLabel, appsDomain: deps.appsDomain })
-  const { appVersion = null, publishedVersion = null } = input.versions ?? {}
-  return { ...summaryOf(input.row), ...input.rights, address, appVersion, publishedVersion }
+  return { ...summaryOf(input.row, input.versions), ...input.rights, address }
 }
 
 /**
@@ -333,12 +339,16 @@ function list(
       rows.map((row) => ProjectRow.parse(row)),
       (row) => row.id,
     )
+    const versions = await deps.appVersionsOfMany(
+      tx,
+      listed.rows.map((row) => row.id),
+    )
     const [ready] = await tx
       .select({ companyId: companyDatabase.companyId })
       .from(companyDatabase)
       .where(and(eq(companyDatabase.companyId, companyId), eq(companyDatabase.state, 'ready')))
     return {
-      projects: listed.rows.map(summaryOf),
+      projects: listed.rows.map((row) => summaryOf(row, versions.get(row.id))),
       next: listed.next,
       databaseReady: ready !== undefined,
     }

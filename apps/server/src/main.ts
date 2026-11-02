@@ -20,7 +20,13 @@ import type { Conversations } from './conversations-of.ts'
 import { conversationsOf } from './conversations-of.ts'
 import { firstPersonArguments } from './first-person-arguments.ts'
 import type { Apps, Ungranted } from './hub/apps/public.ts'
-import { appAccessOf, createAppRemoval, createApps, versionNumbersOf } from './hub/apps/public.ts'
+import {
+  appAccessOf,
+  createAppRemoval,
+  createApps,
+  versionNumbersOf,
+  versionNumbersOfMany,
+} from './hub/apps/public.ts'
 import type { ConnectorDeadlines, Connectors } from './hub/connectors/public.ts'
 import { createConnectors, resealConnections } from './hub/connectors/public.ts'
 import type { Identity } from './hub/identity/public.ts'
@@ -164,7 +170,16 @@ export function subjectsOf(deps: {
   })
   const releaseConversations = conversations.release
   const projects = createProjects({
-    ...{ database, identity, neon, log, appsDomain, appRemoval, appVersionsOf: versionNumbersOf },
+    ...{
+      database,
+      identity,
+      neon,
+      log,
+      appsDomain,
+      appRemoval,
+      appVersionsOf: versionNumbersOf,
+      appVersionsOfMany: versionNumbersOfMany,
+    },
     ...{ releaseConversations, ...appAccessOf(database) },
   })
   const operations = createOperations({

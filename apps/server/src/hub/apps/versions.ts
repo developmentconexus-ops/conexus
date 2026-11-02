@@ -241,6 +241,32 @@ export async function versionNumbersOf(
   return { appVersion: row?.appVersion ?? null, publishedVersion: row?.publishedVersion ?? null }
 }
 
+/** The same numbers for each of `projectIds`, in one query: the list's page of up to 50 Projetos. */
+export async function versionNumbersOfMany(
+  tx: ReadTx,
+  projectIds: readonly ProjectId[],
+): Promise<ReadonlyMap<ProjectId, { appVersion: number | null; publishedVersion: number | null }>> {
+  if (projectIds.length === 0) return new Map()
+  const preview = alias(appVersion, 'preview_version')
+  const published = alias(appVersion, 'published_version')
+  const rows = await tx
+    .select({
+      projectId: app.projectId,
+      appVersion: preview.number,
+      publishedVersion: published.number,
+    })
+    .from(app)
+    .leftJoin(preview, eq(preview.id, app.liveVersionId))
+    .leftJoin(published, eq(published.id, app.publishedVersionId))
+    .where(inArray(app.projectId, [...projectIds]))
+  return new Map(
+    rows.map((row) => [
+      ProjectIdSchema.parse(row.projectId),
+      { appVersion: row.appVersion, publishedVersion: row.publishedVersion },
+    ]),
+  )
+}
+
 /** The published version of each of `projectIds` that has one, in one query (step 24.1's overview). */
 export async function publishedVersionsOf(
   tx: ReadTx,
