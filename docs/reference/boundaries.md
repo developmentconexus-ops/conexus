@@ -1176,9 +1176,10 @@ reference tool checks a read against its documentation.
 - **Revisit when** Mercado Livre publishes an OpenAPI document, or a read fails on a real account
   (then its answer, without company data, becomes the double's data).
 
-## Mastra 1.79.0, @mastra/pg 1.32.0, @mastra/memory 1.39.0: a conversation's changing state lives in a Hub table (step 24.1)
+## Mastra 1.79.0: a conversation's changing state lives in a Hub table (step 24.1)
 
-- **Library line.** `@mastra/pg` `updateThread` (`dist/index.js:12438-12472`) reads the thread,
+- **Library line.** At `@mastra/pg` version 1.32.0 and `@mastra/memory` version 1.39.0 (the lockfile's),
+  `@mastra/pg` `updateThread` (`dist/index.js:12438-12472`) reads the thread,
   merges the new metadata over what it read and writes the whole object, with no lock. Observational
   memory writes the thread title through `patchThread` with the full metadata it read earlier
   (`@mastra/memory` `dist/src-DxZ7N8nO.js:35742-35762`). Either write can put back a value that
