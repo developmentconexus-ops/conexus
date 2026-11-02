@@ -1,21 +1,31 @@
 import type { MachineTuning } from './builder/assistant/public.ts'
 import { createAssistant } from './builder/assistant/public.ts'
+import {
+  AUTOMATION_TURN_MS,
+  AUTOMATION_WORKFLOW,
+  automationRun,
+  automationsOf,
+} from './builder/automations/public.ts'
 import { createConversations, createMastraStorage } from './builder/conversation/public.ts'
 import type { openGoogleCalls } from './builder/model-accounts/public.ts'
 import type { AssistantMachine, Runs } from './builder/runs/public.ts'
 import { publishedVersionsOf } from './hub/apps/public.ts'
 import type { Connectors } from './hub/connectors/public.ts'
 import type { IdentityPorts } from './hub/identity/public.ts'
+import type { Notify } from './hub/notifications/public.ts'
 import { liveProjectOf, liveProjectsOf } from './hub/projects/public.ts'
+import type { Config } from './platform/config.ts'
 import type { Database, MastraPool } from './platform/database.ts'
 import type { FailureLog } from './platform/failure.ts'
 import type { SealKeys } from './platform/seal.ts'
 
 /**
- * The Builder's conversations and the Assistant beside them (step 24.1, U2, `H1`): one Mastra store
- * on the pool of Mastra's own login (0010) and one account queue, shared by both controllers. The
- * connectors are made after the apps whose door they read, and a turn comes long after: each door
- * is reached when called.
+ * The Builder's conversations, the Assistant beside them (step 24.1, U2, `H1`) and its automations
+ * (step 24.2): one Mastra store on the pool of Mastra's own login (0010) and one account queue,
+ * shared by both controllers. The connectors are made after the apps whose door they read, and a
+ * turn comes long after: each door is reached when called. The automations' run is made before the
+ * one `Mastra` it is registered on, and the automations after it, on its schedules; a run and a
+ * removal come long after both.
  */
 export function conversationsOf(deps: {
   database: Database
@@ -28,6 +38,8 @@ export function conversationsOf(deps: {
   /** The tests' folder and start deadline for the Assistant's machines; E2B's when absent. */
   machineTuning?: MachineTuning
   connectors: () => Connectors
+  notify: Notify
+  automationClock: Config['automationClock']
   log: FailureLog
 }) {
   const { database, identity, log } = deps
@@ -50,9 +62,20 @@ export function conversationsOf(deps: {
     },
     projects: { liveProjectOf, liveProjectsOf, publishedVersionsOf },
   })
+  const clock = deps.automationClock
+  const run = automationRun({
+    ...{ assistant, notify: deps.notify, log },
+    updating: () => conversations.updating(),
+    turnMs: clock?.turnMs ?? AUTOMATION_TURN_MS,
+  })
   const conversations = createConversations({
     ...{ database, identity, projects: { liveProjectOf }, google: deps.google, log },
     ...{ storage, queue, assistant, runs: deps.runs },
+    automation: {
+      workflows: { [AUTOMATION_WORKFLOW]: run },
+      schedulerTickMs: clock?.schedulerTickMs,
+      release: (scope) => automations.release(scope),
+    },
     connectors: {
       granted: (ids) => deps.connectors().builder.granted(ids),
       read: (ids, a) => deps.connectors().builder.read(ids, a),
@@ -60,5 +83,10 @@ export function conversationsOf(deps: {
       saveNote: (ids, a) => deps.connectors().builder.saveNote(ids, a),
     },
   })
-  return { conversations, assistant }
+  const automations = automationsOf({
+    ...{ mastra: conversations.mastra, assistant, log, bootedAt: Date.now() },
+    connectors: { connections: (scope) => deps.connectors().assistant.connections(scope) },
+    updating: conversations.updating,
+  })
+  return { conversations, assistant, automations }
 }

@@ -7,6 +7,7 @@ import {
   FilePlusIcon,
   FileTextIcon,
   FolderPlusIcon,
+  GlobeIcon,
   HistoryIcon,
   SearchIcon,
   TerminalIcon,
@@ -148,7 +149,7 @@ export const TOOLS: Record<RowTool, ToolSpec> = {
     groups: true,
   },
   [webSearch]: {
-    icon: SearchIcon,
+    icon: GlobeIcon,
     running: 'Pesquisando na internet',
     done: 'Pesquisou na internet',
     failed: 'Não conseguiu pesquisar na internet',

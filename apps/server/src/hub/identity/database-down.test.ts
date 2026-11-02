@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { hashPassword } from 'better-auth/crypto'
-import { createHub, identityOf, subjectsOf } from '../../main.ts'
+import { createHub, subjectsOf } from '../../main.ts'
 import { testAppPorts } from '../../platform/test-app-ports.ts'
 import type { TestDatabase } from '../../platform/test-database.ts'
 import {
@@ -15,8 +15,10 @@ import {
   unreachableDatabase,
   WRITE_HEADERS,
 } from '../../platform/test-database.ts'
+import { testMail } from '../../platform/test-mail.ts'
 import { testMastraPool } from '../../platform/test-mastra-database.ts'
 import { createStatus } from '../status/public.ts'
+import { createIdentity } from './public.ts'
 
 type Config = ReturnType<typeof testConfig>
 const ANA = { id: 'person-ana', name: 'Ana Lima', email: 'ana@example.test' }
@@ -31,16 +33,27 @@ const UNAVAILABLE = {
 
 async function hubOn(t: TestContext, database: TestDatabase['database'], config: Config) {
   const status = createStatus({ version: config.version, database })
-  const identity = identityOf({ database, config, log: silent })
-  const { projects, operations, apps, modelAccounts, conversations, assistant, connectors } =
-    subjectsOf({
-      mastraPool: testMastraPool(t, config),
-      database,
-      config,
-      identity,
-      ...testAppPorts(config),
-      log: silent,
-    })
+  const sendMail = testMail(config)
+  const identity = createIdentity({ database, config, log: silent, sendMail })
+  const {
+    projects,
+    operations,
+    apps,
+    modelAccounts,
+    conversations,
+    assistant,
+    automations,
+    notifications,
+    connectors,
+  } = subjectsOf({
+    mastraPool: testMastraPool(t, config),
+    database,
+    config,
+    identity,
+    sendMail,
+    ...testAppPorts(config),
+    log: silent,
+  })
   const webRoot = testWebRoot(t)
   const app = await createHub(config, {
     status,
@@ -51,6 +64,8 @@ async function hubOn(t: TestContext, database: TestDatabase['database'], config:
     modelAccounts,
     conversations,
     assistant,
+    automations,
+    notifications,
     connectors,
     webRoot,
   })

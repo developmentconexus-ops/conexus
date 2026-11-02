@@ -25,3 +25,17 @@ export function useAttemptKey(): <T>(work: (key: string) => Promise<T>) => Promi
     }
   }
 }
+
+/**
+ * An attempt key that a place derives instead of drawing, for a write the browser can reach again
+ * after a reload with nothing it kept (code C37): the first 16 bytes of the SHA-256 of `seed`, as a
+ * UUID of version 8 and the RFC variant, the shape the Hub's key asks.
+ */
+export async function derivedAttemptKey(seed: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(seed))
+  const bytes = new Uint8Array(digest.slice(0, 16))
+  bytes[6] = ((bytes[6] ?? 0) & 0x0f) | 0x80
+  bytes[8] = ((bytes[8] ?? 0) & 0x3f) | 0x80
+  const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('')
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
+}

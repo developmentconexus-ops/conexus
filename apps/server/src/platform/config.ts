@@ -162,10 +162,15 @@ export type Config = BaseConfig & {
   gitCopyBucket: GitCopyBucket
   gitCopyKey: GitCopyKey
   gitCopyUrl?: GitCopyUrl
-  /** Each connector's double on this machine, for tests and the local Hub; never in production. */
+  /** Each connector's double on this machine, for tests; never in production. */
   connectorOrigins?: ReadonlyMap<string, string>
   /** The installation's app at each OAuth connector; none, and no OAuth connector can be linked. */
   connectorApps?: ReadonlyMap<string, ConnectorApp>
+  /**
+   * A shorter clock for the automations, for tests; never in production, where
+   * Mastra's scheduler ticks every 10 s and a run's turn has 15 minutes (step 24.2).
+   */
+  automationClock?: Readonly<{ schedulerTickMs: number; turnMs: number }>
   e2bApiKey: E2bApiKey
   machineTemplate: MachineTemplate
   installationId: InstallationId

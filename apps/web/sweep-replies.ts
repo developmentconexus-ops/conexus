@@ -8,6 +8,7 @@ import {
   getStatus,
   listAssistantConnections,
   listAssistantConversations,
+  listAutomations,
   listClients,
   listCompanies,
   listCompanyAppAccess,
@@ -16,6 +17,7 @@ import {
   listMembers,
   listModelAccounts,
   listMyApps,
+  listNotifications,
   listProjectConnections,
   listProjects,
 } from '@conexus/hub-api'
@@ -121,6 +123,13 @@ function companyPage(
       conversations: [],
       next: { kind: 'END' },
     }),
+    // The frame's bell reads the person's notifications on every page, and Automações their automations.
+    [`GET /api/companies/${id}/notifications`]: ok(listNotifications, {
+      notifications: [],
+      unread: 0,
+      next: { kind: 'END' },
+    }),
+    [`GET /api/companies/${id}/automations`]: ok(listAutomations, { automations: [] }),
     [`GET /api/companies/${id}`]: ok(getCompany, { company, role, mayInviteAs }),
     [`GET /api/companies/${id}/members`]: ok(listMembers, {
       members: people.map((one) => ({ ...one, mayChangeTo: [...one.mayChangeTo] })),

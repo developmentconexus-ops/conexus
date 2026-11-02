@@ -1,5 +1,5 @@
 import type { FailureCode } from '@conexus/hub-api'
-import { FAILURES, ProposedApp, ShownFile } from '@conexus/hub-api'
+import { FAILURES, ProposedApp, ProposedAutomation, ShownFile } from '@conexus/hub-api'
 import { Link, useParams } from '@tanstack/react-router'
 import { FileTextIcon } from 'lucide-react'
 import { useEffect, useEffectEvent, useState } from 'react'
@@ -264,13 +264,17 @@ function Body({ tool, status }: { tool: ToolItem; status: ToolStatus }) {
   )
 }
 
-/** The rows that are not a line: the file the Assistant showed, and the app it proposed. */
+/** The rows that are not a line: the file the Assistant showed, and the app or the automation it proposed. */
 function specialRow(tool: ToolItem, status: ToolStatus, room: Room) {
   const body = specOf(tool.toolName, room)?.body
   if (status !== 'done') return undefined
   const shown = body === 'shown' ? ShownFile.safeParse(tool.result).data : undefined
   if (shown !== undefined && shown.kind !== 'SHOW_REFUSED')
     return <ShownLine file={shown} live={tool.startedAt !== undefined} />
+  const automation =
+    body === 'automation' ? ProposedAutomation.safeParse(tool.result).data : undefined
+  if (automation !== undefined)
+    return room.automationCard?.({ proposed: automation, toolCallId: tool.toolCallId })
   const proposed = body === 'proposal' ? ProposedApp.safeParse(tool.result).data : undefined
   return proposed === undefined ? undefined : <ProposalCard summary={proposed.summary} />
 }
@@ -288,7 +292,9 @@ function ToolLine({
   const failed = status === 'error' || status === 'denied'
   const lineStatus = failed ? 'error' : status === 'running' ? 'running' : undefined
   const side = presented.beside ? (
-    <TraceDescription className="min-w-0 max-w-1/2 truncate">{presented.detail}</TraceDescription>
+    <TraceDescription className="min-w-0 shrink flex-1 truncate text-right">
+      {presented.detail}
+    </TraceDescription>
   ) : status === 'running' ? (
     <Since at={startedAt} />
   ) : null
@@ -299,8 +305,8 @@ function ToolLine({
       </TraceIcon>
       <TraceTitle
         className={cn(
-          presented.beside && 'flex-1',
-          (presented.beside || failed) && 'whitespace-normal',
+          presented.beside && 'shrink-0 whitespace-nowrap',
+          failed && 'whitespace-normal',
         )}
       >
         {presented.sentence}

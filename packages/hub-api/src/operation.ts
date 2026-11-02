@@ -27,6 +27,7 @@ export type Operation = {
   success:
     | { status: 200; body: z.ZodType }
     | { status: 201; body: z.ZodType }
+    | { status: 202; body: z.ZodType }
     | { status: 202 | 204 }
   failures: readonly FailureCode[]
 }
