@@ -245,16 +245,23 @@ async function activate(deps: AgentsDeps, scope: InProject, agentId: AgentId, nu
 
 /**
  * Deletes the agent, and by cascade its versions, its choices of tools and its conversations' rows;
- * the tools stay in the library. The agent is read in the Projeto first, so an agent of another
- * Projeto, or one already gone, answers `AGENT_NOT_FOUND` before any sweep (security S10). With no
- * lock across a call outside (data D22): its conversations' threads leave first, then the row,
- * then they are swept again (`DELETED`), which takes a thread opened between the two.
+ * the tools stay in the library. The agent is read in the company first: one of another Projeto
+ * answers `AGENT_NOT_FOUND` before any sweep (security S10); one gone from the whole company is
+ * still swept and answers `AGENT_NOT_FOUND`, which takes the threads a cut between the steps left.
+ * With no lock across a call outside (data D22): its conversations' threads leave first, then the
+ * row, then they are swept again (`DELETED`), which takes a thread opened between the two.
  */
 async function remove(deps: AgentsDeps, scope: InProject, agentId: AgentId): Promise<void> {
   const { companyId } = scope
   await deps.database.command(databaseScopeOf(scope), async (tx) => {
     await admitted(deps, tx, scope, 'manageAgents')
-    await agentIn(tx, scope, agentId)
+    const [found] = await tx
+      .select({ projectId: agent.projectId })
+      .from(agent)
+      .where(and(eq(agent.id, agentId), eq(agent.companyId, companyId)))
+    if (found !== undefined && found.projectId !== scope.projectId) {
+      throw new Failure('AGENT_NOT_FOUND')
+    }
   })
   await deps.emit({ kind: 'DELETING', companyId, agentId })
   await deps.database.command(databaseScopeOf(scope), async (tx) => {

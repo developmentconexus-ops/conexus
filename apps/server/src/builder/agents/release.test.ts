@@ -250,3 +250,14 @@ test('outro Projeto: apagar pelo endereço do Projeto A o agente do Projeto B d�
   const still = await call(on.hub, on.ana, 'GET', `${vendas.agents}/${there.id}`)
   assert.equal(still.statusCode, 200, still.body)
 })
+
+test('o corte: um agente cuja linha saiu antes da segunda varredura é varrido pela próxima remoção, que dá AGENT_NOT_FOUND; nenhum fio fica sem a linha', async (t) => {
+  const on = await spread(t)
+  const talk = await talkedTo(on.hub, on.carla, on.agents, AgentId.parse(on.ids.ana))
+  const id = talk.slice(talk.lastIndexOf('/') + 1)
+  await on.hub.test.asOwner('delete from builder.agent where id = $1', [on.ids.ana])
+  assert.deepEqual(await pairOf(on.hub, id), [1, 0])
+  const again = await call(on.hub, on.ana, 'DELETE', `${on.agents}/${on.ids.ana}`)
+  assert.deepEqual([again.statusCode, codeOf(again)], [404, 'AGENT_NOT_FOUND'])
+  assert.deepEqual(await pairOf(on.hub, id), [0, 0])
+})
