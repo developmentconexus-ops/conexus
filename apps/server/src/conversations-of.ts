@@ -1,3 +1,4 @@
+import type { FastifyInstance } from 'fastify'
 import { agentsOf } from './builder/agents/public.ts'
 import type { MachineTuning } from './builder/assistant/public.ts'
 import { createAssistant } from './builder/assistant/public.ts'
@@ -7,7 +8,8 @@ import {
   automationRun,
   automationsOf,
 } from './builder/automations/public.ts'
-import { createConversations, createMastraStorage } from './builder/conversation/public.ts'
+import { createBuilderConversations, createMastraStorage } from './builder/conversation/public.ts'
+import { createHubMastra } from './builder/mastra/public.ts'
 import type { openGoogleCalls } from './builder/model-accounts/public.ts'
 import { isChoosable } from './builder/model-accounts/public.ts'
 import type { AssistantMachine, Runs } from './builder/runs/public.ts'
@@ -77,18 +79,12 @@ export function conversationsOf(deps: {
   const clock = deps.automationClock
   const run = automationRun({
     ...{ assistant, notify: deps.notify, log },
-    updating: () => conversations.updating(),
+    updating: () => hub.updating(),
     turnMs: clock?.turnMs ?? AUTOMATION_TURN_MS,
   })
-  const conversations = createConversations({
-    ...{ database, identity, projects: { liveProjectOf }, google: deps.google, log },
-    ...{ storage, queue, assistant, runs: deps.runs },
-    automation: {
-      workflows: { [AUTOMATION_WORKFLOW]: run },
-      schedulerTickMs: clock?.schedulerTickMs,
-      release: (scope) => automations.release(scope),
-    },
-    agents,
+  const builder = createBuilderConversations({
+    ...{ database, identity, projects: { liveProjectOf }, log },
+    ...{ storage, queue, runs: deps.runs },
     connectors: {
       granted: (ids) => deps.connectors().builder.granted(ids),
       read: (ids, a) => deps.connectors().builder.read(ids, a),
@@ -96,10 +92,31 @@ export function conversationsOf(deps: {
       saveNote: (ids, a) => deps.connectors().builder.saveNote(ids, a),
     },
   })
+  // The order of removal: the automations, the agents, then the Builder's conversations and the
+  // Assistant's; the Builder's part closes first, as it owns the open streams and the runs.
+  const hub = createHubMastra({
+    ...{ storage, log, parts: [builder.part, assistant.part] },
+    workflows: { [AUTOMATION_WORKFLOW]: run },
+    schedulerTickMs: clock?.schedulerTickMs,
+    releaseFirst: [
+      (scope) => automations.release(scope),
+      async (scope) => {
+        await agents.release(scope)
+      },
+    ],
+    closeLast: [() => deps.google.stop()],
+  })
+  const conversations = Object.freeze({
+    ...hub,
+    routes: (app: FastifyInstance) => builder.routes(app, hub),
+  })
   const automations = automationsOf({
-    ...{ mastra: conversations.mastra, assistant, log, bootedAt: Date.now() },
+    ...{ mastra: hub.mastra, assistant, log, bootedAt: Date.now() },
     connectors: { connections: (scope) => deps.connectors().assistant.connections(scope) },
-    updating: conversations.updating,
+    updating: hub.updating,
   })
   return { conversations, assistant, automations, agents }
 }
+
+/** The conversations on the one `Mastra`, as `main.ts` starts, stops and routes them. */
+export type Conversations = ReturnType<typeof conversationsOf>['conversations']

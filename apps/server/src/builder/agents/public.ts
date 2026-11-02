@@ -1,6 +1,6 @@
 import type { OfProject } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
-import type { ReleaseScope } from '../conversation/public.ts'
+import type { ReleaseScope } from '../controller-kit/public.ts'
 import type { ToolsDeps } from '../tools/public.ts'
 import { createTools, registerToolRoutes } from '../tools/public.ts'
 import type { AgentsDeps } from './agents.ts'

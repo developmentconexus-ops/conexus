@@ -10,16 +10,16 @@ import type { FastifyInstance } from 'fastify'
 import { Failure } from '../../platform/failure.ts'
 import { answer, serve } from '../../platform/http.ts'
 import { pageKey } from '../../platform/pages.ts'
+import type { Owner } from '../controller-kit/public.ts'
+import { attemptIdOf, openSession, resourceOf } from '../controller-kit/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
-import { conversationModel, conversationStart, effortsOf } from '../model-accounts/public.ts'
+import { conversationModel, effortsOf } from '../model-accounts/public.ts'
 import type { Builder } from './builder.ts'
-import { memoryOwner } from './builder.ts'
-import { threadModel, titleOf, titlesOf } from './history.ts'
+import { titleOf, titlesOf } from './history.ts'
 import type { ConversationStore, InProject } from './store.ts'
 import { bodyHashOf } from './store.ts'
 
 type Deps = { store: ConversationStore; builder: Builder; queue: QueueDeps }
-type Owner = Parameters<typeof memoryOwner>[0]
 
 function ownerOf(input: { person: Person; params: { companyId: CompanyId } }): Owner {
   return { companyId: input.params.companyId, personId: input.person.id }
@@ -37,7 +37,7 @@ async function switchModel(
   const { owner, conversationId } = input
   const session = await builder.controller.createSession({
     id: conversationId,
-    resourceId: memoryOwner(owner),
+    resourceId: resourceOf('builder', owner),
     threadId: conversationId,
   })
   await session.model.switch(input.model, { thinkingLevel: input.effort })
@@ -76,9 +76,8 @@ function registerReads(app: FastifyInstance, deps: Deps) {
 }
 
 /**
- * A conversation's creation, keyed by its attempt (code C37): a repeat answers the model its thread
- * is on and runs nothing again; one whose first attempt stopped before the thread had its model
- * puts it on one now.
+ * A conversation's creation, keyed by its attempt (code C37): the person and the Projeto admitted
+ * first, then `openSession` with the index row as what the first attempt kept.
  */
 async function created(
   deps: Deps,
@@ -88,20 +87,24 @@ async function created(
   },
 ) {
   const owner = { companyId: input.companyId, personId: input.person.id }
-  const attempt = { ...input, bodyHash: bodyHashOf(input.body) }
-  const earlier = await deps.store.attempted(attempt)
-  if (earlier !== undefined) {
-    const kept = await threadModel(deps.builder, owner, earlier.id)
-    if (kept !== undefined) return { ...earlier, model: kept, created: false }
-  }
-  const start = await conversationStart(deps.queue, owner, input.body.model)
-  const { model } = start
-  const effort = input.body.effort ?? start.effort
-  if (!effortsOf(model).includes(effort)) throw new Failure('EFFORT_UNSUPPORTED')
-  const made =
-    earlier === undefined ? await deps.store.create(attempt) : { ...earlier, created: false }
-  await switchModel(deps.builder, { owner, conversationId: made.id, model, effort })
-  return { ...made, model }
+  await deps.store.admit(input)
+  const id = attemptIdOf('builder', owner, input.attemptKey)
+  const attempt = { ...input, id, bodyHash: bodyHashOf(input.body) }
+  let createdAt: Date | undefined
+  const opened = await openSession(
+    { controller: deps.builder.controller, memory: deps.builder.memory, queue: deps.queue },
+    {
+      ...{ kind: 'builder', owner, id, model: input.body.model, effort: input.body.effort },
+      keep: async () => {
+        const row = await deps.store.keep(attempt)
+        createdAt = row.createdAt
+        return row.kept
+      },
+    },
+  )
+  if (createdAt === undefined) throw new Failure('INTERNAL_UNEXPECTED')
+  const conversationId = ConversationId.parse(opened.session.identity.getId())
+  return { id: conversationId, createdAt, model: opened.model, made: opened.made }
 }
 
 /**
@@ -113,7 +116,7 @@ function registerWrites(app: FastifyInstance, deps: Deps) {
 
   serve(app, createConversation, async ({ person, params, body, attemptKey, log }) => {
     const made = await created(deps, { person, ...params, attemptKey, body })
-    if (made.created)
+    if (made.made)
       log.info({ companyId: params.companyId, conversationId: made.id }, 'CONVERSATION_CREATED')
     const createdAt = made.createdAt.toISOString()
     return answer({ conversation: { id: made.id, title: null, createdAt, model: made.model } })

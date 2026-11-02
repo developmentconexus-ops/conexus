@@ -16,11 +16,12 @@ import type {
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
 import { logMemory } from '../../platform/memory.ts'
+import { ownerOfResource } from '../controller-kit/public.ts'
 import type { Phase } from '../machine/public.ts'
 import type { Runs, Settled } from '../runs/public.ts'
 import type { Builder } from './builder.ts'
 import { FINISHES, TurnTally, turnLine } from './turn-line.ts'
-import { busyIn, ownerOfResource } from './turn-of.ts'
+import { busyIn } from './turn-of.ts'
 
 export type AgentEnd = NonNullable<Extract<AgentControllerEvent, { type: 'agent_end' }>['reason']>
 

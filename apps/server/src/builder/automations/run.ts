@@ -17,7 +17,7 @@ import { databaseFailure } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
 import type { Assistant } from '../assistant/public.ts'
-import { conversationIdOf } from '../assistant/public.ts'
+import { attemptIdOf } from '../controller-kit/public.ts'
 
 /**
  * Stored contract: every schedule row names this workflow, and Mastra deletes a row whose target
@@ -109,7 +109,7 @@ async function conversed(
   }
   try {
     if (deps.updating()) return ended(failed('INTERRUPTED', null))
-    const id = conversationIdOf(input, runId)
+    const id = attemptIdOf('assistant', input, runId)
     const { session } = await deps.assistant.open({
       ...{ owner: input, place: input.place, id, connections: input.connections },
       automation: { automationId, name: input.name },

@@ -14,7 +14,8 @@ import { databaseFailure } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { Assistant, Owner } from '../assistant/public.ts'
-import { assistantOwner, conversationIdOf, offeredOnly, placeOf } from '../assistant/public.ts'
+import { offeredOnly, placeOf } from '../assistant/public.ts'
+import { attemptIdOf, resourceOf } from '../controller-kit/public.ts'
 import { bodyHashOf } from '../conversation/public.ts'
 import { ACTIVE_AUTOMATIONS_PER_COMPANY, AUTOMATION_TIMEZONE, cronOf } from './cadence.ts'
 import { deleteRunsOf, stored } from './release.ts'
@@ -50,7 +51,7 @@ function samePlace(a: Place, b: Place): boolean {
 
 /** The automation an attempt names: one id per company, person and key, as a conversation's (code C37). */
 function automationIdOf(owner: Owner, attemptKey: string): AutomationId {
-  const uuid = conversationIdOf(owner, `automation:${attemptKey}`)
+  const uuid = attemptIdOf('assistant', owner, `automation:${attemptKey}`)
   return AutomationId.parse(`schedule_conexus-automation-${uuid}`)
 }
 
@@ -164,7 +165,11 @@ async function create(
   try {
     await schedules.create({
       ...{ id, workflowId: AUTOMATION_WORKFLOW, cron: cronOf(body.cadence) },
-      ...{ timezone: AUTOMATION_TIMEZONE, inputData: input, resourceId: assistantOwner(owner) },
+      ...{
+        timezone: AUTOMATION_TIMEZONE,
+        inputData: input,
+        resourceId: resourceOf('assistant', owner),
+      },
       metadata: {
         companyId: owner.companyId,
         cadence: body.cadence,
@@ -189,7 +194,7 @@ async function list(deps: AutomationsDeps, owner: Owner, projectId: ProjectId | 
   const rows = await stored(
     deps.mastra.schedules.list({
       workflowId: AUTOMATION_WORKFLOW,
-      resourceId: assistantOwner(owner),
+      resourceId: resourceOf('assistant', owner),
     }),
   )
   const mine = rows.flatMap((row) => {
