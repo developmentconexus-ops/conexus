@@ -19,6 +19,7 @@ import { Pager } from '../../ui/pager.tsx'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select.tsx'
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { ReadFailure } from '../../ui/states.tsx'
+import { AutomationBadge } from '../automations/public.ts'
 import {
   ASSISTANT_ROOM,
   RoomContext,
@@ -240,10 +241,13 @@ function ConversationLink(props: {
   )
   const content = (
     <>
-      <span className="flex min-w-0 flex-1 items-center gap-sm">
-        <span className="truncate">{titleOf(conversation)}</span>
+      <span className="flex min-w-0 flex-1 flex-wrap items-center gap-x-sm gap-y-xs">
+        <span className="max-w-full truncate">{titleOf(conversation)}</span>
         {props.showProject && conversation.project !== null && (
           <CutBadge className="max-w-[40%]">{conversation.project.name}</CutBadge>
+        )}
+        {conversation.automation !== null && (
+          <AutomationBadge name={conversation.automation.name} />
         )}
       </span>
       <span className="shrink-0 text-label text-text-2">{dayOf(conversation.updatedAt)}</span>

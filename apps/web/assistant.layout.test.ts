@@ -19,15 +19,20 @@ after(async () => {
 })
 
 function assistant(
-  conversations: { id: string; title: string; project: { id: string; name: string } | null }[],
+  conversations: {
+    id: string
+    title: string
+    project: { id: string; name: string } | null
+    automation?: { automationId: string; name: string }
+  }[],
 ) {
   return {
     ...BASE,
     [`GET ${API}/connections`]: ok(listAssistantConnections, { connections: [] }),
     [`GET ${API}/conversations`]: ok(listAssistantConversations, {
       conversations: conversations.map((one) => ({
-        ...one,
         automation: null,
+        ...one,
         updatedAt: '2026-10-19T12:00:00.000Z',
       })),
       next: { kind: 'END' },
@@ -74,6 +79,29 @@ test('no computador, a conversa recente mostra o nome inteiro de um Projeto de n
   const cut = await label.evaluate((one) => one.scrollWidth - one.clientWidth)
   assert.equal(await label.textContent(), name)
   assert.ok(cut <= 0, `the Projeto label is cut by ${cut}px while the row has room`)
+  await page.close()
+})
+
+test('no computador, a conversa recente mostra Automação · nome inteiro quando a linha tem espaço', async () => {
+  const name = 'Resumo de vendas'
+  const replies = assistant([
+    {
+      id: '66666666-4444-4444-8444-444444444444',
+      title: 'Pedidos do mês',
+      project: null,
+      automation: {
+        automationId: 'schedule_conexus-automation-aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+        name,
+      },
+    },
+  ])
+  const page = await harness.open(`/companies/${COMPANY.id}`, { viewport: DESKTOP, replies })
+  const badge = page.getByRole('link', { name: /Pedidos do mês/ }).locator('[data-slot="badge"]')
+  await badge.waitFor()
+  const label = badge.locator('span.truncate')
+  const cut = await label.evaluate((one) => one.scrollWidth - one.clientWidth)
+  assert.equal(await label.textContent(), `Automação · ${name}`)
+  assert.ok(cut <= 0, `the Automação label is cut by ${cut}px while the row has room`)
   await page.close()
 })
 

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
-import { plantCompany } from '../../hub/identity/test-hub.ts'
+import { call, plantCompany } from '../../hub/identity/test-hub.ts'
 import { endOf } from '../conversation/test-conversation.ts'
 import { tool } from '../conversation/test-questions.ts'
 import { assisting, created, reading, said, talking } from './test-assistant.ts'
@@ -62,6 +62,7 @@ test('as ferramentas: o modelo do Assistente recebe as de conector de leitura, a
     'mastra_workspace_read_file',
     'mastra_workspace_write_file',
     'propose_app',
+    'propose_automation',
     'show_file',
     'skill',
     'skill_read',
@@ -83,6 +84,37 @@ test('as ferramentas: numa conversa de Projeto o modelo não recebe propose_app'
   const tools = [...(on.calls.at(0)?.tools ?? [])]
   assert.equal(tools.includes('propose_app'), false)
   assert.equal(tools.includes('show_file'), true)
+  assert.equal(tools.includes('propose_automation'), true)
+})
+
+test('as ferramentas: propose_automation, numa conversa de Projeto, devolve a proposta só com as ligações que a conversa escolheu, e não grava nada (17)', async (t) => {
+  const steps: ReturnType<typeof said>[][] = []
+  const on = await assisting(t, steps)
+  const proposal = {
+    name: 'Resumo de vendas',
+    prompt: 'Resuma as vendas de ontem, por vendedor.',
+    cadence: { kind: 'DAILY', time: '07:00' },
+  }
+  steps.push(
+    [tool('propose_automation', { ...proposal, connections: [on.matriz, on.filial] })],
+    [said('Pronto.')],
+  )
+  const url = await created(on.hub, on.ana, on.assistant, {
+    projectId: on.projectId,
+    connections: [on.matriz],
+  })
+  const { say } = await talking(t, on.hub, on.ana, url)
+  assert.equal(endOf(await say('Todo dia às 7h me manda o resumo de vendas')), 'complete')
+  const seen = on.calls.at(1)?.texts.findLast((text) => text.includes('Resumo de vendas'))
+  assert.ok(seen !== undefined, on.calls.at(1)?.texts.join('\n'))
+  assert.deepEqual(JSON.parse(seen), { ...proposal, connections: [on.matriz] })
+  const listed = await call(
+    on.hub,
+    on.ana,
+    'GET',
+    `${on.company}/automations?projectId=${on.projectId}`,
+  )
+  assert.deepEqual(Object(listed.json()).automations, [])
 })
 
 test('a visão da empresa: os Projetos com o app, e as ligações que o lugar oferece com a escolha; numa conversa do Projeto a Filial não aparece', async (t) => {

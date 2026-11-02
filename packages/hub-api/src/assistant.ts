@@ -14,6 +14,7 @@ export const ASSISTANT_TOOL = {
   overview: 'conexus_overview',
   showFile: 'show_file',
   proposeApp: 'propose_app',
+  proposeAutomation: 'propose_automation',
 } as const
 
 /** The most connections a conversation may choose at once. */

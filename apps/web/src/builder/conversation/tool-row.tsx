@@ -1,5 +1,5 @@
 import type { FailureCode } from '@conexus/hub-api'
-import { FAILURES, ProposedApp, ShownFile } from '@conexus/hub-api'
+import { FAILURES, ProposedApp, ProposedAutomation, ShownFile } from '@conexus/hub-api'
 import { Link, useParams } from '@tanstack/react-router'
 import { FileTextIcon } from 'lucide-react'
 import { useEffect, useEffectEvent, useState } from 'react'
@@ -264,13 +264,17 @@ function Body({ tool, status }: { tool: ToolItem; status: ToolStatus }) {
   )
 }
 
-/** The rows that are not a line: the file the Assistant showed, and the app it proposed. */
+/** The rows that are not a line: the file the Assistant showed, and the app or the automation it proposed. */
 function specialRow(tool: ToolItem, status: ToolStatus, room: Room) {
   const body = specOf(tool.toolName, room)?.body
   if (status !== 'done') return undefined
   const shown = body === 'shown' ? ShownFile.safeParse(tool.result).data : undefined
   if (shown !== undefined && shown.kind !== 'SHOW_REFUSED')
     return <ShownLine file={shown} live={tool.startedAt !== undefined} />
+  const automation =
+    body === 'automation' ? ProposedAutomation.safeParse(tool.result).data : undefined
+  if (automation !== undefined)
+    return room.automationCard?.({ proposed: automation, toolCallId: tool.toolCallId })
   const proposed = body === 'proposal' ? ProposedApp.safeParse(tool.result).data : undefined
   return proposed === undefined ? undefined : <ProposalCard summary={proposed.summary} />
 }

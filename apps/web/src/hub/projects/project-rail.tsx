@@ -8,6 +8,7 @@ import {
   InfoIcon,
   MessagesSquareIcon,
   PlugIcon,
+  TimerIcon,
   UsersIcon,
 } from 'lucide-react'
 import {
@@ -116,6 +117,7 @@ export function ProjectRailNav(scope: Scope) {
   const { companyId } = scope
   const params = scope
   const { company: house } = useQuery(companyQuery(companyId)).data ?? {}
+  const { role } = company.useRouteContext()
   const building = useMatches({
     select: (matches) => matches.some((match) => match.routeId === BUILD_ROUTE),
   })
@@ -152,6 +154,14 @@ export function ProjectRailNav(scope: Scope) {
           icon={MessagesSquareIcon}
           label="Conversas"
         />
+        {role !== 'member' && (
+          <FrameLink
+            to="/companies/$companyId/projects/$projectId/automations"
+            params={params}
+            icon={TimerIcon}
+            label="Automações"
+          />
+        )}
         <FrameLink
           to="/companies/$companyId/projects/$projectId/about"
           params={params}

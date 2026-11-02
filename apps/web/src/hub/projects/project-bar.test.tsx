@@ -12,7 +12,7 @@ const PROJECT = `${HOUSE}/projects/${PEDIDOS.id}`
 
 beforeEach(() => server.use(conversationsNone, versionsRead({ versions: [] })))
 
-function open(path: string, seen: { mayDelete?: boolean } = {}) {
+function open(path: string, seen: { mayDelete?: boolean; role?: string } = {}) {
   server.use(
     ...projectsRead({ projects: [PEDIDOS], databaseReady: true, mayDelete: true, ...seen }),
   )
@@ -25,7 +25,7 @@ async function bar() {
   return within(await screen.findByRole('navigation', { name: 'Navegação' }))
 }
 
-test('dentro do Projeto a barra é a do Projeto: o nome com a troca, a empresa, Construir, Conversas, Sobre, Quem usa o app, Integrações', async () => {
+test('dentro do Projeto a barra é a do Projeto: o nome com a troca, a empresa, Construir, Conversas, Automações, Sobre, Quem usa o app, Integrações', async () => {
   open(PROJECT)
   const rail = await bar()
   expect(
@@ -36,6 +36,7 @@ test('dentro do Projeto a barra é a do Projeto: o nome com a troca, a empresa, 
     COMPANY.name,
     'Construir',
     'Conversas',
+    'Automações',
     'Sobre',
     'Quem usa o app',
     'Integrações',
@@ -44,6 +45,14 @@ test('dentro do Projeto a barra é a do Projeto: o nome com a troca, a empresa, 
   expect(screen.queryByText(/em breve/i)).toBeNull()
   expect(rail.queryByText('Projetos recentes')).toBeNull()
   expect(rail.getByRole('link', { name: 'Construir' }).getAttribute('aria-current')).toBe('page')
+})
+
+test('o membro não vê Automações na barra do Projeto (step 24.2, criterion 20)', async () => {
+  open(PROJECT, { role: 'member' })
+  const rail = await bar()
+  await rail.findByRole('button', { name: 'Trocar de Projeto. Agora: Pedidos' })
+  expect(rail.queryByRole('link', { name: 'Automações' })).toBeNull()
+  expect(rail.getByRole('link', { name: 'Integrações' })).toBeTruthy()
 })
 
 test('um endereço de conversa marca Construir como o lugar atual', async () => {
