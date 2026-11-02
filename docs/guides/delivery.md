@@ -18,9 +18,8 @@ merge.
 
 - **L1.** Product work **should** have one step in construction per track: **frontier** (the
   Builder, agents, data in apps, platform), **pattern** (connectors through the kit and other
-  work with a template, L27) and **design** (`DESIGN.md`, `apps/web/src/brand/` and
-  `apps/web/src/ui/`). A unit touching another track's file builds when no unit in flight of
-  that track touches it, and the reverse. Study/scope of the next step and a draft method change can run beside
+  work with a template, L27) and **design** (`DESIGN.md`, `apps/web/src/{brand,ui}/`). A unit touching another
+  track's file waits for that track's units on it. Study/scope of the next step and a draft method change can run beside
   it without product code. A sibling step builds only after the previous one merges, but once a
   card is approved (L6), its units that touch none of the files of the previous step's fixes may
   start, built from that card's pull request, while the use, fixes and closing of the previous step
@@ -34,8 +33,7 @@ merge.
 ## 2. The card
 
 - **L5.** `docs/steps/` **must** hold one file per track: the card of the step in construction. A
-  card names its track: `Trilho: desenho` in its first five lines, `pattern-` in its file name,
-  else frontier. The next card of a track waits in its own draft pull request, its units built on their branches once
+  card's track is `Trilho: desenho` in its first five lines, `pattern-` in its name, else frontier. The next card of a track waits in its own draft pull request, its units built on their branches once
   approved, and enters when that track's step closes. [check-docs]
 - **L6.** The founder **must** approve the card's page in Portuguese, recorded in the approvals
   ledger with his words, the date and the card's commit. A mid-step decision of his goes straight into the ledger, with no new card approval. Founder,
@@ -99,7 +97,8 @@ merge.
   the founder through the card's use script. His words, the date and the address go in the
   approvals ledger, and only then **may** the next step start, but for the units of L1. Publishing is a GitHub Release firstmate creates after the merge, with CI green and a
   note of what the step delivers: `v0.N.0` for step N, `v0.N.P` for a fix of it, `v1.0.0` with
-  the first company [0035]. A proof **must not** spend a name of this scheme. Failed use leaves the step open for a fix. [CI]
+  the first company [0035]. A proof **must not** spend a name of this scheme; the card names the
+  releases its proof creates. Failed use leaves the step open for a fix. [CI]
 
 ## 5. Closing a step
 
@@ -112,7 +111,8 @@ merge.
   pull request of their own with the founder's word, between two steps of the track it affects; a
   step in flight keeps the rules it started with. Founder, 2026-10-30: "2. Sim". A new check **must** land in a pull request of its own before the step that needs
   it, as native configuration first (Biome, TypeScript, knip, dependency-cruiser), a script only
-  when none serves. A finding that asks for a change waits in an issue with the method label. The exception is an emergency label only the founder applies, counted on the step's
+  when none serves. A finding that asks for a change waits in the method queue, an issue with the
+  method label. The exception is an emergency label only the founder applies, counted on the step's
   line. Founder, 2026-10-16: "Concordo". [CI for skills and guides, review for checks]
 
 ## 6. What the repository keeps
@@ -129,8 +129,9 @@ merge.
   under its ceiling below, when it has one; links **must** resolve; rule identifiers **must** be
   unique and every cited one exist; a rule **must** live in one file; retired process names **must
   not** appear. They are: wave, N0 to N5, receipts, Factory as the old review robot, Codex review,
-  `conexus-spec`, `conexus-prove`, `conexus-development`, dossier. A step
-  card and `docs/approvals.md` have no word ceiling; L21 guards them. [check-docs, review]
+  `conexus-spec`, `conexus-prove`, `conexus-development`, dossier; they appear nowhere else. A step
+  card and `docs/approvals.md` have no word ceiling, and L21 guards them: keep only what changes
+  what the next agent does. [check-docs, review]
 
 | File | Ceiling, in words |
 | --- | ---: |
