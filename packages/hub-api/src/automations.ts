@@ -31,6 +31,13 @@ export type Cadence = z.infer<typeof Cadence>
 export const AutomationName = z.string().trim().min(1).max(AUTOMATION_NAME_MAX)
 export const AutomationPrompt = z.string().trim().min(1).max(AUTOMATION_PROMPT_MAX)
 
+/** The proposal an automation was made from: the Assistant's call of `propose_automation` in a conversation, so the card of that call can say it was created. */
+export const AutomationOrigin = z.object({
+  conversationId: ConversationId,
+  toolCallId: z.string().min(1).max(200),
+})
+export type AutomationOrigin = z.infer<typeof AutomationOrigin>
+
 export const AutomationSummary = z.object({
   id: AutomationId,
   name: z.string(),
@@ -39,6 +46,7 @@ export const AutomationSummary = z.object({
   projectId: ProjectId.nullable(),
   /** Each connection the automation's place offers now, and whether the automation reads it. */
   connections: z.array(SessionConnection),
+  origin: AutomationOrigin.nullable(),
   state: z.enum(['ACTIVE', 'PAUSED']),
   nextRunAt: z.iso.datetime().nullable(),
   createdAt: z.iso.datetime(),
@@ -107,6 +115,7 @@ export const CreateAutomation = z.object({
   cadence: Cadence,
   projectId: ProjectId.optional(),
   connections: z.array(ConnectionId).max(CONNECTIONS_MAX),
+  origin: AutomationOrigin.optional(),
 })
 export type CreateAutomation = z.infer<typeof CreateAutomation>
 

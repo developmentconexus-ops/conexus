@@ -15,7 +15,7 @@ import { Actions, ScheduleLine, StateBadge } from './automations.tsx'
 import { automationOf } from './loader.ts'
 import { Page } from './page.tsx'
 import { PlaceName, readNames } from './place.tsx'
-import { automationRunsQuery, automationsQuery } from './queries.ts'
+import { automationsQuery, useFollowedRuns } from './queries.ts'
 import {
   BACK_TO_AUTOMATIONS,
   NO_RUNS,
@@ -79,7 +79,7 @@ function Runs(props: {
   none: string
 }) {
   const { opened, automationId, page } = props
-  const read = useQuery(automationRunsQuery(opened.companyId, automationId, page))
+  const read = useFollowedRuns(opened.companyId, automationId, page)
   if (read.isPending) return <Skeleton className="h-20 w-full" />
   if (read.isError)
     return <ReadFailure text={sentenceOf(read.error)} onRetry={() => void read.refetch()} />

@@ -27,6 +27,7 @@ export type Summary = {
   cadence: { kind: string; time: string }
   projectId: string | null
   connections: { connectionId: string; name: string; chosen: boolean }[]
+  origin: { conversationId: string; toolCallId: string } | null
   state: 'ACTIVE' | 'PAUSED'
   nextRunAt: string | null
   createdAt: string
