@@ -9,8 +9,8 @@ import { defineOperation } from './operation.ts'
  * model (Mastra's `'auto'` for observational memory), and a model id is that model. A company that
  * never chose reads `'auto'`.
  */
-export const ObservationalMemoryChoice = z.union([z.literal('auto'), ModelId]).nullable()
-export type ObservationalMemoryChoice = z.infer<typeof ObservationalMemoryChoice>
+const ObservationalMemoryChoice = z.union([z.literal('auto'), ModelId]).nullable()
+type ObservationalMemoryChoice = z.infer<typeof ObservationalMemoryChoice>
 
 export const ObservationalMemoryModels = z.object({
   observer: ObservationalMemoryChoice,
