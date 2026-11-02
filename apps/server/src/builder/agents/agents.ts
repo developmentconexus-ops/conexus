@@ -27,7 +27,7 @@ import {
   versionsWithTools,
 } from '../tools/public.ts'
 import type { AgentEvent } from './events.ts'
-import { makeActive, published } from './publish.ts'
+import { invalidField, makeActive, published } from './publish.ts'
 import {
   agentIn,
   agentsIn,
@@ -223,6 +223,20 @@ async function versions(deps: AgentsDeps, scope: InProject, agentId: AgentId) {
   })
 }
 
+/**
+ * Whether the draft can run as it is: what publishing needs of it (`invalidField`), so a test of
+ * the draft refuses with the same `AGENT_DRAFT_INVALID` and the field.
+ */
+async function testable(deps: AgentsDeps, scope: InProject, agentId: AgentId): Promise<void> {
+  const around = await offered(deps, scope)
+  await deps.database.command(databaseScopeOf(scope), async (tx) => {
+    await admitted(deps, tx, scope, 'manageAgents')
+    const { row } = await agentIn(tx, scope, agentId)
+    const field = await invalidField(tx, AgentConfig.parse(row.draft), agentId, around)
+    if (field !== undefined) throw new Failure('AGENT_DRAFT_INVALID', { named: { field } })
+  })
+}
+
 /** Makes a published version the active one; the draft does not change. The last one written wins. */
 async function activate(deps: AgentsDeps, scope: InProject, agentId: AgentId, number: number) {
   const around = await offered(deps, scope)
@@ -288,6 +302,7 @@ export function createAgentService(deps: AgentsDeps) {
     publish: (scope: InProject, agentId: AgentId, body: Publish) =>
       publish(deps, scope, agentId, body),
     versions: (scope: InProject, agentId: AgentId) => versions(deps, scope, agentId),
+    testable: (scope: InProject, agentId: AgentId) => testable(deps, scope, agentId),
     activate: (scope: InProject, agentId: AgentId, number: number) =>
       activate(deps, scope, agentId, number),
     remove: (scope: InProject, agentId: AgentId) => remove(deps, scope, agentId),

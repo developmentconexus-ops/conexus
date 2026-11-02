@@ -31,7 +31,7 @@ import {
 } from '../controller-kit/public.ts'
 import { conversationMemory, routedModel } from '../conversation/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
-import type { AgentRun } from './agent.ts'
+import type { AgentDeps, AgentRun } from './agent.ts'
 import { agentOf, planOf, setAgentRun, takeAgentTurn } from './agent.ts'
 import type { AgentEvents } from './events.ts'
 import type { AgentReads } from './registry.ts'
@@ -134,6 +134,13 @@ function delegatingAgent(queue: QueueDeps, resolvedOf: Resolved, turn: InputProc
   })
 }
 
+/** The draft's `Agent`, with no observational memory, which reads a thread a run alone has not. */
+async function draftAgentOf(deps: Deps & { memories: AgentDeps['memories'] }, run: AgentRun) {
+  const draft = await deps.agents.draftOf(run.scope, run.agentId)
+  const alone = { ...draft, memory: { observational: false } }
+  return agentOf(deps, { ...alone, ...run.scope, agentId: run.agentId })
+}
+
 type Deps = {
   storage: PostgresStore
   database: Database
@@ -209,6 +216,7 @@ export function createAgentConversations(deps: Deps) {
     registry,
     controller,
     memory,
+    draftAgent: (run: AgentRun) => draftAgentOf({ ...deps, memories }, run),
     /** Its controller on the one `Mastra` (`builder/mastra/`), after the Assistant's. */
     part: {
       kind: 'agents',

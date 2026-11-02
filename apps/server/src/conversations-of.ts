@@ -8,6 +8,7 @@ import {
   automationRun,
   automationsOf,
 } from './builder/automations/public.ts'
+import { createConstrutor } from './builder/construtor/public.ts'
 import { createBuilderConversations, createMastraStorage } from './builder/conversation/public.ts'
 import { createHubMastra } from './builder/mastra/public.ts'
 import type { openGoogleCalls } from './builder/model-accounts/public.ts'
@@ -29,7 +30,8 @@ import type { SealKeys } from './platform/seal.ts'
  * shared by both controllers. The connectors are made after the apps whose door they read, and a
  * turn comes long after: each door is reached when called. The automations' run is made before the
  * one `Mastra` it is registered on, and the automations after it, on its schedules; a run and a
- * removal come long after both.
+ * removal come long after both. The Construtor (step 24.3, U4) builds the agents through their
+ * service and lists the automations made below.
  */
 export function conversationsOf(deps: {
   database: Database
@@ -75,6 +77,11 @@ export function conversationsOf(deps: {
     speakersOf: (scope) => speakersOf({ database, identity, projects: { liveProjectOf } }, scope),
     mastra: () => hub.mastra,
   })
+  const construtor = createConstrutor({
+    ...{ storage, database, identity, queue, liveProjectOf, log, agents, connectors: door },
+    speakersOf: (scope) => speakersOf({ database, identity, projects: { liveProjectOf } }, scope),
+    ...{ automations: () => automations, appTables: async () => null },
+  })
   const clock = deps.automationClock
   const run = automationRun({
     ...{ assistant, notify: deps.notify, log },
@@ -92,10 +99,10 @@ export function conversationsOf(deps: {
     },
   })
   // The order of removal: the automations, the agents, then the Builder's conversations, the
-  // Assistant's and the agents'; the Builder's part closes first, as it owns the open streams and
+  // Assistant's, the agents' and the Construtor's; the Builder's part closes first, as it owns the open streams and
   // the runs.
   const hub = createHubMastra({
-    ...{ storage, log, parts: [builder.part, assistant.part, agents.part] },
+    ...{ storage, log, parts: [builder.part, assistant.part, agents.part, construtor.part] },
     workflows: { [AUTOMATION_WORKFLOW]: run },
     schedulerTickMs: clock?.schedulerTickMs,
     releaseFirst: [
@@ -108,7 +115,10 @@ export function conversationsOf(deps: {
   })
   const conversations = Object.freeze({
     ...hub,
-    routes: (app: FastifyInstance) => builder.routes(app, hub),
+    routes: (app: FastifyInstance) => {
+      builder.routes(app, hub)
+      construtor.routes(app)
+    },
   })
   const automations = automationsOf({
     ...{ mastra: hub.mastra, assistant, log, bootedAt: Date.now() },
