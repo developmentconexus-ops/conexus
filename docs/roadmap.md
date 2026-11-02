@@ -42,11 +42,14 @@ Aprovações e usos: [aprovações](approvals.md).
 Sua empresa usa o Conexus desde 2026-11-02, recebendo cada etapa.
 
 - **24.1 O Assistente.** Conversas no Início e no Projeto perguntam aos sistemas e mostram tabelas e gráficos.
-- **24.2 Automações: o Assistente na agenda.** Pede "todo dia às 7h, o resumo" e recebe cada execução numa conversa nova, com aviso.
+- **24.2 Automações.** Recebe o resumo das 7h numa conversa nova, com aviso.
 - **13.3 A Pauta.** Vê o Hub no visual novo, com a caixa igual em toda tela.
-- **24.3 Agentes do Projeto, com o Construtor.** Conversando com o Construtor, cria num Projeto um agente que lê.
-- **24.4 Os agentes escrevem, com aprovação.** Um agente ou app pede "Aprovar?" antes de escrever (resposta B, 2026-10-18; leva a 20.1).
-- **24.5 Workflows.** Monta conversando o fluxo do orçamento do Sankhya e o vê como trem de balões.
+- **24.3 O Construtor.** Cria e publica um agente.
+- **Papéis e pedidos.** O membro pede para publicar.
+- **24.4 Ferramentas em código.** Código que calcula.
+- **24.5 Os agentes escrevem, com aprovação.** Um agente ou app pede "Aprovar?" antes de escrever (resposta B, 2026-10-18; leva a 20.1).
+- **24.6 Workflows e automações.** Monta conversando o fluxo do orçamento do Sankhya e o vê como trem de balões.
+- **24.7 Canais.** O agente no Telegram.
 - **21.1 Ver o que acontece.** Vê a Atividade, o painel e o uso por empresa.
 - **16 Atualizar sem cortar.** Conversa enquanto o Conexus é atualizado.
 - **22 Ensaio geral.** Restaura tudo junto, pelo procedimento.
@@ -103,10 +106,13 @@ Login social. Arquivos enviados por pessoas para dentro de um app ou da máquina
 | Etapa | O que precisa antes | Decisão sua nela | Conhecimento trazido |
 | --- | --- | --- | --- |
 | 13.3 A Pauta | A 24.2 (A1) | O lugar e o DESIGN.md | G4 OS, Linear, AffectUI. A auditoria do front-end |
-| 24.3 Agentes do Projeto | A 24.2 | Onde roda o código do Construtor | Projeto como assunto. Agentes como linhas nossas, nunca o Agent Builder pago. O Open Bots |
-| 24.4 Escrita com aprovação | A 24.3 | Nenhuma | `requireApproval` do Mastra, provada antes a trava da 0053. Escrita nova pede nova liberação |
-| 24.5 Workflows | A 24.4 | O gatilho do Sankhya | Workflows do Mastra como dados; um protótipo de um dia decide o motor. Seu orçamento é o aceite |
-| 21.1 Ver o que acontece | A 24.5 | Grafana no Brasil, provado | Um só caminho OTel (0052). O uso por empresa. O rastro por ferramenta: as ferramentas de conector (`connector_read`, `connector_notes`, `connector_note_save`) escondem entrada e saída no span, com o exportador de lista permitida, porque o `TracingPolicy` do Mastra só tem `internal` (veio da 20, critério 29) |
+| 24.3 O Construtor | A 24.2 | Nenhuma | `addAgent` por agente |
+| Papéis e pedidos | A 24.3.1 | Nenhuma | — |
+| 24.4 Ferramentas em código | Os pedidos | Nenhuma | Protótipo: Workers ou E2B |
+| 24.5 Escrita com aprovação | A 24.4 | Nenhuma | `requireApproval` do Mastra, provada antes a trava da 0053. Escrita nova pede nova liberação |
+| 24.6 Workflows e automações | A 24.5 | O gatilho do Sankhya | Workflows dinâmicos do Mastra. Seu orçamento é o aceite |
+| 24.7 Canais | A 24.6 | Nenhuma | — |
+| 21.1 Ver o que acontece | A 24.7 | Grafana no Brasil, provado | Um só caminho OTel (0052). O uso por empresa. O rastro por ferramenta: as ferramentas de conector (`connector_read`, `connector_notes`, `connector_note_save`) escondem entrada e saída no span, com o exportador de lista permitida, porque o `TracingPolicy` do Mastra só tem `internal` (veio da 20, critério 29) |
 | 16 Atualizar sem cortar | A 21.1 | Nenhuma | Consertos de execução da auditoria. Testes 9 e 10 |
 | 22 Ensaio geral | A 16 | O lugar da cópia fora do Neon | Ensaios das etapas 2, 7, 9, 12 e 13. Carga de um painel e de uma rotina |
 | 23 As outras empresas | A 22 | Os riscos aceitos. O plano pago | A seção 11 da arquitetura |
