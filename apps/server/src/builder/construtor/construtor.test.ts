@@ -3,6 +3,7 @@ import { test } from 'node:test'
 import { CONSTRUTOR_TOOL } from '@conexus/hub-api'
 import { call } from '../../hub/identity/test-hub.ts'
 import { agentOf, drafted, madeAgent, ordersOf, otherProject } from '../agents/test-agents.ts'
+import { created, salesSummary } from '../automations/test-automations.ts'
 import { endOf } from '../conversation/test-conversation.ts'
 import { tool } from '../conversation/test-questions.ts'
 import type { Step } from './test-construtor.ts'
@@ -64,16 +65,18 @@ test('ler o Projeto: o nome, só as ligações que o Projeto recebeu e os agente
 
 test('o rascunho pelo Construtor: procura e grava a ferramenta e a escolhe no rascunho', async (t) => {
   const answers: Record<string, unknown>[] = []
+  let connection = ''
   function keep(asked: Parameters<Step>[0]): void {
     answers.push(resultOf(asked))
   }
   const on = await building(t, [
-    () => [tool('tool_search', { query: 'pedidos' })],
+    () => [tool('tool_search', {})],
     (asked) => {
       keep(asked)
       const orders = listOf(answers[0]?.ready).find((each) => each.operation === 'pedidos')
       assert.ok(orders, 'a ready read of pedidos')
-      return [tool('tool_save', ordersOf(String(orders.connectionId)))]
+      connection = String(orders.connectionId)
+      return [tool('tool_save', ordersOf(connection))]
     },
     (asked) => {
       keep(asked)
@@ -84,18 +87,39 @@ test('o rascunho pelo Construtor: procura e grava a ferramenta e a escolhe no ra
       const agent = Object(answers[2]?.agent)
       const version = Object(Object(answers[1]?.tool).latest)
       return [
-        tool('agent_set', { agentId: agent.id, revision: agent.revision, tools: [version.id] }),
+        tool('agent_set', {
+          agentId: agent.id,
+          revision: agent.revision,
+          tools: [version.id],
+          ready: [{ connectionId: connection, operation: 'empresas' }],
+        }),
       ]
     },
     keeping(answers),
   ])
+  const inProject = salesSummary([], { projectId: on.projectId })
+  await created(on.hub, on.ana, `${on.company}/automations`, inProject)
+  await created(
+    on.hub,
+    on.ana,
+    `${on.company}/automations`,
+    salesSummary([], { name: 'Do Início' }),
+  )
   assert.equal(endOf(await on.conversation.say('Monte um agente de pedidos')), 'complete')
+
+  assert.deepEqual(
+    listOf(answers[0]?.automations).map((each) => each.name),
+    ['Resumo de vendas'],
+  )
 
   assert.equal(answers[1]?.kind, 'SAVED')
   assert.equal(answers[3]?.kind, 'SAVED')
-  assert.deepEqual(
-    listOf(Object(answers[3]?.agent).tools).map((each) => each.slug),
-    ['pedidos_matriz'],
+  const slugs = listOf(Object(answers[3]?.agent).tools).map((each) => String(each.slug))
+  assert.equal(slugs.length, 2)
+  assert.ok(slugs.includes('pedidos_matriz'), 'the tool the Construtor made')
+  assert.ok(
+    slugs.some((slug) => slug.startsWith('empresas_')),
+    'the ready read it chose',
   )
 })
 
