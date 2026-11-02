@@ -224,10 +224,9 @@ test('as conversas: apagar o agente leva as de todas as pessoas nas três ordens
   const gone = await call(on.hub, on.ana, 'DELETE', `${on.agents}/${agentId}`)
   assert.equal(gone.statusCode, 204, gone.body)
   const after = ConversationId.parse(randomUUID())
-  await assert.rejects(
-    on.hub.agents.open({ scope, agentId, draft: true, frozen, id: after }),
-    { code: 'AGENT_NOT_FOUND' },
-  )
+  await assert.rejects(on.hub.agents.open({ scope, agentId, draft: true, frozen, id: after }), {
+    code: 'AGENT_NOT_FOUND',
+  })
   const ids = [before, ...between].map((url) => url.slice(url.lastIndexOf('/') + 1))
   assert.equal(ids.length, 2)
   for (const id of [...ids, after]) assert.deepEqual(await pairOf(on.hub, id), [0, 0], id)
