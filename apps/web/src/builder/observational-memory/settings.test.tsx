@@ -35,7 +35,7 @@ type Chosen = { observer: string | null; reflector: string | null }
 
 /** The screen as a person who manages the accounts (`owner`) or one who does not (`member`) sees it. */
 function open(role: 'owner' | 'member', save: Parameters<typeof http.put>[1]) {
-  const state: Chosen = { observer: null, reflector: null }
+  const state: Chosen = { observer: 'auto', reflector: 'auto' }
   const providers = [{ id: 'openai', name: 'OpenAI', models: [{ id: MODEL, efforts: ['off'] }] }]
   server.use(
     sessionRead(() => ANA),
@@ -94,6 +94,23 @@ test('o dono configura cada papel, salva e retorna um deles a seguir a conversa'
   await waitFor(() => expect(state?.observer).toBeNull())
 
   expect(state).toEqual({ observer: null, reflector: MODEL })
+
+  await choose(observer, 'Automático (o mais barato da conta)')
+  await waitFor(() => expect(state?.observer).toBe('auto'))
+})
+
+test('quem nunca escolheu vê o Automático nos dois papéis, e a frase diz o que ele faz', async () => {
+  open('owner', () => refusal('NOT_FOUND'))
+
+  const observer = await screen.findByRole('combobox', { name: 'Modelo do observador' })
+  const reflector = screen.getByRole('combobox', { name: 'Modelo do refletor' })
+  expect(observer.textContent).toContain('Automático (o mais barato da conta)')
+  expect(reflector.textContent).toContain('Automático (o mais barato da conta)')
+  expect(
+    screen.getByText(
+      'Sem escolha, o observador e o refletor usam o modelo mais barato da conta. Quem não tem conta no modelo mais barato, ou no escolhido aqui, usa o da conversa.',
+    ),
+  ).toBeTruthy()
 })
 
 test('o modelo sem conta é recusado, e a tela diz a frase da recusa', async () => {
@@ -119,7 +136,7 @@ test('o modelo escolhido fica à vista no campo e uma resposta cortada diz que n
   open('owner', () => new HttpResponse('{"observer"', { status: 200 }))
 
   const observer = await screen.findByRole('combobox', { name: 'Modelo do observador' })
-  expect(observer.textContent).toContain('Segue o modelo da conversa')
+  expect(observer.textContent).toContain('Automático (o mais barato da conta)')
   await choose(observer, 'GPT 5')
 
   expect(

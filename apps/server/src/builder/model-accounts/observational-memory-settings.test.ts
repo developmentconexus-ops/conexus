@@ -5,15 +5,18 @@ import { company, connect } from './test-defaults.ts'
 
 const MODEL = 'openai/gpt-5'
 
-test('the company configures Observer and Reflector independently and restores Auto', async (t) => {
+test('the company configures Observer and Reflector independently and restores following', async (t) => {
   const { hub, ana, carla, accounts, base } = await company(t)
   await connect(hub, ana, accounts, 'openai')
   const path = `${base}/observational-memory-models`
-  assert.deepEqual((await call(hub, ana, 'GET', path)).json(), { observer: null, reflector: null })
+  assert.deepEqual((await call(hub, ana, 'GET', path)).json(), {
+    observer: 'auto',
+    reflector: 'auto',
+  })
 
   const observer = await call(hub, ana, 'PUT', path, { role: 'observer', model: MODEL })
   assert.equal(observer.statusCode, 200)
-  assert.deepEqual(observer.json(), { observer: MODEL, reflector: null })
+  assert.deepEqual(observer.json(), { observer: MODEL, reflector: 'auto' })
   const reflector = await call(hub, ana, 'PUT', path, { role: 'reflector', model: MODEL })
   assert.deepEqual(reflector.json(), { observer: MODEL, reflector: MODEL })
 
@@ -50,5 +53,21 @@ test('a model the picker does not offer is refused and nothing is saved', async 
   })
   assert.equal(refused.statusCode, 422)
   assert.equal(codeOf(refused), 'MODEL_UNKNOWN')
-  assert.deepEqual((await call(hub, ana, 'GET', path)).json(), { observer: null, reflector: null })
+  assert.deepEqual((await call(hub, ana, 'GET', path)).json(), {
+    observer: 'auto',
+    reflector: 'auto',
+  })
+})
+
+test('Automatic is saved apart from following, and one role chosen leaves the other Automatic', async (t) => {
+  const { hub, ana, base } = await company(t)
+  const path = `${base}/observational-memory-models`
+  const followed = await call(hub, ana, 'PUT', path, { role: 'observer', model: null })
+  assert.deepEqual(followed.json(), { observer: null, reflector: 'auto' })
+  const automatic = await call(hub, ana, 'PUT', path, { role: 'observer', model: 'auto' })
+  assert.deepEqual(automatic.json(), { observer: 'auto', reflector: 'auto' })
+  assert.deepEqual((await call(hub, ana, 'GET', path)).json(), {
+    observer: 'auto',
+    reflector: 'auto',
+  })
 })

@@ -10,10 +10,12 @@ import { observationalMemoryModelsQuery, setObservationalMemoryModelMutation } f
 
 const route = getRouteApi('/_app/companies/$companyId_/settings/observational-memory')
 
-/** The select's value for "no choice": the role follows the model of each conversation. */
+/** The select's value for the role that follows the model of each conversation. */
 const FOLLOW = 'follow'
+/** The select's value for the cheapest model of the account; it is the saved choice's own word. */
+const AUTO = 'auto'
 
-/** The company's Observer and Reflector models: none follows each conversation's model; the two are chosen apart. */
+/** The company's Observer and Reflector models: the default is the cheapest model of the account; the two are chosen apart. */
 export function ObservationalMemorySettings() {
   const { companyId } = route.useParams()
   const { observer, reflector } = useSuspenseQuery(observationalMemoryModelsQuery(companyId)).data
@@ -21,6 +23,7 @@ export function ObservationalMemorySettings() {
   const save = useMutation(setObservationalMemoryModelMutation)
   const models = accounts.choices.company.flatMap((provider) => provider.models)
   const options = [
+    { value: AUTO, label: 'Automático (o mais barato da conta)' },
     { value: FOLLOW, label: 'Segue o modelo da conversa' },
     ...models.map((model) => ({ value: model.id, label: modelLabel(model.id) })),
   ]
@@ -28,11 +31,11 @@ export function ObservationalMemorySettings() {
   function select(role: 'observer' | 'reflector', value: string) {
     save.mutate({
       params: { companyId },
-      body: { role, model: value === FOLLOW ? null : ModelId.parse(value) },
+      body: { role, model: value === FOLLOW ? null : value === AUTO ? AUTO : ModelId.parse(value) },
     })
   }
 
-  function selector(role: 'observer' | 'reflector', value: ModelId | null, label: string) {
+  function selector(role: 'observer' | 'reflector', value: string | null, label: string) {
     return (
       <Field>
         <FieldLabel htmlFor={`om-${role}`}>{label}</FieldLabel>
@@ -71,7 +74,7 @@ export function ObservationalMemorySettings() {
       <SettingsSection
         id="observer"
         title="Observador"
-        description="Sem escolha, o observador e o refletor seguem o modelo da conversa. Quem não tem conta no modelo escolhido aqui também segue o da conversa."
+        description="Sem escolha, o observador e o refletor usam o modelo mais barato da conta. Quem não tem conta no modelo mais barato, ou no escolhido aqui, usa o da conversa."
       >
         {selector('observer', observer, 'Modelo do observador')}
       </SettingsSection>
