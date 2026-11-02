@@ -42,8 +42,9 @@ Aprovações e usos: [aprovações](approvals.md).
 Sua empresa usa o Conexus desde 2026-11-02, recebendo cada etapa.
 
 - **24.1 O Assistente.** Conversas no Início e no Projeto perguntam aos sistemas e mostram tabelas e gráficos.
-- **24.2 Automações: o Assistente na agenda.** Pede "todo dia às 7h, o resumo" e recebe cada execução numa conversa nova, com aviso.
-- **24.3 O Construtor e o agente de verdade.** Cria e publica um agente; a 24.3.1 o automatiza.
+- **24.2 Automações.** Recebe o resumo das 7h numa conversa nova, com aviso.
+- **13.3 A Pauta.** Vê o Hub no visual novo, com a caixa igual em toda tela.
+- **24.3 O Construtor.** Cria e publica um agente.
 - **Papéis e pedidos.** O membro pede para publicar.
 - **24.4 Ferramentas em código.** Código que calcula.
 - **24.5 Os agentes escrevem, com aprovação.** Um agente ou app pede "Aprovar?" antes de escrever (resposta B, 2026-10-18; leva a 20.1).
@@ -104,6 +105,7 @@ Login social. Arquivos enviados por pessoas para dentro de um app ou da máquina
 
 | Etapa | O que precisa antes | Decisão sua nela | Conhecimento trazido |
 | --- | --- | --- | --- |
+| 13.3 A Pauta | A 24.2 (A1) | O lugar e o DESIGN.md | G4 OS, Linear, AffectUI. A auditoria do front-end |
 | 24.3 O Construtor | A 24.2 | Nenhuma | `addAgent` por agente |
 | Papéis e pedidos | A 24.3.1 | Nenhuma | — |
 | 24.4 Ferramentas em código | Os pedidos | Nenhuma | Protótipo: Workers ou E2B |
