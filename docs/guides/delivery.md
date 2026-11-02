@@ -18,13 +18,13 @@ merge.
 
 - **L1.** Product work **should** have one step in construction per track: **frontier** (the
   Builder, agents, data in apps, platform), **pattern** (connectors through the kit and other
-  work with a template, L27) and **design** (`DESIGN.md`, the design guide,
-  `apps/web/src/brand/`, `apps/web/src/ui/` and the frame, L28). Study, scope and a draft method
-  change can run beside it without product code. A sibling step builds only after
-  the previous one merges, but once a card is approved (L6), its units that touch none of the
-  files of the previous step's fixes may start, built from that card's pull request, while the
-  use, fixes and closing of the previous step run beside them. Founder, 2026-10-27: "1. Sim";
-  2026-10-30: "1. Sim". [review]
+  work with a template, L27) and **design** (`DESIGN.md`, `apps/web/src/brand/` and
+  `apps/web/src/ui/`). A unit touching another track's file builds when no unit in flight of
+  that track touches it, and the reverse. Study/scope of the next step and a draft method change can run beside
+  it without product code. A sibling step builds only after the previous one merges, but once a
+  card is approved (L6), its units that touch none of the files of the previous step's fixes may
+  start, built from that card's pull request, while the use, fixes and closing of the previous step
+  run beside them. Founder, 2026-10-27: "1. Sim"; 2026-10-30: "1. Sim"; 2026-11-02: "A", "a". [review]
 - **L2.** A step **should** be usable within a few days, with about 4,000 changed code lines excluding
   tests/generated files, calibrated at step 5; split before build when it exceeds that budget.
   [review]
@@ -34,10 +34,9 @@ merge.
 ## 2. The card
 
 - **L5.** `docs/steps/` **must** hold one file per track: the card of the step in construction. A
-  card names its track: `Trilho: desenho` in its first five lines, or `pattern-` in its file name;
-  otherwise frontier. The next card of a track waits in its own draft pull request, its
-  units built on their branches once approved, and enters when that track's step closes.
-  [check-docs]
+  card names its track: `Trilho: desenho` in its first five lines, `pattern-` in its file name,
+  else frontier. The next card of a track waits in its own draft pull request, its units built on their branches once
+  approved, and enters when that track's step closes. [check-docs]
 - **L6.** The founder **must** approve the card's page in Portuguese, recorded in the approvals
   ledger with his words, the date and the card's commit. A mid-step decision of his goes straight into the ledger, with no new card approval. Founder,
   2026-10-27: "3. Sim". [CI]
@@ -60,7 +59,8 @@ merge.
   defects, while QA reruns the screens it touched. The card's reader checks the reference table
   before any build. Founder, 2026-10-25: "2. A", "3. A".
   Documents-only changes get check-docs and one reader once; a card gets one whole reading, then
-  deltas. Founder, 2026-10-16: "Concordo"; 2026-10-21: "nao podemos adicionar gargalo". [review]
+  deltas. Founder, 2026-10-16: "Concordo"; 2026-10-21: "nao podemos adicionar gargalo". Failure:
+  rereading everything after each fix samples new rules forever. [review]
 - **L11.** Findings **should** cite evidence, file, line and broken rule; fixes address the cause
   and sweep its class through the whole diff. A third delta check blocking on the same premise
   returns to the card and founder. [review]
@@ -68,12 +68,13 @@ merge.
   merge and says "Se for assim para produção, <quem> perde <o quê> quando <situação>"; without that,
   the finding is **Fechamento**. Bloqueia includes a security failure; lost data; a limit hit at the
   card's scale; a break of the card's contract; a hand-made piece on an undocumented API; a "must"
-  test that cannot fail (T12); two owners of one rule; red CI. Fechamento goes on the pull request's closing list. **Issue futura** (outside scope, future
+  test that cannot fail (T12); two owners of one rule; red CI. Fechamento (wording, name, citation,
+  guide amendment) goes on the pull request's closing list. **Issue futura** (outside scope, future
   scale with a written trigger, development tool) goes to a next-card or method issue. A trigger
   that the step's use script or its first live turn reaches is not future: that finding is Bloqueia
   unless the step proves it does not happen. With neither broken rule nor shown defect, start with
   `Nit:`, as Fechamento. On the border, a loss in the use script or operation is Bloqueia; a loss only after a later code change is Fechamento unless two owners
-  can diverge. [review]
+  can diverge. Failure: a stale line citation blocks like a password leak. [review]
 
 ## 4. Merge and use
 
@@ -85,7 +86,8 @@ merge.
   The merge **must** keep the commits, so a cited commit exists on `main`. [firstmate's merge script]
 - **L14.** GitHub does not protect `main` in this repository. Nobody but firstmate **may** merge into
   `main`, always through firstmate's merge script, and only after the CI job reported green on that
-  exact commit. After the opening commit nobody **may** push to `main` directly.
+  exact commit. After the opening commit nobody **may** push to `main` directly. Risk: nothing on
+  GitHub refuses a direct push.
   [firstmate's merge script, review]
 - **L15.** CI **must** have one check that fails when any job fails, is skipped or is cancelled.
   Before waiting on CI, the pull request **must not** be CONFLICTING: a conflicting pull request
@@ -97,21 +99,20 @@ merge.
   the founder through the card's use script. His words, the date and the address go in the
   approvals ledger, and only then **may** the next step start, but for the units of L1. Publishing is a GitHub Release firstmate creates after the merge, with CI green and a
   note of what the step delivers: `v0.N.0` for step N, `v0.N.P` for a fix of it, `v1.0.0` with
-  the first company [0035]. A proof **must not** spend a name of this scheme; the card names the
-  releases its proof creates. Failed use leaves the step open for a fix. [CI]
+  the first company [0035]. A proof **must not** spend a name of this scheme. Failed use leaves the step open for a fix. [CI]
 
 ## 5. Closing a step
 
 - **L19.** Closing **should** follow use and settlement of pending items: write the use line, retain
   learned rules that change the next action, confirm acceptance tests, settle the Fechamento list,
   remove taken items from next-card issues, move each remendo row of the reference table into
-  [boundaries](../reference/boundaries.md) with its package version, and delete the card. [review]
+  [boundaries](../reference/boundaries.md) with its package version, and delete the card. Failure:
+  deleting the card erases a decision nobody preserved. [review]
 - **L20.** Skills and guides **must** change only in a closing pull request, or in a documents-only
   pull request of their own with the founder's word, between two steps of the track it affects; a
   step in flight keeps the rules it started with. Founder, 2026-10-30: "2. Sim". A new check **must** land in a pull request of its own before the step that needs
   it, as native configuration first (Biome, TypeScript, knip, dependency-cruiser), a script only
-  when none serves. A finding that asks for a change waits in the method queue, an issue with the
-  method label. The exception is an emergency label only the founder applies, counted on the step's
+  when none serves. A finding that asks for a change waits in an issue with the method label. The exception is an emergency label only the founder applies, counted on the step's
   line. Founder, 2026-10-16: "Concordo". [CI for skills and guides, review for checks]
 
 ## 6. What the repository keeps
@@ -128,9 +129,8 @@ merge.
   under its ceiling below, when it has one; links **must** resolve; rule identifiers **must** be
   unique and every cited one exist; a rule **must** live in one file; retired process names **must
   not** appear. They are: wave, N0 to N5, receipts, Factory as the old review robot, Codex review,
-  `conexus-spec`, `conexus-prove`, `conexus-development`, dossier; they appear nowhere else. A step
-  card and `docs/approvals.md` have no word ceiling, and L21 guards them: keep only what changes
-  what the next agent does.  [check-docs, review]
+  `conexus-spec`, `conexus-prove`, `conexus-development`, dossier. A step
+  card and `docs/approvals.md` have no word ceiling; L21 guards them. [check-docs, review]
 
 | File | Ceiling, in words |
 | --- | ---: |
@@ -161,10 +161,6 @@ merge.
   `packages/connectors/src/<provider>/` and its fakes, and a change to a shared contract
   (`packages/hub-api`, migrations, `docs/index.md`, guides) **must** be read by the frontier track.
   Founder, 2026-10-30: "3. Sim", "4. Sim". [review]
-
-- **L28.** The design track **must** keep apart from the frontier by file, as L27 does: it owns
-  the files named in L1, and a shared contract or screen change **must** be read by the other
-  track. Founder, 2026-11-02: "A". [review]
 
 ## 8. Git
 

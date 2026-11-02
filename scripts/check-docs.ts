@@ -12,7 +12,6 @@ import { basename, dirname, join, relative, resolve } from 'node:path'
 import { parse } from 'yaml'
 import { z } from 'zod'
 import { methodProblems, RULE_DEFINITION, withoutFences, words } from './check-docs-method.ts'
-import type { Track } from './cli.ts'
 import { trackOf } from './cli.ts'
 
 const root = resolve(process.argv[2] ?? '.')
@@ -225,7 +224,7 @@ function checkRetired(file: string, text: string) {
 
 function checkSteps() {
   const cards = files.filter((file) => /^docs\/steps\/[^/]+\.md$/.test(file))
-  const byTrack = new Map<Track, string[]>()
+  const byTrack = new Map<ReturnType<typeof trackOf>, string[]>()
   for (const card of cards) {
     const track = trackOf(basename(card), readFileSync(join(root, card), 'utf8'))
     byTrack.set(track, [...(byTrack.get(track) ?? []), card])

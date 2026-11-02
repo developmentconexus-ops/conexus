@@ -26,7 +26,7 @@ const cards = existsSync(stepsDir)
 const tracks = new Set(
   cards.map((name) => trackOf(name, readFileSync(join(stepsDir, name), 'utf8'))),
 )
-const inConstruction = { pattern: tracks.has('pattern') }
+const patternInConstruction = tracks.has('pattern')
 if (tracks.size === 0) {
   console.log('check-method-freeze: no step in construction, the method may change')
   process.exit(0)
@@ -37,7 +37,7 @@ const changed = runCommand('git', ['diff', '--name-only', '--no-renames', `${bas
 })
   .split('\n')
   .filter((file) => FROZEN.some((prefix) => file.startsWith(prefix)))
-  .filter((file) => (PATTERN_ONLY.includes(file) ? inConstruction.pattern : true))
+  .filter((file) => (PATTERN_ONLY.includes(file) ? patternInConstruction : true))
 
 if (changed.length > 0 && !labels.includes(EMERGENCY)) {
   console.error(`method-frozen-during-step: ${changed.join(', ')}`)
