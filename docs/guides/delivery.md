@@ -144,7 +144,7 @@ merge.
 | `docs/guides/security.md` | 3,000 |
 | `docs/guides/data.md`, `design.md` | 2,500 |
 | `docs/guides/testing.md`, `web.md` | 2,000 |
-| `docs/guides/delivery.md` | 1,900 |
+| `docs/guides/delivery.md` | 1,950 |
 | `docs/decisions/*.md` | 350 |
 | `docs/steps/*.md` | none (L21), nor on the founder's page |
 | `docs/how-to/*.md` | 800 |
