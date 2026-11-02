@@ -186,7 +186,7 @@ function SidebarRail() {
       title={label}
       tabIndex={-1}
       onClick={toggleSidebar}
-      className="absolute inset-y-0 -right-2 z-20 hidden w-4 cursor-w-resize after:absolute after:inset-y-0 after:left-1/2 after:w-[2px] hover:after:bg-line group-data-[collapsible=icon]:cursor-e-resize md:flex"
+      className="absolute inset-y-0 -right-1.5 z-20 hidden w-3 cursor-w-resize after:absolute after:inset-y-0 after:left-1/2 after:w-[2px] hover:after:bg-line group-data-[collapsible=icon]:cursor-e-resize md:flex"
     />
   )
 }

@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { PlusIcon } from 'lucide-react'
 import { useRef, useState } from 'react'
+import { Button } from '../../ui/button.tsx'
 import { Dialog, DialogContent, DialogTrigger } from '../../ui/dialog.tsx'
 import { SidebarGroupAction } from '../../ui/sidebar.tsx'
 import { companyQuery } from '../identity/public.ts'
@@ -10,11 +11,13 @@ import { NameStep } from './name-step.tsx'
 import { projectsQuery } from './queries.ts'
 
 /**
- * The **+** on the sidebar's Projetos group: a dialog asking what a Projeto needs, its name for now,
- * which creates it and opens its page. Every member may create (`createProject`'s admission), so
- * the button is always there; a refusal shows on the name field.
+ * The **+** on the sidebar's Projetos group, or "Novo projeto" in the header of Início's Projetos
+ * block (`block`): a dialog asking what a Projeto needs, its name for now, which creates it and
+ * opens its page. Every member may create (`createProject`'s admission), so the button is always
+ * there; a refusal shows on the name field.
  */
-export function NewProjectDialog({ companyId }: { companyId: CompanyId }) {
+export function NewProjectDialog(props: { companyId: CompanyId; block?: boolean }) {
+  const { companyId } = props
   const [open, setOpen] = useState(false)
   const created = useRef(false)
   const navigate = useNavigate()
@@ -32,9 +35,16 @@ export function NewProjectDialog({ companyId }: { companyId: CompanyId }) {
         setOpen(next)
       }}
     >
-      <DialogTrigger render={<SidebarGroupAction aria-label="Novo projeto" />}>
-        <PlusIcon aria-hidden="true" />
-      </DialogTrigger>
+      {props.block ? (
+        <DialogTrigger render={<Button variant="ghost" size="sm" />}>
+          <PlusIcon aria-hidden="true" />
+          <span className="max-[400px]:sr-only">Novo projeto</span>
+        </DialogTrigger>
+      ) : (
+        <DialogTrigger render={<SidebarGroupAction aria-label="Novo projeto" />}>
+          <PlusIcon aria-hidden="true" />
+        </DialogTrigger>
+      )}
       <DialogContent
         title="Novo projeto"
         description="Um Projeto precisa só de um nome, por enquanto."

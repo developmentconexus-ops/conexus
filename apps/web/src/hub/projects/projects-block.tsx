@@ -5,6 +5,7 @@ import { sentenceOf } from '../../platform/hub.ts'
 import { BLOCK_ROWS, Block, BlockSentence, blockRow, Stamp } from '../../ui/block.tsx'
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { ReadFailure } from '../../ui/states.tsx'
+import { NewProjectDialog } from './new-project-dialog.tsx'
 import { projectStateOf, projectStateText } from './project-state.ts'
 import { projectsQuery } from './queries.ts'
 
@@ -52,19 +53,26 @@ function ProjectRows({ companyId }: { companyId: CompanyId }) {
   )
 }
 
-/** "Projetos" on Início: the first five, each with its app's state in words (step 13.3, U3). */
-export function ProjectsBlock({ companyId }: { companyId: CompanyId }) {
+/**
+ * "Projetos" on Início: the first five, each with its app's state in words (step 13.3, U3). Where
+ * the list holds no "+" (the owner's and the administrator's), `creates` brings "Novo projeto" here.
+ */
+export function ProjectsBlock(props: { companyId: CompanyId; creates?: boolean }) {
+  const { companyId } = props
   return (
     <Block
       title="Projetos"
       action={
-        <Link
-          to="/companies/$companyId/projects"
-          params={{ companyId }}
-          className="text-label text-text-2 hover:text-text"
-        >
-          Todos →
-        </Link>
+        <span className="flex items-center gap-md">
+          {props.creates && <NewProjectDialog companyId={companyId} block />}
+          <Link
+            to="/companies/$companyId/projects"
+            params={{ companyId }}
+            className="text-label text-text-2 hover:text-text"
+          >
+            Todos →
+          </Link>
+        </span>
       }
     >
       <ProjectRows companyId={companyId} />

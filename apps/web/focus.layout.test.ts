@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
 import { getSession } from '@conexus/hub-api'
+import type { Page } from 'playwright-core'
 import type { Replies, Viewport } from './layout-harness.ts'
 import { createHarness, DESKTOP, ok, PHONE, presses } from './layout-harness.ts'
-import { central, companies, PROJECT_NAME } from './sweep-replies.ts'
+import { central, companies, startsOn } from './sweep-replies.ts'
 
 const SIGNED_OUT: Replies = {
   'GET /api/sessions/current': ok(getSession, { state: 'SIGNED_OUT' }),
@@ -54,19 +55,20 @@ test('o contorno não vai ao título focado pelo programa', async () => {
   await page.close()
 })
 
-// The bell sits at the top of the sidebar on a computer and in the phone's top line, so the drawer lacks it.
-const NAV = [
+// The owner's sidebar: the rail from the top (places, Configurações, the bell, the account) and then the list. On a phone the drawer holds the same, and the bell is in it.
+const RAIL_STOPS = [
   'Início',
-  'Automações',
-  'Novo projeto',
-  PROJECT_NAME,
-  'Todos os projetos',
+  'Projetos',
   'Integrações',
+  'Automações',
   'Configurações',
+  'Notificações',
   'Conta de Ana Lima',
 ]
-const RAIL = ['Notificações', ...NAV].map((name) => `${name} solid 2px`)
-const DRAWER = NAV.map((name) => `${name} solid 2px`)
+const LIST_STOPS = ['Nova conversa']
+const NAV = [...RAIL_STOPS, ...LIST_STOPS]
+const RAIL = NAV.map((name) => `${name} solid 2px`)
+const DRAWER = RAIL
 
 test('o Tab passa pela barra com contorno de 2px numa tela de 1366px, antes do conteúdo', async () => {
   const page = await open('/', DESKTOP, HOUSE)
@@ -81,9 +83,8 @@ test('numa tela de 390px o Tab começa em Abrir navegação e não entra na gave
   // The owner's Início opens with the preparation card, whose Continuar is the first of the content.
   // The card is not shown while its reads load, so Tab waits for it.
   await page.getByRole('link', { name: 'Continuar' }).waitFor()
-  assert.deepEqual(await presses(page, 'Tab', 3), [
+  assert.deepEqual(await presses(page, 'Tab', 2), [
     'Abrir navegação solid 2px',
-    'Notificações solid 2px',
     'Continuar solid 2px',
   ])
   await page.close()
@@ -100,7 +101,7 @@ test('a gaveta aberta pelo teclado prende o Tab, com contorno em cada parada', a
   const page = await open('/', PHONE, HOUSE)
   await page.getByRole('button', { name: 'Abrir navegação' }).focus()
   assert.deepEqual(
-    [...(await presses(page, 'Enter', 1)), ...(await presses(page, 'Tab', 9))],
+    [...(await presses(page, 'Enter', 1)), ...(await presses(page, 'Tab', NAV.length + 1))],
     [...DRAWER, 'Fechar navegação solid 2px', 'Início solid 2px'].map((stop) => `${stop} inside`),
   )
   await page.close()
@@ -118,5 +119,33 @@ test('na gaveta, Estado do Hub é um link: seguido, muda o endereço, fecha a ga
   await page.getByRole('heading', { name: 'Estado do Hub' }).waitFor()
   assert.equal(new URL(page.url()).pathname, '/operations/status')
   assert.equal(await opener.evaluate((button) => button === document.activeElement), true)
+  await page.close()
+})
+
+function colourOf(page: Page, name: string) {
+  return page.evaluate((className) => {
+    const probe = document.createElement('div')
+    probe.className = className
+    document.body.append(probe)
+    const value = getComputedStyle(probe).backgroundColor
+    probe.remove()
+    return value
+  }, name)
+}
+
+test('o dourado: o enviar, ao passar o mouse, fica no cinza de destaque (surface-3), não dourado', async () => {
+  const page = await open('/', DESKTOP, { ...HOUSE, ...startsOn('0'.repeat(32)) })
+  const box = page.getByRole('textbox', { name: 'Mensagem para o Assistente' })
+  await box.fill('Como foram as vendas?')
+  const send = page.getByRole('button', { name: 'Enviar' })
+  await page.waitForFunction(
+    () =>
+      document.querySelector<HTMLButtonElement>('button[aria-label=Enviar]')?.disabled === false,
+  )
+  const [grey, gold] = [await colourOf(page, 'bg-surface-3'), await colourOf(page, 'bg-accent')]
+  assert.notEqual(grey, gold)
+  await send.hover()
+  await page.waitForTimeout(300)
+  assert.equal(await send.evaluate((one) => getComputedStyle(one).backgroundColor), grey)
   await page.close()
 })

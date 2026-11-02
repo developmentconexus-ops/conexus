@@ -121,7 +121,7 @@ export function AssistantDay({ companyId }: { companyId: CompanyId }) {
         <ContinueRows companyId={companyId} />
       </Block>
       <div className="grid gap-3xl min-[768px]:grid-cols-2 min-[768px]:gap-lg">
-        <ProjectsBlock companyId={companyId} />
+        <ProjectsBlock companyId={companyId} creates />
         <Block
           title="Ligações"
           action={

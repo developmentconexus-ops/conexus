@@ -29,9 +29,9 @@ function isTouch(): boolean {
   return globalThis.matchMedia('(pointer: coarse)').matches
 }
 
-/** The round button at the end of the field: ink at rest, ipê under the pointer (design V5). */
+/** The round button at the end of the field: ink at rest, the soft grey under the pointer (design V5). */
 const ROUND =
-  'rounded-pill hover:bg-accent disabled:bg-surface-4 disabled:text-text-2 disabled:opacity-100'
+  'rounded-pill hover:bg-surface-3 hover:text-text disabled:bg-surface-4 disabled:text-text-2 disabled:opacity-100'
 
 type Attachments = ReturnType<typeof useAttachments>
 /** Takes the files and says why any was left out. */
