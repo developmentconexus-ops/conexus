@@ -78,7 +78,7 @@ Em espera: 19.2 Central de Ajuda. Sai: o pg-boss; a agenda do Mastra, gatilho de
 | 13 | Uma chave do E2B (a da conta grátis). Um bucket privado no R2 | E2B pago: US$ 150 por mês, se o uso pedir |
 | 19 | Usuário só de leitura no Sankhya de uma empresa | Nenhum |
 | 19.1 | O seu app de desenvolvedor do Mercado Livre | Não lido |
-| 24.2 | O Neon Launch no projeto do Hub, com a primeira automação: a agenda o mantém acordado | Cerca de US$ 19,35 por mês, uma conta só |
+| 24.2 | O Neon Launch no projeto do Hub: a agenda das automações o mantém acordado. Por agora fica no plano grátis (2026-11-01) | Cerca de US$ 19,35 por mês, uma conta só |
 | 22 | Um lugar de cópia fora do Neon | Não lido |
 | 23 | O aviso do que sai do Brasil, com uma linha: o ditado no Chrome passa pelo Google | Nenhum novo |
 
@@ -101,7 +101,6 @@ Login social. Arquivos enviados por pessoas para dentro de um app ou da máquina
 
 | Etapa | O que precisa antes | Decisão sua nela | Conhecimento trazido |
 | --- | --- | --- | --- |
-| 24.2 Automações | A U2 a U4 da 24.1 | Nenhuma | Automação: gatilho, o que roda, o lugar, por `mastra.schedules`. A 20.4 entra aqui |
 | 24.3 Agentes do Projeto | A 24.2 | Onde roda o código do Construtor | Projeto como assunto. Agentes como linhas nossas, nunca o Agent Builder pago. O Open Bots |
 | 24.4 Escrita com aprovação | A 24.3 | Nenhuma | `requireApproval` do Mastra, provada antes a trava da 0053. Escrita nova pede nova liberação |
 | 24.5 Workflows | A 24.4 | O gatilho do Sankhya | Workflows do Mastra como dados; um protótipo de um dia decide o motor. Seu orçamento é o aceite |
