@@ -11,6 +11,7 @@ import {
   post,
 } from '../../hub/identity/test-hub.ts'
 import { MODEL, started } from '../conversation/test-conversation.ts'
+import { sessionStateOf } from '../conversation/test-questions.ts'
 import { assisting, created } from './test-assistant.ts'
 
 type Listed = {
@@ -199,4 +200,58 @@ test('uma conversa e o que escolher: cada ligação do lugar com a escolha; uma 
   for (const at of [url, offered, on.assistant]) {
     assert.equal(codeOf(await call(on.hub, bruno, 'GET', at)), 'NOT_FOUND', at)
   }
+})
+
+const OTHER_MODEL = 'anthropic/claude-haiku-4-5'
+
+test('o modelo: a dona troca o modelo e o esforço e a resposta diz o que ficou; duas trocas, a segunda vale; ASSISTANT_MODEL_SET uma vez por troca', async (t) => {
+  const on = await assisting(t)
+  const url = await created(on.hub, on.ana, on.assistant, { connections: [on.matriz] })
+  const first = await call(on.hub, on.ana, 'PUT', `${url}/model`, { model: MODEL, effort: 'high' })
+  assert.equal(first.statusCode, 200, first.body)
+  assert.deepEqual(first.json(), { model: MODEL, effort: 'high' })
+  const second = await call(on.hub, on.ana, 'PUT', `${url}/model`, {
+    model: OTHER_MODEL,
+    effort: 'off',
+  })
+  assert.equal(second.statusCode, 200, second.body)
+  assert.deepEqual(second.json(), { model: OTHER_MODEL, effort: 'off' })
+  assert.deepEqual(await sessionStateOf(on.hub, on.ana, url), {
+    model: OTHER_MODEL,
+    effort: 'off',
+    tasks: [],
+  })
+  assert.equal(on.lines.filter((line) => line.message === 'ASSISTANT_MODEL_SET').length, 2)
+})
+
+test('o modelo: sem conta, desconhecido ou com esforço que o modelo não tem, recusa e nada muda; de outra pessoa ou inexistente, CONVERSATION_NOT_FOUND; o membro, NOT_FOUND', async (t) => {
+  const on = await assisting(t)
+  const url = await created(on.hub, on.ana, on.assistant, { connections: [] })
+  const before = await sessionStateOf(on.hub, on.ana, url)
+  const refusals = [
+    [{ model: 'openai/gpt-5.4', effort: 'off' }, 422, 'MODEL_NO_ACCOUNT'],
+    [{ model: 'nada/nenhum', effort: 'off' }, 422, 'MODEL_UNKNOWN'],
+    [{ model: MODEL, effort: 'xhigh' }, 422, 'EFFORT_UNSUPPORTED'],
+  ] as const
+  for (const [body, status, code] of refusals) {
+    const refused = await call(on.hub, on.ana, 'PUT', `${url}/model`, body)
+    assert.deepEqual([refused.statusCode, codeOf(refused)], [status, code], refused.body)
+  }
+  assert.deepEqual(await sessionStateOf(on.hub, on.ana, url), before, 'a refusal changes nothing')
+  assert.equal(on.lines.filter((line) => line.message === 'ASSISTANT_MODEL_SET').length, 0)
+
+  const carla = await memberOn(on.hub, on.companyId, CARLA, 'admin')
+  const body = { model: MODEL, effort: 'off' }
+  const missing = `${on.assistant}/${randomUUID()}`
+  for (const [person, at] of [
+    [carla, url],
+    [on.ana, missing],
+  ] as const) {
+    const refused = await call(on.hub, person, 'PUT', `${at}/model`, body)
+    assert.equal(refused.statusCode, 404, refused.body)
+    assert.equal(codeOf(refused), 'CONVERSATION_NOT_FOUND')
+  }
+  const bruno = await memberOn(on.hub, on.companyId, BRUNO, 'member')
+  const member = await call(on.hub, bruno, 'PUT', `${url}/model`, body)
+  assert.equal(codeOf(member), 'NOT_FOUND')
 })

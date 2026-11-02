@@ -5,7 +5,7 @@ import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { call, codeOf, post } from '../../hub/identity/test-hub.ts'
 import { mastraPoolAt } from '../../platform/test-mastra-database.ts'
-import { hubBeside, sent } from '../conversation/test-conversation.ts'
+import { hubBeside, MODEL, sent } from '../conversation/test-conversation.ts'
 import { assisting, created } from './test-assistant.ts'
 
 type Outage = 'REFUSED' | 'SILENT'
@@ -72,6 +72,7 @@ async function everyRouteUnavailable(t: TestContext, outage: Outage) {
     create: await post(down, on.ana, on.assistant, { connections: [on.matriz] }),
     read: await call(down, on.ana, 'GET', url),
     choose: await call(down, on.ana, 'PUT', `${url}/connections`, { connections: [] }),
+    model: await call(down, on.ana, 'PUT', `${url}/model`, { model: MODEL, effort: 'off' }),
     message: await sent(down, on.ana, url, 'Quanto vendemos?'),
   }
   // The Hub ends while its test database lives, closing Mastra through the door opened again.
