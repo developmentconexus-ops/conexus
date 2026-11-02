@@ -21,6 +21,8 @@ import {
   madeAgent,
   madeTool,
   ordersOf,
+  otherProject,
+  publishedAgent,
   talkedTo,
   toolOf,
 } from './test-agents.ts'
@@ -230,4 +232,21 @@ test('as conversas: apagar o agente leva as de todas as pessoas nas três ordens
   const ids = [before, ...between].map((url) => url.slice(url.lastIndexOf('/') + 1))
   assert.equal(ids.length, 2)
   for (const id of [...ids, after]) assert.deepEqual(await pairOf(on.hub, id), [0, 0], id)
+})
+
+test('outro Projeto: apagar pelo endereço do Projeto A o agente do Projeto B dá AGENT_NOT_FOUND sem efeito; a conversa da Carla fica e o agente responde', async (t) => {
+  const on = await spread(t)
+  const vendas = await otherProject(on.hub, on.ana, on.company, [])
+  const there = await publishedAgent(on.hub, on.ana, vendas.agents, {
+    instructions: 'Responda sobre as vendas.',
+  })
+  const talk = await talkedTo(on.hub, on.carla, vendas.agents, there.id)
+  const id = talk.slice(talk.lastIndexOf('/') + 1)
+  const seen = on.events.length
+  const crossed = await call(on.hub, on.ana, 'DELETE', `${on.agents}/${there.id}`)
+  assert.deepEqual([crossed.statusCode, codeOf(crossed)], [404, 'AGENT_NOT_FOUND'])
+  assert.deepEqual(on.events.slice(seen), [])
+  assert.deepEqual(await pairOf(on.hub, id), [1, 1])
+  const still = await call(on.hub, on.ana, 'GET', `${vendas.agents}/${there.id}`)
+  assert.equal(still.statusCode, 200, still.body)
 })

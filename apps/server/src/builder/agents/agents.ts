@@ -245,15 +245,17 @@ async function activate(deps: AgentsDeps, scope: InProject, agentId: AgentId, nu
 
 /**
  * Deletes the agent, and by cascade its versions, its choices of tools and its conversations' rows;
- * the tools stay in the library. With no lock across a call outside (data D22): its conversations'
- * threads leave first, then the row, then they are swept again (`DELETED`); a second removal finds
- * no row, sweeps and answers `AGENT_NOT_FOUND`.
+ * the tools stay in the library. The agent is read in the Projeto first, so an agent of another
+ * Projeto, or one already gone, answers `AGENT_NOT_FOUND` before any sweep (security S10). With no
+ * lock across a call outside (data D22): its conversations' threads leave first, then the row,
+ * then they are swept again (`DELETED`), which takes a thread opened between the two.
  */
 async function remove(deps: AgentsDeps, scope: InProject, agentId: AgentId): Promise<void> {
   const { companyId } = scope
-  await deps.database.command(databaseScopeOf(scope), (tx) =>
-    admitted(deps, tx, scope, 'manageAgents'),
-  )
+  await deps.database.command(databaseScopeOf(scope), async (tx) => {
+    await admitted(deps, tx, scope, 'manageAgents')
+    await agentIn(tx, scope, agentId)
+  })
   await deps.emit({ kind: 'DELETING', companyId, agentId })
   await deps.database.command(databaseScopeOf(scope), async (tx) => {
     await admitted(deps, tx, scope, 'manageAgents')

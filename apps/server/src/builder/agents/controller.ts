@@ -6,7 +6,6 @@ import {
   ProjectId,
 } from '@conexus/hub-api'
 import { Agent } from '@mastra/core/agent'
-import type { AgentController } from '@mastra/core/agent-controller'
 import type { Mastra } from '@mastra/core/mastra'
 import type { InputProcessor } from '@mastra/core/processors'
 import type { RequestContext } from '@mastra/core/request-context'
@@ -27,10 +26,11 @@ import {
   oncePerRun,
   ownerOfResource,
   releaseThreads,
+  sessionTurns,
   threadsByMarks,
 } from '../controller-kit/public.ts'
 import { conversationMemory, routedModel } from '../conversation/public.ts'
-import type { QueueDeps, Turn } from '../model-accounts/public.ts'
+import type { QueueDeps } from '../model-accounts/public.ts'
 import type { AgentRun } from './agent.ts'
 import { agentOf, planOf, setAgentRun, takeAgentTurn } from './agent.ts'
 import type { AgentEvents } from './events.ts'
@@ -57,7 +57,6 @@ export const AGENT_MARK = {
 } as const
 
 const Controller = z.object({ resourceId: z.string(), sessionId: ConversationId })
-const Session = z.object({ sessionId: ConversationId })
 
 /** Which agent a conversation of the owner's runs, and whether its draft, as the Hub keeps it. */
 export async function keptRun(database: Database, owner: Owner, id: ConversationId) {
@@ -93,40 +92,20 @@ function runsOf(database: Database) {
 type Resolved = (requestContext: RequestContext) => Promise<Agent>
 
 /**
- * The turns of the agents' conversations, and the one owner of their end (code C26): a run takes
- * its person's turn as Mastra reads its input, with the model of the version it runs held, and
- * lets go of it when the controller says the run ended, or its session was deleted.
+ * The turns of the agents' conversations, on the kit's owner of their end: a run takes its
+ * person's turn with the model of the version it runs held.
  */
 function agentTurns(queue: QueueDeps, runOf: ReturnType<typeof runsOf>, resolvedOf: Resolved) {
-  const held = new Map<ConversationId, Turn>()
-  function letGo(sessionId: ConversationId): void {
-    held.get(sessionId)?.end()
-    held.delete(sessionId)
-  }
-  const processor: InputProcessor = {
+  return sessionTurns({
     id: 'conexus-agents-turn',
-    async processInput({ requestContext, messages, abort }) {
-      const run = requestContext === undefined ? undefined : await runOf(requestContext)
-      const session = Session.safeParse(requestContext?.get('controller'))
-      if (requestContext === undefined || run === undefined || !session.success) {
-        return abort('CONVERSATION_NOT_FOUND')
-      }
+    async take(requestContext) {
+      const run = await runOf(requestContext)
+      if (run === undefined) return undefined
       const { start } = await planOf(await resolvedOf(requestContext), requestContext)
       const model = { id: start.model, effort: start.effort }
-      held.set(session.data.sessionId, await takeAgentTurn(queue, requestContext, { run, model }))
-      return messages
+      return takeAgentTurn(queue, requestContext, { run, model })
     },
-  }
-  function watch(controller: AgentController): void {
-    controller.onSessionCreated((session) => {
-      const sessionId = ConversationId.parse(session.identity.getId())
-      session.subscribe((event) => {
-        if (event.type === 'agent_end') letGo(sessionId)
-      })
-    })
-    controller.onSessionDeleted((session) => letGo(ConversationId.parse(session.identity.getId())))
-  }
-  return { processor, watch }
+  })
 }
 
 /**
