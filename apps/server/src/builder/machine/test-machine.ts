@@ -1,15 +1,18 @@
 import { execFileSync } from 'node:child_process'
 import {
   createReadStream,
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  rmdirSync,
   rmSync,
   writeFileSync,
 } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { dirname, join } from 'node:path'
+import { basename, dirname, join } from 'node:path'
 import type { TestContext } from 'node:test'
+import { setTimeout as sleep } from 'node:timers/promises'
 import { CompanyId, ConversationId, ProjectId } from '@conexus/hub-api'
 import { RequestContext } from '@mastra/core/request-context'
 import type { Workspace, WorkspaceSandbox } from '@mastra/core/workspace'
@@ -17,7 +20,8 @@ import { LocalFilesystem, LocalSandbox } from '@mastra/core/workspace'
 import { E2bApiKey, InstallationId, MachineTemplate } from '../../platform/config-machine.ts'
 import { Failure } from '../../platform/failure.ts'
 import { openRepository } from '../git/public.ts'
-import type { Kit, KitFactory, MachineApi } from './kit.ts'
+import type { AssistantMachineApi, Kit, KitFactory, MachineApi } from './kit.ts'
+import { APP_FOLDER } from './kit.ts'
 import type { Phase } from './public.ts'
 import { createMachines } from './public.ts'
 
@@ -74,6 +78,12 @@ export type Control = {
   afterCommand: () => void
   /** What another process in the machine does to a file just before the Hub reads it. */
   beforeRead: (path: string) => void
+  /** How many of the next finds fail as a provider that does not answer its list. */
+  findFails: number
+  /** How long the provider takes for each chunk of a file the Hub reads; it stops when the read's signal aborts. */
+  chunkMs: number
+  /** The reads whose signal aborted while the provider was still sending. */
+  readsCut: number
 }
 
 export function newControl(): Control {
@@ -98,6 +108,9 @@ export function newControl(): Control {
     killed: false,
     afterCommand: () => undefined,
     beforeRead: () => undefined,
+    findFails: 0,
+    chunkMs: 0,
+    readsCut: 0,
   }
 }
 
@@ -107,10 +120,16 @@ export function newControl(): Control {
  */
 export function localKit(folder: string, control: Control): KitFactory {
   return (options): Kit => {
+    let made = false
     const sandbox = new LocalSandbox({
       workingDirectory: options.workingDirectory,
       instructions: options.instructions,
       onStart: async (started) => {
+        // E2B's template makes the app folder and no other: a working folder this start made is
+        // taken away again, so a command run there before anything makes it fails as on E2B.
+        if (made && basename(options.workingDirectory) !== basename(APP_FOLDER)) {
+          rmdirSync(options.workingDirectory)
+        }
         await new Promise((up) => setTimeout(up, control.upMs))
         const outcome = control.discoverable.includes(options.id) ? 'connected' : control.outcome
         if (outcome === 'connected') control.attached.push(options.id)
@@ -135,7 +154,12 @@ export function localKit(folder: string, control: Control): KitFactory {
     }
     const start = sandbox.start.bind(sandbox)
     sandbox.start = async (...args) => {
+      // E2B's reattach of a machine found by its id (`reattach: 'required'`): gone, it makes none.
+      if (options.foundAs !== undefined && !heldBy(control, options.foundAs)) {
+        throw Object.assign(new Error('reattach failed'), { code: 'SANDBOX_REATTACH_FAILED' })
+      }
       mkdirSync(folder, { recursive: true })
+      made = !existsSync(options.workingDirectory)
       control.names.push(options.id)
       control.marks.push(options.metadata)
       control.allowOut.push(options.allowOut)
@@ -161,15 +185,52 @@ export function localKit(folder: string, control: Control): KitFactory {
           mkdirSync(dirname(path), { recursive: true })
           writeFileSync(path, bytes)
         },
-        read: async (path) => {
+        read: async (path, signal) => {
           control.beforeRead(path)
-          return createReadStream(path)
+          return control.chunkMs === 0 ? createReadStream(path) : slowly(control, path, signal)
         },
       },
       closeNetwork: async () => {
         control.networkClosed += 1
       },
     }
+  }
+}
+
+/** Whether the provider holds the machine of this name: found by a turn before, and not killed. */
+function heldBy(control: Control, name: string): boolean {
+  return control.discoverable.includes(name) && !control.killed
+}
+
+/** A file sent in 64 KiB chunks, `chunkMs` apart, until the read's signal aborts it. */
+async function* slowly(control: Control, path: string, signal: AbortSignal | undefined) {
+  for await (const chunk of createReadStream(path, { highWaterMark: 65_536 })) {
+    try {
+      await sleep(control.chunkMs, undefined, { signal })
+    } catch (error) {
+      control.readsCut += 1
+      throw error
+    }
+    yield chunk
+  }
+}
+
+/**
+ * The provider's find by the marks, as E2B's list: the conversation's machine of `template` it
+ * holds, by its name, which this double uses as the provider's id; `findFails` lists that fail.
+ */
+export function findOf(control: Control): AssistantMachineApi['find'] {
+  return async (conversationId, template) => {
+    if (control.findFails > 0) {
+      control.findFails -= 1
+      throw new Error('502 Bad Gateway')
+    }
+    return control.discoverable.find(
+      (name) =>
+        name.endsWith(conversationId) &&
+        heldBy(control, name) &&
+        (control.templates[name] ?? TEMPLATE) === template,
+    )
   }
 }
 

@@ -1,6 +1,6 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { expect, test } from 'vitest'
-import { hubServer, PEDIDOS } from '../../platform/test-hub.tsx'
+import { hubServer, PEDIDOS, refusal } from '../../platform/test-hub.tsx'
 import {
   assistantConversation,
   assistantScreens,
@@ -35,10 +35,11 @@ test('o dono vê a caixa, a barra do Projeto e só as conversas deste Projeto', 
   )
 })
 
-test('a lista do Projeto se chama Conversas, sob o título da página', async () => {
+test('a lista do Projeto leva o nome Conversas só como região: o título da página é o único título (U4)', async () => {
   at(CONVERSAS, { conversations: [assistantConversation({ projectId: PEDIDOS_ID })] })
   await screen.findByRole('link', { name: /Vendas da semana/ })
-  expect(screen.getAllByRole('heading', { name: 'Conversas' })).toHaveLength(2)
+  expect(screen.getAllByRole('heading', { name: 'Conversas' })).toHaveLength(1)
+  expect(screen.getByRole('region', { name: 'Conversas' })).toBeTruthy()
   expect(screen.queryByRole('heading', { name: 'Conversas recentes' })).toBeNull()
 })
 
@@ -98,4 +99,42 @@ test('o membro lê quem pode conversar, e a página não esconde a regra', async
 test('a entrada Conversas fica na lateral do Projeto', async () => {
   at(CONVERSAS)
   expect(await screen.findByRole('link', { name: 'Conversas' })).toBeTruthy()
+})
+
+test('enquanto a lista lê, a página mostra o esqueleto no lugar dela, com a caixa já à mostra', async () => {
+  let release: () => void = () => undefined
+  const held = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  at(CONVERSAS, {
+    conversations: [assistantConversation({ projectId: PEDIDOS_ID })],
+    answers: {
+      list: async () => {
+        await held
+        return undefined
+      },
+    },
+  })
+  expect(await screen.findByRole('textbox', { name: 'Mensagem para o Assistente' })).toBeTruthy()
+  expect(screen.queryByRole('link', { name: /Vendas da semana/ })).toBeNull()
+  release()
+  expect(await screen.findByRole('link', { name: /Vendas da semana/ })).toBeTruthy()
+})
+
+test('se a lista falha, a página diz a frase da falha e Tentar de novo lê outra vez', async () => {
+  let failing = true
+  at(CONVERSAS, {
+    conversations: [assistantConversation({ projectId: PEDIDOS_ID })],
+    answers: { list: () => (failing ? refusal('DATABASE_UNAVAILABLE') : undefined) },
+  })
+  expect(await screen.findByText(/O banco do Conexus não respondeu\./)).toBeTruthy()
+  failing = false
+  fireEvent.click(screen.getByRole('button', { name: 'Tentar de novo' }))
+  expect(await screen.findByRole('link', { name: /Vendas da semana/ })).toBeTruthy()
+})
+
+test('um Projeto que o Hub não acha mais (apagado) diz a frase de não encontrado', async () => {
+  at(CONVERSAS, { answers: { list: () => refusal('NOT_FOUND') } })
+  expect(await screen.findByText(/Não encontramos o que você procurou\./)).toBeTruthy()
+  expect(screen.queryByRole('link', { name: /Vendas da semana/ })).toBeNull()
 })

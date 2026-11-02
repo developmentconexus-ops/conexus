@@ -171,16 +171,22 @@ export async function liveProjectOf(
   return row
 }
 
-/** The company's live Projetos by name, at most a page of them: what the Assistant tells of the company (step 24.1). */
+/**
+ * The company's live Projetos by name, at most a page of them, and whether it has more: what the
+ * Assistant tells of the company (step 24.1).
+ */
 export async function liveProjectsOf(
   tx: ReadTx,
   companyId: CompanyId,
-): Promise<{ projectId: ProjectId; name: string }[]> {
+): Promise<{ projects: { projectId: ProjectId; name: string }[]; more: boolean }> {
   const rows = await tx
     .select({ id: project.id, name: project.name })
     .from(project)
     .where(and(eq(project.companyId, companyId), isNull(project.deletingSince)))
     .orderBy(asc(project.name), asc(project.id))
-    .limit(PAGE_SIZE)
-  return rows.map((row) => ({ projectId: ProjectId.parse(row.id), name: row.name }))
+    .limit(PAGE_SIZE + 1)
+  const projects = rows
+    .slice(0, PAGE_SIZE)
+    .map((row) => ({ projectId: ProjectId.parse(row.id), name: row.name }))
+  return { projects, more: rows.length > PAGE_SIZE }
 }

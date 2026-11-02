@@ -5,8 +5,7 @@ import { CompanyId, ProjectId } from '@conexus/hub-api'
 import { call } from '../../hub/identity/test-hub.ts'
 import type { Sent } from '../../platform/test-anthropic.ts'
 import { connect, GROQ_MODEL } from '../model-accounts/test-defaults.ts'
-import { hubBeside } from './test-beside.ts'
-import { conversing, endOf, sent, started, streamOf } from './test-conversation.ts'
+import { conversing, endOf, hubBeside, sent, started, streamOf } from './test-conversation.ts'
 import { failuresOf } from './test-parts.ts'
 import {
   ask,

@@ -1,6 +1,6 @@
 export type { CheckPlatformFailed } from './check.ts'
 export { createE2bApi, createE2bKit } from './e2b.ts'
-export type { AssistantMachine, Kit } from './kit.ts'
+export type { AssistantMachine, AssistantMachineApi, Kit, KitFactory } from './kit.ts'
 export { ALLOWED_HOSTS, APP_FOLDER, MARK, machineInstructions, readCapped } from './kit.ts'
 export { createMachines, execIn, within } from './machines.ts'
 export type { VersionFolder } from './pack.ts'

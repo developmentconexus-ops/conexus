@@ -150,7 +150,12 @@ test('o Projeto: apagá-lo apaga as automações presas a ele; a agenda fora dei
 
 /** Mastra's schedule delete, made to fail as a database that went away would. */
 function refusingDelete(t: TestContext, hub: Hub) {
-  const refused = Object.assign(new Error('connect ECONNREFUSED'), { code: 'ECONNREFUSED' })
+  const socket = Object.assign(new Error('connect ECONNREFUSED'), {
+    ...{ syscall: 'connect', code: 'ECONNREFUSED' },
+  })
+  const refused = Object.assign(new Error('DELETE SCHEDULE FAILED', { cause: socket }), {
+    ...{ domain: 'STORAGE', category: 'THIRD_PARTY' },
+  })
   return t.mock.method(hub.mastra.schedules, 'delete', () => Promise.reject(refused))
 }
 

@@ -96,8 +96,9 @@ export function BuilderTurn(props: {
   streaming: boolean
   onAsk: (text: string) => void
 }) {
-  const rows = fold(props.items)
-  const { agent } = useRoom()
+  const room = useRoom()
+  const { agent } = room
+  const rows = fold(props.items, room)
 
   return (
     <Message>

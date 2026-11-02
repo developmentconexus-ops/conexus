@@ -2,11 +2,11 @@ import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { call } from '../../hub/identity/test-hub.ts'
-import { hubBeside } from '../conversation/test-beside.ts'
 import {
   conversing,
   endOf,
   holding,
+  hubBeside,
   messagesOf,
   PARTIAL,
   sent,

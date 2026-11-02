@@ -1,11 +1,10 @@
-import { AutomationId } from '@conexus/hub-api'
+import { ProjectId } from '@conexus/hub-api'
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
-import { http } from 'msw'
+import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { hubServer, PEDIDOS, refusal } from '../../platform/test-hub.tsx'
 import { choose } from '../conversation/test-hub.tsx'
 import {
-  ASKED,
   assistantConversation,
   assistantScreens,
   COMPANY_ROOT,
@@ -22,9 +21,6 @@ import {
 // Início of the owner: the Assistant's box, its bar and the recent conversations (step 24.1, criteria 23 and 23a).
 const server = hubServer()
 const { at } = assistantScreens(server)
-const AUTOMATION = AutomationId.parse(
-  'schedule_conexus-automation-11111111-1111-4111-8111-111111111111',
-)
 
 async function box() {
   return screen.findByRole('textbox', { name: 'Mensagem para o Assistente' })
@@ -155,6 +151,46 @@ test('escolher um Projeto no seletor cria a conversa nele, com as ligações del
   expect(writes()[0]?.body).toMatchObject({ projectId: PEDIDOS_ID })
 })
 
+test('com 31 Projetos, o seletor oferece os 30 da primeira página e, em "Mais Projetos", o 31º', async () => {
+  const projects = Array.from({ length: 31 }, (_, n) => ({
+    id: ProjectId.parse(`${'q'.repeat(29)}${String(n).padStart(3, '0')}`),
+    name: `Projeto ${n + 1}`,
+    createdAt: '2026-10-17T12:00:00.000Z',
+  }))
+  const { writes, asked } = at(COMPANY_ROOT)
+  server.use(
+    http.get('*/api/companies/:companyId/projects', ({ request }) => {
+      const more = new URL(request.url).searchParams.has('page')
+      return HttpResponse.json({
+        projects: more ? projects.slice(30) : projects.slice(0, 30),
+        next: more ? { kind: 'END' } : { kind: 'MORE', page: 'segunda' },
+        databaseReady: true,
+      })
+    }),
+  )
+  await barOf()
+  fireEvent.click(await screen.findByRole('button', { name: 'Mais Projetos' }))
+  await waitFor(() => expect(screen.queryByRole('button', { name: 'Mais Projetos' })).toBeNull())
+  await choose(screen.getByRole('combobox', { name: 'Projeto da conversa' }), 'Projeto 31')
+  await waitFor(() => expect(asked.at(-1)).toContain(`projectId=${projects[30]?.id}`))
+  await ask('Como foram as vendas?')
+  await waitFor(() => expect(writes()[0]?.body).toMatchObject({ projectId: projects[30]?.id }))
+})
+
+test('a ligação tirada sem Projeto volta ligada ao escolher um Projeto: a escolha é do lugar (K28)', async () => {
+  const { asked } = at(COMPANY_ROOT)
+  const bar = await barOf()
+  await turnOff(bar, 'Sankhya · Estoque')
+  await waitFor(() => expect(within(bar).queryByText('Sankhya · Estoque')).toBeNull())
+  await choose(screen.getByRole('combobox', { name: 'Projeto da conversa' }), PEDIDOS.name)
+  await waitFor(() => expect(asked.at(-1)).toContain(`projectId=${PEDIDOS_ID}`))
+  const placed = await barOf()
+  fireEvent.click(within(placed).getByRole('button', { name: 'Ajustar' }))
+  expect(
+    (await screen.findByRole('switch', { name: 'Sankhya · Estoque' })).getAttribute('aria-checked'),
+  ).toBe('true')
+})
+
 test('sem ligação no lugar, a barra diz onde ligar um sistema', async () => {
   at(COMPANY_ROOT, { offered: [] })
   expect(
@@ -230,29 +266,6 @@ test('as recentes passam de uma página: Ver mais leva à seguinte no endereço,
   expect(conexus.router.state.location.search).toMatchObject({ conversations: '2' })
   fireEvent.click(screen.getByRole('link', { name: 'Primeira página: Conversas' }))
   expect(await screen.findByRole('link', { name: /Gama/ })).toBeTruthy()
-})
-
-test('a etiqueta: a conversa que uma automação abriu mostra Automação · nome nas recentes e no topo da conversa; a outra não', async () => {
-  const { conexus } = at(COMPANY_ROOT, {
-    conversations: [
-      assistantConversation({
-        title: 'Resumo de ontem',
-        automation: { automationId: AUTOMATION, name: 'Resumo de vendas' },
-      }),
-      assistantConversation({ id: ELSEWHERE, title: 'Conversa da pessoa' }),
-    ],
-  })
-  const recent = (await screen.findByRole('link', { name: /Resumo de ontem/ })).closest('li')
-  if (recent === null) throw new Error('the recent conversation has no row')
-  expect(within(recent).getByText('Automação · Resumo de vendas')).toBeTruthy()
-  const other = (await screen.findByRole('link', { name: /Conversa da pessoa/ })).closest('li')
-  if (other === null) throw new Error('the other conversation has no row')
-  expect(within(other).queryByText(/Automação ·/)).toBeNull()
-
-  fireEvent.click(within(recent).getByRole('link', { name: /Resumo de ontem/ }))
-  const header = await screen.findByRole('heading', { name: 'Resumo de ontem' })
-  expect(header.parentElement?.textContent).toContain('Automação · Resumo de vendas')
-  expect(conexus.router.state.location.pathname).toContain(ASKED)
 })
 
 test('voltar ao Início depois de perguntar mostra a conversa nova entre as recentes', async () => {

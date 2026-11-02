@@ -1,13 +1,10 @@
 import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
-import {
-  listAssistantConnections,
-  listAssistantConversations,
-  listProjects,
-} from '@conexus/hub-api'
+import { listAssistantConnections, listAssistantConversations } from '@conexus/hub-api'
 import type { Replies } from './layout-harness.ts'
 import { createHarness, DESKTOP, ok, PHONE } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
+import { ASSISTANT_PATH, ASSISTANT_REPLIES } from './sweep-assistant-states.ts'
 import { OWNER, PROJECT_ID, projectsPage, startsOn } from './sweep-replies.ts'
 
 // The Assistant's Início and Conversas do Projeto in a real browser (step 24.1, criterion 23).
@@ -25,7 +22,7 @@ function assistant(
   conversations: {
     id: string
     title: string
-    projectId: string | null
+    project: { id: string; name: string } | null
     automation?: { automationId: string; name: string }
   }[],
 ) {
@@ -45,7 +42,11 @@ function assistant(
 
 test('no celular, a conversa recente de um Projeto de nome comprido mantém o título e a data na tela', async () => {
   const replies = assistant([
-    { id: '44444444-4444-4444-8444-444444444444', title: 'Pedidos do mês', projectId: PROJECT_ID },
+    {
+      id: '44444444-4444-4444-8444-444444444444',
+      title: 'Pedidos do mês',
+      project: { id: PROJECT_ID, name: 'Pedidos' },
+    },
   ])
   const page = await harness.open(`/companies/${COMPANY.id}`, { viewport: PHONE, replies })
   const row = page.getByRole('link', { name: /Pedidos do mês/ })
@@ -64,20 +65,13 @@ test('no celular, a conversa recente de um Projeto de nome comprido mantém o t�
 
 test('no computador, a conversa recente mostra o nome inteiro de um Projeto de nome médio', async () => {
   const name = 'Pedidos e entregas da filial'
-  const replies = {
-    ...assistant([
-      {
-        id: '44444444-4444-4444-8444-444444444444',
-        title: 'Pedidos do mês',
-        projectId: PROJECT_ID,
-      },
-    ]),
-    [`GET /api/companies/${COMPANY.id}/projects`]: ok(listProjects, {
-      projects: [{ id: PROJECT_ID, name, createdAt: '2026-10-17T12:00:00.000Z' }],
-      next: { kind: 'END' },
-      databaseReady: true,
-    }),
-  }
+  const replies = assistant([
+    {
+      id: '44444444-4444-4444-8444-444444444444',
+      title: 'Pedidos do mês',
+      project: { id: PROJECT_ID, name },
+    },
+  ])
   const page = await harness.open(`/companies/${COMPANY.id}`, { viewport: DESKTOP, replies })
   const badge = page.getByRole('link', { name: /Pedidos do mês/ }).locator('[data-slot="badge"]')
   await badge.waitFor()
@@ -94,7 +88,7 @@ test('no computador, a conversa recente mostra Automação · nome inteiro quand
     {
       id: '66666666-4444-4444-8444-444444444444',
       title: 'Pedidos do mês',
-      projectId: null,
+      project: null,
       automation: {
         automationId: 'schedule_conexus-automation-aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
         name,
@@ -134,5 +128,29 @@ test('em Conversas do Projeto, o título, a caixa e a frase de vazio ficam na me
     1,
     `lefts differ: ${lefts}`,
   )
+  await page.close()
+})
+
+test('no celular, a linha de uma leitura recusada diz a frase inteira, sem cortar (QA F3)', async () => {
+  const page = await harness.open(ASSISTANT_PATH, { viewport: PHONE, replies: ASSISTANT_REPLIES })
+  await page.getByRole('button', { name: /4 ferramentas/ }).click()
+  const sentence = page.getByText(/pediu para esperar/)
+  await sentence.waitFor()
+  const cut = await sentence.evaluate((one) => one.scrollWidth - one.clientWidth)
+  assert.ok(cut <= 0, `the refusal is cut by ${cut}px`)
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), PHONE.width)
+  await page.close()
+})
+
+test('no celular, o arquivo abre numa folha que fecha com Esc e devolve o foco ao botão (U4)', async () => {
+  const page = await harness.open(ASSISTANT_PATH, { viewport: PHONE, replies: ASSISTANT_REPLIES })
+  const open = page.getByRole('button', { name: /^Abrir relatorio/ })
+  await open.waitFor()
+  await open.click()
+  const sheet = page.getByRole('dialog', { name: /^relatorio/ })
+  await sheet.waitFor()
+  assert.equal(await sheet.getAttribute('aria-modal'), null)
+  await page.keyboard.press('Escape')
+  await sheet.waitFor({ state: 'detached' })
   await page.close()
 })

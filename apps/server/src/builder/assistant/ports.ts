@@ -10,6 +10,9 @@ export type AssistantProjects = {
   liveProjectsOf(
     tx: ReadTx,
     companyId: CompanyId,
-  ): Promise<{ projectId: ProjectId; name: string }[]>
-  versionNumbersOf(tx: ReadTx, projectId: ProjectId): Promise<{ publishedVersion: number | null }>
+  ): Promise<{ projects: { projectId: ProjectId; name: string }[]; more: boolean }>
+  publishedVersionsOf(
+    tx: ReadTx,
+    projectIds: readonly ProjectId[],
+  ): Promise<ReadonlyMap<ProjectId, number>>
 }

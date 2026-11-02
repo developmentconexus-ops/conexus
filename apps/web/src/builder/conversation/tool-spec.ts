@@ -31,6 +31,19 @@ export type Presented = { icon: LucideIcon; sentence: string; detail?: string; b
  */
 export type Refusal = 'SAID' | 'RECONNECT'
 
+/** What a row says of a connector, from the catalog the screen read; the id's own words until it arrives. */
+export type ConnectorWords = {
+  name: (connector: string) => string
+  /** What a connector's refusal says, in the words of the screen that links it (Integrações). */
+  refusal: (connector: string | undefined, why: ConnectorRefusal) => string
+}
+
+/** The refusals a connector's own answer carries: to connect again, to wait, or not reached. */
+type ConnectorRefusal =
+  | { kind: 'REAUTH' }
+  | { kind: 'BUSY'; waitMs: number | null }
+  | { kind: 'UNREACHABLE' }
+
 /** How one tool of the closed set reads on the screen: the one owner of its words (code C26). */
 export type ToolSpec = {
   icon: LucideIcon
@@ -53,6 +66,6 @@ export type ToolSpec = {
   present?: (
     tool: Pick<ToolItem, 'args' | 'result'>,
     status: ToolStatus,
-    connectorName: (connector: string) => string,
+    words: ConnectorWords,
   ) => Presented
 }

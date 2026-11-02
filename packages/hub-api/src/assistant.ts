@@ -29,13 +29,22 @@ export const AutomationId = z
   .brand('AutomationId')
 export type AutomationId = z.infer<typeof AutomationId>
 
-export const AssistantConversationSummary = z.object({
+/** The automation whose run opened the conversation, with its name at that run; kept after the automation goes. */
+const OpenedBy = z.object({ automationId: AutomationId, name: z.string() }).nullable()
+
+const ConversationHead = z.object({
   id: ConversationId,
   title: z.string().nullable(),
   updatedAt: z.iso.datetime(),
-  projectId: ProjectId.nullable(),
-  /** The automation whose run opened the conversation, with its name at that run; kept after the automation goes. */
-  automation: z.object({ automationId: AutomationId, name: z.string() }).nullable(),
+})
+
+/**
+ * A conversation in the person's list: its Projeto with the name the row shows, or none when it
+ * was born in the company. A Projeto no longer live has no name to show, so it reads as none.
+ */
+export const AssistantConversationSummary = ConversationHead.extend({
+  project: z.object({ id: ProjectId, name: z.string() }).nullable(),
+  automation: OpenedBy,
 })
 export type AssistantConversationSummary = z.infer<typeof AssistantConversationSummary>
 
@@ -48,7 +57,9 @@ export const SessionConnection = z.object({
 })
 export type SessionConnection = z.infer<typeof SessionConnection>
 
-export const AssistantConversation = AssistantConversationSummary.extend({
+export const AssistantConversation = ConversationHead.extend({
+  projectId: ProjectId.nullable(),
+  automation: OpenedBy,
   connections: z.array(SessionConnection),
 })
 export type AssistantConversation = z.infer<typeof AssistantConversation>
@@ -87,8 +98,30 @@ export function assistantFilePath(ids: {
   conversationId: string
   path: string
 }): string {
-  return `/api/companies/${ids.companyId}/assistant/conversations/${ids.conversationId}/files?${new URLSearchParams({ path: ids.path })}`
+  const url = ASSISTANT_FILE.url
+    .replace(':companyId', encodeURIComponent(ids.companyId))
+    .replace(':conversationId', encodeURIComponent(ids.conversationId))
+  return `${url}?${new URLSearchParams({ path: ids.path })}`
 }
+
+/**
+ * What a connection read answers the screen, as Mastra stored it: the cut the model read, never the
+ * whole answer. `value` is a list in `linhas` or something else; `complete` is false when the cut
+ * took rows or text away; `empty` is the provider's own word that nothing matched.
+ */
+export const ReadCut = z.object({
+  kind: z.literal('OK'),
+  value: z.unknown().optional(),
+  complete: z.boolean().optional(),
+  empty: z.boolean().optional(),
+})
+export type ReadCut = z.infer<typeof ReadCut>
+
+/** A read's value that is a list of rows. */
+export const ReadRows = z.looseObject({ linhas: z.array(z.unknown()) })
+
+/** A read the provider asked to wait for, with the wait it named. */
+export const ReadBusy = z.object({ kind: z.literal('BUSY'), waitMs: z.number().nullable() })
 
 /** What `propose_app` answers: the request, summarized, that **Criar app** hands to the Builder of a new Projeto. */
 export const ProposedApp = z.object({ summary: z.string().min(1).max(4000) })
@@ -101,6 +134,8 @@ export type Overview = {
     name: string
     app: { kind: 'PUBLISHED'; version: string } | { kind: 'NOT_PUBLISHED' }
   }[]
+  /** The company has more live Projetos than the page `projects` holds. */
+  moreProjects: boolean
   connections: readonly SessionConnection[]
 }
 

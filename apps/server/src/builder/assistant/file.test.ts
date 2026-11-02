@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
+import { get } from 'node:http'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { BRUNO, CARLA, call, codeOf, memberOn } from '../../hub/identity/test-hub.ts'
+import { TEST_ORIGIN } from '../../platform/test-database.ts'
 import { endOf } from '../conversation/test-conversation.ts'
 import { tool } from '../conversation/test-questions.ts'
 import { INSTALLATION } from '../machine/test-machine.ts'
@@ -127,12 +129,95 @@ test('o arquivo: acima do teto, FILE_TOO_LARGE; a máquina perdida, FILE_GONE; a
   assert.equal(titleOf(tooLarge), 'O arquivo passa do tamanho que o Hub entrega.')
   // The machine the files were written on is gone: the provider makes a new, empty one.
   big.hub.assistantMachines.control.discoverable.length = 0
+  const started = big.hub.assistantMachines.control.names.length
   const gone = await call(big.hub, big.ana, 'GET', fileOf(bigUrl, 'grande.bin'))
   assert.deepEqual([gone.statusCode, codeOf(gone)], [410, 'FILE_GONE'])
+  assert.equal(big.hub.assistantMachines.control.names.length, started, 'none was started (B2)')
   assert.equal(titleOf(gone), 'A máquina desta conversa não guarda mais este arquivo.')
 
   const down = await withFile(t)
   down.hub.assistantMachines.control.start = 'unreachable'
   const unavailable = await call(down.hub, down.ana, 'GET', fileOf(down.url, 'relatorio.csv'))
   assert.deepEqual([unavailable.statusCode, codeOf(unavailable)], [503, 'MACHINE_UNAVAILABLE'])
+})
+
+test('o download quando a lista do provedor falha: nenhuma máquina é ligada nem morta, a resposta é MACHINE_UNAVAILABLE, e o mesmo arquivo baixa depois (B2)', async (t) => {
+  const on = await withFile(t)
+  const { control, killed } = on.hub.assistantMachines
+  const started = control.names.length
+  control.findFails = 1
+  const down = await call(on.hub, on.ana, 'GET', fileOf(on.url, 'relatorio.csv'))
+  assert.deepEqual([down.statusCode, codeOf(down)], [503, 'MACHINE_UNAVAILABLE'])
+  assert.equal(control.names.length, started, 'the download started no machine')
+  assert.equal(control.killed, false)
+  assert.deepEqual(killed, [], 'and killed none by the mark')
+  const line = on.lines.find((each) => each.message === 'MACHINE_UNAVAILABLE')
+  assert.equal(line?.fields.reason, 'FIND')
+  const got = await call(on.hub, on.ana, 'GET', fileOf(on.url, 'relatorio.csv'))
+  assert.equal(got.statusCode, 200, got.body)
+  assert.equal(got.body, 'a;b\n1;2\n', 'the machine the turn wrote on, with its file')
+})
+
+test('o download cuja pausa falha: o arquivo lido é entregue, e a pausa que falhou fica no log (F27)', async (t) => {
+  const on = await withFile(t)
+  const { control } = on.hub.assistantMachines
+  // The provider loses the machine while the Hub reads it: the pause after the read fails.
+  control.beforeRead = () => {
+    control.killed = true
+  }
+  const got = await call(on.hub, on.ana, 'GET', fileOf(on.url, 'relatorio.csv'))
+  assert.equal(got.statusCode, 200, got.body)
+  assert.equal(got.body, 'a;b\n1;2\n')
+  const line = on.lines.find((each) => each.message === 'MACHINE_UNAVAILABLE')
+  assert.equal(line?.fields.reason, 'STOP')
+  assert.equal(line?.fields.conversationId, on.url.slice(on.url.lastIndexOf('/') + 1))
+})
+
+test('o download que o navegador abandona, num soquete de verdade: sair no meio corta a leitura da máquina, e nenhum arquivo é entregue (K20)', async (t) => {
+  const on = await assisting(t, [
+    [
+      tool('mastra_workspace_execute_command', {
+        command: 'head -c 3000000 /dev/zero > grande.bin',
+      }),
+    ],
+    [said('Escrevi.')],
+  ])
+  const url = await created(on.hub, on.ana, on.assistant, { connections: [] })
+  assert.equal(endOf(await (await talking(t, on.hub, on.ana, url)).say('Escreva')), 'complete')
+  provided(on, url)
+  const { control } = on.hub.assistantMachines
+  control.chunkMs = 50
+  const reading = Promise.withResolvers<void>()
+  control.beforeRead = () => reading.resolve()
+  const address = await on.hub.app.listen({ port: 0, host: '127.0.0.1' })
+  const request = get(`${address}${fileOf(url, 'grande.bin')}`, {
+    headers: { origin: TEST_ORIGIN, cookie: on.ana.cookie },
+  })
+  const failed = Promise.withResolvers<Error>()
+  request.on('error', failed.resolve)
+  await reading.promise
+  request.destroy()
+  assert.equal((await failed.promise).message, 'socket hang up', 'the browser left before any byte')
+  const deadline = Date.now() + 2_000
+  while (control.readsCut === 0 && Date.now() < deadline) {
+    await new Promise((later) => setTimeout(later, 20))
+  }
+  assert.equal(control.readsCut, 1, 'the machine stopped sending once the browser left')
+  assert.equal(
+    on.lines.some((line) => line.message === 'ASSISTANT_FILE_READ'),
+    false,
+  )
+})
+
+test("o arquivo com ' e parênteses no nome: filename* os codifica, como o cabeçalho pede (RFC 8187)", async (t) => {
+  const on = await assisting(t, [[write("d'água (1).csv", 'a;b\n')], [said('Escrevi.')]])
+  const url = await created(on.hub, on.ana, on.assistant, { connections: [] })
+  assert.equal(endOf(await (await talking(t, on.hub, on.ana, url)).say('Escreva')), 'complete')
+  provided(on, url)
+  const got = await call(on.hub, on.ana, 'GET', fileOf(url, "d'água (1).csv"))
+  assert.equal(got.statusCode, 200, got.body)
+  assert.equal(
+    got.headers['content-disposition'],
+    `attachment; filename="d'_gua (1).csv"; filename*=UTF-8''d%27%C3%A1gua%20%281%29.csv`,
+  )
 })

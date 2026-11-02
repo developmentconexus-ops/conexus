@@ -1,4 +1,5 @@
 import type { ConversationId } from '@conexus/hub-api'
+import type { HistoryState } from '@tanstack/react-router'
 import { useLocation, useNavigate } from '@tanstack/react-router'
 import { useEffect, useRef } from 'react'
 import { pageStorage } from '../../platform/storage.ts'
@@ -27,6 +28,12 @@ addEventListener('pagehide', () => {
 addEventListener('pageshow', () => {
   leaving = false
 })
+
+/** The request handed over in a navigation's state, only when it is addressed to this conversation. */
+export function handoffTo(state: HistoryState, conversationId: string | undefined) {
+  const { handoff } = state
+  return handoff !== undefined && handoff.conversationId === conversationId ? handoff : undefined
+}
 
 function keyOf(conversationId: ConversationId) {
   return `conexus-handoff:${conversationId}`
@@ -59,7 +66,7 @@ export function useHandoff(
   on: { send: (outgoing: Outgoing) => Promise<void>; recover: (text: string) => void },
 ): void {
   const navigate = useNavigate()
-  const handoff = useLocation({ select: (location) => location.state.handoff })
+  const handoff = useLocation({ select: (location) => handoffTo(location.state, conversationId) })
   const handedOff = useRef(false)
   const recovered = useRef(false)
 

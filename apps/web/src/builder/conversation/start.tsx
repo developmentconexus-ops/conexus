@@ -106,7 +106,7 @@ function useCreated(
       await navigate({
         to: '/companies/$companyId/projects/$projectId/conversations/$conversationId',
         params: { ...params, conversationId: conversation.id },
-        state: { handoff: { content: outgoing.content } },
+        state: { handoff: { conversationId: conversation.id, content: outgoing.content } },
       })
     } catch (error) {
       if (!(error instanceof HubFailure && isModelRefusal(error.code))) throw error
@@ -122,8 +122,8 @@ function useCreated(
 /** The phases after **Enviar**, the request held out of the box. */
 type Sent = Exclude<Phase, { kind: 'WRITING' }>
 
-/** The request sent, with the name of its Projeto under it, in the box's place. */
-function Naming(props: {
+/** The request sent, with the name of its Projeto under it: the part of a frame that its screen draws or a dialog holds. */
+function NamingBody(props: {
   companyId: CompanyId
   phase: Sent
   picked: { model: ModelId; effort: Effort }
@@ -138,7 +138,7 @@ function Naming(props: {
   const navigate = useNavigate()
   const created = useCreated(companyId, props.picked, props.onOpened)
   return (
-    <div className={`${START_COLUMN} rounded-composer border border-line bg-surface`}>
+    <>
       <Request outgoing={outgoing} />
       <div className="border-t border-line px-lg pt-md pb-lg">
         <NameStep
@@ -161,6 +161,15 @@ function Naming(props: {
           }}
         />
       </div>
+    </>
+  )
+}
+
+/** The request sent, with the name of its Projeto under it, in the box's place. */
+function Naming(props: Parameters<typeof NamingBody>[0]) {
+  return (
+    <div className={`${START_COLUMN} rounded-composer border border-line bg-surface`}>
+      <NamingBody {...props} />
     </div>
   )
 }
@@ -290,7 +299,7 @@ export function CreateApp(props: {
   })
   if (picked === null) return <StartWithoutAccount companyId={companyId} />
   return (
-    <Naming
+    <NamingBody
       companyId={companyId}
       phase={phase}
       picked={picked}

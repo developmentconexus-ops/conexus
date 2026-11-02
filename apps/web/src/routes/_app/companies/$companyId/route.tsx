@@ -39,6 +39,10 @@ function HouseFrame() {
     if (projectId !== undefined) rememberProject({ personId: person.id, companyId, projectId })
   }, [person.id, companyId, projectId])
   const bounded = useMatches({ select: (matches) => matches.at(-1)?.staticData.bounded === true })
+  // Início is the place of the company's page and of the conversations born there.
+  const atInicio = useMatches({
+    select: (matches) => matches.at(-1)?.staticData.place === 'Início',
+  })
   const phone = useIsMobile()
   const params = { companyId }
   return (
@@ -64,6 +68,7 @@ function HouseFrame() {
                   to="/companies/$companyId"
                   params={params}
                   activeOptions={{ exact: true }}
+                  current={atInicio}
                   icon={HouseIcon}
                   label="Início"
                 />

@@ -1178,3 +1178,21 @@ reference tool checks a read against its documentation.
   needs the live site.
 - **Revisit when** Mercado Livre publishes an OpenAPI document, or a read fails on a real account
   (then its answer, without company data, becomes the double's data).
+
+## Mastra 1.79.0: a conversation's changing state lives in a Hub table (step 24.1)
+
+- **Library line.** At `@mastra/pg` version 1.32.0 and `@mastra/memory` version 1.39.0 (the lockfile's),
+  `@mastra/pg` `updateThread` (`dist/index.js:12438-12472`) reads the thread,
+  merges the new metadata over what it read and writes the whole object, with no lock. Observational
+  memory writes the thread title through `patchThread` with the full metadata it read earlier
+  (`@mastra/memory` `dist/src-DxZ7N8nO.js:35742-35762`). Either write can put back a value that
+  another request changed in between. Reported to Mastra (feedback, 2026-11-01).
+- **Hand-made piece.** The Assistant's chosen connections and its place live in
+  `builder.assistant_conversation`, which only the Hub writes (`apps/server/src/builder/assistant/chosen.ts`,
+  `context.ts`; founder's D11 word, 2026-11-01: "Aprovo as permissoes do b1"). The thread's metadata
+  keeps only marks set once at `createSession({ tags })`.
+- **Why.** The step's B1: a change of connections made while Mastra saved the title came back on
+  the next turn. The Builder's own metadata has the same exposure; per-conversation state that
+  changes after creation goes in a Hub table, never in the thread's metadata.
+- **Proof.** `instructions.test.ts` "trocar a escolha enquanto o Mastra grava o título": the next
+  turn reads only the new choice, and the title stays.

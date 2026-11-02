@@ -4,13 +4,13 @@ import { join } from 'node:path'
 import { test } from 'node:test'
 import { ConversationId } from '@conexus/hub-api'
 import { servedSankhya } from '../../hub/connectors/test-connections.ts'
-import { PLANTED, withRows } from '../connectors/test-rows.ts'
-import { hubBeside } from '../conversation/test-beside.ts'
+import { PLANTED, withRows } from '../../hub/connectors/test-rows.ts'
 import {
   asked,
   conversing,
   endOf,
   holding,
+  hubBeside,
   PARTIAL,
   sent,
   streamOf,
@@ -221,11 +221,14 @@ test('o download cancelado: o navegador que sai faz a leitura da máquina parar,
   assert.equal(endOf(await say('Escreva')), 'complete')
   const { control, deps } = on.hub.assistantMachines
   control.discoverable.push(nameOf(url))
-  const machines = createAssistantMachines({
-    ...deps,
-    scopeOf: async () => undefined,
-    log: { info: () => undefined, error: () => undefined },
-  })
+  const machines = createAssistantMachines(
+    {
+      ...deps,
+      log: { info: () => undefined, error: () => undefined },
+      scopeOf: async () => undefined,
+    },
+    on.hub.assistantMachines.tuning,
+  )
   const id = ConversationId.parse(url.slice(url.lastIndexOf('/') + 1))
   const left = new AbortController()
   left.abort()

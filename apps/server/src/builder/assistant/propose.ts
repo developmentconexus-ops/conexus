@@ -10,7 +10,7 @@ import { createTool } from '@mastra/core/tools'
 export const proposeAppTool = createTool({
   id: ASSISTANT_TOOL.proposeApp,
   description:
-    'Offers the person a button, Criar app, to hand a need to the Builder of a new Projeto. Call it when what they ask for is a screen they will use every day, a record people keep filling or a process several people follow. Summarize the need in a few lines: who uses it, what they record or see, and which systems it reads.',
+    'Offers the person a button, Criar app, to hand a need to the Builder of a new Projeto. Call it when what they ask for is a screen they will use every day, a record people keep filling or a process several people follow, and also when Conexus cannot do the whole need yet but an app serves part of it. Summarize the need in a few lines: who uses it, what they record or see, and which systems it reads.',
   inputSchema: ProposedApp,
   execute: async ({ summary }): Promise<ProposedApp> => ({ summary }),
 })

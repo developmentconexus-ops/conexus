@@ -19,7 +19,7 @@ import {
 } from '../identity/test-hub.ts'
 import { linkSankhya, testOf } from './test-connections.ts'
 
-export { CONNECTOR_CALLS_PER_TURN } from './builder-port.ts'
+export { CONNECTOR_CALLS_PER_TURN, TURNS_KEPT } from './builder-port.ts'
 export { shaped } from './cut.ts'
 export { readOf } from './grants.ts'
 

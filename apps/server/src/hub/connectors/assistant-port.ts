@@ -10,7 +10,7 @@ import { readOf } from './grants.ts'
 import { Notes } from './notes.ts'
 import { readThrough } from './read.ts'
 import type { Deps } from './rows.ts'
-import { admitted, scopeOf } from './rows.ts'
+import { scopeOf } from './rows.ts'
 import { openedIn } from './testing.ts'
 
 /** Where a conversation lives: it decides which connections it may choose (C21). */
@@ -49,7 +49,14 @@ export type AssistantConnectors = {
   /** One read of a chosen, offered connection, read class only. */
   read(
     scope: SessionScope,
-    call: { connectionId: ConnectionId; turn: TurnKey; operation: string; input: unknown },
+    call: {
+      connectionId: ConnectionId
+      turn: TurnKey
+      operation: string
+      input: unknown
+      /** The turn's stop: a read waiting in its connection's line leaves it at once. */
+      signal?: AbortSignal
+    },
   ): Promise<AssistantRead>
   /** The connection's caderno, read only, under the same check as read. */
   notes(scope: SessionScope, connectionId: ConnectionId): Promise<Notes | null>
@@ -62,19 +69,25 @@ function idsOf(scope: SessionScope) {
     : { companyId: scope.companyId }
 }
 
-/** Whether the person may ask now: their role is read on every call (S10); a person no longer in the company may not either. */
+/**
+ * Whether the person may ask now: admission reads their role on every call (S10), the same way as
+ * the Assistant's routes. A refusal is `false` for the caller and its reason in the log only.
+ */
 async function mayAsk(deps: Deps, tx: ReadTx, scope: SessionScope) {
   try {
-    const member = await admitted(
-      deps,
+    await deps.identity.admitMember({
       tx,
-      { person: { id: scope.personId }, companyId: scope.companyId },
-      'readConnections',
-    )
-    return deps.identity.allows(member.role, 'askAssistant')
+      personId: scope.personId,
+      companyId: scope.companyId,
+      action: 'askAssistant',
+    })
+    return true
   } catch (error) {
-    if (error instanceof Failure && error.code === 'NOT_FOUND') return false
-    throw error
+    if (!(error instanceof Failure) || error.code !== 'NOT_FOUND') throw error
+    const reason = String(error.details.reason ?? 'NOT_FOUND')
+    const { companyId, personId } = scope
+    deps.log.info({ companyId, personId, reason }, 'ASSISTANT_NOT_ADMITTED')
+    return false
   }
 }
 
@@ -85,23 +98,38 @@ function offered(deps: Deps, scope: SessionScope) {
   )
 }
 
+/** Why the conversation may not read a connection: the caller hears NOT_GRANTED alone (S10). */
+type Refusal = 'NOT_CHOSEN' | 'NOT_ADMITTED' | 'NOT_OFFERED' | 'NOT_A_READ'
+
 /**
  * The one connection the conversation chose and its place offers, handed to `use` in the same
- * transaction that decided it (D22, S8); none gives undefined whatever the reason (S10). The owner of
- * "what a conversation may read" (C26): the notebook and every read go through it.
+ * transaction that decided it (D22, S8); none gives the reason, which the caller logs and answers
+ * as NOT_GRANTED (S10). The owner of "what a conversation may read" (C26): the notebook and every
+ * read go through it.
  */
 async function readable<T>(
   deps: Deps,
   scope: SessionScope,
   connectionId: ConnectionId,
   use: (tx: ReadTx, row: { notes: unknown }) => Promise<T>,
-) {
-  if (!scope.chosen.includes(connectionId)) return undefined
+): Promise<{ kind: 'OK'; value: T } | { kind: Refusal }> {
+  if (!scope.chosen.includes(connectionId)) return { kind: 'NOT_CHOSEN' }
   return deps.database.read(scopeOf(viewerOf(scope)), async (tx) => {
-    if (!(await mayAsk(deps, tx, scope))) return undefined
+    if (!(await mayAsk(deps, tx, scope))) return { kind: 'NOT_ADMITTED' }
     const [row] = await offeredIn(tx, idsOf(scope), connectionId)
-    return row === undefined ? undefined : use(tx, row)
+    return row === undefined ? { kind: 'NOT_OFFERED' } : { kind: 'OK', value: await use(tx, row) }
   })
+}
+
+/** A refusal of the Assistant's read or notebook, its reason in the log (S10: the model hears NOT_GRANTED). */
+function refused(
+  deps: Deps,
+  scope: SessionScope,
+  about: { connectionId: ConnectionId; operation?: string; reason: Refusal },
+) {
+  const { companyId, personId } = scope
+  deps.log.info({ companyId, personId, ...about }, 'ASSISTANT_READ_REFUSED')
+  return { kind: 'NOT_GRANTED' } as const
 }
 
 function viewerOf(scope: SessionScope) {
@@ -127,12 +155,17 @@ export function createAssistantConnectors(deps: Deps): AssistantConnectors {
     },
 
     async read(scope, call) {
-      const open = await readable(deps, scope, call.connectionId, (tx) =>
-        openedIn(deps, tx, { companyId: scope.companyId, connectionId: call.connectionId }),
+      const { connectionId } = call
+      const found = await readable(deps, scope, connectionId, (tx) =>
+        openedIn(deps, tx, { companyId: scope.companyId, connectionId }),
       )
-      if (open === undefined) return { kind: 'NOT_GRANTED' }
+      if (found.kind !== 'OK') return refused(deps, scope, { connectionId, reason: found.kind })
+      const open = found.value
       const operation = readOf(open.connector, call.operation)
-      if (operation === undefined) return { kind: 'NOT_GRANTED' }
+      if (operation === undefined) {
+        const about = { connectionId, operation: call.operation, reason: 'NOT_A_READ' } as const
+        return refused(deps, scope, about)
+      }
       if (!spend(call.turn)) return { kind: 'CALLS_SPENT' }
       const answered = await readThrough(deps, {
         by: 'assistant',
@@ -142,6 +175,7 @@ export function createAssistantConnectors(deps: Deps): AssistantConnectors {
         operation,
         input: call.input,
         deadlineMs: CALL_DEADLINE_MS,
+        signal: call.signal,
       })
       return answered.kind === 'OK'
         ? { kind: 'OK', ...shaped(answered.value), whole: answered.value }
@@ -149,10 +183,12 @@ export function createAssistantConnectors(deps: Deps): AssistantConnectors {
     },
 
     async notes(scope, connectionId) {
-      return (
-        (await readable(deps, scope, connectionId, async (_, row) => Notes.parse(row.notes))) ??
-        null
+      const found = await readable(deps, scope, connectionId, async (_, row) =>
+        Notes.parse(row.notes),
       )
+      if (found.kind === 'OK') return found.value
+      refused(deps, scope, { connectionId, reason: found.kind })
+      return null
     },
   }
 }

@@ -13,11 +13,11 @@ import {
   problem,
 } from '../../hub/identity/test-hub.ts'
 import { TEST_ORIGIN } from '../../platform/test-database.ts'
-import { hubBeside } from './test-beside.ts'
 import {
   conversing,
   endOf,
   holding,
+  hubBeside,
   MODEL,
   PARTIAL,
   sent,

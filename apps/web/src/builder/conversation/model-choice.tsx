@@ -6,7 +6,7 @@ import type {
   ProjectId,
   Provider,
 } from '@conexus/hub-api'
-import { runningEffort } from '@conexus/hub-api'
+import { BUILDER_CONTROLLER, runningEffort } from '@conexus/hub-api'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { sentenceOfCode, writeFailureText } from '../../platform/hub.ts'
@@ -72,7 +72,7 @@ export function ModelChoice(props: {
     ...sendModel,
     onSuccess: (kept) =>
       queryClient.setQueryData<SessionRead>(
-        sessionReadQuery(props.conversationId).queryKey,
+        sessionReadQuery(props.conversationId, BUILDER_CONTROLLER).queryKey,
         (read) => read && { ...read, ...kept },
       ),
   })

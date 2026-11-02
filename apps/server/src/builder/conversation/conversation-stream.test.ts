@@ -7,11 +7,11 @@ import type { Hub } from '../../hub/identity/test-hub.ts'
 import { call, post } from '../../hub/identity/test-hub.ts'
 import type { Reply } from '../../platform/test-anthropic.ts'
 import { TEST_ORIGIN } from '../../platform/test-database.ts'
-import { hubBeside } from './test-beside.ts'
 import {
   conversing,
   endOf,
   holding,
+  hubBeside,
   PARTIAL,
   rolesAndParts,
   sent,

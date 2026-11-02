@@ -9,6 +9,7 @@ import type { RequestContext } from '@mastra/core/request-context'
 import { webFetchTool, webSearchTool } from '@mastra/core/tools'
 import { Memory } from '@mastra/memory'
 import type { PostgresStore } from '@mastra/pg'
+import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { BuilderConnectors, GrantedConnection } from '../connectors/public.ts'
 import { builderAccess, connectorTools } from '../connectors/public.ts'
@@ -94,8 +95,13 @@ function grantedFor(
 }
 
 /** The Builder's three connector tools, its notebook's write included. */
-function builderConnectorTools(...bound: Parameters<typeof builderAccess>): ToolsInput {
-  const { access, save } = builderAccess(...bound)
+function builderConnectorTools(
+  deps: { connectors: BuilderConnectors; runs: Runs; log: FailureLog },
+  granted: readonly GrantedConnection[],
+  ids: Omit<Parameters<typeof builderAccess>[2], 'runIdOf'>,
+): ToolsInput {
+  const who = { ...ids, runIdOf: (context: RequestContext) => deps.runs.runIdOf(context) }
+  const { access, save } = builderAccess(deps.connectors, granted, who, deps.log)
   return connectorTools(access, { noteSave: true, save })
 }
 
@@ -186,6 +192,7 @@ export function createBuilder(deps: {
   runs: Runs
   index: ConversationIndex
   connectors: BuilderConnectors
+  log: FailureLog
   projectName: Parameters<typeof builderInstructions>[0]['projectName']
 }) {
   const { storage } = deps
@@ -213,15 +220,15 @@ export function createBuilder(deps: {
     model: ({ requestContext }) => sessionModel(requestContext),
     tools: async ({ requestContext }) => {
       const ids = await projectOf(requestContext)
+      const web = toolsOf(sessionModel(requestContext))
+      // The order of step 20 (criterion 13a): the model's request stays byte for byte the same.
       return {
-        ...toolsOf(sessionModel(requestContext)),
+        web_fetch: webFetchTool,
         [BUILDER_TOOL.check]: check,
+        ...web,
         ...(ids === undefined
           ? {}
-          : builderConnectorTools(deps.connectors, await granted(requestContext), {
-              ...ids,
-              runIdOf: (context) => deps.runs.runIdOf(context),
-            })),
+          : builderConnectorTools(deps, await granted(requestContext), ids)),
       }
     },
     inputProcessors: [turnOf(deps), accountPick(deps.queue)],

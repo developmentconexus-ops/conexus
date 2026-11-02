@@ -6,7 +6,8 @@ import { createTool } from '@mastra/core/tools'
 import type { WorkspaceFilesystem } from '@mastra/core/workspace'
 import { z } from 'zod'
 import type { Connectors } from '../../hub/connectors/public.ts'
-import { Failure } from '../../platform/failure.ts'
+import type { FailureLog } from '../../platform/failure.ts'
+import { Failure, logFailure } from '../../platform/failure.ts'
 
 export type BuilderConnectors = Connectors['builder']
 export type GrantedConnection = Awaited<ReturnType<BuilderConnectors['granted']>>[number]
@@ -30,11 +31,13 @@ export type Asker = OfProject & {
 export type ConnectorAccess = {
   connections: readonly Pick<GrantedConnection, 'connectionId' | 'connector' | 'name' | 'reads'>[]
   read(
-    call: { connectionId: ConnectionId; operation: string; input: unknown },
+    call: { connectionId: ConnectionId; operation: string; input: unknown; signal?: AbortSignal },
     requestContext: RequestContext,
   ): Promise<Answer | WholeAnswer>
-  /** With a machine, the path (inside its folder) the turn's next read is saved whole at. */
-  savedAt?(requestContext: RequestContext): string
+  /** With a machine: the path (inside its folder) the turn's next read is saved whole at. */
+  savedAt?: (requestContext: RequestContext) => string
+  /** Where a refused call and a failed save are logged. */
+  log: FailureLog
   notes(connectionId: ConnectionId): Promise<Notes>
   wording: { whose: string; limit: string }
 }
@@ -62,9 +65,11 @@ export function builderAccess(
   port: BuilderConnectors,
   granted: readonly GrantedConnection[],
   who: Asker,
+  log: FailureLog,
 ): { access: ConnectorAccess; save: NoteSave } {
   const access: ConnectorAccess = {
     connections: granted,
+    log,
     read: (call, requestContext) =>
       port.read(who, {
         ...call,
@@ -95,6 +100,17 @@ function inNotebook(connections: readonly Connection[], name: string, connector?
   return named(connections, name, connector)
 }
 
+/**
+ * The connection's name, one of the names this scope offers: a name the model makes up, such as
+ * the connector's id for the connection's name, is refused by the tool's own schema, which tells
+ * the model the names there are.
+ */
+function connectionField(connections: readonly Connection[]) {
+  const [first, ...rest] = [...new Set(connections.map((each) => each.name))]
+  if (first === undefined) return z.never()
+  return z.enum([first, ...rest]).describe("The connection's name, exactly as listed")
+}
+
 const CONNECTOR_FIELD = z
   .string()
   .optional()
@@ -116,19 +132,44 @@ function describeReads(connections: readonly Connection[]): string {
  */
 async function saveWhole<T extends object>(
   files: WorkspaceFilesystem,
-  path: string,
+  save: { path: string; log: FailureLog },
   whole: unknown,
   cut: T,
 ) {
   try {
-    await files.writeFile(path, JSON.stringify(whole), { recursive: true })
+    await files.writeFile(save.path, JSON.stringify(whole), { recursive: true })
   } catch (error) {
-    if (error instanceof Failure && error.code === 'MACHINE_UNAVAILABLE') {
-      return { ...cut, saved: false, reason: error.code }
-    }
-    throw error
+    // A machine that did not start says so; one that started and lost the write is the same to the
+    // model: the cut stands, the file does not. The reason is logged, typed, with scalars alone.
+    const failure =
+      error instanceof Failure
+        ? error
+        : new Failure('MACHINE_UNAVAILABLE', { cause: error, details: { reason: 'READS_WRITE' } })
+    logFailure(save.log, failure)
+    return { ...cut, saved: false, reason: failure.code }
   }
-  return { ...cut, file: path }
+  return { ...cut, file: save.path }
+}
+
+/**
+ * The named connection is of another system than the operation's: the schema let both through,
+ * each from its own list, and the tool refuses the pair, saying whose each one is.
+ */
+function otherSystem(access: ConnectorAccess, connection: string, operation: string) {
+  const of = access.connections.filter((each) => each.name === connection)
+  const systems = of.map((each) => each.connector).join(', ')
+  access.log.info(
+    {
+      connectionIds: of.map((each) => each.connectionId).join(','),
+      operation,
+      reason: 'OTHER_SYSTEM',
+    },
+    'CONNECTOR_READ_REFUSED',
+  )
+  return {
+    ...NOT_GRANTED,
+    reason: `The connection "${connection}" is of ${systems}; the operation ${operation} is of another system. Read it through a connection of that system.`,
+  }
 }
 
 function readTool(access: ConnectorAccess): ToolsInput {
@@ -148,22 +189,27 @@ function readTool(access: ConnectorAccess): ToolsInput {
         describeReads(connections),
       ].join('\n'),
       inputSchema: z.object({
-        connection: z.string().describe("The connection's name"),
+        connection: connectionField(connections),
         operation: z.enum([first, ...rest]),
         input: z.record(z.string(), z.unknown()),
       }),
-      execute: async ({ connection, operation, input }, { requestContext, workspace }) => {
+      execute: async (
+        { connection, operation, input },
+        { requestContext, workspace, abortSignal },
+      ) => {
         const [connector, ...id] = operation.split('.')
         const found = named(connections, connection, connector)
-        if (found === undefined || requestContext === undefined) return NOT_GRANTED
+        if (found === undefined) return otherSystem(access, connection, operation)
+        if (requestContext === undefined) return NOT_GRANTED
         const answered = await access.read(
-          { connectionId: found.connectionId, operation: id.join('.'), input },
+          { connectionId: found.connectionId, operation: id.join('.'), input, signal: abortSignal },
           requestContext,
         )
         if (answered.kind !== 'OK' || !('whole' in answered)) return answered
         const { whole, ...cut } = answered
         if (workspace?.filesystem === undefined || access.savedAt === undefined) return cut
-        return saveWhole(workspace.filesystem, access.savedAt(requestContext), whole, cut)
+        const save = { path: access.savedAt(requestContext), log: access.log }
+        return saveWhole(workspace.filesystem, save, whole, cut)
       },
     }),
   }
@@ -175,7 +221,10 @@ function notesTool(access: ConnectorAccess) {
       id: BUILDER_TOOL.connectorNotes,
       description:
         'The notebook of a connection: each concept the Builder proved before, with its mapping and the query that proved it. Read it before you ask the person what a code means.',
-      inputSchema: z.object({ connection: z.string(), connector: CONNECTOR_FIELD }),
+      inputSchema: z.object({
+        connection: connectionField(access.connections),
+        connector: CONNECTOR_FIELD,
+      }),
       execute: async ({ connection, connector }) => {
         const found = inNotebook(access.connections, connection, connector)
         if (found === undefined) return NOT_GRANTED
@@ -193,7 +242,7 @@ function noteSaveTool(connections: readonly Connection[], save: NoteSave) {
       description:
         "Saves in a connection's notebook what a code or a field means in this company. It runs `provingQuery` once through the connection's read door and keeps the mapping, the query, the date and the number of rows it returned, never a row. Names and codes only, never a value.",
       inputSchema: z.object({
-        connection: z.string(),
+        connection: connectionField(connections),
         connector: CONNECTOR_FIELD,
         concept: z.string().min(1).max(120),
         mapping: z.string().min(1).max(500),

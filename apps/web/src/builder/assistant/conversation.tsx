@@ -4,11 +4,11 @@ import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 import { hubQueryPrefix } from '../../platform/hub.ts'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '../../ui/resizable.tsx'
-import { NotFound } from '../../ui/states.tsx'
+import { Sheet, SheetContent } from '../../ui/sheet.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
 import { AutomationBadge, ProposalCard } from '../automations/public.ts'
 import type { OpenedFile, Room } from '../conversation/public.ts'
-import { ASSISTANT_ROOM, Chat, RoomContext } from '../conversation/public.ts'
+import { ASSISTANT_ROOM, Chat, RoomContext, START_NO_ACCOUNT } from '../conversation/public.ts'
 import { useConnectorCatalog } from './connector-names.ts'
 import { ContextBar, FixedProject } from './context-bar.tsx'
 import { FilePanel } from './file.tsx'
@@ -19,17 +19,35 @@ import { EMPTY_ASSISTANT, titleOf } from './text.ts'
 type Props = { companyId: CompanyId; conversationId: ConversationId; projectId?: ProjectId }
 
 /**
- * The conversation and, when the Assistant showed a file, the file beside it (or over it, on a
- * phone). The chat keeps its place in the tree, so showing a file does not remount it and drop its
- * stream.
+ * The conversation and, when the Assistant showed a file, the file beside it (or in a sheet over
+ * it, on a phone, which holds the focus and closes on Esc). The chat keeps its place in the tree,
+ * so showing a file does not remount it and drop its stream.
  */
-function Beside(props: { chat: React.ReactNode; file: React.ReactNode | undefined }) {
-  const phone = useIsMobile()
-  if (phone)
+function Beside(props: {
+  chat: React.ReactNode
+  file: React.ReactNode | undefined
+  /** The file's name, the sheet's title on a phone. */
+  fileName: string | undefined
+  phone: boolean
+  onCloseFile: () => void
+}) {
+  if (props.phone)
     return (
-      <div className="relative h-full min-h-0">
+      <div className="h-full min-h-0">
         {props.chat}
-        {props.file !== undefined && <div className="absolute inset-0 z-10">{props.file}</div>}
+        <Sheet
+          open={props.file !== undefined}
+          onOpenChange={(open) => !open && props.onCloseFile()}
+        >
+          <SheetContent
+            side="right"
+            title={props.fileName ?? ''}
+            closeLabel="Fechar"
+            className="p-0"
+          >
+            {props.file}
+          </SheetContent>
+        </Sheet>
       </div>
     )
   return (
@@ -58,11 +76,11 @@ function useAssistantRoom(held: {
   setProposal: (summary: string) => void
 }): Room {
   const { companyId, conversation, file, setFile, setProposal } = held
-  const { name: connectorName } = useConnectorCatalog(companyId)
+  const { words } = useConnectorCatalog(companyId)
   return useMemo(
     () => ({
       ...ASSISTANT_ROOM,
-      connectorName,
+      connectors: words,
       openFile: setFile,
       openedPath: file?.path,
       createApp: setProposal,
@@ -75,7 +93,7 @@ function useAssistantRoom(held: {
         />
       ),
     }),
-    [companyId, connectorName, conversation, file?.path, setFile, setProposal],
+    [companyId, words, conversation, file?.path, setFile, setProposal],
   )
 }
 
@@ -86,6 +104,7 @@ function Conversation(props: Props) {
     assistantConversationQuery(companyId, conversationId),
   ).data
   const [file, setFile] = useState<OpenedFile>()
+  const phone = useIsMobile()
   const [proposal, setProposal] = useState<string>()
   const room = useAssistantRoom({ companyId, conversation, file, setFile, setProposal })
   return (
@@ -99,6 +118,9 @@ function Conversation(props: Props) {
         </div>
         <div className="min-h-0 flex-1">
           <Beside
+            phone={phone}
+            fileName={file?.name}
+            onCloseFile={() => setFile(undefined)}
             chat={
               <div className="flex h-full min-h-0 flex-col bg-canvas">
                 <Chat
@@ -112,6 +134,7 @@ function Conversation(props: Props) {
                     })
                   }
                   empty={EMPTY_ASSISTANT}
+                  noAccount={START_NO_ACCOUNT}
                   bar={
                     <div className="px-md pb-sm">
                       <ContextBar
@@ -135,7 +158,8 @@ function Conversation(props: Props) {
                   companyId={companyId}
                   conversationId={conversationId}
                   shown={file}
-                  onClose={() => setFile(undefined)}
+                  onClose={phone ? undefined : () => setFile(undefined)}
+                  inSheet={phone}
                 />
               )
             }
@@ -150,12 +174,8 @@ function Conversation(props: Props) {
 /**
  * A conversation with the Assistant (criteria 24 to 27): the Builder's transcript and box over the
  * Assistant's session, its bar of connections above the box and the file it showed beside. A
- * conversation lives at one address, its Projeto's or the company's: at the other, it is not found.
+ * conversation lives at one address, its Projeto's or the company's: the loader finds the other not found.
  */
 export function AssistantChat(props: Props) {
-  const { conversation } = useSuspenseQuery(
-    assistantConversationQuery(props.companyId, props.conversationId),
-  ).data
-  if (conversation.projectId !== (props.projectId ?? null)) return <NotFound />
   return <Conversation key={props.conversationId} {...props} />
 }

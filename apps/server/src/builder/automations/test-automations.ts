@@ -10,8 +10,7 @@ import type { Anthropic, Reply, Sent } from '../../platform/test-anthropic.ts'
 import { silent } from '../../platform/test-database.ts'
 import { mailServer } from '../../platform/test-mail.ts'
 import { assisting } from '../assistant/test-assistant.ts'
-import { hubBeside } from '../conversation/test-beside.ts'
-import { title } from '../conversation/test-conversation.ts'
+import { hubBeside, title } from '../conversation/test-conversation.ts'
 import type { tool } from '../conversation/test-questions.ts'
 
 type Block = ReturnType<typeof tool>

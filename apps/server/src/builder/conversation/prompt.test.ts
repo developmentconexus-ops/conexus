@@ -104,6 +104,11 @@ test('o prompt tem cada linha "igual" e "adaptada" da tabela, nenhuma "tirada"; 
   assert.doesNotMatch(data, /constraints and views/)
   assert.match(data, /no row level security, policies or rules/)
   assert.doesNotMatch(skills.join('\n'), /only then remove the old fields/)
+  // The order of step 20, byte for byte (criterion 13a): web_fetch, the check, then the search.
+  const web = first.tools.filter((name) =>
+    ['web_fetch', 'conexus_check', 'web_search'].includes(name),
+  )
+  assert.deepEqual(web.slice(0, 2), ['web_fetch', 'conexus_check'], first.tools.join(','))
   // The skills come through Mastra's skill tools; the second test sees none in the machine.
   for (const name of ['skill', 'skill_read', 'skill_search'])
     assert.ok(first.tools.includes(name), name)

@@ -3,6 +3,7 @@ import { expect, test } from 'vitest'
 import { ANA } from '../../platform/fixtures.ts'
 import { hubServer, memberView } from '../../platform/test-hub.tsx'
 import { preparationOf } from './preparation.ts'
+import { NO_SHARED_ACCOUNT } from './preparation-card.tsx'
 import { COMPANY_PATH, companyHub, companyView, openAt } from './test-hub.tsx'
 
 const server = hubServer()
@@ -26,6 +27,7 @@ for (const role of ['owner', 'admin'] as const) {
     expect(card.getByText('Empresa: feito')).toBeTruthy()
     expect(card.getByText('Conta de modelo: falta')).toBeTruthy()
     expect(card.getByText('Convidar equipe: falta')).toBeTruthy()
+    expect(card.getByText(NO_SHARED_ACCOUNT)).toBeTruthy()
   })
 }
 
@@ -41,6 +43,7 @@ test('com a conta ligada e sem equipe, Continuar abre Pessoas e convites', async
   inicio({ accounts: 1 })
   const card = within(await screen.findByRole('region', { name: CARD }))
   expect(card.getByText('Conta de modelo: feito')).toBeTruthy()
+  expect(card.queryByText(NO_SHARED_ACCOUNT)).toBeNull()
   expect(card.getByText('Convidar equipe: falta')).toBeTruthy()
   fireEvent.click(card.getByRole('link', { name: 'Continuar' }))
   expect(await screen.findByRole('heading', { name: 'Pessoas e convites' })).toBeTruthy()

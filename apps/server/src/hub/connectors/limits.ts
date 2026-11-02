@@ -15,11 +15,15 @@ type Deadline = Readonly<{ kind: 'DEADLINE' }>
 
 /** One per Hub process (0058): each connection's calls one at a time, and a pasted-key connection's token reused, renewed with a logout first. */
 export type Limits = {
-  /** Runs `work` when the connection's turn comes; DEADLINE when `deadlineMs` passes in the queue. */
+  /**
+   * Runs `work` when the connection's turn comes; DEADLINE when `deadlineMs` passes in the queue, or
+   * when `signal` (the caller's turn stopped) aborts there: a caller already stopped never takes a turn.
+   */
   inTurn<T>(
     connection: ConnectionId,
     deadlineMs: number,
     work: (waitedMs: number) => Promise<T>,
+    signal?: AbortSignal,
   ): Promise<T | Deadline>
   /** The live token, or one login (the old token logged out first, while it lives). */
   token(opened: OpenedConnection, deadlineMs: number): Promise<Login>
@@ -48,13 +52,15 @@ function createLanes(): Pick<Limits, 'inTurn'> {
   const lanes = new Map<ConnectionId, Lane>()
 
   /** True when the turn is this caller's; false when its deadline passed first, and it left the line. */
-  function turnOf(lane: Lane, deadlineMs: number): Promise<boolean> {
+  function turnOf(lane: Lane, deadlineMs: number, stopped?: AbortSignal): Promise<boolean> {
+    if (stopped?.aborted === true) return Promise.resolve(false)
     if (!lane.busy) {
       lane.busy = true
       return Promise.resolve(true)
     }
     return new Promise((resolve) => {
-      const signal = AbortSignal.timeout(deadlineMs)
+      const deadline = AbortSignal.timeout(deadlineMs)
+      const signal = stopped === undefined ? deadline : AbortSignal.any([deadline, stopped])
       function give() {
         signal.removeEventListener('abort', leave)
         resolve(true)
@@ -80,14 +86,18 @@ function createLanes(): Pick<Limits, 'inTurn'> {
   }
 
   return {
-    async inTurn(connection, deadlineMs, work) {
+    async inTurn(connection, deadlineMs, work, signal) {
       let lane = lanes.get(connection)
       if (lane === undefined) {
         lane = { busy: false, waiting: new Set() }
         lanes.set(connection, lane)
       }
       const started = performance.now()
-      if (!(await turnOf(lane, deadlineMs))) return { kind: 'DEADLINE' }
+      if (!(await turnOf(lane, deadlineMs, signal))) {
+        // A caller that left an idle lane's entry behind would keep the map's key alive.
+        if (!lane.busy) lanes.delete(connection)
+        return { kind: 'DEADLINE' }
+      }
       try {
         return await work(performance.now() - started)
       } finally {
