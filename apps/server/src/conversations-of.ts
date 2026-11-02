@@ -1,3 +1,4 @@
+import { agentsOf } from './builder/agents/public.ts'
 import type { MachineTuning } from './builder/assistant/public.ts'
 import { createAssistant } from './builder/assistant/public.ts'
 import {
@@ -8,6 +9,7 @@ import {
 } from './builder/automations/public.ts'
 import { createConversations, createMastraStorage } from './builder/conversation/public.ts'
 import type { openGoogleCalls } from './builder/model-accounts/public.ts'
+import { isChoosable } from './builder/model-accounts/public.ts'
 import type { AssistantMachine, Runs } from './builder/runs/public.ts'
 import { publishedVersionsOf } from './hub/apps/public.ts'
 import type { Connectors } from './hub/connectors/public.ts'
@@ -20,8 +22,8 @@ import type { FailureLog } from './platform/failure.ts'
 import type { SealKeys } from './platform/seal.ts'
 
 /**
- * The Builder's conversations, the Assistant beside them (step 24.1, U2, `H1`) and its automations
- * (step 24.2): one Mastra store on the pool of Mastra's own login (0010) and one account queue,
+ * The Builder's conversations, the Assistant beside them (step 24.1, U2, `H1`), its automations
+ * (step 24.2) and a Projeto's agents (step 24.3): one Mastra store on the pool of Mastra's own login (0010) and one account queue,
  * shared by both controllers. The connectors are made after the apps whose door they read, and a
  * turn comes long after: each door is reached when called. The automations' run is made before the
  * one `Mastra` it is registered on, and the automations after it, on its schedules; a run and a
@@ -59,8 +61,18 @@ export function conversationsOf(deps: {
       connections: (scope) => deps.connectors().assistant.connections(scope),
       read: (scope, call) => deps.connectors().assistant.read(scope, call),
       notes: (scope, connectionId) => deps.connectors().assistant.notes(scope, connectionId),
+      operationOf: (scope, target) => deps.connectors().assistant.operationOf(scope, target),
     },
     projects: { liveProjectOf, liveProjectsOf, publishedVersionsOf },
+  })
+  // A Projeto's agents and the company's tools (step 24.3): the connectors' door is reached when a
+  // route calls it, long after the connectors are made.
+  const agents = agentsOf({
+    ...{ database, identity, liveProjectOf, isChoosable, log },
+    connectors: {
+      connections: (scope) => deps.connectors().assistant.connections(scope),
+      operationOf: (scope, target) => deps.connectors().assistant.operationOf(scope, target),
+    },
   })
   const clock = deps.automationClock
   const run = automationRun({
@@ -76,6 +88,7 @@ export function conversationsOf(deps: {
       schedulerTickMs: clock?.schedulerTickMs,
       release: (scope) => automations.release(scope),
     },
+    agents,
     connectors: {
       granted: (ids) => deps.connectors().builder.granted(ids),
       read: (ids, a) => deps.connectors().builder.read(ids, a),
@@ -88,5 +101,5 @@ export function conversationsOf(deps: {
     connectors: { connections: (scope) => deps.connectors().assistant.connections(scope) },
     updating: conversations.updating,
   })
-  return { conversations, assistant, automations }
+  return { conversations, assistant, automations, agents }
 }

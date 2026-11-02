@@ -47,6 +47,7 @@ async function hub(webRoot?: string) {
     conversations,
     assistant,
     automations,
+    agents,
     notifications,
     connectors,
   } = subjectsOf({
@@ -68,6 +69,7 @@ async function hub(webRoot?: string) {
     conversations,
     assistant,
     automations,
+    agents,
     notifications,
     connectors,
     webRoot,

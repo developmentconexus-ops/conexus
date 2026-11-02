@@ -1,4 +1,10 @@
-import type { FailureCode, MigrationCause } from '@conexus/hub-api'
+import type {
+  FailureCode,
+  MigrationCause,
+  ProblemAgents,
+  ProblemField,
+  ProblemReason,
+} from '@conexus/hub-api'
 import { FAILURES } from '@conexus/hub-api'
 
 export type Scalar = string | number | boolean
@@ -11,6 +17,13 @@ export type FailureLog = {
 const CAUSE_DEPTH = 5
 const FRAME_COUNT = 3
 
+/** The field, the reason and the agents a refusal names to the person (step 24.3). */
+export type Named = Readonly<{
+  field?: ProblemField
+  reason?: ProblemReason
+  agents?: ProblemAgents
+}>
+
 export class Failure extends Error {
   readonly code: FailureCode
   readonly details: Readonly<Record<string, Scalar>>
@@ -18,6 +31,8 @@ export class Failure extends Error {
   readonly person: string | undefined
   /** Why a migration did not enter, for the Prévia's line; names only, never a value, never logged. */
   readonly migration: MigrationCause | undefined
+  /** What a refusal names for the screen (the Problem's extension members), written by its owner. */
+  readonly named: Named
 
   constructor(
     code: FailureCode,
@@ -25,6 +40,7 @@ export class Failure extends Error {
       details?: Record<string, Scalar>
       person?: string
       migration?: MigrationCause
+      named?: Named
       cause?: unknown
     } = {},
   ) {
@@ -36,6 +52,7 @@ export class Failure extends Error {
     this.details = details
     this.person = options.person
     this.migration = options.migration
+    this.named = options.named ?? {}
   }
 }
 

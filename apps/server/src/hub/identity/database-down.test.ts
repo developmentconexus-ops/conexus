@@ -43,6 +43,7 @@ async function hubOn(t: TestContext, database: TestDatabase['database'], config:
     conversations,
     assistant,
     automations,
+    agents,
     notifications,
     connectors,
   } = subjectsOf({
@@ -65,6 +66,7 @@ async function hubOn(t: TestContext, database: TestDatabase['database'], config:
     conversations,
     assistant,
     automations,
+    agents,
     notifications,
     connectors,
     webRoot,

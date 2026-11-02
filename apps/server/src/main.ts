@@ -2,6 +2,7 @@ import { appendFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { FAILURES, getStatus } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
+import type { Agents } from './builder/agents/public.ts'
 import type { Assistant, MachineTuning } from './builder/assistant/public.ts'
 import type { AutomationsPart } from './builder/automations/public.ts'
 import type { Conversations } from './builder/conversation/public.ts'
@@ -77,6 +78,7 @@ export async function createHub(
     conversations: Conversations
     assistant: Assistant
     automations: AutomationsPart
+    agents: Agents
     notifications: NotificationsPart
     connectors: Connectors
     webRoot?: string
@@ -92,15 +94,12 @@ export async function createHub(
     releaseConversations: deps.conversations.release,
     apps: deps.projects.appInvitations,
   })
-  deps.operations.routes(app)
-  deps.projects.routes(app)
-  deps.apps.routes(app)
-  deps.modelAccounts.routes(app)
-  deps.conversations.routes(app)
-  deps.assistant.routes(app)
-  deps.automations.routes(app)
-  deps.notifications.routes(app)
-  deps.connectors.routes(app)
+  for (const part of [
+    ...[deps.operations, deps.projects, deps.apps, deps.modelAccounts, deps.conversations],
+    ...[deps.assistant, deps.automations, deps.agents, deps.notifications, deps.connectors],
+  ]) {
+    part.routes(app)
+  }
   await app.ready()
   return app
 }
@@ -157,7 +156,7 @@ export function subjectsOf(deps: {
     send: (version) => apps.sendFromBuilder(version),
   })
   const notifications = notificationsOf({ ...deps, identity, publicOrigin: config.publicOrigin })
-  const { conversations, assistant, automations } = conversationsOf({
+  const { conversations, assistant, automations, agents } = conversationsOf({
     ...{ database, identity, sealKeys, google, log, runs, mastraPool: deps.mastraPool },
     ...{ machine: deps.assistantMachine, machineTuning: deps.assistantTuning },
     connectors: () => connectors,
@@ -182,7 +181,7 @@ export function subjectsOf(deps: {
   const connectors = createConnectors({ ...deps, identity, door: apps.connectorCall })
   return {
     ...{ runs, projects, operations, apps, modelAccounts },
-    ...{ conversations, assistant, automations, notifications, connectors },
+    ...{ conversations, assistant, automations, agents, notifications, connectors },
   }
 }
 

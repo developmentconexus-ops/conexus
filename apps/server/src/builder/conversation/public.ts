@@ -62,6 +62,11 @@ export type AutomationPart = {
   release(scope: ReleaseScope): Promise<void>
 }
 
+/** What a Projeto's agents hand the conversations (step 24.3): their removal, after the automations'. */
+export type AgentPart = {
+  release(scope: ReleaseScope): Promise<number>
+}
+
 /** Deletes the threads, and so the memory, of a Projeto, a person or a company (data D17). */
 type ReleaseConversations = (scope: ReleaseScope) => Promise<void>
 export type Conversations = ReturnType<typeof createConversations>
@@ -75,7 +80,8 @@ function askerAdmission(database: Database, identity: IdentityPorts): AssistantA
 }
 
 /**
- * The removal of a Projeto's, a person's or a company's conversations, after their automations.
+ * The removal of a Projeto's, a person's or a company's conversations, after their automations and
+ * their agents.
  * The runs first: a turn the removal aborts then finds its run gone and writes nothing. Its Mastra
  * run is aborted before the kill (`deleteSession` aborts it and denies its cards), so no tool starts
  * the machine again; a thread goes only once its machine is killed.
@@ -86,11 +92,13 @@ function releaseOf(deps: {
   runs: Runs
   assistant: AssistantPart
   automation: AutomationPart
+  agents: AgentPart
   log: FailureLog
 }): ReleaseConversations {
   const { store, builder, assistant } = deps
   return async (scope) => {
     await deps.automation.release(scope)
+    await deps.agents.release(scope)
     const ids = await store.releasedIds(scope)
     await deps.runs.stopWriting(scope)
     for (const id of ids) await builder.controller.deleteSession({ sessionId: id })
@@ -116,6 +124,7 @@ export function createConversations(deps: {
   connectors: BuilderConnectors
   assistant: AssistantPart
   automation: AutomationPart
+  agents: AgentPart
   log: FailureLog
 }) {
   const { database, identity, queue, assistant, automation } = deps

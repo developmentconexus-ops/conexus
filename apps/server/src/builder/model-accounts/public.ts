@@ -24,6 +24,7 @@ export {
   MAX_PROCESSOR_RETRIES,
   stabilityProcessors,
 } from './processors.ts'
+export { isChoosable } from './providers.ts'
 export type { QueueDeps } from './queue.ts'
 export { callModel, conversationModel, providerOf } from './queue.ts'
 export { AnthropicPage, GooglePage, listRequest, OpenAiList } from './served.ts'

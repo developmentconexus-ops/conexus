@@ -33,6 +33,7 @@ async function hubOn(t: Parameters<typeof createTestDatabase>[0]) {
     conversations,
     assistant,
     automations,
+    agents,
     notifications,
     connectors,
   } = subjectsOf({
@@ -54,6 +55,7 @@ async function hubOn(t: Parameters<typeof createTestDatabase>[0]) {
     conversations,
     assistant,
     automations,
+    agents,
     notifications,
     connectors,
   })
@@ -132,6 +134,7 @@ test('com o banco fora, /api/status responde 503 e /api/health continua 200', as
     conversations,
     assistant,
     automations,
+    agents,
     notifications,
     connectors,
   } = subjectsOf({
@@ -153,6 +156,7 @@ test('com o banco fora, /api/status responde 503 e /api/health continua 200', as
     conversations,
     assistant,
     automations,
+    agents,
     notifications,
     connectors,
   })

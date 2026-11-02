@@ -72,6 +72,12 @@ const ACTIONS = {
   // Whoever manages the company's connections asks the Assistant about them: an owner or an
   // administrator (step 24.1, U1). Reading holds no row.
   askAssistant: { by: 'MEMBER', statement: MANAGE_CONNECTIONS, locks: false },
+  // A Projeto's agents and the company's tools are an owner's or an administrator's, as the
+  // connections they read (step 24.3, 3.A): reading holds no row, a change holds the role until it
+  // commits. The step of roles and requests makes `publishAgent` "may publish or may ask".
+  readAgents: { by: 'MEMBER', statement: MANAGE_CONNECTIONS, locks: false },
+  manageAgents: { by: 'MEMBER', statement: MANAGE_CONNECTIONS, locks: true },
+  publishAgent: { by: 'MEMBER', statement: MANAGE_CONNECTIONS, locks: true },
   readMembers: { by: 'COMPANY', statement: undefined, locks: false },
   readInvitations: { by: 'COMPANY', statement: INVITE, locks: false },
   invite: { by: 'COMPANY', statement: INVITE, locks: true },
