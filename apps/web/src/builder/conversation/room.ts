@@ -50,9 +50,9 @@ export const ASSISTANT_ROOM: Room = {
   failures: { MODEL_NO_ACCOUNT: START_NO_ACCOUNT },
 }
 
-/** The room of a conversation with the Construtor or with an agent of the Projeto: the rows are the Assistant's, the name is the one the person talks to. */
-export function agentRoom(agent: string): Room {
-  return { ...ASSISTANT_ROOM, agent }
+/** The room of a conversation with the Construtor or with an agent of the Projeto: the rows are the Assistant's, the name is the one the person talks to and the connectors are named by the catalog the screen read. */
+export function agentRoom(agent: string, connectors: ConnectorWords = PLAIN_WORDS): Room {
+  return { ...ASSISTANT_ROOM, agent, connectors }
 }
 
 export const RoomContext = createContext<Room>(BUILDER_ROOM)
