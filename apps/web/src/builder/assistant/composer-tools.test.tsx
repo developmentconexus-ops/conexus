@@ -83,6 +83,7 @@ test('a busca: com 11 ferramentas aparece, "loja" filtra pelo nome e sem resulta
   at(COMPANY_ROOT, { offered: tools(11) })
   const menu = await openMenu()
   const search = await within(menu).findByRole('searchbox', { name: 'Buscar ferramenta' })
+  expect(search.getAttribute('placeholder')).toBe('Buscar ferramenta')
   expect(await within(menu).findAllByRole('switch')).toHaveLength(11)
   fireEvent.change(search, { target: { value: 'loja' } })
   expect(within(menu).getAllByRole('switch')).toHaveLength(1)
@@ -102,8 +103,10 @@ test('a contagem: mostra até 3 logos e o número, e tocar nela abre o "+"', asy
   at(COMPANY_ROOT, { offered: tools(5) })
   const count = await screen.findByRole('button', { name: '5 ferramentas' })
   expect(count.querySelectorAll('img')).toHaveLength(3)
+  expect(count.getAttribute('aria-expanded')).toBe('false')
   fireEvent.click(count)
   expect(await screen.findByRole('dialog', PLUS)).toBeTruthy()
+  expect(count.getAttribute('aria-expanded')).toBe('true')
 })
 
 test('a contagem: sem ferramenta no lugar, o menu diz a frase e leva às Integrações', async () => {

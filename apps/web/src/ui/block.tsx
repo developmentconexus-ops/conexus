@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react'
+import type { ComponentProps, ReactNode } from 'react'
+import { Badge } from './badge.tsx'
 import { cn } from './cn.ts'
 
 /** The most rows a block of Início shows before "Mais N" (design `block`). */
@@ -32,19 +33,17 @@ export function BlockSentence({ children }: { children: ReactNode }) {
   return <p className={cn(blockRow, 'text-text-2')}>{children}</p>
 }
 
-const TONES = { success: 'text-success', neutral: 'text-text-2', danger: 'text-danger' } as const
-
-/** A state in words with a dot of its colour, never the colour alone (design V35). */
-export function Stamp(props: { tone: keyof typeof TONES; children: ReactNode }) {
+/** A state in words with a dot of its colour, never the colour alone (design V35): the Badge without its frame. */
+export function Stamp(props: {
+  tone: NonNullable<ComponentProps<typeof Badge>['tone']>
+  children: ReactNode
+}) {
   return (
-    <span
-      className={cn(
-        'inline-flex shrink-0 items-center gap-xs text-eyebrow tabular-nums',
-        TONES[props.tone],
-      )}
+    <Badge
+      tone={props.tone}
+      className="h-auto border-0 bg-transparent px-0 text-eyebrow tabular-nums before:inline-block"
     >
-      <span aria-hidden="true" className="size-1.5 rounded-pill bg-current" />
       {props.children}
-    </span>
+    </Badge>
   )
 }

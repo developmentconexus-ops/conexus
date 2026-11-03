@@ -39,7 +39,7 @@ function Revoke({ companyId, projectId, line }: Scope & { line: Line }) {
       queryClient.invalidateQueries({ queryKey: projectConnectionsKey(companyId, projectId) }),
   })
   return (
-    <span className="flex flex-col items-start gap-xs">
+    <div className="flex flex-col items-start gap-xs">
       <Button
         size="sm"
         aria-label={`${REVOKE}: ${line.name}`}
@@ -49,7 +49,7 @@ function Revoke({ companyId, projectId, line }: Scope & { line: Line }) {
         {revoke.isPending ? 'Tirando…' : REVOKE}
       </Button>
       {revoke.isError && <Alert tone="danger">{sentenceOf(revoke.error)}</Alert>}
-    </span>
+    </div>
   )
 }
 

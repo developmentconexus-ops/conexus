@@ -23,7 +23,12 @@ export type { ComposerPlace } from './plus-menu.tsx'
 const SHOWN_LOGOS = 3
 
 /** "N ferramentas": up to three logos and the count; it opens the "+" menu, which lists the switches. */
-function ToolsCount(props: { place: ComposerPlace; choice: Choice; onOpen: () => void }) {
+function ToolsCount(props: {
+  place: ComposerPlace
+  choice: Choice
+  open: boolean
+  onOpen: () => void
+}) {
   const { place, choice } = props
   const catalog = useConnectorCatalog(place.companyId)
   const { offered } = choice
@@ -45,6 +50,7 @@ function ToolsCount(props: { place: ComposerPlace; choice: Choice; onOpen: () =>
       type="button"
       aria-label={none ? NO_TOOLS : toolsOf(chosen.length)}
       aria-haspopup="dialog"
+      aria-expanded={props.open}
       className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), CHIP, 'px-sm')}
       onClick={props.onOpen}
     >
@@ -161,7 +167,7 @@ export function useComposerTools(place: ComposerPlace): ComposerTools {
     context: (
       <>
         <ProjectControl place={place} />
-        <ToolsCount place={place} choice={choice} onOpen={() => setOpen(true)} />
+        <ToolsCount place={place} choice={choice} open={open} onOpen={() => setOpen(true)} />
       </>
     ),
     notice: <Notice choice={choice} catalogFailure={catalog.failure} />,
