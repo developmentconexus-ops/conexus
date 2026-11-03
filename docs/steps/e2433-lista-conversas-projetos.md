@@ -62,7 +62,7 @@ U3 só toca `hub/projects/` e corre em paralelo à U2. A U2 espera a U1 porque a
 | # | Unidade | Critério, observável de fora, com a recusa | Teste que o prova | Nível |
 | --- | --- | --- | --- | --- |
 | 1 | U1 | `DELETE …/assistant/conversations/{id}` da própria conversa dá 204; ela some da lista e a leitura dela dá `CONVERSATION_NOT_FOUND`. A de outra pessoa e uma que não existe dão `CONVERSATION_NOT_FOUND` igual (S10) e nada se apaga | `assistant/delete.test.ts`: apaga a própria; a de outra pessoa | must |
-| 2 | U1 | Apagar no meio de uma resposta para a resposta, mata as máquinas da conversa e apaga a linha `assistant_conversation` e o fio; o que a conversa mandou para um Projeto (app, versões) fica igual | `assistant/delete.test.ts`: apaga com turno aberto | must |
+| 2 | U1 | Apagar no meio de uma resposta para a resposta, mata as máquinas da conversa e apaga o fio; o que a conversa mandou para um Projeto (app, versões) fica igual | `assistant/delete.test.ts`: apaga com turno aberto | must |
 | 3 | U1 | Apagar duas vezes: a primeira dá 204, a segunda `CONVERSATION_NOT_FOUND`, que a tela trata como "já foi"; uma falha no meio deixa o que o próximo apagar acha | `assistant/delete.test.ts`: repete; falha da máquina | must |
 | 4 | U1 | Uma conversa aberta por uma automação apaga só ela: a automação, a agenda e o histórico ficam, e o aviso que a apontava abre "não encontrada" | `assistant/delete.test.ts`: conversa de automação | must |
 | 5 | U1 | `PATCH` com `{ title }` renomeia e o título fica fixo: a memória não o troca na volta seguinte. Título vazio ou de mais de 120 caracteres: `REQUEST_MALFORMED` | `assistant/rename.test.ts` | must |
@@ -109,7 +109,7 @@ projeto", o vazio) do estudo de 2026-11-01; elas ficam fora do repositório.
 
 | Peça | Unidade | Hoje no main | Referência | Como a referência faz | Veredito | Prova, se não for nativo | Palavra do fundador | Arquivo novo |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Apagar uma conversa | U1 | `controller-kit/release.ts:releaseThreads`, `assistant/release.ts:releaseConversations` | `@mastra/core@1.79.0` `AgentController.deleteSession`; `@mastra/memory@1.39.0` `deleteThread` (`src-DxZ7N8nO.js:42812-42828`) | `deleteSession` aborta a resposta; `deleteThread` apaga mensagens, vetores e o fio | nativo | — | B a, C a, E a | `assistant/remove.ts` |
+| Apagar uma conversa | U1 | `controller-kit/release.ts:releaseThreads`, `assistant/release.ts:releaseConversations` | `@mastra/core@1.79.0` `AgentController.deleteSession`; `@mastra/memory@1.39.0` `deleteThread` (`src-DxZ7N8nO.js:42812-42828`) | `deleteSession` aborta a resposta; `deleteThread` apaga mensagens, vetores e o fio | nativo | — | B a, C a, E a | `assistant/routes.ts` |
 | Renomear | U1 | nenhuma | `@mastra/memory@1.39.0` `updateThread` com `titlePinned` (`src-DxZ7N8nO.js:42793-42811`) | mescla os metadados; a marca impede a memória de trocar o título | nativo | — | D a | `assistant/routes.ts` |
 | O ⋮ da linha | U1 | `sidebar-conversations.tsx:ConversationRow` | Mastra Studio `thread-list.tsx:110,119` (`mastra-1.79` `4c22623e`) | a ação aparece no hover e no foco | nativo | — | A a | `assistant/conversation-menu.tsx` |
 | Busca pelo título | U2 | `routes.ts:listAssistantConversations` | `@mastra/core@1.79.0` `storage/types.d.ts:183-209`; `@mastra/pg@1.32.0` `index.js:12335-12340`; Open WebUI `chats.py:1656` | o Mastra filtra só por dono e marcas; o título se filtra fora | embrulhado, o Hub filtra a lista que o Mastra devolve | `@mastra/pg@1.32.0`: sem busca de título; entrada em `boundaries.md` no fechamento | A a | `assistant/search.ts` |
@@ -120,7 +120,7 @@ projeto", o vazio) do estudo de 2026-11-01; elas ficam fora do repositório.
 
 **A medida do transplante.** Nenhum código vem do repositório antigo.
 
-**A dívida.** O comentário "50 por página" de `sidebar-conversations.tsx` (U2 conserta). A conversa
+**A dívida.** A linha `assistant_conversation` de uma conversa apagada fica até o Projeto, a pessoa ou a empresa sair: apagá-la pede `GRANT DELETE` (D11, um pedido só, com a palavra do fundador). O comentário "50 por página" de `sidebar-conversations.tsx` (U2 conserta). A conversa
 de execução de automação não tem selo na lista lateral (o campo `automation` do resumo é ignorado
 pela linha): issue futura. O "⋮" para o Builder, o Construtor e os agentes: cartão próprio.
 
@@ -133,10 +133,10 @@ as máquinas, o Mastra e o banco.
 
 - **Apagar.** Em `assistant/release.ts` já está o laço de uma lista de ids; extraia dele a conversa
   de um id: `deleteSession({ sessionId })` (aborta a resposta e nega cartões), `machines.kill(id)`,
-  `DELETE` da linha `assistant_conversation` (única apagada aqui, por `database.command`), depois
-  `memory.deleteThread(id)` (D17: só depois, para uma falha deixar o que o próximo apagar acha). A
-  linha sai antes do fio e a leitura limpa um fio sem linha (`routes.ts:ownThread`); se a ordem for
-  outra, uma linha sem fio fica para sempre.
+  depois `memory.deleteThread(id)` (D17: o fio por último, para uma falha deixar o que o próximo
+  apagar acha). A linha `assistant_conversation` fica: o Hub não tem `DELETE` nela e dá-lo é uma
+  mudança de permissão (D11, um pedido só dela, na dívida abaixo); ela sai com o Projeto, a pessoa ou
+  a empresa, e sem o fio nenhuma leitura chega a ela.
 - **Renomear.** `memory.updateThread({ id, title, metadata: { ...thread.metadata, titlePinned: true } })`.
   Confirme `titlePinned` no `dist` instalado (`src-DxZ7N8nO.js:42793-42811`) antes de usar.
 - **O "⋮".** `ui/dropdown-menu.tsx`, `ui/alert-dialog.tsx` e `ui/dialog.tsx` como estão; o `AlertDialog` de
@@ -147,7 +147,7 @@ as máquinas, o Mastra e o banco.
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
 | `packages/hub-api/src/assistant.ts` | cria `deleteAssistantConversation` e `renameAssistantConversation` | o servidor, a tela, `index.ts` |
-| `apps/server/src/builder/assistant/` | cria `remove.ts`; muda `routes.ts`, `release.ts` | `assistant.ts` |
+| `apps/server/src/builder/assistant/` | muda `routes.ts` | `assistant.ts` |
 | `apps/web/src/builder/assistant/` | cria `conversation-menu.tsx`, muda `sidebar-conversations.tsx`, `queries.ts` | a moldura da empresa |
 
 ### Os contratos que a unidade cria
@@ -168,8 +168,8 @@ export const renameAssistantConversation = defineOperation({
 
 Falhas: `CONVERSATION_NOT_FOUND`, `SESSION_REQUIRED`, `DATABASE_UNAVAILABLE`, `HUB_UPDATING`,
 `REQUEST_MALFORMED`. Cada estado é a falha pelo `code`; cada id é o `ConversationId` já marcado e
-conferido por `ownThread` (C23); o dono do fato "como se apaga uma conversa" é `remove.ts` e o lote
-de `release.ts` passa a chamá-lo (C26); o `title` tem o esquema Zod acima (C27). Modelo:
+conferido por `ownThread` (C23); o dono do fato "como se apaga um fio" continua `releaseThreads`, que a rota e o lote de
+`release.ts` chamam (C26); o `title` tem o esquema Zod acima (C27). Modelo:
 `assistant/routes.ts` (`setAssistantModel`), que cumpre C21, C23 e C26.
 
 ### As skills e a leitura
@@ -180,7 +180,7 @@ de `release.ts` passa a chamá-lo (C26); o `title` tem o esquema Zod acima (C27)
 ### A ordem do trabalho
 
 1. O contrato em `hub-api` e o teste que falha: apagar a própria conversa dá 204 (critérios 1 a 6).
-2. `remove.ts` e o laço de `release.ts` por ele; a rota; o `PATCH`.
+2. A rota `DELETE` por `releaseThreads` e o `PATCH`.
 3. A tela: `conversation-menu.tsx`, a linha, a mutação, a conversa aberta apagada leva a uma nova
    (`router.navigate`), "já foi" invalida a lista (critério 7).
 
