@@ -1,4 +1,3 @@
-import type { CompanyId, Person } from '@conexus/hub-api'
 import {
   AGENTS_CONTROLLER,
   AgentId as AgentIdSchema,
@@ -35,8 +34,8 @@ import type { QueueDeps } from '../model-accounts/public.ts'
 import type { AgentDeps, AgentRun } from './agent.ts'
 import { agentOf, planOf, setAgentRun, takeAgentTurn } from './agent.ts'
 import type { AppDataPort } from './app-data.ts'
-import type { AgentEvents } from './events.ts'
-import type { AgentReads } from './registry.ts'
+import type { AgentEvent, AgentEvents } from './events.ts'
+import type { AgentReads, Registry } from './registry.ts'
 import { createRegistry } from './registry.ts'
 import { agent, agentConversation } from './tables.ts'
 
@@ -202,18 +201,7 @@ export function createAgentConversations(deps: Deps) {
   async function sweep(marks: Record<string, string>): Promise<number> {
     return releaseThreads({ controller, memory }, await threadsByMarks(memory, marks))
   }
-  deps.agents.onChange(async (event) => {
-    if (event.kind === 'ACTIVATED') return registry.replace(event.agentId, event.companyId)
-    if (event.kind === 'DELETED') registry.remove(event.agentId)
-    const count = await sweep({
-      [AGENT_MARK.company]: event.companyId,
-      [AGENT_MARK.agent]: event.agentId,
-    })
-    log.info(
-      { companyId: event.companyId, agentId: event.agentId, count },
-      'AGENT_CONVERSATIONS_SWEPT',
-    )
-  })
+  deps.agents.onChange((event) => followed(event, { registry, sweep, log }))
 
   return Object.freeze({
     registry,
@@ -241,6 +229,36 @@ export function createAgentConversations(deps: Deps) {
       },
     },
   } as const)
+}
+
+/** What an agent's change does to the registry and to its conversations: a swap, or a removal and a sweep. */
+async function followed(
+  event: AgentEvent,
+  own: {
+    registry: Registry
+    sweep: (marks: Record<string, string>) => Promise<number>
+    log: FailureLog
+  },
+): Promise<void> {
+  switch (event.kind) {
+    case 'ACTIVATED':
+      return own.registry.replace(event.agentId, event.companyId)
+    case 'DELETED':
+      await own.registry.remove(event.agentId)
+      break
+    case 'DELETING':
+      break
+    default:
+      return event satisfies never
+  }
+  const count = await own.sweep({
+    [AGENT_MARK.company]: event.companyId,
+    [AGENT_MARK.agent]: event.agentId,
+  })
+  own.log.info(
+    { companyId: event.companyId, agentId: event.agentId, count },
+    'AGENT_CONVERSATIONS_SWEPT',
+  )
 }
 
 export type AgentConversations = ReturnType<typeof createAgentConversations>

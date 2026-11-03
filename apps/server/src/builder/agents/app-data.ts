@@ -50,7 +50,7 @@ export function appDataTools(deps: {
     [id]: createTool({
       id,
       description:
-        'Reads the data of this Projeto’s app with one PostgreSQL SELECT, on its tables by name, with no schema. List the tables and columns with information_schema.columns. One statement only, and it cannot write. A refusal carries PostgreSQL’s SQLSTATE: 42P01 or 42703 is a table or column that does not exist, 42601 a syntax error, 25006 or 42501 a write or a table you cannot read; fix the query and try again. The answer is cut to the first rows. Ask for the columns and rows you need.',
+        'Reads the data of this Projeto’s app with one PostgreSQL SELECT, on its tables by name, with no schema. List the tables and columns with information_schema.columns where table_schema = current_schema(). One statement only, and it cannot write. A refusal carries PostgreSQL’s SQLSTATE: 42P01 or 42703 is a table or column that does not exist, 42601 a syntax error, 25006 or 42501 a write or a table you cannot read; fix the query and try again. The answer is cut to the first rows. Ask for the columns and rows you need.',
       inputSchema: AppDataInput,
       execute: async ({ sql }, { abortSignal }) => {
         const deadline = AbortSignal.timeout(APP_CALL_LIMITS.callDeadlineMs)

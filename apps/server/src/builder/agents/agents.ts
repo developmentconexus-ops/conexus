@@ -18,6 +18,7 @@ import type {
   ToolConnectors,
   Tools,
   ToolsDeps,
+  Writer,
 } from '../tools/public.ts'
 import {
   admitted,
@@ -167,7 +168,13 @@ async function choose(
  * Changes the draft at the revision the writer read (code C38): the update holds the row, so of
  * two at the same revision one writes and the other finds no row (`AGENT_DRAFT_STALE`).
  */
-async function saveDraft(deps: AgentsDeps, scope: InProject, agentId: AgentId, patch: DraftPatch) {
+async function saveDraft(
+  deps: AgentsDeps,
+  scope: InProject,
+  agentId: AgentId,
+  patch: DraftPatch,
+  by: Writer,
+) {
   const around = await offered(deps, scope)
   checked(deps, patch, around)
   const ready = await deps.tools.readyOf(scope, patch.ready ?? [])
@@ -190,7 +197,7 @@ async function saveDraft(deps: AgentsDeps, scope: InProject, agentId: AgentId, p
     return { revision: changed.revision, agent: await detail(tx, scope, agentId, around) }
   })
   const { companyId } = scope
-  deps.log.info({ companyId, agentId, revision: saved.revision, by: 'PERSON' }, 'AGENT_DRAFT_SAVED')
+  deps.log.info({ companyId, agentId, revision: saved.revision, by }, 'AGENT_DRAFT_SAVED')
   return saved.agent
 }
 
@@ -297,8 +304,12 @@ export function createAgentService(deps: AgentsDeps) {
     create: (scope: InProject, body: CreateAgent, key: string) => create(deps, scope, body, key),
     list: (scope: InProject) => list(deps, scope),
     get: (scope: InProject, agentId: AgentId) => get(deps, scope, agentId),
-    saveDraft: (scope: InProject, agentId: AgentId, patch: DraftPatch): Promise<AgentDetail> =>
-      saveDraft(deps, scope, agentId, patch),
+    saveDraft: (
+      scope: InProject,
+      agentId: AgentId,
+      patch: DraftPatch,
+      by: Writer,
+    ): Promise<AgentDetail> => saveDraft(deps, scope, agentId, patch, by),
     publish: (scope: InProject, agentId: AgentId, body: Publish) =>
       publish(deps, scope, agentId, body),
     versions: (scope: InProject, agentId: AgentId) => versions(deps, scope, agentId),

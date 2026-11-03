@@ -2,7 +2,7 @@ import type { AgentId, CompanyId, OfProject } from '@conexus/hub-api'
 import type { Agent } from '@mastra/core/agent'
 import type { Mastra } from '@mastra/core/mastra'
 import type { FailureLog } from '../../platform/failure.ts'
-import { Failure } from '../../platform/failure.ts'
+import { Failure, logFailure } from '../../platform/failure.ts'
 import type { AgentRun } from './agent.ts'
 import { agentKey } from './agent.ts'
 import type { FrozenVersion } from './frozen.ts'
@@ -22,7 +22,8 @@ export type Registry = {
   hydrate(): Promise<{ count: number }>
   /** Reads the active version again and swaps the registered agent; in a line per agent. */
   replace(agentId: AgentId, companyId: CompanyId): Promise<void>
-  remove(agentId: AgentId): void
+  /** In the agent's line, behind a swap or a registration still under way. */
+  remove(agentId: AgentId): Promise<void>
   /** The registered agent (registered if missing: `lazy`), or the draft's, made for the turn. */
   resolve(run: AgentRun): Promise<Agent>
 }
@@ -75,8 +76,10 @@ export function createRegistry(
   }
 
   function failed(about: { companyId: CompanyId; agentId: AgentId }, error: unknown): void {
-    const code = error instanceof Failure ? error.code : 'INTERNAL_UNEXPECTED'
-    deps.log.error({ ...about, code }, 'AGENT_REGISTER_FAILED')
+    const failure =
+      error instanceof Failure ? error : new Failure('INTERNAL_UNEXPECTED', { cause: error })
+    const { companyId, agentId } = about
+    logFailure(deps.log, failure, { companyId, agentId }, 'AGENT_REGISTER_FAILED')
   }
 
   return {
@@ -109,9 +112,10 @@ export function createRegistry(
         }
       }),
 
-    remove(agentId) {
-      deps.mastra().removeAgent(agentKey(agentId))
-    },
+    remove: (agentId) =>
+      inLine(agentId, async () => {
+        deps.mastra().removeAgent(agentKey(agentId))
+      }),
 
     async resolve(run) {
       if (run.kind === 'DRAFT') {

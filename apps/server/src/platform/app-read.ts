@@ -1,7 +1,7 @@
 import { APP_CALL_LIMITS } from '@conexus/app-contract'
 import type { ProjectId } from '@conexus/hub-api'
 import { appLogin, appLoginPassword } from '@conexus/hub-api'
-import type { Context, SqlAnswer, SqlRead, SqlStatement } from './app-sql.ts'
+import type { Context, SqlAnswer, SqlStatement } from './app-sql.ts'
 import { LEDGER, missingLogins, quoted, REPLY_CAP_BYTES } from './app-sql.ts'
 import { DatabaseUrl } from './database.ts'
 import { COMPANY_DATABASE, NEON_CALL_BUDGET_MS } from './neon.ts'
@@ -135,7 +135,9 @@ export async function readApp(
       }
     case 'REFUSED':
       if (NO_LOGIN.has(answer.code)) return { kind: 'NO_LOGIN' }
-      if (TIMED_OUT.has(answer.code)) return { kind: 'FAILED', code: 'APP_DATA_TIMEOUT' }
+      if (TIMED_OUT.has(answer.code)) {
+        return { kind: 'FAILED', code: 'APP_DATA_TIMEOUT', cause: answer.code }
+      }
       return { kind: 'REFUSED', code: 'APP_DATA_REFUSED', sqlstate: answer.code }
     default:
       return answer satisfies never

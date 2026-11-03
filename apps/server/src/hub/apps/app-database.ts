@@ -142,16 +142,23 @@ export async function readAppData(
   const found = await appDatabaseOf(deps, input)
   if (found === undefined) return { kind: 'FAILED', code: 'APP_DATA_NO_APP' }
   const unavailable = { kind: 'FAILED', code: 'APP_DATA_UNAVAILABLE' } as const
+  function silent(cause: string): typeof unavailable {
+    deps.log.info(
+      { companyId, projectId, answer: unavailable.kind, code: unavailable.code, cause },
+      'APP_DATA_READ',
+    )
+    return unavailable
+  }
   const address = await deps.companyPostgres.readAddress(found.host, projectId)
   let answer = await deps.companyPostgres.readApp(address, input.sql, signal)
   if (answer.kind === 'NO_LOGIN') {
     const owner = await deps.neon.ownerConnection(found.neonProjectId)
-    if (owner.kind !== 'DONE') return unavailable
+    if (owner.kind !== 'DONE') return silent(`OWNER_${owner.kind}`)
     const made = await deps.companyPostgres.ensureReadLogin(owner.value, projectId)
     if (made.kind !== 'DONE') {
       const code = made.kind === 'REFUSED' ? made.code : made.kind
       deps.log.error({ companyId, projectId, code }, 'APP_READ_LOGIN_FAILED')
-      return unavailable
+      return silent('READ_LOGIN_NOT_MADE')
     }
     deps.log.info({ companyId, projectId }, 'APP_READ_LOGIN_CREATED')
     answer = await deps.companyPostgres.readApp(address, input.sql, signal)
@@ -179,7 +186,7 @@ export async function readAppData(
       )
       return { kind: 'FAILED', code: answer.code }
     case 'NO_LOGIN':
-      return unavailable
+      return silent('NO_LOGIN')
     default:
       return answer satisfies never
   }

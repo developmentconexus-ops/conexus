@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs'
-import type { AutomationId, CompanyId, Person } from '@conexus/hub-api'
+import type { AutomationId } from '@conexus/hub-api'
 import {
   BUILDER_TOOL,
   CONSTRUTOR_CONTROLLER,
