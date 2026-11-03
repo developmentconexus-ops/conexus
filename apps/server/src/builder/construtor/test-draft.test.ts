@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
 import { AgentId, CompanyId, PersonId, ProjectId } from '@conexus/hub-api'
 import type { Agent } from '@mastra/core/agent'
+import { APICallError } from 'ai'
 import { testDraft } from './public.ts'
 
 const scope = {
@@ -47,4 +48,20 @@ test('testar: uma execução que um processador interrompeu (tripwire) volta rec
     tripwire: { reason: 'NO_TURN' },
   }))
   assert.deepEqual(await on.run(), { kind: 'REFUSED', code: 'MODEL_REFUSED' })
+})
+
+test('testar: a falha do provedor do modelo (APICallError, também na cadeia de causas) volta recusada como MODEL_CALL_FAILED, sem alarme SYSTEM', async () => {
+  const provider = new APICallError({
+    message: 'upstream',
+    url: 'https://provider.invalid/v1',
+    requestBodyValues: {},
+    statusCode: 500,
+  })
+  for (const thrown of [provider, new Error('generate failed', { cause: provider })]) {
+    const on = testing(async () => {
+      throw thrown
+    })
+    assert.deepEqual(await on.run(), { kind: 'REFUSED', code: 'MODEL_CALL_FAILED' })
+    assert.equal(on.lines[0]?.message, 'MODEL_CALL_FAILED')
+  }
 })

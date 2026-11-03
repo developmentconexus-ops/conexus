@@ -1,7 +1,8 @@
 import type { AgentId, FailureCode } from '@conexus/hub-api'
 import type { Agent } from '@mastra/core/agent'
+import { APICallError } from 'ai'
 import type { FailureLog } from '../../platform/failure.ts'
-import { Failure, logFailure } from '../../platform/failure.ts'
+import { causeChain, Failure, logFailure } from '../../platform/failure.ts'
 import type { AgentRun, AgentService } from '../agents/public.ts'
 import { agentRunContext } from '../agents/public.ts'
 import type { InProject } from '../tools/public.ts'
@@ -24,6 +25,9 @@ export function testDraft(deps: {
 }) {
   function refusal(error: unknown, scope: InProject): Tested {
     if (error instanceof Failure && error.code === 'INTERNAL_UNEXPECTED') throw error
+    if (!(error instanceof Failure) && causeChain(error).some((c) => APICallError.isInstance(c))) {
+      return refusal(new Failure('MODEL_CALL_FAILED', { cause: error }), scope)
+    }
     if (!(error instanceof Failure)) {
       const failure = new Failure('INTERNAL_UNEXPECTED', { cause: error })
       logFailure(deps.log, failure, { companyId: scope.companyId })
