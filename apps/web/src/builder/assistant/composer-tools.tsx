@@ -9,22 +9,18 @@ import { cn } from '../../ui/cn.ts'
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { ReadFailure } from '../../ui/states.tsx'
 import type { ComposerTools } from '../conversation/public.ts'
-import { CHIP } from './choice-list.tsx'
+import { CHIP, WORDS } from './choice-list.tsx'
 import { useConnectorCatalog } from './connector-names.ts'
-import type { DraftChoice } from './context-bar.tsx'
+import type { DraftChoice } from './draft-choice.ts'
 import type { Choice, ComposerPlace } from './plus-menu.tsx'
 import { PlusMenu } from './plus-menu.tsx'
 import { ProjectControl } from './project-choice.tsx'
 import { assistantConversationQuery, sendAssistantConnections } from './queries.ts'
-import { NO_TOOLS, UNCONFIRMED_CHOICE } from './text.ts'
+import { NO_TOOLS, READING_TOOLS, toolsOf, toolWord, UNCONFIRMED_CHOICE } from './text.ts'
 
 export type { ComposerPlace } from './plus-menu.tsx'
 
 const SHOWN_LOGOS = 3
-
-function countText(count: number): string {
-  return count === 1 ? '1 ferramenta' : `${count} ferramentas`
-}
 
 /** "N ferramentas": up to three logos and the count; it opens the "+" menu, which lists the switches. */
 function ToolsCount(props: { place: ComposerPlace; choice: Choice; onOpen: () => void }) {
@@ -32,7 +28,12 @@ function ToolsCount(props: { place: ComposerPlace; choice: Choice; onOpen: () =>
   const catalog = useConnectorCatalog(place.companyId)
   const { offered } = choice
   if (offered === undefined)
-    return choice.failed === undefined ? <Skeleton className="h-5 w-24" /> : null
+    return choice.failed === undefined ? (
+      <span role="status" className="inline-flex items-center gap-xs text-fact text-text-2">
+        <Skeleton className="h-5 w-5" />
+        <span className={WORDS}>{READING_TOOLS}</span>
+      </span>
+    ) : null
   const chosen = offered.filter((one) => one.chosen)
   const logos = chosen.slice(0, SHOWN_LOGOS).flatMap((one) => {
     const logo = catalog.logo(one.connector)
@@ -42,7 +43,7 @@ function ToolsCount(props: { place: ComposerPlace; choice: Choice; onOpen: () =>
   return (
     <button
       type="button"
-      aria-label={none ? NO_TOOLS : countText(chosen.length)}
+      aria-label={none ? NO_TOOLS : toolsOf(chosen.length)}
       aria-haspopup="dialog"
       className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), CHIP, 'px-sm')}
       onClick={props.onOpen}
@@ -60,9 +61,7 @@ function ToolsCount(props: { place: ComposerPlace; choice: Choice; onOpen: () =>
         ) : (
           <>
             {chosen.length}
-            <span className="@max-[26rem]:hidden">
-              {chosen.length === 1 ? ' ferramenta' : ' ferramentas'}
-            </span>
+            <span className="@max-[26rem]:hidden">{` ${toolWord(chosen.length)}`}</span>
           </>
         )}
       </span>

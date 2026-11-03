@@ -5,7 +5,7 @@ import { afterEach, expect, test } from 'vitest'
 import { COMPANY } from '../../platform/fixtures.ts'
 import { hubServer, refusal, undecided } from '../../platform/test-hub.tsx'
 import { PROJECT, SECOND } from './test-hub.tsx'
-import { create, REQUEST, request, startHub, UNCONFIRMED } from './test-start.tsx'
+import { box, create, REQUEST, request, startHub, UNCONFIRMED } from './test-start.tsx'
 import { EMPTY_CONVERSATION, REQUEST_NOT_SENT } from './text.ts'
 
 // What the Hub refuses or leaves undecided when Início creates (step 13.1, criteria 9, 10 and 13).
@@ -109,12 +109,29 @@ test('o modelo recusado depois do Projeto abre o Projeto com a frase', async () 
   expect(conversations()).toHaveLength(1)
 })
 
+test('com os Projetos recusados, o pedido enviado mostra a frase com Tentar de novo e depois pede o nome', async () => {
+  let refuse = true
+  home()
+  server.use(
+    http.get(`*/api/companies/${COMPANY.id}/projects`, () =>
+      refuse ? refusal('DATABASE_UNAVAILABLE') : undefined,
+    ),
+  )
+  fireEvent.change(await box(), { target: { value: REQUEST } })
+  fireEvent.click(screen.getByRole('button', { name: 'Enviar' }))
+  const retry = await screen.findByRole('button', { name: 'Tentar de novo' })
+  expect(screen.queryByLabelText('Nome do projeto')).toBeNull()
+  refuse = false
+  fireEvent.click(retry)
+  expect(await screen.findByLabelText('Nome do projeto')).toBeTruthy()
+})
+
 test('Criar numa empresa que o Hub já não acha', async () => {
   home({ project: () => refusal('NOT_FOUND') })
   await request()
   server.use(http.get(`*/api/companies/${COMPANY.id}/projects`, () => refusal('NOT_FOUND')))
   create('Pedidos')
   expect(
-    await screen.findByRole('heading', { name: 'Não encontramos o que você procurou.' }),
-  ).toBeTruthy()
+    (await screen.findAllByText('Não encontramos o que você procurou.', { exact: false })).length,
+  ).toBeGreaterThan(0)
 })

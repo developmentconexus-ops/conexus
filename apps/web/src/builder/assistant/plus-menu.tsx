@@ -13,13 +13,12 @@ import { buttonVariants } from '../../ui/button.tsx'
 import { cn } from '../../ui/cn.ts'
 import { Drawer, DrawerContent, DrawerTrigger } from '../../ui/drawer.tsx'
 import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover.tsx'
-import { Skeleton } from '../../ui/skeleton.tsx'
 import { Switch } from '../../ui/switch.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
 import { COMPOSER_SOFT } from '../conversation/public.ts'
 import { LIST, matches, ROW, SEARCH_FROM, Search } from './choice-list.tsx'
 import { useConnectorCatalog } from './connector-names.ts'
-import type { DraftChoice } from './context-bar.tsx'
+import type { DraftChoice } from './draft-choice.ts'
 import {
   ATTACH_FILE,
   ATTACH_HINT,
@@ -29,6 +28,7 @@ import {
   NO_TOOL_MATCH,
   NO_TOOLS_COMPANY,
   PLUS_MENU,
+  READING_TOOLS,
   RELEASE_ANOTHER_TOOL,
   TOOLS_LIST,
   TOOLS_SEARCH,
@@ -64,7 +64,12 @@ function ToolSwitches(props: { place: ComposerPlace; choice: Choice }) {
   const { offered } = props.choice
   const catalog = useConnectorCatalog(props.place.companyId)
   const [query, setQuery] = useState('')
-  if (offered === undefined) return <Skeleton className="h-8 w-full" />
+  if (offered === undefined)
+    return (
+      <p role="status" className="px-sm py-xs text-text-2">
+        {READING_TOOLS}
+      </p>
+    )
   if (offered.length === 0)
     return (
       <p className="px-sm py-xs text-text-2">

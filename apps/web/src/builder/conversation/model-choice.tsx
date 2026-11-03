@@ -55,13 +55,13 @@ export function ModelChoice(props: {
   session: SessionRead
   /** What the Hub offers this person: their connected providers, with the models served. */
   providers: readonly Provider[]
-  /** The caller's write: the choice goes to its route and what the Hub kept comes back. */
-  send: (choice: Choice) => Promise<Choice>
+  /** The caller's write, with the key the Hub's operation gives it: the choice goes to its route and what the Hub kept comes back. */
+  write: { mutationKey: readonly string[]; mutationFn: (choice: Choice) => Promise<Choice> }
   onError: (text: string | undefined) => void
 }) {
   const queryClient = useQueryClient()
   const send = useMutation<Choice, Error, Choice>({
-    mutationFn: props.send,
+    ...props.write,
     onSuccess: (kept) =>
       queryClient.setQueryData<SessionRead>(
         sessionReadQuery(props.conversationId, props.controller).queryKey,
@@ -79,12 +79,14 @@ export function ModelChoice(props: {
   }
 
   return (
-    <ComposerModelPicker
-      providers={props.providers}
-      value={now}
-      heading="Modelo desta conversa"
-      onChange={(choice) => choose(choice.model, choice.effort)}
-    />
+    <span aria-busy={send.isPending} className="inline-flex min-w-0 shrink aria-busy:opacity-60">
+      <ComposerModelPicker
+        providers={props.providers}
+        value={now}
+        heading="Modelo desta conversa"
+        onChange={(choice) => choose(choice.model, choice.effort)}
+      />
+    </span>
   )
 }
 

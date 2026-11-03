@@ -13,7 +13,7 @@ export function Home(props: {
   below?: ReactNode
 }) {
   return (
-    <div className="mx-auto flex w-full max-w-axis flex-col gap-3xl pb-2xl min-[1600px]:max-w-axis-wide">
+    <div className="axis flex flex-col gap-3xl pb-2xl">
       {props.aside}
       <section aria-labelledby="start-title" className="flex flex-col gap-xl">
         <PageTitle className="text-balance text-center text-display max-md:text-display-narrow">

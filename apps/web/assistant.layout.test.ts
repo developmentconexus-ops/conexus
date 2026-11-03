@@ -3,7 +3,7 @@ import { after, before, test } from 'node:test'
 import { listAssistantConnections, listAssistantConversations } from '@conexus/hub-api'
 import type { Page } from 'playwright-core'
 import type { Replies } from './layout-harness.ts'
-import { createHarness, DESKTOP, ok, PHONE } from './layout-harness.ts'
+import { createHarness, DESKTOP, ok, PHONE, touching } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import { ASSISTANT_PATH, ASSISTANT_REPLIES } from './sweep-assistant-states.ts'
 import { OWNER, PROJECT_ID, PROJECT_NAME, projectsPage, startsOn } from './sweep-replies.ts'
@@ -270,4 +270,24 @@ test('com 11 ferramentas, as linhas do "+" mantêm 32 px e a lista rola (U5, cri
   }))
   assert.ok(scroll.total > scroll.visible, 'the list does not scroll')
   await page.close()
+})
+
+async function plusRows(viewport: typeof DESKTOP, touch: boolean) {
+  const page = await harness.open(ASSISTANT_PATH, { viewport, replies: ASSISTANT_REPLIES })
+  await page.getByRole('button', { name: 'Anexar e ferramentas' }).click()
+  const dialog = page.getByRole('dialog', { name: 'Anexar e ferramentas' })
+  await dialog.getByRole('switch').first().waitFor()
+  if (touch) await touching(page)
+  const rows = await dialog
+    .getByRole('button')
+    .evaluateAll((all) => all.map((one) => one.getBoundingClientRect().height))
+  await page.close()
+  return rows
+}
+
+test('as linhas do "+" têm 44 px num toque e 32 com o mouse (V58)', async () => {
+  const fine = await plusRows(DESKTOP, false)
+  assert.ok(fine.length > 0 && fine.every((height) => height === 32), `mouse rows: ${fine}`)
+  const touch = await plusRows(PHONE, true)
+  assert.ok(touch.length > 0 && touch.every((height) => height === 44), `touch rows: ${touch}`)
 })

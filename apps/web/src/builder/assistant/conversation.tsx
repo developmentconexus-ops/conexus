@@ -149,12 +149,14 @@ function Conversation(props: Props) {
                       conversationId={conversationId}
                       session={session}
                       providers={providers}
-                      send={(body) =>
-                        sendAssistantModel.mutationFn({
-                          params: { companyId, conversationId },
-                          body,
-                        })
-                      }
+                      write={{
+                        ...sendAssistantModel,
+                        mutationFn: (body) =>
+                          sendAssistantModel.mutationFn({
+                            params: { companyId, conversationId },
+                            body,
+                          }),
+                      }}
                       onError={onError}
                     />
                   )}

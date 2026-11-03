@@ -184,6 +184,16 @@
   }
 }
 
+/* The one column of Início, of a conversation and of the lists under them: 720 wide, 880 from 1600 (design V59). */
+@utility axis {
+  margin-inline: auto;
+  width: 100%;
+  max-width: var(--container-axis);
+  @media (min-width: 1600px) {
+    max-width: var(--container-axis-wide);
+  }
+}
+
 /* A light sweeps across the text of work in progress; under reduced motion the text keeps its resting colour. */
 @utility shimmer {
   background:

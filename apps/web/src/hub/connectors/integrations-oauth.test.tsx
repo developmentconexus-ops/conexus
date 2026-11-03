@@ -105,6 +105,11 @@ test('um client_credentials NEEDS_REAUTH abre a janela das chaves com o nome tra
   fireEvent.click(within(dialog).getByRole('button', { name: 'Conectar de novo' }))
   expect(await screen.findByRole('button', { name: 'Testando…' })).toBeTruthy()
   const put = hub.sent.find((one) => one.method === 'PUT')
+  await vi.waitFor(() =>
+    expect(
+      hub.sent.some((one) => one.method === 'POST' && one.path.endsWith(`${refused.id}/test`)),
+    ).toBe(true),
+  )
   expect(put).toMatchObject({
     path: `/api/companies/${COMPANY.id}/connections/${refused.id}/credential`,
     body: {
@@ -120,7 +125,9 @@ test('um client_credentials NEEDS_REAUTH abre a janela das chaves com o nome tra
 test('Ligar e testar recusado, depois Conectar de novo com chaves boas: a janela fecha, o teste roda e a página volta a funcionar', async () => {
   const connection = connectionOf({ name: 'Comercial' })
   const hub = connectionsHub(viewOf({ connections: [connection] }), {}, (one) => {
-    const tests = hub.sent.filter((sent) => sent.method === 'POST' && sent.path.endsWith('/test'))
+    const tests = hub.sent.filter(
+      (sent) => sent.method === 'POST' && sent.path.endsWith(`${one.id}/test`),
+    )
     return tests.length === 1
       ? {
           result: 'AUTH_REFUSED',

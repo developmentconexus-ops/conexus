@@ -1,4 +1,6 @@
 import { SearchIcon } from 'lucide-react'
+import { listRow } from '../../ui/block.tsx'
+import { cn } from '../../ui/cn.ts'
 import { InputGroup, InputGroupAddon, InputGroupInput } from '../../ui/input-group.tsx'
 
 /** The words that go first under 26 rem of box: the row keeps its controls and loses these. */
@@ -11,8 +13,10 @@ export const CHIP =
 export const SEARCH_FROM = 7
 
 export const LIST = 'flex max-h-64 flex-col overflow-y-auto'
-export const ROW =
-  'flex h-row w-full shrink-0 items-center gap-sm rounded-control px-sm text-left text-label text-text hover:bg-surface-3'
+export const ROW = cn(
+  listRow,
+  'shrink-0 gap-sm rounded-control text-left text-text hover:bg-surface-3',
+)
 
 export function matches(text: string, query: string): boolean {
   return text.toLocaleLowerCase('pt-BR').includes(query.trim().toLocaleLowerCase('pt-BR'))
