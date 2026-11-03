@@ -180,36 +180,6 @@ escolhe e cria ferramentas.
   carga mediu 1.000 agentes registrados em cerca de 50 MiB; o registro do Hub passa a dizer, a cada
   minuto, o atraso do laço e o processador, os sinais de quando mudar.
 
-## Correções do fechamento
-
-Escritas no fechamento (L20: o cartão e os guias ficam congelados no meio da etapa). Cada item vale
-sobre o texto que corrige; a palavra do fundador de cada um está em `docs/approvals.md`.
-
-1. **Repetição de uma criação com a mesma chave (U1b).** Numa conversa do Assistente, numa execução
-   de automação e numa conversa do Builder, repetir a chave devolve o fio que já tem modelo, sem
-   conferir de novo o esforço nem a conta (`controller-kit/open.ts`); o Assistente conferia antes.
-   Numa repetição com outro corpo, de um fio ainda sem modelo, o `EFFORT_UNSUPPORTED` ou o erro da
-   conta pode sair antes do `IDEMPOTENCY_CONFLICT`. Nenhum cliente repete uma chave com outro corpo.
-2. **`CONVERSATION_NOT_FOUND` no Builder.** Não é só um 404: a tela chama `onGone()`, como já fazia
-   com o Assistente. Só se vê entre a saída do membro ou do Projeto e a remoção dos fios.
-3. **`threadModel`.** `history.ts` o perdeu; virou `modelOn` em `controller-kit/open.ts`.
-4. **`keep`.** O contrato da U1b o pede opcional e a U4 "sem `keep`". Construído: `keep` é obrigatório
-   no kit (C74: nenhum chamador o dispensava) e o Construtor escreve o seu (`construtor/open.ts`),
-   que compara as marcas do fio anterior.
-5. **As telas da U5 seguem o protótipo do Construtor.** Fundador, 2026-11-03: a página do agente e a
-   conversa do Construtor seguem as nove telas do protótipo no que o Conexus tem de dados, sem
-   inventar dado nem texto de explicação. Construído: a área em uma coluna, com a linha rica do
-   agente (nome e estado) e as conversas; o rascunho do agente fica ao lado da conversa com o
-   Construtor, e numa folha no celular, no lugar do cartão (**Abrir** e **Publicar** estão no painel,
-   e a linha da matriz "O cartão do rascunho" vale para o painel); a página do agente em seções, com
-   a conversa de teste ao lado; a caixa do Construtor mostra o Projeto fixo e o modelo; **Apagar**
-   só no menu **⋯**; a linha agrupada de passos, com os ícones e "N feitos", em toda conversa.
-6. **Apagar** avisa também do turno em andamento, que termina com o agente.
-7. **Versões** fica no fim da **Configuração**, nos dois tamanhos, e não no menu **⋯** a 390 px; mudar
-   isso seria uma tela nova.
-8. **Telas mais limpas.** Fundador, 2026-11-03: "deve ser um pouco mais
-   clean"; as telas perdem o texto que explica e ficam com o que o agente tem.
-
 ## As unidades
 
 | Unidade | O que entrega | Pastas | Guia além do de código | Depende de |
@@ -364,9 +334,9 @@ texto do sistema; aqui o painel é editável. Só a estrutura e o fluxo, nunca o
  └────────────┴──────────────────────────┴──────────────┘  └──────────────────────────┘
 ```
 
-A 390 px a área é uma coluna só, e a página do agente troca as colunas por abas; uma conversa aberta
-ocupa a tela, como as da 24.1; **Apagar** vai para o menu **⋯** e **Versões** fica no fim da
-**Configuração** (correção do fechamento, item 7 abaixo).
+A 390 px a área troca as colunas por duas abas (**Construtor** e **Agentes**), e a página do agente
+por duas (**Conversas** e **Configuração**); uma conversa aberta ocupa a tela, como as da 24.1;
+**Apagar** e **Versões** vão para o menu **⋯**.
 
 | Campo de contrato | Quem escreve | Quem lê |
 | --- | --- | --- |
@@ -931,7 +901,7 @@ Os testes que já existem, sem mudar o que afirmam: os de `builder/conversation/
 `release.test.ts`, `assistant.test.ts`), de `builder/automations/` (`run.test.ts`, `race.test.ts`,
 `release.test.ts`, `scheduler.test.ts`), `boot.test.ts` e `main.test.ts`; mais o teste novo da ordem
 1. E, lidos no diff: `git grep -n "action: 'askAssistant'" -- apps/server/src/builder` dá uma linha;
-`transactionLock` e `conversationIdOf` não aparecem mais em `builder/` (salvo `model-accounts`, que guarda o seu `transactionLock`, e uma `conversationIdOf` local); `guard.ts` não tem `if` por
+`transactionLock` e `conversationIdOf` não aparecem mais em `builder/`; `guard.ts` não tem `if` por
 tipo; `conversation/public.ts` não importa `Mastra`. Comando: os testes tocados, `npm run typecheck`,
 `npm run lint`, `npm run deps`, `npm run knip`.
 
