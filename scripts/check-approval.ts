@@ -3,6 +3,7 @@
 // the same file at that commit and now (delivery L6).
 // Refusals are proved by planting each one in check-approval.test.ts.
 // An amended card has more than one approval line; the last one holds (founder, 2026-10-22).
+// A card of three levels, e2432, is step 24.3.2 (founder, 2026-11-03: "4. Okay").
 // Revalidate by 2027-04-13, or when the approval line changes shape.
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
@@ -51,16 +52,12 @@ if (cards.length === 0) {
 const ledger = readFileSync(join(root, 'docs/approvals.md'), 'utf8')
 
 function checkCard(card: string): void {
+  // The first two digits are the step and each one after a level: e041 is 4.1, e2432 is 24.3.2.
   const digits = (card.match(/^e(\d+)-/) ?? [])[1] ?? ''
-  const step =
-    digits.length > 2
-      ? digits.startsWith('0')
-        ? `${Number(digits[1])}.${Number(digits.slice(2))}`
-        : `${digits.slice(0, 2)}.${Number(digits.slice(2))}`
-      : String(Number(digits))
+  const step = [String(Number(digits.slice(0, 2))), ...digits.slice(2)].join('.')
   const cardPath = `docs/steps/${card}`
   const line = new RegExp(
-    `^\\s*Cartão da etapa ${step.replace('.', '\\.')} aprovado em \\d{4}-\\d{2}-\\d{2} \\(commit ([0-9a-f]{7,40})\\): ".+"\\s*$`,
+    `^\\s*Cartão da etapa ${step.replaceAll('.', '\\.')} aprovado em \\d{4}-\\d{2}-\\d{2} \\(commit ([0-9a-f]{7,40})\\): ".+"\\s*$`,
     'gm',
   )
   // An amended card is approved again: the newest line is the one that holds.
