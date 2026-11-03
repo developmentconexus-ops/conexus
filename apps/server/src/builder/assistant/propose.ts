@@ -9,9 +9,8 @@ import {
 } from '@conexus/hub-api'
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
-import { Failure } from '../../platform/failure.ts'
 import type { AssistantMachines } from './machine.ts'
-import { locate } from './machine.ts'
+import { withFile } from './machine-file.ts'
 
 const BRIEFING_EXTENSIONS = ['.md', '.txt']
 
@@ -52,23 +51,15 @@ async function briefingOf(
   requestContext: Parameters<Machines['serving']>[0] | undefined,
   path: string,
 ): Promise<Briefing | ProposeRefused> {
-  const files = requestContext === undefined ? undefined : machines.serving(requestContext)
-  if (files === undefined) return refused('MACHINE_UNAVAILABLE')
-  try {
-    const found = await locate(files, path)
-    if (found.kind !== 'FILE') return refused(found.kind)
+  const read = await withFile(machines, requestContext, path, async (files, found) => {
     if (!BRIEFING_EXTENSIONS.includes(posix.extname(found.name).toLowerCase())) {
       return refused('NOT_TEXT')
     }
     if (found.bytes > SHOWN_TEXT_MAX) return refused('TOO_LARGE')
     const content = await files.readFile(found.path, { encoding: 'utf-8' })
     return { name: found.name, content: String(content) }
-  } catch (error) {
-    if (error instanceof Failure && error.code === 'MACHINE_UNAVAILABLE') {
-      return refused('MACHINE_UNAVAILABLE')
-    }
-    throw error
-  }
+  })
+  return 'kind' in read && read.kind !== 'PROPOSE_REFUSED' ? refused(read.kind) : read
 }
 
 /**
