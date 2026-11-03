@@ -535,6 +535,8 @@ Etapa 13.3 no ar em https://hub.conexus.fun (v0.24.10), sem a linha de uso do fu
 
 Em 2026-11-02, ao buffer da memória observacional (o estudo A/B do buffer, B1 ou B2): "1. Sem buffer". Fica o B1 de hoje: `bufferTokens: false`, sem o buffer do Mastra Code.
 
+Em 2026-11-03, a um PR pequeno, entre etapas, para o `scripts/check-approval.ts` ler cartões de três níveis: "4. Okay". O cartão `e2432` é a etapa 24.3.2 e o `e2433` a 24.3.3: os dois primeiros dígitos são a etapa e cada um depois deles, um nível.
+
 Em 2026-11-01, ao estudo do auth do Mastra (se a porta das rotas do Mastra passa ao auth nativo dele, com a integração Better Auth): "okay sibre auth". Fica como está: o login é o Better Auth, e a porta das rotas do Mastra é a nossa, a lista fixa de `guard.ts` com o dono de cada conversa conferido a cada pedido; a decisão 0050 vale.
 
 Em 2026-11-03, com a captura do Hub ao vivo (v0.24.8) em que a coluna do Início não ficava no centro da folha, e a lista das páginas que seguiam coladas à esquerda (Projetos, Integrações, a página da ligação, as Integrações do Projeto e Automações), à pergunta se elas ficam centradas como o Início: "Aprovado". Lido pelo firstmate como: essas cinco páginas centram a coluna de `max-w-page` (64rem, `DESIGN.md`) com `mx-auto`, na mesma largura de hoje; o eixo da V59 continua só do Início e da conversa. Em seguida, à pergunta se o Sobre do Projeto e o Quem usa o app (os dois ainda colados à esquerda) centram do mesmo modo: "A"; ganham a mesma coluna `mx-auto max-w-page`.
@@ -568,3 +570,5 @@ Em 2026-11-03, à decisão de seguir o protótipo do Construtor nas telas de Age
 Em 2026-11-03, ao estudo de apagar conversas (A a F): "A a, B a, C a, D a, E a, F a". Lido pelo firstmate como: só a própria pessoa apaga as conversas dela; uma conversa que responde para e se apaga, e o Builder espera o salvamento; a confirmação tem dois botões; Renomear vem junto no mesmo "⋮"; a conversa aberta por uma automação apaga só ela; o cartão é curto e vem depois da 24.3.
 
 Em 2026-11-03, ao estudo da lista de conversas e da página Todos os projetos, com as capturas da lista e da página vazia: "A a, B a, C a, D a, E a, F A, G a, H a". Lido pelo firstmate como: a busca procura só no título; o filtro é Todas, Início, cada Projeto e Automações; uma aba Projetos ao lado de Recentes; o Builder, o Construtor e os agentes ficam fora da lista; o cartão do Projeto mostra nome, estado e data; "Novo projeto" no alto e no vazio; sem busca na página de Projetos por enquanto; um só cartão curto, "A lista de conversas e os Projetos", com três unidades (o "⋮", a busca com filtro e abas, Todos os projetos). Palavra antes da aprovação do cartão.
+
+Cartão da etapa 24.3.3 aprovado em 2026-11-03 (commit 8aa1641838aa18987c153bfe2bd0e29fb8b008a9): "3. Aprovado"
