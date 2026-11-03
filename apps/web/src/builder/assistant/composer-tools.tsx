@@ -200,7 +200,10 @@ function ToolsCount(props: { place: ComposerPlace; choice: Choice }) {
   function label(connection: SessionConnection): string {
     return `${catalog.name(connection.connector)} · ${connection.name}`
   }
-  const logos = chosen.slice(0, SHOWN_LOGOS).flatMap((one) => catalog.logo(one.connector) ?? [])
+  const logos = chosen.slice(0, SHOWN_LOGOS).flatMap((one) => {
+    const logo = catalog.logo(one.connector)
+    return logo === undefined ? [] : [{ id: one.connectionId, logo }]
+  })
   return (
     <Popover>
       <PopoverTrigger
@@ -208,9 +211,8 @@ function ToolsCount(props: { place: ComposerPlace; choice: Choice }) {
         className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), CHIP, 'px-sm')}
       >
         <span aria-hidden="true" className="flex -space-x-1">
-          {logos.map((logo, index) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: the stack's logos can repeat, and it never reorders.
-            <span key={index} className={index > 0 ? '@max-[26rem]:hidden' : undefined}>
+          {logos.map(({ id, logo }, index) => (
+            <span key={id} className={index > 0 ? '@max-[26rem]:hidden' : undefined}>
               <ConnectorLogo small entry={{ logo }} />
             </span>
           ))}
