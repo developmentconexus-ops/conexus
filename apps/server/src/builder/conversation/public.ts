@@ -1,4 +1,5 @@
 import type { ServerResponse } from 'node:http'
+import type { ConversationId } from '@conexus/hub-api'
 import type { PostgresStore } from '@mastra/pg'
 import type { FastifyInstance } from 'fastify'
 import type { IdentityPorts } from '../../hub/identity/public.ts'
@@ -6,7 +7,8 @@ import type { ProjectPorts } from '../../hub/projects/public.ts'
 import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import type { BuilderConnectors } from '../connectors/public.ts'
-import type { ReleaseScope } from '../controller-kit/public.ts'
+import type { Owner, ReleaseScope } from '../controller-kit/public.ts'
+import { resourceOf } from '../controller-kit/public.ts'
 import { registerSourceRoutes } from '../git/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import type { Runs } from '../runs/public.ts'
@@ -14,7 +16,7 @@ import { createBuilder } from './builder.ts'
 import type { GuardedMastra } from './guard.ts'
 import { registerBuilderRoutes } from './guard.ts'
 import { TOOL_CLOSURE } from './permissions.ts'
-import { registerConversationRoutes } from './routes.ts'
+import { created, registerConversationRoutes } from './routes.ts'
 import { createConversationStore } from './store.ts'
 
 export { conversationMemory, routedModel, sessionModel, toolsOf } from './builder.ts'
@@ -97,6 +99,21 @@ export function createBuilderConversations(deps: {
         // Mastra's adapter stops writing on the response's close (`@mastra/fastify` `stream`).
         for (const stream of streams) stream.destroy()
         deps.runs.stop()
+      },
+    },
+    /**
+     * What the Assistant's hand-off reaches the Builder through (step 24.3.2): a conversation of the
+     * Projeto opened by its attempt, as the route opens one, and whether it holds a message yet.
+     */
+    handOffs: {
+      open: (input: Parameters<typeof created>[1]) => created({ store, builder, queue }, input),
+      async asked(owner: Owner, conversationId: ConversationId): Promise<boolean> {
+        const { messages } = await builder.memory.recall({
+          threadId: conversationId,
+          resourceId: resourceOf('builder', owner),
+          perPage: 1,
+        })
+        return messages.length > 0
       },
     },
     routes: (app: FastifyInstance, hub: GuardedMastra) => {

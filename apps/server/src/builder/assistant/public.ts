@@ -1,6 +1,7 @@
 export type { Assistant } from './assistant.ts'
 export { createAssistant, speakersOf } from './assistant.ts'
 export type { Owner } from './context.ts'
+export type { HandOffDoors } from './handoff.ts'
 export type { Speakers } from './instructions.ts'
 export { blockOf } from './instructions.ts'
 export type { MachineTuning } from './machine.ts'
