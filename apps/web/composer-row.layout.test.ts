@@ -13,7 +13,13 @@ after(async () => {
 
 // The Assistant's box on a phone (the card of 13.3, criterion 16): under 416 px the words go, never the controls.
 async function rowOf(page: Page) {
-  const names = ['Anexar arquivos', /ferramenta/, /Memória da conversa/, 'Ditar', 'Enviar']
+  const names = [
+    'Anexar e ferramentas',
+    /^\d+ ferramentas?$/,
+    /Memória da conversa/,
+    'Ditar',
+    'Enviar',
+  ]
   const found = await Promise.all(
     names.map(async (name) => {
       const box = await page.locator('form').getByRole('button', { name }).first().boundingBox()
@@ -50,7 +56,7 @@ test('a 390, a linha da caixa do Assistente perde as palavras e guarda todos os 
   assert.equal(await ring.getByText(/%$/).isVisible(), true)
   assert.equal(
     await page
-      .getByRole('button', { name: /ferramenta/ })
+      .getByRole('button', { name: /^\d+ ferramentas?$/ })
       .first()
       .getByText(/^ ferramenta/)
       .isVisible(),

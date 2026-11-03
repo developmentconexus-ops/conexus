@@ -200,7 +200,7 @@ test('a linha da caixa de Início, sem Projeto, a 1366: + em 13, pasta em 49, fe
   })
   await page.getByRole('button', { name: '2 ferramentas' }).waitFor()
   assert.deepEqual(
-    await offsets(page, ['Anexar arquivos', 'Projeto da conversa', '2 ferramentas', 'Enviar']),
+    await offsets(page, ['Anexar e ferramentas', 'Projeto da conversa', '2 ferramentas', 'Enviar']),
     [13, 49, 85, 675],
   )
   await page.close()
@@ -214,7 +214,7 @@ test('a 390 os três controles da esquerda ficam onde estavam, só com o número
   const tools = page.getByRole('button', { name: '2 ferramentas' })
   await tools.waitFor()
   const [plus, folder, count] = await offsets(page, [
-    'Anexar arquivos',
+    'Anexar e ferramentas',
     'Projeto da conversa',
     '2 ferramentas',
   ])

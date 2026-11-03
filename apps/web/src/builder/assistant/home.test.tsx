@@ -14,6 +14,8 @@ import {
   STOCK,
 } from './test-hub.tsx'
 
+const COUNT = /^(\d+ ferramentas?|Sem ferramentas)$/
+
 // Início of the owner: the Assistant's box, its folder and its tools in the box's row (step 24.1, criteria 23 and 23a; step 13.3, criteria 13 to 17).
 const server = hubServer()
 const { at } = assistantScreens(server)
@@ -28,7 +30,7 @@ async function toolsOf(name = '2 ferramentas') {
 }
 
 async function turnOff(name: string) {
-  fireEvent.click(await screen.findByRole('button', { name: /ferramentas?$|Sem ferramentas/ }))
+  fireEvent.click(await screen.findByRole('button', { name: COUNT }))
   fireEvent.click(await screen.findByRole('switch', { name }))
   fireEvent.keyDown(document.activeElement ?? document.body, { key: 'Escape' })
 }
@@ -36,10 +38,7 @@ async function turnOff(name: string) {
 /** Opens the folder's list and picks the Projeto by its name. */
 async function chooseProject(name: string) {
   fireEvent.click(await screen.findByRole('button', { name: 'Projeto da conversa' }))
-  const option = await screen.findByRole('menuitemradio', { name })
-  for (const event of ['pointerDown', 'mouseDown', 'pointerUp', 'mouseUp', 'click'] as const) {
-    fireEvent[event](option)
-  }
+  fireEvent.click(await screen.findByRole('button', { name }))
 }
 
 /** An alert that is not the one of a block of Início, which reads the same list on its own. */
@@ -134,7 +133,7 @@ test('enquanto a lista das ligações não chegou, o Enviar espera e a contagem 
   })
   fireEvent.change(await box(), { target: { value: 'Como foram as vendas?' } })
   expect(screen.getByRole('button', { name: 'Enviar' }).hasAttribute('disabled')).toBe(true)
-  expect(screen.queryByRole('button', { name: /ferramentas?$/ })).toBeNull()
+  expect(screen.queryByRole('button', { name: COUNT })).toBeNull()
   arrive()
   await toolsOf()
   await waitFor(() =>
@@ -198,10 +197,9 @@ test('com 31 Projetos, o seletor oferece os 30 da primeira página e, em "Mais P
   )
   await toolsOf()
   fireEvent.click(await screen.findByRole('button', { name: 'Projeto da conversa' }))
-  fireEvent.click(await screen.findByRole('menuitem', { name: 'Mais Projetos' }))
-  await waitFor(() => expect(screen.queryByRole('menuitem', { name: 'Mais Projetos' })).toBeNull())
-  fireEvent.keyDown(document.activeElement ?? document.body, { key: 'Escape' })
-  await chooseProject('Projeto 31')
+  fireEvent.click(await screen.findByRole('button', { name: 'Mais Projetos' }))
+  await waitFor(() => expect(screen.queryByRole('button', { name: 'Mais Projetos' })).toBeNull())
+  fireEvent.click(await screen.findByRole('button', { name: 'Projeto 31' }))
   await waitFor(() => expect(asked.at(-1)).toContain(`projectId=${projects[30]?.id}`))
   await ask('Como foram as vendas?')
   await waitFor(() => expect(writes()[0]?.body).toMatchObject({ projectId: projects[30]?.id }))
@@ -220,10 +218,11 @@ test('a ligação tirada sem Projeto volta ligada ao escolher um Projeto: a esco
   ).toBe('true')
 })
 
-test('sem ligação no lugar, a caixa diz "Sem ferramentas" e leva a Integrações', async () => {
+test('sem ligação no lugar, a contagem diz "Sem ferramentas" e o menu leva a Integrações', async () => {
   at(COMPANY_ROOT, { offered: [] })
-  const link = await screen.findByRole('link', { name: 'Ligar um sistema em Integrações' })
-  expect(link.textContent).toBe('Sem ferramentas')
+  fireEvent.click(await screen.findByRole('button', { name: 'Sem ferramentas' }))
+  expect(await screen.findByText('Nenhuma ferramenta ligada à empresa')).toBeTruthy()
+  const link = screen.getByRole('link', { name: 'Conectar outra ferramenta' })
   expect(link.getAttribute('href')).toBe(`${COMPANY_ROOT}/integrations`)
 })
 
@@ -273,4 +272,48 @@ test('voltar ao Início depois de perguntar mostra a conversa nova entre as rece
   await screen.findByRole('textbox', { name: 'Mensagem para o Assistente' })
   act(() => conexus.router.history.back())
   expect((await screen.findAllByRole('link', { name: /Conversa de/ })).length).toBeGreaterThan(0)
+})
+
+test('a pasta: abre Sem Projeto e os Projetos, e a busca só aparece a partir de 7', async () => {
+  const projects = Array.from({ length: 7 }, (_, n) => ({
+    ...PEDIDOS,
+    id: ProjectId.parse(`${'r'.repeat(29)}${String(n).padStart(3, '0')}`),
+    name: n === 0 ? 'Vendas' : `Projeto ${n}`,
+  }))
+  at(COMPANY_ROOT)
+  server.use(
+    http.get('*/api/companies/:companyId/projects', () =>
+      HttpResponse.json({
+        projects: projects.slice(0, 3),
+        next: { kind: 'END' },
+        databaseReady: true,
+      }),
+    ),
+  )
+  await toolsOf()
+  fireEvent.click(await screen.findByRole('button', { name: 'Projeto da conversa' }))
+  expect(await screen.findByRole('button', { name: 'Sem Projeto' })).toBeTruthy()
+  expect(screen.getByRole('button', { name: 'Vendas' })).toBeTruthy()
+  expect(screen.queryByRole('searchbox', { name: 'Buscar Projeto' })).toBeNull()
+})
+
+test('a pasta: com 7 Projetos a busca filtra pelo nome e escolher Vendas fecha a lista', async () => {
+  const projects = Array.from({ length: 7 }, (_, n) => ({
+    ...PEDIDOS,
+    id: ProjectId.parse(`${'r'.repeat(29)}${String(n).padStart(3, '0')}`),
+    name: n === 0 ? 'Vendas' : `Projeto ${n}`,
+  }))
+  const { asked } = at(COMPANY_ROOT)
+  server.use(
+    http.get('*/api/companies/:companyId/projects', () =>
+      HttpResponse.json({ projects, next: { kind: 'END' }, databaseReady: true }),
+    ),
+  )
+  await toolsOf()
+  fireEvent.click(await screen.findByRole('button', { name: 'Projeto da conversa' }))
+  const search = await screen.findByRole('searchbox', { name: 'Buscar Projeto' })
+  fireEvent.change(search, { target: { value: 'vend' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Vendas' }))
+  await waitFor(() => expect(asked.at(-1)).toContain(`projectId=${projects[0]?.id}`))
+  expect(screen.queryByRole('searchbox', { name: 'Buscar Projeto' })).toBeNull()
 })
