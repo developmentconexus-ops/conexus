@@ -14,11 +14,13 @@ import {
   ASSISTANT_PATH,
   ASSISTANT_REPLIES,
 } from './sweep-assistant-states.ts'
+import { WITH_ACCOUNT } from './sweep-conversation-states.ts'
 import { OWNER, PROJECT_ID, projectsPage, startsOn } from './sweep-replies.ts'
 import { sessionReplies } from './sweep-session.ts'
+import { WORKING, WORKING_REPLIES } from './sweep-working.ts'
 
 // The axis of a conversation and the labels of the lists beside it, in a real browser (step 13.3, V59 and V61).
-const harness = createHarness(import.meta.dirname)
+const harness = createHarness(import.meta.dirname, { scrollbars: 'classic' })
 before(() => harness.start())
 after(async () => {
   await harness.stop()
@@ -184,3 +186,28 @@ for (const viewport of [DESKTOP, WIDE, PHONE])
     )
     await page.close()
   })
+
+// The panel at the Builder's side is narrower than the axis and its gutters: the footer must not cover the scrollbar's end.
+test('no painel estreito do Construtor a caixa fica dentro da área de rolagem, sem cobrir a barra', async () => {
+  const page = await harness.open(
+    `/companies/${COMPANY.id}/projects/${PROJECT_ID}/conversations/${WORKING}`,
+    {
+      viewport: { width: 1366, height: 560 },
+      replies: { ...WITH_ACCOUNT, ...WORKING_REPLIES },
+    },
+  )
+  const scroller = page.getByLabel('Rolagem da conversa')
+  const form = page.locator('form').filter({ has: page.getByLabel('Mensagem') })
+  await form.waitFor()
+  const [scroll, box, bar] = await Promise.all([
+    scroller.boundingBox(),
+    form.boundingBox(),
+    // The gutter is reserved on both edges; the scrollbar is the one on the right.
+    scroller.evaluate((element: HTMLElement) => (element.offsetWidth - element.clientWidth) / 2),
+  ])
+  assert.ok(scroll && box, 'the panel is not laid out')
+  assert.ok(bar > 0, 'the browser shows no scrollbar')
+  assert.ok(box.x + box.width <= scroll.x + scroll.width - bar, 'the box covers the scrollbar')
+  assert.equal(Math.round(scroll.y + scroll.height), 560, 'the scrollbar stops above the bottom')
+  await page.close()
+})

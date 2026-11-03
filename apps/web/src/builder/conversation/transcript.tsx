@@ -1,7 +1,7 @@
 import type { ModelId } from '@conexus/hub-api'
 import { Loader2Icon } from 'lucide-react'
 import type { ReactNode } from 'react'
-import { useCallback, useEffect, useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import {
   MessageScroller,
   MessageScrollerButton,
@@ -65,9 +65,6 @@ export function shownOf(state: SessionState): ShownTurn[] {
   })
 }
 
-/** The height of the footer over the scroll area, for the room the last message needs under it. */
-const FOOTER = '--chat-footer'
-
 /**
  * The conversation as a log a screen reader follows: `aria-busy` holds its announcements while the
  * answer arrives, so the finished answer is read once and not word by word. The scroller follows
@@ -89,15 +86,6 @@ export function Transcript(props: {
 }) {
   const { turns, older } = props
   const { agent } = useRoom()
-  const watchFooter = useCallback((element: HTMLElement | null) => {
-    if (element === null) return
-    const scroller = element.parentElement
-    const watch = new ResizeObserver(() =>
-      scroller?.style.setProperty(FOOTER, `${element.offsetHeight}px`),
-    )
-    watch.observe(element)
-    return () => watch.disconnect()
-  }, [])
   return (
     <MessageScrollerProvider autoScroll defaultScrollPosition="end">
       <EndOnSent last={turns.at(-1)?.key} />
@@ -105,11 +93,11 @@ export function Transcript(props: {
       <MessageScroller>
         <MessageScrollerViewport
           aria-label="Rolagem da conversa"
-          className="pt-md [scrollbar-gutter:stable_both-edges]"
+          className="flex flex-col pt-md [scrollbar-gutter:stable_both-edges]"
         >
           <MessageScrollerContent
             aria-label={`Conversa com o ${agent}`}
-            className="axis px-md pb-[calc(var(--chat-footer,0px)+var(--spacing-xl))]"
+            className="axis min-h-0 flex-[1_0_auto] px-md pb-xl"
             aria-live="polite"
             aria-busy={turns.at(-1)?.streaming === true}
           >
@@ -136,6 +124,10 @@ export function Transcript(props: {
               </MessageScrollerItem>
             ))}
           </MessageScrollerContent>
+          <div className="sticky bottom-0 [&>*]:bg-(--ground,var(--color-surface))">
+            <MessageScrollerButton className="data-[direction=end]:bottom-[calc(100%+var(--spacing-lg))]" />
+            {props.children}
+          </div>
         </MessageScrollerViewport>
         {older.loading && (
           <div className="pointer-events-none absolute inset-x-0 top-md flex justify-center">
@@ -148,13 +140,6 @@ export function Transcript(props: {
             </div>
           </div>
         )}
-        <MessageScrollerButton className="data-[direction=end]:bottom-[calc(var(--chat-footer,0px)+var(--spacing-lg))]" />
-        <div
-          ref={watchFooter}
-          className="pointer-events-none absolute inset-x-0 bottom-0 [&>*]:pointer-events-auto [&>*]:bg-(--ground,var(--color-surface))"
-        >
-          {props.children}
-        </div>
       </MessageScroller>
     </MessageScrollerProvider>
   )
