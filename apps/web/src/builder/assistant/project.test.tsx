@@ -62,12 +62,11 @@ test('sem conversas, a página diz que nenhuma começou neste Projeto', async ()
   expect(await screen.findByText('Nenhuma conversa neste Projeto ainda.')).toBeTruthy()
 })
 
-test('sem ligação liberada ao Projeto, a caixa diz "Sem ferramentas" e leva às Integrações do Projeto', async () => {
+test('sem ligação liberada ao Projeto, a contagem diz "Sem ferramentas" e o menu leva às Integrações do Projeto', async () => {
   at(CONVERSAS, { offered: [] })
-  const link = await screen.findByRole('link', {
-    name: 'Liberar um sistema em Integrações do Projeto',
-  })
-  expect(link.textContent).toBe('Sem ferramentas')
+  fireEvent.click(await screen.findByRole('button', { name: 'Sem ferramentas' }))
+  expect(await screen.findByText('Liberar um sistema em Integrações do Projeto')).toBeTruthy()
+  const link = screen.getByRole('link', { name: 'Liberar outra ferramenta ao Projeto' })
   expect(link.getAttribute('href')).toBe(`${CONVERSAS.replace('/assistant', '')}/integrations`)
 })
 

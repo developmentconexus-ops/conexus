@@ -1,5 +1,13 @@
 import { ArrowUpIcon, PlusIcon, SquareIcon, XIcon } from 'lucide-react'
-import type { ClipboardEvent, DragEvent, KeyboardEvent, ReactNode, Ref, SubmitEvent } from 'react'
+import type {
+  ClipboardEvent,
+  DragEvent,
+  KeyboardEvent,
+  ReactNode,
+  Ref,
+  RefObject,
+  SubmitEvent,
+} from 'react'
 import { useRef, useState } from 'react'
 import { AttachmentAction, AttachmentGroup } from '../../ui/attachment.tsx'
 import { Button } from '../../ui/button.tsx'
@@ -92,6 +100,13 @@ function Refused({ phrase }: { phrase: string | null }) {
   )
 }
 
+/** What a place hands the box: the menu behind **+**, the folder and tools after it, and what their failures say above the box. */
+export type ComposerTools = {
+  plus: (pickFiles: () => void) => ReactNode
+  context: ReactNode
+  notice: ReactNode
+}
+
 /** The words joined to what is in the box, a space between them unless the box ends in one. */
 function joined(text: string, added: string): string {
   if (added === '') return text
@@ -99,33 +114,51 @@ function joined(text: string, added: string): string {
 }
 
 /** The model button's round, soft fill, on the controls beside it (the card, row "O + e o microfone"). */
-const SOFT = 'shrink-0 rounded-full bg-surface-3 hover:bg-accent-soft'
+export const COMPOSER_SOFT = 'shrink-0 rounded-full bg-surface-3 hover:bg-accent-soft'
 
-/** **+**: the browser's file picker, limited to the types the Builder reads. */
-function Attach({ add }: { add: AddFiles }) {
-  const picker = useRef<HTMLInputElement>(null)
+/** The browser's file picker, limited to the types the Builder reads; **+** or the menu behind it opens it. */
+function FilePicker(props: { add: AddFiles; input: RefObject<HTMLInputElement | null> }) {
   return (
-    <>
-      <InputGroupButton
-        className={SOFT}
-        aria-label="Anexar arquivos"
-        onClick={() => picker.current?.click()}
-      >
-        <PlusIcon aria-hidden="true" />
-      </InputGroupButton>
-      <input
-        ref={picker}
-        type="file"
-        multiple
-        accept={ACCEPT}
-        hidden
-        onChange={(event) => {
-          const picked = Array.from(event.currentTarget.files ?? [])
-          event.currentTarget.value = ''
-          add(picked)
-        }}
-      />
-    </>
+    <input
+      ref={props.input}
+      type="file"
+      multiple
+      accept={ACCEPT}
+      hidden
+      onChange={(event) => {
+        const picked = Array.from(event.currentTarget.files ?? [])
+        event.currentTarget.value = ''
+        props.add(picked)
+      }}
+    />
+  )
+}
+
+/** The row's left: **+** (its menu, or the file picker alone), then what the place puts after it. */
+function RowStart(props: {
+  add: AddFiles
+  plus: ((pickFiles: () => void) => ReactNode) | undefined
+  children: ReactNode
+}) {
+  const input = useRef<HTMLInputElement>(null)
+  function pickFiles() {
+    input.current?.click()
+  }
+  return (
+    <div className="flex shrink-0 items-center gap-xs max-[20rem]:basis-full max-[20rem]:flex-wrap">
+      {props.plus === undefined ? <AttachButton onClick={pickFiles} /> : props.plus(pickFiles)}
+      <FilePicker add={props.add} input={input} />
+      {props.children}
+    </div>
+  )
+}
+
+/** **+** of a box with no menu: it opens the file picker at once. */
+function AttachButton({ onClick }: { onClick: () => void }) {
+  return (
+    <InputGroupButton className={COMPOSER_SOFT} aria-label="Anexar arquivos" onClick={onClick}>
+      <PlusIcon aria-hidden="true" />
+    </InputGroupButton>
   )
 }
 
@@ -159,7 +192,7 @@ function useDictation(draft: Draft, setPhrase: (phrase: string | null) => void) 
     mic: (
       <SpeechInput
         lang="pt-BR"
-        className={SOFT}
+        className={COMPOSER_SOFT}
         onFinal={(text) => {
           setPhrase(null)
           draft.change(joined(draft.text, text))
@@ -208,6 +241,8 @@ export function Composer(props: {
   /** The model's button, first of the row's right. */
   picker: ReactNode
   taskPanel?: ReactNode
+  /** The menu behind **+**, given the way to open the file picker; without it **+** opens the picker itself. */
+  plus?: (pickFiles: () => void) => ReactNode
   /** The folder and the tools count, after **+** on the row's left. */
   context?: ReactNode
   /** What the tools say above the box when they fail. */
@@ -284,10 +319,9 @@ export function Composer(props: {
           align="block-end"
           className="flex-nowrap items-center justify-between gap-xs pointer-coarse:gap-sm max-[20rem]:flex-wrap"
         >
-          <div className="flex shrink-0 items-center gap-xs max-[20rem]:basis-full max-[20rem]:flex-wrap">
-            <Attach add={addFiles} />
+          <RowStart add={addFiles} plus={props.plus}>
             {props.context}
-          </div>
+          </RowStart>
           <div className="flex min-w-0 flex-1 items-center justify-end gap-xs pointer-coarse:gap-md">
             {props.picker}
             {props.memory}

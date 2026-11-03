@@ -11,6 +11,7 @@ import { AttachmentGroup } from '../../ui/attachment.tsx'
 import { Button } from '../../ui/button.tsx'
 import { accountsQuery } from '../model-accounts/public.ts'
 import type { Outgoing } from './attachments.ts'
+import type { ComposerTools } from './composer.tsx'
 import { Composer } from './composer.tsx'
 import { useDraft } from './draft.ts'
 import { isModelRefusal, stashHandoffFiles } from './handoff.ts'
@@ -192,7 +193,7 @@ export function StartBox(props: {
   canSend?: boolean
   onSend: (outgoing: Outgoing) => Promise<boolean>
   /** The folder and the tools count after the box's **+**, and what their failures say above it. */
-  tools?: { context: ReactNode; notice: ReactNode }
+  tools?: ComposerTools
   /** Under the box, before the examples: what sending said. */
   notice?: ReactNode
 }): ReactNode {
@@ -209,6 +210,7 @@ export function StartBox(props: {
           placeholder={props.placeholder}
           onSend={props.onSend}
           onStop={() => undefined}
+          plus={props.tools?.plus}
           context={props.tools?.context}
           notice={props.tools?.notice}
           picker={

@@ -1,4 +1,6 @@
 export { Chat } from './chat.tsx'
+export type { ComposerTools } from './composer.tsx'
+export { COMPOSER_SOFT } from './composer.tsx'
 export { wordsOf } from './connector-words.ts'
 export { useDraft } from './draft.ts'
 export { stashHandoffFiles } from './handoff.ts'
