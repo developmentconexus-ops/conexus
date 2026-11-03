@@ -39,10 +39,6 @@ export function askAgent(name: string): string {
   return `Pergunte a ${name}…`
 }
 
-export function toolsText(count: number): string {
-  return count === 1 ? '1 ferramenta' : `${count} ferramentas`
-}
-
 export function stateText(state: AgentState): string {
   if (state.kind === 'DRAFT') return 'Rascunho'
   return state.changed ? 'Rascunho com mudanças' : `Versão ${state.version} · publicada`

@@ -5,10 +5,11 @@ import { useState } from 'react'
 import { HubFailure, sentenceOfCode } from '../../platform/hub.ts'
 import { Button, buttonVariants } from '../../ui/button.tsx'
 import { useConnectorCatalog } from '../assistant/public.ts'
+import { toolsText } from '../conversation/public.ts'
 import { publishFailureText, usePublish } from './publish.tsx'
 import { agentQuery } from './queries.ts'
 import { StateStamp } from './rows.tsx'
-import { AGENT_GONE, DRAFT_CHANGED, toolsText } from './text.ts'
+import { AGENT_GONE, DRAFT_CHANGED } from './text.ts'
 
 /**
  * The card of the draft in the Construtor's conversation (step 24.3, U5, criterion 26): what

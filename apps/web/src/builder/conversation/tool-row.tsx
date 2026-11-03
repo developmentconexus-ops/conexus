@@ -5,6 +5,8 @@ import {
   ProposedApp,
   ProposedAutomation,
   ShownFile,
+  TestedResult,
+  ToolSearchResult,
 } from '@conexus/hub-api'
 import { Link, useParams } from '@tanstack/react-router'
 import { FileTextIcon } from 'lucide-react'
@@ -29,21 +31,9 @@ import type { ToolItem } from './rows.ts'
 import { durationOf } from './text.ts'
 import type { Edit } from './tool-args.ts'
 import { editOf, shown } from './tool-args.ts'
+import { Answer, BLOCK, Generic, Library, textOf } from './tool-bodies.tsx'
 import type { ToolBody, ToolStatus } from './tool-registry.ts'
 import { presentTool, readable, specOf, toolStatus } from './tool-registry.ts'
-
-const BLOCK =
-  'max-h-64 overflow-auto rounded-control bg-surface-3 p-sm font-mono text-fact text-text-2 whitespace-pre-wrap wrap-break-word'
-
-function textOf(value: unknown): string | undefined {
-  if (value === undefined || value === null) return undefined
-  if (typeof value === 'string') return value === '' ? undefined : value
-  try {
-    return JSON.stringify(value, null, 2)
-  } catch {
-    return String(value)
-  }
-}
 
 function fieldOf(obj: unknown, key: string): string | undefined {
   if (obj && typeof obj === 'object' && key in obj) {
@@ -181,28 +171,20 @@ function Block({ tool, body }: { tool: ToolItem; body: ToolBody }) {
         </>
       )
     }
-    default: {
-      const args =
-        typeof tool.args === 'object' && tool.args !== null && Object.keys(tool.args).length > 0
-      const result = tool.result === undefined ? undefined : (textOf(tool.result) ?? '')
-      return (
-        <div className="flex min-w-0 flex-col gap-xs font-mono text-fact text-text-2">
-          <div className="font-sans font-semibold text-text">{title}</div>
-          {args && (
-            <div className="flex flex-col gap-xxs">
-              <span className="font-sans text-text-2">Argumentos:</span>
-              <pre className={BLOCK}>{shown(textOf(tool.args) ?? '')}</pre>
-            </div>
-          )}
-          {result !== undefined && (
-            <div className="flex flex-col gap-xxs">
-              <span className="font-sans text-text-2">Resultado:</span>
-              <pre className={BLOCK}>{shown(result)}</pre>
-            </div>
-          )}
-        </div>
+    case 'library': {
+      const found = ToolSearchResult.safeParse(tool.result).data
+      return found === undefined ? <Generic tool={tool} title={title} /> : <Library found={found} />
+    }
+    case 'answer': {
+      const tested = TestedResult.safeParse(tool.result).data
+      return tested?.kind === 'ANSWERED' ? (
+        <Answer text={tested.text} called={tested.tools.length} />
+      ) : (
+        <Generic tool={tool} title={title} />
       )
     }
+    default:
+      return <Generic tool={tool} title={title} />
   }
 }
 

@@ -9,7 +9,7 @@ import type {
 import {
   AGENTS_CONTROLLER,
   AgentId,
-  AgentSummary,
+  AgentListed,
   ATTEMPT_KEY_HEADER,
   BUILDER_ROUTES,
   CONSTRUTOR_CONTROLLER,
@@ -74,7 +74,9 @@ function draftRoutes(held: Held, note: Note) {
       `*/api/companies/${COMPANY.id}/agents`,
       () =>
         answers.list?.() ??
-        HttpResponse.json({ agents: held.agents.map((one) => AgentSummary.parse(one)) }),
+        HttpResponse.json({
+          agents: held.agents.map((one) => AgentListed.parse({ ...one, tools: one.tools.length })),
+        }),
     ),
     http.get(`${PROJECT_API}/agents/:id`, ({ params }) => {
       const replaced = answers.read?.()

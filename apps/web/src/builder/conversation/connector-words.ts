@@ -1,4 +1,4 @@
-import type { ConnectorEntry } from '@conexus/hub-api'
+import type { Connection, ConnectorEntry } from '@conexus/hub-api'
 import { busyText, reauthText, unreachableText } from '../../hub/connectors/public.ts'
 import type { ConnectorWords } from './tool-spec.ts'
 
@@ -9,14 +9,17 @@ import type { ConnectorWords } from './tool-spec.ts'
  * authorization is.
  */
 export function wordsOf(
-  catalog: readonly Pick<ConnectorEntry, 'id' | 'name' | 'auth'>[],
+  catalog: readonly Pick<ConnectorEntry, 'id' | 'name' | 'auth' | 'logo'>[],
+  connections: readonly Pick<Connection, 'id' | 'connector'>[] = [],
 ): ConnectorWords {
   const named = new Map(catalog.map((one) => [one.id, one]))
+  const linked = new Map<string, string>(connections.map((one) => [one.id, one.connector]))
   function name(connector: string): string {
     return named.get(connector)?.name ?? connector
   }
   return {
     name,
+    logoOf: (connectionId) => named.get(linked.get(connectionId) ?? '')?.logo,
     refusal(connector, why) {
       const shown = connector === undefined ? 'sistema' : name(connector)
       switch (why.kind) {

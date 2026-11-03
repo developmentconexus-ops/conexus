@@ -179,6 +179,7 @@ test('uma ou duas ferramentas são linhas; três ou mais viram um grupo fechado 
   )
   const group = screen.getByRole('button', { name: /4 ferramentas/ })
   expect(group.getAttribute('aria-expanded')).toBe('false')
+  expect(screen.getByText('4 feitos')).toBeTruthy()
 
   fireEvent.click(group)
   expect(group.getAttribute('aria-expanded')).toBe('true')
@@ -186,6 +187,32 @@ test('uma ou duas ferramentas são linhas; três ou mais viram um grupo fechado 
   expect(screen.getByText(/Buscou no código/)).toBeTruthy()
   expect(screen.getByText(/Leu um arquivo/)).toBeTruthy()
   expect(screen.getByText(/Editou um arquivo/)).toBeTruthy()
+})
+
+test('o grupo fechado conta os passos feitos e os que falharam', () => {
+  const steps: TranscriptItem[] = [
+    toolItem('t-1', 'mastra_workspace_list_files'),
+    toolItem('t-2', 'mastra_workspace_grep'),
+    {
+      kind: 'tool',
+      id: 't-3',
+      toolCallId: 't-3',
+      toolName: 'mastra_workspace_read_file',
+      state: 'output-error',
+      args: { path: 't-3.ts' },
+      errorText: 'falhou',
+    },
+  ]
+  render(
+    <Transcript
+      turns={[turnOf(steps, false)]}
+      steers={[]}
+      model={MODEL}
+      older={NO_OLDER}
+      onAsk={() => undefined}
+    />,
+  )
+  expect(screen.getByText('2 feitos, 1 falhou')).toBeTruthy()
 })
 
 test('skill, ask_user e submit_plan nunca se agrupam mesmo com 3 ou mais ferramentas (Critério 9)', () => {
