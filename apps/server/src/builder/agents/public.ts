@@ -9,7 +9,10 @@ import { createAgentConversations } from './controller.ts'
 import { registerAgentConversationRoutes } from './conversation-routes.ts'
 import { openAgentConversation } from './open.ts'
 
+export type { AgentRun } from './agent.ts'
 export { agentKey, agentRunContext } from './agent.ts'
+export type { AgentService } from './agents.ts'
+export type { AppDataPort } from './app-data.ts'
 
 import { agentEvents } from './events.ts'
 import { activeOf, draftOf, liveOf, publishedAll } from './frozen.ts'
@@ -33,6 +36,8 @@ export function agentsOf(deps: Omit<ToolsDeps, 'usedBy'> & Pick<AgentsDeps, 'isC
       registerToolRoutes(app, tools)
     },
     service,
+    /** The company's tool library, which the Construtor searches and saves into. */
+    tools,
     activeOf: (ids: OfProject, agentId: Parameters<typeof activeOf>[2]) =>
       activeOf(database, ids, agentId),
     draftOf: (ids: OfProject, agentId: Parameters<typeof draftOf>[2]) =>
@@ -61,6 +66,8 @@ export function agentsAlive(
   return Object.freeze({
     ...agents,
     part: live.part,
+    /** The `Agent` of an agent's draft, which runs alone with no thread (the Construtor's test). */
+    draftAgent: live.draftAgent,
     /** Opens a conversation with the agent, as its route does, past the admission (U6's run). */
     open: (input: Parameters<typeof openAgentConversation>[1]) =>
       openAgentConversation({ ...deps, ...live }, input),
@@ -70,3 +77,5 @@ export function agentsAlive(
     },
   })
 }
+
+export type AgentsAlive = ReturnType<typeof agentsAlive>

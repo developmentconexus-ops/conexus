@@ -1,8 +1,11 @@
+import { randomUUID } from 'node:crypto'
 import { ConversationId } from '@conexus/hub-api'
 import type { AgentController } from '@mastra/core/agent-controller'
 import type { InputProcessor } from '@mastra/core/processors'
 import type { RequestContext } from '@mastra/core/request-context'
 import { z } from 'zod'
+import { TurnKey } from '../../hub/connectors/public.ts'
+import { Failure } from '../../platform/failure.ts'
 import type { Turn } from '../model-accounts/public.ts'
 
 const Session = z.object({ sessionId: ConversationId })
@@ -52,4 +55,26 @@ export function sessionTurns(options: {
   }
 
   return { processor, watch }
+}
+
+/**
+ * The key a controller's run counts the company door's calls by, kept on its request context under
+ * the controller's own name: `start` puts a new one when the turn is taken, `of` reads it for a
+ * connector call and fails when there is no turn.
+ */
+export function turnKeyOn(name: string) {
+  return {
+    start(requestContext: RequestContext): void {
+      requestContext.set(name, TurnKey.parse(randomUUID()))
+    },
+    of(requestContext: RequestContext): TurnKey {
+      const turn = TurnKey.safeParse(requestContext.get(name))
+      if (!turn.success) {
+        throw new Failure('INTERNAL_UNEXPECTED', {
+          details: { reason: 'CONNECTOR_TOOL_WITHOUT_TURN' },
+        })
+      }
+      return turn.data
+    },
+  }
 }

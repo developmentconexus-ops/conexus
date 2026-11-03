@@ -9,7 +9,7 @@ import { chosenIds, ofProject } from './store.ts'
 import { agent, agentTool, agentVersion, agentVersionTool } from './tables.ts'
 
 /** What publishing needs of the draft: instructions, and only connections the Projeto still offers. */
-async function invalid(
+export async function invalidField(
   tx: ReadTx,
   draft: AgentConfig,
   agentId: AgentId,
@@ -105,7 +105,7 @@ export async function published(
   if (earlier !== undefined) return earlier
   if (row.revision !== body.revision) throw new Failure('AGENT_DRAFT_STALE')
   const draft = AgentConfig.parse(row.draft)
-  const field = await invalid(tx, draft, agentId, a.around)
+  const field = await invalidField(tx, draft, agentId, a.around)
   if (field !== undefined) throw new Failure('AGENT_DRAFT_INVALID', { named: { field } })
   return frozen(tx, scope, { agentId, draft, body })
 }
