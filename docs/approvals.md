@@ -574,3 +574,5 @@ Em 2026-11-03, ao estudo do método da passagem (as decisões F e G): "F1" "G1, 
 Cartão da etapa 24.3.2 aprovado em 2026-11-03 (commit 599cdf9423269eddf7c2156c5d4e7ee24495e30e): "1. A 2. A 3. Aprovado 4. Okay"
 
 Lido pelo firstmate como: o "3. Aprovado" aprova a página do cartão no commit citado; o "4. Okay" autoriza o PR pequeno do `scripts/check-approval.ts` que lê cartões de três níveis, registrado em "Decisões fora de uma etapa".
+
+Em 2026-11-03, no meio da etapa, à prova do critério 6 (as três rodadas do `G1`): "Não precisa de tudo isso de teste não" e, à opção a, "A". Lido pelo firstmate como: cada um dos 13 casos roda uma vez só, e a etapa passa com os 13 certos, no lugar das três rodadas do `G1`. Palavra de meio de etapa, vai direto para este livro (L6); o texto do cartão se corrige no fechamento.

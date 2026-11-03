@@ -125,7 +125,7 @@ export const EVAL_SET = z
   .enum(['tuning', 'held-out', 'all'])
   // biome-ignore lint/style/noProcessEnv: the choice of the opt-in case's half, not the app's configuration
   .parse(process.env.CONEXUS_EVAL_SET ?? 'tuning')
-export const ROUNDS = 3
+export const ROUNDS = 1
 const RUN_WAIT_MS = 600_000
 
 /** Every part the Assistant answered in the conversation, over all its turns. */

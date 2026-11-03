@@ -143,7 +143,7 @@ test('o modelo de verdade: as perguntas do roteiro sobre o dublê, cada uma numa
   }
 })
 
-test('o modelo de verdade passa ao Builder: cada caso do conjunto, numa conversa nova, certo nas três rodadas (step 24.3.2, critério 6, G1)', {
+test('o modelo de verdade passa ao Builder: cada caso do conjunto, numa conversa nova, certo na rodada única (step 24.3.2, critério 6, decisão de 2026-11-03)', {
   timeout: 10_800_000,
 }, async (t) => {
   if (REAL_MODEL === undefined) {
