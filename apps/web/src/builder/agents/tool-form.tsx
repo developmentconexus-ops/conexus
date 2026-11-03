@@ -1,4 +1,10 @@
-import type { OfferedConnection, ToolInput, ToolVersionConfig } from '@conexus/hub-api'
+import type {
+  OfferedConnection,
+  ProblemField,
+  ProblemReason,
+  ToolInput,
+  ToolVersionConfig,
+} from '@conexus/hub-api'
 import {
   OperationId,
   ToolInput as ToolInputSchema,
@@ -12,7 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Textarea } from '../../ui/textarea.tsx'
 import { reasonText } from './text.ts'
 
-type Refusal = { field: string | undefined; reason: string | undefined }
+type Refusal = { field: ProblemField | undefined; reason: ProblemReason | undefined }
 type Local = { field: string; text: string }
 
 /** The fixed values the person typed, read as the contract reads them; what is not JSON says so. */

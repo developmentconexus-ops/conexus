@@ -194,9 +194,11 @@ export function StartBox(props: {
   /** Chips under the bar; none draws nothing. */
   examples: readonly Example[]
   /** The model's button; none where the request does not choose the model (the Construtor's). */
-  picked?: { model: ModelId; effort: Effort }
-  onPick?: (picked: { model: ModelId; effort: Effort }) => void
-  providers?: ReturnType<typeof usePicked>['providers']
+  picker?: {
+    picked: { model: ModelId; effort: Effort }
+    onPick: (picked: { model: ModelId; effort: Effort }) => void
+    providers: ReturnType<typeof usePicked>['providers']
+  }
   /** The model that answers, named and not changed, where the request does not choose it (the Construtor's). */
   modelName?: ModelId
   /** False while something the request needs has not arrived: **Enviar** waits. */
@@ -227,14 +229,12 @@ export function StartBox(props: {
             props.modelName !== undefined ? (
               <ComposerModelName model={props.modelName} />
             ) : (
-              props.picked !== undefined &&
-              props.onPick !== undefined &&
-              props.providers !== undefined && (
+              props.picker !== undefined && (
                 <ComposerModelPicker
-                  providers={props.providers}
-                  value={props.picked}
+                  providers={props.picker.providers}
+                  value={props.picker.picked}
                   heading="Modelo do pedido"
-                  onChange={props.onPick}
+                  onChange={props.picker.onPick}
                 />
               )
             )
@@ -293,9 +293,7 @@ export function Start({ companyId }: { companyId: CompanyId }): ReactNode {
       draft={draft}
       placeholder={START_PLACEHOLDER}
       examples={EXAMPLES}
-      picked={picked}
-      onPick={setPicked}
-      providers={providers}
+      picker={{ picked, onPick: setPicked, providers }}
       onSend={(outgoing) => {
         // The request stays in the draft until its conversation opens (criterion 12).
         draft.restore(outgoing)

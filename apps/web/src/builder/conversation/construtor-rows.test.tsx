@@ -168,6 +168,21 @@ test('tool_<slug> diz o que o agente consultou, nunca "Usou Tool"', () => {
   expect(screen.getByText('Consultando vendas ontem')).toBeTruthy()
 })
 
+test('tool_<slug> diz o que o agente consultou pela descrição da ferramenta, com acento', () => {
+  const room = {
+    ...agentRoom('Construtor'),
+    toolDescription: (slug: string) =>
+      slug === 'vendas_por_regiao' ? 'vendas por região' : undefined,
+  }
+  render(
+    <RoomContext.Provider value={room}>
+      <ToolRow tool={{ ...draftRow('tool_vendas_por_regiao'), result: 'ok' }} />
+    </RoomContext.Provider>,
+  )
+  expect(screen.getByText('Consultou vendas por região')).toBeTruthy()
+  expect(screen.queryByText('Consultou vendas por regiao')).toBeNull()
+})
+
 test('a linha aberta de agent_read titula em português, nunca pelo nome da ferramenta', () => {
   render(<ToolRow tool={draftRow(CONSTRUTOR_TOOL.agentRead)} />)
   expect(screen.getAllByText('Leu o rascunho do agente')).toHaveLength(1)

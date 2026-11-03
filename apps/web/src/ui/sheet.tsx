@@ -7,6 +7,13 @@ import { cn } from './cn.ts'
 // Copied from shadcn's base-nova `sheet`: the left side is the phone drawer (V56), the right one a
 // panel for a form beside the page. A hairline separates it, and the overlay is the canvas itself, since the brand has no overlay token.
 // Its slide and fade stop under reduced motion (design V26).
+/**
+ * What a header inside the sheet reserves so the sheet's own **Fechar** (`absolute top-md right-md`,
+ * `size-control`) touches nothing of it: the close's side plus its inset on the right (md + control + md),
+ * and a row as tall as the close plus its two insets, so the close sits at the row's vertical center.
+ */
+export const SHEET_CLOSE_ROOM = 'pr-14 min-h-14'
+
 export function Sheet(props: SheetPrimitive.Root.Props) {
   return <SheetPrimitive.Root data-slot="sheet" {...props} />
 }
