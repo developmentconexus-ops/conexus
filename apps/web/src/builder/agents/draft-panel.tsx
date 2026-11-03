@@ -15,9 +15,11 @@ import type { ReactNode } from 'react'
 import { useState } from 'react'
 import { HubFailure, sentenceOf } from '../../platform/hub.ts'
 import { Button, buttonVariants } from '../../ui/button.tsx'
+import { cn } from '../../ui/cn.ts'
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { Empty, ReadFailure } from '../../ui/states.tsx'
 import { useConnectorCatalog } from '../assistant/public.ts'
+import { SHEET_CLOSE_ROOM } from '../conversation/public.ts'
 import { modelLabel } from '../model-accounts/public.ts'
 import { useOpenAgentConversation } from './open-conversation.ts'
 import { publishFailureText, usePublish, usePublishLabel } from './publish.tsx'
@@ -51,7 +53,7 @@ function Part(props: { icon: LucideIcon; title: string; children: ReactNode }) {
   )
 }
 
-function Filled({ scope, agent }: { scope: Scope; agent: AgentDetail }) {
+function Filled({ scope, agent, inSheet }: { scope: Scope; agent: AgentDetail; inSheet: boolean }) {
   const catalog = useConnectorCatalog(scope.companyId)
   const { publish, pending } = usePublish(scope, agent.id)
   const test = useOpenAgentConversation(scope, agent.id)
@@ -71,7 +73,12 @@ function Filled({ scope, agent }: { scope: Scope; agent: AgentDetail }) {
 
   return (
     <>
-      <div className="flex min-w-0 items-center gap-sm border-b border-line px-md py-sm">
+      <div
+        className={cn(
+          'flex min-w-0 items-center gap-sm border-b border-line px-md py-sm',
+          inSheet && SHEET_CLOSE_ROOM,
+        )}
+      >
         <BotIcon aria-hidden="true" className="size-4 shrink-0" />
         <h2 className="min-w-0 flex-1 truncate font-display text-title">Rascunho · {agent.name}</h2>
         <StateStamp state={agent.state} />
@@ -154,7 +161,7 @@ function Filled({ scope, agent }: { scope: Scope; agent: AgentDetail }) {
  * read live by its id, so it fills as the Construtor works. **Publicar** sends the `revision` it
  * showed, so a draft that moved since is refused with `AGENT_DRAFT_STALE`.
  */
-export function DraftPanel(props: { scope: Scope; agentId: AgentId }) {
+export function DraftPanel(props: { scope: Scope; agentId: AgentId; inSheet?: boolean }) {
   const { scope, agentId } = props
   const live = useQuery(agentQuery(scope, agentId))
   const gone = live.error instanceof HubFailure && live.error.code === 'AGENT_NOT_FOUND'
@@ -167,7 +174,7 @@ export function DraftPanel(props: { scope: Scope; agentId: AgentId }) {
       ) : live.data === undefined ? (
         <Skeleton className="m-md h-24" />
       ) : (
-        <Filled scope={scope} agent={live.data.agent} />
+        <Filled scope={scope} agent={live.data.agent} inSheet={props.inSheet === true} />
       )}
     </section>
   )

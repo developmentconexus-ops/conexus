@@ -81,13 +81,6 @@ export async function agentTurnOf(
   return turn
 }
 
-/** The same turn, put on the run's context: for a run that no controller's turns take. */
-async function takeAgentTurn(...args: Parameters<typeof agentTurnOf>): Promise<Turn> {
-  const turn = await agentTurnOf(...args)
-  setTurn(args[1], turn)
-  return turn
-}
-
 export type AgentDeps = {
   queue: QueueDeps
   connectors: Connectors['assistant']
@@ -165,10 +158,13 @@ export function agentOf(
       if (requestContext === undefined || agentRunIn(requestContext) === undefined)
         return abort('NO_TURN')
       const { run, start } = await plan(requestContext)
-      await takeAgentTurn(deps.queue, requestContext, {
-        run,
-        model: { id: start.model, effort: start.effort },
-      })
+      setTurn(
+        requestContext,
+        await agentTurnOf(deps.queue, requestContext, {
+          run,
+          model: { id: start.model, effort: start.effort },
+        }),
+      )
       return messages
     },
   }

@@ -81,7 +81,7 @@ export function ConstrutorChat(props: {
             onCloseSide={() => setCovering(false)}
             side={
               agentId === undefined || (phone && !covering) ? undefined : (
-                <DraftPanel scope={scope} agentId={agentId} />
+                <DraftPanel scope={scope} agentId={agentId} inSheet={phone} />
               )
             }
             chat={

@@ -43,6 +43,7 @@ export function Tools(props: Part) {
                       {toolFact(
                         catalog.name(connection.connector),
                         several ? connection.name : undefined,
+                        tool.effect,
                       )}
                     </span>
                   )}

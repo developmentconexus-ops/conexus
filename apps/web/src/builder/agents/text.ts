@@ -36,9 +36,18 @@ export function readyGroup(connector: string): string {
   return `${connector} · prontas do conector`
 }
 
-/** The second line of a tool: its connector and "lê" (the library only holds reads); the connection only when the Projeto has more than one. */
-export function toolFact(connector: string, connection: string | undefined): string {
-  return [connector, connection, 'lê'].filter((part) => part !== undefined).join(' · ')
+/** What a tool does to the system it reads: the library only holds reads, so a new effect is a type error here until it has its words. */
+const EFFECT_TEXT = { READ: 'lê' } as const
+
+/** The second line of a tool: its connector and what it does; the connection only when the Projeto has more than one. */
+export function toolFact(
+  connector: string,
+  connection: string | undefined,
+  effect: keyof typeof EFFECT_TEXT,
+): string {
+  return [connector, connection, EFFECT_TEXT[effect]]
+    .filter((part) => part !== undefined)
+    .join(' · ')
 }
 export const NO_CONNECTIONS = 'Este Projeto não recebeu nenhuma ligação.'
 export const GONE_CONNECTION = 'O Projeto não oferece mais'

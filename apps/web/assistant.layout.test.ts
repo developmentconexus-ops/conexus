@@ -160,6 +160,27 @@ test('no celular, o arquivo abre numa folha que fecha com Esc e devolve o foco a
   await page.close()
 })
 
+test('no celular, a folha do arquivo mostra o nome e o Fechar da folha não encosta em nada do cabeçalho', async () => {
+  const page = await harness.open(ASSISTANT_PATH, { viewport: PHONE, replies: ASSISTANT_REPLIES })
+  const open = page.getByRole('button', { name: /^Abrir relatorio/ })
+  await open.waitFor()
+  await open.click()
+  const sheet = page.getByRole('dialog', { name: /^relatorio/ })
+  await sheet.waitFor()
+  const name = sheet.locator('section h2')
+  await name.waitFor()
+  const close = await sheet.getByRole('button', { name: 'Fechar' }).boundingBox()
+  const baixar = await sheet.getByRole('button', { name: 'Baixar' }).boundingBox()
+  const title = await name.boundingBox()
+  assert.ok(close && baixar && title, 'the header is not laid out')
+  for (const [label, box] of [
+    ['Baixar', baixar],
+    ['o nome', title],
+  ] as const)
+    assert.ok(box.x + box.width <= close.x, `Fechar touches ${label}`)
+  await page.close()
+})
+
 const TWO_TOOLS = [
   {
     connectionId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',

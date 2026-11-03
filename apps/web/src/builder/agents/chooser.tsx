@@ -158,6 +158,7 @@ function ReadyGroups(
               detail={toolFact(
                 catalog.name(connector),
                 several ? connectionOf(agent.offered, one.connectionId)?.name : undefined,
+                'READ',
               )}
               checked={props.chosen.has(key)}
               onChange={() => props.onToggle(key)}
@@ -193,6 +194,7 @@ function LibraryGroup(
                 : toolFact(
                     catalog.name(connection.connector),
                     agent.offered.length > 1 ? connection.name : undefined,
+                    tool.effect,
                   )
             }
             fact={`v${tool.latest.number}`}
