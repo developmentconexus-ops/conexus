@@ -1,5 +1,11 @@
 import type { FailureCode } from '@conexus/hub-api'
-import { FAILURES, ProposedApp, ProposedAutomation, ShownFile } from '@conexus/hub-api'
+import {
+  ConstrutorResult,
+  FAILURES,
+  ProposedApp,
+  ProposedAutomation,
+  ShownFile,
+} from '@conexus/hub-api'
 import { Link, useParams } from '@tanstack/react-router'
 import { FileTextIcon } from 'lucide-react'
 import { useEffect, useEffectEvent, useState } from 'react'
@@ -275,6 +281,8 @@ function specialRow(tool: ToolItem, status: ToolStatus, room: Room) {
     body === 'automation' ? ProposedAutomation.safeParse(tool.result).data : undefined
   if (automation !== undefined)
     return room.automationCard?.({ proposed: automation, toolCallId: tool.toolCallId })
+  const agent = body === 'agent' ? ConstrutorResult.safeParse(tool.result).data : undefined
+  if (agent !== undefined) return room.agentCard?.(agent)
   const proposed = body === 'proposal' ? ProposedApp.safeParse(tool.result).data : undefined
   return proposed === undefined ? undefined : <ProposalCard summary={proposed.summary} />
 }

@@ -39,7 +39,7 @@ async function rail() {
   return within(column)
 }
 
-test('dentro do Projeto o trilho continua e a lista é a do Projeto: o nome com a troca, Construir, Conversas, Automações, Sobre, Quem usa o app, Integrações', async () => {
+test('dentro do Projeto o trilho continua e a lista é a do Projeto: o nome com a troca, Construir, Conversas, Agentes, Automações, Sobre, Quem usa o app, Integrações', async () => {
   open(PROJECT)
   const list = await bar()
   expect(
@@ -49,6 +49,7 @@ test('dentro do Projeto o trilho continua e a lista é a do Projeto: o nome com 
   expect(entries).toEqual([
     'Construir',
     'Conversas',
+    'Agentes',
     'Automações',
     'Sobre',
     'Quem usa o app',
@@ -62,10 +63,11 @@ test('dentro do Projeto o trilho continua e a lista é a do Projeto: o nome com 
   expect(places.getByRole('link', { name: 'Início' })).toBeTruthy()
 })
 
-test('o membro não vê Automações na barra do Projeto (step 24.2, criterion 20)', async () => {
+test('o membro não vê Agentes nem Automações na barra do Projeto (steps 24.2 e 24.3)', async () => {
   open(PROJECT, { role: 'member' })
   const list = await bar()
   await list.findByRole('button', { name: 'Trocar de Projeto. Agora: Pedidos' })
+  expect(list.queryByRole('link', { name: 'Agentes' })).toBeNull()
   expect(list.queryByRole('link', { name: 'Automações' })).toBeNull()
   expect(list.getByRole('link', { name: 'Integrações' })).toBeTruthy()
 })

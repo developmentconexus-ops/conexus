@@ -1,13 +1,13 @@
-import type { CompanyId, ConversationId, ProjectId } from '@conexus/hub-api'
+import type { CompanyId, ConstrutorResult, ConversationId, ProjectId } from '@conexus/hub-api'
 import { CONSTRUTOR_CONTROLLER } from '@conexus/hub-api'
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { ArrowLeftIcon } from 'lucide-react'
+import { useMemo } from 'react'
 import { agentRoom, Chat, RoomContext, START_NO_ACCOUNT } from '../conversation/public.ts'
+import { DraftCard } from './draft-card.tsx'
 import { construtorConversationsQuery } from './queries.ts'
 import { CONSTRUTOR_FIRST, CONSTRUTOR_NAME, CONSTRUTOR_PLACEHOLDER, titleOf } from './text.ts'
-
-const ROOM = agentRoom(CONSTRUTOR_NAME)
 
 /** A conversation with the Construtor: the conversation of the 24.1 over the `construtor` controller (criterion 26). */
 export function ConstrutorChat(props: {
@@ -21,8 +21,17 @@ export function ConstrutorChat(props: {
   const { conversations } = useSuspenseQuery(construtorConversationsQuery(scope)).data
   const here = conversations.find((one) => one.id === conversationId)
   const listKey = construtorConversationsQuery(scope).queryKey
+  const room = useMemo(
+    () => ({
+      ...agentRoom(CONSTRUTOR_NAME),
+      agentCard: (result: ConstrutorResult) => (
+        <DraftCard companyId={companyId} projectId={projectId} result={result} />
+      ),
+    }),
+    [companyId, projectId],
+  )
   return (
-    <RoomContext.Provider value={ROOM}>
+    <RoomContext.Provider value={room}>
       <div key={conversationId} className="flex h-full min-h-0 flex-col bg-canvas">
         <div className="flex min-w-0 items-center gap-sm border-b border-line px-md py-sm">
           <Link

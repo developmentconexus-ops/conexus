@@ -78,7 +78,7 @@ function Ask({ companyId, projectId }: Scope) {
         placeholder={CONSTRUTOR_PLACEHOLDER}
         examples={CONSTRUTOR_EXAMPLES}
         onSend={begin}
-        bar={
+        notice={
           error !== undefined && (
             <p role="alert" className="text-danger">
               {error}
