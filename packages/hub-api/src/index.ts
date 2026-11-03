@@ -79,7 +79,6 @@ export {
   setAssistantConnections,
   setAssistantModel,
 } from './assistant.ts'
-export * from './handoff.ts'
 export * from './automation-api.ts'
 export { CAPACITY } from './capacity.ts'
 export {
@@ -174,6 +173,7 @@ export {
   TurnFailureCode,
 } from './conversations.ts'
 export { FAILURES, type FailureCode, PROBLEM_MEDIA_TYPE, Problem, phraseOf } from './failures.ts'
+export * from './handoff.ts'
 export { getHealth, Health } from './health.ts'
 export {
   COOKIE_PREFIX,
@@ -281,13 +281,7 @@ export {
   ProjectName,
   ProjectSummary,
 } from './projects.ts'
-export {
-  Answer,
-  QUESTION_LIMITS,
-  Question,
-  Task,
-  ToolCallId,
-} from './questions.ts'
+export * from './questions.ts'
 export { RunId } from './runs.ts'
 export {
   ProjectSource,

@@ -26,6 +26,8 @@ import type { QueueDeps } from '../model-accounts/public.ts'
 import { chosenConnections } from './chosen.ts'
 import type { Owner, ScopeOf } from './context.ts'
 import { runConversation, sessionScopes } from './context.ts'
+import type { HandOffDoors } from './handoff.ts'
+import { registerHandOff } from './handoff.ts'
 import type { Speakers } from './instructions.ts'
 import { assistantInstructions } from './instructions.ts'
 import type { AssistantMachines, MachineTuning } from './machine.ts'
@@ -84,6 +86,8 @@ type Deps = {
    */
   machine: AssistantMachine
   machineTuning?: MachineTuning
+  /** The Projects, the grants and the Builder a hand-off reaches, made after the Assistant (step 24.3.2). */
+  handOffs: () => HandOffDoors
   log: FailureLog
 }
 
@@ -348,7 +352,9 @@ export function createAssistant(deps: Deps) {
     turnEnd: (session: Parameters<typeof turnEnd>[1]) => turnEnd(controller, session),
     /** Whether the conversation already holds a question (`open.ts`). */
     asked: (owner: Owner, conversationId: ConversationId) => asked(memory, owner, conversationId),
-    routes: (app: FastifyInstance) =>
-      registerAssistantRoutes(app, { ...deps, controller, memory, chosen, machines }),
+    routes: (app: FastifyInstance) => {
+      registerAssistantRoutes(app, { ...deps, controller, memory, chosen, machines })
+      registerHandOff(app, { ...deps, memory, chosen, doors: deps.handOffs })
+    },
   } as const)
 }

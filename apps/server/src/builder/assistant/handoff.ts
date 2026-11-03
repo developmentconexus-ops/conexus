@@ -7,6 +7,7 @@ import type {
   Person,
   ProjectId,
   ProjectName,
+  ToolCallId,
 } from '@conexus/hub-api'
 import { ASSISTANT_TOOL, handAssistantProposal, ProposedApp } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
@@ -34,7 +35,7 @@ type BuilderSession = {
       author: { id: string; name: string }
     },
     options: { requireDelivery: true },
-  ): { accepted: Promise<{ action: string }> }
+  ): { accepted: Promise<{ action?: string | undefined }> }
 }
 
 /**
@@ -99,7 +100,7 @@ const Invocation = z.object({
 async function proposalOf(
   deps: HandOffDeps,
   owner: Owner,
-  call: { conversationId: ConversationId; toolCallId: string; toolName: string },
+  call: { conversationId: ConversationId; toolCallId: ToolCallId; toolName: string },
 ): Promise<ProposedApp> {
   const { messages } = await deps.memory.recall({
     threadId: call.conversationId,
@@ -184,7 +185,11 @@ type HandOffInput = {
   companyId: CompanyId
   conversationId: ConversationId
   attemptKey: string
-  body: { toolCallId: string; projectName?: ProjectName | undefined; connections: ConnectionId[] }
+  body: {
+    toolCallId: ToolCallId
+    projectName?: ProjectName | undefined
+    connections: ConnectionId[]
+  }
   log: FailureLog
 }
 
@@ -216,7 +221,7 @@ async function projectOf(
  * (as an automation's run sends its own, `automations/run.ts`). Every step is keyed by the attempt,
  * so a second touch finds what the first made and sends only when nothing was sent.
  */
-export async function handOff(deps: HandOffDeps, input: HandOffInput): Promise<HandedOff> {
+async function handOff(deps: HandOffDeps, input: HandOffInput): Promise<HandedOff> {
   const { person, companyId, conversationId } = input
   const owner = { companyId, personId: person.id }
   const doors = deps.doors()
@@ -271,6 +276,6 @@ export async function handOff(deps: HandOffDeps, input: HandOffInput): Promise<H
 /** The hand-off's route, beside the Assistant's own (`routes.ts`). */
 export function registerHandOff(app: FastifyInstance, deps: HandOffDeps): void {
   serve(app, handAssistantProposal, async ({ person, params, body, attemptKey, log }) =>
-    answer(await handOff(deps, { person, ...params, attemptKey, body, log }), 201),
+    answer(await handOff(deps, { person, ...params, attemptKey, body, log })),
   )
 }

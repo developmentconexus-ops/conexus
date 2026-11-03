@@ -4,6 +4,7 @@ import { CONNECTIONS_MAX, ConnectionId } from './connectors.ts'
 import { ConversationId } from './conversations.ts'
 import { ATTEMPT_KEY_HEADER, defineOperation } from './operation.ts'
 import { ProjectId, ProjectName } from './projects.ts'
+import { ToolCallId } from './questions.ts'
 
 /** Why a marked connection was not released to the Projeto; the others were. */
 export const HandOffRefusal = z.enum([
@@ -36,7 +37,7 @@ export const handAssistantProposal = defineOperation({
   input: {
     params: z.object({ companyId: CompanyId, conversationId: ConversationId }),
     body: z.object({
-      toolCallId: z.string().min(1).max(200),
+      toolCallId: ToolCallId,
       /** The new Projeto's name on the Início; absent in a Projeto's conversation, which uses its own. */
       projectName: ProjectName.optional(),
       connections: z.array(ConnectionId).max(CONNECTIONS_MAX),
@@ -50,6 +51,8 @@ export const handAssistantProposal = defineOperation({
     'SESSION_REQUIRED',
     'DATABASE_UNAVAILABLE',
     'IDEMPOTENCY_CONFLICT',
+    'REQUEST_MALFORMED',
+    'HUB_UPDATING',
     'PROJECT_NAME_TAKEN',
     'PROJECT_ADDRESS_TAKEN',
     'PROJECT_NAME_NO_ADDRESS',

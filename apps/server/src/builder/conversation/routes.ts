@@ -105,7 +105,13 @@ export async function created(
   )
   if (createdAt === undefined) throw new Failure('INTERNAL_UNEXPECTED')
   const conversationId = ConversationId.parse(opened.session.identity.getId())
-  return { id: conversationId, createdAt, model: opened.model, made: opened.made, session: opened.session }
+  return {
+    id: conversationId,
+    createdAt,
+    model: opened.model,
+    made: opened.made,
+    session: opened.session,
+  }
 }
 
 /**
