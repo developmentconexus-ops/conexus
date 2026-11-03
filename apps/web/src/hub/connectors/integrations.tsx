@@ -100,7 +100,7 @@ export function Integrations() {
     .filter((group) => group.own.length > 0)
 
   return (
-    <div className="flex w-full max-w-page flex-col gap-xl">
+    <div className="mx-auto flex w-full max-w-page flex-col gap-xl">
       <div className="flex flex-col gap-sm">
         <PageTitle>Integrações</PageTitle>
         <p className="text-text-2">{LEAD}</p>

@@ -519,6 +519,8 @@ Em 2026-11-02, ao buffer da memória observacional (o estudo A/B do buffer, B1 o
 
 Em 2026-11-01, ao estudo do auth do Mastra (se a porta das rotas do Mastra passa ao auth nativo dele, com a integração Better Auth): "okay sibre auth". Fica como está: o login é o Better Auth, e a porta das rotas do Mastra é a nossa, a lista fixa de `guard.ts` com o dono de cada conversa conferido a cada pedido; a decisão 0050 vale.
 
+Em 2026-11-03, com a captura do Hub ao vivo (v0.24.8) em que a coluna do Início não ficava no centro da folha, e a lista das páginas que seguiam coladas à esquerda (Projetos, Integrações, a página da ligação, as Integrações do Projeto e Automações), à pergunta se elas ficam centradas como o Início: "Aprovado". Lido pelo firstmate como: essas cinco páginas centram a coluna de `max-w-page` (64rem, `DESIGN.md`) com `mx-auto`, na mesma largura de hoje; o eixo da V59 continua só do Início e da conversa.
+
 ## Etapa 24.3
 
 Em 2026-11-02, à pergunta A do cartão da 24.3 (a entrada Agentes para o membro, contra a regra W34 do guia da web): "3.A". **Agentes** some para o membro, como **Automações** pela resposta "1 A" de 2026-11-01; a exceção da W34 que o fechamento da 24.2 escreve nomeia as duas entradas. Palavra antes da aprovação do cartão, que ainda espera a decisão B.
