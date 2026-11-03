@@ -13,6 +13,8 @@ export type Sent = {
   bearer: string | null
   stream: boolean
   tools: string[]
+  /** Each offered tool's description, by name, as the model reads when to call it. */
+  descriptions: Record<string, string>
   system: string
   /** The system's blocks as the body sends them, each with whether it carries a cache mark. */
   systems: { text: string; cached: boolean }[]
@@ -41,7 +43,7 @@ const Body = z.object({
   model: z.string().optional(),
   stream: z.boolean().optional(),
   thinking: Thinking.optional(),
-  tools: z.array(z.object({ name: z.string() })).optional(),
+  tools: z.array(z.object({ name: z.string(), description: z.string().optional() })).optional(),
   tool_choice: z.object({ type: z.string() }).optional(),
   system: z
     .union([
@@ -164,6 +166,9 @@ export function sentOf(init: RequestInit | undefined): Sent {
     stream: body.stream === true,
     // `tool_choice: none` offers the model no tool, as the router's model asked it with an empty list.
     tools: body.tool_choice?.type === 'none' ? [] : (body.tools ?? []).map((tool) => tool.name),
+    descriptions: Object.fromEntries(
+      (body.tools ?? []).map((tool) => [tool.name, tool.description ?? '']),
+    ),
     system,
     systems,
     texts,

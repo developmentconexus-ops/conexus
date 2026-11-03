@@ -46,6 +46,12 @@ const Controller = z.object({
 
 export type ScopeOf = (requestContext: RequestContext) => Promise<SessionScope | undefined>
 
+/** The conversation a run belongs to, from the controller's mark on its context; none outside one. */
+export function runConversation(requestContext: RequestContext) {
+  const controller = Controller.safeParse(requestContext.get('controller'))
+  return controller.success ? controller.data : undefined
+}
+
 /**
  * The scope for each turn: the owner from the thread's resource, the place and the
  * choice as the Hub keeps them, read once per `RequestContext`, so the instructions, the tools and
@@ -54,12 +60,12 @@ export type ScopeOf = (requestContext: RequestContext) => Promise<SessionScope |
  */
 export function sessionScopes(deps: { chosenOf: ChosenOf }): ScopeOf {
   return oncePerRun(async (requestContext) => {
-    const controller = Controller.safeParse(requestContext.get('controller'))
-    if (!controller.success) return undefined
-    const owner = ownerOfResource(controller.data.resourceId)
+    const run = runConversation(requestContext)
+    if (run === undefined) return undefined
+    const owner = ownerOfResource(run.resourceId)
     if (owner?.kind !== 'assistant') return undefined
     const { companyId, personId } = owner
     const owned = { companyId, personId }
-    return scopeOn(owned, await deps.chosenOf(owned, controller.data.sessionId))
+    return scopeOn(owned, await deps.chosenOf(owned, run.sessionId))
   })
 }
