@@ -177,8 +177,8 @@ for (const viewport of [DESKTOP, WIDE, PHONE])
       'the end of the conversation is under the working line and the box',
     )
     assert.ok(
-      Math.abs(log.x + log.width / 2 - (scroll.x + scroll.width / 2)) <= 1,
-      'the column of messages is not centred',
+      Math.abs(log.x + log.width / 2 - (box.x + box.width / 2)) <= 1,
+      'the column of messages is not centred on the box',
     )
     assert.ok(
       Math.abs(line.x - box.x) <= 1,
@@ -202,8 +202,7 @@ test('no painel estreito do Construtor a caixa fica dentro da área de rolagem, 
   const [scroll, box, bar] = await Promise.all([
     scroller.boundingBox(),
     form.boundingBox(),
-    // The gutter is reserved on both edges; the scrollbar is the one on the right.
-    scroller.evaluate((element: HTMLElement) => (element.offsetWidth - element.clientWidth) / 2),
+    scroller.evaluate((element: HTMLElement) => element.offsetWidth - element.clientWidth),
   ])
   assert.ok(scroll && box, 'the panel is not laid out')
   assert.ok(bar > 0, 'the browser shows no scrollbar')

@@ -93,7 +93,7 @@ export function Transcript(props: {
       <MessageScroller>
         <MessageScrollerViewport
           aria-label="Rolagem da conversa"
-          className="flex flex-col pt-md [scrollbar-gutter:stable_both-edges]"
+          className="flex flex-col pt-md [scrollbar-gutter:stable]"
         >
           <MessageScrollerContent
             aria-label={`Conversa com o ${agent}`}
