@@ -45,7 +45,7 @@ Sua empresa usa o Conexus desde 2026-11-02, recebendo cada etapa.
 - **24.2 Automações.** Recebe o resumo das 7h numa conversa nova, com aviso.
 - **13.3 A Pauta.** Vê o Hub no visual novo, com a caixa igual em toda tela.
 - **24.3 O Construtor.** Cria e publica um agente.
-- **24.3.3 A lista e os Projetos.** Apaga e busca conversas.
+- **24.3.3 A lista e os Projetos.** Busca.
 - **Papéis e pedidos.** O membro pede para publicar.
 - **24.4 Ferramentas em código.** Código que calcula.
 - **24.5 Os agentes escrevem, com aprovação.** Um agente ou app pede "Aprovar?" antes de escrever (resposta B, 2026-10-18; leva a 20.1).
@@ -107,7 +107,7 @@ Login social. Arquivos enviados por pessoas para dentro de um app ou da máquina
 | Etapa | O que precisa antes | Decisão sua nela | Conhecimento trazido |
 | --- | --- | --- | --- |
 | 24.3 O Construtor | A 24.2 | Nenhuma | `addAgent` por agente |
-| 24.3.3 A lista e os Projetos | A 24.3 | Nenhuma | G4 OS Sessões |
+| 24.3.3 A lista e os Projetos | A 24.3 | Nenhuma | G4 OS |
 | Papéis e pedidos | A 24.3.1 | Nenhuma | — |
 | 24.4 Ferramentas em código | Os pedidos | Nenhuma | Protótipo: Workers ou E2B |
 | 24.5 Escrita com aprovação | A 24.4 | Nenhuma | `requireApproval` do Mastra, provada antes a trava da 0053. Escrita nova pede nova liberação |
