@@ -10,6 +10,7 @@ import { getRouteApi, Link, useNavigate } from '@tanstack/react-router'
 import { ArrowLeftIcon, MoreHorizontalIcon } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { HubFailure, sentenceOf } from '../../platform/hub.ts'
+import { Alert } from '../../ui/alert.tsx'
 import { Badge } from '../../ui/badge.tsx'
 import { Button } from '../../ui/button.tsx'
 import {
@@ -69,9 +70,7 @@ export function ConnectionReadFailure(props: { error: unknown; reset: () => void
   if (isGone(props.error)) {
     return (
       <div className="flex flex-col items-start gap-md">
-        <p role="alert" className="text-danger">
-          {sentenceOf(props.error)}
-        </p>
+        <Alert tone="danger">{sentenceOf(props.error)}</Alert>
         <BackLink companyId={companyId} />
       </div>
     )
@@ -184,11 +183,7 @@ function Test(props: {
           {TESTING_TEXT}
         </p>
       )}
-      {props.error !== null && (
-        <p role="alert" className="text-danger">
-          {sentenceOf(props.error)}
-        </p>
-      )}
+      {props.error !== null && <Alert tone="danger">{sentenceOf(props.error)}</Alert>}
       {answer && answer.result !== 'WORKING' && <TestRefusal answer={answer} name={name} />}
       {(answer?.result === 'WORKING' || connection.testedAt !== null) && (
         <p className="flex flex-wrap items-baseline gap-x-md gap-y-xs">
@@ -262,9 +257,9 @@ function Reauth(props: {
   const { entry, connection } = props
   return (
     <div className="flex flex-col items-start gap-md">
-      <p role="alert" className="text-danger">
+      <Alert tone="danger">
         {reauthText(props.name, entry?.auth ?? 'client_credentials', props.mayManage)}
-      </p>
+      </Alert>
       {props.mayManage && entry && (
         <ReconnectButton companyId={props.companyId} entry={entry} connection={connection} />
       )}

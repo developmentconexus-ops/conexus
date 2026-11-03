@@ -2,6 +2,7 @@ import type { CompanyId, ProjectConnections, ProjectId } from '@conexus/hub-api'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { HubFailure, sentenceOf } from '../../platform/hub.ts'
+import { Alert } from '../../ui/alert.tsx'
 import { Badge } from '../../ui/badge.tsx'
 import { Button } from '../../ui/button.tsx'
 import { List, PageTitle, Row } from '../../ui/list.tsx'
@@ -47,11 +48,7 @@ function Revoke({ companyId, projectId, line }: Scope & { line: Line }) {
       >
         {revoke.isPending ? 'Tirando…' : REVOKE}
       </Button>
-      {revoke.isError && (
-        <span role="alert" className="text-label text-danger">
-          {sentenceOf(revoke.error)}
-        </span>
-      )}
+      {revoke.isError && <Alert tone="danger">{sentenceOf(revoke.error)}</Alert>}
     </span>
   )
 }

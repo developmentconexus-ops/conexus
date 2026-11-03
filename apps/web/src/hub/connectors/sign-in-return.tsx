@@ -5,6 +5,7 @@ import { getRouteApi, Link, useNavigate, useRouter } from '@tanstack/react-route
 import { useEffect, useRef, useState } from 'react'
 import { ConexusWordmark } from '../../brand/mark.tsx'
 import { HubFailure, sentenceOf } from '../../platform/hub.ts'
+import { Alert } from '../../ui/alert.tsx'
 import { buttonVariants } from '../../ui/button.tsx'
 import { ReadFailure } from '../../ui/states.tsx'
 import { connectionsPrefix, connectionsQuery, sendSignInEnd } from './queries.ts'
@@ -107,9 +108,7 @@ function Ended(props: {
   const name = connectorName(catalog.data.connectors, answer.connector)
   return (
     <>
-      <p role="alert" className="text-danger">
-        {signInEndText(answer, name)}
-      </p>
+      <Alert tone="danger">{signInEndText(answer, name)}</Alert>
       {'native' in answer && answer.native !== null && <Said native={answer.native} name={name} />}
       <Back companyId={props.companyId} />
     </>
@@ -159,9 +158,7 @@ export function SignInReturn() {
   if (arrival.kind === 'UNKNOWN' || isNotOurs(end.error)) {
     return (
       <Page>
-        <p role="alert" className="text-danger">
-          {NOT_A_SIGN_IN_TEXT}
-        </p>
+        <Alert tone="danger">{NOT_A_SIGN_IN_TEXT}</Alert>
         <Back companyId={companyId} />
       </Page>
     )
@@ -169,9 +166,7 @@ export function SignInReturn() {
   if (end.error !== null) {
     return (
       <Page>
-        <p role="alert" className="text-danger">
-          {sentenceOf(end.error)}
-        </p>
+        <Alert tone="danger">{sentenceOf(end.error)}</Alert>
         <Back companyId={companyId} />
       </Page>
     )

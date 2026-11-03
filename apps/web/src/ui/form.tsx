@@ -7,6 +7,7 @@ import { FormProvider, useForm, useFormContext } from 'react-hook-form'
 import type { z } from 'zod'
 import { keepsAttemptKey } from '../platform/attempt-key.ts'
 import { HubFailure, sentenceOf } from '../platform/hub.ts'
+import { Alert } from './alert.tsx'
 import { Button } from './button.tsx'
 import { cn } from './cn.ts'
 import { Field, FieldError, FieldGroup, FieldLabel } from './field.tsx'
@@ -99,11 +100,7 @@ export function FormAlert() {
   const { formState } = useFormContext()
   const message = formState.errors.root?.server?.message
   if (!message) return null
-  return (
-    <p role="alert" className="text-danger">
-      {message}
-    </p>
-  )
+  return <Alert tone="danger">{message}</Alert>
 }
 
 /** Puts the sentence for a failure on a field, or on the whole form when no field is named. */

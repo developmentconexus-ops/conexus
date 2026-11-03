@@ -16,6 +16,7 @@ import { useEffect, useRef, useState } from 'react'
 import { View } from '../../hub/projects/public.ts'
 import { sentenceOf } from '../../platform/hub.ts'
 import { pageStorage } from '../../platform/storage.ts'
+import { Alert } from '../../ui/alert.tsx'
 import { Button, buttonVariants } from '../../ui/button.tsx'
 import { cn } from '../../ui/cn.ts'
 import { ToggleGroup, ToggleGroupItem } from '../../ui/toggle-group.tsx'
@@ -107,9 +108,7 @@ function Frame(props: { address: string; view: FrameView }) {
   if (state.kind === 'refused') {
     return (
       <div className="min-h-0 flex-1 overflow-auto p-xl">
-        <p role="alert" className="text-danger">
-          {sentenceOf(state.error)}
-        </p>
+        <Alert tone="danger">{sentenceOf(state.error)}</Alert>
       </div>
     )
   }

@@ -1,5 +1,6 @@
 import { ToolCallId } from '@conexus/hub-api'
 import { useId, useLayoutEffect, useRef, useState } from 'react'
+import { Alert } from '../../ui/alert.tsx'
 import { Button } from '../../ui/button.tsx'
 import { Card } from '../../ui/card.tsx'
 import { Dialog, DialogContent, DialogTrigger } from '../../ui/dialog.tsx'
@@ -77,11 +78,7 @@ function Reply({ answering }: { answering: Answering }) {
           {said('rejected', 'Pedir ajustes')}
         </Button>
       </div>
-      {answering.error !== undefined && (
-        <p role="alert" className="text-danger">
-          {answering.error}
-        </p>
-      )}
+      {answering.error !== undefined && <Alert tone="danger">{answering.error}</Alert>}
     </div>
   )
 }

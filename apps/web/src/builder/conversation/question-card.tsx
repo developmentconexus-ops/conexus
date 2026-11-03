@@ -7,6 +7,7 @@ import type { SubmitEvent } from 'react'
 import { useMemo, useRef, useState } from 'react'
 import { ConexusMark } from '../../brand/mark.tsx'
 import { sentenceOfCode, writeFailureText } from '../../platform/hub.ts'
+import { Alert } from '../../ui/alert.tsx'
 import {
   Questionnaire,
   QuestionnaireActions,
@@ -220,11 +221,7 @@ export function QuestionCard({ part }: { part: QuestionCardItem }) {
           </TraceCollapsibleContent>
         </TraceCollapsible>
       )}
-      {error !== undefined && (
-        <p role="alert" className="text-danger">
-          {error}
-        </p>
-      )}
+      {error !== undefined && <Alert tone="danger">{error}</Alert>}
     </div>
   )
 }

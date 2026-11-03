@@ -12,6 +12,7 @@ import { useState } from 'react'
 import { useAttemptKey } from '../../platform/attempt-key.ts'
 import { dayOf } from '../../platform/dates.ts'
 import { sentenceOf, writeFailureText } from '../../platform/hub.ts'
+import { Alert } from '../../ui/alert.tsx'
 import { cn } from '../../ui/cn.ts'
 import { Pager } from '../../ui/pager.tsx'
 import { Skeleton } from '../../ui/skeleton.tsx'
@@ -150,13 +151,7 @@ function AskBox(props: {
       providers={props.providers}
       onSend={begin}
       tools={tools}
-      notice={
-        error !== undefined && (
-          <p role="alert" className="text-danger">
-            {error}
-          </p>
-        )
-      }
+      notice={error !== undefined && <Alert tone="danger">{error}</Alert>}
     />
   )
 }

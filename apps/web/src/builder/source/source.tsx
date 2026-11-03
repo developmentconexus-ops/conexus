@@ -5,6 +5,7 @@ import { FileIcon, FolderTreeIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { dayAndHour } from '../../platform/dates.ts'
 import { sentenceOf } from '../../platform/hub.ts'
+import { Alert } from '../../ui/alert.tsx'
 import { Button } from '../../ui/button.tsx'
 import {
   CodeBlock,
@@ -61,7 +62,7 @@ function FileText(props: { commit: string; path: string }) {
   const { companyId, projectId } = route.useParams()
   const text = useQuery({ ...fileQuery({ companyId, projectId, ...props }), retry: false })
   if (text.isPending) return <Loading />
-  if (text.isError) return <p role="alert">{sentenceOf(text.error)}</p>
+  if (text.isError) return <Alert tone="danger">{sentenceOf(text.error)}</Alert>
   return (
     <CodeBlock aria-label={`Conteúdo de ${props.path}`} role="region" className="min-h-0">
       <CodeBlockHeader>

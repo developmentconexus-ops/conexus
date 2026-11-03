@@ -3,6 +3,7 @@ import { Link } from '@tanstack/react-router'
 import { BuildingIcon, ChevronsUpDownIcon, LogOutIcon } from 'lucide-react'
 import { sentenceOf } from '../../platform/hub.ts'
 import { THEME_LABELS, ThemeChoice, useTheme } from '../../platform/theme.ts'
+import { Alert } from '../../ui/alert.tsx'
 import { Avatar, AvatarFallback } from '../../ui/avatar.tsx'
 import { cn } from '../../ui/cn.ts'
 import {
@@ -110,9 +111,9 @@ export function AccountMenu({ person, compact = false }: { person: Person; compa
                 {signOut.pending ? 'Saindo…' : 'Sair do Conexus'}
               </DropdownMenuItem>
               {signOut.error !== undefined && (
-                <p role="alert" className="px-sm py-xs text-label text-danger">
+                <Alert tone="danger" className="px-sm py-xs">
                   {sentenceOf(signOut.error)}
-                </p>
+                </Alert>
               )}
             </DropdownMenuGroup>
           </DropdownMenuContent>

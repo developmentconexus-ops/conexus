@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { dayAndHour } from '../../platform/dates.ts'
 import { HubFailure, sentenceOf } from '../../platform/hub.ts'
+import { Alert } from '../../ui/alert.tsx'
 import { List, Row, rowBody, SectionTitle } from '../../ui/list.tsx'
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { Empty, NotFound, ReadFailure } from '../../ui/states.tsx'
@@ -76,11 +77,7 @@ export function Versions(scope: Scope) {
   return (
     <section className="flex w-full max-w-column flex-col gap-lg">
       <SectionTitle>Versões</SectionTitle>
-      {stale !== undefined && (
-        <p role="alert" className="text-danger">
-          {stale}
-        </p>
-      )}
+      {stale !== undefined && <Alert tone="danger">{stale}</Alert>}
       {read.isPending && <Loading />}
       {read.isError && (
         <ReadFailure text={sentenceOf(read.error)} onRetry={() => void read.refetch()} />

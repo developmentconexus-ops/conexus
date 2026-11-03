@@ -5,6 +5,7 @@ import type { ReactNode } from 'react'
 import { ConexusWordmark } from '../brand/mark.tsx'
 import { sentenceOf } from '../platform/hub.ts'
 import { useInitialAction } from '../platform/initial.ts'
+import { Alert } from './alert.tsx'
 import { Button, buttonVariants } from './button.tsx'
 import { useInFrame } from './frame.tsx'
 import { PageTitle } from './list.tsx'
@@ -74,9 +75,7 @@ export function Failure({ code, onRetry }: { code: FailureCode; onRetry: () => v
 export function ReadFailure({ text, onRetry }: { text: string; onRetry: () => void }) {
   return (
     <div className="flex flex-col items-start gap-md">
-      <p role="alert" className="text-danger">
-        {text}
-      </p>
+      <Alert tone="danger">{text}</Alert>
       <Button onClick={onRetry}>Tentar de novo</Button>
     </div>
   )

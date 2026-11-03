@@ -6,6 +6,7 @@ import { z } from 'zod'
 import { useAttemptKey } from '../../platform/attempt-key.ts'
 import { dayAndHour } from '../../platform/dates.ts'
 import { sentenceOf } from '../../platform/hub.ts'
+import { Alert } from '../../ui/alert.tsx'
 import { Button } from '../../ui/button.tsx'
 import {
   Form,
@@ -133,9 +134,7 @@ export function OwnerInvitationSection({
       )}
       {open === 'OTHER' && <OtherEmailForm companyId={companyId} onDone={() => setOpen('NONE')} />}
       {(renew.isError || reissue.isError) && (
-        <p role="alert" className="text-label text-danger">
-          {sentenceOf(renew.error ?? reissue.error)}
-        </p>
+        <Alert tone="danger">{sentenceOf(renew.error ?? reissue.error)}</Alert>
       )}
     </section>
   )
