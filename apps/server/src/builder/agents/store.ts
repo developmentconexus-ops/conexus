@@ -1,5 +1,6 @@
 import type {
   AgentDetail,
+  AgentListed,
   AgentState,
   AgentSummary,
   AgentVersionSummary,
@@ -14,7 +15,7 @@ import {
   ToolId as ToolIdSchema,
   ToolVersionId,
 } from '@conexus/hub-api'
-import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm'
+import { and, asc, count, desc, eq, inArray, sql } from 'drizzle-orm'
 import { personNameColumn } from '../../hub/identity/public.ts'
 import type { ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
@@ -84,6 +85,22 @@ export function summaryOf({ row, activeRevision }: Listed): AgentSummary {
     state: stateOf(row, activeRevision),
     updatedAt: row.updatedAt.toISOString(),
   }
+}
+
+/** The rows of the list, each with the number of tools its draft holds, counted in one query. */
+export async function listedOf(tx: ReadTx, rows: readonly Listed[]): Promise<AgentListed[]> {
+  const counted = await tx
+    .select({ agentId: agentTool.agentId, tools: count() })
+    .from(agentTool)
+    .where(
+      inArray(
+        agentTool.agentId,
+        rows.map(({ row }) => row.id),
+      ),
+    )
+    .groupBy(agentTool.agentId)
+  const byAgent = new Map(counted.map((each) => [each.agentId, each.tools]))
+  return rows.map((listed) => ({ ...summaryOf(listed), tools: byAgent.get(listed.row.id) ?? 0 }))
 }
 
 /** The versions of each tool the draft chose. */

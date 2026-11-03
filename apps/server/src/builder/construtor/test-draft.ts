@@ -1,4 +1,4 @@
-import type { AgentId, FailureCode } from '@conexus/hub-api'
+import type { AgentId, TestedResult } from '@conexus/hub-api'
 import type { Agent } from '@mastra/core/agent'
 import { APICallError } from 'ai'
 import type { FailureLog } from '../../platform/failure.ts'
@@ -8,9 +8,7 @@ import { agentRunContext } from '../agents/public.ts'
 import type { InProject } from '../tools/public.ts'
 
 /** What a test of the draft answers the Construtor: the draft's answer and its tools, or the refusal. */
-export type Tested =
-  | { kind: 'ANSWERED'; text: string; tools: string[] }
-  | { kind: 'REFUSED'; code: FailureCode; field?: string }
+export type Tested = TestedResult
 
 /**
  * One question to the draft's `Agent` (step 24.3, U4): the same `agentOf` a published agent runs

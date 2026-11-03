@@ -3,7 +3,9 @@ import type {
   AutomationId,
   FailureCode,
   ProjectId,
+  ProjectReadResult,
   ReadyTool,
+  ToolSearchResult,
   ToolSummary,
 } from '@conexus/hub-api'
 import {
@@ -99,10 +101,11 @@ function projectRead(deps: ConstrutorDeps, scope: InProject) {
     description:
       'Reads this Project: its name, the connections it received with what each reads, whether it has an app and the tables of the app (names and columns, never a row), and its agents with their state.',
     inputSchema: z.object({}),
-    execute: async () => ({
-      ...(await deps.project(scope)),
-      agents: await deps.agents.list(scope),
-    }),
+    execute: async () =>
+      ({
+        ...(await deps.project(scope)),
+        agents: await deps.agents.list(scope),
+      }) satisfies Omit<ProjectReadResult, 'offered'> & { offered: readonly OfferedConnection[] },
   })
 }
 
@@ -120,7 +123,7 @@ function toolSearch(deps: ConstrutorDeps, scope: InProject) {
         automations: (await deps.automations(scope)).filter((each) =>
           matches(query, each.name, each.prompt),
         ),
-      }
+      } satisfies ToolSearchResult
     },
   })
 }
