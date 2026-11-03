@@ -9,7 +9,7 @@ export { ModelChoice } from './model-choice.tsx'
 export { EmptyPanel, Panel } from './panel.tsx'
 export { conversationQuery, conversationsQuery, sessionReadQuery } from './queries.ts'
 export type { OpenedFile, Room } from './room.ts'
-export { ASSISTANT_ROOM, RoomContext } from './room.ts'
+export { ASSISTANT_ROOM, agentRoom, RoomContext } from './room.ts'
 export {
   CreateApp,
   START_COLUMN,

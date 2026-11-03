@@ -1,5 +1,11 @@
 import type { FailureCode } from '@conexus/hub-api'
-import { FAILURES, ProposedApp, ProposedAutomation, ShownFile } from '@conexus/hub-api'
+import {
+  ConstrutorResult,
+  FAILURES,
+  ProposedApp,
+  ProposedAutomation,
+  ShownFile,
+} from '@conexus/hub-api'
 import { Link, useParams } from '@tanstack/react-router'
 import { FileTextIcon } from 'lucide-react'
 import { useEffect, useEffectEvent, useState } from 'react'
@@ -126,8 +132,15 @@ function Change({ edit }: { edit: Edit }) {
   )
 }
 
+/** The heading of an open row: its sentence in Portuguese, or the readable name for a tool outside the table. */
+function titleOf(toolName: string, room: Room) {
+  return specOf(toolName, room)?.done ?? readable(toolName)
+}
+
 function Block({ tool, body }: { tool: ToolItem; body: ToolBody }) {
-  const detail = presentTool(tool, 'done', useRoom()).detail
+  const room = useRoom()
+  const detail = presentTool(tool, 'done', room).detail
+  const title = titleOf(tool.toolName, room)
   switch (body) {
     case 'command': {
       const output = tool.output ?? textOf(tool.result)
@@ -174,7 +187,7 @@ function Block({ tool, body }: { tool: ToolItem; body: ToolBody }) {
       const result = tool.result === undefined ? undefined : (textOf(tool.result) ?? '')
       return (
         <div className="flex min-w-0 flex-col gap-xs font-mono text-fact text-text-2">
-          <div className="font-sans font-semibold text-text">{readable(tool.toolName)}</div>
+          <div className="font-sans font-semibold text-text">{title}</div>
           {args && (
             <div className="flex flex-col gap-xxs">
               <span className="font-sans text-text-2">Argumentos:</span>
@@ -275,6 +288,8 @@ function specialRow(tool: ToolItem, status: ToolStatus, room: Room) {
     body === 'automation' ? ProposedAutomation.safeParse(tool.result).data : undefined
   if (automation !== undefined)
     return room.automationCard?.({ proposed: automation, toolCallId: tool.toolCallId })
+  const agent = body === 'agent' ? ConstrutorResult.safeParse(tool.result).data : undefined
+  if (agent !== undefined) return room.agentCard?.(agent)
   const proposed = body === 'proposal' ? ProposedApp.safeParse(tool.result).data : undefined
   return proposed === undefined ? undefined : <ProposalCard summary={proposed.summary} />
 }

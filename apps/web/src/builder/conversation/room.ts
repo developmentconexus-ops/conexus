@@ -1,4 +1,4 @@
-import type { FailureCode, ProposedAutomation, ShownFile } from '@conexus/hub-api'
+import type { ConstrutorResult, FailureCode, ProposedAutomation, ShownFile } from '@conexus/hub-api'
 import type { ReactNode } from 'react'
 import { createContext, useContext } from 'react'
 import { ASSISTANT_OVERRIDES } from './assistant-specs.ts'
@@ -16,7 +16,7 @@ export type OpenedFile = Extract<ShownFile, { kind: 'TEXT' | 'FILE' }>
  */
 export type Room = {
   /** Who answers, as the screen's words name it. */
-  agent: 'Builder' | 'Assistente'
+  agent: string
   /** The connector's name as the person knows it ("Sankhya"), and its refusals, from its id. */
   connectors: ConnectorWords
   /** Opens a file beside the chat; none in the Builder's conversation. */
@@ -27,6 +27,8 @@ export type Room = {
   createApp?: (summary: string) => void
   /** Draws **Criar automação** for the proposal of the call `toolCallId`; none in the Builder's conversation. */
   automationCard?: (proposal: { proposed: ProposedAutomation; toolCallId: string }) => ReactNode
+  /** Draws the card of the draft `agent_draft` or `agent_set` answered; none outside the Construtor's conversation. */
+  agentCard?: (result: ConstrutorResult) => ReactNode
   /** The rows this room draws differently from the table. */
   overrides: Partial<Record<RowTool, ToolSpec>>
   /** A turn's failures this room says in its own sentence: the Assistant has no model to choose. */
@@ -46,6 +48,11 @@ export const ASSISTANT_ROOM: Room = {
   connectors: PLAIN_WORDS,
   overrides: ASSISTANT_OVERRIDES,
   failures: { MODEL_NO_ACCOUNT: START_NO_ACCOUNT },
+}
+
+/** The room of a conversation with the Construtor or with an agent of the Projeto: the rows are the Assistant's, the name is the one the person talks to. */
+export function agentRoom(agent: string): Room {
+  return { ...ASSISTANT_ROOM, agent }
 }
 
 export const RoomContext = createContext<Room>(BUILDER_ROOM)

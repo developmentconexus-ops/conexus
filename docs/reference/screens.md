@@ -29,6 +29,10 @@ L24](../guides/delivery.md)): it grows by one line per screen.
 | A Projeto's conversation, with the tab Prévia or Código (`?lens=`) | `/companies/<c>/projects/<p>/conversations/<id>` | Projeto | owner, administrator, member |
 | Conversas of a Projeto: the box to the Assistant with the Projeto's connections, and its conversations; a member reads who can talk there | `/companies/<c>/projects/<p>/assistant` | Projeto | owner, administrator, member (reads) |
 | A conversation with the Assistant in a Projeto, with the file it shows beside the chat | `/companies/<c>/projects/<p>/assistant/<id>` | Projeto | owner, administrator |
+| Agentes of a Projeto: the box to the Construtor, its earlier conversations and the Projeto's agents with their state | `/companies/<c>/projects/<p>/agents` | Projeto | owner, administrator |
+| A conversation with the Construtor, with the draft card of the agent it makes | `/companies/<c>/projects/<p>/agents/construtor/<id>` | Projeto | owner, administrator |
+| An agent: the person's conversations with it, the editable configuration, Publicar and Versões | `/companies/<c>/projects/<p>/agents/<agent>` | Projeto | owner, administrator |
+| A conversation with an agent, published or the test one with its draft, inside the agent's page | `/companies/<c>/projects/<p>/agents/<agent>/<id>` | Projeto | owner, administrator |
 | Automações of a Projeto: the person's own, with state, next time and actions | `/companies/<c>/projects/<p>/automations` | Projeto | owner, administrator |
 | The history of one automation of a Projeto, with its runs | `/companies/<c>/projects/<p>/automations/<id>` | Projeto | owner, administrator |
 | Sobre, with its parts Sobre and Versões (`?part=`) | `/companies/<c>/projects/<p>/about` | Projeto | owner, administrator, member |

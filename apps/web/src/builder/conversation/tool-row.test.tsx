@@ -1,4 +1,11 @@
-import { ASSISTANT_TOOL, CARD_TOOLS, CLOSED_TOOLS, TASK_TOOLS } from '@conexus/hub-api'
+import {
+  AGENT_TOOL,
+  ASSISTANT_TOOL,
+  CARD_TOOLS,
+  CLOSED_TOOLS,
+  CONSTRUTOR_TOOL,
+  TASK_TOOLS,
+} from '@conexus/hub-api'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, expect, test, vi } from 'vitest'
 import { BUILDER_ROOM } from './room.ts'
@@ -180,6 +187,14 @@ test('cada ferramenta do conjunto fechado e do Assistente tem frase e abre no co
   const drawn = [
     ...CLOSED_TOOLS.filter((name) => !cards.includes(name) && !tasks.includes(name)),
     ...Object.values(ASSISTANT_TOOL),
+    CONSTRUTOR_TOOL.projectRead,
+    CONSTRUTOR_TOOL.toolSearch,
+    CONSTRUTOR_TOOL.toolSave,
+    CONSTRUTOR_TOOL.agentRead,
+    CONSTRUTOR_TOOL.agentDraft,
+    CONSTRUTOR_TOOL.agentSet,
+    CONSTRUTOR_TOOL.agentTest,
+    AGENT_TOOL.appDataRead,
   ]
   expect(Object.keys(TOOLS).sort()).toEqual([...drawn].sort())
   for (const name of drawn) {

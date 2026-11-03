@@ -38,6 +38,8 @@ export type ChatProps = {
   /** The conversation is gone: the caller reads again what lists it. */
   onGone: () => void
   empty: string
+  /** What the empty box says; "Escreva sua mensagem" by default. */
+  placeholder?: string
   /** What a person with no account to answer with reads, where the model is not changed here; the table's sentence by default. */
   noAccount?: string
   /** The model's button of the composer, for a person who can answer; none where the model is not changed here. */
@@ -101,6 +103,7 @@ function ChatComposer(props: {
   state: SessionState
   draft: ReturnType<typeof useDraft>
   field: RefObject<HTMLTextAreaElement | null>
+  placeholder: string | undefined
   onSend: (outgoing: Outgoing) => Promise<boolean>
   onStop: () => void
   onError: (error: string | undefined) => void
@@ -115,6 +118,7 @@ function ChatComposer(props: {
         canSend={canAnswer}
         draft={draft}
         field={field}
+        placeholder={props.placeholder}
         onSend={props.onSend}
         onStop={props.onStop}
         plus={chat.tools?.plus}
@@ -246,6 +250,7 @@ export function Chat(props: ChatProps) {
         state={state}
         draft={draft}
         field={field}
+        placeholder={props.placeholder}
         onSend={(outgoing) => send(outgoing, state.running || waiting)}
         onStop={halt}
         onError={setError}

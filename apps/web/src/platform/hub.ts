@@ -16,16 +16,27 @@ export class HubFailure extends Error {
   readonly outcomeUnknown: boolean
   /** The person the Hub's phrase names, for the rows that do. */
   readonly person: string | undefined
+  /** The field and the reason a refusal of a form names (step 24.3), for the screen to show beside it. */
+  readonly field: string | undefined
+  readonly reason: string | undefined
 
   constructor(
     code: FailureCode,
-    options: { cause?: unknown; outcomeUnknown?: boolean; person?: string } = {},
+    options: {
+      cause?: unknown
+      outcomeUnknown?: boolean
+      person?: string
+      field?: string
+      reason?: string
+    } = {},
   ) {
     super(code, options)
     this.name = 'HubFailure'
     this.code = code
     this.outcomeUnknown = options.outcomeUnknown ?? true
     this.person = options.person
+    this.field = options.field
+    this.reason = options.reason
   }
 }
 
@@ -51,7 +62,12 @@ export function failureOfProblem(body: unknown): HubFailure {
   if (!problem.success) return new HubFailure('INTERNAL_UNEXPECTED', { cause: problem.error })
   const { code } = problem.data
   const settled = FAILURES[code].settles
-  return new HubFailure(code, { outcomeUnknown: !settled, person: problem.data.person })
+  return new HubFailure(code, {
+    outcomeUnknown: !settled,
+    person: problem.data.person,
+    field: problem.data.field,
+    reason: problem.data.reason,
+  })
 }
 
 /** The one fetch to the Hub: same origin, with cookies, under a deadline (web W9). */

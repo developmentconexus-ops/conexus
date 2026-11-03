@@ -2,6 +2,7 @@ import type { CompanyId, ProjectId } from '@conexus/hub-api'
 import { useQuery } from '@tanstack/react-query'
 import { getRouteApi, Link, useMatches } from '@tanstack/react-router'
 import {
+  BotIcon,
   HammerIcon,
   InfoIcon,
   MessagesSquareIcon,
@@ -73,7 +74,7 @@ export function ProjectRailHead({ companyId, projectId }: Scope) {
 
 /**
  * The entries of the Projeto's list, beside the rail that carries the way back to the company:
- * Construir, Conversas, Sobre, Quem usa o app, Integrações. Each later one is added by its step, never as "em breve" (web W31). The
+ * Construir, Conversas, Agentes, Automações, Sobre, Quem usa o app, Integrações. Each later one is added by its step, never as "em breve" (web W31). The
  * address of Construir is the Projeto's own, with its conversations below it: it is the current
  * place while the route it lives under is among the matches.
  */
@@ -109,6 +110,14 @@ export function ProjectRailNav(scope: Scope) {
           icon={MessagesSquareIcon}
           label="Conversas"
         />
+        {role !== 'member' && (
+          <FrameLink
+            to="/companies/$companyId/projects/$projectId/agents"
+            params={params}
+            icon={BotIcon}
+            label="Agentes"
+          />
+        )}
         {role !== 'member' && (
           <FrameLink
             to="/companies/$companyId/projects/$projectId/automations"

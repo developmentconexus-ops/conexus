@@ -1,4 +1,11 @@
-import type { ASSISTANT_TOOL, CARD_TOOLS, ClosedTool, TASK_TOOLS } from '@conexus/hub-api'
+import type {
+  AGENT_TOOL,
+  ASSISTANT_TOOL,
+  CARD_TOOLS,
+  ClosedTool,
+  CONSTRUTOR_TOOL,
+  TASK_TOOLS,
+} from '@conexus/hub-api'
 import type { LucideIcon } from 'lucide-react'
 import type { ToolItem } from './rows.ts'
 
@@ -6,6 +13,18 @@ import type { ToolItem } from './rows.ts'
 export type RowTool =
   | Exclude<ClosedTool, (typeof CARD_TOOLS)[keyof typeof CARD_TOOLS] | (typeof TASK_TOOLS)[number]>
   | (typeof ASSISTANT_TOOL)[keyof typeof ASSISTANT_TOOL]
+  | (typeof AGENT_TOOL)[keyof typeof AGENT_TOOL]
+  | ConstrutorRowTool
+
+/** The Construtor's tools that draw a row; the draft ones draw the agent's card (step 24.3, U5). */
+export type ConstrutorRowTool = (typeof CONSTRUTOR_TOOL)[
+  | 'projectRead'
+  | 'toolSearch'
+  | 'toolSave'
+  | 'agentRead'
+  | 'agentDraft'
+  | 'agentSet'
+  | 'agentTest']
 
 /** What a row opens on (Factory `ToolBody`, `ToolCard.tsx:32-67`). */
 export type ToolBody =
@@ -18,6 +37,7 @@ export type ToolBody =
   | 'shown'
   | 'proposal'
   | 'automation'
+  | 'agent'
   | 'generic'
 
 export type ToolStatus = 'running' | 'done' | 'error' | 'denied'

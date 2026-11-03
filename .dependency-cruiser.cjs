@@ -3,9 +3,9 @@
 // A subject is one folder of hub/ or builder/ (server and web). Revalidate by 2027-04-13.
 const SERVER = '^apps/server/src'
 const WEB = '^apps/web/src'
-// The Assistant's tests, and the automations' beside them, drive the Builder's test Hub and stream, as a server test drives the test Hub (T5).
+// The Assistant's tests, and the automations' and the agents' beside them, drive the Builder's test Hub and stream, as a server test drives the test Hub (T5).
 const WEB_BUILDER_TESTS =
-  '^apps/web/src/builder/(assistant/(test-hub|.*\\.test)|automations/.*\\.test)\\.tsx$'
+  '^apps/web/src/builder/(assistant/(test-hub|.*\\.test)|automations/.*\\.test|agents/(test-hub|.*\\.test))\\.tsx$'
 const PUBLIC_DOOR = '(^|/)public\\.tsx?$'
 const TEST_DATABASE = `${SERVER}/(platform/(test-database|test-neon|test-bucket|test-mail|test-hub-process|test-cloudflare|test-company-postgres|test-migration-cases|test-app-ports|test-cliproxy-binary|test-seal|test-mastra-database|test-migrate|test-anthropic|test-recordings)|hub/identity/test-hub|hub/apps/test-versions|hub/connectors/test-connections|hub/connectors/test-app-calls|hub/connectors/test-limits|hub/connectors/test-sales|hub/notifications/test-notifications|builder/assistant/test-assistant|builder/assistant/test-numbers|builder/automations/test-automations|builder/agents/test-agents|builder/construtor/test-construtor|hub/connectors/test-rows|hub/apps/test-handoff|builder/conversation/test-conversation|builder/model-accounts/test-defaults|builder/conversation/test-research|builder/conversation/test-prompt|builder/conversation/test-questions|builder/conversation/test-parts|builder/conversation/test-preview|builder/conversation/test-gemini|builder/machine/test-machine|builder/runs/test-runs)\\.ts$`
 const MASTRA_EE = 'node_modules/@mastra/(core/dist/(agent-builder|auth)/ee|editor)'
