@@ -22,6 +22,7 @@ import {
   ToolVersionConfig,
 } from '@conexus/hub-api'
 import type { ToolsInput } from '@mastra/core/agent'
+import type { ToolExecutionContext } from '@mastra/core/tools'
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
 import type { FailureLog } from '../../platform/failure.ts'
@@ -46,7 +47,6 @@ export type ConstrutorDeps = {
   log: FailureLog
 }
 
-const Call = z.object({ agent: z.object({ toolCallId: z.string() }) })
 const Search = z.object({ query: z.string().trim().max(200).optional() })
 const Read = z.object({ agentId: AgentId })
 const Test = z.object({ agentId: AgentId, question: z.string().trim().min(1).max(2000) })
@@ -76,14 +76,14 @@ function refused(deps: ConstrutorDeps, error: unknown): Refused {
 }
 
 /** The attempt key of a step: the id of the tool call, so a repeated step finds what it made. */
-function keyOf(context: object): string {
-  const call = Call.safeParse(context)
-  if (!call.success) {
+function keyOf(context: Pick<ToolExecutionContext, 'agent'>): string {
+  const key = context.agent?.toolCallId
+  if (key === undefined) {
     throw new Failure('INTERNAL_UNEXPECTED', {
       details: { reason: 'CONSTRUTOR_TOOL_WITHOUT_CALL' },
     })
   }
-  return call.data.agent.toolCallId
+  return key
 }
 
 /** The draft as saved, or the refusal, as what an agent tool answers (`ConstrutorResult`). */

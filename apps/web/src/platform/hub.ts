@@ -1,4 +1,4 @@
-import type { FailureCode, Operation } from '@conexus/hub-api'
+import type { FailureCode, Operation, ProblemField, ProblemReason } from '@conexus/hub-api'
 import { ATTEMPT_KEY_HEADER, FAILURES, Problem, phraseOf } from '@conexus/hub-api'
 import type { QueryFunctionContext, QueryKey } from '@tanstack/react-query'
 import { mutationOptions } from '@tanstack/react-query'
@@ -17,8 +17,8 @@ export class HubFailure extends Error {
   /** The person the Hub's phrase names, for the rows that do. */
   readonly person: string | undefined
   /** The field and the reason a refusal of a form names (step 24.3), for the screen to show beside it. */
-  readonly field: string | undefined
-  readonly reason: string | undefined
+  readonly field: ProblemField | undefined
+  readonly reason: ProblemReason | undefined
 
   constructor(
     code: FailureCode,
@@ -26,8 +26,8 @@ export class HubFailure extends Error {
       cause?: unknown
       outcomeUnknown?: boolean
       person?: string
-      field?: string
-      reason?: string
+      field?: ProblemField
+      reason?: ProblemReason
     } = {},
   ) {
     super(code, options)

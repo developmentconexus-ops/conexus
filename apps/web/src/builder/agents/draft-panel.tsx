@@ -16,10 +16,10 @@ import { useState } from 'react'
 import { HubFailure, sentenceOf } from '../../platform/hub.ts'
 import { Button, buttonVariants } from '../../ui/button.tsx'
 import { cn } from '../../ui/cn.ts'
+import { SHEET_CLOSE_ROOM } from '../../ui/sheet.tsx'
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { Empty, ReadFailure } from '../../ui/states.tsx'
 import { useConnectorCatalog } from '../assistant/public.ts'
-import { SHEET_CLOSE_ROOM } from '../conversation/public.ts'
 import { modelLabel } from '../model-accounts/public.ts'
 import { useOpenAgentConversation } from './open-conversation.ts'
 import { publishFailureText, usePublish, usePublishLabel } from './publish.tsx'
@@ -168,9 +168,13 @@ export function DraftPanel(props: { scope: Scope; agentId: AgentId; inSheet?: bo
   return (
     <section aria-label={DRAFT_PANEL} className="flex h-full min-h-0 flex-col bg-surface">
       {gone ? (
-        <Empty>{AGENT_GONE}</Empty>
+        <div className={cn(props.inSheet === true && SHEET_CLOSE_ROOM)}>
+          <Empty>{AGENT_GONE}</Empty>
+        </div>
       ) : live.isError ? (
-        <ReadFailure text={sentenceOf(live.error)} onRetry={() => void live.refetch()} />
+        <div className={cn(props.inSheet === true && SHEET_CLOSE_ROOM)}>
+          <ReadFailure text={sentenceOf(live.error)} onRetry={() => void live.refetch()} />
+        </div>
       ) : live.data === undefined ? (
         <Skeleton className="m-md h-24" />
       ) : (

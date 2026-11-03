@@ -165,9 +165,9 @@ export const AGENT_SPECS: Record<(typeof AGENT_TOOL)[keyof typeof AGENT_TOOL], T
   },
 }
 
-/** The agent's own tool, named `tool_<slug>` (step 24.3): its row says what it read, by the slug's words. */
-export function slugToolSpec(slug: string): ToolSpec {
-  const words = slug.replace(/_+/g, ' ').trim()
+/** The agent's own tool, named `tool_<slug>` (step 24.3): its row says what it read, by the tool's description, or the slug's words while the description is not known. */
+export function slugToolSpec(slug: string, description?: string): ToolSpec {
+  const words = description?.trim() || slug.replace(/_+/g, ' ').trim()
   return {
     icon: WrenchIcon,
     running: `Consultando ${words}`,

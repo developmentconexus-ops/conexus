@@ -111,6 +111,9 @@ test('Apagar pede confirmação com o aviso das conversas e das automações, e 
   expect(
     within(dialog).getByText(/conversas de todas as pessoas com ele e as automações que o rodam/),
   ).toBeTruthy()
+  expect(
+    within(dialog).getByText(/Se ele estiver respondendo agora, essa resposta é interrompida\./),
+  ).toBeTruthy()
   expect(writes()).toHaveLength(0)
   fireEvent.click(within(dialog).getByRole('button', { name: 'Apagar agente' }))
   await waitFor(() => expect(conexus.router.state.location.pathname).toBe(AREA))

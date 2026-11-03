@@ -90,7 +90,7 @@ test('no celular a área é uma coluna, sem abas, e o agente está na lista', as
     expect(await screen.findByRole('link', { name: /Conferente de metas/ })).toBeTruthy()
     expect(screen.queryByRole('tab')).toBeNull()
     expect(screen.getByRole('textbox', { name: 'Mensagem para o Construtor' })).toBeTruthy()
-    expect(screen.getAllByRole('heading', { name: 'Agentes' })).toHaveLength(2)
+    expect(screen.getAllByRole('heading', { name: 'Agentes' })).toHaveLength(1)
   })
 })
 

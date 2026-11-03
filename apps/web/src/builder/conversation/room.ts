@@ -31,6 +31,8 @@ export type Room = {
   openAgent?: (agentId: AgentId, by: 'CALL' | 'TAP') => void
   /** The agent now open, for its row to say so; `undefined` until one is. */
   openedAgent?: AgentId
+  /** What the agent's own tool `slug` does, in the words its row reads; none where the room does not know the tools. */
+  toolDescription?: (slug: string) => string | undefined
   /** The rows this room draws differently from the table. */
   overrides: Partial<Record<RowTool, ToolSpec>>
   /** A turn's failures this room says in its own sentence: the Assistant has no model to choose. */

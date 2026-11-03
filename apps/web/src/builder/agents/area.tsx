@@ -10,6 +10,7 @@ import { cn } from '../../ui/cn.ts'
 import { PageTitle } from '../../ui/list.tsx'
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { ReadFailure } from '../../ui/states.tsx'
+import { useIsMobile } from '../../ui/use-mobile.ts'
 import { FixedProjectChip } from '../assistant/public.ts'
 import {
   agentRoom,
@@ -150,8 +151,9 @@ function AgentRow({ scope, agent }: { scope: Scope; agent: AgentListed }) {
 
 function AgentList(scope: Scope) {
   const read = useQuery(agentsQuery(scope))
-  return (
-    <Block title="Agentes">
+  const phone = useIsMobile()
+  const rows = (
+    <>
       {read.isPending && <Skeleton className="h-20 w-full" />}
       {read.isError && (
         <ReadFailure text={sentenceOf(read.error)} onRetry={() => void read.refetch()} />
@@ -162,7 +164,15 @@ function AgentList(scope: Scope) {
           <AgentRow key={agent.id} scope={scope} agent={agent} />
         ))}
       </ul>
-    </Block>
+    </>
+  )
+  // On a phone the page's own title sits right above, so the block does not say it a second time.
+  return phone ? (
+    <section aria-label={AREA_TITLE} className="flex min-w-0 flex-col">
+      {rows}
+    </section>
+  ) : (
+    <Block title={AREA_TITLE}>{rows}</Block>
   )
 }
 

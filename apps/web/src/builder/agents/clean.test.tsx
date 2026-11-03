@@ -1,15 +1,25 @@
 import { OperationId } from '@conexus/hub-api'
 import { fireEvent, screen, within } from '@testing-library/react'
 import { expect, test } from 'vitest'
-import { hubServer } from '../../platform/test-hub.tsx'
+import { hubServer, PEDIDOS } from '../../platform/test-hub.tsx'
 import { onPhone } from '../conversation/test-hub.tsx'
-import { AGENT, AREA, agent, MATRIZ, TEST_CHAT, toolSummary } from './test-agents.ts'
+import { AGENT, AREA, agent, BUILDER_CHAT, MATRIZ, TEST_CHAT, toolSummary } from './test-agents.ts'
 import { agentScreens } from './test-hub.tsx'
+import { TEST_BANNER } from './text.ts'
 
 // As telas de Agentes mais limpas (step 24.3, conserto C1 a C11): uma linha por coisa, o nome e o estado.
 const server = hubServer()
 const { at } = agentScreens(server)
 const PAGE = `${AREA}/${AGENT}`
+
+/** The form of the Construtor's box: its Projeto and its model sit inside it. */
+async function construtorBox() {
+  const form = (await screen.findByRole('textbox', { name: 'Mensagem para o Construtor' })).closest(
+    'form',
+  )
+  if (form === null) throw new Error('the box has no form')
+  return form
+}
 
 function ready(operation: string, label: string) {
   return {
@@ -100,8 +110,24 @@ test('a conversa de teste fica na folha branca', async () => {
       },
     ],
   })
-  const box = (await screen.findAllByRole('textbox', { name: /^Mensagem para/ }))[0]
-  expect(box?.closest('.bg-surface, .bg-canvas')?.className).toContain('bg-surface')
+  // The root of the conversation is the banner's parent, not a surface piece of the box inside it.
+  const root = (await screen.findByText(TEST_BANNER)).parentElement
+  expect(root?.className).toContain('bg-surface')
+  expect(root?.className).not.toContain('bg-canvas')
+})
+
+test('a conversa com o Construtor fica na folha branca, com o Projeto fixo e o modelo na caixa', async () => {
+  at(`${AREA}/construtor/${BUILDER_CHAT}`, {
+    agents: [],
+    construtor: [{ id: BUILDER_CHAT, title: 'Meu agente', updatedAt: '2026-11-02T12:00:00.000Z' }],
+  })
+  const title = await screen.findByRole('heading', { level: 1, name: 'Meu agente' })
+  const root = title.parentElement?.parentElement
+  expect(root?.className).toContain('bg-surface')
+  expect(root?.className).not.toContain('bg-canvas')
+  const form = await construtorBox()
+  expect(await within(form).findByText(PEDIDOS.name)).toBeTruthy()
+  expect(within(form).getByText('Claude Sonnet 4')).toBeTruthy()
 })
 
 test('o formulário Criar usa os seletores da Pauta, não os do navegador', async () => {
@@ -114,8 +140,9 @@ test('o formulário Criar usa os seletores da Pauta, não os do navegador', asyn
 
 test('a caixa do Construtor mostra o Projeto fixo e o modelo que responde', async () => {
   at(AREA, { agents: [] })
-  await screen.findByRole('textbox', { name: 'Mensagem para o Construtor' })
-  expect(screen.getByText('Claude Sonnet 4')).toBeTruthy()
+  const form = await construtorBox()
+  expect(await within(form).findByText(PEDIDOS.name)).toBeTruthy()
+  expect(within(form).getByText('Claude Sonnet 4')).toBeTruthy()
 })
 
 test('no celular, Apagar também fica no menu ⋯', async () => {
