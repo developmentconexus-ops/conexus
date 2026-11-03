@@ -16,24 +16,26 @@ export function AboutPage() {
   const { part = AboutPart.enum.about } = route.useSearch()
   const navigate = useNavigate()
   return (
-    <Tabs
-      value={part}
-      onValueChange={(next) => {
-        const chosen = AboutPart.safeParse(next)
-        if (chosen.success) void navigate({ to: '.', search: { part: chosen.data } })
-      }}
-      className="min-h-0 flex-1 overflow-y-auto p-xl"
-    >
-      <TabsList aria-label="Partes do Sobre">
-        <TabsTrigger value={AboutPart.enum.about}>Sobre</TabsTrigger>
-        <TabsTrigger value={AboutPart.enum.versions}>Versões</TabsTrigger>
-      </TabsList>
-      <TabsContent value={AboutPart.enum.about}>
-        <About companyId={companyId} projectId={projectId} />
-      </TabsContent>
-      <TabsContent value={AboutPart.enum.versions}>
-        <Versions companyId={companyId} projectId={projectId} />
-      </TabsContent>
-    </Tabs>
+    <div className="min-h-0 flex-1 overflow-y-auto p-xl">
+      <Tabs
+        value={part}
+        onValueChange={(next) => {
+          const chosen = AboutPart.safeParse(next)
+          if (chosen.success) void navigate({ to: '.', search: { part: chosen.data } })
+        }}
+        className="mx-auto w-full max-w-page"
+      >
+        <TabsList aria-label="Partes do Sobre">
+          <TabsTrigger value={AboutPart.enum.about}>Sobre</TabsTrigger>
+          <TabsTrigger value={AboutPart.enum.versions}>Versões</TabsTrigger>
+        </TabsList>
+        <TabsContent value={AboutPart.enum.about}>
+          <About companyId={companyId} projectId={projectId} />
+        </TabsContent>
+        <TabsContent value={AboutPart.enum.versions}>
+          <Versions companyId={companyId} projectId={projectId} />
+        </TabsContent>
+      </Tabs>
+    </div>
   )
 }

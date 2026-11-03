@@ -250,7 +250,7 @@ export function Access(scope: Scope) {
   const list = read.data
   if (read.error instanceof HubFailure && read.error.code === 'NOT_FOUND') return <NotFound />
   return (
-    <section className="flex w-full flex-col gap-lg">
+    <section className="mx-auto flex w-full max-w-page flex-col gap-lg">
       <SectionTitle>Quem usa o app</SectionTitle>
       {read.isPending && <Loading />}
       {read.isError && (

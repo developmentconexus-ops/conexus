@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
 import { createHarness } from './layout-harness.ts'
+import { APP_STATES } from './sweep-app-states.ts'
 import { INTEGRATIONS_STATES } from './sweep-integrations-states.ts'
 import type { State } from './sweep-kit.ts'
 import { PROJECT_INTEGRATIONS_STATES } from './sweep-project-integrations-states.ts'
@@ -36,6 +37,8 @@ const PAGES: State[] = [
     PROJECT_INTEGRATIONS_STATES,
     'Integrações do Projeto, a dona com liberadas e uma escolha pelo nome',
   ),
+  state(PROJECT_STATES, 'Projeto, Sobre do dono'),
+  state(APP_STATES, 'Quem usa o app, quem gerencia'),
   AUTOMATIONS,
 ]
 
