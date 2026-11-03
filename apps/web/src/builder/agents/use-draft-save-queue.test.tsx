@@ -119,7 +119,7 @@ test('seções misturadas com a segunda gravação em voo: toda mudança chega a
   fireEvent.click(await screen.findByRole('button', { name: 'Tirar um' }))
   await waitFor(() => expect(sent).toHaveLength(2))
   fireEvent.click(sw('Filial'))
-  fireEvent.click(screen.getByRole('switch', { name: 'Lê a web' }))
+  fireEvent.click(screen.getByRole('switch', { name: 'Memória observacional' }))
   fireEvent.click(screen.getByRole('button', { name: 'Tirar dois' }))
   const field = screen.getByRole('textbox', { name: 'Instruções' })
   fireEvent.change(field, { target: { value: 'Texto da fila.' } })
@@ -130,11 +130,13 @@ test('seções misturadas com a segunda gravação em voo: toda mudança chega a
   await waitFor(() => expect(held.draft.instructions).toBe('Texto da fila.'))
   expect(sent.map((one) => one.revision)).toEqual([3, 4, 5, 6, 7, 8])
   expect(held.draft.connections).toEqual([MATRIZ, FILIAL])
-  expect(held.draft.web).toBe(true)
+  expect(held.draft.memory.observational).toBe(false)
   expect(held.tools.map((one) => one.slug)).toEqual(['tres'])
   expect(screen.queryByRole('alert')).toBeNull()
   expect(screen.queryByRole('button', { name: 'Tirar um' })).toBeNull()
-  expect(screen.getByRole('switch', { name: 'Lê a web' }).getAttribute('aria-checked')).toBe('true')
+  expect(
+    screen.getByRole('switch', { name: 'Memória observacional' }).getAttribute('aria-checked'),
+  ).toBe('false')
   expect(screen.getByRole('textbox', { name: 'Instruções' })).toHaveProperty(
     'value',
     'Texto da fila.',

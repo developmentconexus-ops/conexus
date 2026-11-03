@@ -21,30 +21,30 @@ function ready(operation: string, label: string) {
   }
 }
 
-test('Escolher lista pelo nome da leitura, em dois grupos, sem o texto do modelo nem o slug', async () => {
+test('Adicionar da biblioteca lista pelo nome da leitura, por origem, sem o texto do modelo nem o slug', async () => {
   at(PAGE, {
     agents: [agent({ tools: [] })],
     tools: [toolSummary()],
     ready: [ready('pedidos', 'Pedidos'), ready('clientes', 'Clientes')],
   })
-  fireEvent.click(await screen.findByRole('button', { name: 'Escolher' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Adicionar da biblioteca' }))
   const dialog = await screen.findByRole('dialog')
   expect(await within(dialog).findByRole('switch', { name: /Pedidos/ })).toBeTruthy()
   expect(within(dialog).getByRole('region', { name: 'Da biblioteca' })).toBeTruthy()
-  expect(within(dialog).getByRole('region', { name: 'Prontas do conector' })).toBeTruthy()
+  expect(within(dialog).getByRole('region', { name: 'Sankhya · prontas do conector' })).toBeTruthy()
   expect(within(dialog).queryByText(/a página começa em 0/)).toBeNull()
   expect(within(dialog).queryByText(/pedidos_aaaaaa/)).toBeNull()
   expect(within(dialog).queryByRole('checkbox')).toBeNull()
   expect(within(dialog).queryByRole('searchbox')).toBeNull()
 })
 
-test('Escolher busca a partir de sete linhas', async () => {
+test('Adicionar da biblioteca busca a partir de sete linhas', async () => {
   const labels = ['Pedidos', 'Clientes', 'Vendedores', 'Metas', 'Estoque', 'Notas', 'Empresas']
   at(PAGE, {
     agents: [agent({ tools: [] })],
     ready: labels.map((label) => ready(label.toLowerCase(), label)),
   })
-  fireEvent.click(await screen.findByRole('button', { name: 'Escolher' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Adicionar da biblioteca' }))
   const dialog = await screen.findByRole('dialog')
   fireEvent.change(await within(dialog).findByRole('searchbox', { name: 'Buscar ferramenta' }), {
     target: { value: 'metas' },
@@ -62,14 +62,17 @@ test('a ferramenta pronta do painel tem o nome da leitura; a feita à mão, a de
       }),
     ],
   })
-  const panel = await screen.findByRole('region', { name: 'Configuração' })
+  const panel = await screen.findByRole('region', { name: 'Ferramentas' })
   expect(await within(panel).findByText('Pedidos')).toBeTruthy()
   expect(within(panel).queryByText('vendas_de_ontem')).toBeNull()
 })
 
-test('sem conversa aberta, o meio da página diz uma frase', async () => {
+test('sem conversa aberta, o painel de teste diz a frase da matriz e traz os dois botões', async () => {
   at(PAGE, { agents: [agent()] })
-  expect(await screen.findByText('Escolha uma conversa ou comece uma nova.')).toBeTruthy()
+  const panel = await screen.findByRole('region', { name: 'Testar' })
+  expect(await within(panel).findByText('Ainda não há conversas com este agente.')).toBeTruthy()
+  expect(within(panel).getByRole('button', { name: 'Testar rascunho' })).toBeTruthy()
+  expect(screen.queryByText('Escolha uma conversa ou comece uma nova.')).toBeNull()
 })
 
 test('Apagar fica só no menu ⋯, também no computador', async () => {
@@ -80,7 +83,7 @@ test('Apagar fica só no menu ⋯, também no computador', async () => {
 
 test('Publicar é o botão principal da página', async () => {
   at(PAGE, { agents: [agent()] })
-  const publish = await screen.findByRole('button', { name: 'Publicar' })
+  const publish = await screen.findByRole('button', { name: /^Publicar v\d/ })
   expect(publish.className).toContain('bg-ink')
 })
 

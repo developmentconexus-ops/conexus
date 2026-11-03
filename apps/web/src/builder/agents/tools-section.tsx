@@ -1,0 +1,108 @@
+import { GlobeIcon } from 'lucide-react'
+import { useState } from 'react'
+import { Button } from '../../ui/button.tsx'
+import { cn } from '../../ui/cn.ts'
+import { Dialog, DialogContent } from '../../ui/dialog.tsx'
+import { Logo, ROW, useConnectorCatalog } from '../assistant/public.ts'
+import { Chooser } from './chooser.tsx'
+import { Creator } from './creator.tsx'
+import type { Part } from './section.tsx'
+import { Section } from './section.tsx'
+import { ADD_FROM_LIBRARY, connectionOf, NO_TOOLS, toolFact, toolTitle, WEB_TOOL } from './text.ts'
+import { useDraftSave } from './use-draft-save.ts'
+
+/** **Ferramentas**: the tools the draft chose, each with its connector's logo, its version and what it does; the web is one of them. */
+export function Tools(props: Part) {
+  const { agent } = props
+  const saving = useDraftSave(props.scope, agent.id)
+  const catalog = useConnectorCatalog(props.scope.companyId)
+  const [mode, setMode] = useState<'choose' | 'create'>()
+  const several = agent.offered.length > 1
+  function close() {
+    setMode(undefined)
+  }
+  return (
+    <Section
+      title="Ferramentas"
+      busy={saving.pending}
+      error={saving.refused?.field === 'tools' ? saving.refused.reason : saving.error}
+    >
+      {agent.tools.length === 0 && !agent.draft.web && <p className="text-text-2">{NO_TOOLS}</p>}
+      <ul className="flex flex-col">
+        {agent.tools.map((tool) => {
+          const title = toolTitle({ ...tool, description: tool.version.description }, agent.offered)
+          const connection = connectionOf(agent.offered, tool.connectionId)
+          return (
+            <li key={tool.id} className={cn(ROW, 'justify-between')}>
+              <span className="flex min-w-0 flex-1 items-center gap-sm">
+                <Logo logo={catalog.logo(connection?.connector ?? '')} />
+                <span className="flex min-w-0 flex-col">
+                  <span className="truncate">{title}</span>
+                  {connection !== undefined && (
+                    <span className="truncate text-fact text-text-2">
+                      {toolFact(
+                        catalog.name(connection.connector),
+                        several ? connection.name : undefined,
+                        tool.effect,
+                      )}
+                    </span>
+                  )}
+                </span>
+              </span>
+              <span className="flex shrink-0 items-center gap-xs">
+                <span className="text-fact text-text-2">v{tool.version.number}</span>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  aria-label={`Tirar ${title}`}
+                  onClick={() =>
+                    saving.save((now) => ({
+                      tools: now.tools
+                        .filter((one) => one.id !== tool.id)
+                        .map((one) => one.version.id),
+                    }))
+                  }
+                >
+                  Tirar
+                </Button>
+              </span>
+            </li>
+          )
+        })}
+        {agent.draft.web && (
+          <li className={cn(ROW, 'justify-between')}>
+            <span className="flex min-w-0 flex-1 items-center gap-sm">
+              <GlobeIcon aria-hidden="true" className="size-5 shrink-0" />
+              <span className="truncate">{WEB_TOOL}</span>
+            </span>
+            <Button
+              size="sm"
+              variant="ghost"
+              aria-label={`Tirar ${WEB_TOOL}`}
+              onClick={() => saving.save({ web: false })}
+            >
+              Tirar
+            </Button>
+          </li>
+        )}
+      </ul>
+      <div className="flex flex-wrap gap-sm">
+        <Button size="sm" onClick={() => setMode('choose')}>
+          {ADD_FROM_LIBRARY}
+        </Button>
+        <Button size="sm" onClick={() => setMode('create')}>
+          Criar
+        </Button>
+      </div>
+      <Dialog open={mode !== undefined} onOpenChange={(open) => !open && close()}>
+        <DialogContent
+          size="fields"
+          title={mode === 'create' ? 'Criar ferramenta' : ADD_FROM_LIBRARY}
+        >
+          {mode === 'choose' && <Chooser {...props} saving={saving} onClose={close} />}
+          {mode === 'create' && <Creator {...props} saving={saving} onClose={close} />}
+        </DialogContent>
+      </Dialog>
+    </Section>
+  )
+}

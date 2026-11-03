@@ -24,15 +24,38 @@ export const UNCONFIRMED_PUBLISH =
 export const UNCONFIRMED_DELETE = 'Não confirmamos a exclusão. Confira a lista e tente de novo.'
 export const AGENT_GONE = 'Este agente foi apagado.'
 export const NO_AGENT_CONVERSATIONS = 'Ainda não há conversas com este agente.'
-export const NO_CONVERSATION_OPEN = 'Escolha uma conversa ou comece uma nova.'
 export const NO_VERSIONS = 'Ainda não publicado.'
 export const NO_TOOLS = 'Nenhuma ferramenta. Peça ao Construtor, escolha ou crie aqui.'
 export const NO_TOOL_MATCH = 'Nenhuma ferramenta com essas palavras.'
 export const LIBRARY_TOOLS = 'Da biblioteca'
-export const READY_TOOLS = 'Prontas do conector'
+export const CONEXUS_TOOLS = 'Do Conexus'
+export const ADD_FROM_LIBRARY = 'Adicionar da biblioteca'
+
+/** The group of a connector's ready reads: "Sankhya · prontas do conector". */
+export function readyGroup(connector: string): string {
+  return `${connector} · prontas do conector`
+}
+
+/** What a tool does to the system it reads: the library only holds reads. */
+function effectText(effect: 'READ'): string {
+  return effect === 'READ' ? 'lê' : effect
+}
+
+/** The second line of a tool: its connector and what it does; the connection only when the Projeto has more than one. */
+export function toolFact(
+  connector: string,
+  connection: string | undefined,
+  effect: 'READ',
+): string {
+  return [connector, connection, effectText(effect)]
+    .filter((part) => part !== undefined)
+    .join(' · ')
+}
 export const NO_CONNECTIONS = 'Este Projeto não recebeu nenhuma ligação.'
 export const GONE_CONNECTION = 'O Projeto não oferece mais'
 export const DRAFT_CHANGED = 'O rascunho mudou. Abra o agente para ver.'
+export const VERSIONS_TITLE = 'Versões'
+export const ACTIVE_VERSION = 'Ativa'
 export const DRAFT_PANEL = 'Rascunho do agente'
 export const SAME_MODEL = 'O modelo de quem conversa'
 export const WEB_TOOL = 'Pesquisar na web'

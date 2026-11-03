@@ -1,11 +1,11 @@
 import type { AgentDetail, CompanyId, ProjectId } from '@conexus/hub-api'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { HubFailure, writeFailureText } from '../../platform/hub.ts'
 import { Button } from '../../ui/button.tsx'
 import { Dialog, DialogContent, DialogFooter } from '../../ui/dialog.tsx'
 import { Textarea } from '../../ui/textarea.tsx'
-import { sendPublish, settleAgent } from './queries.ts'
+import { sendPublish, settleAgent, versionsQuery } from './queries.ts'
 import { missingField, UNCONFIRMED_PUBLISH } from './text.ts'
 
 type Scope = { companyId: CompanyId; projectId: ProjectId }
@@ -16,6 +16,12 @@ export function publishFailureText(failure: unknown): string {
     return missingField(failure.field)
   }
   return writeFailureText(failure, UNCONFIRMED_PUBLISH)
+}
+
+/** The number the next publication makes: one past the newest version, the first when none is published. */
+export function useNextVersion(scope: Scope, agentId: AgentDetail['id']): number {
+  const versions = useQuery(versionsQuery(scope, agentId))
+  return Math.max(0, ...(versions.data?.versions.map((one) => one.number) ?? [])) + 1
 }
 
 /**
@@ -44,6 +50,7 @@ export function PublishButton(props: { scope: Scope; agent: AgentDetail }) {
   const [message, setMessage] = useState('')
   const [error, setError] = useState<string>()
   const { publish, pending } = usePublish(props.scope, agent.id)
+  const next = useNextVersion(props.scope, agent.id)
 
   async function confirm() {
     setError(undefined)
@@ -59,7 +66,7 @@ export function PublishButton(props: { scope: Scope; agent: AgentDetail }) {
   return (
     <>
       <Button size="sm" variant="primary" onClick={() => setOpen(true)}>
-        Publicar
+        Publicar v{next}
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent

@@ -15,7 +15,7 @@ test('a resposta de criar a ferramenta se perde: tocar de novo leva a mesma chav
     agents: [agent()],
     answers: { createTool: () => (++calls === 1 ? HttpResponse.error() : undefined) },
   })
-  const panel = await screen.findByRole('region', { name: 'Configuração' })
+  const panel = await screen.findByRole('region', { name: 'Ferramentas' })
   fireEvent.click(await within(panel).findByRole('button', { name: 'Criar' }))
   const dialog = await screen.findByRole('dialog')
   fireEvent.change(within(dialog).getByLabelText('Nome da ferramenta'), {

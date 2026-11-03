@@ -7,6 +7,8 @@ import type {
   ToolVersionId,
 } from '@conexus/hub-api'
 import { useQuery } from '@tanstack/react-query'
+import { GlobeIcon } from 'lucide-react'
+import type { ReactNode } from 'react'
 import { useState } from 'react'
 import { sentenceOf } from '../../platform/hub.ts'
 import { Button } from '../../ui/button.tsx'
@@ -24,7 +26,16 @@ import {
   useConnectorCatalog,
 } from '../assistant/public.ts'
 import { toolsQuery } from './queries.ts'
-import { connectionOf, LIBRARY_TOOLS, NO_TOOL_MATCH, READY_TOOLS, toolTitle } from './text.ts'
+import {
+  CONEXUS_TOOLS,
+  connectionOf,
+  LIBRARY_TOOLS,
+  NO_TOOL_MATCH,
+  readyGroup,
+  toolFact,
+  toolTitle,
+  WEB_TOOL,
+} from './text.ts'
 import type { Saving } from './use-draft-save.ts'
 
 type Scope = { companyId: CompanyId; projectId: ProjectId }
@@ -40,28 +51,39 @@ function toggled(set: ReadonlySet<string>, key: string): ReadonlySet<string> {
 /** A row of the chooser: the logo plate, the name, what sits at its end, and a switch, the pieces of the "+" menu. */
 function ChoiceRow(props: {
   id: string
-  logo: string | undefined
+  leading: ReactNode
   title: string
-  fact: string
+  /** What the tool does and where, under its name. */
+  detail?: string
+  /** Its version, at the end. */
+  fact?: string
   checked: boolean
   onChange: () => void
 }) {
   return (
     <li className={cn(ROW, 'justify-between')}>
       <label htmlFor={props.id} className="flex min-w-0 flex-1 items-center gap-sm">
-        <Logo logo={props.logo} />
-        <span className="truncate">{props.title}</span>
-        <span className="shrink-0 text-fact text-text-2">{props.fact}</span>
+        {props.leading}
+        <span className="flex min-w-0 flex-col">
+          <span className="truncate">{props.title}</span>
+          {props.detail !== undefined && (
+            <span className="truncate text-fact text-text-2">{props.detail}</span>
+          )}
+        </span>
+        {props.fact !== undefined && (
+          <span className="ml-auto shrink-0 text-fact text-text-2">{props.fact}</span>
+        )}
       </label>
       <Switch id={props.id} checked={props.checked} onCheckedChange={props.onChange} />
     </li>
   )
 }
 
-function Group(props: { title: string; children: React.ReactNode }) {
+function Group(props: { title: string; logo?: string; children: React.ReactNode }) {
   return (
     <section aria-label={props.title} className="flex flex-col">
-      <h4 className="flex h-row items-center px-sm font-body text-label font-semibold">
+      <h4 className="flex h-row items-center gap-sm px-sm font-body text-label font-semibold">
+        {props.logo !== undefined && <Logo logo={props.logo} />}
         {props.title}
       </h4>
       <ul className="flex flex-col">{props.children}</ul>
@@ -94,67 +116,147 @@ function chosenWrite(
   }
 }
 
+type Catalog = ReturnType<typeof useConnectorCatalog>
+type Shown = { query: string; catalog: Catalog; agent: AgentDetail }
+
+/** The connector a ready read comes from, by the connection it reads; the id's own when the Projeto no longer offers it. */
+function connectorOf(agent: AgentDetail, connectionId: string): string {
+  return connectionOf(agent.offered, connectionId)?.connector ?? ''
+}
+
+/** A group of the connector's ready reads for each connector, its logo in the title. */
+function ReadyGroups(
+  props: Shown & {
+    readies: { one: ReadyTool; title: string }[]
+    chosen: ReadonlySet<string>
+    onToggle: (key: string) => void
+  },
+) {
+  const { agent, catalog } = props
+  const several = agent.offered.length > 1
+  const connectors = [
+    ...new Set(props.readies.map(({ one }) => connectorOf(agent, one.connectionId))),
+  ]
+  return connectors.map((connector) => (
+    <Group
+      key={connector}
+      title={readyGroup(catalog.name(connector))}
+      {...(catalog.logo(connector) !== undefined && { logo: catalog.logo(connector) })}
+    >
+      {props.readies
+        .filter(({ one }) => connectorOf(agent, one.connectionId) === connector)
+        .map(({ one, title }) => {
+          const key = `${one.connectionId}:${one.operation}`
+          return (
+            <ChoiceRow
+              key={key}
+              id={`ready-${key}`}
+              leading={<Logo logo={catalog.logo(connector)} />}
+              title={title}
+              detail={toolFact(
+                catalog.name(connector),
+                several ? connectionOf(agent.offered, one.connectionId)?.name : undefined,
+                'READ',
+              )}
+              checked={props.chosen.has(key)}
+              onChange={() => props.onToggle(key)}
+            />
+          )
+        })}
+    </Group>
+  ))
+}
+
+function LibraryGroup(
+  props: Shown & {
+    tools: { tool: ToolSummary; title: string }[]
+    picked: ReadonlySet<string>
+    onToggle: (id: string) => void
+  },
+) {
+  const { agent, catalog } = props
+  if (props.tools.length === 0) return null
+  return (
+    <Group title={LIBRARY_TOOLS}>
+      {props.tools.map(({ tool, title }) => {
+        const connection = connectionOf(agent.offered, tool.connectionId)
+        return (
+          <ChoiceRow
+            key={tool.id}
+            id={`tool-${tool.id}`}
+            leading={<Logo logo={catalog.logo(connection?.connector ?? '')} />}
+            title={title}
+            detail={
+              connection === undefined
+                ? undefined
+                : toolFact(
+                    catalog.name(connection.connector),
+                    agent.offered.length > 1 ? connection.name : undefined,
+                    tool.effect,
+                  )
+            }
+            fact={`v${tool.latest.number}`}
+            checked={props.picked.has(tool.id)}
+            onChange={() => props.onToggle(tool.id)}
+          />
+        )
+      })}
+    </Group>
+  )
+}
+
 export function Chooser(props: Part & { saving: Saving; onClose: () => void }) {
   const { scope, agent } = props
   const read = useQuery(toolsQuery(scope))
   const catalog = useConnectorCatalog(scope.companyId)
-  const chosenIds = new Set(agent.tools.map((one) => one.id))
-  const [picked, setPicked] = useState<ReadonlySet<string>>(chosenIds)
+  const [picked, setPicked] = useState<ReadonlySet<string>>(
+    new Set(agent.tools.map((one) => one.id)),
+  )
   const [ready, setReady] = useState<ReadonlySet<string>>(new Set())
   const [query, setQuery] = useState('')
   if (read.isError)
     return <ReadFailure text={sentenceOf(read.error)} onRetry={() => void read.refetch()} />
-  function confirm(list: Listed) {
-    props.saving.save((now) => chosenWrite(now, list, picked, ready), props.onClose)
-  }
   const library = (read.data?.tools ?? []).map((tool) => ({
     tool,
     title: toolTitle(tool, agent.offered),
   }))
   const readies = (read.data?.ready ?? []).map((one) => ({ one, title: one.label }))
-  const rows = library.length + readies.length
-  const shownLibrary = library.filter((each) => matches(each.title, query))
-  const shownReady = readies.filter((each) => matches(each.title, query))
+  const shown = {
+    tools: library.filter((each) => matches(each.title, query)),
+    readies: readies.filter((each) => matches(each.title, query)),
+    web: matches(WEB_TOOL, query),
+  }
+  const at = { query, catalog, agent }
   return (
     <div className="flex flex-col gap-md">
       {read.isPending && <Skeleton className="h-16 w-full" />}
-      {rows >= SEARCH_FROM && (
+      {library.length + readies.length + 1 >= SEARCH_FROM && (
         <Search label="Buscar ferramenta" value={query} onChange={setQuery} />
       )}
-      {shownLibrary.length > 0 && (
-        <Group title={LIBRARY_TOOLS}>
-          {shownLibrary.map(({ tool, title }) => (
-            <ChoiceRow
-              key={tool.id}
-              id={`tool-${tool.id}`}
-              logo={catalog.logo(connectionOf(agent.offered, tool.connectionId)?.connector ?? '')}
-              title={title}
-              fact={`v${tool.latest.number}`}
-              checked={picked.has(tool.id)}
-              onChange={() => setPicked((now) => toggled(now, tool.id))}
-            />
-          ))}
+      <ReadyGroups
+        {...at}
+        readies={shown.readies}
+        chosen={ready}
+        onToggle={(key) => setReady((now) => toggled(now, key))}
+      />
+      <LibraryGroup
+        {...at}
+        tools={shown.tools}
+        picked={picked}
+        onToggle={(id) => setPicked((now) => toggled(now, id))}
+      />
+      {shown.web && (
+        <Group title={CONEXUS_TOOLS}>
+          <ChoiceRow
+            id="tool-web"
+            leading={<GlobeIcon aria-hidden="true" className="size-5 shrink-0" />}
+            title={WEB_TOOL}
+            checked={agent.draft.web}
+            onChange={() => props.saving.save({ web: !agent.draft.web })}
+          />
         </Group>
       )}
-      {shownReady.length > 0 && (
-        <Group title={READY_TOOLS}>
-          {shownReady.map(({ one, title }) => {
-            const key = `${one.connectionId}:${one.operation}`
-            return (
-              <ChoiceRow
-                key={key}
-                id={`ready-${key}`}
-                logo={catalog.logo(connectionOf(agent.offered, one.connectionId)?.connector ?? '')}
-                title={title}
-                fact={connectionOf(agent.offered, one.connectionId)?.name ?? ''}
-                checked={ready.has(key)}
-                onChange={() => setReady((now) => toggled(now, key))}
-              />
-            )
-          })}
-        </Group>
-      )}
-      {read.data !== undefined && rows > 0 && shownLibrary.length + shownReady.length === 0 && (
+      {read.data !== undefined && !shown.web && shown.tools.length + shown.readies.length === 0 && (
         <p className="px-sm text-text-2">{NO_TOOL_MATCH}</p>
       )}
       {props.saving.error !== undefined && (
@@ -166,7 +268,10 @@ export function Chooser(props: Part & { saving: Saving; onClose: () => void }) {
         <Button
           variant="primary"
           disabled={read.data === undefined || props.saving.pending}
-          onClick={() => read.data !== undefined && confirm(read.data)}
+          onClick={() =>
+            read.data !== undefined &&
+            props.saving.save((now) => chosenWrite(now, read.data, picked, ready), props.onClose)
+          }
         >
           Usar as escolhidas
         </Button>

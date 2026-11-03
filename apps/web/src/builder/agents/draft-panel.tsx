@@ -20,8 +20,8 @@ import { Empty, ReadFailure } from '../../ui/states.tsx'
 import { useConnectorCatalog } from '../assistant/public.ts'
 import { modelLabel } from '../model-accounts/public.ts'
 import { useOpenAgentConversation } from './open-conversation.ts'
-import { publishFailureText, usePublish } from './publish.tsx'
-import { agentQuery, versionsQuery } from './queries.ts'
+import { publishFailureText, useNextVersion, usePublish } from './publish.tsx'
+import { agentQuery } from './queries.ts'
 import { StateStamp } from './rows.tsx'
 import {
   AGENT_GONE,
@@ -53,11 +53,10 @@ function Part(props: { icon: LucideIcon; title: string; children: ReactNode }) {
 
 function Filled({ scope, agent }: { scope: Scope; agent: AgentDetail }) {
   const catalog = useConnectorCatalog(scope.companyId)
-  const versions = useQuery(versionsQuery(scope, agent.id))
   const { publish, pending } = usePublish(scope, agent.id)
   const test = useOpenAgentConversation(scope, agent.id)
   const [error, setError] = useState<string>()
-  const next = Math.max(0, ...(versions.data?.versions.map((one) => one.number) ?? [])) + 1
+  const next = useNextVersion(scope, agent.id)
   const { draft } = agent
 
   async function asPublish() {
