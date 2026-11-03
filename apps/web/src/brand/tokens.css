@@ -278,8 +278,8 @@
 
 @media (max-width: 40rem) {
   :root {
-    --text-display: 1.5rem;
-    --text-display--line-height: 2rem;
+    --text-display: var(--text-display-narrow);
+    --text-display--line-height: var(--text-display-narrow--line-height);
   }
 }
 

@@ -4,6 +4,7 @@ import { Link } from '@tanstack/react-router'
 import { dayOf } from '../../platform/dates.ts'
 import { Card } from '../../ui/card.tsx'
 import { Empty } from '../../ui/states.tsx'
+import { NO_PROJECTS } from './project-state.ts'
 import { projectsQuery } from './queries.ts'
 
 /**
@@ -14,7 +15,7 @@ import { projectsQuery } from './queries.ts'
 export function ProjectCards(props: { companyId: CompanyId; page: string | undefined }) {
   const { companyId } = props
   const { projects } = useSuspenseQuery(projectsQuery(companyId, props.page)).data
-  if (projects.length === 0) return <Empty>Nenhum projeto ainda.</Empty>
+  if (projects.length === 0) return <Empty>{NO_PROJECTS}</Empty>
   return (
     <ul className="grid gap-md sm:grid-cols-2 sm:gap-lg lg:grid-cols-3">
       {projects.map((project) => (

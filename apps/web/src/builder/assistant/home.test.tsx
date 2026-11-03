@@ -2,7 +2,7 @@ import { ProjectId } from '@conexus/hub-api'
 import { act, fireEvent, screen, waitFor } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
-import { hubServer, PEDIDOS, refusal } from '../../platform/test-hub.tsx'
+import { hubServer, outsideBlock, PEDIDOS, refusal } from '../../platform/test-hub.tsx'
 import {
   assistantScreens,
   COMPANY_ROOT,
@@ -44,9 +44,7 @@ async function chooseProject(name: string) {
 /** An alert that is not the one of a block of Início, which reads the same list on its own. */
 async function alertOutside(block: string) {
   return waitFor(() => {
-    const found = screen
-      .getAllByRole('alert')
-      .find((alert) => alert.closest(`section[aria-label="${block}"]`) === null)
+    const [found] = outsideBlock(screen.getAllByRole('alert'), block)
     if (found === undefined) throw new Error('no alert outside the block')
     return found
   })
@@ -283,17 +281,18 @@ test('voltar ao Início depois de perguntar mostra a conversa nova entre as rece
   expect((await screen.findAllByRole('link', { name: /Conversa de/ })).length).toBeGreaterThan(0)
 })
 
+const projects = Array.from({ length: 7 }, (_, n) => ({
+  ...PEDIDOS,
+  id: ProjectId.parse(`${'r'.repeat(29)}${String(n).padStart(3, '0')}`),
+  name: n === 0 ? 'Vendas' : `Projeto ${n}`,
+}))
+
 test('a pasta: abre Sem Projeto e os Projetos, e a busca só aparece a partir de 7', async () => {
-  const projects = Array.from({ length: 7 }, (_, n) => ({
-    ...PEDIDOS,
-    id: ProjectId.parse(`${'r'.repeat(29)}${String(n).padStart(3, '0')}`),
-    name: n === 0 ? 'Vendas' : `Projeto ${n}`,
-  }))
   at(COMPANY_ROOT)
   server.use(
     http.get('*/api/companies/:companyId/projects', () =>
       HttpResponse.json({
-        projects: projects.slice(0, 3),
+        projects: projects.slice(0, 6),
         next: { kind: 'END' },
         databaseReady: true,
       }),
@@ -310,11 +309,6 @@ test('a pasta: abre Sem Projeto e os Projetos, e a busca só aparece a partir de
 })
 
 test('a pasta: com 7 Projetos a busca filtra pelo nome e escolher Vendas fecha a lista', async () => {
-  const projects = Array.from({ length: 7 }, (_, n) => ({
-    ...PEDIDOS,
-    id: ProjectId.parse(`${'r'.repeat(29)}${String(n).padStart(3, '0')}`),
-    name: n === 0 ? 'Vendas' : `Projeto ${n}`,
-  }))
   const { asked } = at(COMPANY_ROOT)
   server.use(
     http.get('*/api/companies/:companyId/projects', () =>
@@ -328,4 +322,9 @@ test('a pasta: com 7 Projetos a busca filtra pelo nome e escolher Vendas fecha a
   fireEvent.click(screen.getByRole('button', { name: 'Vendas' }))
   await waitFor(() => expect(asked.at(-1)).toContain(`projectId=${projects[0]?.id}`))
   expect(screen.queryByRole('searchbox', { name: 'Buscar Projeto' })).toBeNull()
+  fireEvent.click(screen.getByRole('button', { name: 'Projeto da conversa' }))
+  expect(await screen.findByRole('searchbox', { name: 'Buscar Projeto' })).toHaveProperty(
+    'value',
+    '',
+  )
 })

@@ -1,4 +1,3 @@
-import type { ShownFile } from '@conexus/hub-api'
 import { ASSISTANT_TOOL } from '@conexus/hub-api'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, expect, test, vi } from 'vitest'

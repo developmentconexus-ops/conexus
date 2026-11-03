@@ -9,7 +9,6 @@ const alertVariants = cva('font-body text-label', {
   variants: {
     tone: {
       danger: 'text-danger',
-      neutral: 'text-text',
     },
   },
 })
