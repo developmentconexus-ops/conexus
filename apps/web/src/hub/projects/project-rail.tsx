@@ -2,7 +2,6 @@ import type { CompanyId, ProjectId } from '@conexus/hub-api'
 import { useQuery } from '@tanstack/react-query'
 import { getRouteApi, Link, useMatches } from '@tanstack/react-router'
 import {
-  ArrowLeftIcon,
   ChevronsUpDownIcon,
   HammerIcon,
   InfoIcon,
@@ -29,7 +28,6 @@ import {
   useSidebar,
 } from '../../ui/sidebar.tsx'
 import { Skeleton } from '../../ui/skeleton.tsx'
-import { companyQuery } from '../identity/public.ts'
 import { projectQuery } from './queries.ts'
 import { useRecentProjects } from './recent-projects.tsx'
 
@@ -108,15 +106,13 @@ export function ProjectRailHead({ companyId, projectId }: Scope) {
 }
 
 /**
- * The entries of the Projeto's sidebar, in the order of Conexus OS: back to the company, Construir,
- * Sobre, Quem usa o app, Integrações. Each later one is added by its step, never as "em breve" (web W31). The
+ * The entries of the Projeto's list, beside the rail that carries the way back to the company:
+ * Construir, Conversas, Sobre, Quem usa o app, Integrações. Each later one is added by its step, never as "em breve" (web W31). The
  * address of Construir is the Projeto's own, with its conversations below it: it is the current
  * place while the route it lives under is among the matches.
  */
 export function ProjectRailNav(scope: Scope) {
-  const { companyId } = scope
   const params = scope
-  const { company: house } = useQuery(companyQuery(companyId)).data ?? {}
   const { role } = company.useRouteContext()
   const building = useMatches({
     select: (matches) => matches.some((match) => match.routeId === BUILD_ROUTE),
@@ -124,13 +120,6 @@ export function ProjectRailNav(scope: Scope) {
   return (
     <SidebarGroup>
       <SidebarMenu>
-        <FrameLink
-          to="/companies/$companyId"
-          params={{ companyId }}
-          activeOptions={{ exact: true }}
-          icon={ArrowLeftIcon}
-          label={house?.name ?? 'Empresa'}
-        />
         <SidebarMenuItem>
           <SidebarMenuButton
             tooltip="Construir"

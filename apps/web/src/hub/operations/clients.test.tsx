@@ -196,7 +196,9 @@ test('o operador que tem empresas vê "Ir para uma empresa", e escolher abre o I
   fireEvent.click(await screen.findByRole('button', { name: /Ir para uma empresa/ }))
   expect(await screen.findByText('Ir para uma empresa')).toBeTruthy()
   fireEvent.click(await screen.findByRole('menuitem', { name: 'Empresa Teste' }))
-  expect(await screen.findByRole('heading', { name: 'O que vamos construir?' })).toBeTruthy()
+  expect(
+    await screen.findByRole('heading', { name: /^(Bom dia|Boa tarde|Boa noite)/ }),
+  ).toBeTruthy()
   expect(router.state.location.pathname).toBe(`/companies/${company.id}`)
 })
 

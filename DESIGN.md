@@ -458,13 +458,17 @@ fixed, chrome ground, each with its right hairline. Closed, only the rail stays.
 white sheet (W30).
 
 - **Rail.** The mark tile and the place tiles are 40px with the rail icon size (V34), 4px apart;
-  Início, Projetos, Integrações at the top, then Configurações and the account (`avatar`) at the
-  foot. The current tile has the selected fill and a 2px-wide ipê tick on the rail's left edge (V5).
+  Início, Projetos, Integrações at the top, then Automações right after Integrações (only for an
+  owner or an administrator; founder, 2026-11-02, "Opção 1"); Configurações, the bell just above the
+  account, and the account (`avatar`) at the foot. The current tile has the selected fill and a 2px-wide ipê tick on the rail's left edge (V5).
 - **List.** The company switcher, "Nova conversa" (bordered), then "Conversas" in day groups (Hoje,
   Ontem, Esta semana, Antes) as `eyebrow` rows and conversation rows of `spacing.row` with the age
   at the end. The current row has the selected fill and a shorter tick.
 - **Header bar.** Title centred, bottom hairline, desktop only. **Phone top bar:** chrome, bottom
-  hairline, the safe-area inset: menu, mark, place title.
+  hairline, the safe-area inset: menu, mark, place title. While a notification is unread the menu
+  button carries a small `danger` dot, the colour of the bell's count (ipê marks no attention, it
+  is held for the current place and focus), and its name adds the count (founder, 2026-11-02,
+  "2B", emergência).
 - **The axis (V59).** `axis`, and `axis-wide` from 1600px wide. A secondary block is `half`: the
   axis less the gutter, divided by two. In a conversation the transcript, notices and composer share
   the axis.

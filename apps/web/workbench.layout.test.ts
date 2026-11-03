@@ -28,16 +28,33 @@ async function widthOf(locator: Locator): Promise<number> {
 const PROJECT = `/companies/${COMPANY.id}/projects/${PROJECT_ID}`
 const CHAT = '[data-slot=resizable-panel]:last-of-type'
 
-test('no Projeto a barra do Projeto fica aberta e a da empresa volta ao sair', async () => {
+test('o trilho no Projeto: o trilho continua com Projetos marcado, a lista é a do Projeto, e sair devolve Conversas', async () => {
   const page = await open(PROJECT, DESKTOP)
   await page.getByRole('textbox', { name: 'Mensagem para o Builder' }).waitFor()
   const nav = page.getByRole('navigation', { name: 'Navegação' })
+  const list = nav.locator('[data-sidebar=sidebar]')
   await page.waitForTimeout(250)
-  const inProject = await widthOf(nav)
-  await nav.getByRole('link').first().click()
-  await page.getByRole('heading', { name: 'Pergunte ou peça um app' }).waitFor()
+  const [rail, column] = [
+    await widthOf(nav.locator('[data-slot=sidebar-rail-column]')),
+    await widthOf(list),
+  ]
+  assert.deepEqual([rail, column], [56, 272])
+  assert.equal(
+    await nav.getByRole('link', { name: 'Projetos' }).getAttribute('aria-current'),
+    'page',
+  )
+  assert.equal(await nav.locator('[data-slot=sidebar-rail-column] [aria-current]').count(), 1)
+  await list.getByRole('button', { name: /^Trocar de Projeto/ }).waitFor()
+  for (const name of ['Construir', 'Conversas', 'Sobre', 'Quem usa o app', 'Integrações']) {
+    await list.getByRole('link', { name }).waitFor()
+  }
+  assert.equal(await list.getByRole('link', { name: 'Nova conversa' }).count(), 0)
+  await nav.getByRole('link', { name: 'Início' }).click()
+  await page.getByRole('heading', { name: /^(Bom dia|Boa tarde|Boa noite)/ }).waitFor()
+  await list.getByRole('link', { name: 'Nova conversa' }).waitFor()
   await page.waitForTimeout(250)
-  assert.deepEqual([inProject, await widthOf(nav)], [328, 328])
+  assert.equal(await widthOf(list), 272)
+  assert.equal(await list.getByRole('link', { name: 'Construir' }).count(), 0)
   assert.deepEqual(page.problems, [])
   await page.close()
 })

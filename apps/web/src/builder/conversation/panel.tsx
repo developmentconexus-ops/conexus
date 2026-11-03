@@ -21,7 +21,7 @@ const emptyRoute = getRouteApi('/_app/companies/$companyId/projects/$projectId/'
 
 function PanelFrame(props: { current: Item | undefined; children: ReactNode }) {
   return (
-    <div className="flex h-full min-h-0 flex-col bg-canvas">
+    <div className="flex h-full min-h-0 flex-col bg-surface">
       <ConversationSwitch current={props.current} />
       {props.children}
     </div>

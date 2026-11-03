@@ -1,7 +1,7 @@
 import { randomBytes } from 'node:crypto'
 import type { CompanyId, Person, Project, ProjectName, Role } from '@conexus/hub-api'
 import { appHostOf, HostLabel, hostLabelOf, PAGE_SIZE, ProjectId } from '@conexus/hub-api'
-import { and, asc, eq, isNotNull, isNull, sql } from 'drizzle-orm'
+import { and, asc, eq, isNull, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { AppsDomain } from '../../platform/config.ts'
 import type { CommandTx, Database, ReadTx, Scope } from '../../platform/database.ts'
@@ -12,6 +12,7 @@ import type { NeonProjects } from '../../platform/neon.ts'
 import { after, pageKey, pageOf } from '../../platform/pages.ts'
 import type { IdentityPorts } from '../identity/public.ts'
 import { claimDatabase, markReady, prepareDatabase, releaseClaim } from './company-database.ts'
+import { finishMarkedProject, ofProject } from './marked.ts'
 import type { AppRemoval, AppVersionsOf, ProjectConversationRelease } from './ports.ts'
 import { companyDatabase, project } from './tables.ts'
 
@@ -47,8 +48,13 @@ function scopeOf(person: Person, companyId: CompanyId): Scope {
   return { kind: 'COMPANY', companyId, personId: person.id }
 }
 
-function summaryOf(row: ProjectRow) {
-  return { id: row.id, name: row.name, createdAt: row.createdAt.toISOString() }
+type Versions = Pick<Project, 'appVersion' | 'publishedVersion'>
+
+function summaryOf(
+  row: ProjectRow,
+  versions: Versions = { appVersion: null, publishedVersion: null },
+) {
+  return { id: row.id, name: row.name, createdAt: row.createdAt.toISOString(), ...versions }
 }
 
 /** What a viewer with this role may do to a Project: the Hub's answer, never the screen's (code C26). */
@@ -57,7 +63,9 @@ function rightsOf(deps: Deps, role: Role) {
 }
 
 type Rights = ReturnType<typeof rightsOf>
-type Versions = Pick<Project, 'appVersion' | 'publishedVersion'>
+async function versionsOf(deps: Deps, tx: ReadTx, projectId: ProjectId) {
+  return (await deps.appVersionsOf(tx, [projectId])).get(projectId)
+}
 
 function viewOf(
   deps: Deps,
@@ -66,8 +74,7 @@ function viewOf(
   const { hostLabel } = input.row
   const address =
     hostLabel === null ? null : appHostOf({ label: hostLabel, appsDomain: deps.appsDomain })
-  const { appVersion = null, publishedVersion = null } = input.versions ?? {}
-  return { ...summaryOf(input.row), ...input.rights, address, appVersion, publishedVersion }
+  return { ...summaryOf(input.row, input.versions), ...input.rights, address }
 }
 
 /**
@@ -138,7 +145,10 @@ async function enterCreation(deps: Deps, tx: CommandTx, input: Creation) {
   })
   const rights = rightsOf(deps, admitted.role)
   const replay = await replayOf(tx, { ...input })
-  if (replay !== undefined) return { kind: 'REPLAY', rights, row: replay } as const
+  if (replay !== undefined) {
+    const versions = await versionsOf(deps, tx, replay.id)
+    return { kind: 'REPLAY', rights, row: replay, versions } as const
+  }
   return { kind: 'NEW', rights, ...(await hostLabelFor(deps, tx, input)) } as const
 }
 
@@ -154,8 +164,8 @@ async function create(deps: Deps, input: Creation): Promise<Created> {
     const entered = await enterCreation(deps, tx, input)
     const { rights } = entered
     if (entered.kind === 'REPLAY') {
-      const versions = await deps.appVersionsOf(tx, entered.row.id)
-      return { kind: 'DONE', created: false, row: entered.row, rights, versions } as const
+      const { row, versions } = entered
+      return { kind: 'DONE', created: false, row, rights, versions } as const
     }
     if ((await claimDatabase(tx, input.companyId)) === 'CLAIMED') {
       return { kind: 'CLAIMED', rights, nickname: entered.nickname } as const
@@ -181,11 +191,7 @@ async function create(deps: Deps, input: Creation): Promise<Created> {
       const { rights } = entered
       if (entered.kind === 'REPLAY') {
         return {
-          project: viewOf(deps, {
-            row: entered.row,
-            rights,
-            versions: await deps.appVersionsOf(tx, entered.row.id),
-          }),
+          project: viewOf(deps, { row: entered.row, rights, versions: entered.versions }),
           created: false,
           databaseCreated: false,
         }
@@ -246,39 +252,6 @@ async function remove(deps: Deps, input: OfProject & { name: ProjectName }) {
   await finishMarkedProject(deps, { scope, ...ids })
 }
 
-function ofProject(ids: { companyId: CompanyId; projectId: ProjectId }) {
-  return and(eq(project.id, ids.projectId), eq(project.companyId, ids.companyId))
-}
-
-/** The company's Projetos marked for deletion, which the repair at start finishes. */
-export async function markedProjectsOf(tx: ReadTx, companyId: CompanyId): Promise<ProjectId[]> {
-  const rows = await tx
-    .select({ id: project.id })
-    .from(project)
-    .where(and(eq(project.companyId, companyId), isNotNull(project.deletingSince)))
-  return rows.map(({ id }) => ProjectId.parse(id))
-}
-
-/**
- * The rest of a Projeto marked for deletion, once its app is gone: its conversations, with no
- * transaction open (data D22), then its row. Conversations the Builder could not release keep the
- * mark for the repair at start: `PROJECT_DELETION_PENDING`.
- */
-export async function finishMarkedProject(
-  deps: Pick<Deps, 'database' | 'releaseConversations'>,
-  input: { scope: Scope; companyId: CompanyId; projectId: ProjectId },
-): Promise<void> {
-  const ids = { companyId: input.companyId, projectId: input.projectId }
-  try {
-    await deps.releaseConversations(ids)
-  } catch (cause) {
-    throw new Failure('PROJECT_DELETION_PENDING', { cause })
-  }
-  await deps.database.command(input.scope, (tx) =>
-    tx.delete(project).where(and(ofProject(ids), isNotNull(project.deletingSince))),
-  )
-}
-
 function get(deps: Deps, input: OfProject) {
   return deps.database.read(scopeOf(input.person, input.companyId), async (tx) => {
     const admitted = await deps.identity.admitMember({
@@ -293,7 +266,7 @@ function get(deps: Deps, input: OfProject) {
       .where(and(ofProject(input), isNull(project.deletingSince)))
     if (row === undefined) throw new Failure('NOT_FOUND')
     const rights = rightsOf(deps, admitted.role)
-    const versions = await deps.appVersionsOf(tx, input.projectId)
+    const versions = await versionsOf(deps, tx, input.projectId)
     return { project: viewOf(deps, { row: ProjectRow.parse(row), rights, versions }) }
   })
 }
@@ -333,12 +306,14 @@ function list(
       rows.map((row) => ProjectRow.parse(row)),
       (row) => row.id,
     )
+    const ids = listed.rows.map((row) => row.id)
+    const versions = await deps.appVersionsOf(tx, ids)
     const [ready] = await tx
       .select({ companyId: companyDatabase.companyId })
       .from(companyDatabase)
       .where(and(eq(companyDatabase.companyId, companyId), eq(companyDatabase.state, 'ready')))
     return {
-      projects: listed.rows.map(summaryOf),
+      projects: listed.rows.map((row) => summaryOf(row, versions.get(row.id))),
       next: listed.next,
       databaseReady: ready !== undefined,
     }
