@@ -1,5 +1,4 @@
 import type { Person } from '@conexus/hub-api'
-import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { BuildingIcon, ChevronsUpDownIcon, LogOutIcon } from 'lucide-react'
 import { sentenceOf } from '../../platform/hub.ts'
@@ -19,8 +18,8 @@ import {
   DropdownMenuTrigger,
 } from '../../ui/dropdown-menu.tsx'
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from '../../ui/sidebar.tsx'
-import { companiesQuery } from './queries.ts'
 import { useSignOut } from './sign-out.ts'
+import { useCompanies } from './use-companies.ts'
 
 function initialsOf(name: string): string {
   const words = name.trim().split(/\s+/)
@@ -39,7 +38,7 @@ export function AccountMenu({ person, compact = false }: { person: Person; compa
   const signOut = useSignOut()
   // The installation's role comes with the company list, read once more only when it changes;
   // without the role the link is not offered.
-  const { data: companies } = useQuery({ ...companiesQuery(undefined), refetchOnMount: false })
+  const { data: companies } = useCompanies()
 
   return (
     <SidebarMenu className={cn(compact && 'items-center')}>
@@ -64,7 +63,7 @@ export function AccountMenu({ person, compact = false }: { person: Person; compa
             {!compact && (
               <>
                 <span className="grid min-w-0 flex-1 text-left">
-                  <span className="truncate text-text">{person.name}</span>
+                  <span className="truncate text-label text-text">{person.name}</span>
                   <span className="truncate text-fact text-text-2">{person.email}</span>
                 </span>
                 <ChevronsUpDownIcon aria-hidden="true" className="ml-auto" />
@@ -74,15 +73,13 @@ export function AccountMenu({ person, compact = false }: { person: Person; compa
           <DropdownMenuContent align="end" side={isMobile && !compact ? 'top' : 'right'}>
             <DropdownMenuGroup>
               <DropdownMenuLabel>
-                <span className="truncate text-text">{person.name}</span>
+                <span className="truncate text-label text-text">{person.name}</span>
                 <span className="truncate text-label text-text-2">{person.email}</span>
               </DropdownMenuLabel>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuLabel className="text-eyebrow text-text-2 uppercase">
-                Tema
-              </DropdownMenuLabel>
+              <DropdownMenuLabel>Tema</DropdownMenuLabel>
               <DropdownMenuRadioGroup
                 value={choice}
                 onValueChange={(value: unknown) => choose(ThemeChoice.parse(value))}
