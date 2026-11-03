@@ -9,10 +9,11 @@ import {
   AGENTS_CONTROLLER,
   AgentId,
   AgentSummary,
+  ATTEMPT_KEY_HEADER,
   BUILDER_ROUTES,
   CONSTRUTOR_CONTROLLER,
   DraftPatch,
-  ModelId,
+  ToolInput,
 } from '@conexus/hub-api'
 import { HttpResponse, http } from 'msw'
 import type { setupServer } from 'msw/node'
@@ -23,7 +24,7 @@ import type { View } from '../conversation/test-hub.tsx'
 import { screens, view } from '../conversation/test-hub.tsx'
 import { START } from '../conversation/test-start.tsx'
 import { displayOf, openLine } from '../conversation/test-stream.tsx'
-import { BUILDER_CHAT, CHAT, TEST_CHAT, version } from './test-agents.ts'
+import { BUILDER_CHAT, CHAT, TEST_CHAT, TOOL_V1, toolSummary, version } from './test-agents.ts'
 
 const PROJECT_API = `*/api/companies/${COMPANY.id}/projects/${PEDIDOS.id}`
 
@@ -31,17 +32,19 @@ function SESSION(controller: string) {
   return `*${BUILDER_ROUTES}/agent-controller/${controller}/sessions/:id`
 }
 
-export type Answers = {
+type Answers = {
   /** What a save of the draft answers instead of the Hub's success. */
   save?: () => Response | undefined
   /** What the read of the agent answers instead of its row. */
   read?: () => Response | undefined
   publish?: () => Response | undefined
+  /** What the creation of a tool answers instead of the Hub's success. */
+  createTool?: () => Response | undefined
   /** What the read of the Projeto's agents answers instead of the list. */
   list?: () => Response | undefined
 }
 
-type Sent = { method: string; path: string; body: unknown }
+type Sent = { method: string; path: string; body: unknown; key: string | null }
 type Held = {
   agents: AgentDetail[]
   versions?: AgentVersionSummary[]
@@ -151,6 +154,21 @@ function conversationRoutes(held: Held, note: Note) {
     http.get(`${PROJECT_API}/tools`, () =>
       HttpResponse.json({ tools: held.tools ?? [], ready: [] }),
     ),
+    http.post(`${PROJECT_API}/tools`, async ({ request }) => {
+      const body = ToolInput.parse(await note(request))
+      const replaced = held.answers?.createTool?.()
+      if (replaced) return replaced
+      const { connectionId, operation, slug, description } = body
+      const made = {
+        ...toolSummary({ slug, connectionId, operation, description }),
+        versions: [{ id: TOOL_V1, number: 1, description, bound: body.bound, open: body.open }],
+      }
+      held.tools = [
+        ...(held.tools ?? []),
+        toolSummary({ slug, connectionId, operation, description }),
+      ]
+      return HttpResponse.json({ tool: made }, { status: 201 })
+    }),
     http.get(`${PROJECT_API}/construtor/conversations`, () =>
       HttpResponse.json({ conversations: held.construtor ?? [] }),
     ),
@@ -213,13 +231,18 @@ function memberRoutes() {
  * The Hub's Agentes routes of one Projeto on `server`, with the sessions of the Construtor and of an
  * agent. `held` changes as the writes land; `sent` holds every write.
  */
-export function agentsHub(server: ReturnType<typeof setupServer>, held: Held) {
+function agentsHub(server: ReturnType<typeof setupServer>, held: Held) {
   const sent: Sent[] = []
   const lines: ReturnType<typeof openLine>['line'][] = []
   async function note(request: Request) {
     const text = await request.text()
     const body: unknown = text === '' ? undefined : JSON.parse(text)
-    sent.push({ method: request.method, path: new URL(request.url).pathname, body })
+    sent.push({
+      method: request.method,
+      path: new URL(request.url).pathname,
+      body,
+      key: request.headers.get(ATTEMPT_KEY_HEADER),
+    })
     return body
   }
   server.use(
@@ -233,8 +256,6 @@ export function agentsHub(server: ReturnType<typeof setupServer>, held: Held) {
   )
   return { sent, writes: () => sent.filter((one) => one.method !== 'GET'), lines, held }
 }
-
-export const MODEL_CHOICE = ModelId.parse('anthropic/claude-opus-4')
 
 /** The Agentes screens: the Projeto's frame of the conversation tests, and the agents' routes. */
 export function agentScreens(server: ReturnType<typeof setupServer>) {

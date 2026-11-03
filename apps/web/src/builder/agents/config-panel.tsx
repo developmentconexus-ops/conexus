@@ -1,6 +1,7 @@
 import type { AgentDetail, CompanyId, ProjectId, ToolVersionId } from '@conexus/hub-api'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useId, useState } from 'react'
+import { useAttemptKey } from '../../platform/attempt-key.ts'
 import { HubFailure, sentenceOf, writeFailureText } from '../../platform/hub.ts'
 import { Button } from '../../ui/button.tsx'
 import { Dialog, DialogContent, DialogFooter } from '../../ui/dialog.tsx'
@@ -223,6 +224,7 @@ function Creator(props: { scope: Scope; agent: AgentDetail; saving: Saving; onCl
   const { scope, agent } = props
   const queryClient = useQueryClient()
   const create = useMutation(sendTool)
+  const attempt = useAttemptKey()
   const [error, setError] = useState<string>()
   const [refused, setRefused] = useState<{
     field: string | undefined
@@ -241,12 +243,9 @@ function Creator(props: { scope: Scope; agent: AgentDetail; saving: Saving; onCl
         setRefused(undefined)
         void (async () => {
           try {
-            const key = crypto.randomUUID()
-            const { tool } = await create.mutateAsync({
-              params: scope,
-              body: input,
-              attemptKey: key,
-            })
+            const { tool } = await attempt((attemptKey) =>
+              create.mutateAsync({ params: scope, body: input, attemptKey }),
+            )
             await queryClient.invalidateQueries({ queryKey: toolsQuery(scope).queryKey })
             const kept = agent.tools.map((one) => one.version.id)
             const saved = await props.saving.save({ tools: [...kept, tool.latest.id] })
