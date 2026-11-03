@@ -184,9 +184,10 @@ export function StartBox(props: {
   placeholder: string
   /** Chips under the bar; none draws nothing. */
   examples: readonly Example[]
-  picked: { model: ModelId; effort: Effort }
-  onPick: (picked: { model: ModelId; effort: Effort }) => void
-  providers: ReturnType<typeof usePicked>['providers']
+  /** The model's button; none where the request does not choose the model (the Construtor's). */
+  picked?: { model: ModelId; effort: Effort }
+  onPick?: (picked: { model: ModelId; effort: Effort }) => void
+  providers?: ReturnType<typeof usePicked>['providers']
   /** False while something the request needs has not arrived: **Enviar** waits. */
   canSend?: boolean
   onSend: (outgoing: Outgoing) => Promise<boolean>
@@ -207,12 +208,16 @@ export function StartBox(props: {
           onSend={props.onSend}
           onStop={() => undefined}
           picker={
-            <ComposerModelPicker
-              providers={props.providers}
-              value={props.picked}
-              heading="Modelo do pedido"
-              onChange={props.onPick}
-            />
+            props.picked !== undefined &&
+            props.onPick !== undefined &&
+            props.providers !== undefined && (
+              <ComposerModelPicker
+                providers={props.providers}
+                value={props.picked}
+                heading="Modelo do pedido"
+                onChange={props.onPick}
+              />
+            )
           }
         />
       </div>

@@ -11,6 +11,7 @@ export type DraftKey =
   | `start:${CompanyId}`
   | `first:${ProjectId}`
   | `assistant:${ProjectId}`
+  | `construtor:${ProjectId}`
 
 const texts = new Map<DraftKey, string>()
 /** Files stay in the page's memory: storage holds ~5 MB, and a reload drops them, as in Factory. */

@@ -1,7 +1,9 @@
 import type {
+  AGENTS_CONTROLLER,
   Answer,
   ASSISTANT_CONTROLLER,
   BUILDER_CONTROLLER,
+  CONSTRUTOR_CONTROLLER,
   ConversationId,
   ProjectId,
 } from '@conexus/hub-api'
@@ -17,15 +19,24 @@ import type { Outgoing } from './attachments.ts'
  * retry of the client's own, since a write retried would say a message twice. The Builder's and the
  * Assistant's conversations are the same session on two controllers (step 24.1, `H1`).
  */
-export type Controller = typeof BUILDER_CONTROLLER | typeof ASSISTANT_CONTROLLER
+export type Controller =
+  | typeof BUILDER_CONTROLLER
+  | typeof ASSISTANT_CONTROLLER
+  | typeof CONSTRUTOR_CONTROLLER
+  | typeof AGENTS_CONTROLLER
 
 /**
  * Whose conversation it is: the Builder's, with the Projeto whose Prévia and files its runs change,
- * or the Assistant's, which has none (step 24.1, U4).
+ * or the Assistant's, the Construtor's or an agent's, which have none (steps 24.1 U4 and 24.3 U5).
  */
 export type Place =
   | { controller: typeof BUILDER_CONTROLLER; projectId: ProjectId }
-  | { controller: typeof ASSISTANT_CONTROLLER }
+  | {
+      controller:
+        | typeof ASSISTANT_CONTROLLER
+        | typeof CONSTRUTOR_CONTROLLER
+        | typeof AGENTS_CONTROLLER
+    }
 
 export function sessionOf(conversationId: ConversationId, controller: Controller) {
   const client = new MastraClient({
