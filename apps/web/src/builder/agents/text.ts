@@ -40,17 +40,16 @@ export function stateText(state: AgentState): string {
   return state.changed ? 'Rascunho com mudanças' : `Versão ${state.version} · publicada`
 }
 
-export function missingField(field: string | undefined): string {
-  return field === undefined
-    ? 'Falta um campo para publicar.'
-    : `Falta ${FIELD_NAMES[field] ?? field} para publicar.`
+/** The whole sentence for each field a publication lacks, so each agrees with its own words. */
+const MISSING: Record<string, string> = {
+  instructions: 'Faltam as instruções para publicar.',
+  connections: 'Falta uma ligação que o Projeto ofereça para publicar.',
+  name: 'Falta o nome para publicar.',
+  model: 'Falta o modelo para publicar.',
 }
 
-const FIELD_NAMES: Record<string, string> = {
-  instructions: 'as instruções',
-  connections: 'uma ligação que o Projeto ofereça',
-  name: 'o nome',
-  model: 'o modelo',
+export function missingField(field: string | undefined): string {
+  return (field === undefined ? undefined : MISSING[field]) ?? 'Falta um campo para publicar.'
 }
 
 export function deleteWarning(name: string): string {

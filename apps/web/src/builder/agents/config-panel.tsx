@@ -1,27 +1,37 @@
 import type { AgentDetail, CompanyId, ProjectId, ToolVersionId } from '@conexus/hub-api'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { useId, useState } from 'react'
 import { useAttemptKey } from '../../platform/attempt-key.ts'
 import { HubFailure, sentenceOf, writeFailureText } from '../../platform/hub.ts'
 import { Button } from '../../ui/button.tsx'
 import { Dialog, DialogContent, DialogFooter } from '../../ui/dialog.tsx'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select.tsx'
+import { Skeleton } from '../../ui/skeleton.tsx'
 import { ReadFailure } from '../../ui/states.tsx'
 import { Switch } from '../../ui/switch.tsx'
 import { Textarea } from '../../ui/textarea.tsx'
 import { accountsQuery, modelLabel } from '../model-accounts/public.ts'
 import { sendTool, toolsQuery } from './queries.ts'
-import { GONE_CONNECTION, NO_CONNECTIONS, NO_TOOLS, reasonText, UNCONFIRMED_SAVE } from './text.ts'
+import { GONE_CONNECTION, NO_CONNECTIONS, NO_TOOLS, UNCONFIRMED_SAVE } from './text.ts'
 import { ToolForm } from './tool-form.tsx'
 import type { Saving } from './use-draft-save.ts'
+import { useDraftSave } from './use-draft-save.ts'
 
 type Scope = { companyId: CompanyId; projectId: ProjectId }
+type Part = { scope: Scope; agent: AgentDetail }
 const SAME = 'same'
 
-function Section(props: { title: string; children: React.ReactNode; error?: string | undefined }) {
+/** One section of the panel: busy while its write is on its way, and its refusal under it until it saves. */
+function Section(props: {
+  title: string
+  children: React.ReactNode
+  busy?: boolean
+  error?: string | undefined
+}) {
   return (
     <section
       aria-label={props.title}
+      aria-busy={props.busy}
       className="flex flex-col gap-sm border-b border-line py-md last:border-b-0"
     >
       <h3 className="font-display text-title">{props.title}</h3>
@@ -35,33 +45,34 @@ function Section(props: { title: string; children: React.ReactNode; error?: stri
   )
 }
 
-function Instructions({ agent, saving }: { agent: AgentDetail; saving: Saving }) {
-  const [text, setText] = useState(agent.draft.instructions)
+function Instructions({ scope, agent }: Part) {
+  const saving = useDraftSave(scope, agent.id)
+  const saved = agent.draft.instructions
+  const [text, setText] = useState(saved)
+  const [seen, setSeen] = useState(saved)
+  if (saved !== seen) {
+    setSeen(saved)
+    // Another writer's text takes the field only while the field holds nothing the person has not saved.
+    if (text === seen && saving.error === undefined) setText(saved)
+  }
   return (
-    <Section title="Instruções">
+    <Section title="Instruções" busy={saving.pending} error={saving.error}>
       <Textarea
         aria-label="Instruções"
         className="min-h-40"
         value={text}
         onChange={(event) => setText(event.target.value)}
         onBlur={() => {
-          if (text !== agent.draft.instructions) void saving.save({ instructions: text })
+          if (text !== saved || saving.error !== undefined) saving.save({ instructions: text })
         }}
       />
     </Section>
   )
 }
 
-function ModelSection({
-  companyId,
-  agent,
-  saving,
-}: {
-  companyId: CompanyId
-  agent: AgentDetail
-  saving: Saving
-}) {
-  const read = useQuery(accountsQuery(companyId))
+function ModelSection({ scope, agent }: Part) {
+  const saving = useDraftSave(scope, agent.id)
+  const read = useQuery(accountsQuery(scope.companyId))
   const models =
     read.data?.choices.mine.flatMap((provider) => provider.models.map((one) => one.id)) ?? []
   const items = [
@@ -69,13 +80,17 @@ function ModelSection({
     ...models.map((id) => ({ value: id, label: modelLabel(id) })),
   ]
   return (
-    <Section title="Modelo">
+    <Section title="Modelo" busy={saving.pending} error={saving.error}>
+      {read.isError && (
+        <ReadFailure text={sentenceOf(read.error)} onRetry={() => void read.refetch()} />
+      )}
       <Select
         value={agent.draft.model ?? SAME}
         items={items}
+        disabled={read.data === undefined}
         onValueChange={(next) => {
           const model = models.find((id) => id === next) ?? null
-          void saving.save({ model })
+          saving.save({ model })
         }}
       >
         <SelectTrigger aria-label="Modelo">
@@ -103,14 +118,18 @@ function Toggle(props: { label: string; checked: boolean; onChange: (next: boole
   )
 }
 
-function Connections({ agent, saving }: { agent: AgentDetail; saving: Saving }) {
+function Connections({ scope, agent }: Part) {
+  const saving = useDraftSave(scope, agent.id)
   const chosen = agent.draft.connections
   const gone = chosen.filter((id) => !agent.offered.some((one) => one.connectionId === id))
   function change(id: (typeof chosen)[number], on: boolean) {
-    void saving.save({ connections: on ? [...chosen, id] : chosen.filter((one) => one !== id) })
+    saving.save((now) => {
+      const others = now.draft.connections.filter((one) => one !== id)
+      return { connections: on ? [...others, id] : others }
+    })
   }
   return (
-    <Section title="Ligações">
+    <Section title="Ligações" busy={saving.pending} error={saving.error}>
       {agent.offered.length === 0 && gone.length === 0 && (
         <p className="text-text-2">{NO_CONNECTIONS}</p>
       )}
@@ -140,7 +159,9 @@ function toggled(set: ReadonlySet<string>, key: string): ReadonlySet<string> {
   return next
 }
 
-function Chooser(props: { scope: Scope; agent: AgentDetail; saving: Saving; onClose: () => void }) {
+type Dialogue = Part & { saving: Saving; onClose: () => void }
+
+function Chooser(props: Dialogue) {
   const { scope, agent } = props
   const read = useQuery(toolsQuery(scope))
   const chosenIds = new Set(agent.tools.map((one) => one.id))
@@ -148,24 +169,27 @@ function Chooser(props: { scope: Scope; agent: AgentDetail; saving: Saving; onCl
   const [ready, setReady] = useState<ReadonlySet<string>>(new Set())
   if (read.isError)
     return <ReadFailure text={sentenceOf(read.error)} onRetry={() => void read.refetch()} />
-  async function confirm() {
-    const tools: ToolVersionId[] = (read.data?.tools ?? []).flatMap((tool) => {
-      if (!picked.has(tool.id)) return []
-      return [agent.tools.find((one) => one.id === tool.id)?.version.id ?? tool.latest.id]
-    })
-    const readies = (read.data?.ready ?? []).filter((one) =>
-      ready.has(`${one.connectionId}:${one.operation}`),
-    )
-    const saved = await props.saving.save({
-      tools,
-      ...(readies.length > 0 && {
-        ready: readies.map(({ connectionId, operation }) => ({ connectionId, operation })),
-      }),
-    })
-    if (saved) props.onClose()
+  function confirm(list: NonNullable<typeof read.data>) {
+    const readies = list.ready.filter((one) => ready.has(`${one.connectionId}:${one.operation}`))
+    props.saving.save((now) => {
+      // A chosen tool the list does not bring cannot be unticked here, so it stays, at its version.
+      const unlisted = now.tools.filter((one) => !list.tools.some((tool) => tool.id === one.id))
+      const listed = list.tools.flatMap((tool) => {
+        if (!picked.has(tool.id)) return []
+        return [now.tools.find((one) => one.id === tool.id)?.version.id ?? tool.latest.id]
+      })
+      const tools: ToolVersionId[] = [...unlisted.map((one) => one.version.id), ...listed]
+      return {
+        tools,
+        ...(readies.length > 0 && {
+          ready: readies.map(({ connectionId, operation }) => ({ connectionId, operation })),
+        }),
+      }
+    }, props.onClose)
   }
   return (
     <div className="flex flex-col gap-md">
+      {read.isPending && <Skeleton className="h-16 w-full" />}
       <ul className="flex flex-col gap-xs">
         {read.data?.tools.map((tool) => (
           <li key={tool.id}>
@@ -209,7 +233,10 @@ function Chooser(props: { scope: Scope; agent: AgentDetail; saving: Saving; onCl
         </p>
       )}
       <DialogFooter>
-        <Button disabled={props.saving.pending} onClick={() => void confirm()}>
+        <Button
+          disabled={read.data === undefined || props.saving.pending}
+          onClick={() => read.data !== undefined && confirm(read.data)}
+        >
           Usar as escolhidas
         </Button>
         <Button variant="ghost" onClick={props.onClose}>
@@ -220,9 +247,8 @@ function Chooser(props: { scope: Scope; agent: AgentDetail; saving: Saving; onCl
   )
 }
 
-function Creator(props: { scope: Scope; agent: AgentDetail; saving: Saving; onClose: () => void }) {
+function Creator(props: Dialogue) {
   const { scope, agent } = props
-  const queryClient = useQueryClient()
   const create = useMutation(sendTool)
   const attempt = useAttemptKey()
   const [error, setError] = useState<string>()
@@ -235,7 +261,7 @@ function Creator(props: { scope: Scope; agent: AgentDetail; saving: Saving; onCl
       offered={agent.offered}
       pending={create.isPending || props.saving.pending}
       refused={refused}
-      error={error}
+      error={error ?? props.saving.error}
       submitLabel="Criar ferramenta"
       onCancel={props.onClose}
       onSubmit={(input) => {
@@ -246,10 +272,10 @@ function Creator(props: { scope: Scope; agent: AgentDetail; saving: Saving; onCl
             const { tool } = await attempt((attemptKey) =>
               create.mutateAsync({ params: scope, body: input, attemptKey }),
             )
-            await queryClient.invalidateQueries({ queryKey: toolsQuery(scope).queryKey })
-            const kept = agent.tools.map((one) => one.version.id)
-            const saved = await props.saving.save({ tools: [...kept, tool.latest.id] })
-            if (saved) props.onClose()
+            props.saving.save(
+              (now) => ({ tools: [...now.tools.map((one) => one.version.id), tool.latest.id] }),
+              props.onClose,
+            )
           } catch (failure) {
             if (failure instanceof HubFailure) {
               setRefused({ field: failure.field, reason: failure.reason })
@@ -262,8 +288,9 @@ function Creator(props: { scope: Scope; agent: AgentDetail; saving: Saving; onCl
   )
 }
 
-function Tools(props: { scope: Scope; agent: AgentDetail; saving: Saving }) {
-  const { agent, saving } = props
+function Tools(props: Part) {
+  const { agent } = props
+  const saving = useDraftSave(props.scope, agent.id)
   const [mode, setMode] = useState<'choose' | 'create'>()
   function close() {
     setMode(undefined)
@@ -271,7 +298,8 @@ function Tools(props: { scope: Scope; agent: AgentDetail; saving: Saving }) {
   return (
     <Section
       title="Ferramentas"
-      error={saving.refused?.field === 'tools' ? reasonText(saving.refused.reason) : undefined}
+      busy={saving.pending}
+      error={saving.refused?.field === 'tools' ? saving.refused.reason : saving.error}
     >
       {agent.tools.length === 0 && <p className="text-text-2">{NO_TOOLS}</p>}
       <ul className="flex flex-col divide-y divide-line">
@@ -290,11 +318,11 @@ function Tools(props: { scope: Scope; agent: AgentDetail; saving: Saving }) {
                 variant="ghost"
                 aria-label={`Tirar ${tool.slug}`}
                 onClick={() =>
-                  void saving.save({
-                    tools: agent.tools
+                  saving.save((now) => ({
+                    tools: now.tools
                       .filter((one) => one.id !== tool.id)
                       .map((one) => one.version.id),
-                  })
+                  }))
                 }
               >
                 Tirar
@@ -321,45 +349,62 @@ function Tools(props: { scope: Scope; agent: AgentDetail; saving: Saving }) {
               : 'As que o Projeto pode usar.'
           }
         >
-          {mode === 'choose' && <Chooser {...props} onClose={close} />}
-          {mode === 'create' && <Creator {...props} onClose={close} />}
+          {mode === 'choose' && <Chooser {...props} saving={saving} onClose={close} />}
+          {mode === 'create' && <Creator {...props} saving={saving} onClose={close} />}
         </DialogContent>
       </Dialog>
     </Section>
   )
 }
 
+/** A section of one switch, saved alone. */
+function SwitchSection(
+  props: Part & {
+    title: string
+    label: string
+    checked: boolean
+    fields: (on: boolean) => Parameters<Saving['save']>[0]
+  },
+) {
+  const saving = useDraftSave(props.scope, props.agent.id)
+  return (
+    <Section title={props.title} busy={saving.pending} error={saving.error}>
+      <Toggle
+        label={props.label}
+        checked={props.checked}
+        onChange={(on) => saving.save(props.fields(on))}
+      />
+    </Section>
+  )
+}
+
 /**
  * The configuration of an agent's draft, field by field editable (step 24.3, U5, criterion 27): the
- * sections of the Studio's agent page, each saved by the `PATCH` of the draft through the agent's queue.
+ * sections of the Studio's agent page, each saved by the `PATCH` of the draft after the agent's
+ * earlier writes, each with its own refusal.
  */
-export function ConfigPanel(props: { scope: Scope; agent: AgentDetail; saving: Saving }) {
-  const { scope, agent, saving } = props
+export function ConfigPanel(part: Part) {
+  const { draft } = part.agent
   return (
     <section aria-label="Configuração" className="flex flex-col">
-      <Instructions key={agent.draft.instructions} agent={agent} saving={saving} />
-      <ModelSection companyId={scope.companyId} agent={agent} saving={saving} />
-      <Section title="Memória">
-        <Toggle
-          label="Memória observacional"
-          checked={agent.draft.memory.observational}
-          onChange={(observational) => void saving.save({ memory: { observational } })}
-        />
-      </Section>
-      <Connections agent={agent} saving={saving} />
-      <Tools scope={scope} agent={agent} saving={saving} />
-      <Section title="Lê">
-        <Toggle
-          label="Lê a web"
-          checked={agent.draft.web}
-          onChange={(web) => void saving.save({ web })}
-        />
-      </Section>
-      {saving.error !== undefined && (
-        <p role="alert" className="pt-sm text-danger">
-          {saving.error}
-        </p>
-      )}
+      <Instructions {...part} />
+      <ModelSection {...part} />
+      <SwitchSection
+        {...part}
+        title="Memória"
+        label="Memória observacional"
+        checked={draft.memory.observational}
+        fields={(observational) => ({ memory: { observational } })}
+      />
+      <Connections {...part} />
+      <Tools {...part} />
+      <SwitchSection
+        {...part}
+        title="Lê"
+        label="Lê a web"
+        checked={draft.web}
+        fields={(web) => ({ web })}
+      />
     </section>
   )
 }

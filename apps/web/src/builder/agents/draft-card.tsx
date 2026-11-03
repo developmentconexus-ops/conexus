@@ -6,7 +6,7 @@ import { HubFailure, sentenceOfCode } from '../../platform/hub.ts'
 import { Button, buttonVariants } from '../../ui/button.tsx'
 import { publishFailureText, usePublish } from './publish.tsx'
 import { agentQuery } from './queries.ts'
-import { AGENT_GONE, stateText } from './text.ts'
+import { AGENT_GONE, DRAFT_CHANGED, stateText } from './text.ts'
 
 /**
  * The card of the draft in the Construtor's conversation (step 24.3, U5, criterion 26): what
@@ -48,7 +48,8 @@ function Saved(props: {
     try {
       await publish(saved.revision, '')
     } catch (failure) {
-      setError(publishFailureText(failure))
+      const moved = failure instanceof HubFailure && failure.code === 'AGENT_DRAFT_STALE'
+      setError(moved ? DRAFT_CHANGED : publishFailureText(failure))
     }
   }
 

@@ -33,8 +33,8 @@ function SESSION(controller: string) {
 }
 
 type Answers = {
-  /** What a save of the draft answers instead of the Hub's success. */
-  save?: () => Response | undefined
+  /** What a save of the draft answers instead of the Hub's success; undefined, once it settles, lets the Hub answer. */
+  save?: () => Response | undefined | Promise<Response | undefined>
   /** What the read of the agent answers instead of its row. */
   read?: () => Response | undefined
   publish?: () => Response | undefined
@@ -42,6 +42,10 @@ type Answers = {
   createTool?: () => Response | undefined
   /** What the read of the Projeto's agents answers instead of the list. */
   list?: () => Response | undefined
+  /** What the read of the tools the Projeto can use answers instead of the list. */
+  tools?: () => Response | Promise<Response> | undefined
+  /** What opening a conversation with the Construtor answers instead of the Hub's success. */
+  openConstrutor?: () => Response | undefined
 }
 
 type Sent = { method: string; path: string; body: unknown; key: string | null }
@@ -77,7 +81,7 @@ function draftRoutes(held: Held, note: Note) {
     }),
     http.patch(`${PROJECT_API}/agents/:id/draft`, async ({ request, params }) => {
       const body = DraftPatch.parse(await note(request))
-      const replaced = answers.save?.()
+      const replaced = await answers.save?.()
       if (replaced) return replaced
       const found = find(params.id)
       if (!found) return refusal('AGENT_NOT_FOUND')
@@ -151,8 +155,9 @@ function conversationRoutes(held: Held, note: Note) {
       held.conversations = [made, ...(held.conversations ?? [])]
       return HttpResponse.json({ conversation: made }, { status: 201 })
     }),
-    http.get(`${PROJECT_API}/tools`, () =>
-      HttpResponse.json({ tools: held.tools ?? [], ready: [] }),
+    http.get(
+      `${PROJECT_API}/tools`,
+      () => held.answers?.tools?.() ?? HttpResponse.json({ tools: held.tools ?? [], ready: [] }),
     ),
     http.post(`${PROJECT_API}/tools`, async ({ request }) => {
       const body = ToolInput.parse(await note(request))
@@ -174,6 +179,8 @@ function conversationRoutes(held: Held, note: Note) {
     ),
     http.post(`${PROJECT_API}/construtor/conversations`, async ({ request }) => {
       await note(request)
+      const replaced = held.answers?.openConstrutor?.()
+      if (replaced) return replaced
       const made = { id: BUILDER_CHAT, title: '', updatedAt: '2026-11-02T12:00:00.000Z' }
       held.construtor = [made, ...(held.construtor ?? [])]
       return HttpResponse.json({ conversation: made }, { status: 201 })

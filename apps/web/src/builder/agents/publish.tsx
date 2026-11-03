@@ -6,16 +6,15 @@ import { Button } from '../../ui/button.tsx'
 import { Dialog, DialogContent, DialogFooter } from '../../ui/dialog.tsx'
 import { Textarea } from '../../ui/textarea.tsx'
 import { sendPublish, settleAgent } from './queries.ts'
-import { DRAFT_CHANGED, missingField, UNCONFIRMED_PUBLISH } from './text.ts'
+import { missingField, UNCONFIRMED_PUBLISH } from './text.ts'
 
 type Scope = { companyId: CompanyId; projectId: ProjectId }
 
-/** What a person reads for a refused publication: the field the draft lacks, or that it moved. */
+/** What a person reads for a refused publication: the field the draft lacks, or the failure's own sentence. */
 export function publishFailureText(failure: unknown): string {
   if (failure instanceof HubFailure && failure.code === 'AGENT_DRAFT_INVALID') {
     return missingField(failure.field)
   }
-  if (failure instanceof HubFailure && failure.code === 'AGENT_DRAFT_STALE') return DRAFT_CHANGED
   return writeFailureText(failure, UNCONFIRMED_PUBLISH)
 }
 

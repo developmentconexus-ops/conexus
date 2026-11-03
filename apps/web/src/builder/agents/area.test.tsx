@@ -93,3 +93,17 @@ test('no celular a área tem duas abas, Construtor e Agentes', async () => {
     expect(await screen.findByRole('link', { name: /Conferente de metas/ })).toBeTruthy()
   })
 })
+
+test('abrir a conversa com o Construtor sem conta para o modelo diz a frase com o caminho das contas', async () => {
+  at(AREA, { agents: [], answers: { openConstrutor: () => refusal('MODEL_NO_ACCOUNT') } })
+  say(
+    await screen.findByRole('textbox', { name: 'Mensagem para o Construtor' }),
+    'quero um agente de vendas',
+  )
+  expect(
+    await screen.findByText(
+      'Você ainda não tem uma conta de modelo. Peça a quem administra a empresa ou ligue a sua.',
+    ),
+  ).toBeTruthy()
+  expect(screen.getByRole('link', { name: 'Minhas contas de modelo' })).toBeTruthy()
+})

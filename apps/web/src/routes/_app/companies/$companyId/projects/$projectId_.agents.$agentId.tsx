@@ -1,8 +1,13 @@
 import { ConversationId } from '@conexus/hub-api'
 import { createFileRoute, Outlet, useParams } from '@tanstack/react-router'
-import { AgentPage, agentParams, loadAgent } from '../../../../../builder/agents/public.ts'
+import {
+  AgentPage,
+  AgentPending,
+  AgentsReadFailure,
+  agentParams,
+  loadAgent,
+} from '../../../../../builder/agents/public.ts'
 import { projectParams } from '../../../../../hub/projects/public.ts'
-import { RouteReadFailure } from '../../../../../ui/states.tsx'
 
 // An agent's page: its conversations, its configuration and, between them, the conversation the address opens (the child route).
 export const Route = createFileRoute(
@@ -14,7 +19,8 @@ export const Route = createFileRoute(
     stringify: (p) => p,
   },
   loader: ({ context, params }) => loadAgent(context.queryClient, params, params.agentId),
-  errorComponent: RouteReadFailure,
+  errorComponent: AgentsReadFailure,
+  pendingComponent: AgentPending,
   component: Agent,
 })
 
