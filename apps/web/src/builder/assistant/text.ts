@@ -2,10 +2,18 @@ import { dayAndHour } from '../../platform/dates.ts'
 
 /** The words of the Assistant's screens (step 24.1, U4); the founder approves them at the step's end. */
 export const HOME_PLACEHOLDER = 'Pergunte, peça uma análise ou um documento…'
-export const RECENT_TITLE = 'Conversas recentes'
-/** A Projeto's list has the page's title "Conversas" for its heading, so the list only names its landmark; Início's is the recent ones of all. */
+export const NEW_CONVERSATION = 'Nova conversa'
+export const DAY_GROUP_LABELS = {
+  TODAY: 'Hoje',
+  YESTERDAY: 'Ontem',
+  WEEK: 'Esta semana',
+  BEFORE: 'Antes',
+} as const
+/** A Projeto's list has the page's title "Conversas" for its heading, so the list only names its landmark. */
 export const PROJECT_LIST_TITLE = 'Conversas'
 export const NO_CONVERSATIONS = 'Nenhuma conversa neste Projeto ainda.'
+export const NO_CONVERSATIONS_BLOCK = 'Nenhuma conversa ainda.'
+export const NO_CONNECTIONS_BLOCK = 'Ligue um sistema em Integrações.'
 export const NO_CHOICE = 'Nenhuma ligação escolhida'
 export const NO_CONNECTIONS_HOME = 'Ligue um sistema em Integrações para perguntar sobre ele.'
 export const NO_CONNECTIONS_PROJECT =

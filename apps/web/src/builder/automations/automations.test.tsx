@@ -86,7 +86,7 @@ test('Apagar pede confirmação: Cancelar não apaga, Apagar tira a linha e a li
       'Peça numa conversa, por exemplo: todo dia às 7h me manda o resumo de vendas.',
     ),
   ).toBeTruthy()
-  expect(screen.getByRole('link', { name: 'Nova conversa' })).toBeTruthy()
+  expect(within(screen.getByRole('main')).getByRole('link', { name: 'Nova conversa' })).toBeTruthy()
   expect(hub.writes().map((one) => one.method)).toEqual(['DELETE'])
 })
 

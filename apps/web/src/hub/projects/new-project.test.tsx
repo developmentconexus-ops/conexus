@@ -20,6 +20,8 @@ const NOVO = ProjectSummary.parse({
   id: 'q'.repeat(32),
   name: 'Estoque',
   createdAt: '2026-10-28T12:00:00.000Z',
+  appVersion: null,
+  publishedVersion: null,
 })
 
 /** The company's Projects as `projects`; the Projeto written is `NOVO`, unless `answer` says otherwise. */

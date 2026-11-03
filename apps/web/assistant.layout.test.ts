@@ -40,7 +40,7 @@ function assistant(
   }
 }
 
-test('no celular, a conversa recente de um Projeto de nome comprido mantém o título e a data na tela', async () => {
+test('no celular, a linha de Continuar de um Projeto de nome comprido mantém o título e a idade na tela', async () => {
   const replies = assistant([
     {
       id: '44444444-4444-4444-8444-444444444444',
@@ -49,21 +49,23 @@ test('no celular, a conversa recente de um Projeto de nome comprido mantém o t�
     },
   ])
   const page = await harness.open(`/companies/${COMPANY.id}`, { viewport: PHONE, replies })
-  const row = page.getByRole('link', { name: /Pedidos do mês/ })
-  await row.locator('[data-slot="badge"]').waitFor()
-  const title = await row.locator('span.truncate').first().boundingBox()
-  const badge = await row.locator('[data-slot="badge"]').boundingBox()
-  const date = await row.locator(':scope > span').last().boundingBox()
+  const row = page
+    .getByRole('region', { name: 'Continuar' })
+    .getByRole('link', { name: /Pedidos do mês/ })
+  await row.waitFor()
+  const [title, project, age] = await Promise.all(
+    [0, 1, 2].map((at) => row.locator(':scope > span').nth(at).boundingBox()),
+  )
   const line = await row.boundingBox()
-  assert.ok(title && badge && date && line, 'the row is not laid out')
+  assert.ok(title && project && age && line, 'the row is not laid out')
   assert.ok(title.width >= 80, `the title is squeezed to ${title.width}px by the Projeto label`)
-  assert.ok(badge.x + badge.width <= date.x, 'the Projeto label runs over the date')
-  assert.ok(date.x + date.width <= line.x + line.width + 1, 'the date leaves the row')
+  assert.ok(project.x + project.width <= age.x, 'the Projeto label runs over the age')
+  assert.ok(age.x + age.width <= line.x + line.width + 1, 'the age leaves the row')
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), PHONE.width)
   await page.close()
 })
 
-test('no computador, a conversa recente mostra o nome inteiro de um Projeto de nome médio', async () => {
+test('no computador, a linha de Continuar mostra o nome inteiro de um Projeto de nome médio', async () => {
   const name = 'Pedidos e entregas da filial'
   const replies = assistant([
     {
@@ -73,9 +75,11 @@ test('no computador, a conversa recente mostra o nome inteiro de um Projeto de n
     },
   ])
   const page = await harness.open(`/companies/${COMPANY.id}`, { viewport: DESKTOP, replies })
-  const badge = page.getByRole('link', { name: /Pedidos do mês/ }).locator('[data-slot="badge"]')
-  await badge.waitFor()
-  const label = badge.locator('span.truncate')
+  const row = page
+    .getByRole('region', { name: 'Continuar' })
+    .getByRole('link', { name: /Pedidos do mês/ })
+  const label = row.locator(':scope > span').nth(1)
+  await label.waitFor()
   const cut = await label.evaluate((one) => one.scrollWidth - one.clientWidth)
   assert.equal(await label.textContent(), name)
   assert.ok(cut <= 0, `the Projeto label is cut by ${cut}px while the row has room`)

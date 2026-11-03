@@ -20,7 +20,7 @@ export function WelcomeFrame(props: {
   children: ReactNode
 }) {
   return (
-    <div className="flex min-h-dvh flex-col bg-canvas">
+    <div className="flex min-h-dvh flex-col bg-canvas [--ground:var(--color-canvas)]">
       <header className="flex h-[calc(3.5rem+env(safe-area-inset-top))] items-center gap-md border-b border-line bg-surface px-lg pt-[env(safe-area-inset-top)]">
         <ConexusWordmark word="md" />
         <p className="ml-auto text-label text-text-2">Passo {props.step} de 4</p>
