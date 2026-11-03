@@ -76,7 +76,7 @@ export function neonTransport(
   statements: readonly SqlStatement[],
   signal: AbortSignal,
   options: Readonly<{ readOnly: true }>,
-): Promise<SqlAnswer | SqlRead>
+): Promise<Exclude<SqlAnswer, { kind: 'DONE' }> | SqlRead>
 export async function neonTransport(
   url: DatabaseUrl,
   statements: readonly SqlStatement[],

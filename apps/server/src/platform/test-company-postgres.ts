@@ -2,7 +2,7 @@ import { createHash, randomUUID } from 'node:crypto'
 import type { ProjectId } from '@conexus/hub-api'
 import { appLogin, appLoginPassword } from '@conexus/hub-api'
 import pg from 'pg'
-import type { SqlAnswer, SqlRead, SqlStatement } from './company-postgres.ts'
+import type { SqlAnswer, SqlRead, SqlStatement, SqlTransport } from './company-postgres.ts'
 import { answerOf, createCompanyPostgres, errorName } from './company-postgres.ts'
 import type { AppLoginKey } from './config.ts'
 import { readTestDatabase } from './config.ts'
@@ -29,7 +29,7 @@ export function pgTransport(
   statements: readonly SqlStatement[],
   signal: AbortSignal,
   options: Readonly<{ readOnly: true }>,
-): Promise<SqlAnswer | SqlRead>
+): Promise<Exclude<SqlAnswer, { kind: 'DONE' }> | SqlRead>
 export async function pgTransport(
   url: DatabaseUrl,
   statements: readonly SqlStatement[],
@@ -49,9 +49,10 @@ export async function pgTransport(
     for (const statement of statements) {
       const query = { text: statement.text, values: [...(statement.values ?? [])] }
       if (options?.readOnly) {
-        // A named statement is a prepared one, which PostgreSQL refuses a second command in (42601);
-        // not proved against Neon's proxy, which no test may call.
-        const result = await client.query({ ...query, name: 'read', rowMode: 'array' })
+        // `queryMode` is node-postgres's own switch to the extended protocol, which refuses a second
+        // command (42601); its types do not list it.
+        const config = { ...query, queryMode: 'extended', rowMode: 'array' } as const
+        const result = await client.query(config)
         read = { kind: 'READ', columns: result.fields.map(({ name }) => name), rows: result.rows }
       } else {
         value.push((await client.query(query)).rows)
@@ -65,6 +66,33 @@ export async function pgTransport(
     signal.removeEventListener('abort', abort)
     await client.end().catch(() => undefined)
   }
+}
+
+/** `pgTransport`, telling `onCall` of each call. */
+export function countingTransport(onCall: () => void): SqlTransport {
+  function counting(
+    url: DatabaseUrl,
+    statements: readonly SqlStatement[],
+    signal: AbortSignal,
+  ): Promise<SqlAnswer>
+  function counting(
+    url: DatabaseUrl,
+    statements: readonly SqlStatement[],
+    signal: AbortSignal,
+    options: Readonly<{ readOnly: true }>,
+  ): ReturnType<typeof pgTransport>
+  function counting(
+    url: DatabaseUrl,
+    statements: readonly SqlStatement[],
+    signal: AbortSignal,
+    options?: Readonly<{ readOnly: true }>,
+  ) {
+    onCall()
+    return options === undefined
+      ? pgTransport(url, statements, signal)
+      : pgTransport(url, statements, signal, options)
+  }
+  return counting
 }
 
 /** What the transport answers when nothing listens at the address: silence, never a refusal. */

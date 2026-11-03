@@ -25,7 +25,7 @@ export type SqlTransport = {
     statements: readonly SqlStatement[],
     signal: AbortSignal,
     options: Readonly<{ readOnly: true }>,
-  ): Promise<SqlAnswer | SqlRead>
+  ): Promise<Exclude<SqlAnswer, { kind: 'DONE' }> | SqlRead>
 }
 
 /** A SQL reply past this is silence: the Hub's own statements read a few rows (code C59). */

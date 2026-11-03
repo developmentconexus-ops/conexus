@@ -6,9 +6,10 @@ import { useState } from 'react'
 import { failureOf, hubClientFetch, sentenceOf, sentenceOfCode } from '../../platform/hub.ts'
 import { Button } from '../../ui/button.tsx'
 import { cn } from '../../ui/cn.ts'
+import { SHEET_CLOSE_ROOM } from '../../ui/sheet.tsx'
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { ReadFailure } from '../../ui/states.tsx'
-import { Markdown, SHEET_CLOSE_ROOM } from '../conversation/public.ts'
+import { Markdown } from '../conversation/public.ts'
 import { FILE_EMPTY } from './text.ts'
 
 type Shown = Extract<ShownFile, { kind: 'TEXT' | 'FILE' }>

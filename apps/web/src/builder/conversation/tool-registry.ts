@@ -236,11 +236,10 @@ const AGENT_TOOL_PREFIX = 'tool_'
 
 /** The one lookup of how a tool's row reads, in the room that draws it. */
 export function specOf(toolName: string, room: Room): ToolSpec | undefined {
-  if (!isRowTool(toolName))
-    return toolName.startsWith(AGENT_TOOL_PREFIX)
-      ? slugToolSpec(toolName.slice(AGENT_TOOL_PREFIX.length))
-      : undefined
-  return room.overrides[toolName] ?? TOOLS[toolName]
+  if (isRowTool(toolName)) return room.overrides[toolName] ?? TOOLS[toolName]
+  if (!toolName.startsWith(AGENT_TOOL_PREFIX)) return undefined
+  const slug = toolName.slice(AGENT_TOOL_PREFIX.length)
+  return slugToolSpec(slug, room.toolDescription?.(slug))
 }
 
 /** One status per call (Factory `terminalInvocationStatus`); a command that exited non-zero is an error. */
