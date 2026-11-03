@@ -132,10 +132,15 @@ function Change({ edit }: { edit: Edit }) {
   )
 }
 
+/** The heading of an open row: its sentence in Portuguese, or the readable name for a tool outside the table. */
+function titleOf(toolName: string, room: Room) {
+  return specOf(toolName, room)?.done ?? readable(toolName)
+}
+
 function Block({ tool, body }: { tool: ToolItem; body: ToolBody }) {
   const room = useRoom()
   const detail = presentTool(tool, 'done', room).detail
-  const title = specOf(tool.toolName, room)?.done ?? readable(tool.toolName)
+  const title = titleOf(tool.toolName, room)
   switch (body) {
     case 'command': {
       const output = tool.output ?? textOf(tool.result)
