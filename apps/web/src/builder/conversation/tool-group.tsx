@@ -11,6 +11,7 @@ import {
 } from '../../ui/trace.tsx'
 import { useRoom } from './room.ts'
 import type { ToolItem } from './rows.ts'
+import { doneText } from './text.ts'
 import { presentTool, toolStatus } from './tool-registry.ts'
 import { ToolRow } from './tool-row.tsx'
 import { summaryOfTools } from './tool-summary.ts'
@@ -37,11 +38,19 @@ export function ToolGroup(props: { tools: ToolItem[]; working: boolean }) {
   const summary = summaryOfTools(tools, room)
 
   const completedCount = tools.filter((t) => toolStatus(t, room) !== 'running').length
+  const stepIcons = [...new Set(tools.map((t) => presentTool(t, toolStatus(t, room), room).icon))]
+  const failedCount = tools.filter((t) => {
+    const status = toolStatus(t, room)
+    return status === 'error' || status === 'denied'
+  }).length
 
   return (
     <TraceCollapsible open={chosen ?? working} onOpenChange={setChosen}>
       <TraceCollapsibleTrigger>
-        <TraceLine status={working ? 'running' : failed ? 'error' : undefined}>
+        <TraceLine
+          status={working ? 'running' : failed ? 'error' : undefined}
+          className={working ? undefined : 'h-lh flex-wrap overflow-hidden'}
+        >
           {working && activePresentation ? (
             <TraceIcon>
               <activePresentation.icon />
@@ -49,7 +58,7 @@ export function ToolGroup(props: { tools: ToolItem[]; working: boolean }) {
           ) : (
             <TraceIcon>{failed ? <CircleAlertIcon /> : <CheckIcon />}</TraceIcon>
           )}
-          <TraceTitle>
+          <TraceTitle className={working ? undefined : 'max-w-full'}>
             {working && activePresentation ? (
               activePresentation.sentence
             ) : (
@@ -59,10 +68,21 @@ export function ToolGroup(props: { tools: ToolItem[]; working: boolean }) {
               </>
             )}
           </TraceTitle>
-          {working && (
+          {working ? (
             <TraceDescription>
               {completedCount}/{tools.length}
             </TraceDescription>
+          ) : (
+            <>
+              <span aria-hidden="true" className="flex shrink-0 items-center gap-xs text-text-2">
+                {stepIcons.map((Icon) => (
+                  <Icon key={Icon.displayName ?? Icon.name} className="size-3.5" />
+                ))}
+              </span>
+              <TraceDescription className="shrink-0">
+                {doneText(tools.length - failedCount, failedCount)}
+              </TraceDescription>
+            </>
           )}
         </TraceLine>
       </TraceCollapsibleTrigger>

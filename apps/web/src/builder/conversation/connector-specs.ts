@@ -58,6 +58,7 @@ const TOOL_FAILED = 'Não conseguiu ler o sistema da empresa.'
 /** The words of a room that has read no catalog and draws no conversation: ids for names, the plain failure for refusals. */
 export const PLAIN_WORDS: ConnectorWords = {
   name: (connector) => connector,
+  logoOf: () => undefined,
   refusal: () => TOOL_FAILED,
 }
 

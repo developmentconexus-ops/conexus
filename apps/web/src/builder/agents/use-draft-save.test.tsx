@@ -24,10 +24,11 @@ function isDisabled(button: HTMLElement) {
 
 test('duas gravações seguidas da mesma pessoa levam o revision que a anterior devolveu', async () => {
   const hub = at(PAGE, { agents: [agent({ revision: 3 })] })
-  const panel = await screen.findByRole('region', { name: 'Configuração' })
-  const memory = await within(panel).findByRole('switch', { name: 'Memória observacional' })
+  const memory = await screen.findByRole('switch', { name: 'Memória observacional' })
   fireEvent.click(memory)
-  fireEvent.click(await within(panel).findByRole('switch', { name: 'Lê a web' }))
+  const field = screen.getByRole('textbox', { name: 'Instruções' })
+  fireEvent.change(field, { target: { value: 'Seja breve.' } })
+  fireEvent.blur(field)
   await waitFor(() => expect(hub.writes()).toHaveLength(2))
   expect(hub.writes().map((one) => DraftPatch.parse(one.body).revision)).toEqual([3, 4])
   expect(screen.queryByText(OLD)).toBeNull()
@@ -45,7 +46,7 @@ test('ligar a Matriz e logo a Filial, antes de a primeira gravação voltar, gra
     ],
   })
   const links = await screen.findByRole('region', { name: 'Ligações' })
-  fireEvent.click(within(links).getByRole('switch', { name: 'Sankhya · Matriz' }))
+  fireEvent.click(await within(links).findByRole('switch', { name: 'Sankhya · Matriz' }))
   fireEvent.click(within(links).getByRole('switch', { name: 'Sankhya · Filial' }))
   await waitFor(() => expect(hub.writes()).toHaveLength(2))
   expect(DraftPatch.parse(hub.writes()[1]?.body).connections).toEqual([MATRIZ, FILIAL])
@@ -82,7 +83,7 @@ test('três ligações seguidas, com a segunda gravação em voo, gravam as trê
   function on(name: string) {
     return within(links).getByRole('switch', { name }).getAttribute('aria-checked')
   }
-  fireEvent.click(within(links).getByRole('switch', { name: 'Sankhya · Matriz' }))
+  fireEvent.click(await within(links).findByRole('switch', { name: 'Sankhya · Matriz' }))
   fireEvent.click(within(links).getByRole('switch', { name: 'Sankhya · Filial' }))
   await waitFor(() => expect(hub.writes()).toHaveLength(2))
   await waitFor(() => expect(on('Sankhya · Filial')).toBe('true'))
@@ -102,7 +103,7 @@ test('três ferramentas tiradas seguidas, com a segunda gravação em voo, não 
       id: ToolId.parse(`${digit.repeat(8)}-bbbb-4bbb-8bbb-${digit.repeat(12)}`),
       slug,
       latest: { id: versionId, number: 1 },
-      version: { ...base.version, id: versionId },
+      version: { ...base.version, id: versionId, description: slug },
     }
   }
   const held = agent({ tools: [tool('1', 'um'), tool('2', 'dois'), tool('3', 'tres')] })
@@ -148,12 +149,12 @@ test('a gravação das instruções falha, outra seção grava, e o aviso fica n
   fireEvent.change(field, { target: { value: 'Texto novo que não gravou.' } })
   fireEvent.blur(field)
   expect(await within(section).findByRole('alert')).toBeTruthy()
-  fireEvent.click(screen.getByRole('switch', { name: 'Lê a web' }))
+  fireEvent.click(screen.getByRole('switch', { name: 'Memória observacional' }))
   await waitFor(() => expect(hub.writes()).toHaveLength(2))
   await waitFor(() =>
-    expect(screen.getByRole('switch', { name: 'Lê a web' }).getAttribute('aria-checked')).toBe(
-      'true',
-    ),
+    expect(
+      screen.getByRole('switch', { name: 'Memória observacional' }).getAttribute('aria-checked'),
+    ).toBe('false'),
   )
   expect(within(section).getByRole('alert').textContent).toBe(
     'Não confirmamos a gravação. Confira o painel e tente de novo.',
@@ -176,7 +177,7 @@ test('Usar as escolhidas espera a lista chegar, e mantém a escolhida que a list
           : undefined,
     },
   })
-  fireEvent.click(await screen.findByRole('button', { name: 'Escolher' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Adicionar da biblioteca' }))
   const dialog = await screen.findByRole('dialog')
   function use() {
     return within(dialog).getByRole('button', { name: 'Usar as escolhidas' })
@@ -205,10 +206,13 @@ test('o que a pessoa digita enquanto a gravação anterior está em voo fica no 
   const field = within(section).getByRole('textbox', { name: 'Instruções' })
   fireEvent.change(field, { target: { value: 'Seja breve.' } })
   fireEvent.blur(field)
-  await waitFor(() => expect(section.getAttribute('aria-busy')).toBe('true'))
+  function busy() {
+    return section.querySelector('[aria-busy="true"]') !== null
+  }
+  await waitFor(() => expect(busy()).toBe(true))
   fireEvent.change(field, { target: { value: 'Seja breve. E educado.' } })
   release?.()
-  await waitFor(() => expect(section.getAttribute('aria-busy')).not.toBe('true'))
+  await waitFor(() => expect(busy()).toBe(false))
   expect(textOf(within(section).getByRole('textbox', { name: 'Instruções' }))).toBe(
     'Seja breve. E educado.',
   )

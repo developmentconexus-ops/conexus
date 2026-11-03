@@ -8,14 +8,12 @@ import { useState } from 'react'
 import { Button } from '../../ui/button.tsx'
 import { Field, FieldError, FieldLabel } from '../../ui/field.tsx'
 import { Input } from '../../ui/input.tsx'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select.tsx'
 import { Textarea } from '../../ui/textarea.tsx'
 import { reasonText } from './text.ts'
 
 type Refusal = { field: string | undefined; reason: string | undefined }
 type Local = { field: string; text: string }
-
-const SELECT =
-  'h-9 w-full rounded-control border border-line bg-surface px-sm text-base md:text-body'
 
 /** The fixed values the person typed, read as the contract reads them; what is not JSON says so. */
 function boundOf(text: string) {
@@ -73,34 +71,42 @@ function Where(props: {
     <>
       <Field>
         <FieldLabel htmlFor="tool-connection">Ligação</FieldLabel>
-        <select
-          id="tool-connection"
-          className={SELECT}
+        <Select
           value={props.connectionId}
-          onChange={(event) => props.onConnection(event.target.value)}
+          items={props.offered.map((one) => ({ value: one.connectionId, label: one.name }))}
+          onValueChange={(next) => next !== null && props.onConnection(next)}
         >
-          {props.offered.map((one) => (
-            <option key={one.connectionId} value={one.connectionId}>
-              {one.name}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger id="tool-connection">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {props.offered.map((one) => (
+              <SelectItem key={one.connectionId} value={one.connectionId}>
+                {one.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <FieldError>{props.say('connectionId')}</FieldError>
       </Field>
       <Field>
         <FieldLabel htmlFor="tool-operation">Leitura</FieldLabel>
-        <select
-          id="tool-operation"
-          className={SELECT}
+        <Select
           value={props.operation}
-          onChange={(event) => props.onOperation(event.target.value)}
+          items={reads.map((read) => ({ value: read.operation, label: read.label }))}
+          onValueChange={(next) => next !== null && props.onOperation(next)}
         >
-          {reads.map((read) => (
-            <option key={read.operation} value={read.operation}>
-              {read.summary}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger id="tool-operation">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {reads.map((read) => (
+              <SelectItem key={read.operation} value={read.operation}>
+                {read.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <FieldError>{props.say('operation')}</FieldError>
       </Field>
       <Field>
@@ -240,7 +246,11 @@ export function ToolForm(props: {
         </p>
       )}
       <div className="flex flex-wrap gap-md">
-        <Button type="submit" disabled={props.pending || connectionId === undefined}>
+        <Button
+          type="submit"
+          variant="primary"
+          disabled={props.pending || connectionId === undefined}
+        >
           {props.pending ? 'Gravando…' : props.submitLabel}
         </Button>
         <Button type="button" variant="ghost" disabled={props.pending} onClick={props.onCancel}>

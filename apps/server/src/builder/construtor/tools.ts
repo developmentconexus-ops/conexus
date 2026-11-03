@@ -3,7 +3,10 @@ import type {
   AutomationId,
   FailureCode,
   ProjectId,
+  ProjectReadResult,
   ReadyTool,
+  TestedResult,
+  ToolSearchResult,
   ToolSummary,
 } from '@conexus/hub-api'
 import {
@@ -26,7 +29,6 @@ import { Failure, logFailure } from '../../platform/failure.ts'
 import type { AgentService } from '../agents/public.ts'
 import type { InProject, OfferedConnection, Tools } from '../tools/public.ts'
 import type { AppTable } from './app-tables.ts'
-import type { Tested } from './test-draft.ts'
 
 type Refused = { kind: 'REFUSED'; code: FailureCode; field?: string }
 
@@ -40,7 +42,7 @@ export type ConstrutorDeps = {
     app: { tables: AppTable[] } | null
   }>
   automations: (scope: InProject) => Promise<{ id: AutomationId; name: string; prompt: string }[]>
-  test: (scope: InProject, agentId: AgentId, question: string) => Promise<Tested>
+  test: (scope: InProject, agentId: AgentId, question: string) => Promise<TestedResult>
   log: FailureLog
 }
 
@@ -99,10 +101,11 @@ function projectRead(deps: ConstrutorDeps, scope: InProject) {
     description:
       'Reads this Project: its name, the connections it received with what each reads, whether it has an app and the tables of the app (names and columns, never a row), and its agents with their state.',
     inputSchema: z.object({}),
-    execute: async () => ({
-      ...(await deps.project(scope)),
-      agents: await deps.agents.list(scope),
-    }),
+    execute: async () =>
+      ({
+        ...(await deps.project(scope)),
+        agents: await deps.agents.list(scope),
+      }) satisfies Omit<ProjectReadResult, 'offered'> & { offered: readonly OfferedConnection[] },
   })
 }
 
@@ -120,7 +123,7 @@ function toolSearch(deps: ConstrutorDeps, scope: InProject) {
         automations: (await deps.automations(scope)).filter((each) =>
           matches(query, each.name, each.prompt),
         ),
-      }
+      } satisfies ToolSearchResult
     },
   })
 }

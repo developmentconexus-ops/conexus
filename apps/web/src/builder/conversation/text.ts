@@ -94,3 +94,31 @@ export function durationOf(seconds: number): string {
   if (minutes < 60) return `${minutes} min ${rest} s`
   return `${Math.floor(minutes / 60)} h ${String(minutes % 60).padStart(2, '0')} min`
 }
+
+/** How many tools: "Nenhuma ferramenta", "1 ferramenta", "3 ferramentas". */
+export function toolsText(count: number): string {
+  if (count === 0) return 'Nenhuma ferramenta'
+  return count === 1 ? '1 ferramenta' : `${count} ferramentas`
+}
+
+export function automationsText(count: number): string {
+  return count === 1 ? '1 automação' : `${count} automações`
+}
+
+export function tablesText(count: number): string {
+  return count === 1 ? 'app com 1 tabela' : `app com ${count} tabelas`
+}
+
+/** The tools an agent test called, said under its answer. */
+export function calledText(count: number): string {
+  return count === 1 ? 'Chamou 1 ferramenta' : `Chamou ${count} ferramentas`
+}
+
+/** A library tool that is not made yet: the connector's ready read. */
+export const READY_TOOL = 'pronta'
+
+/** What a group of steps counts, closed: "3 feitos", "2 feitos, 1 falhou". */
+export function doneText(done: number, failed: number): string {
+  const made = `${done} ${done === 1 ? 'feito' : 'feitos'}`
+  return failed === 0 ? made : `${made}, ${failed} ${failed === 1 ? 'falhou' : 'falharam'}`
+}

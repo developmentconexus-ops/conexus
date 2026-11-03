@@ -109,7 +109,8 @@ function ToolSwitches(props: { place: ComposerPlace; choice: Choice }) {
   )
 }
 
-function Logo({ logo }: { logo: string | undefined }) {
+/** The connector's logo plate, or its empty place before the catalog is read. */
+export function Logo({ logo }: { logo: string | undefined }) {
   return logo === undefined ? (
     <span className="size-5 shrink-0" />
   ) : (

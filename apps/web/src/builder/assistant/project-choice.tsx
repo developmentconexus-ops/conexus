@@ -36,7 +36,7 @@ function NoProjectChip() {
 }
 
 /** The Projeto a conversation lives in, fixed: its folder and, once the Hub has answered, its name. */
-function FixedProjectChip(props: { companyId: CompanyId; projectId: ProjectId }) {
+export function FixedProjectChip(props: { companyId: CompanyId; projectId: ProjectId }) {
   const project = useQuery(projectQuery(props.companyId, props.projectId)).data?.project
   return (
     <span className={cn(CHIP, 'inline-flex items-center')}>

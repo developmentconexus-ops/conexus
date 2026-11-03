@@ -1,4 +1,4 @@
-import type { ConstrutorResult, FailureCode, ProposedAutomation, ShownFile } from '@conexus/hub-api'
+import type { AgentId, FailureCode, ProposedAutomation, ShownFile } from '@conexus/hub-api'
 import type { ReactNode } from 'react'
 import { createContext, useContext } from 'react'
 import { ASSISTANT_OVERRIDES } from './assistant-specs.ts'
@@ -27,8 +27,10 @@ export type Room = {
   createApp?: (summary: string) => void
   /** Draws **Criar automação** for the proposal of the call `toolCallId`; none in the Builder's conversation. */
   automationCard?: (proposal: { proposed: ProposedAutomation; toolCallId: string }) => ReactNode
-  /** Draws the card of the draft `agent_draft` or `agent_set` answered; none outside the Construtor's conversation. */
-  agentCard?: (result: ConstrutorResult) => ReactNode
+  /** Shows the draft `agent_draft` or `agent_set` saved beside the chat: by a call of the answer, or by a tap of its line; none outside the Construtor's conversation. */
+  openAgent?: (agentId: AgentId, by: 'CALL' | 'TAP') => void
+  /** The agent now open, for its row to say so; `undefined` until one is. */
+  openedAgent?: AgentId
   /** The rows this room draws differently from the table. */
   overrides: Partial<Record<RowTool, ToolSpec>>
   /** A turn's failures this room says in its own sentence: the Assistant has no model to choose. */

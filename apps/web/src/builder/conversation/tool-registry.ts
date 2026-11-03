@@ -21,6 +21,7 @@ import type { Room } from './room.ts'
 import type { ToolItem } from './rows.ts'
 import { stringArg } from './tool-args.ts'
 import type { Presented, RowTool, ToolSpec, ToolStatus } from './tool-spec.ts'
+import { headOf } from './tool-spec.ts'
 
 export type { ToolBody, ToolSpec, ToolStatus } from './tool-spec.ts'
 
@@ -294,14 +295,7 @@ export function presentTool(
   if (spec === undefined) return unknownTool(tool.toolName, status)
   if (spec.present !== undefined) return spec.present(tool, status, room.connectors)
   const detail = spec.detailKey === undefined ? undefined : stringArg(tool.args, spec.detailKey)
-  const head =
-    status === 'denied'
-      ? 'Não pôde'
-      : failed
-        ? spec.failed
-        : status === 'running'
-          ? spec.running
-          : spec.done
+  const head = headOf(spec, status)
   const beside = spec.detailBeside === true && !failed && detail !== undefined
   const sentence = detail === undefined || beside ? head : `${head} ${detail}`
   return { icon: failed ? CircleAlertIcon : spec.icon, sentence, detail, beside }

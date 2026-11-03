@@ -7,16 +7,18 @@ import { z } from 'zod'
 import { TurnKey } from '../../hub/connectors/public.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { Turn } from '../model-accounts/public.ts'
+import { setTurn, turnIn } from '../model-accounts/public.ts'
 
 const Session = z.object({ sessionId: ConversationId })
 
 /**
  * A controller's turns by session, and the one owner of their end (code C26): a run takes its turn
  * in the accounts' queue (step 11) as Mastra reads its input, by the controller's `take`; every run
- * reads its input, Mastra skips it only on a resume. The turn lets go of its accounts when the
+ * reads its input, and a resumed one takes it at its first step. The turn lets go of its accounts when the
  * controller says the run ended (`agent_end`), for every end: done, failed, stopped by Parar or by
  * the Hub's end, and then `ended` runs; a deleted session's run ends without one, so its deletion
- * lets go too. `take` answers `undefined` for a run that is not one of its conversations.
+ * lets go too. `take` answers `undefined` for a run that is not one of its conversations; the turn it
+ * answers is put on the run's context here, once, so no `take` has to.
  */
 export function sessionTurns(options: {
   id: string
@@ -30,15 +32,29 @@ export function sessionTurns(options: {
     held.delete(sessionId)
   }
 
+  async function takeFor(
+    requestContext: RequestContext | undefined,
+    abort: (reason: string) => never,
+  ): Promise<void> {
+    const session = Session.safeParse(requestContext?.get('controller'))
+    if (requestContext === undefined || !session.success) return abort('CONVERSATION_NOT_FOUND')
+    const turn = await options.take(requestContext)
+    if (turn === undefined) return abort('CONVERSATION_NOT_FOUND')
+    setTurn(requestContext, turn)
+    held.set(session.data.sessionId, turn)
+  }
+
   const processor: InputProcessor = {
     id: options.id,
     async processInput({ requestContext, messages, abort }) {
-      const session = Session.safeParse(requestContext?.get('controller'))
-      if (requestContext === undefined || !session.success) return abort('CONVERSATION_NOT_FOUND')
-      const turn = await options.take(requestContext)
-      if (turn === undefined) return abort('CONVERSATION_NOT_FOUND')
-      held.set(session.data.sessionId, turn)
+      await takeFor(requestContext, abort)
       return messages
+    },
+    // A run Mastra resumes (an answered card) reads no input: its first step takes the turn.
+    async processInputStep({ requestContext, abort }) {
+      if (requestContext === undefined || turnIn(requestContext) === undefined)
+        await takeFor(requestContext, abort)
+      return {}
     },
   }
 

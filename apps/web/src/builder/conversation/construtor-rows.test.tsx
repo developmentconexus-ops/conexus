@@ -1,4 +1,4 @@
-import { AGENT_TOOL, BUILDER_TOOL, CONSTRUTOR_TOOL } from '@conexus/hub-api'
+import { AGENT_TOOL, BUILDER_TOOL, CONSTRUTOR_TOOL, ConnectionId } from '@conexus/hub-api'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { expect, test } from 'vitest'
 import { wordsOf } from './connector-words.ts'
@@ -19,20 +19,51 @@ function draftRow(toolName: string): ToolItem {
   }
 }
 
+const CONNECTION = '11111111-1111-4111-8111-111111111111'
+const PROJECT = 'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4'
+const TOOL = '33333333-3333-4333-8333-333333333333'
+const VERSION = '44444444-4444-4444-8444-444444444444'
+const AGENT = '55555555-5555-4555-8555-555555555555'
+
 const REFUSED = { kind: 'REFUSED', code: 'AGENT_DRAFT_INVALID' }
 
-test('agent_draft e agent_set desenham o cartão do quarto no lugar da linha, sem o nome da ferramenta', () => {
-  for (const toolName of [CONSTRUTOR_TOOL.agentDraft, CONSTRUTOR_TOOL.agentSet]) {
-    const room = { ...agentRoom('Construtor'), agentCard: () => <p>cartão do rascunho</p> }
+test('agent_draft e agent_set salvos são uma linha que abre o rascunho ao lado, com o nome do agente', () => {
+  for (const [toolName, line] of [
+    [CONSTRUTOR_TOOL.agentDraft, 'Montou o rascunho do agente'],
+    [CONSTRUTOR_TOOL.agentSet, 'Ajustou o rascunho do agente'],
+  ] as const) {
+    const opened: string[] = []
+    const room = { ...agentRoom('Construtor'), openAgent: (id: string) => opened.push(id) }
     const { unmount } = render(
       <RoomContext.Provider value={room}>
-        <ToolRow tool={{ ...draftRow(toolName), result: REFUSED }} />
+        <ToolRow
+          tool={{
+            ...draftRow(toolName),
+            result: { kind: 'SAVED', agent: { id: AGENT, name: 'Vendas' } },
+          }}
+        />
       </RoomContext.Provider>,
     )
-    expect(screen.getByText('cartão do rascunho')).toBeTruthy()
+    // Heard as it ran or read with none open: it opens by itself; the click opens it again.
+    expect(screen.getByText(line)).toBeTruthy()
+    expect(screen.getByText('Vendas')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: new RegExp(line) }))
+    expect(opened.at(-1)).toBe(AGENT)
     expect(screen.queryByText(/Agent (draft|set)/)).toBeNull()
     unmount()
   }
+})
+
+test('agent_draft recusado diz a frase de falha, sem abrir nada', () => {
+  const opened: string[] = []
+  const room = { ...agentRoom('Construtor'), openAgent: (id: string) => opened.push(id) }
+  render(
+    <RoomContext.Provider value={room}>
+      <ToolRow tool={{ ...draftRow(CONSTRUTOR_TOOL.agentDraft), result: REFUSED }} />
+    </RoomContext.Provider>,
+  )
+  expect(screen.getByText('Não conseguiu montar o rascunho')).toBeTruthy()
+  expect(opened).toEqual([])
 })
 
 test('enquanto roda, agent_draft diz o que faz', () => {
@@ -106,7 +137,14 @@ test('uma ferramenta que deu erro diz a frase de falha (F-A1)', () => {
 })
 
 test('a conversa do Construtor e a do agente nomeiam o conector pelo catálogo (F-A2)', () => {
-  const words = wordsOf([{ id: 'sankhya', name: 'Sankhya', auth: 'oauth2_code' }])
+  const words = wordsOf([
+    {
+      id: 'sankhya',
+      name: 'Sankhya',
+      auth: 'oauth2_code',
+      logo: 'data:image/svg+xml;base64,PHN2Zy8+',
+    },
+  ])
   const read = {
     ...draftRow(BUILDER_TOOL.connectorRead),
     args: { operation: 'sankhya.consultar', connection: 'Matriz' },
@@ -136,4 +174,83 @@ test('a linha aberta de agent_read titula em português, nunca pelo nome da ferr
   fireEvent.click(screen.getByRole('button', { name: /Leu o rascunho do agente/ }))
   expect(screen.getAllByText('Leu o rascunho do agente')).toHaveLength(2)
   expect(screen.queryByText('Agent read')).toBeNull()
+})
+
+const CATALOG = wordsOf(
+  [
+    {
+      id: 'sankhya',
+      name: 'Sankhya',
+      auth: 'oauth2_code',
+      logo: 'data:image/svg+xml;base64,PHN2Zy8+',
+    },
+  ],
+  [{ id: ConnectionId.parse(CONNECTION), connector: 'sankhya' }],
+)
+
+function inRoom(tool: ToolItem) {
+  return render(
+    <RoomContext.Provider value={agentRoom('Construtor', CATALOG)}>
+      <ToolRow tool={tool} />
+    </RoomContext.Provider>,
+  )
+}
+
+test('Olhou o Projeto diz as ligações e o app ao lado', () => {
+  const read = {
+    project: { id: PROJECT, name: 'Vendas' },
+    offered: [{ connectionId: CONNECTION, connector: 'sankhya', name: 'Matriz', reads: [] }],
+    app: { tables: [{ name: 'pedidos', columns: ['id'] }] },
+    agents: [],
+  }
+  inRoom({ ...draftRow(CONSTRUTOR_TOOL.projectRead), result: read })
+  expect(screen.getByText('Olhou o Projeto')).toBeTruthy()
+  expect(screen.getByText('Sankhya · Matriz, app com 1 tabela')).toBeTruthy()
+})
+
+test('Procurou ferramentas diz quantas e, aberta, lista cada uma sem o slug', () => {
+  const found = {
+    tools: [
+      {
+        id: TOOL,
+        slug: 'pedidos_matriz',
+        connectionId: CONNECTION,
+        operation: 'pedidos',
+        description: 'Pedidos',
+        effect: 'READ',
+        latest: { id: VERSION, number: 1 },
+        usedBy: [],
+      },
+    ],
+    ready: [
+      {
+        connectionId: CONNECTION,
+        operation: 'clientes',
+        label: 'Clientes',
+        summary: 'Os clientes',
+        slug: 'clientes_matriz',
+      },
+    ],
+    automations: [],
+  }
+  inRoom({ ...draftRow(CONSTRUTOR_TOOL.toolSearch), result: found })
+  expect(screen.getByText('2 ferramentas')).toBeTruthy()
+  fireEvent.click(screen.getByRole('button', { name: /Procurou ferramentas/ }))
+  expect(screen.getByText('Pedidos')).toBeTruthy()
+  expect(screen.getByText('v1')).toBeTruthy()
+  expect(screen.getByText('Clientes')).toBeTruthy()
+  expect(screen.getByText('pronta')).toBeTruthy()
+  expect(screen.queryByText('pedidos_matriz')).toBeNull()
+})
+
+test('Testou o agente diz a pergunta ao lado e, aberta, a resposta', () => {
+  inRoom({
+    ...draftRow(CONSTRUTOR_TOOL.agentTest),
+    args: { agentId: AGENT, question: 'Quanto vendemos?' },
+    result: { kind: 'ANSWERED', text: 'Vendemos **12** pedidos.', tools: ['tool_pedidos'] },
+  })
+  expect(screen.getByText('Quanto vendemos?')).toBeTruthy()
+  fireEvent.click(screen.getByRole('button', { name: /Testou o agente/ }))
+  expect(screen.getByText('12')).toBeTruthy()
+  expect(screen.getByText('Chamou 1 ferramenta')).toBeTruthy()
 })

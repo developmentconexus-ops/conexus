@@ -1,11 +1,13 @@
 import { z } from 'zod'
-import { AgentDetail } from './agents.ts'
+import { AgentDetail, AgentListed, AgentSummary, OfferedConnection } from './agents.ts'
+import { AutomationId } from './assistant.ts'
 import { CompanyId } from './companies.ts'
 import { ConversationId } from './conversations.ts'
 import type { FailureCode } from './failures.ts'
 import { Problem } from './failures.ts'
 import { ATTEMPT_KEY_HEADER, defineOperation } from './operation.ts'
 import { ProjectId } from './projects.ts'
+import { ReadyTool, ToolSummary } from './tools.ts'
 
 /** The key of the Construtor's controller in Mastra's routes (`/agent-controller/construtor/…`), step 24.3. */
 export const CONSTRUTOR_CONTROLLER = 'construtor'
@@ -33,6 +35,39 @@ export const ConstrutorResult = z.discriminatedUnion('kind', [
   }),
 ])
 export type ConstrutorResult = z.infer<typeof ConstrutorResult>
+
+/** What a screen needs of a draft the Construtor saved: which agent, by name; the live draft is read by its id. */
+export const DraftRef = z.object({
+  kind: z.literal('SAVED'),
+  agent: AgentSummary.pick({ id: true, name: true }),
+})
+export type DraftRef = z.infer<typeof DraftRef>
+
+/** What project_read answers the model: the Projeto, what it offers, its app's tables and its agents. */
+export const ProjectReadResult = z.object({
+  project: z.object({ id: ProjectId, name: z.string() }),
+  offered: z.array(OfferedConnection),
+  app: z
+    .object({ tables: z.array(z.object({ name: z.string(), columns: z.array(z.string()) })) })
+    .nullable(),
+  agents: z.array(AgentListed),
+})
+export type ProjectReadResult = z.infer<typeof ProjectReadResult>
+
+/** What tool_search answers the model: the library's tools, the ready reads and the automations that match. */
+export const ToolSearchResult = z.object({
+  tools: z.array(ToolSummary),
+  ready: z.array(ReadyTool),
+  automations: z.array(z.object({ id: AutomationId, name: z.string(), prompt: z.string() })),
+})
+export type ToolSearchResult = z.infer<typeof ToolSearchResult>
+
+/** What agent_test answers the model: the draft's answer and the tools it called, or the refusal. */
+export const TestedResult = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('ANSWERED'), text: z.string(), tools: z.array(z.string()) }),
+  z.object({ kind: z.literal('REFUSED'), code: Problem.shape.code, field: z.string().optional() }),
+])
+export type TestedResult = z.infer<typeof TestedResult>
 
 /** A conversation of the person's with the Construtor, in one Projeto. */
 export const ConstrutorConversationSummary = z.object({

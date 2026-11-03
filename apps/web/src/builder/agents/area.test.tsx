@@ -58,7 +58,7 @@ test('as conversas anteriores com o Construtor aparecem em lista', async () => {
       { id: BUILDER_CHAT, title: 'Agente de vendas', updatedAt: '2026-11-02T12:00:00.000Z' },
     ],
   })
-  const link = await screen.findByRole('link', { name: 'Agente de vendas' })
+  const link = await screen.findByRole('link', { name: /^Agente de vendas/ })
   expect(link.getAttribute('href')).toBe(`${AREA}/construtor/${BUILDER_CHAT}`)
 })
 
@@ -84,14 +84,28 @@ test('a lista que falha ao ler diz a frase da falha, e Tentar de novo lê outra 
   expect(await screen.findByRole('link', { name: /Conferente de metas/ })).toBeTruthy()
 })
 
-test('no celular a área tem duas abas, Construtor e Agentes', async () => {
+test('no celular a área é uma coluna, sem abas, e o agente está na lista', async () => {
   await onPhone(async () => {
     at(AREA, { agents: [agent()] })
-    const agents = await screen.findByRole('tab', { name: 'Agentes' })
-    expect(screen.getByRole('tab', { name: 'Construtor' })).toBeTruthy()
-    fireEvent.click(agents)
     expect(await screen.findByRole('link', { name: /Conferente de metas/ })).toBeTruthy()
+    expect(screen.queryByRole('tab')).toBeNull()
+    expect(screen.getByRole('textbox', { name: 'Mensagem para o Construtor' })).toBeTruthy()
+    expect(screen.getAllByRole('heading', { name: 'Agentes' })).toHaveLength(2)
   })
+})
+
+test('a linha do agente mostra o que ele faz e as ferramentas', async () => {
+  at(AREA, { agents: [agent()] })
+  const link = await screen.findByRole('link', { name: /Conferente de metas/ })
+  expect(link.textContent).toBe(
+    'Conferente de metasCompara as vendas de ontem com as metas.1 ferramentaRascunho',
+  )
+})
+
+test('publicado com mudanças mostra os dois estados', async () => {
+  at(AREA, { agents: [agent({ state: { kind: 'PUBLISHED', version: 1, changed: true } })] })
+  expect(await screen.findByText('Versão 1 · publicada')).toBeTruthy()
+  expect(screen.getByText('Rascunho com mudanças')).toBeTruthy()
 })
 
 test('abrir a conversa com o Construtor sem conta para o modelo diz a frase com o caminho das contas', async () => {

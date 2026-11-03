@@ -38,9 +38,15 @@ import {
   threadsByMarks,
   turnKeyOn,
 } from '../controller-kit/public.ts'
-import { conversationMemory, sessionModel, toolsOf, turnOfOwner } from '../conversation/public.ts'
+import {
+  ASK_USER_TOOL,
+  conversationMemory,
+  createAskUserTool,
+  sessionModel,
+  toolsOf,
+  turnOfOwner,
+} from '../conversation/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
-import { setTurn } from '../model-accounts/public.ts'
 import type { InProject } from '../tools/public.ts'
 import { databaseScopeOf, sessionScopeOf } from '../tools/public.ts'
 import { CONSTRUTOR_MARK } from './open.ts'
@@ -65,14 +71,15 @@ const CACHED = { anthropic: { cacheControl: { type: 'ephemeral', ttl: '1h' } } }
 
 /**
  * The closed set the mode offers the model (criterion 22): the layer that enforces it. It holds
- * none of the controller's own tools, so all are off, and none of these publishes or writes in a
- * company's system.
+ * of the controller's own tools only `ask_user` (the ideas it proposes as a question card), and none
+ * of these publishes or writes in a company's system.
  */
 const AVAILABLE_TOOLS: readonly string[] = [
   BUILDER_TOOL.connectorRead,
   BUILDER_TOOL.connectorNotes,
   BUILDER_TOOL.webFetch,
   BUILDER_TOOL.webSearch,
+  ASK_USER_TOOL,
   ...Object.values(CONSTRUTOR_TOOL),
 ]
 
@@ -221,7 +228,6 @@ export function createConstrutor(deps: Deps) {
       const scope = await scopeOf(requestContext)
       if (scope === undefined) return undefined
       const turn = await turnOfOwner(queue, scope)
-      setTurn(requestContext, turn)
       turnKey.start(requestContext)
       return turn
     },
@@ -231,6 +237,7 @@ export function createConstrutor(deps: Deps) {
   const controller = controllerOf({
     ...{ kind: 'construtor', storage, memory, agent },
     mode: { id: MODE, availableTools: AVAILABLE_TOOLS },
+    tools: { [ASK_USER_TOOL]: createAskUserTool() },
     initialState: { yolo: true },
   })
   turns.watch(controller)

@@ -7,7 +7,7 @@ import { buttonVariants, touchArea } from '../../ui/button.tsx'
 import { cn } from '../../ui/cn.ts'
 import { Notice } from '../../ui/notice.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
-import { ModelPicker } from '../model-accounts/public.ts'
+import { ModelPicker, modelLabel } from '../model-accounts/public.ts'
 import type { SessionRead } from './queries.ts'
 import { sessionReadQuery } from './queries.ts'
 import type { Controller } from './session.ts'
@@ -129,5 +129,14 @@ export function ComposerModelPicker(props: {
       onChange={pickModel}
       effort={{ value: effort, onChange: (next) => props.onChange({ model: now, effort: next }) }}
     />
+  )
+}
+
+/** The model that answers, named and not changed: where the conversation's route does not take a choice (the Construtor's). */
+export function ComposerModelName({ model }: { model: ModelId }) {
+  return (
+    <span className="inline-flex h-8 min-w-0 items-center rounded-pill bg-surface-3 px-sm text-label font-medium">
+      <span className="truncate">{modelLabel(model)}</span>
+    </span>
   )
 }

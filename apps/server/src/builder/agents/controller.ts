@@ -32,7 +32,7 @@ import {
 import { conversationMemory, routedModel } from '../conversation/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import type { AgentDeps, AgentRun } from './agent.ts'
-import { agentOf, planOf, setAgentRun, takeAgentTurn } from './agent.ts'
+import { agentOf, agentTurnOf, planOf, setAgentRun } from './agent.ts'
 import type { AppDataPort } from './app-data.ts'
 import type { AgentEvent, AgentEvents } from './events.ts'
 import type { AgentReads, Registry } from './registry.ts'
@@ -104,7 +104,7 @@ function agentTurns(queue: QueueDeps, runOf: ReturnType<typeof runsOf>, resolved
       if (run === undefined) return undefined
       const { start } = await planOf(await resolvedOf(requestContext), requestContext)
       const model = { id: start.model, effort: start.effort }
-      return takeAgentTurn(queue, requestContext, { run, model })
+      return agentTurnOf(queue, requestContext, { run, model })
     },
   })
 }

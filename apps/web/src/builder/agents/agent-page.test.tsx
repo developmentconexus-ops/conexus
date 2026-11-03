@@ -2,10 +2,22 @@ import { FAILURES, PROBLEM_MEDIA_TYPE } from '@conexus/hub-api'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
+import { connectionOf } from '../../hub/connectors/fixtures.ts'
 import { COMPANY, problemOf } from '../../platform/fixtures.ts'
 import { hubServer, refusal } from '../../platform/test-hub.tsx'
+import { SANKHYA } from '../assistant/test-hub.tsx'
 import { choose, onPhone } from '../conversation/test-hub.tsx'
-import { AGENT, AREA, agent, OTHER_AGENT, TEST_CHAT, toolSummary, version } from './test-agents.ts'
+import {
+  AGENT,
+  AREA,
+  agent,
+  CHAT,
+  MATRIZ,
+  OTHER_AGENT,
+  TEST_CHAT,
+  toolSummary,
+  version,
+} from './test-agents.ts'
 import { agentScreens } from './test-hub.tsx'
 
 // A página do agente (step 24.3, U5, criteria 27 and 28).
@@ -16,7 +28,7 @@ const OLD = 'Outra pessoa ou o Construtor mudou este rascunho. Recarregue.'
 
 test('muda o modelo no painel, o servidor diz AGENT_DRAFT_STALE e a página mostra a frase', async () => {
   at(PAGE, { agents: [agent()], answers: { save: () => refusal('AGENT_DRAFT_STALE') } })
-  const panel = await screen.findByRole('region', { name: 'Configuração' })
+  const panel = await screen.findByRole('region', { name: 'Modelo' })
   await choose(await within(panel).findByRole('combobox', { name: 'Modelo' }), 'Claude Opus 4')
   expect(await screen.findByText(OLD)).toBeTruthy()
 })
@@ -42,7 +54,7 @@ test('Testar rascunho abre a conversa de teste com a faixa', async () => {
 
 test('Publicar pede a mensagem e mostra a versão', async () => {
   const hub = at(PAGE, { agents: [agent()] })
-  fireEvent.click(await screen.findByRole('button', { name: 'Publicar' }))
+  fireEvent.click(await screen.findByRole('button', { name: /^Publicar v\d/ }))
   fireEvent.change(await screen.findByRole('textbox', { name: 'Mensagem da versão' }), {
     target: { value: 'Primeira' },
   })
@@ -77,8 +89,8 @@ test('as ferramentas escolhidas aparecem, e a lista de Escolher traz as que o Pr
   expect(
     await screen.findByText('Nenhuma ferramenta. Peça ao Construtor, escolha ou crie aqui.'),
   ).toBeTruthy()
-  fireEvent.click(screen.getByRole('button', { name: 'Escolher' }))
-  expect(await screen.findByRole('checkbox', { name: /vendas_de_ontem/ })).toBeTruthy()
+  fireEvent.click(screen.getByRole('button', { name: 'Adicionar da biblioteca' }))
+  expect(await screen.findByRole('switch', { name: /Vendas de ontem por vendedor\./ })).toBeTruthy()
 })
 
 test('o membro: o endereço do agente dá não encontrado', async () => {
@@ -93,7 +105,8 @@ test('um agente apagado ou de outro Projeto dá a página de não encontrado', a
 
 test('Apagar pede confirmação com o aviso das conversas e das automações, e leva à área', async () => {
   const { conexus, writes } = at(PAGE, { agents: [agent()] })
-  fireEvent.click(await screen.findByRole('button', { name: 'Apagar' }))
+  fireEvent.click(await screen.findByRole('button', { name: /^Mais ações/ }))
+  fireEvent.click(await screen.findByRole('menuitem', { name: 'Apagar' }))
   const dialog = await screen.findByRole('alertdialog')
   expect(
     within(dialog).getByText(/conversas de todas as pessoas com ele e as automações que o rodam/),
@@ -123,7 +136,7 @@ test('a ferramenta é criada e a gravação do rascunho é recusada: o diálogo 
 
 test('Publicar na página com AGENT_DRAFT_STALE diz a frase de recarregar', async () => {
   at(PAGE, { agents: [agent()], answers: { publish: () => refusal('AGENT_DRAFT_STALE') } })
-  fireEvent.click(await screen.findByRole('button', { name: 'Publicar' }))
+  fireEvent.click(await screen.findByRole('button', { name: /^Publicar v\d/ }))
   const dialog = await screen.findByRole('dialog')
   fireEvent.click(within(dialog).getByRole('button', { name: 'Publicar versão' }))
   expect(await within(dialog).findByText(OLD)).toBeTruthy()
@@ -143,7 +156,7 @@ test('Publicar sem instruções diz o campo que falta, com a concordância certa
         ),
     },
   })
-  fireEvent.click(await screen.findByRole('button', { name: 'Publicar' }))
+  fireEvent.click(await screen.findByRole('button', { name: /^Publicar v\d/ }))
   const dialog = await screen.findByRole('dialog')
   fireEvent.click(within(dialog).getByRole('button', { name: 'Publicar versão' }))
   expect(await within(dialog).findByText('Faltam as instruções para publicar.')).toBeTruthy()
@@ -159,14 +172,147 @@ test('a seção Modelo diz a falha da leitura das contas, com Tentar de novo', a
   expect(within(model).getByRole('button', { name: 'Tentar de novo' })).toBeTruthy()
 })
 
-test('no celular, Versões fica no menu ⋯', async () => {
+test('no celular as abas são Configuração e Conversas, nessa ordem, e Versões é uma seção da página', async () => {
   await onPhone(async () => {
     at(PAGE, { agents: [agent()] })
-    fireEvent.click(await screen.findByRole('tab', { name: 'Configuração' }))
-    expect(screen.queryByRole('region', { name: 'Versões' })).toBeNull()
+    const tabs = await screen.findAllByRole('tab')
+    expect(tabs.map((one) => one.textContent)).toEqual(['Configuração', 'Conversas'])
+    expect(await screen.findByRole('region', { name: 'Versões' })).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Mais ações: Conferente de metas' }))
-    fireEvent.click(await screen.findByRole('menuitem', { name: 'Versões' }))
-    const dialog = await screen.findByRole('dialog')
-    expect(await within(dialog).findByText('Ainda não publicado.')).toBeTruthy()
+    expect((await screen.findAllByRole('menuitem')).map((one) => one.textContent)).toEqual([
+      'Apagar',
+    ])
   })
+})
+
+test('a configuração é a página: as seções são regiões e não há a seção Lê nem a coluna das conversas', async () => {
+  at(PAGE, { agents: [agent()] })
+  for (const name of ['Instruções', 'Modelo', 'Memória', 'Ferramentas', 'Ligações', 'Versões']) {
+    expect(await screen.findByRole('region', { name })).toBeTruthy()
+  }
+  expect(screen.queryByRole('region', { name: 'Lê' })).toBeNull()
+  expect(screen.queryByRole('complementary', { name: 'Conversas' })).toBeNull()
+})
+
+test('Cancelar desfaz a chave de Pesquisar na web: nada é gravado', async () => {
+  const hub = at(PAGE, { agents: [agent({ tools: [] })] })
+  const tools = await screen.findByRole('region', { name: 'Ferramentas' })
+  fireEvent.click(within(tools).getByRole('button', { name: 'Adicionar da biblioteca' }))
+  const dialog = await screen.findByRole('dialog')
+  fireEvent.click(await within(dialog).findByRole('switch', { name: 'Pesquisar na web' }))
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Cancelar' }))
+  await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+  expect(hub.writes()).toHaveLength(0)
+  expect(within(tools).queryByText('Pesquisar na web')).toBeNull()
+})
+
+test('Pesquisar na web é uma ferramenta: ligar a chave e Usar as escolhidas manda { web: true } e a linha aparece em Ferramentas', async () => {
+  const hub = at(PAGE, { agents: [agent({ tools: [] })] })
+  const tools = await screen.findByRole('region', { name: 'Ferramentas' })
+  fireEvent.click(within(tools).getByRole('button', { name: 'Adicionar da biblioteca' }))
+  const dialog = await screen.findByRole('dialog')
+  fireEvent.click(await within(dialog).findByRole('switch', { name: 'Pesquisar na web' }))
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Usar as escolhidas' }))
+  await waitFor(() => expect(hub.writes()).toHaveLength(1))
+  expect(hub.writes()[0]?.body).toMatchObject({ web: true })
+  expect(await within(tools).findByText('Pesquisar na web')).toBeTruthy()
+})
+
+test('com a leitura das ligações recusada, Ligações diz a falha em vez de calar o estado', async () => {
+  at(PAGE, { agents: [agent()] })
+  server.use(
+    http.get('*/api/companies/:companyId/connections', () => refusal('DATABASE_UNAVAILABLE')),
+  )
+  const connections = await screen.findByRole('region', { name: 'Ligações' })
+  expect(await within(connections).findByRole('button', { name: 'Tentar de novo' })).toBeTruthy()
+})
+
+test('a ligação mostra Funcionando', async () => {
+  at(PAGE, { agents: [agent()] })
+  server.use(
+    http.get('*/api/companies/:companyId/connections', () =>
+      HttpResponse.json({
+        connectors: [SANKHYA],
+        connections: [connectionOf({ id: MATRIZ, name: 'Matriz', state: 'ACTIVE' })],
+        mayManage: true,
+      }),
+    ),
+  )
+  const connections = await screen.findByRole('region', { name: 'Ligações' })
+  expect(await within(connections).findByText('Funcionando')).toBeTruthy()
+})
+
+test('Publicar diz a próxima versão', async () => {
+  at(PAGE, {
+    agents: [agent({ state: { kind: 'PUBLISHED', version: 1, changed: true } })],
+    versions: [version(1, true)],
+  })
+  expect(await screen.findByRole('button', { name: 'Publicar v2' })).toBeTruthy()
+})
+
+test('com a leitura das versões recusada, Publicar não promete um número', async () => {
+  at(PAGE, { agents: [agent()] })
+  server.use(
+    http.get(`*/api/companies/${COMPANY.id}/projects/*/agents/*/versions`, () =>
+      refusal('DATABASE_UNAVAILABLE'),
+    ),
+  )
+  expect(await screen.findByRole('button', { name: 'Publicar' })).toBeTruthy()
+  expect(screen.queryByRole('button', { name: /^Publicar v/ })).toBeNull()
+})
+
+test('Testar abre a conversa de teste no painel da direita', async () => {
+  const { conexus } = at(PAGE, { agents: [agent()] })
+  fireEvent.click(await screen.findByRole('button', { name: 'Testar' }))
+  await waitFor(() => expect(conexus.router.state.location.pathname).toContain(TEST_CHAT))
+  const panel = await screen.findByRole('region', { name: 'Testar' })
+  expect(await within(panel).findByText('Conversa de teste com o rascunho')).toBeTruthy()
+})
+
+test('as conversas da pessoa ficam na troca do painel', async () => {
+  const { conexus } = at(`${PAGE}/${TEST_CHAT}`, {
+    agents: [agent()],
+    conversations: [
+      {
+        id: CHAT,
+        agentId: AGENT,
+        draft: false,
+        title: 'Metas de ontem',
+        updatedAt: '2026-11-02T12:00:00.000Z',
+      },
+      {
+        id: TEST_CHAT,
+        agentId: AGENT,
+        draft: true,
+        title: '',
+        updatedAt: '2026-11-02T12:00:00.000Z',
+      },
+    ],
+  })
+  const panel = await screen.findByRole('region', { name: 'Testar' })
+  const switcher = await within(panel).findByRole('combobox', { name: 'Conversas' })
+  expect(switcher).toBeInstanceOf(HTMLInputElement)
+  function shown() {
+    return switcher instanceof HTMLInputElement ? switcher.value : ''
+  }
+  await waitFor(() => expect(shown()).toContain('Teste'))
+  expect(shown()).not.toMatch(/\d (min|h|d)$|ontem$/)
+  fireEvent.keyDown(switcher, {
+    key: 'ArrowDown',
+  })
+  const option = await screen.findByRole('option', { name: /Metas de ontem/ })
+  for (const event of ['pointerDown', 'mouseDown', 'pointerUp', 'mouseUp', 'click'] as const) {
+    fireEvent[event](option)
+  }
+  await waitFor(() => expect(conexus.router.state.location.pathname).toContain(CHAT))
+})
+
+test('o rascunho com mudanças aparece em Versões', async () => {
+  at(PAGE, {
+    agents: [agent({ state: { kind: 'PUBLISHED', version: 1, changed: true } })],
+    versions: [version(1, true)],
+  })
+  const list = await screen.findByRole('region', { name: 'Versões' })
+  expect(await within(list).findByText('Rascunho')).toBeTruthy()
+  expect(await within(list).findByText('Ativa')).toBeTruthy()
 })

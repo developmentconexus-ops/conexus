@@ -29,15 +29,7 @@ import {
 } from '../tools/public.ts'
 import type { AgentEvent } from './events.ts'
 import { invalidField, makeActive, published } from './publish.ts'
-import {
-  agentIn,
-  agentsIn,
-  chosenIds,
-  detailOf,
-  ofProject,
-  summaryOf,
-  versionsOf,
-} from './store.ts'
+import { agentIn, agentsIn, chosenIds, detailOf, listedOf, ofProject, versionsOf } from './store.ts'
 import { agent, agentTool, agentVersion } from './tables.ts'
 
 export type AgentsDeps = Pick<ToolsDeps, 'database' | 'identity' | 'liveProjectOf'> & {
@@ -95,7 +87,7 @@ async function create(deps: AgentsDeps, scope: InProject, body: CreateAgent, att
 async function list(deps: AgentsDeps, scope: InProject) {
   return deps.database.read(databaseScopeOf(scope), async (tx) => {
     await admitted(deps, tx, scope, 'readAgents')
-    return (await agentsIn(tx, scope)).map(summaryOf)
+    return listedOf(tx, await agentsIn(tx, scope))
   })
 }
 

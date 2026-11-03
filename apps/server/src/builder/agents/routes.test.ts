@@ -47,6 +47,10 @@ test('criar: 201 com o rascunho e os padrões; a mesma chave e o mesmo corpo dã
     agent.offered.map((each) => each.connectionId),
     [on.matriz],
   )
+  assert.equal(
+    agent.offered[0]?.reads.find((read) => read.operation === 'pedidos')?.label,
+    'Pedidos',
+  )
   const other = await post(on.hub, on.ana, on.agents, { name: 'Outro' }, key)
   assert.equal(other.statusCode, 409, other.body)
   assert.equal(codeOf(other), 'IDEMPOTENCY_CONFLICT')
@@ -161,6 +165,23 @@ test('as ferramentas do rascunho: escolher troca as ferramentas e sobe o revisio
     tools: [latest],
   })
   assert.deepEqual(fieldOf(lost), ['AGENT_TOOL_REFUSED', 'tools'])
+})
+
+test('a lista conta as ferramentas: cada agente traz quantas o rascunho tem, e zero sem nenhuma', async (t) => {
+  const on = await agentsOn(t)
+  const tool = await madeTool(on.hub, on.ana, on.tools, ordersOf(on.matriz))
+  const bare = await madeAgent(on.hub, on.ana, on.agents)
+  const equipped = await madeAgent(on.hub, on.ana, on.agents)
+  await drafted(on.hub, on.ana, on.agents, equipped, { tools: [tool.latest.id] })
+  const list = await call(on.hub, on.ana, 'GET', on.listed)
+  assert.equal(list.statusCode, 200, list.body)
+  assert.deepEqual(
+    Object(list.json()).agents.map((each: Agent & { tools: number }) => [each.id, each.tools]),
+    [
+      [bare.id, 0],
+      [equipped.id, 1],
+    ],
+  )
 })
 
 test('as recusas: o membro e um Projeto de outra empresa dão NOT_FOUND; o agente de outro Projeto, AGENT_NOT_FOUND; nome vazio ou acima de 80, REQUEST_MALFORMED', async (t) => {

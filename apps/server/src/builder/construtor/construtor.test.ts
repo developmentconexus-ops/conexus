@@ -1,6 +1,12 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { CONSTRUTOR_TOOL } from '@conexus/hub-api'
+import {
+  CONSTRUTOR_TOOL,
+  DraftRef,
+  ProjectReadResult,
+  TestedResult,
+  ToolSearchResult,
+} from '@conexus/hub-api'
 import { ASK, folder, MIGRATION, send, versionWriting } from '../../hub/apps/test-versions.ts'
 import { call } from '../../hub/identity/test-hub.ts'
 import { createCompanyDatabase } from '../../platform/test-company-postgres.ts'
@@ -38,6 +44,7 @@ test('o rascunho pelo Construtor: o modelo cria o agente e muda o rascunho, e a 
 
   const saved = answers[0]
   assert.equal(saved?.kind, 'SAVED')
+  assert.doesNotThrow(() => DraftRef.parse(saved))
   const read = await call(on.hub, on.ana, 'GET', `${on.agents}/${String(Object(saved?.agent).id)}`)
   const agent = agentOf(read)
   assert.equal(agent.state.kind, 'DRAFT')
@@ -53,7 +60,10 @@ test('as ferramentas: o modelo recebe as instruções do Construtor e só as fer
   assert.match(asked.system, /Você é o Construtor do Conexus/)
   assert.match(asked.system, /Nunca publique/)
   const closed = [...Object.values(CONSTRUTOR_TOOL), 'connector_read', 'connector_notes']
-  assert.deepEqual([...asked.tools].sort(), [...closed, 'web_fetch', 'web_search'].sort())
+  assert.deepEqual(
+    [...asked.tools].sort(),
+    [...closed, 'ask_user', 'web_fetch', 'web_search'].sort(),
+  )
 })
 
 test('ler o Projeto: o nome, só as ligações que o Projeto recebeu e os agentes com o estado', async (t) => {
@@ -63,6 +73,7 @@ test('ler o Projeto: o nome, só as ligações que o Projeto recebeu e os agente
   assert.equal(endOf(await on.conversation.say('O que o Projeto tem?')), 'complete')
 
   const [seen] = answers
+  assert.doesNotThrow(() => ProjectReadResult.parse(seen))
   assert.equal(Object(seen?.project).name, 'Encomendas')
   assert.deepEqual(
     listOf(seen?.offered).map((each) => each.name),
@@ -109,6 +120,7 @@ test('o rascunho pelo Construtor: procura e grava a ferramenta e a escolhe no ra
     () => [tool('tool_search', {})],
     (asked) => {
       keep(asked)
+      assert.doesNotThrow(() => ToolSearchResult.parse(answers[0]))
       const orders = listOf(answers[0]?.ready).find((each) => each.operation === 'pedidos')
       assert.ok(orders, 'a ready read of pedidos')
       connection = String(orders.connectionId)
@@ -220,6 +232,7 @@ test('testar: roda uma pergunta contra o rascunho, sem conversa guardada; rascun
   foreign = (await madeAgent(on.hub, on.ana, other.agents, 'De fora')).id
 
   assert.equal(endOf(await on.conversation.say('Teste')), 'complete')
+  for (const answer of answers.slice(0, 3)) assert.doesNotThrow(() => TestedResult.parse(answer))
   assert.deepEqual(answers[0], { kind: 'ANSWERED', text: 'Título', tools: [] })
   assert.deepEqual(answers[1], {
     kind: 'REFUSED',

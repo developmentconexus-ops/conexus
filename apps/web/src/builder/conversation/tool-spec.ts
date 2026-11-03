@@ -38,6 +38,8 @@ export type ToolBody =
   | 'proposal'
   | 'automation'
   | 'agent'
+  | 'library'
+  | 'answer'
   | 'generic'
 
 export type ToolStatus = 'running' | 'done' | 'error' | 'denied'
@@ -54,6 +56,8 @@ export type Refusal = 'SAID' | 'RECONNECT'
 /** What a row says of a connector, from the catalog the screen read; the id's own words until it arrives. */
 export type ConnectorWords = {
   name: (connector: string) => string
+  /** The logo of the connector a connection links, once the catalog is read. */
+  logoOf: (connectionId: string) => string | undefined
   /** What a connector's refusal says, in the words of the screen that links it (Integrações). */
   refusal: (connector: string | undefined, why: ConnectorRefusal) => string
 }
@@ -88,4 +92,18 @@ export type ToolSpec = {
     status: ToolStatus,
     words: ConnectorWords,
   ) => Presented
+}
+
+/** The head of a row's sentence by its status: the table's words, before any detail. */
+export function headOf(spec: Pick<ToolSpec, 'running' | 'done' | 'failed'>, status: ToolStatus) {
+  switch (status) {
+    case 'denied':
+      return 'Não pôde'
+    case 'error':
+      return spec.failed
+    case 'running':
+      return spec.running
+    default:
+      return spec.done
+  }
 }

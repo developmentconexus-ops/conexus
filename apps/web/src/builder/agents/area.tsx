@@ -1,15 +1,16 @@
-import type { AgentSummary, CompanyId, ProjectId } from '@conexus/hub-api'
+import type { AgentListed, CompanyId, ProjectId } from '@conexus/hub-api'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { getRouteApi, Link, useNavigate } from '@tanstack/react-router'
+import { BotIcon } from 'lucide-react'
 import { useState } from 'react'
 import { useAttemptKey } from '../../platform/attempt-key.ts'
 import { HubFailure, sentenceOf, writeFailureText } from '../../platform/hub.ts'
+import { Block, BlockSentence, blockRow } from '../../ui/block.tsx'
 import { cn } from '../../ui/cn.ts'
 import { PageTitle } from '../../ui/list.tsx'
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { ReadFailure } from '../../ui/states.tsx'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs.tsx'
-import { useIsMobile } from '../../ui/use-mobile.ts'
+import { FixedProjectChip } from '../assistant/public.ts'
 import {
   agentRoom,
   RoomContext,
@@ -17,11 +18,13 @@ import {
   StartBox,
   StartWithoutAccount,
   stashHandoffFiles,
+  toolsText,
   useDraft,
   usePicked,
 } from '../conversation/public.ts'
 import { agentsQuery, construtorConversationsQuery, sendConstrutorConversation } from './queries.ts'
 import { AREA_FRAME } from './route-states.tsx'
+import { ConversationLine, StateStamp } from './rows.tsx'
 import {
   AREA_TITLE,
   CONSTRUTOR_EXAMPLES,
@@ -31,8 +34,6 @@ import {
   MEMBERS_CANNOT,
   NO_AGENTS,
   NO_CONSTRUTOR_CONVERSATIONS,
-  stateText,
-  titleOf,
   UNCONFIRMED_CREATION,
 } from './text.ts'
 
@@ -80,6 +81,11 @@ function Ask({ companyId, projectId }: Scope) {
         draft={draft}
         placeholder={CONSTRUTOR_PLACEHOLDER}
         examples={CONSTRUTOR_EXAMPLES}
+        modelName={picked.model}
+        tools={{
+          context: <FixedProjectChip companyId={companyId} projectId={projectId} />,
+          notice: null,
+        }}
         onSend={begin}
         notice={
           error !== undefined && (
@@ -95,46 +101,48 @@ function Ask({ companyId, projectId }: Scope) {
 
 function Earlier(scope: Scope) {
   const read = useQuery(construtorConversationsQuery(scope))
-  if (read.isPending) return <Skeleton className="h-16 w-full" />
-  if (read.isError)
-    return <ReadFailure text={sentenceOf(read.error)} onRetry={() => void read.refetch()} />
-  if (read.data.conversations.length === 0)
-    return <p className="text-text-2">{NO_CONSTRUTOR_CONVERSATIONS}</p>
+  const now = new Date()
   return (
-    <section aria-label="Conversas com o Construtor" className="flex flex-col gap-xs">
-      <h2 className="font-display text-title">Conversas com o Construtor</h2>
-      <ul className="flex flex-col">
-        {read.data.conversations.map((conversation) => (
+    <Block title="Conversas com o Construtor">
+      {read.isPending && <Skeleton className="h-16 w-full" />}
+      {read.isError && (
+        <ReadFailure text={sentenceOf(read.error)} onRetry={() => void read.refetch()} />
+      )}
+      {read.data?.conversations.length === 0 && (
+        <BlockSentence>{NO_CONSTRUTOR_CONVERSATIONS}</BlockSentence>
+      )}
+      <ul>
+        {read.data?.conversations.map((conversation) => (
           <li key={conversation.id}>
             <Link
               to="/companies/$companyId/projects/$projectId/agents/construtor/$conversationId"
               params={{ ...scope, conversationId: conversation.id }}
-              className="block truncate rounded-control px-sm py-xs hover:bg-surface-3"
+              className={`${blockRow} hover:bg-surface-3`}
             >
-              {titleOf(conversation)}
+              <ConversationLine conversation={conversation} now={now} />
             </Link>
           </li>
         ))}
       </ul>
-    </section>
+    </Block>
   )
 }
 
-function AgentRow({ scope, agent }: { scope: Scope; agent: AgentSummary }) {
+function AgentRow({ scope, agent }: { scope: Scope; agent: AgentListed }) {
   return (
-    <li className="border-b border-line last:border-b-0">
+    <li>
       <Link
         to="/companies/$companyId/projects/$projectId/agents/$agentId"
         params={{ ...scope, agentId: agent.id }}
-        className="flex flex-col gap-xs px-sm py-md hover:bg-surface-3"
+        className={`${blockRow} hover:bg-surface-3`}
       >
-        <span className="flex items-center justify-between gap-sm">
-          <span className="truncate font-display">{agent.name}</span>
-          <span className="shrink-0 text-label text-text-2">{stateText(agent.state)}</span>
+        <BotIcon aria-hidden="true" className="size-4 shrink-0 text-text-2" />
+        <span className="max-w-[45%] shrink-0 truncate">{agent.name}</span>
+        <span className="hidden min-w-0 flex-1 truncate text-text-2 sm:inline">
+          {agent.description}
         </span>
-        {agent.description !== '' && (
-          <span className="line-clamp-2 break-words text-text-2">{agent.description}</span>
-        )}
+        <span className="ml-auto shrink-0 text-fact text-text-2">{toolsText(agent.tools)}</span>
+        <StateStamp state={agent.state} />
       </Link>
     </li>
   )
@@ -143,59 +151,39 @@ function AgentRow({ scope, agent }: { scope: Scope; agent: AgentSummary }) {
 function AgentList(scope: Scope) {
   const read = useQuery(agentsQuery(scope))
   return (
-    <section aria-label="Agentes do Projeto" className="flex flex-col gap-sm">
-      <h2 className="font-display text-title">Agentes do Projeto</h2>
+    <Block title="Agentes">
       {read.isPending && <Skeleton className="h-20 w-full" />}
       {read.isError && (
         <ReadFailure text={sentenceOf(read.error)} onRetry={() => void read.refetch()} />
       )}
-      {read.data?.agents.length === 0 && <p className="text-text-2">{NO_AGENTS}</p>}
-      <ul className="flex flex-col border-y border-line">
+      {read.data?.agents.length === 0 && <BlockSentence>{NO_AGENTS}</BlockSentence>}
+      <ul>
         {read.data?.agents.map((agent) => (
           <AgentRow key={agent.id} scope={scope} agent={agent} />
         ))}
       </ul>
-    </section>
+    </Block>
   )
 }
 
 /**
- * **Agentes** of a Projeto (step 24.3, U5, criterion 26, the founder's 1A and 2A): the box that
- * begins a conversation with the Construtor, the earlier ones, and the Projeto's agents with their
- * state. On a phone the two are tabs, **Construtor** and **Agentes**. The Hub refuses a member's
+ * **Agentes** of a Projeto (step 24.3, U5, criterion 26, the founder's 2A and the prototype's one
+ * column): the box that begins a conversation with the Construtor, the Projeto's agents with what
+ * each does, its tools and its state, and the earlier conversations. The Hub refuses a member's
  * read, so the route does not open for them (S10); the sentence below is for a role that changed.
  */
 export function AgentsArea(props: Scope) {
   const { role } = company.useRouteContext()
-  const phone = useIsMobile()
   const scope = { companyId: props.companyId, projectId: props.projectId }
   if (role === 'member') return <p className="p-xl text-text-2">{MEMBERS_CANNOT}</p>
-  const construtor = (
-    <div className={cn(START_COLUMN, 'gap-lg')}>
-      <Ask {...scope} />
-      <Earlier {...scope} />
-    </div>
-  )
   return (
     <div className={AREA_FRAME}>
       <PageTitle>{AREA_TITLE}</PageTitle>
-      {phone ? (
-        <Tabs defaultValue="construtor">
-          <TabsList>
-            <TabsTrigger value="construtor">{CONSTRUTOR_NAME}</TabsTrigger>
-            <TabsTrigger value="agentes">Agentes</TabsTrigger>
-          </TabsList>
-          <TabsContent value="construtor">{construtor}</TabsContent>
-          <TabsContent value="agentes">
-            <AgentList {...scope} />
-          </TabsContent>
-        </Tabs>
-      ) : (
-        <div className="grid grid-cols-[minmax(0,1fr)_22rem] items-start gap-xl">
-          {construtor}
-          <AgentList {...scope} />
-        </div>
-      )}
+      <div className={cn(START_COLUMN, 'gap-lg')}>
+        <Ask {...scope} />
+        <AgentList {...scope} />
+        <Earlier {...scope} />
+      </div>
     </div>
   )
 }

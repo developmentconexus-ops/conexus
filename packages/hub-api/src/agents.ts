@@ -81,6 +81,10 @@ export const AgentSummary = z.object({
 })
 export type AgentSummary = z.infer<typeof AgentSummary>
 
+/** A row of the list: the summary and how many tools the draft holds. */
+export const AgentListed = AgentSummary.extend({ tools: z.int().nonnegative() })
+export type AgentListed = z.infer<typeof AgentListed>
+
 /** A chosen tool: the version the draft holds, and the newest of the library. */
 export const AgentTool = ToolSummary.pick({
   id: true,
@@ -97,7 +101,7 @@ export const OfferedConnection = z.object({
   connectionId: ConnectionId,
   connector: z.string(),
   name: z.string(),
-  reads: z.array(z.object({ operation: z.string(), summary: z.string() })),
+  reads: z.array(z.object({ operation: z.string(), label: z.string(), summary: z.string() })),
 })
 export type OfferedConnection = z.infer<typeof OfferedConnection>
 
@@ -160,7 +164,7 @@ export const listAgents = defineOperation({
   path: '/api/companies/{companyId}/agents',
   bodyLimit: 1024,
   input: { params: InCompany, query: z.object({ projectId: ProjectId }) },
-  success: { status: 200, body: z.object({ agents: z.array(AgentSummary) }) },
+  success: { status: 200, body: z.object({ agents: z.array(AgentListed) }) },
   failures: READ_FAILURES,
 })
 

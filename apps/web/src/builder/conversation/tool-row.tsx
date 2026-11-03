@@ -1,13 +1,15 @@
 import type { FailureCode } from '@conexus/hub-api'
 import {
-  ConstrutorResult,
+  DraftRef,
   FAILURES,
   ProposedApp,
   ProposedAutomation,
   ShownFile,
+  TestedResult,
+  ToolSearchResult,
 } from '@conexus/hub-api'
 import { Link, useParams } from '@tanstack/react-router'
-import { FileTextIcon } from 'lucide-react'
+import { BotIcon, FileTextIcon } from 'lucide-react'
 import { useEffect, useEffectEvent, useState } from 'react'
 import { sentenceOfCode } from '../../platform/hub.ts'
 import { Button } from '../../ui/button.tsx'
@@ -29,21 +31,9 @@ import type { ToolItem } from './rows.ts'
 import { durationOf } from './text.ts'
 import type { Edit } from './tool-args.ts'
 import { editOf, shown } from './tool-args.ts'
+import { Answer, BLOCK, Generic, Library, textOf } from './tool-bodies.tsx'
 import type { ToolBody, ToolStatus } from './tool-registry.ts'
 import { presentTool, readable, specOf, toolStatus } from './tool-registry.ts'
-
-const BLOCK =
-  'max-h-64 overflow-auto rounded-control bg-surface-3 p-sm font-mono text-fact text-text-2 whitespace-pre-wrap wrap-break-word'
-
-function textOf(value: unknown): string | undefined {
-  if (value === undefined || value === null) return undefined
-  if (typeof value === 'string') return value === '' ? undefined : value
-  try {
-    return JSON.stringify(value, null, 2)
-  } catch {
-    return String(value)
-  }
-}
 
 function fieldOf(obj: unknown, key: string): string | undefined {
   if (obj && typeof obj === 'object' && key in obj) {
@@ -181,28 +171,20 @@ function Block({ tool, body }: { tool: ToolItem; body: ToolBody }) {
         </>
       )
     }
-    default: {
-      const args =
-        typeof tool.args === 'object' && tool.args !== null && Object.keys(tool.args).length > 0
-      const result = tool.result === undefined ? undefined : (textOf(tool.result) ?? '')
-      return (
-        <div className="flex min-w-0 flex-col gap-xs font-mono text-fact text-text-2">
-          <div className="font-sans font-semibold text-text">{title}</div>
-          {args && (
-            <div className="flex flex-col gap-xxs">
-              <span className="font-sans text-text-2">Argumentos:</span>
-              <pre className={BLOCK}>{shown(textOf(tool.args) ?? '')}</pre>
-            </div>
-          )}
-          {result !== undefined && (
-            <div className="flex flex-col gap-xxs">
-              <span className="font-sans text-text-2">Resultado:</span>
-              <pre className={BLOCK}>{shown(result)}</pre>
-            </div>
-          )}
-        </div>
+    case 'library': {
+      const found = ToolSearchResult.safeParse(tool.result).data
+      return found === undefined ? <Generic tool={tool} title={title} /> : <Library found={found} />
+    }
+    case 'answer': {
+      const tested = TestedResult.safeParse(tool.result).data
+      return tested?.kind === 'ANSWERED' ? (
+        <Answer text={tested.text} called={tested.tools.length} />
+      ) : (
+        <Generic tool={tool} title={title} />
       )
     }
+    default:
+      return <Generic tool={tool} title={title} />
   }
 }
 
@@ -243,6 +225,42 @@ function ShownLine(props: {
       <FileTextIcon aria-hidden="true" />
       <span className="truncate">{file.name}</span>
     </Button>
+  )
+}
+
+/** The agent the Construtor saved: its line says so and, clicked, opens the draft beside the chat. */
+function AgentLine({
+  draft,
+  sentence,
+  live,
+}: {
+  draft: DraftRef
+  sentence: string
+  live: boolean
+}) {
+  const { agent } = draft
+  const room = useRoom()
+  // A call heard as it ran opens its draft; a conversation read afterwards opens the newest one. Only on
+  // mount: a tap changes `openedAgent`, and that must not re-open the line's own agent.
+  const open = useEffectEvent(() => {
+    if (live || room.openedAgent === undefined) room.openAgent?.(agent.id, 'CALL')
+  })
+  useEffect(() => open(), [])
+  return (
+    <button
+      type="button"
+      aria-pressed={room.openedAgent === agent.id}
+      onClick={() => room.openAgent?.(agent.id, 'TAP')}
+      className="flex w-fit max-w-full min-w-0 cursor-pointer rounded-control text-left hover:text-text"
+    >
+      <TraceLine>
+        <TraceIcon>
+          <BotIcon />
+        </TraceIcon>
+        <TraceTitle className="shrink-0 whitespace-nowrap">{sentence}</TraceTitle>
+        <TraceDescription className="min-w-0 truncate">{agent.name}</TraceDescription>
+      </TraceLine>
+    </button>
   )
 }
 
@@ -288,8 +306,15 @@ function specialRow(tool: ToolItem, status: ToolStatus, room: Room) {
     body === 'automation' ? ProposedAutomation.safeParse(tool.result).data : undefined
   if (automation !== undefined)
     return room.automationCard?.({ proposed: automation, toolCallId: tool.toolCallId })
-  const agent = body === 'agent' ? ConstrutorResult.safeParse(tool.result).data : undefined
-  if (agent !== undefined) return room.agentCard?.(agent)
+  const draft = body === 'agent' ? DraftRef.safeParse(tool.result).data : undefined
+  if (draft !== undefined)
+    return (
+      <AgentLine
+        draft={draft}
+        sentence={specOf(tool.toolName, room)?.done ?? ''}
+        live={tool.startedAt !== undefined}
+      />
+    )
   const proposed = body === 'proposal' ? ProposedApp.safeParse(tool.result).data : undefined
   return proposed === undefined ? undefined : <ProposalCard summary={proposed.summary} />
 }

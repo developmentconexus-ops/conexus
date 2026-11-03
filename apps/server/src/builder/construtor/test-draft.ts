@@ -1,4 +1,4 @@
-import type { AgentId, FailureCode } from '@conexus/hub-api'
+import type { AgentId, TestedResult } from '@conexus/hub-api'
 import type { Agent } from '@mastra/core/agent'
 import { APICallError } from 'ai'
 import type { FailureLog } from '../../platform/failure.ts'
@@ -6,11 +6,6 @@ import { causeChain, Failure, logFailure } from '../../platform/failure.ts'
 import type { AgentRun, AgentService } from '../agents/public.ts'
 import { agentRunContext } from '../agents/public.ts'
 import type { InProject } from '../tools/public.ts'
-
-/** What a test of the draft answers the Construtor: the draft's answer and its tools, or the refusal. */
-export type Tested =
-  | { kind: 'ANSWERED'; text: string; tools: string[] }
-  | { kind: 'REFUSED'; code: FailureCode; field?: string }
 
 /**
  * One question to the draft's `Agent` (step 24.3, U4): the same `agentOf` a published agent runs
@@ -23,7 +18,7 @@ export function testDraft(deps: {
   draftAgent: (run: AgentRun) => Promise<Agent>
   log: FailureLog
 }) {
-  function refusal(error: unknown, scope: InProject): Tested {
+  function refusal(error: unknown, scope: InProject): TestedResult {
     if (error instanceof Failure && error.code === 'INTERNAL_UNEXPECTED') throw error
     if (!(error instanceof Failure) && causeChain(error).some((c) => APICallError.isInstance(c))) {
       return refusal(new Failure('MODEL_CALL_FAILED', { cause: error }), scope)
@@ -38,7 +33,7 @@ export function testDraft(deps: {
     const { field } = failure.named
     return { kind: 'REFUSED', code: failure.code, ...(field === undefined ? {} : { field }) }
   }
-  return async (scope: InProject, agentId: AgentId, question: string): Promise<Tested> => {
+  return async (scope: InProject, agentId: AgentId, question: string): Promise<TestedResult> => {
     const started = Date.now()
     try {
       await deps.agents.testable(scope, agentId)

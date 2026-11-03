@@ -3,13 +3,12 @@ import { ASSISTANT_CONTROLLER, listAssistantConversations } from '@conexus/hub-a
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 import { hubQueryPrefix } from '../../platform/hub.ts'
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '../../ui/resizable.tsx'
-import { Sheet, SheetContent } from '../../ui/sheet.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
 import { AutomationBadge, ProposalCard } from '../automations/public.ts'
 import type { OpenedFile, Room } from '../conversation/public.ts'
 import {
   ASSISTANT_ROOM,
+  Beside,
   Chat,
   ModelChoice,
   RoomContext,
@@ -23,55 +22,6 @@ import { assistantConversationQuery, sendAssistantModel } from './queries.ts'
 import { EMPTY_ASSISTANT, titleOf } from './text.ts'
 
 type Props = { companyId: CompanyId; conversationId: ConversationId; projectId?: ProjectId }
-
-/**
- * The conversation and, when the Assistant showed a file, the file beside it (or in a sheet over
- * it, on a phone, which holds the focus and closes on Esc). The chat keeps its place in the tree,
- * so showing a file does not remount it and drop its stream.
- */
-function Beside(props: {
-  chat: React.ReactNode
-  file: React.ReactNode | undefined
-  /** The file's name, the sheet's title on a phone. */
-  fileName: string | undefined
-  phone: boolean
-  onCloseFile: () => void
-}) {
-  if (props.phone)
-    return (
-      <div className="h-full min-h-0">
-        {props.chat}
-        <Sheet
-          open={props.file !== undefined}
-          onOpenChange={(open) => !open && props.onCloseFile()}
-        >
-          <SheetContent
-            side="right"
-            title={props.fileName ?? ''}
-            closeLabel="Fechar"
-            className="p-0"
-          >
-            {props.file}
-          </SheetContent>
-        </Sheet>
-      </div>
-    )
-  return (
-    <ResizablePanelGroup id="conexus-assistant" className="h-full min-h-0">
-      <ResizablePanel id="chat" minSize="320px">
-        {props.chat}
-      </ResizablePanel>
-      {props.file !== undefined && (
-        <>
-          <ResizableHandle aria-label="Redimensionar o arquivo" />
-          <ResizablePanel id="file" defaultSize="45%" minSize="280px">
-            {props.file}
-          </ResizablePanel>
-        </>
-      )}
-    </ResizablePanelGroup>
-  )
-}
 
 /** The Assistant's room for a conversation: its connector names, the file beside it and the cards it draws. */
 function useAssistantRoom(held: {
@@ -125,9 +75,11 @@ function Conversation(props: Props) {
         </div>
         <div className="min-h-0 flex-1">
           <Beside
+            id="conexus-assistant"
             phone={phone}
-            fileName={file?.name}
-            onCloseFile={() => setFile(undefined)}
+            name={file?.name ?? ''}
+            handle="Redimensionar o arquivo"
+            onCloseSide={() => setFile(undefined)}
             chat={
               <div className="flex h-full min-h-0 flex-col bg-surface">
                 <Chat
@@ -163,7 +115,7 @@ function Conversation(props: Props) {
                 />
               </div>
             }
-            file={
+            side={
               file === undefined ? undefined : (
                 <FilePanel
                   companyId={companyId}
