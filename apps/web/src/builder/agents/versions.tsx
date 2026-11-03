@@ -6,7 +6,8 @@ import { sentenceOf, writeFailureText } from '../../platform/hub.ts'
 import { Button } from '../../ui/button.tsx'
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { ReadFailure } from '../../ui/states.tsx'
-import { agentQuery, agentsPrefix, sendActivation, versionsQuery } from './queries.ts'
+import { agentQuery, agentsPrefix, sendActivation, settleAgent, versionsQuery } from './queries.ts'
+import { ReadStates } from './read-states.tsx'
 import { NO_VERSIONS, UNCONFIRMED_PUBLISH } from './text.ts'
 
 /** **Versões** of an agent: the published ones, newest first, and **Voltar para a versão n** (criterion 27). */
@@ -24,11 +25,7 @@ export function Versions(props: { companyId: CompanyId; projectId: ProjectId; ag
       const { agent } = await activate.mutateAsync({
         params: { ...scope, agentId, number: String(number) },
       })
-      queryClient.setQueryData(agentQuery(scope, agentId).queryKey, { agent })
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: versionsQuery(scope, agentId).queryKey }),
-        queryClient.invalidateQueries({ queryKey: agentsPrefix(scope) }),
-      ])
+      await settleAgent(queryClient, scope, agent)
     } catch (failure) {
       setError(writeFailureText(failure, UNCONFIRMED_PUBLISH))
     }
@@ -39,10 +36,7 @@ export function Versions(props: { companyId: CompanyId; projectId: ProjectId; ag
       <h3 id="versions-title" className="font-display text-title">
         Versões
       </h3>
-      {read.isPending && <Skeleton className="h-16 w-full" />}
-      {read.isError && (
-        <ReadFailure text={sentenceOf(read.error)} onRetry={() => void read.refetch()} />
-      )}
+      <ReadStates read={read} />
       {read.data?.versions.length === 0 && <p className="text-text-2">{NO_VERSIONS}</p>}
       <ul className="flex flex-col divide-y divide-line">
         {read.data?.versions.map((version) => (

@@ -4,6 +4,7 @@ export { AgentsArea } from './area.tsx'
 export { ConstrutorChat } from './construtor-chat.tsx'
 export {
   agentParams,
+  construtorParams,
   conversationParams,
   loadAgent,
   loadAgentConversation,

@@ -5,7 +5,7 @@ import { HubFailure, writeFailureText } from '../../platform/hub.ts'
 import { Button } from '../../ui/button.tsx'
 import { Dialog, DialogContent, DialogFooter } from '../../ui/dialog.tsx'
 import { Textarea } from '../../ui/textarea.tsx'
-import { agentQuery, agentsPrefix, sendPublish, versionsQuery } from './queries.ts'
+import { agentQuery, agentsPrefix, sendPublish, settleAgent, versionsQuery } from './queries.ts'
 import { DRAFT_CHANGED, missingField, UNCONFIRMED_PUBLISH } from './text.ts'
 
 type Scope = { companyId: CompanyId; projectId: ProjectId }
@@ -33,11 +33,7 @@ export function usePublish(scope: Scope, agentId: AgentDetail['id']) {
         params: { ...scope, agentId },
         body: { revision, message },
       })
-      queryClient.setQueryData(agentQuery(scope, agentId).queryKey, { agent })
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: versionsQuery(scope, agentId).queryKey }),
-        queryClient.invalidateQueries({ queryKey: agentsPrefix(scope) }),
-      ])
+      await settleAgent(queryClient, scope, agent)
     },
   }
 }

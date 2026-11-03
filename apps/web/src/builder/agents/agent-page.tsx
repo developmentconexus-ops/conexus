@@ -27,6 +27,7 @@ import {
   sendAgentConversation,
   sendDeletion,
 } from './queries.ts'
+import { ReadStates } from './read-states.tsx'
 import {
   deleteWarning,
   NO_AGENT_CONVERSATIONS,
@@ -92,10 +93,7 @@ function Conversations(props: {
           {error}
         </p>
       )}
-      {read.isPending && <Skeleton className="h-16 w-full" />}
-      {read.isError && (
-        <ReadFailure text={sentenceOf(read.error)} onRetry={() => void read.refetch()} />
-      )}
+      <ReadStates read={read} />
       {read.data?.conversations.length === 0 && (
         <p className="text-text-2">{NO_AGENT_CONVERSATIONS}</p>
       )}

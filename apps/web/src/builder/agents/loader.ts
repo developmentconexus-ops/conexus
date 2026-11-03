@@ -7,7 +7,7 @@ import {
 } from '@conexus/hub-api'
 import type { QueryClient } from '@tanstack/react-query'
 import { notFound } from '@tanstack/react-router'
-import { projectQuery } from '../../hub/projects/public.ts'
+import { projectParams, projectQuery } from '../../hub/projects/public.ts'
 import { HubFailure, idOrNotFound, readOrNotFound } from '../../platform/hub.ts'
 import { sessionReadQuery } from '../conversation/public.ts'
 import {
@@ -30,6 +30,15 @@ export const conversationParams = {
     conversationId: idOrNotFound(ConversationIdSchema, raw.conversationId),
   }),
   stringify: (params: { conversationId: ConversationId }) => params,
+}
+
+/** A conversation with the Construtor at its Projeto's address: the Projeto's params and the conversation's. */
+export const construtorParams = {
+  parse: (raw: { projectId: string; conversationId: string }) => ({
+    ...projectParams.parse(raw),
+    ...conversationParams.parse(raw),
+  }),
+  stringify: (params: { projectId: ProjectId; conversationId: ConversationId }) => params,
 }
 
 /** An agent the Hub does not find at this address is a page not found, as a Projeto is. */
