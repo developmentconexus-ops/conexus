@@ -122,10 +122,7 @@ churn, not runtime style enforcement; do not extend this check to vendor-generat
 - **V60.** The composer's row **should** be one piece with one order on every screen: on the left
   what the message carries ("+", the Projeto folder, the tools), on the right who answers and how
   (model, memory, microphone, send); a place stays empty only when there is no fact to show, and
-  when the box itself is narrower than 416px (a container query, so the Builder's narrow box too)
-  words leave, never controls; "Sem ferramentas" stays whole and the model truncates. Founder,
-  2026-11-01, the order of the row; 2026-11-03, on the Builder's box: "1. AOkay"; on "Sem
-  ferramentas": "2. A". Failure: the
+  below 416px words leave, never controls. Founder, 2026-11-01, the order of the row. Failure: the
   model sits left on one screen and right on another, and the person looks for it each time.
   [`assistant.layout.test.ts`, review]
 - **V61.** The `eyebrow` **should** label a group or a fact (a day group, an age, a stamp), never

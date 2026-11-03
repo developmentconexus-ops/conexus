@@ -521,15 +521,15 @@ Em 2026-11-02, na revisão da pull request 561 (a U2 da 13.3, as medidas), à al
 
 Em 2026-11-02, na U3 da 13.3, aos lugares do trilho: "Opção 1". Automações entra no trilho logo depois de Integrações, só para dona e administradora; o sino fica no pé do trilho, acima da conta; a W30 e o `DESIGN.md` foram emendados na pull request da U3, sob o rótulo emergência. Palavra de meio de etapa, vai direto para este livro (L6).
 
-Em 2026-11-03, às decisões da rodada de conserto da 13.3, ao critério 17 (a caixa do Builder, que mede 416 px pela própria caixa e por isso, no painel estreito do Builder, já perde palavras): "1. AOkay". Opção A: a caixa mantém a medida pela caixa, e o critério 17 é emendado no fechamento: na caixa estreita do Builder saem as mesmas palavras da V60 (o modelo perde "Claude " e a memória vira o anel e a porcentagem). Com o cartão apagado no fechamento (L19), a decisão fica na V60 do guia de desenho e na tabela de larguras do `DESIGN.md`. Palavra de meio de etapa, vai direto para este livro (L6).
+Em 2026-11-03, às decisões da rodada de conserto da 13.3, ao critério 17 (a caixa do Builder, que mede 416 px pela própria caixa e por isso, no painel estreito do Builder, já perde palavras): "1. AOkay". Opção A: a caixa mantém a medida pela caixa, e o critério 17 é emendado no fechamento: na caixa estreita do Builder saem as mesmas palavras da V60 (o modelo perde "Claude " e a memória vira o anel e a porcentagem). Com o cartão apagado no fechamento (L19), a decisão fica na tabela de larguras do `DESIGN.md`, e a V60 do guia de desenho é emendada no fechamento da 24.3 (o método fica congelado enquanto ela está em construção). Palavra de meio de etapa, vai direto para este livro (L6).
 
-Em 2026-11-03, a "Sem ferramentas" numa caixa abaixo de 416 px: "2. A". Opção A: o texto fica inteiro, e quem trunca é o modelo. Fica na V60 e na contagem de ferramentas do `DESIGN.md`. Palavra de meio de etapa, vai direto para este livro (L6).
+Em 2026-11-03, a "Sem ferramentas" numa caixa abaixo de 416 px: "2. A". Opção A: o texto fica inteiro, e quem trunca é o modelo. Fica na contagem de ferramentas do `DESIGN.md`, e a V60 é emendada no fechamento da 24.3. Palavra de meio de etapa, vai direto para este livro (L6).
 
 Em 2026-11-03, ao tom `neutral` do Alerta, que nenhuma tela usa: "3. A". Opção A: o tom sai, e o `Alert` fica só com `tone="danger"`. Palavra de meio de etapa, vai direto para este livro (L6).
 
 Em 2026-11-03, à publicação das duas etapas, 13.3 e 24.3: "4. sIM". Publicar depois que a rodada de conserto fundir; as duas foram ao ar juntas na v0.24.9.
 
-Etapa 13.3 no ar em https://hub.conexus.fun (v0.24.10), sem a linha de uso do fundador: ela entra aqui, com as palavras dele, depois do uso. A etapa foi ao ar na v0.24.9, junto com a 24.3, e a v0.24.10 levou o conserto do menu do celular (pull request 585).
+Etapa 13.3 no ar em https://hub.conexus.fun (v0.24.10), sem a linha de uso do fundador: ela entra aqui, com as palavras dele, depois do uso. A etapa foi ao ar na v0.24.9, junto com a 24.3, e a v0.24.10 levou o conserto do menu do celular (pull request 585). Duas pull requests com o rótulo emergência (554 e 565).
 
 ## Decisões fora de uma etapa
 

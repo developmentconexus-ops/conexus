@@ -94,8 +94,15 @@ describe('o modelo guardado', () => {
     at(OPEN, { conversations: [assistantConversation()] })
     await toolsOf()
     // From here the session read fails, so only what the write put in the cache can keep Opus.
-    server.use(http.get(/\/sessions\/[^/]+$/, () => refusal('DATABASE_UNAVAILABLE')))
+    let failedReads = 0
+    server.use(
+      http.get(/\/sessions\/[^/]+$/, () => {
+        failedReads++
+        return refusal('DATABASE_UNAVAILABLE')
+      }),
+    )
     await pickOpus()
+    await waitFor(() => expect(failedReads).toBeGreaterThan(0))
     const picker = screen.getByRole('combobox', { name: 'Modelo e raciocínio' })
     await waitFor(() =>
       expect(picker.closest('[aria-busy]')?.getAttribute('aria-busy')).toBe('false'),
