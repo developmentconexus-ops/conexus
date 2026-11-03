@@ -33,6 +33,8 @@ type HandOffCase = {
   turns: readonly string[]
   called?: readonly string[]
   notCalled?: readonly string[]
+  /** This tool called, or else the last answer one short question and no list (step 24.3.2, 015). */
+  orAsks?: string
   /** A hand-off accepted at most once over all the turns: no loop; a refused call does not count. */
   atMostOnce?: string
   /** The briefing of the case's proposal exists, is not empty and carries no figure of the reads. */
@@ -77,7 +79,7 @@ export const HAND_OFF_CASES: readonly HandOffCase[] = [
     n: 8,
     place: 'HOME',
     turns: ['Todo dia às 8h me diga o que comprar.'],
-    called: [AUTOMATION],
+    orAsks: AUTOMATION,
     notCalled: [APP],
     held: true,
   },
@@ -116,6 +118,14 @@ export const HAND_OFF_CASES: readonly HandOffCase[] = [
     place: 'AUTOMATION',
     turns: ['O relatório de vendas de ontem, por vendedor.'],
     notCalled: [APP, CHANGE],
+    held: false,
+  },
+  {
+    n: 14,
+    place: 'HOME',
+    turns: ['Toda segunda às 7h me mande o total vendido na semana anterior, por vendedor.'],
+    called: [AUTOMATION],
+    notCalled: [APP],
     held: false,
   },
 ]
@@ -218,6 +228,14 @@ export async function verdictOf(
   wrong.push(...expected.filter((_, at) => scores[at] !== 1).map((one) => one.why))
   for (const name of (each.called ?? []).filter((one) => HAND_OFFS.includes(one))) {
     if (acceptedOf(parts, name).length === 0) wrong.push(`no accepted ${name} with a briefing`)
+  }
+  if (each.orAsks !== undefined && resultsOf(parts, each.orAsks).length === 0) {
+    const last = parts.findLast((part) => part.type === 'text')
+    const asked = last?.type === 'text' ? last.text : ''
+    const listed = /^\s*([-*•]|\d+[.)])\s/m.test(asked)
+    if ((asked.match(/\?/g) ?? []).length !== 1 || listed) {
+      wrong.push(`neither called ${each.orAsks} nor asked one short question`)
+    }
   }
   if (each.atMostOnce !== undefined && acceptedOf(parts, each.atMostOnce).length > 1) {
     wrong.push(`proposed ${each.atMostOnce} more than once`)
