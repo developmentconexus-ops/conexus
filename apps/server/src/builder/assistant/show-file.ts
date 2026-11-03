@@ -3,9 +3,8 @@ import type { ShownFile } from '@conexus/hub-api'
 import { ASSISTANT_TOOL, SHOWN_TEXT_MAX, ShowFileInput } from '@conexus/hub-api'
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
-import { Failure } from '../../platform/failure.ts'
 import type { AssistantMachines } from './machine.ts'
-import { locate } from './machine.ts'
+import { withFile } from './machine-file.ts'
 
 const TEXT_MEDIA: Record<string, 'text/markdown' | 'text/plain' | 'text/csv'> = {
   '.md': 'text/markdown',
@@ -63,11 +62,7 @@ export function showFileTool(machines: Pick<AssistantMachines, 'folder' | 'servi
     description: `Shows the person a file you wrote in ${machines.folder} beside the chat, to read or download. Show the table, chart or document you made; the person sees nothing of your machine otherwise.`,
     inputSchema: ShowFileInput,
     execute: async ({ path }, { requestContext }): Promise<ShownFile> => {
-      const files = requestContext === undefined ? undefined : machines.serving(requestContext)
-      if (files === undefined) return refused('MACHINE_UNAVAILABLE')
-      try {
-        const found = await locate(files, path)
-        if (found.kind !== 'FILE') return refused(found.kind)
+      const shown = await withFile(machines, requestContext, path, async (files, found) => {
         const media = TEXT_MEDIA[posix.extname(found.name).toLowerCase()]
         if (media !== undefined && found.bytes <= SHOWN_TEXT_MAX) {
           const content = await files.readFile(found.path, { encoding: 'utf-8' })
@@ -77,7 +72,7 @@ export function showFileTool(machines: Pick<AssistantMachines, 'folder' | 'servi
             name: found.name,
             media,
             content: String(content),
-          }
+          } as const
         }
         return {
           kind: 'FILE',
@@ -85,19 +80,17 @@ export function showFileTool(machines: Pick<AssistantMachines, 'folder' | 'servi
           name: found.name,
           media: mediaOf(found.name),
           bytes: found.bytes,
-        }
-      } catch (error) {
-        if (error instanceof Failure && error.code === 'MACHINE_UNAVAILABLE') {
-          return refused('MACHINE_UNAVAILABLE')
-        }
-        throw error
-      }
+        } as const
+      })
+      return shown.kind === 'TEXT' || shown.kind === 'FILE' ? shown : refused(shown.kind)
     },
-    // Only the path or the refusal, whatever else the output holds; an output of another shape
-    // throws.
+    // Only the path or the refusal, whatever else the output holds. Mastra's own refusal of the
+    // input is of another shape and reaches the model as Mastra wrote it.
     toModelOutput: (output) => {
-      const shown = ToModel.parse(output)
-      return { type: 'json', value: shown.kind === 'SHOW_REFUSED' ? shown : { shown: shown.path } }
+      const shown = ToModel.safeParse(output)
+      if (!shown.success) return undefined
+      const value = shown.data.kind === 'SHOW_REFUSED' ? shown.data : { shown: shown.data.path }
+      return { type: 'json', value }
     },
   })
 }

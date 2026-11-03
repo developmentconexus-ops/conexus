@@ -1,3 +1,4 @@
+import { BUILDER_TOOL } from '@conexus/hub-api'
 import { z } from 'zod'
 
 /** A number as the answer wrote it: its value at the places shown, its scale (mil, milhão) and whether it is a percentage. */
@@ -83,9 +84,26 @@ function numbersOf(value: unknown): number[] {
   return []
 }
 
+/** A field that names a code or a key, whose number a query filters on: the shape, not a value. */
+const CODE_FIELD = /^(cod|nu|id)/i
+
+/** Every number a read holds, apart from those of its code fields. */
+function valuesOf(value: unknown, field = ''): number[] {
+  if (CODE_FIELD.test(field)) return []
+  if (Array.isArray(value)) return value.flatMap((each) => valuesOf(each, field))
+  if (value !== null && typeof value === 'object') {
+    return Object.entries(value).flatMap(([key, each]) => valuesOf(each, key))
+  }
+  return numbersOf(value)
+}
+
 const Invocation = z.object({
   type: z.literal('tool-invocation'),
-  toolInvocation: z.object({ state: z.literal('result'), result: z.unknown() }),
+  toolInvocation: z.object({
+    state: z.literal('result'),
+    toolName: z.string(),
+    result: z.unknown(),
+  }),
 })
 const Text = z.object({ type: z.literal('text'), text: z.string() })
 
@@ -119,4 +137,27 @@ export function numbersFromReads(turn: {
     if (!foundIn(shown, turn.truth)) return { ok: false, number: shown.text, why: 'NOT_TRUE' }
   }
   return { ok: true }
+}
+
+/**
+ * The check the other way (step 24.3.2): a briefing carries the data's shape and the queries,
+ * never its values, so no figure the conversation's connector reads returned may be in it; a code
+ * the query filters on is shape, not a value. A figure is a number
+ * with decimals or of at least 1,000: a count of days or of columns is not one. The first figure
+ * found is said.
+ */
+export function figuresFromReads(text: string, parts: readonly unknown[]): string | undefined {
+  const reads = parts.flatMap((part) => {
+    const invocation = Invocation.safeParse(part)
+    if (
+      !invocation.success ||
+      invocation.data.toolInvocation.toolName !== BUILDER_TOOL.connectorRead
+    )
+      return []
+    return valuesOf(invocation.data.toolInvocation.result)
+  })
+  return shownIn(text).find((shown) => {
+    const figure = shown.places > 0 || shown.value * shown.scale >= 1000
+    return figure && foundIn(shown, reads)
+  })?.text
 }
