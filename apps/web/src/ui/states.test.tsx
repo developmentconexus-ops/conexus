@@ -89,10 +89,8 @@ test('erro: na área, com a barra, o título da página e "Tentar de novo" lê o
   let failing = true
   serve()
   server.use(
-    http.get(PROJECTS_PATH, () =>
-      failing
-        ? refusal('REQUEST_MALFORMED')
-        : HttpResponse.json({ projects: [], next: { kind: 'END' }, databaseReady: true }),
+    http.get(`*/api/companies/${COMPANY.id}/model-accounts`, () =>
+      failing ? refusal('REQUEST_MALFORMED') : undefined,
     ),
   )
   openCompany(HOME)

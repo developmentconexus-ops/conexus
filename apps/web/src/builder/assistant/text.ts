@@ -32,6 +32,28 @@ export const NO_PROJECT_OPTION = 'Sem Projeto'
 export const NO_PROJECT_MATCH = 'Nenhum Projeto com esse nome.'
 export const MORE_PROJECTS = 'Mais Projetos'
 
+export const CONTINUE_BLOCK = 'Continuar'
+export const CONNECTIONS_BLOCK = 'Ligações'
+export const INTEGRATIONS_LINK = 'Integrações →'
+export const SEARCH_PROJECT = 'Buscar Projeto'
+export const READING_TOOLS = 'Lendo as ferramentas…'
+export const PROJECT_MENU_TITLE = 'Em qual Projeto?'
+
+/** "ferramenta" or "ferramentas": the one plural of the word. */
+export function toolWord(count: number): string {
+  return count === 1 ? 'ferramenta' : 'ferramentas'
+}
+
+/** "1 ferramenta", "3 ferramentas". */
+export function toolsOf(count: number): string {
+  return `${count} ${toolWord(count)}`
+}
+
+/** "Mais 3 ligações". */
+export function moreConnections(count: number): string {
+  return `Mais ${count} ${count === 1 ? 'ligação' : 'ligações'}`
+}
+
 /** "2 de 3 ligadas". */
 export function chosenOf(chosen: number, offered: number): string {
   return `${chosen} de ${offered} ligadas`

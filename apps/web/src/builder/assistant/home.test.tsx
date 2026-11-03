@@ -123,7 +123,7 @@ test('uma ligação desligada continua desligada quando a lista das ligações �
   expect(writes()[0]?.body).toMatchObject({ connections: [SALES, LOJA] })
 })
 
-test('enquanto a lista das ligações não chegou, o Enviar espera e a contagem é um esqueleto', async () => {
+test('enquanto a lista das ligações não chegou, o Enviar espera e a caixa diz "Lendo as ferramentas…"', async () => {
   let arrive: () => void = () => undefined
   const held = new Promise<void>((resolve) => {
     arrive = resolve
@@ -134,6 +134,7 @@ test('enquanto a lista das ligações não chegou, o Enviar espera e a contagem 
   fireEvent.change(await box(), { target: { value: 'Como foram as vendas?' } })
   expect(screen.getByRole('button', { name: 'Enviar' }).hasAttribute('disabled')).toBe(true)
   expect(screen.queryByRole('button', { name: COUNT })).toBeNull()
+  expect(screen.getByText('Lendo as ferramentas…')).toBeTruthy()
   arrive()
   await toolsOf()
   await waitFor(() =>
@@ -244,6 +245,14 @@ test('se o catálogo dos sistemas falha, a caixa diz a frase e as ferramentas le
   expect(await alertOutside('Ligações')).toBeTruthy()
 })
 
+test('se a lista dos Projetos falha ao abrir o Início, a página abre e o bloco diz a frase com Tentar de novo', async () => {
+  at(COMPANY_ROOT)
+  server.use(http.get('*/api/companies/:companyId/projects', () => refusal('DATABASE_UNAVAILABLE')))
+  expect(await box()).toBeTruthy()
+  expect(screen.queryByText('Não foi possível abrir esta página')).toBeNull()
+  expect(await screen.findByRole('button', { name: 'Tentar de novo' })).toBeTruthy()
+})
+
 test('se a lista dos Projetos falha depois de lida, a lista da pasta diz a frase', async () => {
   const { conexus } = at(COMPANY_ROOT)
   await toolsOf()
@@ -292,8 +301,11 @@ test('a pasta: abre Sem Projeto e os Projetos, e a busca só aparece a partir de
   )
   await toolsOf()
   fireEvent.click(await screen.findByRole('button', { name: 'Projeto da conversa' }))
-  expect(await screen.findByRole('button', { name: 'Sem Projeto' })).toBeTruthy()
-  expect(screen.getByRole('button', { name: 'Vendas' })).toBeTruthy()
+  const none = await screen.findByRole('button', { name: 'Sem Projeto' })
+  expect(screen.getByText('Em qual Projeto?')).toBeTruthy()
+  expect(none.getAttribute('aria-pressed')).toBe('true')
+  expect(none.querySelector('svg')).not.toBeNull()
+  expect(screen.getByRole('button', { name: 'Vendas' }).querySelector('svg')).toBeNull()
   expect(screen.queryByRole('searchbox', { name: 'Buscar Projeto' })).toBeNull()
 })
 

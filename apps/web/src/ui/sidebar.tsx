@@ -254,7 +254,7 @@ export function SidebarGroupLabel({ className, ...props }: ComponentProps<'h2'>)
     <h2
       data-slot="sidebar-group-label"
       className={cn(
-        'flex min-h-row shrink-0 items-center px-[0.6rem] py-xs text-eyebrow text-text-2 uppercase group-data-[collapsible=icon]:hidden',
+        'flex min-h-row shrink-0 items-center px-[0.6rem] py-xs text-eyebrow text-text-2 group-data-[collapsible=icon]:hidden',
         className,
       )}
       {...props}

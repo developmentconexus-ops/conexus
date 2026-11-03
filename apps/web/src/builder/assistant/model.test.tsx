@@ -1,4 +1,5 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { http } from 'msw'
 import { describe, expect, test } from 'vitest'
 import { COMPANY } from '../../platform/fixtures.ts'
 import { hubServer, refusal } from '../../platform/test-hub.tsx'
@@ -32,6 +33,28 @@ describe('o modelo', () => {
     expect(put?.method).toBe('PUT')
     expect(put?.path).toBe(`/api/companies/${COMPANY.id}/assistant/conversations/${ASKED}/model`)
     expect(put?.body).toMatchObject({ model: 'anthropic/claude-opus-4' })
+  })
+
+  test('enquanto o Hub não responde, o botão fica marcado como ocupado e solta quando responde', async () => {
+    let answer: () => void = () => undefined
+    const held = new Promise<void>((resolve) => {
+      answer = resolve
+    })
+    at(OPEN, { conversations: [assistantConversation()] })
+    server.use(
+      http.put('*/api/companies/:companyId/assistant/conversations/:id/model', async () => {
+        await held
+      }),
+    )
+    await toolsOf()
+    const busy = (await screen.findByRole('combobox', { name: 'Modelo e raciocínio' })).closest(
+      '[aria-busy]',
+    )
+    expect(busy?.getAttribute('aria-busy')).toBe('false')
+    await pickOpus()
+    await waitFor(() => expect(busy?.getAttribute('aria-busy')).toBe('true'))
+    answer()
+    await waitFor(() => expect(busy?.getAttribute('aria-busy')).toBe('false'))
   })
 
   test('uma recusa diz a frase do código e o botão volta ao modelo de antes', async () => {

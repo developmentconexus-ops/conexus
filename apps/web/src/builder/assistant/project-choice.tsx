@@ -1,6 +1,6 @@
 import type { CompanyId, ProjectId } from '@conexus/hub-api'
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
-import { FolderIcon } from 'lucide-react'
+import { CheckIcon, FolderIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useState } from 'react'
 import { projectQuery, projectsPagedQuery } from '../../hub/projects/public.ts'
@@ -18,6 +18,8 @@ import {
   NO_PROJECT_MATCH,
   NO_PROJECT_OPTION,
   PROJECT_CHOICE,
+  PROJECT_MENU_TITLE,
+  SEARCH_PROJECT,
 } from './text.ts'
 
 /** The folder of a conversation with no Projeto: faded, named for a screen reader, opening nothing. */
@@ -74,8 +76,9 @@ function ProjectChoice(props: {
         )}
       </PopoverTrigger>
       <PopoverContent side="top" align="start" aria-label={PROJECT_CHOICE} className="gap-xs p-xs">
+        <p className="px-sm pt-xs text-label text-text-2">{PROJECT_MENU_TITLE}</p>
         {projects.length >= SEARCH_FROM && (
-          <Search label="Buscar Projeto" value={query} onChange={setQuery} />
+          <Search label={SEARCH_PROJECT} value={query} onChange={setQuery} />
         )}
         <div className={LIST}>
           {query === '' && (
@@ -125,6 +128,9 @@ function ProjectRow(props: { checked: boolean; onPick: () => void; children: Rea
       onClick={props.onPick}
     >
       {props.children}
+      {props.checked && (
+        <CheckIcon aria-hidden="true" className="ml-auto size-4 shrink-0 text-accent" />
+      )}
     </button>
   )
 }
