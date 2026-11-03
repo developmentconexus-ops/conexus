@@ -239,3 +239,35 @@ test('na conversa de Projeto, o nome do Projeto fica na pasta e as ferramentas v
   assert.equal(await page.getByRole('button', { name: 'Projeto da conversa' }).count(), 0)
   await page.close()
 })
+
+test('com 11 ferramentas, as linhas do "+" mantêm 32 px e a lista rola (U5, critério 19)', async () => {
+  const tools = Array.from({ length: 11 }, (_, index) => ({
+    connectionId: `${String(index + 1).padStart(8, '0')}-aaaa-4aaa-8aaa-aaaaaaaaaaaa`,
+    connector: 'sankhya',
+    name: `Ferramenta ${index + 1}`,
+    chosen: true,
+  }))
+  const page = await harness.open(`/companies/${COMPANY.id}`, {
+    viewport: DESKTOP,
+    replies: {
+      ...assistant([]),
+      [`GET ${API}/connections`]: ok(listAssistantConnections, { connections: tools }),
+    },
+  })
+  await page.getByRole('button', { name: '11 ferramentas' }).click()
+  const dialog = page.getByRole('dialog', { name: 'Anexar e ferramentas' })
+  await dialog.getByRole('switch').first().waitFor()
+  const rows = await dialog
+    .getByRole('switch')
+    .evaluateAll((switches) =>
+      switches.map((one) => (one.closest('li') ?? one).getBoundingClientRect().height),
+    )
+  assert.equal(rows.length, 11)
+  for (const height of rows) assert.ok(height >= 32, `a row shrank to ${height}px`)
+  const scroll = await dialog.locator('.overflow-y-auto').evaluate((list) => ({
+    visible: list.clientHeight,
+    total: list.scrollHeight,
+  }))
+  assert.ok(scroll.total > scroll.visible, 'the list does not scroll')
+  await page.close()
+})
