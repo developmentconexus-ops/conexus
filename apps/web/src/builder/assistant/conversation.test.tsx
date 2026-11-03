@@ -56,13 +56,11 @@ describe('a linha da caixa', () => {
     expect(screen.queryByRole('button', { name: 'Ajustar' })).toBeNull()
   })
 
-  test('o modelo da conversa aparece à direita, só para leitura', async () => {
+  test('o modelo da conversa aparece à direita, com o da sessão', async () => {
     at(OPEN, { conversations: [assistantConversation()] })
     await toolsOf()
     const model = screen.getByRole('combobox', { name: 'Modelo e raciocínio' })
-    expect(model.hasAttribute('disabled') || model.getAttribute('aria-disabled') === 'true').toBe(
-      true,
-    )
+    expect(model.hasAttribute('disabled')).toBe(false)
     expect(model.textContent).toMatch(/Sonnet/)
   })
 
