@@ -74,7 +74,7 @@ for (const viewport of [PHONE, SMALL_PHONE]) {
     await page.close()
   })
 
-  test(`o sino com não lidas fica na linha do topo de um Projeto, à vista e sem quebrá-la, em ${viewport.width}px`, async () => {
+  test(`o sino com não lidas fica no pé do trilho, na gaveta, acima da conta e à vista, em ${viewport.width}px`, async () => {
     const state = conversationState('Prévia vazia com a conversa mais recente')
     const unread = ok(listNotifications, {
       notifications: [],
@@ -87,23 +87,25 @@ for (const viewport of [PHONE, SMALL_PHONE]) {
     }
     const page = await harness.open(state.path, { viewport, replies })
     await state.settle(page)
-    const bell = page.getByRole('button', { name: 'Notificações: 12 não lidas' })
+    await page.getByRole('button', { name: 'Abrir navegação' }).click()
+    const drawer = page.getByRole('dialog', { name: 'Navegação' })
+    const bell = drawer.getByRole('button', { name: 'Notificações: 12 não lidas' })
     await bell.waitFor()
-    const [opener, box, title, toggle] = await Promise.all(
-      [
-        page.getByRole('button', { name: 'Abrir navegação' }),
-        bell,
-        page.locator('[data-slot=drawer-trigger]'),
-        page.getByRole('group', { name: 'Parte do Projeto' }),
-      ].map((each) => each.boundingBox()),
+    await page.waitForFunction(() =>
+      document.getAnimations().every((a) => a.playState !== 'running'),
     )
-    assert.ok(opener && box && title && toggle, 'the top line lacks one of its parts')
-    for (const part of [box, title, toggle]) {
-      const apart = Math.abs(part.y + part.height / 2 - (opener.y + opener.height / 2))
-      assert.ok(apart <= 2, 'the top line breaks into two rows')
-    }
-    assert.ok(box.x + box.width <= viewport.width, 'the bell leaves the screen')
-    assert.ok(toggle.x + toggle.width <= box.x, 'the bell overlaps the toggle')
+    const [box, account, panel] = await Promise.all(
+      [bell, drawer.getByRole('button', { name: /^Conta de / }), drawer].map((each) =>
+        each.boundingBox(),
+      ),
+    )
+    assert.ok(box && account && panel, 'the drawer lacks the bell or the account')
+    assert.ok(box.y + box.height <= account.y, 'the bell is not above the account')
+    assert.ok(Math.abs(box.x - account.x) <= 1, 'the bell is off the rail column')
+    assert.ok(
+      box.x >= panel.x && box.x + box.width <= panel.x + panel.width,
+      'the bell leaves the drawer',
+    )
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), viewport.width)
     await page.close()
   })
@@ -185,7 +187,7 @@ for (const viewport of [PHONE, SMALL_PHONE]) {
       const row = list.parentElement?.getBoundingClientRect()
       return row ? Math.round(row.bottom) : 0
     })
-    if (viewport === PHONE) assert.equal(header, 89, 'the top of the Projeto is not two rows')
+    if (viewport === PHONE) assert.equal(header, 86, 'the top of the Projeto is not two rows')
     const pressed = await page
       .getByRole('group', { name: 'Parte do Projeto' })
       .getByRole('button', { name: 'App', exact: true })

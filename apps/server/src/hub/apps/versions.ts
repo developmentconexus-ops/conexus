@@ -225,20 +225,30 @@ export async function listVersions(tx: ReadTx, ids: OfProject): Promise<AppVersi
   return rows.map((row) => versionView(row, pointers))
 }
 
-/** The numbers of the Prévia's and the published version, in one read; null before each first. */
+/** The numbers of the Prévia's and the published version of each of `projectIds`, in one query; null before each first, and a Projeto with no app is absent. */
 export async function versionNumbersOf(
   tx: ReadTx,
-  projectId: ProjectId,
-): Promise<{ appVersion: number | null; publishedVersion: number | null }> {
+  projectIds: readonly ProjectId[],
+): Promise<ReadonlyMap<ProjectId, { appVersion: number | null; publishedVersion: number | null }>> {
+  if (projectIds.length === 0) return new Map()
   const preview = alias(appVersion, 'preview_version')
   const published = alias(appVersion, 'published_version')
-  const [row] = await tx
-    .select({ appVersion: preview.number, publishedVersion: published.number })
+  const rows = await tx
+    .select({
+      projectId: app.projectId,
+      appVersion: preview.number,
+      publishedVersion: published.number,
+    })
     .from(app)
     .leftJoin(preview, eq(preview.id, app.liveVersionId))
     .leftJoin(published, eq(published.id, app.publishedVersionId))
-    .where(eq(app.projectId, projectId))
-  return { appVersion: row?.appVersion ?? null, publishedVersion: row?.publishedVersion ?? null }
+    .where(inArray(app.projectId, [...projectIds]))
+  return new Map(
+    rows.map((row) => [
+      ProjectIdSchema.parse(row.projectId),
+      { appVersion: row.appVersion, publishedVersion: row.publishedVersion },
+    ]),
+  )
 }
 
 /** The published version of each of `projectIds` that has one, in one query (step 24.1's overview). */

@@ -1,7 +1,7 @@
 import { CompanyId, ConnectionList, ProjectSummary } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import type { BoundFunctions, queries } from '@testing-library/react'
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { beforeEach, expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../../../main.tsx'
@@ -16,6 +16,8 @@ const PROJECTS = [1, 2, 3, 4, 5, 6, 7].map((number) =>
     id: String(number).repeat(32),
     name: `Projeto ${number}`,
     createdAt: '2026-10-17T12:00:00.000Z',
+    appVersion: null,
+    publishedVersion: null,
   }),
 )
 
@@ -28,59 +30,84 @@ function remembered(...numbers: number[]) {
   )
 }
 
-function open(path: string, projects = PROJECTS) {
-  server.use(...projectsRead({ projects, databaseReady: true, mayDelete: false, role: 'member' }))
+function open(path: string, projects = PROJECTS, role = 'member') {
+  server.use(...projectsRead({ projects, databaseReady: true, mayDelete: false, role }))
   const conexus = createConexus(createMemoryHistory({ initialEntries: [path] }))
   render(<Conexus conexus={conexus} />)
   return conexus.router
 }
 
-function rail() {
+function toggle() {
   return screen.getByRole('button', { name: /barra lateral/ })
 }
 
-function railLabel() {
-  return rail().getAttribute('aria-label')
+function toggleLabel() {
+  return toggle().getAttribute('aria-label')
 }
 
+/** The rail of places and the list beside it, once the list has what the role reads. */
 async function sidebar() {
-  const nav = within(await screen.findByRole('navigation', { name: 'Navegação' }))
-  await nav.findByRole('link', { name: /Todos os projetos|Construir/ })
-  return nav
+  const nav = await screen.findByRole('navigation', { name: 'Navegação' })
+  const column = nav.querySelector<HTMLElement>('[data-slot="sidebar-rail-column"]')
+  const list = nav.querySelector<HTMLElement>('[data-sidebar="sidebar"]')
+  if (column === null || list === null) throw new Error('the sidebar has no rail or no list')
+  const within_ = { rail: within(column), list: within(list) }
+  await within_.list.findAllByRole('link', {
+    name: /Nova conversa|Projeto 1|Construir|Todos os projetos/,
+  })
+  return within_
 }
 
-function linkNames(nav: BoundFunctions<typeof queries>) {
-  return nav.getAllByRole('link').map((link) => link.textContent)
+function linkNames(scope: BoundFunctions<typeof queries>) {
+  return scope
+    .getAllByRole('link')
+    .map((link) => link.getAttribute('aria-label') ?? link.textContent)
 }
 
-test('a barra: empresa, Início, Projetos recentes, Todos os projetos, Integrações, Configurações e a conta (critério 3)', async () => {
+test('o trilho do membro: Início, Projetos, Integrações, Configurações e a conta; a lista, os Projetos recentes (critérios 3 e 5)', async () => {
   open(HOME)
-  const nav = await sidebar()
-  expect(nav.getByText('Empresa Teste')).toBeTruthy()
-  expect(nav.getByText('Projetos recentes')).toBeTruthy()
-  expect(linkNames(nav)).toEqual([
-    'Início',
+  const { rail, list } = await sidebar()
+  expect(linkNames(rail)).toEqual(['Início', 'Projetos', 'Integrações', 'Configurações'])
+  expect(rail.getByRole('button', { name: 'Conta de Ana Lima' })).toBeTruthy()
+  expect(rail.getByRole('link', { name: 'Início' }).getAttribute('aria-current')).toBe('page')
+  expect(rail.getByRole('link', { name: 'Configurações' }).getAttribute('href')).toBe(
+    `${HOME}/settings`,
+  )
+  expect(list.getByText('Empresa Teste')).toBeTruthy()
+  expect(list.getByText('Projetos recentes')).toBeTruthy()
+  expect(linkNames(list)).toEqual([
     'Projeto 1',
     'Projeto 2',
     'Projeto 3',
     'Projeto 4',
     'Projeto 5',
     'Todos os projetos',
-    'Integrações',
-    'Configurações',
   ])
-  expect(nav.getByRole('button', { name: 'Conta de Ana Lima' })).toBeTruthy()
-  expect(nav.getByRole('link', { name: 'Início' }).getAttribute('aria-current')).toBe('page')
-  expect(nav.getByRole('link', { name: 'Configurações' }).getAttribute('href')).toBe(
-    `${HOME}/settings`,
-  )
   expect(screen.getByRole('main')).toBeTruthy()
 })
 
-test('sem Projeto, a barra mostra Projetos recentes com o +, uma frase quieta e sem Todos os projetos', async () => {
+test('o trilho da dona tem Automações logo depois de Integrações; a lista é Nova conversa e Conversas; o membro não vê Automações', async () => {
+  open(HOME, PROJECTS, 'owner')
+  const owner = await sidebar()
+  expect(linkNames(owner.rail)).toEqual([
+    'Início',
+    'Projetos',
+    'Integrações',
+    'Automações',
+    'Configurações',
+  ])
+  expect(owner.list.getByRole('link', { name: 'Nova conversa' })).toBeTruthy()
+  expect(owner.list.queryByText('Projetos recentes')).toBeNull()
+  cleanup()
+  open(HOME)
+  const member = await sidebar()
+  expect(member.rail.queryByRole('link', { name: 'Automações' })).toBeNull()
+})
+
+test('sem Projeto, a lista do membro mostra Projetos recentes com o +, uma frase quieta e sem Todos os projetos', async () => {
   open(HOME, [])
   const nav = within(await screen.findByRole('navigation', { name: 'Navegação' }))
-  await screen.findByRole('heading', { name: 'O que vamos construir?' })
+  await screen.findByRole('heading', { name: /^(Bom dia|Boa tarde|Boa noite)/ })
   expect(nav.getByRole('link', { name: 'Início' })).toBeTruthy()
   expect(await nav.findByText('Projetos recentes')).toBeTruthy()
   expect(nav.getByRole('button', { name: 'Novo projeto' })).toBeTruthy()
@@ -91,8 +118,8 @@ test('sem Projeto, a barra mostra Projetos recentes com o +, uma frase quieta e 
 test('os Projetos recentes: os abertos por último que seguem na lista, completados pelos primeiros, até cinco (critério 3)', async () => {
   remembered(7, 3, 6)
   open(HOME)
-  const nav = await sidebar()
-  expect(linkNames(nav).slice(1, -3)).toEqual([
+  const { list } = await sidebar()
+  expect(linkNames(list).slice(0, -1)).toEqual([
     'Projeto 7',
     'Projeto 3',
     'Projeto 6',
@@ -107,8 +134,8 @@ test('um Projeto lembrado que o Hub já não lista fica de fora (critério 3)', 
     `${'9'.repeat(32)} ${'4'.repeat(32)}`,
   )
   open(HOME)
-  const nav = await sidebar()
-  expect(linkNames(nav).slice(1, -3)).toEqual([
+  const { list } = await sidebar()
+  expect(linkNames(list).slice(0, -1)).toEqual([
     'Projeto 4',
     'Projeto 1',
     'Projeto 2',
@@ -117,16 +144,10 @@ test('um Projeto lembrado que o Hub já não lista fica de fora (critério 3)', 
   ])
 })
 
-test('com um só Projeto, a barra lista só ele (critério 3)', async () => {
+test('com um só Projeto, a lista traz só ele (critério 3)', async () => {
   open(HOME, PROJECTS.slice(0, 1))
-  const nav = await sidebar()
-  expect(linkNames(nav)).toEqual([
-    'Início',
-    'Projeto 1',
-    'Todos os projetos',
-    'Integrações',
-    'Configurações',
-  ])
+  const { list } = await sidebar()
+  expect(linkNames(list)).toEqual(['Projeto 1', 'Todos os projetos'])
 })
 
 test('abrir um Projeto o põe primeiro nos recentes (critério 3)', async () => {
@@ -136,29 +157,30 @@ test('abrir um Projeto o põe primeiro nos recentes (critério 3)', async () => 
     to: '/companies/$companyId',
     params: { companyId: CompanyId.parse(COMPANY.id) },
   })
-  const nav = await sidebar()
-  expect(linkNames(nav)[1]).toBe('Projeto 6')
+  const { list } = await sidebar()
+  expect(linkNames(list)[0]).toBe('Projeto 6')
 })
 
-test('dentro de um Projeto a barra é a do Projeto e fica aberta; Ctrl+B a recolhe e, ao sair, a da empresa volta (critério 4)', async () => {
+test('dentro de um Projeto o trilho fica e a lista é a do Projeto; Ctrl+B a recolhe e, ao sair, a da empresa volta (critérios 4 e 11)', async () => {
   const router = open(`${HOME}/projects/${PROJECTS[0]?.id}`)
   await screen.findAllByRole('heading', { name: 'Projeto 1' })
-  const nav = await sidebar()
-  expect(railLabel()).toBe('Recolher a barra lateral')
-  expect(nav.getByRole('link', { name: 'Construir' })).toBeTruthy()
+  const { rail, list } = await sidebar()
+  expect(toggleLabel()).toBe('Recolher a barra lateral')
+  expect(list.getByRole('link', { name: 'Construir' })).toBeTruthy()
+  expect(rail.getByRole('link', { name: 'Projetos' }).getAttribute('aria-current')).toBe('page')
 
   fireEvent.keyDown(globalThis.window, { key: 'b', ctrlKey: true })
-  await waitFor(() => expect(railLabel()).toBe('Abrir a barra lateral'))
-  fireEvent.click(rail())
-  await waitFor(() => expect(railLabel()).toBe('Recolher a barra lateral'))
+  await waitFor(() => expect(toggleLabel()).toBe('Abrir a barra lateral'))
+  fireEvent.click(toggle())
+  await waitFor(() => expect(toggleLabel()).toBe('Recolher a barra lateral'))
 
-  fireEvent.click(nav.getByRole('link', { name: COMPANY.name }))
-  await screen.findByRole('heading', { name: 'O que vamos construir?' })
+  fireEvent.click(rail.getByRole('link', { name: 'Início' }))
+  await screen.findByRole('heading', { name: /^(Bom dia|Boa tarde|Boa noite)/ })
   expect(router.state.location.pathname).toBe(HOME)
-  expect(nav.getByRole('link', { name: 'Início' })).toBeTruthy()
+  expect(list.queryByRole('link', { name: 'Construir' })).toBeNull()
 })
 
-test('Integrações na barra: entre os Projetos e as Configurações, ativa na página (critério 19)', async () => {
+test('Integrações no trilho: depois de Projetos, ativa na página, e Configurações não (critérios 5 e 19)', async () => {
   server.use(
     http.get(`*/api/companies/${COMPANY.id}/connections`, () =>
       HttpResponse.json(
@@ -171,17 +193,16 @@ test('Integrações na barra: entre os Projetos e as Configurações, ativa na p
     ),
   )
   open(`${HOME}/integrations`)
-  const nav = await sidebar()
-  const names = linkNames(nav)
-  expect(names.indexOf('Integrações')).toBe(names.indexOf('Configurações') - 1)
-  expect(names.indexOf('Integrações')).toBeGreaterThan(names.indexOf('Todos os projetos'))
-  expect(nav.getByRole('link', { name: 'Integrações' }).getAttribute('aria-current')).toBe('page')
-  expect(nav.getByRole('link', { name: 'Configurações' }).getAttribute('aria-current')).toBeNull()
+  const { rail } = await sidebar()
+  const names = linkNames(rail)
+  expect(names.indexOf('Integrações')).toBe(names.indexOf('Projetos') + 1)
+  expect(rail.getByRole('link', { name: 'Integrações' }).getAttribute('aria-current')).toBe('page')
+  expect(rail.getByRole('link', { name: 'Configurações' }).getAttribute('aria-current')).toBeNull()
   expect(await screen.findByRole('heading', { name: 'Integrações' })).toBeTruthy()
 })
 
 test('fora do Projeto a barra começa aberta (critério 4)', async () => {
   open(HOME)
   await sidebar()
-  expect(railLabel()).toBe('Recolher a barra lateral')
+  expect(toggleLabel()).toBe('Recolher a barra lateral')
 })

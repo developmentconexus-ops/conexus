@@ -1,13 +1,15 @@
+import type { CompanyId } from '@conexus/hub-api'
 import { createFileRoute, Outlet, useMatches, useParams } from '@tanstack/react-router'
-import { HouseIcon, PlugIcon, SettingsIcon, TimerIcon } from 'lucide-react'
+import { FolderIcon, HouseIcon, PlugIcon, SettingsIcon, TimerIcon } from 'lucide-react'
 import { useEffect } from 'react'
+import { NewConversation, SidebarConversations } from '../../../../builder/assistant/public.ts'
 import {
   AccountMenu,
   CompanySwitcher,
   companyEntry,
   enterHouse,
 } from '../../../../hub/identity/public.ts'
-import { NotificationBell } from '../../../../hub/notifications/public.ts'
+import { NotificationBell, unreadNote, useUnread } from '../../../../hub/notifications/public.ts'
 import {
   ProjectRailHead,
   ProjectRailNav,
@@ -15,9 +17,9 @@ import {
   RecentProjects,
   rememberProject,
 } from '../../../../hub/projects/public.ts'
-import { Frame, FrameLink, PhoneTopContent } from '../../../../ui/frame.tsx'
-import { SidebarGroup, SidebarMenu } from '../../../../ui/sidebar.tsx'
-import { useIsMobile } from '../../../../ui/use-mobile.ts'
+import { Frame } from '../../../../ui/frame.tsx'
+import { SidebarGroup } from '../../../../ui/sidebar.tsx'
+import { SidebarRailButton } from '../../../../ui/sidebar-rail-button.tsx'
 
 export const Route = createFileRoute('/_app/companies/$companyId')({
   ...companyEntry,
@@ -30,7 +32,48 @@ export const Route = createFileRoute('/_app/companies/$companyId')({
   component: HouseFrame,
 })
 
-/** The company's frame: inside a Projeto its sidebar is the Projeto's own (web W30). */
+/** The rail's places at the top: Automações follows Integrações and is for whoever may ask the Assistant. */
+function RailPlaces(props: { companyId: CompanyId; role: string }) {
+  const { companyId } = props
+  const inInicio = useMatches({
+    select: (matches) => matches.at(-1)?.staticData.place === 'Início',
+  })
+  const params = { companyId }
+  return (
+    <>
+      <SidebarRailButton
+        to="/companies/$companyId"
+        params={params}
+        icon={HouseIcon}
+        label="Início"
+        activeOptions={{ exact: true }}
+        alsoCurrent={inInicio}
+      />
+      <SidebarRailButton
+        to="/companies/$companyId/projects"
+        params={params}
+        icon={FolderIcon}
+        label="Projetos"
+      />
+      <SidebarRailButton
+        to="/companies/$companyId/integrations"
+        params={params}
+        icon={PlugIcon}
+        label="Integrações"
+      />
+      {props.role !== 'member' && (
+        <SidebarRailButton
+          to="/companies/$companyId/automations"
+          params={params}
+          icon={TimerIcon}
+          label="Automações"
+        />
+      )}
+    </>
+  )
+}
+
+/** The company's frame: the rail of places, and beside it the list, which inside a Projeto is the Projeto's own (web W30). */
 function HouseFrame() {
   const { companyId } = Route.useParams()
   const { person, role } = Route.useRouteContext()
@@ -39,85 +82,44 @@ function HouseFrame() {
     if (projectId !== undefined) rememberProject({ personId: person.id, companyId, projectId })
   }, [person.id, companyId, projectId])
   const bounded = useMatches({ select: (matches) => matches.at(-1)?.staticData.bounded === true })
-  // Início is the place of the company's page and of the conversations born there.
-  const atInicio = useMatches({
-    select: (matches) => matches.at(-1)?.staticData.place === 'Início',
-  })
-  const phone = useIsMobile()
-  const params = { companyId }
+  const menuNote = unreadNote(useUnread(companyId))
+  const foot = (
+    <>
+      <SidebarRailButton
+        to="/companies/$companyId/settings"
+        params={{ companyId }}
+        icon={SettingsIcon}
+        label="Configurações"
+      />
+      <NotificationBell companyId={companyId} />
+      <AccountMenu person={person} compact />
+    </>
+  )
   return (
     <Frame
       header={
-        <>
-          {projectId === undefined ? (
-            <CompanySwitcher current={companyId} />
-          ) : (
-            <ProjectRailHead companyId={companyId} projectId={projectId} />
-          )}
-          {!phone && <NotificationBell companyId={companyId} />}
-        </>
+        projectId === undefined ? (
+          <CompanySwitcher current={companyId} />
+        ) : (
+          <ProjectRailHead companyId={companyId} projectId={projectId} />
+        )
       }
+      rail={{ top: <RailPlaces companyId={companyId} role={role} />, foot }}
+      menuNote={menuNote}
       nav={
         projectId !== undefined ? (
           <ProjectRailNav companyId={companyId} projectId={projectId} />
+        ) : role === 'member' ? (
+          <RecentProjects companyId={companyId} personId={person.id} />
         ) : (
-          <>
-            <SidebarGroup>
-              <SidebarMenu>
-                <FrameLink
-                  to="/companies/$companyId"
-                  params={params}
-                  activeOptions={{ exact: true }}
-                  current={atInicio}
-                  icon={HouseIcon}
-                  label="Início"
-                />
-                {role !== 'member' && (
-                  <FrameLink
-                    to="/companies/$companyId/automations"
-                    params={params}
-                    icon={TimerIcon}
-                    label="Automações"
-                  />
-                )}
-              </SidebarMenu>
-            </SidebarGroup>
-            <RecentProjects companyId={companyId} personId={person.id} />
-            <SidebarGroup>
-              <SidebarMenu>
-                <FrameLink
-                  to="/companies/$companyId/integrations"
-                  params={params}
-                  icon={PlugIcon}
-                  label="Integrações"
-                />
-              </SidebarMenu>
-            </SidebarGroup>
-          </>
+          <SidebarGroup>
+            <NewConversation companyId={companyId} />
+            <SidebarConversations companyId={companyId} />
+          </SidebarGroup>
         )
-      }
-      footer={
-        <>
-          <SidebarMenu>
-            <FrameLink
-              to="/companies/$companyId/settings"
-              params={params}
-              icon={SettingsIcon}
-              label="Configurações"
-            />
-          </SidebarMenu>
-          <AccountMenu person={person} />
-        </>
       }
       compact={projectId !== undefined || bounded}
     >
-      {phone && (
-        <PhoneTopContent>
-          <div className="order-3 shrink-0">
-            <NotificationBell companyId={companyId} />
-          </div>
-        </PhoneTopContent>
-      )}
       <Outlet />
     </Frame>
   )

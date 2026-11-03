@@ -13,6 +13,7 @@ import {
   releaseCompanyDatabase,
 } from './company-deletion.ts'
 import { admitToApp, liveProjectOf, projectOfHost } from './hosts.ts'
+import { finishMarkedProject, markedProjectsOf } from './marked.ts'
 import type {
   AppRemoval,
   AppSessionsEnd,
@@ -20,7 +21,7 @@ import type {
   ProjectConversationRelease,
   PublishedRolesOf,
 } from './ports.ts'
-import { createProjectStore, finishMarkedProject, markedProjectsOf } from './projects.ts'
+import { createProjectStore } from './projects.ts'
 import { registerProjectRoutes } from './routes.ts'
 
 /** For the apps' removal, which Projects and the Central call before Projects exist to hand it. */

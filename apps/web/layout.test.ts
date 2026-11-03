@@ -110,28 +110,29 @@ test('abaixo de 1024px a barra lateral abre nos ícones, de 56px, e a pessoa a e
   await wide.close()
 })
 
-test('no Projeto a barra é a do Projeto e abre com 328px; Ctrl+B a recolhe para ícones com dica e, ao sair do Projeto, a da empresa volta', async () => {
+test('no Projeto o trilho fica e a lista é a do Projeto, com 328px; Ctrl+B recolhe a lista e deixa o trilho de 56px com dica e, ao sair do Projeto, a lista da empresa volta', async () => {
   const page = await open(PROJECT, DESKTOP, HOUSE)
   const nav = page.getByRole('navigation', { name: 'Navegação' })
-  const construir = nav.getByRole('link', { name: 'Construir' })
-  await construir.waitFor()
+  await nav.getByRole('link', { name: 'Construir' }).waitFor()
   await page.waitForTimeout(250)
   const opened = await widthOf(nav)
   await page.keyboard.press('Control+b')
   await page.waitForTimeout(250)
   const collapsed = await widthOf(nav)
-  await construir.hover()
+  const projetos = nav.getByRole('link', { name: 'Projetos' })
+  assert.equal(await projetos.getAttribute('aria-current'), 'page')
+  await projetos.hover()
   // Base UI's tooltip popup carries no role; the trigger names the place by its own label.
   const tip = await page.locator('[data-slot=tooltip-content]').textContent()
   await page.keyboard.press('Control+b')
   await page.waitForTimeout(250)
-  await nav.getByRole('link').first().click()
-  await page.getByRole('heading', { name: 'Pergunte ou peça um app' }).waitFor()
-  await nav.getByRole('link', { name: 'Início' }).waitFor()
+  await nav.getByRole('link', { name: 'Início' }).click()
+  await page.getByRole('heading', { name: /^(Bom dia|Boa tarde|Boa noite)/ }).waitFor()
+  await nav.getByRole('link', { name: 'Nova conversa' }).waitFor()
   await page.waitForTimeout(250)
   assert.deepEqual(
     { opened, collapsed, tip, after: await widthOf(nav) },
-    { opened: 328, collapsed: 56, tip: 'Construir', after: 328 },
+    { opened: 328, collapsed: 56, tip: 'Projetos', after: 328 },
   )
   await page.close()
 })
@@ -159,7 +160,7 @@ for (const state of DEFAULT_STATES) {
   })
 }
 
-test('a gaveta tem tudo da barra: a empresa, Início, os Projetos, Configurações e a conta', async () => {
+test('a gaveta tem o trilho e a lista juntos: Início, Projetos, Configurações, o sino e a conta, e a empresa e Nova conversa', async () => {
   const page = await open('/', PHONE, HOUSE)
   await page.getByRole('button', { name: 'Abrir navegação' }).click()
   const drawer = page.getByRole('dialog', { name: 'Navegação' })
@@ -167,12 +168,14 @@ test('a gaveta tem tudo da barra: a empresa, Início, os Projetos, Configuraçõ
   const names = await Promise.all(
     [
       drawer.getByText('Empresa Teste'),
-      drawer.getByRole('link', { name: 'Todos os projetos' }),
+      drawer.getByRole('link', { name: 'Nova conversa' }),
+      drawer.getByRole('link', { name: 'Projetos' }),
       drawer.getByRole('link', { name: 'Configurações' }),
+      drawer.getByRole('button', { name: 'Notificações' }),
       drawer.getByRole('button', { name: 'Conta de Ana Lima' }),
     ].map((one) => one.isVisible()),
   )
-  assert.deepEqual(names, [true, true, true, true])
+  assert.deepEqual(names, [true, true, true, true, true, true])
   await page.close()
 })
 
@@ -252,7 +255,7 @@ function iconWidth(owner: Locator): Promise<number> {
   return owner.locator('svg').evaluate((icon) => icon.getBoundingClientRect().width)
 }
 
-test('os ícones têm 14px na barra, 16px ao lado de um texto e 18px no trilho', async () => {
+test('os ícones têm 14px na barra, 16px ao lado de um texto e 20px no trilho', async () => {
   const page = await open('/', PHONE, HOUSE)
   const opener = await iconWidth(page.getByRole('button', { name: 'Abrir navegação' }))
   await page.getByRole('button', { name: 'Abrir navegação' }).click()
@@ -262,7 +265,7 @@ test('os ícones têm 14px na barra, 16px ao lado de um texto e 18px no trilho',
   const rail = await iconWidth(drawer.getByRole('link', { name: 'Início' }))
   await drawer.getByRole('button', { name: 'Conta de Ana Lima' }).click()
   const leave = await iconWidth(page.getByRole('menuitem', { name: 'Sair do Conexus' }))
-  assert.deepEqual({ opener, close, leave, rail }, { opener: 14, close: 14, leave: 16, rail: 18 })
+  assert.deepEqual({ opener, close, leave, rail }, { opener: 14, close: 14, leave: 16, rail: 20 })
   await page.close()
 })
 

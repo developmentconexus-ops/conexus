@@ -47,15 +47,13 @@ async function opened(viewport: typeof DESKTOP, events: unknown[] = []) {
   return page
 }
 
-for (const [viewport, showsPercent] of [
-  [DESKTOP, true],
-  [PHONE, false],
-] as const) {
-  test(`o percentual da memória ${showsPercent ? 'aparece' : 'some'} em ${viewport.width}px`, async () => {
+for (const viewport of [DESKTOP, PHONE]) {
+  test(`a memória mostra o percentual em ${viewport.width}px, e a palavra não cabe na caixa estreita do Builder`, async () => {
     const page = await opened(viewport)
     const ring = page.getByRole('button', { name: /Memória da conversa/ })
     await ring.waitFor()
-    assert.equal(await ring.getByText('70%').isVisible(), showsPercent)
+    assert.equal(await ring.getByText('70%').isVisible(), true)
+    assert.equal(await ring.getByText('Memória', { exact: true }).isVisible(), false)
     await page.close()
   })
 }
@@ -184,7 +182,7 @@ for (const [viewport, effort, shown] of [
       shown,
     )
     if (shown) {
-      const name = button.getByText('Claude Sonnet 4', { exact: true })
+      const name = button.locator('.truncate')
       assert.ok(await name.evaluate((one) => one.scrollWidth <= one.clientWidth), 'name whole')
       // Playwright calls a level clipped by the one-line box visible, so the line is measured.
       const level = await button

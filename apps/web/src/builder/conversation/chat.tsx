@@ -44,8 +44,8 @@ export type ChatProps = {
     providers: readonly Provider[]
     onError: (error: string | undefined) => void
   }) => ReactNode
-  /** Between the transcript and the box. */
-  bar?: ReactNode
+  /** The folder and the tools count after the box's **+**, and what their failures say above it. */
+  tools?: { context: ReactNode; notice: ReactNode }
 }
 
 function useSending(
@@ -115,6 +115,8 @@ function ChatComposer(props: {
         field={field}
         onSend={props.onSend}
         onStop={props.onStop}
+        context={chat.tools?.context}
+        notice={chat.tools?.notice}
         taskPanel={<TaskPanel tasks={session.tasks} streaming={state.running} />}
         memory={
           <MemoryStatus memory={state.memory} omPhase={state.omPhase} failed={state.memoryFailed} />
@@ -234,7 +236,6 @@ export function Chat(props: ChatProps) {
       {(state.running || waiting) && !(phone && waiting) && (
         <WorkingLine startedAt={state.startedAt} heard={state.messages} waiting={waiting} />
       )}
-      {props.bar}
       <ChatComposer
         chat={props}
         session={session}

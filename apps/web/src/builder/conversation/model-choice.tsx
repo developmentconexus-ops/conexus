@@ -108,6 +108,8 @@ export function ComposerModelPicker(props: {
   value: Choice
   heading: string
   onChange: (choice: Choice) => void
+  /** The model is shown and not changed here (the Assistant's conversation, until its model is a choice). */
+  disabled?: boolean
 }) {
   const phone = useIsMobile()
   const { model: now, effort } = props.value
@@ -131,6 +133,7 @@ export function ComposerModelPicker(props: {
       heading={props.heading}
       note={phone ? NO_SECRETS : undefined}
       chevron={false}
+      disabled={props.disabled}
       className={cn(
         touchArea,
         'h-8 rounded-pill bg-surface-3 px-sm text-label font-medium hover:bg-accent-soft data-popup-open:bg-accent-soft',

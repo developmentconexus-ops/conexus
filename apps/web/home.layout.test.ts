@@ -81,7 +81,7 @@ const WITH_MODEL: Replies = {
 for (const viewport of [DESKTOP, PHONE]) {
   test(`o Início é centrado: título, caixa e exemplos no centro da coluna, numa tela de ${viewport.width}px`, async () => {
     const page = await open(`/companies/${COMPANY_ID}`, viewport, WITH_MODEL)
-    const title = page.getByRole('heading', { name: 'O que vamos construir?' })
+    const title = page.getByRole('heading', { name: /^(Bom dia|Boa tarde|Boa noite)/ })
     const box = page
       .getByRole('textbox', { name: 'Mensagem para o Builder' })
       .locator('xpath=ancestor::form')

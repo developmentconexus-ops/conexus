@@ -107,8 +107,8 @@ function Budget(props: {
 }
 
 /**
- * One memory ring in the status line of the composer's action row (Criterion 15): the share of the
- * message window that is full, with the number beside it on a computer. The popover keeps both
+ * One memory ring in the composer's action row: the share of the message window that is full, with
+ * its word and number beside it; under 26 rem of box the word goes and the ring and number stay. The popover keeps both
  * memories (Criterion 16).
  * Failure marks carry no vendor text (C48, C51).
  */
@@ -141,7 +141,12 @@ export function MemoryStatus(props: {
         }`}
       >
         <Ring percent={percent} working={working} />
-        <span className="tabular-nums max-md:hidden">{percent}%</span>
+        <span aria-hidden="true" className="@max-[26rem]:hidden">
+          Memória
+        </span>
+        <span aria-hidden="true" className="tabular-nums">
+          {percent}%
+        </span>
         {failed && (
           <span className="flex items-center text-danger" title="Falha na memória">
             <CircleAlertIcon className="size-3.5" aria-label="Falha na memória" />

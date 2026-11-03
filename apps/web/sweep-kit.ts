@@ -11,7 +11,7 @@ export type State = {
   settle(page: Page): Promise<void>
 }
 
-export async function waitFor(page: Page, text: string) {
+export async function waitFor(page: Page, text: string | RegExp) {
   await page.getByText(text).first().waitFor()
 }
 

@@ -20,18 +20,21 @@ import { FileChip } from './person-turn.tsx'
 import { useRoom } from './room.ts'
 import { dictationText, NO_SECRETS, REFUSALS, steerPlaceholderText } from './text.ts'
 
-/** The form sticks to the bottom and clears the home indicator. */
+/**
+ * The form sticks to the bottom and clears the home indicator. Its band takes `--ground`, the
+ * ground of the frame it sits in (surface unless the frame says otherwise, like the welcome's canvas).
+ */
 const FORM =
-  'sticky bottom-0 flex flex-col gap-xs bg-canvas pb-[max(0.5rem,env(safe-area-inset-bottom))]'
+  '@container sticky bottom-0 flex flex-col gap-xs bg-(--ground,var(--color-surface)) pb-[max(0.5rem,env(safe-area-inset-bottom))]'
 
 /** A finger's keyboard has a Return that means a new line; the button is what sends. */
 function isTouch(): boolean {
   return globalThis.matchMedia('(pointer: coarse)').matches
 }
 
-/** The round button at the end of the field: ink at rest, ipê under the pointer (design V5). */
+/** The round button at the end of the field: ink at rest, the soft grey under the pointer (design V5). */
 const ROUND =
-  'rounded-pill hover:bg-accent disabled:bg-surface-4 disabled:text-text-2 disabled:opacity-100'
+  'shrink-0 rounded-pill hover:bg-surface-3 hover:text-text disabled:bg-surface-4 disabled:text-text-2 disabled:opacity-100'
 
 type Attachments = ReturnType<typeof useAttachments>
 /** Takes the files and says why any was left out. */
@@ -96,7 +99,7 @@ function joined(text: string, added: string): string {
 }
 
 /** The model button's round, soft fill, on the controls beside it (the card, row "O + e o microfone"). */
-const SOFT = 'rounded-full bg-surface-3 hover:bg-accent-soft'
+const SOFT = 'shrink-0 rounded-full bg-surface-3 hover:bg-accent-soft'
 
 /** **+**: the browser's file picker, limited to the types the Builder reads. */
 function Attach({ add }: { add: AddFiles }) {
@@ -180,13 +183,13 @@ function Subject() {
 }
 
 /**
- * The field and its action row, at every width: on the left **+**, the model's button and the memory
- * ring, and on the right the microphone and the round button, which is **Parar** while the Builder
- * answers and the box is empty, and **Enviar** otherwise (founder, 2026-10-27: **+** first, as AI
- * Elements' `PromptInputTools` puts the attachments action, then the model and the ring after it). The row never wraps down to 320 px: the
- * left takes the free width and the model's name truncates in it, the buttons keep theirs
- * (`PromptInputFooter`, `PromptInputSubmit`). Under 20 rem, at 200% zoom on a phone (design V18),
- * there is no room for four 44 px targets and the buttons take a line of their own.
+ * The field and its action row, at every width and on every screen, in one order: on the left
+ * **+**, the folder and the tools count, and on the right the model's button, the memory ring, the
+ * microphone and the round button, which is **Parar** while the Builder answers and the box is
+ * empty, and **Enviar** otherwise (the card of step 13.3, criterion 13). The row never wraps down to
+ * 320 px: the left keeps its controls and the model's name truncates in the free width, the buttons
+ * keep theirs (`PromptInputFooter`, `PromptInputSubmit`). Under 20 rem, at 200% zoom on a phone
+ * (design V18), there is no room for the controls in one line and the left group takes a line of its own.
  * Enter sends and Shift+Enter breaks the line, except while an input method is composing a character
  * (design V30); on touch Return breaks the line and only the button sends. While the Builder answers
  * the field stays open: Enter steers the running turn, Esc stops, and focus goes back to the field
@@ -202,9 +205,14 @@ export function Composer(props: {
   field: Ref<HTMLTextAreaElement>
   onSend: (outgoing: Outgoing) => Promise<boolean>
   onStop: () => void
+  /** The model's button, first of the row's right. */
   picker: ReactNode
   taskPanel?: ReactNode
-  /** The memory ring, after the model's button on the row's left. */
+  /** The folder and the tools count, after **+** on the row's left. */
+  context?: ReactNode
+  /** What the tools say above the box when they fail. */
+  notice?: ReactNode
+  /** The memory ring, after the model's button on the row's right. */
   memory?: ReactNode
   /** What the empty box says; without it, the conversation's words. */
   placeholder?: string
@@ -253,6 +261,7 @@ export function Composer(props: {
   return (
     <form onSubmit={submit} {...droppedOn(addFiles)} className={FORM}>
       {props.taskPanel}
+      {props.notice}
       <Refused phrase={phrase} />
       <InputGroup
         data-busy={props.answering || undefined}
@@ -275,12 +284,13 @@ export function Composer(props: {
           align="block-end"
           className="flex-nowrap items-center justify-between gap-xs pointer-coarse:gap-sm max-[20rem]:flex-wrap"
         >
-          <div className="flex min-w-0 flex-1 items-center gap-sm max-[20rem]:basis-full">
+          <div className="flex shrink-0 items-center gap-xs max-[20rem]:basis-full">
             <Attach add={addFiles} />
+            {props.context}
+          </div>
+          <div className="flex min-w-0 flex-1 items-center justify-end gap-xs pointer-coarse:gap-md">
             {props.picker}
             {props.memory}
-          </div>
-          <div className="flex shrink-0 items-center gap-xs pointer-coarse:gap-md">
             {dictation.mic}
             <Button
               type={action === 'stop' ? 'button' : 'submit'}

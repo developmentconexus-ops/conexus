@@ -15,5 +15,14 @@ export function useConnectorCatalog(companyId: CompanyId) {
   const read = useQuery(connectionsQuery(companyId))
   const connectors = read.data?.connectors
   const words = useMemo(() => wordsOf(connectors ?? []), [connectors])
-  return { words, name: words.name, failure: read.isError ? sentenceOf(read.error) : undefined }
+  /** The connector's logo, once the catalog is read. */
+  function logo(connector: string): string | undefined {
+    return connectors?.find((one) => one.id === connector)?.logo
+  }
+  return {
+    words,
+    name: words.name,
+    logo,
+    failure: read.isError ? sentenceOf(read.error) : undefined,
+  }
 }
