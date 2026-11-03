@@ -10,6 +10,7 @@ import { ToolCallId } from './questions.ts'
 export const HandOffRefusal = z.enum([
   'CONNECTION_NOT_WORKING',
   'CONNECTION_NOT_FOUND',
+  'PROJECT_CONNECTION_TAKEN',
   'CONNECTIONS_NOT_ALLOWED',
 ])
 export type HandOffRefusal = z.infer<typeof HandOffRefusal>

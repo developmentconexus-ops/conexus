@@ -73,6 +73,14 @@ async function granted(on: On, projectId: string): Promise<string[]> {
   return rows.map((row) => String(Object(row).connection_id))
 }
 
+/** The person's messages in the Builder's conversation of a hand-off, once its turn had time to end. */
+async function signalsOf(on: On, handed: HandedOff): Promise<number> {
+  const builder = `${on.company}/projects/${handed.projectId}/conversations/${handed.conversationId}`
+  await sleep(500)
+  const messages = await messagesOf(on.hub, on.ana, builder)
+  return messages.filter((each) => each.role === 'person').length
+}
+
 async function projectCount(on: On): Promise<number> {
   const rows = await on.hub.test.asOwner('select count(*)::int as n from projects.project')
   return Number(Object(rows[0]).n)
@@ -108,15 +116,39 @@ test('o toque repetido: a mesma chave devolve o mesmo Projeto e a mesma conversa
   assert.deepEqual(HandedOff.parse(again.json()), HandedOff.parse(first.json()))
   assert.equal(await projectCount(on), projects)
 
-  const handed = HandedOff.parse(first.json())
-  const builder = `${on.company}/projects/${handed.projectId}/conversations/${handed.conversationId}`
-  await sleep(500)
-  const asked = (await messagesOf(on.hub, on.ana, builder)).filter((each) => each.role === 'person')
-  assert.equal(asked.length, 1, 'one signal')
+  assert.equal(await signalsOf(on, HandedOff.parse(first.json())), 1, 'one signal')
+
+  // Two touches at once, as two tabs or a retry while the first still runs: one signal too.
+  const twin = { ...body, projectName: 'Compras ao mesmo tempo' }
+  const twinKey = randomUUID()
+  const both = await Promise.all([
+    post(on.hub, on.ana, `${url}/handoffs`, twin, twinKey),
+    post(on.hub, on.ana, `${url}/handoffs`, twin, twinKey),
+  ])
+  for (const each of both) assert.equal(each.statusCode, 201, each.body)
+  const [one, other] = both.map((each) => HandedOff.parse(each.json()))
+  assert.ok(one !== undefined)
+  assert.deepEqual(one, other)
+  await handedCalls(on, 2)
+  assert.equal(await signalsOf(on, one), 1, 'one signal at once')
 })
 
 test('as recusas: quem não pode gerenciar ligações cria o Projeto sem liberar nada, e uma chamada que não é proposta desta conversa é NOT_FOUND (9)', async (t) => {
   const { on, url, toolCallId } = await proposing(t, APP)
+  // Two Sankhyas marked: a Projeto holds one, so the second is refused and the first released.
+  const two = { toolCallId, projectName: 'Compras', connections: [on.matriz, on.filial] }
+  const key = randomUUID()
+  for (const _ of [1, 2]) {
+    const touched = await post(on.hub, on.ana, `${url}/handoffs`, two, key)
+    assert.equal(touched.statusCode, 201, touched.body)
+    const handed = HandedOff.parse(touched.json())
+    assert.deepEqual(handed.released, [on.matriz])
+    assert.deepEqual(handed.refused, [
+      { connectionId: on.filial, code: 'PROJECT_CONNECTION_TAKEN' },
+    ])
+    assert.deepEqual(await granted(on, handed.projectId), [on.matriz])
+  }
+
   // No role asks the Assistant without managing connections today (`askAssistant`); the
   // connectors' door answers as it will for one.
   const { grants } = on.hub.connectors
@@ -125,7 +157,7 @@ test('as recusas: quem não pode gerenciar ligações cria o Projeto sem liberar
   t.after(() => {
     grants.may = may
   })
-  const body = { toolCallId, projectName: 'Compras', connections: [on.matriz] }
+  const body = { toolCallId, projectName: 'Sem ligações', connections: [on.matriz] }
   const touched = await post(on.hub, on.ana, `${url}/handoffs`, body, randomUUID())
   assert.equal(touched.statusCode, 201, touched.body)
   const handed = HandedOff.parse(touched.json())
@@ -137,6 +169,17 @@ test('as recusas: quem não pode gerenciar ligações cria o Projeto sem liberar
   const refused = await post(on.hub, on.ana, `${url}/handoffs`, unknown, randomUUID())
   assert.equal(refused.statusCode, 404, refused.body)
   assert.equal(Object(refused.json()).code, 'NOT_FOUND')
+})
+
+test('a ligação que a conversa não escolheu: marcada no toque, não é liberada (7, 9)', async (t) => {
+  const { on, url, toolCallId } = await proposing(t, APP, (on) => ({ connections: [on.matriz] }))
+  const body = { toolCallId, projectName: 'Compras', connections: [on.filial] }
+  const touched = await post(on.hub, on.ana, `${url}/handoffs`, body, randomUUID())
+  assert.equal(touched.statusCode, 201, touched.body)
+  const handed = HandedOff.parse(touched.json())
+  assert.deepEqual(handed.released, [])
+  assert.deepEqual(handed.refused, [{ connectionId: on.filial, code: 'CONNECTION_NOT_FOUND' }])
+  assert.deepEqual(await granted(on, handed.projectId), [])
 })
 
 test('a mudança no Projeto: a mesma rota abre uma conversa nova do Builder desse Projeto e não cria Projeto (10)', async (t) => {

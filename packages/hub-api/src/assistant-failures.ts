@@ -28,7 +28,8 @@ export const ASSISTANT_FAILURES = {
   },
   HANDOFF_NOT_DELIVERED: {
     category: 'SYSTEM',
-    settles: true,
+    // The key is kept (W24): the touch again finds the Projeto and the conversation, and sends.
+    settles: false,
     status: 503,
     phrase: 'O Builder não recebeu a proposta.',
     action: 'O Projeto e a conversa ficam. Tente de novo.',

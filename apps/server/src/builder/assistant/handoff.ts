@@ -10,6 +10,7 @@ import type {
   ToolCallId,
 } from '@conexus/hub-api'
 import { ASSISTANT_TOOL, handAssistantProposal, ProposedApp } from '@conexus/hub-api'
+import type { Session } from '@mastra/core/agent-controller'
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import type { IdentityPorts } from '../../hub/identity/public.ts'
@@ -25,18 +26,7 @@ import { admitted, placeOf } from './open.ts'
 import type { AssistantProjects } from './ports.ts'
 
 /** The Builder's session a hand-off sends on: Mastra's, as `openSession` gives it. */
-type BuilderSession = {
-  sendSignal(
-    input: {
-      type: 'user'
-      tagName: string
-      contents: { type: 'text'; text: string }[]
-      attributes: Record<string, string>
-      author: { id: string; name: string }
-    },
-    options: { requireDelivery: true },
-  ): { accepted: Promise<{ action?: string | undefined }> }
-}
+type BuilderSession = Pick<Session, 'sendSignal'>
 
 /**
  * What a hand-off reaches the other subjects through (code C4): the Projects' creation, the
@@ -161,8 +151,15 @@ async function released(
   return done
 }
 
-/** The grant's refusals of one connection that leave the others to release. */
-const Refusal = z.enum(['CONNECTION_NOT_WORKING', 'CONNECTION_NOT_FOUND'])
+/**
+ * The grant's refusals of one connection that leave the others to release; a second connection of
+ * a connector the Projeto holds one of is `PROJECT_CONNECTION_TAKEN`.
+ */
+const Refusal = z.enum([
+  'CONNECTION_NOT_WORKING',
+  'CONNECTION_NOT_FOUND',
+  'PROJECT_CONNECTION_TAKEN',
+])
 
 /**
  * What the Builder receives, as Mastra's `createMessageInput` sends a text file with a message: the
@@ -178,6 +175,36 @@ function contentsOf(proposal: ProposedApp): { type: 'text'; text: string }[] {
     { type: 'text', text: proposal.summary },
     { type: 'text', text: file },
   ]
+}
+
+/**
+ * The proposal sent as a signal marked as the Assistant's, and what Mastra did with it. A signal it
+ * could not route or start (`requireDelivery`), or one neither run nor discarded, is
+ * `HANDOFF_NOT_DELIVERED`, with the key kept.
+ */
+async function delivered(
+  session: BuilderSession,
+  proposal: ProposedApp,
+  from: { person: Person; conversationId: ConversationId },
+): Promise<'wake' | 'deliver' | 'discard'> {
+  const sent = session.sendSignal(
+    {
+      type: 'user',
+      tagName: 'user',
+      contents: contentsOf(proposal),
+      attributes: { source: 'assistant', assistantConversation: from.conversationId },
+      author: { id: from.person.id, name: from.person.name },
+    },
+    { requireDelivery: true, ifActive: { behavior: 'discard' } },
+  )
+  let action: string | undefined
+  try {
+    action = (await sent.accepted).action
+  } catch (error) {
+    throw new Failure('HANDOFF_NOT_DELIVERED', { cause: error })
+  }
+  if (action === 'wake' || action === 'deliver' || action === 'discard') return action
+  throw new Failure('HANDOFF_NOT_DELIVERED', { details: { action: String(action) } })
 }
 
 type HandOffInput = {
@@ -254,21 +281,13 @@ async function handOff(deps: HandOffDeps, input: HandOffInput): Promise<HandedOf
   if (opened.made) {
     input.log.info({ companyId, conversationId: opened.id }, 'CONVERSATION_CREATED')
   }
-  // A conversation that already holds a message received the proposal: never twice.
+  // A conversation that already holds a message received the proposal: never twice. A touch while
+  // another's run is active is discarded by Mastra (`ifActive`): that one delivered it.
   if (!(await doors.builder.asked(owner, opened.id))) {
-    const sent = opened.session.sendSignal(
-      {
-        type: 'user',
-        tagName: 'user',
-        contents: contentsOf(proposal),
-        attributes: { source: 'assistant', assistantConversation: conversationId },
-        author: { id: person.id, name: person.name },
-      },
-      { requireDelivery: true },
-    )
-    const { action } = await sent.accepted
-    if (action !== 'wake' && action !== 'deliver') throw new Failure('HANDOFF_NOT_DELIVERED')
-    input.log.info({ companyId, conversationId: opened.id, projectId }, 'ASSISTANT_HANDED_OFF')
+    const action = await delivered(opened.session, proposal, { person, conversationId })
+    if (action !== 'discard') {
+      input.log.info({ companyId, conversationId: opened.id, projectId }, 'ASSISTANT_HANDED_OFF')
+    }
   }
   return { projectId, conversationId: opened.id, ...grants }
 }
