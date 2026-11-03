@@ -19,7 +19,7 @@ export function proposeAutomationTool(
   return createTool({
     id: ASSISTANT_TOOL.proposeAutomation,
     description:
-      'Offers the person a button, Criar automação, to run something on a schedule: every day, on weekdays, on chosen days of the week or on a day of the month, always at a time of day in São Paulo. Call it when what they ask repeats at a time, such as a report every Monday. Write the prompt to be understood alone, without this conversation: it is asked to you in a new conversation at each time. Name the connections the prompt reads, from those this conversation chose.',
+      'Offers the person a button, Criar automação, to run something on a schedule: every day, on weekdays, on chosen days of the week or on a day of the month, always at a time of day in São Paulo. Call it when what they ask repeats at a time, such as a report every Monday, in the same turn and without asking first: the card shows the person the prompt, the time and the connections, and nothing is made until they touch it. Write the prompt to be understood alone, without this conversation: it is asked to you in a new conversation at each time. Name the connections the prompt reads, from those this conversation chose.',
     inputSchema: ProposedAutomation.extend({
       connections: z.array(connectionField(chosen)).max(chosen.length),
     }),
