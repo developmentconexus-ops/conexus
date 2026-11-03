@@ -7,7 +7,23 @@ import {
   SearchIcon,
   WrenchIcon,
 } from 'lucide-react'
-import type { ConstrutorRowTool, ToolSpec } from './tool-spec.ts'
+import { z } from 'zod'
+import { readRefusal } from './connector-specs.ts'
+import type { ConstrutorRowTool, Refusal, ToolSpec } from './tool-spec.ts'
+
+const Refused = z.object({ kind: z.literal('REFUSED') })
+
+/** A result the Hub refused (`{ kind: 'REFUSED' }`): the row says its failed sentence, as the Assistant's do. */
+function refusedResult(result: unknown): Refusal | undefined {
+  return Refused.safeParse(result).success ? 'SAID' : undefined
+}
+
+const AppDataFailed = z.object({ kind: z.enum(['REFUSED', 'FAILED']) })
+
+/** `app_data_read` answers `REFUSED` (the query) or `FAILED` (the app's data, out of reach): both read as failed. */
+function appDataRefusal(result: unknown): Refusal | undefined {
+  return AppDataFailed.safeParse(result).success ? 'SAID' : undefined
+}
 
 /** The rows of the Construtor's own tools (step 24.3, U5): the person reads what was done to the agent, never a tool's name. */
 export const CONSTRUTOR_SPECS: Record<ConstrutorRowTool, ToolSpec> = {
@@ -37,6 +53,7 @@ export const CONSTRUTOR_SPECS: Record<ConstrutorRowTool, ToolSpec> = {
     verb: 'fez a ferramenta',
     body: 'generic',
     groups: false,
+    refusal: refusedResult,
   },
   [CONSTRUTOR_TOOL.agentRead]: {
     icon: BotIcon,
@@ -46,6 +63,7 @@ export const CONSTRUTOR_SPECS: Record<ConstrutorRowTool, ToolSpec> = {
     verb: 'leu o rascunho',
     body: 'generic',
     groups: true,
+    refusal: refusedResult,
   },
   [CONSTRUTOR_TOOL.agentDraft]: {
     icon: BotIcon,
@@ -73,6 +91,7 @@ export const CONSTRUTOR_SPECS: Record<ConstrutorRowTool, ToolSpec> = {
     verb: 'testou',
     body: 'generic',
     groups: true,
+    refusal: refusedResult,
   },
 }
 
@@ -86,6 +105,7 @@ export const AGENT_SPECS: Record<(typeof AGENT_TOOL)[keyof typeof AGENT_TOOL], T
     verb: 'consultou',
     body: 'generic',
     groups: true,
+    refusal: appDataRefusal,
   },
 }
 
@@ -100,5 +120,6 @@ export function slugToolSpec(slug: string): ToolSpec {
     verb: 'consultou',
     body: 'generic',
     groups: true,
+    refusal: readRefusal,
   }
 }
