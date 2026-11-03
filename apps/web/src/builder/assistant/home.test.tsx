@@ -40,6 +40,7 @@ async function chooseProject(name: string) {
   for (const event of ['pointerDown', 'mouseDown', 'pointerUp', 'mouseUp', 'click'] as const) {
     fireEvent[event](option)
   }
+  await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
 }
 
 /** An alert that is not the one of a block of Início, which reads the same list on its own. */

@@ -2,7 +2,9 @@ import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
 import type { Page } from 'playwright-core'
 import { createHarness, PHONE, SMALL_PHONE } from './layout-harness.ts'
+import { COMPANY } from './src/platform/fixtures.ts'
 import { ASSISTANT_PATH, ASSISTANT_REPLIES } from './sweep-assistant-states.ts'
+import { OWNER, startsOn } from './sweep-replies.ts'
 
 const harness = createHarness(import.meta.dirname)
 before(() => harness.start())
@@ -75,5 +77,22 @@ test('a 320, o grupo da esquerda ganha uma linha própria e nenhum controle troc
   assert.ok(plus.x < tools.x, '+ comes before the tools')
   assert.ok(ring.x < mic.x && mic.x < send.x, 'the right group changed order')
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), SMALL_PHONE.width)
+  await page.close()
+})
+
+test('a 390, o menu da pasta do Início com um Projeto de nome comprido cabe na tela, aberto e depois de escolher', async () => {
+  const page = await harness.open(`/companies/${COMPANY.id}`, {
+    viewport: PHONE,
+    replies: { ...OWNER, ...startsOn(COMPANY.id) },
+  })
+  await page.getByRole('button', { name: 'Projeto da conversa' }).click()
+  const option = page.getByRole('menuitemradio').nth(1)
+  await option.waitFor()
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), PHONE.width)
+  const menu = await page.getByRole('menu').boundingBox()
+  assert.ok(menu && menu.x >= 0 && menu.x + menu.width <= PHONE.width, 'the menu left the screen')
+  await option.click()
+  await page.getByRole('menu').waitFor({ state: 'detached' })
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), PHONE.width)
   await page.close()
 })

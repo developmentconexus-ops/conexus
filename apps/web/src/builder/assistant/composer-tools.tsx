@@ -105,16 +105,22 @@ function ProjectChoice(props: {
           <span className={cn('max-w-40 truncate text-text', WORDS)}>{chosen.name}</span>
         )}
       </DropdownMenuTrigger>
-      <DropdownMenuContent side="top" align="start" className="max-h-72 overflow-y-auto">
+      <DropdownMenuContent
+        side="top"
+        align="start"
+        className="max-h-72 w-80 max-w-(--available-width) overflow-y-auto"
+      >
         <DropdownMenuRadioGroup
           value={props.value ?? NO_PROJECT}
           onValueChange={(next) =>
             props.onChange(projects.find((project) => project.id === next)?.id)
           }
         >
-          <DropdownMenuRadioItem value={NO_PROJECT}>Sem Projeto</DropdownMenuRadioItem>
+          <DropdownMenuRadioItem closeOnClick value={NO_PROJECT}>
+            Sem Projeto
+          </DropdownMenuRadioItem>
           {projects.map((project) => (
-            <DropdownMenuRadioItem key={project.id} value={project.id}>
+            <DropdownMenuRadioItem closeOnClick key={project.id} value={project.id}>
               <span className="truncate">{project.name}</span>
             </DropdownMenuRadioItem>
           ))}
