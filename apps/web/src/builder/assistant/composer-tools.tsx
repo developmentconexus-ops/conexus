@@ -33,7 +33,10 @@ function ToolsCount(props: { place: ComposerPlace; choice: Choice; onOpen: () =>
   if (offered === undefined)
     return choice.failed === undefined ? <Skeleton className="h-5 w-24" /> : null
   const chosen = offered.filter((one) => one.chosen)
-  const logos = chosen.slice(0, SHOWN_LOGOS).flatMap((one) => catalog.logo(one.connector) ?? [])
+  const logos = chosen.slice(0, SHOWN_LOGOS).flatMap((one) => {
+    const logo = catalog.logo(one.connector)
+    return logo === undefined ? [] : [{ id: one.connectionId, logo }]
+  })
   const none = chosen.length === 0
   return (
     <button
@@ -44,9 +47,10 @@ function ToolsCount(props: { place: ComposerPlace; choice: Choice; onOpen: () =>
       onClick={props.onOpen}
     >
       <span aria-hidden="true" className="flex -space-x-1">
-        {logos.map((logo, index) => (
-          // biome-ignore lint/suspicious/noArrayIndexKey: the stack's logos can repeat, and it never reorders.
-          <ConnectorLogo key={index} small entry={{ logo }} />
+        {logos.map(({ id, logo }, index) => (
+          <span key={id} className={index > 0 ? '@max-[26rem]:hidden' : undefined}>
+            <ConnectorLogo small entry={{ logo }} />
+          </span>
         ))}
       </span>
       <span aria-hidden="true">
