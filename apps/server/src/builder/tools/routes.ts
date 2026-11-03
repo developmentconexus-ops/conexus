@@ -18,7 +18,7 @@ export function inProjectOf(input: {
 export function registerToolRoutes(app: FastifyInstance, tools: Tools): void {
   serve(app, listTools, async (input) => answer(await tools.list(inProjectOf(input))))
   serve(app, createTool, async (input) =>
-    answer({ tool: await tools.save(inProjectOf(input), input.body, input.attemptKey) }),
+    answer({ tool: await tools.save(inProjectOf(input), input.body, input.attemptKey, 'PERSON') }),
   )
   serve(app, getTool, async (input) =>
     answer({ tool: await tools.get(inProjectOf(input), input.params.toolId) }),
@@ -26,7 +26,13 @@ export function registerToolRoutes(app: FastifyInstance, tools: Tools): void {
   serve(app, createToolVersion, async (input) => {
     const { toolId } = input.params
     return answer({
-      tool: await tools.addVersion(inProjectOf(input), toolId, input.body, input.attemptKey),
+      tool: await tools.addVersion(
+        inProjectOf(input),
+        toolId,
+        input.body,
+        input.attemptKey,
+        'PERSON',
+      ),
     })
   })
   serve(app, deleteTool, async (input) => {

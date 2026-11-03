@@ -16,7 +16,7 @@ import { violatedConstraint, violatedReference } from '../../platform/database.t
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import { bodyHashOf } from '../conversation/public.ts'
-import type { InProject, ToolConnectors } from './check.ts'
+import type { InProject, ToolConnectors, Writer } from './check.ts'
 import {
   databaseScopeOf,
   fitting,
@@ -87,7 +87,13 @@ async function detailOf(deps: ToolsDeps, tx: ReadTx, row: typeof tool.$inferSele
 }
 
 /** A new tool of the library at version 1, keyed by its attempt (code C37). */
-async function save(deps: ToolsDeps, scope: InProject, body: ToolInput, attemptKey: string) {
+async function save(
+  deps: ToolsDeps,
+  scope: InProject,
+  body: ToolInput,
+  attemptKey: string,
+  by: Writer,
+) {
   const id = ToolId.parse(derivedUuid('tool', scope.companyId, scope.personId, attemptKey))
   const bodyHash = bodyHashOf(body)
   const { slug, connectionId, operation, ...config } = body
@@ -105,7 +111,7 @@ async function save(deps: ToolsDeps, scope: InProject, body: ToolInput, attemptK
     if (row.bodyHash !== bodyHash) throw new Failure('IDEMPOTENCY_CONFLICT')
     return detailOf(deps, tx, row)
   })
-  deps.log.info({ companyId: scope.companyId, toolId: id, version: 1 }, 'TOOL_SAVED')
+  deps.log.info({ companyId: scope.companyId, toolId: id, version: 1, by }, 'TOOL_SAVED')
   return detail
 }
 
@@ -125,6 +131,7 @@ async function addVersion(
   toolId: ToolId,
   config: ToolVersionConfig,
   attemptKey: string,
+  by: Writer,
 ): Promise<ToolDetail> {
   const versionId = derivedUuid('tool-version', toolId, scope.personId, attemptKey)
   const bodyHash = bodyHashOf(config)
@@ -162,7 +169,7 @@ async function addVersion(
       if (violatedConstraint(error) !== 'tool_version_pkey') throw error
       return deps.database.command(databaseScopeOf(scope), write)
     })
-  deps.log.info({ companyId: scope.companyId, toolId, version: number }, 'TOOL_SAVED')
+  deps.log.info({ companyId: scope.companyId, toolId, version: number, by }, 'TOOL_SAVED')
   return detail
 }
 
@@ -245,10 +252,15 @@ async function releasePerson(tx: CommandTx, companyId: CompanyId, personId: Pers
  */
 export function createTools(deps: ToolsDeps) {
   return Object.freeze({
-    save: (scope: InProject, body: ToolInput, attemptKey: string) =>
-      save(deps, scope, body, attemptKey),
-    addVersion: (scope: InProject, toolId: ToolId, config: ToolVersionConfig, key: string) =>
-      addVersion(deps, scope, toolId, config, key),
+    save: (scope: InProject, body: ToolInput, attemptKey: string, by: Writer) =>
+      save(deps, scope, body, attemptKey, by),
+    addVersion: (
+      scope: InProject,
+      toolId: ToolId,
+      config: ToolVersionConfig,
+      attemptKey: string,
+      by: Writer,
+    ) => addVersion(deps, scope, toolId, config, attemptKey, by),
     list: (scope: InProject) => list(deps, scope),
     get: (scope: InProject, toolId: ToolId) => get(deps, scope, toolId),
     remove: (scope: InProject, toolId: ToolId) => remove(deps, scope, toolId),

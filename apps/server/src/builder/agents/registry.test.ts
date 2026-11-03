@@ -148,6 +148,23 @@ test('roda sozinho: o agente registrado, com o dono no requestContext, chama o m
   await assert.rejects(refused, { code: 'MODEL_NO_ACCOUNT' })
 })
 
+test('roda sozinho: o agente registrado recusa uma execução de outro Projeto da mesma empresa', async (t) => {
+  const on = await onePublished(t, { memory: { observational: false } })
+  const agent = registered(on.hub, on.agent.id)
+  assert.ok(agent)
+  const scope = {
+    companyId: CompanyId.parse(on.companyId),
+    projectId: ProjectId.parse(randomUUID().replaceAll('-', '')),
+    personId: PersonId.parse(on.ana.id),
+  }
+  const run = { kind: 'PUBLISHED', scope, agentId: AgentId.parse(on.agent.id) } as const
+  const refused = agent.generate('Quanto vendemos?', { requestContext: agentRunContext(run) })
+  await assert.rejects(refused, {
+    code: 'INTERNAL_UNEXPECTED',
+    details: { reason: 'AGENT_RUN_MISSING' },
+  })
+})
+
 test('o registro atrasado: um agente que falta no registro é registrado pela linha no próximo turno', async (t) => {
   const on = await onePublished(t)
   on.hub.mastra.removeAgent(agentKey(AgentId.parse(on.agent.id)))

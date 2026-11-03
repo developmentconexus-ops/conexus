@@ -6,7 +6,7 @@ import type { Database } from '../../platform/database.ts'
 import { violatedReference } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { Kept, Owner } from '../controller-kit/public.ts'
-import { openSession } from '../controller-kit/public.ts'
+import { openSession, releaseThreads } from '../controller-kit/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import type { InProject } from '../tools/public.ts'
 import { AGENT_MARK, keptRun } from './controller.ts'
@@ -74,8 +74,7 @@ export async function openAgentConversation(
     keep: () => keep(deps.database, owner, { id, agentId, draft }),
   })
   if ((await keptRun(deps.database, owner, id)) === undefined) {
-    await deps.controller.deleteSession({ sessionId: id })
-    await deps.memory.deleteThread(id)
+    await releaseThreads(deps, [id])
     throw new Failure('AGENT_NOT_FOUND')
   }
   return opened

@@ -9,6 +9,9 @@ export type AppTable = { name: string; columns: string[] }
 const TABLES_SQL = `select table_name, column_name from information_schema.columns
   where table_schema = current_schema() order by table_name, ordinal_position`
 
+/** The app's database not answering in time is the database's, not a defect of ours. */
+const SILENT = new Set<string>(['APP_DATA_UNAVAILABLE', 'APP_DATA_TIMEOUT'])
+
 /**
  * The tables of a Projeto's app, names and columns, never a row (step 24.3, U4): read through the
  * same door the agents' `app_data_read` uses (U3). No app is `null`; a read that fails is a failure
@@ -25,6 +28,11 @@ export function appTablesOf(appData: AppDataPort) {
       sql: TABLES_SQL,
       signal: AbortSignal.timeout(APP_CALL_LIMITS.callDeadlineMs),
     })
+    if (read.kind === 'FAILED' && SILENT.has(read.code)) {
+      throw new Failure('DATABASE_UNAVAILABLE', {
+        details: { reason: 'APP_TABLES_UNREADABLE', answer: read.code },
+      })
+    }
     if (read.kind !== 'ROWS') {
       throw new Failure('INTERNAL_UNEXPECTED', {
         details: { reason: 'APP_TABLES_UNREADABLE', answer: read.kind },

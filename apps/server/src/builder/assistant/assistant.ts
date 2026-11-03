@@ -40,7 +40,7 @@ import { proposeAutomationTool } from './propose-automation.ts'
 import { releaseConversations } from './release.ts'
 import { registerAssistantRoutes } from './routes.ts'
 import { showFileTool } from './show-file.ts'
-import { assistantTurns, turnEnd, turnKeyIn } from './turn.ts'
+import { assistantTurns, turnEnd, turnKey } from './turn.ts'
 
 type AssistantConnectors = Connectors['assistant']
 type AssistantConnection = Awaited<ReturnType<AssistantConnectors['connections']>>[number]
@@ -157,13 +157,7 @@ function accessOf(
     savedAt,
     log: deps.log,
     async read(call, requestContext) {
-      const turn = turnKeyIn(requestContext)
-      if (turn === undefined) {
-        throw new Failure('INTERNAL_UNEXPECTED', {
-          details: { reason: 'CONNECTOR_TOOL_WITHOUT_TURN' },
-        })
-      }
-      return deps.connectors.read(scope, { ...call, turn })
+      return deps.connectors.read(scope, { ...call, turn: turnKey.of(requestContext) })
     },
     notes: (connectionId) => deps.connectors.notes(scope, connectionId),
     wording: { whose: 'this conversation chose', limit: '50 connector calls per answer' },
@@ -177,12 +171,7 @@ function accessOf(
 function readsFiles(): (requestContext: RequestContext) => string {
   const readsOfRun = new WeakMap<RequestContext, number>()
   return (requestContext) => {
-    const turn = turnKeyIn(requestContext)
-    if (turn === undefined) {
-      throw new Failure('INTERNAL_UNEXPECTED', {
-        details: { reason: 'CONNECTOR_TOOL_WITHOUT_TURN' },
-      })
-    }
+    const turn = turnKey.of(requestContext)
     const n = (readsOfRun.get(requestContext) ?? 0) + 1
     readsOfRun.set(requestContext, n)
     return `reads/${turn.slice(0, 8)}-${n}.json`

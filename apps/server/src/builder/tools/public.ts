@@ -1,4 +1,4 @@
-export type { InProject, OfferedConnection, ToolConnectors } from './check.ts'
+export type { InProject, OfferedConnection, ToolConnectors, Writer } from './check.ts'
 export { databaseScopeOf, sessionScopeOf } from './check.ts'
 export { derivedUuid } from './derived.ts'
 export { inProjectOf, registerToolRoutes } from './routes.ts'

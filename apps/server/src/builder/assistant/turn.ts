@@ -1,9 +1,6 @@
-import { randomUUID } from 'node:crypto'
 import type { FailureCode } from '@conexus/hub-api'
 import type { AgentController, Session as ControllerSession } from '@mastra/core/agent-controller'
-import type { RequestContext } from '@mastra/core/request-context'
-import { TurnKey } from '../../hub/connectors/public.ts'
-import { sessionTurns } from '../controller-kit/public.ts'
+import { sessionTurns, turnKeyOn } from '../controller-kit/public.ts'
 import { failureOf, modelFailure, TurnTally, turnOfOwner } from '../conversation/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import { setTurn } from '../model-accounts/public.ts'
@@ -11,15 +8,9 @@ import type { ScopeOf } from './context.ts'
 import type { AssistantMachines } from './machine.ts'
 
 const TURN_PROCESSOR = 'conexus-assistant-turn'
-/**
- * Where the run's context holds the turn's key, which the company's door counts the 50 calls by.
- */
-const TURN_KEY = 'conexus-assistant-turn-key'
 
-/** The key of the turn the run is, put on its context by the turn's processor. */
-export function turnKeyIn(requestContext: RequestContext): TurnKey | undefined {
-  return TurnKey.safeParse(requestContext.get(TURN_KEY)).data
-}
+/** The key the company's door counts the 50 calls of a turn by, on the run's context (the kit's owner of it). */
+export const turnKey = turnKeyOn('conexus-assistant-turn-key')
 
 /**
  * The Assistant's turns (step 24.1, U2) on the kit's owner of their end: a run of a conversation
@@ -40,7 +31,7 @@ export function assistantTurns(deps: {
       if (scope === undefined) return undefined
       const turn = await turnOfOwner(deps.queue, scope)
       setTurn(requestContext, turn)
-      requestContext.set(TURN_KEY, TurnKey.parse(randomUUID()))
+      turnKey.start(requestContext)
       return turn
     },
     ended: (sessionId) => void deps.machines.stop(sessionId),

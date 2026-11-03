@@ -16,6 +16,9 @@ import { derivedUuid } from './derived.ts'
 /** Who acts, in which Projeto: the session's person, the route's ids (security S8). */
 export type InProject = { companyId: CompanyId; projectId: ProjectId; personId: PersonId }
 
+/** Who wrote a change, for the record: the person at a screen, or the Construtor for them. */
+export type Writer = 'PERSON' | 'CONSTRUTOR'
+
 /** The database scope of the person acting in the company. */
 export function databaseScopeOf(scope: InProject) {
   return { kind: 'COMPANY', companyId: scope.companyId, personId: scope.personId } as const

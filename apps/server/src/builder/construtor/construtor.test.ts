@@ -9,6 +9,7 @@ import {
   agentsOn,
   drafted,
   madeAgent,
+  madeTool,
   ordersOf,
   otherProject,
 } from '../agents/test-agents.ts'
@@ -228,4 +229,68 @@ test('testar: roda uma pergunta contra o rascunho, sem conversa guardada; rascun
   assert.deepEqual(answers[2], { kind: 'REFUSED', code: 'AGENT_NOT_FOUND' })
   const asked = on.anthropic.sent.filter((each) => !each.stream).at(-1)
   assert.match(asked?.system ?? '', /Responda sobre as vendas do dia\./)
+})
+
+test('o registro diz quem gravou: CONSTRUTOR nas ferramentas do Construtor, PERSON nas rotas da pessoa', async (t) => {
+  const answers: Record<string, unknown>[] = []
+  let connection = ''
+  const on = await building(t, [
+    () => [tool('tool_search', {})],
+    (asked) => {
+      answers.push(resultOf(asked))
+      const orders = listOf(answers[0]?.ready).find((each) => each.operation === 'pedidos')
+      assert.ok(orders, 'a ready read of pedidos')
+      connection = String(orders.connectionId)
+      return [tool('tool_save', ordersOf(connection))]
+    },
+    (asked) => {
+      const version = Object(Object(resultOf(asked).tool).latest)
+      assert.ok(version.id, 'the version the Construtor saved')
+      return [tool('agent_draft', { name: 'Pedidos', description: 'Os pedidos' })]
+    },
+    (asked) => {
+      const agent = Object(resultOf(asked).agent)
+      return [
+        tool('agent_set', { agentId: agent.id, revision: agent.revision, instructions: FIRST }),
+      ]
+    },
+    keeping(answers),
+  ])
+  assert.equal(endOf(await on.conversation.say('Monte um agente de pedidos')), 'complete')
+  function byOf(message: string) {
+    return on.lines.filter((line) => line.message === message).map((line) => line.fields.by)
+  }
+  assert.deepEqual(byOf('TOOL_SAVED'), ['CONSTRUTOR'])
+  assert.deepEqual(byOf('AGENT_DRAFT_SAVED'), ['CONSTRUTOR'])
+
+  const own = await madeTool(
+    on.hub,
+    on.ana,
+    on.tools,
+    ordersOf(connection, { slug: 'pedidos_dela' }),
+  )
+  assert.equal(own.slug, 'pedidos_dela')
+  const agent = await madeAgent(on.hub, on.ana, on.agents, 'Dela')
+  await drafted(on.hub, on.ana, on.agents, agent, { instructions: FIRST })
+  assert.deepEqual(byOf('TOOL_SAVED'), ['CONSTRUTOR', 'PERSON'])
+  assert.deepEqual(byOf('AGENT_DRAFT_SAVED'), ['CONSTRUTOR', 'PERSON'])
+})
+
+test('testar: um rascunho cujo modelo a pessoa não tem conta volta recusado MODEL_NO_ACCOUNT, não como falha do modelo', async (t) => {
+  const answers: Record<string, unknown>[] = []
+  let draft = ''
+  const on = await building(t, [
+    () => [tool('agent_test', { agentId: draft, question: 'Quanto vendemos?' })],
+    keeping(answers),
+  ])
+  const agent = await madeAgent(on.hub, on.ana, on.agents)
+  draft = (
+    await drafted(on.hub, on.ana, on.agents, agent, {
+      instructions: FIRST,
+      model: 'openai/gpt-5',
+      memory: { observational: false },
+    })
+  ).id
+  assert.equal(endOf(await on.conversation.say('Teste')), 'complete')
+  assert.deepEqual(answers[0], { kind: 'REFUSED', code: 'MODEL_NO_ACCOUNT' })
 })

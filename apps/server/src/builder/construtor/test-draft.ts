@@ -24,8 +24,12 @@ export function testDraft(deps: {
 }) {
   function refusal(error: unknown, scope: InProject): Tested {
     if (error instanceof Failure && error.code === 'INTERNAL_UNEXPECTED') throw error
-    const failure =
-      error instanceof Failure ? error : new Failure('MODEL_CALL_FAILED', { cause: error })
+    if (!(error instanceof Failure)) {
+      const failure = new Failure('INTERNAL_UNEXPECTED', { cause: error })
+      logFailure(deps.log, failure, { companyId: scope.companyId })
+      throw failure
+    }
+    const failure = error
     logFailure(deps.log, failure, { companyId: scope.companyId })
     const { field } = failure.named
     return { kind: 'REFUSED', code: failure.code, ...(field === undefined ? {} : { field }) }
@@ -42,6 +46,7 @@ export function testDraft(deps: {
     try {
       const agent = await deps.draftAgent(run)
       const answered = await agent.generate(question, { requestContext: agentRunContext(run) })
+      if (answered.tripwire !== undefined) throw new Failure('MODEL_REFUSED')
       const tools = answered.steps.flatMap((step) =>
         step.toolCalls.map((call) => call.payload.toolName),
       )

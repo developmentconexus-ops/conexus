@@ -113,7 +113,11 @@ export function planOf(agent: Agent, requestContext: RequestContext): Promise<Pl
 function planner(deps: AgentDeps, frozen: FrozenVersion & OfProject & { agentId: AgentIdType }) {
   return oncePerRun(async (requestContext): Promise<Plan> => {
     const run = agentRunIn(requestContext)
-    if (run?.agentId !== frozen.agentId || run.scope.companyId !== frozen.companyId) {
+    const ofFrozen =
+      run?.agentId === frozen.agentId &&
+      run.scope.companyId === frozen.companyId &&
+      run.scope.projectId === frozen.projectId
+    if (run === undefined || !ofFrozen) {
       throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'AGENT_RUN_MISSING' } })
     }
     const { companyId, personId, projectId } = run.scope

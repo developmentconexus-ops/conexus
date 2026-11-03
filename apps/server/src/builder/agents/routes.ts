@@ -26,7 +26,9 @@ export function registerAgentRoutes(app: FastifyInstance, agents: AgentService):
     answer({ agent: await agents.get(inProjectOf(input), input.params.agentId) }),
   )
   serve(app, saveAgentDraft, async (input) =>
-    answer({ agent: await agents.saveDraft(inProjectOf(input), input.params.agentId, input.body) }),
+    answer({
+      agent: await agents.saveDraft(inProjectOf(input), input.params.agentId, input.body, 'PERSON'),
+    }),
   )
   serve(app, publishAgent, async (input) =>
     answer(await agents.publish(inProjectOf(input), input.params.agentId, input.body)),

@@ -93,6 +93,7 @@ export function logFailure(
   log: FailureLog,
   failure: Failure,
   about: Record<string, Scalar> = {},
+  line: string = failure.code,
 ): void {
   const row = FAILURES[failure.code]
   const chain = causeChain(failure.cause)
@@ -110,6 +111,6 @@ export function logFailure(
     const code = systemCode(chain)
     if (code !== undefined) fields.code = code
   }
-  if (row.category === 'USER') log.info(fields, failure.code)
-  else log.error(fields, failure.code)
+  if (row.category === 'USER') log.info(fields, line)
+  else log.error(fields, line)
 }

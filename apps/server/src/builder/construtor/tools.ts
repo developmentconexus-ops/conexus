@@ -25,10 +25,10 @@ import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
 import type { AgentService } from '../agents/public.ts'
 import type { InProject, OfferedConnection, Tools } from '../tools/public.ts'
+import type { AppTable } from './app-tables.ts'
 import type { Tested } from './test-draft.ts'
 
 type Refused = { kind: 'REFUSED'; code: FailureCode; field?: string }
-type AppTable = { name: string; columns: string[] }
 
 /** What the Construtor's tools reach: the U1 services, the Projeto's reads and the draft's test. */
 export type ConstrutorDeps = {
@@ -136,7 +136,7 @@ function toolSave(deps: ConstrutorDeps, scope: InProject) {
       const { toolId, slug, connectionId, operation, ...config } = input
       try {
         if (toolId !== undefined) {
-          const tool = await deps.tools.addVersion(scope, toolId, config, key)
+          const tool = await deps.tools.addVersion(scope, toolId, config, key, 'CONSTRUTOR')
           return { kind: 'SAVED', tool } as const
         }
         const body = ToolInput.safeParse({ slug, connectionId, operation, ...config })
@@ -144,7 +144,10 @@ function toolSave(deps: ConstrutorDeps, scope: InProject) {
           const field = String(body.error.issues[0]?.path[0] ?? '')
           return { kind: 'REFUSED', code: 'REQUEST_MALFORMED', field } as const
         }
-        return { kind: 'SAVED', tool: await deps.tools.save(scope, body.data, key) } as const
+        return {
+          kind: 'SAVED',
+          tool: await deps.tools.save(scope, body.data, key, 'CONSTRUTOR'),
+        } as const
       } catch (error) {
         return refused(deps, error)
       }
@@ -182,7 +185,9 @@ function agentSet(deps: ConstrutorDeps, scope: InProject) {
       'Changes the fields sent of an agent’s draft at the revision you read. On AGENT_DRAFT_STALE the answer carries the current draft: save again over it.',
     inputSchema: Change,
     execute: async ({ agentId, ...patch }) => {
-      const answer = await saved(deps, () => deps.agents.saveDraft(scope, agentId, patch))
+      const answer = await saved(deps, () =>
+        deps.agents.saveDraft(scope, agentId, patch, 'CONSTRUTOR'),
+      )
       if (answer.kind === 'REFUSED' && answer.code === 'AGENT_DRAFT_STALE') {
         return { ...answer, current: await deps.agents.get(scope, agentId) }
       }
