@@ -165,7 +165,7 @@ export async function readAppData(
         { companyId, projectId, answer: answer.kind, sqlstate: answer.sqlstate },
         'APP_DATA_READ',
       )
-      return { kind: 'REFUSED', code: answer.code }
+      return answer
     case 'FAILED':
       deps.log.info(
         {

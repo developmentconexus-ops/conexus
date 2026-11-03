@@ -9,19 +9,19 @@ import { COMPANY_DATABASE, NEON_CALL_BUDGET_MS } from './neon.ts'
 /** What a read of the app's data gives: the rows, a refusal by the database, or a failure. */
 export type AppRead =
   | { kind: 'ROWS'; columns: readonly string[]; rows: readonly unknown[][] }
-  | { kind: 'REFUSED'; code: 'APP_DATA_REFUSED' }
+  | { kind: 'REFUSED'; code: 'APP_DATA_REFUSED'; sqlstate: string }
   | {
       kind: 'FAILED'
       code: 'APP_DATA_UNAVAILABLE' | 'APP_DATA_TIMEOUT' | 'APP_DATA_NO_APP' | 'APP_DATA_TOO_LARGE'
     }
 /**
  * What the port answers to the Hub: the login the read asked as is not there yet, which
- * `ensureReadLogin` makes; a refusal keeps its SQLSTATE and a silence its cause for the Hub's log,
- * which strips both before the model reads (code C50).
+ * `ensureReadLogin` makes; a silence keeps its cause for the Hub's log, which strips it before the
+ * model reads; a refusal carries its SQLSTATE to the model (founder, 2026-11-02).
  */
 export type AppReadAnswer =
   | Extract<AppRead, { kind: 'ROWS' }>
-  | { kind: 'REFUSED'; code: 'APP_DATA_REFUSED'; sqlstate: string }
+  | Extract<AppRead, { kind: 'REFUSED' }>
   | (Extract<AppRead, { kind: 'FAILED' }> & { cause?: string })
   | { kind: 'NO_LOGIN' }
 

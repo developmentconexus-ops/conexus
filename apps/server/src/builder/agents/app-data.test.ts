@@ -114,17 +114,28 @@ test('lê: colunas de mesmo nome num JOIN ficam as duas, uma tabela vazia devolv
   assert.equal(long.complete, false)
 })
 
-test('o registro: a recusa guarda o SQLSTATE e a falha a sua causa, e o modelo não lê nenhum dos dois', async (t) => {
+test('o registro: a recusa guarda o SQLSTATE no registro e o modelo o lê, sem o SQL', async (t) => {
   const on = await readingOn(t, ['SELECT * FROM nao_existe', 'DELETE FROM recado'])
   const missing = JSON.parse(await on.ask())
-  assert.deepEqual(missing, { kind: 'REFUSED', code: 'APP_DATA_REFUSED' })
+  assert.deepEqual(missing, { kind: 'REFUSED', code: 'APP_DATA_REFUSED', sqlstate: '42P01' })
   const write = JSON.parse(await on.ask())
-  assert.deepEqual(write, { kind: 'REFUSED', code: 'APP_DATA_REFUSED' })
+  assert.deepEqual(write, { kind: 'REFUSED', code: 'APP_DATA_REFUSED', sqlstate: '25006' })
   const states = on.hub.lines
     .filter((line) => line.message === 'APP_DATA_READ')
     .map(({ fields }) => fields.sqlstate)
   assert.deepEqual(states, ['42P01', '25006'])
   assert.ok(!JSON.stringify(on.hub.lines).includes('nao_existe'), 'the log carries no SQL')
+})
+
+test('coluna errada: volta 42703 com o SQLSTATE e a tabela não muda', async (t) => {
+  const on = await readingOn(t, ['SELECT coluna_errada FROM recado'])
+  const saved = await savedOf(on.owner, on.projectId)
+  assert.deepEqual(JSON.parse(await on.ask()), {
+    kind: 'REFUSED',
+    code: 'APP_DATA_REFUSED',
+    sqlstate: '42703',
+  })
+  assert.deepEqual(await savedOf(on.owner, on.projectId), saved)
 })
 
 const WRITES = [
@@ -165,6 +176,10 @@ test('não grava: INSERT, UPDATE, DELETE, CREATE, SET ROLE e dois comandos são 
     if (kind !== undefined) {
       assert.equal(JSON.parse(result).kind, 'REFUSED', asked)
       assert.equal(JSON.parse(result).code, 'APP_DATA_REFUSED', asked)
+      const { sqlstate } = JSON.parse(result)
+      assert.match(sqlstate, /^[0-9A-Z]{5}$/, asked)
+      if (sql === 'SELECT 1; SELECT 2') assert.equal(sqlstate, '42601', asked)
+      if (sql === 'DELETE FROM recado') assert.equal(sqlstate, '25006', asked)
     }
     assert.deepEqual(await savedOf(on.owner, on.projectId), saved, asked)
   }
