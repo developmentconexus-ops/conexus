@@ -2311,7 +2311,7 @@
   },
   {
     "id": "assistant-locate-where-tools-put-it",
-    "file": "apps/server/src/builder/assistant/machine.ts",
+    "file": "apps/server/src/builder/assistant/machine-file.ts",
     "find": "const found = await files.stat(path)",
     "replace": "const found = await files.stat(path.startsWith('/') ? `..${path}` : path)",
     "test": {

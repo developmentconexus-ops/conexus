@@ -33,7 +33,7 @@ type HandOffCase = {
   turns: readonly string[]
   called?: readonly string[]
   notCalled?: readonly string[]
-  /** This tool called, or else the last answer one short question and no list (step 24.3.2, 015). */
+  /** This tool called, or else the last answer one question with the options found (`askedOnce`). */
   orAsks?: string
   /** A hand-off accepted at most once over all the turns: no loop; a refused call does not count. */
   atMostOnce?: string
@@ -190,6 +190,17 @@ async function automationConversation(on: Subscribed, prompt: string): Promise<s
   throw new Error(`The automation's run ${runId} did not end in ten minutes.`)
 }
 
+/**
+ * One question that brings the options found in the data, as `propose_automation`'s description
+ * asks (step 24.3.2): a single question mark, and two options or more, listed or joined by "ou". A
+ * list of questions is not one; its length is not measured.
+ */
+export function askedOnce(text: string): boolean {
+  if ((text.match(/\?/g) ?? []).length !== 1) return false
+  const options = text.match(/^\s*([-*•]|\d+[.)])\s/gm) ?? []
+  return options.length >= 2 || /\sou\s[^?]*\?/.test(text)
+}
+
 /** What went wrong in one run of a case, or nothing. */
 export async function verdictOf(
   t: TestContext,
@@ -231,10 +242,8 @@ export async function verdictOf(
   }
   if (each.orAsks !== undefined && resultsOf(parts, each.orAsks).length === 0) {
     const last = parts.findLast((part) => part.type === 'text')
-    const asked = last?.type === 'text' ? last.text : ''
-    const listed = /^\s*([-*•]|\d+[.)])\s/m.test(asked)
-    if ((asked.match(/\?/g) ?? []).length !== 1 || listed) {
-      wrong.push(`neither called ${each.orAsks} nor asked one short question`)
+    if (!askedOnce(last?.type === 'text' ? last.text : '')) {
+      wrong.push(`neither called ${each.orAsks} nor asked one question with its options`)
     }
   }
   if (each.atMostOnce !== undefined && acceptedOf(parts, each.atMostOnce).length > 1) {
