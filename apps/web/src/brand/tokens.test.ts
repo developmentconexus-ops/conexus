@@ -103,13 +103,13 @@ function expectedDeclarations(front: Front) {
   return { expected, clashes }
 }
 
-// The scales DESIGN.md owns; an animation, an easing or a keyframe is not one of its tokens.
-const OWNED = /^--(color|text|font|radius|spacing|container|shadow)-/
+// DESIGN.md owns every theme variable but the motion ones: an easing or an animation has no pair in it.
+const UNPAIRED = /^--(ease|animate)-/
 
 test('cada token do DESIGN.md é o mesmo valor em tokens.css, e tokens.css não tem um que o DESIGN.md não tem', () => {
   const { expected, clashes } = expectedDeclarations(frontMatter())
   const actual = new Map(
-    [...themeDeclarations()].filter(([name]) => OWNED.test(name) && name !== '--color-*'),
+    [...themeDeclarations()].filter(([name]) => !UNPAIRED.test(name) && name !== '--color-*'),
   )
   const differences: string[] = [...clashes]
   for (const [name, value] of expected) {

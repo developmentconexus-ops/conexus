@@ -288,7 +288,7 @@ test('a fonte: Hanken Grotesk e JetBrains Mono, a saudação em 28 e 24, toda li
   }
 })
 
-test('a prosa das mensagens usa o tipo reading, 15px com linha de 24, ', async () => {
+test('a prosa das mensagens usa o tipo reading, 15px com linha de 24', async () => {
   const page = await harness.open('/pieces', { viewport: DESKTOP, replies: {} })
   for (const text of ['Compare dois apps de encomenda', 'Resposta']) {
     const prose = await page

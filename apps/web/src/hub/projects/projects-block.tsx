@@ -6,19 +6,19 @@ import { BLOCK_ROWS, Block, BlockSentence, blockRow, Stamp } from '../../ui/bloc
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { ReadFailure } from '../../ui/states.tsx'
 import { NewProjectDialog } from './new-project-dialog.tsx'
-import { projectStateOf, projectStateText } from './project-state.ts'
+import { NO_PROJECTS, projectStateOf, projectStateText } from './project-state.ts'
 import { projectsQuery } from './queries.ts'
-
-const NO_PROJECTS = 'Nenhum projeto ainda.'
 
 function ProjectRows({ companyId }: { companyId: CompanyId }) {
   const read = useQuery(projectsQuery(companyId, undefined))
   if (read.isPending) return <Skeleton className="h-24 w-full" />
   if (read.isError)
     return <ReadFailure text={sentenceOf(read.error)} onRetry={() => void read.refetch()} />
-  const { projects } = read.data
+  const { projects, next } = read.data
   if (projects.length === 0) return <BlockSentence>{NO_PROJECTS}</BlockSentence>
+  // The page holds 50 at most: past it the count is unknown, so the row says "Mais" alone.
   const hidden = projects.length - BLOCK_ROWS
+  const more = next.kind === 'MORE' ? 'Mais' : `Mais ${hidden}`
   return (
     <ul>
       {projects.slice(0, BLOCK_ROWS).map((project) => {
@@ -38,14 +38,14 @@ function ProjectRows({ companyId }: { companyId: CompanyId }) {
           </li>
         )
       })}
-      {hidden > 0 && (
+      {(hidden > 0 || next.kind === 'MORE') && (
         <li>
           <Link
             to="/companies/$companyId/projects"
             params={{ companyId }}
             className={`${blockRow} text-text-2 hover:bg-surface-3`}
           >
-            Mais {hidden}
+            {more}
           </Link>
         </li>
       )}

@@ -74,6 +74,10 @@ test('o menu do celular: tocar num lugar do rail abre a página dele, de qualque
     const rail = await openDrawer(page)
     await rail.getByRole('button', { name: /^Notificações/ }).tap()
     await page.getByRole('heading', { name: 'Notificações', exact: true }).waitFor()
+    await page.goto(`${TEST_ORIGIN}${start}`)
+    const foot = await openDrawer(page)
+    await foot.getByRole('button', { name: `Conta de ${OWNER.name}` }).tap()
+    await page.getByRole('menuitem', { name: /Sair do Conexus/ }).waitFor()
   }
   assert.deepEqual(problems, [])
 })

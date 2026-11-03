@@ -126,6 +126,27 @@ test('o bloco Projetos mostra cinco linhas e "Mais N"; "Todos →" abre todos os
   expect(router.state.location.pathname).toBe(PROJECTS)
 })
 
+test('o bloco Projetos com mais de uma página diz "Mais" sem número', async () => {
+  const many = [1, 2, 3, 4, 5, 6].map((number) => ({
+    ...PEDIDOS,
+    id: ProjectId.parse(String(number).repeat(32)),
+    name: `Projeto ${number}`,
+  }))
+  hub(many)
+  server.use(
+    http.get(`*/api/companies/${COMPANY.id}/projects`, () =>
+      HttpResponse.json({
+        projects: many,
+        next: { kind: 'MORE', page: 'p2' },
+        databaseReady: true,
+      }),
+    ),
+  )
+  open()
+  const block = within(await screen.findByRole('region', { name: 'Projetos' }))
+  expect(await block.findByRole('link', { name: 'Mais' })).toBeTruthy()
+})
+
 test('o banco indisponível: o aviso do Hub na área, com a barra', async () => {
   hub([])
   server.use(

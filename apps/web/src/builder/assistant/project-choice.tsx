@@ -18,6 +18,7 @@ import {
   NO_PROJECT_MATCH,
   NO_PROJECT_OPTION,
   PROJECT_CHOICE,
+  PROJECT_FALLBACK,
   PROJECT_MENU_TITLE,
   SEARCH_PROJECT,
 } from './text.ts'
@@ -35,15 +36,14 @@ function NoProjectChip() {
   )
 }
 
-/** The Projeto a conversation lives in, fixed: its folder and, once the Hub has answered, its name. */
+/** The Projeto a conversation lives in, fixed: its folder and, once the Hub has answered, its name; "Projeto" if the read fails. */
 export function FixedProjectChip(props: { companyId: CompanyId; projectId: ProjectId }) {
-  const project = useQuery(projectQuery(props.companyId, props.projectId)).data?.project
+  const read = useQuery(projectQuery(props.companyId, props.projectId))
+  const name = read.isError ? PROJECT_FALLBACK : read.data?.project.name
   return (
     <span className={cn(CHIP, 'inline-flex items-center')}>
       <FolderIcon aria-hidden="true" className="size-4 shrink-0" />
-      {project !== undefined && (
-        <span className={cn('max-w-40 truncate', WORDS)}>{project.name}</span>
-      )}
+      {name !== undefined && <span className={cn('max-w-40 truncate', WORDS)}>{name}</span>}
     </span>
   )
 }
@@ -60,12 +60,17 @@ function ProjectChoice(props: {
   const projects = read.data?.pages.flatMap((page) => page.projects) ?? []
   const shown = projects.filter((project) => matches(project.name, query))
   const chosen = projects.find((project) => project.id === props.value)
+  // A list reopened starts with an empty search, however it was closed.
+  function change(next: boolean) {
+    setOpen(next)
+    if (!next) setQuery('')
+  }
   function pick(projectId: ProjectId | undefined) {
     props.onChange(projectId)
-    setOpen(false)
+    change(false)
   }
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={change}>
       <PopoverTrigger
         aria-label={PROJECT_CHOICE}
         className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), CHIP)}

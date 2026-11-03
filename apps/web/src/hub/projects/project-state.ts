@@ -16,6 +16,9 @@ export function projectStateOf(
   return { kind: 'NO_APP' }
 }
 
+/** The sentence a list of Projetos says when it holds none. */
+export const NO_PROJECTS = 'Nenhum projeto ainda.'
+
 export function projectStateText(state: ProjectState): string {
   switch (state.kind) {
     case 'PUBLISHED':
@@ -24,5 +27,7 @@ export function projectStateText(state: ProjectState): string {
       return `Em construção · v${state.version}`
     case 'NO_APP':
       return 'Ainda sem app'
+    default:
+      return state satisfies never
   }
 }
