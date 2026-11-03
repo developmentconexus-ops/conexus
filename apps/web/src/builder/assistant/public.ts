@@ -1,3 +1,4 @@
+export { useConnectorCatalog } from './connector-names.ts'
 export { AssistantChat } from './conversation.tsx'
 export { AssistantDay } from './day.tsx'
 export { ConversationGone } from './gone.tsx'

@@ -1,6 +1,8 @@
 import type { AgentDetail, CompanyId, ConversationId, ProjectId } from '@conexus/hub-api'
 import { AGENTS_CONTROLLER } from '@conexus/hub-api'
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
+import { useMemo } from 'react'
+import { useConnectorCatalog } from '../assistant/public.ts'
 import { agentRoom, Chat, RoomContext, START_NO_ACCOUNT } from '../conversation/public.ts'
 import { agentConversationsQuery, agentQuery } from './queries.ts'
 import { askAgent, TEST_BANNER } from './text.ts'
@@ -15,12 +17,14 @@ export function AgentChat(props: {
   const { companyId, projectId, agentId, conversationId } = props
   const scope = { companyId, projectId }
   const queryClient = useQueryClient()
+  const { words } = useConnectorCatalog(companyId)
   const { agent } = useSuspenseQuery(agentQuery(scope, agentId)).data
   const { conversations } = useSuspenseQuery(agentConversationsQuery(scope, agentId)).data
   const draft = conversations.find((one) => one.id === conversationId)?.draft === true
   const listKey = agentConversationsQuery(scope, agentId).queryKey
+  const room = useMemo(() => agentRoom(agent.name, words), [agent.name, words])
   return (
-    <RoomContext.Provider value={agentRoom(agent.name)}>
+    <RoomContext.Provider value={room}>
       <div key={conversationId} className="flex h-full min-h-0 flex-col bg-canvas">
         {draft && (
           <p className="border-b border-line bg-surface-3 px-md py-xs text-label text-text-2">
