@@ -26,5 +26,6 @@ export {
 export { type PasswordLinkKind, SetPasswordForm } from './set-password-form.tsx'
 export { goBack, SameOriginPath, SignInForm } from './sign-in-form.tsx'
 export { SignOutButton } from './sign-out-button.tsx'
+export { useCompanies } from './use-companies.ts'
 export { WelcomeCompany } from './welcome-company.tsx'
 export { WelcomeTeam } from './welcome-team.tsx'
