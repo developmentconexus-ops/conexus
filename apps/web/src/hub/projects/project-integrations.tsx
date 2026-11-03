@@ -143,7 +143,7 @@ export function ProjectIntegrations(scope: Scope) {
   const mayManage = company.data?.mayManage === true
   const groups = read.data?.connectors.filter((group) => group.connections.length > 0)
   return (
-    <section className="flex w-full max-w-page flex-col gap-lg">
+    <section className="mx-auto flex w-full max-w-page flex-col gap-lg">
       <PageTitle>{PROJECT_LEAD}</PageTitle>
       {shown && !mayManage && <p className="text-text-2">{ASK_MANAGER}</p>}
       {failure === undefined && !shown && <Loading />}

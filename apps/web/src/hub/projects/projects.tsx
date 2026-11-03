@@ -21,7 +21,7 @@ export function Projects() {
   }, [arrived, navigate, page])
   const { next } = useSuspenseQuery(projectsQuery(companyId, page)).data
   return (
-    <div className="flex w-full max-w-page flex-col gap-xl">
+    <div className="mx-auto flex w-full max-w-page flex-col gap-xl">
       <PageTitle>Todos os projetos</PageTitle>
       {notice && <Notice>Projeto apagado.</Notice>}
       <ProjectCards companyId={companyId} page={page} />

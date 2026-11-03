@@ -104,6 +104,23 @@ for (const viewport of [DESKTOP, PHONE]) {
   })
 }
 
+// The founder saw the column hug the sheet's left edge on a wide desktop: its centre must be the
+// sheet's (`main`, beside the sidebar) at every width, not only the title's within the column.
+for (const width of [1366, 1490, 1600, 1862, 1920])
+  test(`a coluna do Início tem o centro da folha, numa tela de ${width}px`, async () => {
+    const page = await open(`/companies/${COMPANY_ID}`, { width, height: 800 }, WITH_MODEL)
+    const title = page.getByRole('heading', { name: /^(Bom dia|Boa tarde|Boa noite)/ })
+    await title.waitFor()
+    const [sheet, column] = await Promise.all([
+      page.locator('main').boundingBox(),
+      title.locator('xpath=ancestor::section[1]/parent::*').boundingBox(),
+    ])
+    assert.ok(sheet && column, 'the sheet or the column is not laid out')
+    const gap = sheet.x + sheet.width / 2 - (column.x + column.width / 2)
+    assert.ok(Math.abs(gap) <= 1, `the column's centre is ${gap}px off the sheet's`)
+    await page.close()
+  })
+
 const CONVERSATION_ID = '33333333-3333-4333-8333-333333333333'
 const PROJECT_API = `/api/companies/${COMPANY.id}/projects/${PROJECT_ID}`
 const MESSAGES = `${BUILDER_ROUTES}/agent-controller/${BUILDER_CONTROLLER}/sessions/${CONVERSATION_ID}/messages`

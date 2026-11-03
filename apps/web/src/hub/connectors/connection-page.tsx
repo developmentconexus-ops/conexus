@@ -299,7 +299,7 @@ export function ConnectionPage() {
   useFirstTest(test.mutate, { companyId, connectionId, testar, mayManage })
 
   return (
-    <div className="flex w-full max-w-page flex-col gap-xl">
+    <div className="mx-auto flex w-full max-w-page flex-col gap-xl">
       <BackLink companyId={companyId} />
       <Header
         entry={entry}

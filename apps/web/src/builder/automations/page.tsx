@@ -15,9 +15,9 @@ export function Page(props: {
   return (
     <div
       className={cn(
-        'flex w-full max-w-page flex-col',
+        'mx-auto flex w-full max-w-page flex-col',
         props.gap === 'xl' ? 'gap-xl' : 'gap-lg',
-        props.projectId !== undefined && 'mx-auto min-h-0 flex-1 overflow-y-auto p-xl',
+        props.projectId !== undefined && 'min-h-0 flex-1 overflow-y-auto p-xl',
       )}
     >
       {props.children}
