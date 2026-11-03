@@ -5,6 +5,7 @@ import { CheckIcon, ChevronDownIcon, SquarePenIcon } from 'lucide-react'
 import { useState } from 'react'
 import { useAttemptKey } from '../../platform/attempt-key.ts'
 import { sentenceOf, writeFailureText } from '../../platform/hub.ts'
+import { Alert } from '../../ui/alert.tsx'
 import { Button } from '../../ui/button.tsx'
 import { cn } from '../../ui/cn.ts'
 import {
@@ -142,7 +143,7 @@ function ConversationSheet(props: {
         {props.readFailure !== undefined && (
           <ReadFailure text={props.readFailure} onRetry={props.onRetry} />
         )}
-        {props.failure !== undefined && <p role="alert">{props.failure}</p>}
+        {props.failure !== undefined && <Alert tone="danger">{props.failure}</Alert>}
       </DrawerContent>
     </Drawer>
   )
@@ -223,7 +224,7 @@ export function ConversationSwitch(props: { current: Item | undefined }) {
         {list.isError && (
           <ReadFailure text={sentenceOf(list.error)} onRetry={() => void list.refetch()} />
         )}
-        {failure !== undefined && <p role="alert">{failure}</p>}
+        {failure !== undefined && <Alert tone="danger">{failure}</Alert>}
       </div>
     </>
   )

@@ -4,6 +4,7 @@ import { getRouteApi, useNavigate } from '@tanstack/react-router'
 import { ExternalLinkIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useState } from 'react'
+import { Alert } from '../../ui/alert.tsx'
 import { Badge } from '../../ui/badge.tsx'
 import { buttonVariants } from '../../ui/button.tsx'
 import { PageTitle } from '../../ui/list.tsx'
@@ -99,9 +100,9 @@ export function ProjectArea(props: {
         </div>
       </div>
       {stale !== undefined && (
-        <p role="alert" className="border-b border-line px-md py-xs text-danger">
+        <Alert tone="danger" className="border-b border-line px-md py-xs">
           {stale}
-        </p>
+        </Alert>
       )}
       <TabsContent value={Lens.enum.preview} className="min-h-0">
         {props.preview(project, reloads, reload)}

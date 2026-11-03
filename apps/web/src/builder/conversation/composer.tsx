@@ -9,6 +9,7 @@ import type {
   SubmitEvent,
 } from 'react'
 import { useRef, useState } from 'react'
+import { Alert } from '../../ui/alert.tsx'
 import { AttachmentAction, AttachmentGroup } from '../../ui/attachment.tsx'
 import { Button } from '../../ui/button.tsx'
 import {
@@ -93,11 +94,7 @@ function droppedOn(add: AddFiles) {
 /** Why a file was left out, or why the microphone stopped, above the box. */
 function Refused({ phrase }: { phrase: string | null }) {
   if (phrase === null) return null
-  return (
-    <p role="alert" className="text-fact text-danger">
-      {phrase}
-    </p>
-  )
+  return <Alert tone="danger">{phrase}</Alert>
 }
 
 /** What a place hands the box: the menu behind **+**, the folder and tools after it, and what their failures say above the box. */

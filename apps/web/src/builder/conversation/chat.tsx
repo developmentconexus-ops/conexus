@@ -3,6 +3,7 @@ import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-q
 import type { ReactNode, RefObject } from 'react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { HubFailure, writeFailureText } from '../../platform/hub.ts'
+import { Alert } from '../../ui/alert.tsx'
 import { Empty, NotFound } from '../../ui/states.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
 import { accountsQuery } from '../model-accounts/public.ts'
@@ -231,9 +232,9 @@ export function Chat(props: ChatProps) {
         />
       </div>
       {error !== undefined && (
-        <p role="alert" className="px-md">
+        <Alert tone="danger" className="px-md">
           {error}
-        </p>
+        </Alert>
       )}
       {(state.running || waiting) && !(phone && waiting) && (
         <WorkingLine startedAt={state.startedAt} heard={state.messages} waiting={waiting} />

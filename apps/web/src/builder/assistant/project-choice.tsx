@@ -5,6 +5,7 @@ import type { ReactNode } from 'react'
 import { useState } from 'react'
 import { projectQuery, projectsPagedQuery } from '../../hub/projects/public.ts'
 import { sentenceOf } from '../../platform/hub.ts'
+import { Alert } from '../../ui/alert.tsx'
 import { buttonVariants } from '../../ui/button.tsx'
 import { cn } from '../../ui/cn.ts'
 import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover.tsx'
@@ -106,9 +107,9 @@ function ProjectChoice(props: {
           </button>
         )}
         {read.isError && (
-          <p role="alert" className="px-sm py-xs text-danger">
+          <Alert tone="danger" className="px-sm py-xs">
             {sentenceOf(read.error)}
-          </p>
+          </Alert>
         )}
       </PopoverContent>
     </Popover>

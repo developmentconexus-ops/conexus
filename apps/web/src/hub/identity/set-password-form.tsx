@@ -4,6 +4,7 @@ import { Link, useRouter } from '@tanstack/react-router'
 import { useState } from 'react'
 import { z } from 'zod'
 import { HubFailure } from '../../platform/hub.ts'
+import { Alert } from '../../ui/alert.tsx'
 import { buttonVariants } from '../../ui/button.tsx'
 import {
   Form,
@@ -40,9 +41,7 @@ function AskAgain({ variant }: { variant: 'primary' | 'default' }) {
 function DeadLink() {
   return (
     <section className="flex w-full flex-col gap-lg">
-      <p role="alert" className="text-danger">
-        {LINK_INVALID}
-      </p>
+      <Alert tone="danger">{LINK_INVALID}</Alert>
       <AskAgain variant="primary" />
     </section>
   )

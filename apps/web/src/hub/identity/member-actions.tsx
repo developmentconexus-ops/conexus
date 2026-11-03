@@ -5,6 +5,7 @@ import { useRouter } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
 import { useId, useState } from 'react'
 import { HubFailure, sentenceOf } from '../../platform/hub.ts'
+import { Alert } from '../../ui/alert.tsx'
 import { AlertDialog, AlertDialogContent, AlertDialogTrigger } from '../../ui/alert-dialog.tsx'
 import { Button } from '../../ui/button.tsx'
 import { Field, FieldLabel } from '../../ui/field.tsx'
@@ -64,9 +65,7 @@ export function ActionDialog(props: {
       <AlertDialogContent title={props.title} description={props.description}>
         {props.children}
         {write.isError && !isGone(write.error) && (
-          <p role="alert" className="text-danger">
-            {refusalText(write.error)}
-          </p>
+          <Alert tone="danger">{refusalText(write.error)}</Alert>
         )}
         <div className="flex flex-wrap gap-md">
           <Button

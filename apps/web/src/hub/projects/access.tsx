@@ -5,6 +5,7 @@ import type { ReactNode } from 'react'
 import { useState } from 'react'
 import { dayAndHour, dayAndMonth } from '../../platform/dates.ts'
 import { HubFailure, sentenceOf } from '../../platform/hub.ts'
+import { Alert } from '../../ui/alert.tsx'
 import { Button } from '../../ui/button.tsx'
 import { SectionTitle } from '../../ui/list.tsx'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select.tsx'
@@ -92,9 +93,7 @@ function Refusal({ error }: { error: unknown }) {
   return (
     <TableRow>
       <TableCell colSpan={phone ? 1 : 3} className="whitespace-normal px-sm py-sm">
-        <p role="alert" className="text-label text-danger">
-          {sentenceOf(error)}
-        </p>
+        <Alert tone="danger">{sentenceOf(error)}</Alert>
       </TableCell>
     </TableRow>
   )

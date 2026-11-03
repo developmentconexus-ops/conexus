@@ -6,6 +6,7 @@ import { useRef, useState } from 'react'
 import { keepsAttemptKey } from '../../platform/attempt-key.ts'
 import { dayAndHour } from '../../platform/dates.ts'
 import { sentenceOf } from '../../platform/hub.ts'
+import { Alert } from '../../ui/alert.tsx'
 import { Button } from '../../ui/button.tsx'
 import { SectionTitle } from '../../ui/list.tsx'
 import { Pager } from '../../ui/pager.tsx'
@@ -139,11 +140,7 @@ function InvitationNote(props: {
             onClose={props.onClose}
           />
         )}
-        {props.error !== null && (
-          <p role="alert" className="text-label text-danger">
-            {sentenceOf(props.error)}
-          </p>
-        )}
+        {props.error !== null && <Alert tone="danger">{sentenceOf(props.error)}</Alert>}
       </TableCell>
     </TableRow>
   )

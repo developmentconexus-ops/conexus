@@ -4,6 +4,7 @@ import { useRouter } from '@tanstack/react-router'
 import { UploadIcon } from 'lucide-react'
 import { useState } from 'react'
 import { HubFailure, sentenceOf } from '../../platform/hub.ts'
+import { Alert } from '../../ui/alert.tsx'
 import { AlertDialog, AlertDialogContent, AlertDialogTrigger } from '../../ui/alert-dialog.tsx'
 import { Button } from '../../ui/button.tsx'
 import { publishVersion } from './queries.ts'
@@ -72,11 +73,7 @@ export function Publish(props: {
         title={`Publicar a versão ${number}?`}
         description="Quem abrir o app passa a ver esta versão."
       >
-        {publish.error !== null && (
-          <p role="alert" className="text-danger">
-            {sentenceOf(publish.error)}
-          </p>
-        )}
+        {publish.error !== null && <Alert tone="danger">{sentenceOf(publish.error)}</Alert>}
         <div className="flex flex-wrap gap-md">
           <Button variant="primary" disabled={publish.isPending} onClick={() => void confirm()}>
             {publish.isPending ? 'Publicando…' : `Publicar a versão ${number}`}
