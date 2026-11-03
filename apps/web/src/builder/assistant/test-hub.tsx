@@ -18,6 +18,8 @@ import { AGENT_START, RUNNING, signalStarted } from '../conversation/test-events
 import { say, screens, view } from '../conversation/test-hub.tsx'
 import { START } from '../conversation/test-start.tsx'
 import { displayOf, newest, openLine } from '../conversation/test-stream.tsx'
+import type { ChosenModels } from './test-model.tsx'
+import { modelWrite, sessionState } from './test-model.tsx'
 
 export const LOJA = ConnectionId.parse('cccccccc-cccc-4ccc-8ccc-cccccccccccc')
 export const SALES = ConnectionId.parse('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa')
@@ -53,6 +55,8 @@ type Opened = ReturnType<typeof assistantConversation>
 export type Answers = {
   /** What a write of the chosen connections answers instead of the Hub's success. */
   choose?: () => Response | undefined
+  /** What the write of the conversation's model answers instead of the Hub's success. */
+  model?: () => Response | undefined
   /** Holds the write of the chosen connections in the air until it is released. */
   hold?: Promise<void>
   /** What the read of the connections a place offers answers instead of the Hub's success. */
@@ -93,6 +97,8 @@ type Held = {
   offered: SessionConnection[]
   answers: Answers
   pageSize: number
+  /** The model and effort the Hub kept for each conversation changed here; the session reads them back. */
+  chosen: ChosenModels
 }
 
 function chosenOf(body: unknown): ConnectionId[] {
@@ -175,6 +181,7 @@ function writesOf(held: Held, note: (request: Request) => Promise<unknown>) {
         { status: 201 },
       )
     }),
+    modelWrite(BASE, held, note),
     http.put(`${BASE}/conversations/:id/connections`, async ({ request, params }) => {
       const body = await note(request)
       await held.answers.hold
@@ -197,6 +204,7 @@ function writesOf(held: Held, note: (request: Request) => Promise<unknown>) {
 
 /** Mastra's session of the `assistant` controller: its stream, state, transcript and messages. */
 function sessionOf(
+  held: Held,
   conversations: Opened[],
   answers: Answers,
   lines: ReturnType<typeof openLine>['line'][],
@@ -215,17 +223,7 @@ function sessionOf(
       return response
     }),
     http.get(ASSISTANT_SESSION, ({ params }) =>
-      HttpResponse.json({
-        controllerId: ASSISTANT_CONTROLLER,
-        sessionId: params.id,
-        resourceId: 'company:c1:person:p1',
-        threadId: params.id,
-        modeId: 'ask',
-        modelId: 'anthropic/claude-sonnet-4',
-        running: false,
-        tasks: [],
-        settings: { thinkingLevel: 'off' },
-      }),
+      HttpResponse.json(sessionState(held.chosen, String(params.id))),
     ),
     http.get(`${ASSISTANT_SESSION}/threads/:threadId/messages`, ({ params, request }) => {
       const found = conversations.find(({ conversation }) => conversation.id === params.threadId)
@@ -280,11 +278,11 @@ export function assistantScreens(server: ReturnType<typeof setupServer>) {
       })
       return body
     }
-    const held: Held = { conversations, offered, answers, pageSize }
+    const held: Held = { conversations, offered, answers, pageSize, chosen: new Map() }
     server.use(
       ...readsOf(held, asked),
       ...writesOf(held, note),
-      ...sessionOf(conversations, answers, lines, note),
+      ...sessionOf(held, conversations, answers, lines, note),
     )
     const hub = open(view({ start: START, role, usable }), path)
     return {

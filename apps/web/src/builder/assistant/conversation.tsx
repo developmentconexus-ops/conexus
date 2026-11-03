@@ -11,7 +11,7 @@ import type { OpenedFile, Room } from '../conversation/public.ts'
 import {
   ASSISTANT_ROOM,
   Chat,
-  ComposerModelPicker,
+  ModelChoice,
   RoomContext,
   START_NO_ACCOUNT,
 } from '../conversation/public.ts'
@@ -19,7 +19,7 @@ import { useComposerTools } from './composer-tools.tsx'
 import { useConnectorCatalog } from './connector-names.ts'
 import { FilePanel } from './file.tsx'
 import { Propose } from './propose.tsx'
-import { assistantConversationQuery } from './queries.ts'
+import { assistantConversationQuery, sendAssistantModel } from './queries.ts'
 import { EMPTY_ASSISTANT, titleOf } from './text.ts'
 
 type Props = { companyId: CompanyId; conversationId: ConversationId; projectId?: ProjectId }
@@ -143,13 +143,19 @@ function Conversation(props: Props) {
                   empty={EMPTY_ASSISTANT}
                   noAccount={START_NO_ACCOUNT}
                   tools={tools}
-                  picker={({ session, providers }) => (
-                    <ComposerModelPicker
+                  picker={({ session, providers, onError }) => (
+                    <ModelChoice
+                      controller={ASSISTANT_CONTROLLER}
+                      conversationId={conversationId}
+                      session={session}
                       providers={providers}
-                      value={session}
-                      heading="Modelo desta conversa"
-                      disabled
-                      onChange={() => undefined}
+                      send={(body) =>
+                        sendAssistantModel.mutationFn({
+                          params: { companyId, conversationId },
+                          body,
+                        })
+                      }
+                      onError={onError}
                     />
                   )}
                 />
