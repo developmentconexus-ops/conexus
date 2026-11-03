@@ -142,7 +142,7 @@ function RowStart(props: {
     input.current?.click()
   }
   return (
-    <div className="flex shrink-0 items-center gap-xs max-[20rem]:basis-full">
+    <div className="flex shrink-0 items-center gap-xs max-[20rem]:basis-full max-[20rem]:flex-wrap">
       {props.plus === undefined ? <AttachButton onClick={pickFiles} /> : props.plus(pickFiles)}
       <FilePicker add={props.add} input={input} />
       {props.children}

@@ -12,7 +12,7 @@ export const SEARCH_FROM = 7
 
 export const LIST = 'flex max-h-64 flex-col overflow-y-auto'
 export const ROW =
-  'flex h-row w-full items-center gap-sm rounded-control px-sm text-left text-label text-text hover:bg-surface-3'
+  'flex h-row w-full shrink-0 items-center gap-sm rounded-control px-sm text-left text-label text-text hover:bg-surface-3'
 
 export function matches(text: string, query: string): boolean {
   return text.toLocaleLowerCase('pt-BR').includes(query.trim().toLocaleLowerCase('pt-BR'))

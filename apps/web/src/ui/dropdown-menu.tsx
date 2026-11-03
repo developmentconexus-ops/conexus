@@ -49,7 +49,7 @@ export function DropdownMenuLabel({ className, ...props }: MenuPrimitive.GroupLa
   return (
     <MenuPrimitive.GroupLabel
       data-slot="dropdown-menu-label"
-      className={cn('flex flex-col gap-xs px-sm py-sm', className)}
+      className={cn('flex flex-col gap-xs px-sm py-sm text-eyebrow text-text-2', className)}
       {...props}
     />
   )
