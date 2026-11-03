@@ -1,4 +1,5 @@
 import type {
+  AGENT_TOOL,
   ASSISTANT_TOOL,
   CARD_TOOLS,
   ClosedTool,
@@ -12,6 +13,7 @@ import type { ToolItem } from './rows.ts'
 export type RowTool =
   | Exclude<ClosedTool, (typeof CARD_TOOLS)[keyof typeof CARD_TOOLS] | (typeof TASK_TOOLS)[number]>
   | (typeof ASSISTANT_TOOL)[keyof typeof ASSISTANT_TOOL]
+  | (typeof AGENT_TOOL)[keyof typeof AGENT_TOOL]
   | ConstrutorRowTool
 
 /** The Construtor's tools that draw a row; the draft ones draw the agent's card (step 24.3, U5). */

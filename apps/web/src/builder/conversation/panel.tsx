@@ -10,7 +10,7 @@ import type { Item } from './conversation-switch.tsx'
 import { ConversationSwitch } from './conversation-switch.tsx'
 import { FirstMessage } from './first-message.tsx'
 import { ModelChoice } from './model-choice.tsx'
-import { allConversationsQueryKey, conversationQuery } from './queries.ts'
+import { allConversationsQueryKey, conversationQuery, sendModel } from './queries.ts'
 import { EMPTY_CONVERSATION, REQUEST_NOT_SENT, titleOf, WRITE_AGAIN } from './text.ts'
 
 const route = getRouteApi(
@@ -48,8 +48,9 @@ function BuilderChat(params: Params) {
       empty={EMPTY_CONVERSATION}
       picker={({ session, providers, onError }) => (
         <ModelChoice
-          ids={params}
+          controller={BUILDER_CONTROLLER}
           conversationId={conversationId}
+          send={(body) => sendModel.mutationFn({ params, body })}
           session={session}
           providers={providers}
           onError={onError}

@@ -5,7 +5,7 @@ import { ArrowLeftIcon, MoreHorizontalIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useState } from 'react'
 import { useAttemptKey } from '../../platform/attempt-key.ts'
-import { sentenceOf, writeFailureText } from '../../platform/hub.ts'
+import { writeFailureText } from '../../platform/hub.ts'
 import { AlertDialog, AlertDialogContent } from '../../ui/alert-dialog.tsx'
 import { Button } from '../../ui/button.tsx'
 import {
@@ -14,8 +14,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '../../ui/dropdown-menu.tsx'
-import { Skeleton } from '../../ui/skeleton.tsx'
-import { ReadFailure } from '../../ui/states.tsx'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
 import { ConfigPanel } from './config-panel.tsx'

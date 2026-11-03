@@ -5,6 +5,7 @@ import {
   listAssistantConversations,
   readAssistantConversation,
   setAssistantConnections,
+  setAssistantModel,
 } from '@conexus/hub-api'
 import { hubMutation, hubQuery } from '../../platform/hub.ts'
 
@@ -31,3 +32,4 @@ export function assistantConnectionsQuery(companyId: CompanyId, projectId: Proje
 
 export const sendAssistantCreation = hubMutation(createAssistantConversation)
 export const sendAssistantConnections = hubMutation(setAssistantConnections)
+export const sendAssistantModel = hubMutation(setAssistantModel)

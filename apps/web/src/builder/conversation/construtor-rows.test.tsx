@@ -1,5 +1,5 @@
 import { CONSTRUTOR_TOOL } from '@conexus/hub-api'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { expect, test } from 'vitest'
 import { agentRoom, RoomContext } from './room.ts'
 import type { ToolItem } from './rows.ts'
@@ -69,4 +69,12 @@ test('tool_<slug> diz o que o agente consultou, nunca "Usou Tool"', () => {
   unmount()
   render(<ToolRow tool={{ ...slug, state: 'call', result: undefined }} />)
   expect(screen.getByText('Consultando vendas ontem')).toBeTruthy()
+})
+
+test('a linha aberta de agent_read titula em português, nunca pelo nome da ferramenta', () => {
+  render(<ToolRow tool={draftRow(CONSTRUTOR_TOOL.agentRead)} />)
+  expect(screen.getAllByText('Leu o rascunho do agente')).toHaveLength(1)
+  fireEvent.click(screen.getByRole('button', { name: /Leu o rascunho do agente/ }))
+  expect(screen.getAllByText('Leu o rascunho do agente')).toHaveLength(2)
+  expect(screen.queryByText('Agent read')).toBeNull()
 })

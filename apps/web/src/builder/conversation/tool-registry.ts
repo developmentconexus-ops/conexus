@@ -16,7 +16,7 @@ import {
 } from 'lucide-react'
 import { ASSISTANT_SPECS } from './assistant-specs.ts'
 import { CONNECTOR_SPECS } from './connector-specs.ts'
-import { CONSTRUTOR_SPECS, slugToolSpec } from './construtor-specs.ts'
+import { AGENT_SPECS, CONSTRUTOR_SPECS, slugToolSpec } from './construtor-specs.ts'
 import type { Room } from './room.ts'
 import type { ToolItem } from './rows.ts'
 import { stringArg } from './tool-args.ts'
@@ -192,6 +192,7 @@ export const TOOLS: Record<RowTool, ToolSpec> = {
   ...CONNECTOR_SPECS,
   ...ASSISTANT_SPECS,
   ...CONSTRUTOR_SPECS,
+  ...AGENT_SPECS,
   [skill]: {
     icon: BookOpenIcon,
     running: 'Usando a skill',

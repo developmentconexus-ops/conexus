@@ -1,0 +1,67 @@
+import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { describe, expect, test } from 'vitest'
+import { COMPANY } from '../../platform/fixtures.ts'
+import { hubServer, refusal } from '../../platform/test-hub.tsx'
+import { ASKED, assistantConversation, assistantScreens, COMPANY_ROOT } from './test-hub.tsx'
+
+// The model's button in a conversation with the Assistant (step 13.3, criterion 25).
+const server = hubServer()
+const { at } = assistantScreens(server)
+const OPEN = `${COMPANY_ROOT}/conversations/${ASKED}`
+
+async function toolsOf() {
+  return screen.findByRole('button', { name: '2 ferramentas' })
+}
+
+describe('o modelo', () => {
+  async function pickOpus() {
+    fireEvent.click(await screen.findByRole('combobox', { name: 'Modelo e raciocínio' }))
+    fireEvent.click(await screen.findByRole('option', { name: 'Claude Opus 4' }))
+  }
+
+  test('escolher outro modelo manda o PUT da conversa e o botão mostra o que o Hub guardou', async () => {
+    const { writes } = at(OPEN, { conversations: [assistantConversation()] })
+    await toolsOf()
+    await pickOpus()
+    await waitFor(() =>
+      expect(screen.getByRole('combobox', { name: 'Modelo e raciocínio' }).textContent).toMatch(
+        /Opus/,
+      ),
+    )
+    const [put] = writes()
+    expect(put?.method).toBe('PUT')
+    expect(put?.path).toBe(`/api/companies/${COMPANY.id}/assistant/conversations/${ASKED}/model`)
+    expect(put?.body).toMatchObject({ model: 'anthropic/claude-opus-4' })
+  })
+
+  test('uma recusa diz a frase do código e o botão volta ao modelo de antes', async () => {
+    at(OPEN, {
+      conversations: [assistantConversation()],
+      answers: { model: () => refusal('MODEL_NO_ACCOUNT') },
+    })
+    await toolsOf()
+    await pickOpus()
+    expect((await screen.findByRole('alert')).textContent).toMatch(/Nenhuma conta/)
+    expect(screen.getByRole('combobox', { name: 'Modelo e raciocínio' }).textContent).toMatch(
+      /Sonnet/,
+    )
+  })
+
+  test('depois de recarregar, o botão mostra o modelo que a leitura da sessão dá', async () => {
+    const first = at(OPEN, { conversations: [assistantConversation()] })
+    await toolsOf()
+    await pickOpus()
+    await waitFor(() =>
+      expect(screen.getByRole('combobox', { name: 'Modelo e raciocínio' }).textContent).toMatch(
+        /Opus/,
+      ),
+    )
+    first.conexus.queryClient.clear()
+    await first.conexus.router.invalidate()
+    await waitFor(() =>
+      expect(screen.getByRole('combobox', { name: 'Modelo e raciocínio' }).textContent).toMatch(
+        /Opus/,
+      ),
+    )
+  })
+})

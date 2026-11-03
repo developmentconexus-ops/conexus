@@ -1,5 +1,12 @@
-import { CONSTRUTOR_TOOL } from '@conexus/hub-api'
-import { BotIcon, BuildingIcon, FlaskConicalIcon, SearchIcon, WrenchIcon } from 'lucide-react'
+import { AGENT_TOOL, CONSTRUTOR_TOOL } from '@conexus/hub-api'
+import {
+  BotIcon,
+  BuildingIcon,
+  DatabaseIcon,
+  FlaskConicalIcon,
+  SearchIcon,
+  WrenchIcon,
+} from 'lucide-react'
 import type { ConstrutorRowTool, ToolSpec } from './tool-spec.ts'
 
 /** The rows of the Construtor's own tools (step 24.3, U5): the person reads what was done to the agent, never a tool's name. */
@@ -64,6 +71,19 @@ export const CONSTRUTOR_SPECS: Record<ConstrutorRowTool, ToolSpec> = {
     done: 'Testou o agente',
     failed: 'Não conseguiu testar o agente',
     verb: 'testou',
+    body: 'generic',
+    groups: true,
+  },
+}
+
+/** The agent's own tools that are not the library's (step 24.3, U3): it reads the data of the app it sits in. */
+export const AGENT_SPECS: Record<(typeof AGENT_TOOL)[keyof typeof AGENT_TOOL], ToolSpec> = {
+  [AGENT_TOOL.appDataRead]: {
+    icon: DatabaseIcon,
+    running: 'Consultando os dados do app',
+    done: 'Consultou os dados do app',
+    failed: 'Não conseguiu consultar os dados do app',
+    verb: 'consultou',
     body: 'generic',
     groups: true,
   },

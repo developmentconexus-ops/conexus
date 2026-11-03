@@ -1,12 +1,5 @@
-import type {
-  CompanyId,
-  ConversationId,
-  Effort,
-  ModelId,
-  ProjectId,
-  Provider,
-} from '@conexus/hub-api'
-import { BUILDER_CONTROLLER, runningEffort } from '@conexus/hub-api'
+import type { CompanyId, ConversationId, Effort, ModelId, Provider } from '@conexus/hub-api'
+import { runningEffort } from '@conexus/hub-api'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { sentenceOfCode, writeFailureText } from '../../platform/hub.ts'
@@ -16,7 +9,8 @@ import { Notice } from '../../ui/notice.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
 import { ModelPicker } from '../model-accounts/public.ts'
 import type { SessionRead } from './queries.ts'
-import { sendModel, sessionReadQuery } from './queries.ts'
+import { sessionReadQuery } from './queries.ts'
+import type { Controller } from './session.ts'
 import { NO_SECRETS, UNCONFIRMED_MODEL } from './text.ts'
 
 /**
@@ -47,44 +41,39 @@ export function NoAccount(props: {
   )
 }
 
-type Choice = Pick<SessionRead, 'model' | 'effort'>
-/** What the screen asks: typed with the brand the wire's input parse leaves out. */
-type Asked = {
-  params: { companyId: CompanyId; projectId: ProjectId; conversationId: ConversationId }
-  body: Choice
-}
+export type Choice = Pick<SessionRead, 'model' | 'effort'>
 
 /**
  * The model and the reasoning of the conversation, among the providers the person has an account
- * for, in one button of the composer. A change holds for the next answers, not the one in progress
+ * for, in one button of the composer. The caller owns the write (the Builder's or the Assistant's
+ * route) and the session it changes; a change holds for the next answers, not the one in progress
  * (design V54); a refusal is said below the button.
  */
 export function ModelChoice(props: {
-  ids: { companyId: CompanyId; projectId: ProjectId }
+  controller: Controller
   conversationId: ConversationId
   session: SessionRead
   /** What the Hub offers this person: their connected providers, with the models served. */
   providers: readonly Provider[]
+  /** The caller's write: the choice goes to its route and what the Hub kept comes back. */
+  send: (choice: Choice) => Promise<Choice>
   onError: (text: string | undefined) => void
 }) {
   const queryClient = useQueryClient()
-  const send = useMutation<Choice, Error, Asked>({
-    ...sendModel,
+  const send = useMutation<Choice, Error, Choice>({
+    mutationFn: props.send,
     onSuccess: (kept) =>
       queryClient.setQueryData<SessionRead>(
-        sessionReadQuery(props.conversationId, BUILDER_CONTROLLER).queryKey,
+        sessionReadQuery(props.conversationId, props.controller).queryKey,
         (read) => read && { ...read, ...kept },
       ),
   })
-  const now = send.isPending ? send.variables.body : props.session
+  const now = send.isPending ? send.variables : props.session
 
   function choose(model: ModelId, effort: Effort) {
     props.onError(undefined)
     send.mutate(
-      {
-        params: { ...props.ids, conversationId: props.conversationId },
-        body: { model, effort },
-      },
+      { model, effort },
       { onError: (failure) => props.onError(writeFailureText(failure, UNCONFIRMED_MODEL)) },
     )
   }
@@ -108,8 +97,6 @@ export function ComposerModelPicker(props: {
   value: Choice
   heading: string
   onChange: (choice: Choice) => void
-  /** The model is shown and not changed here (the Assistant's conversation, until its model is a choice). */
-  disabled?: boolean
 }) {
   const phone = useIsMobile()
   const { model: now, effort } = props.value
@@ -133,7 +120,6 @@ export function ComposerModelPicker(props: {
       heading={props.heading}
       note={phone ? NO_SECRETS : undefined}
       chevron={false}
-      disabled={props.disabled}
       className={cn(
         touchArea,
         'h-8 rounded-pill bg-surface-3 px-sm text-label font-medium hover:bg-accent-soft data-popup-open:bg-accent-soft',
