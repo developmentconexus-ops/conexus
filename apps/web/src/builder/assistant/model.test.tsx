@@ -14,12 +14,12 @@ async function toolsOf() {
   return screen.findByRole('button', { name: '2 ferramentas' })
 }
 
-describe('o modelo', () => {
-  async function pickOpus() {
-    fireEvent.click(await screen.findByRole('combobox', { name: 'Modelo e raciocínio' }))
-    fireEvent.click(await screen.findByRole('option', { name: 'Claude Opus 4' }))
-  }
+async function pickOpus() {
+  fireEvent.click(await screen.findByRole('combobox', { name: 'Modelo e raciocínio' }))
+  fireEvent.click(await screen.findByRole('option', { name: 'Claude Opus 4' }))
+}
 
+describe('o modelo', () => {
   test('escolher outro modelo manda o PUT da conversa e o botão mostra o que o Hub guardou', async () => {
     const { writes } = at(OPEN, { conversations: [assistantConversation()] })
     await toolsOf()
@@ -86,5 +86,27 @@ describe('o modelo', () => {
         /Opus/,
       ),
     )
+  })
+})
+
+describe('o modelo guardado', () => {
+  test('se a releitura da sessão falha depois do PUT, o botão fica no modelo que o Hub guardou', async () => {
+    at(OPEN, { conversations: [assistantConversation()] })
+    await toolsOf()
+    // From here the session read fails, so only what the write put in the cache can keep Opus.
+    let failedReads = 0
+    server.use(
+      http.get(/\/sessions\/[^/]+$/, () => {
+        failedReads++
+        return refusal('DATABASE_UNAVAILABLE')
+      }),
+    )
+    await pickOpus()
+    await waitFor(() => expect(failedReads).toBeGreaterThan(0))
+    const picker = screen.getByRole('combobox', { name: 'Modelo e raciocínio' })
+    await waitFor(() =>
+      expect(picker.closest('[aria-busy]')?.getAttribute('aria-busy')).toBe('false'),
+    )
+    expect(picker.textContent).toMatch(/Opus/)
   })
 })

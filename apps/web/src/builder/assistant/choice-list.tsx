@@ -32,6 +32,7 @@ export function Search(props: { label: string; value: string; onChange: (query: 
       <InputGroupInput
         type="search"
         aria-label={props.label}
+        placeholder={props.label}
         value={props.value}
         onChange={(event) => props.onChange(event.target.value)}
       />

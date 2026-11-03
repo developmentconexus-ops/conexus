@@ -19,6 +19,8 @@ export const NO_TOOLS = 'Sem ferramentas'
 export const LINK_TOOLS_PROJECT = 'Liberar um sistema em Integrações do Projeto'
 export const NO_PROJECT_CHIP = 'Conversa sem Projeto'
 export const PROJECT_CHOICE = 'Projeto da conversa'
+/** The name of a Projeto whose read failed. */
+export const PROJECT_FALLBACK = 'Projeto'
 export const PLUS_MENU = 'Anexar e ferramentas'
 export const ATTACH_FILE = 'Anexar arquivo'
 export const ATTACH_HINT = 'PDF, imagem, planilha'

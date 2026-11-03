@@ -1,7 +1,10 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { http } from 'msw'
 import { expect, test } from 'vitest'
+import { COMPANY } from '../../platform/fixtures.ts'
 import { hubServer, PEDIDOS, refusal } from '../../platform/test-hub.tsx'
 import {
+  ASKED,
   assistantConversation,
   assistantScreens,
   COMPANY_ROOT,
@@ -49,6 +52,19 @@ test('a pasta mostra o nome do Projeto, sem controle para trocá-lo, e a contage
   expect(name.compareDocumentPosition(tools) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   expect(screen.queryByRole('button', { name: 'Projeto da conversa' })).toBeNull()
   expect(screen.queryByRole('button', { name: 'Ajustar' })).toBeNull()
+})
+
+test('na conversa de um Projeto, se a leitura do Projeto falha, a pasta diz "Projeto" em vez de ficar sem nome', async () => {
+  at(`${CONVERSAS}/${ASKED}`, {
+    conversations: [assistantConversation({ projectId: PEDIDOS_ID })],
+  })
+  server.use(
+    http.get(`*/api/companies/${COMPANY.id}/projects/:projectId`, () =>
+      refusal('DATABASE_UNAVAILABLE'),
+    ),
+  )
+  const tools = await screen.findByRole('button', { name: '2 ferramentas' })
+  expect(await within(tools.parentElement ?? document.body).findByText('Projeto')).toBeTruthy()
 })
 
 test('a página do Projeto não oferece os exemplos do Início', async () => {

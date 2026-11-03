@@ -3,17 +3,15 @@ import type { ReactNode } from 'react'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from './dropdown-menu.tsx'
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from './sidebar.tsx'
 
-/** The head of a sidebar: an icon tile, a title and a caption; with `children`, the menu to switch place. */
+/** The head of a sidebar: an icon tile and a title; with `children`, the menu to switch place. */
 export function SidebarSelector({
   icon,
   title,
-  caption,
   label,
   children,
 }: {
   icon: ReactNode
   title: ReactNode
-  caption?: string
   label?: string
   children?: ReactNode
 }) {
@@ -28,7 +26,6 @@ export function SidebarSelector({
       </span>
       <span className="grid min-w-0 flex-1 text-left">
         <span className="truncate font-display text-title text-text">{title}</span>
-        {caption && <span className="truncate text-eyebrow text-text-2">{caption}</span>}
       </span>
     </>
   )

@@ -1,7 +1,7 @@
 ---
 version: alpha
 name: Conexus Hub, system Pauta
-description: One ruled sheet. Graphite chrome a step off white, one white work sheet, every list on a 32px row, ipê gold only where you are.
+description: One ruled sheet. Graphite chrome a step off white, one white work sheet, every list on a 32px row, ipê gold only where you are, and on what you chose.
 colors:
   canvas: "#F5F6F7"
   surface: "#FFFFFF"
@@ -393,8 +393,9 @@ figures.
 Two materials only. Chrome (rail, list, phone top bar) is graphite a step off white; the work sheet
 is pure white and the only white region (V19). Depth is a hairline, never a fill change between
 neighbours of the same kind. Colour is withheld: ipê gold marks the current place, the keyboard
-focus, the text caret and the Conexus mark, and the mark of an item the person chose (V5). A state is a word, with at most a dot of its colour
-beside it (V35).
+focus, the text caret (its selection included) and the Conexus mark, then the mark of an item the
+person chose and the busy composer's arc (V28), the two exceptions of V5. A state is a word, with at
+most a dot of its colour beside it (V35).
 
 - One 4px base unit: every height, line height, gap and inset is a multiple of 4 (V16).
 - One axis (V59): the greeting, composer, Continuar and the Projetos | Ligações pair share one centre
@@ -421,7 +422,7 @@ to them:
 | On ink | `on-ink` | text on the primary button and the tooltip |
 | Ipê | `accent` | the 2px current-place tick, focus outline and field edge, the caret, a busy composer's arc (V28); never text |
 | Ipê text | `accent-text` | the only ipê that carries glyphs: the mark of the item the person chose, such as a toggle's icon and the check of the chosen Projeto (V57) |
-| Ipê soft | `accent-soft` | text selection |
+| Ipê soft | `accent-soft` | text selection, with the caret (V5) |
 | Mark | `mark` | the Conexus mark on the rail and beside "Assistente"; nothing else |
 | Memory | `memory` | the memory ring only |
 | Status | `success`, `warning`, `danger` | always with a word (V35): "Publicado · v3", errors |
@@ -435,7 +436,8 @@ words 5.0:1 or more.
 One grotesque for everything: one x-height and one rhythm from greeting to row label. Hanken Grotesk
 is self-hosted in `apps/web/src/brand/fonts`, covers weights 400 to 700 in one variable file and has
 the tabular figures the stamp and every count use. Bricolage Grotesque, the previous display face,
-is retired (V23). Every line height sits on the 4px grid; there are eight text tokens, and `display-narrow` replaces `display` below 640px (V13).
+is retired (V23). Every line height sits on the 4px grid. There are nine text tokens: seven Hanken
+sizes, `display-narrow` as the form of `display` below 640px (V13), and the mono `fact`.
 
 | Token | Where |
 | --- | --- |
@@ -457,10 +459,11 @@ Every figure that can change (ages, counts, versions, percentages) is set with t
 fixed, chrome ground, each with its right hairline. Closed, only the rail stays. The rest is the
 white sheet (W30).
 
-- **Rail.** The mark tile and the place tiles are 40px with the rail icon size (V34), 4px apart;
-  Início, Projetos, Integrações at the top, then Automações right after Integrações (only for an
-  owner or an administrator; founder, 2026-11-02, "Opção 1"); Configurações, the bell just above the
-  account, and the account (`avatar`) at the foot. The current tile has the selected fill and a 2px-wide ipê tick on the rail's left edge (V5).
+- **Rail.** The mark tile and the place tiles are `rail-tile` with the rail icon size (V34), `xs`
+  apart; Início, Projetos, Integrações at the top, then Automações right after Integrações (only for
+  an owner or an administrator; founder, 2026-11-02, "Opção 1"); Configurações, the bell just above
+  the account, and the account (`avatar`) at the foot. The current tile has the selected fill and a
+  2px-wide ipê tick on the rail's left edge (V5).
 - **List.** The company switcher, "Nova conversa" (bordered), then "Conversas" in day groups (Hoje,
   Ontem, Esta semana, Antes) as `eyebrow` rows and conversation rows of `spacing.row` with the age
   at the end. The current row has the selected fill and a shorter tick.
@@ -480,8 +483,8 @@ white sheet (W30).
 
 | Width | What changes |
 | --- | --- |
-| below 320px | the composer row wraps: the left group takes its own line |
-| below 416px | the composer row drops words, never controls (V60) |
+| a box below 320px | the composer row wraps: the left group takes its own line |
+| a box below 416px | the composer row drops words, never controls; measured on the box, so the Builder's narrow box too (V60) |
 | below 640px | `display` becomes `display-narrow` |
 | below 768px (390 reference) | the rail and the list move together into the left drawer (V56); no header bar; the "+" and Projeto menus become bottom drawers; Início blocks stack in one column; rows are 44 on touch |
 | 768px and up | rail and list fixed; popovers; Projetos and Ligações side by side |
@@ -518,68 +521,72 @@ Base: shadcn `base-nova` on Base UI (`@base-ui/react`), Tailwind 4, the tokens o
 `apps/web/src/brand/tokens.css`. The pieces live in `apps/web/src/ui` and each file's header says
 which shadcn file it was copied from; the front matter holds their values. Their rules:
 
-- **Button, icon button.** 32px, label 13/500, radius 8. `icon-button` 32, `icon-button-small` 28
-  (a row's own action), `icon-button-soft` 32 pill (the composer's "+" and microphone); on touch the
-  target reaches 44 without being drawn larger (V32). Primary is ink on `on-ink`; default is the
-  sheet with a hairline, hover raised; ghost is `text-2`. `button-danger` is neutral with danger
-  text; `button-danger-confirm` is the danger fill, only at the final confirmation (V55).
-- **Input.** 36px, `body`, 16px under `md` (V18). Focus is an ipê edge with a 3px halo at 22%, not an
-  outline (V28). Menu search is 32px.
-- **Composer.** One piece on the axis, sheet ground, hairline, radius 16, `composer` shadow (V60).
-  Left: "+", the Projeto folder, the tools count. Right: model, memory, microphone, send. The field is
-  80px tall on Início and 64 on a phone. A busy composer shows the turning ipê arc on its edge (V28).
-  **(target)**
-- **"+" menu.** A popover 320px wide, 4px padding, `float`, opens up in a conversation and down on
-  Início; below 768px a bottom drawer. Rows of 32: "Anexar arquivo", a head with "N de M
-  ligadas", one switch row per tool (logo plate 24, "Conector · Nome"), search from 7 rows, the list
-  at most 256px, "Conectar outra ferramenta". **(target)**
-- **Tools count.** A 32px pill with up to three overlapping logo plates and "N ferramentas" or "Sem
-  ferramentas"; below 416px one plate and the count. **(target)**
-- **Projeto folder.** A 32px folder pill, with the name (128 at most) once chosen; in a conversation
-  the fixed chip with the name, or the folder dimmed with no Projeto, so the tools never move. The
-  menu is 288px, search from 7, "Sem Projeto", the chosen one with a check in `accent-text` (V57).
-  **(target)**
+- **Button, icon button.** `spacing.control` tall, in `label`, `rounded.control`. `icon-button`,
+  `icon-button-small` (a row's own action), `icon-button-soft` (the composer's "+" and microphone);
+  on touch the target reaches 44 without being drawn larger (V32). Primary is ink on `on-ink`;
+  default is the sheet with a hairline, hover raised; ghost is `text-2`. `button-danger` is neutral
+  with danger text; `button-danger-confirm` is the danger fill, only at the final confirmation
+  (V55).
+- **Input.** `input.height`, `body`, 16px under `md` (V18). Focus is an ipê edge with a 3px halo at
+  22%, not an outline (V28). Menu search is `spacing.control` tall.
+- **Composer.** One piece on the axis, sheet ground, hairline, `rounded.composer`, `composer` shadow
+  (V60). Left: "+", the Projeto folder, the tools count. Right: model, memory, microphone, send. The
+  field is 80px tall on Início and 64 on a phone. A busy composer shows the turning ipê arc on its
+  edge (V28). **(target)**
+- **"+" menu.** A popover of the composer's `menu` width and padding, `float`, opens up in a
+  conversation and down on Início; below 768px a bottom drawer. `menu-item` rows: "Anexar arquivo",
+  a head with "N de M ligadas", one switch row per tool (logo plate 24, "Conector · Nome"), search
+  from 7 rows, the list at most 256px, "Conectar outra ferramenta". **(target)**
+- **Tools count.** A `spacing.control` pill with up to three overlapping logo plates and "N
+  ferramentas" or "Sem ferramentas"; in a box below 416px one plate and the count, while "Sem
+  ferramentas" stays whole and the model truncates instead (V60). **(target)**
+- **Projeto folder.** A `spacing.control` folder pill, with the name (128 at most) once chosen; in
+  a conversation the fixed chip with the name, or the folder dimmed with no Projeto, so the tools
+  never move. The menu is 288px, search from 7, "Sem Projeto", the chosen one with a check in
+  `accent-text` (V57). **(target)**
 - **Model button, memory.** The model button is a soft pill with the provider's mark and a short
   label; below 768px it drops "Claude " and the effort. The memory ring with "Memória N%" exists only
   where a conversation does. **(target for the memory's word)**
-- **Rail tile, list row, Nova conversa.** As in Layout: tile 40, row 32 (44 on touch), 8px padding,
-  `label` in `text-2`, hover raised, current selected with its tick. The account menu opens to the
-  right of its 40px tile. **(target)**
-- **Block (Início).** A header row of 32 with the title in 600 and its way out ("Todos →"), then
-  rows of 32 (44 on touch) with a bottom hairline, the title at the start, an age or a stamp at the
-  end; five rows at most, then "Mais N ligações". Loading is a 96px skeleton; empty is a sentence
-  row. **(target)**
+- **Rail tile, list row, Nova conversa.** As in Layout: `rail-tile`, `list-row` (44 on touch) with
+  its padding, `label` in `text-2`, hover raised, current selected with its tick. The account menu
+  opens to the right of its `rail-tile`. **(target)**
+- **Block (Início).** A header row of `spacing.row` with the title in 600 and, on Projetos and
+  Ligações, its way out ("Todos →"); Continuar has none, since the list beside it already holds
+  every conversation. Then `block-row` rows (44 on touch) with a bottom hairline, the title at the
+  start, an age or a stamp at the end; five rows at most, then "Mais N ligações". Loading is a 96px
+  skeleton; empty is a sentence row. **(target)**
 - **Stamp.** The state in words, `eyebrow` with tabular figures and a 6px dot in the current colour:
   "Publicado · v3" in success, "Em construção · v2" and "Ainda sem app" in `text-2`. A connection
   takes the word and tone of `stateBadge`, and none when it was never tested.
   **(target)**
-- **Badge.** 20px pill with a hairline and a dot by tone: neutral, success, warning, danger (V35).
-- **Chip.** The button's default form as a pill, 32px; the examples under the Início composer.
-- **Switch.** Base UI's, 36 × 20; ink when on and `surface-4` when off; it saves on each change and
-  waits disabled for the answer.
-- **Menus, select.** Surface radius 12, hairline, 4px padding; items 32px, highlighted raised. A
-  menu item that goes to an address, Base UI's `Menu.LinkItem`, is the same `menu-item` and closes
-  the menu as an item does; Base UI leaves it open by default (`closeOnClick`). The select is
+- **Badge.** A `badge` pill with a hairline and a dot by tone: neutral, success, warning, danger
+  (V35).
+- **Chip.** The button's default form as a pill, `chip`; the examples under the Início composer.
+- **Switch.** Base UI's, at the `switch` size; ink when on and `surface-4` when off; it saves on
+  each change and waits disabled for the answer.
+- **Menus, select.** `menu`: surface, `rounded.object`, hairline, its padding; `menu-item` items,
+  highlighted raised. A menu item that goes to an address, Base UI's `Menu.LinkItem`, is the same
+  `menu-item` and closes the menu as an item does; Base UI leaves it open by default
+  (`closeOnClick`). The select is
   shadcn's base-nova item with departures: no `SelectGroup`, `SelectLabel` or `SelectSeparator`,
-  since a role list has no groups; its trigger is 36px and its item keeps 2rem on the right for the
-  check. The menu and the
-  select have a hairline; only the "+" and Projeto menus carry `float`. **(target for the item height
-  and the shadow)**
-- **Popover, drawer, sheet.** Popover radius 12, hairline, 288px by default. The bottom drawer is at
-  most 85dvh with a 40 × 4 handle and a `title` heading. The left drawer holds the rail and the list
-  together (V56); the right panel (`drawer-right`) holds a form beside the page. The alert dialog is
-  Base UI's, in the drawer's dress: a click outside does not close it, Escape and its buttons do,
-  and its first field takes the focus.
+  since a role list has no groups; its trigger is `select-trigger` and its item keeps 2rem on the
+  right for the check. The menu and the select have a hairline; only the "+" and Projeto menus
+  carry `float`. **(target for the item height and the shadow)**
+- **Popover, drawer, sheet.** Popover `rounded.object`, hairline, 288px by default. The bottom
+  drawer is at most 85dvh with a 40 × 4 handle and a `title` heading. The left drawer holds the
+  rail and the list together (V56); the right panel (`drawer-right`) holds a form beside the page.
+  The alert dialog is Base UI's, in the drawer's dress: a click outside does not close it, Escape
+  and its buttons do, and its first field takes the focus.
 - **Dialog.** Four sizes, as `ui/dialog.tsx` names them: `form` (`containers.column`), `page`
   (`containers.page`), `fields` (`containers.wide`) and `ask` (a card under `sm`, `fields` above);
   `object` radius; `title` heading; a footer with a hairline.
 - **Tabs.** 32px triggers; the active one is ink with a 2px ipê underline, a current-place mark (V5).
-- **Table.** Header 40 in `label`, `text-2`, cells 12 padding, row hairline, hover raised; its
-  rows keep the table display at every width. A markdown table in a message has a raised header and a
-  full hairline grid.
-- **Chat messages.** The person's bubble: raised, radius 12, right, 80% at most, the time as a fact
-  under it. The assistant's turn is plain text on the sheet, headed by the mark, "Assistente" and the
-  model badge, on the axis.
+- **Table.** Header 40 in `label`, `text-2`, cells with the `table-row` padding, row hairline,
+  hover raised; its rows keep the table display at every width. A markdown table in a message has
+  a raised header and a full hairline grid.
+- **Chat messages.** The person's bubble: raised, `rounded.object`, right, 80% at most, the time as
+  a fact under it. The assistant's turn is plain text on the sheet, headed by the mark,
+  "Assistente" and the model badge, on the axis.
 - **Tool row.** A collapsed row with icon, sentence, duration in tabular figures and a chevron;
   it opens on what the tool received and returned (V39).
 - **Empty, loading, error.** Empty is one sentence row or a centred column of 448 at most; loading is
@@ -597,8 +604,8 @@ which shadcn file it was copied from; the front matter holds their values. Their
   picture of its app.
 - **Wordmark, mark.** The wordmark in `display`, "nexus" and the mark in `mark`; the Encaixe mark
   animates while work runs (V26).
-- **Invitation e-mail.** React Email at send time with inline values and a dark media query, 520px
-  at most, system fonts, no remote resource (V3).
+- **Invitation e-mail.** React Email at send time with inline values and a dark media query, the
+  `invitation-email` width, system fonts, no remote resource (V3).
 - **Toast.** None exists; the Base UI Toast is the base when a card asks for one.
 
 The current-place tick is the signature: a 2px ipê pill on the left edge of the rail (20 tall) and
