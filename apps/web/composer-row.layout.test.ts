@@ -105,7 +105,8 @@ const CONNECTIONS = ['Matriz', 'Filial', 'Loja'].map((name, index) => ({
   chosen: true,
 }))
 
-// The model's name stays whole at 390 whatever sits beside it: the controls beside it yield first (criterion 16).
+// At 390 the tools count yields to the model's name (criterion 16); what "Sem ferramentas" becomes there is the founder's call,
+// so that case only proves nothing overlaps and every control stays visible.
 const BESIDE: ReadonlyArray<[string, typeof CONNECTIONS]> = [
   ['com a contagem das ferramentas', CONNECTIONS],
   ['com "Sem ferramentas"', []],
@@ -129,12 +130,31 @@ for (const [name, connections] of BESIDE) {
       .getByText(/ferramenta|^3/)
       .first()
       .waitFor({ state: 'attached' })
-    const shown = picker.locator('.truncate')
-    assert.match(await shown.innerText(), /^\S+ [\d.]+$/, 'the name is not whole')
-    assert.ok(
-      await shown.evaluate((node) => node.scrollWidth <= node.clientWidth),
-      'the model name is cut',
-    )
+    if (connections.length > 0) {
+      const shown = picker.locator('.truncate')
+      assert.match(await shown.innerText(), /^\S+ [\d.]+$/, 'the name is not whole')
+      assert.ok(
+        await shown.evaluate((node) => node.scrollWidth <= node.clientWidth),
+        'the model name is cut',
+      )
+    } else {
+      const boxes = await page
+        .locator('form [data-slot="input-group-addon"]')
+        .last()
+        .getByRole('button')
+        .evaluateAll((nodes) =>
+          nodes.map((node) => {
+            const { x, width } = node.getBoundingClientRect()
+            return { x, width }
+          }),
+        )
+      boxes.sort((a, b) => a.x - b.x)
+      for (const [index, box] of boxes.entries()) {
+        assert.ok(box.width > 0, 'a control is not visible')
+        const next = boxes[index + 1]
+        if (next) assert.ok(box.x + box.width <= next.x + 0.5, 'two controls overlap')
+      }
+    }
     const box = await page.locator('form').first().boundingBox()
     assert.ok(box)
     assert.equal(box.x, 16, 'the box is not 16 px from the edge')

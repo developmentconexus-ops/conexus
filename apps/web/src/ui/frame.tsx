@@ -176,7 +176,10 @@ export function Frame(props: {
         <PhoneSlot.Provider value={slot}>
           <InFrame.Provider value={true}>
             <div
-              className={cn('flex min-w-0 flex-1 flex-col', compact ? 'min-h-0' : 'p-lg md:p-xl')}
+              className={cn(
+                'flex min-w-0 flex-1 flex-col',
+                compact ? 'min-h-0' : 'px-lg py-xl md:p-xl',
+              )}
             >
               {props.children}
             </div>

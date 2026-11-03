@@ -210,7 +210,9 @@ function ToolsCount(props: { place: ComposerPlace; choice: Choice }) {
         <span aria-hidden="true" className="flex -space-x-1">
           {logos.map((logo, index) => (
             // biome-ignore lint/suspicious/noArrayIndexKey: the stack's logos can repeat, and it never reorders.
-            <ConnectorLogo key={index} small entry={{ logo }} />
+            <span key={index} className={index > 0 ? '@max-[26rem]:hidden' : undefined}>
+              <ConnectorLogo small entry={{ logo }} />
+            </span>
           ))}
         </span>
         <span aria-hidden="true">
