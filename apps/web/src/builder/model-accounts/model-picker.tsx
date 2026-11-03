@@ -54,8 +54,6 @@ export function ModelPicker(props: {
   effort?: EffortChoice
   /** Off where the button is a pill in a row, as the Claude app's composer draws it. */
   chevron?: boolean
-  /** The button shows the choice and opens nothing. */
-  disabled?: boolean
 }) {
   const [search, setSearch] = useState('')
   const { groups, matched } = useMemo(
@@ -90,7 +88,6 @@ export function ModelPicker(props: {
       inputValue={search}
       onInputValueChange={setSearch}
       filter={null}
-      disabled={props.disabled}
     >
       <ComboboxTrigger
         id={props.id}

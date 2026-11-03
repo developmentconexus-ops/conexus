@@ -3,7 +3,7 @@ import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { afterEach, expect, test } from 'vitest'
 import { COMPANY } from '../../platform/fixtures.ts'
-import { hubServer, refusal, undecided } from '../../platform/test-hub.tsx'
+import { hubServer, outsideBlock, refusal, undecided } from '../../platform/test-hub.tsx'
 import { PROJECT, SECOND } from './test-hub.tsx'
 import { box, create, REQUEST, request, startHub, UNCONFIRMED } from './test-start.tsx'
 import { EMPTY_CONVERSATION, REQUEST_NOT_SENT } from './text.ts'
@@ -121,9 +121,7 @@ test('com os Projetos recusados, o pedido enviado mostra a frase com Tentar de n
   fireEvent.click(screen.getByRole('button', { name: 'Enviar' }))
   // Início's own list of Projetos fails too and has its "Tentar de novo"; the request's is the one outside it.
   function own() {
-    return screen
-      .getAllByRole('button', { name: 'Tentar de novo' })
-      .filter((one) => one.closest('section[aria-label="Projetos"]') === null)
+    return outsideBlock(screen.getAllByRole('button', { name: 'Tentar de novo' }), 'Projetos')
   }
   await waitFor(() => expect(own()).toHaveLength(1))
   const [retry] = own()

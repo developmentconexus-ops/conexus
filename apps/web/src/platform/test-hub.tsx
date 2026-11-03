@@ -227,6 +227,11 @@ export function hubServer() {
   return server
 }
 
+/** The elements that are not inside the named block of Início, which reads the same list on its own. */
+export function outsideBlock(found: HTMLElement[], block: string): HTMLElement[] {
+  return found.filter((one) => one.closest(`section[aria-label="${block}"]`) === null)
+}
+
 /** The Hub's refusal for a failure code, as the server sends it. */
 export function refusal(code: FailureCode) {
   return HttpResponse.json(problemOf(code), {
