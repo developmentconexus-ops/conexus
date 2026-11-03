@@ -284,7 +284,7 @@ export function Composer(props: {
           align="block-end"
           className="flex-nowrap items-center justify-between gap-xs pointer-coarse:gap-sm max-[20rem]:flex-wrap"
         >
-          <div className="flex shrink-0 items-center gap-xs max-[20rem]:basis-full">
+          <div className="flex shrink-0 items-center gap-xs max-[20rem]:basis-full max-[20rem]:flex-wrap">
             <Attach add={addFiles} />
             {props.context}
           </div>

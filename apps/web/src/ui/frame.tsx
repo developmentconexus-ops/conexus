@@ -175,7 +175,9 @@ export function Frame(props: {
         <PhoneTop slot={setSlot} menuNote={props.menuNote} />
         <PhoneSlot.Provider value={slot}>
           <InFrame.Provider value={true}>
-            <div className={cn('flex min-w-0 flex-1 flex-col', compact ? 'min-h-0' : 'p-xl')}>
+            <div
+              className={cn('flex min-w-0 flex-1 flex-col', compact ? 'min-h-0' : 'p-lg md:p-xl')}
+            >
               {props.children}
             </div>
           </InFrame.Provider>

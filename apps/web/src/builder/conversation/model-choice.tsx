@@ -136,7 +136,7 @@ export function ComposerModelPicker(props: {
       disabled={props.disabled}
       className={cn(
         touchArea,
-        'h-8 rounded-pill bg-surface-3 px-sm text-label font-medium hover:bg-accent-soft data-popup-open:bg-accent-soft',
+        'h-8 min-[20rem]:shrink-0 rounded-pill bg-surface-3 px-sm text-label font-medium hover:bg-accent-soft data-popup-open:bg-accent-soft',
       )}
       onChange={pickModel}
       effort={{ value: effort, onChange: (next) => props.onChange({ model: now, effort: next }) }}

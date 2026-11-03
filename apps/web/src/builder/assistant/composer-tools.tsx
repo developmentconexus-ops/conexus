@@ -194,7 +194,7 @@ function ToolsCount(props: { place: ComposerPlace; choice: Choice }) {
   const catalog = useConnectorCatalog(place.companyId)
   const { offered } = choice
   if (offered === undefined)
-    return choice.failed === undefined ? <Skeleton className="h-5 w-24" /> : null
+    return choice.failed === undefined ? <Skeleton className="h-5 w-16" /> : null
   if (offered.length === 0) return <NoTools place={place} />
   const chosen = offered.filter((one) => one.chosen)
   function label(connection: SessionConnection): string {

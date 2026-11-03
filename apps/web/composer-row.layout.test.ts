@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
+import { listAssistantConnections } from '@conexus/hub-api'
 import type { Page } from 'playwright-core'
-import { createHarness, PHONE, SMALL_PHONE } from './layout-harness.ts'
+import { createHarness, ok, PHONE, SMALL_PHONE } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import { ASSISTANT_PATH, ASSISTANT_REPLIES } from './sweep-assistant-states.ts'
 import { OWNER, startsOn } from './sweep-replies.ts'
@@ -96,3 +97,48 @@ test('a 390, o menu da pasta do Início com um Projeto de nome comprido cabe na 
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), PHONE.width)
   await page.close()
 })
+
+const CONNECTIONS = ['Matriz', 'Filial', 'Loja'].map((name, index) => ({
+  connectionId: `${String(index + 1).repeat(8)}-${String(index + 1).repeat(4)}-4${String(index + 1).repeat(3)}-8${String(index + 1).repeat(3)}-${String(index + 1).repeat(12)}`,
+  connector: 'sankhya',
+  name,
+  chosen: true,
+}))
+
+// The model's name stays whole at 390 whatever sits beside it: the controls beside it yield first (criterion 16).
+const BESIDE: ReadonlyArray<[string, typeof CONNECTIONS]> = [
+  ['com a contagem das ferramentas', CONNECTIONS],
+  ['com "Sem ferramentas"', []],
+]
+for (const [name, connections] of BESIDE) {
+  test(`a 390, o nome do modelo do Início cabe inteiro ${name}`, async () => {
+    const page = await harness.open(`/companies/${COMPANY.id}`, {
+      viewport: PHONE,
+      replies: {
+        ...OWNER,
+        ...startsOn(COMPANY.id),
+        [`GET /api/companies/${COMPANY.id}/assistant/connections`]: ok(listAssistantConnections, {
+          connections,
+        }),
+      },
+    })
+    const picker = page.locator('form [aria-label="Modelo e raciocínio"]')
+    await picker.waitFor()
+    await page
+      .locator('form')
+      .getByText(/ferramenta|^3/)
+      .first()
+      .waitFor({ state: 'attached' })
+    const shown = picker.locator('.truncate')
+    assert.match(await shown.innerText(), /^\S+ [\d.]+$/, 'the name is not whole')
+    assert.ok(
+      await shown.evaluate((node) => node.scrollWidth <= node.clientWidth),
+      'the model name is cut',
+    )
+    const box = await page.locator('form').first().boundingBox()
+    assert.ok(box)
+    assert.equal(box.x, 16, 'the box is not 16 px from the edge')
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), PHONE.width)
+    await page.close()
+  })
+}
