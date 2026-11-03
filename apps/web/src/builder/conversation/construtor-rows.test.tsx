@@ -142,12 +142,14 @@ test('a linha aberta de agent_read titula em português, nunca pelo nome da ferr
 })
 
 test('duas chamadas do mesmo agente na resposta desenham um cartão só, no último resultado; as anteriores ficam como linha', () => {
-  const saved = (id: string, agentId: string, name: string): ToolItem => ({
-    ...draftRow(CONSTRUTOR_TOOL.agentDraft),
-    id,
-    toolCallId: id,
-    result: { kind: 'SAVED', agent: { ...agent(), id: AgentId.parse(agentId), name } },
-  })
+  function saved(id: string, agentId: string, name: string): ToolItem {
+    return {
+      ...draftRow(CONSTRUTOR_TOOL.agentDraft),
+      id,
+      toolCallId: id,
+      result: { kind: 'SAVED', agent: { ...agent(), id: AgentId.parse(agentId), name } },
+    }
+  }
   const room = {
     ...agentRoom('Construtor'),
     agentCard: (result: ConstrutorResult) => (

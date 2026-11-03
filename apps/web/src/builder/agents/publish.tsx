@@ -58,7 +58,7 @@ export function PublishButton(props: { scope: Scope; agent: AgentDetail }) {
 
   return (
     <>
-      <Button size="sm" onClick={() => setOpen(true)}>
+      <Button size="sm" variant="primary" onClick={() => setOpen(true)}>
         Publicar
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
@@ -78,7 +78,7 @@ export function PublishButton(props: { scope: Scope; agent: AgentDetail }) {
             </p>
           )}
           <DialogFooter>
-            <Button disabled={pending} onClick={() => void confirm()}>
+            <Button variant="primary" disabled={pending} onClick={() => void confirm()}>
               {pending ? 'Publicando…' : 'Publicar versão'}
             </Button>
             <Button variant="ghost" disabled={pending} onClick={() => setOpen(false)}>

@@ -25,7 +25,7 @@ export function AgentChat(props: {
   const room = useMemo(() => agentRoom(agent.name, words), [agent.name, words])
   return (
     <RoomContext.Provider value={room}>
-      <div key={conversationId} className="flex h-full min-h-0 flex-col bg-canvas">
+      <div key={conversationId} className="flex h-full min-h-0 flex-col bg-surface">
         {draft && (
           <p className="border-b border-line bg-surface-3 px-md py-xs text-label text-text-2">
             {TEST_BANNER}

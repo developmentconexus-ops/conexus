@@ -4,9 +4,11 @@ import { Link } from '@tanstack/react-router'
 import { useState } from 'react'
 import { HubFailure, sentenceOfCode } from '../../platform/hub.ts'
 import { Button, buttonVariants } from '../../ui/button.tsx'
+import { useConnectorCatalog } from '../assistant/public.ts'
 import { publishFailureText, usePublish } from './publish.tsx'
 import { agentQuery } from './queries.ts'
-import { AGENT_GONE, DRAFT_CHANGED, stateText } from './text.ts'
+import { StateStamp } from './rows.tsx'
+import { AGENT_GONE, DRAFT_CHANGED, toolsText } from './text.ts'
 
 /**
  * The card of the draft in the Construtor's conversation (step 24.3, U5, criterion 26): what
@@ -32,6 +34,7 @@ function Saved(props: {
   saved: Extract<ConstrutorResult, { kind: 'SAVED' }>['agent']
 }) {
   const { saved } = props
+  const catalog = useConnectorCatalog(props.companyId)
   const scope = { companyId: props.companyId, projectId: props.projectId }
   const live = useQuery(agentQuery(scope, saved.id))
   const { publish, pending } = usePublish(scope, saved.id)
@@ -40,8 +43,8 @@ function Saved(props: {
   const state = live.data?.agent.state ?? saved.state
   const reads = saved.offered
     .filter((one) => saved.draft.connections.includes(one.connectionId))
-    .map((one) => `${one.connector === 'sankhya' ? 'Sankhya' : one.connector} · ${one.name}`)
-  const tools = saved.tools.map((tool) => tool.slug)
+    .map((one) => `${catalog.name(one.connector)} · ${one.name}`)
+  const tools = saved.tools.length === 0 ? [] : [toolsText(saved.tools.length)]
 
   async function asPublish() {
     setError(undefined)
@@ -60,7 +63,7 @@ function Saved(props: {
         <p className="text-text-2">{AGENT_GONE}</p>
       ) : (
         <>
-          <p className="text-label text-text-2">{stateText(state)}</p>
+          <StateStamp state={state} />
           {saved.description !== '' && <p className="break-words text-text">{saved.description}</p>}
           {(reads.length > 0 || tools.length > 0) && (
             <p className="break-words text-text-2">Lê: {[...reads, ...tools].join(' · ')}</p>
@@ -78,7 +81,7 @@ function Saved(props: {
             >
               Abrir
             </Link>
-            <Button size="sm" disabled={pending} onClick={() => void asPublish()}>
+            <Button size="sm" variant="primary" disabled={pending} onClick={() => void asPublish()}>
               {pending ? 'Publicando…' : 'Publicar'}
             </Button>
           </div>

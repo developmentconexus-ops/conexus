@@ -3,6 +3,7 @@ import type {
   AgentDetail,
   AgentVersionSummary,
   ConstrutorConversationSummary,
+  ReadyTool,
   ToolSummary,
 } from '@conexus/hub-api'
 import {
@@ -18,6 +19,7 @@ import {
 import { HttpResponse, http } from 'msw'
 import type { setupServer } from 'msw/node'
 import { z } from 'zod'
+import { SANKHYA } from '../../hub/connectors/fixtures.ts'
 import { COMPANY } from '../../platform/fixtures.ts'
 import { PEDIDOS, refusal } from '../../platform/test-hub.tsx'
 import type { View } from '../conversation/test-hub.tsx'
@@ -53,6 +55,7 @@ type Held = {
   agents: AgentDetail[]
   versions?: AgentVersionSummary[]
   tools?: ToolSummary[]
+  ready?: ReadyTool[]
   conversations?: AgentConversationSummary[]
   construtor?: ConstrutorConversationSummary[]
   answers?: Answers
@@ -157,7 +160,9 @@ function conversationRoutes(held: Held, note: Note) {
     }),
     http.get(
       `${PROJECT_API}/tools`,
-      () => held.answers?.tools?.() ?? HttpResponse.json({ tools: held.tools ?? [], ready: [] }),
+      () =>
+        held.answers?.tools?.() ??
+        HttpResponse.json({ tools: held.tools ?? [], ready: held.ready ?? [] }),
     ),
     http.post(`${PROJECT_API}/tools`, async ({ request }) => {
       const body = ToolInput.parse(await note(request))
@@ -234,6 +239,13 @@ function memberRoutes() {
   ]
 }
 
+/** The company's catalog with the Sankhya, where the screens read the connectors' names and logos. */
+export function catalogRoute() {
+  return http.get('*/api/companies/:companyId/connections', () =>
+    HttpResponse.json({ connectors: [SANKHYA], connections: [], mayManage: true }),
+  )
+}
+
 /**
  * The Hub's Agentes routes of one Projeto on `server`, with the sessions of the Construtor and of an
  * agent. `held` changes as the writes land; `sent` holds every write.
@@ -256,6 +268,7 @@ function agentsHub(server: ReturnType<typeof setupServer>, held: Held) {
     ...(held.member
       ? memberRoutes()
       : [
+          catalogRoute(),
           ...draftRoutes(held, note),
           ...conversationRoutes(held, note),
           ...sessionRoutes(note, lines),

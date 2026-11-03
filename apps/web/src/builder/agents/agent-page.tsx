@@ -7,6 +7,7 @@ import { useState } from 'react'
 import { useAttemptKey } from '../../platform/attempt-key.ts'
 import { writeFailureText } from '../../platform/hub.ts'
 import { AlertDialog, AlertDialogContent } from '../../ui/alert-dialog.tsx'
+import { BlockSentence, blockRow } from '../../ui/block.tsx'
 import { Button } from '../../ui/button.tsx'
 import { Dialog, DialogContent } from '../../ui/dialog.tsx'
 import {
@@ -15,6 +16,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '../../ui/dropdown-menu.tsx'
+import { Empty } from '../../ui/states.tsx'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
 import { ConfigPanel } from './config-panel.tsx'
@@ -27,11 +29,11 @@ import {
   sendDeletion,
 } from './queries.ts'
 import { ReadStates } from './read-states.tsx'
+import { ConversationLine, StateStamp } from './rows.tsx'
 import {
   deleteWarning,
   NO_AGENT_CONVERSATIONS,
-  stateText,
-  titleOf,
+  NO_CONVERSATION_OPEN,
   UNCONFIRMED_CREATION,
   UNCONFIRMED_DELETE,
 } from './text.ts'
@@ -51,6 +53,7 @@ function Conversations(props: {
   const create = useMutation(sendAgentConversation)
   const attempt = useAttemptKey()
   const [error, setError] = useState<string>()
+  const now = new Date()
 
   async function open(draft: boolean) {
     setError(undefined)
@@ -75,8 +78,8 @@ function Conversations(props: {
   }
 
   return (
-    <div className="flex flex-col gap-md p-md">
-      <div className="flex flex-wrap gap-sm">
+    <div className="flex flex-col p-xs">
+      <div className="flex flex-wrap gap-sm px-sm py-xs">
         {agent.state.kind === 'PUBLISHED' && (
           <Button size="sm" disabled={create.isPending} onClick={() => void open(false)}>
             Nova conversa
@@ -93,20 +96,21 @@ function Conversations(props: {
       )}
       <ReadStates read={read} />
       {read.data?.conversations.length === 0 && (
-        <p className="text-text-2">{NO_AGENT_CONVERSATIONS}</p>
+        <BlockSentence>{NO_AGENT_CONVERSATIONS}</BlockSentence>
       )}
-      <ul className="flex flex-col">
+      <ul>
         {read.data?.conversations.map((conversation) => (
           <li key={conversation.id}>
             <Link
               to="/companies/$companyId/projects/$projectId/agents/$agentId/$conversationId"
               params={{ ...scope, agentId: agent.id, conversationId: conversation.id }}
-              className="flex flex-col rounded-control px-sm py-xs hover:bg-surface-3"
+              className={`${blockRow} hover:bg-surface-3`}
             >
-              <span className="truncate">{titleOf(conversation)}</span>
-              {conversation.draft && (
-                <span className="text-label text-text-2">Teste com o rascunho</span>
-              )}
+              <ConversationLine
+                conversation={conversation}
+                now={now}
+                mark={conversation.draft && <span className="text-fact text-text-2">Teste</span>}
+              />
             </Link>
           </li>
         ))}
@@ -178,31 +182,27 @@ function Header(props: { scope: Scope; agent: AgentDetail; phone: boolean }) {
           Agentes
         </Link>
         <h1 className="truncate font-display text-title">{agent.name}</h1>
-        <p className="text-label text-text-2">{stateText(agent.state)}</p>
+        <StateStamp state={agent.state} />
       </div>
       <div className="flex items-center gap-sm">
         <PublishButton scope={scope} agent={agent} />
-        {phone ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={
-                <Button size="icon-sm" variant="ghost" aria-label={`Mais ações: ${agent.name}`} />
-              }
-            >
-              <MoreHorizontalIcon aria-hidden="true" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <Button size="icon-sm" variant="ghost" aria-label={`Mais ações: ${agent.name}`} />
+            }
+          >
+            <MoreHorizontalIcon aria-hidden="true" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {phone && (
               <DropdownMenuItem onClick={() => setVersions(true)}>Versões</DropdownMenuItem>
-              <DropdownMenuItem className="text-danger" onClick={() => setConfirming(true)}>
-                Apagar
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ) : (
-          <Button size="sm" variant="danger" onClick={() => setConfirming(true)}>
-            Apagar
-          </Button>
-        )}
+            )}
+            <DropdownMenuItem className="text-danger" onClick={() => setConfirming(true)}>
+              Apagar
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
       <ConfirmDelete scope={scope} agent={agent} open={confirming} onOpenChange={setConfirming} />
       {phone && (
@@ -221,7 +221,8 @@ function Header(props: { scope: Scope; agent: AgentDetail; phone: boolean }) {
  * (conversations, conversation, configuration) over our own pieces: the person's conversations
  * with it on the left, the conversation in the middle (`children`, the route's outlet) and the
  * editable configuration on the right, with **Publicar** and **Versões**. On a phone the columns
- * are two tabs, **Conversas** and **Configuração**, and **Versões** goes to the **⋯** menu.
+ * are two tabs, **Conversas** and **Configuração**, and **Versões** goes to the **⋯** menu, where **Apagar**
+ * is on every width.
  */
 export function AgentPage(props: {
   companyId: CompanyId
@@ -263,7 +264,15 @@ export function AgentPage(props: {
           <aside aria-label="Conversas" className="min-h-0 overflow-y-auto border-r border-line">
             {conversations}
           </aside>
-          <div className="min-h-0 min-w-0">{props.children}</div>
+          <div className="min-h-0 min-w-0">
+            {props.conversationId === undefined ? (
+              <div className="flex h-full items-center justify-center p-md">
+                <Empty>{NO_CONVERSATION_OPEN}</Empty>
+              </div>
+            ) : (
+              props.children
+            )}
+          </div>
           <div className="min-h-0 overflow-y-auto border-l border-line">{config}</div>
         </div>
       )}

@@ -10,6 +10,7 @@ import { COMPANY } from '../../platform/fixtures.ts'
 import { hubServer, PEDIDOS, refusal } from '../../platform/test-hub.tsx'
 import { DraftCard } from './draft-card.tsx'
 import { AGENT, AREA, agent } from './test-agents.ts'
+import { catalogRoute } from './test-hub.tsx'
 
 // O cartão do rascunho na conversa do Construtor (step 24.3, U5, criterion 26).
 const server = hubServer()
@@ -33,11 +34,14 @@ function saved(fields: Parameters<typeof agent>[0] = {}): ConstrutorResult {
 }
 
 test('mostra o nome, o que faz, o que lê, o estado, Abrir e Publicar', async () => {
-  server.use(http.get(AGENT_PATH, () => HttpResponse.json({ agent: agent() })))
+  server.use(
+    catalogRoute(),
+    http.get(AGENT_PATH, () => HttpResponse.json({ agent: agent() })),
+  )
   card(saved())
   expect(await screen.findByText('Conferente de metas')).toBeTruthy()
   expect(screen.getByText('Compara as vendas de ontem com as metas.')).toBeTruthy()
-  expect(screen.getByText('Lê: Sankhya · Matriz · vendas_de_ontem')).toBeTruthy()
+  expect(await screen.findByText('Lê: Sankhya · Matriz · 1 ferramenta')).toBeTruthy()
   expect(screen.getByText('Rascunho')).toBeTruthy()
   expect(screen.getByRole('link', { name: 'Abrir' })).toBeTruthy()
   expect(screen.getByRole('button', { name: 'Publicar' })).toBeTruthy()

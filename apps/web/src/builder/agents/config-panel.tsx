@@ -4,21 +4,39 @@ import { useId, useState } from 'react'
 import { useAttemptKey } from '../../platform/attempt-key.ts'
 import { HubFailure, sentenceOf, writeFailureText } from '../../platform/hub.ts'
 import { Button } from '../../ui/button.tsx'
+import { cn } from '../../ui/cn.ts'
 import { Dialog, DialogContent, DialogFooter } from '../../ui/dialog.tsx'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select.tsx'
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { ReadFailure } from '../../ui/states.tsx'
 import { Switch } from '../../ui/switch.tsx'
 import { Textarea } from '../../ui/textarea.tsx'
+import {
+  Logo,
+  matches,
+  ROW,
+  SEARCH_FROM,
+  Search,
+  useConnectorCatalog,
+} from '../assistant/public.ts'
 import { accountsQuery, modelLabel } from '../model-accounts/public.ts'
-import { sendTool, toolsQuery } from './queries.ts'
-import { GONE_CONNECTION, NO_CONNECTIONS, NO_TOOLS, UNCONFIRMED_SAVE } from './text.ts'
+import { Chooser } from './chooser.tsx'
+import { sendTool } from './queries.ts'
+import {
+  connectionOf,
+  GONE_CONNECTION,
+  NO_CONNECTIONS,
+  NO_TOOLS,
+  toolTitle,
+  UNCONFIRMED_SAVE,
+} from './text.ts'
 import { ToolForm } from './tool-form.tsx'
 import type { Saving } from './use-draft-save.ts'
 import { useDraftSave } from './use-draft-save.ts'
 
 type Scope = { companyId: CompanyId; projectId: ProjectId }
 type Part = { scope: Scope; agent: AgentDetail }
+type Dialogue = Part & { saving: Saving; onClose: () => void }
 const SAME = 'same'
 
 /** One section of the panel: busy while its write is on its way, and its refusal under it until it saves. */
@@ -34,7 +52,7 @@ function Section(props: {
       aria-busy={props.busy}
       className="flex flex-col gap-sm border-b border-line py-md last:border-b-0"
     >
-      <h3 className="font-display text-title">{props.title}</h3>
+      <h3 className="font-body text-label font-semibold">{props.title}</h3>
       {props.children}
       {props.error !== undefined && (
         <p role="alert" className="text-danger">
@@ -120,6 +138,7 @@ function Toggle(props: { label: string; checked: boolean; onChange: (next: boole
 
 function Connections({ scope, agent }: Part) {
   const saving = useDraftSave(scope, agent.id)
+  const catalog = useConnectorCatalog(scope.companyId)
   const chosen = agent.draft.connections
   const gone = chosen.filter((id) => !agent.offered.some((one) => one.connectionId === id))
   function change(id: (typeof chosen)[number], on: boolean) {
@@ -136,7 +155,7 @@ function Connections({ scope, agent }: Part) {
       {agent.offered.map((one) => (
         <Toggle
           key={one.connectionId}
-          label={`${one.connector === 'sankhya' ? 'Sankhya' : one.connector} · ${one.name}`}
+          label={`${catalog.name(one.connector)} · ${one.name}`}
           checked={chosen.includes(one.connectionId)}
           onChange={(on) => change(one.connectionId, on)}
         />
@@ -150,100 +169,6 @@ function Connections({ scope, agent }: Part) {
         </div>
       ))}
     </Section>
-  )
-}
-
-function toggled(set: ReadonlySet<string>, key: string): ReadonlySet<string> {
-  const next = new Set(set)
-  if (!next.delete(key)) next.add(key)
-  return next
-}
-
-type Dialogue = Part & { saving: Saving; onClose: () => void }
-
-function Chooser(props: Dialogue) {
-  const { scope, agent } = props
-  const read = useQuery(toolsQuery(scope))
-  const chosenIds = new Set(agent.tools.map((one) => one.id))
-  const [picked, setPicked] = useState<ReadonlySet<string>>(chosenIds)
-  const [ready, setReady] = useState<ReadonlySet<string>>(new Set())
-  if (read.isError)
-    return <ReadFailure text={sentenceOf(read.error)} onRetry={() => void read.refetch()} />
-  function confirm(list: NonNullable<typeof read.data>) {
-    const readies = list.ready.filter((one) => ready.has(`${one.connectionId}:${one.operation}`))
-    props.saving.save((now) => {
-      // A chosen tool the list does not bring cannot be unticked here, so it stays, at its version.
-      const unlisted = now.tools.filter((one) => !list.tools.some((tool) => tool.id === one.id))
-      const listed = list.tools.flatMap((tool) => {
-        if (!picked.has(tool.id)) return []
-        return [now.tools.find((one) => one.id === tool.id)?.version.id ?? tool.latest.id]
-      })
-      const tools: ToolVersionId[] = [...unlisted.map((one) => one.version.id), ...listed]
-      return {
-        tools,
-        ...(readies.length > 0 && {
-          ready: readies.map(({ connectionId, operation }) => ({ connectionId, operation })),
-        }),
-      }
-    }, props.onClose)
-  }
-  return (
-    <div className="flex flex-col gap-md">
-      {read.isPending && <Skeleton className="h-16 w-full" />}
-      <ul className="flex flex-col gap-xs">
-        {read.data?.tools.map((tool) => (
-          <li key={tool.id}>
-            <label className="flex items-start gap-sm">
-              <input
-                type="checkbox"
-                className="mt-1 accent-accent"
-                checked={picked.has(tool.id)}
-                onChange={() => setPicked((now) => toggled(now, tool.id))}
-              />
-              <span className="flex flex-col">
-                <span>{tool.slug}</span>
-                <span className="text-label text-text-2">{tool.description}</span>
-              </span>
-            </label>
-          </li>
-        ))}
-        {read.data?.ready.map((one) => {
-          const key = `${one.connectionId}:${one.operation}`
-          return (
-            <li key={key}>
-              <label className="flex items-start gap-sm">
-                <input
-                  type="checkbox"
-                  className="mt-1 accent-accent"
-                  checked={ready.has(key)}
-                  onChange={() => setReady((now) => toggled(now, key))}
-                />
-                <span className="flex flex-col">
-                  <span>{one.slug}</span>
-                  <span className="text-label text-text-2">{one.summary} · pronta do conector</span>
-                </span>
-              </label>
-            </li>
-          )
-        })}
-      </ul>
-      {props.saving.error !== undefined && (
-        <p role="alert" className="text-danger">
-          {props.saving.error}
-        </p>
-      )}
-      <DialogFooter>
-        <Button
-          disabled={read.data === undefined || props.saving.pending}
-          onClick={() => read.data !== undefined && confirm(read.data)}
-        >
-          Usar as escolhidas
-        </Button>
-        <Button variant="ghost" onClick={props.onClose}>
-          Cancelar
-        </Button>
-      </DialogFooter>
-    </div>
   )
 }
 
@@ -291,6 +216,7 @@ function Creator(props: Dialogue) {
 function Tools(props: Part) {
   const { agent } = props
   const saving = useDraftSave(props.scope, agent.id)
+  const catalog = useConnectorCatalog(props.scope.companyId)
   const [mode, setMode] = useState<'choose' | 'create'>()
   function close() {
     setMode(undefined)
@@ -302,34 +228,42 @@ function Tools(props: Part) {
       error={saving.refused?.field === 'tools' ? saving.refused.reason : saving.error}
     >
       {agent.tools.length === 0 && <p className="text-text-2">{NO_TOOLS}</p>}
-      <ul className="flex flex-col divide-y divide-line">
-        {agent.tools.map((tool) => (
-          <li key={tool.id} className="flex items-center justify-between gap-sm py-xs">
-            <span className="flex min-w-0 flex-col">
-              <span className="truncate">{tool.slug}</span>
-              <span className="truncate text-label text-text-2">
-                {tool.version.description} · lê
+      <ul className="flex flex-col">
+        {agent.tools.map((tool) => {
+          const title = toolTitle({ ...tool, description: tool.version.description }, agent.offered)
+          return (
+            <li key={tool.id} className={cn(ROW, 'justify-between')}>
+              <span className="flex min-w-0 flex-1 items-center gap-sm">
+                <Logo
+                  logo={catalog.logo(
+                    connectionOf(agent.offered, tool.connectionId)?.connector ?? '',
+                  )}
+                />
+                <span className="truncate">{title}</span>
+                {title === tool.version.description && (
+                  <span className="shrink-0 font-mono text-fact text-text-2">{tool.slug}</span>
+                )}
               </span>
-            </span>
-            <span className="flex shrink-0 items-center gap-xs">
-              <span className="text-label text-text-2">v{tool.version.number}</span>
-              <Button
-                size="sm"
-                variant="ghost"
-                aria-label={`Tirar ${tool.slug}`}
-                onClick={() =>
-                  saving.save((now) => ({
-                    tools: now.tools
-                      .filter((one) => one.id !== tool.id)
-                      .map((one) => one.version.id),
-                  }))
-                }
-              >
-                Tirar
-              </Button>
-            </span>
-          </li>
-        ))}
+              <span className="flex shrink-0 items-center gap-xs">
+                <span className="text-fact text-text-2">v{tool.version.number}</span>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  aria-label={`Tirar ${title}`}
+                  onClick={() =>
+                    saving.save((now) => ({
+                      tools: now.tools
+                        .filter((one) => one.id !== tool.id)
+                        .map((one) => one.version.id),
+                    }))
+                  }
+                >
+                  Tirar
+                </Button>
+              </span>
+            </li>
+          )
+        })}
       </ul>
       <div className="flex flex-wrap gap-sm">
         <Button size="sm" onClick={() => setMode('choose')}>
@@ -343,11 +277,6 @@ function Tools(props: Part) {
         <DialogContent
           size="fields"
           title={mode === 'create' ? 'Criar ferramenta' : 'Escolher ferramentas'}
-          description={
-            mode === 'create'
-              ? 'Uma leitura de uma ligação do Projeto, com valores fixos.'
-              : 'As que o Projeto pode usar.'
-          }
         >
           {mode === 'choose' && <Chooser {...props} saving={saving} onClose={close} />}
           {mode === 'create' && <Creator {...props} saving={saving} onClose={close} />}

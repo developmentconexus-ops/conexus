@@ -4,8 +4,14 @@ import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { ArrowLeftIcon } from 'lucide-react'
 import { useMemo } from 'react'
-import { useConnectorCatalog } from '../assistant/public.ts'
-import { agentRoom, Chat, RoomContext, START_NO_ACCOUNT } from '../conversation/public.ts'
+import { FixedProjectChip, useConnectorCatalog } from '../assistant/public.ts'
+import {
+  agentRoom,
+  Chat,
+  ComposerModelName,
+  RoomContext,
+  START_NO_ACCOUNT,
+} from '../conversation/public.ts'
 import { DraftCard } from './draft-card.tsx'
 import { construtorConversationsQuery } from './queries.ts'
 import { CONSTRUTOR_FIRST, CONSTRUTOR_NAME, CONSTRUTOR_PLACEHOLDER, titleOf } from './text.ts'
@@ -34,7 +40,7 @@ export function ConstrutorChat(props: {
   )
   return (
     <RoomContext.Provider value={room}>
-      <div key={conversationId} className="flex h-full min-h-0 flex-col bg-canvas">
+      <div key={conversationId} className="flex h-full min-h-0 flex-col bg-surface">
         <div className="flex min-w-0 items-center gap-sm border-b border-line px-md py-sm">
           <Link
             to="/companies/$companyId/projects/$projectId/agents"
@@ -57,6 +63,11 @@ export function ConstrutorChat(props: {
           empty={CONSTRUTOR_FIRST}
           placeholder={CONSTRUTOR_PLACEHOLDER}
           noAccount={START_NO_ACCOUNT}
+          tools={{
+            context: <FixedProjectChip companyId={companyId} projectId={projectId} />,
+            notice: null,
+          }}
+          picker={({ session }) => <ComposerModelName model={session.model} />}
         />
       </div>
     </RoomContext.Provider>

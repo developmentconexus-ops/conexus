@@ -1,4 +1,4 @@
-import type { AgentState } from '@conexus/hub-api'
+import type { AgentDetail, AgentState } from '@conexus/hub-api'
 import { dayAndHour } from '../../platform/dates.ts'
 
 /** The words of the Agentes screens (step 24.3, U5); the founder approves them at the step's end. */
@@ -24,8 +24,12 @@ export const UNCONFIRMED_PUBLISH =
 export const UNCONFIRMED_DELETE = 'Não confirmamos a exclusão. Confira a lista e tente de novo.'
 export const AGENT_GONE = 'Este agente foi apagado.'
 export const NO_AGENT_CONVERSATIONS = 'Ainda não há conversas com este agente.'
+export const NO_CONVERSATION_OPEN = 'Escolha uma conversa ou comece uma nova.'
 export const NO_VERSIONS = 'Ainda não publicado.'
 export const NO_TOOLS = 'Nenhuma ferramenta. Peça ao Construtor, escolha ou crie aqui.'
+export const NO_TOOL_MATCH = 'Nenhuma ferramenta com essas palavras.'
+export const LIBRARY_TOOLS = 'Da biblioteca'
+export const READY_TOOLS = 'Prontas do conector'
 export const NO_CONNECTIONS = 'Este Projeto não recebeu nenhuma ligação.'
 export const GONE_CONNECTION = 'O Projeto não oferece mais'
 export const DRAFT_CHANGED = 'O rascunho mudou. Abra o agente para ver.'
@@ -33,6 +37,10 @@ export const TEST_BANNER = 'Conversa de teste com o rascunho'
 
 export function askAgent(name: string): string {
   return `Pergunte a ${name}…`
+}
+
+export function toolsText(count: number): string {
+  return count === 1 ? '1 ferramenta' : `${count} ferramentas`
 }
 
 export function stateText(state: AgentState): string {
@@ -78,4 +86,19 @@ export function titleOf(conversation: { title: string; updatedAt: string }): str
   return conversation.title === ''
     ? `Conversa de ${dayAndHour(conversation.updatedAt)}`
     : conversation.title
+}
+
+/** The name a person reads for a tool: a ready read by the kit's own `label`; one made by hand by its description. */
+export function toolTitle(
+  tool: { connectionId: string; operation: string; description: string },
+  offered: AgentDetail['offered'],
+): string {
+  const read = offered
+    .find((one) => one.connectionId === tool.connectionId)
+    ?.reads.find((each) => each.operation === tool.operation)
+  return read?.summary === tool.description ? read.label : tool.description
+}
+
+export function connectionOf(offered: AgentDetail['offered'], id: string) {
+  return offered.find((one) => one.connectionId === id)
 }

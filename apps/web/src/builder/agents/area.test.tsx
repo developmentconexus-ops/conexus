@@ -58,7 +58,7 @@ test('as conversas anteriores com o Construtor aparecem em lista', async () => {
       { id: BUILDER_CHAT, title: 'Agente de vendas', updatedAt: '2026-11-02T12:00:00.000Z' },
     ],
   })
-  const link = await screen.findByRole('link', { name: 'Agente de vendas' })
+  const link = await screen.findByRole('link', { name: /^Agente de vendas/ })
   expect(link.getAttribute('href')).toBe(`${AREA}/construtor/${BUILDER_CHAT}`)
 })
 

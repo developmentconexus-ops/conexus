@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { dayOf } from '../../platform/dates.ts'
 import { writeFailureText } from '../../platform/hub.ts'
+import { Stamp } from '../../ui/block.tsx'
 import { Button } from '../../ui/button.tsx'
 import { sendActivation, settleAgent, versionsQuery } from './queries.ts'
 import { ReadStates } from './read-states.tsx'
@@ -31,7 +32,7 @@ export function Versions(props: { companyId: CompanyId; projectId: ProjectId; ag
 
   return (
     <section aria-labelledby="versions-title" className="flex flex-col gap-sm">
-      <h3 id="versions-title" className="font-display text-title">
+      <h3 id="versions-title" className="font-body text-label font-semibold">
         Versões
       </h3>
       <ReadStates read={read} />
@@ -43,9 +44,9 @@ export function Versions(props: { companyId: CompanyId; projectId: ProjectId; ag
             className="flex flex-wrap items-center justify-between gap-sm py-sm"
           >
             <span className="flex min-w-0 flex-col">
-              <span>
+              <span className="flex items-center gap-sm">
                 Versão {version.number}
-                {version.active && <span className="text-success"> · ativa</span>}
+                {version.active && <Stamp tone="success">ativa</Stamp>}
               </span>
               <span className="break-words text-label text-text-2">
                 {dayOf(version.publishedAt)}

@@ -45,7 +45,7 @@ test('ligar a Matriz e logo a Filial, antes de a primeira gravação voltar, gra
     ],
   })
   const links = await screen.findByRole('region', { name: 'Ligações' })
-  fireEvent.click(within(links).getByRole('switch', { name: 'Sankhya · Matriz' }))
+  fireEvent.click(await within(links).findByRole('switch', { name: 'Sankhya · Matriz' }))
   fireEvent.click(within(links).getByRole('switch', { name: 'Sankhya · Filial' }))
   await waitFor(() => expect(hub.writes()).toHaveLength(2))
   expect(DraftPatch.parse(hub.writes()[1]?.body).connections).toEqual([MATRIZ, FILIAL])
@@ -82,7 +82,7 @@ test('três ligações seguidas, com a segunda gravação em voo, gravam as trê
   function on(name: string) {
     return within(links).getByRole('switch', { name }).getAttribute('aria-checked')
   }
-  fireEvent.click(within(links).getByRole('switch', { name: 'Sankhya · Matriz' }))
+  fireEvent.click(await within(links).findByRole('switch', { name: 'Sankhya · Matriz' }))
   fireEvent.click(within(links).getByRole('switch', { name: 'Sankhya · Filial' }))
   await waitFor(() => expect(hub.writes()).toHaveLength(2))
   await waitFor(() => expect(on('Sankhya · Filial')).toBe('true'))
@@ -102,7 +102,7 @@ test('três ferramentas tiradas seguidas, com a segunda gravação em voo, não 
       id: ToolId.parse(`${digit.repeat(8)}-bbbb-4bbb-8bbb-${digit.repeat(12)}`),
       slug,
       latest: { id: versionId, number: 1 },
-      version: { ...base.version, id: versionId },
+      version: { ...base.version, id: versionId, description: slug },
     }
   }
   const held = agent({ tools: [tool('1', 'um'), tool('2', 'dois'), tool('3', 'tres')] })

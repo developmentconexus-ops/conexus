@@ -78,7 +78,7 @@ test('as ferramentas escolhidas aparecem, e a lista de Escolher traz as que o Pr
     await screen.findByText('Nenhuma ferramenta. Peça ao Construtor, escolha ou crie aqui.'),
   ).toBeTruthy()
   fireEvent.click(screen.getByRole('button', { name: 'Escolher' }))
-  expect(await screen.findByRole('checkbox', { name: /vendas_de_ontem/ })).toBeTruthy()
+  expect(await screen.findByRole('switch', { name: /Vendas de ontem por vendedor\./ })).toBeTruthy()
 })
 
 test('o membro: o endereço do agente dá não encontrado', async () => {
@@ -93,7 +93,8 @@ test('um agente apagado ou de outro Projeto dá a página de não encontrado', a
 
 test('Apagar pede confirmação com o aviso das conversas e das automações, e leva à área', async () => {
   const { conexus, writes } = at(PAGE, { agents: [agent()] })
-  fireEvent.click(await screen.findByRole('button', { name: 'Apagar' }))
+  fireEvent.click(await screen.findByRole('button', { name: /^Mais ações/ }))
+  fireEvent.click(await screen.findByRole('menuitem', { name: 'Apagar' }))
   const dialog = await screen.findByRole('alertdialog')
   expect(
     within(dialog).getByText(/conversas de todas as pessoas com ele e as automações que o rodam/),

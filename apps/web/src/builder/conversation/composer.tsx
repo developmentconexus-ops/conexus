@@ -99,7 +99,7 @@ function Refused({ phrase }: { phrase: string | null }) {
 
 /** What a place hands the box: the menu behind **+**, the folder and tools after it, and what their failures say above the box. */
 export type ComposerTools = {
-  plus: (pickFiles: () => void) => ReactNode
+  plus?: (pickFiles: () => void) => ReactNode
   context: ReactNode
   notice: ReactNode
 }
