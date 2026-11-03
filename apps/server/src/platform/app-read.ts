@@ -123,8 +123,6 @@ export async function readApp(
         return { kind: 'FAILED', code: 'APP_DATA_TOO_LARGE' }
       }
       return { kind: 'ROWS', columns: answer.columns, rows: answer.rows }
-    case 'DONE':
-      throw new Error('a read-only call answered with no columns')
     case 'TOO_LARGE':
       return { kind: 'FAILED', code: 'APP_DATA_TOO_LARGE' }
     case 'NO_ANSWER':

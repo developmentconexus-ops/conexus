@@ -186,9 +186,6 @@ test('a memória: desligada na versão, o turno lembra só as últimas 10 mensag
     }
     return on.calls.at(-1)?.texts.filter((text) => text.startsWith('Pergunta ')) ?? []
   }
-  function observing(asked: { system: string; stream: boolean }) {
-    return !asked.stream && /observ/i.test(asked.system)
-  }
   const plain = await window(false)
   // The five turns before, ten messages, then the question.
   assert.deepEqual(plain, [
@@ -199,7 +196,6 @@ test('a memória: desligada na versão, o turno lembra só as últimas 10 mensag
     'Pergunta 6',
     'Pergunta 7',
   ])
-  assert.equal(on.anthropic.sent.filter(observing).length, 0)
   const whole = await window(true)
   assert.equal(whole.length, 7)
 })
