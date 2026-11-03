@@ -120,3 +120,20 @@ export function numbersFromReads(turn: {
   }
   return { ok: true }
 }
+
+/**
+ * The check the other way (step 24.3.2): a briefing carries the data's shape and the queries,
+ * never its values, so no figure of the conversation's reads may be in it. A figure is a number
+ * with decimals or of at least 1,000: a count of days or of columns is not one. The first figure
+ * found is said.
+ */
+export function figuresFromReads(text: string, parts: readonly unknown[]): string | undefined {
+  const reads = parts.flatMap((part) => {
+    const invocation = Invocation.safeParse(part)
+    return invocation.success ? numbersOf(invocation.data.toolInvocation.result) : []
+  })
+  return shownIn(text).find((shown) => {
+    const figure = shown.places > 0 || shown.value * shown.scale >= 1000
+    return figure && foundIn(shown, reads)
+  })?.text
+}

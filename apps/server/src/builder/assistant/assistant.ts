@@ -25,17 +25,17 @@ import type { AssistantMachine } from '../machine/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import { chosenConnections } from './chosen.ts'
 import type { Owner, ScopeOf } from './context.ts'
-import { sessionScopes } from './context.ts'
+import { runConversation, sessionScopes } from './context.ts'
 import type { Speakers } from './instructions.ts'
 import { assistantInstructions } from './instructions.ts'
 import type { AssistantMachines, MachineTuning } from './machine.ts'
 import { createAssistantMachines } from './machine.ts'
 import { assistantMemory } from './memory.ts'
 import type { OpenDeps } from './open.ts'
-import { admitted, asked, openConversation } from './open.ts'
+import { admitted, asked, automationOf, openConversation } from './open.ts'
 import { overviewTool } from './overview.ts'
 import type { AssistantProjects } from './ports.ts'
-import { proposeAppTool } from './propose.ts'
+import { proposeTools } from './propose.ts'
 import { proposeAutomationTool } from './propose-automation.ts'
 import { releaseConversations } from './release.ts'
 import { registerAssistantRoutes } from './routes.ts'
@@ -181,6 +181,37 @@ function readsFiles(): (requestContext: RequestContext) => string {
 type Offered = (requestContext: RequestContext) => Promise<readonly AssistantConnection[]>
 
 /**
+ * Whether an automation's run opened the run's conversation, from its thread's marks, read once per
+ * run: nobody sees a button there, so no hand-off to the Builder is offered.
+ */
+function automationRunFor(memory: ReturnType<typeof assistantMemory>) {
+  return oncePerRun(async (requestContext) => {
+    const run = runConversation(requestContext)
+    if (run === undefined) return false
+    const thread = await memory.getThreadById({
+      threadId: run.sessionId,
+      resourceId: run.resourceId,
+    })
+    return automationOf(thread?.metadata) !== null
+  })
+}
+
+/**
+ * The hand-off to the Builder the place offers: creating an app is the company's, and a
+ * conversation inside a Projeto talks about that Projeto's app.
+ */
+function handOffOf(
+  scope: SessionScope | undefined,
+  proposals: ReturnType<typeof proposeTools>,
+  byAutomation: boolean,
+): Record<string, ReturnType<typeof proposeTools>['app']> {
+  if (scope === undefined || byAutomation) return {}
+  return scope.place.kind === 'COMPANY'
+    ? { [ASSISTANT_TOOL.proposeApp]: proposals.app }
+    : { [ASSISTANT_TOOL.proposeAppChange]: proposals.change }
+}
+
+/**
  * What the run's place offers, each with whether the conversation chose it, read once per run (as
  * `scopeOf`).
  */
@@ -223,6 +254,8 @@ function assistantAgent(
       })),
   })
   const showFile = showFileTool(parts.machines)
+  const proposals = proposeTools(parts.machines)
+  const automationRun = automationRunFor(parts.memory)
   return new Agent({
     id: ASSISTANT_CONTROLLER,
     name: 'Assistant',
@@ -240,9 +273,7 @@ function assistantAgent(
         [ASSISTANT_TOOL.overview]: overview,
         [ASSISTANT_TOOL.showFile]: showFile,
         [ASSISTANT_TOOL.proposeAutomation]: proposeAutomationTool(chosen),
-        // Creating an app is the company's: a conversation inside a Projeto talks about that
-        // Projeto.
-        ...(scope?.place.kind === 'COMPANY' ? { [ASSISTANT_TOOL.proposeApp]: proposeAppTool } : {}),
+        ...handOffOf(scope, proposals, await automationRun(requestContext)),
         ...(scope === undefined
           ? {}
           : connectorTools(accessOf(deps, scope, chosen, savedAt), { noteSave: false })),

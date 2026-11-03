@@ -82,7 +82,7 @@ test('as ferramentas: o modelo do Assistente recebe as de conector de leitura, a
   ])
 })
 
-test('as ferramentas: numa conversa de Projeto o modelo não recebe propose_app', async (t) => {
+test('as ferramentas: numa conversa de Projeto o modelo recebe propose_app_change e não propose_app (3)', async (t) => {
   const on = await assisting(t)
   const url = await created(on.hub, on.ana, on.assistant, {
     projectId: on.projectId,
@@ -93,6 +93,7 @@ test('as ferramentas: numa conversa de Projeto o modelo não recebe propose_app'
   assert.equal(endOf(await say('O que você pode fazer?')), 'complete')
   const tools = [...(on.calls.at(0)?.tools ?? [])]
   assert.equal(tools.includes('propose_app'), false)
+  assert.equal(tools.includes('propose_app_change'), true)
   assert.equal(tools.includes('show_file'), true)
   assert.equal(tools.includes('propose_automation'), true)
 })
