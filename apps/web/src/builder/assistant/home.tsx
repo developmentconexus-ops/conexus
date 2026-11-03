@@ -169,12 +169,8 @@ function ConversationLink(props: {
       params={{ companyId, projectId, conversationId: conversation.id }}
       className={cn(blockRow, 'justify-between hover:bg-surface-3')}
     >
-      <span className="flex min-w-0 flex-1 flex-wrap items-center gap-x-sm gap-y-xs">
-        <span className="max-w-full truncate">{titleOf(conversation)}</span>
-        {conversation.automation !== null && (
-          <AutomationBadge name={conversation.automation.name} />
-        )}
-      </span>
+      <span className="min-w-0 flex-1 truncate">{titleOf(conversation)}</span>
+      {conversation.automation !== null && <AutomationBadge name={conversation.automation.name} />}
       <span className="shrink-0 text-label text-text-2">{dayOf(conversation.updatedAt)}</span>
     </Link>
   )

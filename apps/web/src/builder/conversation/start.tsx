@@ -1,14 +1,16 @@
 import type { CompanyId, Effort, ModelId, Project } from '@conexus/hub-api'
-import { useMutation, useSuspenseQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
 import { useRef, useState } from 'react'
 import { companyQuery } from '../../hub/identity/public.ts'
 import { NameStep, projectsQuery } from '../../hub/projects/public.ts'
 import { useAttemptKey } from '../../platform/attempt-key.ts'
-import { HubFailure } from '../../platform/hub.ts'
+import { HubFailure, sentenceOf } from '../../platform/hub.ts'
 import { AttachmentGroup } from '../../ui/attachment.tsx'
 import { Button } from '../../ui/button.tsx'
+import { Skeleton } from '../../ui/skeleton.tsx'
+import { ReadFailure } from '../../ui/states.tsx'
 import { accountsQuery } from '../model-accounts/public.ts'
 import type { Outgoing } from './attachments.ts'
 import type { ComposerTools } from './composer.tsx'
@@ -135,32 +137,38 @@ function NamingBody(props: {
   const { companyId, phase } = props
   const { outgoing } = phase
   const { company } = useSuspenseQuery(companyQuery(companyId)).data
-  const { databaseReady } = useSuspenseQuery(projectsQuery(companyId, undefined)).data
+  const projects = useQuery(projectsQuery(companyId, undefined))
   const navigate = useNavigate()
   const created = useCreated(companyId, props.picked, props.onOpened)
   return (
     <>
       <Request outgoing={outgoing} />
       <div className="border-t border-line px-lg pt-md pb-lg">
-        <NameStep
-          company={company}
-          databaseReady={databaseReady}
-          locked={phase.kind === 'STARTING' ? phase.project.name : null}
-          idle="Criar e começar"
-          back={props.back ?? 'Voltar'}
-          onCreated={async (project) => {
-            props.onPhase({ kind: 'STARTING', outgoing, project })
-            await created(project, outgoing)
-          }}
-          onBack={() => props.onPhase({ kind: 'WRITING' })}
-          onOpenProject={() => {
-            if (phase.kind !== 'STARTING') return
-            void navigate({
-              to: '/companies/$companyId/projects/$projectId',
-              params: { companyId, projectId: phase.project.id },
-            })
-          }}
-        />
+        {projects.data === undefined && projects.isError && (
+          <ReadFailure text={sentenceOf(projects.error)} onRetry={() => void projects.refetch()} />
+        )}
+        {projects.isPending && <Skeleton className="h-20 w-full" />}
+        {projects.data !== undefined && (
+          <NameStep
+            company={company}
+            databaseReady={projects.data.databaseReady}
+            locked={phase.kind === 'STARTING' ? phase.project.name : null}
+            idle="Criar e começar"
+            back={props.back ?? 'Voltar'}
+            onCreated={async (project) => {
+              props.onPhase({ kind: 'STARTING', outgoing, project })
+              await created(project, outgoing)
+            }}
+            onBack={() => props.onPhase({ kind: 'WRITING' })}
+            onOpenProject={() => {
+              if (phase.kind !== 'STARTING') return
+              void navigate({
+                to: '/companies/$companyId/projects/$projectId',
+                params: { companyId, projectId: phase.project.id },
+              })
+            }}
+          />
+        )}
       </div>
     </>
   )

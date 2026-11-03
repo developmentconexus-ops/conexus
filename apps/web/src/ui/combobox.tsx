@@ -129,7 +129,7 @@ export function ComboboxLabel({ className, ...props }: ComboboxPrimitive.GroupLa
   return (
     <ComboboxPrimitive.GroupLabel
       data-slot="combobox-label"
-      className={cn('px-sm pt-sm pb-xs text-eyebrow text-text-2 uppercase', className)}
+      className={cn('px-sm pt-sm pb-xs text-eyebrow text-text-2', className)}
       {...props}
     />
   )

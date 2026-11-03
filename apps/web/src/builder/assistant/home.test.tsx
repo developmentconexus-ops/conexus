@@ -123,7 +123,7 @@ test('uma ligação desligada continua desligada quando a lista das ligações �
   expect(writes()[0]?.body).toMatchObject({ connections: [SALES, LOJA] })
 })
 
-test('enquanto a lista das ligações não chegou, o Enviar espera e a contagem é um esqueleto', async () => {
+test('enquanto a lista das ligações não chegou, o Enviar espera e a caixa diz "Lendo as ferramentas…"', async () => {
   let arrive: () => void = () => undefined
   const held = new Promise<void>((resolve) => {
     arrive = resolve
