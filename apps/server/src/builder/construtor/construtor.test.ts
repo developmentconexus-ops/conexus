@@ -60,7 +60,10 @@ test('as ferramentas: o modelo recebe as instruções do Construtor e só as fer
   assert.match(asked.system, /Você é o Construtor do Conexus/)
   assert.match(asked.system, /Nunca publique/)
   const closed = [...Object.values(CONSTRUTOR_TOOL), 'connector_read', 'connector_notes']
-  assert.deepEqual([...asked.tools].sort(), [...closed, 'web_fetch', 'web_search'].sort())
+  assert.deepEqual(
+    [...asked.tools].sort(),
+    [...closed, 'ask_user', 'web_fetch', 'web_search'].sort(),
+  )
 })
 
 test('ler o Projeto: o nome, só as ligações que o Projeto recebeu e os agentes com o estado', async (t) => {
