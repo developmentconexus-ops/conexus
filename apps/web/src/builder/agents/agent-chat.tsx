@@ -22,7 +22,14 @@ export function AgentChat(props: {
   const { conversations } = useSuspenseQuery(agentConversationsQuery(scope, agentId)).data
   const draft = conversations.find((one) => one.id === conversationId)?.draft === true
   const listKey = agentConversationsQuery(scope, agentId).queryKey
-  const room = useMemo(() => agentRoom(agent.name, words), [agent.name, words])
+  const room = useMemo(
+    () => ({
+      ...agentRoom(agent.name, words),
+      toolDescription: (slug: string) =>
+        agent.tools.find((one) => one.slug === slug)?.version.description,
+    }),
+    [agent.name, agent.tools, words],
+  )
   return (
     <RoomContext.Provider value={room}>
       <div key={conversationId} className="flex h-full min-h-0 flex-col bg-surface">

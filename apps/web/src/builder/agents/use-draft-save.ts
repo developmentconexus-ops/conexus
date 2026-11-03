@@ -1,4 +1,11 @@
-import type { AgentDetail, AgentId, CompanyId, DraftPatch, ProjectId } from '@conexus/hub-api'
+import type {
+  AgentDetail,
+  AgentId,
+  CompanyId,
+  DraftPatch,
+  ProblemField,
+  ProjectId,
+} from '@conexus/hub-api'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { HubFailure, writeFailureText } from '../../platform/hub.ts'
 import { agentQuery, sendDraft } from './queries.ts'
@@ -16,7 +23,7 @@ export type Saving = {
   /** This section's last refusal, from the Hub's own words, until the section saves again. */
   error: string | undefined
   /** The field that refusal named, and why. */
-  refused: { field: string | undefined; reason: string | undefined } | undefined
+  refused: { field: ProblemField | undefined; reason: string | undefined } | undefined
 }
 
 /** The agent as the screen shows it while `fields` are on their way: what the next change starts from. */

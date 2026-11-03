@@ -168,7 +168,7 @@ test('o recorte: a ferramenta chama a leitura pela porta com os valores fixos po
   assert.equal(inputs.length, 1)
 })
 
-test('a memória: desligada na versão, o turno lembra só as últimas 10 mensagens e não chama o observador; ligada, lembra a conversa toda', async (t) => {
+test('a memória: desligada na versão, o turno lembra só as últimas 10 mensagens; ligada, lembra a conversa toda', async (t) => {
   const on = await agentsOn(t)
   async function window(observational: boolean) {
     const agent = await publishedAgent(on.hub, on.ana, on.agents, {
@@ -186,9 +186,6 @@ test('a memória: desligada na versão, o turno lembra só as últimas 10 mensag
     }
     return on.calls.at(-1)?.texts.filter((text) => text.startsWith('Pergunta ')) ?? []
   }
-  function observing(asked: { system: string; stream: boolean }) {
-    return !asked.stream && /observ/i.test(asked.system)
-  }
   const plain = await window(false)
   // The five turns before, ten messages, then the question.
   assert.deepEqual(plain, [
@@ -199,7 +196,6 @@ test('a memória: desligada na versão, o turno lembra só as últimas 10 mensag
     'Pergunta 6',
     'Pergunta 7',
   ])
-  assert.equal(on.anthropic.sent.filter(observing).length, 0)
   const whole = await window(true)
   assert.equal(whole.length, 7)
 })

@@ -41,10 +41,8 @@ Aprovações e usos: [aprovações](approvals.md).
 
 Sua empresa usa o Conexus desde 2026-11-02, recebendo cada etapa.
 
-- **24.1 O Assistente.** Conversas no Início e no Projeto perguntam aos sistemas e mostram tabelas e gráficos.
-- **24.2 Automações.** Recebe o resumo das 7h numa conversa nova, com aviso.
-- **13.3 A Pauta.** Vê o Hub no visual novo, com a caixa igual em toda tela.
 - **24.3 O Construtor.** Cria e publica um agente.
+- **24.3.1 Ferramentas e ideias.** Vê as ferramentas do Projeto, as ideias do Construtor e todos os agentes da empresa.
 - **24.3.2 Do Assistente ao Builder.** Pede um app ao Assistente e o vê chegar ao Builder com o briefing.
 - **Papéis e pedidos.** O membro pede para publicar.
 - **24.4 Ferramentas em código.** Código que calcula.
@@ -106,7 +104,7 @@ Login social. Arquivos enviados por pessoas para dentro de um app ou da máquina
 
 | Etapa | O que precisa antes | Decisão sua nela | Conhecimento trazido |
 | --- | --- | --- | --- |
-| 24.3 O Construtor | A 24.2 | Nenhuma | `addAgent` por agente |
+| 24.3.1 Ferramentas | A 24.3.3 | Nenhuma | `addAgent` por agente |
 | Papéis e pedidos | A 24.3.1 | Nenhuma | — |
 | 24.4 Ferramentas em código | Os pedidos | Nenhuma | Protótipo: Workers ou E2B |
 | 24.5 Escrita com aprovação | A 24.4 | Nenhuma | `requireApproval` do Mastra, provada antes a trava da 0053. Escrita nova pede nova liberação |

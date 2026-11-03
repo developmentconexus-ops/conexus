@@ -223,7 +223,7 @@ export function Chat(props: ChatProps) {
         empty={empty ? props.empty : undefined}
         noAccount={props.noAccount}
       />
-      <div className="axis min-h-24 flex-1 md:min-h-40">
+      <div className="min-h-24 flex-1 md:min-h-40">
         <Transcript
           turns={turns}
           steers={state.steers}
@@ -233,30 +233,35 @@ export function Chat(props: ChatProps) {
             draft.append(text)
             field.current?.focus()
           }}
-        />
+        >
+          {error !== undefined && (
+            <div className="axis px-md">
+              <Alert tone="danger" className="px-md">
+                {error}
+              </Alert>
+            </div>
+          )}
+          {(state.running || waiting) && !(phone && waiting) && (
+            <div className="axis">
+              <WorkingLine startedAt={state.startedAt} heard={state.messages} waiting={waiting} />
+            </div>
+          )}
+          <ChatComposer
+            chat={props}
+            session={session}
+            providers={accounts.choices.mine}
+            state={state}
+            draft={draft}
+            field={field}
+            placeholder={props.placeholder}
+            onSend={(outgoing) => send(outgoing, state.running || waiting)}
+            onStop={halt}
+            onError={setError}
+            canAnswer={canAnswer}
+            waiting={waiting}
+          />
+        </Transcript>
       </div>
-      {error !== undefined && (
-        <Alert tone="danger" className="px-md">
-          {error}
-        </Alert>
-      )}
-      {(state.running || waiting) && !(phone && waiting) && (
-        <WorkingLine startedAt={state.startedAt} heard={state.messages} waiting={waiting} />
-      )}
-      <ChatComposer
-        chat={props}
-        session={session}
-        providers={accounts.choices.mine}
-        state={state}
-        draft={draft}
-        field={field}
-        placeholder={props.placeholder}
-        onSend={(outgoing) => send(outgoing, state.running || waiting)}
-        onStop={halt}
-        onError={setError}
-        canAnswer={canAnswer}
-        waiting={waiting}
-      />
     </>
   )
 }
