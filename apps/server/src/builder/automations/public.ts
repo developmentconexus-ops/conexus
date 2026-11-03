@@ -22,6 +22,8 @@ export function automationsOf(
   const automations = createAutomations({ ...deps, runs })
   return Object.freeze({
     routes: (app: FastifyInstance) => registerAutomationRoutes(app, automations),
+    /** The person's automations of a Projeto, for the Construtor's search of what exists. */
+    list: automations.list,
     release: (scope: ReleaseScope) => releaseAutomations(deps, scope),
   })
 }

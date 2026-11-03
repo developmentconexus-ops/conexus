@@ -152,6 +152,7 @@ export {
   testConnection,
   unlinkConnection,
 } from './connectors.ts'
+export * from './construtor.ts'
 export {
   BUILDER_CONTROLLER,
   BUILDER_ROUTES,
