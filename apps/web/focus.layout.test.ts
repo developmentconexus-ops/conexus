@@ -4,8 +4,9 @@ import { getSession } from '@conexus/hub-api'
 import type { Page } from 'playwright-core'
 import type { Replies, Viewport } from './layout-harness.ts'
 import { createHarness, DESKTOP, focusDrawn, ok, PHONE, presses } from './layout-harness.ts'
+import { COMPANY } from './src/platform/fixtures.ts'
 import { CARD_STATES } from './sweep-card-states.ts'
-import { central, companies, startsOn } from './sweep-replies.ts'
+import { central, companies, OWNER, projectsPage, startsOn } from './sweep-replies.ts'
 
 const SIGNED_OUT: Replies = {
   'GET /api/sessions/current': ok(getSession, { state: 'SIGNED_OUT' }),
@@ -176,3 +177,37 @@ test('a resposta livre: o foco na própria borda e a caixa cresce em várias lin
     await page.close()
   }
 })
+
+// Step 13.3, U9: the Card around a Project's link must not clip the link's 2px outline (design V28).
+for (const viewport of [DESKTOP, PHONE]) {
+  test(`o cartão de Projeto focado pelo teclado mostra o contorno inteiro, em ${viewport.width}px`, async () => {
+    const page = await open(`/companies/${COMPANY.id}/projects`, viewport, {
+      ...OWNER,
+      ...projectsPage(COMPANY.id),
+    })
+    const link = page.getByRole('main').getByRole('link').first()
+    await link.waitFor()
+    await link.focus()
+    assert.match(await focusDrawn(page), /solid 2px$/)
+    const clipped = await link.evaluate((el) => {
+      const style = getComputedStyle(el)
+      const reach = Number.parseFloat(style.outlineWidth) + Number.parseFloat(style.outlineOffset)
+      const box = el.getBoundingClientRect()
+      const clippers: string[] = []
+      for (let up = el.parentElement; up; up = up.parentElement) {
+        if (getComputedStyle(up).overflow === 'visible') continue
+        const area = up.getBoundingClientRect()
+        const border = Number.parseFloat(getComputedStyle(up).borderTopWidth)
+        const inside =
+          box.left - reach >= area.left + border &&
+          box.right + reach <= area.right - border &&
+          box.top - reach >= area.top + border &&
+          box.bottom + reach <= area.bottom - border
+        if (!inside) clippers.push(up.tagName)
+      }
+      return clippers
+    })
+    assert.deepEqual(clipped, [], 'an ancestor clips the focused link outline')
+    await page.close()
+  })
+}

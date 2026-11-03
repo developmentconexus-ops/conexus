@@ -19,11 +19,11 @@ export function ProjectCards(props: { companyId: CompanyId; page: string | undef
     <ul className="grid gap-md sm:grid-cols-2 sm:gap-lg lg:grid-cols-3">
       {projects.map((project) => (
         <li key={project.id} className="min-w-0">
-          <Card className="group/card items-stretch gap-0 overflow-hidden p-0 hover:border-line-strong">
+          <Card className="group/card items-stretch gap-0 p-0 hover:border-line-strong">
             <Link
               to="/companies/$companyId/projects/$projectId"
               params={{ companyId, projectId: project.id }}
-              className="flex sm:flex-col"
+              className="flex overflow-hidden rounded-[inherit] sm:flex-col"
             >
               <span
                 aria-hidden="true"
