@@ -41,11 +41,9 @@ Aprovações e usos: [aprovações](approvals.md).
 
 Sua empresa usa o Conexus desde 2026-11-02, recebendo cada etapa.
 
-- **24.1 O Assistente.** Conversas no Início e no Projeto perguntam aos sistemas e mostram tabelas e gráficos.
-- **24.2 Automações.** Recebe o resumo das 7h numa conversa nova, com aviso.
-- **13.3 A Pauta.** Vê o Hub no visual novo, com a caixa igual em toda tela.
 - **24.3 O Construtor.** Cria e publica um agente.
 - **24.3.1 Ferramentas e ideias.** Vê as ferramentas do Projeto, as ideias do Construtor e todos os agentes da empresa.
+- **24.3.2 Do Assistente ao Builder.** Pede um app ao Assistente e o vê chegar ao Builder com o briefing.
 - **Papéis e pedidos.** O membro pede para publicar.
 - **24.4 Ferramentas em código.** Código que calcula.
 - **24.5 Os agentes escrevem, com aprovação.** Um agente ou app pede "Aprovar?" antes de escrever (resposta B, 2026-10-18; leva a 20.1).
