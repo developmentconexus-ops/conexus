@@ -21,38 +21,53 @@ function open(path: string, seen: { mayDelete?: boolean; role?: string } = {}) {
   return conexus
 }
 
-async function bar() {
-  return within(await screen.findByRole('navigation', { name: 'Navegação' }))
+async function sidebar() {
+  return await screen.findByRole('navigation', { name: 'Navegação' })
 }
 
-test('dentro do Projeto a barra é a do Projeto: o nome com a troca, a empresa, Construir, Conversas, Automações, Sobre, Quem usa o app, Integrações', async () => {
+/** The Projeto's or the company's list, beside the rail. */
+async function bar() {
+  const list = (await sidebar()).querySelector<HTMLElement>('[data-sidebar="sidebar"]')
+  if (list === null) throw new Error('the sidebar has no list')
+  return within(list)
+}
+
+/** The rail of places. */
+async function rail() {
+  const column = (await sidebar()).querySelector<HTMLElement>('[data-slot="sidebar-rail-column"]')
+  if (column === null) throw new Error('the sidebar has no rail')
+  return within(column)
+}
+
+test('dentro do Projeto o trilho continua e a lista é a do Projeto: o nome com a troca, Construir, Conversas, Automações, Sobre, Quem usa o app, Integrações', async () => {
   open(PROJECT)
-  const rail = await bar()
+  const list = await bar()
   expect(
-    await rail.findByRole('button', { name: 'Trocar de Projeto. Agora: Pedidos' }),
+    await list.findByRole('button', { name: 'Trocar de Projeto. Agora: Pedidos' }),
   ).toBeTruthy()
-  const entries = rail.getAllByRole('link').map((link) => link.textContent)
+  const entries = list.getAllByRole('link').map((link) => link.textContent)
   expect(entries).toEqual([
-    COMPANY.name,
     'Construir',
     'Conversas',
     'Automações',
     'Sobre',
     'Quem usa o app',
     'Integrações',
-    expect.any(String),
   ])
   expect(screen.queryByText(/em breve/i)).toBeNull()
-  expect(rail.queryByText('Projetos recentes')).toBeNull()
-  expect(rail.getByRole('link', { name: 'Construir' }).getAttribute('aria-current')).toBe('page')
+  expect(list.queryByText('Projetos recentes')).toBeNull()
+  expect(list.getByRole('link', { name: 'Construir' }).getAttribute('aria-current')).toBe('page')
+  const places = await rail()
+  expect(places.getByRole('link', { name: 'Projetos' }).getAttribute('aria-current')).toBe('page')
+  expect(places.getByRole('link', { name: 'Início' })).toBeTruthy()
 })
 
 test('o membro não vê Automações na barra do Projeto (step 24.2, criterion 20)', async () => {
   open(PROJECT, { role: 'member' })
-  const rail = await bar()
-  await rail.findByRole('button', { name: 'Trocar de Projeto. Agora: Pedidos' })
-  expect(rail.queryByRole('link', { name: 'Automações' })).toBeNull()
-  expect(rail.getByRole('link', { name: 'Integrações' })).toBeTruthy()
+  const list = await bar()
+  await list.findByRole('button', { name: 'Trocar de Projeto. Agora: Pedidos' })
+  expect(list.queryByRole('link', { name: 'Automações' })).toBeNull()
+  expect(list.getByRole('link', { name: 'Integrações' })).toBeTruthy()
 })
 
 test('um endereço de conversa marca Construir como o lugar atual', async () => {
@@ -71,9 +86,9 @@ test('as outras páginas do Projeto não marcam Construir como o lugar atual', a
   }
 })
 
-test('fora do Projeto, a barra da empresa como hoje', async () => {
+test('fora do Projeto, a lista é a da empresa: Nova conversa, e sem as entradas do Projeto', async () => {
   open(HOUSE)
-  expect(await (await bar()).findByText('Projetos recentes')).toBeTruthy()
+  expect(await (await bar()).findByRole('link', { name: 'Nova conversa' })).toBeTruthy()
   expect((await bar()).queryByRole('link', { name: 'Sobre' })).toBeNull()
 })
 
@@ -87,9 +102,9 @@ test('as entradas levam aos endereços próprios e marcam onde a pessoa está', 
   expect(await screen.findByRole('tab', { name: 'Versões' })).toBeTruthy()
   fireEvent.click((await bar()).getByRole('link', { name: 'Quem usa o app' }))
   await waitFor(() => expect(router.state.location.pathname).toBe(`${PROJECT}/access`))
-  fireEvent.click((await bar()).getByRole('link', { name: COMPANY.name }))
+  fireEvent.click((await rail()).getByRole('link', { name: 'Início' }))
   await waitFor(() => expect(router.state.location.pathname).toBe(HOUSE))
-  expect(await (await bar()).findByText('Projetos recentes')).toBeTruthy()
+  expect(await (await bar()).findByRole('link', { name: 'Nova conversa' })).toBeTruthy()
 })
 
 test('o Sobre tem as duas partes e a parte fica no endereço', async () => {

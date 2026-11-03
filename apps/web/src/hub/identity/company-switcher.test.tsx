@@ -60,7 +60,9 @@ test('com mais de uma empresa, a troca lista todas; escolher uma abre o Início 
   )
   expect(await screen.findByRole('menuitem', { name: 'Empresa Teste' })).toBeTruthy()
   fireEvent.click(await screen.findByRole('menuitem', { name: 'Outra Empresa' }))
-  expect(await screen.findByRole('heading', { name: 'Pergunte ou peça um app' })).toBeTruthy()
+  expect(
+    await screen.findByRole('heading', { name: /^(Bom dia|Boa tarde|Boa noite)/ }),
+  ).toBeTruthy()
   expect(router.state.location.pathname).toBe(`/companies/${OTHER.id}`)
   expect(
     await screen.findByRole('button', { name: 'Trocar de empresa. Agora: Outra Empresa' }),
@@ -78,7 +80,7 @@ test('com uma empresa só, a barra mostra o nome e não oferece troca', async ()
 test('abrir uma empresa pelo endereço a faz a última lembrada', async () => {
   hub([COMPANY, OTHER])
   open(OTHER)
-  await screen.findByRole('heading', { name: 'Pergunte ou peça um app' })
+  await screen.findByRole('heading', { name: /^(Bom dia|Boa tarde|Boa noite)/ })
   expect(localStorage.getItem(`conexus-remembered:${ANA.id}:companies`)).toBe(OTHER.id)
 })
 

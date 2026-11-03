@@ -5,8 +5,9 @@ import { MenuIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { createContext, useContext, useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { ConexusWordmark } from '../brand/mark.tsx'
+import { ConexusMark, ConexusWordmark } from '../brand/mark.tsx'
 import { cn } from './cn.ts'
+import type { RailContent } from './sidebar.tsx'
 import {
   Sidebar,
   SidebarContent,
@@ -16,10 +17,9 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarProvider,
-  SidebarRail,
-  SidebarTrigger,
   useSidebar,
 } from './sidebar.tsx'
+import { SidebarTrigger } from './sidebar-trigger.tsx'
 
 /** The centred column under the arriving wordmark, for the pages without a session. */
 export function Column({ children }: { children: ReactNode }) {
@@ -85,7 +85,7 @@ export function FrameLink(
  * The phone's top line: the button that opens the drawer, the mark and the current place (V56), its
  * route's `staticData.place`, or the section's label for a section of Configurações.
  */
-function PhoneTop(props: { slot: (element: HTMLElement | null) => void }) {
+function PhoneTop(props: { slot: (element: HTMLElement | null) => void; menuNote?: string }) {
   const place = useMatches({
     select: (matches) => {
       const shown = matches.at(-1)?.staticData
@@ -93,8 +93,8 @@ function PhoneTop(props: { slot: (element: HTMLElement | null) => void }) {
     },
   })
   return (
-    <header className="flex min-h-[calc(3.5rem+env(safe-area-inset-top))] items-center gap-sm border-b border-line bg-canvas px-md pt-[env(safe-area-inset-top)] md:hidden">
-      <SidebarTrigger label="Abrir navegação">
+    <header className="flex min-h-[calc(3.25rem+env(safe-area-inset-top))] items-center gap-sm border-b border-line bg-canvas px-md pt-[env(safe-area-inset-top)] md:hidden">
+      <SidebarTrigger label="Abrir navegação" note={props.menuNote}>
         <MenuIcon aria-hidden="true" />
       </SidebarTrigger>
       <span className="max-[22rem]:hidden">
@@ -134,30 +134,45 @@ function opensWide(): boolean {
 
 /**
  * The frame of every page with a session (web W30): one sidebar on the left and no top bar. The
- * sidebar holds `header`, `nav` and `footer`, open until the person collapses it to icons; `compact`
+ * sidebar holds the `rail` of places and the list (`header`, `nav` and `footer`), open until the
+ * person collapses it to the rail; `compact`
  * means the page fills the rest of the screen edge to edge, for a Projeto's two regions. On a phone it is a drawer under a top line naming the place (design V56).
  */
 export function Frame(props: {
   header: ReactNode
   nav: ReactNode
-  footer: ReactNode
+  footer?: ReactNode
+  /** The icon rail beside the list; without it the sidebar is the list alone, closing to icons. */
+  rail?: RailContent
+  /** Words for what waits in the drawer, shown as a dot on the phone's menu button (the unread notifications). */
+  menuNote?: string
   compact: boolean
   children: ReactNode
 }) {
   const [open, setOpen] = useState(opensWide)
   const [slot, setSlot] = useState<HTMLElement | null>(null)
   const { compact } = props
+  const rail = props.rail && {
+    top: (
+      <>
+        <span aria-hidden="true" className="flex size-10 shrink-0 items-center justify-center">
+          <ConexusMark size={24} />
+        </span>
+        {props.rail.top}
+      </>
+    ),
+    foot: props.rail.foot,
+  }
   return (
     <SidebarProvider open={open} onOpenChange={setOpen} className={cn(compact && 'h-dvh')}>
-      <Sidebar label="Navegação">
+      <Sidebar label="Navegação" rail={rail}>
         <SidebarHeader>{props.header}</SidebarHeader>
         <SidebarContent>{props.nav}</SidebarContent>
-        <SidebarFooter>{props.footer}</SidebarFooter>
-        <SidebarRail />
+        {props.footer && <SidebarFooter>{props.footer}</SidebarFooter>}
       </Sidebar>
       <CloseOnNavigation />
       <SidebarInset>
-        <PhoneTop slot={setSlot} />
+        <PhoneTop slot={setSlot} menuNote={props.menuNote} />
         <PhoneSlot.Provider value={slot}>
           <InFrame.Provider value={true}>
             <div className={cn('flex min-w-0 flex-1 flex-col', compact ? 'min-h-0' : 'p-xl')}>

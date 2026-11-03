@@ -122,7 +122,7 @@ function Conversation(props: Props) {
             fileName={file?.name}
             onCloseFile={() => setFile(undefined)}
             chat={
-              <div className="flex h-full min-h-0 flex-col bg-canvas">
+              <div className="flex h-full min-h-0 flex-col bg-surface">
                 <Chat
                   companyId={companyId}
                   conversationId={conversationId}

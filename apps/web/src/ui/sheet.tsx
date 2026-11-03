@@ -24,12 +24,18 @@ export function SheetTrigger(props: SheetPrimitive.Trigger.Props) {
 export function SheetContent({
   className,
   title,
+  titleClassName,
+  closeClassName,
   closeLabel = 'Fechar navegação',
   side = 'left',
   children,
   ...props
 }: SheetPrimitive.Popup.Props & {
   title: string
+  /** Hides the visible title (`sr-only`) when the content brings its own layout, like the drawer's rail. */
+  titleClassName?: string
+  /** Puts the close where the content leaves room for it (the drawer: first in the column, not over the content). */
+  closeClassName?: string
   closeLabel?: string
   side?: keyof typeof SIDES
   children: ReactNode
@@ -49,13 +55,21 @@ export function SheetContent({
         )}
         {...props}
       >
-        <SheetPrimitive.Title className="pt-[env(safe-area-inset-top)] font-display text-title">
+        <SheetPrimitive.Title
+          className={cn('pt-[env(safe-area-inset-top)] font-display text-title', titleClassName)}
+        >
           {title}
         </SheetPrimitive.Title>
         {children}
         <SheetPrimitive.Close
           data-slot="sheet-close"
-          render={<Button variant="ghost" size="icon" className="absolute top-md right-md" />}
+          render={
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn('absolute top-md right-md', closeClassName)}
+            />
+          }
           aria-label={closeLabel}
         >
           <XIcon aria-hidden="true" />

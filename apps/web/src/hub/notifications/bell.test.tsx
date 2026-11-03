@@ -191,16 +191,27 @@ test('sem não lidas o painel não oferece Marcar todas como lidas', async () =>
   expect(screen.queryByRole('button', { name: 'Marcar todas como lidas' })).toBeNull()
 })
 
-test('no computador o sino fica na barra lateral, e no celular na linha do topo', async () => {
+test('o sino fica no pé do trilho, acima da conta, no computador e na gaveta do celular', async () => {
   bell([notification(1)])
   const desktop = await screen.findByRole('button', { name: 'Notificações: 1 não lida' })
+  const rail = desktop.closest('[data-slot="sidebar-rail-column"]')
+  expect(rail).not.toBeNull()
+  const foot = [...(rail?.querySelectorAll('a, button') ?? [])].map((one) =>
+    one.getAttribute('aria-label'),
+  )
+  expect(foot.slice(-3)).toEqual([
+    'Configurações',
+    'Notificações: 1 não lida',
+    expect.stringMatching(/^Conta de /),
+  ])
   expect(desktop.closest('header')).toBeNull()
   cleanup()
   await onPhone(async () => {
     bell([notification(1)])
+    fireEvent.click(await screen.findByRole('button', { name: 'Abrir navegação' }))
     const phone = await screen.findByRole('button', { name: 'Notificações: 1 não lida' })
     expect(screen.getAllByRole('button', { name: /^Notificações/ })).toHaveLength(1)
-    expect(phone.closest('header')).not.toBeNull()
+    expect(phone.closest('[data-mobile="true"]')).not.toBeNull()
   })
 })
 

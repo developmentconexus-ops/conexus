@@ -30,14 +30,13 @@ import {
   useDraft,
   usePicked,
 } from '../conversation/public.ts'
-import { CutBadge, DraftBar, FixedProject, useDraftChoice } from './context-bar.tsx'
+import { DraftBar, FixedProject, useDraftChoice } from './context-bar.tsx'
 import { assistantConversationsQuery, sendAssistantCreation } from './queries.ts'
 import {
   ASSISTANT_EXAMPLES,
   HOME_PLACEHOLDER,
   NO_CONVERSATIONS,
   PROJECT_LIST_TITLE,
-  RECENT_TITLE,
   titleOf,
   UNCONFIRMED_CREATION,
 } from './text.ts'
@@ -231,54 +230,36 @@ function AskBox(props: {
 
 function ConversationLink(props: {
   companyId: CompanyId
+  projectId: ProjectId
   conversation: AssistantConversationSummary
-  /** Início names each conversation's Projeto; the Projeto's own list does not. */
-  showProject: boolean
 }) {
-  const { companyId, conversation } = props
-  const row = cn(
-    'flex items-center justify-between gap-md rounded-control px-sm py-md hover:bg-surface-3',
-  )
-  const content = (
-    <>
+  const { companyId, projectId, conversation } = props
+  return (
+    <Link
+      to="/companies/$companyId/projects/$projectId/assistant/$conversationId"
+      params={{ companyId, projectId, conversationId: conversation.id }}
+      className={cn(
+        'flex items-center justify-between gap-md rounded-control px-sm py-md hover:bg-surface-3',
+      )}
+    >
       <span className="flex min-w-0 flex-1 flex-wrap items-center gap-x-sm gap-y-xs">
         <span className="max-w-full truncate">{titleOf(conversation)}</span>
-        {props.showProject && conversation.project !== null && (
-          <CutBadge className="max-w-[40%]">{conversation.project.name}</CutBadge>
-        )}
         {conversation.automation !== null && (
           <AutomationBadge name={conversation.automation.name} />
         )}
       </span>
       <span className="shrink-0 text-label text-text-2">{dayOf(conversation.updatedAt)}</span>
-    </>
-  )
-  return conversation.project === null ? (
-    <Link
-      to="/companies/$companyId/conversations/$conversationId"
-      params={{ companyId, conversationId: conversation.id }}
-      className={row}
-    >
-      {content}
-    </Link>
-  ) : (
-    <Link
-      to="/companies/$companyId/projects/$projectId/assistant/$conversationId"
-      params={{ companyId, projectId: conversation.project.id, conversationId: conversation.id }}
-      className={row}
-    >
-      {content}
     </Link>
   )
 }
 
 /**
- * The person's conversations with the Assistant, newest first, a page at a time with the page in
- * the address under `param` (web W18): all of them on Início, one Projeto's in its Conversas.
+ * The person's conversations with the Assistant in one Projeto, newest first, a page at a time with
+ * the page in the address under `param` (web W18). Início's own list is the sidebar's.
  */
 export function Recent(props: {
   companyId: CompanyId
-  projectId?: ProjectId
+  projectId: ProjectId
   page: string | undefined
   param: string
 }) {
@@ -289,27 +270,16 @@ export function Recent(props: {
     return <ReadFailure text={sentenceOf(read.error)} onRetry={() => void read.refetch()} />
   const { conversations, next } = read.data
   if (conversations.length === 0)
-    return projectId === undefined ? null : (
-      <p className={cn(START_COLUMN, 'text-text-2')}>{NO_CONVERSATIONS}</p>
-    )
+    return <p className={cn(START_COLUMN, 'text-text-2')}>{NO_CONVERSATIONS}</p>
   return (
-    <section
-      aria-labelledby={projectId === undefined ? 'recent-title' : undefined}
-      aria-label={projectId === undefined ? undefined : PROJECT_LIST_TITLE}
-      className={cn(START_COLUMN, 'gap-sm')}
-    >
-      {projectId === undefined && (
-        <h2 id="recent-title" className="font-display text-title">
-          {RECENT_TITLE}
-        </h2>
-      )}
+    <section aria-label={PROJECT_LIST_TITLE} className={cn(START_COLUMN, 'gap-sm')}>
       <ul className="flex flex-col">
         {conversations.map((conversation) => (
           <li key={conversation.id}>
             <ConversationLink
               companyId={companyId}
+              projectId={projectId}
               conversation={conversation}
-              showProject={projectId === undefined}
             />
           </li>
         ))}
@@ -319,13 +289,7 @@ export function Recent(props: {
   )
 }
 
-/** Início of an owner or an administrator: the box, the bar and, under them, the recent conversations. */
-export function AssistantHome(props: { companyId: CompanyId; page: string | undefined }) {
-  const { companyId } = props
-  return (
-    <div className="flex flex-col gap-xl">
-      <Ask companyId={companyId} chooseProject />
-      <Recent companyId={companyId} page={props.page} param="conversations" />
-    </div>
-  )
+/** Início of an owner or an administrator: the box that asks the Assistant; the blocks come under it (`AssistantDay`). */
+export function AssistantHome(props: { companyId: CompanyId }) {
+  return <Ask companyId={props.companyId} chooseProject />
 }

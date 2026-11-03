@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { TEST_APPS_DOMAIN } from '../../platform/test-database.ts'
+import { companyForVersions, folder, send } from '../apps/test-versions.ts'
+import type { Person } from '../identity/test-hub.ts'
 import {
   ANA_OWNER,
   BRUNO,
@@ -159,4 +161,42 @@ test('endereço: o nome e o apelido; "Acao" após "Ação" é 409, menos de trê
   assert.deepEqual(await hub.test.asOwner(`select name, host_label from projects.project`), [
     { name: 'Ação', host_label: 'acao--empresa-a' },
   ])
+})
+
+test('as versões na lista: cada Projeto traz appVersion e publishedVersion, null antes do primeiro app e da primeira publicação, os mesmos números que o Projeto lido (9)', async (t) => {
+  const subject = await companyForVersions(t)
+  const { hub, ana, bruno, projects, projectId } = subject
+  const made = await post(hub, ana, projects, { name: 'Recados' })
+  const otherId = String(Object(made.json()).project.id)
+  async function listedFor(person: Person) {
+    const read = await call(hub, person, 'GET', projects)
+    assert.equal(read.statusCode, 200, read.body)
+    return Object(read.json()).projects.map(
+      (each: Record<string, unknown>) =>
+        [each.name, each.appVersion, each.publishedVersion] as const,
+    )
+  }
+  assert.deepEqual(await listedFor(ana), [
+    ['Pedidos', null, null],
+    ['Recados', null, null],
+  ])
+  assert.equal((await send(subject, ana)).preview?.state, 'ready')
+  assert.equal((await send(subject, ana, folder({}, '#6b2fa3'))).preview?.state, 'ready')
+  const published = await call(hub, ana, 'PUT', `${projects}/${projectId}/published-version`, {
+    number: 1,
+  })
+  assert.equal(published.statusCode, 200, published.body)
+  const expected = [
+    ['Pedidos', 2, 1],
+    ['Recados', null, null],
+  ]
+  assert.deepEqual(await listedFor(ana), expected)
+  assert.deepEqual(await listedFor(bruno), expected)
+  for (const id of [projectId, otherId]) {
+    const one = Object((await call(hub, ana, 'GET', `${projects}/${id}`)).json()).project
+    const row = Object((await call(hub, ana, 'GET', projects)).json()).projects.find(
+      (each: { id: string }) => each.id === id,
+    )
+    assert.deepEqual([row.appVersion, row.publishedVersion], [one.appVersion, one.publishedVersion])
+  }
 })

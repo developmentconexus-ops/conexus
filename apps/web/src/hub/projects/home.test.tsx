@@ -1,5 +1,5 @@
 import type { ProjectSummary } from '@conexus/hub-api'
-import { FAILURES, listModelAccounts, listModelProviders } from '@conexus/hub-api'
+import { FAILURES, listModelAccounts, listModelProviders, ProjectId } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
@@ -63,17 +63,16 @@ function open(path = HOME) {
   return conexus.router
 }
 
-test('Início: o título, a caixa, os exemplos e os Projetos', async () => {
+test('Início: o título, a caixa, os exemplos e o bloco Projetos, nessa ordem', async () => {
   hub([PEDIDOS])
   open()
-  const title = await screen.findByRole('heading', { name: 'O que vamos construir?' })
+  const title = await screen.findByRole('heading', { name: /^(Bom dia|Boa tarde|Boa noite)/ })
   const box = await screen.findByRole('textbox', { name: 'Mensagem para o Builder' })
   expect(box.getAttribute('placeholder')).toBe('Descreva o app que você quer…')
   const examples = screen.getByRole('list', { name: 'Exemplos' })
   expect(within(examples).getAllByRole('button')).toHaveLength(3)
   const main = screen.getByRole('main')
-  const projects = within(main).getByRole('heading', { name: /^Projetos/ })
-  expect(projects.textContent).toBe('Projetos1')
+  const projects = await within(main).findByRole('region', { name: 'Projetos' })
   const inDom = [projects, examples, box, title].sort((a, b) =>
     a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1,
   )
@@ -86,53 +85,43 @@ test('Início: o título, a caixa, os exemplos e os Projetos', async () => {
   expect(screen.queryByLabelText(/Memória da conversa/)).toBeNull()
 })
 
-test('Início: o cartão com a prévia e a empresa sem Projetos', async () => {
+test('o bloco Projetos: a linha com o nome e o estado em palavras, e a empresa sem Projetos diz a frase', async () => {
   hub([PEDIDOS])
   open()
-  const link = await within(await screen.findByRole('main')).findByRole('link', { name: /Pedidos/ })
-  const letter = within(link).getByText('P')
-  expect(letter.getAttribute('aria-hidden')).toBe('true')
+  const block = within(await screen.findByRole('region', { name: 'Projetos' }))
+  const link = await block.findByRole('link', { name: /Pedidos/ })
   expect(within(link).getByText('Pedidos')).toBeTruthy()
-  expect(link.textContent).toContain('Criado em 17/10/2026')
+  expect(within(link).getByText('Ainda sem app')).toBeTruthy()
   cleanup()
   hub([])
   open()
-  const main = within(await screen.findByRole('main'))
-  expect(await main.findByText('Nenhum projeto ainda.')).toBeTruthy()
-  expect(main.queryByRole('link', { name: /Pedidos/ })).toBeNull()
+  const empty = within(await screen.findByRole('region', { name: 'Projetos' }))
+  expect(await empty.findByText('Nenhum projeto ainda.')).toBeTruthy()
+  expect(empty.queryByRole('link', { name: /Pedidos/ })).toBeNull()
 })
 
-test('cada cartão: o nome, "Criado em" e o link que abre o Projeto', async () => {
+test('o bloco Projetos: a linha abre o Projeto', async () => {
   hub([PEDIDOS])
   const router = open()
-  const link = await within(await screen.findByRole('main')).findByRole('link', { name: /Pedidos/ })
-  expect(link.textContent).toContain('Criado em 17/10/2026')
-  fireEvent.click(link)
+  const block = within(await screen.findByRole('region', { name: 'Projetos' }))
+  fireEvent.click(await block.findByRole('link', { name: /Pedidos/ }))
   expect(await screen.findAllByRole('heading', { name: 'Pedidos' })).not.toHaveLength(0)
   expect(router.state.location.pathname).toBe(`${PROJECTS}/${PEDIDOS.id}`)
 })
 
-test('"Todos os projetos" só aparece no Início quando há mais Projetos', async () => {
-  hub([PEDIDOS])
-  open()
-  const main = within(await screen.findByRole('main'))
-  await main.findByRole('link', { name: /Pedidos/ })
-  expect(main.queryByRole('link', { name: 'Todos os projetos' })).toBeNull()
-  cleanup()
-  server.use(
-    http.get(`*/api/companies/${COMPANY.id}/projects`, () =>
-      HttpResponse.json({
-        projects: [PEDIDOS],
-        next: { kind: 'MORE', page: 'c'.repeat(32) },
-        databaseReady: true,
-      }),
-    ),
-  )
+test('o bloco Projetos mostra cinco linhas e "Mais N"; "Todos →" abre todos os Projetos', async () => {
+  const many = [1, 2, 3, 4, 5, 6, 7].map((number) => ({
+    ...PEDIDOS,
+    id: ProjectId.parse(String(number).repeat(32)),
+    name: `Projeto ${number}`,
+  }))
+  hub(many)
   const router = open()
-  const more = await within(await screen.findByRole('main')).findByRole('link', {
-    name: 'Todos os projetos',
-  })
-  fireEvent.click(more)
+  const block = within(await screen.findByRole('region', { name: 'Projetos' }))
+  await block.findByRole('link', { name: /Projeto 1/ })
+  expect(block.getAllByRole('link', { name: /^Projeto / })).toHaveLength(5)
+  expect(block.getByRole('link', { name: 'Mais 2' })).toBeTruthy()
+  fireEvent.click(block.getByRole('link', { name: 'Todos →' }))
   expect(await screen.findByRole('heading', { name: 'Todos os projetos' })).toBeTruthy()
   expect(router.state.location.pathname).toBe(PROJECTS)
 })

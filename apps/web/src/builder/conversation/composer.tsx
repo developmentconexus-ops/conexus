@@ -20,18 +20,21 @@ import { FileChip } from './person-turn.tsx'
 import { useRoom } from './room.ts'
 import { dictationText, NO_SECRETS, REFUSALS, steerPlaceholderText } from './text.ts'
 
-/** The form sticks to the bottom and clears the home indicator. */
+/**
+ * The form sticks to the bottom and clears the home indicator. Its band takes `--ground`, the
+ * ground of the frame it sits in (surface unless the frame says otherwise, like the welcome's canvas).
+ */
 const FORM =
-  'sticky bottom-0 flex flex-col gap-xs bg-canvas pb-[max(0.5rem,env(safe-area-inset-bottom))]'
+  'sticky bottom-0 flex flex-col gap-xs bg-(--ground,var(--color-surface)) pb-[max(0.5rem,env(safe-area-inset-bottom))]'
 
 /** A finger's keyboard has a Return that means a new line; the button is what sends. */
 function isTouch(): boolean {
   return globalThis.matchMedia('(pointer: coarse)').matches
 }
 
-/** The round button at the end of the field: ink at rest, ipê under the pointer (design V5). */
+/** The round button at the end of the field: ink at rest, the soft grey under the pointer (design V5). */
 const ROUND =
-  'rounded-pill hover:bg-accent disabled:bg-surface-4 disabled:text-text-2 disabled:opacity-100'
+  'rounded-pill hover:bg-surface-3 hover:text-text disabled:bg-surface-4 disabled:text-text-2 disabled:opacity-100'
 
 type Attachments = ReturnType<typeof useAttachments>
 /** Takes the files and says why any was left out. */

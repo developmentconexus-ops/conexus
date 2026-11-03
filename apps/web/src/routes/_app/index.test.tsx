@@ -115,7 +115,9 @@ test('sem sessão, / leva a /login com o endereço de volta, sem desenhar a mold
 test('com uma empresa, / abre o Início dela (critério 2)', async () => {
   hub(listed(FIRST))
   const router = open()
-  expect(await screen.findByRole('heading', { name: 'O que vamos construir?' })).toBeTruthy()
+  expect(
+    await screen.findByRole('heading', { name: /^(Bom dia|Boa tarde|Boa noite)/ }),
+  ).toBeTruthy()
   expect(router.state.location.pathname).toBe(`/companies/${FIRST.id}`)
   expect(screen.getByRole('link', { name: 'Início' })).toBeTruthy()
 })
@@ -123,7 +125,9 @@ test('com uma empresa, / abre o Início dela (critério 2)', async () => {
 test('com duas empresas e nenhuma lembrada, / abre a primeira da lista (critério 2)', async () => {
   hub(listed(FIRST, SECOND))
   const router = open()
-  expect(await screen.findByRole('heading', { name: 'O que vamos construir?' })).toBeTruthy()
+  expect(
+    await screen.findByRole('heading', { name: /^(Bom dia|Boa tarde|Boa noite)/ }),
+  ).toBeTruthy()
   expect(router.state.location.pathname).toBe(`/companies/${FIRST.id}`)
 })
 
@@ -131,14 +135,18 @@ test('com duas empresas, / abre a que este navegador abriu por último (critéri
   hub(listed(FIRST, SECOND))
   remembered(SECOND.id)
   const router = open()
-  expect(await screen.findByRole('heading', { name: 'O que vamos construir?' })).toBeTruthy()
+  expect(
+    await screen.findByRole('heading', { name: /^(Bom dia|Boa tarde|Boa noite)/ }),
+  ).toBeTruthy()
   expect(router.state.location.pathname).toBe(`/companies/${SECOND.id}`)
 })
 
 test('abrir uma empresa a lembra para o próximo / deste navegador (critério 2)', async () => {
   hub(listed(FIRST, SECOND))
   const router = open(`/companies/${SECOND.id}`)
-  expect(await screen.findByRole('heading', { name: 'O que vamos construir?' })).toBeTruthy()
+  expect(
+    await screen.findByRole('heading', { name: /^(Bom dia|Boa tarde|Boa noite)/ }),
+  ).toBeTruthy()
   await router.navigate({ to: '/' })
   await waitFor(() => expect(router.state.location.pathname).toBe(`/companies/${SECOND.id}`))
 })
@@ -147,7 +155,9 @@ test('a empresa lembrada que o Hub não lista mais: / abre a primeira (critério
   hub(listed(FIRST, SECOND))
   remembered('c'.repeat(32))
   const router = open()
-  expect(await screen.findByRole('heading', { name: 'O que vamos construir?' })).toBeTruthy()
+  expect(
+    await screen.findByRole('heading', { name: /^(Bom dia|Boa tarde|Boa noite)/ }),
+  ).toBeTruthy()
   expect(router.state.location.pathname).toBe(`/companies/${FIRST.id}`)
 })
 
@@ -229,7 +239,7 @@ test('com o carregamento da página preso, a caixa que aparece depois recebe o f
   fireEvent.change(screen.getByLabelText('Senha'), { target: { value: 'senha-certa-1' } })
   fireEvent.click(screen.getByRole('button', { name: 'Entrar' }))
   await waitFor(() => expect(state.signedIn).toBe(true))
-  expect(screen.queryByRole('heading', { name: 'O que vamos construir?' })).toBeNull()
+  expect(screen.queryByRole('heading', { name: /^(Bom dia|Boa tarde|Boa noite)/ })).toBeNull()
   held.resolve()
   const box = await screen.findByRole('textbox', { name: 'Mensagem para o Builder' })
   await waitFor(() => expect(document.activeElement).toBe(box))
@@ -245,7 +255,9 @@ test('depois de entrar, abre a página pedida, não a primeira empresa', async (
   hub(listed(FIRST, SECOND), { signedIn: false })
   const router = open(`/companies/${SECOND.id}`)
   await signInFromLogin()
-  expect(await screen.findByRole('heading', { name: 'O que vamos construir?' })).toBeTruthy()
+  expect(
+    await screen.findByRole('heading', { name: /^(Bom dia|Boa tarde|Boa noite)/ }),
+  ).toBeTruthy()
   expect(router.state.location.pathname).toBe(`/companies/${SECOND.id}`)
 })
 
