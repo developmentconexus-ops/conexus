@@ -6,7 +6,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuLinkItem,
 } from '../../ui/dropdown-menu.tsx'
-import { SidebarSelector } from '../../ui/sidebar.tsx'
+import { SidebarSelector } from '../../ui/sidebar-selector.tsx'
 import { companyQuery } from './queries.ts'
 import { useCompanies } from './use-companies.ts'
 

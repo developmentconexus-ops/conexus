@@ -16,13 +16,8 @@ import {
   DropdownMenuSeparator,
 } from '../../ui/dropdown-menu.tsx'
 import { FrameLink } from '../../ui/frame.tsx'
-import {
-  SidebarGroup,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarSelector,
-} from '../../ui/sidebar.tsx'
+import { SidebarGroup, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '../../ui/sidebar.tsx'
+import { SidebarSelector } from '../../ui/sidebar-selector.tsx'
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { projectQuery } from './queries.ts'
 import { useRecentProjects } from './recent-projects.tsx'
