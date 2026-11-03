@@ -193,6 +193,8 @@ const PROJECT = {
   id: 'r'.repeat(32),
   name: `Projeto com um nome muito comprido que não cabe em uma linha de telefone pequeno`,
   createdAt: '2026-10-17T12:00:00.000Z',
+  appVersion: null,
+  publishedVersion: null,
 } as const
 
 /**

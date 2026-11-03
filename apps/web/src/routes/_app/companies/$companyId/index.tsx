@@ -2,11 +2,12 @@ import { listAssistantConversations } from '@conexus/hub-api'
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
-import { AssistantHome } from '../../../../builder/assistant/public.ts'
+import { AssistantDay, AssistantHome } from '../../../../builder/assistant/public.ts'
 import { readStart, Start } from '../../../../builder/conversation/public.ts'
 import { accountsQuery } from '../../../../builder/model-accounts/public.ts'
 import { PreparationCard } from '../../../../hub/identity/public.ts'
-import { Home } from '../../../../hub/projects/public.ts'
+import { Home, ProjectsBlock } from '../../../../hub/projects/public.ts'
+import { greetingOf } from '../../../../platform/dates.ts'
 
 /** What the company still needs, for an owner or an administrator; a member never sees it. */
 function Preparation() {
@@ -18,19 +19,15 @@ function Preparation() {
 
 function HomePage() {
   const { companyId } = Route.useParams()
-  const { role } = Route.useRouteContext()
-  const { conversations } = Route.useSearch()
+  const { role, person } = Route.useRouteContext()
+  const member = role === 'member'
   return (
     <Home
-      companyId={companyId}
-      aside={role === 'member' ? undefined : <Preparation />}
-      title={role === 'member' ? 'O que vamos construir?' : 'Pergunte ou peça um app'}
-      start={
-        role === 'member' ? (
-          <Start companyId={companyId} />
-        ) : (
-          <AssistantHome companyId={companyId} page={conversations} />
-        )
+      aside={member ? undefined : <Preparation />}
+      title={greetingOf(new Date(), person.name)}
+      start={member ? <Start companyId={companyId} /> : <AssistantHome companyId={companyId} />}
+      below={
+        member ? <ProjectsBlock companyId={companyId} /> : <AssistantDay companyId={companyId} />
       }
     />
   )

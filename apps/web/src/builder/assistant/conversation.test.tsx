@@ -1,7 +1,6 @@
-import { BUILDER_TOOL, CompanyId, WORKSPACE_TOOL } from '@conexus/hub-api'
+import { BUILDER_TOOL, WORKSPACE_TOOL } from '@conexus/hub-api'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, test } from 'vitest'
-import { COMPANY } from '../../platform/fixtures.ts'
 import { hubServer, PEDIDOS, refusal } from '../../platform/test-hub.tsx'
 import { START_NO_ACCOUNT } from '../conversation/public.ts'
 import {
@@ -11,7 +10,6 @@ import {
   updatePart,
 } from '../conversation/test-events.ts'
 import { personSaid, reachTop } from '../conversation/test-stream.tsx'
-import { assistantConversationsQuery } from './queries.ts'
 import {
   ASKED,
   assistantConversation,
@@ -216,16 +214,19 @@ describe('as leituras e os comandos', () => {
   })
 })
 
-test('a conversa sumir do Hub marca as recentes para serem lidas de novo', async () => {
-  const { conexus } = at(OPEN, {
+test('a conversa sumir do Hub faz as recentes serem lidas de novo', async () => {
+  let reads = 0
+  at(OPEN, {
     conversations: [assistantConversation()],
-    answers: { stream: () => refusal('CONVERSATION_NOT_FOUND') },
+    answers: {
+      stream: () => refusal('CONVERSATION_NOT_FOUND'),
+      list: () => {
+        reads += 1
+        return undefined
+      },
+    },
   })
-  const recents = assistantConversationsQuery(CompanyId.parse(COMPANY.id), undefined, undefined)
-  await conexus.queryClient.fetchQuery(recents)
-  await waitFor(() =>
-    expect(conexus.queryClient.getQueryState(recents.queryKey)?.isInvalidated).toBe(true),
-  )
+  await waitFor(() => expect(reads).toBeGreaterThan(1))
 })
 
 describe('os comandos', () => {

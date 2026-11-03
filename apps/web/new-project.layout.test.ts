@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
 import { createHarness, DESKTOP, PHONE } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
-import { OWNER, projectsPage } from './sweep-replies.ts'
+import { MEMBER, OWNER, projectsPage } from './sweep-replies.ts'
 
 // The sidebar's + and the dialog it opens, in a real browser (design V18, V32).
 const harness = createHarness(import.meta.dirname)
@@ -16,7 +16,7 @@ for (const viewport of [DESKTOP, PHONE]) {
   test(`o +: 28px na linha do grupo e o diálogo cabe numa tela de ${viewport.width}px`, async () => {
     const page = await harness.open(`/companies/${COMPANY.id}/projects`, {
       viewport,
-      replies: { ...OWNER, ...projectsPage(COMPANY.id) },
+      replies: { ...MEMBER, ...projectsPage(COMPANY.id) },
     })
     if (viewport === PHONE) await page.getByRole('button', { name: 'Abrir navegação' }).click()
     const plus = page.getByRole('button', { name: 'Novo projeto' })
@@ -49,3 +49,23 @@ for (const viewport of [DESKTOP, PHONE]) {
     await page.close()
   })
 }
+
+test('o dono não tem o + na lista: "Novo projeto" fica no cabeçalho do bloco Projetos do Início e abre o diálogo', async () => {
+  const page = await harness.open(`/companies/${COMPANY.id}`, {
+    viewport: DESKTOP,
+    replies: { ...OWNER, ...projectsPage(COMPANY.id) },
+  })
+  const block = page.getByRole('region', { name: 'Projetos' })
+  const trigger = block.getByRole('button', { name: 'Novo projeto' })
+  await trigger.waitFor()
+  assert.equal(
+    await page
+      .getByRole('navigation', { name: 'Navegação' })
+      .getByRole('button', { name: 'Novo projeto' })
+      .count(),
+    0,
+  )
+  await trigger.click()
+  await page.getByRole('dialog', { name: 'Novo projeto' }).waitFor()
+  await page.close()
+})

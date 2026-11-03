@@ -106,7 +106,7 @@ test('entrar a caminho de outra página leva o foco ao título dela, não ao cor
   fireEvent.change(await screen.findByLabelText('E-mail'), { target: { value: ANA.email } })
   fireEvent.change(screen.getByLabelText('Senha'), { target: { value: 'senha-certa-1' } })
   fireEvent.click(screen.getByRole('button', { name: 'Entrar' }))
-  const title = await screen.findByRole('heading', { name: 'O que vamos construir?' })
+  const title = await screen.findByRole('heading', { name: /^(Bom dia|Boa tarde|Boa noite)/ })
   await waitFor(() => expect(document.activeElement).toBe(title))
 })
 

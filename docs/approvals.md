@@ -511,6 +511,8 @@ Em 2026-11-02, na revisão da unidade U0 da 13.3 (a Pauta), à decisão sobre a 
 
 Em 2026-11-02, na revisão da unidade U3 da 24.3, ao achado 7 (o erro do banco que o modelo recebe) e ao estudo da forma mais simples: "1". Lido pelo firstmate como: a recusa `APP_DATA_REFUSED` leva o SQLSTATE do PostgreSQL, e a descrição da ferramenta manda o agente listar as tabelas e as colunas em `information_schema.columns` e corrigir a consulta; sem código novo, sem lista de SQLSTATEs e sem mensagem do Postgres. Palavra de meio de etapa, vai direto para este livro (L6); o cartão fica congelado no commit aprovado, e a emenda do tipo `AppRead` e do critério 19 ("com o SQLSTATE") vai no fechamento da etapa.
 
+Em 2026-11-02, na revisão da unidade U3 da 13.3 (a Pauta), às decisões sobre "Novo projeto" no bloco Projetos do Início, o sino no celular e a posição de Configurações: "1 A B preciso entender melhor 3A". (1) A: "Novo projeto" fica no bloco Projetos do Início, para dona e administradora. (3) A: o critério 5 do cartão passa a dizer Início, Projetos, Integrações e Automações no alto, e Configurações, o sino e a conta no pé do trilho, como o `DESIGN.md` e a W30 dizem. (2) B, depois de entendida: no topo do celular, com notificação não lida, um ponto pequeno no botão de menu, e o sino fica dentro da gaveta, no pé do trilho. Palavra de meio de etapa, vai direto para este livro (L6); o cartão fica congelado no commit aprovado, e a emenda do critério 5 vai no corpo da pull request da U3, para o fechamento.
+
 ## Decisões fora de uma etapa
 
 Em 2026-11-02, ao buffer da memória observacional (o estudo A/B do buffer, B1 ou B2): "1. Sem buffer". Fica o B1 de hoje: `bufferTokens: false`, sem o buffer do Mastra Code.

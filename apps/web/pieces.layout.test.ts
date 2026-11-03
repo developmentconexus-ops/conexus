@@ -137,7 +137,7 @@ test('a escala dos botões, no computador e no celular', async () => {
 })
 
 test('a medida: itens de menu e linhas da barra de 32 px, campos de 36 px, a 1366 e a 390 px', async () => {
-  const home = STATES.find((each) => each.name === 'Início, a primeira de duas empresas')
+  const home = STATES.find((each) => each.name === 'Início do membro')
   assert.ok(home, 'the sweep lacks Início')
   for (const viewport of [DESKTOP, PHONE]) {
     const page = await harness.open('/pieces', { viewport, replies: {} })
@@ -148,7 +148,7 @@ test('a medida: itens de menu e linhas da barra de 32 px, campos de 36 px, a 136
   const page = await harness.open(home.path, { viewport: DESKTOP, replies: home.replies })
   await home.settle(page)
   const rows = await page
-    .locator('[data-slot=sidebar-menu-item] > *')
+    .locator('[data-slot=sidebar-menu-item] > a')
     .evaluateAll((all) => all.map((one) => one.getBoundingClientRect().height))
   assert.ok(rows.length > 0, 'the sidebar has no rows')
   assert.ok(rows.includes(32), 'no sidebar row is 32 px')
@@ -185,14 +185,14 @@ test('o celular desenhado da Prévia mede 390', async () => {
 })
 
 test('num toque as linhas e os itens têm 44 px; com o mouse ficam em 32 (V58)', async () => {
-  const home = STATES.find((each) => each.name === 'Início, a primeira de duas empresas')
+  const home = STATES.find((each) => each.name === 'Início do membro')
   assert.ok(home, 'the sweep lacks Início')
   const page = await harness.open(home.path, { viewport: DESKTOP, replies: home.replies })
   await home.settle(page)
   await page.getByRole('button', { name: /^Conta de / }).click()
   await touching(page)
   const rows = await page
-    .locator('[data-slot=sidebar-menu-item] > *')
+    .locator('[data-slot=sidebar-menu-item] > a')
     .evaluateAll((all) => all.map((one) => one.getBoundingClientRect().height))
   assert.ok(rows.length > 0, 'the sidebar has no rows')
   assert.ok(rows.includes(44), 'no sidebar row is 44 px under touch')
@@ -204,7 +204,7 @@ test('num toque as linhas e os itens têm 44 px; com o mouse ficam em 32 (V58)',
   const mouse = await harness.open(home.path, { viewport: DESKTOP, replies: home.replies })
   await home.settle(mouse)
   const fine = await mouse
-    .locator('[data-slot=sidebar-menu-item] > *')
+    .locator('[data-slot=sidebar-menu-item] > a')
     .evaluateAll((all) => all.map((one) => one.getBoundingClientRect().height))
   assert.ok(fine.includes(32), 'no sidebar row is 32 px with a mouse')
   assert.ok(!fine.includes(44), 'a sidebar row is 44 px with a mouse')
@@ -218,16 +218,24 @@ test('num toque as linhas e os itens têm 44 px; com o mouse ficam em 32 (V58)',
     replies: home.replies,
   })
   await home.settle(rail)
-  const railFine = await rail
-    .locator('[data-slot=sidebar-menu-item] > *')
-    .evaluateAll((all) => all.map((one) => one.getBoundingClientRect().height))
-  assert.ok(railFine.includes(32), 'the collapsed rail has no 32 px square with a mouse')
+  const tile = rail.locator('[data-slot=sidebar-rail-column]').getByRole('link').first()
+  await tile.waitFor()
+  const fineBox = await tile.boundingBox()
+  assert.equal(fineBox?.height, 40, 'the collapsed rail has no 40 px tile with a mouse')
+  assert.equal(
+    await rail.locator('[data-sidebar=sidebar]').evaluate((one) => getComputedStyle(one).display),
+    'none',
+    'the list is not collapsed below 1024 px',
+  )
   await touching(rail)
-  const railTouch = await rail
-    .locator('[data-slot=sidebar-menu-item] > *')
-    .evaluateAll((all) => all.map((one) => one.getBoundingClientRect().height))
-  assert.ok(railTouch.includes(44), 'the collapsed rail has no 44 px square under touch')
-  assert.ok(!railTouch.includes(32), 'a collapsed rail square stayed 32 px under touch')
+  const reach = await reachOf(tile)
+  const touchBox = await tile.boundingBox()
+  assert.equal(touchBox?.height, 40, 'a collapsed rail tile changed size under touch')
+  assert.ok(
+    (touchBox?.height ?? 0) + reach.up + reach.down >= 44 &&
+      (touchBox?.width ?? 0) + reach.left + reach.right >= 44,
+    'a collapsed rail tile reaches less than 44 under touch',
+  )
   await rail.close()
 })
 

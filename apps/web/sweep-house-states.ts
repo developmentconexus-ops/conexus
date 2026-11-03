@@ -76,7 +76,7 @@ export const HOUSE_STATES: State[] = [
     name: 'Início do membro',
     path: HOME,
     replies: MEMBER,
-    settle: (p) => waitFor(p, 'Criado em'),
+    settle: (p) => waitFor(p, 'Ainda sem app'),
   },
   {
     name: 'menu da conta aberto',
