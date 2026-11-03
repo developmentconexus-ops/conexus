@@ -1,10 +1,4 @@
-import {
-  AGENT_TOOL,
-  CONSTRUTOR_TOOL,
-  ProjectReadResult,
-  TestedResult,
-  ToolSearchResult,
-} from '@conexus/hub-api'
+import { AGENT_TOOL, CONSTRUTOR_TOOL, ProjectReadResult, ToolSearchResult } from '@conexus/hub-api'
 import {
   BotIcon,
   BuildingIcon,
@@ -130,6 +124,7 @@ export const CONSTRUTOR_SPECS: Record<ConstrutorRowTool, ToolSpec> = {
     verb: 'montou o rascunho',
     body: 'agent',
     groups: false,
+    refusal: refusedResult,
   },
   [CONSTRUTOR_TOOL.agentSet]: {
     icon: BotIcon,
@@ -139,6 +134,7 @@ export const CONSTRUTOR_SPECS: Record<ConstrutorRowTool, ToolSpec> = {
     verb: 'ajustou o rascunho',
     body: 'agent',
     groups: false,
+    refusal: refusedResult,
   },
   [CONSTRUTOR_TOOL.agentTest]: withDetail(
     {

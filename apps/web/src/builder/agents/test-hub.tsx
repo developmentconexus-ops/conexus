@@ -242,7 +242,7 @@ function memberRoutes() {
 }
 
 /** The company's catalog with the Sankhya, where the screens read the connectors' names and logos. */
-export function catalogRoute() {
+function catalogRoute() {
   return http.get('*/api/companies/:companyId/connections', () =>
     HttpResponse.json({ connectors: [SANKHYA], connections: [], mayManage: true }),
   )

@@ -33,10 +33,17 @@ export const READY_TOOLS = 'Prontas do conector'
 export const NO_CONNECTIONS = 'Este Projeto não recebeu nenhuma ligação.'
 export const GONE_CONNECTION = 'O Projeto não oferece mais'
 export const DRAFT_CHANGED = 'O rascunho mudou. Abra o agente para ver.'
+export const DRAFT_PANEL = 'Rascunho do agente'
+export const SAME_MODEL = 'O modelo de quem conversa'
+export const WEB_TOOL = 'Pesquisar na web'
 export const TEST_BANNER = 'Conversa de teste com o rascunho'
 
 export function askAgent(name: string): string {
   return `Pergunte a ${name}…`
+}
+
+export function memoryText(memory: { observational: boolean }): string {
+  return memory.observational ? 'observacional' : 'desligada'
 }
 
 export function stateText(state: AgentState): string {

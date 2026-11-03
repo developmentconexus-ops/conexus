@@ -27,6 +27,7 @@ import {
   GONE_CONNECTION,
   NO_CONNECTIONS,
   NO_TOOLS,
+  SAME_MODEL,
   toolTitle,
   UNCONFIRMED_SAVE,
 } from './text.ts'
@@ -94,7 +95,7 @@ function ModelSection({ scope, agent }: Part) {
   const models =
     read.data?.choices.mine.flatMap((provider) => provider.models.map((one) => one.id)) ?? []
   const items = [
-    { value: SAME, label: 'O modelo de quem conversa' },
+    { value: SAME, label: SAME_MODEL },
     ...models.map((id) => ({ value: id, label: modelLabel(id) })),
   ]
   return (

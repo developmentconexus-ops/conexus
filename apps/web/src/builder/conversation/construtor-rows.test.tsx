@@ -27,18 +27,43 @@ const AGENT = '55555555-5555-4555-8555-555555555555'
 
 const REFUSED = { kind: 'REFUSED', code: 'AGENT_DRAFT_INVALID' }
 
-test('agent_draft e agent_set desenham o cartão do quarto no lugar da linha, sem o nome da ferramenta', () => {
-  for (const toolName of [CONSTRUTOR_TOOL.agentDraft, CONSTRUTOR_TOOL.agentSet]) {
-    const room = { ...agentRoom('Construtor'), agentCard: () => <p>cartão do rascunho</p> }
+test('agent_draft e agent_set salvos são uma linha que abre o rascunho ao lado, com o nome do agente', () => {
+  for (const [toolName, line] of [
+    [CONSTRUTOR_TOOL.agentDraft, 'Montou o rascunho do agente'],
+    [CONSTRUTOR_TOOL.agentSet, 'Ajustou o rascunho do agente'],
+  ] as const) {
+    const opened: string[] = []
+    const room = { ...agentRoom('Construtor'), openAgent: (id: string) => opened.push(id) }
     const { unmount } = render(
       <RoomContext.Provider value={room}>
-        <ToolRow tool={{ ...draftRow(toolName), result: REFUSED }} />
+        <ToolRow
+          tool={{
+            ...draftRow(toolName),
+            result: { kind: 'SAVED', agent: { id: AGENT, name: 'Vendas' } },
+          }}
+        />
       </RoomContext.Provider>,
     )
-    expect(screen.getByText('cartão do rascunho')).toBeTruthy()
+    // Heard as it ran or read with none open: it opens by itself; the click opens it again.
+    expect(screen.getByText(line)).toBeTruthy()
+    expect(screen.getByText('Vendas')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: new RegExp(line) }))
+    expect(opened.at(-1)).toBe(AGENT)
     expect(screen.queryByText(/Agent (draft|set)/)).toBeNull()
     unmount()
   }
+})
+
+test('agent_draft recusado diz a frase de falha, sem abrir nada', () => {
+  const opened: string[] = []
+  const room = { ...agentRoom('Construtor'), openAgent: (id: string) => opened.push(id) }
+  render(
+    <RoomContext.Provider value={room}>
+      <ToolRow tool={{ ...draftRow(CONSTRUTOR_TOOL.agentDraft), result: REFUSED }} />
+    </RoomContext.Provider>,
+  )
+  expect(screen.getByText('Não conseguiu montar o rascunho')).toBeTruthy()
+  expect(opened).toEqual([])
 })
 
 test('enquanto roda, agent_draft diz o que faz', () => {

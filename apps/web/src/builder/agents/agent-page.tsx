@@ -4,7 +4,6 @@ import { Link, useNavigate } from '@tanstack/react-router'
 import { ArrowLeftIcon, MoreHorizontalIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useState } from 'react'
-import { useAttemptKey } from '../../platform/attempt-key.ts'
 import { writeFailureText } from '../../platform/hub.ts'
 import { AlertDialog, AlertDialogContent } from '../../ui/alert-dialog.tsx'
 import { BlockSentence, blockRow } from '../../ui/block.tsx'
@@ -20,21 +19,15 @@ import { Empty } from '../../ui/states.tsx'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
 import { ConfigPanel } from './config-panel.tsx'
+import { useOpenAgentConversation } from './open-conversation.ts'
 import { PublishButton } from './publish.tsx'
-import {
-  agentConversationsQuery,
-  agentQuery,
-  agentsPrefix,
-  sendAgentConversation,
-  sendDeletion,
-} from './queries.ts'
+import { agentConversationsQuery, agentQuery, agentsPrefix, sendDeletion } from './queries.ts'
 import { ReadStates } from './read-states.tsx'
 import { ConversationLine, StateStamp } from './rows.tsx'
 import {
   deleteWarning,
   NO_AGENT_CONVERSATIONS,
   NO_CONVERSATION_OPEN,
-  UNCONFIRMED_CREATION,
   UNCONFIRMED_DELETE,
 } from './text.ts'
 import { Versions } from './versions.tsx'
@@ -48,44 +41,18 @@ function Conversations(props: {
 }) {
   const { scope, agent } = props
   const read = useQuery(agentConversationsQuery(scope, agent.id))
-  const queryClient = useQueryClient()
-  const navigate = useNavigate()
-  const create = useMutation(sendAgentConversation)
-  const attempt = useAttemptKey()
-  const [error, setError] = useState<string>()
+  const { open, pending, error } = useOpenAgentConversation(scope, agent.id)
   const now = new Date()
-
-  async function open(draft: boolean) {
-    setError(undefined)
-    try {
-      const { conversation } = await attempt((attemptKey) =>
-        create.mutateAsync({
-          params: { ...scope, agentId: agent.id },
-          body: { draft },
-          attemptKey,
-        }),
-      )
-      await queryClient.invalidateQueries({
-        queryKey: agentConversationsQuery(scope, agent.id).queryKey,
-      })
-      await navigate({
-        to: '/companies/$companyId/projects/$projectId/agents/$agentId/$conversationId',
-        params: { ...scope, agentId: agent.id, conversationId: conversation.id },
-      })
-    } catch (failure) {
-      setError(writeFailureText(failure, UNCONFIRMED_CREATION))
-    }
-  }
 
   return (
     <div className="flex flex-col p-xs">
       <div className="flex flex-wrap gap-sm px-sm py-xs">
         {agent.state.kind === 'PUBLISHED' && (
-          <Button size="sm" disabled={create.isPending} onClick={() => void open(false)}>
+          <Button size="sm" disabled={pending} onClick={() => void open(false)}>
             Nova conversa
           </Button>
         )}
-        <Button size="sm" disabled={create.isPending} onClick={() => void open(true)}>
+        <Button size="sm" disabled={pending} onClick={() => void open(true)}>
           Testar rascunho
         </Button>
       </div>

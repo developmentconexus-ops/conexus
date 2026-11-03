@@ -75,7 +75,7 @@ function stateOf(row: AgentRow, activeRevision: number | null): AgentState {
   }
 }
 
-export function summaryOf({ row, activeRevision }: Listed): AgentSummary {
+function summaryOf({ row, activeRevision }: Listed): AgentSummary {
   const draft = AgentConfig.parse(row.draft)
   return {
     id: AgentId.parse(row.id),
