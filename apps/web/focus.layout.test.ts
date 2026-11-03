@@ -3,7 +3,8 @@ import { after, before, test } from 'node:test'
 import { getSession } from '@conexus/hub-api'
 import type { Page } from 'playwright-core'
 import type { Replies, Viewport } from './layout-harness.ts'
-import { createHarness, DESKTOP, ok, PHONE, presses } from './layout-harness.ts'
+import { createHarness, DESKTOP, focusDrawn, ok, PHONE, presses } from './layout-harness.ts'
+import { CARD_STATES } from './sweep-card-states.ts'
 import { central, companies, startsOn } from './sweep-replies.ts'
 
 const SIGNED_OUT: Replies = {
@@ -148,4 +149,30 @@ test('o dourado: o enviar, ao passar o mouse, fica no cinza de destaque (surface
   await page.waitForTimeout(300)
   assert.equal(await send.evaluate((one) => getComputedStyle(one).backgroundColor), grey)
   await page.close()
+})
+
+// Step 13.3, U9 (criterion 28): the free answer of a question is the `Textarea` of `ui/`: focus on its own edge (V28), and it grows with its lines (#272).
+test('a resposta livre: o foco na própria borda e a caixa cresce em várias linhas, em 1366 e 390', async () => {
+  const [state] = CARD_STATES
+  if (!state) throw new Error('the card sweep has no state')
+  for (const viewport of [DESKTOP, PHONE]) {
+    const page = await open(state.path, viewport, state.replies)
+    await state.settle(page)
+    const other = page.getByRole('textbox', { name: 'Outra resposta' })
+    await other.scrollIntoViewIfNeeded()
+    await other.focus()
+    assert.match(
+      await focusDrawn(page),
+      /halo$/,
+      `focus is not on the field's edge at ${viewport.width}`,
+    )
+    const one = await other.evaluate((el) => el.getBoundingClientRect().height)
+    await other.fill('Linha 1\nLinha 2\nLinha 3\nLinha 4')
+    const four = await other.evaluate((el) => el.getBoundingClientRect().height)
+    assert.ok(
+      four > one + 20,
+      `the field kept ${one}px with four lines (${four}px) at ${viewport.width}`,
+    )
+    await page.close()
+  }
 })
