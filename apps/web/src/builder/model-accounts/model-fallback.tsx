@@ -5,6 +5,7 @@ import { ArrowDownIcon, ArrowUpIcon, XIcon } from 'lucide-react'
 import type { RefObject } from 'react'
 import { useEffect, useId, useRef, useState } from 'react'
 import { Button } from '../../ui/button.tsx'
+import { Card } from '../../ui/card.tsx'
 import { Field, FieldError, FieldLabel } from '../../ui/field.tsx'
 import { Label } from '../../ui/label.tsx'
 import { SettingsSection } from '../../ui/settings-section.tsx'
@@ -135,48 +136,50 @@ function ChainList(props: {
   const { chain, busy } = props
   if (chain.length === 0) return <p className="text-text-2">Nenhum modelo na fila</p>
   return (
-    <ol ref={props.box} className="flex flex-col rounded-object border border-line bg-surface">
-      {chain.map((model, index) => (
-        <li
-          key={model}
-          className="flex items-center gap-md border-line border-b px-md py-xs last:border-b-0"
-        >
-          <span className="w-4 font-mono text-fact text-text-2">{index + 1}</span>
-          <span className="min-w-0 flex-1 break-words">{modelLabel(model)}</span>
-          <span className="flex gap-sm">
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              aria-label={`Subir ${modelLabel(model)}`}
-              data-move={`${model}:up`}
-              disabled={index === 0 || busy}
-              onClick={() => props.onMove(index, 'up')}
-            >
-              <ArrowUpIcon aria-hidden="true" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              aria-label={`Descer ${modelLabel(model)}`}
-              data-move={`${model}:down`}
-              disabled={index === chain.length - 1 || busy}
-              onClick={() => props.onMove(index, 'down')}
-            >
-              <ArrowDownIcon aria-hidden="true" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              aria-label={`Tirar ${modelLabel(model)}`}
-              disabled={busy}
-              onClick={() => props.onRemove(model)}
-            >
-              <XIcon aria-hidden="true" />
-            </Button>
-          </span>
-        </li>
-      ))}
-    </ol>
+    <Card className="items-stretch gap-0 p-0">
+      <ol ref={props.box} className="flex flex-col">
+        {chain.map((model, index) => (
+          <li
+            key={model}
+            className="flex items-center gap-md border-line border-b px-md py-xs last:border-b-0"
+          >
+            <span className="w-4 font-mono text-fact text-text-2">{index + 1}</span>
+            <span className="min-w-0 flex-1 break-words">{modelLabel(model)}</span>
+            <span className="flex gap-sm">
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                aria-label={`Subir ${modelLabel(model)}`}
+                data-move={`${model}:up`}
+                disabled={index === 0 || busy}
+                onClick={() => props.onMove(index, 'up')}
+              >
+                <ArrowUpIcon aria-hidden="true" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                aria-label={`Descer ${modelLabel(model)}`}
+                data-move={`${model}:down`}
+                disabled={index === chain.length - 1 || busy}
+                onClick={() => props.onMove(index, 'down')}
+              >
+                <ArrowDownIcon aria-hidden="true" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                aria-label={`Tirar ${modelLabel(model)}`}
+                disabled={busy}
+                onClick={() => props.onRemove(model)}
+              >
+                <XIcon aria-hidden="true" />
+              </Button>
+            </span>
+          </li>
+        ))}
+      </ol>
+    </Card>
   )
 }
 

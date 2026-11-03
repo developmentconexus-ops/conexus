@@ -198,7 +198,9 @@ test('Passo 4: sem conta, o aviso do Início no lugar da caixa', async () => {
 test('Passo 4: Ir para o início sem pedir nada', async () => {
   const { conexus, projects } = home({ at: STEP_FOUR })
   fireEvent.click(await screen.findByRole('link', { name: 'Ir para o início sem pedir nada' }))
-  expect(await screen.findByRole('heading', { name: 'Pergunte ou peça um app' })).toBeTruthy()
+  expect(
+    await screen.findByRole('heading', { name: /^(Bom dia|Boa tarde|Boa noite)/ }),
+  ).toBeTruthy()
   expect(conexus.router.state.location.pathname).toBe(HOME)
   expect(projects).toHaveLength(0)
 })

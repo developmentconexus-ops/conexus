@@ -1,6 +1,7 @@
 import { ToolCallId } from '@conexus/hub-api'
 import { useId, useLayoutEffect, useRef, useState } from 'react'
 import { Button } from '../../ui/button.tsx'
+import { Card } from '../../ui/card.tsx'
 import { Dialog, DialogContent, DialogTrigger } from '../../ui/dialog.tsx'
 import { Label } from '../../ui/label.tsx'
 import { Textarea } from '../../ui/textarea.tsx'
@@ -114,10 +115,7 @@ export function PlanCard({ part }: { part: PlanCardItem }) {
   const plan = part.plan
   const waiting = part.state === 'open'
   return (
-    <section
-      aria-label={title}
-      className="flex min-w-0 flex-col gap-md rounded-card border border-line bg-surface p-md"
-    >
+    <Card role="region" aria-label={title} className="items-stretch gap-md">
       {waiting && <WaitingCaption />}
       <h3 className="font-semibold text-text">{title}</h3>
       <div
@@ -146,6 +144,6 @@ export function PlanCard({ part }: { part: PlanCardItem }) {
       ) : (
         <p className="text-text-2">{STATE_TEXT[part.state]}</p>
       )}
-    </section>
+    </Card>
   )
 }

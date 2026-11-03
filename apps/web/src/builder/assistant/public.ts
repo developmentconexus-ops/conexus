@@ -1,5 +1,7 @@
 export { AssistantChat } from './conversation.tsx'
+export { AssistantDay } from './day.tsx'
 export { ConversationGone } from './gone.tsx'
 export { AssistantHome } from './home.tsx'
 export { conversationParams, loadAssistantConversation } from './loader.ts'
 export { AssistantProject } from './project.tsx'
+export { NewConversation, SidebarConversations } from './sidebar-conversations.tsx'

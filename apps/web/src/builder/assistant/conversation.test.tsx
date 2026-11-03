@@ -1,7 +1,6 @@
-import { BUILDER_TOOL, CompanyId, WORKSPACE_TOOL } from '@conexus/hub-api'
+import { BUILDER_TOOL, WORKSPACE_TOOL } from '@conexus/hub-api'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, test } from 'vitest'
-import { COMPANY } from '../../platform/fixtures.ts'
 import { hubServer, PEDIDOS, refusal } from '../../platform/test-hub.tsx'
 import { START_NO_ACCOUNT } from '../conversation/public.ts'
 import {
@@ -11,7 +10,6 @@ import {
   updatePart,
 } from '../conversation/test-events.ts'
 import { personSaid, reachTop } from '../conversation/test-stream.tsx'
-import { assistantConversationsQuery } from './queries.ts'
 import {
   ASKED,
   assistantConversation,
@@ -24,7 +22,7 @@ import {
   toolSaid,
 } from './test-hub.tsx'
 
-// A conversation with the Assistant: the bar, the rows, the address it lives at (step 24.1, criteria 23a to 26).
+// A conversation with the Assistant: the box's row, the rows, the address it lives at (step 24.1, criteria 23a to 26).
 const server = hubServer()
 const { at } = assistantScreens(server)
 const OPEN = `${COMPANY_ROOT}/conversations/${ASKED}`
@@ -34,49 +32,65 @@ async function field() {
   return screen.findByRole('textbox', { name: 'Mensagem para o Assistente' })
 }
 
-async function barOf() {
-  const bar = await screen.findByRole('group', { name: 'Ligações da conversa' })
-  await waitFor(() => expect(within(bar).getByText('Sankhya · Vendas')).toBeTruthy())
-  return bar
+/** The tools button of the box's row, by its count. */
+async function toolsOf(name = '2 ferramentas') {
+  return screen.findByRole('button', { name })
 }
 
-async function turnOff(bar: HTMLElement, name: string) {
-  fireEvent.click(within(bar).getByRole('button', { name: 'Ajustar' }))
+async function turnOff(name: string) {
+  fireEvent.click(await screen.findByRole('button', { name: /ferramentas?$/ }))
   fireEvent.click(await screen.findByRole('switch', { name }))
 }
 
 const READ = { operation: 'sankhya.consultar', connection: 'Vendas' }
 
-describe('a barra', () => {
-  test('a conversa abre com a caixa do Assistente e a barra das ligações escolhidas', async () => {
+describe('a linha da caixa', () => {
+  test('a conversa abre com a caixa do Assistente, a memória e as ferramentas escolhidas', async () => {
     at(OPEN, { conversations: [assistantConversation()] })
     expect(await field()).toBeTruthy()
     expect(await screen.findByRole('heading', { name: 'Vendas da semana' })).toBeTruthy()
-    const bar = await barOf()
-    expect(within(bar).getByText('Sankhya · Estoque')).toBeTruthy()
+    await toolsOf()
+    expect(screen.getByRole('button', { name: /Memória da conversa/ })).toBeTruthy()
+    expect(screen.queryByRole('group', { name: 'Ligações da conversa' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Ajustar' })).toBeNull()
   })
 
-  test('tirar uma ligação da barra grava a escolha e a barra mostra o que o Hub respondeu', async () => {
+  test('o modelo da conversa aparece à direita, só para leitura', async () => {
+    at(OPEN, { conversations: [assistantConversation()] })
+    await toolsOf()
+    const model = screen.getByRole('combobox', { name: 'Modelo e raciocínio' })
+    expect(model.hasAttribute('disabled') || model.getAttribute('aria-disabled') === 'true').toBe(
+      true,
+    )
+    expect(model.textContent).toMatch(/Sonnet/)
+  })
+
+  test('tirar uma ferramenta grava a escolha e a contagem mostra o que o Hub respondeu', async () => {
     const { writes } = at(OPEN, { conversations: [assistantConversation()] })
-    const bar = await barOf()
-    await turnOff(bar, 'Sankhya · Estoque')
-    await waitFor(() => expect(within(bar).queryByText('Sankhya · Estoque')).toBeNull())
+    await toolsOf()
+    await turnOff('Sankhya · Estoque')
+    await toolsOf('1 ferramenta')
     const [put] = writes()
     expect(put?.method).toBe('PUT')
     expect(put?.path).toMatch(/\/connections$/)
     expect(put?.body).toEqual({ connections: [SALES] })
-    expect(within(bar).getByText('Sankhya · Vendas')).toBeTruthy()
+    expect(
+      screen.getByRole('switch', { name: 'Sankhya · Vendas' }).getAttribute('aria-checked'),
+    ).toBe('true')
+    expect(
+      screen.getByRole('switch', { name: 'Sankhya · Estoque' }).getAttribute('aria-checked'),
+    ).toBe('false')
   })
 
-  test('enquanto a troca viaja, a barra já mostra a escolha e as chaves esperam', async () => {
+  test('enquanto a troca viaja, a contagem já mostra a escolha e as chaves esperam', async () => {
     let release: () => void = () => undefined
     const hold = new Promise<void>((resolve) => {
       release = resolve
     })
     at(OPEN, { conversations: [assistantConversation()], answers: { hold } })
-    const bar = await barOf()
-    await turnOff(bar, 'Sankhya · Estoque')
-    await waitFor(() => expect(within(bar).queryByText('Sankhya · Estoque')).toBeNull())
+    await toolsOf()
+    await turnOff('Sankhya · Estoque')
+    await toolsOf('1 ferramenta')
     expect(
       screen.getByRole('switch', { name: 'Sankhya · Vendas' }).getAttribute('aria-disabled'),
     ).toBe('true')
@@ -86,32 +100,36 @@ describe('a barra', () => {
         screen.getByRole('switch', { name: 'Sankhya · Vendas' }).hasAttribute('disabled'),
       ).toBe(false),
     )
-    expect(within(bar).queryByText('Sankhya · Estoque')).toBeNull()
+    await toolsOf('1 ferramenta')
   })
 
-  test('o Hub recusar a troca devolve a barra à escolha de antes e diz que não confirmou', async () => {
+  test('o Hub recusar a troca devolve a contagem à escolha de antes e diz que não confirmou', async () => {
     at(OPEN, {
       conversations: [assistantConversation()],
       answers: { choose: () => refusal('DATABASE_UNAVAILABLE') },
     })
-    const bar = await barOf()
-    await turnOff(bar, 'Sankhya · Estoque')
+    await toolsOf()
+    await turnOff('Sankhya · Estoque')
     expect(await screen.findByRole('alert')).toBeTruthy()
-    await waitFor(() => expect(within(bar).getByText('Sankhya · Estoque')).toBeTruthy())
+    await toolsOf('2 ferramentas')
   })
+})
 
-  test('na conversa de um Projeto a barra oferece as ligações dele e mostra o Projeto fixo', async () => {
+describe('a pasta', () => {
+  test('na conversa de um Projeto a pasta mostra o nome dele e não abre nada', async () => {
     at(OF_PROJECT, { conversations: [assistantConversation({ projectId: PEDIDOS_ID })] })
     expect(await field()).toBeTruthy()
-    const bar = await barOf()
-    expect(await within(bar).findByText(`Projeto · ${PEDIDOS.name}`)).toBeTruthy()
-    expect(within(bar).queryByRole('combobox')).toBeNull()
+    const left = (await toolsOf()).parentElement
+    expect(await within(left ?? document.body).findByText(PEDIDOS.name)).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Projeto da conversa' })).toBeNull()
   })
 
-  test('na conversa da empresa a barra não nomeia Projeto nenhum', async () => {
+  test('na conversa da empresa a pasta fica apagada, com o nome "Conversa sem Projeto", e não abre nada', async () => {
     at(OPEN, { conversations: [assistantConversation()] })
-    const bar = await barOf()
-    expect(within(bar).queryByText(/^Projeto ·/)).toBeNull()
+    await toolsOf()
+    const folder = screen.getByRole('img', { name: 'Conversa sem Projeto' })
+    expect(folder.closest('button')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Projeto da conversa' })).toBeNull()
   })
 })
 
@@ -216,16 +234,19 @@ describe('as leituras e os comandos', () => {
   })
 })
 
-test('a conversa sumir do Hub marca as recentes para serem lidas de novo', async () => {
-  const { conexus } = at(OPEN, {
+test('a conversa sumir do Hub faz as recentes serem lidas de novo', async () => {
+  let reads = 0
+  at(OPEN, {
     conversations: [assistantConversation()],
-    answers: { stream: () => refusal('CONVERSATION_NOT_FOUND') },
+    answers: {
+      stream: () => refusal('CONVERSATION_NOT_FOUND'),
+      list: () => {
+        reads += 1
+        return undefined
+      },
+    },
   })
-  const recents = assistantConversationsQuery(CompanyId.parse(COMPANY.id), undefined, undefined)
-  await conexus.queryClient.fetchQuery(recents)
-  await waitFor(() =>
-    expect(conexus.queryClient.getQueryState(recents.queryKey)?.isInvalidated).toBe(true),
-  )
+  await waitFor(() => expect(reads).toBeGreaterThan(1))
 })
 
 describe('os comandos', () => {

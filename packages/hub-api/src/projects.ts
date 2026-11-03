@@ -21,6 +21,10 @@ export const ProjectSummary = z.object({
   id: ProjectId,
   name: z.string().min(1),
   createdAt: z.iso.datetime(),
+  /** The number of the version in the Prévia; null before its first. */
+  appVersion: z.int().positive().nullable(),
+  /** The number of the published version; null before the first Publicar. */
+  publishedVersion: z.int().positive().nullable(),
 })
 export type ProjectSummary = z.infer<typeof ProjectSummary>
 
@@ -31,10 +35,6 @@ export type ProjectSummary = z.infer<typeof ProjectSummary>
 export const Project = ProjectSummary.extend({
   mayDelete: z.boolean(),
   address: z.string().min(1).nullable(),
-  /** The number of the version in the Prévia; null before its first. */
-  appVersion: z.int().positive().nullable(),
-  /** The number of the published version; null before the first Publicar. */
-  publishedVersion: z.int().positive().nullable(),
 })
 export type Project = z.infer<typeof Project>
 

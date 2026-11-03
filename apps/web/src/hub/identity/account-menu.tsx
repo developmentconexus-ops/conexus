@@ -1,10 +1,10 @@
 import type { Person } from '@conexus/hub-api'
-import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { BuildingIcon, ChevronsUpDownIcon, LogOutIcon } from 'lucide-react'
 import { sentenceOf } from '../../platform/hub.ts'
 import { THEME_LABELS, ThemeChoice, useTheme } from '../../platform/theme.ts'
 import { Avatar, AvatarFallback } from '../../ui/avatar.tsx'
+import { cn } from '../../ui/cn.ts'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,8 +18,8 @@ import {
   DropdownMenuTrigger,
 } from '../../ui/dropdown-menu.tsx'
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from '../../ui/sidebar.tsx'
-import { companiesQuery } from './queries.ts'
 import { useSignOut } from './sign-out.ts'
+import { useCompanies } from './use-companies.ts'
 
 function initialsOf(name: string): string {
   const words = name.trim().split(/\s+/)
@@ -28,44 +28,58 @@ function initialsOf(name: string): string {
   return `${first}${last}`.toUpperCase()
 }
 
-/** The account, at the foot of the sidebar: who is in, the theme, the Central and "Sair" (W30). */
-export function AccountMenu({ person }: { person: Person }) {
+/**
+ * The account, at the foot of the sidebar: who is in, the theme, the Central and "Sair" (W30).
+ * `compact` is the rail's: the avatar alone in a 40px tile, its menu opening to the right.
+ */
+export function AccountMenu({ person, compact = false }: { person: Person; compact?: boolean }) {
   const { isMobile } = useSidebar()
   const { choice, choose } = useTheme()
   const signOut = useSignOut()
   // The installation's role comes with the company list, read once more only when it changes;
   // without the role the link is not offered.
-  const { data: companies } = useQuery({ ...companiesQuery(undefined), refetchOnMount: false })
+  const { data: companies } = useCompanies()
 
   return (
-    <SidebarMenu>
+    <SidebarMenu className={cn(compact && 'items-center')}>
       <SidebarMenuItem>
         <DropdownMenu>
           <DropdownMenuTrigger
-            render={<SidebarMenuButton size="lg" className="px-0" />}
+            render={
+              compact ? (
+                <button
+                  type="button"
+                  className="flex size-10 shrink-0 items-center justify-center rounded-control hover:bg-surface-3 data-popup-open:bg-surface-4 pointer-coarse:relative pointer-coarse:after:absolute pointer-coarse:after:top-1/2 pointer-coarse:after:left-1/2 pointer-coarse:after:size-11 pointer-coarse:after:-translate-1/2"
+                />
+              ) : (
+                <SidebarMenuButton size="lg" className="px-0" />
+              )
+            }
             aria-label={`Conta de ${person.name}`}
           >
             <Avatar className="size-8">
               <AvatarFallback>{initialsOf(person.name)}</AvatarFallback>
             </Avatar>
-            <span className="grid min-w-0 flex-1 text-left">
-              <span className="truncate text-text">{person.name}</span>
-              <span className="truncate text-fact text-text-2">{person.email}</span>
-            </span>
-            <ChevronsUpDownIcon aria-hidden="true" className="ml-auto" />
+            {!compact && (
+              <>
+                <span className="grid min-w-0 flex-1 text-left">
+                  <span className="truncate text-label text-text">{person.name}</span>
+                  <span className="truncate text-fact text-text-2">{person.email}</span>
+                </span>
+                <ChevronsUpDownIcon aria-hidden="true" className="ml-auto" />
+              </>
+            )}
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" side={isMobile ? 'top' : 'right'}>
+          <DropdownMenuContent align="end" side={isMobile && !compact ? 'top' : 'right'}>
             <DropdownMenuGroup>
               <DropdownMenuLabel>
-                <span className="truncate text-text">{person.name}</span>
+                <span className="truncate text-label text-text">{person.name}</span>
                 <span className="truncate text-label text-text-2">{person.email}</span>
               </DropdownMenuLabel>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuLabel className="text-eyebrow text-text-2 uppercase">
-                Tema
-              </DropdownMenuLabel>
+              <DropdownMenuLabel>Tema</DropdownMenuLabel>
               <DropdownMenuRadioGroup
                 value={choice}
                 onValueChange={(value: unknown) => choose(ThemeChoice.parse(value))}

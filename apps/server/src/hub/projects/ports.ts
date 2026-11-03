@@ -17,11 +17,11 @@ export type AppRemoval = {
   }): Promise<'DONE' | 'LEFT'>
 }
 
-/** The numbers of the Prévia's and the published version of a Projeto's app; null before each first. */
+/** The numbers of the Prévia's and the published version of each Projeto's app; a Projeto with no app is absent. */
 export type AppVersionsOf = (
   tx: ReadTx,
-  projectId: ProjectId,
-) => Promise<{ appVersion: number | null; publishedVersion: number | null }>
+  projectIds: readonly ProjectId[],
+) => Promise<ReadonlyMap<ProjectId, { appVersion: number | null; publishedVersion: number | null }>>
 
 /**
  * What deleting a Projeto asks of the Builder (code C4): its conversations' threads and memory go

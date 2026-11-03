@@ -8,9 +8,15 @@ import { Sheet, SheetContent } from '../../ui/sheet.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
 import { AutomationBadge, ProposalCard } from '../automations/public.ts'
 import type { OpenedFile, Room } from '../conversation/public.ts'
-import { ASSISTANT_ROOM, Chat, RoomContext, START_NO_ACCOUNT } from '../conversation/public.ts'
+import {
+  ASSISTANT_ROOM,
+  Chat,
+  ComposerModelPicker,
+  RoomContext,
+  START_NO_ACCOUNT,
+} from '../conversation/public.ts'
+import { useComposerTools } from './composer-tools.tsx'
 import { useConnectorCatalog } from './connector-names.ts'
-import { ContextBar, FixedProject } from './context-bar.tsx'
 import { FilePanel } from './file.tsx'
 import { Propose } from './propose.tsx'
 import { assistantConversationQuery } from './queries.ts'
@@ -98,7 +104,7 @@ function useAssistantRoom(held: {
 }
 
 function Conversation(props: Props) {
-  const { companyId, conversationId, projectId } = props
+  const { companyId, conversationId } = props
   const queryClient = useQueryClient()
   const { conversation } = useSuspenseQuery(
     assistantConversationQuery(companyId, conversationId),
@@ -107,6 +113,7 @@ function Conversation(props: Props) {
   const phone = useIsMobile()
   const [proposal, setProposal] = useState<string>()
   const room = useAssistantRoom({ companyId, conversation, file, setFile, setProposal })
+  const tools = useComposerTools({ kind: 'CONVERSATION', companyId, conversation })
   return (
     <RoomContext.Provider value={room}>
       <div className="flex h-full min-h-0 flex-col">
@@ -122,7 +129,7 @@ function Conversation(props: Props) {
             fileName={file?.name}
             onCloseFile={() => setFile(undefined)}
             chat={
-              <div className="flex h-full min-h-0 flex-col bg-canvas">
+              <div className="flex h-full min-h-0 flex-col bg-surface">
                 <Chat
                   companyId={companyId}
                   conversationId={conversationId}
@@ -135,20 +142,16 @@ function Conversation(props: Props) {
                   }
                   empty={EMPTY_ASSISTANT}
                   noAccount={START_NO_ACCOUNT}
-                  bar={
-                    <div className="px-md pb-sm">
-                      <ContextBar
-                        companyId={companyId}
-                        projectId={projectId}
-                        conversation={conversation}
-                        trailing={
-                          projectId !== undefined && (
-                            <FixedProject companyId={companyId} projectId={projectId} />
-                          )
-                        }
-                      />
-                    </div>
-                  }
+                  tools={tools}
+                  picker={({ session, providers }) => (
+                    <ComposerModelPicker
+                      providers={providers}
+                      value={session}
+                      heading="Modelo desta conversa"
+                      disabled
+                      onChange={() => undefined}
+                    />
+                  )}
                 />
               </div>
             }
@@ -173,7 +176,7 @@ function Conversation(props: Props) {
 
 /**
  * A conversation with the Assistant (criteria 24 to 27): the Builder's transcript and box over the
- * Assistant's session, its bar of connections above the box and the file it showed beside. A
+ * Assistant's session, its folder and tools in the box's row and the file it showed beside. A
  * conversation lives at one address, its Projeto's or the company's: the loader finds the other not found.
  */
 export function AssistantChat(props: Props) {

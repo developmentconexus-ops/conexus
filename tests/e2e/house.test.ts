@@ -94,8 +94,6 @@ async function home(page: Page) {
   await sidebarOf(page).getByRole('link', { name: 'Construir', exact: true }).waitFor()
   await openHome(page)
   await page.getByRole('button', { name: 'Recolher a barra lateral' }).waitFor()
-  await bar.getByText('Projetos recentes').waitFor()
-  await bar.getByRole('link', { name: 'Encomendas' }).waitFor()
   await page
     .getByRole('main')
     .getByRole('link', { name: /Encomendas/ })
