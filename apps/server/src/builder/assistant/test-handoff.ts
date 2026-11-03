@@ -229,5 +229,13 @@ export async function verdictOf(
     const figure = figuresFromReads(content, parts)
     if (figure !== undefined) wrong.push(`the briefing carries the figure ${figure}`)
   }
-  return wrong.map((why) => `case ${each.n}: ${why}\n${textOf(parts)}`)
+  const called = parts.flatMap((part) => {
+    const call = Object(part).toolInvocation
+    return part.type === 'tool-invocation' && typeof call?.toolName === 'string'
+      ? [call.toolName]
+      : []
+  })
+  return wrong.map(
+    (why) => `case ${each.n}: ${why}\ntools, in order: ${called.join(', ')}\n${textOf(parts)}`,
+  )
 }
