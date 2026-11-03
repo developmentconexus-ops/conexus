@@ -5,6 +5,7 @@ import { setTimeout as sleep } from 'node:timers/promises'
 import { ASSISTANT_TOOL, ProposedApp } from '@conexus/hub-api'
 import type { MastraMessagePart } from '@mastra/core/agent-controller'
 import { checks } from '@mastra/evals/checks'
+import { z } from 'zod'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import { post } from '../../hub/identity/test-hub.ts'
 import { runsOf } from '../automations/test-automations.ts'
@@ -32,7 +33,7 @@ type HandOffCase = {
   turns: readonly string[]
   called?: readonly string[]
   notCalled?: readonly string[]
-  /** A hand-off called at most once over all the turns: no loop. */
+  /** A hand-off accepted at most once over all the turns: no loop; a refused call does not count. */
   atMostOnce?: string
   /** The briefing of the case's proposal exists, is not empty and carries no figure of the reads. */
   briefed?: boolean
@@ -108,6 +109,8 @@ export const HAND_OFF_CASES: readonly HandOffCase[] = [
     notCalled: [CHANGE],
     held: true,
   },
+  // The code offers neither hand-off in an automation's run, so this case is the end-to-end
+  // regression of that, not a decision of the model.
   {
     n: 13,
     place: 'AUTOMATION',
@@ -117,9 +120,11 @@ export const HAND_OFF_CASES: readonly HandOffCase[] = [
   },
 ]
 
-/** Which half runs: `tuning` while the texts are adjusted, `held-out` at the end, or `all`. */
-// biome-ignore lint/style/noProcessEnv: the choice of the opt-in case's half, not the app's configuration
-export const EVAL_SET = process.env.CONEXUS_EVAL_SET ?? 'tuning'
+/** Which half runs: `tuning` while the texts are adjusted, `held-out` at the end, or `all`; another word throws. */
+export const EVAL_SET = z
+  .enum(['tuning', 'held-out', 'all'])
+  // biome-ignore lint/style/noProcessEnv: the choice of the opt-in case's half, not the app's configuration
+  .parse(process.env.CONEXUS_EVAL_SET ?? 'tuning')
 export const ROUNDS = 3
 const RUN_WAIT_MS = 600_000
 
@@ -136,6 +141,19 @@ function resultsOf(parts: MastraMessagePart[], name: string): unknown[] {
     return part.type === 'tool-invocation' && call?.toolName === name ? [call.result] : []
   })
 }
+
+/**
+ * The proposals the tool accepted, each with its briefing: a call Mastra or the tool refused is no
+ * hand-off.
+ */
+function acceptedOf(parts: MastraMessagePart[], name: string) {
+  return resultsOf(parts, name).flatMap((result) => {
+    const proposal = ProposedApp.safeParse(result)
+    return proposal.success && proposal.data.briefing !== undefined ? [proposal.data] : []
+  })
+}
+
+const HAND_OFFS: readonly string[] = [APP, CHANGE]
 
 /** An automation of the company with the case's prompt, run by hand, and its conversation once the run ended. */
 async function automationConversation(on: Subscribed, prompt: string): Promise<string> {
@@ -169,16 +187,20 @@ export async function verdictOf(
   each: HandOffCase,
 ): Promise<string[]> {
   let url: string
+  const ended: string[] = []
   if (each.place === 'AUTOMATION') {
     url = await automationConversation(on, each.turns[0] ?? '')
   } else {
     const place = each.place === 'PROJECT' ? { projectId: on.projectId } : {}
     url = await created(on.hub, on.ana, on.assistant, { ...place, connections: [on.matriz] })
     const { say } = await talking(t, on.hub, on.ana, url)
-    for (const turn of each.turns) assert.equal(endOf(await say(turn)), 'complete')
+    for (const [at, turn] of each.turns.entries()) {
+      const end = endOf(await say(turn))
+      if (end !== 'complete') ended.push(`turn ${at + 1} ended ${end}`)
+    }
   }
   const parts = await answeredParts(on.hub, on.ana, url)
-  const wrong: string[] = []
+  const wrong: string[] = [...ended]
   const expected = [
     ...(each.called ?? []).map((name) => ({
       why: `did not call ${name}`,
@@ -194,11 +216,14 @@ export async function verdictOf(
     expected.map((one) => one.check),
   )
   wrong.push(...expected.filter((_, at) => scores[at] !== 1).map((one) => one.why))
-  if (each.atMostOnce !== undefined && resultsOf(parts, each.atMostOnce).length > 1) {
-    wrong.push(`called ${each.atMostOnce} more than once`)
+  for (const name of (each.called ?? []).filter((one) => HAND_OFFS.includes(one))) {
+    if (acceptedOf(parts, name).length === 0) wrong.push(`no accepted ${name} with a briefing`)
+  }
+  if (each.atMostOnce !== undefined && acceptedOf(parts, each.atMostOnce).length > 1) {
+    wrong.push(`proposed ${each.atMostOnce} more than once`)
   }
   if (each.briefed === true) {
-    const [proposal] = resultsOf(parts, APP).map((result) => ProposedApp.safeParse(result).data)
+    const [proposal] = acceptedOf(parts, APP)
     const content = proposal?.briefing?.content ?? ''
     if (content.trim() === '') wrong.push('no briefing with the proposal')
     const figure = figuresFromReads(content, parts)

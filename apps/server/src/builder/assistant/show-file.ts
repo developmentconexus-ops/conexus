@@ -93,11 +93,13 @@ export function showFileTool(machines: Pick<AssistantMachines, 'folder' | 'servi
         throw error
       }
     },
-    // Only the path or the refusal, whatever else the output holds; an output of another shape
-    // throws.
+    // Only the path or the refusal, whatever else the output holds. Mastra's own refusal of the
+    // input is of another shape and reaches the model as Mastra wrote it.
     toModelOutput: (output) => {
-      const shown = ToModel.parse(output)
-      return { type: 'json', value: shown.kind === 'SHOW_REFUSED' ? shown : { shown: shown.path } }
+      const shown = ToModel.safeParse(output)
+      if (!shown.success) return undefined
+      const value = shown.data.kind === 'SHOW_REFUSED' ? shown.data : { shown: shown.data.path }
+      return { type: 'json', value }
     },
   })
 }

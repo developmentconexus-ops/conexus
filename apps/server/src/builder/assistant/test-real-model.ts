@@ -17,6 +17,7 @@ import {
   post,
 } from '../../hub/identity/test-hub.ts'
 import { MODEL } from '../conversation/test-conversation.ts'
+import { publishedApp } from './test-assistant.ts'
 
 /** The question of the step 24.1 script, over the double's data. */
 export const QUESTION = 'Quanto a Padaria Sol vendeu em setembro por vendedor?'
@@ -99,6 +100,8 @@ export async function subscribed(t: TestContext, folder: string) {
   }
   const projected = await post(hub, ana, `${company}/projects`, { name: 'Vendas' })
   const projectId = String(Object(projected.json()).project.id)
+  // Cases 11 and 12 talk about the Projeto's app, so it has one.
+  await publishedApp(hub, { companyId, projectId, personId: ana.id })
   const grant = `${company}/projects/${projectId}/connections/${ids[0]}`
   assert.equal((await call(hub, ana, 'PUT', grant)).statusCode, 200)
   return {

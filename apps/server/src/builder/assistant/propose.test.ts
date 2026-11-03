@@ -78,6 +78,17 @@ test('as recusas do briefing: inexistente, fora da pasta, que não é texto, ou 
   for (const reason of reasons) assert.match(read, new RegExp(`"reason":"${reason}"`))
 })
 
+test('a entrada que o Mastra recusa: um propose_app sem briefing termina a volta, e o modelo lê a recusa do Mastra para chamar de novo', async (t) => {
+  const on = await assisting(t, [
+    [tool(APP, { summary: SUMMARY })],
+    [said('Vou escrever o briefing.')],
+  ])
+  const url = await created(on.hub, on.ana, on.assistant, { connections: [] })
+  const { say } = await talking(t, on.hub, on.ana, url)
+  assert.equal(endOf(await say('Quero um app')), 'complete')
+  assert.match(on.calls.at(-1)?.texts.join('\n') ?? '', /validation failed for propose_app/i)
+})
+
 test('a mudança no Projeto: o propose_app_change guarda o resumo e o briefing como o propose_app', async (t) => {
   const on = await assisting(t, [
     [write('mudanca.md', BRIEFING)],

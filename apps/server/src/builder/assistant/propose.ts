@@ -21,14 +21,14 @@ function refused(reason: ProposeRefused['reason']): ProposeRefused {
   return { kind: 'PROPOSE_REFUSED', reason }
 }
 
-type Machines = Pick<AssistantMachines, 'folder' | 'serving'>
+type Machines = Pick<AssistantMachines, 'serving'>
 
 /**
  * The two hand-offs to the Builder (step 24.3.2), one per place, so the model never chooses
  * between them: each says when to call it and when not, and what the person then sees.
  */
-function handOffs(folder: string) {
-  const notFor = `Do not call it for a question, a table, a chart or a file, which you answer yourself, nor for a request that repeats at a time, which is propose_automation. Before calling, write the briefing as a Markdown file in ${folder}.`
+function handOffs() {
+  const notFor = `Do not call it for a question, a table, a chart or a file, which you answer yourself, nor for a request that repeats at a time, which is propose_automation. Before calling, write the briefing as a Markdown file among your files.`
   return {
     app: {
       id: ASSISTANT_TOOL.proposeApp,
@@ -78,7 +78,7 @@ async function briefingOf(
  * call, is what the screen's button sends. The model reads only what happens next, or the refusal.
  */
 export function proposeTools(machines: Machines) {
-  const offs = handOffs(machines.folder)
+  const offs = handOffs()
   function proposeTool(off: (typeof offs)[keyof typeof offs]) {
     return createTool({
       id: off.id,
@@ -88,10 +88,13 @@ export function proposeTools(machines: Machines) {
         const briefing = await briefingOf(machines, requestContext, input.briefing)
         return 'kind' in briefing ? briefing : { summary: input.summary, briefing }
       },
-      // Only what happens next, or the refusal; an output of another shape throws.
+      // Only what happens next, or the refusal. Mastra's own refusal of the input is of another
+      // shape and reaches the model as Mastra wrote it.
       toModelOutput: (output) => {
-        const said = ToModel.parse(output)
-        return { type: 'json', value: 'kind' in said ? said : { proposed: true, next: off.next } }
+        const said = ToModel.safeParse(output)
+        if (!said.success) return undefined
+        const value = 'kind' in said.data ? said.data : { proposed: true, next: off.next }
+        return { type: 'json', value }
       },
     })
   }
