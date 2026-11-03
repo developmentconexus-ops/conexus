@@ -164,6 +164,26 @@ test('reconhece o cartão e131 como etapa 13.1', () => {
   assert.equal(run(dir).status, 0)
 })
 
+test('reconhece o cartão e2432 como etapa 24.3.2, sem confundir com a 24.32 nem com a 24.3', () => {
+  const { dir, sha } = decimalCardRepository('e2432-x.md')
+  for (const wrong of ['24.32', '24.3']) {
+    write(
+      dir,
+      'docs/approvals.md',
+      `Cartão da etapa ${wrong} aprovado em 2026-11-03 (commit ${sha}): "Aprovo"\n`,
+    )
+    git(dir, 'commit', '-qam', `approval of ${wrong}`)
+    assert.equal(run(dir).status, 1, wrong)
+  }
+  write(
+    dir,
+    'docs/approvals.md',
+    `Cartão da etapa 24.3.2 aprovado em 2026-11-03 (commit ${sha}): "Aprovo"\n`,
+  )
+  git(dir, 'commit', '-qam', 'approval of 24.3.2')
+  assert.equal(run(dir).status, 0)
+})
+
 test('o cartão e12 continua sendo a etapa 12', () => {
   const { dir, sha } = decimalCardRepository('e12-x.md')
   write(
