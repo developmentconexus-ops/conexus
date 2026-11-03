@@ -1,3 +1,4 @@
+export { BuilderTurn } from './builder-turn.tsx'
 export { Chat } from './chat.tsx'
 export type { ComposerTools } from './composer.tsx'
 export { COMPOSER_SOFT } from './composer.tsx'
