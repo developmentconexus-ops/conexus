@@ -47,7 +47,10 @@ test('criar: 201 com o rascunho e os padrões; a mesma chave e o mesmo corpo dã
     agent.offered.map((each) => each.connectionId),
     [on.matriz],
   )
-  assert.equal(agent.offered[0]?.reads.find((read) => read.operation === 'pedidos')?.label, 'Pedidos')
+  assert.equal(
+    agent.offered[0]?.reads.find((read) => read.operation === 'pedidos')?.label,
+    'Pedidos',
+  )
   const other = await post(on.hub, on.ana, on.agents, { name: 'Outro' }, key)
   assert.equal(other.statusCode, 409, other.body)
   assert.equal(codeOf(other), 'IDEMPOTENCY_CONFLICT')
