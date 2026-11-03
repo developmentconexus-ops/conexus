@@ -6,6 +6,7 @@ import {
   getProject,
   getSession,
   getStatus,
+  listAgents,
   listAssistantConnections,
   listAssistantConversations,
   listAutomations,
@@ -123,12 +124,13 @@ function companyPage(
       conversations: [],
       next: { kind: 'END' },
     }),
-    // The frame's bell reads the person's notifications on every page, and Automações their automations.
+    // The frame's bell reads the person's notifications on every page, Automações their automations and the Agentes link preloads its list.
     [`GET /api/companies/${id}/notifications`]: ok(listNotifications, {
       notifications: [],
       unread: 0,
       next: { kind: 'END' },
     }),
+    [`GET /api/companies/${id}/agents`]: ok(listAgents, { agents: [] }),
     [`GET /api/companies/${id}/automations`]: ok(listAutomations, { automations: [] }),
     [`GET /api/companies/${id}`]: ok(getCompany, { company, role, mayInviteAs }),
     [`GET /api/companies/${id}/members`]: ok(listMembers, {
