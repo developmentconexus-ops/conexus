@@ -88,10 +88,10 @@ export function Transcript(props: {
       <EndOnSent last={turns.at(-1)?.key} />
       <LoadOlderAtStart older={older} />
       <MessageScroller>
-        <MessageScrollerViewport aria-label="Rolagem da conversa" className="px-md pt-md">
+        <MessageScrollerViewport aria-label="Rolagem da conversa" className="pt-md">
           <MessageScrollerContent
             aria-label={`Conversa com o ${agent}`}
-            className="pb-xl"
+            className="axis px-md pb-xl"
             aria-live="polite"
             aria-busy={turns.at(-1)?.streaming === true}
           >

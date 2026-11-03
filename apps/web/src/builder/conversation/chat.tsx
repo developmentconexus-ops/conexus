@@ -223,7 +223,7 @@ export function Chat(props: ChatProps) {
         empty={empty ? props.empty : undefined}
         noAccount={props.noAccount}
       />
-      <div className="axis min-h-24 flex-1 md:min-h-40">
+      <div className="min-h-24 flex-1 md:min-h-40">
         <Transcript
           turns={turns}
           steers={state.steers}
@@ -236,12 +236,16 @@ export function Chat(props: ChatProps) {
         />
       </div>
       {error !== undefined && (
-        <Alert tone="danger" className="px-md">
-          {error}
-        </Alert>
+        <div className="axis">
+          <Alert tone="danger" className="px-md">
+            {error}
+          </Alert>
+        </div>
       )}
       {(state.running || waiting) && !(phone && waiting) && (
-        <WorkingLine startedAt={state.startedAt} heard={state.messages} waiting={waiting} />
+        <div className="axis">
+          <WorkingLine startedAt={state.startedAt} heard={state.messages} waiting={waiting} />
+        </div>
       )}
       <ChatComposer
         chat={props}

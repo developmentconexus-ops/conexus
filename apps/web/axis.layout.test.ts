@@ -1,10 +1,21 @@
 import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
-import { listAssistantConnections, listAssistantConversations } from '@conexus/hub-api'
+import {
+  ASSISTANT_CONTROLLER,
+  listAssistantConnections,
+  listAssistantConversations,
+} from '@conexus/hub-api'
 import { createHarness, DESKTOP, ok, PHONE } from './layout-harness.ts'
+import { AgentStart, recordedEvent } from './src/builder/conversation/test-recorded.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
-import { ASSISTANT_PATH, ASSISTANT_REPLIES } from './sweep-assistant-states.ts'
+import {
+  ASSISTANT_ID,
+  ASSISTANT_MESSAGES,
+  ASSISTANT_PATH,
+  ASSISTANT_REPLIES,
+} from './sweep-assistant-states.ts'
 import { OWNER, PROJECT_ID, projectsPage, startsOn } from './sweep-replies.ts'
+import { sessionReplies } from './sweep-session.ts'
 
 // The axis of a conversation and the labels of the lists beside it, in a real browser (step 13.3, V59 and V61).
 const harness = createHarness(import.meta.dirname)
@@ -113,5 +124,49 @@ for (const viewport of [DESKTOP, PHONE])
       'the badge leaves the row',
     )
     assert.ok(tag.x + tag.width <= line.x + line.width, 'the badge leaves the row sideways')
+    await page.close()
+  })
+
+const WIDE = { width: 1800, height: 900 }
+
+// The scrollbar belongs to the window's edge and the working line to the box (founder, 2026-11-03).
+for (const viewport of [DESKTOP, WIDE, PHONE])
+  test(`na conversa em andamento a rolagem vai à borda e "trabalhando" alinha com a caixa a ${viewport.width}`, async () => {
+    const page = await harness.open(ASSISTANT_PATH, {
+      viewport,
+      replies: {
+        ...ASSISTANT_REPLIES,
+        ...sessionReplies(ASSISTANT_ID, {
+          controller: ASSISTANT_CONTROLLER,
+          messages: ASSISTANT_MESSAGES,
+          display: { isRunning: true },
+          events: [recordedEvent('abort', AgentStart)],
+        }),
+      },
+    })
+    const scroller = page.getByLabel('Rolagem da conversa')
+    const working = page.getByRole('status').filter({ hasText: 'trabalhando' })
+    const form = page.locator('form').filter({ has: page.getByLabel('Mensagem') })
+    await working.waitFor()
+    const [scroll, line, box, log] = await Promise.all([
+      scroller.boundingBox(),
+      working.locator('svg').first().boundingBox(),
+      form.boundingBox(),
+      page.getByRole('log', { name: /^Conversa com o / }).boundingBox(),
+    ])
+    assert.ok(scroll && line && box && log, 'the conversation is not laid out')
+    assert.equal(
+      Math.round(scroll.x + scroll.width),
+      viewport.width,
+      'the scrollbar is not at the window edge',
+    )
+    assert.ok(
+      Math.abs(log.x + log.width / 2 - (scroll.x + scroll.width / 2)) <= 1,
+      'the column of messages is not centred',
+    )
+    assert.ok(
+      Math.abs(line.x - box.x) <= 1,
+      `the working line starts at ${line.x}, the box at ${box.x}`,
+    )
     await page.close()
   })
