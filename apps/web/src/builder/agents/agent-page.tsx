@@ -8,6 +8,7 @@ import { useAttemptKey } from '../../platform/attempt-key.ts'
 import { writeFailureText } from '../../platform/hub.ts'
 import { AlertDialog, AlertDialogContent } from '../../ui/alert-dialog.tsx'
 import { Button } from '../../ui/button.tsx'
+import { Dialog, DialogContent } from '../../ui/dialog.tsx'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,7 +35,6 @@ import {
   UNCONFIRMED_CREATION,
   UNCONFIRMED_DELETE,
 } from './text.ts'
-import { useDraftSave } from './use-draft-save.ts'
 import { Versions } from './versions.tsx'
 
 type Scope = { companyId: CompanyId; projectId: ProjectId }
@@ -165,6 +165,7 @@ function ConfirmDelete(props: {
 function Header(props: { scope: Scope; agent: AgentDetail; phone: boolean }) {
   const { scope, agent, phone } = props
   const [confirming, setConfirming] = useState(false)
+  const [versions, setVersions] = useState(false)
   return (
     <header className="flex flex-wrap items-center justify-between gap-sm border-b border-line px-md py-sm">
       <div className="flex min-w-0 flex-col">
@@ -191,6 +192,7 @@ function Header(props: { scope: Scope; agent: AgentDetail; phone: boolean }) {
               <MoreHorizontalIcon aria-hidden="true" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setVersions(true)}>Versões</DropdownMenuItem>
               <DropdownMenuItem className="text-danger" onClick={() => setConfirming(true)}>
                 Apagar
               </DropdownMenuItem>
@@ -203,6 +205,13 @@ function Header(props: { scope: Scope; agent: AgentDetail; phone: boolean }) {
         )}
       </div>
       <ConfirmDelete scope={scope} agent={agent} open={confirming} onOpenChange={setConfirming} />
+      {phone && (
+        <Dialog open={versions} onOpenChange={setVersions}>
+          <DialogContent title={agent.name}>
+            <Versions {...scope} agentId={agent.id} />
+          </DialogContent>
+        </Dialog>
+      )}
     </header>
   )
 }
@@ -212,7 +221,7 @@ function Header(props: { scope: Scope; agent: AgentDetail; phone: boolean }) {
  * (conversations, conversation, configuration) over our own pieces: the person's conversations
  * with it on the left, the conversation in the middle (`children`, the route's outlet) and the
  * editable configuration on the right, with **Publicar** and **Versões**. On a phone the columns
- * are two tabs, **Conversas** and **Configuração**.
+ * are two tabs, **Conversas** and **Configuração**, and **Versões** goes to the **⋯** menu.
  */
 export function AgentPage(props: {
   companyId: CompanyId
@@ -225,12 +234,11 @@ export function AgentPage(props: {
   const { companyId, projectId, agentId } = props
   const scope = { companyId, projectId }
   const { agent } = useSuspenseQuery(agentQuery(scope, agentId)).data
-  const saving = useDraftSave(scope, agent)
   const phone = useIsMobile()
   const config = (
     <div className="px-md pb-xl">
-      <ConfigPanel scope={scope} agent={agent} saving={saving} />
-      <Versions companyId={companyId} projectId={projectId} agentId={agentId} />
+      <ConfigPanel scope={scope} agent={agent} />
+      {!phone && <Versions companyId={companyId} projectId={projectId} agentId={agentId} />}
     </div>
   )
   const conversations = <Conversations scope={scope} agent={agent} openId={props.conversationId} />

@@ -3,7 +3,7 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { getRouteApi, Link, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useAttemptKey } from '../../platform/attempt-key.ts'
-import { sentenceOf, writeFailureText } from '../../platform/hub.ts'
+import { HubFailure, sentenceOf, writeFailureText } from '../../platform/hub.ts'
 import { cn } from '../../ui/cn.ts'
 import { PageTitle } from '../../ui/list.tsx'
 import { Skeleton } from '../../ui/skeleton.tsx'
@@ -21,6 +21,7 @@ import {
   usePicked,
 } from '../conversation/public.ts'
 import { agentsQuery, construtorConversationsQuery, sendConstrutorConversation } from './queries.ts'
+import { AREA_FRAME } from './route-states.tsx'
 import {
   AREA_TITLE,
   CONSTRUTOR_EXAMPLES,
@@ -45,8 +46,10 @@ function Ask({ companyId, projectId }: Scope) {
   const navigate = useNavigate()
   const create = useMutation(sendConstrutorConversation)
   const attempt = useAttemptKey()
-  const [error, setError] = useState<string>()
-  if (picked === null) return <StartWithoutAccount companyId={companyId} />
+  const [error, setError] = useState<unknown>()
+  // The Hub, too, can find no account for the person's model: the same notice, with the way to the accounts.
+  const noAccount = error instanceof HubFailure && error.code === 'MODEL_NO_ACCOUNT'
+  if (picked === null || noAccount) return <StartWithoutAccount companyId={companyId} />
 
   async function begin(question: {
     content: string
@@ -65,7 +68,7 @@ function Ask({ companyId, projectId }: Scope) {
       })
       return true
     } catch (failure) {
-      setError(writeFailureText(failure, UNCONFIRMED_CREATION))
+      setError(failure)
       return false
     }
   }
@@ -81,7 +84,7 @@ function Ask({ companyId, projectId }: Scope) {
         notice={
           error !== undefined && (
             <p role="alert" className="text-danger">
-              {error}
+              {writeFailureText(error, UNCONFIRMED_CREATION)}
             </p>
           )
         }
@@ -174,7 +177,7 @@ export function AgentsArea(props: Scope) {
     </div>
   )
   return (
-    <div className="mx-auto flex min-h-0 w-full max-w-page flex-1 flex-col gap-lg overflow-y-auto p-xl">
+    <div className={AREA_FRAME}>
       <PageTitle>{AREA_TITLE}</PageTitle>
       {phone ? (
         <Tabs defaultValue="construtor">

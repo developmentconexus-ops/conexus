@@ -14,7 +14,8 @@ import { reasonText } from './text.ts'
 type Refusal = { field: string | undefined; reason: string | undefined }
 type Local = { field: string; text: string }
 
-const SELECT = 'h-9 w-full rounded-control border border-line bg-surface px-sm'
+const SELECT =
+  'h-9 w-full rounded-control border border-line bg-surface px-sm text-base md:text-body'
 
 /** The fixed values the person typed, read as the contract reads them; what is not JSON says so. */
 function boundOf(text: string) {
