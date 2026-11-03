@@ -57,32 +57,35 @@ test('um botão só: Parar com a caixa vazia, Enviar com texto, e o foco volta a
   await waitFor(() => expect(sent.at(-1)?.path).toMatch(/\/abort$/))
 })
 
-async function expectStatusLineAndButtonsInTheBox() {
+/** The row's order, left to right: **+**, then the model, the memory, the microphone and the round button (the card of 13.3, criterion 13). */
+async function expectTheRowsOrder() {
   const { field } = await openConversation(conversationOf({ id: FIRST }))
   const form = field.closest('form')
   const row = form?.querySelector('[data-slot="input-group-addon"]')
   expect(form?.querySelectorAll('[data-slot="input-group-addon"]')).toHaveLength(1)
-  const ring = screen.getByRole('button', { name: /Memória da conversa/ })
-  const picker = screen.getByRole('combobox', PICKER)
-  const status = ring.parentElement
-  expect(row?.contains(status)).toBe(true)
-  expect(status?.contains(picker)).toBe(true)
-  const buttons = screen.getByRole('button', { name: 'Enviar' }).parentElement
-  expect(row?.contains(buttons)).toBe(true)
-  expect(buttons?.contains(status)).toBe(false)
+  const names = [...(row?.querySelectorAll('button, [role="combobox"]') ?? [])].map(
+    (one) => one.getAttribute('aria-label') ?? '',
+  )
+  const order = ['Anexar arquivos', 'Modelo e raciocínio', 'Memória da conversa', 'Enviar'].map(
+    (name) => names.findIndex((one) => one.startsWith(name)),
+  )
+  expect(order.every((at) => at >= 0)).toBe(true)
+  expect(order).toEqual([...order].sort((a, b) => a - b))
+  const send = screen.getByRole('button', { name: 'Enviar' })
+  expect(row?.contains(screen.getByRole('combobox', PICKER))).toBe(true)
+  expect(send.parentElement?.contains(screen.getByRole('combobox', PICKER))).toBe(true)
   expect(
-    [...(buttons?.querySelectorAll('button') ?? [])].map((one) => one.getAttribute('aria-label')),
-  ).not.toContain('Modelo e raciocínio')
-  expect(status?.nextElementSibling).toBe(buttons)
+    send.parentElement?.contains(screen.getByRole('button', { name: 'Anexar arquivos' })),
+  ).toBe(false)
 }
 
 test(
-  'no computador, a linha de ações da caixa tem a memória e o modelo à esquerda e +, microfone e enviar à direita',
-  expectStatusLineAndButtonsInTheBox,
+  'no computador, a linha da caixa vai de + a enviar: modelo, memória, microfone, enviar à direita',
+  expectTheRowsOrder,
 )
 
-test('no celular, a linha de ações da caixa tem a memória e o modelo à esquerda e +, microfone e enviar à direita', () =>
-  onPhone(expectStatusLineAndButtonsInTheBox))
+test('no celular, a linha da caixa vai de + a enviar na mesma ordem', () =>
+  onPhone(expectTheRowsOrder))
 
 test('sem a prop, a caixa diz Escreva sua mensagem', async () => {
   const { field } = await openConversation(conversationOf({ id: FIRST }))
