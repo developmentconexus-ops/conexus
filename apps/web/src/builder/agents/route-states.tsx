@@ -1,26 +1,23 @@
+import { cn } from '../../ui/cn.ts'
 import { PageTitle } from '../../ui/list.tsx'
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { RouteReadFailure } from '../../ui/states.tsx'
+import { START_COLUMN } from '../conversation/public.ts'
 import { AREA_TITLE } from './text.ts'
 
 /** The frame of the area's page, which its loading and its failure keep too (web W34). */
 export const AREA_FRAME =
   'mx-auto flex min-h-0 w-full max-w-page flex-1 flex-col gap-lg overflow-y-auto p-xl'
 
-/** The area while its reads are on the way: the conversations and the list in skeleton. */
+/** The area while its reads are on the way: the box, the agents and the conversations in skeleton. */
 export function AreaPending() {
   return (
     <div role="status" aria-label="Carregando" className={AREA_FRAME}>
       <PageTitle>{AREA_TITLE}</PageTitle>
-      <div className="grid items-start gap-xl md:grid-cols-[minmax(0,1fr)_22rem]">
-        <div className="flex flex-col gap-md">
-          <Skeleton className="h-28 w-full rounded-composer" />
-          <Skeleton className="h-16 w-full" />
-        </div>
-        <div className="flex flex-col gap-sm">
-          <Skeleton className="h-7 w-48" />
-          <Skeleton className="h-20 w-full" />
-        </div>
+      <div className={cn(START_COLUMN, 'gap-lg')}>
+        <Skeleton className="h-28 w-full rounded-composer" />
+        <Skeleton className="h-20 w-full" />
+        <Skeleton className="h-16 w-full" />
       </div>
     </div>
   )

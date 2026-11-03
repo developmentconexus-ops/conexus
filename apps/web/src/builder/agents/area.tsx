@@ -1,6 +1,7 @@
-import type { AgentSummary, CompanyId, ProjectId } from '@conexus/hub-api'
+import type { AgentListed, CompanyId, ProjectId } from '@conexus/hub-api'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { getRouteApi, Link, useNavigate } from '@tanstack/react-router'
+import { BotIcon } from 'lucide-react'
 import { useState } from 'react'
 import { useAttemptKey } from '../../platform/attempt-key.ts'
 import { HubFailure, sentenceOf, writeFailureText } from '../../platform/hub.ts'
@@ -9,8 +10,6 @@ import { cn } from '../../ui/cn.ts'
 import { PageTitle } from '../../ui/list.tsx'
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { ReadFailure } from '../../ui/states.tsx'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs.tsx'
-import { useIsMobile } from '../../ui/use-mobile.ts'
 import { FixedProjectChip } from '../assistant/public.ts'
 import {
   agentRoom,
@@ -19,6 +18,7 @@ import {
   StartBox,
   StartWithoutAccount,
   stashHandoffFiles,
+  toolsText,
   useDraft,
   usePicked,
 } from '../conversation/public.ts'
@@ -128,7 +128,7 @@ function Earlier(scope: Scope) {
   )
 }
 
-function AgentRow({ scope, agent }: { scope: Scope; agent: AgentSummary }) {
+function AgentRow({ scope, agent }: { scope: Scope; agent: AgentListed }) {
   return (
     <li>
       <Link
@@ -136,7 +136,12 @@ function AgentRow({ scope, agent }: { scope: Scope; agent: AgentSummary }) {
         params={{ ...scope, agentId: agent.id }}
         className={`${blockRow} hover:bg-surface-3`}
       >
-        <span className="min-w-0 flex-1 truncate">{agent.name}</span>
+        <BotIcon aria-hidden="true" className="size-4 shrink-0 text-text-2" />
+        <span className="max-w-[45%] shrink-0 truncate">{agent.name}</span>
+        <span className="hidden min-w-0 flex-1 truncate text-text-2 sm:inline">
+          {agent.description}
+        </span>
+        <span className="ml-auto shrink-0 text-fact text-text-2">{toolsText(agent.tools)}</span>
         <StateStamp state={agent.state} />
       </Link>
     </li>
@@ -162,42 +167,23 @@ function AgentList(scope: Scope) {
 }
 
 /**
- * **Agentes** of a Projeto (step 24.3, U5, criterion 26, the founder's 1A and 2A): the box that
- * begins a conversation with the Construtor, the earlier ones, and the Projeto's agents with their
- * state. On a phone the two are tabs, **Construtor** and **Agentes**. The Hub refuses a member's
+ * **Agentes** of a Projeto (step 24.3, U5, criterion 26, the founder's 2A and the prototype's one
+ * column): the box that begins a conversation with the Construtor, the Projeto's agents with what
+ * each does, its tools and its state, and the earlier conversations. The Hub refuses a member's
  * read, so the route does not open for them (S10); the sentence below is for a role that changed.
  */
 export function AgentsArea(props: Scope) {
   const { role } = company.useRouteContext()
-  const phone = useIsMobile()
   const scope = { companyId: props.companyId, projectId: props.projectId }
   if (role === 'member') return <p className="p-xl text-text-2">{MEMBERS_CANNOT}</p>
-  const construtor = (
-    <div className={cn(START_COLUMN, 'gap-lg')}>
-      <Ask {...scope} />
-      <Earlier {...scope} />
-    </div>
-  )
   return (
     <div className={AREA_FRAME}>
       <PageTitle>{AREA_TITLE}</PageTitle>
-      {phone ? (
-        <Tabs defaultValue="construtor">
-          <TabsList>
-            <TabsTrigger value="construtor">{CONSTRUTOR_NAME}</TabsTrigger>
-            <TabsTrigger value="agentes">Agentes</TabsTrigger>
-          </TabsList>
-          <TabsContent value="construtor">{construtor}</TabsContent>
-          <TabsContent value="agentes">
-            <AgentList {...scope} />
-          </TabsContent>
-        </Tabs>
-      ) : (
-        <div className="grid grid-cols-[minmax(0,1fr)_22rem] items-start gap-xl">
-          {construtor}
-          <AgentList {...scope} />
-        </div>
-      )}
+      <div className={cn(START_COLUMN, 'gap-lg')}>
+        <Ask {...scope} />
+        <AgentList {...scope} />
+        <Earlier {...scope} />
+      </div>
     </div>
   )
 }

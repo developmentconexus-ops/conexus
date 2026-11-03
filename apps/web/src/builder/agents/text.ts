@@ -1,4 +1,4 @@
-import type { AgentDetail, AgentState } from '@conexus/hub-api'
+import type { AgentDetail } from '@conexus/hub-api'
 import { dayAndHour } from '../../platform/dates.ts'
 
 /** The words of the Agentes screens (step 24.3, U5); the founder approves them at the step's end. */
@@ -46,9 +46,11 @@ export function memoryText(memory: { observational: boolean }): string {
   return memory.observational ? 'observacional' : 'desligada'
 }
 
-export function stateText(state: AgentState): string {
-  if (state.kind === 'DRAFT') return 'Rascunho'
-  return state.changed ? 'Rascunho com mudanças' : `Versão ${state.version} · publicada`
+export const DRAFT_STATE = 'Rascunho'
+export const CHANGED_STATE = 'Rascunho com mudanças'
+
+export function publishedText(version: number): string {
+  return `Versão ${version} · publicada`
 }
 
 /** The whole sentence for each field a publication lacks, so each agrees with its own words. */

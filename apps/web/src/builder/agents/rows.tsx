@@ -2,12 +2,21 @@ import type { AgentState } from '@conexus/hub-api'
 import type { ReactNode } from 'react'
 import { ageOf } from '../../platform/dates.ts'
 import { Stamp } from '../../ui/block.tsx'
-import { stateText, titleOf } from './text.ts'
+import { CHANGED_STATE, DRAFT_STATE, publishedText, titleOf } from './text.ts'
 
-/** An agent's state as the Pauta's stamp: published in the success colour, a draft or a draft with changes in neutral (design V35). */
+/**
+ * An agent's state as the Pauta's stamps (design V35): the published version in the success colour
+ * and, when the draft moved past it, "Rascunho com mudanças" beside it in neutral; never published
+ * is a neutral draft.
+ */
 export function StateStamp({ state }: { state: AgentState }) {
-  const live = state.kind === 'PUBLISHED' && !state.changed
-  return <Stamp tone={live ? 'success' : 'neutral'}>{stateText(state)}</Stamp>
+  if (state.kind === 'DRAFT') return <Stamp tone="neutral">{DRAFT_STATE}</Stamp>
+  return (
+    <>
+      <Stamp tone="success">{publishedText(state.version)}</Stamp>
+      {state.changed && <Stamp tone="neutral">{CHANGED_STATE}</Stamp>}
+    </>
+  )
 }
 
 /** The inside of a conversation's row: its title, what marks it, and how long ago it moved, at the row's end. */

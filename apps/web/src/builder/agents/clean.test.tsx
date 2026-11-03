@@ -67,12 +67,6 @@ test('a ferramenta pronta do painel tem o nome da leitura; a feita à mão, a de
   expect(within(panel).queryByText('vendas_de_ontem')).toBeNull()
 })
 
-test('a linha do agente é o nome e o estado, sem a descrição', async () => {
-  at(AREA, { agents: [agent()] })
-  const link = await screen.findByRole('link', { name: /Conferente de metas/ })
-  expect(link.textContent).toBe('Conferente de metasRascunho')
-})
-
 test('sem conversa aberta, o meio da página diz uma frase', async () => {
   at(PAGE, { agents: [agent()] })
   expect(await screen.findByText('Escolha uma conversa ou comece uma nova.')).toBeTruthy()
