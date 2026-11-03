@@ -25,6 +25,7 @@ import {
 // A conversation with the Assistant: the box's row, the rows, the address it lives at (step 24.1, criteria 23a to 26).
 const server = hubServer()
 const { at } = assistantScreens(server)
+const COUNT = /^\d+ ferramentas?$/
 const OPEN = `${COMPANY_ROOT}/conversations/${ASKED}`
 const OF_PROJECT = `${COMPANY_ROOT}/projects/${PEDIDOS_ID}/assistant/${ASKED}`
 
@@ -38,7 +39,7 @@ async function toolsOf(name = '2 ferramentas') {
 }
 
 async function turnOff(name: string) {
-  fireEvent.click(await screen.findByRole('button', { name: /ferramentas?$/ }))
+  fireEvent.click(await screen.findByRole('button', { name: COUNT }))
   fireEvent.click(await screen.findByRole('switch', { name }))
 }
 
@@ -307,5 +308,17 @@ describe('o histórico', () => {
     line.emit(observationFailed())
     expect(await screen.findByLabelText('Falha na memória')).toBeTruthy()
     expect(screen.queryByText(/ECONNRESET/)).toBeNull()
+  })
+})
+
+describe('o +', () => {
+  test('o +: o interruptor do menu do "+" grava a escolha pelo mesmo PUT', async () => {
+    const { writes } = at(OPEN, { conversations: [assistantConversation()] })
+    await toolsOf()
+    fireEvent.click(screen.getByRole('button', { name: 'Anexar e ferramentas' }))
+    fireEvent.click(await screen.findByRole('switch', { name: 'Sankhya · Estoque' }))
+    await toolsOf('1 ferramenta')
+    expect(writes()[0]?.body).toEqual({ connections: [SALES] })
+    expect(screen.getByText('1 de 2 ligadas')).toBeTruthy()
   })
 })

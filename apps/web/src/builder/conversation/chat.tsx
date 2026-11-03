@@ -7,6 +7,7 @@ import { Empty, NotFound } from '../../ui/states.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
 import { accountsQuery } from '../model-accounts/public.ts'
 import type { Outgoing } from './attachments.ts'
+import type { ComposerTools } from './composer.tsx'
 import { Composer } from './composer.tsx'
 import { useDraft } from './draft.ts'
 import { useHandoff } from './handoff.ts'
@@ -45,7 +46,7 @@ export type ChatProps = {
     onError: (error: string | undefined) => void
   }) => ReactNode
   /** The folder and the tools count after the box's **+**, and what their failures say above it. */
-  tools?: { context: ReactNode; notice: ReactNode }
+  tools?: ComposerTools
 }
 
 function useSending(
@@ -115,6 +116,7 @@ function ChatComposer(props: {
         field={field}
         onSend={props.onSend}
         onStop={props.onStop}
+        plus={chat.tools?.plus}
         context={chat.tools?.context}
         notice={chat.tools?.notice}
         taskPanel={<TaskPanel tasks={session.tasks} streaming={state.running} />}

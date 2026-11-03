@@ -16,11 +16,26 @@ export const NO_CONVERSATIONS_BLOCK = 'Nenhuma conversa ainda.'
 export const NO_CONNECTIONS_BLOCK = 'Ligue um sistema em Integrações.'
 /** The composer's tools button when nothing is on, or nothing is offered. */
 export const NO_TOOLS = 'Sem ferramentas'
-export const LINK_TOOLS_HOME = 'Ligar um sistema em Integrações'
 export const LINK_TOOLS_PROJECT = 'Liberar um sistema em Integrações do Projeto'
 export const NO_PROJECT_CHIP = 'Conversa sem Projeto'
 export const PROJECT_CHOICE = 'Projeto da conversa'
-export const TOOLS_LIST = 'Ligações desta conversa'
+export const PLUS_MENU = 'Anexar e ferramentas'
+export const ATTACH_FILE = 'Anexar arquivo'
+export const ATTACH_HINT = 'PDF, imagem, planilha'
+export const TOOLS_LIST = 'Ferramentas da conversa'
+export const TOOLS_SEARCH = 'Buscar ferramenta'
+export const NO_TOOL_MATCH = 'Nenhuma ferramenta com esse nome.'
+export const NO_TOOLS_COMPANY = 'Nenhuma ferramenta ligada à empresa'
+export const LINK_ANOTHER_TOOL = 'Conectar outra ferramenta'
+export const RELEASE_ANOTHER_TOOL = 'Liberar outra ferramenta ao Projeto'
+export const NO_PROJECT_OPTION = 'Sem Projeto'
+export const NO_PROJECT_MATCH = 'Nenhum Projeto com esse nome.'
+export const MORE_PROJECTS = 'Mais Projetos'
+
+/** "2 de 3 ligadas". */
+export function chosenOf(chosen: number, offered: number): string {
+  return `${chosen} de ${offered} ligadas`
+}
 export const MEMBERS_CANNOT = 'Só o dono e os administradores conversam sobre o Projeto.'
 export const UNCONFIRMED_CREATION = 'Não confirmamos a criação da conversa. Tente de novo.'
 export const UNCONFIRMED_CHOICE =

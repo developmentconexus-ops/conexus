@@ -16,7 +16,13 @@ after(async () => {
 
 // The Assistant's box on a phone (the card of 13.3, criterion 16): under 416 px the words go, never the controls.
 async function rowOf(page: Page) {
-  const names = ['Anexar arquivos', /ferramenta/, /Memória da conversa/, 'Ditar', 'Enviar']
+  const names = [
+    'Anexar e ferramentas',
+    /^\d+ ferramentas?$/,
+    /Memória da conversa/,
+    'Ditar',
+    'Enviar',
+  ]
   const found = await Promise.all(
     names.map(async (name) => {
       const box = await page.locator('form').getByRole('button', { name }).first().boundingBox()
@@ -53,7 +59,7 @@ test('a 390, a linha da caixa do Assistente perde as palavras e guarda todos os 
   assert.equal(await ring.getByText(/%$/).isVisible(), true)
   assert.equal(
     await page
-      .getByRole('button', { name: /ferramenta/ })
+      .getByRole('button', { name: /^\d+ ferramentas?$/ })
       .first()
       .getByText(/^ ferramenta/)
       .isVisible(),
@@ -87,13 +93,14 @@ test('a 390, o menu da pasta do Início com um Projeto de nome comprido cabe na 
     replies: { ...OWNER, ...startsOn(COMPANY.id) },
   })
   await page.getByRole('button', { name: 'Projeto da conversa' }).click()
-  const option = page.getByRole('menuitemradio').nth(1)
+  const folder = page.getByRole('dialog', { name: 'Projeto da conversa' })
+  const option = folder.getByRole('button').nth(1)
   await option.waitFor()
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), PHONE.width)
-  const menu = await page.getByRole('menu').boundingBox()
+  const menu = await folder.boundingBox()
   assert.ok(menu && menu.x >= 0 && menu.x + menu.width <= PHONE.width, 'the menu left the screen')
   await option.click()
-  await page.getByRole('menu').waitFor({ state: 'detached' })
+  await folder.waitFor({ state: 'detached' })
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), PHONE.width)
   await page.close()
 })
