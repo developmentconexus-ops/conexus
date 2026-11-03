@@ -278,7 +278,7 @@ function Body({ tool, status }: { tool: ToolItem; status: ToolStatus }) {
 }
 
 /** The rows that are not a line: the file the Assistant showed, and the app or the automation it proposed. */
-function specialRow(tool: ToolItem, status: ToolStatus, room: Room) {
+function specialRow(tool: ToolItem, status: ToolStatus, room: Room, plain: boolean) {
   const body = specOf(tool.toolName, room)?.body
   if (status !== 'done') return undefined
   const shown = body === 'shown' ? ShownFile.safeParse(tool.result).data : undefined
@@ -289,7 +289,7 @@ function specialRow(tool: ToolItem, status: ToolStatus, room: Room) {
   if (automation !== undefined)
     return room.automationCard?.({ proposed: automation, toolCallId: tool.toolCallId })
   const agent = body === 'agent' ? ConstrutorResult.safeParse(tool.result).data : undefined
-  if (agent !== undefined) return room.agentCard?.(agent)
+  if (agent !== undefined && !plain) return room.agentCard?.(agent)
   const proposed = body === 'proposal' ? ProposedApp.safeParse(tool.result).data : undefined
   return proposed === undefined ? undefined : <ProposalCard summary={proposed.summary} />
 }
@@ -333,9 +333,10 @@ function ToolLine({
 
 /**
  * A line of tool invocation (Criterion 8).
- * Opens on the body its tool's row in the table names.
+ * Opens on the body its tool's row in the table names. `plain` keeps a draft's card out of the row:
+ * a later call of the same answer drew it.
  */
-export function ToolRow({ tool }: { tool: ToolItem }) {
+export function ToolRow({ tool, plain = false }: { tool: ToolItem; plain?: boolean }) {
   const room = useRoom()
   const status = toolStatus(tool, room)
   // Only a command that is still saying its output shows it as it comes; the person's click rules after.
@@ -349,7 +350,7 @@ export function ToolRow({ tool }: { tool: ToolItem }) {
     />
   )
 
-  const special = specialRow(tool, status, room)
+  const special = specialRow(tool, status, room, plain)
   if (special !== undefined) return special
 
   if (!opens(tool, status, room)) return line

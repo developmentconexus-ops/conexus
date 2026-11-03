@@ -6,6 +6,7 @@ import { Message, MessageContent, MessageHeader } from '../../ui/message.tsx'
 import { modelLabel } from '../model-accounts/public.ts'
 import type { Row } from './fold.ts'
 import { fold } from './fold.ts'
+import { supersededCards } from './agent-cards.ts'
 import { FailureLine, MachineLine, NoticeLine, VersionLine } from './machine-line.tsx'
 import { Markdown } from './markdown.tsx'
 import { PlanCard } from './plan-card.tsx'
@@ -52,10 +53,12 @@ function ConexusPartRow({
 function ItemRow({
   item,
   streaming,
+  superseded,
   onAsk,
 }: {
   item: TranscriptItem
   streaming: boolean
+  superseded: ReadonlySet<string>
   onAsk: (text: string) => void
 }) {
   switch (item.kind) {
@@ -70,7 +73,7 @@ function ItemRow({
     case 'reasoning':
       return <ThinkingLine part={item} />
     case 'tool':
-      return <ToolRow tool={item} />
+      return <ToolRow tool={item} plain={superseded.has(item.toolCallId)} />
     case 'card':
       return item.cardKind === 'question' ? <QuestionCard part={item} /> : <PlanCard part={item} />
     case 'conexus':
@@ -99,6 +102,7 @@ export function BuilderTurn(props: {
   const room = useRoom()
   const { agent } = room
   const rows = fold(props.items, room)
+  const superseded = supersededCards(props.items)
 
   return (
     <Message>
@@ -135,6 +139,7 @@ export function BuilderTurn(props: {
               key={rowKey(row, index)}
               item={row.item}
               streaming={props.streaming}
+              superseded={superseded}
               onAsk={props.onAsk}
             />
           ),

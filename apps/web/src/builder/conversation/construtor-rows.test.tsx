@@ -1,6 +1,9 @@
-import { AGENT_TOOL, BUILDER_TOOL, CONSTRUTOR_TOOL } from '@conexus/hub-api'
+import type { ConstrutorResult } from '@conexus/hub-api'
+import { AGENT_TOOL, AgentId, BUILDER_TOOL, CONSTRUTOR_TOOL } from '@conexus/hub-api'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { expect, test } from 'vitest'
+import { AGENT, agent, OTHER_AGENT } from '../agents/test-agents.ts'
+import { BuilderTurn } from './builder-turn.tsx'
 import { wordsOf } from './connector-words.ts'
 import { agentRoom, RoomContext } from './room.ts'
 import type { ToolItem } from './rows.ts'
@@ -136,4 +139,39 @@ test('a linha aberta de agent_read titula em português, nunca pelo nome da ferr
   fireEvent.click(screen.getByRole('button', { name: /Leu o rascunho do agente/ }))
   expect(screen.getAllByText('Leu o rascunho do agente')).toHaveLength(2)
   expect(screen.queryByText('Agent read')).toBeNull()
+})
+
+test('duas chamadas do mesmo agente na resposta desenham um cartão só, no último resultado; as anteriores ficam como linha', () => {
+  const saved = (id: string, agentId: string, name: string): ToolItem => ({
+    ...draftRow(CONSTRUTOR_TOOL.agentDraft),
+    id,
+    toolCallId: id,
+    result: { kind: 'SAVED', agent: { ...agent(), id: AgentId.parse(agentId), name } },
+  })
+  const room = {
+    ...agentRoom('Construtor'),
+    agentCard: (result: ConstrutorResult) => (
+      <p>{result.kind === 'SAVED' ? `cartão ${result.agent.name}` : 'recusa'}</p>
+    ),
+  }
+  render(
+    <RoomContext.Provider value={room}>
+      <BuilderTurn
+        model={null}
+        streaming={false}
+        onAsk={() => undefined}
+        items={[
+          saved('a', AGENT, 'Primeiro'),
+          saved('b', OTHER_AGENT, 'Outro'),
+          { ...saved('c', AGENT, 'Segundo'), toolName: CONSTRUTOR_TOOL.agentSet },
+        ]}
+      />
+    </RoomContext.Provider>,
+  )
+  expect(screen.queryByText('cartão Primeiro')).toBeNull()
+  expect(screen.getAllByText(/^cartão /).map((each) => each.textContent)).toEqual([
+    'cartão Outro',
+    'cartão Segundo',
+  ])
+  expect(screen.getByText('Montou o rascunho do agente')).toBeTruthy()
 })
