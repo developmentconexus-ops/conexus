@@ -13,6 +13,19 @@ function wordsOf(message: Message): string {
     .trim()
 }
 
+/** The calls of the Builder's message that proposed an app, in order. */
+function proposalsIn(message: Message): string[] {
+  return message.parts.flatMap((part) => {
+    if (part.type !== 'tool-invocation') return []
+    const call = part.toolInvocation
+    const proposed =
+      PROPOSING.includes(call.toolName) &&
+      call.state === 'result' &&
+      ProposedApp.safeParse(call.result).success
+    return proposed ? [call.toolCallId] : []
+  })
+}
+
 /**
  * The proposals of the conversation whose card offers no button (step 24.3.2, U3): one a later
  * proposal replaced, and one the person's **Continuar aqui** came after. Read from the messages
@@ -29,13 +42,9 @@ export function closedProposals(messages: readonly Message[]): ReadonlySet<strin
       }
       continue
     }
-    for (const part of message.parts) {
-      if (part.type !== 'tool-invocation') continue
-      const call = part.toolInvocation
-      if (!PROPOSING.includes(call.toolName) || call.state !== 'result') continue
-      if (!ProposedApp.safeParse(call.result).success) continue
-      if (open !== undefined && open !== call.toolCallId) closed.add(open)
-      open = call.toolCallId
+    for (const toolCallId of proposalsIn(message)) {
+      if (open !== undefined && open !== toolCallId) closed.add(open)
+      open = toolCallId
     }
   }
   return closed
