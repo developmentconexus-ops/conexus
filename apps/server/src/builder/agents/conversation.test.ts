@@ -168,7 +168,7 @@ test('o recorte: a ferramenta chama a leitura pela porta com os valores fixos po
   assert.equal(inputs.length, 1)
 })
 
-test('a memória: desligada na versão, o turno lembra só as últimas 10 mensagens e não chama o observador; ligada, lembra a conversa toda', async (t) => {
+test('a memória: desligada na versão, o turno lembra só as últimas 10 mensagens; ligada, lembra a conversa toda', async (t) => {
   const on = await agentsOn(t)
   async function window(observational: boolean) {
     const agent = await publishedAgent(on.hub, on.ana, on.agents, {
