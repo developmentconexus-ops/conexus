@@ -187,16 +187,14 @@ for (const viewport of [PHONE, ZOOMED_PHONE]) {
     assert.ok(panel.width <= 328, `the drawer is ${panel.width}px wide`)
     const close = await drawer.getByRole('button', { name: 'Fechar navegação' }).boundingBox()
     assert.ok(close, 'the drawer has no close')
-    const under = await drawer
-      .locator('a, button')
-      .evaluateAll((all) =>
-        all
-          .filter((one) => one.getAttribute('aria-label') !== 'Fechar navegação')
-          .map((one) => ({
-            name: one.getAttribute('aria-label') ?? one.textContent,
-            ...one.getBoundingClientRect().toJSON(),
-          })),
-      )
+    const under = await drawer.locator('a, button').evaluateAll((all) =>
+      all
+        .filter((one) => one.getAttribute('aria-label') !== 'Fechar navegação')
+        .map((one) => ({
+          name: one.getAttribute('aria-label') ?? one.textContent,
+          ...one.getBoundingClientRect().toJSON(),
+        })),
+    )
     for (const one of under) {
       const apart =
         one.right <= close.x ||
