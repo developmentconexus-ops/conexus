@@ -142,3 +142,5 @@ export const ASSISTANT_STATES: State[] = [
     },
   },
 ]
+
+export { ID as ASSISTANT_ID, MESSAGES as ASSISTANT_MESSAGES }
