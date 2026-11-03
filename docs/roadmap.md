@@ -106,7 +106,6 @@ Login social. Arquivos enviados por pessoas para dentro de um app ou da máquina
 
 | Etapa | O que precisa antes | Decisão sua nela | Conhecimento trazido |
 | --- | --- | --- | --- |
-| 13.3 A Pauta | A 24.2 (A1) | O lugar e o DESIGN.md | G4 OS, Linear, AffectUI. A auditoria do front-end |
 | 24.3 O Construtor | A 24.2 | Nenhuma | `addAgent` por agente |
 | Papéis e pedidos | A 24.3.1 | Nenhuma | — |
 | 24.4 Ferramentas em código | Os pedidos | Nenhuma | Protótipo: Workers ou E2B |

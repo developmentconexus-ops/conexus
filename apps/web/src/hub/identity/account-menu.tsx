@@ -64,7 +64,7 @@ export function AccountMenu({ person, compact = false }: { person: Person; compa
             {!compact && (
               <>
                 <span className="grid min-w-0 flex-1 text-left">
-                  <span className="truncate text-label text-text">{person.name}</span>
+                  <span className="truncate text-text">{person.name}</span>
                   <span className="truncate text-fact text-text-2">{person.email}</span>
                 </span>
                 <ChevronsUpDownIcon aria-hidden="true" className="ml-auto" />
