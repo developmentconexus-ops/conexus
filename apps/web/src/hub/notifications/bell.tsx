@@ -6,6 +6,7 @@ import { BellIcon } from 'lucide-react'
 import { useState } from 'react'
 import { dayAndHour } from '../../platform/dates.ts'
 import { sentenceOf } from '../../platform/hub.ts'
+import { Alert } from '../../ui/alert.tsx'
 import { Button } from '../../ui/button.tsx'
 import { cn } from '../../ui/cn.ts'
 import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover.tsx'
@@ -121,11 +122,7 @@ function Panel(props: { companyId: CompanyId; onTap: () => void }) {
           Marcar todas como lidas
         </Button>
       )}
-      {mark.isError && (
-        <p role="alert" className="text-danger">
-          {sentenceOf(mark.error)}
-        </p>
-      )}
+      {mark.isError && <Alert tone="danger">{sentenceOf(mark.error)}</Alert>}
       {notifications.length === 0 ? (
         <Empty>{NO_NOTIFICATIONS}</Empty>
       ) : (

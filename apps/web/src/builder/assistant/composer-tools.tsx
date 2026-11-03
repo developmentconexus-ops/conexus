@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { ConnectorLogo } from '../../hub/connectors/public.ts'
 import { sentenceOf, writeFailureText } from '../../platform/hub.ts'
+import { Alert } from '../../ui/alert.tsx'
 import { buttonVariants } from '../../ui/button.tsx'
 import { cn } from '../../ui/cn.ts'
 import { Skeleton } from '../../ui/skeleton.tsx'
@@ -132,11 +133,7 @@ function Notice(props: { choice: Choice; catalogFailure: string | undefined }) {
   const { failed, error } = props.choice
   if (failed !== undefined) return <ReadFailure text={failed.text} onRetry={failed.retry} />
   const text = error ?? props.catalogFailure
-  return text === undefined ? null : (
-    <p role="alert" className="text-danger">
-      {text}
-    </p>
-  )
+  return text === undefined ? null : <Alert tone="danger">{text}</Alert>
 }
 
 /**

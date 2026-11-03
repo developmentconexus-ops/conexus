@@ -7,6 +7,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { sentenceOf } from '../../platform/hub.ts'
+import { Alert } from '../../ui/alert.tsx'
 import { Button, buttonVariants } from '../../ui/button.tsx'
 import {
   Form,
@@ -169,11 +170,7 @@ function OtherSession({ signedInAs }: { signedInAs: string }) {
     <>
       <PageTitle>Este convite foi enviado para outro e-mail.</PageTitle>
       <p className="text-text">Você entrou como {signedInAs}.</p>
-      {send.isError && (
-        <p role="alert" className="text-danger">
-          {sentenceOf(send.error)}
-        </p>
-      )}
+      {send.isError && <Alert tone="danger">{sentenceOf(send.error)}</Alert>}
       <Button disabled={send.isPending} onClick={() => send.mutate(undefined)}>
         {send.isPending ? 'Saindo…' : 'Sair e abrir o convite'}
       </Button>

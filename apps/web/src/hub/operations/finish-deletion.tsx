@@ -1,6 +1,7 @@
 import type { Client } from '@conexus/hub-api'
 import { useMutation } from '@tanstack/react-query'
 import { HubFailure, sentenceOf } from '../../platform/hub.ts'
+import { Alert } from '../../ui/alert.tsx'
 import { Button } from '../../ui/button.tsx'
 import { useLeaveClient } from './leave-client.ts'
 import { sendDeletion } from './queries.ts'
@@ -31,11 +32,7 @@ export function FinishDeletion({ client }: { client: Client }) {
       <Button variant="danger" disabled={send.isPending} onClick={() => void finish()}>
         {send.isPending ? 'Concluindo…' : 'Tentar concluir exclusão'}
       </Button>
-      {send.isError && (
-        <p role="alert" className="text-label text-danger">
-          {sentenceOf(send.error)}
-        </p>
-      )}
+      {send.isError && <Alert tone="danger">{sentenceOf(send.error)}</Alert>}
     </div>
   )
 }

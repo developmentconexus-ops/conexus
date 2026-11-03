@@ -8,6 +8,7 @@ import { useFormContext } from 'react-hook-form'
 import { z } from 'zod'
 import { useAttemptKey } from '../../platform/attempt-key.ts'
 import { HubFailure, sentenceOf } from '../../platform/hub.ts'
+import { Alert } from '../../ui/alert.tsx'
 import { Button } from '../../ui/button.tsx'
 import { cn } from '../../ui/cn.ts'
 import { Dialog, DialogBody, DialogContent, DialogFooter } from '../../ui/dialog.tsx'
@@ -327,11 +328,7 @@ export function ReconnectButton(props: {
       >
         {RECONNECT}
       </Button>
-      {failure !== null && (
-        <p role="alert" className="text-danger">
-          {sentenceOf(failure)}
-        </p>
-      )}
+      {failure !== null && <Alert tone="danger">{sentenceOf(failure)}</Alert>}
       {keys && (
         <LinkDialog
           companyId={companyId}

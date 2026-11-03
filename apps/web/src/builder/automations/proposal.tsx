@@ -5,6 +5,7 @@ import { Link } from '@tanstack/react-router'
 import { useRef, useState } from 'react'
 import { derivedAttemptKey } from '../../platform/attempt-key.ts'
 import { sentenceOf, writeFailureText } from '../../platform/hub.ts'
+import { Alert } from '../../ui/alert.tsx'
 import { Button, buttonVariants } from '../../ui/button.tsx'
 import { ReadFailure } from '../../ui/states.tsx'
 import { cadenceText } from './cadence-text.ts'
@@ -98,11 +99,7 @@ export function ProposalCard(props: {
             </Link>
           </div>
         ))}
-      {error !== undefined && (
-        <p role="alert" className="text-danger">
-          {error}
-        </p>
-      )}
+      {error !== undefined && <Alert tone="danger">{error}</Alert>}
     </div>
   )
 }
