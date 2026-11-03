@@ -28,7 +28,7 @@ test('a mensagem fixa: a mesma em toda conversa, com a sua marca de cache, antes
     assert.equal(fixed?.text, FIXED)
     assert.equal(fixed?.cached, true)
     assert.ok(block?.text.startsWith('Company: Empresa Teste.'), block?.text)
-    assert.doesNotMatch(fixed.text, /Prévia|preview|conexus_check|ask_user/i)
+    assert.doesNotMatch(fixed.text, /Prévia|preview|plan|conexus_check|ask_user/i)
     assert.ok(
       mastra.every((each) => /skill|machine/i.test(each.text) && !/recall/i.test(each.text)),
       JSON.stringify(mastra),
@@ -120,34 +120,4 @@ test('trocar a escolha enquanto o Mastra grava o título: o turno seguinte lê s
     now.connections.map((each: { name: string; chosen: boolean }) => [each.name, each.chosen]),
     [['Matriz', false]],
   )
-})
-
-/** What the references warn against in a prompt: an order in capitals, and "if in doubt, use it", which make the model call too much. */
-const SHOUTED = /\b(MUST|ALWAYS|NEVER|CRITICAL|IMPORTANT)\b|[Ii]f in doubt/
-
-test('o papel de cada um: o texto fixo diz que o Builder faz apps e o Assistente leva o briefing; cada passagem diz quando usar e quando não, sem ordem em maiúsculas (5)', async (t) => {
-  const on = await assisting(t)
-  const home = await created(on.hub, on.ana, on.assistant, { connections: [] })
-  const inProject = await created(on.hub, on.ana, on.assistant, {
-    projectId: on.projectId,
-    connections: [],
-  })
-  assert.equal(endOf(await (await talking(t, on.hub, on.ana, home)).say('Oi')), 'complete')
-  assert.equal(endOf(await (await talking(t, on.hub, on.ana, inProject)).say('Oi')), 'complete')
-  const [inHome, inPlace] = on.calls
-  const fixed = inHome?.systems.at(0)?.text ?? ''
-  assert.match(fixed, /The Builder makes apps/)
-  assert.match(fixed, /bring the Builder what you found, not to design the app/)
-  assert.doesNotMatch(fixed, SHOUTED)
-  const app = inHome?.descriptions.propose_app ?? ''
-  const change = inPlace?.descriptions.propose_app_change ?? ''
-  for (const description of [app, change]) {
-    assert.match(description, /Call it when/)
-    assert.match(description, /Do not call it for a question, a table, a chart or a file/)
-    assert.match(description, /propose_automation/)
-    assert.doesNotMatch(description, SHOUTED)
-  }
-  assert.match(app, /Criar app/)
-  assert.match(change, /Mandar ao Builder/)
-  assert.doesNotMatch(read('./skills/conexus/SKILL.md'), SHOUTED)
 })

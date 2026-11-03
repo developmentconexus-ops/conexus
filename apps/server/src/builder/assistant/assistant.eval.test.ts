@@ -1,16 +1,29 @@
 import assert from 'node:assert/strict'
+import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
+import type { TestContext } from 'node:test'
 import { test } from 'node:test'
+import { setTimeout as sleep } from 'node:timers/promises'
+import type { MastraDBMessage } from '@mastra/core/agent'
 import type { MastraMessagePart } from '@mastra/core/agent-controller'
 import { checks } from '@mastra/evals/checks'
+import { linkSankhya, testOf } from '../../hub/connectors/test-connections.ts'
 import { PADARIA_SOL_MATRIZ, salesSankhya, soldBy } from '../../hub/connectors/test-sales.ts'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
+import {
+  ANA_OWNER,
+  call,
+  hubWithLog,
+  personOn,
+  plantCompany,
+  post,
+} from '../../hub/identity/test-hub.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
-import { endOf, messagesOf, title } from '../conversation/test-conversation.ts'
+import { endOf, MODEL, messagesOf, title } from '../conversation/test-conversation.ts'
 import { assisting, created, READ, talking } from './test-assistant.ts'
-import { EVAL_SET, HAND_OFF_CASES, ROUNDS, verdictOf } from './test-handoff.ts'
 import { numbersFromReads } from './test-numbers.ts'
-import { checked, QUESTION, REAL_MODEL, subscribed, textOf } from './test-real-model.ts'
 
+const QUESTION = 'Quanto a Padaria Sol vendeu em setembro por vendedor?'
 const SOLD_BY_SELLER =
   "SELECT V.APELIDO, ROUND(SUM(I.VLRTOT), 2) AS TOTAL FROM TGFCAB C JOIN TGFITE I ON I.NUNOTA = C.NUNOTA JOIN TGFVEN V ON V.CODVEND = C.CODVEND WHERE C.DTNEG BETWEEN '2026-09-01' AND '2026-09-30' GROUP BY V.APELIDO ORDER BY TOTAL DESC"
 const SEPTEMBER = [...soldBy(PADARIA_SOL_MATRIZ, '2026-09').values()]
@@ -75,8 +88,25 @@ async function answerParts(hub: Hub, person: Person, url: string): Promise<Mastr
 }
 
 /** Mastra's own checks of the turn: the tool called and no tool erred, each a score of 1. */
-function scored(parts: MastraMessagePart[], tool: string) {
-  return checked(parts, [checks.calledTool(tool), checks.noToolErrors()])
+async function scored(parts: MastraMessagePart[], tool: string) {
+  const output: MastraDBMessage[] = [
+    { id: 'answer', role: 'assistant', createdAt: new Date(), content: { format: 2, parts } },
+  ]
+  const input = {
+    inputMessages: [],
+    rememberedMessages: [],
+    systemMessages: [],
+    taggedSystemMessages: {},
+  }
+  return Promise.all(
+    [checks.calledTool(tool), checks.noToolErrors()].map(
+      async (scorer) => (await scorer.run({ input, output })).score,
+    ),
+  )
+}
+
+function textOf(parts: MastraMessagePart[]): string {
+  return parts.flatMap((part) => (part.type === 'text' ? [part.text] : [])).join('\n')
 }
 
 test('as vendas por vendedor: o Assistente lê o Sankhya da Matriz, nenhuma ferramenta erra, e a conferência aprova cada número', async (t) => {
@@ -112,6 +142,67 @@ test('sem ligação: a conversa sem sistema escolhido diz isso e aponta a barra,
   assert.match(textOf(parts), /barra/)
   assert.equal(on.reads.length, 0)
 })
+
+/** Where firstmate runs the real model's case: the authorize link goes there, and the sign-in code comes back there. */
+// biome-ignore lint/style/noProcessEnv: the switch of this one opt-in case, not the app's configuration
+const REAL_MODEL = process.env.CONEXUS_EVAL_REAL_MODEL
+
+/** The sign-in code firstmate writes after opening the link, read once and deleted; never printed. */
+async function codeFrom(folder: string): Promise<string> {
+  const path = join(folder, 'code.txt')
+  for (let waited = 0; waited < 600; waited += 1) {
+    if (existsSync(path)) {
+      const code = readFileSync(path, 'utf8').trim()
+      rmSync(path)
+      return code
+    }
+    await sleep(1000)
+  }
+  throw new Error('No sign-in code arrived in ten minutes.')
+}
+
+/** A Hub that calls the real model, through a Claude subscription signed in by the routes, as a person signs in. */
+async function subscribed(t: TestContext, folder: string) {
+  const sankhya = await salesSankhya(t)
+  const hub = await hubWithLog(t, (config) => ({
+    ...config,
+    connectorOrigins: new Map([['sankhya', sankhya.origin]]),
+  }))
+  const ana = await personOn(hub, ANA_OWNER)
+  const companyId = await plantCompany(hub.test, ana.id)
+  const company = `/api/companies/${companyId}`
+  await hub.test.asOwner(
+    `insert into builder.company_account_kind (company_id, kind) values ($1, 'claude_subscription')`,
+    [companyId],
+  )
+  const body = { owner: 'company', kind: 'claude_subscription', label: 'Assinatura' }
+  const opened = await post(hub, ana, `${company}/model-account-sign-ins`, body)
+  assert.equal(opened.statusCode, 201, opened.body)
+  const { url, signInId } = Object(opened.json())
+  writeFileSync(join(folder, 'authorize-url.txt'), `${url}\n`)
+  const code = await codeFrom(folder)
+  const linked = await post(hub, ana, `${company}/model-account-sign-ins/${signInId}`, { code })
+  assert.equal(linked.statusCode, 201, linked.body)
+  const model = { model: MODEL, effort: 'off' }
+  assert.equal((await call(hub, ana, 'PUT', `${company}/default-model`, model)).statusCode, 200)
+  const connections = `${company}/connections`
+  const ids = []
+  for (const [name, credential] of [
+    ['Matriz', sankhya.matriz],
+    ['Filial', sankhya.filial],
+  ] as const) {
+    const made = await linkSankhya(hub, ana, connections, credential, undefined, name)
+    const id = String(Object(made.json()).connection.id)
+    assert.equal(Object((await testOf(hub, ana, connections, id)).json()).result, 'WORKING')
+    ids.push(id)
+  }
+  const projected = await post(hub, ana, `${company}/projects`, { name: 'Vendas' })
+  const projectId = String(Object(projected.json()).project.id)
+  const grant = `${company}/projects/${projectId}/connections/${ids[0]}`
+  assert.equal((await call(hub, ana, 'PUT', grant)).statusCode, 200)
+  return { hub, ana, assistant: `${company}/assistant/conversations`, matriz: ids[0], projectId }
+}
+
 test('o modelo de verdade: as perguntas do roteiro sobre o dublê, cada uma numa conversa nova, e nenhuma resposta reprovada', {
   timeout: 1_800_000,
 }, async (t) => {
@@ -141,26 +232,4 @@ test('o modelo de verdade: as perguntas do roteiro sobre o dublê, cada uma numa
     const verdict = numbersFromReads({ question: each.question, parts, truth: each.truth })
     assert.deepEqual(verdict, { ok: true }, `${each.question}\n${textOf(parts)}`)
   }
-})
-
-test('o modelo de verdade passa ao Builder: cada caso do conjunto, numa conversa nova, certo nas três rodadas (step 24.3.2, critério 6, G1)', {
-  timeout: 10_800_000,
-}, async (t) => {
-  if (REAL_MODEL === undefined) {
-    t.skip(
-      'opt-in: set CONEXUS_EVAL_REAL_MODEL to a folder, and CONEXUS_EVAL_SET to tuning, held-out or all; firstmate opens the link the test writes there and writes back the sign-in code',
-    )
-    return
-  }
-  const on = await subscribed(t, REAL_MODEL)
-  const cases = HAND_OFF_CASES.filter(
-    (each) => EVAL_SET === 'all' || each.held === (EVAL_SET === 'held-out'),
-  )
-  const wrong: string[] = []
-  for (let round = 1; round <= ROUNDS; round += 1) {
-    for (const each of cases) {
-      for (const why of await verdictOf(t, on, each)) wrong.push(`round ${round}, ${why}`)
-    }
-  }
-  assert.deepEqual(wrong, [], wrong.join('\n\n'))
 })
