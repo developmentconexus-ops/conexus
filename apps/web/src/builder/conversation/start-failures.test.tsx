@@ -119,7 +119,15 @@ test('com os Projetos recusados, o pedido enviado mostra a frase com Tentar de n
   )
   fireEvent.change(await box(), { target: { value: REQUEST } })
   fireEvent.click(screen.getByRole('button', { name: 'Enviar' }))
-  const retry = await screen.findByRole('button', { name: 'Tentar de novo' })
+  // Início's own list of Projetos fails too and has its "Tentar de novo"; the request's is the one outside it.
+  function own() {
+    return screen
+      .getAllByRole('button', { name: 'Tentar de novo' })
+      .filter((one) => one.closest('section[aria-label="Projetos"]') === null)
+  }
+  await waitFor(() => expect(own()).toHaveLength(1))
+  const [retry] = own()
+  if (retry === undefined) throw new Error('the request has no Tentar de novo')
   expect(screen.queryByLabelText('Nome do projeto')).toBeNull()
   refuse = false
   fireEvent.click(retry)
