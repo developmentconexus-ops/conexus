@@ -236,6 +236,38 @@ export const setAssistantModel = defineOperation({
   ],
 })
 
+/** The longest title a person gives a conversation. */
+export const CONVERSATION_TITLE_MAX = 120
+
+export const renameAssistantConversation = defineOperation({
+  id: 'renameAssistantConversation',
+  summary:
+    'Gives an Assistant conversation the title its person chose; the title stays, and the memory no longer replaces it.',
+  access: 'session',
+  method: 'PATCH',
+  path: `${BASE}/{conversationId}`,
+  bodyLimit: 1024,
+  input: {
+    params: OfConversation,
+    body: z.object({ title: z.string().trim().min(1).max(CONVERSATION_TITLE_MAX) }),
+  },
+  success: { status: 200, body: z.object({ title: z.string() }) },
+  failures: [...READ_FAILURES, 'CONVERSATION_NOT_FOUND'],
+})
+
+export const deleteAssistantConversation = defineOperation({
+  id: 'deleteAssistantConversation',
+  summary:
+    'Deletes one of the person’s own Assistant conversations: its answer stops, its machine is killed, its messages and files go. The Projeto, its app and its versions stay.',
+  access: 'session',
+  method: 'DELETE',
+  path: `${BASE}/{conversationId}`,
+  bodyLimit: 1024,
+  input: { params: OfConversation },
+  success: { status: 204 },
+  failures: [...READ_FAILURES, 'CONVERSATION_NOT_FOUND'],
+})
+
 export const listAssistantConnections = defineOperation({
   id: 'listAssistantConnections',
   summary:

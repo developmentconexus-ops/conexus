@@ -18,6 +18,7 @@ import { AGENT_START, RUNNING, signalStarted } from '../conversation/test-events
 import { say, screens, view } from '../conversation/test-hub.tsx'
 import { START } from '../conversation/test-start.tsx'
 import { displayOf, newest, openLine } from '../conversation/test-stream.tsx'
+import { changesOf } from './test-changes.tsx'
 import type { ChosenModels } from './test-model.tsx'
 import { modelWrite, sessionState } from './test-model.tsx'
 
@@ -63,6 +64,8 @@ export type Answers = {
   offer?: () => Promise<Response | undefined> | Response | undefined
   /** What the read of the conversations list answers instead of the Hub's success. */
   list?: () => Promise<Response | undefined> | Response | undefined
+  /** What the delete of a conversation answers instead of the Hub's success. */
+  remove?: () => Response | undefined
   /** What the stream of the conversation's session answers instead of opening. */
   stream?: () => Response | undefined
   /** What the route of a conversation's files answers instead of the file. */
@@ -181,6 +184,7 @@ function writesOf(held: Held, note: (request: Request) => Promise<unknown>) {
         { status: 201 },
       )
     }),
+    ...changesOf(BASE, held, note),
     modelWrite(BASE, held, note),
     http.put(`${BASE}/conversations/:id/connections`, async ({ request, params }) => {
       const body = await note(request)

@@ -16,6 +16,7 @@ import {
   SidebarMenuSkeleton,
 } from '../../ui/sidebar.tsx'
 import { ReadFailure } from '../../ui/states.tsx'
+import { ConversationMenu } from './conversation-menu.tsx'
 import { assistantConversationsQuery } from './queries.ts'
 import { DAY_GROUP_LABELS, NEW_CONVERSATION, titleOf } from './text.ts'
 
@@ -80,6 +81,7 @@ function ConversationRow(props: {
       >
         {content}
       </SidebarMenuButton>
+      <ConversationMenu companyId={companyId} conversation={conversation} />
     </SidebarMenuItem>
   )
 }
