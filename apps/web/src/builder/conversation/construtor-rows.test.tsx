@@ -47,3 +47,26 @@ test('project_read e agent_test leem como frases, sem cartão', () => {
     unmount()
   }
 })
+
+test('tool_search, tool_save e agent_read leem como frases, sem o nome da ferramenta', () => {
+  for (const [toolName, line] of [
+    [CONSTRUTOR_TOOL.toolSearch, 'Procurou ferramentas'],
+    [CONSTRUTOR_TOOL.toolSave, 'Fez a ferramenta'],
+    [CONSTRUTOR_TOOL.agentRead, 'Leu o rascunho do agente'],
+  ] as const) {
+    const { unmount } = render(<ToolRow tool={draftRow(toolName)} />)
+    expect(screen.getByText(line)).toBeTruthy()
+    expect(screen.queryByText(/^Usou /)).toBeNull()
+    unmount()
+  }
+})
+
+test('tool_<slug> diz o que o agente consultou, nunca "Usou Tool"', () => {
+  const slug = { ...draftRow('tool_vendas_ontem'), result: 'ok' }
+  const { unmount } = render(<ToolRow tool={slug} />)
+  expect(screen.getByText('Consultou vendas ontem')).toBeTruthy()
+  expect(screen.queryByText(/Usou Tool/)).toBeNull()
+  unmount()
+  render(<ToolRow tool={{ ...slug, state: 'call', result: undefined }} />)
+  expect(screen.getByText('Consultando vendas ontem')).toBeTruthy()
+})

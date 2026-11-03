@@ -6,10 +6,8 @@ import {
   getProject,
   getSession,
   getStatus,
-  listAgents,
   listAssistantConnections,
   listAssistantConversations,
-  listAutomations,
   listClients,
   listCompanies,
   listCompanyAppAccess,
@@ -27,6 +25,7 @@ import { ok } from './layout-harness.ts'
 import { ANA, COMPANY } from './src/platform/fixtures.ts'
 import { connectionsPage } from './sweep-connections.ts'
 import { modelAccountsPage } from './sweep-model-accounts.ts'
+import { railListsPage } from './sweep-rail-lists.ts'
 
 export const INVITATION = 'i'.repeat(32)
 export const LONG_EMAIL =
@@ -114,6 +113,7 @@ function companyPage(
   return {
     ...SIGNED_IN,
     ...projectsPage(id),
+    ...railListsPage(id),
     ...modelAccountsPage(id, role !== 'member'),
     ...connectionsPage(id, role !== 'member'),
     // Início of the owner and the administrators asks the Assistant: the connections it offers and its conversations.
@@ -124,14 +124,12 @@ function companyPage(
       conversations: [],
       next: { kind: 'END' },
     }),
-    // The frame's bell reads the person's notifications on every page, Automações their automations and the Agentes link preloads its list.
+    // The frame's bell reads the person's notifications on every page.
     [`GET /api/companies/${id}/notifications`]: ok(listNotifications, {
       notifications: [],
       unread: 0,
       next: { kind: 'END' },
     }),
-    [`GET /api/companies/${id}/agents`]: ok(listAgents, { agents: [] }),
-    [`GET /api/companies/${id}/automations`]: ok(listAutomations, { automations: [] }),
     [`GET /api/companies/${id}`]: ok(getCompany, { company, role, mayInviteAs }),
     [`GET /api/companies/${id}/members`]: ok(listMembers, {
       members: people.map((one) => ({ ...one, mayChangeTo: [...one.mayChangeTo] })),

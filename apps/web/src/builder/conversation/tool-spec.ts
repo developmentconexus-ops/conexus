@@ -17,6 +17,9 @@ export type RowTool =
 /** The Construtor's tools that draw a row; the draft ones draw the agent's card (step 24.3, U5). */
 export type ConstrutorRowTool = (typeof CONSTRUTOR_TOOL)[
   | 'projectRead'
+  | 'toolSearch'
+  | 'toolSave'
+  | 'agentRead'
   | 'agentDraft'
   | 'agentSet'
   | 'agentTest']

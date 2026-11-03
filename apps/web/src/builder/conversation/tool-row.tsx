@@ -133,7 +133,9 @@ function Change({ edit }: { edit: Edit }) {
 }
 
 function Block({ tool, body }: { tool: ToolItem; body: ToolBody }) {
-  const detail = presentTool(tool, 'done', useRoom()).detail
+  const room = useRoom()
+  const detail = presentTool(tool, 'done', room).detail
+  const title = specOf(tool.toolName, room)?.done ?? readable(tool.toolName)
   switch (body) {
     case 'command': {
       const output = tool.output ?? textOf(tool.result)
@@ -180,7 +182,7 @@ function Block({ tool, body }: { tool: ToolItem; body: ToolBody }) {
       const result = tool.result === undefined ? undefined : (textOf(tool.result) ?? '')
       return (
         <div className="flex min-w-0 flex-col gap-xs font-mono text-fact text-text-2">
-          <div className="font-sans font-semibold text-text">{readable(tool.toolName)}</div>
+          <div className="font-sans font-semibold text-text">{title}</div>
           {args && (
             <div className="flex flex-col gap-xxs">
               <span className="font-sans text-text-2">Argumentos:</span>

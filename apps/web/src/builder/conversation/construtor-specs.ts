@@ -1,5 +1,5 @@
 import { CONSTRUTOR_TOOL } from '@conexus/hub-api'
-import { BotIcon, BuildingIcon, FlaskConicalIcon } from 'lucide-react'
+import { BotIcon, BuildingIcon, FlaskConicalIcon, SearchIcon, WrenchIcon } from 'lucide-react'
 import type { ConstrutorRowTool, ToolSpec } from './tool-spec.ts'
 
 /** The rows of the Construtor's own tools (step 24.3, U5): the person reads what was done to the agent, never a tool's name. */
@@ -10,6 +10,33 @@ export const CONSTRUTOR_SPECS: Record<ConstrutorRowTool, ToolSpec> = {
     done: 'Olhou o Projeto',
     failed: 'Não conseguiu olhar o Projeto',
     verb: 'olhou o Projeto',
+    body: 'generic',
+    groups: true,
+  },
+  [CONSTRUTOR_TOOL.toolSearch]: {
+    icon: SearchIcon,
+    running: 'Procurando ferramentas',
+    done: 'Procurou ferramentas',
+    failed: 'Não conseguiu procurar ferramentas',
+    verb: 'procurou ferramentas',
+    body: 'generic',
+    groups: true,
+  },
+  [CONSTRUTOR_TOOL.toolSave]: {
+    icon: WrenchIcon,
+    running: 'Fazendo a ferramenta',
+    done: 'Fez a ferramenta',
+    failed: 'Não conseguiu fazer a ferramenta',
+    verb: 'fez a ferramenta',
+    body: 'generic',
+    groups: false,
+  },
+  [CONSTRUTOR_TOOL.agentRead]: {
+    icon: BotIcon,
+    running: 'Lendo o rascunho do agente',
+    done: 'Leu o rascunho do agente',
+    failed: 'Não conseguiu ler o rascunho',
+    verb: 'leu o rascunho',
     body: 'generic',
     groups: true,
   },
@@ -40,4 +67,18 @@ export const CONSTRUTOR_SPECS: Record<ConstrutorRowTool, ToolSpec> = {
     body: 'generic',
     groups: true,
   },
+}
+
+/** The agent's own tool, named `tool_<slug>` (step 24.3): its row says what it read, by the slug's words. */
+export function slugToolSpec(slug: string): ToolSpec {
+  const words = slug.replace(/_+/g, ' ').trim()
+  return {
+    icon: WrenchIcon,
+    running: `Consultando ${words}`,
+    done: `Consultou ${words}`,
+    failed: `Não conseguiu consultar ${words}`,
+    verb: 'consultou',
+    body: 'generic',
+    groups: true,
+  }
 }

@@ -16,7 +16,7 @@ import {
 } from 'lucide-react'
 import { ASSISTANT_SPECS } from './assistant-specs.ts'
 import { CONNECTOR_SPECS } from './connector-specs.ts'
-import { CONSTRUTOR_SPECS } from './construtor-specs.ts'
+import { CONSTRUTOR_SPECS, slugToolSpec } from './construtor-specs.ts'
 import type { Room } from './room.ts'
 import type { ToolItem } from './rows.ts'
 import { stringArg } from './tool-args.ts'
@@ -229,9 +229,15 @@ function isRowTool(toolName: string): toolName is RowTool {
   return Object.hasOwn(TOOLS, toolName)
 }
 
+/** The prefix of the agent's library tools, `tool_<slug>`. */
+const AGENT_TOOL_PREFIX = 'tool_'
+
 /** The one lookup of how a tool's row reads, in the room that draws it. */
 export function specOf(toolName: string, room: Room): ToolSpec | undefined {
-  if (!isRowTool(toolName)) return undefined
+  if (!isRowTool(toolName))
+    return toolName.startsWith(AGENT_TOOL_PREFIX)
+      ? slugToolSpec(toolName.slice(AGENT_TOOL_PREFIX.length))
+      : undefined
   return room.overrides[toolName] ?? TOOLS[toolName]
 }
 
