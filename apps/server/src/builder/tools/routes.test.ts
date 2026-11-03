@@ -22,7 +22,7 @@ function refusalOf(response: { statusCode: number; json(): unknown }) {
 
 function listOf(response: { json(): unknown }): {
   tools: Tool[]
-  ready: { operation: string; slug: string; connectionId: string }[]
+  ready: { operation: string; label: string; slug: string; connectionId: string }[]
 } {
   return Object(response.json())
 }
@@ -83,6 +83,7 @@ test('gravar: a versão 1 nasce com a ferramenta; a mesma chave dá a mesma; cad
   )
   const clientes = library.ready.find((each) => each.operation === 'clientes')
   assert.equal(clientes?.slug, `clientes_${on.matriz.slice(0, 6)}`)
+  assert.equal(clientes?.label, 'Clientes')
   const vendas = await otherProject(on.hub, on.ana, on.company, [on.matriz])
   const theirs = listOf(await call(on.hub, on.ana, 'GET', vendas.tools))
   assert.deepEqual(

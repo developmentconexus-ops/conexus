@@ -97,7 +97,7 @@ export const OfferedConnection = z.object({
   connectionId: ConnectionId,
   connector: z.string(),
   name: z.string(),
-  reads: z.array(z.object({ operation: z.string(), summary: z.string() })),
+  reads: z.array(z.object({ operation: z.string(), label: z.string(), summary: z.string() })),
 })
 export type OfferedConnection = z.infer<typeof OfferedConnection>
 

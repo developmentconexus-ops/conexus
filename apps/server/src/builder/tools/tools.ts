@@ -185,13 +185,13 @@ async function list(deps: ToolsDeps, scope: InProject) {
     const rows = await toolsOn(tx, scope.companyId, ids)
     const held = new Set(rows.map((row) => row.id))
     const ready: ReadyTool[] = offered.flatMap((connection) =>
-      connection.reads.flatMap(({ operation, summary }) => {
+      connection.reads.flatMap(({ operation, label, summary }) => {
         const target = {
           connectionId: ConnectionId.parse(connection.connectionId),
           operation: OperationId.parse(operation),
         }
         if (held.has(readyIdOf(scope.companyId, target))) return []
-        return [{ ...target, summary, slug: readySlug(target) }]
+        return [{ ...target, label, summary, slug: readySlug(target) }]
       }),
     )
     const tools = (await detailsOf(tx, deps.usedBy, rows)).map(

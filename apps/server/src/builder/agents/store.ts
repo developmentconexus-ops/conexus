@@ -121,7 +121,7 @@ export async function detailOf(
     tools: await chosenOf(tx, await chosenIds(tx, AgentId.parse(row.id))),
     offered: offered.map(({ connectionId, connector, name, reads }) => ({
       ...{ connectionId, connector, name },
-      reads: reads.map(({ operation, summary }) => ({ operation, summary })),
+      reads: reads.map(({ operation, label, summary }) => ({ operation, label, summary })),
     })),
     createdBy:
       row.createdBy === null || author === null

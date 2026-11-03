@@ -20,7 +20,7 @@ function granted(
     name,
     perProject: 'many',
     skill: { name: `conexus-${connector}`, content: '', references: {} },
-    reads: [{ operation: 'consultar', summary: 'consulta' }],
+    reads: [{ operation: 'consultar', label: 'Consultas', summary: 'consulta' }],
     notes: [],
   }
 }

@@ -25,7 +25,7 @@ export type GrantedConnection = Readonly<{
   name: string
   perProject: 'one' | 'many'
   skill: Readonly<{ name: string; content: string; references: Readonly<Record<string, string>> }>
-  reads: readonly Readonly<{ operation: string; summary: string }>[]
+  reads: readonly Readonly<{ operation: string; label: string; summary: string }>[]
   notes: readonly string[]
 }>
 export type ShapedRead =
@@ -155,7 +155,11 @@ export function described(rows: Awaited<ReturnType<typeof offeredIn>>): GrantedC
         skill: { name: `conexus-${connector.id}`, ...connector.skill },
         reads: reads
           .filter((operation) => operation.class === 'read')
-          .map((operation) => ({ operation: operation.id, summary: operation.summary })),
+          .map((operation) => ({
+            operation: operation.id,
+            label: operation.label,
+            summary: operation.summary,
+          })),
         notes: Object.keys(Notes.parse(row.notes)),
       },
     ]

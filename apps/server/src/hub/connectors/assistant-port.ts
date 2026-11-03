@@ -29,7 +29,7 @@ type AssistantConnection = {
   connectionId: ConnectionId
   connector: string
   name: string
-  reads: readonly { operation: string; summary: string }[]
+  reads: readonly { operation: string; label: string; summary: string }[]
   skill: GrantedConnection['skill']
   chosen: boolean
 }

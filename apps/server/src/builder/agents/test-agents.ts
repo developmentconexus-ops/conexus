@@ -33,7 +33,7 @@ export type Agent = {
   draft: Record<string, unknown> & { instructions: string; connections: string[] }
   revision: number
   tools: (Omit<Tool, 'usedBy' | 'description' | 'versions'> & { version: ToolVersion })[]
-  offered: { connectionId: string; name: string; reads: { operation: string }[] }[]
+  offered: { connectionId: string; name: string; reads: { operation: string; label: string }[] }[]
   createdBy: { personId: string; name: string } | null
 }
 

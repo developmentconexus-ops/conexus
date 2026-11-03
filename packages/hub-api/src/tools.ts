@@ -96,7 +96,7 @@ export const ToolEffect = z.enum(['READ'])
 export type ToolEffect = z.infer<typeof ToolEffect>
 
 /** A read of a connection the Projeto received that the library does not hold yet, chosen as it is. */
-export const ReadyTool = ToolTarget.extend({ summary: z.string(), slug: ToolSlug })
+export const ReadyTool = ToolTarget.extend({ label: z.string(), summary: z.string(), slug: ToolSlug })
 export type ReadyTool = z.infer<typeof ReadyTool>
 
 export const ToolVersionDetail = ToolVersionConfig.extend({
