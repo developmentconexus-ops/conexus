@@ -99,8 +99,14 @@ for (const viewport of [DESKTOP, PHONE])
     const row = page.getByRole('link', { name: /Pedidos do mês/ })
     await row.waitFor()
     const badge = row.getByText(/^Automação · /)
-    const [line, tag] = await Promise.all([row.boundingBox(), badge.boundingBox()])
-    assert.ok(line && tag, 'the row is not laid out')
+    const title = row.getByText(/^Pedidos do mês$/)
+    const [line, tag, name] = await Promise.all([
+      row.boundingBox(),
+      badge.boundingBox(),
+      title.boundingBox(),
+    ])
+    assert.ok(line && tag && name, 'the row is not laid out')
+    assert.ok(name.width > 0, 'the title has no width left')
     assert.ok(line.height <= 44, `the row is ${line.height} high`)
     assert.ok(
       tag.y >= line.y && tag.y + tag.height <= line.y + line.height,

@@ -33,7 +33,7 @@ function ContinueRows({ companyId }: { companyId: CompanyId }) {
       {conversations.slice(0, BLOCK_ROWS).map((conversation) => {
         const content = (
           <>
-            <span className="min-w-0 flex-1 truncate">{titleOf(conversation)}</span>
+            <span className="min-w-0 flex-auto truncate">{titleOf(conversation)}</span>
             {conversation.project !== null && (
               <span className="min-w-0 shrink truncate text-fact text-text-2">
                 {conversation.project.name}
