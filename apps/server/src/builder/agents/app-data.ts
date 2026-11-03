@@ -5,7 +5,7 @@ import type { ToolsInput } from '@mastra/core/agent'
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
 import type { AppRead } from '../../hub/apps/public.ts'
-import { CUT_BYTES, CUT_ROWS } from '../../hub/connectors/public.ts'
+import { shaped } from '../../hub/connectors/public.ts'
 
 /** What an agent asks of its Projeto's app (step 24.3, U3): the apps' door, which reads and never writes. */
 export type AppDataPort = {
@@ -26,20 +26,14 @@ const AppDataInput = z.object({ sql: z.string().trim().min(1).max(4000) })
 
 const TOO_LARGE = 'A consulta trouxe dados demais. Peça menos linhas.'
 
-function size(value: unknown): number {
-  return Buffer.byteLength(JSON.stringify(value))
-}
-
-/**
- * What the model reads of a read, cut as `connector_read` cuts: up to `CUT_ROWS` rows, then rows
- * dropped from the end until it is at most `CUT_BYTES`; `complete` says nothing was left out.
- */
+/** What the model reads of a read: cut as `connector_read` cuts (code C26), its columns kept whole. */
 function cut(read: Extract<AppRead, { kind: 'ROWS' }>) {
-  let rows = read.rows.slice(0, CUT_ROWS)
-  while (rows.length > 0 && size({ columns: read.columns, rows }) > CUT_BYTES) {
-    rows = rows.slice(0, -1)
-  }
-  return { kind: 'ROWS', columns: read.columns, rows, complete: rows.length === read.rows.length }
+  const { value, complete } = shaped({ columns: read.columns, linhas: read.rows })
+  const listed = z.object({ columns: z.array(z.string()), linhas: z.array(z.array(z.unknown())) })
+  const kept = listed.safeParse(value)
+  if (!kept.success)
+    return { kind: 'FAILED', code: 'APP_DATA_TOO_LARGE', message: TOO_LARGE } as const
+  return { kind: 'ROWS', columns: kept.data.columns, rows: kept.data.linhas, complete } as const
 }
 
 /**

@@ -6,7 +6,7 @@ import { appLogin, appLoginPassword } from '@conexus/hub-api'
 import { NeonDbError, neon, neonConfig } from '@neondatabase/serverless'
 import type { AppReadAnswer } from './app-read.ts'
 import { ensureReadLogin, readAddress, readApp, readGrants, readSettings } from './app-read.ts'
-import type { Context, Row, SqlAnswer, SqlStatement, SqlTransport } from './app-sql.ts'
+import type { Context, Row, SqlAnswer, SqlRead, SqlStatement, SqlTransport } from './app-sql.ts'
 import { existingRoles, LEDGER, missingLogins, quoted, REPLY_CAP_BYTES } from './app-sql.ts'
 import { cappedText } from './capped-text.ts'
 import type { AppLoginKey } from './config.ts'
@@ -17,7 +17,7 @@ import { ruleBreak } from './migration-rule.ts'
 import { NEON_CALL_BUDGET_MS } from './neon.ts'
 
 export type { AppRead } from './app-read.ts'
-export type { SqlAnswer, SqlStatement, SqlTransport } from './app-sql.ts'
+export type { SqlAnswer, SqlRead, SqlStatement, SqlTransport } from './app-sql.ts'
 
 // Classes 08 and 57P0: the connection or the server went away, and the commit may have happened.
 const CONNECTION_LOST = /^(08|57P0)/
@@ -28,13 +28,26 @@ const CONNECTION_LOST = /^(08|57P0)/
  */
 export function answerOf(
   error:
-    | Readonly<{ code?: string; table?: string; column?: string; constraint?: string }>
+    | Readonly<{
+        name?: string
+        code?: string
+        table?: string
+        column?: string
+        constraint?: string
+      }>
     | undefined,
 ): SqlAnswer {
   const code = error?.code
-  if (code === undefined || CONNECTION_LOST.test(code)) return { kind: 'NO_ANSWER' }
+  if (code === undefined || CONNECTION_LOST.test(code)) {
+    return { kind: 'NO_ANSWER', cause: code ?? error?.name }
+  }
   const { table, column, constraint } = error ?? {}
   return { kind: 'REFUSED', code, table, column, constraint }
+}
+
+/** The class of whatever was thrown: enough to say what went silent, never its message. */
+export function errorName(error: unknown): string {
+  return error instanceof Error ? error.name : typeof error
 }
 
 /** What `cappedFetch` throws: the SDK wraps it in a `NeonDbError` as its `sourceError`. */
@@ -53,24 +66,44 @@ async function cappedFetch(input: string | URL | Request, init?: RequestInit): P
 neonConfig.fetchFunction = cappedFetch
 
 /** The program's transport: Neon's HTTP proxy, one request per transaction (decision 0043). */
+export function neonTransport(
+  url: DatabaseUrl,
+  statements: readonly SqlStatement[],
+  signal: AbortSignal,
+): Promise<SqlAnswer>
+export function neonTransport(
+  url: DatabaseUrl,
+  statements: readonly SqlStatement[],
+  signal: AbortSignal,
+  options: Readonly<{ readOnly: true }>,
+): Promise<SqlAnswer | SqlRead>
 export async function neonTransport(
   url: DatabaseUrl,
   statements: readonly SqlStatement[],
   signal: AbortSignal,
   options?: Readonly<{ readOnly: true }>,
-): Promise<SqlAnswer> {
+): Promise<SqlAnswer | SqlRead> {
   try {
     const sql = neon(url.reveal(), { fetchOptions: { signal } })
-    const value: Row[][] = await sql.transaction(
-      statements.map(({ text, values }) => sql.query(text, [...(values ?? [])])),
-      options,
-    )
+    const queries = statements.map(({ text, values }) => sql.query(text, [...(values ?? [])]))
+    if (options?.readOnly) {
+      // Rows as arrays with the result's own fields: two columns of one name stay two, an empty read keeps its columns.
+      const results = await sql.transaction(queries, {
+        ...options,
+        arrayMode: true,
+        fullResults: true,
+      })
+      const result = results[0]
+      if (result === undefined) return { kind: 'NO_ANSWER' }
+      return { kind: 'READ', columns: result.fields.map(({ name }) => name), rows: result.rows }
+    }
+    const value: Row[][] = await sql.transaction(queries)
     return { kind: 'DONE', value }
   } catch (error) {
     if (error instanceof NeonDbError && error.sourceError instanceof ReplyTooLarge) {
       return options?.readOnly ? { kind: 'TOO_LARGE' } : { kind: 'NO_ANSWER' }
     }
-    return answerOf(error instanceof NeonDbError ? error : undefined)
+    return answerOf(error instanceof NeonDbError ? error : { name: errorName(error) })
   }
 }
 

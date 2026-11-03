@@ -2,8 +2,8 @@ import { createHash, randomUUID } from 'node:crypto'
 import type { ProjectId } from '@conexus/hub-api'
 import { appLogin, appLoginPassword } from '@conexus/hub-api'
 import pg from 'pg'
-import type { SqlAnswer, SqlStatement } from './company-postgres.ts'
-import { answerOf, createCompanyPostgres } from './company-postgres.ts'
+import type { SqlAnswer, SqlRead, SqlStatement } from './company-postgres.ts'
+import { answerOf, createCompanyPostgres, errorName } from './company-postgres.ts'
 import type { AppLoginKey } from './config.ts'
 import { readTestDatabase } from './config.ts'
 import { DatabaseUrl } from './database.ts'
@@ -19,12 +19,23 @@ await loadMigrationRule()
  * The tests' transport (T19): one connection and one transaction per call, as Neon's HTTP proxy
  * runs it, on the test server's PostgreSQL.
  */
+export function pgTransport(
+  url: DatabaseUrl,
+  statements: readonly SqlStatement[],
+  signal: AbortSignal,
+): Promise<SqlAnswer>
+export function pgTransport(
+  url: DatabaseUrl,
+  statements: readonly SqlStatement[],
+  signal: AbortSignal,
+  options: Readonly<{ readOnly: true }>,
+): Promise<SqlAnswer | SqlRead>
 export async function pgTransport(
   url: DatabaseUrl,
   statements: readonly SqlStatement[],
   signal: AbortSignal,
   options?: Readonly<{ readOnly: true }>,
-): Promise<SqlAnswer> {
+): Promise<SqlAnswer | SqlRead> {
   const client = new pg.Client({ connectionString: url.reveal() })
   function abort() {
     void client.end()
@@ -34,16 +45,22 @@ export async function pgTransport(
     await client.connect()
     await client.query(options?.readOnly ? 'BEGIN READ ONLY' : 'BEGIN')
     const value = []
+    let read: SqlRead | undefined
     for (const statement of statements) {
-      // A named statement is a prepared one, which PostgreSQL refuses a second command in (42601);
-      // not proved against Neon's proxy, which no test may call.
       const query = { text: statement.text, values: [...(statement.values ?? [])] }
-      value.push((await client.query(options?.readOnly ? { ...query, name: 'read' } : query)).rows)
+      if (options?.readOnly) {
+        // A named statement is a prepared one, which PostgreSQL refuses a second command in (42601);
+        // not proved against Neon's proxy, which no test may call.
+        const result = await client.query({ ...query, name: 'read', rowMode: 'array' })
+        read = { kind: 'READ', columns: result.fields.map(({ name }) => name), rows: result.rows }
+      } else {
+        value.push((await client.query(query)).rows)
+      }
     }
     await client.query('COMMIT')
-    return { kind: 'DONE', value }
+    return read ?? { kind: 'DONE', value }
   } catch (error) {
-    return answerOf(error instanceof pg.DatabaseError ? error : undefined)
+    return answerOf(error instanceof pg.DatabaseError ? error : { name: errorName(error) })
   } finally {
     signal.removeEventListener('abort', abort)
     await client.end().catch(() => undefined)

@@ -9,17 +9,24 @@ export type Row = Readonly<Record<string, unknown>>
 export type SqlAnswer =
   | { kind: 'DONE'; value: Row[][] }
   | { kind: 'REFUSED'; code: string; table?: string; column?: string; constraint?: string }
-  | { kind: 'NO_ANSWER' }
+  /** `cause` names what went silent (an error's name or class), never its message. */
+  | { kind: 'NO_ANSWER'; cause?: string }
   /** A read whose reply passed the cap: only a read ever gets it (code C59). */
   | { kind: 'TOO_LARGE' }
 
-/** Runs the statements in one transaction as the URL's login, all or none; a read-only one if asked. */
-export type SqlTransport = (
-  url: DatabaseUrl,
-  statements: readonly SqlStatement[],
-  signal: AbortSignal,
-  options?: Readonly<{ readOnly: true }>,
-) => Promise<SqlAnswer>
+/** A read-only call's first statement: the columns PostgreSQL named, whatever their names, and rows as arrays. */
+export type SqlRead = { kind: 'READ'; columns: string[]; rows: unknown[][] }
+
+/** Runs the statements in one transaction as the URL's login, all or none; a read-only one answers with its columns. */
+export type SqlTransport = {
+  (url: DatabaseUrl, statements: readonly SqlStatement[], signal: AbortSignal): Promise<SqlAnswer>
+  (
+    url: DatabaseUrl,
+    statements: readonly SqlStatement[],
+    signal: AbortSignal,
+    options: Readonly<{ readOnly: true }>,
+  ): Promise<SqlAnswer | SqlRead>
+}
 
 /** A SQL reply past this is silence: the Hub's own statements read a few rows (code C59). */
 export const REPLY_CAP_BYTES = 1024 * 1024

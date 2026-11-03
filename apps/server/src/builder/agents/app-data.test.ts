@@ -24,6 +24,8 @@ const SEED = {
     "INSERT INTO recado (texto) SELECT 'recado ' || n FROM generate_series(1, 30) AS n",
     'CREATE TABLE grande (id int PRIMARY KEY, texto text NOT NULL)',
     "INSERT INTO grande SELECT n, repeat('x', 100000) FROM generate_series(1, 12) AS n",
+    'CREATE TABLE longo (id int PRIMARY KEY, texto text NOT NULL)',
+    "INSERT INTO longo VALUES (1, 'curta'), (2, repeat('y', 20000)), (3, 'curta')",
   ],
 }
 
@@ -87,6 +89,42 @@ test('lê: a ferramenta devolve as linhas da tabela do app, cortadas, pelo login
     [large.kind, large.code, large.message],
     ['FAILED', 'APP_DATA_TOO_LARGE', 'A consulta trouxe dados demais. Peça menos linhas.'],
   )
+})
+
+test('lê: colunas de mesmo nome num JOIN ficam as duas, uma tabela vazia devolve as suas colunas e o texto longo encurta a linha em vez de a tirar', async (t) => {
+  const on = await readingOn(t, [
+    'SELECT r.id, g.id FROM recado r JOIN grande g ON g.id = r.id ORDER BY r.id LIMIT 2',
+    'SELECT id, texto FROM recado WHERE id < 0',
+    'SELECT id, texto FROM longo ORDER BY id',
+  ])
+  const joined = JSON.parse(await on.ask())
+  assert.deepEqual(joined.columns, ['id', 'id'])
+  assert.deepEqual(joined.rows, [
+    ['1', 1],
+    ['2', 2],
+  ])
+  const empty = JSON.parse(await on.ask())
+  assert.deepEqual([empty.columns, empty.rows, empty.complete], [['id', 'texto'], [], true])
+  const long = JSON.parse(await on.ask())
+  assert.deepEqual(
+    long.rows.map((row: [number, string]) => row[0]),
+    [1, 2, 3],
+  )
+  assert.ok(long.rows[1][1].length < 1000, 'the long text is cut, its row kept')
+  assert.equal(long.complete, false)
+})
+
+test('o registro: a recusa guarda o SQLSTATE e a falha a sua causa, e o modelo não lê nenhum dos dois', async (t) => {
+  const on = await readingOn(t, ['SELECT * FROM nao_existe', 'DELETE FROM recado'])
+  const missing = JSON.parse(await on.ask())
+  assert.deepEqual(missing, { kind: 'REFUSED', code: 'APP_DATA_REFUSED' })
+  const write = JSON.parse(await on.ask())
+  assert.deepEqual(write, { kind: 'REFUSED', code: 'APP_DATA_REFUSED' })
+  const states = on.hub.lines
+    .filter((line) => line.message === 'APP_DATA_READ')
+    .map(({ fields }) => fields.sqlstate)
+  assert.deepEqual(states, ['42P01', '25006'])
+  assert.ok(!JSON.stringify(on.hub.lines).includes('nao_existe'), 'the log carries no SQL')
 })
 
 const WRITES = [
@@ -168,4 +206,7 @@ test('sem app: o agente não recebe a ferramenta; o banco da empresa fora dá AP
   const down = await readingOn(t, ['SELECT 1'])
   down.hub.postgres.companyPostgres.readAddress = async () => unreachableDatabaseUrl()
   assert.deepEqual(JSON.parse(await down.ask()), { kind: 'FAILED', code: 'APP_DATA_UNAVAILABLE' })
+  const line = down.hub.lines.findLast((one) => one.message === 'APP_DATA_READ')
+  assert.equal(line?.fields.code, 'APP_DATA_UNAVAILABLE')
+  assert.equal(typeof line?.fields.cause, 'string', 'the silence keeps its cause in the log')
 })

@@ -155,8 +155,32 @@ export async function readAppData(
     }
     deps.log.info({ companyId, projectId }, 'APP_READ_LOGIN_CREATED')
     answer = await deps.companyPostgres.readApp(address, input.sql, signal)
-    if (answer.kind === 'NO_LOGIN') return unavailable
   }
-  deps.log.info({ companyId, projectId, answer: answer.kind }, 'APP_DATA_READ')
-  return answer
+  switch (answer.kind) {
+    case 'ROWS':
+      deps.log.info({ companyId, projectId, answer: answer.kind }, 'APP_DATA_READ')
+      return answer
+    case 'REFUSED':
+      deps.log.info(
+        { companyId, projectId, answer: answer.kind, sqlstate: answer.sqlstate },
+        'APP_DATA_READ',
+      )
+      return { kind: 'REFUSED', code: answer.code }
+    case 'FAILED':
+      deps.log.info(
+        {
+          companyId,
+          projectId,
+          answer: answer.kind,
+          code: answer.code,
+          cause: answer.cause ?? 'none',
+        },
+        'APP_DATA_READ',
+      )
+      return { kind: 'FAILED', code: answer.code }
+    case 'NO_LOGIN':
+      return unavailable
+    default:
+      return answer satisfies never
+  }
 }

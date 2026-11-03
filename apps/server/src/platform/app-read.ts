@@ -1,7 +1,7 @@
 import { APP_CALL_LIMITS } from '@conexus/app-contract'
 import type { ProjectId } from '@conexus/hub-api'
 import { appLogin, appLoginPassword } from '@conexus/hub-api'
-import type { Context, SqlAnswer, SqlStatement } from './app-sql.ts'
+import type { Context, SqlAnswer, SqlRead, SqlStatement } from './app-sql.ts'
 import { LEDGER, missingLogins, quoted, REPLY_CAP_BYTES } from './app-sql.ts'
 import { DatabaseUrl } from './database.ts'
 import { COMPANY_DATABASE, NEON_CALL_BUDGET_MS } from './neon.ts'
@@ -14,8 +14,16 @@ export type AppRead =
       kind: 'FAILED'
       code: 'APP_DATA_UNAVAILABLE' | 'APP_DATA_TIMEOUT' | 'APP_DATA_NO_APP' | 'APP_DATA_TOO_LARGE'
     }
-/** What the port answers: the login the read asked as is not there yet, which `ensureReadLogin` makes. */
-export type AppReadAnswer = AppRead | { kind: 'NO_LOGIN' }
+/**
+ * What the port answers to the Hub: the login the read asked as is not there yet, which
+ * `ensureReadLogin` makes; a refusal keeps its SQLSTATE and a silence its cause for the Hub's log,
+ * which strips both before the model reads (code C50).
+ */
+export type AppReadAnswer =
+  | Extract<AppRead, { kind: 'ROWS' }>
+  | { kind: 'REFUSED'; code: 'APP_DATA_REFUSED'; sqlstate: string }
+  | (Extract<AppRead, { kind: 'FAILED' }> & { cause?: string })
+  | { kind: 'NO_LOGIN' }
 
 /** Where the dispatcher reaches the read login, as the edge does (`apps/edge/src/db.ts`), with no call to Neon. */
 export async function readAddress(context: Context, host: string, projectId: ProjectId) {
@@ -110,22 +118,25 @@ export async function readApp(
 ): Promise<AppReadAnswer> {
   const answer = await context.transport(read, [{ text: sql }], signal, { readOnly: true })
   switch (answer.kind) {
-    case 'DONE': {
-      const listed = answer.value[0] ?? []
-      if (Buffer.byteLength(JSON.stringify(listed)) > REPLY_CAP_BYTES) {
+    case 'READ':
+      if (Buffer.byteLength(JSON.stringify(answer.rows)) > REPLY_CAP_BYTES) {
         return { kind: 'FAILED', code: 'APP_DATA_TOO_LARGE' }
       }
-      const columns = Object.keys(listed[0] ?? {})
-      return { kind: 'ROWS', columns, rows: listed.map((row) => Object.values(row)) }
-    }
+      return { kind: 'ROWS', columns: answer.columns, rows: answer.rows }
+    case 'DONE':
+      throw new Error('a read-only call answered with no columns')
     case 'TOO_LARGE':
       return { kind: 'FAILED', code: 'APP_DATA_TOO_LARGE' }
     case 'NO_ANSWER':
-      return { kind: 'FAILED', code: signal.aborted ? 'APP_DATA_TIMEOUT' : 'APP_DATA_UNAVAILABLE' }
+      return {
+        kind: 'FAILED',
+        code: signal.aborted ? 'APP_DATA_TIMEOUT' : 'APP_DATA_UNAVAILABLE',
+        cause: answer.cause,
+      }
     case 'REFUSED':
       if (NO_LOGIN.has(answer.code)) return { kind: 'NO_LOGIN' }
       if (TIMED_OUT.has(answer.code)) return { kind: 'FAILED', code: 'APP_DATA_TIMEOUT' }
-      return { kind: 'REFUSED', code: 'APP_DATA_REFUSED' }
+      return { kind: 'REFUSED', code: 'APP_DATA_REFUSED', sqlstate: answer.code }
     default:
       return answer satisfies never
   }

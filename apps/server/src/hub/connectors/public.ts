@@ -23,7 +23,7 @@ import { registerAppCallRoutes, registerConnectionRoutes } from './routes.ts'
 export type { SessionScope } from './assistant-port.ts'
 export { TurnKey } from './assistant-port.ts'
 /** The cut of what a read sends the model: the agents' app reads cut the same way (code C26). */
-export { CUT_BYTES, CUT_ROWS } from './cut.ts'
+export { shaped } from './cut.ts'
 
 /** Tests shorten the deadline. */
 export type ConnectorDeadlines = { callDeadlineMs?: number }
