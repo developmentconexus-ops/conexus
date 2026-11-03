@@ -1,7 +1,9 @@
 import type { ConversationId } from '@conexus/hub-api'
 import type { AgentController } from '@mastra/core/agent-controller'
+import type { StorageThreadType } from '@mastra/core/memory'
 import type { Memory } from '@mastra/memory'
-import type { Kept } from '../controller-kit/public.ts'
+import { Failure } from '../../platform/failure.ts'
+import type { Kept, Owner } from '../controller-kit/public.ts'
 import { openSession, resourceOf } from '../controller-kit/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import type { InProject } from '../tools/public.ts'
@@ -41,4 +43,18 @@ export function openConstrutor(
     return { made: false, same: thread.metadata?.[CONSTRUTOR_MARK.project] === scope.projectId, id }
   }
   return openSession(deps, { kind: 'construtor', owner, id, tags, keep })
+}
+
+/** The thread a conversation of the person's is, which `openSession` has just made or found. */
+export async function threadOf(
+  memory: Memory,
+  owner: Owner,
+  id: ConversationId,
+): Promise<StorageThreadType> {
+  const thread = await memory.getThreadById({
+    threadId: id,
+    resourceId: resourceOf('construtor', owner),
+  })
+  if (thread === null) throw new Failure('CONVERSATION_NOT_FOUND')
+  return thread
 }

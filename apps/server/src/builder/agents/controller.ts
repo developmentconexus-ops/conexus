@@ -22,6 +22,7 @@ import type { Speakers } from '../assistant/public.ts'
 import type { Owner, ReleaseScope } from '../controller-kit/public.ts'
 import {
   agentDefaults,
+  agentManagerAdmission,
   controllerOf,
   oncePerRun,
   ownerOfResource,
@@ -225,12 +226,7 @@ export function createAgentConversations(deps: Deps) {
       controller,
       memory,
       /** Whether the person may talk to the Projeto's agents now (`manageAgents`). */
-      async admit(input: { person: Person; companyId: CompanyId }): Promise<void> {
-        const owner = { companyId: input.companyId, personId: input.person.id }
-        await database.command({ kind: 'COMPANY', ...owner }, async (tx) => {
-          await deps.identity.admitMember({ tx, ...owner, action: 'manageAgents' })
-        })
-      },
+      admit: agentManagerAdmission({ database, identity: deps.identity }),
       async release(scope: ReleaseScope): Promise<void> {
         const count = await sweep({
           [AGENT_MARK.company]: scope.companyId,

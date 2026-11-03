@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import type { AutomationId, CompanyId, Person } from '@conexus/hub-api'
 import {
@@ -17,7 +16,6 @@ import type { PostgresStore } from '@mastra/pg'
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import type { Connectors, SessionScope } from '../../hub/connectors/public.ts'
-import { TurnKey } from '../../hub/connectors/public.ts'
 import type { IdentityPorts } from '../../hub/identity/public.ts'
 import type { liveProjectOf } from '../../hub/projects/public.ts'
 import type { Database } from '../../platform/database.ts'
@@ -31,12 +29,14 @@ import { connectorTools } from '../connectors/public.ts'
 import type { Owner, ReleaseScope } from '../controller-kit/public.ts'
 import {
   agentDefaults,
+  agentManagerAdmission,
   controllerOf,
   oncePerRun,
   ownerOfResource,
   releaseThreads,
   sessionTurns,
   threadsByMarks,
+  turnKeyOn,
 } from '../controller-kit/public.ts'
 import { conversationMemory, sessionModel, toolsOf, turnOfOwner } from '../conversation/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
@@ -49,7 +49,7 @@ import { testDraft } from './test-draft.ts'
 import { construtorTools } from './tools.ts'
 
 const MODE = 'conversa'
-const TURN_KEY = 'conexus-construtor-turn-key'
+const turnKey = turnKeyOn('conexus-construtor-turn-key')
 const TITLE =
   'Dê à conversa um título curto em português, de até seis palavras, sobre o agente que a pessoa quer montar, sem aspas nem ponto final.'
 const OBSERVER =
@@ -97,14 +97,6 @@ type Deps = {
   /** The app's tables of a Projeto, names and columns, never a row (step 24.3, U3's door). */
   appTables: (scope: InProject) => Promise<{ name: string; columns: string[] }[] | null>
   log: FailureLog
-}
-
-function turnKeyIn(requestContext: RequestContext): TurnKey {
-  const turn = TurnKey.safeParse(requestContext.get(TURN_KEY))
-  if (!turn.success) {
-    throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'CONNECTOR_TOOL_WITHOUT_TURN' } })
-  }
-  return turn.data
 }
 
 type Threads = Pick<Memory, 'getThreadById'>
@@ -194,7 +186,7 @@ function construtorAgent(
       const access: ConnectorAccess = {
         connections: offered,
         log: deps.log,
-        read: (call, context) => deps.connectors.read(door, { ...call, turn: turnKeyIn(context) }),
+        read: (call, context) => deps.connectors.read(door, { ...call, turn: turnKey.of(context) }),
         notes: (connectionId) => deps.connectors.notes(door, connectionId),
         wording: { whose: 'this Project received', limit: '50 connector calls per answer' },
       }
@@ -230,7 +222,7 @@ export function createConstrutor(deps: Deps) {
       if (scope === undefined) return undefined
       const turn = await turnOfOwner(queue, scope)
       setTurn(requestContext, turn)
-      requestContext.set(TURN_KEY, TurnKey.parse(randomUUID()))
+      turnKey.start(requestContext)
       return turn
     },
   })
@@ -252,12 +244,7 @@ export function createConstrutor(deps: Deps) {
       controller,
       memory,
       /** Whether the person may build agents in the company now (`manageAgents`). */
-      async admit(input: { person: Person; companyId: CompanyId }): Promise<void> {
-        const owner = { companyId: input.companyId, personId: input.person.id }
-        await database.command({ kind: 'COMPANY', ...owner }, async (tx) => {
-          await deps.identity.admitMember({ tx, ...owner, action: 'manageAgents' })
-        })
-      },
+      admit: agentManagerAdmission({ database, identity: deps.identity }),
       async release(scope: ReleaseScope): Promise<void> {
         const ids = await threadsByMarks(memory, {
           [CONSTRUTOR_MARK.company]: scope.companyId,

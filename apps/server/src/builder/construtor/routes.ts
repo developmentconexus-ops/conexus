@@ -10,13 +10,12 @@ import type { Memory } from '@mastra/memory'
 import type { FastifyInstance } from 'fastify'
 import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
-import { Failure } from '../../platform/failure.ts'
 import { answer, serve } from '../../platform/http.ts'
 import { attemptIdOf, resourceOf } from '../controller-kit/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import type { InProject, ToolsDeps } from '../tools/public.ts'
 import { admitted, databaseScopeOf, inProjectOf } from '../tools/public.ts'
-import { CONSTRUTOR_MARK, openConstrutor } from './open.ts'
+import { CONSTRUTOR_MARK, openConstrutor, threadOf } from './open.ts'
 
 type Deps = Pick<ToolsDeps, 'identity' | 'liveProjectOf'> & {
   database: Database
@@ -52,11 +51,7 @@ export function registerConstrutorRoutes(app: FastifyInstance, deps: Deps): void
     const owner = { companyId: scope.companyId, personId: scope.personId }
     const id = attemptIdOf('construtor', owner, input.attemptKey)
     const opened = await openConstrutor({ ...deps, controller, memory }, { scope, id })
-    const thread = await memory.getThreadById({
-      threadId: id,
-      resourceId: resourceOf('construtor', owner),
-    })
-    if (thread === null) throw new Failure('CONVERSATION_NOT_FOUND')
+    const thread = await threadOf(memory, owner, id)
     if (opened.made) {
       const about = { companyId: scope.companyId, traceId: input.traceId, conversationId: id }
       deps.log.info(about, 'CONSTRUTOR_CONVERSATION_CREATED')
