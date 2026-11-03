@@ -38,7 +38,9 @@ function applied(agent: AgentDetail, fields: Fields): AgentDetail {
  * each reads the `revision` from the cache when it leaves: two sections saved in a row by the same
  * person never refuse each other. Each change is applied to the cached agent at once, so the next
  * change starts from it. Only a refusal from outside (`AGENT_DRAFT_STALE` of another writer) is
- * shown, beside the section that asked.
+ * shown, beside the section that asked. The cache is read again only when the agent's last queued
+ * write settles (web W12, the library's concurrent optimistic updates): a read in between would
+ * drop the changes still waiting.
  */
 export function useDraftSave(
   scope: { companyId: CompanyId; projectId: ProjectId },
@@ -46,6 +48,9 @@ export function useDraftSave(
 ): Saving {
   const queryClient = useQueryClient()
   const { queryKey } = agentQuery(scope, agentId)
+  function queued() {
+    return queryClient.isMutating({ predicate: (one) => one.options.scope?.id === agentId })
+  }
   function cached(): AgentDetail {
     const read = queryClient.getQueryData<{ agent: AgentDetail }>(queryKey)
     if (read === undefined) throw new Error(`the agent ${agentId} is saved while its page is read`)
@@ -54,24 +59,26 @@ export function useDraftSave(
   const send = useMutation({
     mutationKey: sendDraft.mutationKey,
     scope: { id: agentId },
+    meta: { keepCache: true },
     mutationFn: (fields: Fields) =>
       sendDraft.mutationFn({
         params: { ...scope, agentId },
         body: { ...fields, revision: cached().revision },
       }),
     onMutate: (fields) => {
+      // Not awaited: a change made right after this one must start from it, so the cache changes now.
+      void queryClient.cancelQueries({ queryKey })
       queryClient.setQueryData<{ agent: AgentDetail }>(queryKey, {
         agent: applied(cached(), fields),
       })
     },
     onSuccess: ({ agent: saved }) => {
-      const queued = queryClient.isMutating({
-        predicate: (one) => one.options.scope?.id === agentId,
-      })
       // While later writes wait, the screen keeps their changes and takes the saved revision.
-      const shown = queued > 1 ? { ...saved, draft: cached().draft } : saved
+      const shown =
+        queued() > 1 ? { ...saved, draft: cached().draft, tools: cached().tools } : saved
       queryClient.setQueryData<{ agent: AgentDetail }>(queryKey, { agent: shown })
     },
+    onSettled: () => (queued() === 1 ? queryClient.invalidateQueries() : undefined),
   })
   const failure = send.error
   return {
