@@ -65,9 +65,10 @@ export function agentRunContext(run: AgentRun): RequestContext {
 
 /**
  * The turn of the run's person in the accounts' queue, with the agent's model held for the whole
- * turn (`Turn`'s fixed model), and a new key for the door; put on the run's context.
+ * turn (`Turn`'s fixed model), and a new key for the door on the run's context. The turn itself is
+ * put on the context by the caller (the controller's turns do it as they take).
  */
-export async function takeAgentTurn(
+export async function agentTurnOf(
   queue: QueueDeps,
   requestContext: RequestContext,
   input: { run: AgentRun; model: { id: ModelId; effort: Effort } },
@@ -76,8 +77,14 @@ export async function takeAgentTurn(
   const owner = { companyId, personId }
   const memoryModels = await memoryModelsFor(queue, owner)
   const turn = new Turn({ ...owner, memoryModels, model: input.model })
-  setTurn(requestContext, turn)
   turnKey.start(requestContext)
+  return turn
+}
+
+/** The same turn, put on the run's context: for a run that no controller's turns take. */
+async function takeAgentTurn(...args: Parameters<typeof agentTurnOf>): Promise<Turn> {
+  const turn = await agentTurnOf(...args)
+  setTurn(args[1], turn)
   return turn
 }
 

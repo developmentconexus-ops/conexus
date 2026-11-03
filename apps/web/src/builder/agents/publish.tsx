@@ -18,10 +18,14 @@ export function publishFailureText(failure: unknown): string {
   return writeFailureText(failure, UNCONFIRMED_PUBLISH)
 }
 
-/** The number the next publication makes: one past the newest version, the first when none is published. */
-export function useNextVersion(scope: Scope, agentId: AgentDetail['id']): number {
+/**
+ * The label of **Publicar**: it names the number the next publication makes (one past the newest version,
+ * the first when none is published) only once the versions are read, so it never promises a false one.
+ */
+export function usePublishLabel(scope: Scope, agentId: AgentDetail['id']): string {
   const versions = useQuery(versionsQuery(scope, agentId))
-  return Math.max(0, ...(versions.data?.versions.map((one) => one.number) ?? [])) + 1
+  if (versions.data === undefined) return 'Publicar'
+  return `Publicar v${Math.max(0, ...versions.data.versions.map((one) => one.number)) + 1}`
 }
 
 /**
@@ -50,7 +54,7 @@ export function PublishButton(props: { scope: Scope; agent: AgentDetail }) {
   const [message, setMessage] = useState('')
   const [error, setError] = useState<string>()
   const { publish, pending } = usePublish(props.scope, agent.id)
-  const next = useNextVersion(props.scope, agent.id)
+  const label = usePublishLabel(props.scope, agent.id)
 
   async function confirm() {
     setError(undefined)
@@ -66,7 +70,7 @@ export function PublishButton(props: { scope: Scope; agent: AgentDetail }) {
   return (
     <>
       <Button size="sm" variant="primary" onClick={() => setOpen(true)}>
-        Publicar v{next}
+        {label}
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent

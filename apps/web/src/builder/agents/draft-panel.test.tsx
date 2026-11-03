@@ -45,7 +45,7 @@ test('o rascunho aparece ao lado da conversa, com o que o agente tem, e a conver
   expect(within(panel).getByText('Sankhya · Matriz')).toBeTruthy()
   expect(within(panel).getByRole('button', { name: 'Testar' })).toBeTruthy()
   expect(within(panel).getByRole('link', { name: 'Abrir a página' })).toBeTruthy()
-  expect(within(panel).getByRole('button', { name: 'Publicar v1' })).toBeTruthy()
+  expect(await within(panel).findByRole('button', { name: 'Publicar v1' })).toBeTruthy()
   expect(screen.getAllByRole('button', { name: /^Publicar/ })).toHaveLength(1)
 })
 

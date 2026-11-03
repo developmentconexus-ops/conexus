@@ -19,7 +19,7 @@ import { ReadStates } from './read-states.tsx'
 import { NO_AGENT_CONVERSATIONS, titleOf } from './text.ts'
 
 type Scope = { companyId: CompanyId; projectId: ProjectId }
-type Item = { value: ConversationId; label: string }
+type Item = { value: ConversationId; label: string; age: string }
 
 /**
  * The test panel of the agent's page (step 24.3, U5, criterion 27), beside the configuration: a
@@ -39,7 +39,8 @@ export function TestPanel(props: {
   const now = new Date()
   const items: Item[] = (read.data?.conversations ?? []).map((one) => ({
     value: one.id,
-    label: `${titleOf(one)}${one.draft ? ' · Teste' : ''} · ${ageOf(one.updatedAt, now)}`,
+    label: `${titleOf(one)}${one.draft ? ' · Teste' : ''}`,
+    age: ageOf(one.updatedAt, now),
   }))
   const current = items.find((one) => one.value === props.conversationId)
   return (
@@ -63,7 +64,8 @@ export function TestPanel(props: {
             <ComboboxList>
               {(item: Item) => (
                 <ComboboxItem key={item.value} value={item}>
-                  {item.label}
+                  <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                  <span className="shrink-0 text-text-2 tabular-nums">{item.age}</span>
                 </ComboboxItem>
               )}
             </ComboboxList>

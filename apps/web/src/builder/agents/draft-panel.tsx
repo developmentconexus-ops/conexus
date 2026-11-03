@@ -20,7 +20,7 @@ import { Empty, ReadFailure } from '../../ui/states.tsx'
 import { useConnectorCatalog } from '../assistant/public.ts'
 import { modelLabel } from '../model-accounts/public.ts'
 import { useOpenAgentConversation } from './open-conversation.ts'
-import { publishFailureText, useNextVersion, usePublish } from './publish.tsx'
+import { publishFailureText, usePublish, usePublishLabel } from './publish.tsx'
 import { agentQuery } from './queries.ts'
 import { StateStamp } from './rows.tsx'
 import {
@@ -56,7 +56,7 @@ function Filled({ scope, agent }: { scope: Scope; agent: AgentDetail }) {
   const { publish, pending } = usePublish(scope, agent.id)
   const test = useOpenAgentConversation(scope, agent.id)
   const [error, setError] = useState<string>()
-  const next = useNextVersion(scope, agent.id)
+  const label = usePublishLabel(scope, agent.id)
   const { draft } = agent
 
   async function asPublish() {
@@ -141,7 +141,7 @@ function Filled({ scope, agent }: { scope: Scope; agent: AgentDetail }) {
             Abrir a página
           </Link>
           <Button size="sm" variant="primary" disabled={pending} onClick={() => void asPublish()}>
-            {pending ? 'Publicando…' : `Publicar v${next}`}
+            {pending ? 'Publicando…' : label}
           </Button>
         </div>
       </div>

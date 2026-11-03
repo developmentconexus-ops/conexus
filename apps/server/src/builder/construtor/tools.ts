@@ -5,6 +5,7 @@ import type {
   ProjectId,
   ProjectReadResult,
   ReadyTool,
+  TestedResult,
   ToolSearchResult,
   ToolSummary,
 } from '@conexus/hub-api'
@@ -28,7 +29,6 @@ import { Failure, logFailure } from '../../platform/failure.ts'
 import type { AgentService } from '../agents/public.ts'
 import type { InProject, OfferedConnection, Tools } from '../tools/public.ts'
 import type { AppTable } from './app-tables.ts'
-import type { Tested } from './test-draft.ts'
 
 type Refused = { kind: 'REFUSED'; code: FailureCode; field?: string }
 
@@ -42,7 +42,7 @@ export type ConstrutorDeps = {
     app: { tables: AppTable[] } | null
   }>
   automations: (scope: InProject) => Promise<{ id: AutomationId; name: string; prompt: string }[]>
-  test: (scope: InProject, agentId: AgentId, question: string) => Promise<Tested>
+  test: (scope: InProject, agentId: AgentId, question: string) => Promise<TestedResult>
   log: FailureLog
 }
 

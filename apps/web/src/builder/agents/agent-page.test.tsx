@@ -194,15 +194,37 @@ test('a configuração é a página: as seções são regiões e não há a seç
   expect(screen.queryByRole('complementary', { name: 'Conversas' })).toBeNull()
 })
 
-test('Pesquisar na web é uma ferramenta: ligar a chave na biblioteca manda { web: true } e a linha aparece em Ferramentas', async () => {
+test('Cancelar desfaz a chave de Pesquisar na web: nada é gravado', async () => {
   const hub = at(PAGE, { agents: [agent({ tools: [] })] })
   const tools = await screen.findByRole('region', { name: 'Ferramentas' })
   fireEvent.click(within(tools).getByRole('button', { name: 'Adicionar da biblioteca' }))
   const dialog = await screen.findByRole('dialog')
   fireEvent.click(await within(dialog).findByRole('switch', { name: 'Pesquisar na web' }))
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Cancelar' }))
+  await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+  expect(hub.writes()).toHaveLength(0)
+  expect(within(tools).queryByText('Pesquisar na web')).toBeNull()
+})
+
+test('Pesquisar na web é uma ferramenta: ligar a chave e Usar as escolhidas manda { web: true } e a linha aparece em Ferramentas', async () => {
+  const hub = at(PAGE, { agents: [agent({ tools: [] })] })
+  const tools = await screen.findByRole('region', { name: 'Ferramentas' })
+  fireEvent.click(within(tools).getByRole('button', { name: 'Adicionar da biblioteca' }))
+  const dialog = await screen.findByRole('dialog')
+  fireEvent.click(await within(dialog).findByRole('switch', { name: 'Pesquisar na web' }))
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Usar as escolhidas' }))
   await waitFor(() => expect(hub.writes()).toHaveLength(1))
   expect(hub.writes()[0]?.body).toMatchObject({ web: true })
   expect(await within(tools).findByText('Pesquisar na web')).toBeTruthy()
+})
+
+test('com a leitura das ligações recusada, Ligações diz a falha em vez de calar o estado', async () => {
+  at(PAGE, { agents: [agent()] })
+  server.use(
+    http.get('*/api/companies/:companyId/connections', () => refusal('DATABASE_UNAVAILABLE')),
+  )
+  const connections = await screen.findByRole('region', { name: 'Ligações' })
+  expect(await within(connections).findByRole('button', { name: 'Tentar de novo' })).toBeTruthy()
 })
 
 test('a ligação mostra Funcionando', async () => {
@@ -226,6 +248,17 @@ test('Publicar diz a próxima versão', async () => {
     versions: [version(1, true)],
   })
   expect(await screen.findByRole('button', { name: 'Publicar v2' })).toBeTruthy()
+})
+
+test('com a leitura das versões recusada, Publicar não promete um número', async () => {
+  at(PAGE, { agents: [agent()] })
+  server.use(
+    http.get(`*/api/companies/${COMPANY.id}/projects/*/agents/*/versions`, () =>
+      refusal('DATABASE_UNAVAILABLE'),
+    ),
+  )
+  expect(await screen.findByRole('button', { name: 'Publicar' })).toBeTruthy()
+  expect(screen.queryByRole('button', { name: /^Publicar v/ })).toBeNull()
 })
 
 test('Testar abre a conversa de teste no painel da direita', async () => {
@@ -257,7 +290,14 @@ test('as conversas da pessoa ficam na troca do painel', async () => {
     ],
   })
   const panel = await screen.findByRole('region', { name: 'Testar' })
-  fireEvent.keyDown(await within(panel).findByRole('combobox', { name: 'Conversas' }), {
+  const switcher = await within(panel).findByRole('combobox', { name: 'Conversas' })
+  expect(switcher).toBeInstanceOf(HTMLInputElement)
+  function shown() {
+    return switcher instanceof HTMLInputElement ? switcher.value : ''
+  }
+  await waitFor(() => expect(shown()).toContain('Teste'))
+  expect(shown()).not.toMatch(/\d (min|h|d)$|ontem$/)
+  fireEvent.keyDown(switcher, {
     key: 'ArrowDown',
   })
   const option = await screen.findByRole('option', { name: /Metas de ontem/ })

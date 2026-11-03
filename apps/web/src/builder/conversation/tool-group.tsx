@@ -47,7 +47,10 @@ export function ToolGroup(props: { tools: ToolItem[]; working: boolean }) {
   return (
     <TraceCollapsible open={chosen ?? working} onOpenChange={setChosen}>
       <TraceCollapsibleTrigger>
-        <TraceLine status={working ? 'running' : failed ? 'error' : undefined}>
+        <TraceLine
+          status={working ? 'running' : failed ? 'error' : undefined}
+          className={working ? undefined : 'h-lh flex-wrap overflow-hidden'}
+        >
           {working && activePresentation ? (
             <TraceIcon>
               <activePresentation.icon />
@@ -55,7 +58,7 @@ export function ToolGroup(props: { tools: ToolItem[]; working: boolean }) {
           ) : (
             <TraceIcon>{failed ? <CircleAlertIcon /> : <CheckIcon />}</TraceIcon>
           )}
-          <TraceTitle>
+          <TraceTitle className={working ? undefined : 'max-w-full'}>
             {working && activePresentation ? (
               activePresentation.sentence
             ) : (

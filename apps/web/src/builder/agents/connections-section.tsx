@@ -1,7 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
 import { connectionsQuery, stateBadge } from '../../hub/connectors/public.ts'
+import { sentenceOf } from '../../platform/hub.ts'
 import { Badge } from '../../ui/badge.tsx'
 import { Button } from '../../ui/button.tsx'
+import { ReadFailure } from '../../ui/states.tsx'
 import { Switch } from '../../ui/switch.tsx'
 import { Logo, useConnectorCatalog } from '../assistant/public.ts'
 import type { Part } from './section.tsx'
@@ -31,6 +33,9 @@ export function Connections({ scope, agent }: Part) {
   }
   return (
     <Section title="Ligações" busy={saving.pending} error={saving.error}>
+      {linked.isError && (
+        <ReadFailure text={sentenceOf(linked.error)} onRetry={() => void linked.refetch()} />
+      )}
       {agent.offered.length === 0 && gone.length === 0 && (
         <p className="text-text-2">{NO_CONNECTIONS}</p>
       )}

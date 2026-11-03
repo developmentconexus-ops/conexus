@@ -26,7 +26,13 @@ export function Beside(props: {
           open={props.side !== undefined}
           onOpenChange={(open) => !open && props.onCloseSide()}
         >
-          <SheetContent side="right" title={props.name} closeLabel="Fechar" className="p-0">
+          <SheetContent
+            side="right"
+            title={props.name}
+            titleClassName="sr-only"
+            closeLabel="Fechar"
+            className="p-0"
+          >
             {props.side}
           </SheetContent>
         </Sheet>

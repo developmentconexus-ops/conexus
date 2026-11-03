@@ -240,11 +240,12 @@ function AgentLine({
 }) {
   const { agent } = draft
   const room = useRoom()
-  const open = useEffectEvent(() => room.openAgent?.(agent.id, 'CALL'))
-  useEffect(() => {
-    // A call heard as it ran opens its draft; a conversation read afterwards opens the newest one, once.
-    if (live || room.openedAgent === undefined) open()
-  }, [live, room.openedAgent])
+  // A call heard as it ran opens its draft; a conversation read afterwards opens the newest one. Only on
+  // mount: a tap changes `openedAgent`, and that must not re-open the line's own agent.
+  const open = useEffectEvent(() => {
+    if (live || room.openedAgent === undefined) room.openAgent?.(agent.id, 'CALL')
+  })
+  useEffect(() => open(), [])
   return (
     <button
       type="button"

@@ -47,7 +47,6 @@ import {
   turnOfOwner,
 } from '../conversation/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
-import { setTurn } from '../model-accounts/public.ts'
 import type { InProject } from '../tools/public.ts'
 import { databaseScopeOf, sessionScopeOf } from '../tools/public.ts'
 import { CONSTRUTOR_MARK } from './open.ts'
@@ -229,7 +228,6 @@ export function createConstrutor(deps: Deps) {
       const scope = await scopeOf(requestContext)
       if (scope === undefined) return undefined
       const turn = await turnOfOwner(queue, scope)
-      setTurn(requestContext, turn)
       turnKey.start(requestContext)
       return turn
     },

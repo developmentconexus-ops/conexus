@@ -41,7 +41,7 @@ import type { Saving } from './use-draft-save.ts'
 type Scope = { companyId: CompanyId; projectId: ProjectId }
 type Part = { scope: Scope; agent: AgentDetail }
 
-/** The window **Escolher** of the Ferramentas section: the library's tools and the connectors' ready reads, as the "+" menu lists a conversation's. */
+/** The set with `key` taken out when it is in, put in when it is not. */
 function toggled(set: ReadonlySet<string>, key: string): ReadonlySet<string> {
   const next = new Set(set)
   if (!next.delete(key)) next.add(key)
@@ -99,6 +99,7 @@ function chosenWrite(
   list: Listed,
   picked: ReadonlySet<string>,
   ready: ReadonlySet<string>,
+  web: boolean,
 ) {
   const readies = list.ready.filter((one) => ready.has(`${one.connectionId}:${one.operation}`))
   // A chosen tool the list does not bring cannot be unticked here, so it stays, at its version.
@@ -110,6 +111,7 @@ function chosenWrite(
   const tools: ToolVersionId[] = [...unlisted.map((one) => one.version.id), ...listed]
   return {
     tools,
+    web,
     ...(readies.length > 0 && {
       ready: readies.map(({ connectionId, operation }) => ({ connectionId, operation })),
     }),
@@ -156,7 +158,6 @@ function ReadyGroups(
               detail={toolFact(
                 catalog.name(connector),
                 several ? connectionOf(agent.offered, one.connectionId)?.name : undefined,
-                'READ',
               )}
               checked={props.chosen.has(key)}
               onChange={() => props.onToggle(key)}
@@ -192,7 +193,6 @@ function LibraryGroup(
                 : toolFact(
                     catalog.name(connection.connector),
                     agent.offered.length > 1 ? connection.name : undefined,
-                    tool.effect,
                   )
             }
             fact={`v${tool.latest.number}`}
@@ -205,6 +205,10 @@ function LibraryGroup(
   )
 }
 
+/**
+ * The window of the Ferramentas section: the library's tools, the connectors' ready reads and the web
+ * search, as the "+" menu lists a conversation's. Nothing is saved until **Usar as escolhidas**.
+ */
 export function Chooser(props: Part & { saving: Saving; onClose: () => void }) {
   const { scope, agent } = props
   const read = useQuery(toolsQuery(scope))
@@ -213,6 +217,7 @@ export function Chooser(props: Part & { saving: Saving; onClose: () => void }) {
     new Set(agent.tools.map((one) => one.id)),
   )
   const [ready, setReady] = useState<ReadonlySet<string>>(new Set())
+  const [web, setWeb] = useState(agent.draft.web)
   const [query, setQuery] = useState('')
   if (read.isError)
     return <ReadFailure text={sentenceOf(read.error)} onRetry={() => void read.refetch()} />
@@ -251,8 +256,8 @@ export function Chooser(props: Part & { saving: Saving; onClose: () => void }) {
             id="tool-web"
             leading={<GlobeIcon aria-hidden="true" className="size-5 shrink-0" />}
             title={WEB_TOOL}
-            checked={agent.draft.web}
-            onChange={() => props.saving.save({ web: !agent.draft.web })}
+            checked={web}
+            onChange={() => setWeb((now) => !now)}
           />
         </Group>
       )}
@@ -270,7 +275,10 @@ export function Chooser(props: Part & { saving: Saving; onClose: () => void }) {
           disabled={read.data === undefined || props.saving.pending}
           onClick={() =>
             read.data !== undefined &&
-            props.saving.save((now) => chosenWrite(now, read.data, picked, ready), props.onClose)
+            props.saving.save(
+              (now) => chosenWrite(now, read.data, picked, ready, web),
+              props.onClose,
+            )
           }
         >
           Usar as escolhidas
