@@ -1,10 +1,18 @@
 import type { Manifest } from '@conexus/app-contract'
-import type { AppVersionFailure, CompanyId, MigrationCause, ProjectId } from '@conexus/hub-api'
-import type { CompanyPostgres } from '../../platform/company-postgres.ts'
+import type {
+  AppVersionFailure,
+  CompanyId,
+  MigrationCause,
+  PersonId,
+  ProjectId,
+} from '@conexus/hub-api'
+import { eq } from 'drizzle-orm'
+import type { AppRead, CompanyPostgres } from '../../platform/company-postgres.ts'
 import type { Database, DatabaseUrl, Scope } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import type { NeonProjects } from '../../platform/neon.ts'
 import type { ProjectPorts } from '../projects/public.ts'
+import { app } from './tables.ts'
 
 export type AppDatabaseDeps = {
   database: Database
@@ -88,8 +96,91 @@ export async function migrateApp(
         },
       }
     case 'NO_ANSWER':
+    case 'TOO_LARGE':
       return { failure: 'APP_VERSION_FAILED' }
     default:
       return ran satisfies never
+  }
+}
+
+/** The company's database and host once the Projeto has an app in it, or none. */
+export async function appDatabaseOf(
+  deps: Pick<AppDatabaseDeps, 'database' | 'projects'>,
+  input: { scope: { companyId: CompanyId; personId: PersonId }; projectId: ProjectId },
+) {
+  const { companyId, personId } = input.scope
+  return deps.database.read({ kind: 'COMPANY', companyId, personId }, async (tx) => {
+    const [row] = await tx
+      .select({ ready: app.databaseReady })
+      .from(app)
+      .where(eq(app.projectId, input.projectId))
+    if (row?.ready !== true) return undefined
+    const ready = await deps.projects.readyDatabaseOf(tx, companyId)
+    return ready?.host == null
+      ? undefined
+      : { neonProjectId: ready.neonProjectId, host: ready.host }
+  })
+}
+
+/**
+ * One read of a Projeto's app data for its agents (step 24.3, U3), as the app's read login: its
+ * address comes from the host the Hub recorded, with no call to Neon. A Projeto made before the
+ * login existed asks the owner's address once to make it, then reads again. The log carries ids and
+ * the kind of answer, never the SQL nor a row (code C50).
+ */
+export async function readAppData(
+  deps: AppDatabaseDeps,
+  input: {
+    scope: { companyId: CompanyId; personId: PersonId }
+    projectId: ProjectId
+    sql: string
+    signal: AbortSignal
+  },
+): Promise<AppRead> {
+  const { projectId, signal } = input
+  const { companyId } = input.scope
+  const found = await appDatabaseOf(deps, input)
+  if (found === undefined) return { kind: 'FAILED', code: 'APP_DATA_NO_APP' }
+  const unavailable = { kind: 'FAILED', code: 'APP_DATA_UNAVAILABLE' } as const
+  const address = await deps.companyPostgres.readAddress(found.host, projectId)
+  let answer = await deps.companyPostgres.readApp(address, input.sql, signal)
+  if (answer.kind === 'NO_LOGIN') {
+    const owner = await deps.neon.ownerConnection(found.neonProjectId)
+    if (owner.kind !== 'DONE') return unavailable
+    const made = await deps.companyPostgres.ensureReadLogin(owner.value, projectId)
+    if (made.kind !== 'DONE') {
+      const code = made.kind === 'REFUSED' ? made.code : made.kind
+      deps.log.error({ companyId, projectId, code }, 'APP_READ_LOGIN_FAILED')
+      return unavailable
+    }
+    deps.log.info({ companyId, projectId }, 'APP_READ_LOGIN_CREATED')
+    answer = await deps.companyPostgres.readApp(address, input.sql, signal)
+  }
+  switch (answer.kind) {
+    case 'ROWS':
+      deps.log.info({ companyId, projectId, answer: answer.kind }, 'APP_DATA_READ')
+      return answer
+    case 'REFUSED':
+      deps.log.info(
+        { companyId, projectId, answer: answer.kind, sqlstate: answer.sqlstate },
+        'APP_DATA_READ',
+      )
+      return answer
+    case 'FAILED':
+      deps.log.info(
+        {
+          companyId,
+          projectId,
+          answer: answer.kind,
+          code: answer.code,
+          cause: answer.cause ?? 'none',
+        },
+        'APP_DATA_READ',
+      )
+      return { kind: 'FAILED', code: answer.code }
+    case 'NO_LOGIN':
+      return unavailable
+    default:
+      return answer satisfies never
   }
 }

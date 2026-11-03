@@ -157,11 +157,12 @@ function conversationIdOf(url: string): string {
 
 /**
  * Where Mastra's routes serve the conversation's session (`guard.ts`): under the Assistant's
- * controller for a conversation of the Assistant's routes, the agents' for an agent's, the
+ * controller for a conversation of the Assistant's routes, the agents' for an agent's, the Construtor's for its own, the
  * Builder's for any other.
  */
 export function sessionUrl(url: string): string {
-  const controller = /\/(assistant|agents)\/(?:[^/]+\/)?conversations\//.exec(url)?.[1] ?? 'builder'
+  const controller =
+    /\/(assistant|agents|construtor)\/(?:[^/]+\/)?conversations\//.exec(url)?.[1] ?? 'builder'
   return `/api/builder/agent-controller/${controller}/sessions/${conversationIdOf(url)}`
 }
 

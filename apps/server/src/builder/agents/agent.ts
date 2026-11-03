@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import type { AgentId as AgentIdType, Effort, ModelId, OfProject } from '@conexus/hub-api'
 import { AgentId, CompanyId, PersonId, ProjectId } from '@conexus/hub-api'
@@ -9,17 +8,18 @@ import type { InputProcessor } from '@mastra/core/processors'
 import { RequestContext } from '@mastra/core/request-context'
 import { z } from 'zod'
 import type { Connectors, SessionScope } from '../../hub/connectors/public.ts'
-import { TurnKey } from '../../hub/connectors/public.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { Speakers } from '../assistant/public.ts'
 import { blockOf } from '../assistant/public.ts'
 import type { ConnectorAccess } from '../connectors/public.ts'
 import { connectorTools } from '../connectors/public.ts'
-import { agentDefaults, oncePerRun } from '../controller-kit/public.ts'
+import { agentDefaults, oncePerRun, turnKeyOn } from '../controller-kit/public.ts'
 import { routedModel, toolsOf } from '../conversation/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import { conversationStart, memoryModelsFor, setTurn, Turn } from '../model-accounts/public.ts'
+import type { AppDataPort } from './app-data.ts'
+import { appDataTools } from './app-data.ts'
 import type { FrozenVersion } from './frozen.ts'
 import { presetTools } from './tools.ts'
 
@@ -32,7 +32,7 @@ const CACHED = { anthropic: { cacheControl: { type: 'ephemeral', ttl: '1h' } } }
 const READ_ONLY =
   'You only read: no tool of yours writes in a system. When the person asks you to change, save or send something, say that you cannot and what they can do instead.'
 const RUN = 'conexus-agent-run'
-const TURN_KEY = 'conexus-agent-turn-key'
+const turnKey = turnKeyOn('conexus-agent-turn-key')
 
 const AgentRunSchema = z.object({
   kind: z.enum(['PUBLISHED', 'DRAFT']),
@@ -63,15 +63,6 @@ export function agentRunContext(run: AgentRun): RequestContext {
   return context
 }
 
-/** The turn's key, which the company's door counts the 50 calls by. */
-function agentTurnKeyIn(requestContext: RequestContext): TurnKey {
-  const turn = TurnKey.safeParse(requestContext.get(TURN_KEY))
-  if (!turn.success) {
-    throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'CONNECTOR_TOOL_WITHOUT_TURN' } })
-  }
-  return turn.data
-}
-
 /**
  * The turn of the run's person in the accounts' queue, with the agent's model held for the whole
  * turn (`Turn`'s fixed model), and a new key for the door; put on the run's context.
@@ -86,13 +77,14 @@ export async function takeAgentTurn(
   const memoryModels = await memoryModelsFor(queue, owner)
   const turn = new Turn({ ...owner, memoryModels, model: input.model })
   setTurn(requestContext, turn)
-  requestContext.set(TURN_KEY, TurnKey.parse(randomUUID()))
+  turnKey.start(requestContext)
   return turn
 }
 
 export type AgentDeps = {
   queue: QueueDeps
   connectors: Connectors['assistant']
+  appData: AppDataPort
   speakersOf: (scope: SessionScope) => Promise<Speakers>
   /** The 24.1 memory with the observational one, and one without it, each made once. */
   memories: { observational: MastraMemory; plain: MastraMemory }
@@ -185,19 +177,25 @@ export function agentOf(
     },
     model: async ({ requestContext }) => routedModel((await plan(requestContext)).start.model),
     tools: async ({ requestContext }) => {
-      const { scope, offered, start } = await plan(requestContext)
+      const { run, scope, offered, start } = await plan(requestContext)
       const access: ConnectorAccess = {
         connections: offered.filter((each) => ownConnections.has(each.connectionId)),
         log: deps.log,
         read: (call, context) =>
-          deps.connectors.read(scope, { ...call, turn: agentTurnKeyIn(context) }),
+          deps.connectors.read(scope, { ...call, turn: turnKey.of(context) }),
         notes: (connectionId) => deps.connectors.notes(scope, connectionId),
         wording: { whose: 'this agent reads', limit: '50 connector calls per answer' },
       }
+      const { companyId, personId, projectId } = run.scope
+      const mayReadApp =
+        frozen.appData && (await deps.appData.hasApp({ scope: { companyId, personId }, projectId }))
       return {
         ...(frozen.web ? toolsOf(start.model) : {}),
         ...connectorTools(access, { noteSave: false }),
-        ...(await presetTools({ ...deps, scope, tools: frozen.tools, turnOf: agentTurnKeyIn })),
+        ...(mayReadApp
+          ? appDataTools({ appData: deps.appData, scope: { companyId, personId }, projectId })
+          : {}),
+        ...(await presetTools({ ...deps, scope, tools: frozen.tools, turnOf: turnKey.of })),
       }
     },
     memory: frozen.memory.observational ? deps.memories.observational : deps.memories.plain,

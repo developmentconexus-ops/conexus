@@ -1541,13 +1541,24 @@
   },
   {
     "id": "login-not-superuser",
-    "file": "apps/server/src/platform/company-postgres.ts",
+    "file": "apps/server/src/platform/app-sql.ts",
     "find": "LOGIN PASSWORD '${password}'",
     "replace": "LOGIN CREATEROLE PASSWORD '${password}'",
     "test": {
       "cwd": "apps/server",
       "file": "src/platform/company-postgres.test.ts",
       "name": "banco do app: logins por SQL"
+    }
+  },
+  {
+    "id": "read-login-without-ledger",
+    "file": "apps/server/src/platform/app-read.ts",
+    "find": "{ text: `REVOKE ALL ON ${s}.${LEDGER} FROM ${read}` },",
+    "replace": "{ text: 'SELECT 1' },",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/agents/app-data.test.ts",
+      "name": "não grava"
     }
   },
   {

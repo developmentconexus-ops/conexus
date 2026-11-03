@@ -4,6 +4,10 @@ import { APP_CALL_LIMITS } from '@conexus/app-contract'
 import type { ProjectId } from '@conexus/hub-api'
 import { appLogin, appLoginPassword } from '@conexus/hub-api'
 import { NeonDbError, neon, neonConfig } from '@neondatabase/serverless'
+import type { AppReadAnswer } from './app-read.ts'
+import { ensureReadLogin, readAddress, readApp, readGrants, readSettings } from './app-read.ts'
+import type { Context, Row, SqlAnswer, SqlRead, SqlStatement, SqlTransport } from './app-sql.ts'
+import { existingRoles, LEDGER, missingLogins, quoted, REPLY_CAP_BYTES } from './app-sql.ts'
 import { cappedText } from './capped-text.ts'
 import type { AppLoginKey } from './config.ts'
 import { DatabaseUrl } from './database.ts'
@@ -12,21 +16,8 @@ import type { RuleBreak } from './migration-rule.ts'
 import { ruleBreak } from './migration-rule.ts'
 import { NEON_CALL_BUDGET_MS } from './neon.ts'
 
-export type SqlStatement = Readonly<{ text: string; values?: readonly unknown[] }>
-type Row = Readonly<Record<string, unknown>>
-
-/** What PostgreSQL said to one transaction: a SQLSTATE left no effect; silence may have left it. */
-export type SqlAnswer =
-  | { kind: 'DONE'; value: Row[][] }
-  | { kind: 'REFUSED'; code: string; table?: string; column?: string; constraint?: string }
-  | { kind: 'NO_ANSWER' }
-
-/** Runs the statements in one transaction as the URL's login, all or none. */
-export type SqlTransport = (
-  url: DatabaseUrl,
-  statements: readonly SqlStatement[],
-  signal: AbortSignal,
-) => Promise<SqlAnswer>
+export type { AppRead } from './app-read.ts'
+export type { SqlAnswer, SqlRead, SqlStatement, SqlTransport } from './app-sql.ts'
 
 // Classes 08 and 57P0: the connection or the server went away, and the commit may have happened.
 const CONNECTION_LOST = /^(08|57P0)/
@@ -37,23 +28,36 @@ const CONNECTION_LOST = /^(08|57P0)/
  */
 export function answerOf(
   error:
-    | Readonly<{ code?: string; table?: string; column?: string; constraint?: string }>
+    | Readonly<{
+        name?: string
+        code?: string
+        table?: string
+        column?: string
+        constraint?: string
+      }>
     | undefined,
 ): SqlAnswer {
   const code = error?.code
-  if (code === undefined || CONNECTION_LOST.test(code)) return { kind: 'NO_ANSWER' }
+  if (code === undefined || CONNECTION_LOST.test(code)) {
+    return { kind: 'NO_ANSWER', cause: code ?? error?.name }
+  }
   const { table, column, constraint } = error ?? {}
   return { kind: 'REFUSED', code, table, column, constraint }
 }
 
-/** A SQL reply past this is silence: the Hub's own statements read a few rows (code C59). */
-const REPLY_CAP_BYTES = 1024 * 1024
+/** The class of whatever was thrown: enough to say what went silent, never its message. */
+export function errorName(error: unknown): string {
+  return error instanceof Error ? error.name : typeof error
+}
 
-/** Neon's reply read only up to the cap; past it the call fails as silence. */
+/** What `cappedFetch` throws: the SDK wraps it in a `NeonDbError` as its `sourceError`. */
+class ReplyTooLarge extends Error {}
+
+/** Neon's reply read only up to the cap; past it the call fails, as silence unless it is a read. */
 async function cappedFetch(input: string | URL | Request, init?: RequestInit): Promise<Response> {
   const response = await fetch(input, init)
   const text = await cappedText(response.body, REPLY_CAP_BYTES)
-  if (text === undefined) throw new Error('a Neon reply passed the size cap')
+  if (text === undefined) throw new ReplyTooLarge('a Neon reply passed the size cap')
   const type = response.headers.get('content-type') ?? 'application/json'
   return new Response(text, { status: response.status, headers: { 'content-type': type } })
 }
@@ -62,19 +66,44 @@ async function cappedFetch(input: string | URL | Request, init?: RequestInit): P
 neonConfig.fetchFunction = cappedFetch
 
 /** The program's transport: Neon's HTTP proxy, one request per transaction (decision 0043). */
+export function neonTransport(
+  url: DatabaseUrl,
+  statements: readonly SqlStatement[],
+  signal: AbortSignal,
+): Promise<SqlAnswer>
+export function neonTransport(
+  url: DatabaseUrl,
+  statements: readonly SqlStatement[],
+  signal: AbortSignal,
+  options: Readonly<{ readOnly: true }>,
+): Promise<SqlAnswer | SqlRead>
 export async function neonTransport(
   url: DatabaseUrl,
   statements: readonly SqlStatement[],
   signal: AbortSignal,
-): Promise<SqlAnswer> {
+  options?: Readonly<{ readOnly: true }>,
+): Promise<SqlAnswer | SqlRead> {
   try {
     const sql = neon(url.reveal(), { fetchOptions: { signal } })
-    const value: Row[][] = await sql.transaction(
-      statements.map(({ text, values }) => sql.query(text, [...(values ?? [])])),
-    )
+    const queries = statements.map(({ text, values }) => sql.query(text, [...(values ?? [])]))
+    if (options?.readOnly) {
+      // Rows as arrays with the result's own fields: two columns of one name stay two, an empty read keeps its columns.
+      const results = await sql.transaction(queries, {
+        ...options,
+        arrayMode: true,
+        fullResults: true,
+      })
+      const result = results[0]
+      if (result === undefined) return { kind: 'NO_ANSWER' }
+      return { kind: 'READ', columns: result.fields.map(({ name }) => name), rows: result.rows }
+    }
+    const value: Row[][] = await sql.transaction(queries)
     return { kind: 'DONE', value }
   } catch (error) {
-    return answerOf(error instanceof NeonDbError ? error : undefined)
+    if (error instanceof NeonDbError && error.sourceError instanceof ReplyTooLarge) {
+      return options?.readOnly ? { kind: 'TOO_LARGE' } : { kind: 'NO_ANSWER' }
+    }
+    return answerOf(error instanceof NeonDbError ? error : { name: errorName(error) })
   }
 }
 
@@ -83,10 +112,16 @@ type MigrateAnswer =
   | { kind: 'DONE'; applied: number }
   | { kind: 'CHANGED'; id: string }
   | { kind: 'REFUSED_BY_RULE'; rule: RuleBreak }
-  | Extract<SqlAnswer, { kind: 'REFUSED' | 'NO_ANSWER' }>
+  | Extract<SqlAnswer, { kind: 'REFUSED' | 'NO_ANSWER' | 'TOO_LARGE' }>
 
 export type CompanyPostgres = {
   ensureApp(owner: DatabaseUrl, projectId: ProjectId): Promise<SqlAnswer>
+  /** The read login of an app made before it existed, or whose creation a cut left (step 24.3, U3). */
+  ensureReadLogin(owner: DatabaseUrl, projectId: ProjectId): Promise<SqlAnswer>
+  /** One statement as the read login, whose address `readAddress` gives: the Hub never needs the company. */
+  readApp(read: DatabaseUrl, sql: string, signal: AbortSignal): Promise<AppReadAnswer>
+  /** The read login's address on the company's host, its password derived here and never kept. */
+  readAddress(host: string, projectId: ProjectId): Promise<DatabaseUrl>
   migrate(
     owner: DatabaseUrl,
     projectId: ProjectId,
@@ -94,14 +129,6 @@ export type CompanyPostgres = {
   ): Promise<MigrateAnswer>
   dropApp(owner: DatabaseUrl, projectId: ProjectId): Promise<SqlAnswer>
 }
-
-/** An identifier as SQL reads it: the Projeto's id keeps its case. */
-function quoted(name: string): string {
-  return `"${name.replaceAll('"', '""')}"`
-}
-
-/** The ledger of the app's migrations, in its schema; the run login cannot read it. */
-const LEDGER = 'conexus_migration'
 
 /** The SHA-256 of a migration's statements, which the ledger keeps (decision 0046). */
 function migrationDigest(migration: AppMigration): string {
@@ -112,30 +139,12 @@ function appliedOf(row: Row) {
   return { id: String(row.id), sha256: String(row.sha256) }
 }
 
-type Context = { transport: SqlTransport; key: string }
-
 /** The address of one of the app's logins, its password derived for this act alone. */
 async function asLogin(context: Context, owner: DatabaseUrl, login: string): Promise<DatabaseUrl> {
   const url = new URL(owner.reveal())
   url.username = login
   url.password = await appLoginPassword({ key: context.key, login })
   return DatabaseUrl.parse(url.toString())
-}
-
-async function existingRoles(
-  context: Context,
-  owner: DatabaseUrl,
-  names: string[],
-  signal: AbortSignal,
-) {
-  const found = await context.transport(
-    owner,
-    [{ text: 'SELECT rolname FROM pg_roles WHERE rolname = ANY($1::text[])', values: [names] }],
-    signal,
-  )
-  if (found.kind !== 'DONE') return found
-  const existing = new Set(found.value[0]?.map((row) => String(row.rolname)))
-  return { kind: 'DONE', names: existing } as const
 }
 
 /**
@@ -156,6 +165,7 @@ function schemaStatements(projectId: ProjectId): SqlStatement[] {
     { text: `ALTER ROLE ${run} SET statement_timeout = ${APP_CALL_LIMITS.statementTimeoutMs}` },
     { text: `ALTER ROLE ${run} SET transaction_timeout = ${APP_CALL_LIMITS.transactionTimeoutMs}` },
     { text: `ALTER ROLE ${migrate} RESET statement_timeout` },
+    ...readSettings(projectId),
     { text: `SET LOCAL ROLE ${migrate}` },
     {
       text: `CREATE TABLE IF NOT EXISTS ${s}.${LEDGER} (id text PRIMARY KEY, sha256 text NOT NULL,
@@ -166,25 +176,20 @@ function schemaStatements(projectId: ProjectId): SqlStatement[] {
       text: `ALTER DEFAULT PRIVILEGES IN SCHEMA ${s} GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO ${run}`,
     },
     { text: `ALTER DEFAULT PRIVILEGES IN SCHEMA ${s} GRANT USAGE, SELECT ON SEQUENCES TO ${run}` },
+    ...readGrants(projectId),
   ]
 }
 
-/** The schema and both logins, in one transaction; what a cut run left is found, not made twice. */
+/** The schema and the three logins, in one transaction; what a cut run left is found, not made twice. */
 async function ensureApp(
   context: Context,
   owner: DatabaseUrl,
   projectId: ProjectId,
 ): Promise<SqlAnswer> {
   const signal = AbortSignal.timeout(NEON_CALL_BUDGET_MS)
-  const { runLogin, migrateLogin } = appLogin(projectId)
-  const roles = await existingRoles(context, owner, [migrateLogin, runLogin], signal)
-  if (roles.kind !== 'DONE') return roles
-  const created: SqlStatement[] = []
-  for (const login of [migrateLogin, runLogin]) {
-    if (roles.names.has(login)) continue
-    const password = await appLoginPassword({ key: context.key, login })
-    created.push({ text: `CREATE ROLE ${quoted(login)} LOGIN PASSWORD '${password}'` })
-  }
+  const { runLogin, migrateLogin, readLogin } = appLogin(projectId)
+  const created = await missingLogins(context, owner, [migrateLogin, runLogin, readLogin], signal)
+  if (!Array.isArray(created)) return created
   return context.transport(owner, [...created, ...schemaStatements(projectId)], signal)
 }
 
@@ -233,14 +238,14 @@ async function migrate(
   return ran.kind === 'DONE' ? { kind: 'DONE', applied: pending.length } : ran
 }
 
-/** The schema with every table of the app, then both logins; what is already gone is skipped. */
+/** The schema with every table of the app, then its three logins; what is already gone is skipped. */
 async function dropApp(
   context: Context,
   owner: DatabaseUrl,
   projectId: ProjectId,
 ): Promise<SqlAnswer> {
   const signal = AbortSignal.timeout(NEON_CALL_BUDGET_MS)
-  const { schema, runLogin, migrateLogin } = appLogin(projectId)
+  const { schema, runLogin, migrateLogin, readLogin } = appLogin(projectId)
   const roles = await existingRoles(context, owner, [migrateLogin, runLogin], signal)
   if (roles.kind !== 'DONE') return roles
   const schemaGone: SqlStatement[] = roles.names.has(migrateLogin)
@@ -254,6 +259,7 @@ async function dropApp(
     owner,
     [
       ...schemaGone,
+      { text: `DROP ROLE IF EXISTS ${quoted(readLogin)}` },
       { text: `DROP ROLE IF EXISTS ${quoted(runLogin)}` },
       { text: `DROP ROLE IF EXISTS ${quoted(migrateLogin)}` },
     ],
@@ -273,6 +279,9 @@ export function createCompanyPostgres(deps: {
   const context: Context = { transport: deps.transport, key: deps.appLoginKey.reveal() }
   return Object.freeze({
     ensureApp: (owner, projectId) => ensureApp(context, owner, projectId),
+    ensureReadLogin: (owner, projectId) => ensureReadLogin(context, owner, projectId),
+    readApp: (read, sql, signal) => readApp(context, read, sql, signal),
+    readAddress: (host, projectId) => readAddress(context, host, projectId),
     migrate: (owner, projectId, migrations) => migrate(context, { owner, projectId, migrations }),
     dropApp: (owner, projectId) => dropApp(context, owner, projectId),
   })
