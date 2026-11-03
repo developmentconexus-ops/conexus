@@ -6,18 +6,26 @@ import { cn } from '../../ui/cn.ts'
  * a square symbol without the written name (the name stays as text beside it). It sits in a square
  * tile on the `logo-plate` token, light in both themes (design V3), so it reads on the dark surface.
  */
-export function ConnectorLogo(props: { entry: Pick<ConnectorEntry, 'logo'>; large?: boolean }) {
+export function ConnectorLogo(props: {
+  entry: Pick<ConnectorEntry, 'logo'>
+  large?: boolean
+  /** A plate of the composer's tool count, 20 px. */
+  small?: boolean
+}) {
   return (
     <span
       className={cn(
         'flex shrink-0 items-center justify-center rounded-control border border-line bg-logo-plate',
-        props.large ? 'size-10 sm:size-12' : 'size-8 sm:size-10',
+        props.small ? 'size-5' : props.large ? 'size-10 sm:size-12' : 'size-8 sm:size-10',
       )}
     >
       <img
         alt=""
         src={`data:image/svg+xml;utf8,${encodeURIComponent(props.entry.logo)}`}
-        className={cn('object-contain', props.large ? 'size-6 sm:size-8' : 'size-5 sm:size-6')}
+        className={cn(
+          'object-contain',
+          props.small ? 'size-3.5' : props.large ? 'size-6 sm:size-8' : 'size-5 sm:size-6',
+        )}
       />
     </span>
   )

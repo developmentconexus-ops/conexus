@@ -190,8 +190,10 @@ export function StartBox(props: {
   /** False while something the request needs has not arrived: **Enviar** waits. */
   canSend?: boolean
   onSend: (outgoing: Outgoing) => Promise<boolean>
-  /** Under the box, before the examples. */
-  bar?: ReactNode
+  /** The folder and the tools count after the box's **+**, and what their failures say above it. */
+  tools?: { context: ReactNode; notice: ReactNode }
+  /** Under the box, before the examples: what sending said. */
+  notice?: ReactNode
 }): ReactNode {
   const { draft } = props
   const field = useRef<HTMLTextAreaElement>(null)
@@ -206,6 +208,8 @@ export function StartBox(props: {
           placeholder={props.placeholder}
           onSend={props.onSend}
           onStop={() => undefined}
+          context={props.tools?.context}
+          notice={props.tools?.notice}
           picker={
             <ComposerModelPicker
               providers={props.providers}
@@ -216,7 +220,7 @@ export function StartBox(props: {
           }
         />
       </div>
-      {props.bar}
+      {props.notice}
       {props.examples.length > 0 && (
         <Examples
           examples={props.examples}

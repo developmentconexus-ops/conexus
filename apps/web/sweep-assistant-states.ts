@@ -13,7 +13,7 @@ import { waitFor } from './sweep-kit.ts'
 import type { Said } from './sweep-session.ts'
 import { sessionReplies } from './sweep-session.ts'
 
-// The Assistant's conversation in the sweep: its rows, its bar of connections, the file beside it
+// The Assistant's conversation in the sweep: its rows, its box's folder and tools, the file beside it
 // (over it, on a phone) and Criar app (step 24.1, F32).
 const ID = '33333333-3333-4333-8333-333333333333'
 export const ASSISTANT_PATH = `/companies/${COMPANY.id}/conversations/${ID}`
@@ -122,12 +122,12 @@ export const ASSISTANT_STATES: State[] = [
     },
   },
   {
-    name: 'Assistente, Ajustar as ligações aberto',
+    name: 'Assistente, a lista das ferramentas aberta',
     path: ASSISTANT_PATH,
     replies: ASSISTANT_REPLIES,
     settle: async (page) => {
       await opened(page)
-      await page.getByRole('button', { name: 'Ajustar' }).click()
+      await page.locator('form').getByRole('button', { name: '1 ferramenta' }).click()
       await page.getByRole('switch', { name: /Matriz/ }).waitFor()
     },
   },

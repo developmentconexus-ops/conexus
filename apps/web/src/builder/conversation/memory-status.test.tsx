@@ -56,7 +56,7 @@ test('o clique abre as duas memórias (Critério 16)', async () => {
   expect(await screen.findByText('3,6 de 30k')).toBeTruthy()
   expect(screen.getByText('2,1 de 40k')).toBeTruthy()
   expect(screen.getByText('Mensagens')).toBeTruthy()
-  expect(screen.getByText('Memória')).toBeTruthy()
+  expect(screen.getByRole('meter', { name: 'Memória' })).toBeTruthy()
   expect(screen.getByText(/Quando encher, o Builder resume a conversa/)).toBeTruthy()
   expect(screen.getByText(/Quando encher, o Builder junta as observações/)).toBeTruthy()
 })

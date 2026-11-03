@@ -6,17 +6,14 @@ import type {
   ModelId,
   ProjectId,
 } from '@conexus/hub-api'
-import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
-import { projectsPagedQuery } from '../../hub/projects/public.ts'
 import { useAttemptKey } from '../../platform/attempt-key.ts'
 import { dayOf } from '../../platform/dates.ts'
 import { sentenceOf, writeFailureText } from '../../platform/hub.ts'
-import { Button } from '../../ui/button.tsx'
 import { cn } from '../../ui/cn.ts'
 import { Pager } from '../../ui/pager.tsx'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select.tsx'
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { ReadFailure } from '../../ui/states.tsx'
 import { AutomationBadge } from '../automations/public.ts'
@@ -30,7 +27,8 @@ import {
   useDraft,
   usePicked,
 } from '../conversation/public.ts'
-import { DraftBar, FixedProject, useDraftChoice } from './context-bar.tsx'
+import { useComposerTools } from './composer-tools.tsx'
+import { useDraftChoice } from './context-bar.tsx'
 import { assistantConversationsQuery, sendAssistantCreation } from './queries.ts'
 import {
   ASSISTANT_EXAMPLES,
@@ -40,59 +38,6 @@ import {
   titleOf,
   UNCONFIRMED_CREATION,
 } from './text.ts'
-
-const NO_PROJECT = 'none'
-
-/** Início's choice of the Projeto a conversation is born in, only until its first question. */
-function ProjectSelect(props: {
-  companyId: CompanyId
-  value: ProjectId | undefined
-  onChange: (projectId: ProjectId | undefined) => void
-}) {
-  const read = useInfiniteQuery(projectsPagedQuery(props.companyId))
-  const projects = read.data?.pages.flatMap((page) => page.projects) ?? []
-  const items = [
-    { value: NO_PROJECT, label: 'Sem Projeto' },
-    ...projects.map((project) => ({ value: project.id, label: project.name })),
-  ]
-  return (
-    <>
-      <Select
-        value={props.value ?? NO_PROJECT}
-        items={items}
-        onValueChange={(next) =>
-          props.onChange(projects.find((project) => project.id === next)?.id)
-        }
-      >
-        <SelectTrigger aria-label="Projeto da conversa" className="h-7 w-auto min-w-36">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {items.map((item) => (
-            <SelectItem key={item.value} value={item.value}>
-              {item.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      {read.hasNextPage && (
-        <Button
-          size="sm"
-          variant="ghost"
-          disabled={read.isFetchingNextPage}
-          onClick={() => void read.fetchNextPage()}
-        >
-          Mais Projetos
-        </Button>
-      )}
-      {read.isError && (
-        <p role="alert" className="text-danger">
-          {sentenceOf(read.error)}
-        </p>
-      )}
-    </>
-  )
-}
 
 type Begun = { content: string; files: Parameters<typeof stashHandoffFiles>[1] }
 
@@ -150,8 +95,8 @@ function useBegin(
 }
 
 /**
- * The box that asks the Assistant, with its bar under it. On Início the Projeto is chosen here,
- * until the first question; on the Projeto's own page it is fixed.
+ * The box that asks the Assistant, its folder and tools in the box's row. On Início the Projeto is
+ * chosen here, until the first question; on the Projeto's own page it is fixed.
  */
 export function Ask(props: {
   companyId: CompanyId
@@ -187,6 +132,13 @@ function AskBox(props: {
     projectId,
     connections: choice.connections,
   })
+  const tools = useComposerTools({
+    kind: 'HOME',
+    companyId,
+    draft: choice,
+    projectId,
+    onProject: props.chooseProject ? setChosenProject : undefined,
+  })
   return (
     <StartBox
       draft={draft}
@@ -197,32 +149,13 @@ function AskBox(props: {
       onPick={props.onPick}
       providers={props.providers}
       onSend={begin}
-      bar={
-        <div className="flex flex-col gap-sm">
-          <DraftBar
-            companyId={companyId}
-            projectId={projectId}
-            choice={choice}
-            trailing={
-              props.chooseProject ? (
-                <ProjectSelect
-                  companyId={companyId}
-                  value={projectId}
-                  onChange={setChosenProject}
-                />
-              ) : (
-                projectId !== undefined && (
-                  <FixedProject companyId={companyId} projectId={projectId} />
-                )
-              )
-            }
-          />
-          {error !== undefined && (
-            <p role="alert" className="text-danger">
-              {error}
-            </p>
-          )}
-        </div>
+      tools={tools}
+      notice={
+        error !== undefined && (
+          <p role="alert" className="text-danger">
+            {error}
+          </p>
+        )
       }
     />
   )

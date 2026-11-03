@@ -15,7 +15,7 @@ const server = hubServer()
 const { at } = assistantScreens(server)
 const CONVERSAS = `${COMPANY_ROOT}/projects/${PEDIDOS_ID}/assistant`
 
-test('o dono vê a caixa, a barra do Projeto e só as conversas deste Projeto', async () => {
+test('o dono vê a caixa, a pasta do Projeto e só as conversas deste Projeto', async () => {
   const { conexus, asked } = at(CONVERSAS, {
     conversations: [
       assistantConversation({ projectId: PEDIDOS_ID, title: 'Pedidos do mês' }),
@@ -23,9 +23,8 @@ test('o dono vê a caixa, a barra do Projeto e só as conversas deste Projeto', 
     ],
   })
   expect(await screen.findByRole('textbox', { name: 'Mensagem para o Assistente' })).toBeTruthy()
-  const bar = await screen.findByRole('group', { name: 'Ligações da conversa' })
-  await waitFor(() => expect(within(bar).getByText('Sankhya · Vendas')).toBeTruthy())
-  expect(within(bar).queryByRole('combobox', { name: 'Projeto da conversa' })).toBeNull()
+  await screen.findByRole('button', { name: '2 ferramentas' })
+  expect(screen.queryByRole('button', { name: 'Projeto da conversa' })).toBeNull()
   expect(asked).toEqual([`?projectId=${PEDIDOS_ID}`])
   const link = await screen.findByRole('link', { name: /Pedidos do mês/ })
   expect(screen.queryByText('Conversa da empresa')).toBeNull()
@@ -43,17 +42,18 @@ test('a lista do Projeto leva o nome Conversas só como região: o título da p�
   expect(screen.queryByRole('heading', { name: 'Conversas recentes' })).toBeNull()
 })
 
-test('a barra mostra o Projeto fixo ao lado de Ajustar, sem controle para trocá-lo', async () => {
+test('a pasta mostra o nome do Projeto, sem controle para trocá-lo, e a contagem vem depois dele', async () => {
   at(CONVERSAS)
-  const bar = await screen.findByRole('group', { name: 'Ligações da conversa' })
-  expect(await within(bar).findByText(`Projeto · ${PEDIDOS.name}`)).toBeTruthy()
-  expect(within(bar).getByRole('button', { name: 'Ajustar' })).toBeTruthy()
-  expect(within(bar).queryByRole('combobox')).toBeNull()
+  const tools = await screen.findByRole('button', { name: '2 ferramentas' })
+  const name = await within(tools.parentElement ?? document.body).findByText(PEDIDOS.name)
+  expect(name.compareDocumentPosition(tools) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  expect(screen.queryByRole('button', { name: 'Projeto da conversa' })).toBeNull()
+  expect(screen.queryByRole('button', { name: 'Ajustar' })).toBeNull()
 })
 
 test('a página do Projeto não oferece os exemplos do Início', async () => {
   at(CONVERSAS)
-  await screen.findByRole('group', { name: 'Ligações da conversa' })
+  await screen.findByRole('button', { name: '2 ferramentas' })
   expect(screen.queryByRole('list', { name: 'Exemplos' })).toBeNull()
 })
 
@@ -62,12 +62,13 @@ test('sem conversas, a página diz que nenhuma começou neste Projeto', async ()
   expect(await screen.findByText('Nenhuma conversa neste Projeto ainda.')).toBeTruthy()
 })
 
-test('sem ligação liberada ao Projeto, a barra diz onde liberar uma', async () => {
+test('sem ligação liberada ao Projeto, a caixa diz "Sem ferramentas" e leva às Integrações do Projeto', async () => {
   at(CONVERSAS, { offered: [] })
-  expect(await screen.findByText(/Este Projeto não recebeu nenhuma ligação\./)).toBeTruthy()
-  expect(
-    screen.getByRole('link', { name: 'Abrir Integrações do Projeto' }).getAttribute('href'),
-  ).toBe(`${CONVERSAS.replace('/assistant', '')}/integrations`)
+  const link = await screen.findByRole('link', {
+    name: 'Liberar um sistema em Integrações do Projeto',
+  })
+  expect(link.textContent).toBe('Sem ferramentas')
+  expect(link.getAttribute('href')).toBe(`${CONVERSAS.replace('/assistant', '')}/integrations`)
 })
 
 test('a lista passa de uma página: Ver mais leva à seguinte no endereço, e Primeira página volta', async () => {
