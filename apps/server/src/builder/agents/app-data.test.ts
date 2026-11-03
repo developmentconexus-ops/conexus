@@ -1,9 +1,8 @@
 import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
-import { appLogin, appLoginPassword, ProjectId } from '@conexus/hub-api'
+import { appLogin, ProjectId } from '@conexus/hub-api'
 import { ASK, folder, MIGRATION, send, versionWriting } from '../../hub/apps/test-versions.ts'
-import { DatabaseUrl } from '../../platform/database.ts'
 import type { Anthropic } from '../../platform/test-anthropic.ts'
 import {
   appLoginsOf,
@@ -188,17 +187,14 @@ test('não grava: INSERT, UPDATE, DELETE, CREATE, SET ROLE e dois comandos são 
 
 test('não grava: o login de leitura só tem SELECT, de modo que, com a transação virada para escrita, o banco ainda recusa o DELETE com 42501', async (t) => {
   const on = await readingOn(t, [])
-  const { readLogin } = appLogin(on.projectId)
-  const url = new URL(on.owner.reveal())
-  url.username = readLogin
-  url.password = await appLoginPassword({
-    key: on.hub.config.appLoginKey.reveal(),
-    login: readLogin,
-  })
+  // Born after the tables, so what it holds is only what the grants give it, not the defaults.
+  await forgetReadLogin(on.owner, on.projectId)
+  await on.hub.postgres.companyPostgres.ensureReadLogin(on.owner, on.projectId)
+  const url = await on.hub.postgres.companyPostgres.readAddress('db.test', on.projectId)
   const saved = await savedOf(on.owner, on.projectId)
   // The call without `readOnly`: the transaction is the login's own, so only its grants refuse.
   const answer = await pgTransport(
-    DatabaseUrl.parse(url.toString()),
+    url,
     [{ text: 'SET TRANSACTION READ WRITE' }, { text: 'DELETE FROM recado' }],
     AbortSignal.timeout(5_000),
   )
