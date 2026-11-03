@@ -185,7 +185,57 @@ for (const viewport of [PHONE, ZOOMED_PHONE]) {
     assert.ok(rail && list && panel, 'the drawer is not laid out')
     assert.ok(rail.x + rail.width <= list.x, 'the rail and the list are not side by side')
     assert.ok(panel.width <= 328, `the drawer is ${panel.width}px wide`)
+    const close = await drawer.getByRole('button', { name: 'Fechar navegação' }).boundingBox()
+    assert.ok(close, 'the drawer has no close')
+    const under = await drawer
+      .locator('a, button')
+      .evaluateAll((all) =>
+        all
+          .filter((one) => one.getAttribute('aria-label') !== 'Fechar navegação')
+          .map((one) => ({
+            name: one.getAttribute('aria-label') ?? one.textContent,
+            ...one.getBoundingClientRect().toJSON(),
+          })),
+      )
+    for (const one of under) {
+      const apart =
+        one.right <= close.x ||
+        one.left >= close.x + close.width ||
+        one.bottom <= close.y ||
+        one.top >= close.y + close.height
+      assert.ok(apart, `the close covers "${one.name}"`)
+    }
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), viewport.width)
+    await page.close()
+  })
+}
+
+// The box's band takes the ground of the frame it sits in: no strip of another colour behind it.
+for (const [name, path, viewport] of [
+  ['o Início', `/companies/${COMPANY.id}`, DESKTOP],
+  ['o Início', `/companies/${COMPANY.id}`, PHONE],
+  ['o passo 4 das boas-vindas', `/companies/${COMPANY.id}/welcome/build`, DESKTOP],
+  ['o passo 4 das boas-vindas', `/companies/${COMPANY.id}/welcome/build`, PHONE],
+] as const) {
+  test(`a faixa da caixa: ${name} a ${viewport.width}px não desenha uma faixa de outra cor`, async () => {
+    const page = await open(path, viewport, {
+      ...OWNER,
+      ...projectsPage(COMPANY.id),
+      ...startsOn(COMPANY.id),
+    })
+    const form = page.locator('form').filter({ has: page.getByRole('textbox') })
+    await form.waitFor()
+    const [band, behind] = await form.evaluate((element) => {
+      let ground = element.parentElement
+      while (ground && getComputedStyle(ground).backgroundColor === 'rgba(0, 0, 0, 0)') {
+        ground = ground.parentElement
+      }
+      return [
+        getComputedStyle(element).backgroundColor,
+        ground ? getComputedStyle(ground).backgroundColor : 'none',
+      ]
+    })
+    assert.equal(band, behind, 'the box draws a band of another colour than the frame behind it')
     await page.close()
   })
 }

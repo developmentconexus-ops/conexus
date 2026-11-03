@@ -20,9 +20,12 @@ import { FileChip } from './person-turn.tsx'
 import { useRoom } from './room.ts'
 import { dictationText, NO_SECRETS, REFUSALS, steerPlaceholderText } from './text.ts'
 
-/** The form sticks to the bottom and clears the home indicator. */
+/**
+ * The form sticks to the bottom and clears the home indicator. Its band takes `--ground`, the
+ * ground of the frame it sits in (surface unless the frame says otherwise, like the welcome's canvas).
+ */
 const FORM =
-  'sticky bottom-0 flex flex-col gap-xs bg-surface pb-[max(0.5rem,env(safe-area-inset-bottom))]'
+  'sticky bottom-0 flex flex-col gap-xs bg-(--ground,var(--color-surface)) pb-[max(0.5rem,env(safe-area-inset-bottom))]'
 
 /** A finger's keyboard has a Return that means a new line; the button is what sends. */
 function isTouch(): boolean {

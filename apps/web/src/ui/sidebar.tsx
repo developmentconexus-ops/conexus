@@ -125,6 +125,7 @@ export function Sidebar({
         <SheetContent
           title={label}
           titleClassName="sr-only"
+          closeClassName="static order-first mt-sm mr-md self-end"
           data-sidebar="sidebar"
           data-mobile="true"
           className="max-w-drawer gap-0 bg-canvas p-0"
