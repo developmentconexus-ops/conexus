@@ -13,6 +13,7 @@ import { createHubMastra } from './builder/mastra/public.ts'
 import type { openGoogleCalls } from './builder/model-accounts/public.ts'
 import { isChoosable } from './builder/model-accounts/public.ts'
 import type { AssistantMachine, Runs } from './builder/runs/public.ts'
+import type { Apps } from './hub/apps/public.ts'
 import { publishedVersionsOf } from './hub/apps/public.ts'
 import type { Connectors } from './hub/connectors/public.ts'
 import type { IdentityPorts } from './hub/identity/public.ts'
@@ -42,6 +43,8 @@ export function conversationsOf(deps: {
   /** The tests' folder and start deadline for the Assistant's machines; E2B's when absent. */
   machineTuning?: MachineTuning
   connectors: () => Connectors
+  /** The apps are made after the agents; an agent reads its app's data when a turn calls it. */
+  apps: () => Apps
   notify: Notify
   automationClock: Config['automationClock']
   log: FailureLog
@@ -73,6 +76,10 @@ export function conversationsOf(deps: {
   const agents = agentsAlive({
     ...{ storage, database, identity, queue, liveProjectOf, isChoosable, log, connectors: door },
     speakersOf: (scope) => speakersOf({ database, identity, projects: { liveProjectOf } }, scope),
+    appData: {
+      hasApp: (input) => deps.apps().hasAppData(input),
+      read: (input) => deps.apps().readAppData(input),
+    },
     mastra: () => hub.mastra,
   })
   const clock = deps.automationClock

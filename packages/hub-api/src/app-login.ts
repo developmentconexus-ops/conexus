@@ -1,8 +1,8 @@
 import type { ProjectId } from './projects.ts'
 
 /**
- * The schema and the two logins of a Projeto's app in its company's database (decision 0021): one
- * runs the app, one applies its migrations. Each name keeps the Projeto's id as it is, so SQL quotes
+ * The schema and the three logins of a Projeto's app in its company's database (decision 0021): one
+ * runs the app, one applies its migrations, one only reads for the Projeto's agents. Each name keeps the Projeto's id as it is, so SQL quotes
  * it; a login never exists in another company's project, so the derived password opens nothing there.
  */
 export function appLogin(projectId: ProjectId) {
@@ -10,6 +10,7 @@ export function appLogin(projectId: ProjectId) {
     schema: `app_${projectId}`,
     runLogin: `app_${projectId}_run`,
     migrateLogin: `app_${projectId}_migrate`,
+    readLogin: `app_${projectId}_read`,
   })
 }
 export type AppLogin = ReturnType<typeof appLogin>
