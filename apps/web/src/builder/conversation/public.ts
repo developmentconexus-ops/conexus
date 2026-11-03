@@ -9,11 +9,11 @@ export { Markdown } from './markdown.tsx'
 export { ComposerModelName, ModelChoice } from './model-choice.tsx'
 export { EmptyPanel, Panel } from './panel.tsx'
 export { conversationParams, projectConversationParams } from './params.ts'
+export { CONTINUE_HERE } from './proposals.ts'
 export { conversationQuery, conversationsQuery, sessionReadQuery } from './queries.ts'
 export type { OpenedFile, Room } from './room.ts'
-export { ASSISTANT_ROOM, agentRoom, RoomContext } from './room.ts'
+export { ASSISTANT_ROOM, agentRoom, RoomContext, useSay } from './room.ts'
 export {
-  CreateApp,
   START_COLUMN,
   Start,
   StartBox,

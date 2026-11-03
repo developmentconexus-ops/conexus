@@ -145,6 +145,7 @@ test('o papel de cada um: o texto fixo diz que o Builder faz apps e o Assistente
     assert.match(description, /Call it when/)
     assert.match(description, /Do not call it for a question, a table, a chart or a file/)
     assert.match(description, /propose_automation/)
+    assert.match(description, /Continuar aqui.*do not propose again until they ask for it/)
     assert.doesNotMatch(description, SHOUTED)
   }
   assert.match(app, /Criar app/)

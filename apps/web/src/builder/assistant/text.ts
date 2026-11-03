@@ -79,3 +79,15 @@ export const ASSISTANT_EXAMPLES = [
 ] as const
 export const EMPTY_ASSISTANT = 'Pergunte, peça uma análise ou um documento.'
 export const CONVERSATION_GONE = 'Esta conversa não existe mais.'
+
+/** The words of the card of an app the Assistant proposed (step 24.3.2, U3); the founder approves them at the step's end. */
+export const CREATE_APP = 'Criar app'
+export const SEND_TO_BUILDER = 'Mandar ao Builder'
+export const PROJECT_NAME_LABEL = 'Nome do projeto'
+export const RELEASE_CONNECTIONS = 'Ligações para o app ler'
+export const BRIEFING_LABEL = 'Briefing'
+export const PROPOSAL_GONE = 'Esta proposta não existe mais.'
+export const PROJECT_GONE = 'Este Projeto não existe mais.'
+export const UNCONFIRMED_HANDOFF = 'Não confirmamos o envio ao Builder. Tente de novo.'
+export const RETRY = 'Tentar de novo'
+export const OPEN_BUILDER = 'Abrir a conversa do Builder'
