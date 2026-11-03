@@ -79,6 +79,7 @@ export {
   setAssistantConnections,
   setAssistantModel,
 } from './assistant.ts'
+export * from './handoff.ts'
 export * from './automation-api.ts'
 export { CAPACITY } from './capacity.ts'
 export {

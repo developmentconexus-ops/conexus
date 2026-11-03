@@ -15,7 +15,8 @@ import { isOAuth } from './apps.ts'
 import { createAssistantConnectors } from './assistant-port.ts'
 import { createBuilderConnectors } from './builder-port.ts'
 import { createExecutor } from './executor.ts'
-import { ungranted } from './grants.ts'
+import type { OfGrant } from './grants.ts'
+import { grant, mayGrant, ungranted } from './grants.ts'
 import { createLimits } from './limits.ts'
 import { reseal } from './reseal.ts'
 import { registerAppCallRoutes, registerConnectionRoutes } from './routes.ts'
@@ -86,6 +87,11 @@ export function createConnectors(deps: {
     builder: createBuilderConnectors(routeDeps),
     /** What the Assistant's tools and conversation scope read: the chosen connections of its place, read only (step 24.1, U1). */
     assistant: createAssistantConnectors(routeDeps),
+    /** What the Assistant's hand-off releases to the Projeto it made (step 24.3.2), as the grant route does. */
+    grants: {
+      may: (viewer: Parameters<typeof mayGrant>[1]) => mayGrant(routeDeps, viewer),
+      grant: (input: OfGrant) => grant(routeDeps, input),
+    },
     /** The Hub's end: every live token logged out before the database closes. */
     closeAll: limits.closeAll,
   })

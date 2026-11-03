@@ -77,9 +77,10 @@ function registerReads(app: FastifyInstance, deps: Deps) {
 
 /**
  * A conversation's creation, keyed by its attempt (code C37): the person and the Projeto admitted
- * first, then `openSession` with the index row as what the first attempt kept.
+ * first, then `openSession` with the index row as what the first attempt kept. The Assistant's
+ * hand-off opens its conversation here too (step 24.3.2), and sends on the session.
  */
-async function created(
+export async function created(
   deps: Deps,
   input: InProject & {
     attemptKey: string
@@ -104,7 +105,7 @@ async function created(
   )
   if (createdAt === undefined) throw new Failure('INTERNAL_UNEXPECTED')
   const conversationId = ConversationId.parse(opened.session.identity.getId())
-  return { id: conversationId, createdAt, model: opened.model, made: opened.made }
+  return { id: conversationId, createdAt, model: opened.model, made: opened.made, session: opened.session }
 }
 
 /**
