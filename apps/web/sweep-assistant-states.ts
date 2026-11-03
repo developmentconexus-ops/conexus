@@ -29,6 +29,9 @@ function tool(toolName: string, args: unknown, result: unknown, id: string) {
   }
 }
 
+const BRIEFING =
+  '## Quem usa\n\nO time de vendas da padaria, todo dia, no celular.\n\n## O que registra\n\n- quem pediu\n- o que pediu\n- a data de entrega'
+
 const MESSAGES: Said[] = [
   {
     id: 'm1',
@@ -61,7 +64,12 @@ const MESSAGES: Said[] = [
         },
         'c5',
       ),
-      tool(ASSISTANT_TOOL.proposeApp, {}, { summary: SUMMARY }, 'c6'),
+      tool(
+        ASSISTANT_TOOL.proposeApp,
+        {},
+        { summary: SUMMARY, briefing: { name: 'briefing.md', content: BRIEFING } },
+        'c6',
+      ),
       { type: 'text', text: 'Resumi o que achei e deixei o relatório ao lado.' },
     ],
     model: 'anthropic/claude-sonnet-4',
@@ -132,13 +140,13 @@ export const ASSISTANT_STATES: State[] = [
     },
   },
   {
-    name: 'Assistente, Criar app aberto',
+    name: 'Assistente, o cartão do app com o nome do Projeto escrito',
     path: ASSISTANT_PATH,
     replies: ASSISTANT_REPLIES,
     settle: async (page) => {
       await opened(page)
-      await page.getByRole('button', { name: 'Criar app' }).click()
-      await page.getByRole('dialog', { name: 'Criar app' }).waitFor()
+      await page.getByLabel('Nome do projeto').fill('Encomendas')
+      await page.getByRole('button', { name: 'Criar app' }).waitFor()
     },
   },
 ]
