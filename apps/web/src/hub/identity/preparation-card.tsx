@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { CheckIcon, CircleIcon } from 'lucide-react'
 import { buttonVariants } from '../../ui/button.tsx'
+import { Card } from '../../ui/card.tsx'
 import { cn } from '../../ui/cn.ts'
 import { preparationOf, teamDone } from './preparation.ts'
 import { everyMemberQuery, invitationsQuery } from './queries.ts'
@@ -49,9 +50,10 @@ export function PreparationCard(props: { companyId: CompanyId; companyAccounts: 
     ? ('/companies/$companyId/settings/people' as const)
     : ('/companies/$companyId/settings/model-accounts' as const)
   return (
-    <section
+    <Card
+      role="region"
       aria-label="Termine de preparar a empresa"
-      className="flex flex-wrap items-center justify-between gap-md rounded-object border border-line px-lg py-sm max-md:py-md"
+      className="flex-row flex-wrap items-center justify-between gap-md bg-transparent px-lg py-sm max-md:py-md"
     >
       <div className="flex flex-col gap-xs">
         <div className="flex flex-col gap-sm lg:flex-row lg:items-center lg:gap-xl">
@@ -76,6 +78,6 @@ export function PreparationCard(props: { companyId: CompanyId; companyAccounts: 
       >
         Continuar
       </Link>
-    </section>
+    </Card>
   )
 }

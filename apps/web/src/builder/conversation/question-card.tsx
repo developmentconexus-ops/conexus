@@ -20,6 +20,7 @@ import {
   QuestionnaireSubmit,
   QuestionnaireTitle,
 } from '../../ui/questionnaire.tsx'
+import { Textarea } from '../../ui/textarea.tsx'
 import {
   TraceCollapsible,
   TraceCollapsibleContent,
@@ -130,26 +131,18 @@ function Ask({ question, at }: { question: Question; at: number }) {
             </QuestionnaireChoice>
           ))}
           <QuestionnaireInput
+            className="h-auto"
             aria-label="Outra resposta"
             placeholder={CARD_TEXT.other}
-            render={
-              <textarea
-                className="w-full min-h-9 max-md:min-h-16 field-sizing-content max-h-40 rounded-control border border-line bg-surface px-sm py-xs text-base text-text md:text-body resize-none"
-                rows={1}
-              />
-            }
+            render={<Textarea className="max-md:min-h-16" rows={1} />}
           />
         </QuestionnaireChoices>
       ) : (
         <QuestionnaireInput
+          className="h-auto"
           aria-label="Resposta"
           placeholder="Escreva sua resposta…"
-          render={
-            <textarea
-              className="w-full min-h-9 max-md:min-h-16 field-sizing-content max-h-40 rounded-control border border-line bg-surface px-sm py-xs text-base text-text md:text-body resize-none"
-              rows={1}
-            />
-          }
+          render={<Textarea className="max-md:min-h-16" rows={1} />}
         />
       )}
       <QuestionnaireError>Escolha ou escreva uma resposta para continuar.</QuestionnaireError>
