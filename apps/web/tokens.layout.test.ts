@@ -12,18 +12,15 @@ after(async () => {
   assert.deepEqual(harness.unanswered, [], 'the page asked the Hub for something no reply covers')
 })
 
-/** The frame and the sheet as the page paints them: a probe takes each token through `var()`. */
+/** The page as it paints: the body's own background, and a probe that takes the sheet's token through `var()`. */
 async function paint(page: Page) {
   return page.evaluate(() => {
-    function resolved(token: string) {
-      const probe = document.createElement('div')
-      probe.style.backgroundColor = `var(--color-${token})`
-      document.body.append(probe)
-      const color = getComputedStyle(probe).backgroundColor
-      probe.remove()
-      return color
-    }
-    return { canvas: resolved('canvas'), surface: resolved('surface') }
+    const probe = document.createElement('div')
+    probe.style.backgroundColor = 'var(--color-surface)'
+    document.body.append(probe)
+    const surface = getComputedStyle(probe).backgroundColor
+    probe.remove()
+    return { canvas: getComputedStyle(document.body).backgroundColor, surface }
   })
 }
 
