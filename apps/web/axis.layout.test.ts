@@ -148,17 +148,31 @@ for (const viewport of [DESKTOP, WIDE, PHONE])
     const working = page.getByRole('status').filter({ hasText: 'trabalhando' })
     const form = page.locator('form').filter({ has: page.getByLabel('Mensagem') })
     await working.waitFor()
-    const [scroll, line, box, log] = await Promise.all([
+    const [scroll, line, box, log, last] = await Promise.all([
       scroller.boundingBox(),
       working.locator('svg').first().boundingBox(),
       form.boundingBox(),
       page.getByRole('log', { name: /^Conversa com o / }).boundingBox(),
+      page.locator('[data-slot=message-scroller-item]').last().boundingBox(),
     ])
-    assert.ok(scroll && line && box && log, 'the conversation is not laid out')
+    assert.ok(scroll && line && box && log && last, 'the conversation is not laid out')
     assert.equal(
       Math.round(scroll.x + scroll.width),
       viewport.width,
       'the scrollbar is not at the window edge',
+    )
+    assert.equal(
+      Math.round(scroll.y + scroll.height),
+      viewport.height,
+      'the scrollbar stops above the bottom of the window',
+    )
+    assert.ok(
+      box.y >= scroll.y && box.y + box.height <= scroll.y + scroll.height,
+      'the box is not over the bottom of the scroll area',
+    )
+    assert.ok(
+      last.y + last.height <= line.y,
+      'the end of the conversation is under the working line and the box',
     )
     assert.ok(
       Math.abs(log.x + log.width / 2 - (scroll.x + scroll.width / 2)) <= 1,
