@@ -64,21 +64,37 @@ test('tool_search, tool_save e agent_read leem como frases, sem o nome da ferram
   }
 })
 
-test('uma ferramenta recusada diz a frase de falha, nunca a de sucesso (F-A1)', () => {
+test('uma ferramenta do Construtor recusada diz a frase de falha, nunca a de sucesso (F-A1)', () => {
   for (const [toolName, failed] of [
-    [CONSTRUTOR_TOOL.projectRead, 'Não conseguiu olhar o Projeto'],
-    [CONSTRUTOR_TOOL.toolSearch, 'Não conseguiu procurar ferramentas'],
     [CONSTRUTOR_TOOL.toolSave, 'Não conseguiu fazer a ferramenta'],
     [CONSTRUTOR_TOOL.agentRead, 'Não conseguiu ler o rascunho'],
     [CONSTRUTOR_TOOL.agentTest, 'Não conseguiu testar o agente'],
-    [AGENT_TOOL.appDataRead, 'Não conseguiu consultar os dados do app'],
-    ['tool_vendas_ontem', 'Não conseguiu consultar vendas ontem'],
   ] as const) {
     const { unmount } = render(<ToolRow tool={{ ...draftRow(toolName), result: REFUSED }} />)
     expect(screen.getByText(failed)).toBeTruthy()
-    expect(screen.queryByText(/^(Fez|Olhou|Procurou|Leu|Testou|Consultou)/)).toBeNull()
+    expect(screen.queryByText(/^(Fez|Leu|Testou)/)).toBeNull()
     unmount()
   }
+})
+
+test('app_data_read que falhou diz a frase de falha (F-A1)', () => {
+  const failed = { kind: 'FAILED', code: 'APP_DATA_TIMEOUT' }
+  render(<ToolRow tool={{ ...draftRow(AGENT_TOOL.appDataRead), result: failed }} />)
+  expect(screen.getByText('Não conseguiu consultar os dados do app')).toBeTruthy()
+  expect(screen.queryByText('Consultou os dados do app')).toBeNull()
+})
+
+test('tool_<slug> que o conector recusou diz a frase de falha (F-A1)', () => {
+  render(<ToolRow tool={{ ...draftRow('tool_vendas_ontem'), result: { kind: 'DEADLINE' } }} />)
+  expect(screen.getByText('Não conseguiu consultar vendas ontem')).toBeTruthy()
+  expect(screen.queryByText('Consultou vendas ontem')).toBeNull()
+})
+
+test('tool_<slug> com a conexão recusada diz a frase de falha (F-A1)', () => {
+  const refused = { kind: 'AUTH_REFUSED', native: { status: 401, code: null, message: null } }
+  render(<ToolRow tool={{ ...draftRow('tool_vendas_ontem'), result: refused }} />)
+  expect(screen.getByText('Não conseguiu consultar vendas ontem')).toBeTruthy()
+  expect(screen.queryByText('Consultou vendas ontem')).toBeNull()
 })
 
 test('uma ferramenta que deu erro diz a frase de falha (F-A1)', () => {

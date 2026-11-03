@@ -8,6 +8,7 @@ import {
   WrenchIcon,
 } from 'lucide-react'
 import { z } from 'zod'
+import { readRefusal } from './connector-specs.ts'
 import type { ConstrutorRowTool, Refusal, ToolSpec } from './tool-spec.ts'
 
 const Refused = z.object({ kind: z.literal('REFUSED') })
@@ -15,6 +16,13 @@ const Refused = z.object({ kind: z.literal('REFUSED') })
 /** A result the Hub refused (`{ kind: 'REFUSED' }`): the row says its failed sentence, as the Assistant's do. */
 function refusedResult(result: unknown): Refusal | undefined {
   return Refused.safeParse(result).success ? 'SAID' : undefined
+}
+
+const AppDataFailed = z.object({ kind: z.enum(['REFUSED', 'FAILED']) })
+
+/** `app_data_read` answers `REFUSED` (the query) or `FAILED` (the app's data, out of reach): both read as failed. */
+function appDataRefusal(result: unknown): Refusal | undefined {
+  return AppDataFailed.safeParse(result).success ? 'SAID' : undefined
 }
 
 /** The rows of the Construtor's own tools (step 24.3, U5): the person reads what was done to the agent, never a tool's name. */
@@ -27,7 +35,6 @@ export const CONSTRUTOR_SPECS: Record<ConstrutorRowTool, ToolSpec> = {
     verb: 'olhou o Projeto',
     body: 'generic',
     groups: true,
-    refusal: refusedResult,
   },
   [CONSTRUTOR_TOOL.toolSearch]: {
     icon: SearchIcon,
@@ -37,7 +44,6 @@ export const CONSTRUTOR_SPECS: Record<ConstrutorRowTool, ToolSpec> = {
     verb: 'procurou ferramentas',
     body: 'generic',
     groups: true,
-    refusal: refusedResult,
   },
   [CONSTRUTOR_TOOL.toolSave]: {
     icon: WrenchIcon,
@@ -99,7 +105,7 @@ export const AGENT_SPECS: Record<(typeof AGENT_TOOL)[keyof typeof AGENT_TOOL], T
     verb: 'consultou',
     body: 'generic',
     groups: true,
-    refusal: refusedResult,
+    refusal: appDataRefusal,
   },
 }
 
@@ -114,6 +120,6 @@ export function slugToolSpec(slug: string): ToolSpec {
     verb: 'consultou',
     body: 'generic',
     groups: true,
-    refusal: refusedResult,
+    refusal: readRefusal,
   }
 }
