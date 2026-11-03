@@ -1,13 +1,23 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { CONSTRUTOR_TOOL } from '@conexus/hub-api'
+import { ASK, folder, MIGRATION, send, versionWriting } from '../../hub/apps/test-versions.ts'
 import { call } from '../../hub/identity/test-hub.ts'
-import { agentOf, drafted, madeAgent, ordersOf, otherProject } from '../agents/test-agents.ts'
+import { createCompanyDatabase } from '../../platform/test-company-postgres.ts'
+import {
+  agentOf,
+  agentsOn,
+  drafted,
+  madeAgent,
+  ordersOf,
+  otherProject,
+} from '../agents/test-agents.ts'
+import { talking } from '../assistant/test-assistant.ts'
 import { created, salesSummary } from '../automations/test-automations.ts'
 import { endOf } from '../conversation/test-conversation.ts'
 import { tool } from '../conversation/test-questions.ts'
 import type { Step } from './test-construtor.ts'
-import { building, keeping, listOf, resultOf } from './test-construtor.ts'
+import { building, keeping, listOf, opened, resultOf, scripted } from './test-construtor.ts'
 
 const FIRST = 'Responda sobre as vendas do dia.'
 
@@ -61,6 +71,31 @@ test('ler o Projeto: o nome, só as ligações que o Projeto recebeu e os agente
     listOf(seen?.agents).map((each) => [each.name, each.state]),
     [['Conferente', { kind: 'DRAFT' }]],
   )
+})
+
+test('ler o Projeto: sem app, app é null; com app, as tabelas com as colunas, sem o livro das migrações e sem uma linha', async (t) => {
+  const without: Record<string, unknown>[] = []
+  const bare = await building(t, [() => [tool('project_read', {})], keeping(without)])
+  assert.equal(endOf(await bare.conversation.say('O que o Projeto tem?')), 'complete')
+  assert.equal(without[0]?.app, null)
+
+  const answers: Record<string, unknown>[] = []
+  const writing = versionWriting()
+  const steps = scripted([() => [tool('project_read', {})], keeping(answers)])
+  const on = await agentsOn(t, (sent) =>
+    sent.texts.some((text) => text.startsWith(ASK)) ? writing(sent) : steps(sent),
+  )
+  const [neonProject] = on.hub.neon.projects()
+  assert.ok(neonProject)
+  on.hub.neon.ownedBy(neonProject.id, await createCompanyDatabase(t))
+  const subject = { t, hub: on.hub, projects: `${on.company}/projects`, projectId: on.projectId }
+  const sent = await send(subject, on.ana, folder({ migrations: [MIGRATION] }))
+  assert.equal(sent.preview?.state, 'ready')
+  const conversation = await talking(t, on.hub, on.ana, await opened(on))
+  assert.equal(endOf(await conversation.say('O que o Projeto tem?')), 'complete')
+  assert.deepEqual(Object(answers[0]?.app), {
+    tables: [{ name: 'recado', columns: ['id', 'texto'] }],
+  })
 })
 
 test('o rascunho pelo Construtor: procura e grava a ferramenta e a escolhe no rascunho', async (t) => {

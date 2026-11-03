@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify'
+import type { AppDataPort } from './builder/agents/public.ts'
 import { agentsAlive } from './builder/agents/public.ts'
 import type { MachineTuning } from './builder/assistant/public.ts'
 import { createAssistant, speakersOf } from './builder/assistant/public.ts'
@@ -8,7 +9,7 @@ import {
   automationRun,
   automationsOf,
 } from './builder/automations/public.ts'
-import { createConstrutor } from './builder/construtor/public.ts'
+import { appTablesOf, createConstrutor } from './builder/construtor/public.ts'
 import { createBuilderConversations, createMastraStorage } from './builder/conversation/public.ts'
 import { createHubMastra } from './builder/mastra/public.ts'
 import type { openGoogleCalls } from './builder/model-accounts/public.ts'
@@ -24,6 +25,24 @@ import type { Config } from './platform/config.ts'
 import type { Database, MastraPool } from './platform/database.ts'
 import type { FailureLog } from './platform/failure.ts'
 import type { SealKeys } from './platform/seal.ts'
+
+/** The connectors' assistant door, reached when a route or a turn calls it. */
+function doorOf(connectors: () => Connectors): Connectors['assistant'] {
+  return {
+    connections: (scope) => connectors().assistant.connections(scope),
+    read: (scope, call) => connectors().assistant.read(scope, call),
+    notes: (scope, connectionId) => connectors().assistant.notes(scope, connectionId),
+    operationOf: (scope, target) => connectors().assistant.operationOf(scope, target),
+  }
+}
+
+/** The apps' door as the agents and the Construtor read the app's data (step 24.3): reached when called. */
+function appDataOf(apps: () => Pick<Apps, 'hasAppData' | 'readAppData'>): AppDataPort {
+  return {
+    hasApp: (input) => apps().hasAppData(input),
+    read: (input) => apps().readAppData(input),
+  }
+}
 
 /**
  * The Builder's conversations, the Assistant beside them (step 24.1, U2, `H1`), its automations
@@ -60,12 +79,7 @@ export function conversationsOf(deps: {
     googleCalls: deps.google.googleCalls,
     log,
   }
-  const door: Connectors['assistant'] = {
-    connections: (scope) => deps.connectors().assistant.connections(scope),
-    read: (scope, call) => deps.connectors().assistant.read(scope, call),
-    notes: (scope, connectionId) => deps.connectors().assistant.notes(scope, connectionId),
-    operationOf: (scope, target) => deps.connectors().assistant.operationOf(scope, target),
-  }
+  const door = doorOf(deps.connectors)
   const assistant = createAssistant({
     ...{ storage, database, identity, queue, log },
     machine: deps.machine,
@@ -75,19 +89,17 @@ export function conversationsOf(deps: {
   })
   // A Projeto's agents and the company's tools (step 24.3), each published one alive on the one
   // `Mastra`, made below: the connectors' door is reached when a route or a turn calls it.
+  const appData = appDataOf(deps.apps)
   const agents = agentsAlive({
     ...{ storage, database, identity, queue, liveProjectOf, isChoosable, log, connectors: door },
     speakersOf: (scope) => speakersOf({ database, identity, projects: { liveProjectOf } }, scope),
-    appData: {
-      hasApp: (input) => deps.apps().hasAppData(input),
-      read: (input) => deps.apps().readAppData(input),
-    },
+    appData,
     mastra: () => hub.mastra,
   })
   const construtor = createConstrutor({
     ...{ storage, database, identity, queue, liveProjectOf, log, agents, connectors: door },
     speakersOf: (scope) => speakersOf({ database, identity, projects: { liveProjectOf } }, scope),
-    ...{ automations: () => automations, appTables: async () => null },
+    ...{ automations: () => automations, appTables: appTablesOf(appData) },
   })
   const clock = deps.automationClock
   const run = automationRun({

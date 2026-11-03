@@ -12,6 +12,7 @@ import { openAgentConversation } from './open.ts'
 export type { AgentRun } from './agent.ts'
 export { agentKey, agentRunContext } from './agent.ts'
 export type { AgentService } from './agents.ts'
+export type { AppDataPort } from './app-data.ts'
 
 import { agentEvents } from './events.ts'
 import { activeOf, draftOf, liveOf, publishedAll } from './frozen.ts'
