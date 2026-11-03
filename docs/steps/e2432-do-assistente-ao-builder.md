@@ -43,8 +43,8 @@ prova; esta etapa não o muda).
 
 **As decisões suas nesta etapa.** Todas já dadas: A1 (o texto do Assistente diz que app vai para o
 Builder), B1 (a entrega por um sinal do Mastra marcado como vindo do Assistente, com o resumo e o
-briefing, como a automação faz), C1 (as ligações marcadas no toque são liberadas ao Projeto), D2 (no
-Projeto, **Mandar ao Builder** com o mesmo sinal e briefing), E1 (este cartão curto), F1 (o D2 abre
+briefing, como a automação faz), `C1` (as ligações marcadas no toque são liberadas ao Projeto), `D2` (no
+Projeto, **Mandar ao Builder** com o mesmo sinal e briefing), E1 (este cartão curto), F1 (o `D2` abre
 uma conversa nova do Builder) e G1 (passa só com todos os casos certos nas três rodadas). Nenhuma
 nova.
 
@@ -74,7 +74,7 @@ as três estiverem no `main`.
 | 7 | U2 | O toque cria o Projeto, libera só as ligações marcadas, abre uma conversa do Builder e o Builder recebe um sinal `user` com `source="assistant"`, o resumo e o briefing como arquivo | `assistant/handoff.test.ts`, "a entrega" | must |
 | 8 | U2 | O toque repetido com a mesma chave devolve o mesmo Projeto e a mesma conversa, e o sinal sai uma vez | `assistant/handoff.test.ts`, "o toque repetido" | must |
 | 9 | U2 | Recusa: quem não tem `manageConnections` cria o Projeto sem liberar nada (`CONNECTIONS_NOT_ALLOWED` na resposta, nenhuma liberação gravada); uma chamada que não é proposta desta conversa é `NOT_FOUND` | `assistant/handoff.test.ts`, "as recusas" | must |
-| 10 | U2 | No Projeto (D2, F1), a mesma rota abre uma conversa nova do Builder desse Projeto e não cria Projeto | `assistant/handoff.test.ts`, "a mudança no Projeto" | must |
+| 10 | U2 | No Projeto (`D2`, F1), a mesma rota abre uma conversa nova do Builder desse Projeto e não cria Projeto | `assistant/handoff.test.ts`, "a mudança no Projeto" | must |
 | 11 | U3 | O cartão do Criar app mostra o briefing; o toque manda pela rota e abre a conversa do Builder; o cartão do Projeto diz **Mandar ao Builder** | `web/src/builder/assistant/propose.test.tsx` | must |
 
 ## A matriz de estados
@@ -103,21 +103,21 @@ as três estiverem no `main`.
 
 ## A tabela de referência
 
-| Peça | Arquivo do `main` | Como as referências fazem, nas versões instaladas | Veredito | Unidade, arquivo novo |
-| --- | --- | --- | --- | --- |
-| O papel de cada um no texto | `assistant/prompt/assistant.md:1` | Anthropic, boas práticas de prompt: contexto e porquê, "Use this tool when...", sem "If in doubt, use [tool]"; Mastra `docs-subagents.md:462-466`, as instruções do pai dizem quando usar cada recurso | nativo | U1 |
-| A descrição de quando usar e quando não | `assistant/propose.ts:12-13` | Anthropic, definir ferramentas: "When it should be used (and when it shouldn't)", "at least 3–4 sentences" | nativo | U1 |
-| O plano vira o que a ferramenta pede | — | Mastra Code `submit_plan({ path })`, prateleira `mastra-1.79` em `4c22623e`, `mastracode/sdk/src/agents/modes/plan.ts:31-35` | nativo | U1, `assistant/propose.ts` |
-| O briefing lido na chamada, o modelo recebe só o recorte | `assistant/show-file.ts:52-99` | `createTool({ toModelOutput })` de `@mastra/core` 1.79.0 | nativo | U1 |
-| Uma ferramenta por lugar | `assistant/assistant.ts:243-245` | Anthropic, engenharia de contexto: "a minimal viable set of tools" | nativo | U1 |
-| Nenhuma proposta de app numa rodada de automação | `automations/run.ts:111-114`, `assistant/open.ts:77` (as marcas) | as ferramentas dinâmicas do `Agent` (`tools: ({ requestContext })`) | nativo | U1 |
-| A prova | `assistant/assistant.eval.test.ts:90-105,165-235` | `@mastra/evals` 1.10.8, `checks.calledTool`, `checks.didNotCall`, `checks.noToolErrors` (`reference-evals-checks.md:115-130`); Anthropic, "held-out test sets" | nativo | U1 |
-| A entrega por sinal | `automations/run.ts:128-141`; hoje a tela manda (`web/.../start.tsx:308-318`, `handoff.ts:84-92`) | `Session.sendSignal` com `attributes` e `author` (`agent-controller/session.d.ts:1699-1716`); `docs-harness-signals.md:11,19,82-88` | nativo | U2, `assistant/handoff.ts` |
-| O briefing como arquivo no sinal | — | `createMessageInput` do `Session.sendMessage` (`dist/agent-controller-DO6rGsQm.js:5232-5258,5585-5596`), um texto por arquivo com `[File: nome]` | nativo | U2 |
-| Liberar as ligações marcadas | `hub/connectors/grants.ts:168-183` | — (a peça do Hub) | nativo | U2 |
-| Abrir a conversa do Builder | `builder/conversation/routes.ts:82-108` | `openSession` do kit dos controladores | nativo | U2 |
-| A frase do Builder | `builder/conversation/prompt/builder.md:8,17` | Mastra `docs-harness-signals.md:82-88` (os atributos chegam como XML) | nativo | U2 |
-| O cartão e o toque | `web/src/builder/conversation/tool-row.tsx:268-319`, `web/src/builder/assistant/propose.tsx` | Lovable, o cartão "Start building" só quando se pede a mudança | nativo | U3 |
+| Peça | Unidade | Hoje no main | Referência | Como a referência faz | Veredito | Prova, se não for nativo | Palavra do fundador | Arquivo novo |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| O papel de cada um no texto | U1 | `assistant/prompt/assistant.md:1` | Anthropic, boas práticas de prompt; Mastra `@mastra/core` 1.79.0, `docs-subagents.md:462-466` | contexto e porquê, "Use this tool when...", sem "If in doubt, use [tool]"; as instruções do pai dizem quando usar cada recurso | nativo | — | `A1` | — |
+| A descrição de quando usar e quando não | U1 | `assistant/propose.ts:12-13` | Anthropic, definir ferramentas | "When it should be used (and when it shouldn't)", "at least 3–4 sentences" | nativo | — | `G1` | — |
+| O plano vira o que a ferramenta pede | U1 | — | Mastra Code, prateleira `mastra-1.79` em `4c22623e`, `mastracode/sdk/src/agents/modes/plan.ts:31-35` | `submit_plan({ path })`: o plano é um arquivo, a ferramenta recebe o caminho | nativo | — | não precisa | — |
+| O briefing lido na chamada, o modelo recebe só o recorte | U1 | `assistant/show-file.ts:52-99` | `@mastra/core` 1.79.0, `createTool` | `toModelOutput` devolve ao modelo só o recorte; a saída inteira fica guardada com a chamada | nativo | — | não precisa | — |
+| Uma ferramenta por lugar | U1 | `assistant/assistant.ts:243-245` | Anthropic, engenharia de contexto | "a minimal viable set of tools" | nativo | — | `D2` | — |
+| Nenhuma proposta de app numa rodada de automação | U1 | `automations/run.ts:111-114`, `assistant/open.ts:77` (as marcas) | `@mastra/core` 1.79.0, `Agent` | as ferramentas dinâmicas (`tools: ({ requestContext })`) | nativo | — | não precisa | — |
+| A prova | U1 | `assistant/assistant.eval.test.ts:90-105,165-235` | `@mastra/evals` 1.10.8, `reference-evals-checks.md:115-130`; Anthropic, "held-out test sets" | `checks.calledTool`, `checks.didNotCall`, `checks.noToolErrors`; metade guardada | nativo | — | `G1` | `assistant/propose.test.ts` |
+| A entrega por sinal | U2 | `automations/run.ts:128-141`; hoje a tela manda (`web/.../start.tsx:308-318`, `handoff.ts:84-92`) | `@mastra/core` 1.79.0, `agent-controller/session.d.ts:1699-1716`; `docs-harness-signals.md:11,19,82-88` | `Session.sendSignal` com `attributes` e `author` | nativo | — | `B1` | `assistant/handoff.ts` |
+| O briefing como arquivo no sinal | U2 | — | `@mastra/core` 1.79.0, `dist/agent-controller-DO6rGsQm.js:5232-5258,5585-5596` | `createMessageInput` do `Session.sendMessage`, um texto por arquivo com `[File: nome]` | nativo | — | `B1` | — |
+| Liberar as ligações marcadas | U2 | `hub/connectors/grants.ts:168-183` | — (a peça do Hub) | a liberação de hoje | nativo | — | `C1` | — |
+| Abrir a conversa do Builder | U2 | `builder/conversation/routes.ts:82-108` | o kit dos controladores | `openSession` | nativo | — | `F1` | — |
+| A frase do Builder | U2 | `builder/conversation/prompt/builder.md:8,17` | `@mastra/core` 1.79.0, `docs-harness-signals.md:82-88` | os atributos do sinal chegam como XML | nativo | — | `B1` | — |
+| O cartão e o toque | U3 | `web/src/builder/conversation/tool-row.tsx:268-319`, `web/src/builder/assistant/propose.tsx` | Lovable | o cartão "Start building" só quando se pede a mudança | nativo | — | `D2` | — |
 
 **A medida do transplante.** Nada trazido do repositório antigo.
 
