@@ -16,7 +16,6 @@ import {
   plantCompany,
   post,
 } from '../../hub/identity/test-hub.ts'
-import { MODEL } from '../conversation/test-conversation.ts'
 import { publishedApp } from './test-assistant.ts'
 
 /** The question of the step 24.1 script, over the double's data. */
@@ -44,6 +43,9 @@ export async function checked(parts: MastraMessagePart[], scorers: readonly Chec
   }
   return Promise.all(scorers.map(async (scorer) => (await scorer.run({ input, output })).score))
 }
+
+/** The model the real cases run on: the least the company uses (founder, 2026-11-03: "no minimo sonnet 5.5 low"). */
+const REAL_MODEL_CHOICE = { model: 'anthropic/claude-sonnet-5-5', effort: 'low' }
 
 /** Where firstmate runs the real model's case: the authorize link goes there, and the sign-in code comes back there. */
 // biome-ignore lint/style/noProcessEnv: the switch of this one opt-in case, not the app's configuration
@@ -85,7 +87,7 @@ export async function subscribed(t: TestContext, folder: string) {
   const code = await codeFrom(folder)
   const linked = await post(hub, ana, `${company}/model-account-sign-ins/${signInId}`, { code })
   assert.equal(linked.statusCode, 201, linked.body)
-  const model = { model: MODEL, effort: 'off' }
+  const model = REAL_MODEL_CHOICE
   assert.equal((await call(hub, ana, 'PUT', `${company}/default-model`, model)).statusCode, 200)
   const connections = `${company}/connections`
   const ids = []
