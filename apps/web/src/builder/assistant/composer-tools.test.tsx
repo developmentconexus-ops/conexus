@@ -73,7 +73,7 @@ test('o menu: abaixo de 768 px abre numa folha de baixo para cima, com o mesmo t
     at(COMPANY_ROOT)
     const sheet = await openMenu()
     expect(within(sheet).getByRole('heading', PLUS)).toBeTruthy()
-    expect(within(sheet).getAllByRole('switch')).toHaveLength(2)
+    expect(await within(sheet).findAllByRole('switch')).toHaveLength(2)
   } finally {
     globalThis.matchMedia = query
   }
