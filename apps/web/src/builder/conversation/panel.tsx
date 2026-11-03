@@ -50,7 +50,7 @@ function BuilderChat(params: Params) {
         <ModelChoice
           controller={BUILDER_CONTROLLER}
           conversationId={conversationId}
-          send={(body) => sendModel.mutationFn({ params, body })}
+          write={{ ...sendModel, mutationFn: (body) => sendModel.mutationFn({ params, body }) }}
           session={session}
           providers={providers}
           onError={onError}

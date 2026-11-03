@@ -115,6 +115,6 @@ test('Criar numa empresa que o Hub já não acha', async () => {
   server.use(http.get(`*/api/companies/${COMPANY.id}/projects`, () => refusal('NOT_FOUND')))
   create('Pedidos')
   expect(
-    await screen.findByRole('heading', { name: 'Não encontramos o que você procurou.' }),
+    await screen.findByText('Não encontramos o que você procurou.', { exact: false }),
   ).toBeTruthy()
 })

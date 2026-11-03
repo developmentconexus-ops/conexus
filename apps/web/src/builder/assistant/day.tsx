@@ -10,7 +10,15 @@ import { Skeleton } from '../../ui/skeleton.tsx'
 import { ReadFailure } from '../../ui/states.tsx'
 import { AutomationBadge } from '../automations/public.ts'
 import { assistantConversationsQuery } from './queries.ts'
-import { NO_CONNECTIONS_BLOCK, NO_CONVERSATIONS_BLOCK, titleOf } from './text.ts'
+import {
+  CONNECTIONS_BLOCK,
+  CONTINUE_BLOCK,
+  INTEGRATIONS_LINK,
+  moreConnections,
+  NO_CONNECTIONS_BLOCK,
+  NO_CONVERSATIONS_BLOCK,
+  titleOf,
+} from './text.ts'
 
 function ContinueRows({ companyId }: { companyId: CompanyId }) {
   const read = useQuery(assistantConversationsQuery(companyId, undefined, undefined))
@@ -102,7 +110,7 @@ function ConnectionRows({ companyId }: { companyId: CompanyId }) {
             params={{ companyId }}
             className={`${blockRow} text-text-2 hover:bg-surface-3`}
           >
-            Mais {hidden} {hidden === 1 ? 'ligação' : 'ligações'}
+            {moreConnections(hidden)}
           </Link>
         </li>
       )}
@@ -117,20 +125,20 @@ function ConnectionRows({ companyId }: { companyId: CompanyId }) {
 export function AssistantDay({ companyId }: { companyId: CompanyId }) {
   return (
     <div className="flex flex-col gap-3xl">
-      <Block title="Continuar">
+      <Block title={CONTINUE_BLOCK}>
         <ContinueRows companyId={companyId} />
       </Block>
       <div className="grid gap-3xl min-[768px]:grid-cols-2 min-[768px]:gap-lg">
         <ProjectsBlock companyId={companyId} creates />
         <Block
-          title="Ligações"
+          title={CONNECTIONS_BLOCK}
           action={
             <Link
               to="/companies/$companyId/integrations"
               params={{ companyId }}
               className="text-label text-text-2 hover:text-text"
             >
-              Integrações →
+              {INTEGRATIONS_LINK}
             </Link>
           }
         >

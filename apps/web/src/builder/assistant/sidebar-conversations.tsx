@@ -122,7 +122,7 @@ export function SidebarConversations({ companyId }: { companyId: CompanyId }) {
         if (rows.length === 0) return null
         return (
           <section key={group} aria-label={DAY_GROUP_LABELS[group]} className="flex flex-col">
-            <h3 className="flex h-row items-center px-sm text-eyebrow text-text-2 uppercase">
+            <h3 className="flex h-row items-center px-sm text-eyebrow text-text-2">
               {DAY_GROUP_LABELS[group]}
             </h3>
             <SidebarMenu>

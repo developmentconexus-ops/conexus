@@ -112,7 +112,7 @@ function ChatComposer(props: {
 }) {
   const { chat, session, state, draft, field, canAnswer } = props
   return (
-    <div className="px-md">
+    <div className="axis px-md">
       <Composer
         answering={state.running || props.waiting}
         canSend={canAnswer}
@@ -223,7 +223,7 @@ export function Chat(props: ChatProps) {
         empty={empty ? props.empty : undefined}
         noAccount={props.noAccount}
       />
-      <div className="min-h-24 flex-1 md:min-h-40">
+      <div className="axis min-h-24 flex-1 md:min-h-40">
         <Transcript
           turns={turns}
           steers={state.steers}

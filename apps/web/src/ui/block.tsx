@@ -4,9 +4,12 @@ import { cn } from './cn.ts'
 /** The most rows a block of Início shows before "Mais N" (design `block`). */
 export const BLOCK_ROWS = 5
 
-/** A row of a block: 32px, 44 on touch, a hairline under it (design V58). */
-export const blockRow =
-  'flex h-row w-full min-w-0 items-center gap-md border-b border-line px-sm text-label pointer-coarse:h-11'
+/** The one row of the Hub's lists: 32px, 44 on touch (design V58). Menus and blocks both draw from it. */
+export const listRow =
+  'flex h-row w-full min-w-0 items-center gap-md px-sm text-label pointer-coarse:h-11'
+
+/** A row of a block: the list row with a hairline under it. */
+export const blockRow = `${listRow} border-b border-line`
 
 /**
  * A block of Início (web W29): a header row of 32 with the title and its way out, then the rows the

@@ -138,11 +138,12 @@ test('o banco indisponível: o aviso do Hub na área, com a barra', async () => 
   expect(screen.getByRole('navigation', { name: 'Navegação' })).toBeTruthy()
 })
 
-test('a empresa que o Hub não acha: a página de "não encontrado"', async () => {
+test('a empresa que o Hub não acha: o bloco de Projetos diz a frase, com Tentar de novo', async () => {
   hub([])
   server.use(http.get(`*/api/companies/${COMPANY.id}/projects`, () => refusal('NOT_FOUND')))
   open()
   expect(
-    await screen.findByRole('heading', { name: 'Não encontramos o que você procurou.' }),
+    await screen.findByText('Não encontramos o que você procurou.', { exact: false }),
   ).toBeTruthy()
+  expect(screen.getByRole('button', { name: 'Tentar de novo' })).toBeTruthy()
 })

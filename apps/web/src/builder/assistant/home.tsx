@@ -13,6 +13,7 @@ import { useAttemptKey } from '../../platform/attempt-key.ts'
 import { dayOf } from '../../platform/dates.ts'
 import { sentenceOf, writeFailureText } from '../../platform/hub.ts'
 import { Alert } from '../../ui/alert.tsx'
+import { blockRow } from '../../ui/block.tsx'
 import { cn } from '../../ui/cn.ts'
 import { Pager } from '../../ui/pager.tsx'
 import { Skeleton } from '../../ui/skeleton.tsx'
@@ -29,7 +30,7 @@ import {
   usePicked,
 } from '../conversation/public.ts'
 import { useComposerTools } from './composer-tools.tsx'
-import { useDraftChoice } from './context-bar.tsx'
+import { useDraftChoice } from './draft-choice.ts'
 import { assistantConversationsQuery, sendAssistantCreation } from './queries.ts'
 import {
   ASSISTANT_EXAMPLES,
@@ -166,9 +167,7 @@ function ConversationLink(props: {
     <Link
       to="/companies/$companyId/projects/$projectId/assistant/$conversationId"
       params={{ companyId, projectId, conversationId: conversation.id }}
-      className={cn(
-        'flex items-center justify-between gap-md rounded-control px-sm py-md hover:bg-surface-3',
-      )}
+      className={cn(blockRow, 'justify-between hover:bg-surface-3')}
     >
       <span className="flex min-w-0 flex-1 flex-wrap items-center gap-x-sm gap-y-xs">
         <span className="max-w-full truncate">{titleOf(conversation)}</span>
