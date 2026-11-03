@@ -122,6 +122,9 @@ export type AgentVersionSummary = z.infer<typeof AgentVersionSummary>
 /** The key of the agents' controller in Mastra's routes (`/agent-controller/agents/…`), step 24.3. */
 export const AGENTS_CONTROLLER = 'agents'
 
+/** The tools of an agent that are not a tool of the company's library: the name the model reads (step 24.3, U3). */
+export const AGENT_TOOL = { appDataRead: 'app_data_read' } as const
+
 /** A conversation of the person's with an agent: with its published version, or the test one with its draft. */
 export const AgentConversationSummary = z.object({
   id: ConversationId,

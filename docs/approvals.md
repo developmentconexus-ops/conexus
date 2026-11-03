@@ -509,6 +509,8 @@ Lido pelo firstmate como a aprovação do cartão com a linha `Trilho: desenho`,
 
 Em 2026-11-02, na revisão da unidade U0 da 13.3 (a Pauta), à decisão sobre a regra V5 (o ipê marca "só" o lugar atual, o foco, o cursor e a marca, contra a V57, "Dourado", e a V28, o arco do compositor ocupado), com as opções A e B: "B". Opção B: a V5 mantém o "só" e nomeia duas exceções, a marca do item que a pessoa escolheu (o ícone do toggle da V57 e o check do Projeto escolhido) e o arco do compositor ocupado (V28). O critério 12 do cartão (pull request 538, congelado) ganha as duas exceções; a emenda vai no corpo da pull request da U0, para o fechamento. Palavra de meio de etapa, vai direto para este livro (L6).
 
+Em 2026-11-02, na revisão da unidade U3 da 24.3, ao achado 7 (o erro do banco que o modelo recebe) e ao estudo da forma mais simples: "1". Lido pelo firstmate como: a recusa `APP_DATA_REFUSED` leva o SQLSTATE do PostgreSQL, e a descrição da ferramenta manda o agente listar as tabelas e as colunas em `information_schema.columns` e corrigir a consulta; sem código novo, sem lista de SQLSTATEs e sem mensagem do Postgres. Palavra de meio de etapa, vai direto para este livro (L6); o cartão fica congelado no commit aprovado, e a emenda do tipo `AppRead` e do critério 19 ("com o SQLSTATE") vai no fechamento da etapa.
+
 ## Decisões fora de uma etapa
 
 Em 2026-11-02, ao buffer da memória observacional (o estudo A/B do buffer, B1 ou B2): "1. Sem buffer". Fica o B1 de hoje: `bufferTokens: false`, sem o buffer do Mastra Code.

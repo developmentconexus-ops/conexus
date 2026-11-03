@@ -2,8 +2,8 @@ import { createHash, randomUUID } from 'node:crypto'
 import type { ProjectId } from '@conexus/hub-api'
 import { appLogin, appLoginPassword } from '@conexus/hub-api'
 import pg from 'pg'
-import type { SqlAnswer, SqlStatement } from './company-postgres.ts'
-import { answerOf, createCompanyPostgres } from './company-postgres.ts'
+import type { SqlAnswer, SqlRead, SqlStatement } from './company-postgres.ts'
+import { answerOf, createCompanyPostgres, errorName } from './company-postgres.ts'
 import type { AppLoginKey } from './config.ts'
 import { readTestDatabase } from './config.ts'
 import { DatabaseUrl } from './database.ts'
@@ -19,11 +19,23 @@ await loadMigrationRule()
  * The tests' transport (T19): one connection and one transaction per call, as Neon's HTTP proxy
  * runs it, on the test server's PostgreSQL.
  */
+export function pgTransport(
+  url: DatabaseUrl,
+  statements: readonly SqlStatement[],
+  signal: AbortSignal,
+): Promise<SqlAnswer>
+export function pgTransport(
+  url: DatabaseUrl,
+  statements: readonly SqlStatement[],
+  signal: AbortSignal,
+  options: Readonly<{ readOnly: true }>,
+): Promise<SqlAnswer | SqlRead>
 export async function pgTransport(
   url: DatabaseUrl,
   statements: readonly SqlStatement[],
   signal: AbortSignal,
-): Promise<SqlAnswer> {
+  options?: Readonly<{ readOnly: true }>,
+): Promise<SqlAnswer | SqlRead> {
   const client = new pg.Client({ connectionString: url.reveal() })
   function abort() {
     void client.end()
@@ -31,15 +43,24 @@ export async function pgTransport(
   signal.addEventListener('abort', abort)
   try {
     await client.connect()
-    await client.query('BEGIN')
+    await client.query(options?.readOnly ? 'BEGIN READ ONLY' : 'BEGIN')
     const value = []
+    let read: SqlRead | undefined
     for (const statement of statements) {
-      value.push((await client.query(statement.text, [...(statement.values ?? [])])).rows)
+      const query = { text: statement.text, values: [...(statement.values ?? [])] }
+      if (options?.readOnly) {
+        // A named statement is a prepared one, which PostgreSQL refuses a second command in (42601);
+        // not proved against Neon's proxy, which no test may call.
+        const result = await client.query({ ...query, name: 'read', rowMode: 'array' })
+        read = { kind: 'READ', columns: result.fields.map(({ name }) => name), rows: result.rows }
+      } else {
+        value.push((await client.query(query)).rows)
+      }
     }
     await client.query('COMMIT')
-    return { kind: 'DONE', value }
+    return read ?? { kind: 'DONE', value }
   } catch (error) {
-    return answerOf(error instanceof pg.DatabaseError ? error : undefined)
+    return answerOf(error instanceof pg.DatabaseError ? error : { name: errorName(error) })
   } finally {
     signal.removeEventListener('abort', abort)
     await client.end().catch(() => undefined)
@@ -70,7 +91,7 @@ export async function createCompanyDatabase(t: Lifetime): Promise<DatabaseUrl> {
       const company = new pg.Client({ connectionString: owner.reveal() })
       await company.connect()
       const roles = await company.query(
-        `select rolname from pg_roles where rolname like 'app\\_%\\_run' or rolname like 'app\\_%\\_migrate'`,
+        `select rolname from pg_roles where rolname ~ '^app_.*_(run|migrate|read)$'`,
       )
       await company.end()
       await admin.query(`drop database ${name}`)
@@ -190,13 +211,13 @@ export async function previousVersionOf(
 
 /** The app's logins the server still holds: none once its app is deleted (decision 0043). */
 export async function appLoginsOf(owner: DatabaseUrl, projectId: ProjectId): Promise<string[]> {
-  const { runLogin, migrateLogin } = appLogin(projectId)
+  const { runLogin, migrateLogin, readLogin } = appLogin(projectId)
   const client = new pg.Client({ connectionString: owner.reveal() })
   await client.connect()
   try {
     const roles = await client.query(
       'select rolname from pg_roles where rolname = any($1) order by 1',
-      [[runLogin, migrateLogin]],
+      [[runLogin, migrateLogin, readLogin]],
     )
     return roles.rows.map((row) => String(row.rolname))
   } finally {
@@ -235,4 +256,24 @@ export async function forgetApp(
 ) {
   const postgres = createCompanyPostgres({ transport: pgTransport, appLoginKey })
   return (await postgres.dropApp(owner, projectId)).kind
+}
+
+/** Takes the read login out of a Projeto's app, as an app made before the login existed has none. */
+export async function forgetReadLogin(owner: DatabaseUrl, projectId: ProjectId) {
+  const { schema, readLogin } = appLogin(projectId)
+  const [s, read] = [schema, readLogin].map((name) => `"${name.replaceAll('"', '""')}"`)
+  await asMigrateLogin(owner, projectId, async (client) => {
+    await client.query(`REVOKE ALL ON ALL TABLES IN SCHEMA ${s} FROM ${read}`)
+    await client.query(`REVOKE USAGE ON SCHEMA ${s} FROM ${read}`)
+    await client.query(
+      `ALTER DEFAULT PRIVILEGES IN SCHEMA ${s} REVOKE SELECT ON TABLES FROM ${read}`,
+    )
+  })
+  const client = new pg.Client({ connectionString: owner.reveal() })
+  await client.connect()
+  try {
+    await client.query(`DROP ROLE ${read}`)
+  } finally {
+    await client.end()
+  }
 }

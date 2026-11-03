@@ -20,6 +20,8 @@ import { agentDefaults, oncePerRun } from '../controller-kit/public.ts'
 import { routedModel, toolsOf } from '../conversation/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import { conversationStart, memoryModelsFor, setTurn, Turn } from '../model-accounts/public.ts'
+import type { AppDataPort } from './app-data.ts'
+import { appDataTools } from './app-data.ts'
 import type { FrozenVersion } from './frozen.ts'
 import { presetTools } from './tools.ts'
 
@@ -93,6 +95,7 @@ export async function takeAgentTurn(
 export type AgentDeps = {
   queue: QueueDeps
   connectors: Connectors['assistant']
+  appData: AppDataPort
   speakersOf: (scope: SessionScope) => Promise<Speakers>
   /** The 24.1 memory with the observational one, and one without it, each made once. */
   memories: { observational: MastraMemory; plain: MastraMemory }
@@ -185,7 +188,7 @@ export function agentOf(
     },
     model: async ({ requestContext }) => routedModel((await plan(requestContext)).start.model),
     tools: async ({ requestContext }) => {
-      const { scope, offered, start } = await plan(requestContext)
+      const { run, scope, offered, start } = await plan(requestContext)
       const access: ConnectorAccess = {
         connections: offered.filter((each) => ownConnections.has(each.connectionId)),
         log: deps.log,
@@ -194,9 +197,15 @@ export function agentOf(
         notes: (connectionId) => deps.connectors.notes(scope, connectionId),
         wording: { whose: 'this agent reads', limit: '50 connector calls per answer' },
       }
+      const { companyId, personId, projectId } = run.scope
+      const mayReadApp =
+        frozen.appData && (await deps.appData.hasApp({ scope: { companyId, personId }, projectId }))
       return {
         ...(frozen.web ? toolsOf(start.model) : {}),
         ...connectorTools(access, { noteSave: false }),
+        ...(mayReadApp
+          ? appDataTools({ appData: deps.appData, scope: { companyId, personId }, projectId })
+          : {}),
         ...(await presetTools({ ...deps, scope, tools: frozen.tools, turnOf: agentTurnKeyIn })),
       }
     },

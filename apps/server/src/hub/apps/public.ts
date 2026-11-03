@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify'
 import type { Database } from '../../platform/database.ts'
+import { appDatabaseOf, readAppData } from './app-database.ts'
 import { createAppVersions } from './app-versions.ts'
 import type { AppDeps } from './handoff.ts'
 import { createAppDoor, endAppSessions } from './handoff.ts'
@@ -22,6 +23,7 @@ export { PRUNE_BUDGET_MS } from './prune.ts'
 export { publishedVersionsOf, versionNumbersOf } from './versions.ts'
 
 export type Apps = ReturnType<typeof createApps>
+export type { AppRead } from '../../platform/company-postgres.ts'
 export type { ConnectorCall } from './handoff.ts'
 export type { Ungranted } from './live.ts'
 
@@ -73,5 +75,9 @@ export function createApps(deps: AppDeps & RepairDeps & { ungranted: Ungranted }
     repair: () => repairApps(deps),
     /** Where a Builder turn's version goes to the Projeto's app (step 14.1). */
     sendFromBuilder: versions.sendFromBuilder,
+    /** What a Projeto's agents read of its app's data, and whether it has an app to read (step 24.3, U3). */
+    readAppData: (input: Parameters<typeof readAppData>[1]) => readAppData(deps, input),
+    hasAppData: async (input: Parameters<typeof appDatabaseOf>[1]) =>
+      (await appDatabaseOf(deps, input)) !== undefined,
   })
 }
