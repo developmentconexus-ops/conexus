@@ -80,7 +80,7 @@ export type ToolSpec = {
   body: ToolBody
   /** Joins a run of three or more as one group (criterion 9). */
   groups: boolean
-  /** The Assistant's tools answer a refusal as a result, not as an error of the call: the row reads it. */
+  /** A tool that answers a refusal as a result, not as an error of the call (the Assistant's, the Construtor's, the agent's): the row reads it. */
   refusal?: (result: unknown) => Refusal | undefined
   /** The row's own icon and words, instead of the table's by status. */
   present?: (

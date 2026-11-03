@@ -4,6 +4,7 @@ import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { ArrowLeftIcon } from 'lucide-react'
 import { useMemo } from 'react'
+import { useConnectorCatalog } from '../assistant/public.ts'
 import { agentRoom, Chat, RoomContext, START_NO_ACCOUNT } from '../conversation/public.ts'
 import { DraftCard } from './draft-card.tsx'
 import { construtorConversationsQuery } from './queries.ts'
@@ -18,17 +19,18 @@ export function ConstrutorChat(props: {
   const { companyId, projectId, conversationId } = props
   const scope = { companyId, projectId }
   const queryClient = useQueryClient()
+  const { words } = useConnectorCatalog(companyId)
   const { conversations } = useSuspenseQuery(construtorConversationsQuery(scope)).data
   const here = conversations.find((one) => one.id === conversationId)
   const listKey = construtorConversationsQuery(scope).queryKey
   const room = useMemo(
     () => ({
-      ...agentRoom(CONSTRUTOR_NAME),
+      ...agentRoom(CONSTRUTOR_NAME, words),
       agentCard: (result: ConstrutorResult) => (
         <DraftCard companyId={companyId} projectId={projectId} result={result} />
       ),
     }),
-    [companyId, projectId],
+    [companyId, projectId, words],
   )
   return (
     <RoomContext.Provider value={room}>
