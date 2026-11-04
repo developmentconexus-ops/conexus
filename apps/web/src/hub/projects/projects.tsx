@@ -13,11 +13,10 @@ const route = getRouteApi('/_app/companies/$companyId/projects/')
 
 /**
  * "Todos os projetos": the company's Projects, 50 a page, the page in the address (web W18), with
- * "Novo projeto" at the top for whoever may create one (step 24.3.3, U3).
+ * "Novo projeto" at the top, for every member (`createProject`'s admission; step 24.3.3, U3).
  */
 export function Projects() {
   const { companyId } = route.useParams()
-  const creates = route.useRouteContext().role !== 'member'
   const { page, notice: arrived } = route.useSearch()
   const navigate = route.useNavigate()
   // The notice is for this visit: it leaves the address, so a reload or a copied link does not repeat it.
@@ -33,10 +32,10 @@ export function Projects() {
           <PageTitle>Todos os projetos</PageTitle>
           <p className="text-text-2">{PROJECTS_SENTENCE}</p>
         </div>
-        {creates && <NewProjectDialog companyId={companyId} block labelled />}
+        <NewProjectDialog companyId={companyId} block labelled />
       </header>
       {notice && <Notice>Projeto apagado.</Notice>}
-      <ProjectCards companyId={companyId} page={page} creates={creates} />
+      <ProjectCards companyId={companyId} page={page} />
       <Pager next={next} param="page" page={page} list="Projetos" />
     </div>
   )

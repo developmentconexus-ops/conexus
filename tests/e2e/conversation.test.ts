@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import type { Page } from 'playwright-core'
 import { TEST_ORIGIN } from '../../apps/server/src/platform/test-database.ts'
+import { NO_PROJECTS } from '../../apps/web/src/hub/projects/project-state.ts'
 import {
   ANA,
   ANSWER,
@@ -150,7 +151,7 @@ async function otherPerson(diego: Page, ids: { companyA: string; companyB: strin
   await diego.goto(link)
   await diego.getByText(NOT_FOUND).waitFor()
   await diego.goto(`${TEST_ORIGIN}/companies/${ids.companyB}/projects`)
-  await diego.getByText('Nenhum projeto ainda.').waitFor()
+  await diego.getByText(NO_PROJECTS).waitFor()
 }
 
 test('o roteiro da primeira conversa: resposta com páginas e título, recusa, pausa, troca automática e outra pessoa', async (t) => {

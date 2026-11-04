@@ -125,7 +125,7 @@ test('cada cartão diz o estado do app em palavras, e "Novo projeto" no alto abr
   expect(await screen.findByRole('dialog')).toBeTruthy()
 })
 
-test('sem Projeto, a coluna do vazio tem "Novo projeto" e o caminho para o Início; quem não pode criar não vê o botão (13)', async () => {
+test('sem Projeto, a coluna do vazio tem "Novo projeto" e o caminho para o Início (13)', async () => {
   hub([], 'admin')
   server.use(conversationsNone)
   open()
@@ -135,10 +135,13 @@ test('sem Projeto, a coluna do vazio tem "Novo projeto" e o caminho para o Iníc
   expect(main().getByRole('link', { name: 'ou peça um app no Início' })).toBeTruthy()
 })
 
-test('um membro sem permissão de criar não vê "Novo projeto" nem na página nem no vazio (13)', async () => {
+test('o Membro vê "Novo projeto" na página e no vazio, e o diálogo abre (13)', async () => {
   hub([], 'member')
   open()
   await screen.findByRole('heading', { name: 'Todos os projetos' })
   expect(await main().findByText('Nenhum projeto ainda')).toBeTruthy()
-  expect(main().queryByRole('button', { name: /Novo projeto/ })).toBeNull()
+  const buttons = main().getAllByRole('button', { name: /Novo projeto/ })
+  expect(buttons.length).toBe(2)
+  for (const emptyColumnButton of buttons.slice(-1)) fireEvent.click(emptyColumnButton)
+  expect(await screen.findByRole('dialog')).toBeTruthy()
 })

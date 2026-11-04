@@ -19,7 +19,7 @@ for (const viewport of [DESKTOP, PHONE]) {
       replies: { ...MEMBER, ...projectsPage(COMPANY.id) },
     })
     if (viewport === PHONE) await page.getByRole('button', { name: 'Abrir navegação' }).click()
-    const plus = page.getByRole('button', { name: 'Novo projeto' })
+    const plus = page.getByLabel('Novo projeto', { exact: true })
     await plus.waitFor()
     const box = await plus.boundingBox()
     const label = await page.getByText('Projetos recentes').boundingBox()
