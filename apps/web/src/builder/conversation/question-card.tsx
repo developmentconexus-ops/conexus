@@ -1,10 +1,9 @@
 import type { Answer, Question } from '@conexus/hub-api'
-import { BUILDER_CONTROLLER, ToolCallId } from '@conexus/hub-api'
+import { ToolCallId } from '@conexus/hub-api'
 import type { PlanResume } from '@mastra/client-js'
-import { getRouteApi } from '@tanstack/react-router'
 import { MessageCircleQuestionIcon } from 'lucide-react'
 import type { SubmitEvent } from 'react'
-import { useMemo, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { ConexusMark } from '../../brand/mark.tsx'
 import { sentenceOfCode, writeFailureText } from '../../platform/hub.ts'
 import { Alert } from '../../ui/alert.tsx'
@@ -31,12 +30,8 @@ import {
   TraceTitle,
 } from '../../ui/trace.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
+import { useAnswerTo } from './room.ts'
 import type { QuestionCardItem } from './rows.ts'
-import { sessionOf } from './session.ts'
-
-const route = getRouteApi(
-  '/_app/companies/$companyId/projects/$projectId/conversations/$conversationId',
-)
 
 /** The card's words, from the state matrix of step 14's card. */
 export const CARD_TEXT = {
@@ -69,8 +64,7 @@ export function WaitingCaption() {
  * on, or a refusal, says the card's words, or the Hub's row's (code C37).
  */
 export function useAnswer(toolCallId: ToolCallId) {
-  const { conversationId } = route.useParams()
-  const builder = useMemo(() => sessionOf(conversationId, BUILDER_CONTROLLER), [conversationId])
+  const answerTo = useAnswerTo()
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string>()
   const sent = useRef(false)
@@ -80,7 +74,7 @@ export function useAnswer(toolCallId: ToolCallId) {
     setSending(true)
     setError(undefined)
     try {
-      const { ok } = await builder.answer(toolCallId, resumeData)
+      const { ok } = await answerTo(toolCallId, resumeData)
       if (ok) return
       setError(CARD_TEXT.unsent)
     } catch (failure) {

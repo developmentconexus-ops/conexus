@@ -16,7 +16,7 @@ import { MemoryStatus } from './memory-status.tsx'
 import { NoAccount } from './model-choice.tsx'
 import type { SessionRead } from './queries.ts'
 import { sessionReadQuery } from './queries.ts'
-import { SayProvider } from './room.ts'
+import { AnswerProvider, SayProvider } from './room.ts'
 import type { BuilderSession, Place } from './session.ts'
 import type { Action, SessionState } from './session-state.ts'
 import { TaskPanel } from './task-panel.tsx'
@@ -184,6 +184,28 @@ function useHandedOver(input: {
   })
 }
 
+/** What closes the transcript while a turn is open or has failed: the failure and the working line. */
+function Tail(props: { error: string | undefined; state: SessionState; waiting: boolean }) {
+  const { error, state, waiting } = props
+  const phone = useIsMobile()
+  return (
+    <>
+      {error !== undefined && (
+        <div className="axis px-md">
+          <Alert tone="danger" className="px-md">
+            {error}
+          </Alert>
+        </div>
+      )}
+      {(state.running || waiting) && !(phone && waiting) && (
+        <div className="axis">
+          <WorkingLine startedAt={state.startedAt} heard={state.messages} waiting={waiting} />
+        </div>
+      )}
+    </>
+  )
+}
+
 /**
  * One conversation: the transcript with the answer arriving, and the box. The session is Mastra's,
  * on its own routes behind the Hub's guard, read by `use-session.ts`; the Builder's and the
@@ -219,7 +241,6 @@ export function Chat(props: ChatProps) {
 
   const turns = useMemo(() => shownOf(state), [state])
   const waiting = Object.keys(state.suspended).length > 0
-  const phone = useIsMobile()
   if (gone) return <NotFound />
   const empty = state.messages.length === 0 && !state.running
   return (
@@ -231,47 +252,38 @@ export function Chat(props: ChatProps) {
         noAccount={props.noAccount}
       />
       <div className="min-h-24 flex-1 md:min-h-40">
-        <SayProvider
-          value={(words) => send({ content: words, files: [] }, state.running || waiting)}
-        >
-          <Transcript
-            turns={turns}
-            steers={state.steers}
-            model={session.model}
-            older={older}
-            onAsk={(text) => {
-              draft.append(text)
-              field.current?.focus()
-            }}
+        <AnswerProvider value={builder.answer}>
+          <SayProvider
+            value={(words) => send({ content: words, files: [] }, state.running || waiting)}
           >
-            {error !== undefined && (
-              <div className="axis px-md">
-                <Alert tone="danger" className="px-md">
-                  {error}
-                </Alert>
-              </div>
-            )}
-            {(state.running || waiting) && !(phone && waiting) && (
-              <div className="axis">
-                <WorkingLine startedAt={state.startedAt} heard={state.messages} waiting={waiting} />
-              </div>
-            )}
-            <ChatComposer
-              chat={props}
-              session={session}
-              providers={accounts.choices.mine}
-              state={state}
-              draft={draft}
-              field={field}
-              placeholder={props.placeholder}
-              onSend={(outgoing) => send(outgoing, state.running || waiting)}
-              onStop={halt}
-              onError={setError}
-              canAnswer={canAnswer}
-              waiting={waiting}
-            />
-          </Transcript>
-        </SayProvider>
+            <Transcript
+              turns={turns}
+              steers={state.steers}
+              model={session.model}
+              older={older}
+              onAsk={(text) => {
+                draft.append(text)
+                field.current?.focus()
+              }}
+            >
+              <Tail error={error} state={state} waiting={waiting} />
+              <ChatComposer
+                chat={props}
+                session={session}
+                providers={accounts.choices.mine}
+                state={state}
+                draft={draft}
+                field={field}
+                placeholder={props.placeholder}
+                onSend={(outgoing) => send(outgoing, state.running || waiting)}
+                onStop={halt}
+                onError={setError}
+                canAnswer={canAnswer}
+                waiting={waiting}
+              />
+            </Transcript>
+          </SayProvider>
+        </AnswerProvider>
       </div>
     </>
   )
