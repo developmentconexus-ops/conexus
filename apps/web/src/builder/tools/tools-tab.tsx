@@ -1,14 +1,15 @@
 import type { CompanyId, ProjectId, ToolSummary } from '@conexus/hub-api'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { HubFailure, sentenceOf, writeFailureText } from '../../platform/hub.ts'
+import { AlertDialog, AlertDialogContent } from '../../ui/alert-dialog.tsx'
 import { Button } from '../../ui/button.tsx'
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { ReadFailure } from '../../ui/states.tsx'
 import { AreaFrame, toolsQuery } from '../agents/public.ts'
 import { sendToolDeletion } from './queries.ts'
-import { NO_TOOLS_YET, NOBODY_USES, UNCONFIRMED_DELETE } from './text.ts'
+import { deleteWarning, NO_TOOLS_YET, NOBODY_USES, UNCONFIRMED_DELETE } from './text.ts'
 
 type Scope = { companyId: CompanyId; projectId: ProjectId }
 
@@ -46,7 +47,10 @@ function ToolRow({ scope, tool }: { scope: Scope; tool: ToolSummary }) {
   const queryClient = useQueryClient()
   const remove = useMutation(sendToolDeletion)
   const [failure, setFailure] = useState<unknown>()
+  const [confirming, setConfirming] = useState(false)
+  const cancel = useRef<HTMLButtonElement>(null)
   async function erase() {
+    setConfirming(false)
     setFailure(undefined)
     try {
       await remove.mutateAsync({ params: { ...scope, toolId: tool.id } })
@@ -71,10 +75,10 @@ function ToolRow({ scope, tool }: { scope: Scope; tool: ToolSummary }) {
           <span className="text-fact text-text-2">v{tool.latest.number}</span>
           <Button
             size="sm"
-            variant="ghost"
+            variant="danger"
             aria-label={`Apagar ${tool.slug}`}
             disabled={remove.isPending}
-            onClick={() => void erase()}
+            onClick={() => setConfirming(true)}
           >
             Apagar
           </Button>
@@ -82,12 +86,28 @@ function ToolRow({ scope, tool }: { scope: Scope; tool: ToolSummary }) {
       </div>
       <p>{tool.description}</p>
       <p className="text-fact text-text-2">
-        Lê {tool.operation} ({tool.effect === 'READ' ? 'só leitura' : tool.effect})
+        Lê {tool.readLabel} em {tool.connectionName}
       </p>
       <p className="text-fact text-text-2">
         {tool.usedBy.length === 0 ? NOBODY_USES : tool.usedBy.map((one) => one.name).join(', ')}
       </p>
       {failure !== undefined && <Refused scope={scope} failure={failure} />}
+      <AlertDialog open={confirming} onOpenChange={setConfirming}>
+        <AlertDialogContent
+          title={`Apagar ${tool.slug}?`}
+          description={deleteWarning(tool.slug)}
+          initialFocus={cancel}
+        >
+          <div className="flex flex-wrap gap-md">
+            <Button variant="danger-confirm" onClick={() => void erase()}>
+              Apagar ferramenta
+            </Button>
+            <Button ref={cancel} onClick={() => setConfirming(false)}>
+              Cancelar
+            </Button>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
     </li>
   )
 }

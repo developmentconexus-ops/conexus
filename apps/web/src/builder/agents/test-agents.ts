@@ -80,6 +80,8 @@ export function toolSummary(fields: Partial<ToolSummary> = {}): ToolSummary {
     connectionId: MATRIZ,
     operation: PEDIDOS_READ,
     description: 'Vendas de ontem por vendedor.',
+    connectionName: 'Matriz',
+    readLabel: 'Pedidos',
     effect: 'READ',
     latest: { id: TOOL_V1, number: 1 },
     usedBy: [],

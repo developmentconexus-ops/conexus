@@ -10,7 +10,6 @@ import type {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { useState } from 'react'
-import { connectionsQuery } from '../../hub/connectors/public.ts'
 import { useAttemptKey } from '../../platform/attempt-key.ts'
 import { HubFailure, sentenceOf, writeFailureText } from '../../platform/hub.ts'
 import { Button } from '../../ui/button.tsx'
@@ -19,16 +18,14 @@ import { PageTitle } from '../../ui/list.tsx'
 import { ReadFailure } from '../../ui/states.tsx'
 import { AreaFrame, ToolForm } from '../agents/public.ts'
 import { sendToolVersion, toolQuery } from './queries.ts'
-import { BACK_TO_TOOLS, GONE_CONNECTION, UNCONFIRMED_VERSION } from './text.ts'
+import { BACK_TO_TOOLS, UNCONFIRMED_VERSION } from './text.ts'
 
 type Scope = { companyId: CompanyId; projectId: ProjectId }
-
-type Tool = ToolDetail & { connection: string }
 
 /** **Nova versão**: the form of the latest version, whose connection and read only show; it saves version `n + 1`. */
 function NewVersion(props: {
   scope: Scope
-  tool: Tool
+  tool: ToolDetail
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
@@ -72,7 +69,7 @@ function NewVersion(props: {
       <DialogContent size="fields" title="Nova versão">
         <ToolForm
           offered={[]}
-          fixed={tool}
+          fixed={{ ...tool, connection: tool.connectionName }}
           initial={latest}
           pending={save.isPending}
           refused={refused}
@@ -93,10 +90,8 @@ function NewVersion(props: {
 export function ToolPage(props: Scope & { toolId: ToolId }) {
   const scope = { companyId: props.companyId, projectId: props.projectId }
   const read = useQuery(toolQuery(scope, props.toolId))
-  const connections = useQuery(connectionsQuery(props.companyId))
   const [open, setOpen] = useState(false)
   const tool = read.data?.tool
-  const connection = connections.data?.connections.find((one) => one.id === tool?.connectionId)
 
   return (
     <AreaFrame scope={scope} tab="ferramentas">
@@ -110,13 +105,7 @@ export function ToolPage(props: Scope & { toolId: ToolId }) {
       {read.isError && (
         <ReadFailure text={sentenceOf(read.error)} onRetry={() => void read.refetch()} />
       )}
-      {connections.isError && (
-        <ReadFailure
-          text={sentenceOf(connections.error)}
-          onRetry={() => void connections.refetch()}
-        />
-      )}
-      {tool !== undefined && connections.data !== undefined && (
+      {tool !== undefined && (
         <>
           <PageTitle>{tool.slug}</PageTitle>
           <Button className="w-fit" variant="primary" onClick={() => setOpen(true)}>
@@ -136,12 +125,7 @@ export function ToolPage(props: Scope & { toolId: ToolId }) {
                 </li>
               ))}
           </ul>
-          <NewVersion
-            scope={scope}
-            tool={{ ...tool, connection: connection?.name ?? GONE_CONNECTION }}
-            open={open}
-            onOpenChange={setOpen}
-          />
+          <NewVersion scope={scope} tool={tool} open={open} onOpenChange={setOpen} />
         </>
       )}
     </AreaFrame>

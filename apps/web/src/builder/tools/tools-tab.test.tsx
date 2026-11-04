@@ -1,4 +1,4 @@
-import { fireEvent, screen, within } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { expect, test } from 'vitest'
 import { hubServer, refusal } from '../../platform/test-hub.tsx'
 import {
@@ -26,6 +26,7 @@ test('Apagar uma ferramenta usada recebe TOOL_IN_USE e mostra os agentes, sem ti
   const row = (await screen.findByText('vendas_de_ontem')).closest('li')
   if (row === null) throw new Error('a ferramenta não está numa linha')
   fireEvent.click(within(row).getByRole('button', { name: 'Apagar vendas_de_ontem' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Apagar ferramenta' }))
   const said = await screen.findByText(/^Usada por /)
   expect(said.textContent).toBe('Usada por Conferente de metas, Resumo de estoque.')
   expect(within(said).getByRole('link', { name: 'Conferente de metas' }).getAttribute('href')).toBe(
@@ -38,6 +39,7 @@ test('Apagar uma ferramenta usada recebe TOOL_IN_USE e mostra os agentes, sem ti
 test('Apagar uma ferramenta que ninguém usa a tira da lista', async () => {
   at(TABS, { agents: [agent()], tools: [toolSummary()] })
   fireEvent.click(await screen.findByRole('button', { name: 'Apagar vendas_de_ontem' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Apagar ferramenta' }))
   expect(await screen.findByText(/^Nenhuma ferramenta ainda\./)).toBeTruthy()
 })
 
@@ -49,7 +51,7 @@ test('a lista traz o nome, o que a ferramenta faz e lê, a versão e os agentes 
   const row = (await screen.findByText('vendas_de_ontem')).closest('li')
   if (row === null) throw new Error('a ferramenta não está numa linha')
   expect(within(row).getByText('Vendas de ontem por vendedor.')).toBeTruthy()
-  expect(within(row).getByText(/pedidos/)).toBeTruthy()
+  expect(within(row).getByText('Lê Pedidos em Matriz')).toBeTruthy()
   expect(within(row).getByText('v3')).toBeTruthy()
   expect(within(row).getByText('Conferente de metas, Resumo de estoque')).toBeTruthy()
 })
@@ -113,4 +115,14 @@ test('Nova versão abre o formulário com a versão de agora e grava a seguinte'
 test('uma ferramenta que o Hub não acha dá não encontrado', async () => {
   at(`${TABS}/${TOOL}`, { agents: [agent()], tools: [] })
   expect(await screen.findByText(/Não encontramos o que você procurou\./)).toBeTruthy()
+})
+
+test('Apagar pede a confirmação com o nome da ferramenta, e Cancelar não grava nada', async () => {
+  const hub = at(TABS, { agents: [agent()], tools: [toolSummary()] })
+  fireEvent.click(await screen.findByRole('button', { name: 'Apagar vendas_de_ontem' }))
+  expect(await screen.findByText('Apagar vendas_de_ontem?')).toBeTruthy()
+  fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
+  await waitFor(() => expect(screen.queryByText('Apagar vendas_de_ontem?')).toBeNull())
+  expect(hub.writes()).toHaveLength(0)
+  expect(screen.getByText('vendas_de_ontem')).toBeTruthy()
 })

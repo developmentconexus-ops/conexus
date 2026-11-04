@@ -49,6 +49,7 @@ test('gravar: a versão 1 nasce com a ferramenta; a mesma chave dá a mesma; cad
     {
       ...{ id: '', slug: 'pedidos_matriz', connectionId: on.matriz, operation: 'pedidos' },
       ...{ description: body.description, effect: 'READ', latest: 1, usedBy: [], versions: [1] },
+      ...{ connectionName: 'Matriz', readLabel: 'Pedidos' },
     },
   )
   const other = await post(on.hub, on.ana, on.tools, { ...body, description: 'Outra.' }, key)
@@ -70,8 +71,13 @@ test('gravar: a versão 1 nasce com a ferramenta; a mesma chave dá a mesma; cad
 
   const library = listOf(await call(on.hub, on.ana, 'GET', on.tools))
   assert.deepEqual(
-    library.tools.map((each) => [each.slug, each.latest.number]),
-    [['pedidos_matriz', 1]],
+    library.tools.map((each) => [
+      each.slug,
+      each.latest.number,
+      each.connectionName,
+      each.readLabel,
+    ]),
+    [['pedidos_matriz', 1, 'Matriz', 'Pedidos']],
   )
   assert.equal(
     library.ready.some((each) => each.operation === 'pedidos'),

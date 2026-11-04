@@ -6,4 +6,7 @@ export const UNCONFIRMED_DELETE =
 export const UNCONFIRMED_VERSION =
   'Não foi possível confirmar se a versão foi gravada. Confira as versões.'
 export const BACK_TO_TOOLS = 'Voltar às ferramentas'
-export const GONE_CONNECTION = 'Uma ligação que o Projeto não oferece mais'
+
+export function deleteWarning(slug: string): string {
+  return `Apagar ${slug} tira a ferramenta e todas as versões dela da biblioteca. Não dá para desfazer.`
+}
