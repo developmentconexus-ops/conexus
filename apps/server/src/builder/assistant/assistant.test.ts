@@ -48,7 +48,7 @@ test('a escolha no turno: numa conversa de Projeto, as duas leituras do Sankhya 
   assert.notEqual(on.reads[2]?.turn, on.reads[0]?.turn)
 })
 
-test('as ferramentas: o modelo do Assistente recebe as de conector de leitura, a visão da empresa, as da web, as de skill, a de mostrar arquivo e as da máquina do Builder, nenhuma a mais', async (t) => {
+test('as ferramentas: o modelo do Assistente recebe as de conector de leitura, a visão da empresa, as da web, as de skill, a de perguntar por cartão, as de tarefas, a de mostrar arquivo e as da máquina do Builder, nenhuma a mais', async (t) => {
   const on = await assisting(t)
   const url = await created(on.hub, on.ana, on.assistant, { connections: [on.matriz] })
   const { say } = await talking(t, on.hub, on.ana, url)
@@ -56,6 +56,7 @@ test('as ferramentas: o modelo do Assistente recebe as de conector de leitura, a
   assert.equal(endOf(await say('O que você pode fazer?')), 'complete')
   const asked = on.calls.at(0)
   assert.deepEqual([...(asked?.tools ?? [])].sort(), [
+    'ask_user',
     'conexus_overview',
     'connector_notes',
     'connector_read',
@@ -76,6 +77,10 @@ test('as ferramentas: o modelo do Assistente recebe as de conector de leitura, a
     'skill',
     'skill_read',
     'skill_search',
+    'task_check',
+    'task_complete',
+    'task_update',
+    'task_write',
     'web_fetch',
     'web_search',
   ])
