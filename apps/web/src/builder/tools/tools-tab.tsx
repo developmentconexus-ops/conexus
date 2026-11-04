@@ -1,4 +1,5 @@
-import type { CompanyId, ProjectId } from '@conexus/hub-api'
+import type { CompanyId, ProjectId, ToolSummary } from '@conexus/hub-api'
+import type { UseQueryResult } from '@tanstack/react-query'
 import { useQuery } from '@tanstack/react-query'
 import { sentenceOf } from '../../platform/hub.ts'
 import { Skeleton } from '../../ui/skeleton.tsx'
@@ -27,20 +28,26 @@ export function ToolsTab(scope: Scope) {
   const read = useQuery(toolsQuery(scope))
   return (
     <AreaFrame scope={scope} tab="ferramentas">
-      {read.isPending && <Skeleton className="h-20 w-full" />}
-      {read.isError && (
-        <ReadFailure text={sentenceOf(read.error)} onRetry={() => void read.refetch()} />
-      )}
-      {read.data?.tools.length === 0 && <p className="text-text-2">{NO_TOOLS_YET}</p>}
-      {read.data !== undefined && read.data.tools.length > 0 && (
-        <FramedTable aria-label="Ferramentas" columns={COLUMNS}>
-          <TableBody>
-            {read.data.tools.map((tool) => (
-              <ToolRow key={tool.id} scope={scope} tool={tool} />
-            ))}
-          </TableBody>
-        </FramedTable>
-      )}
+      <Library scope={scope} read={read} />
     </AreaFrame>
+  )
+}
+
+/** What the tab shows for the read: the failure, the wait, the empty sentence or the table. */
+function Library(props: { scope: Scope; read: UseQueryResult<{ tools: ToolSummary[] }> }) {
+  const { read } = props
+  if (read.isError) {
+    return <ReadFailure text={sentenceOf(read.error)} onRetry={() => void read.refetch()} />
+  }
+  if (read.isPending) return <Skeleton className="h-20 w-full" />
+  if (read.data.tools.length === 0) return <p className="text-text-2">{NO_TOOLS_YET}</p>
+  return (
+    <FramedTable aria-label="Ferramentas" columns={COLUMNS}>
+      <TableBody>
+        {read.data.tools.map((tool) => (
+          <ToolRow key={tool.id} scope={props.scope} tool={tool} />
+        ))}
+      </TableBody>
+    </FramedTable>
   )
 }
