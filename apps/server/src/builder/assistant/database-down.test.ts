@@ -74,6 +74,8 @@ async function everyRouteUnavailable(t: TestContext, outage: Outage) {
     choose: await call(down, on.ana, 'PUT', `${url}/connections`, { connections: [] }),
     model: await call(down, on.ana, 'PUT', `${url}/model`, { model: MODEL, effort: 'off' }),
     message: await sent(down, on.ana, url, 'Quanto vendemos?'),
+    rename: await call(down, on.ana, 'PATCH', url, { title: 'Pedidos' }),
+    delete: await call(down, on.ana, 'DELETE', url),
   }
   // The Hub ends while its test database lives, closing Mastra through the door opened again.
   await door.open()
@@ -86,7 +88,11 @@ async function everyRouteUnavailable(t: TestContext, outage: Outage) {
   const kept = await on.hub.test.asOwner(
     'select count(*)::int as n from builder.assistant_conversation',
   )
-  assert.deepEqual(kept, [{ n: 1 }], 'the refused creation kept no conversation')
+  assert.deepEqual(
+    kept,
+    [{ n: 1 }],
+    'the refused creation kept no conversation, the refused delete none gone',
+  )
 }
 
 test('banco do Mastra recusando a ligação: cada rota do Assistente responde 503 DATABASE_UNAVAILABLE, e criar não guarda a conversa', async (t) => {
