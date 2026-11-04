@@ -40,6 +40,11 @@ import {
   UNCONFIRMED_WRITE,
 } from './text.ts'
 
+/** "Já foi": the Hub no longer holds the conversation, which is what the person wanted. */
+function isGone(error: unknown) {
+  return error instanceof HubFailure && error.code === 'CONVERSATION_NOT_FOUND'
+}
+
 type Props = { companyId: CompanyId; conversation: AssistantConversationSummary }
 
 function RenameForm(props: Props & { onDone: () => void }) {
@@ -88,27 +93,30 @@ function DeleteConfirm(
   const { companyId, conversation } = props
   const navigate = useNavigate()
   const openId = useParams({ strict: false, select: (params) => params.conversationId })
-  const send = useMutation(sendAssistantDeletion)
   const [refusal, setRefusal] = useState<string>()
-  // Deleted now or before ("já foi"): the cache refreshes on settle, and the open one goes to a new one.
-  async function leave() {
+  // The open conversation goes to a new one before the cache refreshes: the mutation's own
+  // `onSuccess` runs ahead of the cache's `onSettled`, whose reload would show the deleted one "not found".
+  function leave() {
     if (openId === conversation.id) {
-      await navigate({ to: '/companies/$companyId', params: { companyId } })
+      return navigate({ to: '/companies/$companyId', params: { companyId } })
     }
-    props.onDone()
+    return undefined
   }
+  const send = useMutation({
+    ...sendAssistantDeletion,
+    onSuccess: leave,
+    onError: (error) => (isGone(error) ? leave() : undefined),
+  })
   async function confirm() {
     try {
       await send.mutateAsync({ params: { companyId, conversationId: conversation.id } })
     } catch (error) {
-      if (error instanceof HubFailure && error.code === 'CONVERSATION_NOT_FOUND') {
-        await leave()
+      if (!isGone(error)) {
+        setRefusal(writeFailureText(error, UNCONFIRMED_WRITE))
         return
       }
-      setRefusal(writeFailureText(error, UNCONFIRMED_WRITE))
-      return
     }
-    await leave()
+    props.onDone()
   }
   return (
     <>
