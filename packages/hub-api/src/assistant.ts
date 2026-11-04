@@ -173,15 +173,25 @@ const READ_FAILURES = [
   'DATABASE_UNAVAILABLE',
 ] as const satisfies readonly FailureCode[]
 
+/** The longest text a person searches the conversation titles for. */
+export const CONVERSATION_SEARCH_MAX = 100
+
 export const listAssistantConversations = defineOperation({
   id: 'listAssistantConversations',
   summary:
-    'Lists the person’s own conversations with the Assistant, newest first, all of them or those of one Projeto.',
+    'Lists the person’s own conversations with the Assistant, newest first, all of them or those of one Projeto, one place (Início or Automações) or whose title holds a text, without accent or case.',
   access: 'session',
   method: 'GET',
   path: BASE,
   bodyLimit: 1024,
-  input: { params: InCompany, query: Page.extend({ projectId: ProjectId.optional() }) },
+  input: {
+    params: InCompany,
+    query: Page.extend({
+      projectId: ProjectId.optional(),
+      q: z.string().trim().min(1).max(CONVERSATION_SEARCH_MAX).optional(),
+      place: z.enum(['HOME', 'AUTOMATIONS']).optional(),
+    }),
+  },
   success: {
     status: 200,
     body: z.object({ conversations: z.array(AssistantConversationSummary), next: Next }),
