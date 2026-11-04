@@ -2,8 +2,9 @@
 
 O roteiro chama esta etapa de "24.3.4 Papéis e pedidos", logo depois da 24.3.1 e antes da 24.4; o
 número é o nome do arquivo que a conferência `check-approval` lê. Pela regra L5 o cartão entra em
-`docs/steps/` só quando o cartão da 24.3.1 sair no fechamento dela: os dois juntos no `main` fariam
-a verificação `second-card` de `check-docs` recusar o trilho. Até lá vive no seu pull request. Cada
+`docs/steps/` só quando o cartão da 24.3.1 sair no fechamento dela: dois cartões do trilho juntos
+fazem a verificação `second-card` de `check-docs` recusar. Até lá vive no seu pull request, e ela
+fica vermelha nele de propósito enquanto outro cartão do trilho (hoje o da 24.3.2) está no `main`. Cada
 linha citada abaixo foi lida no `main` em `beebd1f9`; o construtor a reabre no `main` do dia antes
 de usar, porque a 24.3.2, a 24.3.3 e a 24.3.1 entram antes.
 
@@ -23,8 +24,9 @@ pessoa; num deles, a largura do celular. Cada versão nova é uma mudança peque
    antes não via. Ele pede uma mudança ao Builder, a versão 4 fica pronta, ele toca **Publicar** e o
    app abre na versão 4.
 2. O Bruno (membro) abre o Início e conversa com o Assistente, que antes só a Ana usava. Ele pede
-   "todo dia às 7h me lembre de conferir o caixa": o cartão da automação diz "Só o dono, os
-   administradores e os desenvolvedores criam automações." e não tem botão.
+   "todo dia às 7h me lembre de conferir o caixa": o Assistente responde que só o dono, os
+   administradores e os desenvolvedores criam automações e que ele pode pedir a um deles; nenhum
+   cartão aparece.
 3. O Bruno pede ao Builder uma mudança no app; a versão 5 fica pronta. Onde havia **Publicar**
    aparece **Pedir para publicar**. Ele toca, escreve "pronta para a loja" e envia. A área do
    Projeto mostra "Você pediu para publicar a versão 5." com **Cancelar pedido**. O Diego, no
@@ -44,7 +46,9 @@ respostas de 2026-11-01 já decidiram a forma: a etapa curta logo depois da 24.3
 é qualquer dono ou administrador ("3"), com o motor o membro pede para publicar e dono,
 administrador e desenvolvedor publicam direto ("4 Confirmo"), e o membro conversa com o Assistente
 ("5"). E a de 2026-11-02, "3A": uma ferramenta da biblioteca é mudada por dono e administrador, e
-pelo desenvolvedor quando esta etapa chegar.
+pelo desenvolvedor quando esta etapa chegar. E as de 2026-11-03, sobre quem usa o quê de cada
+conector: as regras por papel são configuráveis, nunca fixas no código ("não é para você hard codar
+isso"), e vêm numa etapa própria antes da 24.5.
 
 **A sua palavra sobre as permissões do banco (regra D11).** Aprovar esta página é também a sua
 palavra para duas permissões novas do Hub: ler, criar e mudar o estado dos pedidos
@@ -60,7 +64,14 @@ palavra para duas permissões novas do Hub: ler, criar e mudar o estado dos pedi
   liberação de limites do Sankhya; e **papéis inventados por empresa**. Nenhuma empresa pediu.
 - **A escrita com aprovação** ("Aprovar?" antes de um agente gravar) é a 24.5; ela soma um tipo de
   pedido a esta mesma tabela.
-- O que as decisões A, B e D deixam para depois, se você seguir as recomendações.
+- **O que cada papel usa de cada conector.** As permissões por operação de conector (por exemplo,
+  o faturamento do Mercado Livre ou a consulta SQL do Sankhya), os papéis criados pela empresa e um
+  Membro cujas permissões a empresa escolhe são a etapa **Papéis da empresa**, entre a 24.4 e a 24.5,
+  pelo recurso de papéis dinâmicos do Better Auth (resposta de 2026-11-03). Lá também entra a regra
+  de que quem publica precisa poder cada operação que a versão usa. Até ela, esta etapa não põe
+  nenhuma regra fixa por papel nas ligações: o membro que conversa com o Assistente lê as ligações
+  como o dono lê hoje, no Início e no Projeto.
+- O que as decisões A e D deixam para depois, se você seguir as recomendações.
 
 **O que as referências fazem.** O Appsmith já tem o Desenvolvedor: cria e publica, e quem só vê não
 publica; o Mastra, nos papéis dele, deixa publicar o administrador e não o membro. O Activepieces faz
@@ -83,14 +94,13 @@ biblioteca, que pela "3A" só dono, administrador e desenvolvedor mudam.
   ferramenta nova) e pede para publicar. Mais uma unidade, cerca de 800 linhas, e a exceção da regra
   W34 do guia da web muda no fechamento.
 
-**B. O membro e as automações.** Conversando com o Assistente, o membro vai pedir automações.
-- **`B1`. O cartão diz quem cria (recomendo).** "Só o dono, os administradores e os desenvolvedores
-  criam automações.", sem botão; **Automações** continua escondida do membro, como a sua "1 A".
-  Segue a regra W34 (mostrar e dizer quem pode). Nativo: o Hub diz à tela se a pessoa cria
-  automações, e o cartão lê isso.
-- `B2`. O membro pede a automação: o cartão vira **Pedir a um administrador**, e quem aprova cria a
-  automação, que roda como o membro. Desfaz a "1 A" (ele passa a ver as suas automações) e soma um
-  tipo de pedido.
+**B. O membro e as automações (decidida em 2026-11-03).** Conversando com o Assistente, o membro vai
+pedir automações. O Assistente de quem não cria automações não recebe a ferramenta de propor
+automação: ele responde em texto quem cria, e nenhum cartão aparece. É o modo nativo do Mastra, que
+monta a lista de ferramentas a cada pedido; o servidor continua recusando a criação. **Automações**
+continua escondida do membro, como a sua "1 A". Uma proposta antiga, feita quando a pessoa ainda
+criava automações, mostra "Só o dono, os administradores e os desenvolvedores criam automações."
+sem botão (regra W34).
 
 **C. O desenvolvedor e as automações.** O seu pedido original diz que o desenvolvedor "cria
 automações, apps e agentes e publica sozinho". O livro de aprovações registrou a sua resposta "3"
@@ -109,21 +119,12 @@ na execução que espera; o Sankhya tem uma tela central de liberações.
 - `D2`. Também uma página **Pedidos** da empresa, com os pendentes e os decididos. Mais uma tela; faz
   mais sentido quando a 24.5 trouxer pedidos de vários agentes.
 
-**E. O que o Assistente do membro lê.** Hoje só quem gere as ligações conversa com o Assistente, e
-ele lê os dados de toda ligação da empresa (o ERP, as vendas). Abrir a conversa ao membro ("5"),
-sem mais nada, daria a qualquer membro a leitura desses dados no Início, sem que um administrador
-os libere para ele.
-- **`E1`. O membro lê só o que o Projeto libera (recomendo).** No Início, o Assistente do membro não
-  lê nenhuma ligação (ele conversa, pede automações e apps); na conversa de um Projeto, lê as
-  ligações que o administrador liberou para aquele Projeto, como o app lê. Dono, administrador e
-  desenvolvedor leem no Início como hoje.
-- `E2`. O membro lê todas as ligações da empresa no Início, como o dono.
 
 ## As unidades
 
 | Unidade | O que entrega | Pastas | Guia além do de código | Depende de |
 | --- | --- | --- | --- | --- |
-| U1 Os papéis | O papel `developer` (Desenvolvedor) e uma declaração por ação: publicar app, agentes e ferramentas, automações, o Assistente; o membro conversa com o Assistente e lê só o que o Projeto libera (`E1`); a empresa diz à tela o que a pessoa pode, e a tela lê disso, não do papel; o cartão da automação para quem não cria | `packages/hub-api/src/companies.ts`, `apps/server/src/hub/identity/`, `apps/server/src/hub/connectors/`, `apps/server/src/builder/`, `apps/web/src/hub/identity/`, `apps/web/src/routes/_app/companies/$companyId/`, `apps/web/src/hub/projects/project-rail.tsx`, `apps/web/src/builder/`, `apps/web/src/platform/`, `apps/web/src/hub/connectors/test-hub.tsx`, `scripts/removals.json`, `docs/reference/screens.md` | [security](../guides/security.md) | a 24.3.1 no ar |
+| U1 Os papéis | O papel `developer` (Desenvolvedor) e uma declaração por ação: publicar app, agentes e ferramentas, automações, o Assistente; o membro conversa com o Assistente; a empresa diz à tela o que a pessoa pode, e a tela lê disso, não do papel; o Assistente de quem não cria automações não recebe `propose_automation`, e o cartão antigo diz quem cria | `packages/hub-api/src/companies.ts`, `apps/server/src/hub/identity/`, `apps/server/src/builder/`, `apps/web/src/hub/identity/`, `apps/web/src/routes/_app/companies/$companyId/`, `apps/web/src/hub/projects/project-rail.tsx`, `apps/web/src/builder/`, `apps/web/src/platform/`, `apps/web/src/hub/connectors/test-hub.tsx`, `scripts/removals.json`, `docs/reference/screens.md` | [security](../guides/security.md) | a 24.3.1 no ar |
 | U2 O pedido | A tabela `requests.request`, as rotas de pedir, decidir e cancelar, publicar ao aprovar pelo mesmo corpo de `publishVersion`, o pedido que fecha quando outra versão é publicada, a tabela `notifications.request_notice` com os avisos `REQUEST_OPENED` e `REQUEST_DECIDED`, e as duas linhas novas do sino | `packages/hub-api/src/`, `apps/server/src/hub/{requests,apps,projects,notifications,identity}/`, `apps/server/migrations/`, `apps/server/database-grants.sql`, `apps/server/src/main.ts`, `apps/web/src/hub/notifications/`, `apps/web/src/platform/`, `apps/web/src/builder/conversation/`, `apps/web/sweep-*.ts`, `scripts/removals.json` | [data](../guides/data.md) | U1 |
 | U3 As telas do pedido | **Pedir para publicar** onde hoje há **Publicar**; o pedido em cima da área do Projeto e nas Versões, com **Cancelar pedido** para quem pediu e **Publicar a versão n** e **Recusar** para quem decide | `apps/web/src/hub/{apps,projects,requests}/`, `docs/reference/screens.md` | [web](../guides/web.md) | U2 |
 
@@ -135,8 +136,8 @@ da web que o leem.
 for aprovada.
 
 **Orçamento de código alterado.** U1: ~750 (o papel e as declarações, as ações, o `may` da empresa e
-a troca das sete leituras de papel na web, o recorte das ligações do membro, o cartão da automação,
-as dublês). U2: ~1.300 (duas tabelas e duas migrações, três rotas, a transação de decidir, a porta
+a troca das sete leituras de papel na web, a ferramenta de automação por papel, o cartão da
+automação, as dublês). U2: ~1.300 (duas tabelas e duas migrações, três rotas, a transação de decidir, a porta
 de publicar, os avisos, o `list` do sino e as suas duas linhas na tela). U3: ~500 (o botão, a linha
 do pedido, as caixas de pedir e de recusar). Total da etapa: ~2.550, dentro da regra L2. Testes,
 gerados e o OpenAPI ficam fora. Com a `A2`, mais uma U4 de cerca de 800.
@@ -154,11 +155,11 @@ commit de aprovação, não no fechamento.
 | 2 | U1 | `PUT /api/companies/{c}/projects/{p}/published-version` publica para dono, administrador e desenvolvedor; o membro recebe `NOT_FOUND` e a versão publicada não muda | `apps/server/src/hub/apps/publish.test.ts`, "quem publica" | must |
 | 3 | U1 | As rotas de agentes e de ferramentas da 24.3 (`…/agents`, `…/agents/{a}/publish`, `…/tools`) respondem ao desenvolvedor como ao administrador; o membro, `NOT_FOUND` em todas, como hoje | `apps/server/src/builder/agents/routes.test.ts` e `builder/tools/routes.test.ts`, "o desenvolvedor" | must |
 | 4 | U1 | O membro abre e escreve uma conversa em `…/assistant/conversations` e na rota do Mastra `/agent-controller/assistant/…`, no Início e no Projeto; a conversa de outra pessoa continua `NOT_FOUND` | `apps/server/src/builder/assistant/routes.test.ts`, "o membro conversa" | must |
-| 5 | U1 | Com a `E1`: na conversa do Início de um membro, `GET …/assistant/connections` não oferece nenhuma ligação e a leitura de uma ligação da empresa responde `NOT_GRANTED`; na conversa de um Projeto, só as ligações liberadas a ele; dono, administrador e desenvolvedor no Início, todas as usáveis, como hoje | `apps/server/src/hub/connectors/assistant-port.test.ts`, "o membro" | must |
+| 5 | U1 | Sem regra fixa por papel nas ligações (resposta de 2026-11-03): `GET /api/companies/{c}/assistant/connections` do membro lista, no Início e no Projeto, as mesmas ligações que a do dono no mesmo lugar | `apps/server/src/builder/assistant/routes.test.ts`, "o membro vê as ligações do lugar" | must |
 | 6 | U1 | `POST /api/companies/{c}/automations` cria para dono, administrador e desenvolvedor (com a `C1`); o membro recebe `NOT_FOUND`; a automação de quem virou membro, no próximo disparo, pausa com `SKIPPED`/`OWNER_CANNOT_ASK` como hoje | `apps/server/src/builder/automations/routes.test.ts`, "o desenvolvedor"; `run.test.ts`, "o dono virou membro" | must |
 | 7 | U1 | `GET /api/companies/{c}` devolve `may: { manageAgents, manageAutomations }`, lido de `allows`, para cada um dos quatro papéis | `apps/server/src/hub/identity/companies.test.ts`, "o que a pessoa pode" | must |
 | 8 | U1 | Nenhum arquivo de `apps/web/src` fora dos testes e das dublês compara `role` com um papel para decidir o que mostrar: as sete leituras de hoje passam a ler `may`; fica só `hub/identity/enter-company.ts:49`, o apelido, que é do dono por regra própria | a revisão, por `grep -rnE "role (===\|!==) '" apps/web/src --include=*.ts --include=*.tsx \| grep -vE "\.test\.tsx?:\|/test-[^/]*:"` | should |
-| 9 | U1 | Na web, o membro vê no Início a caixa do Assistente e as conversas (não mais só os Projetos) e escreve na conversa do Projeto; não vê **Agentes** nem **Automações** (com `A1` e `B1`); o desenvolvedor vê os dois; o cartão de uma automação proposta a quem não cria mostra "Só o dono, os administradores e os desenvolvedores criam automações." sem botão | `apps/web/src/routes/_app/companies/$companyId/route.test.tsx`, "o membro" e "o desenvolvedor"; `apps/web/src/builder/automations/proposal.test.tsx`, "quem não cria" | must |
+| 9 | U1 | A execução do Assistente de quem não tem `manageAutomations` (o membro) não leva `propose_automation` na lista de ferramentas que o modelo recebe, e a do desenvolvedor leva; uma chamada inventada recebe "Tool not found" do Mastra e não cria nada. Na web, o membro vê no Início a caixa do Assistente e as conversas (não mais só os Projetos) e escreve na conversa do Projeto; não vê **Agentes** nem **Automações** (com `A1`); o desenvolvedor vê os dois; o cartão de uma proposta antiga, a quem não cria mais, mostra "Só o dono, os administradores e os desenvolvedores criam automações." sem botão | `apps/server/src/builder/assistant/routes.test.ts`, "o membro não recebe propor automação"; `apps/web/src/routes/_app/companies/$companyId/route.test.tsx`, "o membro" e "o desenvolvedor"; `apps/web/src/builder/automations/proposal.test.tsx`, "quem não cria" | must |
 | 10 | U2 | `POST /api/companies/{c}/projects/{p}/publish-request` com `{ number, message }` e uma chave de tentativa, por quem não publica, grava um pedido `PENDING` e responde 201 com ele; a mesma chave, a mesma resposta; a mesma chave com outro corpo, `IDEMPOTENCY_CONFLICT`; uma mensagem de 281 caracteres, `REQUEST_MALFORMED`; uma versão que não está pronta, `APP_VERSION_NOT_FOUND`; a versão já publicada, 409 `PUBLISH_REQUEST_ALREADY_LIVE`; com outro pedido aberto no Projeto, 409 `PUBLISH_REQUEST_ALREADY_OPEN`; quem publica direto, 409 `PUBLISH_REQUEST_NOT_NEEDED` | `apps/server/src/hub/requests/requests.test.ts`, "pedir" | must |
 | 11 | U2 | Ao abrir o pedido, cada dono e administrador da empresa recebe um aviso `REQUEST_OPENED` no mesmo commit; quem pediu e o desenvolvedor não recebem | `requests.test.ts`, "quem é avisado" | must |
 | 12 | U2 | `POST /api/companies/{c}/requests/{r}/decision` com `APPROVE` publica a versão pedida pelo mesmo corpo de `PUT …/published-version`, marca o pedido `APPROVED` com quem decidiu e deixa exatamente um aviso `REQUEST_DECIDED` para quem pediu, num commit; com `DECLINE` e um motivo opcional (281 caracteres: `REQUEST_MALFORMED`), marca `DECLINED` e avisa sem publicar | `requests.test.ts`, "decidir" | must |
@@ -178,10 +179,10 @@ commit de aprovação, não no fechamento.
 | Tela | Primeira vez | Vazio | Carregando | Erro | Não encontrado | Sem permissão | Vencido ou recusado |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Pessoas e o convite (U1) | — | o de hoje | o de hoje | o de hoje | o de hoje (`MEMBER_STALE`) | o membro e o desenvolvedor não veem **Mudar papel** nem o convite, como o membro hoje | — |
-| O Início do membro (U1) | a caixa do Assistente, como a da Ana, sem o cartão "Termine de preparar a empresa" | o de hoje | o de hoje | o de hoje | — | **Agentes** e **Automações** não aparecem (`A1`, `B1`) | — |
+| O Início do membro (U1) | a caixa do Assistente, como a da Ana, sem o cartão "Termine de preparar a empresa" | o de hoje | o de hoje | o de hoje | — | **Agentes** e **Automações** não aparecem (`A1`, "1 A"); um pedido de automação recebe a resposta em texto de quem cria | — |
 | A conversa do Projeto do membro (U1) | a de hoje do dono | a de hoje | a de hoje | a de hoje | a de hoje | sai a frase de hoje que o impede; ele escreve | — |
 | A área de Agentes de quem mudou de papel (U1) | — | — | — | — | — | quem virou membro lê "Só o dono, os administradores e os desenvolvedores usam os agentes do Projeto." | — |
-| O cartão da automação proposta (U1) | — | — | — | o de hoje | — | quem não cria: a frase sem botão | — |
+| O cartão da automação proposta (U1) | — | — | — | o de hoje | — | quem não cria não recebe cartão novo; numa proposta antiga, a frase sem botão | — |
 | O sino, linhas novas (U2) | as linhas de automação de hoje | "Nada por aqui." de hoje | o de hoje | o de hoje | o Projeto apagado leva o aviso junto (a cascata); nada a abrir | cada pessoa lê só os seus | quem decidiu saiu: a frase sem nome |
 | O botão de publicar (U3), na área do Projeto e nas Versões | sem versão pronta, nenhum botão, como hoje | — | o botão desligado com "Enviando…" | a frase do código na caixa, com Tentar de novo | `APP_VERSION_NOT_FOUND`: a frase de hoje (`onStale`) | quem não publica vê **Pedir para publicar**; com outro pedido aberto, a linha do pedido sem botão | `PUBLISH_REQUEST_ALREADY_LIVE`: relê o Projeto |
 | A caixa de pedir (U3) | — | a mensagem é opcional | "Enviando…" | a frase na caixa | `PUBLISH_REQUEST_ALREADY_OPEN`: fecha e relê | — | — |
@@ -260,19 +261,18 @@ outras na estante, cada uma com o seu commit. "lido" é uma linha que o autor do
 | Peça | Unidade | Hoje no main | Referência | Como a referência faz | Veredito | Prova, se não for nativo | Palavra do fundador | Arquivo novo |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | O papel Desenvolvedor | U1 | três papéis: `Role` (`packages/hub-api/src/companies.ts:15`), `ROLE_LABELS` (`:22-26`), `COMPANY_ROLES` (`apps/server/src/hub/identity/roles.ts:34-42`), passados ao plugin (`auth.ts:254-255`); `member.role` é `text` sem checagem (`hub/identity/tables.ts:236`), lidos | `better-auth@1.7.8`: `newRole` (`dist/plugins/access/access.mjs:71`, lido); Appsmith `fd78f12`: o Developer cria e publica (`AppsmithRole.java:44-57`, `WORKSPACE_PUBLISH_APPLICATIONS` em `:52`, lido), o App Viewer só lê (`:58-65`, relay); Mastra `M:packages/_internals/auth/src/ee/defaults/roles.ts:32-48`: o admin tem `*:publish` e o member só `*:read`, `*:execute` (lido) | um papel a mais, uma lista de capacidades no código, sem banco | nativo: um `newRole` a mais, um valor em `Role`, um rótulo, um `case` em `rankAllows`; nenhuma migração | — | o pedido do Desenvolvedor (estudo de 2026-11-01); "4 Confirmo"; "3A" (2026-11-02) | — |
-| As capacidades por ação (publicar app, agentes e ferramentas, automações, o Assistente, pedir e decidir) | U1, U2 | `ACTIONS` (`admission.ts:42-92`): publicar sem declaração (`:52`), Assistente, agentes e ferramentas emprestando `connection: ['manage']` (`:74,78-80`), lidos; as automações admitem `askAssistant` (`builder/automations/automations.ts:249-253`, `controller-kit/admission.ts:10-13`, lidos) | `better-auth@1.7.8`: `createAccessControl` (`roles.ts:10-17` o usa); n8n `2e855356`: `workflow:publish` é capacidade própria do editor e do admin do projeto (`packages/@n8n/permissions/src/roles/scopes/project-scopes.ee.ts:30,187`, lido); ToolJet `aa67409`: `appRelease` separado de editar (`server/src/entities/group_permissions.entity.ts:82-86`, relay); Dify `8857292`: `APP_RELEASE_AND_VERSION` (`api/controllers/console/app/workflow.py:1331`, relay) | publicar é uma capacidade separada de editar | nativo: declarações novas no `createAccessControl` (`app: publish`, `agent: manage, publish`, `automation: manage`, `assistant: ask, readCompany` na U1; `request: create, decide` na U2), cada ação com a sua; acaba o empréstimo de `connection: ['manage']` | — | "4 Confirmo", "5 Sua recomendacao" (2026-11-01); "3A" (2026-11-02) | — |
+| As capacidades por ação (publicar app, agentes e ferramentas, automações, o Assistente, pedir e decidir) | U1, U2 | `ACTIONS` (`admission.ts:42-92`): publicar sem declaração (`:52`), Assistente, agentes e ferramentas emprestando `connection: ['manage']` (`:74,78-80`), lidos; as automações admitem `askAssistant` (`builder/automations/automations.ts:249-253`, `controller-kit/admission.ts:10-13`, lidos) | `better-auth@1.7.8`: `createAccessControl` (`roles.ts:10-17` o usa); n8n `2e855356`: `workflow:publish` é capacidade própria do editor e do admin do projeto (`packages/@n8n/permissions/src/roles/scopes/project-scopes.ee.ts:30,187`, lido); ToolJet `aa67409`: `appRelease` separado de editar (`server/src/entities/group_permissions.entity.ts:82-86`, relay); Dify `8857292`: `APP_RELEASE_AND_VERSION` (`api/controllers/console/app/workflow.py:1331`, relay) | publicar é uma capacidade separada de editar | nativo: declarações novas no `createAccessControl` (`app: publish`, `agent: manage, publish`, `automation: manage`, `assistant: ask` na U1; `request: create, decide` na U2), cada ação com a sua; acaba o empréstimo de `connection: ['manage']` | — | "4 Confirmo", "5 Sua recomendacao" (2026-11-01); "3A" (2026-11-02) | — |
 | Quem dá o papel Desenvolvedor | U1 | `rankAllows` (`admission.ts:126-138`), `mayChangeTo` (`hub/identity/memberships.ts:46-55`), `mayInviteAs` (`admission.ts:351-362`), lidos (relay conferido) | `better-auth@1.7.8`: o papel do membro é um texto que o plugin grava (`hub/identity/tables.ts:236`, lido) | o administrador muda papéis abaixo dele | nativo: o `switch` exaustivo ganha `developer`, que não muda ninguém, como o membro; o seletor e o convite leem `Role.options` sozinhos | — | as respostas da etapa 6 sobre quem muda quem | — |
 | A tela lê do Hub o que a pessoa pode | U1 | sete leituras de papel na web: `routes/_app/companies/$companyId/route.tsx:64,112`, `index.tsx:23`, `hub/projects/project-rail.tsx:113,121`, `builder/agents/area.tsx:188`, `builder/assistant/project.tsx:27` (lidas as duas primeiras, as outras relay conferido); o Hub já responde `mayDelete` (`hub/projects/projects.ts:60-62`, lido) | Langfuse `8ee97c4`: um mapa só, lido pelo servidor e pela tela (`packages/shared/src/features/rbac/projectAccessRights.ts:118-313`, relay); n8n: `viewerCanDecide` e a razão numa união fechada (`get-workflow-review-request-detail.dto.ts:37-40,58-62`, relay) | a tela recebe a resposta do servidor | nativo: `may` na leitura da empresa, de `allows`, como `mayDelete` (C26) | — | não precisa | — |
 | O membro conversa com o Assistente | U1 | `askAssistant` com `MANAGE_CONNECTIONS` (`admission.ts:72-74`, lido); a frase do membro (`builder/assistant/text.ts:63`, relay); o Início do membro mostra o começo do Builder (`index.tsx:20-34`, lido) | Mastra `M:.../defaults/roles.ts:48`: o member executa agentes (`*:execute`, lido) | quem é da empresa usa o agente | nativo: `askAssistant` com `assistant: ['ask']`, dado aos quatro papéis; o Início do membro passa a ser o da dona sem o cartão de preparo | — | "5 Sua recomendacao" (2026-11-01) | — |
-| O que o Assistente do membro lê | U1 | `mayAsk` admite por `askAssistant` e `readable` só confere isso (`hub/connectors/assistant-port.ts:85-130`, lido); `offeredIn` sem Projeto oferece toda ligação usável da empresa, com Projeto só as liberadas (`hub/connectors/builder-port.ts:73-103`, lido) | Mastra `M:.../defaults/roles.ts:48`: executar um agente não dá as credenciais dele (relay); o app do Projeto lê só o que o Projeto libera (`builder-port.ts:73-103`, lido) | o lugar decide o que se lê | nativo: `offered` e `readable` pedem `assistantReadCompany` (`assistant: ['readCompany']`, dono, administrador e desenvolvedor) no Início; o Projeto segue com o recorte de hoje | — | a decisão E desta página | — |
-| As automações de quem não cria | U1 | a pausa `OWNER_CANNOT_ASK` (`builder/automations/run.ts:79-90,205-215`, lido); o cartão da proposta (`builder/automations/proposal.tsx`, relay); a entrada escondida do membro (`route.tsx:64`, lido) | Mastra `@mastra/core@1.79.0`: `schedules.pause` e `resume` (`dist/docs/references/reference-schedules-overview.md:161-182`, relay) | a agenda pausa e retoma | nativo: a mesma pausa, agora pela ação `manageAutomations`; o cartão lê `may.manageAutomations` e diz quem cria (W34, V29) | — | "1 A" (2026-11-01); as decisões B e C desta página | — |
+| O que cada papel usa de cada conector, e os papéis da empresa | fica de fora: a etapa Papéis da empresa, antes da 24.5 | `mayAsk` admite por `askAssistant` e `readable` só confere isso (`hub/connectors/assistant-port.ts:85-130`, lido); `offeredIn` sem Projeto oferece toda ligação usável da empresa, com Projeto só as liberadas (`hub/connectors/builder-port.ts:73-103`, lido) | `better-auth@1.7.8`: as declarações são um objeto comum, montável do catálogo de conectores, e `dynamicAccessControl` guarda papéis por empresa (`dist/plugins/organization/organization.mjs:570-579`, lido), que só somam e não editam um papel fixo (`has-permission.mjs:24-26`, relay do estudo de 2026-11-03) | o papel diz quais operações de cada conector | nativo quando entrar: uma ação por operação de conector no `createAccessControl` e `dynamicAccessControl` | — | 2026-11-03: "não é para você hard codar isso"; papéis da empresa numa etapa própria | — |
+| As automações de quem não cria | U1 | a pausa `OWNER_CANNOT_ASK` (`builder/automations/run.ts:79-90,205-215`, lido); as ferramentas do Assistente montadas por pedido, `propose_automation` sempre presente (`builder/assistant/assistant.ts:272-285`, lido); o cartão da proposta (`builder/automations/proposal.tsx`, relay); a entrada escondida do membro (`route.tsx:64`, lido) | Mastra `@mastra/core@1.79.0`: `tools` do `Agent` aceita uma função do `requestContext`, resolvida a cada chamada (`dist/docs/references/reference-agents-agent.md:586`, relay do estudo de 2026-11-03), e uma ferramenta fora do conjunto recebe `ToolNotFoundError` e não executa (`dist/agent-tuAMgHe3.js:34606`, lido); `schedules.pause` e `resume` (`dist/docs/references/reference-schedules-overview.md:161-182`, relay) | a lista de ferramentas é do pedido; a agenda pausa e retoma | nativo: a função `tools` de hoje inclui `propose_automation` só com `allows(role, 'manageAutomations')`, o papel lido uma vez por execução; a mesma pausa, agora pela ação `manageAutomations`; o cartão antigo lê `may.manageAutomations` e diz quem cria (W34, V29) | — | "1 A" (2026-11-01); a decisão B (2026-11-03) e a C desta página | — |
 | O pedido guardado | U2 | nenhum pedido no Hub (busca por `request`, `approval`, `pedido`, relay); a tabela do sino como modelo (`hub/notifications/tables.ts:30-83`, lido) | Activepieces `f34c43cd`: `flow_approval_request` com quem pediu, a versão, quem decidiu, quando, o estado e o motivo (`packages/core/shared/src/lib/ee/flow-approval/index.ts:5-24`, lido), um pendente por fluxo por índice único parcial (`packages/server/api/src/app/ee/flows/flow-approval/flow-approval-request.entity.ts:70-74`, lido); n8n `workflow_review_request` (relay); Cal.com `54343aa`: o pedido no próprio agendamento, `PENDING`, `ACCEPTED`, `REJECTED`, `CANCELLED` (`packages/prisma/schema.prisma:843-849`, lido); o Better Auth 1.7.8 não tem fluxo de pedido (estudo de 2026-11-01, `dist/plugins`) e o Mastra 1.79 não guarda quem aprova (`M:packages/core/src/loop/shared/steps/tool-result-commit-core.ts:118`, relay) | uma linha por pedido, um aberto por objeto | embrulhado: uma tabela do Hub pelo Drizzle, com a política da empresa, como a do sino; ela soma ao Activepieces quem decide nunca ser quem pediu, o `CANCELLED` guardado (o Cal.com guarda, o Activepieces apaga) e o `SUPERSEDED` | critérios 10, 16, 18 | "2 Sua rewcomendação" (2026-11-01) | `hub/requests/tables.ts`, `requests.ts`, `routes.ts`, `public.ts` |
 | Quem decide, nunca quem pediu | U2 | — | n8n: "Authors cannot decide on their own review request" (`packages/cli/src/modules/workflow-reviews.ee/workflow-review-request-decision.service.ts:364-366`, lido), mas o admin decide o seu (`workflow-review-authorization.service.ts:64-68`, lido); Activepieces não confere (relay); o GitLab proíbe por padrão (estudo de 2026-11-01, página pública) | uma regra no servidor | embrulhado: `decideRequest` (`request: decide`, dono e administrador) e `PUBLISH_REQUEST_OWN` no código, sem a exceção do n8n e sem checagem na tabela | critério 13 | "3 Por agora qualquer dono ou admnistrador" (2026-11-01) | — |
 | Publicar ao aprovar, e o pedido que fecha quando outra versão é publicada | U2 | `publishVersion` (`hub/apps/live.ts:25-65`, lido): admite, tranca o app, confere a versão e as ligações, grava `publishedVersionId` | Activepieces: aprovar publica a versão presa e grava `approverId` (`flow-approval-request.service.ts:110-142`, relay); n8n publica como quem pediu (`decision.service.ts:278-279`, lido) e bloqueia publicar direto com revisão aberta (`workflow-review-publish-guard.service.ts:17-33`, lido); a Factory do Mastra atribui a execução a quem aprovou (`M:mastracode/factory/src/storage/domains/work-items/base.ts:259-262`, lido) e tem `superseded` automático (`:166`, relay) | aprovar executa a ação de publicar | nativo sobre o nosso: o corpo de `publishVersion` vira `publishIn`, chamado na transação da decisão com quem aprova como quem publica, como a Factory; publicar direto fecha o pedido aberto em vez de bloquear, como o `superseded` da Factory | critérios 12, 14, 15, 17 | "4 Confirmo" (2026-11-01) | — |
 | O aviso no sino | U2 | `notifications.notification` só de automações: `automation_id`, `automation_name`, `run_id` obrigatórios e três tipos (`hub/notifications/tables.ts:30-83`, lido); `NotificationRow` (`packages/hub-api/src/notifications.ts:22-35`, lido); a política `OWN` (`tables.ts:21,81`, lido); o sino (`apps/web/src/hub/notifications/bell.tsx:47-64`, relay conferido) | Activepieces: só a contagem na barra lateral (`docs/flows/flow-approvals.mdx:34`, lido); Cal.com: e-mail e o selo "Unconfirmed" (relay); n8n: uma caixa de entrada (relay) | quem decide sabe que há pedido | embrulhado: uma tabela ao lado da do sino, só aditiva (D6), com a política de inserir da empresa porque quem avisa não é quem lê; o `list` junta as duas; as linhas de automação não mudam | critérios 11, 19, 20 | `C1` da 24.2 (o sino, 2026-11-01) | `hub/notifications/request-notices.ts` |
 | A tela do pedido | U3 | **Publicar** sem checagem de papel (`apps/web/src/hub/apps/publish.tsx:17-88`, `hub/projects/area.tsx:91-99`, `hub/apps/versions.tsx:48-50`, relay conferido) | Activepieces: o botão vira "Request approval" (`packages/web/src/app/builder/flow-canvas/widgets/publish-flow-reminder-widget.tsx:183`, lido), a faixa "Approval pending" e a versão antiga segue no ar, quem pediu retira o pedido (`docs/flows/flow-approvals.mdx:24-30`, lido), recusar com motivo opcional (`:38-39`, lido); Cal.com: um corpo de decidir com `confirmed` e `reason` opcional (`packages/prisma/zod-utils.ts:310-319`, lido) | o botão muda de nome; o pedido aparece onde se publica | nativo: as peças da Pauta (`apps/web/src/ui/`); a linha do pedido em cima da área (`D1`) | critérios 21, 22 | a decisão D desta página | `apps/web/src/hub/requests/request-line.tsx`, `publish-request.tsx` |
 | O prazo do pedido | fica de fora: nenhuma referência de publicação vence | — | Activepieces, n8n e Cal.com não vencem (relay, buscas por `expire`, `ttl`, `timeout`); só o formulário humano do Dify (relay) | — | nativo quando entrar: uma agenda do Mastra (`mastra.schedules`) que fecha o pedido velho | — | não precisa | — |
-| Papéis inventados por empresa | fica de fora: ninguém pediu | — | `better-auth@1.7.8`: `dynamicAccessControl` (`dist/plugins/organization/organization.mjs:570-579`, lido) | papéis no banco, por empresa | nativo quando entrar: `dynamicAccessControl` | — | não precisa | — |
 | A página Pedidos da empresa | fica de fora com a `D1` | — | Activepieces: "Pending approvals" na barra lateral (`docs/flows/flow-approvals.mdx:34`, lido); n8n: a caixa de revisões (relay) | uma lista central | nativo quando entrar: uma lista sobre a mesma tabela | — | a decisão D desta página | — |
 
 Buscado: Better Auth 1.7.8 e Mastra 1.79.0 instalados; na estante, Appsmith `fd78f12`, ToolJet `aa67409`,
@@ -304,7 +304,7 @@ da admissão, o recorte de uma leitura e as leituras da web; nada de concorrênc
 ### As linhas da tabela
 
 O papel Desenvolvedor, as capacidades por ação (as da U1), quem muda quem, a tela lê do Hub, o
-membro com o Assistente, o que o Assistente do membro lê, as automações de quem não cria.
+membro com o Assistente, as automações de quem não cria.
 
 ### O raio da mudança
 
@@ -312,17 +312,16 @@ membro com o Assistente, o que o Assistente do membro lê, as automações de qu
 | --- | --- | --- |
 | `packages/hub-api/src/companies.ts` | Muda: `Role` ganha `developer` entre `admin` e `member` (a ordem é a do maior ao menor, `companies.ts:14-15`); `ROLE_LABELS.developer = 'Desenvolvedor'`; `CompanyRead` (`getCompany`, `:134-147`) ganha `may` | o servidor e a web inteiros |
 | `apps/server/src/hub/identity/` | Muda `roles.ts` (as declarações e o papel), `admission.ts` (`ACTIONS`, `rankAllows`), `companies.ts` (`may` em `:88-92`) | `auth.ts:254-255` passa os papéis ao plugin, sem mudar |
-| `apps/server/src/hub/connectors/assistant-port.ts` | Muda: `offered` e `readable` (`:104-130`) pedem `assistantReadCompany` quando o lugar é o Início; `builder-port.ts` não muda | `builder/assistant/` |
 | `apps/server/src/builder/controller-kit/admission.ts` | Muda: `admitAsker` segue em `askAssistant`; cria `admitAutomationOwner` (`manageAutomations`) | `builder/assistant/`, `builder/automations/` |
 | `apps/server/src/builder/automations/` | Muda `automations.ts` (cada operação admite `manageAutomations`, comentário `:249-253`), `run.ts` (`mayAsk`, `:79-90`, passa a `manageAutomations`), `routes.ts:20` | — |
-| `apps/server/src/builder/assistant/` | Muda `instructions.ts` (`ROLE_WORDS`, `:23-27`: `developer: 'developer'`) | `assistant.ts:119` |
+| `apps/server/src/builder/assistant/` | Muda `instructions.ts` (`ROLE_WORDS`, `:23-27`: `developer: 'developer'`); `assistant.ts` (a função `tools`, `:272-285`, inclui `propose_automation` só com `allows(role, 'manageAutomations')`, o papel lido uma vez por execução pela admissão de `speakersOf`, `:102`, como `oncePerRun` já faz); `prompt/assistant.md` (uma linha: sem a ferramenta, dizer em texto quem cria automações) | `builder/assistant/routes.ts` |
 | `apps/server/src/builder/tools/tools.ts`, `builder/agents/` | Nada além dos nomes: as ações `readAgents`, `manageAgents`, `publishAgent` mudam de declaração na admissão | — |
 | `apps/web/src/hub/identity/` | Muda `enter-company.ts` (`enterHouse`, `:33-43`, devolve `may` ao contexto da rota) e as dublês `test-*.tsx` que leem `getCompany`; o seletor de papel (`member-actions.tsx:152-179`) e o convite (`invite-form.tsx:23-24`) listam o Desenvolvedor sozinhos por `Role.options`, e o convite segue com Membro por padrão | `routes/_app/companies/$companyId/` |
 | `apps/web/src/routes/_app/companies/$companyId/` | Muda `route.tsx:64,112` e `index.tsx:23-33`: leem `may` do contexto; o membro ganha a caixa do Assistente e as conversas | — |
 | `apps/web/src/hub/projects/project-rail.tsx` | Muda `:113,121`: `may.manageAgents`, `may.manageAutomations` | — |
 | `apps/web/src/builder/` | Muda `agents/area.tsx:188` e `assistant/project.tsx:27` (leem `may`); `builder/assistant/text.ts` (sai a frase do membro na conversa do Projeto); `builder/agents/text.ts` (`MEMBERS_CANNOT` vira "Só o dono, os administradores e os desenvolvedores usam os agentes do Projeto."); `builder/automations/proposal.tsx` e `builder/automations/text.ts` (a frase de quem não cria); as dublês `builder/model-accounts/test-*` | — |
 | `apps/web/src/platform/test-hub.tsx`, `apps/web/src/hub/connectors/test-hub.tsx` | Muda: `companyRead` (`platform/test-hub.tsx:57-80`) devolve `may` | os testes da web |
-| `scripts/removals.json` (T12) | Cria as proteções: o `NOT_FOUND` do membro em publicar, em agentes e em automações; o recorte do Início em `offered` | `npm run removals` |
+| `scripts/removals.json` (T12) | Cria as proteções: o `NOT_FOUND` do membro em publicar, em agentes e em automações; `propose_automation` fora da execução de quem não cria | `npm run removals` |
 | `docs/reference/screens.md` | Muda: o Início do membro, a conversa do Projeto, as colunas de papéis com o desenvolvedor | — |
 
 ### Os contratos que a unidade cria
@@ -334,8 +333,7 @@ export const CompanyMay = z.object({ manageAgents: z.boolean(), manageAutomation
 // getCompany.success.body: { company, role, mayInviteAs, may: CompanyMay }
 
 // apps/server/src/hub/identity/roles.ts: as declarações a mais em ACCESS_CONTROL
-//   app: ['publish'], agent: ['manage', 'publish'], automation: ['manage'],
-//   assistant: ['ask', 'readCompany']
+//   app: ['publish'], agent: ['manage', 'publish'], automation: ['manage'], assistant: ['ask']
 // owner, admin: as de hoje + todas essas;
 // developer: memberAc + project: ['create'] + app, agent, automation, assistant (sem connection,
 //   sem modelAccount, sem appAccess);
@@ -344,7 +342,6 @@ export const CompanyMay = z.object({ manageAgents: z.boolean(), manageAutomation
 // apps/server/src/hub/identity/admission.ts, as ações que mudam ou nascem
 //   publishAppVersion: { app: ['publish'] }                (era: nenhuma)
 //   askAssistant: { assistant: ['ask'] }                   (era: MANAGE_CONNECTIONS)
-//   assistantReadCompany (nova): { assistant: ['readCompany'] }
 //   readAgents, manageAgents: { agent: ['manage'] }; publishAgent: { agent: ['publish'] }
 //                                                          (eram: MANAGE_CONNECTIONS)
 //   manageAutomations (nova): { automation: ['manage'] }, locks: true
@@ -379,7 +376,8 @@ export const CompanyMay = z.object({ manageAgents: z.boolean(), manageAutomation
    `NOT_FOUND`. Falham hoje.
 2. `companies.ts` (hub-api), `roles.ts`, `admission.ts`. Regras: S6, S7, S10, C26. Funções:
    `better-auth@1.7.8`: `createAccessControl`, `newRole` (`dist/plugins/access/access.mjs:71`).
-3. `assistant-port.ts`: o recorte do Início (critério 5).
+3. `assistant.ts`: a função `tools` lê `allows(role, 'manageAutomations')` (critério 9); a linha de
+   `assistant.md`. Função: `@mastra/core@1.79.0`, `tools` como função do `requestContext`.
 4. `controller-kit/admission.ts`, `automations/` e `run.ts`: as automações passam a
    `manageAutomations`; `mayAsk` continua devolvendo `MAY_NOT` quando a pessoa não pode, e o motivo
    `OWNER_CANNOT_ASK` não muda de nome (é um código já guardado nas execuções).
@@ -399,8 +397,8 @@ tocados, `npm run typecheck`, `npm run lint`.
   etapa muda pela resposta "5"; atualizar o teste e dizer no pull request quais.
 - Alguma rota lê `connection: ['manage']` para algo que não é gerir ligações e não está nas cinco
   ações acima: relatar antes de mudar.
-- O fundador responder `E2`: o critério 5 muda para "o membro lê como o dono", e
-  `assistant: ['readCompany']` vai também ao membro; nada mais muda.
+- Alguma regra fixa por papel nas ligações parecer necessária para um critério passar: parar e
+  relatar; é da etapa Papéis da empresa (resposta de 2026-11-03).
 
 ## U2 O pedido
 
