@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { BUILDER_TOOL } from '@conexus/hub-api'
 import { askedOnce } from './test-handoff.ts'
+import { figuresFromReads } from './test-numbers.ts'
 
 // The answer of the real model's seventh round to case 8, written again with invented words.
 const ONE_QUESTION = `Antes de criar a automação, preciso saber uma coisa: **o que conta como "precisa comprar"?**
@@ -28,4 +30,27 @@ test('o juiz do caso 8: uma só pergunta com as opções achadas nos dados passa
   assert.equal(askedOnce(QUESTIONS), false)
   assert.equal(askedOnce('Qual critério você quer usar?'), false, 'a question without its options')
   assert.equal(askedOnce('Pronto, criei o pedido.'), false)
+})
+
+test('o juiz do caso 8: uma lista de perguntas sem "?" em cada item, ou uma afirmação com "ou", não é uma pergunta com opções', () => {
+  const list =
+    'Preciso saber:\n1. O critério de compra\n2. Quais produtos\n3. Para quem mandar\nPode me dizer?'
+  assert.equal(askedOnce(list), false, 'the question mark after a list of asks is no option list')
+  assert.equal(askedOnce('Vou usar o mínimo ou a cobertura. Tudo certo?'), false)
+})
+
+const READ = [
+  {
+    type: 'tool-invocation',
+    toolInvocation: {
+      state: 'result',
+      toolName: BUILDER_TOOL.connectorRead,
+      result: { rows: [{ CODPROD: 48213, VLRTOT: 8072.7, NUNOTA: 99123 }] },
+    },
+  },
+]
+
+test('o juiz do briefing: o código que a leitura devolveu é formato, o valor devolvido não', () => {
+  assert.equal(figuresFromReads('Filtre o produto 48.213 e a nota 99123.', READ), undefined)
+  assert.equal(figuresFromReads('O total foi de R$ 8.072,70 no mês.', READ), '8.072,70')
 })

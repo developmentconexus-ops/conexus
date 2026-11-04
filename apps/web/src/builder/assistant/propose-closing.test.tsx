@@ -80,6 +80,18 @@ test('a leitura da permissão que falha mostra a falha com Tentar de novo, não 
   expect(screen.queryByText(/Peça ao dono ou a um administrador/)).toBeNull()
 })
 
+test('com a leitura da permissão caída o Criar app espera, em vez de mandar o app sem as ligações escolhidas', async () => {
+  const handed = handing()
+  proposing()
+  server.use(
+    http.get('*/api/companies/:companyId/connections', () => refusal('DATABASE_UNAVAILABLE')),
+  )
+  await screen.findByRole('button', { name: 'Tentar de novo' })
+  fireEvent.change(screen.getByLabelText('Nome do projeto'), { target: { value: 'Encomendas' } })
+  expect(screen.getByRole('button', { name: 'Criar app' })).toHaveProperty('disabled', true)
+  expect(handed).toHaveLength(0)
+})
+
 test('em um Projeto, se a leitura do Projeto também cai a frase é a da falha, não um silêncio', async () => {
   handing(() => refusal('NOT_FOUND'))
   proposing([proposal(ASSISTANT_TOOL.proposeAppChange)], IN_PROJECT, PEDIDOS.id)

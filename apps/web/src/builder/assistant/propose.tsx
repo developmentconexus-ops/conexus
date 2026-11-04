@@ -244,6 +244,7 @@ export function AppProposalCard(props: CardProps) {
     .map((each) => each.connectionId)
   const handOff = useHandOff(props, { name, marked: starts && mayRelease ? marked : [] })
   const named = ProjectName.safeParse(name).success
+  const unknownRelease = chosen.length > 0 && !company.isSuccess
   const { made } = handOff
   return (
     <Card>
@@ -295,7 +296,7 @@ export function AppProposalCard(props: CardProps) {
           starts={starts}
           pending={handOff.pending}
           failed={handOff.locked}
-          disabled={starts && !named}
+          disabled={starts && (!named || unknownRelease)}
           onTouch={() => void handOff.touch()}
         />
       )}
