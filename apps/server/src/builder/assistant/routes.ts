@@ -244,14 +244,11 @@ function registerChanges(app: FastifyInstance, deps: Deps): void {
     const owner = ownerOf(input)
     const { conversationId } = input.params
     await admitted(deps, owner, { kind: 'COMPANY' })
-    const thread = await ownThread(deps, owner, conversationId)
+    await ownThread(deps, owner, conversationId)
     const { title } = input.body
-    // `titlePinned`: the memory's own titling no longer replaces the one the person chose.
-    await deps.memory.updateThread({
-      id: conversationId,
-      title,
-      metadata: { ...thread.metadata, titlePinned: true },
-    })
+    // `titlePinned`: the memory's own titling no longer replaces the one the person chose. The
+    // memory merges the metadata with what is stored.
+    await deps.memory.updateThread({ id: conversationId, title, metadata: { titlePinned: true } })
     deps.log.info(
       { companyId: owner.companyId, traceId: input.traceId, conversationId },
       'ASSISTANT_CONVERSATION_RENAMED',
@@ -265,7 +262,7 @@ function registerChanges(app: FastifyInstance, deps: Deps): void {
     await admitted(deps, owner, { kind: 'COMPANY' })
     await ownThread(deps, owner, conversationId)
     // The session first, so its answer stops; then its machines; the thread last, so a failure
-    // halfway leaves what the next delete finds again (data D17). The row of its choice stays until
+    // halfway leaves what the next delete finds again. The row of its choice stays until
     // its Projeto, person or company leaves: the Hub holds no `DELETE` on it (data D11).
     await releaseThreads(deps, [conversationId], (id) => deps.machines.kill(id))
     deps.log.info(
