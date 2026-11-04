@@ -41,7 +41,14 @@ export function Tools(props: Part) {
           const title = toolTitle({ ...tool, description: tool.version.description }, agent.offered)
           const connection = connectionOf(agent.offered, tool.connectionId)
           return (
-            <li key={tool.id} className={cn(ROW, 'justify-between')}>
+            <li
+              key={tool.id}
+              className={cn(
+                ROW,
+                'justify-between',
+                tool.latest.number > tool.version.number && 'h-auto min-h-row py-xs',
+              )}
+            >
               <span className="flex min-w-0 flex-1 items-center gap-sm">
                 <Logo logo={catalog.logo(connection?.connector ?? '')} />
                 <span className="flex min-w-0 flex-col">
@@ -55,29 +62,29 @@ export function Tools(props: Part) {
                       )}
                     </span>
                   )}
+                  {tool.latest.number > tool.version.number && (
+                    <span className="flex flex-wrap items-center gap-xs">
+                      <span className="text-fact text-text-2">
+                        {newVersionText(tool.latest.number)}
+                      </span>
+                      <Button
+                        size="sm"
+                        onClick={() =>
+                          saving.save((now) => ({
+                            tools: now.tools.map((one) =>
+                              one.id === tool.id ? tool.latest.id : one.version.id,
+                            ),
+                          }))
+                        }
+                      >
+                        Usar a versão {tool.latest.number}
+                      </Button>
+                    </span>
+                  )}
                 </span>
               </span>
               <span className="flex shrink-0 items-center gap-xs">
                 <span className="text-fact text-text-2">v{tool.version.number}</span>
-                {tool.latest.number > tool.version.number && (
-                  <span className="flex items-center gap-xs">
-                    <span className="text-fact text-text-2">
-                      {newVersionText(tool.latest.number)}
-                    </span>
-                    <Button
-                      size="sm"
-                      onClick={() =>
-                        saving.save((now) => ({
-                          tools: now.tools.map((one) =>
-                            one.id === tool.id ? tool.latest.id : one.version.id,
-                          ),
-                        }))
-                      }
-                    >
-                      Usar a versão {tool.latest.number}
-                    </Button>
-                  </span>
-                )}
                 <Button
                   size="sm"
                   variant="ghost"

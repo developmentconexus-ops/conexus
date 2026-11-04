@@ -129,6 +129,10 @@ export function ToolPage(props: Scope & { toolId: ToolId }) {
                 <li key={one.id} className="flex flex-col gap-xs border-b border-line px-sm py-sm">
                   <span className="font-semibold">Versão {one.number}</span>
                   <span>{one.description}</span>
+                  <span className="text-fact text-text-2">
+                    Valores fixos: {JSON.stringify(one.bound)} · O modelo preenche:{' '}
+                    {one.open.length === 0 ? 'nada' : one.open.join(', ')}
+                  </span>
                 </li>
               ))}
           </ul>
