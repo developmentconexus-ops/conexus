@@ -4,6 +4,7 @@ import {
   CONSTRUTOR_TOOL,
   DraftRef,
   ProjectReadResult,
+  TASK_TOOLS,
   TestedResult,
   ToolSearchResult,
 } from '@conexus/hub-api'
@@ -62,7 +63,7 @@ test('as ferramentas: o modelo recebe as instruções do Construtor e só as fer
   const closed = [...Object.values(CONSTRUTOR_TOOL), 'connector_read', 'connector_notes']
   assert.deepEqual(
     [...asked.tools].sort(),
-    [...closed, 'ask_user', 'web_fetch', 'web_search'].sort(),
+    [...closed, 'ask_user', ...TASK_TOOLS, 'web_fetch', 'web_search'].sort(),
   )
 })
 

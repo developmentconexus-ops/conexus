@@ -14,9 +14,9 @@ export const turnKey = turnKeyOn('conexus-assistant-turn-key')
 /**
  * The Assistant's turns (step 24.1, U2) on the kit's owner of their end: a run of a conversation
  * takes its owner's turn with a new `TurnKey`, and no Projeto (`Runs`): the controller already
- * sends one message at a time to a conversation, and nothing in the Assistant suspends (no card,
- * no plan, no approval). When the turn ends, the conversation's machine sleeps until the next
- * question; a failed pause is logged there.
+ * sends one message at a time to a conversation. A card (`ask_user`) suspends the run, and an
+ * automation's run ends then (`endOf`). When the turn ends, the conversation's machine sleeps until
+ * the next question; a failed pause is logged there.
  */
 export function assistantTurns(deps: {
   queue: QueueDeps
