@@ -17,7 +17,7 @@ import {
 import { useComposerTools } from './composer-tools.tsx'
 import { useConnectorCatalog } from './connector-names.ts'
 import { FilePanel } from './file.tsx'
-import { Propose } from './propose.tsx'
+import { AppProposalCard } from './propose.tsx'
 import { assistantConversationQuery, sendAssistantModel } from './queries.ts'
 import { EMPTY_ASSISTANT, titleOf } from './text.ts'
 
@@ -29,9 +29,8 @@ function useAssistantRoom(held: {
   conversation: AssistantConversation
   file: OpenedFile | undefined
   setFile: (file: OpenedFile) => void
-  setProposal: (summary: string) => void
 }): Room {
-  const { companyId, conversation, file, setFile, setProposal } = held
+  const { companyId, conversation, file, setFile } = held
   const { words } = useConnectorCatalog(companyId)
   return useMemo(
     () => ({
@@ -39,7 +38,15 @@ function useAssistantRoom(held: {
       connectors: words,
       openFile: setFile,
       openedPath: file?.path,
-      createApp: setProposal,
+      appCard: ({ proposed, toolCallId, closed }) => (
+        <AppProposalCard
+          companyId={companyId}
+          conversation={conversation}
+          proposed={proposed}
+          toolCallId={toolCallId}
+          closed={closed}
+        />
+      ),
       automationCard: ({ proposed, toolCallId }) => (
         <ProposalCard
           companyId={companyId}
@@ -49,7 +56,7 @@ function useAssistantRoom(held: {
         />
       ),
     }),
-    [companyId, words, conversation, file?.path, setFile, setProposal],
+    [companyId, words, conversation, file?.path, setFile],
   )
 }
 
@@ -61,8 +68,7 @@ function Conversation(props: Props) {
   ).data
   const [file, setFile] = useState<OpenedFile>()
   const phone = useIsMobile()
-  const [proposal, setProposal] = useState<string>()
-  const room = useAssistantRoom({ companyId, conversation, file, setFile, setProposal })
+  const room = useAssistantRoom({ companyId, conversation, file, setFile })
   const tools = useComposerTools({ kind: 'CONVERSATION', companyId, conversation })
   return (
     <RoomContext.Provider value={room}>
@@ -129,7 +135,6 @@ function Conversation(props: Props) {
           />
         </div>
       </div>
-      <Propose companyId={companyId} summary={proposal} onClose={() => setProposal(undefined)} />
     </RoomContext.Provider>
   )
 }

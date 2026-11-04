@@ -2,6 +2,7 @@ import type { CompanyId, ConversationId, ProjectId } from '@conexus/hub-api'
 import {
   createAssistantConversation,
   deleteAssistantConversation,
+  handAssistantProposal,
   listAssistantConnections,
   listAssistantConversations,
   readAssistantConversation,
@@ -42,3 +43,4 @@ export const sendAssistantRename = hubMutation(renameAssistantConversation)
 export function allAssistantConversationsKey(companyId: CompanyId) {
   return hubQueryPrefix(listAssistantConversations, { companyId })
 }
+export const sendAssistantHandOff = hubMutation(handAssistantProposal)
