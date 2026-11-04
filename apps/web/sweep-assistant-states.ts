@@ -113,7 +113,7 @@ async function opened(page: Page) {
   await waitFor(page, 'Resumi o que achei e deixei o relatório ao lado.')
 }
 
-const CARD_SPEAKS = [
+export const CARD_SPEAKS = [
   {
     id: 'q1',
     role: 'person' as const,
@@ -123,7 +123,7 @@ const CARD_SPEAKS = [
 ]
 
 /** The conversation of `ASSISTANT_REPLIES`, in the company or in a Projeto, with the messages the card needs. */
-function cardReplies(projectId: string | null, messages: Said[]) {
+export function cardReplies(projectId: string | null, messages: Said[]) {
   const key = `GET /api/companies/${COMPANY.id}/assistant/conversations/${ID}`
   const read = ASSISTANT_REPLIES[key]
   if (read === undefined) throw new Error('the Assistant replies lack the conversation read')
@@ -150,7 +150,7 @@ function cardReplies(projectId: string | null, messages: Said[]) {
   }
 }
 
-function proposed(tool: string): Said {
+export function proposed(tool: string, content: string = BRIEFING): Said {
   return {
     id: 'm-card',
     role: 'builder',
@@ -162,7 +162,7 @@ function proposed(tool: string): Said {
           toolCallId: 'c-card',
           toolName: tool,
           args: {},
-          result: { summary: SUMMARY, briefing: { name: 'briefing.md', content: BRIEFING } },
+          result: { summary: SUMMARY, briefing: { name: 'briefing.md', content } },
         },
       },
     ],
