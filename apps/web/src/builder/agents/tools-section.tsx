@@ -8,7 +8,15 @@ import { Chooser } from './chooser.tsx'
 import { Creator } from './creator.tsx'
 import type { Part } from './section.tsx'
 import { Section } from './section.tsx'
-import { ADD_FROM_LIBRARY, connectionOf, NO_TOOLS, toolFact, toolTitle, WEB_TOOL } from './text.ts'
+import {
+  ADD_FROM_LIBRARY,
+  connectionOf,
+  NO_TOOLS,
+  newVersionText,
+  toolFact,
+  toolTitle,
+  WEB_TOOL,
+} from './text.ts'
 import { useDraftSave } from './use-draft-save.ts'
 
 /** **Ferramentas**: the tools the draft chose, each with its connector's logo, its version and what it does; the web is one of them. */
@@ -33,7 +41,14 @@ export function Tools(props: Part) {
           const title = toolTitle({ ...tool, description: tool.version.description }, agent.offered)
           const connection = connectionOf(agent.offered, tool.connectionId)
           return (
-            <li key={tool.id} className={cn(ROW, 'justify-between')}>
+            <li
+              key={tool.id}
+              className={cn(
+                ROW,
+                'justify-between',
+                tool.latest.number > tool.version.number && 'h-auto min-h-row py-xs',
+              )}
+            >
               <span className="flex min-w-0 flex-1 items-center gap-sm">
                 <Logo logo={catalog.logo(connection?.connector ?? '')} />
                 <span className="flex min-w-0 flex-col">
@@ -45,6 +60,25 @@ export function Tools(props: Part) {
                         several ? connection.name : undefined,
                         tool.effect,
                       )}
+                    </span>
+                  )}
+                  {tool.latest.number > tool.version.number && (
+                    <span className="flex flex-wrap items-center gap-xs">
+                      <span className="text-fact text-text-2">
+                        {newVersionText(tool.latest.number)}
+                      </span>
+                      <Button
+                        size="sm"
+                        onClick={() =>
+                          saving.save((now) => ({
+                            tools: now.tools.map((one) =>
+                              one.id === tool.id ? tool.latest.id : one.version.id,
+                            ),
+                          }))
+                        }
+                      >
+                        Usar a versão {tool.latest.number}
+                      </Button>
                     </span>
                   )}
                 </span>

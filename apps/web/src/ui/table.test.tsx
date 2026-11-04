@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { cleanup, render, screen, within } from '@testing-library/react'
 import { expect, test, vi } from 'vitest'
 import { FramedTable } from './table.tsx'
 
@@ -27,6 +27,18 @@ test('FramedTable names every column in its header and gives each one its width'
   const cols = [...document.querySelectorAll('col')].map((col) => col.className)
   expect(cols).toEqual(['', 'lg:w-36', 'lg:w-80'])
   expect(screen.getByRole('table', { name: 'Pessoas' }).className).toContain('lg:table-fixed')
+})
+
+test('FramedTable hides its header from the screen unless showHeader is set', () => {
+  framed()
+  expect(document.querySelector('thead')?.className).toContain('sr-only')
+  cleanup()
+  render(
+    <FramedTable columns={COLUMNS} aria-label="Pessoas" showHeader>
+      <tbody />
+    </FramedTable>,
+  )
+  expect(document.querySelector('thead')?.className ?? '').not.toContain('sr-only')
 })
 
 test('FramedTable drops the columns that leave on a phone from header and widths', () => {

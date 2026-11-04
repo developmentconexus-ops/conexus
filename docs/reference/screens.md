@@ -30,6 +30,8 @@ L24](../guides/delivery.md)): it grows by one line per screen.
 | Conversas of a Projeto: the box to the Assistant with the Projeto's connections, and its conversations; a member reads who can talk there | `/companies/<c>/projects/<p>/assistant` | Projeto | owner, administrator, member (reads) |
 | A conversation with the Assistant in a Projeto, with the file it shows beside the chat | `/companies/<c>/projects/<p>/assistant/<id>` | Projeto | owner, administrator |
 | Agentes of a Projeto: the box to the Construtor, its earlier conversations and the Projeto's agents with their state | `/companies/<c>/projects/<p>/agents` | Projeto | owner, administrator |
+| Ferramentas of a Projeto, the tab beside Agentes: the library's tools it may use, each with what it reads, its latest version and the agents that use it, and Apagar | `/companies/<c>/projects/<p>/agents/tools` | Projeto | owner, administrator |
+| A tool of the library: its versions, newest first, and Nova versão | `/companies/<c>/projects/<p>/agents/tools/<tool>` | Projeto | owner, administrator |
 | A conversation with the Construtor, with the draft card of the agent it makes | `/companies/<c>/projects/<p>/agents/construtor/<id>` | Projeto | owner, administrator |
 | An agent: the person's conversations with it, the editable configuration, Publicar and Versões | `/companies/<c>/projects/<p>/agents/<agent>` | Projeto | owner, administrator |
 | A conversation with an agent, published or the test one with its draft, inside the agent's page | `/companies/<c>/projects/<p>/agents/<agent>/<id>` | Projeto | owner, administrator |

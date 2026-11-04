@@ -113,6 +113,10 @@ export const ToolSummary = ToolTarget.extend({
   id: ToolId,
   slug: ToolSlug,
   description: z.string(),
+  /** The name of the connection the tool reads, as the Projeto offers it. */
+  connectionName: z.string(),
+  /** The read's name as the kit gives it ("Pedidos"); the operation's id when the kit no longer lists it. */
+  readLabel: z.string(),
   effect: ToolEffect,
   latest: z.object({ id: ToolVersionId, number: z.int().positive() }),
   /** The agents whose draft or a published version uses a version of the tool. */

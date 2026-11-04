@@ -56,6 +56,10 @@ export const VERSIONS_TITLE = 'Versões'
 export const ACTIVE_VERSION = 'Ativa'
 export const DRAFT_PANEL = 'Rascunho do agente'
 export const SAME_MODEL = 'O modelo de quem conversa'
+/** The notice of a tool whose library has a version the draft does not hold. */
+export function newVersionText(number: number): string {
+  return `Versão ${number} disponível`
+}
 export const WEB_TOOL = 'Pesquisar na web'
 export const TEST_BANNER = 'Conversa de teste com o rascunho'
 

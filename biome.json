@@ -218,6 +218,7 @@
         "apps/web/src/builder/model-accounts/test-writes.tsx",
         "apps/web/src/builder/assistant/test-hub.tsx",
         "apps/web/src/builder/agents/test-hub.tsx",
+        "apps/web/src/builder/agents/test-hub-tools.tsx",
         "apps/web/src/builder/assistant/test-model.tsx",
         "apps/web/src/builder/assistant/test-changes.tsx",
         "apps/web/src/builder/assistant/test-propose.tsx",

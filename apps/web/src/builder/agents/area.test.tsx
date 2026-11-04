@@ -84,11 +84,14 @@ test('a lista que falha ao ler diz a frase da falha, e Tentar de novo lê outra 
   expect(await screen.findByRole('link', { name: /Conferente de metas/ })).toBeTruthy()
 })
 
-test('no celular a área é uma coluna, sem abas, e o agente está na lista', async () => {
+test('no celular a área é uma coluna com as abas Agentes e Ferramentas, e o agente está na lista', async () => {
   await onPhone(async () => {
     at(AREA, { agents: [agent()] })
     expect(await screen.findByRole('link', { name: /Conferente de metas/ })).toBeTruthy()
-    expect(screen.queryByRole('tab')).toBeNull()
+    expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual([
+      'Agentes',
+      'Ferramentas',
+    ])
     expect(screen.getByRole('textbox', { name: 'Mensagem para o Construtor' })).toBeTruthy()
     expect(screen.getAllByRole('heading', { name: 'Agentes' })).toHaveLength(1)
   })

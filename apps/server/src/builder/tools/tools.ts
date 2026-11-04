@@ -16,7 +16,7 @@ import { violatedConstraint, violatedReference } from '../../platform/database.t
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import { bodyHashOf } from '../conversation/public.ts'
-import type { InProject, ToolConnectors, Writer } from './check.ts'
+import type { InProject, OfferedConnection, ToolConnectors, Writer } from './check.ts'
 import {
   databaseScopeOf,
   fitting,
@@ -61,8 +61,11 @@ export async function admitted(
 }
 
 /** The ids of the connections the Projeto received, read through the connectors' door. */
-async function offeredIds(deps: Pick<ToolsDeps, 'connectors'>, scope: InProject) {
-  const offered = await deps.connectors.connections(sessionScopeOf(scope))
+async function offeredOf(deps: Pick<ToolsDeps, 'connectors'>, scope: InProject) {
+  return deps.connectors.connections(sessionScopeOf(scope))
+}
+
+function idsOf(offered: readonly OfferedConnection[]) {
   return offered.map((each) => ConnectionId.parse(each.connectionId))
 }
 
@@ -70,18 +73,23 @@ async function offeredIds(deps: Pick<ToolsDeps, 'connectors'>, scope: InProject)
 async function usableTool(
   tx: ReadTx,
   scope: InProject,
-  offered: readonly ConnectionId[],
+  offered: readonly OfferedConnection[],
   id: ToolId,
 ) {
   const row = await toolOf(tx, scope.companyId, id)
-  if (row === undefined || !offered.includes(ConnectionId.parse(row.connectionId))) {
+  if (row === undefined || !idsOf(offered).includes(ConnectionId.parse(row.connectionId))) {
     throw new Failure('TOOL_NOT_FOUND')
   }
   return row
 }
 
-async function detailOf(deps: ToolsDeps, tx: ReadTx, row: typeof tool.$inferSelect) {
-  const [detail] = await detailsOf(tx, deps.usedBy, [row])
+async function detailOf(
+  deps: ToolsDeps,
+  tx: ReadTx,
+  row: typeof tool.$inferSelect,
+  offered: readonly OfferedConnection[],
+) {
+  const [detail] = await detailsOf(tx, deps.usedBy, [row], offered)
   if (detail === undefined) throw new Failure('TOOL_NOT_FOUND')
   return detail
 }
@@ -97,7 +105,13 @@ async function save(
   const id = ToolId.parse(derivedUuid('tool', scope.companyId, scope.personId, attemptKey))
   const bodyHash = bodyHashOf(body)
   const { slug, connectionId, operation, ...config } = body
-  const target = await targetOf(deps.connectors, sessionScopeOf(scope), { connectionId, operation })
+  const offered = await offeredOf(deps, scope)
+  const target = await targetOf(
+    deps.connectors,
+    sessionScopeOf(scope),
+    { connectionId, operation },
+    offered,
+  )
   const detail = await deps.database.command(databaseScopeOf(scope), async (tx) => {
     await admitted(deps, tx, scope, 'manageAgents')
     const earlier = await toolOf(tx, scope.companyId, id)
@@ -105,11 +119,11 @@ async function save(
       fitting(target, config)
       const row = { slug, connectionId, operation }
       const made = { id, scope, target: row, config, bodyHash, createdBy: scope.personId }
-      if (await inserted(tx, made)) return detailOf(deps, tx, await found(tx, scope, id))
+      if (await inserted(tx, made)) return detailOf(deps, tx, await found(tx, scope, id), offered)
     }
     const row = await found(tx, scope, id)
     if (row.bodyHash !== bodyHash) throw new Failure('IDEMPOTENCY_CONFLICT')
-    return detailOf(deps, tx, row)
+    return detailOf(deps, tx, row, offered)
   })
   deps.log.info({ companyId: scope.companyId, toolId: id, version: 1, by }, 'TOOL_SAVED')
   return detail
@@ -135,14 +149,14 @@ async function addVersion(
 ): Promise<ToolDetail> {
   const versionId = derivedUuid('tool-version', toolId, scope.personId, attemptKey)
   const bodyHash = bodyHashOf(config)
-  const offered = await offeredIds(deps, scope)
+  const offered = await offeredOf(deps, scope)
   async function write(tx: CommandTx) {
     await admitted(deps, tx, scope, 'manageAgents')
     const row = await usableTool(tx, scope, offered, toolId)
     const [earlier] = await tx.select().from(toolVersion).where(eq(toolVersion.id, versionId))
     if (earlier !== undefined) {
       if (earlier.bodyHash !== bodyHash) throw new Failure('IDEMPOTENCY_CONFLICT')
-      return { detail: await detailOf(deps, tx, row), number: earlier.number }
+      return { detail: await detailOf(deps, tx, row, offered), number: earlier.number }
     }
     const { connectionId, operation } = row
     const target = {
@@ -160,7 +174,10 @@ async function addVersion(
       ...{ id: versionId, toolId, companyId: scope.companyId, number: next.number },
       ...{ config, createdBy: scope.personId, bodyHash },
     })
-    return { detail: await detailOf(deps, tx, await found(tx, scope, toolId)), number: next.number }
+    return {
+      detail: await detailOf(deps, tx, await found(tx, scope, toolId), offered),
+      number: next.number,
+    }
   }
   const { detail, number } = await deps.database
     .command(databaseScopeOf(scope), write)
@@ -181,7 +198,7 @@ async function list(deps: ToolsDeps, scope: InProject) {
   const offered = await deps.connectors.connections(sessionScopeOf(scope))
   return deps.database.read(databaseScopeOf(scope), async (tx) => {
     await admitted(deps, tx, scope, 'readAgents')
-    const ids = offered.map((each) => ConnectionId.parse(each.connectionId))
+    const ids = idsOf(offered)
     const rows = await toolsOn(tx, scope.companyId, ids)
     const held = new Set(rows.map((row) => row.id))
     const ready: ReadyTool[] = offered.flatMap((connection) =>
@@ -194,7 +211,7 @@ async function list(deps: ToolsDeps, scope: InProject) {
         return [{ ...target, label, summary, slug: readySlug(target) }]
       }),
     )
-    const tools = (await detailsOf(tx, deps.usedBy, rows)).map(
+    const tools = (await detailsOf(tx, deps.usedBy, rows, offered)).map(
       ({ versions: _, ...summary }) => summary,
     )
     return { tools, ready }
@@ -202,10 +219,10 @@ async function list(deps: ToolsDeps, scope: InProject) {
 }
 
 async function get(deps: ToolsDeps, scope: InProject, toolId: ToolId) {
-  const offered = await offeredIds(deps, scope)
+  const offered = await offeredOf(deps, scope)
   return deps.database.read(databaseScopeOf(scope), async (tx) => {
     await admitted(deps, tx, scope, 'readAgents')
-    return detailOf(deps, tx, await usableTool(tx, scope, offered, toolId))
+    return detailOf(deps, tx, await usableTool(tx, scope, offered, toolId), offered)
   })
 }
 
@@ -214,7 +231,7 @@ async function get(deps: ToolsDeps, scope: InProject, toolId: ToolId) {
  * delete, so a tool in use refuses (23503) and nothing changes; the agents are read after.
  */
 async function remove(deps: ToolsDeps, scope: InProject, toolId: ToolId): Promise<void> {
-  const offered = await offeredIds(deps, scope)
+  const offered = await offeredOf(deps, scope)
   await deps.database
     .command(databaseScopeOf(scope), async (tx) => {
       await admitted(deps, tx, scope, 'manageAgents')

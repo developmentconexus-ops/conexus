@@ -19,7 +19,7 @@ import {
 import { and, asc, eq, inArray } from 'drizzle-orm'
 import type { CommandTx, ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
-import type { InProject } from './check.ts'
+import type { InProject, OfferedConnection } from './check.ts'
 import { derivedUuid } from './derived.ts'
 import { tool, toolVersion } from './tables.ts'
 
@@ -101,14 +101,21 @@ export async function detailsOf(
   tx: ReadTx,
   usedBy: UsedBy,
   rows: readonly ToolRow[],
+  offered: readonly OfferedConnection[],
 ): Promise<ToolDetail[]> {
   const ids = rows.map((row) => ToolId.parse(row.id))
   const versions = await versionsOf(tx, ids)
   const users = await usedBy(tx, ids)
   return rows.map((row): ToolDetail => {
     const latest = latestOf(row, versions)
+    const connection = offered.find((each) => each.connectionId === row.connectionId)
+    if (connection === undefined)
+      throw new Error(`the tool ${row.id} reads a connection not offered`)
+    const read = connection.reads.find((each) => each.operation === row.operation)
     const summary: ToolSummary = {
       ...targetOfRow(row),
+      connectionName: connection.name,
+      readLabel: read?.label ?? row.operation,
       id: ToolId.parse(row.id),
       description: ToolVersionConfig.parse(latest.config).description,
       effect: 'READ',

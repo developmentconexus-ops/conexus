@@ -20,6 +20,8 @@ export const PAGES = [
   '/companies/$companyId/projects/$projectId/automations',
   '/companies/$companyId/projects/$projectId/automations/$automationId',
   '/companies/$companyId/projects/$projectId/agents',
+  '/companies/$companyId/projects/$projectId/agents/tools',
+  '/companies/$companyId/projects/$projectId/agents/tools/$toolId',
   '/companies/$companyId/projects/$projectId/agents/$agentId',
   '/companies/$companyId/projects/$projectId/agents/$agentId/$conversationId',
   '/companies/$companyId/projects/$projectId/agents/construtor/$conversationId',

@@ -51,8 +51,9 @@ export async function targetOf(
   connectors: ToolConnectors,
   scope: SessionScope,
   target: ToolTarget,
+  known?: readonly OfferedConnection[],
 ): Promise<Target> {
-  const offered = await connectors.connections(scope)
+  const offered = known ?? (await connectors.connections(scope))
   if (!offered.some((each) => each.connectionId === target.connectionId)) {
     return { kind: 'REFUSED', named: { field: 'connectionId', reason: 'NOT_OFFERED' } }
   }
