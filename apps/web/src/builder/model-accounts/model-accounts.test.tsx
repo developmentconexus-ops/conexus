@@ -258,15 +258,14 @@ test('no celular as setas saem da linha e Subir e Descer ficam no …', async ()
         screen.getByRole('button', { name: 'Mais ações para C' }),
       ),
     )
-    fireEvent.click(screen.getByRole('button', { name: 'Mais ações para A' }))
+    // A click focuses its button for a person; `fireEvent.click` does not, so focus it first.
+    const triggerOfA = screen.getByRole('button', { name: 'Mais ações para A' })
+    triggerOfA.focus()
+    fireEvent.click(triggerOfA)
     await screen.findByRole('menuitem', { name: 'Descer' })
     expect(screen.queryByRole('menuitem', { name: 'Subir' })).toBeNull()
     fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' })
-    await waitFor(() =>
-      expect(document.activeElement).toBe(
-        screen.getByRole('button', { name: 'Mais ações para C' }),
-      ),
-    )
+    await waitFor(() => expect(document.activeElement).toBe(triggerOfA))
   } finally {
     phone.mockRestore()
   }
