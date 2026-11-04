@@ -1,3 +1,4 @@
+import { ProjectSummary } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
@@ -15,8 +16,8 @@ import {
 const server = hubServer()
 const PROJECTS = `/companies/${COMPANY.id}/projects`
 
-function hub(projects: (typeof PEDIDOS)[]) {
-  server.use(...projectsRead({ projects, databaseReady: true, mayDelete: true, role: 'member' }))
+function hub(projects: (typeof PEDIDOS)[], role: 'member' | 'admin' = 'member') {
+  server.use(...projectsRead({ projects, databaseReady: true, mayDelete: true, role }))
 }
 
 function open(path = PROJECTS) {
@@ -95,4 +96,49 @@ test('"Projeto apagado." chega uma vez e sai do endereço', async () => {
   expect(await screen.findByText('Projeto apagado.')).toBeTruthy()
   await waitFor(() => expect(router.state.location.search).toEqual({}))
   expect(screen.getByText('Projeto apagado.')).toBeTruthy()
+})
+
+test('cada cartão diz o estado do app em palavras, e "Novo projeto" no alto abre o diálogo de criar (12)', async () => {
+  hub(
+    [
+      PEDIDOS,
+      ProjectSummary.parse({
+        ...PEDIDOS,
+        id: 'q'.repeat(32),
+        name: 'Compras',
+        publishedVersion: 2,
+        appVersion: 3,
+      }),
+    ],
+    'admin',
+  )
+  server.use(conversationsNone)
+  open()
+  await screen.findByRole('heading', { name: 'Todos os projetos' })
+  expect(
+    await main().findByText('Cada Projeto guarda um app, as conversas e as ligações dele.'),
+  ).toBeTruthy()
+  const compras = await main().findByRole('link', { name: /Compras/ })
+  expect(compras.textContent).toContain('Publicado · v2')
+  expect(main().getByRole('link', { name: /Pedidos/ }).textContent).toContain('Ainda sem app')
+  fireEvent.click(main().getByRole('button', { name: /Novo projeto/ }))
+  expect(await screen.findByRole('dialog')).toBeTruthy()
+})
+
+test('sem Projeto, a coluna do vazio tem "Novo projeto" e o caminho para o Início; quem não pode criar não vê o botão (13)', async () => {
+  hub([], 'admin')
+  server.use(conversationsNone)
+  open()
+  await screen.findByRole('heading', { name: 'Todos os projetos' })
+  expect(await main().findByText('Nenhum projeto ainda')).toBeTruthy()
+  expect(main().getAllByRole('button', { name: /Novo projeto/ }).length).toBe(2)
+  expect(main().getByRole('link', { name: 'ou peça um app no Início' })).toBeTruthy()
+})
+
+test('um membro sem permissão de criar não vê "Novo projeto" nem na página nem no vazio (13)', async () => {
+  hub([], 'member')
+  open()
+  await screen.findByRole('heading', { name: 'Todos os projetos' })
+  expect(await main().findByText('Nenhum projeto ainda')).toBeTruthy()
+  expect(main().queryByRole('button', { name: /Novo projeto/ })).toBeNull()
 })

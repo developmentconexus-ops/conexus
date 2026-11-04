@@ -2,20 +2,31 @@ import type { CompanyId } from '@conexus/hub-api'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { dayOf } from '../../platform/dates.ts'
+import { Stamp } from '../../ui/block.tsx'
 import { Card } from '../../ui/card.tsx'
-import { Empty } from '../../ui/states.tsx'
-import { NO_PROJECTS } from './project-state.ts'
+import { NewProjectDialog } from './new-project-dialog.tsx'
+import {
+  ASK_ON_HOME,
+  NO_PROJECTS,
+  NO_PROJECTS_TITLE,
+  projectStateOf,
+  projectStateText,
+} from './project-state.ts'
 import { projectsQuery } from './queries.ts'
 
 /**
  * A page of the company's Projects as cards (design `project-card`): a preview band on top, which
  * holds the name's first letter until a Projeto has a picture of its app, then the name and the day
- * it was created, each opening its Projeto.
+ * it was created, each opening its Projeto, with its app's state in words.
  */
-export function ProjectCards(props: { companyId: CompanyId; page: string | undefined }) {
+export function ProjectCards(props: {
+  companyId: CompanyId
+  page: string | undefined
+  creates: boolean
+}) {
   const { companyId } = props
   const { projects } = useSuspenseQuery(projectsQuery(companyId, props.page)).data
-  if (projects.length === 0) return <Empty>{NO_PROJECTS}</Empty>
+  if (projects.length === 0) return <NoProjects companyId={companyId} creates={props.creates} />
   return (
     <ul className="grid gap-md sm:grid-cols-2 sm:gap-lg lg:grid-cols-3">
       {projects.map((project) => (
@@ -34,6 +45,9 @@ export function ProjectCards(props: { companyId: CompanyId; page: string | undef
               </span>
               <span className="flex min-w-0 flex-col gap-xs px-lg py-md">
                 <span className="truncate font-display text-title text-text">{project.name}</span>
+                <Stamp tone={projectStateOf(project).kind === 'PUBLISHED' ? 'success' : 'neutral'}>
+                  {projectStateText(projectStateOf(project))}
+                </Stamp>
                 <span className="text-label text-text-2">Criado em {dayOf(project.createdAt)}</span>
               </span>
             </Link>
@@ -41,5 +55,23 @@ export function ProjectCards(props: { companyId: CompanyId; page: string | undef
         </li>
       ))}
     </ul>
+  )
+}
+
+/** With no Projeto, a centred column of 448 at most: the sentence, "Novo projeto" for who may, and the way to Início. */
+function NoProjects(props: { companyId: CompanyId; creates: boolean }) {
+  return (
+    <div className="mx-auto flex w-full max-w-[28rem] flex-col items-center gap-md py-xl text-center">
+      <p className="font-display text-title">{NO_PROJECTS_TITLE}</p>
+      <p className="text-text-2">{NO_PROJECTS}</p>
+      {props.creates && <NewProjectDialog companyId={props.companyId} block />}
+      <Link
+        to="/companies/$companyId"
+        params={{ companyId: props.companyId }}
+        className="text-label text-text-2 hover:text-text"
+      >
+        {ASK_ON_HOME}
+      </Link>
+    </div>
   )
 }

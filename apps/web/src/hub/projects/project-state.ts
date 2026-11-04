@@ -18,6 +18,9 @@ export function projectStateOf(
 
 /** The sentence a list of Projetos says when it holds none. */
 export const NO_PROJECTS = 'Nenhum projeto ainda.'
+export const NO_PROJECTS_TITLE = 'Nenhum projeto ainda'
+export const PROJECTS_SENTENCE = 'Cada Projeto guarda um app, as conversas e as ligações dele.'
+export const ASK_ON_HOME = 'ou peça um app no Início'
 
 export function projectStateText(state: ProjectState): string {
   switch (state.kind) {
