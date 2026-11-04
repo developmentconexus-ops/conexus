@@ -1,8 +1,10 @@
 import type {
   AgentDetail,
   AgentId,
+  CompanyId,
   CreateAgent,
   DraftPatch,
+  ProjectId,
   Publish,
   ToolVersionId,
 } from '@conexus/hub-api'
@@ -42,6 +44,8 @@ import {
 import { agent, agentTool, agentVersion } from './tables.ts'
 
 export type AgentsDeps = Pick<ToolsDeps, 'database' | 'identity' | 'liveProjectOf'> & {
+  /** The ids of the company's live Projetos (`liveProjectIdsOf`). */
+  liveProjectIdsOf: (tx: ReadTx, companyId: CompanyId) => Promise<ProjectId[]>
   connectors: ToolConnectors
   /** Whether the model selector lists a model (`isChoosable`). */
   isChoosable: (model: string) => boolean
@@ -105,7 +109,8 @@ async function listCompany(deps: AgentsDeps, ids: Pick<InProject, 'companyId' | 
   const { companyId, personId } = ids
   return deps.database.read({ kind: 'COMPANY', companyId, personId }, async (tx) => {
     await deps.identity.admitMember({ tx, companyId, personId, action: 'readAgents' })
-    return listedOf(tx, await agentsOfCompany(tx, companyId))
+    const live = await deps.liveProjectIdsOf(tx, companyId)
+    return listedOf(tx, await agentsOfCompany(tx, companyId, live))
   })
 }
 

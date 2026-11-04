@@ -22,6 +22,7 @@ export const NEW_AGENT_WHERE = 'Em qual Projeto?'
 export const NO_PROJECTS_FOR_AGENT = 'Crie um Projeto primeiro: os agentes nascem num Projeto.'
 export const FILTER_PROJECT = 'Projeto'
 export const ALL_PROJECTS = 'Todos os Projetos'
+export const MORE_PROJECTS = 'Mais Projetos'
 
 /** The last published turn of an agent, at a row's second line. */
 export function lastRunText(lastRunAt: string | null, now: Date): string {

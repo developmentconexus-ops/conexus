@@ -21,7 +21,7 @@ import type { Connectors } from './hub/connectors/public.ts'
 import type { IdentityPorts } from './hub/identity/public.ts'
 import type { Notify } from './hub/notifications/public.ts'
 import type { ProjectPorts } from './hub/projects/public.ts'
-import { liveProjectOf, liveProjectsOf } from './hub/projects/public.ts'
+import { liveProjectIdsOf, liveProjectOf, liveProjectsOf } from './hub/projects/public.ts'
 import type { Config } from './platform/config.ts'
 import type { Database, MastraPool } from './platform/database.ts'
 import type { FailureLog } from './platform/failure.ts'
@@ -112,7 +112,8 @@ export function conversationsOf(deps: {
   // `Mastra`, made below: the connectors' door is reached when a route or a turn calls it.
   const appData = appDataOf(deps.apps)
   const agents = agentsAlive({
-    ...{ storage, database, identity, queue, liveProjectOf, isChoosable, log, connectors: door },
+    ...{ storage, database, identity, queue, liveProjectOf, liveProjectIdsOf, isChoosable, log },
+    connectors: door,
     speakersOf: (scope) => speakersOf({ database, identity, projects: { liveProjectOf } }, scope),
     appData,
     mastra: () => hub.mastra,

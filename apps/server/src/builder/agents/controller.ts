@@ -14,8 +14,9 @@ import { z } from 'zod'
 import type { Connectors, SessionScope } from '../../hub/connectors/public.ts'
 import type { IdentityPorts } from '../../hub/identity/public.ts'
 import type { Database } from '../../platform/database.ts'
+import { databaseFailure } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
-import { Failure } from '../../platform/failure.ts'
+import { Failure, logFailure } from '../../platform/failure.ts'
 import type { Speakers } from '../assistant/public.ts'
 import type { Owner, ReleaseScope } from '../controller-kit/public.ts'
 import {
@@ -105,8 +106,12 @@ async function markRun(database: Database, log: FailureLog, run: AgentRun): Prom
         .where(and(eq(agent.companyId, companyId), eq(agent.id, run.agentId))),
     )
   } catch (error) {
-    const reason = error instanceof Error ? error.name : 'UNKNOWN'
-    log.error({ companyId, agentId: run.agentId, reason }, 'AGENT_LAST_RUN_NOT_WRITTEN')
+    logFailure(
+      log,
+      databaseFailure(error),
+      { companyId, agentId: run.agentId },
+      'AGENT_LAST_RUN_NOT_WRITTEN',
+    )
   }
 }
 

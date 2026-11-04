@@ -19,7 +19,7 @@ const LONG = 'Conferente de metas com um nome bem comprido para a linha da lista
 
 function agent(n: number, fields: object = {}) {
   return {
-    id: `${n}`.repeat(8) + '-aaaa-4aaa-8aaa-' + `${n}`.repeat(12),
+    id: `${`${n}`.repeat(8)}-aaaa-4aaa-8aaa-${`${n}`.repeat(12)}`,
     projectId: PROJECT_ID,
     name: n === 1 ? LONG : `Agente ${n}`,
     description: 'Compara as vendas de ontem com as metas.',
@@ -77,6 +77,31 @@ for (const viewport of [DESKTOP, PHONE, ZOOMED_PHONE])
       assert.deepEqual(page.problems, [])
       await page.close()
     })
+
+for (const viewport of [PHONE, ZOOMED_PHONE])
+  test(`a última execução fica inteira na linha a ${viewport.width}px`, async () => {
+    const page = await harness.open(PATH, {
+      viewport,
+      replies: replies([agent(1, { lastRunAt: new Date(Date.now() - 180_000).toISOString() })]),
+    })
+    await page.getByText(/Última execução/).waitFor()
+    const seen = await page.evaluate(() => {
+      const last = [...document.querySelectorAll('main a[href*="/agents/"] span')].find(
+        (el) => el.children.length === 0 && el.textContent?.includes('Última execução'),
+      )
+      const row = last?.closest('a')
+      if (!last || !row) return undefined
+      const box = last.getBoundingClientRect()
+      const bounds = row.getBoundingClientRect()
+      return {
+        cut: last.scrollWidth > last.clientWidth,
+        inside: box.left >= bounds.left && box.right <= bounds.right,
+        shown: getComputedStyle(last).overflow === 'visible',
+      }
+    })
+    assert.deepEqual(seen, { cut: false, inside: true, shown: true })
+    await page.close()
+  })
 
 test('sem agentes, a frase de que eles nascem num Projeto', async () => {
   const page = await harness.open(PATH, { viewport: PHONE, replies: replies([]) })

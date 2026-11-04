@@ -33,10 +33,12 @@ test('a página lista os agentes de todos os Projetos com o Projeto, o estado e 
   expect(link.getAttribute('href')).toBe(
     `/companies/${COMPANY.id}/projects/${ESTOQUE.id}/agents/${OTHER_AGENT}`,
   )
-  expect(await within(link).findByText(/Estoque · Última execução: 3 min/)).toBeTruthy()
+  expect(await within(link).findByText('Estoque')).toBeTruthy()
+  expect(within(link).getByText(/Última execução: 3 min/)).toBeTruthy()
   expect(within(link).getByText('Versão 2 · publicada')).toBeTruthy()
   const here = screen.getByRole('link', { name: /Conferente de metas/ })
-  expect(await within(here).findByText(/Pedidos · Nunca rodou/)).toBeTruthy()
+  expect(await within(here).findByText('Pedidos')).toBeTruthy()
+  expect(within(here).getByText(/Nunca rodou/)).toBeTruthy()
   expect(within(here).getByText('Rascunho')).toBeTruthy()
   expect(screen.queryByRole('button', { name: /Publicar|Apagar|Salvar/ })).toBeNull()
 })

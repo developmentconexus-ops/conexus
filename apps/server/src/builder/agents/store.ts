@@ -6,6 +6,7 @@ import type {
   AgentVersionSummary,
   CompanyId,
   OfProject,
+  ProjectId,
   ToolId,
 } from '@conexus/hub-api'
 import {
@@ -16,9 +17,8 @@ import {
   ToolId as ToolIdSchema,
   ToolVersionId,
 } from '@conexus/hub-api'
-import { and, asc, count, desc, eq, inArray, isNull, sql } from 'drizzle-orm'
+import { and, asc, count, desc, eq, inArray, sql } from 'drizzle-orm'
 import { personNameColumn } from '../../hub/identity/public.ts'
-import { project } from '../../hub/projects/public.ts'
 import type { ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { InProject, OfferedConnection, UsedBy } from '../tools/public.ts'
@@ -68,14 +68,10 @@ export function agentsIn(tx: ReadTx, ids: OfProject) {
     .orderBy(asc(agent.createdAt), asc(agent.id))
 }
 
-/** The agents of every live Projeto of the company: none of a Projeto being deleted. */
-export function agentsOfCompany(tx: ReadTx, companyId: CompanyId) {
+/** The agents of the company's live Projetos, as Projetos reads them: none of one being deleted. */
+export function agentsOfCompany(tx: ReadTx, companyId: CompanyId, live: readonly ProjectId[]) {
   return withActive(tx)
-    .innerJoin(
-      project,
-      and(eq(project.companyId, agent.companyId), eq(project.id, agent.projectId)),
-    )
-    .where(and(eq(agent.companyId, companyId), isNull(project.deletingSince)))
+    .where(and(eq(agent.companyId, companyId), inArray(agent.projectId, [...live])))
     .orderBy(asc(agent.createdAt), asc(agent.id))
 }
 
