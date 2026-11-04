@@ -5,7 +5,7 @@ import { setTimeout as sleep } from 'node:timers/promises'
 import { HandedOff } from '@conexus/hub-api'
 import { post } from '../../hub/identity/test-hub.ts'
 import { endOf, messagesOf } from '../conversation/test-conversation.ts'
-import { tool } from '../conversation/test-questions.ts'
+import { stepping, tool } from '../conversation/test-questions.ts'
 import { assisting, created, said, talking } from './test-assistant.ts'
 
 const APP = 'propose_app'
@@ -40,12 +40,24 @@ async function proposing(
   t: Parameters<typeof assisting>[0],
   name: string,
   place: (on: On) => object = (on) => ({ connections: [on.matriz, on.filial] }),
+  builder?: Promise<void>,
 ) {
-  const on = await assisting(t, [
+  const steps = [
     [write('briefing.md', BRIEFING)],
     [tool(name, { summary: SUMMARY, briefing: 'briefing.md' })],
     [said('Toque o botão.')],
-  ])
+  ]
+  const assistant = stepping(steps, [])
+  // The Builder's turn on the hand-off held until `builder` settles, when one is given.
+  const on = await assisting(
+    t,
+    builder === undefined
+      ? steps
+      : (asked) =>
+          asked.stream && asked.texts.join('\n').includes('[File: briefing.md]')
+            ? { kind: 'hold', until: builder }
+            : assistant(asked),
+  )
   const url = await created(on.hub, on.ana, on.assistant, place(on))
   const { say } = await talking(t, on.hub, on.ana, url)
   assert.equal(endOf(await say('Quero um app de compras')), 'complete')
@@ -101,6 +113,20 @@ test('a entrega: o toque cria o Projeto, libera só a ligação marcada, abre um
   assert.match(read ?? '', /source="assistant"/)
   assert.ok(read?.includes(`assistantConversation="${url.split('/').at(-1)}"`), read)
   assert.ok(read?.includes(BRIEFING), 'the briefing whole, fenced as a file')
+})
+
+test('a conversa do Builder que o toque abre já tem o pedido do Assistente quando a rota responde, com o turno do Builder ainda no meio', async (t) => {
+  const { promise: held, resolve: free } = Promise.withResolvers<void>()
+  t.after(free)
+  const { on, url, toolCallId } = await proposing(t, APP, undefined, held)
+  const body = { toolCallId, projectName: 'Compras', connections: [] }
+  const touched = await post(on.hub, on.ana, `${url}/handoffs`, body, randomUUID())
+  assert.equal(touched.statusCode, 201, touched.body)
+  const handed = HandedOff.parse(touched.json())
+  const builder = `${on.company}/projects/${handed.projectId}/conversations/${handed.conversationId}`
+  const asked = (await messagesOf(on.hub, on.ana, builder)).filter((each) => each.role === 'person')
+  assert.equal(asked.length, 1, 'the signal stored before the answer')
+  assert.ok(JSON.stringify(asked[0]?.parts).includes(SUMMARY))
 })
 
 test('o toque repetido: a mesma chave devolve o mesmo Projeto e a mesma conversa, e o sinal sai uma vez (8)', async (t) => {
