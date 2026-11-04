@@ -253,7 +253,7 @@ export function AppProposalCard(props: CardProps) {
   const { made } = handOff
   return (
     <Card>
-      <CardContent className="flex flex-col gap-sm">
+      <CardContent className="flex w-full flex-col gap-sm">
         <p className="whitespace-pre-wrap break-words text-text">{proposed.summary}</p>
         {proposed.briefing !== undefined && <Briefing briefing={proposed.briefing} />}
       </CardContent>
