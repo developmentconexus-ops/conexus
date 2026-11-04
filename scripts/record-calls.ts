@@ -2,7 +2,7 @@ import type { Block } from '../apps/server/src/platform/test-anthropic-stream.ts
 
 // What the model does in the `tasks`, `reads` and `handoff` scenarios of `scripts/record.ts`: invented prompts and calls (security S40).
 export const TASKS_PROMPT = 'Monte um app de encomendas para uma padaria inventada, por tarefas.'
-export const PLANNED = [
+const PLANNED = [
   { id: '1', content: 'Montar a tabela', activeForm: 'Montando a tabela', status: 'in_progress' },
   { id: '2', content: 'Fazer a tela', activeForm: 'Fazendo a tela', status: 'pending' },
   { id: '3', content: 'Conferir o app', activeForm: 'Conferindo o app', status: 'pending' },
@@ -16,7 +16,7 @@ export const TASKS_CALLS: Block[][] = [
 ]
 
 export const READS_PROMPT = 'Quanto a Padaria Sol vendeu em setembro de 2026 por vendedor?'
-export const SOLD_BY_SELLER =
+const SOLD_BY_SELLER =
   "SELECT V.APELIDO, ROUND(SUM(I.VLRTOT), 2) AS TOTAL FROM TGFCAB C JOIN TGFITE I ON I.NUNOTA = C.NUNOTA JOIN TGFVEN V ON V.CODVEND = C.CODVEND WHERE C.DTNEG BETWEEN '2026-09-01' AND '2026-09-30' GROUP BY V.APELIDO ORDER BY TOTAL DESC"
 /** What the model does in the `reads` scenario: read the Matriz by seller, then answer with what it read. */
 export const READS_CALLS: Block[][] = [
@@ -38,7 +38,7 @@ export const READS_CALLS: Block[][] = [
     },
   ],
 ]
-export const HANDOFF_PROMPT = 'Monte um app de encomendas para uma padaria inventada.'
+const HANDOFF_PROMPT = 'Monte um app de encomendas para uma padaria inventada.'
 /** The signal the Assistant's handoff sends (`builder/assistant/handoff.ts`): the person's words, marked as the Assistant's. */
 export const HANDOFF_SIGNAL = {
   type: 'user',

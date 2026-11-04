@@ -24,7 +24,7 @@ export type Message = {
 }
 
 /** The sources a signal's `attributes.source` can name that the transcript marks. */
-export type Origin = 'assistant'
+type Origin = 'assistant'
 
 /** Mastra's message as the stream and the transcript route carry it, after JSON. */
 export type Stored = {
