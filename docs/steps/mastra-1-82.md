@@ -66,6 +66,7 @@ lockfile e sem os documentos. Total da etapa: 50.
 | 6 | U1 | Um só `e2b` instalado: o pin do Conexus satisfaz o `^2.62.0` do `@mastra/e2b` 0.16.1, e o lockfile não tem `node_modules/@mastra/e2b/node_modules/e2b` | `npm ls e2b` mostra uma versão só | must |
 | 7 | U1 | Nenhuma versão velha escrita: `npm run boundaries` passa, `npm run typecheck`, `npm run lint` e `npm run knip` passam | CI, o job `check` | must |
 | 8 | U1 | Desligar no meio de um turno guarda o texto antes de fechar o stream; o caso deixa de ser `todo` se passar três vezes seguidas | `builder/conversation/conversation-stream.test.ts`, "desligar para o turno em curso como Parar…" | should |
+| 9 | U1 | Com uma automação para as 07:00, o banco do Mastra dorme: o pool chega a zero e a agenda não é lida; uma automação nova para o minuto seguinte acorda o agendador e dispara; um Hub novo acha a guardada e liga a agenda. Recusa de hoje: na 1.79.0 o pool nunca chega a zero | `builder/automations/scheduler.test.ts`, "a primeira automação liga a agenda, que dorme até o próximo disparo…" | must |
 
 ## A matriz de estados
 
@@ -88,7 +89,7 @@ Nenhuma tela nova nem mudada. O cartão fechado por Parar é o estado `denied` d
 | Peça | Unidade | Hoje no main | Referência | Como a referência faz | Veredito | Prova, se não for nativo | Palavra do fundador | Arquivo novo |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | As versões alvo | U1 | `@mastra/core` 1.79.0, `server` 1.79.0, `fastify` 1.5.23, `memory` 1.39.0, `pg` 1.32.0, `e2b` 0.15.0, `evals` 1.10.8, `client-js` 1.56.0 (`apps/server/package.json:25-30,45`, `package.json:44-45`, `packages/app/package.json:30`, `apps/web/package.json:36`) | npm, as versões estáveis mais novas, saídas juntas em 2026-11-03 e 04 | `core` 1.82.0, `server` 1.82.0, `fastify` 1.5.26, `memory` 1.41.0, `pg` 1.35.0, `e2b` 0.16.1, `evals` 1.10.11, `client-js` 1.59.0; cada um pede `@mastra/core >=1.80.0` (o `client-js` traz o `core` 1.82.0 exato) | nativo | — | não precisa | — |
-| Parar logo depois do cartão | U1 | sem conserto desde #686; `approvals.md:590` | `@mastra/core` 1.81.0, PR #28839 (commit `8b781d03`) | o evento da suspensão sai só depois de a chamada estar gravada | nativo | — | 2026-11-04 | — (o caso volta a `conversation-waiting.test.ts`) |
+| Parar logo depois do cartão | U1 | sem conserto desde #686; `approvals.md:594` | `@mastra/core` 1.81.0, PR #28839 (commit `8b781d03`) | o evento da suspensão sai só depois de a chamada estar gravada | nativo | — | 2026-11-04 | — (o caso volta a `conversation-waiting.test.ts`) |
 | A chamada sem argumentos | U1 | `model-accounts/tool-call-input.ts` (todo), `model-accounts/processors.ts:29,399-401` | `@mastra/core` 1.80.0, PR #28332; `dist/stream-GSsXnWy3.js:1195-1207` (`tool-call-empty-input`, em `DEFAULT_COMPAT_RULES`) | manda `{}` no lugar de uma entrada que falta ou é `null`, só no pedido; a mensagem guardada fica igual. É a nossa regra, linha por linha | nativo; a nossa sai | — | não precisa | — |
 | O `e2b` do Conexus | U1 | `e2b` 2.56.0 em `apps/server/package.json:37` (`machine/e2b.ts:3`) e `package.json:51` (`infra/e2b/template.ts:11`) | `@mastra/e2b` 0.16.1 pede `e2b ^2.62.0` | com o pin de hoje, o npm instala uma segunda cópia (2.63.0) dentro do `@mastra/e2b` | nativo | — | não precisa | — |
 | As tabelas do Knowledge | U1 | o Conexus não usa Knowledge; `conversation/storage.ts:10` (`PostgresStore`, `schemaName: 'mastra'`) | `@mastra/pg` 1.35.0 `dist/index.js:10059-10071` (`legacyKnowledgeTablesToDrop`; o changelog só diz "Changes to an experimental, upcoming memory feature") | apaga as tabelas do Knowledge antigo, se existirem, e cria as novas só quando o Knowledge é usado | nativo | medido: o `init()` da 1.32.0 e da 1.35.0 não cria nenhuma `mastra_knowledge_*`; o banco atualizado é igual ao novo | não precisa | — |
@@ -105,6 +106,7 @@ Nenhuma tela nova nem mudada. O cartão fechado por Parar é o estado `denied` d
 | A busca na lista (`boundaries.md` "the list of conversations narrowed by title and place") | U1 | `assistant/search.ts` `listedPage` | `@mastra/core` 1.82.0 `dist/storage/types.d.ts:183-209` | `listThreads` ainda filtra só por `resourceId` e metadados iguais | remendo, fica; muda a versão | `list-search.test.ts` passa na 1.82.0 | não precisa | — |
 | Os dois comentários com versão no código | U1 | `builder/mastra/mastra.ts:29` (o logger dos domínios do store), `model-accounts/providers.ts:14` (o que um modelo produz) | `@mastra/core` 1.82.0 | a reler no passo 4 da U1 | remendo, a reler: fica com a versão nova, ou sai se o Mastra já faz (C75) | a releitura em `@mastra/core` 1.82.0, passo 4 | não precisa | — |
 | A linha do Mastra em `stack.md` e a prateleira | U1 | `docs/reference/stack.md:15,20` ("we pin 1.79.0") | a regra da própria linha 15 | o pull request que troca o pin troca a prateleira e esta linha | nativo | — | não precisa | — |
+| O agendador dorme até o próximo disparo (emenda de 2026-11-04) | U1 | a D27 (`docs/guides/data.md:84-88`, "it reads its table on every tick (10 s)"), `docs/architecture.md:20-21`, `automations/scheduler.test.ts` (o pool nunca chega a zero), `mastra/hub-mastra.ts:93` | `@mastra/core` 1.82.0 `dist/scheduler-Me4rCjO2.js:160-180` (`#nextDelay`), `wake()` em `:117-126`, chamado em `dist/mastra-D4MXu5BN.js:1535,4398` | lê a tabela na partida, quando uma agenda é criada, retomada ou adiantada, e a cada disparo; entre um e outro dorme até o mais cedo, sem timer quando não há nenhum | nativo | — | 2026-11-04: "A" | — (o segundo caso de `scheduler.test.ts` muda) |
 
 As linhas `remendo` já estão em `docs/reference/boundaries.md`, cada uma com a palavra da etapa em
 que entrou. Nenhuma é nova nesta etapa, e uma encolhe.
@@ -134,7 +136,9 @@ Todas as linhas da tabela de referência.
 | `package.json`, `package-lock.json`, `apps/server/package.json`, `apps/web/package.json`, `packages/app/package.json` | Muda os pins do Mastra e do `e2b` | todo o repositório |
 | `apps/server/src/builder/model-accounts/` | Apaga `tool-call-input.ts`; muda `processors.ts` (`stabilityProcessors` deixa o `ProviderHistoryCompat` como o Mastra o dá); `processors.test.ts` fica sem mudança, porque confere só a instância | `controller-kit/factories.ts` e os controladores |
 | `apps/server/src/builder/conversation/` | Muda `conversation-waiting.test.ts`, `conversation-stream.test.ts` | — |
-| `apps/server/src/builder/mastra/` | Muda ou apaga o comentário de `mastra.ts:29` | `builder/mastra/` |
+| `apps/server/src/builder/mastra/` | Muda ou apaga o comentário de `mastra.ts:29`; muda o de `hub-mastra.ts:93` | `builder/mastra/` |
+| `apps/server/src/builder/automations/` | Muda o segundo caso de `scheduler.test.ts` | — |
+| `docs/guides/data.md` (D27), `docs/architecture.md` | Reescreve a exceção do agendador | quem lê a regra do banco que dorme |
 | `docs/reference/boundaries.md`, `docs/reference/stack.md` | Muda as seções da tabela | quem lê o limite |
 | A prateleira de referência `mastra-1.82` | Cria, fora do repositório: é a cópia local do Mastra na tag que `stack.md:12` manda ler; o firstmate a monta | quem estuda o Mastra |
 
