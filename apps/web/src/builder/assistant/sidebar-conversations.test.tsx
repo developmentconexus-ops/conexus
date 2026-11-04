@@ -269,3 +269,51 @@ test('apagar a conversa aberta leva a uma conversa nova mesmo com uma leitura re
     release()
   }
 })
+
+function heldReloads() {
+  let reads = 0
+  let release: () => void = () => undefined
+  const held = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  return {
+    release: () => release(),
+    // The first read is the screen's own; the ones after the delete are the cache's reload.
+    list: async () => {
+      reads += 1
+      if (reads > 1) await held
+      return undefined
+    },
+  }
+}
+
+test('apagar fecha a confirmação ao apagar, sem esperar a lista recarregar', async () => {
+  const reload = heldReloads()
+  at(COMPANY_ROOT, { conversations: fresh(), answers: { list: reload.list } })
+  await menuOf('De hoje')
+  fireEvent.click(await screen.findByRole('menuitem', { name: 'Apagar' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Apagar conversa' }))
+  try {
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull())
+  } finally {
+    reload.release()
+  }
+})
+
+test('apagar a conversa aberta que já foi leva a uma conversa nova mesmo com a lista recarregada ainda no ar', async () => {
+  const reload = heldReloads()
+  const { conexus } = at(`${COMPANY_ROOT}/conversations/${BY_DAY[0]?.conversation.id}`, {
+    conversations: fresh(),
+    answers: { list: reload.list, remove: () => refusal('CONVERSATION_NOT_FOUND') },
+  })
+  await menuOf('De hoje')
+  fireEvent.click(await screen.findByRole('menuitem', { name: 'Apagar' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Apagar conversa' }))
+  try {
+    await waitFor(() => expect(conexus.router.state.location.pathname).toBe(COMPANY_ROOT))
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull())
+    expect(screen.queryByText('Esta conversa não existe mais.')).toBeNull()
+  } finally {
+    reload.release()
+  }
+})

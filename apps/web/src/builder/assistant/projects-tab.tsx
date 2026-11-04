@@ -10,7 +10,7 @@ import { ReadFailure } from '../../ui/states.tsx'
 import { ConversationRow } from './conversation-row.tsx'
 import { narrowedBy } from './list-view.ts'
 import { assistantConversationsQuery } from './queries.ts'
-import { NO_PROJECT_CONVERSATION, SEE_ALL, WITHOUT_PROJECT } from './text.ts'
+import { NO_CONVERSATION_FOUND, NO_PROJECT_CONVERSATION, SEE_ALL, WITHOUT_PROJECT } from './text.ts'
 
 /** The newest conversations a group shows before "Ver todas". */
 const SHOWN = 5
@@ -19,10 +19,12 @@ function Group(props: {
   companyId: CompanyId
   name: string
   project: ProjectSummary['id'] | undefined
+  q: string | undefined
 }) {
   const narrowed = props.project === undefined ? narrowedBy('HOME') : narrowedBy(props.project)
   const read = useQuery(
     assistantConversationsQuery(props.companyId, narrowed.projectId, undefined, {
+      q: props.q,
       place: narrowed.place,
     }),
   )
@@ -42,7 +44,9 @@ function Group(props: {
           <ReadFailure text={sentenceOf(read.error)} onRetry={() => void read.refetch()} />
         )}
         {read.data !== undefined && read.data.conversations.length === 0 && (
-          <p className="px-sm text-fact text-text-2">{NO_PROJECT_CONVERSATION}</p>
+          <p className="px-sm text-fact text-text-2">
+            {props.q === undefined ? NO_PROJECT_CONVERSATION : NO_CONVERSATION_FOUND}
+          </p>
         )}
         {read.data !== undefined && read.data.conversations.length > 0 && (
           <SidebarMenu>
@@ -57,10 +61,10 @@ function Group(props: {
             ))}
           </SidebarMenu>
         )}
-        {props.project !== undefined && (read.data?.conversations.length ?? 0) > SHOWN && (
+        {(read.data?.conversations.length ?? 0) > SHOWN && (
           <Link
             to="."
-            search={(old) => ({ ...old, place: props.project, tab: undefined })}
+            search={(old) => ({ ...old, place: props.project ?? 'HOME', tab: undefined })}
             replace
             state={{ keepDrawer: true }}
             className="px-sm text-fact text-text-2"
@@ -74,7 +78,7 @@ function Group(props: {
 }
 
 /** The Projetos tab: a group for each live Projeto with its newest conversations, and "Sem Projeto" last. */
-export function ProjectsTab({ companyId }: { companyId: CompanyId }) {
+export function ProjectsTab({ companyId, q }: { companyId: CompanyId; q: string | undefined }) {
   const projects = useQuery(projectsQuery(companyId, undefined))
   if (projects.isPending) return <SidebarMenuSkeleton />
   if (projects.isError) {
@@ -83,9 +87,15 @@ export function ProjectsTab({ companyId }: { companyId: CompanyId }) {
   return (
     <div className="flex flex-col">
       {projects.data.projects.map((project) => (
-        <Group key={project.id} companyId={companyId} name={project.name} project={project.id} />
+        <Group
+          key={project.id}
+          companyId={companyId}
+          name={project.name}
+          project={project.id}
+          q={q}
+        />
       ))}
-      <Group companyId={companyId} name={WITHOUT_PROJECT} project={undefined} />
+      <Group companyId={companyId} name={WITHOUT_PROJECT} project={undefined} q={q} />
     </div>
   )
 }

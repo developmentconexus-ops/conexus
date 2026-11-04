@@ -97,6 +97,7 @@ function DeleteConfirm(
   // The open conversation goes to a new one before the cache refreshes: the mutation's own
   // `onSuccess` runs ahead of the cache's `onSettled`, whose reload would show the deleted one "not found".
   function leave() {
+    props.onDone()
     if (openId === conversation.id) {
       return navigate({ to: '/companies/$companyId', params: { companyId } })
     }
@@ -111,12 +112,8 @@ function DeleteConfirm(
     try {
       await send.mutateAsync({ params: { companyId, conversationId: conversation.id } })
     } catch (error) {
-      if (!isGone(error)) {
-        setRefusal(writeFailureText(error, UNCONFIRMED_WRITE))
-        return
-      }
+      if (!isGone(error)) setRefusal(writeFailureText(error, UNCONFIRMED_WRITE))
     }
-    props.onDone()
   }
   return (
     <>

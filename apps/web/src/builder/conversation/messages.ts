@@ -24,7 +24,7 @@ export type Message = {
 }
 
 /** The sources a signal's `attributes.source` can name that the transcript marks. */
-type Origin = 'assistant'
+type Origin = z.infer<typeof Sourced>['signal']['attributes']['source']
 
 /** Mastra's message as the stream and the transcript route carry it, after JSON. */
 export type Stored = {
@@ -36,7 +36,9 @@ export type Stored = {
 
 const Answered = z.object({ modelId: z.string().min(1), provider: z.string().min(1) })
 const PersonSignal = z.object({ signal: z.object({ type: z.literal('user') }) })
-const Sourced = z.object({ attributes: z.object({ source: z.literal('assistant') }) })
+const Sourced = z.object({
+  signal: z.object({ attributes: z.object({ source: z.literal('assistant') }) }),
+})
 /** What Mastra's controller puts in the part of a message the person sent into the running run. */
 const USER_MESSAGE_PART = 'data-user-message'
 const UserContent = z.union([
@@ -79,16 +81,9 @@ function userText(part: MastraMessagePart): MastraMessagePart[] {
   })
 }
 
-/** The origin the signal carries: stored as `metadata.signal`, live as the `data` of the user-message part. */
+/** The origin the signal carries: Mastra puts `metadata.signal` on the stored message and on the live one. */
 function originOf(message: Stored): Origin | null {
-  const stored = z.object({ signal: Sourced }).safeParse(message.content.metadata)
-  if (stored.success) return stored.data.signal.attributes.source
-  for (const part of message.content.parts) {
-    if (part.type !== USER_MESSAGE_PART || !('data' in part)) continue
-    const live = Sourced.safeParse(part.data)
-    if (live.success) return live.data.attributes.source
-  }
-  return null
+  return Sourced.safeParse(message.content.metadata).data?.signal.attributes.source ?? null
 }
 
 function isPersonSignal(message: Stored): boolean {

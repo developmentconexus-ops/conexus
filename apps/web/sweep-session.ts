@@ -1,5 +1,6 @@
 import { BUILDER_CONTROLLER, BUILDER_ROUTES } from '@conexus/hub-api'
 import type { Replies } from './layout-harness.ts'
+import type { Message } from './src/builder/conversation/messages.ts'
 
 /** A message as the sweep writes it: whose, its parts, and the model that answered. */
 export type Said = {
@@ -8,7 +9,7 @@ export type Said = {
   parts: readonly unknown[]
   model?: string | null
   /** A request the Assistant handed over: Mastra stores it as a signal marked with its source. */
-  origin?: 'assistant' | null
+  origin?: Message['origin']
   createdAt: string
 }
 

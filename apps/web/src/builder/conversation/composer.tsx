@@ -30,11 +30,18 @@ import { useRoom } from './room.ts'
 import { dictationText, NO_SECRETS, REFUSALS, steerPlaceholderText } from './text.ts'
 
 /**
- * The form sticks to the bottom and clears the home indicator. Its band takes `--ground`, the
- * ground of the frame it sits in (surface unless the frame says otherwise, like the welcome's canvas).
+ * Where the box sits: `docked` at the bottom of a conversation, `inline` in the flow of a page
+ * (the Início's start box). Only a docked form sticks and clears the home indicator: in the flow, an
+ * inset that changes as the browser's toolbar collapses would push everything below the box.
  */
-const FORM =
-  '@container sticky bottom-0 flex flex-col gap-xs bg-(--ground,var(--color-surface)) pb-[max(0.5rem,env(safe-area-inset-bottom))]'
+export type ComposerPlacement = 'docked' | 'inline'
+
+/** Its band takes `--ground`, the ground of the frame it sits in (surface unless the frame says otherwise, like the welcome's canvas). */
+const FORM_BASE = '@container flex flex-col gap-xs bg-(--ground,var(--color-surface))'
+const FORM: Record<ComposerPlacement, string> = {
+  docked: `${FORM_BASE} sticky bottom-0 pb-[max(0.5rem,env(safe-area-inset-bottom))]`,
+  inline: `${FORM_BASE} pb-sm`,
+}
 
 /** A finger's keyboard has a Return that means a new line; the button is what sends. */
 function isTouch(): boolean {
@@ -229,6 +236,7 @@ function Subject() {
  * computer, one small line says not to paste secrets (founder, 2026-10-26).
  */
 export function Composer(props: {
+  placement: ComposerPlacement
   answering: boolean
   canSend: boolean
   draft: Draft
@@ -291,7 +299,7 @@ export function Composer(props: {
   }
 
   return (
-    <form onSubmit={submit} {...droppedOn(addFiles)} className={FORM}>
+    <form onSubmit={submit} {...droppedOn(addFiles)} className={FORM[props.placement]}>
       {props.taskPanel}
       {props.notice}
       <Refused phrase={phrase} />
