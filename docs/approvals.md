@@ -543,6 +543,8 @@ Em 2026-11-03, com a captura do Hub ao vivo (v0.24.8) em que a coluna do Início
 
 Cartão curto "Atualização do Mastra: de 1.79.0 para 1.82.0" (`docs/steps/mastra-1-82.md`) aprovado em 2026-11-04 (commit 16755e87057614f9433fb4d020e54f71c4e4ddd8), na página do fundador: "Aprovo". Lido pelo firstmate como a aprovação da página do cartão, com a sua única unidade U1, sem decisão aberta do fundador.
 
+Em 2026-11-04, sobre as quatro conversas (Builder, Construtor, Assistente e agentes) e o que cada uma tem: "o construtor tem cartão, mas não tem painel de tarefas. Por que que ele não tem? Com certeza ele tem que ter o task list." E, às decisões `D1` a `D3` do estudo: "`D1`. Okay / `D2`. Não precisa mexer nisso por agora, automação vai funcionar diferente mais pra frente / `D3`. Deixa como está, por agora". Lido pelo firstmate como: o Construtor ganha a lista de tarefas; o Assistente ganha o cartão de pergunta e a lista de tarefas, sem o cartão do plano (quem aprova o plano de um app é o Builder); as automações e os agentes do Projeto ficam como estão; o dono de "esta conversa pergunta e tem tarefas" continua sendo a lista de ferramentas de cada modo.
+
 ## Etapa 24.3
 
 Em 2026-11-02, à pergunta A do cartão da 24.3 (a entrada Agentes para o membro, contra a regra W34 do guia da web): "3.A". **Agentes** some para o membro, como **Automações** pela resposta "1 A" de 2026-11-01; a exceção da W34 que o fechamento da 24.2 escreve nomeia as duas entradas. Palavra antes da aprovação do cartão, que ainda espera a decisão B.

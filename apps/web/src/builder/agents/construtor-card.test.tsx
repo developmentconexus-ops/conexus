@@ -4,7 +4,9 @@ import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { hubServer } from '../../platform/test-hub.tsx'
 import { SANKHYA, toolSaid } from '../assistant/test-hub.tsx'
+import { AGENT_START } from '../conversation/test-events.ts'
 import { onPhone } from '../conversation/test-hub.tsx'
+import { recordedEvent, TaskUpdated } from '../conversation/test-recorded.ts'
 import { displayOf, parkedOf } from '../conversation/test-stream.tsx'
 import { AREA, BUILDER_CHAT } from './test-agents.ts'
 import { agentScreens } from './test-hub.tsx'
@@ -102,4 +104,15 @@ test('uma pergunta que a pessoa parou diz "Você parou o Construtor."', async ()
   stored('Aborted by the user')
   fireEvent.click(await screen.findByRole('button', { name: /sem resposta/ }))
   expect(await screen.findByText('Você parou o Construtor.')).toBeTruthy()
+})
+
+test('a conversa do Construtor que recebe tarefas mostra o painel de tarefas', async () => {
+  const opened = open()
+  stored()
+  await screen.findByRole('textbox', { name: 'Mensagem para o Construtor' })
+  await waitFor(() => expect(opened.lines.length).toBeGreaterThan(0))
+  const line = opened.lines.at(-1)
+  line?.emit(AGENT_START)
+  line?.emit(recordedEvent('tasks', TaskUpdated, (event) => event.tasks.length === 3))
+  expect(await screen.findByRole('region', { name: 'Painel de tarefas' })).toBeTruthy()
 })
