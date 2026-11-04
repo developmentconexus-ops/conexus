@@ -62,17 +62,30 @@ test('sem automação, a agenda não liga: nenhum trabalhador scheduler, nenhuma
   assert.equal(await scheduleReads(on.hub), reads)
 })
 
-test('a primeira automação liga a agenda, e o pool do Mastra nunca chega a zero; com uma guardada, a partida a acha e liga', {
-  timeout: 90_000,
+/** The São Paulo minute at least ten seconds from now, as a cadence's `time` names it. */
+function comingMinute(): string {
+  const at = new Date(Date.now() + 70_000)
+  return new Intl.DateTimeFormat('pt-BR', {
+    ...{ timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' },
+  }).format(at)
+}
+
+test('a primeira automação liga a agenda, que dorme até o próximo disparo: o pool do Mastra chega a zero, uma automação nova a acorda e dispara, e uma guardada é achada na partida', {
+  timeout: 180_000,
 }, async (t) => {
   const on = await automating(t)
   await created(on.hub, on.ana, on.automations, salesSummary([]))
   assert.equal(on.hub.mastra.getWorker('scheduler')?.isRunning, true)
-  const deadline = Date.now() + QUIET_MS
-  while (Date.now() < deadline) {
-    assert.ok((await mastraOpen(on.hub)) > 0, 'the scheduler holds a connection')
-    await sleep(1_000)
-  }
+  await sleep(QUIET_MS)
+  assert.equal(await mastraOpen(on.hub), 0)
+  const asleep = await scheduleReads(on.hub)
+  await sleep(SETTLE_MS)
+  assert.equal(await scheduleReads(on.hub), asleep, 'no read while it sleeps until 07:00')
+
+  const cadence = { kind: 'DAILY', time: comingMinute() }
+  const soon = await created(on.hub, on.ana, on.automations, salesSummary([], { cadence }))
+  const fired = await ended(on.hub, on.ana, `${on.automations}/${soon.id}`)
+  assert.equal(fired.trigger, 'SCHEDULED')
   const later = await hubBeside(t, on.hub)
   assert.equal(later.mastra.getWorker('scheduler')?.isRunning, true)
 })
