@@ -185,3 +185,23 @@ test('o aviso dito ao vivo e depois guardado na resposta aparece uma vez', async
   await waitFor(() => expect(log.getAttribute('aria-busy')).toBe('false'))
   await waitFor(() => expect(within(log).getAllByText(EXHAUSTED)).toHaveLength(1))
 })
+
+test('o aviso ao vivo de um turno cuja releitura do fim chegou antes da gravação aparece uma vez depois do turno seguinte', async () => {
+  const { line, shown, log, field, sent } = await running()
+  line().emit({ type: 'info', message: EXHAUSTED })
+  line().emit(agentEnd('error'))
+  await waitFor(() => expect(log.getAttribute('aria-busy')).toBe('false'))
+  expect(within(log).getAllByText(EXHAUSTED)).toHaveLength(1)
+  shown.conversations[0]?.messages.push(
+    ours({ type: 'data-conexus-notice', data: { text: EXHAUSTED } }),
+  )
+  say(field, 'De novo')
+  await waitFor(() => expect(sent).toHaveLength(2))
+  line().emit(AGENT_START)
+  line().emit(RUNNING)
+  line().emit(signalStarted(shown.conversations[0]?.messages.at(-1)?.id ?? '', 'De novo'))
+  shown.conversations[0]?.messages.push(builderSaid('Agora foi.', 'ours-2'))
+  line().emit(agentEnd())
+  await within(log).findByText('Agora foi.')
+  expect(within(log).getAllByText(EXHAUSTED)).toHaveLength(1)
+})
