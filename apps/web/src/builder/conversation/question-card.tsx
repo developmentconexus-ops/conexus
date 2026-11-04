@@ -1,10 +1,9 @@
 import type { Answer, Question } from '@conexus/hub-api'
-import { BUILDER_CONTROLLER, ToolCallId } from '@conexus/hub-api'
+import { ToolCallId } from '@conexus/hub-api'
 import type { PlanResume } from '@mastra/client-js'
-import { getRouteApi } from '@tanstack/react-router'
 import { MessageCircleQuestionIcon } from 'lucide-react'
 import type { SubmitEvent } from 'react'
-import { useMemo, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { ConexusMark } from '../../brand/mark.tsx'
 import { sentenceOfCode, writeFailureText } from '../../platform/hub.ts'
 import { Alert } from '../../ui/alert.tsx'
@@ -31,19 +30,14 @@ import {
   TraceTitle,
 } from '../../ui/trace.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
+import { useAnswerTo, useRoom } from './room.ts'
 import type { QuestionCardItem } from './rows.ts'
-import { sessionOf } from './session.ts'
-
-const route = getRouteApi(
-  '/_app/companies/$companyId/projects/$projectId/conversations/$conversationId',
-)
 
 /** The card's words, from the state matrix of step 14's card. */
 export const CARD_TEXT = {
   sending: 'Enviando…',
   unsent: 'Não foi possível enviar. Tente de novo.',
   other: 'outra resposta…',
-  stopped: 'Você parou o Builder.',
 }
 
 /** The collapsed row of a card no longer open, as the skill and tool rows are. */
@@ -52,13 +46,14 @@ function rowTitle(state: QuestionCardItem['state'], count: number): string {
   return state === 'answered' ? `Respondeu ${questions}` : `${questions} sem resposta`
 }
 
-/** On a phone the card says the Builder waits on the person, in place of the working line (founder, 2026-10-22, "Aprovo"). */
+/** On a phone the card says the conversation's agent waits on the person, in place of the working line (founder, 2026-10-22, "Aprovo"). */
 export function WaitingCaption() {
+  const { agent } = useRoom()
   if (!useIsMobile()) return null
   return (
     <p role="status" className="flex items-center gap-sm text-label text-accent">
       <ConexusMark size={16} />
-      Builder esperando sua resposta
+      {agent} esperando sua resposta
     </p>
   )
 }
@@ -69,8 +64,7 @@ export function WaitingCaption() {
  * on, or a refusal, says the card's words, or the Hub's row's (code C37).
  */
 export function useAnswer(toolCallId: ToolCallId) {
-  const { conversationId } = route.useParams()
-  const builder = useMemo(() => sessionOf(conversationId, BUILDER_CONTROLLER), [conversationId])
+  const answerTo = useAnswerTo()
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string>()
   const sent = useRef(false)
@@ -80,7 +74,7 @@ export function useAnswer(toolCallId: ToolCallId) {
     setSending(true)
     setError(undefined)
     try {
-      const { ok } = await builder.answer(toolCallId, resumeData)
+      const { ok } = await answerTo(toolCallId, resumeData)
       if (ok) return
       setError(CARD_TEXT.unsent)
     } catch (failure) {
@@ -155,8 +149,8 @@ function answerText(answer: Answer | undefined): string {
   return Array.isArray(answer) ? answer.join(', ') : (answer ?? '')
 }
 
-function closedText(state: QuestionCardItem['state']): string | undefined {
-  if (state === 'stopped') return CARD_TEXT.stopped
+function closedText(state: QuestionCardItem['state'], agent: string): string | undefined {
+  if (state === 'stopped') return `Você parou o ${agent}.`
   return state === 'closed' ? sentenceOfCode('QUESTION_CLOSED') : undefined
 }
 
@@ -172,7 +166,8 @@ export function QuestionCard({ part }: { part: QuestionCardItem }) {
     event.preventDefault()
     void answer(answersOf(new FormData(event.currentTarget), part.questions))
   }
-  const said = closedText(part.state)
+  const { agent } = useRoom()
+  const said = closedText(part.state, agent)
   const open = part.state === 'open'
   return (
     <div

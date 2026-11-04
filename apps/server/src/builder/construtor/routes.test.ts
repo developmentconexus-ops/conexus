@@ -1,18 +1,28 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
-import { CARLA, call, codeOf, memberOn, personOn, post } from '../../hub/identity/test-hub.ts'
+import {
+  BRUNO,
+  CARLA,
+  call,
+  codeOf,
+  memberOn,
+  personOn,
+  post,
+} from '../../hub/identity/test-hub.ts'
 import { agentsOn, otherProject } from '../agents/test-agents.ts'
 import {
   endOf,
   holding,
   hubBeside,
+  MODEL,
   PARTIAL,
   sent,
   sessionUrl,
   streamOf,
   title,
 } from '../conversation/test-conversation.ts'
+import { sessionStateOf } from '../conversation/test-questions.ts'
 import { kept, opened } from './test-construtor.ts'
 
 type Listed = { conversations: { id: string }[] }
@@ -135,4 +145,77 @@ test('o guarda: as seis rotas servem o controlador construtor ao dono enquanto e
   )
   const demoted = await call(on.hub, carla, 'GET', sessionUrl(hers))
   assert.deepEqual([demoted.statusCode, codeOf(demoted)], [404, 'CONVERSATION_NOT_FOUND'])
+})
+
+test('o modelo: a conversa nasce no modelo e no esforço escolhidos, e a troca vale para a conversa', async (t) => {
+  const on = await agentsOn(t)
+  const base = `${on.company}/projects/${on.projectId}/construtor/conversations`
+  const made = await post(on.hub, on.ana, base, { model: MODEL, effort: 'high' }, randomUUID())
+  assert.equal(made.statusCode, 201, made.body)
+  const url = `${base}/${String(Object(made.json()).conversation.id)}`
+  assert.deepEqual(await sessionStateOf(on.hub, on.ana, url), {
+    model: MODEL,
+    effort: 'high',
+    tasks: [],
+  })
+  const switched = await call(on.hub, on.ana, 'PUT', `${url}/model`, {
+    model: MODEL,
+    effort: 'off',
+  })
+  assert.deepEqual([switched.statusCode, switched.json()], [200, { model: MODEL, effort: 'off' }])
+  assert.deepEqual(await sessionStateOf(on.hub, on.ana, url), {
+    model: MODEL,
+    effort: 'off',
+    tasks: [],
+  })
+})
+
+test('o modelo: depois de um reinício a troca recupera a sessão com as marcas da abertura, e a conversa segue do Projeto', async (t) => {
+  const on = await agentsOn(t)
+  const base = `${on.company}/projects/${on.projectId}/construtor/conversations`
+  const made = await post(on.hub, on.ana, base, {}, randomUUID())
+  const url = `${base}/${String(Object(made.json()).conversation.id)}`
+  const restarted = await hubBeside(t, on.hub)
+  const switched = await call(restarted, on.ana, 'PUT', `${url}/model`, {
+    model: MODEL,
+    effort: 'off',
+  })
+  assert.equal(switched.statusCode, 200, switched.body)
+  const id = url.slice(url.lastIndexOf('/') + 1)
+  const session = await restarted.mastra.getAgentController('construtor')?.getSession(id)
+  assert.ok(session)
+  assert.equal(session.getTags().conexusConstrutorProject, on.projectId)
+})
+
+test('o modelo: sem conta, desconhecido ou com esforço que o modelo não tem, recusa e nada muda; de outra pessoa ou inexistente, CONVERSATION_NOT_FOUND; o membro, NOT_FOUND', async (t) => {
+  const on = await agentsOn(t)
+  const base = `${on.company}/projects/${on.projectId}/construtor/conversations`
+  const url = await opened(on)
+  const before = await sessionStateOf(on.hub, on.ana, url)
+  const refusals = [
+    [{ model: 'openai/gpt-5.4', effort: 'off' }, 422, 'MODEL_NO_ACCOUNT'],
+    [{ model: 'nada/nenhum', effort: 'off' }, 422, 'MODEL_UNKNOWN'],
+    [{ model: MODEL, effort: 'xhigh' }, 422, 'EFFORT_UNSUPPORTED'],
+  ] as const
+  for (const [body, status, code] of refusals) {
+    const refused = await call(on.hub, on.ana, 'PUT', `${url}/model`, body)
+    assert.deepEqual([refused.statusCode, codeOf(refused)], [status, code], refused.body)
+  }
+  assert.deepEqual(await sessionStateOf(on.hub, on.ana, url), before, 'a refusal changes nothing')
+  const born = await post(on.hub, on.ana, base, { model: MODEL, effort: 'xhigh' }, randomUUID())
+  assert.deepEqual([born.statusCode, codeOf(born)], [422, 'EFFORT_UNSUPPORTED'])
+
+  const body = { model: MODEL, effort: 'off' }
+  const carla = await memberOn(on.hub, on.companyId, CARLA, 'admin')
+  const missing = `${base}/${randomUUID()}`
+  for (const [person, at] of [
+    [carla, url],
+    [on.ana, missing],
+  ] as const) {
+    const refused = await call(on.hub, person, 'PUT', `${at}/model`, body)
+    assert.deepEqual([refused.statusCode, codeOf(refused)], [404, 'CONVERSATION_NOT_FOUND'])
+  }
+  const bruno = await memberOn(on.hub, on.companyId, BRUNO, 'member')
+  const member = await call(on.hub, bruno, 'PUT', `${url}/model`, body)
+  assert.deepEqual([member.statusCode, codeOf(member)], [404, 'NOT_FOUND'])
 })

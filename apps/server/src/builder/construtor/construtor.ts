@@ -70,7 +70,7 @@ const CACHED = { anthropic: { cacheControl: { type: 'ephemeral', ttl: '1h' } } }
 
 /**
  * The closed set the mode offers the model (criterion 22): the layer that enforces it. It holds
- * of the controller's own tools only `ask_user` (the ideas it proposes as a question card), and none
+ * of the controller's own tools only `ask_user` (a real question to the person, as a card), and none
  * of these publishes or writes in a company's system.
  */
 const AVAILABLE_TOOLS: readonly string[] = [
