@@ -16,6 +16,7 @@ import { MemoryStatus } from './memory-status.tsx'
 import { NoAccount } from './model-choice.tsx'
 import type { SessionRead } from './queries.ts'
 import { sessionReadQuery } from './queries.ts'
+import { SayProvider } from './room.ts'
 import type { BuilderSession, Place } from './session.ts'
 import type { Action, SessionState } from './session-state.ts'
 import { TaskPanel } from './task-panel.tsx'
@@ -224,43 +225,47 @@ export function Chat(props: ChatProps) {
         noAccount={props.noAccount}
       />
       <div className="min-h-24 flex-1 md:min-h-40">
-        <Transcript
-          turns={turns}
-          steers={state.steers}
-          model={session.model}
-          older={older}
-          onAsk={(text) => {
-            draft.append(text)
-            field.current?.focus()
-          }}
+        <SayProvider
+          value={(words) => send({ content: words, files: [] }, state.running || waiting)}
         >
-          {error !== undefined && (
-            <div className="axis px-md">
-              <Alert tone="danger" className="px-md">
-                {error}
-              </Alert>
-            </div>
-          )}
-          {(state.running || waiting) && !(phone && waiting) && (
-            <div className="axis">
-              <WorkingLine startedAt={state.startedAt} heard={state.messages} waiting={waiting} />
-            </div>
-          )}
-          <ChatComposer
-            chat={props}
-            session={session}
-            providers={accounts.choices.mine}
-            state={state}
-            draft={draft}
-            field={field}
-            placeholder={props.placeholder}
-            onSend={(outgoing) => send(outgoing, state.running || waiting)}
-            onStop={halt}
-            onError={setError}
-            canAnswer={canAnswer}
-            waiting={waiting}
-          />
-        </Transcript>
+          <Transcript
+            turns={turns}
+            steers={state.steers}
+            model={session.model}
+            older={older}
+            onAsk={(text) => {
+              draft.append(text)
+              field.current?.focus()
+            }}
+          >
+            {error !== undefined && (
+              <div className="axis px-md">
+                <Alert tone="danger" className="px-md">
+                  {error}
+                </Alert>
+              </div>
+            )}
+            {(state.running || waiting) && !(phone && waiting) && (
+              <div className="axis">
+                <WorkingLine startedAt={state.startedAt} heard={state.messages} waiting={waiting} />
+              </div>
+            )}
+            <ChatComposer
+              chat={props}
+              session={session}
+              providers={accounts.choices.mine}
+              state={state}
+              draft={draft}
+              field={field}
+              placeholder={props.placeholder}
+              onSend={(outgoing) => send(outgoing, state.running || waiting)}
+              onStop={halt}
+              onError={setError}
+              canAnswer={canAnswer}
+              waiting={waiting}
+            />
+          </Transcript>
+        </SayProvider>
       </div>
     </>
   )

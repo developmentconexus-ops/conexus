@@ -50,7 +50,7 @@ export const ASSISTANT_SPECS: Record<
     done: 'Propôs uma mudança do app',
     failed: 'Não conseguiu propor a mudança do app',
     verb: 'propôs',
-    body: 'generic',
+    body: 'proposal',
     groups: false,
     refusal: proposalRefusal,
   },

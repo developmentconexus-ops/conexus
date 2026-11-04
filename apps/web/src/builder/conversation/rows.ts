@@ -33,6 +33,8 @@ export type ToolItem = {
   errorText?: string
   /** When the screen first heard of the call, epoch ms; none on a read (a read row never runs). */
   startedAt?: number
+  /** A proposal whose card offers no button: another replaced it, or the person went on without it. */
+  closed?: boolean
 }
 export type QuestionCardItem = {
   kind: 'card'
@@ -211,6 +213,8 @@ export function invocationToItem(
 
 /** What Mastra's messages do not carry: the calls waiting on the person, and the commands running. */
 export type View = {
+  /** The proposals whose card offers no button (`closedProposals`). */
+  closed?: ReadonlySet<string>
   suspended: Readonly<Record<string, Suspended>>
   running: Readonly<Record<string, Running>>
   /** When the screen first heard of each tool call, by its id, epoch ms. */
@@ -293,6 +297,10 @@ function withHeard(item: TranscriptItem, heard: Readonly<Record<string, number>>
     : item
 }
 
+function withClosed(item: TranscriptItem, closed: ReadonlySet<string> | undefined): TranscriptItem {
+  return item.kind === 'tool' && closed?.has(item.toolCallId) ? { ...item, closed: true } : item
+}
+
 /**
  * A card's later telling, the result Mastra gives in the resumed run's message, says how it ended;
  * what it asked stays as the call said it, since the result does not carry it again.
@@ -332,7 +340,10 @@ export function itemsOf(messages: readonly Message[], view: View): TranscriptIte
   const placed = new Map<string, number>()
   for (const message of messages) {
     for (const found of fromParts(message, thoughts, view)) {
-      const item = withHeard(withRunning(found, view.running[found.id]), view.heard)
+      const item = withClosed(
+        withHeard(withRunning(found, view.running[found.id]), view.heard),
+        view.closed,
+      )
       const at = placed.get(item.id)
       if (at === undefined) placed.set(item.id, items.push(item) - 1)
       else items[at] = joined(items[at], item)
