@@ -1,3 +1,4 @@
+import { NoticeData } from '@conexus/hub-api'
 import type { KnownAgentControllerEvent, MastraMessagePart } from '@mastra/client-js'
 import type { MessageFile } from './attachments.ts'
 import type { Stored, Suspended } from './messages.ts'
@@ -55,6 +56,43 @@ export type Action =
 /** The machine's step is told live as a message of ours that the conversation does not keep. */
 function lasts(message: Stored): boolean {
   return !message.id.endsWith(':machine')
+}
+
+const NOTICE = 'data-conexus-notice'
+const LIVE_NOTICE = ':notice'
+
+/**
+ * A notice Mastra's controller says live (`info`), as the Factory UI keeps one (`transcript.ts`
+ * `pushNotice`): a message of ours the conversation does not keep, until the read brings it saved.
+ * An errored run is saved only after its `agent_end` (core `loop/workflows/stream.ts`, the `finish`
+ * that saves comes after the `error` that ends the run), so the read at the end can miss it.
+ */
+function noticeSaid(text: string): Stored {
+  return {
+    id: `${crypto.randomUUID()}${LIVE_NOTICE}`,
+    role: 'assistant',
+    createdAt: new Date().toISOString(),
+    content: { parts: [{ type: NOTICE, data: { text } }] },
+  }
+}
+
+function noticesIn(messages: readonly Stored[]): string[] {
+  return messages
+    .flatMap((message) => message.content.parts)
+    .flatMap((part) => (part.type === NOTICE ? [NoticeData.safeParse(part.data).data?.text] : []))
+    .filter((text) => text !== undefined)
+}
+
+/** The live notices the read's last turn already holds saved. */
+function savedLive(held: readonly Stored[], read: readonly Stored[]): Set<string> {
+  const turn = read.slice(read.findLastIndex((message) => wordsOf(message) !== undefined) + 1)
+  const saved = new Set(noticesIn(turn))
+  return new Set(
+    held
+      .filter((message) => message.id.endsWith(LIVE_NOTICE))
+      .filter((message) => noticesIn([message]).every((text) => saved.has(text)))
+      .map((message) => message.id),
+  )
 }
 
 function upsert(messages: readonly Stored[], message: Stored): readonly Stored[] {
@@ -139,6 +177,8 @@ function heard(state: SessionState, event: KnownAgentControllerEvent): SessionSt
       if (message === undefined) return state
       return { ...state, messages: upsert(state.messages, updated(message, event.event)) }
     }
+    case 'info':
+      return { ...state, messages: [...state.messages, noticeSaid(event.message)] }
     case 'tool_start':
       return { ...state, heard: heardOf(state, event.toolCallId) }
     case 'shell_output': {
@@ -251,8 +291,9 @@ function merged(held: readonly Stored[], read: readonly Stored[]): Stored[] {
 function loaded(state: SessionState, read: readonly Stored[]): SessionState {
   const readById = new Map(read.map((message) => [message.id, message]))
   const told = new Set(state.messages.map((message) => message.id))
+  const saved = savedLive(state.messages, read)
   const kept = state.messages.filter(
-    (message) => readById.has(message.id) || !drawnBy(read, message),
+    (message) => readById.has(message.id) || (!saved.has(message.id) && !drawnBy(read, message)),
   )
   const messages = merged(kept, read)
   const brought = read.filter((message) => !told.has(message.id)).map(wordsOf)
