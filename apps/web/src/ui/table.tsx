@@ -69,12 +69,13 @@ export function TableCell({ className, ...props }: ComponentProps<'td'>) {
  */
 export type FramedColumn = { name: string; leavesOnPhone?: boolean; width?: string }
 
-/** A settings table in its frame: the hairline border, a screen-reader-only header and the columns that leave on a phone. */
+/** A settings table in its frame: the hairline border, a header read by screen readers alone unless `showHeader`, and the columns that leave on a phone. */
 export function FramedTable({
   columns,
+  showHeader = false,
   children,
   ...props
-}: { columns: readonly FramedColumn[] } & ComponentProps<'table'>) {
+}: { columns: readonly FramedColumn[]; showHeader?: boolean } & ComponentProps<'table'>) {
   const phone = useIsMobile()
   const shown = columns.filter((column) => !(phone && column.leavesOnPhone))
   return (
@@ -85,7 +86,7 @@ export function FramedTable({
             <col key={column.name} className={column.width} />
           ))}
         </colgroup>
-        <TableHeader className="sr-only">
+        <TableHeader className={showHeader ? undefined : 'sr-only'}>
           <TableRow>
             {shown.map((column) => (
               <TableHead key={column.name}>{column.name}</TableHead>

@@ -42,7 +42,7 @@ function Library(props: { scope: Scope; read: UseQueryResult<{ tools: ToolSummar
   if (read.isPending) return <Skeleton className="h-20 w-full" />
   if (read.data.tools.length === 0) return <p className="text-text-2">{NO_TOOLS_YET}</p>
   return (
-    <FramedTable aria-label="Ferramentas" columns={COLUMNS}>
+    <FramedTable aria-label="Ferramentas" columns={COLUMNS} showHeader>
       <TableBody>
         {read.data.tools.map((tool) => (
           <ToolRow key={tool.id} scope={props.scope} tool={tool} />

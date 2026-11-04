@@ -65,7 +65,7 @@ test('a lista é uma tabela com Ferramenta, Lê de, Efeito, Usada por e Versão'
   expect(within(row).getByText('Pedidos')).toBeTruthy()
   expect(within(row).getByText('Lê')).toBeTruthy()
   expect(within(row).getByText('v3')).toBeTruthy()
-  expect(within(row).getByText('Conferente de metas, Resumo de estoque')).toBeTruthy()
+  expect(within(row).getByText('Conferente de metas · Resumo de estoque')).toBeTruthy()
   const heads = screen.getAllByRole('columnheader').map((one) => one.textContent)
   expect(heads).toEqual(['Ferramenta', 'Lê de', 'Efeito', 'Usada por', 'Versão', 'Ações'])
 })

@@ -106,7 +106,7 @@ export function ToolRow({ scope, tool }: { scope: Scope; tool: ToolSummary }) {
       ? null
       : tool.usedBy.length === 0
         ? NOBODY_USES
-        : tool.usedBy.map((one) => one.name).join(', ')
+        : tool.usedBy.map((one) => one.name).join(' · ')
   return (
     <>
       <TableRow>

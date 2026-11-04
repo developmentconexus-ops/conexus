@@ -2,7 +2,7 @@ import type { ToolEffect } from '@conexus/hub-api'
 
 export const NO_TOOLS_YET =
   'Nenhuma ferramenta ainda. O Construtor faz as primeiras quando monta um agente.'
-export const NOBODY_USES = 'Nenhum agente a usa'
+export const NOBODY_USES = 'ninguém'
 
 /** The effect of a tool in the list's Efeito column. */
 export const EFFECT_TEXT: Record<ToolEffect, string> = { READ: 'Lê' }
