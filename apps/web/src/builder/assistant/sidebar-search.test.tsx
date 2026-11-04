@@ -229,6 +229,10 @@ test('na aba Projetos a busca vale dentro de cada grupo, e o chip de lugar sai; 
   expect(nav.queryByRole('button', { name: 'Filtrar conversas' })).toBeNull()
   expect(nav.queryByRole('button', { name: /Tirar o filtro/ })).toBeNull()
   expect(nav.getByRole('searchbox', { name: 'Buscar pelo título' })).toBeTruthy()
+  fireEvent.click(nav.getByRole('tab', { name: 'Recentes' }))
+  expect(await nav.findByRole('button', { name: 'Tirar o filtro: Início' })).toBeTruthy()
+  expect(await nav.findByRole('link', { name: /Relatório da casa/ })).toBeTruthy()
+  expect(nav.queryByRole('link', { name: /Estoque/ })).toBeNull()
 })
 
 test('um lugar sem conversas diz "Nenhuma conversa neste lugar."; com busca, a frase da busca', async () => {
