@@ -264,7 +264,7 @@ export const setAssistantModel = defineOperation({
 })
 
 /** The longest title a person gives a conversation. */
-const CONVERSATION_TITLE_MAX = 120
+export const CONVERSATION_TITLE_MAX = 120
 
 export const renameAssistantConversation = defineOperation({
   id: 'renameAssistantConversation',

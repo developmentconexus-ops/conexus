@@ -1,5 +1,5 @@
 import type { AssistantConversationSummary, CompanyId } from '@conexus/hub-api'
-import { renameAssistantConversation } from '@conexus/hub-api'
+import { CONVERSATION_TITLE_MAX, renameAssistantConversation } from '@conexus/hub-api'
 import { useMutation } from '@tanstack/react-query'
 import { useNavigate, useParams } from '@tanstack/react-router'
 import { MoreVerticalIcon } from 'lucide-react'
@@ -66,7 +66,13 @@ function RenameForm(props: Props & { onDone: () => void }) {
   }
   return (
     <Form form={form} onSubmit={submit}>
-      <TextField name="title" label={RENAME_LABEL} type="text" autoComplete="off" />
+      <TextField
+        name="title"
+        label={RENAME_LABEL}
+        type="text"
+        autoComplete="off"
+        invalid={`Escreva um título, com até ${CONVERSATION_TITLE_MAX} caracteres.`}
+      />
       <FormAlert />
       <SubmitButton idle={RENAME_SAVE} pending="Salvando…" />
       <Button type="button" onClick={props.onDone}>

@@ -170,6 +170,16 @@ test('o ⋮ oferece Renomear e Apagar; renomear manda o título novo e a linha o
   ])
 })
 
+test('renomear com o título vazio diz em português o que escrever e não manda nada', async () => {
+  const { writes } = at(COMPANY_ROOT, { conversations: fresh() })
+  await menuOf('De hoje')
+  fireEvent.click(await screen.findByRole('menuitem', { name: 'Renomear' }))
+  fireEvent.change(await screen.findByLabelText('Título da conversa'), { target: { value: '' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Salvar' }))
+  expect(await screen.findByText('Escreva um título, com até 120 caracteres.')).toBeTruthy()
+  expect(writes()).toHaveLength(0)
+})
+
 test('apagar pede a confirmação com dois botões; Cancelar não apaga, Apagar conversa tira a linha', async () => {
   const { writes } = at(COMPANY_ROOT, { conversations: fresh() })
   await menuOf('De hoje')

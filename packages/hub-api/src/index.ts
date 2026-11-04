@@ -61,6 +61,7 @@ export {
   AssistantConversationSummary,
   assistantFilePath,
   Briefing,
+  CONVERSATION_TITLE_MAX,
   createAssistantConversation,
   deleteAssistantConversation,
   listAssistantConnections,
