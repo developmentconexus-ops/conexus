@@ -10,7 +10,7 @@ import {
   setAssistantConnections,
   setAssistantModel,
 } from '@conexus/hub-api'
-import { hubMutation, hubQuery, hubQueryPrefix } from '../../platform/hub.ts'
+import { hubMutation, hubQuery } from '../../platform/hub.ts'
 
 /** The person's own conversations with the Assistant, newest first: all of them, or those of one Projeto. */
 export function assistantConversationsQuery(
@@ -38,9 +38,4 @@ export const sendAssistantConnections = hubMutation(setAssistantConnections)
 export const sendAssistantModel = hubMutation(setAssistantModel)
 export const sendAssistantDeletion = hubMutation(deleteAssistantConversation)
 export const sendAssistantRename = hubMutation(renameAssistantConversation)
-
-/** Every read of the person's list, whatever its Projeto or page: for an invalidation. */
-export function allAssistantConversationsKey(companyId: CompanyId) {
-  return hubQueryPrefix(listAssistantConversations, { companyId })
-}
 export const sendAssistantHandOff = hubMutation(handAssistantProposal)

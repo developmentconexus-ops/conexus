@@ -6,7 +6,6 @@ import {
 } from '@conexus/hub-api'
 import { Agent } from '@mastra/core/agent'
 import type { Mastra } from '@mastra/core/mastra'
-import type { InputProcessor } from '@mastra/core/processors'
 import type { RequestContext } from '@mastra/core/request-context'
 import { Memory } from '@mastra/memory'
 import type { PostgresStore } from '@mastra/pg'
@@ -114,7 +113,11 @@ function agentTurns(queue: QueueDeps, runOf: ReturnType<typeof runsOf>, resolved
  * its instructions, tools and memory, read once per run, and the version's model; the registered
  * agent's own processors do not run here, the turn below takes their place.
  */
-function delegatingAgent(queue: QueueDeps, resolvedOf: Resolved, turn: InputProcessor): Agent {
+function delegatingAgent(
+  queue: QueueDeps,
+  resolvedOf: Resolved,
+  turns: ReturnType<typeof sessionTurns>,
+): Agent {
   return new Agent({
     id: AGENTS_CONTROLLER,
     name: 'Agents',
@@ -131,7 +134,7 @@ function delegatingAgent(queue: QueueDeps, resolvedOf: Resolved, turn: InputProc
       }
       return chosen
     },
-    ...agentDefaults(queue, turn),
+    ...agentDefaults(queue, turns),
   })
 }
 
@@ -191,7 +194,7 @@ export function createAgentConversations(deps: Deps) {
       kind: 'agents',
       storage,
       memory,
-      agent: delegatingAgent(queue, resolvedOf, turns.processor),
+      agent: delegatingAgent(queue, resolvedOf, turns),
     },
     mode: { id: MODE },
     initialState: { yolo: true },

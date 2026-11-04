@@ -7,7 +7,7 @@ import {
   ended,
   ranNow,
   salesSummary,
-import { assisting, created } from './test-assistant.ts'
+} from '../automations/test-automations.ts'
 import { holding, PARTIAL, sent, streamOf, title } from '../conversation/test-conversation.ts'
 import { assisting, created, publishedApp } from './test-assistant.ts'
 

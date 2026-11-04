@@ -190,6 +190,16 @@ test('apagar pede a confirmação com dois botões; Cancelar não apaga, Apagar 
   expect(writes().map((one) => one.method)).toEqual(['DELETE'])
 })
 
+test('a confirmação de apagar abre com o foco em Cancelar, a ação menos destrutiva', async () => {
+  at(COMPANY_ROOT, { conversations: fresh() })
+  await menuOf('De hoje')
+  fireEvent.click(await screen.findByRole('menuitem', { name: 'Apagar' }))
+  const dialog = await screen.findByRole('alertdialog', { name: 'Apagar esta conversa?' })
+  await waitFor(() =>
+    expect(document.activeElement).toBe(within(dialog).getByRole('button', { name: 'Cancelar' })),
+  )
+})
+
 test('apagar uma conversa que já foi some da lista, sem erro', async () => {
   at(COMPANY_ROOT, {
     conversations: fresh(),
