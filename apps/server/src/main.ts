@@ -159,7 +159,7 @@ export function subjectsOf(deps: {
   const { conversations, assistant, automations, agents } = conversationsOf({
     ...{ database, identity, sealKeys, google, log, runs, mastraPool: deps.mastraPool },
     ...{ machine: deps.assistantMachine, machineTuning: deps.assistantTuning },
-    ...{ connectors: () => connectors, apps: () => apps },
+    ...{ connectors: () => connectors, apps: () => apps, projects: () => projects.ports },
     ...{ notify: notifications.notify, automationClock: config.automationClock },
   })
   const releaseConversations = conversations.release

@@ -73,6 +73,9 @@ export function createProjects(deps: {
       // What the apps' door reaches Projects through: a host's Projeto, and who may open it now.
       projectOfHost: (label: HostLabel) => projectOfHost(deps.database, label),
       admitToApp: (input: Parameters<typeof admitToApp>[1]) => admitToApp(deps, input),
+      // What the Assistant's hand-off reaches Projects through (step 24.3.2): the creation the route
+      // makes, keyed by the same attempt.
+      createProject: (input: Parameters<typeof store.create>[0]) => store.create(input),
       // What the apps' versions reach Projects through: the Projeto, and its company's database.
       liveProjectOf,
       readyDatabaseOf,
