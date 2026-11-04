@@ -19,6 +19,7 @@ import { say, screens, view } from '../conversation/test-hub.tsx'
 import { START } from '../conversation/test-start.tsx'
 import { displayOf, newest, openLine } from '../conversation/test-stream.tsx'
 import { changesOf } from './test-changes.tsx'
+import { listedFor } from './test-list.ts'
 import type { ChosenModels } from './test-model.tsx'
 import { modelWrite, sessionState } from './test-model.tsx'
 
@@ -137,22 +138,7 @@ function readsOf(held: Held, asked: string[]) {
     http.get(`${BASE}/conversations`, async ({ request }) => {
       const replaced = await held.answers.list?.()
       if (replaced) return replaced
-      const { searchParams } = new URL(request.url)
-      const project = searchParams.get('projectId')
-      const from = Number(searchParams.get('page') ?? 0)
-      const all = held.conversations
-        .map(({ conversation }) => conversation)
-        .filter((one) => project === null || one.projectId === project)
-        .map(({ id, title, updatedAt, projectId, automation }) => ({
-          ...{ id, title, updatedAt, automation },
-          project: projectId === null ? null : { id: projectId, name: PEDIDOS.name },
-        }))
-      const listed = all.slice(from, from + held.pageSize)
-      const more = from + held.pageSize < all.length
-      return HttpResponse.json({
-        conversations: listed,
-        next: more ? { kind: 'MORE', page: String(from + held.pageSize) } : { kind: 'END' },
-      })
+      return HttpResponse.json(listedFor(held, new URL(request.url).searchParams))
     }),
     http.get(
       `${BASE}/conversations/:id/files`,

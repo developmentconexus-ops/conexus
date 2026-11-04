@@ -11,15 +11,19 @@ import {
 } from '@conexus/hub-api'
 import { hubMutation, hubQuery, hubQueryPrefix } from '../../platform/hub.ts'
 
-/** The person's own conversations with the Assistant, newest first: all of them, or those of one Projeto. */
+/**
+ * The person's own conversations with the Assistant, newest first: all of them, or those of one
+ * Projeto, one place or a title text (`narrowed`).
+ */
 export function assistantConversationsQuery(
   companyId: CompanyId,
   projectId: ProjectId | undefined,
   page: string | undefined,
+  narrowed: { q?: string | undefined; place?: 'HOME' | 'AUTOMATIONS' | undefined } = {},
 ) {
   return hubQuery(listAssistantConversations, {
     params: { companyId },
-    query: { projectId, page },
+    query: { projectId, page, ...narrowed },
   })
 }
 
