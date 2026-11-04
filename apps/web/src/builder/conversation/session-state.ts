@@ -83,16 +83,33 @@ function noticesIn(messages: readonly Stored[]): string[] {
     .filter((text) => text !== undefined)
 }
 
-/** The live notices the read's last turn already holds saved. */
+/**
+ * The notices the read holds saved in the turn the person's message `opener` opened, or in what
+ * comes before any person's message when there is none; nothing when the read does not reach that
+ * turn (Factory `savedErrorsByTurn`, `indexOfTurnOpener`).
+ */
+function savedInTurn(read: readonly Stored[], opener: string | undefined): string[] {
+  const from = opener === undefined ? 0 : read.findIndex((message) => message.id === opener) + 1
+  if (opener !== undefined && from === 0) return []
+  const next = read.findIndex((message, at) => at >= from && wordsOf(message) !== undefined)
+  return noticesIn(read.slice(from, next === -1 ? undefined : next))
+}
+
+/**
+ * The live notices the read already holds saved, each in its own turn as Factory's
+ * `dropNoticesOfSavedErrors` matches them: a notice said live belongs to the person's message held
+ * before it, however many turns the read brings after.
+ */
 function savedLive(held: readonly Stored[], read: readonly Stored[]): Set<string> {
-  const turn = read.slice(read.findLastIndex((message) => wordsOf(message) !== undefined) + 1)
-  const saved = new Set(noticesIn(turn))
-  return new Set(
-    held
-      .filter((message) => message.id.endsWith(LIVE_NOTICE))
-      .filter((message) => noticesIn([message]).every((text) => saved.has(text)))
-      .map((message) => message.id),
-  )
+  const saved = new Set<string>()
+  let opener: string | undefined
+  for (const message of held) {
+    if (wordsOf(message) !== undefined) opener = message.id
+    if (!message.id.endsWith(LIVE_NOTICE)) continue
+    const turn = savedInTurn(read, opener)
+    if (noticesIn([message]).every((text) => turn.includes(text))) saved.add(message.id)
+  }
+  return saved
 }
 
 function upsert(messages: readonly Stored[], message: Stored): readonly Stored[] {
