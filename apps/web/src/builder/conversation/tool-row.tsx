@@ -13,7 +13,6 @@ import { BotIcon, FileTextIcon } from 'lucide-react'
 import { useEffect, useEffectEvent, useState } from 'react'
 import { sentenceOfCode } from '../../platform/hub.ts'
 import { Button } from '../../ui/button.tsx'
-import { Card, CardContent, CardFooter } from '../../ui/card.tsx'
 import { cn } from '../../ui/cn.ts'
 import {
   TraceCollapsible,
@@ -264,23 +263,6 @@ function AgentLine({
   )
 }
 
-/** The Assistant's proposal: the request it summarized, and **Criar app**. */
-function ProposalCard({ summary }: { summary: string }) {
-  const room = useRoom()
-  return (
-    <Card>
-      <CardContent>
-        <p className="whitespace-pre-wrap break-words text-text">{summary}</p>
-      </CardContent>
-      <CardFooter>
-        <Button variant="primary" onClick={() => room.createApp?.(summary)}>
-          Criar app
-        </Button>
-      </CardFooter>
-    </Card>
-  )
-}
-
 function Body({ tool, status }: { tool: ToolItem; status: ToolStatus }) {
   const spec = specOf(tool.toolName, useRoom())
   if (spec?.refusal?.(tool.result) === 'RECONNECT') return <Reconnect />
@@ -316,7 +298,13 @@ function specialRow(tool: ToolItem, status: ToolStatus, room: Room) {
       />
     )
   const proposed = body === 'proposal' ? ProposedApp.safeParse(tool.result).data : undefined
-  return proposed === undefined ? undefined : <ProposalCard summary={proposed.summary} />
+  return proposed === undefined
+    ? undefined
+    : room.appCard?.({
+        proposed,
+        toolCallId: tool.toolCallId,
+        closed: tool.closed === true,
+      })
 }
 
 /** The line itself: the tool's icon, its sentence and, beside, its detail or the time it has run. */

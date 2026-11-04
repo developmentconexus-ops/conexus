@@ -16,6 +16,7 @@ import { BuilderTurn } from './builder-turn.tsx'
 import type { Message } from './messages.ts'
 import { chipOf, messageOf } from './messages.ts'
 import { PersonBubble, PersonTurn } from './person-turn.tsx'
+import { closedProposals } from './proposals.ts'
 import { useRoom } from './room.ts'
 import type { TranscriptItem } from './rows.ts'
 import { itemsOf } from './rows.ts'
@@ -51,10 +52,17 @@ export type ShownTurn = {
 
 /** The conversation's one list, from the session's messages, by turn; the last streams while the run runs. */
 export function shownOf(state: SessionState): ShownTurn[] {
-  const turns = turnsOf(state.messages.flatMap((stored) => messageOf(stored) ?? []))
+  const messages = state.messages.flatMap((stored) => messageOf(stored) ?? [])
+  const closed = closedProposals(messages)
+  const turns = turnsOf(messages)
   return turns.map((turn, index) => {
     const streaming = state.running && index === turns.length - 1
-    const view = { suspended: state.suspended, running: state.commands, heard: state.heard }
+    const view = {
+      closed,
+      suspended: state.suspended,
+      running: state.commands,
+      heard: state.heard,
+    }
     return {
       key: turn.key,
       person: turn.person,
