@@ -84,13 +84,12 @@ function noticesIn(messages: readonly Stored[]): string[] {
 }
 
 /**
- * The notices the read holds saved in the turn the person's message `opener` opened, or in what
- * comes before any person's message when there is none; nothing when the read does not reach that
- * turn (Factory `savedErrorsByTurn`, `indexOfTurnOpener`).
+ * The notices the read holds saved in the turn the person's message `opener` opened; nothing when
+ * the read does not reach that turn (Factory `savedErrorsByTurn`, `indexOfTurnOpener`).
  */
 function savedInTurn(read: readonly Stored[], opener: string | undefined): string[] {
-  const from = opener === undefined ? 0 : read.findIndex((message) => message.id === opener) + 1
-  if (opener !== undefined && from === 0) return []
+  const from = read.findIndex((message) => message.id === opener) + 1
+  if (from === 0) return []
   const next = read.findIndex((message, at) => at >= from && wordsOf(message) !== undefined)
   return noticesIn(read.slice(from, next === -1 ? undefined : next))
 }
