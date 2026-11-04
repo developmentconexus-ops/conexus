@@ -30,11 +30,11 @@ function main() {
   return within(screen.getByRole('main'))
 }
 
-test('vazio: "Nenhum projeto ainda." na página Todos os projetos', async () => {
+test('vazio: "Nenhum projeto ainda" na página Todos os projetos', async () => {
   hub([])
   open()
   expect(await screen.findByRole('heading', { name: 'Todos os projetos' })).toBeTruthy()
-  expect(await screen.findByText('Nenhum projeto ainda.')).toBeTruthy()
+  expect(await screen.findByText('Nenhum projeto ainda')).toBeTruthy()
 })
 
 test('cada cartão: o nome, "Criado em" e o link para o Projeto', async () => {

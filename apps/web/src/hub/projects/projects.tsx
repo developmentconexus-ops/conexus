@@ -33,7 +33,7 @@ export function Projects() {
           <PageTitle>Todos os projetos</PageTitle>
           <p className="text-text-2">{PROJECTS_SENTENCE}</p>
         </div>
-        {creates && <NewProjectDialog companyId={companyId} block />}
+        {creates && <NewProjectDialog companyId={companyId} block labelled />}
       </header>
       {notice && <Notice>Projeto apagado.</Notice>}
       <ProjectCards companyId={companyId} page={page} creates={creates} />
