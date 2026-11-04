@@ -55,8 +55,6 @@ function NewVersion(props: {
       )
       queryClient.setQueryData(toolQuery(scope, tool.id).queryKey, made)
       props.onOpenChange(false)
-      // The list and the agents' panels read the tool's latest version again.
-      await queryClient.invalidateQueries()
     } catch (failure) {
       if (failure instanceof HubFailure)
         setRefused({ field: failure.field, reason: failure.reason })
@@ -69,7 +67,7 @@ function NewVersion(props: {
       <DialogContent size="fields" title="Nova versão">
         <ToolForm
           offered={[]}
-          fixed={{ ...tool, connection: tool.connectionName }}
+          fixed={{ ...tool, connection: tool.connectionName, read: tool.readLabel }}
           initial={latest}
           pending={save.isPending}
           refused={refused}

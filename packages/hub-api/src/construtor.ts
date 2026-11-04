@@ -56,7 +56,7 @@ export type ProjectReadResult = z.infer<typeof ProjectReadResult>
 
 /** What tool_search answers the model: the library's tools, the ready reads and the automations that match. */
 export const ToolSearchResult = z.object({
-  tools: z.array(ToolSummary),
+  tools: z.array(ToolSummary.omit({ connectionName: true, readLabel: true })),
   ready: z.array(ReadyTool),
   automations: z.array(z.object({ id: AutomationId, name: z.string(), prompt: z.string() })),
 })

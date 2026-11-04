@@ -105,8 +105,13 @@ async function save(
   const id = ToolId.parse(derivedUuid('tool', scope.companyId, scope.personId, attemptKey))
   const bodyHash = bodyHashOf(body)
   const { slug, connectionId, operation, ...config } = body
-  const target = await targetOf(deps.connectors, sessionScopeOf(scope), { connectionId, operation })
   const offered = await offeredOf(deps, scope)
+  const target = await targetOf(
+    deps.connectors,
+    sessionScopeOf(scope),
+    { connectionId, operation },
+    offered,
+  )
   const detail = await deps.database.command(databaseScopeOf(scope), async (tx) => {
     await admitted(deps, tx, scope, 'manageAgents')
     const earlier = await toolOf(tx, scope.companyId, id)
