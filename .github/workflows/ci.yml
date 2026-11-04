@@ -355,6 +355,8 @@ jobs:
     permissions:
       contents: read
       actions: read
+    env:
+      GH_TOKEN: ${{ github.token }}
     steps:
       - name: Every job must have succeeded
         env:
@@ -383,8 +385,7 @@ jobs:
       - name: The jobs and the slowest steps of this run
         if: always()
         continue-on-error: true
-        env:
-          GH_TOKEN: ${{ github.token }}
+        timeout-minutes: 1
         run: |
           # shellcheck disable=SC2016 # the jq program is single-quoted so the shell leaves its $variables alone
           gh api "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}/jobs" --paginate \
@@ -398,28 +399,24 @@ jobs:
             ' >> "$GITHUB_STEP_SUMMARY"
       # How much of its timeout-minutes each job used, so a job that nears its cut-off is seen in the
       # run and not only when it is cut. The budget is the job's own timeout-minutes in this file;
-      # the 0.70 is the warning threshold (the 0.85 of the scheduled issue is ci-budget.ts's).
+      # the 0.70 is the warning threshold (the scheduled issue of U2 has its own).
       - name: The jobs against their budget
         if: always()
         continue-on-error: true
-        env:
-          GH_TOKEN: ${{ github.token }}
+        timeout-minutes: 1
         run: |
-          budgets=$(yq -o=json -I=0 '[.jobs | to_entries[] | {key: (.value.name // .key), value: .value."timeout-minutes"}] | from_entries' .github/workflows/ci.yml)
+          budgets=$(yq -o=json -I=0 '.jobs | with_entries(.key = (.value.name // .key) | .value = .value."timeout-minutes")' .github/workflows/ci.yml)
+          # shellcheck disable=SC2016 # the jq program is single-quoted so the shell leaves its $variables alone
           gh api "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}/jobs" --paginate \
             --jq '.jobs[] | select(.completed_at != null and .name != "ci") | {job: .name, seconds: ((.completed_at | fromdate) - (.started_at | fromdate))}' \
             | jq -s --argjson budgets "$budgets" '
+              def one: (. * 10 | round) as $n | "\($n / 10 | floor),\($n % 10)";
               [.[] | . as $row | ($row.job | sub(" \\([^)]*\\)$"; "")) as $key | select($budgets[$key] != null)
-                | {job: $row.job, used: ([$row.seconds, 0] | max / 60), budget: $budgets[$key]} | . + {ratio: (.used / .budget)}]
+                | {job: $row.job, used: ([$row.seconds, 0] | max / 60), budget: $budgets[$key]} | . + {ratio: (.used / .budget)}
+                | . + {min: (.used | one), pct: (.ratio * 100 | round)}]
               | sort_by(-.ratio)' > "$RUNNER_TEMP/budget.json"
-          # shellcheck disable=SC2016 # the jq program is single-quoted so the shell leaves its $variables alone
-          jq -r '
-            def one: (. * 10 | round) as $n | "\($n / 10 | floor),\($n % 10)";
-            .[] | select(.ratio >= 0.7) | "::warning title=Orçamento do CI::\(.job) usou \(.used | one) de \(.budget) min (\(.ratio * 100 | round)%)"
-          ' "$RUNNER_TEMP/budget.json"
-          # shellcheck disable=SC2016 # the jq program is single-quoted so the shell leaves its $variables alone
-          jq -r '
-            def one: (. * 10 | round) as $n | "\($n / 10 | floor),\($n % 10)";
-            "### Jobs contra o orçamento", "", "| Job | Usou (min) | Limite (min) | % |", "| --- | ---: | ---: | ---: |",
-            (.[] | "| \(.job) | \(.used | one) | \(.budget) | \(.ratio * 100 | round) |")
-          ' "$RUNNER_TEMP/budget.json" >> "$GITHUB_STEP_SUMMARY"
+          jq -r '.[] | select(.ratio >= 0.7) | "::warning title=Orçamento do CI::\(.job) usou \(.min) de \(.budget) min (\(.pct)%)"' "$RUNNER_TEMP/budget.json"
+          {
+            echo "### Jobs contra o orçamento"; echo; echo "| Job | Usou (min) | Limite (min) | % |"; echo "| --- | ---: | ---: | ---: |"
+            jq -r '.[] | "| \(.job) | \(.min) | \(.budget) | \(.pct) |"' "$RUNNER_TEMP/budget.json"
+          } >> "$GITHUB_STEP_SUMMARY"
