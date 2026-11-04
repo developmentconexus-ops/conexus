@@ -34,3 +34,21 @@ test('a mensagem com arquivos se lê igual ao vivo e relida: as palavras e os ar
     ['cardapio.pdf'],
   ])
 })
+
+/** The origin of each of the person's messages. */
+function originsIn(stored: readonly Stored[]) {
+  return stored.flatMap((each) => {
+    const message = messageOf(each)
+    return message?.role === 'person' ? [message.origin] : []
+  })
+}
+
+test('o pedido que o Assistente entrega traz a origem igual ao vivo e relido; a mensagem comum, nenhuma (24.3.2)', () => {
+  const handoff = recordedRun('handoff')
+  const live = handoff.events.flatMap((event) =>
+    event.type === 'message_start' ? [event.message] : [],
+  )
+  expect(originsIn(live)).toEqual(['assistant'])
+  expect(originsIn(handoff.read)).toEqual(['assistant'])
+  expect(originsIn(recordedRun('files').read)).toEqual([null, null])
+})
