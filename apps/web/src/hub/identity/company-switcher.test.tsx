@@ -92,5 +92,9 @@ test('escolher a outra empresa na troca a faz a última lembrada (critério 6)',
   )
   fireEvent.click(await screen.findByRole('menuitem', { name: 'Outra Empresa' }))
   await screen.findByRole('button', { name: 'Trocar de empresa. Agora: Outra Empresa' })
-  expect(localStorage.getItem(`conexus-remembered:${ANA.id}:companies`)).toBe(OTHER.id)
+  // The frame already shows the new company while the router still loads it; the company is
+  // remembered when the router commits the navigation (`onStay`), after the screen has changed.
+  await waitFor(() =>
+    expect(localStorage.getItem(`conexus-remembered:${ANA.id}:companies`)).toBe(OTHER.id),
+  )
 })
