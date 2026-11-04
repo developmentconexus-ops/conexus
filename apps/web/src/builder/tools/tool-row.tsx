@@ -72,6 +72,35 @@ export function ToolRow({ scope, tool }: { scope: Scope; tool: ToolSummary }) {
       setFailure(error)
     }
   }
+  const remover = (
+    <>
+      <Button
+        size="sm"
+        variant="danger"
+        aria-label={`Apagar ${tool.slug}`}
+        disabled={remove.isPending}
+        onClick={() => setConfirming(true)}
+      >
+        Apagar
+      </Button>
+      <AlertDialog open={confirming} onOpenChange={setConfirming}>
+        <AlertDialogContent
+          title={`Apagar ${tool.slug}?`}
+          description={deleteWarning(tool.slug)}
+          initialFocus={cancel}
+        >
+          <div className="flex flex-wrap gap-md">
+            <Button variant="danger-confirm" onClick={() => void erase()}>
+              Apagar ferramenta
+            </Button>
+            <Button ref={cancel} onClick={() => setConfirming(false)}>
+              Cancelar
+            </Button>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  )
   const users =
     failure instanceof HubFailure && failure.code === 'TOOL_IN_USE'
       ? null
@@ -85,13 +114,17 @@ export function ToolRow({ scope, tool }: { scope: Scope; tool: ToolSummary }) {
           <Link
             to="/companies/$companyId/projects/$projectId/agents/tools/$toolId"
             params={{ ...scope, toolId: tool.id }}
-            className="block truncate font-medium hover:underline"
+            className="block wrap-anywhere font-medium hover:underline"
           >
             {tool.slug}
           </Link>
           <span className="block text-fact text-text-2">{tool.description}</span>
           {phone && (
             <>
+              <span className="mt-xs flex flex-wrap items-center gap-sm">
+                <span className="text-fact text-text-2">v{tool.latest.number}</span>
+                {remover}
+              </span>
               <span className="block text-fact text-text-2">
                 {tool.connectionName} · {tool.readLabel} · {EFFECT_TEXT[tool.effect]}
               </span>
@@ -111,38 +144,16 @@ export function ToolRow({ scope, tool }: { scope: Scope; tool: ToolSummary }) {
             <TableCell className="whitespace-normal px-sm text-text-2">{users}</TableCell>
           </>
         )}
-        <TableCell className="px-sm text-fact text-text-2">v{tool.latest.number}</TableCell>
-        <TableCell className="px-sm text-right">
-          <Button
-            size="sm"
-            variant="danger"
-            aria-label={`Apagar ${tool.slug}`}
-            disabled={remove.isPending}
-            onClick={() => setConfirming(true)}
-          >
-            Apagar
-          </Button>
-          <AlertDialog open={confirming} onOpenChange={setConfirming}>
-            <AlertDialogContent
-              title={`Apagar ${tool.slug}?`}
-              description={deleteWarning(tool.slug)}
-              initialFocus={cancel}
-            >
-              <div className="flex flex-wrap gap-md">
-                <Button variant="danger-confirm" onClick={() => void erase()}>
-                  Apagar ferramenta
-                </Button>
-                <Button ref={cancel} onClick={() => setConfirming(false)}>
-                  Cancelar
-                </Button>
-              </div>
-            </AlertDialogContent>
-          </AlertDialog>
-        </TableCell>
+        {!phone && (
+          <>
+            <TableCell className="px-sm text-fact text-text-2">v{tool.latest.number}</TableCell>
+            <TableCell className="px-sm text-right">{remover}</TableCell>
+          </>
+        )}
       </TableRow>
       {failure !== undefined && (
         <TableRow>
-          <TableCell colSpan={phone ? 3 : 6} className="whitespace-normal px-sm py-sm">
+          <TableCell colSpan={phone ? 1 : 6} className="whitespace-normal px-sm py-sm">
             <Refused scope={scope} failure={failure} />
           </TableCell>
         </TableRow>
