@@ -162,3 +162,26 @@ test('60 s sem o Builder dizer nada: "Ainda trabalhando…", contado desde o in�
     vi.useRealTimers()
   }
 })
+
+const EXHAUSTED =
+  'As contas Anthropic que você pode usar estão indisponíveis. Escolha outro modelo ou fale com quem administra a empresa.'
+
+test('o aviso do turno que termina em erro aparece pelo `info` do Mastra, mesmo quando a releitura do fim chega antes de ele guardar a resposta', async () => {
+  const { line, log } = await running()
+  line().emit({ type: 'info', message: EXHAUSTED })
+  line().emit(agentEnd('error'))
+  await waitFor(() => expect(log.getAttribute('aria-busy')).toBe('false'))
+  expect(within(log).getAllByText(EXHAUSTED)).toHaveLength(1)
+})
+
+test('o aviso dito ao vivo e depois guardado na resposta aparece uma vez', async () => {
+  const { line, shown, log } = await running()
+  line().emit({ type: 'info', message: EXHAUSTED })
+  await within(log).findByText(EXHAUSTED)
+  shown.conversations[0]?.messages.push(
+    ours({ type: 'data-conexus-notice', data: { text: EXHAUSTED } }),
+  )
+  line().emit(agentEnd('error'))
+  await waitFor(() => expect(log.getAttribute('aria-busy')).toBe('false'))
+  await waitFor(() => expect(within(log).getAllByText(EXHAUSTED)).toHaveLength(1))
+})
