@@ -29,7 +29,7 @@ const TOOLS = [
     description: 'Vendas de ontem por vendedor.',
     connectionName: 'Matriz',
     readLabel: 'Pedidos',
-    effect: 'READ',
+    effect: 'READ' as const,
     latest: { id: VERSION, number: 12 },
     usedBy: [{ id: '11111111-aaaa-4aaa-8aaa-111111111111', name: 'Conferente de metas' }],
   },
