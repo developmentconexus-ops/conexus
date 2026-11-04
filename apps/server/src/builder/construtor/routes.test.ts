@@ -23,6 +23,7 @@ import {
   title,
 } from '../conversation/test-conversation.ts'
 import { sessionStateOf } from '../conversation/test-questions.ts'
+import { CONSTRUTOR_MARK } from './open.ts'
 import { kept, opened } from './test-construtor.ts'
 
 type Listed = { conversations: { id: string }[] }
@@ -168,6 +169,23 @@ test('o modelo: a conversa nasce no modelo e no esforço escolhidos, e a troca v
     effort: 'off',
     tasks: [],
   })
+})
+
+test('o modelo: depois de um reinício a troca recupera a sessão com as marcas da abertura, e a conversa segue do Projeto', async (t) => {
+  const on = await agentsOn(t)
+  const base = `${on.company}/projects/${on.projectId}/construtor/conversations`
+  const made = await post(on.hub, on.ana, base, {}, randomUUID())
+  const url = `${base}/${String(Object(made.json()).conversation.id)}`
+  const restarted = await hubBeside(t, on.hub)
+  const switched = await call(restarted, on.ana, 'PUT', `${url}/model`, {
+    model: MODEL,
+    effort: 'off',
+  })
+  assert.equal(switched.statusCode, 200, switched.body)
+  const id = url.slice(url.lastIndexOf('/') + 1)
+  const session = await restarted.mastra.getAgentController('construtor')?.getSession(id)
+  assert.ok(session)
+  assert.equal(session.getTags()[CONSTRUTOR_MARK.project], on.projectId)
 })
 
 test('o modelo: sem conta, desconhecido ou com esforço que o modelo não tem, recusa e nada muda; de outra pessoa ou inexistente, CONVERSATION_NOT_FOUND; o membro, NOT_FOUND', async (t) => {

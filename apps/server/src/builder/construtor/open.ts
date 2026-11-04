@@ -18,6 +18,15 @@ export const CONSTRUTOR_MARK = {
   project: 'conexusConstrutorProject',
 } as const
 
+/** The marks a Construtor conversation's thread is born with, which a session recovered later must carry too. */
+export function construtorMarks(scope: InProject): Record<string, string> {
+  return {
+    [CONSTRUTOR_MARK.company]: scope.companyId,
+    [CONSTRUTOR_MARK.person]: scope.personId,
+    [CONSTRUTOR_MARK.project]: scope.projectId,
+  }
+}
+
 /**
  * Opens a conversation of the person's with the Construtor in the Projeto (`openSession` of the
  * kit, no row of the Hub): the id is the attempt's, so a repeat finds the same thread, and one
@@ -34,11 +43,7 @@ export function openConstrutor(
 ) {
   const { scope, id } = input
   const owner = { companyId: scope.companyId, personId: scope.personId }
-  const tags = {
-    [CONSTRUTOR_MARK.company]: scope.companyId,
-    [CONSTRUTOR_MARK.person]: scope.personId,
-    [CONSTRUTOR_MARK.project]: scope.projectId,
-  }
+  const tags = construtorMarks(scope)
   async function keep(): Promise<Kept> {
     const thread = await deps.memory.getThreadById({
       threadId: id,

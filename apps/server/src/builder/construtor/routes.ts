@@ -17,7 +17,7 @@ import { attemptIdOf, changeModel, resourceOf } from '../controller-kit/public.t
 import type { QueueDeps } from '../model-accounts/public.ts'
 import type { InProject, ToolsDeps } from '../tools/public.ts'
 import { admitted, databaseScopeOf, inProjectOf } from '../tools/public.ts'
-import { CONSTRUTOR_MARK, openConstrutor, threadOf } from './open.ts'
+import { CONSTRUTOR_MARK, construtorMarks, openConstrutor, threadOf } from './open.ts'
 
 type Deps = Pick<ToolsDeps, 'identity' | 'liveProjectOf'> & {
   database: Database
@@ -90,7 +90,10 @@ export function registerConstrutorRoutes(app: FastifyInstance, deps: Deps): void
       throw new Failure('CONVERSATION_NOT_FOUND')
     const kept = await changeModel(
       { controller, queue: deps.queue },
-      { kind: 'construtor', owner, id: conversationId, choice: input.body },
+      {
+        ...{ kind: 'construtor', owner, id: conversationId, tags: construtorMarks(scope) },
+        choice: input.body,
+      },
     )
     const about = { companyId: scope.companyId, traceId: input.traceId, conversationId }
     deps.log.info(about, 'CONSTRUTOR_MODEL_SET')
