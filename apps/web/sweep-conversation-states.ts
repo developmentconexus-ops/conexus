@@ -31,6 +31,17 @@ const ANSWER = [
   '```',
 ].join('\n')
 
+/** The request the Assistant handed over, with a long word the bubble must break (step 24.3.2). */
+const HANDOFF_MESSAGES: Said[] = [
+  {
+    id: 'h1',
+    role: 'person',
+    parts: [{ type: 'text', text: `Monte um app de encomendas para uma padaria ${LONG_WORD}` }],
+    origin: 'assistant',
+    createdAt: '2026-10-19T12:00:00.000Z',
+  },
+]
+
 export const MESSAGES: Said[] = [
   {
     id: 'm1',
@@ -202,6 +213,16 @@ export const CONVERSATION_STATES: State[] = [
     path: `${CONVERSATIONS}/${ID}`,
     replies: { ...WITH_ACCOUNT, ...OPEN },
     settle: (p) => inChat(p, 'Encontrei'),
+  },
+  {
+    name: 'Conversa, com o pedido do Assistente',
+    path: `${CONVERSATIONS}/${ID}`,
+    replies: {
+      ...WITH_ACCOUNT,
+      ...OPEN,
+      ...sessionReplies(ID, { messages: HANDOFF_MESSAGES }),
+    },
+    settle: (p) => inChat(p, 'via Assistente'),
   },
   {
     name: 'Conversa, com as ferramentas abertas',
