@@ -6,6 +6,7 @@ import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { COMPANY } from '../../platform/fixtures.ts'
 import { hubServer, PEDIDOS, refusal } from '../../platform/test-hub.tsx'
+import { signalStarted } from '../conversation/test-recorded.ts'
 import { personSaid } from '../conversation/test-stream.tsx'
 import { ASKED, COMPANY_ROOT, OFFERED, SALES } from './test-hub.tsx'
 import {
@@ -60,14 +61,49 @@ test('o toque manda pela rota com o nome e as ligações marcadas e abre a conve
       `${COMPANY_ROOT}/projects/${PEDIDOS.id}/conversations/${BUILDER_CONVERSATION}`,
     ),
   )
-  expect(handed).toHaveLength(1)
   expect(handed[0]?.body).toEqual({
     toolCallId: 'call-tool-1',
     projectName: 'Encomendas',
     connections: [ConnectionId.parse(SALES)],
+    deliver: false,
   })
   expect(handed[0]?.key).toMatch(/^[0-9a-f-]{36}$/)
   expect(writes().filter((one) => one.path.endsWith('/messages'))).toHaveLength(0)
+})
+
+test('a conversa do Builder que o toque abre segue o stream antes de pedir o envio com a mesma chave, e mostra o pedido do Assistente que o stream conta, sem recarregar', async () => {
+  // The Builder's stream answers only once the screen has read the conversation: an ask made
+  // before it follows the stream is noted while the stream is still held.
+  const { promise: held, resolve: open } = Promise.withResolvers<void>()
+  let opened = false
+  const following: boolean[] = []
+  const handed = handing(() => {
+    following.push(opened)
+    return undefined
+  })
+  const stream = async () => {
+    await held
+    return undefined
+  }
+  const hub = proposing(undefined, undefined, undefined, undefined, { stream })
+  mayManage(true)
+  fireEvent.change(await screen.findByLabelText('Nome do projeto'), {
+    target: { value: 'Encomendas' },
+  })
+  fireEvent.click(screen.getByRole('button', { name: 'Criar app' }))
+  await waitFor(() => expect(hub.reads.length).toBeGreaterThan(0))
+  expect(handed).toHaveLength(1)
+  opened = true
+  open()
+  await waitFor(() => expect(handed).toHaveLength(2))
+  expect(handed[1]).toEqual({
+    key: handed[0]?.key,
+    body: { ...Object(handed[0]?.body), deliver: true },
+  })
+  expect(following).toEqual([false, true])
+  hub.line().emit(signalStarted('signal-1', SUMMARY))
+  expect(await screen.findByText(SUMMARY)).toBeTruthy()
+  expect(hub.conexus.router.state.location.state.assistantHandOff).toBeUndefined()
 })
 
 test('o cartão do Projeto diz Mandar ao Builder, sem campo de nome, e manda pela mesma rota', async () => {
@@ -83,7 +119,7 @@ test('o cartão do Projeto diz Mandar ao Builder, sem campo de nome, e manda pel
       `/conversations/${BUILDER_CONVERSATION}`,
     ),
   )
-  expect(handed[0]?.body).toEqual({ toolCallId: 'call-tool-1', connections: [] })
+  expect(handed[0]?.body).toEqual({ toolCallId: 'call-tool-1', connections: [], deliver: false })
 })
 
 test('Continuar aqui manda a mensagem da pessoa pelo envio da conversa e não chama a rota', async () => {

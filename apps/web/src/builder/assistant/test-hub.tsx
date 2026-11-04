@@ -15,6 +15,10 @@ import { COMPANY } from '../../platform/fixtures.ts'
 import { PEDIDOS, refusal } from '../../platform/test-hub.tsx'
 import type { Stored } from '../conversation/messages.ts'
 import { AGENT_START, RUNNING, signalStarted } from '../conversation/test-events.ts'
+import type {
+  Answers as BuilderAnswers,
+  Opened as BuilderConversation,
+} from '../conversation/test-hub.tsx'
 import { say, screens, view } from '../conversation/test-hub.tsx'
 import { START } from '../conversation/test-start.tsx'
 import { displayOf, newest, openLine } from '../conversation/test-stream.tsx'
@@ -246,6 +250,10 @@ export function assistantScreens(server: ReturnType<typeof setupServer>) {
       answers?: Answers
       /** The conversations a list answers at a time; all of them by default. */
       pageSize?: number
+      /** The Builder's conversations the Hub knows, as a hand-off opens one. */
+      builder?: BuilderConversation[]
+      /** How the Builder's session answers, as its own screens' tests set it. */
+      builderAnswers?: BuilderAnswers
     } = {},
   ) {
     const {
@@ -255,6 +263,8 @@ export function assistantScreens(server: ReturnType<typeof setupServer>) {
       usable,
       answers = {},
       pageSize = 30,
+      builder = [],
+      builderAnswers = {},
     } = options
     const sent: Sent[] = []
     const asked: string[] = []
@@ -275,7 +285,11 @@ export function assistantScreens(server: ReturnType<typeof setupServer>) {
       ...writesOf(held, note),
       ...sessionOf(held, conversations, answers, lines, note),
     )
-    const hub = open(view({ start: START, role, usable }), path)
+    const hub = open(
+      view({ start: START, role, usable, conversations: builder }),
+      path,
+      builderAnswers,
+    )
     return {
       ...hub,
       sent,

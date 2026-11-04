@@ -216,6 +216,7 @@ type HandOffInput = {
     toolCallId: ToolCallId
     projectName?: ProjectName | undefined
     connections: ConnectionId[]
+    deliver: boolean
   }
   log: FailureLog
 }
@@ -246,7 +247,10 @@ async function projectOf(
  * the person's conversation, the Projeto, the marked connections released, then a conversation of
  * that Projeto's Builder that receives the proposal once, as a signal marked as the Assistant's
  * (as an automation's run sends its own, `automations/run.ts`). Every step is keyed by the attempt,
- * so a second touch finds what the first made and sends only when nothing was sent.
+ * so a second touch finds what the first made and sends only when nothing was sent. It sends only
+ * when asked to `deliver`: Mastra tells the signal to the conversation's subscribers at that moment
+ * and stores it with the run's first step, so the screen follows the stream before it asks
+ * (Mastra's "subscribe before sending", Factory `useHandoffPrompt`).
  */
 async function handOff(deps: HandOffDeps, input: HandOffInput): Promise<HandedOff> {
   const { person, companyId, conversationId } = input
@@ -283,7 +287,7 @@ async function handOff(deps: HandOffDeps, input: HandOffInput): Promise<HandedOf
   }
   // A conversation that already holds a message received the proposal: never twice. A touch while
   // another's run is active is discarded by Mastra (`ifActive`): that one delivered it.
-  if (!(await doors.builder.asked(owner, opened.id))) {
+  if (input.body.deliver && !(await doors.builder.asked(owner, opened.id))) {
     const action = await delivered(opened.session, proposal, { person, conversationId })
     if (action !== 'discard') {
       input.log.info({ companyId, conversationId: opened.id, projectId }, 'ASSISTANT_HANDED_OFF')

@@ -35,6 +35,7 @@ type Hooks = {
   dispatch: (action: Action) => void
   onGone: () => void
   onEnded: () => void
+  onFollowing: () => void
 }
 
 function sleep(ms: number, signal: AbortSignal): Promise<void> {
@@ -141,6 +142,7 @@ async function follow(hooks: Hooks, signal: AbortSignal): Promise<void> {
       })
       if (signal.aborted) return subscription.unsubscribe()
       signal.addEventListener('abort', () => subscription.unsubscribe(), { once: true })
+      hooks.onFollowing()
       reread(hooks)
       return
     } catch (error) {
@@ -163,6 +165,8 @@ export function useSession(
 ) {
   const queryClient = useQueryClient()
   const [state, dispatch] = useReducer(session, OPENED)
+  // The stream is followed: what Mastra tells from now on reaches the screen.
+  const [following, setFollowing] = useState(false)
   const gone = useEffectEvent(on.gone)
   const ended = useEffectEvent(on.ended)
   const { conversationId, controller } = ids
@@ -201,9 +205,10 @@ export function useSession(
       dispatch,
       onGone: gone,
       onEnded: ended,
+      onFollowing: () => setFollowing(true),
     }
     void follow(hooks, stop.signal)
     return () => stop.abort()
   }, [queryClient, builder])
-  return { state, dispatch, builder, older }
+  return { state, dispatch, builder, older, following }
 }

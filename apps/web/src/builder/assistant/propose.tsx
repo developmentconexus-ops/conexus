@@ -20,8 +20,8 @@ import { Card, CardContent, CardFooter } from '../../ui/card.tsx'
 import { Field, FieldLabel } from '../../ui/field.tsx'
 import { Input } from '../../ui/input.tsx'
 import { ReadFailure } from '../../ui/states.tsx'
-import { CONTINUE_HERE, Markdown, useSay } from '../conversation/public.ts'
-import { sendAssistantHandOff } from './queries.ts'
+import type { AssistantHandOff } from '../conversation/public.ts'
+import { CONTINUE_HERE, Markdown, sendAssistantHandOff, useSay } from '../conversation/public.ts'
 import {
   BRIEFING_LABEL,
   CREATE_APP,
@@ -118,9 +118,10 @@ type CardProps = {
 }
 
 /**
- * The touch: the route hands the proposal over, once by the key the conversation and the call
- * derive (code C37, web W24). It answers NOT_FOUND for a proposal gone and for a Projeto gone, and
- * the Projeto's own read tells which.
+ * The touch: the route makes the Projeto and the Builder's conversation, once by the key the
+ * conversation and the call derive (code C37, web W24), and the conversation it opens asks the same
+ * route to send the proposal once it follows the stream (`useAssistantHandOff`). It answers
+ * NOT_FOUND for a proposal gone and for a Projeto gone, and the Projeto's own read tells which.
  */
 function useHandOff(props: CardProps, body: { name: string; marked: ConnectionId[] }) {
   const { companyId, conversation } = props
@@ -129,13 +130,15 @@ function useHandOff(props: CardProps, body: { name: string; marked: ConnectionId
   const queryClient = useQueryClient()
   const send = useMutation(sendAssistantHandOff)
   const [error, setError] = useState<{ text: string; keepsKey: boolean }>()
-  const [made, setMade] = useState<HandedOff>()
+  const [made, setMade] = useState<{ done: HandedOff; request: AssistantHandOff['request'] }>()
   const inFlight = useRef(false)
 
-  function open(done: HandedOff) {
+  function open(done: HandedOff, request: AssistantHandOff['request']) {
+    const assistantHandOff = { conversationId: done.conversationId, request }
     return navigate({
       to: '/companies/$companyId/projects/$projectId/conversations/$conversationId',
       params: { companyId, projectId: done.projectId, conversationId: done.conversationId },
+      state: { assistantHandOff },
     })
   }
 
@@ -158,17 +161,19 @@ function useHandOff(props: CardProps, body: { name: string; marked: ConnectionId
     setError(undefined)
     try {
       const attemptKey = await derivedAttemptKey(`${conversation.id}:${props.toolCallId}`)
-      const done = await send.mutateAsync({
+      const request = {
         params: { companyId, conversationId: conversation.id },
         body: {
           toolCallId: props.toolCallId,
           projectName: projectId === null ? ProjectName.parse(body.name) : undefined,
           connections: body.marked,
+          deliver: false,
         },
         attemptKey,
-      })
-      if (done.refused.length > 0) setMade(done)
-      else await open(done)
+      }
+      const done = await send.mutateAsync(request)
+      if (done.refused.length > 0) setMade({ done, request })
+      else await open(done, request)
     } catch (failure) {
       setError({
         text: (await gone(failure)) ?? writeFailureText(failure, UNCONFIRMED_HANDOFF),
@@ -285,8 +290,8 @@ export function AppProposalCard(props: CardProps) {
       )}
       {made !== undefined && (
         <>
-          <Refused made={made} connections={conversation.connections} />
-          <Button variant="primary" onClick={() => void handOff.open(made)}>
+          <Refused made={made.done} connections={conversation.connections} />
+          <Button variant="primary" onClick={() => void handOff.open(made.done, made.request)}>
             {OPEN_BUILDER}
           </Button>
         </>
