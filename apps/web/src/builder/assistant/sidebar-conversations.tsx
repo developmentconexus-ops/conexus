@@ -53,7 +53,7 @@ function ConversationRow(props: {
           </span>
         )}
       </span>
-      <span className="shrink-0 text-fact tabular-nums text-text-2">
+      <span className="shrink-0 text-fact tabular-nums text-text-2 group-focus-within/menu-item:opacity-0 group-hover/menu-item:opacity-0 pointer-coarse:group-focus-within/menu-item:opacity-100 pointer-coarse:group-hover/menu-item:opacity-100">
         {ageOf(conversation.updatedAt, props.now)}
       </span>
     </>
@@ -61,6 +61,7 @@ function ConversationRow(props: {
   return (
     <SidebarMenuItem>
       <SidebarMenuButton
+        className="pointer-coarse:pr-9"
         render={
           conversation.project === null ? (
             <Link
