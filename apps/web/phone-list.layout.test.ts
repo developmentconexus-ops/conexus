@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
 import { listAssistantConnections, listAssistantConversations } from '@conexus/hub-api'
-import { createHarness, ok, PHONE, reachOf, touching } from './layout-harness.ts'
+import { createHarness, ok, PHONE, reachOf, touching, ZOOMED_PHONE } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import { OWNER, projectsPage, startsOn } from './sweep-replies.ts'
 
@@ -9,7 +9,9 @@ const API = `/api/companies/${COMPANY.id}/assistant`
 
 function listReplies(conversations: { id: string; title: string; project: null }[]) {
   return {
-    [`GET ${API}/connections`]: ok(listAssistantConnections, { connections: [] }),
+    [`GET ${API}/connections`]: ok(listAssistantConnections, {
+      connections: [],
+    }),
     [`GET ${API}/conversations`]: ok(listAssistantConversations, {
       conversations: conversations.map((one) => ({
         automation: null,
@@ -52,7 +54,12 @@ test('a lista na gaveta do celular: o rótulo do lugar é pílula com × de 44 d
   const box = drawer.getByRole('searchbox', { name: 'Buscar pelo título' })
   const frame = await box.boundingBox()
   assert.ok(frame, 'the search field is not laid out')
-  const end = { x: frame.x + frame.width - 28, y: frame.y, width: 28, height: frame.height }
+  const end = {
+    x: frame.x + frame.width - 28,
+    y: frame.y,
+    width: 28,
+    height: frame.height,
+  }
   await box.fill('')
   await box.hover()
   const bare = await page.screenshot({ clip: end })
@@ -82,31 +89,79 @@ test('no toque, a gaveta com a lista cheia não rola de lado: nenhum alvo de toq
     ...projectsPage(COMPANY.id),
     ...startsOn(COMPANY.id),
     ...listReplies([
-      { id: '44444444-4444-4444-8444-444444444444', title: 'Pedidos do mês', project: null },
+      {
+        id: '44444444-4444-4444-8444-444444444444',
+        title: 'Pedidos do mês',
+        project: null,
+      },
     ]),
   }
-  const page = await harness.open(`/companies/${COMPANY.id}`, { viewport: PHONE, replies })
+  const page = await harness.open(`/companies/${COMPANY.id}`, {
+    viewport: PHONE,
+    replies,
+  })
   await page.getByRole('button', { name: 'Abrir navegação' }).click()
   const drawer = page.getByRole('dialog', { name: 'Navegação' })
   await drawer.getByRole('link', { name: /Pedidos do mês/ }).waitFor()
   await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== 'running'))
   await touching(page)
-  const content = await drawer.locator('[data-slot=sidebar-content]').evaluate((element) => {
-    const box = element.getBoundingClientRect()
-    const leaking = [...element.querySelectorAll('*')].flatMap((each) => {
-      const after = getComputedStyle(each, '::after')
-      const right = each.getBoundingClientRect().right
-      const reach =
-        after.position === 'absolute'
-          ? each.getBoundingClientRect().left + parseFloat(after.left) + parseFloat(after.width)
-          : right
-      return Math.max(right, reach) > box.right + 0.5
-        ? [`${each.tagName.toLowerCase()}[${each.getAttribute('aria-label') ?? ''}]`]
-        : []
-    })
-    const sideways = ['auto', 'scroll'].includes(getComputedStyle(element).overflowX)
-    return { scrolls: sideways && element.scrollWidth > element.clientWidth, leaking }
+  const content = drawer.locator('[data-slot=sidebar-content]')
+  const sideways = await content.evaluate((element) => ({
+    scrollWidth: element.scrollWidth,
+    clientWidth: element.clientWidth,
+  }))
+  assert.equal(
+    sideways.scrollWidth,
+    sideways.clientWidth,
+    `the drawer scrolls sideways: ${JSON.stringify(sideways)}`,
+  )
+  // The magnifier sits 4 px from the filter, so the filter owns the edge between them: the magnifier's width is not asserted.
+  for (const [control, wide] of [
+    [drawer.getByRole('button', { name: 'Buscar conversa' }), false],
+    [drawer.getByRole('button', { name: 'Filtrar conversas' }), true],
+  ] as const) {
+    const reach = await reachOf(control)
+    const drawn = await control.boundingBox()
+    assert.ok(drawn, 'a list control is not laid out')
+    const shape = JSON.stringify({ drawn, reach })
+    assert.ok(
+      drawn.height + reach.up + reach.down >= 44,
+      `a list control is under 44 px tall ${shape}`,
+    )
+    assert.ok(
+      !wide || drawn.width + reach.left + reach.right >= 44,
+      `a list control is under 44 px wide ${shape}`,
+    )
+  }
+  await page.close()
+})
+
+test('a lista na gaveta a 200% de ampliação: a busca, o filtro e a aba Projetos continuam ao alcance', async () => {
+  const replies = {
+    ...OWNER,
+    ...projectsPage(COMPANY.id),
+    ...startsOn(COMPANY.id),
+    ...listReplies([
+      {
+        id: '44444444-4444-4444-8444-444444444444',
+        title: 'Pedidos do mês',
+        project: null,
+      },
+    ]),
+  }
+  const page = await harness.open(`/companies/${COMPANY.id}`, {
+    viewport: ZOOMED_PHONE,
+    replies,
   })
-  assert.equal(content.scrolls, false, `the drawer scrolls sideways: ${JSON.stringify(content)}`)
+  await page.getByRole('button', { name: 'Abrir navegação' }).click()
+  const drawer = page.getByRole('dialog', { name: 'Navegação' })
+  await drawer.getByRole('link', { name: /Pedidos do mês/ }).waitFor()
+  await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== 'running'))
+  for (const control of [
+    drawer.getByRole('button', { name: 'Buscar conversa' }),
+    drawer.getByRole('button', { name: 'Filtrar conversas' }),
+    drawer.getByRole('tab', { name: 'Projetos' }),
+  ])
+    await control.click({ trial: true, timeout: 3000 })
   await page.close()
 })

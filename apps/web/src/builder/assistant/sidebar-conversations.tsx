@@ -197,8 +197,7 @@ export function SidebarConversations({ companyId }: { companyId: CompanyId }) {
         <div className="flex items-center gap-xs">
           <Button
             variant="ghost"
-            size="icon"
-            className="size-6"
+            size="icon-sm"
             aria-label={SEARCH_CONVERSATIONS}
             aria-expanded={searching}
             onClick={() => {

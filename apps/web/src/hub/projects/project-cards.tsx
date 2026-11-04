@@ -42,7 +42,7 @@ export function ProjectCards(props: { companyId: CompanyId; page: string | undef
                   {project.name.charAt(0).toLocaleUpperCase('pt-BR')}
                 </span>
                 <span className="flex min-w-0 flex-col gap-xs px-lg py-md">
-                  <span className="break-words font-display text-title text-text">
+                  <span className="wrap-break-word font-display text-title text-text">
                     {project.name}
                   </span>
                   <Stamp tone={projectStateTone(state)}>{projectStateText(state)}</Stamp>

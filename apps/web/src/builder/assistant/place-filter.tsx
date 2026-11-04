@@ -48,14 +48,7 @@ export function PlaceFilter(props: { companyId: CompanyId; place: Place | undefi
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        render={
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label={FILTER_CONVERSATIONS}
-            className="size-6"
-          />
-        }
+        render={<Button variant="ghost" size="icon-sm" aria-label={FILTER_CONVERSATIONS} />}
       >
         <FilterIcon aria-hidden="true" />
       </DropdownMenuTrigger>
