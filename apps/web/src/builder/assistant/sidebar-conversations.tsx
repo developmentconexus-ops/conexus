@@ -28,6 +28,7 @@ import {
   DAY_GROUP_LABELS,
   NEW_CONVERSATION,
   NO_CONVERSATION_FOUND,
+  NO_CONVERSATION_IN_PLACE,
   PROJECTS_TAB,
   RECENT_TAB,
   SEARCH_CONVERSATIONS,
@@ -132,8 +133,12 @@ function Recent({ companyId, view }: { companyId: CompanyId; view: ListView }) {
     return <ReadFailure text={sentenceOf(read.error)} onRetry={() => void read.refetch()} />
   }
   const { conversations, next } = read.data
-  if (conversations.length === 0 && view.q !== undefined) {
-    return <p className="px-sm text-fact text-text-2">{NO_CONVERSATION_FOUND}</p>
+  if (conversations.length === 0 && (view.q !== undefined || view.place !== undefined)) {
+    return (
+      <p className="px-sm text-fact text-text-2">
+        {view.q === undefined ? NO_CONVERSATION_IN_PLACE : NO_CONVERSATION_FOUND}
+      </p>
+    )
   }
   const now = new Date()
   return (
@@ -209,14 +214,16 @@ export function SidebarConversations({ companyId }: { companyId: CompanyId }) {
           >
             <SearchIcon aria-hidden="true" />
           </Button>
-          <PlaceFilter companyId={companyId} place={view.place} />
+          {view.tab !== 'PROJECTS' && <PlaceFilter companyId={companyId} place={view.place} />}
         </div>
       </div>
       {searching && <SearchBox q={view.q} focus={openedByClick} />}
-      {view.place !== undefined && <PlaceLabel companyId={companyId} place={view.place} />}
+      {view.place !== undefined && view.tab !== 'PROJECTS' && (
+        <PlaceLabel companyId={companyId} place={view.place} />
+      )}
       <ViewTabs view={view} />
       {view.tab === 'PROJECTS' ? (
-        <ProjectsTab companyId={companyId} />
+        <ProjectsTab companyId={companyId} q={view.q} />
       ) : (
         <Recent companyId={companyId} view={view} />
       )}
