@@ -122,3 +122,7 @@ export function doneText(done: number, failed: number): string {
   const made = `${done} ${done === 1 ? 'feito' : 'feitos'}`
   return failed === 0 ? made : `${made}, ${failed} ${failed === 1 ? 'falhou' : 'falharam'}`
 }
+
+/** What the footer of a request the Assistant handed to the Builder says beside the hour (Factory's "via Slack · Jane"). */
+export const FROM_ASSISTANT = 'via Assistente'
+export const FROM_ASSISTANT_LABEL = 'Enviado pelo Assistente'
