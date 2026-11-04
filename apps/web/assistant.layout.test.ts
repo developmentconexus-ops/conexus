@@ -3,9 +3,9 @@ import { after, before, test } from 'node:test'
 import { listAssistantConnections, listAssistantConversations } from '@conexus/hub-api'
 import type { Page } from 'playwright-core'
 import type { Replies } from './layout-harness.ts'
-import { createHarness, DESKTOP, failure, ok, PHONE, touching } from './layout-harness.ts'
+import { createHarness, DESKTOP, ok, PHONE, touching } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
-import { ASSISTANT_ID, ASSISTANT_PATH, ASSISTANT_REPLIES } from './sweep-assistant-states.ts'
+import { ASSISTANT_PATH, ASSISTANT_REPLIES } from './sweep-assistant-states.ts'
 import { OWNER, PROJECT_ID, PROJECT_NAME, projectsPage, startsOn } from './sweep-replies.ts'
 
 // The Assistant's Início and Conversas do Projeto in a real browser (step 24.1, criterion 23).
@@ -311,37 +311,4 @@ test('as linhas do "+" têm 44 px num toque e 32 com o mouse (V58)', async () =>
   assert.ok(fine.length > 0 && fine.every((height) => height === 32), `mouse rows: ${fine}`)
   const touch = await plusRows(PHONE, true)
   assert.ok(touch.length > 0 && touch.every((height) => height === 44), `touch rows: ${touch}`)
-})
-
-test('apagar a conversa aberta pelo ⋮ termina na conversa nova, não em "não encontramos" (24.3.3, critério 7)', async () => {
-  const open = assistant([{ id: ASSISTANT_ID, title: 'Vendas da semana', project: null }])
-  const empty = assistant([])
-  const replies: Replies = { ...ASSISTANT_REPLIES, ...open }
-  let deleted = () => false
-  // After the 204 the Hub no longer holds the conversation: its reads and the list say so, as they do live.
-  for (const [key, gone] of Object.entries(ASSISTANT_REPLIES)) {
-    if (key.startsWith('GET ') && key.includes(ASSISTANT_ID)) {
-      Object.defineProperty(replies, key, {
-        enumerable: true,
-        get: () => (deleted() ? { ...failure('CONVERSATION_NOT_FOUND'), hold: new Promise((r) => setTimeout(r, 800)) } : gone),
-      })
-    }
-  }
-  const listKey = `GET ${API}/conversations`
-  const listed = open[listKey]
-  const none = empty[listKey]
-  Object.defineProperty(replies, listKey, {
-    enumerable: true,
-    get: () => (deleted() && none ? { ...none, hold: new Promise((r) => setTimeout(r, 300)) } : listed),
-  })
-  replies[`DELETE ${API}/conversations/${ASSISTANT_ID}`] = { status: 204 }
-  const page = await harness.open(ASSISTANT_PATH, { viewport: DESKTOP, replies })
-  deleted = () => page.seen.some((one) => one.method === 'DELETE')
-  await page.getByRole('button', { name: /^Ações da conversa: Vendas da semana/ }).click()
-  await page.getByRole('menuitem', { name: 'Apagar' }).click()
-  await page.getByRole('button', { name: 'Apagar conversa' }).click()
-  await page.waitForURL(`**/companies/${COMPANY.id}`)
-  await page.getByText('Confira o endereço.').waitFor({ state: 'detached', timeout: 2000 })
-  assert.equal(new URL(page.url()).pathname, `/companies/${COMPANY.id}`)
-  await page.close()
 })

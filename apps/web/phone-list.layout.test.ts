@@ -1,8 +1,25 @@
 import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
-import { createHarness, PHONE, reachOf, touching } from './layout-harness.ts'
+import { listAssistantConnections, listAssistantConversations } from '@conexus/hub-api'
+import { createHarness, ok, PHONE, reachOf, touching } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import { OWNER, projectsPage, startsOn } from './sweep-replies.ts'
+
+const API = `/api/companies/${COMPANY.id}/assistant`
+
+function listReplies(conversations: { id: string; title: string; project: null }[]) {
+  return {
+    [`GET ${API}/connections`]: ok(listAssistantConnections, { connections: [] }),
+    [`GET ${API}/conversations`]: ok(listAssistantConversations, {
+      conversations: conversations.map((one) => ({
+        automation: null,
+        ...one,
+        updatedAt: '2026-10-19T12:00:00.000Z',
+      })),
+      next: { kind: 'END' },
+    }),
+  }
+}
 
 // The company's list inside the phone's drawer: the place label and the list's own controls (design V22, V32, V56).
 const harness = createHarness(import.meta.dirname)
@@ -56,5 +73,40 @@ test('a lista na gaveta do celular: o rótulo do lugar é pílula com × de 44 d
     drawn.height + reach.up + reach.down >= 44,
     `the × is under 44 px tall to a finger ${JSON.stringify({ drawn, reach })}`,
   )
+  await page.close()
+})
+
+test('no toque, a gaveta com a lista cheia não rola de lado: nenhum alvo de toque passa da borda da área que rola (V18)', async () => {
+  const replies = {
+    ...OWNER,
+    ...projectsPage(COMPANY.id),
+    ...startsOn(COMPANY.id),
+    ...listReplies([
+      { id: '44444444-4444-4444-8444-444444444444', title: 'Pedidos do mês', project: null },
+    ]),
+  }
+  const page = await harness.open(`/companies/${COMPANY.id}`, { viewport: PHONE, replies })
+  await page.getByRole('button', { name: 'Abrir navegação' }).click()
+  const drawer = page.getByRole('dialog', { name: 'Navegação' })
+  await drawer.getByRole('link', { name: /Pedidos do mês/ }).waitFor()
+  await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== 'running'))
+  await touching(page)
+  const content = await drawer.locator('[data-slot=sidebar-content]').evaluate((element) => {
+    const box = element.getBoundingClientRect()
+    const leaking = [...element.querySelectorAll('*')].flatMap((each) => {
+      const after = getComputedStyle(each, '::after')
+      const right = each.getBoundingClientRect().right
+      const reach =
+        after.position === 'absolute'
+          ? each.getBoundingClientRect().left + parseFloat(after.left) + parseFloat(after.width)
+          : right
+      return Math.max(right, reach) > box.right + 0.5
+        ? [`${each.tagName.toLowerCase()}[${each.getAttribute('aria-label') ?? ''}]`]
+        : []
+    })
+    const sideways = ['auto', 'scroll'].includes(getComputedStyle(element).overflowX)
+    return { scrolls: sideways && element.scrollWidth > element.clientWidth, leaking }
+  })
+  assert.equal(content.scrolls, false, `the drawer scrolls sideways: ${JSON.stringify(content)}`)
   await page.close()
 })

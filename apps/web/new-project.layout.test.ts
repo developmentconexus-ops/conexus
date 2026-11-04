@@ -69,3 +69,21 @@ test('o dono não tem o + na lista: "Novo projeto" fica no cabeçalho do bloco P
   await page.getByRole('dialog', { name: 'Novo projeto' }).waitFor()
   await page.close()
 })
+
+for (const viewport of [DESKTOP, PHONE]) {
+  test(`Todos os projetos: o nome comprido do Projeto aparece inteiro no cartão a ${viewport.width}px, em mais de uma linha se for preciso (V18)`, async () => {
+    const page = await harness.open(`/companies/${COMPANY.id}/projects`, {
+      viewport,
+      replies: { ...OWNER, ...projectsPage(COMPANY.id) },
+    })
+    const name = page.getByRole('link').locator('span.font-display').last()
+    await name.waitFor()
+    const cut = await name.evaluate((element) => ({
+      ellipsis: getComputedStyle(element).textOverflow === 'ellipsis',
+      clipped: element.scrollWidth > element.clientWidth,
+    }))
+    assert.deepEqual(cut, { ellipsis: false, clipped: false }, 'the name is cut in the card')
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), viewport.width)
+    await page.close()
+  })
+}
