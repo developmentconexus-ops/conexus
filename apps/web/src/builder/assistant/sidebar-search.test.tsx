@@ -93,7 +93,8 @@ test('a aba Projetos: um grupo por Projeto com as conversas dele e Sem Projeto n
   const project = await nav.findByRole('button', { name: /Pedidos/ })
   const without = await nav.findByRole('button', { name: /Sem Projeto/ })
   expect(project.compareDocumentPosition(without) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-  expect(await nav.findByRole('link', { name: /Do Projeto/ })).toBeTruthy()
+  const row = await nav.findByRole('link', { name: /Do Projeto/ })
+  expect(row.textContent).not.toContain('Pedidos')
   expect(await nav.findByRole('link', { name: /Da casa/ })).toBeTruthy()
 })
 
@@ -137,6 +138,18 @@ test('o campo da busca limita o texto ao do contrato e não deixa o ✕ do naveg
   fireEvent.click(await nav.findByRole('button', { name: 'Buscar conversa' }))
   const box = await nav.findByRole('searchbox', { name: 'Buscar pelo título' })
   expect(box.getAttribute('maxlength')).toBe(String(CONVERSATION_SEARCH_MAX))
+})
+
+test('a lupa leva o foco ao campo; o endereço com o texto abre o campo sem tirar o foco da página', async () => {
+  at(`${COMPANY_ROOT}?q=hoje`, { conversations: TWO })
+  const nav = await list()
+  const box = await nav.findByRole('searchbox', { name: 'Buscar pelo título' })
+  expect(document.activeElement).not.toBe(box)
+  fireEvent.click(nav.getByRole('button', { name: 'Buscar conversa' }))
+  fireEvent.click(nav.getByRole('button', { name: 'Buscar conversa' }))
+  expect(document.activeElement).toBe(
+    await nav.findByRole('searchbox', { name: 'Buscar pelo título' }),
+  )
 })
 
 test('fechar a lupa tira o texto do endereço e a lista volta inteira', async () => {

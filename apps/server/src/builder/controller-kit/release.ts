@@ -8,7 +8,7 @@ export type ReleaseScope = { companyId: CompanyId; projectId?: ProjectId; person
 
 /**
  * Deletes each thread: its session first, so its run is aborted, then the owner's step (the
- * Assistant's machine), then the thread (data D17). A thread deleted twice, or a failure halfway,
+ * Assistant's machine), then the thread. A thread deleted twice, or a failure halfway,
  * leaves what the next removal finds again.
  */
 export async function releaseThreads(

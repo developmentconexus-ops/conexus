@@ -52,6 +52,7 @@ function Group(props: {
                 companyId={props.companyId}
                 conversation={conversation}
                 now={now}
+                inProject
               />
             ))}
           </SidebarMenu>

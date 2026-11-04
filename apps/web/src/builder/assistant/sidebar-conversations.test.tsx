@@ -211,15 +211,25 @@ test('a confirmação de apagar abre com o foco em Cancelar, a ação menos dest
 })
 
 test('apagar uma conversa que já foi some da lista, sem erro', async () => {
+  const held = fresh()
   at(COMPANY_ROOT, {
-    conversations: fresh(),
-    answers: { remove: () => refusal('CONVERSATION_NOT_FOUND') },
+    conversations: held,
+    // The Hub no longer holds it when it answers, as it would after the person's other tab.
+    answers: {
+      remove: () => {
+        held.splice(0, held.length)
+        return refusal('CONVERSATION_NOT_FOUND')
+      },
+    },
   })
   await menuOf('De hoje')
   fireEvent.click(await screen.findByRole('menuitem', { name: 'Apagar' }))
   fireEvent.click(await screen.findByRole('button', { name: 'Apagar conversa' }))
   await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull())
   expect(screen.queryByRole('alert')).toBeNull()
+  await waitFor(async () =>
+    expect((await list()).queryByRole('link', { name: /De hoje/ })).toBeNull(),
+  )
 })
 
 test('apagar a conversa aberta leva a uma conversa nova', async () => {

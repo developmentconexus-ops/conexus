@@ -21,6 +21,18 @@ test('renomear: o título fica na lista, e um título vazio ou longo demais é R
   assert.deepEqual([other.statusCode, codeOf(other)], [404, 'CONVERSATION_NOT_FOUND'])
 })
 
+test('renomear: a conversa de um Projeto continua no Projeto, porque a marca fixa o título sem trocar as outras (5)', async (t) => {
+  const on = await assisting(t)
+  const mine = await created(on.hub, on.ana, on.assistant, {
+    projectId: on.projectId,
+    connections: [],
+  })
+  const renamed = await call(on.hub, on.ana, 'PATCH', mine, { title: 'Pedidos de outubro' })
+  assert.equal(renamed.statusCode, 200, renamed.body)
+  const read = await call(on.hub, on.ana, 'GET', mine)
+  assert.equal(Object(read.json()).conversation.projectId, on.projectId)
+})
+
 const LONG = 'As encomendas da padaria chegam pelo telefone e pelo balcão. '.repeat(3000)
 const OBSERVED = [
   '<observations>',
