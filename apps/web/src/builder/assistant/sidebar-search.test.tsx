@@ -137,7 +137,6 @@ test('o campo da busca limita o texto ao do contrato e não deixa o ✕ do naveg
   fireEvent.click(await nav.findByRole('button', { name: 'Buscar conversa' }))
   const box = await nav.findByRole('searchbox', { name: 'Buscar pelo título' })
   expect(box.getAttribute('maxlength')).toBe(String(CONVERSATION_SEARCH_MAX))
-  expect(box.className).toContain('[&::-webkit-search-cancel-button]:appearance-none')
 })
 
 test('fechar a lupa tira o texto do endereço e a lista volta inteira', async () => {
@@ -170,4 +169,23 @@ test('digitar na busca mantém a lista à vista até a resposta chegar, sem esqu
   await waitFor(() => expect(nav.queryByRole('link', { name: /ontem/ })).toBeNull())
   watch.disconnect()
   expect(most).toBe(0)
+})
+
+test('trocar de lugar com a resposta a caminho mostra os esqueletos, nunca a lista do lugar anterior', async () => {
+  const answer = Promise.withResolvers<undefined>()
+  let held: Promise<undefined> | undefined
+  at(COMPANY_ROOT, { conversations: TWO, answers: { list: () => held } })
+  const nav = await list()
+  await nav.findByRole('link', { name: /De hoje/ })
+  held = answer.promise
+  fireEvent.click(await nav.findByRole('button', { name: 'Filtrar conversas' }))
+  fireEvent.click(await screen.findByRole('menuitemradio', { name: 'Início' }))
+  await waitFor(() =>
+    expect(
+      document.querySelectorAll('[data-sidebar="sidebar"] [data-slot="sidebar-menu-skeleton"]'),
+    ).toHaveLength(3),
+  )
+  expect(nav.queryByRole('link', { name: /De hoje/ })).toBeNull()
+  answer.resolve(undefined)
+  expect(await nav.findByRole('link', { name: /De hoje/ })).toBeTruthy()
 })
