@@ -150,9 +150,6 @@ for (const viewport of [DESKTOP, WIDE, PHONE])
     const working = page.getByRole('status').filter({ hasText: 'trabalhando' })
     const form = page.locator('form').filter({ has: page.getByLabel('Mensagem') })
     await working.waitFor()
-    // The scroller stays hidden until its first scroll to the end lands; measuring before that
-    // reads the conversation at the top.
-    await scroller.waitFor()
     const [scroll, line, box, log, last] = await Promise.all([
       scroller.boundingBox(),
       working.locator('svg').first().boundingBox(),
