@@ -1,0 +1,59 @@
+name: Orçamento do CI
+
+# Once a day, and by hand: a job of `main` at 85% or more of its `timeout-minutes` in each of the
+# last three runs opens the issue "CI acima do orçamento", and an open one gets today's table.
+# The warning of every run is the job `ci`'s, in ci.yml; the rule of the three runs is
+# scripts/ci-budget.ts.
+on:
+  schedule:
+    - cron: "0 11 * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+# Two triggers together take turns: the second finds the issue the first opened.
+concurrency:
+  group: ci-budget
+  cancel-in-progress: false
+
+jobs:
+  budget:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      actions: read
+      contents: read
+      issues: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TITLE: CI acima do orçamento
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/install # zizmor: ignore[self-repository] actionlint 1.7.12 rejects the $/ form
+      # The 10 latest completed runs of ci.yml on main, and the jobs of each one's last attempt.
+      - name: The runs and their jobs
+        run: |
+          mkdir -p "$RUNNER_TEMP/jobs"
+          gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?branch=main&event=push&status=completed&per_page=10" > "$RUNNER_TEMP/runs.json"
+          for id in $(jq -r '.workflow_runs[].id' "$RUNNER_TEMP/runs.json"); do
+            gh api "repos/$GITHUB_REPOSITORY/actions/runs/$id/jobs?filter=latest&per_page=100" > "$RUNNER_TEMP/jobs/$id.json"
+          done
+          # The budget of a job is its own `timeout-minutes`, under its name or else its key.
+          yq -o=json '.jobs | to_entries | map(select(.value.timeout-minutes != null) | {"key": (.value.name // .key), "value": .value.timeout-minutes}) | from_entries' .github/workflows/ci.yml > "$RUNNER_TEMP/budgets.json"
+      - name: The rule of the three runs
+        id: rule
+        run: node scripts/ci-budget.ts --runs "$RUNNER_TEMP/runs.json" --jobs "$RUNNER_TEMP/jobs" --budgets "$RUNNER_TEMP/budgets.json" --body "$RUNNER_TEMP/body.md"
+      # The issue is found by its exact title, never by a label.
+      - name: The issue
+        env:
+          OVER: ${{ steps.rule.outputs.over }}
+        run: |
+          # shellcheck disable=SC2016 # the jq program is single-quoted so the shell leaves its $variables alone
+          open=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --limit 200 --json number,title | jq -r --arg title "$TITLE" '.[] | select(.title == $title) | .number' | head -n 1)
+          if [ -n "$open" ]; then
+            gh issue edit "$open" --repo "$GITHUB_REPOSITORY" --body-file "$RUNNER_TEMP/body.md"
+          elif [ "$OVER" != "0" ]; then
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$TITLE" --body-file "$RUNNER_TEMP/body.md"
+          fi
