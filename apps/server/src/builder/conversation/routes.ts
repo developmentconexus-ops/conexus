@@ -11,9 +11,8 @@ import { Failure } from '../../platform/failure.ts'
 import { answer, serve } from '../../platform/http.ts'
 import { pageKey } from '../../platform/pages.ts'
 import type { Owner } from '../controller-kit/public.ts'
-import { attemptIdOf, openSession, resourceOf } from '../controller-kit/public.ts'
+import { attemptIdOf, changeModel, openSession } from '../controller-kit/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
-import { conversationModel, effortsOf } from '../model-accounts/public.ts'
 import type { Builder } from './builder.ts'
 import { titleOf, titlesOf } from './history.ts'
 import type { ConversationStore, InProject } from './store.ts'
@@ -23,24 +22,6 @@ type Deps = { store: ConversationStore; builder: Builder; queue: QueueDeps }
 
 function ownerOf(input: { person: Person; params: { companyId: CompanyId } }): Owner {
   return { companyId: input.params.companyId, personId: input.person.id }
-}
-
-/**
- * Puts the conversation on a model and an effort, kept together on its thread (`switch`), for its
- * next turns. Mastra's `createSession` is get-or-create: the session is born here, on the
- * conversation's own thread, and every route of Mastra's addresses it by the conversation's id.
- */
-async function switchModel(
-  builder: Builder,
-  input: { owner: Owner; conversationId: ConversationId; model: ModelId; effort: Effort },
-) {
-  const { owner, conversationId } = input
-  const session = await builder.controller.createSession({
-    id: conversationId,
-    resourceId: resourceOf('builder', owner),
-    threadId: conversationId,
-  })
-  await session.model.switch(input.model, { thinkingLevel: input.effort })
 }
 
 /** What the person reads of the conversations: the list and one conversation. */
@@ -132,11 +113,10 @@ function registerWrites(app: FastifyInstance, deps: Deps) {
   serve(app, setConversationModel, async (input) => {
     const { person, params, body } = input
     await store.owned({ person, ...params })
-    const owner = ownerOf(input)
-    const model = await conversationModel(deps.queue, owner, body.model)
-    const { effort } = body
-    if (!effortsOf(model).includes(effort)) throw new Failure('EFFORT_UNSUPPORTED')
-    await switchModel(deps.builder, { owner, conversationId: params.conversationId, model, effort })
+    const { model, effort } = await changeModel(
+      { controller: deps.builder.controller, queue: deps.queue },
+      { kind: 'builder', owner: ownerOf(input), id: params.conversationId, choice: body },
+    )
     input.log.info(
       { companyId: params.companyId, conversationId: params.conversationId },
       'CONVERSATION_MODEL_SET',

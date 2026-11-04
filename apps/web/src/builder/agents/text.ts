@@ -4,8 +4,7 @@ import { dayAndHour } from '../../platform/dates.ts'
 /** The words of the Agentes screens (step 24.3, U5); the founder approves them at the step's end. */
 export const AREA_TITLE = 'Agentes'
 export const CONSTRUTOR_NAME = 'Construtor'
-export const CONSTRUTOR_FIRST =
-  'Conte o que você quer que um agente faça. Eu olho o Projeto e trago ideias.'
+export const CONSTRUTOR_FIRST = 'Conte o que você quer que um agente faça.'
 export const CONSTRUTOR_PLACEHOLDER = 'Peça ao Construtor…'
 export const CONSTRUTOR_EXAMPLES = [
   { label: 'Um agente de vendas', text: 'Quero um agente de vendas' },

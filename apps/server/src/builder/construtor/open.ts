@@ -1,4 +1,4 @@
-import type { ConversationId } from '@conexus/hub-api'
+import type { ConversationId, Effort, ModelId } from '@conexus/hub-api'
 import type { AgentController } from '@mastra/core/agent-controller'
 import type { StorageThreadType } from '@mastra/core/memory'
 import type { Memory } from '@mastra/memory'
@@ -18,6 +18,15 @@ export const CONSTRUTOR_MARK = {
   project: 'conexusConstrutorProject',
 } as const
 
+/** The marks a Construtor conversation's thread is born with, which a session recovered later must carry too. */
+export function construtorMarks(scope: InProject): Record<string, string> {
+  return {
+    [CONSTRUTOR_MARK.company]: scope.companyId,
+    [CONSTRUTOR_MARK.person]: scope.personId,
+    [CONSTRUTOR_MARK.project]: scope.projectId,
+  }
+}
+
 /**
  * Opens a conversation of the person's with the Construtor in the Projeto (`openSession` of the
  * kit, no row of the Hub): the id is the attempt's, so a repeat finds the same thread, and one
@@ -25,15 +34,16 @@ export const CONSTRUTOR_MARK = {
  */
 export function openConstrutor(
   deps: { controller: AgentController; memory: Memory; queue: QueueDeps },
-  input: { scope: InProject; id: ConversationId },
+  input: {
+    scope: InProject
+    id: ConversationId
+    model?: ModelId | undefined
+    effort?: Effort | undefined
+  },
 ) {
   const { scope, id } = input
   const owner = { companyId: scope.companyId, personId: scope.personId }
-  const tags = {
-    [CONSTRUTOR_MARK.company]: scope.companyId,
-    [CONSTRUTOR_MARK.person]: scope.personId,
-    [CONSTRUTOR_MARK.project]: scope.projectId,
-  }
+  const tags = construtorMarks(scope)
   async function keep(): Promise<Kept> {
     const thread = await deps.memory.getThreadById({
       threadId: id,
@@ -42,7 +52,10 @@ export function openConstrutor(
     if (thread === null) return { made: true }
     return { made: false, same: thread.metadata?.[CONSTRUTOR_MARK.project] === scope.projectId, id }
   }
-  return openSession(deps, { kind: 'construtor', owner, id, tags, keep })
+  return openSession(deps, {
+    ...{ kind: 'construtor', owner, id, tags, keep },
+    ...{ model: input.model, effort: input.effort },
+  })
 }
 
 /** The thread a conversation of the person's is, which `openSession` has just made or found. */
