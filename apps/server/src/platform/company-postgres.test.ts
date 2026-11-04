@@ -8,12 +8,12 @@ import { isDeepStrictEqual } from 'node:util'
 import { appLogin, appLoginPassword, ProjectId } from '@conexus/hub-api'
 import { neonConfig } from '@neondatabase/serverless'
 import pg from 'pg'
-import type { SqlTransport } from './company-postgres.ts'
 import { createCompanyPostgres, neonTransport } from './company-postgres.ts'
 import { testAppsConfig } from './test-cloudflare.ts'
 import {
   appLoginTimeoutsOf,
   appTablesOf,
+  countingTransport,
   createCompanyDatabase,
   pgTransport,
   plantApplied,
@@ -233,10 +233,9 @@ test('lista fixa: só passa o que a garantia vê', async (t) => {
   const owner = await createCompanyDatabase(t)
   const id = await seeded(owner)
   let calls = 0
-  const counting: SqlTransport = (url, statements, signal) => {
+  const counting = countingTransport(() => {
     calls++
-    return pgTransport(url, statements, signal)
-  }
+  })
   const counted = createCompanyPostgres({ transport: counting, appLoginKey: KEY })
   const got: Record<string, unknown> = {}
   const want: Record<string, unknown> = {}

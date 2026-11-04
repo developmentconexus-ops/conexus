@@ -1,4 +1,4 @@
-import type { AgentDetail } from '@conexus/hub-api'
+import type { AgentDetail, ProblemField, ProblemReason } from '@conexus/hub-api'
 import { dayAndHour } from '../../platform/dates.ts'
 
 /** The words of the Agentes screens (step 24.3, U5); the founder approves them at the step's end. */
@@ -75,22 +75,21 @@ export function publishedText(version: number): string {
 }
 
 /** The whole sentence for each field a publication lacks, so each agrees with its own words. */
-const MISSING: Record<string, string> = {
+const MISSING: Partial<Record<ProblemField, string>> = {
   instructions: 'Faltam as instruções para publicar.',
   connections: 'Falta uma ligação que o Projeto ofereça para publicar.',
-  name: 'Falta o nome para publicar.',
   model: 'Falta o modelo para publicar.',
 }
 
-export function missingField(field: string | undefined): string {
+export function missingField(field: ProblemField | undefined): string {
   return (field === undefined ? undefined : MISSING[field]) ?? 'Falta um campo para publicar.'
 }
 
 export function deleteWarning(name: string): string {
-  return `Apagar ${name} apaga também as conversas de todas as pessoas com ele e as automações que o rodam. Não dá para desfazer.`
+  return `Apagar ${name} apaga também as conversas de todas as pessoas com ele e as automações que o rodam. Se ele estiver respondendo agora, essa resposta é interrompida. Não dá para desfazer.`
 }
 
-const REASONS: Record<string, string> = {
+const REASONS = {
   NOT_OFFERED: 'o Projeto não recebeu esta ligação',
   NOT_A_READ: 'só leituras entram nesta etapa',
   VALUE_REFUSED: 'a operação não aceita este valor',
@@ -100,11 +99,11 @@ const REASONS: Record<string, string> = {
   SLUG_TAKEN: 'já existe uma ferramenta com este nome',
   NOT_USABLE: 'o Projeto não pode usar esta ferramenta',
   SAME_TOOL_TWICE: 'a mesma ferramenta não entra duas vezes',
-}
+} satisfies Record<ProblemReason, string>
 
 /** The reason a refusal of a tool or of a choice names, in words. */
-export function reasonText(reason: string | undefined): string | undefined {
-  return reason === undefined ? undefined : (REASONS[reason] ?? reason)
+export function reasonText(reason: ProblemReason | undefined): string | undefined {
+  return reason === undefined ? undefined : REASONS[reason]
 }
 
 /** When a conversation has no title yet, the moment it was last written, the contract's only date. */

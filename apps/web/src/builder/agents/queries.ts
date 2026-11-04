@@ -43,8 +43,8 @@ export function construtorConversationsQuery(scope: Scope) {
   return hubQuery(listConstrutorConversations, { params: scope })
 }
 
-/** Everything the area lists: the agents and the Construtor's conversations of a Projeto. */
-export function agentsPrefix(scope: Scope) {
+/** Every read of the company's agent lists, whichever Projeto it names (the lists are keyed by company and Projeto). */
+export function agentsPrefix(scope: Pick<Scope, 'companyId'>) {
   return hubQueryPrefix(listAgents, { companyId: scope.companyId })
 }
 

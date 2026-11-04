@@ -40,6 +40,8 @@ type Answers = {
   /** What the read of the agent answers instead of its row. */
   read?: () => Response | undefined
   publish?: () => Response | undefined
+  /** What going back to a version answers instead of the Hub's success. */
+  activate?: () => Response | undefined
   /** What the creation of a tool answers instead of the Hub's success. */
   createTool?: () => Response | undefined
   /** What the read of the Projeto's agents answers instead of the list. */
@@ -127,6 +129,8 @@ function versionRoutes(held: Held, note: Note, find: (id: unknown) => AgentDetai
       `${PROJECT_API}/agents/:id/versions/:number/activate`,
       async ({ request, params }) => {
         await note(request)
+        const replaced = answers.activate?.()
+        if (replaced) return replaced
         const found = find(params.id)
         if (!found) return refusal('AGENT_NOT_FOUND')
         const number = Number(params.number)

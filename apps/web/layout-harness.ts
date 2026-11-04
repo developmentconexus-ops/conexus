@@ -4,7 +4,7 @@ import { extname, join } from 'node:path'
 import { appContentSecurityPolicy } from '@conexus/app-contract'
 import type { FailureCode } from '@conexus/hub-api'
 import { FAILURES } from '@conexus/hub-api'
-import type { Browser, Locator, Page } from 'playwright-core'
+import type { Browser, LaunchOptions, Locator, Page } from 'playwright-core'
 import { chromium } from 'playwright-core'
 import { build } from 'vite'
 import type { z } from 'zod'
@@ -131,7 +131,18 @@ async function routeApp(page: Page) {
   })
 }
 
-export function createHarness(root: string): Harness {
+function launchOptions(scrollbars: 'classic' | 'hidden' | undefined): LaunchOptions {
+  return scrollbars === 'classic' ? { ignoreDefaultArgs: ['--hide-scrollbars'] } : {}
+}
+
+/**
+ * `scrollbars: 'classic'` keeps the browser's own scrollbars, which the headless shell hides by
+ * default; a screen whose scrollbar must stay in view needs them.
+ */
+export function createHarness(
+  root: string,
+  options: { scrollbars?: 'classic' | 'hidden' } = {},
+): Harness {
   let outDir = ''
   let browser: Browser | undefined
   const unanswered: string[] = []
@@ -201,7 +212,7 @@ export function createHarness(root: string): Harness {
         },
       })
       // The headless shell pinned by playwright-core, which the `pretest` script installs.
-      browser = await chromium.launch()
+      browser = await chromium.launch(launchOptions(options.scrollbars))
     },
     async stop() {
       await browser?.close()
