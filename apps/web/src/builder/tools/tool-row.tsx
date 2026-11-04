@@ -91,10 +91,12 @@ export function ToolRow({ scope, tool }: { scope: Scope; tool: ToolSummary }) {
           </Link>
           <span className="block text-fact text-text-2">{tool.description}</span>
           {phone && (
-            <span className="block text-fact text-text-2">
-              Lê {tool.readLabel} em {tool.connectionName} · {EFFECT_TEXT[tool.effect]}
-              {users !== null && ` · ${users}`}
-            </span>
+            <>
+              <span className="block text-fact text-text-2">
+                {tool.connectionName} · {tool.readLabel} · {EFFECT_TEXT[tool.effect]}
+              </span>
+              {users !== null && <span className="block text-fact text-text-2">{users}</span>}
+            </>
           )}
         </TableCell>
         {!phone && (
