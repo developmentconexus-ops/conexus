@@ -145,3 +145,99 @@ test('o membro vê na lista os Projetos recentes, como hoje, e nenhuma conversa 
   expect(nav.queryByRole('link', { name: 'Nova conversa' })).toBeNull()
   expect(nav.queryByRole('link', { name: /De hoje/ })).toBeNull()
 })
+
+function fresh() {
+  return BY_DAY.map((one) => ({ ...one }))
+}
+
+async function menuOf(title: string) {
+  const nav = await list()
+  const button = await nav.findByRole('button', { name: new RegExp(`Ações da conversa: ${title}`) })
+  fireEvent.click(button)
+  return nav
+}
+
+test('o ⋮ oferece Renomear e Apagar; renomear manda o título novo e a linha o mostra', async () => {
+  const { writes } = at(COMPANY_ROOT, { conversations: fresh() })
+  await menuOf('De hoje')
+  fireEvent.click(await screen.findByRole('menuitem', { name: 'Renomear' }))
+  const field = await screen.findByLabelText('Título da conversa')
+  fireEvent.change(field, { target: { value: 'Vendas de outubro' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Salvar' }))
+  expect(await (await list()).findByRole('link', { name: /Vendas de outubro/ })).toBeTruthy()
+  expect(writes().map((one) => [one.method, one.body])).toEqual([
+    ['PATCH', { title: 'Vendas de outubro' }],
+  ])
+})
+
+test('renomear com o título vazio diz em português o que escrever e não manda nada', async () => {
+  const { writes } = at(COMPANY_ROOT, { conversations: fresh() })
+  await menuOf('De hoje')
+  fireEvent.click(await screen.findByRole('menuitem', { name: 'Renomear' }))
+  fireEvent.change(await screen.findByLabelText('Título da conversa'), { target: { value: '' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Salvar' }))
+  expect(await screen.findByText('Escreva um título, com até 120 caracteres.')).toBeTruthy()
+  expect(writes()).toHaveLength(0)
+})
+
+test('apagar pede a confirmação com dois botões; Cancelar não apaga, Apagar conversa tira a linha', async () => {
+  const { writes } = at(COMPANY_ROOT, { conversations: fresh() })
+  await menuOf('De hoje')
+  fireEvent.click(await screen.findByRole('menuitem', { name: 'Apagar' }))
+  const dialog = await screen.findByRole('alertdialog', { name: 'Apagar esta conversa?' })
+  expect(within(dialog).getByText(/Isto não se desfaz/)).toBeTruthy()
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Cancelar' }))
+  await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull())
+  expect(writes()).toHaveLength(0)
+
+  fireEvent.click(await (await list()).findByRole('button', { name: /Ações da conversa: De hoje/ }))
+  fireEvent.click(await screen.findByRole('menuitem', { name: 'Apagar' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Apagar conversa' }))
+  await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull())
+  await waitFor(async () =>
+    expect((await list()).queryByRole('link', { name: /De hoje/ })).toBeNull(),
+  )
+  expect(writes().map((one) => one.method)).toEqual(['DELETE'])
+})
+
+test('a confirmação de apagar abre com o foco em Cancelar, a ação menos destrutiva', async () => {
+  at(COMPANY_ROOT, { conversations: fresh() })
+  await menuOf('De hoje')
+  fireEvent.click(await screen.findByRole('menuitem', { name: 'Apagar' }))
+  const dialog = await screen.findByRole('alertdialog', { name: 'Apagar esta conversa?' })
+  await waitFor(() =>
+    expect(document.activeElement).toBe(within(dialog).getByRole('button', { name: 'Cancelar' })),
+  )
+})
+
+test('apagar uma conversa que já foi some da lista, sem erro', async () => {
+  const held = fresh()
+  at(COMPANY_ROOT, {
+    conversations: held,
+    // The Hub no longer holds it when it answers, as it would after the person's other tab.
+    answers: {
+      remove: () => {
+        held.splice(0, held.length)
+        return refusal('CONVERSATION_NOT_FOUND')
+      },
+    },
+  })
+  await menuOf('De hoje')
+  fireEvent.click(await screen.findByRole('menuitem', { name: 'Apagar' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Apagar conversa' }))
+  await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull())
+  expect(screen.queryByRole('alert')).toBeNull()
+  await waitFor(async () =>
+    expect((await list()).queryByRole('link', { name: /De hoje/ })).toBeNull(),
+  )
+})
+
+test('apagar a conversa aberta leva a uma conversa nova', async () => {
+  const { conexus } = at(`${COMPANY_ROOT}/conversations/${BY_DAY[0]?.conversation.id}`, {
+    conversations: fresh(),
+  })
+  await menuOf('De hoje')
+  fireEvent.click(await screen.findByRole('menuitem', { name: 'Apagar' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Apagar conversa' }))
+  await waitFor(() => expect(conexus.router.state.location.pathname).toBe(COMPANY_ROOT))
+})

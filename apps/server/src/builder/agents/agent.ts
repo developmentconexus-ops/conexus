@@ -206,7 +206,7 @@ export function agentOf(
       }
     },
     memory: frozen.memory.observational ? deps.memories.observational : deps.memories.plain,
-    ...agentDefaults(deps.queue, turn),
+    ...agentDefaults(deps.queue, { processor: turn }),
   })
   plans.set(agent, plan)
   return agent

@@ -173,7 +173,7 @@ export function createBuilder(deps: {
   const projectOf = projectIn(deps.index)
   const granted = grantedFor(deps.connectors, projectOf)
   const { queue } = deps
-  const defaults = agentDefaults(queue, turnOf(deps))
+  const defaults = agentDefaults(queue, { processor: turnOf(deps) })
   const memory = conversationMemory({ storage, queue, ...BUILDER_MEMORY })
   const agent = createCodingAgent({
     id: BUILDER_CONTROLLER,

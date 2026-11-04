@@ -12,11 +12,15 @@ import { projectsQuery } from './queries.ts'
 
 /**
  * The **+** on the sidebar's Projetos group, or "Novo projeto" in the header of Início's Projetos
- * block (`block`): a dialog asking what a Projeto needs, its name for now, which creates it and
+ * block (`block`, its words always shown with `labelled`): a dialog asking what a Projeto needs, its name for now, which creates it and
  * opens its page. Every member may create (`createProject`'s admission), so the button is always
  * there; a refusal shows on the name field.
  */
-export function NewProjectDialog(props: { companyId: CompanyId; block?: boolean }) {
+export function NewProjectDialog(props: {
+  companyId: CompanyId
+  block?: boolean
+  labelled?: boolean
+}) {
   const { companyId } = props
   const [open, setOpen] = useState(false)
   const created = useRef(false)
@@ -38,7 +42,7 @@ export function NewProjectDialog(props: { companyId: CompanyId; block?: boolean 
       {props.block ? (
         <DialogTrigger render={<Button variant="ghost" size="sm" />}>
           <PlusIcon aria-hidden="true" />
-          <span className="max-[400px]:sr-only">Novo projeto</span>
+          <span className={props.labelled ? undefined : 'max-[400px]:sr-only'}>Novo projeto</span>
         </DialogTrigger>
       ) : (
         <DialogTrigger render={<SidebarGroupAction aria-label="Novo projeto" />}>

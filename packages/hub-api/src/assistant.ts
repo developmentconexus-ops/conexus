@@ -14,6 +14,7 @@ export const ASSISTANT_TOOL = {
   overview: 'conexus_overview',
   showFile: 'show_file',
   proposeApp: 'propose_app',
+  proposeAppChange: 'propose_app_change',
   proposeAutomation: 'propose_automation',
 } as const
 
@@ -120,9 +121,35 @@ export const ReadRows = z.looseObject({ linhas: z.array(z.unknown()) })
 /** A read the provider asked to wait for, with the wait it named. */
 export const ReadBusy = z.object({ kind: z.literal('BUSY'), waitMs: z.number().nullable() })
 
-/** What `propose_app` answers: the request, summarized, that **Criar app** hands to the Builder of a new Projeto. */
-export const ProposedApp = z.object({ summary: z.string().min(1).max(4000) })
+const Summary = z.string().min(1).max(4000)
+
+/** What the model gives `propose_app` and `propose_app_change` (step 24.3.2): the plan is a file, never the chat's text. */
+export const ProposeAppInput = z.object({
+  summary: Summary.describe(
+    'A few lines the person reads on the button: who uses the app, what they record or see, which systems it reads.',
+  ),
+  briefing: z.string().min(1).max(500).describe('The path of the briefing file you wrote.'),
+})
+export type ProposeAppInput = z.infer<typeof ProposeAppInput>
+
+/** The briefing as the tool read it when it ran, kept with the call: the machine may be gone at the touch. */
+export const Briefing = z.object({ name: z.string(), content: z.string().max(SHOWN_TEXT_MAX) })
+export type Briefing = z.infer<typeof Briefing>
+
+/**
+ * What `propose_app` (Início, **Criar app**) and `propose_app_change` (a Projeto, **Mandar ao
+ * Builder**) answer: the need, summarized, and its briefing. Mastra keeps each output as stored, so
+ * a proposal stored before step 24.3.2 has no briefing.
+ */
+export const ProposedApp = z.object({ summary: Summary, briefing: Briefing.optional() })
 export type ProposedApp = z.infer<typeof ProposedApp>
+
+/** Why a proposal was not made: the model writes the briefing again and calls again. */
+export const ProposeRefused = z.object({
+  kind: z.literal('PROPOSE_REFUSED'),
+  reason: z.enum(['OUTSIDE', 'NOT_FOUND', 'NOT_TEXT', 'TOO_LARGE', 'MACHINE_UNAVAILABLE']),
+})
+export type ProposeRefused = z.infer<typeof ProposeRefused>
 
 /** What `conexus_overview` answers (code C21: a list per kind of thing, no free text). */
 export type Overview = {
@@ -146,15 +173,25 @@ const READ_FAILURES = [
   'DATABASE_UNAVAILABLE',
 ] as const satisfies readonly FailureCode[]
 
+/** The longest text a person searches the conversation titles for. */
+export const CONVERSATION_SEARCH_MAX = 100
+
 export const listAssistantConversations = defineOperation({
   id: 'listAssistantConversations',
   summary:
-    'Lists the person’s own conversations with the Assistant, newest first, all of them or those of one Projeto.',
+    'Lists the person’s own conversations with the Assistant, newest first, all of them or those of one Projeto, one place (Início or Automações) or whose title holds a text, without accent or case.',
   access: 'session',
   method: 'GET',
   path: BASE,
   bodyLimit: 1024,
-  input: { params: InCompany, query: Page.extend({ projectId: ProjectId.optional() }) },
+  input: {
+    params: InCompany,
+    query: Page.extend({
+      projectId: ProjectId.optional(),
+      q: z.string().trim().min(1).max(CONVERSATION_SEARCH_MAX).optional(),
+      place: z.enum(['HOME', 'AUTOMATIONS']).optional(),
+    }),
+  },
   success: {
     status: 200,
     body: z.object({ conversations: z.array(AssistantConversationSummary), next: Next }),
@@ -234,6 +271,38 @@ export const setAssistantModel = defineOperation({
     'MODEL_NO_ACCOUNT',
     'EFFORT_UNSUPPORTED',
   ],
+})
+
+/** The longest title a person gives a conversation. */
+export const CONVERSATION_TITLE_MAX = 120
+
+export const renameAssistantConversation = defineOperation({
+  id: 'renameAssistantConversation',
+  summary:
+    'Gives an Assistant conversation the title its person chose; the title stays, and the memory no longer replaces it.',
+  access: 'session',
+  method: 'PATCH',
+  path: `${BASE}/{conversationId}`,
+  bodyLimit: 1024,
+  input: {
+    params: OfConversation,
+    body: z.object({ title: z.string().trim().min(1).max(CONVERSATION_TITLE_MAX) }),
+  },
+  success: { status: 200, body: z.object({ title: z.string() }) },
+  failures: [...READ_FAILURES, 'CONVERSATION_NOT_FOUND'],
+})
+
+export const deleteAssistantConversation = defineOperation({
+  id: 'deleteAssistantConversation',
+  summary:
+    'Deletes one of the person’s own Assistant conversations: its answer stops, its machine is killed, its messages and files go. The Projeto, its app and its versions stay.',
+  access: 'session',
+  method: 'DELETE',
+  path: `${BASE}/{conversationId}`,
+  bodyLimit: 1024,
+  input: { params: OfConversation },
+  success: { status: 204 },
+  failures: [...READ_FAILURES, 'CONVERSATION_NOT_FOUND'],
 })
 
 export const listAssistantConnections = defineOperation({

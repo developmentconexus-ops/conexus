@@ -1,9 +1,13 @@
 import type { ConversationId } from '@conexus/hub-api'
+import { useMutation } from '@tanstack/react-query'
 import type { HistoryState } from '@tanstack/react-router'
 import { useLocation, useNavigate } from '@tanstack/react-router'
-import { useEffect, useRef } from 'react'
+import { useEffect, useEffectEvent, useRef } from 'react'
+import { writeFailureText } from '../../platform/hub.ts'
 import { pageStorage } from '../../platform/storage.ts'
 import type { MessageFile, Outgoing } from './attachments.ts'
+import { sendAssistantHandOff } from './queries.ts'
+import { HANDOFF_UNCONFIRMED } from './text.ts'
 
 /** The refusals of the model a new conversation would meet again: Início opens the Projeto with them. */
 const MODEL_REFUSALS = ['MODEL_NO_ACCOUNT', 'MODEL_UNKNOWN', 'EFFORT_UNSUPPORTED'] as const
@@ -91,4 +95,48 @@ export function useHandoff(
       if (!leaving) mirror.removeItem(keyOf(conversationId))
     })
   }, [conversationId, handoff, navigate, on])
+}
+
+/** The touch's request to the hand-off route, as the card made it, for the conversation to repeat. */
+export type AssistantHandOff = {
+  conversationId: ConversationId
+  request: Parameters<typeof sendAssistantHandOff.mutationFn>[0]
+}
+
+/** The Assistant's proposal a touch opened this conversation for, only when addressed to it. */
+export function assistantHandOffTo(state: HistoryState, conversationId: string | undefined) {
+  const handOff = state.assistantHandOff
+  return handOff !== undefined && handOff.conversationId === conversationId ? handOff : undefined
+}
+
+/**
+ * On the Builder's conversation a touch of **Criar app** or **Mandar ao Builder** opened (step
+ * 24.3.2): once the screen follows the stream, asks the Hub to send the proposal, with the touch's
+ * key. Mastra tells the signal only to those subscribed when it arrives and stores it with the run's
+ * first step, so the screen subscribes before the send (Mastra's "subscribe before sending",
+ * Factory `useHandoffPrompt`). The state leaves the history before the ask: a reload asks nothing,
+ * and the card's next touch opens the conversation to ask again.
+ */
+export function useAssistantHandOff(
+  conversationId: ConversationId,
+  following: boolean,
+  failed: (text: string) => void,
+): void {
+  const navigate = useNavigate()
+  const handOff = useLocation({
+    select: (location) => assistantHandOffTo(location.state, conversationId),
+  })
+  const { mutateAsync } = useMutation(sendAssistantHandOff)
+  const asked = useRef(false)
+  const refused = useEffectEvent(failed)
+
+  useEffect(() => {
+    if (!following || handOff === undefined || asked.current) return
+    asked.current = true
+    void navigate({ to: '.', search: (search) => search, replace: true, state: {} })
+    const { request } = handOff
+    mutateAsync({ ...request, body: { ...request.body, deliver: true } }).catch(
+      (failure: unknown) => refused(writeFailureText(failure, HANDOFF_UNCONFIRMED)),
+    )
+  }, [following, handOff, mutateAsync, navigate])
 }

@@ -17,7 +17,7 @@ import type { Deps, Viewer } from './rows.ts'
 import { admitted, columns, scopeOf, usable, viewOf } from './rows.ts'
 import { connection, projectConnection } from './tables.ts'
 
-type OfGrant = Viewer & OfProject & { connectionId: ConnectionId }
+export type OfGrant = Viewer & OfProject & { connectionId: ConnectionId }
 
 async function liveProject(tx: ReadTx, ids: OfProject) {
   if ((await liveProjectOf(tx, ids)) === undefined)
@@ -178,6 +178,14 @@ export function grant(deps: Deps, input: OfGrant): Promise<Grant> {
     if (connector === undefined) throw new Failure('CONNECTOR_UNKNOWN')
     if (!found.usable) throw new Failure('CONNECTION_NOT_WORKING')
     return (await inserted(tx, input, connector)) ?? (await existingGrant(tx, input))
+  })
+}
+
+/** Whether the person may release connections to a Projeto (`manageConnections`), asked before any grant (step 24.3.2). */
+export function mayGrant(deps: Deps, viewer: Viewer): Promise<boolean> {
+  return deps.database.read(scopeOf(viewer), async (tx) => {
+    const member = await admitted(deps, tx, viewer, 'readConnections')
+    return deps.identity.allows(member.role, 'manageConnections')
   })
 }
 

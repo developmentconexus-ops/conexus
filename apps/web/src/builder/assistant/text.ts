@@ -1,3 +1,4 @@
+import { PROJECT_NAME_MAX_LENGTH } from '@conexus/hub-api'
 import { dayAndHour } from '../../platform/dates.ts'
 
 /** The words of the Assistant's screens (step 24.1, U4); the founder approves them at the step's end. */
@@ -79,3 +80,43 @@ export const ASSISTANT_EXAMPLES = [
 ] as const
 export const EMPTY_ASSISTANT = 'Pergunte, peça uma análise ou um documento.'
 export const CONVERSATION_GONE = 'Esta conversa não existe mais.'
+
+export const CONVERSATION_MENU = 'Ações da conversa'
+export const RENAME = 'Renomear'
+export const DELETE = 'Apagar'
+export const RENAME_TITLE = 'Renomear conversa'
+export const RENAME_LABEL = 'Título da conversa'
+export const RENAME_SAVE = 'Salvar'
+export const DELETE_TITLE = 'Apagar esta conversa?'
+export const DELETE_TEXT =
+  'Isto não se desfaz. As mensagens e os arquivos da máquina dela vão junto. O app e as versões do Projeto ficam.'
+export const DELETE_CONFIRM = 'Apagar conversa'
+export const CANCEL = 'Cancelar'
+export const UNCONFIRMED_WRITE = 'Não confirmamos. Veja a lista.'
+
+export const SEARCH_CONVERSATIONS = 'Buscar conversa'
+export const SEARCH_LABEL = 'Buscar pelo título'
+export const FILTER_CONVERSATIONS = 'Filtrar conversas'
+export const NO_CONVERSATION_FOUND = 'Nenhuma conversa com esse nome.'
+export const NO_PROJECT_CONVERSATION = 'Nenhuma conversa neste Projeto ainda.'
+export const ALL_PLACES = 'Todas'
+export const HOME_PLACE = 'Início'
+export const AUTOMATIONS_PLACE = 'Automações'
+export const WITHOUT_PROJECT = 'Sem Projeto'
+export const SEE_ALL = 'Ver todas'
+export const RECENT_TAB = 'Recentes'
+export const PROJECTS_TAB = 'Projetos'
+export const CLEAR_FILTER = 'Tirar o filtro'
+
+/** The words of the card of an app the Assistant proposed (step 24.3.2, U3); the founder approves them at the step's end. */
+export const CREATE_APP = 'Criar app'
+export const SEND_TO_BUILDER = 'Mandar ao Builder'
+export const PROJECT_NAME_LABEL = 'Nome do projeto'
+export const RELEASE_CONNECTIONS = 'Ligações para o app ler'
+export const BRIEFING_LABEL = 'Briefing'
+export const PROPOSAL_GONE = 'Esta proposta não existe mais.'
+export const PROJECT_GONE = 'Este Projeto não existe mais.'
+export const UNCONFIRMED_HANDOFF = 'Não confirmamos o envio ao Builder. Tente de novo.'
+export const RETRY = 'Tentar de novo'
+export const OPEN_BUILDER = 'Abrir a conversa do Builder'
+export const NAME_HINT = `Escreva o nome do Projeto, com até ${PROJECT_NAME_MAX_LENGTH} caracteres.`

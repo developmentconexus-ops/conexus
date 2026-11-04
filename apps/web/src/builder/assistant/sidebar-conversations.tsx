@@ -1,23 +1,38 @@
-import type { AssistantConversationSummary, CompanyId } from '@conexus/hub-api'
+import type { CompanyId } from '@conexus/hub-api'
+import { CONVERSATION_SEARCH_MAX } from '@conexus/hub-api'
 import { useQuery } from '@tanstack/react-query'
-import { Link, useSearch } from '@tanstack/react-router'
-import { PlusIcon } from 'lucide-react'
+import { Link, useNavigate, useSearch } from '@tanstack/react-router'
+import { PlusIcon, SearchIcon } from 'lucide-react'
+import { useState } from 'react'
 import type { DayGroup } from '../../platform/dates.ts'
-import { ageOf, dayGroupOf } from '../../platform/dates.ts'
+import { dayGroupOf } from '../../platform/dates.ts'
 import { sentenceOf } from '../../platform/hub.ts'
-import { buttonVariants } from '../../ui/button.tsx'
+import { Button, buttonVariants } from '../../ui/button.tsx'
+import { InputGroup, InputGroupInput } from '../../ui/input-group.tsx'
 import { Pager } from '../../ui/pager.tsx'
 import {
   SidebarGroup,
   SidebarGroupLabel,
   SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
   SidebarMenuSkeleton,
 } from '../../ui/sidebar.tsx'
 import { ReadFailure } from '../../ui/states.tsx'
+import { Tabs, TabsList, TabsTrigger } from '../../ui/tabs.tsx'
+import { ConversationRow } from './conversation-row.tsx'
+import type { ListView } from './list-view.ts'
+import { narrowedBy, viewOf } from './list-view.ts'
+import { PlaceFilter, PlaceLabel } from './place-filter.tsx'
+import { ProjectsTab } from './projects-tab.tsx'
 import { assistantConversationsQuery } from './queries.ts'
-import { DAY_GROUP_LABELS, NEW_CONVERSATION, titleOf } from './text.ts'
+import {
+  DAY_GROUP_LABELS,
+  NEW_CONVERSATION,
+  NO_CONVERSATION_FOUND,
+  PROJECTS_TAB,
+  RECENT_TAB,
+  SEARCH_CONVERSATIONS,
+  SEARCH_LABEL,
+} from './text.ts'
 
 const GROUPS: readonly DayGroup[] = ['TODAY', 'YESTERDAY', 'WEEK', 'BEFORE']
 
@@ -36,87 +51,93 @@ export function NewConversation({ companyId }: { companyId: CompanyId }) {
   )
 }
 
-function ConversationRow(props: {
-  companyId: CompanyId
-  conversation: AssistantConversationSummary
-  now: Date
-}) {
-  const { companyId, conversation } = props
-  const content = (
-    <>
-      <span className="flex min-w-0 flex-1 items-baseline gap-sm">
-        <span className="truncate">{titleOf(conversation)}</span>
-        {conversation.project !== null && (
-          <span className="min-w-0 shrink-[3] truncate text-fact text-text-2">
-            {conversation.project.name}
-          </span>
-        )}
-      </span>
-      <span className="shrink-0 text-fact tabular-nums text-text-2">
-        {ageOf(conversation.updatedAt, props.now)}
-      </span>
-    </>
-  )
+/** The text in the address, replaced as the person types so Back does not walk through letters. */
+function useSearchText() {
+  const navigate = useNavigate()
+  return (q: string | undefined) =>
+    navigate({
+      to: '.',
+      search: (old) => ({ ...old, q, conversations: undefined }),
+      replace: true,
+      state: { keepDrawer: true },
+    })
+}
+
+/** The box keeps what was typed, spaces included; the address and the list read it as the Hub does. */
+function SearchBox({ q, focus }: { q: string | undefined; focus: boolean }) {
+  const [typed, setTyped] = useState(q ?? '')
+  const search = useSearchText()
   return (
-    <SidebarMenuItem>
-      <SidebarMenuButton
-        render={
-          conversation.project === null ? (
-            <Link
-              to="/companies/$companyId/conversations/$conversationId"
-              params={{ companyId, conversationId: conversation.id }}
-            />
-          ) : (
-            <Link
-              to="/companies/$companyId/projects/$projectId/assistant/$conversationId"
-              params={{
-                companyId,
-                projectId: conversation.project.id,
-                conversationId: conversation.id,
-              }}
-            />
-          )
-        }
-      >
-        {content}
-      </SidebarMenuButton>
-    </SidebarMenuItem>
+    <InputGroup>
+      <InputGroupInput
+        autoFocus={focus}
+        type="search"
+        aria-label={SEARCH_LABEL}
+        maxLength={CONVERSATION_SEARCH_MAX}
+        className="[&::-webkit-search-cancel-button]:appearance-none"
+        value={typed}
+        onChange={(event) => {
+          setTyped(event.target.value)
+          void search(event.target.value || undefined)
+        }}
+      />
+    </InputGroup>
   )
 }
 
-/**
- * "Conversas" in the company's list (web W30): the person's conversations by day, newest first,
- * the first page of 50 and the pager for the next ones. With none, only "Nova conversa" stays.
- */
-export function SidebarConversations({ companyId }: { companyId: CompanyId }) {
-  const page = useSearch({
-    strict: false,
-    select: (search) =>
-      typeof search.conversations === 'string' ? search.conversations : undefined,
-  })
-  const read = useQuery(assistantConversationsQuery(companyId, undefined, page))
+function ViewTabs({ view }: { view: ListView }) {
+  const navigate = useNavigate()
+  return (
+    <Tabs
+      value={view.tab === 'PROJECTS' ? 'projects' : 'recent'}
+      onValueChange={(value) =>
+        void navigate({
+          to: '.',
+          search: (old) => ({
+            ...old,
+            tab: value === 'projects' ? 'projects' : undefined,
+            conversations: undefined,
+          }),
+          replace: true,
+          state: { keepDrawer: true },
+        })
+      }
+    >
+      <TabsList>
+        <TabsTrigger value="recent">{RECENT_TAB}</TabsTrigger>
+        <TabsTrigger value="projects">{PROJECTS_TAB}</TabsTrigger>
+      </TabsList>
+    </Tabs>
+  )
+}
+
+function Recent({ companyId, view }: { companyId: CompanyId; view: ListView }) {
+  const narrowed = narrowedBy(view.place)
+  const read = useQuery(
+    assistantConversationsQuery(companyId, narrowed.projectId, view.page, {
+      q: view.q,
+      place: narrowed.place,
+    }),
+  )
   if (read.isPending) {
     return (
-      <SidebarGroup aria-label="Conversas" className="px-0">
+      <>
         <SidebarMenuSkeleton />
         <SidebarMenuSkeleton />
         <SidebarMenuSkeleton />
-      </SidebarGroup>
+      </>
     )
   }
   if (read.isError) {
-    return (
-      <SidebarGroup className="px-0">
-        <ReadFailure text={sentenceOf(read.error)} onRetry={() => void read.refetch()} />
-      </SidebarGroup>
-    )
+    return <ReadFailure text={sentenceOf(read.error)} onRetry={() => void read.refetch()} />
   }
   const { conversations, next } = read.data
-  if (conversations.length === 0) return null
+  if (conversations.length === 0 && view.q !== undefined) {
+    return <p className="px-sm text-fact text-text-2">{NO_CONVERSATION_FOUND}</p>
+  }
   const now = new Date()
   return (
-    <SidebarGroup className="gap-xs px-0">
-      <SidebarGroupLabel>Conversas</SidebarGroupLabel>
+    <>
       {GROUPS.map((group) => {
         const rows = conversations.filter((one) => dayGroupOf(one.updatedAt, now) === group)
         if (rows.length === 0) return null
@@ -142,8 +163,64 @@ export function SidebarConversations({ companyId }: { companyId: CompanyId }) {
         )
       })}
       <div className="px-sm">
-        <Pager next={next} param="conversations" page={page} list="Conversas" />
+        <Pager next={next} param="conversations" page={view.page} list="Conversas" />
       </div>
+    </>
+  )
+}
+
+/**
+ * "Conversas" in the company's list (web W30): the person's conversations by day, newest first,
+ * 30 to a page with the pager for the next ones, narrowed by a title text and a place, or grouped
+ * by Projeto in the second tab; text, place, tab and page live in the address (web W18). With none
+ * and nothing narrowing, only "Nova conversa" stays.
+ */
+export function SidebarConversations({ companyId }: { companyId: CompanyId }) {
+  const view = useSearch({ strict: false, select: (search) => viewOf(search) })
+  const [searching, setSearching] = useState(view.q !== undefined)
+  // A box opened by the magnifier takes the focus; one a link opened with its text leaves the page's.
+  const [openedByClick, setOpenedByClick] = useState(false)
+  const search = useSearchText()
+  const narrowed = narrowedBy(view.place)
+  const first = useQuery(
+    assistantConversationsQuery(companyId, narrowed.projectId, view.page, {
+      q: view.q,
+      place: narrowed.place,
+    }),
+  )
+  const clean = view.q === undefined && view.place === undefined
+  if (first.data?.conversations.length === 0 && clean && view.tab === undefined) return null
+  return (
+    <SidebarGroup aria-label="Conversas" className="gap-xs px-0">
+      <div className="flex items-center justify-between">
+        <SidebarGroupLabel>Conversas</SidebarGroupLabel>
+        <div className="flex items-center gap-xs">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-6"
+            aria-label={SEARCH_CONVERSATIONS}
+            aria-expanded={searching}
+            onClick={() => {
+              // Closing the magnifier takes the text out, so no filtered list is left without its box.
+              if (searching) void search(undefined)
+              setOpenedByClick(!searching)
+              setSearching(!searching)
+            }}
+          >
+            <SearchIcon aria-hidden="true" />
+          </Button>
+          <PlaceFilter companyId={companyId} place={view.place} />
+        </div>
+      </div>
+      {searching && <SearchBox q={view.q} focus={openedByClick} />}
+      {view.place !== undefined && <PlaceLabel companyId={companyId} place={view.place} />}
+      <ViewTabs view={view} />
+      {view.tab === 'PROJECTS' ? (
+        <ProjectsTab companyId={companyId} />
+      ) : (
+        <Recent companyId={companyId} view={view} />
+      )}
     </SidebarGroup>
   )
 }

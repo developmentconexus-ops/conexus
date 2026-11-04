@@ -132,7 +132,6 @@ function NamingBody(props: {
   picked: { model: ModelId; effort: Effort }
   onPhase: (phase: Phase) => void
   onOpened: () => void
-  back?: string
 }) {
   const { companyId, phase } = props
   const { outgoing } = phase
@@ -154,7 +153,7 @@ function NamingBody(props: {
             databaseReady={projects.data.databaseReady}
             locked={phase.kind === 'STARTING' ? phase.project.name : null}
             idle="Criar e começar"
-            back={props.back ?? 'Voltar'}
+            back="Voltar"
             onCreated={async (project) => {
               props.onPhase({ kind: 'STARTING', outgoing, project })
               await created(project, outgoing)
@@ -194,9 +193,11 @@ export function StartBox(props: {
   /** Chips under the bar; none draws nothing. */
   examples: readonly Example[]
   /** The model's button; none where the request does not choose the model (the Construtor's). */
-  picked?: { model: ModelId; effort: Effort }
-  onPick?: (picked: { model: ModelId; effort: Effort }) => void
-  providers?: ReturnType<typeof usePicked>['providers']
+  picker?: {
+    picked: { model: ModelId; effort: Effort }
+    onPick: (picked: { model: ModelId; effort: Effort }) => void
+    providers: ReturnType<typeof usePicked>['providers']
+  }
   /** The model that answers, named and not changed, where the request does not choose it (the Construtor's). */
   modelName?: ModelId
   /** False while something the request needs has not arrived: **Enviar** waits. */
@@ -227,14 +228,12 @@ export function StartBox(props: {
             props.modelName !== undefined ? (
               <ComposerModelName model={props.modelName} />
             ) : (
-              props.picked !== undefined &&
-              props.onPick !== undefined &&
-              props.providers !== undefined && (
+              props.picker !== undefined && (
                 <ComposerModelPicker
-                  providers={props.providers}
-                  value={props.picked}
+                  providers={props.picker.providers}
+                  value={props.picker.picked}
                   heading="Modelo do pedido"
-                  onChange={props.onPick}
+                  onChange={props.picker.onPick}
                 />
               )
             )
@@ -293,44 +292,13 @@ export function Start({ companyId }: { companyId: CompanyId }): ReactNode {
       draft={draft}
       placeholder={START_PLACEHOLDER}
       examples={EXAMPLES}
-      picked={picked}
-      onPick={setPicked}
-      providers={providers}
+      picker={{ picked, onPick: setPicked, providers }}
       onSend={(outgoing) => {
         // The request stays in the draft until its conversation opens (criterion 12).
         draft.restore(outgoing)
         setPhase({ kind: 'NAMING', outgoing })
         return Promise.resolve(true)
       }}
-    />
-  )
-}
-
-/**
- * **Criar app** (step 24.1, U4): the Assistant's summary of a need, with the name of the new Projeto
- * under it. **Criar e começar** makes the Projeto and opens its Builder's conversation with the
- * summary sent once; **Cancelar** creates nothing.
- */
-export function CreateApp(props: {
-  companyId: CompanyId
-  summary: string
-  onClose: () => void
-}): ReactNode {
-  const { companyId } = props
-  const { picked } = usePicked(companyId)
-  const [phase, setPhase] = useState<Sent>({
-    kind: 'NAMING',
-    outgoing: { content: props.summary, files: [] },
-  })
-  if (picked === null) return <StartWithoutAccount companyId={companyId} />
-  return (
-    <NamingBody
-      companyId={companyId}
-      phase={phase}
-      picked={picked}
-      back="Cancelar"
-      onPhase={(next) => (next.kind === 'WRITING' ? props.onClose() : setPhase(next))}
-      onOpened={props.onClose}
     />
   )
 }

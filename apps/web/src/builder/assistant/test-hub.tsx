@@ -15,9 +15,19 @@ import { COMPANY } from '../../platform/fixtures.ts'
 import { PEDIDOS, refusal } from '../../platform/test-hub.tsx'
 import type { Stored } from '../conversation/messages.ts'
 import { AGENT_START, RUNNING, signalStarted } from '../conversation/test-events.ts'
+import type {
+  Answers as BuilderAnswers,
+  Opened as BuilderConversation,
+} from '../conversation/test-hub.tsx'
 import { say, screens, view } from '../conversation/test-hub.tsx'
+
+export { conversationOf as builderConversation } from '../conversation/test-hub.tsx'
+export type { BuilderAnswers }
+
 import { START } from '../conversation/test-start.tsx'
 import { displayOf, newest, openLine } from '../conversation/test-stream.tsx'
+import { changesOf } from './test-changes.tsx'
+import { listedFor } from './test-list.ts'
 import type { ChosenModels } from './test-model.tsx'
 import { modelWrite, sessionState } from './test-model.tsx'
 
@@ -63,6 +73,8 @@ export type Answers = {
   offer?: () => Promise<Response | undefined> | Response | undefined
   /** What the read of the conversations list answers instead of the Hub's success. */
   list?: () => Promise<Response | undefined> | Response | undefined
+  /** What the delete of a conversation answers instead of the Hub's success. */
+  remove?: () => Response | undefined
   /** What the stream of the conversation's session answers instead of opening. */
   stream?: () => Response | undefined
   /** What the route of a conversation's files answers instead of the file. */
@@ -134,22 +146,8 @@ function readsOf(held: Held, asked: string[]) {
     http.get(`${BASE}/conversations`, async ({ request }) => {
       const replaced = await held.answers.list?.()
       if (replaced) return replaced
-      const { searchParams } = new URL(request.url)
-      const project = searchParams.get('projectId')
-      const from = Number(searchParams.get('page') ?? 0)
-      const all = held.conversations
-        .map(({ conversation }) => conversation)
-        .filter((one) => project === null || one.projectId === project)
-        .map(({ id, title, updatedAt, projectId, automation }) => ({
-          ...{ id, title, updatedAt, automation },
-          project: projectId === null ? null : { id: projectId, name: PEDIDOS.name },
-        }))
-      const listed = all.slice(from, from + held.pageSize)
-      const more = from + held.pageSize < all.length
-      return HttpResponse.json({
-        conversations: listed,
-        next: more ? { kind: 'MORE', page: String(from + held.pageSize) } : { kind: 'END' },
-      })
+      const listed = listedFor(held, new URL(request.url).searchParams)
+      return listed === null ? refusal('REQUEST_MALFORMED') : HttpResponse.json(listed)
     }),
     http.get(
       `${BASE}/conversations/:id/files`,
@@ -181,6 +179,7 @@ function writesOf(held: Held, note: (request: Request) => Promise<unknown>) {
         { status: 201 },
       )
     }),
+    ...changesOf(BASE, held, note),
     modelWrite(BASE, held, note),
     http.put(`${BASE}/conversations/:id/connections`, async ({ request, params }) => {
       const body = await note(request)
@@ -255,6 +254,10 @@ export function assistantScreens(server: ReturnType<typeof setupServer>) {
       answers?: Answers
       /** The conversations a list answers at a time; all of them by default. */
       pageSize?: number
+      /** The Builder's conversations the Hub knows, as a hand-off opens one. */
+      builder?: BuilderConversation[]
+      /** How the Builder's session answers, as its own screens' tests set it. */
+      builderAnswers?: BuilderAnswers
     } = {},
   ) {
     const {
@@ -264,6 +267,8 @@ export function assistantScreens(server: ReturnType<typeof setupServer>) {
       usable,
       answers = {},
       pageSize = 30,
+      builder = [],
+      builderAnswers = {},
     } = options
     const sent: Sent[] = []
     const asked: string[] = []
@@ -284,7 +289,11 @@ export function assistantScreens(server: ReturnType<typeof setupServer>) {
       ...writesOf(held, note),
       ...sessionOf(held, conversations, answers, lines, note),
     )
-    const hub = open(view({ start: START, role, usable }), path)
+    const hub = open(
+      view({ start: START, role, usable, conversations: builder }),
+      path,
+      builderAnswers,
+    )
     return {
       ...hub,
       sent,

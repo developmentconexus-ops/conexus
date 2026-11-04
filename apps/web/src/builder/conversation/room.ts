@@ -1,4 +1,10 @@
-import type { AgentId, FailureCode, ProposedAutomation, ShownFile } from '@conexus/hub-api'
+import type {
+  AgentId,
+  FailureCode,
+  ProposedApp,
+  ProposedAutomation,
+  ShownFile,
+} from '@conexus/hub-api'
 import type { ReactNode } from 'react'
 import { createContext, useContext } from 'react'
 import { ASSISTANT_OVERRIDES } from './assistant-specs.ts'
@@ -23,14 +29,16 @@ export type Room = {
   openFile?: (file: OpenedFile) => void
   /** The path of the file now open, for its row to say so. */
   openedPath?: string
-  /** Opens **Criar app** with the proposed summary; none in the Builder's conversation. */
-  createApp?: (summary: string) => void
+  /** Draws the card of the app the call `toolCallId` proposed, with no button once `closed`; none in the Builder's conversation. */
+  appCard?: (proposal: { proposed: ProposedApp; toolCallId: string; closed: boolean }) => ReactNode
   /** Draws **Criar automação** for the proposal of the call `toolCallId`; none in the Builder's conversation. */
   automationCard?: (proposal: { proposed: ProposedAutomation; toolCallId: string }) => ReactNode
   /** Shows the draft `agent_draft` or `agent_set` saved beside the chat: by a call of the answer, or by a tap of its line; none outside the Construtor's conversation. */
   openAgent?: (agentId: AgentId, by: 'CALL' | 'TAP') => void
   /** The agent now open, for its row to say so; `undefined` until one is. */
   openedAgent?: AgentId
+  /** What the agent's own tool `slug` does, in the words its row reads; none where the room does not know the tools. */
+  toolDescription?: (slug: string) => string | undefined
   /** The rows this room draws differently from the table. */
   overrides: Partial<Record<RowTool, ToolSpec>>
   /** A turn's failures this room says in its own sentence: the Assistant has no model to choose. */
@@ -61,4 +69,13 @@ export const RoomContext = createContext<Room>(BUILDER_ROOM)
 
 export function useRoom(): Room {
   return useContext(RoomContext)
+}
+
+/** What the conversation's box sends as the person's own message; the card's **Continuar aqui** says it through this. */
+const SayContext = createContext<(words: string) => Promise<boolean>>(() => Promise.resolve(false))
+
+export const SayProvider = SayContext.Provider
+
+export function useSay(): (words: string) => Promise<boolean> {
+  return useContext(SayContext)
 }

@@ -4,7 +4,6 @@ import { HttpResponse, http } from 'msw'
 import { expect, test, vi } from 'vitest'
 import { hubServer, refusal } from '../../platform/test-hub.tsx'
 import { toolSaid } from '../assistant/test-hub.tsx'
-import { SHEET_CLOSE_ROOM } from '../conversation/public.ts'
 import { AGENT, AREA, agent, BUILDER_CHAT, OTHER_AGENT, version } from './test-agents.ts'
 import { agentScreens } from './test-hub.tsx'
 
@@ -112,9 +111,8 @@ test('no celular o rascunho não cobre a conversa sozinho e abre ao toque na lin
     const line = await screen.findByRole('button', { name: /Montou o rascunho do agente/ })
     expect(screen.queryByRole('region', { name: 'Rascunho do agente' })).toBeNull()
     fireEvent.click(line)
-    const title = await screen.findByText('Rascunho · Conferente de metas')
-    // The sheet's own Fechar sits over the header's right end: the header leaves it room (the browser test of the Assistant's file sheet measures the same room).
-    expect(title.parentElement?.className).toContain(SHEET_CLOSE_ROOM)
+    // The room the header leaves the sheet's own Fechar is measured in the browser (assistant.layout.test.ts).
+    expect(await screen.findByText('Rascunho · Conferente de metas')).toBeTruthy()
   } finally {
     phone.mockRestore()
   }

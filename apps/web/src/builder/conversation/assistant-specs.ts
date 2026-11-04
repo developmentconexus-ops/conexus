@@ -1,7 +1,12 @@
-import { ASSISTANT_TOOL, BUILDER_TOOL, ShownFile } from '@conexus/hub-api'
+import { ASSISTANT_TOOL, BUILDER_TOOL, ProposeRefused, ShownFile } from '@conexus/hub-api'
 import { BuildingIcon, PresentationIcon, RocketIcon, TimerIcon } from 'lucide-react'
 import { CONNECTOR_SPECS, presentRead, readRefusal } from './connector-specs.ts'
 import type { RowTool, ToolSpec } from './tool-spec.ts'
+
+/** A hand-off to the Builder that found no briefing to send: the line says it, and the model writes it again. */
+function proposalRefusal(result: unknown) {
+  return ProposeRefused.safeParse(result).success ? 'SAID' : undefined
+}
 
 /** The rows of the Assistant's own tools (step 24.1, U4); the connector tools it shares are in `connector-specs.ts`. */
 export const ASSISTANT_SPECS: Record<
@@ -37,6 +42,17 @@ export const ASSISTANT_SPECS: Record<
     verb: 'propôs',
     body: 'proposal',
     groups: false,
+    refusal: proposalRefusal,
+  },
+  [ASSISTANT_TOOL.proposeAppChange]: {
+    icon: RocketIcon,
+    running: 'Preparando o pedido de mudança do app',
+    done: 'Propôs uma mudança do app',
+    failed: 'Não conseguiu propor a mudança do app',
+    verb: 'propôs',
+    body: 'proposal',
+    groups: false,
+    refusal: proposalRefusal,
   },
   [ASSISTANT_TOOL.proposeAutomation]: {
     icon: TimerIcon,

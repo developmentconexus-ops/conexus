@@ -60,15 +60,22 @@ export {
   AssistantConversation,
   AssistantConversationSummary,
   assistantFilePath,
+  Briefing,
+  CONVERSATION_SEARCH_MAX,
+  CONVERSATION_TITLE_MAX,
   createAssistantConversation,
+  deleteAssistantConversation,
   listAssistantConnections,
   listAssistantConversations,
   type Overview,
+  ProposeAppInput,
   ProposedApp,
+  ProposeRefused,
   ReadBusy,
   ReadCut,
   ReadRows,
   readAssistantConversation,
+  renameAssistantConversation,
   SessionConnection,
   SHOWN_TEXT_MAX,
   ShowFileInput,
@@ -170,6 +177,7 @@ export {
   TurnFailureCode,
 } from './conversations.ts'
 export { FAILURES, type FailureCode, PROBLEM_MEDIA_TYPE, Problem, phraseOf } from './failures.ts'
+export * from './handoff.ts'
 export { getHealth, Health } from './health.ts'
 export {
   COOKIE_PREFIX,
@@ -277,13 +285,7 @@ export {
   ProjectName,
   ProjectSummary,
 } from './projects.ts'
-export {
-  Answer,
-  QUESTION_LIMITS,
-  Question,
-  Task,
-  ToolCallId,
-} from './questions.ts'
+export * from './questions.ts'
 export { RunId } from './runs.ts'
 export {
   ProjectSource,

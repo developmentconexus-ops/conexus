@@ -10,10 +10,12 @@ import type {
 import {
   ConversationId,
   createAssistantConversation,
+  deleteAssistantConversation,
   listAssistantConnections,
   listAssistantConversations,
   ProjectId as ProjectIdSchema,
   readAssistantConversation,
+  renameAssistantConversation,
   setAssistantConnections,
   setAssistantModel,
 } from '@conexus/hub-api'
@@ -27,7 +29,7 @@ import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import { answer, serve } from '../../platform/http.ts'
-import { attemptIdOf, resourceOf } from '../controller-kit/public.ts'
+import { attemptIdOf, releaseThreads, resourceOf } from '../controller-kit/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import { conversationModel, effortsOf } from '../model-accounts/public.ts'
 import type { ChosenConnections } from './chosen.ts'
@@ -38,12 +40,12 @@ import type { AssistantMachines } from './machine.ts'
 import type { assistantMemory } from './memory.ts'
 import { admitted, automationOf, marksOf, offeredOnly, openConversation, placeOf } from './open.ts'
 import type { AssistantProjects } from './ports.ts'
+import { listedPage } from './search.ts'
 
 /**
  * A page of the person's conversations (code C44): a page number the token carries, never
  * authority.
  */
-const PER_PAGE = 30
 const PageNumber = z.coerce.number().int().min(1).max(100_000)
 
 type Deps = {
@@ -170,18 +172,10 @@ function projectShown(mark: ProjectId | null, names: ReadonlyMap<ProjectId, stri
 function registerReads(app: FastifyInstance, deps: Deps): void {
   serve(app, listAssistantConversations, async (input) => {
     const owner = ownerOf(input)
-    const { projectId, page: token } = input.query
+    const { projectId, page: token, q, place } = input.query
     await admitted(deps, owner, placeOf(projectId))
     const page = pageOf(token)
-    const listed = await deps.memory.listThreads({
-      filter: {
-        resourceId: resourceOf('assistant', owner),
-        ...(projectId === undefined ? {} : { metadata: { [SESSION_MARK.project]: projectId } }),
-      },
-      page,
-      perPage: PER_PAGE,
-      orderBy: { field: 'updatedAt', direction: 'DESC' },
-    })
+    const listed = await listedPage(deps.memory, { owner, projectId, page, q, place })
     const marks = listed.threads.map((thread) =>
       ProjectIdSchema.nullable().parse(thread.metadata?.[SESSION_MARK.project] ?? null),
     )
@@ -242,6 +236,41 @@ async function switchModel(
     tags,
   })
   await session.model.switch(input.model, { thinkingLevel: input.effort })
+}
+
+/** What the person does to a conversation she has: Renomear and Apagar. */
+function registerChanges(app: FastifyInstance, deps: Deps): void {
+  serve(app, renameAssistantConversation, async (input) => {
+    const owner = ownerOf(input)
+    const { conversationId } = input.params
+    await admitted(deps, owner, { kind: 'COMPANY' })
+    await ownThread(deps, owner, conversationId)
+    const { title } = input.body
+    // `titlePinned`: the memory's own titling no longer replaces the one the person chose. The
+    // memory merges the metadata with what is stored.
+    await deps.memory.updateThread({ id: conversationId, title, metadata: { titlePinned: true } })
+    deps.log.info(
+      { companyId: owner.companyId, traceId: input.traceId, conversationId },
+      'ASSISTANT_CONVERSATION_RENAMED',
+    )
+    return answer({ title })
+  })
+
+  serve(app, deleteAssistantConversation, async (input) => {
+    const owner = ownerOf(input)
+    const { conversationId } = input.params
+    await admitted(deps, owner, { kind: 'COMPANY' })
+    await ownThread(deps, owner, conversationId)
+    // The session first, so its answer stops; then its machines; the thread last, so a failure
+    // halfway leaves what the next delete finds again. The row of its choice stays until
+    // its Projeto, person or company leaves: the Hub holds no `DELETE` on it (data D11).
+    await releaseThreads(deps, [conversationId], (id) => deps.machines.kill(id))
+    deps.log.info(
+      { companyId: owner.companyId, traceId: input.traceId, conversationId },
+      'ASSISTANT_CONVERSATION_DELETED',
+    )
+    return answer(undefined)
+  })
 }
 
 /** The writes: a new conversation, its choice of connections and its model. */
@@ -305,6 +334,7 @@ function registerWrites(app: FastifyInstance, deps: Deps): void {
 export function registerAssistantRoutes(app: FastifyInstance, deps: Deps): void {
   registerReads(app, deps)
   registerWrites(app, deps)
+  registerChanges(app, deps)
   registerFile(app, {
     machines: deps.machines,
     log: deps.log,

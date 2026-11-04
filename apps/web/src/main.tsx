@@ -7,7 +7,7 @@ import type { RouterHistory } from '@tanstack/react-router'
 import { createRouter, RouterProvider, useRouter } from '@tanstack/react-router'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import type { ModelRefusal } from './builder/conversation/handoff.ts'
+import type { AssistantHandOff, ModelRefusal } from './builder/conversation/handoff.ts'
 import { sessionQuery } from './hub/identity/public.ts'
 import { createCache } from './platform/cache.ts'
 import { HubFailure } from './platform/hub.ts'
@@ -46,8 +46,12 @@ declare module '@tanstack/history' {
      * mounted while the navigation loads leaves it alone.
      */
     handoff?: { conversationId: ConversationId; content: string }
+    /** The Assistant's proposal the Builder's conversation asks the Hub to send once it follows the stream. */
+    assistantHandOff?: AssistantHandOff
     /** The Projeto was created and the Hub refused the model of its conversation. */
     refused?: ModelRefusal
+    /** The list's own controls (search, filter, tabs) change the address and leave the phone's drawer open (design V56). */
+    keepDrawer?: true
   }
 }
 

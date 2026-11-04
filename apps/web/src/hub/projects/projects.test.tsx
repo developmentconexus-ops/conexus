@@ -1,3 +1,4 @@
+import { ProjectSummary } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
@@ -15,8 +16,8 @@ import {
 const server = hubServer()
 const PROJECTS = `/companies/${COMPANY.id}/projects`
 
-function hub(projects: (typeof PEDIDOS)[]) {
-  server.use(...projectsRead({ projects, databaseReady: true, mayDelete: true, role: 'member' }))
+function hub(projects: (typeof PEDIDOS)[], role: 'member' | 'admin' = 'member') {
+  server.use(...projectsRead({ projects, databaseReady: true, mayDelete: true, role }))
 }
 
 function open(path = PROJECTS) {
@@ -29,11 +30,11 @@ function main() {
   return within(screen.getByRole('main'))
 }
 
-test('vazio: "Nenhum projeto ainda." na página Todos os projetos', async () => {
+test('vazio: "Nenhum projeto ainda" na página Todos os projetos', async () => {
   hub([])
   open()
   expect(await screen.findByRole('heading', { name: 'Todos os projetos' })).toBeTruthy()
-  expect(await screen.findByText('Nenhum projeto ainda.')).toBeTruthy()
+  expect(await screen.findByText('Nenhum projeto ainda')).toBeTruthy()
 })
 
 test('cada cartão: o nome, "Criado em" e o link para o Projeto', async () => {
@@ -95,4 +96,55 @@ test('"Projeto apagado." chega uma vez e sai do endereço', async () => {
   expect(await screen.findByText('Projeto apagado.')).toBeTruthy()
   await waitFor(() => expect(router.state.location.search).toEqual({}))
   expect(screen.getByText('Projeto apagado.')).toBeTruthy()
+})
+
+test('cada cartão diz o estado do app em palavras, e "Novo projeto" no alto abre o diálogo de criar (12)', async () => {
+  hub(
+    [
+      PEDIDOS,
+      ProjectSummary.parse({
+        ...PEDIDOS,
+        id: 'q'.repeat(32),
+        name: 'Compras',
+        publishedVersion: 2,
+        appVersion: 3,
+      }),
+    ],
+    'admin',
+  )
+  server.use(conversationsNone)
+  open()
+  await screen.findByRole('heading', { name: 'Todos os projetos' })
+  expect(
+    await main().findByText('Cada Projeto guarda um app, as conversas e as ligações dele.'),
+  ).toBeTruthy()
+  const compras = await main().findByRole('link', { name: /Compras/ })
+  expect(compras.textContent).toContain('Publicado · v2')
+  expect(main().getByRole('link', { name: /Pedidos/ }).textContent).toContain('Ainda sem app')
+  fireEvent.click(main().getByRole('button', { name: /Novo projeto/ }))
+  expect(await screen.findByRole('dialog')).toBeTruthy()
+})
+
+test('sem Projeto, a coluna do vazio tem "Novo projeto" e o caminho para o Início (13)', async () => {
+  hub([], 'admin')
+  server.use(conversationsNone)
+  open()
+  await screen.findByRole('heading', { name: 'Todos os projetos' })
+  expect(await main().findByText('Nenhum projeto ainda')).toBeTruthy()
+  expect(main().getAllByText(/Nenhum projeto ainda/).length).toBe(1)
+  expect(main().getAllByRole('button', { name: /Novo projeto/ }).length).toBe(2)
+  expect(main().getByRole('link', { name: 'ou peça um app no Início' })).toBeTruthy()
+})
+
+test('o Membro vê "Novo projeto" na página e no vazio, e o diálogo abre (13)', async () => {
+  hub([], 'member')
+  open()
+  await screen.findByRole('heading', { name: 'Todos os projetos' })
+  expect(await main().findByText('Nenhum projeto ainda')).toBeTruthy()
+  const buttons = main().getAllByRole('button', { name: /Novo projeto/ })
+  expect(buttons.length).toBe(2)
+  const [, emptyColumnButton] = buttons
+  if (emptyColumnButton === undefined) throw new Error('the empty column has no button')
+  fireEvent.click(emptyColumnButton)
+  expect(await screen.findByRole('dialog')).toBeTruthy()
 })

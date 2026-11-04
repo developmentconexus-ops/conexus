@@ -1,4 +1,10 @@
-import type { AgentDetail, CompanyId, ProjectId } from '@conexus/hub-api'
+import type {
+  AgentDetail,
+  CompanyId,
+  ProblemField,
+  ProblemReason,
+  ProjectId,
+} from '@conexus/hub-api'
 import { useMutation } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useAttemptKey } from '../../platform/attempt-key.ts'
@@ -18,8 +24,8 @@ export function Creator(props: Dialogue) {
   const attempt = useAttemptKey()
   const [error, setError] = useState<string>()
   const [refused, setRefused] = useState<{
-    field: string | undefined
-    reason: string | undefined
+    field: ProblemField | undefined
+    reason: ProblemReason | undefined
   }>()
   return (
     <ToolForm

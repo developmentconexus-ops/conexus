@@ -1,12 +1,11 @@
 import assert from 'node:assert/strict'
-import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
 import { setTimeout as sleep } from 'node:timers/promises'
 import { call, plantCompany } from '../../hub/identity/test-hub.ts'
 import type { Sent } from '../../platform/test-anthropic.ts'
 import { endOf, holding, MODEL, sent, title } from '../conversation/test-conversation.ts'
 import { sessionStateOf, tool } from '../conversation/test-questions.ts'
-import { assisting, created, reading, said, talking } from './test-assistant.ts'
+import { assisting, created, publishedApp, reading, said, talking } from './test-assistant.ts'
 
 const OTHER_MODEL = 'anthropic/claude-haiku-4-5'
 
@@ -82,7 +81,7 @@ test('as ferramentas: o modelo do Assistente recebe as de conector de leitura, a
   ])
 })
 
-test('as ferramentas: numa conversa de Projeto o modelo não recebe propose_app', async (t) => {
+test('as ferramentas: numa conversa de Projeto o modelo recebe propose_app_change e não propose_app (3)', async (t) => {
   const on = await assisting(t)
   const url = await created(on.hub, on.ana, on.assistant, {
     projectId: on.projectId,
@@ -93,6 +92,7 @@ test('as ferramentas: numa conversa de Projeto o modelo não recebe propose_app'
   assert.equal(endOf(await say('O que você pode fazer?')), 'complete')
   const tools = [...(on.calls.at(0)?.tools ?? [])]
   assert.equal(tools.includes('propose_app'), false)
+  assert.equal(tools.includes('propose_app_change'), true)
   assert.equal(tools.includes('show_file'), true)
   assert.equal(tools.includes('propose_automation'), true)
 })
@@ -187,21 +187,7 @@ test('a visão da empresa com 51 Projetos: 50 pelo nome e moreProjects; o app pu
   const overview = [tool('conexus_overview', {})]
   const on = await assisting(t, [overview, [said('Veja.')]])
   const asOwner = on.hub.test.asOwner
-  const versionId = randomUUID().replaceAll('-', '')
-  await asOwner('insert into apps.app (project_id, company_id) values ($1, $2)', [
-    on.projectId,
-    on.companyId,
-  ])
-  await asOwner(
-    `insert into apps.app_version (id, company_id, project_id, number, state, manifest, digest,
-       sent_by, attempt_key, created_at)
-     values ($1, $2, $3, 3, 'ready', '{}'::jsonb, repeat('0', 64), $4, $1, now())`,
-    [versionId, on.companyId, on.projectId, on.ana.id],
-  )
-  await asOwner('update apps.app set published_version_id = $1 where project_id = $2', [
-    versionId,
-    on.projectId,
-  ])
+  await publishedApp(on.hub, { ...on, personId: on.ana.id })
   const elsewhere = await plantCompany(on.hub.test, on.ana.id, 'Outra Empresa')
   const plant = `insert into projects.project (id, company_id, name, attempt_key, created_at)
      select md5($2 || n::text), $1, $3 || lpad(n::text, 2, '0'), md5($2 || n::text), now()
