@@ -12,7 +12,6 @@ import { Failure } from '../../platform/failure.ts'
 import type { ControllerKind } from '../controller-kit/public.ts'
 import { CONTROLLER_KINDS, ownerOfResource } from '../controller-kit/public.ts'
 import type { Builder } from './builder.ts'
-import { untilCardsKept } from './parked.ts'
 import { BuilderServer } from './stream.ts'
 
 const SESSION = '/agent-controller/:controllerId/sessions/:sessionId'
@@ -175,8 +174,7 @@ async function admittedBy(admit: Admission, input: Parameters<Admission>[0]) {
  * it is registered, since the Hub's access check refuses at boot a route without one; Mastra's
  * `server.auth` stays off, as the Hub already read the session. Mastra ends a stream only when its
  * request leaves, so the open ones are kept in `streams` for the Hub's close to close; its stream is
- * slimmed and paced (`stream.ts`). Parar waits
- * for Mastra to keep an open card's run first (`parked.ts`).
+ * slimmed and paced (`stream.ts`).
  */
 export function registerBuilderRoutes(
   app: FastifyInstance,
@@ -202,18 +200,6 @@ export function registerBuilderRoutes(
     scope.removeContentTypeParser('multipart/form-data')
     scope.addHook('preHandler', async (request, reply) => {
       await guard(deps, request)
-      const { controllerId, sessionId } = Params.parse(request.params)
-      // Only the Builder parks a card (`ask_user`, `submit_plan`): the Assistant has none.
-      if (
-        controllerId === CONTROLLER_KINDS.builder.id &&
-        request.method === 'POST' &&
-        request.routeOptions.url?.endsWith('/abort')
-      ) {
-        await untilCardsKept(
-          deps.builder.agent,
-          await deps.builder.controller.getSession(sessionId),
-        )
-      }
       if (!request.routeOptions.url?.endsWith('/stream')) return
       deps.streams.add(reply.raw)
       reply.raw.once('close', () => deps.streams.delete(reply.raw))
