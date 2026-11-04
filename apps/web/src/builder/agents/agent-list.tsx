@@ -2,13 +2,14 @@ import type { AgentListed, CompanyId, ProjectId } from '@conexus/hub-api'
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { BotIcon } from 'lucide-react'
+import type { ReactNode } from 'react'
 import { projectsPagedQuery } from '../../hub/projects/public.ts'
 import { sentenceOf } from '../../platform/hub.ts'
 import { Alert } from '../../ui/alert.tsx'
 import { Block, BlockSentence, blockRow } from '../../ui/block.tsx'
 import { cn } from '../../ui/cn.ts'
 import { PageTitle } from '../../ui/list.tsx'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select.tsx'
+import { ChoiceSelect } from '../../ui/select.tsx'
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { ReadFailure } from '../../ui/states.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
@@ -30,16 +31,31 @@ import {
 
 type Place = { companyId: CompanyId; projectId?: ProjectId }
 
+/** The link every row is: it opens the agent in its Projeto. */
+function AgentLink(props: {
+  companyId: CompanyId
+  agent: AgentListed
+  className: string
+  children: ReactNode
+}) {
+  const { companyId, agent, className, children } = props
+  return (
+    <Link
+      to="/companies/$companyId/projects/$projectId/agents/$agentId"
+      params={{ companyId, projectId: agent.projectId, agentId: agent.id }}
+      className={className}
+    >
+      {children}
+    </Link>
+  )
+}
+
 /** A row of the Projeto's area, as it was before the Início had a list: what the agent does and its tools. */
 function AreaRow(props: { companyId: CompanyId; agent: AgentListed }) {
   const { companyId, agent } = props
   return (
     <li>
-      <Link
-        to="/companies/$companyId/projects/$projectId/agents/$agentId"
-        params={{ companyId, projectId: agent.projectId, agentId: agent.id }}
-        className={`${blockRow} hover:bg-surface-3`}
-      >
+      <AgentLink companyId={companyId} agent={agent} className={`${blockRow} hover:bg-surface-3`}>
         <BotIcon aria-hidden="true" className="size-4 shrink-0 text-text-2" />
         <span className="max-w-[45%] shrink-0 truncate">{agent.name}</span>
         <span className="hidden min-w-0 flex-1 truncate text-text-2 sm:inline">
@@ -47,7 +63,7 @@ function AreaRow(props: { companyId: CompanyId; agent: AgentListed }) {
         </span>
         <span className="ml-auto shrink-0 text-fact text-text-2">{toolsText(agent.tools)}</span>
         <StateStamp state={agent.state} />
-      </Link>
+      </AgentLink>
     </li>
   )
 }
@@ -60,9 +76,9 @@ function InicioRow(props: { companyId: CompanyId; agent: AgentListed }) {
   const { companyId, agent } = props
   return (
     <li>
-      <Link
-        to="/companies/$companyId/projects/$projectId/agents/$agentId"
-        params={{ companyId, projectId: agent.projectId, agentId: agent.id }}
+      <AgentLink
+        companyId={companyId}
+        agent={agent}
         className={cn(
           blockRow,
           'h-auto min-h-row flex-wrap py-sm hover:bg-surface-3 pointer-coarse:h-auto pointer-coarse:min-h-11',
@@ -81,7 +97,7 @@ function InicioRow(props: { companyId: CompanyId; agent: AgentListed }) {
         <span className="flex max-w-full flex-wrap gap-x-md gap-y-xs">
           <StateStamp state={agent.state} />
         </span>
-      </Link>
+      </AgentLink>
     </li>
   )
 }
@@ -140,7 +156,9 @@ function ProjectFilter({ companyId, projectId }: Place) {
   ]
   return (
     <>
-      <Select
+      <ChoiceSelect
+        label={FILTER_PROJECT}
+        className="sm:w-60"
         value={projectId ?? ALL}
         items={items}
         onValueChange={(next) => {
@@ -155,18 +173,7 @@ function ProjectFilter({ companyId, projectId }: Place) {
             search: chosen === undefined ? {} : { projectId: chosen },
           })
         }}
-      >
-        <SelectTrigger aria-label={FILTER_PROJECT} className="sm:w-60">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {items.map((item) => (
-            <SelectItem key={item.value} value={item.value}>
-              {item.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      />
       {read.isError && <Alert tone="danger">{sentenceOf(read.error)}</Alert>}
     </>
   )
