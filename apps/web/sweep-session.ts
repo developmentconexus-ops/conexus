@@ -7,6 +7,8 @@ export type Said = {
   role: 'person' | 'builder'
   parts: readonly unknown[]
   model?: string | null
+  /** A request the Assistant handed over: Mastra stores it as a signal marked with its source. */
+  origin?: 'assistant' | null
   createdAt: string
 }
 
@@ -14,6 +16,15 @@ export type Said = {
 export function storedOf(said: Said) {
   const [provider, ...name] = (said.model ?? '').split('/')
   const metadata = said.model ? { provider, modelId: name.join('/') } : undefined
+  if (said.origin) {
+    const signal = { type: 'user', attributes: { source: said.origin } }
+    return {
+      id: said.id,
+      role: 'signal',
+      createdAt: said.createdAt,
+      content: { format: 2, parts: said.parts, metadata: { signal } },
+    }
+  }
   return {
     id: said.id,
     role: said.role === 'person' ? 'user' : 'assistant',

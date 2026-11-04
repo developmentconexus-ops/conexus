@@ -91,3 +91,49 @@ test('dois arquivos de mesmo nome na mesma mensagem são duas etiquetas, sem cha
   expect(error).not.toHaveBeenCalled()
   error.mockRestore()
 })
+
+function assistantMark() {
+  return screen.queryByRole('note', { name: 'Enviado pelo Assistente' })
+}
+
+test('o pedido do Assistente mostra "via Assistente" com a hora, ao vivo e relido; o da pessoa não (24.3.2)', () => {
+  const handoff = recordedRun('handoff')
+  let live = OPENED
+  for (const event of handoff.events) live = session(live, { type: 'event', event })
+  const shown = render(
+    <Transcript
+      turns={shownOf(live)}
+      steers={[]}
+      model={MODEL}
+      older={NO_OLDER}
+      onAsk={() => undefined}
+    />,
+  )
+  expect(assistantMark()?.textContent).toMatch(/^via Assistente · \d{2}h\d{2}$/)
+  shown.unmount()
+
+  const reread = session(OPENED, { type: 'loaded', messages: handoff.read })
+  const again = render(
+    <Transcript
+      turns={shownOf(reread)}
+      steers={[]}
+      model={MODEL}
+      older={NO_OLDER}
+      onAsk={() => undefined}
+    />,
+  )
+  expect(assistantMark()?.textContent).toMatch(/^via Assistente · \d{2}h\d{2}$/)
+  again.unmount()
+
+  const plain = session(OPENED, { type: 'loaded', messages: read })
+  render(
+    <Transcript
+      turns={shownOf(plain)}
+      steers={[]}
+      model={MODEL}
+      older={NO_OLDER}
+      onAsk={() => undefined}
+    />,
+  )
+  expect(assistantMark()).toBeNull()
+})

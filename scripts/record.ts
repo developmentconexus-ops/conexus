@@ -1,6 +1,6 @@
 // Defect: every 14.2 screen passed on controller events and stored rows typed by hand in the shape
 // the screen wanted, orders Mastra never produces (testing T24; method study, diff 6).
-// `npm run record -- <scenario>` (cited, thinking, abort, plan, files, tasks or reads) runs the native flow once: Mastra's
+// `npm run record -- <scenario>` (cited, thinking, abort, plan, files, tasks, reads or handoff) runs the native flow once: Mastra's
 // real AgentController, with the Builder's model and web tools, on Mastra's in-memory store, answering
 // from the provider recording `apps/server/src/platform/recordings/anthropic-<scenario>.sse` through
 // a fake `fetch`, as `scripts/record-provider.ts` made it. `plan` has no provider recording: it needs
@@ -39,6 +39,14 @@ import {
   Recording,
   replayed,
 } from '../apps/server/src/platform/test-recordings.ts'
+import {
+  HANDOFF_CALLS,
+  HANDOFF_SIGNAL,
+  READS_CALLS,
+  READS_PROMPT,
+  TASKS_CALLS,
+  TASKS_PROMPT,
+} from './record-calls.ts'
 
 const ROOT = join(import.meta.dirname, '..')
 const CLAUDE = 'claude-sonnet-4-6'
@@ -54,7 +62,16 @@ const PROMPTS = {
     'Uma padaria inventada vende 120 pães por dia a R$ 0,80 cada. Quanto ela fatura em 30 dias? Pense antes de responder.',
   abort: 'Escreva uma lista de 60 nomes inventados de padarias, um por linha, sem comentários.',
 }
-const Scenario = z.enum(['cited', 'thinking', 'abort', 'plan', 'files', 'tasks', 'reads'])
+const Scenario = z.enum([
+  'cited',
+  'thinking',
+  'abort',
+  'plan',
+  'files',
+  'tasks',
+  'reads',
+  'handoff',
+])
 
 const PLAN_FILE = '.conexus/plans/encomendas.md'
 const PLAN_PROMPT = 'Planeje um app de encomendas para uma padaria inventada.'
@@ -103,43 +120,6 @@ const FILES_CALLS: Block[][] = [
   [{ type: 'text', text: 'Ela precisa de pães sem glúten.' }],
 ]
 
-const TASKS_PROMPT = 'Monte um app de encomendas para uma padaria inventada, por tarefas.'
-const PLANNED = [
-  { id: '1', content: 'Montar a tabela', activeForm: 'Montando a tabela', status: 'in_progress' },
-  { id: '2', content: 'Fazer a tela', activeForm: 'Fazendo a tela', status: 'pending' },
-  { id: '3', content: 'Conferir o app', activeForm: 'Conferindo o app', status: 'pending' },
-]
-/** What the model does in the `tasks` scenario: plan three tasks, complete two, one call each, and answer. */
-const TASKS_CALLS: Block[][] = [
-  [{ type: 'tool_use', name: 'task_write', input: { tasks: PLANNED } }],
-  [{ type: 'tool_use', name: 'task_complete', input: { id: '1' } }],
-  [{ type: 'tool_use', name: 'task_complete', input: { id: '2' } }],
-  [{ type: 'text', text: 'Falta conferir o app.' }],
-]
-
-const READS_PROMPT = 'Quanto a Padaria Sol vendeu em setembro de 2026 por vendedor?'
-const SOLD_BY_SELLER =
-  "SELECT V.APELIDO, ROUND(SUM(I.VLRTOT), 2) AS TOTAL FROM TGFCAB C JOIN TGFITE I ON I.NUNOTA = C.NUNOTA JOIN TGFVEN V ON V.CODVEND = C.CODVEND WHERE C.DTNEG BETWEEN '2026-09-01' AND '2026-09-30' GROUP BY V.APELIDO ORDER BY TOTAL DESC"
-/** What the model does in the `reads` scenario: read the Matriz by seller, then answer with what it read. */
-const READS_CALLS: Block[][] = [
-  [
-    {
-      type: 'tool_use',
-      name: 'connector_read',
-      input: {
-        connection: 'Matriz',
-        operation: 'sankhya.consultar',
-        input: { sql: SOLD_BY_SELLER },
-      },
-    },
-  ],
-  [
-    {
-      type: 'text',
-      text: 'Em setembro de 2026, na Matriz: JOAO vendeu R$ 8.072,70, RITA R$ 7.951,50 e MARCIA R$ 7.726,50.',
-    },
-  ],
-]
 const matriz = salesDatabase(PADARIA_SOL_MATRIZ)
 
 const Package = z.object({ version: z.string() })
@@ -174,7 +154,13 @@ function replaying(answers: Answer[]): () => void {
 type Session = Awaited<ReturnType<AgentController['createSession']>>
 
 const TASK_TOOLS = { task_write: taskWriteTool, task_complete: taskCompleteTool }
-const CALLS = { plan: PLAN_CALLS, files: FILES_CALLS, tasks: TASKS_CALLS, reads: READS_CALLS }
+const CALLS = {
+  plan: PLAN_CALLS,
+  files: FILES_CALLS,
+  tasks: TASKS_CALLS,
+  reads: READS_CALLS,
+  handoff: HANDOFF_CALLS,
+}
 
 /** Plays the scenario on the session, with the model calls answered from the recording; the events it emitted. */
 async function run(session: Session, scenario: z.infer<typeof Scenario>): Promise<unknown[]> {
@@ -194,7 +180,10 @@ async function run(session: Session, scenario: z.infer<typeof Scenario>): Promis
     if (scenario === 'files' && event.type === 'tool_start' && event.toolName === 'anotar')
       void session.sendMessage({ content: MORE_FILES_PROMPT, files: [MORE_FILE] })
     if (
-      (scenario === 'files' || scenario === 'tasks' || scenario === 'reads') &&
+      (scenario === 'files' ||
+        scenario === 'tasks' ||
+        scenario === 'reads' ||
+        scenario === 'handoff') &&
       event.type === 'agent_end'
     )
       ended.resolve()
@@ -204,7 +193,7 @@ async function run(session: Session, scenario: z.infer<typeof Scenario>): Promis
     }
   })
   const answers: Answer[] =
-    scenario === 'plan' || scenario === 'files' || scenario === 'tasks' || scenario === 'reads'
+    scenario in CALLS
       ? CALLS[scenario].map(
           (blocks, at, calls) => () =>
             new Response(
@@ -217,6 +206,9 @@ async function run(session: Session, scenario: z.infer<typeof Scenario>): Promis
   try {
     if (scenario === 'files') {
       await session.sendMessage({ content: FILES_PROMPT, files: FILES })
+      await ended.promise
+    } else if (scenario === 'handoff') {
+      await session.sendSignal(HANDOFF_SIGNAL, { requireDelivery: true }).accepted
       await ended.promise
     } else if (scenario === 'tasks' || scenario === 'reads') {
       await session.sendMessage({ content: scenario === 'tasks' ? TASKS_PROMPT : READS_PROMPT })

@@ -12,6 +12,7 @@ import { Bubble, BubbleContent } from '../../ui/bubble.tsx'
 import { MessageContent, MessageFooter, Message as Turn } from '../../ui/message.tsx'
 import type { Chip, Message } from './messages.ts'
 import { sentOf } from './messages.ts'
+import { FROM_ASSISTANT, FROM_ASSISTANT_LABEL } from './text.ts'
 
 /** A file as a chip: an image in miniature, any other file by its icon, then its name; `action` at its end. */
 export function FileChip(props: { file: Chip; action?: ReactNode }) {
@@ -70,5 +71,14 @@ export function PersonBubble(props: { text: string; files: readonly Chip[]; foot
 
 export function PersonTurn({ message }: { message: Message }) {
   const { text, files } = sentOf(message)
-  return <PersonBubble text={text} files={files} footer={hourOf(message.createdAt)} />
+  const hour = hourOf(message.createdAt)
+  const footer =
+    message.origin === 'assistant' ? (
+      <span role="note" aria-label={FROM_ASSISTANT_LABEL}>
+        {FROM_ASSISTANT} · {hour}
+      </span>
+    ) : (
+      hour
+    )
+  return <PersonBubble text={text} files={files} footer={footer} />
 }

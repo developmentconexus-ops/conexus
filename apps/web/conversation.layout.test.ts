@@ -3,14 +3,14 @@ import { after, before, test } from 'node:test'
 import { BUILDER_CONTROLLER, BUILDER_ROUTES } from '@conexus/hub-api'
 import type { Locator, Page } from 'playwright-core'
 import type { Replies } from './layout-harness.ts'
-import { createHarness, DESKTOP, focusDrawn, PHONE } from './layout-harness.ts'
+import { createHarness, DESKTOP, focusDrawn, PHONE, ZOOMED_PHONE } from './layout-harness.ts'
 import {
   AgentStart,
   recordedEvent,
   signalStarted,
 } from './src/builder/conversation/test-recorded.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
-import { MESSAGES, WITH_CONVERSATIONS } from './sweep-conversation-states.ts'
+import { CONVERSATION_STATES, MESSAGES, WITH_CONVERSATIONS } from './sweep-conversation-states.ts'
 import { PROJECT_ID } from './sweep-replies.ts'
 import type { Said } from './sweep-session.ts'
 import { sessionReplies } from './sweep-session.ts'
@@ -313,4 +313,24 @@ test('o painel de tarefas aberto quebra os títulos longos dentro da tela', asyn
     assert.deepEqual(page.problems, [])
     await page.close()
   }
+})
+
+test('o pedido do Assistente cabe a 195px, a 200% de ampliação: "via Assistente" e a hora à vista, sem rolagem lateral (24.3.2)', async () => {
+  const state = CONVERSATION_STATES.find(
+    (one) => one.name === 'Conversa, com o pedido do Assistente',
+  )
+  assert.ok(state, 'the sweep has no such state')
+  const page = await harness.open(state.path, { viewport: ZOOMED_PHONE, replies: state.replies })
+  await state.settle(page)
+  const mark = await page.getByRole('note', { name: 'Enviado pelo Assistente' }).boundingBox()
+  const scroll = await page.evaluate(() => document.documentElement.scrollWidth)
+  assert.deepEqual(
+    {
+      scroll,
+      inside: (mark?.x ?? -1) >= 0 && (mark?.x ?? 0) + (mark?.width ?? 0) <= ZOOMED_PHONE.width,
+    },
+    { scroll: ZOOMED_PHONE.width, inside: true },
+  )
+  assert.deepEqual(page.problems, [])
+  await page.close()
 })
