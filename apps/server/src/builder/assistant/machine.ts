@@ -2,21 +2,15 @@ import type { ConversationId } from '@conexus/hub-api'
 import { ConversationId as ConversationIdSchema } from '@conexus/hub-api'
 import type { RequestContext } from '@mastra/core/request-context'
 import type { WorkspaceFilesystem } from '@mastra/core/workspace'
-import { FileNotFoundError, WORKSPACE_TOOLS, Workspace } from '@mastra/core/workspace'
+import { WORKSPACE_TOOLS, Workspace } from '@mastra/core/workspace'
 import { z } from 'zod'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
 import { MAX_BYTES } from '../git/public.ts'
 import type { AssistantMachine, Kit, Phase } from '../machine/public.ts'
-import {
-  execIn,
-  MARK,
-  PathEscapesError,
-  readCapped,
-  SandboxFilesystem,
-  within,
-} from '../machine/public.ts'
+import { execIn, MARK, readCapped, SandboxFilesystem, within } from '../machine/public.ts'
 import type { ScopeOf } from './context.ts'
+import { locate } from './machine-file.ts'
 
 /** Where the conversation's files live on its machine, made at the machine's start. */
 const WORK_FOLDER = '/home/user/work'
@@ -78,33 +72,6 @@ export type MachineTuning = { workFolder: string; startMs: number }
 const ON_E2B: MachineTuning = { workFolder: WORK_FOLDER, startMs: START_MS }
 
 type Deps = AssistantMachine & { log: FailureLog; scopeOf: ScopeOf }
-
-/**
- * Where a path the model or the person names lands in the conversation's folder, or why it does
- * not.
- */
-export type Located =
-  | { kind: 'FILE'; path: string; name: string; bytes: number }
-  | { kind: 'OUTSIDE' | 'NOT_FOUND' }
-
-/**
- * Finds one file of the conversation's folder, where the file tools put it: the filesystem
- * resolves the path (`/relatorio.md` is `relatorio.md` of the folder), refuses what leaves it (a
- * `..` or a symlink out, `PathEscapesError`) and measures it. A folder, or a path that does not
- * exist, is `NOT_FOUND`.
- */
-export async function locate(files: WorkspaceFilesystem, path: string): Promise<Located> {
-  try {
-    const found = await files.stat(path)
-    const abs = files.resolveAbsolutePath?.(path)
-    if (found.type !== 'file' || abs === undefined) return { kind: 'NOT_FOUND' }
-    return { kind: 'FILE', path: abs, name: found.name, bytes: found.size }
-  } catch (error) {
-    if (error instanceof FileNotFoundError) return { kind: 'NOT_FOUND' }
-    if (error instanceof PathEscapesError) return { kind: 'OUTSIDE' }
-    throw error
-  }
-}
 
 type Session = {
   conversationId: ConversationId

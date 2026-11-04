@@ -1,6 +1,6 @@
 import type { AgentId, CompanyId, ConversationId, ProjectId } from '@conexus/hub-api'
 import { CONSTRUTOR_CONTROLLER } from '@conexus/hub-api'
-import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { ArrowLeftIcon } from 'lucide-react'
 import { useMemo, useState } from 'react'
@@ -15,7 +15,7 @@ import {
   START_NO_ACCOUNT,
 } from '../conversation/public.ts'
 import { DraftPanel } from './draft-panel.tsx'
-import { agentQuery, construtorConversationsQuery } from './queries.ts'
+import { agentQuery, construtorConversationsQuery, toolsQuery } from './queries.ts'
 import {
   CONSTRUTOR_FIRST,
   CONSTRUTOR_NAME,
@@ -37,6 +37,7 @@ export function ConstrutorChat(props: {
   const { conversations } = useSuspenseQuery(construtorConversationsQuery(scope)).data
   const here = conversations.find((one) => one.id === conversationId)
   const listKey = construtorConversationsQuery(scope).queryKey
+  const library = useQuery(toolsQuery(scope)).data?.tools
   const [agentId, setAgentId] = useState<AgentId>()
   // On a phone the draft covers the chat, so a call of the answer only keeps the agent and a tap shows it.
   const [covering, setCovering] = useState(false)
@@ -44,6 +45,7 @@ export function ConstrutorChat(props: {
   const room = useMemo(
     () => ({
       ...agentRoom(CONSTRUTOR_NAME, words),
+      toolDescription: (slug: string) => library?.find((one) => one.slug === slug)?.description,
       openAgent: (id: AgentId, by: 'CALL' | 'TAP') => {
         setAgentId(id)
         if (by === 'TAP') setCovering(true)
@@ -54,7 +56,7 @@ export function ConstrutorChat(props: {
       },
       openedAgent: agentId,
     }),
-    [words, agentId, queryClient, companyId, projectId],
+    [words, library, agentId, queryClient, companyId, projectId],
   )
   return (
     <RoomContext.Provider value={room}>

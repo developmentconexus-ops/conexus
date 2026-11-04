@@ -128,3 +128,25 @@ export async function talking(t: TestContext, hub: Hub, person: Person, url: str
   }
   return { stream, say }
 }
+
+/** A published app in the Projeto, at version 3, as the Hub keeps it: what `conexus_overview` reads. */
+export async function publishedApp(
+  hub: Hub,
+  owned: { companyId: string; projectId: string; personId: string },
+) {
+  const versionId = randomUUID().replaceAll('-', '')
+  await hub.test.asOwner('insert into apps.app (project_id, company_id) values ($1, $2)', [
+    owned.projectId,
+    owned.companyId,
+  ])
+  await hub.test.asOwner(
+    `insert into apps.app_version (id, company_id, project_id, number, state, manifest, digest,
+       sent_by, attempt_key, created_at)
+     values ($1, $2, $3, 3, 'ready', '{}'::jsonb, repeat('0', 64), $4, $1, now())`,
+    [versionId, owned.companyId, owned.projectId, owned.personId],
+  )
+  await hub.test.asOwner('update apps.app set published_version_id = $1 where project_id = $2', [
+    versionId,
+    owned.projectId,
+  ])
+}

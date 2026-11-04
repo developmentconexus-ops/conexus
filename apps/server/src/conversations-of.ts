@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify'
 import type { AppDataPort } from './builder/agents/public.ts'
 import { agentsAlive } from './builder/agents/public.ts'
-import type { MachineTuning } from './builder/assistant/public.ts'
+import type { HandOffDoors, MachineTuning } from './builder/assistant/public.ts'
 import { createAssistant, speakersOf } from './builder/assistant/public.ts'
 import {
   AUTOMATION_TURN_MS,
@@ -20,6 +20,7 @@ import { publishedVersionsOf } from './hub/apps/public.ts'
 import type { Connectors } from './hub/connectors/public.ts'
 import type { IdentityPorts } from './hub/identity/public.ts'
 import type { Notify } from './hub/notifications/public.ts'
+import type { ProjectPorts } from './hub/projects/public.ts'
 import { liveProjectOf, liveProjectsOf } from './hub/projects/public.ts'
 import type { Config } from './platform/config.ts'
 import type { Database, MastraPool } from './platform/database.ts'
@@ -44,6 +45,23 @@ function appDataOf(apps: () => Pick<Apps, 'hasAppData' | 'readAppData'>): AppDat
   }
 }
 
+/** The Assistant's hand-off doors (step 24.3.2), each reached when the person touches it. */
+function handOffsOf(
+  deps: {
+    projects: () => Pick<ProjectPorts, 'createProject'>
+    connectors: () => Connectors
+  },
+  builder: HandOffDoors['builder'],
+  updating: () => boolean,
+): HandOffDoors {
+  return {
+    createProject: (input) => deps.projects().createProject(input),
+    grants: deps.connectors().grants,
+    builder,
+    updating,
+  }
+}
+
 /**
  * The Builder's conversations, the Assistant beside them (step 24.1, U2, `H1`), its automations
  * (step 24.2) and a Projeto's agents with their conversations (step 24.3): one Mastra store on the pool of Mastra's own login (0010) and one account queue,
@@ -64,6 +82,8 @@ export function conversationsOf(deps: {
   /** The tests' folder and start deadline for the Assistant's machines; E2B's when absent. */
   machineTuning?: MachineTuning
   connectors: () => Connectors
+  /** The Projects are made after the conversations; a hand-off creates one when it is touched. */
+  projects: () => Pick<ProjectPorts, 'createProject'>
   /** The apps are made after the agents; an agent reads its app's data when a turn calls it. */
   apps: () => Apps
   notify: Notify
@@ -86,6 +106,7 @@ export function conversationsOf(deps: {
     machineTuning: deps.machineTuning,
     connectors: door,
     projects: { liveProjectOf, liveProjectsOf, publishedVersionsOf },
+    handOffs: () => handOffsOf(deps, builder.handOffs, hub.updating),
   })
   // A Projeto's agents and the company's tools (step 24.3), each published one alive on the one
   // `Mastra`, made below: the connectors' door is reached when a route or a turn calls it.

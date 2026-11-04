@@ -147,9 +147,7 @@ function AskBox(props: {
       placeholder={HOME_PLACEHOLDER}
       examples={props.chooseProject ? ASSISTANT_EXAMPLES : []}
       canSend={choice.connections !== undefined}
-      picked={picked}
-      onPick={props.onPick}
-      providers={props.providers}
+      picker={{ picked, onPick: props.onPick, providers: props.providers }}
       onSend={begin}
       tools={tools}
       notice={error !== undefined && <Alert tone="danger">{error}</Alert>}

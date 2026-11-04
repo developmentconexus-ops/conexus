@@ -1562,6 +1562,17 @@
     }
   },
   {
+    "id": "read-login-select-only",
+    "file": "apps/server/src/platform/app-read.ts",
+    "find": "{ text: `GRANT SELECT ON ALL TABLES IN SCHEMA ${s} TO ${read}` },",
+    "replace": "{ text: `GRANT ALL ON ALL TABLES IN SCHEMA ${s} TO ${read}` },",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/agents/app-data.test.ts",
+      "name": "não grava: o login de leitura só tem SELECT"
+    }
+  },
+  {
     "id": "migration-ledger",
     "file": "apps/server/src/platform/company-postgres.ts",
     "find": "text: `INSERT INTO ${ledger} (id, sha256) VALUES ($1, $2)`",
@@ -2300,7 +2311,7 @@
   },
   {
     "id": "assistant-locate-where-tools-put-it",
-    "file": "apps/server/src/builder/assistant/machine.ts",
+    "file": "apps/server/src/builder/assistant/machine-file.ts",
     "find": "const found = await files.stat(path)",
     "replace": "const found = await files.stat(path.startsWith('/') ? `..${path}` : path)",
     "test": {

@@ -21,7 +21,7 @@ import {
 } from '../agents/test-agents.ts'
 import { talking } from '../assistant/test-assistant.ts'
 import { created, salesSummary } from '../automations/test-automations.ts'
-import { endOf } from '../conversation/test-conversation.ts'
+import { endOf, KEY } from '../conversation/test-conversation.ts'
 import { tool } from '../conversation/test-questions.ts'
 import type { Step } from './test-construtor.ts'
 import { building, keeping, listOf, opened, resultOf, scripted } from './test-construtor.ts'
@@ -242,6 +242,7 @@ test('testar: roda uma pergunta contra o rascunho, sem conversa guardada; rascun
   assert.deepEqual(answers[2], { kind: 'REFUSED', code: 'AGENT_NOT_FOUND' })
   const asked = on.anthropic.sent.filter((each) => !each.stream).at(-1)
   assert.match(asked?.system ?? '', /Responda sobre as vendas do dia\./)
+  assert.equal(asked?.key, KEY, 'counted in the person’s own model queue')
 })
 
 test('o registro diz quem gravou: CONSTRUTOR nas ferramentas do Construtor, PERSON nas rotas da pessoa', async (t) => {

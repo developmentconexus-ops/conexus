@@ -1,5 +1,6 @@
 import type { ModelId } from '@conexus/hub-api'
 import { Loader2Icon } from 'lucide-react'
+import type { ReactNode } from 'react'
 import { useEffect, useRef } from 'react'
 import {
   MessageScroller,
@@ -80,6 +81,8 @@ export function Transcript(props: {
   model: ModelId
   older: { has: boolean; loading: boolean; load: () => void }
   onAsk: (text: string) => void
+  /** What sits over the bottom of the scroll area, centred on the column: the box and what goes with it. */
+  children?: ReactNode
 }) {
   const { turns, older } = props
   const { agent } = useRoom()
@@ -88,10 +91,13 @@ export function Transcript(props: {
       <EndOnSent last={turns.at(-1)?.key} />
       <LoadOlderAtStart older={older} />
       <MessageScroller>
-        <MessageScrollerViewport aria-label="Rolagem da conversa" className="px-md pt-md">
+        <MessageScrollerViewport
+          aria-label="Rolagem da conversa"
+          className="flex flex-col pt-md [scrollbar-gutter:stable]"
+        >
           <MessageScrollerContent
             aria-label={`Conversa com o ${agent}`}
-            className="pb-xl"
+            className="axis min-h-0 flex-[1_0_auto] px-md pb-xl"
             aria-live="polite"
             aria-busy={turns.at(-1)?.streaming === true}
           >
@@ -118,6 +124,10 @@ export function Transcript(props: {
               </MessageScrollerItem>
             ))}
           </MessageScrollerContent>
+          <div className="sticky bottom-0 [&>*]:bg-(--ground,var(--color-surface))">
+            <MessageScrollerButton className="data-[direction=end]:bottom-[calc(100%+var(--spacing-lg))]" />
+            {props.children}
+          </div>
         </MessageScrollerViewport>
         {older.loading && (
           <div className="pointer-events-none absolute inset-x-0 top-md flex justify-center">
@@ -130,7 +140,6 @@ export function Transcript(props: {
             </div>
           </div>
         )}
-        <MessageScrollerButton />
       </MessageScroller>
     </MessageScrollerProvider>
   )

@@ -185,6 +185,24 @@ test('não grava: INSERT, UPDATE, DELETE, CREATE, SET ROLE e dois comandos são 
   }
 })
 
+test('não grava: o login de leitura só tem SELECT, de modo que, com a transação virada para escrita, o banco ainda recusa o DELETE com 42501', async (t) => {
+  const on = await readingOn(t, [])
+  // Born after the tables, so what it holds is only what the grants give it, not the defaults.
+  await forgetReadLogin(on.owner, on.projectId)
+  await on.hub.postgres.companyPostgres.ensureReadLogin(on.owner, on.projectId)
+  const url = await on.hub.postgres.companyPostgres.readAddress('db.test', on.projectId)
+  const saved = await savedOf(on.owner, on.projectId)
+  // The call without `readOnly`: the transaction is the login's own, so only its grants refuse.
+  const answer = await pgTransport(
+    url,
+    [{ text: 'SET TRANSACTION READ WRITE' }, { text: 'DELETE FROM recado' }],
+    AbortSignal.timeout(5_000),
+  )
+  assert.equal(answer.kind, 'REFUSED')
+  assert.equal(answer.kind === 'REFUSED' ? answer.code : undefined, '42501')
+  assert.deepEqual(await savedOf(on.owner, on.projectId), saved)
+})
+
 test('o login: nasce na criação do app; o de um Projeto de antes da U3 nasce na primeira chamada; repetir, também ao mesmo tempo, não falha', async (t) => {
   const on = await readingOn(t, ['SELECT count(*) AS total FROM recado'])
   const { readLogin } = appLogin(on.projectId)

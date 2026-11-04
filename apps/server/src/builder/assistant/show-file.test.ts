@@ -167,3 +167,11 @@ test('show_file: um arquivo que existe mas não pode ser lido não vira MACHINE_
     { kind: 'SHOW_REFUSED', reason: 'MACHINE_UNAVAILABLE' },
   ])
 })
+
+test('show_file: uma chamada sem caminho, que o Mastra recusa pela entrada, termina a volta, e o modelo lê a recusa do Mastra', async (t) => {
+  const on = await assisting(t, [[tool(SHOW, {})], [said('Pronto.')]])
+  const url = await created(on.hub, on.ana, on.assistant, { connections: [] })
+  const { say } = await talking(t, on.hub, on.ana, url)
+  assert.equal(endOf(await say('Mostre')), 'complete')
+  assert.match(on.calls.at(-1)?.texts.join('\n') ?? '', /validation failed for show_file/i)
+})
