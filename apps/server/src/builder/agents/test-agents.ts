@@ -19,6 +19,8 @@ export type Tool = {
   connectionId: string
   operation: string
   description: string
+  connectionName: string
+  readLabel: string
   effect: string
   latest: { id: string; number: number }
   usedBy: { id: string; name: string }[]
