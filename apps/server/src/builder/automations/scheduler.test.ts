@@ -62,9 +62,9 @@ test('sem automação, a agenda não liga: nenhum trabalhador scheduler, nenhuma
   assert.equal(await scheduleReads(on.hub), reads)
 })
 
-/** The São Paulo minute at least ten seconds from now, as a cadence's `time` names it. */
-function comingMinute(): string {
-  const at = new Date(Date.now() + 70_000)
+/** The São Paulo minute `ahead` ms from now, as a cadence's `time` names it. */
+function minuteAhead(ahead: number): string {
+  const at = new Date(Date.now() + ahead)
   return new Intl.DateTimeFormat('pt-BR', {
     ...{ timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' },
   }).format(at)
@@ -74,15 +74,16 @@ test('a primeira automação liga a agenda, que dorme até o próximo disparo: o
   timeout: 180_000,
 }, async (t) => {
   const on = await automating(t)
-  await created(on.hub, on.ana, on.automations, salesSummary([]))
+  const far = { kind: 'DAILY', time: minuteAhead(12 * 3_600_000) }
+  await created(on.hub, on.ana, on.automations, salesSummary([], { cadence: far }))
   assert.equal(on.hub.mastra.getWorker('scheduler')?.isRunning, true)
   await sleep(QUIET_MS)
   assert.equal(await mastraOpen(on.hub), 0)
   const asleep = await scheduleReads(on.hub)
   await sleep(SETTLE_MS)
-  assert.equal(await scheduleReads(on.hub), asleep, 'no read while it sleeps until 07:00')
+  assert.equal(await scheduleReads(on.hub), asleep, 'no read while it sleeps')
 
-  const cadence = { kind: 'DAILY', time: comingMinute() }
+  const cadence = { kind: 'DAILY', time: minuteAhead(70_000) }
   const soon = await created(on.hub, on.ana, on.automations, salesSummary([], { cadence }))
   const fired = await ended(on.hub, on.ana, `${on.automations}/${soon.id}`)
   assert.equal(fired.trigger, 'SCHEDULED')
