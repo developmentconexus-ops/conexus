@@ -212,6 +212,7 @@ export function StartBox(props: {
     <div className={`${START_COLUMN} gap-md`}>
       <div className="md:[&_textarea]:min-h-20 [&_textarea]:min-h-16">
         <Composer
+          placement="inline"
           answering={false}
           canSend={props.canSend ?? true}
           draft={draft}
