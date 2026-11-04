@@ -128,6 +128,20 @@ function Where(props: {
   )
 }
 
+/** The connection, the read and the name of an existing tool: they belong to the tool, so a new version only shows them. */
+function Kept(props: { connection: string; operation: string; slug: string }) {
+  return (
+    <dl className="grid grid-cols-[auto_1fr] gap-x-md gap-y-xs text-label">
+      <dt className="text-text-2">Ligação</dt>
+      <dd>{props.connection}</dd>
+      <dt className="text-text-2">Leitura</dt>
+      <dd>{props.operation}</dd>
+      <dt className="text-text-2">Nome da ferramenta</dt>
+      <dd>{props.slug}</dd>
+    </dl>
+  )
+}
+
 function Values(props: {
   description: string
   bound: string
@@ -179,7 +193,7 @@ function Values(props: {
  */
 export function ToolForm(props: {
   offered: readonly OfferedConnection[]
-  fixed?: Pick<ToolInput, 'connectionId' | 'operation' | 'slug'>
+  fixed?: Pick<ToolInput, 'connectionId' | 'operation' | 'slug'> & { connection: string }
   initial?: ToolVersionConfig
   pending: boolean
   refused: Refusal | undefined
@@ -221,6 +235,9 @@ export function ToolForm(props: {
         submit()
       }}
     >
+      {fixed !== undefined && (
+        <Kept connection={fixed.connection} operation={fixed.operation} slug={fixed.slug} />
+      )}
       {fixed === undefined && (
         <Where
           offered={props.offered}

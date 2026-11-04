@@ -5,6 +5,7 @@ import type {
   ConstrutorConversationSummary,
   ReadyTool,
   ToolSummary,
+  ToolVersionDetail,
 } from '@conexus/hub-api'
 import {
   AGENTS_CONTROLLER,
@@ -27,6 +28,7 @@ import { screens, view } from '../conversation/test-hub.tsx'
 import { START } from '../conversation/test-start.tsx'
 import { displayOf, openLine } from '../conversation/test-stream.tsx'
 import { BUILDER_CHAT, CHAT, TEST_CHAT, TOOL_V1, toolSummary, version } from './test-agents.ts'
+import { toolRoutes } from './test-hub-tools.tsx'
 
 const PROJECT_API = `*/api/companies/${COMPANY.id}/projects/${PEDIDOS.id}`
 
@@ -57,6 +59,8 @@ type Held = {
   agents: AgentDetail[]
   versions?: AgentVersionSummary[]
   tools?: ToolSummary[]
+  /** The versions of every tool the Projeto reads, newest last; a tool read without them has version 1 alone. */
+  toolVersions?: ToolVersionDetail[]
   ready?: ReadyTool[]
   conversations?: AgentConversationSummary[]
   construtor?: ConstrutorConversationSummary[]
@@ -185,6 +189,7 @@ function conversationRoutes(held: Held, note: Note) {
       ]
       return HttpResponse.json({ tool: made }, { status: 201 })
     }),
+    ...toolRoutes(held, PROJECT_API, note),
     http.get(`${PROJECT_API}/construtor/conversations`, () =>
       HttpResponse.json({ conversations: held.construtor ?? [] }),
     ),

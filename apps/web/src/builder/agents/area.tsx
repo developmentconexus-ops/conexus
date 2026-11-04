@@ -7,7 +7,6 @@ import { useAttemptKey } from '../../platform/attempt-key.ts'
 import { HubFailure, sentenceOf, writeFailureText } from '../../platform/hub.ts'
 import { Block, BlockSentence, blockRow } from '../../ui/block.tsx'
 import { cn } from '../../ui/cn.ts'
-import { PageTitle } from '../../ui/list.tsx'
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { ReadFailure } from '../../ui/states.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
@@ -23,8 +22,8 @@ import {
   useDraft,
   usePicked,
 } from '../conversation/public.ts'
+import { AreaFrame } from './area-frame.tsx'
 import { agentsQuery, construtorConversationsQuery, sendConstrutorConversation } from './queries.ts'
-import { AREA_FRAME } from './route-states.tsx'
 import { ConversationLine, StateStamp } from './rows.tsx'
 import {
   AREA_TITLE,
@@ -187,13 +186,12 @@ export function AgentsArea(props: Scope) {
   const scope = { companyId: props.companyId, projectId: props.projectId }
   if (role === 'member') return <p className="p-xl text-text-2">{MEMBERS_CANNOT}</p>
   return (
-    <div className={AREA_FRAME}>
-      <PageTitle>{AREA_TITLE}</PageTitle>
+    <AreaFrame scope={scope} tab="agentes">
       <div className={cn(START_COLUMN, 'gap-lg')}>
         <Ask {...scope} />
         <AgentList {...scope} />
         <Earlier {...scope} />
       </div>
-    </div>
+    </AreaFrame>
   )
 }

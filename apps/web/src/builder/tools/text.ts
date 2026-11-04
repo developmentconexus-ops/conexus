@@ -1,0 +1,9 @@
+export const NO_TOOLS_YET =
+  'Nenhuma ferramenta ainda. O Construtor faz as primeiras quando monta um agente.'
+export const NOBODY_USES = 'Nenhum agente a usa.'
+export const UNCONFIRMED_DELETE =
+  'Não foi possível confirmar se a ferramenta foi apagada. Confira a lista.'
+export const UNCONFIRMED_VERSION =
+  'Não foi possível confirmar se a versão foi gravada. Confira as versões.'
+export const BACK_TO_TOOLS = 'Voltar às ferramentas'
+export const GONE_CONNECTION = 'Uma ligação que o Projeto não oferece mais'
