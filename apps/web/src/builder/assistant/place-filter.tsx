@@ -48,14 +48,7 @@ export function PlaceFilter(props: { companyId: CompanyId; place: Place | undefi
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        render={
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label={FILTER_CONVERSATIONS}
-            className="size-6"
-          />
-        }
+        render={<Button variant="ghost" size="icon-sm" aria-label={FILTER_CONVERSATIONS} />}
       >
         <FilterIcon aria-hidden="true" />
       </DropdownMenuTrigger>
@@ -66,14 +59,20 @@ export function PlaceFilter(props: { companyId: CompanyId; place: Place | undefi
             void choose(viewOf({ place: value }).place)
           }}
         >
-          <DropdownMenuRadioItem value={ALL}>{ALL_PLACES}</DropdownMenuRadioItem>
-          <DropdownMenuRadioItem value="HOME">{HOME_PLACE}</DropdownMenuRadioItem>
+          <DropdownMenuRadioItem value={ALL} closeOnClick>
+            {ALL_PLACES}
+          </DropdownMenuRadioItem>
+          <DropdownMenuRadioItem value="HOME" closeOnClick>
+            {HOME_PLACE}
+          </DropdownMenuRadioItem>
           {projects.data?.projects.map((project) => (
-            <DropdownMenuRadioItem key={project.id} value={project.id}>
+            <DropdownMenuRadioItem key={project.id} value={project.id} closeOnClick>
               {project.name}
             </DropdownMenuRadioItem>
           ))}
-          <DropdownMenuRadioItem value="AUTOMATIONS">{AUTOMATIONS_PLACE}</DropdownMenuRadioItem>
+          <DropdownMenuRadioItem value="AUTOMATIONS" closeOnClick>
+            {AUTOMATIONS_PLACE}
+          </DropdownMenuRadioItem>
         </DropdownMenuRadioGroup>
       </DropdownMenuContent>
     </DropdownMenu>

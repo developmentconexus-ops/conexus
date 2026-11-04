@@ -69,6 +69,7 @@ test('o lugar: o filtro mostra só as daquele lugar com um rótulo e ×, e o × 
   fireEvent.click(await screen.findByRole('menuitemradio', { name: 'Início' }))
   await waitFor(() => expect(nav.queryByRole('link', { name: /Do Projeto/ })).toBeNull())
   expect(await nav.findByRole('link', { name: /Da casa/ })).toBeTruthy()
+  await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
   expect(conexus.router.state.location.search).toMatchObject({ place: 'HOME' })
   fireEvent.click(nav.getByRole('button', { name: 'Tirar o filtro: Início' }))
   expect(await nav.findByRole('link', { name: /Do Projeto/ })).toBeTruthy()
