@@ -37,7 +37,7 @@ function NoProjectChip() {
 }
 
 /** The Projeto a conversation lives in, fixed: its folder and, once the Hub has answered, its name; "Projeto" if the read fails. */
-export function FixedProjectChip(props: { companyId: CompanyId; projectId: ProjectId }) {
+function FixedProjectChip(props: { companyId: CompanyId; projectId: ProjectId }) {
   const read = useQuery(projectQuery(props.companyId, props.projectId))
   const name = read.isError ? PROJECT_FALLBACK : read.data?.project.name
   return (

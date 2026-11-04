@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { AgentDetail, AgentListed, AgentSummary, OfferedConnection } from './agents.ts'
 import { AutomationId } from './assistant.ts'
 import { CompanyId } from './companies.ts'
-import { ConversationId } from './conversations.ts'
+import { ConversationId, Effort, ModelChoice, ModelId } from './conversations.ts'
 import type { FailureCode } from './failures.ts'
 import { Problem } from './failures.ts'
 import { ATTEMPT_KEY_HEADER, defineOperation } from './operation.ts'
@@ -87,12 +87,15 @@ const READ_FAILURES = [
 
 export const createConstrutorConversation = defineOperation({
   id: 'createConstrutorConversation',
-  summary: `Opens a conversation of the person's with the Construtor in the Projeto, keyed by ${ATTEMPT_KEY_HEADER}.`,
+  summary: `Opens a conversation of the person's with the Construtor in the Projeto, keyed by ${ATTEMPT_KEY_HEADER}, on the model and reasoning effort chosen or the company’s default.`,
   access: 'session',
   method: 'POST',
   path: BASE,
   bodyLimit: 1024,
-  input: { params: InProject, body: z.object({}) },
+  input: {
+    params: InProject,
+    body: z.object({ model: ModelId.optional(), effort: Effort.optional() }),
+  },
   attemptKey: true,
   success: { status: 201, body: z.object({ conversation: ConstrutorConversationSummary }) },
   failures: [
@@ -117,4 +120,23 @@ export const listConstrutorConversations = defineOperation({
     body: z.object({ conversations: z.array(ConstrutorConversationSummary) }),
   },
   failures: READ_FAILURES,
+})
+
+export const setConstrutorModel = defineOperation({
+  id: 'setConstrutorModel',
+  summary:
+    'Changes the model of a Construtor conversation and its reasoning effort, for its next answers.',
+  access: 'session',
+  method: 'PUT',
+  path: `${BASE}/{conversationId}/model`,
+  bodyLimit: 1024,
+  input: { params: InProject.extend({ conversationId: ConversationId }), body: ModelChoice },
+  success: { status: 200, body: ModelChoice },
+  failures: [
+    ...READ_FAILURES,
+    'CONVERSATION_NOT_FOUND',
+    'MODEL_UNKNOWN',
+    'MODEL_NO_ACCOUNT',
+    'EFFORT_UNSUPPORTED',
+  ],
 })

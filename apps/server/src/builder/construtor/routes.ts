@@ -3,6 +3,7 @@ import {
   ConversationId,
   createConstrutorConversation,
   listConstrutorConversations,
+  setConstrutorModel,
 } from '@conexus/hub-api'
 import type { AgentController } from '@mastra/core/agent-controller'
 import type { StorageThreadType } from '@mastra/core/memory'
@@ -10,8 +11,9 @@ import type { Memory } from '@mastra/memory'
 import type { FastifyInstance } from 'fastify'
 import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
+import { Failure } from '../../platform/failure.ts'
 import { answer, serve } from '../../platform/http.ts'
-import { attemptIdOf, resourceOf } from '../controller-kit/public.ts'
+import { attemptIdOf, changeModel, resourceOf } from '../controller-kit/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import type { InProject, ToolsDeps } from '../tools/public.ts'
 import { admitted, databaseScopeOf, inProjectOf } from '../tools/public.ts'
@@ -50,7 +52,11 @@ export function registerConstrutorRoutes(app: FastifyInstance, deps: Deps): void
     await admittedTo(deps, scope)
     const owner = { companyId: scope.companyId, personId: scope.personId }
     const id = attemptIdOf('construtor', owner, input.attemptKey)
-    const opened = await openConstrutor({ ...deps, controller, memory }, { scope, id })
+    const { model, effort } = input.body
+    const opened = await openConstrutor(
+      { ...deps, controller, memory },
+      { scope, id, model, effort },
+    )
     const thread = await threadOf(memory, owner, id)
     if (opened.made) {
       const about = { companyId: scope.companyId, traceId: input.traceId, conversationId: id }
@@ -72,5 +78,22 @@ export function registerConstrutorRoutes(app: FastifyInstance, deps: Deps): void
       orderBy: { field: 'updatedAt', direction: 'DESC' },
     })
     return answer({ conversations: threads.map(summaryOf) })
+  })
+
+  serve(app, setConstrutorModel, async (input) => {
+    const scope = inProjectOf(input)
+    await admittedTo(deps, scope)
+    const owner = { companyId: scope.companyId, personId: scope.personId }
+    const { conversationId } = input.params
+    const thread = await threadOf(memory, owner, conversationId)
+    if (thread.metadata?.[CONSTRUTOR_MARK.project] !== scope.projectId)
+      throw new Failure('CONVERSATION_NOT_FOUND')
+    const kept = await changeModel(
+      { controller, queue: deps.queue },
+      { kind: 'construtor', owner, id: conversationId, choice: input.body },
+    )
+    const about = { companyId: scope.companyId, traceId: input.traceId, conversationId }
+    deps.log.info(about, 'CONSTRUTOR_MODEL_SET')
+    return answer(kept)
   })
 }

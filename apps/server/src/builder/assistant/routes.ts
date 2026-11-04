@@ -29,9 +29,8 @@ import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import { answer, serve } from '../../platform/http.ts'
-import { attemptIdOf, releaseThreads, resourceOf } from '../controller-kit/public.ts'
+import { attemptIdOf, changeModel, releaseThreads, resourceOf } from '../controller-kit/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
-import { conversationModel, effortsOf } from '../model-accounts/public.ts'
 import type { ChosenConnections } from './chosen.ts'
 import type { Owner } from './context.ts'
 import { SESSION_MARK, scopeOn } from './context.ts'
@@ -213,31 +212,6 @@ function registerReads(app: FastifyInstance, deps: Deps): void {
   })
 }
 
-/**
- * Puts the conversation on a model and an effort, kept together on its thread (`switch`), for its
- * next turns. The session is found or recovered by `createSession` with the marks the creation
- * stamped, so one is never born without them; a `switch` in a turn applies to the next one.
- */
-async function switchModel(
-  deps: Deps,
-  input: { owner: Owner; thread: StorageThreadType; model: ModelId; effort: Effort },
-) {
-  const { owner, thread } = input
-  const id = ConversationId.parse(thread.id)
-  const { place } = await scopeOfThread(deps, owner, thread)
-  const tags = marksOf(owner, {
-    projectId: place.kind === 'PROJECT' ? place.projectId : undefined,
-    automation: automationOf(thread.metadata) ?? undefined,
-  })
-  const session = await deps.controller.createSession({
-    id,
-    resourceId: resourceOf('assistant', owner),
-    threadId: id,
-    tags,
-  })
-  await session.model.switch(input.model, { thinkingLevel: input.effort })
-}
-
 /** What the person does to a conversation she has: Renomear and Apagar. */
 function registerChanges(app: FastifyInstance, deps: Deps): void {
   serve(app, renameAssistantConversation, async (input) => {
@@ -315,10 +289,15 @@ function registerWrites(app: FastifyInstance, deps: Deps): void {
     const { conversationId } = input.params
     await admitted(deps, owner, { kind: 'COMPANY' })
     const thread = await ownThread(deps, owner, conversationId)
-    const model = await conversationModel(deps.queue, owner, input.body.model)
-    const { effort } = input.body
-    if (!effortsOf(model).includes(effort)) throw new Failure('EFFORT_UNSUPPORTED')
-    await switchModel(deps, { owner, thread, model, effort })
+    const { place } = await scopeOfThread(deps, owner, thread)
+    const tags = marksOf(owner, {
+      projectId: place.kind === 'PROJECT' ? place.projectId : undefined,
+      automation: automationOf(thread.metadata) ?? undefined,
+    })
+    const { model, effort } = await changeModel(deps, {
+      ...{ kind: 'assistant', owner, id: conversationId, tags },
+      choice: input.body,
+    })
     deps.log.info(
       { companyId: owner.companyId, traceId: input.traceId, conversationId },
       'ASSISTANT_MODEL_SET',

@@ -26,7 +26,7 @@ test('a área mostra a conversa com o Construtor e a lista dos agentes com o est
     ],
   })
   expect(await screen.findByRole('textbox', { name: 'Mensagem para o Construtor' })).toBeTruthy()
-  expect(screen.getByText(/Conte o que você quer que um agente faça/)).toBeTruthy()
+  expect(screen.getByText('Conte o que você quer que um agente faça.')).toBeTruthy()
   expect(await screen.findByRole('link', { name: /Conferente de metas/ })).toBeTruthy()
   expect(screen.getByText('Rascunho')).toBeTruthy()
   expect(screen.getByText('Versão 2 · publicada')).toBeTruthy()
@@ -48,6 +48,7 @@ test('mandar o primeiro pedido abre uma conversa com o Construtor e leva a ela',
     expect(conexus.router.state.location.pathname).toBe(`${AREA}/construtor/${BUILDER_CHAT}`),
   )
   expect(writes()[0]?.path).toMatch(/construtor\/conversations$/)
+  expect(writes()[0]?.body).toMatchObject({ model: 'anthropic/claude-sonnet-4' })
   expect(await screen.findByRole('textbox', { name: 'Mensagem para o Construtor' })).toBeTruthy()
 })
 
@@ -123,4 +124,30 @@ test('abrir a conversa com o Construtor sem conta para o modelo diz a frase com 
     ),
   ).toBeTruthy()
   expect(screen.getByRole('link', { name: 'Minhas contas de modelo' })).toBeTruthy()
+})
+
+test('o modelo escolhido na caixa vai com o pedido que abre a conversa', async () => {
+  const { writes } = at(AREA, { agents: [] })
+  fireEvent.click(await screen.findByRole('combobox', { name: 'Modelo e raciocínio' }))
+  fireEvent.click(await screen.findByRole('option', { name: 'Claude Opus 4' }))
+  say(await screen.findByRole('textbox', { name: 'Mensagem para o Construtor' }), 'um pedido')
+  await waitFor(() => expect(writes()[0]?.body).toMatchObject({ model: 'anthropic/claude-opus-4' }))
+})
+
+test('na conversa, trocar o modelo manda o PUT do Construtor e o botão mostra o que o Hub guardou', async () => {
+  const { writes } = at(`${AREA}/construtor/${BUILDER_CHAT}`, {
+    agents: [],
+    construtor: [{ id: BUILDER_CHAT, title: 'Meu agente', updatedAt: '2026-11-02T12:00:00.000Z' }],
+  })
+  fireEvent.click(await screen.findByRole('combobox', { name: 'Modelo e raciocínio' }))
+  fireEvent.click(await screen.findByRole('option', { name: 'Claude Opus 4' }))
+  await waitFor(() =>
+    expect(screen.getByRole('combobox', { name: 'Modelo e raciocínio' }).textContent).toMatch(
+      /Opus/,
+    ),
+  )
+  const [put] = writes()
+  expect(put?.method).toBe('PUT')
+  expect(put?.path).toMatch(new RegExp(`/construtor/conversations/${BUILDER_CHAT}/model$`))
+  expect(put?.body).toMatchObject({ model: 'anthropic/claude-opus-4' })
 })

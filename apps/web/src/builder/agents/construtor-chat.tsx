@@ -3,19 +3,25 @@ import { CONSTRUTOR_CONTROLLER } from '@conexus/hub-api'
 import { useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { ArrowLeftIcon } from 'lucide-react'
+import type { ComponentProps } from 'react'
 import { useMemo, useState } from 'react'
 import { useIsMobile } from '../../ui/use-mobile.ts'
-import { FixedProjectChip, useConnectorCatalog } from '../assistant/public.ts'
+import { useConnectorCatalog } from '../assistant/public.ts'
 import {
   agentRoom,
   Beside,
   Chat,
-  ComposerModelName,
+  ModelChoice,
   RoomContext,
   START_NO_ACCOUNT,
 } from '../conversation/public.ts'
 import { DraftPanel } from './draft-panel.tsx'
-import { agentQuery, construtorConversationsQuery, toolsQuery } from './queries.ts'
+import {
+  agentQuery,
+  construtorConversationsQuery,
+  sendConstrutorModel,
+  toolsQuery,
+} from './queries.ts'
 import {
   CONSTRUTOR_FIRST,
   CONSTRUTOR_NAME,
@@ -23,6 +29,30 @@ import {
   DRAFT_PANEL,
   titleOf,
 } from './text.ts'
+
+/** The model's button of the conversation, writing through the Construtor's own route. */
+function ConstrutorModel(props: {
+  scope: { companyId: CompanyId; projectId: ProjectId }
+  conversationId: ConversationId
+  control: Parameters<NonNullable<ComponentProps<typeof Chat>['picker']>>[0]
+}) {
+  const { scope, conversationId, control } = props
+  const write = {
+    ...sendConstrutorModel,
+    mutationFn: (body: Parameters<typeof sendConstrutorModel.mutationFn>[0]['body']) =>
+      sendConstrutorModel.mutationFn({ params: { ...scope, conversationId }, body }),
+  }
+  return (
+    <ModelChoice
+      controller={CONSTRUTOR_CONTROLLER}
+      conversationId={conversationId}
+      session={control.session}
+      providers={control.providers}
+      write={write}
+      onError={control.onError}
+    />
+  )
+}
 
 /** A conversation with the Construtor: the conversation of the 24.1 over the `construtor` controller (criterion 26). */
 export function ConstrutorChat(props: {
@@ -97,11 +127,14 @@ export function ConstrutorChat(props: {
                   empty={CONSTRUTOR_FIRST}
                   placeholder={CONSTRUTOR_PLACEHOLDER}
                   noAccount={START_NO_ACCOUNT}
-                  tools={{
-                    context: <FixedProjectChip companyId={companyId} projectId={projectId} />,
-                    notice: null,
-                  }}
-                  picker={({ session }) => <ComposerModelName model={session.model} />}
+                  tools={{ context: null, notice: null }}
+                  picker={(control) => (
+                    <ConstrutorModel
+                      scope={scope}
+                      conversationId={conversationId}
+                      control={control}
+                    />
+                  )}
                 />
               </div>
             }
