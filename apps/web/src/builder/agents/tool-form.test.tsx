@@ -37,3 +37,16 @@ test('a resposta de criar a ferramenta se perde: tocar de novo leva a mesma chav
   expect(keys[0]).not.toBeNull()
   expect(keys[1]).toBe(keys[0])
 })
+
+test('a descrição vazia diz "Confira este campo." junto do campo, sem gravar nada', async () => {
+  const hub = at(`${AREA}/${AGENT}`, { agents: [agent()] })
+  const panel = await screen.findByRole('region', { name: 'Ferramentas' })
+  fireEvent.click(await within(panel).findByRole('button', { name: 'Criar' }))
+  const dialog = await screen.findByRole('dialog')
+  fireEvent.change(within(dialog).getByLabelText('Nome da ferramenta'), {
+    target: { value: 'pedidos_de_ontem' },
+  })
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Criar ferramenta' }))
+  expect(await within(dialog).findByText('Confira este campo.')).toBeTruthy()
+  expect(hub.writes().filter((one) => one.path.endsWith('/tools'))).toHaveLength(0)
+})
