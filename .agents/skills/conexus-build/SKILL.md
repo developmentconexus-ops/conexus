@@ -29,8 +29,8 @@ unit's one named guide, and loads the card's maintainers' skills, pstack `poteto
    ([code C75](../../../docs/guides/code.md)): a nativo row uses the named API, an embrulhado row
    adds only its line. Fix a defect at its root cause: name the first wrong state, fix there,
    sweep its class.
-3. Delete before adding: remove what the card removes and move every caller. No shim, no parallel
-   old path, no temporary shape.
+3. Delete before adding: remove what the card removes and move every caller. No shim, parallel
+   old path or temporary shape.
 4. Bring old code only as the card's transplant measure says: into the named file, refactored as
    listed, carrying only the old decisions listed. Past the study rule's measure
    ([`conexus-study`](../conexus-study/SKILL.md)), stop.
@@ -49,11 +49,11 @@ unit's one named guide, and loads the card's maintainers' skills, pstack `poteto
 
 ## What it produces
 
-The commit and a report: what I ran, saw and did not prove; each table row with the file that
-builds it; the line counts of each brought part; every criterion with its test, none red; each
-declared file outside the card's folders ([delivery L7](../../../docs/guides/delivery.md)); the
-screenshots looked at, by state, width and theme, or "no screen touched". A criterion known to fail
-is never handed to the review: fix it, or stop.
+The commit and a report: what I ran, saw and did not prove; each table row with its file; the line
+counts of each brought part; every criterion with its test, none red; each declared file outside
+the card's folders ([delivery L7](../../../docs/guides/delivery.md)); the screenshots by state,
+width and theme, or "no screen touched". A criterion known to fail is never handed to the review:
+fix it, or stop.
 
 ## Stop and ask
 
@@ -73,4 +73,4 @@ Stop means no more code: report evidence and question.
 
 Step 7 holds. In the fix round you build one front ([delivery
 L9](../../../docs/guides/delivery.md)): each finding's cause and its class (L11), one commit to the
-same branch.
+same branch, the PR body's counts remeasured there.
