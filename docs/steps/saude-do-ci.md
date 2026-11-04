@@ -599,11 +599,11 @@ modelo de uma opção com padrão de produção.
    não recebe `delayMs` (`stability-defaults.d.ts:81-98`), então `stabilityProcessors`
    (`processors.ts:392-401`) troca o `StreamErrorRetryProcessor` que os padrões montam por um
    `new StreamErrorRetryProcessor({ …, delayMs })` construído com as mesmas opções dos padrões, e
-   o embrula em `accountRetry` como hoje. As opções aceitas estão em
+   o embrulha em `accountRetry` como hoje. As opções aceitas estão em
    `stream-error-retry-processor.d.ts:19-41`, mas os valores dos padrões não estão no `.d.ts`: moram
    no JS de `defaultStabilityErrorProcessors` (`dist/agent-tuAMgHe3.js:2065-2093` na 1.79.0:
    `maxRetries` 2, `delayMs` 3e3 e três matchers). O matcher `isECONNRESETError` não é público na
-   1.79.0 nem na 1.82 (`packages/core/src/processors/index.ts:1036-1040` da estante `mastra-1.82`),
+   1.79.0 nem na 1.82 (`packages/core/src/processors/index.ts:1037-1041` da estante `mastra-1.82`),
    então a peça só entra se a medida do passo 1 passar de 5 s e se o Mastra instalado no dia expuser
    esse matcher; senão o pull request diz o número e para, como o "Parar se" manda. O `delayMs`
    curto chega só pelo caminho de teste. O cartão do Mastra 1.82
@@ -628,8 +628,8 @@ menos na soma. O critério 17 fecha a etapa.
 - Um valor curto faz um teste comum (que não esperava o prazo) falhar: o teste dependia do prazo de
   produção. Diga qual e pare.
 - As opções com que os padrões montam a retentativa não podem ser reproduzidas pela API pública do
-  Mastra (o `.d.ts` não traz os valores e o matcher de `ECONNRESET` não é público): pare. Copiar valores internos da biblioteca é remendo e volta ao
-  cartão.
+  Mastra (o `.d.ts` não traz os valores e o matcher de `ECONNRESET` não é público): pare. Copiar
+  valores internos da biblioteca é remendo e volta ao cartão.
 - Uma constante só pode ser trocada por uma variável de ambiente: pare. Variável nova de produção
   volta ao cartão.
 
