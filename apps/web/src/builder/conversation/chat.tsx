@@ -11,7 +11,7 @@ import type { Outgoing } from './attachments.ts'
 import type { ComposerTools } from './composer.tsx'
 import { Composer } from './composer.tsx'
 import { useDraft } from './draft.ts'
-import { useHandoff } from './handoff.ts'
+import { useAssistantHandOff, useHandoff } from './handoff.ts'
 import { MemoryStatus } from './memory-status.tsx'
 import { NoAccount } from './model-choice.tsx'
 import type { SessionRead } from './queries.ts'
@@ -159,14 +159,19 @@ function Notices(props: {
   )
 }
 
-/** Sends the request Início handed over, and gives its words back to the box when the send is refused or cut short. */
+/**
+ * Sends the request Início handed over, and gives its words back to the box when the send is refused
+ * or cut short; asks for the Assistant's proposal a touch opened the conversation for.
+ */
 function useHandedOver(input: {
   conversationId: ConversationId
   draft: ReturnType<typeof useDraft>
   send: (outgoing: Outgoing, running: boolean) => Promise<boolean>
   setError: (error: string) => void
+  following: boolean
 }) {
   const { draft, send, setError } = input
+  useAssistantHandOff(input.conversationId, input.following, setError)
   useHandoff(input.conversationId, {
     send: async (outgoing) => {
       if (!(await send(outgoing, false))) draft.restore(outgoing)
@@ -194,7 +199,7 @@ export function Chat(props: ChatProps) {
   const [gone, setGone] = useState(false)
   const field = useRef<HTMLTextAreaElement>(null)
   const draft = useDraft(conversationId)
-  const { state, dispatch, builder, older } = useSession(
+  const { state, dispatch, builder, older, following } = useSession(
     { companyId, conversationId, ...place },
     {
       gone: () => {
@@ -209,7 +214,7 @@ export function Chat(props: ChatProps) {
   )
 
   useEffect(() => field.current?.focus(), [])
-  useHandedOver({ conversationId, draft, send, setError })
+  useHandedOver({ conversationId, draft, send, setError, following })
 
   const turns = useMemo(() => shownOf(state), [state])
   const waiting = Object.keys(state.suspended).length > 0

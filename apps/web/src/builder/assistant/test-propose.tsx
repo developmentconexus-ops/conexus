@@ -9,10 +9,12 @@ import { HttpResponse, http } from 'msw'
 import type { setupServer } from 'msw/node'
 import { COMPANY } from '../../platform/fixtures.ts'
 import { PEDIDOS } from '../../platform/test-hub.tsx'
+import type { BuilderAnswers } from './test-hub.tsx'
 import {
   ASKED,
   assistantConversation,
   assistantScreens,
+  builderConversation,
   COMPANY_ROOT,
   OFFERED,
   SALES,
@@ -69,9 +71,12 @@ export function proposalScreens(server: ReturnType<typeof setupServer>) {
       path = `${COMPANY_ROOT}/conversations/${ASKED}`,
       projectId: ProjectId | null = null,
       connections = OFFERED,
+      builderAnswers: BuilderAnswers = {},
     ) {
       return at(path, {
         conversations: [assistantConversation({ messages, projectId, connections })],
+        builder: [builderConversation({ id: BUILDER_CONVERSATION })],
+        builderAnswers,
       })
     },
   }
