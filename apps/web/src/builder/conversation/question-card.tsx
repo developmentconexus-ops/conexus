@@ -30,7 +30,7 @@ import {
   TraceTitle,
 } from '../../ui/trace.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
-import { useAnswerTo } from './room.ts'
+import { useAnswerTo, useRoom } from './room.ts'
 import type { QuestionCardItem } from './rows.ts'
 
 /** The card's words, from the state matrix of step 14's card. */
@@ -38,7 +38,6 @@ export const CARD_TEXT = {
   sending: 'Enviando…',
   unsent: 'Não foi possível enviar. Tente de novo.',
   other: 'outra resposta…',
-  stopped: 'Você parou o Builder.',
 }
 
 /** The collapsed row of a card no longer open, as the skill and tool rows are. */
@@ -47,13 +46,14 @@ function rowTitle(state: QuestionCardItem['state'], count: number): string {
   return state === 'answered' ? `Respondeu ${questions}` : `${questions} sem resposta`
 }
 
-/** On a phone the card says the Builder waits on the person, in place of the working line (founder, 2026-10-22, "Aprovo"). */
+/** On a phone the card says the conversation's agent waits on the person, in place of the working line (founder, 2026-10-22, "Aprovo"). */
 export function WaitingCaption() {
+  const { agent } = useRoom()
   if (!useIsMobile()) return null
   return (
     <p role="status" className="flex items-center gap-sm text-label text-accent">
       <ConexusMark size={16} />
-      Builder esperando sua resposta
+      {agent} esperando sua resposta
     </p>
   )
 }
@@ -149,8 +149,8 @@ function answerText(answer: Answer | undefined): string {
   return Array.isArray(answer) ? answer.join(', ') : (answer ?? '')
 }
 
-function closedText(state: QuestionCardItem['state']): string | undefined {
-  if (state === 'stopped') return CARD_TEXT.stopped
+function closedText(state: QuestionCardItem['state'], agent: string): string | undefined {
+  if (state === 'stopped') return `Você parou o ${agent}.`
   return state === 'closed' ? sentenceOfCode('QUESTION_CLOSED') : undefined
 }
 
@@ -166,7 +166,8 @@ export function QuestionCard({ part }: { part: QuestionCardItem }) {
     event.preventDefault()
     void answer(answersOf(new FormData(event.currentTarget), part.questions))
   }
-  const said = closedText(part.state)
+  const { agent } = useRoom()
+  const said = closedText(part.state, agent)
   const open = part.state === 'open'
   return (
     <div

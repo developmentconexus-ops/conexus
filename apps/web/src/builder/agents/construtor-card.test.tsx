@@ -4,6 +4,7 @@ import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { hubServer } from '../../platform/test-hub.tsx'
 import { SANKHYA, toolSaid } from '../assistant/test-hub.tsx'
+import { onPhone } from '../conversation/test-hub.tsx'
 import { displayOf, parkedOf } from '../conversation/test-stream.tsx'
 import { AREA, BUILDER_CHAT } from './test-agents.ts'
 import { agentScreens } from './test-hub.tsx'
@@ -57,14 +58,8 @@ test('a conversa do Construtor com uma pergunta guardada abre com o cartão, nã
   expect(await screen.findByRole('button', { name: 'Respondeu 1 pergunta' })).toBeTruthy()
 })
 
-test('responder o cartão do Construtor vai para a sessão do Construtor, nunca para a do Builder', async () => {
-  const sent: string[] = []
-  server.use(
-    http.post(`${SESSIONS}/:controller/sessions/:id/tool-suspension`, ({ params }) => {
-      sent.push(String(params.controller))
-      return HttpResponse.json({ ok: true })
-    }),
-  )
+/** The conversation with its question open: the stored call, parked by the stream as Mastra parks it. */
+async function openAsking() {
   const opened = open()
   stored()
   await screen.findByRole('textbox', { name: 'Mensagem para o Construtor' })
@@ -75,9 +70,36 @@ test('responder o cartão do Construtor vai para a sessão do Construtor, nunca 
   }
   await waitFor(() => expect(opened.lines.length).toBeGreaterThan(0))
   opened.lines.at(-1)?.emit(displayOf({ pendingSuspensions: parkedOf(asking) }))
+}
+
+test('responder o cartão do Construtor vai para a sessão do Construtor, nunca para a do Builder', async () => {
+  const sent: string[] = []
+  server.use(
+    http.post(`${SESSIONS}/:controller/sessions/:id/tool-suspension`, ({ params }) => {
+      sent.push(String(params.controller))
+      return HttpResponse.json({ ok: true })
+    }),
+  )
+  await openAsking()
 
   fireEvent.click(await screen.findByRole('radio', { name: 'Conferir as metas' }))
   fireEvent.click(await screen.findByRole('button', { name: 'Enviar' }))
 
   await waitFor(() => expect(sent).toEqual([CONSTRUTOR_CONTROLLER]))
+})
+
+test('no celular, a pergunta aberta diz que o Construtor espera, não o Builder', async () => {
+  await onPhone(async () => {
+    await openAsking()
+    expect((await screen.findByRole('status')).textContent).toBe(
+      'Construtor esperando sua resposta',
+    )
+  })
+})
+
+test('uma pergunta que a pessoa parou diz "Você parou o Construtor."', async () => {
+  open()
+  stored('Aborted by the user')
+  fireEvent.click(await screen.findByRole('button', { name: /sem resposta/ }))
+  expect(await screen.findByText('Você parou o Construtor.')).toBeTruthy()
 })
