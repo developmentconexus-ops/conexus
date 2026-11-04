@@ -115,6 +115,7 @@ function ChatComposer(props: {
   return (
     <div className="axis px-md">
       <Composer
+        placement="docked"
         answering={state.running || props.waiting}
         canSend={canAnswer}
         draft={draft}
