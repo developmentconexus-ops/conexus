@@ -1,78 +1,26 @@
-import type { ProjectId } from '@conexus/hub-api'
-import {
-  ASSISTANT_TOOL,
-  ATTEMPT_KEY_HEADER,
-  ConnectionId,
-  ConversationId,
-  handAssistantProposal,
-} from '@conexus/hub-api'
+// The card of the app the Assistant proposed: Criar app on the Início, Mandar ao Builder in a Projeto,
+// and Continuar aqui (step 24.3.2, criterion 11).
+import { ASSISTANT_TOOL, ConnectionId, handAssistantProposal } from '@conexus/hub-api'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { COMPANY } from '../../platform/fixtures.ts'
 import { hubServer, PEDIDOS, refusal } from '../../platform/test-hub.tsx'
 import { personSaid } from '../conversation/test-stream.tsx'
+import { ASKED, COMPANY_ROOT, OFFERED, SALES } from './test-hub.tsx'
 import {
-  ASKED,
-  assistantConversation,
-  assistantScreens,
-  COMPANY_ROOT,
-  OFFERED,
-  SALES,
-  toolSaid,
-} from './test-hub.tsx'
+  BUILDER_CONVERSATION,
+  PROPOSED_SUMMARY,
+  proposalSaid,
+  proposalScreens,
+} from './test-propose.tsx'
 
-// The card of the app the Assistant proposed: Criar app on the Início, Mandar ao Builder in a Projeto,
-// and Continuar aqui (step 24.3.2, criterion 11).
 const server = hubServer()
-const { at } = assistantScreens(server)
+const { handing, mayManage, proposing } = proposalScreens(server)
 const OPEN = `${COMPANY_ROOT}/conversations/${ASKED}`
 const IN_PROJECT = `${COMPANY_ROOT}/projects/${PEDIDOS.id}/assistant/${ASKED}`
-const SUMMARY = 'Um app de encomendas'
-const BRIEFING = { name: 'briefing.md', content: '## Quem usa\n\nO time de vendas, todo dia.' }
-const BUILDER_CONVERSATION = ConversationId.parse('66666666-6666-4666-8666-666666666666')
-const HANDOFFS = `*/api/companies/${COMPANY.id}/assistant/conversations/:id/handoffs`
-
-type Handed = { key: string | null; body: unknown }
-
-function proposal(tool: string = ASSISTANT_TOOL.proposeApp, id = 'tool-1') {
-  return toolSaid(tool, { summary: SUMMARY }, { summary: SUMMARY, briefing: BRIEFING }, id)
-}
-
-/** The Hub's hand-off route, answering what `answer` says for each touch, and noting each one. */
-function handing(answer: (touch: number) => Response | undefined = () => undefined) {
-  const handed: Handed[] = []
-  server.use(
-    http.post(HANDOFFS, async ({ request }) => {
-      handed.push({ key: request.headers.get(ATTEMPT_KEY_HEADER), body: await request.json() })
-      const replaced = answer(handed.length)
-      if (replaced) return replaced
-      return HttpResponse.json(
-        handAssistantProposal.success.body.parse({
-          projectId: PEDIDOS.id,
-          conversationId: BUILDER_CONVERSATION,
-          released: [SALES],
-          refused: [],
-        }),
-        { status: 201 },
-      )
-    }),
-  )
-  return handed
-}
-
-/** The company's connections read, as the owner or a member makes it. */
-function mayManage(may: boolean) {
-  server.use(
-    http.get('*/api/companies/:companyId/connections', () =>
-      HttpResponse.json({ connectors: [], connections: [], mayManage: may }),
-    ),
-  )
-}
-
-function proposing(messages = [proposal()], path = OPEN, projectId: ProjectId | null = null) {
-  return at(path, { conversations: [assistantConversation({ messages, projectId })] })
-}
+const SUMMARY = PROPOSED_SUMMARY
+const proposal = proposalSaid
 
 test('o cartão do Criar app mostra o resumo, o briefing, o nome e as ligações da conversa marcadas', async () => {
   proposing()

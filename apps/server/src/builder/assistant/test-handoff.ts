@@ -129,7 +129,14 @@ export const HAND_OFF_CASES: readonly HandOffCase[] = [
     held: false,
   },
   // The card's second button sends these words (step 24.3.2, U3): the Assistant goes on, no second card.
-  { n: 15, place: 'HOME', turns: [PHASED, 'Continuar aqui'], atMostOnce: APP, held: false },
+  {
+    n: 15,
+    place: 'HOME',
+    turns: [PHASED, 'Continuar aqui'],
+    called: [APP],
+    atMostOnce: APP,
+    held: false,
+  },
 ]
 
 /** Which half runs: `tuning` while the texts are adjusted, `held-out` at the end, or `all`; another word throws. */

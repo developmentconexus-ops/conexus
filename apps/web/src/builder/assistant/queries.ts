@@ -34,4 +34,4 @@ export function assistantConnectionsQuery(companyId: CompanyId, projectId: Proje
 export const sendAssistantCreation = hubMutation(createAssistantConversation)
 export const sendAssistantConnections = hubMutation(setAssistantConnections)
 export const sendAssistantModel = hubMutation(setAssistantModel)
-export const sendHandOff = hubMutation(handAssistantProposal)
+export const sendAssistantHandOff = hubMutation(handAssistantProposal)

@@ -1,3 +1,4 @@
+import { PROJECT_NAME_MAX_LENGTH } from '@conexus/hub-api'
 import { dayAndHour } from '../../platform/dates.ts'
 
 /** The words of the Assistant's screens (step 24.1, U4); the founder approves them at the step's end. */
@@ -91,3 +92,4 @@ export const PROJECT_GONE = 'Este Projeto não existe mais.'
 export const UNCONFIRMED_HANDOFF = 'Não confirmamos o envio ao Builder. Tente de novo.'
 export const RETRY = 'Tentar de novo'
 export const OPEN_BUILDER = 'Abrir a conversa do Builder'
+export const NAME_HINT = `Escreva o nome do Projeto, com até ${PROJECT_NAME_MAX_LENGTH} caracteres.`

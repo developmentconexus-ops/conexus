@@ -12,18 +12,20 @@ import { useNavigate } from '@tanstack/react-router'
 import { useRef, useState } from 'react'
 import { connectionsQuery } from '../../hub/connectors/public.ts'
 import { projectQuery } from '../../hub/projects/public.ts'
-import { derivedAttemptKey } from '../../platform/attempt-key.ts'
-import { HubFailure, writeFailureText } from '../../platform/hub.ts'
+import { derivedAttemptKey, keepsAttemptKey } from '../../platform/attempt-key.ts'
+import { HubFailure, sentenceOf, writeFailureText } from '../../platform/hub.ts'
 import { Alert } from '../../ui/alert.tsx'
 import { Button } from '../../ui/button.tsx'
 import { Card, CardContent, CardFooter } from '../../ui/card.tsx'
 import { Field, FieldLabel } from '../../ui/field.tsx'
 import { Input } from '../../ui/input.tsx'
+import { ReadFailure } from '../../ui/states.tsx'
 import { CONTINUE_HERE, Markdown, useSay } from '../conversation/public.ts'
-import { sendHandOff } from './queries.ts'
+import { sendAssistantHandOff } from './queries.ts'
 import {
   BRIEFING_LABEL,
   CREATE_APP,
+  NAME_HINT,
   OPEN_BUILDER,
   PROJECT_GONE,
   PROJECT_NAME_LABEL,
@@ -58,6 +60,8 @@ function Briefing({ briefing }: { briefing: NonNullable<ProposedApp['briefing']>
 function Connections(props: {
   connections: AssistantConversation['connections']
   mayRelease: boolean
+  /** The person was refused: the read of the permission came back and said no. */
+  refused: boolean
   marked: ReadonlySet<ConnectionId>
   onToggle: (id: ConnectionId) => void
   disabled: boolean
@@ -70,6 +74,7 @@ function Connections(props: {
         <label key={connection.connectionId} className="flex items-center gap-sm text-label">
           <input
             type="checkbox"
+            className="accent-accent"
             checked={props.mayRelease && props.marked.has(connection.connectionId)}
             disabled={props.disabled || !props.mayRelease}
             onChange={() => props.onToggle(connection.connectionId)}
@@ -77,11 +82,16 @@ function Connections(props: {
           {connection.name}
         </label>
       ))}
-      {!props.mayRelease && (
+      {props.refused && (
         <p className="text-label text-text-2">{REFUSALS.CONNECTIONS_NOT_ALLOWED}</p>
       )}
     </fieldset>
   )
+}
+
+function nameOf(connections: AssistantConversation['connections'], id: ConnectionId): string {
+  const name = connections.find((each) => each.connectionId === id)?.name
+  return name === undefined ? '' : `${name}: `
 }
 
 /** What the touch made, when a connection stayed behind: each refused one with its sentence. */
@@ -90,7 +100,7 @@ function Refused(props: { made: HandedOff; connections: AssistantConversation['c
     <ul className="flex flex-col gap-xs text-label text-text-2">
       {props.made.refused.map((one) => (
         <li key={one.connectionId}>
-          {props.connections.find((each) => each.connectionId === one.connectionId)?.name}:{' '}
+          {nameOf(props.connections, one.connectionId)}
           {REFUSALS[one.code]}
         </li>
       ))}
@@ -112,13 +122,13 @@ type CardProps = {
  * derive (code C37, web W24). It answers NOT_FOUND for a proposal gone and for a Projeto gone, and
  * the Projeto's own read tells which.
  */
-function useHandOff(props: CardProps, body: { name: string | undefined; marked: ConnectionId[] }) {
+function useHandOff(props: CardProps, body: { name: string; marked: ConnectionId[] }) {
   const { companyId, conversation } = props
   const { projectId } = conversation
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const send = useMutation(sendHandOff)
-  const [error, setError] = useState<string>()
+  const send = useMutation(sendAssistantHandOff)
+  const [error, setError] = useState<{ text: string; keepsKey: boolean }>()
   const [made, setMade] = useState<HandedOff>()
   const inFlight = useRef(false)
 
@@ -135,8 +145,9 @@ function useHandOff(props: CardProps, body: { name: string | undefined; marked: 
     try {
       await queryClient.fetchQuery({ ...projectQuery(companyId, projectId), staleTime: 0 })
     } catch (read) {
-      if (read instanceof HubFailure && read.code === 'NOT_FOUND') return PROJECT_GONE
-      throw read
+      return read instanceof HubFailure && read.code === 'NOT_FOUND'
+        ? PROJECT_GONE
+        : writeFailureText(read, UNCONFIRMED_HANDOFF)
     }
     return PROPOSAL_GONE
   }
@@ -152,20 +163,31 @@ function useHandOff(props: CardProps, body: { name: string | undefined; marked: 
         body: {
           toolCallId: props.toolCallId,
           projectName: projectId === null ? ProjectName.parse(body.name) : undefined,
-          connections: projectId === null ? body.marked : [],
+          connections: body.marked,
         },
         attemptKey,
       })
       if (done.refused.length > 0) setMade(done)
       else await open(done)
     } catch (failure) {
-      setError((await gone(failure)) ?? writeFailureText(failure, UNCONFIRMED_HANDOFF))
+      setError({
+        text: (await gone(failure)) ?? writeFailureText(failure, UNCONFIRMED_HANDOFF),
+        keepsKey: keepsAttemptKey(failure),
+      })
     } finally {
       inFlight.current = false
     }
   }
 
-  return { touch, open, error, made, pending: send.isPending }
+  return {
+    touch,
+    open,
+    error: error?.text,
+    /** The answer left the outcome open: the same attempt, with the same name, is all that can follow. */
+    locked: error?.keepsKey === true,
+    made,
+    pending: send.isPending,
+  }
 }
 
 function Buttons(props: {
@@ -212,13 +234,15 @@ function Buttons(props: {
 export function AppProposalCard(props: CardProps) {
   const { companyId, conversation, proposed } = props
   const starts = conversation.projectId === null
-  const mayRelease = useQuery(connectionsQuery(companyId)).data?.mayManage ?? false
+  const company = useQuery(connectionsQuery(companyId))
+  const mayRelease = company.data?.mayManage === true
   const [name, setName] = useState('')
   const [unmarked, setUnmarked] = useState<ReadonlySet<ConnectionId>>(new Set())
-  const marked = conversation.connections
-    .filter((each) => each.chosen && !unmarked.has(each.connectionId))
+  const chosen = conversation.connections.filter((each) => each.chosen)
+  const marked = chosen
+    .filter((each) => !unmarked.has(each.connectionId))
     .map((each) => each.connectionId)
-  const handOff = useHandOff(props, { name, marked })
+  const handOff = useHandOff(props, { name, marked: starts && mayRelease ? marked : [] })
   const named = ProjectName.safeParse(name).success
   const { made } = handOff
   return (
@@ -234,15 +258,20 @@ export function AppProposalCard(props: CardProps) {
             <Input
               id={`${props.toolCallId}-name`}
               value={name}
-              disabled={handOff.pending}
+              disabled={handOff.pending || handOff.locked}
               onChange={(event) => setName(event.target.value)}
             />
+            {!named && <p className="text-label text-text-2">{NAME_HINT}</p>}
           </Field>
+          {company.isError && (
+            <ReadFailure text={sentenceOf(company.error)} onRetry={() => void company.refetch()} />
+          )}
           <Connections
-            connections={conversation.connections}
+            connections={chosen}
             mayRelease={mayRelease}
+            refused={company.isSuccess && !mayRelease}
             marked={new Set(marked)}
-            disabled={handOff.pending}
+            disabled={handOff.pending || handOff.locked}
             onToggle={(id) =>
               setUnmarked((now) => {
                 const next = new Set(now)
@@ -265,7 +294,7 @@ export function AppProposalCard(props: CardProps) {
         <Buttons
           starts={starts}
           pending={handOff.pending}
-          failed={handOff.error !== undefined}
+          failed={handOff.locked}
           disabled={starts && !named}
           onTouch={() => void handOff.touch()}
         />
