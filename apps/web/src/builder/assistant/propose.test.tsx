@@ -81,7 +81,7 @@ test('a conversa do Builder que o toque abre segue o stream antes de pedir o env
     following.push(opened)
     return undefined
   })
-  const stream = async () => {
+  async function stream() {
     await held
     return undefined
   }
