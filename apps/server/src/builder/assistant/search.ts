@@ -4,9 +4,10 @@ import { resourceOf } from '../controller-kit/public.ts'
 import type { Owner } from './context.ts'
 import { SESSION_MARK } from './context.ts'
 import type { assistantMemory } from './memory.ts'
+import { automationOf } from './open.ts'
 
 /** A page of the person's conversations holds 30 (code C44). */
-export const PER_PAGE = 30
+const PER_PAGE = 30
 
 /** Mastra's `listThreads` filters by owner and marks only: a title is searched here, on what it returns. */
 export type ListFilter = { q?: string | undefined; place?: 'HOME' | 'AUTOMATIONS' | undefined }
@@ -18,12 +19,12 @@ function comparable(text: string): string {
 
 function inPlace(thread: StorageThreadType, place: ListFilter['place']): boolean {
   if (place === 'HOME') return thread.metadata?.[SESSION_MARK.project] === undefined
-  if (place === 'AUTOMATIONS') return thread.metadata?.[SESSION_MARK.automation] !== undefined
+  if (place === 'AUTOMATIONS') return automationOf(thread.metadata) !== null
   return true
 }
 
 /** Of the threads, those in the place whose title holds the text, in the order given. */
-export function matching(threads: readonly StorageThreadType[], filter: ListFilter) {
+function matching(threads: readonly StorageThreadType[], filter: ListFilter) {
   const wanted = filter.q === undefined ? undefined : comparable(filter.q)
   return threads.filter(
     (thread) =>

@@ -1,4 +1,5 @@
 import type { CompanyId } from '@conexus/hub-api'
+import { CONVERSATION_SEARCH_MAX } from '@conexus/hub-api'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate, useSearch } from '@tanstack/react-router'
 import { PlusIcon, SearchIcon } from 'lucide-react'
@@ -51,26 +52,34 @@ export function NewConversation({ companyId }: { companyId: CompanyId }) {
 }
 
 /** The text in the address, replaced as the person types so Back does not walk through letters. */
-function SearchBox({ q }: { q: string | undefined }) {
+function useSearchText() {
   const navigate = useNavigate()
+  return (q: string | undefined) =>
+    navigate({
+      to: '.',
+      search: (old) => ({ ...old, q, conversations: undefined }),
+      replace: true,
+      state: { keepDrawer: true },
+    })
+}
+
+/** The box keeps what was typed, spaces included; the address and the list read it as the Hub does. */
+function SearchBox({ q }: { q: string | undefined }) {
+  const [typed, setTyped] = useState(q ?? '')
+  const search = useSearchText()
   return (
     <InputGroup>
       <InputGroupInput
         autoFocus
         type="search"
         aria-label={SEARCH_LABEL}
-        value={q ?? ''}
-        onChange={(event) =>
-          void navigate({
-            to: '.',
-            search: (old) => ({
-              ...old,
-              q: event.target.value || undefined,
-              conversations: undefined,
-            }),
-            replace: true,
-          })
-        }
+        maxLength={CONVERSATION_SEARCH_MAX}
+        className="[&::-webkit-search-cancel-button]:appearance-none"
+        value={typed}
+        onChange={(event) => {
+          setTyped(event.target.value)
+          void search(event.target.value || undefined)
+        }}
       />
     </InputGroup>
   )
@@ -90,6 +99,7 @@ function ViewTabs({ view }: { view: ListView }) {
             conversations: undefined,
           }),
           replace: true,
+          state: { keepDrawer: true },
         })
       }
     >
@@ -168,6 +178,7 @@ function Recent({ companyId, view }: { companyId: CompanyId; view: ListView }) {
 export function SidebarConversations({ companyId }: { companyId: CompanyId }) {
   const view = useSearch({ strict: false, select: (search) => viewOf(search) })
   const [searching, setSearching] = useState(view.q !== undefined)
+  const search = useSearchText()
   const narrowed = narrowedBy(view.place)
   const first = useQuery(
     assistantConversationsQuery(companyId, narrowed.projectId, view.page, {
@@ -188,7 +199,11 @@ export function SidebarConversations({ companyId }: { companyId: CompanyId }) {
             className="size-6"
             aria-label={SEARCH_CONVERSATIONS}
             aria-expanded={searching}
-            onClick={() => setSearching(!searching)}
+            onClick={() => {
+              // Closing the magnifier takes the text out, so no filtered list is left without its box.
+              if (searching) void search(undefined)
+              setSearching(!searching)
+            }}
           >
             <SearchIcon aria-hidden="true" />
           </Button>

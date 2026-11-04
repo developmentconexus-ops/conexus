@@ -138,7 +138,8 @@ function readsOf(held: Held, asked: string[]) {
     http.get(`${BASE}/conversations`, async ({ request }) => {
       const replaced = await held.answers.list?.()
       if (replaced) return replaced
-      return HttpResponse.json(listedFor(held, new URL(request.url).searchParams))
+      const listed = listedFor(held, new URL(request.url).searchParams)
+      return listed === null ? refusal('REQUEST_MALFORMED') : HttpResponse.json(listed)
     }),
     http.get(
       `${BASE}/conversations/:id/files`,

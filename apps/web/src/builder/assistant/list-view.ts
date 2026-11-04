@@ -1,4 +1,4 @@
-import { ProjectId } from '@conexus/hub-api'
+import { listAssistantConversations, ProjectId } from '@conexus/hub-api'
 
 /** The places the filter names besides a Projeto. */
 export type Place = 'HOME' | 'AUTOMATIONS' | ProjectId
@@ -21,10 +21,18 @@ function placeOf(value: unknown): Place | undefined {
   return project.success ? project.data : undefined
 }
 
+const SearchText = listAssistantConversations.input.query.shape.q
+
+/** The search text as the Hub reads it: trimmed, and nothing for a text the Hub would refuse. */
+function searchOf(value: unknown): string | undefined {
+  const text = SearchText.safeParse(value)
+  return text.success ? text.data : undefined
+}
+
 /** The list's view as the address says it; a part the Hub would refuse is left out. */
 export function viewOf(search: Record<string, unknown>): ListView {
   return {
-    q: textOf(search.q),
+    q: searchOf(search.q),
     place: placeOf(search.place),
     tab: search.tab === 'projects' ? 'PROJECTS' : undefined,
     page: textOf(search.conversations),

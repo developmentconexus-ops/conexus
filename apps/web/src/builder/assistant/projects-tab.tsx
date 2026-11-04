@@ -2,7 +2,7 @@ import type { CompanyId, ProjectSummary } from '@conexus/hub-api'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { ChevronDownIcon } from 'lucide-react'
-import { projectsQuery } from '../../hub/projects/queries.ts'
+import { projectsQuery } from '../../hub/projects/public.ts'
 import { sentenceOf } from '../../platform/hub.ts'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../../ui/collapsible.tsx'
 import { SidebarMenu, SidebarMenuSkeleton } from '../../ui/sidebar.tsx'
@@ -61,6 +61,7 @@ function Group(props: {
             to="."
             search={(old) => ({ ...old, place: props.project, tab: undefined })}
             replace
+            state={{ keepDrawer: true }}
             className="px-sm text-fact text-text-2"
           >
             {SEE_ALL}

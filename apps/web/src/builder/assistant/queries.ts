@@ -10,6 +10,7 @@ import {
   setAssistantConnections,
   setAssistantModel,
 } from '@conexus/hub-api'
+import { keepPreviousData } from '@tanstack/react-query'
 import { hubMutation, hubQuery } from '../../platform/hub.ts'
 
 /**
@@ -22,10 +23,14 @@ export function assistantConversationsQuery(
   page: string | undefined,
   narrowed: { q?: string | undefined; place?: 'HOME' | 'AUTOMATIONS' | undefined } = {},
 ) {
-  return hubQuery(listAssistantConversations, {
-    params: { companyId },
-    query: { projectId, page, ...narrowed },
-  })
+  return {
+    ...hubQuery(listAssistantConversations, {
+      params: { companyId },
+      query: { projectId, page, ...narrowed },
+    }),
+    // A new text keeps the list on screen until its answer comes, not three skeletons per letter.
+    placeholderData: keepPreviousData,
+  }
 }
 
 export function assistantConversationQuery(companyId: CompanyId, conversationId: ConversationId) {

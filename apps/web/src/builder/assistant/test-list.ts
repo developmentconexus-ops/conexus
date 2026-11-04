@@ -1,4 +1,5 @@
 import type { AssistantConversation } from '@conexus/hub-api'
+import { listAssistantConversations } from '@conexus/hub-api'
 import { PEDIDOS } from '../../platform/test-hub.tsx'
 
 /** A title as the Hub compares it: without accent and case. */
@@ -6,14 +7,18 @@ function plain(text: string): string {
   return text.normalize('NFD').replaceAll(/\p{M}/gu, '').toLowerCase()
 }
 
-/** What the Hub answers to a read of the list: its Projeto, place and title text narrowing it, a page at a time. */
+/** What the Hub answers to a read of the list: its Projeto, place and title text narrowing it, a page at a time; a text the contract refuses (empty after trimming, or over its length) gets `null`, which the screen's Hub refuses as the contract does. */
 export function listedFor(
   held: { conversations: { conversation: AssistantConversation }[]; pageSize: number },
   params: URLSearchParams,
 ) {
   const project = params.get('projectId')
   const place = params.get('place')
-  const q = params.get('q')
+  const text = listAssistantConversations.input.query.shape.q.safeParse(
+    params.get('q') ?? undefined,
+  )
+  if (!text.success) return null
+  const q = text.data ?? null
   const from = Number(params.get('page') ?? 0)
   const all = held.conversations
     .map(({ conversation }) => conversation)

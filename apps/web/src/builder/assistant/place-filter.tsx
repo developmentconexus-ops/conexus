@@ -2,8 +2,8 @@ import type { CompanyId } from '@conexus/hub-api'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { FilterIcon, XIcon } from 'lucide-react'
-import { projectsQuery } from '../../hub/projects/queries.ts'
-import { Button } from '../../ui/button.tsx'
+import { projectsQuery } from '../../hub/projects/public.ts'
+import { Button, touchArea } from '../../ui/button.tsx'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,6 +31,7 @@ function usePlace() {
       to: '.',
       search: (old) => ({ ...old, place, conversations: undefined }),
       replace: true,
+      state: { keepDrawer: true },
     })
 }
 
@@ -85,12 +86,12 @@ export function PlaceLabel(props: { companyId: CompanyId; place: Place }) {
   const choose = usePlace()
   const name = placeName(props.place, projects.data?.projects ?? [])
   return (
-    <span className="inline-flex w-fit items-center gap-xs rounded-control border border-line px-sm text-fact text-text-2">
+    <span className="mb-xs inline-flex min-h-8 w-fit items-center gap-xs rounded-pill border border-line pl-sm text-fact text-text-2">
       {name}
       <button
         type="button"
         aria-label={`${CLEAR_FILTER}: ${name}`}
-        className="inline-flex size-4 items-center justify-center"
+        className={`${touchArea} inline-flex size-8 items-center justify-center`}
         onClick={() => void choose(undefined)}
       >
         <XIcon aria-hidden="true" className="size-3" />

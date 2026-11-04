@@ -110,7 +110,7 @@ function PhoneTop(props: { slot: (element: HTMLElement | null) => void; menuNote
 }
 
 /**
- * Following a link in the drawer closes it (V56): the drawer closes once a navigation to another page resolves; the search, the filter and the tab of the list only change its address and leave it open. The
+ * Following a link in the drawer closes it (V56): every navigation closes the drawer once it resolves, except the list's own controls (the search, the filter and the tabs), which say `keepDrawer` in the navigation's state. The
  * page's first load has no location to come from, and a drawer opened while it resolves stays open.
  */
 function CloseOnNavigation() {
@@ -118,8 +118,8 @@ function CloseOnNavigation() {
   const router = useRouter()
   useEffect(
     () =>
-      router.subscribe('onResolved', ({ fromLocation, pathChanged }) => {
-        if (fromLocation !== undefined && pathChanged) setOpenMobile(false)
+      router.subscribe('onResolved', ({ fromLocation, toLocation }) => {
+        if (fromLocation !== undefined && toLocation.state.keepDrawer !== true) setOpenMobile(false)
       }),
     [router, setOpenMobile],
   )
