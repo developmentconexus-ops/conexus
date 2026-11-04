@@ -7,7 +7,6 @@ import { Card } from '../../ui/card.tsx'
 import { NewProjectDialog } from './new-project-dialog.tsx'
 import {
   ASK_ON_HOME,
-  NO_PROJECTS,
   NO_PROJECTS_TITLE,
   projectStateOf,
   projectStateText,
@@ -58,12 +57,11 @@ export function ProjectCards(props: { companyId: CompanyId; page: string | undef
   )
 }
 
-/** With no Projeto, a centred column of 448 at most: the title, its sentence, "Novo projeto" and the way to Início. */
+/** With no Projeto, a centred column of 448 at most: the title, "Novo projeto" and the way to Início. */
 function NoProjects(props: { companyId: CompanyId }) {
   return (
     <div className="mx-auto flex w-full max-w-message flex-col items-center gap-md py-xl text-center">
       <p className="font-display text-title">{NO_PROJECTS_TITLE}</p>
-      <p className="text-text-2">{NO_PROJECTS}</p>
       <NewProjectDialog companyId={props.companyId} block labelled />
       <Link
         to="/companies/$companyId"

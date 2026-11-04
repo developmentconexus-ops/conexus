@@ -2,7 +2,7 @@ import { listAppVersions, readProjectFile, readProjectSource } from '@conexus/hu
 import type { Page } from 'playwright-core'
 import type { Replies } from './layout-harness.ts'
 import { failure, ok } from './layout-harness.ts'
-import { NO_PROJECTS } from './src/hub/projects/project-state.ts'
+import { NO_PROJECTS_TITLE } from './src/hub/projects/project-state.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import type { State } from './sweep-kit.ts'
 import { createRefused, waitFor } from './sweep-kit.ts'
@@ -92,7 +92,7 @@ export const PROJECT_STATES: State[] = [
     name: 'Todos os projetos, vazio',
     path: PROJECTS,
     replies: NOBODY,
-    settle: (p) => waitFor(p, NO_PROJECTS),
+    settle: (p) => waitFor(p, NO_PROJECTS_TITLE),
   },
   {
     name: 'Todos os projetos, com um Projeto',

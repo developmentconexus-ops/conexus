@@ -14,7 +14,7 @@ import {
   refusal,
 } from '../../platform/test-hub.tsx'
 import { publishedVersion, versionView } from '../../platform/test-hub-versions.tsx'
-import { NO_PROJECTS } from './project-state.ts'
+import { NO_PROJECTS_TITLE } from './project-state.ts'
 
 const server = hubServer()
 const PROJECT = `/companies/${COMPANY.id}/projects/${PEDIDOS.id}`
@@ -257,7 +257,7 @@ test('204: leva o nome, vai à lista e diz "Projeto apagado."', async () => {
   confirm()
   expect(await screen.findByText('Projeto apagado.')).toBeTruthy()
   expect(sent).toEqual([deleteProject.input.body.parse({ name: 'Pedidos' })])
-  expect(screen.getByText(NO_PROJECTS)).toBeTruthy()
+  expect(screen.getByText(NO_PROJECTS_TITLE)).toBeTruthy()
   expect(screen.queryByRole('alertdialog')).toBeNull()
   await waitFor(() => expect(router.state.location.search).toEqual({}))
 })

@@ -16,9 +16,9 @@ export function projectStateOf(
   return { kind: 'NO_APP' }
 }
 
-/** The sentence a list of Projetos says when it holds none: Início's block and the empty page's sentence. */
+/** The sentence a list of Projetos says when it holds none: Início's block. */
 export const NO_PROJECTS = 'Nenhum projeto ainda.'
-/** The empty page's title, the same fact as `NO_PROJECTS` without its full stop. */
+/** The empty "Todos os projetos" says it once, as its title: `NO_PROJECTS` without its full stop. */
 export const NO_PROJECTS_TITLE = 'Nenhum projeto ainda'
 /** What "Todos os projetos" says under its title. */
 export const PROJECTS_SENTENCE = 'Cada Projeto guarda um app, as conversas e as ligações dele.'

@@ -131,6 +131,7 @@ test('sem Projeto, a coluna do vazio tem "Novo projeto" e o caminho para o Iníc
   open()
   await screen.findByRole('heading', { name: 'Todos os projetos' })
   expect(await main().findByText('Nenhum projeto ainda')).toBeTruthy()
+  expect(main().getAllByText(/Nenhum projeto ainda/).length).toBe(1)
   expect(main().getAllByRole('button', { name: /Novo projeto/ }).length).toBe(2)
   expect(main().getByRole('link', { name: 'ou peça um app no Início' })).toBeTruthy()
 })
