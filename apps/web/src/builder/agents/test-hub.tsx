@@ -80,14 +80,17 @@ function draftRoutes(held: Held, note: Note) {
     return held.agents.find((one) => one.id === id)
   }
   return [
-    http.get(
-      `*/api/companies/${COMPANY.id}/agents`,
-      () =>
+    http.get(`*/api/companies/${COMPANY.id}/agents`, ({ request }) => {
+      const only = new URL(request.url).searchParams.get('projectId')
+      return (
         answers.list?.() ??
         HttpResponse.json({
-          agents: held.agents.map((one) => AgentListed.parse({ ...one, tools: one.tools.length })),
-        }),
-    ),
+          agents: held.agents
+            .filter((one) => only === null || one.projectId === only)
+            .map((one) => AgentListed.parse({ ...one, tools: one.tools.length })),
+        })
+      )
+    }),
     http.get(`${PROJECT_API}/agents/:id`, ({ params }) => {
       const replaced = answers.read?.()
       if (replaced) return replaced

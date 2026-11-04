@@ -32,6 +32,7 @@ export function agent(fields: Partial<AgentDetail> = {}): AgentDetail {
     description: 'Compara as vendas de ontem com as metas.',
     state: { kind: 'DRAFT' },
     updatedAt: '2026-11-02T12:00:00.000Z',
+    lastRunAt: null,
     draft: {
       name: 'Conferente de metas',
       description: 'Compara as vendas de ontem com as metas.',

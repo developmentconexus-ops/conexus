@@ -1,4 +1,5 @@
 export { AgentChat } from './agent-chat.tsx'
+export { AgentsPage } from './agent-list.tsx'
 export { AgentPage } from './agent-page.tsx'
 export { AgentsArea } from './area.tsx'
 export { AreaFrame } from './area-frame.tsx'
@@ -7,6 +8,7 @@ export {
   agentParams,
   loadAgent,
   loadAgentConversation,
+  loadAgents,
   loadArea,
   loadConstrutorConversation,
 } from './loader.ts'

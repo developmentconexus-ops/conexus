@@ -94,7 +94,14 @@ test('a moldura: a 1366 px o trilho tem 56, a lista 272, as linhas 32, e o lugar
   const places = await nav
     .locator('[data-slot=sidebar-rail-column] a')
     .evaluateAll((all) => all.map((one) => one.getAttribute('aria-label')))
-  assert.deepEqual(places, ['Início', 'Projetos', 'Integrações', 'Automações', 'Configurações'])
+  assert.deepEqual(places, [
+    'Início',
+    'Projetos',
+    'Integrações',
+    'Automações',
+    'Agentes',
+    'Configurações',
+  ])
   const home = nav.getByRole('link', { name: 'Início' })
   assert.equal(await home.getAttribute('aria-current'), 'page')
   assert.deepEqual(await home.evaluate(tickOf), { width: '2px', drawn: true })

@@ -268,3 +268,35 @@ test('a remoção: remover a empresa leva as conversas de agente de todas as pes
   assert.equal(deleted.statusCode, 204, deleted.body)
   for (const url of urls) assert.equal(await kept(on.hub, url), false, url)
 })
+
+test('a última execução: o turno da conversa de teste não muda lastRunAt; o do publicado grava o começo do turno, de qualquer pessoa, e o próximo o move', async (t) => {
+  const on = await agentsOn(t)
+  const carla = await memberOn(on.hub, on.companyId, CARLA, 'admin')
+  const agent = await publishedAgent(on.hub, on.ana, on.agents, { instructions: 'Responda.' })
+  async function lastRun() {
+    const listed = await call(on.hub, on.ana, 'GET', `${on.company}/agents`)
+    const rows: { id: string; lastRunAt: string | null }[] = Object(listed.json()).agents
+    return rows.find((each) => each.id === agent.id)?.lastRunAt ?? null
+  }
+  assert.equal(await lastRun(), null)
+  const test = await talking(
+    t,
+    on.hub,
+    on.ana,
+    await talkedTo(on.hub, on.ana, on.agents, agent.id, { draft: true }),
+  )
+  assert.equal(endOf(await test.say('Teste')), 'complete')
+  assert.equal(await lastRun(), null, 'the test conversation does not count')
+
+  const before = Date.now()
+  const theirs = await talking(t, on.hub, carla, await talkedTo(on.hub, carla, on.agents, agent.id))
+  assert.equal(endOf(await theirs.say('Quanto vendemos?')), 'complete')
+  const first = await lastRun()
+  assert.ok(
+    first !== null && Date.parse(first) >= before - 1000,
+    'written by another person’s turn',
+  )
+  assert.equal(endOf(await theirs.say('E ontem?')), 'complete')
+  const second = await lastRun()
+  assert.ok(second !== null && Date.parse(second) > Date.parse(first), 'the next turn moves it')
+})

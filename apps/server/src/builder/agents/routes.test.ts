@@ -239,3 +239,38 @@ test('as recusas: o membro e um Projeto de outra empresa dão NOT_FOUND; o agent
   }
   assert.equal(agentOf(await call(on.hub, on.ana, 'GET', url)).name, 'Vendas do dia')
 })
+
+test('a lista da empresa: sem projectId traz os agentes de todos os Projetos, com projectId só os dele; lastRunAt nulo sem execução; o membro e um Projeto de outra empresa dão NOT_FOUND', async (t) => {
+  const on = await agentsOn(t)
+  const vendas = await otherProject(on.hub, on.ana, on.company, [])
+  const here = await madeAgent(on.hub, on.ana, on.agents, 'Vendas do dia')
+  const there = await madeAgent(on.hub, on.ana, vendas.agents, 'Estoque')
+  const company = `${on.company}/agents`
+  const all = await call(on.hub, on.ana, 'GET', company)
+  assert.equal(all.statusCode, 200, all.body)
+  const listed: Agent[] = Object(all.json()).agents
+  assert.deepEqual(
+    listed.map((each) => [each.id, each.projectId]).toSorted(),
+    [
+      [here.id, on.projectId],
+      [there.id, vendas.projectId],
+    ].toSorted(),
+  )
+  assert.ok(listed.every((each) => Object(each).lastRunAt === null))
+  const one = await call(on.hub, on.ana, 'GET', `${company}?projectId=${vendas.projectId}`)
+  assert.deepEqual(
+    Object(one.json()).agents.map((each: Agent) => each.id),
+    [there.id],
+  )
+  const bia = await memberOn(on.hub, on.companyId, BIA, 'member')
+  const theirs = await plantCompany(on.hub.test, bia.id, 'Outra Empresa')
+  const refused = [
+    await call(on.hub, bia, 'GET', company),
+    await call(on.hub, on.ana, 'GET', `/api/companies/${theirs}/agents`),
+    await call(on.hub, on.ana, 'GET', `${company}?projectId=${randomUUID().replaceAll('-', '')}`),
+  ]
+  assert.deepEqual(
+    refused.map((each) => [each.statusCode, codeOf(each)]),
+    refused.map(() => [404, 'NOT_FOUND']),
+  )
+})

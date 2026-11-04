@@ -20,7 +20,8 @@ import { hubMutation, hubQuery, hubQueryPrefix } from '../../platform/hub.ts'
 
 type Scope = { companyId: CompanyId; projectId: ProjectId }
 
-export function agentsQuery({ companyId, projectId }: Scope) {
+/** The Projeto's agents; without a Projeto, those of every live Projeto of the company (Início). */
+export function agentsQuery(companyId: CompanyId, projectId: ProjectId | undefined) {
   return hubQuery(listAgents, { params: { companyId }, query: { projectId } })
 }
 

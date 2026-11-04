@@ -4,7 +4,9 @@ import type {
   AgentState,
   AgentSummary,
   AgentVersionSummary,
+  CompanyId,
   OfProject,
+  ProjectId,
   ToolId,
 } from '@conexus/hub-api'
 import {
@@ -66,6 +68,13 @@ export function agentsIn(tx: ReadTx, ids: OfProject) {
     .orderBy(asc(agent.createdAt), asc(agent.id))
 }
 
+/** The agents of the company's live Projetos, as Projetos reads them: none of one being deleted. */
+export function agentsOfCompany(tx: ReadTx, companyId: CompanyId, live: readonly ProjectId[]) {
+  return withActive(tx)
+    .where(and(eq(agent.companyId, companyId), inArray(agent.projectId, [...live])))
+    .orderBy(asc(agent.createdAt), asc(agent.id))
+}
+
 function stateOf(row: AgentRow, activeRevision: number | null): AgentState {
   if (row.activeVersion === null) return { kind: 'DRAFT' }
   return {
@@ -84,6 +93,7 @@ function summaryOf({ row, activeRevision }: Listed): AgentSummary {
     description: draft.description,
     state: stateOf(row, activeRevision),
     updatedAt: row.updatedAt.toISOString(),
+    lastRunAt: row.lastRunAt?.toISOString() ?? null,
   }
 }
 
