@@ -252,21 +252,23 @@ test('no celular as setas saem da linha e Subir e Descer ficam no …', async ()
     await pickFromMenu('C', 'Descer')
     await waitFor(() => expect(labelsInOrder()).toEqual(['A', 'B', 'C', 'D']))
     expect(sent).toHaveLength(2)
-    // The menu of A returns focus to what had it when it opened: let the one of C give it back first.
+    // Descer gives focus back to C's "…"; wait for it so it does not land after A's menu opens.
     await waitFor(() =>
       expect(document.activeElement).toBe(
         screen.getByRole('button', { name: 'Mais ações para C' }),
       ),
     )
-    fireEvent.click(screen.getByRole('button', { name: 'Mais ações para A' }))
+    // A click focuses its button for a person; `fireEvent.click` does not, so focus it first.
+    const triggerOfA = screen.getByRole('button', { name: 'Mais ações para A' })
+    triggerOfA.focus()
+    fireEvent.click(triggerOfA)
     await screen.findByRole('menuitem', { name: 'Descer' })
     expect(screen.queryByRole('menuitem', { name: 'Subir' })).toBeNull()
-    fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' })
     await waitFor(() =>
-      expect(document.activeElement).toBe(
-        screen.getByRole('button', { name: 'Mais ações para C' }),
-      ),
+      expect(screen.getByRole('menu').contains(document.activeElement)).toBe(true),
     )
+    fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' })
+    await waitFor(() => expect(document.activeElement).toBe(triggerOfA))
   } finally {
     phone.mockRestore()
   }
