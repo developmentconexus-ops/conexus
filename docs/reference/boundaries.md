@@ -1197,3 +1197,20 @@ reference tool checks a read against its documentation.
   changes after creation goes in a Hub table, never in the thread's metadata.
 - **Proof.** `instructions.test.ts` "trocar a escolha enquanto o Mastra grava o título": the next
   turn reads only the new choice, and the title stays.
+
+## Mastra 1.79.0: the list of conversations narrowed by title and place (step 24.3.3)
+
+- **Library line.** At `@mastra/core` version 1.79.0 and `@mastra/pg` version 1.32.0 (the lockfile's),
+  `listThreads` filters by `resourceId` and by metadata equality only (`@mastra/core` `dist/storage/types.d.ts:183-209`;
+  `@mastra/pg` `dist/index.js:12335-12340`, a `@>` containment). It has no title search, no "the key is
+  missing" and no "any value of the key".
+- **Hand-made piece.** `listedPage` in `apps/server/src/builder/assistant/search.ts`. With a text or a
+  place it reads all the person's threads (`perPage: false`) and filters here: the title composed, without
+  accent and without case; `HOME` as the missing project mark and `AUTOMATIONS` as the present automation
+  mark; then it pages 30 at a time under the same token. Without text or place it is Mastra's own page.
+- **Why.** The founder's A a and B a on the list (2026-11-03): the search is on the title, and the filter
+  has Todas, Início, each Projeto and Automações. The step measured 500 threads of one person through the
+  whole Hub: a read of all of them took about 10 ms, so the read stays whole until a person holds
+  thousands of threads. That is the trigger to revisit: a title column or a search index of the Hub's own.
+- **Proof.** `list-search.test.ts` "a busca" (accent, case, spaces, nothing found) and "o lugar" (the
+  marks, with and without a text): each fails when its comparison or its mark is taken out.
