@@ -18,7 +18,7 @@ import { Composer } from './composer.tsx'
 import { useDraft } from './draft.ts'
 import { isModelRefusal, stashHandoffFiles } from './handoff.ts'
 import { chipOf } from './messages.ts'
-import { ComposerModelName, ComposerModelPicker, NoAccount } from './model-choice.tsx'
+import { ComposerModelPicker, NoAccount } from './model-choice.tsx'
 import { FileChip } from './person-turn.tsx'
 import { sendCreation } from './queries.ts'
 import { EXAMPLES, START_NO_ACCOUNT, START_PLACEHOLDER } from './text.ts'
@@ -192,14 +192,12 @@ export function StartBox(props: {
   placeholder: string
   /** Chips under the bar; none draws nothing. */
   examples: readonly Example[]
-  /** The model's button; none where the request does not choose the model (the Construtor's). */
+  /** The model's button; none draws nothing. */
   picker?: {
     picked: { model: ModelId; effort: Effort }
     onPick: (picked: { model: ModelId; effort: Effort }) => void
     providers: ReturnType<typeof usePicked>['providers']
   }
-  /** The model that answers, named and not changed, where the request does not choose it (the Construtor's). */
-  modelName?: ModelId
   /** False while something the request needs has not arrived: **Enviar** waits. */
   canSend?: boolean
   onSend: (outgoing: Outgoing) => Promise<boolean>
@@ -226,17 +224,13 @@ export function StartBox(props: {
           context={props.tools?.context}
           notice={props.tools?.notice}
           picker={
-            props.modelName !== undefined ? (
-              <ComposerModelName model={props.modelName} />
-            ) : (
-              props.picker !== undefined && (
-                <ComposerModelPicker
-                  providers={props.picker.providers}
-                  value={props.picker.picked}
-                  heading="Modelo do pedido"
-                  onChange={props.picker.onPick}
-                />
-              )
+            props.picker !== undefined && (
+              <ComposerModelPicker
+                providers={props.picker.providers}
+                value={props.picker.picked}
+                heading="Modelo do pedido"
+                onChange={props.picker.onPick}
+              />
             )
           }
         />

@@ -5,7 +5,7 @@ import type { AgentController } from '@mastra/core/agent-controller'
 import type { Memory } from '@mastra/memory'
 import { Failure } from '../../platform/failure.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
-import { conversationStart, effortsOf } from '../model-accounts/public.ts'
+import { conversationModel, conversationStart, effortsOf } from '../model-accounts/public.ts'
 import type { ControllerKind, Owner } from './kinds.ts'
 import { resourceOf } from './kinds.ts'
 
@@ -80,4 +80,35 @@ export async function openSession(
   const session = await sessionOf(id)
   if (kept === undefined) await session.model.switch(start.model, { thinkingLevel: effort })
   return { made, session, model: kept ?? start.model }
+}
+
+/**
+ * Puts a conversation on the model and effort the person chose, kept together on its thread
+ * (`switch`), for its next turns; the Builder's, the Assistant's and the Construtor's routes of
+ * `…/model` all end here. The model needs an account the person may use and the effort one the model
+ * offers, or nothing changes. `createSession` finds the session, or recovers it with the marks its
+ * creation stamped (`tags`), so one is never born without them.
+ */
+export async function changeModel(
+  deps: { controller: AgentController; queue: QueueDeps },
+  input: {
+    kind: ControllerKind
+    owner: Owner
+    id: ConversationId
+    tags?: Record<string, string>
+    choice: { model: ModelId; effort: Effort }
+  },
+): Promise<{ model: ModelId; effort: Effort }> {
+  const { kind, owner, id, choice } = input
+  const model = await conversationModel(deps.queue, owner, choice.model)
+  if (!effortsOf(model).includes(choice.effort)) throw new Failure('EFFORT_UNSUPPORTED')
+  const tags = input.tags === undefined ? {} : { tags: input.tags }
+  const session = await deps.controller.createSession({
+    id,
+    resourceId: resourceOf(kind, owner),
+    threadId: id,
+    ...tags,
+  })
+  await session.model.switch(model, { thinkingLevel: choice.effort })
+  return { model, effort: choice.effort }
 }

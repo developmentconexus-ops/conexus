@@ -12,6 +12,7 @@ import {
 } from '@conexus/hub-api'
 import { useState } from 'react'
 import { Button } from '../../ui/button.tsx'
+import { DialogBody, DialogFooter } from '../../ui/dialog.tsx'
 import { Field, FieldError, FieldLabel } from '../../ui/field.tsx'
 import { Input } from '../../ui/input.tsx'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select.tsx'
@@ -160,6 +161,7 @@ function Values(props: {
           value={props.description}
           onChange={(event) => props.onDescription(event.target.value)}
         />
+        <FieldError>{props.say('description')}</FieldError>
       </Field>
       <Field>
         <FieldLabel htmlFor="tool-bound">Valores fixos (JSON)</FieldLabel>
@@ -232,57 +234,61 @@ export function ToolForm(props: {
 
   return (
     <form
-      className="flex flex-col gap-md"
+      className="flex min-h-0 flex-1 flex-col gap-md"
       onSubmit={(event) => {
         event.preventDefault()
         submit()
       }}
     >
-      {fixed !== undefined && (
-        <Kept connection={fixed.connection} read={fixed.read} slug={fixed.slug} />
-      )}
-      {fixed === undefined && (
-        <Where
-          offered={props.offered}
-          connectionId={connectionId}
-          operation={operation}
-          slug={slug}
+      <DialogBody className="flex flex-col gap-md">
+        {fixed !== undefined && (
+          <Kept connection={fixed.connection} read={fixed.read} slug={fixed.slug} />
+        )}
+        {fixed === undefined && (
+          <Where
+            offered={props.offered}
+            connectionId={connectionId}
+            operation={operation}
+            slug={slug}
+            say={say}
+            onSlug={setSlug}
+            onOperation={(next) => setOperation(OperationId.parse(next))}
+            onConnection={(next) => {
+              const found = props.offered.find((one) => one.connectionId === next)
+              setConnectionId(found?.connectionId)
+              setOperation(found?.reads[0]?.operation)
+            }}
+          />
+        )}
+        <Values
+          description={description}
+          bound={bound}
+          open={open}
           say={say}
-          onSlug={setSlug}
-          onOperation={(next) => setOperation(OperationId.parse(next))}
-          onConnection={(next) => {
-            const found = props.offered.find((one) => one.connectionId === next)
-            setConnectionId(found?.connectionId)
-            setOperation(found?.reads[0]?.operation)
-          }}
+          onDescription={setDescription}
+          onBound={setBound}
+          onOpen={setOpen}
         />
-      )}
-      <Values
-        description={description}
-        bound={bound}
-        open={open}
-        say={say}
-        onDescription={setDescription}
-        onBound={setBound}
-        onOpen={setOpen}
-      />
-      {props.error !== undefined && (
-        <p role="alert" className="text-danger">
-          {props.error}
-        </p>
-      )}
-      <div className="flex flex-wrap gap-md">
-        <Button
-          type="submit"
-          variant="primary"
-          disabled={props.pending || connectionId === undefined}
-        >
-          {props.pending ? 'Gravando…' : props.submitLabel}
-        </Button>
-        <Button type="button" variant="ghost" disabled={props.pending} onClick={props.onCancel}>
-          Cancelar
-        </Button>
-      </div>
+      </DialogBody>
+      <DialogFooter>
+        {props.error !== undefined && (
+          <p role="alert" className="text-danger">
+            {props.error}
+          </p>
+        )}
+        <div className="flex flex-wrap gap-md">
+          <Button
+            type="submit"
+            variant="primary"
+            disabled={props.pending || connectionId === undefined}
+          >
+            {props.pending ? 'Gravando…' : props.submitLabel}
+          </Button>
+          <Button type="button" variant="ghost" disabled={props.pending} onClick={props.onCancel}>
+            Cancelar
+          </Button>
+        </div>
+      </DialogFooter>
     </form>
   )
 }

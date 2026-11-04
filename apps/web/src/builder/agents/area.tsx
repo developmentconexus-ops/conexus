@@ -1,4 +1,4 @@
-import type { AgentListed, CompanyId, ProjectId } from '@conexus/hub-api'
+import type { AgentListed, CompanyId, Effort, ModelId, ProjectId } from '@conexus/hub-api'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { getRouteApi, Link, useNavigate } from '@tanstack/react-router'
 import { BotIcon } from 'lucide-react'
@@ -10,7 +10,6 @@ import { cn } from '../../ui/cn.ts'
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { ReadFailure } from '../../ui/states.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
-import { FixedProjectChip } from '../assistant/public.ts'
 import {
   agentRoom,
   RoomContext,
@@ -42,7 +41,19 @@ type Scope = { companyId: CompanyId; projectId: ProjectId }
 
 /** The box that begins a conversation with the Construtor in this Projeto; the question goes with the conversation it opens. */
 function Ask({ companyId, projectId }: Scope) {
-  const { picked } = usePicked(companyId)
+  const { picked, setPicked, providers } = usePicked(companyId)
+  if (picked === null) return <StartWithoutAccount companyId={companyId} />
+  return <AskBox {...{ companyId, projectId, picked, providers }} onPick={setPicked} />
+}
+
+function AskBox(
+  props: Scope & {
+    picked: { model: ModelId; effort: Effort }
+    onPick: (picked: { model: ModelId; effort: Effort }) => void
+    providers: ReturnType<typeof usePicked>['providers']
+  },
+) {
+  const { companyId, projectId, picked } = props
   const draft = useDraft(`construtor:${projectId}`)
   const navigate = useNavigate()
   const create = useMutation(sendConstrutorConversation)
@@ -50,7 +61,7 @@ function Ask({ companyId, projectId }: Scope) {
   const [error, setError] = useState<unknown>()
   // The Hub, too, can find no account for the person's model: the same notice, with the way to the accounts.
   const noAccount = error instanceof HubFailure && error.code === 'MODEL_NO_ACCOUNT'
-  if (picked === null || noAccount) return <StartWithoutAccount companyId={companyId} />
+  if (noAccount) return <StartWithoutAccount companyId={companyId} />
 
   async function begin(question: {
     content: string
@@ -59,7 +70,7 @@ function Ask({ companyId, projectId }: Scope) {
     setError(undefined)
     try {
       const { conversation } = await attempt((attemptKey) =>
-        create.mutateAsync({ params: { companyId, projectId }, body: {}, attemptKey }),
+        create.mutateAsync({ params: { companyId, projectId }, body: picked, attemptKey }),
       )
       stashHandoffFiles(conversation.id, question.files)
       await navigate({
@@ -81,11 +92,7 @@ function Ask({ companyId, projectId }: Scope) {
         draft={draft}
         placeholder={CONSTRUTOR_PLACEHOLDER}
         examples={CONSTRUTOR_EXAMPLES}
-        modelName={picked.model}
-        tools={{
-          context: <FixedProjectChip companyId={companyId} projectId={projectId} />,
-          notice: null,
-        }}
+        picker={{ picked, onPick: props.onPick, providers: props.providers }}
         onSend={begin}
         notice={
           error !== undefined && (
