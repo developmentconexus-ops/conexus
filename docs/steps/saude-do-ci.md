@@ -184,7 +184,7 @@ Nenhuma tela do Hub. Os dois textos que uma pessoa lê são o aviso de U1 e o is
 | Os direitos de banco que o clone não copia | U5 | a migração `20261019151514_mastra_login/migration.sql:21-22` (o `REVOKE CONNECT` e o `GRANT CONNECT` do banco do Hub); `prepareMastraDatabase` (`platform/migrate.ts:147-166`, os dois do banco do Mastra em `:161-162`) | PostgreSQL 18, `CREATE DATABASE`, Notes: "Database-level configuration parameters (set via ALTER DATABASE) and database-level permissions (set via GRANT) are not copied from the template" | o clone traz tudo de dentro do banco, nada do nível do banco | embrulhado: reaplicados a cada clone; `catalog.test.ts:95` prova que nada ficou de fora | — | "E OKAY" | — |
 | A recusa da configuração | U6 | `boot.test.ts:60-67` e `:89-95` geram 45 testes, cada um um processo `main.ts` por `startHub` (`platform/test-hub-process.ts:25-40`) | o próprio `platform/config.test.ts:12-23` (`refusal`, que chama `readConfig` dentro do processo); twenty `b76d0217` `packages/twenty-server/test/integration/utils/create-app.ts:31-39` e activepieces `f34c43cd` `packages/server/api/test/helpers/test-setup.ts:41-48` (o app no mesmo processo do teste) | a função da fronteira testada dentro do processo; o processo inteiro só para a ligação de saída | nativo: um caso por recusa em `config.test.ts` | — | "E OKAY" | — |
 | O pool, o prazo de leitura e o orçamento da poda | U7 | `POOL_LIMITS` (`platform/database.ts:15-23`) e `READ_DEADLINE_MS` (`:26`), usados por `openDatabase` (`:236-237`) e `openMastraPool` (`:323-324`); `PRUNE_BUDGET_MS` (`hub/apps/prune.ts:104,121`) | o próprio `deadlines?: ConnectorDeadlines` (`main.ts:142`, `hub/connectors/public.ts:47,78`): uma opção com o valor de produção por padrão; o mesmo padrão de relógio injetado das linhas acima | o valor entra por dependência e cai no de produção quando ninguém o passa | embrulhado: um parâmetro opcional por constante | — | "E OKAY" | — |
-| O atraso da retentativa do Mastra | U7 | `stabilityProcessors` e `accountRetry` (`builder/model-accounts/processors.ts:369-401`) sobre `defaultStabilityErrorProcessors`, que não recebe `delayMs` | `@mastra/core` 1.79.0 `dist/processors/stream-error-retry-processor.d.ts:19-41` (`delayMs`, `maxRetryAfterMs` de `StreamErrorRetryProcessorOptions`) e `dist/processors/stability-defaults.d.ts:81-98` (400 repetido depois de 2 s) | a retentativa aceita o seu atraso na construção | embrulhado: um `new StreamErrorRetryProcessor({ …, delayMs })` no lugar do que os padrões montam, com as opções dos padrões lidas do `.d.ts`, e `accountRetry` em volta como hoje; só se a medida do passo 1 de U7 pedir, senão a peça fica de fora | o passo 1 de U7 e o "Parar se" dele | "E OKAY" | — |
+| O atraso da retentativa do Mastra | U7 | `stabilityProcessors` e `accountRetry` (`builder/model-accounts/processors.ts:369-401`) sobre `defaultStabilityErrorProcessors`, que não recebe `delayMs` | `@mastra/core` 1.79.0 `dist/processors/stream-error-retry-processor.d.ts:19-41` (`delayMs`, `maxRetryAfterMs` de `StreamErrorRetryProcessorOptions`) e `dist/processors/stability-defaults.d.ts:81-98` (400 repetido depois de 2 s) | a retentativa aceita o seu atraso na construção | embrulhado: um `new StreamErrorRetryProcessor({ …, delayMs })` no lugar do que os padrões montam, com as opções dos padrões (valores no JS, não no `.d.ts`), e `accountRetry` em volta como hoje; só se a medida do passo 1 de U7 pedir, senão a peça fica de fora | o passo 1 de U7 e o "Parar se" dele | "E OKAY" | — |
 | O conserto 6 | fica de fora | `apps/server/package.json:13` (`--test-concurrency=1`); `ci.yml:135-136` | langfuse `8ee97c44` `web/vitest.config.mts:18-28,238-248` (`isolate: false` só para os arquivos sem estado global, medidos 371 s de import contra 264 s de teste); n8n `2e855356` `packages/cli/vitest.config.base.ts:60-65` (um processo por arquivo, de propósito) | — | nativo (`node --test --test-concurrency=N`; `--test-isolation=none` do Node 24), e fica de fora até ser medido de novo depois de U7 | — | "E OKAY" ("fica de fora") | — |
 
 **Duas formas comparadas para montar o modelo de U5.** A: na primeira chamada de
@@ -598,11 +598,17 @@ modelo de uma opção com padrão de produção.
    parte fica de fora, e o pull request diz o número. Se passar, `defaultStabilityErrorProcessors`
    não recebe `delayMs` (`stability-defaults.d.ts:81-98`), então `stabilityProcessors`
    (`processors.ts:392-401`) troca o `StreamErrorRetryProcessor` que os padrões montam por um
-   `new StreamErrorRetryProcessor({ …, delayMs })` construído com as mesmas opções dos padrões,
-   lidas do `.d.ts` (`stream-error-retry-processor.d.ts:19-41`), e o embrulha em `accountRetry`
-   como hoje. O `delayMs` curto chega só pelo caminho de teste. O cartão do Mastra 1.82
-   (https://github.com/developmentconexus-ops/conexus/pull/689) pode mudar esse `.d.ts` antes de
-   U7: leia o da versão instalada no dia.
+   `new StreamErrorRetryProcessor({ …, delayMs })` construído com as mesmas opções dos padrões, e
+   o embrula em `accountRetry` como hoje. As opções aceitas estão em
+   `stream-error-retry-processor.d.ts:19-41`, mas os valores dos padrões não estão no `.d.ts`: moram
+   no JS de `defaultStabilityErrorProcessors` (`dist/agent-tuAMgHe3.js:2065-2093` na 1.79.0:
+   `maxRetries` 2, `delayMs` 3e3 e três matchers). O matcher `isECONNRESETError` não é público na
+   1.79.0 nem na 1.82 (`packages/core/src/processors/index.ts:1036-1040` da estante `mastra-1.82`),
+   então a peça só entra se a medida do passo 1 passar de 5 s e se o Mastra instalado no dia expuser
+   esse matcher; senão o pull request diz o número e para, como o "Parar se" manda. O `delayMs`
+   curto chega só pelo caminho de teste. O cartão do Mastra 1.82
+   (https://github.com/developmentconexus-ops/conexus/pull/689) pode mudar isso antes de U7: leia a
+   versão instalada no dia.
 2. `database.ts`: as opções do contrato. `createTestDatabase` e `mastraPoolAt` passam valores curtos
    onde um teste espera o ocioso ou o prazo de leitura.
 3. Os testes que esperavam esses prazos passam a recebê-los curtos e continuam falhando quando o
@@ -622,7 +628,7 @@ menos na soma. O critério 17 fecha a etapa.
 - Um valor curto faz um teste comum (que não esperava o prazo) falhar: o teste dependia do prazo de
   produção. Diga qual e pare.
 - As opções com que os padrões montam a retentativa não podem ser reproduzidas pela API pública do
-  Mastra (o `.d.ts` não as expõe): pare. Copiar valores internos da biblioteca é remendo e volta ao
+  Mastra (o `.d.ts` não traz os valores e o matcher de `ECONNRESET` não é público): pare. Copiar valores internos da biblioteca é remendo e volta ao
   cartão.
 - Uma constante só pode ser trocada por uma variável de ambiente: pare. Variável nova de produção
   volta ao cartão.
