@@ -50,7 +50,9 @@ async function opened(viewport: typeof DESKTOP, events: unknown[] = []) {
 for (const viewport of [DESKTOP, PHONE]) {
   test(`a memória mostra o percentual em ${viewport.width}px, e a palavra não cabe na caixa estreita do Builder`, async () => {
     const page = await opened(viewport)
-    const ring = page.getByRole('button', { name: /Memória da conversa/ })
+    // The ring first draws the empty memory; its name carries the percent once the session's
+    // memory arrives, so that name is the state the assertions below depend on.
+    const ring = page.getByRole('button', { name: /Memória da conversa: Mensagens 70%/ })
     await ring.waitFor()
     assert.equal(await ring.getByText('70%').isVisible(), true)
     assert.equal(await ring.getByText('Memória', { exact: true }).isVisible(), false)
