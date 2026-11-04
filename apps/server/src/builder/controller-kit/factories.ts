@@ -48,10 +48,17 @@ const BUILTIN: Record<BuiltinToolId, true> = {
  * What every conversation agent shares: the turn, then the account's pick; the account's errors;
  * Mastra retries nothing itself, the account processors retry; and the model call's budget.
  */
-export function agentDefaults(queue: QueueDeps, turn: InputProcessor) {
+export function agentDefaults(
+  queue: QueueDeps,
+  turns: { processor: InputProcessor; deletedRun?: OutputProcessor },
+) {
   return {
-    inputProcessors: [turn, accountPick(queue)],
-    outputProcessors: [new CyberRefusalHandler(), workspaceMetadataLive],
+    inputProcessors: [turns.processor, accountPick(queue)],
+    outputProcessors: [
+      new CyberRefusalHandler(),
+      workspaceMetadataLive,
+      ...(turns.deletedRun === undefined ? [] : [turns.deletedRun]),
+    ],
     errorProcessors: accountErrorProcessors(queue),
     maxRetries: 0,
     maxProcessorRetries: MAX_PROCESSOR_RETRIES,

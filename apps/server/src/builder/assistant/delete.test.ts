@@ -8,7 +8,8 @@ import {
   ranNow,
   salesSummary,
 } from '../automations/test-automations.ts'
-import { assisting, created } from './test-assistant.ts'
+import { holding, PARTIAL, sent, streamOf, title } from '../conversation/test-conversation.ts'
+import { assisting, created, publishedApp } from './test-assistant.ts'
 
 function idOf(url: string) {
   return url.slice(url.lastIndexOf('/') + 1)
@@ -48,6 +49,31 @@ test('apagar: sem sessão dá SESSION_REQUIRED e nada se apaga (6)', async (t) =
   const response = await call(on.hub, { ...on.ana, cookie: '' }, 'DELETE', mine)
   assert.equal(codeOf(response), 'SESSION_REQUIRED')
   assert.equal((await call(on.hub, on.ana, 'GET', mine)).statusCode, 200)
+})
+
+test('apagar com a resposta aberta: a resposta para, a máquina morre, o fio sai, e o app e as versões do Projeto ficam (2)', async (t) => {
+  const held = holding(t)
+  const on = await assisting(t, (asked) => title(asked) ?? held.reply)
+  await publishedApp(on.hub, { ...on, personId: on.ana.id })
+  const url = await created(on.hub, on.ana, on.assistant, {
+    projectId: on.projectId,
+    connections: [],
+  })
+  const stream = await streamOf(on.hub, on.ana, url)
+  t.after(() => stream.close())
+  assert.equal((await sent(on.hub, on.ana, url, 'Uma pergunta')).statusCode, 200)
+  assert.equal(await stream.text(), PARTIAL)
+
+  const deleted = await call(on.hub, on.ana, 'DELETE', url)
+  assert.equal(deleted.statusCode, 204, deleted.body)
+  assert.deepEqual(on.hub.assistantMachines.killed, [idOf(url)])
+  const read = await call(on.hub, on.ana, 'GET', url)
+  assert.deepEqual([read.statusCode, codeOf(read)], [404, 'CONVERSATION_NOT_FOUND'])
+  const [versions] = await on.hub.test.asOwner(
+    'select count(*)::int as n from apps.app_version where project_id = $1',
+    [on.projectId],
+  )
+  assert.equal(Object(versions).n, 1, 'the Projeto keeps its version')
 })
 
 test('apagar com a máquina que não morre: o fio fica e o próximo apagar o acha (3)', async (t) => {

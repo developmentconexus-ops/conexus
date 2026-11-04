@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { ConversationId } from '@conexus/hub-api'
 import type { AgentController } from '@mastra/core/agent-controller'
-import type { InputProcessor } from '@mastra/core/processors'
+import type { InputProcessor, OutputProcessor } from '@mastra/core/processors'
 import type { RequestContext } from '@mastra/core/request-context'
 import { z } from 'zod'
 import { TurnKey } from '../../hub/connectors/public.ts'
@@ -25,10 +25,11 @@ export function sessionTurns(options: {
   take: (requestContext: RequestContext) => Promise<Turn | undefined>
   ended?: (sessionId: ConversationId) => void
 }) {
-  const held = new Map<ConversationId, Turn>()
+  const held = new Map<ConversationId, { turn: Turn; requestContext: RequestContext }>()
+  const deleted = new WeakSet<RequestContext>()
 
   function letGo(sessionId: ConversationId): void {
-    held.get(sessionId)?.end()
+    held.get(sessionId)?.turn.end()
     held.delete(sessionId)
   }
 
@@ -41,7 +42,19 @@ export function sessionTurns(options: {
     const turn = await options.take(requestContext)
     if (turn === undefined) return abort('CONVERSATION_NOT_FOUND')
     setTurn(requestContext, turn)
-    held.set(session.data.sessionId, turn)
+    held.set(session.data.sessionId, { turn, requestContext })
+  }
+
+  // A deleted session's run still ends its stream after the abort, and Mastra's memory saves that
+  // end, creating the thread again when the delete got there first. Its result belongs to a
+  // conversation that no longer exists: a tripwire keeps the memory processors, which run after
+  // this one, from saving it.
+  const deletedRun: OutputProcessor = {
+    id: `${options.id}-deleted`,
+    async processOutputResult({ messages, requestContext, abort }) {
+      if (requestContext !== undefined && deleted.has(requestContext)) abort('CONVERSATION_DELETED')
+      return messages
+    },
   }
 
   const processor: InputProcessor = {
@@ -67,10 +80,15 @@ export function sessionTurns(options: {
         options.ended?.(sessionId)
       })
     })
-    controller.onSessionDeleted((session) => letGo(ConversationId.parse(session.identity.getId())))
+    controller.onSessionDeleted((session) => {
+      const sessionId = ConversationId.parse(session.identity.getId())
+      const run = held.get(sessionId)
+      if (run !== undefined) deleted.add(run.requestContext)
+      letGo(sessionId)
+    })
   }
 
-  return { processor, watch }
+  return { processor, deletedRun, watch }
 }
 
 /**
