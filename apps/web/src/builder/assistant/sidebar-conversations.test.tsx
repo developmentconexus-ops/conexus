@@ -241,3 +241,31 @@ test('apagar a conversa aberta leva a uma conversa nova', async () => {
   fireEvent.click(await screen.findByRole('button', { name: 'Apagar conversa' }))
   await waitFor(() => expect(conexus.router.state.location.pathname).toBe(COMPANY_ROOT))
 })
+
+test('apagar a conversa aberta leva a uma conversa nova mesmo com uma leitura recarregada ainda no ar', async () => {
+  let reads = 0
+  let release: () => void = () => undefined
+  const held = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  const { conexus } = at(`${COMPANY_ROOT}/conversations/${BY_DAY[0]?.conversation.id}`, {
+    conversations: fresh(),
+    answers: {
+      // The first read is the screen's own; the ones after the delete are the cache's reload.
+      list: async () => {
+        reads += 1
+        if (reads > 1) await held
+        return undefined
+      },
+    },
+  })
+  await menuOf('De hoje')
+  fireEvent.click(await screen.findByRole('menuitem', { name: 'Apagar' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Apagar conversa' }))
+  try {
+    await waitFor(() => expect(conexus.router.state.location.pathname).toBe(COMPANY_ROOT))
+    expect(screen.queryByText('Esta conversa não existe mais.')).toBeNull()
+  } finally {
+    release()
+  }
+})
