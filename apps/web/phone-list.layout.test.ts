@@ -67,10 +67,6 @@ test('a lista na gaveta do celular: o rótulo do lugar é pílula com × de 44 d
   const typed = await page.screenshot({ clip: end })
   assert.ok(bare.equals(typed), "the browser's own ✕ is drawn at the end of the field")
   await page.waitForURL((url) => url.searchParams.get('q') === 'rel')
-  await drawer.getByRole('tab', { name: 'Projetos' }).click()
-  await page.waitForURL((url) => url.searchParams.get('tab') === 'projects')
-  await page.waitForTimeout(400)
-  assert.ok(await drawer.isVisible(), 'searching or switching the tab closed the drawer')
   await touching(page)
   const reach = await reachOf(clear)
   const drawn = await clear.boundingBox()
@@ -80,6 +76,11 @@ test('a lista na gaveta do celular: o rótulo do lugar é pílula com × de 44 d
     drawn.height + reach.up + reach.down >= 44,
     `the × is under 44 px tall to a finger ${JSON.stringify({ drawn, reach })}`,
   )
+  await drawer.getByRole('tab', { name: 'Projetos' }).dispatchEvent('click')
+  await page.waitForURL((url) => url.searchParams.get('tab') === 'projects')
+  await page.waitForTimeout(400)
+  assert.ok(await drawer.isVisible(), 'searching or switching the tab closed the drawer')
+  assert.equal(await clear.count(), 0, 'the place label stays on the Projetos tab')
   await page.close()
 })
 

@@ -203,3 +203,55 @@ test('trocar de lugar com a resposta a caminho mostra os esqueletos, nunca a lis
   answer.resolve(undefined)
   expect(await nav.findByRole('link', { name: /De hoje/ })).toBeTruthy()
 })
+
+test('na aba Projetos a busca vale dentro de cada grupo, e o chip de lugar sai; um grupo sem achado diz a frase da busca', async () => {
+  at(`${COMPANY_ROOT}?q=relatorio&place=HOME&tab=projects`, {
+    conversations: [
+      assistantConversation({ title: 'Relatório da casa', updatedAt: '2026-11-02T17:00:00Z' }),
+      assistantConversation({
+        id: ELSEWHERE,
+        title: 'Estoque da casa',
+        updatedAt: '2026-11-02T16:00:00Z',
+      }),
+      assistantConversation({
+        id: THIRD,
+        title: 'Estoque do Projeto',
+        updatedAt: '2026-11-02T15:00:00Z',
+        projectId: PEDIDOS_ID,
+      }),
+    ],
+  })
+  const nav = await list()
+  expect(await nav.findByRole('link', { name: /Relatório da casa/ })).toBeTruthy()
+  expect(nav.queryByRole('link', { name: /Estoque/ })).toBeNull()
+  expect(await nav.findByText('Nenhuma conversa com esse nome.')).toBeTruthy()
+  expect(nav.queryByText('Nenhuma conversa neste Projeto ainda.')).toBeNull()
+  expect(nav.queryByRole('button', { name: 'Filtrar conversas' })).toBeNull()
+  expect(nav.queryByRole('button', { name: /Tirar o filtro/ })).toBeNull()
+  expect(nav.getByRole('searchbox', { name: 'Buscar pelo título' })).toBeTruthy()
+})
+
+test('um lugar sem conversas diz "Nenhuma conversa neste lugar."; com busca, a frase da busca', async () => {
+  const { conexus } = at(`${COMPANY_ROOT}?place=AUTOMATIONS`, { conversations: TWO })
+  const nav = await list()
+  expect(await nav.findByText('Nenhuma conversa neste lugar.')).toBeTruthy()
+  await conexus.router.navigate({ to: '.', search: { place: 'AUTOMATIONS', q: 'zzz' } })
+  expect(await nav.findByText('Nenhuma conversa com esse nome.')).toBeTruthy()
+  expect(nav.queryByText('Nenhuma conversa neste lugar.')).toBeNull()
+})
+
+test('Sem Projeto com mais de 5 conversas tem Ver todas, que leva a place=HOME na aba Recentes', async () => {
+  const six = Array.from({ length: 6 }, (_, index) =>
+    assistantConversation({
+      id: ConversationId.parse(`aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaa0${index}`),
+      title: `Avulsa ${index}`,
+      updatedAt: `2026-11-02T1${index}:00:00Z`,
+    }),
+  )
+  const { conexus } = at(`${COMPANY_ROOT}?tab=projects`, { conversations: six })
+  const nav = await list()
+  await waitFor(() => expect(nav.getAllByRole('link', { name: /Avulsa \d/ })).toHaveLength(5))
+  fireEvent.click(nav.getByRole('link', { name: 'Ver todas' }))
+  await waitFor(() => expect(conexus.router.state.location.search).toMatchObject({ place: 'HOME' }))
+  expect(conexus.router.state.location.search).not.toHaveProperty('tab')
+})
