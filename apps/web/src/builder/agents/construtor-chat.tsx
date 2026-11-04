@@ -3,7 +3,6 @@ import { CONSTRUTOR_CONTROLLER } from '@conexus/hub-api'
 import { useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { ArrowLeftIcon } from 'lucide-react'
-import type { ComponentProps } from 'react'
 import { useMemo, useState } from 'react'
 import { useIsMobile } from '../../ui/use-mobile.ts'
 import { useConnectorCatalog } from '../assistant/public.ts'
@@ -30,27 +29,27 @@ import {
   titleOf,
 } from './text.ts'
 
-/** The model's button of the conversation, writing through the Construtor's own route. */
-function ConstrutorModel(props: {
+/** The strip over the conversation: the way back to Agentes and the conversation's title. */
+function Heading(props: {
   scope: { companyId: CompanyId; projectId: ProjectId }
   conversationId: ConversationId
-  control: Parameters<NonNullable<ComponentProps<typeof Chat>['picker']>>[0]
 }) {
-  const { scope, conversationId, control } = props
-  const write = {
-    ...sendConstrutorModel,
-    mutationFn: (body: Parameters<typeof sendConstrutorModel.mutationFn>[0]['body']) =>
-      sendConstrutorModel.mutationFn({ params: { ...scope, conversationId }, body }),
-  }
+  const { conversations } = useSuspenseQuery(construtorConversationsQuery(props.scope)).data
+  const here = conversations.find((one) => one.id === props.conversationId)
   return (
-    <ModelChoice
-      controller={CONSTRUTOR_CONTROLLER}
-      conversationId={conversationId}
-      session={control.session}
-      providers={control.providers}
-      write={write}
-      onError={control.onError}
-    />
+    <div className="flex min-w-0 items-center gap-sm border-b border-line px-md py-sm">
+      <Link
+        to="/companies/$companyId/projects/$projectId/agents"
+        params={props.scope}
+        aria-label="Voltar para Agentes"
+        className="text-text-2"
+      >
+        <ArrowLeftIcon aria-hidden="true" className="size-4" />
+      </Link>
+      <h1 className="max-w-full truncate font-display text-title">
+        {here === undefined ? CONSTRUTOR_NAME : titleOf(here)}
+      </h1>
+    </div>
   )
 }
 
@@ -64,8 +63,6 @@ export function ConstrutorChat(props: {
   const scope = { companyId, projectId }
   const queryClient = useQueryClient()
   const { words } = useConnectorCatalog(companyId)
-  const { conversations } = useSuspenseQuery(construtorConversationsQuery(scope)).data
-  const here = conversations.find((one) => one.id === conversationId)
   const listKey = construtorConversationsQuery(scope).queryKey
   const library = useQuery(toolsQuery(scope)).data?.tools
   const [agentId, setAgentId] = useState<AgentId>()
@@ -91,19 +88,7 @@ export function ConstrutorChat(props: {
   return (
     <RoomContext.Provider value={room}>
       <div key={conversationId} className="flex h-full min-h-0 flex-col bg-surface">
-        <div className="flex min-w-0 items-center gap-sm border-b border-line px-md py-sm">
-          <Link
-            to="/companies/$companyId/projects/$projectId/agents"
-            params={scope}
-            aria-label="Voltar para Agentes"
-            className="text-text-2"
-          >
-            <ArrowLeftIcon aria-hidden="true" className="size-4" />
-          </Link>
-          <h1 className="max-w-full truncate font-display text-title">
-            {here === undefined ? CONSTRUTOR_NAME : titleOf(here)}
-          </h1>
-        </div>
+        <Heading scope={scope} conversationId={conversationId} />
         <div className="min-h-0 flex-1">
           <Beside
             id="conexus-construtor"
@@ -127,12 +112,21 @@ export function ConstrutorChat(props: {
                   empty={CONSTRUTOR_FIRST}
                   placeholder={CONSTRUTOR_PLACEHOLDER}
                   noAccount={START_NO_ACCOUNT}
-                  tools={{ context: null, notice: null }}
-                  picker={(control) => (
-                    <ConstrutorModel
-                      scope={scope}
+                  picker={({ session, providers, onError }) => (
+                    <ModelChoice
+                      controller={CONSTRUTOR_CONTROLLER}
                       conversationId={conversationId}
-                      control={control}
+                      write={{
+                        ...sendConstrutorModel,
+                        mutationFn: (body) =>
+                          sendConstrutorModel.mutationFn({
+                            params: { ...scope, conversationId },
+                            body,
+                          }),
+                      }}
+                      session={session}
+                      providers={providers}
+                      onError={onError}
                     />
                   )}
                 />

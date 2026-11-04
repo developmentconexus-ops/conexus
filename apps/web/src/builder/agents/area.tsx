@@ -93,7 +93,6 @@ function AskBox(
         placeholder={CONSTRUTOR_PLACEHOLDER}
         examples={CONSTRUTOR_EXAMPLES}
         picker={{ picked, onPick: props.onPick, providers: props.providers }}
-        tools={{ context: null, notice: null }}
         onSend={begin}
         notice={
           error !== undefined && (
