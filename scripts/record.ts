@@ -154,6 +154,7 @@ function replaying(answers: Answer[]): () => void {
 type Session = Awaited<ReturnType<AgentController['createSession']>>
 
 const TASK_TOOLS = { task_write: taskWriteTool, task_complete: taskCompleteTool }
+const Scripted = Scenario.exclude(['cited', 'thinking', 'abort'])
 const CALLS = {
   plan: PLAN_CALLS,
   files: FILES_CALLS,
@@ -192,16 +193,16 @@ async function run(session: Session, scenario: z.infer<typeof Scenario>): Promis
       if (ends === 2) ended.resolve()
     }
   })
-  const answers: Answer[] =
-    scenario in CALLS
-      ? CALLS[scenario].map(
-          (blocks, at, calls) => () =>
-            new Response(
-              streamed(CLAUDE, blocks, at === calls.length - 1 ? 'end_turn' : 'tool_use'),
-              { headers: { 'content-type': 'text/event-stream' } },
-            ),
-        )
-      : [(signal) => replayed(`anthropic-${scenario}`, signal)]
+  const scripted = Scripted.safeParse(scenario)
+  const answers: Answer[] = scripted.success
+    ? CALLS[scripted.data].map(
+        (blocks, at, calls) => () =>
+          new Response(
+            streamed(CLAUDE, blocks, at === calls.length - 1 ? 'end_turn' : 'tool_use'),
+            { headers: { 'content-type': 'text/event-stream' } },
+          ),
+      )
+    : [(signal) => replayed(`anthropic-${scenario}`, signal)]
   const restore = replaying(answers)
   try {
     if (scenario === 'files') {
@@ -261,7 +262,7 @@ const RECORDED_TOOLS = {
 }
 
 async function record(scenario: z.infer<typeof Scenario>) {
-  const planned = scenario in CALLS
+  const planned = Scripted.safeParse(scenario).success
   const source = planned ? 'test-anthropic-stream.ts' : `anthropic-${scenario}.sse`
   // The plan's calls are not a provider's recording; the SDK that reads them is the one of any other.
   const provider = Recording.parse(
