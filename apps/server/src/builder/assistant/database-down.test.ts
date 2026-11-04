@@ -88,10 +88,11 @@ async function everyRouteUnavailable(t: TestContext, outage: Outage) {
   const kept = await on.hub.test.asOwner(
     'select count(*)::int as n from builder.assistant_conversation',
   )
-  assert.deepEqual(
-    kept,
-    [{ n: 1 }],
-    'the refused creation kept no conversation, the refused delete none gone',
+  assert.deepEqual(kept, [{ n: 1 }], 'the refused creation kept no conversation')
+  assert.equal(
+    (await call(on.hub, on.ana, 'GET', url)).statusCode,
+    200,
+    'the refused delete kept the thread',
   )
 }
 

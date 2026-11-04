@@ -85,7 +85,7 @@ test('apagar com a máquina que não morre: o fio fica e o próximo apagar o ach
     throw new Error('the provider did not answer')
   }
   const failed = await call(on.hub, on.ana, 'DELETE', url)
-  assert.notEqual(failed.statusCode, 204)
+  assert.deepEqual([failed.statusCode, codeOf(failed)], [500, 'INTERNAL_UNEXPECTED'])
   assert.equal((await call(on.hub, on.ana, 'GET', url)).statusCode, 200, 'the thread stays')
 
   api.kill = kill

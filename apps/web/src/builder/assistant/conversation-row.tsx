@@ -9,13 +9,15 @@ export function ConversationRow(props: {
   companyId: CompanyId
   conversation: AssistantConversationSummary
   now: Date
+  /** The Projeto's own group already names it, so its rows do not. */
+  inProject?: boolean
 }) {
   const { companyId, conversation } = props
   const content = (
     <>
       <span className="flex min-w-0 flex-1 items-baseline gap-sm">
         <span className="truncate">{titleOf(conversation)}</span>
-        {conversation.project !== null && (
+        {conversation.project !== null && props.inProject !== true && (
           <span className="min-w-0 shrink-[3] truncate text-fact text-text-2">
             {conversation.project.name}
           </span>

@@ -143,6 +143,8 @@ test('o Membro vê "Novo projeto" na página e no vazio, e o diálogo abre (13)'
   expect(await main().findByText('Nenhum projeto ainda')).toBeTruthy()
   const buttons = main().getAllByRole('button', { name: /Novo projeto/ })
   expect(buttons.length).toBe(2)
-  for (const emptyColumnButton of buttons.slice(-1)) fireEvent.click(emptyColumnButton)
+  const [, emptyColumnButton] = buttons
+  if (emptyColumnButton === undefined) throw new Error('the empty column has no button')
+  fireEvent.click(emptyColumnButton)
   expect(await screen.findByRole('dialog')).toBeTruthy()
 })

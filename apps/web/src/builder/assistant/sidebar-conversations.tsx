@@ -64,13 +64,13 @@ function useSearchText() {
 }
 
 /** The box keeps what was typed, spaces included; the address and the list read it as the Hub does. */
-function SearchBox({ q }: { q: string | undefined }) {
+function SearchBox({ q, focus }: { q: string | undefined; focus: boolean }) {
   const [typed, setTyped] = useState(q ?? '')
   const search = useSearchText()
   return (
     <InputGroup>
       <InputGroupInput
-        autoFocus
+        autoFocus={focus}
         type="search"
         aria-label={SEARCH_LABEL}
         maxLength={CONVERSATION_SEARCH_MAX}
@@ -178,6 +178,8 @@ function Recent({ companyId, view }: { companyId: CompanyId; view: ListView }) {
 export function SidebarConversations({ companyId }: { companyId: CompanyId }) {
   const view = useSearch({ strict: false, select: (search) => viewOf(search) })
   const [searching, setSearching] = useState(view.q !== undefined)
+  // A box opened by the magnifier takes the focus; one a link opened with its text leaves the page's.
+  const [openedByClick, setOpenedByClick] = useState(false)
   const search = useSearchText()
   const narrowed = narrowedBy(view.place)
   const first = useQuery(
@@ -202,6 +204,7 @@ export function SidebarConversations({ companyId }: { companyId: CompanyId }) {
             onClick={() => {
               // Closing the magnifier takes the text out, so no filtered list is left without its box.
               if (searching) void search(undefined)
+              setOpenedByClick(!searching)
               setSearching(!searching)
             }}
           >
@@ -210,7 +213,7 @@ export function SidebarConversations({ companyId }: { companyId: CompanyId }) {
           <PlaceFilter companyId={companyId} place={view.place} />
         </div>
       </div>
-      {searching && <SearchBox q={view.q} />}
+      {searching && <SearchBox q={view.q} focus={openedByClick} />}
       {view.place !== undefined && <PlaceLabel companyId={companyId} place={view.place} />}
       <ViewTabs view={view} />
       {view.tab === 'PROJECTS' ? (
