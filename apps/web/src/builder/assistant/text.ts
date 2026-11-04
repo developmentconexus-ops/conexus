@@ -81,6 +81,18 @@ export const ASSISTANT_EXAMPLES = [
 export const EMPTY_ASSISTANT = 'Pergunte, peça uma análise ou um documento.'
 export const CONVERSATION_GONE = 'Esta conversa não existe mais.'
 
+export const CONVERSATION_MENU = 'Ações da conversa'
+export const RENAME = 'Renomear'
+export const DELETE = 'Apagar'
+export const RENAME_TITLE = 'Renomear conversa'
+export const RENAME_LABEL = 'Título da conversa'
+export const RENAME_SAVE = 'Salvar'
+export const DELETE_TITLE = 'Apagar esta conversa?'
+export const DELETE_TEXT =
+  'Isto não se desfaz. As mensagens e os arquivos da máquina dela vão junto. O app e as versões do Projeto ficam.'
+export const DELETE_CONFIRM = 'Apagar conversa'
+export const CANCEL = 'Cancelar'
+export const UNCONFIRMED_WRITE = 'Não confirmamos. Veja a lista.'
 /** The words of the card of an app the Assistant proposed (step 24.3.2, U3); the founder approves them at the step's end. */
 export const CREATE_APP = 'Criar app'
 export const SEND_TO_BUILDER = 'Mandar ao Builder'

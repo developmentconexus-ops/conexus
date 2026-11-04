@@ -9,7 +9,6 @@ import {
 } from '@conexus/hub-api'
 import type { AgentInstructions } from '@mastra/core/agent'
 import { Agent } from '@mastra/core/agent'
-import type { InputProcessor } from '@mastra/core/processors'
 import type { RequestContext } from '@mastra/core/request-context'
 import type { Memory } from '@mastra/memory'
 import type { PostgresStore } from '@mastra/pg'
@@ -147,7 +146,11 @@ function projectReader(deps: Deps) {
  */
 function construtorAgent(
   deps: Deps,
-  parts: { memory: Memory; turn: InputProcessor; scopeOf: ReturnType<typeof scopes> },
+  parts: {
+    memory: Memory
+    turns: ReturnType<typeof sessionTurns>
+    scopeOf: ReturnType<typeof scopes>
+  },
 ) {
   const { scopeOf } = parts
   const offeredOf = oncePerRun(async (requestContext) => {
@@ -203,7 +206,7 @@ function construtorAgent(
         ...construtorTools(construtor, scope),
       }
     },
-    ...agentDefaults(deps.queue, parts.turn),
+    ...agentDefaults(deps.queue, parts.turns),
     memory: parts.memory,
   })
 }
@@ -232,7 +235,7 @@ export function createConstrutor(deps: Deps) {
       return turn
     },
   })
-  const agent = construtorAgent(deps, { memory, turn: turns.processor, scopeOf })
+  const agent = construtorAgent(deps, { memory, turns, scopeOf })
   // Decision 0053: nothing waits to be approved; the tools only build a draft.
   const controller = controllerOf({
     ...{ kind: 'construtor', storage, memory, agent },

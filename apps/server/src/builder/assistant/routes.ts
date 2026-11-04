@@ -10,10 +10,12 @@ import type {
 import {
   ConversationId,
   createAssistantConversation,
+  deleteAssistantConversation,
   listAssistantConnections,
   listAssistantConversations,
   ProjectId as ProjectIdSchema,
   readAssistantConversation,
+  renameAssistantConversation,
   setAssistantConnections,
   setAssistantModel,
 } from '@conexus/hub-api'
@@ -27,7 +29,7 @@ import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import { answer, serve } from '../../platform/http.ts'
-import { attemptIdOf, resourceOf } from '../controller-kit/public.ts'
+import { attemptIdOf, releaseThreads, resourceOf } from '../controller-kit/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import { conversationModel, effortsOf } from '../model-accounts/public.ts'
 import type { ChosenConnections } from './chosen.ts'
@@ -244,6 +246,44 @@ async function switchModel(
   await session.model.switch(input.model, { thinkingLevel: input.effort })
 }
 
+/** What the person does to a conversation she has: Renomear and Apagar. */
+function registerChanges(app: FastifyInstance, deps: Deps): void {
+  serve(app, renameAssistantConversation, async (input) => {
+    const owner = ownerOf(input)
+    const { conversationId } = input.params
+    await admitted(deps, owner, { kind: 'COMPANY' })
+    const thread = await ownThread(deps, owner, conversationId)
+    const { title } = input.body
+    // `titlePinned`: the memory's own titling no longer replaces the one the person chose.
+    await deps.memory.updateThread({
+      id: conversationId,
+      title,
+      metadata: { ...thread.metadata, titlePinned: true },
+    })
+    deps.log.info(
+      { companyId: owner.companyId, traceId: input.traceId, conversationId },
+      'ASSISTANT_CONVERSATION_RENAMED',
+    )
+    return answer({ title })
+  })
+
+  serve(app, deleteAssistantConversation, async (input) => {
+    const owner = ownerOf(input)
+    const { conversationId } = input.params
+    await admitted(deps, owner, { kind: 'COMPANY' })
+    await ownThread(deps, owner, conversationId)
+    // The session first, so its answer stops; then its machines; the thread last, so a failure
+    // halfway leaves what the next delete finds again (data D17). The row of its choice stays until
+    // its Projeto, person or company leaves: the Hub holds no `DELETE` on it (data D11).
+    await releaseThreads(deps, [conversationId], (id) => deps.machines.kill(id))
+    deps.log.info(
+      { companyId: owner.companyId, traceId: input.traceId, conversationId },
+      'ASSISTANT_CONVERSATION_DELETED',
+    )
+    return answer(undefined)
+  })
+}
+
 /** The writes: a new conversation, its choice of connections and its model. */
 function registerWrites(app: FastifyInstance, deps: Deps): void {
   serve(app, createAssistantConversation, async (input) => {
@@ -305,6 +345,7 @@ function registerWrites(app: FastifyInstance, deps: Deps): void {
 export function registerAssistantRoutes(app: FastifyInstance, deps: Deps): void {
   registerReads(app, deps)
   registerWrites(app, deps)
+  registerChanges(app, deps)
   registerFile(app, {
     machines: deps.machines,
     log: deps.log,

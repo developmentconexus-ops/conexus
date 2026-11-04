@@ -256,7 +256,7 @@ export function post(
 export function call(
   hub: Hub,
   person: Person,
-  method: 'GET' | 'PUT' | 'DELETE',
+  method: 'GET' | 'PUT' | 'PATCH' | 'DELETE',
   url: string,
   body?: object,
 ) {

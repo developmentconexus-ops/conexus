@@ -289,7 +289,7 @@ function assistantAgent(
         skillOf({ directory: each.skill.name, ...each.skill }),
       ),
     ],
-    ...agentDefaults(queue, parts.turns.processor),
+    ...agentDefaults(queue, parts.turns),
     memory: parts.memory,
   })
 }
