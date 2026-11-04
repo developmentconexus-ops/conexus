@@ -4,7 +4,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { after, test } from 'node:test'
-import { ciRuns, ISSUE_TITLE, issueBody, overBudget } from './ci-budget.ts'
+import { ciRuns, issueBody, overBudget } from './ci-budget.ts'
 
 const SCRIPT = resolve(import.meta.dirname, 'ci-budget.ts')
 const BUDGETS = { check: 15, scripts: 15, server: 10, web: 15 }
@@ -268,22 +268,18 @@ test('na linha de comando, a conta diz quantos jobs estão acima e escreve sempr
     shardRun(1, 'success', 560),
   ])
   assert.equal(above.result.status, 0)
-  assert.equal(above.output, 'over=1\n')
+  assert.equal(above.output, 'over=1\ntitle=CI acima do orçamento\n')
   assert.match(above.body, /`server`/)
   const below = runScript([
     shardRun(3, 'success', 560),
     shardRun(2, 'success', 200),
     shardRun(1, 'success', 560),
   ])
-  assert.equal(below.output, 'over=0\n')
+  assert.equal(below.output, 'over=0\ntitle=CI acima do orçamento\n')
   assert.match(below.body, /\| server \| 10 min \| 93% \| 33% \| 93% \|/)
 })
 
 test('o run cancelado pela concorrência aparece na tabela e não conta', () => {
   const runs = runsOf([shardRun(3, 'success', 560), shardRun(2, 'cancelled', 90)])
   assert.match(issueBody([], runs, BUDGETS), /\| server \| 10 min \| 93% \| – \|/)
-})
-
-test('o título do issue é o que o fluxo procura', () => {
-  assert.equal(ISSUE_TITLE, 'CI acima do orçamento')
 })

@@ -7,7 +7,7 @@ import { join } from 'node:path'
 import { z } from 'zod'
 import { option } from './cli.ts'
 
-export const ISSUE_TITLE = 'CI acima do orçamento'
+const ISSUE_TITLE = 'CI acima do orçamento'
 const OVER_PERCENT = 85
 const STREAK = 3
 const IGNORED_JOB = 'ci'
@@ -55,7 +55,11 @@ function budgetOf(job: string, budgets: Budgets): { key: string; minutes: number
   return minutes === undefined ? undefined : { key, minutes }
 }
 
-/** The share of its budget a job used; a job the timeout cut counts as the whole of it. */
+/**
+ * The share of its budget a job used; a job the timeout cut counts as the whole of it. The API
+ * reports that cut as `cancelled` with a duration at or over the limit, not as `timed_out`, so the
+ * comparison of minutes is what catches it.
+ */
 function percentOf(job: JobRun, budget: number): number {
   if (job.conclusion === 'timed_out' || job.minutes >= budget) return 100
   return (job.minutes / budget) * 100
@@ -162,7 +166,8 @@ function main() {
   const over = overBudget(runs, budgets)
   const body = issueBody(over, runs, budgets)
   writeFileSync(bodyFile, body)
-  if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, `over=${over.length}\n`)
+  if (process.env.GITHUB_OUTPUT)
+    appendFileSync(process.env.GITHUB_OUTPUT, `over=${over.length}\ntitle=${ISSUE_TITLE}\n`)
   if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, body)
   console.log(body)
 }

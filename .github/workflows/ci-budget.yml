@@ -26,7 +26,6 @@ jobs:
       issues: write
     env:
       GH_TOKEN: ${{ github.token }}
-      TITLE: CI acima do orçamento
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -49,9 +48,10 @@ jobs:
       - name: The issue
         env:
           OVER: ${{ steps.rule.outputs.over }}
+          TITLE: ${{ steps.rule.outputs.title }}
         run: |
-          # shellcheck disable=SC2016 # the jq program is single-quoted so the shell leaves its $variables alone
-          open=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --limit 200 --json number,title | jq -r --arg title "$TITLE" '.[] | select(.title == $title) | .number' | head -n 1)
+          # Paginated, so an issue open for months is still found; sed reads to the end, head would cut gh off.
+          open=$(gh api --paginate "repos/$GITHUB_REPOSITORY/issues?state=open&per_page=100" --jq '.[] | select(.pull_request == null and .title == env.TITLE) | .number' | sed -n 1p)
           if [ -n "$open" ]; then
             gh issue edit "$open" --repo "$GITHUB_REPOSITORY" --body-file "$RUNNER_TEMP/body.md"
           elif [ "$OVER" != "0" ]; then
