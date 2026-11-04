@@ -58,7 +58,7 @@ function drained(response: ServerResponse): Promise<void> {
  * Mastra's stream as the response can take it. Mastra's handler pushes every event into its stream
  * as it happens, and its adapter writes each one without waiting for `drain`, so a page that reads
  * slower than a turn talks keeps the rest in the Hub's heap (`@mastra/server@1.82.0`
- * `handlers/agent-controller.js:531-631`, `@mastra/fastify@1.5.23` `dist/index.js:162-180`). Here
+ * `handlers/agent-controller.js:570-650`, `@mastra/fastify@1.5.26` `dist/index.js:160-182`). Here
  * every event is read at once and slimmed, so Mastra's copy of the whole display state is let go,
  * and the adapter gets the next one only once the response drained. Past `STREAM_BEHIND_BYTES` not
  * yet written, the response is destroyed: Mastra's client opens the stream again.
