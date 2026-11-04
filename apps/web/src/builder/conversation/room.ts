@@ -9,6 +9,7 @@ import type { ReactNode } from 'react'
 import { createContext, useContext } from 'react'
 import { ASSISTANT_OVERRIDES } from './assistant-specs.ts'
 import { PLAIN_WORDS } from './connector-specs.ts'
+import type { BuilderSession } from './session.ts'
 import { START_NO_ACCOUNT } from './text.ts'
 import type { ConnectorWords, RowTool, ToolSpec } from './tool-spec.ts'
 
@@ -78,4 +79,15 @@ export const SayProvider = SayContext.Provider
 
 export function useSay(): (words: string) => Promise<boolean> {
   return useContext(SayContext)
+}
+
+/** Where a card's answer goes: the session of the conversation the card is drawn in. */
+const AnswerContext = createContext<BuilderSession['answer'] | null>(null)
+
+export const AnswerProvider = AnswerContext.Provider
+
+export function useAnswerTo(): BuilderSession['answer'] {
+  const answer = useContext(AnswerContext)
+  if (answer === null) throw new Error('a card drawn outside a conversation')
+  return answer
 }

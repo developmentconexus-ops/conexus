@@ -13,7 +13,7 @@ import { useState } from 'react'
 import { sentenceOf } from '../../platform/hub.ts'
 import { Button } from '../../ui/button.tsx'
 import { cn } from '../../ui/cn.ts'
-import { DialogFooter } from '../../ui/dialog.tsx'
+import { DialogBody, DialogFooter } from '../../ui/dialog.tsx'
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { ReadFailure } from '../../ui/states.tsx'
 import { Switch } from '../../ui/switch.tsx'
@@ -235,43 +235,47 @@ export function Chooser(props: Part & { saving: Saving; onClose: () => void }) {
   }
   const at = { query, catalog, agent }
   return (
-    <div className="flex flex-col gap-md">
-      {read.isPending && <Skeleton className="h-16 w-full" />}
-      {library.length + readies.length + 1 >= SEARCH_FROM && (
-        <Search label="Buscar ferramenta" value={query} onChange={setQuery} />
-      )}
-      <ReadyGroups
-        {...at}
-        readies={shown.readies}
-        chosen={ready}
-        onToggle={(key) => setReady((now) => toggled(now, key))}
-      />
-      <LibraryGroup
-        {...at}
-        tools={shown.tools}
-        picked={picked}
-        onToggle={(id) => setPicked((now) => toggled(now, id))}
-      />
-      {shown.web && (
-        <Group title={CONEXUS_TOOLS}>
-          <ChoiceRow
-            id="tool-web"
-            leading={<GlobeIcon aria-hidden="true" className="size-5 shrink-0" />}
-            title={WEB_TOOL}
-            checked={web}
-            onChange={() => setWeb((now) => !now)}
-          />
-        </Group>
-      )}
-      {read.data !== undefined && !shown.web && shown.tools.length + shown.readies.length === 0 && (
-        <p className="px-sm text-text-2">{NO_TOOL_MATCH}</p>
-      )}
-      {props.saving.error !== undefined && (
-        <p role="alert" className="text-danger">
-          {props.saving.error}
-        </p>
-      )}
+    <div className="flex min-h-0 flex-1 flex-col gap-md">
+      <DialogBody className="flex flex-col gap-md">
+        {read.isPending && <Skeleton className="h-16 w-full" />}
+        {library.length + readies.length + 1 >= SEARCH_FROM && (
+          <Search label="Buscar ferramenta" value={query} onChange={setQuery} />
+        )}
+        <ReadyGroups
+          {...at}
+          readies={shown.readies}
+          chosen={ready}
+          onToggle={(key) => setReady((now) => toggled(now, key))}
+        />
+        <LibraryGroup
+          {...at}
+          tools={shown.tools}
+          picked={picked}
+          onToggle={(id) => setPicked((now) => toggled(now, id))}
+        />
+        {shown.web && (
+          <Group title={CONEXUS_TOOLS}>
+            <ChoiceRow
+              id="tool-web"
+              leading={<GlobeIcon aria-hidden="true" className="size-5 shrink-0" />}
+              title={WEB_TOOL}
+              checked={web}
+              onChange={() => setWeb((now) => !now)}
+            />
+          </Group>
+        )}
+        {read.data !== undefined &&
+          !shown.web &&
+          shown.tools.length + shown.readies.length === 0 && (
+            <p className="px-sm text-text-2">{NO_TOOL_MATCH}</p>
+          )}
+      </DialogBody>
       <DialogFooter>
+        {props.saving.error !== undefined && (
+          <p role="alert" className="text-danger">
+            {props.saving.error}
+          </p>
+        )}
         <Button
           variant="primary"
           disabled={read.data === undefined || props.saving.pending}
