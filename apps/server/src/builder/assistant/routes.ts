@@ -40,12 +40,12 @@ import type { AssistantMachines } from './machine.ts'
 import type { assistantMemory } from './memory.ts'
 import { admitted, automationOf, marksOf, offeredOnly, openConversation, placeOf } from './open.ts'
 import type { AssistantProjects } from './ports.ts'
+import { listedPage } from './search.ts'
 
 /**
  * A page of the person's conversations (code C44): a page number the token carries, never
  * authority.
  */
-const PER_PAGE = 30
 const PageNumber = z.coerce.number().int().min(1).max(100_000)
 
 type Deps = {
@@ -172,18 +172,10 @@ function projectShown(mark: ProjectId | null, names: ReadonlyMap<ProjectId, stri
 function registerReads(app: FastifyInstance, deps: Deps): void {
   serve(app, listAssistantConversations, async (input) => {
     const owner = ownerOf(input)
-    const { projectId, page: token } = input.query
+    const { projectId, page: token, q, place } = input.query
     await admitted(deps, owner, placeOf(projectId))
     const page = pageOf(token)
-    const listed = await deps.memory.listThreads({
-      filter: {
-        resourceId: resourceOf('assistant', owner),
-        ...(projectId === undefined ? {} : { metadata: { [SESSION_MARK.project]: projectId } }),
-      },
-      page,
-      perPage: PER_PAGE,
-      orderBy: { field: 'updatedAt', direction: 'DESC' },
-    })
+    const listed = await listedPage(deps.memory, { owner, projectId, page, q, place })
     const marks = listed.threads.map((thread) =>
       ProjectIdSchema.nullable().parse(thread.metadata?.[SESSION_MARK.project] ?? null),
     )

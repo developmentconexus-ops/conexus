@@ -93,6 +93,21 @@ export const DELETE_TEXT =
 export const DELETE_CONFIRM = 'Apagar conversa'
 export const CANCEL = 'Cancelar'
 export const UNCONFIRMED_WRITE = 'Não confirmamos. Veja a lista.'
+
+export const SEARCH_CONVERSATIONS = 'Buscar conversa'
+export const SEARCH_LABEL = 'Buscar pelo título'
+export const FILTER_CONVERSATIONS = 'Filtrar conversas'
+export const NO_CONVERSATION_FOUND = 'Nenhuma conversa com esse nome.'
+export const NO_PROJECT_CONVERSATION = 'Nenhuma conversa neste Projeto ainda.'
+export const ALL_PLACES = 'Todas'
+export const HOME_PLACE = 'Início'
+export const AUTOMATIONS_PLACE = 'Automações'
+export const WITHOUT_PROJECT = 'Sem Projeto'
+export const SEE_ALL = 'Ver todas'
+export const RECENT_TAB = 'Recentes'
+export const PROJECTS_TAB = 'Projetos'
+export const CLEAR_FILTER = 'Tirar o filtro'
+
 /** The words of the card of an app the Assistant proposed (step 24.3.2, U3); the founder approves them at the step's end. */
 export const CREATE_APP = 'Criar app'
 export const SEND_TO_BUILDER = 'Mandar ao Builder'

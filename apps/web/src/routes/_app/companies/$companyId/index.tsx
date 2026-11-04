@@ -36,7 +36,12 @@ function HomePage() {
 export const Route = createFileRoute('/_app/companies/$companyId/')({
   staticData: { place: 'Início' },
   validateSearch: z
-    .object({ conversations: listAssistantConversations.input.query.shape.page })
+    .object({
+      conversations: listAssistantConversations.input.query.shape.page,
+      q: z.string().optional(),
+      place: z.string().optional(),
+      tab: z.literal('projects').optional(),
+    })
     .catch({}),
   loader: ({ context, params }) => readStart(context.queryClient, params.companyId),
   component: HomePage,
