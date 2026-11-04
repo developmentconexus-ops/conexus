@@ -23,7 +23,6 @@ import {
   title,
 } from '../conversation/test-conversation.ts'
 import { sessionStateOf } from '../conversation/test-questions.ts'
-import { CONSTRUTOR_MARK } from './open.ts'
 import { kept, opened } from './test-construtor.ts'
 
 type Listed = { conversations: { id: string }[] }
@@ -185,7 +184,7 @@ test('o modelo: depois de um reinício a troca recupera a sessão com as marcas 
   const id = url.slice(url.lastIndexOf('/') + 1)
   const session = await restarted.mastra.getAgentController('construtor')?.getSession(id)
   assert.ok(session)
-  assert.equal(session.getTags()[CONSTRUTOR_MARK.project], on.projectId)
+  assert.equal(session.getTags().conexusConstrutorProject, on.projectId)
 })
 
 test('o modelo: sem conta, desconhecido ou com esforço que o modelo não tem, recusa e nada muda; de outra pessoa ou inexistente, CONVERSATION_NOT_FOUND; o membro, NOT_FOUND', async (t) => {
