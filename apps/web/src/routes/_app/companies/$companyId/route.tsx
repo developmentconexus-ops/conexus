@@ -1,6 +1,6 @@
 import type { CompanyId } from '@conexus/hub-api'
 import { createFileRoute, Outlet, useMatches, useParams } from '@tanstack/react-router'
-import { FolderIcon, HouseIcon, PlugIcon, SettingsIcon, TimerIcon } from 'lucide-react'
+import { BotIcon, FolderIcon, HouseIcon, PlugIcon, SettingsIcon, TimerIcon } from 'lucide-react'
 import { useEffect } from 'react'
 import { NewConversation, SidebarConversations } from '../../../../builder/assistant/public.ts'
 import {
@@ -67,6 +67,14 @@ function RailPlaces(props: { companyId: CompanyId; role: string }) {
           params={params}
           icon={TimerIcon}
           label="Automações"
+        />
+      )}
+      {props.role !== 'member' && (
+        <SidebarRailButton
+          to="/companies/$companyId/agents"
+          params={params}
+          icon={BotIcon}
+          label="Agentes"
         />
       )}
     </>

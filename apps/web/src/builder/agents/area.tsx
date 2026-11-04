@@ -1,7 +1,6 @@
-import type { AgentListed, CompanyId, ProjectId } from '@conexus/hub-api'
+import type { CompanyId, ProjectId } from '@conexus/hub-api'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { getRouteApi, Link, useNavigate } from '@tanstack/react-router'
-import { BotIcon } from 'lucide-react'
 import { useState } from 'react'
 import { useAttemptKey } from '../../platform/attempt-key.ts'
 import { HubFailure, sentenceOf, writeFailureText } from '../../platform/hub.ts'
@@ -9,7 +8,6 @@ import { Block, BlockSentence, blockRow } from '../../ui/block.tsx'
 import { cn } from '../../ui/cn.ts'
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { ReadFailure } from '../../ui/states.tsx'
-import { useIsMobile } from '../../ui/use-mobile.ts'
 import { FixedProjectChip } from '../assistant/public.ts'
 import {
   agentRoom,
@@ -18,21 +16,19 @@ import {
   StartBox,
   StartWithoutAccount,
   stashHandoffFiles,
-  toolsText,
   useDraft,
   usePicked,
 } from '../conversation/public.ts'
+import { AgentList } from './agent-list.tsx'
 import { AreaFrame } from './area-frame.tsx'
-import { agentsQuery, construtorConversationsQuery, sendConstrutorConversation } from './queries.ts'
-import { ConversationLine, StateStamp } from './rows.tsx'
+import { construtorConversationsQuery, sendConstrutorConversation } from './queries.ts'
+import { ConversationLine } from './rows.tsx'
 import {
-  AREA_TITLE,
   CONSTRUTOR_EXAMPLES,
   CONSTRUTOR_FIRST,
   CONSTRUTOR_NAME,
   CONSTRUTOR_PLACEHOLDER,
   MEMBERS_CANNOT,
-  NO_AGENTS,
   NO_CONSTRUTOR_CONVERSATIONS,
   UNCONFIRMED_CREATION,
 } from './text.ts'
@@ -128,53 +124,6 @@ function Earlier(scope: Scope) {
   )
 }
 
-function AgentRow({ scope, agent }: { scope: Scope; agent: AgentListed }) {
-  return (
-    <li>
-      <Link
-        to="/companies/$companyId/projects/$projectId/agents/$agentId"
-        params={{ ...scope, agentId: agent.id }}
-        className={`${blockRow} hover:bg-surface-3`}
-      >
-        <BotIcon aria-hidden="true" className="size-4 shrink-0 text-text-2" />
-        <span className="max-w-[45%] shrink-0 truncate">{agent.name}</span>
-        <span className="hidden min-w-0 flex-1 truncate text-text-2 sm:inline">
-          {agent.description}
-        </span>
-        <span className="ml-auto shrink-0 text-fact text-text-2">{toolsText(agent.tools)}</span>
-        <StateStamp state={agent.state} />
-      </Link>
-    </li>
-  )
-}
-
-function AgentList(scope: Scope) {
-  const read = useQuery(agentsQuery(scope))
-  const phone = useIsMobile()
-  const rows = (
-    <>
-      {read.isPending && <Skeleton className="h-20 w-full" />}
-      {read.isError && (
-        <ReadFailure text={sentenceOf(read.error)} onRetry={() => void read.refetch()} />
-      )}
-      {read.data?.agents.length === 0 && <BlockSentence>{NO_AGENTS}</BlockSentence>}
-      <ul>
-        {read.data?.agents.map((agent) => (
-          <AgentRow key={agent.id} scope={scope} agent={agent} />
-        ))}
-      </ul>
-    </>
-  )
-  // On a phone the page's own title sits right above, so the block does not say it a second time.
-  return phone ? (
-    <section aria-label={AREA_TITLE} className="flex min-w-0 flex-col">
-      {rows}
-    </section>
-  ) : (
-    <Block title={AREA_TITLE}>{rows}</Block>
-  )
-}
-
 /**
  * **Agentes** of a Projeto (step 24.3, U5, criterion 26, the founder's 2A and the prototype's one
  * column): the box that begins a conversation with the Construtor, the Projeto's agents with what
@@ -189,7 +138,7 @@ export function AgentsArea(props: Scope) {
     <AreaFrame scope={scope} tab="agentes">
       <div className={cn(START_COLUMN, 'gap-lg')}>
         <Ask {...scope} />
-        <AgentList {...scope} />
+        <AgentList companyId={scope.companyId} projectId={scope.projectId} />
         <Earlier {...scope} />
       </div>
     </AreaFrame>

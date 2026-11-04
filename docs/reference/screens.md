@@ -17,6 +17,7 @@ L24](../guides/delivery.md)): it grows by one line per screen.
 | Início of a company: the box to the Builder for a member; for the owner and the administrators the box to the Assistant, its bar of connections and the recent conversations | `/companies/<c>` | Empresa | owner, administrator, member |
 | A conversation with the Assistant born on Início, with the file it shows beside the chat | `/companies/<c>/conversations/<id>` | Empresa | owner, administrator |
 | Todos os projetos | `/companies/<c>/projects` | Empresa | owner, administrator, member |
+| Agentes of the Início: every agent of the company's live Projetos, view only, each with its Projeto, version and state, and when it last ran; filtered by Projeto in the address; the name opens the agent in its Projeto; Novo agente asks the Projeto and opens its Agentes area | `/companies/<c>/agents?projectId=<p>` | Empresa | owner, administrator |
 | Automações of the Início: the person's own, with state, next time and actions | `/companies/<c>/automations` | Empresa | owner, administrator |
 | The history of one automation of the Início, with its runs | `/companies/<c>/automations/<id>` | Empresa | owner, administrator |
 | Integrações: the connectors the company can link and its connections, grouped by connector, with the window to link | `/companies/<c>/integrations` | Empresa | owner, administrator, member (reads) |

@@ -4,6 +4,7 @@ import type {
   AgentState,
   AgentSummary,
   AgentVersionSummary,
+  CompanyId,
   OfProject,
   ToolId,
 } from '@conexus/hub-api'
@@ -15,8 +16,9 @@ import {
   ToolId as ToolIdSchema,
   ToolVersionId,
 } from '@conexus/hub-api'
-import { and, asc, count, desc, eq, inArray, sql } from 'drizzle-orm'
+import { and, asc, count, desc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import { personNameColumn } from '../../hub/identity/public.ts'
+import { project } from '../../hub/projects/public.ts'
 import type { ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { InProject, OfferedConnection, UsedBy } from '../tools/public.ts'
@@ -66,6 +68,17 @@ export function agentsIn(tx: ReadTx, ids: OfProject) {
     .orderBy(asc(agent.createdAt), asc(agent.id))
 }
 
+/** The agents of every live Projeto of the company: none of a Projeto being deleted. */
+export function agentsOfCompany(tx: ReadTx, companyId: CompanyId) {
+  return withActive(tx)
+    .innerJoin(
+      project,
+      and(eq(project.companyId, agent.companyId), eq(project.id, agent.projectId)),
+    )
+    .where(and(eq(agent.companyId, companyId), isNull(project.deletingSince)))
+    .orderBy(asc(agent.createdAt), asc(agent.id))
+}
+
 function stateOf(row: AgentRow, activeRevision: number | null): AgentState {
   if (row.activeVersion === null) return { kind: 'DRAFT' }
   return {
@@ -84,6 +97,7 @@ function summaryOf({ row, activeRevision }: Listed): AgentSummary {
     description: draft.description,
     state: stateOf(row, activeRevision),
     updatedAt: row.updatedAt.toISOString(),
+    lastRunAt: row.lastRunAt?.toISOString() ?? null,
   }
 }
 

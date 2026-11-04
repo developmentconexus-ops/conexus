@@ -1,5 +1,5 @@
 import type { AgentDetail, ProblemField, ProblemReason } from '@conexus/hub-api'
-import { dayAndHour } from '../../platform/dates.ts'
+import { ageOf, dayAndHour } from '../../platform/dates.ts'
 
 /** The words of the Agentes screens (step 24.3, U5); the founder approves them at the step's end. */
 export const AREA_TITLE = 'Agentes'
@@ -15,6 +15,18 @@ export const CONSTRUTOR_EXAMPLES = [
   },
 ] as const
 export const NO_AGENTS = 'Nenhum agente ainda.'
+export const NO_AGENTS_COMPANY = 'Nenhum agente ainda. Os agentes nascem num Projeto.'
+export const NO_AGENTS_IN_PROJECT = 'Nenhum agente neste Projeto.'
+export const NEW_AGENT = 'Novo agente'
+export const NEW_AGENT_WHERE = 'Em qual Projeto?'
+export const NO_PROJECTS_FOR_AGENT = 'Crie um Projeto primeiro: os agentes nascem num Projeto.'
+export const FILTER_PROJECT = 'Projeto'
+export const ALL_PROJECTS = 'Todos os Projetos'
+
+/** The last published turn of an agent, at a row's second line. */
+export function lastRunText(lastRunAt: string | null, now: Date): string {
+  return lastRunAt === null ? 'Nunca rodou' : `Última execução: ${ageOf(lastRunAt, now)}`
+}
 export const NO_CONSTRUTOR_CONVERSATIONS = 'Nenhuma conversa com o Construtor ainda.'
 export const MEMBERS_CANNOT = 'Só o dono e os administradores usam os agentes do Projeto.'
 export const UNCONFIRMED_CREATION = 'Não confirmamos a criação da conversa. Tente de novo.'
