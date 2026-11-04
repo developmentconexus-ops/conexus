@@ -9,12 +9,12 @@ import { HttpResponse, http } from 'msw'
 import type { setupServer } from 'msw/node'
 import { COMPANY } from '../../platform/fixtures.ts'
 import { PEDIDOS } from '../../platform/test-hub.tsx'
-import type { Answers as BuilderAnswers } from '../conversation/test-hub.tsx'
-import { conversationOf } from '../conversation/test-hub.tsx'
+import type { BuilderAnswers } from './test-hub.tsx'
 import {
   ASKED,
   assistantConversation,
   assistantScreens,
+  builderConversation,
   COMPANY_ROOT,
   OFFERED,
   SALES,
@@ -75,7 +75,7 @@ export function proposalScreens(server: ReturnType<typeof setupServer>) {
     ) {
       return at(path, {
         conversations: [assistantConversation({ messages, projectId, connections })],
-        builder: [conversationOf({ id: BUILDER_CONVERSATION })],
+        builder: [builderConversation({ id: BUILDER_CONVERSATION })],
         builderAnswers,
       })
     },

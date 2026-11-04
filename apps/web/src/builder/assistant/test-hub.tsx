@@ -20,6 +20,10 @@ import type {
   Opened as BuilderConversation,
 } from '../conversation/test-hub.tsx'
 import { say, screens, view } from '../conversation/test-hub.tsx'
+
+export { conversationOf as builderConversation } from '../conversation/test-hub.tsx'
+export type { BuilderAnswers }
+
 import { START } from '../conversation/test-start.tsx'
 import { displayOf, newest, openLine } from '../conversation/test-stream.tsx'
 import { changesOf } from './test-changes.tsx'
