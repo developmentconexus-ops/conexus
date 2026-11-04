@@ -98,6 +98,7 @@ const agentReplies = {
       ...DRAFT,
       state: { kind: 'DRAFT' as const },
       updatedAt: '2026-11-02T12:00:00.000Z',
+      lastRunAt: null,
       draft: DRAFT,
       revision: 1,
       tools: [],
