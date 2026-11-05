@@ -1,9 +1,7 @@
 import { z } from 'zod'
-import { CompanyId, LIBRARY_ID, Next, Page } from './companies.ts'
+import { CompanyId, Next, Page } from './companies.ts'
+import { ProjectId } from './library-ids.ts'
 import { defineOperation } from './operation.ts'
-
-export const ProjectId = z.string().regex(LIBRARY_ID).brand('ProjectId')
-export type ProjectId = z.infer<typeof ProjectId>
 
 /** The longest Project name, in characters, the same as a company's. */
 export const PROJECT_NAME_MAX_LENGTH = 100

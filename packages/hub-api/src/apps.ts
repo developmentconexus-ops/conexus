@@ -2,10 +2,10 @@ import type { Caller } from '@conexus/app-contract'
 import { CallerAccess } from '@conexus/app-contract'
 import { z } from 'zod'
 import { HostLabel } from './address.ts'
-import { CompanyId, LIBRARY_ID } from './companies.ts'
+import { CompanyId } from './companies.ts'
 import { PersonId } from './identity.ts'
+import { LIBRARY_ID, ProjectId } from './library-ids.ts'
 import { defineOperation } from './operation.ts'
-import { ProjectId } from './projects.ts'
 
 /** A one-use secret of the app's door, 32 random bytes in base64url: a pass, a binding, a session. */
 const DoorSecret = z.string().regex(/^[A-Za-z0-9_-]{43}$/)

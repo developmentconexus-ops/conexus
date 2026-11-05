@@ -17,7 +17,7 @@ const COLUMNS = [
   { name: 'Efeito', leavesOnPhone: true, width: 'lg:w-28' },
   { name: 'Usada por', leavesOnPhone: true, width: 'lg:w-64' },
   { name: 'Versão', leavesOnPhone: true, width: 'lg:w-20' },
-  { name: 'Ações', leavesOnPhone: true, width: 'lg:w-28' },
+  { name: 'Ações', leavesOnPhone: true, width: 'lg:w-52' },
 ]
 
 /**

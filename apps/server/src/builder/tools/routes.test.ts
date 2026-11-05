@@ -181,7 +181,9 @@ test('apagar: sem uso, 204; usada por um rascunho ou por uma versão publicada, 
   })
   const used = await call(on.hub, on.ana, 'DELETE', `${on.tools}/${tool.id}`)
   assert.deepEqual([used.statusCode, codeOf(used)], [409, 'TOOL_IN_USE'])
-  assert.deepEqual(Object(used.json()).agents, [{ id: made.id, name: 'Vendas do dia' }])
+  assert.deepEqual(Object(used.json()).agents, [
+    { id: made.id, projectId: on.projectId, name: 'Vendas do dia' },
+  ])
   const published = await post(on.hub, on.ana, `${on.agents}/${made.id}/publish`, {
     revision: chosen.revision,
     message: '',
@@ -191,7 +193,7 @@ test('apagar: sem uso, 204; usada por um rascunho ou por uma versão publicada, 
   const pinned = await call(on.hub, on.ana, 'DELETE', `${on.tools}/${tool.id}`)
   assert.deepEqual([pinned.statusCode, codeOf(pinned)], [409, 'TOOL_IN_USE'])
   const still = toolOf(await call(on.hub, on.ana, 'GET', `${on.tools}/${tool.id}`))
-  assert.deepEqual(still.usedBy, [{ id: made.id, name: 'Vendas do dia' }])
+  assert.deepEqual(still.usedBy, [{ id: made.id, projectId: on.projectId, name: 'Vendas do dia' }])
 
   const elsewhere = await plantCompany(on.hub.test, on.ana.id, 'Outra Empresa')
   const foreign = await plantedTool(on.hub, elsewhere, on.matriz)
@@ -208,4 +210,30 @@ test('apagar: sem uso, 204; usada por um rascunho ou por uma versão publicada, 
       asked.map(() => [404, 'TOOL_NOT_FOUND']),
     )
   }
+})
+
+test('apagar: o agente de outro Projeto que usa a ferramenta vem com o Projeto dele, na lista e na recusa', async (t) => {
+  const on = await agentsOn(t)
+  const estoque = await otherProject(on.hub, on.ana, on.company, [on.matriz], 'Estoque')
+  const tool = await madeTool(
+    on.hub,
+    on.ana,
+    estoque.tools,
+    ordersOf(on.matriz, { slug: 'pedidos_estoque' }),
+  )
+  const made = await madeAgent(on.hub, on.ana, estoque.agents, 'Conferente de estoque')
+  await drafted(on.hub, on.ana, estoque.agents, made, {
+    instructions: 'Os pedidos do estoque.',
+    tools: [tool.latest.id],
+  })
+  const users = [{ id: made.id, projectId: estoque.projectId, name: 'Conferente de estoque' }]
+
+  const library = listOf(await call(on.hub, on.ana, 'GET', on.tools))
+  assert.deepEqual(
+    library.tools.map((each) => [each.slug, each.usedBy]),
+    [['pedidos_estoque', users]],
+  )
+  const refused = await call(on.hub, on.ana, 'DELETE', `${on.tools}/${tool.id}`)
+  assert.deepEqual([refused.statusCode, codeOf(refused)], [409, 'TOOL_IN_USE'])
+  assert.deepEqual(Object(refused.json()).agents, users)
 })
