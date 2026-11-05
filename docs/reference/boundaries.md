@@ -944,7 +944,7 @@ rows for the five above wait on issue #458.
 ## The Builder's clocks and its eval gate (step 13)
 
 - **Clocks.** `setTimeout` and `setInterval` are refused in `apps/server/src/builder/` except in the
-  owners `runs/{deadline,lease,copy-retry}.ts`, and `node:timers` and
+  owner `runs/copy-retry.ts`, and `node:timers` and
   `node:timers/promises` are refused except in `conversation/turn-log.ts`, which waits 250 ms for
   short text (decision 0051; `biome.json`). Three step 11 files keep their timers out of the rule, with the reason that they
   were written before it: `model-accounts/google/{calls,google}.ts` and `claude/store.ts`. A change

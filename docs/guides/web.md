@@ -132,11 +132,11 @@ tudo". The lines of [screens](../reference/screens.md) say which screen is on wh
   with its conversations with the Assistant); Configurações
   (`/companies/<e>/settings/<section>`); Central (`/operations/…`). A person who only uses an app
   sees only "Seus apps" at `/` and never enters them. [review]
-- **W30.** The frame **should** be an icon rail (Início, Projetos, Integrações, then Automações for
-  an owner or an administrator, and Configurações, the bell and the account at the foot) with the
-  place's list beside it. In the company the list is Nova conversa and Conversas
-  by day (a member sees the recent Projetos instead). Inside a Projeto the rail stays and the list
-  is the Projeto's: its name with the switcher, Construir, Conversas (with the Assistant, step
+- **W30.** The frame **should** be an icon rail (Início, Projetos, Integrações, then Automações and
+  Agentes (founder, 2026-11-02, `V1`) for an owner or an administrator, and Configurações, the
+  bell and the account at the foot) with the place's list beside it. In the company the list is
+  Nova conversa and Conversas by day (a member sees the recent Projetos instead). Inside a Projeto
+  the rail stays and the list is the Projeto's: its name with the switcher, Construir, Conversas (with the Assistant, step
   24.1), Sobre, Quem usa o app and Integrações (founder, 2026-10-30, R2). The account menu holds the
   name, theme, Central for whoever operates it, and Sair. On a phone the rail and the list go
   together into a drawer opened from the top button (design V56). A person with two companies
