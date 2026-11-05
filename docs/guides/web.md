@@ -154,7 +154,8 @@ tudo". The lines of [screens](../reference/screens.md) say which screen is on wh
   headed by its name (Geral, Pessoas e convites, Padrões da empresa, Memória observacional); founder,
   2026-10-20: "1. A"; 2026-10-27: "Opcao C", "1. Sim 2. Antes", "Aprovado". Integrações is not
   there: it is a company sidebar entry between Projetos and Configurações (founder, 2026-10-28, on
-  the connectors study: "O1"). Owner and administrator change the company's group; a developer or a member reads Pessoas (step 24.3.4, founder, 2026-11-04: "2. Aprovo").
+  the connectors study: "O1"). Owner and administrator change the company's group; a developer or a member
+  reads Pessoas (step 24.3.4, founder, 2026-11-04: "2. Aprovo").
   Atividade and Uso have their place reserved there and appear only when a card asks for them. [review]
 - **W33.** An owner's first entry **should** be four steps with progress, "Voltar" and "Sair":
   Sua empresa, Ligue uma conta de modelo, Convide sua equipe, O que vamos construir primeiro? Steps
@@ -168,7 +169,8 @@ tudo". The lines of [screens](../reference/screens.md) say which screen is on wh
   and says who can (design V29), and never hides it. The exceptions: the Automações and Agentes
   entries are hidden from the member and their addresses answer not found (S10), because the member
   never creates them (founder, 2026-11-01: "1 A"; 2026-11-02: "3.A"); the developer creates both and
-  sees them (step 24.3.4, founder, 2026-11-04: "2. Aprovo"). Failure: a screen that hides what a person may not do
+  sees them (step 24.3.4, founder, 2026-11-04: "2. Aprovo"). Failure: a screen that hides what a person
+  may not do
   leaves them guessing. [review]
 - **W35.** The Hub added to the iPhone home screen (iOS 26.1 or newer) draws a blurred band under
   the status bar: WebKit bug 301994, with no fix in the page. The page **must not** carry a
