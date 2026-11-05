@@ -35,7 +35,7 @@ import {
   testAppsConfig,
 } from './test-cloudflare.ts'
 import { grantCloned, hubTemplate, withDatabase } from './test-database-template.ts'
-import { mastraUrlOf } from './test-mastra-database.ts'
+import { mastraUrlOf, TEST_POOL_TIMINGS } from './test-mastra-database.ts'
 import type { ModelLists } from './test-model-lists.ts'
 import { plantModelLists } from './test-model-lists.ts'
 import { NO_NEON_SERVER, TEST_NEON_ORG, testNeon } from './test-neon.ts'
@@ -185,8 +185,8 @@ export async function createTestDatabase(t: Lifetime, locale?: 'C'): Promise<Tes
     ? `template template0 encoding 'UTF8' lc_collate '${locale}' lc_ctype '${locale}'`
     : `template ${await withRoleLock(() => hubTemplate(admin, serverUrl, runtimePassword))}`
   await admin.query(`create database ${name} ${source}`)
-  const database = openDatabase({ url: runtimeUrl, log: silent })
-  const mastraPool = openMastraPool({ url: mastraUrl, log: silent })
+  const database = openDatabase({ url: runtimeUrl, log: silent, timings: TEST_POOL_TIMINGS })
+  const mastraPool = openMastraPool({ url: mastraUrl, log: silent, timings: TEST_POOL_TIMINGS })
   t.after(async () => {
     try {
       await Promise.all([database.close(), mastraPool.end()])

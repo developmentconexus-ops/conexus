@@ -95,13 +95,19 @@ export async function removeWorkers(
   return { removed, left: versionIds.length - removed.length }
 }
 
-export type PruneDeps = { database: Database; cloudflare: CloudflareApps; log: FailureLog }
+export type PruneDeps = {
+  database: Database
+  cloudflare: CloudflareApps
+  log: FailureLog
+  /** Only a test passes it; `PRUNE_BUDGET_MS` otherwise. */
+  pruneBudgetMs?: number
+}
 
 /**
  * How long a send's answer waits for its prune's Cloudflare calls, inside the screen's deadline
  * (code C57); what it leaves is pruned by the next send.
  */
-export const PRUNE_BUDGET_MS = 10_000
+const PRUNE_BUDGET_MS = 10_000
 
 /**
  * The prune the send marked, with no transaction open for Cloudflare (data D22): each version's
@@ -118,7 +124,7 @@ export async function prune(deps: PruneDeps, input: Ids & { scope: Scope }): Pro
   const { removed, left } = await removeWorkers(
     deps.cloudflare,
     marked.map(({ id }) => VersionId.parse(id)),
-    AbortSignal.timeout(PRUNE_BUDGET_MS),
+    AbortSignal.timeout(deps.pruneBudgetMs ?? PRUNE_BUDGET_MS),
   )
   await deps.database.command(input.scope, async (tx) => {
     // The app's row first, as every write to its versions takes it (code C65).

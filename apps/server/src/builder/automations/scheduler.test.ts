@@ -3,6 +3,7 @@ import { test } from 'node:test'
 import { setTimeout as sleep } from 'node:timers/promises'
 import type { Hub } from '../../hub/identity/test-hub.ts'
 import { call, codeOf, post } from '../../hub/identity/test-hub.ts'
+import { TEST_IDLE_MS } from '../../platform/test-mastra-database.ts'
 import { holding, hubBeside } from '../conversation/test-conversation.ts'
 import type { Summary } from './test-automations.ts'
 import {
@@ -20,9 +21,8 @@ import {
   TEST_CLOCK,
 } from './test-automations.ts'
 
-// The pool's idle time (POOL_LIMITS) and a margin: what lets Neon put the branch to sleep (D27).
-// The code has no adjustment for it, so the two waits on it stay (U7 of the CI health card).
-const QUIET_MS = 15_000
+// The test pool's idle time and a margin: what lets Neon put the branch to sleep (D27).
+const QUIET_MS = TEST_IDLE_MS + 2_000
 /** How long the Hub waits for its turns when it is told to stop. */
 const SETTLE_MS = 3_000
 /** Five ticks of the scheduler: a fire or a read that was going to come would have come by now. */
