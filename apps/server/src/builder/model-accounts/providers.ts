@@ -11,7 +11,7 @@ const REGISTRY = Object.entries(PROVIDER_REGISTRY)
 const URL_TEMPLATE = /\$\{[A-Z0-9_]+\}/
 // Only the models.dev gateway resolves a provider from its key alone: Netlify's needs a site too.
 const KEY_GATEWAY = 'models.dev'
-// Mastra 1.79.0 says nothing of what a model outputs: its capabilities are attachments,
+// Mastra 1.82.0 says nothing of what a model outputs: its capabilities are attachments,
 // temperature, structured output and reasoning. So a model that draws, films, speaks, hears,
 // embeds, ranks, guards, reads scans or talks live is left out by a word of its name, as the old Hub
 // did (Conexus OS `model-accounts.ts`, 729bdc5d); the words come from every key provider's list.
@@ -21,7 +21,7 @@ const NOT_CHAT = new RegExp(
     'video|veo|sora|seedance|kling|wan|wanx|t2v|i2v|r2v|heygen',
     'audio|music|lyria|tts|speech|voice|voicechat|studiovoice|orpheus|elevenlabs|voxtral|whisper|transcribe|asr|stt',
     'embed|embedding|embedcode|bge|e5|rerank|reranker',
-    'guard|safeguard|gliguard|qwen3guard|moderation|detector',
+    'guard|safeguard|gliguard|assguard|qwen3guard|moderation|detector',
     'ocr|paddleocr|deepseek-ocr|lightonocr',
     'realtime|live|computer-use|deep-research|gemini-omni',
   ].join('|')})(?=$|[-_./:@\\d])`,

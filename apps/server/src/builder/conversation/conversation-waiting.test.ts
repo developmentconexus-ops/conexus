@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
+import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { setTimeout as sleep } from 'node:timers/promises'
+import pg from 'pg'
 import { z } from 'zod'
 import { post } from '../../hub/identity/test-hub.ts'
 
@@ -18,7 +20,6 @@ import {
   SUBMIT,
   stateOf,
   untilCard,
-  untilParked,
   WHO,
   WRITE_PLAN,
   within,
@@ -27,14 +28,6 @@ import {
 const Planned = z.object({ plan: z.string() })
 
 const QUESTION = { kind: 'answers', answers: ['Todos (recomendado)'] }
-
-/**
- * Mastra 1.78.0 can write the parked run's snapshot after the release that deletes it, so a row
- * may outlive the turn (reported to Mastra, feedback id 6edddc96-17b5-4e31-a6df-986c1598d366).
- * The tests that own the leftover row are `todo`: remove the option when Mastra's fix lands.
- */
-const MASTRA_RACE =
-  'Mastra 1.78.0 can recreate the parked snapshot after abort (report 6edddc96-17b5-4e31-a6df-986c1598d366)'
 
 /**
  * The conversation read again once Mastra has written the denial of the call: it writes the call and
@@ -83,6 +76,39 @@ async function endOrLostClaim(stream: Awaited<ReturnType<typeof streamOf>>) {
   }
 }
 
+/**
+ * Mastra's save of a call still open, slowed by `ms`: it widens the moment between the card and the
+ * saved call as a loaded database does. Mastra publishes the card only after it saved the call.
+ */
+function slowedSaveOfOpenCalls(t: TestContext, ms: number) {
+  const query = pg.Client.prototype.query
+  function slowed(this: pg.Client, ...args: unknown[]): unknown {
+    const [text, values] = args
+    const sql = typeof text === 'string' ? text : String(Object(text).text)
+    const row: unknown[] = Array.isArray(values) ? values : (Object(text).values ?? [])
+    const call = row.some((each) => typeof each === 'string' && each.includes('"state":"call"'))
+    if (!/^\s*INSERT INTO "mastra"\."mastra_messages"/.test(sql) || !call) {
+      return Reflect.apply(query, this, args)
+    }
+    const done = args.at(-1)
+    if (typeof done !== 'function') {
+      return sleep(ms).then(() => Reflect.apply(query, this, args))
+    }
+    const rest = args.slice(0, -1)
+    void sleep(ms).then(() =>
+      Reflect.apply(query, this, [
+        ...rest,
+        (...reply: unknown[]) => Reflect.apply(done, this, reply),
+      ]),
+    )
+    return undefined
+  }
+  Reflect.set(pg.Client.prototype, 'query', slowed)
+  t.after(() => {
+    pg.Client.prototype.query = query
+  })
+}
+
 test('uma pergunta encerra o turno: o fim é dito, o Projeto fica livre e o cartão espera sem prazo', {
   timeout: 60_000,
 }, async (t) => {
@@ -123,7 +149,6 @@ test('Parar com uma pergunta aberta: a chamada fecha negada, numa volta do Mastr
   assert.equal((await send()).statusCode, 200)
   const { card } = await untilCard(stream, 'question')
   const asked = calls.length
-  await untilParked(hub)
   assert.equal((await stopped(hub, ana, url)).statusCode, 200)
   // Mastra resumes the parked call with its denial in a run of its own, which ends aborted.
   assert.equal(endOf(await within(15_000, stream.turn())), 'aborted')
@@ -139,7 +164,6 @@ test('um plano fechado por Parar, relido, traz o texto que o Mastra guardou ao s
   assert.equal((await send()).statusCode, 200)
   const { card } = await untilCard(stream, 'plan')
   assert.ok(Planned.parse(card.suspendPayload).plan.length > 0)
-  await untilParked(hub)
   assert.equal((await stopped(hub, ana, url)).statusCode, 200)
   const messages = await closedRead(hub, ana, url, card.toolCallId)
   const closed = messages.flatMap((message) => message.parts)
@@ -155,15 +179,25 @@ test('um plano fechado por Parar, relido, traz o texto que o Mastra guardou ao s
 
 test('Parar com uma pergunta aberta: nada fica no banco do Mastra', {
   timeout: 60_000,
-  todo: MASTRA_RACE,
 }, async (t) => {
   const { hub, ana, url, stream, send } = await conversingWith(t, [[ask(WHO)]])
   assert.equal((await send()).statusCode, 200)
   await untilCard(stream, 'question')
-  await untilParked(hub)
   assert.equal((await stopped(hub, ana, url)).statusCode, 200)
   await answeredOf(hub, ana, url)
   assert.equal(await parkedRows(hub), 0)
+})
+
+test('Parar no instante em que o cartão chega, antes de o Mastra guardar a chamada: ela fecha negada', {
+  timeout: 60_000,
+}, async (t) => {
+  const { hub, ana, url, stream, send } = await conversingWith(t, [[ask(WHO)]])
+  slowedSaveOfOpenCalls(t, 300)
+  assert.equal((await send()).statusCode, 200)
+  const { card } = await untilCard(stream, 'question')
+  assert.equal((await stopped(hub, ana, url)).statusCode, 200)
+  const read = (await closedRead(hub, ana, url, card.toolCallId)).flatMap((m) => m.parts)
+  assert.deepEqual(stateOf(read, card.toolCallId), CLOSED)
 })
 
 for (const [type, steps] of [

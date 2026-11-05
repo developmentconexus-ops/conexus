@@ -141,12 +141,14 @@ export async function conversing(hub: Hub, person: Person, url: string, runId: s
 
 /**
  * Puts the automation's next fire in the past, as when the Hub was down for three days: the
- * scheduler fires it, as `SCHEDULED`, on its next tick.
+ * scheduler fires it, as `SCHEDULED`. The scheduler sleeps until the next fire it knew, so it is
+ * woken, as Mastra documents for a schedule moved earlier.
  */
 export async function dueNow(hub: Hub, automationId: string) {
   const store = await hub.mastra.getStorage()?.getStore('schedules')
   assert.ok(store)
   await store.updateSchedule(automationId, { nextFireAt: Date.now() - 3 * 86_400_000 })
+  hub.mastra.scheduler?.wake()
 }
 
 /** The next 07:00 in São Paulo (UTC-3, no daylight saving since 2019) after `now`. */

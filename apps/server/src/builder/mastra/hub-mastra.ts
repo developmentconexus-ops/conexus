@@ -91,7 +91,7 @@ export function createHubMastra(deps: {
     },
     /**
      * Mastra's workers, after every subject is made: the orchestration that runs the workflows,
-     * and the scheduler only if a schedule row exists (`NM:mastra-Da0Czfte.js:5037-5049`).
+     * and the scheduler only if a schedule row exists (`NM:mastra-D4MXu5BN.js:4424-4439,5135-5150`).
      */
     async start(): Promise<void> {
       for (const part of parts) await part.beforeWorkers?.()
