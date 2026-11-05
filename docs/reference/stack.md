@@ -35,6 +35,7 @@ change.
 | `helmet` | `apps/server/src/platform` | README | none | — | security | — |
 | `@fastify/static` | `apps/server/src/platform` | README | none | — | — | — |
 | `close-with-grace` | `apps/server/src/platform` | `node_modules/close-with-grace/AGENTS.md` | none | — | — | — |
+| `pino` | `apps/server/src/platform` | `node_modules/pino/docs/asynchronous.md`; `node_modules/pino/docs/api.md` | none | — | — | Fastify already brings it; we import it for `pino.destination({ sync: true })`, the one stream the Hub log and the boot log share: `process.stdout` loses lines on `process.exit` with a full pipe |
 | `drizzle-orm` | `apps/server/src` | `orm.drizzle.team/llms.txt` (not `llms-full.txt`, 3.7 MB) | none | — | 0005, 0037, data | — |
 | `drizzle-kit` | `apps/server` | `node_modules/drizzle-kit/skills/` | `drizzle` (in the package, CLI only) | — | 0037, data | — |
 | `pg` | `apps/server/src/platform`, `tests` | `node-postgres.com` | none | — | data | — |
