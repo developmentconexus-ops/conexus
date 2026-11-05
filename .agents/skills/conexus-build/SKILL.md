@@ -51,8 +51,8 @@ unit's one named guide, and loads the card's maintainers' skills, pstack `poteto
 
 The commit and a report: what I ran, saw and did not prove; each table row with its file; the line
 counts of each brought part; every criterion with its test, none red; each declared file outside
-the card's folders ([delivery L7](../../../docs/guides/delivery.md)); the screenshots by state,
-width and theme, or "no screen touched". A criterion known to fail is never handed to the review:
+the card's folders ([delivery L7](../../../docs/guides/delivery.md)); the screenshots seen, by state,
+width and theme, or "no screen touched". A failing criterion is never handed to the review:
 fix it, or stop.
 
 ## Stop and ask
