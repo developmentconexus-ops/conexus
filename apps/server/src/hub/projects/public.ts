@@ -40,8 +40,7 @@ export type {
 } from './ports.ts'
 /** For the apps' and the requests' foreign keys, and the name a notice shows (code C8). */
 export { project } from './tables.ts'
-export type Projects = ReturnType<typeof createProjects>
-export type ProjectPorts = Projects['ports']
+export type ProjectPorts = ReturnType<typeof createProjects>['ports']
 
 /**
  * The Projects of a company and its database in Neon. It reaches identity only through its ports

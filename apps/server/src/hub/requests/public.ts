@@ -23,5 +23,3 @@ export function requestsOf(deps: RequestDeps) {
     publishRequestOf: requests.publishRequestOf,
   })
 }
-
-export type RequestsPart = ReturnType<typeof requestsOf>

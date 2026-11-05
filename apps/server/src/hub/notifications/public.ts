@@ -18,5 +18,3 @@ export function notificationsOf(deps: Parameters<typeof createNotifications>[0])
     routes: (app: FastifyInstance) => registerNotificationRoutes(app, notifications),
   })
 }
-
-export type NotificationsPart = ReturnType<typeof notificationsOf>

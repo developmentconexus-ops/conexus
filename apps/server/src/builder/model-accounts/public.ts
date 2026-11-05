@@ -31,8 +31,6 @@ export { AnthropicPage, GooglePage, listRequest, OpenAiList } from './served.ts'
 export { effortFor, effortsOf, providerOptionsOf } from './thinking.ts'
 export { chosenModel, setTurn, Turn, turnContext, turnIn } from './turn.ts'
 
-export type ModelAccounts = ReturnType<typeof createModelAccounts>
-
 /**
  * The model accounts of each company and of its people (decision 0049). It reaches identity only
  * through its ports (code C4); `main.ts` hands them over with the installation's seal keys.

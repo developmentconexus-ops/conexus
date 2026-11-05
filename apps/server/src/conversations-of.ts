@@ -168,6 +168,3 @@ export function conversationsOf(deps: {
   })
   return { conversations, assistant, automations, agents }
 }
-
-/** The conversations on the one `Mastra`, as `main.ts` starts, stops and routes them. */
-export type Conversations = ReturnType<typeof conversationsOf>['conversations']

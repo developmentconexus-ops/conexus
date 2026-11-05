@@ -56,7 +56,7 @@ export function receiveVersion(input: VersionFolder): ReceivedVersion {
 }
 
 /** The columns a version is shown from; the manifest and the files stay unread. */
-export const VERSION_VIEW = {
+const VERSION_VIEW = {
   id: appVersion.id,
   number: appVersion.number,
   state: appVersion.state,
