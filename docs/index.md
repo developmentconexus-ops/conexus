@@ -82,7 +82,7 @@ One line per document (`check-docs`).
 - [0045](decisions/0045-app-reads-by-query-writes-by-one-batch.md) one batch.
 - [0046](decisions/0046-version-worker-first-migrations-in-one-transaction.md) Worker first.
 - [0047](decisions/0047-one-call-limits-in-the-dispatcher.md) call limits.
-- [0048](decisions/0048-company-neon-project-named-by-nickname-and-id.md) Neon name.
+- [0048](decisions/0048-company-neon-project-named-by-nickname-and-id.md) Neon.
 - [0049](decisions/0049-model-accounts-keys-sign-ins-queues.md) accounts.
 - [0050](decisions/0050-conversation-on-the-agent-controller.md) conversation.
 - [0051](decisions/0051-builder-machine-git-and-copy-in-r2.md) machine.
@@ -92,8 +92,9 @@ One line per document (`check-docs`).
 - [0055](decisions/0055-apps-on-the-platform-contract.md) contract.
 - [0056](decisions/0056-connectors-kit-and-one-executor.md) connectors kit.
 - [0057](decisions/0057-connections-by-oauth.md) OAuth.
-- [0058](decisions/0058-provider-limits-and-queues.md) provider limits.
-- [0059](decisions/0059-assistant-machine-reaches-package-registries.md) Assistant registries.
+- [0058](decisions/0058-provider-limits-and-queues.md) limits.
+- [0059](decisions/0059-assistant-machine-reaches-package-registries.md) registries.
+- [0060](decisions/0060-openai-subscription-sign-in.md) OpenAI.
 
 ## Skills
 

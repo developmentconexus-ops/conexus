@@ -8,6 +8,7 @@ import {
   listModelAccounts,
   listModelProviders,
   orderModelAccounts,
+  pollModelAccountSignIn,
   removeModelAccount,
   setAccountKinds,
   setDefaultModel,
@@ -21,6 +22,7 @@ import type { Deps } from './accounts.ts'
 import { readKinds, setKinds } from './kinds.ts'
 import { registerObservationalMemoryModelRoutes } from './observational-memory-settings.ts'
 import { listKeyProviders } from './providers.ts'
+import { pollSignIn } from './sign-in-poll.ts'
 import type { SignInDeps } from './sign-ins.ts'
 import { completeSignIn, startSignIn } from './sign-ins.ts'
 import type { ModelAccountStore } from './store.ts'
@@ -199,5 +201,17 @@ function registerSignInRoutes(app: FastifyInstance, deps: Deps & SignInDeps) {
       'MODEL_ACCOUNT_LINKED',
     )
     return answer(linked)
+  })
+
+  serve(app, pollModelAccountSignIn, async ({ person, params, log }) => {
+    const polled = await pollSignIn(deps, { person, ...params })
+    if (polled.status === 'linked') {
+      const { id, provider, owner, kind } = polled.account
+      log.info(
+        { by: person.id, companyId: params.companyId, accountId: id, provider, owner, kind },
+        'MODEL_ACCOUNT_SIGN_IN_LINKED',
+      )
+    }
+    return answer(polled)
   })
 }

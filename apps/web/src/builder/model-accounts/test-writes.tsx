@@ -103,6 +103,7 @@ function signIns(view: View, sent: Sent[], answers: Answers): HttpHandler[] {
       Object.assign(started, body)
       return HttpResponse.json(
         {
+          entry: 'paste',
           signInId: '00000000-0000-4000-8000-0000000000aa',
           url: 'https://claude.example.test/oauth/authorize?state=abc',
           expiresAt: '2026-10-19T12:10:00.000Z',

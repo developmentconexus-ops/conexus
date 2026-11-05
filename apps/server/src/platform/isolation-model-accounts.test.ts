@@ -159,3 +159,35 @@ test('padrão de modelo: com o escopo de Ana, o padrão de outra pessoa não se 
     ],
   )
 })
+
+test('entrada por código: a empresa muda só o poll_at da própria entrada, nada mais', async (t) => {
+  const { database, asOwner } = await createTestDatabase(t)
+  await asOwner(SEED)
+  await asOwner(`
+    insert into auth.member(id, company_id, user_id, role, created_at) values
+      ('member-bb', '${B}', 'person-b', 'owner', now());
+    insert into builder.model_account_sign_in(id, company_id, person_id, owner, kind, label, sealed, key_id, expires_at) values
+      ('00000000-0000-4000-8000-0000000000c1', '${A}', 'person-a', 'me', 'openai_codex', 'ChatGPT', '\\x01', 'k1', now() + interval '15 minutes'),
+      ('00000000-0000-4000-8000-0000000000c2', '${B}', 'person-b', 'me', 'openai_codex', 'ChatGPT', '\\x02', 'k1', now() + interval '15 minutes');`)
+  function inA(statement: ReturnType<typeof sql>) {
+    return database.command({ kind: 'COMPANY', companyId: A, personId: ANA }, (tx) =>
+      tx.execute(statement),
+    )
+  }
+  const moved = await inA(
+    sql`update builder.model_account_sign_in set poll_at = now() + interval '5 seconds' returning id`,
+  )
+  assert.deepEqual(moved.rows, [{ id: '00000000-0000-4000-8000-0000000000c1' }])
+  await assert.rejects(
+    inA(sql`update builder.model_account_sign_in set label = 'Outra'`),
+    refusedWith('42501'),
+  )
+  await assert.rejects(
+    inA(sql`update builder.model_account_sign_in set expires_at = now() + interval '1 day'`),
+    refusedWith('42501'),
+  )
+  const other = await asOwner(
+    `select poll_at <= now() as untouched from builder.model_account_sign_in where company_id = '${B}'`,
+  )
+  assert.deepEqual(other, [{ untouched: true }])
+})

@@ -17,7 +17,12 @@ export const Owner = z.enum(['company', 'me'])
 export type Owner = z.infer<typeof Owner>
 
 /** The kinds of account, as a tuple the Builder's table columns read too. */
-export const ACCOUNT_KINDS = ['api_key', 'claude_subscription', 'google_cliproxy'] as const
+export const ACCOUNT_KINDS = [
+  'api_key',
+  'claude_subscription',
+  'google_cliproxy',
+  'openai_codex',
+] as const
 export const AccountKind = z.enum(ACCOUNT_KINDS)
 export type AccountKind = z.infer<typeof AccountKind>
 
@@ -26,7 +31,10 @@ export const SignInKind = AccountKind.exclude(['api_key'])
 export type SignInKind = z.infer<typeof SignInKind>
 
 /** The kinds that sign in and renew their tokens, one lease-based renewal for all (data D25). */
-export const SUBSCRIPTION_KINDS = ['claude_subscription'] as const satisfies readonly SignInKind[]
+export const SUBSCRIPTION_KINDS = [
+  'claude_subscription',
+  'openai_codex',
+] as const satisfies readonly SignInKind[]
 export type SubscriptionKind = (typeof SUBSCRIPTION_KINDS)[number]
 
 const SUBSCRIPTIONS: ReadonlySet<AccountKind> = new Set(SUBSCRIPTION_KINDS)
@@ -95,10 +103,9 @@ export type ModelAccount = z.infer<typeof ModelAccount>
 export const ProviderOrder = z.object({ provider: ProviderId, accounts: z.array(ModelAccountId) })
 export type ProviderOrder = z.infer<typeof ProviderOrder>
 
-const InCompany = z.object({ companyId: CompanyId })
+export const InCompany = z.object({ companyId: CompanyId })
 const OfAccount = InCompany.extend({ accountId: ModelAccountId })
 const OfQueue = InCompany.extend({ owner: Owner, provider: ProviderId })
-const OfSignIn = InCompany.extend({ signInId: SignInId })
 
 /** The most models the company's automatic switch tries, in order. */
 export const MODEL_FALLBACK_MAX_LENGTH = 50
@@ -150,7 +157,7 @@ const Change = Revision.extend({
   state: z.enum(['ready', 'paused']).optional(),
 })
 
-const READ_FAILURES = ['NOT_FOUND', 'SESSION_REQUIRED', 'DATABASE_UNAVAILABLE'] as const
+export const READ_FAILURES = ['NOT_FOUND', 'SESSION_REQUIRED', 'DATABASE_UNAVAILABLE'] as const
 
 export const listModelAccounts = defineOperation({
   id: 'listModelAccounts',
@@ -292,54 +299,4 @@ export const setAccountKinds = defineOperation({
   input: { params: OfClient, body: Kinds },
   success: { status: 200, body: Kinds },
   failures: READ_FAILURES,
-})
-
-export const startModelAccountSignIn = defineOperation({
-  id: 'startModelAccountSignIn',
-  summary:
-    'Starts a subscription sign-in for an account of the company or of the person, and gives the address to open.',
-  access: 'session',
-  method: 'POST',
-  path: '/api/companies/{companyId}/model-account-sign-ins',
-  bodyLimit: 1024,
-  input: {
-    params: InCompany,
-    body: z.object({
-      owner: Owner,
-      kind: SignInKind,
-      label: z.string().max(ACCOUNT_LABEL_MAX_LENGTH * 4),
-    }),
-  },
-  success: {
-    status: 201,
-    body: z.object({ signInId: SignInId, url: z.url(), expiresAt: z.iso.datetime() }),
-  },
-  failures: [
-    ...READ_FAILURES,
-    'MODEL_ACCOUNT_LABEL_INVALID',
-    'MODEL_ACCOUNT_KIND_OFF',
-    'MODEL_ACCOUNT_UNAVAILABLE',
-    'CLIPROXY_BINARY_REFUSED',
-    'CLIPROXY_UNAVAILABLE',
-  ],
-})
-
-export const completeModelAccountSignIn = defineOperation({
-  id: 'completeModelAccountSignIn',
-  summary:
-    'Completes a sign-in with the code or address the vendor showed, sealing what it returns as a new account.',
-  access: 'session',
-  method: 'POST',
-  path: '/api/companies/{companyId}/model-account-sign-ins/{signInId}',
-  bodyLimit: 16 * 1024,
-  input: { params: OfSignIn, body: z.object({ code: z.string().max(ACCOUNT_KEY_MAX_LENGTH) }) },
-  success: { status: 201, body: z.object({ account: ModelAccount }) },
-  failures: [
-    ...READ_FAILURES,
-    'MODEL_ACCOUNT_KIND_OFF',
-    'MODEL_ACCOUNT_REFUSED',
-    'MODEL_ACCOUNT_SIGN_IN_EXPIRED',
-    'MODEL_ACCOUNT_UNAVAILABLE',
-    'CLIPROXY_UNAVAILABLE',
-  ],
 })

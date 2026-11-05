@@ -94,8 +94,8 @@ export const MODEL_ACCOUNT_FAILURES = {
     category: 'USER',
     settles: true,
     status: 422,
-    phrase: 'O fornecedor recusou este código.',
-    action: 'Entre de novo e cole o código novo.',
+    phrase: 'O fornecedor recusou a entrada.',
+    action: 'Entre de novo.',
     actionKind: 'NONE',
   },
   MODEL_ACCOUNT_SIGN_IN_EXPIRED: {
@@ -104,6 +104,14 @@ export const MODEL_ACCOUNT_FAILURES = {
     status: 410,
     phrase: 'O código venceu. Entre de novo.',
     action: '',
+    actionKind: 'NONE',
+  },
+  MODEL_ACCOUNT_SIGN_IN_WRONG_ENTRY: {
+    category: 'USER',
+    settles: true,
+    status: 400,
+    phrase: 'Esta entrada não é por aqui.',
+    action: 'Entre de novo.',
     actionKind: 'NONE',
   },
   MODEL_ACCOUNT_UNAVAILABLE: {

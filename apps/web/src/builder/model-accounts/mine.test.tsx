@@ -131,7 +131,11 @@ test('Tipos de conta: "Chave de API" sempre ligada, e cada assinatura manda a li
   const { sent } = open(shown, `/operations/clients/${ACTIVE_CLIENT.companyId}`)
   expect(await screen.findByRole('heading', { name: 'Tipos de conta' })).toBeTruthy()
   expect(screen.getByText('Chave de API · sempre ligada')).toBeTruthy()
-  expect(screen.getAllByRole('checkbox')).toHaveLength(2)
+  expect(screen.getAllByRole('checkbox')).toHaveLength(3)
+  expect(screen.getByRole('checkbox', { name: 'Assinatura ChatGPT' })).toHaveProperty(
+    'checked',
+    false,
+  )
 
   fireEvent.click(screen.getByRole('checkbox', { name: 'Assinatura Claude' }))
   await waitFor(() =>

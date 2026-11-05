@@ -1,7 +1,8 @@
-import type { CompanyId, ModelAccount, Owner, SignInKind } from '@conexus/hub-api'
+import type { CompanyId, ModelAccount, Owner, PasteKind, SignInKind } from '@conexus/hub-api'
 import {
   ACCOUNT_LABEL_MAX_LENGTH,
   completeModelAccountSignIn,
+  isDeviceKind,
   startModelAccountSignIn,
 } from '@conexus/hub-api'
 import { useMutation } from '@tanstack/react-query'
@@ -22,7 +23,7 @@ import { Choice } from './choice.tsx'
 import { sendSignInCompletion, sendSignInStart } from './queries.ts'
 import { KIND_NAMES } from './text.ts'
 
-type Started = { signInId: string; url: string; expiresAt: string; kind: SignInKind }
+type Started = { signInId: string; url: string; expiresAt: string; kind: PasteKind }
 
 const CODE_FIELDS = {
   claude_subscription: {
@@ -36,7 +37,7 @@ const CODE_FIELDS = {
     invalid:
       'Cole o endereço inteiro em que o navegador parou, começando em http://localhost:51121/oauth-callback?',
   },
-} as const satisfies Record<SignInKind, { label: string; help: string; invalid: string }>
+} as const satisfies Record<PasteKind, { label: string; help: string; invalid: string }>
 
 /** The address to open, as a link only when it is a secure web address the vendor's page uses. */
 function OpenAddress({ url }: { url: string }) {
@@ -75,7 +76,9 @@ function StartForm(props: {
         params: { companyId: props.companyId },
         body: values,
       })
-      props.onStarted({ ...started, kind: values.kind })
+      if (started.entry === 'paste' && !isDeviceKind(values.kind)) {
+        props.onStarted({ ...started, kind: values.kind })
+      }
     } catch (error) {
       setServerError(form, error)
     }
@@ -93,7 +96,9 @@ function StartForm(props: {
               id={kindId}
               value={field.value ?? null}
               placeholder="Escolha o tipo"
-              options={props.kinds.map((kind) => ({ value: kind, label: KIND_NAMES[kind] }))}
+              options={props.kinds
+                .filter((kind) => !isDeviceKind(kind))
+                .map((kind) => ({ value: kind, label: KIND_NAMES[kind] }))}
               onChange={field.onChange}
             />
           )}

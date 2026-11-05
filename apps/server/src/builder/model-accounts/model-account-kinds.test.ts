@@ -61,3 +61,20 @@ test('só o operador muda os tipos; o dono dá 404; a chave sempre ligada; desli
   await call(hub, operator, 'PUT', kinds, { kinds: ['claude_subscription', 'google_cliproxy'] })
   assert.deepEqual(await kindOff(), [false])
 })
+
+test('Assinatura ChatGPT vem desligada; o operador a liga e a desliga como os outros tipos', async (t) => {
+  const hub = await hubWithMail(t)
+  const operator = await personOn(hub, ANA)
+  const bruno = await personOn(hub, BRUNO)
+  const companyId = await plantCompany(hub.test, bruno.id)
+  const kinds = `/api/clients/${companyId}/account-kinds`
+  assert.deepEqual((await call(hub, operator, 'GET', kinds)).json(), { kinds: [] })
+  const on = await call(hub, operator, 'PUT', kinds, { kinds: ['openai_codex'] })
+  assert.deepEqual([on.statusCode, on.json()], [200, { kinds: ['openai_codex'] }])
+  assert.deepEqual(
+    Object((await call(hub, bruno, 'GET', `/api/companies/${companyId}/model-accounts`)).json())
+      .kinds,
+    ['openai_codex'],
+  )
+  assert.deepEqual((await call(hub, operator, 'PUT', kinds, { kinds: [] })).json(), { kinds: [] })
+})

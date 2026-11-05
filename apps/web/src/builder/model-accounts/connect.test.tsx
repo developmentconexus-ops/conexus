@@ -221,6 +221,7 @@ test('um endereço que não é https aparece como texto, sem link', async () => 
     start: () =>
       HttpResponse.json(
         {
+          entry: 'paste',
           signInId: '00000000-0000-4000-8000-0000000000aa',
           url: 'http://claude.example.test/oauth',
           expiresAt: '2026-10-19T12:10:00.000Z',
@@ -236,10 +237,7 @@ test('um endereço que não é https aparece como texto, sem link', async () => 
 })
 
 for (const [code, sentence] of [
-  [
-    'MODEL_ACCOUNT_REFUSED',
-    'O fornecedor recusou este código. Entre de novo e cole o código novo.',
-  ],
+  ['MODEL_ACCOUNT_REFUSED', 'O fornecedor recusou a entrada. Entre de novo.'],
   ['MODEL_ACCOUNT_SIGN_IN_EXPIRED', 'O código venceu. Entre de novo.'],
   [
     'MODEL_ACCOUNT_KIND_OFF',
