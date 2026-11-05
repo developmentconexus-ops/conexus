@@ -5,7 +5,8 @@ import { MemoryPG } from '@mastra/pg'
 import { call } from '../../hub/identity/test-hub.ts'
 import { turnDate } from '../conversation/public.ts'
 import { endOf } from '../conversation/test-conversation.ts'
-import { assisting, created, talking } from './test-assistant.ts'
+import { tool } from '../conversation/test-questions.ts'
+import { assisting, created, said, talking } from './test-assistant.ts'
 
 function read(path: string) {
   return readFileSync(new URL(path, import.meta.url), 'utf8').trim()
@@ -151,4 +152,30 @@ test('o papel de cada um: o texto fixo diz que o Builder faz apps e o Assistente
   assert.match(app, /Criar app/)
   assert.match(change, /Mandar ao Builder/)
   assert.doesNotMatch(read('./skills/conexus/SKILL.md'), SHOUTED)
+})
+
+test('as ferramentas que o turno leva: o texto fixo e a skill conexus não pedem ao modelo que confira se as tem', async (t) => {
+  const steps: ReturnType<typeof said>[][] = []
+  const on = await assisting(t, steps)
+  steps.push([tool('skill', { name: 'conexus' })], [said('Pronto.')])
+  const url = await created(on.hub, on.ana, on.assistant, { connections: [on.matriz] })
+  const { say } = await talking(t, on.hub, on.ana, url)
+  assert.equal(endOf(await say('Todo dia às 10:15 me manda um bom dia.')), 'complete')
+
+  const [first, afterSkill] = on.calls
+  const carried = first?.tools ?? []
+  assert.ok(carried.includes('propose_automation'), carried.join(', '))
+  const skillText = afterSkill?.texts.find((text) => text.includes('propose_automation')) ?? ''
+  assert.match(skillText, /Criar automação/)
+  const shown = [first?.system ?? '', skillText]
+  function sentenceOf(pattern: string) {
+    const sentence = new RegExp(`[^.]*(${pattern})[^.]*\\.`, 'i')
+    return shown.map((text) => sentence.exec(text)?.[0].trim()).find(Boolean)
+  }
+  assert.equal(sentenceOf('if you have (it|the tool)'), undefined)
+  for (const name of carried) {
+    assert.equal(sentenceOf(`if you have ${name}|if (the tool )?${name} (is|exists)`), undefined)
+  }
+  assert.match(first?.system ?? '', /call propose_automation with the request/)
+  assert.match(skillText, /and call propose_automation:/)
 })
