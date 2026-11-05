@@ -10,13 +10,15 @@ import {
   Recording,
 } from './test-recordings.ts'
 
-// Claude's four cases and Gemini's interruption and reasoning, as `record-provider.ts` names them.
+// Claude's four cases and Gemini's interruption, reasoning and automation proposal, as `record-provider.ts` names them.
 const EXPECTED = [
   'anthropic-abort',
   'anthropic-cited',
   'anthropic-thinking',
   'anthropic-tool-error',
   'google-abort',
+  'google-propose-automation-weekly-no-days',
+  'google-propose-automation',
   'google-thinking',
 ]
 
