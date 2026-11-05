@@ -169,14 +169,31 @@ test('Nova versão da lista abre o diálogo logo, com a espera dentro, e depois 
       await new Promise<void>((resolve) => {
         answer = resolve
       })
-      return HttpResponse.json({ tool: { ...toolSummary(), versions: [] } })
+      return HttpResponse.json({
+        tool: {
+          ...toolSummary(),
+          versions: [
+            {
+              id: TOOL_V1,
+              number: 1,
+              description: 'Vendas de ontem por vendedor.',
+              bound: { dias: 1 },
+              open: ['vendedor'],
+            },
+          ],
+        },
+      })
     }),
   )
   fireEvent.click(await screen.findByRole('button', { name: 'Nova versão de vendas_de_ontem' }))
   const dialog = await screen.findByRole('dialog')
   expect(within(dialog).getByText('Nova versão')).toBeTruthy()
   expect(within(dialog).queryByRole('button', { name: 'Gravar versão' })).toBeNull()
+  expect(dialog.querySelector('[data-slot="skeleton"]')).not.toBeNull()
+  await waitFor(() => expect(answer).toBeDefined())
   answer?.()
+  expect(await within(dialog).findByRole('textbox', { name: 'O que ela faz' })).toBeTruthy()
+  expect(dialog.querySelector('[data-slot="skeleton"]')).toBeNull()
 })
 
 test('Nova versão da lista, com a leitura da ferramenta falhando, mostra a falha dentro do diálogo', async () => {
