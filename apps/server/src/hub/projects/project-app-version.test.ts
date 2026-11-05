@@ -32,7 +32,7 @@ test('o Projeto diz a Prévia e a publicada: null antes do primeiro app, os núm
       [2, null],
     ],
   )
-  const published = await call(hub, bruno, 'PUT', `${projects}/${projectId}/published-version`, {
+  const published = await call(hub, ana, 'PUT', `${projects}/${projectId}/published-version`, {
     number: 1,
   })
   assert.equal(published.statusCode, 200, published.body)

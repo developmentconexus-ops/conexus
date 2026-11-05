@@ -61,7 +61,6 @@ export function moreConnections(count: number): string {
 export function chosenOf(chosen: number, offered: number): string {
   return `${chosen} de ${offered} ligadas`
 }
-export const MEMBERS_CANNOT = 'Só o dono e os administradores conversam sobre o Projeto.'
 export const UNCONFIRMED_CREATION = 'Não confirmamos a criação da conversa. Tente de novo.'
 export const UNCONFIRMED_CHOICE =
   'Não confirmamos a troca das ferramentas. Confira a caixa e tente de novo.'

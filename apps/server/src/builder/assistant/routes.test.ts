@@ -1,15 +1,7 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
-import {
-  BRUNO,
-  CARLA,
-  call,
-  codeOf,
-  memberOn,
-  plantCompany,
-  post,
-} from '../../hub/identity/test-hub.ts'
+import { CARLA, call, codeOf, memberOn, plantCompany, post } from '../../hub/identity/test-hub.ts'
 import { MODEL, started } from '../conversation/test-conversation.ts'
 import { sessionStateOf } from '../conversation/test-questions.ts'
 import { assisting, created } from './test-assistant.ts'
@@ -66,7 +58,7 @@ test('criar: com o modelo padrão, só as ligações que o lugar oferece, no Pro
   )
 })
 
-test('criar: um modelo sem conta, um Projeto de outra empresa, apagado ou marcado, e o membro não criam nada', async (t) => {
+test('criar: um modelo sem conta, um Projeto de outra empresa, apagado ou marcado, e uma empresa que está sendo apagada, não criam nada', async (t) => {
   const on = await assisting(t)
   const noAccount = await post(on.hub, on.ana, on.assistant, {
     model: 'openai/gpt-5.4',
@@ -94,14 +86,18 @@ test('criar: um modelo sem conta, um Projeto de outra empresa, apagado ou marcad
     assert.equal(refused.statusCode, 404, refused.body)
     assert.equal(codeOf(refused), 'NOT_FOUND')
   }
-  const bruno = await memberOn(on.hub, on.companyId, BRUNO, 'member')
-  const member = await post(on.hub, bruno, on.assistant, { connections: [] })
-  assert.equal(member.statusCode, 404, member.body)
   const listed: Listed = Object((await call(on.hub, on.ana, 'GET', on.assistant)).json())
   assert.deepEqual(listed.conversations, [])
+  await on.hub.test.asOwner('update auth.company set deleting_since = now() where id = $1', [
+    on.companyId,
+  ])
+  const deleting = await post(on.hub, on.ana, on.assistant, { connections: [] })
+  assert.equal(deleting.statusCode, 404, deleting.body)
+  const listing = await call(on.hub, on.ana, 'GET', on.assistant)
+  assert.equal(listing.statusCode, 404, listing.body)
 })
 
-test('trocar as ligações: a resposta diz as que ficaram, só as que o lugar oferece; de outra pessoa ou inexistente, CONVERSATION_NOT_FOUND; o membro, NOT_FOUND', async (t) => {
+test('trocar as ligações: a resposta diz as que ficaram, só as que o lugar oferece; de outra pessoa ou inexistente, CONVERSATION_NOT_FOUND', async (t) => {
   const on = await assisting(t)
   const url = await created(on.hub, on.ana, on.assistant, { connections: [on.matriz] })
   const changed = await call(on.hub, on.ana, 'PUT', `${url}/connections`, {
@@ -131,9 +127,6 @@ test('trocar as ligações: a resposta diz as que ficaram, só as que o lugar of
   }
   const notMade = await call(on.hub, on.ana, 'GET', missing)
   assert.equal(codeOf(notMade), 'CONVERSATION_NOT_FOUND')
-  const bruno = await memberOn(on.hub, on.companyId, BRUNO, 'member')
-  const member = await call(on.hub, bruno, 'PUT', `${url}/connections`, { connections: [] })
-  assert.equal(codeOf(member), 'NOT_FOUND')
 })
 
 test('a lista: só as da pessoa, as mais novas primeiro, por Projeto; mais de 30 em páginas sem repetir nem pular; uma página adulterada, NOT_FOUND', async (t) => {
@@ -178,7 +171,7 @@ test('a lista: só as da pessoa, as mais novas primeiro, por Projeto; mais de 30
   assert.equal(codeOf(asBuilders), 'CONVERSATION_NOT_FOUND')
 })
 
-test('uma conversa e o que escolher: cada ligação do lugar com a escolha; uma conversa nova pode escolher tudo o que o lugar oferece; o membro, NOT_FOUND', async (t) => {
+test('uma conversa e o que escolher: cada ligação do lugar com a escolha; uma conversa nova pode escolher tudo o que o lugar oferece', async (t) => {
   const on = await assisting(t)
   const url = await created(on.hub, on.ana, on.assistant, {
     projectId: on.projectId,
@@ -196,10 +189,6 @@ test('uma conversa e o que escolher: cada ligação do lugar com a escolha; uma 
     Object(project.json()).connections.map((each: { name: string }) => each.name),
     ['Matriz'],
   )
-  const bruno = await memberOn(on.hub, on.companyId, BRUNO, 'member')
-  for (const at of [url, offered, on.assistant]) {
-    assert.equal(codeOf(await call(on.hub, bruno, 'GET', at)), 'NOT_FOUND', at)
-  }
 })
 
 const OTHER_MODEL = 'anthropic/claude-haiku-4-5'
@@ -224,7 +213,7 @@ test('o modelo: a dona troca o modelo e o esforço e a resposta diz o que ficou;
   assert.equal(on.lines.filter((line) => line.message === 'ASSISTANT_MODEL_SET').length, 2)
 })
 
-test('o modelo: sem conta, desconhecido ou com esforço que o modelo não tem, recusa e nada muda; de outra pessoa ou inexistente, CONVERSATION_NOT_FOUND; o membro, NOT_FOUND', async (t) => {
+test('o modelo: sem conta, desconhecido ou com esforço que o modelo não tem, recusa e nada muda; de outra pessoa ou inexistente, CONVERSATION_NOT_FOUND', async (t) => {
   const on = await assisting(t)
   const url = await created(on.hub, on.ana, on.assistant, { connections: [] })
   const before = await sessionStateOf(on.hub, on.ana, url)
@@ -251,7 +240,4 @@ test('o modelo: sem conta, desconhecido ou com esforço que o modelo não tem, r
     assert.equal(refused.statusCode, 404, refused.body)
     assert.equal(codeOf(refused), 'CONVERSATION_NOT_FOUND')
   }
-  const bruno = await memberOn(on.hub, on.companyId, BRUNO, 'member')
-  const member = await call(on.hub, bruno, 'PUT', `${url}/model`, body)
-  assert.equal(codeOf(member), 'NOT_FOUND')
 })

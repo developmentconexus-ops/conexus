@@ -56,7 +56,7 @@ const Checked = z.discriminatedUnion('kind', [
 const Conversed = z.object({ input: AutomationInput.nullable(), outcome: RunOutcome })
 
 type Deps = {
-  assistant: Pick<Assistant, 'admit' | 'open' | 'turnEnd' | 'asked'>
+  assistant: Pick<Assistant, 'admitAutomations' | 'open' | 'turnEnd' | 'asked'>
   notify: Notify
   updating: () => boolean
   turnMs: number
@@ -73,7 +73,7 @@ function failed(code: FailureCode, conversationId: ConversationId | null): RunOu
 }
 
 /**
- * Whether the owner may still ask the Assistant in the company (a refusal is `NOT_FOUND`, S10), or
+ * Whether the owner may still create automations in the company (a refusal is `NOT_FOUND`, S10), or
  * the failure that kept the Hub from knowing: that one ends the run, it never throws.
  */
 async function mayAsk(
@@ -81,7 +81,7 @@ async function mayAsk(
   input: AutomationInput,
 ): Promise<{ kind: 'MAY' } | { kind: 'MAY_NOT' } | { kind: 'UNKNOWN'; failure: Failure }> {
   try {
-    await deps.assistant.admit(input, { kind: 'COMPANY' })
+    await deps.assistant.admitAutomations(input, { kind: 'COMPANY' })
     return { kind: 'MAY' }
   } catch (error) {
     if (error instanceof Failure && error.code === 'NOT_FOUND') return { kind: 'MAY_NOT' }

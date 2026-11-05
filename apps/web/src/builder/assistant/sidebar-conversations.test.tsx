@@ -138,12 +138,12 @@ test('enquanto a lista não chega, linhas de esqueleto; se falha, a frase com Te
   expect(await nav.findByRole('link', { name: /Vendas da semana/ })).toBeTruthy()
 })
 
-test('o membro vê na lista os Projetos recentes, como hoje, e nenhuma conversa do Assistente', async () => {
+test('o membro vê na lista Nova conversa e as suas conversas, como a dona, sem Projetos recentes', async () => {
   at(COMPANY_ROOT, { role: 'member', conversations: BY_DAY })
   const nav = await list()
-  expect(await nav.findByText('Projetos recentes')).toBeTruthy()
-  expect(nav.queryByRole('link', { name: 'Nova conversa' })).toBeNull()
-  expect(nav.queryByRole('link', { name: /De hoje/ })).toBeNull()
+  expect(await nav.findByRole('link', { name: 'Nova conversa' })).toBeTruthy()
+  expect(await nav.findByRole('link', { name: /De hoje/ })).toBeTruthy()
+  expect(nav.queryByText('Projetos recentes')).toBeNull()
 })
 
 function fresh() {

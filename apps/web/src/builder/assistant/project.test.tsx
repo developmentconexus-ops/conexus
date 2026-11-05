@@ -104,12 +104,10 @@ test('a lista passa de uma página: Ver mais leva à seguinte no endereço, e Pr
   expect(await screen.findByRole('link', { name: /Gama/ })).toBeTruthy()
 })
 
-test('o membro lê quem pode conversar, e a página não esconde a regra', async () => {
+test('o membro conversa no Projeto: a caixa do Assistente está na página, sem frase que o impeça', async () => {
   at(CONVERSAS, { role: 'member' })
-  expect(
-    await screen.findByText('Só o dono e os administradores conversam sobre o Projeto.'),
-  ).toBeTruthy()
-  expect(screen.queryByRole('textbox', { name: 'Mensagem para o Assistente' })).toBeNull()
+  expect(await screen.findByRole('textbox', { name: 'Mensagem para o Assistente' })).toBeTruthy()
+  expect(screen.queryByText(/conversam sobre o Projeto/)).toBeNull()
 })
 
 test('a entrada Conversas fica na lateral do Projeto', async () => {

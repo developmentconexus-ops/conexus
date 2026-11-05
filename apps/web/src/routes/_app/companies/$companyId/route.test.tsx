@@ -1,4 +1,4 @@
-import { CompanyId, ConnectionList, ProjectSummary } from '@conexus/hub-api'
+import { ConnectionList, ProjectSummary } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import type { BoundFunctions, queries } from '@testing-library/react'
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
@@ -64,7 +64,7 @@ function linkNames(scope: BoundFunctions<typeof queries>) {
     .map((link) => link.getAttribute('aria-label') ?? link.textContent)
 }
 
-test('o trilho do membro: Início, Projetos, Integrações, Configurações e a conta; a lista, os Projetos recentes (critérios 3 e 5)', async () => {
+test('o membro: o trilho tem Início, Projetos, Integrações, Configurações e a conta; a lista é a da dona, Nova conversa e as conversas, sem Projetos recentes (critérios 3, 5 e 9)', async () => {
   open(HOME)
   const { rail, list } = await sidebar()
   expect(linkNames(rail)).toEqual(['Início', 'Projetos', 'Integrações', 'Configurações'])
@@ -74,16 +74,23 @@ test('o trilho do membro: Início, Projetos, Integrações, Configurações e a 
     `${HOME}/settings`,
   )
   expect(list.getByText('Empresa Teste')).toBeTruthy()
-  expect(list.getByText('Projetos recentes')).toBeTruthy()
-  expect(linkNames(list)).toEqual([
-    'Projeto 1',
-    'Projeto 2',
-    'Projeto 3',
-    'Projeto 4',
-    'Projeto 5',
-    'Todos os projetos',
-  ])
+  expect(list.getByRole('link', { name: 'Nova conversa' })).toBeTruthy()
+  expect(list.queryByText('Projetos recentes')).toBeNull()
   expect(screen.getByRole('main')).toBeTruthy()
+})
+
+test('o desenvolvedor: o trilho tem Automações e Agentes depois de Integrações, como a dona; o membro não os tem', async () => {
+  open(HOME, PROJECTS, 'developer')
+  const developer = await sidebar()
+  expect(linkNames(developer.rail)).toEqual([
+    'Início',
+    'Projetos',
+    'Integrações',
+    'Automações',
+    'Agentes',
+    'Configurações',
+  ])
+  expect(developer.list.getByRole('link', { name: 'Nova conversa' })).toBeTruthy()
 })
 
 test('o trilho da dona tem Automações e Agentes logo depois de Integrações; a lista é Nova conversa e Conversas; o membro não vê Automações nem Agentes', async () => {
@@ -106,28 +113,20 @@ test('o trilho da dona tem Automações e Agentes logo depois de Integrações; 
   expect(member.rail.queryByRole('link', { name: 'Agentes' })).toBeNull()
 })
 
-test('sem Projeto, a lista do membro mostra Projetos recentes com o +, uma frase quieta e sem Todos os projetos', async () => {
-  open(HOME, [])
-  const nav = within(await screen.findByRole('navigation', { name: 'Navegação' }))
-  await screen.findByRole('heading', { name: /^(Bom dia|Boa tarde|Boa noite)/ })
-  expect(nav.getByRole('link', { name: 'Início' })).toBeTruthy()
-  expect(await nav.findByText('Projetos recentes')).toBeTruthy()
-  expect(nav.getByRole('button', { name: 'Novo projeto' })).toBeTruthy()
-  expect(nav.getByText('Sem projetos por enquanto.')).toBeTruthy()
-  expect(nav.queryByRole('link', { name: 'Todos os projetos' })).toBeNull()
-})
+/** The Projetos the Projeto's own header offers to switch to, in order, without "Todos os projetos". */
+async function recents() {
+  fireEvent.click(await screen.findByRole('button', { name: /Trocar de Projeto/ }))
+  const menu = within(await screen.findByRole('menu'))
+  return menu
+    .getAllByRole('menuitem')
+    .map((item) => item.textContent)
+    .slice(0, -1)
+}
 
-test('os Projetos recentes: os abertos por último que seguem na lista, completados pelos primeiros, até cinco (critério 3)', async () => {
+test('os Projetos recentes do cabeçalho do Projeto: os abertos por último que seguem na lista, completados pelos primeiros, até cinco (critério 3)', async () => {
   remembered(7, 3, 6)
-  open(HOME)
-  const { list } = await sidebar()
-  expect(linkNames(list).slice(0, -1)).toEqual([
-    'Projeto 7',
-    'Projeto 3',
-    'Projeto 6',
-    'Projeto 1',
-    'Projeto 2',
-  ])
+  open(`${HOME}/projects/${PROJECTS[0]?.id}`)
+  expect(await recents()).toEqual(['Projeto 1', 'Projeto 7', 'Projeto 3', 'Projeto 6', 'Projeto 2'])
 })
 
 test('um Projeto lembrado que o Hub já não lista fica de fora (critério 3)', async () => {
@@ -135,32 +134,11 @@ test('um Projeto lembrado que o Hub já não lista fica de fora (critério 3)', 
     `conexus-remembered:${ANA.id}:projects.${COMPANY.id}`,
     `${'9'.repeat(32)} ${'4'.repeat(32)}`,
   )
-  open(HOME)
-  const { list } = await sidebar()
-  expect(linkNames(list).slice(0, -1)).toEqual([
-    'Projeto 4',
-    'Projeto 1',
-    'Projeto 2',
-    'Projeto 3',
-    'Projeto 5',
-  ])
-})
-
-test('com um só Projeto, a lista traz só ele (critério 3)', async () => {
-  open(HOME, PROJECTS.slice(0, 1))
-  const { list } = await sidebar()
-  expect(linkNames(list)).toEqual(['Projeto 1', 'Todos os projetos'])
-})
-
-test('abrir um Projeto o põe primeiro nos recentes (critério 3)', async () => {
-  const router = open(`${HOME}/projects/${PROJECTS[5]?.id}`)
-  await screen.findAllByRole('heading', { name: 'Projeto 6' })
-  await router.navigate({
-    to: '/companies/$companyId',
-    params: { companyId: CompanyId.parse(COMPANY.id) },
-  })
-  const { list } = await sidebar()
-  expect(linkNames(list)[0]).toBe('Projeto 6')
+  open(`${HOME}/projects/${PROJECTS[0]?.id}`)
+  const shown = await recents()
+  expect(shown).toHaveLength(5)
+  expect(shown).toContain('Projeto 4')
+  expect(shown).not.toContain('Projeto 9')
 })
 
 test('dentro de um Projeto o trilho fica e a lista é a do Projeto; Ctrl+B a recolhe e, ao sair, a da empresa volta (critérios 4 e 11)', async () => {

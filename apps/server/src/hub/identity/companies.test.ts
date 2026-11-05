@@ -54,9 +54,10 @@ test('fora: o membro lê a empresa e as pessoas; os convites, só dono e adminis
     company: { id: companyId, name: 'Empresa Teste', ...address },
     role: 'member',
     mayInviteAs: [],
+    may: { manageAgents: false, manageAutomations: false },
   })
   const owner = await call(hub, ana, 'GET', `/api/companies/${companyId}`)
-  assert.deepEqual(Object(owner.json()).mayInviteAs, ['owner', 'admin', 'member'])
+  assert.deepEqual(Object(owner.json()).mayInviteAs, ['owner', 'admin', 'developer', 'member'])
   const members = await call(hub, bruno, 'GET', `/api/companies/${companyId}/members`)
   assert.deepEqual(members.json(), {
     members: [
@@ -85,7 +86,7 @@ test('fora: o membro lê a empresa e as pessoas; os convites, só dono e adminis
   assert.deepEqual(invitations.json(), { invitations: [], next: { kind: 'END' } })
   await hub.test.asOwner(`update auth.member set role = 'admin' where user_id = $1`, [bruno.id])
   const asAdmin = await call(hub, bruno, 'GET', `/api/companies/${companyId}`)
-  assert.deepEqual(Object(asAdmin.json()).mayInviteAs, ['admin', 'member'])
+  assert.deepEqual(Object(asAdmin.json()).mayInviteAs, ['admin', 'developer', 'member'])
   assert.equal(
     (await call(hub, bruno, 'GET', `/api/companies/${companyId}/invitations`)).statusCode,
     200,

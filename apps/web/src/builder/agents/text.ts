@@ -31,7 +31,8 @@ export function lastRunText(lastRunAt: string | null, now: Date): string {
   return age === 'ontem' ? 'Rodou ontem' : `Rodou em ${age}`
 }
 export const NO_CONSTRUTOR_CONVERSATIONS = 'Nenhuma conversa com o Construtor ainda.'
-export const MEMBERS_CANNOT = 'Só o dono e os administradores usam os agentes do Projeto.'
+export const MEMBERS_CANNOT =
+  'Só o dono, os administradores e os desenvolvedores usam os agentes do Projeto.'
 export const UNCONFIRMED_CREATION = 'Não confirmamos a criação da conversa. Tente de novo.'
 export const UNCONFIRMED_SAVE = 'Não confirmamos a gravação. Confira o painel e tente de novo.'
 export const UNCONFIRMED_PUBLISH =

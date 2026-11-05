@@ -19,6 +19,7 @@ import { HttpResponse, http } from 'msw'
 import { setupServer } from 'msw/node'
 import { afterAll, afterEach, beforeAll } from 'vitest'
 import { ANA, COMPANY, problemOf } from './fixtures.ts'
+import { mayOf } from './test-may.ts'
 
 export const NO_COMPANIES = listCompanies.success.body.parse({
   companies: [],
@@ -70,6 +71,7 @@ export function companyRead(view: {
           },
           role: view.role,
           mayInviteAs: view.mayInviteAs ?? [],
+          may: mayOf(view.role),
         }),
       ),
     ),

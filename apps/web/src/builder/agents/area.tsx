@@ -134,13 +134,13 @@ function Earlier(scope: Scope) {
 /**
  * **Agentes** of a Projeto (step 24.3, U5, criterion 26, the founder's 2A and the prototype's one
  * column): the box that begins a conversation with the Construtor, the Projeto's agents with what
- * each does, its tools and its state, and the earlier conversations. The Hub refuses a member's
- * read, so the route does not open for them (S10); the sentence below is for a role that changed.
+ * each does, its tools and its state, and the earlier conversations. The Hub refuses a read to whoever may not
+ * manage agents, so the route does not open for them (S10); the sentence below is for a role that changed.
  */
 export function AgentsArea(props: Scope) {
-  const { role } = company.useRouteContext()
+  const { may } = company.useRouteContext()
   const scope = { companyId: props.companyId, projectId: props.projectId }
-  if (role === 'member') return <p className="p-xl text-text-2">{MEMBERS_CANNOT}</p>
+  if (!may.manageAgents) return <p className="p-xl text-text-2">{MEMBERS_CANNOT}</p>
   return (
     <AreaFrame scope={scope} tab="agentes">
       <div className={cn(START_COLUMN, 'gap-lg')}>

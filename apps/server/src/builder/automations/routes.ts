@@ -17,7 +17,7 @@ function ownerOf(input: { person: Person; params: { companyId: CompanyId } }): O
   return { companyId: input.params.companyId, personId: input.person.id }
 }
 
-/** The person's automations (step 24.2); the service admits the person on each (`askAssistant`). */
+/** The person's automations (step 24.2); the service admits the person on each (`manageAutomations`). */
 export function registerAutomationRoutes(app: FastifyInstance, automations: Automations): void {
   serve(app, listAutomations, async (input) =>
     answer({ automations: await automations.list(ownerOf(input), input.query.projectId) }),

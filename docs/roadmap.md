@@ -45,8 +45,9 @@ Sua empresa usa o Conexus desde 2026-11-02, recebendo cada etapa.
 - **24.3.2 Do Assistente ao Builder.** Pede um app ao Assistente e o vê chegar ao Builder com o briefing.
 - **24.3.3 A lista e os Projetos.** Busca.
 - **24.3.1 Ferramentas.** Vê as ferramentas do Projeto e todos os agentes da empresa.
-- **Papéis e pedidos.** O membro pede para publicar.
+- **24.3.4 Papéis e pedidos.** O membro pede para publicar.
 - **24.4 Ferramentas em código.** Código que calcula.
+- **Papéis da empresa.** A empresa cria papéis e escolhe o que cada um, o Membro também, usa de cada conector.
 - **24.5 Os agentes escrevem, com aprovação.** Um agente ou app pede "Aprovar?" antes de escrever (resposta B, 2026-10-18; leva a 20.1).
 - **24.6 Workflows e automações.** Monta conversando o fluxo do orçamento do Sankhya e o vê como trem de balões.
 - **24.7 Canais.** O agente no Telegram.
@@ -105,7 +106,7 @@ Login social. Arquivos enviados por pessoas para dentro de um app ou da máquina
 
 | Etapa | O que precisa antes | Decisão sua nela | Conhecimento trazido |
 | --- | --- | --- | --- |
-| Papéis e pedidos | A 24.3.1 | Nenhuma | — |
+| Papéis e pedidos | A 24.3.1 | Três | — |
 | 24.4 Ferramentas em código | Os pedidos | Nenhuma | Protótipo: Workers ou E2B |
 | 24.5 Escrita com aprovação | A 24.4 | Nenhuma | `requireApproval` do Mastra, provada antes a trava da 0053. Escrita nova pede nova liberação |
 | 24.6 Workflows e automações | A 24.5 | O gatilho do Sankhya | Workflows dinâmicos do Mastra. Seu orçamento é o aceite |
