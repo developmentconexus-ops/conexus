@@ -14,17 +14,13 @@ import { publishVersion } from './queries.ts'
  * Publicar: after a confirmation, who opens the app sees this version; the Prévia stays. A refusal
  * the list explains closes the dialog and reads the Projeto again; it leaves through `onChanged`,
  * because the row may be gone when the list is read again. Who does not publish (`mayPublish`) is
- * offered **Pedir para publicar** instead, and nothing while a request is open. Who does publish
- * decides an open request in its line, so the top line leaves **Publicar** out while one is open.
+ * offered **Pedir para publicar** instead, and nothing while a request is open.
  */
 export function Publish(
   props: PublishProps & { project: Pick<Project, 'mayPublish' | 'publishRequest'> },
 ) {
   const { project, ...rest } = props
-  if (project.mayPublish) {
-    if (project.publishRequest !== null && rest.label === 'Publicar') return null
-    return <PublishNow {...rest} />
-  }
+  if (project.mayPublish) return <PublishNow {...rest} />
   if (project.publishRequest !== null) return null
   return (
     <RequestPublish

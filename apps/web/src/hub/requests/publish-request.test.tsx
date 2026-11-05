@@ -278,3 +278,15 @@ test('quem publica com um pedido aberto decide na linha do pedido e não vê Pub
   expect(screen.queryByRole('button', { name: 'Publicar' })).toBeNull()
   expect(screen.queryByRole('button', { name: 'Pedir para publicar' })).toBeNull()
 })
+
+test('quem publica e não decide, com um pedido aberto, vê Publicar no alto e nenhum botão na linha do pedido', async () => {
+  bruno({
+    mayPublish: true,
+    role: 'developer',
+    publishRequest: requestView({ mayDecide: false }),
+  })
+  open()
+  expect(await screen.findByRole('button', { name: 'Publicar' })).toBeTruthy()
+  expect(screen.queryByRole('button', { name: /^Publicar a versão \d+$/ })).toBeNull()
+  expect(screen.queryByRole('button', { name: 'Recusar' })).toBeNull()
+})

@@ -89,16 +89,18 @@ export function ProjectArea(props: {
                 <span className="max-md:hidden">Abrir app</span>
               </a>
             )}
-          {appVersion !== null && appVersion !== publishedVersion && (
-            <Publish
-              companyId={companyId}
-              projectId={projectId}
-              number={appVersion}
-              label="Publicar"
-              project={project}
-              onChanged={setStale}
-            />
-          )}
+          {appVersion !== null &&
+            appVersion !== publishedVersion &&
+            project.publishRequest?.mayDecide !== true && (
+              <Publish
+                companyId={companyId}
+                projectId={projectId}
+                number={appVersion}
+                label="Publicar"
+                project={project}
+                onChanged={setStale}
+              />
+            )}
         </div>
       </div>
       {stale !== undefined && (
