@@ -34,6 +34,8 @@ test('criar: o membro cria, só o primeiro Projeto chama o Neon e o banco da emp
     name: 'Pedidos',
     createdAt: project.createdAt,
     mayDelete: false,
+    mayPublish: false,
+    publishRequest: null,
     address: `pedidos--empresa-${companyId.slice(0, 8)}.${TEST_APPS_DOMAIN}`,
     appVersion: null,
     publishedVersion: null,
@@ -199,4 +201,60 @@ test('as versões na lista: cada Projeto traz appVersion e publishedVersion, nul
     )
     assert.deepEqual([row.appVersion, row.publishedVersion], [one.appVersion, one.publishedVersion])
   }
+})
+
+test('o pedido aberto: o Projeto lido e o criado de novo trazem mayPublish e o pedido como cada um o vê', async (t) => {
+  const { hub, ana, bruno, companyId, projects } = await companyWithMember(t)
+  const carla = await memberOn(hub, companyId, CARLA, 'developer')
+  const key = crypto.randomUUID()
+  const made = await post(hub, bruno, projects, { name: 'Encomendas' }, key)
+  const projectId = String(Object(made.json()).project.id)
+  const requestId = crypto.randomUUID()
+  await hub.test.asOwner(
+    `insert into requests.request (id, attempt_key, company_id, requested_by, project_id, kind,
+       number, message, state, created_at)
+     values ($1::uuid, $1::text, $2, $3, $4, 'PUBLISH_APP_VERSION', 5, 'pronta para a loja',
+       'PENDING', '2026-11-05T10:00:00Z')`,
+    [requestId, companyId, bruno.id, projectId],
+  )
+  async function seenBy(person: Person) {
+    const read = await call(hub, person, 'GET', `${projects}/${projectId}`)
+    assert.equal(read.statusCode, 200, read.body)
+    const { mayPublish, publishRequest } = Object(read.json()).project
+    return { mayPublish, publishRequest }
+  }
+  const request = {
+    id: requestId,
+    number: 5,
+    message: 'pronta para a loja',
+    requestedBy: { name: BRUNO.name },
+    createdAt: '2026-11-05T10:00:00.000Z',
+  }
+  assert.deepEqual(await seenBy(bruno), {
+    mayPublish: false,
+    publishRequest: { ...request, mayDecide: false, mayCancel: true },
+  })
+  assert.deepEqual(await seenBy(ana), {
+    mayPublish: true,
+    publishRequest: { ...request, mayDecide: true, mayCancel: false },
+  })
+  assert.deepEqual(await seenBy(carla), {
+    mayPublish: true,
+    publishRequest: { ...request, mayDecide: false, mayCancel: false },
+  })
+  const again = await post(hub, bruno, projects, { name: 'Encomendas' }, key)
+  assert.equal(again.statusCode, 201, again.body)
+  assert.deepEqual(Object(again.json()).project.publishRequest, {
+    ...request,
+    mayDecide: false,
+    mayCancel: true,
+  })
+  await hub.test.asOwner(`update requests.request set state = 'CANCELLED'`)
+  assert.deepEqual(await seenBy(bruno), { mayPublish: false, publishRequest: null })
+  // A request of another company never shows, nor is decided (the row policy).
+  const other = await plantCompany(hub.test, ana.id, 'Outra Empresa')
+  const decided = await post(hub, ana, `/api/companies/${other}/requests/${requestId}/decision`, {
+    decision: 'APPROVE',
+  })
+  assert.deepEqual([decided.statusCode, codeOf(decided)], [404, 'NOT_FOUND'])
 })

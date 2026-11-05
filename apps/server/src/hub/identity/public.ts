@@ -22,7 +22,7 @@ import { createFirstPerson } from './first-person.ts'
 import { mailInvitation } from './invitation-mail.ts'
 import { lockCompany } from './invitations.ts'
 import type { PersonConversationRelease } from './memberships.ts'
-import { companyMembersOf, peopleNamed } from './memberships.ts'
+import { companyMembersOf, holdMember, membersAllowed, peopleNamed } from './memberships.ts'
 import { companyNicknameOf } from './nickname.ts'
 import { createPasswordRecovery } from './password-recovery.ts'
 import { registerIdentityRoutes } from './routes.ts'
@@ -36,8 +36,16 @@ export type { PersonConversationRelease } from './memberships.ts'
 export { passwordLinkText } from './messages.ts'
 // The row policies' pieces, for the Central's own table, the Hub session's table, for the apps'
 // and the model accounts' foreign keys (code C8), and a person's name, for the version that
-// person sent.
-export { ADMINISTRATOR, company, member, personNameColumn, policy, session } from './tables.ts'
+// person sent, or a member's, for the request they decided.
+export {
+  ADMINISTRATOR,
+  company,
+  member,
+  memberNameColumn,
+  personNameColumn,
+  policy,
+  session,
+} from './tables.ts'
 export type { OperatorProof }
 export type Identity = ReturnType<typeof createIdentity>
 export type IdentityPorts = Identity['ports']
@@ -70,6 +78,10 @@ export function createIdentity(deps: {
       lockCompany,
       admitMember: admit,
       allows,
+      // Who a request to publish tells, the members who decide it, and its asker held while it
+      // is decided (step 24.3.4).
+      membersAllowed,
+      holdMember,
       // What a person's access to an app reaches identity through (step 18): the company being
       // deleted refuses them; the members, who use every app; names; the app's invitations.
       admitAppUser,

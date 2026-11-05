@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { CompanyId, Next, Page } from './companies.ts'
 import { ProjectId } from './library-ids.ts'
 import { defineOperation } from './operation.ts'
+import { PublishRequest } from './requests.ts'
 
 /** The longest Project name, in characters, the same as a company's. */
 export const PROJECT_NAME_MAX_LENGTH = 100
@@ -27,11 +28,14 @@ export const ProjectSummary = z.object({
 export type ProjectSummary = z.infer<typeof ProjectSummary>
 
 /**
- * `mayDelete` is what the viewer's role allows, the Hub's one answer (code C26). `address` is the
- * app's host name, `null` for a Projeto made while the Hub ran step 7's image.
+ * `mayDelete` and `mayPublish` are what the viewer's role allows, the Hub's one answer (code C26).
+ * `publishRequest` is the Projeto's open request, if any (step 24.3.4). `address` is the app's host
+ * name, `null` for a Projeto made while the Hub ran step 7's image.
  */
 export const Project = ProjectSummary.extend({
   mayDelete: z.boolean(),
+  mayPublish: z.boolean(),
+  publishRequest: PublishRequest.nullable(),
   address: z.string().min(1).nullable(),
 })
 export type Project = z.infer<typeof Project>

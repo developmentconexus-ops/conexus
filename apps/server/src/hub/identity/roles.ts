@@ -14,6 +14,11 @@ export const ACCESS_CONTROL = createAccessControl({
   modelAccount: ['manage'],
   appAccess: ['manage'],
   connection: ['manage'],
+  app: ['publish'],
+  agent: ['manage', 'publish'],
+  automation: ['manage'],
+  assistant: ['ask'],
+  request: ['create', 'decide'],
 })
 
 const MANAGE_COMPANY = {
@@ -21,6 +26,19 @@ const MANAGE_COMPANY = {
   modelAccount: ['manage'],
   appAccess: ['manage'],
   connection: ['manage'],
+  request: ['create', 'decide'],
+} as const
+
+// Every member asks to publish a version; only an owner or an administrator decides (step 24.3.4, "3").
+const ASK = { request: ['create'] } as const
+
+// What makes a person a builder: they publish apps, manage and publish agents, create automations
+// and ask the Assistant (step 24.3.4, U1). The connections stay the administrators' (step 19, D).
+const BUILD = {
+  app: ['publish'],
+  agent: ['manage', 'publish'],
+  automation: ['manage'],
+  assistant: ['ask'],
 } as const
 
 /**
@@ -35,8 +53,20 @@ export const COMPANY_ROLES = {
   owner: ACCESS_CONTROL.newRole({
     ...ownerAc.statements,
     ...MANAGE_COMPANY,
+    ...BUILD,
     company: ['nickname'],
   }),
-  admin: ACCESS_CONTROL.newRole({ ...adminAc.statements, ...MANAGE_COMPANY }),
-  member: ACCESS_CONTROL.newRole({ ...memberAc.statements, project: ['create'] }),
+  admin: ACCESS_CONTROL.newRole({ ...adminAc.statements, ...MANAGE_COMPANY, ...BUILD }),
+  developer: ACCESS_CONTROL.newRole({
+    ...memberAc.statements,
+    project: ['create'],
+    ...BUILD,
+    ...ASK,
+  }),
+  member: ACCESS_CONTROL.newRole({
+    ...memberAc.statements,
+    project: ['create'],
+    assistant: ['ask'],
+    ...ASK,
+  }),
 }

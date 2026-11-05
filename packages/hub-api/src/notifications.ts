@@ -6,6 +6,7 @@ import { ConversationId } from './conversations.ts'
 import type { FailureCode } from './failures.ts'
 import { ProjectId } from './library-ids.ts'
 import { defineOperation } from './operation.ts'
+import { RequestState } from './requests.ts'
 
 export const NotificationId = z.uuid().brand('NotificationId')
 export type NotificationId = z.infer<typeof NotificationId>
@@ -14,24 +15,51 @@ const OfNotification = {
   id: NotificationId,
   createdAt: z.iso.datetime(),
   read: z.boolean(),
+}
+
+const OfAutomation = {
+  ...OfNotification,
   automation: z.object({ id: AutomationId, name: z.string() }),
   projectId: ProjectId.nullable(),
 }
 
-/** What the Hub tells a person: an automation's run ended (step 24.2). */
+const OfRequest = {
+  ...OfNotification,
+  projectId: ProjectId,
+  projectName: z.string(),
+  number: z.int().positive(),
+}
+
+/**
+ * What the Hub tells a person: an automation's run ended (step 24.2); a member asks to publish a
+ * version, or the request they made was decided (step 24.3.4). `decidedBy` is `null` once the person
+ * who decided has left the company.
+ */
 export const NotificationRow = z.discriminatedUnion('kind', [
   z.object({
     kind: z.literal('AUTOMATION_DONE'),
-    ...OfNotification,
+    ...OfAutomation,
     conversationId: ConversationId,
   }),
   z.object({
     kind: z.literal('AUTOMATION_FAILED'),
-    ...OfNotification,
+    ...OfAutomation,
     code: AutomationFailureCode,
     conversationId: ConversationId.nullable(),
   }),
-  z.object({ kind: z.literal('AUTOMATION_PAUSED'), ...OfNotification }),
+  z.object({ kind: z.literal('AUTOMATION_PAUSED'), ...OfAutomation }),
+  z.object({
+    kind: z.literal('REQUEST_OPENED'),
+    ...OfRequest,
+    requestedBy: z.object({ name: z.string() }),
+  }),
+  z.object({
+    kind: z.literal('REQUEST_DECIDED'),
+    ...OfRequest,
+    outcome: RequestState.extract(['APPROVED', 'DECLINED', 'SUPERSEDED']),
+    decidedBy: z.object({ name: z.string() }).nullable(),
+    reason: z.string().nullable(),
+  }),
 ])
 export type NotificationRow = z.infer<typeof NotificationRow>
 

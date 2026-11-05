@@ -1,4 +1,4 @@
-import type { CompanyId, PersonId, ProjectId } from '@conexus/hub-api'
+import type { CompanyId, PersonId, ProjectId, PublishRequest, Role } from '@conexus/hub-api'
 import type { CommandTx, ReadTx, Scope } from '../../platform/database.ts'
 
 /**
@@ -40,3 +40,8 @@ export type PublishedRolesOf = (
 
 /** Ends a person's sessions in a Projeto's app, after the commit that took their access (S13). */
 export type AppSessionsEnd = (ids: { projectId: ProjectId; personId: PersonId }) => Promise<void>
+
+export type PublishRequestOf = (
+  tx: ReadTx,
+  input: { companyId: CompanyId; projectId: ProjectId; personId: PersonId; role: Role },
+) => Promise<PublishRequest | null>

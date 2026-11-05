@@ -62,7 +62,7 @@ export function ProjectsBlock(props: { companyId: CompanyId; creates?: boolean }
       title="Projetos"
       action={
         <span className="flex items-center gap-md">
-          {props.creates && <NewProjectDialog companyId={companyId} block />}
+          {props.creates && <NewProjectDialog companyId={companyId} />}
           <Link
             to="/companies/$companyId/projects"
             params={{ companyId }}

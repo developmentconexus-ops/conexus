@@ -55,8 +55,6 @@ export function agentsOf(
   })
 }
 
-export type Agents = ReturnType<typeof agentsOf>
-
 /**
  * The agents of `agentsOf` alive (step 24.3, U2): the agents' conversations, whose part joins the
  * one `Mastra` after the Assistant's, and their routes beside the agents'.

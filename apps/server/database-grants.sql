@@ -13,6 +13,7 @@ ALTER SCHEMA hub OWNER TO test_owner;
 ALTER SCHEMA notifications OWNER TO test_owner;
 ALTER SCHEMA operations OWNER TO test_owner;
 ALTER SCHEMA projects OWNER TO test_owner;
+ALTER SCHEMA requests OWNER TO test_owner;
 -- Step 5, provisional until the founder's word (firstmate, 2026-10-17): the operator's administrator
 -- check, one SECURITY DEFINER function owned by a role that cannot log in and reads only the
 -- administrators' rows; only hub_operator executes it.
@@ -75,11 +76,13 @@ ALTER TABLE drizzle.__drizzle_migrations OWNER TO test_owner;
 ALTER SEQUENCE drizzle.__drizzle_migrations_id_seq OWNER TO test_owner;
 ALTER TABLE hub.starts OWNER TO test_owner;
 ALTER TABLE notifications.notification OWNER TO test_owner;
+ALTER TABLE notifications.request_notice OWNER TO test_owner;
 ALTER TABLE operations.client OWNER TO test_owner;
 -- Step 18 (D11, founder 2026-10-28, "aPROVO PAGINA"): who uses an app and the Projects of one person.
 ALTER TABLE projects.app_access OWNER TO test_owner;
 ALTER TABLE projects.company_database OWNER TO test_owner;
 ALTER TABLE projects.project OWNER TO test_owner;
+ALTER TABLE requests.request OWNER TO test_owner;
 -- Step 12, founder 2026-10-19 ("1. A", decision 0010): the Hub's database lets in its own logins only,
 -- so Mastra's login is refused at the door.
 REVOKE CONNECT,TEMPORARY ON DATABASE hub_database FROM PUBLIC;
@@ -121,6 +124,10 @@ GRANT USAGE ON SCHEMA projects TO hub_runtime;
 -- Step 18 (D11, founder 2026-10-28, "aPROVO PAGINA"): who uses an app and the Projects of one person.
 GRANT USAGE ON SCHEMA projects TO hub_invitation;
 GRANT USAGE ON SCHEMA projects TO hub_app_people;
+-- Step 24.3.4, U2, the founder's word on the card (D11, "2. Aprovo"): a company's routes read, create and
+-- change the state of a request to publish, and read, create and mark read what a request tells; both
+-- leave by cascade, never by the Hub.
+GRANT USAGE ON SCHEMA requests TO hub_company;
 REVOKE ALL ON FUNCTION apps.companies_with_apps() FROM PUBLIC;
 GRANT ALL ON FUNCTION apps.companies_with_apps() TO hub_runtime;
 REVOKE ALL ON FUNCTION auth.is_installation_administrator(person text) FROM PUBLIC;
@@ -317,6 +324,11 @@ GRANT SELECT,INSERT ON TABLE hub.starts TO hub_runtime;
 -- leaves by cascade, never by the Hub.
 GRANT SELECT,INSERT ON TABLE notifications.notification TO hub_company;
 GRANT UPDATE(read_at) ON TABLE notifications.notification TO hub_company;
+-- Step 24.3.4, U2, the founder's word on the card (D11, "2. Aprovo"): a company's routes read, create and
+-- change the state of a request to publish, and read, create and mark read what a request tells; both
+-- leave by cascade, never by the Hub.
+GRANT SELECT,INSERT ON TABLE notifications.request_notice TO hub_company;
+GRANT UPDATE(read_at) ON TABLE notifications.request_notice TO hub_company;
 -- Step 4.2, founder 2026-10-16 ("Aprovo", option A): the Hub never deletes a client.
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE operations.client TO hub_operator;
 -- Step 18 (D11, founder 2026-10-28, "aPROVO PAGINA"): who uses an app and the Projects of one person.
@@ -353,6 +365,13 @@ GRANT UPDATE(deleting_since) ON TABLE projects.project TO hub_company;
 GRANT SELECT(deleting_since) ON TABLE projects.project TO hub_hosts;
 -- Step 18 (D11, founder 2026-10-28, "aPROVO PAGINA"): who uses an app and the Projects of one person.
 GRANT SELECT(deleting_since) ON TABLE projects.project TO hub_app_people;
+-- Step 24.3.4, U2, the founder's word on the card (D11, "2. Aprovo"): a company's routes read, create and
+-- change the state of a request to publish, and read, create and mark read what a request tells; both
+-- leave by cascade, never by the Hub.
+GRANT SELECT,INSERT ON TABLE requests.request TO hub_company;
+GRANT UPDATE(state) ON TABLE requests.request TO hub_company;
+GRANT UPDATE(decided_by) ON TABLE requests.request TO hub_company;
+GRANT UPDATE(reason) ON TABLE requests.request TO hub_company;
 -- Step 12, founder 2026-10-19 ("1. A", decision 0010): Mastra's database, the same dump of its
 -- objects, open to Mastra's login alone, which creates its tables there at start.
 ALTER DATABASE mastra_database OWNER TO test_owner;

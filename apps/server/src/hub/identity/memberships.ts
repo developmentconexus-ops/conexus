@@ -12,8 +12,8 @@ import { z } from 'zod'
 import type { CommandTx, Database, ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import { after, pageKey, pageOf } from '../../platform/pages.ts'
-import type { Actor, CompanyProof } from './admission.ts'
-import { actorOf, admitCompany, rankAllows } from './admission.ts'
+import type { Actor, CompanyProof, MemberAction } from './admission.ts'
+import { actorOf, admitCompany, allows, rankAllows } from './admission.ts'
 import type { ProjectApps } from './app-invitations.ts'
 import type { Auth, LibraryCommand } from './auth.ts'
 import { organizationAdapter } from './auth.ts'
@@ -104,6 +104,40 @@ export async function companyMembersOf(tx: ReadTx, companyId: CompanyId) {
     .where(eq(member.organizationId, companyId))
     .orderBy(asc(user.name), asc(user.id))
   return rows.map((row) => Named.parse(row))
+}
+
+/**
+ * The members of the company whose role takes the action, held with `for key share` until the
+ * caller commits, so a person who leaves meanwhile waits for what the caller writes for them (S8).
+ */
+export async function membersAllowed(
+  tx: CommandTx,
+  input: { companyId: CompanyId; action: MemberAction },
+): Promise<PersonId[]> {
+  const rows = await tx
+    .select({ personId: member.userId, role: member.role })
+    .from(member)
+    .where(eq(member.organizationId, input.companyId))
+    .for('key share')
+  return rows
+    .filter((row) => allows(Role.parse(row.role), input.action))
+    .map((row) => PersonIdSchema.parse(row.personId))
+}
+
+/**
+ * Holds a member with `for key share` until the caller commits. A removal deletes the member before
+ * its cascade reaches the rows that point at them, so a caller that holds the member before such a
+ * row takes the same order and waits instead of deadlocking (code C65).
+ */
+export async function holdMember(
+  tx: CommandTx,
+  input: { companyId: CompanyId; personId: PersonId },
+): Promise<void> {
+  await tx
+    .select({ id: member.id })
+    .from(member)
+    .where(and(eq(member.organizationId, input.companyId), eq(member.userId, input.personId)))
+    .for('key share')
 }
 
 /** The name and address of each person the scope reads among `personIds`. */

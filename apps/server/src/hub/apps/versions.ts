@@ -56,7 +56,7 @@ export function receiveVersion(input: VersionFolder): ReceivedVersion {
 }
 
 /** The columns a version is shown from; the manifest and the files stay unread. */
-export const VERSION_VIEW = {
+const VERSION_VIEW = {
   id: appVersion.id,
   number: appVersion.number,
   state: appVersion.state,
@@ -106,6 +106,24 @@ export async function lockApp(tx: CommandTx, ids: OfProject) {
     .where(eq(app.projectId, ids.projectId))
     .for('update')
   if (row === undefined) throw new Failure('NOT_FOUND', { details: { reason: 'NO_APP' } })
+  return row
+}
+
+/**
+ * A version the Projeto keeps, by its number, with its manifest: one pruned, failed, being sent, of
+ * another Projeto or that never entered is absent. What a publish and a request to publish name.
+ */
+export async function keptVersionOf(tx: ReadTx, input: { projectId: ProjectId; number: number }) {
+  const [row] = await tx
+    .select({ ...VERSION_VIEW, manifest: appVersion.manifest })
+    .from(appVersion)
+    .where(
+      and(
+        eq(appVersion.projectId, input.projectId),
+        eq(appVersion.number, input.number),
+        eq(appVersion.state, 'ready'),
+      ),
+    )
   return row
 }
 

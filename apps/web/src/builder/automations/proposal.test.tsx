@@ -158,6 +158,23 @@ test('com a lista ainda lendo ou que falhou, o cartão não oferece Criar automa
   expect(hub.writes()).toHaveLength(0)
 })
 
+test('quem não cria: uma proposta antiga diz quem cria, sem botão e sem ler a lista que o Hub recusaria', async () => {
+  const hub = automationsHub(server, { automations: [] })
+  const reads: string[] = []
+  server.events.on('request:start', ({ request }) => {
+    if (request.url.includes('/automations')) reads.push(request.url)
+  })
+  at(OPEN, { conversations: [proposing()], role: 'member' })
+  expect(await screen.findByText('Resumo de vendas')).toBeTruthy()
+  expect(
+    screen.getByText('Só o dono, os administradores e os desenvolvedores criam automações.'),
+  ).toBeTruthy()
+  expect(screen.queryByRole('button', { name: 'Criar automação' })).toBeNull()
+  expect(screen.queryByRole('button', { name: 'Tentar de novo' })).toBeNull()
+  expect(reads).toEqual([])
+  expect(hub.writes()).toHaveLength(0)
+})
+
 test('voltar à conversa depois de criar mostra "Automação criada" e nenhum Criar automação', async () => {
   const hub = automationsHub(server, { automations: [] })
   const { conexus } = at(OPEN, { conversations: [proposing()] })

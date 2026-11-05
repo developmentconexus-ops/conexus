@@ -3,7 +3,7 @@ import type { NotificationRow } from '@conexus/hub-api'
 export type AutomationMailProps = {
   name: string
   /** How the automation's run ended: the kind of the notification it comes with. */
-  kind: NotificationRow['kind']
+  kind: Extract<NotificationRow, { automation: unknown }>['kind']
   link: string
   to: string
 }

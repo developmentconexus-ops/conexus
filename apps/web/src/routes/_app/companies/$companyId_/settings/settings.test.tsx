@@ -8,6 +8,7 @@ import { afterEach, expect, test, vi } from 'vitest'
 import { Conexus, createConexus } from '../../../../../main.tsx'
 import { ANA, COMPANY } from '../../../../../platform/fixtures.ts'
 import { companyRead, hubServer, refusal, sessionRead } from '../../../../../platform/test-hub.tsx'
+import { mayOf } from '../../../../../platform/test-may.ts'
 import { Route as SettingsRoute } from './route.tsx'
 
 const server = hubServer()
@@ -199,6 +200,7 @@ test('o nome comprido da empresa numa linha: cortado com reticências e inteiro 
           company: { ...COMPANY, name },
           role: 'owner',
           mayInviteAs: [],
+          may: mayOf('owner'),
         }),
       ),
     ),

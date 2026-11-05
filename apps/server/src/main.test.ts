@@ -39,18 +39,7 @@ async function hub(webRoot?: string) {
   const status = createStatus({ version: config.version, database: shared.database })
   const sendMail = testMail(config)
   const identity = createIdentity({ database: shared.database, config, log: silent, sendMail })
-  const {
-    projects,
-    operations,
-    apps: door,
-    modelAccounts,
-    conversations,
-    assistant,
-    automations,
-    agents,
-    notifications,
-    connectors,
-  } = subjectsOf({
+  const subjects = subjectsOf({
     mastraPool: shared.mastraPool,
     database: shared.database,
     config,
@@ -59,21 +48,7 @@ async function hub(webRoot?: string) {
     ...testAppPorts(config),
     log: silent,
   })
-  const app = await createHub(config, {
-    status,
-    identity,
-    operations,
-    projects,
-    apps: door,
-    modelAccounts,
-    conversations,
-    assistant,
-    automations,
-    agents,
-    notifications,
-    connectors,
-    webRoot,
-  })
+  const app = await createHub(config, { status, identity, ...subjects, webRoot })
   apps.push(app)
   return app
 }

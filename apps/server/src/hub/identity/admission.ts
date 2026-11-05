@@ -16,6 +16,13 @@ const CHOOSE_NICKNAME = { company: ['nickname'] } as const
 const MANAGE_MODEL_ACCOUNTS = { modelAccount: ['manage'] } as const
 const MANAGE_APP_ACCESS = { appAccess: ['manage'] } as const
 const MANAGE_CONNECTIONS = { connection: ['manage'] } as const
+const PUBLISH_APP = { app: ['publish'] } as const
+const MANAGE_AGENTS = { agent: ['manage'] } as const
+const PUBLISH_AGENT = { agent: ['publish'] } as const
+const MANAGE_AUTOMATIONS = { automation: ['manage'] } as const
+const ASK_ASSISTANT = { assistant: ['ask'] } as const
+const REQUEST_PUBLISH = { request: ['create'] } as const
+const DECIDE_REQUEST = { request: ['decide'] } as const
 type ActionRule = {
   by: 'MEMBER' | 'COMPANY' | 'OPERATOR'
   locks: boolean
@@ -29,6 +36,13 @@ type ActionRule = {
     | typeof MANAGE_MODEL_ACCOUNTS
     | typeof MANAGE_APP_ACCESS
     | typeof MANAGE_CONNECTIONS
+    | typeof PUBLISH_APP
+    | typeof MANAGE_AGENTS
+    | typeof PUBLISH_AGENT
+    | typeof MANAGE_AUTOMATIONS
+    | typeof ASK_ASSISTANT
+    | typeof REQUEST_PUBLISH
+    | typeof DECIDE_REQUEST
 }
 
 /**
@@ -45,11 +59,16 @@ const ACTIONS = {
   createProject: { by: 'MEMBER', statement: CREATE_PROJECT, locks: true },
   deleteProject: { by: 'MEMBER', statement: DELETE_PROJECT, locks: true },
   chooseNickname: { by: 'MEMBER', statement: CHOOSE_NICKNAME, locks: true },
-  // Every member who converses with the Builder lists the Projeto's versions and publishes any kept
-  // one (step 17, C2 and E1). Listing reads in a read-only transaction, which cannot hold the
-  // member's row; publishing holds it until it commits.
+  // Every member who converses with the Builder lists the Projeto's versions (step 17, C2 and E1);
+  // an owner, an administrator or a developer publishes any kept one (step 24.3.4). Listing reads
+  // in a read-only transaction, which cannot hold the member's row; publishing holds it until it
+  // commits.
   readAppVersions: { by: 'MEMBER', statement: undefined, locks: false },
-  publishAppVersion: { by: 'MEMBER', statement: undefined, locks: true },
+  publishAppVersion: { by: 'MEMBER', statement: PUBLISH_APP, locks: true },
+  // Withdrawing needs only the membership; `cancel` checks the person is the asker.
+  requestPublish: { by: 'MEMBER', statement: REQUEST_PUBLISH, locks: true },
+  cancelRequest: { by: 'MEMBER', statement: undefined, locks: true },
+  decideRequest: { by: 'MEMBER', statement: DECIDE_REQUEST, locks: true },
   // Every member's Builder turn sends its version to the Projeto's one app (step 14.1, X1).
   sendBuilderVersion: { by: 'MEMBER', statement: undefined, locks: true },
   // Every member reads the company's model accounts and links, orders and removes their own; only
@@ -69,15 +88,16 @@ const ACTIONS = {
   // and removes one (step 19, D).
   readConnections: { by: 'MEMBER', statement: undefined, locks: false },
   manageConnections: { by: 'MEMBER', statement: MANAGE_CONNECTIONS, locks: true },
-  // Whoever manages the company's connections asks the Assistant about them: an owner or an
-  // administrator (step 24.1, U1). Reading holds no row.
-  askAssistant: { by: 'MEMBER', statement: MANAGE_CONNECTIONS, locks: false },
-  // A Projeto's agents and the company's tools are an owner's or an administrator's, as the
-  // connections they read (step 24.3, 3.A): reading holds no row, a change holds the role until it
-  // commits. The step of roles and requests makes `publishAgent` "may publish or may ask".
-  readAgents: { by: 'MEMBER', statement: MANAGE_CONNECTIONS, locks: false },
-  manageAgents: { by: 'MEMBER', statement: MANAGE_CONNECTIONS, locks: true },
-  publishAgent: { by: 'MEMBER', statement: MANAGE_CONNECTIONS, locks: true },
+  // Every member asks the Assistant (step 24.3.4, "5"). Reading holds no row.
+  askAssistant: { by: 'MEMBER', statement: ASK_ASSISTANT, locks: false },
+  // A Projeto's agents and the company's tools are an owner's, an administrator's or a developer's
+  // (step 24.3, 3.A, and 24.3.4): reading holds no row, a change holds the role until it commits.
+  readAgents: { by: 'MEMBER', statement: MANAGE_AGENTS, locks: false },
+  manageAgents: { by: 'MEMBER', statement: MANAGE_AGENTS, locks: true },
+  publishAgent: { by: 'MEMBER', statement: PUBLISH_AGENT, locks: true },
+  // The same three create, change and remove automations (step 24.3.4, C1). They live in Mastra's
+  // schedules and are admitted in a read-only transaction, which cannot hold the role.
+  manageAutomations: { by: 'MEMBER', statement: MANAGE_AUTOMATIONS, locks: false },
   readMembers: { by: 'COMPANY', statement: undefined, locks: false },
   readInvitations: { by: 'COMPANY', statement: INVITE, locks: false },
   invite: { by: 'COMPANY', statement: INVITE, locks: true },
@@ -130,6 +150,7 @@ export function rankAllows(actor: Actor, target: Role, next?: Role): boolean {
       return true
     case 'admin':
       return target !== 'owner' && next !== 'owner'
+    case 'developer':
     case 'member':
       return false
     default:

@@ -265,6 +265,16 @@ export const member = auth.table(
   ],
 )
 
+/**
+ * The name of a person while they are a member of the company, read beside another subject's row:
+ * one who has left is no longer named.
+ */
+export function memberNameColumn(companyId: SQLWrapper, personId: SQLWrapper) {
+  return sql<string | null>`case when exists (select 1 from ${member}
+    where ${member.organizationId} = ${companyId} and ${member.userId} = ${personId})
+    then ${personNameColumn(personId)} end`
+}
+
 export const invitation = auth.table(
   'invitation',
   {

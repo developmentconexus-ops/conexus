@@ -3,26 +3,13 @@ import { AppEntry, CompanyNickname } from './address.ts'
 import { Email, Password, PersonId } from './identity.ts'
 import { LIBRARY_ID } from './library-ids.ts'
 import { defineOperation } from './operation.ts'
+import { CompanyMay, Role } from './roles.ts'
 
 export const CompanyId = z.string().regex(LIBRARY_ID).brand('CompanyId')
 export type CompanyId = z.infer<typeof CompanyId>
 
 export const InvitationId = z.string().regex(LIBRARY_ID).brand('InvitationId')
 export type InvitationId = z.infer<typeof InvitationId>
-
-/** From the most privileged to the least; `mayInviteAs` and the invite form read this order. */
-export const Role = z.enum(['owner', 'admin', 'member'])
-export type Role = z.infer<typeof Role>
-
-/** The roles the Operations Central invites with in a client: the rule, read by the Hub and its form. */
-export const OPERATOR_INVITES_AS: readonly Role[] = ['owner']
-
-/** The Portuguese name of each role, on the screens and in the mail. */
-export const ROLE_LABELS: Record<Role, string> = {
-  owner: 'Dono',
-  admin: 'Administrador',
-  member: 'Membro',
-}
 
 export const Company = z.object({ id: CompanyId, name: z.string().min(1) })
 export type Company = z.infer<typeof Company>
@@ -132,7 +119,8 @@ export const listCompanies = defineOperation({
 
 export const getCompany = defineOperation({
   id: 'getCompany',
-  summary: 'Reads a company the person belongs to, the role and the roles it may invite as.',
+  summary:
+    'Reads a company the person belongs to, the role, the roles it may invite as and what it may do.',
   access: 'session',
   method: 'GET',
   path: '/api/companies/{companyId}',
@@ -140,7 +128,12 @@ export const getCompany = defineOperation({
   input: { params: InCompany },
   success: {
     status: 200,
-    body: z.object({ company: CompanyDetail, role: Role, mayInviteAs: z.array(Role) }),
+    body: z.object({
+      company: CompanyDetail,
+      role: Role,
+      mayInviteAs: z.array(Role),
+      may: CompanyMay,
+    }),
   },
   failures: ['NOT_FOUND', 'SESSION_REQUIRED', 'DATABASE_UNAVAILABLE'],
 })

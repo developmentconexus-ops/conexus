@@ -19,6 +19,7 @@ import { HttpResponse, http } from 'msw'
 import { setupServer } from 'msw/node'
 import { afterAll, afterEach, beforeAll } from 'vitest'
 import { ANA, COMPANY, problemOf } from './fixtures.ts'
+import { mayOf } from './test-may.ts'
 
 export const NO_COMPANIES = listCompanies.success.body.parse({
   companies: [],
@@ -70,6 +71,7 @@ export function companyRead(view: {
           },
           role: view.role,
           mayInviteAs: view.mayInviteAs ?? [],
+          may: mayOf(view.role),
         }),
       ),
     ),
@@ -311,6 +313,9 @@ export function projectsRead(view: ProjectsView) {
               project: {
                 ...project,
                 mayDelete: view.mayDelete,
+                // Who deletes here publishes too: the owner's view, or the member's (step 24.3.4).
+                mayPublish: view.mayDelete,
+                publishRequest: null,
                 address: view.address === undefined ? PEDIDOS_ADDRESS : view.address,
                 appVersion: view.appVersion ?? null,
                 publishedVersion: view.publishedVersion ?? null,

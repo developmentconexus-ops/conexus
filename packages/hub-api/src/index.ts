@@ -107,11 +107,8 @@ export {
   Member,
   Membership,
   Next,
-  OPERATOR_INVITES_AS,
   PAGE_SIZE,
   PendingInvitation,
-  ROLE_LABELS,
-  Role,
   removeMember,
   renewInvitation,
 } from './companies.ts'
@@ -285,6 +282,8 @@ export {
   ProjectSummary,
 } from './projects.ts'
 export * from './questions.ts'
+export * from './requests.ts'
+export { CompanyMay, OPERATOR_INVITES_AS, ROLE_LABELS, Role } from './roles.ts'
 export { RunId } from './runs.ts'
 export {
   ProjectSource,

@@ -2,6 +2,7 @@ import { getCompany, getInvitation, listAppAccess, listMyApps } from '@conexus/h
 import type { Page } from 'playwright-core'
 import { failure, ok } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
+import { mayOf } from './src/platform/test-may.ts'
 import type { State } from './sweep-kit.ts'
 import { createRefused, waitFor } from './sweep-kit.ts'
 import {
@@ -9,7 +10,6 @@ import {
   INVITATION_DETAILS,
   LONG_EMAIL,
   LONG_NAME,
-  MEMBER,
   NO_COMPANIES,
   OWNER,
   PROJECT_ID,
@@ -28,7 +28,8 @@ const UNSET = {
   [`GET /api/companies/${COMPANY.id}`]: ok(getCompany, {
     company: { id: COMPANY.id, name: LONG_NAME, nickname: null, appsDomain: 'apps.example.test' },
     role: 'owner',
-    mayInviteAs: ['owner', 'admin', 'member'],
+    mayInviteAs: ['owner', 'admin', 'developer', 'member'],
+    may: mayOf('owner'),
   }),
 }
 
@@ -96,9 +97,9 @@ export const APP_STATES: State[] = [
   },
   {
     name: 'criar Projeto, nome sem endereço',
-    path: `/companies/${COMPANY.id}`,
+    path: `/companies/${COMPANY.id}/welcome/build`,
     replies: {
-      ...MEMBER,
+      ...OWNER,
       ...projectsPage(COMPANY.id, { empty: true }),
       ...startsOn(COMPANY.id),
       [`POST /api/companies/${COMPANY.id}/projects`]: failure('PROJECT_NAME_NO_ADDRESS'),

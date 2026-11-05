@@ -26,18 +26,7 @@ async function linked(t: TestContext) {
   const status = createStatus({ version: config.version, database: test.database })
   const sendMail = testMail(config)
   const identity = createIdentity({ database: test.database, config, log: silent, sendMail })
-  const {
-    projects,
-    operations,
-    apps,
-    modelAccounts,
-    conversations,
-    assistant,
-    automations,
-    agents,
-    notifications,
-    connectors,
-  } = subjectsOf({
+  const subjects = subjectsOf({
     mastraPool: test.mastraPool,
     database: test.database,
     config,
@@ -46,20 +35,7 @@ async function linked(t: TestContext) {
     ...testAppPorts(config),
     log: silent,
   })
-  const app = await createHub(config, {
-    status,
-    identity,
-    operations,
-    projects,
-    apps,
-    modelAccounts,
-    conversations,
-    assistant,
-    automations,
-    agents,
-    notifications,
-    connectors,
-  })
+  const app = await createHub(config, { status, identity, ...subjects })
   t.after(() => app.close())
   const { link } = await identity.firstPerson({
     name: 'Ana Lima',

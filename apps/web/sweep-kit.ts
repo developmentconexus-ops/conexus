@@ -15,7 +15,7 @@ export async function waitFor(page: Page, text: string | RegExp) {
   await page.getByText(text).first().waitFor()
 }
 
-/** Início's request, sent, and the name of its Projeto, which the Hub refuses with `sentence`. */
+/** The Builder's box (the first entry's last step): the request, sent, and the name of its Projeto, which the Hub refuses with `sentence`. */
 export async function createRefused(page: Page, sentence: string, name = 'Pedidos') {
   await page.getByRole('textbox', { name: 'Mensagem para o Builder' }).fill('Um app de encomendas')
   await page.getByRole('button', { name: 'Enviar' }).click()

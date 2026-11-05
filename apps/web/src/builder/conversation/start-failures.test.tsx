@@ -131,13 +131,3 @@ test('com os Projetos recusados, o pedido enviado mostra a frase com Tentar de n
   fireEvent.click(retry)
   expect(await screen.findByLabelText('Nome do projeto')).toBeTruthy()
 })
-
-test('Criar numa empresa que o Hub já não acha', async () => {
-  home({ project: () => refusal('NOT_FOUND') })
-  await request()
-  server.use(http.get(`*/api/companies/${COMPANY.id}/projects`, () => refusal('NOT_FOUND')))
-  create('Pedidos')
-  expect(
-    (await screen.findAllByText('Não encontramos o que você procurou.', { exact: false })).length,
-  ).toBeGreaterThan(0)
-})

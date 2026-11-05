@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { CARLA, call, codeOf, personOn, post } from '../identity/test-hub.ts'
+import { CARLA, call, codeOf, memberOn, personOn, post } from '../identity/test-hub.ts'
 import { companyForVersions, folder, listed, send } from './test-versions.ts'
 
 function versionOf(response: { json(): unknown }) {
@@ -19,13 +19,14 @@ async function pointers(subject: Awaited<ReturnType<typeof companyForVersions>>)
 
 test('publicar: 200, só o ponteiro publicado muda, e de novo é o mesmo', async (t) => {
   const subject = await companyForVersions(t)
-  const { hub, ana, bruno, versions } = subject
+  const { hub, ana, bruno, versions, companyId } = subject
+  const diego = await memberOn(hub, companyId, CARLA, 'developer')
   await send(subject, ana)
   await send(subject, ana, folder({}, '#6b2fa3'))
   const route = `${versions.replace(/\/versions$/, '')}/published-version`
   assert.deepEqual(await pointers(subject), { live: 2, published: null })
-  // Any member publishes (C2, E1): Bruno is no owner or administrator.
-  const published = await call(hub, bruno, 'PUT', route, { number: 1 })
+  // A developer publishes (step 24.3.4): Diego is no owner or administrator.
+  const published = await call(hub, diego, 'PUT', route, { number: 1 })
   assert.equal(published.statusCode, 200, published.body)
   assert.deepEqual([versionOf(published).number, versionOf(published).published], [1, true])
   assert.equal(versionOf(published).live, false)
@@ -49,6 +50,37 @@ test('publicar: 200, só o ponteiro publicado muda, e de novo é o mesmo', async
   // The member lists too (E1).
   const read = await call(hub, bruno, 'GET', versions)
   assert.equal(read.statusCode, 200, read.body)
+})
+
+test('quem publica: o dono, o administrador e o desenvolvedor; o membro, 404, e a versão publicada não muda', async (t) => {
+  const subject = await companyForVersions(t)
+  const { hub, ana, bruno, companyId, versions } = subject
+  const admin = await memberOn(hub, companyId, CARLA, 'admin')
+  const developer = await memberOn(
+    hub,
+    companyId,
+    { name: 'Diego Reis', email: 'diego@example.test' },
+    'developer',
+  )
+  await send(subject, ana)
+  await send(subject, ana, folder({}, '#6b2fa3'))
+  await send(subject, ana, folder({}, '#2fa36b'))
+  const route = `${versions.replace(/\/versions$/, '')}/published-version`
+  const refused = await call(hub, bruno, 'PUT', route, { number: 1 })
+  assert.deepEqual([refused.statusCode, codeOf(refused)], [404, 'NOT_FOUND'])
+  assert.deepEqual(await pointers(subject), { live: 3, published: null })
+  for (const [number, who] of [
+    [1, ana],
+    [2, admin],
+    [3, developer],
+  ] as const) {
+    const answer = await call(hub, who, 'PUT', route, { number })
+    assert.equal(answer.statusCode, 200, answer.body)
+    assert.deepEqual(await pointers(subject), { live: 3, published: number })
+  }
+  const stillRefused = await call(hub, bruno, 'PUT', route, { number: 1 })
+  assert.equal(stillRefused.statusCode, 404)
+  assert.deepEqual(await pointers(subject), { live: 3, published: 3 })
 })
 
 test('publicar: as recusas, e o envio em curso não atrapalha', async (t) => {

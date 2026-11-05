@@ -57,7 +57,7 @@ async function ran(
 test('o banco do Hub fora no primeiro passo: a execução termina FAILED com DATABASE_UNAVAILABLE, sem conversa, e o dono é avisado', async () => {
   const { told, outcome } = await ran(
     {
-      admit: () => Promise.reject(shutdown()),
+      admitAutomations: () => Promise.reject(shutdown()),
       open: () => Promise.reject(new Error('no conversation before the check')),
       turnEnd: () => {
         throw new Error('no turn before the check')
@@ -81,7 +81,7 @@ test('a pergunta que não sai: o envio que falha solta os ouvintes do fim do tur
   })
   const { outcome } = await ran(
     {
-      admit: () => Promise.resolve(),
+      admitAutomations: () => Promise.resolve(),
       open: () => Promise.resolve(Object.assign(Object.create(null), { session })),
       turnEnd: () => ({
         ended: new Promise<never>(() => undefined),
@@ -107,7 +107,7 @@ test('o envio aceito que não chega ao modelo: um sinal bloqueado solta os ouvin
   })
   const { outcome } = await ran(
     {
-      admit: () => Promise.resolve(),
+      admitAutomations: () => Promise.resolve(),
       open: () => Promise.resolve(Object.assign(Object.create(null), { session })),
       turnEnd: () => ({
         ended: new Promise<never>(() => undefined),

@@ -7,6 +7,7 @@ import { Conexus, createConexus } from '../../main.tsx'
 import { ANA, COMPANY } from '../../platform/fixtures.ts'
 import { hubServer, memberView, refusal, sessionRead } from '../../platform/test-hub.tsx'
 import { companyAppAccessRead } from '../../platform/test-hub-access.tsx'
+import { mayOf } from '../../platform/test-may.ts'
 
 export const server = hubServer()
 
@@ -52,6 +53,7 @@ export function hub(view: View) {
           company: COMPANY,
           role: view.role,
           mayInviteAs: view.mayInviteAs,
+          may: mayOf(view.role),
         }),
       ),
     ),

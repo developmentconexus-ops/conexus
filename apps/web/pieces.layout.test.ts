@@ -137,8 +137,9 @@ test('a escala dos botões, no computador e no celular', async () => {
 })
 
 test('a medida: itens de menu e linhas da barra de 32 px, campos de 36 px, a 1366 e a 390 px', async () => {
-  const home = STATES.find((each) => each.name === 'Início do membro')
-  assert.ok(home, 'the sweep lacks Início')
+  // The member's Início lists conversations, none in the sweep; a Projeto's sidebar lists its places.
+  const home = STATES.find((each) => each.name === 'Projeto, Sobre do membro')
+  assert.ok(home, 'the sweep lacks the member in a Projeto')
   for (const viewport of [DESKTOP, PHONE]) {
     const page = await harness.open('/pieces', { viewport, replies: {} })
     const field = await page.getByRole('textbox', { name: 'Campo' }).boundingBox()
@@ -185,8 +186,9 @@ test('o celular desenhado da Prévia mede 390', async () => {
 })
 
 test('num toque as linhas e os itens têm 44 px; com o mouse ficam em 32 (V58)', async () => {
-  const home = STATES.find((each) => each.name === 'Início do membro')
-  assert.ok(home, 'the sweep lacks Início')
+  // The member's Início lists conversations, none in the sweep; a Projeto's sidebar lists its places.
+  const home = STATES.find((each) => each.name === 'Projeto, Sobre do membro')
+  assert.ok(home, 'the sweep lacks the member in a Projeto')
   const page = await harness.open(home.path, { viewport: DESKTOP, replies: home.replies })
   await home.settle(page)
   await page.getByRole('button', { name: /^Conta de / }).click()

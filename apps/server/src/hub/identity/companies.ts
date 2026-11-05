@@ -6,7 +6,7 @@ import type { AppsDomain } from '../../platform/config.ts'
 import type { Database, ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import { after, pageKey, pageOf } from '../../platform/pages.ts'
-import { admit, mayInviteAs, mayOperate } from './admission.ts'
+import { admit, allows, mayInviteAs, mayOperate } from './admission.ts'
 import { company, member, user } from './tables.ts'
 
 const PersonRole = z.object({ role: z.string().nullable() })
@@ -73,7 +73,10 @@ export async function companyDetailOf(
   return CompanyDetail.parse({ ...row, appsDomain: input.appsDomain })
 }
 
-/** The company, the caller's role in it and the roles the caller may invite with, one snapshot. */
+/**
+ * The company, the caller's role in it, the roles the caller may invite with and what the role may
+ * do, one snapshot. `may` is read from `allows`, the table the routes admit by (code C26).
+ */
 export function readCompany(
   database: Database,
   input: { personId: PersonId; companyId: CompanyId; appsDomain: AppsDomain },
@@ -89,6 +92,10 @@ export function readCompany(
       company: detail,
       role: admitted.role,
       mayInviteAs: mayInviteAs(admitted),
+      may: {
+        manageAgents: allows(admitted.role, 'manageAgents'),
+        manageAutomations: allows(admitted.role, 'manageAutomations'),
+      },
     }
   })
 }

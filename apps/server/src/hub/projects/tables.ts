@@ -1,3 +1,4 @@
+import type { SQLWrapper } from 'drizzle-orm'
 import { sql } from 'drizzle-orm'
 import {
   check,
@@ -70,6 +71,11 @@ export const project = projects.table(
     ),
   ],
 )
+
+/** A Projeto's name, read beside another subject's row that names it. */
+export function projectNameColumn(projectId: SQLWrapper) {
+  return sql<string>`(select ${project.name} from ${project} where ${project.id} = ${projectId})`
+}
 
 /** A person who is not a member and uses this Projeto's app, with one role (step 18, C). */
 export const appAccess = projects.table(

@@ -145,3 +145,95 @@ test('a remoção: as notificações saem com a pessoa e com a empresa', async (
   await on.hub.test.asOwner('delete from auth.company where id = $1', [other])
   assert.deepEqual(await count(), [{ n: 1 }])
 })
+
+/**
+ * Bia, a member, asked to publish the versions 5 (open) and 6 (declined by Ana) of Encomendas: Ana
+ * was told of both, an hour apart and before any run, and Bia of the refusal.
+ */
+async function requested(on: Awaited<ReturnType<typeof notifying>>) {
+  const bia = await memberOn(on.hub, on.companyId, BIA, 'member')
+  const projectId = 'p'.repeat(32)
+  await on.hub.test.asOwner(
+    `insert into projects.project (id, company_id, name, attempt_key, created_at)
+      values ($1, $2, 'Encomendas', $1, now())`,
+    [projectId, on.companyId],
+  )
+  const [open, declined] = [randomUUID(), randomUUID()]
+  await on.hub.test.asOwner(
+    `insert into requests.request (id, attempt_key, company_id, requested_by, project_id, kind,
+       number, message, state, decided_by, reason, created_at)
+     values ($1::uuid, $1::text, $3, $4, $5, 'PUBLISH_APP_VERSION', 5, '', 'PENDING', null, null, now()),
+            ($2::uuid, $2::text, $3, $4, $5, 'PUBLISH_APP_VERSION', 6, '', 'DECLINED', $6, 'falta o logo', now())`,
+    [open, declined, on.companyId, bia.id, projectId, on.ana.id],
+  )
+  const notice = `insert into notifications.request_notice (id, company_id, person_id, request_id,
+      kind, created_at) values ($1, $2, $3, $4, $5, now() - $6 * interval '1 hour')`
+  const [older, newer] = [randomUUID(), randomUUID()]
+  await on.hub.test.asOwner(notice, [older, on.companyId, on.ana.id, open, 'REQUEST_OPENED', 2])
+  await on.hub.test.asOwner(notice, [newer, on.companyId, on.ana.id, declined, 'REQUEST_OPENED', 1])
+  const decided = [randomUUID(), on.companyId, bia.id, declined, 'REQUEST_DECIDED', 1]
+  await on.hub.test.asOwner(notice, decided)
+  return { bia, projectId, older, newer }
+}
+
+test('pedidos: os avisos de pedido entram no mesmo sino, na mesma ordem e página, e as de automação não mudam', async (t) => {
+  const on = await notifying(t)
+  const { bia, projectId, older, newer } = await requested(on)
+  const runs = Array.from({ length: 29 }, () => endedRun(on, { trigger: 'MANUAL' }))
+  for (const ran of runs) await on.hub.notify.automationRan(ran)
+
+  const first = await bellOf(on.hub, on.ana, on.company)
+  assert.equal(first.unread, 31)
+  assert.deepEqual(
+    first.notifications.slice(0, 29).map((each) => each.automation.id),
+    runs.toReversed().map((ran) => ran.automationId),
+  )
+  assert.deepEqual(
+    { ...Object(first.notifications[29]), createdAt: undefined },
+    {
+      kind: 'REQUEST_OPENED',
+      id: newer,
+      createdAt: undefined,
+      read: false,
+      projectId,
+      projectName: 'Encomendas',
+      number: 6,
+      requestedBy: { name: BIA.name },
+    },
+  )
+  const page = first.next.kind === 'MORE' ? first.next.page : ''
+  const second = await bellOf(on.hub, on.ana, on.company, page)
+  assert.deepEqual(
+    second.notifications.map((each) => each.id),
+    [older],
+  )
+  assert.deepEqual(second.next, { kind: 'END' })
+  const [biasLine] = (await bellOf(on.hub, bia, on.company)).notifications
+  assert.deepEqual(
+    { ...biasLine, id: undefined, createdAt: undefined },
+    {
+      kind: 'REQUEST_DECIDED',
+      id: undefined,
+      createdAt: undefined,
+      read: false,
+      projectId,
+      projectName: 'Encomendas',
+      number: 6,
+      outcome: 'DECLINED',
+      decidedBy: { name: 'Ana Lima' },
+      reason: 'falta o logo',
+    },
+  )
+
+  const read = `${on.company}/notifications/read`
+  assert.equal((await post(on.hub, on.ana, read, { ids: [older] })).statusCode, 204)
+  const marked = await bellOf(on.hub, on.ana, on.company, page)
+  assert.deepEqual(
+    marked.notifications.map((each) => each.read),
+    [true],
+  )
+  assert.equal(marked.unread, 30)
+  assert.equal((await post(on.hub, on.ana, read, { all: true })).statusCode, 204)
+  assert.equal((await bellOf(on.hub, on.ana, on.company)).unread, 0)
+  assert.equal((await bellOf(on.hub, bia, on.company)).unread, 1, 'marcar todas é só das dela')
+})
