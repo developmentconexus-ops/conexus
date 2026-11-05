@@ -83,11 +83,11 @@ cerca de 130. U5: cerca de 40. Total da etapa: cerca de 990, dentro da L2.
 | # | Unidade | Critério, observável de fora, com a recusa | Teste que o prova | Nível |
 | --- | --- | --- | --- | --- |
 | 1 | U1 | Duas conversas ao mesmo tempo numa assinatura Claude vencida chamam a renovação da Anthropic uma vez; uma renovação recusada (400) deixa a conta recusada e as duas conversas dizem isso. Os testes de hoje passam sem mudar uma asserção | `claude-refresh.test.ts`, os casos de hoje | must |
-| 2 | U1 | Depois de uma renovação, a conversa seguinte na mesma assinatura Claude abre o token novo, selado com o tipo da própria conta, e responde sem renovar de novo; o mesmo store renova a OpenAI no critério 14 | `claude-refresh.test.ts`, o caso de hoje da conversa depois da renovação | must |
+| 2 | U1 | O store não sabe mais de um tipo: o mesmo `subscriptionAccess` renova a assinatura Claude (critério 1) e a da OpenAI (critério 14), e o typecheck passa sem um `'claude_subscription'` no store | `npm run typecheck`, e o critério 14 na U3 | should |
 | 3 | U2 | Com o tipo desligado para a empresa, `POST /api/companies/{id}/model-account-sign-ins` com `kind: 'openai_codex'` recusa `MODEL_ACCOUNT_KIND_OFF` e não chama a OpenAI | `openai/sign-in.test.ts`, "tipo desligado: recusa sem chamar a OpenAI" | must |
 | 4 | U2 | Com o tipo ligado, a partida responde 201 `{ entry: 'device', signInId, url: 'https://auth.openai.com/codex/device', userCode, retryMs, expiresAt }`, com `expiresAt` 15 minutos à frente, depois de um só `POST …/api/accounts/deviceauth/usercode` com o `client_id` do Codex. Um 4xx da partida recusa `MODEL_ACCOUNT_REFUSED`, um 5xx ou a rede `MODEL_ACCOUNT_UNAVAILABLE`, e nenhuma entrada fica gravada. A partida do Claude responde `entry: 'paste'` | `openai/sign-in.test.ts`, "a partida mostra o código", "a partida recusada" | must |
 | 5 | U2 | `POST …/model-account-sign-ins/{signInId}/poll` antes de a pessoa digitar (o dublê responde 403 ou 404) responde 200 `{ status: 'waiting', retryMs }`; um segundo pedido antes de `retryMs` responde `waiting` sem chamar a OpenAI | `openai/sign-in.test.ts`, "esperando: uma chamada por intervalo" | must |
-| 6 | U2 | Depois de a pessoa digitar, a espera responde 200 `{ status: 'linked', account }`: `kind: 'openai_codex'`, `provider: 'openai'`, o dono e o nome da partida, no fim da fila da OpenAI. A credencial selada guarda `{ access, refresh, expires, accountId }`. Uma terceira espera recusa `MODEL_ACCOUNT_SIGN_IN_EXPIRED` | `openai/sign-in.test.ts`, "ligada: a conta entra e a entrada some" | must |
+| 6 | U2 | Depois de a pessoa digitar, a espera responde 200 `{ status: 'linked', account }`: `kind: 'openai_codex'`, `provider: 'openai'`, o dono e o nome da partida, no fim da fila da OpenAI. A credencial selada guarda `{ access, refresh, expires, accountId }`. A entrada sai do banco, e uma espera repetida responde `linked` com a mesma conta (critério 7) sem chamar a OpenAI | `openai/sign-in.test.ts`, "ligada: a conta entra e a entrada some" | must |
 | 7 | U2 | Duas esperas ao mesmo tempo depois de a pessoa digitar fazem uma troca de código e criam uma conta; a outra responde `waiting`, ou `linked` com a mesma conta. Uma espera repetida depois de a resposta `linked` se perder responde `linked` com a mesma conta, e não `SIGN_IN_EXPIRED` | `openai/sign-in.test.ts`, "duas esperas ao mesmo tempo: uma conta", "a resposta perdida volta ligada" | must |
 | 8 | U2 | Recusas da espera: a OpenAI responde um 4xx que não é 403, 404, 408 nem 429, a troca de código é recusada, ou nenhum token traz `chatgpt_account_id`: `MODEL_ACCOUNT_REFUSED`, e a entrada acaba. Um 408, um 429, um 5xx, a rede fora ou o prazo de 15 s: `MODEL_ACCOUNT_UNAVAILABLE`, e a entrada continua. Depois de 15 minutos: `MODEL_ACCOUNT_SIGN_IN_EXPIRED` | `openai/sign-in.test.ts`, um caso por recusa | must |
 | 9 | U2 | `complete` numa entrada `openai_codex`, ou `poll` numa entrada Claude, recusa `MODEL_ACCOUNT_SIGN_IN_WRONG_ENTRY` e deixa a entrada como estava | `openai/sign-in.test.ts`, "cada entrada pela sua rota" | must |
@@ -99,11 +99,11 @@ cerca de 130. U5: cerca de 40. Total da etapa: cerca de 990, dentro da L2.
 | 15 | U3 | A conta `openai_codex` oferece os modelos OpenAI do registro, sem leitor de lista, como a assinatura Claude; um 404 da chamada segue a regra de hoje da fila (`missing`). Se o 404 do Codex quer dizer "modelo não atendido" só a U5 mostra | `model-served.test.ts`, caso novo `openai_codex` | must |
 | 16 | U4 | Escolhida **Assinatura ChatGPT**, a janela mostra o código, o botão **Abrir a página da OpenAI** e "Esperando você digitar o código…", sem campo de código; quando a espera diz `linked`, a janela fecha e a conta aparece na fila. A 1366 e a 390 px, nos dois temas | `sign-in.test.tsx` e QA | must |
 | 17 | U4 | Recusa, vencimento, tipo desligado ou entrada errada voltam ao começo com a frase do Hub; um 502 mantém a espera, mostra a frase do Hub para `MODEL_ACCOUNT_UNAVAILABLE` e tenta de novo depois de `retryMs`. **Cancelar** fica desligado enquanto uma espera está no ar | `sign-in.test.tsx`, um caso por estado | must |
-| 18 | U2 | O operador vê **Assinatura ChatGPT** desligada por padrão na lista de tipos da empresa | `account-kinds` no teste de hoje, com o tipo novo | must |
+| 18 | U2 | O operador vê **Assinatura ChatGPT** desligada por padrão na lista de tipos da empresa | `model-account-kinds.test.ts` (desligado por padrão) e QA (o nome na lista, de `KIND_NAMES`) | must |
 | 19 | U5 | A prova da 0049 com a assinatura do fundador: entrar 200, um token, o `expires_in` cru, uma renovação com duas conversas, 20 de 20 turnos sem 401 nem 403, entre eles um com o raciocínio desligado. As gravações ficam em `platform/recordings/`, e um turno que responde passa a ser testado com elas | `record-provider --provider openai-codex`; `openai/codex.test.ts`, "o turno responde" | must |
-| 20 | U2 | Uma espera de outra pessoa, ou de outra empresa, com o `signInId` de alguém recusa `MODEL_ACCOUNT_SIGN_IN_EXPIRED` e não chama a OpenAI | `openai/sign-in.test.ts`, "a entrada é só de quem a começou" | must |
+| 20 | U2 | Uma espera com um `signInId` que nunca existiu, ou com o de outra pessoa ou de outra empresa, antes ou depois de ele ligar a conta, recusa `MODEL_ACCOUNT_SIGN_IN_EXPIRED` e não chama a OpenAI | `openai/sign-in.test.ts`, "a entrada é só de quem a começou" | must |
 | 21 | U2 | Com o tipo desligado entre a partida e a espera, a espera recusa `MODEL_ACCOUNT_KIND_OFF` sem chamar a OpenAI, e a entrada fica | `openai/sign-in.test.ts`, "tipo desligado no meio" | must |
-| 22 | U5 | O que um 404 do Codex quer dizer para um modelo que a assinatura não atende, e se o Codex aceita o raciocínio `none`, ficam gravados; se um deles não for o que os critérios 13 e 15 supõem, a correção volta ao cartão | `record-provider --provider openai-codex --case unserved`, `--case off` | must |
+| 22 | U5 | O Codex aceita o raciocínio `none` (as gravações `abort` e `tool-error`, feitas com ele desligado, respondem), e o status que ele dá a um modelo que a assinatura não atende fica escrito no resultado da decisão nova; se um deles não for o que os critérios 13 e 15 supõem, a correção volta ao cartão | `record-provider --provider openai-codex --case abort`, `--case tool-error`, `--case unserved` | must |
 
 ## A matriz de estados
 
@@ -153,7 +153,7 @@ Mastra Factory (`factory-ui/src/ui/domains/settings/components/ProviderOAuthDial
 | Renovação: lease de `refresh_until`, `POST oauth/token` com o refresh token rotativo, depois o store | A segunda conversa espera o lease e lê o token novo (o mesmo da U1) | Queda entre a resposta e o store: o refresh token novo se perde, o velho já foi gasto, e a próxima renovação é recusada; a conta fica recusada e a pessoa entra de novo. É a mesma janela da assinatura Claude | 4xx: recusada. 5xx ou rede: `MODEL_ACCOUNT_UNAVAILABLE`, o lease é solto | `MODEL_TOKEN_REFRESHED` de hoje | 1, 14 |
 | Chamada do modelo no endpoint do Codex | Duas conversas usam o mesmo token, como no Claude | Resposta cortada no meio do stream: o turno acaba como hoje, pelo AI SDK | 401 ou 403: renova uma vez, depois recusada. 429 ou 402: limite. 404: o modelo sai da conta. 5xx: falha de hoje | `MODEL_CALL_REFUSED` ou `MODEL_CALL_FAILED` de hoje | 12, 13, 15 |
 | A migração | — | Uma instrução recusada desfaz a migração inteira (a transação do migrador) | — | O migrador de hoje | 11 |
-| `npm run record-provider -- --provider openai-codex` | Duas rodadas regravam o mesmo arquivo; vale a última, revista no diff | Cortada no meio: o arquivo não é escrito, porque ele grava só no fim | OpenAI fora ou 401: sai com o status, sem arquivo | O caso, o modelo, o status e o caminho do arquivo, nunca o token (S40) | 19, 22 |
+| `npm run record-provider -- --provider openai-codex` | Duas rodadas regravam o mesmo arquivo; vale a última, revista no diff | Cortada no meio: o arquivo não é escrito, porque ele grava só no fim | OpenAI fora ou 401: sai com o status, sem arquivo; `unserved` nunca escreve arquivo e imprime o status | O caso, o modelo, o status e o caminho do arquivo, nunca o token (S40) | 19, 22 |
 
 ## A tabela de referência
 
@@ -172,7 +172,7 @@ Mastra Factory (`factory-ui/src/ui/domains/settings/components/ProviderOAuthDial
 | 11. Os tipos por empresa | U2 | `kinds.ts`; migração `20261019110217_model_accounts/migration.sql:7,34,61`; `tables.ts` | nenhuma faz (peça de produto) | decisão 0049 | remendo | `docs/decisions/0049-model-accounts-keys-sign-ins-queues.md`; a entrada em `boundaries.md` vem no fechamento (L19) | 0049 e "3." | migração nova |
 | 12. As telas | U4 | `text.ts:16-20` `KIND_NAMES`; `sign-in-form.tsx:27-39,115-152` | Factory UI `ProviderOAuthDialog.tsx:104-192` | o código em letra fixa, o botão da página, a espera por `setTimeout` com `nextPollMs`, a frase de erro no rodapé | embrulhado | QA a 1366 e 390 px | "2." | nenhum |
 | 13. O programa oficial | fica de fora | — | developers.openai.com/siwc | registro dinâmico, só para app local ou aprovado | nativo, e não aberto ao Hub | — | "1. B" | — |
-| 14. O Google | fica de fora | `google/*` | CLIProxyAPI v8.0.33 (0049) | o login Antigravity | remendo, sem mudança desde a 0049 | CLIProxyAPI v8.0.33, a prova 3 da 0049 | "Google pode manter como é hoj" | — |
+| 14. O Google | fica de fora | `google/*` | CLIProxyAPI v8.0.33 (0049) | o login Antigravity | remendo, sem mudança desde a 0049; a seção de `boundaries.md:1206` é só a das uniões achatadas | CLIProxyAPI v8.0.33, a prova 3 da 0049 | "Google pode manter como é hoj" | — |
 
 **A medida do transplante.** `openai/sign-in.ts` traz de
 `mastracode/sdk/src/auth/providers/openai-codex.ts` só as constantes (`:46-59`), a troca de código
@@ -215,7 +215,7 @@ Linhas 6 e 10. Ler `claude/store.ts` inteiro (143 linhas), `processors.ts:255-27
 | `apps/server/src/builder/model-accounts/claude/sign-in.ts` | Muda: a recusa e `SubscriptionTokens` saem para o store | `subscription-store.ts`, `claude/sign-in.ts` |
 | `biome.json:176`, `docs/reference/boundaries.md:946-951` | Muda: a exceção do relógio passa de `claude/store.ts` para `subscription-store.ts` | o lint |
 | `apps/server/src/builder/model-accounts/processors.ts` | Muda a linha 265 | — |
-| `packages/hub-api/src/model-accounts.ts` | Cria `SUBSCRIPTION_KINDS` | server |
+| `packages/hub-api/src/model-accounts.ts`, `packages/hub-api/src/index.ts` | Cria e exporta `SUBSCRIPTION_KINDS` e `isSubscription` | server |
 
 ### Os contratos que a unidade cria
 
@@ -228,12 +228,14 @@ export function isSubscription(kind: AccountKind): kind is SubscriptionKind
 // apps/server/src/builder/model-accounts/subscription-store.ts
 export const SubscriptionTokens: z.ZodType<{ access: string; refresh: string; expires: number; accountId?: string }>
 export class SubscriptionRefusal extends Error { readonly status: number | undefined }
-export type Renewal = (refresh: string) => Promise<SubscriptionTokens>
+export type Renewal = (tokens: SubscriptionTokens) => Promise<SubscriptionTokens>
 export type SubscriptionAccount = { id; companyId; personId; kind: SubscriptionKind; provider; revision; credential }
 export function subscriptionAccess(deps: Deps, account: SubscriptionAccount, renew: Renewal, force?: boolean): Promise<SubscriptionTokens>
 ```
 
-`AnthropicRefusal` sai e vira `SubscriptionRefusal`. `subscriptionAccess` devolve os tokens inteiros,
+`AnthropicRefusal` sai e vira `SubscriptionRefusal`. A renovação recebe os tokens inteiros, para a da
+OpenAI guardar o `accountId` velho quando a resposta não traz um, como o Mastra Code faz
+(`openai-codex.ts:744`, `requireAccountId(result, previousAccountId)`). `subscriptionAccess` devolve os tokens inteiros,
 porque a OpenAI precisa do `accountId`; o Claude lê `.access`. O tipo selado vem de `account.kind`,
 não mais do literal de `store.ts:45,71`. Modelo: o próprio `claude/store.ts`, que cumpre C21, C23 e
 C26.
@@ -256,7 +258,7 @@ as regras D22 e D25 de data.
 
 ### Como se prova
 
-Os critérios 1 e 2 com `claude-refresh.test.ts` como está. `npm run typecheck`,
+O critério 1 com `claude-refresh.test.ts` como está; o 2 pelo typecheck aqui e pelo critério 14 na U3. `npm run typecheck`,
 `npm run lint`, `npm run knip`.
 
 ### Parar se
@@ -278,7 +280,7 @@ e `:287-335`, `model-account-failures.ts:93-115`, e as referências da linha 5.
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `packages/hub-api/src/model-accounts.ts` | Muda: o tipo, `SIGN_IN_ENTRY`, a resposta da partida, a operação de espera | server, web |
+| `packages/hub-api/src/model-accounts.ts`, `packages/hub-api/src/index.ts` | Muda e exporta: o tipo, `SIGN_IN_ENTRY` e os seus derivados, a resposta da partida, a operação de espera | server, web |
 | `packages/hub-api/src/model-account-failures.ts` | Cria `MODEL_ACCOUNT_SIGN_IN_WRONG_ENTRY`; muda a frase de `MODEL_ACCOUNT_REFUSED` | server, web |
 | `apps/web/src/builder/model-accounts/{text.ts,sign-in-form.tsx,test-writes.tsx,connect.test.tsx}` | Muda: `KIND_NAMES.openai_codex`, `CODE_FIELDS` só dos tipos `paste`, a resposta dublê da partida com `entry`, a frase nova no teste | o typecheck do web |
 | `apps/server/src/platform/test-openai-codex.ts`, `.dependency-cruiser.cjs` | Cria o dublê de `auth.openai.com` e o põe em `TEST_DATABASE` (T5) | `openai/sign-in.test.ts` |
@@ -355,8 +357,8 @@ CHECKs (`company_account_kind_kind`, `model_account_kind`, `model_account_sign_i
 O `pending` selado da OpenAI: `{ deviceAuthId, userCode, retryMs }`, lido por Zod. As respostas da
 OpenAI lidas por Zod: `{ device_auth_id, user_code | usercode, interval }` da partida,
 `{ authorization_code, code_verifier }` da espera, `{ access_token, refresh_token, expires_in?, id_token? }`
-da troca e da renovação; o `chatgpt_account_id` vem da reivindicação `https://api.openai.com/auth` do
-JWT de acesso (Mastra Code `requireAccountId`), e sem ele a entrada é recusada.
+da troca e da renovação; o `chatgpt_account_id` vem como diz a medida do transplante (o `id_token`,
+depois o token de acesso; Mastra Code `getAccountId`, `:122-140`), e sem ele a entrada é recusada.
 
 O modelo: `claude/sign-in.ts` para o arquivo trazido (cumpre C21, C26, C27); a reserva por `UPDATE`
 segue a de `subscription-store.ts` `reserve` (C21, C23); se o jscpd apontar as duas como clone, elas
@@ -378,9 +380,13 @@ As linhas de `docs/reference/stack.md` das pastas: `fastify` (skill `fastify-bes
 1. hub-api: o tipo, `SUBSCRIPTION_KINDS`, `SIGN_IN_ENTRY` e os seus derivados, a resposta da partida
    em união, a operação `pollModelAccountSignIn`, a falha nova (também na lista de
    `completeModelAccountSignIn`), `MODEL_ACCOUNT_REFUSED` na lista da partida, e a frase. Regras: C21,
-   C26, C27. No mesmo passo, o web compila: `KIND_NAMES.openai_codex = 'Assinatura ChatGPT'`,
-   `CODE_FIELDS` tipado por `PasteKind`, a resposta dublê de `test-writes.tsx:96,126` com
-   `entry: 'paste'`, e a frase nova em `connect.test.tsx:241`.
+   C26, C27. Cada nome novo sai também por `packages/hub-api/src/index.ts`, que reexporta por nome
+   (`:200-222`). No mesmo passo, o web compila: `KIND_NAMES.openai_codex = 'Assinatura ChatGPT'`;
+   `CODE_FIELDS` tipado por `PasteKind`, com `Started.kind: PasteKind` (`sign-in-form.tsx:25`) e
+   `onStarted` que só guarda uma partida `entry: 'paste'`; até a U4, `StartForm` lista só os tipos
+   `paste` (`props.kinds.filter((kind) => !isDeviceKind(kind))`), então o tipo novo não aparece na
+   janela antes da sua vista; as respostas dublê da partida em `test-writes.tsx:104-109` e
+   `connect.test.tsx:222-227` com `entry: 'paste'`; e a frase nova em `connect.test.tsx:241`.
 2. A migração e as permissões, com `npm run check-migrations` local antes de seguir; `tables.ts`
    acompanha.
 3. `openai/sign-in.ts`: a partida e a espera trazidas. Uma recusa leva o status da OpenAI
@@ -390,14 +396,18 @@ As linhas de `docs/reference/stack.md` das pastas: `fastify` (skill `fastify-bes
    OpenAI logo, e devolve `entry`. `take` só pega uma entrada `paste`: para outra, lança
    `WRONG_ENTRY` dentro da transação, e o `DELETE` volta atrás, como o tipo desligado faz em
    `sign-ins.ts:135`. `pollSignIn`, nesta ordem:
-   1. Admitir e conferir o tipo aberto (`admitOpen`), sem chamar a OpenAI.
-   2. Reservar com `UPDATE … SET poll_at = expires_at WHERE id, empresa, pessoa, kind IN DEVICE_KINDS,
-      expires_at > statement_timestamp(), poll_at <= statement_timestamp() RETURNING …`.
-   3. Sem linha reservada, ler a entrada por id, empresa e pessoa. Existe e não é `device`:
-      `WRONG_ENTRY`. Existe e está viva: `waiting`, com o que falta de `poll_at`, ou 250 ms se está
-      reservada. Não existe: procurar uma conta desta pessoa com `attempt_key = signInId`; achou,
-      `linked` com ela; senão `SIGN_IN_EXPIRED`.
-   4. Abrir o selo e chamar `flow.poll` sem transação aberta (D22). `waiting`:
+   1. Numa transação: `admitMember` como `take` faz (`sign-ins.ts:111-117`); reservar com
+      `UPDATE … SET poll_at = expires_at WHERE id, empresa, pessoa, kind IN DEVICE_KINDS,
+      expires_at > statement_timestamp(), poll_at <= statement_timestamp() RETURNING owner, kind, …`;
+      com a linha reservada, `admitOpen` com o dono e o tipo dela. Um `KIND_OFF` lançado ali desfaz a
+      reserva, e a entrada fica como estava (critério 21), como em `sign-ins.ts:135`.
+   2. Sem linha reservada, ler a entrada por id, empresa e pessoa. Existe e não é `device`:
+      `WRONG_ENTRY`. Existe e está viva: `admitOpen`, depois `waiting` com o que falta de `poll_at`,
+      ou 250 ms se está reservada. Não existe: procurar a conta da empresa com
+      `attempt_key = signInId` e `linked_by = a pessoa` (as duas colunas, `tables.ts:64,68`, já são
+      lidas por `hub_company`), o que acha também a conta `owner: 'company'`, cujo `person_id` é
+      nulo; achou, `linked` com ela; senão `SIGN_IN_EXPIRED`.
+   3. Abrir o selo e chamar `flow.poll` sem transação aberta (D22). `waiting`:
       `poll_at = statement_timestamp() + retryMs`. `linked`: numa transação, apagar a entrada,
       `admitOpen`, `insertAccount` com `attemptKey: signInId`. Recusa: apagar a entrada.
       `UNAVAILABLE`: `poll_at = statement_timestamp()`.
@@ -410,7 +420,7 @@ As linhas de `docs/reference/stack.md` das pastas: `fastify` (skill `fastify-bes
 
 ### Como se prova
 
-Os critérios 3 a 10, 18, 20 e 21 em `openai/sign-in.test.ts`, pela porta pública (`post` de
+O critério 18 em `model-account-kinds.test.ts`. Os critérios 3 a 10, 20 e 21 em `openai/sign-in.test.ts`, pela porta pública (`post` de
 `test-hub.ts`), com o `fetch` dublê de `platform/test-openai-codex.ts` para `auth.openai.com`, que
 responde o JSON das formas acima com conteúdo inventado (S40), como `test-anthropic.ts:267-290` faz
 para a Anthropic. Hoje todos falham: a rota e o tipo não existem. O 11 em `catalog.test.ts`,
@@ -452,7 +462,8 @@ Linhas 4, 6, 7, 8 e 10. Ler `claude/models.ts` (153 linhas, o modelo com `fetch`
 export function codexModel(name: string, tokens: { access: string; accountId: string }): LanguageModelV3
 ```
 
-O ramo da fila: `row.kind === 'openai_codex'` chama `subscriptionAccess(…, codexRenewal, force)` e
+O ramo da fila: `row.kind === 'openai_codex'` chama `subscriptionAccess(…, codexRenewal, force)`,
+lê os tokens com um esquema Zod de `openai/` que exige `accountId` (sem `!` nem `as`, C24), e chama
 `codexModel`, o mesmo modelo para `conversation` e `system`. `instructions` é uma frase fixa de
 `models.ts`, e o prompt do Hub segue em `input`, como o Mastra Code faz.
 
@@ -469,10 +480,18 @@ T24 e T26 de testing.
 2. `openai/models.ts`: `createOpenAI({ apiKey: 'oauth-placeholder', fetch }).responses(name)`, com o
    middleware de `instructions` e `store: false` e o `bodylessMiddleware` de hoje
    (`claude/models.ts:80-86`).
-3. `queue.ts`: o ramo.
-4. `record-provider.ts`: o caso `openai-codex` (`thinking`, `abort`, `tool-error`, `unserved`, `off`),
-   gravado com `provider: 'openai'` em arquivos `openai-codex-<caso>`, porque `recordings.test.ts:44`
-   lê o provedor no começo do nome; com o token do ambiente (`CONEXUS_RECORD_CODEX_ACCESS`, `CONEXUS_RECORD_CODEX_ACCOUNT`), nunca num arquivo (S40).
+3. `openai/sign-in.ts`: `codexRenewal`, a renovação trazida (`:209-230`), com o `accountId` velho
+   guardado. Regras: S34, C57, C59.
+4. `queue.ts`: o ramo; `public.ts` exporta `codexModel` para `record-provider.ts` (C4).
+5. `platform/test-openai-codex.ts`: o dublê de `chatgpt.com/backend-api/codex/responses` (lê o pedido,
+   responde com status) e de `oauth/token` com `grant_type=refresh_token`.
+6. `record-provider.ts`: o caso `openai-codex`. `thinking`, `abort` e `tool-error` gravam com
+   `provider: 'openai'` em arquivos `openai-codex-<caso>`, porque `recordings.test.ts:44` lê o
+   provedor no começo do nome; `abort` e `tool-error` já rodam com o raciocínio desligado
+   (`record-provider.ts:239`), então provam o `none`. `unserved` não grava arquivo: chama um
+   `--model` do registro OpenAI que a assinatura não atende e imprime o status e o código de erro
+   da resposta, que vão para o resultado da decisão nova. O token vem do ambiente
+   (`CONEXUS_RECORD_CODEX_ACCESS`, `CONEXUS_RECORD_CODEX_ACCOUNT`), nunca num arquivo (S40).
 
 ### Como se prova
 
@@ -504,11 +523,13 @@ e `apps/web/src/builder/automations/queries.ts:31` (um `refetchInterval` de hoje
 | `apps/web/src/builder/model-accounts/sign-in-form.tsx` | Muda: a vista `device` | `link-account.tsx` |
 | `apps/web/src/builder/model-accounts/{text,queries}.ts` | Muda | — |
 | `apps/web/src/builder/model-accounts/sign-in.test.tsx` | Cria | — |
+| `apps/web/src/builder/model-accounts/test-writes.tsx` | Muda: a resposta dublê `device` da partida e a da espera | `sign-in.test.tsx` |
 
 ### Os contratos que a unidade cria
 
 O nome do tipo e o `CODE_FIELDS` dos tipos `paste` vêm da U2; aqui entra
-`sendSignInPoll = hubMutation(pollModelAccountSignIn)`. A vista escolhe pela `entry` da
+`sendSignInPoll = hubMutation(pollModelAccountSignIn)`, e o filtro dos tipos `paste` de `StartForm`
+sai. A vista escolhe pela `entry` da
 resposta. A espera é um `useMutation` disparado por `setTimeout` com `retryMs`, também depois de um
 502, e **Cancelar** fica desligado enquanto ela está no ar, como a `DeviceCodeDialog` do Factory
 (`ProviderOAuthDialog.tsx:112-141`); o botão da partida diz **Gerar código** quando o tipo é `device`.
@@ -541,7 +562,7 @@ Linhas 5, 6, 7 e 8: a prova da 0049 para o tipo, e o que o 404 e o `none` do Cod
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
 | `apps/server/src/platform/recordings/openai-codex-*.{sse,json}` | Cria | `openai/codex.test.ts` |
-| `apps/server/src/platform/recordings.test.ts` | Muda: `EXPECTED` ganha os cinco casos | — |
+| `apps/server/src/platform/recordings.test.ts` | Muda: `EXPECTED` ganha `openai-codex-abort`, `openai-codex-thinking` e `openai-codex-tool-error` | — |
 | `apps/server/src/builder/model-accounts/openai/codex.test.ts` | Muda: "o turno responde" | — |
 | a decisão nova | Muda: o resultado e o estado | — |
 
@@ -552,7 +573,7 @@ T24 e T26 de testing, `scripts/record-provider.ts` e `platform/test-recordings.t
 ### A ordem do trabalho
 
 1. No roteiro de uso, o fundador entra com a sua assinatura no Hub no ar.
-2. `npm run record-provider -- --provider openai-codex --case thinking|abort|tool-error|unserved|off`, com o token
+2. `npm run record-provider -- --provider openai-codex --case thinking|abort|tool-error|unserved`, com o token
    no ambiente da máquina dele, e as gravações em `platform/recordings/` com o provedor, a API, a
    versão do SDK e a data.
 3. O teste "o turno responde" em `openai/codex.test.ts`, com a gravação; a linha do resultado na
