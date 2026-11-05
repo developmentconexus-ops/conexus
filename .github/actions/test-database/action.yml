@@ -24,10 +24,8 @@ runs:
       run: >-
         docker exec "$CONEXUS_TEST_DATABASE_CONTAINER" psql --username postgres
         --command "create role conexus_owner login createdb createrole password 'ci-owner'"
-    - name: The test databases are disposable, so the server skips durability
+    - name: The test databases are disposable, so PostgreSQL skips durability
       shell: bash
-      run: >-
-        docker exec "$CONEXUS_TEST_DATABASE_CONTAINER" psql --username postgres
-        --command "alter system set fsync = off" --command "alter system set synchronous_commit = off"
-        --command "alter system set full_page_writes = off" --command "select pg_reload_conf()"
-        --command "show fsync" --command "show synchronous_commit" --command "show full_page_writes"
+      run: |
+        docker exec "$CONEXUS_TEST_DATABASE_CONTAINER" psql --username postgres --set ON_ERROR_STOP=1 --command "alter system set fsync = off" --command "alter system set synchronous_commit = off" --command "alter system set full_page_writes = off" --command "select pg_reload_conf()"
+        docker exec "$CONEXUS_TEST_DATABASE_CONTAINER" psql --username postgres --command "show fsync" --command "show synchronous_commit" --command "show full_page_writes"
