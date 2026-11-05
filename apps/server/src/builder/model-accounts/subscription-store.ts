@@ -1,28 +1,53 @@
 import { setTimeout } from 'node:timers/promises'
-import type { CompanyId, ModelAccountId, PersonId, ProviderId } from '@conexus/hub-api'
+import type {
+  CompanyId,
+  ModelAccountId,
+  PersonId,
+  ProviderId,
+  SubscriptionKind,
+} from '@conexus/hub-api'
 import { and, eq, isNull, lt, or, sql } from 'drizzle-orm'
-import type { Database, Scope } from '../../../platform/database.ts'
-import type { FailureLog } from '../../../platform/failure.ts'
-import { Failure } from '../../../platform/failure.ts'
-import type { SealKeys } from '../../../platform/seal.ts'
-import { Credential, seal } from '../../../platform/seal.ts'
-import { credentialOf, sealContext } from '../accounts.ts'
-import { modelAccount } from '../tables.ts'
-import type { SubscriptionTokens } from './sign-in.ts'
-import {
-  AnthropicRefusal,
-  refreshAnthropicTokens,
-  SubscriptionTokens as Tokens,
-} from './sign-in.ts'
+import { z } from 'zod'
+import type { Database, Scope } from '../../platform/database.ts'
+import type { FailureLog } from '../../platform/failure.ts'
+import { Failure } from '../../platform/failure.ts'
+import type { SealKeys } from '../../platform/seal.ts'
+import { Credential, seal } from '../../platform/seal.ts'
+import { credentialOf, sealContext } from './accounts.ts'
+import { modelAccount } from './tables.ts'
 
 // How long one refresh holds its account (data D25); a second caller waits for it, then reads.
 const LEASE_MS = 30_000
 const WAIT_STEP_MS = 200
 
+/** The subscription's tokens, sealed whole in its account: `expires` is milliseconds since 1970. */
+export const SubscriptionTokens = z.object({
+  refresh: z.string().min(1),
+  access: z.string().min(1),
+  expires: z.number(),
+  accountId: z.string().min(1).optional(),
+})
+export type SubscriptionTokens = z.infer<typeof SubscriptionTokens>
+
+/** A vendor refused the token or the code: `status` is its HTTP status, or none before any call. */
+export class SubscriptionRefusal extends Error {
+  readonly status: number | undefined
+
+  constructor(reason: string, status?: number) {
+    super(reason)
+    this.name = 'SubscriptionRefusal'
+    this.status = status
+  }
+}
+
+/** One kind's renewal: the sealed tokens in, the vendor's new ones out. */
+export type Renewal = (tokens: SubscriptionTokens) => Promise<SubscriptionTokens>
+
 export type SubscriptionAccount = {
   id: ModelAccountId
   companyId: CompanyId
   personId: PersonId | null
+  kind: SubscriptionKind
   provider: ProviderId
   revision: number
   credential: Credential
@@ -42,8 +67,7 @@ async function reread(deps: Deps, account: SubscriptionAccount) {
       .from(modelAccount)
       .where(eq(modelAccount.id, account.id))
     if (row === undefined) throw new Failure('NOT_FOUND')
-    const sealed = { ...account, kind: 'claude_subscription' }
-    return { ...row, credential: await credentialOf(deps, tx, sealed) }
+    return { ...row, credential: await credentialOf(deps, tx, account) }
   })
 }
 
@@ -66,11 +90,7 @@ async function reserve(deps: Deps, account: SubscriptionAccount): Promise<boolea
 }
 
 async function store(deps: Deps, account: SubscriptionAccount, tokens: SubscriptionTokens) {
-  const sealed = seal(
-    deps.sealKeys,
-    sealContext({ ...account, kind: 'claude_subscription' }),
-    Credential.parse(JSON.stringify(tokens)),
-  )
+  const sealed = seal(deps.sealKeys, sealContext(account), Credential.parse(JSON.stringify(tokens)))
   await deps.database.command(deps.scope, (tx) =>
     tx
       .update(modelAccount)
@@ -85,7 +105,7 @@ async function store(deps: Deps, account: SubscriptionAccount, tokens: Subscript
 }
 
 /**
- * A refresh that failed gives the account back, `refused` when Anthropic refused its token (S34),
+ * A refresh that failed gives the account back, `refused` when the vendor refused its token (S34),
  * so the caller waiting for it stops now rather than at the lease's end.
  */
 async function release(deps: Deps, account: SubscriptionAccount, refused: boolean) {
@@ -100,23 +120,24 @@ async function release(deps: Deps, account: SubscriptionAccount, refused: boolea
 
 /**
  * The subscription's access token for one call (security S34): the sealed one while it lives;
- * otherwise one refresh, reserved in the database, so two turns call Anthropic once, with no
+ * otherwise one refresh, reserved in the database, so two turns call the vendor once, with no
  * transaction open during the call (data D22). The other caller waits for the reserved one to land,
- * or to fail. `force` refreshes a token Anthropic refused before the account is called refused.
+ * or to fail. `force` refreshes a token the vendor refused before the account is called refused.
  */
 export async function subscriptionAccess(
   deps: Deps,
   account: SubscriptionAccount,
+  renew: Renewal,
   force = false,
-): Promise<string> {
-  const tokens = Tokens.parse(JSON.parse(account.credential.reveal()))
-  if (!force && tokens.expires > Date.now()) return tokens.access
+): Promise<SubscriptionTokens> {
+  const tokens = SubscriptionTokens.parse(JSON.parse(account.credential.reveal()))
+  if (!force && tokens.expires > Date.now()) return tokens
   if (await reserve(deps, account)) {
     let renewed: SubscriptionTokens
     try {
-      renewed = await refreshAnthropicTokens(tokens.refresh)
+      renewed = await renew(tokens)
     } catch (error) {
-      const refused = error instanceof AnthropicRefusal && (error.status ?? 500) < 500
+      const refused = error instanceof SubscriptionRefusal && (error.status ?? 500) < 500
       await release(deps, account, refused)
       throw new Failure(refused ? 'MODEL_ACCOUNT_REFUSED' : 'MODEL_ACCOUNT_UNAVAILABLE', {
         details: { provider: account.provider },
@@ -125,13 +146,13 @@ export async function subscriptionAccess(
     }
     await store(deps, account, renewed)
     deps.log.info({ companyId: account.companyId, accountId: account.id }, 'MODEL_TOKEN_REFRESHED')
-    return renewed.access
+    return renewed
   }
   const deadline = Date.now() + LEASE_MS
   for (;;) {
     const now = await reread(deps, account)
     if (now.revision !== account.revision) {
-      return Tokens.parse(JSON.parse(now.credential.reveal())).access
+      return SubscriptionTokens.parse(JSON.parse(now.credential.reveal()))
     }
     const details = { provider: account.provider }
     if (now.state === 'refused') throw new Failure('MODEL_ACCOUNT_REFUSED', { details })

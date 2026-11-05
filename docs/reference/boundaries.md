@@ -947,7 +947,7 @@ rows for the five above wait on issue #458.
   owner `runs/copy-retry.ts`, and `node:timers` and
   `node:timers/promises` are refused except in `conversation/turn-log.ts`, which waits 250 ms for
   short text (decision 0051; `biome.json`). Three step 11 files keep their timers out of the rule, with the reason that they
-  were written before it: `model-accounts/google/{calls,google}.ts` and `claude/store.ts`. A change
+  were written before it: `model-accounts/google/{calls,google}.ts` and `subscription-store.ts`. A change
   that touches their timers moves each to a named owner.
 - **Eval gate.** `conversation/builder.eval.test.ts` drives the real Builder through the Hub with
   a scripted model and the test machine, then scores what Mastra saved with `checks.calledTool` and
