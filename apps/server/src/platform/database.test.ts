@@ -7,7 +7,13 @@ import { CompanyId, PersonId } from '@conexus/hub-api'
 import { Mastra } from '@mastra/core/mastra'
 import { PostgresStore } from '@mastra/pg'
 import { sql } from 'drizzle-orm'
-import { DatabaseUrl, databaseFailure, openDatabase, openMastraPool } from './database.ts'
+import {
+  DatabaseUrl,
+  databaseFailure,
+  openDatabase,
+  openMastraPool,
+  POOL_TIMINGS,
+} from './database.ts'
 import {
   createTestDatabase,
   silent,
@@ -15,6 +21,9 @@ import {
   whenIdle,
   withRoleLock,
 } from './test-database.ts'
+
+/** The read deadline the test below gives its pool, short of production's. */
+const READ_DEADLINE_TEST_MS = 1_000
 
 function failsWith(code: string, sqlstate?: string) {
   return (error: unknown) => {
@@ -133,7 +142,12 @@ test('a conexão derrubada no meio de um comando vira DATABASE_UNAVAILABLE e o p
 })
 
 test('uma leitura parada além do prazo: 503, o soquete destruído solta as travas e a conexão não volta ao pool', async (t) => {
-  const { database, asOwner } = await createTestDatabase(t)
+  const { runtimeUrl, asOwner } = await createTestDatabase(t)
+  const database = openDatabase({
+    url: runtimeUrl,
+    log: silent,
+    timings: { ...POOL_TIMINGS, readDeadlineMs: READ_DEADLINE_TEST_MS },
+  })
   const holder = asOwner('select pg_advisory_xact_lock(777), pg_sleep(60)').catch(
     (error: unknown) => error,
   )
@@ -155,15 +169,20 @@ test('uma leitura parada além do prazo: 503, o soquete destruído solta as trav
       }),
       failsWith('DATABASE_UNAVAILABLE'),
     )
-    assert.ok(Date.now() - started >= 15_000, 'the read deadline is 15 s')
+    assert.ok(Date.now() - started >= READ_DEADLINE_TEST_MS, 'the read deadline is the one given')
+    await asOwner(`select pg_cancel_backend(pid) from pg_stat_activity
+      where query like 'select pg_advisory_xact_lock(777), pg_sleep(60)%'`)
+    assert.equal(Object(await holder).code, '57014')
+    assert.deepEqual(await asOwner('select pg_advisory_xact_lock(888)::text as held'), [
+      { held: '' },
+    ])
+    const next = await database.installation((tx) => tx.execute(sql`select 1 as one`))
+    assert.deepEqual(next.rows, [{ one: 1 }])
   } finally {
     await asOwner(`select pg_cancel_backend(pid) from pg_stat_activity
       where query like 'select pg_advisory_xact_lock(777), pg_sleep(60)%'`)
+    await database.close()
   }
-  assert.equal(Object(await holder).code, '57014')
-  assert.deepEqual(await asOwner('select pg_advisory_xact_lock(888)::text as held'), [{ held: '' }])
-  const next = await database.installation((tx) => tx.execute(sql`select 1 as one`))
-  assert.deepEqual(next.rows, [{ one: 1 }])
 })
 
 test('um erro do próprio programa na consulta não vira banco fora', async (t) => {
@@ -219,10 +238,14 @@ async function replyHolder(target: DatabaseUrl) {
   }
 }
 
-test('uma consulta da biblioteca sem resposta cai no prazo de 15 s como conexão perdida, e o pool a solta', async (t) => {
+test('uma consulta da biblioteca sem resposta cai no prazo de leitura como conexão perdida, e o pool a solta', async (t) => {
   const { runtimeUrl } = await createTestDatabase(t)
   const proxy = await replyHolder(runtimeUrl)
-  const database = openDatabase({ url: proxy.url, log: silent })
+  const database = openDatabase({
+    url: proxy.url,
+    log: silent,
+    timings: { ...POOL_TIMINGS, readDeadlineMs: READ_DEADLINE_TEST_MS },
+  })
   const orm = database.libraryOrm({})
   try {
     assert.deepEqual((await orm.execute(sql`select 1 as one`)).rows, [{ one: 1 }])
@@ -232,9 +255,12 @@ test('uma consulta da biblioteca sem resposta cai no prazo de 15 s como conexão
       () => 'answered',
       (error: unknown) => (error instanceof Error ? String(Object(error.cause).message) : 'thrown'),
     )
-    const outcome = await Promise.race([read, setTimeout(17_000, 'pending', { ref: false })])
+    const outcome = await Promise.race([
+      read,
+      setTimeout(READ_DEADLINE_TEST_MS + 2_000, 'pending', { ref: false }),
+    ])
     assert.equal(outcome, 'Connection terminated unexpectedly')
-    assert.ok(Date.now() - started >= 15_000, 'the deadline is 15 s')
+    assert.ok(Date.now() - started >= READ_DEADLINE_TEST_MS, 'the deadline is the one given')
     assert.equal(orm.$client.totalCount, 0)
   } finally {
     proxy.close()

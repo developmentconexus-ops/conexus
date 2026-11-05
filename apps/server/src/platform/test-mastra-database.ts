@@ -1,7 +1,7 @@
 import pg from 'pg'
 import type { Config } from './config.ts'
 import type { MastraPool } from './database.ts'
-import { DatabaseUrl, MASTRA_LOGIN, openMastraPool } from './database.ts'
+import { DatabaseUrl, MASTRA_LOGIN, openMastraPool, POOL_TIMINGS } from './database.ts'
 
 /** Mastra's database beside a test one, `<name>_mastra`, its login with the Hub login's password. */
 export function mastraUrlOf(hubUrl: DatabaseUrl): DatabaseUrl {
@@ -32,6 +32,11 @@ export async function loginAnswer(url: DatabaseUrl, statement = 'select 1'): Pro
   }
 }
 
+/** How long a test's pool keeps an unused connection: the tests that wait for zero do not wait 10 s. */
+export const TEST_IDLE_MS = 250
+/** A test pool's timings: production's read deadline, a short idle time; a test of the deadline passes its own. */
+export const TEST_POOL_TIMINGS = { ...POOL_TIMINGS, idleTimeoutMillis: TEST_IDLE_MS }
+
 const QUIET = { info: () => undefined, error: () => undefined }
 
 /** The pool of Mastra's login a test Hub converses through, ended with the test. */
@@ -39,7 +44,11 @@ export function testMastraPool(
   t: { after: (cleanup: () => Promise<void>) => void },
   config: Config,
 ): MastraPool {
-  const pool = openMastraPool({ url: config.mastraDatabaseUrl, log: QUIET })
+  const pool = openMastraPool({
+    url: config.mastraDatabaseUrl,
+    log: QUIET,
+    timings: TEST_POOL_TIMINGS,
+  })
   t.after(() => pool.end())
   return pool
 }
@@ -49,5 +58,6 @@ export function mastraPoolAt(address: string): MastraPool {
   return openMastraPool({
     url: DatabaseUrl.parse(address),
     log: { info: () => undefined, error: () => undefined },
+    timings: TEST_POOL_TIMINGS,
   })
 }
