@@ -5,7 +5,8 @@ How a developer gets the disposable PostgreSQL 18 that the server tests need. Ru
 ## Start the database
 
 1. Start PostgreSQL 18 with a throwaway superuser, on a port that is free on your machine:
-   `docker run --rm -d --name conexus-test-db -e POSTGRES_PASSWORD=local-superuser -p 127.0.0.1:55432:5432 postgres:18`
+   `docker run --rm -d --name conexus-test-db -e POSTGRES_PASSWORD=local-superuser -p 127.0.0.1:55432:5432 postgres:18 -c fsync=off -c synchronous_commit=off -c full_page_writes=off`
+   The three settings turn durability off: the data is disposable, and the tests spend less time waiting on the disk.
 2. Create the login that owns the test databases. It is not a superuser, as in CI:
    `docker exec conexus-test-db psql -U postgres -c "create role conexus_owner login createdb createrole password 'local-owner'"`
 3. Export the three variables the tests read, the same ones CI sets (the third names the container, whose `pg_dump` 18 takes the catalog snapshot):
@@ -14,7 +15,9 @@ How a developer gets the disposable PostgreSQL 18 that the server tests need. Ru
    `export CONEXUS_TEST_DATABASE_CONTAINER=conexus-test-db`
 4. Run `npm test -w @conexus/server`.
 
-Each suite creates its own database named `conexus_test_` and a random suffix, migrates it, and drops it at the end. The password of `hub_runtime` is the second variable, so the suites that run at once agree on it.
+Each suite clones its own database, named `conexus_test_` and a random suffix, from a template named `conexus_template_` and the hash of the `migrations/` folder, and drops it at the end. The first suite of a new hash migrates that template; the others wait for it and clone it. The password of `hub_runtime` is the second variable, so the suites that run at once agree on it.
+
+Templates of older hashes stay on the server. To drop them, list them with `docker exec conexus-test-db psql -U postgres -Atc "select datname from pg_database where datname like 'conexus_template_%'"`, then run `docker exec conexus-test-db psql -U postgres -c "alter database <name> is_template false" -c "drop database <name>"` for each. When you change `CONEXUS_TEST_RUNTIME_PASSWORD`, drop every template: the password of the logins is set only when a template is migrated, and without that step every suite gets 28P01.
 
 ## Stop it
 

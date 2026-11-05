@@ -74,7 +74,7 @@ export function promptCacheMiddleware(scope: PromptCacheScope): LanguageModelMid
 /**
  * Each step's answer without the body of its request. Mastra keeps every step's output, request
  * included, until the session's next run, so a conversation's last turn held every prompt it sent
- * (`@mastra/core@1.79.0` `MastraModelOutput` `#bufferedSteps[].request.body`); nothing of ours or
+ * (`@mastra/core@1.82.0` `MastraModelOutput` `#bufferedSteps[].request.body`); nothing of ours or
  * Mastra's reads it back.
  */
 const bodylessMiddleware: LanguageModelMiddleware = {

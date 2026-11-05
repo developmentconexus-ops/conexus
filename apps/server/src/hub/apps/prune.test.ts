@@ -2,8 +2,7 @@ import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { test } from 'node:test'
 import { queued, withOwnerLock } from '../../platform/test-database.ts'
-import { call, post } from '../identity/test-hub.ts'
-import { PRUNE_BUDGET_MS } from './public.ts'
+import { call, post, TEST_PRUNE_BUDGET_MS } from '../identity/test-hub.ts'
 import type { Turned } from './test-versions.ts'
 import { companyForVersions, folder, send, versionNumbered } from './test-versions.ts'
 
@@ -118,12 +117,12 @@ test('poda: um Cloudflare lento não segura o fim do turno além do orçamento; 
   for (const n of [2, 3, 4]) await send(subject, ana, folder({}, color(n)))
   const slow = hub.cloudflare.holdRemove()
   // Cloudflare answers at last, well past the budget: a turn whose send waited for it ends late.
-  const late = setTimeout(slow.release, PRUNE_BUDGET_MS + 5_000)
+  const late = setTimeout(slow.release, TEST_PRUNE_BUDGET_MS + 5_000)
   t.after(() => clearTimeout(late))
   const started = performance.now()
   const answer = await send(subject, ana, folder({}, color(5)))
   assert.deepEqual(answer.preview, { state: 'ready', number: 5 })
-  assert.ok(performance.now() - started < PRUNE_BUDGET_MS + 2_000)
+  assert.ok(performance.now() - started < TEST_PRUNE_BUDGET_MS + 2_000)
   const [marked] = await hub.test.asOwner('select state from apps.app_version where id = $1', [
     first,
   ])

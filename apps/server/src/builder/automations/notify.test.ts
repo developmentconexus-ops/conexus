@@ -4,10 +4,10 @@ import { bellOf } from '../../hub/notifications/test-notifications.ts'
 import { TEST_ORIGIN } from '../../platform/test-database.ts'
 import { title } from '../conversation/test-conversation.ts'
 import {
-  aMinuteAhead,
   answering,
   automating,
   created,
+  dueNow,
   ended,
   ranNow,
   salesSummary,
@@ -43,9 +43,9 @@ test('o e-mail do horário: o disparo manda ao dono o assunto, o nome e o botão
 }, async (t) => {
   const answer = { kind: 'text' as const, text: 'Vendas de ontem: 98765 reais.' }
   const on = await automating(t, answering([answer]))
-  const cadence = await aMinuteAhead()
-  const body = salesSummary([on.matriz], { cadence, projectId: on.projectId })
+  const body = salesSummary([on.matriz], { projectId: on.projectId })
   const automation = await created(on.hub, on.ana, on.automations, body)
+  await dueNow(on.hub, automation.id)
   const run = await ended(on.hub, on.ana, `${on.automations}/${automation.id}`)
   assert.equal(run.trigger, 'SCHEDULED')
   assert.equal(run.state.kind, 'DONE')

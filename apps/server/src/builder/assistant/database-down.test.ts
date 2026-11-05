@@ -67,16 +67,22 @@ async function everyRouteUnavailable(t: TestContext, outage: Outage) {
   const broken = { ...on.hub, test: { ...on.hub.test, mastraPool } }
   const down = await hubBeside(t, broken, undefined, false)
   t.after(() => door.close())
-  const answers = {
-    list: await call(down, on.ana, 'GET', on.assistant),
-    create: await post(down, on.ana, on.assistant, { connections: [on.matriz] }),
-    read: await call(down, on.ana, 'GET', url),
-    choose: await call(down, on.ana, 'PUT', `${url}/connections`, { connections: [] }),
-    model: await call(down, on.ana, 'PUT', `${url}/model`, { model: MODEL, effort: 'off' }),
-    message: await sent(down, on.ana, url, 'Quanto vendemos?'),
-    rename: await call(down, on.ana, 'PATCH', url, { title: 'Pedidos' }),
-    delete: await call(down, on.ana, 'DELETE', url),
+  // Together, so that the routes wait out the connection deadline once, not once each.
+  const routes = {
+    list: call(down, on.ana, 'GET', on.assistant),
+    create: post(down, on.ana, on.assistant, { connections: [on.matriz] }),
+    read: call(down, on.ana, 'GET', url),
+    choose: call(down, on.ana, 'PUT', `${url}/connections`, { connections: [] }),
+    model: call(down, on.ana, 'PUT', `${url}/model`, { model: MODEL, effort: 'off' }),
+    message: sent(down, on.ana, url, 'Quanto vendemos?'),
+    rename: call(down, on.ana, 'PATCH', url, { title: 'Pedidos' }),
+    delete: call(down, on.ana, 'DELETE', url),
   }
+  const answers = Object.fromEntries(
+    await Promise.all(
+      Object.entries(routes).map(async ([route, answer]) => [route, await answer] as const),
+    ),
+  )
   // The Hub ends while its test database lives, closing Mastra through the door opened again.
   await door.open()
   await down.close()
