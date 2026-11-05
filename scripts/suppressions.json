@@ -1,5 +1,6 @@
 {
   ".github/actions/test-database/action.yml": 1,
+  ".github/workflows/ci-budget.yml": 1,
   ".github/workflows/ci.yml": 13,
   ".github/workflows/publish.yml": 3,
   ".github/workflows/rollback.yml": 1,
