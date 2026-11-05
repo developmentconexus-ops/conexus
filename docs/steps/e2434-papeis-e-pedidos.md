@@ -364,8 +364,8 @@ export const CompanyMay = z.object({ manageAgents: z.boolean(), manageAutomation
 ### As skills e a leitura
 
 `organization-best-practices`, `better-auth-best-practices`, `pstack:tdd`; as linhas de
-`docs/reference/stack.md` dos pacotes que as pastas usam: `better-auth`, `drizzle-orm`, `fastify` e
-`zod` no servidor, e as de `apps/web/src` na web.
+`docs/reference/stack.md` dos pacotes que as pastas usam: `better-auth`, `drizzle-orm`, `fastify`,
+`zod` e `@mastra/core` (skill `mastra`) no servidor, e as de `apps/web/src` na web.
 [security](../guides/security.md) S6 a S12; [web](../guides/web.md) W29, W34;
 [testing](../guides/testing.md) T5, T12.
 
@@ -419,7 +419,7 @@ publicar, o aviso no sino.
 | `apps/server/src/hub/apps/` | Muda `live.ts`: `publishVersion` (`:25-58`) fica com a admissão e chama `publishIn`, que tem o resto do corpo e chama a porta `CloseRequests`; `public.ts` passa a exportar `publishIn`, `lockApp` (`hub/apps/versions.ts:95`) e o tipo `CloseRequests` | `hub/apps/routes.ts:81-83`, `hub/requests/` |
 | `apps/server/src/hub/projects/` | Muda `projects.ts`: `rightsOf` (`:60-62`) ganha `mayPublish`; `getProject` e `createProject` trazem `publishRequest` pela porta `PublishRequestOf`, definida aqui | `projects/routes.ts:58` |
 | `apps/server/src/hub/identity/` | Muda `roles.ts` (`request: ['create', 'decide']`), `admission.ts` (`requestPublish`, `cancelRequest`, `decideRequest`), `memberships.ts` e `public.ts` (a porta `membersAllowed`) | `hub/requests/` |
-| `apps/server/src/hub/notifications/` | Cria `request-notices.ts` (a tabela `request_notice` e o escritor `NoticeRequests`); muda `notifications.ts` (o `list`, `:196-243`, junta as duas tabelas no mesmo cursor, e a contagem de não lidas, `:225`, e o `markRead`, `:249`, contam e marcam as duas), `public.ts`; as linhas de automação não mudam | `main.ts` |
+| `apps/server/src/hub/notifications/` | Cria `request-notices.ts` (a tabela `request_notice` e o escritor `NoticeRequests`); muda `notifications.ts` (o `list`, `:196-246`, junta as duas tabelas no mesmo cursor, e a contagem de não lidas, `:224-227`, e o `markRead`, `:249`, contam e marcam as duas), `public.ts`; as linhas de automação não mudam | `main.ts` |
 | `apps/server/migrations/` | Cria `…_e2434_requests` (as duas tabelas, só aditivas, D6) e `…_e2434_requests_grants` (o SQL das permissões e o `snapshot.json` do Drizzle, num commit próprio, D10, D11) | — |
 | `apps/server/database-grants.sql` | Muda: as permissões e os donos (`ALTER SCHEMA requests OWNER`, `ALTER TABLE … OWNER`, como `:13,77` para `notifications`) | `catalog.test.ts` |
 | `packages/hub-api/src/` | Cria `requests.ts` (o contrato) e `request-failures.ts` (os códigos, como `agent-failures.ts`, espalhados em `failures.ts:238`); muda `projects.ts` (`Project`), `notifications.ts` (`NotificationRow`), `failures.ts`, `index.ts` | a web |
@@ -593,7 +593,7 @@ requests.request`; `GRANT SELECT, INSERT ON notifications.request_notice`;
 ### As skills e a leitura
 
 `fastify-best-practices`, `pstack:tdd`; as linhas de `docs/reference/stack.md` dos pacotes que as
-pastas usam: `drizzle-orm`, `drizzle-kit`, `pg`, `fastify`, `better-auth` e `zod`. [data](../guides/data.md) D5, D6, D10, D11, D15, D17, D22;
+pastas usam: `drizzle-orm`, `drizzle-kit`, `fastify`, `better-auth` e `zod`. [data](../guides/data.md) D5, D6, D10, D11, D15, D17, D22;
 [security](../guides/security.md) S7, S8, S10; [testing](../guides/testing.md) T5, T12.
 
 ### A ordem do trabalho
