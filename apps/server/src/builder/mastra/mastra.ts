@@ -26,7 +26,7 @@ export function createMastra(deps: {
       ? {}
       : { scheduler: { tickIntervalMs: deps.schedulerTickMs } }),
   })
-  // Mastra 1.79.0 gives its logger to the store but not to the store's domains, which log their own
+  // Mastra 1.82.0 gives its logger to the store but not to the store's domains, which log their own
   // failures; each domain takes it by the same `__setLogger` (code C50). Revisit on an upgrade.
   for (const domain of Object.values(deps.storage.stores)) domain?.__setLogger(mastra.getLogger())
   return mastra

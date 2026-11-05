@@ -5,6 +5,7 @@ import { test } from 'node:test'
 import { BRUNO, call, memberOn } from '../../hub/identity/test-hub.ts'
 import type { Reply } from '../../platform/test-anthropic.ts'
 import { TEST_ORIGIN } from '../../platform/test-database.ts'
+import type { StreamEvent } from '../conversation/test-conversation.ts'
 import {
   answeredOf,
   asked,
@@ -20,6 +21,11 @@ const EXHAUSTED =
 const MINUTE = 60_000
 /** Mastra's wait before the retry of an unknown error (`StreamErrorRetryProcessor`, 1.79). */
 const RETRY_DELAY_MS = 3000
+
+/** The notices the stream said live, as the screen draws them before the answer is saved. */
+function saidLive(events: readonly StreamEvent[]): string[] {
+  return events.flatMap((event) => (event.type === 'info' ? [event.message] : []))
+}
 
 function keyOf(label: string): string {
   return label === 'Time 1' ? KEY : `sk-ant-queue-${label.replaceAll(' ', '-')}-key-0001`
@@ -152,6 +158,7 @@ test('sem conta: nenhuma chamada ao fornecedor, nem com chave no ambiente', asyn
   const started = Date.now()
   const stream = await f.ask(pause)
   assert.ok(Date.now() - started < RETRY_DELAY_MS, 'our own failure is not retried')
+  assert.deepEqual(saidLive(stream.events), [EXHAUSTED])
   assert.deepEqual(await turnNotices(f.hub, f.ana, stream.url), [EXHAUSTED])
   assert.deepEqual(failuresOf(stream.events), ['MODEL_NO_ACCOUNT'])
   assert.equal(endOf(stream.events), 'error')
@@ -243,6 +250,7 @@ test('todas fora: o aviso de que as contas acabaram, MODEL_NO_ACCOUNT e o fim co
   // The end says why the last account was lost, not that none is left.
   assert.match(notices[1] ?? '', /^Dois no limite até \d{2}h\d{2}\.$/)
   assert.equal(notices.length, 2)
+  assert.deepEqual(saidLive(events), notices)
   assert.deepEqual(failuresOf(events), ['MODEL_NO_ACCOUNT'])
   assert.equal(endOf(events), 'error')
 })
