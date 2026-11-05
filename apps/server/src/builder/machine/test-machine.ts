@@ -24,6 +24,7 @@ import type { AssistantMachineApi, Kit, KitFactory, MachineApi } from './kit.ts'
 import { APP_FOLDER } from './kit.ts'
 import type { Phase } from './public.ts'
 import { createMachines } from './public.ts'
+import { FOREGROUND, foregroundMaintenanceIn, GIT_FOREGROUND_ENV } from './test-git.ts'
 
 /** A seed the Git refuses to make, because its copy holds a version the disk lost. */
 export function restoreRefused(): Promise<Buffer> {
@@ -123,6 +124,7 @@ export function localKit(folder: string, control: Control): KitFactory {
     let made = false
     const sandbox = new LocalSandbox({
       workingDirectory: options.workingDirectory,
+      env: GIT_FOREGROUND_ENV,
       instructions: options.instructions,
       onStart: async (started) => {
         // E2B's template makes the app folder and no other: a working folder this start made is
@@ -282,6 +284,7 @@ export async function world(
     log: LOG,
   })
   const base = await repository.ensure()
+  foregroundMaintenanceIn(join(folder, 'git', COMPANY, `${PROJECT}.git`))
   const control = newControl()
   /** What the machines logged as errors, by message. */
   const errors: string[] = []
@@ -334,7 +337,7 @@ export function moveMain(gitDir: string, path: string, content: string | null) {
     if (content === null) rmSync(join(work, path))
     else writeFileSync(join(work, path), content)
     function git(...args: string[]) {
-      execFileSync('git', ['-C', work, ...args])
+      execFileSync('git', [...FOREGROUND, '-C', work, ...args])
     }
     git('add', '--all')
     git('-c', 'user.name=Outra', '-c', 'user.email=outra@conexus.invalid', 'commit', '-qm', 'outra')
