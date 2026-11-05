@@ -98,6 +98,8 @@ function chatSentOf(init: RequestInit | undefined): Sent {
     descriptions: Object.fromEntries(
       (body.tools ?? []).map((tool) => [tool.function.name, tool.function.description ?? '']),
     ),
+    // Chat Completions' tool declarations are not read into `schemas`: no test of this path needs them.
+    schemas: {},
     system: body.messages.find((message) => message.role === 'system')?.content?.toString() ?? '',
     systems: [],
     texts,

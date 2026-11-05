@@ -2693,5 +2693,16 @@
       "file": "src/platform/isolation-requests.test.ts",
       "name": "pedidos"
     }
+  },
+  {
+    "id": "cliproxy-flat-unions",
+    "file": "apps/server/src/builder/model-accounts/processors.ts",
+    "find": "      const flat = forCliProxy(account.kind, args.tools)\n      if (flat !== undefined) result.tools = flat\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/model-accounts/google/flat-unions.test.ts",
+      "name": "sem união"
+    }
   }
 ]

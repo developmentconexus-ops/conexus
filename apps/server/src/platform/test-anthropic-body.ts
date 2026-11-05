@@ -15,6 +15,8 @@ export type Sent = {
   tools: string[]
   /** Each offered tool's description, by name, as the model reads when to call it. */
   descriptions: Record<string, string>
+  /** Each offered tool's input schema, by name, as the body declares it. */
+  schemas: Record<string, unknown>
   system: string
   /** The system's blocks as the body sends them, each with whether it carries a cache mark. */
   systems: { text: string; cached: boolean }[]
@@ -43,7 +45,15 @@ const Body = z.object({
   model: z.string().optional(),
   stream: z.boolean().optional(),
   thinking: Thinking.optional(),
-  tools: z.array(z.object({ name: z.string(), description: z.string().optional() })).optional(),
+  tools: z
+    .array(
+      z.object({
+        name: z.string(),
+        description: z.string().optional(),
+        input_schema: z.unknown().optional(),
+      }),
+    )
+    .optional(),
   tool_choice: z.object({ type: z.string() }).optional(),
   system: z
     .union([
@@ -169,6 +179,7 @@ export function sentOf(init: RequestInit | undefined): Sent {
     descriptions: Object.fromEntries(
       (body.tools ?? []).map((tool) => [tool.name, tool.description ?? '']),
     ),
+    schemas: Object.fromEntries((body.tools ?? []).map((tool) => [tool.name, tool.input_schema])),
     system,
     systems,
     texts,
