@@ -10,18 +10,23 @@ import {
   automating,
   conversing,
   created,
+  dueNow,
   dyingHub,
   ended,
   nextSeven,
   ranNow,
   runsOf,
   salesSummary,
+  TEST_CLOCK,
 } from './test-automations.ts'
 
 // The pool's idle time (POOL_LIMITS) and a margin: what lets Neon put the branch to sleep (D27).
+// The code has no adjustment for it, so the two waits on it stay (U7 of the CI health card).
 const QUIET_MS = 15_000
 /** How long the Hub waits for its turns when it is told to stop. */
 const SETTLE_MS = 3_000
+/** Five ticks of the scheduler: a fire or a read that was going to come would have come by now. */
+const TICKS_MS = 5 * TEST_CLOCK.schedulerTickMs
 
 /** The connections Mastra's login holds open to the Hub's database. */
 async function mastraOpen(hub: Hub): Promise<number> {
@@ -58,7 +63,7 @@ test('sem automação, a agenda não liga: nenhum trabalhador scheduler, nenhuma
   assert.equal(await mastraOpen(on.hub), 0)
   const reads = await scheduleReads(on.hub)
   assert.ok(reads >= 1, 'the schedules were read')
-  await sleep(SETTLE_MS)
+  await sleep(TICKS_MS)
   assert.equal(await scheduleReads(on.hub), reads)
 })
 
@@ -166,15 +171,13 @@ test('o horário perdido: com o Hub parado, roda uma vez quando ele volta, e o p
   const on = await automating(t)
   const automation = await created(on.hub, on.ana, on.automations, salesSummary([]))
   await on.hub.mastra.getWorker('scheduler')?.stop()
-  const store = await on.hub.mastra.getStorage()?.getStore('schedules')
-  assert.ok(store)
-  await store.updateSchedule(automation.id, { nextFireAt: Date.now() - 3 * 86_400_000 })
+  await dueNow(on.hub, automation.id)
 
   const back = await hubBeside(t, on.hub)
   const url = `${on.automations}/${automation.id}`
   const run = await ended(back, on.ana, url)
   assert.equal(run.trigger, 'SCHEDULED')
-  await sleep(SETTLE_MS)
+  await sleep(TICKS_MS)
   assert.equal((await runsOf(back, on.ana, url)).runs.length, 1)
   const listed = await call(back, on.ana, 'GET', on.automations)
   const [shown]: Summary[] = Object(listed.json()).automations

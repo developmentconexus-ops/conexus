@@ -6,6 +6,7 @@
   ".github/workflows/rollback.yml": 1,
   "apps/server/src/builder/assistant/test-handoff.ts": 1,
   "apps/server/src/builder/assistant/test-real-model.ts": 1,
+  "apps/server/src/builder/automations/run.test.ts": 1,
   "apps/server/src/builder/machine/test-machine.ts": 1,
   "apps/server/src/builder/model-accounts/google/calls.ts": 1,
   "apps/server/src/hub/apps/versions.ts": 3,
