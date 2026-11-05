@@ -18,6 +18,7 @@ import { createModelAccountStore } from './store.ts'
 export { promptCacheMiddleware, subscriptionModel } from './claude/models.ts'
 export { conversationStart } from './defaults.ts'
 export { memoryModelsFor } from './observational-memory-settings.ts'
+export { codexModel } from './openai/models.ts'
 export {
   accountErrorProcessors,
   accountModel,
