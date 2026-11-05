@@ -51,29 +51,42 @@ if (cards.length === 0) {
 }
 const ledger = readFileSync(join(root, 'docs/approvals.md'), 'utf8')
 
-function checkCard(card: string): void {
-  // The first two digits are the step and each one after a level: e041 is 4.1, e2432 is 24.3.2.
-  const digits = (card.match(/^e(\d+)-/) ?? [])[1] ?? ''
-  const step = [String(Number(digits.slice(0, 2))), ...digits.slice(2)].join('.')
+function approvedCommit(card: string): { label: string; approved: string | undefined } {
   const cardPath = `docs/steps/${card}`
-  const line = new RegExp(
-    `^\\s*Cartão da etapa ${step.replaceAll('.', '\\.')} aprovado em \\d{4}-\\d{2}-\\d{2} \\(commit ([0-9a-f]{7,40})\\): ".+"\\s*$`,
-    'gm',
-  )
+  const digits = (card.match(/^e(\d+)-/) ?? [])[1]
+  // A short card has no step number: its ledger line names its file.
+  const line =
+    digits === undefined
+      ? new RegExp(
+          `^\\s*(?:Emenda do c|C)artão curto .+ \\(\`${cardPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\`\\) aprovad[oa] em \\d{4}-\\d{2}-\\d{2} \\(commit ([0-9a-f]{7,40})\\)`,
+          'gm',
+        )
+      : new RegExp(
+          `^\\s*Cartão da etapa ${stepOf(digits).replaceAll('.', '\\.')} aprovado em \\d{4}-\\d{2}-\\d{2} \\(commit ([0-9a-f]{7,40})\\): ".+"\\s*$`,
+          'gm',
+        )
   // An amended card is approved again: the newest line is the one that holds.
   const approved = [...ledger.matchAll(line)].at(-1)?.[1]
+  return { label: digits === undefined ? card : `step ${stepOf(digits)}`, approved }
+}
+
+// The first two digits are the step and each one after a level: e041 is 4.1, e2432 is 24.3.2.
+function stepOf(digits: string): string {
+  return [String(Number(digits.slice(0, 2))), ...digits.slice(2)].join('.')
+}
+
+function checkCard(card: string): void {
+  const cardPath = `docs/steps/${card}`
+  const { label, approved } = approvedCommit(card)
 
   if (approved === undefined) {
     if (onlyDocuments()) {
       console.log(
-        `check-approval: step ${step} is not approved yet, and this change holds only documents`,
+        `check-approval: ${label} is not approved yet, and this change holds only documents`,
       )
       return
     }
-    refuse(
-      'approval-missing',
-      `docs/approvals.md has no approval line for step ${step} (${cardPath})`,
-    )
+    refuse('approval-missing', `docs/approvals.md has no approval line for ${label} (${cardPath})`)
   }
   if (!gitSucceeds('merge-base', '--is-ancestor', approved, 'HEAD')) {
     refuse('approval-commit-not-in-tip', `${approved} is not an ancestor of HEAD (${cardPath})`)
@@ -81,7 +94,7 @@ function checkCard(card: string): void {
   if (!gitSucceeds('diff', '--quiet', approved, 'HEAD', '--', cardPath)) {
     refuse('card-changed-after-approval', `${cardPath} differs from ${approved}`)
   }
-  console.log(`check-approval: step ${step} approved at ${approved}, card unchanged`)
+  console.log(`check-approval: ${label} approved at ${approved}, card unchanged`)
 }
 
 for (const card of cards.sort()) checkCard(card)
