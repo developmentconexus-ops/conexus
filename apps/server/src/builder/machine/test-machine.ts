@@ -332,7 +332,7 @@ export async function sandboxOf(workspace: Workspace) {
 export function moveMain(gitDir: string, path: string, content: string | null) {
   const work = mkdtempSync(join(tmpdir(), 'conexus-other-'))
   try {
-    execFileSync('git', [...FOREGROUND, 'clone', '--quiet', gitDir, work])
+    execFileSync('git', ['clone', '--quiet', gitDir, work])
     mkdirSync(dirname(join(work, path)), { recursive: true })
     if (content === null) rmSync(join(work, path))
     else writeFileSync(join(work, path), content)
