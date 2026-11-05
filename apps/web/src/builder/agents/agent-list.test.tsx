@@ -1,7 +1,7 @@
 import { ProjectSummary } from '@conexus/hub-api'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
-import { expect, test } from 'vitest'
+import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { COMPANY } from '../../platform/fixtures.ts'
 import { hubServer, PEDIDOS } from '../../platform/test-hub.tsx'
 import { choose } from '../conversation/test-hub.tsx'
@@ -12,6 +12,10 @@ import { agentScreens } from './test-hub.tsx'
 const server = hubServer()
 const { at } = agentScreens(server)
 const HOME_AGENTS = `/companies/${COMPANY.id}/agents`
+// "ontem" and "há 3 min" count calendar days in the browser zone, so the clock is pinned, not read.
+const NOW = new Date('2026-11-02T15:00:00Z')
+beforeEach(() => vi.useFakeTimers({ toFake: ['Date'], now: NOW }))
+afterEach(() => vi.useRealTimers())
 const ESTOQUE = ProjectSummary.parse({
   id: 'e'.repeat(32),
   name: 'Estoque',
@@ -24,7 +28,7 @@ const THERE = agent({
   projectId: ESTOQUE.id,
   name: 'Resumo de estoque',
   state: { kind: 'PUBLISHED', version: 2, changed: false },
-  lastRunAt: new Date(Date.now() - 3 * 60_000).toISOString(),
+  lastRunAt: new Date(NOW.getTime() - 3 * 60_000).toISOString(),
 })
 const HERE = agent({ state: { kind: 'DRAFT' } })
 
@@ -46,12 +50,12 @@ test('a página lista os agentes de todos os Projetos com o Projeto, o estado e 
 
 test('a última execução diz "Rodou ontem" e, mais antiga, "Rodou em" com o dia', async () => {
   const day = 24 * 3_600_000
-  const old = new Date(Date.now() - 20 * day)
+  const old = new Date(NOW.getTime() - 20 * day)
   at(
     HOME_AGENTS,
     {
       agents: [
-        agent({ name: 'Ontem', lastRunAt: new Date(Date.now() - day - 3_600_000).toISOString() }),
+        agent({ name: 'Ontem', lastRunAt: new Date(NOW.getTime() - day).toISOString() }),
         agent({ id: OTHER_AGENT, name: 'Antigo', lastRunAt: old.toISOString() }),
       ],
     },
