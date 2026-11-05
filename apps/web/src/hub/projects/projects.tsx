@@ -32,7 +32,7 @@ export function Projects() {
           <PageTitle>Todos os projetos</PageTitle>
           <p className="text-text-2">{PROJECTS_SENTENCE}</p>
         </div>
-        <NewProjectDialog companyId={companyId} block labelled />
+        <NewProjectDialog companyId={companyId} labelled />
       </header>
       {notice && <Notice>Projeto apagado.</Notice>}
       <ProjectCards companyId={companyId} page={page} />

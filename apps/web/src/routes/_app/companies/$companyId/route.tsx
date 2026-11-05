@@ -1,4 +1,4 @@
-import type { CompanyId } from '@conexus/hub-api'
+import type { CompanyId, CompanyMay } from '@conexus/hub-api'
 import { createFileRoute, Outlet, useMatches, useParams } from '@tanstack/react-router'
 import { BotIcon, FolderIcon, HouseIcon, PlugIcon, SettingsIcon, TimerIcon } from 'lucide-react'
 import { useEffect } from 'react'
@@ -14,7 +14,6 @@ import {
   ProjectRailHead,
   ProjectRailNav,
   projectsQuery,
-  RecentProjects,
   rememberProject,
 } from '../../../../hub/projects/public.ts'
 import { Frame } from '../../../../ui/frame.tsx'
@@ -32,9 +31,9 @@ export const Route = createFileRoute('/_app/companies/$companyId')({
   component: HouseFrame,
 })
 
-/** The rail's places at the top: Automações follows Integrações and is for whoever may ask the Assistant. */
-function RailPlaces(props: { companyId: CompanyId; role: string }) {
-  const { companyId } = props
+/** The rail's places at the top: Automações follows Integrações and Agentes follows it, each for whoever the Hub says may. */
+function RailPlaces(props: { companyId: CompanyId; may: CompanyMay }) {
+  const { companyId, may } = props
   const inInicio = useMatches({
     select: (matches) => matches.at(-1)?.staticData.place === 'Início',
   })
@@ -61,7 +60,7 @@ function RailPlaces(props: { companyId: CompanyId; role: string }) {
         icon={PlugIcon}
         label="Integrações"
       />
-      {props.role !== 'member' && (
+      {may.manageAutomations && (
         <SidebarRailButton
           to="/companies/$companyId/automations"
           params={params}
@@ -69,7 +68,7 @@ function RailPlaces(props: { companyId: CompanyId; role: string }) {
           label="Automações"
         />
       )}
-      {props.role !== 'member' && (
+      {may.manageAgents && (
         <SidebarRailButton
           to="/companies/$companyId/agents"
           params={params}
@@ -84,7 +83,7 @@ function RailPlaces(props: { companyId: CompanyId; role: string }) {
 /** The company's frame: the rail of places, and beside it the list, which inside a Projeto is the Projeto's own (web W30). */
 function HouseFrame() {
   const { companyId } = Route.useParams()
-  const { person, role } = Route.useRouteContext()
+  const { person, may } = Route.useRouteContext()
   const projectId = useParams({ strict: false, select: (params) => params.projectId })
   useEffect(() => {
     if (projectId !== undefined) rememberProject({ personId: person.id, companyId, projectId })
@@ -112,13 +111,11 @@ function HouseFrame() {
           <ProjectRailHead companyId={companyId} projectId={projectId} />
         )
       }
-      rail={{ top: <RailPlaces companyId={companyId} role={role} />, foot }}
+      rail={{ top: <RailPlaces companyId={companyId} may={may} />, foot }}
       menuNote={menuNote}
       nav={
         projectId !== undefined ? (
           <ProjectRailNav companyId={companyId} projectId={projectId} />
-        ) : role === 'member' ? (
-          <RecentProjects companyId={companyId} personId={person.id} />
         ) : (
           <SidebarGroup>
             <NewConversation companyId={companyId} />

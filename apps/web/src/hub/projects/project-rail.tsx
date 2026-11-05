@@ -80,7 +80,7 @@ export function ProjectRailHead({ companyId, projectId }: Scope) {
  */
 export function ProjectRailNav(scope: Scope) {
   const params = scope
-  const { role } = company.useRouteContext()
+  const { may } = company.useRouteContext()
   const building = useMatches({
     select: (matches) => matches.some((match) => match.routeId === BUILD_ROUTE),
   })
@@ -110,7 +110,7 @@ export function ProjectRailNav(scope: Scope) {
           icon={MessagesSquareIcon}
           label="Conversas"
         />
-        {role !== 'member' && (
+        {may.manageAgents && (
           <FrameLink
             to="/companies/$companyId/projects/$projectId/agents"
             params={params}
@@ -118,7 +118,7 @@ export function ProjectRailNav(scope: Scope) {
             label="Agentes"
           />
         )}
-        {role !== 'member' && (
+        {may.manageAutomations && (
           <FrameLink
             to="/companies/$companyId/projects/$projectId/automations"
             params={params}

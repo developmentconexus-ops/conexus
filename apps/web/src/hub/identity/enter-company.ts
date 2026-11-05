@@ -1,4 +1,4 @@
-import type { CompanyDetail, PersonId, Role } from '@conexus/hub-api'
+import type { CompanyDetail, CompanyMay, PersonId } from '@conexus/hub-api'
 import { CompanyId } from '@conexus/hub-api'
 import type { QueryClient } from '@tanstack/react-query'
 import { redirect } from '@tanstack/react-router'
@@ -19,19 +19,20 @@ async function readCompany(context: { queryClient: QueryClient }, companyId: Com
 
 /**
  * The guard of a company's house and Configurações. The Hub answers 404 for a company the person
- * cannot open, which is not found here too. A company without its nickname opens its first entry,
+ * cannot open, which is not found here too. The route context gets what the Hub says the person may
+ * do (`may`, and whether they invite), never the role (web W34). A company without its nickname opens its first entry,
  * which only its owner sees (web W33).
  */
 export async function enterHouse(input: {
   context: { queryClient: QueryClient }
   companyId: CompanyId
-}): Promise<{ company: CompanyDetail; role: Role }> {
-  const { company, role } = await readCompany(input.context, input.companyId)
+}): Promise<{ company: CompanyDetail; may: CompanyMay; mayInvite: boolean }> {
+  const { company, may, mayInviteAs } = await readCompany(input.context, input.companyId)
   if (company.nickname === null) {
     const params = { companyId: input.companyId }
     throw redirect({ to: '/companies/$companyId/welcome', params, replace: true })
   }
-  return { company, role }
+  return { company, may, mayInvite: mayInviteAs.length > 0 }
 }
 
 /**

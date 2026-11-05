@@ -90,15 +90,14 @@ test('o arquivo: o que o modelo escreveu como imagem abre no lugar, e ainda sob 
   assert.match(String(got.headers['content-security-policy']), /(^|; )sandbox$/)
 })
 
-test('o arquivo: de outra pessoa, do membro ou de conversa que não existe, CONVERSATION_NOT_FOUND ou NOT_FOUND; fora da pasta ou inexistente, FILE_NOT_FOUND (20)', async (t) => {
+test('o arquivo: de outra pessoa, do membro ou de conversa que não existe, CONVERSATION_NOT_FOUND; fora da pasta ou inexistente, FILE_NOT_FOUND (20)', async (t) => {
   const on = await withFile(t)
   const carla = await memberOn(on.hub, on.companyId, CARLA, 'admin')
   const bruno = await memberOn(on.hub, on.companyId, BRUNO, 'member')
   const other = await call(on.hub, carla, 'GET', fileOf(on.url, 'relatorio.csv'))
   assert.deepEqual([other.statusCode, codeOf(other)], [404, 'CONVERSATION_NOT_FOUND'])
   const member = await call(on.hub, bruno, 'GET', fileOf(on.url, 'relatorio.csv'))
-  assert.equal(member.statusCode, 404)
-  assert.equal(codeOf(member), 'NOT_FOUND')
+  assert.deepEqual([member.statusCode, codeOf(member)], [404, 'CONVERSATION_NOT_FOUND'])
   const nowhere = `${on.assistant}/${randomUUID()}`
   assert.equal(
     codeOf(await call(on.hub, on.ana, 'GET', fileOf(nowhere, 'a.csv'))),

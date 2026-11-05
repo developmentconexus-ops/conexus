@@ -2147,7 +2147,7 @@
   {
     "id": "assistant-routes-ask",
     "file": "apps/server/src/builder/assistant/open.ts",
-    "find": "    await admitAsker(deps.identity, tx, owner)\n",
+    "find": "    await deps.identity.admitMember({ tx, ...owner, action })\n",
     "replace": "",
     "test": {
       "cwd": "apps/server",
@@ -2389,7 +2389,7 @@
   {
     "id": "automations-admit-each",
     "file": "apps/server/src/builder/automations/automations.ts",
-    "find": "  await deps.assistant.admit(owner, { kind: 'COMPANY' })\n  const found",
+    "find": "  await deps.assistant.admitAutomations(owner, { kind: 'COMPANY' })\n  const found",
     "replace": "  const found",
     "test": {
       "cwd": "apps/server",
@@ -2400,7 +2400,7 @@
   {
     "id": "automations-create-admit",
     "file": "apps/server/src/builder/automations/automations.ts",
-    "find": "  await deps.assistant.admit(owner, place)\n  const id = automationIdOf",
+    "find": "  await deps.assistant.admitAutomations(owner, place)\n  const id = automationIdOf",
     "replace": "  const id = automationIdOf",
     "test": {
       "cwd": "apps/server",
@@ -2505,6 +2505,94 @@
       "cwd": "apps/server",
       "file": "src/builder/tools/routes.test.ts",
       "name": "apagar"
+    }
+  },
+  {
+    "id": "publish-needs-publish-right",
+    "file": "apps/server/src/hub/identity/admission.ts",
+    "find": "publishAppVersion: { by: 'MEMBER', statement: PUBLISH_APP, locks: true },",
+    "replace": "publishAppVersion: { by: 'MEMBER', statement: undefined, locks: true },",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/apps/publish.test.ts",
+      "name": "quem publica"
+    }
+  },
+  {
+    "id": "agents-need-agent-right",
+    "file": "apps/server/src/hub/identity/admission.ts",
+    "find": "readAgents: { by: 'MEMBER', statement: MANAGE_AGENTS, locks: false },",
+    "replace": "readAgents: { by: 'MEMBER', statement: undefined, locks: false },",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/agents/developer.test.ts",
+      "name": "o desenvolvedor"
+    }
+  },
+  {
+    "id": "automations-need-automation-right",
+    "file": "apps/server/src/hub/identity/admission.ts",
+    "find": "manageAutomations: { by: 'MEMBER', statement: MANAGE_AUTOMATIONS, locks: false },",
+    "replace": "manageAutomations: { by: 'MEMBER', statement: undefined, locks: false },",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/automations/developer.test.ts",
+      "name": "o desenvolvedor"
+    }
+  },
+  {
+    "id": "assistant-asked-by-every-member",
+    "file": "apps/server/src/hub/identity/admission.ts",
+    "find": "askAssistant: { by: 'MEMBER', statement: ASK_ASSISTANT, locks: false },",
+    "replace": "askAssistant: { by: 'MEMBER', statement: MANAGE_AGENTS, locks: false },",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/assistant/member.test.ts",
+      "name": "o membro conversa"
+    }
+  },
+  {
+    "id": "developer-changes-no-role",
+    "file": "apps/server/src/hub/identity/admission.ts",
+    "find": "    case 'developer':\n    case 'member':\n      return false",
+    "replace": "    case 'member':\n      return false",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/developer.test.ts",
+      "name": "o desenvolvedor"
+    }
+  },
+  {
+    "id": "company-may-read-from-allows",
+    "file": "apps/server/src/hub/identity/companies.ts",
+    "find": "manageAutomations: allows(admitted.role, 'manageAutomations'),",
+    "replace": "manageAutomations: true,",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/developer.test.ts",
+      "name": "o que a pessoa pode"
+    }
+  },
+  {
+    "id": "assistant-without-automation-tool-for-member",
+    "file": "apps/server/src/builder/assistant/assistant.ts",
+    "find": "        ...(mayAutomate\n          ? { [ASSISTANT_TOOL.proposeAutomation]: proposeAutomationTool(chosen) }\n          : {}),",
+    "replace": "        [ASSISTANT_TOOL.proposeAutomation]: proposeAutomationTool(chosen),",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/assistant/member.test.ts",
+      "name": "o membro não recebe propor automação"
+    }
+  },
+  {
+    "id": "hand-off-releases-only-to-connection-managers",
+    "file": "apps/server/src/hub/connectors/grants.ts",
+    "find": "    return deps.identity.allows(member.role, 'manageConnections')",
+    "replace": "    return member.role !== undefined",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/assistant/member.test.ts",
+      "name": "o passe do membro"
     }
   }
 ]

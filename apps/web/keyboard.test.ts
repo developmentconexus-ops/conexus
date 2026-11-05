@@ -68,7 +68,7 @@ test('o popup do papel, aberto pelo teclado, mostra o contorno de 2px inteiro de
   stops.push(...(await presses(page, 'ArrowDown', 1)))
   assert.deepEqual(
     stops.map((stop) => stop.replace(/ inside$/, '')),
-    ['Membro solid 2px', 'Administrador solid 2px', 'Membro solid 2px'],
+    ['Membro solid 2px', 'Desenvolvedor solid 2px', 'Membro solid 2px'],
   )
   const clipped = await page.evaluate(() => {
     const option = document.activeElement

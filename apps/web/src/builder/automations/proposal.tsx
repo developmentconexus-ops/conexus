@@ -1,7 +1,7 @@
 import type { AssistantConversation, CompanyId, ProposedAutomation } from '@conexus/hub-api'
 import { automationPath } from '@conexus/hub-api'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { Link } from '@tanstack/react-router'
+import { getRouteApi, Link } from '@tanstack/react-router'
 import { useRef, useState } from 'react'
 import { derivedAttemptKey } from '../../platform/attempt-key.ts'
 import { sentenceOf, writeFailureText } from '../../platform/hub.ts'
@@ -11,7 +11,9 @@ import { ReadFailure } from '../../ui/states.tsx'
 import { cadenceText } from './cadence-text.ts'
 import { PlaceName } from './place.tsx'
 import { automationsQuery, sendAutomationCreation } from './queries.ts'
-import { CREATED, READS_NO_SYSTEM, UNCONFIRMED_CREATION } from './text.ts'
+import { CREATED, ONLY_BUILDERS_CREATE, READS_NO_SYSTEM, UNCONFIRMED_CREATION } from './text.ts'
+
+const company = getRouteApi('/_app/companies/$companyId')
 
 /**
  * **Criar automação** (step 24.2, U3, `E1`): the automation the Assistant proposed, with the place
@@ -19,6 +21,8 @@ import { CREATED, READS_NO_SYSTEM, UNCONFIRMED_CREATION } from './text.ts'
  * Mastra stored with the message, so a reload and a second touch create one automation (code C37,
  * web W24); nothing is made before the touch. Whether it was created is the Hub's to say: the
  * automation of the place that names this call as its origin, so leaving and returning keeps it.
+ * A proposal made when the person still created automations says who creates them now, with no
+ * button and no read the Hub would refuse (web W34).
  */
 export function ProposalCard(props: {
   companyId: CompanyId
@@ -28,7 +32,11 @@ export function ProposalCard(props: {
   toolCallId: string
 }) {
   const { companyId, conversation, proposed } = props
-  const automations = useQuery(automationsQuery(companyId, conversation.projectId ?? undefined))
+  const { may } = company.useRouteContext()
+  const automations = useQuery({
+    ...automationsQuery(companyId, conversation.projectId ?? undefined),
+    enabled: may.manageAutomations,
+  })
   const created = automations.data?.automations.find(
     (each) =>
       each.origin?.conversationId === conversation.id &&
@@ -75,6 +83,7 @@ export function ProposalCard(props: {
         {` · ${names.length > 0 ? names.join(', ') : READS_NO_SYSTEM}`}
       </p>
       <p className="whitespace-pre-wrap break-words text-text">{proposed.prompt}</p>
+      {!may.manageAutomations && <p className="text-text-2">{ONLY_BUILDERS_CREATE}</p>}
       {automations.isError && (
         <ReadFailure
           text={sentenceOf(automations.error)}

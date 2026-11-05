@@ -25,7 +25,7 @@ function polled(companyId: CompanyId) {
 }
 
 const NO_NOTIFICATIONS = 'Nenhuma notificação.'
-const PAUSED_BY_OWNER = 'não roda mais: você não pode perguntar ao Assistente'
+const PAUSED_BY_OWNER = 'não roda mais: você não cria mais automações'
 
 function unreadText(count: number): string {
   return count === 1 ? '1 não lida' : `${count} não lidas`
@@ -55,7 +55,7 @@ function textOf(notification: NotificationRow): string {
   }
 }
 
-/** Where a notification opens: its conversation, or, without one, its automation's page. A pause opens the Início, where a person can ask again. */
+/** Where a notification opens: its conversation, or, without one, its automation's page. A pause opens the Início. */
 function pathOf(
   companyId: CompanyId,
   notification: Exclude<NotificationRow, { kind: 'AUTOMATION_PAUSED' }>,

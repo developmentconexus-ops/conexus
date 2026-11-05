@@ -5,29 +5,24 @@ import { PlusIcon } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { Button } from '../../ui/button.tsx'
 import { Dialog, DialogContent, DialogTrigger } from '../../ui/dialog.tsx'
-import { SidebarGroupAction } from '../../ui/sidebar.tsx'
 import { companyQuery } from '../identity/public.ts'
 import { NameStep } from './name-step.tsx'
 import { projectsQuery } from './queries.ts'
 
 /**
- * The **+** on the sidebar's Projetos group, or "Novo projeto" in the header of Início's Projetos
- * block (`block`, its words always shown with `labelled`): a dialog asking what a Projeto needs, its name for now, which creates it and
- * opens its page. Every member may create (`createProject`'s admission), so the button is always
+ * "Novo projeto" in the header of Início's Projetos block (its words always shown with
+ * `labelled`): a dialog asking what a Projeto needs, its name for now, which creates it and opens
+ * its page. Every member may create (`createProject`'s admission), so the button is always
  * there; a refusal shows on the name field.
  */
-export function NewProjectDialog(props: {
-  companyId: CompanyId
-  block?: boolean
-  labelled?: boolean
-}) {
+export function NewProjectDialog(props: { companyId: CompanyId; labelled?: boolean }) {
   const { companyId } = props
   const [open, setOpen] = useState(false)
   const created = useRef(false)
   const navigate = useNavigate()
   const company = useQuery(companyQuery(companyId)).data?.company
   const databaseReady = useQuery(projectsQuery(companyId, undefined)).data?.databaseReady === true
-  /** The + gets focus back on Cancelar or Esc; after creating, the new Projeto's page owns it. */
+  /** The button gets focus back on Cancelar or Esc; after creating, the new Projeto's page owns it. */
   function finalFocus() {
     return !created.current
   }
@@ -39,16 +34,10 @@ export function NewProjectDialog(props: {
         setOpen(next)
       }}
     >
-      {props.block ? (
-        <DialogTrigger render={<Button variant="ghost" size="sm" />}>
-          <PlusIcon aria-hidden="true" />
-          <span className={props.labelled ? undefined : 'max-[400px]:sr-only'}>Novo projeto</span>
-        </DialogTrigger>
-      ) : (
-        <DialogTrigger render={<SidebarGroupAction aria-label="Novo projeto" />}>
-          <PlusIcon aria-hidden="true" />
-        </DialogTrigger>
-      )}
+      <DialogTrigger render={<Button variant="ghost" size="sm" />}>
+        <PlusIcon aria-hidden="true" />
+        <span className={props.labelled ? undefined : 'max-[400px]:sr-only'}>Novo projeto</span>
+      </DialogTrigger>
       <DialogContent
         title="Novo projeto"
         description="Um Projeto precisa só de um nome, por enquanto."

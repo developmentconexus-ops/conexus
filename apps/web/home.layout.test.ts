@@ -15,7 +15,7 @@ import { HANDOFF_UNCONFIRMED } from './src/builder/conversation/text.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import {
   companies,
-  MEMBER,
+  OWNER,
   PROJECT_ID,
   PROJECT_NAME,
   projectsPage,
@@ -23,7 +23,7 @@ import {
 } from './sweep-replies.ts'
 import { sessionReplies } from './sweep-session.ts'
 
-// Início in a real browser: one company Ana is a member of, whose Início asks the Builder in the company's frame.
+// Início in a real browser: one company Ana is a member of, whose Início asks the Assistant in the company's frame.
 const HOUSE = companies([{ name: 'Empresa Teste', role: 'member' }], false)
 const COMPANY_ID = '0'.repeat(32)
 
@@ -83,7 +83,7 @@ for (const viewport of [DESKTOP, PHONE]) {
     const page = await open(`/companies/${COMPANY_ID}`, viewport, WITH_MODEL)
     const title = page.getByRole('heading', { name: /^(Bom dia|Boa tarde|Boa noite)/ })
     const box = page
-      .getByRole('textbox', { name: 'Mensagem para o Builder' })
+      .getByRole('textbox', { name: 'Mensagem para o Assistente' })
       .locator('xpath=ancestor::form')
     const examples = page.getByRole('list', { name: 'Exemplos' })
     await examples.waitFor()
@@ -124,13 +124,15 @@ for (const width of [1366, 1490, 1600, 1862, 1920])
 const CONVERSATION_ID = '33333333-3333-4333-8333-333333333333'
 const PROJECT_API = `/api/companies/${COMPANY.id}/projects/${PROJECT_ID}`
 const MESSAGES = `${BUILDER_ROUTES}/agent-controller/${BUILDER_CONTROLLER}/sessions/${CONVERSATION_ID}/messages`
+// The Builder's box is the first entry's last step, where the owner starts the first Projeto.
+const BUILD = `/companies/${COMPANY.id}/welcome/build`
 const REQUEST = 'Um app de encomendas com cliente, data de entrega e valor'
 const CREATED_AT = '2026-10-27T12:00:00.000Z'
 
-/** Início creates the Projeto and its conversation, which opens and sends; `sent` holds that send. */
+/** The Builder's box creates the Projeto and its conversation, which opens and sends; `sent` holds that send. */
 function starting(sent: Promise<unknown>): Replies {
   return {
-    ...MEMBER,
+    ...OWNER,
     ...projectsPage(COMPANY.id),
     ...startsOn(COMPANY.id),
     [`POST /api/companies/${COMPANY.id}/projects`]: ok(createProject, {
@@ -160,7 +162,7 @@ function starting(sent: Promise<unknown>): Replies {
   }
 }
 
-/** The request written, **Enviar**, the name, **Criar e começar**: the conversation opens. */
+/** The request written in the Builder's box, **Enviar**, the name, **Criar e começar**: the conversation opens. */
 async function start(page: Page) {
   await page.getByRole('textbox', { name: 'Mensagem para o Builder' }).fill(REQUEST)
   await page.getByRole('button', { name: 'Enviar' }).click()
@@ -174,7 +176,7 @@ function messagesSent(page: Page & { seen: { method: string; path: string }[] })
 }
 
 test('no celular, Criar e começar abre na Conversa, não na Prévia', async () => {
-  const page = await open(`/companies/${COMPANY.id}`, PHONE, starting(Promise.resolve()))
+  const page = await open(BUILD, PHONE, starting(Promise.resolve()))
   await start(page)
   const conversation = page.getByRole('button', { name: 'Conversa', exact: true })
   assert.equal(await conversation.getAttribute('aria-pressed'), 'true')
@@ -186,7 +188,7 @@ test('no celular, Criar e começar abre na Conversa, não na Prévia', async () 
 
 test('recarregar durante o envio do pedido põe o texto na caixa com a frase e não reenvia (11)', async () => {
   const held = Promise.withResolvers<void>()
-  const page = await open(`/companies/${COMPANY.id}`, DESKTOP, starting(held.promise))
+  const page = await open(BUILD, DESKTOP, starting(held.promise))
   await start(page)
   await page.waitForFunction(
     (key) => sessionStorage.getItem(key) !== null,
@@ -208,7 +210,7 @@ test('o pedido recusado e reenviado não volta depois de recarregar: sem a frase
       ...starting(Promise.resolve()),
       [`POST ${MESSAGES}`]: { status: 502, json: {} },
     }
-    const page = await open(`/companies/${COMPANY.id}`, viewport, replies)
+    const page = await open(BUILD, viewport, replies)
     await start(page)
     await page.getByRole('alert').waitFor()
     replies[`POST ${MESSAGES}`] = { status: 200, json: { ok: true } }
@@ -231,7 +233,7 @@ test('o pedido recusado e reenviado não volta depois de recarregar: sem a frase
 
 test('no celular, recarregar durante o envio do pedido abre na Conversa, com a frase à vista', async () => {
   const held = Promise.withResolvers<void>()
-  const page = await open(`/companies/${COMPANY.id}`, PHONE, starting(held.promise))
+  const page = await open(BUILD, PHONE, starting(held.promise))
   await start(page)
   await page.waitForFunction(
     (key) => sessionStorage.getItem(key) !== null,

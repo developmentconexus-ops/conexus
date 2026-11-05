@@ -270,23 +270,29 @@ function assistantAgent(
   const showFile = showFileTool(parts.machines)
   const proposals = proposeTools(parts.machines)
   const automationRun = automationRunFor(parts.memory)
+  // The prompt's block and the tools read the speaker's role together, once per run.
+  const speakersFor = oncePerRun(async (requestContext) => {
+    const scope = await scopeOf(requestContext)
+    return scope === undefined ? undefined : speakersOf(deps, scope)
+  })
   return new Agent({
     id: ASSISTANT_CONTROLLER,
     name: 'Assistant',
-    instructions: assistantInstructions({
-      scopeOf,
-      offeredOf,
-      speakersOf: (scope) => speakersOf(deps, scope),
-    }),
+    instructions: assistantInstructions({ offeredOf, speakersOf: speakersFor }),
     model: ({ requestContext }) => sessionModel(requestContext),
     tools: async ({ requestContext }) => {
       const scope = await scopeOf(requestContext)
       const chosen = await chosenOf(requestContext)
+      const speakers = await speakersFor(requestContext)
+      const mayAutomate =
+        speakers !== undefined && deps.identity.allows(speakers.role, 'manageAutomations')
       return {
         ...toolsOf(sessionModel(requestContext)),
         [ASSISTANT_TOOL.overview]: overview,
         [ASSISTANT_TOOL.showFile]: showFile,
-        [ASSISTANT_TOOL.proposeAutomation]: proposeAutomationTool(chosen),
+        ...(mayAutomate
+          ? { [ASSISTANT_TOOL.proposeAutomation]: proposeAutomationTool(chosen) }
+          : {}),
         ...handOffOf(scope, proposals, await automationRun(requestContext)),
         ...(scope === undefined
           ? {}
@@ -356,7 +362,11 @@ export function createAssistant(deps: Deps) {
       close: () => machines.stopAll(),
     },
     /** Admits the person who may ask now, in the place; else `NOT_FOUND` (S10). */
-    admit: (owner: Owner, place: SessionScope['place']) => admitted(deps, owner, place),
+    admit: (owner: Owner, place: SessionScope['place']) =>
+      admitted(deps, owner, place, 'askAssistant'),
+    /** Admits the person who may create automations now, in the place; else `NOT_FOUND` (S10). */
+    admitAutomations: (owner: Owner, place: SessionScope['place']) =>
+      admitted(deps, owner, place, 'manageAutomations'),
     /** Opens a conversation, or finds the one its id names (`open.ts`). */
     open: (input: Parameters<typeof openConversation>[1]) => openConversation(opening, input),
     /** How the session's next turn ends (`turn.ts`). */

@@ -64,7 +64,7 @@ function NoProjects(props: { companyId: CompanyId }) {
   return (
     <div className="mx-auto flex w-full max-w-message flex-col items-center gap-md py-xl text-center">
       <p className="font-display text-title">{NO_PROJECTS_TITLE}</p>
-      <NewProjectDialog companyId={props.companyId} block labelled />
+      <NewProjectDialog companyId={props.companyId} labelled />
       <Link
         to="/companies/$companyId"
         params={{ companyId: props.companyId }}

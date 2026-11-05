@@ -36,7 +36,7 @@ type Owned = { view: WorkflowSchedule; input: AutomationInput }
 
 export type AutomationsDeps = {
   mastra: Mastra
-  assistant: Pick<Assistant, 'admit'>
+  assistant: Pick<Assistant, 'admitAutomations'>
   connectors: Pick<Connectors['assistant'], 'connections'>
   runs: AutomationRuns
   updating: () => boolean
@@ -73,7 +73,7 @@ function isOwner(input: AutomationInput, owner: Owner): boolean {
 }
 
 async function owned(deps: AutomationsDeps, owner: Owner, id: AutomationId): Promise<Owned> {
-  await deps.assistant.admit(owner, { kind: 'COMPANY' })
+  await deps.assistant.admitAutomations(owner, { kind: 'COMPANY' })
   const found = ownedOf(await stored(deps.mastra.schedules.get(id)))
   if (found === undefined || !isOwner(found.input, owner)) {
     throw new Failure('AUTOMATION_NOT_FOUND')
@@ -148,7 +148,7 @@ async function create(
 ): Promise<AutomationSummary> {
   const { schedules } = deps.mastra
   const place = placeOf(body.projectId)
-  await deps.assistant.admit(owner, place)
+  await deps.assistant.admitAutomations(owner, place)
   const id = automationIdOf(owner, attemptKey)
   const { origin, ...deduplicated } = body
   const attempt = { bodyHash: bodyHashOf(deduplicated), origin }
@@ -190,7 +190,7 @@ async function create(
 /** The person's automations of one place: the Início's, or one live Projeto's. */
 async function list(deps: AutomationsDeps, owner: Owner, projectId: ProjectId | undefined) {
   const place = placeOf(projectId)
-  await deps.assistant.admit(owner, place)
+  await deps.assistant.admitAutomations(owner, place)
   const rows = await stored(
     deps.mastra.schedules.list({
       workflowId: AUTOMATION_WORKFLOW,
@@ -248,7 +248,7 @@ async function remove(deps: AutomationsDeps, owner: Owner, id: AutomationId): Pr
 /**
  * The person's automations of the Assistant (step 24.2): each one row of Mastra's schedules, what
  * it is in its `inputData`, with no table of the Hub. Every operation admits the person who may
- * ask now (`askAssistant`), and another's automation is `AUTOMATION_NOT_FOUND` (S10).
+ * create them now (`manageAutomations`), and another's automation is `AUTOMATION_NOT_FOUND` (S10).
  */
 export function createAutomations(deps: AutomationsDeps) {
   return Object.freeze({
