@@ -262,7 +262,7 @@ async function handOff(deps: HandOffDeps, input: HandOffInput): Promise<HandedOf
   if (thread === null) throw new Failure('CONVERSATION_NOT_FOUND')
   const kept = await deps.chosen.of(owner, conversationId)
   const place = placeOf(kept.projectId)
-  await admitted(deps, owner, place)
+  await admitted(deps, owner, place, 'askAssistant')
   const toolName =
     place.kind === 'COMPANY' ? ASSISTANT_TOOL.proposeApp : ASSISTANT_TOOL.proposeAppChange
   const proposal = await proposalOf(deps, owner, {

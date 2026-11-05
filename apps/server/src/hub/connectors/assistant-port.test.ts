@@ -61,13 +61,12 @@ async function assistantOn(
   }
 }
 
-test('o Início: a dona e a administradora leem uma ligação ACTIVE escolhida, sem liberação de Projeto; o membro, NEEDS_REAUTH, outra empresa e uma apagada dão a mesma resposta', async (t) => {
+test('o Início: a dona, a administradora e o membro leem uma ligação ACTIVE escolhida, sem liberação de Projeto; NEEDS_REAUTH, outra empresa e uma apagada dão a mesma resposta', async (t) => {
   const on = await assistantOn(t)
-  for (const who of [on.ana, on.bruno]) {
+  for (const who of [on.ana, on.bruno, on.carla]) {
     const answered = await on.ask(who)
     assert.equal(answered.kind, 'OK')
   }
-  assert.deepEqual(await on.ask(on.carla), { kind: 'NOT_GRANTED' })
 
   const otherCompany = await plantCompany(on.hub.test, on.carla.id, 'Empresa B', 'empresa-b')
   const otherRoute = `/api/companies/${otherCompany}/connections`
@@ -99,14 +98,14 @@ test('o Projeto: uma escolhida e liberada ao Projeto dá OK; uma escolhida mas n
   assert.equal((await on.ask(on.ana, { project: true })).kind, 'OK')
 })
 
-test('a escolha: o que o lugar oferece e a conversa não escolheu dá NOT_GRANTED e caderno null; escolhida de novo, OK; o caderno de quem o Projeto não recebeu também é null', async (t) => {
+test('a escolha: o que o lugar oferece e a conversa não escolheu dá NOT_GRANTED e caderno null; escolhida de novo, OK; o caderno de quem o Projeto não recebeu é null; o do membro é o da dona', async (t) => {
   const on = await assistantOn(t)
   assert.deepEqual(await on.ask(on.ana, { chosen: [] }), { kind: 'NOT_GRANTED' })
   assert.equal(await on.port.notes(on.scope(on.ana, { chosen: [] }), on.matriz), null)
   assert.equal((await on.ask(on.ana)).kind, 'OK')
   assert.deepEqual(await on.port.notes(on.scope(on.ana), on.matriz), {})
   assert.equal(await on.port.notes(on.scope(on.ana, { project: true }), on.matriz), null)
-  assert.equal(await on.port.notes(on.scope(on.carla), on.matriz), null)
+  assert.deepEqual(await on.port.notes(on.scope(on.carla), on.matriz), {})
 })
 
 test('só leitura: uma operação que não é read nunca sai pela porta da empresa', async (t) => {
@@ -121,7 +120,7 @@ test('só leitura: uma operação que não é read nunca sai pela porta da empre
   assert.equal(on.called(), 0, 'nothing reached the provider')
 })
 
-test('a lista: no Início cada ACTIVE da empresa, num Projeto só as liberadas, com a escolha; NEW, NEEDS_REAUTH e outra empresa ficam de fora; quem não pode perguntar recebe vazia', async (t) => {
+test('a lista: no Início cada ACTIVE da empresa, num Projeto só as liberadas, com a escolha; NEW, NEEDS_REAUTH e outra empresa ficam de fora; o membro recebe a mesma lista da dona', async (t) => {
   const on = await assistantOn(t)
   const filial = ConnectionId.parse(await on.connect('Filial', false))
   const stale = ConnectionId.parse(await on.connect('Velha', false))
@@ -165,7 +164,7 @@ test('a lista: no Início cada ACTIVE da empresa, num Projeto só as liberadas, 
     inProject.map(({ name, chosen }) => [name, chosen]),
     [['Filial', false]],
   )
-  assert.deepEqual(await on.port.connections(on.scope(on.carla)), [])
+  assert.deepEqual(await on.port.connections(on.scope(on.carla)), home)
 })
 
 test('50 por turno: a 51ª chamada do mesmo turno é CALLS_SPENT sem chamar o fornecedor; outro turno começa do zero', async (t) => {

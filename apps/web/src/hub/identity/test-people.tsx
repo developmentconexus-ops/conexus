@@ -4,9 +4,10 @@ import type { within } from '@testing-library/react'
 import { render } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { Conexus, createConexus } from '../../main.tsx'
-import { ANA, COMPANY, mayOf } from '../../platform/fixtures.ts'
+import { ANA, COMPANY } from '../../platform/fixtures.ts'
 import { hubServer, memberView, refusal, sessionRead } from '../../platform/test-hub.tsx'
 import { companyAppAccessRead } from '../../platform/test-hub-access.tsx'
+import { mayOf } from '../../platform/test-may.ts'
 
 export const server = hubServer()
 

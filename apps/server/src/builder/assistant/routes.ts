@@ -117,7 +117,7 @@ type Asked = {
  */
 async function created(deps: Deps, owner: Owner, input: { attemptKey: string; body: Asked }) {
   const place = placeOf(input.body.projectId)
-  await admitted(deps, owner, place)
+  await admitted(deps, owner, place, 'askAssistant')
   const id = attemptIdOf('assistant', owner, input.attemptKey)
   const { body } = input
   const opened = await openConversation(deps, {
@@ -172,7 +172,7 @@ function registerReads(app: FastifyInstance, deps: Deps): void {
   serve(app, listAssistantConversations, async (input) => {
     const owner = ownerOf(input)
     const { projectId, page: token, q, place } = input.query
-    await admitted(deps, owner, placeOf(projectId))
+    await admitted(deps, owner, placeOf(projectId), 'askAssistant')
     const page = pageOf(token)
     const listed = await listedPage(deps.memory, { owner, projectId, page, q, place })
     const marks = listed.threads.map((thread) =>
@@ -191,7 +191,7 @@ function registerReads(app: FastifyInstance, deps: Deps): void {
 
   serve(app, readAssistantConversation, async (input) => {
     const owner = ownerOf(input)
-    await admitted(deps, owner, { kind: 'COMPANY' })
+    await admitted(deps, owner, { kind: 'COMPANY' }, 'askAssistant')
     const thread = await ownThread(deps, owner, input.params.conversationId)
     const scope = await scopeOfThread(deps, owner, thread)
     return answer({ conversation: await conversationOf(deps, thread, scope) })
@@ -200,7 +200,7 @@ function registerReads(app: FastifyInstance, deps: Deps): void {
   serve(app, listAssistantConnections, async (input) => {
     const owner = ownerOf(input)
     const place = placeOf(input.query.projectId)
-    await admitted(deps, owner, place)
+    await admitted(deps, owner, place, 'askAssistant')
     const offered = await deps.connectors.connections({ ...owner, place, chosen: [] })
     const connections = offered.map(({ connectionId, connector, name }) => ({
       connectionId,
@@ -217,7 +217,7 @@ function registerChanges(app: FastifyInstance, deps: Deps): void {
   serve(app, renameAssistantConversation, async (input) => {
     const owner = ownerOf(input)
     const { conversationId } = input.params
-    await admitted(deps, owner, { kind: 'COMPANY' })
+    await admitted(deps, owner, { kind: 'COMPANY' }, 'askAssistant')
     await ownThread(deps, owner, conversationId)
     const { title } = input.body
     // `titlePinned`: the memory's own titling no longer replaces the one the person chose. The
@@ -233,7 +233,7 @@ function registerChanges(app: FastifyInstance, deps: Deps): void {
   serve(app, deleteAssistantConversation, async (input) => {
     const owner = ownerOf(input)
     const { conversationId } = input.params
-    await admitted(deps, owner, { kind: 'COMPANY' })
+    await admitted(deps, owner, { kind: 'COMPANY' }, 'askAssistant')
     await ownThread(deps, owner, conversationId)
     // The session first, so its answer stops; then its machines; the thread last, so a failure
     // halfway leaves what the next delete finds again. The row of its choice stays until
@@ -271,7 +271,7 @@ function registerWrites(app: FastifyInstance, deps: Deps): void {
   serve(app, setAssistantConnections, async (input) => {
     const owner = ownerOf(input)
     const { conversationId } = input.params
-    await admitted(deps, owner, { kind: 'COMPANY' })
+    await admitted(deps, owner, { kind: 'COMPANY' }, 'askAssistant')
     const thread = await ownThread(deps, owner, conversationId)
     const scope = await scopeOfThread(deps, owner, thread)
     const chosen = await offeredOnly(deps, scope, input.body.connections)
@@ -287,7 +287,7 @@ function registerWrites(app: FastifyInstance, deps: Deps): void {
   serve(app, setAssistantModel, async (input) => {
     const owner = ownerOf(input)
     const { conversationId } = input.params
-    await admitted(deps, owner, { kind: 'COMPANY' })
+    await admitted(deps, owner, { kind: 'COMPANY' }, 'askAssistant')
     const thread = await ownThread(deps, owner, conversationId)
     const { place } = await scopeOfThread(deps, owner, thread)
     const tags = marksOf(owner, {
@@ -318,7 +318,7 @@ export function registerAssistantRoutes(app: FastifyInstance, deps: Deps): void 
     machines: deps.machines,
     log: deps.log,
     ownConversation: async (owner, conversationId) => {
-      await admitted(deps, owner, { kind: 'COMPANY' })
+      await admitted(deps, owner, { kind: 'COMPANY' }, 'askAssistant')
       await ownThread(deps, owner, conversationId)
     },
   })

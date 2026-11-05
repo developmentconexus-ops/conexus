@@ -6,8 +6,9 @@ import { ReceiptIcon } from 'lucide-react'
 import { HttpResponse, http } from 'msw'
 import { afterEach, expect, test, vi } from 'vitest'
 import { Conexus, createConexus } from '../../../../../main.tsx'
-import { ANA, COMPANY, mayOf } from '../../../../../platform/fixtures.ts'
+import { ANA, COMPANY } from '../../../../../platform/fixtures.ts'
 import { companyRead, hubServer, refusal, sessionRead } from '../../../../../platform/test-hub.tsx'
+import { mayOf } from '../../../../../platform/test-may.ts'
 import { Route as SettingsRoute } from './route.tsx'
 
 const server = hubServer()

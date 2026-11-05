@@ -2147,7 +2147,7 @@
   {
     "id": "assistant-routes-ask",
     "file": "apps/server/src/builder/assistant/open.ts",
-    "find": "    await admitAsker(deps.identity, tx, owner)\n",
+    "find": "    await deps.identity.admitMember({ tx, ...owner, action })\n",
     "replace": "",
     "test": {
       "cwd": "apps/server",
@@ -2389,7 +2389,7 @@
   {
     "id": "automations-admit-each",
     "file": "apps/server/src/builder/automations/automations.ts",
-    "find": "  await deps.assistant.admit(owner, { kind: 'COMPANY' })\n  const found",
+    "find": "  await deps.assistant.admitAutomations(owner, { kind: 'COMPANY' })\n  const found",
     "replace": "  const found",
     "test": {
       "cwd": "apps/server",
@@ -2400,7 +2400,7 @@
   {
     "id": "automations-create-admit",
     "file": "apps/server/src/builder/automations/automations.ts",
-    "find": "  await deps.assistant.admit(owner, place)\n  const id = automationIdOf",
+    "find": "  await deps.assistant.admitAutomations(owner, place)\n  const id = automationIdOf",
     "replace": "  const id = automationIdOf",
     "test": {
       "cwd": "apps/server",

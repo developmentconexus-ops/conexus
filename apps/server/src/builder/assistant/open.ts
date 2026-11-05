@@ -13,12 +13,7 @@ import type { Connectors, SessionScope } from '../../hub/connectors/public.ts'
 import type { IdentityPorts } from '../../hub/identity/public.ts'
 import type { Database } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
-import {
-  admitAsker,
-  admitAutomationOwner,
-  openSession,
-  resourceOf,
-} from '../controller-kit/public.ts'
+import { openSession, resourceOf } from '../controller-kit/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import type { ChosenConnections } from './chosen.ts'
 import type { Owner } from './context.ts'
@@ -42,8 +37,8 @@ export type OpenDeps = {
 }
 
 /**
- * The person may ask the Assistant in the company now (`askAssistant`), or take `admit`'s own
- * action, and the Projeto named is live; else the same `NOT_FOUND` (security S10).
+ * The person may take `action` in the company now (ask the Assistant, or create automations), and
+ * the Projeto named is live; else the same `NOT_FOUND` (security S10).
  */
 export async function admitted(
   deps: {
@@ -53,10 +48,10 @@ export async function admitted(
   },
   owner: Owner,
   place: Place,
-  admit: typeof admitAsker = admitAsker,
+  action: 'askAssistant' | 'manageAutomations',
 ): Promise<void> {
   await deps.database.read({ kind: 'COMPANY', ...owner }, async (tx) => {
-    await admit(deps.identity, tx, owner)
+    await deps.identity.admitMember({ tx, ...owner, action })
     if (place.kind === 'COMPANY') return
     const live = await deps.projects.liveProjectOf(tx, {
       companyId: owner.companyId,
@@ -64,15 +59,6 @@ export async function admitted(
     })
     if (live === undefined) throw new Failure('NOT_FOUND', { details: { reason: 'PROJECT' } })
   })
-}
-
-/** The person may create automations in the company now (`manageAutomations`), and the Projeto named is live. */
-export function admittedAutomations(
-  deps: Parameters<typeof admitted>[0],
-  owner: Owner,
-  place: Place,
-) {
-  return admitted(deps, owner, place, admitAutomationOwner)
 }
 
 /** The automation whose run opened a conversation, as its marks keep it. */

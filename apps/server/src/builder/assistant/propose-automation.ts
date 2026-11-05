@@ -2,12 +2,7 @@ import type { ConnectionId } from '@conexus/hub-api'
 import { ASSISTANT_TOOL, ProposedAutomation } from '@conexus/hub-api'
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
-import type { SessionScope } from '../../hub/connectors/public.ts'
-import type { IdentityPorts } from '../../hub/identity/public.ts'
 import { connectionField } from '../connectors/public.ts'
-import { oncePerRun } from '../controller-kit/public.ts'
-import type { ScopeOf } from './context.ts'
-import type { Speakers } from './instructions.ts'
 
 /**
  * `propose_automation` (step 24.2, U3, `E1`): when what the person asks repeats at a time, the
@@ -34,22 +29,5 @@ export function proposeAutomationTool(
         .filter((each) => proposal.connections.includes(each.name))
         .map((each) => each.connectionId),
     }),
-  })
-}
-
-/**
- * Whether the speaker's role creates automations (`manageAutomations`), read once per run: the
- * Assistant of one who does not is given no `propose_automation`, and Mastra answers a call made
- * anyway with "Tool not found" (step 24.3.4, B).
- */
-export function mayAutomateFor(
-  identity: Pick<IdentityPorts, 'allows'>,
-  scopeOf: ScopeOf,
-  speakersOf: (scope: SessionScope) => Promise<Speakers>,
-) {
-  return oncePerRun(async (requestContext) => {
-    const scope = await scopeOf(requestContext)
-    if (scope === undefined) return false
-    return identity.allows((await speakersOf(scope)).role, 'manageAutomations')
   })
 }

@@ -20,7 +20,7 @@ function sentenceOf(kind: AutomationMailProps['kind'], name: string): string {
     case 'AUTOMATION_FAILED':
       return `A automação ${name} não conseguiu terminar.`
     case 'AUTOMATION_PAUSED':
-      return `A automação ${name} foi pausada: você não pode mais perguntar ao Assistente da empresa.`
+      return `A automação ${name} foi pausada: você não cria mais automações na empresa.`
     default:
       return kind satisfies never
   }

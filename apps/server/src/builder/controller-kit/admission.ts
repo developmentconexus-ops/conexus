@@ -12,15 +12,6 @@ export function admitAsker(identity: IdentityPorts, tx: ReadTx, owner: Owner) {
   return identity.admitMember({ tx, companyId, personId, action: 'askAssistant' })
 }
 
-/**
- * The person may create and change automations now, else `NOT_FOUND` (security S10): the owner, an
- * administrator and a developer (step 24.3.4, C1).
- */
-export function admitAutomationOwner(identity: IdentityPorts, tx: ReadTx, owner: Owner) {
-  const { companyId, personId } = owner
-  return identity.admitMember({ tx, companyId, personId, action: 'manageAutomations' })
-}
-
 /** `admit` of a part whose conversations need `manageAgents` now: the agents' part and the Construtor's. */
 export function agentManagerAdmission(deps: { database: Database; identity: IdentityPorts }) {
   return async (input: { person: Person; companyId: CompanyId }): Promise<void> => {

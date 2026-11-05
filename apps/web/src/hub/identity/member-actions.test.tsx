@@ -4,9 +4,10 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
-import { ANA, COMPANY, mayOf } from '../../platform/fixtures.ts'
+import { ANA, COMPANY } from '../../platform/fixtures.ts'
 import { hubServer, memberView, refusal, sessionRead } from '../../platform/test-hub.tsx'
 import { COMPANY_ACCESS_NONE } from '../../platform/test-hub-access.tsx'
+import { mayOf } from '../../platform/test-may.ts'
 
 const server = hubServer()
 

@@ -58,7 +58,7 @@ test('criar: com o modelo padrão, só as ligações que o lugar oferece, no Pro
   )
 })
 
-test('criar: um modelo sem conta, um Projeto de outra empresa, apagado ou marcado não criam nada', async (t) => {
+test('criar: um modelo sem conta, um Projeto de outra empresa, apagado ou marcado, e uma empresa que está sendo apagada, não criam nada', async (t) => {
   const on = await assisting(t)
   const noAccount = await post(on.hub, on.ana, on.assistant, {
     model: 'openai/gpt-5.4',
@@ -88,6 +88,13 @@ test('criar: um modelo sem conta, um Projeto de outra empresa, apagado ou marcad
   }
   const listed: Listed = Object((await call(on.hub, on.ana, 'GET', on.assistant)).json())
   assert.deepEqual(listed.conversations, [])
+  await on.hub.test.asOwner('update auth.company set deleting_since = now() where id = $1', [
+    on.companyId,
+  ])
+  const deleting = await post(on.hub, on.ana, on.assistant, { connections: [] })
+  assert.equal(deleting.statusCode, 404, deleting.body)
+  const listing = await call(on.hub, on.ana, 'GET', on.assistant)
+  assert.equal(listing.statusCode, 404, listing.body)
 })
 
 test('trocar as ligações: a resposta diz as que ficaram, só as que o lugar oferece; de outra pessoa ou inexistente, CONVERSATION_NOT_FOUND', async (t) => {

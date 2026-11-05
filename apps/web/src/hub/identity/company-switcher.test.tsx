@@ -4,8 +4,9 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { afterEach, expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
-import { ANA, COMPANY, mayOf } from '../../platform/fixtures.ts'
+import { ANA, COMPANY } from '../../platform/fixtures.ts'
 import { hubServer, sessionRead } from '../../platform/test-hub.tsx'
+import { mayOf } from '../../platform/test-may.ts'
 
 const server = hubServer()
 

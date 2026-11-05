@@ -15,8 +15,9 @@ import { render } from '@testing-library/react'
 import type { HttpHandler } from 'msw'
 import { HttpResponse, http } from 'msw'
 import { Conexus, createConexus } from '../../main.tsx'
-import { ANA, COMPANY, mayOf } from '../../platform/fixtures.ts'
+import { ANA, COMPANY } from '../../platform/fixtures.ts'
 import { memberView, refusal, sessionRead } from '../../platform/test-hub.tsx'
+import { mayOf } from '../../platform/test-may.ts'
 
 const BASE = `*/api/companies/${COMPANY.id}`
 const ROLES = {

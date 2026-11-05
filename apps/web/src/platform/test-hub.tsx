@@ -18,7 +18,8 @@ import {
 import { HttpResponse, http } from 'msw'
 import { setupServer } from 'msw/node'
 import { afterAll, afterEach, beforeAll } from 'vitest'
-import { ANA, COMPANY, mayOf, problemOf } from './fixtures.ts'
+import { ANA, COMPANY, problemOf } from './fixtures.ts'
+import { mayOf } from './test-may.ts'
 
 export const NO_COMPANIES = listCompanies.success.body.parse({
   companies: [],

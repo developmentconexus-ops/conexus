@@ -11,9 +11,10 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { beforeEach, expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
-import { ANA, COMPANY, mayOf } from '../../platform/fixtures.ts'
+import { ANA, COMPANY } from '../../platform/fixtures.ts'
 import { centralHub, homeHub, hubServer, NO_COMPANIES, refusal } from '../../platform/test-hub.tsx'
 import { ENCOMENDAS, myAppsRead } from '../../platform/test-hub-access.tsx'
+import { mayOf } from '../../platform/test-may.ts'
 
 const server = hubServer()
 

@@ -2,7 +2,6 @@ import { readFileSync } from 'node:fs'
 import type { Role } from '@conexus/hub-api'
 import type { AgentInstructions } from '@mastra/core/agent'
 import type { RequestContext } from '@mastra/core/request-context'
-import type { SessionScope } from '../../hub/connectors/public.ts'
 import { Failure } from '../../platform/failure.ts'
 import { turnDate } from '../conversation/public.ts'
 
@@ -63,23 +62,21 @@ export function blockOf(
  * block, which the Hub marks as the last one; resolved again on each call of the agent.
  */
 export function assistantInstructions(deps: {
-  scopeOf: (requestContext: RequestContext) => Promise<SessionScope | undefined>
   offeredOf: (
     requestContext: RequestContext,
   ) => Promise<readonly { name: string; connector: string; chosen: boolean }[]>
-  speakersOf: (scope: SessionScope) => Promise<Speakers>
+  speakersOf: (requestContext: RequestContext) => Promise<Speakers | undefined>
 }) {
   return async ({ requestContext }: { requestContext: RequestContext }) => {
-    const scope = await deps.scopeOf(requestContext)
-    if (scope === undefined) {
+    const [speakers, offered] = await Promise.all([
+      deps.speakersOf(requestContext),
+      deps.offeredOf(requestContext),
+    ])
+    if (speakers === undefined) {
       throw new Failure('INTERNAL_UNEXPECTED', {
         details: { reason: 'PROMPT_WITHOUT_CONVERSATION' },
       })
     }
-    const [speakers, offered] = await Promise.all([
-      deps.speakersOf(scope),
-      deps.offeredOf(requestContext),
-    ])
     const chosen = offered.filter((each) => each.chosen)
     return [
       { role: 'system', content: FIXED, providerOptions: CACHED },

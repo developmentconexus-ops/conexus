@@ -4,7 +4,7 @@ import { createHarness, DESKTOP, PHONE } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import { MEMBER, OWNER, projectsPage } from './sweep-replies.ts'
 
-// The sidebar's + and the dialog it opens, in a real browser (design V18, V32).
+// The Novo projeto button of Início's Projetos block and the dialog it opens, in a real browser (design V18, V32).
 const harness = createHarness(import.meta.dirname)
 before(() => harness.start())
 after(async () => {
@@ -13,23 +13,15 @@ after(async () => {
 })
 
 for (const viewport of [DESKTOP, PHONE]) {
-  test(`o +: 28px na linha do grupo e o diálogo cabe numa tela de ${viewport.width}px`, async () => {
-    const page = await harness.open(`/companies/${COMPANY.id}/projects`, {
+  test(`o diálogo de "Novo projeto", aberto pelo membro no bloco Projetos do Início, cabe numa tela de ${viewport.width}px`, async () => {
+    const page = await harness.open(`/companies/${COMPANY.id}`, {
       viewport,
       replies: { ...MEMBER, ...projectsPage(COMPANY.id) },
     })
-    if (viewport === PHONE) await page.getByRole('button', { name: 'Abrir navegação' }).click()
-    const plus = page.getByLabel('Novo projeto', { exact: true })
+    const plus = page.getByRole('region', { name: 'Projetos' }).getByRole('button', {
+      name: 'Novo projeto',
+    })
     await plus.waitFor()
-    const box = await plus.boundingBox()
-    const label = await page.getByText('Projetos recentes').boundingBox()
-    assert.ok(box && label, 'the + or the group label is not laid out')
-    assert.equal(box.width, 28)
-    assert.equal(box.height, 28)
-    assert.ok(
-      Math.abs(box.y + box.height / 2 - (label.y + label.height / 2)) <= 1,
-      '+ is off the label line',
-    )
     await plus.click()
     const dialog = page.getByRole('dialog', { name: 'Novo projeto' })
     await dialog.waitFor()
@@ -50,7 +42,7 @@ for (const viewport of [DESKTOP, PHONE]) {
   })
 }
 
-test('o dono não tem o + na lista: "Novo projeto" fica no cabeçalho do bloco Projetos do Início e abre o diálogo', async () => {
+test('ninguém tem o + na lista: "Novo projeto" fica no cabeçalho do bloco Projetos do Início e abre o diálogo', async () => {
   const page = await harness.open(`/companies/${COMPANY.id}`, {
     viewport: DESKTOP,
     replies: { ...OWNER, ...projectsPage(COMPANY.id) },

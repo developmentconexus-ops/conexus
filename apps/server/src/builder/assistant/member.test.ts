@@ -148,8 +148,13 @@ test('o passe do membro e do desenvolvedor ao Builder cria o Projeto e abre o Bu
       [handed.projectId],
     )
     assert.deepEqual(granted, [], role)
-    await sleep(500)
     const builder = `${on.company}/projects/${handed.projectId}/conversations/${handed.conversationId}`
-    assert.ok((await messagesOf(on.hub, person, builder)).length > 0, `${role}: the Builder opened`)
+    const deadline = Date.now() + 5000
+    let opened = await messagesOf(on.hub, person, builder)
+    while (opened.length === 0 && Date.now() < deadline) {
+      await sleep(100)
+      opened = await messagesOf(on.hub, person, builder)
+    }
+    assert.ok(opened.length > 0, `${role}: the Builder opened`)
   }
 })

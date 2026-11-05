@@ -15,7 +15,7 @@ function transcript(url: string, controller: 'builder' | 'assistant' | 'agents' 
   return `${session}/threads/${id}/messages`
 }
 
-test('o Assistente: as rotas do Mastra com a chave assistant respondem só ao dono da conversa enquanto ele pode perguntar; a conversa do outro controlador, de outra pessoa ou de quem virou membro não', async (t) => {
+test('o Assistente: as rotas do Mastra com a chave assistant respondem só ao dono da conversa enquanto a empresa o admite; a conversa do outro controlador, de outra pessoa ou de uma empresa que está sendo apagada não', async (t) => {
   const on = await assisting(t)
   const mine = await created(on.hub, on.ana, on.assistant, { connections: [] })
   const builder = `${on.conversations}/${await started(on.hub, on.ana, on.conversations)}`
@@ -36,13 +36,12 @@ test('o Assistente: as rotas do Mastra com a chave assistant respondem só ao do
   assert.equal(codeOf(foreign), 'CONVERSATION_NOT_FOUND')
   assert.equal((await call(on.hub, carla, 'GET', transcript(hers, 'assistant'))).statusCode, 200)
 
-  await on.hub.test.asOwner(
-    `update auth.member set role = 'member' where user_id = $1 and company_id = $2`,
-    [carla.id, on.companyId],
-  )
-  const demoted = await call(on.hub, carla, 'GET', transcript(hers, 'assistant'))
-  assert.equal(demoted.statusCode, 404)
-  assert.equal(codeOf(demoted), 'CONVERSATION_NOT_FOUND')
+  await on.hub.test.asOwner('update auth.company set deleting_since = now() where id = $1', [
+    on.companyId,
+  ])
+  const deleting = await call(on.hub, carla, 'GET', transcript(hers, 'assistant'))
+  assert.equal(deleting.statusCode, 404)
+  assert.equal(codeOf(deleting), 'CONVERSATION_NOT_FOUND')
   const asked = await post(on.hub, carla, `${sessionUrl(hers)}/messages`, { message: 'Oi' })
   assert.equal(codeOf(asked), 'CONVERSATION_NOT_FOUND')
 })
