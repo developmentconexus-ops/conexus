@@ -10,6 +10,7 @@ import type {
 } from '@conexus/hub-api'
 import { isDeviceKind, SignInId } from '@conexus/hub-api'
 import { and, eq, lte, sql } from 'drizzle-orm'
+import type { CommandTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { Credential } from '../../platform/seal.ts'
 import { open, seal } from '../../platform/seal.ts'
@@ -154,6 +155,37 @@ export async function startSignIn(
   return { entry: 'paste' as const, ...made, url }
 }
 
+/** The person is a member of the company, who may read its model accounts. */
+export function admitReader(deps: Deps, tx: Parameters<typeof admitFor>[1], viewer: Viewer) {
+  return deps.identity.admitMember({
+    tx,
+    personId: viewer.person.id,
+    companyId: viewer.companyId,
+    action: 'readModelAccounts',
+  })
+}
+
+/**
+ * Seals the credential a finished sign-in gave to a new account at the end of its queue, in the
+ * transaction that holds the sign-in, and shows it as the person sees it.
+ */
+export async function linkAccount(
+  deps: Deps,
+  tx: CommandTx,
+  input: Viewer & { signInId: SignInId },
+  taken: { owner: Owner; kind: SignInKind; label: string },
+  made: { provider: ProviderId; credential: Credential },
+) {
+  await admitOpen(deps, tx, input, taken.owner, taken.kind)
+  const id = await insertAccount(deps, tx, input, {
+    ...taken,
+    ...made,
+    hint: null,
+    attemptKey: input.signInId,
+  })
+  return accountView(tx, input, id)
+}
+
 /**
  * Takes the sign-in once (security S22): `DELETE … RETURNING`, so a second try, or one after ten
  * minutes, finds nothing. A closed kind, or one whose code is typed on the vendor's page, rolls back
@@ -161,12 +193,7 @@ export async function startSignIn(
  */
 function take(deps: Deps, input: Viewer & { signInId: SignInId }) {
   return deps.database.command(scopeOf(input), async (tx) => {
-    await deps.identity.admitMember({
-      tx,
-      personId: input.person.id,
-      companyId: input.companyId,
-      action: 'readModelAccounts',
-    })
+    await admitReader(deps, tx, input)
     const [taken] = await tx
       .delete(modelAccountSignIn)
       .where(
@@ -202,7 +229,7 @@ export async function completeSignIn(
 ) {
   const taken = await take(deps, input)
   if (taken === undefined) throw new Failure('MODEL_ACCOUNT_SIGN_IN_EXPIRED')
-  const { kind, owner, label } = taken
+  const { kind } = taken
   const flow = deps.flows.paste[kind]
   const signIn = { id: input.signInId, companyId: input.companyId, personId: input.person.id, kind }
   const pending = open(deps.sealKeys, sealContext(signIn, flow.provider), {
@@ -210,19 +237,9 @@ export async function completeSignIn(
     blob: taken.sealed,
   })
   const credential = await flow.complete(pending, input.code)
-  const made = await deps.database.command(scopeOf(input), async (tx) => {
-    await admitOpen(deps, tx, input, owner, kind)
-    const id = await insertAccount(deps, tx, input, {
-      owner,
-      kind,
-      provider: flow.provider,
-      label,
-      credential,
-      hint: null,
-      attemptKey: input.signInId,
-    })
-    return { account: await accountView(tx, input, id) }
-  })
+  const made = await deps.database.command(scopeOf(input), async (tx) => ({
+    account: await linkAccount(deps, tx, input, taken, { provider: flow.provider, credential }),
+  }))
   if (kind === 'google_cliproxy') {
     await readServedOf(deps, scopeOf(input), input.companyId, made.account.id)
   }

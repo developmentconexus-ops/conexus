@@ -6,12 +6,13 @@ import {
   SignInKind as SignInKindSchema,
 } from '@conexus/hub-api'
 import { and, eq, gt, inArray, lte, sql } from 'drizzle-orm'
+import type { CommandTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import { open } from '../../platform/seal.ts'
 import type { Deps, Viewer } from './accounts.ts'
-import { accountView, insertAccount, scopeOf } from './accounts.ts'
+import { accountView, scopeOf } from './accounts.ts'
 import type { DevicePoll, SignInDeps } from './sign-ins.ts'
-import { admitOpen, sealContext } from './sign-ins.ts'
+import { admitOpen, admitReader, linkAccount, sealContext } from './sign-ins.ts'
 import { modelAccount, modelAccountSignIn } from './tables.ts'
 
 type Poll = { status: 'waiting'; retryMs: number } | { status: 'linked'; account: ModelAccount }
@@ -28,82 +29,88 @@ function ofSignIn(input: Viewer & { signInId: SignInId }) {
   )
 }
 
+/** Reserves the sign-in for this ask: `poll_at` moves to the end of its window, so a second ask finds it held. */
+async function hold(deps: Deps, tx: CommandTx, input: Viewer & { signInId: SignInId }) {
+  const [held] = await tx
+    .update(modelAccountSignIn)
+    .set({ pollAt: modelAccountSignIn.expiresAt })
+    .where(
+      and(
+        ofSignIn(input),
+        inArray(modelAccountSignIn.kind, DEVICE_KINDS),
+        gt(modelAccountSignIn.expiresAt, sql`statement_timestamp()`),
+        lte(modelAccountSignIn.pollAt, sql`statement_timestamp()`),
+      ),
+    )
+    .returning({
+      kind: modelAccountSignIn.kind,
+      owner: modelAccountSignIn.owner,
+      label: modelAccountSignIn.label,
+      sealed: modelAccountSignIn.sealed,
+      keyId: modelAccountSignIn.keyId,
+    })
+  if (held === undefined) return undefined
+  const kind = SignInKindSchema.parse(held.kind)
+  if (!isDeviceKind(kind)) throw new Failure('INTERNAL_UNEXPECTED')
+  await admitOpen(deps, tx, input, held.owner, kind)
+  return { ...held, kind }
+}
+
+/** A live sign-in another ask holds, or one not yet due, answers `waiting` with what is left. */
+async function waitingOn(deps: Deps, tx: CommandTx, input: Viewer & { signInId: SignInId }) {
+  const [entry] = await tx
+    .select({
+      kind: modelAccountSignIn.kind,
+      owner: modelAccountSignIn.owner,
+      pollAt: modelAccountSignIn.pollAt,
+      expiresAt: modelAccountSignIn.expiresAt,
+      live: sql<boolean>`${modelAccountSignIn.expiresAt} > statement_timestamp()`,
+      waitMs: sql<number>`ceil(extract(epoch from ${modelAccountSignIn.pollAt} - statement_timestamp()) * 1000)`,
+    })
+    .from(modelAccountSignIn)
+    .where(ofSignIn(input))
+  if (entry === undefined) return undefined
+  const kind = SignInKindSchema.parse(entry.kind)
+  if (!isDeviceKind(kind)) throw new Failure('MODEL_ACCOUNT_SIGN_IN_WRONG_ENTRY')
+  if (!entry.live) throw new Failure('MODEL_ACCOUNT_SIGN_IN_EXPIRED')
+  await admitOpen(deps, tx, input, entry.owner, kind)
+  const held = entry.pollAt.getTime() >= entry.expiresAt.getTime()
+  return { status: 'waiting', retryMs: held ? HELD_RETRY_MS : Math.max(entry.waitMs, 1) } as const
+}
+
+/** The account a sign-in that is gone made for this person, if it made one (criterion 7). */
+async function linkedBy(tx: CommandTx, input: Viewer & { signInId: SignInId }) {
+  const [made] = await tx
+    .select({ id: modelAccount.id })
+    .from(modelAccount)
+    .where(
+      and(
+        eq(modelAccount.companyId, input.companyId),
+        eq(modelAccount.attemptKey, input.signInId),
+        eq(modelAccount.linkedBy, input.person.id),
+        inArray(modelAccount.kind, DEVICE_KINDS),
+      ),
+    )
+  if (made === undefined) throw new Failure('MODEL_ACCOUNT_SIGN_IN_EXPIRED')
+  return {
+    status: 'linked',
+    account: await accountView(tx, input, ModelAccountId.parse(made.id)),
+  } as const
+}
+
 /**
- * The first step of a poll, in one transaction: reserve the sign-in for this ask (`poll_at` moves to
- * the end of its window, so a second ask finds it held), or say why not. A closed kind rolls the
- * reservation back and the sign-in stays (criterion 21). An ask for a sign-in that is gone finds the
- * account it made, if the person made one (criterion 7).
+ * The first step of a poll, in one transaction: reserve the sign-in for this ask, or say why not. A
+ * closed kind rolls the reservation back and the sign-in stays (criterion 21).
  */
 function reserve(
   deps: Deps,
   input: Viewer & { signInId: SignInId },
 ): Promise<{ held: Held } | { answer: Poll }> {
   return deps.database.command(scopeOf(input), async (tx) => {
-    await deps.identity.admitMember({
-      tx,
-      personId: input.person.id,
-      companyId: input.companyId,
-      action: 'readModelAccounts',
-    })
-    const [held] = await tx
-      .update(modelAccountSignIn)
-      .set({ pollAt: modelAccountSignIn.expiresAt })
-      .where(
-        and(
-          ofSignIn(input),
-          inArray(modelAccountSignIn.kind, DEVICE_KINDS),
-          gt(modelAccountSignIn.expiresAt, sql`statement_timestamp()`),
-          lte(modelAccountSignIn.pollAt, sql`statement_timestamp()`),
-        ),
-      )
-      .returning({
-        kind: modelAccountSignIn.kind,
-        owner: modelAccountSignIn.owner,
-        label: modelAccountSignIn.label,
-        sealed: modelAccountSignIn.sealed,
-        keyId: modelAccountSignIn.keyId,
-      })
-    if (held !== undefined) {
-      const kind = SignInKindSchema.parse(held.kind)
-      if (!isDeviceKind(kind)) throw new Failure('INTERNAL_UNEXPECTED')
-      await admitOpen(deps, tx, input, held.owner, kind)
-      return { held: { ...held, kind } }
-    }
-    const [entry] = await tx
-      .select({
-        kind: modelAccountSignIn.kind,
-        owner: modelAccountSignIn.owner,
-        pollAt: modelAccountSignIn.pollAt,
-        expiresAt: modelAccountSignIn.expiresAt,
-        live: sql<boolean>`${modelAccountSignIn.expiresAt} > statement_timestamp()`,
-        waitMs: sql<number>`ceil(extract(epoch from ${modelAccountSignIn.pollAt} - statement_timestamp()) * 1000)`,
-      })
-      .from(modelAccountSignIn)
-      .where(ofSignIn(input))
-    if (entry !== undefined) {
-      const kind = SignInKindSchema.parse(entry.kind)
-      if (!isDeviceKind(kind)) throw new Failure('MODEL_ACCOUNT_SIGN_IN_WRONG_ENTRY')
-      if (!entry.live) throw new Failure('MODEL_ACCOUNT_SIGN_IN_EXPIRED')
-      await admitOpen(deps, tx, input, entry.owner, kind)
-      const held = entry.pollAt.getTime() >= entry.expiresAt.getTime()
-      return {
-        answer: { status: 'waiting', retryMs: held ? HELD_RETRY_MS : Math.max(entry.waitMs, 1) },
-      }
-    }
-    const [made] = await tx
-      .select({ id: modelAccount.id })
-      .from(modelAccount)
-      .where(
-        and(
-          eq(modelAccount.companyId, input.companyId),
-          eq(modelAccount.attemptKey, input.signInId),
-          eq(modelAccount.linkedBy, input.person.id),
-          inArray(modelAccount.kind, DEVICE_KINDS),
-        ),
-      )
-    if (made === undefined) throw new Failure('MODEL_ACCOUNT_SIGN_IN_EXPIRED')
-    const account = await accountView(tx, input, ModelAccountId.parse(made.id))
-    return { answer: { status: 'linked', account } }
+    await admitReader(deps, tx, input)
+    const held = await hold(deps, tx, input)
+    if (held !== undefined) return { held }
+    return { answer: (await waitingOn(deps, tx, input)) ?? (await linkedBy(tx, input)) }
   })
 }
 
@@ -134,7 +141,7 @@ export async function pollSignIn(
 ): Promise<Poll> {
   const reserved = await reserve(deps, input)
   if ('answer' in reserved) return reserved.answer
-  const { kind, owner, label } = reserved.held
+  const { kind } = reserved.held
   const flow = deps.flows.device[kind]
   const signIn = { id: input.signInId, companyId: input.companyId, personId: input.person.id, kind }
   const pending = open(deps.sealKeys, sealContext(signIn, flow.provider), {
@@ -160,16 +167,10 @@ export async function pollSignIn(
   const { credential } = polled
   return deps.database.command(scopeOf(input), async (tx) => {
     await tx.delete(modelAccountSignIn).where(ofSignIn(input))
-    await admitOpen(deps, tx, input, owner, kind)
-    const id = await insertAccount(deps, tx, input, {
-      owner,
-      kind,
+    const account = await linkAccount(deps, tx, input, reserved.held, {
       provider: flow.provider,
-      label,
       credential,
-      hint: null,
-      attemptKey: input.signInId,
     })
-    return { status: 'linked', account: await accountView(tx, input, id) }
+    return { status: 'linked', account }
   })
 }
