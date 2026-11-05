@@ -10,7 +10,7 @@ const GIL = { name: 'Gil Matos', email: 'gil@example.test' }
 const CENTRAL = { name: 'Central Conexus', email: 'central@example.test', role: 'admin' }
 
 /**
- * A client of two owners, Ana and Gil, with every write to a member held for a tenth of a second,
+ * A client of two owners, Ana and Gil, with every write to a member held for 20 ms,
  * so two commands that do not wait for each other both read two owners before either writes.
  */
 async function twoOwners(t: TestContext) {
@@ -25,7 +25,7 @@ async function twoOwners(t: TestContext) {
     [companyId],
   )
   await hub.test.asOwner(`create function hold() returns trigger language plpgsql as
-    $$ begin perform pg_sleep(0.1); return coalesce(new, old); end $$`)
+    $$ begin perform pg_sleep(0.02); return coalesce(new, old); end $$`)
   await hub.test.asOwner(`create trigger hold before update or delete on auth.member
     for each row execute function hold()`)
   function request(actor: Person, method: 'PUT' | 'DELETE', target: Person, body?: unknown) {

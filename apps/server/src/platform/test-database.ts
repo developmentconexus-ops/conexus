@@ -34,7 +34,8 @@ import {
   TEST_NAMESPACE,
   testAppsConfig,
 } from './test-cloudflare.ts'
-import { mastraUrlOf } from './test-mastra-database.ts'
+import { grantCloned, hubTemplate, withDatabase } from './test-database-template.ts'
+import { mastraUrlOf, TEST_IDLE_MS, TEST_POOL_TIMINGS } from './test-mastra-database.ts'
 import type { ModelLists } from './test-model-lists.ts'
 import { plantModelLists } from './test-model-lists.ts'
 import { NO_NEON_SERVER, TEST_NEON_ORG, testNeon } from './test-neon.ts'
@@ -138,16 +139,6 @@ export type TestDatabase = {
   asOwner(text: string, values?: unknown[]): Promise<Record<string, unknown>[]>
 }
 
-function withDatabase(url: DatabaseUrl, name: string, login?: { user: string; password: string }) {
-  const next = new URL(url.reveal())
-  next.pathname = `/${name}`
-  if (login !== undefined) {
-    next.username = login.user
-    next.password = login.password
-  }
-  return DatabaseUrl.parse(next.toString())
-}
-
 async function connected(url: DatabaseUrl): Promise<pg.Client> {
   const client = new pg.Client({ connectionString: url.reveal() })
   await client.connect()
@@ -176,7 +167,10 @@ export function databaseWithPassword(test: TestDatabase, password: string): Data
   return openDatabase({ url: runtimeUrlWithPassword(test, password), log: silent })
 }
 
-/** A fresh database; `locale: 'C'` makes one whose `LC_CTYPE` knows no case outside ASCII. */
+/**
+ * A fresh database cloned from the Hub's template; `locale: 'C'` makes one migrated from nothing,
+ * whose `LC_CTYPE` knows no case outside ASCII.
+ */
 export async function createTestDatabase(t: Lifetime, locale?: 'C'): Promise<TestDatabase> {
   const { ownerUrl: serverUrl, runtimePassword, container } = readTestDatabase()
   const name = `conexus_test_${randomUUID().replaceAll('-', '')}`
@@ -187,11 +181,12 @@ export async function createTestDatabase(t: Lifetime, locale?: 'C'): Promise<Tes
   })
   const mastraUrl = mastraUrlOf(runtimeUrl)
   const admin = await connected(serverUrl)
-  const localeClause =
-    locale && `template template0 encoding 'UTF8' lc_collate '${locale}' lc_ctype '${locale}'`
-  await admin.query(`create database ${name} ${localeClause ?? ''}`)
-  const database = openDatabase({ url: runtimeUrl, log: silent })
-  const mastraPool = openMastraPool({ url: mastraUrl, log: silent })
+  const source = locale
+    ? `template template0 encoding 'UTF8' lc_collate '${locale}' lc_ctype '${locale}'`
+    : `template ${await withRoleLock(() => hubTemplate(admin, serverUrl, runtimePassword))}`
+  await admin.query(`create database ${name} ${source}`)
+  const database = openDatabase({ url: runtimeUrl, log: silent, timings: TEST_POOL_TIMINGS })
+  const mastraPool = openMastraPool({ url: mastraUrl, log: silent, timings: TEST_POOL_TIMINGS })
   t.after(async () => {
     try {
       await Promise.all([database.close(), mastraPool.end()])
@@ -204,7 +199,8 @@ export async function createTestDatabase(t: Lifetime, locale?: 'C'): Promise<Tes
       await admin.end()
     }
   })
-  await withRoleLock(() => migrate({ ownerUrl, runtimeUrl, mastraUrl }))
+  if (locale) await withRoleLock(() => migrate({ ownerUrl, runtimeUrl, mastraUrl }))
+  else await grantCloned(admin, name)
   return {
     passwords: plantPasswordService(t),
     lists: plantModelLists(t),
@@ -265,10 +261,15 @@ export async function queued(test: TestDatabase, count: number, request?: Promis
   }
 }
 
-/** Resolves once the pool holds no connection, as when nobody uses Conexus (data D27). */
+/**
+ * Resolves once the pool holds no connection, as when nobody uses Conexus (data D27). The test pool
+ * idles for `TEST_IDLE_MS`; a pool that ignores it takes production's 10 s and the wait is cut, so
+ * the short idle time is proved by this call failing.
+ */
 export async function whenIdle(database: Database): Promise<void> {
   const pool = database.libraryOrm({}).$client
-  while (pool.totalCount > 0) await once(pool, 'remove')
+  const signal = AbortSignal.timeout(TEST_IDLE_MS + 4_000)
+  while (pool.totalCount > 0) await once(pool, 'remove', { signal })
 }
 
 export async function freePort(): Promise<number> {
