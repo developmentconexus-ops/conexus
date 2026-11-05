@@ -148,11 +148,26 @@ test('durante a espera o × e as abas ficam desligados, e Cancelar também', asy
   await waitFor(() => expect(close).toHaveProperty('disabled', false))
 })
 
-test('o link da OpenAI tem a cara de botão', async () => {
-  open()
+test('um 500 em toda espera mantém a espera até a hora do código e volta ao começo', async () => {
+  open({
+    start: () =>
+      HttpResponse.json(
+        {
+          entry: 'device',
+          signInId: '00000000-0000-4000-8000-0000000000bb',
+          url: 'https://auth.example.test/codex/device',
+          userCode: 'ABCD-1234',
+          retryMs: 1,
+          expiresAt: new Date(Date.now() + 150).toISOString(),
+        },
+        { status: 201 },
+      ),
+    poll: async () => refusal('INTERNAL_UNEXPECTED'),
+  })
   await startChatgpt('Time GPT')
-  const link = await screen.findByRole('link', { name: 'Abrir a página da OpenAI' })
-  expect(link.className).toContain('bg-')
+  expect(await screen.findByText('ABCD-1234')).toBeTruthy()
+  expect((await screen.findByRole('alert')).textContent).toBe('O código venceu. Entre de novo.')
+  expect(screen.getByRole('button', { name: 'Gerar código' })).toBeTruthy()
 })
 
 for (const [code, sentence] of [

@@ -90,18 +90,19 @@ function StartForm(props: {
   const kind = useWatch({ control: form.control, name: 'kind' })
 
   async function submit(values: typeof startModelAccountSignIn.input.body._output) {
+    let started: Awaited<ReturnType<typeof send.mutateAsync>>
     try {
-      const started = await send.mutateAsync({
+      started = await send.mutateAsync({
         params: { companyId: props.companyId },
         body: values,
       })
-      const beginning = { kind: values.kind, label: values.label }
-      if (started.entry === 'device') return props.onStarted(started, beginning)
-      if (isDeviceKind(values.kind)) throw new Error('A paste entry came back for a device kind')
-      props.onStarted({ ...started, kind: values.kind }, beginning)
     } catch (error) {
-      setServerError(form, error)
+      return setServerError(form, error)
     }
+    const beginning = { kind: values.kind, label: values.label }
+    if (started.entry === 'device') return props.onStarted(started, beginning)
+    if (isDeviceKind(values.kind)) throw new Error('A paste entry came back for a device kind')
+    props.onStarted({ ...started, kind: values.kind }, beginning)
   }
 
   return (
@@ -178,10 +179,31 @@ function CodeForm(props: {
   )
 }
 
+/** What a failed wait does: ends the sign-in, or keeps the wait, with the sentence to show. */
+function afterFailedWait(
+  error: unknown,
+  expiresAt: string,
+): { ends: true; sentence: string } | { ends: false; sentence: string | undefined } {
+  const keeps =
+    error instanceof HubFailure &&
+    (error.code === 'MODEL_ACCOUNT_UNAVAILABLE' || error.outcomeUnknown)
+  if (!keeps) return { ends: true, sentence: sentenceOf(error) }
+  if (Date.now() >= Date.parse(expiresAt)) {
+    return { ends: true, sentence: sentenceOfCode('MODEL_ACCOUNT_SIGN_IN_EXPIRED') }
+  }
+  return {
+    ends: false,
+    sentence:
+      error.code === 'MODEL_ACCOUNT_UNAVAILABLE'
+        ? sentenceOfCode('MODEL_ACCOUNT_UNAVAILABLE')
+        : undefined,
+  }
+}
+
 /**
  * The code to type on the vendor's page. The wait asks the Hub once per `retryMs`, by a timer, and
- * a 502 or an answer that did not arrive whole keeps the wait with the Hub's sentence; any other
- * failure that settles it sends the person back.
+ * a 502 keeps the wait with the Hub's sentence and an answer that did not arrive whole keeps it
+ * silent; both stop at the code's hour, and any other failure that settles it sends the person back.
  */
 function DeviceView(props: {
   companyId: CompanyId
@@ -214,19 +236,14 @@ function DeviceView(props: {
         setUnavailable(undefined)
         setTurn({ delay: reply.retryMs })
       } catch (error) {
-        if (
-          error instanceof HubFailure &&
-          (error.code === 'MODEL_ACCOUNT_UNAVAILABLE' || error.outcomeUnknown)
-        ) {
-          setUnavailable(sentenceOfCode('MODEL_ACCOUNT_UNAVAILABLE'))
-          setTurn({ delay: started.retryMs })
-        } else {
-          failed(sentenceOf(error))
-        }
+        const next = afterFailedWait(error, started.expiresAt)
+        if (next.ends) return failed(next.sentence)
+        if (next.sentence) setUnavailable(next.sentence)
+        setTurn({ delay: started.retryMs })
       }
     }, turn.delay)
     return () => window.clearTimeout(timer)
-  }, [turn, mutateAsync, props.companyId, started.signInId, started.retryMs])
+  }, [turn, mutateAsync, props.companyId, started.signInId, started.retryMs, started.expiresAt])
 
   return (
     <div className="flex flex-col gap-md">

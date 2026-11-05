@@ -126,7 +126,7 @@ function signIns(view: View, sent: Sent[], answers: Answers): HttpHandler[] {
             url: 'https://auth.example.test/codex/device',
             userCode: 'ABCD-1234',
             retryMs: 1,
-            expiresAt: '2026-10-19T12:15:00.000Z',
+            expiresAt: new Date(Date.now() + 15 * 60_000).toISOString(),
           },
           { status: 201 },
         )
