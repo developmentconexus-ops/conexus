@@ -152,7 +152,11 @@ async function openerOf(args: Args) {
       open: (asked: Asked) => model.doStream({ ...asked, tools: WEB_TOOLS }),
       secrets: [token],
       modelId: ModelId.parse(`anthropic/${CLAUDE}`),
-      meta: { api: 'Anthropic Messages API, streamed', sdk: versionOf('@ai-sdk/anthropic') },
+      meta: {
+        provider: ProviderId.parse('anthropic'),
+        api: 'Anthropic Messages API, streamed',
+        sdk: versionOf('@ai-sdk/anthropic'),
+      },
     }
   }
   if (args.provider === 'openai-codex') {
@@ -163,7 +167,11 @@ async function openerOf(args: Args) {
       open: (asked: Asked) => model.doStream({ ...asked, tools: [WEB_FETCH] }),
       secrets: [access, env.CONEXUS_RECORD_CODEX_ACCOUNT],
       modelId: ModelId.parse(`openai/${args.model}`),
-      meta: { api: 'ChatGPT Codex Responses API, streamed', sdk: versionOf('@ai-sdk/openai') },
+      meta: {
+        provider: ProviderId.parse('openai'),
+        api: 'ChatGPT Codex Responses API, streamed',
+        sdk: versionOf('@ai-sdk/openai'),
+      },
     }
   }
   const env = CliProxy.parse(process.env)
@@ -175,6 +183,7 @@ async function openerOf(args: Args) {
     secrets: [apiKey],
     modelId: ModelId.parse(`google/${args.model}`),
     meta: {
+      provider: ProviderId.parse('google'),
       api: 'Chat Completions through CLIProxyAPI, streamed',
       sdk: `${versionOf('@mastra/core')} (its OpenAI-compatible model)`,
     },
@@ -312,8 +321,7 @@ async function record(args: Args) {
   }
   const name = `${args.provider}-${args.case}`
   const today = new Date().toISOString().slice(0, 10)
-  const provider = ProviderId.parse(args.provider === 'openai-codex' ? 'openai' : args.provider)
-  const described: Recording = { provider, ...meta, recordedAt: today }
+  const described: Recording = { ...meta, recordedAt: today }
   writeFileSync(join(RECORDINGS, `${name}.sse`), body)
   writeFileSync(join(RECORDINGS, `${name}.json`), `${JSON.stringify(described, null, 2)}\n`)
   console.log(`Saved ${name}.sse (${body.length} bytes) and ${name}.json.`)

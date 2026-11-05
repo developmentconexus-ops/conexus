@@ -75,9 +75,8 @@ const bodylessMiddleware: LanguageModelMiddleware = {
 export function codexModel(name: string, tokens: Pick<CodexTokens, 'access' | 'accountId'>) {
   const provider = createOpenAI({
     apiKey: 'oauth-placeholder',
-    fetch: async (url, init) => {
-      const headers = new Headers(url instanceof Request ? url.headers : undefined)
-      for (const [key, value] of new Headers(init?.headers)) headers.set(key, value)
+    fetch: async (_url, init) => {
+      const headers = new Headers(init?.headers)
       headers.delete('x-api-key')
       headers.delete('content-length')
       headers.set('Authorization', `Bearer ${tokens.access}`)
