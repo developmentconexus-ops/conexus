@@ -1,8 +1,7 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
-import { queued, withOwnerLock } from '../../platform/test-database.ts'
-import { call, codeOf, memberOn, personOn } from '../identity/test-hub.ts'
+import { call, memberOn, personOn } from '../identity/test-hub.ts'
 import { pedidos, refusal } from './test-requests.ts'
 
 const FABIO = { name: 'Fábio Nunes', email: 'fabio@example.test' }
@@ -144,91 +143,17 @@ test('decidir, quem decide e aprovar o que não publica', async (t) => {
   })
 })
 
-test('duas decisões, e decidir e publicar ao mesmo tempo', async (t) => {
-  const on = await pedidos(t, 3)
-  const { hub, ana, bruno, carla, diego, projectId } = on
-  const app = 'select 1 from apps.app where project_id = $1 for update'
-
-  await t.test('duas decisões', async () => {
-    const two = await on.asked(bruno, 2)
-    const answers = await withOwnerLock(hub.test, app, [projectId], async (release) => {
-      const first = on.decide(ana, two, { decision: 'APPROVE' })
-      const second = on.decide(carla, two, { decision: 'DECLINE' })
-      await queued(hub.test, 2)
-      await release()
-      return Promise.all([first, second])
-    })
-    const statuses = answers.map((answer) => [answer.statusCode, codeOf(answer)])
-    assert.deepEqual(statuses, [
-      [200, undefined],
-      [409, 'PUBLISH_REQUEST_CLOSED'],
-    ])
-    assert.equal(await on.published(), 2)
-  })
-
-  await t.test('decidir e publicar ao mesmo tempo', async () => {
-    // The approval queues first: it publishes 3, and the publish then puts 1 over it.
-    const three = await on.asked(bruno, 3)
-    const first = await withOwnerLock(hub.test, app, [projectId], async (release) => {
-      const decision = on.decide(ana, three, { decision: 'APPROVE' })
-      await queued(hub.test, 1)
-      const publish = on.publish(diego, 1)
-      await queued(hub.test, 2)
-      await release()
-      return Promise.all([decision, publish])
-    })
-    assert.deepEqual(
-      first.map((answer) => answer.statusCode),
-      [200, 200],
-    )
-    assert.equal(await on.published(), 1)
-    // The publish queues first: it closes the request, and the decision finds it closed.
-    const again = await on.asked(bruno, 3)
-    const second = await withOwnerLock(hub.test, app, [projectId], async (release) => {
-      const publish = on.publish(diego, 2)
-      await queued(hub.test, 1)
-      const decision = on.decide(ana, again, { decision: 'APPROVE' })
-      await queued(hub.test, 2)
-      await release()
-      return Promise.all([publish, decision])
-    })
-    assert.deepEqual(
-      second.map((answer) => [answer.statusCode, codeOf(answer)]),
-      [
-        [200, undefined],
-        [409, 'PUBLISH_REQUEST_CLOSED'],
-      ],
-    )
-    assert.equal(await on.published(), 2)
-    const [last] = (await on.requests()).slice(-1)
-    assert.deepEqual(last, {
-      number: 3,
-      state: 'SUPERSEDED',
-      reason: null,
-      decided_by: 'Diego Reis',
-    })
-  })
-})
-
-test('cancelar e decidir ao mesmo tempo', async (t) => {
+test('recusar sem motivo', async (t) => {
   const on = await pedidos(t, 1)
-  const { hub, ana, bruno } = on
-  // The cancel holds the request first; the approval then finds it closed and publishes nothing.
-  const one = await on.asked(bruno, 1)
-  const held = 'select 1 from requests.request where id = $1 for update'
-  const [cancel, decision] = await withOwnerLock(hub.test, held, [one], async (release) => {
-    const cancelling = on.cancel(bruno, one)
-    await queued(hub.test, 1)
-    const deciding = on.decide(ana, one, { decision: 'APPROVE' })
-    await queued(hub.test, 2)
-    await release()
-    return Promise.all([cancelling, deciding])
+  const { bruno, carla } = on
+  // A blank reason is no reason: the bell ends the sentence at the version (criterion 20).
+  const blank = await on.decide(carla, await on.asked(bruno, 1), {
+    decision: 'DECLINE',
+    reason: ' ',
   })
-  assert.equal(cancel?.statusCode, 204)
-  assert.deepEqual(decision && refusal(decision), [409, 'PUBLISH_REQUEST_CLOSED'])
-  assert.equal(await on.published(), null)
+  assert.equal(blank.statusCode, 200, blank.body)
   assert.deepEqual(await on.requests(), [
-    { number: 1, state: 'CANCELLED', reason: null, decided_by: null },
+    { number: 1, state: 'DECLINED', reason: null, decided_by: 'Carla Dias' },
   ])
 })
 

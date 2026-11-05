@@ -39,7 +39,7 @@ export type {
   PublishRequestOf,
 } from './ports.ts'
 /** For the apps' and the requests' foreign keys, and the name a notice shows (code C8). */
-export { project } from './tables.ts'
+export { project, projectNameColumn } from './tables.ts'
 export type ProjectPorts = ReturnType<typeof createProjects>['ports']
 
 /**

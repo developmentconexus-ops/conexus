@@ -1596,8 +1596,8 @@
   },
   {
     "id": "live-same-project",
-    "file": "apps/server/src/hub/apps/live.ts",
-    "find": "          eq(appVersion.projectId, projectId),\n",
+    "file": "apps/server/src/hub/apps/versions.ts",
+    "find": "        eq(appVersion.projectId, input.projectId),\n",
     "replace": "",
     "test": {
       "cwd": "apps/server",
@@ -2609,7 +2609,7 @@
   {
     "id": "request-decider-not-asker",
     "file": "apps/server/src/hub/requests/requests.ts",
-    "find": "    if (row.requestedBy === person.id) throw new Failure('PUBLISH_REQUEST_OWN')\n",
+    "find": "  if (row.requestedBy === input.person.id) throw new Failure('PUBLISH_REQUEST_OWN')\n",
     "replace": "",
     "test": {
       "cwd": "apps/server",
@@ -2624,19 +2624,52 @@
     "replace": "    .where(and(eq(request.id, input.requestId), eq(request.companyId, input.companyId)))\n",
     "test": {
       "cwd": "apps/server",
-      "file": "src/hub/requests/requests.test.ts",
+      "file": "src/hub/requests/races.test.ts",
       "name": "cancelar e decidir ao mesmo tempo"
     }
   },
   {
     "id": "request-decision-locks-app-first",
     "file": "apps/server/src/hub/requests/requests.ts",
-    "find": "      throw new Failure('NOT_FOUND', { details: { reason: 'NO_PROJECT' } })\n    await lockApp(tx, { companyId, projectId })\n",
-    "replace": "      throw new Failure('NOT_FOUND', { details: { reason: 'NO_PROJECT' } })\n",
+    "find": "    throw new Failure('NOT_FOUND', { details: { reason: 'NO_PROJECT' } })\n  await lockApp(tx, { companyId, projectId })\n",
+    "replace": "    throw new Failure('NOT_FOUND', { details: { reason: 'NO_PROJECT' } })\n",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/requests/races.test.ts",
+      "name": "decidir e publicar ao mesmo tempo"
+    }
+  },
+  {
+    "id": "request-decision-holds-asker",
+    "file": "apps/server/src/hub/requests/requests.ts",
+    "find": "  await lockApp(tx, { companyId, projectId })\n  await deps.identity.holdMember(tx, { companyId, personId: asker })\n",
+    "replace": "  await lockApp(tx, { companyId, projectId })\n",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/requests/races.test.ts",
+      "name": "decidir ou publicar enquanto quem pediu sai da empresa"
+    }
+  },
+  {
+    "id": "request-close-holds-asker",
+    "file": "apps/server/src/hub/requests/requests.ts",
+    "find": "    await deps.identity.holdMember(tx, { companyId, personId: asker })\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/requests/races.test.ts",
+      "name": "decidir ou publicar enquanto quem pediu sai da empresa"
+    }
+  },
+  {
+    "id": "request-blank-reason-none",
+    "file": "apps/server/src/hub/requests/requests.ts",
+    "find": "decision.reason?.trim() ? decision.reason : null",
+    "replace": "decision.reason ?? null",
     "test": {
       "cwd": "apps/server",
       "file": "src/hub/requests/requests.test.ts",
-      "name": "decidir e publicar ao mesmo tempo"
+      "name": "recusar sem motivo"
     }
   },
   {

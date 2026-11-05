@@ -35,7 +35,10 @@ export type CloseRequests = (tx: CommandTx, input: PublishInput) => Promise<void
 
 export type PublishDeps = { ungranted: Ungranted; closeRequests: CloseRequests; log: FailureLog }
 
-/** The app is locked first, the order every publish and every decision keeps (code C65). */
+/**
+ * The app is locked first, before the request `closeRequests` holds, the order a decision keeps too
+ * (code C65).
+ */
 export async function publishIn(
   tx: CommandTx,
   deps: PublishDeps,
@@ -63,10 +66,12 @@ export async function publishIn(
 }
 
 /**
- * Publishes a kept version, in one transaction: only the published pointer changes, so the Prévia, the Builder and the data stay as they are, and a
- * send in course neither refuses it nor is failed by it. A version pruned, failed, being sent, of
- * another Projeto or that never entered is not found. A version that declares a connector the
- * Projeto has no grant for, or an operation the kit does not read, is refused before the write.
+ * Publishes a kept version, in one transaction: only the published pointer changes, so the Prévia,
+ * the Builder and the data stay as they are, and a send in course neither refuses it nor is failed
+ * by it. A version pruned, failed, being sent, of another Projeto or that never entered is not
+ * found. A version that declares a connector the Projeto has no grant for, or an operation the kit
+ * does not read, is refused before the write. Publishing the published version again changes
+ * nothing.
  */
 export function publishVersion(
   deps: SendDeps & PublishDeps,

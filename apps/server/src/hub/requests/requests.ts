@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import type { CompanyId, Decision, Person, PublishRequest, Role } from '@conexus/hub-api'
+import type { CompanyId, Decision, Person } from '@conexus/hub-api'
 import { PersonId, ProjectId, RequestId } from '@conexus/hub-api'
 import { and, eq, sql } from 'drizzle-orm'
 import type { CommandTx, Database, ReadTx, Scope } from '../../platform/database.ts'
@@ -9,9 +9,10 @@ import { Failure } from '../../platform/failure.ts'
 import type { CloseRequests, PublishInput, Ungranted } from '../apps/public.ts'
 import { keptVersionOf, lockApp, publishIn } from '../apps/public.ts'
 import type { IdentityPorts } from '../identity/public.ts'
-import { member, personNameColumn } from '../identity/public.ts'
-import { liveProjectOf, project } from '../projects/public.ts'
+import { liveProjectOf } from '../projects/public.ts'
 import { request } from './tables.ts'
+import type { Row } from './views.ts'
+import { publishRequestOf, VIEW, viewOf } from './views.ts'
 
 /** Writes what a request tells its people; implemented by the notifications (step 24.3.4). */
 export type NoticeRequests = (
@@ -26,7 +27,7 @@ export type NoticeRequests = (
 
 export type RequestDeps = {
   database: Database
-  identity: Pick<IdentityPorts, 'admitMember' | 'allows' | 'membersAllowed'>
+  identity: Pick<IdentityPorts, 'admitMember' | 'allows' | 'membersAllowed' | 'holdMember'>
   ungranted: Ungranted
   noticeRequests: NoticeRequests
   log: FailureLog
@@ -37,80 +38,6 @@ const ATTEMPT_KEY = 'request_attempt_key'
 
 function scopeOf(person: Person, companyId: CompanyId): Scope {
   return { kind: 'COMPANY', companyId, personId: person.id }
-}
-
-/**
- * The name of a person who decided, while they are still a member of the request's company: one who
- * has left is no longer named (criterion 19).
- */
-function memberNameColumn(personId: typeof request.decidedBy) {
-  return sql<string | null>`case when exists (select 1 from ${member}
-    where ${member.organizationId} = ${request.companyId} and ${member.userId} = ${personId})
-    then ${personNameColumn(personId)} end`
-}
-
-/** What the bell reads of the request a notice names (`hub/notifications` joins it by id). */
-export const NOTICE_VIEW = {
-  projectId: request.projectId,
-  projectName: sql<string>`(select ${project.name} from ${project} where ${project.id} = ${request.projectId})`,
-  number: request.number,
-  state: request.state,
-  reason: request.reason,
-  requestedByName: personNameColumn(request.requestedBy),
-  decidedByName: memberNameColumn(request.decidedBy),
-}
-
-const VIEW = {
-  id: request.id,
-  number: request.number,
-  message: request.message,
-  requestedBy: request.requestedBy,
-  requestedByName: personNameColumn(request.requestedBy),
-  createdAt: request.createdAt,
-}
-
-type Row = {
-  id: string
-  number: number
-  message: string
-  requestedBy: string
-  requestedByName: string | null
-  createdAt: Date
-}
-
-function viewOf(
-  deps: Pick<RequestDeps, 'identity'>,
-  row: Row,
-  reader: { personId: PersonId; role: Role },
-): PublishRequest {
-  const own = row.requestedBy === reader.personId
-  return {
-    id: RequestId.parse(row.id),
-    number: row.number,
-    message: row.message,
-    requestedBy: { name: row.requestedByName ?? '' },
-    createdAt: row.createdAt.toISOString(),
-    mayDecide: !own && deps.identity.allows(reader.role, 'decideRequest'),
-    mayCancel: own,
-  }
-}
-
-export async function publishRequestOf(
-  deps: Pick<RequestDeps, 'identity'>,
-  tx: ReadTx,
-  input: { companyId: CompanyId; projectId: ProjectId; personId: PersonId; role: Role },
-): Promise<PublishRequest | null> {
-  const [row] = await tx
-    .select(VIEW)
-    .from(request)
-    .where(
-      and(
-        eq(request.companyId, input.companyId),
-        eq(request.projectId, input.projectId),
-        eq(request.state, 'PENDING'),
-      ),
-    )
-  return row === undefined ? null : viewOf(deps, row, input)
 }
 
 type Asking = {
@@ -166,8 +93,8 @@ async function insertRequest(tx: CommandTx, input: Asking): Promise<Row> {
 }
 
 /**
- * The app is locked before the request is written, the order every publish and decision keeps (code
- * C65), so two requests at once queue and the unique index leaves one open.
+ * The app is locked before the request is written (code C65), so two requests at once queue and the
+ * unique index leaves one open.
  */
 async function ask(deps: RequestDeps, input: Asking) {
   const { companyId, projectId } = input
@@ -218,8 +145,39 @@ async function heldRequest(tx: CommandTx, input: OfRequest) {
 }
 
 /**
- * The app is locked before the request (code C65). The decision is written before `publishIn`, so
- * its `closeRequests` finds no open request and neither closes it again nor tells the asker twice.
+ * The request a decision takes, held in the order of every publish: the app, then the asker, the
+ * parent a removal deletes before its cascade reaches the request, then the request (code C65).
+ */
+async function heldToDecide(deps: RequestDeps, tx: CommandTx, input: OfRequest) {
+  const { companyId, requestId } = input
+  const [found] = await tx
+    .select({ projectId: request.projectId, requestedBy: request.requestedBy })
+    .from(request)
+    .where(and(eq(request.id, requestId), eq(request.companyId, companyId)))
+  if (found === undefined) throw new Failure('NOT_FOUND', { details: { reason: 'NO_REQUEST' } })
+  const projectId = ProjectId.parse(found.projectId)
+  const asker = PersonId.parse(found.requestedBy)
+  if ((await liveProjectOf(tx, { companyId, projectId })) === undefined)
+    throw new Failure('NOT_FOUND', { details: { reason: 'NO_PROJECT' } })
+  await lockApp(tx, { companyId, projectId })
+  await deps.identity.holdMember(tx, { companyId, personId: asker })
+  const row = await heldRequest(tx, input)
+  if (row === undefined) throw new Failure('NOT_FOUND', { details: { reason: 'NO_REQUEST' } })
+  if (row.state !== 'PENDING') throw new Failure('PUBLISH_REQUEST_CLOSED')
+  if (row.requestedBy === input.person.id) throw new Failure('PUBLISH_REQUEST_OWN')
+  return { projectId, asker, number: row.number }
+}
+
+/** A blank reason is no reason, so the bell ends the sentence at the version (criterion 20). */
+function outcomeOf(decision: Decision) {
+  if (decision.decision === 'APPROVE') return { state: 'APPROVED' as const, reason: null }
+  const reason = decision.reason?.trim() ? decision.reason : null
+  return { state: 'DECLINED' as const, reason }
+}
+
+/**
+ * The decision is written before `publishIn`, so its `closeRequests` finds no open request and
+ * neither closes it again nor tells the asker twice.
  */
 async function decide(deps: RequestDeps, input: OfRequest & { decision: Decision }) {
   const { companyId, requestId, person } = input
@@ -230,35 +188,18 @@ async function decide(deps: RequestDeps, input: OfRequest & { decision: Decision
       companyId,
       action: 'decideRequest',
     })
-    const [found] = await tx
-      .select({ projectId: request.projectId })
-      .from(request)
-      .where(and(eq(request.id, requestId), eq(request.companyId, companyId)))
-    if (found === undefined) throw new Failure('NOT_FOUND', { details: { reason: 'NO_REQUEST' } })
-    const projectId = ProjectId.parse(found.projectId)
-    if ((await liveProjectOf(tx, { companyId, projectId })) === undefined)
-      throw new Failure('NOT_FOUND', { details: { reason: 'NO_PROJECT' } })
-    await lockApp(tx, { companyId, projectId })
-    const row = await heldRequest(tx, input)
-    if (row === undefined) throw new Failure('NOT_FOUND', { details: { reason: 'NO_REQUEST' } })
-    if (row.state !== 'PENDING') throw new Failure('PUBLISH_REQUEST_CLOSED')
-    if (row.requestedBy === person.id) throw new Failure('PUBLISH_REQUEST_OWN')
-    const state =
-      input.decision.decision === 'APPROVE' ? ('APPROVED' as const) : ('DECLINED' as const)
-    const reason = input.decision.decision === 'DECLINE' ? (input.decision.reason ?? null) : null
+    const { projectId, asker, number } = await heldToDecide(deps, tx, input)
+    const { state, reason } = outcomeOf(input.decision)
     await tx
       .update(request)
       .set({ state, decidedBy: person.id, reason })
       .where(eq(request.id, requestId))
-    if (state === 'APPROVED') {
-      const by = person.id
-      await publishIn(tx, publishDeps(deps), { companyId, projectId, number: row.number, by })
-    }
-    const asker = PersonId.parse(row.requestedBy)
+    if (state === 'APPROVED')
+      await publishIn(tx, publishDeps(deps), { companyId, projectId, number, by: person.id })
     await deps.noticeRequests(tx, [
       { companyId, personId: asker, requestId, kind: 'REQUEST_DECIDED' },
     ])
-    return { state, projectId, number: row.number }
+    return { state, projectId, number }
   })
 }
 
@@ -283,11 +224,17 @@ async function cancel(deps: RequestDeps, input: OfRequest) {
   })
 }
 
-function closeRequestsOf(deps: Pick<RequestDeps, 'noticeRequests' | 'log'>): CloseRequests {
+/**
+ * Under the app's lock no request opens, so the open one is read, its asker held, then its row, the
+ * order a decision keeps (code C65); a cancel meanwhile leaves nothing to close.
+ */
+function closeRequestsOf(
+  deps: Pick<RequestDeps, 'identity' | 'noticeRequests' | 'log'>,
+): CloseRequests {
   return async (tx, input: PublishInput) => {
     const { companyId, projectId } = input
     const [open] = await tx
-      .select({ id: request.id, requestedBy: request.requestedBy, number: request.number })
+      .select({ id: request.id, requestedBy: request.requestedBy })
       .from(request)
       .where(
         and(
@@ -296,18 +243,25 @@ function closeRequestsOf(deps: Pick<RequestDeps, 'noticeRequests' | 'log'>): Clo
           eq(request.state, 'PENDING'),
         ),
       )
-      .for('update')
     if (open === undefined) return
-    const outcome = open.number === input.number ? 'APPROVED' : 'SUPERSEDED'
+    const requestId = RequestId.parse(open.id)
+    const asker = PersonId.parse(open.requestedBy)
+    await deps.identity.holdMember(tx, { companyId, personId: asker })
+    const [held] = await tx
+      .select({ number: request.number })
+      .from(request)
+      .where(and(eq(request.id, requestId), eq(request.state, 'PENDING')))
+      .for('update')
+    if (held === undefined) return
+    const outcome = held.number === input.number ? 'APPROVED' : 'SUPERSEDED'
     await tx
       .update(request)
       .set({ state: outcome, decidedBy: input.by })
-      .where(eq(request.id, open.id))
-    const requestId = RequestId.parse(open.id)
-    if (open.requestedBy !== input.by) {
-      const personId = PersonId.parse(open.requestedBy)
-      await deps.noticeRequests(tx, [{ companyId, personId, requestId, kind: 'REQUEST_DECIDED' }])
-    }
+      .where(eq(request.id, requestId))
+    if (asker !== input.by)
+      await deps.noticeRequests(tx, [
+        { companyId, personId: asker, requestId, kind: 'REQUEST_DECIDED' },
+      ])
     deps.log.info(
       { companyId, projectId, requestId, by: input.by, outcome },
       'PUBLISH_REQUEST_CLOSED_BY_PUBLISH',

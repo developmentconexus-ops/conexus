@@ -124,6 +124,22 @@ export async function membersAllowed(
     .map((row) => PersonIdSchema.parse(row.personId))
 }
 
+/**
+ * Holds a member with `for key share` until the caller commits. A removal deletes the member before
+ * its cascade reaches the rows that point at them, so a caller that holds the member before such a
+ * row takes the same order and waits instead of deadlocking (code C65).
+ */
+export async function holdMember(
+  tx: CommandTx,
+  input: { companyId: CompanyId; personId: PersonId },
+): Promise<void> {
+  await tx
+    .select({ id: member.id })
+    .from(member)
+    .where(and(eq(member.organizationId, input.companyId), eq(member.userId, input.personId)))
+    .for('key share')
+}
+
 /** The name and address of each person the scope reads among `personIds`. */
 export async function peopleNamed(tx: ReadTx, personIds: readonly PersonId[]) {
   if (personIds.length === 0) return new Map<PersonId, z.infer<typeof Named>>()
