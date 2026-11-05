@@ -1,6 +1,6 @@
 import { TEST_LONGEST_MS, TestResult } from '@conexus/hub-api'
 import { cleanup, fireEvent, screen } from '@testing-library/react'
-import { delay, http } from 'msw'
+import { http } from 'msw'
 import { afterEach, expect, test, vi } from 'vitest'
 import { COMPANY } from '../../platform/fixtures.ts'
 import { hubServer } from '../../platform/test-hub.tsx'
@@ -21,24 +21,33 @@ test.each([
 ] as const)(
   'Testar que o Hub responde depois do prazo comum do navegador mostra o resultado: %s',
   async (result, sentence) => {
-    const real = AbortSignal.timeout.bind(AbortSignal)
-    vi.spyOn(AbortSignal, 'timeout').mockImplementation((ms) => real(ms / 100))
+    const deadlines: { ms: number; abort: () => void }[] = []
+    vi.spyOn(AbortSignal, 'timeout').mockImplementation((ms) => {
+      const controller = new AbortController()
+      deadlines.push({ ms, abort: () => controller.abort(new DOMException('', 'TimeoutError')) })
+      return controller.signal
+    })
     const connection = connectionOf({ state: 'ACTIVE', testedAt: TESTED })
     const hub = connectionsHub(viewOf({ connections: [connection] }), {}, (one) =>
       result === 'WORKING' ? workingOf(one) : { result, native: null, connection: one },
     )
+    const asked = Promise.withResolvers<void>()
+    const answer = Promise.withResolvers<void>()
     server.use(
       http.post(`*/api/companies/${COMPANY.id}/connections/:id/test`, async () => {
-        await delay(TEST_LONGEST_MS / 100 + 50)
+        asked.resolve()
+        await answer.promise
         return undefined
       }),
       ...hub.handlers,
     )
     mount(pageOf(connection))
     fireEvent.click(await screen.findByRole('button', { name: 'Testar' }))
-    expect(await screen.findByText(sentence, {}, { timeout: 12_000 })).toBeTruthy()
+    await asked.promise
+    for (const deadline of deadlines) if (deadline.ms < TEST_WAIT_MS) deadline.abort()
+    answer.resolve()
+    expect(await screen.findByText(sentence)).toBeTruthy()
   },
-  20_000,
 )
 
 test('o navegador espera o Testar além do mais longo que ele leva e responde antes da borda da Cloudflare', () => {
