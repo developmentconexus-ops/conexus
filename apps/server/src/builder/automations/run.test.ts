@@ -18,12 +18,12 @@ import { failuresIn } from '../conversation/test-parts.ts'
 import { tool } from '../conversation/test-questions.ts'
 import { AUTOMATION_WORKFLOW } from './public.ts'
 import {
-  aMinuteAhead,
   answering,
   automating,
   choiceOf,
   conversing,
   created,
+  dueNow,
   dyingHub,
   ended,
   ranNow,
@@ -33,8 +33,12 @@ import {
 
 const BIA = { name: 'Bia Souza', email: 'bia@example.test' }
 const PROMPT = 'O resumo de vendas de ontem, por vendedor.'
-/** Mastra's ownership lease of a run and of a thread (`MASTRA_AGENT_THREAD_LEASE_TTL_MS`, 15 s), and a margin. */
-const LEASE_MS = 16_000
+/**
+ * Mastra's ownership lease of a run and of a thread, the `MASTRA_AGENT_THREAD_LEASE_TTL_MS` that
+ * the `test` script sets (15 s when the file runs outside it), and a margin.
+ */
+// biome-ignore lint/style/noProcessEnv: the lease the `test` script gives Mastra, not the app's configuration
+const LEASE_MS = Number(process.env.MASTRA_AGENT_THREAD_LEASE_TTL_MS ?? 15_000) + 1_000
 
 /** The person's questions in the conversation, in order. */
 async function questionsIn(hub: Hub, person: Person, url: string): Promise<string[]> {
@@ -50,12 +54,12 @@ test('o horário: a agenda dispara no minuto; uma conversa do dono com o pedido,
   timeout: 150_000,
 }, async (t) => {
   const on = await automating(t)
-  const cadence = await aMinuteAhead()
-  const body = salesSummary([on.matriz], { cadence, projectId: on.projectId })
+  const body = salesSummary([on.matriz], { projectId: on.projectId })
   const automation = await created(on.hub, on.ana, on.automations, body)
   const sibling = await created(on.hub, on.ana, on.automations, { ...body, name: 'Pausada' })
   const siblingUrl = `${on.automations}/${sibling.id}`
   assert.equal((await post(on.hub, on.ana, `${siblingUrl}/pause`, {})).statusCode, 200)
+  await dueNow(on.hub, automation.id)
 
   const run = await ended(on.hub, on.ana, `${on.automations}/${automation.id}`)
   assert.equal(run.trigger, 'SCHEDULED')
@@ -192,14 +196,14 @@ test('o dono virou membro: o disparo não abre conversa, SKIPPED com OWNER_CANNO
 }, async (t) => {
   const on = await automating(t)
   const bia = await memberOn(on.hub, on.companyId, BIA, 'admin')
-  const cadence = await aMinuteAhead()
-  const automation = await created(on.hub, bia, on.automations, salesSummary([], { cadence }))
+  const automation = await created(on.hub, bia, on.automations, salesSummary([]))
   function role(to: string, from: string) {
     return call(on.hub, on.ana, 'PUT', `${on.company}/members/${bia.id}`, { role: to, from })
   }
   assert.equal((await role('member', 'admin')).statusCode, 200)
   const asMember = await post(on.hub, bia, `${on.automations}/${automation.id}/run`, {})
   assert.deepEqual([asMember.statusCode, codeOf(asMember)], [404, 'NOT_FOUND'])
+  await dueNow(on.hub, automation.id)
   const deadline = Date.now() + 90_000
   async function paused() {
     const { notifications } = await bellOf(on.hub, bia, on.company)

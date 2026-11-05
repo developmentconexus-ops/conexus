@@ -139,25 +139,14 @@ export async function conversing(hub: Hub, person: Person, url: string, runId: s
   throw new Error(`the run ${runId} did not open its conversation within ${RUN_DEADLINE_MS} ms`)
 }
 
-/** The time of day in São Paulo of the minute after now, as a cadence names it. */
-export function nextMinute(now = new Date()): string {
-  const at = new Date(Math.floor(now.getTime() / 60_000) * 60_000 + 60_000)
-  return new Intl.DateTimeFormat('en-GB', {
-    timeZone: 'America/Sao_Paulo',
-    hour: '2-digit',
-    minute: '2-digit',
-    hourCycle: 'h23',
-  }).format(at)
-}
-
 /**
- * A cadence of every day at the next minute, with at least 10 s left before it: the creation lands
- * before the fire it waits for.
+ * Puts the automation's next fire in the past, as when the Hub was down for three days: the
+ * scheduler fires it, as `SCHEDULED`, on its next tick.
  */
-export async function aMinuteAhead() {
-  const left = 60_000 - (Date.now() % 60_000)
-  if (left < 10_000) await sleep(left + 500)
-  return { kind: 'DAILY', time: nextMinute() }
+export async function dueNow(hub: Hub, automationId: string) {
+  const store = await hub.mastra.getStorage()?.getStore('schedules')
+  assert.ok(store)
+  await store.updateSchedule(automationId, { nextFireAt: Date.now() - 3 * 86_400_000 })
 }
 
 /** The next 07:00 in São Paulo (UTC-3, no daylight saving since 2019) after `now`. */
