@@ -9,6 +9,7 @@ import {
   listModelAccounts,
   listModelProviders,
   orderModelAccounts,
+  pollModelAccountSignIn,
   removeModelAccount,
   setAccountKinds,
   setDefaultModel,
@@ -46,3 +47,4 @@ export const sendRemoval = hubMutation(removeModelAccount)
 export const sendKinds = hubMutation(setAccountKinds)
 export const sendSignInStart = hubMutation(startModelAccountSignIn)
 export const sendSignInCompletion = hubMutation(completeModelAccountSignIn)
+export const sendSignInPoll = hubMutation(pollModelAccountSignIn)

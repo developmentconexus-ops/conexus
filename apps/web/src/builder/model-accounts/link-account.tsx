@@ -19,6 +19,7 @@ function Panel(props: {
   onClose: () => void
 }) {
   const [way, setWay] = useState<Way>('key')
+  const [waiting, setWaiting] = useState(false)
   return (
     <div className="flex w-full flex-col gap-lg">
       {props.kinds.length > 0 && (
@@ -44,10 +45,13 @@ function Panel(props: {
           owner={props.owner}
           kinds={props.kinds}
           onLinked={props.onLinked}
+          onPolling={setWaiting}
         />
       )}
       <div>
-        <Button onClick={props.onClose}>Cancelar</Button>
+        <Button disabled={waiting} onClick={props.onClose}>
+          Cancelar
+        </Button>
       </div>
     </div>
   )

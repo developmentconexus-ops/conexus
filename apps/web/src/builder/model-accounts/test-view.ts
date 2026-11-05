@@ -49,7 +49,10 @@ export type Answers = Partial<
     | 'kinds',
     () => Response | undefined
   >
->
+> & {
+  /** A wait's answer, which a test may hold back to see the window while the wait is in the air. */
+  poll?: () => Promise<Response | undefined>
+}
 
 export const BASE = `*/api/companies/${COMPANY.id}`
 
