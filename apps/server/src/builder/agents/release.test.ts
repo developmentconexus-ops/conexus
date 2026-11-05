@@ -95,7 +95,7 @@ test('apagar: 204, o agente, as versões e as escolhas somem e a ferramenta fica
   const again = await call(on.hub, on.ana, 'DELETE', url)
   assert.deepEqual([again.statusCode, codeOf(again)], [404, 'AGENT_NOT_FOUND'])
   const tool = toolOf(await call(on.hub, on.ana, 'GET', `${on.tools}/${on.tool.id}`))
-  assert.deepEqual(tool.usedBy, [{ id: on.ids.carla, name: 'Estoque' }])
+  assert.deepEqual(tool.usedBy, [{ id: on.ids.carla, projectId: on.projectId, name: 'Estoque' }])
 })
 
 test('a pessoa: tirar a Carla deixa os agentes, as versões e as ferramentas dela, sem autor', async (t) => {

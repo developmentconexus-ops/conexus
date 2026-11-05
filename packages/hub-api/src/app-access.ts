@@ -3,8 +3,8 @@ import { z } from 'zod'
 import { AppEntry } from './address.ts'
 import { CompanyId, InvitationId, Next, Page } from './companies.ts'
 import { Email, PersonId } from './identity.ts'
+import { ProjectId } from './library-ids.ts'
 import { defineOperation } from './operation.ts'
-import { ProjectId } from './projects.ts'
 
 /**
  * A person from outside the company who uses the app, with the role given; `roleDeclared` is false

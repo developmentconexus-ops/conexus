@@ -1,6 +1,9 @@
-import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
-import { expect, test } from 'vitest'
-import { hubServer, refusal } from '../../platform/test-hub.tsx'
+import { ProjectId } from '@conexus/hub-api'
+import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { HttpResponse, http } from 'msw'
+import { expect, test, vi } from 'vitest'
+import { COMPANY } from '../../platform/fixtures.ts'
+import { hubServer, PEDIDOS, refusal } from '../../platform/test-hub.tsx'
 import {
   AGENT,
   AREA,
@@ -16,9 +19,10 @@ import { agentScreens } from '../agents/test-hub.tsx'
 const server = hubServer()
 const { at } = agentScreens(server)
 const TABS = `${AREA}/tools`
+const ESTOQUE = ProjectId.parse('e'.repeat(32))
 const USERS = [
-  { id: AGENT, name: 'Conferente de metas' },
-  { id: OTHER_AGENT, name: 'Resumo de estoque' },
+  { id: AGENT, projectId: PEDIDOS.id, name: 'Conferente de metas' },
+  { id: OTHER_AGENT, projectId: ESTOQUE, name: 'Resumo de estoque' },
 ]
 
 test('Apagar uma ferramenta usada recebe TOOL_IN_USE e mostra os agentes, sem tirá-la da lista', async () => {
@@ -32,7 +36,10 @@ test('Apagar uma ferramenta usada recebe TOOL_IN_USE e mostra os agentes, sem ti
   expect(within(said).getByRole('link', { name: 'Conferente de metas' }).getAttribute('href')).toBe(
     `${AREA}/${AGENT}`,
   )
-  expect(screen.getAllByText(/Conferente de metas/)).toHaveLength(1)
+  expect(within(said).getByRole('link', { name: 'Resumo de estoque' }).getAttribute('href')).toBe(
+    `/companies/${COMPANY.id}/projects/${ESTOQUE}/agents/${OTHER_AGENT}`,
+  )
+  expect(screen.getByText('Conferente de metas · Resumo de estoque')).toBeTruthy()
   expect(screen.getByText('vendas_de_ontem')).toBeTruthy()
   expect(hub.writes().map((one) => one.method)).toEqual(['DELETE'])
 })
@@ -130,6 +137,89 @@ test('Nova versão abre o formulário com a versão de agora e grava a seguinte'
   expect(sent?.path).toMatch(/\/tools\/.+\/versions$/)
   expect(sent?.body).toMatchObject({ bound: { dias: 7 }, open: ['vendedor'] })
   expect(sent?.key).not.toBeNull()
+})
+
+test('Nova versão na linha da lista abre o formulário da ferramenta, sem sair da lista', async () => {
+  at(TABS, {
+    agents: [agent()],
+    tools: [toolSummary()],
+    toolVersions: [
+      {
+        id: TOOL_V1,
+        number: 1,
+        description: 'Vendas de ontem por vendedor.',
+        bound: { dias: 1 },
+        open: ['vendedor'],
+      },
+    ],
+  })
+  fireEvent.click(await screen.findByRole('button', { name: 'Nova versão de vendas_de_ontem' }))
+  const bound = await screen.findByRole<HTMLTextAreaElement>('textbox', {
+    name: 'Valores fixos (JSON)',
+  })
+  expect(JSON.parse(bound.value)).toEqual({ dias: 1 })
+  expect(screen.getByRole('button', { name: 'Gravar versão' })).toBeTruthy()
+})
+
+test('Nova versão da lista abre o diálogo logo, com a espera dentro, e depois o formulário', async () => {
+  at(TABS, { agents: [agent()], tools: [toolSummary()] })
+  let answer: (() => void) | undefined
+  server.use(
+    http.get(`*/api/companies/${COMPANY.id}/projects/${PEDIDOS.id}/tools/:toolId`, async () => {
+      await new Promise<void>((resolve) => {
+        answer = resolve
+      })
+      return HttpResponse.json({ tool: { ...toolSummary(), versions: [] } })
+    }),
+  )
+  fireEvent.click(await screen.findByRole('button', { name: 'Nova versão de vendas_de_ontem' }))
+  const dialog = await screen.findByRole('dialog')
+  expect(within(dialog).getByText('Nova versão')).toBeTruthy()
+  expect(within(dialog).queryByRole('button', { name: 'Gravar versão' })).toBeNull()
+  answer?.()
+})
+
+test('Nova versão da lista, com a leitura da ferramenta falhando, mostra a falha dentro do diálogo', async () => {
+  at(TABS, { agents: [agent()], tools: [toolSummary()] })
+  server.use(
+    http.get(`*/api/companies/${COMPANY.id}/projects/${PEDIDOS.id}/tools/:toolId`, () =>
+      refusal('TOOL_NOT_FOUND'),
+    ),
+  )
+  fireEvent.click(await screen.findByRole('button', { name: 'Nova versão de vendas_de_ontem' }))
+  const dialog = await screen.findByRole('dialog')
+  expect(await within(dialog).findByText(/Não encontramos esta ferramenta\./)).toBeTruthy()
+})
+
+test('Nova versão da lista guarda o que se digitou quando a largura cruza o limite do celular', async () => {
+  const media = new EventTarget()
+  let phone = true
+  const query = vi.spyOn(globalThis, 'matchMedia').mockImplementation((text: string) =>
+    Object.assign(media, {
+      get matches() {
+        return phone
+      },
+      media: text,
+      onchange: null,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+    }),
+  )
+  try {
+    at(TABS, { agents: [agent()], tools: [toolSummary()] })
+    fireEvent.click(await screen.findByRole('button', { name: 'Nova versão de vendas_de_ontem' }))
+    const field = await screen.findByRole<HTMLTextAreaElement>('textbox', { name: 'O que ela faz' })
+    fireEvent.change(field, { target: { value: 'Texto digitado' } })
+    phone = false
+    act(() => {
+      media.dispatchEvent(new Event('change'))
+    })
+    expect(screen.getByRole<HTMLTextAreaElement>('textbox', { name: 'O que ela faz' }).value).toBe(
+      'Texto digitado',
+    )
+  } finally {
+    query.mockRestore()
+  }
 })
 
 test('uma ferramenta que o Hub não acha dá não encontrado, e a que ele acha abre', async () => {

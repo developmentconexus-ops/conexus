@@ -22,13 +22,19 @@ import { reasonText } from './text.ts'
 type Refusal = { field: ProblemField | undefined; reason: ProblemReason | undefined }
 type Local = { field: string; text: string }
 
-/** The fixed values the person typed, read as the contract reads them; what is not JSON says so. */
+/** The fixed values the person typed, read as the contract reads them; what is not JSON is not a success. */
 function boundOf(text: string) {
   try {
     return VersionSchema.shape.bound.safeParse(JSON.parse(text))
   } catch (cause) {
-    return { success: false as const, syntax: cause instanceof SyntaxError ? cause.message : text }
+    if (cause instanceof SyntaxError) return { success: false as const }
+    throw cause
   }
+}
+
+/** What the person fixes in a field the contract refused before the Hub saw it, one sentence for each. */
+const LOCAL_FIELD_TEXT: Record<string, string> = {
+  description: 'Escreva o que a ferramenta faz, em até 500 caracteres.',
 }
 
 type Typed = {
@@ -44,10 +50,7 @@ type Typed = {
 function inputOf(typed: Typed): { input?: ToolInput; local?: Local } {
   const values = boundOf(typed.bound)
   if (!values.success) {
-    const syntax = 'syntax' in values ? `: ${values.syntax}` : '.'
-    return {
-      local: { field: 'bound', text: `Os valores fixos não são um JSON de campos${syntax}` },
-    }
+    return { local: { field: 'bound', text: 'Os valores fixos não são um JSON de campos.' } }
   }
   const parsed = ToolInputSchema.safeParse({
     ...typed,
@@ -58,9 +61,8 @@ function inputOf(typed: Typed): { input?: ToolInput; local?: Local } {
       .filter((name) => name !== ''),
   })
   if (parsed.success) return { input: parsed.data }
-  return {
-    local: { field: String(parsed.error.issues[0]?.path[0] ?? ''), text: 'Confira este campo.' },
-  }
+  const field = String(parsed.error.issues[0]?.path[0] ?? '')
+  return { local: { field, text: LOCAL_FIELD_TEXT[field] ?? 'Confira este campo.' } }
 }
 
 function Where(props: {

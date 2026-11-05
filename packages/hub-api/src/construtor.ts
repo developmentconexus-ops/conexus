@@ -5,8 +5,8 @@ import { CompanyId } from './companies.ts'
 import { ConversationId, ModelChoice, START_FAILURES, StartChoice } from './conversations.ts'
 import type { FailureCode } from './failures.ts'
 import { Problem } from './failures.ts'
+import { ProjectId } from './library-ids.ts'
 import { ATTEMPT_KEY_HEADER, defineOperation } from './operation.ts'
-import { ProjectId } from './projects.ts'
 import { ReadyTool, ToolSummary } from './tools.ts'
 
 /** The key of the Construtor's controller in Mastra's routes (`/agent-controller/construtor/…`), step 24.3. */
