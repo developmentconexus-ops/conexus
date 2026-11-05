@@ -310,5 +310,22 @@ test('a linha de outro cartão curto não aprova este', () => {
   const { dir, sha } = shortCardRepository()
   write(dir, 'docs/approvals.md', shortApproval(sha).replace('saude-do-ci', 'outro-cartao'))
   git(dir, 'commit', '-qam', 'approval of another card')
-  assert.equal(run(dir).status, 1)
+  const result = run(dir)
+  assert.equal(result.status, 1)
+  assert.match(result.stderr, /^approval-missing: .*saude-do-ci\.md/)
+})
+
+test('o cartão curto exige as palavras do fundador e cada abertura o seu gênero', () => {
+  for (const line of [
+    shortApproval('abc1234').replace(/, na página.*\n/, '\n'),
+    shortApproval('abc1234').replace('aprovado', 'aprovada'),
+    shortApproval('abc1234', true).replace('aprovada', 'aprovado'),
+  ]) {
+    const { dir, sha } = shortCardRepository()
+    write(dir, 'docs/approvals.md', line.replace('abc1234', sha))
+    git(dir, 'commit', '-qam', 'approval')
+    const result = run(dir)
+    assert.equal(result.status, 1, line)
+    assert.match(result.stderr, /^approval-missing: .*saude-do-ci\.md/)
+  }
 })

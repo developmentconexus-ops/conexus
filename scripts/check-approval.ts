@@ -54,11 +54,12 @@ const ledger = readFileSync(join(root, 'docs/approvals.md'), 'utf8')
 function approvedCommit(card: string): { label: string; approved: string | undefined } {
   const cardPath = `docs/steps/${card}`
   const digits = (card.match(/^e(\d+)-/) ?? [])[1]
+  const file = cardPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
   // A short card has no step number: its ledger line names its file.
   const line =
     digits === undefined
       ? new RegExp(
-          `^\\s*(?:Emenda do c|C)artão curto .+ \\(\`${cardPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\`\\) aprovad[oa] em \\d{4}-\\d{2}-\\d{2} \\(commit ([0-9a-f]{7,40})\\)`,
+          `^\\s*(?:Cartão curto .+ \\(\`${file}\`\\) aprovado|Emenda do cartão curto .+ \\(\`${file}\`\\) aprovada) em \\d{4}-\\d{2}-\\d{2} \\(commit ([0-9a-f]{7,40})\\).*: ".+"`,
           'gm',
         )
       : new RegExp(
