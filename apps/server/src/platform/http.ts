@@ -156,12 +156,16 @@ export function installErrorHandling(app: FastifyInstance, page: { built: boolea
   app.addHook('onResponse', async (request, reply) => logServed(request, reply))
 }
 
-/** The Fastify instance both listeners share: its limits, its logs and its failure output. */
+/**
+ * The Fastify instance both listeners share: its limits, its logs and its failure output. Its log
+ * writes to `process.stdout` as `bootLog` does: left to pino's default, it would buffer in a
+ * `SonicBoom` of its own, and a line of the Hub could reach the pipe after a later line of `bootLog`.
+ */
 export async function baseServer(config: Config): Promise<FastifyInstance> {
   const options = helmetOptions(config.appsDomain)
   const securityHeaders = helmet(options)
   const app: FastifyInstance = Fastify({
-    logger: { level: config.logLevel },
+    logger: { level: config.logLevel, stream: process.stdout },
     logController: new LogController({ disableRequestLogging: true, requestIdLogLabel: 'traceId' }),
     genReqId: () => randomUUID(),
     trustProxy: false,
