@@ -1,6 +1,6 @@
 // The daily CI budget check: a job that used 85% or more of its `timeout-minutes` in each of the
 // last three runs of `main` is told in one open issue before the timeout cuts it
-// (docs/steps/saude-do-ci.md, U2). The 70% warning of every run is U1's, in ci.yml.
+// (docs/how-to/ci-health.md). The 70% warning of every run is U1's, in ci.yml.
 // It never fails a build: .github/workflows/ci-budget.yml runs it on a schedule.
 import { appendFileSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'

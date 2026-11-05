@@ -1,13 +1,14 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { setTimeout } from 'node:timers/promises'
+import { TEST_IDLE_MS } from '../../platform/test-mastra-database.ts'
 import { conversing, endOf, sent, started, streamOf, title } from './test-conversation.ts'
 
-// The pool's idle time (POOL_LIMITS) and a margin: what lets Neon put the branch to sleep (D27).
-// The test ends when the pool is empty; the idle time itself has no adjustment yet (U7 of the CI health card).
-const QUIET_MS = 15_000
+// The test pool's idle time and a margin: what lets Neon put the branch to sleep (D27).
+// The test ends when the pool is empty.
+const QUIET_MS = TEST_IDLE_MS + 4_750
 
-test('depois de um turno, o login do Mastra não segura conexão: zero em 15 s', {
+test('depois de um turno, o login do Mastra não segura conexão: zero depois do ocioso do pool', {
   timeout: 60_000,
 }, async (t) => {
   const { hub, ana, conversations } = await conversing(t, () => ({ kind: 'text', text: 'Olá' }))

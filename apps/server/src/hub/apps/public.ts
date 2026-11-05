@@ -17,8 +17,6 @@ import { repairApps } from './repair.ts'
 import { registerEdgeRoutes, registerHandoffRoute, registerVersionRoutes } from './routes.ts'
 import { publishedRolesOf } from './versions.ts'
 
-/** How long a send's answer waits for its prune: a test of the send names it. */
-export { PRUNE_BUDGET_MS } from './prune.ts'
 /** What a Projeto's page reads of its app: the Prévia's and the published version (step 17). */
 export { publishedVersionsOf, versionNumbersOf } from './versions.ts'
 
