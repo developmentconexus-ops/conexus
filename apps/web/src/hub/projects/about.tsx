@@ -1,7 +1,9 @@
+import { useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi, useNavigate } from '@tanstack/react-router'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs.tsx'
 import { Versions } from '../apps/public.ts'
 import { About } from './project.tsx'
+import { projectQuery } from './queries.ts'
 import { AboutPart } from './search.ts'
 
 const route = getRouteApi('/_app/companies/$companyId/projects/$projectId_/about')
@@ -15,6 +17,7 @@ export function AboutPage() {
   const { companyId, projectId } = route.useParams()
   const { part = AboutPart.enum.about } = route.useSearch()
   const navigate = useNavigate()
+  const { project } = useSuspenseQuery(projectQuery(companyId, projectId)).data
   return (
     <div className="min-h-0 flex-1 overflow-y-auto p-xl">
       <Tabs
@@ -33,7 +36,7 @@ export function AboutPage() {
           <About companyId={companyId} projectId={projectId} />
         </TabsContent>
         <TabsContent value={AboutPart.enum.versions}>
-          <Versions companyId={companyId} projectId={projectId} />
+          <Versions companyId={companyId} projectId={projectId} project={project} />
         </TabsContent>
       </Tabs>
     </div>

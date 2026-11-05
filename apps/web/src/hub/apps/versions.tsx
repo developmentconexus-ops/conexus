@@ -1,4 +1,4 @@
-import type { AppVersion, CompanyId, ProjectId } from '@conexus/hub-api'
+import type { AppVersion, CompanyId, Project, ProjectId } from '@conexus/hub-api'
 import { FAILURES } from '@conexus/hub-api'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
@@ -8,10 +8,12 @@ import { Alert } from '../../ui/alert.tsx'
 import { List, Row, rowBody, SectionTitle } from '../../ui/list.tsx'
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { Empty, NotFound, ReadFailure } from '../../ui/states.tsx'
+import { RequestLine } from '../requests/public.ts'
 import { Publish } from './publish.tsx'
 import { versionsQuery } from './queries.ts'
 
 type Scope = { companyId: CompanyId; projectId: ProjectId }
+type Access = { project: Pick<Project, 'mayPublish' | 'publishRequest'> }
 
 /**
  * The words of a version's state after its number, "Versão 1 · Na Prévia · Publicada"; a failed one
@@ -32,7 +34,7 @@ function State({ version }: { version: AppVersion }) {
 function VersionRow({
   version,
   ...props
-}: Scope & { version: AppVersion; onStale: (message?: string) => void }) {
+}: Scope & Access & { version: AppVersion; onChanged: (message?: string) => void }) {
   return (
     <Row>
       <div className={rowBody({ kind: 'wrapping' })}>
@@ -70,14 +72,18 @@ function Loading() {
  * read that fails shows its sentence and "Tentar de novo"; a Projeto the Hub does not find is the
  * not-found page.
  */
-export function Versions(scope: Scope) {
+export function Versions({ project, ...scope }: Scope & Access) {
   const read = useQuery(versionsQuery(scope.companyId, scope.projectId))
   const [stale, setStale] = useState<string>()
+  const { publishRequest } = project
   if (read.error instanceof HubFailure && read.error.code === 'NOT_FOUND') return <NotFound />
   return (
     <section className="flex w-full max-w-column flex-col gap-lg">
       <SectionTitle>Versões</SectionTitle>
       {stale !== undefined && <Alert tone="danger">{stale}</Alert>}
+      {publishRequest !== null && (
+        <RequestLine companyId={scope.companyId} request={publishRequest} onChanged={setStale} />
+      )}
       {read.isPending && <Loading />}
       {read.isError && (
         <ReadFailure text={sentenceOf(read.error)} onRetry={() => void read.refetch()} />
@@ -91,7 +97,13 @@ export function Versions(scope: Scope) {
       {read.data !== undefined && read.data.versions.length > 0 && (
         <List>
           {read.data.versions.map((version) => (
-            <VersionRow key={version.id} {...scope} version={version} onStale={setStale} />
+            <VersionRow
+              key={version.id}
+              {...scope}
+              project={project}
+              version={version}
+              onChanged={setStale}
+            />
           ))}
         </List>
       )}

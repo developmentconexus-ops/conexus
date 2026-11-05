@@ -11,6 +11,7 @@ import { PageTitle } from '../../ui/list.tsx'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
 import { Publish } from '../apps/public.ts'
+import { RequestLine } from '../requests/public.ts'
 import { projectQuery } from './queries.ts'
 import { Lens } from './search.ts'
 
@@ -94,7 +95,8 @@ export function ProjectArea(props: {
               projectId={projectId}
               number={appVersion}
               label="Publicar"
-              onStale={setStale}
+              project={project}
+              onChanged={setStale}
             />
           )}
         </div>
@@ -103,6 +105,15 @@ export function ProjectArea(props: {
         <Alert tone="danger" className="border-b border-line px-md py-xs">
           {stale}
         </Alert>
+      )}
+      {project.publishRequest !== null && (
+        <div className="border-b border-line p-md max-md:p-sm">
+          <RequestLine
+            companyId={companyId}
+            request={project.publishRequest}
+            onChanged={setStale}
+          />
+        </div>
       )}
       <TabsContent value={Lens.enum.preview} className="min-h-0">
         {props.preview(project, reloads, reload)}
