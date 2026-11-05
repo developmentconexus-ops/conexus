@@ -5,12 +5,10 @@ roteiro põe na fila do molde, para a trilha da fronteira, porque traz um mecani
 conta, uma migração e uma rota), e o modelo do cartão padrão manda esse caso para o cartão inteiro.
 O estudo, fora do repositório (L21), foi feito sobre o `main` em `0d535e2a`; este cartão tira dele as
 seções 3 e 4.4 e reabriu no `main` de hoje cada linha que cita. Pela L5, `docs/steps/` guarda um
-cartão por trilha, e o próximo de uma trilha espera no seu pull request em rascunho até o da frente
-fechar. Três cartões da fronteira esperam a mesma vaga: este, o da 24.4
-(https://github.com/developmentconexus-ops/conexus/pull/771) e o da 24.3.5
-(https://github.com/developmentconexus-ops/conexus/pull/643). A ordem é do fundador. Se outro
-entrar antes, este fica no rascunho, e a verificação `second-card` de `check-docs` fica vermelha
-nele de propósito. Referências: Mastra Code e Mastra
+cartão por trilha. A ordem da vaga da fronteira é do fundador (2026-11-05): este cartão primeiro,
+depois o da 24.4 (https://github.com/developmentconexus-ops/conexus/pull/771), depois o da 24.3.5
+(https://github.com/developmentconexus-ops/conexus/pull/643); este é o cartão da vaga, e os
+outros dois esperam no rascunho. Referências: Mastra Code e Mastra
 Factory na tag `@mastra/core@1.82.0` (`6e8dfcb8`, `mastracode/`), Codex CLI em `openai/codex`
 `970111f`. O Google fica como está.
 
