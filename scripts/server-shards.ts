@@ -1,11 +1,11 @@
-// Defect: `node --test --test-shard=N/4` splits the server's test files by their order, not by their
-// time, so the four jobs took 181 to 437 s and the slowest held every pull request. Here the files go
+// Defect: `node --test --test-shard=N/6` splits the server's test files by their order, not by their
+// time, so the jobs took 181 to 437 s and the slowest held every pull request. Here the files go
 // to the lightest shard longest first, by the seconds in server-test-seconds.json plus each file's
-// start; a file the record lacks weighs the average of the others. `server-shards.ts 2/4` prints the files of the second shard
-// of four, one per line and relative to apps/server, where `npm test` runs; `all` prints every file.
+// start; a file the record lacks weighs the average of the others. `server-shards.ts 2/6` prints the files of the second shard
+// of six, one per line and relative to apps/server, where `npm test` runs; `all` prints every file.
 // `server-shards.ts --record <log>...` rewrites the record from the "Test files" tables that
 // scripts/test-reporter.ts prints in the log of each shard's job: run it on the logs of one run of
-// all four shards, since a file's time does not depend on the shard it ran in.
+// all six shards, since a file's time does not depend on the shard it ran in.
 // The assignment is proved in server-shards.test.ts.
 // Revalidate by 2027-04-20, or when the shards drift apart again.
 import { globSync, readFileSync, writeFileSync } from 'node:fs'
