@@ -64,7 +64,7 @@ export function TableCell({ className, ...props }: ComponentProps<'td'>) {
 }
 
 /**
- * One column of a `FramedTable`'s hidden header; `leavesOnPhone` columns move under the name there,
+ * One column of a `FramedTable`'s header; `leavesOnPhone` columns move under the name there,
  * and `width` (a class, for `lg` and up) is shared by every table that names the column.
  */
 export type FramedColumn = { name: string; leavesOnPhone?: boolean; width?: string }

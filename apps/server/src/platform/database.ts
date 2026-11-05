@@ -25,6 +25,17 @@ export const POOL_LIMITS = {
 // in openDatabase below.
 const READ_DEADLINE_MS = 15_000
 
+/**
+ * The two waits a test cannot afford at production's length: how long an unused connection stays,
+ * and how long a checked-out one may wait for a reply. Each defaults to the constant above; only a
+ * test passes its own, and `main.ts` passes none.
+ */
+export type PoolTimings = { readonly idleTimeoutMillis: number; readonly readDeadlineMs: number }
+export const POOL_TIMINGS: PoolTimings = {
+  idleTimeoutMillis: POOL_LIMITS.idleTimeoutMillis,
+  readDeadlineMs: READ_DEADLINE_MS,
+}
+
 const UNAVAILABLE_SQLSTATES = /^(08.{3}|57P0[123]|57014)$/
 
 export type DatabaseUrl = Secret<'DatabaseUrl'>
@@ -233,8 +244,17 @@ async function asPersonIn<T>(
   return result
 }
 
-export function openDatabase(deps: { url: DatabaseUrl; log: FailureLog }): Database {
-  const pool = new pg.Pool({ connectionString: deps.url.reveal(), ...POOL_LIMITS })
+export function openDatabase(deps: {
+  url: DatabaseUrl
+  log: FailureLog
+  timings?: PoolTimings
+}): Database {
+  const { idleTimeoutMillis, readDeadlineMs } = deps.timings ?? POOL_TIMINGS
+  const pool = new pg.Pool({
+    connectionString: deps.url.reveal(),
+    ...POOL_LIMITS,
+    idleTimeoutMillis,
+  })
   function lost(error: Error): void {
     logFailure(deps.log, new Failure('DATABASE_UNAVAILABLE', { cause: error }))
   }
@@ -244,7 +264,7 @@ export function openDatabase(deps: { url: DatabaseUrl; log: FailureLog }): Datab
   // is destroyed, so a stalled reply fails as a dropped connection does and the pool drops the client.
   const deadlines = new Map<pg.PoolClient, NodeJS.Timeout>()
   pool.on('acquire', (client) => {
-    const stalled = setTimeout(() => client.connection.stream.destroy(), READ_DEADLINE_MS)
+    const stalled = setTimeout(() => client.connection.stream.destroy(), readDeadlineMs)
     deadlines.set(client, stalled.unref())
   })
   pool.on('release', (_error, client) => {
@@ -320,8 +340,17 @@ export type MastraPool = pg.Pool
  * limits, and an idle connection the server drops is logged, not fatal. Mastra never closes a pool
  * it was given; its owner, `main.ts`, does.
  */
-export function openMastraPool(deps: { url: DatabaseUrl; log: FailureLog }): MastraPool {
-  const pool = new pg.Pool({ connectionString: deps.url.reveal(), ...POOL_LIMITS })
+export function openMastraPool(deps: {
+  url: DatabaseUrl
+  log: FailureLog
+  timings?: Pick<PoolTimings, 'idleTimeoutMillis'>
+}): MastraPool {
+  const idleTimeoutMillis = deps.timings?.idleTimeoutMillis ?? POOL_TIMINGS.idleTimeoutMillis
+  const pool = new pg.Pool({
+    connectionString: deps.url.reveal(),
+    ...POOL_LIMITS,
+    idleTimeoutMillis,
+  })
   pool.on('error', (error) => {
     logFailure(deps.log, new Failure('DATABASE_UNAVAILABLE', { cause: error }))
   })

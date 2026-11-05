@@ -252,3 +252,80 @@ test('recusa o cartão do trilho de desenho sem aprovação, ao lado de um da fr
   assert.equal(result.status, 1)
   assert.match(result.stderr, /^approval-missing: .*e133-pauta\.md/)
 })
+
+function shortCardRepository(): { dir: string; sha: string } {
+  const { dir } = repository()
+  git(dir, 'rm', '-q', 'docs/steps/e01-x.md')
+  write(dir, 'docs/steps/saude-do-ci.md', 'short card\n')
+  git(dir, 'add', '.')
+  git(dir, 'commit', '-qam', 'short card')
+  return { dir, sha: git(dir, 'rev-parse', 'HEAD') }
+}
+
+function shortApproval(sha: string, amendment = false): string {
+  const opening = amendment ? 'Emenda do cartão curto' : 'Cartão curto'
+  const verb = amendment ? 'aprovada' : 'aprovado'
+  return `${opening} "Saúde do CI" (\`docs/steps/saude-do-ci.md\`) ${verb} em 2026-11-04 (commit ${sha}), na página do fundador: "Aprovo".\n`
+}
+
+test('aceita o cartão curto aprovado e inalterado', () => {
+  const { dir, sha } = shortCardRepository()
+  write(dir, 'docs/approvals.md', shortApproval(sha))
+  git(dir, 'commit', '-qam', 'approval')
+  const result = run(dir)
+  assert.equal(result.status, 0, result.stderr)
+  assert.match(result.stdout, /saude-do-ci\.md approved at/)
+})
+
+test('recusa o cartão curto sem linha de aprovação, nomeando o arquivo', () => {
+  const { dir } = shortCardRepository()
+  const result = run(dir)
+  assert.equal(result.status, 1)
+  assert.match(result.stderr, /^approval-missing: .*saude-do-ci\.md/)
+})
+
+test('recusa o cartão curto mudado depois da aprovação', () => {
+  const { dir, sha } = shortCardRepository()
+  write(dir, 'docs/approvals.md', shortApproval(sha))
+  write(dir, 'docs/steps/saude-do-ci.md', 'short card changed\n')
+  git(dir, 'commit', '-qam', 'approval and change')
+  const result = run(dir)
+  assert.equal(result.status, 1)
+  assert.match(result.stderr, /^card-changed-after-approval: .*saude-do-ci\.md/)
+})
+
+test('lê a linha mais nova entre o Cartão curto e a Emenda', () => {
+  const { dir, sha } = shortCardRepository()
+  write(dir, 'docs/steps/saude-do-ci.md', 'short card amended\n')
+  git(dir, 'commit', '-qam', 'amendment')
+  const amended = git(dir, 'rev-parse', 'HEAD')
+  write(dir, 'docs/approvals.md', shortApproval(sha) + shortApproval(amended, true))
+  git(dir, 'commit', '-qam', 'approvals')
+  const result = run(dir)
+  assert.equal(result.status, 0, result.stderr)
+  assert.match(result.stdout, new RegExp(`approved at ${amended}`))
+})
+
+test('a linha de outro cartão curto não aprova este', () => {
+  const { dir, sha } = shortCardRepository()
+  write(dir, 'docs/approvals.md', shortApproval(sha).replace('saude-do-ci', 'outro-cartao'))
+  git(dir, 'commit', '-qam', 'approval of another card')
+  const result = run(dir)
+  assert.equal(result.status, 1)
+  assert.match(result.stderr, /^approval-missing: .*saude-do-ci\.md/)
+})
+
+test('o cartão curto exige as palavras do fundador e cada abertura o seu gênero', () => {
+  for (const line of [
+    shortApproval('abc1234').replace(/, na página.*\n/, '\n'),
+    shortApproval('abc1234').replace('aprovado', 'aprovada'),
+    shortApproval('abc1234', true).replace('aprovada', 'aprovado'),
+  ]) {
+    const { dir, sha } = shortCardRepository()
+    write(dir, 'docs/approvals.md', line.replace('abc1234', sha))
+    git(dir, 'commit', '-qam', 'approval')
+    const result = run(dir)
+    assert.equal(result.status, 1, line)
+    assert.match(result.stderr, /^approval-missing: .*saude-do-ci\.md/)
+  }
+})

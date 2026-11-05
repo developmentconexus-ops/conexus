@@ -23,9 +23,12 @@ export const FILTER_PROJECT = 'Projeto'
 export const ALL_PROJECTS = 'Todos os Projetos'
 export const MORE_PROJECTS = 'Mais Projetos'
 
-/** The last published turn of an agent, at a row's second line. */
+/** The last published turn of an agent, at a row's second line: "Rodou há 3 h", "Rodou ontem", "Rodou em 28/10". */
 export function lastRunText(lastRunAt: string | null, now: Date): string {
-  return lastRunAt === null ? 'Nunca rodou' : `Última execução: ${ageOf(lastRunAt, now)}`
+  if (lastRunAt === null) return 'Nunca rodou'
+  const age = ageOf(lastRunAt, now)
+  if (/^\d+ (min|h|d)$/.test(age)) return `Rodou há ${age}`
+  return age === 'ontem' ? 'Rodou ontem' : `Rodou em ${age}`
 }
 export const NO_CONSTRUTOR_CONVERSATIONS = 'Nenhuma conversa com o Construtor ainda.'
 export const MEMBERS_CANNOT = 'Só o dono e os administradores usam os agentes do Projeto.'
@@ -106,15 +109,16 @@ export function deleteWarning(name: string): string {
 }
 
 const REASONS = {
-  NOT_OFFERED: 'o Projeto não recebeu esta ligação',
-  NOT_A_READ: 'só leituras entram nesta etapa',
-  VALUE_REFUSED: 'a operação não aceita este valor',
-  UNKNOWN_FIELD: 'a operação não tem este campo',
-  FIELD_TWICE: 'o campo está nos valores fixos e nos abertos',
-  REQUIRED_MISSING: 'falta um campo obrigatório da operação',
-  SLUG_TAKEN: 'já existe uma ferramenta com este nome',
-  NOT_USABLE: 'o Projeto não pode usar esta ferramenta',
-  SAME_TOOL_TWICE: 'a mesma ferramenta não entra duas vezes',
+  NOT_OFFERED: 'O Projeto não recebeu esta ligação.',
+  NOT_A_READ: 'Só leituras entram nesta etapa.',
+  VALUE_REFUSED: 'A operação não aceita este valor.',
+  UNKNOWN_FIELD: 'A operação não tem este campo.',
+  FIELD_TWICE:
+    'Um campo aparece duas vezes: repetido nos que o modelo preenche, ou também nos valores fixos.',
+  REQUIRED_MISSING: 'Falta um campo obrigatório da operação.',
+  SLUG_TAKEN: 'Já existe uma ferramenta com este nome.',
+  NOT_USABLE: 'O Projeto não pode usar esta ferramenta.',
+  SAME_TOOL_TWICE: 'A mesma ferramenta não entra duas vezes.',
 } satisfies Record<ProblemReason, string>
 
 /** The reason a refusal of a tool or of a choice names, in words. */
@@ -129,15 +133,23 @@ export function titleOf(conversation: { title: string; updatedAt: string }): str
     : conversation.title
 }
 
+/** The ready read of the kit a tool still is, when its description is the read's own; a tool made by hand has none. */
+export function readOfTool(
+  tool: { connectionId: string; operation: string; description: string },
+  offered: AgentDetail['offered'],
+) {
+  const read = offered
+    .find((one) => one.connectionId === tool.connectionId)
+    ?.reads.find((each) => each.operation === tool.operation)
+  return read?.summary === tool.description ? read : undefined
+}
+
 /** The name a person reads for a tool: a ready read by the kit's own `label`; one made by hand by its description. */
 export function toolTitle(
   tool: { connectionId: string; operation: string; description: string },
   offered: AgentDetail['offered'],
 ): string {
-  const read = offered
-    .find((one) => one.connectionId === tool.connectionId)
-    ?.reads.find((each) => each.operation === tool.operation)
-  return read?.summary === tool.description ? read.label : tool.description
+  return readOfTool(tool, offered)?.label ?? tool.description
 }
 
 export function connectionOf(offered: AgentDetail['offered'], id: string) {

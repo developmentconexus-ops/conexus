@@ -5,6 +5,7 @@ import {
   ASSISTANT_TOOL,
   BUILDER_TOOL,
   SKILL_TOOLS,
+  TASK_TOOLS,
   WORKSPACE_TOOL,
 } from '@conexus/hub-api'
 import { Agent } from '@mastra/core/agent'
@@ -20,7 +21,13 @@ import type { ConnectorAccess } from '../connectors/public.ts'
 import { connectorTools } from '../connectors/public.ts'
 import type { ReleaseScope } from '../controller-kit/public.ts'
 import { admitAsker, agentDefaults, controllerOf, oncePerRun } from '../controller-kit/public.ts'
-import { sessionModel, skillOf, toolsOf } from '../conversation/public.ts'
+import {
+  ASK_USER_TOOL,
+  createAskUserTool,
+  sessionModel,
+  skillOf,
+  toolsOf,
+} from '../conversation/public.ts'
 import type { AssistantMachine } from '../machine/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import { chosenConnections } from './chosen.ts'
@@ -51,8 +58,9 @@ const MODE = 'conversa'
 /**
  * The closed set the mode offers the model (criterion 12): the layer that enforces it, as the
  * controller filters the agent's tools by it; `noteSave: false` below only leaves the save unbuilt.
- * It holds none of the controller's own tools, so all are off: the Assistant asks no card, keeps no
- * task list and calls no subagent.
+ * Of the controller's own tools it holds `ask_user` (a card, only what it cannot decide) and the
+ * task list; the plan card stays the Builder's, as the Assistant approves no plan, and it calls no
+ * subagent.
  */
 const AVAILABLE_TOOLS: readonly string[] = [
   ...Object.values(WORKSPACE_TOOL),
@@ -62,6 +70,8 @@ const AVAILABLE_TOOLS: readonly string[] = [
   BUILDER_TOOL.webFetch,
   BUILDER_TOOL.webSearch,
   ...SKILL_TOOLS,
+  ASK_USER_TOOL,
+  ...TASK_TOOLS,
 ]
 
 /** What Conexus does, read by the Assistant when the task asks (the `conexus` skill). */
@@ -315,6 +325,7 @@ export function createAssistant(deps: Deps) {
   const controller = controllerOf({
     ...{ kind: 'assistant', storage, memory, agent },
     mode: { id: MODE, availableTools: AVAILABLE_TOOLS },
+    tools: { [ASK_USER_TOOL]: createAskUserTool() },
     // The conversation's machine (Factory `session-sandbox.ts:29-36`); none outside a conversation.
     workspace: ({ requestContext }) => machines.workspace(requestContext),
     // Decision 0053: nothing waits to be approved; the systems get no write.
