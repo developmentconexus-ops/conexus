@@ -260,7 +260,13 @@ test('nas Versões: Pedir esta no lugar de Publicar esta, e a caixa pede a vers�
   expect(screen.queryByRole('button', { name: 'Pedir esta' })).toBeNull()
 })
 
-test('quem publica vê Publicar como hoje, mesmo com um pedido aberto', async () => {
+test('quem publica sem pedido aberto vê Publicar no alto', async () => {
+  bruno({ mayDelete: true, mayPublish: true, role: 'owner', publishRequest: null })
+  open()
+  expect(await screen.findByRole('button', { name: 'Publicar' })).toBeTruthy()
+})
+
+test('quem publica com um pedido aberto decide na linha do pedido e não vê Publicar no alto', async () => {
   bruno({
     mayDelete: true,
     mayPublish: true,
@@ -268,6 +274,7 @@ test('quem publica vê Publicar como hoje, mesmo com um pedido aberto', async ()
     publishRequest: requestView({ mayDecide: true }),
   })
   open()
-  expect(await screen.findByRole('button', { name: 'Publicar' })).toBeTruthy()
+  expect(await screen.findByRole('button', { name: /^Publicar a versão \d+$/ })).toBeTruthy()
+  expect(screen.queryByRole('button', { name: 'Publicar' })).toBeNull()
   expect(screen.queryByRole('button', { name: 'Pedir para publicar' })).toBeNull()
 })
