@@ -85,7 +85,7 @@ test('a chamada achatada que o Gemini gravou vira o cartão com o Cadence certo,
   assert.deepEqual(card.connections, [on.matriz])
 })
 
-test('um WEEKLY sem dias (gravação real com os argumentos trocados por conteúdo inventado) volta ao modelo com cadence.days, e o turno segue', async (t) => {
+test('um WEEKLY sem dias (a gravação real com os dias tirados à mão) volta ao modelo com cadence.days, e o turno segue', async (t) => {
   const on = await onGoogle(
     t,
     'google-propose-automation-weekly-no-days',

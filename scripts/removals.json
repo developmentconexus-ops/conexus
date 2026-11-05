@@ -2697,7 +2697,7 @@
   {
     "id": "cliproxy-flat-unions",
     "file": "apps/server/src/builder/model-accounts/processors.ts",
-    "find": "      const flat =\n        account.kind === 'google_cliproxy' && args.tools ? forCliProxy(args.tools) : undefined\n      if (flat !== undefined) result.tools = flat\n",
+    "find": "      const flat = forCliProxy(account.kind, args.tools)\n      if (flat !== undefined) result.tools = flat\n",
     "replace": "",
     "test": {
       "cwd": "apps/server",

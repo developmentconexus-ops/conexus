@@ -216,8 +216,7 @@ export function accountPick(deps: QueueDeps): InputProcessor {
       if (turn.switched && args.activeTools !== undefined) {
         result.activeTools = args.activeTools.filter((name) => name !== WEB_SEARCH)
       }
-      const flat =
-        account.kind === 'google_cliproxy' && args.tools ? forCliProxy(args.tools) : undefined
+      const flat = forCliProxy(account.kind, args.tools)
       if (flat !== undefined) result.tools = flat
       return result
     },

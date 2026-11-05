@@ -42,37 +42,56 @@ function discriminatorOf(branches: Schema[]): string | undefined {
   })
 }
 
+/** Each property said once, in the first branch's shape; `undefined` when two branches shape one differently. */
+function sharedProperties(branches: Schema[], key: string): Record<string, Schema> | undefined {
+  const properties: Record<string, Schema> = {}
+  for (const branch of branches) {
+    for (const [name, property] of Object.entries(propertiesOf(branch))) {
+      if (name === key) continue
+      const seen = properties[name]
+      if (seen !== undefined && JSON.stringify(seen) !== JSON.stringify(property)) return undefined
+      properties[name] = property
+    }
+  }
+  return properties
+}
+
+/** Each property that not every branch has says for which values of the discriminator it is. */
+function saidFor(properties: Record<string, Schema>, branches: Schema[], key: string): void {
+  for (const [name, property] of Object.entries(properties)) {
+    const of = branches
+      .filter((branch) => name in propertiesOf(branch))
+      .map((branch) => String(fixedOf(propertiesOf(branch)[key])))
+    if (of.length === branches.length) continue
+    const only = `Only for ${of.join(', ')}.`
+    properties[name] = {
+      ...property,
+      description: property.description ? `${only} ${property.description}` : only,
+    }
+  }
+}
+
+/** The names every branch requires. */
+function requiredByAll(branches: Schema[]): string[] {
+  return branches
+    .map((branch) => namesOf(branch.required))
+    .reduce((all, each) => all.filter((name) => each.includes(name)))
+}
+
 /**
  * One object for the union: the discriminator as an `enum` of every value, each other property once,
  * required only where every branch requires it, and said for which values it is. `undefined` when
  * two branches give one property two shapes.
  */
 function flatOf(branches: Schema[], key: string): Schema | undefined {
+  const properties = sharedProperties(branches, key)
+  if (properties === undefined) return undefined
+  saidFor(properties, branches, key)
   const values = branches.map((branch) => String(fixedOf(propertiesOf(branch)[key])))
-  const properties: Record<string, Schema> = {}
-  const owners = new Map<string, string[]>()
-  for (const [index, branch] of branches.entries()) {
-    for (const [name, property] of Object.entries(propertiesOf(branch))) {
-      if (name === key) continue
-      const seen = properties[name]
-      if (seen !== undefined && JSON.stringify(seen) !== JSON.stringify(property)) return undefined
-      properties[name] = property
-      owners.set(name, [...(owners.get(name) ?? []), values[index] ?? ''])
-    }
-  }
-  for (const [name, of] of owners) {
-    if (of.length === branches.length) continue
-    const said = properties[name]?.description
-    const only = `Only for ${of.join(', ')}.`
-    properties[name] = { ...properties[name], description: said ? `${only} ${said}` : only }
-  }
-  const required = branches
-    .map((branch) => namesOf(branch.required))
-    .reduce((all, each) => all.filter((name) => each.includes(name)))
   return {
     type: 'object',
     properties: { [key]: { type: 'string', enum: values }, ...properties },
-    required,
+    required: requiredByAll(branches),
   }
 }
 
@@ -104,9 +123,10 @@ function declaredOf(tool: unknown): unknown {
  * The step's tools for CLIProxy's Google path, which drops every `enum` and so makes the branches of
  * such a union indistinguishable: a tool whose declaration has one is declared flat. Its `execute`
  * and the validation of its own schema stay, so the input is checked and read in its own shape.
- * `undefined` when no tool changes.
+ * `undefined` when the account is not that path or no tool changes.
  */
-export function forCliProxy(tools: Tools): Tools | undefined {
+export function forCliProxy(accountKind: string, tools: Tools | undefined): Tools | undefined {
+  if (accountKind !== 'google_cliproxy' || tools === undefined) return undefined
   const flatTools: Tools = { ...tools }
   for (const [name, tool] of Object.entries(tools)) {
     const declared = declaredOf(tool)

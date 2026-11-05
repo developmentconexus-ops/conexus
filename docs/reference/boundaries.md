@@ -1203,7 +1203,7 @@ reference tool checks a read against its documentation.
 - **Proof.** `list-search.test.ts` "a busca" (accent, case, spaces, nothing found) and "o lugar" (the
   marks, with and without a text): each fails when its comparison or its mark is taken out.
 
-## CLIProxyAPI v8.0.33: uniões achatadas no login do Google (step 24.3.5)
+## CLIProxyAPI v8.0.33: unions flattened on the Google sign-in (fix, PR 764)
 
 - **Library line.** At CLIProxyAPI v8.0.33 (`infra/hub.Dockerfile`; unchanged in v8.0.56),
   `internal/util/gemini_schema.go:73-83`, `:941` and `:957-971` drop every `enum` from a tool's
