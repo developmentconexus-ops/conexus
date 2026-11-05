@@ -141,7 +141,7 @@ test('a conexão derrubada no meio de um comando vira DATABASE_UNAVAILABLE e o p
   assert.deepEqual(next.rows, [{ one: 1 }])
 })
 
-test('uma leitura parada além do prazo: 503, o soquete destruído solta as travas e a conexão não volta ao pool', async (t) => {
+test('uma leitura parada além do prazo dado: 503, o soquete destruído solta as travas e a conexão não volta ao pool', async (t) => {
   const { runtimeUrl, asOwner } = await createTestDatabase(t)
   const database = openDatabase({
     url: runtimeUrl,
@@ -159,7 +159,7 @@ test('uma leitura parada além do prazo: 503, o soquete destruído solta as trav
     assert.ok(Date.now() < deadline, 'the holder never took lock 777')
     await setTimeout(20)
   }
-  const started = Date.now()
+  const started = performance.now()
   try {
     await assert.rejects(
       database.installation(async (tx) => {
@@ -169,7 +169,15 @@ test('uma leitura parada além do prazo: 503, o soquete destruído solta as trav
       }),
       failsWith('DATABASE_UNAVAILABLE'),
     )
-    assert.ok(Date.now() - started >= READ_DEADLINE_TEST_MS, 'the read deadline is the one given')
+    const waited = performance.now() - started
+    assert.ok(
+      waited >= READ_DEADLINE_TEST_MS,
+      'the read deadline is not shorter than the one given',
+    )
+    assert.ok(
+      waited < READ_DEADLINE_TEST_MS + 2_000,
+      'the read deadline is not longer than the one given',
+    )
     await asOwner(`select pg_cancel_backend(pid) from pg_stat_activity
       where query like 'select pg_advisory_xact_lock(777), pg_sleep(60)%'`)
     assert.equal(Object(await holder).code, '57014')
@@ -250,7 +258,7 @@ test('uma consulta da biblioteca sem resposta cai no prazo de leitura como conex
   try {
     assert.deepEqual((await orm.execute(sql`select 1 as one`)).rows, [{ one: 1 }])
     proxy.hold()
-    const started = Date.now()
+    const started = performance.now()
     const read = orm.execute(sql`select 1 as one`).then(
       () => 'answered',
       (error: unknown) => (error instanceof Error ? String(Object(error.cause).message) : 'thrown'),
@@ -260,7 +268,7 @@ test('uma consulta da biblioteca sem resposta cai no prazo de leitura como conex
       setTimeout(READ_DEADLINE_TEST_MS + 2_000, 'pending', { ref: false }),
     ])
     assert.equal(outcome, 'Connection terminated unexpectedly')
-    assert.ok(Date.now() - started >= READ_DEADLINE_TEST_MS, 'the deadline is the one given')
+    assert.ok(performance.now() - started >= READ_DEADLINE_TEST_MS, 'the deadline is the one given')
     assert.equal(orm.$client.totalCount, 0)
   } finally {
     proxy.close()

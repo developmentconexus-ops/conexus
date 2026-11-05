@@ -35,7 +35,7 @@ import {
   testAppsConfig,
 } from './test-cloudflare.ts'
 import { grantCloned, hubTemplate, withDatabase } from './test-database-template.ts'
-import { mastraUrlOf, TEST_POOL_TIMINGS } from './test-mastra-database.ts'
+import { mastraUrlOf, TEST_IDLE_MS, TEST_POOL_TIMINGS } from './test-mastra-database.ts'
 import type { ModelLists } from './test-model-lists.ts'
 import { plantModelLists } from './test-model-lists.ts'
 import { NO_NEON_SERVER, TEST_NEON_ORG, testNeon } from './test-neon.ts'
@@ -261,10 +261,15 @@ export async function queued(test: TestDatabase, count: number, request?: Promis
   }
 }
 
-/** Resolves once the pool holds no connection, as when nobody uses Conexus (data D27). */
+/**
+ * Resolves once the pool holds no connection, as when nobody uses Conexus (data D27). The test pool
+ * idles for `TEST_IDLE_MS`; a pool that ignores it takes production's 10 s and the wait is cut, so
+ * the short idle time is proved by this call failing.
+ */
 export async function whenIdle(database: Database): Promise<void> {
   const pool = database.libraryOrm({}).$client
-  while (pool.totalCount > 0) await once(pool, 'remove')
+  const signal = AbortSignal.timeout(TEST_IDLE_MS + 4_000)
+  while (pool.totalCount > 0) await once(pool, 'remove', { signal })
 }
 
 export async function freePort(): Promise<number> {
