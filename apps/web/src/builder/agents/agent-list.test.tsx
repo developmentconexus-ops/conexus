@@ -1,5 +1,6 @@
 import { ProjectSummary } from '@conexus/hub-api'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { COMPANY } from '../../platform/fixtures.ts'
 import { hubServer, PEDIDOS } from '../../platform/test-hub.tsx'
@@ -34,7 +35,7 @@ test('a página lista os agentes de todos os Projetos com o Projeto, o estado e 
     `/companies/${COMPANY.id}/projects/${ESTOQUE.id}/agents/${OTHER_AGENT}`,
   )
   expect(await within(link).findByText('Estoque')).toBeTruthy()
-  expect(within(link).getByText(/Última execução: 3 min/)).toBeTruthy()
+  expect(within(link).getByText(/Rodou há 3 min/)).toBeTruthy()
   expect(within(link).getByText('Versão 2 · publicada')).toBeTruthy()
   const here = screen.getByRole('link', { name: /Conferente de metas/ })
   expect(await within(here).findByText('Pedidos')).toBeTruthy()
@@ -50,6 +51,21 @@ test('o filtro por Projeto troca a lista e o endereço; sem agentes ali, a frase
   expect(await screen.findByText('Nenhum agente neste Projeto.')).toBeTruthy()
   expect(conexus.router.state.location.search).toEqual({ projectId: ESTOQUE.id })
   expect(screen.queryByRole('link', { name: /Conferente de metas/ })).toBeNull()
+})
+
+test('o endereço que nomeia um Projeto fora das páginas lidas mostra o nome dele no filtro, não o id', async () => {
+  at(
+    `${HOME_AGENTS}?projectId=${ESTOQUE.id}`,
+    { agents: [THERE] },
+    { projects: [PEDIDOS, ESTOQUE] },
+  )
+  server.use(
+    http.get(`*/api/companies/${COMPANY.id}/projects`, () =>
+      HttpResponse.json({ projects: [PEDIDOS], next: { kind: 'END' }, databaseReady: true }),
+    ),
+  )
+  const filter = await screen.findByRole('combobox', { name: 'Projeto' })
+  await waitFor(() => expect(filter.textContent).toBe('Estoque'))
 })
 
 test('sem agentes, a frase de que eles nascem num Projeto', async () => {

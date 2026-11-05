@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { AgentId } from './agent-ids.ts'
 import type { FailureRow } from './failure-row.ts'
+import { ProjectId } from './projects.ts'
 
 /**
  * The failures of a Projeto's agents and of the company's tool library (step 24.3, U1). A refusal
@@ -109,6 +110,10 @@ export const ProblemReason = z.enum([
 ])
 export type ProblemReason = z.infer<typeof ProblemReason>
 
+/** An agent a tool names, with the Projeto it lives in, since the library is the company's and its users may be in another Projeto. */
+export const NamedAgent = z.object({ id: AgentId, projectId: ProjectId, name: z.string() })
+export type NamedAgent = z.infer<typeof NamedAgent>
+
 /** The agents a refusal names, such as those that still use a tool (`TOOL_IN_USE`). */
-export const ProblemAgents = z.array(z.object({ id: AgentId, name: z.string() }))
+export const ProblemAgents = z.array(NamedAgent)
 export type ProblemAgents = z.infer<typeof ProblemAgents>

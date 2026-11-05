@@ -10,7 +10,7 @@ export {
   RESERVED_NICKNAMES,
   suggestedNickname,
 } from './address.ts'
-export { ProblemAgents, ProblemField, ProblemReason } from './agent-failures.ts'
+export { NamedAgent, ProblemAgents, ProblemField, ProblemReason } from './agent-failures.ts'
 export * from './agent-ids.ts'
 export * from './agents.ts'
 export {

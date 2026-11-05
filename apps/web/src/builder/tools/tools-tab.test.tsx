@@ -1,6 +1,8 @@
+import { ProjectId } from '@conexus/hub-api'
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { expect, test } from 'vitest'
-import { hubServer, refusal } from '../../platform/test-hub.tsx'
+import { COMPANY } from '../../platform/fixtures.ts'
+import { hubServer, PEDIDOS, refusal } from '../../platform/test-hub.tsx'
 import {
   AGENT,
   AREA,
@@ -16,9 +18,10 @@ import { agentScreens } from '../agents/test-hub.tsx'
 const server = hubServer()
 const { at } = agentScreens(server)
 const TABS = `${AREA}/tools`
+const ESTOQUE = ProjectId.parse('e'.repeat(32))
 const USERS = [
-  { id: AGENT, name: 'Conferente de metas' },
-  { id: OTHER_AGENT, name: 'Resumo de estoque' },
+  { id: AGENT, projectId: PEDIDOS.id, name: 'Conferente de metas' },
+  { id: OTHER_AGENT, projectId: ESTOQUE, name: 'Resumo de estoque' },
 ]
 
 test('Apagar uma ferramenta usada recebe TOOL_IN_USE e mostra os agentes, sem tirá-la da lista', async () => {
@@ -32,7 +35,10 @@ test('Apagar uma ferramenta usada recebe TOOL_IN_USE e mostra os agentes, sem ti
   expect(within(said).getByRole('link', { name: 'Conferente de metas' }).getAttribute('href')).toBe(
     `${AREA}/${AGENT}`,
   )
-  expect(screen.getAllByText(/Conferente de metas/)).toHaveLength(1)
+  expect(within(said).getByRole('link', { name: 'Resumo de estoque' }).getAttribute('href')).toBe(
+    `/companies/${COMPANY.id}/projects/${ESTOQUE}/agents/${OTHER_AGENT}`,
+  )
+  expect(screen.getByText('Conferente de metas · Resumo de estoque')).toBeTruthy()
   expect(screen.getByText('vendas_de_ontem')).toBeTruthy()
   expect(hub.writes().map((one) => one.method)).toEqual(['DELETE'])
 })

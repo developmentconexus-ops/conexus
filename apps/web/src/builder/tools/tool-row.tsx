@@ -24,7 +24,11 @@ function Refused(props: { scope: Scope; failure: unknown }) {
             {index > 0 && ', '}
             <Link
               to="/companies/$companyId/projects/$projectId/agents/$agentId"
-              params={{ ...props.scope, agentId: agent.id }}
+              params={{
+                companyId: props.scope.companyId,
+                projectId: agent.projectId,
+                agentId: agent.id,
+              }}
               className="underline"
             >
               {agent.name}
@@ -54,8 +58,8 @@ function Effect({ tool }: { tool: ToolSummary }) {
 /**
  * A tool of the library as a table row (prototype screen 4): its name with what it does, what it
  * reads and where, its effect, the agents that use it and its latest version. On a phone the read,
- * the effect and the agents move under the name. The agents are named by the refusal alone once
- * Apagar is refused for them, so they never show twice.
+ * the effect and the agents move under the name. Once Apagar is refused for them the row keeps its
+ * agents, and the refusal below links each one.
  */
 export function ToolRow({ scope, tool }: { scope: Scope; tool: ToolSummary }) {
   const remove = useMutation(sendToolDeletion)
@@ -102,11 +106,7 @@ export function ToolRow({ scope, tool }: { scope: Scope; tool: ToolSummary }) {
     </>
   )
   const users =
-    failure instanceof HubFailure && failure.code === 'TOOL_IN_USE'
-      ? null
-      : tool.usedBy.length === 0
-        ? NOBODY_USES
-        : tool.usedBy.map((one) => one.name).join(' · ')
+    tool.usedBy.length === 0 ? NOBODY_USES : tool.usedBy.map((one) => one.name).join(' · ')
   return (
     <>
       <TableRow>
@@ -128,7 +128,7 @@ export function ToolRow({ scope, tool }: { scope: Scope; tool: ToolSummary }) {
               <span className="block text-fact text-text-2">
                 {tool.connectionName} · {tool.readLabel} · {EFFECT_TEXT[tool.effect]}
               </span>
-              {users !== null && <span className="block text-fact text-text-2">{users}</span>}
+              <span className="block text-fact text-text-2">{users}</span>
             </>
           )}
         </TableCell>

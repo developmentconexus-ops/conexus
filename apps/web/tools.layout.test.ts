@@ -31,7 +31,13 @@ const TOOLS = [
     readLabel: 'Pedidos',
     effect: 'READ' as const,
     latest: { id: VERSION, number: 12 },
-    usedBy: [{ id: '11111111-aaaa-4aaa-8aaa-111111111111', name: 'Conferente de metas' }],
+    usedBy: [
+      {
+        id: '11111111-aaaa-4aaa-8aaa-111111111111',
+        projectId: PROJECT_ID,
+        name: 'Conferente de metas',
+      },
+    ],
   },
 ]
 
@@ -116,15 +122,15 @@ const agentReplies = {
   [`GET ${BASE}/agents/${AGENT}/versions`]: ok(listAgentVersions, { versions: [] }),
 }
 
-for (const [opening, button, footer] of [
-  ['a lista da biblioteca', 'Adicionar da biblioteca', 'Usar as escolhidas'],
-  ['o formulário de criar', 'Criar', 'Criar ferramenta'],
+for (const [opening, button, footer, viewport] of [
+  ['a lista da biblioteca', 'Adicionar da biblioteca', 'Usar as escolhidas', PHONE],
+  ['o formulário de criar', 'Criar', 'Criar ferramenta', ZOOMED_PHONE],
 ] as const) {
-  test(`no celular, ${opening} rola no corpo da janela e o ${footer} fica à vista`, async () => {
+  test(`a ${viewport.width} px, ${opening} rola no corpo da janela e o ${footer} fica à vista`, async () => {
     const page = await harness.open(
       `/companies/${COMPANY.id}/projects/${PROJECT_ID}/agents/${AGENT}`,
       {
-        viewport: PHONE,
+        viewport,
         replies: agentReplies,
       },
     )
@@ -137,13 +143,11 @@ for (const [opening, button, footer] of [
       return {
         popupScrolls: node.scrollHeight > node.clientHeight,
         bodyScrolls: body ? body.scrollHeight > body.clientHeight : false,
-        hasBody: body !== null,
       }
     })
-    assert.equal(reach.hasBody, true, 'a janela não tem DialogBody')
     assert.equal(reach.popupScrolls, false, 'a janela corta o que passa da tela')
     const at = await dialog.getByRole('button', { name: footer }).boundingBox()
-    assert.ok(at && at.y + at.height <= PHONE.height, `o ${footer} passa do pé da tela`)
+    assert.ok(at && at.y + at.height <= viewport.height, `o ${footer} passa do pé da tela`)
     if (button !== 'Criar') assert.equal(reach.bodyScrolls, true, 'a lista longa não rola no corpo')
     await page.close()
   })

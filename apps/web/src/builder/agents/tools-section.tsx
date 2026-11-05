@@ -53,6 +53,9 @@ export function Tools(props: Part) {
                 <Logo logo={catalog.logo(connection?.connector ?? '')} />
                 <span className="flex min-w-0 flex-col">
                   <span className="truncate">{title}</span>
+                  {title === tool.version.description && (
+                    <span className="truncate text-fact text-text-2">{tool.slug}</span>
+                  )}
                   {connection !== undefined && (
                     <span className="truncate text-fact text-text-2">
                       {toolFact(
