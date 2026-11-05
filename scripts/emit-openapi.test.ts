@@ -77,7 +77,12 @@ test('uma operação traz parâmetros, corpo e falhas pelo status HTTP', () => {
 })
 
 test('o comando emite JSON válido e sai com zero', () => {
-  const result = spawnSync('node', [SCRIPT], { encoding: 'utf8', timeout: 120_000 })
+  // The document passed spawnSync's 1 MiB default buffer, which cut it with ENOBUFS.
+  const result = spawnSync('node', [SCRIPT], {
+    encoding: 'utf8',
+    timeout: 120_000,
+    maxBuffer: 16 * 1024 * 1024,
+  })
   assert.equal(result.status, 0, result.stderr)
   assert.equal(Document.parse(JSON.parse(result.stdout)).openapi, '3.1.0')
 })
