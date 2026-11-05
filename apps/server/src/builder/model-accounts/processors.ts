@@ -1,4 +1,5 @@
 import type { ModelId } from '@conexus/hub-api'
+import { isSubscription } from '@conexus/hub-api'
 import type { MessageList } from '@mastra/core/agent'
 import type { LanguageModel } from '@mastra/core/llm'
 import { parseModelString } from '@mastra/core/llm'
@@ -262,7 +263,7 @@ async function afterFailure(deps: QueueDeps, args: ProcessAPIErrorArgs, turn: Tu
     return { retry: false }
   }
   deps.log.info(fields, 'MODEL_CALL_REFUSED')
-  const resubscribe = failure.kind === 'refused' && account.kind === 'claude_subscription'
+  const resubscribe = failure.kind === 'refused' && isSubscription(account.kind)
   // A first refusal of a subscription refreshes it; a refused refresh is said by `sayRefused`.
   const refreshing = resubscribe && !turn.refreshed.has(account.id)
   if (refreshing) {

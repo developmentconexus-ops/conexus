@@ -25,6 +25,16 @@ export type AccountKind = z.infer<typeof AccountKind>
 export const SignInKind = AccountKind.exclude(['api_key'])
 export type SignInKind = z.infer<typeof SignInKind>
 
+/** The kinds that sign in and renew their tokens, one lease-based renewal for all (data D25). */
+export const SUBSCRIPTION_KINDS = ['claude_subscription'] as const satisfies readonly SignInKind[]
+export type SubscriptionKind = (typeof SUBSCRIPTION_KINDS)[number]
+
+const SUBSCRIPTIONS: ReadonlySet<AccountKind> = new Set(SUBSCRIPTION_KINDS)
+
+export function isSubscription(kind: AccountKind): kind is SubscriptionKind {
+  return SUBSCRIPTIONS.has(kind)
+}
+
 export const ACCOUNT_STATES = ['ready', 'paused', 'refused'] as const
 export const AccountState = z.enum(ACCOUNT_STATES)
 export type AccountState = z.infer<typeof AccountState>

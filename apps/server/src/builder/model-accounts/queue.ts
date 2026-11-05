@@ -10,11 +10,12 @@ import type { Credential, SealKeys } from '../../platform/seal.ts'
 import { AccountRow, columns, contextOf, credentialOf, usableInOrder } from './accounts.ts'
 import type { PromptCacheScope } from './claude/models.ts'
 import { apiKeyModel, subscriptionModel } from './claude/models.ts'
-import { subscriptionAccess } from './claude/store.ts'
+import { refreshAnthropicTokens } from './claude/sign-in.ts'
 import type { AccountFailure } from './errors.ts'
 import type { GoogleCalls } from './google/port.ts'
 import { isChoosable } from './providers.ts'
 import { readServedOf, servesModel } from './served.ts'
+import { subscriptionAccess } from './subscription-store.ts'
 import { modelAccount } from './tables.ts'
 import type { Picked, Turn } from './turn.ts'
 
@@ -150,8 +151,13 @@ async function pickedOf(
   const base = { id: row.id, label: row.label, kind: row.kind, modelId }
   if (row.kind === 'claude_subscription') {
     const force = turn.refreshed.has(row.id)
-    const account = { ...row, companyId: turn.companyId, credential }
-    const access = await subscriptionAccess({ ...deps, scope: scopeOf(turn) }, account, force)
+    const account = { ...row, kind: row.kind, companyId: turn.companyId, credential }
+    const { access } = await subscriptionAccess(
+      { ...deps, scope: scopeOf(turn) },
+      account,
+      refreshAnthropicTokens,
+      force,
+    )
     return { ...base, models: await byScope((scope) => subscriptionModel(name, access, scope)) }
   }
   const target = { providerId: row.provider, modelId: name }

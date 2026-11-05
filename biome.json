@@ -173,7 +173,7 @@
         "!apps/server/src/builder/runs/copy-retry.ts",
         "!apps/server/src/builder/model-accounts/google/calls.ts",
         "!apps/server/src/builder/model-accounts/google/google.ts",
-        "!apps/server/src/builder/model-accounts/claude/store.ts",
+        "!apps/server/src/builder/model-accounts/subscription-store.ts",
         "!apps/server/src/builder/conversation/turn-log.ts",
         "!**/*.test.ts",
         "!**/test-*.ts"
