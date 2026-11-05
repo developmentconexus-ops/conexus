@@ -16,8 +16,19 @@ export function projectStateOf(
   return { kind: 'NO_APP' }
 }
 
-/** The sentence a list of Projetos says when it holds none. */
+/** The sentence a list of Projetos says when it holds none: Início's block. */
 export const NO_PROJECTS = 'Nenhum projeto ainda.'
+/** The empty "Todos os projetos" says it once, as its title: `NO_PROJECTS` without its full stop. */
+export const NO_PROJECTS_TITLE = 'Nenhum projeto ainda'
+/** What "Todos os projetos" says under its title. */
+export const PROJECTS_SENTENCE = 'Cada Projeto guarda um app, as conversas e as ligações dele.'
+/** The way out of the empty page, to where a person asks for an app. */
+export const ASK_ON_HOME = 'ou peça um app no Início'
+
+/** The tone of a state's stamp: only a published app is a success. */
+export function projectStateTone(state: ProjectState): 'success' | 'neutral' {
+  return state.kind === 'PUBLISHED' ? 'success' : 'neutral'
+}
 
 export function projectStateText(state: ProjectState): string {
   switch (state.kind) {

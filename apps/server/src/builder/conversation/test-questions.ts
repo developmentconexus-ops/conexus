@@ -15,6 +15,9 @@ type Suspended = Extract<StreamEvent, { type: 'tool_suspended' }>
 /** The tool each kind of card is, as Mastra names the call it parks. */
 const CARD_TOOL = { question: ASK_USER_TOOL, plan: SUBMIT_PLAN_TOOL } as const
 
+/** How long a test waits for the card a turn parks, which the double answers at once. */
+const CARD_DEADLINE_MS = 15_000
+
 /** A tool call of the model's. */
 export function tool(name: string, input: object): Block {
   return { type: 'tool_use', name, input }
@@ -69,7 +72,8 @@ export async function conversingWith(t: TestContext, steps: Block[][]) {
 
 /**
  * The events of the run that asks the next card of `type` (its `tool_suspended`), up to its
- * `agent_end`: a question ends the run, and its answer opens the next one.
+ * `agent_end`: a question ends the run, and its answer opens the next one. A card that does not
+ * come fails here, as an assertion, and not at the suite's timeout.
  */
 export async function untilCard(
   stream: Awaited<ReturnType<typeof streamOf>>,
@@ -77,8 +81,14 @@ export async function untilCard(
 ) {
   const events: StreamEvent[] = []
   let card: Suspended | undefined
+  const late = sleep(CARD_DEADLINE_MS, 'late', { ref: false })
   for (;;) {
-    const event = await stream.next()
+    const event = await Promise.race([stream.next(), late])
+    if (typeof event === 'string') {
+      throw new assert.AssertionError({
+        message: `O cartão ${type} não veio em ${CARD_DEADLINE_MS} ms`,
+      })
+    }
     events.push(event)
     if (event.type === 'tool_suspended' && event.toolName === CARD_TOOL[type]) card ??= event
     if (event.type === 'agent_end' && card !== undefined) return { events, card }

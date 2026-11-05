@@ -18,7 +18,7 @@ import { Composer } from './composer.tsx'
 import { useDraft } from './draft.ts'
 import { isModelRefusal, stashHandoffFiles } from './handoff.ts'
 import { chipOf } from './messages.ts'
-import { ComposerModelName, ComposerModelPicker, NoAccount } from './model-choice.tsx'
+import { ComposerModelPicker, NoAccount } from './model-choice.tsx'
 import { FileChip } from './person-turn.tsx'
 import { sendCreation } from './queries.ts'
 import { EXAMPLES, START_NO_ACCOUNT, START_PLACEHOLDER } from './text.ts'
@@ -132,7 +132,6 @@ function NamingBody(props: {
   picked: { model: ModelId; effort: Effort }
   onPhase: (phase: Phase) => void
   onOpened: () => void
-  back?: string
 }) {
   const { companyId, phase } = props
   const { outgoing } = phase
@@ -154,7 +153,7 @@ function NamingBody(props: {
             databaseReady={projects.data.databaseReady}
             locked={phase.kind === 'STARTING' ? phase.project.name : null}
             idle="Criar e começar"
-            back={props.back ?? 'Voltar'}
+            back="Voltar"
             onCreated={async (project) => {
               props.onPhase({ kind: 'STARTING', outgoing, project })
               await created(project, outgoing)
@@ -193,14 +192,12 @@ export function StartBox(props: {
   placeholder: string
   /** Chips under the bar; none draws nothing. */
   examples: readonly Example[]
-  /** The model's button; none where the request does not choose the model (the Construtor's). */
+  /** The model's button; none draws nothing. */
   picker?: {
     picked: { model: ModelId; effort: Effort }
     onPick: (picked: { model: ModelId; effort: Effort }) => void
     providers: ReturnType<typeof usePicked>['providers']
   }
-  /** The model that answers, named and not changed, where the request does not choose it (the Construtor's). */
-  modelName?: ModelId
   /** False while something the request needs has not arrived: **Enviar** waits. */
   canSend?: boolean
   onSend: (outgoing: Outgoing) => Promise<boolean>
@@ -215,6 +212,7 @@ export function StartBox(props: {
     <div className={`${START_COLUMN} gap-md`}>
       <div className="md:[&_textarea]:min-h-20 [&_textarea]:min-h-16">
         <Composer
+          placement="inline"
           answering={false}
           canSend={props.canSend ?? true}
           draft={draft}
@@ -226,17 +224,13 @@ export function StartBox(props: {
           context={props.tools?.context}
           notice={props.tools?.notice}
           picker={
-            props.modelName !== undefined ? (
-              <ComposerModelName model={props.modelName} />
-            ) : (
-              props.picker !== undefined && (
-                <ComposerModelPicker
-                  providers={props.picker.providers}
-                  value={props.picker.picked}
-                  heading="Modelo do pedido"
-                  onChange={props.picker.onPick}
-                />
-              )
+            props.picker !== undefined && (
+              <ComposerModelPicker
+                providers={props.picker.providers}
+                value={props.picker.picked}
+                heading="Modelo do pedido"
+                onChange={props.picker.onPick}
+              />
             )
           }
         />
@@ -300,35 +294,6 @@ export function Start({ companyId }: { companyId: CompanyId }): ReactNode {
         setPhase({ kind: 'NAMING', outgoing })
         return Promise.resolve(true)
       }}
-    />
-  )
-}
-
-/**
- * **Criar app** (step 24.1, U4): the Assistant's summary of a need, with the name of the new Projeto
- * under it. **Criar e começar** makes the Projeto and opens its Builder's conversation with the
- * summary sent once; **Cancelar** creates nothing.
- */
-export function CreateApp(props: {
-  companyId: CompanyId
-  summary: string
-  onClose: () => void
-}): ReactNode {
-  const { companyId } = props
-  const { picked } = usePicked(companyId)
-  const [phase, setPhase] = useState<Sent>({
-    kind: 'NAMING',
-    outgoing: { content: props.summary, files: [] },
-  })
-  if (picked === null) return <StartWithoutAccount companyId={companyId} />
-  return (
-    <NamingBody
-      companyId={companyId}
-      phase={phase}
-      picked={picked}
-      back="Cancelar"
-      onPhase={(next) => (next.kind === 'WRITING' ? props.onClose() : setPhase(next))}
-      onOpened={props.onClose}
     />
   )
 }

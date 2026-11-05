@@ -2,6 +2,7 @@ import type { CompanyId, ConversationId, ProjectId } from '@conexus/hub-api'
 import {
   createConversation,
   Effort,
+  handAssistantProposal,
   listConversations,
   ModelId,
   readConversation,
@@ -52,3 +53,5 @@ export function sessionReadQuery(conversationId: ConversationId, controller: Con
 
 export const sendCreation = hubMutation(createConversation)
 export const sendModel = hubMutation(setConversationModel)
+/** The Assistant's proposal handed to the Builder (step 24.3.2): the card's touch, then the Builder's conversation. */
+export const sendAssistantHandOff = hubMutation(handAssistantProposal)

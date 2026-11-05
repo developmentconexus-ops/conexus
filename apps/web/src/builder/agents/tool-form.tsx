@@ -12,6 +12,7 @@ import {
 } from '@conexus/hub-api'
 import { useState } from 'react'
 import { Button } from '../../ui/button.tsx'
+import { DialogBody, DialogFooter } from '../../ui/dialog.tsx'
 import { Field, FieldError, FieldLabel } from '../../ui/field.tsx'
 import { Input } from '../../ui/input.tsx'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select.tsx'
@@ -21,13 +22,19 @@ import { reasonText } from './text.ts'
 type Refusal = { field: ProblemField | undefined; reason: ProblemReason | undefined }
 type Local = { field: string; text: string }
 
-/** The fixed values the person typed, read as the contract reads them; what is not JSON says so. */
+/** The fixed values the person typed, read as the contract reads them; what is not JSON is not a success. */
 function boundOf(text: string) {
   try {
     return VersionSchema.shape.bound.safeParse(JSON.parse(text))
   } catch (cause) {
-    return { success: false as const, syntax: cause instanceof SyntaxError ? cause.message : text }
+    if (cause instanceof SyntaxError) return { success: false as const }
+    throw cause
   }
+}
+
+/** What the person fixes in a field the contract refused before the Hub saw it, one sentence for each. */
+const LOCAL_FIELD_TEXT: Record<string, string> = {
+  description: 'Escreva o que a ferramenta faz, em até 500 caracteres.',
 }
 
 type Typed = {
@@ -43,10 +50,7 @@ type Typed = {
 function inputOf(typed: Typed): { input?: ToolInput; local?: Local } {
   const values = boundOf(typed.bound)
   if (!values.success) {
-    const syntax = 'syntax' in values ? `: ${values.syntax}` : '.'
-    return {
-      local: { field: 'bound', text: `Os valores fixos não são um JSON de campos${syntax}` },
-    }
+    return { local: { field: 'bound', text: 'Os valores fixos não são um JSON de campos.' } }
   }
   const parsed = ToolInputSchema.safeParse({
     ...typed,
@@ -57,9 +61,8 @@ function inputOf(typed: Typed): { input?: ToolInput; local?: Local } {
       .filter((name) => name !== ''),
   })
   if (parsed.success) return { input: parsed.data }
-  return {
-    local: { field: String(parsed.error.issues[0]?.path[0] ?? ''), text: 'Confira este campo.' },
-  }
+  const field = String(parsed.error.issues[0]?.path[0] ?? '')
+  return { local: { field, text: LOCAL_FIELD_TEXT[field] ?? 'Confira este campo.' } }
 }
 
 function Where(props: {
@@ -128,6 +131,20 @@ function Where(props: {
   )
 }
 
+/** The connection, the read and the name of an existing tool: they belong to the tool, so a new version only shows them. */
+function Kept(props: { connection: string; read: string; slug: string }) {
+  return (
+    <dl className="grid grid-cols-[auto_1fr] gap-x-md gap-y-xs text-label">
+      <dt className="text-text-2">Ligação</dt>
+      <dd>{props.connection}</dd>
+      <dt className="text-text-2">Leitura</dt>
+      <dd>{props.read}</dd>
+      <dt className="text-text-2">Nome da ferramenta</dt>
+      <dd>{props.slug}</dd>
+    </dl>
+  )
+}
+
 function Values(props: {
   description: string
   bound: string
@@ -146,6 +163,7 @@ function Values(props: {
           value={props.description}
           onChange={(event) => props.onDescription(event.target.value)}
         />
+        <FieldError>{props.say('description')}</FieldError>
       </Field>
       <Field>
         <FieldLabel htmlFor="tool-bound">Valores fixos (JSON)</FieldLabel>
@@ -179,7 +197,10 @@ function Values(props: {
  */
 export function ToolForm(props: {
   offered: readonly OfferedConnection[]
-  fixed?: Pick<ToolInput, 'connectionId' | 'operation' | 'slug'>
+  fixed?: Pick<ToolInput, 'connectionId' | 'operation' | 'slug'> & {
+    connection: string
+    read: string
+  }
   initial?: ToolVersionConfig
   pending: boolean
   refused: Refusal | undefined
@@ -215,54 +236,61 @@ export function ToolForm(props: {
 
   return (
     <form
-      className="flex flex-col gap-md"
+      className="flex min-h-0 flex-1 flex-col gap-md"
       onSubmit={(event) => {
         event.preventDefault()
         submit()
       }}
     >
-      {fixed === undefined && (
-        <Where
-          offered={props.offered}
-          connectionId={connectionId}
-          operation={operation}
-          slug={slug}
+      <DialogBody className="flex flex-col gap-md">
+        {fixed !== undefined && (
+          <Kept connection={fixed.connection} read={fixed.read} slug={fixed.slug} />
+        )}
+        {fixed === undefined && (
+          <Where
+            offered={props.offered}
+            connectionId={connectionId}
+            operation={operation}
+            slug={slug}
+            say={say}
+            onSlug={setSlug}
+            onOperation={(next) => setOperation(OperationId.parse(next))}
+            onConnection={(next) => {
+              const found = props.offered.find((one) => one.connectionId === next)
+              setConnectionId(found?.connectionId)
+              setOperation(found?.reads[0]?.operation)
+            }}
+          />
+        )}
+        <Values
+          description={description}
+          bound={bound}
+          open={open}
           say={say}
-          onSlug={setSlug}
-          onOperation={(next) => setOperation(OperationId.parse(next))}
-          onConnection={(next) => {
-            const found = props.offered.find((one) => one.connectionId === next)
-            setConnectionId(found?.connectionId)
-            setOperation(found?.reads[0]?.operation)
-          }}
+          onDescription={setDescription}
+          onBound={setBound}
+          onOpen={setOpen}
         />
-      )}
-      <Values
-        description={description}
-        bound={bound}
-        open={open}
-        say={say}
-        onDescription={setDescription}
-        onBound={setBound}
-        onOpen={setOpen}
-      />
-      {props.error !== undefined && (
-        <p role="alert" className="text-danger">
-          {props.error}
-        </p>
-      )}
-      <div className="flex flex-wrap gap-md">
-        <Button
-          type="submit"
-          variant="primary"
-          disabled={props.pending || connectionId === undefined}
-        >
-          {props.pending ? 'Gravando…' : props.submitLabel}
-        </Button>
-        <Button type="button" variant="ghost" disabled={props.pending} onClick={props.onCancel}>
-          Cancelar
-        </Button>
-      </div>
+      </DialogBody>
+      <DialogFooter>
+        {props.error !== undefined && (
+          <p role="alert" className="text-danger">
+            {props.error}
+          </p>
+        )}
+        <div className="flex flex-wrap gap-md">
+          <Button
+            type="submit"
+            variant="primary"
+            disabled={props.pending || connectionId === undefined}
+          >
+            {props.pending ? 'Gravando…' : props.submitLabel}
+          </Button>
+          <Button type="button" variant="ghost" disabled={props.pending} onClick={props.onCancel}>
+            Cancelar
+          </Button>
+        </div>
+      </DialogFooter>
     </form>
   )
 }

@@ -2,11 +2,11 @@ import { z } from 'zod'
 import { AgentDetail, AgentListed, AgentSummary, OfferedConnection } from './agents.ts'
 import { AutomationId } from './assistant.ts'
 import { CompanyId } from './companies.ts'
-import { ConversationId } from './conversations.ts'
+import { ConversationId, ModelChoice, START_FAILURES, StartChoice } from './conversations.ts'
 import type { FailureCode } from './failures.ts'
 import { Problem } from './failures.ts'
+import { ProjectId } from './library-ids.ts'
 import { ATTEMPT_KEY_HEADER, defineOperation } from './operation.ts'
-import { ProjectId } from './projects.ts'
 import { ReadyTool, ToolSummary } from './tools.ts'
 
 /** The key of the Construtor's controller in Mastra's routes (`/agent-controller/construtor/…`), step 24.3. */
@@ -56,7 +56,7 @@ export type ProjectReadResult = z.infer<typeof ProjectReadResult>
 
 /** What tool_search answers the model: the library's tools, the ready reads and the automations that match. */
 export const ToolSearchResult = z.object({
-  tools: z.array(ToolSummary),
+  tools: z.array(ToolSummary.omit({ connectionName: true, readLabel: true })),
   ready: z.array(ReadyTool),
   automations: z.array(z.object({ id: AutomationId, name: z.string(), prompt: z.string() })),
 })
@@ -87,21 +87,15 @@ const READ_FAILURES = [
 
 export const createConstrutorConversation = defineOperation({
   id: 'createConstrutorConversation',
-  summary: `Opens a conversation of the person's with the Construtor in the Projeto, keyed by ${ATTEMPT_KEY_HEADER}.`,
+  summary: `Opens a conversation of the person's with the Construtor in the Projeto, keyed by ${ATTEMPT_KEY_HEADER}, on the model and reasoning effort chosen or the company’s default.`,
   access: 'session',
   method: 'POST',
   path: BASE,
   bodyLimit: 1024,
-  input: { params: InProject, body: z.object({}) },
+  input: { params: InProject, body: StartChoice },
   attemptKey: true,
   success: { status: 201, body: z.object({ conversation: ConstrutorConversationSummary }) },
-  failures: [
-    ...READ_FAILURES,
-    'IDEMPOTENCY_CONFLICT',
-    'MODEL_UNKNOWN',
-    'MODEL_NO_ACCOUNT',
-    'EFFORT_UNSUPPORTED',
-  ],
+  failures: START_FAILURES,
 })
 
 export const listConstrutorConversations = defineOperation({
@@ -117,4 +111,23 @@ export const listConstrutorConversations = defineOperation({
     body: z.object({ conversations: z.array(ConstrutorConversationSummary) }),
   },
   failures: READ_FAILURES,
+})
+
+export const setConstrutorModel = defineOperation({
+  id: 'setConstrutorModel',
+  summary:
+    'Changes the model of a Construtor conversation and its reasoning effort, for its next answers.',
+  access: 'session',
+  method: 'PUT',
+  path: `${BASE}/{conversationId}/model`,
+  bodyLimit: 1024,
+  input: { params: InProject.extend({ conversationId: ConversationId }), body: ModelChoice },
+  success: { status: 200, body: ModelChoice },
+  failures: [
+    ...READ_FAILURES,
+    'CONVERSATION_NOT_FOUND',
+    'MODEL_UNKNOWN',
+    'MODEL_NO_ACCOUNT',
+    'EFFORT_UNSUPPORTED',
+  ],
 })

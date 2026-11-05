@@ -60,6 +60,8 @@ export type View = {
   display?: Record<string, unknown>
   /** The person's role in the company; the owner by default. */
   role?: string
+  /** The company's Projetos; Pedidos alone by default. */
+  projects?: Parameters<typeof projectsRead>[0]['projects']
 }
 
 type Sent = { method: string; path: string; body: unknown; attemptKey: string | null }
@@ -200,7 +202,7 @@ function conversationHub(view: View, answers: Answers = {}) {
     conversationReads,
     handlers: [
       ...projectsRead({
-        projects: [PEDIDOS],
+        projects: view.projects ?? [PEDIDOS],
         databaseReady: true,
         mayDelete: true,
         role: view.role,

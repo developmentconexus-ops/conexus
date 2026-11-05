@@ -37,6 +37,8 @@ export const agent = builder.table(
     activeVersion: integer('active_version'),
     ...authored(),
     updatedAt: instant('updated_at').notNull().defaultNow(),
+    // The start of the last turn with the published version, by anyone; the test conversation never writes it.
+    lastRunAt: instant('last_run_at'),
   },
   // Typed, because the agent and its versions name each other.
   (table): PgTableExtraConfigValue[] => [

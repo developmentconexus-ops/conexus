@@ -1,4 +1,10 @@
-import type { FailureCode, Operation, ProblemField, ProblemReason } from '@conexus/hub-api'
+import type {
+  FailureCode,
+  Operation,
+  ProblemAgents,
+  ProblemField,
+  ProblemReason,
+} from '@conexus/hub-api'
 import { ATTEMPT_KEY_HEADER, FAILURES, Problem, phraseOf } from '@conexus/hub-api'
 import type { QueryFunctionContext, QueryKey } from '@tanstack/react-query'
 import { mutationOptions } from '@tanstack/react-query'
@@ -19,6 +25,8 @@ export class HubFailure extends Error {
   /** The field and the reason a refusal of a form names (step 24.3), for the screen to show beside it. */
   readonly field: ProblemField | undefined
   readonly reason: ProblemReason | undefined
+  /** The agents a refusal names, such as those that still use a tool (`TOOL_IN_USE`). */
+  readonly agents: ProblemAgents | undefined
 
   constructor(
     code: FailureCode,
@@ -28,6 +36,7 @@ export class HubFailure extends Error {
       person?: string
       field?: ProblemField
       reason?: ProblemReason
+      agents?: ProblemAgents
     } = {},
   ) {
     super(code, options)
@@ -37,6 +46,7 @@ export class HubFailure extends Error {
     this.person = options.person
     this.field = options.field
     this.reason = options.reason
+    this.agents = options.agents
   }
 }
 
@@ -67,6 +77,7 @@ export function failureOfProblem(body: unknown): HubFailure {
     person: problem.data.person,
     field: problem.data.field,
     reason: problem.data.reason,
+    agents: problem.data.agents,
   })
 }
 

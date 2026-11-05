@@ -2,8 +2,9 @@ import { z } from 'zod'
 import { CompanyId } from './companies.ts'
 import { CONNECTIONS_MAX, ConnectionId } from './connectors.ts'
 import { ConversationId } from './conversations.ts'
+import { ProjectId } from './library-ids.ts'
 import { ATTEMPT_KEY_HEADER, defineOperation } from './operation.ts'
-import { ProjectId, ProjectName } from './projects.ts'
+import { ProjectName } from './projects.ts'
 import { ToolCallId } from './questions.ts'
 
 /** Why a marked connection was not released to the Projeto; the others were. */
@@ -30,7 +31,7 @@ export type HandedOff = z.infer<typeof HandedOff>
 
 export const handAssistantProposal = defineOperation({
   id: 'handAssistantProposal',
-  summary: `Hands one of the Assistant's proposals to the Builder, keyed by ${ATTEMPT_KEY_HEADER}: on the Início it creates the Projeto and releases the marked connections the conversation chose; in a Projeto it uses that Projeto. It opens a Builder conversation there that receives the summary and the briefing once, marked as coming from the Assistant.`,
+  summary: `Hands one of the Assistant's proposals to the Builder, keyed by ${ATTEMPT_KEY_HEADER}: on the Início it creates the Projeto and releases the marked connections the conversation chose; in a Projeto it uses that Projeto. It opens a Builder conversation there; with \`deliver\`, that conversation receives the summary and the briefing once, marked as coming from the Assistant. The touch opens without delivering, and the Builder's conversation asks again with the same key and \`deliver\` once it follows the stream, since Mastra tells an input only to those already subscribed.`,
   access: 'session',
   method: 'POST',
   path: '/api/companies/{companyId}/assistant/conversations/{conversationId}/handoffs',
@@ -42,6 +43,8 @@ export const handAssistantProposal = defineOperation({
       /** The new Projeto's name on the Início; absent in a Projeto's conversation, which uses its own. */
       projectName: ProjectName.optional(),
       connections: z.array(ConnectionId).max(CONNECTIONS_MAX),
+      /** Send the proposal to the Builder's conversation, unless it already holds a message. */
+      deliver: z.boolean(),
     }),
   },
   attemptKey: true,

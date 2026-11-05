@@ -86,7 +86,7 @@ test('o trilho do membro: Início, Projetos, Integrações, Configurações e a 
   expect(screen.getByRole('main')).toBeTruthy()
 })
 
-test('o trilho da dona tem Automações logo depois de Integrações; a lista é Nova conversa e Conversas; o membro não vê Automações', async () => {
+test('o trilho da dona tem Automações e Agentes logo depois de Integrações; a lista é Nova conversa e Conversas; o membro não vê Automações nem Agentes', async () => {
   open(HOME, PROJECTS, 'owner')
   const owner = await sidebar()
   expect(linkNames(owner.rail)).toEqual([
@@ -94,6 +94,7 @@ test('o trilho da dona tem Automações logo depois de Integrações; a lista é
     'Projetos',
     'Integrações',
     'Automações',
+    'Agentes',
     'Configurações',
   ])
   expect(owner.list.getByRole('link', { name: 'Nova conversa' })).toBeTruthy()
@@ -102,6 +103,7 @@ test('o trilho da dona tem Automações logo depois de Integrações; a lista é
   open(HOME)
   const member = await sidebar()
   expect(member.rail.queryByRole('link', { name: 'Automações' })).toBeNull()
+  expect(member.rail.queryByRole('link', { name: 'Agentes' })).toBeNull()
 })
 
 test('sem Projeto, a lista do membro mostra Projetos recentes com o +, uma frase quieta e sem Todos os projetos', async () => {

@@ -16,7 +16,12 @@ import type { AgentService } from './agents.ts'
 /** A Projeto's agents' routes (step 24.3, U1); the service admits the person on each. */
 export function registerAgentRoutes(app: FastifyInstance, agents: AgentService): void {
   serve(app, listAgents, async (input) => {
-    const params = { ...input.params, projectId: input.query.projectId }
+    const { projectId } = input.query
+    if (projectId === undefined) {
+      const { companyId } = input.params
+      return answer({ agents: await agents.listCompany({ companyId, personId: input.person.id }) })
+    }
+    const params = { ...input.params, projectId }
     return answer({ agents: await agents.list(inProjectOf({ ...input, params })) })
   })
   serve(app, createAgent, async (input) =>

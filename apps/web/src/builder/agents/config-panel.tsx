@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { sentenceOf } from '../../platform/hub.ts'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select.tsx'
+import { ChoiceSelect } from '../../ui/select.tsx'
 import { ReadFailure } from '../../ui/states.tsx'
 import { Textarea } from '../../ui/textarea.tsx'
 import { accountsQuery, modelLabel } from '../model-accounts/public.ts'
@@ -54,7 +54,8 @@ function ModelSection({ scope, agent }: Part) {
       {read.isError && (
         <ReadFailure text={sentenceOf(read.error)} onRetry={() => void read.refetch()} />
       )}
-      <Select
+      <ChoiceSelect
+        label="Modelo"
         value={agent.draft.model ?? SAME}
         items={items}
         disabled={read.data === undefined}
@@ -62,18 +63,7 @@ function ModelSection({ scope, agent }: Part) {
           const model = models.find((id) => id === next) ?? null
           saving.save({ model })
         }}
-      >
-        <SelectTrigger aria-label="Modelo">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {items.map((item) => (
-            <SelectItem key={item.value} value={item.value}>
-              {item.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      />
     </Section>
   )
 }

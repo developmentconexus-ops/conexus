@@ -5,8 +5,8 @@ import { CONNECTIONS_MAX, ConnectionId } from './connectors.ts'
 import { ConversationId, ModelId } from './conversations.ts'
 import type { FailureCode } from './failures.ts'
 import { PersonId } from './identity.ts'
+import { ProjectId } from './library-ids.ts'
 import { ATTEMPT_KEY_HEADER, defineOperation } from './operation.ts'
-import { ProjectId } from './projects.ts'
 import { ToolSummary, ToolTarget, ToolVersionDetail } from './tools.ts'
 
 /** An automation's limit: the same line in the lists. */
@@ -78,6 +78,8 @@ export const AgentSummary = z.object({
   description: z.string(),
   state: AgentState,
   updatedAt: z.iso.datetime(),
+  /** The start of the last turn with the published version, by anyone; `null`: never ran published. */
+  lastRunAt: z.iso.datetime().nullable(),
 })
 export type AgentSummary = z.infer<typeof AgentSummary>
 
@@ -158,12 +160,13 @@ const PathNumber = z
 
 export const listAgents = defineOperation({
   id: 'listAgents',
-  summary: 'Lists the agents of one Projeto of the company.',
+  summary:
+    'Lists the agents of one Projeto of the company, or of all its live Projetos without `projectId`.',
   access: 'session',
   method: 'GET',
   path: '/api/companies/{companyId}/agents',
   bodyLimit: 1024,
-  input: { params: InCompany, query: z.object({ projectId: ProjectId }) },
+  input: { params: InCompany, query: z.object({ projectId: ProjectId.optional() }) },
   success: { status: 200, body: z.object({ agents: z.array(AgentListed) }) },
   failures: READ_FAILURES,
 })

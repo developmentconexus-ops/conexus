@@ -13,13 +13,15 @@ import {
   listTools,
   publishAgent,
   saveAgentDraft,
+  setConstrutorModel,
 } from '@conexus/hub-api'
 import type { QueryClient } from '@tanstack/react-query'
 import { hubMutation, hubQuery, hubQueryPrefix } from '../../platform/hub.ts'
 
 type Scope = { companyId: CompanyId; projectId: ProjectId }
 
-export function agentsQuery({ companyId, projectId }: Scope) {
+/** The Projeto's agents; without a Projeto, those of every live Projeto of the company (Início). */
+export function agentsQuery(companyId: CompanyId, projectId: ProjectId | undefined) {
   return hubQuery(listAgents, { params: { companyId }, query: { projectId } })
 }
 
@@ -54,6 +56,7 @@ export const sendActivation = hubMutation(activateAgentVersion)
 export const sendDeletion = hubMutation(deleteAgent)
 export const sendAgentConversation = hubMutation(createAgentConversation)
 export const sendConstrutorConversation = hubMutation(createConstrutorConversation)
+export const sendConstrutorModel = hubMutation(setConstrutorModel)
 export const sendTool = hubMutation(createTool)
 
 /** After a write that returns the agent: the page reads it as answered, and the versions and the list are read again. */

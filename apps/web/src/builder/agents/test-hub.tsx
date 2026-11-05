@@ -5,6 +5,7 @@ import type {
   ConstrutorConversationSummary,
   ReadyTool,
   ToolSummary,
+  ToolVersionDetail,
 } from '@conexus/hub-api'
 import {
   AGENTS_CONTROLLER,
@@ -22,11 +23,14 @@ import { z } from 'zod'
 import { SANKHYA } from '../../hub/connectors/fixtures.ts'
 import { COMPANY } from '../../platform/fixtures.ts'
 import { PEDIDOS, refusal } from '../../platform/test-hub.tsx'
+import type { ChosenModels } from '../assistant/test-model.tsx'
+import { modelWrite } from '../assistant/test-model.tsx'
 import type { View } from '../conversation/test-hub.tsx'
 import { screens, view } from '../conversation/test-hub.tsx'
 import { START } from '../conversation/test-start.tsx'
 import { displayOf, openLine } from '../conversation/test-stream.tsx'
 import { BUILDER_CHAT, CHAT, TEST_CHAT, TOOL_V1, toolSummary, version } from './test-agents.ts'
+import { toolRoutes } from './test-hub-tools.tsx'
 
 const PROJECT_API = `*/api/companies/${COMPANY.id}/projects/${PEDIDOS.id}`
 
@@ -50,6 +54,8 @@ type Answers = {
   tools?: () => Response | Promise<Response> | undefined
   /** What opening a conversation with the Construtor answers instead of the Hub's success. */
   openConstrutor?: () => Response | undefined
+  /** What the write of a Construtor conversation's model answers instead of the Hub's success. */
+  model?: () => Response | undefined
 }
 
 type Sent = { method: string; path: string; body: unknown; key: string | null }
@@ -57,6 +63,8 @@ type Held = {
   agents: AgentDetail[]
   versions?: AgentVersionSummary[]
   tools?: ToolSummary[]
+  /** The versions of every tool the Projeto reads, newest last; a tool read without them has version 1 alone. */
+  toolVersions?: ToolVersionDetail[]
   ready?: ReadyTool[]
   conversations?: AgentConversationSummary[]
   construtor?: ConstrutorConversationSummary[]
@@ -72,14 +80,17 @@ function draftRoutes(held: Held, note: Note) {
     return held.agents.find((one) => one.id === id)
   }
   return [
-    http.get(
-      `*/api/companies/${COMPANY.id}/agents`,
-      () =>
+    http.get(`*/api/companies/${COMPANY.id}/agents`, ({ request }) => {
+      const only = new URL(request.url).searchParams.get('projectId')
+      return (
         answers.list?.() ??
         HttpResponse.json({
-          agents: held.agents.map((one) => AgentListed.parse({ ...one, tools: one.tools.length })),
-        }),
-    ),
+          agents: held.agents
+            .filter((one) => only === null || one.projectId === only)
+            .map((one) => AgentListed.parse({ ...one, tools: one.tools.length })),
+        })
+      )
+    }),
     http.get(`${PROJECT_API}/agents/:id`, ({ params }) => {
       const replaced = answers.read?.()
       if (replaced) return replaced
@@ -147,7 +158,7 @@ function versionRoutes(held: Held, note: Note, find: (id: unknown) => AgentDetai
 
 const OpenConversation = z.object({ draft: z.boolean().optional() })
 
-function conversationRoutes(held: Held, note: Note) {
+function conversationRoutes(held: Held, chosen: ChosenModels, note: Note) {
   return [
     http.get(`${PROJECT_API}/agents/:id/conversations`, () =>
       HttpResponse.json({ conversations: held.conversations ?? [] }),
@@ -185,6 +196,7 @@ function conversationRoutes(held: Held, note: Note) {
       ]
       return HttpResponse.json({ tool: made }, { status: 201 })
     }),
+    ...toolRoutes(held, PROJECT_API, note),
     http.get(`${PROJECT_API}/construtor/conversations`, () =>
       HttpResponse.json({ conversations: held.construtor ?? [] }),
     ),
@@ -196,10 +208,15 @@ function conversationRoutes(held: Held, note: Note) {
       held.construtor = [made, ...(held.construtor ?? [])]
       return HttpResponse.json({ conversation: made }, { status: 201 })
     }),
+    modelWrite(`${PROJECT_API}/construtor`, { chosen, answers: held.answers ?? {} }, note),
   ]
 }
 
-function sessionRoutes(note: Note, lines: ReturnType<typeof openLine>['line'][]) {
+function sessionRoutes(
+  chosen: ChosenModels,
+  note: Note,
+  lines: ReturnType<typeof openLine>['line'][],
+) {
   return [AGENTS_CONTROLLER, CONSTRUTOR_CONTROLLER].flatMap((controller) => [
     http.get(`${SESSION(controller)}/stream`, ({ request }) => {
       const { line, response } = openLine(displayOf())
@@ -209,19 +226,20 @@ function sessionRoutes(note: Note, lines: ReturnType<typeof openLine>['line'][])
       })
       return response
     }),
-    http.get(SESSION(controller), ({ params }) =>
-      HttpResponse.json({
+    http.get(SESSION(controller), ({ params }) => {
+      const kept = chosen.get(String(params.id))
+      return HttpResponse.json({
         controllerId: controller,
         sessionId: params.id,
         resourceId: 'company:c1:person:p1',
         threadId: params.id,
         modeId: 'ask',
-        modelId: 'anthropic/claude-sonnet-4',
+        modelId: kept?.model ?? 'anthropic/claude-sonnet-4',
         running: false,
         tasks: [],
-        settings: { thinkingLevel: 'off' },
-      }),
-    ),
+        settings: { thinkingLevel: kept?.effort ?? 'off' },
+      })
+    }),
     http.get(`${SESSION(controller)}/threads/:threadId/messages`, () =>
       HttpResponse.json({ messages: [] }),
     ),
@@ -258,6 +276,7 @@ function catalogRoute() {
  */
 function agentsHub(server: ReturnType<typeof setupServer>, held: Held) {
   const sent: Sent[] = []
+  const chosen: ChosenModels = new Map()
   const lines: ReturnType<typeof openLine>['line'][] = []
   async function note(request: Request) {
     const text = await request.text()
@@ -276,8 +295,8 @@ function agentsHub(server: ReturnType<typeof setupServer>, held: Held) {
       : [
           catalogRoute(),
           ...draftRoutes(held, note),
-          ...conversationRoutes(held, note),
-          ...sessionRoutes(note, lines),
+          ...conversationRoutes(held, chosen, note),
+          ...sessionRoutes(chosen, note, lines),
         ]),
   )
   return { sent, writes: () => sent.filter((one) => one.method !== 'GET'), lines, held }

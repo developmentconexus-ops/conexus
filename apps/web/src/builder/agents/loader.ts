@@ -42,7 +42,7 @@ export function loadArea(queryClient: QueryClient, scope: Scope) {
   return readOrGone(
     Promise.all([
       queryClient.query(projectQuery(scope.companyId, scope.projectId)),
-      queryClient.query(agentsQuery(scope)),
+      queryClient.query(agentsQuery(scope.companyId, scope.projectId)),
     ]),
   )
 }
@@ -86,4 +86,12 @@ export async function loadConstrutorConversation(
     ]),
   )
   if (!listed.conversations.some((one) => one.id === conversationId)) throw notFound()
+}
+
+/** What the Início's Agentes page reads before it opens: the company's agents, or one Projeto's; a member's read is not found (S10). */
+export function loadAgents(
+  queryClient: QueryClient,
+  place: { companyId: CompanyId; projectId?: ProjectId },
+) {
+  return readOrGone(queryClient.query(agentsQuery(place.companyId, place.projectId)))
 }

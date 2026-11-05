@@ -11,7 +11,6 @@ test('P0: o Biome recusa setTimeout e setInterval em builder/, aceita nos donos 
   const run = biomeLint({
     [`${runs}/other.ts`]: clock,
     'apps/server/src/builder/machine/wait.ts': clock,
-    [`${runs}/deadline.ts`]: clock,
     [`${runs}/copy-retry.ts`]: clock,
     [`${runs}/runs.test.ts`]: clock,
     'apps/server/src/hub/a/timer.ts': clock,

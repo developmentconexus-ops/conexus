@@ -27,7 +27,7 @@ function listOf(response: { json(): unknown }): {
   return Object(response.json())
 }
 
-test('gravar: a versão 1 nasce com a ferramenta; a mesma chave dá a mesma; cada recusa diz o campo e o motivo; a lista mostra as da biblioteca e as prontas, e o Projeto sem a ligação não a vê', async (t) => {
+test('gravar: a versão 1 nasce com a ferramenta; a mesma chave dá a mesma; cada recusa diz o campo e o motivo', async (t) => {
   const on = await agentsOn(t)
   const key = randomUUID()
   const body = ordersOf(on.matriz)
@@ -49,6 +49,7 @@ test('gravar: a versão 1 nasce com a ferramenta; a mesma chave dá a mesma; cad
     {
       ...{ id: '', slug: 'pedidos_matriz', connectionId: on.matriz, operation: 'pedidos' },
       ...{ description: body.description, effect: 'READ', latest: 1, usedBy: [], versions: [1] },
+      ...{ connectionName: 'Matriz', readLabel: 'Pedidos' },
     },
   )
   const other = await post(on.hub, on.ana, on.tools, { ...body, description: 'Outra.' }, key)
@@ -67,11 +68,20 @@ test('gravar: a versão 1 nasce com a ferramenta; a mesma chave dá a mesma; cad
     const refused = await post(on.hub, on.ana, on.tools, ordersOf(on.matriz, change))
     assert.deepEqual(refusalOf(refused), [422, 'TOOL_REFUSED', field, reason])
   }
+})
 
+test('listar: a lista traz as da biblioteca com a ligação e a leitura por nome, e as prontas; o Projeto sem a ligação não a vê', async (t) => {
+  const on = await agentsOn(t)
+  const tool = await madeTool(on.hub, on.ana, on.tools, ordersOf(on.matriz))
   const library = listOf(await call(on.hub, on.ana, 'GET', on.tools))
   assert.deepEqual(
-    library.tools.map((each) => [each.slug, each.latest.number]),
-    [['pedidos_matriz', 1]],
+    library.tools.map((each) => [
+      each.slug,
+      each.latest.number,
+      each.connectionName,
+      each.readLabel,
+    ]),
+    [['pedidos_matriz', 1, 'Matriz', 'Pedidos']],
   )
   assert.equal(
     library.ready.some((each) => each.operation === 'pedidos'),
@@ -92,6 +102,31 @@ test('gravar: a versão 1 nasce com a ferramenta; a mesma chave dá a mesma; cad
   )
   const bare = await otherProject(on.hub, on.ana, on.company, [], 'Compras')
   assert.deepEqual(listOf(await call(on.hub, on.ana, 'GET', bare.tools)), { tools: [], ready: [] })
+})
+
+test('listar: uma leitura que saiu do kit mostra o id dela no lugar do nome, e a lista continua', async (t) => {
+  const on = await agentsOn(t)
+  const toolId = randomUUID()
+  await on.hub.test.asOwner(
+    `insert into builder.tool (id, company_id, connection_id, operation, slug, body_hash)
+      values ($1, $2, $3, 'removida', 'removida_matriz', 'plantada')`,
+    [toolId, on.companyId, on.matriz],
+  )
+  await on.hub.test.asOwner(
+    `insert into builder.tool_version (id, tool_id, company_id, number, config, body_hash)
+      values ($1, $2, $3, 1, $4, 'plantada')`,
+    [
+      randomUUID(),
+      toolId,
+      on.companyId,
+      JSON.stringify({ description: 'Antiga.', bound: {}, open: [] }),
+    ],
+  )
+  const library = listOf(await call(on.hub, on.ana, 'GET', on.tools))
+  assert.deepEqual(
+    library.tools.map((each) => [each.operation, each.readLabel]),
+    [['removida', 'removida']],
+  )
 })
 
 test('versões: a nova é n+1 e as anteriores não mudam; a mesma chave dá a mesma; duas ao mesmo tempo dão 2 e 3; uma versão que não cabe na operação, TOOL_REFUSED', async (t) => {
@@ -146,7 +181,9 @@ test('apagar: sem uso, 204; usada por um rascunho ou por uma versão publicada, 
   })
   const used = await call(on.hub, on.ana, 'DELETE', `${on.tools}/${tool.id}`)
   assert.deepEqual([used.statusCode, codeOf(used)], [409, 'TOOL_IN_USE'])
-  assert.deepEqual(Object(used.json()).agents, [{ id: made.id, name: 'Vendas do dia' }])
+  assert.deepEqual(Object(used.json()).agents, [
+    { id: made.id, projectId: on.projectId, name: 'Vendas do dia' },
+  ])
   const published = await post(on.hub, on.ana, `${on.agents}/${made.id}/publish`, {
     revision: chosen.revision,
     message: '',
@@ -156,7 +193,7 @@ test('apagar: sem uso, 204; usada por um rascunho ou por uma versão publicada, 
   const pinned = await call(on.hub, on.ana, 'DELETE', `${on.tools}/${tool.id}`)
   assert.deepEqual([pinned.statusCode, codeOf(pinned)], [409, 'TOOL_IN_USE'])
   const still = toolOf(await call(on.hub, on.ana, 'GET', `${on.tools}/${tool.id}`))
-  assert.deepEqual(still.usedBy, [{ id: made.id, name: 'Vendas do dia' }])
+  assert.deepEqual(still.usedBy, [{ id: made.id, projectId: on.projectId, name: 'Vendas do dia' }])
 
   const elsewhere = await plantCompany(on.hub.test, on.ana.id, 'Outra Empresa')
   const foreign = await plantedTool(on.hub, elsewhere, on.matriz)
@@ -173,4 +210,30 @@ test('apagar: sem uso, 204; usada por um rascunho ou por uma versão publicada, 
       asked.map(() => [404, 'TOOL_NOT_FOUND']),
     )
   }
+})
+
+test('apagar: o agente de outro Projeto que usa a ferramenta vem com o Projeto dele, na lista e na recusa', async (t) => {
+  const on = await agentsOn(t)
+  const estoque = await otherProject(on.hub, on.ana, on.company, [on.matriz], 'Estoque')
+  const tool = await madeTool(
+    on.hub,
+    on.ana,
+    estoque.tools,
+    ordersOf(on.matriz, { slug: 'pedidos_estoque' }),
+  )
+  const made = await madeAgent(on.hub, on.ana, estoque.agents, 'Conferente de estoque')
+  await drafted(on.hub, on.ana, estoque.agents, made, {
+    instructions: 'Os pedidos do estoque.',
+    tools: [tool.latest.id],
+  })
+  const users = [{ id: made.id, projectId: estoque.projectId, name: 'Conferente de estoque' }]
+
+  const library = listOf(await call(on.hub, on.ana, 'GET', on.tools))
+  assert.deepEqual(
+    library.tools.map((each) => [each.slug, each.usedBy]),
+    [['pedidos_estoque', users]],
+  )
+  const refused = await call(on.hub, on.ana, 'DELETE', `${on.tools}/${tool.id}`)
+  assert.deepEqual([refused.statusCode, codeOf(refused)], [409, 'TOOL_IN_USE'])
+  assert.deepEqual(Object(refused.json()).agents, users)
 })

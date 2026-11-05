@@ -17,6 +17,7 @@ function textsOf(parts: readonly MastraMessagePart[]) {
     id: 'm1',
     role: 'builder',
     model: null,
+    origin: null,
     createdAt: '2026-11-02T00:39:37.000Z',
     parts,
   }

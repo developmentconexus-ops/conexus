@@ -1,17 +1,13 @@
-import type { AgentListed, CompanyId, ProjectId } from '@conexus/hub-api'
+import type { CompanyId, Effort, ModelId, ProjectId } from '@conexus/hub-api'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { getRouteApi, Link, useNavigate } from '@tanstack/react-router'
-import { BotIcon } from 'lucide-react'
 import { useState } from 'react'
 import { useAttemptKey } from '../../platform/attempt-key.ts'
 import { HubFailure, sentenceOf, writeFailureText } from '../../platform/hub.ts'
 import { Block, BlockSentence, blockRow } from '../../ui/block.tsx'
 import { cn } from '../../ui/cn.ts'
-import { PageTitle } from '../../ui/list.tsx'
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { ReadFailure } from '../../ui/states.tsx'
-import { useIsMobile } from '../../ui/use-mobile.ts'
-import { FixedProjectChip } from '../assistant/public.ts'
 import {
   agentRoom,
   RoomContext,
@@ -19,21 +15,19 @@ import {
   StartBox,
   StartWithoutAccount,
   stashHandoffFiles,
-  toolsText,
   useDraft,
   usePicked,
 } from '../conversation/public.ts'
-import { agentsQuery, construtorConversationsQuery, sendConstrutorConversation } from './queries.ts'
-import { AREA_FRAME } from './route-states.tsx'
-import { ConversationLine, StateStamp } from './rows.tsx'
+import { AgentList } from './agent-list.tsx'
+import { AreaFrame } from './area-frame.tsx'
+import { construtorConversationsQuery, sendConstrutorConversation } from './queries.ts'
+import { ConversationLine } from './rows.tsx'
 import {
-  AREA_TITLE,
   CONSTRUTOR_EXAMPLES,
   CONSTRUTOR_FIRST,
   CONSTRUTOR_NAME,
   CONSTRUTOR_PLACEHOLDER,
   MEMBERS_CANNOT,
-  NO_AGENTS,
   NO_CONSTRUTOR_CONVERSATIONS,
   UNCONFIRMED_CREATION,
 } from './text.ts'
@@ -43,7 +37,19 @@ type Scope = { companyId: CompanyId; projectId: ProjectId }
 
 /** The box that begins a conversation with the Construtor in this Projeto; the question goes with the conversation it opens. */
 function Ask({ companyId, projectId }: Scope) {
-  const { picked } = usePicked(companyId)
+  const { picked, setPicked, providers } = usePicked(companyId)
+  if (picked === null) return <StartWithoutAccount companyId={companyId} />
+  return <AskBox {...{ companyId, projectId, picked, providers }} onPick={setPicked} />
+}
+
+function AskBox(
+  props: Scope & {
+    picked: { model: ModelId; effort: Effort }
+    onPick: (picked: { model: ModelId; effort: Effort }) => void
+    providers: ReturnType<typeof usePicked>['providers']
+  },
+) {
+  const { companyId, projectId, picked } = props
   const draft = useDraft(`construtor:${projectId}`)
   const navigate = useNavigate()
   const create = useMutation(sendConstrutorConversation)
@@ -51,7 +57,7 @@ function Ask({ companyId, projectId }: Scope) {
   const [error, setError] = useState<unknown>()
   // The Hub, too, can find no account for the person's model: the same notice, with the way to the accounts.
   const noAccount = error instanceof HubFailure && error.code === 'MODEL_NO_ACCOUNT'
-  if (picked === null || noAccount) return <StartWithoutAccount companyId={companyId} />
+  if (noAccount) return <StartWithoutAccount companyId={companyId} />
 
   async function begin(question: {
     content: string
@@ -60,7 +66,7 @@ function Ask({ companyId, projectId }: Scope) {
     setError(undefined)
     try {
       const { conversation } = await attempt((attemptKey) =>
-        create.mutateAsync({ params: { companyId, projectId }, body: {}, attemptKey }),
+        create.mutateAsync({ params: { companyId, projectId }, body: picked, attemptKey }),
       )
       stashHandoffFiles(conversation.id, question.files)
       await navigate({
@@ -82,11 +88,7 @@ function Ask({ companyId, projectId }: Scope) {
         draft={draft}
         placeholder={CONSTRUTOR_PLACEHOLDER}
         examples={CONSTRUTOR_EXAMPLES}
-        modelName={picked.model}
-        tools={{
-          context: <FixedProjectChip companyId={companyId} projectId={projectId} />,
-          notice: null,
-        }}
+        picker={{ picked, onPick: props.onPick, providers: props.providers }}
         onSend={begin}
         notice={
           error !== undefined && (
@@ -129,53 +131,6 @@ function Earlier(scope: Scope) {
   )
 }
 
-function AgentRow({ scope, agent }: { scope: Scope; agent: AgentListed }) {
-  return (
-    <li>
-      <Link
-        to="/companies/$companyId/projects/$projectId/agents/$agentId"
-        params={{ ...scope, agentId: agent.id }}
-        className={`${blockRow} hover:bg-surface-3`}
-      >
-        <BotIcon aria-hidden="true" className="size-4 shrink-0 text-text-2" />
-        <span className="max-w-[45%] shrink-0 truncate">{agent.name}</span>
-        <span className="hidden min-w-0 flex-1 truncate text-text-2 sm:inline">
-          {agent.description}
-        </span>
-        <span className="ml-auto shrink-0 text-fact text-text-2">{toolsText(agent.tools)}</span>
-        <StateStamp state={agent.state} />
-      </Link>
-    </li>
-  )
-}
-
-function AgentList(scope: Scope) {
-  const read = useQuery(agentsQuery(scope))
-  const phone = useIsMobile()
-  const rows = (
-    <>
-      {read.isPending && <Skeleton className="h-20 w-full" />}
-      {read.isError && (
-        <ReadFailure text={sentenceOf(read.error)} onRetry={() => void read.refetch()} />
-      )}
-      {read.data?.agents.length === 0 && <BlockSentence>{NO_AGENTS}</BlockSentence>}
-      <ul>
-        {read.data?.agents.map((agent) => (
-          <AgentRow key={agent.id} scope={scope} agent={agent} />
-        ))}
-      </ul>
-    </>
-  )
-  // On a phone the page's own title sits right above, so the block does not say it a second time.
-  return phone ? (
-    <section aria-label={AREA_TITLE} className="flex min-w-0 flex-col">
-      {rows}
-    </section>
-  ) : (
-    <Block title={AREA_TITLE}>{rows}</Block>
-  )
-}
-
 /**
  * **Agentes** of a Projeto (step 24.3, U5, criterion 26, the founder's 2A and the prototype's one
  * column): the box that begins a conversation with the Construtor, the Projeto's agents with what
@@ -187,13 +142,12 @@ export function AgentsArea(props: Scope) {
   const scope = { companyId: props.companyId, projectId: props.projectId }
   if (role === 'member') return <p className="p-xl text-text-2">{MEMBERS_CANNOT}</p>
   return (
-    <div className={AREA_FRAME}>
-      <PageTitle>{AREA_TITLE}</PageTitle>
+    <AreaFrame scope={scope} tab="agentes">
       <div className={cn(START_COLUMN, 'gap-lg')}>
         <Ask {...scope} />
-        <AgentList {...scope} />
+        <AgentList companyId={scope.companyId} projectId={scope.projectId} />
         <Earlier {...scope} />
       </div>
-    </div>
+    </AreaFrame>
   )
 }

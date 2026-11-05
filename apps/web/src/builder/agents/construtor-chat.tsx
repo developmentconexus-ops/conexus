@@ -5,17 +5,22 @@ import { Link } from '@tanstack/react-router'
 import { ArrowLeftIcon } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useIsMobile } from '../../ui/use-mobile.ts'
-import { FixedProjectChip, useConnectorCatalog } from '../assistant/public.ts'
+import { useConnectorCatalog } from '../assistant/public.ts'
 import {
   agentRoom,
   Beside,
   Chat,
-  ComposerModelName,
+  ModelChoice,
   RoomContext,
   START_NO_ACCOUNT,
 } from '../conversation/public.ts'
 import { DraftPanel } from './draft-panel.tsx'
-import { agentQuery, construtorConversationsQuery, toolsQuery } from './queries.ts'
+import {
+  agentQuery,
+  construtorConversationsQuery,
+  sendConstrutorModel,
+  toolsQuery,
+} from './queries.ts'
 import {
   CONSTRUTOR_FIRST,
   CONSTRUTOR_NAME,
@@ -23,6 +28,30 @@ import {
   DRAFT_PANEL,
   titleOf,
 } from './text.ts'
+
+/** The strip over the conversation: the way back to Agentes and the conversation's title. */
+function Heading(props: {
+  scope: { companyId: CompanyId; projectId: ProjectId }
+  conversationId: ConversationId
+}) {
+  const { conversations } = useSuspenseQuery(construtorConversationsQuery(props.scope)).data
+  const here = conversations.find((one) => one.id === props.conversationId)
+  return (
+    <div className="flex min-w-0 items-center gap-sm border-b border-line px-md py-sm">
+      <Link
+        to="/companies/$companyId/projects/$projectId/agents"
+        params={props.scope}
+        aria-label="Voltar para Agentes"
+        className="text-text-2"
+      >
+        <ArrowLeftIcon aria-hidden="true" className="size-4" />
+      </Link>
+      <h1 className="max-w-full truncate font-display text-title">
+        {here === undefined ? CONSTRUTOR_NAME : titleOf(here)}
+      </h1>
+    </div>
+  )
+}
 
 /** A conversation with the Construtor: the conversation of the 24.1 over the `construtor` controller (criterion 26). */
 export function ConstrutorChat(props: {
@@ -34,8 +63,6 @@ export function ConstrutorChat(props: {
   const scope = { companyId, projectId }
   const queryClient = useQueryClient()
   const { words } = useConnectorCatalog(companyId)
-  const { conversations } = useSuspenseQuery(construtorConversationsQuery(scope)).data
-  const here = conversations.find((one) => one.id === conversationId)
   const listKey = construtorConversationsQuery(scope).queryKey
   const library = useQuery(toolsQuery(scope)).data?.tools
   const [agentId, setAgentId] = useState<AgentId>()
@@ -61,19 +88,7 @@ export function ConstrutorChat(props: {
   return (
     <RoomContext.Provider value={room}>
       <div key={conversationId} className="flex h-full min-h-0 flex-col bg-surface">
-        <div className="flex min-w-0 items-center gap-sm border-b border-line px-md py-sm">
-          <Link
-            to="/companies/$companyId/projects/$projectId/agents"
-            params={scope}
-            aria-label="Voltar para Agentes"
-            className="text-text-2"
-          >
-            <ArrowLeftIcon aria-hidden="true" className="size-4" />
-          </Link>
-          <h1 className="max-w-full truncate font-display text-title">
-            {here === undefined ? CONSTRUTOR_NAME : titleOf(here)}
-          </h1>
-        </div>
+        <Heading scope={scope} conversationId={conversationId} />
         <div className="min-h-0 flex-1">
           <Beside
             id="conexus-construtor"
@@ -97,11 +112,23 @@ export function ConstrutorChat(props: {
                   empty={CONSTRUTOR_FIRST}
                   placeholder={CONSTRUTOR_PLACEHOLDER}
                   noAccount={START_NO_ACCOUNT}
-                  tools={{
-                    context: <FixedProjectChip companyId={companyId} projectId={projectId} />,
-                    notice: null,
-                  }}
-                  picker={({ session }) => <ComposerModelName model={session.model} />}
+                  picker={({ session, providers, onError }) => (
+                    <ModelChoice
+                      controller={CONSTRUTOR_CONTROLLER}
+                      conversationId={conversationId}
+                      write={{
+                        ...sendConstrutorModel,
+                        mutationFn: (body) =>
+                          sendConstrutorModel.mutationFn({
+                            params: { ...scope, conversationId },
+                            body,
+                          }),
+                      }}
+                      session={session}
+                      providers={providers}
+                      onError={onError}
+                    />
+                  )}
                 />
               </div>
             }

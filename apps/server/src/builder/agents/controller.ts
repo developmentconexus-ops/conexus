@@ -6,17 +6,17 @@ import {
 } from '@conexus/hub-api'
 import { Agent } from '@mastra/core/agent'
 import type { Mastra } from '@mastra/core/mastra'
-import type { InputProcessor } from '@mastra/core/processors'
 import type { RequestContext } from '@mastra/core/request-context'
 import { Memory } from '@mastra/memory'
 import type { PostgresStore } from '@mastra/pg'
-import { eq } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { Connectors, SessionScope } from '../../hub/connectors/public.ts'
 import type { IdentityPorts } from '../../hub/identity/public.ts'
 import type { Database } from '../../platform/database.ts'
+import { databaseFailure } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
-import { Failure } from '../../platform/failure.ts'
+import { Failure, logFailure } from '../../platform/failure.ts'
 import type { Speakers } from '../assistant/public.ts'
 import type { Owner, ReleaseScope } from '../controller-kit/public.ts'
 import {
@@ -93,15 +93,44 @@ function runsOf(database: Database) {
 type Resolved = (requestContext: RequestContext) => Promise<Agent>
 
 /**
+ * The start of a turn with the published version, written on the agent's row (`last_run_at`, step
+ * 24.3.1, U9). A write that fails does not stop the turn: the next one writes.
+ */
+async function markRun(database: Database, log: FailureLog, run: AgentRun): Promise<void> {
+  const { companyId, personId } = run.scope
+  try {
+    await database.command({ kind: 'COMPANY', companyId, personId }, (tx) =>
+      tx
+        .update(agent)
+        .set({ lastRunAt: sql`now()` })
+        .where(and(eq(agent.companyId, companyId), eq(agent.id, run.agentId))),
+    )
+  } catch (error) {
+    logFailure(
+      log,
+      databaseFailure(error),
+      { companyId, agentId: run.agentId },
+      'AGENT_LAST_RUN_NOT_WRITTEN',
+    )
+  }
+}
+
+/**
  * The turns of the agents' conversations, on the kit's owner of their end: a run takes its
  * person's turn with the model of the version it runs held.
  */
-function agentTurns(queue: QueueDeps, runOf: ReturnType<typeof runsOf>, resolvedOf: Resolved) {
+function agentTurns(
+  queue: QueueDeps,
+  runOf: ReturnType<typeof runsOf>,
+  resolvedOf: Resolved,
+  own: { database: Database; log: FailureLog },
+) {
   return sessionTurns({
     id: 'conexus-agents-turn',
     async take(requestContext) {
       const run = await runOf(requestContext)
       if (run === undefined) return undefined
+      if (run.kind === 'PUBLISHED') await markRun(own.database, own.log, run)
       const { start } = await planOf(await resolvedOf(requestContext), requestContext)
       const model = { id: start.model, effort: start.effort }
       return agentTurnOf(queue, requestContext, { run, model })
@@ -114,7 +143,11 @@ function agentTurns(queue: QueueDeps, runOf: ReturnType<typeof runsOf>, resolved
  * its instructions, tools and memory, read once per run, and the version's model; the registered
  * agent's own processors do not run here, the turn below takes their place.
  */
-function delegatingAgent(queue: QueueDeps, resolvedOf: Resolved, turn: InputProcessor): Agent {
+function delegatingAgent(
+  queue: QueueDeps,
+  resolvedOf: Resolved,
+  turns: ReturnType<typeof sessionTurns>,
+): Agent {
   return new Agent({
     id: AGENTS_CONTROLLER,
     name: 'Agents',
@@ -131,7 +164,7 @@ function delegatingAgent(queue: QueueDeps, resolvedOf: Resolved, turn: InputProc
       }
       return chosen
     },
-    ...agentDefaults(queue, turn),
+    ...agentDefaults(queue, turns),
   })
 }
 
@@ -183,7 +216,7 @@ export function createAgentConversations(deps: Deps) {
     setAgentRun(requestContext, run)
     return registry.resolve(run)
   })
-  const turns = agentTurns(queue, runOf, resolvedOf)
+  const turns = agentTurns(queue, runOf, resolvedOf, { database, log })
   // Decision 0053: nothing waits to be approved; the version's tools only read. The mode lists no
   // tools: the closed set is the version's, which only this code builds.
   const controller = controllerOf({
@@ -191,7 +224,7 @@ export function createAgentConversations(deps: Deps) {
       kind: 'agents',
       storage,
       memory,
-      agent: delegatingAgent(queue, resolvedOf, turns.processor),
+      agent: delegatingAgent(queue, resolvedOf, turns),
     },
     mode: { id: MODE },
     initialState: { yolo: true },

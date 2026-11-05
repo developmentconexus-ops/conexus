@@ -944,9 +944,9 @@ rows for the five above wait on issue #458.
 ## The Builder's clocks and its eval gate (step 13)
 
 - **Clocks.** `setTimeout` and `setInterval` are refused in `apps/server/src/builder/` except in the
-  owners `runs/{deadline,lease,copy-retry}.ts` and `conversation/parked.ts`, and `node:timers` and
+  owner `runs/copy-retry.ts`, and `node:timers` and
   `node:timers/promises` are refused except in `conversation/turn-log.ts`, which waits 250 ms for
-  short text, and `conversation/parked.ts`, Parar's wait (decision 0051; `biome.json`). Three step 11 files keep their timers out of the rule, with the reason that they
+  short text (decision 0051; `biome.json`). Three step 11 files keep their timers out of the rule, with the reason that they
   were written before it: `model-accounts/google/{calls,google}.ts` and `claude/store.ts`. A change
   that touches their timers moves each to a named owner.
 - **Eval gate.** `conversation/builder.eval.test.ts` drives the real Builder through the Hub with
@@ -1054,36 +1054,6 @@ rows for the five above wait on issue #458.
 - **Why.** The Hub's heap grew with the prompts of the last turn of every open conversation.
 - **Proof.** `prompt-cache.test.ts` "cada passo do modelo da conta volta sem o corpo do pedido…".
 - **Revisit when** Mastra passes an include option to its loop, or stops keeping the request.
-
-## Mastra 1.79.0: Parar waits until Mastra keeps an open card's run
-
-- **Library line.** `@mastra/core` 1.79.0, default engine. The controller ends a run at its
-  `tool-call-suspended` chunk (`agent-controller-DO6rGsQm.js:1660-1680`) before the agent's output
-  processors save the call and, last, the run's `agentic-loop` snapshot. Parar is Mastra's
-  `abortRun` (`:5005-5060`): it denies the open call through `settleSuspendedToolCallsAsDenied`
-  (`:1434-1490`), which denies the call in the message it holds and saves it. The agent's output
-  processors save their own copy of the call afterwards (`:4220-4222` keeps the held message after
-  a suspended end), so memory reads `call` again and the card reads open after Parar.
-- **Hand-made piece.** `untilCardsKept` in `apps/server/src/builder/conversation/parked.ts`, called
-  by the guard on `POST …/abort` (`guard.ts`). When the session's display state holds an open card,
-  it reads `Agent.listSuspendedRuns` (the native storage view of parked runs, which Mastra's own
-  answer route reads, `:5859-5893`) until every open card is listed, every 20 ms for at most 2 s,
-  then lets Mastra's handler run. Past the bound, Parar goes to Mastra as before.
-- **Why.** The screen shows Parar while a card waits (`apps/web/src/builder/conversation/panel.tsx`),
-  and the CI flake of step 14.1 was this window (about 5 runs in 301, `main` included). The bound is
-  measured: the window from the card on the stream to its run listed was 14 to 30 ms idle and 59 ms
-  at most under three CPU hogs (10 runs each); 2 s is about 30 times that, for a remote database
-  (code C57). Founder, 2026-10-25: "A1".
-- **Proof.** `conversation-waiting.test.ts` "Parar no instante em que o cartão chega, antes de o
-  Mastra guardar a chamada": Mastra's save of the open call slowed by 300 ms, Parar as the card
-  arrives. Without the wait it reads `call`, 3 runs of 3; with it, `output-denied`, 3 of 3. The
-  two Parar tests that flaked in CI failed 2 of 2 with the same slowed save before, and passed 6 of 6
-  after. Past the bound, with the save slowed by 5 s, "Parar com o Mastra guardando a chamada
-  além do prazo" proves Parar answers within the bound and the turn ends aborted;
-  the card's state there is Mastra's old window.
-- **Revisit when** Mastra saves the suspension before publishing its chunk on the default engine, as
-  1.80.0-alpha.3 does for the durable and evented engines (PR #27352), or Conexus runs the Builder
-  on such an engine. Then `parked.ts` and its call leave.
 
 ## e2b 2.56.0: the version folder read without following a link (step 14.1)
 
@@ -1197,3 +1167,20 @@ reference tool checks a read against its documentation.
   changes after creation goes in a Hub table, never in the thread's metadata.
 - **Proof.** `instructions.test.ts` "trocar a escolha enquanto o Mastra grava o título": the next
   turn reads only the new choice, and the title stays.
+
+## Mastra 1.79.0: the list of conversations narrowed by title and place (step 24.3.3)
+
+- **Library line.** At `@mastra/core` version 1.79.0 and `@mastra/pg` version 1.32.0 (the lockfile's),
+  `listThreads` filters by `resourceId` and by metadata equality only (`@mastra/core` `dist/storage/types.d.ts:183-209`;
+  `@mastra/pg` `dist/index.js:12335-12340`, a `@>` containment). It has no title search, no "the key is
+  missing" and no "any value of the key".
+- **Hand-made piece.** `listedPage` in `apps/server/src/builder/assistant/search.ts`. With a text or a
+  place it reads all the person's threads (`perPage: false`) and filters here: the title composed, without
+  accent and without case; `HOME` as the missing project mark and `AUTOMATIONS` as the present automation
+  mark; then it pages 30 at a time under the same token. Without text or place it is Mastra's own page.
+- **Why.** The founder's A a and B a on the list (2026-11-03): the search is on the title, and the filter
+  has Todas, Início, each Projeto and Automações. The step measured 500 threads of one person through the
+  whole Hub: a read of all of them took about 10 ms, so the read stays whole until a person holds
+  thousands of threads. That is the trigger to revisit: a title column or a search index of the Hub's own.
+- **Proof.** `list-search.test.ts` "a busca" (accent, case, spaces, nothing found) and "o lugar" (the
+  marks, with and without a text): each fails when its comparison or its mark is taken out.

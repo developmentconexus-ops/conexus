@@ -4,7 +4,10 @@ import type {
   AgentState,
   AgentSummary,
   AgentVersionSummary,
+  CompanyId,
+  NamedAgent,
   OfProject,
+  ProjectId,
   ToolId,
 } from '@conexus/hub-api'
 import {
@@ -66,6 +69,13 @@ export function agentsIn(tx: ReadTx, ids: OfProject) {
     .orderBy(asc(agent.createdAt), asc(agent.id))
 }
 
+/** The agents of the company's live Projetos, as Projetos reads them: none of one being deleted. */
+export function agentsOfCompany(tx: ReadTx, companyId: CompanyId, live: readonly ProjectId[]) {
+  return withActive(tx)
+    .where(and(eq(agent.companyId, companyId), inArray(agent.projectId, [...live])))
+    .orderBy(asc(agent.createdAt), asc(agent.id))
+}
+
 function stateOf(row: AgentRow, activeRevision: number | null): AgentState {
   if (row.activeVersion === null) return { kind: 'DRAFT' }
   return {
@@ -84,6 +94,7 @@ function summaryOf({ row, activeRevision }: Listed): AgentSummary {
     description: draft.description,
     state: stateOf(row, activeRevision),
     updatedAt: row.updatedAt.toISOString(),
+    lastRunAt: row.lastRunAt?.toISOString() ?? null,
   }
 }
 
@@ -174,16 +185,26 @@ export async function usedBy(tx: ReadTx, toolIds: readonly ToolId[]): ReturnType
   const versions = await toolVersionsOf(tx, toolIds)
   const toolOf = new Map(versions.map((each) => [each.id, ToolIdSchema.parse(each.toolId)]))
   const ids = [...toolOf.keys()]
-  const found = new Map<ToolId, { id: AgentId; name: string }[]>()
+  const found = new Map<ToolId, NamedAgent[]>()
   if (ids.length === 0) return found
   const name = sql<string>`${agent.draft}->>'name'`
   const chosen = tx
-    .selectDistinct({ versionId: agentTool.toolVersionId, id: agent.id, name })
+    .selectDistinct({
+      versionId: agentTool.toolVersionId,
+      id: agent.id,
+      projectId: agent.projectId,
+      name,
+    })
     .from(agentTool)
     .innerJoin(agent, eq(agent.id, agentTool.agentId))
     .where(inArray(agentTool.toolVersionId, ids))
   const pinned = tx
-    .selectDistinct({ versionId: agentVersionTool.toolVersionId, id: agent.id, name })
+    .selectDistinct({
+      versionId: agentVersionTool.toolVersionId,
+      id: agent.id,
+      projectId: agent.projectId,
+      name,
+    })
     .from(agentVersionTool)
     .innerJoin(agent, eq(agent.id, agentVersionTool.agentId))
     .where(inArray(agentVersionTool.toolVersionId, ids))
@@ -192,7 +213,11 @@ export async function usedBy(tx: ReadTx, toolIds: readonly ToolId[]): ReturnType
     if (toolId === undefined) continue
     const users = found.get(toolId) ?? []
     if (!users.some((each) => each.id === row.id))
-      users.push({ id: AgentId.parse(row.id), name: row.name })
+      users.push({
+        id: AgentId.parse(row.id),
+        projectId: ProjectIdSchema.parse(row.projectId),
+        name: row.name,
+      })
     found.set(
       toolId,
       users.sort((a, b) => a.name.localeCompare(b.name)),

@@ -1,8 +1,10 @@
 import type {
   AgentDetail,
   AgentId,
+  CompanyId,
   CreateAgent,
   DraftPatch,
+  ProjectId,
   Publish,
   ToolVersionId,
 } from '@conexus/hub-api'
@@ -29,10 +31,21 @@ import {
 } from '../tools/public.ts'
 import type { AgentEvent } from './events.ts'
 import { invalidField, makeActive, published } from './publish.ts'
-import { agentIn, agentsIn, chosenIds, detailOf, listedOf, ofProject, versionsOf } from './store.ts'
+import {
+  agentIn,
+  agentsIn,
+  agentsOfCompany,
+  chosenIds,
+  detailOf,
+  listedOf,
+  ofProject,
+  versionsOf,
+} from './store.ts'
 import { agent, agentTool, agentVersion } from './tables.ts'
 
 export type AgentsDeps = Pick<ToolsDeps, 'database' | 'identity' | 'liveProjectOf'> & {
+  /** The ids of the company's live Projetos (`liveProjectIdsOf`). */
+  liveProjectIdsOf: (tx: ReadTx, companyId: CompanyId) => Promise<ProjectId[]>
   connectors: ToolConnectors
   /** Whether the model selector lists a model (`isChoosable`). */
   isChoosable: (model: string) => boolean
@@ -88,6 +101,16 @@ async function list(deps: AgentsDeps, scope: InProject) {
   return deps.database.read(databaseScopeOf(scope), async (tx) => {
     await admitted(deps, tx, scope, 'readAgents')
     return listedOf(tx, await agentsIn(tx, scope))
+  })
+}
+
+/** The agents of every live Projeto of the company, for a person who may read them. */
+async function listCompany(deps: AgentsDeps, ids: Pick<InProject, 'companyId' | 'personId'>) {
+  const { companyId, personId } = ids
+  return deps.database.read({ kind: 'COMPANY', companyId, personId }, async (tx) => {
+    await deps.identity.admitMember({ tx, companyId, personId, action: 'readAgents' })
+    const live = await deps.liveProjectIdsOf(tx, companyId)
+    return listedOf(tx, await agentsOfCompany(tx, companyId, live))
   })
 }
 
@@ -295,6 +318,7 @@ export function createAgentService(deps: AgentsDeps) {
   return Object.freeze({
     create: (scope: InProject, body: CreateAgent, key: string) => create(deps, scope, body, key),
     list: (scope: InProject) => list(deps, scope),
+    listCompany: (ids: Pick<InProject, 'companyId' | 'personId'>) => listCompany(deps, ids),
     get: (scope: InProject, agentId: AgentId) => get(deps, scope, agentId),
     saveDraft: (
       scope: InProject,

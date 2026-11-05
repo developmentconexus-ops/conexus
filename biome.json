@@ -170,13 +170,11 @@
     {
       "includes": [
         "apps/server/src/builder/**",
-        "!apps/server/src/builder/runs/deadline.ts",
         "!apps/server/src/builder/runs/copy-retry.ts",
         "!apps/server/src/builder/model-accounts/google/calls.ts",
         "!apps/server/src/builder/model-accounts/google/google.ts",
         "!apps/server/src/builder/model-accounts/claude/store.ts",
         "!apps/server/src/builder/conversation/turn-log.ts",
-        "!apps/server/src/builder/conversation/parked.ts",
         "!**/*.test.ts",
         "!**/test-*.ts"
       ],
@@ -190,8 +188,8 @@
                   "vitest": "Only screen files use Vitest (decision 0034).",
                   "msw": "Only screen files use MSW (decision 0034).",
                   "@testing-library/react": "Only screen files use Testing Library (decision 0034).",
-                  "node:timers": "A clock has one owner (decision 0051): the deadline and the copy retry in builder/runs/, the short text in conversation/turn-log.ts, and Parar's wait in conversation/parked.ts.",
-                  "node:timers/promises": "A clock has one owner (decision 0051): the deadline and the copy retry in builder/runs/, the short text in conversation/turn-log.ts, and Parar's wait in conversation/parked.ts."
+                  "node:timers": "A clock has one owner (decision 0051): the copy retry in builder/runs/, and the short text in conversation/turn-log.ts.",
+                  "node:timers/promises": "A clock has one owner (decision 0051): the copy retry in builder/runs/, and the short text in conversation/turn-log.ts."
                 }
               }
             },
@@ -199,8 +197,8 @@
               "level": "error",
               "options": {
                 "deniedGlobals": {
-                  "setTimeout": "A clock has one owner (decision 0051): the deadline and the copy retry in builder/runs/, and Parar's wait in conversation/parked.ts.",
-                  "setInterval": "A clock has one owner (decision 0051): the deadline and the copy retry in builder/runs/, and Parar's wait in conversation/parked.ts."
+                  "setTimeout": "A clock has one owner (decision 0051): the copy retry in builder/runs/.",
+                  "setInterval": "A clock has one owner (decision 0051): the copy retry in builder/runs/."
                 }
               }
             }
@@ -218,7 +216,10 @@
         "apps/web/src/builder/model-accounts/test-writes.tsx",
         "apps/web/src/builder/assistant/test-hub.tsx",
         "apps/web/src/builder/agents/test-hub.tsx",
+        "apps/web/src/builder/agents/test-hub-tools.tsx",
         "apps/web/src/builder/assistant/test-model.tsx",
+        "apps/web/src/builder/assistant/test-changes.tsx",
+        "apps/web/src/builder/assistant/test-propose.tsx",
         "apps/web/src/builder/automations/test-hub.tsx",
         "apps/web/src/builder/conversation/test-hub.tsx",
         "apps/web/src/builder/conversation/test-start.tsx",

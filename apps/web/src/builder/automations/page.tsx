@@ -3,9 +3,9 @@ import type { ReactNode } from 'react'
 import { cn } from '../../ui/cn.ts'
 
 /**
- * The column of an Automações page. The company's Início sits in a frame that pads and scrolls it
- * (as the Projetos list does); a Projeto's frame is compact, so there the page pads and scrolls
- * itself, as the Projeto's Conversas does.
+ * The column of an Automações page, or of the Início's Agentes page. The company's Início sits in a
+ * frame that pads and scrolls it (as the Projetos list does); a Projeto's frame is compact, so
+ * there the page pads and scrolls itself, as the Projeto's Conversas does.
  */
 export function Page(props: {
   projectId: ProjectId | undefined

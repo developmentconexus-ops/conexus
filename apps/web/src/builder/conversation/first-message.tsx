@@ -78,6 +78,7 @@ export function FirstMessage(props: { companyId: CompanyId; projectId: ProjectId
       )}
       <div className="px-md">
         <Composer
+          placement="docked"
           answering={false}
           canSend={usable}
           draft={draft}

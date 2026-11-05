@@ -5,11 +5,12 @@ import {
   readAssistantConversation,
 } from '@conexus/hub-api'
 import type { Page } from 'playwright-core'
-import { ok } from './layout-harness.ts'
+import { failure, ok } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import { WITH_ACCOUNT } from './sweep-conversation-states.ts'
 import type { State } from './sweep-kit.ts'
 import { waitFor } from './sweep-kit.ts'
+import { PROJECT_ID } from './sweep-replies.ts'
 import type { Said } from './sweep-session.ts'
 import { sessionReplies } from './sweep-session.ts'
 
@@ -28,6 +29,9 @@ function tool(toolName: string, args: unknown, result: unknown, id: string) {
     toolInvocation: { state: 'result' as const, toolCallId: id, toolName, args, result },
   }
 }
+
+const BRIEFING =
+  '## Quem usa\n\nO time de vendas da padaria, todo dia, no celular.\n\n## O que registra\n\n- quem pediu\n- o que pediu\n- a data de entrega'
 
 const MESSAGES: Said[] = [
   {
@@ -61,7 +65,12 @@ const MESSAGES: Said[] = [
         },
         'c5',
       ),
-      tool(ASSISTANT_TOOL.proposeApp, {}, { summary: SUMMARY }, 'c6'),
+      tool(
+        ASSISTANT_TOOL.proposeApp,
+        {},
+        { summary: SUMMARY, briefing: { name: 'briefing.md', content: BRIEFING } },
+        'c6',
+      ),
       { type: 'text', text: 'Resumi o que achei e deixei o relatório ao lado.' },
     ],
     model: 'anthropic/claude-sonnet-4',
@@ -104,6 +113,67 @@ async function opened(page: Page) {
   await waitFor(page, 'Resumi o que achei e deixei o relatório ao lado.')
 }
 
+export const CARD_SPEAKS = [
+  {
+    id: 'q1',
+    role: 'person' as const,
+    parts: [{ type: 'text', text: 'Quero um app de encomendas para a padaria.' }],
+    createdAt: '2026-10-19T12:00:00.000Z',
+  },
+]
+
+/** The conversation of `ASSISTANT_REPLIES`, in the company or in a Projeto, with the messages the card needs. */
+export function cardReplies(projectId: string | null, messages: Said[]) {
+  const key = `GET /api/companies/${COMPANY.id}/assistant/conversations/${ID}`
+  const read = ASSISTANT_REPLIES[key]
+  if (read === undefined) throw new Error('the Assistant replies lack the conversation read')
+  return {
+    ...ASSISTANT_REPLIES,
+    [key]: ok(readAssistantConversation, {
+      conversation: {
+        id: ID,
+        title: 'Vendas da semana',
+        updatedAt: '2026-10-19T12:00:00.000Z',
+        projectId,
+        automation: null,
+        connections: [
+          {
+            connectionId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+            connector: 'sankhya',
+            name: 'Matriz',
+            chosen: true,
+          },
+        ],
+      },
+    }),
+    ...sessionReplies(ID, { messages, controller: ASSISTANT_CONTROLLER }),
+  }
+}
+
+export function proposed(tool: string, content: string = BRIEFING): Said {
+  return {
+    id: 'm-card',
+    role: 'builder',
+    parts: [
+      {
+        type: 'tool-invocation',
+        toolInvocation: {
+          state: 'result',
+          toolCallId: 'c-card',
+          toolName: tool,
+          args: {},
+          result: { summary: SUMMARY, briefing: { name: 'briefing.md', content } },
+        },
+      },
+    ],
+    model: 'anthropic/claude-sonnet-4',
+    createdAt: '2026-10-19T12:01:00.000Z',
+  }
+}
+
+const INSIDE = `/companies/${COMPANY.id}/projects/${PROJECT_ID}/assistant/${ID}`
+const HANDOFF = `POST /api/companies/${COMPANY.id}/assistant/conversations/${ID}/handoffs`
+
 export const ASSISTANT_STATES: State[] = [
   {
     name: 'Assistente, a conversa com leituras recusadas e o pedido de app',
@@ -132,13 +202,52 @@ export const ASSISTANT_STATES: State[] = [
     },
   },
   {
-    name: 'Assistente, Criar app aberto',
+    name: 'Assistente, o cartão Mandar ao Builder de um Projeto',
+    path: INSIDE,
+    replies: cardReplies(PROJECT_ID, [...CARD_SPEAKS, proposed(ASSISTANT_TOOL.proposeAppChange)]),
+    settle: async (page) => {
+      await page.getByRole('button', { name: 'Mandar ao Builder' }).waitFor()
+    },
+  },
+  {
+    name: 'Assistente, o cartão do app depois do Continuar aqui, sem botão',
+    path: ASSISTANT_PATH,
+    replies: cardReplies(null, [
+      ...CARD_SPEAKS,
+      proposed(ASSISTANT_TOOL.proposeApp),
+      {
+        id: 'q2',
+        role: 'person',
+        parts: [{ type: 'text', text: 'Continuar aqui' }],
+        createdAt: '2026-10-19T12:02:00.000Z',
+      },
+    ]),
+    settle: async (page) => {
+      await waitFor(page, 'Continuar aqui')
+      await page.getByText('Quem usa').waitFor()
+    },
+  },
+  {
+    name: 'Assistente, o cartão do app com a falha e Tentar de novo',
+    path: ASSISTANT_PATH,
+    replies: {
+      ...cardReplies(null, [...CARD_SPEAKS, proposed(ASSISTANT_TOOL.proposeApp)]),
+      [HANDOFF]: failure('HANDOFF_NOT_DELIVERED'),
+    },
+    settle: async (page) => {
+      await page.getByLabel('Nome do projeto').fill('Encomendas')
+      await page.getByRole('button', { name: 'Criar app' }).click()
+      await page.getByRole('button', { name: 'Tentar de novo' }).waitFor()
+    },
+  },
+  {
+    name: 'Assistente, o cartão do app com o nome do Projeto escrito',
     path: ASSISTANT_PATH,
     replies: ASSISTANT_REPLIES,
     settle: async (page) => {
       await opened(page)
-      await page.getByRole('button', { name: 'Criar app' }).click()
-      await page.getByRole('dialog', { name: 'Criar app' }).waitFor()
+      await page.getByLabel('Nome do projeto').fill('Encomendas')
+      await page.getByRole('button', { name: 'Criar app' }).waitFor()
     },
   },
 ]

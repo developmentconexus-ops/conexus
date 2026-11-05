@@ -1,8 +1,8 @@
 import { z } from 'zod'
 import { CompanyId, Next, Page } from './companies.ts'
 import type { FailureCode } from './failures.ts'
+import { ProjectId } from './library-ids.ts'
 import { ATTEMPT_KEY_HEADER, defineOperation } from './operation.ts'
-import { ProjectId } from './projects.ts'
 
 /**
  * Where the Hub serves Mastra's own session routes of the Builder, behind its guard (decision
@@ -91,6 +91,16 @@ export const listConversations = defineOperation({
   failures: ['NOT_FOUND', 'SESSION_REQUIRED', 'DATABASE_UNAVAILABLE'],
 })
 
+/** What a request to start a conversation may choose, and what refuses it: the Builder's and the Construtor's. */
+export const StartChoice = z.object({ model: ModelId.optional(), effort: Effort.optional() })
+export const START_FAILURES = [
+  ...READ_FAILURES,
+  'IDEMPOTENCY_CONFLICT',
+  'MODEL_UNKNOWN',
+  'MODEL_NO_ACCOUNT',
+  'EFFORT_UNSUPPORTED',
+] as const satisfies readonly FailureCode[]
+
 export const createConversation = defineOperation({
   id: 'createConversation',
   summary: `Starts a conversation of the person in a Projeto, keyed by ${ATTEMPT_KEY_HEADER}, on the model and reasoning effort chosen or the company’s default.`,
@@ -100,20 +110,14 @@ export const createConversation = defineOperation({
   bodyLimit: 1024,
   input: {
     params: InProject,
-    body: z.object({ model: ModelId.optional(), effort: Effort.optional() }),
+    body: StartChoice,
   },
   attemptKey: true,
   success: {
     status: 201,
     body: z.object({ conversation: ConversationSummary.extend({ model: ModelId }) }),
   },
-  failures: [
-    ...READ_FAILURES,
-    'IDEMPOTENCY_CONFLICT',
-    'MODEL_UNKNOWN',
-    'MODEL_NO_ACCOUNT',
-    'EFFORT_UNSUPPORTED',
-  ],
+  failures: START_FAILURES,
 })
 
 export const readConversation = defineOperation({

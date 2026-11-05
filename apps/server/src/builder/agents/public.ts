@@ -27,7 +27,9 @@ import { usedBy } from './store.ts'
  * service the Construtor calls, the versions as an agent runs them, the removal and the hooks that
  * follow an agent's live version.
  */
-export function agentsOf(deps: Omit<ToolsDeps, 'usedBy'> & Pick<AgentsDeps, 'isChoosable'>) {
+export function agentsOf(
+  deps: Omit<ToolsDeps, 'usedBy'> & Pick<AgentsDeps, 'isChoosable' | 'liveProjectIdsOf'>,
+) {
   const events = agentEvents()
   const tools = createTools({ ...deps, usedBy })
   const service = createAgentService({ ...deps, tools, emit: events.emit })

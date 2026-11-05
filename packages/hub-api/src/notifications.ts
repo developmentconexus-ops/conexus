@@ -4,8 +4,8 @@ import { AutomationFailureCode } from './automations.ts'
 import { CompanyId, Next, Page } from './companies.ts'
 import { ConversationId } from './conversations.ts'
 import type { FailureCode } from './failures.ts'
+import { ProjectId } from './library-ids.ts'
 import { defineOperation } from './operation.ts'
-import { ProjectId } from './projects.ts'
 
 export const NotificationId = z.uuid().brand('NotificationId')
 export type NotificationId = z.infer<typeof NotificationId>

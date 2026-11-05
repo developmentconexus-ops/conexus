@@ -1,11 +1,10 @@
 import type { AgentDetail, ProblemField, ProblemReason } from '@conexus/hub-api'
-import { dayAndHour } from '../../platform/dates.ts'
+import { ageOf, dayAndHour } from '../../platform/dates.ts'
 
 /** The words of the Agentes screens (step 24.3, U5); the founder approves them at the step's end. */
 export const AREA_TITLE = 'Agentes'
 export const CONSTRUTOR_NAME = 'Construtor'
-export const CONSTRUTOR_FIRST =
-  'Conte o que você quer que um agente faça. Eu olho o Projeto e trago ideias.'
+export const CONSTRUTOR_FIRST = 'Conte o que você quer que um agente faça.'
 export const CONSTRUTOR_PLACEHOLDER = 'Peça ao Construtor…'
 export const CONSTRUTOR_EXAMPLES = [
   { label: 'Um agente de vendas', text: 'Quero um agente de vendas' },
@@ -15,6 +14,22 @@ export const CONSTRUTOR_EXAMPLES = [
   },
 ] as const
 export const NO_AGENTS = 'Nenhum agente ainda.'
+export const NO_AGENTS_COMPANY = 'Nenhum agente ainda. Os agentes nascem num Projeto.'
+export const NO_AGENTS_IN_PROJECT = 'Nenhum agente neste Projeto.'
+export const NEW_AGENT = 'Novo agente'
+export const NEW_AGENT_WHERE = 'Em qual Projeto?'
+export const NO_PROJECTS_FOR_AGENT = 'Crie um Projeto primeiro: os agentes nascem num Projeto.'
+export const FILTER_PROJECT = 'Projeto'
+export const ALL_PROJECTS = 'Todos os Projetos'
+export const MORE_PROJECTS = 'Mais Projetos'
+
+/** The last published turn of an agent, at a row's second line: "Rodou há 3 h", "Rodou ontem", "Rodou em 28/10". */
+export function lastRunText(lastRunAt: string | null, now: Date): string {
+  if (lastRunAt === null) return 'Nunca rodou'
+  const age = ageOf(lastRunAt, now)
+  if (/^\d+ (min|h|d)$/.test(age)) return `Rodou há ${age}`
+  return age === 'ontem' ? 'Rodou ontem' : `Rodou em ${age}`
+}
 export const NO_CONSTRUTOR_CONVERSATIONS = 'Nenhuma conversa com o Construtor ainda.'
 export const MEMBERS_CANNOT = 'Só o dono e os administradores usam os agentes do Projeto.'
 export const UNCONFIRMED_CREATION = 'Não confirmamos a criação da conversa. Tente de novo.'
@@ -56,6 +71,10 @@ export const VERSIONS_TITLE = 'Versões'
 export const ACTIVE_VERSION = 'Ativa'
 export const DRAFT_PANEL = 'Rascunho do agente'
 export const SAME_MODEL = 'O modelo de quem conversa'
+/** The notice of a tool whose library has a version the draft does not hold. */
+export function newVersionText(number: number): string {
+  return `Versão ${number} disponível`
+}
 export const WEB_TOOL = 'Pesquisar na web'
 export const TEST_BANNER = 'Conversa de teste com o rascunho'
 
@@ -90,15 +109,16 @@ export function deleteWarning(name: string): string {
 }
 
 const REASONS = {
-  NOT_OFFERED: 'o Projeto não recebeu esta ligação',
-  NOT_A_READ: 'só leituras entram nesta etapa',
-  VALUE_REFUSED: 'a operação não aceita este valor',
-  UNKNOWN_FIELD: 'a operação não tem este campo',
-  FIELD_TWICE: 'o campo está nos valores fixos e nos abertos',
-  REQUIRED_MISSING: 'falta um campo obrigatório da operação',
-  SLUG_TAKEN: 'já existe uma ferramenta com este nome',
-  NOT_USABLE: 'o Projeto não pode usar esta ferramenta',
-  SAME_TOOL_TWICE: 'a mesma ferramenta não entra duas vezes',
+  NOT_OFFERED: 'O Projeto não recebeu esta ligação.',
+  NOT_A_READ: 'Só leituras entram nesta etapa.',
+  VALUE_REFUSED: 'A operação não aceita este valor.',
+  UNKNOWN_FIELD: 'A operação não tem este campo.',
+  FIELD_TWICE:
+    'Um campo aparece duas vezes: repetido nos que o modelo preenche, ou também nos valores fixos.',
+  REQUIRED_MISSING: 'Falta um campo obrigatório da operação.',
+  SLUG_TAKEN: 'Já existe uma ferramenta com este nome.',
+  NOT_USABLE: 'O Projeto não pode usar esta ferramenta.',
+  SAME_TOOL_TWICE: 'A mesma ferramenta não entra duas vezes.',
 } satisfies Record<ProblemReason, string>
 
 /** The reason a refusal of a tool or of a choice names, in words. */
@@ -113,15 +133,23 @@ export function titleOf(conversation: { title: string; updatedAt: string }): str
     : conversation.title
 }
 
+/** The ready read of the kit a tool still is, when its description is the read's own; a tool made by hand has none. */
+export function readOfTool(
+  tool: { connectionId: string; operation: string; description: string },
+  offered: AgentDetail['offered'],
+) {
+  const read = offered
+    .find((one) => one.connectionId === tool.connectionId)
+    ?.reads.find((each) => each.operation === tool.operation)
+  return read?.summary === tool.description ? read : undefined
+}
+
 /** The name a person reads for a tool: a ready read by the kit's own `label`; one made by hand by its description. */
 export function toolTitle(
   tool: { connectionId: string; operation: string; description: string },
   offered: AgentDetail['offered'],
 ): string {
-  const read = offered
-    .find((one) => one.connectionId === tool.connectionId)
-    ?.reads.find((each) => each.operation === tool.operation)
-  return read?.summary === tool.description ? read.label : tool.description
+  return readOfTool(tool, offered)?.label ?? tool.description
 }
 
 export function connectionOf(offered: AgentDetail['offered'], id: string) {

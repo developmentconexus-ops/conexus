@@ -6,10 +6,10 @@ import {
   CONSTRUTOR_TOOL,
   ConversationId,
   ProjectId,
+  TASK_TOOLS,
 } from '@conexus/hub-api'
 import type { AgentInstructions } from '@mastra/core/agent'
 import { Agent } from '@mastra/core/agent'
-import type { InputProcessor } from '@mastra/core/processors'
 import type { RequestContext } from '@mastra/core/request-context'
 import type { Memory } from '@mastra/memory'
 import type { PostgresStore } from '@mastra/pg'
@@ -70,9 +70,10 @@ const MANUAL = readFileSync(new URL('./prompt/construtor.md', import.meta.url), 
 const CACHED = { anthropic: { cacheControl: { type: 'ephemeral', ttl: '1h' } } } as const
 
 /**
- * The closed set the mode offers the model (criterion 22): the layer that enforces it. It holds
- * of the controller's own tools only `ask_user` (the ideas it proposes as a question card), and none
- * of these publishes or writes in a company's system.
+ * The closed set the mode offers the model (criterion 22): the layer that enforces it. It holds of
+ * the controller's own tools `ask_user` (a real question to the person, as a card) and the task
+ * list, which the person follows the work by; none of these publishes or writes in a company's
+ * system.
  */
 const AVAILABLE_TOOLS: readonly string[] = [
   BUILDER_TOOL.connectorRead,
@@ -81,6 +82,7 @@ const AVAILABLE_TOOLS: readonly string[] = [
   BUILDER_TOOL.webSearch,
   ASK_USER_TOOL,
   ...Object.values(CONSTRUTOR_TOOL),
+  ...TASK_TOOLS,
 ]
 
 const Controller = z.object({ resourceId: z.string(), sessionId: ConversationId })
@@ -147,7 +149,11 @@ function projectReader(deps: Deps) {
  */
 function construtorAgent(
   deps: Deps,
-  parts: { memory: Memory; turn: InputProcessor; scopeOf: ReturnType<typeof scopes> },
+  parts: {
+    memory: Memory
+    turns: ReturnType<typeof sessionTurns>
+    scopeOf: ReturnType<typeof scopes>
+  },
 ) {
   const { scopeOf } = parts
   const offeredOf = oncePerRun(async (requestContext) => {
@@ -203,7 +209,7 @@ function construtorAgent(
         ...construtorTools(construtor, scope),
       }
     },
-    ...agentDefaults(deps.queue, parts.turn),
+    ...agentDefaults(deps.queue, parts.turns),
     memory: parts.memory,
   })
 }
@@ -232,7 +238,7 @@ export function createConstrutor(deps: Deps) {
       return turn
     },
   })
-  const agent = construtorAgent(deps, { memory, turn: turns.processor, scopeOf })
+  const agent = construtorAgent(deps, { memory, turns, scopeOf })
   // Decision 0053: nothing waits to be approved; the tools only build a draft.
   const controller = controllerOf({
     ...{ kind: 'construtor', storage, memory, agent },

@@ -16,6 +16,7 @@ import { BuilderTurn } from './builder-turn.tsx'
 import type { Message } from './messages.ts'
 import { chipOf, messageOf } from './messages.ts'
 import { PersonBubble, PersonTurn } from './person-turn.tsx'
+import { closedProposals } from './proposals.ts'
 import { useRoom } from './room.ts'
 import type { TranscriptItem } from './rows.ts'
 import { itemsOf } from './rows.ts'
@@ -51,10 +52,17 @@ export type ShownTurn = {
 
 /** The conversation's one list, from the session's messages, by turn; the last streams while the run runs. */
 export function shownOf(state: SessionState): ShownTurn[] {
-  const turns = turnsOf(state.messages.flatMap((stored) => messageOf(stored) ?? []))
+  const messages = state.messages.flatMap((stored) => messageOf(stored) ?? [])
+  const closed = closedProposals(messages)
+  const turns = turnsOf(messages)
   return turns.map((turn, index) => {
     const streaming = state.running && index === turns.length - 1
-    const view = { suspended: state.suspended, running: state.commands, heard: state.heard }
+    const view = {
+      closed,
+      suspended: state.suspended,
+      running: state.commands,
+      heard: state.heard,
+    }
     return {
       key: turn.key,
       person: turn.person,
@@ -124,10 +132,10 @@ export function Transcript(props: {
               </MessageScrollerItem>
             ))}
           </MessageScrollerContent>
-          <div className="sticky bottom-0 [&>*]:bg-(--ground,var(--color-surface))">
+          <FollowingFooter>
             <MessageScrollerButton className="data-[direction=end]:bottom-[calc(100%+var(--spacing-lg))]" />
             {props.children}
-          </div>
+          </FollowingFooter>
         </MessageScrollerViewport>
         {older.loading && (
           <div className="pointer-events-none absolute inset-x-0 top-md flex justify-center">
@@ -147,6 +155,34 @@ export function Transcript(props: {
 
 /** No older messages: the whole conversation is on screen. */
 export const NO_OLDER = { has: false, loading: false, load: () => undefined }
+
+/**
+ * The footer over the bottom of the scroll area. It sits outside `MessageScrollerContent`, and
+ * `@shadcn/react` 0.3.1 follows the end only by the viewport's and the content's size, so a footer
+ * that grows (the working line appears when the stream says the run began) would push the end of
+ * the last message under it with nobody scrolling. Whoever is at the end stays there.
+ */
+function FollowingFooter(props: { children: ReactNode }) {
+  const { scrollToEnd } = useMessageScroller()
+  const { end } = useMessageScrollerScrollable()
+  const footer = useRef<HTMLDivElement>(null)
+  const away = useRef(end)
+  away.current = end
+  useEffect(() => {
+    const element = footer.current
+    if (element === null) return
+    const observer = new ResizeObserver(() => {
+      if (!away.current) scrollToEnd()
+    })
+    observer.observe(element)
+    return () => observer.disconnect()
+  }, [scrollToEnd])
+  return (
+    <div ref={footer} className="sticky bottom-0 [&>*]:bg-(--ground,var(--color-surface))">
+      {props.children}
+    </div>
+  )
+}
 
 /** Jumps to the end, and follows it again, when a message of the person's opens a turn. */
 function EndOnSent(props: { last: string | undefined }) {

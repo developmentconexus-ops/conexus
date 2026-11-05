@@ -6,7 +6,7 @@ import { BLOCK_ROWS, Block, BlockSentence, blockRow, Stamp } from '../../ui/bloc
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { ReadFailure } from '../../ui/states.tsx'
 import { NewProjectDialog } from './new-project-dialog.tsx'
-import { NO_PROJECTS, projectStateOf, projectStateText } from './project-state.ts'
+import { NO_PROJECTS, projectStateOf, projectStateText, projectStateTone } from './project-state.ts'
 import { projectsQuery } from './queries.ts'
 
 function ProjectRows({ companyId }: { companyId: CompanyId }) {
@@ -31,9 +31,7 @@ function ProjectRows({ companyId }: { companyId: CompanyId }) {
               className={`${blockRow} hover:bg-surface-3`}
             >
               <span className="min-w-0 flex-1 truncate">{project.name}</span>
-              <Stamp tone={state.kind === 'PUBLISHED' ? 'success' : 'neutral'}>
-                {projectStateText(state)}
-              </Stamp>
+              <Stamp tone={projectStateTone(state)}>{projectStateText(state)}</Stamp>
             </Link>
           </li>
         )

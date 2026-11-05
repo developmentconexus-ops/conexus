@@ -171,6 +171,15 @@ export async function liveProjectOf(
   return row
 }
 
+/** The ids of every live Projeto of the company: what a list across Projetos is limited to. */
+export async function liveProjectIdsOf(tx: ReadTx, companyId: CompanyId): Promise<ProjectId[]> {
+  const rows = await tx
+    .select({ id: project.id })
+    .from(project)
+    .where(and(eq(project.companyId, companyId), isNull(project.deletingSince)))
+  return rows.map((row) => ProjectId.parse(row.id))
+}
+
 /**
  * The company's live Projetos by name, at most a page of them, and whether it has more: what the
  * Assistant tells of the company (step 24.1).

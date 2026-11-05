@@ -1,4 +1,4 @@
-import type { ProjectId } from './projects.ts'
+import type { ProjectId } from './library-ids.ts'
 
 /**
  * The schema and the three logins of a Projeto's app in its company's database (decision 0021): one

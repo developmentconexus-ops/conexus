@@ -128,6 +128,15 @@ export const HAND_OFF_CASES: readonly HandOffCase[] = [
     notCalled: [APP],
     held: false,
   },
+  // The card's second button sends these words (step 24.3.2, U3): the Assistant goes on, no second card.
+  {
+    n: 15,
+    place: 'HOME',
+    turns: [PHASED, 'Continuar aqui'],
+    called: [APP],
+    atMostOnce: APP,
+    held: false,
+  },
 ]
 
 /** Which half runs: `tuning` while the texts are adjusted, `held-out` at the end, or `all`; another word throws. */
@@ -192,13 +201,16 @@ async function automationConversation(on: Subscribed, prompt: string): Promise<s
 
 /**
  * One question that brings the options found in the data, as `propose_automation`'s description
- * asks (step 24.3.2): a single question mark, and two options or more, listed or joined by "ou". A
- * list of questions is not one; its length is not measured.
+ * asks (step 24.3.2): a single question mark, and two options or more, listed after it or joined by
+ * "ou" inside the question. A list of asks under a question mark that comes after it is not one;
+ * its length is not measured.
  */
 export function askedOnce(text: string): boolean {
   if ((text.match(/\?/g) ?? []).length !== 1) return false
-  const options = text.match(/^\s*([-*•]|\d+[.)])\s/gm) ?? []
-  return options.length >= 2 || /\sou\s[^?]*\?/.test(text)
+  const items = [...text.matchAll(/^\s*(?:[-*•]|\d+[.)])\s/gm)]
+  const [first] = items
+  if (first !== undefined && items.length >= 2) return text.indexOf('?') < first.index
+  return /[^.!?\n]*\sou\s[^.!?\n]*\?/.test(text)
 }
 
 /** What went wrong in one run of a case, or nothing. */

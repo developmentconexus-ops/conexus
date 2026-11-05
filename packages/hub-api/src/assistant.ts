@@ -3,8 +3,8 @@ import { CompanyId, Next, Page } from './companies.ts'
 import { CONNECTIONS_MAX, ConnectionId } from './connectors.ts'
 import { ConversationId, Effort, ModelChoice, ModelId } from './conversations.ts'
 import type { FailureCode } from './failures.ts'
+import { ProjectId } from './library-ids.ts'
 import { ATTEMPT_KEY_HEADER, defineOperation } from './operation.ts'
-import { ProjectId } from './projects.ts'
 
 /** The Assistant's controller, as Mastra's routes name it (`/agent-controller/assistant/…`, step 24.1). */
 export const ASSISTANT_CONTROLLER = 'assistant'
@@ -173,15 +173,25 @@ const READ_FAILURES = [
   'DATABASE_UNAVAILABLE',
 ] as const satisfies readonly FailureCode[]
 
+/** The longest text a person searches the conversation titles for. */
+export const CONVERSATION_SEARCH_MAX = 100
+
 export const listAssistantConversations = defineOperation({
   id: 'listAssistantConversations',
   summary:
-    'Lists the person’s own conversations with the Assistant, newest first, all of them or those of one Projeto.',
+    'Lists the person’s own conversations with the Assistant, newest first, all of them or those of one Projeto, one place (Início or Automações) or whose title holds a text, without accent or case.',
   access: 'session',
   method: 'GET',
   path: BASE,
   bodyLimit: 1024,
-  input: { params: InCompany, query: Page.extend({ projectId: ProjectId.optional() }) },
+  input: {
+    params: InCompany,
+    query: Page.extend({
+      projectId: ProjectId.optional(),
+      q: z.string().trim().min(1).max(CONVERSATION_SEARCH_MAX).optional(),
+      place: z.enum(['HOME', 'AUTOMATIONS']).optional(),
+    }),
+  },
   success: {
     status: 200,
     body: z.object({ conversations: z.array(AssistantConversationSummary), next: Next }),
@@ -261,6 +271,38 @@ export const setAssistantModel = defineOperation({
     'MODEL_NO_ACCOUNT',
     'EFFORT_UNSUPPORTED',
   ],
+})
+
+/** The longest title a person gives a conversation. */
+export const CONVERSATION_TITLE_MAX = 120
+
+export const renameAssistantConversation = defineOperation({
+  id: 'renameAssistantConversation',
+  summary:
+    'Gives an Assistant conversation the title its person chose; the title stays, and the memory no longer replaces it.',
+  access: 'session',
+  method: 'PATCH',
+  path: `${BASE}/{conversationId}`,
+  bodyLimit: 1024,
+  input: {
+    params: OfConversation,
+    body: z.object({ title: z.string().trim().min(1).max(CONVERSATION_TITLE_MAX) }),
+  },
+  success: { status: 200, body: z.object({ title: z.string() }) },
+  failures: [...READ_FAILURES, 'CONVERSATION_NOT_FOUND'],
+})
+
+export const deleteAssistantConversation = defineOperation({
+  id: 'deleteAssistantConversation',
+  summary:
+    'Deletes one of the person’s own Assistant conversations: its answer stops, its machine is killed, its messages and files go. The Projeto, its app and its versions stay.',
+  access: 'session',
+  method: 'DELETE',
+  path: `${BASE}/{conversationId}`,
+  bodyLimit: 1024,
+  input: { params: OfConversation },
+  success: { status: 204 },
+  failures: [...READ_FAILURES, 'CONVERSATION_NOT_FOUND'],
 })
 
 export const listAssistantConnections = defineOperation({

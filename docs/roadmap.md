@@ -42,8 +42,9 @@ Aprovações e usos: [aprovações](approvals.md).
 Sua empresa usa o Conexus desde 2026-11-02, recebendo cada etapa.
 
 - **24.3 O Construtor.** Cria e publica um agente.
-- **24.3.1 Ferramentas e ideias.** Vê as ferramentas do Projeto, as ideias do Construtor e todos os agentes da empresa.
 - **24.3.2 Do Assistente ao Builder.** Pede um app ao Assistente e o vê chegar ao Builder com o briefing.
+- **24.3.3 A lista e os Projetos.** Busca.
+- **24.3.1 Ferramentas.** Vê as ferramentas do Projeto e todos os agentes da empresa.
 - **24.3.4 Papéis e pedidos.** O membro pede para publicar.
 - **24.4 Ferramentas em código.** Código que calcula.
 - **Papéis da empresa.** A empresa cria papéis e escolhe o que cada um, o Membro também, usa de cada conector.
@@ -105,7 +106,6 @@ Login social. Arquivos enviados por pessoas para dentro de um app ou da máquina
 
 | Etapa | O que precisa antes | Decisão sua nela | Conhecimento trazido |
 | --- | --- | --- | --- |
-| 24.3.1 Ferramentas | A 24.3.3 | Nenhuma | `addAgent` por agente |
 | Papéis e pedidos | A 24.3.1 | Três | — |
 | 24.4 Ferramentas em código | Os pedidos | Nenhuma | Protótipo: Workers ou E2B |
 | 24.5 Escrita com aprovação | A 24.4 | Nenhuma | `requireApproval` do Mastra, provada antes a trava da 0053. Escrita nova pede nova liberação |

@@ -10,7 +10,7 @@ export {
   RESERVED_NICKNAMES,
   suggestedNickname,
 } from './address.ts'
-export { ProblemAgents, ProblemField, ProblemReason } from './agent-failures.ts'
+export { NamedAgent, ProblemAgents, ProblemField, ProblemReason } from './agent-failures.ts'
 export * from './agent-ids.ts'
 export * from './agents.ts'
 export {
@@ -61,7 +61,10 @@ export {
   AssistantConversationSummary,
   assistantFilePath,
   Briefing,
+  CONVERSATION_SEARCH_MAX,
+  CONVERSATION_TITLE_MAX,
   createAssistantConversation,
+  deleteAssistantConversation,
   listAssistantConnections,
   listAssistantConversations,
   type Overview,
@@ -72,6 +75,7 @@ export {
   ReadCut,
   ReadRows,
   readAssistantConversation,
+  renameAssistantConversation,
   SessionConnection,
   SHOWN_TEXT_MAX,
   ShowFileInput,
@@ -96,7 +100,6 @@ export {
   getInvitation,
   InvitationId,
   InvitationView,
-  LIBRARY_ID,
   ListedInvitation,
   listCompanies,
   listInvitations,
@@ -189,6 +192,7 @@ export {
   SessionState,
   setPassword,
 } from './identity.ts'
+export * from './library-ids.ts'
 export {
   ACCOUNT_KEY_MAX_LENGTH,
   ACCOUNT_KINDS,
@@ -277,7 +281,6 @@ export {
   listProjects,
   PROJECT_NAME_MAX_LENGTH,
   Project,
-  ProjectId,
   ProjectName,
   ProjectSummary,
 } from './projects.ts'

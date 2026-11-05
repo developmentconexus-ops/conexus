@@ -79,6 +79,34 @@ export function SelectContent({
   )
 }
 
+type SelectChoice = { value: string; label: string }
+
+/** A single-choice field over a list of choices: its trigger, its menu and one item for each. */
+export function ChoiceSelect(props: {
+  label: string
+  value: string
+  items: SelectChoice[]
+  onValueChange: (next: string | null) => void
+  disabled?: boolean
+  className?: string
+}) {
+  const { label, items, className, ...root } = props
+  return (
+    <Select items={items} {...root}>
+      <SelectTrigger aria-label={label} className={className}>
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {items.map((item) => (
+          <SelectItem key={item.value} value={item.value}>
+            {item.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
+}
+
 export function SelectItem({ className, children, ...props }: SelectPrimitive.Item.Props) {
   return (
     <SelectPrimitive.Item

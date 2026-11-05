@@ -12,7 +12,7 @@ const server = hubServer()
 const { at } = agentScreens(server)
 const PAGE = `${AREA}/${AGENT}`
 
-/** The form of the Construtor's box: its Projeto and its model sit inside it. */
+/** The form of the Construtor's box: its model button sits inside it, and no Projeto (the person is already in one). */
 async function construtorBox() {
   const form = (await screen.findByRole('textbox', { name: 'Mensagem para o Construtor' })).closest(
     'form',
@@ -77,6 +77,13 @@ test('a ferramenta pronta do painel tem o nome da leitura; a feita à mão, a de
   expect(within(panel).queryByText('vendas_de_ontem')).toBeNull()
 })
 
+test('a ferramenta feita à mão mostra o nome dela junto da descrição, para distinguir duas parecidas', async () => {
+  at(PAGE, { agents: [agent()] })
+  const panel = await screen.findByRole('region', { name: 'Ferramentas' })
+  expect(await within(panel).findByText('Vendas de ontem por vendedor.')).toBeTruthy()
+  expect(within(panel).getByText('vendas_de_ontem')).toBeTruthy()
+})
+
 test('sem conversa aberta, o painel de teste diz a frase da matriz e traz os dois botões', async () => {
   at(PAGE, { agents: [agent()] })
   const panel = await screen.findByRole('region', { name: 'Testar' })
@@ -116,7 +123,7 @@ test('a conversa de teste fica na folha branca', async () => {
   expect(root?.className).not.toContain('bg-canvas')
 })
 
-test('a conversa com o Construtor fica na folha branca, com o Projeto fixo e o modelo na caixa', async () => {
+test('a conversa com o Construtor fica na folha branca, com o botão do modelo na caixa e sem o Projeto', async () => {
   at(`${AREA}/construtor/${BUILDER_CHAT}`, {
     agents: [],
     construtor: [{ id: BUILDER_CHAT, title: 'Meu agente', updatedAt: '2026-11-02T12:00:00.000Z' }],
@@ -126,8 +133,8 @@ test('a conversa com o Construtor fica na folha branca, com o Projeto fixo e o m
   expect(root?.className).toContain('bg-surface')
   expect(root?.className).not.toContain('bg-canvas')
   const form = await construtorBox()
-  expect(await within(form).findByText(PEDIDOS.name)).toBeTruthy()
-  expect(within(form).getByText('Claude Sonnet 4')).toBeTruthy()
+  expect(await within(form).findByRole('combobox', { name: 'Modelo e raciocínio' })).toBeTruthy()
+  expect(within(form).queryByText(PEDIDOS.name)).toBeNull()
 })
 
 test('o formulário Criar usa os seletores da Pauta, não os do navegador', async () => {
@@ -138,11 +145,11 @@ test('o formulário Criar usa os seletores da Pauta, não os do navegador', asyn
   expect(dialog.querySelector('select')).toBeNull()
 })
 
-test('a caixa do Construtor mostra o Projeto fixo e o modelo que responde', async () => {
+test('a caixa do Construtor tem o botão do modelo e do raciocínio e não mostra o Projeto', async () => {
   at(AREA, { agents: [] })
   const form = await construtorBox()
-  expect(await within(form).findByText(PEDIDOS.name)).toBeTruthy()
-  expect(within(form).getByText('Claude Sonnet 4')).toBeTruthy()
+  expect(await within(form).findByRole('combobox', { name: 'Modelo e raciocínio' })).toBeTruthy()
+  expect(within(form).queryByText(PEDIDOS.name)).toBeNull()
 })
 
 test('no celular, Apagar também fica no menu ⋯', async () => {
