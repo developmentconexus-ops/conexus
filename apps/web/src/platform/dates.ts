@@ -63,6 +63,13 @@ export function ageOf(instant: string, now: Date): string {
   return days <= 7 ? `${days} d` : dayAndMonth(instant)
 }
 
+/** `ageOf` in a sentence's own words: "há 5 min", "há 2 h", "ontem", "há 3 d", "em 28/10". */
+export function agoOf(instant: string, now: Date): string {
+  const age = ageOf(instant, now)
+  if (age === 'ontem') return age
+  return /^\d+ (min|h|d)$/.test(age) ? `há ${age}` : `em ${age}`
+}
+
 /** "Bom dia, Ana": the part of the day by the browser's clock and the person's first name. */
 export function greetingOf(now: Date, fullName: string): string {
   const hour = now.getHours()

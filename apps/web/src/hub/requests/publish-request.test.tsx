@@ -1,4 +1,4 @@
-import { requestPublish } from '@conexus/hub-api'
+import { FAILURES, requestPublish } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
@@ -76,6 +76,8 @@ test('pedir para publicar: o botão no lugar de Publicar, a caixa com a mensagem
   expect(sent[0]?.key).toMatch(/^[0-9a-f-]{36}$/)
   expect(screen.getByText('“pronta para a loja”')).toBeTruthy()
   expect(screen.getByText('há 2 min')).toBeTruthy()
+  // Who asked can withdraw it, so the line does not say that only the deciders decide.
+  expect(screen.queryByText('Só o dono e os administradores decidem pedidos.')).toBeNull()
   expect(screen.queryByRole('button', { name: 'Pedir para publicar' })).toBeNull()
   expect(screen.queryByRole('dialog')).toBeNull()
   fireEvent.click(screen.getByRole('button', { name: 'Cancelar pedido' }))
@@ -169,6 +171,44 @@ test('APP_VERSION_NOT_FOUND: a caixa fecha e a frase de hoje fica abaixo do alto
   fireEvent.click(await screen.findByRole('button', { name: 'Pedir' }))
   expect((await screen.findByRole('alert')).textContent).toBe('Essa versão não existe mais.')
   await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+})
+
+test('PUBLISH_REQUEST_NOT_NEEDED: a caixa fecha e a frase de hoje fica abaixo do alto', async () => {
+  bruno()
+  server.use(http.post(PUBLISH_REQUEST_PATH, () => refusal('PUBLISH_REQUEST_NOT_NEEDED')))
+  open()
+  fireEvent.click(await screen.findByRole('button', { name: 'Pedir para publicar' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Pedir' }))
+  expect((await screen.findByRole('alert')).textContent).toContain(
+    FAILURES.PUBLISH_REQUEST_NOT_NEEDED.phrase,
+  )
+  await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+})
+
+test('NOT_FOUND ao pedir: a caixa fecha sem frase de erro, como Publicar', async () => {
+  bruno()
+  server.use(http.post(PUBLISH_REQUEST_PATH, () => refusal('NOT_FOUND')))
+  open()
+  fireEvent.click(await screen.findByRole('button', { name: 'Pedir para publicar' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Pedir' }))
+  await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+  expect(screen.queryByText(FAILURES.NOT_FOUND.phrase)).toBeNull()
+})
+
+test('a frase de um pedido que já fechou sai quando a pessoa abre a caixa de pedir de novo', async () => {
+  const view = bruno({ publishRequest: requestView({ mayCancel: true }) })
+  server.use(
+    http.post(cancelPath, () => {
+      view.publishRequest = null
+      return refusal('PUBLISH_REQUEST_CLOSED')
+    }),
+  )
+  open()
+  fireEvent.click(await screen.findByRole('button', { name: 'Cancelar pedido' }))
+  expect(await screen.findByText('Este pedido já foi decidido.')).toBeTruthy()
+  fireEvent.click(await screen.findByRole('button', { name: 'Pedir para publicar' }))
+  await screen.findByRole('dialog', { name: 'Pedir para publicar a versão 5' })
+  expect(screen.queryByText('Este pedido já foi decidido.')).toBeNull()
 })
 
 test('o banco sem resposta: a caixa não confirma, "Tentar de novo" manda a mesma chave', async () => {

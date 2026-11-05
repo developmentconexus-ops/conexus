@@ -177,6 +177,60 @@ test('PUBLISH_REQUEST_CLOSED ao cancelar: o mesmo, e o botão de pedir volta', a
   expect(await screen.findByRole('button', { name: 'Pedir para publicar' })).toBeTruthy()
 })
 
+test('a frase de um pedido que já fechou sai quando a pessoa age sobre o pedido novo', async () => {
+  const view = open('owner')
+  server.use(
+    http.post(decisionPath, () => {
+      view.publishRequest = requestView({ mayDecide: true, number: 6 })
+      return refusal('PUBLISH_REQUEST_CLOSED')
+    }),
+  )
+  fireEvent.click(await screen.findByRole('button', { name: 'Publicar a versão 5' }))
+  expect(await screen.findByText(DECIDED)).toBeTruthy()
+  fireEvent.click(await screen.findByRole('button', { name: 'Recusar' }))
+  await screen.findByRole('dialog', { name: 'Recusar a versão 6' })
+  expect(screen.queryByText(DECIDED)).toBeNull()
+})
+
+test('NOT_FOUND na linha: relê o Projeto, e a frase de não achado não fica', async () => {
+  const view = open('owner')
+  server.use(
+    http.post(decisionPath, () => {
+      view.publishRequest = requestView({ mayDecide: false })
+      return refusal('NOT_FOUND')
+    }),
+  )
+  fireEvent.click(await screen.findByRole('button', { name: 'Publicar a versão 5' }))
+  await waitFor(() =>
+    expect(screen.queryByRole('button', { name: 'Publicar a versão 5' })).toBeNull(),
+  )
+  expect(screen.queryByRole('alert')).toBeNull()
+  expect(screen.queryByText(FAILURES.NOT_FOUND.phrase)).toBeNull()
+})
+
+test('o banco sem resposta ao recusar: a frase fica na caixa e o botão vira Tentar de novo', async () => {
+  const view = open('owner')
+  let answers = 0
+  server.use(
+    http.post(decisionPath, () => {
+      answers += 1
+      if (answers === 1) return refusal('DATABASE_UNAVAILABLE')
+      view.publishRequest = null
+      return HttpResponse.json({ state: 'DECLINED' })
+    }),
+  )
+  fireEvent.click(await screen.findByRole('button', { name: 'Recusar' }))
+  const box = await screen.findByRole('dialog', { name: 'Recusar a versão 5' })
+  fireEvent.click(within(box).getByRole('button', { name: 'Recusar' }))
+  expect((await within(box).findByRole('alert')).textContent).toContain(
+    FAILURES.DATABASE_UNAVAILABLE.phrase,
+  )
+  expect(within(box).queryByRole('button', { name: 'Recusar' })).toBeNull()
+  fireEvent.click(within(box).getByRole('button', { name: 'Tentar de novo' }))
+  await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+  expect(answers).toBe(2)
+})
+
 test('CONNECTOR_NOT_GRANTED: a frase de publicar fica na linha, o pedido segue e a decisão pode ser outra', async () => {
   open('owner')
   server.use(http.post(decisionPath, () => refusal('CONNECTOR_NOT_GRANTED')))

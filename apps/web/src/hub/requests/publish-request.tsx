@@ -1,4 +1,4 @@
-import type { CompanyId, ProjectId } from '@conexus/hub-api'
+import type { CompanyId, FailureCode, ProjectId } from '@conexus/hub-api'
 import { REQUEST_MESSAGE_MAX, requestPublish } from '@conexus/hub-api'
 import { useMutation } from '@tanstack/react-query'
 import { useRouter } from '@tanstack/react-router'
@@ -26,9 +26,15 @@ import { UNCONFIRMED_ASK } from './text.ts'
 type Scope = { companyId: CompanyId; projectId: ProjectId }
 
 /** The refusals the Projeto read again explains by itself: a request is open, or the version is on the air. */
-const EXPLAINED_BY_READING = ['PUBLISH_REQUEST_ALREADY_OPEN', 'PUBLISH_REQUEST_ALREADY_LIVE']
+const EXPLAINED_BY_READING: ReadonlySet<FailureCode> = new Set([
+  'PUBLISH_REQUEST_ALREADY_OPEN',
+  'PUBLISH_REQUEST_ALREADY_LIVE',
+])
 /** The refusals that leave a sentence below the top of the Projeto, as a refused publication does. */
-const SAID_BELOW = ['APP_VERSION_NOT_FOUND', 'PUBLISH_REQUEST_NOT_NEEDED']
+const SAID_BELOW: ReadonlySet<FailureCode> = new Set([
+  'APP_VERSION_NOT_FOUND',
+  'PUBLISH_REQUEST_NOT_NEEDED',
+])
 
 /** The optional sentence of a box that asks for one, a message or a reason; the box shows its refusal. */
 export function MessageField(props: { name: 'message' | 'reason'; label: string }) {
@@ -69,10 +75,8 @@ function AskForm(
       props.onClose()
     } catch (error) {
       if (!(error instanceof HubFailure)) return setServerError(form, error)
-      if (EXPLAINED_BY_READING.includes(error.code)) {
-        props.onClose()
-        props.onChanged()
-      } else if (SAID_BELOW.includes(error.code)) {
+      if (EXPLAINED_BY_READING.has(error.code)) props.onClose()
+      else if (SAID_BELOW.has(error.code)) {
         props.onClose()
         props.onChanged(sentenceOf(error))
       } else if (error.code === 'NOT_FOUND') {
@@ -101,7 +105,8 @@ function AskForm(
  * **Pedir para publicar**, where **Publicar** is for who does not publish: a box asking an optional
  * message, then the Hub opens the request and the Projeto read again shows its line. The attempt key
  * is the box's, one per opening (web W24). The refusals the Projeto explains by itself leave through
- * `onChanged`, as **Publicar**'s leave through its own.
+ * `onChanged`, as **Publicar**'s leave through its own, and opening the box clears the sentence the last
+ * action left.
  */
 export function RequestPublish(
   props: Scope & {
@@ -113,7 +118,13 @@ export function RequestPublish(
   const { label, number } = props
   const [open, setOpen] = useState(false)
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (next) props.onChanged()
+        setOpen(next)
+      }}
+    >
       <DialogTrigger
         render={
           label === 'Pedir para publicar' ? (

@@ -1,7 +1,9 @@
 import type { CompanyId, PublishRequest } from '@conexus/hub-api'
 import { Decision, FAILURES } from '@conexus/hub-api'
 import { useMutation } from '@tanstack/react-query'
+import { useRouter } from '@tanstack/react-router'
 import { useState } from 'react'
+import { agoOf } from '../../platform/dates.ts'
 import { HubFailure, sentenceOf } from '../../platform/hub.ts'
 import { Alert } from '../../ui/alert.tsx'
 import { Button } from '../../ui/button.tsx'
@@ -10,12 +12,12 @@ import { Form, FormAlert, SubmitButton, setServerError, useSchemaForm } from '..
 import { Notice } from '../../ui/notice.tsx'
 import { MessageField } from './publish-request.tsx'
 import { sendCancellation, sendDecision } from './queries.ts'
-import { ALREADY_DECIDED, agoText, askedText, ONLY_DECIDERS } from './text.ts'
+import { ALREADY_DECIDED, askedText, ONLY_DECIDERS } from './text.ts'
 
 type Props = {
   companyId: CompanyId
   request: PublishRequest
-  /** The Projeto changed under the line, or the line is done: it reads the Projeto again, and may say why. */
+  /** The sentence the screen keeps above for the last action: said when an action ends in one, cleared when the next begins. The Projeto is read again by the cache. */
   onChanged: (message?: string) => void
 }
 
@@ -42,6 +44,7 @@ function DeclineForm(props: Props & { onClose: () => void }) {
     }
   }
 
+  const failed = form.formState.errors.root?.server !== undefined
   return (
     <Form form={form} onSubmit={submit}>
       <MessageField name="reason" label="Motivo (opcional)" />
@@ -50,7 +53,7 @@ function DeclineForm(props: Props & { onClose: () => void }) {
         <Button type="button" disabled={form.formState.isSubmitting} onClick={props.onClose}>
           Voltar
         </Button>
-        <SubmitButton idle="Recusar" pending="Recusando…" />
+        <SubmitButton idle={failed ? 'Tentar de novo' : 'Recusar'} pending="Recusando…" />
       </div>
     </Form>
   )
@@ -64,11 +67,13 @@ type Failed = { text: string; canRetry: boolean; work: () => Promise<unknown> }
  * and what the reader may do. The Hub says what that is (`mayCancel`, `mayDecide`): the asker
  * withdraws it, an owner or an administrator publishes the version or declines with a reason, and
  * anyone else reads who decides. A request that was closed meanwhile reads the Projeto again and
- * says so; any other failure stays in the line, with **Tentar de novo** where a try can work.
+ * says so; any other failure stays in the line, with **Tentar de novo** where a try can work. A request the
+ * Hub no longer finds reads the Projeto again, as **Publicar** does.
  */
 export function RequestLine(props: Props) {
   const { companyId, request } = props
   const params = { companyId, requestId: request.id }
+  const router = useRouter()
   const approve = useMutation(sendDecision)
   const cancel = useMutation(sendCancellation)
   const [declining, setDeclining] = useState(false)
@@ -76,12 +81,17 @@ export function RequestLine(props: Props) {
   const pending = approve.isPending || cancel.isPending
 
   async function run(work: () => Promise<unknown>) {
+    props.onChanged()
     setFailed(undefined)
     try {
       await work()
     } catch (error) {
       if (error instanceof HubFailure && error.code === 'PUBLISH_REQUEST_CLOSED') {
         props.onChanged(ALREADY_DECIDED)
+        return
+      }
+      if (error instanceof HubFailure && error.code === 'NOT_FOUND') {
+        await router.invalidate()
         return
       }
       // A try can work when the Hub may not have answered whole, or its own row says to try again.
@@ -101,7 +111,7 @@ export function RequestLine(props: Props) {
       <div className="flex flex-wrap items-baseline justify-between gap-x-md gap-y-xs">
         <Notice>{askedText(request)}</Notice>
         <time dateTime={request.createdAt} className="text-label text-text-2">
-          {agoText(request.createdAt)}
+          {agoOf(request.createdAt, new Date())}
         </time>
       </div>
       {request.message !== '' && <p className="break-words text-text-2">“{request.message}”</p>}
@@ -122,7 +132,13 @@ export function RequestLine(props: Props) {
         )}
         {request.mayDecide && (
           <>
-            <Button disabled={pending} onClick={() => setDeclining(true)}>
+            <Button
+              disabled={pending}
+              onClick={() => {
+                props.onChanged()
+                setDeclining(true)
+              }}
+            >
               Recusar
             </Button>
             <Button

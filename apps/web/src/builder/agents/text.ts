@@ -1,5 +1,5 @@
 import type { AgentDetail, ProblemField, ProblemReason } from '@conexus/hub-api'
-import { ageOf, dayAndHour } from '../../platform/dates.ts'
+import { agoOf, dayAndHour } from '../../platform/dates.ts'
 
 /** The words of the Agentes screens (step 24.3, U5); the founder approves them at the step's end. */
 export const AREA_TITLE = 'Agentes'
@@ -26,9 +26,7 @@ export const MORE_PROJECTS = 'Mais Projetos'
 /** The last published turn of an agent, at a row's second line: "Rodou há 3 h", "Rodou ontem", "Rodou em 28/10". */
 export function lastRunText(lastRunAt: string | null, now: Date): string {
   if (lastRunAt === null) return 'Nunca rodou'
-  const age = ageOf(lastRunAt, now)
-  if (/^\d+ (min|h|d)$/.test(age)) return `Rodou há ${age}`
-  return age === 'ontem' ? 'Rodou ontem' : `Rodou em ${age}`
+  return `Rodou ${agoOf(lastRunAt, now)}`
 }
 export const NO_CONSTRUTOR_CONVERSATIONS = 'Nenhuma conversa com o Construtor ainda.'
 export const MEMBERS_CANNOT =
