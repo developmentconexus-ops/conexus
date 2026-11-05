@@ -1,0 +1,70 @@
+name: Diagnostic check-migrations hang
+
+# Temporary. Loops one test and captures the stuck process tree. Never merge.
+on:
+  pull_request:
+    paths: [.github/workflows/diag-check-migrations.yml]
+
+permissions:
+  contents: read
+
+env:
+  NODE_COMPILE_CACHE: /tmp/node-compile-cache
+
+jobs:
+  loop:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 13
+    strategy:
+      fail-fast: false
+      matrix:
+        copy: [1, 2, 3]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/install # zizmor: ignore[self-repository]
+      - name: Loop the test with a watchdog
+        run: |
+          mkdir -p diag
+          export NODE_OPTIONS="--report-on-signal --report-signal=SIGUSR2 --report-compact --report-directory=$PWD/diag"
+          runs=0
+          while [ "$SECONDS" -lt 600 ]; do
+            runs=$((runs + 1))
+            node --test --test-name-pattern 'aceita duas migrações que partem' scripts/check-migrations.test.ts > diag/last.out 2>&1 &
+            pid=$!
+            start=$SECONDS
+            while kill -0 "$pid" 2>/dev/null && [ $((SECONDS - start)) -lt 20 ]; do sleep 0.5; done
+            if kill -0 "$pid" 2>/dev/null; then
+              echo "HANG at run $runs"
+              {
+                date -u
+                ps -eo pid,ppid,pgid,stat,wchan:32,etime,time,cmd --forest
+                for p in $(ps -eo pid --no-headers); do
+                  [ -r "/proc/$p/cmdline" ] || continue
+                  c=$(tr '\0' ' ' < "/proc/$p/cmdline")
+                  case "$c" in *node*|*drizzle*|*git*)
+                    echo "=== $p $c"
+                    sudo cat "/proc/$p/stack" 2>&1
+                    cat "/proc/$p/wchan" 2>&1; echo
+                    cat "/proc/$p/syscall" 2>&1
+                    grep -E 'State|Threads' "/proc/$p/status"
+                    ls -l "/proc/$p/fd" 2>&1
+                    for t in /proc/$p/task/*; do echo "$t $(cat $t/wchan 2>&1) $(cat $t/stat | cut -d' ' -f3)"; done
+                  esac
+                done
+              } > diag/hang-ps.txt 2>&1
+              for p in $(pgrep -f 'node|drizzle'); do kill -USR2 "$p" 2>/dev/null || true; done
+              sleep 3
+              cat diag/last.out >> diag/hang-ps.txt
+              echo "hung=1" >> "$GITHUB_ENV"
+              break
+            fi
+            wait "$pid" || { echo "test failed run $runs"; cat diag/last.out; }
+          done
+          echo "runs=$runs"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always() && env.hung == '1'
+        with:
+          name: hang-${{ matrix.copy }}
+          path: diag
