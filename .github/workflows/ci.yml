@@ -355,6 +355,8 @@ jobs:
     permissions:
       contents: read
       actions: read
+    env:
+      GH_TOKEN: ${{ github.token }}
     steps:
       - name: Every job must have succeeded
         env:
@@ -368,6 +370,14 @@ jobs:
               exit 1
             fi
           done
+      # Only for the budget step below, which reads each job's timeout-minutes from this file. It
+      # runs after a failed job too, as the steps that follow it do.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: always()
+        continue-on-error: true
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/workflows/ci.yml
       # Where the time went: the run's own record of each job and step, read back from GitHub, so
       # the job that held the run and the slowest step of every run are one click away and no
       # service holds the numbers. "Ended" counts from the first job's creation: the top row is the
@@ -375,12 +385,13 @@ jobs:
       - name: The jobs and the slowest steps of this run
         if: always()
         continue-on-error: true
+        timeout-minutes: 1
         env:
-          GH_TOKEN: ${{ github.token }}
+          JOBS_JQ: >-
+            .jobs[] | select(.completed_at != null and .name != "ci") | . as $job | {job: $job.name, created: ($job.created_at | fromdate), started: ($job.started_at | fromdate), ended: ($job.completed_at | fromdate), steps: [$job.steps[] | select(.completed_at != null and .started_at != null) | {step: .name, seconds: ((.completed_at | fromdate) - (.started_at | fromdate))}]}
         run: |
-          # shellcheck disable=SC2016 # the jq program is single-quoted so the shell leaves its $variables alone
           gh api "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}/jobs" --paginate \
-            --jq '.jobs[] | select(.completed_at != null and .name != "ci") | . as $job | {job: $job.name, created: ($job.created_at | fromdate), started: ($job.started_at | fromdate), ended: ($job.completed_at | fromdate), steps: [$job.steps[] | select(.completed_at != null and .started_at != null) | {step: .name, seconds: ((.completed_at | fromdate) - (.started_at | fromdate))}]}' \
+            --jq "$JOBS_JQ" \
             | jq -s -r '
               (map(.created) | min) as $start |
               "### Jobs, last to end first", "", "| Ended | Queued | Ran | Job |", "| ---: | ---: | ---: | --- |",
@@ -388,3 +399,28 @@ jobs:
               "### Slowest steps", "", "| Seconds | Job | Step |", "| ---: | --- | --- |",
               ([.[] | .job as $job | .steps[] | {job: $job, step, seconds}] | sort_by(-.seconds) | .[:15][] | "| \(.seconds) | \(.job) | \(.step) |")
             ' >> "$GITHUB_STEP_SUMMARY"
+      # How much of its timeout-minutes each job used, so a job that nears its cut-off is seen in the
+      # run and not only when it is cut. The budget is the job's own timeout-minutes in this file;
+      # the 0.70 is the warning threshold (the scheduled issue of U2 has its own).
+      - name: The jobs against their budget
+        if: always()
+        continue-on-error: true
+        timeout-minutes: 1
+        env:
+          JOBS_JQ: >-
+            .jobs[] | select(.completed_at != null and .name != "ci") | {job: .name, seconds: ((.completed_at | fromdate) - (.started_at | fromdate))}
+        run: |
+          budgets=$(yq -o=json -I=0 '.jobs | with_entries(.key = (.value.name // .key) | .value = .value."timeout-minutes")' .github/workflows/ci.yml)
+          gh api "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}/jobs" --paginate \
+            --jq "$JOBS_JQ" \
+            | jq -s --argjson budgets "$budgets" '
+              def one: (. * 10 | round) as $n | "\($n / 10 | floor),\($n % 10)";
+              [.[] | . as $row | ($row.job | sub(" \\([^)]*\\)$"; "")) as $key | select($budgets[$key] != null)
+                | {job: $row.job, used: ([$row.seconds, 0] | max / 60), budget: $budgets[$key]} | . + {ratio: (.used / .budget)}
+                | . + {min: (.used | one), pct: (.ratio * 100 | round)}]
+              | sort_by(-.ratio)' > "$RUNNER_TEMP/budget.json"
+          jq -r '.[] | select(.ratio >= 0.7) | "::warning title=Orçamento do CI::\(.job) usou \(.min) de \(.budget) min (\(.pct)%)"' "$RUNNER_TEMP/budget.json"
+          {
+            echo "### Jobs contra o orçamento"; echo; echo "| Job | Usou (min) | Limite (min) | % |"; echo "| --- | ---: | ---: | ---: |"
+            jq -r '.[] | "| \(.job) | \(.min) | \(.budget) | \(.pct) |"' "$RUNNER_TEMP/budget.json"
+          } >> "$GITHUB_STEP_SUMMARY"
