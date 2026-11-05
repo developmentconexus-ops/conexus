@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import {
-  aMinuteAhead,
   automating,
   created as automationCreated,
   ended,
@@ -115,12 +114,11 @@ test('a rodada de automação: numa conversa que a rodada abriu, no Início ou n
   timeout: 150_000,
 }, async (t) => {
   const on = await automating(t)
-  const cadence = await aMinuteAhead()
   for (const place of [{}, { projectId: on.projectId }]) {
     const body = {
       name: 'Relatório',
       prompt: 'O relatório de vendas de ontem.',
-      cadence,
+      cadence: { kind: 'DAILY', time: '07:00' },
       connections: [on.matriz],
       ...place,
     }

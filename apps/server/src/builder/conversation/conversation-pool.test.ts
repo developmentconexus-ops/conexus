@@ -4,6 +4,7 @@ import { setTimeout } from 'node:timers/promises'
 import { conversing, endOf, sent, started, streamOf, title } from './test-conversation.ts'
 
 // The pool's idle time (POOL_LIMITS) and a margin: what lets Neon put the branch to sleep (D27).
+// The test ends when the pool is empty; the idle time itself has no adjustment yet (U7 of the CI health card).
 const QUIET_MS = 15_000
 
 test('depois de um turno, o login do Mastra não segura conexão: zero em 15 s', {
@@ -25,7 +26,8 @@ test('depois de um turno, o login do Mastra não segura conexão: zero em 15 s',
     return rows[0]?.n
   }
   assert.ok(Number(await open()) > 0, 'the turn went through Mastra’s login')
-  await setTimeout(QUIET_MS)
+  const deadline = Date.now() + QUIET_MS
+  while (Number(await open()) > 0 && Date.now() < deadline) await setTimeout(250)
   assert.equal(await open(), 0)
 })
 

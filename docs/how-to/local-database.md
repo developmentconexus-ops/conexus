@@ -15,7 +15,9 @@ How a developer gets the disposable PostgreSQL 18 that the server tests need. Ru
    `export CONEXUS_TEST_DATABASE_CONTAINER=conexus-test-db`
 4. Run `npm test -w @conexus/server`.
 
-Each suite creates its own database named `conexus_test_` and a random suffix, migrates it, and drops it at the end. The password of `hub_runtime` is the second variable, so the suites that run at once agree on it.
+Each suite clones its own database, named `conexus_test_` and a random suffix, from a template named `conexus_template_` and the hash of the `migrations/` folder, and drops it at the end. The first suite of a new hash migrates that template; the others wait for it and clone it. The password of `hub_runtime` is the second variable, so the suites that run at once agree on it.
+
+Templates of older hashes stay on the server. To drop them, list them with `docker exec conexus-test-db psql -U postgres -Atc "select datname from pg_database where datname like 'conexus_template_%'"`, then run `docker exec conexus-test-db psql -U postgres -c "alter database <name> is_template false" -c "drop database <name>"` for each. When you change `CONEXUS_TEST_RUNTIME_PASSWORD`, drop every template: the password of the logins is set only when a template is migrated, and without that step every suite gets 28P01.
 
 ## Stop it
 
