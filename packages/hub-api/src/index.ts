@@ -10,7 +10,7 @@ export {
   RESERVED_NICKNAMES,
   suggestedNickname,
 } from './address.ts'
-export { ProblemAgents, ProblemField, ProblemReason } from './agent-failures.ts'
+export { NamedAgent, ProblemAgents, ProblemField, ProblemReason } from './agent-failures.ts'
 export * from './agent-ids.ts'
 export * from './agents.ts'
 export {
@@ -100,7 +100,6 @@ export {
   getInvitation,
   InvitationId,
   InvitationView,
-  LIBRARY_ID,
   ListedInvitation,
   listCompanies,
   listInvitations,
@@ -193,6 +192,7 @@ export {
   SessionState,
   setPassword,
 } from './identity.ts'
+export * from './library-ids.ts'
 export {
   ACCOUNT_KEY_MAX_LENGTH,
   ACCOUNT_KINDS,
@@ -281,7 +281,6 @@ export {
   listProjects,
   PROJECT_NAME_MAX_LENGTH,
   Project,
-  ProjectId,
   ProjectName,
   ProjectSummary,
 } from './projects.ts'

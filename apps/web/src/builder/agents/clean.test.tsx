@@ -77,6 +77,13 @@ test('a ferramenta pronta do painel tem o nome da leitura; a feita à mão, a de
   expect(within(panel).queryByText('vendas_de_ontem')).toBeNull()
 })
 
+test('a ferramenta feita à mão mostra o nome dela junto da descrição, para distinguir duas parecidas', async () => {
+  at(PAGE, { agents: [agent()] })
+  const panel = await screen.findByRole('region', { name: 'Ferramentas' })
+  expect(await within(panel).findByText('Vendas de ontem por vendedor.')).toBeTruthy()
+  expect(within(panel).getByText('vendas_de_ontem')).toBeTruthy()
+})
+
 test('sem conversa aberta, o painel de teste diz a frase da matriz e traz os dois botões', async () => {
   at(PAGE, { agents: [agent()] })
   const panel = await screen.findByRole('region', { name: 'Testar' })
