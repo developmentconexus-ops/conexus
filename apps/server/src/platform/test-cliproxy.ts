@@ -5,7 +5,7 @@
 // answers the ids the file `models` holds, comma apart, or the ids recorded from the founder's proxy,
 // and none for the milliseconds the file `loading` holds after it starts, or while the file `hold`
 // is there, as v8.0.33 does while it fetches the login's models from Google. Its model route, `/v1`'s Chat
-// Completions, answers with the recording the file `recording` names (testing T24), and adds the
+// Completions, answers with the recording the file `recording` names (testing T24; one name a line, the call's own in order, the last again after them), and adds the
 // model each call asks for to the file `asked`, a line per call.
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { createServer } from 'node:http'
@@ -85,8 +85,12 @@ const server = createServer(async (request, response) => {
     return reply(200, { object: 'list', data: ids.map((id) => ({ id, object: 'model' })) })
   }
   if (url.pathname === '/v1/chat/completions' && request.method === 'POST') {
-    appendFileSync(join(control, 'asked'), `${(await body(request)).model}\n`)
-    const name = readFileSync(join(control, 'recording'), 'utf8').trim()
+    const asked = await body(request)
+    if ('tools' in asked) writeFileSync(join(control, 'body'), JSON.stringify(asked))
+    appendFileSync(join(control, 'asked'), `${asked.model}\n`)
+    const names = readFileSync(join(control, 'recording'), 'utf8').trim().split('\n')
+    const calls = readFileSync(join(control, 'asked'), 'utf8').trim().split('\n').length
+    const name = names[Math.min(calls, names.length) - 1] ?? ''
     const recorded = recordedBody(name)
     response.writeHead(200, { 'content-type': 'text/event-stream' })
     // A stream the client cut stays open, as the provider was still sending, until the Hub stops.

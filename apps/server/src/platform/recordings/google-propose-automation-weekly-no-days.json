@@ -1,0 +1,6 @@
+{
+  "provider": "google",
+  "api": "Chat Completions through CLIProxyAPI v8.0.33, streamed, with propose_automation declared flat; the arguments edited by hand: the days are taken out of a real call, with its call id changed, since Gemini never sent a WEEKLY without days",
+  "sdk": "CLIProxyAPI 8.0.33 answering a plain Chat Completions call (the body the Hub's model sends)",
+  "recordedAt": "2026-11-05"
+}

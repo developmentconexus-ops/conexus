@@ -1,0 +1,6 @@
+data: {"id":"b7nsaoa5E7a_ytMPpPbImAk","object":"chat.completion.chunk","created":0,"model":"gemini-3.8-flash-n","choices":[{"index":0,"delta":{"role":"assistant","content":null,"reasoning_content":null,"tool_calls":[{"id": "propose_automation-1793898867778635775-1","index": 0,"type": "function","function": {"name": "propose_automation","arguments": "{\"name\": \"Resumo do giro de estoque - Padaria Pão Novo\",\"cadence\": {\"kind\": \"WEEKLY\",\"time\": \"07:00\",\"days\": [\"MON\",\"WED\"]},\"connections\": [\"Matriz\"],\"prompt\": \"Acesse os dados da conexão Matriz e elabore um resumo do giro de estoque da padaria Pão Novo, destacando os itens de maior e menor saída, níveis críticos e principais movimentações recentes.\"}"}}]},"finish_reason":null,"native_finish_reason":null}]}
+
+data: {"id":"b7nsaoa5E7a_ytMPpPbImAk","object":"chat.completion.chunk","created":0,"model":"gemini-3.8-flash-n","choices":[{"index":0,"delta":{"role":"assistant","content":"","reasoning_content":null},"finish_reason":"tool_calls","native_finish_reason":"stop"}],"usage":{"completion_tokens":330,"total_tokens":916,"prompt_tokens":586,"completion_tokens_details":{"reasoning_tokens":217}}}
+
+data: [DONE]
+

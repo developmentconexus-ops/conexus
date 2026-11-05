@@ -21,6 +21,7 @@ import { autoMemoryModel } from './auto-memory-model.ts'
 import type { AccountFailure } from './errors.ts'
 import { callFailureOf } from './errors.ts'
 import { nextModels } from './fallback.ts'
+import { forCliProxy } from './google/flat-unions.ts'
 import type { QueueDeps } from './queue.ts'
 import { callModel, markAccount, pickAccount, providerName, providerOf } from './queue.ts'
 import type { ProviderOptions } from './thinking.ts'
@@ -189,8 +190,9 @@ function withOptions(
  * the queue must come after Mastra's retries (Mastra Code, `account-rotation-processor.ts:12-20`).
  * Each attempt gets its account's model; after the automatic switch, the new model reads pages
  * but does not search again (founder, card reading 3 A), since the search tool was resolved for
- * the first model (`agent.ts:5300-5301`). The set it narrows is the mode's own (`availableTools`,
- * `permissions.ts`), never the agent's whole toolset.
+ * the first model (`agent.ts:5300-5301`). On CLIProxy's Google path the unions it
+ * makes indistinguishable go flat (`docs/reference/boundaries.md`). The set it narrows is the mode's
+ * own (`availableTools`, `permissions.ts`), never the agent's whole toolset.
  */
 export function accountPick(deps: QueueDeps): InputProcessor {
   return {
@@ -214,6 +216,9 @@ export function accountPick(deps: QueueDeps): InputProcessor {
       if (turn.switched && args.activeTools !== undefined) {
         result.activeTools = args.activeTools.filter((name) => name !== WEB_SEARCH)
       }
+      const flat =
+        account.kind === 'google_cliproxy' && args.tools ? forCliProxy(args.tools) : undefined
+      if (flat !== undefined) result.tools = flat
       return result
     },
   }

@@ -1202,3 +1202,23 @@ reference tool checks a read against its documentation.
   thousands of threads. That is the trigger to revisit: a title column or a search index of the Hub's own.
 - **Proof.** `list-search.test.ts` "a busca" (accent, case, spaces, nothing found) and "o lugar" (the
   marks, with and without a text): each fails when its comparison or its mark is taken out.
+
+## CLIProxyAPI v8.0.33: uniões achatadas no login do Google (step 24.3.5)
+
+- **Library line.** At CLIProxyAPI v8.0.33 (`infra/hub.Dockerfile`; unchanged in v8.0.56),
+  `internal/util/gemini_schema.go:73-83`, `:941` and `:957-971` drop every `enum` from a tool's
+  schema for the Antigravity path and keep a multi-branch `anyOf`; `antigravity_executor_request.go:70-77`
+  sends the same cleaned schema to Gemini (commits `7d55d0da` and `5efe9758`).
+- **Hand-made piece.** `forCliProxy` in `apps/server/src/builder/model-accounts/google/flat-unions.ts`,
+  called by `accountPick` only when the account is `google_cliproxy`. For that step it declares flat
+  any tool whose input has a union of objects told apart by a fixed-value field (`cadence` of
+  `propose_automation`); `execute` and the validation stay the tool's own, so the card, the route and
+  storage see only the correct `Cadence`. Founder, 2026-11-05: "B, mas apenas para o Gemini via CLI PRoxy".
+- **Why.** Through the proxy the four branches of `cadence` reach Gemini differing only by a text hint,
+  and Gemini never called the tool. With `cadence` flat it called it correctly 6 of 6 in a local proof
+  of 18 calls to the company's Google login.
+- **Proof.** `google/flat-unions.test.ts` "sem união": the declaration the proxy receives has no union.
+  The row `cliproxy-flat-unions` in `scripts/removals.json` takes the lines out of `accountPick`
+  and the test fails.
+- **Revisit when** CLIProxyAPI keeps the tools' `enum` for Gemini, or the `google_cliproxy` path leaves
+  the product. Then delete the file, its test, the lines in `processors.ts`, the removal row and this entry.
