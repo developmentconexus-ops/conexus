@@ -133,9 +133,10 @@ tudo". The lines of [screens](../reference/screens.md) say which screen is on wh
   (`/companies/<e>/settings/<section>`); Central (`/operations/…`). A person who only uses an app
   sees only "Seus apps" at `/` and never enters them. [review]
 - **W30.** The frame **should** be an icon rail (Início, Projetos, Integrações, then Automações and
-  Agentes (founder, 2026-11-02, `V1`) for an owner or an administrator, and Configurações, the
-  bell and the account at the foot) with the place's list beside it. In the company the list is
-  Nova conversa and Conversas by day (a member sees the recent Projetos instead). Inside a Projeto
+  Agentes (founder, 2026-11-02, `V1`) for an owner, an administrator or a developer (step 24.3.4,
+  founder, 2026-11-04: "2. Aprovo"), and Configurações, the bell and the account at the foot) with
+  the place's list beside it. In the company the list is Nova conversa and Conversas by day, for
+  every role, since the member talks with the Assistant too. Inside a Projeto
   the rail stays and the list is the Projeto's: its name with the switcher, Construir, Conversas (with the Assistant, step
   24.1), Sobre, Quem usa o app and Integrações (founder, 2026-10-30, R2). The account menu holds the
   name, theme, Central for whoever operates it, and Sair. On a phone the rail and the list go
@@ -153,7 +154,7 @@ tudo". The lines of [screens](../reference/screens.md) say which screen is on wh
   headed by its name (Geral, Pessoas e convites, Padrões da empresa, Memória observacional); founder,
   2026-10-20: "1. A"; 2026-10-27: "Opcao C", "1. Sim 2. Antes", "Aprovado". Integrações is not
   there: it is a company sidebar entry between Projetos and Configurações (founder, 2026-10-28, on
-  the connectors study: "O1"). Owner and administrator change the company's group; a member reads Pessoas.
+  the connectors study: "O1"). Owner and administrator change the company's group; a developer or a member reads Pessoas.
   Atividade and Uso have their place reserved there and appear only when a card asks for them. [review]
 - **W33.** An owner's first entry **should** be four steps with progress, "Voltar" and "Sair":
   Sua empresa, Ligue uma conta de modelo, Convide sua equipe, O que vamos construir primeiro? Steps
@@ -166,7 +167,8 @@ tudo". The lines of [screens](../reference/screens.md) say which screen is on wh
   início" ([code C48](code.md); founder, 2026-10-20: "2. A"); a missing permission shows the page
   and says who can (design V29), and never hides it. The exceptions: the Automações and Agentes
   entries are hidden from the member and their addresses answer not found (S10), because the member
-  never creates them (founder, 2026-11-01: "1 A"; 2026-11-02: "3.A"). Failure: a screen that hides what a person may not do
+  never creates them (founder, 2026-11-01: "1 A"; 2026-11-02: "3.A"); the developer creates both and
+  sees them (step 24.3.4). Failure: a screen that hides what a person may not do
   leaves them guessing. [review]
 - **W35.** The Hub added to the iPhone home screen (iOS 26.1 or newer) draws a blurred band under
   the status bar: WebKit bug 301994, with no fix in the page. The page **must not** carry a
