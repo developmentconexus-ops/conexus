@@ -2647,7 +2647,7 @@
     "test": {
       "cwd": "apps/server",
       "file": "src/hub/requests/races.test.ts",
-      "name": "decidir ou publicar enquanto quem pediu sai da empresa"
+      "name": "recusar enquanto quem pediu sai da empresa"
     }
   },
   {
@@ -2658,7 +2658,7 @@
     "test": {
       "cwd": "apps/server",
       "file": "src/hub/requests/races.test.ts",
-      "name": "decidir ou publicar enquanto quem pediu sai da empresa"
+      "name": "publicar outra versão enquanto quem pediu sai da empresa"
     }
   },
   {

@@ -11,7 +11,7 @@ import type {
   RunTrigger,
 } from '@conexus/hub-api'
 import { automationPath, conversationPath, NotificationRow } from '@conexus/hub-api'
-import { and, desc, eq, inArray, isNull, lt, or, sql } from 'drizzle-orm'
+import { and, desc, eq, getTableColumns, inArray, isNull, lt, or, sql } from 'drizzle-orm'
 import type { PublicOrigin } from '../../platform/config.ts'
 import type { Database, ReadTx, Scope } from '../../platform/database.ts'
 import { databaseFailure } from '../../platform/database.ts'
@@ -22,7 +22,7 @@ import { pageOf } from '../../platform/pages.ts'
 import type { IdentityPorts } from '../identity/public.ts'
 import { automationMail } from './mail.ts'
 import { requestNoticeRows, requestNoticeView } from './request-notices.ts'
-import { notification, requestNotice } from './tables.ts'
+import { microsOf, notification, requestNotice } from './tables.ts'
 
 /** A run that ended, for the person who owns its automation. */
 export type AutomationRan = {
@@ -202,7 +202,7 @@ function mine(table: Mine, input: Of) {
 async function anchorOf(tx: ReadTx, input: Of, id: NotificationId) {
   for (const table of [notification, requestNotice]) {
     const [row] = await tx
-      .select({ id: table.id, createdAt: table.createdAt })
+      .select({ id: table.id, micros: microsOf(table.createdAt) })
       .from(table)
       .where(and(mine(table, input), eq(table.id, id)))
     if (row !== undefined) return row
@@ -210,12 +210,16 @@ async function anchorOf(tx: ReadTx, input: Of, id: NotificationId) {
   return undefined
 }
 
-type Shown = { id: string; createdAt: Date; row: unknown }
+type Shown = { id: string; micros: string; row: unknown }
 
-/** Newest first, the order of both tables' index; equal instants by id, as PostgreSQL orders uuids. */
+/**
+ * Newest first, the order of both tables' index; equal instants by id, as PostgreSQL orders uuids.
+ * The instants are microseconds: a `Date` keeps milliseconds, and rows of one millisecond would
+ * leave the order the database gave them.
+ */
 function newestFirst(a: Shown, b: Shown): number {
-  const byTime = b.createdAt.getTime() - a.createdAt.getTime()
-  if (byTime !== 0) return byTime
+  const byTime = BigInt(b.micros) - BigInt(a.micros)
+  if (byTime !== 0n) return byTime > 0n ? 1 : -1
   return a.id < b.id ? 1 : a.id > b.id ? -1 : 0
 }
 
@@ -226,14 +230,15 @@ async function list(deps: Deps, input: Of & { after: NotificationId | undefined 
     const last = input.after === undefined ? undefined : await anchorOf(tx, input, input.after)
     function after(table: Mine) {
       if (last === undefined) return mine(table, input)
+      const at = sql`to_timestamp(${last.micros}::numeric / 1000000)`
       const before = or(
-        lt(table.createdAt, last.createdAt),
-        and(eq(table.createdAt, last.createdAt), lt(table.id, last.id)),
+        lt(table.createdAt, at),
+        and(eq(table.createdAt, at), lt(table.id, last.id)),
       )
       return and(mine(table, input), before)
     }
     const automations = await tx
-      .select()
+      .select({ ...getTableColumns(notification), micros: microsOf(notification.createdAt) })
       .from(notification)
       .where(after(notification))
       .orderBy(desc(notification.createdAt), desc(notification.id))
@@ -245,7 +250,7 @@ async function list(deps: Deps, input: Of & { after: NotificationId | undefined 
     const shown: Shown[] = [
       ...automations.map((row) => ({
         id: row.id,
-        createdAt: row.createdAt,
+        micros: row.micros,
         row: {
           kind: row.kind,
           id: row.id,
@@ -259,7 +264,7 @@ async function list(deps: Deps, input: Of & { after: NotificationId | undefined 
       })),
       ...requests.map((row) => ({
         id: row.id,
-        createdAt: row.createdAt,
+        micros: row.micros,
         row: requestNoticeView(row),
       })),
     ].sort(newestFirst)
