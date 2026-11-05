@@ -212,3 +212,61 @@ test('configuração: as chaves dos apps', async (t) => {
     'HUB_CONNECTOR_APPS_FILE',
   )
 })
+
+// Each refusal of the program's start-up reading, proven here and not through a process per case:
+// boot.test.ts keeps two process cases for the exit code and the CONFIG_INVALID line. The variables
+// the cases above already refuse when missing are not repeated.
+const MISSING = [
+  'CONEXUS_VERSION',
+  'HUB_PORT',
+  'LOG_LEVEL',
+  'HUB_DATABASE_URL_FILE',
+  'HUB_EDGE_PORT',
+  'HUB_APPS_DOMAIN',
+  'HUB_PUBLIC_ORIGIN',
+  'HUB_SESSION_SECRET_FILE',
+  'HUB_MAIL_API_URL',
+  'HUB_MAIL_FROM',
+  'HUB_MAIL_TOKEN_FILE',
+  'HUB_APP_LOGIN_KEY_FILE',
+  'HUB_CLOUDFLARE_API_URL',
+  'HUB_CLOUDFLARE_ACCOUNT_ID',
+  'HUB_APPS_NAMESPACE',
+  'HUB_CLOUDFLARE_APPS_TOKEN_FILE',
+  'HUB_INSTALLATION_ID',
+] as const
+
+const OUT_OF_FORMAT = [
+  ['CONEXUS_VERSION', '0.1.0'],
+  ['HUB_PORT', 'abc'],
+  ['HUB_PORT', '70000'],
+  ['LOG_LEVEL', 'loud'],
+  ['HUB_EDGE_PORT', 'abc'],
+  ['HUB_EDGE_PORT', '8080'],
+  ['HUB_APPS_DOMAIN', 'Apps.Example.Test'],
+  ['HUB_APPS_DOMAIN', 'localhost'],
+  ['HUB_PUBLIC_ORIGIN', 'http://hub.example.test'],
+  ['HUB_PUBLIC_ORIGIN', 'https://hub.example.test/'],
+  ['HUB_MAIL_API_URL', 'ftp://mail.example.test/send'],
+  ['HUB_MAIL_API_URL', 'http://mail.example.test/send'],
+  ['HUB_MAIL_FROM', 'convites'],
+  ['HUB_CLOUDFLARE_API_URL', 'http://cloudflare.example.test/client/v4'],
+  ['HUB_CLOUDFLARE_ACCOUNT_ID', 'Conta'],
+  ['HUB_APPS_NAMESPACE', 'conexus_apps'],
+  ['HUB_INSTALLATION_ID', 'hub.example.test'],
+  ['HUB_INSTALLATION_ID', 'ABCDEF0123456789ABCDEF'],
+] as const
+
+test('configuração: recusa ler sem uma variável, nomeando-a', async (t) => {
+  const env = serveEnvironment(t, await unreachableDatabaseUrl(), { port: 8080, edgePort: 8081 })
+  for (const name of MISSING) {
+    await t.test(`sem ${name}`, () => refusal({ ...env, [name]: undefined }, name))
+  }
+})
+
+test('configuração: recusa ler um valor fora do formato, nomeando a variável', async (t) => {
+  const env = serveEnvironment(t, await unreachableDatabaseUrl(), { port: 8080, edgePort: 8081 })
+  for (const [name, value] of OUT_OF_FORMAT) {
+    await t.test(`${name}=${value}`, () => refusal({ ...env, [name]: value }, name))
+  }
+})
