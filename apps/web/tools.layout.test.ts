@@ -94,31 +94,30 @@ const DRAFT = {
   web: false,
   appData: false,
 }
+const AGENT_DETAIL = {
+  id: AGENT,
+  projectId: PROJECT_ID,
+  ...DRAFT,
+  state: { kind: 'DRAFT' as const },
+  updatedAt: '2026-11-02T12:00:00.000Z',
+  lastRunAt: null,
+  draft: DRAFT,
+  revision: 1,
+  tools: [],
+  offered: [
+    {
+      connectionId: CONNECTION,
+      connector: 'sankhya',
+      name: 'Matriz',
+      reads: [{ operation: 'pedidos', label: 'Pedidos', summary: 'Pedidos de venda.' }],
+    },
+  ],
+  createdBy: null,
+}
 const agentReplies = {
   ...replies,
   [`GET ${BASE}/tools`]: ok(listTools, { tools: LONG, ready: [] }),
-  [`GET ${BASE}/agents/${AGENT}`]: ok(getAgent, {
-    agent: {
-      id: AGENT,
-      projectId: PROJECT_ID,
-      ...DRAFT,
-      state: { kind: 'DRAFT' as const },
-      updatedAt: '2026-11-02T12:00:00.000Z',
-      lastRunAt: null,
-      draft: DRAFT,
-      revision: 1,
-      tools: [],
-      offered: [
-        {
-          connectionId: CONNECTION,
-          connector: 'sankhya',
-          name: 'Matriz',
-          reads: [{ operation: 'pedidos', label: 'Pedidos', summary: 'Pedidos de venda.' }],
-        },
-      ],
-      createdBy: null,
-    },
-  }),
+  [`GET ${BASE}/agents/${AGENT}`]: ok(getAgent, { agent: AGENT_DETAIL }),
   [`GET ${BASE}/agents/${AGENT}/versions`]: ok(listAgentVersions, { versions: [] }),
 }
 
@@ -152,3 +151,48 @@ for (const [opening, button, footer, viewport] of [
     await page.close()
   })
 }
+
+function handMade(id: string, slug: string, description: string) {
+  return {
+    id,
+    slug,
+    connectionId: CONNECTION,
+    operation: 'pedidos',
+    effect: 'READ' as const,
+    latest: { id: VERSION, number: 1 },
+    version: { id: VERSION, number: 1, description, bound: {}, open: [] },
+  }
+}
+
+// The agent's panel keeps each chosen tool's lines inside its row, whichever the tool (design V23).
+test('o painel do agente com duas ferramentas feitas à mão não deixa o texto de uma passar sobre a outra', async () => {
+  const page = await harness.open(
+    `/companies/${COMPANY.id}/projects/${PROJECT_ID}/agents/${AGENT}`,
+    {
+      viewport: PHONE,
+      replies: {
+        ...agentReplies,
+        [`GET ${BASE}/agents/${AGENT}`]: ok(getAgent, {
+          agent: {
+            ...AGENT_DETAIL,
+            tools: [
+              handMade(
+                '33333333-aaaa-4aaa-8aaa-000000000001',
+                'vendas_de_ontem',
+                'Vendas de ontem.',
+              ),
+              handMade('33333333-aaaa-4aaa-8aaa-000000000002', 'metas_do_mes', 'Metas do mês.'),
+            ],
+          },
+        }),
+      },
+    },
+  )
+  const rows = page.getByRole('region', { name: 'Ferramentas' }).locator('li')
+  await rows.first().waitFor()
+  const cut = await rows.evaluateAll((nodes) =>
+    nodes.map((node) => node.scrollHeight > node.clientHeight),
+  )
+  assert.deepEqual(cut, [false, false], 'o texto de uma ferramenta passa da linha dela')
+  await page.close()
+})

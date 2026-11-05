@@ -114,7 +114,7 @@ const REASONS = {
   VALUE_REFUSED: 'A operação não aceita este valor.',
   UNKNOWN_FIELD: 'A operação não tem este campo.',
   FIELD_TWICE:
-    'Um campo não pode estar nos valores fixos e nos que o modelo preenche ao mesmo tempo.',
+    'Um campo aparece duas vezes: repetido nos que o modelo preenche, ou também nos valores fixos.',
   REQUIRED_MISSING: 'Falta um campo obrigatório da operação.',
   SLUG_TAKEN: 'Já existe uma ferramenta com este nome.',
   NOT_USABLE: 'O Projeto não pode usar esta ferramenta.',
@@ -133,15 +133,23 @@ export function titleOf(conversation: { title: string; updatedAt: string }): str
     : conversation.title
 }
 
+/** The ready read of the kit a tool still is, when its description is the read's own; a tool made by hand has none. */
+export function readOfTool(
+  tool: { connectionId: string; operation: string; description: string },
+  offered: AgentDetail['offered'],
+) {
+  const read = offered
+    .find((one) => one.connectionId === tool.connectionId)
+    ?.reads.find((each) => each.operation === tool.operation)
+  return read?.summary === tool.description ? read : undefined
+}
+
 /** The name a person reads for a tool: a ready read by the kit's own `label`; one made by hand by its description. */
 export function toolTitle(
   tool: { connectionId: string; operation: string; description: string },
   offered: AgentDetail['offered'],
 ): string {
-  const read = offered
-    .find((one) => one.connectionId === tool.connectionId)
-    ?.reads.find((each) => each.operation === tool.operation)
-  return read?.summary === tool.description ? read.label : tool.description
+  return readOfTool(tool, offered)?.label ?? tool.description
 }
 
 export function connectionOf(offered: AgentDetail['offered'], id: string) {

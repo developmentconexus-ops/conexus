@@ -81,6 +81,25 @@ function NewVersion(props: {
   )
 }
 
+/** **Nova versão** opened from the list: the tool is read when the dialog opens, then the same form. */
+export function NewVersionOf(props: {
+  scope: Scope
+  toolId: ToolId
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}) {
+  const read = useQuery({ ...toolQuery(props.scope, props.toolId), enabled: props.open })
+  const tool = read.data?.tool
+  return tool === undefined ? null : (
+    <NewVersion
+      scope={props.scope}
+      tool={tool}
+      open={props.open}
+      onOpenChange={props.onOpenChange}
+    />
+  )
+}
+
 /**
  * One tool of the library (step 24.3.1, U7, criterion 32): its versions, newest first, and **Nova
  * versão**; the agents that hold an earlier version keep it.

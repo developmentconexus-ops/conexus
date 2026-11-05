@@ -9,6 +9,7 @@ import { TableCell, TableRow } from '../../ui/table.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
 import { sendToolDeletion } from './queries.ts'
 import { deleteWarning, EFFECT_TEXT, NOBODY_USES, UNCONFIRMED_DELETE } from './text.ts'
+import { NewVersionOf } from './tool-page.tsx'
 
 type Scope = { companyId: CompanyId; projectId: ProjectId }
 
@@ -66,6 +67,7 @@ export function ToolRow({ scope, tool }: { scope: Scope; tool: ToolSummary }) {
   const phone = useIsMobile()
   const [failure, setFailure] = useState<unknown>()
   const [confirming, setConfirming] = useState(false)
+  const [versioning, setVersioning] = useState(false)
   const cancel = useRef<HTMLButtonElement>(null)
   async function erase() {
     setConfirming(false)
@@ -76,8 +78,16 @@ export function ToolRow({ scope, tool }: { scope: Scope; tool: ToolSummary }) {
       setFailure(error)
     }
   }
-  const remover = (
+  const actions = (
     <>
+      <Button
+        size="sm"
+        aria-label={`Nova versão de ${tool.slug}`}
+        onClick={() => setVersioning(true)}
+      >
+        Nova versão
+      </Button>
+      <NewVersionOf scope={scope} toolId={tool.id} open={versioning} onOpenChange={setVersioning} />
       <Button
         size="sm"
         variant="danger"
@@ -123,7 +133,7 @@ export function ToolRow({ scope, tool }: { scope: Scope; tool: ToolSummary }) {
             <>
               <span className="mt-xs flex flex-wrap items-center gap-sm">
                 <span className="text-fact text-text-2">v{tool.latest.number}</span>
-                {remover}
+                {actions}
               </span>
               <span className="block text-fact text-text-2">
                 {tool.connectionName} · {tool.readLabel} · {EFFECT_TEXT[tool.effect]}
@@ -147,7 +157,9 @@ export function ToolRow({ scope, tool }: { scope: Scope; tool: ToolSummary }) {
         {!phone && (
           <>
             <TableCell className="px-sm text-fact text-text-2">v{tool.latest.number}</TableCell>
-            <TableCell className="px-sm text-right">{remover}</TableCell>
+            <TableCell className="px-sm">
+              <span className="flex justify-end gap-xs">{actions}</span>
+            </TableCell>
           </>
         )}
       </TableRow>

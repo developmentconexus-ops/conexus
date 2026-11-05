@@ -44,6 +44,25 @@ test('a página lista os agentes de todos os Projetos com o Projeto, o estado e 
   expect(screen.queryByRole('button', { name: /Publicar|Apagar|Salvar/ })).toBeNull()
 })
 
+test('a última execução diz "Rodou ontem" e, mais antiga, "Rodou em" com o dia', async () => {
+  const day = 24 * 3_600_000
+  const old = new Date(Date.now() - 20 * day)
+  at(
+    HOME_AGENTS,
+    {
+      agents: [
+        agent({ name: 'Ontem', lastRunAt: new Date(Date.now() - day - 3_600_000).toISOString() }),
+        agent({ id: OTHER_AGENT, name: 'Antigo', lastRunAt: old.toISOString() }),
+      ],
+    },
+    { projects: [PEDIDOS] },
+  )
+  const yesterday = await screen.findByRole('link', { name: /Ontem/ })
+  expect(within(yesterday).getByText(/Rodou ontem/)).toBeTruthy()
+  const older = screen.getByRole('link', { name: /Antigo/ })
+  expect(within(older).getByText(/^Rodou em \d{2}\/\d{2}$/)).toBeTruthy()
+})
+
 test('o filtro por Projeto troca a lista e o endereço; sem agentes ali, a frase do filtro', async () => {
   const { conexus } = at(HOME_AGENTS, { agents: [HERE] }, { projects: [PEDIDOS, ESTOQUE] })
   await screen.findByRole('link', { name: /Conferente de metas/ })

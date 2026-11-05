@@ -138,6 +138,28 @@ test('Nova versão abre o formulário com a versão de agora e grava a seguinte'
   expect(sent?.key).not.toBeNull()
 })
 
+test('Nova versão na linha da lista abre o formulário da ferramenta, sem sair da lista', async () => {
+  at(TABS, {
+    agents: [agent()],
+    tools: [toolSummary()],
+    toolVersions: [
+      {
+        id: TOOL_V1,
+        number: 1,
+        description: 'Vendas de ontem por vendedor.',
+        bound: { dias: 1 },
+        open: ['vendedor'],
+      },
+    ],
+  })
+  fireEvent.click(await screen.findByRole('button', { name: 'Nova versão de vendas_de_ontem' }))
+  const bound = await screen.findByRole<HTMLTextAreaElement>('textbox', {
+    name: 'Valores fixos (JSON)',
+  })
+  expect(JSON.parse(bound.value)).toEqual({ dias: 1 })
+  expect(screen.getByRole('button', { name: 'Gravar versão' })).toBeTruthy()
+})
+
 test('uma ferramenta que o Hub não acha dá não encontrado, e a que ele acha abre', async () => {
   at(`${TABS}/${TOOL}`, { agents: [agent()], tools: [toolSummary()] })
   expect(await screen.findByText('Versão 1')).toBeTruthy()
