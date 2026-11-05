@@ -107,7 +107,7 @@ merge.
   remove taken items from next-card issues, move each remendo row of the reference table into
   [boundaries](../reference/boundaries.md) with its package version, and delete the card. An agent
   that did not build the step also runs the [CI health review](../how-to/ci-health.md) and sends
-  its findings to the founder. Failure: deleting the card erases a decision nobody preserved. [review]
+  its findings to the founder. Founder, 2026-11-04: "D A". Failure: deleting the card erases a decision nobody preserved. [review]
 - **L20.** Skills and guides **must** change only in a closing pull request, or in a documents-only
   pull request of their own with the founder's word, between two steps of the track it affects; a
   step in flight keeps the rules it started with. Founder, 2026-10-30: "2. Sim". A new check **must** land in a pull request of its own before the step that needs
