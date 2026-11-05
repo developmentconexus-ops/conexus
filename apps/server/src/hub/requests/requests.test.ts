@@ -210,6 +210,28 @@ test('duas decisões, e decidir e publicar ao mesmo tempo', async (t) => {
   })
 })
 
+test('cancelar e decidir ao mesmo tempo', async (t) => {
+  const on = await pedidos(t, 1)
+  const { hub, ana, bruno } = on
+  // The cancel holds the request first; the approval then finds it closed and publishes nothing.
+  const one = await on.asked(bruno, 1)
+  const held = 'select 1 from requests.request where id = $1 for update'
+  const [cancel, decision] = await withOwnerLock(hub.test, held, [one], async (release) => {
+    const cancelling = on.cancel(bruno, one)
+    await queued(hub.test, 1)
+    const deciding = on.decide(ana, one, { decision: 'APPROVE' })
+    await queued(hub.test, 2)
+    await release()
+    return Promise.all([cancelling, deciding])
+  })
+  assert.equal(cancel?.statusCode, 204)
+  assert.deepEqual(decision && refusal(decision), [409, 'PUBLISH_REQUEST_CLOSED'])
+  assert.equal(await on.published(), null)
+  assert.deepEqual(await on.requests(), [
+    { number: 1, state: 'CANCELLED', reason: null, decided_by: null },
+  ])
+})
+
 test('publicar com um pedido aberto', async (t) => {
   const on = await pedidos(t, 3)
   const { ana, bruno, diego } = on

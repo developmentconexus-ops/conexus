@@ -69,10 +69,12 @@ const VIEW = {
   createdAt: request.createdAt,
 }
 
-type Row = { [K in keyof typeof VIEW]: unknown } & {
+type Row = {
+  id: string
   number: number
   message: string
   requestedBy: string
+  requestedByName: string | null
   createdAt: Date
 }
 
@@ -86,7 +88,7 @@ function viewOf(
     id: RequestId.parse(row.id),
     number: row.number,
     message: row.message,
-    requestedBy: { name: String(row.requestedByName ?? '') },
+    requestedBy: { name: row.requestedByName ?? '' },
     createdAt: row.createdAt.toISOString(),
     mayDecide: !own && deps.identity.allows(reader.role, 'decideRequest'),
     mayCancel: own,
