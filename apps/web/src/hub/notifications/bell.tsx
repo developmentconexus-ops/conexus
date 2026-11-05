@@ -42,27 +42,56 @@ export function unreadNote(count: number): string | undefined {
   return count === 1 ? '1 notificação não lida' : `${count} notificações não lidas`
 }
 
-/** What a notification says, in the words of the state matrix. */
-function textOf(notification: NotificationRow): string {
-  const { name } = notification.automation
-  switch (notification.kind) {
-    case 'AUTOMATION_DONE':
-      return `Automação ${name}: pronta`
-    case 'AUTOMATION_FAILED':
-      return `${name} falhou: ${phraseOf(notification.code)}`
-    case 'AUTOMATION_PAUSED':
-      return `${name} ${PAUSED_BY_OWNER}`
+type Decided = Extract<NotificationRow, { kind: 'REQUEST_DECIDED' }>
+
+/** What the asker reads of their request's end; without a name once the person who decided left. */
+function decidedText(notification: Decided): string {
+  const { number, decidedBy, reason } = notification
+  switch (notification.outcome) {
+    case 'APPROVED':
+      return decidedBy === null
+        ? `A versão ${number} que você pediu foi publicada.`
+        : `${decidedBy.name} publicou a versão ${number} que você pediu.`
+    case 'DECLINED':
+      if (decidedBy === null) return `O pedido da versão ${number} foi recusado.`
+      return reason === null
+        ? `${decidedBy.name} recusou publicar a versão ${number}.`
+        : `${decidedBy.name} recusou publicar a versão ${number}: ${reason}.`
+    case 'SUPERSEDED':
+      return `Outra versão de ${notification.projectName} foi publicada; o seu pedido da versão ${number} fechou.`
   }
 }
 
-/** Where a notification opens: its conversation, or, without one, its automation's page. A pause opens the Início. */
+/** What a notification says, in the words of the state matrix. */
+function textOf(notification: NotificationRow): string {
+  switch (notification.kind) {
+    case 'AUTOMATION_DONE':
+      return `Automação ${notification.automation.name}: pronta`
+    case 'AUTOMATION_FAILED':
+      return `${notification.automation.name} falhou: ${phraseOf(notification.code)}`
+    case 'AUTOMATION_PAUSED':
+      return `${notification.automation.name} ${PAUSED_BY_OWNER}`
+    case 'REQUEST_OPENED':
+      return `${notification.requestedBy.name} pede para publicar a versão ${notification.number} de ${notification.projectName}.`
+    case 'REQUEST_DECIDED':
+      return decidedText(notification)
+  }
+}
+
+/** Where a notification opens: a run's conversation, or, without one, its automation's page; a request's Projeto area. */
 function pathOf(
   companyId: CompanyId,
   notification: Exclude<NotificationRow, { kind: 'AUTOMATION_PAUSED' }>,
 ): string {
-  return notification.conversationId === null
-    ? automationPath(companyId, notification.projectId, notification.automation.id)
-    : conversationPath(companyId, notification.projectId, notification.conversationId)
+  switch (notification.kind) {
+    case 'REQUEST_OPENED':
+    case 'REQUEST_DECIDED':
+      return `/companies/${companyId}/projects/${notification.projectId}`
+    default:
+      return notification.conversationId === null
+        ? automationPath(companyId, notification.projectId, notification.automation.id)
+        : conversationPath(companyId, notification.projectId, notification.conversationId)
+  }
 }
 
 function Item(props: { companyId: CompanyId; notification: NotificationRow; onTap: () => void }) {

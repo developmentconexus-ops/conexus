@@ -124,6 +124,51 @@ test('a pausa abre o Início, e a falha sem conversa abre a página da automaç�
   expect(conexus.router.state.location.pathname).toBe(FRAME)
 })
 
+function request(n: number, fields: Record<string, unknown>): NotificationRow {
+  return ROW.parse({
+    id: NotificationId.parse(`00000000-0000-4000-8000-${String(n).padStart(12, '0')}`),
+    createdAt: '2026-11-01T10:00:00.000Z',
+    read: false,
+    projectId: PEDIDOS.id,
+    projectName: 'Encomendas',
+    number: 5,
+    ...fields,
+  })
+}
+
+test('pedidos: as frases de quem decide e de quem pediu, e o toque abre a área do Projeto', async () => {
+  const decided = { kind: 'REQUEST_DECIDED', reason: null, decidedBy: { name: 'Ana' } }
+  const { conexus } = bell([
+    request(1, { kind: 'REQUEST_OPENED', requestedBy: { name: 'Bruno' } }),
+    request(2, { ...decided, outcome: 'APPROVED' }),
+    request(3, { ...decided, number: 6, outcome: 'DECLINED', reason: 'falta o logo' }),
+    request(4, { ...decided, number: 6, outcome: 'DECLINED' }),
+    request(5, { ...decided, number: 6, outcome: 'SUPERSEDED', decidedBy: { name: 'Diego' } }),
+    request(6, { ...decided, outcome: 'APPROVED', decidedBy: null }),
+    request(7, { ...decided, number: 6, outcome: 'DECLINED', decidedBy: null }),
+  ])
+  fireEvent.click(await screen.findByRole('button', { name: 'Notificações: 7 não lidas' }))
+  const panel = await screen.findByRole('dialog')
+  for (const sentence of [
+    'Bruno pede para publicar a versão 5 de Encomendas.',
+    'Ana publicou a versão 5 que você pediu.',
+    'Ana recusou publicar a versão 6: falta o logo.',
+    'Ana recusou publicar a versão 6.',
+    'Outra versão de Encomendas foi publicada; o seu pedido da versão 6 fechou.',
+    'A versão 5 que você pediu foi publicada.',
+    'O pedido da versão 6 foi recusado.',
+  ])
+    expect(within(panel).getByText(sentence)).toBeTruthy()
+  const lines = within(panel).getAllByRole('link')
+  expect(lines).toHaveLength(7)
+  const area = `/companies/${COMPANY.id}/projects/${PEDIDOS.id}`
+  expect(new Set(lines.map((one) => one.getAttribute('href')))).toEqual(new Set([area]))
+  const [opened] = lines
+  if (opened === undefined) throw new Error('the request has no line')
+  fireEvent.click(opened)
+  await waitFor(() => expect(conexus.router.state.location.pathname).toBe(area))
+})
+
 test('a leitura que falha mostra a frase do código e Tentar de novo no painel', async () => {
   bell([], { failRead: true })
   fireEvent.click(await screen.findByRole('button', { name: 'Notificações' }))

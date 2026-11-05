@@ -1,4 +1,5 @@
 import { AutomationFailureCode } from '@conexus/hub-api'
+import type { AnyColumn } from 'drizzle-orm'
 import { sql } from 'drizzle-orm'
 import {
   check,
@@ -12,6 +13,12 @@ import {
 } from 'drizzle-orm/pg-core'
 import { SCOPE_ROLES, scoped } from '../../platform/database.ts'
 import { company, member, policy } from '../identity/public.ts'
+import { request } from '../requests/public.ts'
+
+/** An instant to the microsecond, as a whole number: a `Date` keeps milliseconds, a column keeps more. */
+export function microsOf(column: AnyColumn) {
+  return sql<string>`(extract(epoch from ${column}) * 1000000)::bigint`
+}
 
 export const notifications = pgSchema('notifications')
 
@@ -79,5 +86,46 @@ export const notification = notifications.table(
       table.id.desc(),
     ),
     policy(SCOPE_ROLES.COMPANY, 'all', OWN),
+  ],
+)
+
+/**
+ * A table beside `notification`, so the automations' rows stay as they are (data D6). The asker
+ * writes the deciders' rows, so inserting needs only the company; reading and marking read stay the
+ * person's own.
+ */
+export const requestNotice = notifications.table(
+  'request_notice',
+  {
+    id: uuid('id').primaryKey(),
+    companyId: text('company_id').notNull(),
+    personId: text('person_id').notNull(),
+    requestId: uuid('request_id').notNull(),
+    kind: text('kind').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
+    readAt: timestamp('read_at', { withTimezone: true }),
+  },
+  (table) => [
+    foreignKey({
+      name: 'request_notice_member_fkey',
+      columns: [table.companyId, table.personId],
+      foreignColumns: [member.organizationId, member.userId],
+    }).onDelete('cascade'),
+    foreignKey({
+      name: 'request_notice_request_id_fkey',
+      columns: [table.requestId],
+      foreignColumns: [request.id],
+    }).onDelete('cascade'),
+    check('request_notice_kind', sql`${table.kind} in ('REQUEST_OPENED', 'REQUEST_DECIDED')`),
+    unique('request_notice_key').on(table.requestId, table.personId, table.kind),
+    index('request_notice_person_created').on(
+      table.companyId,
+      table.personId,
+      table.createdAt.desc(),
+      table.id.desc(),
+    ),
+    policy(SCOPE_ROLES.COMPANY, 'select', OWN),
+    policy(SCOPE_ROLES.COMPANY, 'update', OWN),
+    policy(SCOPE_ROLES.COMPANY, 'insert', sql`company_id = ${scoped.companyId}`),
   ],
 )

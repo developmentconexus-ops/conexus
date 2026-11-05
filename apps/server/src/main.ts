@@ -2,12 +2,9 @@ import { appendFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { FAILURES, getStatus } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
-import type { Agents } from './builder/agents/public.ts'
-import type { Assistant, MachineTuning } from './builder/assistant/public.ts'
-import type { AutomationsPart } from './builder/automations/public.ts'
+import type { MachineTuning } from './builder/assistant/public.ts'
 import type { GitCopy } from './builder/git/public.ts'
 import { repositoriesIn } from './builder/git/public.ts'
-import type { ModelAccounts } from './builder/model-accounts/public.ts'
 import {
   createModelAccounts,
   openGoogleCalls,
@@ -16,21 +13,18 @@ import {
 } from './builder/model-accounts/public.ts'
 import type { AssistantMachine, MachinesOf, RepositoryOf } from './builder/runs/public.ts'
 import { builderPortsOf, createRuns } from './builder/runs/public.ts'
-import type { Conversations } from './conversations-of.ts'
 import { conversationsOf } from './conversations-of.ts'
 import { firstPersonArguments } from './first-person-arguments.ts'
-import type { Apps, Ungranted } from './hub/apps/public.ts'
+import type { Apps, CloseRequests, Ungranted } from './hub/apps/public.ts'
 import { appAccessOf, createAppRemoval, createApps, versionNumbersOf } from './hub/apps/public.ts'
 import type { ConnectorDeadlines, Connectors } from './hub/connectors/public.ts'
 import { createConnectors, resealConnections } from './hub/connectors/public.ts'
 import type { Identity } from './hub/identity/public.ts'
 import { createIdentity, passwordLinkText } from './hub/identity/public.ts'
-import type { NotificationsPart } from './hub/notifications/public.ts'
 import { notificationsOf } from './hub/notifications/public.ts'
-import type { Operations } from './hub/operations/public.ts'
 import { createOperations } from './hub/operations/public.ts'
-import type { Projects } from './hub/projects/public.ts'
 import { createProjects } from './hub/projects/public.ts'
+import { requestsOf } from './hub/requests/public.ts'
 import type { Status } from './hub/status/public.ts'
 import { createStatus } from './hub/status/public.ts'
 import type { CloudflareApps } from './platform/cloudflare.ts'
@@ -68,21 +62,7 @@ const SHUTDOWN_LOGOUT_MS = 5_000
 /** `webRoot` is where the built screens are; without them `/` answers 404. */
 export async function createHub(
   config: Config,
-  deps: {
-    status: Status
-    identity: Identity
-    operations: Operations
-    projects: Projects
-    apps: Apps
-    modelAccounts: ModelAccounts
-    conversations: Conversations
-    assistant: Assistant
-    automations: AutomationsPart
-    agents: Agents
-    notifications: NotificationsPart
-    connectors: Connectors
-    webRoot?: string
-  },
+  deps: Omit<Subjects, 'runs'> & { status: Status; identity: Identity; webRoot?: string },
 ): Promise<FastifyInstance> {
   const app = await createServer(config, {
     webRoot: deps.webRoot ?? WEB_ROOT,
@@ -97,12 +77,15 @@ export async function createHub(
   for (const part of [
     ...[deps.operations, deps.projects, deps.apps, deps.modelAccounts, deps.conversations],
     ...[deps.assistant, deps.automations, deps.agents, deps.notifications, deps.connectors],
+    deps.requests,
   ]) {
     part.routes(app)
   }
   await app.ready()
   return app
 }
+
+type Subjects = ReturnType<typeof subjectsOf>
 
 /** The listener on `HUB_EDGE_PORT`: the apps' dispatcher's calls and nothing else (security S48). */
 export async function createEdgeHub(
@@ -168,6 +151,8 @@ export function subjectsOf(deps: {
   const projects = createProjects({
     ...{ database, identity, neon, log, appsDomain, appRemoval, appVersionsOf: versionNumbersOf },
     ...{ releaseConversations, ...appAccessOf(database) },
+    // The requests come below, after the apps they publish through; a Projeto's read comes long after.
+    publishRequestOf: (tx, input) => requests.publishRequestOf(tx, input),
   })
   const operations = createOperations({
     ...{ database, identity, projects: projects.ports },
@@ -175,14 +160,19 @@ export function subjectsOf(deps: {
   })
   // The connectors come below, after the apps whose door they read; a publish comes long after.
   const ungranted: Ungranted = (tx, ids, declared) => connectors.ungranted(tx, ids, declared)
-  const apps = createApps({ ...deps, identity, projects: projects.ports, appsDomain, ungranted })
+  const closeRequests: CloseRequests = (tx, input) => requests.closeRequests(tx, input)
+  const apps = createApps({
+    ...{ ...deps, identity, projects: projects.ports, appsDomain, ungranted, closeRequests },
+  })
+  const { noticeRequests } = notifications
+  const requests = requestsOf({ database, identity, ungranted, noticeRequests, log })
   const flows = signInFlows({ cliProxy: config.cliProxy, log })
   const modelAccounts = createModelAccounts({
     ...{ database, identity, sealKeys, flows, log, googleCalls: google.googleCalls },
   })
   const connectors = createConnectors({ ...deps, identity, door: apps.connectorCall })
   return {
-    ...{ runs, projects, operations, apps, modelAccounts },
+    ...{ runs, projects, operations, apps, modelAccounts, requests },
     ...{ conversations, assistant, automations, agents, notifications, connectors },
   }
 }

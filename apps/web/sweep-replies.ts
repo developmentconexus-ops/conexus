@@ -221,7 +221,8 @@ export function projectsPage(
     [`GET /api/companies/${id}/projects/${PROJECT.id}`]: ok(getProject, {
       project: {
         ...PROJECT,
-        mayDelete: view.mayDelete ?? true,
+        ...{ mayDelete: view.mayDelete ?? true, mayPublish: view.mayDelete ?? true },
+        publishRequest: null,
         address: ADDRESS,
         appVersion: view.appVersion ?? null,
         publishedVersion: view.publishedVersion ?? null,

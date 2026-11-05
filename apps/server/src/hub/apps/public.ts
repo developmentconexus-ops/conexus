@@ -4,7 +4,7 @@ import { appDatabaseOf, readAppData } from './app-database.ts'
 import { createAppVersions } from './app-versions.ts'
 import type { AppDeps } from './handoff.ts'
 import { createAppDoor, endAppSessions } from './handoff.ts'
-import type { Ungranted } from './live.ts'
+import type { PublishDeps } from './live.ts'
 import type { RemovalDeps } from './removal.ts'
 import {
   claimForDeletion,
@@ -23,7 +23,13 @@ export { publishedVersionsOf, versionNumbersOf } from './versions.ts'
 export type Apps = ReturnType<typeof createApps>
 export type { AppRead } from '../../platform/company-postgres.ts'
 export type { ConnectorCall } from './handoff.ts'
-export type { Ungranted } from './live.ts'
+export type { CloseRequests, PublishDeps, PublishInput, Ungranted } from './live.ts'
+/**
+ * What a request to publish reaches the apps through (step 24.3.4): the app's lock, the kept version
+ * it names, and the publish a decision makes.
+ */
+export { publishIn } from './live.ts'
+export { keptVersionOf, lockApp } from './versions.ts'
 
 /**
  * What Projects asks of the apps for who uses them: the published version's roles, and the end of a
@@ -55,10 +61,11 @@ export function createAppRemoval(deps: RemovalDeps) {
 /**
  * The app of a Projeto: the pass the Hub gives a person, what the apps' dispatcher asks on each
  * call (decision 0041), and the versions every member's Builder turn sends (decision 0043, step
- * 14.1), which every member lists and publishes. It reaches identity and Projects only
- * through their ports (code C4), Neon and Cloudflare only through the ports `main.ts` hands it (C56).
+ * 14.1), which every member lists and an owner, an administrator or a developer publishes. It
+ * reaches identity and Projects only through their ports (code C4), Neon and Cloudflare only
+ * through the ports `main.ts` hands it (C56).
  */
-export function createApps(deps: AppDeps & RepairDeps & { ungranted: Ungranted }) {
+export function createApps(deps: AppDeps & RepairDeps & Omit<PublishDeps, 'log'>) {
   const door = createAppDoor(deps)
   const versions = createAppVersions(deps)
   return Object.freeze({

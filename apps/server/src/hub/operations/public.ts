@@ -7,7 +7,6 @@ import { createClients } from './clients.ts'
 import { registerClientRoutes } from './routes.ts'
 
 export type { CompanyConversationRelease } from './clients.ts'
-export type Operations = ReturnType<typeof createOperations>
 
 /**
  * The Operations Central: Conexus's record of its clients, which reaches identity only through its

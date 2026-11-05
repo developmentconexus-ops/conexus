@@ -27,5 +27,3 @@ export function automationsOf(
     release: (scope: ReleaseScope) => releaseAutomations(deps, scope),
   })
 }
-
-export type AutomationsPart = ReturnType<typeof automationsOf>

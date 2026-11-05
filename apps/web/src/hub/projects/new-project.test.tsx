@@ -44,6 +44,8 @@ function hub(answer?: () => Response | Promise<Response>) {
             project: {
               ...NOVO,
               mayDelete: true,
+              mayPublish: true,
+              publishRequest: null,
               address: PEDIDOS_ADDRESS,
               appVersion: null,
               publishedVersion: null,

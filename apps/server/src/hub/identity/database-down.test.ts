@@ -46,6 +46,7 @@ async function hubOn(t: TestContext, database: TestDatabase['database'], config:
     agents,
     notifications,
     connectors,
+    requests,
   } = subjectsOf({
     mastraPool: testMastraPool(t, config),
     database,
@@ -69,6 +70,7 @@ async function hubOn(t: TestContext, database: TestDatabase['database'], config:
     agents,
     notifications,
     connectors,
+    requests,
     webRoot,
   })
   t.after(() => app.close())
