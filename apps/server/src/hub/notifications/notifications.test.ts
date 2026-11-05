@@ -237,3 +237,24 @@ test('pedidos: os avisos de pedido entram no mesmo sino, na mesma ordem e págin
   assert.equal((await bellOf(on.hub, on.ana, on.company)).unread, 0)
   assert.equal((await bellOf(on.hub, bia, on.company)).unread, 1, 'marcar todas é só das dela')
 })
+
+test('o sino ordena pelo microssegundo: duas linhas do mesmo milissegundo ficam na ordem do banco', async (t) => {
+  const on = await notifying(t)
+  const insert = `insert into notifications.notification
+      (id, company_id, person_id, kind, automation_id, automation_name, conversation_id, run_id, created_at)
+    values ($1::uuid, $2, $3, 'AUTOMATION_DONE', 'schedule_conexus-automation-' || $1::text, 'Resumo', $1::uuid,
+      $1::text, $4::timestamptz)`
+  const older = 'ffffffff-ffff-4fff-8fff-ffffffffffff'
+  const newer = '00000000-0000-4000-8000-000000000000'
+  for (const [id, at] of [
+    [older, '2026-11-05T09:00:00.000100Z'],
+    [newer, '2026-11-05T09:00:00.000900Z'],
+  ]) {
+    await on.hub.test.asOwner(insert, [id, on.companyId, on.ana.id, at])
+  }
+  const bell = await bellOf(on.hub, on.ana, on.company)
+  assert.deepEqual(
+    bell.notifications.map((each) => each.id),
+    [newer, older],
+  )
+})

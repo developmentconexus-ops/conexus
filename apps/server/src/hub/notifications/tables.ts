@@ -1,4 +1,5 @@
 import { AutomationFailureCode } from '@conexus/hub-api'
+import type { AnyColumn } from 'drizzle-orm'
 import { sql } from 'drizzle-orm'
 import {
   check,
@@ -13,6 +14,11 @@ import {
 import { SCOPE_ROLES, scoped } from '../../platform/database.ts'
 import { company, member, policy } from '../identity/public.ts'
 import { request } from '../requests/public.ts'
+
+/** An instant to the microsecond, as a whole number: a `Date` keeps milliseconds, a column keeps more. */
+export function microsOf(column: AnyColumn) {
+  return sql<string>`(extract(epoch from ${column}) * 1000000)::bigint`
+}
 
 export const notifications = pgSchema('notifications')
 

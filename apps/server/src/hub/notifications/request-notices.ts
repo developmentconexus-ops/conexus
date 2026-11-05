@@ -3,7 +3,7 @@ import { eq, sql } from 'drizzle-orm'
 import type { ReadTx } from '../../platform/database.ts'
 import type { NoticeRequests } from '../requests/public.ts'
 import { NOTICE_VIEW, request } from '../requests/public.ts'
-import { requestNotice } from './tables.ts'
+import { microsOf, requestNotice } from './tables.ts'
 
 /**
  * Writes what a request tells, once per request, person and kind: the asker writes the deciders'
@@ -30,6 +30,7 @@ export function requestNoticeRows(tx: ReadTx) {
       id: requestNotice.id,
       kind: requestNotice.kind,
       createdAt: requestNotice.createdAt,
+      micros: microsOf(requestNotice.createdAt),
       readAt: requestNotice.readAt,
       ...NOTICE_VIEW,
     })
