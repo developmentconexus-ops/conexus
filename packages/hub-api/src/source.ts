@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { CompanyId } from './companies.ts'
+import { ProjectId } from './library-ids.ts'
 import { defineOperation } from './operation.ts'
-import { ProjectId } from './projects.ts'
 
 /** The most files a Projeto's version lists, and the largest file shown, in bytes (code C44, C48). */
 export const SOURCE_MAX_FILES = 2000

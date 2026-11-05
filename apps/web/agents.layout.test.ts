@@ -84,10 +84,10 @@ for (const viewport of [PHONE, ZOOMED_PHONE])
       viewport,
       replies: replies([agent(1, { lastRunAt: new Date(Date.now() - 180_000).toISOString() })]),
     })
-    await page.getByText(/Última execução/).waitFor()
+    await page.getByText(/Rodou há/).waitFor()
     const seen = await page.evaluate(() => {
       const last = [...document.querySelectorAll('main a[href*="/agents/"] span')].find(
-        (el) => el.children.length === 0 && el.textContent?.includes('Última execução'),
+        (el) => el.children.length === 0 && el.textContent?.includes('Rodou há'),
       )
       const row = last?.closest('a')
       if (!last || !row) return undefined

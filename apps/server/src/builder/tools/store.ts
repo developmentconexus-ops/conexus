@@ -1,7 +1,7 @@
 import type {
-  AgentId,
   AgentTool,
   CompanyId,
+  NamedAgent,
   PersonId,
   ToolDetail,
   ToolSlug,
@@ -27,7 +27,7 @@ import { tool, toolVersion } from './tables.ts'
 export type UsedBy = (
   tx: ReadTx,
   toolIds: readonly ToolId[],
-) => Promise<ReadonlyMap<ToolId, readonly { id: AgentId; name: string }[]>>
+) => Promise<ReadonlyMap<ToolId, readonly NamedAgent[]>>
 
 type ToolRow = typeof tool.$inferSelect
 type VersionRow = typeof toolVersion.$inferSelect

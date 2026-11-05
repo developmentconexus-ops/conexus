@@ -240,6 +240,22 @@ test('as recusas: o membro e um Projeto de outra empresa dão NOT_FOUND; o agent
   assert.equal(agentOf(await call(on.hub, on.ana, 'GET', url)).name, 'Vendas do dia')
 })
 
+test('a lista da empresa: o agente de um Projeto em remoção some da lista', async (t) => {
+  const on = await agentsOn(t)
+  const vendas = await otherProject(on.hub, on.ana, on.company, [])
+  const here = await madeAgent(on.hub, on.ana, on.agents, 'Vendas do dia')
+  await madeAgent(on.hub, on.ana, vendas.agents, 'Estoque')
+  await on.hub.test.asOwner('update projects.project set deleting_since = now() where id = $1', [
+    vendas.projectId,
+  ])
+  const all = await call(on.hub, on.ana, 'GET', `${on.company}/agents`)
+  assert.equal(all.statusCode, 200, all.body)
+  assert.deepEqual(
+    Object(all.json()).agents.map((each: Agent) => each.id),
+    [here.id],
+  )
+})
+
 test('a lista da empresa: sem projectId traz os agentes de todos os Projetos, com projectId só os dele; lastRunAt nulo sem execução; o membro e um Projeto de outra empresa dão NOT_FOUND', async (t) => {
   const on = await agentsOn(t)
   const vendas = await otherProject(on.hub, on.ana, on.company, [])
