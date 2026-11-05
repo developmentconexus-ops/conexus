@@ -96,7 +96,10 @@ choice of test tools.
 - **T20.** Tests **should** wait for an observable event, bind port 0 and isolate and clean up
   resources even after assertion failure. The approved acceptance-race observation through
   `pg_locks` remains (founder, 2026-10-16: "2. a"). Failure: without `finally`, a test leaves a
-  role without its password. A blind ban on timers would not prove reliable waiting. [review]
+  role without its password. A blind ban on timers would not prove reliable waiting. A test **must not**
+  wait on a production clock or deadline that the code lets it inject (a schedule's next run, a
+  lease, a pool's idle time, a read deadline); a fixed wait of one second or more says why in a
+  comment. Failure: a test waits the production 15 s that a 1 s value proves as well. [review]
 - **T21.** Test files **must** obey the same size limits as code. [Biome]
 - **T23.** Screen changes and their transitions **should** be looked at in a real browser, including
   narrow widths, both themes and a keyboard pass through focus stops. Captures are taken at 1366 and

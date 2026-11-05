@@ -84,6 +84,7 @@ test('migrate não corta uma migração lenta no prazo de 15 s das consultas do 
   t.after(() => rmSync(folder, { recursive: true, force: true }))
   cpSync(join(import.meta.dirname, '..', '..', 'migrations'), folder, { recursive: true })
   mkdirSync(join(folder, '99991231000000_slow'))
+  // Waits the real 17 s on purpose: migrate opens its own client and has no read deadline to shorten.
   writeFileSync(join(folder, '99991231000000_slow', 'migration.sql'), 'select pg_sleep(17);')
   await withRoleLock(() =>
     migrate({
