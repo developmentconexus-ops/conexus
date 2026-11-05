@@ -23,7 +23,7 @@ export type Tool = {
   readLabel: string
   effect: string
   latest: { id: string; number: number }
-  usedBy: { id: string; name: string }[]
+  usedBy: { id: string; projectId: string; name: string }[]
   versions?: ToolVersion[]
 }
 export type Agent = {

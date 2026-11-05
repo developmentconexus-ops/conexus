@@ -15,6 +15,7 @@ import { HubFailure, sentenceOf, writeFailureText } from '../../platform/hub.ts'
 import { Button } from '../../ui/button.tsx'
 import { Dialog, DialogContent } from '../../ui/dialog.tsx'
 import { PageTitle } from '../../ui/list.tsx'
+import { Skeleton } from '../../ui/skeleton.tsx'
 import { ReadFailure } from '../../ui/states.tsx'
 import { AreaFrame, ToolForm } from '../agents/public.ts'
 import { sendToolVersion, toolQuery } from './queries.ts'
@@ -22,13 +23,8 @@ import { BACK_TO_TOOLS, UNCONFIRMED_VERSION } from './text.ts'
 
 type Scope = { companyId: CompanyId; projectId: ProjectId }
 
-/** **Nova versão**: the form of the latest version, whose connection and read only show; it saves version `n + 1`. */
-function NewVersion(props: {
-  scope: Scope
-  tool: ToolDetail
-  open: boolean
-  onOpenChange: (open: boolean) => void
-}) {
+/** The form of the latest version, whose connection and read only show; it saves version `n + 1`. */
+function NewVersionForm(props: { scope: Scope; tool: ToolDetail; onClose: () => void }) {
   const { scope, tool } = props
   const queryClient = useQueryClient()
   const save = useMutation(sendToolVersion)
@@ -54,7 +50,7 @@ function NewVersion(props: {
         }),
       )
       queryClient.setQueryData(toolQuery(scope, tool.id).queryKey, made)
-      props.onOpenChange(false)
+      props.onClose()
     } catch (failure) {
       if (failure instanceof HubFailure)
         setRefused({ field: failure.field, reason: failure.reason })
@@ -63,19 +59,46 @@ function NewVersion(props: {
   }
 
   return (
+    <ToolForm
+      offered={[]}
+      fixed={{ ...tool, connection: tool.connectionName, read: tool.readLabel }}
+      initial={latest}
+      pending={save.isPending}
+      refused={refused}
+      error={error}
+      submitLabel="Gravar versão"
+      onCancel={props.onClose}
+      onSubmit={(input) => void send(input)}
+    />
+  )
+}
+
+/**
+ * **Nova versão**, the dialog the tool page and the list share. It opens at once; the tool is read
+ * when it opens, and the wait or the failure of that read shows inside it.
+ */
+export function NewVersion(props: {
+  scope: Scope
+  toolId: ToolId
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}) {
+  const read = useQuery({ ...toolQuery(props.scope, props.toolId), enabled: props.open })
+  const tool = read.data?.tool
+  return (
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
       <DialogContent size="fields" title="Nova versão">
-        <ToolForm
-          offered={[]}
-          fixed={{ ...tool, connection: tool.connectionName, read: tool.readLabel }}
-          initial={latest}
-          pending={save.isPending}
-          refused={refused}
-          error={error}
-          submitLabel="Gravar versão"
-          onCancel={() => props.onOpenChange(false)}
-          onSubmit={(input) => void send(input)}
-        />
+        {read.isError && (
+          <ReadFailure text={sentenceOf(read.error)} onRetry={() => void read.refetch()} />
+        )}
+        {tool === undefined && !read.isError && <Skeleton className="h-20 w-full" />}
+        {tool !== undefined && (
+          <NewVersionForm
+            scope={props.scope}
+            tool={tool}
+            onClose={() => props.onOpenChange(false)}
+          />
+        )}
       </DialogContent>
     </Dialog>
   )
@@ -123,7 +146,7 @@ export function ToolPage(props: Scope & { toolId: ToolId }) {
                 </li>
               ))}
           </ul>
-          <NewVersion scope={scope} tool={tool} open={open} onOpenChange={setOpen} />
+          <NewVersion scope={scope} toolId={tool.id} open={open} onOpenChange={setOpen} />
         </>
       )}
     </AreaFrame>
