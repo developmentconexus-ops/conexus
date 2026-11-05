@@ -1,14 +1,13 @@
 import type { AppVersion, CompanyId, Project, ProjectId } from '@conexus/hub-api'
 import { FAILURES } from '@conexus/hub-api'
 import { useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
 import { dayAndHour } from '../../platform/dates.ts'
 import { HubFailure, sentenceOf } from '../../platform/hub.ts'
 import { Alert } from '../../ui/alert.tsx'
 import { List, Row, rowBody, SectionTitle } from '../../ui/list.tsx'
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { Empty, NotFound, ReadFailure } from '../../ui/states.tsx'
-import { RequestLine } from '../requests/public.ts'
+import { RequestLine, useSaid } from '../requests/public.ts'
 import { Publish } from './publish.tsx'
 import { versionsQuery } from './queries.ts'
 
@@ -74,8 +73,8 @@ function Loading() {
  */
 export function Versions({ project, ...scope }: Scope & Access) {
   const read = useQuery(versionsQuery(scope.companyId, scope.projectId))
-  const [stale, setStale] = useState<string>()
   const { publishRequest } = project
+  const [stale, setStale] = useSaid(publishRequest)
   if (read.error instanceof HubFailure && read.error.code === 'NOT_FOUND') return <NotFound />
   return (
     <section className="flex w-full max-w-column flex-col gap-lg">

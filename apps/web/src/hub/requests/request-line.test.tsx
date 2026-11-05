@@ -177,21 +177,6 @@ test('PUBLISH_REQUEST_CLOSED ao cancelar: o mesmo, e o botão de pedir volta', a
   expect(await screen.findByRole('button', { name: 'Pedir para publicar' })).toBeTruthy()
 })
 
-test('a frase de um pedido que já fechou sai quando a pessoa age sobre o pedido novo', async () => {
-  const view = open('owner')
-  server.use(
-    http.post(decisionPath, () => {
-      view.publishRequest = requestView({ mayDecide: true, number: 6 })
-      return refusal('PUBLISH_REQUEST_CLOSED')
-    }),
-  )
-  fireEvent.click(await screen.findByRole('button', { name: 'Publicar a versão 5' }))
-  expect(await screen.findByText(DECIDED)).toBeTruthy()
-  fireEvent.click(await screen.findByRole('button', { name: 'Recusar' }))
-  await screen.findByRole('dialog', { name: 'Recusar a versão 6' })
-  expect(screen.queryByText(DECIDED)).toBeNull()
-})
-
 test('NOT_FOUND na linha: relê o Projeto, e a frase de não achado não fica', async () => {
   const view = open('owner')
   server.use(

@@ -11,7 +11,7 @@ import { PageTitle } from '../../ui/list.tsx'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
 import { Publish } from '../apps/public.ts'
-import { RequestLine } from '../requests/public.ts'
+import { RequestLine, useSaid } from '../requests/public.ts'
 import { projectQuery } from './queries.ts'
 import { Lens } from './search.ts'
 
@@ -42,7 +42,7 @@ export function ProjectArea(props: {
   }
   const { address, appVersion, publishedVersion } = project
   const live = address !== null && appVersion !== null
-  const [stale, setStale] = useState<string>()
+  const [stale, setStale] = useSaid(project.publishRequest)
   const isMobile = useIsMobile()
   return (
     <Tabs
