@@ -1,6 +1,7 @@
 import { ProjectId } from '@conexus/hub-api'
-import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
-import { expect, test } from 'vitest'
+import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { HttpResponse, http } from 'msw'
+import { expect, test, vi } from 'vitest'
 import { COMPANY } from '../../platform/fixtures.ts'
 import { hubServer, PEDIDOS, refusal } from '../../platform/test-hub.tsx'
 import {
@@ -158,6 +159,67 @@ test('Nova versão na linha da lista abre o formulário da ferramenta, sem sair 
   })
   expect(JSON.parse(bound.value)).toEqual({ dias: 1 })
   expect(screen.getByRole('button', { name: 'Gravar versão' })).toBeTruthy()
+})
+
+test('Nova versão da lista abre o diálogo logo, com a espera dentro, e depois o formulário', async () => {
+  at(TABS, { agents: [agent()], tools: [toolSummary()] })
+  let answer: (() => void) | undefined
+  server.use(
+    http.get(`*/api/companies/${COMPANY.id}/projects/${PEDIDOS.id}/tools/:toolId`, async () => {
+      await new Promise<void>((resolve) => {
+        answer = resolve
+      })
+      return HttpResponse.json({ tool: { ...toolSummary(), versions: [] } })
+    }),
+  )
+  fireEvent.click(await screen.findByRole('button', { name: 'Nova versão de vendas_de_ontem' }))
+  const dialog = await screen.findByRole('dialog')
+  expect(within(dialog).getByText('Nova versão')).toBeTruthy()
+  expect(within(dialog).queryByRole('button', { name: 'Gravar versão' })).toBeNull()
+  answer?.()
+})
+
+test('Nova versão da lista, com a leitura da ferramenta falhando, mostra a falha dentro do diálogo', async () => {
+  at(TABS, { agents: [agent()], tools: [toolSummary()] })
+  server.use(
+    http.get(`*/api/companies/${COMPANY.id}/projects/${PEDIDOS.id}/tools/:toolId`, () =>
+      refusal('TOOL_NOT_FOUND'),
+    ),
+  )
+  fireEvent.click(await screen.findByRole('button', { name: 'Nova versão de vendas_de_ontem' }))
+  const dialog = await screen.findByRole('dialog')
+  expect(await within(dialog).findByText(/Não encontramos esta ferramenta\./)).toBeTruthy()
+})
+
+test('Nova versão da lista guarda o que se digitou quando a largura cruza o limite do celular', async () => {
+  const media = new EventTarget()
+  let phone = true
+  const query = vi.spyOn(globalThis, 'matchMedia').mockImplementation((text: string) =>
+    Object.assign(media, {
+      get matches() {
+        return phone
+      },
+      media: text,
+      onchange: null,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+    }),
+  )
+  try {
+    at(TABS, { agents: [agent()], tools: [toolSummary()] })
+    fireEvent.click(await screen.findByRole('button', { name: 'Nova versão de vendas_de_ontem' }))
+    const field = await screen.findByRole<HTMLTextAreaElement>('textbox', { name: 'O que ela faz' })
+    fireEvent.change(field, { target: { value: 'Texto digitado' } })
+    phone = false
+    act(() => {
+      media.dispatchEvent(new Event('change'))
+    })
+    expect(screen.getByRole<HTMLTextAreaElement>('textbox', { name: 'O que ela faz' }).value).toBe(
+      'Texto digitado',
+    )
+  } finally {
+    query.mockRestore()
+  }
 })
 
 test('uma ferramenta que o Hub não acha dá não encontrado, e a que ele acha abre', async () => {

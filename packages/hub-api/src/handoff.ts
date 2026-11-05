@@ -2,8 +2,9 @@ import { z } from 'zod'
 import { CompanyId } from './companies.ts'
 import { CONNECTIONS_MAX, ConnectionId } from './connectors.ts'
 import { ConversationId } from './conversations.ts'
+import { ProjectId } from './library-ids.ts'
 import { ATTEMPT_KEY_HEADER, defineOperation } from './operation.ts'
-import { ProjectId, ProjectName } from './projects.ts'
+import { ProjectName } from './projects.ts'
 import { ToolCallId } from './questions.ts'
 
 /** Why a marked connection was not released to the Projeto; the others were. */

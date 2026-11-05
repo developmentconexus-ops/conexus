@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { AgentId } from './agent-ids.ts'
 import type { FailureRow } from './failure-row.ts'
-import { ProjectId } from './projects.ts'
+import { ProjectId } from './library-ids.ts'
 
 /**
  * The failures of a Projeto's agents and of the company's tool library (step 24.3, U1). A refusal

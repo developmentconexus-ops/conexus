@@ -4,8 +4,8 @@ import { ToolId, ToolVersionId } from './agent-ids.ts'
 import { CompanyId } from './companies.ts'
 import { ConnectionId } from './connectors.ts'
 import type { FailureCode } from './failures.ts'
+import { ProjectId } from './library-ids.ts'
 import { ATTEMPT_KEY_HEADER, defineOperation } from './operation.ts'
-import { ProjectId } from './projects.ts'
 
 /** The tool of each card the person answers, as the controller names the call it parks. */
 export const CARD_TOOLS = { question: 'ask_user', plan: 'submit_plan' } as const

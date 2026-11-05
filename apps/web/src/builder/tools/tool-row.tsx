@@ -9,7 +9,7 @@ import { TableCell, TableRow } from '../../ui/table.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
 import { sendToolDeletion } from './queries.ts'
 import { deleteWarning, EFFECT_TEXT, NOBODY_USES, UNCONFIRMED_DELETE } from './text.ts'
-import { NewVersionOf } from './tool-page.tsx'
+import { NewVersion } from './tool-page.tsx'
 
 type Scope = { companyId: CompanyId; projectId: ProjectId }
 
@@ -87,7 +87,6 @@ export function ToolRow({ scope, tool }: { scope: Scope; tool: ToolSummary }) {
       >
         Nova versão
       </Button>
-      <NewVersionOf scope={scope} toolId={tool.id} open={versioning} onOpenChange={setVersioning} />
       <Button
         size="sm"
         variant="danger"
@@ -119,6 +118,7 @@ export function ToolRow({ scope, tool }: { scope: Scope; tool: ToolSummary }) {
     tool.usedBy.length === 0 ? NOBODY_USES : tool.usedBy.map((one) => one.name).join(' · ')
   return (
     <>
+      <NewVersion scope={scope} toolId={tool.id} open={versioning} onOpenChange={setVersioning} />
       <TableRow>
         <TableCell className="whitespace-normal px-sm">
           <Link
@@ -158,7 +158,7 @@ export function ToolRow({ scope, tool }: { scope: Scope; tool: ToolSummary }) {
           <>
             <TableCell className="px-sm text-fact text-text-2">v{tool.latest.number}</TableCell>
             <TableCell className="px-sm">
-              <span className="flex justify-end gap-xs">{actions}</span>
+              <span className="flex gap-xs">{actions}</span>
             </TableCell>
           </>
         )}
