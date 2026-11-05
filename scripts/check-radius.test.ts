@@ -45,12 +45,12 @@ function git(repo: string, ...args: string[]) {
   })
 }
 
-function committed(files: string[], card = CARD): string {
+function committed(files: string[], card = CARD, cardName = 'e09-teste.md'): string {
   const repo = mkdtempSync(join(tmpdir(), 'conexus-radius-'))
   repos.push(repo)
   git(repo, 'init', '--quiet')
   mkdirSync(join(repo, 'docs/steps'), { recursive: true })
-  writeFileSync(join(repo, 'docs/steps/e09-teste.md'), card)
+  writeFileSync(join(repo, 'docs/steps', cardName), card)
   git(repo, 'add', '.')
   git(repo, 'commit', '--quiet', '-m', 'card')
   for (const file of files) {
@@ -234,4 +234,12 @@ test('raio: o commit de merge reporta arquivos contra o primeiro pai sem falhar'
   const result = radius(repo, 'U1')
   assert.equal(result.status, 0, result.stdout + result.stderr)
   assert.match(result.stdout, /^out-of-radius U1 outside\/side\.ts$/m)
+})
+
+test('raio: um cartão curto, sem o prefixo e<número>-, é lido como cartão', () => {
+  const repo = committed(['apps/server/src/c.ts', 'outside/contract.ts'], CARD, 'saude-do-ci.md')
+  const result = radius(repo, 'U1')
+  assert.equal(result.status, 0, result.stdout + result.stderr)
+  assert.match(result.stdout, /out-of-radius U1 outside\/contract\.ts/)
+  assert.doesNotMatch(result.stdout, /out-of-radius U1 apps\/server\/src\/c\.ts/)
 })
