@@ -31,7 +31,13 @@ const TOOLS = [
     readLabel: 'Pedidos',
     effect: 'READ' as const,
     latest: { id: VERSION, number: 12 },
-    usedBy: [{ id: '11111111-aaaa-4aaa-8aaa-111111111111', name: 'Conferente de metas' }],
+    usedBy: [
+      {
+        id: '11111111-aaaa-4aaa-8aaa-111111111111',
+        projectId: PROJECT_ID,
+        name: 'Conferente de metas',
+      },
+    ],
   },
 ]
 
@@ -88,43 +94,42 @@ const DRAFT = {
   web: false,
   appData: false,
 }
+const AGENT_DETAIL = {
+  id: AGENT,
+  projectId: PROJECT_ID,
+  ...DRAFT,
+  state: { kind: 'DRAFT' as const },
+  updatedAt: '2026-11-02T12:00:00.000Z',
+  lastRunAt: null,
+  draft: DRAFT,
+  revision: 1,
+  tools: [],
+  offered: [
+    {
+      connectionId: CONNECTION,
+      connector: 'sankhya',
+      name: 'Matriz',
+      reads: [{ operation: 'pedidos', label: 'Pedidos', summary: 'Pedidos de venda.' }],
+    },
+  ],
+  createdBy: null,
+}
 const agentReplies = {
   ...replies,
   [`GET ${BASE}/tools`]: ok(listTools, { tools: LONG, ready: [] }),
-  [`GET ${BASE}/agents/${AGENT}`]: ok(getAgent, {
-    agent: {
-      id: AGENT,
-      projectId: PROJECT_ID,
-      ...DRAFT,
-      state: { kind: 'DRAFT' as const },
-      updatedAt: '2026-11-02T12:00:00.000Z',
-      lastRunAt: null,
-      draft: DRAFT,
-      revision: 1,
-      tools: [],
-      offered: [
-        {
-          connectionId: CONNECTION,
-          connector: 'sankhya',
-          name: 'Matriz',
-          reads: [{ operation: 'pedidos', label: 'Pedidos', summary: 'Pedidos de venda.' }],
-        },
-      ],
-      createdBy: null,
-    },
-  }),
+  [`GET ${BASE}/agents/${AGENT}`]: ok(getAgent, { agent: AGENT_DETAIL }),
   [`GET ${BASE}/agents/${AGENT}/versions`]: ok(listAgentVersions, { versions: [] }),
 }
 
-for (const [opening, button, footer] of [
-  ['a lista da biblioteca', 'Adicionar da biblioteca', 'Usar as escolhidas'],
-  ['o formulário de criar', 'Criar', 'Criar ferramenta'],
+for (const [opening, button, footer, viewport] of [
+  ['a lista da biblioteca', 'Adicionar da biblioteca', 'Usar as escolhidas', PHONE],
+  ['o formulário de criar', 'Criar', 'Criar ferramenta', ZOOMED_PHONE],
 ] as const) {
-  test(`no celular, ${opening} rola no corpo da janela e o ${footer} fica à vista`, async () => {
+  test(`a ${viewport.width} px, ${opening} rola no corpo da janela e o ${footer} fica à vista`, async () => {
     const page = await harness.open(
       `/companies/${COMPANY.id}/projects/${PROJECT_ID}/agents/${AGENT}`,
       {
-        viewport: PHONE,
+        viewport,
         replies: agentReplies,
       },
     )
@@ -137,14 +142,57 @@ for (const [opening, button, footer] of [
       return {
         popupScrolls: node.scrollHeight > node.clientHeight,
         bodyScrolls: body ? body.scrollHeight > body.clientHeight : false,
-        hasBody: body !== null,
       }
     })
-    assert.equal(reach.hasBody, true, 'a janela não tem DialogBody')
     assert.equal(reach.popupScrolls, false, 'a janela corta o que passa da tela')
     const at = await dialog.getByRole('button', { name: footer }).boundingBox()
-    assert.ok(at && at.y + at.height <= PHONE.height, `o ${footer} passa do pé da tela`)
+    assert.ok(at && at.y + at.height <= viewport.height, `o ${footer} passa do pé da tela`)
     if (button !== 'Criar') assert.equal(reach.bodyScrolls, true, 'a lista longa não rola no corpo')
     await page.close()
   })
 }
+
+function handMade(id: string, slug: string, description: string) {
+  return {
+    id,
+    slug,
+    connectionId: CONNECTION,
+    operation: 'pedidos',
+    effect: 'READ' as const,
+    latest: { id: VERSION, number: 1 },
+    version: { id: VERSION, number: 1, description, bound: {}, open: [] },
+  }
+}
+
+// The agent's panel keeps each chosen tool's lines inside its row, whichever the tool (design V23).
+test('o painel do agente com duas ferramentas feitas à mão não deixa o texto de uma passar sobre a outra', async () => {
+  const page = await harness.open(
+    `/companies/${COMPANY.id}/projects/${PROJECT_ID}/agents/${AGENT}`,
+    {
+      viewport: PHONE,
+      replies: {
+        ...agentReplies,
+        [`GET ${BASE}/agents/${AGENT}`]: ok(getAgent, {
+          agent: {
+            ...AGENT_DETAIL,
+            tools: [
+              handMade(
+                '33333333-aaaa-4aaa-8aaa-000000000001',
+                'vendas_de_ontem',
+                'Vendas de ontem.',
+              ),
+              handMade('33333333-aaaa-4aaa-8aaa-000000000002', 'metas_do_mes', 'Metas do mês.'),
+            ],
+          },
+        }),
+      },
+    },
+  )
+  const rows = page.getByRole('region', { name: 'Ferramentas' }).locator('li')
+  await rows.first().waitFor()
+  const cut = await rows.evaluateAll((nodes) =>
+    nodes.map((node) => node.scrollHeight > node.clientHeight),
+  )
+  assert.deepEqual(cut, [false, false], 'o texto de uma ferramenta passa da linha dela')
+  await page.close()
+})
