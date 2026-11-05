@@ -28,71 +28,27 @@ function messages(lines: Line[], message: string): Line[] {
   return lines.filter((line) => line.msg === message)
 }
 
-const GOOD_ENV = { CONEXUS_VERSION: 'v0.1.0', HUB_PORT: '8080', LOG_LEVEL: 'info' }
-const WITH_FILE = {
-  ...GOOD_ENV,
-  HUB_DATABASE_URL_FILE: '/nowhere/hub_database_url',
-  HUB_MASTRA_DATABASE_URL_FILE: '/nowhere/hub_mastra_database_url',
-  HUB_EDGE_PORT: '8081',
-  HUB_APPS_DOMAIN: 'apps.example.test',
-  HUB_PUBLIC_ORIGIN: 'https://hub.example.test',
-  HUB_SESSION_SECRET_FILE: '/nowhere/hub_session_secret',
-  HUB_MAIL_API_URL: 'https://mail.example.test/email/sending/send',
-  HUB_MAIL_FROM: 'convites@hub.example.test',
-  HUB_MAIL_TOKEN_FILE: '/nowhere/hub_mail_token',
-  HUB_NEON_API_URL: 'https://neon.example.test/api/v2',
-  HUB_NEON_ORG_ID: 'org-test-0000',
-  HUB_NEON_API_KEY_FILE: '/nowhere/hub_neon_api_key',
-  HUB_APP_LOGIN_KEY_FILE: '/nowhere/hub_app_login_key',
-  HUB_CLOUDFLARE_API_URL: 'https://cloudflare.example.test/client/v4',
-  HUB_CLOUDFLARE_ACCOUNT_ID: 'a'.repeat(32),
-  HUB_APPS_NAMESPACE: 'conexus-apps',
-  HUB_CLOUDFLARE_APPS_TOKEN_FILE: '/nowhere/hub_cloudflare_apps_token',
-  HUB_SEAL_KEYS_FILE: '/nowhere/hub_seal_keys',
-  HUB_GIT_ROOT: '/var/lib/conexus/git',
-  HUB_GIT_COPY_BUCKET: 'conexus-git-test',
-  HUB_GIT_COPY_KEY_FILE: '/nowhere/hub_git_copy_key',
-  HUB_E2B_API_KEY_FILE: '/nowhere/hub_e2b_api_key',
-  HUB_E2B_TEMPLATE: 'conexus-builder:test',
-  HUB_INSTALLATION_ID: 'bootinstallation0',
+async function configEnv(t: TestContext) {
+  const ports = { port: await freePort(), edgePort: await freePort() }
+  return serveEnvironment(t, await unreachableDatabaseUrl(), ports)
 }
 
-for (const name of Object.keys(WITH_FILE)) {
-  test(`configuração: recusa subir sem ${name}`, async (t) => {
-    const env = Object.fromEntries(Object.entries(WITH_FILE).filter(([key]) => key !== name))
-    const { lines, exited } = startHub(t, env)
-    assert.equal(await exited, 1)
-    assert.equal(messages(lines, 'CONFIG_INVALID')[0]?.variables, name)
-  })
-}
+// Every refusal is proven inside the process by `readConfig` (platform/config.test.ts); these two
+// prove only that the program turns a refusal into exit code 1 and the CONFIG_INVALID line.
+test('configuração: recusa subir sem uma variável', async (t) => {
+  const env = await configEnv(t)
+  const { HUB_PORT: _omitted, ...without } = env
+  const { lines, exited } = startHub(t, without)
+  assert.equal(await exited, 1)
+  assert.equal(messages(lines, 'CONFIG_INVALID')[0]?.variables, 'HUB_PORT')
+})
 
-const OUT_OF_FORMAT = [
-  ['CONEXUS_VERSION', '0.1.0'],
-  ['HUB_PORT', 'abc'],
-  ['HUB_PORT', '70000'],
-  ['LOG_LEVEL', 'loud'],
-  ['HUB_EDGE_PORT', 'abc'],
-  ['HUB_EDGE_PORT', '8080'],
-  ['HUB_APPS_DOMAIN', 'Apps.Example.Test'],
-  ['HUB_APPS_DOMAIN', 'localhost'],
-  ['HUB_PUBLIC_ORIGIN', 'http://hub.example.test'],
-  ['HUB_PUBLIC_ORIGIN', 'https://hub.example.test/'],
-  ['HUB_MAIL_API_URL', 'ftp://mail.example.test/send'],
-  ['HUB_MAIL_API_URL', 'http://mail.example.test/send'],
-  ['HUB_MAIL_FROM', 'convites'],
-  ['HUB_CLOUDFLARE_API_URL', 'http://cloudflare.example.test/client/v4'],
-  ['HUB_CLOUDFLARE_ACCOUNT_ID', 'Conta'],
-  ['HUB_APPS_NAMESPACE', 'conexus_apps'],
-  ['HUB_INSTALLATION_ID', 'hub.example.test'],
-  ['HUB_INSTALLATION_ID', 'ABCDEF0123456789ABCDEF'],
-] as const
-for (const [name, value] of OUT_OF_FORMAT) {
-  test(`configuração: recusa subir com ${name}=${value} fora do formato`, async (t) => {
-    const { lines, exited } = startHub(t, { ...WITH_FILE, [name]: value })
-    assert.equal(await exited, 1)
-    assert.equal(messages(lines, 'CONFIG_INVALID')[0]?.variables, name)
-  })
-}
+test('configuração: recusa subir com um valor fora do formato', async (t) => {
+  const env = await configEnv(t)
+  const { lines, exited } = startHub(t, { ...env, HUB_PORT: 'abc' })
+  assert.equal(await exited, 1)
+  assert.equal(messages(lines, 'CONFIG_INVALID')[0]?.variables, 'HUB_PORT')
+})
 
 async function serverEnv(t: TestContext, extra: Record<string, string> = {}) {
   const database = await createTestDatabase(t)
