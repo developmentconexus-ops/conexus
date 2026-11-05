@@ -302,8 +302,8 @@ test('migrate cuja conexão cai antes do limite da transação: repetível, nada
 test('migrate longa demais para o limite da transação: o servidor encerra, sem repetir e sem nada aplicado', async (t) => {
   const { test, outcome } = await migratingWith(
     t,
-    'create table public.slow (id int); select pg_sleep(10);',
-    { lockTimeoutMs: 5_000, transactionTimeoutMs: 2_000, connectionCheckIntervalMs: 1_000 },
+    'create table public.slow (id int); select pg_sleep(5);',
+    { lockTimeoutMs: 2_500, transactionTimeoutMs: 1_000, connectionCheckIntervalMs: 500 },
   )
   const failure = await failureOf(outcome)
   assert.equal(failure.details.reason, 'TOO_LONG')
@@ -312,7 +312,7 @@ test('migrate longa demais para o limite da transação: o servidor encerra, sem
     { found: null },
   ])
   const sessions = await test.asOwner(
-    "select count(*)::int as n from pg_stat_activity where query like '%pg_sleep(10)%' and pid <> pg_backend_pid()",
+    "select count(*)::int as n from pg_stat_activity where query like '%pg_sleep(5)%' and pid <> pg_backend_pid()",
   )
   assert.deepEqual(sessions, [{ n: 0 }])
 })
@@ -320,9 +320,9 @@ test('migrate longa demais para o limite da transação: o servidor encerra, sem
 test('migrate com a trava ocupada na última espera do limite da transação: longa demais, sem repetir', async (t) => {
   const { test, outcome } = await migratingWith(
     t,
-    `create table public.early (id int); select pg_sleep(6.3);
+    `create table public.early (id int); select pg_sleep(1.575);
       alter table auth.user add column probe_column int;`,
-    { lockTimeoutMs: 1_000, transactionTimeoutMs: 8_000, connectionCheckIntervalMs: 1_000 },
+    { lockTimeoutMs: 250, transactionTimeoutMs: 2_000, connectionCheckIntervalMs: 250 },
   )
   await withOwnerLock(test, 'lock table auth.user in share mode', [], async (release) => {
     const failure = await failureOf(outcome)
