@@ -1,4 +1,4 @@
-import type { FailureCode, Member as MemberRow } from '@conexus/hub-api'
+import type { FailureCode, Member as MemberRow, PublishRequest } from '@conexus/hub-api'
 import {
   Client,
   FAILURES,
@@ -289,6 +289,10 @@ export type ProjectsView = {
   appVersion?: number | null
   publishedVersion?: number | null
   role?: string
+  /** Whether the viewer publishes; who deletes does by default (step 24.3.4). */
+  mayPublish?: boolean
+  /** The Projeto's open request as the viewer reads it; none by default. */
+  publishRequest?: PublishRequest | null
 }
 
 /** The session, the company and the Projects' two reads, which answer from `view` at each read. */
@@ -314,8 +318,8 @@ export function projectsRead(view: ProjectsView) {
                 ...project,
                 mayDelete: view.mayDelete,
                 // Who deletes here publishes too: the owner's view, or the member's (step 24.3.4).
-                mayPublish: view.mayDelete,
-                publishRequest: null,
+                mayPublish: view.mayPublish ?? view.mayDelete,
+                publishRequest: view.publishRequest ?? null,
                 address: view.address === undefined ? PEDIDOS_ADDRESS : view.address,
                 appVersion: view.appVersion ?? null,
                 publishedVersion: view.publishedVersion ?? null,
