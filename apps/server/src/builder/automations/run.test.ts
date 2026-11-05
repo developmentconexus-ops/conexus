@@ -50,7 +50,7 @@ async function questionsIn(hub: Hub, person: Person, url: string): Promise<strin
     )
 }
 
-test('o horário: a agenda dispara no minuto; uma conversa do dono com o pedido, as marcas e as ligações; SCHEDULED e DONE; a pausada ao lado não roda', {
+test('o horário: a agenda dispara quando está devida; uma conversa do dono com o pedido, as marcas e as ligações; SCHEDULED e DONE; a pausada ao lado não roda', {
   timeout: 150_000,
 }, async (t) => {
   const on = await automating(t)
@@ -60,6 +60,7 @@ test('o horário: a agenda dispara no minuto; uma conversa do dono com o pedido,
   const siblingUrl = `${on.automations}/${sibling.id}`
   assert.equal((await post(on.hub, on.ana, `${siblingUrl}/pause`, {})).statusCode, 200)
   await dueNow(on.hub, automation.id)
+  await dueNow(on.hub, sibling.id)
 
   const run = await ended(on.hub, on.ana, `${on.automations}/${automation.id}`)
   assert.equal(run.trigger, 'SCHEDULED')

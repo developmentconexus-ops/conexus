@@ -15,9 +15,9 @@ import type { tool } from '../conversation/test-questions.ts'
 
 type Block = ReturnType<typeof tool>
 
-/** A scheduler that ticks fast enough for a test to wait for a minute's fire, and a turn's budget. */
+/** A scheduler that ticks fast enough for a test to wait for a fire it made due, and a turn's budget. */
 export const TEST_CLOCK = { schedulerTickMs: 200, turnMs: 60_000 }
-/** How long a test waits for a run to end: a fire within the next minute, then its turn. */
+/** How long a test waits for a run to end: the fire a tick away, then its turn, with a margin. */
 const RUN_DEADLINE_MS = 90_000
 
 export type Summary = {
