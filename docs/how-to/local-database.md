@@ -5,7 +5,8 @@ How a developer gets the disposable PostgreSQL 18 that the server tests need. Ru
 ## Start the database
 
 1. Start PostgreSQL 18 with a throwaway superuser, on a port that is free on your machine:
-   `docker run --rm -d --name conexus-test-db -e POSTGRES_PASSWORD=local-superuser -p 127.0.0.1:55432:5432 postgres:18`
+   `docker run --rm -d --name conexus-test-db -e POSTGRES_PASSWORD=local-superuser -p 127.0.0.1:55432:5432 postgres:18 -c fsync=off -c synchronous_commit=off -c full_page_writes=off`
+   The three settings turn durability off: the data is disposable, and the tests run several times faster on a slow disk.
 2. Create the login that owns the test databases. It is not a superuser, as in CI:
    `docker exec conexus-test-db psql -U postgres -c "create role conexus_owner login createdb createrole password 'local-owner'"`
 3. Export the three variables the tests read, the same ones CI sets (the third names the container, whose `pg_dump` 18 takes the catalog snapshot):
