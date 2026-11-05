@@ -21,6 +21,8 @@ const MANAGE_AGENTS = { agent: ['manage'] } as const
 const PUBLISH_AGENT = { agent: ['publish'] } as const
 const MANAGE_AUTOMATIONS = { automation: ['manage'] } as const
 const ASK_ASSISTANT = { assistant: ['ask'] } as const
+const REQUEST_PUBLISH = { request: ['create'] } as const
+const DECIDE_REQUEST = { request: ['decide'] } as const
 type ActionRule = {
   by: 'MEMBER' | 'COMPANY' | 'OPERATOR'
   locks: boolean
@@ -39,6 +41,8 @@ type ActionRule = {
     | typeof PUBLISH_AGENT
     | typeof MANAGE_AUTOMATIONS
     | typeof ASK_ASSISTANT
+    | typeof REQUEST_PUBLISH
+    | typeof DECIDE_REQUEST
 }
 
 /**
@@ -61,6 +65,11 @@ const ACTIONS = {
   // commits.
   readAppVersions: { by: 'MEMBER', statement: undefined, locks: false },
   publishAppVersion: { by: 'MEMBER', statement: PUBLISH_APP, locks: true },
+  // Every member asks to publish a kept version, and withdraws their own request; only an owner or
+  // an administrator decides one (step 24.3.4, "3"). Each holds the role until its write commits.
+  requestPublish: { by: 'MEMBER', statement: REQUEST_PUBLISH, locks: true },
+  cancelRequest: { by: 'MEMBER', statement: undefined, locks: true },
+  decideRequest: { by: 'MEMBER', statement: DECIDE_REQUEST, locks: true },
   // Every member's Builder turn sends its version to the Projeto's one app (step 14.1, X1).
   sendBuilderVersion: { by: 'MEMBER', statement: undefined, locks: true },
   // Every member reads the company's model accounts and links, orders and removes their own; only

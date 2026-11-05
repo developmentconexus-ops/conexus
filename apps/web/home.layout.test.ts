@@ -141,6 +141,8 @@ function starting(sent: Promise<unknown>): Replies {
         name: PROJECT_NAME,
         createdAt: CREATED_AT,
         mayDelete: true,
+        mayPublish: true,
+        publishRequest: null,
         address: 'pedidos--empresa-teste.apps.example.test',
         appVersion: null,
         publishedVersion: null,

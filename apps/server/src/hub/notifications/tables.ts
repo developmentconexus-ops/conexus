@@ -12,6 +12,7 @@ import {
 } from 'drizzle-orm/pg-core'
 import { SCOPE_ROLES, scoped } from '../../platform/database.ts'
 import { company, member, policy } from '../identity/public.ts'
+import { request } from '../requests/public.ts'
 
 export const notifications = pgSchema('notifications')
 
@@ -79,5 +80,47 @@ export const notification = notifications.table(
       table.id.desc(),
     ),
     policy(SCOPE_ROLES.COMPANY, 'all', OWN),
+  ],
+)
+
+/**
+ * What a request to publish tells (step 24.3.4, U2): its deciders that it opened, and its asker that
+ * it was decided. A row beside the bell's, so the automations' rows stay as they are (data D6). The
+ * person who asks writes the deciders' rows, so inserting needs only the company; reading and
+ * marking read stay the person's own. It leaves with its request, or its person, by cascade.
+ */
+export const requestNotice = notifications.table(
+  'request_notice',
+  {
+    id: uuid('id').primaryKey(),
+    companyId: text('company_id').notNull(),
+    personId: text('person_id').notNull(),
+    requestId: uuid('request_id').notNull(),
+    kind: text('kind').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
+    readAt: timestamp('read_at', { withTimezone: true }),
+  },
+  (table) => [
+    foreignKey({
+      name: 'request_notice_member_fkey',
+      columns: [table.companyId, table.personId],
+      foreignColumns: [member.organizationId, member.userId],
+    }).onDelete('cascade'),
+    foreignKey({
+      name: 'request_notice_request_id_fkey',
+      columns: [table.requestId],
+      foreignColumns: [request.id],
+    }).onDelete('cascade'),
+    check('request_notice_kind', sql`${table.kind} in ('REQUEST_OPENED', 'REQUEST_DECIDED')`),
+    unique('request_notice_key').on(table.requestId, table.personId, table.kind),
+    index('request_notice_person_created').on(
+      table.companyId,
+      table.personId,
+      table.createdAt.desc(),
+      table.id.desc(),
+    ),
+    policy(SCOPE_ROLES.COMPANY, 'select', OWN),
+    policy(SCOPE_ROLES.COMPANY, 'update', OWN),
+    policy(SCOPE_ROLES.COMPANY, 'insert', sql`company_id = ${scoped.companyId}`),
   ],
 )

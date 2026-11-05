@@ -313,6 +313,9 @@ export function projectsRead(view: ProjectsView) {
               project: {
                 ...project,
                 mayDelete: view.mayDelete,
+                // Who deletes here publishes too: the owner's view, or the member's (step 24.3.4).
+                mayPublish: view.mayDelete,
+                publishRequest: null,
                 address: view.address === undefined ? PEDIDOS_ADDRESS : view.address,
                 appVersion: view.appVersion ?? null,
                 publishedVersion: view.publishedVersion ?? null,

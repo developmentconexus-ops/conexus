@@ -109,6 +109,24 @@ export async function lockApp(tx: CommandTx, ids: OfProject) {
   return row
 }
 
+/**
+ * A version the Projeto keeps, by its number, with its manifest: one pruned, failed, being sent, of
+ * another Projeto or that never entered is absent. What a publish and a request to publish name.
+ */
+export async function keptVersionOf(tx: ReadTx, input: { projectId: ProjectId; number: number }) {
+  const [row] = await tx
+    .select({ ...VERSION_VIEW, manifest: appVersion.manifest })
+    .from(appVersion)
+    .where(
+      and(
+        eq(appVersion.projectId, input.projectId),
+        eq(appVersion.number, input.number),
+        eq(appVersion.state, 'ready'),
+      ),
+    )
+  return row
+}
+
 /** Ends a send that did not put its version in the Prévia: the version fails with its reason. */
 export async function failVersion(
   tx: CommandTx,

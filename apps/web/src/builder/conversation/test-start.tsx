@@ -58,6 +58,8 @@ export function startHub(server: ReturnType<typeof setupServer>) {
               project: {
                 ...PEDIDOS,
                 mayDelete: true,
+                mayPublish: true,
+                publishRequest: null,
                 address: PEDIDOS_ADDRESS,
                 appVersion: null,
                 publishedVersion: null,

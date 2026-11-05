@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto'
-import type { CompanyId, Person, Project, ProjectName, Role } from '@conexus/hub-api'
+import type { CompanyId, Person, PersonId, Project, ProjectName, Role } from '@conexus/hub-api'
 import { appHostOf, HostLabel, hostLabelOf, PAGE_SIZE, ProjectId } from '@conexus/hub-api'
 import { and, asc, eq, isNull, sql } from 'drizzle-orm'
 import { z } from 'zod'
@@ -13,7 +13,12 @@ import { after, pageKey, pageOf } from '../../platform/pages.ts'
 import type { IdentityPorts } from '../identity/public.ts'
 import { claimDatabase, markReady, prepareDatabase, releaseClaim } from './company-database.ts'
 import { finishMarkedProject, ofProject } from './marked.ts'
-import type { AppRemoval, AppVersionsOf, ProjectConversationRelease } from './ports.ts'
+import type {
+  AppRemoval,
+  AppVersionsOf,
+  ProjectConversationRelease,
+  PublishRequestOf,
+} from './ports.ts'
 import { companyDatabase, project } from './tables.ts'
 
 type Deps = {
@@ -21,6 +26,7 @@ type Deps = {
   identity: IdentityPorts
   appRemoval: AppRemoval
   appVersionsOf: AppVersionsOf
+  publishRequestOf: PublishRequestOf
   releaseConversations: ProjectConversationRelease
   neon: NeonProjects
   log: FailureLog
@@ -59,22 +65,30 @@ function summaryOf(
 
 /** What a viewer with this role may do to a Project: the Hub's answer, never the screen's (code C26). */
 function rightsOf(deps: Deps, role: Role) {
-  return { mayDelete: deps.identity.allows(role, 'deleteProject') }
+  return {
+    mayDelete: deps.identity.allows(role, 'deleteProject'),
+    mayPublish: deps.identity.allows(role, 'publishAppVersion'),
+  }
 }
 
 type Rights = ReturnType<typeof rightsOf>
-async function versionsOf(deps: Deps, tx: ReadTx, projectId: ProjectId) {
-  return (await deps.appVersionsOf(tx, [projectId])).get(projectId)
+type Reader = { companyId: CompanyId; personId: PersonId; role: Role }
+
+/** What the reader's Project page shows of its app: the versions and the open request to publish. */
+async function appOf(deps: Deps, tx: ReadTx, projectId: ProjectId, reader: Reader) {
+  const versions = (await deps.appVersionsOf(tx, [projectId])).get(projectId)
+  const publishRequest = await deps.publishRequestOf(tx, { ...reader, projectId })
+  return { versions, publishRequest }
 }
 
-function viewOf(
-  deps: Deps,
-  input: { row: ProjectRow; rights: Rights; versions?: Versions },
-): Project {
+type AppOf = Awaited<ReturnType<typeof appOf>>
+
+function viewOf(deps: Deps, input: { row: ProjectRow; rights: Rights; app?: AppOf }): Project {
   const { hostLabel } = input.row
   const address =
     hostLabel === null ? null : appHostOf({ label: hostLabel, appsDomain: deps.appsDomain })
-  return { ...summaryOf(input.row, input.versions), ...input.rights, address }
+  const publishRequest = input.app?.publishRequest ?? null
+  return { ...summaryOf(input.row, input.app?.versions), ...input.rights, publishRequest, address }
 }
 
 /**
@@ -146,8 +160,9 @@ async function enterCreation(deps: Deps, tx: CommandTx, input: Creation) {
   const rights = rightsOf(deps, admitted.role)
   const replay = await replayOf(tx, { ...input })
   if (replay !== undefined) {
-    const versions = await versionsOf(deps, tx, replay.id)
-    return { kind: 'REPLAY', rights, row: replay, versions } as const
+    const reader = { companyId: input.companyId, personId: input.person.id, role: admitted.role }
+    const app = await appOf(deps, tx, replay.id, reader)
+    return { kind: 'REPLAY', rights, row: replay, app } as const
   }
   return { kind: 'NEW', rights, ...(await hostLabelFor(deps, tx, input)) } as const
 }
@@ -164,8 +179,8 @@ async function create(deps: Deps, input: Creation): Promise<Created> {
     const entered = await enterCreation(deps, tx, input)
     const { rights } = entered
     if (entered.kind === 'REPLAY') {
-      const { row, versions } = entered
-      return { kind: 'DONE', created: false, row, rights, versions } as const
+      const { row, app } = entered
+      return { kind: 'DONE', created: false, row, rights, app } as const
     }
     if ((await claimDatabase(tx, input.companyId)) === 'CLAIMED') {
       return { kind: 'CLAIMED', rights, nickname: entered.nickname } as const
@@ -174,8 +189,8 @@ async function create(deps: Deps, input: Creation): Promise<Created> {
     return { kind: 'DONE', created: true, row, rights } as const
   })
   if (started.kind === 'DONE') {
-    const { row, rights, created, versions } = started
-    return { project: viewOf(deps, { row, rights, versions }), created, databaseCreated: false }
+    const { row, rights, created, app } = started
+    return { project: viewOf(deps, { row, rights, app }), created, databaseCreated: false }
   }
   const { nickname } = started
   const prepared = await prepareDatabase(deps.neon, { companyId: input.companyId, nickname })
@@ -191,7 +206,7 @@ async function create(deps: Deps, input: Creation): Promise<Created> {
       const { rights } = entered
       if (entered.kind === 'REPLAY') {
         return {
-          project: viewOf(deps, { row: entered.row, rights, versions: entered.versions }),
+          project: viewOf(deps, { row: entered.row, rights, app: entered.app }),
           created: false,
           databaseCreated: false,
         }
@@ -266,8 +281,9 @@ function get(deps: Deps, input: OfProject) {
       .where(and(ofProject(input), isNull(project.deletingSince)))
     if (row === undefined) throw new Failure('NOT_FOUND')
     const rights = rightsOf(deps, admitted.role)
-    const versions = await versionsOf(deps, tx, input.projectId)
-    return { project: viewOf(deps, { row: ProjectRow.parse(row), rights, versions }) }
+    const reader = { companyId: input.companyId, personId: input.person.id, role: admitted.role }
+    const app = await appOf(deps, tx, input.projectId, reader)
+    return { project: viewOf(deps, { row: ProjectRow.parse(row), rights, app }) }
   })
 }
 

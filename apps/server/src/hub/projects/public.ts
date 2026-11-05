@@ -20,6 +20,7 @@ import type {
   AppVersionsOf,
   ProjectConversationRelease,
   PublishedRolesOf,
+  PublishRequestOf,
 } from './ports.ts'
 import { createProjectStore } from './projects.ts'
 import { registerProjectRoutes } from './routes.ts'
@@ -35,8 +36,9 @@ export type {
   AppVersionsOf,
   ProjectConversationRelease,
   PublishedRolesOf,
+  PublishRequestOf,
 } from './ports.ts'
-/** For the apps' foreign key alone (code C8). */
+/** For the apps' and the requests' foreign keys, and the name a notice shows (code C8). */
 export { project } from './tables.ts'
 export type Projects = ReturnType<typeof createProjects>
 export type ProjectPorts = Projects['ports']
@@ -53,6 +55,7 @@ export function createProjects(deps: {
   appsDomain: AppsDomain
   appRemoval: AppRemoval
   appVersionsOf: AppVersionsOf
+  publishRequestOf: PublishRequestOf
   releaseConversations: ProjectConversationRelease
   publishedRolesOf: PublishedRolesOf
   endAppSessions: AppSessionsEnd

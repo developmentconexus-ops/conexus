@@ -1,15 +1,20 @@
 import type { FastifyInstance } from 'fastify'
 import type { Notifications } from './notifications.ts'
 import { createNotifications } from './notifications.ts'
+import { noticeRequests } from './request-notices.ts'
 import { registerNotificationRoutes } from './routes.ts'
 
 export type { Notify } from './notifications.ts'
 
-/** The Hub's notifications: `notify` for the subjects that tell a person, and the bell's routes. */
+/**
+ * The Hub's notifications: `notify` for the subjects that tell a person, what a request to publish
+ * tells (step 24.3.4), and the bell's routes.
+ */
 export function notificationsOf(deps: Parameters<typeof createNotifications>[0]) {
   const notifications: Notifications = createNotifications(deps)
   return Object.freeze({
     notify: notifications.notify,
+    noticeRequests,
     routes: (app: FastifyInstance) => registerNotificationRoutes(app, notifications),
   })
 }

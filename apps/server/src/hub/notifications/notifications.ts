@@ -21,7 +21,8 @@ import type { SendMail } from '../../platform/mail.ts'
 import { pageOf } from '../../platform/pages.ts'
 import type { IdentityPorts } from '../identity/public.ts'
 import { automationMail } from './mail.ts'
-import { notification } from './tables.ts'
+import { requestNoticeRows, requestNoticeView } from './request-notices.ts'
+import { notification, requestNotice } from './tables.ts'
 
 /** A run that ended, for the person who owns its automation. */
 export type AutomationRan = {
@@ -192,43 +193,64 @@ async function admitted(deps: Deps, tx: ReadTx, input: Of): Promise<void> {
   })
 }
 
-/** The person's own notifications, newest first, and how many are unread (the bell's number). */
+type Mine = typeof notification | typeof requestNotice
+
+function mine(table: Mine, input: Of) {
+  return and(eq(table.companyId, input.companyId), eq(table.personId, input.person.id))
+}
+
+/** Where a page starts: the notification it follows, in either table. */
+async function anchorOf(tx: ReadTx, input: Of, id: NotificationId) {
+  for (const table of [notification, requestNotice]) {
+    const [row] = await tx
+      .select({ id: table.id, createdAt: table.createdAt })
+      .from(table)
+      .where(and(mine(table, input), eq(table.id, id)))
+    if (row !== undefined) return row
+  }
+  return undefined
+}
+
+type Shown = { id: string; createdAt: Date; row: unknown }
+
+/** Newest first, the order of both tables' index; equal instants by id, as PostgreSQL orders uuids. */
+function newestFirst(a: Shown, b: Shown): number {
+  const byTime = b.createdAt.getTime() - a.createdAt.getTime()
+  if (byTime !== 0) return byTime
+  return a.id < b.id ? 1 : a.id > b.id ? -1 : 0
+}
+
+/**
+ * The person's own notifications, newest first, and how many are unread (the bell's number): the
+ * automations' and the requests', each table read a page deep after the same anchor and merged.
+ */
 async function list(deps: Deps, input: Of & { after: NotificationId | undefined }) {
   return deps.database.read(scopeOf(input), async (tx) => {
     await admitted(deps, tx, input)
-    const mine = and(
-      eq(notification.companyId, input.companyId),
-      eq(notification.personId, input.person.id),
-    )
-    const anchor = input.after
-    const [last] =
-      anchor === undefined
-        ? []
-        : await tx
-            .select({ id: notification.id, createdAt: notification.createdAt })
-            .from(notification)
-            .where(and(mine, eq(notification.id, anchor)))
-    const before =
-      last === undefined
-        ? undefined
-        : or(
-            lt(notification.createdAt, last.createdAt),
-            and(eq(notification.createdAt, last.createdAt), lt(notification.id, last.id)),
-          )
-    const rows = await tx
+    const last = input.after === undefined ? undefined : await anchorOf(tx, input, input.after)
+    function after(table: Mine) {
+      if (last === undefined) return mine(table, input)
+      const before = or(
+        lt(table.createdAt, last.createdAt),
+        and(eq(table.createdAt, last.createdAt), lt(table.id, last.id)),
+      )
+      return and(mine(table, input), before)
+    }
+    const automations = await tx
       .select()
       .from(notification)
-      .where(and(mine, before))
+      .where(after(notification))
       .orderBy(desc(notification.createdAt), desc(notification.id))
       .limit(NOTIFICATIONS_PER_PAGE + 1)
-    const [counted] = await tx
-      .select({ unread: sql<number>`count(*)::int` })
-      .from(notification)
-      .where(and(mine, isNull(notification.readAt)))
-    const page = pageOf(rows, (row) => row.id, NOTIFICATIONS_PER_PAGE)
-    return {
-      notifications: page.rows.map((row) =>
-        NotificationRow.parse({
+    const requests = await requestNoticeRows(tx)
+      .where(after(requestNotice))
+      .orderBy(desc(requestNotice.createdAt), desc(requestNotice.id))
+      .limit(NOTIFICATIONS_PER_PAGE + 1)
+    const shown: Shown[] = [
+      ...automations.map((row) => ({
+        id: row.id,
+        createdAt: row.createdAt,
+        row: {
           kind: row.kind,
           id: row.id,
           createdAt: row.createdAt.toISOString(),
@@ -237,29 +259,47 @@ async function list(deps: Deps, input: Of & { after: NotificationId | undefined 
           projectId: row.projectId,
           conversationId: row.conversationId,
           code: row.failureCode,
-        }),
-      ),
-      unread: counted?.unread ?? 0,
+        },
+      })),
+      ...requests.map((row) => ({
+        id: row.id,
+        createdAt: row.createdAt,
+        row: requestNoticeView(row),
+      })),
+    ].sort(newestFirst)
+    let unread = 0
+    for (const table of [notification, requestNotice]) {
+      const [counted] = await tx
+        .select({ unread: sql<number>`count(*)::int` })
+        .from(table)
+        .where(and(mine(table, input), isNull(table.readAt)))
+      unread += counted?.unread ?? 0
+    }
+    const page = pageOf(shown, (each) => each.id, NOTIFICATIONS_PER_PAGE)
+    return {
+      notifications: page.rows.map((each) => NotificationRow.parse(each.row)),
+      unread,
       next: page.next,
     }
   })
 }
 
-/** Marks the person's own notifications read, the ones named or all; a repeat changes nothing. */
+/** Marks the person's own notifications read, the ones named or all, in both tables; a repeat changes nothing. */
 async function markRead(deps: Deps, input: Of & { ids: readonly NotificationId[] | 'ALL' }) {
   await deps.database.command(scopeOf(input), async (tx) => {
     await admitted(deps, tx, input)
-    await tx
-      .update(notification)
-      .set({ readAt: sql`statement_timestamp()` })
-      .where(
-        and(
-          eq(notification.companyId, input.companyId),
-          eq(notification.personId, input.person.id),
-          isNull(notification.readAt),
-          input.ids === 'ALL' ? undefined : inArray(notification.id, [...input.ids]),
-        ),
-      )
+    for (const table of [notification, requestNotice]) {
+      await tx
+        .update(table)
+        .set({ readAt: sql`statement_timestamp()` })
+        .where(
+          and(
+            mine(table, input),
+            isNull(table.readAt),
+            input.ids === 'ALL' ? undefined : inArray(table.id, [...input.ids]),
+          ),
+        )
+    }
   })
 }
 
