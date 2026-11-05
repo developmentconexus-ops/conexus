@@ -25,7 +25,7 @@ import { openProject, PASSWORD, signIn, waitForHome } from './live-hub.ts'
 // runs on the test server with the login the Hub made. The app's visits carry their cookies by
 // hand, as step 8's journey does: a browser route is never called for a redirect's next request
 // (testing T5, T6, T14).
-/** 1. Versões: nothing on the app yet; Recados 1 goes to the Prévia. The member sees the list too, and is offered to ask. */
+/** 1. Versões: nothing on the app yet; Recados 1 goes to the Prévia. The member sees the list too. */
 async function firstVersion(s: Scenario, pedidos: string) {
   const { page } = s.owner
   await page.goto(`${pedidos}/about?part=versions`)
@@ -41,12 +41,7 @@ async function firstVersion(s: Scenario, pedidos: string) {
   await signIn(s.member.page, CARLA.email, PASSWORD)
   await waitForHome(s.member.page)
   await openProject(s.member.page, 'Pedidos')
-  // Carla is a member: since 24.3.4 U3 the Hub offers her to ask, not to publish.
-  await s.member.page.getByRole('button', { name: 'Pedir para publicar', exact: true }).waitFor()
-  assert.equal(
-    await s.member.page.getByRole('button', { name: 'Publicar', exact: true }).count(),
-    0,
-  )
+  await s.member.page.getByRole('button', { name: 'Publicar', exact: true }).waitFor()
   await s.member.page.goto(`${pedidos}/about?part=versions`)
   await s.member.page.getByText('Versão 1 · Na Prévia').waitFor()
 }

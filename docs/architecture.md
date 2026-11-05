@@ -17,8 +17,8 @@ operates the installation, for a handful of invited companies at launch.
    data. Generated code holds no secret and reaches no network.
 2. **Recoverable by one person.** Every part can be published, rolled back and restored by the
    founder, without a terminal.
-3. **Cheap at rest.** Idle, Conexus leaves its databases asleep [0009], the Hub's apart while an
-   automation exists (data D27).
+3. **Cheap at rest.** Idle, Conexus leaves its databases asleep [0009], the Hub's woken only at
+   automation fires (data D27).
 4. **Native first.** A platform or library feature comes before Conexus code. Each exception names
    the line where the library does less.
 5. **Readable.** One language, one tree, and walls checked by a machine, so a person or an agent
