@@ -85,7 +85,7 @@ export const modelAccount = builder.table(
     unique('model_account_attempt_key').on(table.companyId, table.attemptKey),
     check(
       'model_account_kind',
-      sql`${table.kind} IN ('api_key', 'claude_subscription', 'google_cliproxy')`,
+      sql`${table.kind} IN ('api_key', 'claude_subscription', 'google_cliproxy', 'openai_codex')`,
     ),
     check('model_account_state', sql`${table.state} IN ('ready', 'paused', 'refused')`),
     check('model_account_label_length', sql`char_length(${table.label}) BETWEEN 1 AND 60`),
@@ -174,7 +174,7 @@ export const companyAccountKind = builder.table(
     companyKey('company_account_kind_company_id_fkey', table),
     check(
       'company_account_kind_kind',
-      sql`${table.kind} IN ('claude_subscription', 'google_cliproxy')`,
+      sql`${table.kind} IN ('claude_subscription', 'google_cliproxy', 'openai_codex')`,
     ),
     policy(SCOPE_ROLES.COMPANY, 'select', OWN_COMPANY),
     policy(SCOPE_ROLES.OPERATOR, 'select', OPERATOR_COMPANY),
@@ -200,6 +200,8 @@ export const modelAccountSignIn = builder.table(
     sealed: bytea('sealed').notNull(),
     keyId: text('key_id').notNull(),
     expiresAt: instant('expires_at').notNull(),
+    // The next time a device-code sign-in may ask the vendor: the poll's lease and its schedule.
+    pollAt: instant('poll_at').notNull().default(sql`statement_timestamp()`),
   },
   (table) => [
     foreignKey({
@@ -210,7 +212,7 @@ export const modelAccountSignIn = builder.table(
     check('model_account_sign_in_owner', sql`${table.owner} IN ('company', 'me')`),
     check(
       'model_account_sign_in_kind',
-      sql`${table.kind} IN ('claude_subscription', 'google_cliproxy')`,
+      sql`${table.kind} IN ('claude_subscription', 'google_cliproxy', 'openai_codex')`,
     ),
     check('model_account_sign_in_label_length', sql`char_length(${table.label}) BETWEEN 1 AND 60`),
     policy(

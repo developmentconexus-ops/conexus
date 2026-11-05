@@ -190,6 +190,7 @@ export {
   setPassword,
 } from './identity.ts'
 export * from './library-ids.ts'
+export * from './model-account-sign-ins.ts'
 export {
   ACCOUNT_KEY_MAX_LENGTH,
   ACCOUNT_KINDS,
@@ -199,7 +200,6 @@ export {
   AccountState,
   assignModelAccount,
   changeModelAccount,
-  completeModelAccountSignIn,
   connectModelAccount,
   getAccountKinds,
   isSubscription,
@@ -221,7 +221,6 @@ export {
   type SubscriptionKind,
   setAccountKinds,
   setModelFallback,
-  startModelAccountSignIn,
 } from './model-accounts.ts'
 export {
   ConversationStart,

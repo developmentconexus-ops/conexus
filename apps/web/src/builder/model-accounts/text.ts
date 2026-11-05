@@ -17,6 +17,7 @@ export const KIND_NAMES = {
   api_key: 'Chave de API',
   claude_subscription: 'Assinatura Claude',
   google_cliproxy: 'Google',
+  openai_codex: 'Assinatura ChatGPT',
 } as const satisfies Record<AccountKind, string>
 
 /** A person of the company as the assignment lists them. */

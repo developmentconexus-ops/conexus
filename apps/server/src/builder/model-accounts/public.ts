@@ -7,6 +7,7 @@ import type { SealKeys } from '../../platform/seal.ts'
 import { claudeSignIn } from './claude/sign-in.ts'
 import { googleCalls } from './google/calls.ts'
 import { googleSignIn } from './google/google.ts'
+import { codexSignIn } from './openai/sign-in.ts'
 import { reseal } from './reseal.ts'
 import { registerModelAccountRoutes } from './routes.ts'
 import type { ReadingDeps } from './served.ts'
@@ -58,7 +59,10 @@ export function resealModelAccounts(deps: { database: Database; sealKeys: SealKe
 
 /** The installation's sign-in flows, one per kind the operators open (decision 0049). */
 export function signInFlows(deps: { cliProxy: CliProxy; log: FailureLog }): SignInFlows {
-  return { claude_subscription: claudeSignIn(), google_cliproxy: googleSignIn(deps) }
+  return {
+    paste: { claude_subscription: claudeSignIn(), google_cliproxy: googleSignIn(deps) },
+    device: { openai_codex: codexSignIn() },
+  }
 }
 
 /** Google's calls, one CLIProxyAPI per account; `stop()` ends them with the program (step 12 U10). */
