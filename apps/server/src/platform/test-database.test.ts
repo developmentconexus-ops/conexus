@@ -12,7 +12,6 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
 import { pathToFileURL } from 'node:url'
-import { MIGRATIONS_FOLDER } from './database.ts'
 import { templateNameOf } from './test-database-template.ts'
 import { startHub } from './test-hub-process.ts'
 
@@ -74,7 +73,7 @@ test('linha crua: um Hub iniciado que escreve uma linha de registro com level an
 test('modelo: uma migração mudada, acrescentada ou apagada leva a outro modelo', (t) => {
   const folder = mkdtempSync(join(tmpdir(), 'conexus-migrations-'))
   t.after(() => rmSync(folder, { recursive: true, force: true }))
-  cpSync(MIGRATIONS_FOLDER, folder, { recursive: true })
+  cpSync(join(import.meta.dirname, '..', '..', 'migrations'), folder, { recursive: true })
   const shipped = templateNameOf(folder)
   assert.equal(shipped, templateNameOf())
   assert.match(shipped, /^conexus_template_[0-9a-f]{12}$/)
