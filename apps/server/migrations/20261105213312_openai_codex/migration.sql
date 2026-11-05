@@ -1,3 +1,4 @@
+-- contract: the three kind CHECKs are dropped and re-added with one more allowed value, so every row and insert the previous image makes still passes; the new column has a default (data D6).
 ALTER TABLE "builder"."model_account_sign_in" ADD COLUMN "poll_at" timestamp with time zone DEFAULT statement_timestamp() NOT NULL;--> statement-breakpoint
 ALTER TABLE "builder"."company_account_kind" DROP CONSTRAINT "company_account_kind_kind", ADD CONSTRAINT "company_account_kind_kind" CHECK ("kind" IN ('claude_subscription', 'google_cliproxy', 'openai_codex'));--> statement-breakpoint
 ALTER TABLE "builder"."model_account" DROP CONSTRAINT "model_account_kind", ADD CONSTRAINT "model_account_kind" CHECK ("kind" IN ('api_key', 'claude_subscription', 'google_cliproxy', 'openai_codex'));--> statement-breakpoint
