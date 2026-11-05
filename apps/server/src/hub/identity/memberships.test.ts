@@ -225,7 +225,7 @@ test('papel: a resposta é a pessoa como quem muda a vê; o papel velho, 412; o 
       email: 'davi@example.test',
       role: 'admin',
       mayRemove: true,
-      mayChangeTo: ['member'],
+      mayChangeTo: ['developer', 'member'],
       invitationsSent: 0,
     },
   })
@@ -254,12 +254,12 @@ test('Central: sem virar membro, lista pessoas e convites de empresa ativa, muda
   assert.deepEqual(
     members.map((one: Member) => [one.email.split('@')[0], one.mayRemove, one.mayChangeTo]),
     [
-      ['ana', true, ['admin', 'member']],
-      ['bruno', true, ['owner', 'member']],
-      ['carla', true, ['owner', 'member']],
-      ['davi', true, ['owner', 'admin']],
-      ['edu', true, ['owner', 'admin']],
-      ['gil', true, ['admin', 'member']],
+      ['ana', true, ['admin', 'developer', 'member']],
+      ['bruno', true, ['owner', 'developer', 'member']],
+      ['carla', true, ['owner', 'developer', 'member']],
+      ['davi', true, ['owner', 'admin', 'developer']],
+      ['edu', true, ['owner', 'admin', 'developer']],
+      ['gil', true, ['admin', 'developer', 'member']],
     ],
   )
   assert.equal((await act(hub, central, 'GET', `${base}/invitations`)).statusCode, 200)

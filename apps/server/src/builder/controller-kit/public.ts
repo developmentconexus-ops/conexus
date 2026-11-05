@@ -1,4 +1,4 @@
-export { admitAsker, agentManagerAdmission } from './admission.ts'
+export { admitAsker, admitAutomationOwner, agentManagerAdmission } from './admission.ts'
 export { agentDefaults, controllerOf, MODEL_TIMEOUT } from './factories.ts'
 export type { ControllerKind, Owner, ResourceOwner } from './kinds.ts'
 export { CONTROLLER_KINDS, ownerOfResource, resourceOf } from './kinds.ts'

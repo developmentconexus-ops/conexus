@@ -23,6 +23,7 @@ const CACHED = { anthropic: { cacheControl: { type: 'ephemeral', ttl: '1h' } } }
 const ROLE_WORDS = {
   owner: 'owner',
   admin: 'administrator',
+  developer: 'developer',
   member: 'member',
 } as const satisfies Record<Role, string>
 
