@@ -75,7 +75,11 @@ Neon's owner login joins `neon_superuser`; the Hub's runtime login does not [003
   holds a row lock indefinitely. PostgreSQL's [isolation semantics](https://www.postgresql.org/docs/18/transaction-iso.html)
   explain the choice: repeatable read shares a snapshot but can require retry after concurrent
   updates; read committed with row locks lets the next command decide on the committed row.
-  Neither an isolation name nor a ban on `merge` proves atomicity. [review]
+  Neither an isolation name nor a ban on `merge` proves atomicity. The lock order counts the rows a
+  cascade reaches: a deletion locks the parent first and the cascaded child after, so a decision that
+  holds the child and then writes a row checked against the parent takes the parent first. Step
+  24.3.4: deciding a publish request holds the app, then the asker's membership, then the request,
+  or removing the asker deadlocks with the decision. [review]
 - **D25.** There **must not** be a session-level lock, or a session setting outside a transaction,
   and a single owner **must** be a lease row with an expiry, renewed by activity. The one exception:
   the `migrate` connection, on the direct address, opens with its limits in `options`, so
