@@ -1055,6 +1055,24 @@ rows for the five above wait on issue #458.
 - **Proof.** `prompt-cache.test.ts` "cada passo do modelo da conta volta sem o corpo do pedido…".
 - **Revisit when** Mastra passes an include option to its loop, or stops keeping the request.
 
+## Mastra 1.82.0: the store's domains log, and a model's output is read from its name
+
+- **Library line.** `Mastra` gives its logger to the store, but `MastraCompositeStore` does not pass
+  it on to the store's domains (the class at `dist/filesystem-versioned-CNYJdPJl.js:207-463` has no
+  `__setLogger` of its own), and each domain logs its own failures. The provider registry says of a model only
+  `attachment`, `temperature`, `structuredOutput` and `reasoning` (`dist/capabilities/*.json`),
+  nothing of what the model outputs.
+- **Hand-made piece.** `apps/server/src/builder/mastra/mastra.ts` gives each domain the Hub's logger
+  by the same `__setLogger`. `NOT_CHAT` in `apps/server/src/builder/model-accounts/providers.ts`
+  leaves out a model whose name says it draws, films, speaks, hears, embeds, ranks, guards, reads
+  scans or talks live.
+- **Why.** A domain's failure would log nowhere the Hub reads; the model picker would list models
+  that cannot hold a conversation.
+- **Proof.** `providers.test.ts` "em todo fornecedor por chave, um nome que sugere mídia…" fails when
+  a new such name enters the registry unread. No test fails without the logger line.
+- **Revisit when** the composite store passes its logger to its domains, or the registry says what a
+  model outputs.
+
 ## e2b 2.63.0: the version folder read without following a link (step 14.1)
 
 - **Library line.** `e2b@2.63.0` `files.read(path)` reads by path and
