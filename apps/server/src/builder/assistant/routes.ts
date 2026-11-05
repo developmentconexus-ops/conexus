@@ -75,6 +75,13 @@ async function ownThread(deps: Deps, owner: Owner, conversationId: ConversationI
   return thread
 }
 
+/** Admits the person who may ask, then reads the thread they own and its scope. */
+async function ownScoped(deps: Deps, owner: Owner, conversationId: ConversationId) {
+  await admitted(deps, owner, { kind: 'COMPANY' }, 'askAssistant')
+  const thread = await ownThread(deps, owner, conversationId)
+  return { thread, scope: await scopeOfThread(deps, owner, thread) }
+}
+
 /**
  * The thread's scope, read with no session (a `GET` starts nothing): its place and choice as the
  * Hub keeps them.
@@ -190,10 +197,7 @@ function registerReads(app: FastifyInstance, deps: Deps): void {
   })
 
   serve(app, readAssistantConversation, async (input) => {
-    const owner = ownerOf(input)
-    await admitted(deps, owner, { kind: 'COMPANY' }, 'askAssistant')
-    const thread = await ownThread(deps, owner, input.params.conversationId)
-    const scope = await scopeOfThread(deps, owner, thread)
+    const { thread, scope } = await ownScoped(deps, ownerOf(input), input.params.conversationId)
     return answer({ conversation: await conversationOf(deps, thread, scope) })
   })
 
@@ -271,9 +275,7 @@ function registerWrites(app: FastifyInstance, deps: Deps): void {
   serve(app, setAssistantConnections, async (input) => {
     const owner = ownerOf(input)
     const { conversationId } = input.params
-    await admitted(deps, owner, { kind: 'COMPANY' }, 'askAssistant')
-    const thread = await ownThread(deps, owner, conversationId)
-    const scope = await scopeOfThread(deps, owner, thread)
+    const { thread, scope } = await ownScoped(deps, owner, conversationId)
     const chosen = await offeredOnly(deps, scope, input.body.connections)
     await deps.chosen.change(owner, conversationId, chosen)
     deps.log.info(
@@ -287,9 +289,10 @@ function registerWrites(app: FastifyInstance, deps: Deps): void {
   serve(app, setAssistantModel, async (input) => {
     const owner = ownerOf(input)
     const { conversationId } = input.params
-    await admitted(deps, owner, { kind: 'COMPANY' }, 'askAssistant')
-    const thread = await ownThread(deps, owner, conversationId)
-    const { place } = await scopeOfThread(deps, owner, thread)
+    const {
+      thread,
+      scope: { place },
+    } = await ownScoped(deps, owner, conversationId)
     const tags = marksOf(owner, {
       projectId: place.kind === 'PROJECT' ? place.projectId : undefined,
       automation: automationOf(thread.metadata) ?? undefined,

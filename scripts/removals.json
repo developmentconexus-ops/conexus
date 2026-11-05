@@ -2576,7 +2576,7 @@
   {
     "id": "assistant-without-automation-tool-for-member",
     "file": "apps/server/src/builder/assistant/assistant.ts",
-    "find": "        ...((await mayAutomate(requestContext))\n          ? { [ASSISTANT_TOOL.proposeAutomation]: proposeAutomationTool(chosen) }\n          : {}),",
+    "find": "        ...(mayAutomate\n          ? { [ASSISTANT_TOOL.proposeAutomation]: proposeAutomationTool(chosen) }\n          : {}),",
     "replace": "        [ASSISTANT_TOOL.proposeAutomation]: proposeAutomationTool(chosen),",
     "test": {
       "cwd": "apps/server",
