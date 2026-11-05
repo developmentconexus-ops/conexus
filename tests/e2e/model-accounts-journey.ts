@@ -57,10 +57,17 @@ export async function changeState(page: Page, label: string, item: 'Pausar' | 'R
   await page.locator('tr', { hasText: label }).getByText(state, { exact: true }).waitFor()
 }
 
-/** Raises the account and waits until its arrow can go no further: the screen caught up with the write. */
+/**
+ * Raises the account and waits for the page to say its new place. The arrows are disabled while the
+ * write runs too, so a disabled arrow does not prove the new order landed; the sentence comes with
+ * it, after the focus moves to the arrow (design V30).
+ */
 export async function moveUp(page: Page, label: string) {
   await page.getByRole('button', { name: `Subir ${label}`, exact: true }).click()
-  await page.locator(`button[aria-label="Subir ${label}"]:disabled`).waitFor()
+  await page
+    .getByRole('status')
+    .filter({ hasText: `${label} agora é a ` })
+    .waitFor()
 }
 
 /** Picks `option` in the UI's select labelled `label`; its list opens at the page's end. */
