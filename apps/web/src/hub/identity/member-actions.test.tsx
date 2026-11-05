@@ -4,7 +4,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
-import { ANA, COMPANY } from '../../platform/fixtures.ts'
+import { ANA, COMPANY, mayOf } from '../../platform/fixtures.ts'
 import { hubServer, memberView, refusal, sessionRead } from '../../platform/test-hub.tsx'
 import { COMPANY_ACCESS_NONE } from '../../platform/test-hub-access.tsx'
 
@@ -45,6 +45,7 @@ function hub(answers: { remove?: () => Response; change?: () => Response } = {})
           company: COMPANY,
           role: 'owner',
           mayInviteAs: [],
+          may: mayOf('owner'),
         }),
       ),
     ),

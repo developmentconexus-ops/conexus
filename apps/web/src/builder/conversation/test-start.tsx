@@ -8,6 +8,8 @@ import type { Answers } from './test-hub.tsx'
 import { screens, view } from './test-hub.tsx'
 
 export const HOME = `/companies/${COMPANY.id}`
+/** The first entry's last step, where the Builder's box is today (Início asks the Assistant). */
+const BUILD = `${HOME}/welcome/build`
 export const REQUEST = 'Um app de encomendas com cliente, data de entrega e valor'
 export const START = {
   model: ModelId.parse('anthropic/claude-sonnet-4'),
@@ -20,7 +22,7 @@ export const PDF = new File(['%PDF-1.4'], 'tabela.pdf', { type: 'application/pdf
 
 type Sent = { key: string | null; body: unknown }
 
-/** Início's screen on `server`, as a member sees it: the owner and the administrators ask the Assistant there. */
+/** The Builder's box on `server`, as the owner finds it in the first entry's last step. */
 export function startHub(server: ReturnType<typeof setupServer>) {
   const { open } = screens(server)
 
@@ -34,17 +36,17 @@ export function startHub(server: ReturnType<typeof setupServer>) {
       project?: () => Response | undefined
       answers?: Answers
       start?: typeof START | null
-      /** Where the screen opens, Início by default. */
+      /** Where the screen opens, the first entry's last step by default. */
       at?: string
-      /** The person's role: a member on Início, who asks the Builder there; the owner elsewhere. */
+      /** The person's role; the owner by default. */
       role?: string
     } = {},
   ) {
     const shown = view({
       start: options.start === null ? undefined : START,
-      role: options.role ?? (options.at === undefined ? 'member' : undefined),
+      role: options.role,
     })
-    const hub = open(shown, options.at ?? HOME, options.answers)
+    const hub = open(shown, options.at ?? BUILD, options.answers)
     const projects: Sent[] = []
     server.use(
       http.post(`*/api/companies/${COMPANY.id}/projects`, async ({ request }) => {

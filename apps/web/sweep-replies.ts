@@ -1,3 +1,4 @@
+import type { Role } from '@conexus/hub-api'
 import {
   getAccountKinds,
   getClient,
@@ -22,7 +23,7 @@ import {
 } from '@conexus/hub-api'
 import type { Replies } from './layout-harness.ts'
 import { ok } from './layout-harness.ts'
-import { ANA, COMPANY } from './src/platform/fixtures.ts'
+import { ANA, COMPANY, mayOf } from './src/platform/fixtures.ts'
 import { connectionsPage } from './sweep-connections.ts'
 import { modelAccountsPage } from './sweep-model-accounts.ts'
 import { railListsPage } from './sweep-rail-lists.ts'
@@ -60,10 +61,10 @@ export const SIGNED_IN: Replies = {
   'GET /api/apps': ok(listMyApps, { apps: [] }),
 }
 
-export function companies(
-  list: { name: string; role: 'owner' | 'admin' | 'member' }[],
-  mayOperate: boolean,
-) {
+/** The roles that manage the company's model accounts and connections: the owner and the administrators. */
+const MANAGES: ReadonlySet<Role> = new Set(['owner', 'admin'])
+
+export function companies(list: { name: string; role: Role }[], mayOperate: boolean) {
   const body = {
     companies: list.map(({ name, role }, index) => ({
       company: { id: String(index).repeat(32), name },
@@ -73,7 +74,12 @@ export function companies(
     next: { kind: 'END' },
   } as const
   const preloaded = body.companies.map(({ company, role }) =>
-    companyPage(role, role === 'member' ? [] : ['admin', 'member'], company.id, company.name),
+    companyPage(
+      role,
+      MANAGES.has(role) ? ['admin', 'developer', 'member'] : [],
+      company.id,
+      company.name,
+    ),
   )
   return {
     ...Object.assign({}, ...preloaded),
@@ -82,12 +88,7 @@ export function companies(
   }
 }
 
-function companyPage(
-  role: 'owner' | 'admin' | 'member',
-  mayInviteAs: ('owner' | 'admin' | 'member')[],
-  id = COMPANY.id,
-  name = LONG_NAME,
-) {
+function companyPage(role: Role, mayInviteAs: Role[], id = COMPANY.id, name = LONG_NAME) {
   const company = { id, name, nickname: 'empresa-teste', appsDomain: 'apps.example.test' }
   const people = [
     {
@@ -105,7 +106,7 @@ function companyPage(
       email: LONG_EMAIL,
       role: 'member',
       mayRemove: true,
-      mayChangeTo: ['admin'],
+      mayChangeTo: ['admin', 'developer'],
       invitationsSent: 1,
     },
   ] as const
@@ -114,8 +115,8 @@ function companyPage(
     ...SIGNED_IN,
     ...projectsPage(id),
     ...railListsPage(id),
-    ...modelAccountsPage(id, role !== 'member'),
-    ...connectionsPage(id, role !== 'member'),
+    ...modelAccountsPage(id, MANAGES.has(role)),
+    ...connectionsPage(id, MANAGES.has(role)),
     // Início of the owner and the administrators asks the Assistant: the connections it offers and its conversations.
     [`GET /api/companies/${id}/assistant/connections`]: ok(listAssistantConnections, {
       connections: [],
@@ -130,7 +131,7 @@ function companyPage(
       unread: 0,
       next: { kind: 'END' },
     }),
-    [`GET /api/companies/${id}`]: ok(getCompany, { company, role, mayInviteAs }),
+    [`GET /api/companies/${id}`]: ok(getCompany, { company, role, mayInviteAs, may: mayOf(role) }),
     [`GET /api/companies/${id}/members`]: ok(listMembers, {
       members: people.map((one) => ({ ...one, mayChangeTo: [...one.mayChangeTo] })),
       next: { kind: 'END' },
@@ -258,12 +259,12 @@ export function received(state: 'PENDING' | 'EXPIRED' | 'ACCEPTED' | 'CANCELED')
   } as const
   return {
     ...SIGNED_IN,
-    ...(state === 'ACCEPTED' ? companyPage('admin', ['admin', 'member']) : {}),
+    ...(state === 'ACCEPTED' ? companyPage('admin', ['admin', 'developer', 'member']) : {}),
     [`GET /api/invitations/${INVITATION}`]: ok(getInvitation, { invitation: views[state] }),
   }
 }
 
-export const OWNER = companyPage('owner', ['owner', 'admin', 'member'])
+export const OWNER = companyPage('owner', ['owner', 'admin', 'developer', 'member'])
 export const MEMBER = companyPage('member', [])
 export const WITH_EXPIRED: Replies = {
   ...OWNER,

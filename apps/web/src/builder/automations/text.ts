@@ -14,4 +14,6 @@ export const OPEN_CONVERSATION = 'Abrir a conversa'
 export const NOT_RUN = 'Não rodou'
 export const SKIPPED_BECAUSE = 'Você não pode mais perguntar ao Assistente.'
 export const CREATED = 'Automação criada'
+export const ONLY_BUILDERS_CREATE =
+  'Só o dono, os administradores e os desenvolvedores criam automações.'
 export const READS_NO_SYSTEM = 'Não lê nenhum sistema.'

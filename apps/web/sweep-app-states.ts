@@ -1,7 +1,7 @@
 import { getCompany, getInvitation, listAppAccess, listMyApps } from '@conexus/hub-api'
 import type { Page } from 'playwright-core'
 import { failure, ok } from './layout-harness.ts'
-import { COMPANY } from './src/platform/fixtures.ts'
+import { COMPANY, mayOf } from './src/platform/fixtures.ts'
 import type { State } from './sweep-kit.ts'
 import { createRefused, waitFor } from './sweep-kit.ts'
 import {
@@ -28,7 +28,8 @@ const UNSET = {
   [`GET /api/companies/${COMPANY.id}`]: ok(getCompany, {
     company: { id: COMPANY.id, name: LONG_NAME, nickname: null, appsDomain: 'apps.example.test' },
     role: 'owner',
-    mayInviteAs: ['owner', 'admin', 'member'],
+    mayInviteAs: ['owner', 'admin', 'developer', 'member'],
+    may: mayOf('owner'),
   }),
 }
 

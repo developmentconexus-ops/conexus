@@ -63,28 +63,6 @@ function open(path = HOME) {
   return conexus.router
 }
 
-test('Início: o título, a caixa, os exemplos e o bloco Projetos, nessa ordem', async () => {
-  hub([PEDIDOS])
-  open()
-  const title = await screen.findByRole('heading', { name: /^(Bom dia|Boa tarde|Boa noite)/ })
-  const box = await screen.findByRole('textbox', { name: 'Mensagem para o Builder' })
-  expect(box.getAttribute('placeholder')).toBe('Descreva o app que você quer…')
-  const examples = screen.getByRole('list', { name: 'Exemplos' })
-  expect(within(examples).getAllByRole('button')).toHaveLength(3)
-  const main = screen.getByRole('main')
-  const projects = await within(main).findByRole('region', { name: 'Projetos' })
-  const inDom = [projects, examples, box, title].sort((a, b) =>
-    a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1,
-  )
-  expect(inDom).toEqual([title, box, examples, projects])
-  // The only place to create a Projeto beside the box is the sidebar's +, not the page.
-  for (const name of ['Criar projeto', '+ Novo projeto', 'Novo projeto']) {
-    expect(within(main).queryByRole('button', { name })).toBeNull()
-    expect(within(main).queryByRole('link', { name })).toBeNull()
-  }
-  expect(screen.queryByLabelText(/Memória da conversa/)).toBeNull()
-})
-
 test('o bloco Projetos: a linha com o nome e o estado em palavras, e a empresa sem Projetos diz a frase', async () => {
   hub([PEDIDOS])
   open()

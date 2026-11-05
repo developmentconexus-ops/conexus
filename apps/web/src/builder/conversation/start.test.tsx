@@ -126,7 +126,7 @@ test('com o banco da empresa: "Criando…"; sem ele: "Preparando o banco da empr
   const held = Promise.withResolvers<void>()
   home({ project: () => undefined })
   server.use(
-    ...projectsRead({ projects: [], databaseReady: false, mayDelete: true, role: 'member' }),
+    ...projectsRead({ projects: [], databaseReady: false, mayDelete: true, role: 'owner' }),
     http.post(`*/api/companies/${COMPANY.id}/projects`, async () => {
       await held.promise
       return refusal('PROJECT_NAME_TAKEN')
@@ -147,12 +147,18 @@ test('o rascunho do Início volta e some depois de criar', async () => {
   const companyId = CompanyId.parse(COMPANY.id)
   await conexus.router.navigate({ to: '/companies/$companyId/projects', params: { companyId } })
   await screen.findByRole('heading', { name: 'Todos os projetos' })
-  await conexus.router.navigate({ to: '/companies/$companyId', params: { companyId } })
+  await conexus.router.navigate({
+    to: '/companies/$companyId/welcome/build',
+    params: { companyId },
+  })
   expect(typed(await box())).toBe('meio da frase')
   await request()
   create('Pedidos')
   await waitFor(() => expect(messages()).toHaveLength(1))
-  await conexus.router.navigate({ to: '/companies/$companyId', params: { companyId } })
+  await conexus.router.navigate({
+    to: '/companies/$companyId/welcome/build',
+    params: { companyId },
+  })
   expect(typed(await box())).toBe('')
 })
 
@@ -162,7 +168,10 @@ test('sair do Início no passo do nome e voltar devolve o pedido à caixa', asyn
   const companyId = CompanyId.parse(COMPANY.id)
   await conexus.router.navigate({ to: '/companies/$companyId/projects', params: { companyId } })
   await screen.findByRole('heading', { name: 'Todos os projetos' })
-  await conexus.router.navigate({ to: '/companies/$companyId', params: { companyId } })
+  await conexus.router.navigate({
+    to: '/companies/$companyId/welcome/build',
+    params: { companyId },
+  })
   expect(typed(await box())).toBe(REQUEST)
   expect(projects).toHaveLength(0)
 })

@@ -15,11 +15,15 @@ import { render } from '@testing-library/react'
 import type { HttpHandler } from 'msw'
 import { HttpResponse, http } from 'msw'
 import { Conexus, createConexus } from '../../main.tsx'
-import { ANA, COMPANY } from '../../platform/fixtures.ts'
+import { ANA, COMPANY, mayOf } from '../../platform/fixtures.ts'
 import { memberView, refusal, sessionRead } from '../../platform/test-hub.tsx'
 
 const BASE = `*/api/companies/${COMPANY.id}`
-const ROLES = { owner: ['owner', 'admin', 'member'], admin: ['admin', 'member'], member: [] }
+const ROLES = {
+  owner: ['owner', 'admin', 'developer', 'member'],
+  admin: ['admin', 'developer', 'member'],
+  member: [],
+}
 
 /** What the Hub holds of a company in its first entry: a write changes it, a read shows it. */
 export type CompanyView = {
@@ -160,6 +164,7 @@ export function companyHub(
               company: { ...COMPANY, nickname: view.nickname },
               role: view.role,
               mayInviteAs: ROLES[view.role],
+              may: mayOf(view.role),
             }),
           ),
     ),

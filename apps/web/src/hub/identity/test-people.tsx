@@ -4,7 +4,7 @@ import type { within } from '@testing-library/react'
 import { render } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { Conexus, createConexus } from '../../main.tsx'
-import { ANA, COMPANY } from '../../platform/fixtures.ts'
+import { ANA, COMPANY, mayOf } from '../../platform/fixtures.ts'
 import { hubServer, memberView, refusal, sessionRead } from '../../platform/test-hub.tsx'
 import { companyAppAccessRead } from '../../platform/test-hub-access.tsx'
 
@@ -52,6 +52,7 @@ export function hub(view: View) {
           company: COMPANY,
           role: view.role,
           mayInviteAs: view.mayInviteAs,
+          may: mayOf(view.role),
         }),
       ),
     ),

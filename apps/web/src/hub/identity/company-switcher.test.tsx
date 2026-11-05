@@ -4,7 +4,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { afterEach, expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
-import { ANA, COMPANY } from '../../platform/fixtures.ts'
+import { ANA, COMPANY, mayOf } from '../../platform/fixtures.ts'
 import { hubServer, sessionRead } from '../../platform/test-hub.tsx'
 
 const server = hubServer()
@@ -29,7 +29,12 @@ function hub(listed: (typeof COMPANY)[]) {
     http.get('*/api/companies/:companyId', ({ params }) => {
       const company = listed.find((one) => one.id === params.companyId)
       return HttpResponse.json(
-        getCompany.success.body.parse({ company, role: 'owner', mayInviteAs: [] }),
+        getCompany.success.body.parse({
+          company,
+          role: 'owner',
+          mayInviteAs: [],
+          may: mayOf('owner'),
+        }),
       )
     }),
     http.get('*/api/companies/:companyId/projects', () =>

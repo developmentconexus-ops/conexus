@@ -60,8 +60,8 @@ function hub(answer?: () => Response | Promise<Response>) {
 }
 
 async function openDialog() {
-  const nav = within(await screen.findByRole('navigation', { name: 'Navegação' }))
-  fireEvent.click(await nav.findByRole('button', { name: 'Novo projeto' }))
+  const main = within(await screen.findByRole('main'))
+  fireEvent.click(await main.findByRole('button', { name: 'Novo projeto' }))
   return within(await screen.findByRole('dialog', { name: 'Novo projeto' }))
 }
 

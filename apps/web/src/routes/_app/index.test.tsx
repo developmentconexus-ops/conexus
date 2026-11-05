@@ -11,7 +11,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { beforeEach, expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
-import { ANA, COMPANY } from '../../platform/fixtures.ts'
+import { ANA, COMPANY, mayOf } from '../../platform/fixtures.ts'
 import { centralHub, homeHub, hubServer, NO_COMPANIES, refusal } from '../../platform/test-hub.tsx'
 import { ENCOMENDAS, myAppsRead } from '../../platform/test-hub-access.tsx'
 
@@ -38,6 +38,7 @@ function companyHandlers(...companies: { id: string; name: string }[]) {
           company: { ...COMPANY, ...company },
           role: 'member',
           mayInviteAs: [],
+          may: mayOf('member'),
         }),
       )
     }),
@@ -197,7 +198,7 @@ test('depois de entrar, o foco vai à caixa (#32-4)', async () => {
   const form = screen.getByRole('button', { name: 'Entrar' }).closest('form')
   if (form === null) throw new Error('the sign-in form is missing')
   fireEvent.submit(form)
-  const box = await screen.findByRole('textbox', { name: 'Mensagem para o Builder' })
+  const box = await screen.findByRole('textbox', { name: 'Mensagem para o Assistente' })
   await waitFor(() => expect(document.activeElement).toBe(box))
   expect(box.tabIndex).toBe(0)
 })
@@ -241,7 +242,7 @@ test('com o carregamento da página preso, a caixa que aparece depois recebe o f
   await waitFor(() => expect(state.signedIn).toBe(true))
   expect(screen.queryByRole('heading', { name: /^(Bom dia|Boa tarde|Boa noite)/ })).toBeNull()
   held.resolve()
-  const box = await screen.findByRole('textbox', { name: 'Mensagem para o Builder' })
+  const box = await screen.findByRole('textbox', { name: 'Mensagem para o Assistente' })
   await waitFor(() => expect(document.activeElement).toBe(box))
 })
 
@@ -266,7 +267,7 @@ test('depois do foco na caixa, uma nova renderização não o puxa de volta', as
   startable()
   const router = open()
   await signInFromLogin()
-  const box = await screen.findByRole('textbox', { name: 'Mensagem para o Builder' })
+  const box = await screen.findByRole('textbox', { name: 'Mensagem para o Assistente' })
   await waitFor(() => expect(document.activeElement).toBe(box))
   const account = screen.getByRole('button', { name: /Ana/ })
   account.focus()
