@@ -34,6 +34,7 @@ export function SheetContent({
   titleClassName,
   closeClassName,
   closeLabel = 'Fechar navegação',
+  closeDisabled = false,
   side = 'left',
   children,
   ...props
@@ -44,6 +45,8 @@ export function SheetContent({
   /** Puts the close where the content leaves room for it (the drawer: first in the column, not over the content). */
   closeClassName?: string
   closeLabel?: string
+  /** Turns the close off while the content holds something the person must not leave. */
+  closeDisabled?: boolean
   side?: keyof typeof SIDES
   children: ReactNode
 }) {
@@ -78,6 +81,7 @@ export function SheetContent({
             />
           }
           aria-label={closeLabel}
+          disabled={closeDisabled}
         >
           <XIcon aria-hidden="true" />
         </SheetPrimitive.Close>

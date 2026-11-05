@@ -10,7 +10,8 @@ import { Loader2Icon } from 'lucide-react'
 import { useEffect, useEffectEvent, useId, useState } from 'react'
 import { Controller, useWatch } from 'react-hook-form'
 import { dayAndHour } from '../../platform/dates.ts'
-import { HubFailure, sentenceOf } from '../../platform/hub.ts'
+import { HubFailure, sentenceOf, sentenceOfCode } from '../../platform/hub.ts'
+import { buttonVariants } from '../../ui/button.tsx'
 import { Field, FieldError, FieldLabel } from '../../ui/field.tsx'
 import {
   Form,
@@ -70,18 +71,21 @@ function OpenAddress({ url }: { url: string }) {
   )
 }
 
+type Beginning = { kind: SignInKind | undefined; label: string }
+
 function StartForm(props: {
   companyId: CompanyId
   owner: Owner
   kinds: readonly SignInKind[]
-  onStarted: (started: Started) => void
+  initial: Beginning
+  onStarted: (started: Started, beginning: Beginning) => void
 }) {
   const send = useMutation(sendSignInStart)
   const kindId = useId()
   const form = useSchemaForm(startModelAccountSignIn.input.body, {
     owner: props.owner,
-    kind: props.kinds[0],
-    label: '',
+    kind: props.initial.kind ?? props.kinds[0],
+    label: props.initial.label,
   })
   const kind = useWatch({ control: form.control, name: 'kind' })
 
@@ -91,8 +95,10 @@ function StartForm(props: {
         params: { companyId: props.companyId },
         body: values,
       })
-      if (started.entry === 'device') props.onStarted(started)
-      else if (!isDeviceKind(values.kind)) props.onStarted({ ...started, kind: values.kind })
+      const beginning = { kind: values.kind, label: values.label }
+      if (started.entry === 'device') return props.onStarted(started, beginning)
+      if (isDeviceKind(values.kind)) throw new Error('A paste entry came back for a device kind')
+      props.onStarted({ ...started, kind: values.kind }, beginning)
     } catch (error) {
       setServerError(form, error)
     }
@@ -174,7 +180,8 @@ function CodeForm(props: {
 
 /**
  * The code to type on the vendor's page. The wait asks the Hub once per `retryMs`, by a timer, and
- * a 502 keeps the wait with the Hub's sentence; any other answer that ends it sends the person back.
+ * a 502 or an answer that did not arrive whole keeps the wait with the Hub's sentence; any other
+ * failure that settles it sends the person back.
  */
 function DeviceView(props: {
   companyId: CompanyId
@@ -185,7 +192,7 @@ function DeviceView(props: {
 }) {
   const { started } = props
   const poll = useMutation(sendSignInPoll)
-  const [turn, setTurn] = useState({ n: 0, delay: started.retryMs })
+  const [turn, setTurn] = useState({ delay: started.retryMs })
   const [unavailable, setUnavailable] = useState<string | undefined>(undefined)
   const polling = useEffectEvent(props.onPolling)
   const linked = useEffectEvent(props.onLinked)
@@ -205,11 +212,14 @@ function DeviceView(props: {
         })
         if (reply.status === 'linked') return linked(reply.account)
         setUnavailable(undefined)
-        setTurn((last) => ({ n: last.n + 1, delay: reply.retryMs }))
+        setTurn({ delay: reply.retryMs })
       } catch (error) {
-        if (error instanceof HubFailure && error.code === 'MODEL_ACCOUNT_UNAVAILABLE') {
-          setUnavailable(sentenceOf(error))
-          setTurn((last) => ({ n: last.n + 1, delay: started.retryMs }))
+        if (
+          error instanceof HubFailure &&
+          (error.code === 'MODEL_ACCOUNT_UNAVAILABLE' || error.outcomeUnknown)
+        ) {
+          setUnavailable(sentenceOfCode('MODEL_ACCOUNT_UNAVAILABLE'))
+          setTurn({ delay: started.retryMs })
         } else {
           failed(sentenceOf(error))
         }
@@ -223,14 +233,19 @@ function DeviceView(props: {
       <p>Digite este código na página da OpenAI</p>
       <p className="break-all select-all font-mono text-heading">{started.userCode}</p>
       {isSecure(started.url) ? (
-        <a href={started.url} target="_blank" rel="noopener noreferrer" className="underline">
+        <a
+          href={started.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={buttonVariants({ variant: 'primary' })}
+        >
           Abrir a página da OpenAI
         </a>
       ) : (
         <p className="break-all font-mono text-fact text-text-2">{started.url}</p>
       )}
       <p className="text-label text-text-2">{`O código vale até ${dayAndHour(started.expiresAt)}.`}</p>
-      {unavailable && <p role="alert">{unavailable}</p>}
+      <FieldError>{unavailable}</FieldError>
       <p role="status" className="flex items-center gap-sm text-label text-text-2">
         <Loader2Icon aria-hidden="true" className="size-4 motion-safe:animate-spin" />
         Esperando você digitar o código…
@@ -254,6 +269,7 @@ export function SignInForm(props: {
 }) {
   const [started, setStarted] = useState<Started | undefined>(undefined)
   const [failure, setFailure] = useState<string | undefined>(undefined)
+  const [beginning, setBeginning] = useState<Beginning>({ kind: undefined, label: '' })
   function failed(sentence: string) {
     setStarted(undefined)
     setFailure(sentence)
@@ -285,8 +301,10 @@ export function SignInForm(props: {
         companyId={props.companyId}
         owner={props.owner}
         kinds={props.kinds}
-        onStarted={(next) => {
+        initial={beginning}
+        onStarted={(next, was) => {
           setFailure(undefined)
+          setBeginning(was)
           setStarted(next)
         }}
       />

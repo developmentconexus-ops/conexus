@@ -101,6 +101,60 @@ test('um 502 mantém a espera, diz a frase do Hub e tenta de novo', async () => 
   expect(await screen.findByText('Time GPT')).toBeTruthy()
 })
 
+test('a rede fora na espera mantém o código e a espera, e a conta ligada que volta entra', async () => {
+  let asked = 0
+  const sent = open({
+    poll: async () => {
+      asked += 1
+      return asked === 1 ? HttpResponse.error() : undefined
+    },
+  })
+  await startChatgpt('Time GPT')
+  expect(await screen.findByText('Time GPT')).toBeTruthy()
+  expect(sent.filter((one) => one.path.endsWith('/poll'))).toHaveLength(2)
+})
+
+test('uma espera repetida depois da resposta perdida volta ligada com a mesma conta', async () => {
+  let asked = 0
+  open({
+    poll: async () => {
+      asked += 1
+      return asked < 3 ? HttpResponse.error() : undefined
+    },
+  })
+  await startChatgpt('Time GPT')
+  expect(await screen.findByText('Time GPT')).toBeTruthy()
+  expect(screen.queryByText('Algo deu errado dentro do Conexus.', { exact: false })).toBeNull()
+})
+
+test('durante a espera o × e as abas ficam desligados, e Cancelar também', async () => {
+  const held = Promise.withResolvers<void>()
+  let asked = 0
+  open({
+    poll: async () => {
+      asked += 1
+      if (asked > 1) return undefined
+      await held.promise
+      return HttpResponse.json({ status: 'waiting', retryMs: 60_000 })
+    },
+  })
+  await startChatgpt('Time GPT')
+  const close = await screen.findByRole('button', { name: 'Fechar' })
+  await waitFor(() => expect(close).toHaveProperty('disabled', true))
+  expect(screen.getByRole('button', { name: 'Chave de API' })).toHaveProperty('disabled', true)
+  fireEvent.keyDown(document.body, { key: 'Escape' })
+  expect(screen.getByRole('dialog', { name: 'Ligar conta' })).toBeTruthy()
+  held.resolve()
+  await waitFor(() => expect(close).toHaveProperty('disabled', false))
+})
+
+test('o link da OpenAI tem a cara de botão', async () => {
+  open()
+  await startChatgpt('Time GPT')
+  const link = await screen.findByRole('link', { name: 'Abrir a página da OpenAI' })
+  expect(link.className).toContain('bg-')
+})
+
 for (const [code, sentence] of [
   ['MODEL_ACCOUNT_REFUSED', 'O fornecedor recusou a entrada. Entre de novo.'],
   ['MODEL_ACCOUNT_SIGN_IN_EXPIRED', 'O código venceu. Entre de novo.'],
@@ -115,7 +169,8 @@ for (const [code, sentence] of [
     await startChatgpt('Time GPT')
     const alert = await screen.findByRole('alert')
     expect(alert.textContent).toBe(sentence)
-    expect(screen.getByLabelText('Nome da conta')).toBeTruthy()
+    expect(screen.getByLabelText('Nome da conta')).toHaveProperty('value', 'Time GPT')
+    expect(screen.getByRole('button', { name: 'Gerar código' })).toBeTruthy()
     expect(screen.queryByText('ABCD-1234')).toBeNull()
   })
 }
