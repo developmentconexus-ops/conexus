@@ -168,12 +168,13 @@ test('as ferramentas que o turno leva: o texto fixo e a skill conexus não pedem
   const skillText = afterSkill?.texts.find((text) => text.includes('propose_automation')) ?? ''
   assert.match(skillText, /Criar automação/)
   const shown = [first?.system ?? '', skillText]
+  function sentenceOf(pattern: string) {
+    const sentence = new RegExp(`[^.]*(${pattern})[^.]*\\.`, 'i')
+    return shown.map((text) => sentence.exec(text)?.[0].trim()).find(Boolean)
+  }
+  assert.equal(sentenceOf('if you have (it|the tool)'), undefined)
   for (const name of carried) {
-    const doubt = new RegExp(
-      `if you have (it|the tool|${name})|if (the tool )?${name} (is|exists)`,
-      'i',
-    )
-    for (const text of shown) assert.doesNotMatch(text, doubt, name)
+    assert.equal(sentenceOf(`if you have ${name}|if (the tool )?${name} (is|exists)`), undefined)
   }
   assert.match(first?.system ?? '', /call propose_automation with the request/)
   assert.match(skillText, /and call propose_automation:/)
