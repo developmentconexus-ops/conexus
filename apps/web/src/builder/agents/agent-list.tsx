@@ -3,7 +3,7 @@ import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { BotIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
-import { projectsPagedQuery } from '../../hub/projects/public.ts'
+import { projectQuery, projectsPagedQuery } from '../../hub/projects/public.ts'
 import { sentenceOf } from '../../platform/hub.ts'
 import { Alert } from '../../ui/alert.tsx'
 import { Block, BlockSentence, blockRow } from '../../ui/block.tsx'
@@ -87,11 +87,11 @@ function InicioRow(props: { companyId: CompanyId; agent: AgentListed }) {
         <BotIcon aria-hidden="true" className="size-4 shrink-0 text-text-2" />
         <span className="flex min-w-24 flex-1 flex-col">
           <span className="truncate">{agent.name}</span>
-          <span className="flex flex-wrap gap-x-xs text-fact text-text-2">
+          <span className="flex flex-wrap gap-x-md text-fact text-text-2">
             <span className="max-w-full truncate">
               <PlaceName companyId={companyId} projectId={agent.projectId} />
             </span>
-            <span>· {lastRunText(agent.lastRunAt, new Date())}</span>
+            <span>{lastRunText(agent.lastRunAt, new Date())}</span>
           </span>
         </span>
         <span className="flex max-w-full flex-wrap gap-x-md gap-y-xs">
@@ -144,13 +144,16 @@ export function AgentList(props: Place & { inicio?: boolean }) {
 const ALL = 'ALL'
 const MORE = 'MORE'
 
-/** The filter by Projeto: the Projetos of the company, whose choice is a value of the address. */
-function ProjectFilter({ companyId, projectId }: Place) {
+type Chosen = { id: ProjectId; name: string }
+
+function FilterBox({ companyId, projectId, chosen }: Place & { chosen?: Chosen }) {
   const navigate = useNavigate()
   const read = useInfiniteQuery(projectsPagedQuery(companyId))
   const projects = read.data?.pages.flatMap((page) => page.projects) ?? []
+  const named = chosen !== undefined && !projects.some((project) => project.id === chosen.id)
   const items = [
     { value: ALL, label: ALL_PROJECTS },
+    ...(named ? [{ value: chosen.id, label: chosen.name }] : []),
     ...projects.map((project) => ({ value: project.id, label: project.name })),
     ...(read.hasNextPage ? [{ value: MORE, label: MORE_PROJECTS }] : []),
   ]
@@ -166,16 +169,33 @@ function ProjectFilter({ companyId, projectId }: Place) {
             void read.fetchNextPage()
             return
           }
-          const chosen = projects.find((project) => project.id === next)?.id
+          const picked = projects.find((project) => project.id === next)?.id
           void navigate({
             to: '/companies/$companyId/agents',
             params: { companyId },
-            search: chosen === undefined ? {} : { projectId: chosen },
+            search: picked === undefined ? {} : { projectId: picked },
           })
         }}
       />
       {read.isError && <Alert tone="danger">{sentenceOf(read.error)}</Alert>}
     </>
+  )
+}
+
+/** The Projeto the address names, read on its own: its page may not be among those the filter has loaded. */
+function NamedFilter(props: Place & { projectId: ProjectId }) {
+  const { companyId, projectId } = props
+  const project = useQuery(projectQuery(companyId, projectId)).data?.project
+  return <FilterBox {...props} chosen={project && { id: project.id, name: project.name }} />
+}
+
+/** The filter by Projeto: the Projetos of the company, whose choice is a value of the address. */
+function ProjectFilter(props: Place) {
+  const { projectId } = props
+  return projectId === undefined ? (
+    <FilterBox {...props} />
+  ) : (
+    <NamedFilter {...props} projectId={projectId} />
   )
 }
 

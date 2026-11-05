@@ -3,7 +3,8 @@ export function option(name: string): string | undefined {
   return index === -1 ? undefined : process.argv[index + 1]
 }
 
-export const STEP_CARD = /^e\d+-.*\.md$/
+/** A card is any `.md` directly in `docs/steps/`: the one owner for the radius, approval and docs checks (delivery L5). */
+export const STEP_CARD = /^[^/]+\.md$/
 
 export type Track = 'frontier' | 'pattern' | 'design'
 
