@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { queued, withOwnerLock } from '../../platform/test-database.ts'
-import { call, codeOf, memberOn } from '../identity/test-hub.ts'
+import { call, memberOn } from '../identity/test-hub.ts'
 import type { Pedidos } from './test-requests.ts'
 import { pedidos, refusal } from './test-requests.ts'
 
