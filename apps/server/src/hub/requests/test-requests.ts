@@ -79,6 +79,8 @@ export async function pedidos(t: TestContext, count: number) {
   }
 }
 
+export type Pedidos = Awaited<ReturnType<typeof pedidos>>
+
 export function refusal(answer: { statusCode: number; json(): unknown }) {
   return [answer.statusCode, codeOf(answer)]
 }
