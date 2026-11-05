@@ -4,7 +4,7 @@
 // Revalidate by 2027-04-13, or when the emergency label changes.
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
-import { option, trackOf } from './cli.ts'
+import { option, STEP_CARD, trackOf } from './cli.ts'
 import { runCommand } from './command.ts'
 
 const EMERGENCY = 'emergência'
@@ -21,7 +21,7 @@ const root = resolve(option('--root') ?? '.')
 
 const stepsDir = join(root, 'docs/steps')
 const cards = existsSync(stepsDir)
-  ? readdirSync(stepsDir).filter((name) => name.endsWith('.md'))
+  ? readdirSync(stepsDir).filter((name) => STEP_CARD.test(name))
   : []
 const tracks = new Set(
   cards.map((name) => trackOf(name, readFileSync(join(stepsDir, name), 'utf8'))),

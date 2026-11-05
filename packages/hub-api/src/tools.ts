@@ -1,10 +1,11 @@
 import { z } from 'zod'
-import { AgentId, ToolId, ToolVersionId } from './agent-ids.ts'
+import { NamedAgent } from './agent-failures.ts'
+import { ToolId, ToolVersionId } from './agent-ids.ts'
 import { CompanyId } from './companies.ts'
 import { ConnectionId } from './connectors.ts'
 import type { FailureCode } from './failures.ts'
+import { ProjectId } from './library-ids.ts'
 import { ATTEMPT_KEY_HEADER, defineOperation } from './operation.ts'
-import { ProjectId } from './projects.ts'
 
 /** The tool of each card the person answers, as the controller names the call it parks. */
 export const CARD_TOOLS = { question: 'ask_user', plan: 'submit_plan' } as const
@@ -120,7 +121,7 @@ export const ToolSummary = ToolTarget.extend({
   effect: ToolEffect,
   latest: z.object({ id: ToolVersionId, number: z.int().positive() }),
   /** The agents whose draft or a published version uses a version of the tool. */
-  usedBy: z.array(z.object({ id: AgentId, name: z.string() })),
+  usedBy: z.array(NamedAgent),
 })
 export type ToolSummary = z.infer<typeof ToolSummary>
 

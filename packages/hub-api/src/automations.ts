@@ -4,8 +4,8 @@ import { CompanyId, Next, Page } from './companies.ts'
 import { CONNECTIONS_MAX, ConnectionId } from './connectors.ts'
 import { ConversationId } from './conversations.ts'
 import type { FailureCode } from './failures.ts'
+import { ProjectId } from './library-ids.ts'
 import { ATTEMPT_KEY_HEADER, defineOperation } from './operation.ts'
-import { ProjectId } from './projects.ts'
 
 /** The id the Assistant's conversations carry for the automation that opened them, re-exported with the automation's own shapes. */
 export { AutomationId }

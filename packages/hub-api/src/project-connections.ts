@@ -10,8 +10,8 @@ import {
   OfConnection,
   READ_FAILURES,
 } from './connectors.ts'
+import { ProjectId } from './library-ids.ts'
 import { defineOperation } from './operation.ts'
-import { ProjectId } from './projects.ts'
 
 /** A Projeto's permission to read a connection: who gave it (null: they left) and when. */
 export const Grant = z.object({ by: z.string().nullable(), at: z.iso.datetime() })

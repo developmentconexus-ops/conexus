@@ -1,9 +1,8 @@
 import { z } from 'zod'
 import { AppEntry, CompanyNickname } from './address.ts'
 import { Email, Password, PersonId } from './identity.ts'
+import { LIBRARY_ID } from './library-ids.ts'
 import { defineOperation } from './operation.ts'
-
-export const LIBRARY_ID = /^[A-Za-z0-9]{32}$/
 
 export const CompanyId = z.string().regex(LIBRARY_ID).brand('CompanyId')
 export type CompanyId = z.infer<typeof CompanyId>

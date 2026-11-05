@@ -3,8 +3,8 @@ import { CompanyId, Next, Page } from './companies.ts'
 import { CONNECTIONS_MAX, ConnectionId } from './connectors.ts'
 import { ConversationId, Effort, ModelChoice, ModelId } from './conversations.ts'
 import type { FailureCode } from './failures.ts'
+import { ProjectId } from './library-ids.ts'
 import { ATTEMPT_KEY_HEADER, defineOperation } from './operation.ts'
-import { ProjectId } from './projects.ts'
 
 /** The Assistant's controller, as Mastra's routes name it (`/agent-controller/assistant/…`, step 24.1). */
 export const ASSISTANT_CONTROLLER = 'assistant'

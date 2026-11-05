@@ -5,8 +5,8 @@ import { CONNECTIONS_MAX, ConnectionId } from './connectors.ts'
 import { ConversationId, ModelId } from './conversations.ts'
 import type { FailureCode } from './failures.ts'
 import { PersonId } from './identity.ts'
+import { ProjectId } from './library-ids.ts'
 import { ATTEMPT_KEY_HEADER, defineOperation } from './operation.ts'
-import { ProjectId } from './projects.ts'
 import { ToolSummary, ToolTarget, ToolVersionDetail } from './tools.ts'
 
 /** An automation's limit: the same line in the lists. */
