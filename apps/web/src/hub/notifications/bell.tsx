@@ -78,10 +78,7 @@ function textOf(notification: NotificationRow): string {
   }
 }
 
-/**
- * Where a notification opens: a run's conversation, or, without one, its automation's page; a
- * request's Projeto area, where the request is decided. A pause opens the Início.
- */
+/** Where a notification opens: a run's conversation, or, without one, its automation's page; a request's Projeto area. */
 function pathOf(
   companyId: CompanyId,
   notification: Exclude<NotificationRow, { kind: 'AUTOMATION_PAUSED' }>,

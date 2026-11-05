@@ -17,9 +17,7 @@ export function requestsOf(deps: RequestDeps) {
   const requests = createRequests(deps)
   return Object.freeze({
     routes: (app: FastifyInstance) => registerRequestRoutes(app, requests),
-    /** What a publish closes, handed to the apps (`publishIn`). */
     closeRequests: requests.closeRequests,
-    /** What the Projeto's page reads, handed to Projects. */
     publishRequestOf: requests.publishRequestOf,
   })
 }

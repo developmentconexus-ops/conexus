@@ -84,10 +84,9 @@ export const notification = notifications.table(
 )
 
 /**
- * What a request to publish tells (step 24.3.4, U2): its deciders that it opened, and its asker that
- * it was decided. A row beside the bell's, so the automations' rows stay as they are (data D6). The
- * person who asks writes the deciders' rows, so inserting needs only the company; reading and
- * marking read stay the person's own. It leaves with its request, or its person, by cascade.
+ * A table beside `notification`, so the automations' rows stay as they are (data D6). The asker
+ * writes the deciders' rows, so inserting needs only the company; reading and marking read stay the
+ * person's own.
  */
 export const requestNotice = notifications.table(
   'request_notice',

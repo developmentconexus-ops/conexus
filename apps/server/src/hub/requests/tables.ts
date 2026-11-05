@@ -20,10 +20,8 @@ export const requests = pgSchema('requests')
 const STATES = sql.raw(RequestState.options.map((state) => `'${state}'`).join(', '))
 
 /**
- * A member's request to publish a version of a Projeto's app (step 24.3.4, U2): one open per
- * Projeto, by the partial unique index. It leaves with its Projeto, its company or the person who
- * asked by the foreign keys' cascade (data D17); `decided_by` has no key, so a decision outlives the
- * person who took it. That the decider is not the asker is the code's rule, not the table's.
+ * `decided_by` has no foreign key, so a decision outlives the person who took it (data D17). That the
+ * decider is not the asker is the code's rule, not the table's.
  */
 export const request = requests.table(
   'request',

@@ -74,7 +74,6 @@ function rightsOf(deps: Deps, role: Role) {
 type Rights = ReturnType<typeof rightsOf>
 type Reader = { companyId: CompanyId; personId: PersonId; role: Role }
 
-/** What the reader's Project page shows of its app: the versions and the open request to publish. */
 async function appOf(deps: Deps, tx: ReadTx, projectId: ProjectId, reader: Reader) {
   const versions = (await deps.appVersionsOf(tx, [projectId])).get(projectId)
   const publishRequest = await deps.publishRequestOf(tx, { ...reader, projectId })

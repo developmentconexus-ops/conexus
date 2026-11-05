@@ -1,6 +1,5 @@
 import type { FailureRow } from './failure-row.ts'
 
-/** The failures of asking to publish a version and of deciding the request (step 24.3.4, U2). */
 export const REQUEST_FAILURES = {
   PUBLISH_REQUEST_ALREADY_LIVE: {
     category: 'USER',

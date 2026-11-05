@@ -65,8 +65,7 @@ const ACTIONS = {
   // commits.
   readAppVersions: { by: 'MEMBER', statement: undefined, locks: false },
   publishAppVersion: { by: 'MEMBER', statement: PUBLISH_APP, locks: true },
-  // Every member asks to publish a kept version, and withdraws their own request; only an owner or
-  // an administrator decides one (step 24.3.4, "3"). Each holds the role until its write commits.
+  // Withdrawing needs only the membership; `cancel` checks the person is the asker.
   requestPublish: { by: 'MEMBER', statement: REQUEST_PUBLISH, locks: true },
   cancelRequest: { by: 'MEMBER', statement: undefined, locks: true },
   decideRequest: { by: 'MEMBER', statement: DECIDE_REQUEST, locks: true },

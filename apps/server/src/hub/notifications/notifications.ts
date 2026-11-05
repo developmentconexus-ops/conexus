@@ -199,7 +199,6 @@ function mine(table: Mine, input: Of) {
   return and(eq(table.companyId, input.companyId), eq(table.personId, input.person.id))
 }
 
-/** Where a page starts: the notification it follows, in either table. */
 async function anchorOf(tx: ReadTx, input: Of, id: NotificationId) {
   for (const table of [notification, requestNotice]) {
     const [row] = await tx
@@ -220,10 +219,7 @@ function newestFirst(a: Shown, b: Shown): number {
   return a.id < b.id ? 1 : a.id > b.id ? -1 : 0
 }
 
-/**
- * The person's own notifications, newest first, and how many are unread (the bell's number): the
- * automations' and the requests', each table read a page deep after the same anchor and merged.
- */
+/** Each table is read a full page deep after the same anchor, so the merged page misses no row of either. */
 async function list(deps: Deps, input: Of & { after: NotificationId | undefined }) {
   return deps.database.read(scopeOf(input), async (tx) => {
     await admitted(deps, tx, input)
@@ -284,7 +280,6 @@ async function list(deps: Deps, input: Of & { after: NotificationId | undefined 
   })
 }
 
-/** Marks the person's own notifications read, the ones named or all, in both tables; a repeat changes nothing. */
 async function markRead(deps: Deps, input: Of & { ids: readonly NotificationId[] | 'ALL' }) {
   await deps.database.command(scopeOf(input), async (tx) => {
     await admitted(deps, tx, input)

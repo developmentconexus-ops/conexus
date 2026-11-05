@@ -23,7 +23,6 @@ export type Ungranted = (
   declared: NonNullable<Manifest['connectors']>,
 ) => Promise<readonly { connector: string; operation: string | null }[]>
 
-/** Who published which version of a Projeto, in the publishing transaction. */
 export type PublishInput = {
   companyId: CompanyId
   projectId: ProjectId
@@ -36,12 +35,7 @@ export type CloseRequests = (tx: CommandTx, input: PublishInput) => Promise<void
 
 export type PublishDeps = { ungranted: Ungranted; closeRequests: CloseRequests; log: FailureLog }
 
-/**
- * Publishes a kept version inside the caller's transaction, whoever admitted it: the app is locked
- * first (the order every publish and every decision keeps, code C65), then the version and its
- * connectors are checked, the pointer is written and the Projeto's open request closes. Publishing
- * the published version again changes nothing and closes no request.
- */
+/** The app is locked first, the order every publish and every decision keeps (code C65). */
 export async function publishIn(
   tx: CommandTx,
   deps: PublishDeps,
@@ -69,8 +63,7 @@ export async function publishIn(
 }
 
 /**
- * Publishes a kept version for an owner, an administrator or a developer, in one transaction: only
- * the published pointer changes, so the Prévia, the Builder and the data stay as they are, and a
+ * Publishes a kept version, in one transaction: only the published pointer changes, so the Prévia, the Builder and the data stay as they are, and a
  * send in course neither refuses it nor is failed by it. A version pruned, failed, being sent, of
  * another Projeto or that never entered is not found. A version that declares a connector the
  * Projeto has no grant for, or an operation the kit does not read, is refused before the write.

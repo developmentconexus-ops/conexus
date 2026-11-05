@@ -95,7 +95,6 @@ function viewOf(
   }
 }
 
-/** The Projeto's open request as the reader sees it, or `null`: what the Projeto's page carries. */
 export async function publishRequestOf(
   deps: Pick<RequestDeps, 'identity'>,
   tx: ReadTx,
@@ -167,10 +166,8 @@ async function insertRequest(tx: CommandTx, input: Asking): Promise<Row> {
 }
 
 /**
- * A member who does not publish asks to publish a kept version. The app is locked before the
- * request is written, the order every publish and decision keeps (code C65), so two requests at
- * once queue and the unique index leaves one open. Each owner and administrator is told in the same
- * commit; they are held with `for key share`, so one who leaves meanwhile waits for it.
+ * The app is locked before the request is written, the order every publish and decision keeps (code
+ * C65), so two requests at once queue and the unique index leaves one open.
  */
 async function ask(deps: RequestDeps, input: Asking) {
   const { companyId, projectId } = input
@@ -206,7 +203,6 @@ async function ask(deps: RequestDeps, input: Asking) {
 
 type OfRequest = { person: Person; companyId: CompanyId; requestId: RequestId }
 
-/** The request's row held until commit, or nothing for one of another company or none. */
 async function heldRequest(tx: CommandTx, input: OfRequest) {
   const [row] = await tx
     .select({
@@ -222,11 +218,8 @@ async function heldRequest(tx: CommandTx, input: OfRequest) {
 }
 
 /**
- * An owner or an administrator who did not ask decides a request. The app is locked before the
- * request, as every publish and request does, so a decision and a publish at once queue on the app
- * and the second sees what the first wrote. Approving writes the decision before publishing, so the
- * publish finds no open request to close; a refusal to publish undoes both, and the request stays
- * open. The asker is told in the same commit.
+ * The app is locked before the request (code C65). The decision is written before `publishIn`, so
+ * its `closeRequests` finds no open request and neither closes it again nor tells the asker twice.
  */
 async function decide(deps: RequestDeps, input: OfRequest & { decision: Decision }) {
   const { companyId, requestId, person } = input
@@ -270,9 +263,8 @@ async function decide(deps: RequestDeps, input: OfRequest & { decision: Decision
 }
 
 /**
- * The asker withdraws their open request. Who asked is checked before the state, so another person
- * gets the same not-found whether it is open or closed (S10). It locks no app: it writes nothing a
- * publish reads, so it forms no cycle with one.
+ * The asker is checked before the state, so another person gets the same not-found whether it is
+ * open or closed (S10). It takes one lock, the request's row, so it forms no cycle with a publish.
  */
 async function cancel(deps: RequestDeps, input: OfRequest) {
   const { companyId, person } = input
@@ -291,11 +283,6 @@ async function cancel(deps: RequestDeps, input: OfRequest) {
   })
 }
 
-/**
- * Inside a publish, after the pointer is written: the Projeto's open request closes, approved by the
- * publisher when it asked for that version, superseded when not. The asker is told, unless they
- * published it themselves.
- */
 function closeRequestsOf(deps: Pick<RequestDeps, 'noticeRequests' | 'log'>): CloseRequests {
   return async (tx, input: PublishInput) => {
     const { companyId, projectId } = input
@@ -332,7 +319,6 @@ function publishDeps(deps: RequestDeps) {
   return { ungranted: deps.ungranted, closeRequests: closeRequestsOf(deps), log: deps.log }
 }
 
-/** The requests to publish (step 24.3.4, U2), each act bound to its dependencies. */
 export function createRequests(deps: RequestDeps) {
   return Object.freeze({
     ask: (input: Asking) => ask(deps, input),

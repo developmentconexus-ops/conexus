@@ -41,7 +41,6 @@ export type PublishedRolesOf = (
 /** Ends a person's sessions in a Projeto's app, after the commit that took their access (S13). */
 export type AppSessionsEnd = (ids: { projectId: ProjectId; personId: PersonId }) => Promise<void>
 
-/** The Projeto's open request to publish, as the reader sees it, or `null` (step 24.3.4). */
 export type PublishRequestOf = (
   tx: ReadTx,
   input: { companyId: CompanyId; projectId: ProjectId; personId: PersonId; role: Role },
