@@ -386,10 +386,12 @@ jobs:
         if: always()
         continue-on-error: true
         timeout-minutes: 1
+        env:
+          JOBS_JQ: >-
+            .jobs[] | select(.completed_at != null and .name != "ci") | . as $job | {job: $job.name, created: ($job.created_at | fromdate), started: ($job.started_at | fromdate), ended: ($job.completed_at | fromdate), steps: [$job.steps[] | select(.completed_at != null and .started_at != null) | {step: .name, seconds: ((.completed_at | fromdate) - (.started_at | fromdate))}]}
         run: |
-          # shellcheck disable=SC2016 # the jq program is single-quoted so the shell leaves its $variables alone
           gh api "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}/jobs" --paginate \
-            --jq '.jobs[] | select(.completed_at != null and .name != "ci") | . as $job | {job: $job.name, created: ($job.created_at | fromdate), started: ($job.started_at | fromdate), ended: ($job.completed_at | fromdate), steps: [$job.steps[] | select(.completed_at != null and .started_at != null) | {step: .name, seconds: ((.completed_at | fromdate) - (.started_at | fromdate))}]}' \
+            --jq "$JOBS_JQ" \
             | jq -s -r '
               (map(.created) | min) as $start |
               "### Jobs, last to end first", "", "| Ended | Queued | Ran | Job |", "| ---: | ---: | ---: | --- |",
@@ -404,11 +406,13 @@ jobs:
         if: always()
         continue-on-error: true
         timeout-minutes: 1
+        env:
+          JOBS_JQ: >-
+            .jobs[] | select(.completed_at != null and .name != "ci") | {job: .name, seconds: ((.completed_at | fromdate) - (.started_at | fromdate))}
         run: |
           budgets=$(yq -o=json -I=0 '.jobs | with_entries(.key = (.value.name // .key) | .value = .value."timeout-minutes")' .github/workflows/ci.yml)
-          # shellcheck disable=SC2016 # the jq program is single-quoted so the shell leaves its $variables alone
           gh api "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}/jobs" --paginate \
-            --jq '.jobs[] | select(.completed_at != null and .name != "ci") | {job: .name, seconds: ((.completed_at | fromdate) - (.started_at | fromdate))}' \
+            --jq "$JOBS_JQ" \
             | jq -s --argjson budgets "$budgets" '
               def one: (. * 10 | round) as $n | "\($n / 10 | floor),\($n % 10)";
               [.[] | . as $row | ($row.job | sub(" \\([^)]*\\)$"; "")) as $key | select($budgets[$key] != null)
