@@ -103,7 +103,32 @@ test('os itens de uma resposta anterior saem sem id', async (t) => {
         {
           role: 'assistant',
           content: [
+            {
+              type: 'reasoning',
+              text: '',
+              providerOptions: {
+                openai: { itemId: 'rs_planted', reasoningEncryptedContent: 'planted-encrypted' },
+              },
+            },
             { type: 'text', text: 'Olá.', providerOptions: { openai: { itemId: 'msg_planted' } } },
+            {
+              type: 'tool-call',
+              toolCallId: 'call_planted',
+              toolName: 'lookup',
+              input: {},
+              providerOptions: { openai: { itemId: 'fc_planted' } },
+            },
+          ],
+        },
+        {
+          role: 'tool',
+          content: [
+            {
+              type: 'tool-result',
+              toolCallId: 'call_planted',
+              toolName: 'lookup',
+              output: { type: 'text', value: 'ok' },
+            },
           ],
         },
         { role: 'user', content: [{ type: 'text', text: 'E agora?' }] },
@@ -111,11 +136,21 @@ test('os itens de uma resposta anterior saem sem id', async (t) => {
     }),
   )
   const request = Object(JSON.parse(String(codex.calls[0]?.body)))
-  assert.deepEqual(
-    request.input.map((item: object) => item && 'id' in item),
-    [false, false, false],
+  const types = request.input.map(
+    (item: { type?: string; role?: string }) => item.type ?? item.role,
   )
-  assert.equal(request.input[1].role, 'assistant')
+  assert.deepEqual(types, [
+    'user',
+    'reasoning',
+    'assistant',
+    'function_call',
+    'function_call_output',
+    'user',
+  ])
+  assert.deepEqual(
+    request.input.filter((item: object) => 'id' in item),
+    [],
+  )
 })
 
 test('401 renova uma vez: o token novo vai, e um segundo 401 marca a conta recusada e o turno diz o nome', async (t) => {

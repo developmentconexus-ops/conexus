@@ -26,6 +26,7 @@ import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { parseArgs } from 'node:util'
 import { ModelId, ProviderId } from '@conexus/hub-api'
+import { APICallError } from 'ai'
 import { z } from 'zod'
 import {
   callModel,
@@ -245,11 +246,6 @@ function reasoningCharsOf(sse: string): number {
     .reduce((sum, choice) => sum + (choice.delta.reasoning_content?.length ?? 0), 0)
 }
 
-// The AI SDK's `APICallError` as far as this script reads it.
-const CallError = z.object({
-  statusCode: z.number().optional(),
-  responseBody: z.string().optional(),
-})
 const ErrorReply = z.object({ error: z.object({ code: z.string().nullish() }) })
 
 /** What the endpoint answers for a model the subscription does not serve: the status and the error code. */
@@ -264,11 +260,10 @@ async function recordUnserved(args: Args) {
       abortSignal: AbortSignal.timeout(CALL_MS),
     })
   } catch (error) {
-    const refusal = CallError.safeParse(error)
-    if (!refusal.success) throw error
-    const reply = ErrorReply.safeParse(JSON.parse(refusal.data.responseBody ?? 'null'))
+    if (!APICallError.isInstance(error)) throw error
+    const reply = ErrorReply.safeParse(error.data)
     console.log(
-      `UNSERVED status=${refusal.data.statusCode ?? 'none'} code=${reply.data?.error.code ?? 'none'}`,
+      `UNSERVED status=${error.statusCode ?? 'none'} code=${reply.data?.error.code ?? 'none'}`,
     )
     return
   }

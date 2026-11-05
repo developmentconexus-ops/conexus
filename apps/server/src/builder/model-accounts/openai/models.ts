@@ -9,6 +9,7 @@ import { createOpenAI } from '@ai-sdk/openai'
 import type { LanguageModelMiddleware } from 'ai'
 import { wrapLanguageModel } from 'ai'
 import { z } from 'zod'
+import { bodylessMiddleware } from '../bodyless.ts'
 import { SubscriptionTokens } from '../subscription-store.ts'
 import { ORIGINATOR } from './sign-in.ts'
 
@@ -59,15 +60,6 @@ const codexMiddleware: LanguageModelMiddleware = {
   }),
 }
 
-/** Each step's answer without the body of its request (see `claude/models.ts`). */
-const bodylessMiddleware: LanguageModelMiddleware = {
-  specificationVersion: 'v3',
-  wrapStream: async ({ doStream }) => {
-    const { request: _request, ...answer } = await doStream()
-    return answer
-  },
-}
-
 /**
  * The ChatGPT subscription's model for one call: the access token as a bearer, never as an API key,
  * sent to the Codex endpoint with the ChatGPT account it belongs to.
@@ -77,7 +69,6 @@ export function codexModel(name: string, tokens: Pick<CodexTokens, 'access' | 'a
     apiKey: 'oauth-placeholder',
     fetch: async (_url, init) => {
       const headers = new Headers(init?.headers)
-      headers.delete('x-api-key')
       headers.delete('content-length')
       headers.set('Authorization', `Bearer ${tokens.access}`)
       headers.set('originator', ORIGINATOR)
