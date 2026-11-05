@@ -123,6 +123,8 @@ export function subjectsOf(deps: {
   copy: GitCopy
   log: FailureLog
   deadlines?: ConnectorDeadlines
+  /** The tests' budget for a send's prune (`test-hub.ts`); production's by default. */
+  pruneBudgetMs?: number
 }) {
   const { database, config, log, neon } = deps
   const identity = deps.identity.ports

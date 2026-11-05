@@ -130,7 +130,7 @@ test('Parar: o turno termina `aborted` e o texto até ali fica na conversa', asy
  * same at shutdown. Remove the option when Mastra gives the wait.
  */
 const MASTRA_SHUTDOWN_GAP =
-  'Mastra 1.79 saves a stopped answer after agent_end, with no public wait for the save'
+  'Mastra 1.82 saves a stopped answer after agent_end, with no public wait for the save'
 
 test('desligar para o turno em curso como Parar, guarda o texto e só então fecha o stream', {
   timeout: 60_000,

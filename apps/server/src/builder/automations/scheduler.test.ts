@@ -3,6 +3,7 @@ import { test } from 'node:test'
 import { setTimeout as sleep } from 'node:timers/promises'
 import type { Hub } from '../../hub/identity/test-hub.ts'
 import { call, codeOf, post } from '../../hub/identity/test-hub.ts'
+import { TEST_IDLE_MS } from '../../platform/test-mastra-database.ts'
 import { holding, hubBeside } from '../conversation/test-conversation.ts'
 import type { Summary } from './test-automations.ts'
 import {
@@ -20,9 +21,8 @@ import {
   TEST_CLOCK,
 } from './test-automations.ts'
 
-// The pool's idle time (POOL_LIMITS) and a margin: what lets Neon put the branch to sleep (D27).
-// The code has no adjustment for it, so the two waits on it stay (U7 of the CI health card).
-const QUIET_MS = 15_000
+// The test pool's idle time and a margin: what lets Neon put the branch to sleep (D27).
+const QUIET_MS = TEST_IDLE_MS + 2_000
 /** How long the Hub waits for its turns when it is told to stop. */
 const SETTLE_MS = 3_000
 /** Five ticks of the scheduler: a fire or a read that was going to come would have come by now. */
@@ -67,17 +67,31 @@ test('sem automação, a agenda não liga: nenhum trabalhador scheduler, nenhuma
   assert.equal(await scheduleReads(on.hub), reads)
 })
 
-test('a primeira automação liga a agenda, e o pool do Mastra nunca chega a zero; com uma guardada, a partida a acha e liga', {
-  timeout: 90_000,
+/** The São Paulo minute `ahead` ms from now, as a cadence's `time` names it. */
+function minuteAhead(ahead: number): string {
+  const at = new Date(Date.now() + ahead)
+  return new Intl.DateTimeFormat('pt-BR', {
+    ...{ timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' },
+  }).format(at)
+}
+
+test('a primeira automação liga a agenda, que dorme até o próximo disparo: o pool do Mastra chega a zero, uma automação nova a acorda e dispara, e uma guardada é achada na partida', {
+  timeout: 180_000,
 }, async (t) => {
   const on = await automating(t)
-  await created(on.hub, on.ana, on.automations, salesSummary([]))
+  const far = { kind: 'DAILY', time: minuteAhead(12 * 3_600_000) }
+  await created(on.hub, on.ana, on.automations, salesSummary([], { cadence: far }))
   assert.equal(on.hub.mastra.getWorker('scheduler')?.isRunning, true)
-  const deadline = Date.now() + QUIET_MS
-  while (Date.now() < deadline) {
-    assert.ok((await mastraOpen(on.hub)) > 0, 'the scheduler holds a connection')
-    await sleep(1_000)
-  }
+  await sleep(QUIET_MS)
+  assert.equal(await mastraOpen(on.hub), 0)
+  const asleep = await scheduleReads(on.hub)
+  await sleep(SETTLE_MS)
+  assert.equal(await scheduleReads(on.hub), asleep, 'no read while it sleeps')
+
+  const cadence = { kind: 'DAILY', time: minuteAhead(70_000) }
+  const soon = await created(on.hub, on.ana, on.automations, salesSummary([], { cadence }))
+  const fired = await ended(on.hub, on.ana, `${on.automations}/${soon.id}`)
+  assert.equal(fired.trigger, 'SCHEDULED')
   const later = await hubBeside(t, on.hub)
   assert.equal(later.mastra.getWorker('scheduler')?.isRunning, true)
 })
