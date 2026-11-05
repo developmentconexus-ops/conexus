@@ -2,7 +2,9 @@
 
 O roteiro chama esta etapa de "24.4 Ferramentas em código. Código que calcula.", depois da 24.3.4
 (o "Os pedidos" da tabela é a etapa Papéis e pedidos, fechada) e antes de Papéis da empresa. O
-`docs/steps/` do `main` não tem cartão: pela regra L5 este entra com o seu pull request. Cada linha
+`docs/steps/` do `main` guarda hoje o cartão da Assinatura ChatGPT, que tem a vaga da fronteira (ordem do
+fundador, 2026-11-05: Assinatura ChatGPT, depois esta 24.4, depois a 24.3.5). Pela regra L5 este cartão
+espera em rascunho a vaga e só a toma, trocando o arquivo da trilha, quando a Assinatura ChatGPT fechar. Cada linha
 citada foi relida no `main` em `0d535e2a`, com `@mastra/core` 1.82.0, `@mastra/e2b` 0.16.1, `e2b`
 2.63.0 e `wrangler` 4.151.1; o construtor de cada unidade a reabre no `main` do dia. O lugar de cada
 tipo de código foi decidido antes deste cartão (o fundador, 2026-11-05, à combinação do estudo:
@@ -45,8 +47,7 @@ publicado na versão 1. Você é a Ana (dona).
 6. Você pede ao Construtor para a ferramenta arredondar para reais inteiros: ele grava a versão 2 da
    ferramenta. O "Vendas" publicado continua na versão 1 dela até você publicar o agente de novo.
 
-**O que você faz, e quando.** Antes: nada. No começo: aprova esta página e responde às decisões A e
-B. Na U3: autoriza na Cloudflare o que ela pede e a conta do Conexus ainda não tem (o segundo
+**O que você faz, e quando.** Antes: nada. No começo: aprova esta página (as decisões A e B já estão respondidas). Na U3: autoriza na Cloudflare o que ela pede e a conta do Conexus ainda não tem (o segundo
 namespace de Workers for Platforms, uma aplicação do Cloudflare Access com um token de serviço, e o
 que o token do Release precisa a mais); o construtor da U3 traz a lista de passos. No fim: faz o
 roteiro, diz o que viu e aprova os textos das telas.
@@ -95,30 +96,18 @@ uma prova anterior; **documentado** é a página do fornecedor; **conta** é uma
   que grava uma versão de ferramenta sobre uma lida antes (#707). Os outros (116 abertos hoje) tocam
   telas e partes que esta etapa não muda e esperam o seu gatilho.
 
-**As decisões suas nesta etapa.**
+**As decisões suas nesta etapa.** O fundador respondeu em 2026-11-05: "2 A1 e B1".
 
-**A. O modo código num agente sem Computador.** O modo código precisa de um lugar isolado para rodar
-o programa que o modelo escreve. O caminho que você aprovou é a máquina do agente.
-
-- **`A1`. Só com Computador ligado (recomendo).** O agente com Computador ganha também o modo código,
-  na mesma máquina. Um agente sem Computador faz contas pelas ferramentas salvas. Nativo:
+- **A. O modo código só com Computador ligado (`A1`).** O agente com Computador ganha também o modo
+  código, na mesma máquina. Um agente sem Computador faz contas pelas ferramentas salvas. Nativo:
   `createCodeMode` com `E2BCodeModeTransport` do `@mastra/e2b`. Custo: a máquina liga na primeira conta
   da conversa (~1 s) e cada chamada em série soma ~0,3 s.
-- `A2`. Todo agente ganha o modo código, rodando dentro do Hub num isolamento do Mastra
-  (`@mastra/quickjs`: sem arquivo, sem rede, só as ferramentas do agente). Sem máquina e sem a ida e
-  volta ao E2B, mas põe código escrito pelo modelo dentro do servidor que guarda tudo, o que nenhuma
-  decisão de hoje permite: pede uma decisão nova e um pacote novo, que não foi instalado nem medido (o
-  Mastra o diz mais lento que rodar direto).
+- **B. A máquina do agente alcança os mesmos três endereços do Assistente (`B1`).** Decisão 0059:
+  `registry.npmjs.org`, `pypi.org` e `files.pythonhosted.org`; a máquina não tem senha nenhuma. O agente
+  instala a biblioteca de gráfico que pedir, em Python ou em JavaScript. A máquina do Construtor fica
+  como está, só o primeiro (decisão 0051): ele escreve TypeScript.
 
-**B. Até onde a máquina do agente alcança a internet.** A máquina do Assistente só baixa pacotes de
-três endereços (decisão 0059: `registry.npmjs.org`, `pypi.org`, `files.pythonhosted.org`); ela não
-tem senha nenhuma. A máquina do Construtor fica como está, só o primeiro (decisão 0051): ele escreve
-TypeScript.
-
-- **`B1`. Os mesmos três do Assistente (recomendo).** O agente instala a biblioteca de gráfico que
-  pedir, em Python ou em JavaScript.
-- `B2`. Nenhum endereço. O agente usa só o que a máquina já traz (Node 24 e Python 3.11, sem
-  bibliotecas de gráfico); o gráfico sai em SVG escrito à mão pelo programa.
+Não há decisão aberta do fundador neste cartão; falta a aprovação desta página (L6).
 
 ## As unidades
 
