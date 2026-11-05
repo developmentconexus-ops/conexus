@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
-import { test } from 'node:test'
+import { mock, test } from 'node:test'
 import { CompanyId } from '@conexus/hub-api'
-import { CARLA, codeOf, memberOn, post } from '../../../hub/identity/test-hub.ts'
+import { CARLA, codeOf, memberOn, plantCompany, post } from '../../../hub/identity/test-hub.ts'
 import { ACCESS, ACCOUNT_ID, REFRESH, USER_CODE } from '../../../platform/test-openai-codex.ts'
 import { testOpened } from '../../../platform/test-seal.ts'
 import { opened } from './test-sign-in.ts'
@@ -220,4 +220,59 @@ test('tipo desligado no meio: a espera recusa sem chamar a OpenAI, e a entrada f
   )
   codex.typed = true
   assert.equal(Object((await poll(signInId)).json()).status, 'linked')
+})
+
+test('a ligação que falha depois da troca acaba a entrada: a espera seguinte diz que venceu', async (t) => {
+  const { hub, companyId, codex, start, poll, entries, accounts } = await opened(t)
+  const { signInId } = await start()
+  codex.typed = true
+  const grant = codex.deviceToken
+  codex.deviceToken = async () => {
+    await hub.test.asOwner(`delete from builder.company_account_kind where company_id = $1`, [
+      companyId,
+    ])
+    return grant()
+  }
+  const failed = await poll(signInId)
+  assert.deepEqual([failed.statusCode, codeOf(failed)], [422, 'MODEL_ACCOUNT_KIND_OFF'])
+  assert.deepEqual([(await entries()).length, (await accounts()).length], [0, 0])
+  await hub.test.asOwner(
+    `insert into builder.company_account_kind (company_id, kind) values ($1, 'openai_codex')`,
+    [companyId],
+  )
+  const again = await poll(signInId)
+  assert.deepEqual([again.statusCode, codeOf(again)], [410, 'MODEL_ACCOUNT_SIGN_IN_EXPIRED'])
+  assert.equal(codex.calls.filter((made) => made.endpoint === 'device-token').length, 1)
+})
+
+test('a entrada de outra empresa: a espera diz que venceu, sem chamar a OpenAI', async (t) => {
+  const { hub, ana, codex, start, poll, calls } = await opened(t)
+  const { signInId } = await start()
+  const elsewhere = await plantCompany(hub.test, ana.id, 'Outra Empresa')
+  await hub.test.asOwner(
+    `insert into builder.company_account_kind (company_id, kind) values ($1, 'openai_codex')`,
+    [elsewhere],
+  )
+  codex.typed = true
+  const stranger = await poll(signInId, ana, elsewhere)
+  assert.deepEqual([stranger.statusCode, codeOf(stranger)], [410, 'MODEL_ACCOUNT_SIGN_IN_EXPIRED'])
+  assert.equal(calls('device-token'), 0)
+})
+
+test('cada chamada à OpenAI tem o prazo de 15 s', async (t) => {
+  const { hub, ana, signIns, entries } = await opened(t)
+  const asked: number[] = []
+  const timeout = mock.method(AbortSignal, 'timeout', (ms: number) => {
+    asked.push(ms)
+    return AbortSignal.abort(new DOMException('The operation timed out.', 'TimeoutError'))
+  })
+  t.after(() => timeout.mock.restore())
+  const late = await post(hub, ana, signIns, {
+    owner: 'company',
+    kind: 'openai_codex',
+    label: 'ChatGPT',
+  })
+  assert.deepEqual([late.statusCode, codeOf(late)], [502, 'MODEL_ACCOUNT_UNAVAILABLE'])
+  assert.deepEqual(asked, [15_000])
+  assert.equal((await entries()).length, 0)
 })

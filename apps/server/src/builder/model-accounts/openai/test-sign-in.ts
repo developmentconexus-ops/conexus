@@ -22,10 +22,10 @@ export async function opened(t: TestContext) {
     return Object(started.json())
   }
   // The poll has no body, so it carries no content type: the way the web sends it.
-  function poll(signInId: string, who: Who = ana) {
+  function poll(signInId: string, who: Who = ana, company: string = companyId) {
     return hub.app.inject({
       method: 'POST',
-      url: `${signIns}/${signInId}/poll`,
+      url: `/api/companies/${company}/model-account-sign-ins/${signInId}/poll`,
       headers: { origin: TEST_ORIGIN, cookie: who.cookie, [ATTEMPT_KEY_HEADER]: randomUUID() },
     })
   }

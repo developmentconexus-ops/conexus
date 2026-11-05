@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
 import { codeOf, post } from '../../../hub/identity/test-hub.ts'
 import { ACCESS, planted, REFRESH } from '../../../platform/test-openai-codex.ts'
@@ -47,6 +48,29 @@ const REFUSALS = [
     'nenhum token traz a conta do ChatGPT',
     'token',
     { status: 200, body: { access_token: planted({}), refresh_token: REFRESH } },
+    422,
+    'MODEL_ACCOUNT_REFUSED',
+    0,
+  ],
+  [
+    'o token da conta sem corpo legível',
+    'token',
+    { status: 200, body: { access_token: 'a.b.c', refresh_token: REFRESH } },
+    422,
+    'MODEL_ACCOUNT_REFUSED',
+    0,
+  ],
+  [
+    'a conta do ChatGPT vazia',
+    'token',
+    {
+      status: 200,
+      body: {
+        access_token: planted({ chatgpt_account_id: '' }),
+        refresh_token: REFRESH,
+        id_token: planted({ chatgpt_account_id: '' }),
+      },
+    },
     422,
     'MODEL_ACCOUNT_REFUSED',
     0,
@@ -100,4 +124,34 @@ test('depois de 15 minutos a espera diz que o código venceu', async (t) => {
   const late = await poll(signInId)
   assert.deepEqual([late.statusCode, codeOf(late)], [410, 'MODEL_ACCOUNT_SIGN_IN_EXPIRED'])
   assert.equal(calls('device-token'), 0)
+})
+
+test('o token de acesso dá a conta quando o id_token não a traz legível', async (t) => {
+  const { codex, start, poll } = await opened(t)
+  const { signInId } = await start()
+  codex.typed = true
+  codex.exchange = () => ({
+    status: 200,
+    body: {
+      access_token: planted({ chatgpt_account_id: 'conta-do-acesso' }),
+      refresh_token: REFRESH,
+      id_token: 'a.b.c',
+    },
+  })
+  assert.equal(Object((await poll(signInId)).json()).status, 'linked')
+})
+
+test('um insert direto de um tipo desconhecido é recusado pelos CHECKs', async (t) => {
+  const { hub, ana, companyId } = await opened(t)
+  const inserts = [
+    [`insert into builder.company_account_kind (company_id, kind) values ($1, 'desconhecido')`],
+    [
+      `insert into builder.model_account_sign_in (id, company_id, person_id, owner, kind, label, sealed, key_id, expires_at)
+        values ($2, $1, $3, 'me', 'desconhecido', 'x', '\\x00', 'k1', now())`,
+      [randomUUID(), ana.id],
+    ],
+  ] as const
+  for (const [text, extra = []] of inserts) {
+    await assert.rejects(hub.test.asOwner(text, [companyId, ...extra]), { code: '23514' })
+  }
 })

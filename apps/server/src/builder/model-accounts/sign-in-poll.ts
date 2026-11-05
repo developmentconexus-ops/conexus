@@ -65,7 +65,7 @@ async function waitingOn(deps: Deps, tx: CommandTx, input: Viewer & { signInId: 
       pollAt: modelAccountSignIn.pollAt,
       expiresAt: modelAccountSignIn.expiresAt,
       live: sql<boolean>`${modelAccountSignIn.expiresAt} > statement_timestamp()`,
-      waitMs: sql<number>`ceil(extract(epoch from ${modelAccountSignIn.pollAt} - statement_timestamp()) * 1000)`,
+      waitMs: sql<number>`ceil(extract(epoch from ${modelAccountSignIn.pollAt} - statement_timestamp()) * 1000)::int`,
     })
     .from(modelAccountSignIn)
     .where(ofSignIn(input))
@@ -165,12 +165,20 @@ export async function pollSignIn(
     return { status: 'waiting', retryMs: polled.retryMs }
   }
   const { credential } = polled
-  return deps.database.command(scopeOf(input), async (tx) => {
-    await tx.delete(modelAccountSignIn).where(ofSignIn(input))
-    const account = await linkAccount(deps, tx, input, reserved.held, {
-      provider: flow.provider,
-      credential,
+  try {
+    return await deps.database.command(scopeOf(input), async (tx) => {
+      await tx.delete(modelAccountSignIn).where(ofSignIn(input))
+      const account = await linkAccount(deps, tx, input, reserved.held, {
+        provider: flow.provider,
+        credential,
+      })
+      return { status: 'linked', account }
     })
-    return { status: 'linked', account }
-  })
+  } catch (error) {
+    // The grant is spent, so the sign-in cannot be asked again: end it, and the next ask says it expired.
+    await deps.database.command(scopeOf(input), (tx) =>
+      tx.delete(modelAccountSignIn).where(ofSignIn(input)),
+    )
+    throw error
+  }
 }

@@ -82,6 +82,7 @@ export function plantCodex(t: Lifetime): Codex {
     }
     const [, name, answer] = endpoint
     codex.calls.push({ endpoint: name, body: String(init?.body) })
+    init?.signal?.throwIfAborted()
     const { status, body } = await answer()
     return body === undefined ? new Response(null, { status }) : Response.json(body, { status })
   }

@@ -65,12 +65,21 @@ const JwtClaims = z.looseObject({
   [CLAIM_PATH]: z.looseObject({ chatgpt_account_id: AccountId.optional() }).optional(),
 })
 
-/** The ChatGPT account id a token's claims carry, at the top or under the vendor's key. */
+/** The ChatGPT account id a token's claims carry, at the top or under the vendor's key; none when it cannot be read. */
 function accountIdOf(token: string | undefined): string | undefined {
   const payload = token?.split('.')[1]
   if (payload === undefined) return undefined
-  const claims = JwtClaims.parse(JSON.parse(Buffer.from(payload, 'base64url').toString('utf8')))
-  return claims.chatgpt_account_id ?? claims[CLAIM_PATH]?.chatgpt_account_id
+  try {
+    const claims = JwtClaims.safeParse(
+      JSON.parse(Buffer.from(payload, 'base64url').toString('utf8')),
+    )
+    return claims.success
+      ? (claims.data.chatgpt_account_id ?? claims.data[CLAIM_PATH]?.chatgpt_account_id)
+      : undefined
+  } catch (error) {
+    if (error instanceof SyntaxError) return undefined
+    throw error
+  }
 }
 
 async function replyOf<T>(response: Response, schema: z.ZodType<T>): Promise<T> {
