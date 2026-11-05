@@ -41,6 +41,9 @@ type Change = (config: Config) => Config
 /** A connector call's deadline in tests: a silent double is given up on quickly (criterion 11), and a Testar waiting on another's refresh still sees the double's refresh land. */
 const TEST_CALL_DEADLINE_MS = 1_000
 
+/** The budget of a send's prune in tests: a Cloudflare that answers late is given up on quickly. */
+export const TEST_PRUNE_BUDGET_MS = 1_000
+
 /** Production's shutdown deadline (`SHUTDOWN_DEADLINE_MS` in platform/lifecycle.ts). */
 const CLOSE_DEADLINE_MS = 15_000
 
@@ -73,6 +76,7 @@ async function hubServing(
     ...{ database: test.database, mastraPool: test.mastraPool, config, identity, sendMail },
     ...{ ...ports, log },
     deadlines: { callDeadlineMs: TEST_CALL_DEADLINE_MS },
+    pruneBudgetMs: TEST_PRUNE_BUDGET_MS,
   })
   const { projects, apps, conversations, runs } = subjects
   const webRoot = testWebRoot(t)
