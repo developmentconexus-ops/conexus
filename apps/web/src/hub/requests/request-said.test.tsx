@@ -23,12 +23,13 @@ import {
 
 const server = hubServer()
 const PROJECT = `/companies/${COMPANY.id}/projects/${PEDIDOS.id}`
+const VERSIONS = `${PROJECT}/about?part=versions`
 const DECIDED = 'Este pedido já foi decidido.'
 
 beforeEach(() => server.use(conversationsNone, versionsRead({ versions: [versionView(5)] })))
 
 /** The Projeto as its owner reads it: version 5 ready and unpublished, Bruno's request open. */
-function open() {
+function open(path = PROJECT) {
   const view: ProjectsView = {
     projects: [PEDIDOS],
     databaseReady: true,
@@ -39,7 +40,7 @@ function open() {
     publishRequest: requestView({ mayDecide: true }),
   }
   server.use(...projectsRead(view))
-  render(<Conexus conexus={createConexus(createMemoryHistory({ initialEntries: [PROJECT] }))} />)
+  render(<Conexus conexus={createConexus(createMemoryHistory({ initialEntries: [path] }))} />)
   return view
 }
 
@@ -58,8 +59,9 @@ test('a frase de um pedido que já fechou sai quando a pessoa age sobre o pedido
   expect(screen.queryByText(DECIDED)).toBeNull()
 })
 
-test('a frase de um pedido que já fechou não fica sobre o pedido novo que a releitura traz, sem que a pessoa aja', async () => {
-  const view = open()
+/** Request 5's sentence is said, request 6 takes its place on the screen, then leaves. */
+async function closedThenNewThenGone(path: string) {
+  const view = open(path)
   server.use(
     http.post(decisionPath, () => {
       view.publishRequest = null
@@ -81,7 +83,20 @@ test('a frase de um pedido que já fechou não fica sobre o pedido novo que a re
   expect(await screen.findByRole('button', { name: 'Publicar a versão 6' })).toBeTruthy()
   expect(screen.getByText('Bruno Reis pede para publicar a versão 6.')).toBeTruthy()
   expect(screen.queryByText(DECIDED)).toBeNull()
-})
+  view.publishRequest = null
+  focusManager.setFocused(false)
+  focusManager.setFocused(true)
+  await waitFor(() =>
+    expect(screen.queryByRole('button', { name: 'Publicar a versão 6' })).toBeNull(),
+  )
+  expect(screen.queryByText(DECIDED)).toBeNull()
+}
+
+test('a frase de um pedido que já fechou não fica sobre o pedido novo que a releitura traz, nem volta quando ele sai', () =>
+  closedThenNewThenGone(PROJECT))
+
+test('nas Versões, a frase de um pedido que já fechou também sai com o pedido novo e não volta', () =>
+  closedThenNewThenGone(VERSIONS))
 
 test('agir de novo sobre o mesmo pedido apaga a frase da ação anterior', async () => {
   const view = open()
