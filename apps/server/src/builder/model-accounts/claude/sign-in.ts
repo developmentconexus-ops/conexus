@@ -10,6 +10,8 @@ import { z } from 'zod'
 import { Failure } from '../../../platform/failure.ts'
 import { Credential } from '../../../platform/seal.ts'
 import type { SignInFlow } from '../sign-ins.ts'
+import type { SubscriptionTokens } from '../subscription-store.ts'
+import { SubscriptionRefusal } from '../subscription-store.ts'
 
 const CLIENT_ID = '9d1c250a-e61b-44d9-88ed-5944d1962f5e'
 const AUTHORIZE_URL = 'https://claude.ai/oauth/authorize'
@@ -26,17 +28,6 @@ const TokenReply = z.object({
   refresh_token: z.string().min(1),
   expires_in: z.number().positive(),
 })
-
-/** Anthropic refused the code: `status` is the trade's HTTP status, or none before any call. */
-export class AnthropicRefusal extends Error {
-  readonly status: number | undefined
-
-  constructor(reason: string, status?: number) {
-    super(reason)
-    this.name = 'AnthropicRefusal'
-    this.status = status
-  }
-}
 
 function startAnthropicLogin(): { url: string; verifier: string } {
   const verifier = randomBytes(32).toString('base64url')
@@ -76,14 +67,6 @@ function parseAuthorizationInput(input: string): { code?: string; state?: string
   return { code: value }
 }
 
-/** The subscription's tokens, sealed whole in its account: `expires` is milliseconds since 1970. */
-export const SubscriptionTokens = z.object({
-  refresh: z.string().min(1),
-  access: z.string().min(1),
-  expires: z.number(),
-})
-export type SubscriptionTokens = z.infer<typeof SubscriptionTokens>
-
 async function tokensOf(response: Response): Promise<SubscriptionTokens> {
   const tokens = TokenReply.parse(await response.json())
   return {
@@ -94,7 +77,9 @@ async function tokensOf(response: Response): Promise<SubscriptionTokens> {
 }
 
 /** Trades the refresh token for new tokens (`refreshAnthropicToken`, `anthropic.ts:130`). */
-export async function refreshAnthropicTokens(refresh: string): Promise<SubscriptionTokens> {
+export async function refreshAnthropicTokens({
+  refresh,
+}: SubscriptionTokens): Promise<SubscriptionTokens> {
   const response = await fetch(TOKEN_URL, {
     method: 'POST',
     signal: AbortSignal.timeout(EXCHANGE_TIMEOUT_MS),
@@ -105,15 +90,15 @@ export async function refreshAnthropicTokens(refresh: string): Promise<Subscript
       refresh_token: refresh,
     }),
   })
-  if (!response.ok) throw new AnthropicRefusal('REFRESH_REFUSED', response.status)
+  if (!response.ok) throw new SubscriptionRefusal('REFRESH_REFUSED', response.status)
   return tokensOf(response)
 }
 
 /** Trades the pasted code for the subscription's tokens with the verifier `start` gave. */
 async function completeAnthropicLogin(input: string, verifier: string) {
   const { code, state } = parseAuthorizationInput(input)
-  if (!code) throw new AnthropicRefusal('MISSING_CODE')
-  if (!state || state !== verifier) throw new AnthropicRefusal('STATE_MISMATCH')
+  if (!code) throw new SubscriptionRefusal('MISSING_CODE')
+  if (!state || state !== verifier) throw new SubscriptionRefusal('STATE_MISMATCH')
   const response = await fetch(TOKEN_URL, {
     method: 'POST',
     signal: AbortSignal.timeout(EXCHANGE_TIMEOUT_MS),
@@ -127,7 +112,7 @@ async function completeAnthropicLogin(input: string, verifier: string) {
       code_verifier: verifier,
     }),
   })
-  if (!response.ok) throw new AnthropicRefusal('EXCHANGE_REFUSED', response.status)
+  if (!response.ok) throw new SubscriptionRefusal('EXCHANGE_REFUSED', response.status)
   return tokensOf(response)
 }
 
@@ -138,7 +123,7 @@ const CODE_SECONDS = 600
 
 function failureOf(error: unknown): Failure {
   const refused =
-    error instanceof AnthropicRefusal && (error.status === undefined || error.status < 500)
+    error instanceof SubscriptionRefusal && (error.status === undefined || error.status < 500)
   const details = { provider: 'anthropic' }
   return refused
     ? new Failure('MODEL_ACCOUNT_REFUSED', { details, cause: error })
