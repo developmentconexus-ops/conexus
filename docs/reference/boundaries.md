@@ -953,14 +953,14 @@ rows for the five above wait on issue #458.
   a scripted model and the test machine, then scores what Mastra saved with `checks.calledTool` and
   `checks.noToolErrors` from `@mastra/evals/checks`, and requires the only tool called to be the
   write tool. It does not use `runEvals`: the Builder's `Agent` is private to its controller, and
-  `runEvals` takes no tool mocks nor `unmockedToolPolicy` at 1.79.0 (`evals/run/index.d.ts`;
-  `ItemToolMock` and `unmockedToolPolicy` live on dataset items, `datasets/experiment/types.d.ts:60-62`).
+  `runEvals` takes no tool mocks nor `unmockedToolPolicy` at 1.82.0 (`evals/run/index.d.ts`;
+  `ItemToolMock` and `unmockedToolPolicy` live on dataset items, `datasets/experiment/types.d.ts:60-63`).
   The scripted model keys on facts the setup must give it (the app folder, the skill, the tools),
   not on the instructions' sentences. A second case has a person paste a password: it proves the
   secrets rule reaches the model and that the gate fails without it, not that a real model obeys.
   Revisit when `runEvals` takes tool mocks, or the Builder's agent can be a target.
 
-## Mastra 1.79.0: the Builder's end of the turn, open tasks (step 14.2)
+## Mastra 1.82.0: the Builder's end of the turn, open tasks (step 14.2)
 
 - **The end of the turn is Mastra's `isTaskComplete`.** `conversation/builder.ts` gives the Builder's
   `defaultOptions.isTaskComplete` one code scorer, `conexus-check` (`conversation/processors.ts`
@@ -974,34 +974,31 @@ rows for the five above wait on issue #458.
   Mastra's own `goal` judges completion with a model, not the list (`agent/goal/scorer.ts:14-28`), so
   it does not serve. Proof: `conversation-check.test.ts`, criterion 15 of step 14.2.
 
-## Mastra 1.79.0: a tool call the model streamed unparseable (defect after v0.20.8)
+## Mastra 1.82.0: a tool call the model streamed unparseable (defect after v0.20.8)
 
 - **Library line.** Mastra's in-process loop persists a tool call whose JSON it cannot parse with
-  `args: undefined` (`@mastra/core/dist/stream-Cf2uTBjB.js:813-848`, after `tryRepairJson`, which
-  does not repair truncation), and replays it with `input: invocation.args`
-  (`message-list-Bfir0O2V.js:9061-9068`). `@ai-sdk/anthropic` 3.0.133 writes `input: part.input`
-  (`dist/index.mjs:3062-3069`), `JSON.stringify` drops the undefined field, and Anthropic answers 400
-  `tool_use.input: Field required` to every later request of the conversation. The AI SDK's own loop
-  sends such a call as `{}` (`ai/dist/index.mjs:4392`); Mastra has no such rule in
-  `DEFAULT_COMPAT_RULES` (`trip-wire-C6DhMdZ8.js`), only the extension point
-  `new ProviderHistoryCompat({ additionalRules })`. Mastra's in-process engine also scores an
-  errored iteration through `isTaskComplete` (the durable engine skips it, Mastra issue #21897).
-- **Hand-made piece.** `toolCallInputRequired` in `model-accounts/tool-call-input.ts` (wired in
-  `model-accounts/processors.ts`), a `ProviderHistoryCompat` rule: its `applyToPrompt` sends a
-  `tool-call` with no `input` as `{}` in the outbound prompt only; stored messages are not touched, so a conversation already broken
-  recovers on its next message. And `judge` in `conversation/processors.ts` returns finished once
-  the queue has ended the turn (`turnIn(requestContext)?.outcome`), so a failed turn is not called
-  again and no false `MODEL_NO_ACCOUNT` is stored. Visible change: the version of a failed turn
-  with open tasks has no check verdict, like a turn that stopped on a question; before, it read
-  "unfinished" only because of those false calls.
+  `args: undefined` (after `tryRepairJson`, which does not repair truncation), and replays it with
+  `input: invocation.args`. `@ai-sdk/anthropic` writes `input: part.input`, `JSON.stringify` drops
+  the undefined field, and Anthropic answers 400 `tool_use.input: Field required` to every later
+  request of the conversation. Since `@mastra/core` 1.80.0 (PR #28332) the rule is Mastra's own:
+  `tool-call-empty-input`, in `DEFAULT_COMPAT_RULES` (`dist/stream-GSsXnWy3.js:1195-1207`), sends a
+  `tool-call` whose input is missing or `null` as `{}` in the outbound prompt only; the stored
+  message is not touched, so a conversation already broken recovers on its next message. Mastra's
+  in-process engine also scores an errored iteration through `isTaskComplete` (the durable engine
+  skips it, Mastra issue #21897).
+- **Hand-made piece.** `judge` in `conversation/processors.ts` returns finished once the queue has
+  ended the turn (`turnIn(requestContext)?.outcome`), so a failed turn is not called again and no
+  false `MODEL_NO_ACCOUNT` is stored. Visible change: the version of a failed turn with open tasks
+  has no check verdict, like a turn that stopped on a question; before, it read "unfinished" only
+  because of those false calls.
 - **Why.** One bad tool call must never leave a conversation broken. Proof: in
   `conversation-tool-input.test.ts`, "guardou sem argumentos" (an `ask_user` call streamed truncated,
   then two more turns, against a double that answers the 400 and records each replayed `tool_use`
-  input) fails without the rule, and "não volta ao modelo" (a call that fails with tasks open,
-  through the public door) fails without the check. Not done: `toolStreaming: false` (changes card
-  streaming for every call and leaves other providers exposed).
+  input) proves Mastra's rule at the installed version, and "não volta ao modelo" (a call that fails
+  with tasks open, through the public door) fails without the check. Not done:
+  `toolStreaming: false` (changes card streaming for every call and leaves other providers exposed).
 
-## Mastra 1.79.0 and @mastra/fastify 1.5.23: session routes behind the Hub's guard (step 14.2)
+## Mastra 1.82.0 and @mastra/fastify 1.5.26: session routes behind the Hub's guard (step 14.2)
 
 - **A fixed list, one guard.** `conversation/guard.ts` registers six of Mastra's own
   agent-controller routes (a session's state, stream, message, Parar, a card's answer, transcript;
@@ -1012,18 +1009,20 @@ rows for the five above wait on issue #458.
   Hub's index (S10), refuses a browser `requestContext` with 400, and sets the message's author.
   Proof: `conversation-routes.test.ts`, criteria 3, 30 and 31 of step 14.2.
 - **The Hub's close closes the open streams.** Mastra's stream route ends only when its request
-  leaves (`handlers/agent-controller.ts:581-647` at 1.79.0), so the guard keeps each open stream's
+  leaves (`@mastra/server` `dist/server/handlers/agent-controller.js:570-650` at 1.82.0, `abortSignal` at `:642`), so the guard keeps each open stream's
   response and the close destroys them once the runs have said their end, which `@mastra/fastify`
   reads as the request leaving; a session Mastra deletes
   with its Projeto ends its run without an `agent_end`, so `end.ts` lets it go on
   `onSessionDeleted`. Proof: `conversation-stream.test.ts`. Revisit when Mastra's server ends its
   streams on shutdown.
 
-## Mastra 1.79.0: the stream sends the screen what it reads (memory, pace)
+## Mastra 1.82.0: the stream sends the screen what it reads (memory, pace)
 
-- **Library line.** `@mastra/core` 1.79.0 `agent-controller/session.ts` sends the session's whole
+- **Library line.** `@mastra/core` 1.82.0 `agent-controller/session.ts` sends the session's whole
   display state after every event (the turn's message and every tool's input and result), which grows
-  with the square of a turn's length. The stream route has no option to send a subset.
+  with the square of a turn's length. The stream route's `displayState: false` (`@mastra/server`
+  1.80.0, PR #28527) cuts all of it, and the screen reads a part (`isRunning`, `pendingSuspensions`,
+  `omProgress`), so there is still no option to send a subset.
 - **Hand-made piece.** `slim` and `paced` in `apps/server/src/builder/conversation/stream.ts`. `slim`
   keeps of a `display_state_changed` event only what the screen reads (`DISPLAY_READ`); every other
   event goes as Mastra sent it. `paced` writes each event once the response can take more and ends
@@ -1038,12 +1037,13 @@ rows for the five above wait on issue #458.
 - **Proof.** `conversation-stream-paced.test.ts`: "um turno de 96 passos…" fails without `slim`;
   "uma página 8 MiB atrás perde o stream…" fails without `paced`. "uma página que lê devagar…" holds
   the order of events for a slow page and passes with Mastra's own adapter too, so it proves neither.
-- **Revisit when** Mastra lets a stream send a subset of the display state.
+- **Revisit when** Mastra lets a stream send a subset of the display state, beyond `displayState: false`.
 
-## Mastra 1.79.0: a step's answer without the body of its request
+## Mastra 1.82.0: a step's answer without the body of its request
 
-- **Library line.** `@mastra/core` 1.79.0 keeps every step's output, `request.body` included, until
-  the session's next run (`MastraModelOutput` `#bufferedSteps[].request`), so a conversation's last
+- **Library line.** `@mastra/core` 1.82.0 keeps every step's output, `request.body` included, until
+  the session's next run (`MastraModelOutput` `#bufferedSteps[].request`, `dist/stream-GSsXnWy3.js:5037`;
+  it joins equal requests only when it serializes, `:4730-4760`), so a conversation's last
   turn holds every prompt it sent. Nothing of ours or Mastra's reads the body back. The AI SDK's
   own `experimental_include.requestBody: false` (`ai@6.0.309` `generateText` and `streamText`) is
   not reachable here: Mastra's loop reads the provider's `stream.request` itself and takes no
@@ -1055,12 +1055,30 @@ rows for the five above wait on issue #458.
 - **Proof.** `prompt-cache.test.ts` "cada passo do modelo da conta volta sem o corpo do pedido…".
 - **Revisit when** Mastra passes an include option to its loop, or stops keeping the request.
 
-## e2b 2.56.0: the version folder read without following a link (step 14.1)
+## Mastra 1.82.0: the store's domains log, and a model's output is read from its name
 
-- **Library line.** `e2b@2.56.0` `files.read(path)` (`index.d.ts:5135-5148`) reads by path and
-  follows a link: `FilesystemReadOpts` has no `nofollow`. `files.list` (`index.d.ts:5037-5065`)
+- **Library line.** `Mastra` gives its logger to the store, but `MastraCompositeStore` does not pass
+  it on to the store's domains (the class at `dist/filesystem-versioned-CNYJdPJl.js:207-463` has no
+  `__setLogger` of its own), and each domain logs its own failures. The provider registry says of a model only
+  `attachment`, `temperature`, `structuredOutput` and `reasoning` (`dist/capabilities/*.json`),
+  nothing of what the model outputs.
+- **Hand-made piece.** `apps/server/src/builder/mastra/mastra.ts` gives each domain the Hub's logger
+  by the same `__setLogger`. `NOT_CHAT` in `apps/server/src/builder/model-accounts/providers.ts`
+  leaves out a model whose name says it draws, films, speaks, hears, embeds, ranks, guards, reads
+  scans or talks live.
+- **Why.** A domain's failure would log nowhere the Hub reads; the model picker would list models
+  that cannot hold a conversation.
+- **Proof.** `providers.test.ts` "em todo fornecedor por chave, um nome que sugere mídia…" fails when
+  a new such name enters the registry unread. No test fails without the logger line.
+- **Revisit when** the composite store passes its logger to its domains, or the registry says what a
+  model outputs.
+
+## e2b 2.63.0: the version folder read without following a link (step 14.1)
+
+- **Library line.** `e2b@2.63.0` `files.read(path)` reads by path and
+  follows a link: `FilesystemReadOpts` has no `nofollow` (`dist/index.d.ts:5794-5807`). `files.list` (`:5972`)
   shows a link's `symlinkTarget`, but a link swapped in between the list and the read still passes.
-  Mastra 1.79.0 `WorkspaceFilesystem.readFile` has the same shape.
+  Mastra 1.82.0 `WorkspaceFilesystem.readFile` has the same shape.
 - **Hand-made piece.** `packIn` in `apps/server/src/builder/machine/pack.ts` runs one Node program
   on the machine, while the run still holds it. The program opens every folder and file of
   `node_modules/.conexus/version` with `O_NOFOLLOW` through `/proc/self/fd`, refuses a link or a
@@ -1150,13 +1168,13 @@ reference tool checks a read against its documentation.
 - **Revisit when** Mercado Livre publishes an OpenAPI document, or a read fails on a real account
   (then its answer, without company data, becomes the double's data).
 
-## Mastra 1.79.0: a conversation's changing state lives in a Hub table (step 24.1)
+## Mastra 1.82.0: a conversation's changing state lives in a Hub table (step 24.1)
 
-- **Library line.** At `@mastra/pg` version 1.32.0 and `@mastra/memory` version 1.39.0 (the lockfile's),
-  `@mastra/pg` `updateThread` (`dist/index.js:12438-12472`) reads the thread,
+- **Library line.** At `@mastra/pg` version 1.35.0 and `@mastra/memory` version 1.41.0 (the lockfile's),
+  `@mastra/pg` `updateThread` (`dist/index.js:12260-12290`) reads the thread,
   merges the new metadata over what it read and writes the whole object, with no lock. Observational
   memory writes the thread title through `patchThread` with the full metadata it read earlier
-  (`@mastra/memory` `dist/src-DxZ7N8nO.js:35742-35762`). Either write can put back a value that
+  (`@mastra/memory` `dist/src-BncFunCW.js:35473-35477`). Either write can put back a value that
   another request changed in between. Reported to Mastra (feedback, 2026-11-01).
 - **Hand-made piece.** The Assistant's chosen connections and its place live in
   `builder.assistant_conversation`, which only the Hub writes (`apps/server/src/builder/assistant/chosen.ts`,
@@ -1168,11 +1186,11 @@ reference tool checks a read against its documentation.
 - **Proof.** `instructions.test.ts` "trocar a escolha enquanto o Mastra grava o título": the next
   turn reads only the new choice, and the title stays.
 
-## Mastra 1.79.0: the list of conversations narrowed by title and place (step 24.3.3)
+## Mastra 1.82.0: the list of conversations narrowed by title and place (step 24.3.3)
 
-- **Library line.** At `@mastra/core` version 1.79.0 and `@mastra/pg` version 1.32.0 (the lockfile's),
+- **Library line.** At `@mastra/core` version 1.82.0 and `@mastra/pg` version 1.35.0 (the lockfile's),
   `listThreads` filters by `resourceId` and by metadata equality only (`@mastra/core` `dist/storage/types.d.ts:183-209`;
-  `@mastra/pg` `dist/index.js:12335-12340`, a `@>` containment). It has no title search, no "the key is
+  `@mastra/pg` `dist/index.js:12158`, a `@>` containment). It has no title search, no "the key is
   missing" and no "any value of the key".
 - **Hand-made piece.** `listedPage` in `apps/server/src/builder/assistant/search.ts`. With a text or a
   place it reads all the person's threads (`perPage: false`) and filters here: the title composed, without
