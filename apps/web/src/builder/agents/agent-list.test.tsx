@@ -64,7 +64,7 @@ test('a última execução diz "Rodou ontem" e, mais antiga, "Rodou em" com o di
   const yesterday = await screen.findByRole('link', { name: /Ontem/ })
   expect(within(yesterday).getByText(/Rodou ontem/)).toBeTruthy()
   const older = screen.getByRole('link', { name: /Antigo/ })
-  expect(within(older).getByText(/^Rodou em \d{2}\/\d{2}$/)).toBeTruthy()
+  expect(within(older).getByText(/^Rodou em 13\/10$/)).toBeTruthy()
 })
 
 test('o filtro por Projeto troca a lista e o endereço; sem agentes ali, a frase do filtro', async () => {
