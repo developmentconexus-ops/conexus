@@ -44,7 +44,6 @@ publicado na versão 1. Você é a Ana (dona).
    cresceu.
 6. Você pede ao Construtor para a ferramenta arredondar para reais inteiros: ele grava a versão 2 da
    ferramenta. O "Vendas" publicado continua na versão 1 dela até você publicar o agente de novo.
-7. Você apaga a conversa do passo 4: ela some, e a máquina dela é desligada para sempre.
 
 **O que você faz, e quando.** Antes: nada. No começo: aprova esta página e responde às decisões A e
 B. Na U3: autoriza na Cloudflare o que ela pede e a conta do Conexus ainda não tem (o segundo
@@ -71,7 +70,7 @@ uma prova anterior; **documentado** é a página do fornecedor; **conta** é uma
   fechada. Cada chamada em série custa uma ida e volta ao E2B (0,2 a 0,6 s): 10 em paralelo levam
   ~1,7 s, 10 em série ~3,7 s, e 60 em série passaram de 30 s numa de três vezes.
 - **Uma máquina pausada fica guardada para sempre** no E2B se ninguém a matar (documentado; visto no
-  protótipo). Por isso cada conversa apagada desliga a sua (passo 7 do roteiro).
+  protótipo). Por isso o agente apagado, e o Projeto ou a empresa removidos, desligam as máquinas das suas conversas.
 - **Não medido:** quantos pedidos saem certos com o modo código contra só ferramentas, com modelo de
   verdade. A conta Google do Gemini respondeu, já na primeira chamada, que o serviço foi desativado por
   violação dos Termos de Serviço, e você deixou o Google de lado por agora (2026-11-05). Essa medida
@@ -128,7 +127,7 @@ TypeScript.
 | U1 A forma | A avaliação da arquitetura do código de hoje para a 24.4, e o que se move ou se apaga antes: o dono das máquinas de conversa e o `show_file` com a sua rota de arquivo saem de `builder/assistant/` para `builder/machine/`, servindo Assistente, Construtor e agentes; a linha do `show_file` na conversa sai das do Assistente para uma compartilhada; o cartão ganha os nomes finais de pastas, módulos e assinaturas das U2 a U5 | `apps/server/src/builder/{machine,assistant,agents,tools,construtor}/`, `apps/edge/src/`, `packages/{hub-api,app-contract}/src/`, `apps/web/src/builder/conversation/`, `docs/steps/e244-ferramentas-em-codigo.md` | [architecture](../architecture.md) | esta página aprovada |
 | U2 A ferramenta em código, escrita | O tipo `CODE` na biblioteca e na leitura do agente, a versão com código, leituras declaradas e teste; o Construtor com máquina escreve, confere, testa e grava; as rotas da pessoa recusam `CODE`; os avisos #712 e #707; a aba Ferramentas mostra **Em código**, a página da versão mostra o código e o teste, e a conversa do Construtor mostra a linha da ferramenta | `packages/hub-api/src/{tools,construtor,agent-failures}.ts`, `apps/server/src/builder/{tools,construtor,agents}/`, `apps/server/migrations/`, `apps/web/src/builder/{tools,agents,conversation}/`, `docs/reference/screens.md` | [data](../guides/data.md) | U1 |
 | U3 A ferramenta em código, chamada | O namespace das ferramentas e o host delas na borda; a subida de `t-<versão>` ao gravar, a nova subida quando o Worker some e a remoção ao apagar; a rota de ferramenta atrás do Access, com a capability `data`; a operação de borda que lê pelo Hub com escopo e o limite de 50; a ferramenta fina no agente | `apps/edge/{src,wrangler.jsonc}`, `packages/{hub-api,app-contract}/src/`, `apps/server/src/platform/`, `apps/server/src/hub/connectors/`, `apps/server/src/builder/{tools,agents}/`, `infra/`, `docs/how-to/apps-edge.md`, `.dependency-cruiser.cjs` | [security](../guides/security.md) | U2 |
-| U4 O Computador do agente | O campo `machine` na configuração do agente; o agente com Computador recebe o workspace do dono de máquinas, a rede da decisão B e `show_file`, com a rota de arquivo da conversa do agente; a linha **Computador** nas Ferramentas do Conexus; a conversa apagada, o agente apagado e o Projeto ou a empresa removidos matam as máquinas das suas conversas | `packages/hub-api/src/agents.ts`, `apps/server/src/builder/{agents,construtor,machine}/`, `apps/web/src/builder/{agents,conversation}/` | [web](../guides/web.md) | U1 |
+| U4 O Computador do agente | O campo `machine` na configuração do agente; o agente com Computador recebe o workspace do dono de máquinas, a rede da decisão B e `show_file`, com a rota de arquivo da conversa do agente; a linha **Computador** nas Ferramentas do Conexus; o agente apagado e o Projeto ou a empresa removidos matam as máquinas das suas conversas | `packages/hub-api/src/agents.ts`, `apps/server/src/builder/{agents,construtor,machine}/`, `apps/web/src/builder/{agents,conversation}/` | [web](../guides/web.md) | U1 |
 | U5 O modo código | `execute_typescript` sobre as ferramentas do agente com Computador (decisão A), pelo `E2BCodeModeTransport`, dentro do limite de 50; a chamada **Programa** na conversa; a medida de acerto contra só ferramentas | `apps/server/src/builder/agents/`, `apps/web/src/builder/{agents,conversation}/` | [testing](../guides/testing.md) | U4, U3 |
 
 A U2 e a U4 correm em paralelo depois da U1. Elas dividem `builder/agents/` em arquivos separados (a
@@ -172,13 +171,13 @@ U1 somar mais, a etapa se divide antes da U2 (U5 vira a etapa seguinte).
 | 12 | U3 | Um pedido ao host das ferramentas sem o `Cf-Access-Jwt-Assertion` do Access, com outro público ou vencido, é recusado com 403 antes de chegar a um Worker | `apps/edge/src/tools.test.ts` (Miniflare, chaves de teste no lugar das do Access) | must |
 | 13 | U3 | Uma versão cujo Worker sumiu ("Worker not found.") sobe de novo do módulo gravado e responde; com a Cloudflare fora, devolve ao modelo `TOOL_UNAVAILABLE`, e a ferramenta de conector do mesmo agente continua funcionando | `builder/agents/code-tool.test.ts` | must |
 | 14 | U3 | Apagar uma ferramenta `CODE` tira os Workers das versões dela antes das linhas; com a Cloudflare fora, a remoção é recusada com `TOOL_UNAVAILABLE` e nada muda; a remoção da empresa tira os Workers de ferramenta dela | `builder/tools/routes.test.ts`; o teste da remoção da empresa de hoje, com o caso novo | must |
-| 15 | U4 | O agente com Computador roda um comando, escreve um arquivo e o mostra com `show_file`, e o arquivo aparece ao lado da conversa do agente; um caminho fora da pasta da conversa é recusado (`SHOW_REFUSED`); a máquina só liga na primeira ferramenta que precisa dela, e um agente sem Computador não recebe nenhuma ferramenta de máquina | `builder/agents/machine.test.ts` (kit dublê); `apps/web/src/builder/conversation/shown-file.test.tsx` | must |
+| 15 | U4 | O agente com Computador roda um comando, escreve um arquivo e o mostra com `show_file`, e o arquivo aparece ao lado da conversa do agente; um caminho fora da pasta da conversa é recusado (`SHOW_REFUSED`), e a rota de arquivo dá 404 a quem não pode ler a conversa; a máquina só liga na primeira ferramenta que precisa dela, e um agente sem Computador não recebe nenhuma ferramenta de máquina | `builder/agents/machine.test.ts` (kit dublê); `apps/web/src/builder/conversation/shown-file.test.tsx` | must |
 | 16 | U4 | A máquina do agente recebe a lista da decisão B; um endereço de fora da lista é recusado | `builder/agents/machine.test.ts`, a lista passada ao kit; caso opcional com o E2B de verdade, que tenta um endereço de fora (T13) | must |
-| 17 | U4 | Apagar a conversa de um agente, apagar o agente, remover o Projeto ou a empresa mata a máquina de cada conversa que vai embora, a do Construtor também; repetir não falha | `builder/agents/release.test.ts` e `builder/construtor/routes.test.ts`, com o kit dublê contando as mortes | must |
+| 17 | U4 | Apagar o agente, remover o Projeto ou a empresa mata a máquina de cada conversa que vai embora, a do Construtor também; repetir não falha | `builder/agents/release.test.ts` e o teste de remoção do Construtor, pela rota de apagar agente e pela remoção da empresa, com o kit dublê contando as mortes | must |
 | 18 | U4 | Uma versão publicada antes desta etapa abre com Computador desligado | `builder/agents/frozen.test.ts`, uma configuração sem o campo | must |
 | 19 | U5 | O agente com Computador recebe `execute_typescript`; o programa chama as ferramentas do agente pelo Hub, com o mesmo limite de 50; um agente sem Computador não o recebe | `builder/agents/code-mode.test.ts`, com o transporte padrão do Mastra sobre o `LocalSandbox`; caso opcional com o E2B de verdade e o `E2BCodeModeTransport` | must |
 | 20 | U5 | A conversa mostra a chamada **Programa** com o resultado; um programa que falha mostra o erro e o agente responde sem inventar o número | `apps/web/src/builder/conversation/program-call.test.tsx` | must |
-| 21 | U5 | Numa conta da OpenAI no Hub, os três pedidos de exemplo rodam 3 vezes com modo código e 3 só com ferramentas; o relatório da unidade traz acertos, tokens e tempo | relatório da U5, fora do repositório (L21) | should |
+| 21 | U5 | Numa conta da OpenAI no Hub, os três pedidos de exemplo rodam 3 vezes com modo código e 3 só com ferramentas; o relatório da unidade traz acertos, tokens e tempo, antes do código da U5 | relatório da U5, fora do repositório (L21) | must |
 
 ## A matriz de estados
 
@@ -228,7 +227,7 @@ abaixo.
 | Gravar a versão de uma ferramenta `CODE` (U2) | a mesma tentativa: a chave é o id da chamada do Construtor (`construtor/tools.ts:78-84`) e a segunda acha a primeira; duas gravações diferentes da mesma ferramenta: a única `tool_version_tool_id_number_key` (`tables.ts:61`) deixa uma, e a outra recebe `STALE_VERSION` | o teste passou e o banco caiu: nada gravado, o Construtor tenta de novo com a mesma chave | máquina fora: `MACHINE_UNAVAILABLE`, nada gravado | `TOOL_TEST_FAILED`, `TOOL_REFUSED` com a razão ou `MACHINE_UNAVAILABLE`, sem o código | 2, 3, 5, 7, 8 |
 | Subir `t-<toolVersionId>` ao gravar (U3) | o PUT é idempotente pelo nome do script | gravou e a subida falhou: a versão fica, e a primeira chamada sobe de novo do `module` | Cloudflare fora: a versão fica gravada e a chamada devolve `TOOL_UNAVAILABLE` | o código de falha da Cloudflare, sem o token (S36) | 9, 13 |
 | Chamar a ferramenta (U3) | duas chamadas são dois pedidos; o código não guarda estado de módulo (critério 7) | o Worker respondeu e a resposta se perdeu (502, corte): a leitura não escreve, o modelo pode repetir | a borda ou o Hub fora: `TOOL_UNAVAILABLE`; prazo de 10 s da 0047 | `TOOL_FAILED`, `TOOL_UNAVAILABLE`, sem a entrada | 10, 11, 12, 13 |
-| Apagar uma ferramenta `CODE` (U3) | os Workers saem pela marca `tool-<id>`, e tirar duas vezes não falha | tirou os Workers e a linha não saiu (em uso, 23503): a ferramenta fica, e a próxima chamada sobe de novo | Cloudflare fora: `TOOL_UNAVAILABLE`, nada muda | `TOOL_DELETED` com a contagem de Workers | 14 |
+| Apagar uma ferramenta `CODE` (U3) | os Workers saem pelo nome `t-<toolVersionId>` de cada versão, e tirar duas vezes não falha | tirou os Workers e a linha não saiu (em uso, 23503): a ferramenta fica, e a próxima chamada sobe de novo | Cloudflare fora: `TOOL_UNAVAILABLE`, nada muda | `TOOL_DELETED` com a contagem de Workers | 14 |
 | Gravar `machine` no rascunho do agente (U4) | a revisão do rascunho de hoje | o de hoje | o de hoje | o de hoje | 18 |
 | Ligar a máquina do agente (U4, `E2BSandbox.start`) | a fila por conversa do dono de máquinas (`inLane`) | ligou e o turno caiu: a máquina pausa no fim do turno ou no timeout | E2B fora ou 429: `MACHINE_UNAVAILABLE`; o SDK espera o `Retry-After` | `MACHINE_UNAVAILABLE` com a razão | 15 |
 | Ler o arquivo da máquina para a tela (U4) | duas leituras leem o mesmo arquivo | a máquina pausou: a leitura a religa pela fila | E2B fora: "Não conseguiu mostrar o arquivo" | `MACHINE_UNAVAILABLE`, sem o caminho completo | 15 |
@@ -249,7 +248,7 @@ abaixo.
 | Guardar a versão com código | U2 | `builder/tools/tables.ts:44-70` (`tool_version.config jsonb`) | o estudo de carga `C3` ("code in the Hub DB (version)"); o estudo do Construtor `3.3` dizia Git e R2, antes da biblioteca da empresa (`T1`, 2026-11-02) | A versão é imutável e guarda o que roda (lido) | nativo (Drizzle) | — | `T1`, 2026-11-02 | migração nova |
 | A aba e a página da ferramenta | U2 | `apps/web/src/builder/tools/{tools-tab,tool-page}.tsx` | nenhuma no código instalado; o estudo do Construtor `1.6` diz que o Studio do Mastra mostra o código em leitura | — | nativo (as peças da Pauta) | — | não precisa | — |
 | Subir a versão como Worker | U3 | `apps/server/src/platform/cloudflare.ts:200-219,276-293` (`v-<id>`, `bindings: []`, `limits`, `tags`) | `vibesdk@9da158d` `worker/services/deployer/api/cloudflare-api.ts:131`; Cloudflare WfP (documentado) | PUT do script no namespace (lido; provado no item 1: p50 1.084 ms) | nativo | — | não precisa | `apps/server/src/platform/cloudflare.ts` |
-| Tirar os Workers de uma ferramenta | U3 | `hub/apps/prune.ts:85-96` (`removeWorkers`); `hub/apps/removal.ts:116` (`removeCompanyWorkers`); `builder/tools/tools.ts:233-250` (`remove`) | Cloudflare WfP, apagar scripts por marca (documentado) | Os scripts saem por `tags` (documentado; não rodado) | nativo | — | não precisa | — |
+| Tirar os Workers de uma ferramenta | U3 | `hub/apps/prune.ts:85-96` (`removeWorkers`); `hub/apps/removal.ts:116` (`removeCompanyWorkers`); `builder/tools/tools.ts:233-250` (`remove`) | o mesmo `removeWorkers` dos apps | Um DELETE por nome de script, fora da transação (lido) | nativo | — | não precisa | — |
 | O namespace e o host das ferramentas | U3 | `apps/edge/wrangler.jsonc:7-16` (`conexus-apps`, saída `conexus-outbound`, rota `*.conexusapp.tech/*`); `packages/hub-api/src/address.ts:39-46` (um app tem rótulo de duas partes) | estudo de runtime `(a)`: um namespace à parte; WfP (documentado) | Um segundo binding de namespace com a mesma parede (provado no item 1); o host `tools.conexusapp.tech`, de uma parte só, nunca é de um app | nativo | — | não precisa | `apps/edge/wrangler.jsonc` |
 | Despachar a ferramenta com a capability | U3 | `apps/edge/src/dispatch.ts:124-170` (`DISPATCHER.get`, `props`, `limits`, prazo); `dispatcher.ts:39-56` (`Connectors`) | Cloudflare WfP, `get(nome, args, { outbound, limits })` e `ctx.exports` (documentado); `vibesdk@9da158d` `worker/index.ts:202-205` (só o `get` sem `props`) | A capability é um `WorkerEntrypoint` em `props` (provado no item 1, fora do repositório) | nativo | — | não precisa | `apps/edge/src/tools.ts` |
 | A capability `data` lê pelo Hub | U3 | `apps/edge/src/connectors.ts:26-48`; `packages/hub-api/src/project-connections.ts:128-145` (`callAppConnector`, `access: 'edge'`); `hub/apps/routes.ts:86-87` (S48) | a mesma forma da capability dos apps (herdado, 0041) | Workers VPC até o ouvinte de borda do Hub (herdado) | nativo | — | não precisa | `packages/hub-api/src/project-connections.ts` |
@@ -377,6 +376,7 @@ escreve e testa na máquina", "Conferir o estado de módulo", "Empacotar", "Guar
 | `apps/web/src/builder/tools/` | Muda: selo, página da versão | — |
 | `apps/web/src/builder/agents/tool-form.tsx` | Muda: "Há uma versão mais nova" (#707) | — |
 | `apps/web/src/builder/conversation/construtor-specs.ts` | Muda: a linha de `tool_code_save` | — |
+| `infra/e2b/template.ts` | Muda: o Biome no template, para a regra de estado de módulo | o Construtor |
 | `docs/reference/screens.md` | Muda: as telas novas | — |
 | `.dependency-cruiser.cjs` | Muda, se a porta de teste nova pedir | — |
 
@@ -396,10 +396,12 @@ Apaga: nada.
   nem `source` (a leitura do agente não carrega o código).
 - `tool.operation`: a primeira migração o torna opcional e soma a trava `(kind = 'PRESET') =
   (operation IS NOT NULL)`, com a linha `-- contract: a ferramenta CODE lê várias operações, guardadas
-  na versão`; a segunda soma `CODE` à trava de `kind`. Nenhuma linha de hoje muda.
-- `tool_code_save` do Construtor: `{ toolId?: ToolId, basedOn?: number, slug: ToolSlug, connectionId:
-  ConnectionId, reads: OperationId[], description: string, source: string }`, marcas conferidas na
-  entrada (C23). A chave de tentativa é a da chamada (`construtor/tools.ts:78-84`).
+  na versão`; a segunda troca a trava de `kind` por uma que aceita `CODE`, com a sua linha `--
+  contract: a trava passa a aceitar CODE`. Nenhuma linha de hoje muda.
+- `tool_code_save` do Construtor: `{ slug: ToolSlug, connectionId: ConnectionId, reads: OperationId[],
+  description: string, source: string }` e, para uma versão nova, `{ toolId: ToolId, basedOn: number }`
+  juntos (uma união, C21: sem `toolId` é ferramenta nova; com ele, `basedOn` é obrigatório), marcas
+  conferidas na entrada (C23). A chave de tentativa é a da chamada (`construtor/tools.ts:78-84`).
 - `addVersion` passa a receber a versão em que a pessoa se baseou; outra vira `STALE_VERSION`.
 - Falhas: `TOOL_TEST_FAILED` (nova); `TOOL_REFUSED` com as razões novas `CODE_BY_CONSTRUTOR`,
   `MODULE_STATE` e `STALE_VERSION`; `TOOL_REFUSED` com `NOT_OFFERED`, como hoje.
@@ -419,8 +421,11 @@ Apaga: nada.
 2. As recusas das rotas da pessoa (`CODE_BY_CONSTRUTOR`), `STALE_VERSION` e o #712.
 3. O Construtor abre a máquina pelo dono da U1 com a rede da 0051, escreve `tool.ts` e `tool.test.ts`,
    roda a regra de estado de módulo, lê uma vez pelo Hub a leitura declarada e grava a resposta como
-   fixture na máquina (a máquina não tem segredo), roda o typecheck e o teste, empacota com `esbuild` e
-   devolve fonte, módulo e resultado. O Hub roda os comandos, não o modelo.
+   fixture na máquina (a máquina não tem segredo; a fixture são linhas reais da empresa, ficam só na
+   máquina da conversa e saem dela depois do teste), roda o typecheck e o teste, empacota com
+   `esbuild` e devolve fonte, módulo e resultado. O Hub roda os comandos, não o modelo; a regra de
+   estado de módulo roda pelo Biome que o template da máquina passa a trazer, na versão do
+   repositório.
 4. Grava a versão só com o teste passando.
 5. As telas: selo **Em código**, a página da versão, a linha do Construtor, o aviso do #707.
 
@@ -465,7 +470,7 @@ ctx.exports.ToolData({ props: { reads } }) } }, { outbound: {}, limits: { cpuMs:
 | `packages/app-contract/src/` | Cria `ToolProps = { data }` (versionado) | o Worker da ferramenta |
 | `packages/hub-api/src/project-connections.ts` | Cria `callToolConnector` (operação de borda) | a borda |
 | `apps/server/src/hub/connectors/` | Muda: a porta que lê para uma ferramenta, com escopo e a chave do turno; a porta de teste nova | a rota de borda |
-| `apps/server/src/platform/` | Muda `cloudflare.ts` (subir, tirar por marca no namespace das ferramentas) e `config.ts` (o namespace, o host, o token de serviço); cria `edge-tools.ts` (o Hub chama a borda) | ferramentas, agentes |
+| `apps/server/src/platform/` | Muda `cloudflare.ts` (subir e tirar no namespace das ferramentas) e `config.ts` (o namespace, o host, o token de serviço); cria `edge-tools.ts` (o Hub chama a borda) | ferramentas, agentes |
 | `apps/server/src/builder/tools/` | Muda: subir ao gravar; tirar os Workers ao apagar e na remoção da empresa | o serviço de ferramentas |
 | `apps/server/src/builder/agents/` | Cria `code-tools.ts`; muda `agent.ts` `tools` | o agente |
 | `infra/` | Muda: o token de serviço do Access no servidor, pelo runner (0035, 0042); `compose.yaml` | — |
@@ -480,9 +485,10 @@ Apaga: nada.
   `limits.cpu_ms` de `APP_CALL_LIMITS` (0047). Sobe depois que a versão grava, fora da transação (data
   D22); a presença do Worker não é gravada: "Worker not found." sobe de novo do `module` e chama uma
   vez mais.
-- Apagar uma ferramenta: confere que não está em uso, tira os Workers pela marca `tool-<ToolId>`, depois
-  apaga as linhas. A remoção da empresa tira pela marca `company-<CompanyId>`, ao lado de
-  `removeCompanyWorkers`.
+- Apagar uma ferramenta: confere que não está em uso, tira o Worker `t-<toolVersionId>` de cada versão
+  pelo nome, como `removeWorkers` (`hub/apps/prune.ts:85-96`), depois apaga as linhas. A remoção da
+  empresa tira os das versões `CODE` dela da mesma forma, ao lado de `removeCompanyWorkers`; um Worker
+  que a Cloudflare não confirmou deixa a remoção pendente, como hoje.
 - O Hub chama `https://tools.conexusapp.tech/<toolVersionId>` com o token de serviço do Access; o
   Worker confere o `Cf-Access-Jwt-Assertion` (equipe e público das variáveis) e só então despacha.
 - `ToolProps = { data: { read(operation: string, input: unknown): Promise<ConnectorAnswer> } }`: a
@@ -628,8 +634,8 @@ critério 21 pedir outro, com a razão. O arquivo tomado como modelo: `builder/a
 
 ### A ordem do trabalho
 
-1. A medida do critério 21, antes do código, numa conta da OpenAI no Hub (sem ela, parar e avisar o
-   firstmate): os três pedidos de exemplo do protótipo, com as linhas sintéticas, 3 vezes cada modo.
+1. A medida do critério 21, antes do código, numa conta da OpenAI no Hub (sem ela, a U5 espera e o
+   firstmate é avisado; as U1 a U4 não dependem dela): os três pedidos de exemplo do protótipo, com as linhas sintéticas, 3 vezes cada modo.
 2. `code-mode.ts` e a ligação no `agentOf` só quando `machine`.
 3. A chamada **Programa** na conversa.
 
