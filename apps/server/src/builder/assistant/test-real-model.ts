@@ -108,7 +108,7 @@ export async function subscribed(t: TestContext, folder: string) {
   assert.equal((await call(hub, ana, 'PUT', grant)).statusCode, 200)
   return {
     ...{ hub, ana, company, assistant: `${company}/assistant/conversations` },
-    ...{ matriz: ids[0], projectId },
+    ...{ matriz: ids[0], projectId, companyId },
   }
 }
 

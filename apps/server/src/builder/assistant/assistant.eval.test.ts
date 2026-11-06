@@ -4,7 +4,7 @@ import type { MastraMessagePart } from '@mastra/core/agent-controller'
 import { checks } from '@mastra/evals/checks'
 import { PADARIA_SOL_MATRIZ, salesSankhya, soldBy } from '../../hub/connectors/test-sales.ts'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
-import { BRUNO, memberOn } from '../../hub/identity/test-hub.ts'
+import { BRUNO, call, memberOn } from '../../hub/identity/test-hub.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
 import { endOf, messagesOf, title } from '../conversation/test-conversation.ts'
 import { assisting, created, READ, talking } from './test-assistant.ts'
@@ -178,24 +178,29 @@ test('o modelo de verdade: o caderno — a dona pede e o turno grava e diz o que
   const on = await subscribed(t, REAL_MODEL)
   const SAVE = 'connector_note_save'
   const body = { connections: [on.matriz] }
-  async function saved(url: string, who: Person = on.ana) {
-    return (await scored(await answerParts(on.hub, who, url), SAVE))[0]
-  }
   const owner = await created(on.hub, on.ana, on.assistant, body)
-  const asked = 'Na Matriz, o CODEMP da tabela TSIEMP é o código da empresa. Anota isso no caderno.'
+  const asked =
+    'Na Matriz, o NUNOTA da tabela TGFCAB é o número da nota de venda. Anota isso no caderno.'
   assert.equal(endOf(await (await talking(t, on.hub, on.ana, owner)).say(asked)), 'complete')
   const parts = await answerParts(on.hub, on.ana, owner)
-  assert.equal(await saved(owner), 1, textOf(parts))
-  assert.match(textOf(parts), /CODEMP/)
+  assert.deepEqual(await scored(parts, SAVE), [1, 1], textOf(parts))
+  const page = await call(on.hub, on.ana, 'GET', `${on.company}/connections/${on.matriz}`)
+  const [note, ...others] = Object(page.json()).notes
+  assert.equal(others.length, 0, textOf(parts))
+  assert.ok(note.provedRows > 0, textOf(parts))
+  assert.equal(note.writtenBy, 'Ana Lima')
+  assert.match(textOf(parts), /NUNOTA/)
   const idle = await created(on.hub, on.ana, on.assistant, body)
-  const chat = 'O que é o CODEMP no Sankhya?'
+  const chat = 'O que é o NUNOTA no Sankhya?'
   assert.equal(endOf(await (await talking(t, on.hub, on.ana, idle)).say(chat)), 'complete')
-  assert.equal(await saved(idle), 0, textOf(await answerParts(on.hub, on.ana, idle)))
-  const companyId = on.company.split('/').at(-1) ?? ''
-  const bruno = await memberOn(on.hub, companyId, BRUNO, 'member')
+  const talked = await answerParts(on.hub, on.ana, idle)
+  assert.deepEqual(await checked(talked, [checks.didNotCall(SAVE)]), [1], textOf(talked))
+  const bruno = await memberOn(on.hub, on.companyId, BRUNO, 'member')
   const his = await created(on.hub, bruno, on.assistant, body)
   assert.equal(endOf(await (await talking(t, on.hub, bruno, his)).say(asked)), 'complete')
   const theirs = await answerParts(on.hub, bruno, his)
-  assert.equal(await saved(his, bruno), 0, textOf(theirs))
-  assert.match(textOf(theirs), /CODEMP/)
+  assert.deepEqual(await checked(theirs, [checks.didNotCall(SAVE)]), [1], textOf(theirs))
+  assert.match(textOf(theirs), /NUNOTA/)
+  assert.match(textOf(theirs), /SELECT/i)
+  assert.match(textOf(theirs), /TGFCAB/)
 })
