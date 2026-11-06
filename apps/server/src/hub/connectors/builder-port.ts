@@ -1,5 +1,4 @@
 import type { ConnectorAnswer } from '@conexus/app-contract'
-import type { Operation } from '@conexus/connectors'
 import { connectorOf } from '@conexus/connectors'
 import type { CompanyId, OfProject, PersonId, ProjectId, RunId } from '@conexus/hub-api'
 import { CALL_DEADLINE_MS, ConnectionId } from '@conexus/hub-api'
@@ -45,7 +44,7 @@ export type BuilderConnectors = {
   saveNote(
     ids: OfProject,
     a: Of & Readonly<{ concept: string; mapping: string; provingQuery: string }>,
-  ): Promise<NoteSaved>
+  ): Promise<NoteSaved | Spent>
 }
 
 /** The call counts by key (a run, a turn), the oldest forgotten past `TURNS_KEPT`; false once a key has spent its 50. */
@@ -113,27 +112,23 @@ async function admit(deps: Deps, ids: OfProject, a: Of): Promise<OpenedConnectio
   )
 }
 
-function callThrough(
-  deps: Deps,
+/** The Builder's read as the connector's door takes it, all but the operation and its input. */
+function readerOf(
   a: Readonly<{
     ids: OfProject
     personId: PersonId
     opened: OpenedConnection
-    operation: Operation<unknown, unknown, 'read'>
-    input: unknown
     signal?: AbortSignal
   }>,
 ) {
-  return readThrough(deps, {
+  return {
     by: 'builder',
     ids: a.ids,
     viewer: { person: { id: a.personId }, companyId: a.ids.companyId },
     opened: a.opened,
-    operation: a.operation,
-    input: a.input,
     deadlineMs: CALL_DEADLINE_MS,
     signal: a.signal,
-  })
+  } as const
 }
 
 /** What the model is told of each row; a row of a connector the kit no longer has is left out. */
@@ -179,7 +174,11 @@ export function createBuilderConnectors(deps: Deps): BuilderConnectors {
         return { kind: 'NOT_GRANTED' }
       }
       if (!spend(a.runId)) return { kind: 'CALLS_SPENT' }
-      const answered = await callThrough(deps, { ids, ...a, opened, operation })
+      const answered = await readThrough(deps, {
+        ...readerOf({ ids, ...a, opened }),
+        operation,
+        input: a.input,
+      })
       return answered.kind === 'OK' ? { kind: 'OK', ...shaped(answered.value) } : answered
     },
 
@@ -191,20 +190,8 @@ export function createBuilderConnectors(deps: Deps): BuilderConnectors {
     async saveNote(ids, a) {
       const opened = await admit(deps, ids, a)
       if (opened === undefined) return { kind: 'NOT_GRANTED' }
-      // A connector with no read door has no notebook.
-      const door = readOf(opened.connector, 'consultar')
-      if (door === undefined || a.concept.length < 1 || a.concept.length > 120)
-        return { kind: 'NOTE_INVALID' }
       if (!spend(a.runId)) return { kind: 'CALLS_SPENT' }
-      const viewer = { person: { id: a.personId }, companyId: ids.companyId }
-      const read = {
-        by: 'builder',
-        ids,
-        viewer,
-        opened,
-        operation: door,
-        deadlineMs: CALL_DEADLINE_MS,
-      } as const
+      const read = readerOf({ ids, ...a, opened })
       return provedAndSaved(deps, { ...a, read })
     },
   }

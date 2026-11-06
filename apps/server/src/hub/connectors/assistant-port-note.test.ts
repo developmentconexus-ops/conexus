@@ -49,20 +49,18 @@ test('a anotação recusada: o membro e o desenvolvedor, de verdade no banco, a 
   const on = await notingOn(t)
   const diego = await memberOn(on.hub, on.companyId, DIEGO, 'developer')
   for (const who of [on.carla, diego]) assert.deepEqual(await on.note(who), { kind: 'NOT_GRANTED' })
+  assert.deepEqual(await on.note(on.ana, { chosen: [] }), { kind: 'NOT_GRANTED' })
+  assert.deepEqual(await on.note(on.ana, { project: true }), { kind: 'NOT_GRANTED' })
   const refusals = on.hub.lines.filter((line) => line.message === 'CONNECTION_NOTE_REFUSED')
   assert.deepEqual(
     refusals.map((line) => [line.fields.personId, line.fields.reason]),
     [
       [on.carla.id, 'FORBIDDEN'],
       [diego.id, 'FORBIDDEN'],
+      [on.ana.id, 'NOT_CHOSEN'],
+      [on.ana.id, 'NOT_OFFERED'],
     ],
   )
-  assert.deepEqual(await on.note(on.ana, { chosen: [] }), { kind: 'NOT_GRANTED' })
-  assert.deepEqual(await on.note(on.ana, { project: true }), { kind: 'NOT_GRANTED' })
-  const reasons = on.hub.lines
-    .filter((line) => line.message === 'ASSISTANT_READ_REFUSED')
-    .map((line) => line.fields.reason)
-  assert.deepEqual(reasons, ['NOT_CHOSEN', 'NOT_OFFERED'])
   assert.deepEqual(await on.notebook(), {})
   assert.deepEqual(await on.note(on.bruno), { kind: 'SAVED', provedRows: 1 })
   assert.equal((await on.notebook()).Empresa.writtenBy, on.bruno.id)
@@ -70,7 +68,10 @@ test('a anotação recusada: o membro e o desenvolvedor, de verdade no banco, a 
 
 test('a prova da anotação: a consulta que a porta recusa não grava; a gravação conta uma das 50 chamadas do turno; o caderno cheio é NOTE_INVALID', async (t) => {
   const on = await notingOn(t)
-  assert.notEqual((await on.note(on.ana, { sql: 'DELETE FROM TSIEMP' })).kind, 'SAVED')
+  assert.deepEqual(await on.note(on.ana, { sql: 'DELETE FROM TSIEMP' }), {
+    kind: 'REFUSED',
+    native: { status: 400, code: 'INPUT_INVALID', message: 'sql: Invalid input' },
+  })
   assert.deepEqual(await on.notebook(), {})
   const turn = randomUUID()
   assert.equal((await on.note(on.ana, { turn })).kind, 'SAVED')

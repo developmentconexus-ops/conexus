@@ -44,6 +44,18 @@ test('guardar: roda a consulta uma vez pela porta e guarda o mapa, a consulta, a
   assert.deepEqual(Object.keys(logged?.fields ?? {}).sort(), ['by', 'connectionId', 'rows'])
 })
 
+test('guardar: no Builder o membro grava, sem manageConnections', async (t) => {
+  const on = await builderOn(t)
+  const carla = { ...on.who(), personId: PersonId.parse(on.carla.id) }
+  const saved = await on.port.saveNote(on.ids, {
+    ...carla,
+    concept: 'Empresa',
+    mapping: 'm',
+    provingQuery: QUERY,
+  })
+  assert.deepEqual(saved, { kind: 'SAVED', provedRows: 1 })
+})
+
 test('guardar: a consulta que a porta recusa recusa a anotação; o caderno cheio é NOTE_INVALID; a 51ª chamada da execução é recusada', async (t) => {
   const on = await builderOn(t)
   const refused = await on.port.saveNote(on.ids, {
@@ -52,7 +64,10 @@ test('guardar: a consulta que a porta recusa recusa a anotação; o caderno chei
     mapping: 'm',
     provingQuery: 'DELETE FROM TSIEMP',
   })
-  assert.notEqual(refused.kind, 'SAVED')
+  assert.deepEqual(refused, {
+    kind: 'REFUSED',
+    native: { status: 400, code: 'INPUT_INVALID', message: 'sql: Invalid input' },
+  })
   assert.deepEqual(
     await on.hub.test.asOwner("select 1 from connectors.connection where notes <> '{}'"),
     [],

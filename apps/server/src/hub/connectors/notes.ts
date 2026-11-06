@@ -7,6 +7,7 @@ import { violatedCheck } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import { personNameColumn } from '../identity/public.ts'
 import { Listed } from './cut.ts'
+import { readOf } from './grants.ts'
 import type { ReadRequest } from './read.ts'
 import { readThrough } from './read.ts'
 import type { Deps, OfConnection, Viewer } from './rows.ts'
@@ -28,10 +29,11 @@ export type NoteSaved =
   | Readonly<{ kind: 'SAVED'; provedRows: number }>
   | Exclude<ConnectorAnswer, { kind: 'OK' }>
   | Readonly<{ kind: 'NOTE_INVALID' }>
-  | Readonly<{ kind: 'CALLS_SPENT' }>
+
+const Concept = z.string().min(1).max(120)
 
 /** The connection's notebook as the database holds it, read by this schema (C27); the key is the concept. */
-export const Notes = z.record(z.string().min(1).max(120), Note)
+export const Notes = z.record(Concept, Note)
 export type Notes = z.infer<typeof Notes>
 
 /** The notebook, newest first, for the page of the connection; the writer is a name, null once they left the company. */
@@ -104,26 +106,33 @@ async function save(
 }
 
 /**
- * The proving query run once by the connector's read door, then the concept written with the rows
- * it returned, never the rows, and who wrote it: the one owner of the notebook's write for the
- * Builder and the Assistant (C26). The Assistant's writer must manage connections.
+ * The proving query run once by the opened connection's read door, then the concept written with
+ * the rows it returned, never the rows, and who wrote it: the one owner of the notebook's write for
+ * the Builder and the Assistant (C26), after their door admitted the call and counted it. The
+ * Assistant's writer must manage connections.
  */
 export async function provedAndSaved(
   deps: Deps,
   a: Readonly<{
-    read: Omit<ReadRequest, 'input'>
-    connectionId: OfConnection['connectionId']
+    read: Omit<ReadRequest, 'operation' | 'input'>
     concept: string
     mapping: string
     provingQuery: string
   }>,
 ): Promise<NoteSaved> {
-  const answered = await readThrough(deps, { ...a.read, input: { sql: a.provingQuery } })
+  // A connector with no read door has no notebook.
+  const door = readOf(a.read.opened.connector, 'consultar')
+  if (door === undefined || !Concept.safeParse(a.concept).success) return { kind: 'NOTE_INVALID' }
+  const answered = await readThrough(deps, {
+    ...a.read,
+    operation: door,
+    input: { sql: a.provingQuery },
+  })
   if (answered.kind !== 'OK') return answered
   const listed = Listed.safeParse(answered.value)
   if (!listed.success) return { kind: 'NOTE_INVALID' }
   const provedRows = listed.data.linhas.length
-  const { viewer, by } = a.read
+  const { viewer, by, opened } = a.read
   const note = Note.safeParse({
     mapping: a.mapping,
     provingQuery: a.provingQuery,
@@ -132,11 +141,11 @@ export async function provedAndSaved(
     writtenBy: viewer.person.id,
   })
   if (!note.success) return { kind: 'NOTE_INVALID' }
-  const target = { ...viewer, connectionId: a.connectionId, concept: a.concept, note: note.data }
+  const target = { ...viewer, connectionId: opened.id, concept: a.concept, note: note.data }
   const saved = await save(deps, target, by === 'assistant')
   if (saved === 'GONE' || saved === 'NOT_GRANTED') return { kind: 'NOT_GRANTED' }
   if (saved === 'NOTE_INVALID') return { kind: 'NOTE_INVALID' }
-  deps.log.info({ connectionId: a.connectionId, rows: provedRows, by }, 'CONNECTION_NOTE_SAVED')
+  deps.log.info({ connectionId: opened.id, rows: provedRows, by }, 'CONNECTION_NOTE_SAVED')
   return { kind: 'SAVED', provedRows }
 }
 
