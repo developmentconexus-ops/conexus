@@ -50,7 +50,9 @@ const REAL_MODEL_CHOICE = { model: 'anthropic/claude-sonnet-5-5', effort: 'low' 
 
 /** Where firstmate runs the real model's case: the authorize link goes there, and the sign-in code comes back there. */
 // biome-ignore lint/style/noProcessEnv: the switch of this one opt-in case, not the app's configuration
-export const REAL_MODEL = process.env.CONEXUS_EVAL_REAL_MODEL
+const env = process.env
+export const REAL_MODEL = env.CONEXUS_EVAL_REAL_MODEL
+const LOGIN_FILE = env.CONEXUS_EVAL_CLAUDE_CREDENTIAL
 
 /** The sign-in code firstmate writes after opening the link, read once and deleted; never printed. */
 async function codeFrom(folder: string): Promise<string> {
@@ -67,8 +69,6 @@ async function codeFrom(folder: string): Promise<string> {
 }
 
 /** Our own file of the sign-in the Hub kept (`access`, `refresh`, `expiresAt` in ms), named by the switch; never printed. */
-// biome-ignore lint/style/noProcessEnv: the switch of this one opt-in case, not the app's configuration
-const LOGIN_FILE = process.env.CONEXUS_EVAL_CLAUDE_CREDENTIAL
 const EARLY_MS = 300_000
 const Login = z.object({
   access: z.string().min(1),
@@ -180,7 +180,7 @@ export async function subscribed(t: TestContext, folder: string) {
   assert.equal((await call(hub, ana, 'PUT', grant)).statusCode, 200)
   return {
     ...{ hub, ana, company, assistant: `${company}/assistant/conversations` },
-    ...{ matriz: ids[0], projectId, companyId, connections: ids },
+    ...{ matriz: ids[0], projectId, companyId },
   }
 }
 

@@ -738,3 +738,5 @@ Em 2026-11-06, sobre o "2. A": "Acho estranho, como o Builder faz, porque hoje o
 Cartão da etapa 24.3.5 aprovado em 2026-11-06 (commit 8827482b9b59104ed847c134fd26f655c873db89): "1. Sim 2. Sim continua"
 
 Lido pelo firstmate como a emenda da página: (1) o Assistente anota no caderno sem pedir sim, igual ao Builder, com a mesma ferramenta e a mesma prova, e diz o que anotou; o "2. A" de 2026-11-03 sai; (2) o "1. A" continua: só dono e administrador anotam pelo Assistente, e o membro recebe o texto pronto. A página, o roteiro, os critérios, as tabelas e os tamanhos das unidades foram reescritos para essa forma, e as linhas citadas relidas no `main` em `4ce6b422`.
+
+Em 2026-11-06, à pergunta de como provar a conversa do dono, depois que o dublê SQLite do Sankhya recusou o SQL (`ROWNUM`, `TOP`) que o modelo de verdade escreveu: "Pode ser no hub sankhya real". Lido pelo firstmate como: o caso do dono sai da avaliação automática e vira prova no Hub no ar, com o Sankhya real, feita depois da publicação (critério 8). E, à pergunta de usar a entrada guardada da conta Claude na avaliação real: "Aprovado".
