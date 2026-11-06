@@ -17,7 +17,7 @@ Owners next door: [architecture](../architecture.md) for execution zones, hosts 
   filled by the platform [0019]. A code tool **must** receive only `data`, which reads through the
   Hub only the reads its version declares. [app-contract types]
 - **S5.** Generated code **must not** keep mutable state at module level. [a code tool:
-  `builder/construtor/module-state.grit`; an app: review]
+  `builder/construtor/module-state.grit`; an app: no check yet, issue 813]
 
 ## 2. Who may act (ASVS `V8`)
 

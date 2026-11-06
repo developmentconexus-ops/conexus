@@ -12,7 +12,8 @@ test('apagar uma ferramenta em código: com a Cloudflare fora, TOOL_UNAVAILABLE 
 
   on.hub.tools.script('remove', 'NO_ANSWER')
   const refused = await call(on.hub, on.ana, 'DELETE', url)
-  assert.deepEqual([refused.statusCode, codeOf(refused)], [503, 'TOOL_UNAVAILABLE'])
+  assert.equal(refused.statusCode, 503, refused.body)
+  assert.equal(codeOf(refused), 'TOOL_UNAVAILABLE')
   assert.equal((await call(on.hub, on.ana, 'GET', url)).statusCode, 200, 'nothing changed')
 
   const held = on.hub.tools.holdRemove()
@@ -41,7 +42,8 @@ test('apagar uma ferramenta em código: um rascunho que a escolhe enquanto os Wo
   await drafted(on.hub, on.ana, on.agents, made, { tools: [saved.latest.id] })
   held.release()
   const refused = await deleting
-  assert.deepEqual([refused.statusCode, codeOf(refused)], [409, 'TOOL_IN_USE'])
+  assert.equal(refused.statusCode, 409, refused.body)
+  assert.equal(codeOf(refused), 'TOOL_IN_USE')
   const still = toolOf(await call(on.hub, on.ana, 'GET', url))
   assert.deepEqual(still.usedBy, [{ id: made.id, projectId: on.projectId, name: 'Vendas do dia' }])
 })
