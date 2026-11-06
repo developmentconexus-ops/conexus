@@ -173,6 +173,18 @@ test('uma ligação que o Projeto não recebeu é recusada com NOT_OFFERED, sem 
   assert.deepEqual(Object(listed.json()).tools, [])
 })
 
+test('um esquema com callback que chama JSON.parse não é estado: a regra olha a chamada, não o texto', async (t) => {
+  const answers: Record<string, unknown>[] = []
+  const known = { matriz: '' }
+  const schema = 'const texto = z.string().transform((valor) => JSON.parse(valor))\n\n'
+  const on = await building(t, [
+    ...searching(known, { source: SOURCE.replace('type Data', `${schema}type Data`) }),
+    keeping(answers),
+  ])
+  assert.equal(endOf(await on.conversation.say('Crie')), 'complete')
+  assert.equal(answerOf(answers).kind, 'SAVED', JSON.stringify(answers))
+})
+
 /** Code that keeps state outside the function in each of the shapes a model writes it. */
 const WITH_STATE: Record<string, string> = {
   let: 'let chamadas = 0\n\n',
@@ -187,6 +199,9 @@ const WITH_STATE: Record<string, string> = {
   'a globalThis': 'globalThis.chamadas = 0\n\n',
   'uma classe padrão': 'export default class { chamadas = 0 }\n\n',
   'um valor lido por um esquema': 'const chamadas = z.any().parse(new Map<string, number>())\n\n',
+  'um valor lido por um esquema, assíncrono':
+    'const chamadas = z.any().safeParseAsync(new Map())\n\n',
+  'um valor decodificado por um esquema': 'const chamadas = z.any().decode(new Map())\n\n',
 }
 
 test('estado de módulo: cada forma de guardar estado fora da função é recusada antes do teste e nada é gravado', async (t) => {

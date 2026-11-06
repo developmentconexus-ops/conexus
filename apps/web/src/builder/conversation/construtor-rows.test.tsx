@@ -315,10 +315,17 @@ test('tool_code_save com o teste que não passou diz O teste não passou e o err
     <ToolRow
       tool={{
         ...draftRow(CONSTRUTOR_TOOL.toolCodeSave),
-        result: { kind: 'REFUSED', code: 'TOOL_REFUSED', field: 'source', reason: 'MODULE_STATE' },
+        result: {
+          kind: 'REFUSED',
+          code: 'TOOL_REFUSED',
+          field: 'source',
+          reason: 'MODULE_STATE',
+          output: 'MODULE_STATE: a `let` or `var` outside a function keeps state between calls',
+        },
       }}
     />,
   )
   expect(screen.getByText('Não conseguiu fazer a ferramenta')).toBeTruthy()
   expect(screen.queryByText(/^Escreveu/)).toBeNull()
+  expect(screen.queryByText(/MODULE_STATE/)).toBeNull()
 })
