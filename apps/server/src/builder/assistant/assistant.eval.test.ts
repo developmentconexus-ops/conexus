@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { writeFileSync } from 'node:fs'
 import { join } from 'node:path'
+import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import type { MastraMessagePart } from '@mastra/core/agent-controller'
 import { checks } from '@mastra/evals/checks'
@@ -168,33 +169,36 @@ test('o modelo de verdade passa ao Builder: cada caso do conjunto, numa conversa
   assert.deepEqual(wrong, [], wrong.join('\n\n'))
 })
 
-test('o modelo de verdade: o caderno — a dona pede e o turno grava e diz o que anotou, a conversa sem ensino não grava, o membro pede e recebe o texto sem a ferramenta (step 24.3.5, critério 8)', {
-  timeout: 1_800_000,
-}, async (t) => {
-  if (REAL_MODEL === undefined) {
-    t.skip(
-      'opt-in: set CONEXUS_EVAL_REAL_MODEL to a folder; firstmate opens the link the test writes there and writes back the sign-in code',
-    )
-    return
-  }
-  const on = await subscribed(t, REAL_MODEL)
-  const SAVE = 'connector_note_save'
-  const body = { connections: [on.matriz] }
-  /** Every tool call (arguments and result) and the final text of a case, kept beside the sign-in files, never in the repository. */
+const SAVE = 'connector_note_save'
+const TEACHING =
+  'Na Matriz, o NUNOTA da tabela TGFCAB é o número da nota de venda. Anota isso no caderno.'
+const OPT_IN =
+  'opt-in: set CONEXUS_EVAL_REAL_MODEL to a folder; firstmate opens the link the test writes there and writes back the sign-in code, or CONEXUS_EVAL_CLAUDE_CREDENTIAL names a saved sign-in'
+
+/** The real model's case of the caderno: the Hub signed in, and every tool call and the final text of a case kept beside the sign-in files, never in the repository. */
+async function notebook(t: TestContext) {
+  const folder = REAL_MODEL ?? ''
+  const on = await subscribed(t, folder)
   function record(name: string, parts: MastraMessagePart[]) {
     const calls = parts.flatMap((part) =>
       part.type === 'tool-invocation' ? [part.toolInvocation] : [],
     )
     writeFileSync(
-      join(REAL_MODEL ?? '', `caderno-${name}.json`),
+      join(folder, `caderno-${name}.json`),
       JSON.stringify({ calls, text: textOf(parts) }, null, 2),
     )
     return `${JSON.stringify(calls)}\n${textOf(parts)}`
   }
+  return { on, record, body: { connections: [on.matriz] } }
+}
+
+test('o modelo de verdade: o caderno, a dona pede e o turno grava e diz o que anotou (step 24.3.5, critério 8)', {
+  timeout: 1_800_000,
+}, async (t) => {
+  if (REAL_MODEL === undefined) return t.skip(OPT_IN)
+  const { on, record, body } = await notebook(t)
   const owner = await created(on.hub, on.ana, on.assistant, body)
-  const asked =
-    'Na Matriz, o NUNOTA da tabela TGFCAB é o número da nota de venda. Anota isso no caderno.'
-  assert.equal(endOf(await (await talking(t, on.hub, on.ana, owner)).say(asked)), 'complete')
+  assert.equal(endOf(await (await talking(t, on.hub, on.ana, owner)).say(TEACHING)), 'complete')
   const parts = await answerParts(on.hub, on.ana, owner)
   const seen = record('dona', parts)
   assert.deepEqual(await scored(parts, SAVE), [1, 1], `chamou e nenhuma ferramenta errou\n${seen}`)
@@ -213,15 +217,29 @@ test('o modelo de verdade: o caderno — a dona pede e o turno grava e diz o que
   assert.ok(note.provedRows > 0, `a prova não voltou linhas\n${seen}`)
   assert.equal(note.writtenBy, 'Ana Lima')
   assert.match(textOf(parts), /NUNOTA/, `a resposta não diz o que anotou\n${seen}`)
+})
+
+test('o modelo de verdade: o caderno, a conversa em que a pessoa não ensina nem pede anotação não grava', {
+  timeout: 1_800_000,
+}, async (t) => {
+  if (REAL_MODEL === undefined) return t.skip(OPT_IN)
+  const { on, record, body } = await notebook(t)
   const idle = await created(on.hub, on.ana, on.assistant, body)
   const chat = 'O que é o NUNOTA no Sankhya?'
   assert.equal(endOf(await (await talking(t, on.hub, on.ana, idle)).say(chat)), 'complete')
   const talked = await answerParts(on.hub, on.ana, idle)
   const talk = record('sem-ensino', talked)
   assert.deepEqual(await checked(talked, [checks.didNotCall(SAVE)]), [1], talk)
+})
+
+test('o modelo de verdade: o caderno, o membro pede e o turno termina com o texto e sem a ferramenta', {
+  timeout: 1_800_000,
+}, async (t) => {
+  if (REAL_MODEL === undefined) return t.skip(OPT_IN)
+  const { on, record, body } = await notebook(t)
   const bruno = await memberOn(on.hub, on.companyId, BRUNO, 'member')
   const his = await created(on.hub, bruno, on.assistant, body)
-  assert.equal(endOf(await (await talking(t, on.hub, bruno, his)).say(asked)), 'complete')
+  assert.equal(endOf(await (await talking(t, on.hub, bruno, his)).say(TEACHING)), 'complete')
   const theirs = await answerParts(on.hub, bruno, his)
   const hers = record('membro', theirs)
   assert.deepEqual(await checked(theirs, [checks.didNotCall(SAVE)]), [1], hers)

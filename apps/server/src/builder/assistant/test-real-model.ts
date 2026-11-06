@@ -6,6 +6,7 @@ import { setTimeout as sleep } from 'node:timers/promises'
 import type { MastraDBMessage } from '@mastra/core/agent'
 import type { MastraMessagePart } from '@mastra/core/agent-controller'
 import type { ScorerRun, ScorerRunInputForAgent, ScorerRunOutputForAgent } from '@mastra/core/evals'
+import { z } from 'zod'
 import { linkSankhya, testOf } from '../../hub/connectors/test-connections.ts'
 import { salesSankhya } from '../../hub/connectors/test-sales.ts'
 import {
@@ -65,6 +66,54 @@ async function codeFrom(folder: string): Promise<string> {
   throw new Error('No sign-in code arrived in ten minutes.')
 }
 
+/** The saved sign-in a person kept on this machine, when the switch names it: `access`, `refresh` and `expiresAt` (ms). Its content is never printed and the file is never written. */
+// biome-ignore lint/style/noProcessEnv: the switch of this one opt-in case, not the app's configuration
+const SAVED_LOGIN = process.env.CONEXUS_EVAL_CLAUDE_CREDENTIAL
+
+function savedLogin(): { access: string; refresh: string; expiresAt: number } | undefined {
+  if (SAVED_LOGIN === undefined) return undefined
+  const read = z
+    .object({ access: z.string().min(1), refresh: z.string().min(1), expiresAt: z.number() })
+    .parse(JSON.parse(readFileSync(SAVED_LOGIN, 'utf8')))
+  return read
+}
+
+function urlState(url: string): string {
+  return String(new URL(url).searchParams.get('state'))
+}
+
+/** Without a saved sign-in: the link goes to the folder and the code comes back there. */
+async function linkCode(folder: string, url: string): Promise<string> {
+  writeFileSync(join(folder, 'authorize-url.txt'), `${url}\n`)
+  return codeFrom(folder)
+}
+
+/**
+ * The vendor's trade of the code, answered with the saved tokens while the Hub completes its own
+ * sign-in; every other call goes through, and `restore` puts the real `fetch` back.
+ */
+function tradeWith(saved: { access: string; refresh: string; expiresAt: number }) {
+  const real = globalThis.fetch
+  globalThis.fetch = (input, init) => {
+    if (!String(input instanceof Request ? input.url : input).includes('/v1/oauth/token')) {
+      return real(input, init)
+    }
+    const early = 300_000
+    return Promise.resolve(
+      Response.json({
+        access_token: saved.access,
+        refresh_token: saved.refresh,
+        expires_in: Math.max(1, (saved.expiresAt - Date.now() + early) / 1000),
+      }),
+    )
+  }
+  return {
+    restore() {
+      globalThis.fetch = real
+    },
+  }
+}
+
 /** A Hub that calls the real model, through a Claude subscription signed in by the routes, as a person signs in. */
 export async function subscribed(t: TestContext, folder: string) {
   const sankhya = await salesSankhya(t)
@@ -83,9 +132,11 @@ export async function subscribed(t: TestContext, folder: string) {
   const opened = await post(hub, ana, `${company}/model-account-sign-ins`, body)
   assert.equal(opened.statusCode, 201, opened.body)
   const { url, signInId } = Object(opened.json())
-  writeFileSync(join(folder, 'authorize-url.txt'), `${url}\n`)
-  const code = await codeFrom(folder)
+  const saved = savedLogin()
+  const code = saved === undefined ? await linkCode(folder, url) : `saved#${urlState(url)}`
+  const trade = saved === undefined ? undefined : tradeWith(saved)
   const linked = await post(hub, ana, `${company}/model-account-sign-ins/${signInId}`, { code })
+  trade?.restore()
   assert.equal(linked.statusCode, 201, linked.body)
   const model = REAL_MODEL_CHOICE
   assert.equal((await call(hub, ana, 'PUT', `${company}/default-model`, model)).statusCode, 200)
