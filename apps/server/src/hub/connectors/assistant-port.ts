@@ -158,6 +158,16 @@ function viewerOf(scope: SessionScope) {
   return { person: { id: scope.personId }, companyId: scope.companyId }
 }
 
+/** The chosen connection its place offers, opened; none once the refusal is logged. */
+async function chosenOpened(deps: Deps, scope: SessionScope, connectionId: ConnectionId) {
+  const found = await readable(deps, scope, connectionId, (tx) =>
+    openedIn(deps, tx, { companyId: scope.companyId, connectionId }),
+  )
+  if (found.kind === 'OK') return found.value
+  refused(deps, scope, { connectionId, reason: found.kind })
+  return undefined
+}
+
 /**
  * The Assistant's note: the chosen connection its place offers, one of the turn's calls, then the
  * proof and the write, which checks `manageConnections` (step 24.3.5).
@@ -168,13 +178,10 @@ async function noted(
   scope: SessionScope,
   call: Parameters<AssistantConnectors['saveNote']>[1],
 ): Promise<NoteSaved> {
-  const { connectionId } = call
-  const found = await readable(deps, scope, connectionId, (tx) =>
-    openedIn(deps, tx, { companyId: scope.companyId, connectionId }),
-  )
-  if (found.kind !== 'OK') return refused(deps, scope, { connectionId, reason: found.kind })
+  const opened = await chosenOpened(deps, scope, call.connectionId)
+  if (opened === undefined) return { kind: 'NOT_GRANTED' }
   // A connector with no read door has no notebook.
-  const door = readOf(found.value.connector, 'consultar')
+  const door = readOf(opened.connector, 'consultar')
   if (door === undefined || call.concept.length < 1 || call.concept.length > 120)
     return { kind: 'NOTE_INVALID' }
   if (!spend(call.turn)) return { kind: 'CALLS_SPENT' }
@@ -182,7 +189,7 @@ async function noted(
     by: 'assistant',
     ids: idsOf(scope),
     viewer: viewerOf(scope),
-    opened: found.value,
+    opened,
     operation: door,
     deadlineMs: CALL_DEADLINE_MS,
   } as const
@@ -209,11 +216,8 @@ export function createAssistantConnectors(deps: Deps): AssistantConnectors {
 
     async read(scope, call) {
       const { connectionId } = call
-      const found = await readable(deps, scope, connectionId, (tx) =>
-        openedIn(deps, tx, { companyId: scope.companyId, connectionId }),
-      )
-      if (found.kind !== 'OK') return refused(deps, scope, { connectionId, reason: found.kind })
-      const open = found.value
+      const open = await chosenOpened(deps, scope, connectionId)
+      if (open === undefined) return { kind: 'NOT_GRANTED' }
       const operation = readOf(open.connector, call.operation)
       if (operation === undefined) {
         const about = { connectionId, operation: call.operation, reason: 'NOT_A_READ' } as const
