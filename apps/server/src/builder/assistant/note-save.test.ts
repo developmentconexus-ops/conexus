@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { call } from '../../hub/identity/test-hub.ts'
+import { BRUNO, CARLA, call, memberOn } from '../../hub/identity/test-hub.ts'
 import {
   automating,
   created as automationCreated,
@@ -69,4 +69,50 @@ test('a rodada de automação: a conversa que a automação abre não leva conne
   const asked = on.calls.slice(before).filter((each) => each.tools.includes('connector_read'))
   assert.ok(asked.length > 0)
   for (const each of asked) assert.equal(each.tools.includes(SAVE), false)
+})
+
+test('o membro: a execução de quem não administra ligações não leva connector_note_save, a da dona leva, e uma chamada inventada não grava nada', async (t) => {
+  const on = await assisting(t)
+  const owner = await created(on.hub, on.ana, on.assistant, { connections: [on.matriz] })
+  assert.equal(endOf(await (await talking(t, on.hub, on.ana, owner)).say('Oi')), 'complete')
+  assert.equal(on.calls.at(-1)?.tools.includes(SAVE), true, 'owner')
+  for (const [role, who] of [
+    ['member', BRUNO],
+    ['developer', CARLA],
+  ] as const) {
+    const person = await memberOn(on.hub, on.companyId, who, role)
+    const url = await created(on.hub, person, on.assistant, { connections: [on.matriz] })
+    const { say } = await talking(t, on.hub, person, url)
+    assert.equal(endOf(await say('O CODEMP é o código da empresa; anota isso')), 'complete')
+    const tools = on.calls.at(-1)?.tools ?? []
+    assert.equal(tools.includes(SAVE), false, role)
+    assert.equal(tools.includes('show_file'), true, role)
+  }
+  const steps: ReturnType<typeof said>[][] = []
+  const invented = await assisting(t, steps)
+  steps.push(
+    [
+      tool(SAVE, {
+        connection: 'Matriz',
+        concept: 'Empresa',
+        mapping: 'TSIEMP.CODEMP é o código da empresa',
+        provingQuery: COUNT,
+      }),
+    ],
+    [said('Peça a um administrador.')],
+  )
+  const bruno = await memberOn(invented.hub, invented.companyId, BRUNO, 'member')
+  const link = await created(invented.hub, bruno, invented.assistant, {
+    connections: [invented.matriz],
+  })
+  const asking = await talking(t, invented.hub, bruno, link)
+  assert.equal(endOf(await asking.say('Anota que o CODEMP é a empresa')), 'complete')
+  assert.match(invented.calls.at(1)?.texts.join('\n') ?? '', /not found/i)
+  const page = await call(
+    invented.hub,
+    invented.ana,
+    'GET',
+    `${invented.company}/connections/${invented.matriz}`,
+  )
+  assert.deepEqual(Object(page.json()).notes, [])
 })
