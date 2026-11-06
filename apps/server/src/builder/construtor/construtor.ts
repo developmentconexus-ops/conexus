@@ -296,7 +296,7 @@ export function createConstrutor(deps: Deps) {
           ...(scope.personId === undefined ? {} : { [CONSTRUTOR_MARK.person]: scope.personId }),
           ...(scope.projectId === undefined ? {} : { [CONSTRUTOR_MARK.project]: scope.projectId }),
         })
-        const count = await releaseThreads({ controller, memory }, ids)
+        const count = await releaseThreads({ controller, memory }, ids, (id) => machines.kill(id))
         log.info({ companyId: scope.companyId, count }, 'CONSTRUTOR_CONVERSATIONS_RELEASED')
       },
     },

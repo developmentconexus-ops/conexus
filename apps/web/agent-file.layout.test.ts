@@ -25,6 +25,7 @@ after(async () => {
 
 const AGENT = '11111111-aaaa-4aaa-8aaa-111111111111'
 const CHAT = '66666666-aaaa-4aaa-8aaa-666666666666'
+const CHART = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200" width="320" height="200"><rect width="320" height="200" fill="#fff"/><g fill="#5b3fd1"><rect x="40" y="60" width="50" height="110"/><rect x="135" y="85" width="50" height="85"/><rect x="230" y="30" width="50" height="140"/></g><g font-family="sans-serif" font-size="12" fill="#222" text-anchor="middle"><text x="65" y="188">Ana</text><text x="160" y="188">Bruno</text><text x="255" y="188">Carla</text><text x="160" y="20" font-size="14">Vendas de setembro</text></g></svg>`
 const BASE = `/api/companies/${COMPANY.id}/projects/${PROJECT_ID}`
 const DRAFT = {
   name: 'Vendas',
@@ -50,27 +51,35 @@ const DETAIL = {
   offered: [],
   createdBy: null,
 }
-const SHOWN = {
-  type: 'tool-invocation',
-  toolInvocation: {
-    state: 'result',
-    toolCallId: 'c1',
-    toolName: MACHINE_TOOL.showFile,
-    args: { path: 'vendas.md' },
-    result: {
-      kind: 'TEXT',
-      path: 'vendas.md',
-      name: 'vendas.md',
-      media: 'text/markdown',
-      content: '# Vendas de setembro\n\n- Ana: 12.400',
-    },
-  },
-}
 const MESSAGES = [
   {
     id: 'm1',
+    role: 'person' as const,
+    parts: [{ type: 'text', text: 'Faça um gráfico das vendas de setembro por vendedor.' }],
+    createdAt: '2026-11-05T12:00:00.000Z',
+  },
+  {
+    id: 'm2',
     role: 'builder' as const,
-    parts: [SHOWN, { type: 'text', text: 'Escrevi o relatório e deixei ao lado.' }],
+    parts: [
+      {
+        type: 'tool-invocation',
+        toolInvocation: {
+          state: 'result',
+          toolCallId: 'c1',
+          toolName: MACHINE_TOOL.showFile,
+          args: { path: 'vendas.svg' },
+          result: {
+            kind: 'FILE',
+            path: 'vendas.svg',
+            name: 'vendas.svg',
+            media: 'image/svg+xml',
+            bytes: CHART.length,
+          },
+        },
+      },
+      { type: 'text', text: 'Fiz o gráfico na máquina e deixei ao lado.' },
+    ],
     model: 'anthropic/claude-sonnet-4',
     createdAt: '2026-11-05T12:01:00.000Z',
   },
@@ -82,7 +91,7 @@ const replies = {
   [`GET ${BASE}/agents/${AGENT}/versions`]: ok(listAgentVersions, {
     versions: [3, 2, 1].map((number) => ({
       number,
-      message: '',
+      message: number === 3 ? 'Com o Computador' : '',
       active: number === 3,
       publishedAt: `2026-11-0${number}T12:00:00.000Z`,
       publishedBy: null,
@@ -95,7 +104,7 @@ const replies = {
         id: CHAT,
         agentId: AGENT,
         draft: false,
-        title: 'Relatório',
+        title: 'Gráfico de vendas',
         updatedAt: '2026-11-05T12:01:00.000Z',
       },
     ],
@@ -109,8 +118,11 @@ for (const viewport of [DESKTOP, PHONE])
       `/companies/${COMPANY.id}/projects/${PROJECT_ID}/agents/${AGENT}/${CHAT}`,
       { viewport, replies },
     )
+    await page.route('**/agents/conversations/*/files*', (route) =>
+      route.fulfill({ status: 200, contentType: 'image/svg+xml', body: CHART }),
+    )
     await page.getByRole('button', { name: /^Abrir vendas/ }).click()
-    await page.getByText('Vendas de setembro', { exact: true }).waitFor()
+    await page.getByRole('img', { name: /vendas/ }).waitFor()
     assert.equal(
       await page.evaluate(() => document.documentElement.scrollWidth),
       viewport.width,

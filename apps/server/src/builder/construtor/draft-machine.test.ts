@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { ConversationId } from '@conexus/hub-api'
 import { call } from '../../hub/identity/test-hub.ts'
 import { agentOf, drafted } from '../agents/test-agents.ts'
 import { endOf } from '../conversation/test-conversation.ts'
@@ -27,4 +28,15 @@ test('o rascunho pelo Construtor: agent_set sem `machine` mantém o Computador q
   const after = agentOf(await call(on.hub, on.ana, 'GET', `${on.agents}/${agentId}`))
   assert.equal(after.draft.instructions, 'Do Construtor.')
   assert.equal(after.draft.machine, true)
+})
+
+test('a máquina do Construtor: apagar o Projeto mata a máquina da conversa dele, uma vez (17)', async (t) => {
+  const on = await building(t, [() => [{ type: 'text', text: 'Pronto.' }]])
+  assert.equal(endOf(await on.conversation.say('Oi')), 'complete')
+  const id = ConversationId.parse(on.url.slice(on.url.lastIndexOf('/') + 1))
+  const gone = await call(on.hub, on.ana, 'DELETE', `${on.company}/projects/${on.projectId}`, {
+    name: 'Encomendas',
+  })
+  assert.equal(gone.statusCode, 204, gone.body)
+  assert.deepEqual(on.hub.assistantMachines.killed, [id])
 })

@@ -75,7 +75,11 @@ test('o Computador: o agente roda um comando, escreve um arquivo e o mostra; a m
   assert.equal(marks?.conexus_agent, agent.id)
   assert.equal(marks?.conexus_conversation, idOf(url))
 
-  await new Promise((done) => setTimeout(done, 200))
+  const deadline = Date.now() + 5_000
+  while (control.stops < 1) {
+    assert.ok(Date.now() < deadline, 'the machine never slept when the turn ended')
+    await new Promise((done) => setTimeout(done, 20))
+  }
   assert.equal(control.stops, 1, 'the machine sleeps when the turn ends')
 
   const [output] = await shown(on, url)

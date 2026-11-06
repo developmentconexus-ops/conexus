@@ -32,24 +32,29 @@ test('abrir: a linha que a varredura levou depois do fio devolve AGENT_NOT_FOUND
       for each row when (new.metadata::text like '%currentModelId%')
       execute function mastra.hold_model()`,
   )
+  // The holder leaves with the test, even when an assertion fails: the database drops only once nobody is in it.
   const id = ConversationId.parse(randomUUID())
-  const opening = on.hub.agents.open({ scope, agentId, draft: false, frozen, id }).then(
-    (made) => made,
-    (error: unknown) => error,
-  )
-  const deadline = Date.now() + 10_000
-  for (;;) {
-    const waiting = await mastraPool.query(
-      `select 1 from pg_locks where locktype = 'advisory' and not granted`,
+  let opening: Promise<unknown>
+  try {
+    opening = on.hub.agents.open({ scope, agentId, draft: false, frozen, id }).then(
+      (made) => made,
+      (error: unknown) => error,
     )
-    if ((waiting.rowCount ?? 0) > 0) break
-    assert.ok(Date.now() < deadline, 'the open never reached the thread taking its model')
-    await new Promise((done) => setTimeout(done, 20))
+    const deadline = Date.now() + 10_000
+    for (;;) {
+      const waiting = await mastraPool.query(
+        `select 1 from pg_locks where locktype = 'advisory' and objid = 7441 and not granted`,
+      )
+      if ((waiting.rowCount ?? 0) > 0) break
+      assert.ok(Date.now() < deadline, 'the open never reached the thread taking its model')
+      await new Promise((done) => setTimeout(done, 20))
+    }
+    // The sweep of the deletion that ran while the open waited.
+    await on.hub.test.asOwner('delete from builder.agent_conversation where id = $1', [id])
+    await holder.query('select pg_advisory_unlock(7441)')
+  } finally {
+    await holder.end()
   }
-  // The sweep of the deletion that ran while the open waited.
-  await on.hub.test.asOwner('delete from builder.agent_conversation where id = $1', [id])
-  await holder.query('select pg_advisory_unlock(7441)')
-  await holder.end()
   assert.deepEqual(Object(await opening).code, 'AGENT_NOT_FOUND')
   assert.ok(
     on.hub.assistantMachines.killed.includes(id),
