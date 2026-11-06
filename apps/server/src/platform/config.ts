@@ -133,6 +133,22 @@ export const CloudflareName = z
   .brand('CloudflareName')
 export type CloudflareName = z.infer<typeof CloudflareName>
 
+/**
+ * The saved tools' host on the edge (step 24.4), behind Cloudflare Access: an origin and nothing
+ * more; the Hub calls only `<origin>/<toolVersionId>` there.
+ */
+export const ToolsOrigin = z
+  .string()
+  .refine((value) => overHttpsOrLoopback(value) && URL.parse(value)?.origin === value)
+  .brand('ToolsOrigin')
+export type ToolsOrigin = z.infer<typeof ToolsOrigin>
+
+/** The Access service token, which only `createEdgeTools` sends, to the tools' host alone (S36). */
+export type ToolsAccess = Readonly<{
+  clientId: Secret<'ToolsAccessClientId'>
+  clientSecret: Secret<'ToolsAccessClientSecret'>
+}>
+
 type BaseConfig = {
   version: Version
   port: number
@@ -156,6 +172,10 @@ export type Config = BaseConfig & {
   cloudflareAccountId: CloudflareName
   appsNamespace: CloudflareName
   cloudflareAppsToken: CloudflareAppsToken
+  /** The saved tools' namespace, on the apps' token (step 24.4). */
+  toolsNamespace: CloudflareName
+  toolsOrigin: ToolsOrigin
+  toolsAccess: ToolsAccess
   sealKeys: SealKeys
   cliProxy: CliProxy
   gitRoot: string
@@ -224,6 +244,10 @@ const ServeEnvironment = z.object({
   HUB_CLOUDFLARE_ACCOUNT_ID: CloudflareName,
   HUB_APPS_NAMESPACE: CloudflareName,
   HUB_CLOUDFLARE_APPS_TOKEN_FILE: z.string().min(1),
+  HUB_TOOLS_NAMESPACE: CloudflareName,
+  HUB_TOOLS_ORIGIN: ToolsOrigin,
+  HUB_TOOLS_ACCESS_CLIENT_ID_FILE: z.string().min(1),
+  HUB_TOOLS_ACCESS_CLIENT_SECRET_FILE: z.string().min(1),
   HUB_SEAL_KEYS_FILE: z.string().min(1),
   ...GitEnvironment.shape,
   HUB_GIT_COPY_URL: GitCopyUrl.optional(),
@@ -313,6 +337,20 @@ export function readConfig(mode: 'serve' | 'migrate', env = process.env): Config
       serve.HUB_CLOUDFLARE_APPS_TOKEN_FILE,
       CloudflareAppsToken.parse,
     ),
+    toolsNamespace: serve.HUB_TOOLS_NAMESPACE,
+    toolsOrigin: serve.HUB_TOOLS_ORIGIN,
+    toolsAccess: {
+      clientId: readSecret(
+        'HUB_TOOLS_ACCESS_CLIENT_ID_FILE',
+        serve.HUB_TOOLS_ACCESS_CLIENT_ID_FILE,
+        (value) => new Secret('ToolsAccessClientId', value),
+      ),
+      clientSecret: readSecret(
+        'HUB_TOOLS_ACCESS_CLIENT_SECRET_FILE',
+        serve.HUB_TOOLS_ACCESS_CLIENT_SECRET_FILE,
+        (value) => new Secret('ToolsAccessClientSecret', value),
+      ),
+    },
     sealKeys: readSecret('HUB_SEAL_KEYS_FILE', serve.HUB_SEAL_KEYS_FILE, parseSealKeys),
     cliProxy: CLIPROXY,
     gitRoot: serve.HUB_GIT_ROOT,

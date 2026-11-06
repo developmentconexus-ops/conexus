@@ -1,11 +1,21 @@
 import { randomBytes } from 'node:crypto'
 import type { CloudflareAnswer, CloudflareApps, WorkerUpload } from './cloudflare.ts'
-import { AppLoginKey, CloudflareApiUrl, CloudflareAppsToken, CloudflareName } from './config.ts'
+import {
+  AppLoginKey,
+  CloudflareApiUrl,
+  CloudflareAppsToken,
+  CloudflareName,
+  ToolsOrigin,
+} from './config.ts'
+import { Secret } from './secret.ts'
 
 // Nothing listens on the discard port, so a Hub that reaches Cloudflare without a double fails loudly.
 export const NO_CLOUDFLARE_SERVER = 'http://127.0.0.1:9/client/v4'
 export const TEST_ACCOUNT = 'a'.repeat(32)
 export const TEST_NAMESPACE = 'conexus-apps-test'
+export const TEST_TOOLS_NAMESPACE = 'conexus-tools-test'
+// Nothing listens on the discard port: a Hub that calls the tools' host without a double fails loudly.
+export const NO_TOOLS_ORIGIN = 'http://127.0.0.1:9'
 
 /** The apps' part of a test configuration; the key and the token are fresh for each call. */
 export function testAppsConfig(apiUrl = NO_CLOUDFLARE_SERVER) {
@@ -15,6 +25,12 @@ export function testAppsConfig(apiUrl = NO_CLOUDFLARE_SERVER) {
     cloudflareAccountId: CloudflareName.parse(TEST_ACCOUNT),
     appsNamespace: CloudflareName.parse(TEST_NAMESPACE),
     cloudflareAppsToken: CloudflareAppsToken.parse(randomBytes(16).toString('hex')),
+    toolsNamespace: CloudflareName.parse(TEST_TOOLS_NAMESPACE),
+    toolsOrigin: ToolsOrigin.parse(NO_TOOLS_ORIGIN),
+    toolsAccess: {
+      clientId: new Secret('ToolsAccessClientId', `${randomBytes(16).toString('hex')}.access`),
+      clientSecret: new Secret('ToolsAccessClientSecret', randomBytes(32).toString('hex')),
+    },
   }
 }
 

@@ -23,3 +23,13 @@ export type CallerAccess = Readonly<z.infer<typeof CallerAccess>>
 
 /** The dispatcher's `props` to the app's Worker, which reads them as `ctx.props`. */
 export type AppProps = Readonly<{ caller: Caller; db: Db; connectors: Connectors }>
+
+/**
+ * What a saved tool's Worker receives from the dispatcher, version 1 (step 24.4): `data.read` reads
+ * one of the reads its version declares, through the Hub, and resolves with the read's whole answer;
+ * any other answer rejects with its code as the message. The operation and the input come from
+ * generated code, so they enter as `string` and `unknown` and the Hub parses them (code C27).
+ */
+export type ToolProps = Readonly<{
+  data: Readonly<{ read(operation: string, input: unknown): Promise<unknown> }>
+}>
