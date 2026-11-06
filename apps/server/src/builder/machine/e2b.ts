@@ -1,5 +1,6 @@
 import type { ConversationId } from '@conexus/hub-api'
-import { E2BSandbox } from '@mastra/e2b'
+import type { CodeModeTransport } from '@mastra/core/tools'
+import { E2BCodeModeTransport, E2BSandbox } from '@mastra/e2b'
 import { ALL_TRAFFIC, Sandbox } from 'e2b'
 import type { Config } from '../../platform/config.ts'
 import type { ConversationMachineApi, Kit, KitFactory } from './kit.ts'
@@ -44,6 +45,11 @@ export function createE2bKit(config: Credentials): KitFactory {
         sandbox.e2b.updateNetwork({ allowOut: [...options.allowOut], denyOut: [ALL_TRAFFIC] }),
     }
   }
+}
+
+/** The transport that runs an agent's program in its E2B machine (step 24.4, U5): the `E2BSandbox` is the workspace's. */
+export function createE2bCodeMode(): CodeModeTransport {
+  return new E2BCodeModeTransport()
 }
 
 /**

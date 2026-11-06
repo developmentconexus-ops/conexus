@@ -1,4 +1,5 @@
 import type { ConversationId } from '@conexus/hub-api'
+import type { CodeModeTransport } from '@mastra/core/tools'
 import type {
   SandboxStartHook,
   WorkspaceFilesystem,
@@ -196,4 +197,6 @@ export type ConversationMachine = {
   installation: InstallationId
   /** The marks every machine of this installation carries, with which `api.kill` finds them (security S36). */
   mark: Record<string, string>
+  /** How a program of an agent's code mode runs in the machine (step 24.4, U5). */
+  codeMode: CodeModeTransport
 }

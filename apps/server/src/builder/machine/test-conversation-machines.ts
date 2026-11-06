@@ -1,6 +1,7 @@
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { ConversationId } from '@conexus/hub-api'
+import { StdioCodeModeTransport } from '@mastra/core/tools'
 import type { ConversationMachine } from './kit.ts'
 import { MARK } from './kit.ts'
 import {
@@ -37,6 +38,8 @@ export function testConversationMachines(folder: string) {
     template: TEMPLATE,
     installation: INSTALLATION,
     mark,
+    // Mastra's own transport over the doubles' local sandbox: the E2B one needs an `E2BSandbox`.
+    codeMode: new StdioCodeModeTransport(),
   }
   // The repository's own packages stand in for the template's `/opt/conexus`.
   const toolchain = fileURLToPath(new URL('../../../../../', import.meta.url))
