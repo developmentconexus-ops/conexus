@@ -1,9 +1,14 @@
+import type { ConnectorAnswer } from '@conexus/app-contract'
 import type { ConnectionNote } from '@conexus/hub-api'
 import { sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { ReadTx } from '../../platform/database.ts'
 import { violatedCheck } from '../../platform/database.ts'
+import { Failure } from '../../platform/failure.ts'
 import { personNameColumn } from '../identity/public.ts'
+import { Listed } from './cut.ts'
+import type { ReadRequest } from './read.ts'
+import { readThrough } from './read.ts'
 import type { Deps, OfConnection, Viewer } from './rows.ts'
 import { admitted, ofCompany, scopeOf } from './rows.ts'
 import { connection } from './tables.ts'
@@ -17,6 +22,13 @@ export const Note = z.strictObject({
   writtenBy: z.string(),
 })
 export type Note = z.infer<typeof Note>
+
+/** What a save answers: the rows the proving query returned, or why nothing was written. */
+export type NoteSaved =
+  | Readonly<{ kind: 'SAVED'; provedRows: number }>
+  | Exclude<ConnectorAnswer, { kind: 'OK' }>
+  | Readonly<{ kind: 'NOTE_INVALID' }>
+  | Readonly<{ kind: 'CALLS_SPENT' }>
 
 /** The connection's notebook as the database holds it, read by this schema (C27); the key is the concept. */
 export const Notes = z.record(z.string().min(1).max(120), Note)
@@ -56,28 +68,73 @@ export async function notesOf(tx: ReadTx, input: OfConnection): Promise<Connecti
 /**
  * Writes one concept in one instruction (the row's lock): the same concept again is the last
  * writer's, two different both stay. The notebook above 32 KB is the database's refusal (23514). A
- * connection taken off between the admission and this write is `GONE`, never `SAVED`.
+ * connection taken off between the admission and this write is `GONE`, never `SAVED`. With
+ * `manage`, the writer's `manageConnections` is checked in the same transaction, and a refusal is
+ * `NOT_GRANTED` with its reason in the log alone (S8, S10).
  */
-export async function save(
+async function save(
   deps: Deps,
   input: Viewer & { connectionId: OfConnection['connectionId']; concept: string; note: Note },
-): Promise<'SAVED' | 'NOTE_INVALID' | 'GONE'> {
+  manage: boolean,
+): Promise<'SAVED' | 'NOTE_INVALID' | 'GONE' | 'NOT_GRANTED'> {
   const note = Note.parse(input.note)
   try {
-    const written = await deps.database.command(scopeOf(input), (tx) =>
-      tx
+    const written = await deps.database.command(scopeOf(input), async (tx) => {
+      if (manage) await admitted(deps, tx, input, 'manageConnections')
+      return tx
         .update(connection)
         .set({
           notes: sql`${connection.notes} || jsonb_build_object(${input.concept}::text, ${JSON.stringify(note)}::jsonb)`,
         })
         .where(ofCompany(input, input.connectionId))
-        .returning({ id: connection.id }),
-    )
+        .returning({ id: connection.id })
+    })
     return written.length === 0 ? 'GONE' : 'SAVED'
   } catch (error) {
     if (violatedCheck(error) === 'connection_notes') return 'NOTE_INVALID'
-    throw error
+    if (!(error instanceof Failure) || error.code !== 'NOT_FOUND') throw error
+    const { connectionId, companyId } = input
+    const reason = String(error.details.reason ?? 'NOT_FOUND')
+    deps.log.info({ companyId, connectionId, reason }, 'CONNECTION_NOTE_REFUSED')
+    return 'NOT_GRANTED'
   }
+}
+
+/**
+ * The proving query run once by the connector's read door, then the concept written with the rows
+ * it returned, never the rows, and who wrote it: the one owner of the notebook's write for the
+ * Builder and the Assistant (C26). The Assistant's writer must manage connections.
+ */
+export async function provedAndSaved(
+  deps: Deps,
+  a: Readonly<{
+    read: Omit<ReadRequest, 'input'>
+    connectionId: OfConnection['connectionId']
+    concept: string
+    mapping: string
+    provingQuery: string
+  }>,
+): Promise<NoteSaved> {
+  const answered = await readThrough(deps, { ...a.read, input: { sql: a.provingQuery } })
+  if (answered.kind !== 'OK') return answered
+  const listed = Listed.safeParse(answered.value)
+  if (!listed.success) return { kind: 'NOTE_INVALID' }
+  const provedRows = listed.data.linhas.length
+  const { viewer, by } = a.read
+  const note = Note.safeParse({
+    mapping: a.mapping,
+    provingQuery: a.provingQuery,
+    provedAt: new Date().toISOString(),
+    provedRows,
+    writtenBy: viewer.person.id,
+  })
+  if (!note.success) return { kind: 'NOTE_INVALID' }
+  const target = { ...viewer, connectionId: a.connectionId, concept: a.concept, note: note.data }
+  const saved = await save(deps, target, by === 'assistant')
+  if (saved === 'GONE' || saved === 'NOT_GRANTED') return { kind: 'NOT_GRANTED' }
+  if (saved === 'NOTE_INVALID') return { kind: 'NOTE_INVALID' }
+  deps.log.info({ connectionId: a.connectionId, rows: provedRows, by }, 'CONNECTION_NOTE_SAVED')
+  return { kind: 'SAVED', provedRows }
 }
 
 /** Erases one concept; erasing one already gone answers the same. */

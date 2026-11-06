@@ -5,10 +5,11 @@ import type { CompanyId, OfProject, PersonId, ProjectId, RunId } from '@conexus/
 import { CALL_DEADLINE_MS, ConnectionId } from '@conexus/hub-api'
 import { and, asc, eq, inArray } from 'drizzle-orm'
 import type { ReadTx } from '../../platform/database.ts'
-import { Listed, shaped } from './cut.ts'
+import { shaped } from './cut.ts'
 import type { OpenedConnection } from './executor.ts'
 import { readOf } from './grants.ts'
-import { Note, Notes, save } from './notes.ts'
+import type { NoteSaved } from './notes.ts'
+import { Notes, provedAndSaved } from './notes.ts'
 import { readThrough } from './read.ts'
 import type { Deps } from './rows.ts'
 import { usable } from './rows.ts'
@@ -44,12 +45,7 @@ export type BuilderConnectors = {
   saveNote(
     ids: OfProject,
     a: Of & Readonly<{ concept: string; mapping: string; provingQuery: string }>,
-  ): Promise<
-    | Readonly<{ kind: 'SAVED'; provedRows: number }>
-    | Exclude<ConnectorAnswer, { kind: 'OK' }>
-    | Readonly<{ kind: 'NOTE_INVALID' }>
-    | Spent
-  >
+  ): Promise<NoteSaved>
 }
 
 /** The call counts by key (a run, a turn), the oldest forgotten past `TURNS_KEPT`; false once a key has spent its 50. */
@@ -166,45 +162,6 @@ export function described(rows: Awaited<ReturnType<typeof offeredIn>>): GrantedC
   })
 }
 
-/** The proving query run once by the connector's read door, then the concept written with the rows it returned (never the rows). */
-async function noteSaved(
-  deps: Deps,
-  ids: OfProject,
-  a: Parameters<BuilderConnectors['saveNote']>[1],
-  proved: { opened: OpenedConnection; door: Operation<unknown, unknown, 'read'> },
-): ReturnType<BuilderConnectors['saveNote']> {
-  const answered = await callThrough(deps, {
-    ids,
-    personId: a.personId,
-    opened: proved.opened,
-    operation: proved.door,
-    input: { sql: a.provingQuery },
-  })
-  if (answered.kind !== 'OK') return answered
-  const listed = Listed.safeParse(answered.value)
-  if (!listed.success) return { kind: 'NOTE_INVALID' }
-  const provedRows = listed.data.linhas.length
-  const note = Note.safeParse({
-    mapping: a.mapping,
-    provingQuery: a.provingQuery,
-    provedAt: new Date().toISOString(),
-    provedRows,
-    writtenBy: a.personId,
-  })
-  if (!note.success) return { kind: 'NOTE_INVALID' }
-  const saved = await save(deps, {
-    person: { id: a.personId },
-    companyId: ids.companyId,
-    connectionId: a.connectionId,
-    concept: a.concept,
-    note: note.data,
-  })
-  if (saved === 'GONE') return { kind: 'NOT_GRANTED' }
-  if (saved === 'NOTE_INVALID') return { kind: 'NOTE_INVALID' }
-  deps.log.info({ connectionId: a.connectionId, rows: provedRows }, 'CONNECTION_NOTE_SAVED')
-  return { kind: 'SAVED', provedRows }
-}
-
 /** The Builder's door to the Projeto's granted connections (step 20, U3): read, notebook, and what the next turn is given. */
 export function createBuilderConnectors(deps: Deps): BuilderConnectors {
   const spend = createSpending()
@@ -239,7 +196,9 @@ export function createBuilderConnectors(deps: Deps): BuilderConnectors {
       if (door === undefined || a.concept.length < 1 || a.concept.length > 120)
         return { kind: 'NOTE_INVALID' }
       if (!spend(a.runId)) return { kind: 'CALLS_SPENT' }
-      return noteSaved(deps, ids, a, { opened, door })
+      const viewer = { person: { id: a.personId }, companyId: ids.companyId }
+      const read = { by: 'builder', ids, viewer, opened, operation: door, deadlineMs: CALL_DEADLINE_MS } as const
+      return provedAndSaved(deps, { ...a, read })
     },
   }
 }

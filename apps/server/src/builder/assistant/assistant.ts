@@ -55,7 +55,7 @@ type AssistantConnection = Awaited<ReturnType<AssistantConnectors['connections']
 const MODE = 'conversa'
 /**
  * The closed set the mode offers the model (criterion 12): the layer that enforces it, as the
- * controller filters the agent's tools by it; `noteSave: false` below only leaves the save unbuilt.
+ * controller filters the agent's tools by it; the save is built only for who may manage connections.
  * Of the controller's own tools it holds `ask_user` (a card, only what it cannot decide) and the
  * task list; the plan card stays the Builder's, as the Assistant approves no plan, and it calls no
  * subagent.
@@ -64,6 +64,7 @@ const AVAILABLE_TOOLS: readonly string[] = [
   ...Object.values(WORKSPACE_TOOL),
   BUILDER_TOOL.connectorRead,
   BUILDER_TOOL.connectorNotes,
+  BUILDER_TOOL.connectorNoteSave,
   ...Object.values(ASSISTANT_TOOL),
   BUILDER_TOOL.webFetch,
   BUILDER_TOOL.webSearch,
@@ -176,6 +177,16 @@ function accessOf(
   }
 }
 
+/** The notebook's write after the person's yes, for who may manage connections, never in an automation's run. */
+function notingOf(deps: Deps, scope: SessionScope, may: boolean) {
+  if (!may) return { noteSave: false } as const
+  return {
+    noteSave: 'confirm',
+    save: (call, requestContext) =>
+      deps.connectors.saveNote(scope, { ...call, turn: turnKey.of(requestContext) }),
+  } as const satisfies Parameters<typeof connectorTools>[1]
+}
+
 /**
  * `reads/<turn>-<n>.json`: the turn's first 8 characters and the read's number in the run, so one
  * turn never writes over another; the count lives with the agent, one per run.
@@ -247,8 +258,8 @@ function assistantAgent(
     scopeOf: ScopeOf
   },
 ) {
-  const { queue } = deps
   const { scopeOf } = parts
+  const defaults = agentDefaults(deps.queue, parts.turns)
   const offeredOf = offeredFor(deps, scopeOf)
   const savedAt = readsFiles()
   async function chosenOf(requestContext: RequestContext) {
@@ -282,8 +293,13 @@ function assistantAgent(
       const scope = await scopeOf(requestContext)
       const chosen = await chosenOf(requestContext)
       const speakers = await speakersFor(requestContext)
+      const byAutomation = await automationRun(requestContext)
       const mayAutomate =
         speakers !== undefined && deps.identity.allows(speakers.role, 'manageAutomations')
+      const mayNote =
+        speakers !== undefined &&
+        !byAutomation &&
+        deps.identity.allows(speakers.role, 'manageConnections')
       return {
         ...toolsOf(sessionModel(requestContext)),
         [ASSISTANT_TOOL.overview]: overview,
@@ -291,10 +307,10 @@ function assistantAgent(
         ...(mayAutomate
           ? { [ASSISTANT_TOOL.proposeAutomation]: proposeAutomationTool(chosen) }
           : {}),
-        ...handOffOf(scope, proposals, await automationRun(requestContext)),
+        ...handOffOf(scope, proposals, byAutomation),
         ...(scope === undefined
           ? {}
-          : connectorTools(accessOf(deps, scope, chosen, savedAt), { noteSave: false })),
+          : connectorTools(accessOf(deps, scope, chosen, savedAt), notingOf(deps, scope, mayNote))),
       }
     },
     skills: async ({ requestContext }) => [
@@ -303,7 +319,9 @@ function assistantAgent(
         skillOf({ directory: each.skill.name, ...each.skill }),
       ),
     ],
-    ...agentDefaults(queue, parts.turns),
+    ...defaults,
+    // The person's next message resumes the suspended save with its answer (step 24.3.5, "2. A").
+    defaultOptions: { ...defaults.defaultOptions, autoResumeSuspendedTools: true },
     memory: parts.memory,
   })
 }

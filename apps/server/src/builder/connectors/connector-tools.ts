@@ -42,7 +42,7 @@ export type ConnectorAccess = {
   wording: { whose: string; limit: string }
 }
 
-/** The notebook's write, only the Builder's: the Assistant reads the notebook and never writes it. */
+/** The notebook's write: the Builder's at once, the Assistant's after the person's yes. */
 type NoteSave = (
   call: { connectionId: ConnectionId; concept: string; mapping: string; provingQuery: string },
   requestContext: RequestContext,
@@ -235,12 +235,30 @@ function notesTool(access: ConnectorAccess) {
   }
 }
 
-function noteSaveTool(connections: readonly Connection[], save: NoteSave) {
+/** What the person reads before saying yes: the `suspendPayload` of the Assistant's save. */
+const NoteSaveProposal = z.object({
+  connection: z.string(),
+  concept: z.string(),
+  mapping: z.string(),
+  provingQuery: z.string(),
+})
+
+/** What the person's next message gives back, read by the model: the `resumeSchema`. */
+const NoteSaveAnswer = z.object({
+  confirmed: z.boolean().describe('true only when the person said yes to saving this note'),
+})
+
+const SAVES =
+  "Saves in a connection's notebook what a code or a field means in this company. It runs `provingQuery` once through the connection's read door and keeps the mapping, the query, the date and the number of rows it returned, never a row. Names and codes only, never a value."
+const CONFIRMS =
+  ' Call it when the person tells you what a code means and asks to note it. It first shows the person the concept, the mapping and the query and waits: say them in words and ask whether to save. The yes is the person\'s, in their next message; anything but a clear yes is `confirmed: false`.'
+
+function noteSaveTool(connections: readonly Connection[], include: Saving) {
+  const confirm = include.noteSave === 'confirm'
   return {
     [BUILDER_TOOL.connectorNoteSave]: createTool({
       id: BUILDER_TOOL.connectorNoteSave,
-      description:
-        "Saves in a connection's notebook what a code or a field means in this company. It runs `provingQuery` once through the connection's read door and keeps the mapping, the query, the date and the number of rows it returned, never a row. Names and codes only, never a value.",
+      description: confirm ? SAVES + CONFIRMS : SAVES,
       inputSchema: z.object({
         connection: connectionField(connections),
         connector: CONNECTOR_FIELD,
@@ -248,14 +266,23 @@ function noteSaveTool(connections: readonly Connection[], save: NoteSave) {
         mapping: z.string().min(1).max(500),
         provingQuery: z.string().min(1).max(4000),
       }),
+      suspendSchema: NoteSaveProposal,
+      resumeSchema: NoteSaveAnswer,
       execute: async (
         { connection, connector, concept, mapping, provingQuery },
-        { requestContext },
+        { requestContext, agent },
       ) => {
         const found = inNotebook(connections, connection, connector)
         if (found === undefined || requestContext === undefined) return NOT_GRANTED
         if ('kind' in found) return found
-        return save(
+        if (confirm) {
+          const answer = agent?.resumeData
+          if (answer === undefined) {
+            return agent?.suspend({ connection, concept, mapping, provingQuery })
+          }
+          if (!answer.confirmed) return { kind: 'NOT_CONFIRMED' } as const
+        }
+        return include.save(
           { connectionId: found.connectionId, concept, mapping, provingQuery },
           requestContext,
         )
@@ -264,18 +291,23 @@ function noteSaveTool(connections: readonly Connection[], save: NoteSave) {
   }
 }
 
+/** Whether the scope writes the notebook: the Builder at once, the Assistant after the person's yes. */
+type Saving =
+  | { noteSave: true; save: NoteSave }
+  | { noteSave: 'confirm'; save: NoteSave }
+
 /**
  * The connector tools for a scope that offers at least one connection; {} otherwise. The notebook's
- * write comes only with `noteSave`, the Builder's.
+ * write comes only with `noteSave`.
  */
 export function connectorTools(
   access: ConnectorAccess,
-  include: { noteSave: false } | { noteSave: true; save: NoteSave },
+  include: { noteSave: false } | Saving,
 ): ToolsInput {
   if (access.connections.length === 0) return {}
   return {
     ...readTool(access),
     ...notesTool(access),
-    ...(include.noteSave ? noteSaveTool(access.connections, include.save) : {}),
+    ...(include.noteSave === false ? {} : noteSaveTool(access.connections, include)),
   }
 }

@@ -8,7 +8,8 @@ import type { GrantedConnection, ShapedRead, Spent } from './builder-port.ts'
 import { createSpending, described, offeredIn } from './builder-port.ts'
 import { shaped } from './cut.ts'
 import { readOf } from './grants.ts'
-import { Notes } from './notes.ts'
+import type { NoteSaved } from './notes.ts'
+import { Notes, provedAndSaved } from './notes.ts'
 import { readThrough } from './read.ts'
 import type { Deps } from './rows.ts'
 import { scopeOf } from './rows.ts'
@@ -59,8 +60,19 @@ export type AssistantConnectors = {
       signal?: AbortSignal
     },
   ): Promise<AssistantRead>
-  /** The connection's caderno, read only, under the same check as read. */
+  /** The connection's caderno, under the same check as read. */
   notes(scope: SessionScope, connectionId: ConnectionId): Promise<Notes | null>
+  /** One concept in the caderno, proved once by the read door; only for `manageConnections`. */
+  saveNote(
+    scope: SessionScope,
+    call: {
+      connectionId: ConnectionId
+      turn: TurnKey
+      concept: string
+      mapping: string
+      provingQuery: string
+    },
+  ): Promise<NoteSaved>
   /**
    * The input of one read of a connection the place offers, whose top-level fields an agent's tool
    * fixes or leaves to the model (step 24.3, U1); none for a connection not offered, an operation
@@ -131,7 +143,7 @@ async function readable<T>(
   })
 }
 
-/** A refusal of the Assistant's read or notebook, its reason in the log (S10: the model hears NOT_GRANTED). */
+/** A refusal of the Assistant's read, notebook or note, its reason in the log (S10: the model hears NOT_GRANTED). */
 function refused(
   deps: Deps,
   scope: SessionScope,
@@ -146,7 +158,7 @@ function viewerOf(scope: SessionScope) {
   return { person: { id: scope.personId }, companyId: scope.companyId }
 }
 
-/** The company's door for the Assistant (step 24.1, U1): the chosen connections its place offers, read only, `by: 'assistant'`. */
+/** The company's door for the Assistant (step 24.1, U1): the chosen connections its place offers, `by: 'assistant'`; the caderno's write only for `manageConnections` (step 24.3.5). */
 export function createAssistantConnectors(deps: Deps): AssistantConnectors {
   const spend = createSpending()
   return {
@@ -206,6 +218,28 @@ export function createAssistantConnectors(deps: Deps): AssistantConnectors {
       if (found.kind === 'OK') return found.value
       refused(deps, scope, { connectionId, reason: found.kind })
       return null
+    },
+
+    async saveNote(scope, call) {
+      const { connectionId } = call
+      const found = await readable(deps, scope, connectionId, (tx) =>
+        openedIn(deps, tx, { companyId: scope.companyId, connectionId }),
+      )
+      if (found.kind !== 'OK') return refused(deps, scope, { connectionId, reason: found.kind })
+      // A connector with no read door has no notebook.
+      const door = readOf(found.value.connector, 'consultar')
+      if (door === undefined || call.concept.length < 1 || call.concept.length > 120)
+        return { kind: 'NOTE_INVALID' }
+      if (!spend(call.turn)) return { kind: 'CALLS_SPENT' }
+      const read = {
+        by: 'assistant',
+        ids: idsOf(scope),
+        viewer: viewerOf(scope),
+        opened: found.value,
+        operation: door,
+        deadlineMs: CALL_DEADLINE_MS,
+      } as const
+      return provedAndSaved(deps, { ...call, read })
     },
   }
 }
