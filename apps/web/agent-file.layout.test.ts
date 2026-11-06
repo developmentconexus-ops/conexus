@@ -11,6 +11,7 @@ import {
 import type { Page } from 'playwright-core'
 import { createHarness, DESKTOP, ok, PHONE } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
+import { connectionsPage } from './sweep-connections.ts'
 import { WITH_ACCOUNT } from './sweep-conversation-states.ts'
 import { PROJECT_ID, projectsPage } from './sweep-replies.ts'
 import { sessionReplies } from './sweep-session.ts'
@@ -27,6 +28,7 @@ after(async () => {
 const AGENT = '11111111-aaaa-4aaa-8aaa-111111111111'
 const CHAT = '66666666-aaaa-4aaa-8aaa-666666666666'
 const CHART = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200" width="320" height="200"><rect width="320" height="200" fill="#fff"/><g fill="#5b3fd1"><rect x="40" y="60" width="50" height="110"/><rect x="135" y="85" width="50" height="85"/><rect x="230" y="30" width="50" height="140"/></g><g font-family="sans-serif" font-size="12" fill="#222" text-anchor="middle"><text x="65" y="188">Ana</text><text x="160" y="188">Bruno</text><text x="255" y="188">Carla</text><text x="160" y="20" font-size="14">Vendas de setembro</text></g></svg>`
+const CONNECTION = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
 const BASE = `/api/companies/${COMPANY.id}/projects/${PROJECT_ID}`
 const DRAFT = {
   name: 'Vendas',
@@ -34,7 +36,7 @@ const DRAFT = {
   instructions: 'Diga quem vendeu mais.',
   model: null,
   memory: { observational: true },
-  connections: [],
+  connections: [CONNECTION],
   web: false,
   appData: false,
   machine: true,
@@ -49,7 +51,14 @@ const DETAIL = {
   draft: DRAFT,
   revision: 4,
   tools: [],
-  offered: [],
+  offered: [
+    {
+      connectionId: CONNECTION,
+      connector: 'sankhya',
+      name: 'Matriz',
+      reads: [{ operation: 'pedidos', label: 'Pedidos', summary: 'Pedidos de venda.' }],
+    },
+  ],
   createdBy: null,
 }
 const MESSAGES = [
@@ -88,6 +97,7 @@ const MESSAGES = [
 const replies = {
   ...WITH_ACCOUNT,
   ...projectsPage(COMPANY.id),
+  ...connectionsPage(COMPANY.id, true),
   [`GET ${BASE}/agents/${AGENT}`]: ok(getAgent, { agent: DETAIL }),
   [`GET ${BASE}/agents/${AGENT}/versions`]: ok(listAgentVersions, {
     versions: [3, 2, 1].map((number) => ({
@@ -180,3 +190,27 @@ test('a 1366 px, o arquivo alarga o painel de teste e, fechado, ele volta', asyn
   assert.deepEqual(page.problems, [])
   await page.close()
 })
+
+// The two scenes the founder is shown beside the file's (step 24.4, U4): choosing the Computador in
+// the library's list, and its row among the agent's tools with the connection it reads.
+for (const viewport of [DESKTOP, PHONE]) {
+  test(`a ${viewport.width} px, o Computador ligado aparece na lista da biblioteca e entre as ferramentas, com a ligação do agente`, async () => {
+    const page = await harness.open(
+      `/companies/${COMPANY.id}/projects/${PROJECT_ID}/agents/${AGENT}`,
+      { viewport, replies },
+    )
+    const connection = page.getByRole('switch', { name: 'Sankhya · Matriz' })
+    await connection.waitFor()
+    assert.equal(await connection.isChecked(), true, 'a ligação do agente não está ligada')
+    const tools = page.getByRole('region', { name: 'Ferramentas' })
+    await tools.getByRole('button', { name: 'Tirar Computador' }).waitFor()
+    await tools.getByRole('button', { name: 'Adicionar da biblioteca', exact: true }).click()
+    const dialog = page.getByRole('dialog')
+    assert.equal(await dialog.getByRole('switch', { name: 'Computador' }).isChecked(), true)
+    assert.equal(await dialog.getByRole('switch', { name: 'Pesquisar na web' }).isChecked(), false)
+    await dialog.getByRole('button', { name: 'Usar as escolhidas' }).waitFor()
+    await dialog.getByRole('button', { name: 'Cancelar' }).waitFor()
+    assert.deepEqual(page.problems, [])
+    await page.close()
+  })
+}

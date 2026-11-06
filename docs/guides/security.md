@@ -14,8 +14,10 @@ Owners next door: [architecture](../architecture.md) for execution zones, hosts 
   overwriting newer work. A reachable Git object is not disclosure authority. Failure: a candidate
   symlink opens a file outside the tree. Prove this boundary when it is built. [review]
 - **S4.** The generated handler **must** receive only `db`, `caller` and `connectors`, with `caller`
-  filled by the platform [0019]. [app-contract types]
-- **S5.** Generated code **must not** keep mutable state at module level. [the Builder's lint]
+  filled by the platform [0019]. A code tool **must** receive only `data`, which reads through the
+  Hub only the reads its version declares. [app-contract types]
+- **S5.** Generated code **must not** keep mutable state at module level. [a code tool:
+  `builder/construtor/module-state.grit`; an app: no check yet, issue 813]
 
 ## 2. Who may act (ASVS `V8`)
 

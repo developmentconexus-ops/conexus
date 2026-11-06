@@ -47,6 +47,36 @@ export function toolsAt(origin: string): ToolsOrigin {
 type Call = 'upload' | 'remove' | 'exists'
 type Scripted = 'REFUSED' | 'NO_ANSWER' | 'NOT_STARTING'
 
+function newHold() {
+  return {
+    arrived: Promise.withResolvers<void>(),
+    released: Promise.withResolvers<void>(),
+    ended: Promise.withResolvers<'ABORTED' | 'RELEASED'>(),
+  }
+}
+type Hold = ReturnType<typeof newHold>
+
+/**
+ * A held call waits until released or until its caller's signal ends the wait; true when the
+ * signal did.
+ */
+async function waitedOn(held: Hold, signal?: AbortSignal): Promise<boolean> {
+  held.arrived.resolve()
+  const aborted = new Promise<void>((resolve) => signal?.addEventListener('abort', () => resolve()))
+  await Promise.race([held.released.promise, aborted])
+  held.ended.resolve(signal?.aborted ? 'ABORTED' : 'RELEASED')
+  return signal?.aborted === true
+}
+
+/** What a test holds of a held call: when it waits, how to release it, how its wait ended. */
+function handleOf(held: Hold) {
+  return {
+    arrived: held.arrived.promise,
+    release: () => held.released.resolve(),
+    ended: held.ended.promise,
+  }
+}
+
 /**
  * A namespace of memory (T14) that answers like the adapter: the Workers it holds by name, each
  * call recorded, and the next answers scripted.
@@ -55,8 +85,7 @@ export function fakeCloudflare() {
   const workers = new Map<string, WorkerUpload>()
   const calls: { call: Call; worker: string }[] = []
   const scripts: Record<Call, Scripted[]> = { upload: [], remove: [], exists: [] }
-  const holds: { arrived: PromiseWithResolvers<void>; released: PromiseWithResolvers<void> }[] = []
-  const removeHolds: typeof holds = []
+  const holds: Record<'upload' | 'remove', Hold[]> = { upload: [], remove: [] }
 
   function scripted<T>(
     call: Call,
@@ -67,14 +96,16 @@ export function fakeCloudflare() {
     if (next === undefined || next === 'NOT_STARTING') return next
     return { kind: next }
   }
+  function holding(call: 'upload' | 'remove') {
+    const held = newHold()
+    holds[call].push(held)
+    return handleOf(held)
+  }
 
   const cloudflare: CloudflareApps = {
-    async upload(input) {
-      const held = holds.shift()
-      if (held !== undefined) {
-        held.arrived.resolve()
-        await held.released.promise
-      }
+    async upload(input, signal) {
+      const held = holds.upload.shift()
+      if (held !== undefined && (await waitedOn(held, signal))) return { kind: 'NO_ANSWER' }
       const next = scripted<never>('upload', input.worker)
       if (next === 'NOT_STARTING') return { kind: 'DONE', value: 'NOT_STARTING' }
       if (next !== undefined) return next
@@ -82,15 +113,8 @@ export function fakeCloudflare() {
       return { kind: 'DONE', value: 'UPLOADED' }
     },
     async remove(worker, signal) {
-      const held = removeHolds.shift()
-      if (held !== undefined) {
-        held.arrived.resolve()
-        const aborted = new Promise<void>((resolve) =>
-          signal?.addEventListener('abort', () => resolve()),
-        )
-        await Promise.race([held.released.promise, aborted])
-        if (signal?.aborted) return { kind: 'NO_ANSWER' }
-      }
+      const held = holds.remove.shift()
+      if (held !== undefined && (await waitedOn(held, signal))) return { kind: 'NO_ANSWER' }
       const next = scripted<never>('remove', worker)
       if (next !== undefined && next !== 'NOT_STARTING') return next
       workers.delete(worker)
@@ -109,24 +133,10 @@ export function fakeCloudflare() {
     /** The Workers the namespace holds now, by name. */
     workers: () => [...workers.keys()].sort(),
     upload: (worker: string) => workers.get(worker),
-    /** Keeps the next upload before its effect; `arrived` resolves when it is waiting. */
-    holdUpload() {
-      const held = {
-        arrived: Promise.withResolvers<void>(),
-        released: Promise.withResolvers<void>(),
-      }
-      holds.push(held)
-      return { arrived: held.arrived.promise, release: () => held.released.resolve() }
-    },
+    /** Keeps the next upload until released or until its caller's signal ends the wait. */
+    holdUpload: () => holding('upload'),
     /** Keeps the next removal until released or until its caller's signal ends the wait. */
-    holdRemove() {
-      const held = {
-        arrived: Promise.withResolvers<void>(),
-        released: Promise.withResolvers<void>(),
-      }
-      removeHolds.push(held)
-      return { arrived: held.arrived.promise, release: () => held.released.resolve() }
-    },
+    holdRemove: () => holding('remove'),
     /** The next call of this kind answers so. */
     script(call: Call, answer: Scripted) {
       scripts[call].push(answer)

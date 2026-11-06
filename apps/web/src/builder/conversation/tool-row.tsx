@@ -30,7 +30,7 @@ import type { ToolItem } from './rows.ts'
 import { durationOf } from './text.ts'
 import type { Edit } from './tool-args.ts'
 import { editOf, shown } from './tool-args.ts'
-import { Answer, BLOCK, Generic, Library, textOf } from './tool-bodies.tsx'
+import { Answer, BLOCK, Generic, Library, Program, textOf } from './tool-bodies.tsx'
 import type { ToolBody, ToolStatus } from './tool-registry.ts'
 import { presentTool, readable, specOf, toolStatus } from './tool-registry.ts'
 
@@ -182,6 +182,8 @@ function Block({ tool, body }: { tool: ToolItem; body: ToolBody }) {
         <Generic tool={tool} title={title} />
       )
     }
+    case 'program':
+      return <Program tool={tool} title={title} />
     default:
       return <Generic tool={tool} title={title} />
   }
