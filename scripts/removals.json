@@ -2618,6 +2618,17 @@
     }
   },
   {
+    "id": "assistant-note-never-for-those-who-do-not-manage-connections",
+    "file": "apps/server/src/builder/assistant/assistant.ts",
+    "find": "deps.identity.allows(speakers.role, 'manageConnections')",
+    "replace": "true",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/assistant/note-save.test.ts",
+      "name": "o membro"
+    }
+  },
+  {
     "id": "hand-off-releases-only-to-connection-managers",
     "file": "apps/server/src/hub/connectors/grants.ts",
     "find": "    return deps.identity.allows(member.role, 'manageConnections')",
