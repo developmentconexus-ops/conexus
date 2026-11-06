@@ -63,13 +63,14 @@ local). **Medido** saiu de uma execução aqui.
   Com a `suspend()`, o `yolo` fica, e as leituras não mudam.
 - **A trava da decisão 0053 continua no Mastra 1.82** (medido), nos dois caminhos. Ele mostra o
   pedido antes de guardar a espera no banco, e uma resposta que chega cedo demais perde a corrida: a
-  escrita não sai e a conversa fica parada. Respondendo no mesmo instante, 22 de 200 ficaram presas.
+  escrita não sai e a conversa fica parada. Respondendo no mesmo instante, 21 de 200 ficaram presas.
   Respondendo 1,5 s depois, o tempo de alguém ler o cartão, 0 de 200. Nas medidas, nenhuma escrita
   rodou duas vezes nem sem aprovação.
 - **Duas coisas o Mastra não faz na `suspend()`, e ficam conosco** (medido). Uma mensagem sua não
   recusa o cartão aberto: aprovar o cartão velho ainda escreveria. A ferramenta confere isso ao
-  voltar. E a resposta depois de um reinício não foi provada aqui; a construção prova primeiro e para
-  se falhar.
+  voltar (a conferência é desenho, ainda não medida). E a resposta depois de um reinício não foi
+  provada aqui: na memória, ela foi aceita e não rodou. A construção prova as duas primeiro e para se
+  falharem.
 - **O que as empresas fazem** (17 fornecedores, em 2026-11-05: Glean, Retool e Claude Enterprise lidos
   na fonte; os outros 14 por relato de páginas e buscas, sem reabrir). Escrever pede
   aprovação, ler não: OpenAI, Microsoft Copilot, Glean, Claude Enterprise. O cartão mostra a ação e
@@ -167,11 +168,11 @@ releitura). Total da etapa: ~2.600, dentro da regra L2.
 | 7 | U2 | `POST …/sessions/{id}/tool-suspension` com `resumeData: { approved: true }` roda a escrita uma vez e o turno termina; com `approved: false` e um motivo, nada roda, e o pedido seguinte ao modelo traz o motivo | `builder/agents/approval.test.ts`, "aprovar e recusar" | must |
 | 8 | U2 | A trava da 0053: sete cópias do teste, cada uma com oito execuções, 56 ao mesmo tempo no `PostgresStore`. Com a resposta 1,5 s depois do `tool_suspended`, terminam todas, cada escrita uma vez. Com a resposta no mesmo instante, nenhuma escrita roda duas vezes nem sem aprovação, e o teste imprime quantas ficaram presas | `builder/agents/approval-load.test.ts` | must |
 | 9 | U2 | Recusa: outra pessoa, ou a mesma em outra conversa, recebe `CONVERSATION_NOT_FOUND` na rota (o `guard.ts`); uma segunda resposta ao mesmo pedido não roda nada; aprovar um cartão depois de uma mensagem nova da pessoa não envia, e o modelo recebe "Recusado porque a pessoa mandou outra mensagem" | `builder/agents/approval.test.ts`, "a resposta recusada" | must |
-| 10 | U2 | Depois de um reinício (um Hub novo ao lado do mesmo banco, como `conversations.test.ts:149`), o cartão continua no estado da sessão e a aprovação roda a escrita uma vez | `builder/agents/approval.test.ts`, "depois do reinício" | must |
+| 10 | U2 | Depois de um reinício (um Hub novo ao lado do mesmo banco, por `hubBeside`, como `conversations.test.ts:256-258`), o cartão continua no estado da sessão e a aprovação roda a escrita uma vez. Depende da prova do passo 1 da U2, ainda não feita: se ela falhar, a U2 para | `builder/agents/approval.test.ts`, "depois do reinício" | must, se a prova passar |
 | 11 | U2 | Recusa: o Builder, o Assistente e o Construtor não recebem ferramenta de escrita; uma rodada de automação não recebe ferramenta de escrita | `builder/conversation/permissions.test.ts` (os casos de hoje passam sem mudar) e `builder/agents/approval.test.ts`, "sem pessoa" | must |
 | 12 | U2 | Na lista de ferramentas, a ferramenta com uma operação de escrita (`effect: 'WRITE'`) diz **Pede aprovação**; a gravação dela numa ligação sem a escrita liberada é recusada com `TOOL_REFUSED` e `reason: 'NOT_RELEASED'` | `builder/tools/routes.test.ts`; `apps/web/src/builder/tools/` o teste da lista | must |
 | 13 | U3 | O cartão mostra o agente, o sistema com o logotipo e o nome da ligação, a ação ("Responder perguntas") e cada campo que vai ser escrito, e **Aprovar** e **Recusar**; a caixa de mensagem continua aberta, com a frase "Escrever outra mensagem recusa este pedido." | `web/src/builder/conversation/approval-card.test.tsx` | must |
-| 14 | U3 | Depois de **Aprovar**: "Aprovado por você", e o resultado da ferramenta na linha. Depois de **Recusar**: "Recusado". Depois de uma mensagem: "Recusado porque você mandou outra mensagem". Depois de Parar: "Recusado porque você parou a conversa". Uma falha: "Não conseguiu escrever", com a falha dita | `approval-card.test.tsx`, os cinco estados | must |
+| 14 | U3 | Depois de **Aprovar**: "Aprovado por você", e o resultado da ferramenta na linha. Depois de **Recusar**: "Recusado". Depois de uma mensagem: "Recusado porque você mandou outra mensagem". Depois de Parar: "Recusado porque você parou a conversa". Uma falha: "Não conseguiu escrever", com a falha dita e **Tentar de novo** | `approval-card.test.tsx`, os cinco estados | must |
 | 15 | U3 | Recarregar a página ou abrir a conversa em outra aba traz o cartão esperando; responder numa aba fecha o cartão na outra quando o estado da sessão chega | `web/src/builder/conversation/card-reread.test.tsx`, o caso da aprovação | must |
 | 16 | U3 | Avaliação com o modelo de verdade (opt-in): pedido de resposta termina com o cartão; recusado com motivo, o agente diz que não respondeu e não chama de novo a ferramenta no mesmo turno | `builder/agents/agents.eval.test.ts`, "a escrita" | should |
 
@@ -232,11 +233,11 @@ releitura). Total da etapa: ~2.600, dentro da regra L2.
 | A ferramenta que escreve | U2 | `builder/agents/tools.ts:33-55` (`presetTools`, só `connectors.read`); `builder/conversation/plan-tools.ts:142-159` (o cartão do plano se suspende) | `@mastra/core@1.82.0` `suspend()` e `resumeSchema` (`dist/docs/references/docs-agents-human-in-the-loop.md:233-262,360-432`) | a ferramenta para no meio do `execute`, o stream manda `tool-call-suspended` com o `suspendPayload`, e a volta traz o `resumeData` | nativo | proof carga 7 (abaixo) | `A1` | — |
 | Ler sem perguntar | U2 | `builder/agents/controller.ts:226-231` (`initialState: { yolo: true }`) | `@mastra/core@1.82.0` `requireApproval` e `permissionRules` (`docs-harness-agent-controller.md:270-310`; `dist/agent-controller-BDds1y5w.js:904-910,5166-5191,8638-8643`) | sem `yolo`, toda chamada pede aprovação, e a regra `allow` aprova sozinha na hora | nativo, com o `yolo` mantido; o caminho `A2` medido perde leituras | proof carga 5 (abaixo) | `A` | — |
 | O `yolo` aprova sozinho | U2 | o mesmo | `agent-controller-BDds1y5w.js:5179` | com `yolo`, toda aprovação vira `allow`; a `suspend()` espera assim mesmo | nativo | proof P3, carga 7 | 0053 | — |
-| A rota da resposta | U2 | `builder/conversation/guard.ts:24-31` (a lista fixa já tem `tool-suspension`), `:120-147` (a conversa é da pessoa) | `@mastra/server` `dist/server/handlers/agent-controller.js:208-213,764-800` | o corpo leva `toolCallId`, `runId` e `resumeData`, e retoma a ferramenta | nativo | proof cargas 6 e 7 | não precisa | — |
+| A rota da resposta | U2 | `builder/conversation/guard.ts:24-31` (a lista fixa já tem `tool-suspension`), `:120-147` (a conversa é da pessoa) | `@mastra/server` `dist/server/handlers/agent-controller.js:208-213,764-800` (documentada para as ferramentas próprias do Mastra; medida aqui numa nossa) | o corpo leva `toolCallId`, `runId` e `resumeData`, e retoma a ferramenta | nativo | proof cargas 6 e 7 | não precisa | — |
 | A trava da 0053 | U2 | — | `agent-BP9OWM6D.js:19450-19500` (o pedido sai antes de a suspensão ser guardada) e `:84343-84434` (a reivindicação espera `suspended`) | quem responde antes recebe `AGENT_RESUME_ALREADY_CLAIMED`, e a execução para sem fim | nativo, com o defeito do Mastra medido e dito na decisão `A`; sem remendo nosso | proof cargas 1 a 7 (abaixo), `@mastra/core` 1.82.0 | `A` | — |
-| Recusar com motivo | U2 | — | `docs-agents-human-in-the-loop.md:248-262` (`resumeSchema`) | a ferramenta recebe o `resumeData` e devolve o motivo como resultado | nativo | proof, a recusa com motivo (abaixo) | não precisa | — |
-| Mensagem nova recusa | U2 | `plan-tools.ts:149` (o plano lê a conversa por `getMessages`) | `agent-controller-BDds1y5w.js:5447-5456` (`interrupted_by_user_message` solta só os portões de aprovação, não as suspensões) | a mensagem nova não toca a suspensão: aprovar o cartão velho ainda escreve | embrulhado: a ferramenta, ao voltar, lê a conversa e recusa se a pessoa escreveu depois do pedido | proof, a mensagem nova (abaixo) | `A1` | — |
-| Parar recusa | U2 | — | `agent-controller-BDds1y5w.js:5070-5089` | abortar encerra as chamadas suspensas; uma resposta depois não roda nada | nativo | proof, o Parar (abaixo) | não precisa | — |
+| Recusar com motivo | U2 | — | `docs-agents-human-in-the-loop.md:360-432` (a aprovação pela `suspend()`) | a ferramenta recebe o `resumeData` e devolve o motivo como resultado | nativo | proof, a recusa com motivo (abaixo) | não precisa | — |
+| Mensagem nova recusa | U2 | `plan-tools.ts:149` (o plano lê a conversa por `getMessages`, na primeira execução) | `agent-controller-BDds1y5w.js:5447-5456` (`interrupted_by_user_message` solta só os portões de aprovação, não as suspensões) | a mensagem nova não toca a suspensão: aprovar o cartão velho ainda escreve | embrulhado: a ferramenta, ao voltar, lê a conversa e recusa se a pessoa escreveu depois do pedido | proof do problema, a mensagem nova (abaixo); a conferência, no passo 1 da U2 | `A1` | — |
+| Parar recusa | U2 | — | `agent-controller-BDds1y5w.js:5042-5058,5090-5101` | abortar limpa as suspensões, emite `tool_suspension_cancelled` e as nega; uma resposta depois não roda nada | nativo | proof, o Parar (abaixo) | não precisa | — |
 | "Sempre permitir" | fica de fora (`B1`) | — | `always_allow_category` (`agent-controller-BDds1y5w.js:5196-5222`, só no caminho `A2`, e aberto no corpo da rota `tool-approval`, `@mastra/server` `agent-controller.js:194-203`); Mastra Code `mastracode/tui/src/tui/components/tool-approval-dialog.ts:88` (`mastra-1.82@6e8dfcb8`); Dyad `src/ipc/utils/mcp_consent.ts:10-27,87-88` (`dyad@902829f`) | o Mastra lembra só na memória; o Dyad guarda por ferramenta | embrulhado (`B2`, `B3`: nossos) | proof P4, P9 | `B` | — |
 | Quem aprovou, no registro | U2 | `hub/connectors/routes.ts:106-115` (as linhas de log da liberação) | Claude Code, o evento `tool_decision` (relato, não reaberto) | uma linha por decisão | embrulhado (a linha de log é nossa) | — | não precisa | — |
 | Sem pessoa, sem escrita | U2 | `builder/automations/run.ts:59,112` (a automação roda só o Assistente) | Retool (docs, 2026-11-05: "only tools that do not require consent are accessible"); Glean (só sessões interativas) | a ferramenta que pede aprovação não é oferecida | nativo (a função de ferramentas do agente) | — | 24.6 decide o resto | — |
@@ -256,7 +257,8 @@ desligado; 5: leituras; 6 e 7: a `suspend()` com o `yolo` mantido.
 - Carga 4, aprovação 1,5 s depois do pedido: 0 de 200.
 - Carga 5, leituras com a regra `allow` e o `yolo` desligado, sem ninguém responder: 12 de 200 não
   rodaram (`AGENT_RESUME_ALREADY_CLAIMED`).
-- Carga 6, a `suspend()` respondida no mesmo instante: 22 de 200 presas.
+- Carga 6, a `suspend()` respondida no mesmo instante: 22 de 200 perderam a corrida, e 21 conversas
+  ficaram sem fim.
 - Carga 7, a `suspend()` respondida 1,5 s depois: 0 de 200.
 - A mensagem nova, na memória: aprovar o cartão velho depois dela rodou a escrita.
 - O Parar, na memória: a resposta depois dele não rodou nada.
@@ -413,7 +415,8 @@ fora e passa pelo `resumeSchema` (C27).
 
 1. A prova, antes de qualquer código de produto, pelo controlador "agentes" de verdade (o agente que
    delega por execução, `controller.ts:150-168`) e o `PostgresStore` do banco de teste: uma ferramenta
-   com `suspend()` e o `yolo` mantido; o reinício por um Hub novo ao lado do mesmo banco responde ao
+   com `suspend()` e o `yolo` mantido; a conferência da mensagem nova (o `getMessages` na volta traz a
+   mensagem escrita depois do pedido); o `toolName` e os `args` no `tool_suspended`; o reinício por um Hub novo ao lado do mesmo banco responde ao
    cartão e roda a escrita uma vez; a retomada leva o `conexus-agent-run` no contexto (ela não passa
    pelo `processInput` de novo); e o critério 8 nos dois ritmos.
 2. `ToolEffect` e a biblioteca: a classe da operação dá o efeito; `choice.ts` e `check.ts` aceitam uma
@@ -461,7 +464,11 @@ O cartão, o cartão depois de recarregar.
    opcional), e a frase sob a caixa. As respostas vão pela rota `tool-suspension`, como o plano.
 2. `rows.ts`: a parte em aprovação vira o cartão; o `tool-call-resumed` e o resultado passam aos
    estados do critério 14.
-3. `session-state.ts`: o cartão volta pelo `pendingSuspensions`, como o do plano (`:149-160`).
+3. `session-state.ts`: o cartão volta pelo `pendingSuspensions`, como o do plano (`:149-160`). Os
+   botões só acendem quando o estado da sessão lido traz o `toolCallId`; isso não protege de um
+   clique no mesmo instante (a carga 6), só dá à pessoa o tempo de ler. O estado "parou a conversa"
+   vem do `tool_suspension_cancelled` ou da conversa guardada, não do `pendingSuspensions`, que fica
+   vazio. **Tentar de novo**, na falha, manda ao agente "Tente de novo" como mensagem.
 4. Os textos: "O {agente} quer {ação} no {sistema}", "Aprovar", "Recusar", "Aprovado por você",
    "Recusado", "Recusado porque você mandou outra mensagem", "Recusado porque você parou a conversa",
    "Não conseguiu escrever", "Escrever outra mensagem recusa este pedido.", "Pede aprovação", "Liberar
