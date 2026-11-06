@@ -32,7 +32,10 @@ export type WorkerUpload = Readonly<{
 }>
 
 export type CloudflareApps = {
-  /** Uploads the Worker, or answers that its code does not start (decision 0046). A caller's signal can end the wait sooner. */
+  /**
+   * Uploads the Worker, or answers that its code does not start (decision 0046). A caller's signal
+   * can end the wait sooner.
+   */
   upload(
     input: WorkerUpload,
     signal?: AbortSignal,

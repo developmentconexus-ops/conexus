@@ -1,5 +1,6 @@
 import type { ToolSearchResult } from '@conexus/hub-api'
 import { ConnectorLogo } from '../../hub/connectors/public.ts'
+import { ProgramSuccess } from './machine-specs.ts'
 import { Markdown } from './markdown.tsx'
 import { useRoom } from './room.ts'
 import type { ToolItem } from './rows.ts'
@@ -36,6 +37,33 @@ export function Generic({ tool, title }: { tool: ToolItem; title: string }) {
         <div className="flex flex-col gap-xxs">
           <span className="font-sans text-text-2">Resultado:</span>
           <pre className={BLOCK}>{shown(result)}</pre>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/**
+ * A program the agent ran: only what it returned, and what it logged when it logged anything. Not
+ * the program's code and not Mastra's envelope around the result (the founder, step 24.4 U5).
+ */
+export function Program({ tool, title }: { tool: ToolItem; title: string }) {
+  const done = ProgramSuccess.safeParse(tool.result).data
+  const result = textOf(done?.result)
+  const logs = done?.logs?.map((line) => textOf(line) ?? '').join('\n')
+  return (
+    <div className="flex min-w-0 flex-col gap-xs font-mono text-fact text-text-2">
+      <div className="font-sans font-semibold text-text">{title}</div>
+      {result !== undefined && (
+        <div className="flex flex-col gap-xxs">
+          <span className="font-sans text-text-2">Resultado:</span>
+          <pre className={BLOCK}>{shown(result)}</pre>
+        </div>
+      )}
+      {logs !== undefined && logs !== '' && (
+        <div className="flex flex-col gap-xxs">
+          <span className="font-sans text-text-2">Registros:</span>
+          <pre className={BLOCK}>{shown(logs)}</pre>
         </div>
       )}
     </div>

@@ -1,7 +1,10 @@
 import { z } from 'zod'
 import type { FailureCode } from './failures.ts'
 
-/** The tools of a conversation's machine that every conversation with one shares, by name (step 24.4, U1). */
+/**
+ * The tools a conversation with a machine can have, by name (step 24.4): `show_file` every one
+ * shares (U1), `execute_typescript` only an agent with its Computador has (U5).
+ */
 export const MACHINE_TOOL = {
   showFile: 'show_file',
   /** The program an agent with its Computador writes over its tools (step 24.4, U5): Mastra's own id. */
