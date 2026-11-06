@@ -43,9 +43,7 @@ test('apagar uma ferramenta em código: um rascunho que a escolhe enquanto os Wo
   const refused = await deleting
   assert.deepEqual([refused.statusCode, codeOf(refused)], [409, 'TOOL_IN_USE'])
   const still = toolOf(await call(on.hub, on.ana, 'GET', url))
-  assert.deepEqual(still.usedBy, [
-    { id: made.id, projectId: on.projectId, name: 'Vendas do dia' },
-  ])
+  assert.deepEqual(still.usedBy, [{ id: made.id, projectId: on.projectId, name: 'Vendas do dia' }])
 })
 
 test('as ferramentas em código: remover a empresa tira os Workers delas; com a Cloudflare fora, CLIENT_DELETION_PENDING e a mesma rota termina', async (t) => {
