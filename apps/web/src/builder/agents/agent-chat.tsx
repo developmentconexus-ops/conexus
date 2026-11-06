@@ -9,7 +9,7 @@ import {
   agentRoom,
   Beside,
   Chat,
-  FilePanel,
+  fileSide,
   RoomContext,
   START_NO_ACCOUNT,
 } from '../conversation/public.ts'
@@ -80,16 +80,10 @@ export function AgentChat(props: {
                 noAccount={START_NO_ACCOUNT}
               />
             }
-            side={
-              file === undefined ? undefined : (
-                <FilePanel
-                  urlOf={(path) => agentFilePath({ companyId, conversationId, path })}
-                  shown={file}
-                  onClose={phone ? undefined : () => setFile(undefined)}
-                  inSheet={phone}
-                />
-              )
-            }
+            side={fileSide(file, (path) => agentFilePath({ companyId, conversationId, path }), {
+              phone,
+              close: () => setFile(undefined),
+            })}
           />
         </div>
       </div>
