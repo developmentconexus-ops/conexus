@@ -700,3 +700,7 @@ Linha de uso da Assinatura ChatGPT, em 2026-11-05: o fundador fez o roteiro de u
 ## Etapa 24.3.5
 
 Em 2026-11-03, sobre uma resposta do Assistente que disse não poder escrever no caderno de uma ligação: "Aqui para deixar registrado, Assistente deveria sim poder". Às duas perguntas seguintes: "1. A" "2. A". Mais tarde no mesmo dia, usando o Assistente de novo: "ele ainda não escreve na anotação do conector e ele deveria". Lido pelo firstmate como: (1) dono e administrador gravam no caderno pelo Assistente, como no Builder, e o membro recebe o texto sugerido; (2) o Assistente mostra o texto e só grava depois do sim da pessoa na conversa. Vira o cartão curto da 24.3.5.
+
+Cartão da etapa 24.3.5 aprovado em 2026-11-05 (commit cf9ada5c1507bc2aa9a05466938b02aeff1ace1b): "O 24.3.5 está aprovado, pode colocar ele também nessa execução."
+
+Lido pelo firstmate como a aprovação da página, com as respostas de 2026-11-03 "1. A" e "2. A" já nela. O cartão foi conferido contra o `main` em `65b8191c` e a U1 da 24.4 antes desta linha; a página ficou como ele a aprovou.
