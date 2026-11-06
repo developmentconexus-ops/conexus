@@ -142,8 +142,9 @@ Hub, a ferramenta fina). U4: ~600 (o campo, o workspace, a rota de arquivo do ag
 máquina, a linha na tela). U5: ~300. Total da etapa: ~3.950, no limite da regra L2: se a avaliação da
 U1 somar mais, a etapa se divide antes da U2 (U5 vira a etapa seguinte).
 
-**O que a avaliação da U1 mediu** (2026-11-05). A U1 mudou ~415 linhas de código fora dos testes e do
-cartão (239 somadas, 176 tiradas, contadas com os arquivos movidos como movidos), abaixo das ~550. O raio de hoje deixava de fora ~150 a 250 linhas que as unidades seguintes precisam e que as
+**O que a avaliação da U1 mediu** (2026-11-05). A U1 mudou ~430 linhas de código fora dos testes, dos
+scripts e da documentação (248 somadas, 183 tiradas, contadas com os arquivos movidos como movidos, com
+a rodada de conserto da revisão), abaixo das ~550. O raio de hoje deixava de fora ~150 a 250 linhas que as unidades seguintes precisam e que as
 seções abaixo agora nomeiam: parar a máquina no fim do turno e no fim do Hub no Construtor e nos agentes
 (U2, U4, ~40), a ligação em `main.ts` e `conversations-of.ts`, `removeWorkers` saindo de `hub/apps/` e
 as chaves de configuração (U3, ~100 a 150), `Plan.machine` (U4, ~10) e o transporte do modo código em
@@ -320,6 +321,12 @@ Assistente mudam de lugar na U1 com os seus testes, sem mudar o que fazem.
 | `packages/hub-api/src/` | Move `ShownFile` e o limite do texto mostrado de `assistant.ts` para um módulo da máquina; `ASSISTANT_TOOL.showFile` passa a ler o id compartilhado | servidor, web |
 | `apps/web/src/builder/conversation/` | Move a linha do `show_file` de `assistant-specs.ts` para uma compartilhada, e o arquivo ao lado de `assistant/file.tsx` para `conversation/` | Assistente; depois agentes (U4) |
 | `docs/steps/e244-ferramentas-em-codigo.md` | Muda as seções U2 a U5 | os construtores das unidades |
+| `apps/server/src/builder/runs/{ports,public,test-runs}.ts` (emenda da U1) | Muda: a porta da máquina de conversa e a sua sintonia passam a `conversationMachine` e `machineTuning`, do tipo `ConversationMachine`; a dublagem sai para `machine/test-conversation-machines.ts` | `main.ts`, os testes |
+| `apps/server/src/{main,conversations-of}.ts` (emenda da U1) | Muda: só o tipo e o nome da porta (`machine: deps.conversationMachine`) | o Hub |
+| `.dependency-cruiser.cjs` (emenda da U1) | Muda: a dublagem nova entra nas portas de teste | — |
+| `scripts/{removals,server-test-seconds}.json` (emenda da U1) | Muda: as linhas de remoção e os tempos dos testes que mudaram de arquivo | CI |
+| `apps/web/src/builder/assistant/{conversation.tsx,text.ts}` (emenda da U1) | Muda: `conversation.tsx` passa `urlOf` ao `FilePanel`; `FILE_EMPTY` sai de `text.ts` para `conversation/text.ts` | o Assistente |
+| `docs/approvals.md` (emenda da U1) | Muda: a linha de aprovação desta emenda (L6, L9) | `npm run approval` |
 
 Apaga: os três arquivos do Assistente acima, na mesma onda dos chamadores.
 
@@ -431,7 +438,9 @@ Apaga: nada.
   conferidas na entrada (C23). A chave de tentativa é a da chamada (`construtor/tools.ts:78-84`).
 - `addVersion` passa a receber a versão em que a pessoa se baseou; outra vira `STALE_VERSION`.
 - A máquina do Construtor (emenda da U1): `createConversationMachines({ ...machine, log, hosts:
-  ALLOWED_HOSTS, marksOf })` de `builder/machine/public.ts`, com as marcas `MARK.company` e
+  ALLOWED_HOSTS, marksOf })` de `builder/machine/public.ts`, onde `machine` é o `ConversationMachine`
+  que `conversationsOf` já recebe (`conversations-of.ts:81`, de `builderPortsOf` em `runs/ports.ts`
+  pelo `conversationMachine` de `main.ts`), com as marcas `MARK.company` e
   `MARK.project` da conversa (`CONSTRUTOR_MARK`, `construtor.ts:124-126`). O controlador do Construtor
   não recebe `workspace`: o Hub roda os comandos, não o modelo, e o modelo não ganha as ferramentas de
   máquina. `tool_code_save` abre a máquina por `(await machines.workspace(requestContext))?.resolveSandbox({
@@ -511,7 +520,7 @@ ctx.exports.ToolData({ props: { reads } }) } }, { outbound: {}, limits: { cpuMs:
 | `packages/hub-api/src/project-connections.ts` | Cria `callToolConnector` (operação de borda) | a borda |
 | `apps/server/src/hub/connectors/` | Muda: a porta que lê para uma ferramenta, com escopo e a chave do turno; a porta de teste nova | a rota de borda |
 | `apps/server/src/platform/` | Muda `cloudflare.ts` (subir e tirar no namespace das ferramentas, e `removeWorkers`, que sai de `hub/apps/prune.ts:85-96`: `hub/apps/public.ts` não o exporta, e `builder/tools` não o alcança, C4) e `config.ts` (o namespace, o host, o token de serviço); cria `edge-tools.ts` (o Hub chama a borda) | ferramentas, agentes, apps |
-| `apps/server/src/hub/apps/prune.ts` | Muda: chama `removeWorkers` de `platform/` | — |
+| `apps/server/src/hub/apps/{prune,removal}.ts` | Muda: chamam `removeWorkers` de `platform/` com `appWorkerOf` (`prune.ts:124`; `removal.ts:49`, `:87`, `:136`) | — |
 | `apps/server/src/{main,conversations-of}.ts` | Muda: a porta que relê a versão pelo `toolVersionId` entra no Hub como `door` entra hoje (`main.ts:173`); a remoção da empresa tira os Workers de ferramenta por `releaseFirst` (`conversations-of.ts:149-154`) | o Hub |
 | `apps/server/src/builder/tools/` | Muda: subir ao gravar; tirar os Workers ao apagar e na remoção da empresa | o serviço de ferramentas |
 | `apps/server/src/builder/agents/` | Cria `code-tools.ts`; muda `agent.ts` `tools` | o agente |
@@ -543,8 +552,11 @@ Apaga: nada.
 - Falhas ao modelo: `TOOL_FAILED`, `TOOL_UNAVAILABLE`, `NOT_DECLARED`, `CONNECTOR_CALLS_SPENT`.
 - Os nomes (emenda da U1): `createCloudflareTools(deps: { config: Config; log: FailureLog }):
   CloudflareApps` (o mesmo tipo, `cloudflare.ts:34-41`, sobre o segundo namespace);
-  `removeWorkers(cloudflare: CloudflareApps, workers: readonly string[], budget?: AbortSignal):
-  Promise<{ removed: string[]; left: number }>` em `platform/cloudflare.ts`; `createEdgeTools(deps: {
+  `removeWorkers<Id>(cloudflare: CloudflareApps, ids: readonly Id[], workerOf: (id: Id) => string,
+  budget?: AbortSignal): Promise<{ removed: Id[]; left: number }>` em `platform/cloudflare.ts`, que
+  devolve os ids marcados (C23) para `deleteVersionRows` (`prune.ts:132`) e `removal.ts:49` sem
+  mapear nomes de volta; chamado por `hub/apps/prune.ts` e `hub/apps/removal.ts` (`:49`, `:87`, `:136`)
+  com `appWorkerOf`, e pelas ferramentas com o nome `t-<toolVersionId>`; `createEdgeTools(deps: {
   config: Config; log: FailureLog }): EdgeTools`, com `call(input: { toolVersionId: ToolVersionId; turn:
   TurnKey; input: unknown; signal: AbortSignal }): Promise<EdgeToolAnswer>` (C56: o único `fetch` do Hub
   à borda); na borda, `export class ToolData extends WorkerEntrypoint<Env, ToolDataProps>` e
