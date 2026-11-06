@@ -70,8 +70,9 @@ async function hubServing(
   const sendMail = testMail(config)
   const identity = createIdentity({ database: test.database, config, log: silent, sendMail })
   const cloudflare = fakeCloudflare()
+  const tools = fakeCloudflare()
   const postgres = heldCompanyPostgres(config)
-  const ports = testAppPorts(config, { neon, cloudflare, postgres })
+  const ports = testAppPorts(config, { neon, cloudflare, postgres, tools })
   const subjects = subjectsOf({
     ...{ database: test.database, mastraPool: test.mastraPool, config, identity, sendMail },
     ...{ ...ports, log },
@@ -101,6 +102,8 @@ async function hubServing(
     config,
     neon,
     cloudflare,
+    /** The saved tools' namespace of memory (step 24.4). */
+    tools,
     postgres,
     projects,
     runs,

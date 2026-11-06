@@ -5,7 +5,7 @@ import type {
   ToolSlug,
   ToolVersionBody,
 } from '@conexus/hub-api'
-import { ConnectionId, ToolId } from '@conexus/hub-api'
+import { ConnectionId, ToolId, ToolVersionId } from '@conexus/hub-api'
 import { and, eq, sql } from 'drizzle-orm'
 import type { CommandTx } from '../../platform/database.ts'
 import { violatedConstraint } from '../../platform/database.ts'
@@ -16,8 +16,9 @@ import { admitted, detailOf, found, offeredOf, savedOnce, usableTool } from './a
 import type { InProject, OfferedConnection, Writer } from './check.ts'
 import { databaseScopeOf, fitting, sessionScopeOf, targetOf } from './check.ts'
 import { derivedUuid } from './derived.ts'
-import { presetTargetOf, toolOf } from './store.ts'
+import { firstVersionIdOf, presetTargetOf, toolOf } from './store.ts'
 import { tool, toolVersion } from './tables.ts'
+import { uploadWorker } from './workers.ts'
 
 /**
  * What a next version writes: its values, the request it came from (what the attempt is keyed by,
@@ -28,6 +29,8 @@ type Next = {
   config: object
   request: object
   fit: (row: ToolRow, offered: readonly OfferedConnection[]) => Promise<void>
+  /** What runs once the version committed, outside the transaction (data D22). */
+  saved?: (versionId: ToolVersionId) => Promise<void>
 }
 type ToolRow = typeof tool.$inferSelect
 
@@ -82,6 +85,7 @@ async function appendVersion(
       return deps.database.command(databaseScopeOf(scope), write)
     })
   deps.log.info({ companyId: scope.companyId, toolId, version: number, by }, 'TOOL_SAVED')
+  await next.saved?.(ToolVersionId.parse(versionId))
   return detail
 }
 
@@ -163,6 +167,12 @@ export async function saveCode(
     { companyId: scope.companyId, toolId: id, version: 1, by: 'CONSTRUTOR' },
     'TOOL_SAVED',
   )
+  const toolVersionId = firstVersionIdOf(id)
+  await uploadWorker(
+    deps,
+    { companyId: scope.companyId, toolId: id, toolVersionId },
+    version.module,
+  )
   return detail
 }
 
@@ -179,8 +189,12 @@ export async function addCodeVersion(
     }
     codeFitting(offered, ConnectionId.parse(row.connectionId), a.version.reads)
   }
+  const { companyId } = scope
+  async function saved(toolVersionId: ToolVersionId) {
+    await uploadWorker(deps, { companyId, toolId: a.toolId, toolVersionId }, a.version.module)
+  }
   return appendVersion(deps, scope, {
     ...{ toolId: a.toolId, basedOn: a.basedOn, attemptKey, by: 'CONSTRUTOR' },
-    next: { config: a.version, request: a.request, fit },
+    next: { config: a.version, request: a.request, fit, saved },
   })
 }

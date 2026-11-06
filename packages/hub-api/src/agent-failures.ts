@@ -88,6 +88,14 @@ export const AGENT_FAILURES = {
     action: '',
     actionKind: 'NONE',
   },
+  TOOL_UNAVAILABLE: {
+    category: 'THIRD_PARTY',
+    settles: false,
+    status: 503,
+    phrase: 'Não foi possível apagar esta ferramenta agora.',
+    action: 'Tente de novo em alguns minutos.',
+    actionKind: 'RETRY',
+  },
 } as const satisfies Record<string, FailureRow>
 
 /** The field of a request a refusal names, for the screen to show it beside that field (step 24.3). */

@@ -196,6 +196,8 @@ const SECRETS = [
   'hub_neon_api_key',
   'hub_app_login_key',
   'hub_cloudflare_apps_token',
+  'hub_tools_access_client_id',
+  'hub_tools_access_client_secret',
   'hub_seal_keys',
   'hub_mastra_database_url',
   'hub_git_copy_key',

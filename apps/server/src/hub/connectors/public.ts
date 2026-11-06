@@ -19,12 +19,18 @@ import type { OfGrant } from './grants.ts'
 import { grant, mayGrant, ungranted } from './grants.ts'
 import { createLimits } from './limits.ts'
 import { reseal } from './reseal.ts'
-import { registerAppCallRoutes, registerConnectionRoutes } from './routes.ts'
+import {
+  registerAppCallRoutes,
+  registerConnectionRoutes,
+  registerToolCallRoutes,
+} from './routes.ts'
+import { createToolDoor } from './tool-door.ts'
 
 export type { SessionScope } from './assistant-port.ts'
 export { TurnKey } from './assistant-port.ts'
 /** The cut of what a read sends the model: the agents' app reads cut the same way (code C26). */
 export { shaped } from './cut.ts'
+export type { LiveToolCall } from './tool-door.ts'
 
 /** Tests shorten the deadline. */
 export type ConnectorDeadlines = { callDeadlineMs?: number }
@@ -78,15 +84,23 @@ export function createConnectors(deps: {
     callDeadlineMs: deps.deadlines?.callDeadlineMs ?? CALL_DEADLINE_MS,
   }
   const appCalls = createAppCalls(routeDeps, deps.door)
+  // One door for the agents and the saved tools they call, so a turn's 50 reads count both.
+  const assistant = createAssistantConnectors(routeDeps)
+  const toolDoor = createToolDoor(assistant, deps.log)
   return Object.freeze({
     routes: (app: FastifyInstance) => registerConnectionRoutes(app, routeDeps),
-    edgeRoutes: (edge: FastifyInstance) => registerAppCallRoutes(edge, appCalls),
+    edgeRoutes: (edge: FastifyInstance) => {
+      registerAppCallRoutes(edge, appCalls)
+      registerToolCallRoutes(edge, toolDoor)
+    },
     /** What Publicar asks: the declared connectors and operations the Projeto may not read. */
     ungranted,
     /** What the Builder's tools and instructions read; the Builder wires it in U5. */
     builder: createBuilderConnectors(routeDeps),
     /** What the Assistant's tools and conversation scope read: the chosen connections of its place, read only (step 24.1, U1). */
-    assistant: createAssistantConnectors(routeDeps),
+    assistant,
+    /** The saved tools' live calls (step 24.4): the agent opens one before it calls the edge. */
+    tools: { open: toolDoor.open },
     /** What the Assistant's hand-off releases to the Projeto it made (step 24.3.2), as the grant route does. */
     grants: {
       may: (viewer: Parameters<typeof mayGrant>[1]) => mayGrant(routeDeps, viewer),

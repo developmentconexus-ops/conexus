@@ -32,7 +32,7 @@ import { requestsOf } from './hub/requests/public.ts'
 import type { Status } from './hub/status/public.ts'
 import { createStatus } from './hub/status/public.ts'
 import type { CloudflareApps } from './platform/cloudflare.ts'
-import { createCloudflareApps } from './platform/cloudflare.ts'
+import { createCloudflareApps, createCloudflareTools } from './platform/cloudflare.ts'
 import type { CompanyPostgres } from './platform/company-postgres.ts'
 import { createCompanyPostgres, neonTransport } from './platform/company-postgres.ts'
 import type { Config } from './platform/config.ts'
@@ -46,6 +46,7 @@ import {
   openMastraPool,
 } from './platform/database.ts'
 import { createEdgeServer } from './platform/edge-server.ts'
+import { createEdgeTools } from './platform/edge-tools.ts'
 import type { FailureLog } from './platform/failure.ts'
 import { Failure, logFailure } from './platform/failure.ts'
 import { registerHealth } from './platform/health.ts'
@@ -118,6 +119,8 @@ export function subjectsOf(deps: {
   neon: NeonProjects
   companyPostgres: CompanyPostgres
   cloudflare: CloudflareApps
+  /** The saved tools' namespace (step 24.4); the Hub calls their host through `createEdgeTools`. */
+  cloudflareTools: CloudflareApps
   mastraPool: MastraPool
   machinesOf: MachinesOf
   conversationMachine: ConversationMachine
@@ -148,6 +151,7 @@ export function subjectsOf(deps: {
   const { conversations, assistant, automations, agents } = conversationsOf({
     ...{ database, identity, sealKeys, google, log, runs, mastraPool: deps.mastraPool },
     ...{ machine: deps.conversationMachine, machineTuning: deps.machineTuning },
+    tools: { cloudflare: deps.cloudflareTools, edge: createEdgeTools({ config, log }) },
     ...{ connectors: () => connectors, apps: () => apps, projects: () => projects.ports },
     ...{ notify: notifications.notify, automationClock: config.automationClock },
   })
@@ -200,9 +204,10 @@ async function runServer(): Promise<void> {
       appLoginKey: config.appLoginKey,
     })
     const cloudflare = createCloudflareApps({ config, log })
+    const cloudflareTools = createCloudflareTools({ config, log })
     const subjects = subjectsOf({
       ...{ database, config, identity, sendMail },
-      ...{ neon, companyPostgres, cloudflare, mastraPool, log },
+      ...{ neon, companyPostgres, cloudflare, cloudflareTools, mastraPool, log },
       ...builderPortsOf({ config, log }),
     })
     const { projects, apps, conversations, modelAccounts, runs, connectors } = subjects

@@ -23,6 +23,8 @@ services:
       - hub_neon_api_key
       - hub_app_login_key
       - hub_cloudflare_apps_token
+      - hub_tools_access_client_id
+      - hub_tools_access_client_secret
       - hub_seal_keys
       - hub_git_copy_key
       - hub_e2b_api_key
@@ -50,6 +52,12 @@ services:
       HUB_CLOUDFLARE_API_URL: https://api.cloudflare.com/client/v4
       HUB_CLOUDFLARE_APPS_TOKEN_FILE: /run/secrets/hub_cloudflare_apps_token
       HUB_APPS_NAMESPACE: conexus-apps
+      # The saved tools (step 24.4): their namespace, on the same token, and their host on the edge,
+      # behind Cloudflare Access, which the Hub passes with the service token's two halves.
+      HUB_TOOLS_NAMESPACE: conexus-tools
+      HUB_TOOLS_ORIGIN: https://tools.conexusapp.tech
+      HUB_TOOLS_ACCESS_CLIENT_ID_FILE: /run/secrets/hub_tools_access_client_id
+      HUB_TOOLS_ACCESS_CLIENT_SECRET_FILE: /run/secrets/hub_tools_access_client_secret
       # The installation's seal keys (security S32, S33): the last line seals, the others only open.
       HUB_SEAL_KEYS_FILE: /run/secrets/hub_seal_keys
       # The apps' repositories on the server, and the key of the private R2 bucket that copies them
@@ -132,6 +140,10 @@ secrets:
     file: /etc/conexus/secrets/hub_app_login_key
   hub_cloudflare_apps_token:
     file: /etc/conexus/secrets/hub_cloudflare_apps_token
+  hub_tools_access_client_id:
+    file: /etc/conexus/secrets/hub_tools_access_client_id
+  hub_tools_access_client_secret:
+    file: /etc/conexus/secrets/hub_tools_access_client_secret
   hub_seal_keys:
     file: /etc/conexus/secrets/hub_seal_keys
   hub_git_copy_key:

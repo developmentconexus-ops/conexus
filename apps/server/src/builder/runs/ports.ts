@@ -4,7 +4,13 @@ import type { FailureLog } from '../../platform/failure.ts'
 import type { GitCopy, Repository } from '../git/public.ts'
 import { createGitCopy, openRepository, restoreGuarded } from '../git/public.ts'
 import type { ConversationMachine, Machines, MachineTuning } from '../machine/public.ts'
-import { createE2bApi, createE2bKit, createMachines, MARK } from '../machine/public.ts'
+import {
+  createE2bApi,
+  createE2bCodeMode,
+  createE2bKit,
+  createMachines,
+  MARK,
+} from '../machine/public.ts'
 
 export type { ConversationMachine, MachineTuning }
 export type RepositoryOf = (ids: { companyId: CompanyId; projectId: ProjectId }) => Repository
@@ -43,6 +49,7 @@ export function builderPortsOf(deps: { config: Config; log: FailureLog }): {
     template: config.machineTemplate,
     installation: config.installationId,
     mark,
+    codeMode: createE2bCodeMode(),
   }
   return { machinesOf, repository, copy, conversationMachine }
 }

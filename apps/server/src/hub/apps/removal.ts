@@ -1,14 +1,15 @@
 import type { CompanyId, ProjectId } from '@conexus/hub-api'
-import { AppVersionId } from '@conexus/hub-api'
+import { AppVersionId, appWorkerOf } from '@conexus/hub-api'
 import { and, eq } from 'drizzle-orm'
 import type { CloudflareApps } from '../../platform/cloudflare.ts'
+import { removeWorkers } from '../../platform/cloudflare.ts'
 import type { CompanyPostgres } from '../../platform/company-postgres.ts'
 import type { CommandTx, Database, Scope } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { NeonProjects } from '../../platform/neon.ts'
 import { readyDatabaseOf } from '../projects/public.ts'
-import { deleteUnusedBlobs, removeWorkers } from './prune.ts'
+import { deleteUnusedBlobs } from './prune.ts'
 import { app, appVersion, blob, versionFile } from './tables.ts'
 import { CLAIM_HELD, failVersion } from './versions.ts'
 
@@ -46,7 +47,7 @@ export async function takeBackRepair(
   deps: RemovalDeps,
   input: Ids & { scope: Scope; versionIds: readonly AppVersionId[] },
 ): Promise<void> {
-  const { removed } = await removeWorkers(deps.cloudflare, input.versionIds)
+  const { removed } = await removeWorkers(deps.cloudflare, input.versionIds, appWorkerOf)
   const dropped = removed.length === input.versionIds.length && (await dropAppDatabase(deps, input))
   if (!dropped) throw new Failure('APP_VERSION_FAILED', { details: { reason: 'TAKE_BACK_LEFT' } })
 }
@@ -87,6 +88,7 @@ export async function removeProjectApp(
   const { left } = await removeWorkers(
     deps.cloudflare,
     versions.map(({ id }) => AppVersionId.parse(id)),
+    appWorkerOf,
   )
   if (left > 0 || !(await dropAppDatabase(deps, input))) {
     deps.log.error({ companyId, projectId, workersLeft: left }, 'PROJECT_APP_DELETE_LEFT')
@@ -133,7 +135,7 @@ export async function removeCompanyWorkers(
     throw new Failure('CLIENT_DELETION_PENDING', { details: { sending: sending.length } })
   }
   const ids = versions.map(({ id }) => AppVersionId.parse(id))
-  const { left } = await removeWorkers(deps.cloudflare, ids)
+  const { left } = await removeWorkers(deps.cloudflare, ids, appWorkerOf)
   if (left > 0) throw new Failure('CLIENT_DELETION_PENDING', { details: { workersLeft: left } })
 }
 

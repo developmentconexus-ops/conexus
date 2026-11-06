@@ -262,6 +262,7 @@ export { PAGES, REDIRECT_PATH } from './pages.ts'
 export {
   APP_CONNECTOR_REPLY_BYTES,
   callAppConnector,
+  callToolConnector,
   deleteConnectionNote,
   Grant,
   grantProjectConnection,
@@ -270,6 +271,7 @@ export {
   ProjectAccess,
   ProjectConnections,
   revokeProjectConnection,
+  ToolDataAnswer,
 } from './project-connections.ts'
 export {
   createProject,

@@ -871,8 +871,19 @@
   {
     "id": "edge-outbound-wall",
     "file": "apps/edge/wrangler.jsonc",
-    "find": ",\n      \"outbound\": { \"service\": \"conexus-outbound\" }",
-    "replace": "",
+    "find": "\"conexus-apps\",\n      \"outbound\": { \"service\": \"conexus-outbound\" }",
+    "replace": "\"conexus-apps\"",
+    "test": {
+      "cwd": "apps/edge",
+      "file": "src/outbound.test.ts",
+      "name": "o muro"
+    }
+  },
+  {
+    "id": "edge-tools-outbound-wall",
+    "file": "apps/edge/wrangler.jsonc",
+    "find": "\"conexus-tools\",\n      \"outbound\": { \"service\": \"conexus-outbound\" }",
+    "replace": "\"conexus-tools\"",
     "test": {
       "cwd": "apps/edge",
       "file": "src/outbound.test.ts",
@@ -2725,6 +2736,94 @@
       "cwd": "apps/server",
       "file": "src/builder/model-accounts/google/flat-unions.test.ts",
       "name": "sem união"
+    }
+  },
+  {
+    "id": "edge-tools-access-audience",
+    "file": "apps/edge/src/tools.ts",
+    "find": "access === undefined || access.aud !== env.TOOLS_ACCESS_AUD",
+    "replace": "access === undefined",
+    "test": {
+      "cwd": "apps/edge",
+      "file": "src/tools.test.ts",
+      "name": "sem o Access ou com outro público"
+    }
+  },
+  {
+    "id": "edge-tools-runtime-access",
+    "file": "apps/edge/src/dispatcher.ts",
+    "find": "        ctx.access,\n",
+    "replace": "        { aud: env.TOOLS_ACCESS_AUD },\n",
+    "test": {
+      "cwd": "apps/edge",
+      "file": "src/dispatcher-clone.test.ts",
+      "name": "a entrada do despachante"
+    }
+  },
+  {
+    "id": "tool-door-same-version",
+    "file": "apps/server/src/hub/connectors/tool-door.ts",
+    "find": "call.toolVersionId !== body.toolVersionId",
+    "replace": "false",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/connectors/tool-door.test.ts",
+      "name": "a chave da chamada"
+    }
+  },
+  {
+    "id": "tool-door-declared-reads",
+    "file": "apps/server/src/hub/connectors/tool-door.ts",
+    "find": "call.reads.includes(body.operation)",
+    "replace": "true",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/connectors/tool-door.test.ts",
+      "name": "a chave da chamada"
+    }
+  },
+  {
+    "id": "tool-call-closes",
+    "file": "apps/server/src/builder/agents/code-tools.ts",
+    "find": "          live.close()\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/agents/code-tool.test.ts",
+      "name": "a ferramenta salva sobe ao gravar"
+    }
+  },
+  {
+    "id": "edge-tools-status",
+    "file": "apps/server/src/platform/edge-tools.ts",
+    "find": "response.status !== 200",
+    "replace": "false",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/edge-tools.test.ts",
+      "name": "a borda fora"
+    }
+  },
+  {
+    "id": "edge-tools-margin",
+    "file": "apps/server/src/platform/edge-tools.ts",
+    "find": " + EDGE_MARGIN_MS",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/edge-tools.test.ts",
+      "name": "o prazo"
+    }
+  },
+  {
+    "id": "tool-upload-budget",
+    "file": "apps/server/src/platform/cloudflare.ts",
+    "find": "  budget?: AbortSignal,\n): Promise<CloudflareAnswer<'UPLOADED' | 'NOT_STARTING'>> {\n  // A form body under a signal that already ended rejects inside undici, where no one catches it.\n  if (budget?.aborted) return { kind: 'NO_ANSWER' }\n  const deadline = AbortSignal.timeout(CLOUDFLARE_DEADLINE_MS)\n  const signal = budget === undefined ? deadline : AbortSignal.any([deadline, budget])",
+    "replace": "  budget?: AbortSignal,\n): Promise<CloudflareAnswer<'UPLOADED' | 'NOT_STARTING'>> {\n  // A form body under a signal that already ended rejects inside undici, where no one catches it.\n  if (budget?.aborted) return { kind: 'NO_ANSWER' }\n  const deadline = AbortSignal.timeout(CLOUDFLARE_DEADLINE_MS)\n  const signal = deadline",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/cloudflare.test.ts",
+      "name": "quem a pediu desiste"
     }
   }
 ]

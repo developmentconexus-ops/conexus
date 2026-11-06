@@ -5,6 +5,7 @@ import type { ToolsDeps } from '../tools/public.ts'
 import { createTools, registerToolRoutes } from '../tools/public.ts'
 import type { AgentsDeps } from './agents.ts'
 import { createAgentService } from './agents.ts'
+import type { CodeToolsDeps } from './code-tools.ts'
 import { createAgentConversations } from './controller.ts'
 import { registerAgentConversationRoutes } from './conversation-routes.ts'
 import { openAgentConversation } from './open.ts'
@@ -61,10 +62,12 @@ export function agentsOf(
  */
 export function agentsAlive(
   deps: Parameters<typeof agentsOf>[0] &
-    Omit<Parameters<typeof createAgentConversations>[0], 'agents'>,
+    Omit<Parameters<typeof createAgentConversations>[0], 'agents' | 'codeTools'> &
+    Pick<CodeToolsDeps, 'edge' | 'calls'>,
 ) {
   const agents = agentsOf(deps)
-  const live = createAgentConversations({ ...deps, agents })
+  const codeTools = { ...deps, reupload: agents.tools.reupload }
+  const live = createAgentConversations({ ...deps, agents, codeTools })
   return Object.freeze({
     ...agents,
     part: live.part,
