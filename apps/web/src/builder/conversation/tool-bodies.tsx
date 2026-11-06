@@ -20,6 +20,15 @@ export function textOf(value: unknown): string | undefined {
   }
 }
 
+function Labelled({ label, text }: { label: string; text: string }) {
+  return (
+    <div className="flex flex-col gap-xxs">
+      <span className="font-sans text-text-2">{label}</span>
+      <pre className={BLOCK}>{shown(text)}</pre>
+    </div>
+  )
+}
+
 export function Generic({ tool, title }: { tool: ToolItem; title: string }) {
   const args =
     typeof tool.args === 'object' && tool.args !== null && Object.keys(tool.args).length > 0
@@ -27,18 +36,8 @@ export function Generic({ tool, title }: { tool: ToolItem; title: string }) {
   return (
     <div className="flex min-w-0 flex-col gap-xs font-mono text-fact text-text-2">
       <div className="font-sans font-semibold text-text">{title}</div>
-      {args && (
-        <div className="flex flex-col gap-xxs">
-          <span className="font-sans text-text-2">Argumentos:</span>
-          <pre className={BLOCK}>{shown(textOf(tool.args) ?? '')}</pre>
-        </div>
-      )}
-      {result !== undefined && (
-        <div className="flex flex-col gap-xxs">
-          <span className="font-sans text-text-2">Resultado:</span>
-          <pre className={BLOCK}>{shown(result)}</pre>
-        </div>
-      )}
+      {args && <Labelled label="Argumentos:" text={textOf(tool.args) ?? ''} />}
+      {result !== undefined && <Labelled label="Resultado:" text={result} />}
     </div>
   )
 }
@@ -54,18 +53,8 @@ export function Program({ tool, title }: { tool: ToolItem; title: string }) {
   return (
     <div className="flex min-w-0 flex-col gap-xs font-mono text-fact text-text-2">
       <div className="font-sans font-semibold text-text">{title}</div>
-      {result !== undefined && (
-        <div className="flex flex-col gap-xxs">
-          <span className="font-sans text-text-2">Resultado:</span>
-          <pre className={BLOCK}>{shown(result)}</pre>
-        </div>
-      )}
-      {logs !== undefined && logs !== '' && (
-        <div className="flex flex-col gap-xxs">
-          <span className="font-sans text-text-2">Registros:</span>
-          <pre className={BLOCK}>{shown(logs)}</pre>
-        </div>
-      )}
+      {result !== undefined && <Labelled label="Resultado:" text={result} />}
+      {logs !== undefined && logs !== '' && <Labelled label="Registros:" text={logs} />}
     </div>
   )
 }
