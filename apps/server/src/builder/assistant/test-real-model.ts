@@ -66,52 +66,71 @@ async function codeFrom(folder: string): Promise<string> {
   throw new Error('No sign-in code arrived in ten minutes.')
 }
 
-/** The saved sign-in a person kept on this machine, when the switch names it: `access`, `refresh` and `expiresAt` (ms). Its content is never printed and the file is never written. */
+/** Our own file of the sign-in the Hub kept (`access`, `refresh`, `expiresAt` in ms), named by the switch; never printed. */
 // biome-ignore lint/style/noProcessEnv: the switch of this one opt-in case, not the app's configuration
-const SAVED_LOGIN = process.env.CONEXUS_EVAL_CLAUDE_CREDENTIAL
+const LOGIN_FILE = process.env.CONEXUS_EVAL_CLAUDE_CREDENTIAL
+const EARLY_MS = 300_000
+const Login = z.object({
+  access: z.string().min(1),
+  refresh: z.string().min(1),
+  expiresAt: z.number(),
+})
+type Login = z.infer<typeof Login>
 
-function savedLogin(): { access: string; refresh: string; expiresAt: number } | undefined {
-  if (SAVED_LOGIN === undefined) return undefined
-  const read = z
-    .object({ access: z.string().min(1), refresh: z.string().min(1), expiresAt: z.number() })
-    .parse(JSON.parse(readFileSync(SAVED_LOGIN, 'utf8')))
-  return read
-}
-
-function urlState(url: string): string {
-  return String(new URL(url).searchParams.get('state'))
-}
-
-/** Without a saved sign-in: the link goes to the folder and the code comes back there. */
-async function linkCode(folder: string, url: string): Promise<string> {
-  writeFileSync(join(folder, 'authorize-url.txt'), `${url}\n`)
-  return codeFrom(folder)
+function keptLogin(): Login | undefined {
+  if (LOGIN_FILE === undefined || !existsSync(LOGIN_FILE)) return undefined
+  return Login.parse(JSON.parse(readFileSync(LOGIN_FILE, 'utf8')))
 }
 
 /**
- * The vendor's trade of the code, answered with the saved tokens while the Hub completes its own
- * sign-in; every other call goes through, and `restore` puts the real `fetch` back.
+ * The vendor's token calls while the Hub signs in and renews: with a kept login, the first trade
+ * of the code is answered with it, and every token the vendor gives (the trade or a renewal) is
+ * written back to the file (mode 0600). Every other call goes through; the real `fetch` returns
+ * when the test ends.
  */
-function tradeWith(saved: { access: string; refresh: string; expiresAt: number }) {
+function keeping(t: TestContext, file: string, kept: Login | undefined) {
   const real = globalThis.fetch
-  globalThis.fetch = (input, init) => {
-    if (!String(input instanceof Request ? input.url : input).includes('/v1/oauth/token')) {
-      return real(input, init)
+  let answered = kept === undefined
+  globalThis.fetch = async (input, init) => {
+    const target = String(input instanceof Request ? input.url : input)
+    if (!target.includes('/v1/oauth/token')) return real(input, init)
+    if (!answered && kept !== undefined) {
+      answered = true
+      return Response.json({
+        access_token: kept.access,
+        refresh_token: kept.refresh,
+        expires_in: Math.max(1, (kept.expiresAt - Date.now() + EARLY_MS) / 1000),
+      })
     }
-    const early = 300_000
-    return Promise.resolve(
-      Response.json({
-        access_token: saved.access,
-        refresh_token: saved.refresh,
-        expires_in: Math.max(1, (saved.expiresAt - Date.now() + early) / 1000),
-      }),
-    )
+    const response = await real(input, init)
+    if (response.ok) {
+      const reply = z
+        .object({
+          access_token: z.string(),
+          refresh_token: z.string(),
+          expires_in: z.number(),
+        })
+        .safeParse(await response.clone().json())
+      if (reply.success) {
+        const next: Login = {
+          access: reply.data.access_token,
+          refresh: reply.data.refresh_token,
+          expiresAt: Date.now() + reply.data.expires_in * 1000 - EARLY_MS,
+        }
+        writeFileSync(file, JSON.stringify(next), { mode: 0o600 })
+      }
+    }
+    return response
   }
-  return {
-    restore() {
-      globalThis.fetch = real
-    },
-  }
+  t.after(() => {
+    globalThis.fetch = real
+  })
+}
+
+/** Without a kept login: the link goes to the folder and the code comes back there. */
+async function linkCode(folder: string, url: string): Promise<string> {
+  writeFileSync(join(folder, 'authorize-url.txt'), `${url}\n`)
+  return codeFrom(folder)
 }
 
 /** A Hub that calls the real model, through a Claude subscription signed in by the routes, as a person signs in. */
@@ -132,11 +151,13 @@ export async function subscribed(t: TestContext, folder: string) {
   const opened = await post(hub, ana, `${company}/model-account-sign-ins`, body)
   assert.equal(opened.statusCode, 201, opened.body)
   const { url, signInId } = Object(opened.json())
-  const saved = savedLogin()
-  const code = saved === undefined ? await linkCode(folder, url) : `saved#${urlState(url)}`
-  const trade = saved === undefined ? undefined : tradeWith(saved)
+  const kept = keptLogin()
+  if (LOGIN_FILE !== undefined) keeping(t, LOGIN_FILE, kept)
+  const code =
+    kept === undefined
+      ? await linkCode(folder, url)
+      : `saved#${new URL(url).searchParams.get('state')}`
   const linked = await post(hub, ana, `${company}/model-account-sign-ins/${signInId}`, { code })
-  trade?.restore()
   assert.equal(linked.statusCode, 201, linked.body)
   const model = REAL_MODEL_CHOICE
   assert.equal((await call(hub, ana, 'PUT', `${company}/default-model`, model)).statusCode, 200)
