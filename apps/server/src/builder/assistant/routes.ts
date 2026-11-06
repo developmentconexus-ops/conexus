@@ -8,6 +8,7 @@ import type {
   ProjectId,
 } from '@conexus/hub-api'
 import {
+  ASSISTANT_FILE,
   ConversationId,
   createAssistantConversation,
   deleteAssistantConversation,
@@ -30,12 +31,12 @@ import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import { answer, serve } from '../../platform/http.ts'
 import { attemptIdOf, changeModel, releaseThreads, resourceOf } from '../controller-kit/public.ts'
+import type { ConversationMachines } from '../machine/public.ts'
+import { registerFile } from '../machine/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import type { ChosenConnections } from './chosen.ts'
 import type { Owner } from './context.ts'
 import { SESSION_MARK, scopeOn } from './context.ts'
-import { registerFile } from './file-route.ts'
-import type { AssistantMachines } from './machine.ts'
 import type { assistantMemory } from './memory.ts'
 import { admitted, automationOf, marksOf, offeredOnly, openConversation, placeOf } from './open.ts'
 import type { AssistantProjects } from './ports.ts'
@@ -55,7 +56,7 @@ type Deps = {
   queue: QueueDeps
   controller: AgentController
   memory: ReturnType<typeof assistantMemory>
-  machines: AssistantMachines
+  machines: ConversationMachines
   chosen: ChosenConnections
   log: FailureLog
 }
@@ -318,8 +319,10 @@ export function registerAssistantRoutes(app: FastifyInstance, deps: Deps): void 
   registerWrites(app, deps)
   registerChanges(app, deps)
   registerFile(app, {
+    route: ASSISTANT_FILE,
     machines: deps.machines,
     log: deps.log,
+    served: 'ASSISTANT_FILE_READ',
     ownConversation: async (owner, conversationId) => {
       await admitted(deps, owner, { kind: 'COMPANY' }, 'askAssistant')
       await ownThread(deps, owner, conversationId)
