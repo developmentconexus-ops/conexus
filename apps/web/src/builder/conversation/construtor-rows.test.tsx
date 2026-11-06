@@ -227,6 +227,7 @@ test('Procurou ferramentas diz quantas e, aberta, lista cada uma sem o slug', ()
   const found = {
     tools: [
       {
+        kind: 'PRESET',
         id: TOOL,
         slug: 'pedidos_matriz',
         connectionId: CONNECTION,
@@ -268,4 +269,56 @@ test('Testou o agente diz a pergunta ao lado e, aberta, a resposta', () => {
   fireEvent.click(screen.getByRole('button', { name: /Testou o agente/ }))
   expect(screen.getByText('12')).toBeTruthy()
   expect(screen.getByText('Chamou 1 ferramenta')).toBeTruthy()
+})
+
+// A ferramenta em código (step 24.4, U2): a pessoa lê o que o Construtor fez e o que o teste leu.
+const CODE_VERSION = {
+  ...{ kind: 'CODE', id: VERSION, number: 1, description: 'Soma as vendas.' },
+  ...{ source: 'export default {}', reads: ['pedidos'], inputSchema: {}, outputSchema: {} },
+  test: { passed: true, rows: 251, at: '2026-11-05T12:00:00.000Z' },
+}
+const SAVED_CODE = {
+  kind: 'SAVED',
+  tool: {
+    ...{ kind: 'CODE', id: TOOL, slug: 'vendas', connectionId: CONNECTION, reads: ['pedidos'] },
+    readLabels: { pedidos: 'Pedidos' },
+    ...{ description: 'Soma as vendas.', connectionName: 'Matriz', effect: 'READ', usedBy: [] },
+    latest: { id: VERSION, number: 1 },
+    versions: [CODE_VERSION],
+  },
+}
+
+test('tool_code_save diz Escrevendo e testando enquanto roda, e o que o teste leu quando grava', () => {
+  const running = render(
+    <ToolRow tool={{ ...draftRow(CONSTRUTOR_TOOL.toolCodeSave), state: 'call' }} />,
+  )
+  expect(screen.getByText('Escrevendo e testando uma ferramenta')).toBeTruthy()
+  running.unmount()
+  render(<ToolRow tool={{ ...draftRow(CONSTRUTOR_TOOL.toolCodeSave), result: SAVED_CODE }} />)
+  expect(screen.getByText('Escreveu e testou uma ferramenta')).toBeTruthy()
+  expect(screen.getByText('Testei com 251 linhas')).toBeTruthy()
+})
+
+test('tool_code_save com o teste que não passou diz O teste não passou e o erro; uma recusa diz a frase de falha', () => {
+  const failed = render(
+    <ToolRow
+      tool={{
+        ...draftRow(CONSTRUTOR_TOOL.toolCodeSave),
+        result: { kind: 'REFUSED', code: 'TOOL_TEST_FAILED', output: 'expected 5, got 6' },
+      }}
+    />,
+  )
+  expect(screen.getByText('O teste não passou')).toBeTruthy()
+  expect(screen.getByText('expected 5, got 6')).toBeTruthy()
+  failed.unmount()
+  render(
+    <ToolRow
+      tool={{
+        ...draftRow(CONSTRUTOR_TOOL.toolCodeSave),
+        result: { kind: 'REFUSED', code: 'TOOL_REFUSED', field: 'source', reason: 'MODULE_STATE' },
+      }}
+    />,
+  )
+  expect(screen.getByText('Não conseguiu fazer a ferramenta')).toBeTruthy()
+  expect(screen.queryByText(/^Escreveu/)).toBeNull()
 })

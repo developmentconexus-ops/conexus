@@ -18,13 +18,19 @@ import { PageTitle } from '../../ui/list.tsx'
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { ReadFailure } from '../../ui/states.tsx'
 import { AreaFrame, ToolForm } from '../agents/public.ts'
+import { CodeBadge, CodeVersion } from './code-version.tsx'
 import { sendToolVersion, toolQuery } from './queries.ts'
 import { BACK_TO_TOOLS, UNCONFIRMED_VERSION } from './text.ts'
 
 type Scope = { companyId: CompanyId; projectId: ProjectId }
 
 /** The form of the latest version, whose connection and read only show; it saves version `n + 1`. */
-function NewVersionForm(props: { scope: Scope; tool: ToolDetail; onClose: () => void }) {
+function NewVersionForm(props: {
+  scope: Scope
+  tool: ToolDetail & { kind: 'PRESET' }
+  onClose: () => void
+  onReload: () => void
+}) {
   const { scope, tool } = props
   const queryClient = useQueryClient()
   const save = useMutation(sendToolVersion)
@@ -35,8 +41,8 @@ function NewVersionForm(props: { scope: Scope; tool: ToolDetail; onClose: () => 
     reason: ProblemReason | undefined
   }>()
   const latest = tool.versions.find((one) => one.number === tool.latest.number)
-  if (latest === undefined)
-    throw new Error(`the tool ${tool.id} has no version ${tool.latest.number}`)
+  if (latest?.kind !== 'PRESET')
+    throw new Error(`the tool ${tool.id} has no preset version ${tool.latest.number}`)
 
   async function send({ description, bound, open }: ToolVersionConfig) {
     setError(undefined)
@@ -45,7 +51,7 @@ function NewVersionForm(props: { scope: Scope; tool: ToolDetail; onClose: () => 
       const made = await attempt((attemptKey) =>
         save.mutateAsync({
           params: { ...scope, toolId: tool.id },
-          body: { description, bound, open },
+          body: { description, bound, open, basedOn: tool.latest.number },
           attemptKey,
         }),
       )
@@ -54,7 +60,9 @@ function NewVersionForm(props: { scope: Scope; tool: ToolDetail; onClose: () => 
     } catch (failure) {
       if (failure instanceof HubFailure)
         setRefused({ field: failure.field, reason: failure.reason })
-      setError(writeFailureText(failure, UNCONFIRMED_VERSION))
+      // The form says a newer version exists in its own words, with Recarregar.
+      const newer = failure instanceof HubFailure && failure.reason === 'STALE_VERSION'
+      setError(newer ? undefined : writeFailureText(failure, UNCONFIRMED_VERSION))
     }
   }
 
@@ -68,6 +76,7 @@ function NewVersionForm(props: { scope: Scope; tool: ToolDetail; onClose: () => 
       error={error}
       submitLabel="Gravar versão"
       onCancel={props.onClose}
+      onReload={props.onReload}
       onSubmit={(input) => void send(input)}
     />
   )
@@ -92,11 +101,13 @@ export function NewVersion(props: {
           <ReadFailure text={sentenceOf(read.error)} onRetry={() => void read.refetch()} />
         )}
         {tool === undefined && !read.isError && <Skeleton className="h-20 w-full" />}
-        {tool !== undefined && (
+        {tool?.kind === 'PRESET' && (
           <NewVersionForm
+            key={tool.latest.id}
             scope={props.scope}
             tool={tool}
             onClose={() => props.onOpenChange(false)}
+            onReload={() => void read.refetch()}
           />
         )}
       </DialogContent>
@@ -113,6 +124,7 @@ export function ToolPage(props: Scope & { toolId: ToolId }) {
   const read = useQuery(toolQuery(scope, props.toolId))
   const [open, setOpen] = useState(false)
   const tool = read.data?.tool
+  const labels = tool?.kind === 'CODE' ? tool.readLabels : {}
 
   return (
     <AreaFrame scope={scope} tab="ferramentas">
@@ -128,10 +140,15 @@ export function ToolPage(props: Scope & { toolId: ToolId }) {
       )}
       {tool !== undefined && (
         <>
-          <PageTitle>{tool.slug}</PageTitle>
-          <Button className="w-fit" variant="primary" onClick={() => setOpen(true)}>
-            Nova versão
-          </Button>
+          <PageTitle>
+            {tool.slug}
+            {tool.kind === 'CODE' && <CodeBadge />}
+          </PageTitle>
+          {tool.kind === 'PRESET' && (
+            <Button className="w-fit" variant="primary" onClick={() => setOpen(true)}>
+              Nova versão
+            </Button>
+          )}
           <ul className="flex flex-col">
             {[...tool.versions]
               .sort((a, b) => b.number - a.number)
@@ -139,14 +156,20 @@ export function ToolPage(props: Scope & { toolId: ToolId }) {
                 <li key={one.id} className="flex flex-col gap-xs border-b border-line px-sm py-sm">
                   <span className="font-semibold">Versão {one.number}</span>
                   <span>{one.description}</span>
-                  <span className="text-fact text-text-2">
-                    Valores fixos: {JSON.stringify(one.bound)} · O modelo preenche:{' '}
-                    {one.open.length === 0 ? 'nada' : one.open.join(', ')}
-                  </span>
+                  {one.kind === 'PRESET' ? (
+                    <span className="text-fact text-text-2">
+                      Valores fixos: {JSON.stringify(one.bound)} · O modelo preenche:{' '}
+                      {one.open.length === 0 ? 'nada' : one.open.join(', ')}
+                    </span>
+                  ) : (
+                    <CodeVersion connection={tool.connectionName} labels={labels} version={one} />
+                  )}
                 </li>
               ))}
           </ul>
-          <NewVersion scope={scope} toolId={tool.id} open={open} onOpenChange={setOpen} />
+          {tool.kind === 'PRESET' && (
+            <NewVersion scope={scope} toolId={tool.id} open={open} onOpenChange={setOpen} />
+          )}
         </>
       )}
     </AreaFrame>

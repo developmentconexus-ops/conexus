@@ -188,7 +188,16 @@ function conversationRoutes(held: Held, chosen: ChosenModels, note: Note) {
       const { connectionId, operation, slug, description } = body
       const made = {
         ...toolSummary({ slug, connectionId, operation, description }),
-        versions: [{ id: TOOL_V1, number: 1, description, bound: body.bound, open: body.open }],
+        versions: [
+          {
+            kind: 'PRESET',
+            id: TOOL_V1,
+            number: 1,
+            description,
+            bound: body.bound,
+            open: body.open,
+          },
+        ],
       }
       held.tools = [
         ...(held.tools ?? []),

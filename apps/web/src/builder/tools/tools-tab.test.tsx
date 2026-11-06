@@ -112,6 +112,7 @@ test('Nova versão abre o formulário com a versão de agora e grava a seguinte'
     tools: [toolSummary()],
     toolVersions: [
       {
+        kind: 'PRESET',
         id: TOOL_V1,
         number: 1,
         description: 'Vendas de ontem por vendedor.',
@@ -145,6 +146,7 @@ test('Nova versão na linha da lista abre o formulário da ferramenta, sem sair 
     tools: [toolSummary()],
     toolVersions: [
       {
+        kind: 'PRESET',
         id: TOOL_V1,
         number: 1,
         description: 'Vendas de ontem por vendedor.',
@@ -174,6 +176,7 @@ test('Nova versão da lista abre o diálogo logo, com a espera dentro, e depois 
           ...toolSummary(),
           versions: [
             {
+              kind: 'PRESET',
               id: TOOL_V1,
               number: 1,
               description: 'Vendas de ontem por vendedor.',

@@ -118,6 +118,7 @@ test('as ferramentas do rascunho: escolher troca as ferramentas e sobe o revisio
     description: 'Os pedidos da empresa 2.',
     bound: { codigoEmpresa: 2 },
     open: ['page'],
+    basedOn: 1,
   }
   const grown = await post(on.hub, on.ana, `${on.tools}/${tool.id}/versions`, v2)
   assert.equal(grown.statusCode, 201, grown.body)
@@ -203,7 +204,10 @@ test('as recusas: o membro e um Projeto de outra empresa dão NOT_FOUND; o agent
     await call(on.hub, bia, 'GET', on.tools),
     await post(on.hub, bia, on.tools, ordersOf(on.matriz, { slug: 'dela' })),
     await call(on.hub, bia, 'GET', toolUrl),
-    await post(on.hub, bia, `${toolUrl}/versions`, { description: 'Dela.', bound: {}, open: [] }),
+    await post(on.hub, bia, `${toolUrl}/versions`, {
+      ...{ description: 'Dela.', bound: {}, open: [] },
+      basedOn: 1,
+    }),
     await call(on.hub, bia, 'DELETE', toolUrl),
   ]
   assert.deepEqual(

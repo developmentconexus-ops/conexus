@@ -49,7 +49,7 @@ test('gravar: a versão 1 nasce com a ferramenta; a mesma chave dá a mesma; cad
     {
       ...{ id: '', slug: 'pedidos_matriz', connectionId: on.matriz, operation: 'pedidos' },
       ...{ description: body.description, effect: 'READ', latest: 1, usedBy: [], versions: [1] },
-      ...{ connectionName: 'Matriz', readLabel: 'Pedidos' },
+      ...{ connectionName: 'Matriz', readLabel: 'Pedidos', kind: 'PRESET' },
     },
   )
   const other = await post(on.hub, on.ana, on.tools, { ...body, description: 'Outra.' }, key)
@@ -129,7 +129,7 @@ test('listar: uma leitura que saiu do kit mostra o id dela no lugar do nome, e a
   )
 })
 
-test('versões: a nova é n+1 e as anteriores não mudam; a mesma chave dá a mesma; duas ao mesmo tempo dão 2 e 3; uma versão que não cabe na operação, TOOL_REFUSED', async (t) => {
+test('versões: a nova é n+1 sobre a que a pessoa leu e as anteriores não mudam; a mesma chave dá a mesma; duas sobre a mesma base dão uma versão e STALE_VERSION; uma que não cabe na operação, TOOL_REFUSED', async (t) => {
   const on = await agentsOn(t)
   const tool = await madeTool(on.hub, on.ana, on.tools, ordersOf(on.matriz))
   const url = `${on.tools}/${tool.id}/versions`
@@ -138,6 +138,7 @@ test('versões: a nova é n+1 e as anteriores não mudam; a mesma chave dá a me
     description: 'Os pedidos da empresa 2.',
     bound: { codigoEmpresa: 2 },
     open: ['page'],
+    basedOn: 1,
   }
   const made = await post(on.hub, on.ana, url, v2, key)
   assert.equal(made.statusCode, 201, made.body)
@@ -146,7 +147,17 @@ test('versões: a nova é n+1 e as anteriores não mudam; a mesma chave dá a me
   assert.deepEqual(toolOf(again), toolOf(made))
   const conflict = await post(on.hub, on.ana, url, { ...v2, description: 'Outra.' }, key)
   assert.deepEqual([conflict.statusCode, codeOf(conflict)], [409, 'IDEMPOTENCY_CONFLICT'])
-  await Promise.all([post(on.hub, on.ana, url, v2), post(on.hub, on.ana, url, v2)])
+
+  // Two tabs that read version 2: one writes version 3, the other is told there is a newer one.
+  const v3 = { ...v2, basedOn: 2 }
+  const tabs = await Promise.all([post(on.hub, on.ana, url, v3), post(on.hub, on.ana, url, v3)])
+  assert.deepEqual(tabs.map((each) => each.statusCode).sort(), [201, 422])
+  const stale = tabs.find((each) => each.statusCode === 422)
+  assert.ok(stale)
+  assert.deepEqual(refusalOf(stale), [422, 'TOOL_REFUSED', 'toolId', 'STALE_VERSION'])
+  const late = await post(on.hub, on.ana, url, { ...v2, basedOn: 1 })
+  assert.deepEqual(refusalOf(late), [422, 'TOOL_REFUSED', 'toolId', 'STALE_VERSION'])
+
   const read = toolOf(await call(on.hub, on.ana, 'GET', `${on.tools}/${tool.id}`))
   assert.deepEqual(
     read.versions?.map(({ number, description, bound }) => [number, description, bound]),
@@ -154,15 +165,71 @@ test('versões: a nova é n+1 e as anteriores não mudam; a mesma chave dá a me
       [1, ordersOf(on.matriz).description, { codigoEmpresa: 1 }],
       [2, v2.description, { codigoEmpresa: 2 }],
       [3, v2.description, { codigoEmpresa: 2 }],
-      [4, v2.description, { codigoEmpresa: 2 }],
     ],
   )
   assert.deepEqual(
     [read.latest.number, read.slug, read.operation],
-    [4, 'pedidos_matriz', 'pedidos'],
+    [3, 'pedidos_matriz', 'pedidos'],
   )
-  const refused = await post(on.hub, on.ana, url, { ...v2, open: [] })
+  const refused = await post(on.hub, on.ana, url, { ...v2, open: [], basedOn: 3 })
   assert.deepEqual(refusalOf(refused), [422, 'TOOL_REFUSED', 'open', 'REQUIRED_MISSING'])
+})
+
+test('ferramenta em código: a pessoa não grava versão nova nela (CODE_BY_CONSTRUTOR), e a lista a mostra com o tipo e as leituras', async (t) => {
+  const on = await agentsOn(t)
+  const toolId = randomUUID()
+  const versionId = randomUUID()
+  await on.hub.test.asOwner(
+    `insert into builder.tool (id, company_id, kind, connection_id, slug, body_hash)
+      values ($1, $2, 'CODE', $3, 'vendas_por_vendedor', 'plantada')`,
+    [toolId, on.companyId, on.matriz],
+  )
+  const config = {
+    description: 'Soma as vendas.',
+    source: 'export default {}',
+    module: 'export default {}',
+    reads: ['pedidos'],
+    inputSchema: { type: 'object' },
+    outputSchema: { type: 'object' },
+    test: { passed: true, rows: 251, at: '2026-11-05T12:00:00.000Z' },
+  }
+  await on.hub.test.asOwner(
+    `insert into builder.tool_version (id, tool_id, company_id, number, config, body_hash)
+      values ($1, $2, $3, 1, $4, 'plantada')`,
+    [versionId, toolId, on.companyId, JSON.stringify(config)],
+  )
+  const listed = listOf(await call(on.hub, on.ana, 'GET', on.tools))
+  assert.deepEqual(
+    listed.tools.map((each) => [Object(each).kind, Object(each).reads]),
+    [['CODE', ['pedidos']]],
+  )
+  const read = Object(toolOf(await call(on.hub, on.ana, 'GET', `${on.tools}/${toolId}`)))
+  assert.deepEqual(
+    read.versions.map((each: Record<string, unknown>) => [
+      each.kind,
+      each.number,
+      'module' in each,
+    ]),
+    [['CODE', 1, false]],
+  )
+  const refused = await post(on.hub, on.ana, `${on.tools}/${toolId}/versions`, {
+    ...{ description: 'Outra.', bound: {}, open: [] },
+    basedOn: 1,
+  })
+  assert.deepEqual(refusalOf(refused), [422, 'TOOL_REFUSED', 'kind', 'CODE_BY_CONSTRUTOR'])
+  const after = Object(toolOf(await call(on.hub, on.ana, 'GET', `${on.tools}/${toolId}`)))
+  assert.equal(after.latest.number, 1)
+})
+
+test('gravar de novo uma ferramenta cuja ligação saiu do Projeto: TOOL_NOT_FOUND, não 500 (#712)', async (t) => {
+  const on = await agentsOn(t)
+  const key = randomUUID()
+  const body = ordersOf(on.matriz)
+  const first = await post(on.hub, on.ana, on.tools, body, key)
+  assert.equal(first.statusCode, 201, first.body)
+  const bare = await otherProject(on.hub, on.ana, on.company, [])
+  const repeated = await post(on.hub, on.ana, bare.tools, body, key)
+  assert.deepEqual([repeated.statusCode, codeOf(repeated)], [404, 'TOOL_NOT_FOUND'])
 })
 
 test('apagar: sem uso, 204; usada por um rascunho ou por uma versão publicada, TOOL_IN_USE com os nomes e nada muda; de outra empresa ou de uma ligação que o Projeto não recebeu, TOOL_NOT_FOUND', async (t) => {
@@ -198,7 +265,7 @@ test('apagar: sem uso, 204; usada por um rascunho ou por uma versão publicada, 
   const elsewhere = await plantCompany(on.hub.test, on.ana.id, 'Outra Empresa')
   const foreign = await plantedTool(on.hub, elsewhere, on.matriz)
   const bare = await otherProject(on.hub, on.ana, on.company, [])
-  const v2 = { description: 'Outra.', bound: {}, open: ['codigoEmpresa', 'page'] }
+  const v2 = { description: 'Outra.', bound: {}, open: ['codigoEmpresa', 'page'], basedOn: 1 }
   for (const url of [`${on.tools}/${foreign.toolId}`, `${bare.tools}/${tool.id}`]) {
     const asked = [
       await call(on.hub, on.ana, 'GET', url),

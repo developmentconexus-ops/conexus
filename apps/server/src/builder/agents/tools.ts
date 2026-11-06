@@ -3,7 +3,7 @@ import type { RequestContext } from '@mastra/core/request-context'
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
 import type { Connectors, SessionScope, TurnKey } from '../../hub/connectors/public.ts'
-import type { FrozenVersion } from './frozen.ts'
+import type { FrozenTool, PresetFrozenTool } from './frozen.ts'
 
 const NOT_GRANTED = { kind: 'NOT_GRANTED' } as const
 
@@ -14,7 +14,7 @@ const NOT_GRANTED = { kind: 'NOT_GRANTED' } as const
 async function openInput(
   connectors: Pick<Connectors['assistant'], 'operationOf'>,
   scope: SessionScope,
-  tool: FrozenVersion['tools'][number],
+  tool: PresetFrozenTool,
 ) {
   const input = await connectors.operationOf(scope, tool)
   if (input === undefined) return undefined
@@ -22,6 +22,11 @@ async function openInput(
   return z.object(
     Object.fromEntries(Object.entries(input.shape).filter(([field]) => open.has(field))),
   )
+}
+
+/** A tool in code is called through the Worker it is uploaded as (step 24.4, U3); only a `PRESET` one is a read here. */
+function isPreset(tool: FrozenTool): tool is PresetFrozenTool {
+  return tool.kind === 'PRESET'
 }
 
 /**
@@ -33,11 +38,11 @@ async function openInput(
 export async function presetTools(deps: {
   connectors: Pick<Connectors['assistant'], 'operationOf' | 'read'>
   scope: SessionScope
-  tools: FrozenVersion['tools']
+  tools: readonly FrozenTool[]
   turnOf: (requestContext: RequestContext) => TurnKey
 }): Promise<ToolsInput> {
   const made = await Promise.all(
-    deps.tools.map(async (tool) => {
+    deps.tools.filter(isPreset).map(async (tool) => {
       const id = `tool_${tool.slug}`
       const inputSchema = await openInput(deps.connectors, deps.scope, tool)
       const made = createTool({

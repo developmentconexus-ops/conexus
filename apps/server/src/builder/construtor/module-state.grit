@@ -1,0 +1,58 @@
+// A tool's code keeps no state at module level: two calls of the Worker may share one module, and a
+// value one call leaves behind would reach the next (step 24.4, criterion 7). The rule is a list of
+// what may exist outside a function, and everything else is refused: imports, types, functions,
+// the default export of methods, and a `const` of a string, a number, a boolean, a template
+// without expressions or a Zod schema (a chain that parses a value is not a schema). Known blind spot: a Zod schema's own callbacks that keep a
+// value, which the types and the test would meet first.
+// The Construtor writes it beside the tool's code on the machine and runs it with the Biome of the
+// template; the repository's own Biome does not read it (biome.json wires other plugins).
+or {
+  JsVariableDeclaration() as $decl where {
+    $decl <: not within JsFunctionBody() ,
+    $decl <: r"(?s)(?:let|var)\b.*",
+    register_diagnostic(span=$decl, message="MODULE_STATE: a `let` or `var` outside a function keeps state between calls; move it inside the function.")
+  },
+  JsVariableDeclarator(initializer=JsInitializerClause(expression=$init)) as $decl where {
+    $decl <: not within JsFunctionBody() ,
+    $init <: not or {
+      JsStringLiteralExpression(),
+      JsNumberLiteralExpression(),
+      JsBooleanLiteralExpression(),
+      JsNullLiteralExpression(),
+      r"-[0-9][0-9_.]*",
+      r"`(?:[^`$\\]|\\.)*`",
+      and { r"(?s)z\..*",
+      not r"(?s).*\.(?:parse|safeParse|parseAsync)\b.*" }
+    },
+    register_diagnostic(span=$decl, message="MODULE_STATE: outside a function a `const` holds only a string, a number, a boolean, a template without expressions or a Zod schema; any other value is state the function can change between calls.")
+  },
+  or {
+    JsExpressionStatement(),
+    JsClassDeclaration(),
+    JsClassExportDefaultDeclaration(),
+    JsIfStatement(),
+    JsForStatement(),
+    JsForInStatement(),
+    JsForOfStatement(),
+    JsWhileStatement(),
+    JsDoWhileStatement(),
+    JsTryStatement(),
+    JsSwitchStatement()
+  } as $stmt where {
+    $stmt <: not within JsFunctionBody() ,
+    register_diagnostic(span=$stmt, message="MODULE_STATE: outside a function only imports, types, functions, constants and the default export of methods may exist; this statement runs once and keeps what it leaves.")
+  },
+  JsExportDefaultExpressionClause(expression=$value) as $clause where {
+    $value <: not JsObjectExpression(),
+    register_diagnostic(span=$clause, message="MODULE_STATE: the default export is an object of methods, `export default { async fetch(request, env, ctx) { … } }`.")
+  },
+  JsPropertyObjectMember(value=$value) as $member where {
+    $member <: within JsExportDefaultExpressionClause() ,
+    $member <: not within JsFunctionBody() ,
+    $value <: not or {
+      JsArrowFunctionExpression(),
+      JsFunctionExpression()
+    },
+    register_diagnostic(span=$member, message="MODULE_STATE: the default export holds methods only; a value in it is state the methods change between calls.")
+  }
+}

@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { AgentId, ToolVersionId } from './agent-ids.ts'
+import { AgentId, ToolId, ToolVersionId } from './agent-ids.ts'
 import { CompanyId } from './companies.ts'
 import { CONNECTIONS_MAX, ConnectionId } from './connectors.ts'
 import { ConversationId, ModelId } from './conversations.ts'
@@ -8,7 +8,14 @@ import { PersonId } from './identity.ts'
 import { ProjectId } from './library-ids.ts'
 import { MACHINE_FILE_FAILURES, MachineFileQuery } from './machine.ts'
 import { ATTEMPT_KEY_HEADER, defineOperation } from './operation.ts'
-import { ToolSummary, ToolTarget, ToolVersionDetail } from './tools.ts'
+import {
+  CodeVersionDetail,
+  LatestVersion,
+  PresetVersionDetail,
+  ToolEffect,
+  ToolSlug,
+  ToolTarget,
+} from './tools.ts'
 
 /** An automation's limit: the same line in the lists. */
 export const AGENT_NAME_MAX = 80
@@ -95,14 +102,20 @@ export const AgentListed = AgentSummary.extend({ tools: z.int().nonnegative() })
 export type AgentListed = z.infer<typeof AgentListed>
 
 /** A chosen tool: the version the draft holds, and the newest of the library. */
-export const AgentTool = ToolSummary.pick({
-  id: true,
-  slug: true,
-  connectionId: true,
-  operation: true,
-  effect: true,
-  latest: true,
-}).extend({ version: ToolVersionDetail })
+const ChosenBase = { id: ToolId, slug: ToolSlug, effect: ToolEffect, latest: LatestVersion }
+export const AgentTool = z.discriminatedUnion('kind', [
+  ToolTarget.extend({
+    ...ChosenBase,
+    kind: z.literal('PRESET'),
+    version: PresetVersionDetail,
+  }),
+  z.object({
+    ...ChosenBase,
+    kind: z.literal('CODE'),
+    connectionId: ConnectionId,
+    version: CodeVersionDetail,
+  }),
+])
 export type AgentTool = z.infer<typeof AgentTool>
 
 /** A connection the Projeto offers now, with its reads, for the panel to choose from. */

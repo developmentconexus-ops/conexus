@@ -2454,7 +2454,7 @@
   },
   {
     "id": "agents-member-refused",
-    "file": "apps/server/src/builder/tools/tools.ts",
+    "file": "apps/server/src/builder/tools/access.ts",
     "find": "  await deps.identity.admitMember({ tx, companyId, personId, action })\n",
     "replace": "",
     "test": {

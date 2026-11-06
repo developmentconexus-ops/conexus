@@ -47,6 +47,7 @@ export function agent(fields: Partial<AgentDetail> = {}): AgentDetail {
     revision: 3,
     tools: [
       {
+        kind: 'PRESET',
         id: TOOL,
         slug: 'vendas_de_ontem',
         connectionId: MATRIZ,
@@ -54,6 +55,7 @@ export function agent(fields: Partial<AgentDetail> = {}): AgentDetail {
         effect: 'READ',
         latest: { id: TOOL_V1, number: 1 },
         version: {
+          kind: 'PRESET',
           id: TOOL_V1,
           number: 1,
           description: 'Vendas de ontem por vendedor.',
@@ -75,8 +77,11 @@ export function agent(fields: Partial<AgentDetail> = {}): AgentDetail {
   }
 }
 
-export function toolSummary(fields: Partial<ToolSummary> = {}): ToolSummary {
+export function toolSummary(
+  fields: Partial<Extract<ToolSummary, { kind: 'PRESET' }>> = {},
+): ToolSummary {
   return {
+    kind: 'PRESET',
     id: TOOL,
     slug: 'vendas_de_ontem',
     connectionId: MATRIZ,
