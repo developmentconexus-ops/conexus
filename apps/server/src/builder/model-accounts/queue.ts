@@ -1,4 +1,4 @@
-import type { ModelAccountId, ModelId } from '@conexus/hub-api'
+import type { ModelAccountId, ModelId, SubscriptionKind } from '@conexus/hub-api'
 import type { LanguageModel, MastraModelConfig } from '@mastra/core/llm'
 import { PROVIDER_REGISTRY, parseModelString, resolveModelConfig } from '@mastra/core/llm'
 import { and, asc, eq } from 'drizzle-orm'
@@ -13,8 +13,11 @@ import { apiKeyModel, subscriptionModel } from './claude/models.ts'
 import { refreshAnthropicTokens } from './claude/sign-in.ts'
 import type { AccountFailure } from './errors.ts'
 import type { GoogleCalls } from './google/port.ts'
+import { CodexTokens, codexModel } from './openai/models.ts'
+import { codexRenewal } from './openai/sign-in.ts'
 import { isChoosable } from './providers.ts'
 import { readServedOf, servesModel } from './served.ts'
+import type { Renewal } from './subscription-store.ts'
 import { subscriptionAccess } from './subscription-store.ts'
 import { modelAccount } from './tables.ts'
 import type { Picked, Turn } from './turn.ts'
@@ -149,32 +152,45 @@ async function pickedOf(
   const { row, credential } = found
   const { modelId: name } = parseModelString(modelId)
   const base = { id: row.id, label: row.label, kind: row.kind, modelId }
-  if (row.kind === 'claude_subscription') {
-    const force = turn.refreshed.has(row.id)
-    const account = { ...row, kind: row.kind, companyId: turn.companyId, credential }
-    const { access } = await subscriptionAccess(
+  const target = { providerId: row.provider, modelId: name }
+  function access(kind: SubscriptionKind, renew: Renewal) {
+    const account = { ...row, kind, companyId: turn.companyId, credential }
+    return subscriptionAccess(
       { ...deps, scope: scopeOf(turn) },
       account,
-      refreshAnthropicTokens,
-      force,
+      renew,
+      turn.refreshed.has(row.id),
     )
-    return { ...base, models: await byScope((scope) => subscriptionModel(name, access, scope)) }
   }
-  const target = { providerId: row.provider, modelId: name }
-  if (row.kind === 'google_cliproxy') {
-    const { url, apiKey, hold } = await deps.googleCalls(
-      { ...row, companyId: turn.companyId, credential },
-      scopeOf(turn),
-    )
-    turn.hold(hold())
-    const model = await callModel({ ...target, url, apiKey })
-    return { ...base, models: { conversation: model, system: model } }
+  switch (row.kind) {
+    case 'claude_subscription': {
+      const { access: token } = await access(row.kind, refreshAnthropicTokens)
+      return { ...base, models: await byScope((scope) => subscriptionModel(name, token, scope)) }
+    }
+    case 'openai_codex': {
+      const tokens = await access(row.kind, codexRenewal)
+      const model = await callModel(codexModel(name, CodexTokens.parse(tokens)))
+      return { ...base, models: { conversation: model, system: model } }
+    }
+    case 'google_cliproxy': {
+      const { url, apiKey, hold } = await deps.googleCalls(
+        { ...row, companyId: turn.companyId, credential },
+        scopeOf(turn),
+      )
+      turn.hold(hold())
+      const model = await callModel({ ...target, url, apiKey })
+      return { ...base, models: { conversation: model, system: model } }
+    }
+    case 'api_key': {
+      const apiKey = credential.reveal()
+      if (row.provider === 'anthropic')
+        return { ...base, models: await byScope((scope) => apiKeyModel(name, apiKey, scope)) }
+      const model = await callModel({ ...target, apiKey })
+      return { ...base, models: { conversation: model, system: model } }
+    }
+    default:
+      return row.kind satisfies never
   }
-  const apiKey = credential.reveal()
-  if (row.provider === 'anthropic')
-    return { ...base, models: await byScope((scope) => apiKeyModel(name, apiKey, scope)) }
-  const model = await callModel({ ...target, apiKey })
-  return { ...base, models: { conversation: model, system: model } }
 }
 
 /**

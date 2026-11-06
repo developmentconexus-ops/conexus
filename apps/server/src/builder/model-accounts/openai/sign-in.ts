@@ -11,7 +11,7 @@ import { cappedText } from '../../../platform/capped-text.ts'
 import { Failure } from '../../../platform/failure.ts'
 import { Credential } from '../../../platform/seal.ts'
 import type { DeviceSignInFlow } from '../sign-ins.ts'
-import type { SubscriptionTokens } from '../subscription-store.ts'
+import type { Renewal, SubscriptionTokens } from '../subscription-store.ts'
 import { SubscriptionRefusal } from '../subscription-store.ts'
 
 const CLIENT_ID = 'app_EMoamEEZ73f0CkXaXp7hrann'
@@ -21,7 +21,8 @@ const DEVICE_USER_CODE_URL = `${ISSUER}/api/accounts/deviceauth/usercode`
 const DEVICE_TOKEN_URL = `${ISSUER}/api/accounts/deviceauth/token`
 const DEVICE_PAGE_URL = `${ISSUER}/codex/device`
 const DEVICE_REDIRECT_URI = `${ISSUER}/deviceauth/callback`
-const ORIGINATOR = 'conexus'
+/** The one name the Hub gives the vendor as originator and user agent. */
+export const ORIGINATOR = 'conexus'
 const CLAIM_PATH = 'https://api.openai.com/auth'
 // The package's deadline for each call (code C57) and its reply cap (code C59).
 const REQUEST_TIMEOUT_MS = 15_000
@@ -120,7 +121,25 @@ async function startDeviceLogin() {
   })
 }
 
-/** Trades the device grant for the subscription's tokens, with the ChatGPT account they belong to. */
+/** The tokens of a vendor's reply, with the ChatGPT account they belong to; `previous` when they name none. */
+async function tokensOf(
+  response: Response,
+  previousAccountId?: SubscriptionTokens['accountId'],
+): Promise<SubscriptionTokens> {
+  const tokens = await replyOf(response, TokenReply)
+  const accountId =
+    accountIdOf(tokens.id_token) ?? accountIdOf(tokens.access_token) ?? previousAccountId
+  if (accountId === undefined) throw new SubscriptionRefusal('NO_ACCOUNT_ID')
+  const seconds = tokens.expires_in ?? DEFAULT_EXPIRES_IN_SECONDS
+  return {
+    refresh: tokens.refresh_token,
+    access: tokens.access_token,
+    expires: Date.now() + seconds * 1000 - EARLY_MS,
+    accountId,
+  }
+}
+
+/** Trades the device grant for the subscription's tokens. */
 async function exchange(grant: z.infer<typeof GrantReply>): Promise<SubscriptionTokens> {
   const response = await post(
     TOKEN_URL,
@@ -134,16 +153,25 @@ async function exchange(grant: z.infer<typeof GrantReply>): Promise<Subscription
     'application/x-www-form-urlencoded',
   )
   if (!response.ok) throw await refused(response)
-  const tokens = await replyOf(response, TokenReply)
-  const accountId = accountIdOf(tokens.id_token) ?? accountIdOf(tokens.access_token)
-  if (accountId === undefined) throw new SubscriptionRefusal('NO_ACCOUNT_ID')
-  const seconds = tokens.expires_in ?? DEFAULT_EXPIRES_IN_SECONDS
-  return {
-    refresh: tokens.refresh_token,
-    access: tokens.access_token,
-    expires: Date.now() + seconds * 1000 - EARLY_MS,
-    accountId,
-  }
+  return tokensOf(response)
+}
+
+/**
+ * The renewal of a ChatGPT subscription's tokens (the refresh token rotates): the account the old
+ * tokens named stays when the new ones name none.
+ */
+export const codexRenewal: Renewal = async (tokens) => {
+  const response = await post(
+    TOKEN_URL,
+    new URLSearchParams({
+      grant_type: 'refresh_token',
+      refresh_token: tokens.refresh,
+      client_id: CLIENT_ID,
+    }).toString(),
+    'application/x-www-form-urlencoded',
+  )
+  if (!response.ok) throw await refused(response)
+  return tokensOf(response, tokens.accountId)
 }
 
 /** One ask of the vendor: `undefined` while the person has not typed the code (its 403 and 404). */
