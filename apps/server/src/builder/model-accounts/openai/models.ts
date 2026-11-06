@@ -1,9 +1,10 @@
 // Copyright (c) 2025 Kepler Software, Inc. Licensed under the Apache License, Version 2.0; a copy is
 // in THIRD_PARTY_LICENSE.txt beside this file.
 // From @mastra/code-sdk 1.18.0, src/providers/openai-codex.ts (`buildOpenAICodexOAuthFetch`,
-// `stripCodexInputItemIds`, `createCodexMiddleware`). Changed: TypeScript with every body read by
-// Zod, the token and the account are the ones the queue opened for this call, no thread headers, no
-// test branch, and the effort goes by the queue's processor.
+// `stripCodexInputItemIds`, `createCodexMiddleware`, `getRequestThreadId`,
+// `createPromptCacheKeyMiddleware`). Changed: TypeScript with every body read by Zod, the token and
+// the account are the ones the queue opened for this call, no test branch, and the effort goes by
+// the queue's processor; the thread is read on every call, not at model construction.
 
 import { createOpenAI } from '@ai-sdk/openai'
 import type { LanguageModelMiddleware } from 'ai'
@@ -44,20 +45,32 @@ function withoutItemIds(body: string): string {
   return JSON.stringify({ ...request.data, input })
 }
 
-/** `instructions` and `store: false`, which the endpoint requires, beside the options the queue set. */
+/** The conversation a call belongs to: Mastra puts its id, lowercased, in `x-thread-id` on every model call. */
+function threadOf(headers: Record<string, string | undefined> | undefined): string | undefined {
+  return headers?.['x-thread-id'] || undefined
+}
+
+/**
+ * `instructions` and `store: false`, which the endpoint requires, beside the options the queue set;
+ * and the conversation as the prompt cache key, so its steps land where its prompt prefix is cached.
+ */
 const codexMiddleware: LanguageModelMiddleware = {
   specificationVersion: 'v3',
-  transformParams: async ({ params }) => ({
-    ...params,
-    providerOptions: {
-      ...params.providerOptions,
-      openai: {
-        ...params.providerOptions?.openai,
-        instructions: CODEX_INSTRUCTIONS,
-        store: false,
+  transformParams: async ({ params }) => {
+    const thread = threadOf(params.headers)
+    return {
+      ...params,
+      providerOptions: {
+        ...params.providerOptions,
+        openai: {
+          ...(thread ? { promptCacheKey: thread } : {}),
+          ...params.providerOptions?.openai,
+          instructions: CODEX_INSTRUCTIONS,
+          store: false,
+        },
       },
-    },
-  }),
+    }
+  },
 }
 
 /**
@@ -74,6 +87,11 @@ export function codexModel(name: string, tokens: Pick<CodexTokens, 'access' | 'a
       headers.set('originator', ORIGINATOR)
       headers.set('User-Agent', ORIGINATOR)
       headers.set('ChatGPT-Account-ID', tokens.accountId)
+      const thread = headers.get('x-thread-id')
+      if (thread) {
+        headers.set('session-id', thread)
+        headers.set('thread-id', thread)
+      }
       const body = typeof init?.body === 'string' ? withoutItemIds(init.body) : init?.body
       return fetch(CODEX_ENDPOINT, { ...init, headers, body })
     },
