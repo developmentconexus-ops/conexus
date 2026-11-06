@@ -28,3 +28,30 @@ test('versão no ar: o connectors de props atravessa a clonagem do workerd e res
     await worker.stop()
   }
 })
+
+// The tool's `data` is a `ToolData` entrypoint: it crosses the clone into the tool, and a read the
+// version did not declare rejects across workerd's RPC with its code, which the host answers.
+test('ferramenta salva: o data de props atravessa a clonagem, lê, e a recusa volta com o código', async () => {
+  const worker = await unstable_dev(join(CLONE, 'worker.ts'), {
+    config: join(CLONE, 'wrangler.jsonc'),
+    local: true,
+    logLevel: 'none',
+    experimental: { disableExperimentalWarning: true },
+  })
+  try {
+    const call = { call: crypto.randomUUID() }
+    const path = `/tool/${crypto.randomUUID()}`
+    const read = await worker.fetch(path, {
+      method: 'POST',
+      body: JSON.stringify({ ...call, input: { operation: 'pedidos' } }),
+    })
+    assert.deepEqual(await read.json(), { kind: 'OK', value: { total: 3 } })
+    const refused = await worker.fetch(path, {
+      method: 'POST',
+      body: JSON.stringify({ ...call, input: { operation: 'clientes' } }),
+    })
+    assert.deepEqual(await refused.json(), { kind: 'FAILED', reason: 'NOT_DECLARED' })
+  } finally {
+    await worker.stop()
+  }
+})

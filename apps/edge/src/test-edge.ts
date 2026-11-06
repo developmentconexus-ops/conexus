@@ -1,4 +1,4 @@
-import type { AppProps } from '@conexus/app-contract'
+import type { AppProps, ToolProps } from '@conexus/app-contract'
 import { FAILURES } from '@conexus/hub-api'
 import type { ConnectorsProps } from './connectors.ts'
 import { connectorsOf } from './connectors.ts'
@@ -6,6 +6,8 @@ import type { DbProps } from './db.ts'
 import type { Exports } from './dispatch.ts'
 import { serveDispatch } from './dispatch.ts'
 import { hubOf } from './hub.ts'
+import type { ToolDataProps } from './tools.ts'
+import { serveTool, toolDataOf } from './tools.ts'
 
 // Doubles of the two bindings, answering as the contract does: the Hub through its VPC service and
 // the namespace that holds the apps' Workers.
@@ -23,6 +25,11 @@ export const CALLER = {
 } as const
 
 type App = (request: Request, ctx: { props: AppProps }) => Response | Promise<Response>
+/** A saved tool's Worker, as the tools' namespace holds it by its name `t-<id>`. */
+export type Tool = (request: Request, ctx: { props: ToolProps }) => Response | Promise<Response>
+/** The audience of the Access application in front of the tools' host (`wrangler.jsonc`). */
+export const TOOLS_AUD = '91331491ad702b62868605b9604ba7cf47bd92c170f8c5a374362d060ef55d16'
+export const TOOLS_ORIGIN = 'https://tools.conexusapp.tech'
 type Hub = (request: Request) => Response | Promise<Response>
 
 export function problem(code: keyof typeof FAILURES): Response {
@@ -56,7 +63,9 @@ function greets(_request: Request, ctx: { props: AppProps }): Response {
 }
 
 /** The dispatcher with both doubles; every call each double received is kept. */
-export function edge(doubles: { hub?: Hub; app?: App; missingScript?: boolean } = {}) {
+export function edge(
+  doubles: { hub?: Hub; app?: App; missingScript?: boolean; tools?: Record<string, Tool> } = {},
+) {
   const hub = doubles.hub ?? admits
   const app = doubles.app ?? greets
   const hubCalls: Request[] = []
@@ -67,6 +76,8 @@ export function edge(doubles: { hub?: Hub; app?: App; missingScript?: boolean } 
     request: Request
   }[] = []
   const dbBindings: DbProps[] = []
+  const toolCalls: { name: string; options: unknown; request: Request }[] = []
+  const toolBindings: ToolDataProps[] = []
   const connectorBindings: ConnectorsProps[] = []
   const exports: Exports = {
     Db({ props }) {
@@ -85,9 +96,16 @@ export function edge(doubles: { hub?: Hub; app?: App; missingScript?: boolean } 
       return connectorsOf(hubOf(env), props)
     },
   }
+  const toolExports = {
+    ToolData({ props }: { props: ToolDataProps }) {
+      toolBindings.push(props)
+      return toolDataOf(hubOf(env), props)
+    },
+  }
   const env = {
     HUB_PUBLIC_ORIGIN: 'https://hub.conexus.fun',
     APPS_DOMAIN: 'conexusapp.tech',
+    TOOLS_ACCESS_AUD: TOOLS_AUD,
     APP_LOGIN_KEY: 'k'.repeat(43),
     HUB: {
       async fetch(input: RequestInfo | URL, init?: RequestInit) {
@@ -116,8 +134,31 @@ export function edge(doubles: { hub?: Hub; app?: App; missingScript?: boolean } 
         }
       },
     },
+    TOOLS: {
+      get(name: string, args: { props: ToolProps }, options: unknown) {
+        const tool = doubles.tools?.[name]
+        // The namespace raises "Worker not found." for a script it does not hold, as Cloudflare does.
+        if (tool === undefined) throw new Error('Worker not found.')
+        return {
+          async fetch(input: RequestInfo | URL, init?: RequestInit) {
+            const request = new Request(input, init)
+            toolCalls.push({ name, options, request: request.clone() })
+            return tool(request, args)
+          },
+          connect(): Socket {
+            throw new Error('the dispatcher never opens a socket to a tool')
+          },
+        }
+      },
+    },
   } satisfies Env
   return {
+    toolCalls,
+    toolBindings,
+    /** A request to the tools' host; `access` is what Access gave the request, none by default. */
+    tool(path: string, init: RequestInit = {}, access?: { aud: string }): Promise<Response> {
+      return serveTool(new Request(`${TOOLS_ORIGIN}${path}`, init), env, toolExports, access)
+    },
     hubCalls,
     appCalls,
     dbBindings,

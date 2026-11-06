@@ -3,6 +3,7 @@ import {
   APP_CONNECTOR_REPLY_BYTES,
   APP_SESSION_HEADER,
   callAppConnector,
+  callToolConnector,
   checkAppCall,
   createAppSession,
   listAppConnections,
@@ -29,6 +30,7 @@ type CheckRequest = z.infer<typeof checkAppCall.input.query> & { session: AppSes
 type CallRequest = Omit<z.infer<typeof callAppConnector.input.body>, 'deadlineMs'> & {
   session: AppSessionToken
 }
+type ToolReadRequest = Omit<z.infer<typeof callToolConnector.input.body>, 'deadlineMs'>
 type ConnectionsRequest = z.infer<typeof listAppConnections.input.query> & {
   session: AppSessionToken
 }
@@ -47,6 +49,11 @@ export type HubPort = {
   listAppConnections(
     input: ConnectionsRequest,
   ): Promise<HubAnswer<z.infer<typeof listAppConnections.success.body>>>
+  /** A saved tool's read (step 24.4); `deadlineMs` is what remains of the tool's call. */
+  callToolConnector(
+    input: ToolReadRequest,
+    deadlineMs: number,
+  ): Promise<HubAnswer<z.infer<typeof callToolConnector.success.body>>>
 }
 
 // Decision 0041: the VPC took 31 to 119 ms and the sleeping database takes up to 1.6 s; the
@@ -59,7 +66,7 @@ const SHORT_ANSWER = { deadlineMs: HUB_CHECK_DEADLINE_MS, capBytes: REPLY_CAP_BY
 const HUB_ORIGIN = 'http://hub:8081'
 
 /** The reply's text, or nothing once it passes the cap (code C59); leaving the loop cancels the body. */
-async function cappedText(
+export async function cappedText(
   body: ReadableStream<Uint8Array>,
   capBytes: number,
 ): Promise<string | undefined> {
@@ -144,6 +151,16 @@ export function hubOf(env: Env): HubPort {
           'Content-Type': 'application/json',
           [APP_SESSION_HEADER]: session,
         }),
+        body: JSON.stringify({ ...body, deadlineMs }),
+        deadlineMs,
+        capBytes: APP_CONNECTOR_REPLY_BYTES,
+      })
+    },
+    callToolConnector(body, deadlineMs) {
+      return call({
+        operation: callToolConnector,
+        url: callToolConnector.path,
+        headers: new Headers({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ ...body, deadlineMs }),
         deadlineMs,
         capBytes: APP_CONNECTOR_REPLY_BYTES,
