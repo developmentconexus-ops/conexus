@@ -161,12 +161,12 @@ function planner(deps: AgentDeps, frozen: FrozenVersion & OfProject & { agentId:
  * made (`createCodeMode`), and its instructions list them, so the instructions and the tools of a
  * run come from one making. The Computador's, the web's and `show_file` stay direct only.
  */
-function toolsOfRunner(
+function runToolsOf(
   deps: AgentDeps,
   frozen: FrozenVersion & OfProject & { agentId: AgentIdType },
   plan: (requestContext: RequestContext) => Promise<Plan>,
+  ownConnections: ReadonlySet<string>,
 ) {
-  const ownConnections = new Set(frozen.connections)
   const machines = frozen.machine ? deps.machines : undefined
   const showFile = machines === undefined ? undefined : showFileTool(machines)
   return oncePerRun(async (requestContext) => {
@@ -232,7 +232,7 @@ export function agentOf(
     },
   }
   const ownConnections = new Set(frozen.connections)
-  const toolsOfRun = toolsOfRunner(deps, frozen, plan)
+  const toolsOfRun = runToolsOf(deps, frozen, plan, ownConnections)
   const agent = new Agent({
     id: agentKey(frozen.agentId),
     name: frozen.name,

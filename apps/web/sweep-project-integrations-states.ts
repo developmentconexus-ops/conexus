@@ -179,14 +179,14 @@ export const PROJECT_INTEGRATIONS_STATES: State[] = [
     replies: notebook(OWNER, true, [NOTE]),
     settle: async (p) => {
       await p.getByRole('button', { name: 'Apagar: Vendedor do pedido' }).click()
-      await waitFor(p, 'O Builder deixa de usar essa anotação. Ele pode anotar de novo.')
+      await waitFor(p, 'Quem conversa deixa de usar essa anotação. Ela pode ser anotada de novo.')
     },
   },
   {
     name: 'A ligação com o Caderno vazio',
     path: `/companies/${COMPANY.id}/integrations/${CONNECTION.id}`,
     replies: notebook(OWNER, true, []),
-    settle: (p) => waitFor(p, 'O Builder ainda não anotou nada desta ligação.'),
+    settle: (p) => waitFor(p, 'Nada anotado nesta ligação ainda.'),
   },
   {
     name: 'A ligação com o Caderno do membro',

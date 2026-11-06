@@ -43,6 +43,7 @@ export type ToolBody =
   | 'agent'
   | 'library'
   | 'answer'
+  | 'program'
   | 'generic'
 
 export type ToolStatus = 'running' | 'done' | 'error' | 'denied'

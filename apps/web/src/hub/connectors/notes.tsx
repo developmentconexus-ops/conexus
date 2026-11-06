@@ -5,7 +5,7 @@ import { SectionTitle } from '../../ui/list.tsx'
 import { Empty } from '../../ui/states.tsx'
 import { ActionDialog, isGone } from '../identity/public.ts'
 import { connectionKeys, sendNoteDeletion } from './queries.ts'
-import { EMPTY_NOTEBOOK, ERASE, NOTEBOOK, provedText } from './text.ts'
+import { EMPTY_NOTEBOOK, ERASE, ERASE_NOTE_DESCRIPTION, NOTEBOOK, provedText } from './text.ts'
 
 function Entry(props: {
   companyId: CompanyId
@@ -37,7 +37,7 @@ function Entry(props: {
           onOpenChange={setOpen}
           trigger={{ label: ERASE, name: `${ERASE}: ${note.concept}`, danger: true }}
           title={`Apagar a anotação "${note.concept}"?`}
-          description="O Builder deixa de usar essa anotação. Ele pode anotar de novo."
+          description={ERASE_NOTE_DESCRIPTION}
           confirm={{ label: ERASE, pending: 'Apagando…' }}
           write={erase}
           onConfirm={() =>
@@ -52,7 +52,7 @@ function Entry(props: {
   )
 }
 
-/** The Builder's notebook of a connection: what it proved about the system's names, never a value. The owner and the administrators erase an entry (`mayManage`); a member reads. */
+/** The notebook of a connection: what the Builder or the Assistant proved about the system's names, never a value. The owner and the administrators erase an entry (`mayManage`); a member reads. */
 export function Notebook(props: {
   companyId: CompanyId
   connectionId: ConnectionId
