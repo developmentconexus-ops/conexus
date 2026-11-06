@@ -12,11 +12,11 @@ import { violatedConstraint } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import { bodyHashOf } from '../conversation/public.ts'
 import type { ToolsDeps } from './access.ts'
-import { admitted, detailOf, found, offeredOf, usableTool } from './access.ts'
+import { admitted, detailOf, found, offeredOf, savedOnce, usableTool } from './access.ts'
 import type { InProject, Writer } from './check.ts'
 import { databaseScopeOf, fitting, sessionScopeOf, targetOf } from './check.ts'
 import { derivedUuid } from './derived.ts'
-import { inserted, presetTargetOf, toolOf } from './store.ts'
+import { presetTargetOf, toolOf } from './store.ts'
 import { tool, toolVersion } from './tables.ts'
 
 /** What a next version writes: its values, and the check that it fits the tool's connection. */
@@ -129,14 +129,10 @@ export async function saveCode(
   const offered = await offeredOf(deps, scope)
   const detail = await deps.database.command(databaseScopeOf(scope), async (tx) => {
     await admitted(deps, tx, scope, 'manageAgents')
-    if ((await toolOf(tx, scope.companyId, id)) === undefined) {
-      const target = { kind: 'CODE', slug, connectionId } as const
-      const made = { id, scope, target, config: version, bodyHash, createdBy: scope.personId }
-      if (await inserted(tx, made)) return detailOf(deps, tx, await found(tx, scope, id), offered)
-    }
-    const row = await found(tx, scope, id)
-    if (row.bodyHash !== bodyHash) throw new Failure('IDEMPOTENCY_CONFLICT')
-    return detailOf(deps, tx, row, offered)
+    const fresh = (await toolOf(tx, scope.companyId, id)) === undefined
+    const target = { kind: 'CODE', slug, connectionId } as const
+    const made = { id, scope, target, config: version, bodyHash, createdBy: scope.personId }
+    return savedOnce(deps, tx, { scope, id, offered, bodyHash }, fresh ? made : undefined)
   })
   deps.log.info(
     { companyId: scope.companyId, toolId: id, version: 1, by: 'CONSTRUTOR' },

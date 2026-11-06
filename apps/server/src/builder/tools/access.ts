@@ -1,13 +1,13 @@
 import type { CompanyId, ProjectId, ToolId } from '@conexus/hub-api'
 import { ConnectionId } from '@conexus/hub-api'
 import type { IdentityPorts } from '../../hub/identity/public.ts'
-import type { Database, ReadTx } from '../../platform/database.ts'
+import type { CommandTx, Database, ReadTx } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { InProject, OfferedConnection, ToolConnectors } from './check.ts'
 import { sessionScopeOf } from './check.ts'
 import type { UsedBy } from './store.ts'
-import { detailsOf, toolOf } from './store.ts'
+import { detailsOf, inserted, toolOf } from './store.ts'
 import type { tool } from './tables.ts'
 
 export type ToolsDeps = {
@@ -77,4 +77,22 @@ export async function found(tx: ReadTx, scope: InProject, id: ToolId) {
   const row = await toolOf(tx, scope.companyId, id)
   if (row === undefined) throw new Failure('TOOL_NOT_FOUND')
   return row
+}
+
+/**
+ * The attempt's tool in the library: written now when `made` is there, else the one this attempt
+ * wrote before, refused when the body it kept is not this one (`IDEMPOTENCY_CONFLICT`).
+ */
+export async function savedOnce(
+  deps: ToolsDeps,
+  tx: CommandTx,
+  at: { scope: InProject; id: ToolId; offered: readonly OfferedConnection[]; bodyHash: string },
+  made: Parameters<typeof inserted>[1] | undefined,
+) {
+  if (made !== undefined && (await inserted(tx, made))) {
+    return detailOf(deps, tx, await found(tx, at.scope, at.id), at.offered)
+  }
+  const row = await found(tx, at.scope, at.id)
+  if (row.bodyHash !== at.bodyHash) throw new Failure('IDEMPOTENCY_CONFLICT')
+  return detailOf(deps, tx, row, at.offered)
 }

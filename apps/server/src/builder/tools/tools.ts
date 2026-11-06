@@ -13,7 +13,7 @@ import { violatedReference } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import { bodyHashOf } from '../conversation/public.ts'
 import type { ToolsDeps } from './access.ts'
-import { admitted, detailOf, found, idsOf, offeredOf, usableTool } from './access.ts'
+import { admitted, detailOf, idsOf, offeredOf, savedOnce, usableTool } from './access.ts'
 import type { InProject, Writer } from './check.ts'
 import {
   databaseScopeOf,
@@ -25,7 +25,7 @@ import {
 } from './check.ts'
 import { readyOf, saveReady, usable } from './choice.ts'
 import { derivedUuid } from './derived.ts'
-import { detailsOf, inserted, toolOf, toolsOn } from './store.ts'
+import { detailsOf, toolOf, toolsOn } from './store.ts'
 import { tool, toolVersion } from './tables.ts'
 import { addCodeVersion, addVersion, codeFitting, saveCode } from './versions.ts'
 
@@ -49,16 +49,11 @@ async function save(
   )
   const detail = await deps.database.command(databaseScopeOf(scope), async (tx) => {
     await admitted(deps, tx, scope, 'manageAgents')
-    const earlier = await toolOf(tx, scope.companyId, id)
-    if (earlier === undefined) {
-      fitting(target, config)
-      const row = { kind: 'PRESET', slug, connectionId, operation } as const
-      const made = { id, scope, target: row, config, bodyHash, createdBy: scope.personId }
-      if (await inserted(tx, made)) return detailOf(deps, tx, await found(tx, scope, id), offered)
-    }
-    const row = await found(tx, scope, id)
-    if (row.bodyHash !== bodyHash) throw new Failure('IDEMPOTENCY_CONFLICT')
-    return detailOf(deps, tx, row, offered)
+    const fresh = (await toolOf(tx, scope.companyId, id)) === undefined
+    if (fresh) fitting(target, config)
+    const row = { kind: 'PRESET', slug, connectionId, operation } as const
+    const made = { id, scope, target: row, config, bodyHash, createdBy: scope.personId }
+    return savedOnce(deps, tx, { scope, id, offered, bodyHash }, fresh ? made : undefined)
   })
   deps.log.info({ companyId: scope.companyId, toolId: id, version: 1, by }, 'TOOL_SAVED')
   return detail
