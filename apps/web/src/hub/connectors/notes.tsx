@@ -52,7 +52,7 @@ function Entry(props: {
   )
 }
 
-/** The Builder's notebook of a connection: what it proved about the system's names, never a value. The owner and the administrators erase an entry (`mayManage`); a member reads. */
+/** The notebook of a connection: what the Builder or the Assistant proved about the system's names, never a value. The owner and the administrators erase an entry (`mayManage`); a member reads. */
 export function Notebook(props: {
   companyId: CompanyId
   connectionId: ConnectionId
