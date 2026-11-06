@@ -197,7 +197,14 @@ export function createBuilderConnectors(deps: Deps): BuilderConnectors {
         return { kind: 'NOTE_INVALID' }
       if (!spend(a.runId)) return { kind: 'CALLS_SPENT' }
       const viewer = { person: { id: a.personId }, companyId: ids.companyId }
-      const read = { by: 'builder', ids, viewer, opened, operation: door, deadlineMs: CALL_DEADLINE_MS } as const
+      const read = {
+        by: 'builder',
+        ids,
+        viewer,
+        opened,
+        operation: door,
+        deadlineMs: CALL_DEADLINE_MS,
+      } as const
       return provedAndSaved(deps, { ...a, read })
     },
   }

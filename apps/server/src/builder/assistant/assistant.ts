@@ -17,8 +17,6 @@ import type { IdentityPorts } from '../../hub/identity/public.ts'
 import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
-import type { ConnectorAccess } from '../connectors/public.ts'
-import { connectorTools } from '../connectors/public.ts'
 import type { ReleaseScope } from '../controller-kit/public.ts'
 import { admitAsker, agentDefaults, controllerOf, oncePerRun } from '../controller-kit/public.ts'
 import {
@@ -32,6 +30,7 @@ import type { ConversationMachine, ConversationMachines, MachineTuning } from '.
 import { createConversationMachines, PACKAGE_HOSTS, showFileTool } from '../machine/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import { chosenConnections } from './chosen.ts'
+import { assistantConnectorTools, readsFiles } from './connector-access.ts'
 import type { Owner, ScopeOf } from './context.ts'
 import { machineMarks, runConversation, sessionScopes } from './context.ts'
 import type { HandOffDoors } from './handoff.ts'
@@ -47,7 +46,7 @@ import { proposeTools } from './propose.ts'
 import { proposeAutomationTool } from './propose-automation.ts'
 import { releaseConversations } from './release.ts'
 import { registerAssistantRoutes } from './routes.ts'
-import { assistantTurns, turnEnd, turnKey } from './turn.ts'
+import { assistantTurns, turnEnd } from './turn.ts'
 
 type AssistantConnectors = Connectors['assistant']
 type AssistantConnection = Awaited<ReturnType<AssistantConnectors['connections']>>[number]
@@ -155,52 +154,6 @@ function projectsOf(deps: Deps, scope: SessionScope): Promise<Omit<Overview, 'co
   })
 }
 
-/**
- * The connector tools' access for a conversation (U1's door): the chosen connections its place
- * offers, each read counted by the turn's key; the model gets the cut, never the whole answer.
- */
-function accessOf(
-  deps: Deps,
-  scope: SessionScope,
-  chosen: readonly AssistantConnection[],
-  savedAt: (requestContext: RequestContext) => string,
-): ConnectorAccess {
-  return {
-    connections: chosen,
-    savedAt,
-    log: deps.log,
-    async read(call, requestContext) {
-      return deps.connectors.read(scope, { ...call, turn: turnKey.of(requestContext) })
-    },
-    notes: (connectionId) => deps.connectors.notes(scope, connectionId),
-    wording: { whose: 'this conversation chose', limit: '50 connector calls per answer' },
-  }
-}
-
-/** The notebook's write after the person's yes, for who may manage connections, never in an automation's run. */
-function notingOf(deps: Deps, scope: SessionScope, may: boolean) {
-  if (!may) return { noteSave: false } as const
-  return {
-    noteSave: 'confirm',
-    save: (call, requestContext) =>
-      deps.connectors.saveNote(scope, { ...call, turn: turnKey.of(requestContext) }),
-  } as const satisfies Parameters<typeof connectorTools>[1]
-}
-
-/**
- * `reads/<turn>-<n>.json`: the turn's first 8 characters and the read's number in the run, so one
- * turn never writes over another; the count lives with the agent, one per run.
- */
-function readsFiles(): (requestContext: RequestContext) => string {
-  const readsOfRun = new WeakMap<RequestContext, number>()
-  return (requestContext) => {
-    const turn = turnKey.of(requestContext)
-    const n = (readsOfRun.get(requestContext) ?? 0) + 1
-    readsOfRun.set(requestContext, n)
-    return `reads/${turn.slice(0, 8)}-${n}.json`
-  }
-}
-
 type Offered = (requestContext: RequestContext) => Promise<readonly AssistantConnection[]>
 
 /**
@@ -258,8 +211,8 @@ function assistantAgent(
     scopeOf: ScopeOf
   },
 ) {
+  const { queue } = deps
   const { scopeOf } = parts
-  const defaults = agentDefaults(deps.queue, parts.turns)
   const offeredOf = offeredFor(deps, scopeOf)
   const savedAt = readsFiles()
   async function chosenOf(requestContext: RequestContext) {
@@ -310,7 +263,7 @@ function assistantAgent(
         ...handOffOf(scope, proposals, byAutomation),
         ...(scope === undefined
           ? {}
-          : connectorTools(accessOf(deps, scope, chosen, savedAt), notingOf(deps, scope, mayNote))),
+          : assistantConnectorTools(deps, { scope, chosen, savedAt, mayNote })),
       }
     },
     skills: async ({ requestContext }) => [
@@ -319,9 +272,7 @@ function assistantAgent(
         skillOf({ directory: each.skill.name, ...each.skill }),
       ),
     ],
-    ...defaults,
-    // The person's next message resumes the suspended save with its answer (step 24.3.5, "2. A").
-    defaultOptions: { ...defaults.defaultOptions, autoResumeSuspendedTools: true },
+    ...agentDefaults(queue, parts.turns),
     memory: parts.memory,
   })
 }

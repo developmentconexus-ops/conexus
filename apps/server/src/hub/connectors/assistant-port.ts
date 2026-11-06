@@ -158,6 +158,37 @@ function viewerOf(scope: SessionScope) {
   return { person: { id: scope.personId }, companyId: scope.companyId }
 }
 
+/**
+ * The Assistant's note: the chosen connection its place offers, one of the turn's calls, then the
+ * proof and the write, which checks `manageConnections` (step 24.3.5).
+ */
+async function noted(
+  deps: Deps,
+  spend: ReturnType<typeof createSpending>,
+  scope: SessionScope,
+  call: Parameters<AssistantConnectors['saveNote']>[1],
+): Promise<NoteSaved> {
+  const { connectionId } = call
+  const found = await readable(deps, scope, connectionId, (tx) =>
+    openedIn(deps, tx, { companyId: scope.companyId, connectionId }),
+  )
+  if (found.kind !== 'OK') return refused(deps, scope, { connectionId, reason: found.kind })
+  // A connector with no read door has no notebook.
+  const door = readOf(found.value.connector, 'consultar')
+  if (door === undefined || call.concept.length < 1 || call.concept.length > 120)
+    return { kind: 'NOTE_INVALID' }
+  if (!spend(call.turn)) return { kind: 'CALLS_SPENT' }
+  const read = {
+    by: 'assistant',
+    ids: idsOf(scope),
+    viewer: viewerOf(scope),
+    opened: found.value,
+    operation: door,
+    deadlineMs: CALL_DEADLINE_MS,
+  } as const
+  return provedAndSaved(deps, { ...call, read })
+}
+
 /** The company's door for the Assistant (step 24.1, U1): the chosen connections its place offers, `by: 'assistant'`; the caderno's write only for `manageConnections` (step 24.3.5). */
 export function createAssistantConnectors(deps: Deps): AssistantConnectors {
   const spend = createSpending()
@@ -220,26 +251,6 @@ export function createAssistantConnectors(deps: Deps): AssistantConnectors {
       return null
     },
 
-    async saveNote(scope, call) {
-      const { connectionId } = call
-      const found = await readable(deps, scope, connectionId, (tx) =>
-        openedIn(deps, tx, { companyId: scope.companyId, connectionId }),
-      )
-      if (found.kind !== 'OK') return refused(deps, scope, { connectionId, reason: found.kind })
-      // A connector with no read door has no notebook.
-      const door = readOf(found.value.connector, 'consultar')
-      if (door === undefined || call.concept.length < 1 || call.concept.length > 120)
-        return { kind: 'NOTE_INVALID' }
-      if (!spend(call.turn)) return { kind: 'CALLS_SPENT' }
-      const read = {
-        by: 'assistant',
-        ids: idsOf(scope),
-        viewer: viewerOf(scope),
-        opened: found.value,
-        operation: door,
-        deadlineMs: CALL_DEADLINE_MS,
-      } as const
-      return provedAndSaved(deps, { ...call, read })
-    },
+    saveNote: (scope, call) => noted(deps, spend, scope, call),
   }
 }

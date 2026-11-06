@@ -95,7 +95,10 @@ async function save(
     if (!(error instanceof Failure) || error.code !== 'NOT_FOUND') throw error
     const { connectionId, companyId } = input
     const reason = String(error.details.reason ?? 'NOT_FOUND')
-    deps.log.info({ companyId, connectionId, reason }, 'CONNECTION_NOTE_REFUSED')
+    deps.log.info(
+      { companyId, personId: input.person.id, connectionId, reason },
+      'CONNECTION_NOTE_REFUSED',
+    )
     return 'NOT_GRANTED'
   }
 }
