@@ -22,6 +22,7 @@ const BASE = `/api/companies/${COMPANY.id}/projects/${PROJECT_ID}`
 
 const TOOLS = [
   {
+    kind: 'PRESET' as const,
     id: TOOL,
     slug: 'vendas_de_ontem_por_vendedor',
     connectionId: CONNECTION,
@@ -154,13 +155,14 @@ for (const [opening, button, footer, viewport] of [
 
 function handMade(id: string, slug: string, description: string) {
   return {
+    kind: 'PRESET' as const,
     id,
     slug,
     connectionId: CONNECTION,
     operation: 'pedidos',
     effect: 'READ' as const,
     latest: { id: VERSION, number: 1 },
-    version: { id: VERSION, number: 1, description, bound: {}, open: [] },
+    version: { kind: 'PRESET' as const, id: VERSION, number: 1, description, bound: {}, open: [] },
   }
 }
 

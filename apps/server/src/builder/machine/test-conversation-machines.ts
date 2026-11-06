@@ -1,4 +1,5 @@
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import type { ConversationId } from '@conexus/hub-api'
 import type { ConversationMachine } from './kit.ts'
 import { MARK } from './kit.ts'
@@ -37,6 +38,8 @@ export function testConversationMachines(folder: string) {
     installation: INSTALLATION,
     mark,
   }
-  const tuning = { workFolder: join(own, 'work'), startMs: 5_000 }
+  // The repository's own packages stand in for the template's `/opt/conexus`.
+  const toolchain = fileURLToPath(new URL('../../../../../', import.meta.url))
+  const tuning = { workFolder: join(own, 'work'), toolchain, startMs: 5_000 }
   return { deps, tuning, control, killed, folder: own }
 }

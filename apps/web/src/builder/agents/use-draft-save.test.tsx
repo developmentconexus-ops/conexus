@@ -96,7 +96,7 @@ test('três ligações seguidas, com a segunda gravação em voo, gravam as trê
 test('três ferramentas tiradas seguidas, com a segunda gravação em voo, não voltam', async () => {
   function tool(digit: string, slug: string) {
     const [base] = agent().tools
-    if (base === undefined) throw new Error('the fixture has a tool')
+    if (base?.kind !== 'PRESET') throw new Error('the fixture has a preset tool')
     const versionId = ToolVersionId.parse(`${digit.repeat(8)}-cccc-4ccc-8ccc-${digit.repeat(12)}`)
     return {
       ...base,

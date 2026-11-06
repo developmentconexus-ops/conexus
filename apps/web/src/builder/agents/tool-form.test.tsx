@@ -1,10 +1,10 @@
-import { FAILURES, PROBLEM_MEDIA_TYPE } from '@conexus/hub-api'
+import { FAILURES, PROBLEM_MEDIA_TYPE, ToolVersionId } from '@conexus/hub-api'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
-import { HttpResponse } from 'msw'
+import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { problemOf } from '../../platform/fixtures.ts'
-import { hubServer } from '../../platform/test-hub.tsx'
-import { AGENT, AREA, agent } from './test-agents.ts'
+import { hubServer, PEDIDOS } from '../../platform/test-hub.tsx'
+import { AGENT, AREA, agent, TOOL, TOOL_V1, toolSummary } from './test-agents.ts'
 import { agentScreens } from './test-hub.tsx'
 
 // O formulário da ferramenta criada no painel (step 24.3, U5, criterion 27; web W24, code C37).
@@ -96,4 +96,48 @@ test('o Hub recusa um campo aberto repetido (FIELD_TWICE): a frase diz o que hou
       'Um campo aparece duas vezes: repetido nos que o modelo preenche, ou também nos valores fixos.',
     ),
   ).toBeTruthy()
+})
+
+test('outra aba gravou uma versão no meio (STALE_VERSION): a tela diz que há versão mais nova e Recarregar abre o formulário sobre a versão de agora', async () => {
+  const V2 = ToolVersionId.parse('44444444-aaaa-4aaa-8aaa-555555555555')
+  const held = {
+    agents: [agent()],
+    tools: [toolSummary()],
+    toolVersions: [
+      {
+        ...{ kind: 'PRESET' as const, id: TOOL_V1, number: 1 },
+        ...{ description: 'Vendas de ontem por vendedor.', bound: {}, open: [] },
+      },
+    ],
+  }
+  at(`${AREA}/tools/${TOOL}`, held)
+  server.use(
+    http.post(
+      `*/api/companies/*/projects/${PEDIDOS.id}/tools/:toolId/versions`,
+      () =>
+        HttpResponse.json(
+          { ...problemOf('TOOL_REFUSED'), field: 'toolId', reason: 'STALE_VERSION' },
+          { status: FAILURES.TOOL_REFUSED.status, headers: { 'content-type': PROBLEM_MEDIA_TYPE } },
+        ),
+      { once: true },
+    ),
+  )
+  fireEvent.click(await screen.findByRole('button', { name: 'Nova versão' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Gravar versão' }))
+  const newer = 'Há uma versão mais nova desta ferramenta.'
+  expect(await screen.findByText(newer)).toBeTruthy()
+
+  // The other tab's version is the Hub's latest now.
+  held.toolVersions.push({
+    ...{ kind: 'PRESET' as const, id: V2, number: 2 },
+    ...{ description: 'Da outra aba.', bound: {}, open: [] },
+  })
+  Object.assign(held.tools[0] ?? {}, {
+    latest: { id: V2, number: 2 },
+    description: 'Da outra aba.',
+  })
+  fireEvent.click(screen.getByRole('button', { name: 'Recarregar' }))
+  await waitFor(() => expect(screen.queryByText(newer)).toBeNull())
+  const description = await screen.findByLabelText('O que ela faz')
+  expect(description).toHaveProperty('value', 'Da outra aba.')
 })

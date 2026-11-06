@@ -1,6 +1,6 @@
 // Builds the E2B template the Builder's machines start from (decisions 0051, 0055): Node 24 and git,
 // the app folder, and in /opt/conexus the check program with its tools (TypeScript, esbuild,
-// wrangler, Chromium's headless shell), the SDK it copies into each app, and an npm cache of the
+// wrangler, Biome, Chromium's headless shell), the SDK it copies into each app, and an npm cache of the
 // starter's packages. Publish runs it from the Release's commit, with the account's key in
 // E2B_API_KEY (the SDK reads it); so does firstmate to try a candidate. It prints the `name:tag` the
 // deploy gives the Hub as HUB_E2B_TEMPLATE. The tag is the commit, so a build never replaces the one
@@ -37,11 +37,15 @@ function versionOf(packageJson: string, name: string): string {
   return version
 }
 
-// The tools at the versions the repository tests the check with: wrangler is the edge's.
+// The tools at the versions the repository tests the check with: wrangler is the edge's, and Biome runs the
+// rule that keeps module state out of a tool in code (step 24.4).
 const TOOLS = JSON.stringify({
   private: true,
   workspaces: ['packages/*'],
-  dependencies: { wrangler: versionOf('apps/edge/package.json', 'wrangler') },
+  dependencies: {
+    wrangler: versionOf('apps/edge/package.json', 'wrangler'),
+    '@biomejs/biome': versionOf('package.json', '@biomejs/biome'),
+  },
 })
 
 // The program the server runs; the variables reach the browser and npm also when the check runs.
