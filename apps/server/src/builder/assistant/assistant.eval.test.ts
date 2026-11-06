@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict'
+import { writeFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { test } from 'node:test'
 import type { MastraMessagePart } from '@mastra/core/agent-controller'
 import { checks } from '@mastra/evals/checks'
@@ -178,29 +180,52 @@ test('o modelo de verdade: o caderno — a dona pede e o turno grava e diz o que
   const on = await subscribed(t, REAL_MODEL)
   const SAVE = 'connector_note_save'
   const body = { connections: [on.matriz] }
+  /** Every tool call (arguments and result) and the final text of a case, kept beside the sign-in files, never in the repository. */
+  function record(name: string, parts: MastraMessagePart[]) {
+    const calls = parts.flatMap((part) =>
+      part.type === 'tool-invocation' ? [part.toolInvocation] : [],
+    )
+    writeFileSync(
+      join(REAL_MODEL ?? '', `caderno-${name}.json`),
+      JSON.stringify({ calls, text: textOf(parts) }, null, 2),
+    )
+    return `${JSON.stringify(calls)}\n${textOf(parts)}`
+  }
   const owner = await created(on.hub, on.ana, on.assistant, body)
   const asked =
     'Na Matriz, o NUNOTA da tabela TGFCAB é o número da nota de venda. Anota isso no caderno.'
   assert.equal(endOf(await (await talking(t, on.hub, on.ana, owner)).say(asked)), 'complete')
   const parts = await answerParts(on.hub, on.ana, owner)
-  assert.deepEqual(await scored(parts, SAVE), [1, 1], textOf(parts))
-  const page = await call(on.hub, on.ana, 'GET', `${on.company}/connections/${on.matriz}`)
-  const [note, ...others] = Object(page.json()).notes
-  assert.equal(others.length, 0, textOf(parts))
-  assert.ok(note.provedRows > 0, textOf(parts))
+  const seen = record('dona', parts)
+  assert.deepEqual(await scored(parts, SAVE), [1, 1], `chamou e nenhuma ferramenta errou\n${seen}`)
+  const notes = []
+  for (const id of on.connections) {
+    const page = await call(on.hub, on.ana, 'GET', `${on.company}/connections/${id}`)
+    notes.push(...Object(page.json()).notes.map((each: object) => ({ connection: id, ...each })))
+  }
+  assert.equal(
+    notes.length,
+    1,
+    `esperava uma anotação nas ligações da empresa, vieram ${notes.length}\n${seen}`,
+  )
+  const [note] = notes
+  assert.equal(note.connection, on.matriz, `a anotação foi para outra ligação\n${seen}`)
+  assert.ok(note.provedRows > 0, `a prova não voltou linhas\n${seen}`)
   assert.equal(note.writtenBy, 'Ana Lima')
-  assert.match(textOf(parts), /NUNOTA/)
+  assert.match(textOf(parts), /NUNOTA/, `a resposta não diz o que anotou\n${seen}`)
   const idle = await created(on.hub, on.ana, on.assistant, body)
   const chat = 'O que é o NUNOTA no Sankhya?'
   assert.equal(endOf(await (await talking(t, on.hub, on.ana, idle)).say(chat)), 'complete')
   const talked = await answerParts(on.hub, on.ana, idle)
-  assert.deepEqual(await checked(talked, [checks.didNotCall(SAVE)]), [1], textOf(talked))
+  const talk = record('sem-ensino', talked)
+  assert.deepEqual(await checked(talked, [checks.didNotCall(SAVE)]), [1], talk)
   const bruno = await memberOn(on.hub, on.companyId, BRUNO, 'member')
   const his = await created(on.hub, bruno, on.assistant, body)
   assert.equal(endOf(await (await talking(t, on.hub, bruno, his)).say(asked)), 'complete')
   const theirs = await answerParts(on.hub, bruno, his)
-  assert.deepEqual(await checked(theirs, [checks.didNotCall(SAVE)]), [1], textOf(theirs))
-  assert.match(textOf(theirs), /NUNOTA/)
-  assert.match(textOf(theirs), /SELECT/i)
-  assert.match(textOf(theirs), /TGFCAB/)
+  const hers = record('membro', theirs)
+  assert.deepEqual(await checked(theirs, [checks.didNotCall(SAVE)]), [1], hers)
+  assert.match(textOf(theirs), /NUNOTA/, `o texto não traz o conceito\n${hers}`)
+  assert.match(textOf(theirs), /SELECT/i, `o texto não traz a consulta\n${hers}`)
+  assert.match(textOf(theirs), /TGFCAB/, `o texto não traz a tabela\n${hers}`)
 })
