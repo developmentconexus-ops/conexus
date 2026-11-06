@@ -224,7 +224,9 @@ export function oneAtATimeText(connector: string, taken: string): string {
 }
 
 export const NOTEBOOK = 'Caderno'
-export const EMPTY_NOTEBOOK = 'O Builder ainda não anotou nada desta ligação.'
+export const EMPTY_NOTEBOOK = 'Nada anotado nesta ligação ainda.'
+export const ERASE_NOTE_DESCRIPTION =
+  'Quem conversa deixa de usar essa anotação. Ela pode ser anotada de novo.'
 export const ERASE = 'Apagar'
 
 /** "provado em 30/10 por Bruno, com 20 linhas": what an entry of the notebook says about its proof. */
