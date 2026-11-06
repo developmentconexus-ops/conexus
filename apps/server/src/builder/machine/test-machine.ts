@@ -273,7 +273,7 @@ export async function world(
   startMs = 5_000,
   installation = INSTALLATION,
   seedOf?: () => Promise<Buffer>,
-  options: Readonly<{ checkProgram?: string; commandMs?: number }> = {},
+  options: Readonly<{ checkProgram?: string }> = {},
 ) {
   const folder = mkdtempSync(join(tmpdir(), 'conexus-machine-'))
   t.after(() => rmSync(folder, { recursive: true, force: true }))
@@ -288,33 +288,44 @@ export async function world(
   const control = newControl()
   /** What the machines logged as errors, by message. */
   const errors: string[] = []
-  const machines = createMachines({
-    kit: localKit(folder, control),
-    api: {
-      kill: async () => 0,
-      // The provider's list by the conversation's mark, as E2B's: every machine of another template goes.
-      killStale: killStaleOf(control),
-    },
-    seedOf: seedOf ?? (() => repository.bundleOfMain()),
-    mark: { conexus_origin: installation },
-    installation,
-    template: TEMPLATE,
-    log: { info: () => undefined, error: (_fields, message) => errors.push(message) },
-    workdir: join(folder, 'app'),
-    tmp: folder,
-    startMs,
-    ...options,
-  })
+  function machinesWith(more: Readonly<{ commandMs?: number }> = {}) {
+    return createMachines({
+      kit: localKit(folder, control),
+      api: {
+        kill: async () => 0,
+        // The provider's list by the conversation's mark, as E2B's: every machine of another template goes.
+        killStale: killStaleOf(control),
+      },
+      seedOf: seedOf ?? (() => repository.bundleOfMain()),
+      mark: { conexus_origin: installation },
+      installation,
+      template: TEMPLATE,
+      log: { info: () => undefined, error: (_fields, message) => errors.push(message) },
+      workdir: join(folder, 'app'),
+      tmp: folder,
+      startMs,
+      ...options,
+      ...more,
+    })
+  }
+  const machines = machinesWith()
   const phases: Phase[] = []
-  function open(conversationId = CONVERSATION) {
-    return machines.workspaceFor({
+  function openOn(on: ReturnType<typeof createMachines>, conversationId = CONVERSATION) {
+    return on.workspaceFor({
       companyId: COMPANY,
       projectId: PROJECT,
       conversationId,
       onPhase: (phase) => phases.push(phase),
     })
   }
-  return { machines, repository, base, control, phases, errors, open, folder }
+  function open(conversationId = CONVERSATION) {
+    return openOn(machines, conversationId)
+  }
+  /** The same conversation opened by another copy of the machines, whose commands get `commandMs`. */
+  function openWithCommandMs(commandMs: number) {
+    return openOn(machinesWith({ commandMs }))
+  }
+  return { machines, repository, base, control, phases, errors, open, openWithCommandMs, folder }
 }
 
 /** The workspace's machine, started as a tool's first call starts it. */
