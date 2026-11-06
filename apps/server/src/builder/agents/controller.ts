@@ -36,6 +36,7 @@ import type { QueueDeps } from '../model-accounts/public.ts'
 import type { AgentDeps, AgentRun } from './agent.ts'
 import { agentOf, agentTurnOf, planOf, setAgentRun } from './agent.ts'
 import type { AppDataPort } from './app-data.ts'
+import type { CodeToolsDeps } from './code-tools.ts'
 import type { AgentEvent, AgentEvents } from './events.ts'
 import type { AgentReads, Registry } from './registry.ts'
 import { createRegistry } from './registry.ts'
@@ -211,6 +212,8 @@ type Deps = {
   machineTuning?: MachineTuning
   /** The one `Mastra` the registry adds the agents to, made after the parts. */
   mastra: () => Mastra
+  /** The saved tools' calls at the edge (step 24.4, U3). */
+  codeTools: CodeToolsDeps
   log: FailureLog
 }
 

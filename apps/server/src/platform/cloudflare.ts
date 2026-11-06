@@ -271,17 +271,16 @@ async function exists(api: Api, worker: string): Promise<CloudflareAnswer<boolea
   return { kind: 'DONE', value: script.success && script.data.script != null }
 }
 
-/**
- * The one adapter to Cloudflare's API for the apps: only it holds the token, which leaves only in
- * its requests (code C56, security S36). A version is a Worker `v-<id>` in the namespace, with its
- * static files served before it (decision 0043).
- */
-export function createCloudflareApps(deps: { config: Config; log: FailureLog }): CloudflareApps {
-  const { cloudflareApiUrl, cloudflareAccountId, appsNamespace, cloudflareAppsToken } = deps.config
+/** The adapter over one dispatch namespace: only it holds the token, which leaves only in its requests (C56, S36). */
+function namespaceAdapter(
+  deps: { config: Config; log: FailureLog },
+  namespace: Config['appsNamespace'],
+): CloudflareApps {
+  const { cloudflareApiUrl, cloudflareAccountId, cloudflareAppsToken } = deps.config
   const account = `${cloudflareApiUrl}/accounts/${cloudflareAccountId}`
   const api: Api = {
     account,
-    scripts: `${account}/workers/dispatch/namespaces/${appsNamespace}/scripts`,
+    scripts: `${account}/workers/dispatch/namespaces/${namespace}/scripts`,
     token: cloudflareAppsToken.reveal(),
     log: deps.log,
   }
@@ -290,4 +289,38 @@ export function createCloudflareApps(deps: { config: Config; log: FailureLog }):
     remove: (worker: string, signal?: AbortSignal) => remove(api, worker, signal),
     exists: (worker: string) => exists(api, worker),
   })
+}
+
+/**
+ * The one adapter to Cloudflare's API for the apps: a version is a Worker `v-<id>` in the namespace,
+ * with its static files served before it (decision 0043).
+ */
+export function createCloudflareApps(deps: { config: Config; log: FailureLog }): CloudflareApps {
+  return namespaceAdapter(deps, deps.config.appsNamespace)
+}
+
+/**
+ * The same adapter over the saved tools' namespace (step 24.4): a `CODE` version is a Worker
+ * `t-<id>`, on the same token, which already edits every Worker of the account.
+ */
+export function createCloudflareTools(deps: { config: Config; log: FailureLog }): CloudflareApps {
+  return namespaceAdapter(deps, deps.config.toolsNamespace)
+}
+
+/**
+ * Removes each id's Worker, by the name `workerOf` gives it; the ones Cloudflare did not confirm, or
+ * that the budget did not reach, stay for the next pass. The ids it answers are the ones gone.
+ */
+export async function removeWorkers<Id>(
+  cloudflare: CloudflareApps,
+  ids: readonly Id[],
+  workerOf: (id: Id) => string,
+  budget?: AbortSignal,
+): Promise<{ removed: Id[]; left: number }> {
+  const removed: Id[] = []
+  for (const id of ids) {
+    if (budget?.aborted) break
+    if ((await cloudflare.remove(workerOf(id), budget)).kind === 'DONE') removed.push(id)
+  }
+  return { removed, left: ids.length - removed.length }
 }

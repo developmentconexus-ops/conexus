@@ -63,10 +63,18 @@ export function heldCompanyPostgres(config: Config) {
   }
 }
 
+type Doubles = {
+  neon: ReturnType<typeof fakeNeon>
+  cloudflare: ReturnType<typeof fakeCloudflare>
+  postgres: ReturnType<typeof heldCompanyPostgres>
+  /** The saved tools' namespace (step 24.4); one of its own when the test does not look at it. */
+  tools?: ReturnType<typeof fakeCloudflare>
+}
+
 /** The ports the apps reach the outside through, as doubles: Neon and Cloudflare of memory (T14). */
 export function testAppPorts(
   config: Config,
-  doubles = {
+  doubles: Doubles = {
     neon: fakeNeon(),
     cloudflare: fakeCloudflare(),
     postgres: heldCompanyPostgres(config),
@@ -77,6 +85,7 @@ export function testAppPorts(
     neon: doubles.neon.neon,
     companyPostgres: doubles.postgres.companyPostgres,
     cloudflare: doubles.cloudflare.cloudflare,
+    cloudflareTools: (doubles.tools ?? fakeCloudflare()).cloudflare,
     ...testBuilderPorts(config, machineFolder),
     log: silent,
   }

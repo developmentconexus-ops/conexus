@@ -2,6 +2,7 @@ import type { AppVersionId, CompanyId, ProjectId } from '@conexus/hub-api'
 import { appWorkerOf, AppVersionId as VersionId } from '@conexus/hub-api'
 import { and, desc, eq, inArray, notExists, notInArray } from 'drizzle-orm'
 import type { CloudflareApps } from '../../platform/cloudflare.ts'
+import { removeWorkers } from '../../platform/cloudflare.ts'
 import type { CommandTx, Database, Scope } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { app, appVersion, blob, versionFile } from './tables.ts'
@@ -78,23 +79,6 @@ async function deleteVersionRows(tx: CommandTx, companyId: CompanyId, ids: strin
   )
 }
 
-/**
- * Removes each version's Worker; the ones Cloudflare did not confirm, or that the budget did not
- * reach, stay for the next pass.
- */
-export async function removeWorkers(
-  cloudflare: CloudflareApps,
-  versionIds: readonly AppVersionId[],
-  budget?: AbortSignal,
-): Promise<{ removed: AppVersionId[]; left: number }> {
-  const removed: AppVersionId[] = []
-  for (const id of versionIds) {
-    if (budget?.aborted) break
-    if ((await cloudflare.remove(appWorkerOf(id), budget)).kind === 'DONE') removed.push(id)
-  }
-  return { removed, left: versionIds.length - removed.length }
-}
-
 export type PruneDeps = {
   database: Database
   cloudflare: CloudflareApps
@@ -124,6 +108,7 @@ export async function prune(deps: PruneDeps, input: Ids & { scope: Scope }): Pro
   const { removed, left } = await removeWorkers(
     deps.cloudflare,
     marked.map(({ id }) => VersionId.parse(id)),
+    appWorkerOf,
     AbortSignal.timeout(deps.pruneBudgetMs ?? PRUNE_BUDGET_MS),
   )
   await deps.database.command(input.scope, async (tx) => {

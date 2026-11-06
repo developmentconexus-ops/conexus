@@ -1,6 +1,7 @@
 import type { CompanyId, ProjectId, ToolId } from '@conexus/hub-api'
 import { ConnectionId } from '@conexus/hub-api'
 import type { IdentityPorts } from '../../hub/identity/public.ts'
+import type { CloudflareApps } from '../../platform/cloudflare.ts'
 import type { CommandTx, Database, ReadTx } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
@@ -19,6 +20,8 @@ export type ToolsDeps = {
   ) => Promise<unknown | undefined>
   connectors: ToolConnectors
   usedBy: UsedBy
+  /** The saved tools' namespace (step 24.4), where each `CODE` version runs as `t-<id>`. */
+  cloudflare: CloudflareApps
   log: FailureLog
 }
 

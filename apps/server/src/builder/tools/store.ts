@@ -224,6 +224,11 @@ type Insert = {
  * Every unique key arbitrates, so a twin written at once waits and then finds that row; no row of
  * this id after it is the slug another tool holds (`TOOL_REFUSED`).
  */
+/** A tool's version 1, whose id its tool's id fixes. */
+export function firstVersionIdOf(toolId: ToolId): ToolVersionId {
+  return ToolVersionId.parse(derivedUuid('tool-version', toolId, '1'))
+}
+
 export async function inserted(tx: CommandTx, a: Insert): Promise<boolean> {
   const { companyId } = a.scope
   const [made] = await tx
@@ -236,7 +241,7 @@ export async function inserted(tx: CommandTx, a: Insert): Promise<boolean> {
     throw new Failure('TOOL_REFUSED', { named: { field: 'slug', reason: 'SLUG_TAKEN' } })
   }
   await tx.insert(toolVersion).values({
-    ...{ id: derivedUuid('tool-version', a.id, '1'), toolId: a.id, companyId, number: 1 },
+    ...{ id: firstVersionIdOf(a.id), toolId: a.id, companyId, number: 1 },
     ...{ config: a.config, createdBy: a.createdBy, bodyHash: a.bodyHash },
   })
   return true

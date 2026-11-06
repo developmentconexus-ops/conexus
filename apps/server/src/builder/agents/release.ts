@@ -9,7 +9,7 @@ import { agent, agentVersion } from './tables.ts'
 
 type ReleaseDeps = {
   database: Database
-  tools: Pick<Tools, 'releasePerson'>
+  tools: Pick<Tools, 'releasePerson' | 'removeCompanyWorkers'>
   emit: (event: AgentEvent) => Promise<void>
   log: FailureLog
 }
@@ -18,7 +18,8 @@ type ReleaseDeps = {
  * The removal of a person, a Projeto or a company, after its automations and before its
  * conversations. A person's authorship leaves with them and their agents, versions and tools stay
  * (data D17); a Projeto's or a company's agents are deleted with their versions and choices, so no
- * choice holds a tool when the company's row takes the library with it. Repeating it finds nothing.
+ * choice holds a tool when the company's row takes the library with it, and the company's tool
+ * Workers leave first. Repeating it finds nothing.
  */
 export async function releaseAgents(deps: ReleaseDeps, scope: ReleaseScope): Promise<number> {
   const { companyId, projectId, personId } = scope
@@ -35,6 +36,8 @@ export async function releaseAgents(deps: ReleaseDeps, scope: ReleaseScope): Pro
     })
     return 0
   }
+  // The company's tool Workers leave before its library does (step 24.4); a Projeto's tools stay.
+  if (projectId === undefined) await deps.tools.removeCompanyWorkers(companyId)
   const gone = await deps.database.command(hub, (tx) =>
     tx
       .delete(agent)

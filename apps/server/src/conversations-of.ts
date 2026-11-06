@@ -22,8 +22,10 @@ import type { IdentityPorts } from './hub/identity/public.ts'
 import type { Notify } from './hub/notifications/public.ts'
 import type { ProjectPorts } from './hub/projects/public.ts'
 import { liveProjectIdsOf, liveProjectOf, liveProjectsOf } from './hub/projects/public.ts'
+import type { CloudflareApps } from './platform/cloudflare.ts'
 import type { Config } from './platform/config.ts'
 import type { Database, MastraPool } from './platform/database.ts'
+import type { EdgeTools } from './platform/edge-tools.ts'
 import type { FailureLog } from './platform/failure.ts'
 import type { SealKeys } from './platform/seal.ts'
 
@@ -87,6 +89,9 @@ export function conversationsOf(deps: {
   /** The tests' folder and start deadline for the Assistant's machines; E2B's when absent. */
   machineTuning?: MachineTuning
   connectors: () => Connectors
+  /** The saved tools' namespace and their host on the edge (step 24.4, U3). */
+  cloudflareTools: CloudflareApps
+  edgeTools: EdgeTools
   /** The Projects are made after the conversations; a hand-off creates one when it is touched. */
   projects: () => Pick<ProjectPorts, 'createProject'>
   /** The apps are made after the agents; an agent reads its app's data when a turn calls it. */
@@ -118,6 +123,8 @@ export function conversationsOf(deps: {
   const agents = agentsAlive({
     ...{ storage, database, identity, queue, liveProjectOf, liveProjectIdsOf, isChoosable, log },
     ...{ connectors: door, machine: deps.machine, machineTuning: deps.machineTuning },
+    ...{ cloudflare: deps.cloudflareTools, edge: deps.edgeTools },
+    calls: { open: (call) => deps.connectors().tools.open(call) },
     speakersOf: (scope) => speakersOf({ database, identity, projects: { liveProjectOf } }, scope),
     appData,
     mastra: () => hub.mastra,
