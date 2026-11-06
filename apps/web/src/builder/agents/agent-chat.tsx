@@ -1,7 +1,7 @@
 import type { AgentDetail, CompanyId, ConversationId, ProjectId } from '@conexus/hub-api'
 import { AGENTS_CONTROLLER, agentFilePath } from '@conexus/hub-api'
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
-import { useMemo, useState } from 'react'
+import { useContext, useEffect, useMemo, useState } from 'react'
 import { useIsMobile } from '../../ui/use-mobile.ts'
 import { useConnectorCatalog } from '../assistant/public.ts'
 import type { OpenedFile } from '../conversation/public.ts'
@@ -13,6 +13,7 @@ import {
   RoomContext,
   START_NO_ACCOUNT,
 } from '../conversation/public.ts'
+import { FileWidth } from './file-width.ts'
 import { agentConversationsQuery, agentQuery } from './queries.ts'
 import { askAgent, TEST_BANNER } from './text.ts'
 
@@ -53,6 +54,13 @@ export function AgentChat(props: {
   const [file, setFile] = useState<OpenedFile>()
   const phone = useIsMobile()
   const room = useAgentRoom(agent, words, { file, setFile })
+  const widen = useContext(FileWidth)
+  const open = file !== undefined
+  useEffect(() => {
+    if (!open) return
+    widen(true)
+    return () => widen(false)
+  }, [open, widen])
   return (
     <RoomContext.Provider value={room}>
       <div key={conversationId} className="flex h-full min-h-0 flex-col bg-surface">
