@@ -15,6 +15,8 @@ export const MARK = {
   origin: 'conexus_origin',
   company: 'conexus_company',
   project: 'conexus_project',
+  /** The agent whose conversation the machine is (step 24.4, U4). */
+  agent: 'conexus_agent',
   conversation: 'conexus_conversation',
   /** The template the machine was made from: E2B's own record of a machine names no tag. */
   template: 'conexus_template',

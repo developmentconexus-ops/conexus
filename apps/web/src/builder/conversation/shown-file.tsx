@@ -1,6 +1,7 @@
 import type { ShownFile } from '@conexus/hub-api'
 import { useMutation } from '@tanstack/react-query'
 import { DownloadIcon, XIcon } from 'lucide-react'
+import type { ReactNode } from 'react'
 import { useState } from 'react'
 import { failureOf, hubClientFetch, sentenceOf, sentenceOfCode } from '../../platform/hub.ts'
 import { Button } from '../../ui/button.tsx'
@@ -142,7 +143,7 @@ function bytesText(bytes: number): string {
  * reads the route with the Hub's fetch and saves the bytes, or says why it could not; the Hub
  * answers the route with the headers that keep the browser from running it (S24).
  */
-export function FilePanel(props: {
+function FilePanel(props: {
   urlOf: UrlOf
   shown: Shown
   onClose?: () => void
@@ -200,5 +201,25 @@ export function FilePanel(props: {
         <Body urlOf={props.urlOf} shown={shown} picture={picture} />
       </div>
     </section>
+  )
+}
+
+/**
+ * What goes beside a conversation (`Beside`'s `side`): the file panel once a file is open, none
+ * before. On a phone the sheet has its own **Fechar**, so the panel does not draw one.
+ */
+export function fileSide(
+  file: Shown | undefined,
+  urlOf: UrlOf,
+  closing: { phone: boolean; close: () => void },
+): ReactNode | undefined {
+  if (file === undefined) return undefined
+  return (
+    <FilePanel
+      urlOf={urlOf}
+      shown={file}
+      onClose={closing.phone ? undefined : closing.close}
+      inSheet={closing.phone}
+    />
   )
 }

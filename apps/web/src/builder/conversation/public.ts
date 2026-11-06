@@ -19,7 +19,7 @@ export {
 } from './queries.ts'
 export type { OpenedFile, Room } from './room.ts'
 export { ASSISTANT_ROOM, agentRoom, RoomContext, useSay } from './room.ts'
-export { FilePanel } from './shown-file.tsx'
+export { fileSide } from './shown-file.tsx'
 export {
   START_COLUMN,
   Start,

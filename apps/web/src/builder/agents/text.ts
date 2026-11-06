@@ -75,6 +75,8 @@ export function newVersionText(number: number): string {
   return `Versão ${number} disponível`
 }
 export const WEB_TOOL = 'Pesquisar na web'
+/** The agent's own machine (step 24.4): commands, files and charts beside the conversation. */
+export const COMPUTER_TOOL = 'Computador'
 export const TEST_BANNER = 'Conversa de teste com o rascunho'
 
 export function askAgent(name: string): string {
