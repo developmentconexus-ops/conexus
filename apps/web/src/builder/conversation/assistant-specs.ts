@@ -1,5 +1,6 @@
-import { ASSISTANT_TOOL, BUILDER_TOOL, ProposeRefused, ShownFile } from '@conexus/hub-api'
-import { BuildingIcon, PresentationIcon, RocketIcon, TimerIcon } from 'lucide-react'
+import type { MACHINE_TOOL } from '@conexus/hub-api'
+import { ASSISTANT_TOOL, BUILDER_TOOL, ProposeRefused } from '@conexus/hub-api'
+import { BuildingIcon, RocketIcon, TimerIcon } from 'lucide-react'
 import { CONNECTOR_SPECS, presentRead, readRefusal } from './connector-specs.ts'
 import type { RowTool, ToolSpec } from './tool-spec.ts'
 
@@ -8,9 +9,15 @@ function proposalRefusal(result: unknown) {
   return ProposeRefused.safeParse(result).success ? 'SAID' : undefined
 }
 
-/** The rows of the Assistant's own tools (step 24.1, U4); the connector tools it shares are in `connector-specs.ts`. */
+/**
+ * The rows of the Assistant's own tools (step 24.1, U4); the connector tools it shares are in
+ * `connector-specs.ts`, its machine's in `machine-specs.ts`.
+ */
 export const ASSISTANT_SPECS: Record<
-  (typeof ASSISTANT_TOOL)[keyof typeof ASSISTANT_TOOL],
+  Exclude<
+    (typeof ASSISTANT_TOOL)[keyof typeof ASSISTANT_TOOL],
+    (typeof MACHINE_TOOL)[keyof typeof MACHINE_TOOL]
+  >,
   ToolSpec
 > = {
   [ASSISTANT_TOOL.overview]: {
@@ -21,18 +28,6 @@ export const ASSISTANT_SPECS: Record<
     verb: 'olhou a empresa',
     body: 'generic',
     groups: true,
-  },
-  [ASSISTANT_TOOL.showFile]: {
-    icon: PresentationIcon,
-    running: 'Preparando um arquivo para mostrar',
-    done: 'Mostrou um arquivo',
-    failed: 'Não conseguiu mostrar o arquivo',
-    verb: 'mostrou',
-    detailKey: 'path',
-    body: 'shown',
-    groups: false,
-    refusal: (result) =>
-      ShownFile.safeParse(result).data?.kind === 'SHOW_REFUSED' ? 'SAID' : undefined,
   },
   [ASSISTANT_TOOL.proposeApp]: {
     icon: RocketIcon,

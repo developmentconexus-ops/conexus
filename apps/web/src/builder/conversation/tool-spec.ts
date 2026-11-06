@@ -4,6 +4,7 @@ import type {
   CARD_TOOLS,
   ClosedTool,
   CONSTRUTOR_TOOL,
+  MACHINE_TOOL,
   TASK_TOOLS,
 } from '@conexus/hub-api'
 import type { LucideIcon } from 'lucide-react'
@@ -13,6 +14,7 @@ import type { ToolItem } from './rows.ts'
 export type RowTool =
   | Exclude<ClosedTool, (typeof CARD_TOOLS)[keyof typeof CARD_TOOLS] | (typeof TASK_TOOLS)[number]>
   | (typeof ASSISTANT_TOOL)[keyof typeof ASSISTANT_TOOL]
+  | (typeof MACHINE_TOOL)[keyof typeof MACHINE_TOOL]
   | (typeof AGENT_TOOL)[keyof typeof AGENT_TOOL]
   | ConstrutorRowTool
 

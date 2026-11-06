@@ -5,17 +5,16 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
-import { CompanyId, ConversationId, PersonId } from '@conexus/hub-api'
+import { CompanyId, ConversationId } from '@conexus/hub-api'
 import { RequestContext } from '@mastra/core/request-context'
 import { WORKSPACE_TOOLS } from '@mastra/core/workspace'
 import { MAX_BYTES } from '../git/public.ts'
-import type { AssistantMachineApi, KitFactory } from '../machine/public.ts'
-import { INSTALLATION, OLD_TEMPLATE } from '../machine/test-machine.ts'
-import { testAssistantMachines } from '../runs/test-runs.ts'
-import { createAssistantMachines } from './public.ts'
+import type { ConversationMachineApi, KitFactory } from './public.ts'
+import { createConversationMachines, MARK, PACKAGE_HOSTS } from './public.ts'
+import { testConversationMachines } from './test-conversation-machines.ts'
+import { INSTALLATION, OLD_TEMPLATE } from './test-machine.ts'
 
 const COMPANY = CompanyId.parse('companyAAAAAAAAAAAAAAAAAAAAAAAAA')
-const PERSON = PersonId.parse('person-ana')
 
 type Line = { message: string; fields: Record<string, unknown> }
 
@@ -26,12 +25,12 @@ type Line = { message: string; fields: Record<string, unknown> }
  */
 function machinesOf(
   t: TestContext,
-  replace: { api?: Partial<AssistantMachineApi>; kit?: (kit: KitFactory) => KitFactory } = {},
+  replace: { api?: Partial<ConversationMachineApi>; kit?: (kit: KitFactory) => KitFactory } = {},
   tuning: { startMs?: number } = {},
 ) {
   const folder = mkdtempSync(join(tmpdir(), 'conexus-lane-'))
   t.after(() => rmSync(folder, { recursive: true, force: true }))
-  const doubles = testAssistantMachines(folder)
+  const doubles = testConversationMachines(folder)
   const lines: Line[] = []
   const log = {
     info: (fields: Record<string, unknown>, message: string) => lines.push({ message, fields }),
@@ -41,18 +40,14 @@ function machinesOf(
   mkdirSync(doubles.tuning.workFolder, { recursive: true })
   writeFileSync(join(doubles.tuning.workFolder, 'a.txt'), 'um')
   doubles.control.discoverable.push(`conexus-${INSTALLATION}-${id}`)
-  const machines = createAssistantMachines(
+  const machines = createConversationMachines(
     {
       ...doubles.deps,
       api: { ...doubles.deps.api, ...replace.api },
       kit: replace.kit?.(doubles.deps.kit) ?? doubles.deps.kit,
       log,
-      scopeOf: async () => ({
-        companyId: COMPANY,
-        personId: PERSON,
-        place: { kind: 'COMPANY' },
-        chosen: [],
-      }),
+      hosts: PACKAGE_HOSTS,
+      marksOf: async () => ({ [MARK.company]: COMPANY }),
     },
     { ...doubles.tuning, ...tuning },
   )

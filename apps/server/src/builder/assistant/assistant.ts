@@ -28,17 +28,16 @@ import {
   skillOf,
   toolsOf,
 } from '../conversation/public.ts'
-import type { AssistantMachine } from '../machine/public.ts'
+import type { ConversationMachine, ConversationMachines, MachineTuning } from '../machine/public.ts'
+import { createConversationMachines, PACKAGE_HOSTS, showFileTool } from '../machine/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import { chosenConnections } from './chosen.ts'
 import type { Owner, ScopeOf } from './context.ts'
-import { runConversation, sessionScopes } from './context.ts'
+import { machineMarks, runConversation, sessionScopes } from './context.ts'
 import type { HandOffDoors } from './handoff.ts'
 import { registerHandOff } from './handoff.ts'
 import type { Speakers } from './instructions.ts'
 import { assistantInstructions } from './instructions.ts'
-import type { AssistantMachines, MachineTuning } from './machine.ts'
-import { createAssistantMachines } from './machine.ts'
 import { assistantMemory } from './memory.ts'
 import type { OpenDeps } from './open.ts'
 import { admitted, asked, automationOf, openConversation } from './open.ts'
@@ -48,7 +47,6 @@ import { proposeTools } from './propose.ts'
 import { proposeAutomationTool } from './propose-automation.ts'
 import { releaseConversations } from './release.ts'
 import { registerAssistantRoutes } from './routes.ts'
-import { showFileTool } from './show-file.ts'
 import { assistantTurns, turnEnd, turnKey } from './turn.ts'
 
 type AssistantConnectors = Connectors['assistant']
@@ -94,7 +92,7 @@ type Deps = {
    * The conversations' machines at the provider (step 24.1, U3): the Builder's kit and API, its
    * template and installation.
    */
-  machine: AssistantMachine
+  machine: ConversationMachine
   machineTuning?: MachineTuning
   /** The Projects, the grants and the Builder a hand-off reaches, made after the Assistant (step 24.3.2). */
   handOffs: () => HandOffDoors
@@ -245,7 +243,7 @@ function assistantAgent(
   parts: {
     memory: ReturnType<typeof assistantMemory>
     turns: ReturnType<typeof assistantTurns>
-    machines: AssistantMachines
+    machines: ConversationMachines
     scopeOf: ScopeOf
   },
 ) {
@@ -322,8 +320,8 @@ export function createAssistant(deps: Deps) {
   const memory = assistantMemory({ storage, queue })
   const chosen = chosenConnections(deps.database)
   const scopeOf = sessionScopes({ chosenOf: chosen.of })
-  const machines = createAssistantMachines(
-    { ...deps.machine, log: deps.log, scopeOf },
+  const machines = createConversationMachines(
+    { ...deps.machine, log: deps.log, hosts: PACKAGE_HOSTS, marksOf: machineMarks(scopeOf) },
     deps.machineTuning,
   )
   const turns = assistantTurns({ queue, scopeOf, machines })

@@ -7,8 +7,7 @@ import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { promisify } from 'node:util'
 import { LocalFilesystem } from '@mastra/core/workspace'
-import { SandboxFilesystem } from '../machine/public.ts'
-import { locate } from './public.ts'
+import { locate, SandboxFilesystem } from './public.ts'
 
 const run = promisify(execFile)
 

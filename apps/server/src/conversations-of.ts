@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify'
 import type { AppDataPort } from './builder/agents/public.ts'
 import { agentsAlive } from './builder/agents/public.ts'
-import type { HandOffDoors, MachineTuning } from './builder/assistant/public.ts'
+import type { HandOffDoors } from './builder/assistant/public.ts'
 import { createAssistant, speakersOf } from './builder/assistant/public.ts'
 import {
   AUTOMATION_TURN_MS,
@@ -14,7 +14,7 @@ import { createBuilderConversations, createMastraStorage } from './builder/conve
 import { createHubMastra } from './builder/mastra/public.ts'
 import type { openGoogleCalls } from './builder/model-accounts/public.ts'
 import { isChoosable } from './builder/model-accounts/public.ts'
-import type { AssistantMachine, Runs } from './builder/runs/public.ts'
+import type { ConversationMachine, MachineTuning, Runs } from './builder/runs/public.ts'
 import type { Apps } from './hub/apps/public.ts'
 import { publishedVersionsOf } from './hub/apps/public.ts'
 import type { Connectors } from './hub/connectors/public.ts'
@@ -78,7 +78,7 @@ export function conversationsOf(deps: {
   google: ReturnType<typeof openGoogleCalls>
   mastraPool: MastraPool
   runs: Runs
-  machine: AssistantMachine
+  machine: ConversationMachine
   /** The tests' folder and start deadline for the Assistant's machines; E2B's when absent. */
   machineTuning?: MachineTuning
   connectors: () => Connectors

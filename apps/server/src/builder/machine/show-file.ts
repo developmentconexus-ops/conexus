@@ -1,10 +1,10 @@
 import { posix } from 'node:path'
 import type { ShownFile } from '@conexus/hub-api'
-import { ASSISTANT_TOOL, SHOWN_TEXT_MAX, ShowFileInput } from '@conexus/hub-api'
+import { MACHINE_TOOL, SHOWN_TEXT_MAX, ShowFileInput } from '@conexus/hub-api'
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
-import type { AssistantMachines } from './machine.ts'
-import { withFile } from './machine-file.ts'
+import type { ConversationMachines } from './conversation.ts'
+import { withFile } from './conversation-file.ts'
 
 const TEXT_MEDIA: Record<string, 'text/markdown' | 'text/plain' | 'text/csv'> = {
   '.md': 'text/markdown',
@@ -50,15 +50,16 @@ const ToModel = z.union([
 ])
 
 /**
- * `show_file` (step 24.1, `B-a`): opens beside the chat a file the Assistant wrote in the
- * conversation's folder. A Markdown, text or CSV file of up to 64 KB comes with its content; any
- * other is named, with its size and type, for the person to download. The model gets only
+ * `show_file` (step 24.1, `B-a`; the Assistant's until step 24.4 gives it to every conversation
+ * with a machine): opens beside the chat a file the model wrote in the conversation's folder. A
+ * Markdown, text or CSV file of up to 64 KB comes with its content; any other is named, with its
+ * size and type, for the person to download. The model gets only
  * `{ shown: path }` or the refusal (`toModelOutput`), never the content; Mastra stores the whole
  * output, which the screen reads back (criterion 19).
  */
-export function showFileTool(machines: Pick<AssistantMachines, 'folder' | 'serving'>) {
+export function showFileTool(machines: Pick<ConversationMachines, 'folder' | 'serving'>) {
   return createTool({
-    id: ASSISTANT_TOOL.showFile,
+    id: MACHINE_TOOL.showFile,
     description: `Shows the person a file you wrote in ${machines.folder} beside the chat, to read or download. Show the table, chart or document you made; the person sees nothing of your machine otherwise.`,
     inputSchema: ShowFileInput,
     execute: async ({ path }, { requestContext }): Promise<ShownFile> => {

@@ -16,8 +16,8 @@ import {
   streamOf,
 } from '../conversation/test-conversation.ts'
 import { tool } from '../conversation/test-questions.ts'
+import { createConversationMachines, PACKAGE_HOSTS } from '../machine/public.ts'
 import { INSTALLATION, OLD_TEMPLATE, TEMPLATE } from '../machine/test-machine.ts'
-import { createAssistantMachines } from './public.ts'
 import { assisting, COUNT, created, reading, said, talking } from './test-assistant.ts'
 
 const WRITE = 'mastra_workspace_write_file'
@@ -221,11 +221,12 @@ test('o download cancelado: o navegador que sai faz a leitura da máquina parar,
   assert.equal(endOf(await say('Escreva')), 'complete')
   const { control, deps } = on.hub.assistantMachines
   control.discoverable.push(nameOf(url))
-  const machines = createAssistantMachines(
+  const machines = createConversationMachines(
     {
       ...deps,
       log: { info: () => undefined, error: () => undefined },
-      scopeOf: async () => undefined,
+      hosts: PACKAGE_HOSTS,
+      marksOf: async () => undefined,
     },
     on.hub.assistantMachines.tuning,
   )

@@ -1,5 +1,4 @@
-import type { CompanyId, ConversationId, ShownFile } from '@conexus/hub-api'
-import { assistantFilePath } from '@conexus/hub-api'
+import type { ShownFile } from '@conexus/hub-api'
 import { useMutation } from '@tanstack/react-query'
 import { DownloadIcon, XIcon } from 'lucide-react'
 import { useState } from 'react'
@@ -9,7 +8,7 @@ import { cn } from '../../ui/cn.ts'
 import { SHEET_CLOSE_ROOM } from '../../ui/sheet.tsx'
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { ReadFailure } from '../../ui/states.tsx'
-import { Markdown } from '../conversation/public.ts'
+import { Markdown } from './markdown.tsx'
 import { FILE_EMPTY } from './text.ts'
 
 type Shown = Extract<ShownFile, { kind: 'TEXT' | 'FILE' }>
@@ -106,12 +105,10 @@ function Image(props: { url: string; name: string; picture: Picture }) {
   )
 }
 
-function Body(props: {
-  companyId: CompanyId
-  conversationId: ConversationId
-  shown: Shown
-  picture: Picture
-}) {
+/** The address of a file of the conversation's machine, on the route of the conversation's owner. */
+type UrlOf = (path: string) => string
+
+function Body(props: { urlOf: UrlOf; shown: Shown; picture: Picture }) {
   const { shown } = props
   if (shown.kind === 'TEXT') {
     if (shown.content === '') return <p className="text-text-2">{FILE_EMPTY}</p>
@@ -123,13 +120,7 @@ function Body(props: {
   }
   if (shown.bytes === 0) return <p className="text-text-2">{FILE_EMPTY}</p>
   if (DRAWN.includes(shown.media)) {
-    return (
-      <Image
-        url={assistantFilePath({ ...props, path: shown.path })}
-        name={shown.name}
-        picture={props.picture}
-      />
-    )
+    return <Image url={props.urlOf(shown.path)} name={shown.name} picture={props.picture} />
   }
   return (
     <p className="text-text-2">
@@ -145,22 +136,21 @@ function bytesText(bytes: number): string {
 }
 
 /**
- * The file the Assistant showed, beside the chat (web W31's panel in the Prévia's place): a text as
+ * The file `show_file` showed, beside the chat (web W31's panel in the Prévia's place): a text as
  * Markdown or as plain text, an image drawn from the conversation's file route (same origin,
  * `img-src 'self'`), any other file by its name, size and type. Every file has **Baixar**, which
  * reads the route with the Hub's fetch and saves the bytes, or says why it could not; the Hub
  * answers the route with the headers that keep the browser from running it (S24).
  */
 export function FilePanel(props: {
-  companyId: CompanyId
-  conversationId: ConversationId
+  urlOf: UrlOf
   shown: Shown
   onClose?: () => void
   /** In the sheet on a phone, the header leaves room for the sheet's own **Fechar**. */
   inSheet?: boolean
 }) {
   const { shown } = props
-  const url = assistantFilePath({ ...props, path: shown.path })
+  const url = props.urlOf(shown.path)
   const download = useMutation({ mutationFn: save, meta: { keepCache: true } })
   const picture = usePicture()
   // The image and Baixar read the same route: when they fail the same way, the person reads it once.
@@ -207,12 +197,7 @@ export function FilePanel(props: {
             onRetry={() => download.mutate({ url, name: shown.name })}
           />
         )}
-        <Body
-          companyId={props.companyId}
-          conversationId={props.conversationId}
-          shown={shown}
-          picture={picture}
-        />
+        <Body urlOf={props.urlOf} shown={shown} picture={picture} />
       </div>
     </section>
   )

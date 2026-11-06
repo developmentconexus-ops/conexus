@@ -692,3 +692,15 @@ Linha de uso da etapa 24.3.4, em 2026-11-05: o firstmate fez o roteiro no Hub no
 Cartão curto "Assinatura ChatGPT: a conta OpenAI entra como a do Claude" (`docs/steps/assinatura-chatgpt.md`) aprovado em 2026-11-05 (commit 24709be156a62af7e625c36b1fac1abdc08cb1d6): "1. Aprovo". O fundador aprovou a página em `6a18a47c`; de lá até o commit citado só mudou o parágrafo de espera da L5 do cartão (a ordem da vaga da fronteira, que ele decidiu com "3. Okay"), não a página. Lido pelo firstmate como a aprovação da página do cartão, com as unidades U1 a U5 e a escolha B (o tipo `openai_codex`, entrada pelo código de dispositivo, de pessoa e de empresa) já dita por ele no estudo, com o risco de termos do fornecedor aceito depois do bloqueio do Google.
 
 Em 2026-11-05, à ordem da vaga da fronteira entre os três cartões (este, o da 24.4 e o da 24.3.5): "3. Okay", sobre a ordem "Assinatura ChatGPT primeiro, depois a 24.4, depois a 24.3.5". Lido pelo firstmate como: este cartão ocupa a vaga da fronteira (L5), e os cartões da 24.4 e da 24.3.5 esperam no rascunho, nessa ordem.
+
+## Etapa 24.4
+
+Cartão da etapa 24.4 aprovado em 2026-11-05 (commit 27359bd7adab23a9be87ecaadfb9443672bc10d5): "2. Aum"
+
+À pergunta "O senhor aprova a página da 24.4? As suas respostas A1 e B1 já estão nela", o fundador respondeu "2. Aum". Lido pelo firstmate como "2. Sim": "Aum" é erro de digitação de "Sim" (S e A, I e U são teclas vizinhas), e a opção 2 era a aprovação. Antes, às decisões A e B do cartão: "2 A1 e B1". Lido pelo firstmate como: o `A1` (o modo código só com Computador, a máquina do agente) e o `B1` (a máquina do agente alcança só os três hosts de pacote da migração 0059). E, à ordem da vaga da fronteira entre os três cartões: "3. Okay", sobre a ordem "Assinatura ChatGPT primeiro, depois a 24.4, depois a 24.3.5". Lido pelo firstmate como: o "Okay" vale para a ordem dos merges; as unidades da 24.4 já podem ser construídas a partir do PR do cartão (L1, L5), e nada da 24.4 entra no `main` antes de a Assinatura ChatGPT fechar.
+
+Em 2026-11-05, à pergunta sobre a leitura do "3. Okay" (opção A, recomendada: o Okay vale para a ordem dos merges, a 24.4 já pode construir e nada dela entra no `main` antes de a Assinatura ChatGPT fechar; B: nada da 24.4 começa antes): "2 okay". Lido pelo firstmate como a opção A. Palavra de meio de etapa, vai direto para este livro, sem nova aprovação do cartão (L6).
+
+Cartão da etapa 24.4 aprovado em 2026-11-05 (commit ef02cdaa62944b138659a1c92bd0bf1c5eece525): "2. Aum"
+
+Essa emenda vem da unidade U1 (A forma) e da sua revisão, decidida pelo firstmate pela L9, sem decisão nova do fundador nem mudança no que ele vê: a seção da U1 registra o dono das máquinas de conversa e o `show_file` construídos em `builder/machine/`, a tabela "O raio da mudança" da U1 nomeia cada arquivo que ela tocou fora das suas pastas, e as seções U2 a U5 levam os nomes e as assinaturas finais (na U3, `removeWorkers` mantém o id marcado e nomeia `hub/apps/removal.ts` ao lado de `prune.ts`). A página que ele aprovou em 27359bd7 com "2. Aum" fica igual.
