@@ -81,6 +81,12 @@ página. No fim: faz o roteiro na sua empresa, diz o que viu e aprova os textos 
 
   No protótipo, um papel sem a consulta livre não a viu na lista e foi recusado pela leitura comum
   e pela ferramenta em código. Tirar a consulta do Membro valeu já na chamada seguinte.
+
+  A conferência no Hub no ar, em 2026-11-06, confirmou a rede fechada: do Computador, nem um site
+  público nem o Hub responderam, e a máquina não guarda chave, token nem o endereço do Hub. Mas o
+  agente de teste, configurado só com a leitura de pedidos e o Computador, ainda tinha entre as
+  ferramentas o `connector_read` com a consulta livre: hoje só o modelo o manteve longe dela. Esta
+  etapa fecha isso pela estrutura, com o `mayUse` dentro de `readThrough`.
 - **Sobre a D, o pedido no Sankhya** (lido na documentação pública, sem chamar o Sankhya). Lançar um
   pedido é `POST /v1/vendas/pedidos`, e ele nasce "a confirmar". Desfazer pela API é **cancelar**,
   com um motivo; apagar de vez não está na API, e um pedido faturado não cancela. Está no anexo "O
