@@ -113,7 +113,8 @@ async function remove(deps: ToolsDeps, scope: InProject, toolId: ToolId): Promis
       ? undefined
       : new Failure('TOOL_IN_USE', { named: { agents }, cause })
   }
-  const versions = await deps.database.read(databaseScopeOf(scope), async (tx) => {
+  // A command, as admitting `manageAgents` locks the membership: a reader removes no Worker.
+  const versions = await deps.database.command(databaseScopeOf(scope), async (tx) => {
     await admitted(deps, tx, scope, 'manageAgents')
     const row = await usableTool(tx, scope, offered, toolId)
     return row.kind === 'CODE' ? codeVersionsOf(tx, { companyId: scope.companyId, toolId }) : []

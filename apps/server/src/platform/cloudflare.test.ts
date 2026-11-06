@@ -5,7 +5,7 @@ import { createServer } from 'node:http'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import type { WorkerUpload } from './cloudflare.ts'
-import { createCloudflareApps } from './cloudflare.ts'
+import { createCloudflareApps, createCloudflareTools } from './cloudflare.ts'
 import { testAppsConfig } from './test-cloudflare.ts'
 import { testConfig, unreachableDatabaseUrl } from './test-database.ts'
 
@@ -47,7 +47,14 @@ async function cloudflareAt(t: TestContext, answer: Answer) {
   }
   const logged: unknown[] = []
   const log = { info: () => undefined, error: (fields: unknown) => logged.push(fields) }
-  return { cloudflare: createCloudflareApps({ config, log }), paths, received, logged, config }
+  return {
+    cloudflare: createCloudflareApps({ config, log }),
+    tools: createCloudflareTools({ config, log }),
+    paths,
+    received,
+    logged,
+    config,
+  }
 }
 
 function json(response: ServerResponse, status: number, body: unknown) {
@@ -159,6 +166,27 @@ test('cloudflare: o envio com arquivos estáticos, nas formas da API, do pedido 
     tags: ['company-c', 'project-p'],
   })
   assert.equal(await Object(form?.get('worker.js')).text(), 'export default {}')
+})
+
+test('cloudflare: a ferramenta salva sobe no namespace das ferramentas, só com o módulo e sem binding', async (t) => {
+  const { tools, received, config } = await cloudflareAt(t, (response) =>
+    json(response, 200, { success: true, errors: [], messages: [], result: { id: 't-1' } }),
+  )
+  const upload = { ...UPLOAD, worker: 't-1', tags: ['company-c', 'tool-t', 'kind-tool'] }
+  assert.deepEqual(await tools.upload(upload), { kind: 'DONE', value: 'UPLOADED' })
+  const [script] = received
+  assert.equal(
+    script?.path,
+    `/client/v4/accounts/${'a'.repeat(32)}/workers/dispatch/namespaces/${config.toolsNamespace}/scripts/t-1`,
+  )
+  const form = await script?.body.formData()
+  assert.deepEqual(JSON.parse(await Object(form?.get('metadata')).text()), {
+    main_module: 'worker.js',
+    compatibility_date: '2026-10-18',
+    bindings: [],
+    limits: { cpu_ms: 50 },
+    tags: ['company-c', 'tool-t', 'kind-tool'],
+  })
 })
 
 /** Cloudflare's direct-upload hash: the SHA-256 of the base64 and the extension, 32 hex digits. */
