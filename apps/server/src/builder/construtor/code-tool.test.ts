@@ -2,9 +2,9 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { AgentId, CodeSaveResult, CompanyId, ProjectId } from '@conexus/hub-api'
 import { call, post } from '../../hub/identity/test-hub.ts'
-import { agentOf, agentsOn, drafted, madeAgent, toolOf } from '../agents/test-agents.ts'
-import { tool } from '../conversation/test-questions.ts'
+import { agentOf, drafted, madeAgent } from '../agents/test-agents.ts'
 import { endOf } from '../conversation/test-conversation.ts'
+import { tool } from '../conversation/test-questions.ts'
 import { building, keeping } from './test-construtor.ts'
 
 /** The tool's code: counts the rows the read answers, as a Worker module of the platform. */
@@ -64,10 +64,7 @@ function answerOf(answers: Record<string, unknown>[], at = 0) {
 test('o teste passa: a versão 1 é gravada com o código, o módulo empacotado e o resultado do teste', async (t) => {
   const answers: Record<string, unknown>[] = []
   let matriz = ''
-  const on = await building(t, [
-    () => [tool('tool_code_save', saving(matriz))],
-    keeping(answers),
-  ])
+  const on = await building(t, [() => [tool('tool_code_save', saving(matriz))], keeping(answers)])
   matriz = on.matriz
   assert.equal(endOf(await on.conversation.say('Crie uma ferramenta de vendas')), 'complete')
 
@@ -199,7 +196,6 @@ test('uma versão nunca muda: a segunda grava a versão 2 e o agente publicado a
   assert.equal(frozen.description, 'Soma as vendas de cada vendedor num mês.')
   assert.ok(!('module' in frozen) && !('source' in frozen), 'the agent does not carry the code')
   assert.equal(agentOf(published).state.kind, 'PUBLISHED')
-  void toolOf
 })
 
 test('a versão gravada sobre uma que não é a última é recusada com STALE_VERSION', async (t) => {

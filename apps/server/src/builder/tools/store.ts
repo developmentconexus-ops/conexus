@@ -5,7 +5,6 @@ import type {
   PersonId,
   ToolDetail,
   ToolSlug,
-  ToolSummary,
   ToolTarget,
   ToolVersionDetail,
 } from '@conexus/hub-api'
@@ -82,7 +81,7 @@ export function presetTargetOf(row: ToolRow): ToolTarget & { slug: ToolSlug } {
 }
 
 /** A version as a screen reads it, by its tool's kind (code C21): a `CODE` one without its module. */
-export function versionDetail(kind: string, row: VersionRow): ToolVersionDetail {
+function versionDetail(kind: string, row: VersionRow): ToolVersionDetail {
   const identity = { id: ToolVersionId.parse(row.id), number: row.number }
   if (kind === 'CODE') {
     const { module: _, ...version } = CodeToolVersion.parse(row.config)
@@ -166,7 +165,12 @@ export async function chosenOf(
       }
       const detail = versionDetail(row.kind, version)
       if (detail.kind === 'CODE') {
-        return { ...base, kind: 'CODE', connectionId: ConnectionId.parse(row.connectionId), version: detail }
+        return {
+          ...base,
+          kind: 'CODE',
+          connectionId: ConnectionId.parse(row.connectionId),
+          version: detail,
+        }
       }
       return { ...base, ...presetTargetOf(row), kind: 'PRESET', version: detail }
     })

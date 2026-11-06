@@ -205,7 +205,11 @@ test('ferramenta em código: a pessoa não grava versão nova nela (CODE_BY_CONS
   )
   const read = Object(toolOf(await call(on.hub, on.ana, 'GET', `${on.tools}/${toolId}`)))
   assert.deepEqual(
-    read.versions.map((each: Record<string, unknown>) => [each.kind, each.number, 'module' in each]),
+    read.versions.map((each: Record<string, unknown>) => [
+      each.kind,
+      each.number,
+      'module' in each,
+    ]),
     [['CODE', 1, false]],
   )
   const refused = await post(on.hub, on.ana, `${on.tools}/${toolId}/versions`, {

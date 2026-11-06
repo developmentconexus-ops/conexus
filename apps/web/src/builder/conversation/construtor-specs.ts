@@ -85,16 +85,20 @@ function codeSaveRow(tool: Tool, status: Parameters<typeof headOf>[1]) {
   const detail =
     saved?.kind === 'REFUSED'
       ? saved.output
+          ?.split('\n')
+          .find((line) => line.trim() !== '')
+          ?.slice(0, 160)
       : test?.kind === 'CODE'
         ? `Testei com ${test.test.rows} ${test.test.rows === 1 ? 'linha' : 'linhas'}`
         : undefined
   return {
     icon: failed ? CircleAlertIcon : CodeIcon,
-    sentence: failed && saved?.kind === 'REFUSED' && saved.code === 'TOOL_TEST_FAILED'
-      ? 'O teste não passou'
-      : headOf(CODE_SAVE, failed && status === 'done' ? 'error' : status),
+    sentence:
+      failed && saved?.kind === 'REFUSED' && saved.code === 'TOOL_TEST_FAILED'
+        ? 'O teste não passou'
+        : headOf(CODE_SAVE, failed && status === 'done' ? 'error' : status),
     detail,
-    beside: false,
+    beside: detail !== undefined,
   }
 }
 

@@ -18,9 +18,9 @@ import { PageTitle } from '../../ui/list.tsx'
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { ReadFailure } from '../../ui/states.tsx'
 import { AreaFrame, ToolForm } from '../agents/public.ts'
+import { CodeBadge, CodeVersion } from './code-version.tsx'
 import { sendToolVersion, toolQuery } from './queries.ts'
 import { BACK_TO_TOOLS, UNCONFIRMED_VERSION } from './text.ts'
-import { CodeBadge, CodeVersion } from './code-version.tsx'
 
 type Scope = { companyId: CompanyId; projectId: ProjectId }
 
@@ -60,7 +60,9 @@ function NewVersionForm(props: {
     } catch (failure) {
       if (failure instanceof HubFailure)
         setRefused({ field: failure.field, reason: failure.reason })
-      setError(writeFailureText(failure, UNCONFIRMED_VERSION))
+      // The form says a newer version exists in its own words, with Recarregar.
+      const newer = failure instanceof HubFailure && failure.reason === 'STALE_VERSION'
+      setError(newer ? undefined : writeFailureText(failure, UNCONFIRMED_VERSION))
     }
   }
 

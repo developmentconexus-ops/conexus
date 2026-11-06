@@ -31,7 +31,12 @@ export function toolRoutes(
       const found = held.tools?.find((one) => one.id === params.toolId)
       if (!found) return refusal('TOOL_NOT_FOUND')
       const number = found.latest.number + 1
-      const made = { kind: 'PRESET', id: ToolVersionId.parse(crypto.randomUUID()), number, ...body } as const
+      const made = {
+        kind: 'PRESET',
+        id: ToolVersionId.parse(crypto.randomUUID()),
+        number,
+        ...body,
+      } as const
       held.toolVersions = [...detail(found).versions, made]
       Object.assign(found, { latest: { id: made.id, number }, description: body.description })
       return HttpResponse.json({ tool: detail(found) }, { status: 201 })

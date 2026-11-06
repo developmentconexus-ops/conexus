@@ -33,7 +33,10 @@ export const tool = builder.table(
     unique('tool_company_id_slug_key').on(table.companyId, table.slug),
     unique('tool_company_id_id_key').on(table.companyId, table.id),
     check('tool_kind', sql`${table.kind} in ('PRESET', 'CODE')`),
-    check('tool_operation_by_kind', sql`(${table.kind} = 'PRESET') = (${table.operation} is not null)`),
+    check(
+      'tool_operation_by_kind',
+      sql`(${table.kind} = 'PRESET') = (${table.operation} is not null)`,
+    ),
     policy(SCOPE_ROLES.COMPANY, 'all', OWN_COMPANY),
   ],
 )

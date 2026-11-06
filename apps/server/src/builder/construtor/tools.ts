@@ -38,7 +38,10 @@ type Refused = { kind: 'REFUSED'; code: FailureCode; field?: string }
 /** What the Construtor's tools reach: the U1 services, the Projeto's reads and the draft's test. */
 export type ConstrutorDeps = Pick<CodeToolDeps, 'machines' | 'read'> & {
   agents: Pick<AgentService, 'create' | 'get' | 'list' | 'saveDraft'>
-  tools: Pick<Tools, 'list' | 'save' | 'addVersion' | 'get' | 'fitCode' | 'saveCode' | 'addCodeVersion'>
+  tools: Pick<
+    Tools,
+    'list' | 'save' | 'addVersion' | 'get' | 'fitCode' | 'saveCode' | 'addCodeVersion'
+  >
   project: (scope: InProject) => Promise<{
     project: { id: ProjectId; name: string }
     offered: readonly OfferedConnection[]

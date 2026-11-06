@@ -7,7 +7,7 @@ import type { FailureCode } from './failures.ts'
 import { Problem } from './failures.ts'
 import { ProjectId } from './library-ids.ts'
 import { ATTEMPT_KEY_HEADER, defineOperation } from './operation.ts'
-import { ReadyTool, ToolDetail, ToolSummary } from './tools.ts'
+import { CodeSummary, PresetSummary, ReadyTool, ToolDetail } from './tools.ts'
 
 /** The key of the Construtor's controller in Mastra's routes (`/agent-controller/construtor/…`), step 24.3. */
 export const CONSTRUTOR_CONTROLLER = 'construtor'
@@ -57,7 +57,12 @@ export type ProjectReadResult = z.infer<typeof ProjectReadResult>
 
 /** What tool_search answers the model: the library's tools, the ready reads and the automations that match. */
 export const ToolSearchResult = z.object({
-  tools: z.array(ToolSummary),
+  tools: z.array(
+    z.discriminatedUnion('kind', [
+      PresetSummary.omit({ connectionName: true, readLabel: true }),
+      CodeSummary.omit({ connectionName: true }),
+    ]),
+  ),
   ready: z.array(ReadyTool),
   automations: z.array(z.object({ id: AutomationId, name: z.string(), prompt: z.string() })),
 })

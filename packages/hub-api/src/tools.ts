@@ -180,22 +180,23 @@ const SummaryBase = {
   usedBy: z.array(NamedAgent),
 }
 
+export const PresetSummary = ToolTarget.extend({
+  ...SummaryBase,
+  kind: z.literal('PRESET'),
+  /** The read's name as the kit gives it ("Pedidos"); the operation's id when the kit no longer lists it. */
+  readLabel: z.string(),
+})
+
+export const CodeSummary = z.object({
+  ...SummaryBase,
+  kind: z.literal('CODE'),
+  connectionId: ConnectionId,
+  /** The reads the latest version declares. */
+  reads: z.array(OperationId),
+})
+
 /** A tool of the library: one read of a connection, or code that reads several of one. */
-export const ToolSummary = z.discriminatedUnion('kind', [
-  ToolTarget.extend({
-    ...SummaryBase,
-    kind: z.literal('PRESET'),
-    /** The read's name as the kit gives it ("Pedidos"); the operation's id when the kit no longer lists it. */
-    readLabel: z.string(),
-  }),
-  z.object({
-    ...SummaryBase,
-    kind: z.literal('CODE'),
-    connectionId: ConnectionId,
-    /** The reads the latest version declares. */
-    reads: z.array(OperationId),
-  }),
-])
+export const ToolSummary = z.discriminatedUnion('kind', [PresetSummary, CodeSummary])
 export type ToolSummary = z.infer<typeof ToolSummary>
 
 export const ToolDetail = z.intersection(
@@ -240,7 +241,7 @@ export const createTool = defineOperation({
   input: { params: InProject, body: ToolInput },
   attemptKey: true,
   success: { status: 201, body: OneTool },
-  failures: [...TOOL_FAILURES, 'TOOL_REFUSED', 'IDEMPOTENCY_CONFLICT'],
+  failures: [...TOOL_FAILURES, 'TOOL_NOT_FOUND', 'TOOL_REFUSED', 'IDEMPOTENCY_CONFLICT'],
 })
 
 export const getTool = defineOperation({

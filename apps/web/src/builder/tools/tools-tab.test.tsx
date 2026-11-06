@@ -176,6 +176,7 @@ test('Nova versão da lista abre o diálogo logo, com a espera dentro, e depois 
           ...toolSummary(),
           versions: [
             {
+              kind: 'PRESET',
               id: TOOL_V1,
               number: 1,
               description: 'Vendas de ontem por vendedor.',

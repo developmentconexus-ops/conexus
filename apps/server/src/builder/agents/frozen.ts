@@ -1,8 +1,8 @@
 import type {
   AgentConfig,
+  CodeToolVersion,
   CompanyId,
   OfProject,
-  CodeToolVersion,
   ToolSlug,
   ToolTarget,
   ToolVersionConfig,
@@ -29,14 +29,13 @@ import { chosenIds, ofProject, pinnedIds } from './store.ts'
 import { agent, agentVersion, agentVersionTool } from './tables.ts'
 
 /** A `PRESET` tool as its version holds it: one read, with the values it fixes. */
-export type PresetFrozenTool = ToolTarget &
-  ToolVersionConfig & { kind: 'PRESET'; slug: ToolSlug }
+export type PresetFrozenTool = ToolTarget & ToolVersionConfig & { kind: 'PRESET'; slug: ToolSlug }
 
 /**
  * A `CODE` tool as its version holds it: the reads it declares and the schemas of its input and
  * output, never its source or module (the agent runs the Worker the version was uploaded as).
  */
-export type CodeFrozenTool = Pick<
+type CodeFrozenTool = Pick<
   CodeToolVersion,
   'description' | 'reads' | 'inputSchema' | 'outputSchema'
 > & { kind: 'CODE'; slug: ToolSlug; toolVersionId: ToolVersionId; connectionId: ConnectionId }

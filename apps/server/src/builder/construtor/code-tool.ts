@@ -151,7 +151,11 @@ async function checked(
     await filesystem.writeFile(`${folder}/${name}`, content, { recursive: true })
   }
   const bin = `${deps.machines.toolchain}/node_modules/.bin`
-  await run(sandbox, folder, 'ln', ['-sfn', `${deps.machines.toolchain}/node_modules`, 'node_modules'])
+  await run(sandbox, folder, 'ln', [
+    '-sfn',
+    `${deps.machines.toolchain}/node_modules`,
+    'node_modules',
+  ])
   return { filesystem, sandbox, bin }
 }
 
@@ -245,7 +249,8 @@ async function saveCode(
   await deps.tools.fitCode(scope, connectionId, reads)
 
   const workspace = await deps.machines.workspace(requestContext)
-  if (workspace === undefined) throw new Failure('MACHINE_UNAVAILABLE', { details: { reason: 'NONE' } })
+  if (workspace === undefined)
+    throw new Failure('MACHINE_UNAVAILABLE', { details: { reason: 'NONE' } })
 
   const fixtures: Record<string, unknown> = {}
   for (const operation of reads) {
@@ -254,7 +259,9 @@ async function saveCode(
       requestContext,
     )
     if (answered.kind !== 'OK' || !('whole' in answered)) {
-      return refusal('TOOL_TEST_FAILED', { output: `the read ${operation} answered ${answered.kind}` })
+      return refusal('TOOL_TEST_FAILED', {
+        output: `the read ${operation} answered ${answered.kind}`,
+      })
     }
     fixtures[operation] = answered.whole
   }
