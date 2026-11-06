@@ -46,6 +46,7 @@ Sua empresa usa o Conexus desde 2026-11-02, recebendo cada etapa.
 - **24.3.3 A lista e os Projetos.** Busca.
 - **24.3.1 Ferramentas.** Vê as ferramentas do Projeto e todos os agentes da empresa.
 - **24.3.4 Papéis e pedidos.** O membro pede para publicar.
+- **Assinatura ChatGPT.** Liga a assinatura do ChatGPT em Contas de modelo e conversa pelo GPT (a parte OpenAI da 21).
 - **24.4 Ferramentas em código.** Código que calcula.
 - **Papéis da empresa.** A empresa cria papéis e escolhe o que cada um, o Membro também, usa de cada conector.
 - **24.5 Os agentes escrevem, com aprovação.** Um agente ou app pede "Aprovar?" antes de escrever (resposta B, 2026-10-18; leva a 20.1).
@@ -65,7 +66,6 @@ O que tem molde anda numa segunda fila, de método leve (2026-10-30: "1. Sim 2. 
 2. **Os sistemas das quatro empresas.**
 3. **Bling**, **Omie** (login por chave fixa) e **Conta Azul**.
 4. Shopee, Nuvemshop, Google Sheets, NF-e recebida, extratos de banco; a Jet (20.3) quando alguém a usar.
-5. **21 Outras contas.** Liga a da OpenAI, se os termos confirmarem.
 
 Em espera: 19.2 Central de Ajuda. Sai: o pg-boss; a agenda do Mastra, gatilho de toda automação, e os workflows o substituem.
 
@@ -116,4 +116,3 @@ Login social. Arquivos enviados por pessoas para dentro de um app ou da máquina
 | 22 Ensaio geral | A 16 | O lugar da cópia fora do Neon | Ensaios das etapas 2, 7, 9, 12 e 13. Carga de um painel e de uma rotina |
 | 23 As outras empresas | A 22 | Os riscos aceitos. O plano pago | A seção 11 da arquitetura |
 | 20.2 App que se atualiza | A 23 e os webhooks | Nenhuma | Avisos do fornecedor (S48), num workflow do Mastra |
-| 21 Outras contas | Fila do molde | Nenhuma | A leitura dos termos da OpenAI |
