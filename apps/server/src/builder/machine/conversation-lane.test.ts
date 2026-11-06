@@ -9,9 +9,9 @@ import { CompanyId, ConversationId } from '@conexus/hub-api'
 import { RequestContext } from '@mastra/core/request-context'
 import { WORKSPACE_TOOLS } from '@mastra/core/workspace'
 import { MAX_BYTES } from '../git/public.ts'
-import { testAssistantMachines } from '../runs/test-runs.ts'
 import type { ConversationMachineApi, KitFactory } from './public.ts'
 import { createConversationMachines, MARK, PACKAGE_HOSTS } from './public.ts'
+import { testConversationMachines } from './test-conversation-machines.ts'
 import { INSTALLATION, OLD_TEMPLATE } from './test-machine.ts'
 
 const COMPANY = CompanyId.parse('companyAAAAAAAAAAAAAAAAAAAAAAAAA')
@@ -30,7 +30,7 @@ function machinesOf(
 ) {
   const folder = mkdtempSync(join(tmpdir(), 'conexus-lane-'))
   t.after(() => rmSync(folder, { recursive: true, force: true }))
-  const doubles = testAssistantMachines(folder)
+  const doubles = testConversationMachines(folder)
   const lines: Line[] = []
   const log = {
     info: (fields: Record<string, unknown>, message: string) => lines.push({ message, fields }),

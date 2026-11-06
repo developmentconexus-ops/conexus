@@ -1,10 +1,9 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { readFileSync } from 'node:fs'
-import { createServer } from 'node:http'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { CompanyId, ConversationId, ProjectId } from '@conexus/hub-api'
+import { CompanyId, ConversationId } from '@conexus/hub-api'
 import { RequestContext } from '@mastra/core/request-context'
 import { testConfig, unreachableDatabaseUrl } from '../../platform/test-database.ts'
 import {
@@ -20,7 +19,6 @@ import {
 import { INSTALLATION, realE2b } from './test-machine.ts'
 
 const COMPANY = CompanyId.parse('companyAAAAAAAAAAAAAAAAAAAAAAAAA')
-const PROJECT = ProjectId.parse('projectAAAAAAAAAAAAAAAAAAAAAAAAA')
 const CONVERSATION = ConversationId.parse('00000000-0000-4000-8000-00000000000a')
 const IN_APP = {
   allowOut: ALLOWED_HOSTS,

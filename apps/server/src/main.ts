@@ -120,9 +120,9 @@ export function subjectsOf(deps: {
   cloudflare: CloudflareApps
   mastraPool: MastraPool
   machinesOf: MachinesOf
-  assistantMachine: ConversationMachine
-  /** The tests' folder and start deadline for the Assistant's machines (`test-runs.ts`). */
-  assistantTuning?: MachineTuning
+  conversationMachine: ConversationMachine
+  /** The tests' folder and start deadline for the conversations' machines (`test-runs.ts`). */
+  machineTuning?: MachineTuning
   repository: RepositoryOf
   copy: GitCopy
   log: FailureLog
@@ -147,7 +147,7 @@ export function subjectsOf(deps: {
   const notifications = notificationsOf({ ...deps, identity, publicOrigin: config.publicOrigin })
   const { conversations, assistant, automations, agents } = conversationsOf({
     ...{ database, identity, sealKeys, google, log, runs, mastraPool: deps.mastraPool },
-    ...{ machine: deps.assistantMachine, machineTuning: deps.assistantTuning },
+    ...{ machine: deps.conversationMachine, machineTuning: deps.machineTuning },
     ...{ connectors: () => connectors, apps: () => apps, projects: () => projects.ports },
     ...{ notify: notifications.notify, automationClock: config.automationClock },
   })

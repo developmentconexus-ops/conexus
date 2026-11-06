@@ -50,9 +50,10 @@ const ToModel = z.union([
 ])
 
 /**
- * `show_file` (step 24.1, `B-a`; every conversation with a machine since step 24.4): opens beside
- * the chat a file the model wrote in the conversation's folder. A Markdown, text or CSV file of up to 64 KB comes with its content; any
- * other is named, with its size and type, for the person to download. The model gets only
+ * `show_file` (step 24.1, `B-a`; the Assistant's until step 24.4 gives it to every conversation
+ * with a machine): opens beside the chat a file the model wrote in the conversation's folder. A
+ * Markdown, text or CSV file of up to 64 KB comes with its content; any other is named, with its
+ * size and type, for the person to download. The model gets only
  * `{ shown: path }` or the refusal (`toModelOutput`), never the content; Mastra stores the whole
  * output, which the screen reads back (criterion 19).
  */

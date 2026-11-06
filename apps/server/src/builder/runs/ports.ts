@@ -16,7 +16,7 @@ export function builderPortsOf(deps: { config: Config; log: FailureLog }): {
   machinesOf: MachinesOf
   repository: RepositoryOf
   copy: GitCopy
-  assistantMachine: ConversationMachine
+  conversationMachine: ConversationMachine
 } {
   const { config, log } = deps
   const copy = createGitCopy(config, config.gitCopyUrl)
@@ -37,12 +37,12 @@ export function builderPortsOf(deps: { config: Config; log: FailureLog }): {
       },
     })
   }
-  const assistantMachine: ConversationMachine = {
+  const conversationMachine: ConversationMachine = {
     kit: createE2bKit(config),
     api: createE2bApi(config, mark),
     template: config.machineTemplate,
     installation: config.installationId,
     mark,
   }
-  return { machinesOf, repository, copy, assistantMachine }
+  return { machinesOf, repository, copy, conversationMachine }
 }
