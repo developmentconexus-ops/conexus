@@ -323,6 +323,7 @@ Assistente mudam de lugar na U1 com os seus testes, sem mudar o que fazem.
 | `docs/steps/e244-ferramentas-em-codigo.md` | Muda as seções U2 a U5 | os construtores das unidades |
 | `apps/server/src/builder/runs/{ports,public,test-runs}.ts` (emenda da U1) | Muda: a porta da máquina de conversa e a sua sintonia passam a `conversationMachine` e `machineTuning`, do tipo `ConversationMachine`; a dublagem sai para `machine/test-conversation-machines.ts` | `main.ts`, os testes |
 | `apps/server/src/{main,conversations-of}.ts` (emenda da U1) | Muda: só o tipo e o nome da porta (`machine: deps.conversationMachine`) | o Hub |
+| `tests/e2e/live-hub.ts` (emenda da U1) | Muda: o Hub de ponta a ponta passa `conversationMachine` de `testBuilderPorts` | os testes de ponta a ponta |
 | `.dependency-cruiser.cjs` (emenda da U1) | Muda: a dublagem nova entra nas portas de teste | — |
 | `scripts/{removals,server-test-seconds}.json` (emenda da U1) | Muda: as linhas de remoção e os tempos dos testes que mudaram de arquivo | CI |
 | `apps/web/src/builder/assistant/{conversation.tsx,text.ts}` (emenda da U1) | Muda: `conversation.tsx` passa `urlOf` ao `FilePanel`; `FILE_EMPTY` sai de `text.ts` para `conversation/text.ts` | o Assistente |
