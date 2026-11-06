@@ -654,10 +654,12 @@ a cada chamada, levou p50 155 ms.
   o prazo, uma resposta que não é JSON, ou o código da rejeição), ou `MISSING` ("Worker not found."). Os
   dois tipos moram em `packages/hub-api/src/tools.ts`, ao lado de `ToolWorker`. O modelo ouve o valor,
   `TOOL_FAILED` com a razão, ou `TOOL_UNAVAILABLE` (a borda ou o Hub fora, o Access recusado, o prazo do
-  Hub); `MISSING` sobe de novo uma vez e chama outra.
-- **A releitura do módulo** (B.5): `tools.workerOf(companyId, toolVersionId)` em `builder/tools/` lê
-  `tool_version.config.module` da versão `CODE` da empresa e devolve o `WorkerUpload`; a subida ao
-  gravar e a nova subida usam o mesmo. `CodeFrozenTool` passa a ser exportado de `frozen.ts`.
+  Hub); `MISSING` sobe de novo uma vez e chama outra. Um módulo que a Cloudflare diz que não inicia,
+  na nova subida, chega ao modelo como `TOOL_FAILED` com a razão `NOT_STARTING`, que só o Hub dá.
+- **A releitura do módulo** (B.5): `tools.reupload(companyId, toolVersionId)` em `builder/tools/`
+  lê `tool_version.config.module` da versão `CODE` da empresa e sobe de novo o mesmo `WorkerUpload`
+  da subida ao gravar; responde `UPLOADED`, `NOT_STARTING`, `GONE` (nenhuma versão `CODE` da empresa
+  com esse id) ou `UNAVAILABLE`. `CodeFrozenTool` passa a ser exportado de `frozen.ts`.
 - **A remoção da empresa** (B.6): os Workers de ferramenta saem em `releaseAgents`
   (`builder/agents/release.ts`), que já é a parte do `releaseFirst` (`conversations-of.ts`) que a
   remoção da empresa chama, antes de apagar os agentes; um Worker que a Cloudflare não confirmou lança
