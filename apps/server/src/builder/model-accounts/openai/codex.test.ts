@@ -19,6 +19,9 @@ import {
   beside,
   conversing,
   endOf,
+  sent,
+  started,
+  streamOf,
   turnNotices,
 } from '../../conversation/test-conversation.ts'
 import { failuresOf } from '../../conversation/test-parts.ts'
@@ -79,17 +82,39 @@ test('o pedido que sai', async (t) => {
   const f = await subscribed(t, 3600)
   f.codex.responses = () => ({ status: 400 })
   await asked(t, f.where)
-  const [sent] = responses(f)
-  assert.equal(sent?.headers.get('authorization'), `Bearer ${ACCESS}`)
-  assert.equal(sent?.headers.get('chatgpt-account-id'), ACCOUNT_ID)
-  assert.equal(sent?.headers.get('originator'), 'conexus')
-  const request = Object(JSON.parse(String(sent?.body)))
+  const [made] = responses(f)
+  assert.equal(made?.headers.get('authorization'), `Bearer ${ACCESS}`)
+  assert.equal(made?.headers.get('chatgpt-account-id'), ACCOUNT_ID)
+  assert.equal(made?.headers.get('originator'), 'conexus')
+  const request = Object(JSON.parse(String(made?.body)))
+  assert.equal(typeof request.prompt_cache_key, 'string')
+  assert.ok(request.prompt_cache_key.length > 0)
+  assert.equal(made?.headers.get('session-id'), request.prompt_cache_key)
+  assert.equal(made?.headers.get('thread-id'), request.prompt_cache_key)
   assert.equal(request.store, false)
   assert.equal(typeof request.instructions, 'string')
   assert.ok(request.instructions.length > 0)
   assert.equal(request.reasoning.effort, 'medium')
   assert.ok(Array.isArray(request.input) && request.input.length > 0)
   for (const item of request.input) assert.equal('id' in item, false)
+})
+
+test('a conversa é a chave do cache: dois turnos dela mandam a mesma, outra conversa manda outra', async (t) => {
+  const f = await subscribed(t, 3600)
+  f.codex.responses = () => ({ status: 400 })
+  const { hub, person, conversations } = f.where
+  const url = `${conversations}/${await started(hub, person, conversations)}`
+  const stream = await streamOf(hub, person, url)
+  t.after(() => stream.close())
+  for (const content of ['Primeiro', 'Segundo']) {
+    assert.equal((await sent(hub, person, url, content)).statusCode, 200)
+    await stream.turn()
+  }
+  await asked(t, await beside(f.where, 'Estoque'))
+  const keys = responses(f).map((made) => Object(JSON.parse(String(made.body))).prompt_cache_key)
+  assert.ok(keys.length >= 3)
+  assert.equal(keys[0], keys[1])
+  assert.notEqual(keys[0], keys.at(-1))
 })
 
 test('os itens de uma resposta anterior saem sem id', async (t) => {
