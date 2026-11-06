@@ -4,7 +4,7 @@
 import { WorkerEntrypoint } from 'cloudflare:workers'
 import type { AppProps, ToolProps } from '@conexus/app-contract'
 import { serveDispatch } from '../src/dispatch.ts'
-import { Connectors, Db, ToolData } from '../src/dispatcher.ts'
+import dispatcher, { Connectors, Db, ToolData } from '../src/dispatcher.ts'
 import { APP_ORIGIN, TOOLS_AUD, TOOLS_ORIGIN, VERSION_CALL } from '../src/test-edge.ts'
 import type { ToolDataProps } from '../src/tools.ts'
 import { serveTool } from '../src/tools.ts'
@@ -60,8 +60,11 @@ export class App extends WorkerEntrypoint<Env, AppProps> {
   }
 }
 
+// What the dispatcher's own entry asked of the tools' namespace, which `/entry/` serves.
+let toolsReached = 0
+
 export default {
-  fetch(request: Request, _env: Env, ctx: ExecutionContext) {
+  async fetch(request: Request, _env: Env, ctx: ExecutionContext) {
     const env = {
       HUB_PUBLIC_ORIGIN: 'https://hub.conexus.fun',
       APPS_DOMAIN: 'conexusapp.tech',
@@ -81,6 +84,23 @@ export default {
       },
     } satisfies Env
     const url = new URL(request.url)
+    if (url.pathname.startsWith('/entry/')) {
+      const tools = new Request(`${TOOLS_ORIGIN}/${url.pathname.slice('/entry/'.length)}`, request)
+      const counted = {
+        ...env,
+        TOOLS: {
+          get: (name: string, args: { props: ToolProps }) => {
+            toolsReached += 1
+            return env.TOOLS.get(name, args)
+          },
+        },
+      }
+      const response = await dispatcher.fetch(tools, counted, ctx)
+      return new Response(response.body, {
+        status: response.status,
+        headers: { 'x-tools-reached': String(toolsReached) },
+      })
+    }
     if (url.pathname.startsWith('/tool/')) {
       const tools = new Request(`${TOOLS_ORIGIN}/${url.pathname.slice('/tool/'.length)}`, request)
       const exports = {

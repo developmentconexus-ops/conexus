@@ -26,8 +26,25 @@ const ORDERS = 'tool_pedidos_matriz'
  * whose Worker the namespace double holds reads `pedidos` through the Hub's door with the call's
  * key and answers how many rows came; one it does not hold is `MISSING`.
  */
+/** One read through the Hub's door for the tools, as the edge's `data.read` makes it. */
+function readThroughDoor(hub: Hub, toolVersionId: string, call: string) {
+  return hub.edge.inject({
+    method: 'POST',
+    url: '/api/tool-connector-calls',
+    headers: { 'content-type': 'application/json' },
+    payload: JSON.stringify({
+      toolVersionId,
+      call,
+      operation: 'pedidos',
+      input: { codigoEmpresa: 1, page: 1 },
+      deadlineMs: APP_CALL_LIMITS.callDeadlineMs,
+    }),
+  })
+}
+
 async function edgeDouble(t: TestContext, holder: { hub?: Hub }) {
   const seen: { worker: string; input: unknown }[] = []
+  const keys: string[] = []
   const server = createServer(async (request, response) => {
     const hub = holder.hub
     assert.ok(hub)
@@ -42,22 +59,12 @@ async function edgeDouble(t: TestContext, holder: { hub?: Hub }) {
     for await (const chunk of request) text += chunk
     const body = ToolCall.parse(JSON.parse(text))
     seen.push({ worker, input: body.input })
+    keys.push(body.call)
     function reply(answer: object) {
       response.writeHead(200, { 'content-type': 'application/json' }).end(JSON.stringify(answer))
     }
     if (!hub.tools.workers().includes(worker)) return reply({ kind: 'MISSING' })
-    const read = await hub.edge.inject({
-      method: 'POST',
-      url: '/api/tool-connector-calls',
-      headers: { 'content-type': 'application/json' },
-      payload: JSON.stringify({
-        toolVersionId,
-        call: body.call,
-        operation: 'pedidos',
-        input: { codigoEmpresa: 1, page: 1 },
-        deadlineMs: APP_CALL_LIMITS.callDeadlineMs,
-      }),
-    })
+    const read = await readThroughDoor(hub, toolVersionId, body.call)
     const answered = Object(read.json())
     if (answered.kind !== 'OK') return reply({ kind: 'FAILED', reason: answered.kind })
     return reply({ kind: 'OK', value: { total: Object(answered.value).linhas.length } })
@@ -66,7 +73,7 @@ async function edgeDouble(t: TestContext, holder: { hub?: Hub }) {
   t.after(() => server.close())
   const address = server.address()
   assert.ok(address !== null && typeof address === 'object')
-  return { origin: `http://127.0.0.1:${address.port}`, seen }
+  return { origin: `http://127.0.0.1:${address.port}`, seen, keys }
 }
 
 /**
@@ -119,6 +126,12 @@ test('a ferramenta salva sobe ao gravar como t-<versão>, com só o módulo, e o
   assert.match(heard(on), /"kind":"OK"/)
   assert.match(heard(on), /"total":\d+/)
   assert.equal(on.reads.length, 1, 'the tool’s read counted in the turn’s calls')
+
+  const [key] = on.edge.keys
+  assert.ok(key)
+  const late = await readThroughDoor(on.hub, on.saved.latest.id, key)
+  assert.deepEqual(late.json(), { kind: 'NOT_DECLARED' }, 'the call’s key closed with its call')
+  assert.equal(on.reads.length, 1)
 })
 
 test('o Worker que sumiu sobe de novo do módulo gravado e responde; com a Cloudflare fora, TOOL_UNAVAILABLE, e a ferramenta de conector do mesmo agente continua', async (t) => {

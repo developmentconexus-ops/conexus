@@ -83,16 +83,18 @@ async function workerOf(
 
 /**
  * Uploads again the Worker of a `CODE` version of the company, for the call that found it gone:
- * `GONE` when the company holds no such version, `UNAVAILABLE` when Cloudflare did not take it.
+ * `GONE` when the company holds no such version, `UNAVAILABLE` when Cloudflare did not take it
+ * before the call's turn ended.
  */
 export async function reupload(
   deps: Pick<ToolsDeps, 'cloudflare' | 'database'>,
   companyId: CompanyId,
   toolVersionId: ToolVersionId,
+  signal?: AbortSignal,
 ): Promise<'UPLOADED' | 'NOT_STARTING' | 'GONE' | 'UNAVAILABLE'> {
   const upload = await workerOf(deps, companyId, toolVersionId)
   if (upload === undefined) return 'GONE'
-  const sent = await deps.cloudflare.upload(upload)
+  const sent = await deps.cloudflare.upload(upload, signal)
   return sent.kind === 'DONE' ? sent.value : 'UNAVAILABLE'
 }
 

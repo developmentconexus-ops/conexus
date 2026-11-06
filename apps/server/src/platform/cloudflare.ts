@@ -32,8 +32,11 @@ export type WorkerUpload = Readonly<{
 }>
 
 export type CloudflareApps = {
-  /** Uploads the Worker, or answers that its code does not start (decision 0046). */
-  upload(input: WorkerUpload): Promise<CloudflareAnswer<'UPLOADED' | 'NOT_STARTING'>>
+  /** Uploads the Worker, or answers that its code does not start (decision 0046). A caller's signal can end the wait sooner. */
+  upload(
+    input: WorkerUpload,
+    signal?: AbortSignal,
+  ): Promise<CloudflareAnswer<'UPLOADED' | 'NOT_STARTING'>>
   /** Removes the Worker; one already gone is removed. A caller's signal can end the wait sooner. */
   remove(worker: string, signal?: AbortSignal): Promise<CloudflareAnswer<'REMOVED'>>
   /** Whether the namespace holds the Worker: a removed one answers `script: null` (0043, check 5). */
@@ -221,8 +224,12 @@ function metadataOf(input: WorkerUpload, assetsToken: string | undefined) {
 async function upload(
   api: Api,
   input: WorkerUpload,
+  budget?: AbortSignal,
 ): Promise<CloudflareAnswer<'UPLOADED' | 'NOT_STARTING'>> {
-  const signal = AbortSignal.timeout(CLOUDFLARE_DEADLINE_MS)
+  // A form body under a signal that already ended rejects inside undici, where no one catches it.
+  if (budget?.aborted) return { kind: 'NO_ANSWER' }
+  const deadline = AbortSignal.timeout(CLOUDFLARE_DEADLINE_MS)
+  const signal = budget === undefined ? deadline : AbortSignal.any([deadline, budget])
   const main = input.files.find((file) => file.path === input.mainModule)
   if (main === undefined) return { kind: 'REFUSED' }
   const assets = await uploadAssets(api, input, signal)
@@ -285,7 +292,7 @@ function namespaceAdapter(
     log: deps.log,
   }
   return Object.freeze({
-    upload: (input: WorkerUpload) => upload(api, input),
+    upload: (input: WorkerUpload, signal?: AbortSignal) => upload(api, input, signal),
     remove: (worker: string, signal?: AbortSignal) => remove(api, worker, signal),
     exists: (worker: string) => exists(api, worker),
   })

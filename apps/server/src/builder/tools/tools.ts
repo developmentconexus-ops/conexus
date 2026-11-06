@@ -182,8 +182,8 @@ export function createTools(deps: ToolsDeps) {
     saveReady,
     releasePerson,
     /** A `CODE` version's Worker uploaded again from its row, for the call that found it gone. */
-    reupload: (companyId: CompanyId, toolVersionId: ToolVersionId) =>
-      reupload(deps, companyId, toolVersionId),
+    reupload: (companyId: CompanyId, toolVersionId: ToolVersionId, signal?: AbortSignal) =>
+      reupload(deps, companyId, toolVersionId, signal),
     removeCompanyWorkers: (companyId: CompanyId) => removeCompanyWorkers(deps, companyId),
   })
 }

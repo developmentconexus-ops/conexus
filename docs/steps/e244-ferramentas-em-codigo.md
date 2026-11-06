@@ -215,7 +215,8 @@ abaixo.
 | `CodeToolVersion.module` (o JavaScript empacotado) | U2, na máquina | U3, a subida e a nova subida; nunca a leitura do agente (`frozen.ts`) |
 | `CodeToolVersion.reads` | U2 | U3, a porta do Hub (relida pelo `toolVersionId`) |
 | `CodeToolVersion.test` (passou, linhas lidas, quando) | U2 | a página da versão |
-| `CodeToolVersion.inputSchema`, `outputSchema` (JSON Schema) | U2 | U3, a ferramenta fina no agente |
+| `CodeToolVersion.inputSchema` (JSON Schema) | U2 | U3, a ferramenta fina no agente |
+| `CodeToolVersion.outputSchema` (JSON Schema) | U2 | a página da versão (emenda da U3) |
 | `AgentConfig.machine` | U4, o rascunho e a publicação | U4, `agentOf`; U5, o modo código; a tela |
 
 ## A tabela de falhas
@@ -623,7 +624,8 @@ a cada chamada, levou p50 155 ms.
   `TOOLS_ACCESS_AUD` do `wrangler.jsonc`. É o caminho que a página "Validate JWTs" da Cloudflare dá para
   um Worker atrás do Access; o `jose` não entra. O critério 12 lê-se assim: sem `ctx.access` (o Access
   não autenticou: sem token, token errado, JWT vencido) ou com outra AUD, 403; a assinatura e o prazo
-  do JWT são do Access, provados no passo 1. O teste dá a `serveTool` o `access` do contexto.
+  do JWT são do Access, provados no passo 1. O teste dá a `serveTool` o `access` do contexto, e um
+  teste no workerd chama a entrada do despachante sem Access: 403, e nenhum Worker pedido ao namespace.
 - **`ToolProps`** (B.1): `{ data: { read(operation: string, input: unknown): Promise<unknown> } }`,
   versão 1. `read` resolve com a resposta inteira da leitura, a mesma que a fixture do teste da U2
   guardou (`construtor/code-tool.ts`, `fixtures[operation] = answered.whole`), e rejeita, com o código
@@ -656,10 +658,10 @@ a cada chamada, levou p50 155 ms.
   `TOOL_FAILED` com a razão, ou `TOOL_UNAVAILABLE` (a borda ou o Hub fora, o Access recusado, o prazo do
   Hub); `MISSING` sobe de novo uma vez e chama outra. Um módulo que a Cloudflare diz que não inicia,
   na nova subida, chega ao modelo como `TOOL_FAILED` com a razão `NOT_STARTING`, que só o Hub dá.
-- **A releitura do módulo** (B.5): `tools.reupload(companyId, toolVersionId)` em `builder/tools/`
+- **A releitura do módulo** (B.5): `tools.reupload(companyId, toolVersionId, signal)` em `builder/tools/`
   lê `tool_version.config.module` da versão `CODE` da empresa e sobe de novo o mesmo `WorkerUpload`
-  da subida ao gravar; responde `UPLOADED`, `NOT_STARTING`, `GONE` (nenhuma versão `CODE` da empresa
-  com esse id) ou `UNAVAILABLE`. `CodeFrozenTool` passa a ser exportado de `frozen.ts`.
+  da subida ao gravar, dentro do turno (o sinal de abortar dele); responde `UPLOADED`, `NOT_STARTING`,
+  `GONE` (nenhuma versão `CODE` da empresa com esse id) ou `UNAVAILABLE`. `CodeFrozenTool` passa a ser exportado de `frozen.ts`.
 - **A remoção da empresa** (B.6): os Workers de ferramenta saem em `releaseAgents`
   (`builder/agents/release.ts`), que já é a parte do `releaseFirst` (`conversations-of.ts`) que a
   remoção da empresa chama, antes de apagar os agentes; um Worker que a Cloudflare não confirmou lança
@@ -677,6 +679,24 @@ a cada chamada, levou p50 155 ms.
   `agent-failures.ts`, 503) e nada muda.
 - **Arquivos fora das pastas do cartão** (L7): `apps/edge/worker-configuration.d.ts`, que `wrangler types`
   gera de novo do `wrangler.jsonc`; `packages/hub-api/src/agent-failures.ts`, a falha nova.
+
+### Emenda da revisão da U3 (2026-11-06)
+
+Da revisão Opus do pull request da U3, decidida pelo Firstmate pela L9; a página do fundador não muda.
+
+- **O prazo do Hub tem margem** sobre o da borda: a borda conta os 10 s da decisão 0047 desde que o
+  pedido chega, depois do Access e da rede, e o Hub espera 2 s a mais. Assim o `FAILED: DEADLINE` da
+  borda chega ao modelo como `TOOL_FAILED` com a razão; só quando nem a margem basta é
+  `TOOL_UNAVAILABLE`.
+- **O `outputSchema` não é lido pela ferramenta fina.** O `outputSchema` do `createTool` do Mastra
+  (1.82.0, `reference-tools-create-tool.md`) valida a saída inteira do `execute`, que é a união do que o
+  modelo ouve (`OK` com o valor e `complete`, `TOOL_FAILED`, `TOOL_UNAVAILABLE`), e não o `value`; e o
+  `value` chega ao modelo já cortado como toda leitura (`shaped`, as 50 linhas e os 16 KB), então um
+  valor cortado falharia um esquema que pede todas as linhas, e o modo `strict` o trocaria por um
+  erro. Validar o `value` à mão pediria uma razão de falha nova, que o cartão não tem. Fica como a
+  página da versão o mostra.
+- **Uma chamada sem o contexto do turno** (o agente do Mastra sempre o passa) registra
+  `TOOL_CALL_NO_CONTEXT` e lança; não há turno onde contar a leitura.
 
 ## U4 O Computador do agente
 

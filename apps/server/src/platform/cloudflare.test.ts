@@ -4,6 +4,7 @@ import type { ServerResponse } from 'node:http'
 import { createServer } from 'node:http'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
+import { setTimeout as sleep } from 'node:timers/promises'
 import type { WorkerUpload } from './cloudflare.ts'
 import { createCloudflareApps, createCloudflareTools } from './cloudflare.ts'
 import { testAppsConfig } from './test-cloudflare.ts'
@@ -187,6 +188,24 @@ test('cloudflare: a ferramenta salva sobe no namespace das ferramentas, só com 
     limits: { cpu_ms: 50 },
     tags: ['company-c', 'tool-t', 'kind-tool'],
   })
+})
+
+test('cloudflare: a subida termina com o sinal de quem a pediu, sem chegar à Cloudflare', async (t) => {
+  const { tools, received } = await cloudflareAt(t, (response) =>
+    json(response, 200, { success: true, errors: [], messages: [], result: { id: 't-1' } }),
+  )
+  const upload = { ...UPLOAD, worker: 't-1' }
+  assert.deepEqual(await tools.upload(upload, AbortSignal.abort()), { kind: 'NO_ANSWER' })
+  assert.deepEqual(received, [])
+})
+
+test('cloudflare: a subida que a Cloudflare segura termina quando quem a pediu desiste', async (t) => {
+  const ended = new AbortController()
+  const { tools } = await cloudflareAt(t, () => ended.abort())
+  const upload = { ...UPLOAD, worker: 't-1' }
+  const hung = sleep(5_000, 'HUNG', { ref: false })
+  const answer = await Promise.race([tools.upload(upload, ended.signal), hung])
+  assert.deepEqual(answer, { kind: 'NO_ANSWER' })
 })
 
 /** Cloudflare's direct-upload hash: the SHA-256 of the base64 and the extension, 32 hex digits. */

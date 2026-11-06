@@ -81,7 +81,7 @@ export async function cappedText(
   return text + decoder.decode()
 }
 
-function parsedJson(text: string): unknown {
+export function parsedJson(text: string): unknown {
   try {
     return JSON.parse(text)
   } catch {

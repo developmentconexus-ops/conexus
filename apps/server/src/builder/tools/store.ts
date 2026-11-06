@@ -219,16 +219,16 @@ type Insert = {
   createdBy: PersonId | null
 }
 
-/**
- * The tool and its version 1 in the caller's transaction, or nothing if its id is already there.
- * Every unique key arbitrates, so a twin written at once waits and then finds that row; no row of
- * this id after it is the slug another tool holds (`TOOL_REFUSED`).
- */
 /** A tool's version 1, whose id its tool's id fixes. */
 export function firstVersionIdOf(toolId: ToolId): ToolVersionId {
   return ToolVersionId.parse(derivedUuid('tool-version', toolId, '1'))
 }
 
+/**
+ * The tool and its version 1 in the caller's transaction, or nothing if its id is already there.
+ * Every unique key arbitrates, so a twin written at once waits and then finds that row; no row of
+ * this id after it is the slug another tool holds (`TOOL_REFUSED`).
+ */
 export async function inserted(tx: CommandTx, a: Insert): Promise<boolean> {
   const { companyId } = a.scope
   const [made] = await tx

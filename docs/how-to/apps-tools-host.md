@@ -16,5 +16,6 @@ itself comes first: [apps-edge](apps-edge.md).
    `/etc/conexus/secrets/hub_tools_access_client_id` and
    `/etc/conexus/secrets/hub_tools_access_client_secret`, each owner uid 1000, mode 0400, beside the
    other keys ([hub-server](hub-server.md)).
-   `infra/deploy.sh` refuses to deploy without them. The Hub uploads the tools with the apps' token,
-   whose Workers Scripts permission covers both namespaces.
+   `infra/deploy.sh` refuses to deploy without them. The Hub uploads the tools with the apps' token.
+   That its Workers Scripts permission covers the tools' namespace too is an inference until the
+   first real upload: if that upload logs `TOOL_WORKER_NOT_UPLOADED`, widen that permission.

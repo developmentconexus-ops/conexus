@@ -32,8 +32,8 @@ function isCode(tool: FrozenTool): tool is CodeFrozenTool {
 
 /**
  * Calls the tool's Worker once; a Worker the namespace no longer holds ("Worker not found.") is
- * uploaded again from its version's module and called once more (the failure table: the upload
- * after a save may have failed, and the Worker's presence is not written).
+ * uploaded again from its version's module, within the turn, and called once more (the failure
+ * table: the upload after a save may have failed, and the Worker's presence is not written).
  */
 async function called(
   deps: CodeToolsDeps,
@@ -44,7 +44,7 @@ async function called(
   const answer =
     first.kind === 'MISSING'
       ? await (async () => {
-          const uploaded = await deps.reupload(at.companyId, at.toolVersionId)
+          const uploaded = await deps.reupload(at.companyId, at.toolVersionId, call.signal)
           if (uploaded === 'NOT_STARTING') return { kind: 'NOT_STARTING' } as const
           return uploaded === 'UPLOADED' ? deps.edge.call(call) : first
         })()
@@ -87,9 +87,13 @@ export function codeTools(
       description: tool.description,
       inputSchema: z.fromJSONSchema(tool.inputSchema),
       execute: async (input, { requestContext, abortSignal }): Promise<CodeToolResult> => {
-        if (requestContext === undefined) return UNAVAILABLE
-        const turn = deps.turnOf(requestContext)
         const { toolVersionId, connectionId, reads } = tool
+        // The agent always passes the run's context: a call without it has no turn to count in.
+        if (requestContext === undefined) {
+          deps.log.error({ toolVersionId }, 'TOOL_CALL_NO_CONTEXT')
+          throw new Error('a saved tool was called without the run’s context')
+        }
+        const turn = deps.turnOf(requestContext)
         const live = deps.calls.open({
           scope: deps.scope,
           toolVersionId,

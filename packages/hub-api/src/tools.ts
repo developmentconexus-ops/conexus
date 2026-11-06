@@ -309,7 +309,7 @@ export type ToolCall = z.infer<typeof ToolCall>
  * Why a call of a saved tool failed, as the edge saw it: its CPU, the call's deadline, an answer
  * that is not JSON or not a success, a throw of its own, or the code its `data.read` rejected with.
  */
-export const TOOL_FAILURE_REASONS = [
+const TOOL_FAILURE_REASONS = [
   'CPU',
   'DEADLINE',
   'NOT_JSON',

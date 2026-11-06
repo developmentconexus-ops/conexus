@@ -14,7 +14,7 @@ import {
 } from '@conexus/hub-api'
 import { DISPATCH_OPTIONS, deadlineOf } from './dispatch.ts'
 import type { HubPort } from './hub.ts'
-import { cappedText } from './hub.ts'
+import { cappedText, parsedJson } from './hub.ts'
 
 /** The host's one label, which never parses as an app's two-part label (`HostLabel`). */
 export const TOOLS_LABEL = 'tools'
@@ -134,13 +134,5 @@ export async function serveTool(
     return result.kind === 'FAILED' ? failed(result.reason) : answered(result)
   } finally {
     deadline.end()
-  }
-}
-
-function parsedJson(text: string): unknown {
-  try {
-    return JSON.parse(text)
-  } catch {
-    return undefined
   }
 }

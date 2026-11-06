@@ -55,3 +55,24 @@ test('ferramenta salva: o data de props atravessa a clonagem, lê, e a recusa vo
     await worker.stop()
   }
 })
+
+// The dispatcher's own entry, in workerd, which fills no `ctx.access` without Access in front: the
+// tools' host refuses before the namespace is asked for any Worker.
+test('a entrada do despachante: sem o Access do runtime, 403 e nenhum Worker de ferramenta', async () => {
+  const worker = await unstable_dev(join(CLONE, 'worker.ts'), {
+    config: join(CLONE, 'wrangler.jsonc'),
+    local: true,
+    logLevel: 'none',
+    experimental: { disableExperimentalWarning: true },
+  })
+  try {
+    const response = await worker.fetch(`/entry/${crypto.randomUUID()}`, {
+      method: 'POST',
+      body: JSON.stringify({ call: crypto.randomUUID(), input: { operation: 'pedidos' } }),
+    })
+    assert.equal(response.status, 403)
+    assert.equal(response.headers.get('x-tools-reached'), '0')
+  } finally {
+    await worker.stop()
+  }
+})

@@ -122,7 +122,7 @@ export async function drafted(hub: Hub, person: Person, url: string, agent: Agen
 }
 
 /** A `CODE` version as the Construtor's machine leaves it; no test runs its module. */
-export const CODE_VERSION = CodeToolVersion.parse({
+const CODE_VERSION = CodeToolVersion.parse({
   description: 'Conta os pedidos de um mês.',
   source: 'export default {}',
   module: 'export default { fetch() {} }',
