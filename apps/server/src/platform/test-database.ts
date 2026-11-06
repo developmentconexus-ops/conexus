@@ -30,11 +30,10 @@ import { testBuilderConfig, testGitRoot } from './test-builder-config.ts'
 import { testCliProxy } from './test-cliproxy-binary.ts'
 import {
   NO_CLOUDFLARE_SERVER,
-  NO_TOOLS_ORIGIN,
   TEST_ACCOUNT,
   TEST_NAMESPACE,
-  TEST_TOOLS_NAMESPACE,
   testAppsConfig,
+  toolsEnvironment,
 } from './test-cloudflare.ts'
 import { grantCloned, hubTemplate, withDatabase } from './test-database-template.ts'
 import { mastraUrlOf, TEST_IDLE_MS, TEST_POOL_TIMINGS } from './test-mastra-database.ts'
@@ -347,10 +346,7 @@ export function serveEnvironment(
     HUB_CLOUDFLARE_ACCOUNT_ID: TEST_ACCOUNT,
     HUB_APPS_NAMESPACE: TEST_NAMESPACE,
     HUB_CLOUDFLARE_APPS_TOKEN_FILE: keyFile(t, 'hub_apps_token', randomBytes(16).toString('hex')),
-    HUB_TOOLS_NAMESPACE: TEST_TOOLS_NAMESPACE,
-    HUB_TOOLS_ORIGIN: NO_TOOLS_ORIGIN,
-    HUB_TOOLS_ACCESS_CLIENT_ID_FILE: keyFile(t, 'hub_tools_access_client_id', 'id.access'),
-    HUB_TOOLS_ACCESS_CLIENT_SECRET_FILE: keyFile(t, 'hub_tools_access_client_secret', 'secret'),
+    ...toolsEnvironment((name, value) => keyFile(t, name, value)),
     HUB_SEAL_KEYS_FILE: keyFile(t, 'hub_seal_keys', testSealKeyLine()),
     HUB_GIT_ROOT: testGitRoot(url),
     HUB_GIT_COPY_BUCKET: 'conexus-test-git',

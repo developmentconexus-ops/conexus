@@ -92,7 +92,7 @@ export const AGENT_FAILURES = {
     category: 'THIRD_PARTY',
     settles: false,
     status: 503,
-    phrase: 'Não foi possível tirar a ferramenta da Cloudflare agora.',
+    phrase: 'Não foi possível apagar esta ferramenta agora.',
     action: 'Tente de novo em alguns minutos.',
     actionKind: 'RETRY',
   },

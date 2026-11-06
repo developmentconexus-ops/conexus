@@ -62,6 +62,30 @@ function greets(_request: Request, ctx: { props: AppProps }): Response {
   return new Response(`Olá, ${ctx.props.caller.personName}.`)
 }
 
+/** One call a namespace double received, by Worker name. */
+type Called = { name: string; options: unknown; request: Request }
+
+/** The tools' namespace: it holds `tools` by Worker name, and keeps every call in `calls`. */
+function toolsNamespace(tools: Record<string, Tool>, calls: Called[]) {
+  return {
+    get(name: string, args: { props: ToolProps }, options: unknown) {
+      const tool = tools[name]
+      // The namespace raises "Worker not found." for a script it does not hold, as Cloudflare does.
+      if (tool === undefined) throw new Error('Worker not found.')
+      return {
+        async fetch(input: RequestInfo | URL, init?: RequestInit) {
+          const request = new Request(input, init)
+          calls.push({ name, options, request: request.clone() })
+          return tool(request, args)
+        },
+        connect(): Socket {
+          throw new Error('the dispatcher never opens a socket to a tool')
+        },
+      }
+    },
+  }
+}
+
 /** The dispatcher with both doubles; every call each double received is kept. */
 export function edge(
   doubles: { hub?: Hub; app?: App; missingScript?: boolean; tools?: Record<string, Tool> } = {},
@@ -69,14 +93,9 @@ export function edge(
   const hub = doubles.hub ?? admits
   const app = doubles.app ?? greets
   const hubCalls: Request[] = []
-  const appCalls: {
-    name: string
-    args: { props: AppProps }
-    options: unknown
-    request: Request
-  }[] = []
+  const appCalls: (Called & { args: { props: AppProps } })[] = []
   const dbBindings: DbProps[] = []
-  const toolCalls: { name: string; options: unknown; request: Request }[] = []
+  const toolCalls: Called[] = []
   const toolBindings: ToolDataProps[] = []
   const connectorBindings: ConnectorsProps[] = []
   const exports: Exports = {
@@ -134,23 +153,7 @@ export function edge(
         }
       },
     },
-    TOOLS: {
-      get(name: string, args: { props: ToolProps }, options: unknown) {
-        const tool = doubles.tools?.[name]
-        // The namespace raises "Worker not found." for a script it does not hold, as Cloudflare does.
-        if (tool === undefined) throw new Error('Worker not found.')
-        return {
-          async fetch(input: RequestInfo | URL, init?: RequestInit) {
-            const request = new Request(input, init)
-            toolCalls.push({ name, options, request: request.clone() })
-            return tool(request, args)
-          },
-          connect(): Socket {
-            throw new Error('the dispatcher never opens a socket to a tool')
-          },
-        }
-      },
-    },
+    TOOLS: toolsNamespace(doubles.tools ?? {}, toolCalls),
   } satisfies Env
   return {
     toolCalls,

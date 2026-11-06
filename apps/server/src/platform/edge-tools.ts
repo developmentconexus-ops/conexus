@@ -6,7 +6,7 @@ import type { Config } from './config.ts'
 import type { FailureLog } from './failure.ts'
 
 /** What the edge answered of a saved tool's call, or that it gave no answer the Hub can read in time. */
-export type EdgeToolAnswer = ToolCallAnswer | { kind: 'UNAVAILABLE' }
+type EdgeToolAnswer = ToolCallAnswer | { kind: 'UNAVAILABLE' }
 
 export type EdgeTools = {
   call(input: {
@@ -19,13 +19,17 @@ export type EdgeTools = {
 
 const UNAVAILABLE = { kind: 'UNAVAILABLE' } as const
 
-function parsedJson(text: string): unknown {
+/** The edge's reply read by its contract, or why it could not be: text that is not JSON, or another shape. */
+function answerOf(text: string): ToolCallAnswer | { why: 'not json' | 'shape' } {
+  let json: unknown
   try {
-    // biome-ignore lint/plugin: ToolCallAnswer.safeParse reads this value on the next line (C27)
-    return JSON.parse(text)
+    // biome-ignore lint/plugin: ToolCallAnswer.safeParse reads this value on the next lines (C27)
+    json = JSON.parse(text)
   } catch {
-    return undefined
+    return { why: 'not json' }
   }
+  const answer = ToolCallAnswer.safeParse(json)
+  return answer.success ? answer.data : { why: 'shape' }
 }
 
 /**
@@ -58,13 +62,17 @@ export function createEdgeTools(deps: {
           signal: signal === undefined ? timeout : AbortSignal.any([signal, timeout]),
         })
         const text = await cappedText(response.body, APP_CONNECTOR_REPLY_BYTES)
-        const answer =
-          response.status === 200 && text !== undefined
-            ? ToolCallAnswer.safeParse(parsedJson(text))
-            : undefined
-        if (answer?.success) return answer.data
-        const reason = text === undefined ? 'past cap' : answer === undefined ? 'status' : 'shape'
-        deps.log.error({ toolVersionId, status: response.status, reason }, 'EDGE_TOOLS_FAILED')
+        const read =
+          response.status !== 200
+            ? { why: 'status' }
+            : text === undefined
+              ? { why: 'past cap' }
+              : answerOf(text)
+        if ('kind' in read) return read
+        deps.log.error(
+          { toolVersionId, status: response.status, reason: read.why },
+          'EDGE_TOOLS_FAILED',
+        )
         return UNAVAILABLE
       } catch (error) {
         const reason = error instanceof Error ? error.name : 'unknown'

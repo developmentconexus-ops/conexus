@@ -15,6 +15,7 @@ import { chromium } from 'playwright-core'
 import example from '../../apps/edge/example/src/index.ts'
 import { serveDispatch } from '../../apps/edge/src/dispatch.ts'
 import { AppsDomain, PublicOrigin } from '../../apps/server/src/platform/config.ts'
+import { NO_TOOLS } from './apps-edge.ts'
 import {
   closeBrowser,
   liveHub,
@@ -87,6 +88,7 @@ function edgeEnv(edgePort: number) {
         return { fetch: async (request: Request) => example.fetch(request, {}, args), connect }
       },
     },
+    ...NO_TOOLS,
   } satisfies Env
 }
 

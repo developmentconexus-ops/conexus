@@ -151,7 +151,7 @@ export function subjectsOf(deps: {
   const { conversations, assistant, automations, agents } = conversationsOf({
     ...{ database, identity, sealKeys, google, log, runs, mastraPool: deps.mastraPool },
     ...{ machine: deps.conversationMachine, machineTuning: deps.machineTuning },
-    ...{ cloudflareTools: deps.cloudflareTools, edgeTools: createEdgeTools({ config, log }) },
+    tools: { cloudflare: deps.cloudflareTools, edge: createEdgeTools({ config, log }) },
     ...{ connectors: () => connectors, apps: () => apps, projects: () => projects.ports },
     ...{ notify: notifications.notify, automationClock: config.automationClock },
   })

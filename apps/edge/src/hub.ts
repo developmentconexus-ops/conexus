@@ -89,42 +89,51 @@ function parsedJson(text: string): unknown {
   }
 }
 
+type HubRequest<S extends z.ZodType> = {
+  operation: Operation & { success: { body: S } }
+  url: string
+  headers: Headers
+  body?: string
+  deadlineMs: number
+  capBytes: number
+}
+
+/** One request to the Hub, read by its operation's contract within its deadline and cap. */
+async function called<S extends z.ZodType>(
+  env: Env,
+  input: HubRequest<S>,
+): Promise<HubAnswer<z.infer<S>>> {
+  try {
+    const response = await env.HUB.fetch(`${HUB_ORIGIN}${input.url}`, {
+      method: input.operation.method,
+      headers: input.headers,
+      body: input.body,
+      signal: AbortSignal.timeout(input.deadlineMs),
+    })
+    const text = response.body === null ? '' : await cappedText(response.body, input.capBytes)
+    if (text === undefined) return { kind: 'NO_ANSWER', reason: 'TOO_LARGE' }
+    const json = parsedJson(text)
+    if (response.status === input.operation.success.status) {
+      const value = input.operation.success.body.safeParse(json)
+      if (value.success) return { kind: 'DONE', value: value.data }
+      return { kind: 'NO_ANSWER', reason: 'UNREADABLE' }
+    }
+    const problem = Problem.safeParse(json)
+    if (problem.success) return { kind: 'REFUSED', code: problem.data.code }
+    return { kind: 'NO_ANSWER', reason: 'UNEXPECTED_STATUS' }
+  } catch (error) {
+    // A lost connection, a passed deadline or a cut body: the Hub gave no answer to act on, and
+    // the dispatcher's page logs why.
+    const timedOut = error instanceof Error && error.name === 'TimeoutError'
+    return { kind: 'NO_ANSWER', reason: timedOut ? 'TIMEOUT' : 'NETWORK' }
+  }
+}
+
 /** The one adapter to the Hub over its VPC binding: no other file reads `env.HUB` (code C56). */
 export function hubOf(env: Env): HubPort {
-  async function call<S extends z.ZodType>(input: {
-    operation: Operation & { success: { body: S } }
-    url: string
-    headers: Headers
-    body?: string
-    deadlineMs: number
-    capBytes: number
-  }): Promise<HubAnswer<z.infer<S>>> {
-    try {
-      const response = await env.HUB.fetch(`${HUB_ORIGIN}${input.url}`, {
-        method: input.operation.method,
-        headers: input.headers,
-        body: input.body,
-        signal: AbortSignal.timeout(input.deadlineMs),
-      })
-      const text = response.body === null ? '' : await cappedText(response.body, input.capBytes)
-      if (text === undefined) return { kind: 'NO_ANSWER', reason: 'TOO_LARGE' }
-      const json = parsedJson(text)
-      if (response.status === input.operation.success.status) {
-        const value = input.operation.success.body.safeParse(json)
-        if (value.success) return { kind: 'DONE', value: value.data }
-        return { kind: 'NO_ANSWER', reason: 'UNREADABLE' }
-      }
-      const problem = Problem.safeParse(json)
-      if (problem.success) return { kind: 'REFUSED', code: problem.data.code }
-      return { kind: 'NO_ANSWER', reason: 'UNEXPECTED_STATUS' }
-    } catch (error) {
-      // A lost connection, a passed deadline or a cut body: the Hub gave no answer to act on, and
-      // the dispatcher's page logs why.
-      const timedOut = error instanceof Error && error.name === 'TimeoutError'
-      return { kind: 'NO_ANSWER', reason: timedOut ? 'TIMEOUT' : 'NETWORK' }
-    }
+  function call<S extends z.ZodType>(input: HubRequest<S>) {
+    return called(env, input)
   }
-
   return {
     createAppSession(body) {
       return call({

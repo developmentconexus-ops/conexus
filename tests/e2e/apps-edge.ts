@@ -295,6 +295,11 @@ const EDGE_DOMAIN = 'conexusapp.tech'
 const EDGE_HUB = 'https://hub.conexus.fun'
 
 /** The dispatcher's bindings: the Hub's edge port, and the namespace of the uploaded Workers. */
+export const NO_TOOLS: Pick<Env, 'TOOLS' | 'TOOLS_ACCESS_AUD'> = {
+  TOOLS: { get: () => assert.fail('no saved tool runs in this test') },
+  TOOLS_ACCESS_AUD: '91331491ad702b62868605b9604ba7cf47bd92c170f8c5a374362d060ef55d16',
+}
+
 export function edgeEnv(edgePort: number, key: string, workers: Env['DISPATCHER']) {
   return {
     HUB_PUBLIC_ORIGIN: EDGE_HUB,
@@ -310,6 +315,7 @@ export function edgeEnv(edgePort: number, key: string, workers: Env['DISPATCHER'
       },
     },
     DISPATCHER: workers,
+    ...NO_TOOLS,
   } satisfies Env
 }
 

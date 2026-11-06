@@ -39,6 +39,11 @@ function doorOf(connectors: () => Connectors): Connectors['assistant'] {
   }
 }
 
+/** The saved tools' live calls (step 24.4): reached when an agent's turn calls one. */
+function toolCallsOf(connectors: () => Connectors): Connectors['tools'] {
+  return { open: (call) => connectors().tools.open(call) }
+}
+
 /** The apps' door as the agents and the Construtor read the app's data (step 24.3): reached when called. */
 function appDataOf(apps: () => Pick<Apps, 'hasAppData' | 'readAppData'>): AppDataPort {
   return {
@@ -90,8 +95,7 @@ export function conversationsOf(deps: {
   machineTuning?: MachineTuning
   connectors: () => Connectors
   /** The saved tools' namespace and their host on the edge (step 24.4, U3). */
-  cloudflareTools: CloudflareApps
-  edgeTools: EdgeTools
+  tools: { cloudflare: CloudflareApps; edge: EdgeTools }
   /** The Projects are made after the conversations; a hand-off creates one when it is touched. */
   projects: () => Pick<ProjectPorts, 'createProject'>
   /** The apps are made after the agents; an agent reads its app's data when a turn calls it. */
@@ -122,9 +126,7 @@ export function conversationsOf(deps: {
   const appData = appDataOf(deps.apps)
   const agents = agentsAlive({
     ...{ storage, database, identity, queue, liveProjectOf, liveProjectIdsOf, isChoosable, log },
-    ...{ connectors: door, machine: deps.machine, machineTuning: deps.machineTuning },
-    ...{ cloudflare: deps.cloudflareTools, edge: deps.edgeTools },
-    calls: { open: (call) => deps.connectors().tools.open(call) },
+    ...{ ...machineOf(deps), ...deps.tools, connectors: door, calls: toolCallsOf(deps.connectors) },
     speakersOf: (scope) => speakersOf({ database, identity, projects: { liveProjectOf } }, scope),
     appData,
     mastra: () => hub.mastra,

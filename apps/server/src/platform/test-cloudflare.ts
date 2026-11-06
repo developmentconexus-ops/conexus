@@ -1,21 +1,16 @@
 import { randomBytes } from 'node:crypto'
 import type { CloudflareAnswer, CloudflareApps, WorkerUpload } from './cloudflare.ts'
-import {
-  AppLoginKey,
-  CloudflareApiUrl,
-  CloudflareAppsToken,
-  CloudflareName,
-  ToolsOrigin,
-} from './config.ts'
+import { AppLoginKey, CloudflareApiUrl, CloudflareAppsToken, CloudflareName } from './config.ts'
+import { ToolsOrigin } from './config-tools.ts'
 import { Secret } from './secret.ts'
 
 // Nothing listens on the discard port, so a Hub that reaches Cloudflare without a double fails loudly.
 export const NO_CLOUDFLARE_SERVER = 'http://127.0.0.1:9/client/v4'
 export const TEST_ACCOUNT = 'a'.repeat(32)
 export const TEST_NAMESPACE = 'conexus-apps-test'
-export const TEST_TOOLS_NAMESPACE = 'conexus-tools-test'
+const TEST_TOOLS_NAMESPACE = 'conexus-tools-test'
 // Nothing listens on the discard port: a Hub that calls the tools' host without a double fails loudly.
-export const NO_TOOLS_ORIGIN = 'http://127.0.0.1:9'
+const NO_TOOLS_ORIGIN = 'http://127.0.0.1:9'
 
 /** The apps' part of a test configuration; the key and the token are fresh for each call. */
 export function testAppsConfig(apiUrl = NO_CLOUDFLARE_SERVER) {
@@ -32,6 +27,21 @@ export function testAppsConfig(apiUrl = NO_CLOUDFLARE_SERVER) {
       clientSecret: new Secret('ToolsAccessClientSecret', randomBytes(32).toString('hex')),
     },
   }
+}
+
+/** The saved tools' variables of a served Hub, each half of the token in a file `keyFile` writes. */
+export function toolsEnvironment(keyFile: (name: string, value: string) => string) {
+  return {
+    HUB_TOOLS_NAMESPACE: TEST_TOOLS_NAMESPACE,
+    HUB_TOOLS_ORIGIN: NO_TOOLS_ORIGIN,
+    HUB_TOOLS_ACCESS_CLIENT_ID_FILE: keyFile('hub_tools_access_client_id', 'id.access'),
+    HUB_TOOLS_ACCESS_CLIENT_SECRET_FILE: keyFile('hub_tools_access_client_secret', 'secret'),
+  }
+}
+
+/** The tools' host at a test's double on this machine. */
+export function toolsAt(origin: string): ToolsOrigin {
+  return ToolsOrigin.parse(origin)
 }
 
 type Call = 'upload' | 'remove' | 'exists'
