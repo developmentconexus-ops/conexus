@@ -208,6 +208,8 @@ export function ToolForm(props: {
   submitLabel: string
   onSubmit: (input: ToolInput) => void
   onCancel: () => void
+  /** Reads the tool again when another version was saved over the one this form started from (#707). */
+  onReload?: () => void
 }) {
   const { fixed, initial, refused } = props
   const first = props.offered[0]
@@ -279,6 +281,11 @@ export function ToolForm(props: {
           </p>
         )}
         <div className="flex flex-wrap gap-md">
+          {refused?.reason === 'STALE_VERSION' && props.onReload !== undefined && (
+            <Button type="button" onClick={props.onReload}>
+              Recarregar
+            </Button>
+          )}
           <Button
             type="submit"
             variant="primary"

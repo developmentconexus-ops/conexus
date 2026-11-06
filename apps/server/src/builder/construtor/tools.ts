@@ -30,13 +30,15 @@ import { Failure, logFailure } from '../../platform/failure.ts'
 import type { AgentService } from '../agents/public.ts'
 import type { InProject, OfferedConnection, Tools } from '../tools/public.ts'
 import type { AppTable } from './app-tables.ts'
+import type { CodeToolDeps } from './code-tool.ts'
+import { codeToolSave } from './code-tool.ts'
 
 type Refused = { kind: 'REFUSED'; code: FailureCode; field?: string }
 
 /** What the Construtor's tools reach: the U1 services, the Projeto's reads and the draft's test. */
-export type ConstrutorDeps = {
+export type ConstrutorDeps = Pick<CodeToolDeps, 'machines' | 'read'> & {
   agents: Pick<AgentService, 'create' | 'get' | 'list' | 'saveDraft'>
-  tools: Pick<Tools, 'list' | 'save' | 'addVersion'>
+  tools: Pick<Tools, 'list' | 'save' | 'addVersion' | 'get' | 'fitCode' | 'saveCode' | 'addCodeVersion'>
   project: (scope: InProject) => Promise<{
     project: { id: ProjectId; name: string }
     offered: readonly OfferedConnection[]
@@ -54,6 +56,7 @@ const Change = DraftPatch.extend({ agentId: AgentId })
 /** A tool's input is one object for the model; `toolId` tells a new version from a new tool. */
 const Save = ToolVersionConfig.extend({
   toolId: ToolId.optional(),
+  basedOn: z.int().positive().optional(),
   slug: ToolSlug.optional(),
   connectionId: ConnectionId.optional(),
   operation: OperationId.optional(),
@@ -132,14 +135,18 @@ function toolSave(deps: ConstrutorDeps, scope: InProject) {
   return createTool({
     id: CONSTRUTOR_TOOL.toolSave,
     description:
-      'Saves a read tool in the library. Without toolId it makes a new tool (slug, connectionId, operation, description, bound, open); with toolId it saves that tool’s next version (description, bound, open). A tool never changes an agent already published.',
+      'Saves a read tool in the library. Without toolId it makes a new tool (slug, connectionId, operation, description, bound, open); with toolId and basedOn (the version you read as the latest) it saves that tool’s next version (description, bound, open). A tool never changes an agent already published.',
     inputSchema: Save,
     execute: async (input, context) => {
       const key = keyOf(context)
-      const { toolId, slug, connectionId, operation, ...config } = input
+      const { toolId, basedOn, slug, connectionId, operation, ...config } = input
       try {
         if (toolId !== undefined) {
-          const tool = await deps.tools.addVersion(scope, toolId, config, key, 'CONSTRUTOR')
+          if (basedOn === undefined) {
+            return { kind: 'REFUSED', code: 'REQUEST_MALFORMED', field: 'basedOn' } as const
+          }
+          const body = { ...config, basedOn }
+          const tool = await deps.tools.addVersion(scope, toolId, body, key, 'CONSTRUTOR')
           return { kind: 'SAVED', tool } as const
         }
         const body = ToolInput.safeParse({ slug, connectionId, operation, ...config })
@@ -219,6 +226,7 @@ export function construtorTools(deps: ConstrutorDeps, scope: InProject): ToolsIn
     [CONSTRUTOR_TOOL.projectRead]: projectRead(deps, scope),
     [CONSTRUTOR_TOOL.toolSearch]: toolSearch(deps, scope),
     [CONSTRUTOR_TOOL.toolSave]: toolSave(deps, scope),
+    [CONSTRUTOR_TOOL.toolCodeSave]: codeToolSave(deps, scope),
     [CONSTRUTOR_TOOL.agentRead]: agentRead(deps, scope),
     [CONSTRUTOR_TOOL.agentDraft]: agentDraft(deps, scope),
     [CONSTRUTOR_TOOL.agentSet]: agentSet(deps, scope),

@@ -17,6 +17,9 @@ import { SandboxFilesystem } from './sandbox-filesystem/filesystem.ts'
 /** Where the conversation's files live on its machine, made at the machine's start. */
 const WORK_FOLDER = '/home/user/work'
 
+/** The template's own folder of packages (`infra/e2b/template.ts`, `OPT`). */
+const TOOLCHAIN = '/opt/conexus'
+
 const START_MS = 120_000
 const MKDIR_FAILED = 'the conversation folder could not be made'
 
@@ -37,6 +40,8 @@ type FileRead =
 export type ConversationMachines = {
   /** Where the conversation's files are on its machine. */
   readonly folder: string
+  /** Where the template keeps the packages of the tools the Hub runs there (TypeScript, esbuild, Biome). */
+  readonly toolchain: string
   /** The controller's workspace resolver; undefined outside a conversation, as the Builder's. */
   workspace(requestContext: RequestContext): Promise<Workspace | undefined>
   /**
@@ -63,10 +68,10 @@ export type ConversationMachines = {
   onPhase(conversationId: ConversationId, listener: (phase: Phase) => void): () => void
 }
 
-/** What a test changes of the machines: the folder on this computer, and a shorter start. */
-export type MachineTuning = { workFolder: string; startMs: number }
+/** What a test changes of the machines: the folder and the toolchain on this computer, and a shorter start. */
+export type MachineTuning = { workFolder: string; toolchain: string; startMs: number }
 
-const ON_E2B: MachineTuning = { workFolder: WORK_FOLDER, startMs: START_MS }
+const ON_E2B: MachineTuning = { workFolder: WORK_FOLDER, toolchain: TOOLCHAIN, startMs: START_MS }
 
 type Deps = ConversationMachine & {
   log: FailureLog
@@ -108,6 +113,7 @@ const Controller = z.object({ sessionId: ConversationIdSchema })
 class Machines implements ConversationMachines {
   private readonly deps: Deps
   readonly folder: string
+  readonly toolchain: string
   private readonly startMs: number
   private readonly sessions = new Map<ConversationId, Session>()
   /** The pauses in flight, which the Hub's end waits for (code C62). */
@@ -130,6 +136,7 @@ class Machines implements ConversationMachines {
   constructor(deps: Deps, tuning: MachineTuning) {
     this.deps = deps
     this.folder = tuning.workFolder
+    this.toolchain = tuning.toolchain
     this.startMs = tuning.startMs
     this.told = `The conversation's own Linux machine. Commands start in ${this.folder}.`
   }

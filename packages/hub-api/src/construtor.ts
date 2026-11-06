@@ -7,7 +7,7 @@ import type { FailureCode } from './failures.ts'
 import { Problem } from './failures.ts'
 import { ProjectId } from './library-ids.ts'
 import { ATTEMPT_KEY_HEADER, defineOperation } from './operation.ts'
-import { ReadyTool, ToolSummary } from './tools.ts'
+import { ReadyTool, ToolDetail, ToolSummary } from './tools.ts'
 
 /** The key of the Construtor's controller in Mastra's routes (`/agent-controller/construtor/…`), step 24.3. */
 export const CONSTRUTOR_CONTROLLER = 'construtor'
@@ -17,6 +17,7 @@ export const CONSTRUTOR_TOOL = {
   projectRead: 'project_read',
   toolSearch: 'tool_search',
   toolSave: 'tool_save',
+  toolCodeSave: 'tool_code_save',
   agentRead: 'agent_read',
   agentDraft: 'agent_draft',
   agentSet: 'agent_set',
@@ -56,11 +57,28 @@ export type ProjectReadResult = z.infer<typeof ProjectReadResult>
 
 /** What tool_search answers the model: the library's tools, the ready reads and the automations that match. */
 export const ToolSearchResult = z.object({
-  tools: z.array(ToolSummary.omit({ connectionName: true, readLabel: true })),
+  tools: z.array(ToolSummary),
   ready: z.array(ReadyTool),
   automations: z.array(z.object({ id: AutomationId, name: z.string(), prompt: z.string() })),
 })
 export type ToolSearchResult = z.infer<typeof ToolSearchResult>
+
+/**
+ * What tool_code_save answers the model: the tool as saved, the refusal with the reason it names, or
+ * the test that did not pass with what it printed (step 24.4).
+ */
+export const CodeSaveResult = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('SAVED'), tool: ToolDetail }),
+  z.object({
+    kind: z.literal('REFUSED'),
+    code: Problem.shape.code,
+    field: z.string().optional(),
+    reason: z.string().optional(),
+    /** On `TOOL_TEST_FAILED`: what the test printed, the end of it. */
+    output: z.string().optional(),
+  }),
+])
+export type CodeSaveResult = z.infer<typeof CodeSaveResult>
 
 /** What agent_test answers the model: the draft's answer and the tools it called, or the refusal. */
 export const TestedResult = z.discriminatedUnion('kind', [

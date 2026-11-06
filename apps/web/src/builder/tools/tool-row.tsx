@@ -8,6 +8,7 @@ import { Button } from '../../ui/button.tsx'
 import { TableCell, TableRow } from '../../ui/table.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
 import { sendToolDeletion } from './queries.ts'
+import { CodeBadge } from './code-version.tsx'
 import { deleteWarning, EFFECT_TEXT, NOBODY_USES, UNCONFIRMED_DELETE } from './text.ts'
 import { NewVersion } from './tool-page.tsx'
 
@@ -47,6 +48,11 @@ function Refused(props: { scope: Scope; failure: unknown }) {
   )
 }
 
+/** What the tool reads: a preset's one read by its name, a tool in code's reads by their ids. */
+function readText(tool: ToolSummary): string {
+  return tool.kind === 'PRESET' ? tool.readLabel : tool.reads.join(', ')
+}
+
 function Effect({ tool }: { tool: ToolSummary }) {
   return (
     <span className="inline-flex items-center gap-xs">
@@ -80,13 +86,15 @@ export function ToolRow({ scope, tool }: { scope: Scope; tool: ToolSummary }) {
   }
   const actions = (
     <>
-      <Button
-        size="sm"
-        aria-label={`Nova versão de ${tool.slug}`}
-        onClick={() => setVersioning(true)}
-      >
-        Nova versão
-      </Button>
+      {tool.kind === 'PRESET' && (
+        <Button
+          size="sm"
+          aria-label={`Nova versão de ${tool.slug}`}
+          onClick={() => setVersioning(true)}
+        >
+          Nova versão
+        </Button>
+      )}
       <Button
         size="sm"
         variant="danger"
@@ -118,7 +126,9 @@ export function ToolRow({ scope, tool }: { scope: Scope; tool: ToolSummary }) {
     tool.usedBy.length === 0 ? NOBODY_USES : tool.usedBy.map((one) => one.name).join(' · ')
   return (
     <>
-      <NewVersion scope={scope} toolId={tool.id} open={versioning} onOpenChange={setVersioning} />
+      {tool.kind === 'PRESET' && (
+        <NewVersion scope={scope} toolId={tool.id} open={versioning} onOpenChange={setVersioning} />
+      )}
       <TableRow>
         <TableCell className="whitespace-normal px-sm">
           <Link
@@ -127,6 +137,7 @@ export function ToolRow({ scope, tool }: { scope: Scope; tool: ToolSummary }) {
             className="block wrap-anywhere font-medium hover:underline"
           >
             {tool.slug}
+            {tool.kind === 'CODE' && <CodeBadge />}
           </Link>
           <span className="block text-fact text-text-2">{tool.description}</span>
           {phone && (
@@ -136,7 +147,7 @@ export function ToolRow({ scope, tool }: { scope: Scope; tool: ToolSummary }) {
                 {actions}
               </span>
               <span className="block text-fact text-text-2">
-                {tool.connectionName} · {tool.readLabel} · {EFFECT_TEXT[tool.effect]}
+                {tool.connectionName} · {readText(tool)} · {EFFECT_TEXT[tool.effect]}
               </span>
               <span className="block text-fact text-text-2">{users}</span>
             </>
@@ -146,7 +157,7 @@ export function ToolRow({ scope, tool }: { scope: Scope; tool: ToolSummary }) {
           <>
             <TableCell className="whitespace-normal px-sm text-text-2">
               {tool.connectionName}
-              <span className="block text-fact">{tool.readLabel}</span>
+              <span className="block text-fact">{readText(tool)}</span>
             </TableCell>
             <TableCell className="px-sm text-text-2">
               <Effect tool={tool} />

@@ -7,8 +7,10 @@ import type {
   ToolSlug,
   ToolSummary,
   ToolTarget,
+  ToolVersionDetail,
 } from '@conexus/hub-api'
 import {
+  CodeToolVersion,
   ConnectionId,
   OperationId,
   ToolId,
@@ -17,6 +19,7 @@ import {
   ToolVersionId,
 } from '@conexus/hub-api'
 import { and, asc, eq, inArray } from 'drizzle-orm'
+import { z } from 'zod'
 import type { CommandTx, ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { InProject, OfferedConnection } from './check.ts'
@@ -69,7 +72,8 @@ export function versionsWithTools(tx: ReadTx, versionIds: readonly ToolVersionId
     .where(inArray(toolVersion.id, [...versionIds]))
 }
 
-function targetOfRow(row: ToolRow): ToolTarget & { slug: ToolSlug } {
+/** A `PRESET` tool's read; its row holds the operation by the table's check. */
+export function presetTargetOf(row: ToolRow): ToolTarget & { slug: ToolSlug } {
   return {
     connectionId: ConnectionId.parse(row.connectionId),
     operation: OperationId.parse(row.operation),
@@ -77,12 +81,19 @@ function targetOfRow(row: ToolRow): ToolTarget & { slug: ToolSlug } {
   }
 }
 
-function versionDetail(row: VersionRow) {
-  return {
-    ...ToolVersionConfig.parse(row.config),
-    id: ToolVersionId.parse(row.id),
-    number: row.number,
+/** A version as a screen reads it, by its tool's kind (code C21): a `CODE` one without its module. */
+export function versionDetail(kind: string, row: VersionRow): ToolVersionDetail {
+  const identity = { id: ToolVersionId.parse(row.id), number: row.number }
+  if (kind === 'CODE') {
+    const { module: _, ...version } = CodeToolVersion.parse(row.config)
+    return { ...version, kind: 'CODE', ...identity }
   }
+  return { ...ToolVersionConfig.parse(row.config), kind: 'PRESET', ...identity }
+}
+
+/** The description the latest version gives: the same field in both kinds. */
+function descriptionOf(row: VersionRow): string {
+  return z.object({ description: z.string() }).parse(row.config).description
 }
 
 function latestOf(row: ToolRow, versions: readonly VersionRow[]) {
@@ -108,22 +119,29 @@ export async function detailsOf(
   const users = await usedBy(tx, ids)
   return rows.map((row): ToolDetail => {
     const latest = latestOf(row, versions)
+    // A connection the Projeto lost: the tool is not usable from here, as a tool it never had (#712).
     const connection = offered.find((each) => each.connectionId === row.connectionId)
-    if (connection === undefined)
-      throw new Error(`the tool ${row.id} reads a connection not offered`)
-    const read = connection.reads.find((each) => each.operation === row.operation)
-    const summary: ToolSummary = {
-      ...targetOfRow(row),
+    if (connection === undefined) throw new Failure('TOOL_NOT_FOUND')
+    const base = {
       connectionName: connection.name,
-      readLabel: read?.label ?? row.operation,
       id: ToolId.parse(row.id),
-      description: ToolVersionConfig.parse(latest.config).description,
-      effect: 'READ',
+      slug: ToolSlugSchema.parse(row.slug),
+      connectionId: ConnectionId.parse(row.connectionId),
+      description: descriptionOf(latest),
+      effect: 'READ' as const,
       latest: { id: ToolVersionId.parse(latest.id), number: latest.number },
       usedBy: [...(users.get(ToolId.parse(row.id)) ?? [])],
     }
-    const own = versions.filter((each) => each.toolId === row.id).map(versionDetail)
-    return { ...summary, versions: own }
+    const own = versions.filter((each) => each.toolId === row.id)
+    const detailed = own.map((each) => versionDetail(row.kind, each))
+    if (row.kind === 'CODE') {
+      const reads = CodeToolVersion.parse(latest.config).reads
+      return { ...base, kind: 'CODE', reads, versions: detailed }
+    }
+    const { operation } = presetTargetOf(row)
+    const read = connection.reads.find((each) => each.operation === operation)
+    const readLabel = read?.label ?? operation
+    return { ...base, kind: 'PRESET', operation, readLabel, versions: detailed }
   })
 }
 
@@ -140,13 +158,17 @@ export async function chosenOf(
   return found
     .map(({ version, tool: row }): AgentTool => {
       const newest = latestOf(row, latest)
-      return {
-        ...targetOfRow(row),
+      const base = {
         id: ToolId.parse(row.id),
-        effect: 'READ',
+        slug: ToolSlugSchema.parse(row.slug),
+        effect: 'READ' as const,
         latest: { id: ToolVersionId.parse(newest.id), number: newest.number },
-        version: versionDetail(version),
       }
+      const detail = versionDetail(row.kind, version)
+      if (detail.kind === 'CODE') {
+        return { ...base, kind: 'CODE', connectionId: ConnectionId.parse(row.connectionId), version: detail }
+      }
+      return { ...base, ...presetTargetOf(row), kind: 'PRESET', version: detail }
     })
     .sort((a, b) => a.slug.localeCompare(b.slug))
 }
@@ -154,8 +176,10 @@ export async function chosenOf(
 type Insert = {
   id: ToolId
   scope: InProject
-  target: ToolTarget & { slug: string }
-  config: ToolVersionConfig
+  /** The tool's row: a `PRESET` one names its operation, a `CODE` one none (the table's check). */
+  target: { kind: 'PRESET' | 'CODE'; slug: string; connectionId: ConnectionId; operation?: string }
+  /** What version 1 holds: a `PRESET` tool's values or a `CODE` tool's version. */
+  config: ToolVersionConfig | CodeToolVersion
   bodyHash: string
   createdBy: PersonId | null
 }

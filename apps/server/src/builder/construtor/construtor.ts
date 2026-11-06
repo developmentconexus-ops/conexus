@@ -49,6 +49,8 @@ import {
 import type { QueueDeps } from '../model-accounts/public.ts'
 import type { InProject } from '../tools/public.ts'
 import { databaseScopeOf, sessionScopeOf } from '../tools/public.ts'
+import type { ConversationMachine, ConversationMachines, MachineTuning } from '../machine/public.ts'
+import { ALLOWED_HOSTS, createConversationMachines, MARK } from '../machine/public.ts'
 import { CONSTRUTOR_MARK } from './open.ts'
 import { registerConstrutorRoutes } from './routes.ts'
 import { testDraft } from './test-draft.ts'
@@ -105,6 +107,9 @@ type Deps = {
   }
   /** The app's tables of a Projeto, names and columns, never a row (step 24.3, U3's door). */
   appTables: (scope: InProject) => Promise<{ name: string; columns: string[] }[] | null>
+  /** The machine's provider (the Assistant's kit and API) and the tests' folder and toolchain; E2B's when absent. */
+  machine: ConversationMachine
+  machineTuning?: MachineTuning
   log: FailureLog
 }
 
@@ -125,6 +130,15 @@ function scopes(memory: Threads) {
     if (!projectId.success) return undefined
     return { companyId: owner.companyId, personId: owner.personId, projectId: projectId.data }
   })
+}
+
+/** The marks of the conversation's machine: its company and its Projeto (security S36). */
+function machineMarks(scopeOf: ReturnType<typeof scopes>) {
+  return async (requestContext: RequestContext) => {
+    const scope = await scopeOf(requestContext)
+    if (scope === undefined) return undefined
+    return { [MARK.company]: scope.companyId, [MARK.project]: scope.projectId }
+  }
 }
 
 /** What the Construtor's tools read of the Projeto: its name, what it received and its app's tables. */
@@ -153,6 +167,7 @@ function construtorAgent(
     memory: Memory
     turns: ReturnType<typeof sessionTurns>
     scopeOf: ReturnType<typeof scopes>
+    machines: ConversationMachines
   },
 ) {
   const { scopeOf } = parts
@@ -161,6 +176,7 @@ function construtorAgent(
     return scope === undefined ? [] : deps.connectors.connections(sessionScopeOf(scope))
   })
   const construtor = {
+    machines: parts.machines,
     agents: deps.agents.service,
     tools: deps.agents.tools,
     log: deps.log,
@@ -206,7 +222,14 @@ function construtorAgent(
       return {
         ...toolsOf(sessionModel(requestContext)),
         ...connectorTools(access, { noteSave: false }),
-        ...construtorTools(construtor, scope),
+        ...construtorTools(
+          {
+            ...construtor,
+            read: (call, context) =>
+              deps.connectors.read(door, { ...call, turn: turnKey.of(context) }),
+          },
+          scope,
+        ),
       }
     },
     ...agentDefaults(deps.queue, parts.turns),
@@ -218,7 +241,8 @@ function construtorAgent(
  * The Construtor (step 24.3, U4): the third controller on the kit, one mode with a closed list of
  * tools, `yolo` (the draft without asking; nothing publishes). Its conversations are threads under
  * `construtor:company:<c>:person:<p>` marked with the Projeto; the Hub keeps no table of them. Its
- * turn takes the person's accounts as the Assistant's, with no machine and no Projeto's run.
+ * turn takes the person's accounts as the Assistant's, with no Projeto's run. Its machine (step 24.4) is
+ * the Hub's own, for the tool in code it writes and tests: the model gets none of the machine's tools.
  */
 export function createConstrutor(deps: Deps) {
   const { storage, database, queue, log } = deps
@@ -228,6 +252,10 @@ export function createConstrutor(deps: Deps) {
     observer: OBSERVER,
   })
   const scopeOf = scopes(memory)
+  const machines = createConversationMachines(
+    { ...deps.machine, log, hosts: ALLOWED_HOSTS, marksOf: machineMarks(scopeOf) },
+    deps.machineTuning,
+  )
   const turns = sessionTurns({
     id: 'conexus-construtor-turn',
     async take(requestContext) {
@@ -237,8 +265,9 @@ export function createConstrutor(deps: Deps) {
       turnKey.start(requestContext)
       return turn
     },
+    ended: (sessionId) => void machines.stop(sessionId),
   })
-  const agent = construtorAgent(deps, { memory, turns, scopeOf })
+  const agent = construtorAgent(deps, { memory, turns, scopeOf, machines })
   // Decision 0053: nothing waits to be approved; the tools only build a draft.
   const controller = controllerOf({
     ...{ kind: 'construtor', storage, memory, agent },
@@ -256,6 +285,10 @@ export function createConstrutor(deps: Deps) {
       kind: 'construtor',
       controller,
       memory,
+      // Its tool that writes code starts the conversation's machine, as the Assistant's: the screen hears it.
+      ends: { onPhase: machines.onPhase.bind(machines) },
+      /** The machines, after the runs `drain` stopped, before Mastra stops. */
+      close: () => machines.stopAll(),
       /** Whether the person may build agents in the company now (`manageAgents`). */
       admit: agentManagerAdmission({ database, identity: deps.identity }),
       async release(scope: ReleaseScope): Promise<void> {

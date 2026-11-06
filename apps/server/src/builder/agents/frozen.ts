@@ -2,6 +2,7 @@ import type {
   AgentConfig,
   CompanyId,
   OfProject,
+  CodeToolVersion,
   ToolSlug,
   ToolTarget,
   ToolVersionConfig,
@@ -10,6 +11,7 @@ import type {
 import {
   AgentConfig as AgentConfigSchema,
   AgentId,
+  CodeToolVersion as CodeToolVersionSchema,
   CompanyId as CompanyIdSchema,
   ConnectionId,
   OperationId,
@@ -26,9 +28,24 @@ import { versionsWithTools } from '../tools/public.ts'
 import { chosenIds, ofProject, pinnedIds } from './store.ts'
 import { agent, agentVersion, agentVersionTool } from './tables.ts'
 
+/** A `PRESET` tool as its version holds it: one read, with the values it fixes. */
+export type PresetFrozenTool = ToolTarget &
+  ToolVersionConfig & { kind: 'PRESET'; slug: ToolSlug }
+
+/**
+ * A `CODE` tool as its version holds it: the reads it declares and the schemas of its input and
+ * output, never its source or module (the agent runs the Worker the version was uploaded as).
+ */
+export type CodeFrozenTool = Pick<
+  CodeToolVersion,
+  'description' | 'reads' | 'inputSchema' | 'outputSchema'
+> & { kind: 'CODE'; slug: ToolSlug; toolVersionId: ToolVersionId; connectionId: ConnectionId }
+
+export type FrozenTool = PresetFrozenTool | CodeFrozenTool
+
 /** The configuration a version or the draft becomes an agent with, its tools as their versions hold them. */
 export type FrozenVersion = AgentConfig & {
-  tools: readonly (ToolTarget & ToolVersionConfig & { slug: ToolSlug })[]
+  tools: readonly FrozenTool[]
   source: { kind: 'VERSION'; number: number } | { kind: 'DRAFT'; revision: number }
 }
 
@@ -39,25 +56,42 @@ function hubScope(companyId: CompanyId) {
   return { kind: 'COMPANY', companyId, personId: null } as const
 }
 
-type Tools = FrozenVersion['tools']
+type Tools = readonly FrozenTool[]
+
+/** A tool as its version holds it, by its tool's kind (code C21). */
+function frozenOf(row: Awaited<ReturnType<typeof versionsWithTools>>[number]): FrozenTool {
+  const { version, tool } = row
+  const slug = ToolSlugSchema.parse(tool.slug)
+  const connectionId = ConnectionId.parse(tool.connectionId)
+  switch (tool.kind) {
+    case 'CODE': {
+      const { description, reads, inputSchema, outputSchema } = CodeToolVersionSchema.parse(
+        version.config,
+      )
+      const toolVersionId = ToolVersionIdSchema.parse(version.id)
+      return {
+        ...{ kind: 'CODE', slug, connectionId, toolVersionId },
+        ...{ description, reads, inputSchema, outputSchema },
+      }
+    }
+    default:
+      return {
+        kind: 'PRESET',
+        connectionId,
+        operation: OperationId.parse(tool.operation),
+        slug,
+        ...ToolVersionConfigSchema.parse(version.config),
+      }
+  }
+}
 
 /** The tools of the versions named, by version, as each version holds it. */
 async function toolsBy(tx: ReadTx, versionIds: readonly ToolVersionId[]) {
   const rows = await versionsWithTools(tx, versionIds)
-  return new Map(
-    rows.map(({ version, tool }) => [
-      version.id,
-      {
-        connectionId: ConnectionId.parse(tool.connectionId),
-        operation: OperationId.parse(tool.operation),
-        slug: ToolSlugSchema.parse(tool.slug),
-        ...ToolVersionConfigSchema.parse(version.config),
-      },
-    ]),
-  )
+  return new Map(rows.map((row) => [row.version.id, frozenOf(row)]))
 }
 
-function sorted(tools: Tools[number][]): Tools {
+function sorted(tools: FrozenTool[]): Tools {
   return tools.sort((a, b) => a.slug.localeCompare(b.slug))
 }
 

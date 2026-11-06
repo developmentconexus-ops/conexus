@@ -39,6 +39,7 @@ test('publicar: a versão 1 guarda o rascunho e a versão 1 da ferramenta; depoi
     description: 'Os pedidos da empresa 2.',
     bound: { codigoEmpresa: 2 },
     open: ['page'],
+    basedOn: 1,
   }
   const grown = await post(on.hub, on.ana, `${on.tools}/${tool.id}/versions`, v2)
   assert.equal(grown.statusCode, 201, grown.body)
@@ -55,9 +56,11 @@ test('publicar: a versão 1 guarda o rascunho e a versão 1 da ferramenta; depoi
   assert.deepEqual(active?.connections, [on.matriz])
   assert.deepEqual(active?.source, { kind: 'VERSION', number: 1 })
   assert.deepEqual(
-    active?.tools.map(({ slug, operation, description, bound, open }) => ({
-      ...{ slug, operation, description, bound, open },
-    })),
+    active?.tools.flatMap((tool) =>
+      tool.kind === 'PRESET'
+        ? [{ slug: tool.slug, operation: tool.operation, description: tool.description, bound: tool.bound, open: tool.open }]
+        : [],
+    ),
     [
       {
         ...{ slug: 'pedidos_matriz', operation: 'pedidos', bound: { codigoEmpresa: 1 } },

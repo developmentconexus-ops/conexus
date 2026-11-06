@@ -1,0 +1,19 @@
+// A tool's code keeps no state at module level: two calls of the Worker may share one module, and a
+// value one call leaves behind would reach the next (step 24.4, criterion 7). The rule sees only
+// the shape: a `let` or `var` outside a function, and an empty collection outside a function (the
+// shape a function fills). Known blind spot: a collection that starts with values and is changed.
+// The Construtor writes it beside the tool's code on the machine and runs it with the Biome of the
+// template; the repository's own Biome does not read it (biome.json wires other plugins).
+or {
+  JsVariableStatement() as $decl where {
+    $decl <: r"(?:let|var) .*",
+    $decl <: not within or { JsFunctionBody(), JsBlockStatement() },
+    register_diagnostic(span=$decl, message="MODULE_STATE: a `let` or `var` outside a function keeps state between calls; move it inside the function.")
+  },
+  JsVariableDeclarator(initializer=JsInitializerClause(expression=$init)) as $decl where {
+    $decl <: not within or { JsFunctionBody(), JsBlockStatement() },
+    $init <: or { JsArrayExpression(), JsObjectExpression(), JsNewExpression() },
+    $init <: r"(?:\[\]|\{\}|new (?:Map|Set|WeakMap|WeakSet)\(\))",
+    register_diagnostic(span=$decl, message="MODULE_STATE: an empty collection outside a function is state the function fills between calls; make it inside the function.")
+  }
+}

@@ -23,6 +23,7 @@ export type ConstrutorRowTool = (typeof CONSTRUTOR_TOOL)[
   | 'projectRead'
   | 'toolSearch'
   | 'toolSave'
+  | 'toolCodeSave'
   | 'agentRead'
   | 'agentDraft'
   | 'agentSet'

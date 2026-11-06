@@ -12,6 +12,14 @@ export const UNCONFIRMED_VERSION =
   'Não foi possível confirmar se a versão foi gravada. Confira as versões.'
 export const BACK_TO_TOOLS = 'Voltar às ferramentas'
 
+/** The mark of a tool the Construtor wrote in code. */
+export const IN_CODE = 'Em código'
+
+/** What the test of a version in code proved: that it passed, on how many real rows. */
+export function testText(test: { rows: number }): string {
+  return `Teste passou · ${test.rows} ${test.rows === 1 ? 'linha lida' : 'linhas lidas'}`
+}
+
 export function deleteWarning(slug: string): string {
   return `Apagar ${slug} tira a ferramenta e todas as versões dela da biblioteca. Não dá para desfazer.`
 }

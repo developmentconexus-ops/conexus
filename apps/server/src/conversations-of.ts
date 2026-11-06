@@ -122,6 +122,8 @@ export function conversationsOf(deps: {
     ...{ storage, database, identity, queue, liveProjectOf, log, agents, connectors: door },
     speakersOf: (scope) => speakersOf({ database, identity, projects: { liveProjectOf } }, scope),
     ...{ automations: () => automations, appTables: appTablesOf(appData) },
+    machine: deps.machine,
+    machineTuning: deps.machineTuning,
   })
   const clock = deps.automationClock
   const run = automationRun({

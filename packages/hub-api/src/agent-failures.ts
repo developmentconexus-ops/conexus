@@ -72,6 +72,14 @@ export const AGENT_FAILURES = {
     action: '',
     actionKind: 'NONE',
   },
+  TOOL_TEST_FAILED: {
+    category: 'USER',
+    settles: true,
+    status: 422,
+    phrase: 'O teste da ferramenta não passou.',
+    action: '',
+    actionKind: 'NONE',
+  },
   TOOL_IN_USE: {
     category: 'USER',
     settles: true,
@@ -93,6 +101,9 @@ export const ProblemField = z.enum([
   'bound',
   'open',
   'slug',
+  'source',
+  'toolId',
+  'kind',
 ])
 export type ProblemField = z.infer<typeof ProblemField>
 
@@ -107,6 +118,9 @@ export const ProblemReason = z.enum([
   'SLUG_TAKEN',
   'NOT_USABLE',
   'SAME_TOOL_TWICE',
+  'CODE_BY_CONSTRUTOR',
+  'MODULE_STATE',
+  'STALE_VERSION',
 ])
 export type ProblemReason = z.infer<typeof ProblemReason>
 

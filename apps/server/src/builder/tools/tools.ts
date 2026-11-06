@@ -1,12 +1,14 @@
 import type {
+  CodeToolVersion,
   CompanyId,
   PersonId,
   ProjectId,
   ReadyTool,
   ToolDetail,
   ToolInput,
+  ToolSlug,
   ToolTarget,
-  ToolVersionConfig,
+  ToolVersionBody,
 } from '@conexus/hub-api'
 import { ConnectionId, OperationId, ToolId } from '@conexus/hub-api'
 import { and, eq, sql } from 'drizzle-orm'
@@ -28,7 +30,7 @@ import {
 import { readyOf, saveReady, usable } from './choice.ts'
 import { derivedUuid } from './derived.ts'
 import type { UsedBy } from './store.ts'
-import { detailsOf, inserted, toolOf, toolsOn } from './store.ts'
+import { detailsOf, inserted, presetTargetOf, toolOf, toolsOn } from './store.ts'
 import { tool, toolVersion } from './tables.ts'
 
 export type ToolsDeps = {
@@ -117,7 +119,7 @@ async function save(
     const earlier = await toolOf(tx, scope.companyId, id)
     if (earlier === undefined) {
       fitting(target, config)
-      const row = { slug, connectionId, operation }
+      const row = { kind: 'PRESET', slug, connectionId, operation } as const
       const made = { id, scope, target: row, config, bodyHash, createdBy: scope.personId }
       if (await inserted(tx, made)) return detailOf(deps, tx, await found(tx, scope, id), offered)
     }
@@ -135,20 +137,23 @@ async function found(tx: ReadTx, scope: InProject, id: ToolId) {
   return row
 }
 
+/** What a next version writes: its values, and the check that it fits the tool's connection. */
+type Next = { config: object; fit: (tx: CommandTx, row: ToolRow) => Promise<void> }
+type ToolRow = typeof tool.$inferSelect
+
 /**
- * The tool's next version, keyed by its attempt (code C37): the counter's update holds the tool's
- * row, so two at once become `n+1` and `n+2`; a repeat finds its version by id.
+ * The tool's next version, keyed by its attempt (code C37) and written over the version the writer
+ * read (`basedOn`): the counter moves only from that number, so two writers over the same one end
+ * as one version and `STALE_VERSION`, and a repeat finds its version by id.
  */
-async function addVersion(
+async function appendVersion(
   deps: ToolsDeps,
   scope: InProject,
-  toolId: ToolId,
-  config: ToolVersionConfig,
-  attemptKey: string,
-  by: Writer,
+  a: { toolId: ToolId; basedOn: number; attemptKey: string; by: Writer; next: Next },
 ): Promise<ToolDetail> {
+  const { toolId, basedOn, attemptKey, by, next } = a
   const versionId = derivedUuid('tool-version', toolId, scope.personId, attemptKey)
-  const bodyHash = bodyHashOf(config)
+  const bodyHash = bodyHashOf(next.config)
   const offered = await offeredOf(deps, scope)
   async function write(tx: CommandTx) {
     await admitted(deps, tx, scope, 'manageAgents')
@@ -158,25 +163,22 @@ async function addVersion(
       if (earlier.bodyHash !== bodyHash) throw new Failure('IDEMPOTENCY_CONFLICT')
       return { detail: await detailOf(deps, tx, row, offered), number: earlier.number }
     }
-    const { connectionId, operation } = row
-    const target = {
-      connectionId: ConnectionId.parse(connectionId),
-      operation: OperationId.parse(operation),
-    }
-    fitting(await targetOf(deps.connectors, sessionScopeOf(scope), target), config)
-    const [next] = await tx
+    await next.fit(tx, row)
+    const [moved] = await tx
       .update(tool)
       .set({ currentVersion: sql`${tool.currentVersion} + 1`, updatedAt: sql`now()` })
-      .where(eq(tool.id, toolId))
+      .where(and(eq(tool.id, toolId), eq(tool.currentVersion, basedOn)))
       .returning({ number: tool.currentVersion })
-    if (next === undefined) throw new Failure('TOOL_NOT_FOUND')
+    if (moved === undefined) {
+      throw new Failure('TOOL_REFUSED', { named: { field: 'toolId', reason: 'STALE_VERSION' } })
+    }
     await tx.insert(toolVersion).values({
-      ...{ id: versionId, toolId, companyId: scope.companyId, number: next.number },
-      ...{ config, createdBy: scope.personId, bodyHash },
+      ...{ id: versionId, toolId, companyId: scope.companyId, number: moved.number },
+      ...{ config: next.config, createdBy: scope.personId, bodyHash },
     })
     return {
       detail: await detailOf(deps, tx, await found(tx, scope, toolId), offered),
-      number: next.number,
+      number: moved.number,
     }
   }
   const { detail, number } = await deps.database
@@ -188,6 +190,96 @@ async function addVersion(
     })
   deps.log.info({ companyId: scope.companyId, toolId, version: number, by }, 'TOOL_SAVED')
   return detail
+}
+
+/** A `PRESET` tool's next version, the person's or the Construtor's; a `CODE` tool's is the Construtor's alone. */
+async function addVersion(
+  deps: ToolsDeps,
+  scope: InProject,
+  toolId: ToolId,
+  body: ToolVersionBody,
+  attemptKey: string,
+  by: Writer,
+): Promise<ToolDetail> {
+  const { basedOn, ...config } = body
+  const fit = async (tx: CommandTx, row: ToolRow) => {
+    if (row.kind !== 'PRESET') {
+      throw new Failure('TOOL_REFUSED', { named: { field: 'kind', reason: 'CODE_BY_CONSTRUTOR' } })
+    }
+    const target = await targetOf(deps.connectors, sessionScopeOf(scope), presetTargetOf(row))
+    fitting(target, config)
+  }
+  return appendVersion(deps, scope, { toolId, basedOn, attemptKey, by, next: { config, fit } })
+}
+
+/**
+ * Why the reads of a `CODE` version do not fit its connection, or nothing: the Projeto received the
+ * connection and every read is one of its reads (the connectors' door alone reads the kit, S36).
+ */
+async function codeFitting(
+  deps: ToolsDeps,
+  scope: InProject,
+  connectionId: ConnectionId,
+  reads: readonly OperationId[],
+): Promise<void> {
+  const offered = await offeredOf(deps, scope)
+  const connection = offered.find((each) => each.connectionId === connectionId)
+  if (connection === undefined) {
+    throw new Failure('TOOL_REFUSED', { named: { field: 'connectionId', reason: 'NOT_OFFERED' } })
+  }
+  const known = new Set(connection.reads.map((each) => each.operation))
+  if (reads.some((read) => !known.has(read))) {
+    throw new Failure('TOOL_REFUSED', { named: { field: 'operation', reason: 'NOT_A_READ' } })
+  }
+}
+
+/** A new `CODE` tool at version 1, keyed by its attempt: the Construtor's, after its test passed. */
+async function saveCode(
+  deps: ToolsDeps,
+  scope: InProject,
+  body: { slug: ToolSlug; connectionId: ConnectionId; version: CodeToolVersion },
+  attemptKey: string,
+): Promise<ToolDetail> {
+  const id = ToolId.parse(derivedUuid('tool', scope.companyId, scope.personId, attemptKey))
+  const { slug, connectionId, version } = body
+  const bodyHash = bodyHashOf(body)
+  await codeFitting(deps, scope, connectionId, version.reads)
+  const offered = await offeredOf(deps, scope)
+  const detail = await deps.database.command(databaseScopeOf(scope), async (tx) => {
+    await admitted(deps, tx, scope, 'manageAgents')
+    if ((await toolOf(tx, scope.companyId, id)) === undefined) {
+      const target = { kind: 'CODE', slug, connectionId } as const
+      const made = { id, scope, target, config: version, bodyHash, createdBy: scope.personId }
+      if (await inserted(tx, made)) return detailOf(deps, tx, await found(tx, scope, id), offered)
+    }
+    const row = await found(tx, scope, id)
+    if (row.bodyHash !== bodyHash) throw new Failure('IDEMPOTENCY_CONFLICT')
+    return detailOf(deps, tx, row, offered)
+  })
+  deps.log.info(
+    { companyId: scope.companyId, toolId: id, version: 1, by: 'CONSTRUTOR' },
+    'TOOL_SAVED',
+  )
+  return detail
+}
+
+/** A `CODE` tool's next version over the one the Construtor read; its connection is the tool's, never new. */
+async function addCodeVersion(
+  deps: ToolsDeps,
+  scope: InProject,
+  a: { toolId: ToolId; basedOn: number; version: CodeToolVersion },
+  attemptKey: string,
+): Promise<ToolDetail> {
+  const fit = async (_tx: CommandTx, row: ToolRow) => {
+    if (row.kind !== 'CODE') {
+      throw new Failure('TOOL_REFUSED', { named: { field: 'kind', reason: 'CODE_BY_CONSTRUTOR' } })
+    }
+    await codeFitting(deps, scope, ConnectionId.parse(row.connectionId), a.version.reads)
+  }
+  return appendVersion(deps, scope, {
+    ...{ toolId: a.toolId, basedOn: a.basedOn, attemptKey, by: 'CONSTRUTOR' },
+    next: { config: a.version, fit },
+  })
 }
 
 /**
@@ -274,10 +366,22 @@ export function createTools(deps: ToolsDeps) {
     addVersion: (
       scope: InProject,
       toolId: ToolId,
-      config: ToolVersionConfig,
+      body: ToolVersionBody,
       attemptKey: string,
       by: Writer,
-    ) => addVersion(deps, scope, toolId, config, attemptKey, by),
+    ) => addVersion(deps, scope, toolId, body, attemptKey, by),
+    fitCode: (scope: InProject, connectionId: ConnectionId, reads: readonly OperationId[]) =>
+      codeFitting(deps, scope, connectionId, reads),
+    saveCode: (
+      scope: InProject,
+      body: Parameters<typeof saveCode>[2],
+      attemptKey: string,
+    ) => saveCode(deps, scope, body, attemptKey),
+    addCodeVersion: (
+      scope: InProject,
+      body: Parameters<typeof addCodeVersion>[2],
+      attemptKey: string,
+    ) => addCodeVersion(deps, scope, body, attemptKey),
     list: (scope: InProject) => list(deps, scope),
     get: (scope: InProject, toolId: ToolId) => get(deps, scope, toolId),
     remove: (scope: InProject, toolId: ToolId) => remove(deps, scope, toolId),
