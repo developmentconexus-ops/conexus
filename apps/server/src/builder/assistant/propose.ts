@@ -9,8 +9,8 @@ import {
 } from '@conexus/hub-api'
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
-import type { AssistantMachines } from './machine.ts'
-import { withFile } from './machine-file.ts'
+import type { ConversationMachines } from '../machine/public.ts'
+import { withFile } from '../machine/public.ts'
 
 const BRIEFING_EXTENSIONS = ['.md', '.txt']
 
@@ -20,7 +20,7 @@ function refused(reason: ProposeRefused['reason']): ProposeRefused {
   return { kind: 'PROPOSE_REFUSED', reason }
 }
 
-type Machines = Pick<AssistantMachines, 'serving'>
+type Machines = Pick<ConversationMachines, 'serving'>
 
 /**
  * The two hand-offs to the Builder (step 24.3.2), one per place, so the model never chooses

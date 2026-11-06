@@ -2,7 +2,7 @@ import type { ConversationId } from '@conexus/hub-api'
 import { E2BSandbox } from '@mastra/e2b'
 import { ALL_TRAFFIC, Sandbox } from 'e2b'
 import type { Config } from '../../platform/config.ts'
-import type { AssistantMachineApi, Kit, KitFactory } from './kit.ts'
+import type { ConversationMachineApi, Kit, KitFactory } from './kit.ts'
 import { MARK } from './kit.ts'
 
 /** E2B's free plan keeps a machine up an hour at most; it pauses then, and the next start resumes it. */
@@ -55,7 +55,7 @@ export function createE2bApi(
   config: Credentials,
   mark: Record<string, string>,
   apiUrl?: string,
-): AssistantMachineApi {
+): ConversationMachineApi {
   const apiKey = config.e2bApiKey.reveal()
   const where = { apiKey, ...(apiUrl === undefined ? {} : { apiUrl }), requestTimeoutMs: CALL_MS }
   async function killWhere(

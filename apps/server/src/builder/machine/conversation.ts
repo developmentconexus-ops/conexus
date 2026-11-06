@@ -7,19 +7,15 @@ import { z } from 'zod'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
 import { MAX_BYTES } from '../git/public.ts'
-import type { AssistantMachine, Kit, Phase } from '../machine/public.ts'
-import { execIn, MARK, readCapped, SandboxFilesystem, within } from '../machine/public.ts'
-import type { ScopeOf } from './context.ts'
-import { locate } from './machine-file.ts'
+import { locate } from './conversation-file.ts'
+import type { ConversationMachine, Kit } from './kit.ts'
+import { MARK, readCapped } from './kit.ts'
+import { execIn, within } from './machines.ts'
+import type { Phase } from './port.ts'
+import { SandboxFilesystem } from './sandbox-filesystem/filesystem.ts'
 
 /** Where the conversation's files live on its machine, made at the machine's start. */
 const WORK_FOLDER = '/home/user/work'
-
-/**
- * The hosts the Assistant's machine may reach: the package registries, for pip and npm (decision
- * 0059).
- */
-export const ASSISTANT_HOSTS = ['registry.npmjs.org', 'pypi.org', 'files.pythonhosted.org']
 
 const START_MS = 120_000
 const MKDIR_FAILED = 'the conversation folder could not be made'
@@ -34,10 +30,11 @@ type FileRead =
     }
 
 /**
- * The conversations' machines: the Builder's kit without the app's seed, Git, check or pack; the
- * network reaches only `ASSISTANT_HOSTS`. One owner (code C26) for start, stop, kill and read.
+ * The conversations' machines, of the Assistant and of whoever else opens one in a conversation:
+ * the Builder's kit without the app's seed, Git, check or pack; the network reaches only the hosts
+ * its user names. One owner (code C26) for start, stop, kill and read.
  */
-export type AssistantMachines = {
+export type ConversationMachines = {
   /** Where the conversation's files are on its machine. */
   readonly folder: string
   /** The controller's workspace resolver; undefined outside a conversation, as the Builder's. */
@@ -71,7 +68,16 @@ export type MachineTuning = { workFolder: string; startMs: number }
 
 const ON_E2B: MachineTuning = { workFolder: WORK_FOLDER, startMs: START_MS }
 
-type Deps = AssistantMachine & { log: FailureLog; scopeOf: ScopeOf }
+type Deps = ConversationMachine & {
+  log: FailureLog
+  /** The hosts the machine may reach, the user's decision (the Assistant's: 0059). */
+  hosts: readonly string[]
+  /**
+   * The marks of the conversation's company and place, which its machine carries (security S36);
+   * undefined outside a conversation the user serves, which gets no machine.
+   */
+  marksOf(requestContext: RequestContext): Promise<Record<string, string> | undefined>
+}
 
 type Session = {
   conversationId: ConversationId
@@ -99,7 +105,7 @@ type Session = {
 
 const Controller = z.object({ sessionId: ConversationIdSchema })
 
-class Machines implements AssistantMachines {
+class Machines implements ConversationMachines {
   private readonly deps: Deps
   readonly folder: string
   private readonly startMs: number
@@ -117,7 +123,7 @@ class Machines implements AssistantMachines {
 
   /**
    * What the model is told of the machine in place of the provider's own words; its files and its
-   * network are in the fixed message (`assistant.md`).
+   * network are in the user's fixed message (the Assistant's `assistant.md`).
    */
   private readonly told: string
 
@@ -224,7 +230,7 @@ class Machines implements AssistantMachines {
     const kit: Kit = this.deps.kit({
       id: name,
       ...(found === undefined ? {} : { foundAs: found }),
-      allowOut: ASSISTANT_HOSTS,
+      allowOut: this.deps.hosts,
       metadata: {
         ...mark,
         ...marks,
@@ -249,19 +255,16 @@ class Machines implements AssistantMachines {
   }
 
   async workspace(requestContext: RequestContext): Promise<Workspace | undefined> {
-    const scope = await this.deps.scopeOf(requestContext)
+    const marks = await this.deps.marksOf(requestContext)
     const controller = Controller.safeParse(requestContext.get('controller'))
-    if (scope === undefined || !controller.success) return undefined
+    if (marks === undefined || !controller.success) return undefined
     const { sessionId: conversationId } = controller.data
     const held = this.sessions.get(conversationId)?.workspace
     if (held !== undefined) return held
     return this.inLane(conversationId, async () => {
       const opened = this.sessions.get(conversationId)?.workspace
       if (opened !== undefined) return opened
-      const session = this.open(conversationId, {
-        [MARK.company]: scope.companyId,
-        ...(scope.place.kind === 'PROJECT' ? { [MARK.project]: scope.place.projectId } : {}),
-      })
+      const session = this.open(conversationId, marks)
       this.sessions.set(conversationId, session)
       session.workspace = new Workspace({
         sandbox: async () => (await this.ensure(session)).sandbox,
@@ -386,9 +389,9 @@ class Machines implements AssistantMachines {
 /**
  * The conversations' machines; `tuning` is a test's, which runs them as folders of this computer.
  */
-export function createAssistantMachines(
+export function createConversationMachines(
   deps: Deps,
   tuning: MachineTuning = ON_E2B,
-): AssistantMachines {
+): ConversationMachines {
   return new Machines(deps, tuning)
 }

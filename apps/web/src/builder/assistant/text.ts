@@ -64,7 +64,6 @@ export function chosenOf(chosen: number, offered: number): string {
 export const UNCONFIRMED_CREATION = 'Não confirmamos a criação da conversa. Tente de novo.'
 export const UNCONFIRMED_CHOICE =
   'Não confirmamos a troca das ferramentas. Confira a caixa e tente de novo.'
-export const FILE_EMPTY = 'Arquivo vazio.'
 
 /** What a conversation is called until it is titled: the moment it was last written, the contract's only date. */
 export function titleOf(conversation: { title: string | null; updatedAt: string }): string {
