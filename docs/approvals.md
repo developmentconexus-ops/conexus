@@ -708,3 +708,11 @@ Em 2026-11-05, à pergunta sobre a leitura do "3. Okay" (opção A, recomendada:
 Cartão da etapa 24.4 aprovado em 2026-11-05 (commit ef02cdaa62944b138659a1c92bd0bf1c5eece525): "2. Aum"
 
 Essa emenda vem da unidade U1 (A forma) e da sua revisão, decidida pelo firstmate pela L9, sem decisão nova do fundador nem mudança no que ele vê: a seção da U1 registra o dono das máquinas de conversa e o `show_file` construídos em `builder/machine/`, a tabela "O raio da mudança" da U1 nomeia cada arquivo que ela tocou fora das suas pastas, e as seções U2 a U5 levam os nomes e as assinaturas finais (na U3, `removeWorkers` mantém o id marcado e nomeia `hub/apps/removal.ts` ao lado de `prune.ts`). A página que ele aprovou em 27359bd7 com "2. Aum" fica igual.
+
+## Etapa 24.3.5
+
+Em 2026-11-03, sobre uma resposta do Assistente que disse não poder escrever no caderno de uma ligação: "Aqui para deixar registrado, Assistente deveria sim poder". Às duas perguntas seguintes: "1. A" "2. A". Mais tarde no mesmo dia, usando o Assistente de novo: "ele ainda não escreve na anotação do conector e ele deveria". Lido pelo firstmate como: (1) dono e administrador gravam no caderno pelo Assistente, como no Builder, e o membro recebe o texto sugerido; (2) o Assistente mostra o texto e só grava depois do sim da pessoa na conversa. Vira o cartão curto da 24.3.5.
+
+Cartão da etapa 24.3.5 aprovado em 2026-11-05 (commit cf9ada5c1507bc2aa9a05466938b02aeff1ace1b): "O 24.3.5 está aprovado, pode colocar ele também nessa execução."
+
+Lido pelo firstmate como a aprovação da página, com as respostas de 2026-11-03 "1. A" e "2. A" já nela. O cartão foi conferido contra o `main` em `65b8191c` e a U1 da 24.4 antes desta linha; a página ficou como ele a aprovou.
