@@ -260,11 +260,9 @@ async function recordUnserved(args: Args) {
       abortSignal: AbortSignal.timeout(CALL_MS),
     })
   } catch (error) {
-    if (!APICallError.isInstance(error)) throw error
+    if (!APICallError.isInstance(error) || error.statusCode === undefined) throw error
     const reply = ErrorReply.safeParse(error.data)
-    console.log(
-      `UNSERVED status=${error.statusCode ?? 'none'} code=${reply.data?.error.code ?? 'none'}`,
-    )
+    console.log(`UNSERVED status=${error.statusCode} code=${reply.data?.error.code ?? 'none'}`)
     return
   }
   throw new Error('The endpoint served the model; choose one the subscription does not serve.')
