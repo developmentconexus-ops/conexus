@@ -2,9 +2,9 @@ import type { FailureCode } from '@conexus/hub-api'
 import type { AgentController, Session as ControllerSession } from '@mastra/core/agent-controller'
 import { sessionTurns, turnKeyOn } from '../controller-kit/public.ts'
 import { failureOf, modelFailure, TurnTally, turnOfOwner } from '../conversation/public.ts'
+import type { ConversationMachines } from '../machine/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import type { ScopeOf } from './context.ts'
-import type { AssistantMachines } from './machine.ts'
 
 const TURN_PROCESSOR = 'conexus-assistant-turn'
 
@@ -21,7 +21,7 @@ export const turnKey = turnKeyOn('conexus-assistant-turn-key')
 export function assistantTurns(deps: {
   queue: QueueDeps
   scopeOf: ScopeOf
-  machines: AssistantMachines
+  machines: ConversationMachines
 }) {
   return sessionTurns({
     id: TURN_PROCESSOR,

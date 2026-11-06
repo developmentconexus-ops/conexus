@@ -5,7 +5,7 @@ import type { Config } from '../../platform/config.ts'
 import { silent } from '../../platform/test-database.ts'
 import type { GitCopy, Repository, Sha } from '../git/public.ts'
 import { openRepository, restoreGuarded } from '../git/public.ts'
-import type { AssistantMachine } from '../machine/public.ts'
+import type { ConversationMachine } from '../machine/public.ts'
 import { createMachines, MARK } from '../machine/public.ts'
 import {
   findOf,
@@ -91,7 +91,7 @@ export function testAssistantMachines(folder: string) {
   // The installation's marks, as `builderPortsOf` makes them: the machines carry them and the kill looks for them.
   const mark = { [MARK.origin]: INSTALLATION, conexus_probe: 'marks' }
   const kill = killByMark(control, mark)
-  const deps: AssistantMachine = {
+  const deps: ConversationMachine = {
     kit: localKit(assistantFolder, control),
     api: {
       kill: async (conversationId) => {

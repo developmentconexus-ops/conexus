@@ -3,10 +3,10 @@ import type { Config } from '../../platform/config.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import type { GitCopy, Repository } from '../git/public.ts'
 import { createGitCopy, openRepository, restoreGuarded } from '../git/public.ts'
-import type { AssistantMachine, Machines } from '../machine/public.ts'
+import type { ConversationMachine, Machines, MachineTuning } from '../machine/public.ts'
 import { createE2bApi, createE2bKit, createMachines, MARK } from '../machine/public.ts'
 
-export type { AssistantMachine }
+export type { ConversationMachine, MachineTuning }
 export type RepositoryOf = (ids: { companyId: CompanyId; projectId: ProjectId }) => Repository
 /** The machines of the conversations, found at the provider by their names. */
 export type MachinesOf = () => Machines
@@ -16,7 +16,7 @@ export function builderPortsOf(deps: { config: Config; log: FailureLog }): {
   machinesOf: MachinesOf
   repository: RepositoryOf
   copy: GitCopy
-  assistantMachine: AssistantMachine
+  assistantMachine: ConversationMachine
 } {
   const { config, log } = deps
   const copy = createGitCopy(config, config.gitCopyUrl)
@@ -37,7 +37,7 @@ export function builderPortsOf(deps: { config: Config; log: FailureLog }): {
       },
     })
   }
-  const assistantMachine: AssistantMachine = {
+  const assistantMachine: ConversationMachine = {
     kit: createE2bKit(config),
     api: createE2bApi(config, mark),
     template: config.machineTemplate,

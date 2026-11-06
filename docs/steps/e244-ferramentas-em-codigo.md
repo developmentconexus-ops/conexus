@@ -115,12 +115,12 @@ Não há decisão aberta do fundador neste cartão; falta a aprovação desta p�
 | --- | --- | --- | --- | --- |
 | U1 A forma | A avaliação da arquitetura do código de hoje para a 24.4, e o que se move ou se apaga antes: o dono das máquinas de conversa e o `show_file` com a sua rota de arquivo saem de `builder/assistant/` para `builder/machine/`, servindo Assistente, Construtor e agentes; a linha do `show_file` na conversa sai das do Assistente para uma compartilhada; o cartão ganha os nomes finais de pastas, módulos e assinaturas das U2 a U5 | `apps/server/src/builder/{machine,assistant,agents,tools,construtor}/`, `apps/edge/src/`, `packages/{hub-api,app-contract}/src/`, `apps/web/src/builder/conversation/`, `docs/steps/e244-ferramentas-em-codigo.md` | [architecture](../architecture.md) | esta página aprovada |
 | U2 A ferramenta em código, escrita | O tipo `CODE` na biblioteca e na leitura do agente, a versão com código, leituras declaradas e teste; o Construtor com máquina escreve, confere, testa e grava; as rotas da pessoa recusam `CODE`; os avisos #712 e #707; a aba Ferramentas mostra **Em código**, a página da versão mostra o código e o teste, e a conversa do Construtor mostra a linha da ferramenta | `packages/hub-api/src/{tools,construtor,agent-failures}.ts`, `apps/server/src/builder/{tools,construtor,agents}/`, `apps/server/migrations/`, `apps/web/src/builder/{tools,agents,conversation}/`, `docs/reference/screens.md` | [data](../guides/data.md) | U1 |
-| U3 A ferramenta em código, chamada | O namespace das ferramentas e o host delas na borda; a subida de `t-<versão>` ao gravar, a nova subida quando o Worker some e a remoção ao apagar; a rota de ferramenta atrás do Access, com a capability `data`; a operação de borda que lê pelo Hub com escopo e o limite de 50; a ferramenta fina no agente | `apps/edge/{src,wrangler.jsonc}`, `packages/{hub-api,app-contract}/src/`, `apps/server/src/platform/`, `apps/server/src/hub/connectors/`, `apps/server/src/builder/{tools,agents}/`, `infra/`, `docs/how-to/apps-edge.md`, `.dependency-cruiser.cjs` | [security](../guides/security.md) | U2 |
+| U3 A ferramenta em código, chamada | O namespace das ferramentas e o host delas na borda; a subida de `t-<versão>` ao gravar, a nova subida quando o Worker some e a remoção ao apagar; a rota de ferramenta atrás do Access, com a capability `data`; a operação de borda que lê pelo Hub com escopo e o limite de 50; a ferramenta fina no agente | `apps/edge/{src,wrangler.jsonc}`, `packages/{hub-api,app-contract}/src/`, `apps/server/src/platform/`, `apps/server/src/hub/{connectors,apps}/`, `apps/server/src/{main,conversations-of}.ts`, `apps/server/src/builder/{tools,agents}/`, `infra/`, `docs/how-to/apps-edge.md`, `.dependency-cruiser.cjs` | [security](../guides/security.md) | U2 |
 | U4 O Computador do agente | O campo `machine` na configuração do agente; o agente com Computador recebe o workspace do dono de máquinas, a rede da decisão B e `show_file`, com a rota de arquivo da conversa do agente; a linha **Computador** nas Ferramentas do Conexus; o agente apagado e o Projeto ou a empresa removidos matam as máquinas das suas conversas | `packages/hub-api/src/agents.ts`, `apps/server/src/builder/{agents,construtor,machine}/`, `apps/web/src/builder/{agents,conversation}/` | [web](../guides/web.md) | U1 |
-| U5 O modo código | `execute_typescript` sobre as ferramentas do agente com Computador (decisão A), pelo `E2BCodeModeTransport`, dentro do limite de 50; a chamada **Programa** na conversa; a medida de acerto contra só ferramentas | `apps/server/src/builder/agents/`, `apps/web/src/builder/{agents,conversation}/` | [testing](../guides/testing.md) | U4, U3 |
+| U5 O modo código | `execute_typescript` sobre as ferramentas do agente com Computador (decisão A), pelo `E2BCodeModeTransport`, dentro do limite de 50; a chamada **Programa** na conversa; a medida de acerto contra só ferramentas | `apps/server/src/builder/{agents,machine}/`, `apps/web/src/builder/{agents,conversation}/` | [testing](../guides/testing.md) | U4, U3 |
 
 A U2 e a U4 correm em paralelo depois da U1. Elas dividem `builder/agents/` em arquivos separados (a
-U2 muda `frozen.ts` e `choice.ts`, a leitura das ferramentas; a U4 muda `agent.ts`, `controller.ts` e
+U2 muda `agents/frozen.ts` e `tools/choice.ts`, a leitura das ferramentas; a U4 muda `agent.ts`, `controller.ts` e
 `release.ts`, a máquina) e `web/builder/conversation/` em linhas separadas; o dono de máquinas e o
 `show_file`, que as duas usam, saem prontos da U1. A U3 espera a U2 (lê a versão com código e entra na
 gravação dela); a U5 espera a U4 (a máquina) e a U3 (a ferramenta salva também entra no programa).
@@ -141,6 +141,14 @@ o Access, a subida, a nova subida e a remoção, a rota e a capability na borda,
 Hub, a ferramenta fina). U4: ~600 (o campo, o workspace, a rota de arquivo do agente, as mortes de
 máquina, a linha na tela). U5: ~300. Total da etapa: ~3.950, no limite da regra L2: se a avaliação da
 U1 somar mais, a etapa se divide antes da U2 (U5 vira a etapa seguinte).
+
+**O que a avaliação da U1 mediu** (2026-11-05). A U1 mudou ~415 linhas de código fora dos testes e do
+cartão (239 somadas, 176 tiradas, contadas com os arquivos movidos como movidos), abaixo das ~550. O raio de hoje deixava de fora ~150 a 250 linhas que as unidades seguintes precisam e que as
+seções abaixo agora nomeiam: parar a máquina no fim do turno e no fim do Hub no Construtor e nos agentes
+(U2, U4, ~40), a ligação em `main.ts` e `conversations-of.ts`, `removeWorkers` saindo de `hub/apps/` e
+as chaves de configuração (U3, ~100 a 150), `Plan.machine` (U4, ~10) e o transporte do modo código em
+`builder/machine/` (U5, ~15). A etapa fica entre ~3.950 e ~4.150: na linha da regra L2, sem passar dela
+com folga. Fica a saída que este cartão já dá: se a U3 passar de ~1.250, a U5 vira a etapa seguinte.
 
 ## Os critérios de aceite
 
@@ -227,8 +235,8 @@ abaixo.
 
 | Peça | Unidade | Hoje no main | Referência | Como a referência faz | Veredito | Prova, se não for nativo | Palavra do fundador | Arquivo novo |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Onde mora o dono das máquinas de conversa | U1 | `apps/server/src/builder/assistant/machine.ts:251-282` (workspace, `sandboxCacheKey`) | `mastra@6e8dfcb8` `mastracode/factory/src/workspace.ts:1669-1698` | O Factory monta um `Workspace` por sessão com o `sessionSandbox`, um dono só (lido) | nativo (só muda de lugar) | — | não precisa | `apps/server/src/builder/machine/conversation.ts` (nome na U1) |
-| Mostrar o arquivo da máquina | U1, U4 | `builder/assistant/show-file.ts:59-64` (recebe a pasta e o `serving` de `AssistantMachines`); `assistant/file-route.ts`, `routes.ts:320`; `packages/hub-api/src/assistant.ts:15,93,322-327`; `web/builder/conversation/assistant-specs.ts:25` | nenhuma faz (Mastra, Factory: a interface lê o arquivo) | — | embrulhado (o do Assistente, um dono só depois da U1) | — | "H1 / W1 / Ba / Sa", 2026-10-31 | `apps/server/src/builder/machine/show-file.ts` (nome na U1) |
+| Onde mora o dono das máquinas de conversa | U1 | `apps/server/src/builder/assistant/machine.ts:251-282` (workspace, `sandboxCacheKey`) | `mastra@6e8dfcb8` `mastracode/factory/src/workspace.ts:1669-1698` | O Factory monta um `Workspace` por sessão com o `sessionSandbox`, um dono só (lido) | nativo (só muda de lugar) | — | não precisa | `apps/server/src/builder/machine/conversation.ts` |
+| Mostrar o arquivo da máquina | U1, U4 | `builder/assistant/show-file.ts:59-64` (recebe a pasta e o `serving` de `AssistantMachines`); `assistant/file-route.ts`, `routes.ts:320`; `packages/hub-api/src/assistant.ts:15,93,322-327`; `web/builder/conversation/assistant-specs.ts:25` | nenhuma faz (Mastra, Factory: a interface lê o arquivo) | — | embrulhado (o do Assistente, um dono só depois da U1) | — | "H1 / W1 / Ba / Sa", 2026-10-31 | `apps/server/src/builder/machine/{show-file,conversation-file,file-route}.ts`; `packages/hub-api/src/machine.ts`; `apps/web/src/builder/conversation/{shown-file.tsx,machine-specs.ts}` |
 | A ferramenta em código no contrato da biblioteca | U2 | `packages/hub-api/src/tools.ts:76-90`; `builder/tools/tables.ts:19-21` (`kind`, "`CODE` joins with step 24.4"; `operation` `notNull`) | `@mastra/core@1.82.0` `createTool` (`dist/docs/references/reference-tools-create-tool.md`) | Uma ferramenta é id, descrição, esquemas e `execute` (lido) | nativo | — | não precisa | `packages/hub-api/src/tools.ts` |
 | A leitura do agente com uma ferramenta `CODE` | U2 | `builder/agents/frozen.ts:30-33,45-58` (`ToolVersionConfigSchema.parse`, `OperationId.parse` em cada versão) | o mesmo `createTool` | Cada ferramenta do agente é uma variante pelo `kind` (C21) | nativo | — | não precisa | — |
 | O Construtor escreve e testa na máquina | U2 | `builder/construtor/construtor.ts:221` ("with no machine"); `builder/assistant/machine.ts` | `@mastra/e2b@0.16.1` `E2BSandbox`; `@mastra/core` `Workspace` com resolver (`docs-sandbox-overview.md:185-224`) | A máquina por conversa vem de um resolver com `sandboxCacheKey` (lido; provado no item 7) | nativo | — | não precisa | `apps/server/src/builder/construtor/code-tool.ts` |
@@ -245,9 +253,9 @@ abaixo.
 | A ferramenta fina no agente | U3 | `builder/agents/agent.ts:186-207` (`tools`), `builder/agents/tools.ts:33` (`presetTools`) | `@mastra/core@1.82.0` `createTool` (`reference-tools-create-tool.md`) | `execute` chama a borda e devolve o resultado (lido) | embrulhado: o nosso põe o escopo e a chave do turno | — | não precisa | `apps/server/src/builder/agents/code-tools.ts` |
 | O limite de 50 leituras | U3, U5 | `hub/connectors/builder-port.ts:18-60` (`CONNECTOR_CALLS_PER_TURN`); `controller-kit/turns.ts:99-114` | `@mastra/core@1.82.0` `tools-BVDic2bB.js:478-486` (o modo código passa `requestContext`) | A chave do turno vem do `requestContext` (lido; provado no item 5) | nativo | — | não precisa | — |
 | A chave Computador | U4 | `packages/hub-api/src/agents.ts:21-36` (`web`, `appData`); `builder/agents/agent.ts:172-209` (sem `workspace`); o Assistente passa `workspace` em `assistant.ts:336` | `@mastra/core@1.82.0` `workspace` por pedido (`docs-sandbox-overview.md:52-56,228-230`) | Quem recebe um `workspace` ganha as ferramentas de máquina (lido) | nativo | — | "Concordo e aprovo", 2026-11-05 | `packages/hub-api/src/agents.ts` |
-| A máquina do agente e a rede | U4 | `builder/machine/e2b.ts:15-32`; `builder/assistant/machine.ts:22` (`ASSISTANT_HOSTS`); `machine/kit.ts:24` (0051) | `@mastra/e2b@0.16.1` `E2BSandbox({ network, lifecycle })` | rede negada menos a lista; pausa no timeout (lido; provado nos itens 2 e 5) | nativo | — | decisão B | — |
+| A máquina do agente e a rede | U4 | `builder/machine/e2b.ts:15-32`; `builder/machine/kit.ts` (`PACKAGE_HOSTS`, 0059, desde a U1; antes `ASSISTANT_HOSTS` em `assistant/machine.ts:22`); `machine/kit.ts:24` (0051) | `@mastra/e2b@0.16.1` `E2BSandbox({ network, lifecycle })` | rede negada menos a lista; pausa no timeout (lido; provado nos itens 2 e 5) | nativo | — | decisão B | — |
 | Quem mata a máquina de uma conversa que sai | U4 | `builder/assistant/release.ts:28` e `routes.ts:245` (`releaseThreads` com `machines.kill`); `builder/agents/open.ts:77`, `controller.ts:235` e `construtor/construtor.ts:267` (`releaseThreads` sem matar) | `@mastra/core@1.82.0` `docs-sandbox-overview.md:224,305` ("Your application owns sandboxes returned by a resolver"); E2B, pausada "indefinitely" (documentado) | O dono destrói; o provedor não mata a pausada (provado no item 7) | nativo | — | não precisa | — |
-| O modo código | U5 | nenhum | `@mastra/core@1.82.0` `createCodeMode` (`docs-agents-code-mode.md:30,137-149`; `reference-tools-create-code-mode.md:61,67`); `@mastra/e2b@0.16.1` `E2BCodeModeTransport` | O programa roda isolado; as ferramentas, no host; o transporte é o segundo argumento (lido; provado no item 5) | nativo | — | decisão A | `apps/server/src/builder/agents/code-mode.ts` |
+| O modo código | U5 | nenhum; o `@mastra/e2b` só entra por `builder/machine/` (`.dependency-cruiser.cjs:116-123`, `e2b-only-in-the-machine`) | `@mastra/core@1.82.0` `createCodeMode` (`docs-agents-code-mode.md:30,137-149`; `reference-tools-create-code-mode.md:61,67`); `@mastra/e2b@0.16.1` `E2BCodeModeTransport` | O programa roda isolado; as ferramentas, no host; o transporte é o segundo argumento (lido; provado no item 5) | nativo | — | decisão A | `apps/server/src/builder/agents/code-mode.ts` |
 | A chamada Programa na conversa | U5 | `apps/web/src/builder/conversation/` (as chamadas de hoje, `assistant-specs.ts`, `construtor-specs.ts`) | as chamadas de hoje | Uma chamada como as outras (lido) | nativo | — | não precisa | — |
 
 Procurado: Mastra instalado (`node_modules/@mastra/{core,e2b}/dist` e `dist/docs`), a estante
@@ -259,6 +267,19 @@ desde eles: a máquina do template tem ~2 GB, não 4 GiB (medido); o Factory mon
 então o código fica na versão, não no Git de um Projeto; o modo código pela máquina custa uma ida e
 volta por chamada (medido).
 
+**Depois da U1** (a emenda é lida como delta, L9). As linhas "Hoje no main" das duas primeiras peças
+são o `main` de antes da U1; depois dela: o dono é `builder/machine/conversation.ts`
+(`createConversationMachines`, tipo `ConversationMachines`), o `locate` e o `withFile` são
+`builder/machine/conversation-file.ts`, o `show_file` é `builder/machine/show-file.ts` (`showFileTool`),
+a rota de arquivo é `builder/machine/file-route.ts` (`registerFile`), e `ShownFile`, `SHOWN_TEXT_MAX`,
+`ShowFileInput`, `MACHINE_TOOL`, `MachineFileQuery` e `MACHINE_FILE_FAILURES` são
+`packages/hub-api/src/machine.ts`; na web, o painel é `conversation/shown-file.tsx` (`FilePanel`) e a
+linha do `show_file` é `conversation/machine-specs.ts` (`MACHINE_SPECS`). Linhas que andaram no `main`
+de `866fca4d`: `hub-api/src/assistant.ts:93` é `assistantFilePath` (as peças que saíram eram `:65-91`);
+`ASSISTANT_FILE` é `:321-340`; `builder/tools/tables.ts:44-67`; `hub/connectors/builder-port.ts:18-67`;
+`builder/tools/tools.ts:233-251`; `platform/cloudflare.ts:274-293`; `choice.ts` é `builder/tools/choice.ts`,
+não `builder/agents/`. As outras linhas citadas conferem.
+
 **A medida do transplante.** Nada vem do produto antigo. O dono de máquinas e o `show_file` do
 Assistente mudam de lugar na U1 com os seus testes, sem mudar o que fazem.
 
@@ -266,11 +287,15 @@ Assistente mudam de lugar na U1 com os seus testes, sem mudar o que fazem.
 
 - A arquitetura (§8) lista uma limpeza diária de máquinas ociosas que não achei no `main` em
   `0d535e2a` (`killStale`, `machine/kit.ts:171`, mata só as de um template velho da mesma conversa); a
-  U1 confirma, e a falta vira issue com o label `next-card`. Esta etapa mata as máquinas das conversas
+  U1 confirmou (os únicos chamadores de `killStale` são as partidas de máquina, e nenhum relógio do
+  servidor toca máquinas), e a falta é a issue #778, com o label `next-card`. Esta etapa mata as máquinas das conversas
   que saem (critério 17), não as que ficam paradas.
 - A S5 cita "the Builder's lint", que não existe no `main`; a regra da U2 cobre a ferramenta, e a
   emenda do guia vai ao fechamento. A `S4` fala só do handler de app; a ferramenta gerada recebe só
   `data`; a emenda vai ao mesmo fechamento.
+- A arquitetura (§5, `docs/architecture.md:94`) só desenha o Hub subindo versões para a borda; a U3 soma
+  o Hub chamando a borda (`edge-tools.ts`). É emenda de texto da §5 no fechamento, não uma fronteira
+  nova: nenhuma peça desta etapa pede um módulo entre Hub e Builder (avaliação da U1).
 - Na mesma instância de `E2BSandbox`, `start()` depois de `stop()` não religou (medido); o Hub usa
   instância nova e não é afetado. Fica anotado em `stack.md` no fechamento.
 
@@ -302,9 +327,21 @@ Apaga: os três arquivos do Assistente acima, na mesma onda dos chamadores.
 
 - O dono das máquinas de conversa, um tipo só (C26), com `workspace(requestContext)`, `stop`,
   `stopAll`, `kill`, `serving` e `folder` como hoje (`AssistantMachines`), parametrizado pela lista de
-  rede e pela marca de quem o usa (`'assistant' | 'construtor' | 'agents'`, uma união, C21).
+  rede e pela marca de quem o usa. Construído (emenda da U1): `createConversationMachines(deps:
+  ConversationMachine & { log: FailureLog; hosts: readonly string[]; marksOf(requestContext:
+  RequestContext): Promise<Record<string, string> | undefined> }, tuning?: MachineTuning):
+  ConversationMachines`. Quem usa passa a sua lista (`PACKAGE_HOSTS`, 0059, ou `ALLOWED_HOSTS`, 0051) e
+  as suas marcas (S36); `undefined` fora de uma conversa sua, que não ganha máquina. A união
+  `'assistant' | 'construtor' | 'agents'` não foi criada: nada ramifica por ela, e cada usuário passa
+  os seus valores (laziness: um parâmetro a menos). `AssistantMachine` e `AssistantMachineApi` de
+  `machine/kit.ts` viraram `ConversationMachine` e `ConversationMachineApi`.
 - `show_file` e a rota de arquivo, parametrizados pelo dono da conversa: a rota de cada dono confere
   quem pode ler aquela conversa, e o `show_file` só lê dentro da pasta dela (`SHOW_REFUSED` fora).
+  Construído: `showFileTool(machines: Pick<ConversationMachines, 'folder' | 'serving'>)`, id
+  `MACHINE_TOOL.showFile`; `registerFile(app, { route, machines, log, served, ownConversation })`,
+  `route` com `url`, `params`, `query` e `failures` do contrato (o do Assistente, `ASSISTANT_FILE`, lê
+  `MachineFileQuery` e `MACHINE_FILE_FAILURES`), `served` a linha do log (C54). Na web,
+  `FilePanel({ urlOf: (path) => string, shown, onClose?, inSheet? })`.
 - Os nomes finais e as assinaturas descem às seções U2 a U5.
 - O arquivo tomado como modelo: `builder/assistant/machine.ts` cumpre C21 (o `found` da sessão), C23
   (`ConversationId` marcado) e C26 (um dono); sai dele sem mudar a forma.
@@ -347,7 +384,7 @@ novo entre Hub e Builder), ou que a etapa passa de ~4.000 linhas: volta ao cart�
 "A ferramenta em código no contrato", "A leitura do agente com uma ferramenta `CODE`", "O Construtor
 escreve e testa na máquina", "Conferir o estado de módulo", "Empacotar", "Guardar a versão com código",
 "A aba e a página da ferramenta". Ler `packages/hub-api/src/{tools,construtor,agent-failures}.ts`,
-`builder/tools/{tables,store,tools,check,routes}.ts`, `builder/agents/{frozen,choice}.ts`,
+`builder/tools/{tables,store,tools,check,routes,choice}.ts`, `builder/agents/frozen.ts`,
 `builder/construtor/{tools,construtor,test-construtor}.ts`, `apps/web/src/builder/tools/`,
 `apps/web/src/builder/agents/tool-form.tsx` e `web/builder/conversation/construtor-specs.ts`.
 
@@ -359,9 +396,10 @@ escreve e testa na máquina", "Conferir o estado de módulo", "Empacotar", "Guar
 | `packages/hub-api/src/construtor.ts` | Muda: `CONSTRUTOR_TOOL.toolCodeSave` | servidor, web |
 | `packages/hub-api/src/agent-failures.ts` | Muda: `TOOL_TEST_FAILED` | servidor, web |
 | `apps/server/src/builder/tools/` | Muda: a versão `CODE`, a trava de `kind`, a recusa das rotas da pessoa, `STALE_VERSION`, #712 em `store.ts:112-113` | Construtor, agentes |
-| `apps/server/src/builder/agents/` | Muda: `frozen.ts` e `choice.ts` leem a união | o agente |
+| `apps/server/src/builder/agents/` | Muda: `frozen.ts` lê a união | o agente |
+| `apps/server/src/builder/tools/choice.ts` | Muda: a escolha lê a união | o agente |
 | `apps/server/migrations/` | Cria duas migrações (abaixo) | — |
-| `apps/server/src/builder/construtor/` | Cria `code-tool.ts`, a ferramenta `tool_code_save`, e a regra de estado de módulo | o Construtor |
+| `apps/server/src/builder/construtor/` | Cria `code-tool.ts`, a ferramenta `tool_code_save`, e a regra de estado de módulo; muda `construtor.ts`: o dono de máquinas da U1, o fim do turno que o para, `close` e `ends.onPhase` | o Construtor |
 | `apps/web/src/builder/tools/` | Muda: selo, página da versão | — |
 | `apps/web/src/builder/agents/tool-form.tsx` | Muda: "Há uma versão mais nova" (#707) | — |
 | `apps/web/src/builder/conversation/construtor-specs.ts` | Muda: a linha de `tool_code_save` | — |
@@ -392,11 +430,24 @@ Apaga: nada.
   juntos (uma união, C21: sem `toolId` é ferramenta nova; com ele, `basedOn` é obrigatório), marcas
   conferidas na entrada (C23). A chave de tentativa é a da chamada (`construtor/tools.ts:78-84`).
 - `addVersion` passa a receber a versão em que a pessoa se baseou; outra vira `STALE_VERSION`.
+- A máquina do Construtor (emenda da U1): `createConversationMachines({ ...machine, log, hosts:
+  ALLOWED_HOSTS, marksOf })` de `builder/machine/public.ts`, com as marcas `MARK.company` e
+  `MARK.project` da conversa (`CONSTRUTOR_MARK`, `construtor.ts:124-126`). O controlador do Construtor
+  não recebe `workspace`: o Hub roda os comandos, não o modelo, e o modelo não ganha as ferramentas de
+  máquina. `tool_code_save` abre a máquina por `(await machines.workspace(requestContext))?.resolveSandbox({
+  requestContext })` (`@mastra/core` `workspace.d.ts:581`) e roda comandos fixos. O fim do turno a para
+  (`sessionTurns({ ended: (id) => void machines.stop(id) })`, como `assistant/turn.ts`), e a parte do
+  Construtor ganha `close: () => machines.stopAll()` e `ends.onPhase`, como `assistant/assistant.ts`.
+- `codeToolSave(deps: { machines: ConversationMachines; tools: Tools; connectors; log: FailureLog })`,
+  id `CONSTRUTOR_TOOL.toolCodeSave`; `toolWorkerOf(id: ToolVersionId)` ao lado de `appWorkerOf` em
+  `hub-api` (o nome `t-<toolVersionId>` que a U3 sobe).
 - Falhas: `TOOL_TEST_FAILED` (nova); `TOOL_REFUSED` com as razões novas `CODE_BY_CONSTRUTOR`,
   `MODULE_STATE` e `STALE_VERSION`; `TOOL_REFUSED` com `NOT_OFFERED`, como hoje.
 - Nenhuma permissão nova do banco: as tabelas são as da 24.3.1.
 - O arquivo tomado como modelo: `builder/tools/check.ts` (a recusa com `named`) cumpre C21 e C26;
-  `frozen.ts` hoje não cumpre C21 para mais de um `kind`, e é o que esta unidade conserta.
+  `frozen.ts` hoje não cumpre C21 para mais de um `kind`, e é o que esta unidade conserta: `FrozenTool =
+  PresetFrozenTool | CodeFrozenTool`, um `switch` no `kind` onde hoje `toolsBy` lê toda versão como
+  `PRESET` (`frozen.ts:45-58`).
 
 ### As skills e a leitura
 
@@ -408,7 +459,7 @@ Apaga: nada.
 1. O contrato, as duas migrações (data D6, com a linha `-- contract:`) e a união em `frozen.ts` e
    `choice.ts`.
 2. As recusas das rotas da pessoa (`CODE_BY_CONSTRUTOR`), `STALE_VERSION` e o #712.
-3. O Construtor abre a máquina pelo dono da U1 com a rede da 0051, escreve `tool.ts` e `tool.test.ts`,
+3. O Construtor abre a máquina pelo dono da U1 (`createConversationMachines`, `hosts: ALLOWED_HOSTS`), escreve `tool.ts` e `tool.test.ts`,
    roda a regra de estado de módulo, lê uma vez pelo Hub a leitura declarada e grava a resposta como
    fixture na máquina (a máquina não tem segredo; a fixture são linhas reais da empresa, ficam só na
    máquina da conversa e saem dela depois do teste), roda o typecheck e o teste, empacota com
@@ -455,11 +506,13 @@ ctx.exports.ToolData({ props: { reads } }) } }, { outbound: {}, limits: { cpuMs:
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
 | `apps/edge/wrangler.jsonc` | Muda: segundo namespace `conexus-tools`, mesma saída; as variáveis do Access (equipe e público) | — |
-| `apps/edge/src/` | Cria `tools.ts` (o host `tools.conexusapp.tech`, a conferência do JWT, a rota e `ToolData`); muda `dispatcher.ts` para mandar esse host antes do rótulo de app | o Hub |
+| `apps/edge/src/` | Cria `tools.ts` (o host `tools.conexusapp.tech`, a conferência do JWT, a rota e `ToolData`); muda `dispatcher.ts` (o `fetch`, `:59-66`, manda esse host antes do rótulo de app, e exporta `ToolData`) e `dispatch.ts` (a leitura do rótulo, `:189-195`) | o Hub |
 | `packages/app-contract/src/` | Cria `ToolProps = { data }` (versionado) | o Worker da ferramenta |
 | `packages/hub-api/src/project-connections.ts` | Cria `callToolConnector` (operação de borda) | a borda |
 | `apps/server/src/hub/connectors/` | Muda: a porta que lê para uma ferramenta, com escopo e a chave do turno; a porta de teste nova | a rota de borda |
-| `apps/server/src/platform/` | Muda `cloudflare.ts` (subir e tirar no namespace das ferramentas) e `config.ts` (o namespace, o host, o token de serviço); cria `edge-tools.ts` (o Hub chama a borda) | ferramentas, agentes |
+| `apps/server/src/platform/` | Muda `cloudflare.ts` (subir e tirar no namespace das ferramentas, e `removeWorkers`, que sai de `hub/apps/prune.ts:85-96`: `hub/apps/public.ts` não o exporta, e `builder/tools` não o alcança, C4) e `config.ts` (o namespace, o host, o token de serviço); cria `edge-tools.ts` (o Hub chama a borda) | ferramentas, agentes, apps |
+| `apps/server/src/hub/apps/prune.ts` | Muda: chama `removeWorkers` de `platform/` | — |
+| `apps/server/src/{main,conversations-of}.ts` | Muda: a porta que relê a versão pelo `toolVersionId` entra no Hub como `door` entra hoje (`main.ts:173`); a remoção da empresa tira os Workers de ferramenta por `releaseFirst` (`conversations-of.ts:149-154`) | o Hub |
 | `apps/server/src/builder/tools/` | Muda: subir ao gravar; tirar os Workers ao apagar e na remoção da empresa | o serviço de ferramentas |
 | `apps/server/src/builder/agents/` | Cria `code-tools.ts`; muda `agent.ts` `tools` | o agente |
 | `infra/` | Muda: o token de serviço do Access no servidor, pelo runner (0035, 0042); `compose.yaml` | — |
@@ -488,6 +541,16 @@ Apaga: nada.
   ligação e `reads`, confere que o turno é de um agente da mesma empresa que prende aquela versão, e
   conta a chave `turn` com as de `connector_read`.
 - Falhas ao modelo: `TOOL_FAILED`, `TOOL_UNAVAILABLE`, `NOT_DECLARED`, `CONNECTOR_CALLS_SPENT`.
+- Os nomes (emenda da U1): `createCloudflareTools(deps: { config: Config; log: FailureLog }):
+  CloudflareApps` (o mesmo tipo, `cloudflare.ts:34-41`, sobre o segundo namespace);
+  `removeWorkers(cloudflare: CloudflareApps, workers: readonly string[], budget?: AbortSignal):
+  Promise<{ removed: string[]; left: number }>` em `platform/cloudflare.ts`; `createEdgeTools(deps: {
+  config: Config; log: FailureLog }): EdgeTools`, com `call(input: { toolVersionId: ToolVersionId; turn:
+  TurnKey; input: unknown; signal: AbortSignal }): Promise<EdgeToolAnswer>` (C56: o único `fetch` do Hub
+  à borda); na borda, `export class ToolData extends WorkerEntrypoint<Env, ToolDataProps>` e
+  `serveTool(request, env, exports): Promise<Response>`; no agente, `codeTools(deps: { edge: EdgeTools;
+  tools: readonly CodeFrozenTool[]; turnOf(requestContext: RequestContext): TurnKey }): ToolsInput`, o
+  esquema guardado lido uma vez por `z.fromJSONSchema` (zod 4.6.5) para o `createTool` (C27).
 - O arquivo tomado como modelo: `apps/edge/src/dispatch.ts` (prazo, `limits`, `props`) e
   `hub/apps/prune.ts` (`removeWorkers` fora da transação) cumprem C21, C23 e C26.
 
@@ -540,12 +603,12 @@ o `show_file` da U1, e `apps/web/src/builder/agents/{chooser,tools-section,draft
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `packages/hub-api/src/agents.ts` | Muda: `AgentConfig.machine: boolean`, padrão `false` ao ler versão antiga; a rota de arquivo da conversa do agente | servidor, web |
-| `apps/server/src/builder/agents/` | Muda: `agentOf` e o controlador com `workspace` e `show_file` quando `machine`; `open.ts`, `controller.ts` e `release.ts` matam a máquina | o controlador dos agentes |
+| `packages/hub-api/src/agents.ts` | Muda: `AgentConfig.machine: boolean`, padrão `false` ao ler versão antiga; `AGENT_FILE`, a rota de arquivo da conversa do agente, com `MachineFileQuery` e `MACHINE_FILE_FAILURES` de `machine.ts` | servidor, web |
+| `apps/server/src/builder/agents/` | Muda: `Plan` ganha `machine` (`agent.ts:95-100`: o resolver do controlador só vê `planOf`); o controlador com `workspace` e `show_file` quando `machine`; o fim do turno para a máquina, a parte ganha `close` e `ends.onPhase`; `open.ts`, `controller.ts` e `release.ts` matam a máquina | o controlador dos agentes |
 | `apps/server/src/builder/construtor/` | Muda: a remoção das conversas do Construtor mata a máquina | a remoção |
-| `apps/server/src/builder/machine/` | Muda: a marca `'agents'` e a lista da decisão B | agentes |
+| `apps/server/src/builder/machine/kit.ts` | Muda: `MARK.agent = 'conexus_agent'`; a lista da decisão B é `PACKAGE_HOSTS` (0059), a mesma do Assistente, que já mora aqui desde a U1 | agentes |
 | `apps/web/src/builder/agents/` | Muda: a linha **Computador** | — |
-| `apps/web/src/builder/conversation/` | Muda: o arquivo ao lado na conversa do agente | — |
+| `apps/web/src/builder/conversation/` | Muda: o arquivo ao lado na conversa do agente, `FilePanel` com `urlOf` do `AGENT_FILE`; a linha do `show_file` já é `MACHINE_SPECS` | — |
 
 Apaga: nada.
 
@@ -554,7 +617,15 @@ Apaga: nada.
 - `AgentConfig.machine: z.boolean().default(false)` (C27 na leitura da versão).
 - A marca da máquina do agente: empresa, Projeto, agente e conversa (S36).
 - A rota de arquivo da conversa do agente, `GET`, com a mesma forma da do Assistente
-  (`packages/hub-api/src/assistant.ts:322-327`), para quem pode ler a conversa.
+  (`ASSISTANT_FILE`, `packages/hub-api/src/assistant.ts:321-340` antes da U1), para quem pode ler a
+  conversa: `registerFile(app, { route: AGENT_FILE, machines, log, served: 'AGENT_FILE_READ',
+  ownConversation })` de `builder/machine/public.ts`.
+- A máquina do agente: `createConversationMachines({ ...machine, log, hosts: PACKAGE_HOSTS, marksOf })`,
+  com `marksOf` dando `MARK.company`, `MARK.project` e `MARK.agent` e `undefined` quando o plano do
+  turno não tem `machine`. O `workspace` entra em `controllerOf` de `createAgentConversations`
+  (`controller.ts:222-231`); o resolver lê `controller` do `requestContext` antes de `resolvedOf`, que
+  lança fora de uma conversa (`controller.ts:213-218`), para que listar agentes não ligue nada.
+  `agentOf` sozinho (o teste do rascunho pelo Construtor) não recebe máquina.
 - Cada `releaseThreads` de agentes e do Construtor recebe a morte da máquina como o Assistente
   (`releaseThreads(deps, ids, (id) => machines.kill(id))`).
 - O arquivo tomado como modelo: `builder/assistant/release.ts` cumpre C21, C23 e C26.
@@ -598,6 +669,7 @@ resolver não pode ligar nada fora de uma ferramenta.
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
 | `apps/server/src/builder/agents/` | Cria `code-mode.ts`; muda `agentOf` (instruções e ferramentas) | o agente |
+| `apps/server/src/builder/machine/` | Muda: `e2b.ts` cria o `E2BCodeModeTransport` (`createE2bCodeMode(): CodeModeTransport`), e `ConversationMachine` ganha `codeMode: CodeModeTransport`; só `builder/machine/` importa `@mastra/e2b` (`.dependency-cruiser.cjs:116-123`) | agentes |
 | `apps/web/src/builder/{agents,conversation}/` | Muda: a chamada **Programa** | — |
 
 Apaga: nada.
@@ -609,11 +681,12 @@ ferramentas em código, dados do app), sem `sandbox` fixo: o modo código pega a
 agente (`ctx.workspace.resolveSandbox`, `tools-BVDic2bB.js:472-477`). Como `createCodeMode` fixa os ids
 das ferramentas ao ser criado (`tools-BVDic2bB.js:449-465`) e `agentOf` monta as ferramentas por pedido
 (`agent.ts:186-207`), o modo código e as suas `instructions` são montados dentro desse mesmo resolver;
-as ferramentas diretas continuam ao lado dele. O `transport` é uma dependência: em produção, o
-`E2BCodeModeTransport`; nos testes, o padrão do Mastra sobre o `LocalSandbox`
+as ferramentas diretas continuam ao lado dele. O `transport` é uma dependência, `ConversationMachine.codeMode`: em produção, o
+`E2BCodeModeTransport` que `builder/machine/e2b.ts` cria; nos testes, o padrão do Mastra sobre o `LocalSandbox`
 (`docs-agents-code-mode.md:137`), porque o `E2BCodeModeTransport` exige um `E2BSandbox`
 (`@mastra/e2b/dist/index.js:2961`). O `timeout` fica no padrão do Mastra (30 s) até a medida do
-critério 21 pedir outro, com a razão. O arquivo tomado como modelo: `builder/agents/tools.ts`
+critério 21 pedir outro, com a razão. O nome: `codeModeOf(tools: ToolsInput, transport: CodeModeTransport): { tool: Tool; instructions:
+string }` em `builder/agents/code-mode.ts`. O arquivo tomado como modelo: `builder/agents/tools.ts`
 (`presetTools`) cumpre C21 e C26.
 
 ### As skills e a leitura

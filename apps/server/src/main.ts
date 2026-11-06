@@ -2,7 +2,6 @@ import { appendFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { FAILURES, getStatus } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
-import type { MachineTuning } from './builder/assistant/public.ts'
 import type { GitCopy } from './builder/git/public.ts'
 import { repositoriesIn } from './builder/git/public.ts'
 import {
@@ -11,7 +10,12 @@ import {
   resealModelAccounts,
   signInFlows,
 } from './builder/model-accounts/public.ts'
-import type { AssistantMachine, MachinesOf, RepositoryOf } from './builder/runs/public.ts'
+import type {
+  ConversationMachine,
+  MachinesOf,
+  MachineTuning,
+  RepositoryOf,
+} from './builder/runs/public.ts'
 import { builderPortsOf, createRuns } from './builder/runs/public.ts'
 import { conversationsOf } from './conversations-of.ts'
 import { firstPersonArguments } from './first-person-arguments.ts'
@@ -116,7 +120,7 @@ export function subjectsOf(deps: {
   cloudflare: CloudflareApps
   mastraPool: MastraPool
   machinesOf: MachinesOf
-  assistantMachine: AssistantMachine
+  assistantMachine: ConversationMachine
   /** The tests' folder and start deadline for the Assistant's machines (`test-runs.ts`). */
   assistantTuning?: MachineTuning
   repository: RepositoryOf

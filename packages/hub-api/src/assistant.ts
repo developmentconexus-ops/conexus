@@ -4,6 +4,7 @@ import { CONNECTIONS_MAX, ConnectionId } from './connectors.ts'
 import { ConversationId, Effort, ModelChoice, ModelId } from './conversations.ts'
 import type { FailureCode } from './failures.ts'
 import { ProjectId } from './library-ids.ts'
+import { MACHINE_FILE_FAILURES, MACHINE_TOOL, MachineFileQuery, SHOWN_TEXT_MAX } from './machine.ts'
 import { ATTEMPT_KEY_HEADER, defineOperation } from './operation.ts'
 
 /** The Assistant's controller, as Mastra's routes name it (`/agent-controller/assistant/…`, step 24.1). */
@@ -12,7 +13,7 @@ export const ASSISTANT_CONTROLLER = 'assistant'
 /** The Assistant's own tools, by name; the units after U2 add theirs. */
 export const ASSISTANT_TOOL = {
   overview: 'conexus_overview',
-  showFile: 'show_file',
+  showFile: MACHINE_TOOL.showFile,
   proposeApp: 'propose_app',
   proposeAppChange: 'propose_app_change',
   proposeAutomation: 'propose_automation',
@@ -61,34 +62,6 @@ export const AssistantConversation = ConversationHead.extend({
   connections: z.array(SessionConnection),
 })
 export type AssistantConversation = z.infer<typeof AssistantConversation>
-
-/** The most a text file shown beside the chat carries in its output: a larger one is a file to download. */
-export const SHOWN_TEXT_MAX = 65_536
-
-export const ShowFileInput = z.object({ path: z.string().min(1).max(500) })
-
-/** What `show_file` answers the screen: the text to read, a file to download, or why nothing is shown. */
-export const ShownFile = z.discriminatedUnion('kind', [
-  z.object({
-    kind: z.literal('TEXT'),
-    path: z.string(),
-    name: z.string(),
-    media: z.enum(['text/markdown', 'text/plain', 'text/csv']),
-    content: z.string().max(SHOWN_TEXT_MAX),
-  }),
-  z.object({
-    kind: z.literal('FILE'),
-    path: z.string(),
-    name: z.string(),
-    media: z.string(),
-    bytes: z.number().int().nonnegative(),
-  }),
-  z.object({
-    kind: z.literal('SHOW_REFUSED'),
-    reason: z.enum(['OUTSIDE', 'NOT_FOUND', 'MACHINE_UNAVAILABLE']),
-  }),
-])
-export type ShownFile = z.infer<typeof ShownFile>
 
 /** The file of a conversation's machine, as a download: `GET`, the bytes with their type, for the owner alone. */
 export function assistantFilePath(ids: {
@@ -326,15 +299,12 @@ export const listAssistantConnections = defineOperation({
 export const ASSISTANT_FILE = {
   url: '/api/companies/:companyId/assistant/conversations/:conversationId/files',
   params: OfConversation,
-  query: z.object({ path: z.string().min(1).max(500) }),
+  query: MachineFileQuery,
   failures: [
     ...READ_FAILURES,
     'REQUEST_MALFORMED',
     'REQUEST_ORIGIN_REFUSED',
     'CONVERSATION_NOT_FOUND',
-    'FILE_NOT_FOUND',
-    'FILE_TOO_LARGE',
-    'FILE_GONE',
-    'MACHINE_UNAVAILABLE',
+    ...MACHINE_FILE_FAILURES,
   ] as const satisfies readonly FailureCode[],
 }
