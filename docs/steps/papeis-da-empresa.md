@@ -68,6 +68,19 @@ página. No fim: faz o roteiro na sua empresa, diz o que viu e aprova os textos 
   supervisionada, numa execução sem ninguém, para e espera.
 - **Sobre a C, a coerência**: o papel diz quem, a liberação diz onde, a versão do agente diz se
   pergunta. A 24.5 só acrescenta a terceira, sem mudar as outras.
+- **Sobre a sua pergunta, "um agente com computador consegue usar o DB Explorer do Sankhya se o
+  papel não deixa?"** (lido no código do `main` de 2026-11-06 e provado num protótipo antes de
+  construir). Depois desta etapa, não. Hoje, sim: qualquer membro chega à consulta livre pelo
+  Assistente e pelo Builder, e é isso que esta etapa fecha. Toda leitura de qualquer conector passa
+  por um funil só no Hub, e o papel é conferido ali, então não há uma segunda porta. A volta por fora
+  já está fechada hoje:
+  - o computador do agente não sai para a internet, só para os repositórios de pacotes;
+  - nenhuma senha de conector chega ao computador nem ao agente;
+  - a ferramenta em código roda atrás de um muro que recusa toda saída;
+  - o `web_fetch` do agente recusa o Hub e os endereços internos, e não manda senha nenhuma.
+
+  No protótipo, um papel sem a consulta livre não a viu na lista e foi recusado pela leitura comum
+  e pela ferramenta em código. Tirar a consulta do Membro valeu já na chamada seguinte.
 - **Sobre a D, o pedido no Sankhya** (lido na documentação pública, sem chamar o Sankhya). Lançar um
   pedido é `POST /v1/vendas/pedidos`, e ele nasce "a confirmar". Desfazer pela API é **cancelar**,
   com um motivo; apagar de vez não está na API, e um pedido faturado não cancela. Está no anexo "O
@@ -87,7 +100,9 @@ página. No fim: faz o roteiro na sua empresa, diz o que viu e aprova os textos 
   estudo de autorização das ferramentas (todo membro roda a consulta livre do Sankhya) é fechado por
   esta etapa, pelo passo 3 do roteiro.
 
-**As decisões suas nesta etapa.** A recomendação vem primeiro em cada uma.
+**As decisões suas nesta etapa.** Decididas em 2026-11-06: `A1`, `B1`, `C1` e `D1`. Primeiro "A um,
+B um, C um", e depois, com os exemplos, "confirma o seu 1 e D1". A aprovação desta página ainda não
+foi dada. As opções ficam abaixo como foram apresentadas, com a recomendação primeiro.
 
 - **A. O papel escolhe por conector ou por ligação?**
   - `A1` (recomendo): por conector, com o assunto e a operação. Caso real: o Claude Enterprise dá a
@@ -150,9 +165,11 @@ A U2 e a U3 correm em paralelo depois da U1: não dividem pasta.
 **Orçamento de código alterado.** U1: ~1.200 (a configuração e os recursos sem ações de conector nos fixos
 editáveis, a migração e a semente, o `Role` aberto em hub-api, admissão, `rankAllows` e
 `mayInviteAs`, `manageRoles`, as quatro rotas, as falhas). U2:
-~800 (a função, `allows` para papéis próprios, cinco portas, a conferência nova de publicar, os
-textos de recusa ao modelo). U3: ~1.200
-(duas telas, o diálogo de apagar, a troca de papel). Total da etapa: ~3.200, dentro da regra L2.
+~1.100 (a função; `allows` para papéis próprios; o `Speaker` obrigatório no pedido de leitura e o
+`mayUse` dentro de `readThrough`; a lista do modelo filtrada no Builder e no Assistente; a versão
+do agente congelando as suas leituras; a conferência nova de publicar agente e app; os textos de
+recusa ao modelo). U3: ~1.200
+(duas telas, o diálogo de apagar, a troca de papel). Total da etapa: ~3.500, dentro da regra L2.
 
 ## Os critérios de aceite
 
@@ -172,6 +189,14 @@ textos de recusa ao modelo). U3: ~1.200
 | 12 | U2 | O caderno: anotar continua exigindo `manageConnections`, e ler as notas segue o papel na operação | `hub/connectors/notes.test.ts`, "notas pelo papel" | should |
 | 13 | U3 | Em Configurações › Papéis, o dono cria "Atendente", marca Vendas e deixa só Pedidos, salva, e a linha diz "Sankhya: 1 operação de Vendas"; o Membro e o Desenvolvedor não veem o item Papéis | `apps/web/src/hub/identity/roles.test.tsx` (novo), "criar um papel" | must |
 | 14 | U3 | Apagar um papel em uso mostra quem o usa e não apaga; em Pessoas, a troca e o convite listam os papéis próprios | `apps/web/src/hub/identity/roles.test.tsx`, "apagar"; `people.test.tsx`, "papel próprio" | must |
+| 15 | U2 | O funil: `ReadRequest` de `hub/connectors/read.ts` exige o `speaker`, e `readThrough` chama `mayUse` antes do executor; um pedido sem `speaker` não compila (o `npm run typecheck` prova), e um `speaker` sem a operação dá `NOT_IN_ROLE` sem pedido ao dublê | `hub/connectors/read.test.ts` (novo), "o funil confere o papel" | must |
+| 16 | U2 | A ferramenta da biblioteca presa à consulta livre: publicar a versão por quem não tem `consultar` dá `NOT_IN_ROLE`; publicada por quem tem, ela roda para quem conversa, e uma versão que não declara `consultar` é recusada no funil | `builder/agents/publish.test.ts` (novo), "a ferramenta presa à Porta" | must |
+| 17 | U2 | A ferramenta em código: uma leitura que a versão não declarou continua `NOT_DECLARED` (`tool-door.ts:45-61`); declarar `consultar` e publicar sem ter a operação dá `NOT_IN_ROLE`; o Worker continua sem saída (o muro de `apps/edge/src/outbound.ts`, `outbound.test.ts`) | `hub/connectors/tool-door.test.ts`, "o papel na ferramenta em código"; `apps/edge/src/outbound.test.ts` | must |
+| 18 | U2 | O `connector_read` de um agente publicado (`builder/agents/agent.ts:177`) só lê as leituras que a versão congelou ao publicar, conferidas contra o papel de quem publicou (decisão `C1`); pedir outra dá `NOT_IN_ROLE` | `builder/agents/agent-read.test.ts` (novo), "o agente lê o que a versão declara" | must |
+| 19 | U2 | O app publicado: publicar uma versão cujo manifesto declara uma operação que o papel de quem publica não tem dá `NOT_IN_ROLE`; quem só usa o app continua usando (o "8. Sim"); `app-calls.ts` continua recusando o que o manifesto não declara | `hub/apps/live.test.ts` (novo), "publicar pelo papel"; `hub/connectors/app-calls.test.ts`, "a versão no funil" | must |
+| 20 | U2 | O caderno: num papel sem `consultar`, gravar uma nota pelo Builder ou pelo Assistente dá `NOT_IN_ROLE`, e o dublê não recebe a consulta de prova | `hub/connectors/notes.test.ts`, "a prova do caderno pelo papel" | must |
+| 21 | U2 | A automação roda como o dono dela (`builder/automations/run.ts:113`), com o papel dele: tirar a operação do papel do dono faz a próxima execução recusar | `builder/automations/run.test.ts`, "a automação pelo papel do dono" | should |
+| 22 | U2 | Os muros de fora continuam: a máquina nasce sem variáveis de ambiente e com `denyOut: ['0.0.0.0/0']` (`builder/machine/machine-e2b.test.ts`, já existe); o `web_fetch` recusa `127.0.0.1`, `localhost`, `[::1]`, `10.0.0.0/8` e `169.254.169.254`, e um servidor local que imita o Hub recebe zero pedidos | `builder/machine/machine-e2b.test.ts`; `builder/conversation/web-fetch.test.ts` (novo), "o web_fetch não alcança o Hub" | must |
 
 ## A matriz de estados
 
@@ -335,7 +360,9 @@ migração duas vezes. Os critérios 1, 4, 7 e 8 a 11 dependem do passo 0.
 ### As linhas da tabela
 
 "Conferir se a pessoa pode uma operação", "O modelo só vê o que a pessoa pode", "Ferramenta da
-biblioteca ou em código". Leia `hub/connectors/builder-port.ts:60-160`, `assistant-port.ts`,
+biblioteca ou em código". Leia `hub/connectors/read.ts:100-160` (o funil, `readThrough`, e os seus
+quatro chamadores: `assistant-port.ts:228`, `builder-port.ts:177`, `notes.ts:126`,
+`app-calls.ts:87`), `hub/connectors/builder-port.ts:60-160`, `assistant-port.ts`,
 `grants.ts:20-60` e `:200-240`, `builder/assistant/assistant.ts:240-270`,
 `builder/agents/tools.ts`, `code-tools.ts`.
 
@@ -344,7 +371,8 @@ biblioteca ou em código". Leia `hub/connectors/builder-port.ts:60-160`, `assist
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
 | `apps/server/src/hub/identity/may-use.ts` | Cria | as portas abaixo |
-| `apps/server/src/hub/connectors/` | Muda `builder-port.ts`, `assistant-port.ts`, `notes.ts`; `tool-door.ts` passa a receber o `Speaker` e chamar `mayUse` antes de cada leitura | `builder/` |
+| `apps/server/src/hub/connectors/` | Muda `read.ts` (o `speaker` em `ReadRequest` e o `mayUse` em `readThrough`), `builder-port.ts`, `assistant-port.ts`, `notes.ts`, `app-calls.ts`, `tool-door.ts` (o `speaker` vem da chamada aberta, `LiveToolCall`) | `builder/`, `hub/apps/` |
+| `apps/server/src/hub/apps/` | Muda a conferência de publicar um app (`live.ts:51`) | as rotas de publicar |
 | `apps/server/src/hub/identity/admission.ts` | Muda `allows` para papéis próprios | todo módulo que admite |
 | `apps/server/src/builder/{assistant,agents,tools,connectors}/` | Muda a montagem das ferramentas e a conferência de publicar | as conversas |
 
@@ -356,8 +384,13 @@ export type Speaker = { kind: 'PERSON'; personId: PersonId; role: Role } | { kin
 export function mayUse(tx: CompanyTx, speaker: Speaker, connectorId: ConnectorId, operationId: OperationId): Promise<boolean>
 ```
 
-- `VERSION` é o agente publicado (decisão `C1`): ele pode o que a versão declara, conferido ao
-  publicar.
+- `VERSION` é o agente ou o app publicado (decisão `C1`): ele pode o que a versão declara,
+  conferido ao publicar contra o papel de quem publica. Para o `connector_read` de um agente, a
+  versão congela, ao publicar, as leituras liberadas que o papel de quem publica tem.
+- `ReadRequest` (`hub/connectors/read.ts`) ganha `speaker: Speaker`, obrigatório: é o que faz um
+  caminho novo que esqueça o papel não compilar.
+- A função `hasPermission` do plugin devolve um booleano (`permission.mjs:2-11`), e não
+  `{ success }`; o protótipo do estudo errou nisso primeiro.
 - A falha ao modelo é `NOT_IN_ROLE`, com o nome do papel e sem a entrada (S40).
 
 ### A ordem do trabalho
@@ -371,23 +404,30 @@ export function mayUse(tx: CompanyTx, speaker: Speaker, connectorId: ConnectorId
 2. `allows()` (`admission.ts:130-134`) passa a usar a mesma função para um papel próprio: hoje ele
    faz `COMPANY_ROLES[role].authorize`, que não existe para "atendente", e quebraria
    `assistant.ts:251,255` e `memberships.ts:123`.
-3. As portas: `described` e a leitura do Builder, `connections` e `read` do Assistente, a porta de
-   leitura, as notas.
-4. Publicar um agente: conferência nova em `builder/agents/` (o `ungranted` de `grants.ts:215` só
-   serve aos apps e aos pedidos, e não recebe a pessoa): quem publica pode cada operação que a
-   versão declara.
+3. O funil: `speaker` em `ReadRequest` e `mayUse` em `readThrough`, antes do executor. Cada um dos
+   quatro chamadores passa o seu: a pessoa (Assistente, Builder, caderno, Construtor, automação como
+   o dono) ou a versão (ferramenta da biblioteca, ferramenta em código pela chamada aberta,
+   `connector_read` do agente, app).
+4. As listas do modelo: `described` no Builder e `connections` no Assistente mostram só o que o
+   papel deixa, para o modelo nem tentar.
+5. Publicar um agente: conferência nova em `builder/agents/`, que congela as leituras do
+   `connector_read` na versão. Publicar um app: `ungranted` (`grants.ts:215`, chamado em
+   `hub/apps/live.ts:51`) passa a receber quem publica. Nos dois, quem publica pode cada operação que
+   a versão declara.
 
 ### Como se prova
 
-Os critérios 8 a 12, pelas portas públicas e pelo dublê do Sankhya, contando os pedidos que ele
+Os critérios 8 a 12 e 15 a 22, pelas portas públicas e pelo dublê do Sankhya, contando os pedidos que ele
 recebe.
 
 ### Parar se
 
 - A função `hasPermission` não puder ser chamada fora de uma rota do Better Auth na 1.7.8: pare e
   reporte, com o erro.
-- Uma porta não tiver a pessoa à mão na hora de rodar (uma automação): pare e reporte; a decisão D
-  diz que uma automação usa a versão.
+- Um chamador do funil não tiver nem a pessoa nem a versão à mão: pare e reporte. A automação roda
+  como o dono (`builder/automations/run.ts:113`), e é ele quem fala.
+- Aparecer um quinto chamador de `readThrough`, ou um caminho até `Executor.call` que não passe por
+  ele (hoje só o Testar da ligação, `check.ts:43`, que exige `manageConnections`): pare e reporte.
 
 ## U3 A tela
 
