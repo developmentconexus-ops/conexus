@@ -31,7 +31,7 @@ If 1 fails, that kind stays off and returns to the founder.
 
 2026-11-05, the founder's use of the step on v0.24.32: "Cara, deu tudo certo, tá? Testei,
 funcionou." and "pode finalizar aos 5 ... Não precisa ter esse teste, não." Criterion 2 and the
-rest of 1 stay unmeasured (ISSUE-02); a 404 keeps [0054]'s rule.
+rest of 1 stay unmeasured (https://github.com/developmentconexus-ops/conexus/issues/789); a 404 keeps [0054]'s rule.
 
 ## Consequences
 
