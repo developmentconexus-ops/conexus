@@ -4,6 +4,7 @@ import type { MastraMessagePart } from '@mastra/core/agent-controller'
 import { checks } from '@mastra/evals/checks'
 import { PADARIA_SOL_MATRIZ, salesSankhya, soldBy } from '../../hub/connectors/test-sales.ts'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
+import { BRUNO, memberOn } from '../../hub/identity/test-hub.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
 import { endOf, messagesOf, title } from '../conversation/test-conversation.ts'
 import { assisting, created, READ, talking } from './test-assistant.ts'
@@ -163,4 +164,38 @@ test('o modelo de verdade passa ao Builder: cada caso do conjunto, numa conversa
     }
   }
   assert.deepEqual(wrong, [], wrong.join('\n\n'))
+})
+
+test('o modelo de verdade: o caderno — a dona pede e o turno grava e diz o que anotou, a conversa sem ensino não grava, o membro pede e recebe o texto sem a ferramenta (step 24.3.5, critério 8)', {
+  timeout: 1_800_000,
+}, async (t) => {
+  if (REAL_MODEL === undefined) {
+    t.skip(
+      'opt-in: set CONEXUS_EVAL_REAL_MODEL to a folder; firstmate opens the link the test writes there and writes back the sign-in code',
+    )
+    return
+  }
+  const on = await subscribed(t, REAL_MODEL)
+  const SAVE = 'connector_note_save'
+  const body = { connections: [on.matriz] }
+  async function saved(url: string, who: Person = on.ana) {
+    return (await scored(await answerParts(on.hub, who, url), SAVE))[0]
+  }
+  const owner = await created(on.hub, on.ana, on.assistant, body)
+  const asked = 'Na Matriz, o CODEMP da tabela TSIEMP é o código da empresa. Anota isso no caderno.'
+  assert.equal(endOf(await (await talking(t, on.hub, on.ana, owner)).say(asked)), 'complete')
+  const parts = await answerParts(on.hub, on.ana, owner)
+  assert.equal(await saved(owner), 1, textOf(parts))
+  assert.match(textOf(parts), /CODEMP/)
+  const idle = await created(on.hub, on.ana, on.assistant, body)
+  const chat = 'O que é o CODEMP no Sankhya?'
+  assert.equal(endOf(await (await talking(t, on.hub, on.ana, idle)).say(chat)), 'complete')
+  assert.equal(await saved(idle), 0, textOf(await answerParts(on.hub, on.ana, idle)))
+  const companyId = on.company.split('/').at(-1) ?? ''
+  const bruno = await memberOn(on.hub, companyId, BRUNO, 'member')
+  const his = await created(on.hub, bruno, on.assistant, body)
+  assert.equal(endOf(await (await talking(t, on.hub, bruno, his)).say(asked)), 'complete')
+  const theirs = await answerParts(on.hub, bruno, his)
+  assert.equal(await saved(his, bruno), 0, textOf(theirs))
+  assert.match(textOf(theirs), /CODEMP/)
 })
