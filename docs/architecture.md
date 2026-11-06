@@ -3,7 +3,7 @@
 What Conexus is, its parts, where each runs and who owns what. A choice that is expensive to undo
 has a record in [`decisions/`](decisions/), cited here as [0020]; the record holds the reason, the
 founder's words and what reopens it. The rules that follow from this design live in the
-[guides](guides/). The sections follow arc42, with C4 context and container levels.
+[guides](guides/).
 
 ## 1. Introduction and goals
 
@@ -75,6 +75,7 @@ flowchart TB
     D[Dispatcher]
     O[Outbound wall]
     A[Generated app, one Worker per version]
+    C[Code tool]
   end
   subgraph NEON[Neon]
     HB[(Hub database, with the Builder's space)]
@@ -87,24 +88,26 @@ flowchart TB
   A -.->|db.query| D
   D --> CB
   A -.-> O
+  D --> C
   S --> HB
   S --> MB
   S --> G
   S --> E
   S -->|uploads app versions| A
+  S -->|through Access| D
 ```
 
 | Container | Responsibility | Owns |
 | --- | --- | --- |
 | Server program | The Hub: screens' API, sign-in, companies, invitations, Projects, connectors, publishing. The Builder: the agent, the Assistant, its automations, conversations, runs, the machines, the Git of each app, model accounts [0006] | Nothing on disk but the Git |
 | Web | The Hub's screens, served by the server program | Nothing |
-| Dispatcher | Checks the session, hands the app a `db` capability bound to that app's login, calls the app [0019] [0043] | The key app passwords derive from |
+| Dispatcher | Checks the session, hands the app a `db` capability bound to that app's login, calls the app or a code tool [0019] [0043] | The key app passwords derive from |
 | Outbound wall | Refuses every network call from an app | Nothing |
-| Generated app | One Worker per app version, with its screen files inside, no binding, no secret [0018] [0055] | Nothing |
+| Generated app, code tool | One Worker per app version, with its screen files, or tool version, reading only what it declares; no binding or secret [0018] [0055] | Nothing |
 | Hub database | Companies, people, sessions, Projects; the Builder's space holds runs and model accounts [0011] | Company column on every table [0012] |
 | Mastra database | Mastra's own tables: threads, memory, traces, under a login of its own [0010] | Nothing of the Hub |
 | Company project | One schema and two logins per app and environment: one runs the app, one applies its migrations [0021] | The company's app data |
-| E2B machine | Compiles and tests the app; runs the Assistant's code on what it read [0028] [0059] | Nothing after the run or the conversation |
+| E2B machine | Compiles and tests the app; runs Assistant and agent code [0028] [0059] | Nothing after the run or the conversation |
 
 **The Hub and the Builder.** One program, two modules, written boundaries [0006]. The Builder
 calls the Hub through named ports: admit, read a connector, store an app version,
@@ -142,7 +145,7 @@ and tests, and a `public.ts` with what others may use. The import law is
 | A rented server in São Paulo | The server program, from an image built by GitHub Actions and run with Compose, behind the Cloudflare Tunnel. The server opens no port | [0007] |
 | Cloudflare | Tunnel, dispatcher, outbound wall, and a Workers for Platforms namespace for the apps, on a second domain, one host per app | [0018] [0023] [0024] |
 | Neon | Two organizations of Conexus's own: the Hub's, one project with two databases; the companies', one project each, under a key that cannot reach the Hub's | [0008] [0009] [0021] [0040] |
-| E2B | Build and Assistant machines behind a list of domains, under the founder's free-account key | [0028] [0051] [0059] |
+| E2B | Build, Assistant and agent machines behind a domain list, under the founder's free-account key | [0028] [0051] [0059] |
 
 **Publish.** A GitHub Release of a commit on `main` builds the image and puts it live, with no
 command on the server; a merge alone publishes nothing [0035] [0044]. Migrations run before the
@@ -155,8 +158,7 @@ P6 B deleted old test companies; none before v0.5.0 runs [0039]. Step 14.2 drops
 **Restore.** Neon restores a branch to a moment: 6 hours on the free plan, 7 days on the
 paid. Both Hub databases return to one instant. It then sets every login password
 again, invalidates sessions; the Hub's start recreates app logins, and missing
-Workers from the built files it keeps [0043]. A company's project restores alone. Steps 2, 7, 9 and 13
-rehearse it by part, step 22 everything together.
+Workers from the built files it keeps [0043]. A company's project restores alone.
 
 **The Hub reaches its database** by the direct address, because a long-lived server keeps connections. Basis: only tested so.
 
@@ -208,9 +210,11 @@ a scale that does not exist. Every job but the automations' lets the database sl
 | --- | --- |
 | Run heartbeat and takeover | One pass at start, then only while a run is open |
 | Expired sessions, handoffs, invitations | Expiry checked on read; cleanup once a day |
-| Idle conversations, idle machines, traces | Touch nothing when there is nothing; daily otherwise |
+| Idle conversations, traces | Touch nothing when there is nothing; daily otherwise |
 | The lease | Renewed by activity, not by clock |
 | Automations' schedule | Awake: Mastra reads its table every 10 s, from the first schedule until a restart without one (step 24.2) |
+
+No job touches a machine; it ends with its conversation.
 
 **Shutdown.** The program waits for live Builder turns before exiting; an update waits
 too.
@@ -233,7 +237,7 @@ too.
 | A page the Builder reads hides instructions | It strays, or leaks conversation text in an address | Accepted, founder 2026-10-19 [0050] |
 | A company's Neon project outlives its company | Company data nobody sees | Phased deletion keeps the company until its project leaves [0040] |
 
-**Debt.** Fixes left, one line each, with the step that removes them.
+**Debt.** Fixes left, with the steps that remove them.
 
 - Until the first scheduled job, expired `auth.session`, `auth.verification` and app-handoff rows
   leave only when presented.

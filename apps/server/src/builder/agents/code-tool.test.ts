@@ -7,7 +7,7 @@ import { ToolCall, toolWorkerOf } from '@conexus/hub-api'
 import type { Hub } from '../../hub/identity/test-hub.ts'
 import { toolsAt } from '../../platform/test-cloudflare.ts'
 import { talking } from '../assistant/test-assistant.ts'
-import { endOf } from '../conversation/test-conversation.ts'
+import { endOf, stopped } from '../conversation/test-conversation.ts'
 import { tool } from '../conversation/test-questions.ts'
 import {
   agentsOn,
@@ -95,13 +95,9 @@ async function agentWithCode(t: TestContext, model: Parameters<typeof agentsOn>[
     instructions: 'Responda sobre as vendas.',
     tools: [saved.latest.id, orders.latest.id],
   })
-  const conversation = await talking(
-    t,
-    on.hub,
-    on.ana,
-    await talkedTo(on.hub, on.ana, on.agents, agent.id),
-  )
-  return { ...on, edge, saved, conversation, worker: toolWorkerOf(saved.latest.id) }
+  const url = await talkedTo(on.hub, on.ana, on.agents, agent.id)
+  const conversation = await talking(t, on.hub, on.ana, url)
+  return { ...on, edge, saved, conversation, url, worker: toolWorkerOf(saved.latest.id) }
 }
 
 /** The tool results the model received in its last step. */
@@ -157,4 +153,17 @@ test('o Worker que sumiu sobe de novo do módulo gravado e responde; com a Cloud
     on.hub.lines.some((line) => line.message === 'TOOL_CALL_UNAVAILABLE'),
     'the unavailable call is in the log',
   )
+})
+
+test('o turno parado enquanto o Worker sobe de novo solta a subida: o sinal do turno chega até a Cloudflare', async (t) => {
+  const on = await agentWithCode(t, [[tool(SALES, { mes: '2026-09' })], []])
+  await on.hub.tools.cloudflare.remove(on.worker)
+  const held = on.hub.tools.holdUpload()
+  const turn = on.conversation.say('E setembro?')
+  await held.arrived
+  assert.equal((await stopped(on.hub, on.ana, on.url)).statusCode, 200)
+  const patience = new Promise<string>((resolve) => setTimeout(resolve, 3000, 'STILL_WAITING'))
+  assert.equal(await Promise.race([held.ended, patience]), 'ABORTED', 'the upload kept waiting')
+  assert.equal(endOf(await turn), 'aborted')
+  assert.deepEqual(on.hub.tools.workers(), [], 'the stopped upload left nothing in the namespace')
 })

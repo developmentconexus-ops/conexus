@@ -2514,8 +2514,8 @@
     "replace": "ALTER TABLE \"builder\".\"agent_tool\" ADD CONSTRAINT \"agent_tool_tool_version_fkey\" FOREIGN KEY (\"tool_id\",\"tool_version_id\") REFERENCES \"builder\".\"tool_version\"(\"tool_id\",\"id\") ON DELETE CASCADE;--> statement-breakpoint\nALTER TABLE \"builder\".\"agent_tool\" ADD CONSTRAINT \"agent_tool_company_tool_version_fkey\" FOREIGN KEY (\"company_id\",\"tool_version_id\") REFERENCES \"builder\".\"tool_version\"(\"company_id\",\"id\") ON DELETE CASCADE;",
     "test": {
       "cwd": "apps/server",
-      "file": "src/builder/tools/routes.test.ts",
-      "name": "apagar"
+      "file": "src/builder/tools/code-removal.test.ts",
+      "name": "um rascunho que a escolhe enquanto os Workers saem"
     }
   },
   {

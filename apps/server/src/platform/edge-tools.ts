@@ -38,8 +38,9 @@ function answerOf(text: string): ToolCallAnswer | { why: 'not json' | 'shape' } 
 /**
  * The Hub's one call to the edge (code C56, step 24.4): a saved tool at the tools' host, past
  * Cloudflare Access with the service token, which leaves only in these requests (S36), under the
- * call's deadline of decision 0047 and a margin for the way there. Access's refusal, a cut or late reply and an answer out of
- * the contract are `UNAVAILABLE`, logged by status and reason, never the input or the answer.
+ * call's deadline of decision 0047 and a margin for the way there. Access's refusal, a cut or late
+ * reply and an answer out of the contract are `UNAVAILABLE`, logged by status and reason, never
+ * the input or the answer.
  */
 export function createEdgeTools(deps: {
   config: Pick<Config, 'toolsOrigin' | 'toolsAccess'>
