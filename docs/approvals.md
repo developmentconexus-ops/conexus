@@ -744,3 +744,11 @@ Em 2026-11-06, à pergunta de como provar a conversa do dono, depois que o dubl�
 Cartão da etapa 24.3.5 aprovado em 2026-11-06 (commit 5527ae56934fb11b2c892c9768e862ea67a856f1): "Pode ser no hub sankhya real"
 
 Lido pelo firstmate como a aprovação da emenda do critério 8, dada à pergunta de como provar a conversa do dono depois que o dublê SQLite recusou o SQL do modelo; nada mais do cartão muda.
+
+## Papéis da empresa
+
+Em 2026-11-06, às decisões do cartão de Papéis da empresa: "A um, B um, C um", e depois "confirma o seu 1 e D1". Lido pelo firstmate como o `A1`, o `B1`, o `C1` e o `D1` da página. Na mesma resposta, a pergunta que virou os critérios 15 a 22: um agente com computador "conseguiria chamar o DB Explorer?" se o papel não deixa.
+
+Cartão curto da etapa Papéis da empresa (`docs/steps/papeis-da-empresa.md`) aprovado em 2026-11-06 (commit 60a303f03539eede1f3d855bc5e4add398d85f79), na página do fundador: "Aprovo tudo"
+
+Lido pelo firstmate como a aprovação da página do cartão, com as três unidades U1 a U3 e as decisões acima. A única mudança depois da leitura dele é a linha da conferência no Hub no ar de 2026-11-06, na resposta à pergunta acima: a rede do Computador fechada e o `connector_read` com a consulta livre ainda na lista do agente de teste, que esta etapa fecha com o `mayUse` em `readThrough`. O cartão entra em `docs/steps/` pela L5 quando o cartão da 24.3.5 sair no seu fechamento; até lá a verificação `second-card` fica vermelha nele de propósito.
