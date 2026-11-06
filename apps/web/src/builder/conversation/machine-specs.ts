@@ -4,7 +4,16 @@ import { z } from 'zod'
 import type { ToolSpec } from './tool-spec.ts'
 import { headOf } from './tool-spec.ts'
 
-/** What Mastra's `execute_typescript` answers when the program threw or ran out of time (`tools-BVDic2bB.js:404`). */
+/**
+ * What Mastra's `execute_typescript` answers (`CodeModeToolResult`, in its code mode reference):
+ * the program's value and its logs, or the error when it threw or ran out of time.
+ */
+export const ProgramSuccess = z.object({
+  success: z.literal(true),
+  result: z.unknown(),
+  logs: z.array(z.unknown()).optional(),
+})
+
 const ProgramFailure = z.object({
   success: z.literal(false),
   error: z.object({ message: z.string(), name: z.string().optional() }),
@@ -41,7 +50,7 @@ export const MACHINE_SPECS: Record<(typeof MACHINE_TOOL)[keyof typeof MACHINE_TO
     done: 'Rodou um programa',
     failed: 'O programa falhou',
     verb: 'rodou programa',
-    body: 'generic',
+    body: 'program',
     groups: false,
     refusal: (result) => (ProgramFailure.safeParse(result).success ? 'SAID' : undefined),
     present: (tool, status) => {

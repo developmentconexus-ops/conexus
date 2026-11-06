@@ -202,6 +202,14 @@ const WITH_STATE: Record<string, string> = {
   'um valor lido por um esquema, assíncrono':
     'const chamadas = z.any().safeParseAsync(new Map())\n\n',
   'um valor decodificado por um esquema': 'const chamadas = z.any().decode(new Map())\n\n',
+  'o parse chamado por .call': 'const chamadas = z.any().parse.call(null, new Map())\n\n',
+  'o parse chamado por .apply': 'const chamadas = z.any().parse.apply(null, [new Map()])\n\n',
+  'o parse guardado por .bind': 'const ler = z.any().parse.bind(z.any())\n\n',
+  'o parse pelo nome entre colchetes': "const chamadas = z.any()['parse'](new Map())\n\n",
+  'um esquema somado a um Map': 'const chamadas = z.any() && new Map<string, number>()\n\n',
+  'um esquema escolhido por condição':
+    'const chamadas = z.any() ? new Map<string, number>() : null\n\n',
+  'um registro do Zod': 'const registro = z.registry<{ n: number }>()\n\n',
 }
 
 test('estado de módulo: cada forma de guardar estado fora da função é recusada antes do teste e nada é gravado', async (t) => {
