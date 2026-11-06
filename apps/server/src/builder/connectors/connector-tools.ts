@@ -42,7 +42,7 @@ export type ConnectorAccess = {
   wording: { whose: string; limit: string }
 }
 
-/** The notebook's write, only the Builder's: the Assistant reads the notebook and never writes it. */
+/** The notebook's write: the Builder's, and the Assistant's for who manages the connections. */
 type NoteSave = (
   call: { connectionId: ConnectionId; concept: string; mapping: string; provingQuery: string },
   requestContext: RequestContext,
@@ -266,7 +266,7 @@ function noteSaveTool(connections: readonly Connection[], save: NoteSave) {
 
 /**
  * The connector tools for a scope that offers at least one connection; {} otherwise. The notebook's
- * write comes only with `noteSave`, the Builder's.
+ * write comes only with `noteSave`.
  */
 export function connectorTools(
   access: ConnectorAccess,

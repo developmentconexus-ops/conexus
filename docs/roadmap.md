@@ -48,6 +48,7 @@ Sua empresa usa o Conexus desde 2026-11-02, recebendo cada etapa.
 - **24.3.4 Papéis e pedidos.** O membro pede para publicar.
 - **Assinatura ChatGPT.** Liga a assinatura do ChatGPT em Contas de modelo e conversa pelo GPT (a parte OpenAI da 21).
 - **24.4 Ferramentas em código.** Código que calcula.
+- **24.3.5 O Assistente anota no caderno.** Ensina ao Assistente o que um código quer dizer, diz sim, e vê a anotação na ligação.
 - **Papéis da empresa.** A empresa cria papéis e escolhe o que cada um, o Membro também, usa de cada conector.
 - **24.5 Os agentes escrevem, com aprovação.** Um agente ou app pede "Aprovar?" antes de escrever (resposta B, 2026-10-18; leva a 20.1).
 - **24.6 Workflows e automações.** Monta conversando o fluxo do orçamento do Sankhya e o vê como trem de balões.

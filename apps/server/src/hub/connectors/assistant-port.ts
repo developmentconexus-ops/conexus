@@ -8,7 +8,8 @@ import type { GrantedConnection, ShapedRead, Spent } from './builder-port.ts'
 import { createSpending, described, offeredIn } from './builder-port.ts'
 import { shaped } from './cut.ts'
 import { readOf } from './grants.ts'
-import { Notes } from './notes.ts'
+import type { NoteSaved } from './notes.ts'
+import { Notes, provedAndSaved } from './notes.ts'
 import { readThrough } from './read.ts'
 import type { Deps } from './rows.ts'
 import { scopeOf } from './rows.ts'
@@ -59,8 +60,19 @@ export type AssistantConnectors = {
       signal?: AbortSignal
     },
   ): Promise<AssistantRead>
-  /** The connection's caderno, read only, under the same check as read. */
+  /** The connection's caderno, under the same check as read. */
   notes(scope: SessionScope, connectionId: ConnectionId): Promise<Notes | null>
+  /** One concept in the caderno, proved once by the read door; only for `manageConnections`. */
+  saveNote(
+    scope: SessionScope,
+    call: {
+      connectionId: ConnectionId
+      turn: TurnKey
+      concept: string
+      mapping: string
+      provingQuery: string
+    },
+  ): Promise<NoteSaved | Spent>
   /**
    * The input of one read of a connection the place offers, whose top-level fields an agent's tool
    * fixes or leaves to the model (step 24.3, U1); none for a connection not offered, an operation
@@ -131,14 +143,15 @@ async function readable<T>(
   })
 }
 
-/** A refusal of the Assistant's read or notebook, its reason in the log (S10: the model hears NOT_GRANTED). */
+/** A refusal of the Assistant's read, notebook or note, its reason in the log (S10: the model hears NOT_GRANTED). */
 function refused(
   deps: Deps,
   scope: SessionScope,
   about: { connectionId: ConnectionId; operation?: string; reason: Refusal },
+  event: 'ASSISTANT_READ_REFUSED' | 'CONNECTION_NOTE_REFUSED' = 'ASSISTANT_READ_REFUSED',
 ) {
   const { companyId, personId } = scope
-  deps.log.info({ companyId, personId, ...about }, 'ASSISTANT_READ_REFUSED')
+  deps.log.info({ companyId, personId, ...about }, event)
   return { kind: 'NOT_GRANTED' } as const
 }
 
@@ -146,7 +159,45 @@ function viewerOf(scope: SessionScope) {
   return { person: { id: scope.personId }, companyId: scope.companyId }
 }
 
-/** The company's door for the Assistant (step 24.1, U1): the chosen connections its place offers, read only, `by: 'assistant'`. */
+/** The chosen connection its place offers, opened; none once the refusal is logged as `event`. */
+async function chosenOpened(
+  deps: Deps,
+  scope: SessionScope,
+  connectionId: ConnectionId,
+  event?: Parameters<typeof refused>[3],
+) {
+  const found = await readable(deps, scope, connectionId, (tx) =>
+    openedIn(deps, tx, { companyId: scope.companyId, connectionId }),
+  )
+  if (found.kind === 'OK') return found.value
+  refused(deps, scope, { connectionId, reason: found.kind }, event)
+  return undefined
+}
+
+/**
+ * The Assistant's note: the chosen connection its place offers, one of the turn's calls, then the
+ * proof and the write, which checks `manageConnections` (step 24.3.5).
+ */
+async function noted(
+  deps: Deps,
+  spend: ReturnType<typeof createSpending>,
+  scope: SessionScope,
+  call: Parameters<AssistantConnectors['saveNote']>[1],
+): Promise<NoteSaved | Spent> {
+  const opened = await chosenOpened(deps, scope, call.connectionId, 'CONNECTION_NOTE_REFUSED')
+  if (opened === undefined) return { kind: 'NOT_GRANTED' }
+  if (!spend(call.turn)) return { kind: 'CALLS_SPENT' }
+  const read = {
+    by: 'assistant',
+    ids: idsOf(scope),
+    viewer: viewerOf(scope),
+    opened,
+    deadlineMs: CALL_DEADLINE_MS,
+  } as const
+  return provedAndSaved(deps, { ...call, read })
+}
+
+/** The company's door for the Assistant (step 24.1, U1): the chosen connections its place offers, `by: 'assistant'`; the caderno's write only for `manageConnections` (step 24.3.5). */
 export function createAssistantConnectors(deps: Deps): AssistantConnectors {
   const spend = createSpending()
   return {
@@ -166,11 +217,8 @@ export function createAssistantConnectors(deps: Deps): AssistantConnectors {
 
     async read(scope, call) {
       const { connectionId } = call
-      const found = await readable(deps, scope, connectionId, (tx) =>
-        openedIn(deps, tx, { companyId: scope.companyId, connectionId }),
-      )
-      if (found.kind !== 'OK') return refused(deps, scope, { connectionId, reason: found.kind })
-      const open = found.value
+      const open = await chosenOpened(deps, scope, connectionId)
+      if (open === undefined) return { kind: 'NOT_GRANTED' }
       const operation = readOf(open.connector, call.operation)
       if (operation === undefined) {
         const about = { connectionId, operation: call.operation, reason: 'NOT_A_READ' } as const
@@ -207,5 +255,7 @@ export function createAssistantConnectors(deps: Deps): AssistantConnectors {
       refused(deps, scope, { connectionId, reason: found.kind })
       return null
     },
+
+    saveNote: (scope, call) => noted(deps, spend, scope, call),
   }
 }

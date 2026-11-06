@@ -17,8 +17,6 @@ import type { IdentityPorts } from '../../hub/identity/public.ts'
 import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
-import type { ConnectorAccess } from '../connectors/public.ts'
-import { connectorTools } from '../connectors/public.ts'
 import type { ReleaseScope } from '../controller-kit/public.ts'
 import { admitAsker, agentDefaults, controllerOf, oncePerRun } from '../controller-kit/public.ts'
 import {
@@ -32,6 +30,7 @@ import type { ConversationMachine, ConversationMachines, MachineTuning } from '.
 import { createConversationMachines, PACKAGE_HOSTS, showFileTool } from '../machine/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import { chosenConnections } from './chosen.ts'
+import { assistantConnectorTools, readsFiles } from './connector-access.ts'
 import type { Owner, ScopeOf } from './context.ts'
 import { machineMarks, runConversation, sessionScopes } from './context.ts'
 import type { HandOffDoors } from './handoff.ts'
@@ -47,7 +46,7 @@ import { proposeTools } from './propose.ts'
 import { proposeAutomationTool } from './propose-automation.ts'
 import { releaseConversations } from './release.ts'
 import { registerAssistantRoutes } from './routes.ts'
-import { assistantTurns, turnEnd, turnKey } from './turn.ts'
+import { assistantTurns, turnEnd } from './turn.ts'
 
 type AssistantConnectors = Connectors['assistant']
 type AssistantConnection = Awaited<ReturnType<AssistantConnectors['connections']>>[number]
@@ -55,7 +54,7 @@ type AssistantConnection = Awaited<ReturnType<AssistantConnectors['connections']
 const MODE = 'conversa'
 /**
  * The closed set the mode offers the model (criterion 12): the layer that enforces it, as the
- * controller filters the agent's tools by it; `noteSave: false` below only leaves the save unbuilt.
+ * controller filters the agent's tools by it; the save is built only for who may manage connections.
  * Of the controller's own tools it holds `ask_user` (a card, only what it cannot decide) and the
  * task list; the plan card stays the Builder's, as the Assistant approves no plan, and it calls no
  * subagent.
@@ -64,6 +63,7 @@ const AVAILABLE_TOOLS: readonly string[] = [
   ...Object.values(WORKSPACE_TOOL),
   BUILDER_TOOL.connectorRead,
   BUILDER_TOOL.connectorNotes,
+  BUILDER_TOOL.connectorNoteSave,
   ...Object.values(ASSISTANT_TOOL),
   BUILDER_TOOL.webFetch,
   BUILDER_TOOL.webSearch,
@@ -152,42 +152,6 @@ function projectsOf(deps: Deps, scope: SessionScope): Promise<Omit<Overview, 'co
     })
     return { projects, moreProjects: live.more }
   })
-}
-
-/**
- * The connector tools' access for a conversation (U1's door): the chosen connections its place
- * offers, each read counted by the turn's key; the model gets the cut, never the whole answer.
- */
-function accessOf(
-  deps: Deps,
-  scope: SessionScope,
-  chosen: readonly AssistantConnection[],
-  savedAt: (requestContext: RequestContext) => string,
-): ConnectorAccess {
-  return {
-    connections: chosen,
-    savedAt,
-    log: deps.log,
-    async read(call, requestContext) {
-      return deps.connectors.read(scope, { ...call, turn: turnKey.of(requestContext) })
-    },
-    notes: (connectionId) => deps.connectors.notes(scope, connectionId),
-    wording: { whose: 'this conversation chose', limit: '50 connector calls per answer' },
-  }
-}
-
-/**
- * `reads/<turn>-<n>.json`: the turn's first 8 characters and the read's number in the run, so one
- * turn never writes over another; the count lives with the agent, one per run.
- */
-function readsFiles(): (requestContext: RequestContext) => string {
-  const readsOfRun = new WeakMap<RequestContext, number>()
-  return (requestContext) => {
-    const turn = turnKey.of(requestContext)
-    const n = (readsOfRun.get(requestContext) ?? 0) + 1
-    readsOfRun.set(requestContext, n)
-    return `reads/${turn.slice(0, 8)}-${n}.json`
-  }
 }
 
 type Offered = (requestContext: RequestContext) => Promise<readonly AssistantConnection[]>
@@ -282,8 +246,13 @@ function assistantAgent(
       const scope = await scopeOf(requestContext)
       const chosen = await chosenOf(requestContext)
       const speakers = await speakersFor(requestContext)
+      const byAutomation = await automationRun(requestContext)
       const mayAutomate =
         speakers !== undefined && deps.identity.allows(speakers.role, 'manageAutomations')
+      const mayNote =
+        speakers !== undefined &&
+        !byAutomation &&
+        deps.identity.allows(speakers.role, 'manageConnections')
       return {
         ...toolsOf(sessionModel(requestContext)),
         [ASSISTANT_TOOL.overview]: overview,
@@ -291,10 +260,10 @@ function assistantAgent(
         ...(mayAutomate
           ? { [ASSISTANT_TOOL.proposeAutomation]: proposeAutomationTool(chosen) }
           : {}),
-        ...handOffOf(scope, proposals, await automationRun(requestContext)),
+        ...handOffOf(scope, proposals, byAutomation),
         ...(scope === undefined
           ? {}
-          : connectorTools(accessOf(deps, scope, chosen, savedAt), { noteSave: false })),
+          : assistantConnectorTools(deps, { scope, chosen, savedAt, mayNote })),
       }
     },
     skills: async ({ requestContext }) => [
