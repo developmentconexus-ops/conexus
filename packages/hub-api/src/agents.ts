@@ -6,6 +6,7 @@ import { ConversationId, ModelId } from './conversations.ts'
 import type { FailureCode } from './failures.ts'
 import { PersonId } from './identity.ts'
 import { ProjectId } from './library-ids.ts'
+import { MACHINE_FILE_FAILURES, MachineFileQuery } from './machine.ts'
 import { ATTEMPT_KEY_HEADER, defineOperation } from './operation.ts'
 import { ToolSummary, ToolTarget, ToolVersionDetail } from './tools.ts'
 
@@ -33,6 +34,8 @@ export const AgentConfig = z.object({
     .refine((ids) => new Set(ids).size === ids.length),
   web: z.boolean(),
   appData: z.boolean(),
+  /** The agent's Computador (step 24.4): a machine of its own per conversation. A version published before it reads as off. */
+  machine: z.boolean().default(false),
 })
 export type AgentConfig = z.infer<typeof AgentConfig>
 
@@ -300,3 +303,33 @@ export const listAgentConversations = defineOperation({
   success: { status: 200, body: z.object({ conversations: z.array(AgentConversationSummary) }) },
   failures: ONE_FAILURES,
 })
+
+/**
+ * The file of an agent conversation's machine, as a download (step 24.4, U4): `GET`, the bytes with
+ * their type, for the person who may read the conversation. The server registers it beside the
+ * operations, as the Assistant's.
+ */
+export const AGENT_FILE = {
+  url: '/api/companies/:companyId/agents/conversations/:conversationId/files',
+  params: InCompany.extend({ conversationId: ConversationId }),
+  query: MachineFileQuery,
+  failures: [
+    ...READ_FAILURES,
+    'REQUEST_MALFORMED',
+    'REQUEST_ORIGIN_REFUSED',
+    'CONVERSATION_NOT_FOUND',
+    ...MACHINE_FILE_FAILURES,
+  ] as const satisfies readonly FailureCode[],
+}
+
+/** The URL a download of the agent conversation's file is fetched from. */
+export function agentFilePath(ids: {
+  companyId: string
+  conversationId: string
+  path: string
+}): string {
+  const url = AGENT_FILE.url
+    .replace(':companyId', encodeURIComponent(ids.companyId))
+    .replace(':conversationId', encodeURIComponent(ids.conversationId))
+  return `${url}?${new URLSearchParams({ path: ids.path })}`
+}

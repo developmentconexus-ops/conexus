@@ -7,7 +7,7 @@ import type {
   ToolVersionId,
 } from '@conexus/hub-api'
 import { useQuery } from '@tanstack/react-query'
-import { GlobeIcon } from 'lucide-react'
+import { ComputerIcon, GlobeIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useState } from 'react'
 import { sentenceOf } from '../../platform/hub.ts'
@@ -27,6 +27,7 @@ import {
 } from '../assistant/public.ts'
 import { toolsQuery } from './queries.ts'
 import {
+  COMPUTER_TOOL,
   CONEXUS_TOOLS,
   connectionOf,
   LIBRARY_TOOLS,
@@ -99,7 +100,7 @@ function chosenWrite(
   list: Listed,
   picked: ReadonlySet<string>,
   ready: ReadonlySet<string>,
-  web: boolean,
+  conexus: { web: boolean; machine: boolean },
 ) {
   const readies = list.ready.filter((one) => ready.has(`${one.connectionId}:${one.operation}`))
   // A chosen tool the list does not bring cannot be unticked here, so it stays, at its version.
@@ -111,7 +112,7 @@ function chosenWrite(
   const tools: ToolVersionId[] = [...unlisted.map((one) => one.version.id), ...listed]
   return {
     tools,
-    web,
+    ...conexus,
     ...(readies.length > 0 && {
       ready: readies.map(({ connectionId, operation }) => ({ connectionId, operation })),
     }),
@@ -207,6 +208,38 @@ function LibraryGroup(
   )
 }
 
+/** The group of Conexus's own tools the search leaves: the web search and the Computador. */
+function ConexusGroup(props: {
+  shown: { web: boolean; machine: boolean }
+  chosen: { web: boolean; machine: boolean }
+  onToggle: { web: () => void; machine: () => void }
+}) {
+  const { shown, chosen, onToggle } = props
+  if (!shown.web && !shown.machine) return null
+  return (
+    <Group title={CONEXUS_TOOLS}>
+      {shown.web && (
+        <ChoiceRow
+          id="tool-web"
+          leading={<GlobeIcon aria-hidden="true" className="size-5 shrink-0" />}
+          title={WEB_TOOL}
+          checked={chosen.web}
+          onChange={onToggle.web}
+        />
+      )}
+      {shown.machine && (
+        <ChoiceRow
+          id="tool-machine"
+          leading={<ComputerIcon aria-hidden="true" className="size-5 shrink-0" />}
+          title={COMPUTER_TOOL}
+          checked={chosen.machine}
+          onChange={onToggle.machine}
+        />
+      )}
+    </Group>
+  )
+}
+
 /**
  * The window of the Ferramentas section: the library's tools, the connectors' ready reads and the web
  * search, as the "+" menu lists a conversation's. Nothing is saved until **Usar as escolhidas**.
@@ -220,6 +253,7 @@ export function Chooser(props: Part & { saving: Saving; onClose: () => void }) {
   )
   const [ready, setReady] = useState<ReadonlySet<string>>(new Set())
   const [web, setWeb] = useState(agent.draft.web)
+  const [machine, setMachine] = useState(agent.draft.machine)
   const [query, setQuery] = useState('')
   if (read.isError)
     return <ReadFailure text={sentenceOf(read.error)} onRetry={() => void read.refetch()} />
@@ -232,13 +266,14 @@ export function Chooser(props: Part & { saving: Saving; onClose: () => void }) {
     tools: library.filter((each) => matches(each.title, query)),
     readies: readies.filter((each) => matches(each.title, query)),
     web: matches(WEB_TOOL, query),
+    machine: matches(COMPUTER_TOOL, query),
   }
   const at = { query, catalog, agent }
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-md">
       <DialogBody className="flex flex-col gap-md">
         {read.isPending && <Skeleton className="h-16 w-full" />}
-        {library.length + readies.length + 1 >= SEARCH_FROM && (
+        {library.length + readies.length + 2 >= SEARCH_FROM && (
           <Search label="Buscar ferramenta" value={query} onChange={setQuery} />
         )}
         <ReadyGroups
@@ -253,19 +288,17 @@ export function Chooser(props: Part & { saving: Saving; onClose: () => void }) {
           picked={picked}
           onToggle={(id) => setPicked((now) => toggled(now, id))}
         />
-        {shown.web && (
-          <Group title={CONEXUS_TOOLS}>
-            <ChoiceRow
-              id="tool-web"
-              leading={<GlobeIcon aria-hidden="true" className="size-5 shrink-0" />}
-              title={WEB_TOOL}
-              checked={web}
-              onChange={() => setWeb((now) => !now)}
-            />
-          </Group>
-        )}
+        <ConexusGroup
+          shown={{ web: shown.web, machine: shown.machine }}
+          chosen={{ web, machine }}
+          onToggle={{
+            web: () => setWeb((now) => !now),
+            machine: () => setMachine((now) => !now),
+          }}
+        />
         {read.data !== undefined &&
           !shown.web &&
+          !shown.machine &&
           shown.tools.length + shown.readies.length === 0 && (
             <p className="px-sm text-text-2">{NO_TOOL_MATCH}</p>
           )}
@@ -282,7 +315,7 @@ export function Chooser(props: Part & { saving: Saving; onClose: () => void }) {
           onClick={() =>
             read.data !== undefined &&
             props.saving.save(
-              (now) => chosenWrite(now, read.data, picked, ready, web),
+              (now) => chosenWrite(now, read.data, picked, ready, { web, machine }),
               props.onClose,
             )
           }

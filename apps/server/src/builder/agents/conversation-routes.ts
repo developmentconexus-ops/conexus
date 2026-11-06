@@ -1,5 +1,10 @@
 import type { AgentConversationSummary, AgentId } from '@conexus/hub-api'
-import { ConversationId, createAgentConversation, listAgentConversations } from '@conexus/hub-api'
+import {
+  AGENT_FILE,
+  ConversationId,
+  createAgentConversation,
+  listAgentConversations,
+} from '@conexus/hub-api'
 import type { StorageThreadType } from '@mastra/core/memory'
 import type { FastifyInstance } from 'fastify'
 import type { Database } from '../../platform/database.ts'
@@ -7,11 +12,12 @@ import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import { answer, serve } from '../../platform/http.ts'
 import { attemptIdOf, resourceOf } from '../controller-kit/public.ts'
+import { registerFile } from '../machine/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import type { InProject, ToolsDeps } from '../tools/public.ts'
 import { admitted, databaseScopeOf, inProjectOf } from '../tools/public.ts'
 import type { AgentConversations } from './controller.ts'
-import { AGENT_MARK } from './controller.ts'
+import { AGENT_MARK, keptRun } from './controller.ts'
 import { openAgentConversation } from './open.ts'
 import type { AgentReads } from './registry.ts'
 
@@ -57,7 +63,7 @@ export function registerAgentConversationRoutes(app: FastifyInstance, deps: Deps
     const owner = { companyId: scope.companyId, personId: scope.personId }
     const id = attemptIdOf('agents', owner, input.attemptKey)
     const opened = await openAgentConversation(
-      { ...deps, controller, memory },
+      { ...deps, controller, memory, machines: deps.conversations.machines },
       { scope, agentId, draft, frozen, id },
     )
     const resourceId = resourceOf('agents', owner)
@@ -89,5 +95,20 @@ export function registerAgentConversationRoutes(app: FastifyInstance, deps: Deps
       orderBy: { field: 'updatedAt', direction: 'DESC' },
     })
     return answer({ conversations: threads.map((thread) => summaryOf(thread, agentId)) })
+  })
+  registerFile(app, {
+    route: AGENT_FILE,
+    machines: deps.conversations.machines,
+    log: deps.log,
+    served: 'AGENT_FILE_READ',
+    ownConversation: async (owner, conversationId) => {
+      const run = await keptRun(deps.database, owner, conversationId)
+      const thread = await memory.getThreadById({
+        threadId: conversationId,
+        resourceId: resourceOf('agents', owner),
+      })
+      if (run === undefined || thread === null) throw new Failure('CONVERSATION_NOT_FOUND')
+      await admittedTo(deps, { ...owner, projectId: run.scope.projectId }, run.agentId)
+    },
   })
 }

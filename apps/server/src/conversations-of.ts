@@ -113,7 +113,7 @@ export function conversationsOf(deps: {
   const appData = appDataOf(deps.apps)
   const agents = agentsAlive({
     ...{ storage, database, identity, queue, liveProjectOf, liveProjectIdsOf, isChoosable, log },
-    connectors: door,
+    ...{ connectors: door, machine: deps.machine, machineTuning: deps.machineTuning },
     speakersOf: (scope) => speakersOf({ database, identity, projects: { liveProjectOf } }, scope),
     appData,
     mastra: () => hub.mastra,
