@@ -3,9 +3,9 @@
 ## Context
 
 The founder's answers of 2026-11-05 add the ChatGPT subscription as a model account, as the Claude
-one is: "1. B igual mastra code e igual fizemos para Claude", "2. Sua recomendação" (the code typed
-on the vendor's page), "3. Da empresa também sem gambiarra aptch, seguindo nosso padrão e lógica".
-It amends [0049]. Basis: the step card.
+one is: "1. B igual mastra code e igual fizemos para Claude", "2. Sua recomendação",
+"3. Da empresa também sem gambiarra aptch, seguindo nosso padrão e lógica".
+It amends [0049].
 
 ## Decision
 
@@ -29,8 +29,9 @@ If 1 fails, that kind stays off and returns to the founder.
 
 ## Result
 
-Not run. It needs the founder's subscription (card unit U5). Until then the tests prove the sign-in
-against a double of the vendor, with invented content.
+2026-11-05, the founder's use of the step on v0.24.32: "Cara, deu tudo certo, tá? Testei,
+funcionou." and "pode finalizar aos 5 ... Não precisa ter esse teste, não." Criterion 2 and the
+rest of 1 stay unmeasured (ISSUE-02); a 404 keeps [0054]'s rule.
 
 ## Consequences
 
@@ -44,4 +45,4 @@ OpenAI blocks the client or changes the device flow.
 
 ## State
 
-Proposed 2026-11-05. Founder: "1. B igual mastra code e igual fizemos para Claude." Amends [0049].
+Accepted 2026-11-05, at the founder's use. Amends [0049].
