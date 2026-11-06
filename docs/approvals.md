@@ -708,3 +708,7 @@ Em 2026-11-05, à pergunta sobre a leitura do "3. Okay" (opção A, recomendada:
 Cartão da etapa 24.4 aprovado em 2026-11-05 (commit ef02cdaa62944b138659a1c92bd0bf1c5eece525): "2. Aum"
 
 Essa emenda vem da unidade U1 (A forma) e da sua revisão, decidida pelo firstmate pela L9, sem decisão nova do fundador nem mudança no que ele vê: a seção da U1 registra o dono das máquinas de conversa e o `show_file` construídos em `builder/machine/`, a tabela "O raio da mudança" da U1 nomeia cada arquivo que ela tocou fora das suas pastas, e as seções U2 a U5 levam os nomes e as assinaturas finais (na U3, `removeWorkers` mantém o id marcado e nomeia `hub/apps/removal.ts` ao lado de `prune.ts`). A página que ele aprovou em 27359bd7 com "2. Aum" fica igual.
+
+Cartão da etapa 24.4 aprovado em 2026-11-05 (commit 87e6032e0982e5605c674504460e53c0a53524bc): "2. Aum"
+
+Essa emenda vem da unidade U3 (A ferramenta em código, chamada), pedida pelo firstmate como emenda técnica antes do passo 2, pela L9, sem decisão nova do fundador nem mudança no que ele vê: a seção "Emenda técnica antes do passo 2" registra a prova do Access, a conferência nativa do público em lugar do JWT, os nomes e os contratos da chamada da ferramenta, a chave da chamada na porta do Hub, a releitura do módulo, a remoção da empresa e os segredos do servidor. A página que ele aprovou em 27359bd7 com "2. Aum" fica igual.
