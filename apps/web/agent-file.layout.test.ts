@@ -8,6 +8,7 @@ import {
   listTools,
   MACHINE_TOOL,
 } from '@conexus/hub-api'
+import type { Page } from 'playwright-core'
 import { createHarness, DESKTOP, ok, PHONE } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import { WITH_ACCOUNT } from './sweep-conversation-states.ts'
@@ -131,3 +132,37 @@ for (const viewport of [DESKTOP, PHONE])
     assert.deepEqual(page.problems, [])
     await page.close()
   })
+
+// Opening the file widens the test panel (the founder chose it, 24.4 U4): at 1366 the conversation
+// keeps at least 320 px and the file 260 px (before: ~200 and ~180), and closing gives the width back.
+const MIN_CHAT = 320
+const MIN_FILE = 260
+function widthOf(page: Page, selector: string) {
+  return page.locator(selector).evaluate((element) => element.getBoundingClientRect().width)
+}
+
+test('a 1366 px, o arquivo alarga o painel de teste e, fechado, ele volta', async () => {
+  const page = await harness.open(
+    `/companies/${COMPANY.id}/projects/${PROJECT_ID}/agents/${AGENT}/${CHAT}`,
+    { viewport: DESKTOP, replies },
+  )
+  await page.route('**/agents/conversations/*/files*', (route) =>
+    route.fulfill({ status: 200, contentType: 'image/svg+xml', body: CHART }),
+  )
+  const test = '[data-slot="resizable-panel"][id="test"]'
+  const chat = '[id="conexus-agent-file"] [id="chat"]'
+  const side = '[id="conexus-agent-file"] [id="side"]'
+  await page.getByRole('button', { name: /^Abrir vendas/ }).waitFor()
+  const before = await widthOf(page, test)
+  await page.getByRole('button', { name: /^Abrir vendas/ }).click()
+  await page.getByRole('img', { name: /vendas/ }).waitFor()
+  await page.waitForTimeout(300)
+  assert.ok((await widthOf(page, chat)) >= MIN_CHAT, 'a conversa ficou estreita')
+  assert.ok((await widthOf(page, side)) >= MIN_FILE, 'o arquivo ficou estreito')
+  await page.getByRole('button', { name: /^Fechar/ }).click()
+  await page.getByRole('img', { name: /vendas/ }).waitFor({ state: 'detached' })
+  await page.waitForTimeout(300)
+  assert.ok(Math.abs((await widthOf(page, test)) - before) <= 2, 'o painel não voltou')
+  assert.deepEqual(page.problems, [])
+  await page.close()
+})

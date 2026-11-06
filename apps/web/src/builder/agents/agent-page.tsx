@@ -17,6 +17,7 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '../../ui/r
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
 import { ConfigPanel } from './config-panel.tsx'
+import { FileWidth, useFileWidth } from './file-width.ts'
 import { useOpenAgentConversation } from './open-conversation.ts'
 import { PublishButton } from './publish.tsx'
 import { agentQuery, agentsPrefix, sendDeletion } from './queries.ts'
@@ -151,6 +152,7 @@ export function AgentPage(props: {
   const { agent } = useSuspenseQuery(agentQuery(scope, agentId)).data
   const phone = useIsMobile()
   const opener = useOpenAgentConversation(scope, agentId)
+  const { panel, widen } = useFileWidth()
   const [tab, setTab] = useState(props.conversationId === undefined ? 'configuracao' : 'conversas')
   const page = (
     <div className="px-md pb-xl">
@@ -158,9 +160,11 @@ export function AgentPage(props: {
     </div>
   )
   const test = (
-    <TestPanel scope={scope} agent={agent} conversationId={props.conversationId} opener={opener}>
-      {props.children}
-    </TestPanel>
+    <FileWidth.Provider value={widen}>
+      <TestPanel scope={scope} agent={agent} conversationId={props.conversationId} opener={opener}>
+        {props.children}
+      </TestPanel>
+    </FileWidth.Provider>
   )
   const header = (
     <Header scope={scope} agent={agent} opener={opener} onTest={() => setTab('conversas')} />
@@ -192,7 +196,13 @@ export function AgentPage(props: {
             </div>
           </ResizablePanel>
           <ResizableHandle aria-label="Redimensionar a conversa de teste" />
-          <ResizablePanel id="test" defaultSize="380px" minSize="320px" maxSize="60%">
+          <ResizablePanel
+            id="test"
+            panelRef={panel}
+            defaultSize="380px"
+            minSize="320px"
+            maxSize="60%"
+          >
             {test}
           </ResizablePanel>
         </ResizablePanelGroup>
