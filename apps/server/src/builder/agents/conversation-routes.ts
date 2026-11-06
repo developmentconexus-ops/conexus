@@ -31,10 +31,14 @@ type Deps = Pick<ToolsDeps, 'identity' | 'liveProjectOf'> & {
 
 /** The person may manage the Projeto's agents, and the agent is one of the Projeto's (`AGENT_NOT_FOUND`). */
 async function admittedTo(deps: Deps, scope: InProject, agentId: AgentId) {
+  await mayManage(deps, scope)
+  return deps.agents.draftOf(scope, agentId)
+}
+
+async function mayManage(deps: Deps, scope: InProject) {
   await deps.database.command(databaseScopeOf(scope), (tx) =>
     admitted(deps, tx, scope, 'manageAgents'),
   )
-  return deps.agents.draftOf(scope, agentId)
 }
 
 function summaryOf(thread: StorageThreadType, agentId: AgentId): AgentConversationSummary {
@@ -108,7 +112,7 @@ export function registerAgentConversationRoutes(app: FastifyInstance, deps: Deps
         resourceId: resourceOf('agents', owner),
       })
       if (run === undefined || thread === null) throw new Failure('CONVERSATION_NOT_FOUND')
-      await admittedTo(deps, { ...owner, projectId: run.scope.projectId }, run.agentId)
+      await mayManage(deps, { ...owner, projectId: run.scope.projectId })
     },
   })
 }

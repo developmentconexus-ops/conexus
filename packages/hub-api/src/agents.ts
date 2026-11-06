@@ -49,14 +49,18 @@ export type CreateAgent = z.infer<typeof CreateAgent>
  * A change of the draft at the revision the writer read (code C38). `tools` replaces the chosen
  * versions whole; `ready` adds ready reads, which the service saves in the library first.
  */
-export const DraftPatch = AgentConfig.partial().extend({
-  revision: z.int().positive(),
-  tools: z
-    .array(ToolVersionId)
-    .refine((ids) => new Set(ids).size === ids.length)
-    .optional(),
-  ready: z.array(ToolTarget).max(CONNECTIONS_MAX).optional(),
-})
+export const DraftPatch = AgentConfig.omit({ machine: true })
+  .partial()
+  .extend({
+    /** Absent keeps the draft's Computador; the default of `AgentConfig` is for reading an old version only. */
+    machine: z.boolean().optional(),
+    revision: z.int().positive(),
+    tools: z
+      .array(ToolVersionId)
+      .refine((ids) => new Set(ids).size === ids.length)
+      .optional(),
+    ready: z.array(ToolTarget).max(CONNECTIONS_MAX).optional(),
+  })
 export type DraftPatch = z.infer<typeof DraftPatch>
 
 export const Publish = z.object({

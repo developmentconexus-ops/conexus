@@ -4,10 +4,19 @@ import { join } from 'node:path'
 import { test } from 'node:test'
 import { BRUNO, CARLA, call, codeOf, memberOn } from '../../hub/identity/test-hub.ts'
 import { said, talking } from '../assistant/test-assistant.ts'
-import { endOf, messagesOf } from '../conversation/test-conversation.ts'
+import {
+  endOf,
+  holding,
+  hubBeside,
+  messagesOf,
+  PARTIAL,
+  sent,
+  streamOf,
+  title,
+} from '../conversation/test-conversation.ts'
 import { tool } from '../conversation/test-questions.ts'
 import { INSTALLATION } from '../machine/test-machine.ts'
-import { agentsOn, publishedAgent, talkedTo } from './test-agents.ts'
+import { agentsOn, drafted, madeAgent, publishedAgent, talkedTo } from './test-agents.ts'
 
 const COMMAND = 'mastra_workspace_execute_command'
 const WRITE = 'mastra_workspace_write_file'
@@ -65,6 +74,9 @@ test('o Computador: o agente roda um comando, escreve um arquivo e o mostra; a m
   assert.equal(marks?.conexus_project, on.projectId)
   assert.equal(marks?.conexus_agent, agent.id)
   assert.equal(marks?.conexus_conversation, idOf(url))
+
+  await new Promise((done) => setTimeout(done, 200))
+  assert.equal(control.stops, 1, 'the machine sleeps when the turn ends')
 
   const [output] = await shown(on, url)
   assert.deepEqual(output, {
@@ -132,4 +144,52 @@ test('o arquivo: um caminho fora da pasta (por um link) é recusado com SHOW_REF
     fileOf(on.company, `${url.slice(0, url.lastIndexOf('/'))}/${randomUUID()}`, 'a.md'),
   )
   assert.deepEqual([missing.statusCode, codeOf(missing)], [404, 'CONVERSATION_NOT_FOUND'])
+})
+
+test('o fim do Hub: a máquina do turno do agente em andamento para quando o Hub é parado (C62)', {
+  timeout: 60_000,
+}, async (t) => {
+  const held = holding(t)
+  let modelCalls = 0
+  const on = await agentsOn(t, (asked) => {
+    const titled = title(asked)
+    if (titled !== undefined) return titled
+    modelCalls += 1
+    return modelCalls === 1
+      ? { kind: 'blocks', blocks: [tool(WRITE, { path: 'a.txt', content: 'um' })] }
+      : held.reply
+  })
+  const agent = await publishedAgent(on.hub, on.ana, on.agents, {
+    instructions: 'Responda.',
+    machine: true,
+  })
+  const stopping = await hubBeside(t, on.hub)
+  const url = await talkedTo(stopping, on.ana, on.agents, agent.id)
+  const stream = await streamOf(stopping, on.ana, url)
+  t.after(() => stream.close())
+  assert.equal((await sent(stopping, on.ana, url, 'Escreva')).statusCode, 200)
+  assert.equal(await stream.text(), PARTIAL)
+  const { control } = stopping.assistantMachines
+  control.stopMs = 150
+  assert.equal(control.names.length, 1, 'the turn started the machine')
+  assert.equal(control.stops, 0, 'and it runs')
+  const stopped = stopping.close(300)
+  assert.equal(endOf(await stream.turn()), 'aborted')
+  await stopped
+  assert.equal(control.stops, 1, 'the Hub ending stopped it, and its close waited for the pause')
+})
+
+test('o rascunho: gravar sem a chave `machine` mantém o Computador ligado, pela porta HTTP (18)', async (t) => {
+  const on = await agentsOn(t)
+  const made = await madeAgent(on.hub, on.ana, on.agents)
+  const on1 = await drafted(on.hub, on.ana, on.agents, made, { machine: true })
+  assert.equal(on1.draft.machine, true)
+  const edited = await drafted(on.hub, on.ana, on.agents, on1, {
+    instructions: 'Outra.',
+    web: false,
+  })
+  assert.equal(edited.draft.instructions, 'Outra.')
+  assert.equal(edited.draft.machine, true)
+  const off = await drafted(on.hub, on.ana, on.agents, edited, { machine: false })
+  assert.equal(off.draft.machine, false)
 })

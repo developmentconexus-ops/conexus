@@ -627,7 +627,7 @@ Apaga: nada.
 
 ### Os contratos que a unidade cria
 
-- `AgentConfig.machine: z.boolean().default(false)` (C27 na leitura da versão).
+- `AgentConfig.machine: z.boolean().default(false)` (C27 na leitura da versão); o `DraftPatch` o declara `z.boolean().optional()`, para que uma gravação sem `machine` mantenha o Computador.
 - A marca da máquina do agente: empresa, Projeto, agente e conversa (S36).
 - A rota de arquivo da conversa do agente, `GET`, com a mesma forma da do Assistente
   (`ASSISTANT_FILE`, `packages/hub-api/src/assistant.ts:321-340` antes da U1), para quem pode ler a
