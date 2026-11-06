@@ -22,8 +22,10 @@ import type { IdentityPorts } from './hub/identity/public.ts'
 import type { Notify } from './hub/notifications/public.ts'
 import type { ProjectPorts } from './hub/projects/public.ts'
 import { liveProjectIdsOf, liveProjectOf, liveProjectsOf } from './hub/projects/public.ts'
+import type { CloudflareApps } from './platform/cloudflare.ts'
 import type { Config } from './platform/config.ts'
 import type { Database, MastraPool } from './platform/database.ts'
+import type { EdgeTools } from './platform/edge-tools.ts'
 import type { FailureLog } from './platform/failure.ts'
 import type { SealKeys } from './platform/seal.ts'
 
@@ -35,6 +37,11 @@ function doorOf(connectors: () => Connectors): Connectors['assistant'] {
     notes: (scope, connectionId) => connectors().assistant.notes(scope, connectionId),
     operationOf: (scope, target) => connectors().assistant.operationOf(scope, target),
   }
+}
+
+/** The saved tools' live calls (step 24.4): reached when an agent's turn calls one. */
+function toolCallsOf(connectors: () => Connectors): Connectors['tools'] {
+  return { open: (call) => connectors().tools.open(call) }
 }
 
 /** The apps' door as the agents and the Construtor read the app's data (step 24.3): reached when called. */
@@ -87,6 +94,8 @@ export function conversationsOf(deps: {
   /** The tests' folder and start deadline for the Assistant's machines; E2B's when absent. */
   machineTuning?: MachineTuning
   connectors: () => Connectors
+  /** The saved tools' namespace and their host on the edge (step 24.4, U3). */
+  tools: { cloudflare: CloudflareApps; edge: EdgeTools }
   /** The Projects are made after the conversations; a hand-off creates one when it is touched. */
   projects: () => Pick<ProjectPorts, 'createProject'>
   /** The apps are made after the agents; an agent reads its app's data when a turn calls it. */
@@ -117,7 +126,7 @@ export function conversationsOf(deps: {
   const appData = appDataOf(deps.apps)
   const agents = agentsAlive({
     ...{ storage, database, identity, queue, liveProjectOf, liveProjectIdsOf, isChoosable, log },
-    ...{ connectors: door, machine: deps.machine, machineTuning: deps.machineTuning },
+    ...{ ...machineOf(deps), ...deps.tools, connectors: door, calls: toolCallsOf(deps.connectors) },
     speakersOf: (scope) => speakersOf({ database, identity, projects: { liveProjectOf } }, scope),
     appData,
     mastra: () => hub.mastra,

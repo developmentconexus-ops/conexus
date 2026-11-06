@@ -1,6 +1,15 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import type { TestContext } from 'node:test'
+import {
+  CodeToolVersion,
+  CompanyId,
+  ConnectionId,
+  PersonId,
+  ProjectId,
+  ToolId,
+  ToolSlug,
+} from '@conexus/hub-api'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import { call, post } from '../../hub/identity/test-hub.ts'
 import { TEST_ORIGIN } from '../../platform/test-database.ts'
@@ -110,6 +119,48 @@ export async function drafted(hub: Hub, person: Person, url: string, agent: Agen
   })
   assert.equal(saved.statusCode, 200, saved.body)
   return agentOf(saved)
+}
+
+/** A `CODE` version as the Construtor's machine leaves it; no test runs its module. */
+const CODE_VERSION = CodeToolVersion.parse({
+  description: 'Conta os pedidos de um mês.',
+  source: 'export default {}',
+  module: 'export default { fetch() {} }',
+  reads: ['pedidos'],
+  inputSchema: { type: 'object', properties: { mes: { type: 'string' } }, required: ['mes'] },
+  outputSchema: { type: 'object', properties: { total: { type: 'number' } } },
+  test: { passed: true, rows: 3, at: '2026-11-05T12:00:00.000Z' },
+})
+
+/** Ana's `CODE` tool on the Matriz, saved as the Construtor saves it, with `versions` more after the first. */
+export async function savedCodeTool(
+  on: { hub: Hub; ana: Person; companyId: string; projectId: string; matriz: string },
+  versions = 0,
+) {
+  const scope = {
+    companyId: CompanyId.parse(on.companyId),
+    projectId: ProjectId.parse(on.projectId),
+    personId: PersonId.parse(on.ana.id),
+  }
+  const { tools } = on.hub.agents
+  const saved = await tools.saveCode(
+    scope,
+    {
+      slug: ToolSlug.parse('vendas_do_mes'),
+      connectionId: ConnectionId.parse(on.matriz),
+      version: CODE_VERSION,
+      request: {},
+    },
+    randomUUID(),
+  )
+  let latest = saved
+  for (let basedOn = 1; basedOn <= versions; basedOn += 1) {
+    const request = { basedOn }
+    const toolId = ToolId.parse(saved.id)
+    const a = { toolId, basedOn, version: CODE_VERSION, request }
+    latest = await tools.addCodeVersion(scope, a, randomUUID())
+  }
+  return latest
 }
 
 /** A tool of `companyId` written as its rows, as another company's library holds one. */

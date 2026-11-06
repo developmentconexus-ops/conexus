@@ -6,6 +6,8 @@ import type { GitCopyBucket } from './config-git.ts'
 import { GitCopyKey, GitEnvironment } from './config-git.ts'
 import type { InstallationId, MachineTemplate } from './config-machine.ts'
 import { E2bApiKey, MachineEnvironment } from './config-machine.ts'
+import type { ToolsAccess, ToolsOrigin } from './config-tools.ts'
+import { ToolsEnvironment, toolsConfigOf } from './config-tools.ts'
 import { DatabaseUrl } from './database.ts'
 import { Failure } from './failure.ts'
 import type { SealKeys } from './seal.ts'
@@ -156,6 +158,10 @@ export type Config = BaseConfig & {
   cloudflareAccountId: CloudflareName
   appsNamespace: CloudflareName
   cloudflareAppsToken: CloudflareAppsToken
+  /** The saved tools' namespace, on the apps' token (step 24.4). */
+  toolsNamespace: CloudflareName
+  toolsOrigin: ToolsOrigin
+  toolsAccess: ToolsAccess
   sealKeys: SealKeys
   cliProxy: CliProxy
   gitRoot: string
@@ -224,6 +230,8 @@ const ServeEnvironment = z.object({
   HUB_CLOUDFLARE_ACCOUNT_ID: CloudflareName,
   HUB_APPS_NAMESPACE: CloudflareName,
   HUB_CLOUDFLARE_APPS_TOKEN_FILE: z.string().min(1),
+  HUB_TOOLS_NAMESPACE: CloudflareName,
+  ...ToolsEnvironment.shape,
   HUB_SEAL_KEYS_FILE: z.string().min(1),
   ...GitEnvironment.shape,
   HUB_GIT_COPY_URL: GitCopyUrl.optional(),
@@ -313,6 +321,8 @@ export function readConfig(mode: 'serve' | 'migrate', env = process.env): Config
       serve.HUB_CLOUDFLARE_APPS_TOKEN_FILE,
       CloudflareAppsToken.parse,
     ),
+    toolsNamespace: serve.HUB_TOOLS_NAMESPACE,
+    ...toolsConfigOf(serve, readSecretFile),
     sealKeys: readSecret('HUB_SEAL_KEYS_FILE', serve.HUB_SEAL_KEYS_FILE, parseSealKeys),
     cliProxy: CLIPROXY,
     gitRoot: serve.HUB_GIT_ROOT,

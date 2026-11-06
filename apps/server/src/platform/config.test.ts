@@ -233,6 +233,10 @@ const MISSING = [
   'HUB_CLOUDFLARE_ACCOUNT_ID',
   'HUB_APPS_NAMESPACE',
   'HUB_CLOUDFLARE_APPS_TOKEN_FILE',
+  'HUB_TOOLS_NAMESPACE',
+  'HUB_TOOLS_ORIGIN',
+  'HUB_TOOLS_ACCESS_CLIENT_ID_FILE',
+  'HUB_TOOLS_ACCESS_CLIENT_SECRET_FILE',
   'HUB_INSTALLATION_ID',
 ] as const
 
@@ -253,6 +257,8 @@ const OUT_OF_FORMAT = [
   ['HUB_CLOUDFLARE_API_URL', 'http://cloudflare.example.test/client/v4'],
   ['HUB_CLOUDFLARE_ACCOUNT_ID', 'Conta'],
   ['HUB_APPS_NAMESPACE', 'conexus_apps'],
+  ['HUB_TOOLS_ORIGIN', 'http://tools.example.test'],
+  ['HUB_TOOLS_ORIGIN', 'https://tools.example.test/t'],
   ['HUB_INSTALLATION_ID', 'hub.example.test'],
   ['HUB_INSTALLATION_ID', 'ABCDEF0123456789ABCDEF'],
 ] as const

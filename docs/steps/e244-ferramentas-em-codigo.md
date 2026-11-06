@@ -215,7 +215,8 @@ abaixo.
 | `CodeToolVersion.module` (o JavaScript empacotado) | U2, na máquina | U3, a subida e a nova subida; nunca a leitura do agente (`frozen.ts`) |
 | `CodeToolVersion.reads` | U2 | U3, a porta do Hub (relida pelo `toolVersionId`) |
 | `CodeToolVersion.test` (passou, linhas lidas, quando) | U2 | a página da versão |
-| `CodeToolVersion.inputSchema`, `outputSchema` (JSON Schema) | U2 | U3, a ferramenta fina no agente |
+| `CodeToolVersion.inputSchema` (JSON Schema) | U2 | U3, a ferramenta fina no agente |
+| `CodeToolVersion.outputSchema` (JSON Schema) | U2 | a página da versão (emenda da U3) |
 | `AgentConfig.machine` | U4, o rascunho e a publicação | U4, `agentOf`; U5, o modo código; a tela |
 
 ## A tabela de falhas
@@ -600,6 +601,102 @@ Regras: S36, S48, C56, C57 (o prazo de 10 s da 0047), D22.
 
 O Access não recusar o pedido sem token (passo 1), ou a contagem de 50 não chegar à borda pela chave do
 turno.
+
+### Emenda técnica antes do passo 2 (2026-11-06)
+
+O fundador autorizou em 2026-11-06 ("Autorizo, pode fazer prova com nomes finais, pode ser 1 ano") a
+equipe do Zero Trust, o namespace `conexus-tools`, o token de serviço `conexus-hub-tools` (1 ano) e a
+aplicação do Access em `tools.conexusapp.tech`, com a política Service Auth; o Firstmate os criou. A
+emenda abaixo lê-se como delta das seções acima (L9); a página do fundador não muda.
+
+**O passo 1 rodou** fora do repositório, com os nomes finais e um Worker de prova `cx-e244-access` numa
+rota mais específica que a do despachante, apagado no fim (nada `cx-` sobrou). Sem token: 403 do
+Access, e o Worker não rodou. Segredo errado: 401 do Access. Token certo: o Worker recebeu o
+`Cf-Access-Jwt-Assertion`, que conferiu (RS256, as chaves da equipe, o emissor e a AUD), e o
+`ctx.access.aud` nativo chegou com a AUD da aplicação; os cabeçalhos do token não chegam ao Worker. O
+mesmo JWT conferido contra outra AUD foi recusado (o token de prova não cria uma segunda aplicação do
+Access; o caso volta no teste da borda). Tempo, 30 chamadas desta máquina: com o Access e a conferência
+nativa, p50 28 ms e p95 45 ms, contra 27 e 43 ms sem o Access; conferir o JWT à mão, buscando as chaves
+a cada chamada, levou p50 155 ms.
+
+- **A conferência do Access é nativa** (C75): a borda recusa com 403, antes de qualquer Worker, o
+  pedido ao host das ferramentas cujo `ctx.access` falta ou traz outra `aud` que a da variável
+  `TOOLS_ACCESS_AUD` do `wrangler.jsonc`. É o caminho que a página "Validate JWTs" da Cloudflare dá para
+  um Worker atrás do Access; o `jose` não entra. O critério 12 lê-se assim: sem `ctx.access` (o Access
+  não autenticou: sem token, token errado, JWT vencido) ou com outra AUD, 403; a assinatura e o prazo
+  do JWT são do Access, provados no passo 1. O teste dá a `serveTool` o `access` do contexto, e um
+  teste no workerd chama a entrada do despachante sem Access: 403, e nenhum Worker pedido ao namespace.
+- **`ToolProps`** (B.1): `{ data: { read(operation: string, input: unknown): Promise<unknown> } }`,
+  versão 1. `read` resolve com a resposta inteira da leitura, a mesma que a fixture do teste da U2
+  guardou (`construtor/code-tool.ts`, `fixtures[operation] = answered.whole`), e rejeita, com o código
+  como mensagem, qualquer resposta que não seja `OK` (`NOT_DECLARED`, `CALLS_SPENT`, `NOT_GRANTED`, a
+  ligação recusada ou fora, o prazo). Uma ferramenta que não trata a rejeição falha, e o modelo ouve
+  `TOOL_FAILED` com o código: o `NOT_DECLARED` do critério 10 chega ao modelo como a razão do
+  `TOOL_FAILED`. O Worker da ferramenta sobe com `APP_COMPATIBILITY_DATE[1]` (B.8), a data do contrato
+  dos apps da mesma versão.
+- **A chave da chamada** (B.3). A `TurnKey` é um uuid sem empresa nem agente. Antes de cada `fetch` à
+  borda, a ferramenta fina abre no Hub, em memória, uma chamada viva: uma chave nova (`ToolCallKey`,
+  uuid) com o escopo da conversa, o `toolVersionId`, a ligação, as leituras declaradas e a chave do
+  turno, todos tirados da versão que o agente prende (`frozen.ts`, relida do banco no começo do turno);
+  a chamada fecha no `finally`. Os `props` da capability passam a ser `{ toolVersionId, call, endsAt }`:
+  a borda não vê a chave do turno. A porta de leitura de ferramenta recusa com `NOT_DECLARED` a chave
+  que não está aberta, a que é de outro `toolVersionId` e a operação que a versão não declarou. O dono
+  é `hub/connectors/tool-door.ts` (`createToolDoor`), exposto por `createConnectors` como `tools`.
+- **Um só limite de 50** (B.4): a leitura da ferramenta passa pelo mesmo
+  `connectors.assistant.read(scope, { connectionId, operation, input, turn })` que o `connector_read`
+  dos agentes, com o mesmo `spend` da mesma instância; a chave do turno conta as duas juntas. O código
+  é o de hoje, `CALLS_SPENT` (não `CONNECTOR_CALLS_SPENT`).
+- **A operação de borda** `callToolConnector`, `access: 'edge'`, `POST /api/tool-connector-calls`, corpo
+  `{ toolVersionId, call, operation, input, deadlineMs }`; responde 200 com `ToolDataAnswer`: `OK` com
+  `value` (a resposta inteira), `NOT_DECLARED`, `CALLS_SPENT`, ou as outras não-`OK` do
+  `ConnectorAnswer`, como `callAppConnector` responde as suas como dado.
+- **O Hub chama a borda**: `POST https://tools.conexusapp.tech/<toolVersionId>` com
+  `CF-Access-Client-Id` e `CF-Access-Client-Secret`, corpo `ToolCall = { call, input }`; a borda
+  responde `ToolCallAnswer`: `OK` com `value` (o JSON da ferramenta), `FAILED` com `reason` (a CPU,
+  o prazo, uma resposta que não é JSON, ou o código da rejeição), ou `MISSING` ("Worker not found."). Os
+  dois tipos moram em `packages/hub-api/src/tools.ts`, ao lado de `ToolWorker`. O modelo ouve o valor,
+  `TOOL_FAILED` com a razão, ou `TOOL_UNAVAILABLE` (a borda ou o Hub fora, o Access recusado, o prazo do
+  Hub); `MISSING` sobe de novo uma vez e chama outra. Um módulo que a Cloudflare diz que não inicia,
+  na nova subida, chega ao modelo como `TOOL_FAILED` com a razão `NOT_STARTING`, que só o Hub dá.
+- **A releitura do módulo** (B.5): `tools.reupload(companyId, toolVersionId, signal)` em `builder/tools/`
+  lê `tool_version.config.module` da versão `CODE` da empresa e sobe de novo o mesmo `WorkerUpload`
+  da subida ao gravar, dentro do turno (o sinal de abortar dele); responde `UPLOADED`, `NOT_STARTING`,
+  `GONE` (nenhuma versão `CODE` da empresa com esse id) ou `UNAVAILABLE`. `CodeFrozenTool` passa a ser exportado de `frozen.ts`.
+- **A remoção da empresa** (B.6): os Workers de ferramenta saem em `releaseAgents`
+  (`builder/agents/release.ts`), que já é a parte do `releaseFirst` (`conversations-of.ts`) que a
+  remoção da empresa chama, antes de apagar os agentes; um Worker que a Cloudflare não confirmou lança
+  `CLIENT_DELETION_PENDING`, e a remoção se repete. Uma empresa sem banco da empresa não tem Projeto
+  (`hub/projects/projects.ts`, `create` só grava o Projeto depois do banco), logo não tem ferramenta; o
+  ramo sem banco de `hub/operations/clients.ts` não precisa do gancho.
+- **O servidor** (B.7): dois segredos em `/etc/conexus/secrets/`, `hub_tools_access_client_id` e
+  `hub_tools_access_client_secret`, lidos por `HUB_TOOLS_ACCESS_CLIENT_ID_FILE` e
+  `HUB_TOOLS_ACCESS_CLIENT_SECRET_FILE` (`infra/compose.yaml`, a lista de `require_secrets` em
+  `infra/deploy.sh`); `HUB_TOOLS_NAMESPACE: conexus-tools` e `HUB_TOOLS_ORIGIN:
+  https://tools.conexusapp.tech` no `compose.yaml`. O token da API do Hub é o mesmo nos dois
+  namespaces. O runner não muda.
+- **Apagar uma ferramenta** confere o uso antes (`usedBy`, `TOOL_IN_USE`), tira os Workers fora da
+  transação e só então apaga as linhas; um Worker que fica devolve `TOOL_UNAVAILABLE` (novo em
+  `agent-failures.ts`, 503) e nada muda.
+- **Arquivos fora das pastas do cartão** (L7): `apps/edge/worker-configuration.d.ts`, que `wrangler types`
+  gera de novo do `wrangler.jsonc`; `packages/hub-api/src/agent-failures.ts`, a falha nova.
+
+### Emenda da revisão da U3 (2026-11-06)
+
+Da revisão Opus do pull request da U3, decidida pelo Firstmate pela L9; a página do fundador não muda.
+
+- **O prazo do Hub tem margem** sobre o da borda: a borda conta os 10 s da decisão 0047 desde que o
+  pedido chega, depois do Access e da rede, e o Hub espera 2 s a mais. Assim o `FAILED: DEADLINE` da
+  borda chega ao modelo como `TOOL_FAILED` com a razão; só quando nem a margem basta é
+  `TOOL_UNAVAILABLE`.
+- **O `outputSchema` não é lido pela ferramenta fina.** O `outputSchema` do `createTool` do Mastra
+  (1.82.0, `reference-tools-create-tool.md`) valida a saída inteira do `execute`, que é a união do que o
+  modelo ouve (`OK` com o valor e `complete`, `TOOL_FAILED`, `TOOL_UNAVAILABLE`), e não o `value`; e o
+  `value` chega ao modelo já cortado como toda leitura (`shaped`, as 50 linhas e os 16 KB), então um
+  valor cortado falharia um esquema que pede todas as linhas, e o modo `strict` o trocaria por um
+  erro. Validar o `value` à mão pediria uma razão de falha nova, que o cartão não tem. Fica como a
+  página da versão o mostra.
+- **Uma chamada sem o contexto do turno** (o agente do Mastra sempre o passa) registra
+  `TOOL_CALL_NO_CONTEXT` e lança; não há turno onde contar a leitura.
 
 ## U4 O Computador do agente
 

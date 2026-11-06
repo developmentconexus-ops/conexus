@@ -121,13 +121,13 @@ async function redeem(visit: Visit): Promise<Response> {
  * `db` (decision 0047); the outbound Worker refuses any other. `cpuMs` repeats the CPU limit its
  * upload carries, the one Cloudflare was seen to cut (0047, check 5); of the two, the lower applies.
  */
-const DISPATCH_OPTIONS = {
+export const DISPATCH_OPTIONS = {
   outbound: {},
   limits: { subRequests: APP_CALL_LIMITS.dbCallsPerCall, cpuMs: APP_CALL_LIMITS.cpuMs },
 } as const
 
 /** Settles at the call's deadline: no platform limit cuts an app that only waits (decision 0047). */
-function deadlineOf(ms: number) {
+export function deadlineOf(ms: number) {
   const endsAt = Date.now() + ms
   let timer: ReturnType<typeof setTimeout> | undefined
   const passed = new Promise<'PASSED'>((resolve) => {

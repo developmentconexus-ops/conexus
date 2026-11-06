@@ -22,6 +22,8 @@ import type { QueueDeps } from '../model-accounts/public.ts'
 import { conversationStart, memoryModelsFor, setTurn, Turn } from '../model-accounts/public.ts'
 import type { AppDataPort } from './app-data.ts'
 import { appDataTools } from './app-data.ts'
+import type { CodeToolsDeps } from './code-tools.ts'
+import { codeTools } from './code-tools.ts'
 import type { FrozenVersion } from './frozen.ts'
 import { presetTools } from './tools.ts'
 
@@ -95,6 +97,8 @@ export type AgentDeps = {
    * runs alone (the Construtor's test of the draft) gets none.
    */
   machines?: Pick<ConversationMachines, 'folder' | 'serving'>
+  /** The saved tools' calls at the edge (step 24.4, U3). */
+  codeTools: CodeToolsDeps
   log: FailureLog
 }
 
@@ -218,6 +222,7 @@ export function agentOf(
           ? appDataTools({ appData: deps.appData, scope: { companyId, personId }, projectId })
           : {}),
         ...(await presetTools({ ...deps, scope, tools: frozen.tools, turnOf: turnKey.of })),
+        ...codeTools({ ...deps.codeTools, scope, tools: frozen.tools, turnOf: turnKey.of }),
       }
     },
     memory: frozen.memory.observational ? deps.memories.observational : deps.memories.plain,

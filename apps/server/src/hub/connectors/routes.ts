@@ -1,5 +1,6 @@
 import {
   callAppConnector,
+  callToolConnector,
   completeConnectionSignIn,
   deleteConnectionNote,
   getConnection,
@@ -23,6 +24,7 @@ import { erase } from './notes.ts'
 import type { Deps } from './rows.ts'
 import { completeSignIn, startSignIn } from './sign-ins.ts'
 import { test } from './testing.ts'
+import type { ToolDoor } from './tool-door.ts'
 
 /** The status and code an ended test came with, when it came with any. */
 function ended(
@@ -131,4 +133,9 @@ export function registerAppCallRoutes(edge: FastifyInstance, calls: AppCalls): v
   serve(edge, listAppConnections, async ({ query, headers }) =>
     answer({ names: await calls.names({ host: query.host, headers, connector: query.connector }) }),
   )
+}
+
+/** The saved tools' reads (step 24.4), on the edge listener alone (security S48). */
+export function registerToolCallRoutes(edge: FastifyInstance, door: ToolDoor): void {
+  serve(edge, callToolConnector, async ({ body }) => answer(await door.read(body)))
 }
