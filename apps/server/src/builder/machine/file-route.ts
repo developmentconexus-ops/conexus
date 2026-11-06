@@ -69,10 +69,10 @@ function sandboxed(policy: unknown): string {
 }
 
 /**
- * The file the model wrote, for who may read the conversation (step 24.1, criterion 20). The model wrote it, so
- * the browser is told not to run it: the type from the name, saved unless an image, and the Hub's
- * Content-Security-Policy with `sandbox` (security S24); helmet's `nosniff` is on every reply.
- * Each file served is logged (code C54).
+ * The file the model wrote, for whoever may read the conversation (step 24.1, criterion 20). The
+ * model wrote it, so the browser is told not to run it: the type from the name, saved unless an
+ * image, and the Hub's Content-Security-Policy with `sandbox` (security S24); helmet's `nosniff` is
+ * on every reply. Each file served is logged (code C54).
  */
 export function registerFile(app: FastifyInstance, deps: FileDeps): void {
   const { route } = deps
