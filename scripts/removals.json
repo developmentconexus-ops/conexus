@@ -2289,7 +2289,7 @@
   },
   {
     "id": "assistant-read-numbered",
-    "file": "apps/server/src/builder/assistant/assistant.ts",
+    "file": "apps/server/src/builder/assistant/connector-access.ts",
     "find": "const n = (readsOfRun.get(requestContext) ?? 0) + 1",
     "replace": "const n = 1",
     "test": {
@@ -2582,6 +2582,28 @@
       "cwd": "apps/server",
       "file": "src/builder/assistant/member.test.ts",
       "name": "o membro não recebe propor automação"
+    }
+  },
+  {
+    "id": "assistant-note-only-for-connection-managers",
+    "file": "apps/server/src/hub/connectors/notes.ts",
+    "find": "      if (manage) await admitted(deps, tx, input, 'manageConnections')\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/connectors/assistant-port-note.test.ts",
+      "name": "a anotação recusada"
+    }
+  },
+  {
+    "id": "assistant-note-never-in-automation-run",
+    "file": "apps/server/src/builder/assistant/assistant.ts",
+    "find": "        !byAutomation &&\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/assistant/note-save.test.ts",
+      "name": "a rodada de automação"
     }
   },
   {
