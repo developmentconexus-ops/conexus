@@ -11,8 +11,8 @@ Run `wrangler` from `apps/edge` with the installed version, using a token of you
    `wrangler vpc service create conexus-hub-borda --type http --tunnel-id <tunnel id> --hostname hub --http-port 8081`.
    Copy the id it prints into `vpc_services` in `apps/edge/wrangler.jsonc`, and commit that.
    `infra/compose.yaml` keeps 8081 off `ports:`.
-3. The DNS record in the apps' zone: `*`, type `AAAA`, value `100::`, proxied. It only sends every
-   host to Cloudflare, where the dispatcher's route `*.<apps domain>/*` answers.
+3. The DNS record in the apps' zone: `*`, type `AAAA`, value `100::`, proxied. It sends every
+   host, [the tools'](apps-tools-host.md) too, to the dispatcher's route `*.<apps domain>/*`.
 4. Keep Web Analytics off for that zone. Its beacon breaks the apps' content security policy (0041).
 
 The dispatcher's route and the Hub's `HUB_APPS_DOMAIN` name the same apps domain.

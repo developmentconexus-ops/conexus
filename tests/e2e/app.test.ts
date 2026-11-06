@@ -6,7 +6,7 @@ import { ATTEMPT_KEY_HEADER } from '@conexus/hub-api'
 import example from '../../apps/edge/example/src/index.ts'
 import { serveDispatch } from '../../apps/edge/src/dispatch.ts'
 import { TEST_APPS_DOMAIN, TEST_ORIGIN } from '../../apps/server/src/platform/test-database.ts'
-import { Jar } from './apps-edge.ts'
+import { Jar, NO_TOOLS } from './apps-edge.ts'
 import { liveHub, openOnHub, PASSWORD, personWithPassword, plantCompany } from './live-hub.ts'
 
 // Step 8's journey without Cloudflare: the real Hub on both ports, the real dispatcher in Node,
@@ -67,6 +67,7 @@ function edgeEnv(edgePort: number) {
         }
       },
     },
+    ...NO_TOOLS,
   } satisfies Env
 }
 

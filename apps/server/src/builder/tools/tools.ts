@@ -5,6 +5,7 @@ import type {
   ToolInput,
   ToolTarget,
   ToolVersionBody,
+  ToolVersionId,
 } from '@conexus/hub-api'
 import { ConnectionId, OperationId, ToolId } from '@conexus/hub-api'
 import { and, eq } from 'drizzle-orm'
@@ -28,6 +29,7 @@ import { derivedUuid } from './derived.ts'
 import { detailsOf, toolOf, toolsOn } from './store.ts'
 import { tool, toolVersion } from './tables.ts'
 import { addCodeVersion, addVersion, fitCode, saveCode } from './versions.ts'
+import { codeVersionsOf, removeCompanyWorkers, removedWorkers, reupload } from './workers.ts'
 
 /** A new tool of the library at version 1, keyed by its attempt (code C37). */
 async function save(
@@ -96,11 +98,30 @@ async function get(deps: ToolsDeps, scope: InProject, toolId: ToolId) {
 }
 
 /**
- * Deletes a tool and, by cascade, its versions. A choice points at a version with no action on
- * delete, so a tool in use refuses (23503) and nothing changes; the agents are read after.
+ * Deletes a tool and, by cascade, its versions: a tool in use refuses before anything changes, a
+ * `CODE` one's Workers leave outside any transaction (D22), then its rows. A choice made meanwhile
+ * still refuses the delete (23503), and the next call uploads the Worker again.
  */
 async function remove(deps: ToolsDeps, scope: InProject, toolId: ToolId): Promise<void> {
   const offered = await offeredOf(deps, scope)
+  async function inUse(cause?: unknown) {
+    const users = await deps.database.read(databaseScopeOf(scope), (tx) =>
+      deps.usedBy(tx, [toolId]),
+    )
+    const agents = [...(users.get(toolId) ?? [])]
+    return agents.length === 0
+      ? undefined
+      : new Failure('TOOL_IN_USE', { named: { agents }, cause })
+  }
+  // A command, as admitting `manageAgents` locks the membership: a reader removes no Worker.
+  const versions = await deps.database.command(databaseScopeOf(scope), async (tx) => {
+    await admitted(deps, tx, scope, 'manageAgents')
+    const row = await usableTool(tx, scope, offered, toolId)
+    return row.kind === 'CODE' ? codeVersionsOf(tx, { companyId: scope.companyId, toolId }) : []
+  })
+  const held = await inUse()
+  if (held !== undefined) throw held
+  const workers = await removedWorkers(deps, versions)
   await deps.database
     .command(databaseScopeOf(scope), async (tx) => {
       await admitted(deps, tx, scope, 'manageAgents')
@@ -110,13 +131,9 @@ async function remove(deps: ToolsDeps, scope: InProject, toolId: ToolId): Promis
     })
     .catch(async (error: unknown) => {
       if (violatedReference(error) === undefined) throw error
-      const users = await deps.database.read(databaseScopeOf(scope), (tx) =>
-        deps.usedBy(tx, [toolId]),
-      )
-      const agents = [...(users.get(toolId) ?? [])]
-      throw new Failure('TOOL_IN_USE', { named: { agents }, cause: error })
+      throw (await inUse(error)) ?? error
     })
-  deps.log.info({ companyId: scope.companyId, toolId }, 'TOOL_DELETED')
+  deps.log.info({ companyId: scope.companyId, toolId, workers }, 'TOOL_DELETED')
 }
 
 /** The person's authorship leaves with them: their tools and versions stay with no author (data D17). */
@@ -164,6 +181,10 @@ export function createTools(deps: ToolsDeps) {
       readyOf(deps.connectors, scope, targets),
     saveReady,
     releasePerson,
+    /** A `CODE` version's Worker uploaded again from its row, for the call that found it gone. */
+    reupload: (companyId: CompanyId, toolVersionId: ToolVersionId, signal?: AbortSignal) =>
+      reupload(deps, companyId, toolVersionId, signal),
+    removeCompanyWorkers: (companyId: CompanyId) => removeCompanyWorkers(deps, companyId),
   })
 }
 

@@ -6,7 +6,7 @@ export { APP_FAILURE_CODES, type AppFailureCode } from './failures.ts'
 export { APP_CALL_LIMITS, APP_COMPATIBILITY_DATE, APP_LIMITS } from './limits.ts'
 export { ASSETS_FOLDER, FilePath, Manifest, RoleName, versionFiles } from './manifest.ts'
 export { appContentSecurityPolicy, mediaTypeOf } from './page.ts'
-export { type AppProps, type Caller, CallerAccess } from './props.ts'
+export { type AppProps, type Caller, CallerAccess, type ToolProps } from './props.ts'
 export {
   type Context,
   type Handler,

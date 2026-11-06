@@ -36,7 +36,7 @@ export type PresetFrozenTool = ToolTarget & ToolVersionConfig & { kind: 'PRESET'
  * A `CODE` tool as its version holds it: the reads it declares and the schemas of its input and
  * output, never its source or module (the agent runs the Worker the version was uploaded as).
  */
-type CodeFrozenTool = Pick<
+export type CodeFrozenTool = Pick<
   CodeToolRead,
   'description' | 'reads' | 'inputSchema' | 'outputSchema'
 > & { kind: 'CODE'; slug: ToolSlug; toolVersionId: ToolVersionId; connectionId: ConnectionId }

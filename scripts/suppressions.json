@@ -16,6 +16,7 @@
   "apps/server/src/platform/cloudflare.ts": 1,
   "apps/server/src/platform/database.check.ts": 6,
   "apps/server/src/platform/database.ts": 1,
+  "apps/server/src/platform/edge-tools.ts": 1,
   "apps/server/src/platform/http.check.ts": 1,
   "apps/server/src/platform/http.test.ts": 1,
   "apps/server/src/platform/mail.ts": 1,

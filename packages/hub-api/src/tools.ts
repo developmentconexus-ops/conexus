@@ -285,7 +285,7 @@ export const deleteTool = defineOperation({
   bodyLimit: 1024,
   input: { params: OfTool },
   success: { status: 204 },
-  failures: [...TOOL_FAILURES, 'TOOL_NOT_FOUND', 'TOOL_IN_USE'],
+  failures: [...TOOL_FAILURES, 'TOOL_NOT_FOUND', 'TOOL_IN_USE', 'TOOL_UNAVAILABLE'],
 })
 
 /** A `CODE` version's Worker in the tools' namespace, named by its id: step 24.4's U3 uploads and removes it. */
@@ -293,3 +293,44 @@ export const ToolWorker = z.string().regex(/^t-[A-Za-z0-9-]{32,36}$/)
 export function toolWorkerOf(id: ToolVersionId) {
   return ToolWorker.parse(`t-${id}`)
 }
+
+/**
+ * One live call of a saved tool, which the Hub opens before it calls the edge and closes after: the
+ * edge carries only this key, and the Hub finds the conversation, the version and the turn by it.
+ */
+export const ToolCallKey = z.uuid().brand('ToolCallKey')
+export type ToolCallKey = z.infer<typeof ToolCallKey>
+
+/** What the Hub sends the tools' host at `/<toolVersionId>`, behind Cloudflare Access. */
+export const ToolCall = z.object({ call: ToolCallKey, input: z.unknown() })
+export type ToolCall = z.infer<typeof ToolCall>
+
+/**
+ * Why a call of a saved tool failed, as the edge saw it: its CPU, the call's deadline, an answer
+ * that is not JSON or not a success, a throw of its own, or the code its `data.read` rejected with.
+ */
+const TOOL_FAILURE_REASONS = [
+  'CPU',
+  'DEADLINE',
+  'NOT_JSON',
+  'STATUS',
+  'THREW',
+  'NOT_DECLARED',
+  'CALLS_SPENT',
+  'NOT_GRANTED',
+  'REFUSED',
+  'AUTH_REFUSED',
+  'UNREADABLE',
+  'BUSY',
+  'UNREACHABLE',
+] as const
+export const ToolFailureReason = z.enum(TOOL_FAILURE_REASONS)
+export type ToolFailureReason = z.infer<typeof ToolFailureReason>
+
+/** What the tools' host answers: the tool's JSON, why it failed, or that its Worker is gone. */
+export const ToolCallAnswer = z.discriminatedUnion('kind', [
+  z.strictObject({ kind: z.literal('OK'), value: z.unknown() }),
+  z.strictObject({ kind: z.literal('FAILED'), reason: ToolFailureReason }),
+  z.strictObject({ kind: z.literal('MISSING') }),
+])
+export type ToolCallAnswer = z.infer<typeof ToolCallAnswer>

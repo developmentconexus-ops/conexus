@@ -39,6 +39,15 @@ test('a imagem do Hub traz o git e a pasta dos repositórios é um volume do usu
   )
   assert.ok(compose.services.hub.secrets.includes('hub_connector_apps'))
   assert.equal(compose.secrets.hub_connector_apps.file, '/etc/conexus/secrets/hub_connector_apps')
+  for (const half of ['id', 'secret']) {
+    const name = `hub_tools_access_client_${half}`
+    assert.equal(
+      compose.services.hub.environment[`HUB_TOOLS_ACCESS_CLIENT_${half.toUpperCase()}_FILE`],
+      `/run/secrets/${name}`,
+    )
+    assert.ok(compose.services.hub.secrets.includes(name))
+    assert.equal(compose.secrets[name].file, `/etc/conexus/secrets/${name}`)
+  }
   // The template comes beside the image from deploy.sh, never fixed here nor read from hub.env.
   assert.equal(
     compose.services.hub.environment.HUB_E2B_TEMPLATE,

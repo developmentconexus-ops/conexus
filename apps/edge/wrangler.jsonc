@@ -12,6 +12,12 @@
       "binding": "DISPATCHER",
       "namespace": "conexus-apps",
       "outbound": { "service": "conexus-outbound" }
+    },
+    // The saved tools' Workers (step 24.4), behind the same outbound wall as the apps.
+    {
+      "binding": "TOOLS",
+      "namespace": "conexus-tools",
+      "outbound": { "service": "conexus-outbound" }
     }
   ],
   // The Hub's edge listener, hub:8081 through the server's Tunnel: the VPC service conexus-hub-borda.
@@ -20,7 +26,9 @@
   "secrets": { "required": ["APP_LOGIN_KEY"] },
   "vars": {
     "HUB_PUBLIC_ORIGIN": "https://hub.conexus.fun",
-    "APPS_DOMAIN": "conexusapp.tech"
+    "APPS_DOMAIN": "conexusapp.tech",
+    // The Access application in front of tools.conexusapp.tech: its audience tag, not a secret.
+    "TOOLS_ACCESS_AUD": "91331491ad702b62868605b9604ba7cf47bd92c170f8c5a374362d060ef55d16"
   },
   // A pass travels in the query string: the logs keep the path without it (security S41).
   "observability": {

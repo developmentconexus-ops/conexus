@@ -24,7 +24,7 @@ async function openInput(
   )
 }
 
-/** A tool in code is called through the Worker it is uploaded as (step 24.4, U3); only a `PRESET` one is a read here. */
+/** A tool in code is called through the Worker it is uploaded as (`code-tools.ts`); only a `PRESET` one is a read here. */
 function isPreset(tool: FrozenTool): tool is PresetFrozenTool {
   return tool.kind === 'PRESET'
 }

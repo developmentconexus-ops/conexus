@@ -17,7 +17,10 @@ import { testBuilderPorts } from '../../apps/server/src/builder/runs/test-runs.t
 import { createIdentity } from '../../apps/server/src/hub/identity/public.ts'
 import { createStatus } from '../../apps/server/src/hub/status/public.ts'
 import { createEdgeHub, createHub, subjectsOf } from '../../apps/server/src/main.ts'
-import { createCloudflareApps } from '../../apps/server/src/platform/cloudflare.ts'
+import {
+  createCloudflareApps,
+  createCloudflareTools,
+} from '../../apps/server/src/platform/cloudflare.ts'
 import { createCompanyPostgres } from '../../apps/server/src/platform/company-postgres.ts'
 import type { Config } from '../../apps/server/src/platform/config.ts'
 import { ConnectorApps } from '../../apps/server/src/platform/config-connectors.ts'
@@ -138,6 +141,7 @@ export async function liveHub(
       appLoginKey: config.appLoginKey,
     }),
     cloudflare: createCloudflareApps({ config, log: silent }),
+    cloudflareTools: createCloudflareTools({ config, log: silent }),
     log: silent,
   })
   const { apps, conversations, connectors } = subjects
