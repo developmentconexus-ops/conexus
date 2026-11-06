@@ -211,33 +211,6 @@ async function notebook(t: TestContext) {
   return { on, record, body: { connections: [on.matriz] } }
 }
 
-test('o modelo de verdade: o caderno, a dona pede e o turno grava e diz o que anotou (step 24.3.5, critério 8)', {
-  timeout: 1_800_000,
-}, async (t) => {
-  if (REAL_MODEL === undefined) return t.skip(OPT_IN)
-  const { on, record, body } = await notebook(t)
-  const owner = await created(on.hub, on.ana, on.assistant, body)
-  await completed(on, on.ana, owner, await (await talking(t, on.hub, on.ana, owner)).say(TEACHING))
-  const parts = await answerParts(on.hub, on.ana, owner)
-  const seen = record('dona', parts)
-  assert.deepEqual(await scored(parts, SAVE), [1, 1], `chamou e nenhuma ferramenta errou\n${seen}`)
-  const notes = []
-  for (const id of on.connections) {
-    const page = await call(on.hub, on.ana, 'GET', `${on.company}/connections/${id}`)
-    notes.push(...Object(page.json()).notes.map((each: object) => ({ connection: id, ...each })))
-  }
-  assert.equal(
-    notes.length,
-    1,
-    `esperava uma anotação nas ligações da empresa, vieram ${notes.length}\n${seen}`,
-  )
-  const [note] = notes
-  assert.equal(note.connection, on.matriz, `a anotação foi para outra ligação\n${seen}`)
-  assert.ok(note.provedRows > 0, `a prova não voltou linhas\n${seen}`)
-  assert.equal(note.writtenBy, 'Ana Lima')
-  assert.match(textOf(parts), /NUNOTA/, `a resposta não diz o que anotou\n${seen}`)
-})
-
 test('o modelo de verdade: o caderno, a conversa em que a pessoa não ensina nem pede anotação não grava', {
   timeout: 1_800_000,
 }, async (t) => {

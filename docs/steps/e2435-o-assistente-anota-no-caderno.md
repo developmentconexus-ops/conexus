@@ -66,7 +66,7 @@ em `hub/identity/roles.ts:52-72`). A U3 espera só a U1.
 | 5 | U1 | A escrita do Builder continua igual, e o seu teste de hoje passa sem mudar | `builder/conversation/conversation-connectors.test.ts`, os casos de hoje | must |
 | 6 | U2 | O caderno vazio diz "Nada anotado nesta ligação ainda."; o diálogo de apagar não nomeia só o Builder; a linha "Anotou no caderno do sistema" da sala do Assistente é a de hoje | `web/src/hub/connectors/notes.test.tsx`, o caderno vazio e o diálogo de apagar | must |
 | 7 | U3 | Para um membro ou um desenvolvedor, que conversam desde a 24.3.4, o modelo não recebe `connector_note_save`, como `propose_automation` hoje (`builder/assistant/member.test.ts:57-98`); uma chamada inventada é `ToolNotFoundError` do Mastra; o texto do Assistente diz que, sem a ferramenta, ele entrega o texto pronto para um dono ou administrador anotar | `note-save.test.ts`, "o membro" | must |
-| 8 | U3 | Avaliação com o modelo de verdade (opt-in, `CONEXUS_EVAL_REAL_MODEL`): o dono pede para anotar, e o turno grava e diz o que anotou; uma conversa sobre um código em que a pessoa não ensina nem pede anotação não grava; o membro pede, e o turno termina com o texto e sem chamada da ferramenta | `assistant.eval.test.ts`, "o caderno" | should |
+| 8 | U3 | Com o modelo de verdade: uma conversa sobre um código em que a pessoa não ensina nem pede anotação não grava; o membro pede, e o turno termina com o texto e sem chamada da ferramenta (avaliação opt-in, `CONEXUS_EVAL_REAL_MODEL`, `assistant.eval.test.ts`, "o caderno"). O dono pede para anotar, e o turno grava e diz o que anotou: não cabe no dublê SQLite do Sankhya, que recusa a consulta de prova que o modelo escreve no dialeto do Sankhya; o fundador, em 2026-11-06: "Pode ser no hub sankhya real". Prova no Hub no ar, com o Sankhya real, feita pelo firstmate depois da publicação | `assistant.eval.test.ts`, "o caderno"; o dono, no Hub no ar | should |
 
 ## A matriz de estados
 
@@ -253,7 +253,7 @@ O membro sem a ferramenta.
    mapeamento e a consulta para a pessoa passar a um dono ou administrador.
 2. O caso do membro e do desenvolvedor em `note-save.test.ts`, com pessoas de verdade, no molde de
    `member.test.ts:57-98`.
-3. Os três casos da avaliação; firstmate roda a avaliação com o modelo de verdade.
+3. Os dois casos da avaliação (a conversa sem ensino e o membro); firstmate roda a avaliação com o modelo de verdade, e prova o caso do dono no Hub no ar (critério 8).
 
 ### Como se prova
 
