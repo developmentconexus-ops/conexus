@@ -238,7 +238,7 @@ function DeviceView(props: {
       } catch (error) {
         const next = afterFailedWait(error, started.expiresAt)
         if (next.ends) return failed(next.sentence)
-        if (next.sentence) setUnavailable(next.sentence)
+        setUnavailable(next.sentence)
         setTurn({ delay: started.retryMs })
       }
     }, turn.delay)

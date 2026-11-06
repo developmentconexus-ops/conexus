@@ -101,6 +101,25 @@ test('um 502 mantém a espera, diz a frase do Hub e tenta de novo', async () => 
   expect(await screen.findByText('Time GPT')).toBeTruthy()
 })
 
+test('um 502 e depois uma resposta perdida deixam a espera em silêncio', async () => {
+  const held = Promise.withResolvers<void>()
+  let asked = 0
+  open({
+    poll: async () => {
+      asked += 1
+      if (asked === 1) return refusal('MODEL_ACCOUNT_UNAVAILABLE')
+      if (asked === 2) return HttpResponse.error()
+      return held.promise.then(() => undefined)
+    },
+  })
+  await startChatgpt('Time GPT')
+  await screen.findByRole('alert')
+  await waitFor(() => expect(asked).toBeGreaterThanOrEqual(3))
+  await waitFor(() => expect(screen.queryByRole('alert')).toBeNull())
+  expect(screen.getByText('ABCD-1234')).toBeTruthy()
+  held.resolve()
+})
+
 test('a rede fora na espera mantém o código e a espera, e a conta ligada que volta entra', async () => {
   let asked = 0
   const sent = open({
