@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import type { CodeSaveResult, ConnectionId } from '@conexus/hub-api'
 import {
   CODE_MODULE_MAX,
+  CODE_SOURCE_MAX,
   CONSTRUTOR_TOOL,
   CodeToolVersion,
   ConnectionId as ConnectionIdSchema,
@@ -12,7 +13,7 @@ import {
 } from '@conexus/hub-api'
 import type { RequestContext } from '@mastra/core/request-context'
 import { createTool } from '@mastra/core/tools'
-import type { Workspace, WorkspaceSandbox } from '@mastra/core/workspace'
+import type { WorkspaceFilesystem, WorkspaceSandbox } from '@mastra/core/workspace'
 import { z } from 'zod'
 import type { Connectors } from '../../hub/connectors/public.ts'
 import type { FailureLog } from '../../platform/failure.ts'
@@ -48,10 +49,15 @@ const TSCONFIG = JSON.stringify({
   files: ['tool.ts'],
 })
 
-/** Prints the JSON Schema of the code's `input` and `output` (`z.toJSONSchema`, on the machine). */
-const SCHEMAS = `import { z } from 'zod'
+/**
+ * Writes the JSON Schema of the code's `input` and `output` (`z.toJSONSchema`, on the machine) to a
+ * file the Hub reads whole: a command's output is cut for the model, a schema must not be.
+ */
+const SCHEMAS = `import { writeFileSync } from 'node:fs'
+import { z } from 'zod'
 import * as tool from './tool.ts'
-console.log(JSON.stringify({ input: z.toJSONSchema(tool.input), output: z.toJSONSchema(tool.output) }))
+const schemas = { input: z.toJSONSchema(tool.input), output: z.toJSONSchema(tool.output) }
+writeFileSync('schemas.json', JSON.stringify(schemas))
 `
 
 const COMMAND_MS = 120_000
@@ -75,14 +81,18 @@ const CodeInput = z.object({
   basedOn: z.int().positive().optional(),
   reads: z.array(OperationId).min(1).max(16),
   description: z.string().trim().min(1).max(500),
-  source: z.string().min(1).max(40_000),
-  test: z.string().min(1).max(40_000),
+  source: z.string().min(1).max(CODE_SOURCE_MAX),
+  test: z.string().min(1).max(CODE_SOURCE_MAX),
   samples: z.record(OperationId, z.unknown()).default({}),
 })
 
 const Which = z.union([
   z.object({ toolId: ToolId, basedOn: z.int().positive() }),
-  z.object({ slug: ToolSlugSchema, connectionId: ConnectionIdSchema }),
+  z.object({
+    slug: ToolSlugSchema,
+    connectionId: ConnectionIdSchema,
+    toolId: z.undefined().optional(),
+  }),
 ])
 
 type Refusal = Extract<CodeSaveResult, { kind: 'REFUSED' }>
@@ -134,30 +144,29 @@ async function run(
   return { ok: result.exitCode === 0, output: output.slice(-OUTPUT_TAIL) }
 }
 
-/** The tool's files on the machine, in a folder of this attempt, and the commands that check them. */
-async function checked(
+/** The tool's files on the machine, in a folder of this attempt, and the link to the toolchain. */
+async function written(
   deps: CodeToolDeps,
-  workspace: Workspace,
-  requestContext: RequestContext,
+  machine: Machine,
   folder: string,
   files: Record<string, string>,
 ) {
-  const { filesystem } = workspace
-  const sandbox = await workspace.resolveSandbox({ requestContext })
-  if (filesystem === undefined || sandbox === undefined) {
-    throw new Failure('MACHINE_UNAVAILABLE', { details: { reason: 'NO_WORKSPACE' } })
-  }
+  const { filesystem, sandbox } = machine
   for (const [name, content] of Object.entries(files)) {
     await filesystem.writeFile(`${folder}/${name}`, content, { recursive: true })
   }
-  const bin = `${deps.machines.toolchain}/node_modules/.bin`
-  await run(sandbox, folder, 'ln', [
+  const { toolchain } = deps.machines
+  const linked = await run(sandbox, folder, 'ln', [
     '-sfn',
-    `${deps.machines.toolchain}/node_modules`,
+    `${toolchain}/node_modules`,
     'node_modules',
   ])
-  return { filesystem, sandbox, bin }
+  if (!linked.ok) {
+    throw new Failure('MACHINE_UNAVAILABLE', { details: { reason: 'LINK' } })
+  }
 }
+
+type Machine = { filesystem: WorkspaceFilesystem; sandbox: WorkspaceSandbox }
 
 type Stage = 'MODULE_STATE' | 'TYPES' | 'TEST' | 'SCHEMAS' | 'BUNDLE'
 
@@ -166,10 +175,14 @@ type Stage = 'MODULE_STATE' | 'TYPES' | 'TEST' | 'SCHEMAS' | 'BUNDLE'
  * bundle. The first that fails ends it, with what it printed.
  */
 async function pipeline(
-  tool: Awaited<ReturnType<typeof checked>>,
+  deps: CodeToolDeps,
+  machine: Machine,
   folder: string,
-): Promise<{ stage: Stage; output: string } | { stage: 'PASSED'; schemas: Run; module: string }> {
-  const { sandbox, bin, filesystem } = tool
+): Promise<
+  { stage: Stage; output: string } | { stage: 'PASSED'; schemas: string; module: string }
+> {
+  const { sandbox, filesystem } = machine
+  const bin = `${deps.machines.toolchain}/node_modules/.bin`
   const steps: [Stage, string, string[]][] = [
     ['MODULE_STATE', `${bin}/biome`, ['lint', '--config-path=.', 'tool.ts']],
     ['TYPES', `${bin}/tsc`, ['-p', 'tsconfig.json']],
@@ -179,8 +192,8 @@ async function pipeline(
     const ran = await run(sandbox, folder, command, args)
     if (!ran.ok) return { stage, output: ran.output }
   }
-  const schemas = await run(sandbox, folder, 'node', ['schemas.ts'])
-  if (!schemas.ok) return { stage: 'SCHEMAS', output: schemas.output }
+  const printed = await run(sandbox, folder, 'node', ['schemas.ts'])
+  if (!printed.ok) return { stage: 'SCHEMAS', output: printed.output }
   const bundle = [
     ...['tool.ts', '--bundle', '--format=esm', '--platform=neutral', '--target=es2022'],
     ...['--main-fields=module,main', '--conditions=workerd,worker,browser', '--minify'],
@@ -188,8 +201,10 @@ async function pipeline(
   ]
   const built = await run(sandbox, folder, `${bin}/esbuild`, bundle)
   if (!built.ok) return { stage: 'BUNDLE', output: built.output }
-  const module = await filesystem.readFile(`${folder}/module.js`, { encoding: 'utf-8' })
-  return { stage: 'PASSED', schemas, module: String(module) }
+  const encoding = 'utf-8'
+  const schemas = await filesystem.readFile(`${folder}/schemas.json`, { encoding })
+  const module = await filesystem.readFile(`${folder}/module.js`, { encoding })
+  return { stage: 'PASSED', schemas: String(schemas), module: String(module) }
 }
 
 /**
@@ -215,7 +230,7 @@ export function codeToolSave(deps: CodeToolDeps, scope: InProject) {
       const which = Which.safeParse(input)
       if (!which.success) return refusal('REQUEST_MALFORMED', { field: 'toolId' })
       try {
-        return await saveCode(deps, scope, { ...input, which: which.data }, key, requestContext)
+        return await testAndSave(deps, scope, { input, which: which.data }, key, requestContext)
       } catch (error) {
         return refusedBy(deps, error)
       }
@@ -223,19 +238,20 @@ export function codeToolSave(deps: CodeToolDeps, scope: InProject) {
   })
 }
 
-type Saving = z.infer<typeof CodeInput> & { which: z.infer<typeof Which> }
+type Saving = { input: z.infer<typeof CodeInput>; which: z.infer<typeof Which> }
 
-async function saveCode(
+async function testAndSave(
   deps: CodeToolDeps,
   scope: InProject,
-  input: Saving,
+  saving: Saving,
   key: string,
   requestContext: RequestContext,
 ): Promise<CodeSaveResult> {
-  const { which, reads, samples } = input
+  const { input, which } = saving
+  const { reads, samples } = input
   // Before the machine: the tool is the Projeto's to use, on a connection it received, at this version.
   const connectionId =
-    'toolId' in which
+    which.toolId !== undefined
       ? await (async () => {
           const held = await deps.tools.get(scope, which.toolId)
           if (held.latest.number !== which.basedOn) {
@@ -251,6 +267,11 @@ async function saveCode(
   const workspace = await deps.machines.workspace(requestContext)
   if (workspace === undefined)
     throw new Failure('MACHINE_UNAVAILABLE', { details: { reason: 'NONE' } })
+  const { filesystem } = workspace
+  const sandbox = await workspace.resolveSandbox({ requestContext })
+  if (filesystem === undefined || sandbox === undefined) {
+    throw new Failure('MACHINE_UNAVAILABLE', { details: { reason: 'NO_WORKSPACE' } })
+  }
 
   const fixtures: Record<string, unknown> = {}
   for (const operation of reads) {
@@ -277,11 +298,12 @@ async function saveCode(
     'module-state.grit': MODULE_RULE,
     'schemas.ts': SCHEMAS,
   }
-  const tool = await checked(deps, workspace, requestContext, folder, files)
+  const machine = { filesystem, sandbox }
   try {
-    const result = await pipeline(tool, folder)
+    await written(deps, machine, folder, files)
+    const result = await pipeline(deps, machine, folder)
     if (result.stage === 'PASSED') {
-      return await save(deps, scope, { ...input, connectionId, key }, result, rows)
+      return await keep(deps, scope, saving, key, result, rows)
     }
     if (result.stage === 'MODULE_STATE' && result.output.includes('MODULE_STATE')) {
       return refusal('TOOL_REFUSED', {
@@ -292,18 +314,20 @@ async function saveCode(
     return refusal('TOOL_TEST_FAILED', { output: result.output })
   } finally {
     // The fixtures are the company's rows: they leave the machine with the folder, whatever happened.
-    await tool.filesystem.rmdir(folder, { recursive: true, force: true })
+    await filesystem.rmdir(folder, { recursive: true, force: true })
   }
 }
 
-async function save(
+async function keep(
   deps: CodeToolDeps,
   scope: InProject,
-  input: Saving & { connectionId: ConnectionId; key: string },
-  passed: { schemas: Run; module: string },
+  saving: Saving,
+  key: string,
+  passed: { schemas: string; module: string },
   rows: number,
 ): Promise<CodeSaveResult> {
-  const schemas = Schemas.parse(JSON.parse(passed.schemas.output))
+  const { input, which } = saving
+  const schemas = Schemas.parse(JSON.parse(passed.schemas))
   if (passed.module.length > CODE_MODULE_MAX) {
     return refusal('TOOL_REFUSED', { field: 'source', reason: 'VALUE_REFUSED' })
   }
@@ -312,10 +336,10 @@ async function save(
     ...{ reads: input.reads, inputSchema: schemas.input, outputSchema: schemas.output },
     test: { passed: true, rows, at: new Date().toISOString() },
   })
-  const { which, key } = input
+  const request = input
   const tool =
-    'toolId' in which
-      ? await deps.tools.addCodeVersion(scope, { ...which, version }, key)
-      : await deps.tools.saveCode(scope, { ...which, version }, key)
+    which.toolId !== undefined
+      ? await deps.tools.addCodeVersion(scope, { ...which, version, request }, key)
+      : await deps.tools.saveCode(scope, { ...which, version, request }, key)
   return { kind: 'SAVED', tool }
 }

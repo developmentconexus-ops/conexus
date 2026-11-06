@@ -281,6 +281,7 @@ const SAVED_CODE = {
   kind: 'SAVED',
   tool: {
     ...{ kind: 'CODE', id: TOOL, slug: 'vendas', connectionId: CONNECTION, reads: ['pedidos'] },
+    readLabels: { pedidos: 'Pedidos' },
     ...{ description: 'Soma as vendas.', connectionName: 'Matriz', effect: 'READ', usedBy: [] },
     latest: { id: VERSION, number: 1 },
     versions: [CODE_VERSION],

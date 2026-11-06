@@ -1,5 +1,6 @@
 import type {
   AgentTool,
+  CodeToolVersion,
   CompanyId,
   NamedAgent,
   PersonId,
@@ -9,15 +10,16 @@ import type {
   ToolVersionDetail,
 } from '@conexus/hub-api'
 import {
-  CodeToolVersion,
+  CodeToolRead,
   ConnectionId,
   OperationId,
   ToolId,
+  ToolKind,
   ToolSlug as ToolSlugSchema,
   ToolVersionConfig,
   ToolVersionId,
 } from '@conexus/hub-api'
-import { and, asc, eq, inArray } from 'drizzle-orm'
+import { and, asc, eq, getTableColumns, inArray, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { CommandTx, ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
@@ -33,6 +35,15 @@ export type UsedBy = (
 
 type ToolRow = typeof tool.$inferSelect
 type VersionRow = typeof toolVersion.$inferSelect
+
+/**
+ * A version's columns with its config minus the bundled module (453 KB a version): no read but the
+ * Worker's upload needs it, so none brings it from the database.
+ */
+const withoutModule = {
+  ...getTableColumns(toolVersion),
+  config: sql<unknown>`${toolVersion.config} - 'module'`,
+}
 
 export function toolOf(tx: ReadTx, companyId: CompanyId, toolId: ToolId) {
   return tx
@@ -55,7 +66,7 @@ export function toolsOn(tx: ReadTx, companyId: CompanyId, connections: readonly 
 export function versionsOf(tx: ReadTx, toolIds: readonly ToolId[]) {
   if (toolIds.length === 0) return Promise.resolve([])
   return tx
-    .select()
+    .select(withoutModule)
     .from(toolVersion)
     .where(inArray(toolVersion.toolId, [...toolIds]))
     .orderBy(asc(toolVersion.toolId), asc(toolVersion.number))
@@ -65,7 +76,7 @@ export function versionsOf(tx: ReadTx, toolIds: readonly ToolId[]) {
 export function versionsWithTools(tx: ReadTx, versionIds: readonly ToolVersionId[]) {
   if (versionIds.length === 0) return Promise.resolve([])
   return tx
-    .select({ version: toolVersion, tool })
+    .select({ version: withoutModule, tool })
     .from(toolVersion)
     .innerJoin(tool, eq(tool.id, toolVersion.toolId))
     .where(inArray(toolVersion.id, [...versionIds]))
@@ -81,21 +92,30 @@ export function presetTargetOf(row: ToolRow): ToolTarget & { slug: ToolSlug } {
 }
 
 /** A version as a screen reads it, by its tool's kind (code C21): a `CODE` one without its module. */
-function versionDetail(kind: string, row: VersionRow): ToolVersionDetail {
+function versionDetail(
+  kind: ToolKind,
+  row: Pick<VersionRow, 'id' | 'number' | 'config'>,
+): ToolVersionDetail {
   const identity = { id: ToolVersionId.parse(row.id), number: row.number }
-  if (kind === 'CODE') {
-    const { module: _, ...version } = CodeToolVersion.parse(row.config)
-    return { ...version, kind: 'CODE', ...identity }
+  switch (kind) {
+    case 'CODE':
+      return { ...CodeToolRead.parse(row.config), kind, ...identity }
+    case 'PRESET':
+      return { ...ToolVersionConfig.parse(row.config), kind, ...identity }
+    default:
+      return kind satisfies never
   }
-  return { ...ToolVersionConfig.parse(row.config), kind: 'PRESET', ...identity }
 }
 
 /** The description the latest version gives: the same field in both kinds. */
-function descriptionOf(row: VersionRow): string {
+function descriptionOf(row: Pick<VersionRow, 'config'>): string {
   return z.object({ description: z.string() }).parse(row.config).description
 }
 
-function latestOf(row: ToolRow, versions: readonly VersionRow[]) {
+function latestOf<V extends Pick<VersionRow, 'toolId' | 'number'>>(
+  row: ToolRow,
+  versions: readonly V[],
+) {
   const latest = versions.find(
     (each) => each.toolId === row.id && each.number === row.currentVersion,
   )
@@ -131,16 +151,27 @@ export async function detailsOf(
       latest: { id: ToolVersionId.parse(latest.id), number: latest.number },
       usedBy: [...(users.get(ToolId.parse(row.id)) ?? [])],
     }
-    const own = versions.filter((each) => each.toolId === row.id)
-    const detailed = own.map((each) => versionDetail(row.kind, each))
-    if (row.kind === 'CODE') {
-      const reads = CodeToolVersion.parse(latest.config).reads
-      return { ...base, kind: 'CODE', reads, versions: detailed }
+    const kind = ToolKind.parse(row.kind)
+    const detailed = versions
+      .filter((each) => each.toolId === row.id)
+      .map((each) => versionDetail(kind, each))
+    switch (kind) {
+      case 'CODE':
+        return {
+          ...base,
+          ...{ kind, reads: CodeToolRead.parse(latest.config).reads, versions: detailed },
+          readLabels: Object.fromEntries(
+            connection.reads.map((each) => [each.operation, each.label]),
+          ),
+        }
+      case 'PRESET': {
+        const { operation } = presetTargetOf(row)
+        const read = connection.reads.find((each) => each.operation === operation)
+        return { ...base, kind, operation, readLabel: read?.label ?? operation, versions: detailed }
+      }
+      default:
+        return kind satisfies never
     }
-    const { operation } = presetTargetOf(row)
-    const read = connection.reads.find((each) => each.operation === operation)
-    const readLabel = read?.label ?? operation
-    return { ...base, kind: 'PRESET', operation, readLabel, versions: detailed }
   })
 }
 
@@ -163,7 +194,7 @@ export async function chosenOf(
         effect: 'READ' as const,
         latest: { id: ToolVersionId.parse(newest.id), number: newest.number },
       }
-      const detail = versionDetail(row.kind, version)
+      const detail = versionDetail(ToolKind.parse(row.kind), version)
       if (detail.kind === 'CODE') {
         return {
           ...base,

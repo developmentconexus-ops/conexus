@@ -212,24 +212,23 @@ function construtorAgent(
         ...sessionScopeOf(scope),
         chosen: offered.map((each) => each.connectionId),
       }
+      function read(
+        call: Parameters<ConnectorAccess['read']>[0],
+        context: Parameters<ConnectorAccess['read']>[1],
+      ) {
+        return deps.connectors.read(door, { ...call, turn: turnKey.of(context) })
+      }
       const access: ConnectorAccess = {
         connections: offered,
         log: deps.log,
-        read: (call, context) => deps.connectors.read(door, { ...call, turn: turnKey.of(context) }),
+        read,
         notes: (connectionId) => deps.connectors.notes(door, connectionId),
         wording: { whose: 'this Project received', limit: '50 connector calls per answer' },
       }
       return {
         ...toolsOf(sessionModel(requestContext)),
         ...connectorTools(access, { noteSave: false }),
-        ...construtorTools(
-          {
-            ...construtor,
-            read: (call, context) =>
-              deps.connectors.read(door, { ...call, turn: turnKey.of(context) }),
-          },
-          scope,
-        ),
+        ...construtorTools({ ...construtor, read }, scope),
       }
     },
     ...agentDefaults(deps.queue, parts.turns),

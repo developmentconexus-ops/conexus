@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { ProblemField, ProblemReason } from './agent-failures.ts'
 import { AgentDetail, AgentListed, AgentSummary, OfferedConnection } from './agents.ts'
 import { AutomationId } from './assistant.ts'
 import { CompanyId } from './companies.ts'
@@ -60,7 +61,7 @@ export const ToolSearchResult = z.object({
   tools: z.array(
     z.discriminatedUnion('kind', [
       PresetSummary.omit({ connectionName: true, readLabel: true }),
-      CodeSummary.omit({ connectionName: true }),
+      CodeSummary.omit({ connectionName: true, readLabels: true }),
     ]),
   ),
   ready: z.array(ReadyTool),
@@ -77,8 +78,8 @@ export const CodeSaveResult = z.discriminatedUnion('kind', [
   z.object({
     kind: z.literal('REFUSED'),
     code: Problem.shape.code,
-    field: z.string().optional(),
-    reason: z.string().optional(),
+    field: ProblemField.optional(),
+    reason: ProblemReason.optional(),
     /** On `TOOL_TEST_FAILED`: what the test printed, the end of it. */
     output: z.string().optional(),
   }),

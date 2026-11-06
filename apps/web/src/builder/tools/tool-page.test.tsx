@@ -1,3 +1,4 @@
+import assert from 'node:assert/strict'
 import type { ToolSummary, ToolVersionDetail } from '@conexus/hub-api'
 import { ConnectionId, OperationId, ToolId, ToolVersionId } from '@conexus/hub-api'
 import { cleanup, screen, within } from '@testing-library/react'
@@ -21,6 +22,7 @@ const summary: ToolSummary = {
   slug: 'vendas_por_vendedor',
   connectionId: ConnectionId.parse('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),
   reads: [OperationId.parse('pedidos')],
+  readLabels: { pedidos: 'Pedidos' },
   description: 'Soma as vendas de cada vendedor num mês.',
   connectionName: 'Matriz',
   effect: 'READ',
@@ -44,6 +46,9 @@ test('a lista marca a ferramenta Em código e não oferece Nova versão nela', a
   at(TABS, { agents: [agent()], tools: [summary] })
   expect(await screen.findByText('vendas_por_vendedor')).toBeTruthy()
   expect(screen.getByText('Em código')).toBeTruthy()
+  const row = screen.getByText('vendas_por_vendedor').closest('tr')
+  assert.ok(row, 'the tool row')
+  expect(within(row).getByText('Pedidos')).toBeTruthy()
   expect(screen.queryByRole('button', { name: /Nova versão/ })).toBeNull()
   expect(screen.getByRole('button', { name: 'Apagar vendas_por_vendedor' })).toBeTruthy()
 })
@@ -55,7 +60,7 @@ test('a página da versão mostra o código e o resultado do teste; o membro, no
   const code = screen.getByText(/Response\.json/)
   expect(code.textContent).toContain('total: 5')
   expect(screen.getByText('Teste passou · 251 linhas lidas')).toBeTruthy()
-  expect(screen.getByText(/Lê: Matriz · pedidos/)).toBeTruthy()
+  expect(screen.getByText(/Lê: Matriz · Pedidos/)).toBeTruthy()
   expect(screen.queryByRole('button', { name: 'Nova versão' })).toBeNull()
   expect(within(document.body).queryByText(/"module"/)).toBeNull()
   cleanup()

@@ -1,7 +1,7 @@
 import type { ToolVersionDetail } from '@conexus/hub-api'
 import { Badge } from '../../ui/badge.tsx'
 import { CodeBlock, CodeBlockContent, CodeBlockLine } from '../../ui/code-block.tsx'
-import { IN_CODE, testText } from './text.ts'
+import { IN_CODE, readNames, testText } from './text.ts'
 
 type CodeVersionDetail = Extract<ToolVersionDetail, { kind: 'CODE' }>
 
@@ -11,18 +11,21 @@ export function CodeBadge() {
 }
 
 /** A version of a tool in code (step 24.4): what it reads, the code the Construtor wrote and the test that passed. */
-export function CodeVersion(props: { connection: string; version: CodeVersionDetail }) {
+export function CodeVersion(props: {
+  connection: string
+  labels: Record<string, string>
+  version: CodeVersionDetail
+}) {
   const { version } = props
   return (
     <>
       <span className="text-fact text-text-2">
-        Lê: {props.connection} · {version.reads.join(', ')}
+        Lê: {props.connection} · {readNames(version.reads, props.labels)}
       </span>
       <CodeBlock>
         <CodeBlockContent>
-          {version.source.split('\n').map((line, index) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: the lines of a saved source never reorder.
-            <CodeBlockLine key={index}>{line}</CodeBlockLine>
+          {[...version.source.split('\n').entries()].map(([at, line]) => (
+            <CodeBlockLine key={at}>{line}</CodeBlockLine>
           ))}
         </CodeBlockContent>
       </CodeBlock>

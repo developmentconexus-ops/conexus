@@ -1,6 +1,6 @@
 import type {
   AgentConfig,
-  CodeToolVersion,
+  CodeToolRead,
   CompanyId,
   OfProject,
   ToolSlug,
@@ -11,11 +11,12 @@ import type {
 import {
   AgentConfig as AgentConfigSchema,
   AgentId,
-  CodeToolVersion as CodeToolVersionSchema,
+  CodeToolRead as CodeToolReadSchema,
   CompanyId as CompanyIdSchema,
   ConnectionId,
   OperationId,
   ProjectId,
+  ToolKind,
   ToolSlug as ToolSlugSchema,
   ToolVersionConfig as ToolVersionConfigSchema,
   ToolVersionId as ToolVersionIdSchema,
@@ -36,7 +37,7 @@ export type PresetFrozenTool = ToolTarget & ToolVersionConfig & { kind: 'PRESET'
  * output, never its source or module (the agent runs the Worker the version was uploaded as).
  */
 type CodeFrozenTool = Pick<
-  CodeToolVersion,
+  CodeToolRead,
   'description' | 'reads' | 'inputSchema' | 'outputSchema'
 > & { kind: 'CODE'; slug: ToolSlug; toolVersionId: ToolVersionId; connectionId: ConnectionId }
 
@@ -62,9 +63,10 @@ function frozenOf(row: Awaited<ReturnType<typeof versionsWithTools>>[number]): F
   const { version, tool } = row
   const slug = ToolSlugSchema.parse(tool.slug)
   const connectionId = ConnectionId.parse(tool.connectionId)
-  switch (tool.kind) {
+  const kind = ToolKind.parse(tool.kind)
+  switch (kind) {
     case 'CODE': {
-      const { description, reads, inputSchema, outputSchema } = CodeToolVersionSchema.parse(
+      const { description, reads, inputSchema, outputSchema } = CodeToolReadSchema.parse(
         version.config,
       )
       const toolVersionId = ToolVersionIdSchema.parse(version.id)
@@ -73,14 +75,16 @@ function frozenOf(row: Awaited<ReturnType<typeof versionsWithTools>>[number]): F
         ...{ description, reads, inputSchema, outputSchema },
       }
     }
-    default:
+    case 'PRESET':
       return {
-        kind: 'PRESET',
+        kind,
         connectionId,
         operation: OperationId.parse(tool.operation),
         slug,
         ...ToolVersionConfigSchema.parse(version.config),
       }
+    default:
+      return kind satisfies never
   }
 }
 

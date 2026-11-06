@@ -154,8 +154,12 @@ export const PresetVersionDetail = ToolVersionConfig.extend({
   kind: z.literal('PRESET'),
   ...VersionIdentity,
 })
-/** A `CODE` version as a screen reads it: its source and test, never its module. */
-export const CodeVersionDetail = CodeToolVersion.omit({ module: true }).extend({
+/** A `CODE` version as every read but the Worker's upload has it: its source and test, never its module. */
+export const CodeToolRead = CodeToolVersion.omit({ module: true })
+export type CodeToolRead = z.infer<typeof CodeToolRead>
+
+/** A `CODE` version as a screen reads it. */
+export const CodeVersionDetail = CodeToolRead.extend({
   kind: z.literal('CODE'),
   ...VersionIdentity,
 })
@@ -193,6 +197,8 @@ export const CodeSummary = z.object({
   connectionId: ConnectionId,
   /** The reads the latest version declares. */
   reads: z.array(OperationId),
+  /** The name the kit gives each read of the connection ("Notas"); a read it no longer lists has none, and its id shows. */
+  readLabels: z.record(z.string(), z.string()),
 })
 
 /** A tool of the library: one read of a connection, or code that reads several of one. */

@@ -27,7 +27,7 @@ import { readyOf, saveReady, usable } from './choice.ts'
 import { derivedUuid } from './derived.ts'
 import { detailsOf, toolOf, toolsOn } from './store.ts'
 import { tool, toolVersion } from './tables.ts'
-import { addCodeVersion, addVersion, codeFitting, saveCode } from './versions.ts'
+import { addCodeVersion, addVersion, fitCode, saveCode } from './versions.ts'
 
 /** A new tool of the library at version 1, keyed by its attempt (code C37). */
 async function save(
@@ -148,7 +148,7 @@ export function createTools(deps: ToolsDeps) {
       by: Writer,
     ) => addVersion(deps, scope, toolId, body, attemptKey, by),
     fitCode: (scope: InProject, connectionId: ConnectionId, reads: readonly OperationId[]) =>
-      codeFitting(deps, scope, connectionId, reads),
+      fitCode(deps, scope, connectionId, reads),
     saveCode: (scope: InProject, body: Parameters<typeof saveCode>[2], attemptKey: string) =>
       saveCode(deps, scope, body, attemptKey),
     addCodeVersion: (

@@ -9,7 +9,7 @@ import { TableCell, TableRow } from '../../ui/table.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
 import { CodeBadge } from './code-version.tsx'
 import { sendToolDeletion } from './queries.ts'
-import { deleteWarning, EFFECT_TEXT, NOBODY_USES, UNCONFIRMED_DELETE } from './text.ts'
+import { deleteWarning, EFFECT_TEXT, NOBODY_USES, readNames, UNCONFIRMED_DELETE } from './text.ts'
 import { NewVersion } from './tool-page.tsx'
 
 type Scope = { companyId: CompanyId; projectId: ProjectId }
@@ -50,7 +50,7 @@ function Refused(props: { scope: Scope; failure: unknown }) {
 
 /** What the tool reads: a preset's one read by its name, a tool in code's reads by their ids. */
 function readText(tool: ToolSummary): string {
-  return tool.kind === 'PRESET' ? tool.readLabel : tool.reads.join(', ')
+  return tool.kind === 'PRESET' ? tool.readLabel : readNames(tool.reads, tool.readLabels)
 }
 
 function Effect({ tool }: { tool: ToolSummary }) {

@@ -1,11 +1,13 @@
 import assert from 'node:assert/strict'
+import { readdirSync } from 'node:fs'
 import { test } from 'node:test'
 import { AgentId, CodeSaveResult, CompanyId, ProjectId } from '@conexus/hub-api'
 import { call, post } from '../../hub/identity/test-hub.ts'
 import { agentOf, drafted, madeAgent } from '../agents/test-agents.ts'
 import { endOf } from '../conversation/test-conversation.ts'
 import { tool } from '../conversation/test-questions.ts'
-import { building, keeping } from './test-construtor.ts'
+import type { Step } from './test-construtor.ts'
+import { building, keeping, listOf, resultOf } from './test-construtor.ts'
 
 /** The tool's code: counts the rows the read answers, as a Worker module of the platform. */
 const SOURCE = `import { z } from 'zod'
@@ -61,11 +63,35 @@ function answerOf(answers: Record<string, unknown>[], at = 0) {
   return CodeSaveResult.parse(answers[at])
 }
 
-test('o teste passa: a versão 1 é gravada com o código, o módulo empacotado e o resultado do teste', async (t) => {
+/** The Matriz as the model learns it: the ready read of pedidos that tool_search shows. */
+function matrizOf(asked: Parameters<Step>[0]) {
+  const orders = listOf(resultOf(asked).ready).find((each) => each.operation === 'pedidos')
+  assert.ok(orders, 'a ready read of pedidos')
+  return String(orders.connectionId)
+}
+
+/** The model searches the library, then saves what `change` says on the connection the search showed. */
+function searching(known: { matriz: string }, change: object = {}): Step[] {
+  return [
+    () => [tool('tool_search', {})],
+    (asked) => {
+      known.matriz = matrizOf(asked)
+      return [tool('tool_code_save', saving(known.matriz, change))]
+    },
+  ]
+}
+
+/** The folders of tools the machine still holds: the fixtures are the company's rows. */
+function leftOnMachine(on: { hub: { assistantMachines: { tuning: { workFolder: string } } } }) {
+  return readdirSync(on.hub.assistantMachines.tuning.workFolder).filter((name) =>
+    name.startsWith('tool-'),
+  )
+}
+
+test('o teste passa: a versão 1 é gravada com o código, o módulo empacotado, os esquemas e o resultado do teste, e a pasta da máquina sai', async (t) => {
   const answers: Record<string, unknown>[] = []
-  let matriz = ''
-  const on = await building(t, [() => [tool('tool_code_save', saving(matriz))], keeping(answers)])
-  matriz = on.matriz
+  const known = { matriz: '' }
+  const on = await building(t, [...searching(known), keeping(answers)])
   assert.equal(endOf(await on.conversation.say('Crie uma ferramenta de vendas')), 'complete')
 
   const saved = answerOf(answers)
@@ -80,6 +106,7 @@ test('o teste passa: a versão 1 é gravada com o código, o módulo empacotado 
   assert.deepEqual(version.reads, ['pedidos'])
   assert.equal(version.test.passed, true)
   assert.ok(version.inputSchema.type === 'object', 'the JSON Schema of the input')
+  assert.ok(!('module' in version), 'a read does not bring the module')
   const listed = await call(on.hub, on.ana, 'GET', on.tools)
   const [kept] = Object(listed.json()).tools
   assert.equal(kept.kind, 'CODE')
@@ -89,16 +116,35 @@ test('o teste passa: a versão 1 é gravada com o código, o módulo empacotado 
     [saved.tool.id],
   )
   assert.match(String(stored[0]?.module), /total/)
+  assert.deepEqual(leftOnMachine(on), [], 'the fixtures left the machine with the folder')
 })
 
-test('o teste não passa: o Construtor recebe TOOL_TEST_FAILED com o erro e nada entra na biblioteca', async (t) => {
+test('um esquema de mais de 2.000 caracteres é gravado inteiro: o corte do comando é só do que o modelo lê', async (t) => {
   const answers: Record<string, unknown>[] = []
-  let matriz = ''
-  const on = await building(t, [
-    () => [tool('tool_code_save', saving(matriz, { test: FAILING }))],
-    keeping(answers),
-  ])
-  matriz = on.matriz
+  const known = { matriz: '' }
+  const fields = Array.from({ length: 30 }, (_, at) => `campo${at}`)
+  const wide = SOURCE.replace(
+    'z.object({ total: z.number() })',
+    `z.object({ total: z.number(), ${fields
+      .map((name) => `${name}: z.string().optional().describe('${name}, descrito para o modelo')`)
+      .join(', ')} })`,
+  )
+  const on = await building(t, [...searching(known, { source: wide }), keeping(answers)])
+  assert.equal(endOf(await on.conversation.say('Crie')), 'complete')
+
+  const saved = answerOf(answers)
+  assert.equal(saved.kind, 'SAVED', JSON.stringify(answers))
+  if (saved.kind !== 'SAVED') return
+  const [version] = saved.tool.versions
+  if (version?.kind !== 'CODE') return assert.fail('a CODE version')
+  assert.ok(JSON.stringify(version.outputSchema).length > 2000, 'the schema is past the cut')
+  assert.ok(Object(version.outputSchema.properties).campo29, 'the last field is in it')
+})
+
+test('o teste não passa: o Construtor recebe TOOL_TEST_FAILED com o erro, nada entra na biblioteca e a pasta sai', async (t) => {
+  const answers: Record<string, unknown>[] = []
+  const known = { matriz: '' }
+  const on = await building(t, [...searching(known, { test: FAILING }), keeping(answers)])
   assert.equal(endOf(await on.conversation.say('Crie')), 'complete')
 
   const refused = answerOf(answers)
@@ -108,6 +154,7 @@ test('o teste não passa: o Construtor recebe TOOL_TEST_FAILED com o erro e nada
   assert.match(String(refused.output), /fail|expected|Error/i)
   const listed = await call(on.hub, on.ana, 'GET', on.tools)
   assert.deepEqual(Object(listed.json()).tools, [])
+  assert.deepEqual(leftOnMachine(on), [], 'the fixtures left the machine with the folder')
 })
 
 test('uma ligação que o Projeto não recebeu é recusada com NOT_OFFERED, sem máquina e sem linha', async (t) => {
@@ -127,45 +174,68 @@ test('uma ligação que o Projeto não recebeu é recusada com NOT_OFFERED, sem 
   assert.deepEqual(Object(listed.json()).tools, [])
 })
 
-test('estado de módulo: um let fora da função é recusado antes do teste e nada é gravado', async (t) => {
+/** Code that keeps state outside the function in each of the shapes a model writes it. */
+const WITH_STATE: Record<string, string> = {
+  let: 'let chamadas = 0\n\n',
+  'export let': 'export let chamadas = 0\n\n',
+  var: 'var chamadas = 0\n\n',
+  'um Map tipado': 'const chamadas = new Map<string, number>()\n\n',
+  'um Set tipado': 'const chamadas = new Set<string>()\n\n',
+  'um Map com valores': "const chamadas = new Map([['a', 1]])\n\n",
+  'uma lista vazia': 'const chamadas = [] as string[]\n\n',
+  'um objeto mudado': 'const chamadas = { total: 0 }\n\n',
+  'um campo estático': 'class Contador { static chamadas = 0 }\n\n',
+  'a globalThis': 'globalThis.chamadas = 0\n\n',
+}
+
+test('estado de módulo: cada forma de guardar estado fora da função é recusada antes do teste e nada é gravado', async (t) => {
   const answers: Record<string, unknown>[] = []
-  let matriz = ''
-  const withState = SOURCE.replace('type Data', 'let chamadas = 0\n\ntype Data').replace(
-    'const { mes }',
-    'chamadas += 1\n    const { mes }',
-  )
-  const on = await building(t, [
-    () => [tool('tool_code_save', saving(matriz, { source: withState }))],
-    keeping(answers),
-  ])
-  matriz = on.matriz
+  const known = { matriz: '' }
+  const shapes = Object.entries(WITH_STATE)
+  function sourceWith(state: string) {
+    return SOURCE.replace('type Data', `${state}type Data`)
+  }
+  const attempts: Step[] = shapes.map(([, state], at) => (asked) => {
+    if (at === 0) known.matriz = matrizOf(asked)
+    else answers.push(resultOf(asked))
+    return [tool('tool_code_save', saving(known.matriz, { source: sourceWith(state) }))]
+  })
+  const on = await building(t, [() => [tool('tool_search', {})], ...attempts, keeping(answers)])
   assert.equal(endOf(await on.conversation.say('Crie')), 'complete')
 
-  const refused = answerOf(answers)
-  assert.deepEqual(
-    [refused.kind, Object(refused).code, Object(refused).field, Object(refused).reason],
-    ['REFUSED', 'TOOL_REFUSED', 'source', 'MODULE_STATE'],
-  )
+  assert.equal(answers.length, shapes.length)
+  shapes.forEach(([name], at) => {
+    const refused = answerOf(answers, at)
+    assert.deepEqual(
+      [refused.kind, Object(refused).code, Object(refused).field, Object(refused).reason],
+      ['REFUSED', 'TOOL_REFUSED', 'source', 'MODULE_STATE'],
+      name,
+    )
+  })
   const listed = await call(on.hub, on.ana, 'GET', on.tools)
   assert.deepEqual(Object(listed.json()).tools, [])
 })
 
 test('uma versão nunca muda: a segunda grava a versão 2 e o agente publicado abre e continua na 1', async (t) => {
   const answers: Record<string, unknown>[] = []
-  let matriz = ''
-  let toolId = ''
+  const known = { matriz: '' }
+  const [search, firstSave] = searching(known)
+  assert.ok(search && firstSave)
   const on = await building(t, [
-    () => [tool('tool_code_save', saving(matriz))],
+    search,
+    firstSave,
     (asked) => {
-      answers.push(Object(JSON.parse(String(asked.texts.at(-1)))))
-      toolId = String(Object(Object(answers[0]).tool).id)
+      answers.push(resultOf(asked))
+      const toolId = String(Object(Object(answers[0]).tool).id)
       return [
-        tool('tool_code_save', saving(matriz, { toolId, basedOn: 1, description: 'Soma, v2.' })),
+        tool(
+          'tool_code_save',
+          saving(known.matriz, { toolId, basedOn: 1, description: 'Soma, v2.' }),
+        ),
       ]
     },
     keeping(answers),
   ])
-  matriz = on.matriz
   assert.equal(endOf(await on.conversation.say('Crie e mude')), 'complete')
   const [first, second] = [answerOf(answers, 0), answerOf(answers, 1)]
   assert.equal(first.kind, 'SAVED')
@@ -200,22 +270,26 @@ test('uma versão nunca muda: a segunda grava a versão 2 e o agente publicado a
 
 test('a versão gravada sobre uma que não é a última é recusada com STALE_VERSION', async (t) => {
   const answers: Record<string, unknown>[] = []
-  let matriz = ''
-  let toolId = ''
+  const known = { matriz: '' }
+  const [search, firstSave] = searching(known)
+  assert.ok(search && firstSave)
+  function toolIdOf() {
+    return String(Object(Object(answers[0]).tool).id)
+  }
   const on = await building(t, [
-    () => [tool('tool_code_save', saving(matriz))],
+    search,
+    firstSave,
     (asked) => {
-      answers.push(Object(JSON.parse(String(asked.texts.at(-1)))))
-      toolId = String(Object(Object(answers[0]).tool).id)
-      return [tool('tool_code_save', saving(matriz, { toolId, basedOn: 1 }))]
+      answers.push(resultOf(asked))
+      return [tool('tool_code_save', saving(known.matriz, { toolId: toolIdOf(), basedOn: 1 }))]
     },
     (asked) => {
-      answers.push(Object(JSON.parse(String(asked.texts.at(-1)))))
-      return [tool('tool_code_save', saving(matriz, { toolId, basedOn: 1, description: 'Outra.' }))]
+      answers.push(resultOf(asked))
+      const change = { toolId: toolIdOf(), basedOn: 1, description: 'Outra.' }
+      return [tool('tool_code_save', saving(known.matriz, change))]
     },
     keeping(answers),
   ])
-  matriz = on.matriz
   assert.equal(endOf(await on.conversation.say('Crie e mude duas vezes')), 'complete')
   const stale = answerOf(answers, 2)
   assert.deepEqual(

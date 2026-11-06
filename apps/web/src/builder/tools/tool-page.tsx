@@ -124,6 +124,7 @@ export function ToolPage(props: Scope & { toolId: ToolId }) {
   const read = useQuery(toolQuery(scope, props.toolId))
   const [open, setOpen] = useState(false)
   const tool = read.data?.tool
+  const labels = tool?.kind === 'CODE' ? tool.readLabels : {}
 
   return (
     <AreaFrame scope={scope} tab="ferramentas">
@@ -161,7 +162,7 @@ export function ToolPage(props: Scope & { toolId: ToolId }) {
                       {one.open.length === 0 ? 'nada' : one.open.join(', ')}
                     </span>
                   ) : (
-                    <CodeVersion connection={tool.connectionName} version={one} />
+                    <CodeVersion connection={tool.connectionName} labels={labels} version={one} />
                   )}
                 </li>
               ))}

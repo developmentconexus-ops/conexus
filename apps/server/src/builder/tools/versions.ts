@@ -13,14 +13,22 @@ import { Failure } from '../../platform/failure.ts'
 import { bodyHashOf } from '../conversation/public.ts'
 import type { ToolsDeps } from './access.ts'
 import { admitted, detailOf, found, offeredOf, savedOnce, usableTool } from './access.ts'
-import type { InProject, Writer } from './check.ts'
+import type { InProject, OfferedConnection, Writer } from './check.ts'
 import { databaseScopeOf, fitting, sessionScopeOf, targetOf } from './check.ts'
 import { derivedUuid } from './derived.ts'
 import { presetTargetOf, toolOf } from './store.ts'
 import { tool, toolVersion } from './tables.ts'
 
-/** What a next version writes: its values, and the check that it fits the tool's connection. */
-type Next = { config: object; fit: (row: ToolRow) => Promise<void> }
+/**
+ * What a next version writes: its values, the request it came from (what the attempt is keyed by,
+ * so a repeat of the same request finds its version), and the check that it fits the tool's
+ * connection among the ones the Projeto received.
+ */
+type Next = {
+  config: object
+  request: object
+  fit: (row: ToolRow, offered: readonly OfferedConnection[]) => Promise<void>
+}
 type ToolRow = typeof tool.$inferSelect
 
 /**
@@ -35,7 +43,7 @@ async function appendVersion(
 ): Promise<ToolDetail> {
   const { toolId, basedOn, attemptKey, by, next } = a
   const versionId = derivedUuid('tool-version', toolId, scope.personId, attemptKey)
-  const bodyHash = bodyHashOf(next.config)
+  const bodyHash = bodyHashOf(next.request)
   const offered = await offeredOf(deps, scope)
   async function write(tx: CommandTx) {
     await admitted(deps, tx, scope, 'manageAgents')
@@ -45,7 +53,7 @@ async function appendVersion(
       if (earlier.bodyHash !== bodyHash) throw new Failure('IDEMPOTENCY_CONFLICT')
       return { detail: await detailOf(deps, tx, row, offered), number: earlier.number }
     }
-    await next.fit(row)
+    await next.fit(row, offered)
     const [moved] = await tx
       .update(tool)
       .set({ currentVersion: sql`${tool.currentVersion} + 1`, updatedAt: sql`now()` })
@@ -91,20 +99,24 @@ export async function addVersion(
     const target = await targetOf(deps.connectors, sessionScopeOf(scope), presetTargetOf(row))
     fitting(target, config)
   }
-  return appendVersion(deps, scope, { toolId, basedOn, attemptKey, by, next: { config, fit } })
+  return appendVersion(deps, scope, {
+    toolId,
+    basedOn,
+    attemptKey,
+    by,
+    next: { config, request: config, fit },
+  })
 }
 
 /**
  * Why the reads of a `CODE` version do not fit its connection, or nothing: the Projeto received the
  * connection and every read is one of its reads (the connectors' door alone reads the kit, S36).
  */
-export async function codeFitting(
-  deps: ToolsDeps,
-  scope: InProject,
+function codeFitting(
+  offered: readonly OfferedConnection[],
   connectionId: ConnectionId,
   reads: readonly OperationId[],
-): Promise<void> {
-  const offered = await offeredOf(deps, scope)
+): void {
   const connection = offered.find((each) => each.connectionId === connectionId)
   if (connection === undefined) {
     throw new Failure('TOOL_REFUSED', { named: { field: 'connectionId', reason: 'NOT_OFFERED' } })
@@ -115,18 +127,28 @@ export async function codeFitting(
   }
 }
 
+/** The check above before the Construtor's machine runs, so a refused tool costs no machine. */
+export async function fitCode(
+  deps: ToolsDeps,
+  scope: InProject,
+  connectionId: ConnectionId,
+  reads: readonly OperationId[],
+): Promise<void> {
+  codeFitting(await offeredOf(deps, scope), connectionId, reads)
+}
+
 /** A new `CODE` tool at version 1, keyed by its attempt: the Construtor's, after its test passed. */
 export async function saveCode(
   deps: ToolsDeps,
   scope: InProject,
-  body: { slug: ToolSlug; connectionId: ConnectionId; version: CodeToolVersion },
+  body: { slug: ToolSlug; connectionId: ConnectionId; version: CodeToolVersion; request: object },
   attemptKey: string,
 ): Promise<ToolDetail> {
   const id = ToolId.parse(derivedUuid('tool', scope.companyId, scope.personId, attemptKey))
   const { slug, connectionId, version } = body
-  const bodyHash = bodyHashOf(body)
-  await codeFitting(deps, scope, connectionId, version.reads)
+  const bodyHash = bodyHashOf(body.request)
   const offered = await offeredOf(deps, scope)
+  codeFitting(offered, connectionId, version.reads)
   const detail = await deps.database.command(databaseScopeOf(scope), async (tx) => {
     await admitted(deps, tx, scope, 'manageAgents')
     const fresh = (await toolOf(tx, scope.companyId, id)) === undefined
@@ -145,17 +167,17 @@ export async function saveCode(
 export async function addCodeVersion(
   deps: ToolsDeps,
   scope: InProject,
-  a: { toolId: ToolId; basedOn: number; version: CodeToolVersion },
+  a: { toolId: ToolId; basedOn: number; version: CodeToolVersion; request: object },
   attemptKey: string,
 ): Promise<ToolDetail> {
-  async function fit(row: ToolRow) {
+  async function fit(row: ToolRow, offered: readonly OfferedConnection[]) {
     if (row.kind !== 'CODE') {
-      throw new Failure('TOOL_REFUSED', { named: { field: 'kind', reason: 'CODE_BY_CONSTRUTOR' } })
+      throw new Failure('TOOL_REFUSED', { named: { field: 'kind', reason: 'VALUE_REFUSED' } })
     }
-    await codeFitting(deps, scope, ConnectionId.parse(row.connectionId), a.version.reads)
+    codeFitting(offered, ConnectionId.parse(row.connectionId), a.version.reads)
   }
   return appendVersion(deps, scope, {
     ...{ toolId: a.toolId, basedOn: a.basedOn, attemptKey, by: 'CONSTRUTOR' },
-    next: { config: a.version, fit },
+    next: { config: a.version, request: a.request, fit },
   })
 }
