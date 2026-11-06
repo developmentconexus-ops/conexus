@@ -1,4 +1,6 @@
-import { GlobeIcon } from 'lucide-react'
+import type { AgentDetail } from '@conexus/hub-api'
+import { ComputerIcon, GlobeIcon } from 'lucide-react'
+import type { ReactNode } from 'react'
 import { useState } from 'react'
 import { Button } from '../../ui/button.tsx'
 import { cn } from '../../ui/cn.ts'
@@ -10,6 +12,7 @@ import type { Part } from './section.tsx'
 import { Section } from './section.tsx'
 import {
   ADD_FROM_LIBRARY,
+  COMPUTER_TOOL,
   connectionOf,
   NO_TOOLS,
   newVersionText,
@@ -18,19 +21,49 @@ import {
   toolTitle,
   WEB_TOOL,
 } from './text.ts'
+import type { Saving } from './use-draft-save.ts'
 import { useDraftSave } from './use-draft-save.ts'
 
-function WebRow(props: { onRemove: () => void }) {
+/** A tool of Conexus's own that the draft chose: the web search, the Computador. */
+function ConexusRow(props: { icon: ReactNode; title: string; onRemove: () => void }) {
   return (
     <li className={cn(ROW, 'justify-between')}>
       <span className="flex min-w-0 flex-1 items-center gap-sm">
-        <GlobeIcon aria-hidden="true" className="size-5 shrink-0" />
-        <span className="truncate">{WEB_TOOL}</span>
+        {props.icon}
+        <span className="truncate">{props.title}</span>
       </span>
-      <Button size="sm" variant="ghost" aria-label={`Tirar ${WEB_TOOL}`} onClick={props.onRemove}>
+      <Button
+        size="sm"
+        variant="ghost"
+        aria-label={`Tirar ${props.title}`}
+        onClick={props.onRemove}
+      >
         Tirar
       </Button>
     </li>
+  )
+}
+
+/** The draft's own Conexus tools it chose, each with its **Tirar**: the web search and the Computador. */
+function ConexusRows(props: { draft: AgentDetail['draft']; saving: Saving }) {
+  const { draft, saving } = props
+  return (
+    <>
+      {draft.web && (
+        <ConexusRow
+          icon={<GlobeIcon aria-hidden="true" className="size-5 shrink-0" />}
+          title={WEB_TOOL}
+          onRemove={() => saving.save({ web: false })}
+        />
+      )}
+      {draft.machine && (
+        <ConexusRow
+          icon={<ComputerIcon aria-hidden="true" className="size-5 shrink-0" />}
+          title={COMPUTER_TOOL}
+          onRemove={() => saving.save({ machine: false })}
+        />
+      )}
+    </>
   )
 }
 
@@ -50,7 +83,9 @@ export function Tools(props: Part) {
       busy={saving.pending}
       error={saving.refused?.field === 'tools' ? saving.refused.reason : saving.error}
     >
-      {agent.tools.length === 0 && !agent.draft.web && <p className="text-text-2">{NO_TOOLS}</p>}
+      {agent.tools.length === 0 && !agent.draft.web && !agent.draft.machine && (
+        <p className="text-text-2">{NO_TOOLS}</p>
+      )}
       <ul className="flex flex-col">
         {agent.tools.map((tool) => {
           const described = { ...tool, description: tool.version.description }
@@ -115,7 +150,7 @@ export function Tools(props: Part) {
             </li>
           )
         })}
-        {agent.draft.web && <WebRow onRemove={() => saving.save({ web: false })} />}
+        <ConexusRows draft={agent.draft} saving={saving} />
       </ul>
       <div className="flex flex-wrap gap-sm">
         <Button size="sm" onClick={() => setMode('choose')}>

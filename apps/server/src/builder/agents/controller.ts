@@ -30,6 +30,8 @@ import {
   threadsByMarks,
 } from '../controller-kit/public.ts'
 import { conversationMemory, routedModel } from '../conversation/public.ts'
+import type { ConversationMachine, ConversationMachines, MachineTuning } from '../machine/public.ts'
+import { createConversationMachines, MARK, PACKAGE_HOSTS } from '../machine/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import type { AgentDeps, AgentRun } from './agent.ts'
 import { agentOf, agentTurnOf, planOf, setAgentRun } from './agent.ts'
@@ -123,7 +125,7 @@ function agentTurns(
   queue: QueueDeps,
   runOf: ReturnType<typeof runsOf>,
   resolvedOf: Resolved,
-  own: { database: Database; log: FailureLog },
+  own: { database: Database; log: FailureLog; machines: ConversationMachines },
 ) {
   return sessionTurns({
     id: 'conexus-agents-turn',
@@ -135,7 +137,27 @@ function agentTurns(
       const model = { id: start.model, effort: start.effort }
       return agentTurnOf(queue, requestContext, { run, model })
     },
+    ended: (sessionId) => void own.machines.stop(sessionId),
   })
+}
+
+/**
+ * The marks of an agent conversation's machine (security S36): its company, Projeto and agent.
+ * None outside an agent's conversation, and none when the version has no Computador, so listing
+ * agents or talking to one without it starts and makes nothing.
+ */
+function machineMarks(runOf: ReturnType<typeof runsOf>, resolvedOf: Resolved) {
+  return async (requestContext: RequestContext): Promise<Record<string, string> | undefined> => {
+    const run = await runOf(requestContext)
+    if (run === undefined) return undefined
+    const { machine } = await planOf(await resolvedOf(requestContext), requestContext)
+    if (!machine) return undefined
+    return {
+      [MARK.company]: run.scope.companyId,
+      [MARK.project]: run.scope.projectId,
+      [MARK.agent]: run.agentId,
+    }
+  }
 }
 
 /**
@@ -184,6 +206,9 @@ type Deps = {
   speakersOf: (scope: SessionScope) => Promise<Speakers>
   appData: AppDataPort
   agents: AgentReads & Pick<AgentEvents, 'onChange'>
+  /** The conversations' machines at the provider; an agent with its Computador gets one (step 24.4, U4). */
+  machine: ConversationMachine
+  machineTuning?: MachineTuning
   /** The one `Mastra` the registry adds the agents to, made after the parts. */
   mastra: () => Mastra
   log: FailureLog
@@ -204,10 +229,12 @@ export function createAgentConversations(deps: Deps) {
     observer: OBSERVER,
   })
   const memories = { observational: memory, plain: new Memory({ storage }) }
+  // The registry builds its agents with the machines, and the machines' marks read a run's plan
+  // through the registry: each is used after both exist.
   const registry = createRegistry({
     ...deps.agents,
     ...{ mastra: deps.mastra, log },
-    build: (live) => agentOf({ ...deps, memories }, live),
+    build: (live) => agentOf({ ...deps, memories, machines }, live),
   })
   const runOf = runsOf(database)
   const resolvedOf = oncePerRun(async (requestContext) => {
@@ -216,7 +243,14 @@ export function createAgentConversations(deps: Deps) {
     setAgentRun(requestContext, run)
     return registry.resolve(run)
   })
-  const turns = agentTurns(queue, runOf, resolvedOf, { database, log })
+  const machines = createConversationMachines(
+    {
+      ...{ ...deps.machine, log, hosts: PACKAGE_HOSTS },
+      marksOf: machineMarks(runOf, resolvedOf),
+    },
+    deps.machineTuning,
+  )
+  const turns = agentTurns(queue, runOf, resolvedOf, { database, log, machines })
   // Decision 0053: nothing waits to be approved; the version's tools only read. The mode lists no
   // tools: the closed set is the version's, which only this code builds.
   const controller = controllerOf({
@@ -227,12 +261,16 @@ export function createAgentConversations(deps: Deps) {
       agent: delegatingAgent(queue, resolvedOf, turns),
     },
     mode: { id: MODE },
+    // The conversation's machine, none for a version without its Computador (Factory `session-sandbox.ts:29-36`).
+    workspace: ({ requestContext }) => machines.workspace(requestContext),
     initialState: { yolo: true },
   })
   turns.watch(controller)
 
   async function sweep(marks: Record<string, string>): Promise<number> {
-    return releaseThreads({ controller, memory }, await threadsByMarks(memory, marks))
+    return releaseThreads({ controller, memory }, await threadsByMarks(memory, marks), (id) =>
+      machines.kill(id),
+    )
   }
   deps.agents.onChange((event) => followed(event, { registry, sweep, log }))
 
@@ -240,6 +278,7 @@ export function createAgentConversations(deps: Deps) {
     registry,
     controller,
     memory,
+    machines,
     draftAgent: (run: AgentRun) => draftAgentOf({ ...deps, memories }, run),
     /** Its controller on the one `Mastra` (`builder/mastra/`), after the Assistant's. */
     part: {
@@ -260,6 +299,9 @@ export function createAgentConversations(deps: Deps) {
       async beforeWorkers(): Promise<void> {
         await registry.hydrate()
       },
+      // Where its machine starts, which the turn's end tells (QA F1); the machines stop after the runs `drain` stopped.
+      ends: { onPhase: machines.onPhase.bind(machines) },
+      close: () => machines.stopAll(),
     },
   } as const)
 }

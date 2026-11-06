@@ -1,22 +1,20 @@
 import type {
   CompanyId,
   PersonId,
-  ProjectId,
   ReadyTool,
-  ToolDetail,
   ToolInput,
   ToolTarget,
-  ToolVersionConfig,
+  ToolVersionBody,
 } from '@conexus/hub-api'
 import { ConnectionId, OperationId, ToolId } from '@conexus/hub-api'
-import { and, eq, sql } from 'drizzle-orm'
-import type { IdentityPorts } from '../../hub/identity/public.ts'
-import type { CommandTx, Database, ReadTx } from '../../platform/database.ts'
-import { violatedConstraint, violatedReference } from '../../platform/database.ts'
-import type { FailureLog } from '../../platform/failure.ts'
+import { and, eq } from 'drizzle-orm'
+import type { CommandTx } from '../../platform/database.ts'
+import { violatedReference } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import { bodyHashOf } from '../conversation/public.ts'
-import type { InProject, OfferedConnection, ToolConnectors, Writer } from './check.ts'
+import type { ToolsDeps } from './access.ts'
+import { admitted, detailOf, idsOf, offeredOf, savedOnce, usableTool } from './access.ts'
+import type { InProject, Writer } from './check.ts'
 import {
   databaseScopeOf,
   fitting,
@@ -27,72 +25,9 @@ import {
 } from './check.ts'
 import { readyOf, saveReady, usable } from './choice.ts'
 import { derivedUuid } from './derived.ts'
-import type { UsedBy } from './store.ts'
-import { detailsOf, inserted, toolOf, toolsOn } from './store.ts'
+import { detailsOf, toolOf, toolsOn } from './store.ts'
 import { tool, toolVersion } from './tables.ts'
-
-export type ToolsDeps = {
-  database: Database
-  identity: Pick<IdentityPorts, 'admitMember'>
-  liveProjectOf: (
-    tx: ReadTx,
-    ids: { companyId: CompanyId; projectId: ProjectId },
-  ) => Promise<unknown | undefined>
-  connectors: ToolConnectors
-  usedBy: UsedBy
-  log: FailureLog
-}
-
-/**
- * The person may manage agents now and the Projeto is live; else the same `NOT_FOUND` (security
- * S10). `manageAgents` holds the membership until the write commits; a read holds no row.
- */
-export async function admitted(
-  deps: Pick<ToolsDeps, 'identity' | 'liveProjectOf'>,
-  tx: ReadTx,
-  scope: InProject,
-  action: 'readAgents' | 'manageAgents' | 'publishAgent',
-): Promise<void> {
-  const { companyId, personId, projectId } = scope
-  await deps.identity.admitMember({ tx, companyId, personId, action })
-  if ((await deps.liveProjectOf(tx, { companyId, projectId })) === undefined) {
-    throw new Failure('NOT_FOUND', { details: { reason: 'PROJECT' } })
-  }
-}
-
-/** The ids of the connections the Projeto received, read through the connectors' door. */
-async function offeredOf(deps: Pick<ToolsDeps, 'connectors'>, scope: InProject) {
-  return deps.connectors.connections(sessionScopeOf(scope))
-}
-
-function idsOf(offered: readonly OfferedConnection[]) {
-  return offered.map((each) => ConnectionId.parse(each.connectionId))
-}
-
-/** The tool if this Projeto may use it: the company's, on a connection it received (`usable`). */
-async function usableTool(
-  tx: ReadTx,
-  scope: InProject,
-  offered: readonly OfferedConnection[],
-  id: ToolId,
-) {
-  const row = await toolOf(tx, scope.companyId, id)
-  if (row === undefined || !idsOf(offered).includes(ConnectionId.parse(row.connectionId))) {
-    throw new Failure('TOOL_NOT_FOUND')
-  }
-  return row
-}
-
-async function detailOf(
-  deps: ToolsDeps,
-  tx: ReadTx,
-  row: typeof tool.$inferSelect,
-  offered: readonly OfferedConnection[],
-) {
-  const [detail] = await detailsOf(tx, deps.usedBy, [row], offered)
-  if (detail === undefined) throw new Failure('TOOL_NOT_FOUND')
-  return detail
-}
+import { addCodeVersion, addVersion, fitCode, saveCode } from './versions.ts'
 
 /** A new tool of the library at version 1, keyed by its attempt (code C37). */
 async function save(
@@ -114,79 +49,13 @@ async function save(
   )
   const detail = await deps.database.command(databaseScopeOf(scope), async (tx) => {
     await admitted(deps, tx, scope, 'manageAgents')
-    const earlier = await toolOf(tx, scope.companyId, id)
-    if (earlier === undefined) {
-      fitting(target, config)
-      const row = { slug, connectionId, operation }
-      const made = { id, scope, target: row, config, bodyHash, createdBy: scope.personId }
-      if (await inserted(tx, made)) return detailOf(deps, tx, await found(tx, scope, id), offered)
-    }
-    const row = await found(tx, scope, id)
-    if (row.bodyHash !== bodyHash) throw new Failure('IDEMPOTENCY_CONFLICT')
-    return detailOf(deps, tx, row, offered)
+    const fresh = (await toolOf(tx, scope.companyId, id)) === undefined
+    if (fresh) fitting(target, config)
+    const row = { kind: 'PRESET', slug, connectionId, operation } as const
+    const made = { id, scope, target: row, config, bodyHash, createdBy: scope.personId }
+    return savedOnce(deps, tx, { scope, id, offered, bodyHash }, fresh ? made : undefined)
   })
   deps.log.info({ companyId: scope.companyId, toolId: id, version: 1, by }, 'TOOL_SAVED')
-  return detail
-}
-
-async function found(tx: ReadTx, scope: InProject, id: ToolId) {
-  const row = await toolOf(tx, scope.companyId, id)
-  if (row === undefined) throw new Failure('TOOL_NOT_FOUND')
-  return row
-}
-
-/**
- * The tool's next version, keyed by its attempt (code C37): the counter's update holds the tool's
- * row, so two at once become `n+1` and `n+2`; a repeat finds its version by id.
- */
-async function addVersion(
-  deps: ToolsDeps,
-  scope: InProject,
-  toolId: ToolId,
-  config: ToolVersionConfig,
-  attemptKey: string,
-  by: Writer,
-): Promise<ToolDetail> {
-  const versionId = derivedUuid('tool-version', toolId, scope.personId, attemptKey)
-  const bodyHash = bodyHashOf(config)
-  const offered = await offeredOf(deps, scope)
-  async function write(tx: CommandTx) {
-    await admitted(deps, tx, scope, 'manageAgents')
-    const row = await usableTool(tx, scope, offered, toolId)
-    const [earlier] = await tx.select().from(toolVersion).where(eq(toolVersion.id, versionId))
-    if (earlier !== undefined) {
-      if (earlier.bodyHash !== bodyHash) throw new Failure('IDEMPOTENCY_CONFLICT')
-      return { detail: await detailOf(deps, tx, row, offered), number: earlier.number }
-    }
-    const { connectionId, operation } = row
-    const target = {
-      connectionId: ConnectionId.parse(connectionId),
-      operation: OperationId.parse(operation),
-    }
-    fitting(await targetOf(deps.connectors, sessionScopeOf(scope), target), config)
-    const [next] = await tx
-      .update(tool)
-      .set({ currentVersion: sql`${tool.currentVersion} + 1`, updatedAt: sql`now()` })
-      .where(eq(tool.id, toolId))
-      .returning({ number: tool.currentVersion })
-    if (next === undefined) throw new Failure('TOOL_NOT_FOUND')
-    await tx.insert(toolVersion).values({
-      ...{ id: versionId, toolId, companyId: scope.companyId, number: next.number },
-      ...{ config, createdBy: scope.personId, bodyHash },
-    })
-    return {
-      detail: await detailOf(deps, tx, await found(tx, scope, toolId), offered),
-      number: next.number,
-    }
-  }
-  const { detail, number } = await deps.database
-    .command(databaseScopeOf(scope), write)
-    .catch((error: unknown) => {
-      // The same attempt at once: the second insert meets the first's id; it reads that one.
-      if (violatedConstraint(error) !== 'tool_version_pkey') throw error
-      return deps.database.command(databaseScopeOf(scope), write)
-    })
-  deps.log.info({ companyId: scope.companyId, toolId, version: number, by }, 'TOOL_SAVED')
   return detail
 }
 
@@ -274,10 +143,19 @@ export function createTools(deps: ToolsDeps) {
     addVersion: (
       scope: InProject,
       toolId: ToolId,
-      config: ToolVersionConfig,
+      body: ToolVersionBody,
       attemptKey: string,
       by: Writer,
-    ) => addVersion(deps, scope, toolId, config, attemptKey, by),
+    ) => addVersion(deps, scope, toolId, body, attemptKey, by),
+    fitCode: (scope: InProject, connectionId: ConnectionId, reads: readonly OperationId[]) =>
+      fitCode(deps, scope, connectionId, reads),
+    saveCode: (scope: InProject, body: Parameters<typeof saveCode>[2], attemptKey: string) =>
+      saveCode(deps, scope, body, attemptKey),
+    addCodeVersion: (
+      scope: InProject,
+      body: Parameters<typeof addCodeVersion>[2],
+      attemptKey: string,
+    ) => addCodeVersion(deps, scope, body, attemptKey),
     list: (scope: InProject) => list(deps, scope),
     get: (scope: InProject, toolId: ToolId) => get(deps, scope, toolId),
     remove: (scope: InProject, toolId: ToolId) => remove(deps, scope, toolId),

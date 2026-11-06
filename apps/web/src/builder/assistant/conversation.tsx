@@ -14,7 +14,7 @@ import {
   ASSISTANT_ROOM,
   Beside,
   Chat,
-  FilePanel,
+  fileSide,
   ModelChoice,
   RoomContext,
   START_NO_ACCOUNT,
@@ -125,16 +125,10 @@ function Conversation(props: Props) {
                 />
               </div>
             }
-            side={
-              file === undefined ? undefined : (
-                <FilePanel
-                  urlOf={(path) => assistantFilePath({ companyId, conversationId, path })}
-                  shown={file}
-                  onClose={phone ? undefined : () => setFile(undefined)}
-                  inSheet={phone}
-                />
-              )
-            }
+            side={fileSide(file, (path) => assistantFilePath({ companyId, conversationId, path }), {
+              phone,
+              close: () => setFile(undefined),
+            })}
           />
         </div>
       </div>

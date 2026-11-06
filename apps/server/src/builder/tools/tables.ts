@@ -15,10 +15,10 @@ export const tool = builder.table(
   {
     id: uuid('id').primaryKey(),
     companyId: text('company_id').notNull(),
-    // `CODE` joins with step 24.4's tools in code, without migrating the rows.
+    // `CODE` is a tool in code (step 24.4): it reads several operations, which its version keeps.
     kind: text('kind').notNull().default('PRESET'),
     connectionId: uuid('connection_id').notNull(),
-    operation: text('operation').notNull(),
+    operation: text('operation'),
     slug: text('slug').notNull(),
     currentVersion: integer('current_version').notNull().default(1),
     ...authored(),
@@ -32,7 +32,11 @@ export const tool = builder.table(
     }).onDelete('cascade'),
     unique('tool_company_id_slug_key').on(table.companyId, table.slug),
     unique('tool_company_id_id_key').on(table.companyId, table.id),
-    check('tool_kind', sql`${table.kind} in ('PRESET')`),
+    check('tool_kind', sql`${table.kind} in ('PRESET', 'CODE')`),
+    check(
+      'tool_operation_by_kind',
+      sql`(${table.kind} = 'PRESET') = (${table.operation} is not null)`,
+    ),
     policy(SCOPE_ROLES.COMPANY, 'all', OWN_COMPANY),
   ],
 )

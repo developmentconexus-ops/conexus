@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import type { AgentId as AgentIdType, Effort, ModelId, OfProject } from '@conexus/hub-api'
-import { AgentId, CompanyId, PersonId, ProjectId } from '@conexus/hub-api'
+import { AgentId, CompanyId, MACHINE_TOOL, PersonId, ProjectId } from '@conexus/hub-api'
 import type { AgentInstructions } from '@mastra/core/agent'
 import { Agent } from '@mastra/core/agent'
 import type { MastraMemory } from '@mastra/core/memory'
@@ -16,6 +16,8 @@ import type { ConnectorAccess } from '../connectors/public.ts'
 import { connectorTools } from '../connectors/public.ts'
 import { agentDefaults, oncePerRun, turnKeyOn } from '../controller-kit/public.ts'
 import { routedModel, toolsOf } from '../conversation/public.ts'
+import type { ConversationMachines } from '../machine/public.ts'
+import { showFileTool } from '../machine/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import { conversationStart, memoryModelsFor, setTurn, Turn } from '../model-accounts/public.ts'
 import type { AppDataPort } from './app-data.ts'
@@ -88,6 +90,11 @@ export type AgentDeps = {
   speakersOf: (scope: SessionScope) => Promise<Speakers>
   /** The 24.1 memory with the observational one, and one without it, each made once. */
   memories: { observational: MastraMemory; plain: MastraMemory }
+  /**
+   * The conversations' machines, which the agents' controller owns (step 24.4, U4); an agent that
+   * runs alone (the Construtor's test of the draft) gets none.
+   */
+  machines?: Pick<ConversationMachines, 'folder' | 'serving'>
   log: FailureLog
 }
 
@@ -97,6 +104,8 @@ export type Plan = {
   start: { model: ModelId; effort: Effort }
   scope: SessionScope
   offered: Awaited<ReturnType<Connectors['assistant']['connections']>>
+  /** Whether the version has its Computador: the conversation's machine and `show_file`. */
+  machine: boolean
 }
 
 const plans = new WeakMap<Agent, (requestContext: RequestContext) => Promise<Plan>>()
@@ -135,7 +144,10 @@ function planner(deps: AgentDeps, frozen: FrozenVersion & OfProject & { agentId:
       place: { kind: 'PROJECT', projectId },
       chosen,
     }
-    return { run, start, scope, offered: await deps.connectors.connections(scope) }
+    return {
+      ...{ run, start, scope, machine: frozen.machine },
+      offered: await deps.connectors.connections(scope),
+    }
   })
 }
 
@@ -169,6 +181,8 @@ export function agentOf(
     },
   }
   const ownConnections = new Set(frozen.connections)
+  const showFile =
+    frozen.machine && deps.machines !== undefined ? showFileTool(deps.machines) : undefined
   const agent = new Agent({
     id: agentKey(frozen.agentId),
     name: frozen.name,
@@ -198,6 +212,7 @@ export function agentOf(
         frozen.appData && (await deps.appData.hasApp({ scope: { companyId, personId }, projectId }))
       return {
         ...(frozen.web ? toolsOf(start.model) : {}),
+        ...(showFile === undefined ? {} : { [MACHINE_TOOL.showFile]: showFile }),
         ...connectorTools(access, { noteSave: false }),
         ...(mayReadApp
           ? appDataTools({ appData: deps.appData, scope: { companyId, personId }, projectId })

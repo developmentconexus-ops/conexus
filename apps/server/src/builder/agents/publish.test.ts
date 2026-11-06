@@ -2,9 +2,22 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { AgentId, CompanyId, ProjectId } from '@conexus/hub-api'
 import { call, codeOf, post } from '../../hub/identity/test-hub.ts'
+import type { AgentReads } from './public.ts'
 import { agentOf, agentsOn, drafted, madeAgent, madeTool, ordersOf, toolOf } from './test-agents.ts'
 
 const INSTRUCTIONS = 'Responda com os pedidos do dia, por vendedor.'
+
+type Frozen = NonNullable<Awaited<ReturnType<AgentReads['activeOf']>>>['tools'][number]
+type Preset = Extract<Frozen, { kind: 'PRESET' }>
+
+/** The preset tools of a published version, with the fields its test compares. */
+function presetsOf(tools: readonly Frozen[] = []) {
+  return tools
+    .filter((tool): tool is Preset => tool.kind === 'PRESET')
+    .map(({ slug, operation, description, bound, open }) => ({
+      ...{ slug, operation, description, bound, open },
+    }))
+}
 
 function versionOf(response: { json(): unknown }) {
   return Object(response.json()).version
@@ -39,6 +52,7 @@ test('publicar: a versão 1 guarda o rascunho e a versão 1 da ferramenta; depoi
     description: 'Os pedidos da empresa 2.',
     bound: { codigoEmpresa: 2 },
     open: ['page'],
+    basedOn: 1,
   }
   const grown = await post(on.hub, on.ana, `${on.tools}/${tool.id}/versions`, v2)
   assert.equal(grown.statusCode, 201, grown.body)
@@ -54,17 +68,12 @@ test('publicar: a versão 1 guarda o rascunho e a versão 1 da ferramenta; depoi
   assert.equal(active?.instructions, INSTRUCTIONS)
   assert.deepEqual(active?.connections, [on.matriz])
   assert.deepEqual(active?.source, { kind: 'VERSION', number: 1 })
-  assert.deepEqual(
-    active?.tools.map(({ slug, operation, description, bound, open }) => ({
-      ...{ slug, operation, description, bound, open },
-    })),
-    [
-      {
-        ...{ slug: 'pedidos_matriz', operation: 'pedidos', bound: { codigoEmpresa: 1 } },
-        ...{ description: ordersOf(on.matriz).description, open: ordersOf(on.matriz).open },
-      },
-    ],
-  )
+  assert.deepEqual(presetsOf(active?.tools), [
+    {
+      ...{ slug: 'pedidos_matriz', operation: 'pedidos', bound: { codigoEmpresa: 1 } },
+      ...{ description: ordersOf(on.matriz).description, open: ordersOf(on.matriz).open },
+    },
+  ])
   const read = agentOf(await call(on.hub, on.ana, 'GET', url))
   assert.deepEqual(
     read.tools.map((each) => [each.version.number, each.latest.number]),

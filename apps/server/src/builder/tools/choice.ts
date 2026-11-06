@@ -64,7 +64,7 @@ export async function saveReady(
   const ids: ToolId[] = []
   for (const { target, config } of ready) {
     const id = readyIdOf(scope.companyId, target)
-    const row = { ...target, slug: readySlug(target) }
+    const row = { ...target, kind: 'PRESET', slug: readySlug(target) } as const
     const bodyHash = bodyHashOf({ ...row, ...config })
     await inserted(tx, { id, scope, target: row, config, bodyHash, createdBy: scope.personId })
     ids.push(id)

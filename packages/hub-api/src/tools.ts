@@ -89,6 +89,10 @@ export const ToolVersionConfig = z.object({
 })
 export type ToolVersionConfig = z.infer<typeof ToolVersionConfig>
 
+/** The next version of a tool and the version the person read it from; another latest one is `STALE_VERSION`. */
+export const ToolVersionBody = ToolVersionConfig.extend({ basedOn: z.int().positive() })
+export type ToolVersionBody = z.infer<typeof ToolVersionBody>
+
 export const ToolInput = ToolTarget.extend(ToolVersionConfig.shape).extend({ slug: ToolSlug })
 export type ToolInput = z.infer<typeof ToolInput>
 
@@ -104,28 +108,107 @@ export const ReadyTool = ToolTarget.extend({
 })
 export type ReadyTool = z.infer<typeof ReadyTool>
 
-export const ToolVersionDetail = ToolVersionConfig.extend({
-  id: ToolVersionId,
-  number: z.int().positive(),
+/** What a tool is: a library read of one connection, or code the Construtor wrote and tested (step 24.4). */
+export const ToolKind = z.enum(['PRESET', 'CODE'])
+export type ToolKind = z.infer<typeof ToolKind>
+
+/**
+ * The largest source and bundled module of a `CODE` version. The module is the tool's code with
+ * `zod` bundled in: 453 KB for the largest tool of the test, so 1 MiB leaves room for a tool twice
+ * as large and stays under Cloudflare's script limit (3 MB on the free plan).
+ */
+export const CODE_SOURCE_MAX = 40_000
+export const CODE_MODULE_MAX = 1_048_576
+
+/** A JSON Schema as `z.toJSONSchema` makes it; the Hub keeps it as data and the thin tool hands it to the model. */
+export const JsonSchema = z.record(z.string(), z.unknown())
+export type JsonSchema = z.infer<typeof JsonSchema>
+
+/** What the test of a `CODE` version proved: it passed, on how many rows of the company's real read, and when. */
+export const ToolTestResult = z.object({
+  passed: z.literal(true),
+  rows: z.int().nonnegative(),
+  at: z.iso.datetime(),
 })
+export type ToolTestResult = z.infer<typeof ToolTestResult>
+
+/**
+ * One version of a `CODE` tool as the library stores it, never changed after it is written: the
+ * source the model wrote, the bundled `module` that step 24.4's U3 uploads, the reads it declares
+ * of its tool's connection, the schemas of its input and output and the test that passed.
+ */
+export const CodeToolVersion = z.object({
+  description: z.string().trim().min(1).max(500),
+  source: z.string().min(1).max(CODE_SOURCE_MAX),
+  module: z.string().min(1).max(CODE_MODULE_MAX),
+  reads: z.array(OperationId).min(1).max(16),
+  inputSchema: JsonSchema,
+  outputSchema: JsonSchema,
+  test: ToolTestResult,
+})
+export type CodeToolVersion = z.infer<typeof CodeToolVersion>
+
+const VersionIdentity = { id: ToolVersionId, number: z.int().positive() }
+
+export const PresetVersionDetail = ToolVersionConfig.extend({
+  kind: z.literal('PRESET'),
+  ...VersionIdentity,
+})
+/** A `CODE` version as every read but the Worker's upload has it: its source and test, never its module. */
+export const CodeToolRead = CodeToolVersion.omit({ module: true })
+export type CodeToolRead = z.infer<typeof CodeToolRead>
+
+/** A `CODE` version as a screen reads it. */
+export const CodeVersionDetail = CodeToolRead.extend({
+  kind: z.literal('CODE'),
+  ...VersionIdentity,
+})
+export const ToolVersionDetail = z.discriminatedUnion('kind', [
+  PresetVersionDetail,
+  CodeVersionDetail,
+])
 export type ToolVersionDetail = z.infer<typeof ToolVersionDetail>
 
-export const ToolSummary = ToolTarget.extend({
+/** The newest version of a tool, with its number. */
+export const LatestVersion = z.object({ id: ToolVersionId, number: z.int().positive() })
+
+const SummaryBase = {
   id: ToolId,
   slug: ToolSlug,
   description: z.string(),
   /** The name of the connection the tool reads, as the Projeto offers it. */
   connectionName: z.string(),
-  /** The read's name as the kit gives it ("Pedidos"); the operation's id when the kit no longer lists it. */
-  readLabel: z.string(),
   effect: ToolEffect,
-  latest: z.object({ id: ToolVersionId, number: z.int().positive() }),
+  latest: LatestVersion,
   /** The agents whose draft or a published version uses a version of the tool. */
   usedBy: z.array(NamedAgent),
+}
+
+export const PresetSummary = ToolTarget.extend({
+  ...SummaryBase,
+  kind: z.literal('PRESET'),
+  /** The read's name as the kit gives it ("Pedidos"); the operation's id when the kit no longer lists it. */
+  readLabel: z.string(),
 })
+
+export const CodeSummary = z.object({
+  ...SummaryBase,
+  kind: z.literal('CODE'),
+  connectionId: ConnectionId,
+  /** The reads the latest version declares. */
+  reads: z.array(OperationId),
+  /** The name the kit gives each read of the connection ("Notas"); a read it no longer lists has none, and its id shows. */
+  readLabels: z.record(z.string(), z.string()),
+})
+
+/** A tool of the library: one read of a connection, or code that reads several of one. */
+export const ToolSummary = z.discriminatedUnion('kind', [PresetSummary, CodeSummary])
 export type ToolSummary = z.infer<typeof ToolSummary>
 
-export const ToolDetail = ToolSummary.extend({ versions: z.array(ToolVersionDetail) })
+export const ToolDetail = z.intersection(
+  ToolSummary,
+  z.object({ versions: z.array(ToolVersionDetail) }),
+)
 export type ToolDetail = z.infer<typeof ToolDetail>
 
 const InProject = z.object({ companyId: CompanyId, projectId: ProjectId })
@@ -164,7 +247,7 @@ export const createTool = defineOperation({
   input: { params: InProject, body: ToolInput },
   attemptKey: true,
   success: { status: 201, body: OneTool },
-  failures: [...TOOL_FAILURES, 'TOOL_REFUSED', 'IDEMPOTENCY_CONFLICT'],
+  failures: [...TOOL_FAILURES, 'TOOL_NOT_FOUND', 'TOOL_REFUSED', 'IDEMPOTENCY_CONFLICT'],
 })
 
 export const getTool = defineOperation({
@@ -186,7 +269,7 @@ export const createToolVersion = defineOperation({
   method: 'POST',
   path: `${TOOLS}/{toolId}/versions`,
   bodyLimit: 32_768,
-  input: { params: OfTool, body: ToolVersionConfig },
+  input: { params: OfTool, body: ToolVersionBody },
   attemptKey: true,
   success: { status: 201, body: OneTool },
   failures: [...TOOL_FAILURES, 'TOOL_NOT_FOUND', 'TOOL_REFUSED', 'IDEMPOTENCY_CONFLICT'],
@@ -204,3 +287,9 @@ export const deleteTool = defineOperation({
   success: { status: 204 },
   failures: [...TOOL_FAILURES, 'TOOL_NOT_FOUND', 'TOOL_IN_USE'],
 })
+
+/** A `CODE` version's Worker in the tools' namespace, named by its id: step 24.4's U3 uploads and removes it. */
+export const ToolWorker = z.string().regex(/^t-[A-Za-z0-9-]{32,36}$/)
+export function toolWorkerOf(id: ToolVersionId) {
+  return ToolWorker.parse(`t-${id}`)
+}

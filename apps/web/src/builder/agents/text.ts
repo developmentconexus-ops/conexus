@@ -75,6 +75,8 @@ export function newVersionText(number: number): string {
   return `Versão ${number} disponível`
 }
 export const WEB_TOOL = 'Pesquisar na web'
+/** The agent's own machine (step 24.4): commands, files and charts beside the conversation. */
+export const COMPUTER_TOOL = 'Computador'
 export const TEST_BANNER = 'Conversa de teste com o rascunho'
 
 export function askAgent(name: string): string {
@@ -118,6 +120,9 @@ const REASONS = {
   SLUG_TAKEN: 'Já existe uma ferramenta com este nome.',
   NOT_USABLE: 'O Projeto não pode usar esta ferramenta.',
   SAME_TOOL_TWICE: 'A mesma ferramenta não entra duas vezes.',
+  CODE_BY_CONSTRUTOR: 'Uma ferramenta em código só o Construtor muda.',
+  MODULE_STATE: 'O código guarda estado fora da função.',
+  STALE_VERSION: 'Há uma versão mais nova desta ferramenta.',
 } satisfies Record<ProblemReason, string>
 
 /** The reason a refusal of a tool or of a choice names, in words. */
@@ -132,9 +137,9 @@ export function titleOf(conversation: { title: string; updatedAt: string }): str
     : conversation.title
 }
 
-/** The ready read of the kit a tool still is, when its description is the read's own; a tool made by hand has none. */
+/** The ready read of the kit a tool still is, when its description is the read's own; a tool made by hand, or in code, has none. */
 export function readOfTool(
-  tool: { connectionId: string; operation: string; description: string },
+  tool: { connectionId: string; operation?: string; description: string },
   offered: AgentDetail['offered'],
 ) {
   const read = offered
@@ -145,7 +150,7 @@ export function readOfTool(
 
 /** The name a person reads for a tool: a ready read by the kit's own `label`; one made by hand by its description. */
 export function toolTitle(
-  tool: { connectionId: string; operation: string; description: string },
+  tool: { connectionId: string; operation?: string; description: string },
   offered: AgentDetail['offered'],
 ): string {
   return readOfTool(tool, offered)?.label ?? tool.description

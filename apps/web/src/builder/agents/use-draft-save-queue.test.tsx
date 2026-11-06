@@ -35,14 +35,14 @@ function checked(element: HTMLElement) {
 
 function toolOf(digit: string, slug: string) {
   const [base] = agent().tools
-  if (base === undefined) throw new Error('the fixture has a tool')
+  if (base?.kind !== 'PRESET') throw new Error('the fixture has a preset tool')
   const versionId = ToolVersionId.parse(`${digit.repeat(8)}-cccc-4ccc-8ccc-${digit.repeat(12)}`)
   return {
     ...base,
     id: ToolId.parse(`${digit.repeat(8)}-bbbb-4bbb-8bbb-${digit.repeat(12)}`),
     slug,
     latest: { id: versionId, number: 1 },
-    version: { ...base.version, id: versionId, description: slug },
+    version: { ...base.version, kind: 'PRESET' as const, id: versionId, description: slug },
   }
 }
 

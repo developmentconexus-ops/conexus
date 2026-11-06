@@ -716,3 +716,9 @@ Em 2026-11-03, sobre uma resposta do Assistente que disse não poder escrever no
 Cartão da etapa 24.3.5 aprovado em 2026-11-05 (commit cf9ada5c1507bc2aa9a05466938b02aeff1ace1b): "O 24.3.5 está aprovado, pode colocar ele também nessa execução."
 
 Lido pelo firstmate como a aprovação da página, com as respostas de 2026-11-03 "1. A" e "2. A" já nela. O cartão foi conferido contra o `main` em `65b8191c` e a U1 da 24.4 antes desta linha; a página ficou como ele a aprovou.
+
+Em 2026-11-06, sobre o "2. A": "Acho estranho, como o Builder faz, porque hoje o builder ele adiciona anotações do conector, não é para ser algo travado ou obrigatório é como foi feito no Builder, igual Builder tem memory.md também. Entende? Verifique isso melhor, e me explicque para a gente se alinhar." Às duas perguntas do relatório que veio dessa leitura (1: trocar o "2. A" por "anota sem pedir sim, como o Builder"?; 2: quem anota pelo Assistente continua só dono e administrador, o "1. A"?): "1. Sim 2. Sim continua".
+
+Cartão da etapa 24.3.5 aprovado em 2026-11-06 (commit 8827482b9b59104ed847c134fd26f655c873db89): "1. Sim 2. Sim continua"
+
+Lido pelo firstmate como a emenda da página: (1) o Assistente anota no caderno sem pedir sim, igual ao Builder, com a mesma ferramenta e a mesma prova, e diz o que anotou; o "2. A" de 2026-11-03 sai; (2) o "1. A" continua: só dono e administrador anotam pelo Assistente, e o membro recebe o texto pronto. A página, o roteiro, os critérios, as tabelas e os tamanhos das unidades foram reescritos para essa forma, e as linhas citadas relidas no `main` em `4ce6b422`.
