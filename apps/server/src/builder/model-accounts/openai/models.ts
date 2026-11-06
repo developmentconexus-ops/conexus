@@ -4,7 +4,7 @@
 // `stripCodexInputItemIds`, `createCodexMiddleware`, `getRequestThreadId`,
 // `createPromptCacheKeyMiddleware`). Changed: TypeScript with every body read by Zod, the token and
 // the account are the ones the queue opened for this call, no test branch, and the effort goes by
-// the queue's processor.
+// the queue's processor; the thread is read on every call, not at model construction.
 
 import { createOpenAI } from '@ai-sdk/openai'
 import type { LanguageModelMiddleware } from 'ai'
@@ -45,17 +45,14 @@ function withoutItemIds(body: string): string {
   return JSON.stringify({ ...request.data, input })
 }
 
-/** The conversation a call belongs to: Mastra puts its id in `x-thread-id` on every model call. */
+/** The conversation a call belongs to: Mastra puts its id, lowercased, in `x-thread-id` on every model call. */
 function threadOf(headers: Record<string, string | undefined> | undefined): string | undefined {
-  for (const name in headers)
-    if (name.toLowerCase() === 'x-thread-id') return headers[name] || undefined
-  return undefined
+  return headers?.['x-thread-id'] || undefined
 }
 
 /**
  * `instructions` and `store: false`, which the endpoint requires, beside the options the queue set;
- * and the conversation as the prompt cache key, so its steps land where its prompt prefix is cached
- * (a key already set wins).
+ * and the conversation as the prompt cache key, so its steps land where its prompt prefix is cached.
  */
 const codexMiddleware: LanguageModelMiddleware = {
   specificationVersion: 'v3',
@@ -92,8 +89,8 @@ export function codexModel(name: string, tokens: Pick<CodexTokens, 'access' | 'a
       headers.set('ChatGPT-Account-ID', tokens.accountId)
       const thread = headers.get('x-thread-id')
       if (thread) {
-        if (!headers.has('session-id')) headers.set('session-id', thread)
-        if (!headers.has('thread-id')) headers.set('thread-id', thread)
+        headers.set('session-id', thread)
+        headers.set('thread-id', thread)
       }
       const body = typeof init?.body === 'string' ? withoutItemIds(init.body) : init?.body
       return fetch(CODEX_ENDPOINT, { ...init, headers, body })
