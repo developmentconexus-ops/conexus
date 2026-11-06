@@ -64,7 +64,7 @@ test('Adicionar da biblioteca busca a partir de sete linhas', async () => {
 
 test('a ferramenta pronta do painel tem o nome da leitura; a feita à mão, a descrição', async () => {
   const pronta = agent().tools[0]
-  if (pronta === undefined) throw new Error('the fixture has a tool')
+  if (pronta?.kind !== 'PRESET') throw new Error('the fixture has a preset tool')
   at(PAGE, {
     agents: [
       agent({

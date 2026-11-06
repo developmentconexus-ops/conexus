@@ -2190,9 +2190,9 @@
   },
   {
     "id": "assistant-file-read-logged",
-    "file": "apps/server/src/builder/assistant/file-route.ts",
-    "find": "        'ASSISTANT_FILE_READ',",
-    "replace": "        'ASSISTANT_FILE_SERVED',",
+    "file": "apps/server/src/builder/assistant/routes.ts",
+    "find": "    served: 'ASSISTANT_FILE_READ',",
+    "replace": "    served: 'ASSISTANT_FILE_SERVED',",
     "test": {
       "cwd": "apps/server",
       "file": "src/builder/assistant/file.test.ts",
@@ -2201,7 +2201,7 @@
   },
   {
     "id": "assistant-machine-mark",
-    "file": "apps/server/src/builder/assistant/machine.ts",
+    "file": "apps/server/src/builder/machine/conversation.ts",
     "find": "        ...mark,\n        ...marks,",
     "replace": "        [MARK.origin]: installation,\n        ...marks,",
     "test": {
@@ -2212,7 +2212,7 @@
   },
   {
     "id": "assistant-serving-short-lived",
-    "file": "apps/server/src/builder/assistant/machine.ts",
+    "file": "apps/server/src/builder/machine/conversation.ts",
     "find": "return session === undefined ? undefined : this.shortLived(session)",
     "replace": "return session?.files",
     "test": {
@@ -2223,7 +2223,7 @@
   },
   {
     "id": "assistant-file-links-checked",
-    "file": "apps/server/src/builder/assistant/machine.ts",
+    "file": "apps/server/src/builder/machine/conversation.ts",
     "find": "      workdir: this.folder,\n      verifySymlinks: true,",
     "replace": "      workdir: this.folder,\n      verifySymlinks: false,",
     "test": {
@@ -2245,7 +2245,7 @@
   },
   {
     "id": "assistant-stop-all-waits",
-    "file": "apps/server/src/builder/assistant/machine.ts",
+    "file": "apps/server/src/builder/machine/conversation.ts",
     "find": "    await Promise.all([...this.pausing])\n",
     "replace": "",
     "test": {
@@ -2267,7 +2267,7 @@
   },
   {
     "id": "assistant-machine-stale-killed",
-    "file": "apps/server/src/builder/assistant/machine.ts",
+    "file": "apps/server/src/builder/machine/conversation.ts",
     "find": "session.found === undefined ? api.killStale(conversationId, template) : undefined",
     "replace": "undefined",
     "test": {
@@ -2311,12 +2311,12 @@
   },
   {
     "id": "assistant-locate-where-tools-put-it",
-    "file": "apps/server/src/builder/assistant/machine-file.ts",
+    "file": "apps/server/src/builder/machine/conversation-file.ts",
     "find": "const found = await files.stat(path)",
     "replace": "const found = await files.stat(path.startsWith('/') ? `..${path}` : path)",
     "test": {
       "cwd": "apps/server",
-      "file": "src/builder/assistant/locate.test.ts",
+      "file": "src/builder/machine/locate.test.ts",
       "name": "o caminho cai na pasta"
     }
   },
@@ -2333,7 +2333,7 @@
   },
   {
     "id": "assistant-file-sandbox",
-    "file": "apps/server/src/builder/assistant/file-route.ts",
+    "file": "apps/server/src/builder/machine/file-route.ts",
     "find": "sandboxed(reply.getHeader('content-security-policy'))",
     "replace": "String(reply.getHeader('content-security-policy'))",
     "test": {
@@ -2355,7 +2355,7 @@
   },
   {
     "id": "assistant-download-makes-no-machine",
-    "file": "apps/server/src/builder/assistant/machine.ts",
+    "file": "apps/server/src/builder/machine/conversation.ts",
     "find": "      if (found === undefined) return { kind: 'FILE_GONE' }\n",
     "replace": "",
     "test": {
@@ -2454,7 +2454,7 @@
   },
   {
     "id": "agents-member-refused",
-    "file": "apps/server/src/builder/tools/tools.ts",
+    "file": "apps/server/src/builder/tools/access.ts",
     "find": "  await deps.identity.admitMember({ tx, companyId, personId, action })\n",
     "replace": "",
     "test": {

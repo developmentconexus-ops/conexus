@@ -190,6 +190,7 @@ test('cada ferramenta do conjunto fechado e do Assistente tem frase e abre no co
     CONSTRUTOR_TOOL.projectRead,
     CONSTRUTOR_TOOL.toolSearch,
     CONSTRUTOR_TOOL.toolSave,
+    CONSTRUTOR_TOOL.toolCodeSave,
     CONSTRUTOR_TOOL.agentRead,
     CONSTRUTOR_TOOL.agentDraft,
     CONSTRUTOR_TOOL.agentSet,

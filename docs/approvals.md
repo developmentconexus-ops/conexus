@@ -697,6 +697,18 @@ Cartão curto "Assinatura ChatGPT" fechado neste pull request (L19), com a linha
 
 Linha de uso da Assinatura ChatGPT, em 2026-11-05: o fundador fez o roteiro de uso no Hub no ar (https://hub.conexus.fun, v0.24.32) com a sua assinatura do ChatGPT e disse: "Cara, deu tudo certo, tá? Testei, funcionou." Sobre a U5, a prova com as gravações, na mesma noite: "Aos 5. Não, pode finalizar aos 5. Eu já testei, tá funcionando o codex, tá? Não precisa ter esse teste, não." Sobre as configurações: "Eu só quero garantir que a gente implementou ele corretamente, tipo, todas as configurações óptimas para OpenAI ... Se já tiver, então tá pronto." e "Até também como Master Factory faz isso." Lido pelo firstmate como: "Cara, deu tudo certo, tá? Testei, funcionou." é a linha de uso da Assinatura ChatGPT; a U5 fecha sem as gravações, e o resultado e o estado da decisão 0060 vêm desse uso; as configurações seguem o Codex CLI e o Mastra Code, com o cache de prompt por conversa da https://github.com/developmentconexus-ops/conexus/pull/782.
 
+## Etapa 24.4
+
+Cartão da etapa 24.4 aprovado em 2026-11-05 (commit 27359bd7adab23a9be87ecaadfb9443672bc10d5): "2. Aum"
+
+À pergunta "O senhor aprova a página da 24.4? As suas respostas A1 e B1 já estão nela", o fundador respondeu "2. Aum". Lido pelo firstmate como "2. Sim": "Aum" é erro de digitação de "Sim" (S e A, I e U são teclas vizinhas), e a opção 2 era a aprovação. Antes, às decisões A e B do cartão: "2 A1 e B1". Lido pelo firstmate como: o `A1` (o modo código só com Computador, a máquina do agente) e o `B1` (a máquina do agente alcança só os três hosts de pacote da migração 0059). E, à ordem da vaga da fronteira entre os três cartões: "3. Okay", sobre a ordem "Assinatura ChatGPT primeiro, depois a 24.4, depois a 24.3.5". Lido pelo firstmate como: o "Okay" vale para a ordem dos merges; as unidades da 24.4 já podem ser construídas a partir do PR do cartão (L1, L5), e nada da 24.4 entra no `main` antes de a Assinatura ChatGPT fechar.
+
+Em 2026-11-05, à pergunta sobre a leitura do "3. Okay" (opção A, recomendada: o Okay vale para a ordem dos merges, a 24.4 já pode construir e nada dela entra no `main` antes de a Assinatura ChatGPT fechar; B: nada da 24.4 começa antes): "2 okay". Lido pelo firstmate como a opção A. Palavra de meio de etapa, vai direto para este livro, sem nova aprovação do cartão (L6).
+
+Cartão da etapa 24.4 aprovado em 2026-11-05 (commit ef02cdaa62944b138659a1c92bd0bf1c5eece525): "2. Aum"
+
+Essa emenda vem da unidade U1 (A forma) e da sua revisão, decidida pelo firstmate pela L9, sem decisão nova do fundador nem mudança no que ele vê: a seção da U1 registra o dono das máquinas de conversa e o `show_file` construídos em `builder/machine/`, a tabela "O raio da mudança" da U1 nomeia cada arquivo que ela tocou fora das suas pastas, e as seções U2 a U5 levam os nomes e as assinaturas finais (na U3, `removeWorkers` mantém o id marcado e nomeia `hub/apps/removal.ts` ao lado de `prune.ts`). A página que ele aprovou em 27359bd7 com "2. Aum" fica igual.
+
 ## Etapa 24.3.5
 
 Em 2026-11-03, sobre uma resposta do Assistente que disse não poder escrever no caderno de uma ligação: "Aqui para deixar registrado, Assistente deveria sim poder". Às duas perguntas seguintes: "1. A" "2. A". Mais tarde no mesmo dia, usando o Assistente de novo: "ele ainda não escreve na anotação do conector e ele deveria". Lido pelo firstmate como: (1) dono e administrador gravam no caderno pelo Assistente, como no Builder, e o membro recebe o texto sugerido; (2) o Assistente mostra o texto e só grava depois do sim da pessoa na conversa. Vira o cartão curto da 24.3.5.

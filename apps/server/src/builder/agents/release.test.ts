@@ -261,3 +261,55 @@ test('o corte: um agente cuja linha saiu antes da segunda varredura é varrido p
   assert.deepEqual([again.statusCode, codeOf(again)], [404, 'AGENT_NOT_FOUND'])
   assert.deepEqual(await pairOf(on.hub, id), [0, 0])
 })
+
+/** An agent of Ana's with its Computador and a conversation of Carla's with it: the id of the conversation. */
+async function withComputer(on: Awaited<ReturnType<typeof spread>>) {
+  const agent = await publishedAgent(on.hub, on.ana, on.agents, {
+    instructions: 'Responda.',
+    machine: true,
+  })
+  const talk = await talkedTo(on.hub, on.carla, on.agents, AgentId.parse(agent.id))
+  return { agent, id: ConversationId.parse(talk.slice(talk.lastIndexOf('/') + 1)) }
+}
+
+test('as máquinas: apagar o agente mata a máquina de cada conversa que vai embora, a de teste também (17)', async (t) => {
+  const on = await spread(t)
+  const { agent, id } = await withComputer(on)
+  const draft = await talkedTo(on.hub, on.ana, on.agents, AgentId.parse(agent.id), { draft: true })
+  const { killed } = on.hub.assistantMachines
+  const gone = await call(on.hub, on.ana, 'DELETE', `${on.agents}/${agent.id}`)
+  assert.equal(gone.statusCode, 204, gone.body)
+  assert.ok(killed.includes(id))
+  assert.ok(killed.includes(ConversationId.parse(draft.slice(draft.lastIndexOf('/') + 1))))
+  const again = await call(on.hub, on.ana, 'DELETE', `${on.agents}/${agent.id}`)
+  assert.deepEqual([again.statusCode, codeOf(again)], [404, 'AGENT_NOT_FOUND'])
+})
+
+test('as máquinas: apagar o Projeto mata as das conversas dos agentes dele (17)', async (t) => {
+  const on = await spread(t)
+  const { id } = await withComputer(on)
+  const gone = await call(on.hub, on.ana, 'DELETE', `${on.company}/projects/${on.projectId}`, {
+    name: 'Encomendas',
+  })
+  assert.equal(gone.statusCode, 204, gone.body)
+  assert.ok(on.hub.assistantMachines.killed.includes(id))
+})
+
+test('as máquinas: remover a empresa mata as das conversas dos agentes dela (17)', async (t) => {
+  const on = await spread(t)
+  const { id } = await withComputer(on)
+  const operator = await personOn(on.hub, {
+    name: 'Olga Souza',
+    email: 'olga@example.test',
+    role: 'admin',
+  })
+  await on.hub.test.asOwner(
+    `insert into operations.client (company_id, cnpj, legal_name, attempt_key, registered_at)
+     values ($1, '00000000000001', 'Empresa Teste Ltda', $1, now())`,
+    [on.companyId],
+  )
+  const body = { name: 'Empresa Teste', revision: 0 }
+  const deleted = await call(on.hub, operator, 'DELETE', `/api/clients/${on.companyId}`, body)
+  assert.equal(deleted.statusCode, 204, deleted.body)
+  assert.ok(on.hub.assistantMachines.killed.includes(id))
+})

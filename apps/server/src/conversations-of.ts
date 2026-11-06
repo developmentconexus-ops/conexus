@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify'
 import type { AppDataPort } from './builder/agents/public.ts'
 import { agentsAlive } from './builder/agents/public.ts'
-import type { HandOffDoors, MachineTuning } from './builder/assistant/public.ts'
+import type { HandOffDoors } from './builder/assistant/public.ts'
 import { createAssistant, speakersOf } from './builder/assistant/public.ts'
 import {
   AUTOMATION_TURN_MS,
@@ -14,7 +14,7 @@ import { createBuilderConversations, createMastraStorage } from './builder/conve
 import { createHubMastra } from './builder/mastra/public.ts'
 import type { openGoogleCalls } from './builder/model-accounts/public.ts'
 import { isChoosable } from './builder/model-accounts/public.ts'
-import type { AssistantMachine, Runs } from './builder/runs/public.ts'
+import type { ConversationMachine, MachineTuning, Runs } from './builder/runs/public.ts'
 import type { Apps } from './hub/apps/public.ts'
 import { publishedVersionsOf } from './hub/apps/public.ts'
 import type { Connectors } from './hub/connectors/public.ts'
@@ -62,6 +62,11 @@ function handOffsOf(
   }
 }
 
+/** The provider's machines and the tests' tuning of them, which the Assistant and the Construtor open. */
+function machineOf(deps: { machine: ConversationMachine; machineTuning?: MachineTuning }) {
+  return { machine: deps.machine, machineTuning: deps.machineTuning }
+}
+
 /**
  * The Builder's conversations, the Assistant beside them (step 24.1, U2, `H1`), its automations
  * (step 24.2) and a Projeto's agents with their conversations (step 24.3): one Mastra store on the pool of Mastra's own login (0010) and one account queue,
@@ -78,7 +83,7 @@ export function conversationsOf(deps: {
   google: ReturnType<typeof openGoogleCalls>
   mastraPool: MastraPool
   runs: Runs
-  machine: AssistantMachine
+  machine: ConversationMachine
   /** The tests' folder and start deadline for the Assistant's machines; E2B's when absent. */
   machineTuning?: MachineTuning
   connectors: () => Connectors
@@ -102,8 +107,7 @@ export function conversationsOf(deps: {
   const door = doorOf(deps.connectors)
   const assistant = createAssistant({
     ...{ storage, database, identity, queue, log },
-    machine: deps.machine,
-    machineTuning: deps.machineTuning,
+    ...machineOf(deps),
     connectors: door,
     projects: { liveProjectOf, liveProjectsOf, publishedVersionsOf },
     handOffs: () => handOffsOf(deps, builder.handOffs, hub.updating),
@@ -113,7 +117,7 @@ export function conversationsOf(deps: {
   const appData = appDataOf(deps.apps)
   const agents = agentsAlive({
     ...{ storage, database, identity, queue, liveProjectOf, liveProjectIdsOf, isChoosable, log },
-    connectors: door,
+    ...{ connectors: door, machine: deps.machine, machineTuning: deps.machineTuning },
     speakersOf: (scope) => speakersOf({ database, identity, projects: { liveProjectOf } }, scope),
     appData,
     mastra: () => hub.mastra,
@@ -122,6 +126,7 @@ export function conversationsOf(deps: {
     ...{ storage, database, identity, queue, liveProjectOf, log, agents, connectors: door },
     speakersOf: (scope) => speakersOf({ database, identity, projects: { liveProjectOf } }, scope),
     ...{ automations: () => automations, appTables: appTablesOf(appData) },
+    ...machineOf(deps),
   })
   const clock = deps.automationClock
   const run = automationRun({

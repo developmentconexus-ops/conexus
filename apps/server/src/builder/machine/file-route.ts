@@ -1,20 +1,31 @@
 import { posix } from 'node:path'
-import type { CompanyId, ConversationId, Person } from '@conexus/hub-api'
-import { ASSISTANT_FILE } from '@conexus/hub-api'
+import type { CompanyId, ConversationId, FailureCode, Person } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
+import type { z } from 'zod'
 import { sessionOf } from '../../platform/access.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import { untilClientLeaves } from '../../platform/reply-lifetime.ts'
-import type { AssistantMachines } from './machine.ts'
+import type { ConversationMachines } from './conversation.ts'
 import { INLINE_MEDIA, mediaOf } from './show-file.ts'
 
+/** A conversation's file route as its contract declares it (the Assistant's: `ASSISTANT_FILE`). */
+type FileRoute = {
+  url: string
+  params: z.ZodType<{ companyId: CompanyId; conversationId: ConversationId }>
+  query: z.ZodType<{ path: string }>
+  failures: readonly FailureCode[]
+}
+
 type FileDeps = {
-  machines: AssistantMachines
+  route: FileRoute
+  machines: ConversationMachines
   log: FailureLog
+  /** The line each file served is logged as (code C54). */
+  served: string
   /**
-   * The person may ask the Assistant now and owns the conversation, else the same `NOT_FOUND` or
-   * `CONVERSATION_NOT_FOUND` (security S10).
+   * The person may read the conversation now, else the same `NOT_FOUND` or
+   * `CONVERSATION_NOT_FOUND` (security S10): each user of the route says who may.
    */
   ownConversation(
     owner: { companyId: CompanyId; personId: Person['id'] },
@@ -22,7 +33,7 @@ type FileDeps = {
   ): Promise<void>
 }
 
-/** What a failed read of the machine's file answers (the codes of `ASSISTANT_FILE`). */
+/** What a failed read of the machine's file answers (`MACHINE_FILE_FAILURES`). */
 const FILE_FAILURE = {
   FILE_NOT_FOUND: 'FILE_NOT_FOUND',
   FILE_TOO_LARGE: 'FILE_TOO_LARGE',
@@ -58,22 +69,23 @@ function sandboxed(policy: unknown): string {
 }
 
 /**
- * The file the Assistant wrote, for the conversation's owner (criterion 20). The model wrote it, so
- * the browser is told not to run it: the type from the name, saved unless an image, and the Hub's
- * Content-Security-Policy with `sandbox` (security S24); helmet's `nosniff` is on every reply.
- * Each file served is logged (code C54).
+ * The file the model wrote, for whoever may read the conversation (step 24.1, criterion 20). The
+ * model wrote it, so the browser is told not to run it: the type from the name, saved unless an
+ * image, and the Hub's Content-Security-Policy with `sandbox` (security S24); helmet's `nosniff` is
+ * on every reply. Each file served is logged (code C54).
  */
 export function registerFile(app: FastifyInstance, deps: FileDeps): void {
+  const { route } = deps
   app.route({
     method: 'GET',
-    url: ASSISTANT_FILE.url,
-    config: { access: 'session', failures: ASSISTANT_FILE.failures },
+    url: route.url,
+    config: { access: 'session', failures: route.failures },
     handler: async (request, reply) => {
-      const params = ASSISTANT_FILE.params.safeParse(request.params)
+      const params = route.params.safeParse(request.params)
       if (!params.success) {
         throw new Failure('NOT_FOUND', { details: { reason: 'MALFORMED' }, cause: params.error })
       }
-      const query = ASSISTANT_FILE.query.safeParse(request.query)
+      const query = route.query.safeParse(request.query)
       if (!query.success) throw new Failure('REQUEST_MALFORMED', { cause: query.error })
       const owner = { companyId: params.data.companyId, personId: sessionOf(request).person.id }
       await deps.ownConversation(owner, params.data.conversationId)
@@ -88,7 +100,7 @@ export function registerFile(app: FastifyInstance, deps: FileDeps): void {
       if (read.kind !== 'OK') throw new Failure(FILE_FAILURE[read.kind])
       deps.log.info(
         { companyId: owner.companyId, conversationId, bytes: read.bytes.length },
-        'ASSISTANT_FILE_READ',
+        deps.served,
       )
       const name = posix.basename(query.data.path)
       const media = mediaOf(name)

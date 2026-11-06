@@ -2,7 +2,7 @@ import type { RequestContext } from '@mastra/core/request-context'
 import type { WorkspaceFilesystem } from '@mastra/core/workspace'
 import { FileNotFoundError } from '@mastra/core/workspace'
 import { Failure } from '../../platform/failure.ts'
-import { PathEscapesError } from '../machine/public.ts'
+import { PathEscapesError } from './sandbox-filesystem/containment.ts'
 
 /**
  * Where a path the model or the person names lands in the conversation's folder, or why it does

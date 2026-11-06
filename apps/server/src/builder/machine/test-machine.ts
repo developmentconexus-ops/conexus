@@ -20,7 +20,7 @@ import { LocalFilesystem, LocalSandbox } from '@mastra/core/workspace'
 import { E2bApiKey, InstallationId, MachineTemplate } from '../../platform/config-machine.ts'
 import { Failure } from '../../platform/failure.ts'
 import { openRepository } from '../git/public.ts'
-import type { AssistantMachineApi, Kit, KitFactory, MachineApi } from './kit.ts'
+import type { ConversationMachineApi, Kit, KitFactory, MachineApi } from './kit.ts'
 import { APP_FOLDER } from './kit.ts'
 import type { Phase } from './public.ts'
 import { createMachines } from './public.ts'
@@ -221,7 +221,7 @@ async function* slowly(control: Control, path: string, signal: AbortSignal | und
  * The provider's find by the marks, as E2B's list: the conversation's machine of `template` it
  * holds, by its name, which this double uses as the provider's id; `findFails` lists that fail.
  */
-export function findOf(control: Control): AssistantMachineApi['find'] {
+export function findOf(control: Control): ConversationMachineApi['find'] {
   return async (conversationId, template) => {
     if (control.findFails > 0) {
       control.findFails -= 1

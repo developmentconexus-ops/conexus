@@ -7,6 +7,7 @@ import { violatedReference } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { Kept, Owner } from '../controller-kit/public.ts'
 import { openSession, releaseThreads } from '../controller-kit/public.ts'
+import type { ConversationMachines } from '../machine/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import type { InProject } from '../tools/public.ts'
 import { AGENT_MARK, keptRun } from './controller.ts'
@@ -51,7 +52,13 @@ function keep(
  * and the answer is `AGENT_NOT_FOUND` (data D22).
  */
 export async function openAgentConversation(
-  deps: { controller: AgentController; memory: Memory; queue: QueueDeps; database: Database },
+  deps: {
+    controller: AgentController
+    memory: Memory
+    queue: QueueDeps
+    database: Database
+    machines: Pick<ConversationMachines, 'kill'>
+  },
   input: {
     scope: InProject
     agentId: AgentId
@@ -74,7 +81,7 @@ export async function openAgentConversation(
     keep: () => keep(deps.database, owner, { id, agentId, draft }),
   })
   if ((await keptRun(deps.database, owner, id)) === undefined) {
-    await releaseThreads(deps, [id])
+    await releaseThreads(deps, [id], (each) => deps.machines.kill(each))
     throw new Failure('AGENT_NOT_FOUND')
   }
   return opened
