@@ -336,10 +336,9 @@ async function keep(
     ...{ reads: input.reads, inputSchema: schemas.input, outputSchema: schemas.output },
     test: { passed: true, rows, at: new Date().toISOString() },
   })
-  const request = input
   const tool =
     which.toolId !== undefined
-      ? await deps.tools.addCodeVersion(scope, { ...which, version, request }, key)
-      : await deps.tools.saveCode(scope, { ...which, version, request }, key)
+      ? await deps.tools.addCodeVersion(scope, { ...which, version, request: input }, key)
+      : await deps.tools.saveCode(scope, { ...which, version, request: input }, key)
   return { kind: 'SAVED', tool }
 }

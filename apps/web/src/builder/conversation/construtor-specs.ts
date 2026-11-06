@@ -83,7 +83,7 @@ function codeSaveRow(tool: Tool, status: Parameters<typeof headOf>[1]) {
   const failed = status === 'error' || status === 'denied' || saved?.kind === 'REFUSED'
   const test = saved?.kind === 'SAVED' ? saved.tool.versions.at(-1) : undefined
   const detail =
-    saved?.kind === 'REFUSED'
+    saved?.kind === 'REFUSED' && saved.code === 'TOOL_TEST_FAILED'
       ? saved.output
           ?.split('\n')
           .find((line) => line.trim() !== '')

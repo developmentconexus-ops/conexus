@@ -2,7 +2,7 @@
 // value one call leaves behind would reach the next (step 24.4, criterion 7). The rule is a list of
 // what may exist outside a function, and everything else is refused: imports, types, functions,
 // the default export of methods, and a `const` of a string, a number, a boolean, a template
-// without expressions or a Zod schema. Known blind spot: a Zod schema's own callbacks that keep a
+// without expressions or a Zod schema (a chain that parses a value is not a schema). Known blind spot: a Zod schema's own callbacks that keep a
 // value, which the types and the test would meet first.
 // The Construtor writes it beside the tool's code on the machine and runs it with the Biome of the
 // template; the repository's own Biome does not read it (biome.json wires other plugins).
@@ -21,13 +21,15 @@ or {
       JsNullLiteralExpression(),
       r"-[0-9][0-9_.]*",
       r"`(?:[^`$\\]|\\.)*`",
-      r"(?s)z\..*"
+      and { r"(?s)z\..*",
+      not r"(?s).*\.(?:parse|safeParse|parseAsync)\b.*" }
     },
     register_diagnostic(span=$decl, message="MODULE_STATE: outside a function a `const` holds only a string, a number, a boolean, a template without expressions or a Zod schema; any other value is state the function can change between calls.")
   },
   or {
     JsExpressionStatement(),
     JsClassDeclaration(),
+    JsClassExportDefaultDeclaration(),
     JsIfStatement(),
     JsForStatement(),
     JsForInStatement(),

@@ -48,7 +48,7 @@ function Refused(props: { scope: Scope; failure: unknown }) {
   )
 }
 
-/** What the tool reads: a preset's one read by its name, a tool in code's reads by their ids. */
+/** What the tool reads: a preset's one read by its name, a tool in code's reads by their names. */
 function readText(tool: ToolSummary): string {
   return tool.kind === 'PRESET' ? tool.readLabel : readNames(tool.reads, tool.readLabels)
 }

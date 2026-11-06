@@ -48,7 +48,10 @@ async function appendVersion(
   async function write(tx: CommandTx) {
     await admitted(deps, tx, scope, 'manageAgents')
     const row = await usableTool(tx, scope, offered, toolId)
-    const [earlier] = await tx.select().from(toolVersion).where(eq(toolVersion.id, versionId))
+    const [earlier] = await tx
+      .select({ bodyHash: toolVersion.bodyHash, number: toolVersion.number })
+      .from(toolVersion)
+      .where(eq(toolVersion.id, versionId))
     if (earlier !== undefined) {
       if (earlier.bodyHash !== bodyHash) throw new Failure('IDEMPOTENCY_CONFLICT')
       return { detail: await detailOf(deps, tx, row, offered), number: earlier.number }

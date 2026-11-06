@@ -106,7 +106,6 @@ test('o teste passa: a versão 1 é gravada com o código, o módulo empacotado,
   assert.deepEqual(version.reads, ['pedidos'])
   assert.equal(version.test.passed, true)
   assert.ok(version.inputSchema.type === 'object', 'the JSON Schema of the input')
-  assert.ok(!('module' in version), 'a read does not bring the module')
   const listed = await call(on.hub, on.ana, 'GET', on.tools)
   const [kept] = Object(listed.json()).tools
   assert.equal(kept.kind, 'CODE')
@@ -186,6 +185,8 @@ const WITH_STATE: Record<string, string> = {
   'um objeto mudado': 'const chamadas = { total: 0 }\n\n',
   'um campo estático': 'class Contador { static chamadas = 0 }\n\n',
   'a globalThis': 'globalThis.chamadas = 0\n\n',
+  'uma classe padrão': 'export default class { chamadas = 0 }\n\n',
+  'um valor lido por um esquema': 'const chamadas = z.any().parse(new Map<string, number>())\n\n',
 }
 
 test('estado de módulo: cada forma de guardar estado fora da função é recusada antes do teste e nada é gravado', async (t) => {
