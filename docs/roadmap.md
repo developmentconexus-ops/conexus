@@ -106,8 +106,6 @@ Login social. Arquivos enviados por pessoas para dentro de um app ou da máquina
 
 | Etapa | O que precisa antes | Decisão sua nela | Conhecimento trazido |
 | --- | --- | --- | --- |
-| Papéis e pedidos | A 24.3.1 | Três | — |
-| 24.4 Ferramentas em código | Os pedidos | Nenhuma | Protótipo: Workers ou E2B |
 | 24.5 Escrita com aprovação | A 24.4 | Nenhuma | `requireApproval` do Mastra, provada antes a trava da 0053. Escrita nova pede nova liberação |
 | 24.6 Workflows e automações | A 24.5 | O gatilho do Sankhya | Workflows dinâmicos do Mastra. Seu orçamento é o aceite |
 | 24.7 Canais | A 24.6 | Nenhuma | — |
