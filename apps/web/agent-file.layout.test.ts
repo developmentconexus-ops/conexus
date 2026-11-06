@@ -79,7 +79,15 @@ const replies = {
   ...WITH_ACCOUNT,
   ...projectsPage(COMPANY.id),
   [`GET ${BASE}/agents/${AGENT}`]: ok(getAgent, { agent: DETAIL }),
-  [`GET ${BASE}/agents/${AGENT}/versions`]: ok(listAgentVersions, { versions: [] }),
+  [`GET ${BASE}/agents/${AGENT}/versions`]: ok(listAgentVersions, {
+    versions: [3, 2, 1].map((number) => ({
+      number,
+      message: '',
+      active: number === 3,
+      publishedAt: `2026-11-0${number}T12:00:00.000Z`,
+      publishedBy: null,
+    })),
+  }),
   [`GET ${BASE}/tools`]: ok(listTools, { tools: [], ready: [] }),
   [`GET ${BASE}/agents/${AGENT}/conversations`]: ok(listAgentConversations, {
     conversations: [
