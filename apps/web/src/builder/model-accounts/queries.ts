@@ -9,6 +9,7 @@ import {
   listModelAccounts,
   listModelProviders,
   orderModelAccounts,
+  pollModelAccountSignIn,
   removeModelAccount,
   setAccountKinds,
   setDefaultModel,
@@ -46,3 +47,5 @@ export const sendRemoval = hubMutation(removeModelAccount)
 export const sendKinds = hubMutation(setAccountKinds)
 export const sendSignInStart = hubMutation(startModelAccountSignIn)
 export const sendSignInCompletion = hubMutation(completeModelAccountSignIn)
+/** The Hub's wait asks the vendor twice, 15 s each, so the browser waits past both. */
+export const sendSignInPoll = hubMutation(pollModelAccountSignIn, { deadlineMs: 35_000 })

@@ -15,18 +15,25 @@ function Panel(props: {
   owner: Owner
   providers: readonly Provider[]
   kinds: readonly SignInKind[]
+  waiting: boolean
+  onWaiting: (waiting: boolean) => void
   onLinked: (account: ModelAccount) => void
   onClose: () => void
 }) {
   const [way, setWay] = useState<Way>('key')
+  const { waiting } = props
   return (
     <div className="flex w-full flex-col gap-lg">
       {props.kinds.length > 0 && (
         <div className="flex flex-wrap gap-md">
-          <Button aria-pressed={way === 'key'} onClick={() => setWay('key')}>
+          <Button aria-pressed={way === 'key'} disabled={waiting} onClick={() => setWay('key')}>
             Chave de API
           </Button>
-          <Button aria-pressed={way === 'sign-in'} onClick={() => setWay('sign-in')}>
+          <Button
+            aria-pressed={way === 'sign-in'}
+            disabled={waiting}
+            onClick={() => setWay('sign-in')}
+          >
             Entrar com assinatura
           </Button>
         </div>
@@ -44,10 +51,13 @@ function Panel(props: {
           owner={props.owner}
           kinds={props.kinds}
           onLinked={props.onLinked}
+          onPolling={props.onWaiting}
         />
       )}
       <div>
-        <Button onClick={props.onClose}>Cancelar</Button>
+        <Button disabled={waiting} onClick={props.onClose}>
+          Cancelar
+        </Button>
       </div>
     </div>
   )
@@ -70,6 +80,7 @@ export function LinkAccount(props: {
 }) {
   const { hasAccounts, saysLinked, ...panel } = props
   const [open, setOpen] = useState(false)
+  const [waiting, setWaiting] = useState(false)
   const [linked, setLinked] = useState<ModelAccount | undefined>(undefined)
 
   const said = linked ? `${linked.label} · ${originText(linked)} · ${stateText(linked)}` : ''
@@ -78,6 +89,7 @@ export function LinkAccount(props: {
       <Sheet
         open={open}
         onOpenChange={(next) => {
+          if (!next && waiting) return
           if (next) setLinked(undefined)
           setOpen(next)
         }}
@@ -86,9 +98,11 @@ export function LinkAccount(props: {
           <PlusIcon aria-hidden="true" />
           Ligar conta
         </SheetTrigger>
-        <SheetContent side="right" title="Ligar conta" closeLabel="Fechar">
+        <SheetContent side="right" title="Ligar conta" closeLabel="Fechar" closeDisabled={waiting}>
           <Panel
             {...panel}
+            waiting={waiting}
+            onWaiting={setWaiting}
             onLinked={(account) => {
               setLinked(account)
               setOpen(false)
