@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { call, codeOf, personOn } from '../../hub/identity/test-hub.ts'
-import { agentsOn, savedCodeTool } from '../agents/test-agents.ts'
+import { agentsOn, drafted, madeAgent, savedCodeTool, toolOf } from '../agents/test-agents.ts'
 
 test('apagar uma ferramenta em código: com a Cloudflare fora, TOOL_UNAVAILABLE e as linhas ficam; depois, os Workers de cada versão saem antes das linhas', async (t) => {
   const on = await agentsOn(t)
@@ -28,6 +28,24 @@ test('apagar uma ferramenta em código: com a Cloudflare fora, TOOL_UNAVAILABLE 
   assert.deepEqual(on.hub.tools.workers(), [])
   const after = await call(on.hub, on.ana, 'GET', url)
   assert.deepEqual([after.statusCode, codeOf(after)], [404, 'TOOL_NOT_FOUND'])
+})
+
+test('apagar uma ferramenta em código: um rascunho que a escolhe enquanto os Workers saem recusa a remoção com TOOL_IN_USE, e o rascunho fica com ela', async (t) => {
+  const on = await agentsOn(t)
+  const saved = await savedCodeTool(on)
+  const url = `${on.tools}/${saved.id}`
+  const held = on.hub.tools.holdRemove()
+  const deleting = call(on.hub, on.ana, 'DELETE', url)
+  await held.arrived
+  const made = await madeAgent(on.hub, on.ana, on.agents)
+  await drafted(on.hub, on.ana, on.agents, made, { tools: [saved.latest.id] })
+  held.release()
+  const refused = await deleting
+  assert.deepEqual([refused.statusCode, codeOf(refused)], [409, 'TOOL_IN_USE'])
+  const still = toolOf(await call(on.hub, on.ana, 'GET', url))
+  assert.deepEqual(still.usedBy, [
+    { id: made.id, projectId: on.projectId, name: 'Vendas do dia' },
+  ])
 })
 
 test('as ferramentas em código: remover a empresa tira os Workers delas; com a Cloudflare fora, CLIENT_DELETION_PENDING e a mesma rota termina', async (t) => {
