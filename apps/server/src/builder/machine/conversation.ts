@@ -1,6 +1,7 @@
 import type { ConversationId } from '@conexus/hub-api'
 import { ConversationId as ConversationIdSchema } from '@conexus/hub-api'
 import type { RequestContext } from '@mastra/core/request-context'
+import type { CodeModeTransport } from '@mastra/core/tools'
 import type { WorkspaceFilesystem } from '@mastra/core/workspace'
 import { WORKSPACE_TOOLS, Workspace } from '@mastra/core/workspace'
 import { z } from 'zod'
@@ -42,6 +43,8 @@ export type ConversationMachines = {
   readonly folder: string
   /** Where the template keeps the packages of the tools the Hub runs there (TypeScript, esbuild, Biome). */
   readonly toolchain: string
+  /** How an agent's program runs in the machine (step 24.4, U5). */
+  readonly codeMode: CodeModeTransport
   /** The controller's workspace resolver; undefined outside a conversation, as the Builder's. */
   workspace(requestContext: RequestContext): Promise<Workspace | undefined>
   /**
@@ -114,6 +117,7 @@ class Machines implements ConversationMachines {
   private readonly deps: Deps
   readonly folder: string
   readonly toolchain: string
+  readonly codeMode: CodeModeTransport
   private readonly startMs: number
   private readonly sessions = new Map<ConversationId, Session>()
   /** The pauses in flight, which the Hub's end waits for (code C62). */
@@ -135,6 +139,7 @@ class Machines implements ConversationMachines {
 
   constructor(deps: Deps, tuning: MachineTuning) {
     this.deps = deps
+    this.codeMode = deps.codeMode
     this.folder = tuning.workFolder
     this.toolchain = tuning.toolchain
     this.startMs = tuning.startMs
