@@ -141,6 +141,22 @@ function widthOf(page: Page, selector: string) {
   return page.locator(selector).evaluate((element) => element.getBoundingClientRect().width)
 }
 
+// The panel resizes after the file shows: wait, up to a deadline, for the width to arrive.
+async function until(
+  page: Page,
+  selector: string,
+  ok: (width: number) => boolean,
+  message: string,
+) {
+  const deadline = Date.now() + 5000
+  let width = await widthOf(page, selector)
+  while (!ok(width) && Date.now() < deadline) {
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    width = await widthOf(page, selector)
+  }
+  assert.ok(ok(width), `${message} (${width} px)`)
+}
+
 test('a 1366 px, o arquivo alarga o painel de teste e, fechado, ele volta', async () => {
   const page = await harness.open(
     `/companies/${COMPANY.id}/projects/${PROJECT_ID}/agents/${AGENT}/${CHAT}`,
@@ -156,13 +172,11 @@ test('a 1366 px, o arquivo alarga o painel de teste e, fechado, ele volta', asyn
   const before = await widthOf(page, test)
   await page.getByRole('button', { name: /^Abrir vendas/ }).click()
   await page.getByRole('img', { name: /vendas/ }).waitFor()
-  await page.waitForTimeout(300)
-  assert.ok((await widthOf(page, chat)) >= MIN_CHAT, 'a conversa ficou estreita')
-  assert.ok((await widthOf(page, side)) >= MIN_FILE, 'o arquivo ficou estreito')
+  await until(page, chat, (width) => width >= MIN_CHAT, 'a conversa ficou estreita')
+  await until(page, side, (width) => width >= MIN_FILE, 'o arquivo ficou estreito')
   await page.getByRole('button', { name: /^Fechar/ }).click()
   await page.getByRole('img', { name: /vendas/ }).waitFor({ state: 'detached' })
-  await page.waitForTimeout(300)
-  assert.ok(Math.abs((await widthOf(page, test)) - before) <= 2, 'o painel não voltou')
+  await until(page, test, (width) => Math.abs(width - before) <= 2, 'o painel não voltou')
   assert.deepEqual(page.problems, [])
   await page.close()
 })
