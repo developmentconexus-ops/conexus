@@ -22,10 +22,11 @@ test('abrir: a linha que a varredura levou depois do fio devolve AGENT_NOT_FOUND
   // The open stops where the thread takes its model, after the session read the row, until the test lets it go.
   const holder = new pg.Client({ connectionString: on.hub.test.mastraUrl.reveal() })
   await holder.connect()
-  await holder.query('select pg_advisory_lock(7441)')
+  await holder.query('begin')
+  await holder.query('select pg_advisory_xact_lock(7441)')
   await mastraPool.query(
     `create function mastra.hold_model() returns trigger language plpgsql as
-      $$ begin perform pg_advisory_lock(7441); perform pg_advisory_unlock(7441); return null; end $$`,
+      $$ begin perform pg_advisory_xact_lock(7441); return null; end $$`,
   )
   await mastraPool.query(
     `create trigger hold_model after insert or update on mastra.mastra_threads
@@ -51,7 +52,7 @@ test('abrir: a linha que a varredura levou depois do fio devolve AGENT_NOT_FOUND
     }
     // The sweep of the deletion that ran while the open waited.
     await on.hub.test.asOwner('delete from builder.agent_conversation where id = $1', [id])
-    await holder.query('select pg_advisory_unlock(7441)')
+    await holder.query('commit')
   } finally {
     await holder.end()
   }
