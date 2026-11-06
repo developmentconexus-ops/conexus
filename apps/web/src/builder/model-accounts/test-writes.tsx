@@ -3,6 +3,7 @@ import {
   ModelDefault,
   ModelFallback,
   ProviderId,
+  SignInKind,
   startModelAccountSignIn,
 } from '@conexus/hub-api'
 import type { HttpHandler } from 'msw'
@@ -92,6 +93,22 @@ function settingsWrites(view: View, sent: Sent[], answers: Answers): HttpHandler
   ]
 }
 
+const SIGN_IN_ID = '00000000-0000-4000-8000-0000000000aa'
+
+/** The account a finished sign-in puts at the end of its queue. */
+function linkedAccount(view: View, started: { owner: string; kind: string; label: string }) {
+  const owner = started.owner === 'me' ? 'mine' : 'company'
+  const account = accountOf({
+    label: started.label,
+    owner: started.owner === 'me' ? 'me' : 'company',
+    kind: SignInKind.parse(started.kind),
+    hint: null,
+    position: view[owner].length,
+  })
+  view[owner].push(account)
+  return account
+}
+
 function signIns(view: View, sent: Sent[], answers: Answers): HttpHandler[] {
   const started = { kind: 'claude_subscription', owner: 'company', label: '' }
   return [
@@ -101,6 +118,19 @@ function signIns(view: View, sent: Sent[], answers: Answers): HttpHandler[] {
       const replaced = answers.start?.()
       if (replaced) return replaced
       Object.assign(started, body)
+      if (body.kind === 'openai_codex') {
+        return HttpResponse.json(
+          {
+            entry: 'device',
+            signInId: SIGN_IN_ID,
+            url: 'https://auth.example.test/codex/device',
+            userCode: 'ABCD-1234',
+            retryMs: 1,
+            expiresAt: new Date(Date.now() + 15 * 60_000).toISOString(),
+          },
+          { status: 201 },
+        )
+      }
       return HttpResponse.json(
         {
           entry: 'paste',
@@ -120,16 +150,18 @@ function signIns(view: View, sent: Sent[], answers: Answers): HttpHandler[] {
       })
       const replaced = answers.complete?.()
       if (replaced) return replaced
-      const owner = started.owner === 'me' ? 'mine' : 'company'
-      const account = accountOf({
-        label: started.label,
-        owner: started.owner === 'me' ? 'me' : 'company',
-        kind: started.kind === 'google_cliproxy' ? 'google_cliproxy' : 'claude_subscription',
-        hint: null,
-        position: view[owner].length,
+      return HttpResponse.json({ account: linkedAccount(view, started) }, { status: 201 })
+    }),
+    http.post(`${BASE}/model-account-sign-ins/:signInId/poll`, async ({ request }) => {
+      sent.push({
+        method: 'POST',
+        path: new URL(request.url).pathname,
+        body: undefined,
+        attemptKey: null,
       })
-      view[owner].push(account)
-      return HttpResponse.json({ account }, { status: 201 })
+      const replaced = await answers.poll?.()
+      if (replaced) return replaced
+      return HttpResponse.json({ status: 'linked', account: linkedAccount(view, started) })
     }),
   ]
 }

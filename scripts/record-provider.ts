@@ -7,6 +7,12 @@
 // provider, API, SDK version and date beside it. The credential comes from the environment only
 // and never reaches a file or the output (security S40): CONEXUS_RECORD_CLAUDE_TOKEN for Claude,
 // CONEXUS_RECORD_CLIPROXY_URL and CONEXUS_RECORD_CLIPROXY_KEY for Gemini. Every prompt is invented.
+// `--provider openai-codex --case thinking|abort|tool-error|unserved` does the same through the ChatGPT
+// subscription's model (`codexModel`), with CONEXUS_RECORD_CODEX_ACCESS and CONEXUS_RECORD_CODEX_ACCOUNT
+// (a signed-in account's access token and ChatGPT account id) in the environment and `--model` naming a
+// registry OpenAI model. The recordings are `openai-codex-<case>` with provider `openai`. `unserved`
+// writes no file: it asks for a model the subscription does not serve and prints the status and the
+// error code the endpoint answers, for the decision's result.
 // `--provider anthropic|openai|google --case models` saves the first page of the model list the
 // provider gives the credential (CONEXUS_RECORD_CLAUDE_TOKEN, CONEXUS_RECORD_OPENAI_KEY or
 // CONEXUS_RECORD_GOOGLE_KEY); with `--via cliproxy` (google only) the list of the local CLIProxy
@@ -20,18 +26,17 @@ import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { parseArgs } from 'node:util'
 import { ModelId, ProviderId } from '@conexus/hub-api'
+import { APICallError } from 'ai'
 import { z } from 'zod'
 import {
-  AnthropicPage,
   callModel,
-  GooglePage,
-  listRequest,
-  OpenAiList,
+  codexModel,
   providerOptionsOf,
   subscriptionModel,
 } from '../apps/server/src/builder/model-accounts/public.ts'
 import type { Recording } from '../apps/server/src/platform/test-recordings.ts'
 import { LEAK, RECORDINGS } from '../apps/server/src/platform/test-recordings.ts'
+import { CliProxy, ModelsArgs, recordModels } from './record-models.ts'
 
 const ROOT = join(import.meta.dirname, '..')
 // The subscription no longer serves Claude Sonnet 4.5; 4.6 is the nearest it
@@ -39,6 +44,8 @@ const ROOT = join(import.meta.dirname, '..')
 const CLAUDE = 'claude-sonnet-4-6'
 // The local CLIProxy's Gemini model that the router's registry also knows.
 const GEMINI = 'gemini-3.5-flash-lite'
+// An OpenAI model of the registry that the Codex endpoint is known to serve.
+const CODEX = 'gpt-5.2'
 /**
  * The deltas an `abort` case lets through before it stops the call, as a person's stop would; the
  * body keeps every byte that had arrived by then, which can hold a few deltas more.
@@ -58,34 +65,17 @@ const Args = z.discriminatedUnion('provider', [
     model: z.string().min(1).default(GEMINI),
     effort: z.enum(['low', 'medium', 'high']).optional(),
   }),
+  z.object({
+    provider: z.literal('openai-codex'),
+    case: z.enum(['thinking', 'abort', 'tool-error', 'unserved']),
+    model: z.string().min(1).default(CODEX),
+  }),
 ])
 type Args = z.infer<typeof Args>
-type ModelsArgs = z.infer<typeof ModelsArgs>
-
-// The model lists (card 12.3, review 1b): `--case models` saves the first page of what the provider
-// lists for the credential, to check the schemas the Hub reads it with against the real answer.
-const ModelsArgs = z.object({
-  provider: z.enum(['anthropic', 'openai', 'google']),
-  case: z.literal('models'),
-  via: z.literal('cliproxy').optional(),
-})
-// The Hub's own schemas, loose: the body is checked as the Hub reads it and kept whole, indented as
-// the other recordings are.
-const LIST_SCHEMAS = {
-  anthropic: AnthropicPage.loose(),
-  openai: OpenAiList.loose(),
-  google: GooglePage.loose(),
-}
-const ListKeys = z.object({
-  anthropic: z.object({ CONEXUS_RECORD_CLAUDE_TOKEN: z.string().min(1) }),
-  openai: z.object({ CONEXUS_RECORD_OPENAI_KEY: z.string().min(1) }),
-  google: z.object({ CONEXUS_RECORD_GOOGLE_KEY: z.string().min(1) }),
-})
-
 const Claude = z.object({ CONEXUS_RECORD_CLAUDE_TOKEN: z.string().min(1) })
-const Gemini = z.object({
-  CONEXUS_RECORD_CLIPROXY_URL: z.url(),
-  CONEXUS_RECORD_CLIPROXY_KEY: z.string().min(1),
+const Codex = z.object({
+  CONEXUS_RECORD_CODEX_ACCESS: z.string().min(1),
+  CONEXUS_RECORD_CODEX_ACCOUNT: z.string().min(1),
 })
 
 /** The invented question each case asks, in Portuguese as a person of the company would. */
@@ -96,28 +86,30 @@ const PROMPTS: Record<Args['case'], string> = {
     'Uma padaria inventada vende 120 pães por dia a R$ 0,80 cada. Quanto ela fatura em 30 dias? Pense antes de responder.',
   'tool-error':
     'Leia a página http://padaria-inventada.example.test/cardapio e diga o que ela vende.',
+  unserved: 'Diga olá em uma frase.',
   abort: 'Escreva uma lista de 60 nomes inventados de padarias, um por linha, sem comentários.',
 }
 
 /** The Hub's two web tools as the Messages API receives them from Mastra's `webFetchTool` and `webSearchTool`. */
-const WEB_TOOLS = [
-  {
-    type: 'function' as const,
-    name: 'web_fetch',
-    description: 'Fetch a web page by URL and return text content with basic response metadata.',
-    inputSchema: {
-      type: 'object' as const,
-      properties: {
-        url: {
-          type: 'string' as const,
-          minLength: 1,
-          description: 'The fully qualified HTTP or HTTPS URL to fetch.',
-        },
+const WEB_FETCH = {
+  type: 'function' as const,
+  name: 'web_fetch',
+  description: 'Fetch a web page by URL and return text content with basic response metadata.',
+  inputSchema: {
+    type: 'object' as const,
+    properties: {
+      url: {
+        type: 'string' as const,
+        minLength: 1,
+        description: 'The fully qualified HTTP or HTTPS URL to fetch.',
       },
-      required: ['url'],
-      additionalProperties: false,
     },
+    required: ['url'],
+    additionalProperties: false,
   },
+}
+const WEB_TOOLS = [
+  WEB_FETCH,
   {
     type: 'provider' as const,
     id: 'anthropic.web_search_20250305' as const,
@@ -161,10 +153,29 @@ async function openerOf(args: Args) {
       open: (asked: Asked) => model.doStream({ ...asked, tools: WEB_TOOLS }),
       secrets: [token],
       modelId: ModelId.parse(`anthropic/${CLAUDE}`),
-      meta: { api: 'Anthropic Messages API, streamed', sdk: versionOf('@ai-sdk/anthropic') },
+      meta: {
+        provider: ProviderId.parse('anthropic'),
+        api: 'Anthropic Messages API, streamed',
+        sdk: versionOf('@ai-sdk/anthropic'),
+      },
     }
   }
-  const env = Gemini.parse(process.env)
+  if (args.provider === 'openai-codex') {
+    const env = Codex.parse(process.env)
+    const access = env.CONEXUS_RECORD_CODEX_ACCESS
+    const model = codexModel(args.model, { access, accountId: env.CONEXUS_RECORD_CODEX_ACCOUNT })
+    return {
+      open: (asked: Asked) => model.doStream({ ...asked, tools: [WEB_FETCH] }),
+      secrets: [access, env.CONEXUS_RECORD_CODEX_ACCOUNT],
+      modelId: ModelId.parse(`openai/${args.model}`),
+      meta: {
+        provider: ProviderId.parse('openai'),
+        api: 'ChatGPT Codex Responses API, streamed',
+        sdk: versionOf('@ai-sdk/openai'),
+      },
+    }
+  }
+  const env = CliProxy.parse(process.env)
   const apiKey = env.CONEXUS_RECORD_CLIPROXY_KEY
   const url = env.CONEXUS_RECORD_CLIPROXY_URL
   const model = await callModel({ providerId: 'google', modelId: args.model, url, apiKey })
@@ -173,6 +184,7 @@ async function openerOf(args: Args) {
     secrets: [apiKey],
     modelId: ModelId.parse(`google/${args.model}`),
     meta: {
+      provider: ProviderId.parse('google'),
       api: 'Chat Completions through CLIProxyAPI, streamed',
       sdk: `${versionOf('@mastra/core')} (its OpenAI-compatible model)`,
     },
@@ -234,6 +246,28 @@ function reasoningCharsOf(sse: string): number {
     .reduce((sum, choice) => sum + (choice.delta.reasoning_content?.length ?? 0), 0)
 }
 
+const ErrorReply = z.object({ error: z.object({ code: z.string().nullish() }) })
+
+/** What the endpoint answers for a model the subscription does not serve: the status and the error code. */
+async function recordUnserved(args: Args) {
+  const { open } = await openerOf(args)
+  try {
+    await open({
+      prompt: [
+        { role: 'system', content: 'Answer in Brazilian Portuguese.' },
+        { role: 'user', content: [{ type: 'text', text: PROMPTS.unserved }] },
+      ],
+      abortSignal: AbortSignal.timeout(CALL_MS),
+    })
+  } catch (error) {
+    if (!APICallError.isInstance(error) || error.statusCode === undefined) throw error
+    const reply = ErrorReply.safeParse(error.data)
+    console.log(`UNSERVED status=${error.statusCode} code=${reply.data?.error.code ?? 'none'}`)
+    return
+  }
+  throw new Error('The endpoint served the model; choose one the subscription does not serve.')
+}
+
 async function record(args: Args) {
   const { open, secrets, modelId, meta } = await openerOf(args)
   const effort = args.case === 'thinking' ? 'low' : 'off'
@@ -280,58 +314,10 @@ async function record(args: Args) {
   }
   const name = `${args.provider}-${args.case}`
   const today = new Date().toISOString().slice(0, 10)
-  const provider = ProviderId.parse(args.provider)
-  const described: Recording = { provider, ...meta, recordedAt: today }
+  const described: Recording = { ...meta, recordedAt: today }
   writeFileSync(join(RECORDINGS, `${name}.sse`), body)
   writeFileSync(join(RECORDINGS, `${name}.json`), `${JSON.stringify(described, null, 2)}\n`)
   console.log(`Saved ${name}.sse (${body.length} bytes) and ${name}.json.`)
-}
-
-/** The credential the case reads from the environment, and the kind that carries it. */
-function listCredential(args: ModelsArgs) {
-  const { provider } = args
-  if (args.via === 'cliproxy') {
-    const env = Gemini.parse(process.env)
-    const target = { kind: 'google_cliproxy' as const, provider }
-    return { secret: env.CONEXUS_RECORD_CLIPROXY_KEY, target, via: env.CONEXUS_RECORD_CLIPROXY_URL }
-  }
-  if (provider === 'anthropic') {
-    const secret = ListKeys.shape.anthropic.parse(process.env).CONEXUS_RECORD_CLAUDE_TOKEN
-    return { secret, target: { kind: 'claude_subscription' as const, provider }, via: undefined }
-  }
-  const secret =
-    provider === 'openai'
-      ? ListKeys.shape.openai.parse(process.env).CONEXUS_RECORD_OPENAI_KEY
-      : ListKeys.shape.google.parse(process.env).CONEXUS_RECORD_GOOGLE_KEY
-  return { secret, target: { kind: 'api_key' as const, provider }, via: undefined }
-}
-
-/** One GET of the provider's list, saved as the provider sent it, and nothing else of the exchange. */
-async function recordModels(args: ModelsArgs) {
-  const { secret, target, via } = listCredential(args)
-  const request = listRequest(target, secret, via)
-  if (request === undefined) throw new Error('This provider has no list reader.')
-  const response = await fetch(request.url, {
-    headers: request.headers,
-    signal: AbortSignal.timeout(CALL_MS),
-  })
-  if (!response.ok) throw new Error(`The provider refused the list with ${response.status}.`)
-  const text = await response.text()
-  if (text.includes(secret) || LEAK.test(text)) {
-    throw new Error('The list carries a credential, an address or a bearer; nothing is saved.')
-  }
-  const name = args.via === 'cliproxy' ? 'google-cliproxy-models' : `${args.provider}-models`
-  const meta: Recording = {
-    provider: ProviderId.parse(args.provider),
-    api: `${args.provider}${args.via === 'cliproxy' ? ' through CLIProxy' : ''} model list, first page`,
-    sdk: 'none: the Hub reads it with fetch',
-    recordedAt: new Date().toISOString().slice(0, 10),
-  }
-  const schema = args.via === 'cliproxy' ? LIST_SCHEMAS.openai : LIST_SCHEMAS[args.provider]
-  const kept = JSON.stringify(schema.parse(JSON.parse(text)), null, 2)
-  writeFileSync(join(RECORDINGS, `${name}.list.json`), `${kept}\n`)
-  writeFileSync(join(RECORDINGS, `${name}.json`), `${JSON.stringify(meta, null, 2)}\n`)
-  console.log(`Saved ${name}.list.json (${text.length} bytes) and ${name}.json.`)
 }
 
 const { values } = parseArgs({
@@ -344,4 +330,8 @@ const { values } = parseArgs({
   },
 })
 if (values.case === 'models') await recordModels(ModelsArgs.parse(values))
-else await record(Args.parse(values))
+else {
+  const args = Args.parse(values)
+  if (args.case === 'unserved') await recordUnserved(args)
+  else await record(args)
+}

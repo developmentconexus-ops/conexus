@@ -6,6 +6,7 @@
 import { createAnthropic } from '@ai-sdk/anthropic'
 import type { LanguageModelMiddleware } from 'ai'
 import { wrapLanguageModel } from 'ai'
+import { bodylessMiddleware } from '../bodyless.ts'
 
 // From mastra-ai/mastra at @mastra/core@1.78.0, mastracode/sdk/src/providers/claude-max.ts
 // (`createPromptCacheMiddleware`) and anthropic-prompt-cache.ts. Changed: TypeScript without `any`;
@@ -69,20 +70,6 @@ export function promptCacheMiddleware(scope: PromptCacheScope): LanguageModelMid
       return { ...params, prompt }
     },
   }
-}
-
-/**
- * Each step's answer without the body of its request. Mastra keeps every step's output, request
- * included, until the session's next run, so a conversation's last turn held every prompt it sent
- * (`@mastra/core@1.82.0` `MastraModelOutput` `#bufferedSteps[].request.body`); nothing of ours or
- * Mastra's reads it back.
- */
-const bodylessMiddleware: LanguageModelMiddleware = {
-  specificationVersion: 'v3',
-  wrapStream: async ({ doStream }) => {
-    const { request: _request, ...answer } = await doStream()
-    return answer
-  },
 }
 
 // From @mastra/code-sdk 1.14.0, dist/providers/claude-max.js (`opencodeClaudeMaxProvider`,

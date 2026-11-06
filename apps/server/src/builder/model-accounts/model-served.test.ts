@@ -3,6 +3,7 @@ import { test } from 'node:test'
 import type { Person } from '../../hub/identity/test-hub.ts'
 import { call, codeOf, post } from '../../hub/identity/test-hub.ts'
 import { asked, conversing, endOf, KEY, turnNotices } from '../conversation/test-conversation.ts'
+import { opened } from './openai/test-sign-in.ts'
 import { company, connect, created, GROQ_MODEL, pairOf, patch } from './test-defaults.ts'
 
 const SONNET_NEW = 'anthropic/claude-sonnet-5-5'
@@ -174,4 +175,16 @@ test('os fornecedores conectados: em qualquer estado, os da pessoa ou dados a el
     effort: 'off',
   })
   assert.deepEqual([company_.statusCode, codeOf(company_)], [422, 'MODEL_NO_ACCOUNT'])
+})
+
+test('a assinatura ChatGPT oferece os modelos OpenAI do registro, sem leitor de lista', async (t) => {
+  const { hub, ana, companyId, codex, start, poll } = await opened(t)
+  const { signInId } = await start()
+  codex.typed = true
+  assert.equal((await poll(signInId)).statusCode, 200)
+  const [row] = await hub.test.asOwner(`select served_models, served_at from builder.model_account`)
+  assert.deepEqual(row, { served_models: null, served_at: null })
+  const models = await offered(hub, ana, `/api/companies/${companyId}/model-accounts`)
+  assert.ok(models.includes('openai/gpt-5.2'), models.join())
+  assert.deepEqual(codex.elsewhere, [])
 })
