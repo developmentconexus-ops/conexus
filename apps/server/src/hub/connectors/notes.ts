@@ -13,15 +13,15 @@ import type { Deps, OfConnection, Viewer } from './rows.ts'
 import { admitted, ofCompany, scopeOf } from './rows.ts'
 import { connection } from './tables.ts'
 
-/** What the Builder proved about one concept of a company's system: names and codes, the query that proved it, never a value (founder, J1). */
-export const Note = z.strictObject({
+/** What the Builder or the Assistant proved about one concept of a company's system: names and codes, the query that proved it, never a value (founder, J1). */
+const Note = z.strictObject({
   mapping: z.string().min(1).max(500),
   provingQuery: z.string().min(1).max(4000),
   provedAt: z.iso.datetime(),
   provedRows: z.int().nonnegative(),
   writtenBy: z.string(),
 })
-export type Note = z.infer<typeof Note>
+type Note = z.infer<typeof Note>
 
 /** What a save answers: the rows the proving query returned, or why nothing was written. */
 export type NoteSaved =
