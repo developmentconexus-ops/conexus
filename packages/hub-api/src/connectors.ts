@@ -17,6 +17,15 @@ export const CONNECTIONS_MAX = 50
 export const ConnectionSignInId = z.uuid().brand('ConnectionSignInId')
 export type ConnectionSignInId = z.infer<typeof ConnectionSignInId>
 
+/** A read of a connection a Projeto offers, for the panel of an agent to choose from. */
+export const OfferedRead = z.object({
+  operation: z.string(),
+  label: z.string(),
+  summary: z.string(),
+  /** `false`: the role of whoever edits the agent does not use this read, so the screen shows it and does not let it be chosen. Absent means yes. */
+  allowed: z.boolean().optional(),
+})
+
 /** A connector of the kit's catalog, as the screen offers it: its fields by their labels, help and visibility. */
 export const ConnectorEntry = z.object({
   id: z.string(),

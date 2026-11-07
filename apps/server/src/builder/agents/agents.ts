@@ -48,6 +48,11 @@ export type AgentsDeps = Pick<ToolsDeps, 'database' | 'identity' | 'liveProjectO
   log: FailureLog
 }
 
+/** What the page shows: every read of the connections, those the editor's role lacks marked `allowed: false`. */
+function shownOf(deps: AgentsDeps, scope: InProject) {
+  return deps.connectors.listing(sessionScopeOf(scope))
+}
+
 function offered(deps: AgentsDeps, scope: InProject) {
   return deps.connectors.connections(sessionScopeOf(scope))
 }
@@ -70,16 +75,16 @@ async function detail(
   tx: ReadTx,
   scope: InProject,
   id: AgentId,
-  around: readonly OfferedConnection[],
+  shown: readonly OfferedConnection[],
 ) {
-  return detailOf(tx, await agentIn(tx, scope, id), around)
+  return detailOf(tx, await agentIn(tx, scope, id), shown)
 }
 
 /** A new agent of the Projeto as a draft, keyed by its attempt (code C37). */
 async function create(deps: AgentsDeps, scope: InProject, body: CreateAgent, attemptKey: string) {
   const id = AgentIdSchema.parse(derivedUuid('agent', scope.companyId, scope.personId, attemptKey))
   const bodyHash = bodyHashOf({ ...body, projectId: scope.projectId })
-  const around = await offered(deps, scope)
+  const shown = await shownOf(deps, scope)
   const made = await deps.database.command(databaseScopeOf(scope), async (tx) => {
     await admitted(deps, tx, scope, 'manageAgents')
     const [inserted] = await tx
@@ -92,7 +97,7 @@ async function create(deps: AgentsDeps, scope: InProject, body: CreateAgent, att
       .returning({ id: agent.id })
     const [row] = await tx.select({ bodyHash: agent.bodyHash }).from(agent).where(eq(agent.id, id))
     if (row?.bodyHash !== bodyHash) throw new Failure('IDEMPOTENCY_CONFLICT')
-    return { fresh: inserted !== undefined, agent: await detail(tx, scope, id, around) }
+    return { fresh: inserted !== undefined, agent: await detail(tx, scope, id, shown) }
   })
   if (made.fresh) deps.log.info({ companyId: scope.companyId, agentId: id }, 'AGENT_CREATED')
   return made.agent
@@ -116,10 +121,10 @@ async function listCompany(deps: AgentsDeps, ids: Pick<InProject, 'companyId' | 
 }
 
 async function get(deps: AgentsDeps, scope: InProject, agentId: AgentId) {
-  const around = await offered(deps, scope)
+  const shown = await shownOf(deps, scope)
   return deps.database.read(databaseScopeOf(scope), async (tx) => {
     await admitted(deps, tx, scope, 'readAgents')
-    return detail(tx, scope, agentId, around)
+    return detail(tx, scope, agentId, shown)
   })
 }
 
@@ -160,6 +165,7 @@ async function saveDraft(
   by: Writer,
 ) {
   const around = await offered(deps, scope)
+  const shown = await shownOf(deps, scope)
   checked(deps, patch, around)
   const before = await deps.database.read(databaseScopeOf(scope), async (tx) =>
     AgentConfig.parse((await agentIn(tx, scope, agentId)).row.draft),
@@ -203,7 +209,7 @@ async function saveDraft(
           .where(eq(agent.id, agentId))
       }
     }
-    return { revision: changed.revision, agent: await detail(tx, scope, agentId, around) }
+    return { revision: changed.revision, agent: await detail(tx, scope, agentId, shown) }
   })
   const { companyId } = scope
   deps.log.info({ companyId, agentId, revision: saved.revision, by }, 'AGENT_DRAFT_SAVED')
@@ -213,6 +219,7 @@ async function saveDraft(
 /** Publishes the draft of the revision read (`published`), then says so once it committed. */
 async function publish(deps: AgentsDeps, scope: InProject, agentId: AgentId, body: Publish) {
   const around = await offered(deps, scope)
+  const shown = await shownOf(deps, scope)
   const kit = await deps.connectors.kitReads(sessionScopeOf(scope))
   const done = await deps.database.command(databaseScopeOf(scope), async (tx) => {
     await admitted(deps, tx, scope, 'publishAgent')
@@ -229,7 +236,7 @@ async function publish(deps: AgentsDeps, scope: InProject, agentId: AgentId, bod
     const versions = await versionsOf(tx, listed.row)
     const version = versions.find((each) => each.number === done.number)
     if (version === undefined) throw new Failure('AGENT_VERSION_NOT_FOUND')
-    return { agent: await detailOf(tx, listed, around), version }
+    return { agent: await detailOf(tx, listed, shown), version }
   })
 }
 
@@ -256,7 +263,7 @@ async function testable(deps: AgentsDeps, scope: InProject, agentId: AgentId): P
 
 /** Makes a published version the active one; the draft does not change. The last one written wins. */
 async function activate(deps: AgentsDeps, scope: InProject, agentId: AgentId, number: number) {
-  const around = await offered(deps, scope)
+  const shown = await shownOf(deps, scope)
   const made = await deps.database.command(databaseScopeOf(scope), async (tx) => {
     await admitted(deps, tx, scope, 'publishAgent')
     await agentIn(tx, scope, agentId)
@@ -266,7 +273,7 @@ async function activate(deps: AgentsDeps, scope: InProject, agentId: AgentId, nu
       .where(and(eq(agentVersion.agentId, agentId), eq(agentVersion.number, number)))
     if (version === undefined) throw new Failure('AGENT_VERSION_NOT_FOUND')
     await makeActive(tx, agentId, number)
-    return detail(tx, scope, agentId, around)
+    return detail(tx, scope, agentId, shown)
   })
   const { companyId } = scope
   deps.log.info({ companyId, agentId, version: number }, 'AGENT_ACTIVATED')

@@ -37,6 +37,8 @@ export type OfferedConnection = Readonly<
 /** What the tools read of the connectors' door: what the Projeto offers, and one read's input. */
 export type ToolConnectors = {
   connections(scope: SessionScope): Promise<readonly OfferedConnection[]>
+  /** The same connections with every read, each marked `allowed` by the role of whoever edits. */
+  listing(scope: SessionScope): Promise<readonly OfferedConnection[]>
   operationOf(scope: SessionScope, target: ToolTarget): Promise<z.ZodObject | undefined>
   kitReads(scope: SessionScope): Promise<readonly KitRead[]>
 }

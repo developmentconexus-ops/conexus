@@ -26,13 +26,13 @@ type Listed = Readonly<{
   reads: readonly Readonly<{ operation: string }>[]
 }>
 
-/** The connections with only the reads the speaker may use: the model is not told of the others. */
-export async function visibleTo<T extends Listed>(
+/** The keys (`connection:operation`) of the reads the speaker may use, asked in one go. */
+async function allowedKeys(
   deps: Deps,
   companyId: CompanyId,
   speaker: Speaker,
-  connections: readonly T[],
-): Promise<T[]> {
+  connections: readonly Listed[],
+): Promise<Set<string>> {
   const targets = connections.flatMap((each) =>
     each.reads.map((read) => ({
       connectionId: each.connectionId,
@@ -41,7 +41,34 @@ export async function visibleTo<T extends Listed>(
     })),
   )
   const answers = await deps.identity.mayUseEach(companyId, speaker, targets)
-  const allowed = new Set(targets.filter((_, index) => answers[index]).map(keyOf))
+  return new Set(targets.filter((_, index) => answers[index]).map(keyOf))
+}
+
+/** Every read of the connections, each marked with whether the speaker may use it (`allowed`). */
+export async function markedFor<T extends Listed>(
+  deps: Deps,
+  companyId: CompanyId,
+  speaker: Speaker,
+  connections: readonly T[],
+) {
+  const allowed = await allowedKeys(deps, companyId, speaker, connections)
+  return connections.map((each) => ({
+    ...each,
+    reads: each.reads.map((read) => ({
+      ...read,
+      allowed: allowed.has(`${each.connectionId}:${read.operation}`),
+    })),
+  }))
+}
+
+/** The connections with only the reads the speaker may use: the model is not told of the others. */
+export async function visibleTo<T extends Listed>(
+  deps: Deps,
+  companyId: CompanyId,
+  speaker: Speaker,
+  connections: readonly T[],
+): Promise<T[]> {
+  const allowed = await allowedKeys(deps, companyId, speaker, connections)
   return connections.map((each) => ({
     ...each,
     reads: each.reads.filter((read) => allowed.has(`${each.connectionId}:${read.operation}`)),

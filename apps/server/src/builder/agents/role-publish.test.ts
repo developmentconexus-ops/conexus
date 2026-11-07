@@ -110,3 +110,22 @@ test('a ferramenta em código: declarar uma leitura que o papel de quem publica 
     changed: false,
   })
 })
+
+test('a página do agente lista toda leitura da ligação e marca allowed pelo papel de quem edita, sem filtrar', async (t) => {
+  const on = await developerWithoutFreeQuery(t)
+  const made = await madeAgent(on.hub, on.ana, on.agents)
+  function readsSeenBy(body: unknown) {
+    const reads: { operation: string; allowed?: boolean }[] =
+      Object(body).agent.offered[0]?.reads ?? []
+    return Object.fromEntries(reads.map((read) => [read.operation, read.allowed]))
+  }
+  const byDora = await call(on.hub, on.dora, 'GET', `${on.agents}/${made.id}`)
+  const dora = readsSeenBy(byDora.json())
+  assert.equal(dora.consultar, false)
+  assert.equal(dora.pedidos, true)
+  assert.equal(dora.empresas, true)
+  const byAna = await call(on.hub, on.ana, 'GET', `${on.agents}/${made.id}`)
+  const ana = readsSeenBy(byAna.json())
+  assert.deepEqual(Object.keys(ana).toSorted(), Object.keys(dora).toSorted())
+  assert.ok(Object.values(ana).every((allowed) => allowed === true))
+})

@@ -15,7 +15,7 @@ import type { NotInRole } from './read.ts'
 import { readThrough } from './read.ts'
 import type { Deps } from './rows.ts'
 import { scopeOf } from './rows.ts'
-import { mayUseNotebook, visibleTo } from './speaking.ts'
+import { markedFor, mayUseNotebook, visibleTo } from './speaking.ts'
 import { openedIn } from './testing.ts'
 
 /** Where a conversation lives: it decides which connections it may choose (C21). */
@@ -38,7 +38,7 @@ type AssistantConnection = {
   connectionId: ConnectionId
   connector: string
   name: string
-  reads: readonly { operation: string; label: string; summary: string }[]
+  reads: readonly { operation: string; label: string; summary: string; allowed?: boolean }[]
   skill: GrantedConnection['skill']
   chosen: boolean
 }
@@ -56,6 +56,8 @@ type AssistantRead =
 export type AssistantConnectors = {
   /** What the place offers (company: usable; Projeto: usable and released to it), each with chosen; [] for a person who may not ask, a removed one included. */
   connections(scope: SessionScope): Promise<readonly AssistantConnection[]>
+  /** The same connections with every read, each marked `allowed` by the person's role, for a screen that shows what the role cannot use. */
+  listing(scope: SessionScope): Promise<readonly AssistantConnection[]>
   /** One read of a chosen, offered connection, read class only. */
   read(
     scope: SessionScope,
@@ -249,22 +251,40 @@ function kitReadsOf(rows: readonly { id: string; connector: string }[]): KitRead
 }
 
 /** The company's door for the Assistant (step 24.1, U1): the chosen connections its place offers, `by: 'assistant'`; the caderno's write only for `manageConnections` (step 24.3.5). */
+/** A connection as the place lists it: the fields the screen and the model read, and whether the conversation chose it. */
+function chosenAmong(scope: SessionScope) {
+  const chosen = new Set(scope.chosen)
+  return ({
+    connectionId,
+    connector,
+    name,
+    reads,
+    skill,
+  }: ReturnType<typeof described>[number]) => ({
+    connectionId,
+    connector,
+    name,
+    reads,
+    skill,
+    chosen: chosen.has(connectionId),
+  })
+}
+
 export function createAssistantConnectors(deps: Deps): AssistantConnectors {
   const spend = createSpending()
   return {
     async connections(scope) {
-      const chosen = new Set(scope.chosen)
       const found = await offeredTo(deps, scope)
       if (found === undefined) return []
       const shown = await visibleTo(deps, scope.companyId, found.speaker, described(found.rows))
-      return shown.map(({ connectionId, connector, name, reads, skill }) => ({
-        connectionId,
-        connector,
-        name,
-        reads,
-        skill,
-        chosen: chosen.has(connectionId),
-      }))
+      return shown.map(chosenAmong(scope))
+    },
+
+    async listing(scope) {
+      const found = await offeredTo(deps, scope)
+      if (found === undefined) return []
+      const marked = await markedFor(deps, scope.companyId, found.speaker, described(found.rows))
+      return marked.map(chosenAmong(scope))
     },
 
     async read(scope, call) {

@@ -33,6 +33,7 @@ import type { SealKeys } from './platform/seal.ts'
 function doorOf(connectors: () => Connectors): Connectors['assistant'] {
   return {
     connections: (scope) => connectors().assistant.connections(scope),
+    listing: (scope) => connectors().assistant.listing(scope),
     read: (scope, call) => connectors().assistant.read(scope, call),
     notes: (scope, connectionId) => connectors().assistant.notes(scope, connectionId),
     saveNote: (scope, call) => connectors().assistant.saveNote(scope, call),

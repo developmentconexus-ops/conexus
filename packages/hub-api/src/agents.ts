@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { AgentId, ToolId, ToolVersionId } from './agent-ids.ts'
 import { CompanyId } from './companies.ts'
-import { CONNECTIONS_MAX, ConnectionId } from './connectors.ts'
+import { CONNECTIONS_MAX, ConnectionId, OfferedRead } from './connectors.ts'
 import { ConversationId, ModelId } from './conversations.ts'
 import type { FailureCode } from './failures.ts'
 import { PersonId } from './identity.ts'
@@ -131,7 +131,7 @@ export const OfferedConnection = z.object({
   connectionId: ConnectionId,
   connector: z.string(),
   name: z.string(),
-  reads: z.array(z.object({ operation: z.string(), label: z.string(), summary: z.string() })),
+  reads: z.array(OfferedRead),
 })
 export type OfferedConnection = z.infer<typeof OfferedConnection>
 
