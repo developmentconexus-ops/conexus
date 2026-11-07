@@ -238,10 +238,10 @@ function registerRoles(app: FastifyInstance, deps: Deps): void {
   serve(app, listRoles, async ({ person, headers, params }) =>
     answer({ roles: await list({ person, headers, ...params }) }),
   )
-  serve(app, createRole, async ({ person, headers, params, body, log }) => {
-    const made = await create({ person, headers, ...params, body })
-    log.info({ ...params, role: made.role, by: person.id }, 'ROLE_CREATED')
-    return answer({ role: made })
+  serve(app, createRole, async ({ person, headers, params, body, attemptKey, log }) => {
+    const made = await create({ person, headers, ...params, body, attemptKey })
+    if (made.created) log.info({ ...params, role: made.role.role, by: person.id }, 'ROLE_CREATED')
+    return answer({ role: made.role })
   })
   serve(app, updateRole, async ({ person, headers, params, body, log }) => {
     const { role, ...company } = params

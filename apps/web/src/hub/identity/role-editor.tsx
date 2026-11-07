@@ -5,6 +5,7 @@ import { Link } from '@tanstack/react-router'
 import { ArrowLeftIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useController, useFormContext } from 'react-hook-form'
+import { useAttemptKey } from '../../platform/attempt-key.ts'
 import { buttonVariants } from '../../ui/button.tsx'
 import { cn } from '../../ui/cn.ts'
 import {
@@ -72,6 +73,7 @@ type Common = {
 /** "Novo papel": the name, then what the role uses of each connector. */
 export function NewRole({ companyId, kit, logo, onDone }: Common) {
   const send = useMutation(createCompanyRole)
+  const attempt = useAttemptKey()
   const form = useSchemaForm(createRole.input.body, { label: '', connectors: {} })
   return (
     <div className="flex flex-col gap-lg">
@@ -81,7 +83,9 @@ export function NewRole({ companyId, kit, logo, onDone }: Common) {
         form={form}
         onSubmit={async (values) => {
           try {
-            await send.mutateAsync({ params: { companyId }, body: values })
+            await attempt((attemptKey) =>
+              send.mutateAsync({ params: { companyId }, body: values, attemptKey }),
+            )
             onDone()
           } catch (error) {
             setWriteError(form, error, UNCONFIRMED, { ROLE_NAME_TAKEN: 'label' })

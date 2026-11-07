@@ -20,11 +20,10 @@ import { admit } from './admission.ts'
 import type { Auth, LibraryCommand } from './auth.ts'
 import { refusedAs } from './auth.ts'
 import { companyScope, LIVE, lockCompany } from './invitations.ts'
+import { replayOf } from './role-attempt.ts'
 import type { RoleSet } from './roles.ts'
+import { Statements } from './roles.ts'
 import { invitation, member, organizationRole } from './tables.ts'
-
-const Statements = z.record(z.string(), z.array(z.string()))
-type Statements = z.infer<typeof Statements>
 
 /**
  * The library's refusals of a role's write, as the Hub's failures (code C50). Two of its refusals
@@ -225,16 +224,24 @@ async function viewOf(
   return found
 }
 
-/** Creates a role of the company through the library, which checks that the creator holds each action. */
+/**
+ * Creates a role of the company through the library, which checks that the creator holds each
+ * action. The attempt key is the role's own column: under the company's lock a replay finds the
+ * row and answers it, so a lost answer then a retry shows the role and not "already taken".
+ */
 export function createRoleCommand(deps: Deps) {
-  return (input: Acting & { body: RoleCreate }) =>
+  return (input: Acting & { body: RoleCreate; attemptKey: string }) =>
     deps.libraryCommand(companyScope(input), async (tx) => {
-      const { companyId, headers, body } = input
+      const { companyId, headers, body, attemptKey } = input
       await admitted(tx, input)
+      const wanted = customStatements(deps.roles, body.connectors)
+      const replayed = await replayOf(tx, { companyId, attemptKey, label: body.label, wanted })
+      if (replayed !== undefined) {
+        return { role: await viewOf(deps.roles, tx, companyId, replayed), created: false }
+      }
       const role = roleNameOf(body.label)
       if (role === '') throw malformed('ROLE_NAME_EMPTY')
       if (FIXED_NAMES.has(role)) throw new Failure('ROLE_NAME_TAKEN')
-      const permission = customStatements(deps.roles, body.connectors)
       await refusedAs(
         () =>
           deps.auth.api.createOrgRole({
@@ -242,13 +249,16 @@ export function createRoleCommand(deps: Deps) {
             body: {
               organizationId: companyId,
               role,
-              permission,
-              additionalFields: { label: body.label },
+              permission: wanted,
+              additionalFields: { label: body.label, attemptKey },
             },
           }),
         ROLE_REFUSALS,
       )
-      return viewOf(deps.roles, tx, companyId, Role.parse(role))
+      return {
+        role: await viewOf(deps.roles, tx, companyId, Role.parse(role)),
+        created: true,
+      }
     })
 }
 

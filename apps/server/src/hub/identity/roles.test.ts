@@ -55,6 +55,52 @@ test('a lista dos papéis: os quatro fixos, Dono e Administrador com toda opera�
   assert.deepEqual(await roles(w, w.admin), list)
 })
 
+test('criar um papel de novo: a mesma chave devolve o mesmo papel, uma linha só, mesmo com a resposta perdida; outro nome ou outros conectores com a chave, 409 IDEMPOTENCY_CONFLICT', async (t) => {
+  const w = await world(t)
+  const key = randomUUID()
+  const first = await post(w.hub, w.ana, `${w.base}/roles`, ATENDENTE, key)
+  const lost = await post(w.hub, w.ana, `${w.base}/roles`, ATENDENTE, key)
+  assert.deepEqual([first.statusCode, lost.statusCode], [201, 201])
+  assert.deepEqual(lost.json(), first.json())
+  const renamed = await post(w.hub, w.ana, `${w.base}/roles`, { ...ATENDENTE, label: 'Outro' }, key)
+  assert.deepEqual([renamed.statusCode, codeOf(renamed)], [409, 'IDEMPOTENCY_CONFLICT'])
+  const narrowed = await post(
+    w.hub,
+    w.ana,
+    `${w.base}/roles`,
+    { ...ATENDENTE, connectors: {} },
+    key,
+  )
+  assert.deepEqual([narrowed.statusCode, codeOf(narrowed)], [409, 'IDEMPOTENCY_CONFLICT'])
+  const more = { sankhya: ['pedidos', ...FINANCEIRO] }
+  const widened = await post(
+    w.hub,
+    w.ana,
+    `${w.base}/roles`,
+    { ...ATENDENTE, connectors: more },
+    key,
+  )
+  assert.deepEqual([widened.statusCode, codeOf(widened)], [409, 'IDEMPOTENCY_CONFLICT'])
+  const other = await post(w.hub, w.ana, `${w.base}/roles`, ATENDENTE)
+  assert.deepEqual([other.statusCode, codeOf(other)], [409, 'ROLE_NAME_TAKEN'])
+  assert.equal((await roles(w)).filter((one) => one.kind === 'CUSTOM').length, 1)
+})
+
+test('criar um papel: duas tentativas ao mesmo tempo com uma chave fazem um papel só', async (t) => {
+  const w = await world(t)
+  const key = randomUUID()
+  const both = await Promise.all([
+    post(w.hub, w.ana, `${w.base}/roles`, ATENDENTE, key),
+    post(w.hub, w.admin, `${w.base}/roles`, ATENDENTE, key),
+  ])
+  assert.deepEqual(
+    both.map((one) => one.statusCode),
+    [201, 201],
+  )
+  assert.deepEqual(both[0]?.json(), both[1]?.json())
+  assert.equal((await roles(w)).filter((one) => one.kind === 'CUSTOM').length, 1)
+})
+
 test('criar um papel: dono ou administrador cria Atendente, a lista o traz, e a segunda criação igual não grava', async (t) => {
   const w = await world(t)
   const created = await post(w.hub, w.ana, `${w.base}/roles`, ATENDENTE)

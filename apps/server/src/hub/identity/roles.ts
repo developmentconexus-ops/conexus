@@ -5,6 +5,11 @@ import {
   memberAc,
   ownerAc,
 } from 'better-auth/plugins/organization/access'
+import { z } from 'zod'
+
+/** What a role holds in the library's own shape: each resource with its actions. */
+export const Statements = z.record(z.string(), z.array(z.string()))
+export type Statements = z.infer<typeof Statements>
 
 /**
  * What a connector offers a role: its resource and its operations by the ids the kit gives them.
