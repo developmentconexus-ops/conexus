@@ -57,8 +57,8 @@
   {
     "id": "admission-reads-membership",
     "file": "apps/server/src/hub/identity/admission.ts",
-    "find": ".where(and(eq(member.organizationId, input.companyId), eq(member.userId, input.personId)))",
-    "replace": ".where(eq(member.organizationId, input.companyId))",
+    "find": ".where(and(eq(member.organizationId, companyId), eq(member.userId, personId)))",
+    "replace": ".where(eq(member.organizationId, companyId))",
     "test": {
       "cwd": "apps/server",
       "file": "src/hub/identity/companies.test.ts",
