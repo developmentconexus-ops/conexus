@@ -43,6 +43,8 @@ test('o cartão mostra o agente, a ação, cada campo, Aprovar e Recusar, e a fr
   expect(card.getByRole('button', { name: 'Aprovar' }).hasAttribute('disabled')).toBe(false)
   expect(card.getByRole('button', { name: 'Recusar' }).hasAttribute('disabled')).toBe(false)
   expect(screen.getByText('Escrever outra mensagem recusa este pedido.')).toBeTruthy()
+  // The box stays open while the card waits: a message is how the person declines by writing.
+  expect(screen.getByPlaceholderText(/Pergunte/).hasAttribute('disabled')).toBe(false)
 })
 
 test('os botões acendem só quando o estado da sessão traz o toolCallId', async () => {
