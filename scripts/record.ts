@@ -1,6 +1,6 @@
 // Defect: every 14.2 screen passed on controller events and stored rows typed by hand in the shape
 // the screen wanted, orders Mastra never produces (testing T24; method study, diff 6).
-// `npm run record -- <scenario>` (cited, thinking, abort, plan, files, tasks, reads or handoff) runs the native flow once: Mastra's
+// `npm run record -- <scenario>` (cited, thinking, abort, plan, files, tasks, reads, handoff, approval, approval-declined, approval-interrupted or approval-stopped) runs the native flow once: Mastra's
 // real AgentController, with the Builder's model and web tools, on Mastra's in-memory store, answering
 // from the provider recording `apps/server/src/platform/recordings/anthropic-<scenario>.sse` through
 // a fake `fetch`, as `scripts/record-provider.ts` made it. `plan` has no provider recording: it needs
@@ -39,7 +39,12 @@ import {
   Recording,
   replayed,
 } from '../apps/server/src/platform/test-recordings.ts'
+import { orderBook } from '../packages/connectors/src/sankhya/fake-orders.ts'
+import { APPROVALS, answerApproval, approvalTool, isApproval, wired } from './record-approval.ts'
 import {
+  APPROVAL_CALLS,
+  APPROVAL_PROMPT,
+  APPROVAL_TOOL,
   HANDOFF_CALLS,
   HANDOFF_SIGNAL,
   READS_CALLS,
@@ -71,6 +76,7 @@ const Scenario = z.enum([
   'tasks',
   'reads',
   'handoff',
+  ...APPROVALS,
 ])
 
 const PLAN_FILE = '.conexus/plans/encomendas.md'
@@ -121,6 +127,7 @@ const FILES_CALLS: Block[][] = [
 ]
 
 const matriz = salesDatabase(PADARIA_SOL_MATRIZ)
+const orders = orderBook()
 
 const Package = z.object({ version: z.string() })
 function versionOf(name: string): string {
@@ -161,6 +168,7 @@ const CALLS = {
   tasks: TASKS_CALLS,
   reads: READS_CALLS,
   handoff: HANDOFF_CALLS,
+  ...APPROVAL_CALLS,
 }
 
 /** Plays the scenario on the session, with the model calls answered from the recording; the events it emitted. */
@@ -171,7 +179,7 @@ async function run(session: Session, scenario: z.infer<typeof Scenario>): Promis
   const ended = Promise.withResolvers<void>()
   let ends = 0
   session.subscribe((event) => {
-    events.push(event)
+    events.push(wired(event))
     if (event.type === 'message_update' && event.event.type === 'text-delta') deltas += 1
     if (scenario === 'abort' && deltas === ABORT_AFTER) session.abort()
     if (event.type === 'tool_suspended') suspended = event.toolCallId
@@ -188,6 +196,9 @@ async function run(session: Session, scenario: z.infer<typeof Scenario>): Promis
       event.type === 'agent_end'
     )
       ended.resolve()
+    if (event.type === 'tool_approval_required')
+      void answerApproval(session, scenario, event.toolCallId)
+    if (isApproval(scenario) && event.type === 'agent_end') ended.resolve()
     if (scenario === 'plan' && event.type === 'agent_end') {
       ends += 1
       if (ends === 2) ended.resolve()
@@ -210,6 +221,9 @@ async function run(session: Session, scenario: z.infer<typeof Scenario>): Promis
       await ended.promise
     } else if (scenario === 'handoff') {
       await session.sendSignal(HANDOFF_SIGNAL, { requireDelivery: true }).accepted
+      await ended.promise
+    } else if (isApproval(scenario)) {
+      await session.sendMessage({ content: APPROVAL_PROMPT })
       await ended.promise
     } else if (scenario === 'tasks' || scenario === 'reads') {
       await session.sendMessage({ content: scenario === 'tasks' ? TASKS_PROMPT : READS_PROMPT })
@@ -253,6 +267,7 @@ const RECORDED_TOOLS = {
       return { kind: 'OK', value: { linhas, completo: true }, complete: true }
     },
   }),
+  [APPROVAL_TOOL]: approvalTool(orders),
   anotar: createTool({
     id: 'anotar',
     description: 'Anota uma nota.',
@@ -289,8 +304,8 @@ async function record(scenario: z.infer<typeof Scenario>) {
     memory,
     agent,
     modes: [{ id: 'conversa' }],
-    // As the Builder runs its tools (decision 0053): without asking.
-    initialState: { yolo: true },
+    // As the Builder runs its tools (decision 0053): without asking; the agents' controller asks about a write.
+    initialState: { yolo: !isApproval(scenario) },
   })
   await controller.init()
   const session = await controller.createSession({ resourceId: OWNER, id: scenario })
