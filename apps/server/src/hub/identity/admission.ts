@@ -306,6 +306,19 @@ async function membershipOf(input: CompanyInput, action: RoleAction) {
   return row === undefined ? undefined : Role.parse(row.role)
 }
 
+/** The role a person holds in the company now, read in the caller's transaction; none for an outsider. */
+export async function roleOf(
+  tx: ReadTx,
+  companyId: CompanyId,
+  personId: PersonId,
+): Promise<Role | undefined> {
+  const [row] = await tx
+    .select({ role: member.role })
+    .from(member)
+    .where(and(eq(member.organizationId, companyId), eq(member.userId, personId)))
+  return row === undefined ? undefined : Role.parse(row.role)
+}
+
 function admitMember(input: CompanyInput, role: Role, action: RoleAction): MemberProof {
   if (!allows(role, action)) throw new Failure('NOT_FOUND', { details: { reason: 'FORBIDDEN' } })
   return sealMember(input.companyId, input.personId, role)

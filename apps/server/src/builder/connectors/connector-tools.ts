@@ -266,15 +266,16 @@ function noteSaveTool(connections: readonly Connection[], save: NoteSave) {
 
 /**
  * The connector tools for a scope that offers at least one connection; {} otherwise. The notebook's
- * write comes only with `noteSave`.
+ * write comes only with `noteSave`, and `reads: false` leaves `connector_read` out: an agent's
+ * reads are its chosen tools, and its selected connections bring the notebook alone (decision E4).
  */
 export function connectorTools(
   access: ConnectorAccess,
-  include: { noteSave: false } | { noteSave: true; save: NoteSave },
+  include: ({ noteSave: false } | { noteSave: true; save: NoteSave }) & { reads?: false },
 ): ToolsInput {
   if (access.connections.length === 0) return {}
   return {
-    ...readTool(access),
+    ...(include.reads === false ? {} : readTool(access)),
     ...notesTool(access),
     ...(include.noteSave ? noteSaveTool(access.connections, include.save) : {}),
   }

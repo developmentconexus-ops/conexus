@@ -66,6 +66,7 @@ export function createToolDoor(assistant: Pick<AssistantConnectors, 'read'>, log
         turn: call.turn,
         signal: AbortSignal.timeout(body.deadlineMs),
       })
+      if (answered.kind === 'NOT_IN_ROLE') return NOT_DECLARED
       return answered.kind === 'OK' ? { kind: 'OK', value: answered.whole } : answered
     },
   }

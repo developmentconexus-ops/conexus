@@ -22,6 +22,7 @@ import { registerCompanyRoutes } from './company-routes.ts'
 import { createFirstPerson } from './first-person.ts'
 import { mailInvitation } from './invitation-mail.ts'
 import { lockCompany } from './invitations.ts'
+import { createMayUse } from './may-use.ts'
 import type { PersonConversationRelease } from './memberships.ts'
 import { companyMembersOf, holdMember, membersAllowed, peopleNamed } from './memberships.ts'
 import { companyNicknameOf } from './nickname.ts'
@@ -33,6 +34,8 @@ export type { ProjectApps } from './app-invitations.ts'
 // The library's own configuration, for its tests: nothing routes to its sign-up, so only a direct
 // call can prove the sign-up stays closed (criterion 18).
 export { createAuth } from './auth.ts'
+export type { MayUse, Speaker, Target } from './may-use.ts'
+export { roleOfSpeaker } from './may-use.ts'
 export type { PersonConversationRelease } from './memberships.ts'
 export { passwordLinkText } from './messages.ts'
 // The row policies' pieces, for the Central's own table, the Hub session's table, for the apps'
@@ -50,6 +53,29 @@ export {
 export type { OperatorProof }
 export type Identity = ReturnType<typeof createIdentity>
 export type IdentityPorts = Identity['ports']
+
+/** The first owner's invitation, from Conexus, after the commit (step 4.1's E3). */
+function ownerMailer(deps: { config: Config; database: Database; sendMail: SendMail }) {
+  return (input: {
+    admitted: OperatorProof
+    company: Company
+    invitation: PendingInvitation
+    signal: AbortSignal
+  }) =>
+    mailInvitation(deps, {
+      scope: {
+        kind: 'OPERATOR',
+        personId: input.admitted.personId,
+        companyId: input.company.id,
+      },
+      invitation: input.invitation,
+      gives: { kind: 'COMPANY', roleLabel: ROLE_LABELS.owner },
+      companyName: input.company.name,
+      inviter: { kind: 'CONEXUS', firstOwner: true },
+      link: `${deps.config.publicOrigin}/invitations/${input.invitation.id}`,
+      signal: input.signal,
+    })
+}
 
 export function createIdentity(deps: {
   database: Database
@@ -79,6 +105,7 @@ export function createIdentity(deps: {
       lockCompany,
       admitMember: admit,
       allows,
+      ...createMayUse(auth, deps.database),
       // Who a request to publish tells, the members who decide it, and its asker held while it
       // is decided (step 24.3.4).
       membersAllowed,
@@ -102,26 +129,7 @@ export function createIdentity(deps: {
       companyNicknameOf,
       liveHubSession,
       personNameOf,
-      /** The first owner's invitation, from Conexus, after the commit (step 4.1's E3). */
-      mailOwnerInvitation: (input: {
-        admitted: OperatorProof
-        company: Company
-        invitation: PendingInvitation
-        signal: AbortSignal
-      }) =>
-        mailInvitation(deps, {
-          scope: {
-            kind: 'OPERATOR',
-            personId: input.admitted.personId,
-            companyId: input.company.id,
-          },
-          invitation: input.invitation,
-          gives: { kind: 'COMPANY', roleLabel: ROLE_LABELS.owner },
-          companyName: input.company.name,
-          inviter: { kind: 'CONEXUS', firstOwner: true },
-          link: `${deps.config.publicOrigin}/invitations/${input.invitation.id}`,
-          signal: input.signal,
-        }),
+      mailOwnerInvitation: ownerMailer(deps),
     }),
     // The Builder's release and the Projetos' apps come with the routes: identity exists before
     // either (code C4).

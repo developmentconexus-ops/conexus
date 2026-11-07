@@ -13,7 +13,7 @@ import type { tool } from './tables.ts'
 
 export type ToolsDeps = {
   database: Database
-  identity: Pick<IdentityPorts, 'admitMember'>
+  identity: Pick<IdentityPorts, 'admitMember' | 'roleOf' | 'mayUseEach'>
   liveProjectOf: (
     tx: ReadTx,
     ids: { companyId: CompanyId; projectId: ProjectId },

@@ -6,11 +6,10 @@ import type {
   DraftPatch,
   ProjectId,
   Publish,
-  ToolVersionId,
 } from '@conexus/hub-api'
-import { AgentConfig, AgentId as AgentIdSchema, ToolVersionId as VersionId } from '@conexus/hub-api'
+import { AgentConfig, AgentId as AgentIdSchema } from '@conexus/hub-api'
 import { and, eq, sql } from 'drizzle-orm'
-import type { CommandTx, ReadTx } from '../../platform/database.ts'
+import type { ReadTx } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import { bodyHashOf } from '../conversation/public.ts'
@@ -22,26 +21,21 @@ import type {
   ToolsDeps,
   Writer,
 } from '../tools/public.ts'
-import {
-  admitted,
-  databaseScopeOf,
-  derivedUuid,
-  sessionScopeOf,
-  versionsWithTools,
-} from '../tools/public.ts'
+import { admitted, databaseScopeOf, derivedUuid, sessionScopeOf } from '../tools/public.ts'
+import { choose } from './choose.ts'
 import type { AgentEvent } from './events.ts'
+import { legacyReads } from './legacy.ts'
 import { invalidField, makeActive, published } from './publish.ts'
 import {
   agentIn,
   agentsIn,
   agentsOfCompany,
-  chosenIds,
   detailOf,
   listedOf,
   ofProject,
   versionsOf,
 } from './store.ts'
-import { agent, agentTool, agentVersion } from './tables.ts'
+import { agent, agentVersion } from './tables.ts'
 
 export type AgentsDeps = Pick<ToolsDeps, 'database' | 'identity' | 'liveProjectOf'> & {
   /** The ids of the company's live Projetos (`liveProjectIdsOf`). */
@@ -66,6 +60,7 @@ function defaults(body: CreateAgent): AgentConfig {
       connections: [],
       web: false,
       appData: false,
+      byTool: true,
       machine: false,
     },
   }
@@ -150,39 +145,7 @@ function merged(current: AgentConfig, patch: DraftPatch): AgentConfig {
   const given = Object.fromEntries(
     Object.entries(fields).filter(([, value]) => value !== undefined),
   )
-  return AgentConfig.parse({ ...current, ...given })
-}
-
-/**
- * Replaces the draft's choice of tools: the versions asked, or the current ones, with the ready
- * reads saved in the library first; each one this Projeto may use, one per tool.
- */
-async function choose(
-  deps: AgentsDeps,
-  tx: CommandTx,
-  a: {
-    scope: InProject
-    agentId: AgentId
-    patch: DraftPatch
-    around: readonly OfferedConnection[]
-  },
-  ready: Awaited<ReturnType<Tools['readyOf']>>,
-) {
-  const asked = a.patch.tools ?? (await chosenIds(tx, a.agentId))
-  const added = await deps.tools.saveReady(tx, a.scope, ready)
-  const held = new Set((await versionsWithTools(tx, asked)).map((row) => row.tool.id))
-  const extra = (await versionsWithTools(tx, added)).filter((row) => !held.has(row.tool.id))
-  const versions: ToolVersionId[] = [
-    ...asked,
-    ...extra.map((row) => VersionId.parse(row.version.id)),
-  ]
-  const ids = a.around.map((each) => each.connectionId)
-  const rows = await deps.tools.usable(tx, ids, versions)
-  await tx.delete(agentTool).where(eq(agentTool.agentId, a.agentId))
-  if (rows.length === 0) return
-  await tx
-    .insert(agentTool)
-    .values(rows.map((row) => ({ ...row, agentId: a.agentId, companyId: a.scope.companyId })))
+  return AgentConfig.parse({ ...current, ...given, byTool: true })
 }
 
 /**
@@ -198,22 +161,46 @@ async function saveDraft(
 ) {
   const around = await offered(deps, scope)
   checked(deps, patch, around)
-  const ready = await deps.tools.readyOf(scope, patch.ready ?? [])
+  const before = await deps.database.read(databaseScopeOf(scope), async (tx) =>
+    AgentConfig.parse((await agentIn(tx, scope, agentId)).row.draft),
+  )
+  // A draft written before E4 is written in the new shape now: the kit's reads of its
+  // connections become chosen tools, and its connections the selected ones.
+  const old = before.byTool
+    ? []
+    : legacyReads(around, patch.connections ?? before.connections).map(
+        ({ connectionId, operation }) => ({ connectionId, operation }),
+      )
+  const ready = await deps.tools.readyOf(scope, [...(patch.ready ?? []), ...old])
+  const reshapes =
+    patch.tools !== undefined ||
+    patch.connections !== undefined ||
+    ready.length > 0 ||
+    !before.byTool
   const saved = await deps.database.command(databaseScopeOf(scope), async (tx) => {
     await admitted(deps, tx, scope, 'manageAgents')
     const { row } = await agentIn(tx, scope, agentId)
+    const next = merged(AgentConfig.parse(row.draft), patch)
     const [changed] = await tx
       .update(agent)
       .set({
-        draft: merged(AgentConfig.parse(row.draft), patch),
+        draft: next,
         revision: sql`${agent.revision} + 1`,
         updatedAt: sql`now()`,
       })
       .where(and(eq(agent.id, agentId), eq(agent.revision, patch.revision)))
       .returning({ revision: agent.revision })
     if (changed === undefined) throw new Failure('AGENT_DRAFT_STALE')
-    if (patch.tools !== undefined || ready.length > 0) {
-      await choose(deps, tx, { scope, agentId, patch, around }, ready)
+    if (reshapes) {
+      const homes = await choose(deps, tx, { scope, agentId, patch, around }, ready)
+      // The connection of every chosen tool is selected (decision E4).
+      const connections = [...new Set([...next.connections, ...homes])]
+      if (connections.length !== next.connections.length) {
+        await tx
+          .update(agent)
+          .set({ draft: { ...next, connections } })
+          .where(eq(agent.id, agentId))
+      }
     }
     return { revision: changed.revision, agent: await detail(tx, scope, agentId, around) }
   })
@@ -227,7 +214,7 @@ async function publish(deps: AgentsDeps, scope: InProject, agentId: AgentId, bod
   const around = await offered(deps, scope)
   const done = await deps.database.command(databaseScopeOf(scope), async (tx) => {
     await admitted(deps, tx, scope, 'publishAgent')
-    return published(tx, scope, { agentId, body, around })
+    return published(tx, scope, { agentId, body, around, identity: deps.identity })
   })
   if (done.did !== 'NONE') {
     const { companyId } = scope

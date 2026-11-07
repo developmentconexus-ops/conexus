@@ -1,7 +1,7 @@
 import type { ConnectorAnswer } from '@conexus/app-contract'
 import { connectorOf } from '@conexus/connectors'
 import type { HostLabel } from '@conexus/hub-api'
-import { CALL_DEADLINE_MS, ConnectionId } from '@conexus/hub-api'
+import { CALL_DEADLINE_MS, ConnectionId, OperationId } from '@conexus/hub-api'
 import { and, asc, eq } from 'drizzle-orm'
 import type { ReadTx } from '../../platform/database.ts'
 import type { ConnectorCall } from '../apps/public.ts'
@@ -84,15 +84,23 @@ export function createAppCalls(deps: Deps, door: AppDoorPort) {
         return openedIn(deps, tx, { companyId, connectionId: ConnectionId.parse(chosen.id) })
       })
       if (opened === undefined) return NOT_GRANTED
-      return readThrough(deps, {
+      // The version declared this operation (checked above), and publishing checked it against the
+      // publisher's role (decision C1): the app is held to its manifest, not to its user's role.
+      const speaker = {
+        kind: 'VERSION',
+        declared: [{ connectionId: opened.id, operation: OperationId.parse(operation.id) }],
+      } as const
+      const answered = await readThrough(deps, {
         by: 'app',
         ids: { companyId, projectId },
         viewer: { person: { id: call.caller.personId }, companyId },
+        speaker,
         opened,
         operation,
         input: body.input,
         deadlineMs: Math.min(body.deadlineMs, CALL_DEADLINE_MS),
       })
+      return answered.kind === 'NOT_IN_ROLE' ? NOT_GRANTED : answered
     },
 
     /** The names the app may pass as `connection`; none for a connector its version did not declare. */
