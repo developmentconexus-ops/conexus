@@ -22,18 +22,19 @@ export function conversation(
   server: ReturnType<typeof setupServer>,
   held: { rows?: readonly Stored[]; openWrites?: OpenWrite[] } = {},
 ) {
-  server.use(
-    http.get(`${SESSION}/threads/:threadId/messages`, () =>
-      HttpResponse.json({ messages: held.rows ?? [] }),
-    ),
-  )
-  return agentScreens(server).at(PAGE, {
+  const opened = agentScreens(server).at(PAGE, {
     agents: [writer('ASK')],
     conversations: [
       { id: CHAT, agentId: AGENT, draft: false, title: 'Pedido', updatedAt: UPDATED },
     ],
     openWrites: held.openWrites ?? [],
   })
+  server.use(
+    http.get(`${SESSION}/threads/:threadId/messages`, () =>
+      HttpResponse.json({ messages: held.rows ?? [] }),
+    ),
+  )
+  return opened
 }
 
 /** The line of the open stream, once the screen opened it. */

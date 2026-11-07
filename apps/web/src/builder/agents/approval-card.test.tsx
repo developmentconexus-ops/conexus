@@ -146,3 +146,20 @@ test('sem envio aberto da mesma escrita, o cartão não traz o aviso', async () 
   await asked('approval')
   expect(screen.queryByText(/não sabemos se entrou/)).toBeNull()
 })
+
+test('ao reabrir, a escrita decidida em outra aba aparece decidida, com o número do pedido (critério 16)', async () => {
+  conversation(server, { rows: recordedRun('approval').read })
+  expect(await screen.findByText('Aprovado por você')).toBeTruthy()
+  expect(screen.getByText('Pedido 98001 lançado, a confirmar.')).toBeTruthy()
+  expect(screen.queryByRole('button', { name: 'Aprovar' })).toBeNull()
+})
+
+test('ao reabrir, a escrita ainda guardada como aberta volta com os botões acesos só quando a sessão a segura', async () => {
+  const run = recordedRun('approval-stopped')
+  const opened = conversation(server, { rows: run.read })
+  const line = await lineOf(opened)
+  expect(screen.queryByRole('button', { name: 'Aprovar' })).toBeNull()
+  tell(line, run.events, holdsApproval)
+  const card = within(await screen.findByRole('region', { name: TITLE }))
+  expect(card.getByRole('button', { name: 'Aprovar' }).hasAttribute('disabled')).toBe(false)
+})
