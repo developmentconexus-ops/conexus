@@ -169,7 +169,10 @@ export async function writeThrough(deps: Deps, a: WriteRequest): Promise<Written
   }
   // U2's approval gate calls with `approvedBy`: a person who saw the earlier write lets this one past it.
   if (a.approvedBy === undefined) {
-    const [open] = await openWritesOf(deps, a)
+    const [open] = await openWritesOf(deps, {
+      ...{ scope: a.scope, threadId: a.threadId, connectionId: a.connectionId },
+      ...{ operation: a.operation, except: a.toolCallId },
+    })
     if (open !== undefined) {
       deps.log.info(
         { ...aboutOf(a, connector), openMark: open.mark, openState: open.state },

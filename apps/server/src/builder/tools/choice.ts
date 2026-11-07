@@ -43,7 +43,9 @@ export async function readyOf(
       const resolved = await targetOf(connectors, session, target)
       if (resolved.kind === 'REFUSED') throw new Failure('TOOL_REFUSED', { named: resolved.named })
       const connection = offered.find((each) => each.connectionId === target.connectionId)
-      const read = connection?.reads.find((each) => each.operation === target.operation)
+      const read = [...(connection?.reads ?? []), ...(connection?.writes ?? [])].find(
+        (each) => each.operation === target.operation,
+      )
       if (read === undefined) {
         throw new Failure('TOOL_REFUSED', { named: { field: 'operation', reason: 'NOT_A_READ' } })
       }

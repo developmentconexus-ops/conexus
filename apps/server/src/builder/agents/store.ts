@@ -3,6 +3,7 @@ import type {
   AgentListed,
   AgentState,
   AgentSummary,
+  AgentTool,
   AgentVersionSummary,
   CompanyId,
   NamedAgent,
@@ -15,6 +16,7 @@ import {
   AgentId,
   PersonId,
   ProjectId as ProjectIdSchema,
+  ToolApproval,
   ToolId as ToolIdSchema,
   ToolVersionId,
 } from '@conexus/hub-api'
@@ -114,26 +116,61 @@ export async function listedOf(tx: ReadTx, rows: readonly Listed[]): Promise<Age
   return rows.map((listed) => ({ ...summaryOf(listed), tools: byAgent.get(listed.row.id) ?? 0 }))
 }
 
+/** A tool's version the draft chose or a version holds, and a write's approval (none on a read). */
+export type Choice = Readonly<{ id: ToolVersionId; approval: ToolApproval | undefined }>
+
+export function choiceOf(row: { id: string; approval: string | null }): Choice {
+  const id = ToolVersionId.parse(row.id)
+  return { id, approval: row.approval === null ? undefined : ToolApproval.parse(row.approval) }
+}
+
 /** The versions of each tool the draft chose. */
-export async function chosenIds(tx: ReadTx, agentId: AgentId): Promise<ToolVersionId[]> {
+export async function chosenOfDraft(tx: ReadTx, agentId: AgentId): Promise<Choice[]> {
   const rows = await tx
-    .select({ id: agentTool.toolVersionId })
+    .select({ id: agentTool.toolVersionId, approval: agentTool.approval })
     .from(agentTool)
     .where(eq(agentTool.agentId, agentId))
-  return rows.map((row) => ToolVersionId.parse(row.id))
+  return rows.map(choiceOf)
+}
+
+export async function chosenIds(tx: ReadTx, agentId: AgentId): Promise<ToolVersionId[]> {
+  return (await chosenOfDraft(tx, agentId)).map((each) => each.id)
 }
 
 /** The versions of each tool a published version holds. */
-export async function pinnedIds(
-  tx: ReadTx,
-  agentId: AgentId,
-  number: number,
-): Promise<ToolVersionId[]> {
+export async function pinnedOf(tx: ReadTx, agentId: AgentId, number: number): Promise<Choice[]> {
   const rows = await tx
-    .select({ id: agentVersionTool.toolVersionId })
+    .select({ id: agentVersionTool.toolVersionId, approval: agentVersionTool.approval })
     .from(agentVersionTool)
     .where(and(eq(agentVersionTool.agentId, agentId), eq(agentVersionTool.number, number)))
-  return rows.map((row) => ToolVersionId.parse(row.id))
+  return rows.map(choiceOf)
+}
+
+/** The draft's tools as the page shows them, a write with its approval. */
+async function toolsChosen(
+  tx: ReadTx,
+  agentId: AgentId,
+  offered: readonly OfferedConnection[],
+): Promise<AgentTool[]> {
+  const choices = await chosenOfDraft(tx, agentId)
+  const tools = await chosenOf(
+    tx,
+    choices.map((each) => each.id),
+    offered,
+  )
+  return tools.map((each) => {
+    const approval = choices.find((choice) => choice.id === each.version.id)?.approval
+    return approval === undefined ? each : { ...each, approval }
+  })
+}
+
+function offeredOperation({
+  operation,
+  label,
+  summary,
+  allowed,
+}: OfferedConnection['reads'][number]) {
+  return { operation, label, summary, ...(allowed === undefined ? {} : { allowed }) }
 }
 
 export async function detailOf(
@@ -146,13 +183,11 @@ export async function detailOf(
     ...summaryOf(listed),
     draft: AgentConfig.parse(row.draft),
     revision: row.revision,
-    tools: await chosenOf(tx, await chosenIds(tx, AgentId.parse(row.id))),
-    offered: offered.map(({ connectionId, connector, name, reads }) => ({
+    tools: await toolsChosen(tx, AgentId.parse(row.id), offered),
+    offered: offered.map(({ connectionId, connector, name, reads, writes }) => ({
       ...{ connectionId, connector, name },
-      reads: reads.map(({ operation, label, summary, allowed }) => ({
-        ...{ operation, label, summary },
-        ...(allowed === undefined ? {} : { allowed }),
-      })),
+      reads: reads.map(offeredOperation),
+      writes: writes.map(offeredOperation),
     })),
     createdBy:
       row.createdBy === null || author === null

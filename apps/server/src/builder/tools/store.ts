@@ -5,6 +5,7 @@ import type {
   NamedAgent,
   PersonId,
   ToolDetail,
+  ToolEffect,
   ToolSlug,
   ToolTarget,
   ToolVersionDetail,
@@ -126,6 +127,21 @@ function latestOf<V extends Pick<VersionRow, 'toolId' | 'number'>>(
   return latest
 }
 
+/**
+ * What a tool does, by the class the kit gives its operation (code C26), as the connectors' door
+ * lists them: a `PRESET` tool of one of the connection's writes writes; every other reads.
+ */
+export function effectOf(
+  row: Pick<ToolRow, 'kind' | 'operation' | 'connectionId'>,
+  offered: readonly OfferedConnection[],
+): ToolEffect {
+  const connection = offered.find((each) => each.connectionId === row.connectionId)
+  const writes = row.kind === 'PRESET' && row.operation !== null && connection !== undefined
+  return writes && connection.writes.some((each) => each.operation === row.operation)
+    ? 'WRITE'
+    : 'READ'
+}
+
 /** Each tool with its versions, its newest one and the agents that use it. */
 export async function detailsOf(
   tx: ReadTx,
@@ -147,7 +163,7 @@ export async function detailsOf(
       slug: ToolSlugSchema.parse(row.slug),
       connectionId: ConnectionId.parse(row.connectionId),
       description: descriptionOf(latest),
-      effect: 'READ' as const,
+      effect: effectOf(row, offered),
       latest: { id: ToolVersionId.parse(latest.id), number: latest.number },
       usedBy: [...(users.get(ToolId.parse(row.id)) ?? [])],
     }
@@ -179,6 +195,7 @@ export async function detailsOf(
 export async function chosenOf(
   tx: ReadTx,
   versionIds: readonly ToolVersionId[],
+  offered: readonly OfferedConnection[],
 ): Promise<AgentTool[]> {
   const found = await versionsWithTools(tx, versionIds)
   const latest = await versionsOf(
@@ -191,7 +208,7 @@ export async function chosenOf(
       const base = {
         id: ToolId.parse(row.id),
         slug: ToolSlugSchema.parse(row.slug),
-        effect: 'READ' as const,
+        effect: effectOf(row, offered),
         latest: { id: ToolVersionId.parse(newest.id), number: newest.number },
       }
       const detail = versionDetail(ToolKind.parse(row.kind), version)

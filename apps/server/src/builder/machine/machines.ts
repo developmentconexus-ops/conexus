@@ -257,6 +257,9 @@ class BuilderMachines implements Machines {
         workdir: this.workdir,
       }),
       tools: {
+        // The agents' controller asks for every tool without a rule of its own (step 24.5): the
+        // machine's never ask.
+        requireApproval: () => false,
         hooks: {
           beforeToolCall: async () => {
             await this.ensure(session)

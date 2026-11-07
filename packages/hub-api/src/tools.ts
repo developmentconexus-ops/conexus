@@ -96,9 +96,17 @@ export type ToolVersionBody = z.infer<typeof ToolVersionBody>
 export const ToolInput = ToolTarget.extend(ToolVersionConfig.shape).extend({ slug: ToolSlug })
 export type ToolInput = z.infer<typeof ToolInput>
 
-/** What a tool does, by its operation's class; only reads in step 24.3 (the 24.5 adds the writes). */
-export const ToolEffect = z.enum(['READ'])
+/** What a tool does, by its operation's class in the kit (code C26): a read, or a write (step 24.5). */
+export const ToolEffect = z.enum(['READ', 'WRITE'])
 export type ToolEffect = z.infer<typeof ToolEffect>
+
+/**
+ * Whether a write tool asks the person before it runs (Pergunta antes) or runs alone (Faz sozinho),
+ * step 24.5: only a `WRITE` tool has it. A draft's patch sets it by tool; a tool it leaves out keeps
+ * its own, and a new write starts at `ASK`.
+ */
+export const ToolApproval = z.enum(['ASK', 'AUTO'])
+export type ToolApproval = z.infer<typeof ToolApproval>
 
 /** A read of a connection the Projeto received that the library does not hold yet, chosen as it is. */
 export const ReadyTool = ToolTarget.extend({

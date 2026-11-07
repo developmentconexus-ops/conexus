@@ -1,7 +1,11 @@
 import { createHash } from 'node:crypto'
 import type { Answered, Native } from '@conexus/connectors'
 import type { AgentId, ConnectionId, ConversationId, OperationId, PersonId } from '@conexus/hub-api'
-import { ToolCallId } from '@conexus/hub-api'
+import {
+  ConnectionId as ConnectionIdSchema,
+  OperationId as OperationIdSchema,
+  ToolCallId,
+} from '@conexus/hub-api'
 import { and, eq, inArray, ne, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { Scalar } from '../../platform/failure.ts'
@@ -12,7 +16,8 @@ import { scopeOf } from './rows.ts'
 import type { SessionScope, TurnKey } from './scope.ts'
 import { connectorWrite } from './tables.ts'
 
-type Person = Extract<Speaker, { kind: 'PERSON' }>
+/** A person talking to a draft; the funnel reads their role on every call, so the request carries none. */
+type Person = Readonly<{ kind: 'PERSON'; personId: PersonId }>
 type Version = Extract<Speaker, { kind: 'VERSION' }>
 
 /**
@@ -189,39 +194,62 @@ export async function register(
   })
 }
 
-/** An earlier write of the conversation whose end the record does not know. */
-type OpenWrite = Readonly<{ state: Row['state']; since: Date; mark: string }>
+/** An earlier write of the conversation whose end the record does not know: what the card's notice says of it, never its fields (S40). */
+export type OpenWrite = Readonly<{
+  connectionId: ConnectionId
+  operation: OperationId
+  state: 'SENDING' | 'UNCERTAIN'
+  since: Date
+  mark: string
+}>
+
+const OpenState = z.enum(['SENDING', 'UNCERTAIN'])
+
+/** Which open writes: the conversation's, of one connection and operation when named, without the call `except` names. */
+export type OpenWritesKey = Readonly<{
+  scope: SessionScope
+  threadId: ConversationId
+  connectionId?: ConnectionId
+  operation?: OperationId
+  except?: ToolCallId
+}>
 
 /**
- * The writes of this conversation, connection and operation that may exist in the provider: rows still
- * `SENDING` or `UNCERTAIN` under another call. The key's own call is left out, for `register` answers it.
+ * The writes of the conversation that may exist in the provider: rows still `SENDING` or `UNCERTAIN`.
+ * The funnel leaves the call's own key out (`except`), for `register` answers it.
  */
-export async function openWritesOf(deps: Deps, a: WriteRequest): Promise<readonly OpenWrite[]> {
-  const viewer = { person: { id: a.scope.personId }, companyId: a.scope.companyId }
+export async function openWritesOf(deps: Deps, key: OpenWritesKey): Promise<readonly OpenWrite[]> {
+  const viewer = { person: { id: key.scope.personId }, companyId: key.scope.companyId }
   const rows = await deps.database.read(scopeOf(viewer), (tx) =>
     tx
       .select({
         toolCallId: connectorWrite.toolCallId,
+        connectionId: connectorWrite.connectionId,
+        operation: connectorWrite.operationId,
         state: connectorWrite.state,
         createdAt: connectorWrite.createdAt,
       })
       .from(connectorWrite)
       .where(
         and(
-          eq(connectorWrite.companyId, a.scope.companyId),
-          eq(connectorWrite.threadId, a.threadId),
-          eq(connectorWrite.connectionId, a.connectionId),
-          eq(connectorWrite.operationId, a.operation),
-          ne(connectorWrite.toolCallId, a.toolCallId),
+          eq(connectorWrite.companyId, key.scope.companyId),
+          eq(connectorWrite.threadId, key.threadId),
+          key.connectionId === undefined
+            ? undefined
+            : eq(connectorWrite.connectionId, key.connectionId),
+          key.operation === undefined ? undefined : eq(connectorWrite.operationId, key.operation),
+          key.except === undefined ? undefined : ne(connectorWrite.toolCallId, key.except),
           inArray(connectorWrite.state, ['SENDING', 'UNCERTAIN']),
         ),
       )
       .orderBy(connectorWrite.createdAt),
   )
   return rows.map((row) => ({
-    state: row.state,
+    connectionId: ConnectionIdSchema.parse(row.connectionId),
+    operation: OperationIdSchema.parse(row.operation),
+    state: OpenState.parse(row.state),
     since: row.createdAt,
-    mark: markOf(a.threadId, ToolCallId.parse(row.toolCallId)),
+    mark: markOf(key.threadId, ToolCallId.parse(row.toolCallId)),
   }))
 }
 

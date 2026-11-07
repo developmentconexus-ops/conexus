@@ -32,6 +32,10 @@ const MANAGE_COMPANY = {
 // Every member asks to publish a version; only an owner or an administrator decides (step 24.3.4, "3").
 const ASK = { request: ['create'] } as const
 
+// Only an owner or an administrator, and a company role marked with it, publishes a write that runs
+// without asking (step 24.5, Papéis `D1`).
+const UNATTENDED = ['publishUnattendedWrite'] as const
+
 // What makes a person a builder: they publish apps, manage and publish agents, create automations
 // and ask the Assistant (step 24.3.4, U1). The connections stay the administrators' (step 19, D).
 const BUILD = {
@@ -69,7 +73,7 @@ export function rolesFor(kit: RoleKit) {
     appAccess: ['manage'],
     connection: ['manage'],
     app: ['publish'],
-    agent: ['manage', 'publish'],
+    agent: ['manage', 'publish', ...UNATTENDED],
     automation: ['manage'],
     assistant: ['ask'],
     request: ['create', 'decide'],
@@ -80,6 +84,7 @@ export function rolesFor(kit: RoleKit) {
       ...ownerAc.statements,
       ...MANAGE_COMPANY,
       ...BUILD,
+      agent: [...BUILD.agent, ...UNATTENDED],
       ...allOperations,
       company: ['nickname'],
     }),
@@ -87,6 +92,7 @@ export function rolesFor(kit: RoleKit) {
       ...adminAc.statements,
       ...MANAGE_COMPANY,
       ...BUILD,
+      agent: [...BUILD.agent, ...UNATTENDED],
       ...allOperations,
     }),
     developer: ac.newRole({

@@ -91,5 +91,23 @@ export function createMayUse(auth: Auth, database: Database, roles: RoleSet) {
     const [answer] = await mayUseEach(companyId, speaker, [target])
     return answer === true
   }
-  return { mayUse, mayUseEach, roleOf }
+
+  /** Whether the role publishes a write that runs without asking (step 24.5), read now as `mayUse` reads. */
+  async function mayPublishUnattended(companyId: CompanyId, role: Role): Promise<boolean> {
+    const context = await auth.$context
+    return command({ kind: 'COMPANY', companyId, personId: null }, () =>
+      hasPermission(
+        {
+          options,
+          organizationId: companyId,
+          role,
+          useMemoryCache: false,
+          permissions: { agent: ['publishUnattendedWrite'] },
+        },
+        // @ts-expect-error: better-auth 1.7.8 types the context parameter with an options type no configured auth's context matches (invariant); the function reads only context.adapter and context.logger.
+        { context },
+      ),
+    )
+  }
+  return { mayUse, mayUseEach, mayPublishUnattended, roleOf }
 }

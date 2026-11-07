@@ -5,7 +5,7 @@ export const NO_TOOLS_YET =
 export const NOBODY_USES = 'ninguém'
 
 /** The effect of a tool in the list's Efeito column. */
-export const EFFECT_TEXT: Record<ToolEffect, string> = { READ: 'Lê' }
+export const EFFECT_TEXT: Record<ToolEffect, string> = { READ: 'Lê', WRITE: 'Escreve' }
 export const UNCONFIRMED_DELETE =
   'Não foi possível confirmar se a ferramenta foi apagada. Confira a lista.'
 export const UNCONFIRMED_VERSION =

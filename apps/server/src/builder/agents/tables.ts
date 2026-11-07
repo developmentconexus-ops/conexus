@@ -110,9 +110,12 @@ export const agentTool = builder.table(
     toolId: uuid('tool_id').notNull(),
     toolVersionId: uuid('tool_version_id').notNull(),
     companyId: text('company_id').notNull(),
+    /** A write's `ToolApproval` (step 24.5); null on a read. */
+    approval: text('approval'),
   },
   (table) => [
     primaryKey({ name: 'agent_tool_pkey', columns: [table.agentId, table.toolVersionId] }),
+    check('agent_tool_approval', sql`${table.approval} in ('ASK', 'AUTO')`),
     unique('agent_tool_agent_id_tool_id_key').on(table.agentId, table.toolId),
     foreignKey({
       name: 'agent_tool_agent_fkey',
@@ -141,8 +144,11 @@ export const agentVersionTool = builder.table(
     number: integer('number').notNull(),
     toolVersionId: uuid('tool_version_id').notNull(),
     companyId: text('company_id').notNull(),
+    /** A write's `ToolApproval` as the version was published (step 24.5); null on a read. */
+    approval: text('approval'),
   },
   (table) => [
+    check('agent_version_tool_approval', sql`${table.approval} in ('ASK', 'AUTO')`),
     primaryKey({
       name: 'agent_version_tool_pkey',
       columns: [table.agentId, table.number, table.toolVersionId],
