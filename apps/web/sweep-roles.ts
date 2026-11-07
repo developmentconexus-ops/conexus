@@ -54,7 +54,9 @@ export function agentReplies(selected: boolean): Replies {
     draft,
     revision: 2,
     tools: [],
-    offered: [{ connectionId: CONNECTION, connector: 'sankhya', name: 'Matriz', reads }],
+    offered: [
+      { connectionId: CONNECTION, connector: 'sankhya', name: 'Matriz', reads, writes: [] },
+    ],
     createdBy: null,
   }
   return {

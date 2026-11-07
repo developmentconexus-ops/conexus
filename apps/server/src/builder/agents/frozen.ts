@@ -3,6 +3,7 @@ import type {
   CodeToolRead,
   CompanyId,
   OfProject,
+  ToolApproval,
   ToolSlug,
   ToolTarget,
   ToolVersionConfig,
@@ -26,11 +27,16 @@ import { z } from 'zod'
 import type { Database, ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import { versionsWithTools } from '../tools/public.ts'
-import { chosenIds, ofProject, pinnedIds } from './store.ts'
+import type { Choice } from './store.ts'
+import { choiceOf, chosenOfDraft, ofProject, pinnedOf } from './store.ts'
 import { agent, agentVersion, agentVersionTool } from './tables.ts'
 
-/** A `PRESET` tool as its version holds it: one read, with the values it fixes. */
-export type PresetFrozenTool = ToolTarget & ToolVersionConfig & { kind: 'PRESET'; slug: ToolSlug }
+/**
+ * A `PRESET` tool as its version holds it: one read or one write, with the values it fixes; a write
+ * with whether it asks first (step 24.5).
+ */
+export type PresetFrozenTool = ToolTarget &
+  ToolVersionConfig & { kind: 'PRESET'; slug: ToolSlug; approval?: ToolApproval }
 
 /**
  * A `CODE` tool as its version holds it: the reads it declares and the schemas of its input and
@@ -59,7 +65,10 @@ function hubScope(companyId: CompanyId) {
 type Tools = readonly FrozenTool[]
 
 /** A tool as its version holds it, by its tool's kind (code C21). */
-function frozenOf(row: Awaited<ReturnType<typeof versionsWithTools>>[number]): FrozenTool {
+function frozenOf(
+  row: Awaited<ReturnType<typeof versionsWithTools>>[number],
+  approval: ToolApproval | undefined,
+): FrozenTool {
   const { version, tool } = row
   const slug = ToolSlugSchema.parse(tool.slug)
   const connectionId = ConnectionId.parse(tool.connectionId)
@@ -82,24 +91,33 @@ function frozenOf(row: Awaited<ReturnType<typeof versionsWithTools>>[number]): F
         operation: OperationId.parse(tool.operation),
         slug,
         ...ToolVersionConfigSchema.parse(version.config),
+        ...(approval === undefined ? {} : { approval }),
       }
     default:
       return kind satisfies never
   }
 }
 
-/** The tools of the versions named, by version, as each version holds it. */
-async function toolsBy(tx: ReadTx, versionIds: readonly ToolVersionId[]) {
-  const rows = await versionsWithTools(tx, versionIds)
-  return new Map(rows.map((row) => [row.version.id, frozenOf(row)]))
+/** The tools of the choices named, by version, as each version holds it. */
+async function toolsBy(tx: ReadTx, choices: readonly Choice[]) {
+  const rows = await versionsWithTools(
+    tx,
+    choices.map((each) => each.id),
+  )
+  return new Map(
+    rows.map((row) => {
+      const approval = choices.find((each) => each.id === row.version.id)?.approval
+      return [row.version.id, frozenOf(row, approval)]
+    }),
+  )
 }
 
 function sorted(tools: FrozenTool[]): Tools {
   return tools.sort((a, b) => a.slug.localeCompare(b.slug))
 }
 
-async function toolsOf(tx: ReadTx, versionIds: readonly ToolVersionId[]): Promise<Tools> {
-  return sorted([...(await toolsBy(tx, versionIds)).values()])
+async function toolsOf(tx: ReadTx, choices: readonly Choice[]): Promise<Tools> {
+  return sorted([...(await toolsBy(tx, choices)).values()])
 }
 
 /** The active version of an agent of the Projeto, as it was published; none before the first. */
@@ -114,7 +132,7 @@ export function activeOf(database: Database, ids: OfProject, agentId: AgentId) {
       )
       .where(ofProject(ids, agentId))
     if (row === undefined) return null
-    const tools = await toolsOf(tx, await pinnedIds(tx, agentId, row.number))
+    const tools = await toolsOf(tx, await pinnedOf(tx, agentId, row.number))
     const source = { kind: 'VERSION', number: row.number } as const
     return { ...AgentConfigSchema.parse(row.config), tools, source }
   })
@@ -125,7 +143,7 @@ export function draftOf(database: Database, ids: OfProject, agentId: AgentId) {
   return database.read(hubScope(ids.companyId), async (tx): Promise<FrozenVersion> => {
     const [row] = await tx.select().from(agent).where(ofProject(ids, agentId))
     if (row === undefined) throw new Failure('AGENT_NOT_FOUND')
-    const tools = await toolsOf(tx, await chosenIds(tx, agentId))
+    const tools = await toolsOf(tx, await chosenOfDraft(tx, agentId))
     const source = { kind: 'DRAFT', revision: row.revision } as const
     return { ...AgentConfigSchema.parse(row.draft), tools, source }
   })
@@ -162,14 +180,15 @@ async function publishedOf(tx: ReadTx, companyId: CompanyId) {
     .innerJoin(agentVersion, active)
     .where(eq(agent.companyId, companyId))
   const pins = await tx
-    .select({ agentId: agentVersionTool.agentId, id: agentVersionTool.toolVersionId })
+    .select({
+      agentId: agentVersionTool.agentId,
+      id: agentVersionTool.toolVersionId,
+      approval: agentVersionTool.approval,
+    })
     .from(agentVersionTool)
     .innerJoin(agent, eq(agent.id, agentVersionTool.agentId))
     .where(and(eq(agent.companyId, companyId), eq(agentVersionTool.number, agent.activeVersion)))
-  const tools = await toolsBy(
-    tx,
-    pins.map((pin) => ToolVersionIdSchema.parse(pin.id)),
-  )
+  const tools = await toolsBy(tx, pins.map(choiceOf))
   return rows.map((row) => {
     const own = pins
       .filter((pin) => pin.agentId === row.id)

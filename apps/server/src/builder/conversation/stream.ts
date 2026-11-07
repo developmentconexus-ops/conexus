@@ -17,6 +17,7 @@ const STREAM_BEHIND_BYTES = 8 * 1024 * 1024
 const DISPLAY_READ = [
   'isRunning',
   'pendingSuspensions',
+  'pendingApprovals',
   'omProgress',
 ] as const satisfies readonly (keyof WireDisplayState)[]
 

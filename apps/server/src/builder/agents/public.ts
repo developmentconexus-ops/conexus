@@ -29,7 +29,8 @@ import { usedBy } from './store.ts'
  * follow an agent's live version.
  */
 export function agentsOf(
-  deps: Omit<ToolsDeps, 'usedBy'> & Pick<AgentsDeps, 'isChoosable' | 'liveProjectIdsOf'>,
+  deps: Omit<ToolsDeps, 'usedBy' | 'identity'> &
+    Pick<AgentsDeps, 'identity' | 'isChoosable' | 'liveProjectIdsOf'>,
 ) {
   const events = agentEvents()
   const tools = createTools({ ...deps, usedBy })

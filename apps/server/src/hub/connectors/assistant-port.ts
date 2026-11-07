@@ -20,13 +20,16 @@ import { idsOf } from './scope.ts'
 import { markedFor, mayUseNotebook, visibleTo } from './speaking.ts'
 import { openedIn } from './testing.ts'
 import { writeThrough } from './write.ts'
-import type { WriteRequest, Written } from './write-record.ts'
+import type { OpenWrite, OpenWritesKey, WriteRequest, Written } from './write-record.ts'
+import { openWritesOf } from './write-record.ts'
 
 type AssistantConnection = {
   connectionId: ConnectionId
   connector: string
   name: string
   reads: readonly { operation: string; label: string; summary: string; allowed?: boolean }[]
+  /** The connector's writes (step 24.5), for an agent's tools only. */
+  writes: readonly { operation: string; label: string; summary: string; allowed?: boolean }[]
   skill: GrantedConnection['skill']
   chosen: boolean
 }
@@ -56,6 +59,8 @@ export type AssistantConnectors = {
   ): Promise<AssistantRead>
   /** One write of a chosen, offered connection for an agent, never sent twice; it spends one of the turn's calls like a read. */
   write(request: WriteRequest): Promise<Written | Spent>
+  /** The writes of the conversation whose end is not known, oldest first, of one connection and operation when named (step 24.5). */
+  openWrites(key: OpenWritesKey): Promise<readonly OpenWrite[]>
   /** The connection's caderno, under the same check as read. */
   notes(scope: SessionScope, connectionId: ConnectionId): Promise<Notes | NotInRole | null>
   /** One concept in the caderno, proved once by the read door; only for `manageConnections`. */
@@ -75,6 +80,11 @@ export type AssistantConnectors = {
    * that is not a read, or one whose input is not an object.
    */
   operationOf(
+    scope: SessionScope,
+    target: { connectionId: ConnectionId; operation: string },
+  ): Promise<z.ZodObject | undefined>
+  /** The input of one write of a connection the place offers (step 24.5), as `operationOf` gives a read's; none otherwise. */
+  writeOf(
     scope: SessionScope,
     target: { connectionId: ConnectionId; operation: string },
   ): Promise<z.ZodObject | undefined>
@@ -238,12 +248,14 @@ function chosenAmong(scope: SessionScope) {
     connector,
     name,
     reads,
+    writes,
     skill,
   }: ReturnType<typeof described>[number]) => ({
     connectionId,
     connector,
     name,
     reads,
+    writes,
     skill,
     chosen: chosen.has(connectionId),
   })
@@ -295,6 +307,15 @@ export function createAssistantConnectors(deps: Deps): AssistantConnectors {
 
     async write(request) {
       return spend(request.turn) ? writeThrough(deps, request) : { kind: 'CALLS_SPENT' }
+    },
+
+    openWrites: (key) => openWritesOf(deps, key),
+
+    async writeOf(scope, target) {
+      const [row] = (await offered(deps, scope)).filter((each) => each.id === target.connectionId)
+      const connector = row === undefined ? undefined : connectorOf(row.connector)
+      const input = connector?.writes?.find((each) => each.id === target.operation)?.input
+      return input instanceof z.ZodObject ? input : undefined
     },
 
     async operationOf(scope, target) {

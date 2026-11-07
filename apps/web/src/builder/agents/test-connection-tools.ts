@@ -25,7 +25,7 @@ export function offered(
   name: string,
   reads: AgentDetail['offered'][number]['reads'] = READS,
 ) {
-  return { connectionId, connector: 'sankhya', name, reads }
+  return { connectionId, connector: 'sankhya', name, reads, writes: [] }
 }
 
 /** An agent with the Matriz offered, none selected and no tool chosen. */

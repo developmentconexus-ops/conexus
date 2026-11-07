@@ -1,7 +1,11 @@
 import { createHash } from 'node:crypto'
 import type { Answered, Native } from '@conexus/connectors'
 import type { AgentId, ConnectionId, ConversationId, OperationId, PersonId } from '@conexus/hub-api'
-import { ToolCallId } from '@conexus/hub-api'
+import {
+  ConnectionId as ConnectionIdSchema,
+  OperationId as OperationIdSchema,
+  ToolCallId,
+} from '@conexus/hub-api'
 import { and, eq, inArray, ne, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { CommandTx, ReadTx } from '../../platform/database.ts'
@@ -14,7 +18,8 @@ import { scopeOf } from './rows.ts'
 import type { SessionScope, TurnKey } from './scope.ts'
 import { connectorWrite } from './tables.ts'
 
-type Person = Extract<Speaker, { kind: 'PERSON' }>
+/** A person talking to a draft; the funnel reads their role on every call, so the request carries none. */
+type Person = Readonly<{ kind: 'PERSON'; personId: PersonId }>
 type Version = Extract<Speaker, { kind: 'VERSION' }>
 
 /**
@@ -192,7 +197,10 @@ async function found(deps: Deps, tx: CommandTx, a: WriteRequest, put: Put, row: 
 /** The refusal of a call while an earlier write of its kind may exist; none when a person approved it (U2's gate sets `approvedBy`). */
 async function heldBy(deps: Deps, tx: CommandTx, a: WriteRequest, put: Put) {
   if (a.approvedBy !== undefined) return undefined
-  const [open] = await openWritesOf(tx, a)
+  const [open] = await openRows(tx, {
+    ...{ scope: a.scope, threadId: a.threadId, connectionId: a.connectionId },
+    ...{ operation: a.operation, except: a.toolCallId },
+  })
   if (open === undefined) return undefined
   deps.log.info(
     { ...aboutOf(a, put.connector), openMark: open.mark, openState: open.state },
@@ -230,37 +238,66 @@ export async function register(deps: Deps, a: WriteRequest, put: Put): Promise<R
   })
 }
 
-/** An earlier write of the conversation whose end the record does not know. */
-type OpenWrite = Readonly<{ state: Row['state']; since: Date; mark: string }>
+/** An earlier write of the conversation whose end the record does not know: what the card's notice says of it, never its fields (S40). */
+export type OpenWrite = Readonly<{
+  connectionId: ConnectionId
+  operation: OperationId
+  state: 'SENDING' | 'UNCERTAIN'
+  since: Date
+  mark: string
+}>
+
+const OpenState = z.enum(['SENDING', 'UNCERTAIN'])
+
+/** Which open writes: the conversation's, of one connection and operation when named, without the call `except` names. */
+export type OpenWritesKey = Readonly<{
+  scope: SessionScope
+  threadId: ConversationId
+  connectionId?: ConnectionId
+  operation?: OperationId
+  except?: ToolCallId
+}>
 
 /**
- * The writes of this conversation, connection and operation that may exist in the provider: rows still
- * `SENDING` or `UNCERTAIN` under another call. The key's own call is left out, for its own row answers it.
+ * The writes of the conversation that may exist in the provider: rows still `SENDING` or `UNCERTAIN`,
+ * of one connection and operation when the key names them, without the call `except` names.
  */
-async function openWritesOf(tx: ReadTx, a: WriteRequest): Promise<readonly OpenWrite[]> {
+async function openRows(tx: ReadTx, key: OpenWritesKey): Promise<readonly OpenWrite[]> {
   const rows = await tx
     .select({
       toolCallId: connectorWrite.toolCallId,
+      connectionId: connectorWrite.connectionId,
+      operation: connectorWrite.operationId,
       state: connectorWrite.state,
       createdAt: connectorWrite.createdAt,
     })
     .from(connectorWrite)
     .where(
       and(
-        eq(connectorWrite.companyId, a.scope.companyId),
-        eq(connectorWrite.threadId, a.threadId),
-        eq(connectorWrite.connectionId, a.connectionId),
-        eq(connectorWrite.operationId, a.operation),
-        ne(connectorWrite.toolCallId, a.toolCallId),
+        eq(connectorWrite.companyId, key.scope.companyId),
+        eq(connectorWrite.threadId, key.threadId),
+        key.connectionId === undefined
+          ? undefined
+          : eq(connectorWrite.connectionId, key.connectionId),
+        key.operation === undefined ? undefined : eq(connectorWrite.operationId, key.operation),
+        key.except === undefined ? undefined : ne(connectorWrite.toolCallId, key.except),
         inArray(connectorWrite.state, ['SENDING', 'UNCERTAIN']),
       ),
     )
     .orderBy(connectorWrite.createdAt)
   return rows.map((row) => ({
-    state: row.state,
+    connectionId: ConnectionIdSchema.parse(row.connectionId),
+    operation: OperationIdSchema.parse(row.operation),
+    state: OpenState.parse(row.state),
     since: row.createdAt,
-    mark: markOf(a.threadId, ToolCallId.parse(row.toolCallId)),
+    mark: markOf(key.threadId, ToolCallId.parse(row.toolCallId)),
   }))
+}
+
+/** The conversation's open writes, read on their own (step 24.5): what a write's rule and the card's notice read. */
+export function openWritesOf(deps: Deps, key: OpenWritesKey): Promise<readonly OpenWrite[]> {
+  const viewer = { person: { id: key.scope.personId }, companyId: key.scope.companyId }
+  return deps.database.read(scopeOf(viewer), (tx) => openRows(tx, key))
 }
 
 const STATES = { OK: 'DONE', WRITE_UNCERTAIN: 'UNCERTAIN' } as const

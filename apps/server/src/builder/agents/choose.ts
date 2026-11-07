@@ -1,24 +1,80 @@
-import type { AgentId, ConnectionId, DraftPatch, ToolVersionId } from '@conexus/hub-api'
-import { ConnectionId as ConnectionIdSchema, ToolVersionId as VersionId } from '@conexus/hub-api'
+import type {
+  AgentId,
+  ConnectionId,
+  DraftPatch,
+  ToolApproval,
+  ToolVersionId,
+} from '@conexus/hub-api'
+import {
+  ConnectionId as ConnectionIdSchema,
+  OperationId,
+  ToolId,
+  ToolVersionId as VersionId,
+} from '@conexus/hub-api'
 import { eq } from 'drizzle-orm'
 import type { CommandTx } from '../../platform/database.ts'
+import { Failure } from '../../platform/failure.ts'
 import type { InProject, OfferedConnection, Tools } from '../tools/public.ts'
-import { versionsWithTools } from '../tools/public.ts'
+import { effectOf, versionsWithTools } from '../tools/public.ts'
+import { mayLeaveAlone } from './publish.ts'
 import { chosenIds } from './store.ts'
 import { agentTool } from './tables.ts'
+
+/**
+ * Each chosen write's approval: the patch's, else what the tool held, else `ASK` (step 24.5); a read
+ * has none, and an approval for a tool that is not a chosen write is the caller's mistake.
+ */
+async function approvalsOf(
+  identity: Parameters<typeof mayLeaveAlone>[0],
+  tx: CommandTx,
+  a: {
+    scope: InProject
+    agentId: AgentId
+    patch: DraftPatch
+    shown: readonly OfferedConnection[]
+  },
+  homed: Awaited<ReturnType<typeof versionsWithTools>>,
+): Promise<Map<string, ToolApproval>> {
+  const held = await tx
+    .select({ toolId: agentTool.toolId, approval: agentTool.approval })
+    .from(agentTool)
+    .where(eq(agentTool.agentId, a.agentId))
+  const writes = homed.flatMap((row) => {
+    const home = a.shown.find((each) => each.connectionId === row.tool.connectionId)
+    const write = home !== undefined && effectOf(row.tool, a.shown) === 'WRITE'
+    return write ? [{ row, connector: home.connector }] : []
+  })
+  const asked = Object.keys(a.patch.approvals ?? {})
+  if (asked.some((toolId) => !writes.some(({ row }) => row.tool.id === toolId))) {
+    throw new Failure('AGENT_TOOL_REFUSED', { named: { field: 'tools', reason: 'NOT_USABLE' } })
+  }
+  const approvals = new Map<string, ToolApproval>()
+  for (const { row, connector } of writes) {
+    const before = held.find((each) => each.toolId === row.tool.id)?.approval
+    const given = a.patch.approvals?.[ToolId.parse(row.tool.id)]
+    if (given === 'AUTO' && before !== 'AUTO') {
+      const operation = OperationId.parse(row.tool.operation)
+      await mayLeaveAlone(identity, tx, a.scope, { slug: row.tool.slug, connector, operation })
+    }
+    approvals.set(row.version.id, given ?? (before === 'AUTO' ? 'AUTO' : 'ASK'))
+  }
+  return approvals
+}
 
 /**
  * Replaces the draft's choice of tools: the versions asked, or the current ones, with the ready
  * reads saved in the library first; each one this Projeto may use, one per tool.
  */
 export async function choose(
-  deps: { tools: Tools },
+  deps: { tools: Tools; identity: Parameters<typeof mayLeaveAlone>[0] },
   tx: CommandTx,
   a: {
     scope: InProject
     agentId: AgentId
     patch: DraftPatch
     around: readonly OfferedConnection[]
+    /** Every read and write of the connections, whatever the editor's role: what tells a write. */
+    shown: readonly OfferedConnection[]
   },
   ready: Awaited<ReturnType<Tools['readyOf']>>,
 ): Promise<ConnectionId[]> {
@@ -38,11 +94,17 @@ export async function choose(
   )
   const keptVersions = new Set(kept.map((row) => row.version.id))
   const rows = usable.filter((row) => keptVersions.has(row.toolVersionId))
+  const approvals = await approvalsOf(deps.identity, tx, a, kept)
   await tx.delete(agentTool).where(eq(agentTool.agentId, a.agentId))
   if (rows.length > 0) {
-    await tx
-      .insert(agentTool)
-      .values(rows.map((row) => ({ ...row, agentId: a.agentId, companyId: a.scope.companyId })))
+    await tx.insert(agentTool).values(
+      rows.map((row) => ({
+        ...row,
+        agentId: a.agentId,
+        companyId: a.scope.companyId,
+        approval: approvals.get(row.toolVersionId) ?? null,
+      })),
+    )
   }
   return [...new Set(kept.map((row) => ConnectionIdSchema.parse(row.tool.connectionId)))]
 }

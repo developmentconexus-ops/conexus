@@ -73,6 +73,7 @@ export function agent(fields: Partial<AgentDetail> = {}): AgentDetail {
         reads: [
           { operation: 'pedidos', label: 'Pedidos', summary: 'Pedidos de venda', allowed: true },
         ],
+        writes: [],
       },
     ],
     createdBy: null,

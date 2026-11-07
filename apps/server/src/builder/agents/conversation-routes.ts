@@ -4,9 +4,11 @@ import {
   ConversationId,
   createAgentConversation,
   listAgentConversations,
+  listOpenWrites,
 } from '@conexus/hub-api'
 import type { StorageThreadType } from '@mastra/core/memory'
 import type { FastifyInstance } from 'fastify'
+import type { Connectors } from '../../hub/connectors/public.ts'
 import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
@@ -15,7 +17,7 @@ import { attemptIdOf, resourceOf } from '../controller-kit/public.ts'
 import { registerFile } from '../machine/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import type { InProject, ToolsDeps } from '../tools/public.ts'
-import { admitted, databaseScopeOf, inProjectOf } from '../tools/public.ts'
+import { admitted, databaseScopeOf, inProjectOf, sessionScopeOf } from '../tools/public.ts'
 import type { AgentConversations } from './controller.ts'
 import { AGENT_MARK, keptRun } from './controller.ts'
 import { openAgentConversation } from './open.ts'
@@ -26,6 +28,7 @@ type Deps = Pick<ToolsDeps, 'identity' | 'liveProjectOf'> & {
   queue: QueueDeps
   conversations: AgentConversations
   agents: Pick<AgentReads, 'activeOf' | 'draftOf'>
+  connectors: Pick<Connectors['assistant'], 'openWrites'>
   log: FailureLog
 }
 
@@ -49,6 +52,32 @@ function summaryOf(thread: StorageThreadType, agentId: AgentId): AgentConversati
     title: thread.title ?? '',
     updatedAt: thread.updatedAt.toISOString(),
   }
+}
+
+/**
+ * What the card's notice reads (step 24.5): the conversation's sends whose end is not known, as the
+ * record keeps them; a conversation of another person or agent is not found (S10).
+ */
+function serveOpenWrites(app: FastifyInstance, deps: Deps): void {
+  serve(app, listOpenWrites, async (input) => {
+    const scope = inProjectOf(input)
+    const { agentId, conversationId } = input.params
+    await admittedTo(deps, scope, agentId)
+    const owner = { companyId: scope.companyId, personId: scope.personId }
+    const run = await keptRun(deps.database, owner, conversationId)
+    if (run?.agentId !== agentId || run.scope.projectId !== scope.projectId) {
+      throw new Failure('CONVERSATION_NOT_FOUND')
+    }
+    const open = await deps.connectors.openWrites({
+      scope: sessionScopeOf(scope),
+      threadId: conversationId,
+    })
+    const writes = open.map(({ connectionId, operation, state, since, mark }) => ({
+      ...{ connectionId, operation, state, mark },
+      sentAt: since.toISOString(),
+    }))
+    return answer({ writes })
+  })
 }
 
 /**
@@ -100,6 +129,8 @@ export function registerAgentConversationRoutes(app: FastifyInstance, deps: Deps
     })
     return answer({ conversations: threads.map((thread) => summaryOf(thread, agentId)) })
   })
+  serveOpenWrites(app, deps)
+
   registerFile(app, {
     route: AGENT_FILE,
     machines: deps.conversations.machines,

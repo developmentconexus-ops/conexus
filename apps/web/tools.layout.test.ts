@@ -106,6 +106,7 @@ const AGENT_DETAIL = {
       connector: 'sankhya',
       name: 'Matriz',
       reads: [{ operation: 'pedidos', label: 'Pedidos', summary: 'Pedidos de venda.' }],
+      writes: [],
     },
   ],
   createdBy: null,
@@ -174,6 +175,7 @@ test('as ligações do agente com duas ferramentas escolhidas não deixam o text
                   { operation: 'pedidos', label: 'Pedidos', summary: 'Pedidos de venda.' },
                   { operation: 'metas', label: 'Metas', summary: 'As metas do mês.' },
                 ],
+                writes: [],
               },
             ],
             tools: [
