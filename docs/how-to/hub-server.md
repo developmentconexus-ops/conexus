@@ -73,9 +73,10 @@ Merging into `main` does not publish. Create a Release tagged `v<n>.<n>.<n>` on 
 template](builder-template.md) from that commit and runs `infra/deploy.sh` with both on the server.
 A tag on another commit or a failed template ends red; the Hub stays. Keeping ten images needs Admin in the package's Actions access ([apps-edge](apps-edge.md)).
 
-Before the new image starts, `deploy.sh` runs `migrate` for 60 seconds, only when the image
-carries the label `conexus.migrate=1`. A failed `migrate` leaves the live Hub as it is and ends the
-run red; rerun it once fixed.
+Before the new image starts, `deploy.sh` runs `migrate` for up to 120 seconds, up to 3 attempts, only
+when the image carries the label `conexus.migrate=1`. A failed `migrate` leaves the live Hub as it is and ends the
+run red; rerun it once fixed. Each phase of `deploy.sh` first says what it starts (`deploy: …`); a
+Docker call with no answer in its bound ends the run red with `no answer in N s: …`, so a hang shows the phase where it stopped.
 
 ## Restart
 

@@ -54,10 +54,14 @@ test('o --restart e a volta atrás também dizem a fase antes de começar', () =
   )
 })
 
-test('um pull sem resposta em 120 s diz isso e termina vermelho antes dos segredos e de migrate', () => {
-  const { run, count } = deploy('hub@sha256:new', { running: 'hub@sha256:old', pullStatus: 124 })
+// A hanging call is cut by the script's own bound, shortened to 1 s by DEPLOY_WAIT_SECONDS.
+test('um pull que nunca responde é cortado pelo limite, diz isso e termina vermelho antes dos segredos', () => {
+  const { run, count } = deploy('hub@sha256:new', {
+    running: 'hub@sha256:old',
+    hang: 'pull --quiet',
+  })
   assert.equal(run.status, 124)
-  assert.match(run.stderr, /no answer in 120 s: docker pull --quiet hub@sha256:new/)
+  assert.match(run.stderr, /no answer in 1 s: docker pull --quiet hub@sha256:new/)
   assert.equal(count('--entrypoint test'), 0)
   assert.equal(count('run --rm migrate'), 0)
   assert.equal(count(' up '), 0)
@@ -70,4 +74,45 @@ test('um Docker sem resposta ao ler o rótulo termina vermelho: não vira "sem m
   assert.doesNotMatch(run.stdout, /no migrations in/)
   assert.equal(count('run --rm migrate'), 0)
   assert.equal(count(' up '), 0)
+})
+
+const hanging: [string, string, RegExp][] = [
+  ['compose ps do Hub', ' ps --quiet hub', /no answer in 1 s: docker compose .* ps --quiet hub/],
+  [
+    'inspect da imagem do Hub',
+    'inspect --format {{.Config.Image}}',
+    /no answer in 1 s: docker inspect/,
+  ],
+  [
+    'inspect do ambiente do Hub',
+    'inspect --format {{range .Config.Env}}',
+    /no answer in 1 s: docker inspect --format \{\{range/,
+  ],
+]
+for (const [name, hang, message] of hanging) {
+  test(`${name} sem resposta é cortado, termina vermelho e não sobe nem volta atrás`, () => {
+    const { run, count } = deploy('hub@sha256:new', { running: 'hub@sha256:old', hang })
+    assert.equal(run.status, 124, run.stderr)
+    assert.match(run.stderr, message)
+    assert.equal(count('docker pull'), 0)
+    assert.equal(count('run --rm migrate'), 0)
+    assert.equal(count(' up '), 0)
+  })
+}
+
+test('um segredo cuja leitura não responde termina 124 sem mandar escrever o segredo', () => {
+  const { run, count } = deploy('hub@sha256:new', {
+    running: 'hub@sha256:old',
+    hang: `secrets/${SECRETS[0]},`,
+  })
+  assert.equal(run.status, 124)
+  assert.match(run.stderr, /no answer in 1 s: docker run --rm --network none/)
+  assert.doesNotMatch(run.stderr, /missing secret/)
+  assert.equal(count('run --rm migrate'), 0)
+})
+
+test('um segredo que falta continua dizendo para escrevê-lo, com status 1', () => {
+  const { run } = deploy('hub@sha256:new', { running: 'hub@sha256:old', missingSecret: SECRETS[0] })
+  assert.equal(run.status, 1)
+  assert.match(run.stderr, new RegExp(`missing secret: ${SECRETS[0]}; write `))
 })

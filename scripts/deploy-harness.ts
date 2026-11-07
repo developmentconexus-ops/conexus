@@ -27,6 +27,7 @@ after(() => {
 
 const STUB_DOCKER = `#!/bin/bash
 echo "$* [HUB_IMAGE=\${HUB_IMAGE:-}] [HUB_E2B_TEMPLATE=\${HUB_E2B_TEMPLATE:-}]" >> "$CALLS"
+[[ -n "\${STUB_HANG:-}" && "$*" == *"$STUB_HANG"* ]] && exec sleep 30
 case "$*" in
   *" ps --quiet hub") echo "\${STUB_RUNNING_ID:-}" ;;
   "inspect --format {{.Config.Image}}"*) echo "\${STUB_RUNNING_IMAGE:-}" ;;
@@ -61,8 +62,30 @@ export type Stub = {
   upStatus?: number
   pullStatus?: number
   inspectStatus?: number
+  /** A docker call whose arguments contain this text never answers, so only the script's bound ends it. */
+  hang?: string
   missingSecret?: string
   hubEnv?: 'missing' | 'unreadable'
+}
+
+function stubEnv(stub: Stub): Record<string, string> {
+  const running = stub.running
+  return {
+    STUB_RUNNING_ID: running === undefined ? '' : 'container-id',
+    STUB_RUNNING_IMAGE: running ?? '',
+    STUB_RUNNING_TEMPLATE: stub.runningTemplate ?? (running === undefined ? '' : OLD_TEMPLATE),
+    STUB_LABEL: stub.labeled === false ? '' : '1',
+    STUB_RESEAL_LABEL: stub.resealLabeled === false ? '' : '1',
+    STUB_MIGRATE_STATUS: String(stub.migrateStatus ?? 0),
+    STUB_MIGRATE_SEQUENCE: stub.migrateSequence ?? '',
+    STUB_RESEAL_STATUS: String(stub.resealStatus ?? 0),
+    STUB_UP_STATUS: String(stub.upStatus ?? 0),
+    STUB_PULL_STATUS: String(stub.pullStatus ?? 0),
+    STUB_INSPECT_STATUS: stub.inspectStatus === undefined ? '' : String(stub.inspectStatus),
+    STUB_MISSING_SECRET: stub.missingSecret ?? '',
+    STUB_HANG: stub.hang ?? '',
+    ...(stub.hang === undefined ? {} : { DEPLOY_WAIT_SECONDS: '1' }),
+  }
 }
 
 export function deploy(
@@ -89,20 +112,8 @@ export function deploy(
       PATH: `${join(dir, 'bin')}${delimiter}${process.env.PATH}`,
       CALLS: calls,
       HUB_ENV_FILE: hubEnv,
-      STUB_RUNNING_ID: stub.running === undefined ? '' : 'container-id',
-      STUB_RUNNING_IMAGE: stub.running ?? '',
-      STUB_RUNNING_TEMPLATE:
-        stub.runningTemplate ?? (stub.running === undefined ? '' : OLD_TEMPLATE),
-      STUB_LABEL: stub.labeled === false ? '' : '1',
-      STUB_RESEAL_LABEL: stub.resealLabeled === false ? '' : '1',
-      STUB_MIGRATE_STATUS: String(stub.migrateStatus ?? 0),
-      STUB_MIGRATE_SEQUENCE: stub.migrateSequence ?? '',
       MIGRATE_RETRY_SECONDS: '0',
-      STUB_RESEAL_STATUS: String(stub.resealStatus ?? 0),
-      STUB_UP_STATUS: String(stub.upStatus ?? 0),
-      STUB_PULL_STATUS: String(stub.pullStatus ?? 0),
-      STUB_INSPECT_STATUS: stub.inspectStatus === undefined ? '' : String(stub.inspectStatus),
-      STUB_MISSING_SECRET: stub.missingSecret ?? '',
+      ...stubEnv(stub),
     },
   })
   const log = readFileSync(calls, 'utf8').split('\n').filter(Boolean)

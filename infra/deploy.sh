@@ -18,11 +18,14 @@ phase() {
   echo "deploy: $*" >&2
 }
 
-# A call to the Docker engine that waits a bounded time: the 90 s are the wait the script already
-# gives the Hub to answer, `docker pull` takes the 120 s of migrate and reseal. A call that ends
-# without answering says so, and the script ends with it: the job's 10 minutes cancel without a word.
+# A call to the Docker engine that waits a bounded time. The 90 s are the wait the script already
+# gives the Hub to answer. `docker pull` gets 120 s: the whole silent window before migrate, which
+# holds the pull and the 12 secret checks, took 38 to 64 s in the seven Publish runs before v0.24.45
+# (run 42316345546 sat 600 s there), so 120 s is about twice the worst and still a quarter of the
+# job's 10 minutes. A call that ends without answering says so, and the script ends with it.
+# DEPLOY_WAIT_SECONDS shortens every bound, only so scripts/deploy-phases.test.ts waits for real.
 bounded() {
-  local seconds="$1" status=0
+  local seconds="${DEPLOY_WAIT_SECONDS:-$1}" status=0
   shift
   timeout "$seconds" "$@" || status=$?
   if [ "$status" -eq 124 ]; then
@@ -37,9 +40,7 @@ running_id() {
 }
 
 running_template() {
-  local env
-  env="$(bounded 90 docker inspect --format '{{range .Config.Env}}{{println .}}{{end}}' "$1")"
-  sed -n 's/^HUB_E2B_TEMPLATE=//p' <<< "$env"
+  bounded 90 docker inspect --format '{{range .Config.Env}}{{println .}}{{end}}' "$1" | sed -n 's/^HUB_E2B_TEMPLATE=//p'
 }
 
 # The label's value, or empty when the image has none; a call with no answer ends the script, so a
@@ -100,9 +101,15 @@ reseal_if_labeled() {
 require_secret() {
   local image="$1" name="$2"
   phase "checking the secret $name in $image"
-  if ! bounded 90 docker run --rm --network none --user 1000 \
+  local status=0
+  bounded 90 docker run --rm --network none --user 1000 \
     --mount "type=bind,source=/etc/conexus/secrets/$name,target=/run/check,readonly" \
-    --entrypoint test "$image" -s /run/check; then
+    --entrypoint test "$image" -s /run/check || status=$?
+  # 124 is Docker not answering, which `bounded` already said: the secret may well be there.
+  if [ "$status" -eq 124 ]; then
+    return 124
+  fi
+  if [ "$status" -ne 0 ]; then
     echo "missing secret: $name; write /etc/conexus/secrets/$name first" >&2
     return 1
   fi
