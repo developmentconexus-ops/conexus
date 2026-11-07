@@ -166,13 +166,13 @@ tudo". The lines of [screens](../reference/screens.md) say which screen is on wh
   permissão' beside its other states. Loading shows the frame at once and a skeleton only in the
   content; an error stays in the content area with "Tentar de novo"; not found offers "Voltar ao
   início" ([code C48](code.md); founder, 2026-10-20: "2. A"). A missing permission takes two
-  forms, as the references do (Mastra 1.82 Studio's `filterItem`,
+  forms, as references do (Mastra 1.82 Studio's `filterItem`,
   `packages/playground/src/components/ui/app-sidebar.tsx:64-77`; GitHub's organization roles). An
   administration area the person's role never uses is hidden from the navigation and its address
   answers not found (S10): Automações and Agentes for the member (founder, 2026-11-01: "1 A";
   2026-11-02: "3.A"), Papéis for the developer and the member; the developer sees Automações and
   Agentes (step 24.3.4, founder, 2026-11-04: "2. Aprovo"). On a page the person uses, an action
-  outside the role shows and says who can (design V29), as Conectores and Contas de modelo do.
+  outside the role says who can (design V29), as Conectores and Contas de modelo do.
   Founder, 2026-11-07: "Vamos revisar a regra W34 então, se referencias fazem assim não teriamso
   que mudar", then "1. Aprovo".
   Failure: a used page hiding an action leaves them guessing. [review]
