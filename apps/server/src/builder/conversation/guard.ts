@@ -271,7 +271,7 @@ export function registerBuilderRoutes(
     scope.removeContentTypeParser('multipart/form-data')
     // A Parar between the guard's check and Mastra's handler leaves `not_pending`: no line says "approved" for a write that did not run.
     scope.addHook('onSend', async (request, _reply, payload) => {
-      const told = Told.safeParse(request.requestContext.get(TOLD))
+      const told = Told.safeParse(request.requestContext?.get(TOLD))
       if (!told.success || typeof payload !== 'string') return payload
       if (Taken.safeParse(JSON.parse(payload)).success)
         deps.log.info(told.data.fields, told.data.message)
