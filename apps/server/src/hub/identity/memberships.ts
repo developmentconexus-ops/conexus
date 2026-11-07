@@ -17,9 +17,10 @@ import { actorOf, admitCompany, allows, rankAllows } from './admission.ts'
 import type { ProjectApps } from './app-invitations.ts'
 import type { Auth, LibraryCommand } from './auth.ts'
 import { organizationAdapter } from './auth.ts'
-import { checkRoleExists, readRoles } from './company-roles.ts'
+import { checkRoleExists } from './company-roles.ts'
 import { cancelSentBy } from './invitation-management.ts'
 import { companyScope, LIVE, lockCompany } from './invitations.ts'
+import { roleNamesOf } from './role-names.ts'
 import { invitation, member, user } from './tables.ts'
 
 const Listed = Member.pick({ personId: true, name: true }).extend({
@@ -60,7 +61,7 @@ function viewOf(
 
 /** The roles a person may be changed to: the four fixed ones, then the company's own. */
 async function rolesOf(tx: ReadTx, companyId: CompanyId): Promise<Role[]> {
-  return (await readRoles(tx, companyId)).map((one) => one.role)
+  return roleNamesOf(tx, companyId)
 }
 
 async function viewerOf(tx: ReadTx, admitted: CompanyProof, personId: PersonId) {

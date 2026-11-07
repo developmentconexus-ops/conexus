@@ -22,7 +22,7 @@ import { firstPersonArguments } from './first-person-arguments.ts'
 import type { Apps, CloseRequests, Ungranted } from './hub/apps/public.ts'
 import { appAccessOf, createAppRemoval, createApps, versionNumbersOf } from './hub/apps/public.ts'
 import type { ConnectorDeadlines, Connectors } from './hub/connectors/public.ts'
-import { createConnectors, resealConnections } from './hub/connectors/public.ts'
+import { createConnectors, resealConnections, roleKit } from './hub/connectors/public.ts'
 import type { Identity } from './hub/identity/public.ts'
 import { createIdentity, passwordLinkText } from './hub/identity/public.ts'
 import { notificationsOf } from './hub/notifications/public.ts'
@@ -197,7 +197,7 @@ async function runServer(): Promise<void> {
     const status = createStatus({ version: config.version, database })
     // One mail adapter for the identity's invitations and the notifications' e-mail (step 24.2).
     const sendMail = createMail({ config, log })
-    const identity = createIdentity({ database, config, log, sendMail })
+    const identity = createIdentity({ database, config, log, sendMail, kit: roleKit() })
     const neon = createNeonProjects({ config, log })
     const companyPostgres = createCompanyPostgres({
       transport: neonTransport,
@@ -276,7 +276,7 @@ async function runFirstPerson(args: string[]): Promise<void> {
     await assertRuntimeLogin(database)
     await assertMigrated(database)
     const sendMail = createMail({ config, log })
-    const identity = createIdentity({ database, config, log, sendMail })
+    const identity = createIdentity({ database, config, log, sendMail, kit: roleKit() })
     const { link } = await identity.firstPerson({ name: input.name, email: input.email })
     appendFileSync(input.summary, passwordLinkText(input.name, link))
     log.info({}, 'FIRST_PERSON_LINK_GIVEN')

@@ -5,9 +5,9 @@ import { CompanyId, listRoles, PersonId } from '@conexus/hub-api'
 import { hasPermission } from 'better-auth/plugins'
 import type { TestDatabase } from '../../platform/test-database.ts'
 import { silent, testConfig } from '../../platform/test-database.ts'
-import { libraryCommandOn, ORGANIZATION } from './auth.ts'
+import { libraryCommandOn } from './auth.ts'
+import { organizationWith } from './organization.ts'
 import { createAuth } from './public.ts'
-import { KIT } from './roles.ts'
 import type { Person } from './test-hub.ts'
 import {
   ANA_OWNER,
@@ -18,6 +18,7 @@ import {
   memberOn,
   personOn,
   plantCompany,
+  TEST_ROLES,
 } from './test-hub.ts'
 
 export const OPERATOR = { name: 'Central Conexus', email: 'central@example.test', role: 'admin' }
@@ -53,19 +54,20 @@ export function roleOf(list: Awaited<ReturnType<typeof roles>>, name: string) {
   return found
 }
 
-export const everyOperation = Object.fromEntries(
-  KIT.map((connector) => [connector.id, connector.operations.map(({ id }) => id)]),
-)
-export const everyRead = Object.fromEntries(
-  KIT.map((connector) => [
-    connector.id,
-    connector.operations.filter(({ class: kind }) => kind === 'read').map(({ id }) => id),
-  ]),
-)
+/** What the test kit offers, written out so a change of the kit's code moves nothing here (T6). */
+export const everyRead = {
+  sankhya: ['consultar', 'carregar', 'pedidos', 'clientes', 'contasAReceber', 'contasAPagar'],
+  'mercado-livre': ['anuncios'],
+}
+export const everyOperation = {
+  sankhya: [...everyRead.sankhya, 'lancarPedido'],
+  'mercado-livre': everyRead['mercado-livre'],
+}
 
 /** Asks the library whether the company's `member` role holds the statements, as the Hub's adapter reads its rows. */
 export async function memberMay(database: TestDatabase, companyId: string, ownerId: string) {
   const auth = createAuth({
+    roles: TEST_ROLES,
     database: database.database,
     config: testConfig(database.runtimeUrl),
     log: silent,
@@ -82,7 +84,12 @@ export async function memberMay(database: TestDatabase, companyId: string, owner
   return (permissions: Record<string, string[]>) =>
     command(scope, () =>
       hasPermission(
-        { options: ORGANIZATION, organizationId: companyId, role: 'member', permissions },
+        {
+          options: organizationWith(TEST_ROLES),
+          organizationId: companyId,
+          role: 'member',
+          permissions,
+        },
         endpoint,
       ),
     )

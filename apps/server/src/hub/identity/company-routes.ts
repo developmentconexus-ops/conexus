@@ -23,7 +23,6 @@ import {
 import type { FastifyInstance } from 'fastify'
 import type { Config } from '../../platform/config.ts'
 import type { Database } from '../../platform/database.ts'
-import { Failure } from '../../platform/failure.ts'
 import { answer, serve } from '../../platform/http.ts'
 import type { SendMail } from '../../platform/mail.ts'
 import type { ProjectApps } from './app-invitations.ts'
@@ -50,6 +49,7 @@ import type { PersonConversationRelease } from './memberships.ts'
 import { changeMemberRoleCommand, readMembers, removeMemberCommand } from './memberships.ts'
 import { chooseNickname } from './nickname.ts'
 import { checkPassword } from './password-check.ts'
+import type { RoleSet } from './roles.ts'
 import { countAttempt } from './routes.ts'
 
 type Deps = {
@@ -60,6 +60,7 @@ type Deps = {
   sendMail: SendMail
   releaseConversations: PersonConversationRelease
   apps: ProjectApps
+  roles: RoleSet
 }
 
 function registerReads(app: FastifyInstance, deps: Deps): void {
@@ -249,16 +250,7 @@ function registerRoles(app: FastifyInstance, deps: Deps): void {
     return answer({ role: changed })
   })
   serve(app, deleteRole, async ({ person, headers, params, log }) => {
-    try {
-      await remove({ person, headers, ...params })
-    } catch (error) {
-      if (error instanceof Failure && error.code === 'ROLE_IN_USE')
-        log.info(
-          { ...params, by: person.id, reason: error.details.reason ?? 'MEMBER' },
-          'ROLE_DELETE_REFUSED',
-        )
-      throw error
-    }
+    await remove({ person, headers, log, ...params })
     log.info({ ...params, by: person.id }, 'ROLE_DELETED')
     return answer(undefined)
   })

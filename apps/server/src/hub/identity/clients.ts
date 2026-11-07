@@ -19,6 +19,7 @@ import {
   pendingOf,
   Status,
 } from './invitations.ts'
+import type { RoleSet } from './roles.ts'
 import { company, invitation, member, user } from './tables.ts'
 
 // The ports the Operations Central reaches identity through (code C4), each in the caller's
@@ -34,7 +35,7 @@ const SentRow = CompanyPendingRow.extend({ status: Status, unmailed: z.boolean()
  * same key with another name or address is a conflict (code C37). The first owner is never an
  * operator, the same rule as the operator's next owner invitation.
  */
-export function registerCompanyOn(auth: Auth) {
+export function registerCompanyOn(auth: Auth, roles: RoleSet) {
   return async (
     tx: CommandTx,
     input: { admitted: OperatorProof; name: string; ownerEmail: Email; attemptKey: string },
@@ -71,7 +72,7 @@ export function registerCompanyOn(auth: Auth) {
       organization: { name: input.name, slug: attemptKey, attemptKey, createdAt: new Date() },
     })
     const created = Company.parse({ id: made.id, name: made.name })
-    await seedRoles(tx, created.id)
+    await seedRoles(roles, tx, created.id)
     const invited = await adapter.createInvitation({
       invitation: { email, role: 'owner', organizationId: created.id, teamIds: [], attemptKey },
       user: input.admitted.inviter,

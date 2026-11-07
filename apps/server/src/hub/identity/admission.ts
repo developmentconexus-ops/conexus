@@ -1,18 +1,12 @@
 import type { CompanyId, Email, PersonId } from '@conexus/hub-api'
-import {
-  FIXED_ROLES,
-  fixedNameOf,
-  fixedRole,
-  isFixedRole,
-  OPERATOR_INVITES_AS,
-  Role,
-} from '@conexus/hub-api'
+import { fixedNameOf, fixedRole, OPERATOR_INVITES_AS, Role } from '@conexus/hub-api'
 import { and, eq } from 'drizzle-orm'
 import type { ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import { storedAddress } from './auth.ts'
+import { roleNamesOf } from './role-names.ts'
 import { COMPANY_ROLES } from './roles.ts'
-import { company, member, organizationRole, user } from './tables.ts'
+import { company, member, user } from './tables.ts'
 
 const INVITE = { invitation: ['create'] } as const
 const REMOVE = { member: ['delete'] } as const
@@ -380,18 +374,8 @@ export async function mayInviteAs(tx: ReadTx, admitted: CompanyProof): Promise<R
   switch (admitted.kind) {
     case 'MEMBER': {
       if (!allows(admitted.role, 'invite')) return []
-      const own = await tx
-        .select({ role: organizationRole.role })
-        .from(organizationRole)
-        .where(eq(organizationRole.organizationId, admitted.companyId))
-        .orderBy(organizationRole.label)
-      const all = [
-        ...FIXED_ROLES,
-        ...own.map((row) => row.role).filter((role) => !isFixedRole(role)),
-      ]
-      return all
-        .map((role) => Role.parse(role))
-        .filter((role) => role !== CREATOR || admitted.role === CREATOR)
+      const all = await roleNamesOf(tx, admitted.companyId)
+      return all.filter((role) => role !== CREATOR || admitted.role === CREATOR)
     }
     case 'COMPANY_OPERATOR':
       return [...OPERATOR_INVITES_AS]
