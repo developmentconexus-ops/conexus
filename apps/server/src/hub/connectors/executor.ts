@@ -30,6 +30,8 @@ import type { ExecutorDeps, Where } from './send.ts'
 import { send, sendRead, unreachableAt, whereOf } from './send.ts'
 import type { Unreadable } from './wire.ts'
 import { isOk, nativeOf } from './wire.ts'
+import type { Wrote } from './wrote.ts'
+import { wroteOf } from './wrote.ts'
 
 /** A bearer token inside the program: printed, it shows only its name, as a sealed credential. */
 export type BearerToken = Secret<'BearerToken'>
@@ -86,6 +88,18 @@ export type Executor = {
     input: I,
     deadlineMs: number,
   ): Promise<Answered<O> | Unreachable>
+  /**
+   * Sends one write with that token, once and never again (a 429 is not waited out either), given
+   * up on after `deadlineMs`. What came back after the request left, and cannot say whether it was
+   * taken, is `UNCERTAIN`; only a connection never made is `UNREACHABLE`. Never logs input or output (S41).
+   */
+  write<I, O>(
+    connection: OpenedConnection,
+    token: BearerToken,
+    operation: Operation<I, O, 'write'>,
+    input: I,
+    deadlineMs: number,
+  ): Promise<Wrote<O>>
   /**
    * Ends the session of a pasted-key connection's token at the provider, as the connector declares
    * it, while the token lives (an expired token's logout is refused). Nothing is sent, and null
@@ -239,9 +253,44 @@ async function loggedOut(
   return 'LOGGED_OUT'
 }
 
+function originFor(deps: ExecutorDeps, connector: Connector): string {
+  return deps.origins.get(connector.id) ?? connector.origin
+}
+
+/** The request built from the input and sent with the connection's secrets redacted; a read repeats on a 429 that fits, a write never. */
+function sentFor<I, O>(
+  deps: ExecutorDeps,
+  a: Readonly<{
+    connection: OpenedConnection
+    token: BearerToken
+    operation: Operation<I, O>
+    input: I
+  }>,
+  deadlineMs: number,
+) {
+  const { connection, token, operation } = a
+  const { connector } = connection
+  function requestFor() {
+    return toRequest(
+      connector,
+      requestOf(operation, a.input, { ref: connection.accountRef }),
+      token.reveal(),
+      originFor(deps, connector),
+    )
+  }
+  const { auth } = connector
+  const pasted = auth.kind === 'client_credentials' ? valuesOf(connection, auth) : {}
+  // No door returns an operation's 2xx body: the kit nulls an unreadable one, and the check keeps none.
+  const redaction = { secrets: [...Object.values(pasted), token.reveal()], whole2xx: true }
+  return sendRead(deps, requestFor, whereOf(connection), redaction, {
+    deadlineMs,
+    repeat: operation.idempotent,
+  })
+}
+
 export function createExecutor(deps: ExecutorDeps): Executor {
   function originOf(connector: Connector): string {
-    return deps.origins.get(connector.id) ?? connector.origin
+    return originFor(deps, connector)
   }
 
   return {
@@ -250,24 +299,13 @@ export function createExecutor(deps: ExecutorDeps): Executor {
     },
 
     async call(connection, token, operation, input, deadlineMs) {
-      const { connector } = connection
-      function requestFor() {
-        return toRequest(
-          connector,
-          requestOf(operation, input, { ref: connection.accountRef }),
-          token.reveal(),
-          originOf(connector),
-        )
-      }
-      const { auth } = connector
-      const pasted = auth.kind === 'client_credentials' ? valuesOf(connection, auth) : {}
-      // No door returns an operation's 2xx body: the kit nulls an unreadable one, and the check keeps none.
-      const redaction = { secrets: [...Object.values(pasted), token.reveal()], whole2xx: true }
-      const sent = await sendRead(deps, requestFor, whereOf(connection), redaction, {
-        deadlineMs,
-        repeat: operation.idempotent,
-      })
+      const sent = await sentFor(deps, { connection, token, operation, input }, deadlineMs)
       return 'kind' in sent ? sent : operation.answer(sent)
+    },
+
+    async write(connection, token, operation, input, deadlineMs) {
+      const sent = await sentFor(deps, { connection, token, operation, input }, deadlineMs)
+      return wroteOf(sent, operation)
     },
 
     logout(connection, token, deadlineMs) {

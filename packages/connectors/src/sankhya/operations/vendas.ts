@@ -105,7 +105,11 @@ export const LancarPedidoInput = z.object({
   notaModelo: z.number().int().positive(),
   codigoCliente: z.number().int().positive(),
   codigoVendedor: z.number().int().positive().optional(),
-  observacao: z.string().max(150).optional(),
+  observacao: z
+    .string()
+    .max(150)
+    .describe('Até 150 caracteres menos 17: o Conexus acrescenta a sua marca no fim.')
+    .optional(),
   itens: z
     .array(
       z.object({

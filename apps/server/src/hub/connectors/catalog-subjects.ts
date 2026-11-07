@@ -3,7 +3,7 @@ import type { ConnectorEntry } from '@conexus/hub-api'
 
 const EFFECT_OF = { read: 'READ', write: 'WRITE', destructive: 'DESTROY' } as const
 
-/** Every operation a connector has, the door's reads first: the one list a role's screen and a role's check both read (code C26). */
+/** The door's reads first, then the connector's reads, without its writes; the role kit adds those (code C26). */
 export function operationsOf(connector: Connector) {
   return [...Object.values(connector.readDoor ?? {}), ...connector.operations]
 }

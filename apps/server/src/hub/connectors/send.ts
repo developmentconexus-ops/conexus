@@ -7,8 +7,15 @@ import { retryAfterMs } from '../../platform/retry-after.ts'
 import type { Redaction, Unreadable } from './wire.ts'
 import { answerOf, bodyOf, nativeOf, unreadable } from './wire.ts'
 
-/** The provider could not be reached (or answered 5xx): `native` is what it said, when it said anything. */
-export type Unreachable = Readonly<{ kind: 'UNREACHABLE'; native: Native | null }>
+/**
+ * The provider could not be reached (or answered 5xx): `native` is what it said, when it said anything.
+ * `notSent` is set only where the connection was never made (refused, no such host), so a write
+ * that got it knows the provider received nothing.
+ */
+export type Unreachable = Readonly<{ kind: 'UNREACHABLE'; native: Native | null; notSent?: true }>
+
+/** The system codes of a connection that failed before one byte was sent. */
+const NEVER_CONNECTED = new Set(['ECONNREFUSED', 'ENOTFOUND', 'EAI_AGAIN', 'ENETUNREACH'])
 
 /** What a log line about one exchange with the provider names: the connection, or the authorization before it exists. */
 export type Where = Readonly<
@@ -63,7 +70,10 @@ export async function send(
     const cause = unreachableCause(error)
     if (cause === undefined) throw error
     deps.log.info({ ...where, ...cause }, 'CONNECTOR_UNREACHABLE')
-    return { kind: 'UNREACHABLE', native: null }
+    const unsent = error instanceof TypeError && NEVER_CONNECTED.has(cause.cause ?? '')
+    return unsent
+      ? { kind: 'UNREACHABLE', native: null, notSent: true }
+      : { kind: 'UNREACHABLE', native: null }
   }
 }
 
