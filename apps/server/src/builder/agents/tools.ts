@@ -133,8 +133,8 @@ async function aloneByPublisher(deps: Deps, tool: PresetFrozenTool): Promise<boo
  * Pergunta antes, when the publisher's role no longer leaves it alone, or when the conversation
  * holds an earlier send of the same write whose end is not known; Mastra treats the tool's own
  * rule as final, and asks when it throws (`@mastra/core@1.82.0` `agent-BP9OWM6D.js:15136-15140`),
- * so a failed read asks. Its `execute` sends through the Hub's
- * write funnel, which checks the open sends again unless a person approved this very call.
+ * so a failed read asks. Its `execute` sends through the Hub's write funnel, which checks the open
+ * sends again unless a person approved this very call.
  */
 function writeTool(deps: Deps, tool: PresetFrozenTool, input: z.ZodObject) {
   const target = { connectionId: tool.connectionId, operation: tool.operation }
