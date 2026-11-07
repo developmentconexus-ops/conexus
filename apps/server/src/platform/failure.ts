@@ -20,6 +20,8 @@ const FRAME_COUNT = 3
 /** The field, the reason and the agents a refusal names to the person (step 24.3). */
 export type Named = Readonly<{
   field?: ProblemField
+  /** The label of the operation the phrase names, where the row has `{operation}`. */
+  operation?: string
   reason?: ProblemReason
   agents?: ProblemAgents
 }>

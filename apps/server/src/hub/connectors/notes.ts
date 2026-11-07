@@ -8,7 +8,7 @@ import { Failure } from '../../platform/failure.ts'
 import { personNameColumn } from '../identity/public.ts'
 import { Listed } from './cut.ts'
 import { readOf } from './grants.ts'
-import type { ReadRequest } from './read.ts'
+import type { NotInRole, ReadRequest } from './read.ts'
 import { readThrough } from './read.ts'
 import type { Deps, OfConnection, Viewer } from './rows.ts'
 import { admitted, ofCompany, scopeOf } from './rows.ts'
@@ -28,6 +28,7 @@ type Note = z.infer<typeof Note>
 export type NoteSaved =
   | Readonly<{ kind: 'SAVED'; provedRows: number }>
   | Exclude<ConnectorAnswer, { kind: 'OK' }>
+  | NotInRole
   | Readonly<{ kind: 'NOTE_INVALID' }>
 
 const Concept = z.string().min(1).max(120)

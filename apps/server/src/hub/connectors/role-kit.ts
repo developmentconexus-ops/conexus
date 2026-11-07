@@ -1,4 +1,4 @@
-import { CONNECTORS } from '@conexus/connectors'
+import { CONNECTORS, connectorOf } from '@conexus/connectors'
 import { operationsOf } from './catalog-subjects.ts'
 
 /**
@@ -15,4 +15,12 @@ export function roleKit() {
       class: operation.class,
     })),
   }))
+}
+
+/** What a person reads for a connector's operation, the read door's included; the id when the kit has none. */
+export function operationLabel(connector: string, operation: string): string {
+  const kit = connectorOf(connector)
+  const found =
+    kit === undefined ? undefined : operationsOf(kit).find((each) => each.id === operation)
+  return found?.label ?? operation
 }

@@ -187,7 +187,7 @@ test('mudar o Membro: tirar o Financeiro some da lista, e um papel próprio muda
   })
   assert.equal(own.statusCode, 200)
   assert.deepEqual(roleOf(await roles(w), 'atendente').connectors, {
-    sankhya: ['pedidos', 'clientes'],
+    sankhya: ['clientes', 'pedidos'],
     'mercado-livre': ['anuncios'],
   })
   const [row] = await w.hub.test.asOwner(

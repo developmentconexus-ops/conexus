@@ -127,7 +127,8 @@ test('publicar: um rascunho sem instruções, com uma ligação que o Projeto pe
   })
   assert.equal(unbound.statusCode, 422, unbound.body)
   assert.equal(codeOf(unbound), 'AGENT_DRAFT_INVALID')
-  assert.equal(Object(unbound.json()).field, 'tools')
+  // The tool's connection is among the selected ones (decision E4), so the lost connection is named.
+  assert.equal(Object(unbound.json()).field, 'connections')
 })
 
 test('publicar de novo o rascunho de uma versão depois de voltar a outra a torna ativa outra vez, sem versão nova', async (t) => {

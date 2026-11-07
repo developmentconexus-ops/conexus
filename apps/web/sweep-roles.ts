@@ -30,14 +30,19 @@ export function agentReplies(selected: boolean): Replies {
     machine: false,
   }
   const reads = [
-    { operation: 'pedidos', label: 'Pedidos', summary: 'Os pedidos de venda.' },
+    { operation: 'pedidos', label: 'Pedidos', summary: 'Os pedidos de venda.', allowed: true },
     {
       operation: 'contasAReceber',
       label: 'Contas a receber',
       summary: 'Os títulos a receber.',
       allowed: false,
     },
-    { operation: 'consultar', label: 'Consulta', summary: 'Roda uma consulta SQL de leitura.' },
+    {
+      operation: 'consultar',
+      label: 'Consulta',
+      summary: 'Roda uma consulta SQL de leitura.',
+      allowed: true,
+    },
   ]
   const detail = {
     id: AGENT,

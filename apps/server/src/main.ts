@@ -167,7 +167,8 @@ export function subjectsOf(deps: {
     ...{ appRemoval, releaseConversations },
   })
   // The connectors come below, after the apps whose door they read; a publish comes long after.
-  const ungranted: Ungranted = (tx, ids, declared) => connectors.ungranted(tx, ids, declared)
+  const ungranted: Ungranted = (tx, ids, declared, by) =>
+    connectors.ungranted(tx, ids, declared, by)
   const closeRequests: CloseRequests = (tx, input) => requests.closeRequests(tx, input)
   const apps = createApps({
     ...{ ...deps, identity, projects: projects.ports, appsDomain, ungranted, closeRequests },

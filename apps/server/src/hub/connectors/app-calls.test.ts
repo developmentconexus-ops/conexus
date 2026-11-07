@@ -60,7 +60,10 @@ test('só leitura nas duas portas: uma operação de escrita no kit nunca é lid
   Reflect.set(sankhya.operations, index, { ...original, class: 'write' })
   t.after(() => Reflect.set(sankhya.operations, index, original))
   assert.deepEqual((await on.read()).json(), { kind: 'NOT_GRANTED' })
-  const ids = { companyId: CompanyId.parse(on.companyId), projectId: ProjectId.parse(on.projectId) }
+  const ids = {
+    ...{ companyId: CompanyId.parse(on.companyId), projectId: ProjectId.parse(on.projectId) },
+    personId: PersonId.parse(on.ana.id),
+  }
   const [granted] = await on.hub.connectors.builder.granted(ids)
   assert.ok(granted)
   const built = await on.hub.connectors.builder.read(ids, {
@@ -76,7 +79,10 @@ test('só leitura nas duas portas: uma operação de escrita no kit nunca é lid
 test('o Builder segue a regra das outras portas: a ligação liberada que deixou de funcionar sai do que ele lê, e volta quando funciona', async (t) => {
   const on = await appCalls(t)
   const id = await on.connect('Matriz')
-  const ids = { companyId: CompanyId.parse(on.companyId), projectId: ProjectId.parse(on.projectId) }
+  const ids = {
+    ...{ companyId: CompanyId.parse(on.companyId), projectId: ProjectId.parse(on.projectId) },
+    personId: PersonId.parse(on.ana.id),
+  }
   assert.equal((await on.hub.connectors.builder.granted(ids)).length, 1)
   await on.hub.test.asOwner("update connectors.connection set state = 'NEEDS_REAUTH'")
   assert.deepEqual(await on.hub.connectors.builder.granted(ids), [])

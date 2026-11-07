@@ -34,13 +34,21 @@ export const AgentConfig = z.object({
   /** `null`: the model of whoever converses with the agent. */
   model: ModelId.nullable(),
   memory: AgentMemory,
-  /** The Projeto's connections whose reads and notebook the agent gets; a tool needs none of them. */
+  /**
+   * The Projeto's connections the agent selected (decision E4): each brings its notebook and gives
+   * no read; the reads are the chosen tools'. A tool's connection is always among them.
+   */
   connections: z
     .array(ConnectionId)
     .max(CONNECTIONS_MAX)
     .refine((ids) => new Set(ids).size === ids.length),
   web: z.boolean(),
   appData: z.boolean(),
+  /**
+   * Whether the version was written with the reads as chosen tools (decision E4). A version
+   * written before reads `connections` as the kit's typed reads of each connection.
+   */
+  byTool: z.boolean().default(false),
   /** The agent's Computador (step 24.4): a machine of its own per conversation. A version published before it reads as off. */
   machine: z.boolean().default(false),
 })
@@ -56,7 +64,7 @@ export type CreateAgent = z.infer<typeof CreateAgent>
  * A change of the draft at the revision the writer read (code C38). `tools` replaces the chosen
  * versions whole; `ready` adds ready reads, which the service saves in the library first.
  */
-export const DraftPatch = AgentConfig.omit({ machine: true })
+export const DraftPatch = AgentConfig.omit({ machine: true, byTool: true })
   .partial()
   .extend({
     /** Absent keeps the draft's Computador; the default of `AgentConfig` is for reading an old version only. */
@@ -249,7 +257,7 @@ export const publishAgent = defineOperation({
     status: 200,
     body: z.object({ agent: AgentDetail, version: AgentVersionSummary }),
   },
-  failures: [...ONE_FAILURES, 'AGENT_DRAFT_INVALID', 'AGENT_DRAFT_STALE'],
+  failures: [...ONE_FAILURES, 'AGENT_DRAFT_INVALID', 'AGENT_DRAFT_STALE', 'NOT_IN_ROLE'],
 })
 
 export const listAgentVersions = defineOperation({
