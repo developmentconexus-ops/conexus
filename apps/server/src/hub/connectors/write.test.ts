@@ -219,6 +219,12 @@ test('o pedido sem resposta (f): a chamada que se repete com outra linha aberta 
 
 test('o pedido sem resposta (g): duas chamadas da mesma escrita ao mesmo tempo, sem linha antes: uma envia, a outra devolve WRITE_OPEN', async (t) => {
   const on = await writing(t)
+  // The insert waits, so the second call reaches the record while the first one's row is not yet committed.
+  await on.hub.test.asOwner(`
+    create function connectors.slow_insert() returns trigger language plpgsql as
+      $$ begin perform pg_sleep(0.3); return new; end $$;
+    create trigger slow_insert before insert on connectors.connector_write
+      for each row execute function connectors.slow_insert();`)
   const answers = await Promise.all([
     on.ask(on.byAna({ toolCallId: another() })),
     on.ask(on.byAna({ toolCallId: another() })),
