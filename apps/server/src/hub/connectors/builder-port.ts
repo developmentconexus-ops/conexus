@@ -4,14 +4,17 @@ import type { CompanyId, OfProject, PersonId, ProjectId, RunId } from '@conexus/
 import { CALL_DEADLINE_MS, ConnectionId } from '@conexus/hub-api'
 import { and, asc, eq, inArray } from 'drizzle-orm'
 import type { ReadTx } from '../../platform/database.ts'
+import type { Speaker } from '../identity/public.ts'
 import { shaped } from './cut.ts'
 import type { OpenedConnection } from './executor.ts'
 import { readOf } from './grants.ts'
 import type { NoteSaved } from './notes.ts'
 import { Notes, provedAndSaved } from './notes.ts'
+import type { NotInRole } from './read.ts'
 import { readThrough } from './read.ts'
 import type { Deps } from './rows.ts'
 import { usable } from './rows.ts'
+import { mayUseNotebook, personSpeaker, visibleTo } from './speaking.ts'
 import { connection, projectConnection } from './tables.ts'
 import { openedIn } from './testing.ts'
 
@@ -31,16 +34,18 @@ export type GrantedConnection = Readonly<{
 export type ShapedRead =
   | Readonly<{ kind: 'OK'; value: unknown; complete: boolean }>
   | Exclude<ConnectorAnswer, { kind: 'OK' }>
+  | NotInRole
 export type Spent = Readonly<{ kind: 'CALLS_SPENT' }>
 type Of = Readonly<{ connectionId: ConnectionId; personId: PersonId; runId: RunId }>
+type Asking = OfProject & Readonly<{ personId: PersonId }>
 
 export type BuilderConnectors = {
-  granted(ids: OfProject): Promise<readonly GrantedConnection[]>
+  granted(ids: Asking): Promise<readonly GrantedConnection[]>
   read(
     ids: OfProject,
     a: Of & Readonly<{ operation: string; input: unknown; signal?: AbortSignal }>,
   ): Promise<ShapedRead | Spent>
-  notes(ids: OfProject, connectionId: ConnectionId): Promise<Notes | null>
+  notes(ids: Asking, connectionId: ConnectionId): Promise<Notes | NotInRole | null>
   saveNote(
     ids: OfProject,
     a: Of & Readonly<{ concept: string; mapping: string; provingQuery: string }>,
@@ -117,6 +122,7 @@ function readerOf(
   a: Readonly<{
     ids: OfProject
     personId: PersonId
+    speaker: Speaker
     opened: OpenedConnection
     signal?: AbortSignal
   }>,
@@ -125,6 +131,7 @@ function readerOf(
     by: 'builder',
     ids: a.ids,
     viewer: { person: { id: a.personId }, companyId: a.ids.companyId },
+    speaker: a.speaker,
     opened: a.opened,
     deadlineMs: CALL_DEADLINE_MS,
     signal: a.signal,
@@ -161,7 +168,11 @@ export function described(rows: Awaited<ReturnType<typeof offeredIn>>): GrantedC
 export function createBuilderConnectors(deps: Deps): BuilderConnectors {
   const spend = createSpending()
   return {
-    granted: async (ids) => described(await grantedRows(deps, ids)),
+    async granted(ids) {
+      const speaker = await personSpeaker(deps, ids.companyId, ids.personId)
+      if (speaker === undefined) return []
+      return visibleTo(deps, ids.companyId, speaker, described(await grantedRows(deps, ids)))
+    },
 
     async read(ids, a) {
       const opened = await admit(deps, ids, a)
@@ -173,9 +184,11 @@ export function createBuilderConnectors(deps: Deps): BuilderConnectors {
         deps.log.info(about, 'BUILDER_READ_REFUSED')
         return { kind: 'NOT_GRANTED' }
       }
+      const speaker = await personSpeaker(deps, ids.companyId, a.personId)
+      if (speaker === undefined) return { kind: 'NOT_GRANTED' }
       if (!spend(a.runId)) return { kind: 'CALLS_SPENT' }
       const answered = await readThrough(deps, {
-        ...readerOf({ ids, ...a, opened }),
+        ...readerOf({ ids, ...a, speaker, opened }),
         operation,
         input: a.input,
       })
@@ -184,14 +197,23 @@ export function createBuilderConnectors(deps: Deps): BuilderConnectors {
 
     async notes(ids, connectionId) {
       const [row] = await grantedRows(deps, ids, connectionId)
-      return row === undefined ? null : Notes.parse(row.notes)
+      if (row === undefined) return null
+      const speaker = await personSpeaker(deps, ids.companyId, ids.personId)
+      if (speaker === undefined) return null
+      const refused = await mayUseNotebook(deps, ids.companyId, speaker, {
+        connectionId,
+        connector: row.connector,
+      })
+      return refused ?? Notes.parse(row.notes)
     },
 
     async saveNote(ids, a) {
       const opened = await admit(deps, ids, a)
       if (opened === undefined) return { kind: 'NOT_GRANTED' }
+      const speaker = await personSpeaker(deps, ids.companyId, a.personId)
+      if (speaker === undefined) return { kind: 'NOT_GRANTED' }
       if (!spend(a.runId)) return { kind: 'CALLS_SPENT' }
-      const read = readerOf({ ids, ...a, opened })
+      const read = readerOf({ ids, ...a, speaker, opened })
       return provedAndSaved(deps, { ...a, read })
     },
   }

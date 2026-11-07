@@ -109,7 +109,7 @@ Login social. Arquivos enviados por pessoas para dentro de um app ou da máquina
 | --- | --- | --- | --- |
 | 24.5 Escrita com aprovação | Papéis da empresa | Uma, decidida ("A1"): a liberação da escrita no Projeto | `requireApproval` do Mastra como função em cada ferramenta, `yolo` desligado nos agentes, medido sem perda. Escrita nova chega só ao Dono e ao Administrador (`B1` de Papéis) |
 | 24.6 Workflows e automações | A 24.5 | O gatilho do Sankhya | Workflows dinâmicos do Mastra. Seu orçamento é o aceite |
-| 24.7 Canais | A 24.6 | Nenhuma | — |
+| 24.7 Canais | A 24.6 | Nenhuma | Sem ninguém da empresa olhando, `toolApprovers: 'requester'`; até lá, nenhuma escrita que pergunta (`D1`) |
 | 21.1 Ver o que acontece | A 24.7 | Grafana no Brasil, provado | Um só caminho OTel (0052). O uso por empresa. O rastro por ferramenta: as ferramentas de conector (`connector_read`, `connector_notes`, `connector_note_save`) escondem entrada e saída no span, com o exportador de lista permitida, porque o `TracingPolicy` do Mastra só tem `internal` (veio da 20, critério 29) |
 | 16 Atualizar sem cortar | A 21.1 | Nenhuma | Consertos de execução da auditoria. Testes 9 e 10 |
 | 22 Ensaio geral | A 16 | O lugar da cópia fora do Neon | Ensaios das etapas 2, 7, 9, 12 e 13. Carga de um painel e de uma rotina |

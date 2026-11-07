@@ -4,7 +4,7 @@ import { createServer } from 'node:http'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import type { FailureCode } from '@conexus/hub-api'
-import { createInvitation } from '@conexus/hub-api'
+import { createInvitation, createRole } from '@conexus/hub-api'
 import { COMPANY, problemOf } from './src/platform/fixtures.ts'
 import { HubFailure, hubMutation } from './src/platform/hub.ts'
 
@@ -99,4 +99,22 @@ test('resposta que decide: MAIL_UNAVAILABLE do Hub, inteiro, com a mudança que 
     reply.end(problem('MAIL_UNAVAILABLE'))
   })
   assert.equal(assertUnknown(await createdWith(), false).code, 'MAIL_UNAVAILABLE')
+})
+
+test('criar um papel: o 201 cortado depois dos cabeçalhos não decide, e a chave fica para a próxima tentativa', async (t) => {
+  await hubThatAnswers(t, (reply) => {
+    reply.writeHead(201, { 'content-type': 'application/json', 'content-length': '200' })
+    reply.write('{"role":{"role":"aten')
+    setTimeout(() => reply.socket?.destroy(), 20)
+  })
+  const { mutationFn } = hubMutation(createRole)
+  const error = await mutationFn({
+    params: { companyId: COMPANY.id },
+    body: { label: 'Atendente', connectors: {} },
+    attemptKey: crypto.randomUUID(),
+  }).then(
+    () => undefined,
+    (failure: unknown) => failure,
+  )
+  assertUnknown(error, true)
 })

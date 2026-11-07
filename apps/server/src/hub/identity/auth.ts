@@ -3,11 +3,10 @@ import type { GenericEndpointContext } from '@better-auth/core'
 import * as libraryContext from '@better-auth/core/context'
 import { drizzleAdapter } from '@better-auth/drizzle-adapter/relations-v2'
 import type { FailureCode, PersonId } from '@conexus/hub-api'
-import { CAPACITY, COOKIE_PREFIX, PASSWORD_LENGTH, SESSION_COOKIE } from '@conexus/hub-api'
+import { COOKIE_PREFIX, PASSWORD_LENGTH, SESSION_COOKIE } from '@conexus/hub-api'
 import { betterAuth } from 'better-auth'
 import { createAuthEndpoint } from 'better-auth/api'
 import { admin, organization } from 'better-auth/plugins'
-import type { OrganizationOptions } from 'better-auth/plugins/organization'
 import { getOrgAdapter } from 'better-auth/plugins/organization'
 import { eq } from 'drizzle-orm'
 import { z } from 'zod'
@@ -18,14 +17,16 @@ import { databaseFailure } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import { statusOf } from '../../platform/http.ts'
-import { ACCESS_CONTROL, COMPANY_ROLES } from './roles.ts'
+import { ORGANIZATION, organizationWith } from './organization.ts'
+import { relations } from './relations.ts'
+import type { RoleSet } from './roles.ts'
 import {
   account,
   company,
   invitation,
   member,
+  organizationRole,
   rateLimit,
-  relations,
   session,
   user,
   verification,
@@ -69,8 +70,6 @@ const SIGN_IN_ATTEMPTS = { window: 60, max: 10 }
 const RECOVERY_REQUESTS = { window: 60, max: 3 }
 // Every password link lives an hour, the first person's and a recovery's (step 6, P2).
 export const PASSWORD_LINK_SECONDS = 3600
-// The founder's number, step 4 answer 4.
-const INVITATION_SECONDS = 2 * 24 * 60 * 60
 
 /** When an invitation renewed now ends, from the plugin's own option, as `getDate` computes it. */
 export function invitationExpiry(): Date {
@@ -162,7 +161,10 @@ export async function inLibrary<T>(work: () => Promise<T>): Promise<T> {
 function adapterFor(db: Parameters<typeof drizzleAdapter>[0]) {
   return drizzleAdapter(db, {
     provider: 'pg',
-    schema: { user, session, account, verification, rateLimit, company, member, invitation },
+    schema: {
+      ...{ user, session, account, verification, rateLimit, company, member, invitation },
+      organizationRole,
+    },
     // The library spends a reset link before it writes the password; one transaction keeps both (D22).
     transaction: true,
   })
@@ -241,47 +243,6 @@ export async function hasPassword(auth: Auth, personId: PersonId): Promise<boole
   return Boolean(account?.password)
 }
 
-const KEY_FIELD = { type: 'string', required: true } as const
-// Left out of the plugin's request body (db/to-zod.mjs:17), so only the Hub's mark sets it.
-const MAILED_FIELD = { type: 'date', required: false, input: false } as const
-const APP_FIELD = { type: 'string', required: false, input: false } as const
-// The mark of a company the Central is deleting: only the Hub sets it, never a request.
-const DELETING_FIELD = { type: 'date', required: false, input: false } as const
-// The company's nickname in its apps' addresses: only the owner's choice through the Hub sets it.
-const NICKNAME_FIELD = { type: 'string', required: false, input: false } as const
-
-const ORGANIZATION = {
-  ac: ACCESS_CONTROL,
-  roles: COMPANY_ROLES,
-  schema: {
-    organization: {
-      modelName: 'company',
-      additionalFields: {
-        attemptKey: KEY_FIELD,
-        deletingSince: DELETING_FIELD,
-        nickname: NICKNAME_FIELD,
-      },
-    },
-    invitation: {
-      additionalFields: {
-        attemptKey: KEY_FIELD,
-        mailedAt: MAILED_FIELD,
-        projectId: APP_FIELD,
-        appRole: APP_FIELD,
-      },
-    },
-  },
-  // Only the Operations Central creates a company, through the adapter (step 4.2).
-  allowUserToCreateOrganization: false,
-  // Only the Operations Central deletes a company, through the adapter (step 5, Q6).
-  disableOrganizationDeletion: true,
-  // The Hub counts the open invitations itself, under the company's lock: the plugin reads
-  // at most 100 rows of them, in no order (docs/reference/boundaries.md).
-  invitationLimit: Number.POSITIVE_INFINITY,
-  invitationExpiresIn: INVITATION_SECONDS,
-  membershipLimit: CAPACITY.members,
-} satisfies OrganizationOptions
-
 /**
  * The plugin's own adapter, inside a library command: it writes a company and an invitation as its
  * endpoints do, without their check that the caller is a member. The operator, who is never one,
@@ -319,7 +280,12 @@ function hostCookie(name: string) {
   return { name: `${COOKIE_PREFIX}${name}` }
 }
 
-export function createAuth(deps: { database: Database; config: Config; log: FailureLog }) {
+export function createAuth(deps: {
+  database: Database
+  config: Config
+  log: FailureLog
+  roles: RoleSet
+}) {
   return betterAuth({
     appName: 'Conexus',
     basePath: BASE_PATH,
@@ -366,7 +332,12 @@ export function createAuth(deps: { database: Database; config: Config; log: Fail
     // `# SERVER_ERROR` line of better-call's dist/router.mjs); thrown, it reaches inLibrary and
     // leaves as a code (S41).
     onAPIError: { throw: true },
-    plugins: [INVITATION_ATTEMPTS, RECOVERY_ATTEMPTS, organization(ORGANIZATION), admin()],
+    plugins: [
+      INVITATION_ATTEMPTS,
+      RECOVERY_ATTEMPTS,
+      organization(organizationWith(deps.roles)),
+      admin(),
+    ],
     telemetry: { enabled: false },
     logger: {
       // Only a code leaves: the library's messages and arguments can hold an e-mail or an error (S41).

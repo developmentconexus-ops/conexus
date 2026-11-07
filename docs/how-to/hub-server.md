@@ -5,10 +5,10 @@ Decision: [0035](../decisions/0035-publish-through-a-runner-on-the-server.md).
 ## Prepare the server
 
 1. Reinstall the server with Ubuntu LTS; close every inbound port in the provider's firewall.
-2. In the repository's GitHub settings, open Actions, then Runners, and add a self-hosted runner. Copy
-   its registration token, the runner version and its checksum.
-3. As root on the server, save the Cloudflare tunnel token and the runner registration token each in
-   a file only root can read (mode 0400 or 0600), then run
+2. In GitHub settings, Actions, Runners, add a self-hosted runner; copy its registration token,
+   version and checksum.
+3. As root, save the Cloudflare tunnel token and the runner registration token each in a root-only
+   file (0400 or 0600), then run
    `RUNNER_URL=… RUNNER_VERSION=… RUNNER_SHA256=… TUNNEL_TOKEN_FILE=… RUNNER_TOKEN_FILE=… infra/setup-server.sh`
    and delete both files. It installs Docker, copies the tunnel token to
    `/etc/conexus/secrets/tunnel_token` (0400, folder 0700) and starts the runner as a service of
@@ -26,7 +26,7 @@ Decision: [0035](../decisions/0035-publish-through-a-runner-on-the-server.md).
 
 ## Cloudflare
 
-Firstmate does this with the founder's key, deleted afterwards: a tunnel, the Hub's public name pointing
+Firstmate does this with the founder's key, deleted after: a tunnel, the Hub's public name pointing
 to `http://hub:8080`, its DNS record, the token on the server, a Tunnel Health Alert to the founder, and a configuration rule (phase `http_config_settings`) with `disable_rum` for the
 Hub's host. Without it the edge injects the Web Analytics beacon, which the Hub's CSP refuses. The key needs Zone Config Rules Edit.
 
@@ -68,12 +68,11 @@ Firstmate writes `hub_session_secret` beside those keys, 32 random characters or
 
 ## Publish
 
-Merging into `main` does not publish. Create a Release tagged `v<n>.<n>.<n>` on a commit of
-`main`. Publish builds the image, keeps the last ten, builds [the Builder's
+Merging into `main` does not publish. Tag a Release `v<n>.<n>.<n>` on a commit of `main`. Publish builds the image, keeps the last ten, builds [the Builder's
 template](builder-template.md) from that commit and runs `infra/deploy.sh` with both on the server.
 A tag on another commit or a failed template ends red; the Hub stays. Keeping ten images needs Admin in the package's Actions access ([apps-edge](apps-edge.md)).
 
-Before the new image starts, `deploy.sh` runs `migrate` for 60 seconds, only when the image
+Before the new image starts, `deploy.sh` runs `migrate` for up to 120 seconds, 3 attempts, only when the image
 carries the label `conexus.migrate=1`. A failed `migrate` leaves the live Hub as it is and ends the
 run red; rerun it once fixed.
 
@@ -85,15 +84,16 @@ Actions, Reiniciar o Hub, Run workflow. It runs `migrate` on the live image and 
 red; run Voltar atrás with an earlier version.
 
 Every publish, restart and Voltar atrás recreates the `hub` container: Cloudflare answers 502 for
-about 1 to 2 s, until step 16. A check that polls through it expects those 502s and no 500.
+about 1 to 2 s, until step 16. A check polling through it expects those 502s and no 500.
 
 ## Put back
 
 Actions, Voltar atrás, Run workflow, with a version whose digest main's Publish recorded on the
 server, with its template; no record ends red. Running it again changes nothing. An image from
-before step 2 has no label, so putting it back skips `migrate`.
+before step 2 has no label: putting it back skips `migrate`.
 
 ## When it fails
 
 - A release that does not start: `deploy.sh` restores the earlier image and the run ends red.
+- A silent run: the last `deploy: …` line names the phase that stopped.
 - State: `docker compose --file infra/compose.yaml ps`, `docker logs` (no secret in them).

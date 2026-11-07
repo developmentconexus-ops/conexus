@@ -26,6 +26,19 @@ type ToolRead = Readonly<{
 
 const NOT_DECLARED = { kind: 'NOT_DECLARED' } as const
 
+/** Why the call may not read, or nothing when the version declared the operation. */
+function refusalOf(call: LiveToolCall | undefined, body: ToolRead): string | undefined {
+  if (call === undefined) return 'NO_CALL'
+  if (call.toolVersionId !== body.toolVersionId) return 'OTHER_VERSION'
+  return call.reads.includes(body.operation) ? undefined : 'NOT_DECLARED'
+}
+
+/** What the Worker is told: a refusal by role reads as an operation the version did not declare. */
+function toolAnswer(answered: Awaited<ReturnType<AssistantConnectors['read']>>): ToolDataAnswer {
+  if (answered.kind === 'NOT_IN_ROLE') return NOT_DECLARED
+  return answered.kind === 'OK' ? { kind: 'OK', value: answered.whole } : answered
+}
+
 /**
  * The reads of saved tools (step 24.4): the edge names only the call's key, which the Hub opened
  * before calling it, so a read is the open call's version's, of a read it declared, in the turn that
@@ -44,14 +57,7 @@ export function createToolDoor(assistant: Pick<AssistantConnectors, 'read'>, log
 
     async read(body: ToolRead): Promise<ToolDataAnswer> {
       const call = live.get(body.call)
-      const refusal =
-        call === undefined
-          ? 'NO_CALL'
-          : call.toolVersionId !== body.toolVersionId
-            ? 'OTHER_VERSION'
-            : call.reads.includes(body.operation)
-              ? undefined
-              : 'NOT_DECLARED'
+      const refusal = refusalOf(call, body)
       if (call === undefined || refusal !== undefined) {
         log.info(
           { toolVersionId: body.toolVersionId, reason: refusal ?? 'NO_CALL' },
@@ -66,7 +72,7 @@ export function createToolDoor(assistant: Pick<AssistantConnectors, 'read'>, log
         turn: call.turn,
         signal: AbortSignal.timeout(body.deadlineMs),
       })
-      return answered.kind === 'OK' ? { kind: 'OK', value: answered.whole } : answered
+      return toolAnswer(answered)
     },
   }
 }

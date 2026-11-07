@@ -7,6 +7,7 @@ import { join } from 'node:path'
 import { after, before, test } from 'node:test'
 import type { FastifyInstance } from 'fastify'
 import { createIdentity } from './hub/identity/public.ts'
+import { TEST_KIT } from './hub/identity/test-hub.ts'
 import { createStatus } from './hub/status/public.ts'
 import { createHub, subjectsOf } from './main.ts'
 import { testAppPorts } from './platform/test-app-ports.ts'
@@ -38,7 +39,13 @@ async function hub(webRoot?: string) {
   const config = testConfig(shared.runtimeUrl)
   const status = createStatus({ version: config.version, database: shared.database })
   const sendMail = testMail(config)
-  const identity = createIdentity({ database: shared.database, config, log: silent, sendMail })
+  const identity = createIdentity({
+    kit: TEST_KIT,
+    database: shared.database,
+    config,
+    log: silent,
+    sendMail,
+  })
   const subjects = subjectsOf({
     mastraPool: shared.mastraPool,
     database: shared.database,

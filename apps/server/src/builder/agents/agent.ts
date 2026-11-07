@@ -1,6 +1,19 @@
 import { readFileSync } from 'node:fs'
-import type { AgentId as AgentIdType, Effort, ModelId, OfProject } from '@conexus/hub-api'
-import { AgentId, CompanyId, MACHINE_TOOL, PersonId, ProjectId } from '@conexus/hub-api'
+import type {
+  AgentId as AgentIdType,
+  ConnectionId,
+  Effort,
+  ModelId,
+  OfProject,
+} from '@conexus/hub-api'
+import {
+  AgentId,
+  CompanyId,
+  MACHINE_TOOL,
+  OperationId,
+  PersonId,
+  ProjectId,
+} from '@conexus/hub-api'
 import type { AgentInstructions, ToolsInput } from '@mastra/core/agent'
 import { Agent } from '@mastra/core/agent'
 import type { MastraMemory } from '@mastra/core/memory'
@@ -25,7 +38,8 @@ import { appDataTools } from './app-data.ts'
 import { codeModeOf } from './code-mode.ts'
 import type { CodeToolsDeps } from './code-tools.ts'
 import { codeTools } from './code-tools.ts'
-import type { FrozenVersion } from './frozen.ts'
+import type { FrozenTool, FrozenVersion } from './frozen.ts'
+import { legacyTools } from './legacy.ts'
 import { presetTools } from './tools.ts'
 
 /** Conexus's fixed message, the same bytes as the Assistant's first part (step 24.1). */
@@ -111,6 +125,22 @@ export type Plan = {
   offered: Awaited<ReturnType<Connectors['assistant']['connections']>>
   /** Whether the version has its Computador: the conversation's machine and `show_file`. */
   machine: boolean
+  /** The version's tools: the chosen ones, or for a version written before E4 the kit's reads of its connections. */
+  tools: readonly FrozenTool[]
+  /** The connections the version selected: the notebook of each, and the home of every tool. */
+  selected: ReadonlySet<ConnectionId>
+}
+
+/** What a version declares it reads: each chosen tool's connection and operations (decision C1). */
+function declaredOf(tools: readonly FrozenTool[]) {
+  return tools.flatMap((tool) =>
+    tool.kind === 'PRESET'
+      ? [{ connectionId: tool.connectionId, operation: tool.operation }]
+      : tool.reads.map((operation) => ({
+          connectionId: tool.connectionId,
+          operation: OperationId.parse(operation),
+        })),
+  )
 }
 
 const plans = new WeakMap<Agent, (requestContext: RequestContext) => Promise<Plan>>()
@@ -140,17 +170,35 @@ function planner(deps: AgentDeps, frozen: FrozenVersion & OfProject & { agentId:
       { companyId, personId },
       frozen.model ?? undefined,
     )
-    const chosen = [
-      ...new Set([...frozen.connections, ...frozen.tools.map((each) => each.connectionId)]),
-    ]
+    const place = { kind: 'PROJECT', projectId } as const
+    // A version written before E4 reads as the kit's reads of its connections; the connections
+    // are found without the version's declaration, which those reads are part of.
+    const tools: readonly FrozenTool[] = frozen.byTool
+      ? frozen.tools
+      : [
+          ...frozen.tools,
+          ...legacyTools(
+            await deps.connectors.kitReads({
+              ...{ companyId, personId, place },
+              chosen: frozen.connections,
+            }),
+            frozen.connections,
+          ),
+        ]
+    const selected = new Set<ConnectionId>([
+      ...frozen.connections,
+      ...tools.map((each) => each.connectionId),
+    ])
     const scope: SessionScope = {
-      companyId,
-      personId,
-      place: { kind: 'PROJECT', projectId },
-      chosen,
+      ...{ companyId, personId, place },
+      chosen: [...selected],
+      agentVersion: {
+        kind: 'VERSION',
+        declared: declaredOf(tools),
+      },
     }
     return {
-      ...{ run, start, scope, machine: frozen.machine },
+      ...{ run, start, scope, machine: frozen.machine, tools, selected },
       offered: await deps.connectors.connections(scope),
     }
   })
@@ -165,14 +213,13 @@ function runToolsOf(
   deps: AgentDeps,
   frozen: FrozenVersion & OfProject & { agentId: AgentIdType },
   plan: (requestContext: RequestContext) => Promise<Plan>,
-  ownConnections: ReadonlySet<string>,
 ) {
   const machines = frozen.machine ? deps.machines : undefined
   const showFile = machines === undefined ? undefined : showFileTool(machines)
   return oncePerRun(async (requestContext) => {
-    const { run, scope, offered, start } = await plan(requestContext)
+    const { run, scope, offered, start, tools, selected } = await plan(requestContext)
     const access: ConnectorAccess = {
-      connections: offered.filter((each) => ownConnections.has(each.connectionId)),
+      connections: offered.filter((each) => selected.has(each.connectionId)),
       log: deps.log,
       read: (call, context) => deps.connectors.read(scope, { ...call, turn: turnKey.of(context) }),
       notes: (connectionId) => deps.connectors.notes(scope, connectionId),
@@ -182,12 +229,12 @@ function runToolsOf(
     const mayReadApp =
       frozen.appData && (await deps.appData.hasApp({ scope: { companyId, personId }, projectId }))
     const ofTheAgent: ToolsInput = {
-      ...connectorTools(access, { noteSave: false }),
+      ...connectorTools(access, { noteSave: false, reads: false }),
       ...(mayReadApp
         ? appDataTools({ appData: deps.appData, scope: { companyId, personId }, projectId })
         : {}),
-      ...(await presetTools({ ...deps, scope, tools: frozen.tools, turnOf: turnKey.of })),
-      ...codeTools({ ...deps.codeTools, scope, tools: frozen.tools, turnOf: turnKey.of }),
+      ...(await presetTools({ ...deps, scope, tools, turnOf: turnKey.of })),
+      ...codeTools({ ...deps.codeTools, scope, tools, turnOf: turnKey.of }),
     }
     const program = machines === undefined ? undefined : codeModeOf(ofTheAgent, machines.codeMode)
     return {
@@ -231,16 +278,15 @@ export function agentOf(
       return messages
     },
   }
-  const ownConnections = new Set(frozen.connections)
-  const toolsOfRun = runToolsOf(deps, frozen, plan, ownConnections)
+  const toolsOfRun = runToolsOf(deps, frozen, plan)
   const agent = new Agent({
     id: agentKey(frozen.agentId),
     name: frozen.name,
     description: frozen.description,
     instructions: async ({ requestContext }) => {
-      const { scope, offered } = await plan(requestContext)
+      const { scope, offered, selected } = await plan(requestContext)
       const { program } = await toolsOfRun(requestContext)
-      const shown = offered.filter((each) => ownConnections.has(each.connectionId))
+      const shown = offered.filter((each) => selected.has(each.connectionId))
       return [
         { role: 'system', content: FIXED, providerOptions: CACHED },
         { role: 'system', content: blockOf(await deps.speakersOf(scope), shown) },

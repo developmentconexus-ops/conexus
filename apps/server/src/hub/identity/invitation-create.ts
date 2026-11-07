@@ -11,6 +11,7 @@ import { cancelAppInvitations, checkAppInvitation } from './app-invitations.ts'
 import type { Auth, LibraryCommand } from './auth.ts'
 import { organizationAdapter, refusedAs, storedAddress } from './auth.ts'
 import { companyById } from './companies.ts'
+import { checkRoleExists, roleLabelOf } from './company-roles.ts'
 import type { Invited } from './invitations.ts'
 import {
   ADDRESS,
@@ -147,7 +148,8 @@ async function givesOf(
   input: { row: PendingRow; companyId: CompanyId },
 ): Promise<InvitationGives> {
   const { row, companyId } = input
-  if (row.kind === 'COMPANY') return { kind: 'COMPANY', role: row.role }
+  if (row.kind === 'COMPANY')
+    return { kind: 'COMPANY', roleLabel: await roleLabelOf(tx, { companyId, role: row.role }) }
   const app = await apps.appOf(tx, { companyId, projectId: row.projectId })
   if (app === undefined) throw new Failure('INVITATION_CLOSED')
   return { kind: 'APP', appName: app.projectName }
@@ -223,6 +225,8 @@ async function checkInvited(
   if (invited.kind === 'COMPANY') {
     if (admitted.kind === 'COMPANY_OPERATOR') {
       await checkOwnerInvitation(tx, { admitted, email: invite.email, role: invited.role })
+    } else {
+      await checkRoleExists(tx, { companyId: admitted.companyId, role: invited.role })
     }
     return
   }

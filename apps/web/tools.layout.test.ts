@@ -75,16 +75,10 @@ for (const viewport of [DESKTOP, PHONE, ZOOMED_PHONE]) {
   })
 }
 
-// The windows of the agent's Ferramentas section on a phone: the list or the fields scroll between the
-// title and the footer, and the buttons stay in view (design V23, V18).
+// The window of the agent's Ferramentas section on a phone: the fields scroll between the title and
+// the footer, and the buttons stay in view (design V23, V18). The library's list is gone: a
+// connection's tools sit under it in Ligações (decision E4).
 const AGENT = '11111111-aaaa-4aaa-8aaa-111111111111'
-const LONG = TOOLS.flatMap((tool) =>
-  Array.from({ length: 30 }, (_, at) => ({
-    ...tool,
-    id: `33333333-aaaa-4aaa-8aaa-${String(at).padStart(12, '0')}`,
-    slug: `leitura_numero_${at}`,
-  })),
-)
 const DRAFT = {
   name: 'Conferente de metas',
   description: 'Compara as vendas com as metas.',
@@ -94,6 +88,7 @@ const DRAFT = {
   connections: [],
   web: false,
   appData: false,
+  byTool: true,
 }
 const AGENT_DETAIL = {
   id: AGENT,
@@ -117,13 +112,12 @@ const AGENT_DETAIL = {
 }
 const agentReplies = {
   ...replies,
-  [`GET ${BASE}/tools`]: ok(listTools, { tools: LONG, ready: [] }),
+  [`GET ${BASE}/tools`]: ok(listTools, { tools: [], ready: [] }),
   [`GET ${BASE}/agents/${AGENT}`]: ok(getAgent, { agent: AGENT_DETAIL }),
   [`GET ${BASE}/agents/${AGENT}/versions`]: ok(listAgentVersions, { versions: [] }),
 }
 
 for (const [opening, button, footer, viewport] of [
-  ['a lista da biblioteca', 'Adicionar da biblioteca', 'Usar as escolhidas', PHONE],
   ['o formulário de criar', 'Criar', 'Criar ferramenta', ZOOMED_PHONE],
 ] as const) {
   test(`a ${viewport.width} px, ${opening} rola no corpo da janela e o ${footer} fica à vista`, async () => {
@@ -138,36 +132,29 @@ for (const [opening, button, footer, viewport] of [
     await panel.getByRole('button', { name: button, exact: true }).click()
     const dialog = page.getByRole('dialog')
     await dialog.getByRole('button', { name: footer }).waitFor()
-    const reach = await dialog.evaluate((node) => {
-      const body = node.querySelector('[data-slot=dialog-body]')
-      return {
-        popupScrolls: node.scrollHeight > node.clientHeight,
-        bodyScrolls: body ? body.scrollHeight > body.clientHeight : false,
-      }
-    })
-    assert.equal(reach.popupScrolls, false, 'a janela corta o que passa da tela')
+    const popupScrolls = await dialog.evaluate((node) => node.scrollHeight > node.clientHeight)
+    assert.equal(popupScrolls, false, 'a janela corta o que passa da tela')
     const at = await dialog.getByRole('button', { name: footer }).boundingBox()
     assert.ok(at && at.y + at.height <= viewport.height, `o ${footer} passa do pé da tela`)
-    if (button !== 'Criar') assert.equal(reach.bodyScrolls, true, 'a lista longa não rola no corpo')
     await page.close()
   })
 }
 
-function handMade(id: string, slug: string, description: string) {
+function handMade(id: string, slug: string, description: string, operation: string) {
   return {
     kind: 'PRESET' as const,
     id,
     slug,
     connectionId: CONNECTION,
-    operation: 'pedidos',
+    operation,
     effect: 'READ' as const,
     latest: { id: VERSION, number: 1 },
     version: { kind: 'PRESET' as const, id: VERSION, number: 1, description, bound: {}, open: [] },
   }
 }
 
-// The agent's panel keeps each chosen tool's lines inside its row, whichever the tool (design V23).
-test('o painel do agente com duas ferramentas feitas à mão não deixa o texto de uma passar sobre a outra', async () => {
+// The agent's Ligações keep each chosen tool's lines inside its row, whichever the tool (design V23).
+test('as ligações do agente com duas ferramentas escolhidas não deixam o texto de uma passar sobre a outra', async () => {
   const page = await harness.open(
     `/companies/${COMPANY.id}/projects/${PROJECT_ID}/agents/${AGENT}`,
     {
@@ -177,20 +164,38 @@ test('o painel do agente com duas ferramentas feitas à mão não deixa o texto 
         [`GET ${BASE}/agents/${AGENT}`]: ok(getAgent, {
           agent: {
             ...AGENT_DETAIL,
+            draft: { ...DRAFT, connections: [CONNECTION] },
+            offered: [
+              {
+                connectionId: CONNECTION,
+                connector: 'sankhya',
+                name: 'Matriz',
+                reads: [
+                  { operation: 'pedidos', label: 'Pedidos', summary: 'Pedidos de venda.' },
+                  { operation: 'metas', label: 'Metas', summary: 'As metas do mês.' },
+                ],
+              },
+            ],
             tools: [
               handMade(
                 '33333333-aaaa-4aaa-8aaa-000000000001',
                 'vendas_de_ontem',
                 'Vendas de ontem.',
+                'pedidos',
               ),
-              handMade('33333333-aaaa-4aaa-8aaa-000000000002', 'metas_do_mes', 'Metas do mês.'),
+              handMade(
+                '33333333-aaaa-4aaa-8aaa-000000000002',
+                'metas_do_mes',
+                'Metas do mês.',
+                'metas',
+              ),
             ],
           },
         }),
       },
     },
   )
-  const rows = page.getByRole('region', { name: 'Ferramentas' }).locator('li')
+  const rows = page.getByRole('list', { name: 'Ferramentas de Matriz' }).locator('li')
   await rows.first().waitFor()
   const cut = await rows.evaluateAll((nodes) =>
     nodes.map((node) => node.scrollHeight > node.clientHeight),

@@ -12,18 +12,48 @@ compose=(docker compose --file compose.yaml)
 # MachineTemplate's rule (apps/server/src/platform/config-machine.ts): E2B's `name:tag`, tag required.
 template_pattern='^[a-z0-9][a-z0-9-]{0,62}:[a-z0-9][a-z0-9._-]{0,127}$'
 
+# Every phase says what it starts before it starts, on stderr like the other messages, so a hang in
+# the job's log ends on the line of the step that did not return.
+phase() {
+  echo "deploy: $*" >&2
+}
+
+# A call to the Docker engine that waits a bounded time. The 90 s are the wait the script already
+# gives the Hub to answer. `docker pull` gets 120 s: the whole silent window before migrate, which
+# holds the pull and the 12 secret checks, took 38 to 64 s in the seven Publish runs before v0.24.45
+# (run 42316345546 sat 600 s there), so 120 s is about twice the worst and still a quarter of the
+# job's 10 minutes. A call that ends without answering says so, and the script ends with it.
+# DEPLOY_WAIT_SECONDS shortens every bound, only so scripts/deploy-phases.test.ts waits for real.
+bounded() {
+  local seconds="${DEPLOY_WAIT_SECONDS:-$1}" status=0
+  shift
+  timeout "$seconds" "$@" || status=$?
+  if [ "$status" -eq 124 ]; then
+    echo "no answer in $seconds s: $*" >&2
+  fi
+  return "$status"
+}
+
 # Compose needs both variables to read the file, and `ps` uses neither value.
 running_id() {
-  HUB_IMAGE=ps-only HUB_E2B_TEMPLATE=ps-only "${compose[@]}" ps --quiet hub
+  HUB_IMAGE=ps-only HUB_E2B_TEMPLATE=ps-only bounded 90 "${compose[@]}" ps --quiet hub
 }
 
 running_template() {
-  docker inspect --format '{{range .Config.Env}}{{println .}}{{end}}' "$1" | sed -n 's/^HUB_E2B_TEMPLATE=//p'
+  bounded 90 docker inspect --format '{{range .Config.Env}}{{println .}}{{end}}' "$1" | sed -n 's/^HUB_E2B_TEMPLATE=//p'
+}
+
+# The label's value, or empty when the image has none; a call with no answer ends the script, so a
+# silent engine never reads as "no label" and skips a migration.
+image_label() {
+  bounded 90 docker image inspect --format "{{ index .Config.Labels \"$2\" }}" "$1"
 }
 
 migrate_if_labeled() {
-  local image="$1"
-  if [ "$(docker image inspect --format '{{ index .Config.Labels "conexus.migrate" }}' "$image")" != "1" ]; then
+  local image="$1" label
+  phase "reading the migrate label of $image"
+  label="$(image_label "$image" conexus.migrate)"
+  if [ "$label" != "1" ]; then
     echo "no migrations in: $image"
     return 0
   fi
@@ -35,6 +65,7 @@ migrate_if_labeled() {
   local attempt=1 status
   while true; do
     status=0
+    phase "migrating with $image, attempt $attempt of 3 (up to 120 s)"
     HUB_IMAGE="$image" HUB_E2B_TEMPLATE="$template" timeout 120 "${compose[@]}" run --rm migrate || status=$?
     if [ "$status" -eq 0 ]; then
       return 0
@@ -52,11 +83,14 @@ migrate_if_labeled() {
 # After migrate: every model account's credential moves to the seal key file's last line (S32).
 # A release before step 11 has no reseal command, so Voltar atrás to it skips this (0035).
 reseal_if_labeled() {
-  local image="$1"
-  if [ "$(docker image inspect --format '{{ index .Config.Labels "conexus.reseal" }}' "$image")" != "1" ]; then
+  local image="$1" label
+  phase "reading the reseal label of $image"
+  label="$(image_label "$image" conexus.reseal)"
+  if [ "$label" != "1" ]; then
     echo "no reseal in: $image"
     return 0
   fi
+  phase "resealing with $image (up to 120 s)"
   if ! HUB_IMAGE="$image" HUB_E2B_TEMPLATE="$template" timeout 120 "${compose[@]}" run --rm --no-deps hub node apps/server/src/main.ts reseal; then
     echo "reseal failed: $image" >&2
     return 1
@@ -66,9 +100,16 @@ reseal_if_labeled() {
 # The secrets folder is root's alone, so Docker reads the file, as the Hub's user, inside the image.
 require_secret() {
   local image="$1" name="$2"
-  if ! docker run --rm --network none --user 1000 \
+  phase "checking the secret $name in $image"
+  local status=0
+  bounded 90 docker run --rm --network none --user 1000 \
     --mount "type=bind,source=/etc/conexus/secrets/$name,target=/run/check,readonly" \
-    --entrypoint test "$image" -s /run/check; then
+    --entrypoint test "$image" -s /run/check || status=$?
+  # 124 is Docker not answering, which `bounded` already said: the secret may well be there.
+  if [ "$status" -eq 124 ]; then
+    return 124
+  fi
+  if [ "$status" -ne 0 ]; then
     echo "missing secret: $name; write /etc/conexus/secrets/$name first" >&2
     return 1
   fi
@@ -91,12 +132,15 @@ require_hub_env() {
   fi
 }
 
+phase "checking hub.env"
 require_hub_env
+phase "looking for the running Hub"
 id="$(running_id)"
 previous=""
 previous_template=""
 if [ -n "$id" ]; then
-  previous="$(docker inspect --format '{{.Config.Image}}' "$id")"
+  phase "reading the image and the template of the running Hub"
+  previous="$(bounded 90 docker inspect --format '{{.Config.Image}}' "$id")"
   previous_template="$(running_template "$id")"
 fi
 template="${requested_template:-$previous_template}"
@@ -115,9 +159,11 @@ if ! [[ $template =~ $template_pattern ]]; then
 fi
 
 if [ "$mode" = "--restart" ]; then
+  phase "restarting $previous"
   require_secrets "$previous"
   migrate_if_labeled "$previous"
   reseal_if_labeled "$previous"
+  phase "recreating the Hub from $previous with $template (up to 90 s to be healthy)"
   if HUB_IMAGE="$previous" HUB_E2B_TEMPLATE="$template" "${compose[@]}" up --detach --wait --wait-timeout 90 --force-recreate --no-deps hub; then
     echo "restarted: $previous with $template"
     exit 0
@@ -132,11 +178,13 @@ if [ "$previous" = "$image" ] && [ "$previous_template" = "$template" ]; then
   exit 0
 fi
 
-docker pull --quiet "$image" > /dev/null
+phase "pulling $image (up to 120 s)"
+bounded 120 docker pull --quiet "$image" > /dev/null
 require_secrets "$image"
 migrate_if_labeled "$image"
 reseal_if_labeled "$image"
 
+phase "starting the Hub from $image with $template (up to 90 s to be healthy)"
 if HUB_IMAGE="$image" HUB_E2B_TEMPLATE="$template" "${compose[@]}" up --detach --wait --wait-timeout 90; then
   echo "live: $image with $template"
   exit 0
@@ -144,6 +192,7 @@ fi
 
 echo "not healthy: $image with $template" >&2
 if [ -n "$previous" ]; then
+  phase "going back to $previous with $previous_template (up to 90 s to be healthy)"
   HUB_IMAGE="$previous" HUB_E2B_TEMPLATE="$previous_template" "${compose[@]}" up --detach --wait --wait-timeout 90
   echo "back to: $previous with $previous_template" >&2
 fi
