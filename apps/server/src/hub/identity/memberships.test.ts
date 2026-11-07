@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
-import type { Member, Role } from '@conexus/hub-api'
+import type { FixedRole, Member } from '@conexus/hub-api'
 import { TEST_ORIGIN } from '../../platform/test-database.ts'
 import type { Hub, Person } from './test-hub.ts'
 import {
@@ -26,7 +26,7 @@ const NAMES = {
 
 const SEATED = ['ana', 'gil', 'bruno', 'carla', 'davi', 'edu'] as const
 type Name = (typeof SEATED)[number]
-type Roster = Partial<Record<Name, Role>>
+type Roster = Partial<Record<Name, FixedRole>>
 /** Two owners, two administrators, two members. */
 const FULL: Roster = {
   ana: 'owner',
@@ -92,7 +92,7 @@ function remove(w: World, actor: Person, target: Person, companyId = w.companyId
   return act(w.hub, actor, 'DELETE', `/api/companies/${companyId}/members/${target.id}`)
 }
 
-function change(w: World, actor: Person, target: Person, role: Role, from: Role) {
+function change(w: World, actor: Person, target: Person, role: string, from: string) {
   return act(w.hub, actor, 'PUT', `${w.base}/members/${target.id}`, { role, from })
 }
 
@@ -156,8 +156,8 @@ type Cell = [
   label: string,
   actor: Name | 'central' | 'fabi',
   target: Name | 'fabi',
-  role: Role,
-  from: Role,
+  role: FixedRole,
+  from: FixedRole,
   status: number,
   changed: Roster,
 ]
@@ -306,4 +306,49 @@ test('Central: convida dono como Conexus, um de cada vez e só dono; quem não �
   ]) {
     assert.deepEqual([response.statusCode, codeOf(response)], [404, 'NOT_FOUND'])
   }
+})
+
+test('papel próprio: dá-se e tira-se como um fixo, fica abaixo do administrador, e um nome que a empresa não tem, ROLE_NOT_FOUND', async (t) => {
+  const w = await world(t)
+  const { ana, bruno, davi, edu, gil } = w.people
+  const created = await post(w.hub, ana, `${w.base}/roles`, {
+    label: 'Atendente',
+    connectors: { sankhya: ['pedidos'] },
+  })
+  assert.equal(created.statusCode, 201)
+
+  const given = await change(w, ana, davi, 'atendente', 'member')
+  assert.equal(given.statusCode, 200)
+  assert.deepEqual(Object(given.json()).member.role, 'atendente')
+  assert.deepEqual((await rolesOf(w)).davi, 'atendente')
+  assert.deepEqual(Object(given.json()).member.mayChangeTo, [
+    'owner',
+    'admin',
+    'developer',
+    'member',
+  ])
+
+  const listed = await act(w.hub, bruno, 'GET', `${w.base}/members`)
+  const members: { personId: string; mayRemove: boolean; mayChangeTo: string[] }[] =
+    Object(listed.json()).members
+  const shown = members.find((one) => one.personId === davi.id)
+  assert.equal(shown?.mayRemove, true)
+  assert.deepEqual(shown?.mayChangeTo, ['admin', 'developer', 'member'])
+  assert.ok(members.find((one) => one.personId === edu.id)?.mayChangeTo.includes('atendente'))
+
+  assert.equal((await change(w, bruno, edu, 'atendente', 'member')).statusCode, 200)
+  assert.equal((await change(w, bruno, edu, 'member', 'atendente')).statusCode, 200)
+
+  const below = await change(w, davi, edu, 'admin', 'member')
+  assert.deepEqual([below.statusCode, codeOf(below)], [404, 'NOT_FOUND'])
+  assert.equal((await remove(w, davi, edu)).statusCode, 404)
+  assert.equal((await remove(w, davi, davi)).statusCode, 204)
+  await w.seat()
+
+  const unknown = await change(w, ana, davi, 'fantasma', 'member')
+  assert.deepEqual([unknown.statusCode, codeOf(unknown)], [404, 'ROLE_NOT_FOUND'])
+  assert.equal((await rolesOf(w)).davi, 'member')
+  assert.equal((await change(w, ana, gil, 'atendente', 'owner')).statusCode, 200)
+  const lastOwner = await change(w, gil, ana, 'atendente', 'owner')
+  assert.deepEqual([lastOwner.statusCode, codeOf(lastOwner)], [404, 'NOT_FOUND'])
 })

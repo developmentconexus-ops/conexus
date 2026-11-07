@@ -285,7 +285,8 @@ export {
 } from './projects.ts'
 export * from './questions.ts'
 export * from './requests.ts'
-export { CompanyMay, OPERATOR_INVITES_AS, ROLE_LABELS, Role } from './roles.ts'
+export * from './company-roles.ts'
+export * from './roles.ts'
 export { RunId } from './runs.ts'
 export {
   ProjectSource,

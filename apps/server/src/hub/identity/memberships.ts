@@ -14,6 +14,7 @@ import { Failure } from '../../platform/failure.ts'
 import { after, pageKey, pageOf } from '../../platform/pages.ts'
 import type { Actor, CompanyProof, MemberAction } from './admission.ts'
 import { actorOf, admitCompany, allows, rankAllows } from './admission.ts'
+import { checkRoleExists, readRoles } from './company-roles.ts'
 import type { ProjectApps } from './app-invitations.ts'
 import type { Auth, LibraryCommand } from './auth.ts'
 import { organizationAdapter } from './auth.ts'
@@ -43,19 +44,27 @@ const columns = {
 }
 
 /** What the viewer may do to a row, from the rank table that decides it on the write (code C26). */
-function viewOf(viewer: { actor: Actor; personId: PersonId }, row: Listed): Member {
+function viewOf(
+  viewer: { actor: Actor; personId: PersonId; roles: readonly Role[] },
+  row: Listed,
+): Member {
   const { id: _id, ...shown } = row
   return {
     ...shown,
     mayRemove: viewer.personId === row.personId || rankAllows(viewer.actor, row.role),
-    mayChangeTo: Role.options.filter(
+    mayChangeTo: viewer.roles.filter(
       (next) => next !== row.role && rankAllows(viewer.actor, row.role, next),
     ),
   }
 }
 
-function viewerOf(admitted: CompanyProof, personId: PersonId) {
-  return { actor: actorOf(admitted), personId }
+/** The roles a person may be changed to: the four fixed ones, then the company's own. */
+async function rolesOf(tx: ReadTx, companyId: CompanyId): Promise<Role[]> {
+  return (await readRoles(tx, companyId)).map((one) => one.role)
+}
+
+async function viewerOf(tx: ReadTx, admitted: CompanyProof, personId: PersonId) {
+  return { actor: actorOf(admitted), personId, roles: await rolesOf(tx, admitted.companyId) }
 }
 
 export function readMembers(
@@ -88,7 +97,7 @@ export function readMembers(
       rows.map((row) => Listed.parse(row)),
       (row) => row.id,
     )
-    const viewer = viewerOf(admitted, input.personId)
+    const viewer = await viewerOf(tx, admitted, input.personId)
     return { members: listed.rows.map((row) => viewOf(viewer, row)), next: listed.next }
   })
 }
@@ -258,10 +267,11 @@ export function changeMemberRoleCommand(deps: { auth: Auth; libraryCommand: Libr
       const { admitted, target } = await admittedTarget(tx, { ...input, action: 'changeRole' })
       if (target === undefined) throw refused()
       if (target.role !== input.from) throw new Failure('MEMBER_STALE')
+      await checkRoleExists(tx, { companyId: input.companyId, role: input.role })
       if (!rankAllows(actorOf(admitted), target.role, input.role)) throw refused()
       await keepOwner(tx, { companyId: input.companyId, leaving: target.role, next: input.role })
       const adapter = await organizationAdapter(deps.auth)
       await adapter.updateMember(target.id, input.role)
-      return viewOf(viewerOf(admitted, input.person.id), { ...target, role: input.role })
+      return viewOf(await viewerOf(tx, admitted, input.person.id), { ...target, role: input.role })
     })
 }

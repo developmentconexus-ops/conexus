@@ -7,6 +7,7 @@ import { Failure } from '../../platform/failure.ts'
 import type { MemberProof, OperatorProof } from './admission.ts'
 import type { Auth } from './auth.ts'
 import { organizationAdapter, storedAddress } from './auth.ts'
+import { seedRoles } from './company-roles.ts'
 import { companyById } from './companies.ts'
 import { stateOf } from './invitation-reads.ts'
 import {
@@ -70,6 +71,7 @@ export function registerCompanyOn(auth: Auth) {
       organization: { name: input.name, slug: attemptKey, attemptKey, createdAt: new Date() },
     })
     const created = Company.parse({ id: made.id, name: made.name })
+    await seedRoles(tx, created.id)
     const invited = await adapter.createInvitation({
       invitation: { email, role: 'owner', organizationId: created.id, teamIds: [], attemptKey },
       user: input.admitted.inviter,

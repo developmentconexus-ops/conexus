@@ -265,6 +265,29 @@ export const member = auth.table(
   ],
 )
 
+// The plugin's model "organizationRole" (dynamic access control): one row per role the company
+// holds. The permission is the JSON of the role's actions; the label is the name a person reads.
+export const organizationRole = auth.table(
+  'organization_role',
+  {
+    id: text('id').primaryKey(),
+    organizationId: text('company_id')
+      .notNull()
+      .references(() => company.id, { onDelete: 'cascade' }),
+    role: text('role').notNull(),
+    permission: text('permission').notNull(),
+    label: text('label').notNull(),
+    createdAt: instant('created_at').notNull(),
+    updatedAt: instant('updated_at'),
+  },
+  (table) => [
+    uniqueIndex('organization_role_company_id_role_key').on(table.organizationId, table.role),
+    policy(SCOPE_ROLES.COMPANY, 'all', sql`company_id = ${companyId}`),
+    // The Central seeds the developer's and the member's rows when it creates a company.
+    policy(SCOPE_ROLES.OPERATOR, 'insert', ADMINISTRATOR),
+  ],
+)
+
 /**
  * The name of a person while they are a member of the company, read beside another subject's row:
  * one who has left is no longer named.
@@ -337,7 +360,7 @@ export const invitation = auth.table(
  * getJoinRelationKey). With them each join is one query, never one per row on one connection.
  */
 export const relations = defineRelations(
-  { user, session, account, verification, rateLimit, company, member, invitation },
+  { user, session, account, verification, rateLimit, company, member, invitation, organizationRole },
   (r) => ({
     user: { accounts: r.many.account() },
     session: { user: r.one.user({ from: r.session.userId, to: r.user.id }) },

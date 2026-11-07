@@ -24,6 +24,7 @@ import {
   company,
   invitation,
   member,
+  organizationRole,
   rateLimit,
   relations,
   session,
@@ -162,7 +163,10 @@ export async function inLibrary<T>(work: () => Promise<T>): Promise<T> {
 function adapterFor(db: Parameters<typeof drizzleAdapter>[0]) {
   return drizzleAdapter(db, {
     provider: 'pg',
-    schema: { user, session, account, verification, rateLimit, company, member, invitation },
+    schema: {
+      ...{ user, session, account, verification, rateLimit, company, member, invitation },
+      organizationRole,
+    },
     // The library spends a reset link before it writes the password; one transaction keeps both (D22).
     transaction: true,
   })
@@ -250,10 +254,15 @@ const DELETING_FIELD = { type: 'date', required: false, input: false } as const
 // The company's nickname in its apps' addresses: only the owner's choice through the Hub sets it.
 const NICKNAME_FIELD = { type: 'string', required: false, input: false } as const
 
-const ORGANIZATION = {
+// The name a person reads for a role of the company; the stored name is derived from it.
+const LABEL_FIELD = { type: 'string', required: true } as const
+
+export const ORGANIZATION = {
   ac: ACCESS_CONTROL,
   roles: COMPANY_ROLES,
+  dynamicAccessControl: { enabled: true },
   schema: {
+    organizationRole: { additionalFields: { label: LABEL_FIELD } },
     organization: {
       modelName: 'company',
       additionalFields: {

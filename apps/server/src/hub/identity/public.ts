@@ -1,4 +1,5 @@
 import type { Company, PendingInvitation } from '@conexus/hub-api'
+import { ROLE_LABELS } from '@conexus/hub-api'
 import type { Config } from '../../platform/config.ts'
 import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
@@ -115,7 +116,7 @@ export function createIdentity(deps: {
             companyId: input.company.id,
           },
           invitation: input.invitation,
-          gives: { kind: 'COMPANY', role: input.invitation.role },
+          gives: { kind: 'COMPANY', roleLabel: ROLE_LABELS.owner },
           companyName: input.company.name,
           inviter: { kind: 'CONEXUS', firstOwner: true },
           link: `${deps.config.publicOrigin}/invitations/${input.invitation.id}`,

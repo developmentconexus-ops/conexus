@@ -5,26 +5,37 @@ import {
   changeMemberRole,
   createInvitation,
   createInvitationPassword,
+  createRole,
   declineInvitation,
+  deleteRole,
   getCompany,
   getInvitation,
   inviteToApp,
   listCompanies,
   listInvitations,
   listMembers,
+  listRoles,
   removeMember,
   renewInvitation,
   setCompanyNickname,
+  updateRole,
 } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
 import type { Config } from '../../platform/config.ts'
 import type { Database } from '../../platform/database.ts'
+import { Failure } from '../../platform/failure.ts'
 import { answer, serve } from '../../platform/http.ts'
 import type { SendMail } from '../../platform/mail.ts'
 import type { ProjectApps } from './app-invitations.ts'
 import type { Auth, LibraryCommand } from './auth.ts'
 import { INVITATION_DECLINATION_PATH, INVITATION_PASSWORD_PATH } from './auth.ts'
 import { readCompany, readMemberships } from './companies.ts'
+import {
+  createRoleCommand,
+  deleteRoleCommand,
+  listRolesCommand,
+  updateRoleCommand,
+} from './company-roles.ts'
 import { createInvitationCommand, inviteToAppCommand } from './invitation-create.ts'
 import { deliveredOrRefused, mailInvitation } from './invitation-mail.ts'
 import {
@@ -166,7 +177,7 @@ function registerManagement(app: FastifyInstance, deps: Deps): void {
       log.info({ companyId: params.companyId }, 'INVITATION_RENEWED')
       const link = `${deps.config.publicOrigin}/invitations/${result.invitation.id}`
       const scope = companyScope({ person, ...params })
-      const gives = { kind: 'COMPANY', role: result.invitation.role } as const
+      const gives = { kind: 'COMPANY', roleLabel: result.roleLabel } as const
       deliveredOrRefused(await mailInvitation(deps, { scope, ...result, gives, link, signal }))
       return answer({ invitation: result.invitation })
     },
@@ -217,10 +228,44 @@ function registerMemberships(app: FastifyInstance, deps: Deps): void {
   })
 }
 
+/** A role's change names who acted and on which role, never the operations it holds (S41). */
+function registerRoles(app: FastifyInstance, deps: Deps): void {
+  const list = listRolesCommand(deps)
+  const create = createRoleCommand(deps)
+  const update = updateRoleCommand(deps)
+  const remove = deleteRoleCommand(deps)
+  serve(app, listRoles, async ({ person, headers, params }) =>
+    answer({ roles: await list({ person, headers, ...params }) }),
+  )
+  serve(app, createRole, async ({ person, headers, params, body, log }) => {
+    const made = await create({ person, headers, ...params, body })
+    log.info({ ...params, role: made.role, by: person.id }, 'ROLE_CREATED')
+    return answer({ role: made })
+  })
+  serve(app, updateRole, async ({ person, headers, params, body, log }) => {
+    const { role, ...company } = params
+    const changed = await update({ person, headers, ...company, role, body })
+    log.info({ ...params, by: person.id }, 'ROLE_UPDATED')
+    return answer({ role: changed })
+  })
+  serve(app, deleteRole, async ({ person, headers, params, log }) => {
+    try {
+      await remove({ person, headers, ...params })
+    } catch (error) {
+      if (error instanceof Failure && error.code === 'ROLE_IN_USE')
+        log.info({ ...params, by: person.id, reason: error.details.reason ?? 'MEMBER' }, 'ROLE_DELETE_REFUSED')
+      throw error
+    }
+    log.info({ ...params, by: person.id }, 'ROLE_DELETED')
+    return answer(undefined)
+  })
+}
+
 export function registerCompanyRoutes(app: FastifyInstance, deps: Deps): void {
   registerReads(app, deps)
   registerWrites(app, deps)
   registerManagement(app, deps)
   registerAppInvitations(app, deps)
   registerMemberships(app, deps)
+  registerRoles(app, deps)
 }

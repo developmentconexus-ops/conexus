@@ -1,11 +1,11 @@
 import type { CompanyId, Email, PersonId } from '@conexus/hub-api'
-import { OPERATOR_INVITES_AS, Role } from '@conexus/hub-api'
+import { FIXED_ROLES, fixedRole, isFixedRole, OPERATOR_INVITES_AS, Role } from '@conexus/hub-api'
 import { and, eq } from 'drizzle-orm'
 import type { ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import { storedAddress } from './auth.ts'
 import { COMPANY_ROLES } from './roles.ts'
-import { company, member, user } from './tables.ts'
+import { company, member, organizationRole, user } from './tables.ts'
 
 const INVITE = { invitation: ['create'] } as const
 const REMOVE = { member: ['delete'] } as const
@@ -23,6 +23,7 @@ const MANAGE_AUTOMATIONS = { automation: ['manage'] } as const
 const ASK_ASSISTANT = { assistant: ['ask'] } as const
 const REQUEST_PUBLISH = { request: ['create'] } as const
 const DECIDE_REQUEST = { request: ['decide'] } as const
+const MANAGE_ROLES = { ac: ['create', 'update', 'delete'] } as const
 type ActionRule = {
   by: 'MEMBER' | 'COMPANY' | 'OPERATOR'
   locks: boolean
@@ -43,6 +44,7 @@ type ActionRule = {
     | typeof ASK_ASSISTANT
     | typeof REQUEST_PUBLISH
     | typeof DECIDE_REQUEST
+    | typeof MANAGE_ROLES
 }
 
 /**
@@ -98,6 +100,9 @@ const ACTIONS = {
   // The same three create, change and remove automations (step 24.3.4, C1). They live in Mastra's
   // schedules and are admitted in a read-only transaction, which cannot hold the role.
   manageAutomations: { by: 'MEMBER', statement: MANAGE_AUTOMATIONS, locks: false },
+  // Creating, changing and deleting the company's roles is the owner's and the administrator's
+  // (step Papéis da empresa, U1); the library's own routes then check the same statements.
+  manageRoles: { by: 'MEMBER', statement: MANAGE_ROLES, locks: true },
   readMembers: { by: 'COMPANY', statement: undefined, locks: false },
   readInvitations: { by: 'COMPANY', statement: INVITE, locks: false },
   invite: { by: 'COMPANY', statement: INVITE, locks: true },
@@ -120,17 +125,21 @@ export type CompanyAction = ActionBy<'COMPANY'>
 type InstallationAction = ActionBy<'OPERATOR'>
 
 // The plugin's creator role: only a member who holds it may invite with it.
-const CREATOR: Role = 'owner'
+const CREATOR = fixedRole('owner')
 /** The admin plugin's administrator role, on the person, not a company (security S11). */
 export const INSTALLATION_ADMINISTRATOR = 'admin'
 
 type RoleAction = MemberAction | CompanyAction
 
-/** Whether the role takes the action, read from the roles the plugin is given (auth.ts). */
+/**
+ * Whether the role takes the action, read from the roles the plugin is given (auth.ts). A role of
+ * the company's own holds the member's base besides its connectors, which no action here reads.
+ */
 export function allows(role: Role, action: RoleAction): boolean {
   const { statement } = ACTIONS[action]
   if (statement === undefined) return true
-  return COMPANY_ROLES[role].authorize(statement).success
+  const held = isFixedRole(role) ? COMPANY_ROLES[role] : COMPANY_ROLES.member
+  return held.authorize(statement).success
 }
 
 /** Who acts on a member: the role of a member of the company, or the operator, who has none. */
@@ -144,18 +153,9 @@ export type Actor = Role | 'OPERATOR'
  * caller decides that, for the rank table knows no one by name.
  */
 export function rankAllows(actor: Actor, target: Role, next?: Role): boolean {
-  switch (actor) {
-    case 'OPERATOR':
-    case 'owner':
-      return true
-    case 'admin':
-      return target !== 'owner' && next !== 'owner'
-    case 'developer':
-    case 'member':
-      return false
-    default:
-      return actor satisfies never
-  }
+  if (actor === 'OPERATOR' || actor === 'owner') return true
+  if (actor === 'admin') return target !== 'owner' && next !== 'owner'
+  return false
 }
 
 let sealMember: (companyId: CompanyId, personId: PersonId, role: Role) => MemberProof
@@ -367,13 +367,20 @@ export async function admitOperator(input: {
 
 /**
  * The roles an admitted proof may invite with: the plugin keeps its creator role to its holders,
- * and the operator invites only an owner.
+ * and the operator invites only an owner. The company's own roles come after the four fixed ones.
  */
-export function mayInviteAs(admitted: CompanyProof): Role[] {
+export async function mayInviteAs(tx: ReadTx, admitted: CompanyProof): Promise<Role[]> {
   switch (admitted.kind) {
-    case 'MEMBER':
+    case 'MEMBER': {
       if (!allows(admitted.role, 'invite')) return []
-      return Role.options.filter((role) => role !== CREATOR || admitted.role === CREATOR)
+      const own = await tx
+        .select({ role: organizationRole.role })
+        .from(organizationRole)
+        .where(eq(organizationRole.organizationId, admitted.companyId))
+        .orderBy(organizationRole.label)
+      const all = [...FIXED_ROLES, ...own.map((row) => row.role).filter((role) => !isFixedRole(role))]
+      return all.map((role) => Role.parse(role)).filter((role) => role !== CREATOR || admitted.role === CREATOR)
+    }
     case 'COMPANY_OPERATOR':
       return [...OPERATOR_INVITES_AS]
     default:

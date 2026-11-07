@@ -1,5 +1,4 @@
-import type { Email, Role } from '@conexus/hub-api'
-import { ROLE_LABELS } from '@conexus/hub-api'
+import type { Email } from '@conexus/hub-api'
 import type { MailMessage } from '../../platform/mail.ts'
 import { PASSWORD_LINK_SECONDS } from './auth.ts'
 import type { InvitedAs } from './invitation-render.mjs'
@@ -23,12 +22,12 @@ export function passwordLinkText(name: string, link: string): string {
 export type Inviter = { kind: 'MEMBER'; name: string } | { kind: 'CONEXUS'; firstOwner: boolean }
 
 /** What an invitation gives: a role in the company, or the use of one of its apps (step 18). */
-export type InvitationGives = { kind: 'COMPANY'; role: Role } | { kind: 'APP'; appName: string }
+export type InvitationGives = { kind: 'COMPANY'; roleLabel: string } | { kind: 'APP'; appName: string }
 
 function invitedAs(input: { inviter: Inviter; gives: InvitationGives }): InvitedAs {
   if (input.gives.kind === 'APP') return { kind: 'APP', appName: input.gives.appName }
   if (input.inviter.kind === 'CONEXUS' && input.inviter.firstOwner) return { kind: 'FIRST_OWNER' }
-  return { kind: 'COMPANY', roleLabel: ROLE_LABELS[input.gives.role] }
+  return { kind: 'COMPANY', roleLabel: input.gives.roleLabel }
 }
 
 function subjectOf(invited: InvitedAs, companyName: string): string {

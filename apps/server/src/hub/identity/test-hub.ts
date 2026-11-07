@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { randomBytes, randomUUID } from 'node:crypto'
 import type { TestContext } from 'node:test'
 import { setTimeout } from 'node:timers/promises'
-import { ATTEMPT_KEY_HEADER } from '@conexus/hub-api'
+import { ATTEMPT_KEY_HEADER, CompanyId } from '@conexus/hub-api'
 import { hashPassword } from 'better-auth/crypto'
 import { createEdgeHub, createHub, subjectsOf } from '../../main.ts'
 import type { Config } from '../../platform/config.ts'
@@ -22,6 +22,7 @@ import {
 import { mailServer, testMail } from '../../platform/test-mail.ts'
 import { fakeNeon } from '../../platform/test-neon.ts'
 import { createStatus } from '../status/public.ts'
+import { seededRoles } from './company-roles.ts'
 import { createIdentity } from './public.ts'
 
 export const PASSWORD = 'senha-certa-1'
@@ -305,6 +306,13 @@ export async function plantCompany(
       values ($1, $2, $3, 'owner', now())`,
     [id(), companyId, ownerId],
   )
+  for (const row of seededRoles(CompanyId.parse(companyId))) {
+    await test.asOwner(
+      `insert into auth.organization_role (id, company_id, role, permission, label, created_at)
+        values ($1, $2, $3, $4, $5, now())`,
+      [row.id, companyId, row.role, row.permission, row.label],
+    )
+  }
   return companyId
 }
 
