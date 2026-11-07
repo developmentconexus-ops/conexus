@@ -25,7 +25,7 @@ L24](../guides/delivery.md)): it grows by one line per screen.
 | Configurações' index: the sections as a list on a phone; a wide screen opens Minha conta | `/companies/<c>/settings` | Empresa | owner, administrator, developer, member |
 | Configurações: Minha conta, Contas de modelo, Meus padrões | `/companies/<c>/settings/account`, `model-accounts`, `my-defaults` | Empresa | owner, administrator, developer, member |
 | Configurações: Geral, Pessoas e convites (with Quem usa os apps), Padrões da empresa | `/companies/<c>/settings/general`, `people`, `defaults` | Empresa | owner, administrator, developer (reads), member (reads) |
-| Configurações: Papéis, the four roles and the company's own with what each uses of each connector; `?new=true` makes one, `?role=<name>` opens one with its connectors, subjects and operations (lê, escreve, apaga) and Apagar papel | `/companies/<c>/settings/roles` | Empresa | owner, administrator |
+| Configurações: Papéis, the four roles and the company's own with what each uses of each connector; `?new=true` makes one, `?role=<name>` opens one with its connectors, subjects and operations (lê, escreve, apaga), the action Publicar agente que escreve sozinho and Apagar papel | `/companies/<c>/settings/roles` | Empresa | owner, administrator |
 | The owner's first entry, steps 1 to 4 | `/companies/<c>/welcome/company`, `model-account`, `team`, `build` | Empresa | owner |
 | A Projeto, on its latest conversation; above the area, its open publish request (who asked, the message, Cancelar pedido for the asker, Publicar a versão n and Recusar for an owner or an administrator) and, for whoever does not publish, Pedir para publicar with its box | `/companies/<c>/projects/<p>` | Projeto | owner, administrator, developer, member |
 | A Projeto's conversation, with the tab Prévia or Código (`?lens=`) | `/companies/<c>/projects/<p>/conversations/<id>` | Projeto | owner, administrator, developer, member |
@@ -35,13 +35,13 @@ L24](../guides/delivery.md)): it grows by one line per screen.
 | Ferramentas of a Projeto, the tab beside Agentes: the library's tools it may use, each with what it reads, its latest version and the agents that use it, Nova versão and Apagar; a tool the Construtor wrote carries the badge Em código and has no Nova versão | `/companies/<c>/projects/<p>/agents/tools` | Projeto | owner, administrator, developer |
 | A tool of the library: its versions, newest first, and Nova versão; a code tool shows each version's code, what it reads and its test result | `/companies/<c>/projects/<p>/agents/tools/<tool>` | Projeto | owner, administrator, developer |
 | A conversation with the Construtor, with the draft card of the agent it makes | `/companies/<c>/projects/<p>/agents/construtor/<id>` | Projeto | owner, administrator, developer |
-| An agent: the person's conversations with it, the editable configuration (Ligações as selectors, each selected one with its tools beneath, none marked, Marcar todas as leituras and the free query last with its warning), Publicar and Versões | `/companies/<c>/projects/<p>/agents/<agent>` | Projeto | owner, administrator, developer |
-| A conversation with an agent, published or the test one with its draft, inside the agent's page | `/companies/<c>/projects/<p>/agents/<agent>/<id>` | Projeto | owner, administrator, developer |
+| An agent: the person's conversations with it, the editable configuration (Ligações as selectors, each selected one with its tools beneath, none marked, a write marked `escreve` with its key Pergunta antes / Faz sozinho, Marcar todas as leituras and the free query last with its warning), Publicar and Versões | `/companies/<c>/projects/<p>/agents/<agent>` | Projeto | owner, administrator, developer |
+| A conversation with an agent, published or the test one with its draft, inside the agent's page; a write that asks the person is the card Aprovar? in the chat | `/companies/<c>/projects/<p>/agents/<agent>/<id>` | Projeto | owner, administrator, developer |
 | Automações of a Projeto: the person's own, with state, next time and actions | `/companies/<c>/projects/<p>/automations` | Projeto | owner, administrator, developer |
 | The history of one automation of a Projeto, with its runs | `/companies/<c>/projects/<p>/automations/<id>` | Projeto | owner, administrator, developer |
 | Sobre, with its parts Sobre and Versões (`?part=`), where a version is published, or asked to be (Pedir esta) with the open request above the list | `/companies/<c>/projects/<p>/about` | Projeto | owner, administrator, developer, member |
 | Quem usa o app | `/companies/<c>/projects/<p>/access` | Projeto | owner, administrator, developer (reads), member (reads) |
-| Integrações do Projeto: each connected connection with whether the Projeto may read it, Liberar para ler and Tirar | `/companies/<c>/projects/<p>/integrations` | Projeto | owner, administrator, developer (reads), member (reads) |
+| Integrações do Projeto: each connected connection with whether the Projeto may read it, Liberar (whose confirmation says what app, Builder and agents may do) and Tirar | `/companies/<c>/projects/<p>/integrations` | Projeto | owner, administrator, developer (reads), member (reads) |
 | Central, Clientes | `/operations/clients` | Central | whoever operates the installation |
 | Estado do Hub | `/operations/status` | Central | whoever operates the installation |
 | Cadastrar cliente | `/operations/clients/new` | Central | whoever operates the installation |
@@ -77,3 +77,36 @@ Agente, Ligações
      [ ] Consulta   Consulta livre: roda qualquer SQL no banco inteiro
      [Marcar todas as leituras]
 ```
+
+## Boxes of the write that asks (24.5 U3)
+
+The card is the plan card's design: the same width as the chat column at 1280 px and the whole
+column at 390 px; the buttons stack at 390 px.
+
+```text
+Na conversa do agente (1280)                       (390)
+ ┌ O Conferente de metas quer lançar pedido ┐      ┌ O Conferente de metas quer ┐
+ │ no Sankhya · Matriz              [logo]  │      │ lançar pedido no Sankhya   │
+ │ Cliente            1                     │      │ · Matriz           [logo]  │
+ │ Itens              2 × produto 11 a R$ 10,00     │ Cliente            1       │
+ │ Total              R$ 20,00              │      │ Itens  2 × produto 11 ...  │
+ │ [!] Um pedido foi enviado às 10:12 e não │      │ Total              R$ 20,00│
+ │     sabemos se entrou. Confira no ...    │      │ [!] aviso (só com envio    │
+ │                    [Recusar] [Aprovar]   │      │     aberto da mesma escrita)│
+ └──────────────────────────────────────────┘      │ [Recusar]                  │
+ Escrever outra mensagem recusa este pedido.       │ [Aprovar]                  │
+                                                   └────────────────────────────┘
+Decidido: o título e os campos ficam; no lugar dos botões, uma linha
+ Aprovado por você · Pedido 98001 lançado, a confirmar.
+ Recusado | Recusado porque você mandou outra mensagem
+ | Recusado porque você parou a conversa | Não conseguiu lançar
+ | Não deu para saber se o pedido foi lançado. Procure no Sankhya a observação Conexus …
+
+Página do agente, Ligações
+ [x] Sankhya · Matriz  Funcionando
+     [x] Lançar pedido  escreve     (Pergunta antes | Faz sozinho)
+     [ ] Pedidos
+```
+
+The key is lit on Pergunta antes by default. Faz sozinho on a version that publishes shows, under
+Publicar, "Seu papel não publica escrita que faz sozinha" to whoever lacks the action.
