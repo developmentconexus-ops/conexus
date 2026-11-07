@@ -213,9 +213,9 @@ export const REVOKE = 'Tirar'
 const RECONNECT_IN_COMPANY = 'Conectar de novo em Integrações da empresa'
 export const LOADING_PROJECT_CONNECTIONS = 'Carregando as integrações…'
 
-/** The confirmation of "Liberar para ler": whole connection, app and Builder (the founder's S1). */
+/** The confirmation of "Liberar": the whole connection, for app, Builder and agents; what each does is the publisher's role (the founder's S1 and A1). */
 export function grantText(name: string): string {
-  return `O app e o Builder poderão ler o ${name} da empresa. Quem usa o app vê o que o app mostrar.`
+  return `O app, o Builder e os agentes poderão usar o ${name} da empresa. O que cada um faz nele depende do papel de quem publica. Quem usa o app vê o que o app mostrar.`
 }
 
 /** A connector that serves one connection per Projeto, and another of it already read: which to take away first. */
