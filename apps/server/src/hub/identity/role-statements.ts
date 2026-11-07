@@ -47,7 +47,7 @@ export function customStatements(
   return {
     ...base,
     ...statementsOf(set, connectors),
-    ...(unattended ? { agent: [UNATTENDED_ACTION] } : {}),
+    ...(unattended ? { agent: [...(base.agent ?? []), UNATTENDED_ACTION] } : {}),
   }
 }
 

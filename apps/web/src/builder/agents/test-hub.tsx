@@ -2,6 +2,7 @@ import type {
   AgentConversationSummary,
   AgentDetail,
   AgentVersionSummary,
+  Connection,
   ConstrutorConversationSummary,
   ReadyTool,
 } from '@conexus/hub-api'
@@ -27,7 +28,15 @@ import type { View } from '../conversation/test-hub.tsx'
 import { screens, view } from '../conversation/test-hub.tsx'
 import { START } from '../conversation/test-start.tsx'
 import { displayOf, openLine } from '../conversation/test-stream.tsx'
-import { BUILDER_CHAT, CHAT, TEST_CHAT, TOOL_V1, toolSummary, version } from './test-agents.ts'
+import {
+  BUILDER_CHAT,
+  CHAT,
+  MATRIZ,
+  TEST_CHAT,
+  TOOL_V1,
+  toolSummary,
+  version,
+} from './test-agents.ts'
 import type { ToolHeld } from './test-hub-tools.tsx'
 import { openWritesRoute, toolRoutes } from './test-hub-tools.tsx'
 
@@ -275,10 +284,24 @@ function memberRoutes() {
   ]
 }
 
+/** The company's Matriz, linked to the Sankhya: the card of a write shows the connector's logo from it. */
+const MATRIZ_LINK: Connection = {
+  id: MATRIZ,
+  connector: 'sankhya',
+  name: 'Matriz',
+  connectorVersion: '1.0.0',
+  state: 'ACTIVE',
+  linkedBy: null,
+  linkedAt: '2026-11-01T12:00:00.000Z',
+  testedAt: null,
+  testedBy: null,
+  account: null,
+}
+
 /** The company's catalog with the Sankhya, where the screens read the connectors' names and logos. */
 function catalogRoute() {
   return http.get('*/api/companies/:companyId/connections', () =>
-    HttpResponse.json({ connectors: [SANKHYA], connections: [], mayManage: true }),
+    HttpResponse.json({ connectors: [SANKHYA], connections: [MATRIZ_LINK], mayManage: true }),
   )
 }
 

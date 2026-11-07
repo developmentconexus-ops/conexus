@@ -1,4 +1,4 @@
-import { ToolCallId } from '@conexus/hub-api'
+import { phraseOf, ToolCallId } from '@conexus/hub-api'
 import { useEffect, useRef, useState } from 'react'
 import { ConnectorLogo } from '../../hub/connectors/public.ts'
 import { writeFailureText } from '../../platform/hub.ts'
@@ -6,6 +6,7 @@ import { Alert } from '../../ui/alert.tsx'
 import { Button } from '../../ui/button.tsx'
 import { Card } from '../../ui/card.tsx'
 import { Notice } from '../../ui/notice.tsx'
+import { ReadFailure } from '../../ui/states.tsx'
 import { fieldsOf } from './approval-fields.ts'
 import type { ApprovalCardItem, Outcome } from './approval-item.ts'
 import {
@@ -15,7 +16,7 @@ import {
   uncertainText,
   wantsText,
 } from './approval-text.ts'
-import { DEADLINE_TEXT } from './connector-specs.ts'
+import { DEADLINE_TEXT, LOCAL_REFUSALS } from './connector-specs.ts'
 import { WaitingCaption } from './question-card.tsx'
 import { useApprove, useRoom } from './room.ts'
 import type { ConnectorWords } from './tool-spec.ts'
@@ -50,7 +51,8 @@ function useReply(toolCallId: ToolCallId) {
 }
 
 /** What a write that ran says under the answer: the order it made, the mark to look for, or why it did not. */
-function Result({ outcome, connector }: { outcome: Outcome; connector: string }) {
+function Result(props: { outcome: Outcome; connector: string; action: string }) {
+  const { outcome, connector, action } = props
   const { connectors } = useRoom()
   switch (outcome.kind) {
     case 'LAUNCHED':
@@ -63,7 +65,7 @@ function Result({ outcome, connector }: { outcome: Outcome; connector: string })
       return (
         <>
           <Alert tone="danger">{APPROVAL_TEXT.failed}</Alert>
-          <p className="text-text-2">{failureText(outcome, connector, connectors)}</p>
+          <p className="text-text-2">{failureText(outcome, { connector, action }, connectors)}</p>
         </>
       )
     default:
@@ -74,14 +76,23 @@ function Result({ outcome, connector }: { outcome: Outcome; connector: string })
 /** Why a write did not go out, said in the words of the connection or of the Hub. */
 function failureText(
   failed: Extract<Outcome, { kind: 'FAILED' }>,
-  connector: string,
+  of: { connector: string; action: string },
   words: ConnectorWords,
 ): string {
   switch (failed.why) {
     case 'UNREACHABLE':
-      return words.refusal(connector, { kind: 'UNREACHABLE' })
+      return words.refusal(of.connector, { kind: 'UNREACHABLE' })
     case 'DEADLINE':
       return DEADLINE_TEXT
+    case 'NOT_IN_ROLE':
+      return phraseOf('NOT_IN_ROLE', undefined, of.action)
+    case 'NOT_GRANTED':
+    case 'CALLS_SPENT':
+      return LOCAL_REFUSALS[failed.why]
+    case 'WRITE_OPEN':
+      return APPROVAL_TEXT.writeOpen
+    case 'ERROR':
+      return APPROVAL_TEXT.errored
     case 'OTHER':
       return failed.text ?? APPROVAL_TEXT.refused
     default:
@@ -124,11 +135,12 @@ function Fields({ fields }: { fields: Fields }) {
 }
 
 /** How the card ended: who decided, and what the write did. */
-function Decided({ part, connector }: { part: ApprovalCardItem; connector: string }) {
+function Decided(props: { part: ApprovalCardItem; connector: string; action: string }) {
+  const { part, connector, action } = props
   return (
     <>
       {part.state !== 'open' && <p className="font-semibold">{ANSWERED[part.state]}</p>}
-      {part.outcome !== undefined && <Result outcome={part.outcome} connector={connector} />}
+      {part.outcome !== undefined && <Result outcome={part.outcome} connector={connector} action={action} />}
     </>
   )
 }
@@ -157,7 +169,8 @@ function Answer(props: { lit: boolean } & Pick<Replying, 'sending' | 'error' | '
 /**
  * The card of a write that asks the person (step 24.5, reference table row "O cartão"), drawn on
  * the plan's: who wants to write what, where, the fields, and **Aprovar** or **Recusar**. The buttons
- * answer only while the session's state holds the call, so a person has read before they answer.
+ * answer only while the session's state holds the call and the read of the open sends has answered,
+ * so a person has read the warning, if there is one, before they answer.
  */
 export function ApprovalCard({ part }: { part: ApprovalCardItem }) {
   const room = useRoom()
@@ -171,9 +184,15 @@ export function ApprovalCard({ part }: { part: ApprovalCardItem }) {
   const system = write === undefined ? '' : room.connectors.name(write.connector)
   const action = write?.label ?? part.toolName
   const title = wantsText(room.agent, action, system)
-  const same = room.openWrites?.find(
-    (one) => one.connectionId === write?.connectionId && one.operation === write?.operation,
-  )
+  const read = room.openWrites
+  const same =
+    read?.kind === 'READ'
+      ? read.writes.find(
+          (one) => one.connectionId === write?.connectionId && one.operation === write?.operation,
+        )
+      : undefined
+  // Where the room reads the open sends, a person approves only after the read answered.
+  const checked = read === undefined || read.kind === 'READ'
   return (
     <div className="flex min-w-0 flex-col gap-xs">
       <Card role="region" aria-label={title} className="items-stretch gap-md">
@@ -186,11 +205,12 @@ export function ApprovalCard({ part }: { part: ApprovalCardItem }) {
           </h3>
         </div>
         <Fields fields={fieldsOf(write?.operation, part.args)} />
+        {open && read?.kind === 'FAILED' && <ReadFailure text={read.text} onRetry={() => refresh?.()} />}
         {open && same !== undefined && <Notice>{openWriteText(same.sentAt, same.mark)}</Notice>}
         {open ? (
-          <Answer lit={part.lit} sending={sending} error={error} reply={reply} />
+          <Answer lit={part.lit && checked} sending={sending} error={error} reply={reply} />
         ) : (
-          <Decided part={part} connector={write?.connector ?? ''} />
+          <Decided part={part} connector={write?.connector ?? ''} action={action} />
         )}
       </Card>
       {open && <p className="px-xs text-label text-text-2">{APPROVAL_TEXT.steer}</p>}

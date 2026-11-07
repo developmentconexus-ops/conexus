@@ -1,10 +1,11 @@
 import type { AgentDetail, CompanyId, ConversationId, OpenWrite, ProjectId } from '@conexus/hub-api'
 import { AGENTS_CONTROLLER, agentFilePath } from '@conexus/hub-api'
 import { useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
-import { useContext, useEffect, useMemo, useState } from 'react'
+import { useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { sentenceOf } from '../../platform/hub.ts'
 import { useIsMobile } from '../../ui/use-mobile.ts'
 import { useConnectorCatalog } from '../assistant/public.ts'
-import type { OpenedFile, WriteTool } from '../conversation/public.ts'
+import type { OpenedFile, OpenWritesRead, WriteTool } from '../conversation/public.ts'
 import {
   agentRoom,
   Beside,
@@ -24,7 +25,7 @@ function useAgentRoom(
   held: {
     file: OpenedFile | undefined
     setFile: (file: OpenedFile) => void
-    writes: { openWrites: readonly OpenWrite[]; refresh: () => void }
+    writes: { openWrites: OpenWritesRead; refresh: () => void }
   },
 ) {
   const { file, setFile, writes } = held
@@ -59,6 +60,17 @@ function writeOf(agent: AgentDetail, toolName: string): WriteTool | undefined {
   }
 }
 
+/** What the read of the open sends says now: an answer kept from before is not one while it is read again. */
+function openWritesRead(read: {
+  data: { writes: readonly OpenWrite[] } | undefined
+  error: unknown
+  isFetching: boolean
+}): OpenWritesRead {
+  if (read.isFetching) return { kind: 'READING' }
+  if (read.error !== null) return { kind: 'FAILED', text: sentenceOf(read.error) }
+  return read.data === undefined ? { kind: 'READING' } : { kind: 'READ', writes: read.data.writes }
+}
+
 /** A conversation with an agent, published or the test one with the draft: the conversation of the 24.1 over the `agents` controller (web W31). */
 export function AgentChat(props: {
   companyId: CompanyId
@@ -77,9 +89,11 @@ export function AgentChat(props: {
   const [file, setFile] = useState<OpenedFile>()
   const phone = useIsMobile()
   const opened = useQuery(openWritesQuery(scope, agentId, conversationId))
+  const { data, error, isFetching, refetch } = opened
+  const refresh = useCallback(() => void refetch(), [refetch])
   const writes = useMemo(
-    () => ({ openWrites: opened.data?.writes ?? [], refresh: () => void opened.refetch() }),
-    [opened.data, opened.refetch],
+    () => ({ openWrites: openWritesRead({ data, error, isFetching }), refresh }),
+    [data, error, isFetching, refresh],
   )
   const room = useAgentRoom(agent, words, { file, setFile, writes })
   const widen = useContext(FileWidth)

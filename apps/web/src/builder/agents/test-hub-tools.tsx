@@ -11,13 +11,15 @@ export type ToolHeld = {
   toolVersions?: ToolVersionDetail[]
   /** The agent's sends whose end is not known, which the card of a write warns of (step 24.5). */
   openWrites?: OpenWrite[]
+  /** What the read of the open sends answers instead of the list: a failure, or an answer that waits. */
+  openWritesAnswer?: () => Response | Promise<Response>
 }
 type Held = ToolHeld
 
 /** The sends of a conversation whose end is not known. */
 export function openWritesRoute(held: Held, projectApi: string) {
   return http.get(`${projectApi}/agents/:id/conversations/:conversationId/open-writes`, () =>
-    HttpResponse.json({ writes: held.openWrites ?? [] }),
+    held.openWritesAnswer?.() ?? HttpResponse.json({ writes: held.openWrites ?? [] }),
   )
 }
 

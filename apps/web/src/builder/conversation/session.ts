@@ -60,13 +60,13 @@ export function sessionOf(conversationId: ConversationId, controller: Controller
      * thread (`useAgentControllerThreadMessages.ts`, `session.listMessages(threadId, limit)`).
      */
     read: (limit: number) => said(session.listMessages(conversationId, limit)),
+    /** The person's answer to the card of a write that asks (step 24.5), on Mastra's own route behind the Hub's guard. */
+    approve: (toolCallId: string, approved: boolean) =>
+      said(session.approveTool(toolCallId, approved)),
     /**
      * A card's answer: the answers of `ask_user`, one per question (ours takes a list for a
      * multiple choice, which the client's type does not say), or the plan's decision.
      */
-    /** The person's answer to the card of a write that asks (step 24.5), on Mastra's own route behind the Hub's guard. */
-    approve: (toolCallId: string, approved: boolean) =>
-      said(session.approveTool(toolCallId, approved)),
     answer: (toolCallId: string, resumeData: readonly Answer[] | PlanResume) =>
       said(
         session.request<{ ok: boolean }>(`${path}/tool-suspension`, {

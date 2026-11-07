@@ -3,7 +3,8 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { hourOf } from '../../platform/dates.ts'
-import { hubServer } from '../../platform/test-hub.tsx'
+import { hubServer, refusal } from '../../platform/test-hub.tsx'
+import { say } from '../conversation/test-hub.tsx'
 import { recordedRun } from '../conversation/test-recorded.ts'
 import { MATRIZ } from './test-agents.ts'
 import { asks, conversation, ends, holdsApproval, lineOf, SESSION, tell } from './test-approval.tsx'
@@ -44,7 +45,9 @@ test('o cartão mostra o agente, a ação, cada campo, Aprovar e Recusar, e a fr
   expect(card.getByRole('button', { name: 'Recusar' }).hasAttribute('disabled')).toBe(false)
   expect(screen.getByText('Escrever outra mensagem recusa este pedido.')).toBeTruthy()
   // The box stays open while the card waits: a message is how the person declines by writing.
-  expect(document.querySelector('textarea')?.hasAttribute('disabled')).toBe(false)
+  expect(
+    screen.getByRole('textbox', { name: 'Mensagem para o Conferente de metas' }).hasAttribute('disabled'),
+  ).toBe(false)
 })
 
 test('os botões acendem só quando o estado da sessão traz o toolCallId', async () => {
@@ -164,4 +167,120 @@ test('ao reabrir, a escrita ainda guardada como aberta volta com os botões aces
   tell(line, run.events, holdsApproval)
   const card = within(await screen.findByRole('region', { name: TITLE }))
   expect(card.getByRole('button', { name: 'Aprovar' }).hasAttribute('disabled')).toBe(false)
+})
+
+test('uma escrita que lançou o erro depois de Aprovar diz "Não conseguiu lançar" e a falha, nunca "Recusado"', async () => {
+  const { line, rest, card } = await asked('approval')
+  fireEvent.click(within(card).getByRole('button', { name: 'Aprovar' }))
+  for (const event of rest) {
+    line.emit(
+      ends(event) ? { ...event, result: 'connect ECONNREFUSED', isError: true, denied: false } : event,
+    )
+  }
+  expect(await screen.findByText('Aprovado por você')).toBeTruthy()
+  expect(screen.getByText('Não conseguiu lançar')).toBeTruthy()
+  expect(screen.getByText('Deu um erro no Hub e o pedido não foi enviado.')).toBeTruthy()
+  expect(screen.queryByText('Recusado')).toBeNull()
+})
+
+test.each([
+  [{ kind: 'NOT_IN_ROLE' }, 'Seu papel não pode usar a ferramenta Lançar pedido.'],
+  [{ kind: 'NOT_GRANTED' }, 'Esta ligação não está disponível nesta conversa.'],
+  [
+    { kind: 'CALLS_SPENT' },
+    'Esta resposta já usou as 50 leituras que cabem em uma resposta.',
+  ],
+  [
+    { kind: 'WRITE_OPEN', mark: 'Conexus 7f3a2b1c', instruction: 'Do not call this again' },
+    'Um pedido igual pode já existir, e este não foi enviado.',
+  ],
+])('a recusa %j diz quem recusou, não "O sistema recusou o pedido."', async (result, said) => {
+  await endedAs(result)
+  expect(await screen.findByText('Não conseguiu lançar')).toBeTruthy()
+  expect(screen.getByText(said)).toBeTruthy()
+  expect(screen.queryByText('O sistema recusou o pedido.')).toBeNull()
+})
+
+test('a leitura dos envios abertos que falha mostra a falha com Tentar de novo e deixa os botões apagados até ela voltar', async () => {
+  let failing = true
+  const opened = conversation(server, {
+    openWritesAnswer: () =>
+      failing ? refusal('DATABASE_UNAVAILABLE') : HttpResponse.json({ writes: [] }),
+  })
+  const line = await lineOf(opened)
+  tell(line, recordedRun('approval').events, holdsApproval)
+  const card = within(await screen.findByRole('region', { name: TITLE }))
+  const retry = await screen.findByRole('button', { name: 'Tentar de novo' })
+  expect(card.getByRole('button', { name: 'Aprovar' }).hasAttribute('disabled')).toBe(true)
+  expect(card.getByRole('button', { name: 'Recusar' }).hasAttribute('disabled')).toBe(true)
+  failing = false
+  fireEvent.click(retry)
+  await waitFor(() =>
+    expect(card.getByRole('button', { name: 'Aprovar' }).hasAttribute('disabled')).toBe(false),
+  )
+  expect(screen.queryByRole('button', { name: 'Tentar de novo' })).toBeNull()
+})
+
+test('enquanto a leitura dos envios abertos se refaz, os botões ficam apagados e a resposta velha não aparece', async () => {
+  const sentAt = '2026-11-07T13:12:00.000Z'
+  const stale = {
+    connectionId: MATRIZ,
+    operation: OperationId.parse('lancarPedido'),
+    state: 'UNCERTAIN' as const,
+    sentAt,
+    mark: 'Conexus 7f3a2b1c',
+  }
+  let release: () => void = () => undefined
+  const gate = new Promise<void>((done) => {
+    release = done
+  })
+  let reads = 0
+  const opened = conversation(server, {
+    openWritesAnswer: async () => {
+      reads += 1
+      if (reads > 1) await gate
+      return HttpResponse.json({ writes: [stale] })
+    },
+  })
+  const line = await lineOf(opened)
+  tell(line, recordedRun('approval').events, holdsApproval)
+  const card = within(await screen.findByRole('region', { name: TITLE }))
+  await waitFor(() => expect(reads).toBeGreaterThan(1))
+  expect(card.getByRole('button', { name: 'Aprovar' }).hasAttribute('disabled')).toBe(true)
+  expect(screen.queryByText(/não sabemos se entrou/)).toBeNull()
+  release()
+  expect(await screen.findByText(/não sabemos se entrou/)).toBeTruthy()
+  await waitFor(() =>
+    expect(card.getByRole('button', { name: 'Aprovar' }).hasAttribute('disabled')).toBe(false),
+  )
+})
+
+test('uma mensagem escrita com o cartão esperando fica na fila da conversa', async () => {
+  await asked('approval')
+  say(
+    await screen.findByRole('textbox', { name: 'Mensagem para o Conferente de metas' }),
+    'Mande de novo.',
+  )
+  expect(await screen.findByText('Vai ao Conferente de metas no próximo passo')).toBeTruthy()
+})
+
+test('o cartão mostra o logotipo da ligação (critério 14)', async () => {
+  await asked('approval')
+  const card = screen.getByRole('region', { name: TITLE })
+  expect(card.querySelector('svg, img')).not.toBeNull()
+})
+
+test('Aprovar que a Mastra já não espera (ok: false: outra aba respondeu) deixa o cartão dizer o que a sessão diz (critério 16)', async () => {
+  server.use(http.post(`${SESSION}/tool-approval`, () => HttpResponse.json({ ok: false })))
+  const { line, rest, card } = await asked('approval')
+  fireEvent.click(within(card).getByRole('button', { name: 'Aprovar' }))
+  await waitFor(() =>
+    expect(within(card).getByRole('button', { name: 'Aprovar' }).hasAttribute('disabled')).toBe(
+      false,
+    ),
+  )
+  expect(screen.queryByText('Não foi possível enviar. Tente de novo.')).toBeNull()
+  for (const event of rest) line.emit(event)
+  expect(await screen.findByText('Aprovado por você')).toBeTruthy()
+  expect(screen.queryByRole('button', { name: 'Aprovar' })).toBeNull()
 })

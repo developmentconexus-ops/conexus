@@ -35,7 +35,7 @@ export type RoleView = z.infer<typeof RoleView>
 export const RoleCreate = z.object({
   label: z.string().trim().min(1).max(ROLE_LABEL_MAX),
   connectors: RoleConnectors,
-  unattended: z.boolean().optional(),
+  unattended: z.boolean(),
 })
 export type RoleCreate = z.infer<typeof RoleCreate>
 

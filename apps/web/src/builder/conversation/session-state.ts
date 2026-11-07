@@ -29,8 +29,8 @@ export type SessionState = {
   approvals: Readonly<Record<string, unknown>>
   /** The calls the stream said ask the person (`tool_approval_required`), until the screen is left. */
   asked: Readonly<Record<string, true>>
-  /** How the calls the stream ended did, by call (`tool_end`): their result, and whether the person's answer or the run refused them. */
-  ended: Readonly<Record<string, { result: unknown; denied: boolean }>>
+  /** How the calls the stream ended did, by call (`tool_end`): their result, whether the person's answer or the run refused them, and whether the call threw. */
+  ended: Readonly<Record<string, { result: unknown; denied: boolean; failed: boolean }>>
   memory: OMProgress | null
   omPhase: OMPhase
   memoryFailed: MemoryFailure | null
@@ -214,7 +214,11 @@ function heard(state: SessionState, event: KnownAgentControllerEvent): SessionSt
         ...state,
         ended: {
           ...state.ended,
-          [event.toolCallId]: { result: event.result, denied: event.denied === true },
+          [event.toolCallId]: {
+            result: event.result,
+            denied: event.denied === true,
+            failed: event.isError,
+          },
         },
       }
     case 'shell_output': {

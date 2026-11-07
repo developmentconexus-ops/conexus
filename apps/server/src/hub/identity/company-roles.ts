@@ -115,17 +115,17 @@ async function readRoles(set: RoleSet, tx: ReadTx, companyId: CompanyId): Promis
   })
   const own = rows
     .filter((row) => !isFixedRole(row.role))
-    .map((row) =>
-      RoleView.parse({
+    .map((row) => {
+      const held = Statements.parse(JSON.parse(row.permission))
+      return RoleView.parse({
         role: row.role,
         label: row.label,
         kind: 'CUSTOM',
-        connectors: connectorsOf(set, Statements.parse(JSON.parse(row.permission))),
-        unattended:
-          Statements.parse(JSON.parse(row.permission)).agent?.includes(UNATTENDED_ACTION) === true,
+        connectors: connectorsOf(set, held),
+        unattended: held.agent?.includes(UNATTENDED_ACTION) === true,
         members: members.get(row.role) ?? 0,
-      }),
-    )
+      })
+    })
   return [...fixed, ...own]
 }
 

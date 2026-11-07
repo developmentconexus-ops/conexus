@@ -240,7 +240,7 @@ export function Chat(props: ChatProps) {
   useHandedOver({ conversationId, draft, send, setError, following })
 
   const turns = useMemo(() => shownOf(state), [state])
-  const waiting = Object.keys(state.suspended).length + Object.keys(state.approvals).length > 0
+  const waiting = Object.keys(state.suspended).length > 0
   if (gone) return <NotFound />
   const empty = state.messages.length === 0 && !state.running
   return (

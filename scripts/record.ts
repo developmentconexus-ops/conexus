@@ -27,6 +27,7 @@ import {
   webSearchTool,
 } from '@mastra/core/tools'
 import { Memory } from '@mastra/memory'
+import { PostgresStore } from '@mastra/pg'
 import { z } from 'zod'
 import { PADARIA_SOL_MATRIZ, salesDatabase } from '../apps/server/src/hub/connectors/test-sales.ts'
 import type { Block } from '../apps/server/src/platform/test-anthropic-stream.ts'
@@ -274,6 +275,22 @@ const RECORDED_TOOLS = {
   }),
 }
 
+/**
+ * The store the agents' controller keeps its threads in: the `approval` scenarios run on Postgres, as
+ * the Hub does, since a call that waits on the person is read from what the store holds. The database is
+ * a disposable one, named by `RECORD_DATABASE_URL`; each scenario takes a schema of its own.
+ */
+function postgresStore(scenario: string): PostgresStore {
+  const connectionString = process.env.RECORD_DATABASE_URL
+  if (connectionString === undefined)
+    throw new Error('The approval scenarios record on Postgres: set RECORD_DATABASE_URL.')
+  return new PostgresStore({
+    id: 'record',
+    connectionString,
+    schemaName: `record_${scenario.replaceAll('-', '_')}`,
+  })
+}
+
 async function record(scenario: z.infer<typeof Scenario>) {
   const planned = Scripted.safeParse(scenario).success
   const source = planned ? 'test-anthropic-stream.ts' : `anthropic-${scenario}.sse`
@@ -285,7 +302,7 @@ async function record(scenario: z.infer<typeof Scenario>) {
   )
   // Mastra's router reads the key of the provider from the environment; this one is invented.
   process.env.ANTHROPIC_API_KEY = 'invented-key'
-  const storage = new InMemoryStore()
+  const storage = isApproval(scenario) ? postgresStore(scenario) : new InMemoryStore()
   const memory = new Memory({ storage })
   const agent = new Agent({
     id: 'builder',

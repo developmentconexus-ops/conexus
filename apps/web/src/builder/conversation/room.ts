@@ -17,11 +17,13 @@ import type { ConnectorWords, RowTool, ToolSpec } from './tool-spec.ts'
 /** A file the Assistant shows beside the chat: the text to read, or the file to download. */
 export type OpenedFile = Extract<ShownFile, { kind: 'TEXT' | 'FILE' }>
 
-/**
- * Whose conversation the rows are drawn in (step 24.1, U4): the Builder's, which every row was
- * written for, or the Assistant's, whose rows name the connection read and open the file shown or
- * the app proposed in the screen that holds them. Whose session it is, is the chat's `Place`.
- */
+/** The read of the sends whose end is not known: until it answers, or fails, a card does not let the person approve. */
+export type OpenWritesRead =
+  | { kind: 'READING' }
+  | { kind: 'READ'; writes: readonly OpenWrite[] }
+  | { kind: 'FAILED'; text: string }
+
+/** A write of an agent's tool, as the card that asks about it names it: its connection and its operation. */
 export type WriteTool = {
   connectionId: string
   /** The connector's id ("sankhya"), whose name the room's words say. */
@@ -33,6 +35,11 @@ export type WriteTool = {
   label: string
 }
 
+/**
+ * Whose conversation the rows are drawn in (step 24.1, U4): the Builder's, which every row was
+ * written for, or the Assistant's, whose rows name the connection read and open the file shown or
+ * the app proposed in the screen that holds them. Whose session it is, is the chat's `Place`.
+ */
 export type Room = {
   /** Who answers, as the screen's words name it. */
   agent: string
@@ -55,7 +62,7 @@ export type Room = {
   /** The write a tool `tool_<slug>` is, with its connection, for the card that asks about it; none where the room has no writes. */
   writeOf?: (toolName: string) => WriteTool | undefined
   /** The agent's sends of this conversation whose end is not known, for the warning on a card (step 24.5); read again when a card opens. */
-  openWrites?: readonly OpenWrite[]
+  openWrites?: OpenWritesRead
   refreshOpenWrites?: () => void
   /** The rows this room draws differently from the table. */
   overrides: Partial<Record<RowTool, ToolSpec>>

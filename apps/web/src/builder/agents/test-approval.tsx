@@ -20,7 +20,11 @@ const UPDATED = '2026-11-07T12:00:00.000Z'
 /** The agent's conversation open, with `rows` as what the thread kept and `openWrites` as the Hub lists them. */
 export function conversation(
   server: ReturnType<typeof setupServer>,
-  held: { rows?: readonly Stored[]; openWrites?: OpenWrite[] } = {},
+  held: {
+    rows?: readonly Stored[]
+    openWrites?: OpenWrite[]
+    openWritesAnswer?: () => Response | Promise<Response>
+  } = {},
 ) {
   const opened = agentScreens(server).at(PAGE, {
     agents: [writer('ASK')],
@@ -28,6 +32,7 @@ export function conversation(
       { id: CHAT, agentId: AGENT, draft: false, title: 'Pedido', updatedAt: UPDATED },
     ],
     openWrites: held.openWrites ?? [],
+    openWritesAnswer: held.openWritesAnswer,
   })
   server.use(
     http.get(`${SESSION}/threads/:threadId/messages`, () =>

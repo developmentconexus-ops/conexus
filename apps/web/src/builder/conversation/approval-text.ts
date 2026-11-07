@@ -14,6 +14,8 @@ export const APPROVAL_TEXT = {
   stopped: 'Recusado porque você parou a conversa',
   failed: 'Não conseguiu lançar',
   refused: 'O sistema recusou o pedido.',
+  errored: 'Deu um erro no Hub e o pedido não foi enviado.',
+  writeOpen: 'Um pedido igual pode já existir, e este não foi enviado.',
 } as const
 
 /** "O Pedidos quer lançar pedido no Sankhya": the agent, what it wants and the system. */
