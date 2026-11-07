@@ -89,6 +89,7 @@ test('as ferramentas da Conexus aparecem, e a lista de Escolher não traz as de 
   expect(
     await screen.findByText('Nenhuma ferramenta da Conexus. As de cada ligação ficam em Ligações.'),
   ).toBeTruthy()
+  expect(screen.getByRole('heading', { name: 'Do Conexus' })).toBeTruthy()
   fireEvent.click(screen.getByRole('button', { name: 'Adicionar da biblioteca' }))
   expect(await screen.findByRole('switch', { name: 'Pesquisar na web' })).toBeTruthy()
   expect(screen.queryByRole('switch', { name: /Vendas de ontem por vendedor\./ })).toBeNull()

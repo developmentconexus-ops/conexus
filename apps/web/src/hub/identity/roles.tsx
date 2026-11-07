@@ -5,9 +5,9 @@ import { PlusIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { buttonVariants } from '../../ui/button.tsx'
 import { List, Row, rowBody, SectionTitle } from '../../ui/list.tsx'
-import { Empty, NotFound } from '../../ui/states.tsx'
+import { Empty } from '../../ui/states.tsx'
 import { rolesQuery } from './queries.ts'
-import { NewRole, OpenRole } from './role-editor.tsx'
+import { Back, NewRole, OpenRole } from './role-editor.tsx'
 import { summaryOf } from './role-text.ts'
 
 const route = getRouteApi('/_app/companies/$companyId_/settings/roles')
@@ -108,7 +108,14 @@ export function Roles(props: {
   if (search.new) return <NewRole companyId={companyId} kit={kit} logo={logo} onDone={back} />
   if (search.role !== undefined) {
     const found = data.roles.find((one) => one.role === search.role)
-    if (found === undefined) return <NotFound hint={ROLE_GONE} />
+    if (found === undefined) {
+      return (
+        <div className="flex flex-col gap-lg">
+          <Back companyId={companyId} />
+          <Empty>{ROLE_GONE}</Empty>
+        </div>
+      )
+    }
     return <OpenRole companyId={companyId} kit={kit} logo={logo} role={found} onDone={back} />
   }
   return <RoleList companyId={companyId} roles={data.roles} kit={kit} />

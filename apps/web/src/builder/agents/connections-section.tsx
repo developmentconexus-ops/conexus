@@ -57,7 +57,10 @@ export function Connections({ scope, agent }: Part) {
       {agent.offered.map((one) => {
         const badge = badgeOf(one.connectionId, one.connector)
         const label = `${catalog.name(one.connector)} · ${one.name}`
-        const selected = chosen.includes(one.connectionId)
+        // A draft written before E4 may hold a tool of a connection it did not select: that selects it.
+        const selected =
+          chosen.includes(one.connectionId) ||
+          agent.tools.some((tool) => tool.connectionId === one.connectionId)
         return (
           <div key={one.connectionId} className="flex flex-col gap-xs">
             <div className="flex items-center gap-sm">

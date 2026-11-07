@@ -15,7 +15,7 @@ import { useConnectorCatalog } from '../assistant/public.ts'
 import { toolsQuery } from './queries.ts'
 import type { Part } from './section.tsx'
 import {
-  COMPANY_TOOLS,
+  FREE_QUERY,
   FREE_QUERY_WARNING,
   MARK_ALL_READS,
   newVersionText,
@@ -58,8 +58,23 @@ function readsOf(
     ),
     ready: list.ready.find((one) => one.connectionId === at && one.operation === read.operation),
   }))
-  // The free query last (a stable sort keeps the kit's order inside each side).
-  return [...reads.filter((one) => !one.door), ...reads.filter((one) => one.door)]
+  return reads
+}
+
+/** Whether the role of whoever edits holds every read the tool makes; a read the kit does not list is the Hub's to refuse. */
+function toolAllowed(tool: ToolSummary, connection: OfferedConnection): boolean {
+  const reads = tool.kind === 'CODE' ? tool.reads : [tool.operation]
+  return reads.every(
+    (operation) => connection.reads.find((one) => one.operation === operation)?.allowed !== false,
+  )
+}
+
+/** What a company's own tool says under its title: the reads it makes, not its description again. */
+function toolDetail(tool: ToolSummary, title: string): string | undefined {
+  if (tool.kind === 'CODE') {
+    return `Lê ${tool.reads.map((operation) => tool.readLabels[operation] ?? operation).join(', ')}`
+  }
+  return tool.description === title ? undefined : tool.description
 }
 
 /** The chosen tool's newer version, as the line offers it: the draft then holds that version. */
@@ -138,9 +153,9 @@ function ReadLine(props: { connection: OfferedConnection; read: Read; saving: Sa
       id={`read-${connection.connectionId}-${read.operation}`}
       title={read.label}
       detail={read.allowed ? read.summary : OUT_OF_ROLE}
-      warning={read.door ? FREE_QUERY_WARNING : undefined}
+      warning={read.operation === FREE_QUERY ? FREE_QUERY_WARNING : undefined}
       checked={read.chosen !== undefined}
-      disabled={!read.allowed || !known}
+      disabled={(!read.allowed && read.chosen === undefined) || !known}
       onChange={change}
       newer={newerOf(read.chosen, saving)}
     />
@@ -185,28 +200,27 @@ export function ConnectionTools(props: Part & { connection: OfferedConnection; s
   // The connection's name titles the group when the Projeto has two of the same system.
   const sameSystem =
     agent.offered.filter((one) => one.connector === connection.connector).length > 1
+  const line = (one: Read) => (
+    <ReadLine key={one.operation} connection={connection} read={one} saving={saving} />
+  )
   return (
     <div className="flex flex-col gap-xs pl-lg">
       {sameSystem && <h4 className="font-body text-label font-semibold">{connection.name}</h4>}
       <ul aria-label={`Ferramentas de ${connection.name}`} className="flex flex-col">
-        {reads.map((one) => (
-          <ReadLine key={one.operation} connection={connection} read={one} saving={saving} />
-        ))}
-      </ul>
-      {own.length > 0 && (
-        <ul aria-label={COMPANY_TOOLS} className="flex flex-col border-t border-line pt-xs">
-          {own.map((tool) => (
+        {reads.filter((one) => one.operation !== FREE_QUERY).map(line)}
+        {own.map((tool) => {
+          const allowed = toolAllowed(tool, connection)
+          const chosen = agent.tools.find((one) => one.id === tool.id)
+          const title = toolTitle(tool, agent.offered)
+          return (
             <Line
               key={tool.id}
               id={`tool-${connection.connectionId}-${tool.id}`}
-              title={toolTitle(tool, agent.offered)}
-              detail={tool.description}
-              checked={agent.tools.some((one) => one.id === tool.id)}
-              disabled={false}
-              newer={newerOf(
-                agent.tools.find((one) => one.id === tool.id),
-                saving,
-              )}
+              title={title}
+              detail={allowed ? toolDetail(tool, title) : OUT_OF_ROLE}
+              checked={chosen !== undefined}
+              disabled={!allowed && chosen === undefined}
+              newer={newerOf(chosen, saving)}
               onChange={(on) =>
                 saving.save((now) => ({
                   tools: on
@@ -215,9 +229,10 @@ export function ConnectionTools(props: Part & { connection: OfferedConnection; s
                 }))
               }
             />
-          ))}
-        </ul>
-      )}
+          )
+        })}
+        {reads.filter((one) => one.operation === FREE_QUERY).map(line)}
+      </ul>
       <div>
         <Button
           size="sm"

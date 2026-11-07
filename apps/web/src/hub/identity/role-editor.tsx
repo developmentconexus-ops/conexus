@@ -1,5 +1,5 @@
 import type { CompanyId, ConnectorEntry, RoleView } from '@conexus/hub-api'
-import { createRole, RoleConnectors, updateRole } from '@conexus/hub-api'
+import { createRole, ROLE_LABEL_MAX, RoleConnectors, updateRole } from '@conexus/hub-api'
 import { useMutation } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { ArrowLeftIcon } from 'lucide-react'
@@ -47,7 +47,7 @@ function Picked(props: { kit: readonly ConnectorEntry[]; readOnly: boolean; logo
   )
 }
 
-function Back({ companyId }: { companyId: CompanyId }) {
+export function Back({ companyId }: { companyId: CompanyId }) {
   return (
     <Link
       to="/companies/$companyId/settings/roles"
@@ -93,7 +93,8 @@ export function NewRole({ companyId, kit, logo, onDone }: Common) {
           label="Nome do papel"
           type="text"
           autoComplete="off"
-          invalid="Escreva o nome do papel."
+          maxLength={ROLE_LABEL_MAX}
+          invalid={`Escreva o nome do papel, com até ${ROLE_LABEL_MAX} letras.`}
         />
         <Picked kit={kit} readOnly={false} logo={logo} />
         <FormAlert />

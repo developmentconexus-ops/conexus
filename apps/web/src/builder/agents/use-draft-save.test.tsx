@@ -38,6 +38,7 @@ test('ligar a Matriz e logo a Filial, antes de a primeira gravação voltar, gra
     agents: [
       agent({
         draft: { ...agent().draft, connections: [] },
+        tools: [],
         offered: [offered, { ...offered, connectionId: FILIAL, name: 'Filial' }],
       }),
     ],
@@ -60,6 +61,7 @@ test('três ligações seguidas, com a segunda gravação em voo, gravam as trê
     agents: [
       agent({
         draft: { ...agent().draft, connections: [] },
+        tools: [],
         offered: [
           offered,
           { ...offered, connectionId: FILIAL, name: 'Filial' },

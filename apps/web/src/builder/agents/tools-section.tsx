@@ -10,7 +10,7 @@ import { Chooser } from './chooser.tsx'
 import { Creator } from './creator.tsx'
 import type { Part } from './section.tsx'
 import { Section } from './section.tsx'
-import { ADD_FROM_LIBRARY, COMPUTER_TOOL, NO_TOOLS, WEB_TOOL } from './text.ts'
+import { ADD_FROM_LIBRARY, COMPUTER_TOOL, CONEXUS_TOOLS, NO_TOOLS, WEB_TOOL } from './text.ts'
 import type { Saving } from './use-draft-save.ts'
 import { useDraftSave } from './use-draft-save.ts'
 
@@ -71,6 +71,7 @@ export function Tools(props: Part) {
       busy={saving.pending}
       error={saving.refused?.field === 'tools' ? saving.refused.reason : saving.error}
     >
+      <h3 className="font-body text-label font-semibold">{CONEXUS_TOOLS}</h3>
       {!agent.draft.web && !agent.draft.machine && <p className="text-text-2">{NO_TOOLS}</p>}
       <ul className="flex flex-col">
         <ConexusRows draft={agent.draft} saving={saving} />
