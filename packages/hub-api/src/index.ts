@@ -1,15 +1,4 @@
-export {
-  AppEntry,
-  appHostOf,
-  CompanyNickname,
-  HostLabel,
-  hostLabelOf,
-  isReservedNickname,
-  NICKNAME_MAX_LENGTH,
-  NICKNAME_MIN_LENGTH,
-  RESERVED_NICKNAMES,
-  suggestedNickname,
-} from './address.ts'
+export * from './address.ts'
 export { NamedAgent, ProblemAgents, ProblemField, ProblemReason } from './agent-failures.ts'
 export * from './agent-ids.ts'
 export * from './agents.ts'
@@ -237,6 +226,7 @@ export {
   readObservationalMemoryModels,
   setObservationalMemoryModel,
 } from './observational-memory.ts'
+export * from './open-writes.ts'
 export {
   type AccessKind,
   ATTEMPT_KEY_HEADER,

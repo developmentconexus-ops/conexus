@@ -23,6 +23,7 @@ export { conversationMemory, routedModel, sessionModel, toolsOf } from './builde
 export type { Watched } from './end.ts'
 export { failureOf, modelFailure, watchRuns } from './end.ts'
 export type { GuardedMastra } from './guard.ts'
+export { approvedCallOf } from './guard.ts'
 export { skillOf } from './instructions.ts'
 export { ASK_USER_TOOL, createAskUserTool } from './plan-tools.ts'
 export { turnDate } from './prompt/prompt.ts'

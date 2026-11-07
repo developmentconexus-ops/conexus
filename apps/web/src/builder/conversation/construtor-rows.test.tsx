@@ -214,7 +214,9 @@ function inRoom(tool: ToolItem) {
 test('Olhou o Projeto diz as ligações e o app ao lado', () => {
   const read = {
     project: { id: PROJECT, name: 'Vendas' },
-    offered: [{ connectionId: CONNECTION, connector: 'sankhya', name: 'Matriz', reads: [] }],
+    offered: [
+      { connectionId: CONNECTION, connector: 'sankhya', name: 'Matriz', reads: [], writes: [] },
+    ],
     app: { tables: [{ name: 'pedidos', columns: ['id'] }] },
     agents: [],
   }

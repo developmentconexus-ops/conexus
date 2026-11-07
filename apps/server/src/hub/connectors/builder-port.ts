@@ -29,6 +29,8 @@ export type GrantedConnection = Readonly<{
   perProject: 'one' | 'many'
   skill: Readonly<{ name: string; content: string; references: Readonly<Record<string, string>> }>
   reads: readonly Readonly<{ operation: string; label: string; summary: string }>[]
+  /** The writes the connector declares (step 24.5): an agent's tool may be one, never a read of the Builder or the Assistant. */
+  writes: readonly Readonly<{ operation: string; label: string; summary: string }>[]
   notes: readonly string[]
 }>
 export type ShapedRead =
@@ -139,6 +141,10 @@ function readerOf(
 }
 
 /** What the model is told of each row; a row of a connector the kit no longer has is left out. */
+function listedOf(operation: { id: string; label: string; summary: string }) {
+  return { operation: operation.id, label: operation.label, summary: operation.summary }
+}
+
 export function described(rows: Awaited<ReturnType<typeof offeredIn>>): GrantedConnection[] {
   return rows.flatMap((row) => {
     const connector = connectorOf(row.connector)
@@ -151,13 +157,8 @@ export function described(rows: Awaited<ReturnType<typeof offeredIn>>): GrantedC
         name: row.name,
         perProject: connector.perProject,
         skill: { name: `conexus-${connector.id}`, ...connector.skill },
-        reads: reads
-          .filter((operation) => operation.class === 'read')
-          .map((operation) => ({
-            operation: operation.id,
-            label: operation.label,
-            summary: operation.summary,
-          })),
+        reads: reads.filter((operation) => operation.class === 'read').map(listedOf),
+        writes: (connector.writes ?? []).map(listedOf),
         notes: Object.keys(Notes.parse(row.notes)),
       },
     ]

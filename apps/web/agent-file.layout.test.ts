@@ -58,6 +58,7 @@ const DETAIL = {
       connector: 'sankhya',
       name: 'Matriz',
       reads: [{ operation: 'pedidos', label: 'Pedidos', summary: 'Pedidos de venda.' }],
+      writes: [],
     },
   ],
   createdBy: null,

@@ -254,8 +254,8 @@ export function createAgentConversations(deps: Deps) {
     deps.machineTuning,
   )
   const turns = agentTurns(queue, runOf, resolvedOf, { database, log, machines })
-  // Decision 0053: nothing waits to be approved; the version's tools only read. The mode lists no
-  // tools: the closed set is the version's, which only this code builds.
+  // `yolo` off (step 24.5): a write asks by its own rule; no session rule, whose `allow` loses calls.
+  // The mode lists no tools: the closed set is the version's, which only this code builds.
   const controller = controllerOf({
     ...{
       kind: 'agents',
@@ -266,7 +266,7 @@ export function createAgentConversations(deps: Deps) {
     mode: { id: MODE },
     // The conversation's machine, none for a version without its Computador (Factory `session-sandbox.ts:29-36`).
     workspace: ({ requestContext }) => machines.workspace(requestContext),
-    initialState: { yolo: true },
+    initialState: { yolo: false },
   })
   turns.watch(controller)
 

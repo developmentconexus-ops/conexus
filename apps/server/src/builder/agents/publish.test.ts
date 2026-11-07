@@ -1,9 +1,23 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { AgentId, CompanyId, ProjectId } from '@conexus/hub-api'
-import { call, codeOf, post } from '../../hub/identity/test-hub.ts'
+import { operationLabel } from '../../hub/connectors/public.ts'
+import { call, codeOf, memberOn, post } from '../../hub/identity/test-hub.ts'
+import { said } from '../assistant/test-assistant.ts'
+import { sent } from '../conversation/test-conversation.ts'
 import type { AgentReads } from './public.ts'
-import { agentOf, agentsOn, drafted, madeAgent, madeTool, ordersOf, toolOf } from './test-agents.ts'
+import {
+  agentOf,
+  agentsOn,
+  drafted,
+  madeAgent,
+  madeTool,
+  ordersOf,
+  patch,
+  publishedNow,
+  toolOf,
+} from './test-agents.ts'
+import { approvalsIn, approving, launched } from './test-approval.ts'
 
 const INSTRUCTIONS = 'Responda com os pedidos do dia, por vendedor.'
 
@@ -230,4 +244,63 @@ test('as versões: a lista diz número, quem publicou, a mensagem e a ativa; vol
   const missing = await post(on.hub, on.ana, `${url}/versions/9/activate`, {})
   assert.equal(missing.statusCode, 404, missing.body)
   assert.equal(codeOf(missing), 'AGENT_VERSION_NOT_FOUND')
+})
+
+test('a escrita que faz sozinha: gravar o rascunho ou publicar com uma escrita em Faz sozinho, por quem não tem a ação, dá NOT_IN_ROLE sem gravar nem publicar; em Pergunta antes grava e publica; publicada em Faz sozinho, roda sem cartão (9)', async (t) => {
+  const on = await approving(t, [[launched()], [said('Lançado.')]])
+  const dora = await memberOn(
+    on.hub,
+    on.companyId,
+    { name: 'Dora Reis', email: 'dora@example.test' },
+    'developer',
+  )
+  const reads = ['clientes', 'empresas', 'pedidos', 'consultar', 'carregar']
+  const role = await call(on.hub, on.ana, 'PUT', `${on.company}/roles/developer`, {
+    connectors: { sankhya: [...reads, 'lancarPedido'] },
+  })
+  assert.equal(role.statusCode, 200, role.body)
+  const label = operationLabel('sankhya', 'lancarPedido')
+  const made = await madeAgent(on.hub, dora, on.agents)
+  const chosen = { connections: [on.matriz], tools: [on.write.latest.id] }
+
+  const alone = await patch(on.hub, dora, `${on.agents}/${made.id}/draft`, {
+    ...{ revision: made.revision, ...chosen },
+    approvals: { [on.write.id]: 'AUTO' },
+  })
+  assert.deepEqual([alone.statusCode, codeOf(alone)], [409, 'NOT_IN_ROLE'], alone.body)
+  assert.equal(Object(alone.json()).operation, label)
+  const kept = agentOf(await call(on.hub, dora, 'GET', `${on.agents}/${made.id}`))
+  assert.deepEqual(kept.tools, [], 'nothing saved')
+
+  const asking = await drafted(on.hub, dora, on.agents, made, {
+    ...{ instructions: 'Lance os pedidos.', ...chosen },
+    approvals: { [on.write.id]: 'ASK' },
+  })
+  assert.deepEqual(
+    asking.tools.map((each) => [each.effect, Object(each).approval]),
+    [['WRITE', 'ASK']],
+  )
+  assert.deepEqual((await publishedNow(on.hub, dora, on.agents, asking)).state, {
+    kind: 'PUBLISHED',
+    version: 1,
+    changed: false,
+  })
+
+  const byAna = await drafted(on.hub, on.ana, on.agents, asking, {
+    approvals: { [on.write.id]: 'AUTO' },
+  })
+  const refused = await post(on.hub, dora, `${on.agents}/${made.id}/publish`, {
+    revision: byAna.revision,
+    message: '',
+  })
+  assert.deepEqual([refused.statusCode, codeOf(refused)], [409, 'NOT_IN_ROLE'], refused.body)
+  assert.equal(Object(refused.json()).operation, label)
+  const still = agentOf(await call(on.hub, on.ana, 'GET', `${on.agents}/${made.id}`))
+  assert.deepEqual(still.state, { kind: 'PUBLISHED', version: 1, changed: true })
+
+  assert.equal((await publishedNow(on.hub, on.ana, on.agents, byAna)).state.kind, 'PUBLISHED')
+  const { url, stream } = await on.opened(made.id)
+  assert.equal((await sent(on.hub, on.ana, url, 'Lance o pedido')).statusCode, 200)
+  assert.deepEqual(approvalsIn(await stream.turn()), [])
+  assert.equal(on.fake.orders().length, 1)
 })

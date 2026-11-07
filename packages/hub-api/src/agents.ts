@@ -12,6 +12,7 @@ import {
   CodeVersionDetail,
   LatestVersion,
   PresetVersionDetail,
+  ToolApproval,
   ToolEffect,
   ToolSlug,
   ToolTarget,
@@ -75,6 +76,7 @@ export const DraftPatch = AgentConfig.omit({ machine: true, byTool: true })
       .refine((ids) => new Set(ids).size === ids.length)
       .optional(),
     ready: z.array(ToolTarget).max(CONNECTIONS_MAX).optional(),
+    approvals: z.record(ToolId, ToolApproval).optional(),
   })
 export type DraftPatch = z.infer<typeof DraftPatch>
 
@@ -116,6 +118,7 @@ export const AgentTool = z.discriminatedUnion('kind', [
     ...ChosenBase,
     kind: z.literal('PRESET'),
     version: PresetVersionDetail,
+    approval: ToolApproval.optional(),
   }),
   z.object({
     ...ChosenBase,
@@ -126,12 +129,13 @@ export const AgentTool = z.discriminatedUnion('kind', [
 ])
 export type AgentTool = z.infer<typeof AgentTool>
 
-/** A connection the Projeto offers now, with its reads, for the panel to choose from. */
+/** A connection the Projeto offers now, with its reads and its writes, for the panel to choose from. */
 export const OfferedConnection = z.object({
   connectionId: ConnectionId,
   connector: z.string(),
   name: z.string(),
   reads: z.array(OfferedRead),
+  writes: z.array(OfferedRead),
 })
 export type OfferedConnection = z.infer<typeof OfferedConnection>
 
@@ -227,8 +231,7 @@ export const getAgent = defineOperation({
 
 export const saveAgentDraft = defineOperation({
   id: 'saveAgentDraft',
-  summary:
-    'Changes the fields of an agent’s draft sent, at the revision read, and its chosen tools.',
+  summary: 'Changes an agent’s draft at the revision read: fields, tools and approvals.',
   access: 'session',
   method: 'PATCH',
   path: `${BASE}/{agentId}/draft`,
@@ -241,6 +244,7 @@ export const saveAgentDraft = defineOperation({
     'AGENT_TOOL_REFUSED',
     'TOOL_REFUSED',
     'REQUEST_MALFORMED',
+    'NOT_IN_ROLE',
   ],
 })
 

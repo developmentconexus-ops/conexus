@@ -284,6 +284,9 @@ class Machines implements ConversationMachines {
         instructions: { dynamicSandbox: () => this.told },
         filesystem: session.files,
         tools: {
+          // The agents' controller asks for every tool without a rule of its own (step 24.5): the
+          // Computador's never ask.
+          requireApproval: () => false,
           hooks: {
             beforeToolCall: async () => {
               await this.ensure(session)

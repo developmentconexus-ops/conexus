@@ -7,6 +7,7 @@ import {
   ConnectorId as ConnectorIdSchema,
   OperationId as OperationIdSchema,
   ToolKind,
+  ToolVersionId as ToolVersionIdSchema,
 } from '@conexus/hub-api'
 import { and, eq, max, sql } from 'drizzle-orm'
 import type { KitRead } from '../../hub/connectors/public.ts'
@@ -112,6 +113,45 @@ async function refuseByRole(
   }
 }
 
+/** The draft's writes in Faz sozinho, each with its connector and operation. */
+async function alonesOf(tx: ReadTx, agentId: AgentId, around: readonly OfferedConnection[]) {
+  const auto = await tx
+    .select({ toolVersionId: agentTool.toolVersionId })
+    .from(agentTool)
+    .where(and(eq(agentTool.agentId, agentId), eq(agentTool.approval, 'AUTO')))
+  const rows = await versionsWithTools(
+    tx,
+    auto.map((each) => ToolVersionIdSchema.parse(each.toolVersionId)),
+  )
+  return rows.flatMap(({ tool }) => {
+    const home = around.find((each) => each.connectionId === tool.connectionId)
+    if (home === undefined) return []
+    const operation = OperationIdSchema.parse(tool.operation)
+    return [{ slug: tool.slug, connector: home.connector, operation }]
+  })
+}
+
+/**
+ * Whether who saves or publishes may leave a write to run without asking (step 24.5, criterion 9):
+ * the role read now, else `NOT_IN_ROLE` naming the write, and nothing is written.
+ */
+export async function mayLeaveAlone(
+  identity: Pick<IdentityPorts, 'roleOf' | 'mayPublishUnattended'>,
+  tx: ReadTx,
+  scope: InProject,
+  write: { slug: string; connector: string; operation: OperationId },
+): Promise<void> {
+  const role = await identity.roleOf(tx, scope.companyId, scope.personId)
+  if (role !== undefined && (await identity.mayPublishUnattended(scope.companyId, role))) return
+  throw new Failure('NOT_IN_ROLE', {
+    details: { tool: write.slug, operation: write.operation, reason: 'UNATTENDED_WRITE' },
+    named: {
+      field: 'tools',
+      operation: operationLabel(ConnectorIdSchema.parse(write.connector), write.operation),
+    },
+  })
+}
+
 /** Makes the version the agent's active one; the draft does not change. */
 export function makeActive(tx: CommandTx, agentId: AgentId, number: number) {
   return tx
@@ -169,9 +209,11 @@ async function frozen(
   })
   const chosen = await tx.select().from(agentTool).where(eq(agentTool.agentId, agentId))
   if (chosen.length > 0) {
-    await tx
-      .insert(agentVersionTool)
-      .values(chosen.map(({ toolVersionId }) => ({ agentId, number, toolVersionId, companyId })))
+    await tx.insert(agentVersionTool).values(
+      chosen.map(({ toolVersionId, approval }) => ({
+        ...{ agentId, number, toolVersionId, companyId, approval },
+      })),
+    )
   }
   await makeActive(tx, agentId, number)
   return { number, did: 'PUBLISHED' }
@@ -190,7 +232,7 @@ export async function published(
     body: Publish
     around: readonly OfferedConnection[]
     kit: readonly KitRead[]
-    identity: Pick<IdentityPorts, 'roleOf' | 'mayUseEach'>
+    identity: Pick<IdentityPorts, 'roleOf' | 'mayUseEach' | 'mayPublishUnattended'>
   },
 ): Promise<Published> {
   const { agentId, body } = a
@@ -203,5 +245,7 @@ export async function published(
   const field = await invalidField(tx, draft, agentId, a.around)
   if (field !== undefined) throw new Failure('AGENT_DRAFT_INVALID', { named: { field } })
   await refuseByRole(tx, scope, { ...a, draft })
+  const [alone] = await alonesOf(tx, agentId, a.around)
+  if (alone !== undefined) await mayLeaveAlone(a.identity, tx, scope, alone)
   return frozen(tx, scope, { agentId, draft, body })
 }
