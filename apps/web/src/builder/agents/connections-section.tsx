@@ -43,7 +43,11 @@ export function Connections({ scope, agent }: Part) {
       : stateBadge(connection, entry.auth)
   }
   return (
-    <Section title="Ligações" busy={saving.pending} error={saving.error}>
+    <Section
+      title="Ligações"
+      busy={saving.pending}
+      error={saving.refused?.field === 'connections' ? saving.refused.reason : saving.error}
+    >
       {linked.isError && (
         <ReadFailure text={sentenceOf(linked.error)} onRetry={() => void linked.refetch()} />
       )}
