@@ -17,6 +17,8 @@ const NICKNAME_FIELD = { type: 'string', required: false, input: false } as cons
 
 // The name a person reads for a role of the company; the stored name is derived from it.
 const LABEL_FIELD = { type: 'string', required: true } as const
+// The attempt that created a role: the two seeded roles have none.
+const ROLE_KEY_FIELD = { type: 'string', required: false } as const
 
 /** The plugin's options with the roles of the kit the server starts with. */
 export function organizationWith(set: RoleSet) {
@@ -25,7 +27,7 @@ export function organizationWith(set: RoleSet) {
     roles: set.roles,
     dynamicAccessControl: { enabled: true },
     schema: {
-      organizationRole: { additionalFields: { label: LABEL_FIELD } },
+      organizationRole: { additionalFields: { label: LABEL_FIELD, attemptKey: ROLE_KEY_FIELD } },
       organization: {
         modelName: 'company',
         additionalFields: {

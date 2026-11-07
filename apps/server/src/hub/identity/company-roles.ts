@@ -225,12 +225,63 @@ async function viewOf(
   return found
 }
 
-/** Creates a role of the company through the library, which checks that the creator holds each action. */
+/** Whether two statement sets hold the same actions, whatever their order. */
+function sameStatements(left: Statements, right: Statements): boolean {
+  const resources = new Set([...Object.keys(left), ...Object.keys(right)])
+  return [...resources].every((resource) => {
+    const a = new Set(left[resource])
+    const b = new Set(right[resource])
+    return a.size === b.size && [...a].every((action) => b.has(action))
+  })
+}
+
+/**
+ * The role a creation attempt already made, if any: the same key with another name or another set
+ * of connectors is a conflict, not a replay (code C37).
+ */
+async function replayOf(
+  deps: Deps,
+  tx: CommandTx,
+  input: { companyId: CompanyId; attemptKey: string; body: RoleCreate },
+): Promise<Role | undefined> {
+  const [found] = await tx
+    .select({
+      role: organizationRole.role,
+      label: organizationRole.label,
+      permission: organizationRole.permission,
+    })
+    .from(organizationRole)
+    .where(
+      and(
+        eq(organizationRole.organizationId, input.companyId),
+        eq(organizationRole.attemptKey, input.attemptKey),
+      ),
+    )
+  if (found === undefined) return undefined
+  const same =
+    found.label === input.body.label &&
+    sameStatements(
+      Statements.parse(JSON.parse(found.permission)),
+      customStatements(deps.roles, input.body.connectors),
+    )
+  if (!same) throw new Failure('IDEMPOTENCY_CONFLICT')
+  return Role.parse(found.role)
+}
+
+/**
+ * Creates a role of the company through the library, which checks that the creator holds each
+ * action. The attempt key is the role's own column: under the company's lock a replay finds the
+ * row and answers it, so a lost answer then a retry shows the role and not "already taken".
+ */
 export function createRoleCommand(deps: Deps) {
-  return (input: Acting & { body: RoleCreate }) =>
+  return (input: Acting & { body: RoleCreate; attemptKey: string }) =>
     deps.libraryCommand(companyScope(input), async (tx) => {
-      const { companyId, headers, body } = input
+      const { companyId, headers, body, attemptKey } = input
       await admitted(tx, input)
+      const replayed = await replayOf(deps, tx, { companyId, attemptKey, body })
+      if (replayed !== undefined) {
+        return { role: await viewOf(deps.roles, tx, companyId, replayed), created: false }
+      }
       const role = roleNameOf(body.label)
       if (role === '') throw malformed('ROLE_NAME_EMPTY')
       if (FIXED_NAMES.has(role)) throw new Failure('ROLE_NAME_TAKEN')
@@ -243,12 +294,15 @@ export function createRoleCommand(deps: Deps) {
               organizationId: companyId,
               role,
               permission,
-              additionalFields: { label: body.label },
+              additionalFields: { label: body.label, attemptKey },
             },
           }),
         ROLE_REFUSALS,
       )
-      return viewOf(deps.roles, tx, companyId, Role.parse(role))
+      return {
+        role: await viewOf(deps.roles, tx, companyId, Role.parse(role)),
+        created: true,
+      }
     })
 }
 
