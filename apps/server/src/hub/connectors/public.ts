@@ -35,7 +35,8 @@ export { operationLabel, roleKit } from './role-kit.ts'
 export type { SessionScope } from './scope.ts'
 export { TurnKey } from './scope.ts'
 export type { LiveToolCall } from './tool-door.ts'
-export { markOf, uncertainText } from './write.ts'
+export { openText, uncertainText } from './write.ts'
+export { markOf } from './write-record.ts'
 export type { WriteRequest } from './write-record.ts'
 
 /** Tests shorten the deadline. */

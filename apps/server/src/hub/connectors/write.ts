@@ -1,7 +1,5 @@
-import { createHash } from 'node:crypto'
 import type { Operation } from '@conexus/connectors'
 import { connectorOf } from '@conexus/connectors'
-import type { ConversationId, ToolCallId } from '@conexus/hub-api'
 import { ConnectorId, OperationId } from '@conexus/hub-api'
 import { z } from 'zod'
 import { Failure } from '../../platform/failure.ts'
@@ -16,20 +14,17 @@ import { openedIn } from './testing.ts'
 import type { AppRefused } from './tokens.ts'
 import { accessFor } from './tokens.ts'
 import type { WriteRequest, Written } from './write-record.ts'
-import { aboutOf, finish, hashOf, plain, register } from './write-record.ts'
+import { aboutOf, finish, hashOf, markOf, openWritesOf, plain, register } from './write-record.ts'
 import type { Wrote } from './wrote.ts'
 
-/** The text the model reads for `WRITE_UNCERTAIN`: the one place that says what to do with it. */
+/** The text the model reads for `WRITE_UNCERTAIN` and for `IDEMPOTENCY_CONFLICT`: the one place that says what to do with them. */
 export function uncertainText(mark: string): string {
   return `Do not call this again: the write may already exist. Tell the person to look for the mark "${mark}" in the system's observation.`
 }
 
-const MARK_HASH_LENGTH = 8
-
-/** The one owner of the mark an order carries in its observation, so the person can find it: "Conexus " and 8 characters of a hash of the conversation and the call. */
-export function markOf(threadId: ConversationId, toolCallId: ToolCallId): string {
-  const hash = createHash('sha256').update(`${threadId}\n${toolCallId}`).digest('hex')
-  return `Conexus ${hash.slice(0, MARK_HASH_LENGTH)}`
+/** The text the model reads for `WRITE_OPEN`: an earlier write of this kind in the conversation may exist, so this one was not sent. */
+export function openText(mark: string, since: Date): string {
+  return `Do not call this again: a write like it, asked at ${since.toISOString()}, may already exist and this one was not sent. Tell the person to look for the mark "${mark}" in the system's observation before anything is written again.`
 }
 
 type Ended = Wrote<unknown> | Exclude<Login, { kind: 'TOKEN' }> | AppRefused | { kind: 'DEADLINE' }
@@ -171,6 +166,17 @@ export async function writeThrough(deps: Deps, a: WriteRequest): Promise<Written
     deps.log.info({ ...aboutOf(a, connector), reason: 'INPUT_INVALID' }, 'CONNECTOR_INPUT_REFUSED')
     const message = parsed.success ? roomLeft(checked.error, mark) : issuesOf(checked.error)
     return { kind: 'REFUSED', native: { status: 400, code: 'INPUT_INVALID', message, body: null } }
+  }
+  // U2's approval gate calls with `approvedBy`: a person who saw the earlier write lets this one past it.
+  if (a.approvedBy === undefined) {
+    const [open] = await openWritesOf(deps, a)
+    if (open !== undefined) {
+      deps.log.info(
+        { ...aboutOf(a, connector), openMark: open.mark, openState: open.state },
+        'CONNECTOR_WRITE_OPEN',
+      )
+      return { kind: 'WRITE_OPEN', mark: open.mark, since: open.since }
+    }
   }
   const registered = await register(deps, a, { hash: hashOf(parsed.data), mark, connector })
   if (registered.kind === 'FOUND') return registered.written

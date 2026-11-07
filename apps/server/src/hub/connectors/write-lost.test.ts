@@ -2,8 +2,9 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
 import { ConversationId, ToolCallId } from '@conexus/hub-api'
-import { markOf, TurnKey, uncertainText } from './public.ts'
+import { markOf, openText, TurnKey, uncertainText } from './public.ts'
 import { ORDER, writing } from './test-write.ts'
+import { hashOf } from './write-record.ts'
 
 test('o mesmo toolCallId: a repetição devolve o que o registro diz sem enviar, outra entrada sob a mesma chave não, e noutra conversa é outra escrita', async (t) => {
   const on = await writing(t)
@@ -13,7 +14,7 @@ test('o mesmo toolCallId: a repetição devolve o que o registro diz sem enviar,
   assert.equal(on.mode.posts, 1)
   const other = await on.ask({ ...first, input: { ...ORDER, codigoCliente: 2 } })
   assert.deepEqual(other, {
-    kind: 'WRITE_UNCERTAIN',
+    kind: 'IDEMPOTENCY_CONFLICT',
     mark: markOf(first.threadId, first.toolCallId),
   })
   assert.equal(on.mode.posts, 1)
@@ -42,14 +43,14 @@ test('a resposta perdida: perdida depois de gravar ou antes, e um corte, dão WR
   assert.equal(on.fake.orders().length, 1)
   on.fake.orderSwitches.lostAfterStore = false
   on.fake.orderSwitches.lostBeforeStore = true
-  const before = on.byAna({ toolCallId: ToolCallId.parse(randomUUID()) })
+  const before = on.byAna({ threadId: ConversationId.parse(randomUUID()) })
   assert.equal((await on.ask(before)).kind, 'WRITE_UNCERTAIN')
   assert.equal((await on.ask(before)).kind, 'WRITE_UNCERTAIN')
   assert.equal(on.mode.posts, 2)
   assert.equal(on.fake.orders().length, 1)
   on.fake.orderSwitches.lostBeforeStore = false
   on.mode.cut = true
-  const cut = on.byAna({ toolCallId: ToolCallId.parse(randomUUID()) })
+  const cut = on.byAna({ threadId: ConversationId.parse(randomUUID()) })
   assert.equal((await on.ask(cut)).kind, 'WRITE_UNCERTAIN')
   assert.equal((await on.ask(cut)).kind, 'WRITE_UNCERTAIN')
   assert.equal(on.mode.posts, 3)
@@ -69,8 +70,8 @@ test('um processo que morreu depois do registro: a linha SENDING faz a chamada d
   await on.hub.test.asOwner(
     `insert into connectors.connector_write(company_id, thread_id, tool_call_id, connection_id,
        operation_id, input_hash, person_id, state, created_at)
-     values ($1, $2, $3, $4, 'lancarPedido', 'x', $5, 'SENDING', now())`,
-    [on.companyId, first.threadId, first.toolCallId, on.matriz, on.ana.id],
+     values ($1, $2, $3, $4, 'lancarPedido', $5, $6, 'SENDING', now())`,
+    [on.companyId, first.threadId, first.toolCallId, on.matriz, hashOf(ORDER), on.ana.id],
   )
   assert.deepEqual(await on.ask(first), {
     kind: 'WRITE_UNCERTAIN',
@@ -126,4 +127,60 @@ test('o fim do registro que falha: o modelo recebe o OK, o processo diz CONNECTO
   await on.hub.test.asOwner('drop trigger refuse_end on connectors.connector_write')
   assert.equal((await on.ask(first)).kind, 'WRITE_UNCERTAIN')
   assert.equal(on.mode.posts, 1)
+})
+
+test('o foi?: depois de um corte, outro toolCallId na mesma conversa, conexão e operação não envia e diz que pode existir', async (t) => {
+  const on = await writing(t)
+  on.mode.cut = true
+  const first = on.byAna()
+  assert.equal((await on.ask(first)).kind, 'WRITE_UNCERTAIN')
+  on.mode.cut = false
+  const again = on.byAna({ toolCallId: ToolCallId.parse(randomUUID()) })
+  const answer = await on.ask(again)
+  const mark = markOf(first.threadId, first.toolCallId)
+  assert.equal(answer.kind, 'WRITE_OPEN')
+  assert.ok(answer.kind === 'WRITE_OPEN' && answer.mark === mark && answer.since instanceof Date)
+  assert.match(openText(mark, new Date(0)), /Do not call this again/)
+  assert.equal(on.mode.posts, 1)
+  assert.equal(on.fake.orders().length, 1)
+  assert.equal((await on.ledger()).length, 1)
+  assert.equal(on.lines('CONNECTOR_WRITE_OPEN').length, 1)
+})
+
+test('o foi? não alcança outra operação, outra conexão nem outra conversa, e a linha acabada não bloqueia', async (t) => {
+  const on = await writing(t)
+  const first = on.byAna()
+  const hold = (over: Record<string, string>) =>
+    on.hub.test.asOwner(
+      `insert into connectors.connector_write(company_id, thread_id, tool_call_id, connection_id,
+         operation_id, input_hash, person_id, state, created_at)
+       values ($1, $2, $3, $4, $5, 'x', $6, $7, now())`,
+      [
+        on.companyId,
+        over.thread ?? first.threadId,
+        randomUUID(),
+        over.connection ?? on.matriz,
+        over.operation ?? 'lancarPedido',
+        on.ana.id,
+        over.state ?? 'SENDING',
+      ],
+    )
+  await hold({ operation: 'outraOperacao' })
+  await hold({ connection: randomUUID() })
+  await hold({ thread: randomUUID() })
+  assert.equal((await on.ask(first)).kind, 'OK')
+  await hold({ state: 'REFUSED' })
+  await hold({ state: 'DONE' })
+  assert.equal((await on.ask(on.byAna({ toolCallId: ToolCallId.parse(randomUUID()) }))).kind, 'OK')
+  assert.equal(on.mode.posts, 2)
+})
+
+test('com a aprovação de uma pessoa a escrita passa pelo aberto', async (t) => {
+  const on = await writing(t)
+  on.mode.cut = true
+  assert.equal((await on.ask(on.byAna())).kind, 'WRITE_UNCERTAIN')
+  on.mode.cut = false
+  const approved = on.byAna({ toolCallId: ToolCallId.parse(randomUUID()) })
+  assert.equal((await on.ask({ ...approved, approvedBy: approved.scope.personId })).kind, 'OK')
+  assert.equal(on.mode.posts, 2)
 })
