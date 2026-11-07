@@ -107,7 +107,7 @@ Login social. Arquivos enviados por pessoas para dentro de um app ou da máquina
 
 | Etapa | O que precisa antes | Decisão sua nela | Conhecimento trazido |
 | --- | --- | --- | --- |
-| 24.5 Escrita com aprovação | Papéis da empresa | Nenhuma | A `D1` de Papéis: cada ferramenta pergunta antes ou roda sozinha; escrita sozinha só com a ação Publicar agente que escreve sozinho. `requireApproval` como função, `yolo: false`: 200 de 200. Escrita nova pede nova liberação |
+| 24.5 Escrita com aprovação | Papéis da empresa | Uma, decidida ("A1"): a liberação da escrita no Projeto | `requireApproval` do Mastra como função em cada ferramenta, `yolo` desligado nos agentes, medido sem perda. Escrita nova chega só ao Dono e ao Administrador (`B1` de Papéis) |
 | 24.6 Workflows e automações | A 24.5 | O gatilho do Sankhya | Workflows dinâmicos do Mastra. Seu orçamento é o aceite |
 | 24.7 Canais | A 24.6 | Nenhuma | Sem ninguém da empresa olhando, `toolApprovers: 'requester'`; até lá, nenhuma escrita que pergunta (`D1`) |
 | 21.1 Ver o que acontece | A 24.7 | Grafana no Brasil, provado | Um só caminho OTel (0052). O uso por empresa. O rastro por ferramenta: as ferramentas de conector (`connector_read`, `connector_notes`, `connector_note_save`) escondem entrada e saída no span, com o exportador de lista permitida, porque o `TracingPolicy` do Mastra só tem `internal` (veio da 20, critério 29) |
