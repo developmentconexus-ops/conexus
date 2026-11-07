@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
-import { CompanyId, ConnectionId, PersonId, ProjectId, RunId } from '@conexus/hub-api'
+import { CompanyId, ConnectionId, OperationId, PersonId, ProjectId, RunId } from '@conexus/hub-api'
 import { ATENDENTE } from '../identity/roles-world.ts'
 import { call, post } from '../identity/test-hub.ts'
 import type { SessionScope } from './public.ts'
@@ -22,20 +22,25 @@ async function atendenteOn(t: Parameters<typeof appCalls>[0]) {
   )
   const companyId = CompanyId.parse(on.companyId)
   const projectId = ProjectId.parse(on.projectId)
-  const scope = (place: 'PROJECT' | 'COMPANY' = 'PROJECT'): SessionScope => ({
-    companyId,
-    personId: PersonId.parse(on.carla.id),
-    place: place === 'PROJECT' ? { kind: 'PROJECT', projectId } : { kind: 'COMPANY' },
-    chosen: [matriz],
-  })
-  const ask = (operation: string, input: unknown = { page: 0 }, at = scope()) =>
-    on.hub.connectors.assistant.read(at, {
+  function scope(): SessionScope {
+    return {
+      companyId,
+      personId: PersonId.parse(on.carla.id),
+      place: { kind: 'PROJECT', projectId },
+      chosen: [matriz],
+    }
+  }
+  function ask(operation: string, input: unknown = { page: 0 }, at = scope()) {
+    return on.hub.connectors.assistant.read(at, {
       connectionId: matriz,
       turn: TurnKey.parse(randomUUID()),
       operation,
       input,
     })
-  const called = () => on.hub.lines.filter((line) => line.message === 'CONNECTOR_CALLED').length
+  }
+  function called() {
+    return on.hub.lines.filter((line) => line.message === 'CONNECTOR_CALLED').length
+  }
   const ids = { companyId, projectId, personId: PersonId.parse(on.carla.id) }
   return { ...on, matriz, base, scope, ask, called, ids }
 }
@@ -75,14 +80,15 @@ test('o papel na leitura: no Builder, a lista e a leitura seguem o papel, e a po
     granted?.reads.map((read) => read.operation),
     ['pedidos'],
   )
-  const read = (operation: string, input: unknown) =>
-    on.hub.connectors.builder.read(on.ids, {
+  function read(operation: string, input: unknown) {
+    return on.hub.connectors.builder.read(on.ids, {
       connectionId: on.matriz,
       personId: on.ids.personId,
       runId: RunId.parse(randomUUID()),
       operation,
       input,
     })
+  }
   const before = on.called()
   assert.equal((await read('consultar', { sql: QUERY })).kind, 'NOT_IN_ROLE')
   assert.equal((await read('empresas', { page: 0 })).kind, 'NOT_IN_ROLE')
@@ -104,4 +110,48 @@ test('a prova do caderno pelo papel: sem consultar, gravar e ler o caderno dá N
   assert.equal(on.called(), before)
   const notes = await on.hub.connectors.builder.notes(on.ids, on.matriz)
   assert.equal(Object(notes).kind, 'NOT_IN_ROLE')
+})
+
+test('o funil: uma versão publicada lê só o que declara, e a que não declarou a consulta livre recebe NOT_IN_ROLE sem pedido ao dublê', async (t) => {
+  const on = await atendenteOn(t)
+  const declared = [{ connectionId: on.matriz, operation: OperationId.parse('pedidos') }]
+  const version = { ...on.scope(), agentVersion: { kind: 'VERSION', declared } } as const
+  const before = on.called()
+  const free = await on.ask('consultar', { sql: QUERY }, version)
+  assert.deepEqual(free, { kind: 'NOT_IN_ROLE', role: null, operation: 'consultar' })
+  assert.equal(on.called(), before)
+  assert.notEqual((await on.ask('pedidos', { pagina: 1 }, version)).kind, 'NOT_IN_ROLE')
+  const [connection] = await on.hub.connectors.assistant.connections(version)
+  assert.deepEqual(
+    connection?.reads.map((read) => read.operation),
+    ['pedidos'],
+  )
+})
+
+test('publicar pelo papel: quem publica o app precisa poder cada operação que a versão declara, e o dono, que pode, publica', async (t) => {
+  const on = await appCalls(t, { declared: [{ connector: 'sankhya', operations: ['empresas'] }] })
+  await on.connect('Matriz')
+  await on.hub.test.asOwner('update apps.app set published_version_id = null')
+  await on.hub.test.asOwner(
+    "update auth.member set role = 'developer' where company_id = $1 and user_id = $2",
+    [on.companyId, on.bruno.id],
+  )
+  const changed = await call(
+    on.hub,
+    on.ana,
+    'PUT',
+    `/api/companies/${on.companyId}/roles/developer`,
+    {
+      connectors: { sankhya: ['pedidos'] },
+    },
+  )
+  assert.equal(changed.statusCode, 200, changed.body)
+  const route = `/api/companies/${on.companyId}/projects/${on.projectId}/published-version`
+  const refused = await call(on.hub, on.bruno, 'PUT', route, { number: 1 })
+  assert.equal(refused.statusCode, 409, refused.body)
+  assert.equal(Object(refused.json()).code, 'NOT_IN_ROLE')
+  assert.equal(Object(refused.json()).person, 'empresas')
+  const [none] = await on.hub.test.asOwner('select published_version_id from apps.app')
+  assert.equal(Object(none).published_version_id, null)
+  assert.equal((await call(on.hub, on.ana, 'PUT', route, { number: 1 })).statusCode, 200)
 })
