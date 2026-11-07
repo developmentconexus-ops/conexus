@@ -34,7 +34,8 @@ export function connectorLine(entry: Kit[number], held: readonly string[]): stri
 
 /** The lines a role's row says: all of all, the reads of all, or one line for each connector it uses. */
 export function summaryOf(role: Pick<RoleView, 'connectors'>, kit: Kit): string[] {
-  const held = (entry: Kit[number]) => Object.entries(role.connectors).find(([id]) => id === entry.id)?.[1] ?? []
+  const held = (entry: Kit[number]): readonly string[] =>
+    Object.entries(role.connectors).find(([id]) => id === entry.id)?.[1] ?? []
   const everyOperation = kit.flatMap(operationsOf)
   const chosen = kit.flatMap((entry) =>
     operationsOf(entry).filter((operation) => held(entry).includes(operation.id)),

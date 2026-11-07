@@ -27,7 +27,7 @@ const catalog = [
   { id: 'sankhya', name: 'Sankhya', category: 'ERP', auth: 'client_credentials' },
   { id: 'mercado-livre', name: 'Mercado Livre', category: 'Marketplace', auth: 'oauth2_code' },
 ].map((one) =>
-  ConnectorEntry.parse({ ...one, version: '1.0.0', summary: 'Resumo.', logo: LOGO, fields: [] }),
+  ConnectorEntry.parse({ ...one, version: '1.0.0', summary: 'Resumo.', logo: LOGO, subjects: [], fields: [] }),
 )
 
 const LineShape = ListShape.shape.connectors.element.shape.connections.element
