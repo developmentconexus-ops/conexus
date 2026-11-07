@@ -257,11 +257,15 @@ export function Chooser(props: Part & { saving: Saving; onClose: () => void }) {
   const [query, setQuery] = useState('')
   if (read.isError)
     return <ReadFailure text={sentenceOf(read.error)} onRetry={() => void read.refetch()} />
-  const library = (read.data?.tools ?? []).map((tool) => ({
-    tool,
-    title: toolTitle(tool, agent.offered),
-  }))
-  const readies = (read.data?.ready ?? []).map((one) => ({ one, title: one.label }))
+  // The free query is chosen only under its connection, with its warning (decision E4).
+  const doorRead = (connectionId: string, operation: string) =>
+    catalog.isDoor(connectorOf(agent, connectionId), operation)
+  const library = (read.data?.tools ?? [])
+    .filter((tool) => tool.kind !== 'PRESET' || !doorRead(tool.connectionId, tool.operation))
+    .map((tool) => ({ tool, title: toolTitle(tool, agent.offered) }))
+  const readies = (read.data?.ready ?? [])
+    .filter((one) => !doorRead(one.connectionId, one.operation))
+    .map((one) => ({ one, title: one.label }))
   const shown = {
     tools: library.filter((each) => matches(each.title, query)),
     readies: readies.filter((each) => matches(each.title, query)),

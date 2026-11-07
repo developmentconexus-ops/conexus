@@ -29,7 +29,7 @@ test('criar um papel: o dono cria "Atendente", marca Vendas, deixa só Pedidos, 
     http.post(ROLES, async ({ request }) => {
       const body = createRole.input.body.parse(await request.json())
       bodies.push(body)
-      const made = customRole(body.label, 'atendente', body.connectors.sankhya ?? [])
+      const made = customRole(body.label, 'atendente', Object.values(body.connectors).flat())
       roles.push(made)
       return HttpResponse.json({ role: made }, { status: 201 })
     }),

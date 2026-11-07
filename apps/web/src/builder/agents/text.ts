@@ -64,6 +64,10 @@ export function toolFact(
     .join(' · ')
 }
 export const NO_CONNECTIONS = 'Este Projeto não recebeu nenhuma ligação.'
+export const MARK_ALL_READS = 'Marcar todas as leituras'
+export const FREE_QUERY_WARNING = 'Consulta livre: roda qualquer SQL no banco inteiro'
+export const OUT_OF_ROLE = 'Fora do seu papel'
+export const COMPANY_TOOLS = 'Ferramentas da empresa'
 export const GONE_CONNECTION = 'O Projeto não oferece mais'
 export const DRAFT_CHANGED = 'O rascunho mudou. Abra o agente para ver.'
 export const VERSIONS_TITLE = 'Versões'

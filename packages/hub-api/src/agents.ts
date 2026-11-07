@@ -123,7 +123,15 @@ export const OfferedConnection = z.object({
   connectionId: ConnectionId,
   connector: z.string(),
   name: z.string(),
-  reads: z.array(z.object({ operation: z.string(), label: z.string(), summary: z.string() })),
+  reads: z.array(
+    z.object({
+      operation: z.string(),
+      label: z.string(),
+      summary: z.string(),
+      /** `false`: the role of whoever edits the agent does not use this read, so the screen shows it and does not let it be chosen. Absent means yes. */
+      allowed: z.boolean().optional(),
+    }),
+  ),
 })
 export type OfferedConnection = z.infer<typeof OfferedConnection>
 
