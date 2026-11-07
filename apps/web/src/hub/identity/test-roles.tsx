@@ -12,12 +12,13 @@ import { render } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { Conexus, createConexus } from '../../main.tsx'
 import { ANA, COMPANY } from '../../platform/fixtures.ts'
-import { hubServer, memberView, refusal, sessionRead } from '../../platform/test-hub.tsx'
+import { memberView, refusal, sessionRead } from '../../platform/test-hub.tsx'
 import { companyAppAccessRead } from '../../platform/test-hub-access.tsx'
 import { mayOf } from '../../platform/test-may.ts'
 import { SANKHYA } from '../connectors/fixtures.ts'
+import { server } from './test-people.tsx'
 
-export const server = hubServer()
+export { server } from './test-people.tsx'
 
 const EVERY = SANKHYA.subjects.flatMap((subject) => subject.operations)
 const READS = EVERY.filter((operation) => operation.effect === 'READ')
@@ -44,7 +45,8 @@ type View = {
   /** The viewer's role in the company. */
   as: 'owner' | 'admin' | 'developer' | 'member'
   roles?: RoleView[]
-  people?: { personId: string; name: string; email: string; role: string }[]
+  people?: Parameters<typeof memberView>[0][]
+  mayInviteAs?: string[]
 }
 
 /** The Hub as one person sees it; the roles written are kept, and each write recorded. */
@@ -59,7 +61,7 @@ export function hub(view: View) {
         getCompany.success.body.parse({
           company: COMPANY,
           role: view.as,
-          mayInviteAs: view.as === 'owner' || view.as === 'admin' ? ['admin', 'member'] : [],
+          mayInviteAs: view.mayInviteAs ?? (view.as === 'owner' || view.as === 'admin' ? ['admin', 'member'] : []),
           may: mayOf(view.as),
         }),
       ),
