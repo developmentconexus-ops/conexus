@@ -7,8 +7,8 @@ import { Failure } from '../../platform/failure.ts'
 import type { MemberProof, OperatorProof } from './admission.ts'
 import type { Auth } from './auth.ts'
 import { organizationAdapter, storedAddress } from './auth.ts'
-import { seedRoles } from './company-roles.ts'
 import { companyById } from './companies.ts'
+import { seedRoles } from './company-roles.ts'
 import { stateOf } from './invitation-reads.ts'
 import {
   CompanyPendingRow,

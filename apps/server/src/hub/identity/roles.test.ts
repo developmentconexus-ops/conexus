@@ -1,72 +1,22 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
-import { readFileSync, readdirSync } from 'node:fs'
-import { join } from 'node:path'
-import type { TestContext } from 'node:test'
 import { test } from 'node:test'
+import type { GenericEndpointContext } from '@better-auth/core'
+import { CompanyId, PersonId } from '@conexus/hub-api'
 import { hasPermission } from 'better-auth/plugins'
 import { createTestDatabase, silent, testConfig } from '../../platform/test-database.ts'
 import { libraryCommandOn, ORGANIZATION } from './auth.ts'
-import { KIT } from './roles.ts'
 import { createAuth } from './public.ts'
-import type { Hub, Person } from './test-hub.ts'
 import {
-  ANA_OWNER,
-  BRUNO,
-  CARLA,
-  call,
-  codeOf,
-  hubWithMail,
-  id,
-  memberOn,
-  personOn,
-  plantCompany,
-  post,
-} from './test-hub.ts'
-
-const OPERATOR = { name: 'Central Conexus', email: 'central@example.test', role: 'admin' }
-const ATENDENTE = { label: 'Atendente', connectors: { sankhya: ['pedidos'] } }
-const FINANCEIRO = ['contasAReceber', 'contasAPagar']
-
-async function world(t: TestContext) {
-  const hub = await hubWithMail(t)
-  const ana = await personOn(hub, ANA_OWNER)
-  const companyId = await plantCompany(hub.test, ana.id)
-  const admin = await memberOn(hub, companyId, CARLA, 'admin')
-  const developer = await memberOn(hub, companyId, { name: 'Dora Reis', email: 'dora@example.test' }, 'developer')
-  const bruno = await memberOn(hub, companyId, BRUNO, 'member')
-  const base = `/api/companies/${companyId}`
-  return { hub, ana, admin, developer, bruno, companyId, base }
-}
-type World = Awaited<ReturnType<typeof world>>
-
-async function roles(w: World, person: Person = w.ana) {
-  const response = await call(w.hub, person, 'GET', `${w.base}/roles`)
-  assert.equal(response.statusCode, 200)
-  return Object(response.json()).roles as {
-    role: string
-    label: string
-    kind: string
-    connectors: Record<string, string[]>
-    members: number
-  }[]
-}
-
-function roleOf(list: Awaited<ReturnType<typeof roles>>, name: string) {
-  const found = list.find((one) => one.role === name)
-  assert.ok(found, name)
-  return found
-}
-
-const everyOperation = Object.fromEntries(
-  KIT.map((connector) => [connector.id, connector.operations.map(({ id }) => id)]),
-)
-const everyRead = Object.fromEntries(
-  KIT.map((connector) => [
-    connector.id,
-    connector.operations.filter(({ class: kind }) => kind === 'read').map(({ id }) => id),
-  ]),
-)
+  ATENDENTE,
+  everyOperation,
+  everyRead,
+  FINANCEIRO,
+  roleOf,
+  roles,
+  world,
+} from './roles-world.ts'
+import { call, codeOf, id, plantCompany, post } from './test-hub.ts'
 
 test('a soma da linha semeada: o Better Auth soma a linha da empresa ao papel fixo, sob o adaptador Drizzle do Hub', async (t) => {
   const database = await createTestDatabase(t)
@@ -84,13 +34,21 @@ test('a soma da linha semeada: o Better Auth soma a linha da empresa ao papel fi
   const companyId = await plantCompany(database, ownerId)
   await database.asOwner(`delete from auth.organization_role where company_id = $1`, [companyId])
   const context = await auth.$context
-  const permitted = (permissions: Record<string, string[]>) =>
-    command({ kind: 'COMPANY', companyId, personId: ownerId } as never, () =>
+  const scope = {
+    kind: 'COMPANY',
+    companyId: CompanyId.parse(companyId),
+    personId: PersonId.parse(ownerId),
+  } as const
+  // biome-ignore lint/nursery/noUnsafeTypeAssertion: the library types its context as an endpoint's, and the permission check reads only `context`
+  const endpoint = { context } as GenericEndpointContext
+  function permitted(permissions: Record<string, string[]>) {
+    return command(scope, () =>
       hasPermission(
         { options: ORGANIZATION, organizationId: companyId, role: 'member', permissions },
-        { context } as never,
+        endpoint,
       ),
     )
+  }
   const sankhya = { connector_sankhya: ['pedidos'] }
   assert.equal(await permitted(sankhya), false)
   await database.asOwner(
@@ -133,7 +91,10 @@ test('criar um papel: dono ou administrador cria Atendente, a lista o traz, e a 
     connectors: { sankhya: ['pedidos'] },
     members: 0,
   })
-  const again = await post(w.hub, w.admin, `${w.base}/roles`, { ...ATENDENTE, label: ' atendente ' })
+  const again = await post(w.hub, w.admin, `${w.base}/roles`, {
+    ...ATENDENTE,
+    label: ' atendente ',
+  })
   assert.equal(again.statusCode, 409)
   assert.equal(codeOf(again), 'ROLE_NAME_TAKEN')
   const list = await roles(w)
@@ -145,7 +106,12 @@ test('criar um papel: dono ou administrador cria Atendente, a lista o traz, e a 
   })
   assert.equal(Object(accented.json()).role.role, 'gerencia-agil')
   assert.equal(
-    (await w.hub.test.asOwner('select count(*)::int as n from auth.organization_role where company_id = $1', [w.companyId]))[0]?.n,
+    (
+      await w.hub.test.asOwner(
+        'select count(*)::int as n from auth.organization_role where company_id = $1',
+        [w.companyId],
+      )
+    )[0]?.n,
     4,
   )
 
@@ -195,10 +161,16 @@ test('o papel recusado: quem não gerencia recebe NOT_FOUND, o que o kit não te
     const change = await call(w.hub, w.ana, 'PUT', `${w.base}/roles/${fixed}`, { connectors: {} })
     assert.equal(change.statusCode, 409)
     assert.equal(codeOf(change), 'ROLE_FIXED')
-    assert.equal(codeOf(await call(w.hub, w.ana, 'DELETE', `${w.base}/roles/${fixed}`)), 'ROLE_FIXED')
+    assert.equal(
+      codeOf(await call(w.hub, w.ana, 'DELETE', `${w.base}/roles/${fixed}`)),
+      'ROLE_FIXED',
+    )
   }
   assert.equal(codeOf(await call(w.hub, w.ana, 'DELETE', `${w.base}/roles/member`)), 'ROLE_FIXED')
-  assert.equal(codeOf(await call(w.hub, w.ana, 'PUT', `${w.base}/roles/fantasma`, { connectors: {} })), 'ROLE_NOT_FOUND')
+  assert.equal(
+    codeOf(await call(w.hub, w.ana, 'PUT', `${w.base}/roles/fantasma`, { connectors: {} })),
+    'ROLE_NOT_FOUND',
+  )
   assert.deepEqual(await roles(w), before)
 })
 
@@ -208,7 +180,9 @@ test('mudar o Membro: tirar o Financeiro some da lista, e um papel próprio muda
     ...everyRead,
     sankhya: (everyRead.sankhya ?? []).filter((one) => !FINANCEIRO.includes(one)),
   }
-  const changed = await call(w.hub, w.admin, 'PUT', `${w.base}/roles/member`, { connectors: without })
+  const changed = await call(w.hub, w.admin, 'PUT', `${w.base}/roles/member`, {
+    connectors: without,
+  })
   assert.equal(changed.statusCode, 200)
   assert.deepEqual(Object(changed.json()).role.connectors, without)
   const list = await roles(w)
@@ -230,78 +204,3 @@ test('mudar o Membro: tirar o Financeiro some da lista, e um papel próprio muda
   )
   assert.deepEqual(Object(JSON.parse(String(Object(row).permission))).assistant, ['ask'])
 })
-
-test('apagar um papel: em uso por uma pessoa ou por um convite não apaga; sem ninguém apaga e a lista não o traz', async (t) => {
-  const w = await world(t)
-  await post(w.hub, w.ana, `${w.base}/roles`, ATENDENTE)
-  const url = `${w.base}/roles/atendente`
-  await call(w.hub, w.ana, 'PUT', `${w.base}/members/${w.bruno.id}`, { role: 'atendente', from: 'member' })
-  assert.equal(roleOf(await roles(w), 'atendente').members, 1)
-  const refused = await call(w.hub, w.ana, 'DELETE', url)
-  assert.equal(refused.statusCode, 409)
-  assert.equal(codeOf(refused), 'ROLE_IN_USE')
-  assert.equal(roleOf(await roles(w), 'atendente').members, 1)
-
-  await call(w.hub, w.ana, 'PUT', `${w.base}/members/${w.bruno.id}`, { role: 'member', from: 'atendente' })
-  const invited = await post(w.hub, w.ana, `${w.base}/invitations`, {
-    email: 'davi@example.test',
-    role: 'atendente',
-  })
-  assert.equal(invited.statusCode, 201)
-  assert.equal(codeOf(await call(w.hub, w.ana, 'DELETE', url)), 'ROLE_IN_USE')
-  assert.ok(roleOf(await roles(w), 'atendente'))
-
-  const invitationId = Object(invited.json()).invitation.id
-  const canceled = await call(w.hub, w.ana, 'DELETE', `${w.base}/invitations/${invitationId}`, {
-    revision: 0,
-  })
-  assert.ok(canceled.statusCode < 300, String(canceled.body))
-  const deleted = await call(w.hub, w.ana, 'DELETE', url)
-  assert.equal(deleted.statusCode, 204)
-  assert.equal((await roles(w)).some((one) => one.role === 'atendente'), false)
-  assert.equal(codeOf(await call(w.hub, w.ana, 'DELETE', url)), 'ROLE_NOT_FOUND')
-})
-
-test('a semente: a migração semeia Membro e Desenvolvedor em cada empresa, rodar de novo não duplica, e a empresa nova já nasce com elas', async (t) => {
-  const w = await world(t)
-  const seed = readdirSync(join(import.meta.dirname, '../../../migrations'))
-    .filter((name) => name.endsWith('_company_roles_seed'))
-    .map((name) => join(import.meta.dirname, '../../../migrations', name, 'migration.sql'))[0]
-  assert.ok(seed)
-  const sql = readFileSync(seed, 'utf8')
-  await w.hub.test.asOwner('delete from auth.organization_role')
-  const rows = () =>
-    w.hub.test.asOwner(
-      'select company_id, role, label, permission from auth.organization_role order by role',
-    )
-  await w.hub.test.asOwner(sql)
-  const first = await rows()
-  assert.deepEqual(
-    first.map((row) => [row.company_id, row.role, row.label]),
-    [
-      [w.companyId, 'developer', 'Desenvolvedor'],
-      [w.companyId, 'member', 'Membro'],
-    ],
-  )
-  for (const row of first) assert.deepEqual(JSON.parse(String(row.permission)), seeded(everyRead))
-  await w.hub.test.asOwner(sql)
-  assert.deepEqual(await rows(), first)
-
-  const central = await personOn(w.hub, OPERATOR)
-  const registered = await post(w.hub, central, '/api/clients', {
-    cnpj: '12.ABC.345/01DE-35',
-    legalName: 'Empresa Nova Ltda',
-    name: 'Empresa Nova',
-    ownerEmail: 'novo@example.test',
-  })
-  assert.equal(registered.statusCode, 201)
-  const born = await w.hub.test.asOwner(
-    'select role from auth.organization_role where company_id = $1 order by role',
-    [Object(registered.json()).client.companyId],
-  )
-  assert.deepEqual(born.map((row) => row.role), ['developer', 'member'])
-})
-
-function seeded(reads: Record<string, string[]>) {
-  return Object.fromEntries(Object.entries(reads).map(([connector, ids]) => [`connector_${connector}`, ids]))
-}

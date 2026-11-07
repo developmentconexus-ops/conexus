@@ -233,7 +233,7 @@ test('LT12: cada caminho de organização e de administração da biblioteca res
     )
     .flatMap((endpoint) => (endpoint.success ? [endpoint.data] : []))
     .filter((endpoint) => /^\/(organization|admin)\//.test(endpoint.path))
-  assert.equal(plugged.length, 37)
+  assert.equal(plugged.length, 42)
   for (const { path, options } of plugged) {
     for (const method of [options.method].flat()) {
       const response = await hub.app.inject({

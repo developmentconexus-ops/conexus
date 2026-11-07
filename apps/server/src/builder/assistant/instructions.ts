@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs'
-import type { Role } from '@conexus/hub-api'
+import type { FixedRole, Role } from '@conexus/hub-api'
+import { fixedNameOf } from '@conexus/hub-api'
 import type { AgentInstructions } from '@mastra/core/agent'
 import type { RequestContext } from '@mastra/core/request-context'
 import { Failure } from '../../platform/failure.ts'
@@ -24,7 +25,12 @@ const ROLE_WORDS = {
   admin: 'administrator',
   developer: 'developer',
   member: 'member',
-} as const satisfies Record<Role, string>
+} as const satisfies Record<FixedRole, string>
+
+function roleWord(role: Role): string {
+  const fixed = fixedNameOf(role)
+  return fixed === undefined ? role : ROLE_WORDS[fixed]
+}
 
 /** Who the conversation is with and where it lives, read for its turn. */
 export type Speakers = {
@@ -50,7 +56,7 @@ export function blockOf(
       : chosen.map((each) => `${each.name} (${each.connector})`).join(', ')
   return [
     `Company: ${speakers.company}.`,
-    `Person: ${speakers.person} (${ROLE_WORDS[speakers.role]}).`,
+    `Person: ${speakers.person} (${roleWord(speakers.role)}).`,
     `Today: ${turnDate()}, America/Sao_Paulo.`,
     `Place: ${place}.`,
     `Connections in this conversation: ${connections}.`,

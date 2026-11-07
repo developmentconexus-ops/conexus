@@ -47,6 +47,7 @@ ALTER TABLE auth.account OWNER TO test_owner;
 ALTER TABLE auth.company OWNER TO test_owner;
 ALTER TABLE auth.invitation OWNER TO test_owner;
 ALTER TABLE auth.member OWNER TO test_owner;
+ALTER TABLE auth.organization_role OWNER TO test_owner;
 ALTER TABLE auth.rate_limit OWNER TO test_owner;
 ALTER TABLE auth.session OWNER TO test_owner;
 ALTER TABLE auth."user" OWNER TO test_owner;
@@ -195,6 +196,12 @@ GRANT SELECT,INSERT ON TABLE auth.member TO hub_invitation;
 GRANT SELECT,DELETE ON TABLE auth.member TO hub_operator;
 GRANT UPDATE(role) ON TABLE auth.member TO hub_company;
 GRANT UPDATE(created_at) ON TABLE auth.member TO hub_company;
+-- Step Papéis da empresa, U1, founder 2026-11-06 ("Aprovo tudo"): a company's routes read, create,
+-- change and delete the roles of their company, and the Central seeds a new company's two editable roles.
+GRANT SELECT,INSERT,DELETE ON TABLE auth.organization_role TO hub_company;
+GRANT INSERT ON TABLE auth.organization_role TO hub_operator;
+GRANT UPDATE(permission) ON TABLE auth.organization_role TO hub_company;
+GRANT UPDATE(updated_at) ON TABLE auth.organization_role TO hub_company;
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE auth.rate_limit TO hub_runtime;
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE auth.session TO hub_runtime;
 GRANT SELECT ON TABLE auth.session TO hub_company;

@@ -18,6 +18,7 @@ import { databaseFailure } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import { statusOf } from '../../platform/http.ts'
+import { relations } from './relations.ts'
 import { ACCESS_CONTROL, COMPANY_ROLES } from './roles.ts'
 import {
   account,
@@ -26,7 +27,6 @@ import {
   member,
   organizationRole,
   rateLimit,
-  relations,
   session,
   user,
   verification,

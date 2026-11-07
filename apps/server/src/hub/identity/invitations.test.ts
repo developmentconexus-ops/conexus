@@ -316,38 +316,3 @@ test('limite: com 100 vivos atrás de 100 vencidos, 409 INVITATIONS_FULL; com 99
     ['edu@example.test'],
   )
 })
-
-test('convite com papel próprio: o administrador convida como Atendente, o e-mail diz o rótulo, quem aceita entra com ele; um nome que a empresa não tem, ROLE_NOT_FOUND', async (t) => {
-  const { hub, ana, bruno, carla, companyId, invite } = await companyOn(t)
-  const created = await post(hub, ana, `/api/companies/${companyId}/roles`, {
-    label: 'Atendente',
-    connectors: { sankhya: ['pedidos'] },
-  })
-  assert.equal(created.statusCode, 201)
-
-  const unknown = await invite(bruno, INVITEE, 'fantasma')
-  assert.deepEqual([unknown.statusCode, codeOf(unknown)], [404, 'ROLE_NOT_FOUND'])
-  const refused = await invite(carla, INVITEE, 'atendente')
-  assert.deepEqual([refused.statusCode, codeOf(refused)], [404, 'NOT_FOUND'])
-  assert.deepEqual(await rows(hub), [])
-  assert.equal(hub.mail.sent.length, 0)
-
-  const response = await invite(bruno, INVITEE, 'atendente')
-  assert.equal(response.statusCode, 201)
-  const { invitation } = Object(response.json())
-  assert.equal(invitation.role, 'atendente')
-  assert.ok(hub.mail.sent[0]?.text.includes('Atendente'), hub.mail.sent[0]?.text)
-
-  const davi = await personOn(hub, { name: 'Davi Costa', email: INVITEE })
-  const accepted = await hub.app.inject({
-    method: 'PUT',
-    url: `/api/invitations/${invitation.id}/acceptance`,
-    headers: { origin: TEST_ORIGIN, 'content-type': 'application/json', cookie: davi.cookie },
-    payload: { revision: 0 },
-  })
-  assert.equal(accepted.statusCode, 200)
-  assert.deepEqual(
-    await hub.test.asOwner('select role from auth.member where user_id = $1', [davi.id]),
-    [{ role: 'atendente' }],
-  )
-})

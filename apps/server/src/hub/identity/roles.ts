@@ -20,7 +20,10 @@ export const KIT = CONNECTORS.map((connector) => ({
 }))
 
 const CONNECTOR_STATEMENTS: Record<string, string[]> = Object.fromEntries(
-  KIT.map((connector) => [connector.resource, connector.operations.map((operation) => operation.id)]),
+  KIT.map((connector) => [
+    connector.resource,
+    connector.operations.map((operation) => operation.id),
+  ]),
 )
 
 const READS: Record<string, string[]> = Object.fromEntries(

@@ -1,13 +1,13 @@
 import { randomUUID } from 'node:crypto'
-import type { CompanyId, Person, RoleChange, RoleCreate } from '@conexus/hub-api'
+import type { CompanyId, Person, RoleChange, RoleConnectors, RoleCreate } from '@conexus/hub-api'
 import {
   ConnectorId,
+  fixedNameOf,
   fixedRole,
-  OperationId,
   isFixedRole,
+  OperationId,
   ROLE_LABELS,
   Role,
-  RoleConnectors,
   RoleView,
 } from '@conexus/hub-api'
 import { and, asc, eq, sql } from 'drizzle-orm'
@@ -21,7 +21,6 @@ import { companyScope, lockCompany } from './invitations.ts'
 import { ALL_OPERATIONS, ALL_READS, KIT, MEMBER_BASE } from './roles.ts'
 import { invitation, member, organizationRole } from './tables.ts'
 
-const RESOURCE_PREFIX = 'connector_'
 const Statements = z.record(z.string(), z.array(z.string()))
 type Statements = z.infer<typeof Statements>
 
@@ -42,7 +41,9 @@ export function roleNameOf(label: string): string {
     .replaceAll(/^-+|-+$/g, '')
 }
 
-const malformed = (reason: string) => new Failure('REQUEST_MALFORMED', { details: { reason } })
+function malformed(reason: string) {
+  return new Failure('REQUEST_MALFORMED', { details: { reason } })
+}
 
 /**
  * The statements a role's connectors become. The library checks only that a resource exists, so
@@ -66,7 +67,8 @@ function connectorsOf(permission: Statements): RoleConnectors {
   for (const connector of KIT) {
     const held = new Set(permission[connector.resource])
     const operations = connector.operations.map(({ id }) => id).filter((id) => held.has(id))
-    if (operations.length > 0) connectors[ConnectorId.parse(connector.id)] = operations.map((id) => OperationId.parse(id))
+    if (operations.length > 0)
+      connectors[ConnectorId.parse(connector.id)] = operations.map((id) => OperationId.parse(id))
   }
   return connectors
 }
@@ -174,7 +176,8 @@ export async function roleLabelOf(
   tx: ReadTx,
   input: { companyId: CompanyId; role: Role },
 ): Promise<string> {
-  if (isFixedRole(input.role)) return ROLE_LABELS[input.role]
+  const fixed = fixedNameOf(input.role)
+  if (fixed !== undefined) return ROLE_LABELS[fixed]
   const [found] = await tx
     .select({ label: organizationRole.label })
     .from(organizationRole)
@@ -274,7 +277,11 @@ export function deleteRoleCommand(deps: Deps) {
       )
       if (invited > 0) throw new Failure('ROLE_IN_USE', { details: { reason: 'INVITATION' } })
       await refusedAs(
-        () => deps.auth.api.deleteOrgRole({ headers, body: { organizationId: companyId, roleName: role } }),
+        () =>
+          deps.auth.api.deleteOrgRole({
+            headers,
+            body: { organizationId: companyId, roleName: role },
+          }),
         ROLE_REFUSALS,
       )
     })

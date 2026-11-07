@@ -109,6 +109,7 @@ export {
   removeMember,
   renewInvitation,
 } from './companies.ts'
+export * from './company-roles.ts'
 export {
   CONEXUS_PARTS,
   ConexusPart,
@@ -285,7 +286,6 @@ export {
 } from './projects.ts'
 export * from './questions.ts'
 export * from './requests.ts'
-export * from './company-roles.ts'
 export * from './roles.ts'
 export { RunId } from './runs.ts'
 export {

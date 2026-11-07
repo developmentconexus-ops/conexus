@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
-import type { Member, Role } from '@conexus/hub-api'
+import type { Member } from '@conexus/hub-api'
 import {
   ANA_OWNER,
   BRUNO,
@@ -42,7 +42,7 @@ async function roleOf(on: Awaited<ReturnType<typeof company>>, email: string): P
 test('o desenvolvedor: o dono e o administrador dão o papel e o veem nas opções de cada pessoa; o desenvolvedor e o membro, 404', async (t) => {
   const on = await company(t)
   const { hub, ana, bruno, carla, davi, base } = on
-  function change(who: typeof ana, role: Role, from: Role) {
+  function change(who: typeof ana, role: string, from: string) {
     return call(hub, who, 'PUT', `${base}/members/${davi.id}`, { role, from })
   }
   assert.equal((await change(ana, 'developer', 'member')).statusCode, 200)

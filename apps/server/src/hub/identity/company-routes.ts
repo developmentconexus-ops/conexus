@@ -253,7 +253,10 @@ function registerRoles(app: FastifyInstance, deps: Deps): void {
       await remove({ person, headers, ...params })
     } catch (error) {
       if (error instanceof Failure && error.code === 'ROLE_IN_USE')
-        log.info({ ...params, by: person.id, reason: error.details.reason ?? 'MEMBER' }, 'ROLE_DELETE_REFUSED')
+        log.info(
+          { ...params, by: person.id, reason: error.details.reason ?? 'MEMBER' },
+          'ROLE_DELETE_REFUSED',
+        )
       throw error
     }
     log.info({ ...params, by: person.id }, 'ROLE_DELETED')

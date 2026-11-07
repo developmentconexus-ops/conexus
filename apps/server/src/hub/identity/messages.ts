@@ -22,7 +22,9 @@ export function passwordLinkText(name: string, link: string): string {
 export type Inviter = { kind: 'MEMBER'; name: string } | { kind: 'CONEXUS'; firstOwner: boolean }
 
 /** What an invitation gives: a role in the company, or the use of one of its apps (step 18). */
-export type InvitationGives = { kind: 'COMPANY'; roleLabel: string } | { kind: 'APP'; appName: string }
+export type InvitationGives =
+  | { kind: 'COMPANY'; roleLabel: string }
+  | { kind: 'APP'; appName: string }
 
 function invitedAs(input: { inviter: Inviter; gives: InvitationGives }): InvitedAs {
   if (input.gives.kind === 'APP') return { kind: 'APP', appName: input.gives.appName }

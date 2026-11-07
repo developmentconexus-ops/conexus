@@ -24,9 +24,20 @@ export const ROLE_LABELS: Record<FixedRole, string> = {
   member: 'Membro',
 }
 
+/** The fixed role a name is, or nothing for a role of the company's own. */
+export function fixedNameOf(role: string): FixedRole | undefined {
+  return FIXED_ROLES.find((fixed) => fixed === role)
+}
+
+/** What a screen says for a role until it has the company's own labels: the fixed role's name, else the stored one. */
+export function roleLabel(role: Role): string {
+  const fixed = fixedNameOf(role)
+  return fixed === undefined ? role : ROLE_LABELS[fixed]
+}
+
 /** Whether the role is one of the four every company has. */
 export function isFixedRole(role: string): role is FixedRole {
-  return (FIXED_ROLES as readonly string[]).includes(role)
+  return fixedNameOf(role) !== undefined
 }
 
 /**

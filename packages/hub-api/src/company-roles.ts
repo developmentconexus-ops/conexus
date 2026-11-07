@@ -44,7 +44,8 @@ const OfRole = InCompany.extend({ role: Role })
 
 export const listRoles = defineOperation({
   id: 'listRoles',
-  summary: 'Lists the four fixed roles and the company’s own, with what each uses of each connector.',
+  summary:
+    'Lists the four fixed roles and the company’s own, with what each uses of each connector.',
   access: 'session',
   method: 'GET',
   path: '/api/companies/{companyId}/roles',
@@ -74,7 +75,8 @@ export const createRole = defineOperation({
 
 export const updateRole = defineOperation({
   id: 'updateRole',
-  summary: 'Changes what a role uses of each connector; the owner and the administrator never change.',
+  summary:
+    'Changes what a role uses of each connector; the owner and the administrator never change.',
   access: 'session',
   method: 'PUT',
   path: '/api/companies/{companyId}/roles/{role}',
