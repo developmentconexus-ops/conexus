@@ -1,4 +1,3 @@
-import type { Role } from '@conexus/hub-api'
 import {
   getAccountKinds,
   getClient,
@@ -63,9 +62,9 @@ export const SIGNED_IN: Replies = {
 }
 
 /** The roles that manage the company's model accounts and connections: the owner and the administrators. */
-const MANAGES: ReadonlySet<Role> = new Set(['owner', 'admin'])
+const MANAGES: ReadonlySet<string> = new Set(['owner', 'admin'])
 
-export function companies(list: { name: string; role: Role }[], mayOperate: boolean) {
+export function companies(list: { name: string; role: string }[], mayOperate: boolean) {
   const body = {
     companies: list.map(({ name, role }, index) => ({
       company: { id: String(index).repeat(32), name },
@@ -89,7 +88,7 @@ export function companies(list: { name: string; role: Role }[], mayOperate: bool
   }
 }
 
-function companyPage(role: Role, mayInviteAs: Role[], id = COMPANY.id, name = LONG_NAME) {
+function companyPage(role: string, mayInviteAs: string[], id = COMPANY.id, name = LONG_NAME) {
   const company = { id, name, nickname: 'empresa-teste', appsDomain: 'apps.example.test' }
   const people = [
     {

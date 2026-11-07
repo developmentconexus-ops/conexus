@@ -13,6 +13,7 @@ import {
   SESSION_COOKIE,
   signedIn,
   signOut,
+  TEST_ROLES,
 } from './test-hub.ts'
 
 const SIGNED_OUT = JSON.stringify({ state: 'SIGNED_OUT' })
@@ -219,6 +220,7 @@ test('LT12: cada caminho de organização e de administração da biblioteca res
   await hub.test.asOwner(`update auth.user set role = 'admin' where id = $1`, [ANA_ACCOUNT.id])
   const cookie = await signedIn(hub)
   const auth = createAuth({
+    roles: TEST_ROLES,
     database: hub.test.database,
     config: testConfig(hub.test.runtimeUrl),
     log: silent,
@@ -233,7 +235,7 @@ test('LT12: cada caminho de organização e de administração da biblioteca res
     )
     .flatMap((endpoint) => (endpoint.success ? [endpoint.data] : []))
     .filter((endpoint) => /^\/(organization|admin)\//.test(endpoint.path))
-  assert.equal(plugged.length, 37)
+  assert.equal(plugged.length, 42)
   for (const { path, options } of plugged) {
     for (const method of [options.method].flat()) {
       const response = await hub.app.inject({

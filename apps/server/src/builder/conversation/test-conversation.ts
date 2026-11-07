@@ -3,7 +3,6 @@ import { randomUUID } from 'node:crypto'
 import type { TestContext } from 'node:test'
 import type { AgentControllerWireEvent, MastraMessagePart } from '@mastra/core/agent-controller'
 import { z } from 'zod'
-import { createIdentity } from '../../hub/identity/public.ts'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import {
   ANA_OWNER,
@@ -12,6 +11,7 @@ import {
   personOn,
   plantCompany,
   post,
+  testIdentity,
 } from '../../hub/identity/test-hub.ts'
 import { createStatus } from '../../hub/status/public.ts'
 import { createHub, subjectsOf } from '../../main.ts'
@@ -99,7 +99,7 @@ export async function conversing(
  */
 export async function hubBeside(t: TestContext, hub: Hub, log: FailureLog = silent, start = true) {
   const { test, config, sendMail } = hub
-  const identity = createIdentity({ database: test.database, config, log: silent, sendMail })
+  const identity = testIdentity({ database: test.database, config, sendMail })
   const postgres = heldCompanyPostgres(config)
   const ports = testAppPorts(
     config,

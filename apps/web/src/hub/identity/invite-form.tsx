@@ -1,5 +1,5 @@
-import type { CompanyId, FailureCode } from '@conexus/hub-api'
-import { createInvitation, ROLE_LABELS, Role } from '@conexus/hub-api'
+import type { CompanyId, FailureCode, Role } from '@conexus/hub-api'
+import { createInvitation, FIXED_ROLES, roleLabel } from '@conexus/hub-api'
 import { useMutation } from '@tanstack/react-query'
 import { SectionTitle } from '../../ui/list.tsx'
 import { InviteFields } from './invite-fields.tsx'
@@ -19,9 +19,12 @@ export function InviteForm({ companyId, roles }: { companyId: CompanyId; roles: 
       <SectionTitle>Convidar pessoa</SectionTitle>
       <InviteFields
         schema={createInvitation.input.body}
-        // `Role.options` runs from the most to the least privileged; the form starts on the least offered.
-        defaults={{ email: '', role: Role.options.findLast((role) => roles.includes(role)) }}
-        options={roles.map((role) => ({ value: role, label: ROLE_LABELS[role] }))}
+        // `FIXED_ROLES` runs from the most to the least privileged; the form starts on the least offered.
+        defaults={{
+          email: '',
+          role: FIXED_ROLES.findLast((fixed) => roles.some((offered) => offered === fixed)),
+        }}
+        options={roles.map((role) => ({ value: role, label: roleLabel(role) }))}
         fieldOf={FIELD_OF}
         send={async (values, attemptKey) =>
           (await send.mutateAsync({ params: { companyId }, body: values, attemptKey })).invitation

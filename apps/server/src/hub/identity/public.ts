@@ -1,4 +1,5 @@
 import type { Company, PendingInvitation } from '@conexus/hub-api'
+import { ROLE_LABELS } from '@conexus/hub-api'
 import type { Config } from '../../platform/config.ts'
 import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
@@ -25,6 +26,8 @@ import type { PersonConversationRelease } from './memberships.ts'
 import { companyMembersOf, holdMember, membersAllowed, peopleNamed } from './memberships.ts'
 import { companyNicknameOf } from './nickname.ts'
 import { createPasswordRecovery } from './password-recovery.ts'
+import type { RoleKit } from './roles.ts'
+import { rolesFor } from './roles.ts'
 import { registerIdentityRoutes } from './routes.ts'
 import { addressOf, createSessionReader, liveHubSession, personNameOf } from './session.ts'
 
@@ -34,6 +37,7 @@ export type { ProjectApps } from './app-invitations.ts'
 export { createAuth } from './auth.ts'
 export type { PersonConversationRelease } from './memberships.ts'
 export { passwordLinkText } from './messages.ts'
+export type { RoleKit } from './roles.ts'
 // The row policies' pieces, for the Central's own table, the Hub session's table, for the apps'
 // and the model accounts' foreign keys (code C8), and a person's name, for the version that
 // person sent, or a member's, for the request they decided.
@@ -55,23 +59,22 @@ export function createIdentity(deps: {
   config: Config
   log: FailureLog
   sendMail: SendMail
+  kit: RoleKit
 }) {
-  const auth = createAuth(deps)
+  const { config, database, sendMail } = deps
+  const roles = rolesFor(deps.kit)
+  const auth = createAuth({ ...deps, roles })
   const libraryCommand = libraryCommandOn(auth, deps.database)
   const readSession = createSessionReader({ auth })
   const recovery = createPasswordRecovery({
     auth,
-    database: deps.database,
-    publicOrigin: deps.config.publicOrigin,
-    sendMail: deps.sendMail,
+    database,
+    publicOrigin: config.publicOrigin,
+    sendMail,
   })
   return Object.freeze({
     readSession,
-    firstPerson: createFirstPerson({
-      auth,
-      database: deps.database,
-      publicOrigin: deps.config.publicOrigin,
-    }),
+    firstPerson: createFirstPerson({ auth, database, publicOrigin: config.publicOrigin }),
     // What the Operations Central reaches identity through (code C4), in the caller's transaction.
     ports: Object.freeze({
       libraryCommand,
@@ -91,7 +94,7 @@ export function createIdentity(deps: {
       addressOf,
       cancelAppInvitations: cancelAppInvitationsOf(auth),
       admitOperator,
-      registerCompany: registerCompanyOn(auth),
+      registerCompany: registerCompanyOn(auth, roles),
       renameCompany: renameCompanyOn(auth),
       markCompanyDeleting,
       markedDeleting,
@@ -115,7 +118,7 @@ export function createIdentity(deps: {
             companyId: input.company.id,
           },
           invitation: input.invitation,
-          gives: { kind: 'COMPANY', role: input.invitation.role },
+          gives: { kind: 'COMPANY', roleLabel: ROLE_LABELS.owner },
           companyName: input.company.name,
           inviter: { kind: 'CONEXUS', firstOwner: true },
           link: `${deps.config.publicOrigin}/invitations/${input.invitation.id}`,
@@ -129,7 +132,7 @@ export function createIdentity(deps: {
       later: { releaseConversations: PersonConversationRelease; apps: ProjectApps },
     ) => {
       registerIdentityRoutes(app, { auth, config: deps.config, readSession, recovery })
-      registerCompanyRoutes(app, { ...deps, ...later, auth, libraryCommand })
+      registerCompanyRoutes(app, { ...deps, ...later, auth, libraryCommand, roles })
     },
   })
 }

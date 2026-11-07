@@ -4,6 +4,7 @@ import { Email } from '@conexus/hub-api'
 import { createTestDatabase, testConfig } from '../../platform/test-database.ts'
 import { testMail } from '../../platform/test-mail.ts'
 import { createIdentity } from './public.ts'
+import { TEST_KIT } from './test-hub.ts'
 
 const ANA = { name: 'Ana Lima', email: 'ana@example.test' }
 
@@ -16,7 +17,13 @@ test('com a pessoa de id vazio no banco, recusa e nenhum link é gravado', async
   const config = testConfig(database.runtimeUrl)
   const log = { info: () => undefined, error: () => undefined }
   const sendMail = testMail(config)
-  const identity = createIdentity({ database: database.database, config, log, sendMail })
+  const identity = createIdentity({
+    kit: TEST_KIT,
+    database: database.database,
+    config,
+    log,
+    sendMail,
+  })
   await assert.rejects(identity.firstPerson({ name: ANA.name, email: Email.parse(ANA.email) }), {
     code: 'INTERNAL_UNEXPECTED',
   })
