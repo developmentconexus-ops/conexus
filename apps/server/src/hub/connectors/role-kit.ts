@@ -1,5 +1,11 @@
+import type { Connector } from '@conexus/connectors'
 import { CONNECTORS, connectorOf } from '@conexus/connectors'
 import { operationsOf } from './catalog-subjects.ts'
+
+/** Every operation the kit gives a connector: the read door's and the reads (`operationsOf`) and the writes. */
+function kitOperationsOf(connector: Connector) {
+  return [...operationsOf(connector), ...(connector.writes ?? [])]
+}
 
 /**
  * What the kit offers a company's roles: each connector's resource and its operations, the door's
@@ -10,7 +16,7 @@ export function roleKit() {
   return CONNECTORS.map((connector) => ({
     id: connector.id,
     resource: `connector_${connector.id}`,
-    operations: [...operationsOf(connector), ...(connector.writes ?? [])].map((operation) => ({
+    operations: kitOperationsOf(connector).map((operation) => ({
       id: operation.id,
       class: operation.class,
     })),
@@ -21,8 +27,6 @@ export function roleKit() {
 export function operationLabel(connector: string, operation: string): string {
   const kit = connectorOf(connector)
   const found =
-    kit === undefined
-      ? undefined
-      : [...operationsOf(kit), ...(kit.writes ?? [])].find((each) => each.id === operation)
+    kit === undefined ? undefined : kitOperationsOf(kit).find((each) => each.id === operation)
   return found?.label ?? operation
 }

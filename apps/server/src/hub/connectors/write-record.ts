@@ -224,7 +224,7 @@ export async function register(deps: Deps, a: WriteRequest, put: Put): Promise<R
   return deps.database.command(scopeOf(viewer), async (tx) => {
     await transactionLock(
       tx,
-      `connector_write\n${a.scope.companyId}\n${a.threadId}\n${a.connectionId}\n${a.operation}`,
+      `conexus.connector-write:${a.scope.companyId}:${a.threadId}:${a.connectionId}:${a.operation}`,
     )
     const own = await ownRow(tx, a)
     if (own !== undefined) return found(deps, tx, a, put, own)
