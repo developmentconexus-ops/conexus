@@ -1,98 +1,7 @@
 import assert from 'node:assert/strict'
-import { spawnSync } from 'node:child_process'
-import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
-import { delimiter, join, resolve } from 'node:path'
-import { after, test } from 'node:test'
+import { test } from 'node:test'
 import { MachineTemplate } from '../apps/server/src/platform/config-machine.ts'
-
-const DEPLOY = resolve(import.meta.dirname, '../infra/deploy.sh')
-const dirs: string[] = []
-after(() => {
-  for (const dir of dirs) rmSync(dir, { recursive: true, force: true })
-})
-
-const STUB_DOCKER = `#!/bin/bash
-echo "$* [HUB_IMAGE=\${HUB_IMAGE:-}] [HUB_E2B_TEMPLATE=\${HUB_E2B_TEMPLATE:-}]" >> "$CALLS"
-case "$*" in
-  *" ps --quiet hub") echo "\${STUB_RUNNING_ID:-}" ;;
-  "inspect --format {{.Config.Image}}"*) echo "\${STUB_RUNNING_IMAGE:-}" ;;
-  "inspect --format {{range .Config.Env}}"*)
-    echo "PATH=/usr/bin"; [ -n "\${STUB_RUNNING_TEMPLATE:-}" ] && echo "HUB_E2B_TEMPLATE=$STUB_RUNNING_TEMPLATE"; exit 0 ;;
-  "image inspect"*conexus.reseal*) echo "\${STUB_RESEAL_LABEL:-}" ;;
-  "image inspect"*) echo "\${STUB_LABEL:-}" ;;
-  *" run --rm migrate")
-    n=$(( $(cat "$CALLS.migrate" 2>/dev/null || echo 0) + 1 )); echo "$n" > "$CALLS.migrate"
-    read -ra seq <<< "\${STUB_MIGRATE_SEQUENCE:-\${STUB_MIGRATE_STATUS:-0}}"
-    exit "\${seq[$((n - 1))]:-\${seq[\${#seq[@]}-1]}}" ;;
-  *" run --rm --no-deps hub node apps/server/src/main.ts reseal") exit "\${STUB_RESEAL_STATUS:-0}" ;;
-  "run --rm --network none --user 1000 --mount type=bind,source=/etc/conexus/secrets/"*)
-    [[ -n "\${STUB_MISSING_SECRET:-}" && "$*" == *"/\${STUB_MISSING_SECRET},"* ]] && exit 1; exit 0 ;;
-  *" up "*) exit "\${STUB_UP_STATUS:-0}" ;;
-esac
-`
-
-/** The template a Release built beside the image, and the one the running Hub was started with. */
-const NEW_TEMPLATE = 'conexus-builder:1111111'
-const OLD_TEMPLATE = 'conexus-builder:0000000'
-
-type Stub = {
-  running?: string
-  runningTemplate?: string
-  labeled?: boolean
-  resealLabeled?: boolean
-  migrateStatus?: number
-  migrateSequence?: string
-  resealStatus?: number
-  upStatus?: number
-  missingSecret?: string
-  hubEnv?: 'missing' | 'unreadable'
-}
-
-function deploy(
-  argument: string,
-  stub: Stub = {},
-  template: string | null = argument === '--restart' ? null : NEW_TEMPLATE,
-) {
-  const dir = mkdtempSync(join(tmpdir(), 'conexus-deploy-'))
-  dirs.push(dir)
-  mkdirSync(join(dir, 'bin'))
-  writeFileSync(join(dir, 'bin/docker'), STUB_DOCKER)
-  chmodSync(join(dir, 'bin/docker'), 0o755)
-  const calls = join(dir, 'calls')
-  const hubEnv = join(dir, 'hub.env')
-  if (stub.hubEnv !== 'missing') writeFileSync(hubEnv, 'HUB_MAIL_FROM=a@b.test\n')
-  if (stub.hubEnv === 'unreadable') chmodSync(hubEnv, 0o000)
-  writeFileSync(calls, '')
-  const args = template === null ? [argument] : [argument, template]
-  const run = spawnSync('bash', [DEPLOY, ...args], {
-    encoding: 'utf8',
-    timeout: 60_000,
-    env: {
-      ...process.env,
-      PATH: `${join(dir, 'bin')}${delimiter}${process.env.PATH}`,
-      CALLS: calls,
-      HUB_ENV_FILE: hubEnv,
-      STUB_RUNNING_ID: stub.running === undefined ? '' : 'container-id',
-      STUB_RUNNING_IMAGE: stub.running ?? '',
-      STUB_RUNNING_TEMPLATE:
-        stub.runningTemplate ?? (stub.running === undefined ? '' : OLD_TEMPLATE),
-      STUB_LABEL: stub.labeled === false ? '' : '1',
-      STUB_RESEAL_LABEL: stub.resealLabeled === false ? '' : '1',
-      STUB_MIGRATE_STATUS: String(stub.migrateStatus ?? 0),
-      STUB_MIGRATE_SEQUENCE: stub.migrateSequence ?? '',
-      MIGRATE_RETRY_SECONDS: '0',
-      STUB_RESEAL_STATUS: String(stub.resealStatus ?? 0),
-      STUB_UP_STATUS: String(stub.upStatus ?? 0),
-      STUB_MISSING_SECRET: stub.missingSecret ?? '',
-    },
-  })
-  const log = readFileSync(calls, 'utf8').split('\n').filter(Boolean)
-  function count(text: string): number {
-    return log.filter((call) => call.includes(text)).length
-  }
-  return { run, log, count }
-}
+import { deploy, NEW_TEMPLATE, OLD_TEMPLATE, SECRETS } from './deploy-harness.ts'
 
 test('uma imagem com o rótulo roda migrate uma vez e só depois sobe o Hub', () => {
   const { run, log, count } = deploy('hub@sha256:new', { running: 'hub@sha256:old' })
@@ -189,21 +98,6 @@ test('reseal que falha termina vermelho e não sobe o Hub', () => {
   assert.match(run.stderr, /reseal failed: hub@sha256:new/)
   assert.equal(count(' up '), 0)
 })
-
-const SECRETS = [
-  'hub_session_secret',
-  'hub_mail_token',
-  'hub_neon_api_key',
-  'hub_app_login_key',
-  'hub_cloudflare_apps_token',
-  'hub_tools_access_client_id',
-  'hub_tools_access_client_secret',
-  'hub_seal_keys',
-  'hub_mastra_database_url',
-  'hub_git_copy_key',
-  'hub_e2b_api_key',
-  'hub_connector_apps',
-]
 
 test('--restart sem Hub rodando termina vermelho', () => {
   const { run, count } = deploy('--restart')
