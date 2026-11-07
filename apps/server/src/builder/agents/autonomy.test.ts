@@ -78,7 +78,7 @@ test('quem publicou perde a ação: a escrita em Faz sozinho volta a perguntar n
   })
 })
 
-test('quem publicou perde a escrita no papel: a escrita em Faz sozinho volta a perguntar (D2-a)', async (t) => {
+test('quem publicou perde a ação e a escrita no papel: a escrita em Faz sozinho volta a perguntar (D2-a)', async (t) => {
   await askedAfter(t, async (on, bia) => {
     await developerHolds(on, READS)
     const demoted = await call(on.hub, on.ana, 'PUT', `${on.company}/members/${bia.id}`, {
@@ -114,7 +114,11 @@ test('restaurar é publicar: trazer de volta uma versão com escrita em Faz sozi
   const refused = await post(on.hub, dora, `${on.agents}/${v1.id}/versions/1/activate`, {})
   assert.deepEqual([refused.statusCode, codeOf(refused)], [409, 'NOT_IN_ROLE'], refused.body)
   assert.equal(Object(refused.json()).operation, operationLabel('sankhya', 'lancarPedido'))
-  assert.deepEqual(await activeVersion(on, v1.id), { kind: 'PUBLISHED', version: 2, changed: false })
+  assert.deepEqual(await activeVersion(on, v1.id), {
+    kind: 'PUBLISHED',
+    version: 2,
+    changed: false,
+  })
 
   const back = await post(on.hub, on.ana, `${on.agents}/${v1.id}/versions/1/activate`, {})
   assert.equal(back.statusCode, 200, back.body)
@@ -133,7 +137,31 @@ test('restaurar é publicar: trazer de volta uma versão com uma operação fora
   const refused = await post(on.hub, dora, `${on.agents}/${v1.id}/versions/1/activate`, {})
   assert.deepEqual([refused.statusCode, codeOf(refused)], [409, 'NOT_IN_ROLE'], refused.body)
   assert.equal(Object(refused.json()).operation, operationLabel('sankhya', 'lancarPedido'))
-  assert.deepEqual(await activeVersion(on, v1.id), { kind: 'PUBLISHED', version: 2, changed: false })
+  assert.deepEqual(await activeVersion(on, v1.id), {
+    kind: 'PUBLISHED',
+    version: 2,
+    changed: false,
+  })
+})
+
+test('publicar de novo a revisão de uma versão é trazê-la de volta: com a escrita em Faz sozinho, por quem não tem a ação, dá NOT_IN_ROLE e a versão ativa não muda (opção A)', async (t) => {
+  const on = await approving(t, [])
+  const dora = await memberOn(on.hub, on.companyId, DORA, 'developer')
+  await developerHolds(on, [...READS, 'lancarPedido'])
+  const v1 = await on.writer('ASK')
+  const alone = await drafted(on.hub, on.ana, on.agents, v1, {
+    approvals: { [on.write.id]: 'AUTO' },
+  })
+  await publishedNow(on.hub, on.ana, on.agents, alone)
+  const back = await post(on.hub, on.ana, `${on.agents}/${v1.id}/versions/1/activate`, {})
+  assert.equal(back.statusCode, 200, back.body)
+
+  const refused = await post(on.hub, dora, `${on.agents}/${v1.id}/publish`, {
+    revision: alone.revision,
+    message: '',
+  })
+  assert.deepEqual([refused.statusCode, codeOf(refused)], [409, 'NOT_IN_ROLE'], refused.body)
+  assert.deepEqual(await activeVersion(on, v1.id), { kind: 'PUBLISHED', version: 1, changed: true })
 })
 
 test('quem aprova precisa ter a escrita no próprio papel: o Aprovar de quem não a tem dá NOT_IN_ROLE e nada chega ao Sankhya (D3-a)', async (t) => {
@@ -156,8 +184,5 @@ test('quem aprova precisa ter a escrita no próprio papel: o Aprovar de quem nã
   assert.deepEqual(await answer(on.hub, dora, url, asked.toolCallId, false), { ok: true })
   assert.equal(endOf(await stream.turn()), 'complete')
   assert.deepEqual(on.fake.orders(), [], 'nothing reached the Sankhya')
-  assert.equal(
-    on.hub.lines.filter((line) => line.message === 'CONNECTOR_WRITE_APPROVED').length,
-    0,
-  )
+  assert.equal(on.hub.lines.filter((line) => line.message === 'CONNECTOR_WRITE_APPROVED').length, 0)
 })
