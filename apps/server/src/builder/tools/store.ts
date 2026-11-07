@@ -182,7 +182,9 @@ export async function detailsOf(
         }
       case 'PRESET': {
         const { operation } = presetTargetOf(row)
-        const read = connection.reads.find((each) => each.operation === operation)
+        const read = [...connection.reads, ...connection.writes].find(
+          (each) => each.operation === operation,
+        )
         return { ...base, kind, operation, readLabel: read?.label ?? operation, versions: detailed }
       }
       default:

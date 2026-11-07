@@ -61,7 +61,10 @@ export async function markedFor<T extends Listed>(
   })
 }
 
-/** The connections with only the reads and writes the speaker may use: the model is not told of the others. */
+/**
+ * The connections with only the reads the speaker may use: the model is not told of the others. The
+ * writes stay as the kit declares them, what tells a tool's class (code C26); no model is told of one.
+ */
 export async function visibleTo<T extends Listed>(
   deps: Deps,
   companyId: CompanyId,
@@ -69,12 +72,10 @@ export async function visibleTo<T extends Listed>(
   connections: readonly T[],
 ): Promise<T[]> {
   const allowed = await allowedKeys(deps, companyId, speaker, connections)
-  return connections.map((each) => {
-    function usable(read: { operation: string }) {
-      return allowed.has(`${each.connectionId}:${read.operation}`)
-    }
-    return { ...each, reads: each.reads.filter(usable), writes: each.writes.filter(usable) }
-  })
+  return connections.map((each) => ({
+    ...each,
+    reads: each.reads.filter((read) => allowed.has(`${each.connectionId}:${read.operation}`)),
+  }))
 }
 
 function keyOf(target: { connectionId: ConnectionId; operationId: OperationId }): string {
