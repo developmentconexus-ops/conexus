@@ -1,7 +1,7 @@
 export type { ToolsDeps } from './access.ts'
 export { admitted } from './access.ts'
 export type { InProject, OfferedConnection, ToolConnectors, Writer } from './check.ts'
-export { databaseScopeOf, readyConfig, readySlug, sessionScopeOf } from './check.ts'
+export { databaseScopeOf, readySlug, sessionScopeOf } from './check.ts'
 export { derivedUuid } from './derived.ts'
 export { inProjectOf, registerToolRoutes } from './routes.ts'
 export type { UsedBy } from './store.ts'

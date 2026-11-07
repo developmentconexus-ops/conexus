@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { everyRead } from '../../hub/identity/roles-world.ts'
 import { call, codeOf, memberOn, post } from '../../hub/identity/test-hub.ts'
 import {
   agentOf,
@@ -13,6 +12,7 @@ import {
   savedCodeTool,
 } from './test-agents.ts'
 
+const EVERY_READ = ['clientes', 'empresas', 'pedidos', 'consultar', 'carregar']
 const DORA = { name: 'Dora Reis', email: 'dora@example.test' }
 const INSTRUCTIONS = 'Responda com os pedidos do dia.'
 
@@ -20,10 +20,7 @@ const INSTRUCTIONS = 'Responda com os pedidos do dia.'
 async function developerWithoutFreeQuery(t: Parameters<typeof agentsOn>[0]) {
   const on = await agentsOn(t)
   const dora = await memberOn(on.hub, on.companyId, DORA, 'developer')
-  const without = {
-    ...everyRead,
-    sankhya: (everyRead.sankhya ?? []).filter((one) => one !== 'consultar'),
-  }
+  const without = { sankhya: EVERY_READ.filter((one) => one !== 'consultar') }
   const changed = await call(on.hub, on.ana, 'PUT', `${on.company}/roles/developer`, {
     connectors: without,
   })

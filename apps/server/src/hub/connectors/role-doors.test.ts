@@ -2,12 +2,12 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
 import { CompanyId, ConnectionId, OperationId, PersonId, ProjectId, RunId } from '@conexus/hub-api'
-import { ATENDENTE } from '../identity/roles-world.ts'
 import { call, post } from '../identity/test-hub.ts'
 import type { SessionScope } from './public.ts'
 import { TurnKey } from './public.ts'
 import { appCalls } from './test-app-calls.ts'
 
+const ATENDENTE = { label: 'Atendente', connectors: { sankhya: ['pedidos'] } }
 const QUERY = 'SELECT COUNT(*) AS N FROM TSIEMP'
 
 /** Empresa A with Sankhya linked and released to the Projeto, and Carla moved to the company's own role "Atendente". */

@@ -178,7 +178,7 @@ function planner(deps: AgentDeps, frozen: FrozenVersion & OfProject & { agentId:
       : [
           ...frozen.tools,
           ...legacyTools(
-            await deps.connectors.connections({
+            await deps.connectors.kitReads({
               ...{ companyId, personId, place },
               chosen: frozen.connections,
             }),

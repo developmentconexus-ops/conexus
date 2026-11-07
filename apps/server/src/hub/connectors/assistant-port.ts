@@ -1,6 +1,6 @@
 import { connectorOf } from '@conexus/connectors'
 import type { CompanyId, ConnectionId, PersonId, ProjectId } from '@conexus/hub-api'
-import { CALL_DEADLINE_MS } from '@conexus/hub-api'
+import { CALL_DEADLINE_MS, ConnectionId as ConnectionIdSchema, OperationId } from '@conexus/hub-api'
 import { z } from 'zod'
 import type { ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
@@ -90,7 +90,19 @@ export type AssistantConnectors = {
     scope: SessionScope,
     target: { connectionId: ConnectionId; operation: string },
   ): Promise<z.ZodObject | undefined>
+  /**
+   * The kit's typed reads of every connection the place offers, the read door's left out: what a
+   * version written before decision E4 reads as its connections' tools.
+   */
+  kitReads(scope: SessionScope): Promise<readonly KitRead[]>
 }
+
+export type KitRead = Readonly<{
+  connectionId: ConnectionId
+  operation: OperationId
+  summary: string
+  open: readonly string[]
+}>
 
 /** The ids of the line and of the query: the Projeto only where the conversation lives in one. */
 function idsOf(scope: SessionScope) {
@@ -218,6 +230,24 @@ async function noted(
   return provedAndSaved(deps, { ...call, read })
 }
 
+/** The kit's typed reads of each row's connector, the read door's left out. */
+function kitReadsOf(rows: readonly { id: string; connector: string }[]): KitRead[] {
+  return rows.flatMap((row) =>
+    (connectorOf(row.connector)?.operations ?? []).flatMap((operation) =>
+      operation.class === 'read' && operation.input instanceof z.ZodObject
+        ? [
+            {
+              connectionId: ConnectionIdSchema.parse(row.id),
+              operation: OperationId.parse(operation.id),
+              summary: operation.summary,
+              open: Object.keys(operation.input.shape),
+            },
+          ]
+        : [],
+    ),
+  )
+}
+
 /** The company's door for the Assistant (step 24.1, U1): the chosen connections its place offers, `by: 'assistant'`; the caderno's write only for `manageConnections` (step 24.3.5). */
 export function createAssistantConnectors(deps: Deps): AssistantConnectors {
   const spend = createSpending()
@@ -269,6 +299,10 @@ export function createAssistantConnectors(deps: Deps): AssistantConnectors {
       const connector = row === undefined ? undefined : connectorOf(row.connector)
       const input = connector && readOf(connector, target.operation)?.input
       return input instanceof z.ZodObject ? input : undefined
+    },
+
+    async kitReads(scope) {
+      return kitReadsOf((await offeredTo(deps, scope))?.rows ?? [])
     },
 
     async notes(scope, connectionId) {

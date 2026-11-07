@@ -37,6 +37,7 @@ function doorOf(connectors: () => Connectors): Connectors['assistant'] {
     notes: (scope, connectionId) => connectors().assistant.notes(scope, connectionId),
     saveNote: (scope, call) => connectors().assistant.saveNote(scope, call),
     operationOf: (scope, target) => connectors().assistant.operationOf(scope, target),
+    kitReads: (scope) => connectors().assistant.kitReads(scope),
   }
 }
 

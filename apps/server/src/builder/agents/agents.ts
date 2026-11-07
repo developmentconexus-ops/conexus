@@ -168,9 +168,10 @@ async function saveDraft(
   // connections become chosen tools, and its connections the selected ones.
   const old = before.byTool
     ? []
-    : legacyReads(around, patch.connections ?? before.connections).map(
-        ({ connectionId, operation }) => ({ connectionId, operation }),
-      )
+    : legacyReads(
+        await deps.connectors.kitReads(sessionScopeOf(scope)),
+        patch.connections ?? before.connections,
+      ).map(({ connectionId, operation }) => ({ connectionId, operation }))
   const ready = await deps.tools.readyOf(scope, [...(patch.ready ?? []), ...old])
   const reshapes =
     patch.tools !== undefined ||
@@ -212,9 +213,10 @@ async function saveDraft(
 /** Publishes the draft of the revision read (`published`), then says so once it committed. */
 async function publish(deps: AgentsDeps, scope: InProject, agentId: AgentId, body: Publish) {
   const around = await offered(deps, scope)
+  const kit = await deps.connectors.kitReads(sessionScopeOf(scope))
   const done = await deps.database.command(databaseScopeOf(scope), async (tx) => {
     await admitted(deps, tx, scope, 'publishAgent')
-    return published(tx, scope, { agentId, body, around, identity: deps.identity })
+    return published(tx, scope, { agentId, body, around, kit, identity: deps.identity })
   })
   if (done.did !== 'NONE') {
     const { companyId } = scope

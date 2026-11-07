@@ -9,6 +9,7 @@ import {
   ToolKind,
 } from '@conexus/hub-api'
 import { and, eq, max, sql } from 'drizzle-orm'
+import type { KitRead } from '../../hub/connectors/public.ts'
 import type { IdentityPorts } from '../../hub/identity/public.ts'
 import type { CommandTx, ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
@@ -38,7 +39,7 @@ type Declared = { slug: string; connectionId: ConnectionId; operation: Operation
 /** Each read the draft will give the agent: its chosen tools', or for a draft written before E4 the kit's reads of its connections. */
 async function declaredBy(
   tx: ReadTx,
-  a: { draft: AgentConfig; agentId: AgentId; around: readonly OfferedConnection[] },
+  a: { draft: AgentConfig; agentId: AgentId; kit: readonly KitRead[] },
 ): Promise<Declared[]> {
   const rows = await versionsWithTools(tx, await chosenIds(tx, a.agentId))
   const chosen = rows.flatMap((row): Declared[] => {
@@ -52,7 +53,7 @@ async function declaredBy(
     return [{ slug, connectionId: home, operation: OperationIdSchema.parse(row.tool.operation) }]
   })
   if (a.draft.byTool) return chosen
-  const kit = legacyReads(a.around, a.draft.connections).map((read) => ({
+  const kit = legacyReads(a.kit, a.draft.connections).map((read) => ({
     slug: read.operation,
     connectionId: read.connectionId,
     operation: read.operation,
@@ -71,6 +72,7 @@ async function refuseByRole(
     draft: AgentConfig
     agentId: AgentId
     around: readonly OfferedConnection[]
+    kit: readonly KitRead[]
     identity: Pick<IdentityPorts, 'roleOf' | 'mayUseEach'>
   },
 ): Promise<void> {
@@ -179,6 +181,7 @@ export async function published(
     agentId: AgentId
     body: Publish
     around: readonly OfferedConnection[]
+    kit: readonly KitRead[]
     identity: Pick<IdentityPorts, 'roleOf' | 'mayUseEach'>
   },
 ): Promise<Published> {

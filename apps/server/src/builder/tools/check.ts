@@ -8,7 +8,7 @@ import type {
 } from '@conexus/hub-api'
 import { ToolId, ToolSlug } from '@conexus/hub-api'
 import type { z } from 'zod'
-import type { SessionScope } from '../../hub/connectors/public.ts'
+import type { KitRead, SessionScope } from '../../hub/connectors/public.ts'
 import type { Named } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import { derivedUuid } from './derived.ts'
@@ -38,6 +38,7 @@ export type OfferedConnection = Readonly<
 export type ToolConnectors = {
   connections(scope: SessionScope): Promise<readonly OfferedConnection[]>
   operationOf(scope: SessionScope, target: ToolTarget): Promise<z.ZodObject | undefined>
+  kitReads(scope: SessionScope): Promise<readonly KitRead[]>
 }
 
 /** A tool's read as the Projeto may use it now: its input, or why not (`TOOL_REFUSED`). */

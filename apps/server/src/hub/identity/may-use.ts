@@ -86,5 +86,3 @@ export function createMayUse(auth: Auth, database: Database) {
   }
   return { mayUse, mayUseEach, roleOf }
 }
-
-export type MayUse = ReturnType<typeof createMayUse>['mayUse']
