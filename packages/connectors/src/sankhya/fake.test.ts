@@ -188,3 +188,70 @@ test('o token vence como o Sankhya dá: o expires_in é o que o dublê configura
   })
   assert.equal(fake.logins(), 1)
 })
+
+function add(token: string, origin: string, body: unknown): Promise<ProviderAnswer> {
+  const request: ProviderRequest = { method: 'POST', path: '/v1/vendas/pedidos', query: {}, body }
+  return send(toRequest(sankhya, request, token, origin))
+}
+
+const PEDIDO = { notaModelo: 12, codigoCliente: 1, itens: [{ codigoProduto: 11, quantidade: 2 }] }
+
+test('o dublê guarda o pedido a confirmar com a observação, e cada chamada é outro pedido', async () => {
+  await withToken(async (origin, token, fake) => {
+    const first = await add(token, origin, { ...PEDIDO, observacao: 'Conexus abc12345' })
+    assert.deepEqual(first, {
+      status: 200,
+      body: {
+        codigo: 1,
+        tipo: 'SUCESSO',
+        mensagem: 'Pedido Incluído/Atualizado/Cancelado com sucesso.',
+        retorno: { codigoPedido: 98001 },
+      },
+    })
+    await add(token, origin, PEDIDO)
+    assert.deepEqual(
+      fake
+        .orders()
+        .map(({ codigoPedido, estado, observacao }) => [codigoPedido, estado, observacao]),
+      [
+        [98001, 'A_CONFIRMAR', 'Conexus abc12345'],
+        [98002, 'A_CONFIRMAR', ''],
+      ],
+    )
+  })
+})
+
+test('o dublê perde a resposta depois de gravar ou antes de gravar, e o mesmo 504 não diz qual', async () => {
+  await withToken(async (origin, token, fake) => {
+    fake.orderSwitches.lostAfterStore = true
+    const after = await add(token, origin, PEDIDO)
+    fake.orderSwitches.lostAfterStore = false
+    fake.orderSwitches.lostBeforeStore = true
+    const before = await add(token, origin, PEDIDO)
+    assert.deepEqual([after.status, before.status], [504, 504])
+    assert.deepEqual(after.body, before.body)
+    assert.partialDeepStrictEqual(after.body, { code: 'GTW3503' })
+    assert.equal(fake.orders().length, 1)
+  })
+})
+
+test('o dublê recusa o produto que não existe com 400 INVALID_REQUEST e o cliente que não existe com 200 e [CORE_E…]', async () => {
+  await withToken(async (origin, token, fake) => {
+    const product = await add(token, origin, {
+      ...PEDIDO,
+      itens: [{ codigoProduto: 9554, quantidade: 1 }],
+    })
+    assert.equal(product.status, 400)
+    assert.partialDeepStrictEqual(product.body, {
+      mensagem: { code: 'INVALID_REQUEST', details: 'O produto [9554] enviado não existe.' },
+    })
+    const client = await add(token, origin, { ...PEDIDO, codigoCliente: 99 })
+    assert.equal(client.status, 200)
+    assert.match(z.object({ mensagem: z.string() }).parse(client.body).mensagem, /\[CORE_E\d+\]/)
+    assert.equal((await add(token, origin, { itens: [] })).status, 400)
+    assert.equal(fake.orders().length, 0)
+    fake.switches.refuse.add('lancarPedido')
+    assert.equal((await add(token, origin, PEDIDO)).status, 403)
+    assert.equal(fake.orders().length, 0)
+  })
+})
