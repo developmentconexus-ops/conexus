@@ -210,7 +210,11 @@ export function ApprovalCard({ part }: { part: ApprovalCardItem }) {
         {open && read?.kind === 'FAILED' && (
           <ReadFailure text={read.text} onRetry={() => refresh?.()} />
         )}
-        {open && same !== undefined && <Notice>{openWriteText(same.sentAt, same.mark)}</Notice>}
+        {open && same !== undefined && (
+          <div className="border-l-2 border-warning pl-sm">
+            <Notice>{openWriteText(same.sentAt, same.mark)}</Notice>
+          </div>
+        )}
         {open ? (
           <Answer lit={part.lit && checked} sending={sending} error={error} reply={reply} />
         ) : (
