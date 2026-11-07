@@ -36,7 +36,7 @@ export type { SessionScope } from './scope.ts'
 export { TurnKey } from './scope.ts'
 export type { LiveToolCall } from './tool-door.ts'
 export { openText, uncertainText } from './write.ts'
-export type { OpenWrite, WriteRequest, Written } from './write-record.ts'
+export type { WriteRequest, Written } from './write-record.ts'
 export { markOf } from './write-record.ts'
 
 /** Tests shorten the deadline. */
