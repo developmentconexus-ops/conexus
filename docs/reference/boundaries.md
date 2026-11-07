@@ -1256,8 +1256,10 @@ reference tool checks a read against its documentation.
   (`apps/server/src/builder/workflows/compile.ts`, `publish.ts`); the Hub's `workflow_version`
   holds the design.
 - **Why.** A run waiting for an approval must finish the flow the person saw when it started.
-- **Proof.** The step 24.6 study's P2 (two processes, Postgres 18): with one id, the resumed run
-  ran `s1-greet, s2-approval, s1b-greet, s3-finish`. The card's criterion on a run waiting on
+- **Proof.** The step 24.6 study's P2 (two processes, Postgres 18): with one id, a code-built
+  workflow resumed with a step inserted before the waiting one ran `s1-greet, s2-approval,
+  s1b-greet, s3-finish`, and a dynamic definition replaced with a step appended ran that step on
+  resume. The card's criterion on a run waiting on
   version n after version n+1 is published. Founder's word: the approval of the step 24.6 card.
   Revisit when Mastra versions stored workflow definitions.
 

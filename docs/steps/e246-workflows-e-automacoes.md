@@ -98,8 +98,8 @@ fora).
 
 **Aprovar esta página é também a sua palavra** para dois mecanismos do Conexus onde o Mastra não
 tem um (a regra C75): uma versão do Mastra por publicação, e a tabela que lembra os orçamentos
-vistos (com a decisão `B1`); e para as permissões das quatro tabelas novas e da mudança no registro
-de envios da 24.5 (a regra D11).
+vistos (com a decisão `B1`); para o uso do workflow dinâmico do Mastra, que ele ainda marca Beta; e
+para as permissões das seis tabelas novas e da mudança no registro de envios da 24.5 (a regra D11).
 
 **As decisões suas nesta etapa.**
 
@@ -174,12 +174,12 @@ de envios da 24.5 (a regra D11).
 
 | Unidade | O que entrega | Pastas | Guia além do de código | Depende de |
 | --- | --- | --- | --- | --- |
-| U1 O workflow como dado | O contrato dos balões e as falhas novas; as tabelas `workflow` e `workflow_version`, a migração e as permissões; a compilação de uma versão para as definições dinâmicas do Mastra (o principal e um por ramo) e o `addDynamicWorkflow` ao publicar; as rotas do rascunho, de publicar e de apagar; quem fala `WORKFLOW` no funil de escrita e a chave execução e balão no registro de envios, com a migração e as permissões | `packages/hub-api/src/`, `apps/server/src/builder/workflows/`, `apps/server/src/hub/connectors/`, `apps/server/migrations/`, `apps/server/database-grants.sql` | [data](../guides/data.md) | esta página aprovada; 24.5 U1 e U2 no `main` |
-| U2 O gatilho e as execuções | As cinco ferramentas dos balões registradas no `Mastra`; o gatilho dos orçamentos novos (a leitura nova do kit e o seu dublê, o workflow fixo `conexus-workflow-poll`, as tabelas do gatilho), a agenda por workflow, pausar e religar; uma execução por orçamento; a lista e a vista das execuções pelo retrato do Mastra; aprovar e recusar; **Tentar de novo**; a execução cortada por um reinício; o teste com o último orçamento; a lista de Automações com as duas espécies; o sino | `apps/server/src/builder/workflows/`, `apps/server/src/builder/mastra/`, `apps/server/src/builder/automations/`, `apps/server/src/hub/notifications/`, `packages/connectors/src/sankhya/`, `packages/hub-api/src/`, `apps/server/migrations/`, `apps/server/database-grants.sql`, `apps/server/src/main.ts` | [testing](../guides/testing.md) | U1 |
+| U1 O workflow como dado | O contrato dos balões e as falhas novas; as tabelas `workflow` e `workflow_version`, a migração e as permissões; a compilação de uma versão para as definições dinâmicas do Mastra (o principal e um por ramo) e o `addDynamicWorkflows` ao publicar; as cinco ferramentas registradas com as suas ids, que falham até a U2; as rotas do rascunho, de publicar e de apagar; quem fala `WORKFLOW` no funil de escrita e a chave execução e balão no registro de envios, com a migração e as permissões | `packages/hub-api/src/`, `apps/server/src/builder/workflows/`, `apps/server/src/builder/mastra/`, `apps/server/src/conversations-of.ts`, `apps/server/src/hub/connectors/`, `apps/server/migrations/`, `apps/server/database-grants.sql` | [data](../guides/data.md) | esta página aprovada; 24.5 U1 e U2 no `main` |
+| U2 O gatilho e as execuções | As cinco ferramentas dos balões registradas no `Mastra`; o gatilho dos orçamentos novos (a leitura nova do kit e o seu dublê, o workflow fixo `conexus-workflow-poll`, as tabelas do gatilho), a agenda por workflow, pausar e religar; uma execução por orçamento; a lista e a vista das execuções pelo retrato do Mastra; aprovar e recusar; **Tentar de novo**; a execução cortada por um reinício; o teste com o último orçamento; a lista de Automações com as duas espécies; o sino | `apps/server/src/builder/workflows/`, `apps/server/src/builder/mastra/`, `apps/server/src/builder/automations/`, `apps/server/src/hub/notifications/`, `packages/connectors/src/sankhya/`, `packages/hub-api/src/`, `apps/server/migrations/`, `apps/server/database-grants.sql`, `apps/server/src/main.ts`, `apps/server/src/platform/recordings/` | [testing](../guides/testing.md) | U1 |
 | U3 O Construtor monta | As ferramentas do Construtor para workflows (o catálogo, gravar o rascunho inteiro com o que não serve pelo caminho, testar), o seu texto, perguntar quando falta | `apps/server/src/builder/construtor/` | [security](../guides/security.md) | U1, U2 |
 | U4 As telas | O trem de balões ao lado da conversa do Construtor e na página do workflow; a página da execução com os balões acesos e o cartão **Aprovar?**; **Publicar**, **Pausar**, **Tentar de novo**; o workflow na lista de Automações | `apps/web/src/builder/workflows/` (novo), `apps/web/src/builder/{automations,agents}/`, `apps/web/src/routes/_app/companies/$companyId/projects/`, `docs/reference/screens.md` | [web](../guides/web.md) | U1, U2 |
 
-Correm em fila: a U2 começa pelo contrato da U1; a U3 e a U4 correm juntas depois da U2, porque não
+Correm em fila: a U2 começa pelo contrato da U1; entre a U1 e a U2 nenhuma execução começa (não há gatilho nem rota de execução), e as ferramentas registradas pela U1 falham com `INTERNAL_UNEXPECTED` se chamadas; a U3 e a U4 correm juntas depois da U2, porque não
 dividem pasta. Os textos das falhas novas e das telas ficam em `packages/hub-api` (U1, U2) e na U4.
 
 **O que cada unidade apaga.** U1: nada. U2: a espera do minuto do relógio de verdade no teste da
@@ -195,31 +195,31 @@ migrações, a compilação, publicar, as rotas, quem fala `WORKFLOW` no funil).
 ferramentas, a leitura nova do kit e o seu dublê, o gatilho e as suas tabelas, a agenda, as
 execuções, aprovar e recusar, tentar de novo, o reinício, o teste, a lista, o sino). U3: ~450. U4:
 ~1.100. Total da etapa: ~3.850, dentro da regra L2 (estimado pela leitura, sem protótipo). Com a
-decisão `E2`, a U1 perde ~150 e a U2 ~250.
+decisão `E2`, a U1 perde ~150 (a migração `e246_workflow_write` e quem fala `WORKFLOW` saem) e a U2 ~250 (a ferramenta de escrever), e saem os critérios 5 e 13 e a última linha da tabela de falhas.
 
 ## Os critérios de aceite
 
 | # | Unidade | Critério, observável de fora, com a recusa | Teste que o prova | Nível |
 | --- | --- | --- | --- | --- |
-| 1 | U1 | `PUT …/projects/{p}/workflows/{w}/draft` com um `WorkflowDraft` válido grava o rascunho e devolve `{ kind: 'SAVED', workflow }`; um desenho que o esquema aceita mas não serve (um `READ` com operação de escrita, um `AGENT` de agente de outro Projeto ou cuja versão publicada tem escrita, uma referência `{{b9.texto}}` a um balão que não vem antes, um `IF` sobre um campo que não é número) devolve `{ kind: 'INVALID', issues: [{ path: 'balloons.2.input', message }] }` e não grava; um corpo que o esquema recusa responde `REQUEST_MALFORMED` (C51) | `builder/workflows/routes.test.ts` (novo), "o rascunho" | must |
+| 1 | U1 | `PUT …/projects/{p}/workflows/{w}/draft` com um `WorkflowDraft` válido grava o rascunho e devolve `{ kind: 'SAVED', workflow }`; um desenho que o esquema aceita mas não serve (um `READ` com operação de escrita, um `AGENT` de agente de outro Projeto ou cuja versão publicada tem escrita, uma referência `{{b9.texto}}` a um balão que não vem antes, um `IF` sobre um campo do gatilho que não é número, um balão depois do `IF` que usa a saída de um balão de dentro do ramo) devolve `{ kind: 'INVALID', issues: [{ path: 'balloons.2.input', message }] }` e não grava; um corpo que o esquema recusa responde `REQUEST_MALFORMED` (C51) | `builder/workflows/routes.test.ts` (novo), "o rascunho" | must |
 | 2 | U1 | `POST …/workflows/{w}/publish` grava a versão `n+1`, registra no Mastra `wf-<w>-v<n+1>` e um `wf-<w>-v<n+1>-<balão>` por `IF`, e as linhas aparecem em `mastra.mastra_workflow_definitions` com `status = 'active'`; as da versão `n` continuam `active`; publicar de novo sem mudança no rascunho responde a mesma versão | `builder/workflows/publish.test.ts` (novo), "publicar" | must |
 | 3 | U1 | Recusa ao publicar: sem `manageAutomations`, `NOT_IN_ROLE`; uma operação fora do papel de quem publica, `NOT_IN_ROLE`; um `WRITE` em **Faz sozinho** sem `agent: publishUnattendedWrite`, `NOT_IN_ROLE`; uma ligação não liberada ao Projeto, `NOT_GRANTED`; uma pessoa de `APPROVAL` ou `NOTIFY` fora da empresa, `PERSON_NOT_FOUND`; nada se grava e nada vai ao Mastra | `publish.test.ts`, "a publicação recusada" | must |
-| 4 | U1 | Depois de um reinício (um Hub novo ao lado do mesmo banco, por `hubBeside`), cada versão publicada está no `Mastra` (`getWorkflowById('wf-<w>-v<n>')`) sem código do Conexus a registrar: o `startWorkers()` a recarrega; uma definição `wf-*` sem versão no Hub é arquivada no início | `publish.test.ts`, "depois do reinício" | must |
+| 4 | U1 | Depois de um reinício (um Hub novo ao lado do mesmo banco, por `hubBeside`), cada versão publicada está no `Mastra` (`getWorkflowById('wf-<w>-v<n>')`) sem código do Conexus a registrar: o `startWorkers()` a recarrega; uma definição `wf-*` sem versão no Hub é apagada no início (`store.delete` e `removeWorkflow`, como o Mastra apaga uma definição) | `publish.test.ts`, "depois do reinício" | must |
 | 5 | U1 | `writeThrough` com `speaker: WORKFLOW` e a chave `RUN` envia ao dublê do Sankhya uma vez e grava a linha de `connector_write` com o workflow, a versão, a execução e o balão; a mesma chave de novo não envia e devolve o que o registro diz; uma linha com chave de conversa e uma com chave de execução nunca se confundem; as recusas da 24.5 (`NOT_IN_ROLE`, `NOT_GRANTED`) valem para quem publicou | `hub/connectors/write.test.ts`, "o workflow escreve" | must (só com `E1`) |
-| 6 | U2 | O gatilho: a primeira volta depois de ligar não dispara nada e marca o começo; o dublê com três orçamentos novos dos tipos escolhidos dá três execuções, cada uma com o número da nota na entrada; a volta seguinte, com os mesmos três e um novo, dá uma; uma nota de outro tipo não dispara; mais de 20 novos numa volta disparam 20 e o resto na volta seguinte | `builder/workflows/trigger.test.ts` (novo), "orçamentos novos" | must |
+| 6 | U2 | O gatilho: ao ligar (publicar a primeira vez ou religar), uma leitura de base grava como vistas as notas que já existem na janela, sem disparar; um orçamento lançado depois dela, mesmo antes da primeira volta, dispara na volta seguinte; o dublê com três orçamentos novos dos tipos escolhidos dá três execuções, cada uma com o número da nota na entrada; a volta seguinte, com os mesmos três e um novo, dá uma; uma nota de outro tipo não dispara; mais de 20 novos numa volta disparam 20 e o resto na volta seguinte; uma volta que deu certo avança o começo para a hora em que começou, e as notas vistas de mais de dois dias antes do começo saem, sem que uma nota antiga volte a disparar (o relógio injetado passa 10 dias) | `builder/workflows/trigger.test.ts` (novo), "orçamentos novos" | must |
 | 7 | U2 | Duas voltas ao mesmo tempo para o mesmo workflow dão uma execução por orçamento; a leitura recusada (`NOT_GRANTED` com a liberação tirada, ou `UNREACHABLE`) não avança o começo, grava a última volta como falha com o código, imprime `WORKFLOW_TRIGGER_FAILED`, e a volta seguinte, com a liberação de volta, dispara o mesmo orçamento uma vez | `trigger.test.ts`, "duas voltas" e "a volta que falhou" | must |
 | 8 | U2 | O balão `READ` lê pelo `readThrough` com o papel de quem publicou: o dublê recebe a leitura e a saída do balão traz as linhas; com a operação tirada do papel dele, o balão falha com `NOT_IN_ROLE` e a execução fica `FAILED` nele; uma entrada que não serve à operação falha o balão (a ferramenta recusa, nunca devolve `{ error: true }` como sucesso) | `builder/workflows/tools.test.ts` (novo), "ler" | must |
 | 9 | U2 | O balão `AGENT` abre uma conversa nova do agente marcada "Workflow", manda o texto do balão com as referências trocadas pelos valores, e devolve o texto final; a conversa aparece na lista do agente com a marca; um turno que falha ou passa de 15 minutos falha o balão com o código do turno; um agente apagado depois de publicar falha o balão com `AGENT_NOT_FOUND` | `tools.test.ts`, "o agente" | must |
 | 10 | U2 | O balão `APPROVAL` para a execução (`WAITING`, com a pessoa e a pergunta) e nada depois dele roda; no mesmo instante a pessoa recebe a notificação "espera sua aprovação" no sino e por e-mail; num `IF` cujo valor não passa, o balão do ramo aparece `SKIPPED` e a execução segue | `tools.test.ts`, "aprovar espera" e "o ramo pulado" | must |
-| 11 | U2 | `POST …/runs/{r}/approval` com `approved: true` pela pessoa do balão retoma a execução e o balão seguinte roda; com `approved: false` a execução termina `DECLINED` (o Mastra guarda `canceled`) e nada depois roda; a decisão fica em `workflow_run_decision` com a pessoa e a hora; uma segunda resposta responde `RUN_NOT_WAITING`; outra pessoa recebe `NOT_APPROVER`; num balão que escreve, a pessoa sem a escrita no papel recebe `NOT_IN_ROLE`; uma execução que espera continua esperando depois de um reinício, e a resposta depois dele funciona, também dentro de um ramo | `builder/workflows/runs.test.ts` (novo), "aprovar e recusar" | must |
+| 11 | U2 | `POST …/runs/{r}/approval` com `approved: true` pela pessoa do balão retoma a execução e o balão seguinte roda; com `approved: false` a execução termina `DECLINED` (o Mastra guarda `canceled`) e nada depois roda; a decisão fica em `workflow_run_decision` com o balão, a pessoa e a hora; uma segunda resposta ao mesmo balão responde `RUN_NOT_WAITING`, e uma execução com dois balões que pedem aprovação recebe uma decisão por balão; uma decisão gravada cuja retomada não aconteceu (o Hub morreu no meio) é retomada no início do Hub; outra pessoa recebe `NOT_APPROVER`; num balão que escreve, a pessoa sem a escrita no papel recebe `NOT_IN_ROLE`; uma execução que espera continua esperando depois de um reinício, e a resposta depois dele funciona, também dentro de um ramo | `builder/workflows/runs.test.ts` (novo), "aprovar e recusar" | must |
 | 12 | U2 | Uma execução que espera na versão `n` continua na versão `n` depois de publicada a `n+1` com um balão a mais antes do que espera: aprovada, roda só os balões da versão `n` | `runs.test.ts`, "a versão em que começou" | must |
 | 13 | U2 | O balão `WRITE` em **Pergunta antes** para antes de enviar, e o dublê não recebe nada; aprovado, envia uma vez pelo `writeThrough` com `WORKFLOW`; em **Faz sozinho** envia sem parar; **Tentar de novo** depois de um envio não envia de novo e devolve o que o registro diz | `tools.test.ts`, "escrever" | must (só com `E1`) |
-| 14 | U2 | `POST …/runs/{r}/retry` numa execução `FAILED` retoma do balão que falhou (`timeTravel`) sem rodar os anteriores (o dublê conta uma leitura do cliente); num balão dentro de um ramo, retoma o ramo do primeiro balão dele; numa execução que não falhou nem foi interrompida responde `RUN_NOT_FAILED` | `runs.test.ts`, "tentar de novo" | must |
+| 14 | U2 | `POST …/runs/{r}/retry` numa execução `FAILED` retoma do balão que falhou (`timeTravel`) sem rodar os anteriores (o dublê conta uma leitura do cliente); num balão dentro de um ramo, retoma o ramo do primeiro balão dele e segue (prova P8 do estudo); numa execução que não falhou nem foi interrompida responde `RUN_NOT_FAILED` | `runs.test.ts`, "tentar de novo" | must |
 | 15 | U2 | Uma execução `running` de antes do início do Hub aparece `INTERRUPTED`; **Tentar de novo** a termina (`restart()`), do balão em que estava, sem rodar os anteriores; antes de vencer o prazo de posse do Mastra responde `RUN_STILL_OWNED` | `runs.test.ts`, "a interrompida" | must |
-| 16 | U2 | Cada volta e cada execução conferem o papel de quem publicou: sem `manageAutomations`, a execução termina `PAUSED_OWNER` sem rodar balão, a agenda pausa e o workflow fica `PAUSED_OWNER`, como `run.ts:189-219` | `trigger.test.ts`, "o dono perdeu o papel" | must |
-| 17 | U2 | `GET …/workflows/{w}/runs` devolve as execuções de todas as versões, 20 por página, mais novas primeiro, cada uma com a versão, o orçamento, o estado e o de cada balão; `GET …/runs/{r}` traz a saída de cada balão fora de um ramo | `runs.test.ts`, "a lista e a vista" | must |
-| 18 | U2 | `POST …/workflows/{w}/test` roda o rascunho como `wf-<w>-teste` sobre o orçamento mais recente dos tipos escolhidos; o `NOTIFY` não avisa, um `WRITE` sempre para antes de enviar, e o teste não entra na lista; um segundo teste substitui a definição de teste | `runs.test.ts`, "o teste" | must |
-| 19 | U2 | Pausar o workflow pausa a agenda e nenhuma volta roda; religar marca um começo novo, e um orçamento lançado durante a pausa não dispara; apagar o workflow apaga a agenda e as tabelas do gatilho, arquiva as definições no Mastra e responde `WORKFLOW_NOT_FOUND` depois; apagar o Projeto ou a empresa faz o mesmo pelo `releaseFirst` | `builder/workflows/routes.test.ts`, "pausar, religar, apagar" | must |
+| 16 | U2 | Cada volta confere o papel de quem publicou antes de ler: sem `manageAutomations`, nenhuma execução começa, a agenda pausa e o workflow fica `PAUSED_OWNER`, como `run.ts:189-219`; dentro de uma execução, cada balão lê e escreve com o papel dele na hora (critério 8) | `trigger.test.ts`, "o dono perdeu o papel" | must |
+| 17 | U2 | `GET …/workflows/{w}/runs` devolve as execuções de todas as versões (pela tabela `workflow_run`, gravada ao começar cada execução), 20 por página, mais novas primeiro, cada uma com a versão, o orçamento, o estado e o de cada balão; `GET …/runs/{r}` traz a saída de cada balão fora de um ramo | `runs.test.ts`, "a lista e a vista" | must |
+| 18 | U2 | `POST …/workflows/{w}/test` copia o rascunho para `workflow.test_draft` e o roda como `wf-<w>-teste` sobre o orçamento mais recente dos tipos escolhidos; o `NOTIFY` não avisa, um `WRITE` sempre para antes de enviar, e o teste não entra na lista; um segundo teste substitui a definição de teste | `runs.test.ts`, "o teste" | must |
+| 19 | U2 | Pausar o workflow pausa a agenda e nenhuma volta roda; religar marca um começo novo, e um orçamento lançado durante a pausa não dispara; apagar o workflow apaga a agenda e as tabelas do gatilho, apaga as definições no Mastra (`store.delete` e `removeWorkflow`) e responde `WORKFLOW_NOT_FOUND` depois; apagar o Projeto ou a empresa faz o mesmo pelo `releaseFirst` | `builder/workflows/routes.test.ts`, "pausar, religar, apagar" | must |
 | 20 | U2 | `GET …/automations` devolve as Automações da 24.2 e os workflows com gatilho numa lista só, cada item com `kind`; as respostas da 24.2 não mudam | `builder/automations/routes.test.ts` (os casos de hoje passam sem mudar), "com os workflows" | must |
 | 21 | U3 | O Construtor tem `workflow_catalog`, `save_workflow_draft` e `test_workflow`; com o modelo de mentira, um pedido completo grava o rascunho; um desenho que não serve volta com os problemas pelo caminho e o Construtor o corrige; um pedido sem tipo de operação faz o Construtor perguntar, sem gravar | `builder/construtor/workflow-tools.test.ts` (novo) | must |
 | 22 | U3 | Avaliação com o modelo de verdade (opt-in): o pedido do roteiro, passo 1, termina num rascunho com os balões na ordem, o `APPROVAL` dentro do `IF` do valor, e nenhum `WRITE` | `builder/construtor/construtor.eval.test.ts`, "o fluxo do orçamento" | should |
@@ -244,8 +244,10 @@ decisão `E2`, a U1 perde ~150 e a U2 ~250.
 | `workflow_version.draft` | publicar (U1) | as ferramentas pela id do Mastra (U2), o gatilho (U2), a página (U4) |
 | `WorkflowView.state` (`ON`, `PAUSED`, `PAUSED_OWNER`) | pausar e religar (U2), a reconferência (U2) | a página e a lista (U4), o gatilho (U2) |
 | `WorkflowView.lastLap` | a volta do gatilho (U2) | a página (U4) |
-| `workflow_trigger.since` | ligar e religar (U2) | a volta do gatilho (U2) |
+| `workflow_trigger.since` | ligar, religar e cada volta que deu certo (U2) | a volta do gatilho (U2) |
 | `workflow_trigger_seen` | a volta do gatilho (U2) | a volta do gatilho (U2) |
+| `workflow_run` (a execução, a versão, o orçamento, a hora) | a volta do gatilho (U2) | a lista de execuções (U2) |
+| `workflow.test_draft` | o teste (U2) | as ferramentas numa id `TEST` (U2) |
 | `RunView.state`, `RunView.balloons[].state` | o retrato do Mastra e `workflow_run_decision`, lidos por `runs.ts` (U2) | a página da execução e a lista (U4) |
 | `RunView.item`, `RunView.startedAt` | a entrada da execução e o retrato (U2) | a página da execução e a lista (U4) |
 | `RunView.waiting` (balão, pessoa, pergunta) | o `suspendPayload` do balão (U2) | o cartão (U4) |
@@ -285,16 +287,16 @@ construir, como manda o estudo de uma tela; o estudo não as tirou.
 | Gravação ou comando, da etapa ou da biblioteca | Duas vezes ao mesmo tempo | Recusada no meio, depois de uma instrução ou de uma chamada | Uma dependência fora (o banco, ou um terceiro) | O que o processo imprime | Critérios |
 | --- | --- | --- | --- | --- | --- |
 | Gravar o rascunho (`UPDATE workflow.draft`) | a última gravação vence, como o rascunho do agente | — | o banco fora: a falha à conversa, nada gravado | — | 1, 21 |
-| Publicar (`INSERT workflow_version` e, na mesma transação antes do `COMMIT`, `addDynamicWorkflows` do ramo e do principal) | a chave `(workflow_id, number)` deixa uma; a outra relê e responde a versão que existe | o Mastra recusa a definição: a transação volta, nada publicado, `WORKFLOW_PUBLISH_REFUSED`; o `COMMIT` falha depois do Mastra: a definição fica sem versão no Hub, as ferramentas a recusam (`WORKFLOW_NOT_FOUND`) e o início a arquiva | o banco fora: nada publicado | `WORKFLOW_PUBLISHED` com workflow e versão | 2, 3, 4 |
+| Publicar (`INSERT workflow_version` e, na mesma transação antes do `COMMIT`, `addDynamicWorkflows` do ramo e do principal) | a chave `(workflow_id, number)` deixa uma; a outra relê e responde a versão que existe | o Mastra recusa a definição: a transação volta, nada publicado, `WORKFLOW_PUBLISH_REFUSED`; o `COMMIT` falha depois do Mastra: a definição fica sem versão no Hub, as ferramentas a recusam (`WORKFLOW_NOT_FOUND`) e o início a apaga | o banco fora: nada publicado | `WORKFLOW_PUBLISHED` com workflow e versão | 2, 3, 4 |
 | A agenda (`mastra.schedules.create`, `pause`, `resume`, `delete`) | uma linha por workflow, id `schedule_wf-<w>`; criar de novo é idempotente, como `automations.ts:143-188` | o Hub morre depois de publicar e antes da agenda: no início, um workflow `ON` sem agenda ganha a sua | o banco fora: a falha à tela, e o estado não muda | `WORKFLOW_SCHEDULED`, `_PAUSED`, `_RESUMED` | 2, 19 |
-| A volta do gatilho (a leitura, `INSERT … ON CONFLICT DO NOTHING RETURNING` em `workflow_trigger_seen`, `createRun().start()`, a limpeza das linhas de mais de 7 dias, o `UPDATE` da última volta) | duas voltas: a chave `(workflow_id, item_key)` deixa uma execução por orçamento | o Hub morre depois do `INSERT` e antes de começar a execução: a linha fica com `run_id` nulo; a volta seguinte começa as execuções dessas linhas | o Sankhya fora ou a liberação tirada: o começo não avança, a última volta guarda a falha; o banco fora: nada dispara | `WORKFLOW_TRIGGER_FAILED` com workflow e código, sem as linhas (S40) | 6, 7 |
+| A volta do gatilho (a leitura, `INSERT … ON CONFLICT DO NOTHING RETURNING` em `workflow_trigger_seen`, `INSERT workflow_run` e `createRun().start()`, a limpeza das vistas de mais de dois dias antes do começo, o `UPDATE` do começo e da última volta); a leitura de base ao ligar | duas voltas: a chave `(workflow_id, item_key)` deixa uma execução por orçamento | o Hub morre depois do `INSERT` e antes de começar a execução: a linha fica com `run_id` nulo e `baseline` falso; a volta seguinte começa as execuções dessas linhas | o Sankhya fora ou a liberação tirada: o começo não avança, a última volta guarda a falha; o banco fora: nada dispara | `WORKFLOW_TRIGGER_FAILED` com workflow e código, sem as linhas (S40) | 6, 7 |
 | A conversa do balão `AGENT` (a conversa nova do agente) | uma por execução e balão: um **Tentar de novo** abre outra | o turno falha: o balão falha com o código; o Hub morre: a execução fica `INTERRUPTED` | o modelo fora: o código do turno | o mesmo da conversa de hoje, com a execução | 9 |
-| A notificação de aprovar e o aviso do `NOTIFY` (o sino e o e-mail) | uma por balão e execução; um **Tentar de novo** depois de um balão feito não avisa de novo | o e-mail falha: o sino fica e o balão termina com "o e-mail não saiu" | o envio de e-mail fora: igual | `WORKFLOW_NOTIFIED` | 10 |
-| Aprovar (`INSERT workflow_run_decision`, depois `run.resume`) | a chave `run_id` deixa uma decisão; a outra recebe `RUN_NOT_WAITING`; o Mastra recusa a segunda retomada (`WORKFLOW_RESUME_ALREADY_CLAIMED`) | o Hub morre entre a decisão e a retomada: a execução continua `suspended` com a decisão gravada; ao abrir a execução, o Hub retoma a decisão gravada | o banco fora: a falha ao cartão, a execução continua esperando | `WORKFLOW_APPROVED` com execução, balão e pessoa | 11 |
+| A notificação de aprovar e o aviso do `NOTIFY` (o sino e o e-mail) | uma por balão e execução; um **Tentar de novo** depois de um balão feito não avisa de novo; um corte no meio do envio e um **Tentar de novo** podem avisar duas vezes (aceito: um aviso a mais, nada escrito) | o e-mail falha: o sino fica e o balão termina com "o e-mail não saiu" | o envio de e-mail fora: igual | `WORKFLOW_NOTIFIED` | 10 |
+| Aprovar (`INSERT workflow_run_decision`, depois `run.resume`) | a chave `(run_id, balloon_id)` deixa uma decisão; a outra recebe `RUN_NOT_WAITING`; o Mastra recusa a segunda retomada (`WORKFLOW_RESUME_ALREADY_CLAIMED`) | o Hub morre entre a decisão e a retomada: a execução continua `suspended` com a decisão gravada; no início, o Hub retoma cada decisão gravada cuja execução ainda espera | o banco fora: a falha ao cartão, a execução continua esperando | `WORKFLOW_APPROVED` com execução, balão e pessoa | 11 |
 | Recusar (`INSERT workflow_run_decision`, depois `run.cancel()`) | como aprovar | o Hub morre entre a decisão e o `cancel()`: como aprovar | o banco fora: igual | `WORKFLOW_DECLINED` | 11 |
 | Tentar de novo (`run.timeTravel` numa falha, `run.restart` numa interrompida) | o Mastra deixa um (`WORKFLOW_TIME_TRAVEL_ALREADY_CLAIMED`, `WORKFLOW_RESTART_RUN_OWNED`); o outro recebe `RUN_NOT_FAILED` ou `RUN_STILL_OWNED` | a definição mudou: não muda, porque cada versão é um id | o banco fora: a falha à tela | `WORKFLOW_RETRIED` | 14, 15 |
 | O teste (`addDynamicWorkflow` de `wf-<w>-teste`, depois uma execução) | o segundo teste substitui a definição | o teste falha num balão: o Construtor diz o balão e o motivo | o Sankhya fora: o teste falha na leitura | `WORKFLOW_TESTED` | 18 |
-| Pausar, religar, apagar (`UPDATE workflow.state`, a agenda; apagar também as tabelas do gatilho e o arquivamento das definições) | a última vence | o Hub morre entre o Hub e o Mastra: no início, a agenda segue o `state` do Hub, e as definições de um workflow apagado são arquivadas | o banco fora: nada muda | `WORKFLOW_PAUSED`, `_RESUMED`, `_DELETED` | 19 |
+| Pausar, religar, apagar (`UPDATE workflow.state`, a agenda, a leitura de base ao religar; apagar também as tabelas do gatilho e as definições, por `store.delete` e `removeWorkflow`) | a última vence | o Hub morre entre o Hub e o Mastra: no início, a agenda segue o `state` do Hub, e as definições de um workflow apagado saem | o banco fora: nada muda | `WORKFLOW_PAUSED`, `_RESUMED`, `_DELETED` | 19 |
 | O balão que escreve (`writeThrough` com `WORKFLOW`) | a chave execução e balão: a segunda chamada lê a linha e não envia | os casos de `WRITE_UNCERTAIN` da 24.5, iguais | os da 24.5, iguais | os da 24.5, com workflow, versão, execução e balão | 5, 13 |
 
 ## A tabela de referência
@@ -303,16 +305,16 @@ construir, como manda o estudo de uma tela; o estudo não as tirou.
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | O workflow guardado como dado e carregado de novo depois de um reinício | U1 | nenhum: o único `createWorkflow` é o fixo da 24.2, `builder/automations/run.ts:248-256` | `@mastra/core@1.82.0`: `addDynamicWorkflow` (`dist/mastra-D4MXu5BN.js:4180`), `#loadDynamicWorkflows` em `startWorkers()` (`:4305`, `:5175`); `packages/core/src/mastra/index.ts:5909-6045`, `:6054-6119`; `mastra_workflow_definitions` (`packages/core/src/storage/constants.ts:374-389`); doc `dist/docs/references/docs-workflows-dynamic-workflows.md:7-11` (Beta) | A definição em JSON é validada contra o registro vivo, vira um `Workflow` e fica no Postgres; `startWorkers()` a recarrega. Provado no estudo (P1, P2) | nativo (Beta) | — | não precisa | `apps/server/src/builder/workflows/compile.ts` |
 | Uma versão publicada não muda debaixo de uma execução aberta | U1 | o agente: uma versão por publicação (`builder/agents/tables.ts:71`) | Mastra 1.82: a definição não tem versão (`constants.ts:374-389`); a execução copia o grafo vivo ao ser criada (`workflows/workflow.ts:3083`); activepieces `packages/core/execution/src/lib/flows/flow-version.ts:16-23`; n8n `@n8n/db/src/entities/workflow-history.ts:12-27`; Vercel Workflow prende a execução ao deploy em que começou (documentado) | Provado no estudo (P2): com o mesmo id, a retomada depois do reinício roda o grafo novo. Cada versão publicada é um id próprio, `wf-<w>-v<n>`, `active` enquanto o workflow existe | remendo | P2 com `@mastra/core@1.82.0`; critério 12; [boundaries](../reference/boundaries.md), "a published workflow version is its own workflow id" | a aprovação desta página | `apps/server/src/builder/workflows/tables.ts` |
-| Os balões e as ligações entre eles | U1 | nenhum | Mastra 1.82: as entradas da definição (`dist/docs/references/reference-workflows-dynamic-workflow-definition.md:52-68`); o mapeamento declarativo (`packages/core/src/workflows/dynamic/mapping-config.ts:51-60`); o `conditional` e o seu predicado, e um ramo com mais de um passo como workflow aninhado (`workflows/builder/authoring-playbook.ts:7`, `:310-343`, `:373`); activepieces, uma lista ligada por `nextAction`, ramo por ROUTER (`flows/actions/action.ts:7-13`) | Cada balão vira um `mapping` (o id do balão e os valores que ele usa) seguido de um `tool` do Conexus; um `IF` vira `conditional` com um ramo, um `workflow` aninhado com os balões do ramo. Provado no estudo (P5): espera dentro do ramo e retoma num processo novo; o ramo não tomado fica fora de `steps` | embrulhado: o balão e a compilação são nossos; o grafo e a execução são do Mastra | — | não precisa | `packages/hub-api/src/workflows.ts`, `compile.ts` |
+| Os balões e as ligações entre eles | U1 | nenhum | Mastra 1.82: as entradas da definição (`dist/docs/references/reference-workflows-dynamic-workflow-definition.md:52-68`); o mapeamento declarativo (`packages/core/src/workflows/dynamic/mapping-config.ts:51-60`); o `conditional` e o seu predicado, e um ramo com mais de um passo como workflow aninhado (`workflows/builder/authoring-playbook.ts:7`, `:310-343`, `:373`); activepieces, uma lista de passos com o ramo por ROUTER (`flows/actions/action.ts:7-13`) | Cada balão vira um `mapping` (o id do balão e os valores que ele usa) seguido de um `tool` do Conexus; um `IF` vira um `mapping` de cima com o que o ramo usa, e um `conditional` com um ramo, um `workflow` aninhado com os balões do ramo, que leem `initData`. Provado no estudo: espera dentro do ramo e retoma num processo novo, e o ramo não tomado fica fora de `steps` (P5); o ramo recebe os valores de fora pelo `mapping` de cima, e uma fonte `step` + `path` que a saída da ferramenta não declara é recusada, enquanto `template` passa (P8) | embrulhado: o balão e a compilação são nossos; o grafo e a execução são do Mastra | — | não precisa | `packages/hub-api/src/workflows.ts`, `compile.ts` |
 | Ler um sistema num balão | U2 | `readThrough` (`hub/connectors/read.ts`), as leituras do Sankhya (`packages/connectors/src/sankhya/operations/index.ts:19-44`) | Mastra 1.82: a entrada `tool` resolve por `mastra.getTool` (`workflows/dynamic/rehydrate.ts:418-425`); a entrada chama `tool.execute` direto (`workflows/entry-executors/run-tool-entry.ts:58`); o contexto traz `workflowId` e `runId` (`dist/tools/types.d.ts:202-212`); provado no estudo (P2): uma entrada inválida volta `{ error: true }` e a execução termina `success` | A ferramenta `conexus-ler` acha o balão pela id do Mastra do contexto, confere a própria entrada e lança uma falha, e lê pelo funil de hoje com o papel de quem publicou | embrulhado: o funil de leitura de hoje | — | não precisa | `apps/server/src/builder/workflows/tools.ts` |
 | Um agente num balão | U2 | a conversa nova da automação, `run.ts:220-229`, e o agente publicado (`builder/agents/registry.ts:49-69`) | Mastra 1.82: `createStep(agent)` chama `agent.stream` sem tratar aprovação (`workflows/entry-executors/run-agent-entry.ts:166-173`); provado no estudo (P3): com uma ferramenta que pergunta, o passo nunca termina | O balão abre uma conversa nova do agente, marcada "Workflow", como a automação abre a do Assistente, e devolve o texto final; um agente cuja versão tem escrita não entra | embrulhado: o passo `converse` da 24.2 sobre a conversa do agente | P3 | não precisa | `tools.ts` |
 | "Aprovar?" no meio do workflow, e recusar | U2 | o cartão da conversa (24.5), só na memória do Hub | Mastra 1.82: uma ferramenta suspende por `context.workflow.suspend` (`dist/docs/references/reference-tools-create-tool.md:75-77,105`); `run.resume` (`dist/agent-BP9OWM6D.js:11239`) e a segunda retomada recusada (`reference-workflows-run-methods-resume.md:102-122`); `run.cancel` guarda `canceled` (`workflows/workflow.ts:4087-4126`); o roteiro de autoria diz que um grafo guardado não suspende (`authoring-playbook.ts:566`), mas uma ferramenta registrada suspende; Zapier "Request Approval" e Dify "Human Input" (documentados, 2026-11-07); n8n `nodes-base/utils/sendAndWait/utils.ts` | Provado no estudo: suspenso num processo, retomado noutro (P2), também dentro de um ramo (P5); `cancel()` num processo novo guarda `canceled` e nada depois roda (P6) | nativo | — | a decisão A e a D | `tools.ts`, `runs.ts` |
 | Escrever num sistema num balão | U1, U2 | `writeThrough` (`hub/connectors/write.ts:154-183`), `connector_write` com chave empresa, conversa e `toolCallId` (`hub/connectors/tables.ts:205-250`), a chave da 24.5 (`builder/agents/tools.ts:110-142`) | Mastra 1.82: `requireApproval` não vale num passo de workflow (nenhuma ocorrência em `packages/core/src/workflows` fora de testes); provado no estudo (P3): a ferramenta roda sem perguntar; `resolveToolApprovalVerdict` só no laço do agente (`dist/agent-BP9OWM6D.js:15127`) | A ferramenta `conexus-escrever` suspende antes de enviar em **Pergunta antes** e envia pelo `writeThrough` com `WORKFLOW` e a chave execução e balão | embrulhado: o funil da 24.5 com uma chave nova | P3 | a decisão E; as permissões pela aprovação desta página | migração `e246_workflow_write` |
 | Avisar uma pessoa | U2 | `deps.notify.automationRan` (`run.ts:230-247`), `hub/notifications` (24.2) | Zapier e Make mandam e-mail ou mensagem por um passo (documentados) | O sino e o e-mail de hoje, com dois tipos novos (aprovar, avisar) | embrulhado | — | não precisa | `tools.ts` |
-| O gatilho: orçamentos novos no Sankhya | U2 | as Automações disparam só por horário (`builder/automations/cadence.ts:22`, `cronOf`) | Sankhya: nenhuma página de aviso para fora no índice `developer.sankhya.com.br/llms.txt`; `logAlteracoesTabelas` pede o parâmetro LOGTABOPER e guarda 3 a 7 dias (documentado, 2026-11-07); activepieces `packages/pieces/common/src/lib/polling/index.ts:38-140` (o começo em `Date.now()` ao ligar, `:119-134`); n8n `nodes-base/nodes/Airtable/AirtableTrigger.node.ts:249,259,274`; Pipedream `dedupe: "unique"`; Zapier deduplica pelo `id` (documentado) | Olhar de tempos em tempos as notas dos tipos escolhidos, lembrar as vistas pelo número da nota, e começar uma execução por orçamento novo | remendo: o agendador do Mastra só publica `workflow.start` e não guarda cursor (`workflows/scheduler/scheduler.ts:18-29`) | `@mastra/core@1.82.0` lido: sem cursor; critérios 6 e 7 com o dublê; [boundaries](../reference/boundaries.md), "the trigger remembers what it has seen" | a decisão B | `apps/server/src/builder/workflows/trigger.ts`, migração `e246_workflow_trigger` |
+| O gatilho: orçamentos novos no Sankhya | U2 | as Automações disparam só por horário (`builder/automations/cadence.ts:22`, `cronOf`) | Sankhya: nenhuma página de aviso para fora no índice `developer.sankhya.com.br/llms.txt`; `logAlteracoesTabelas` pede o parâmetro LOGTABOPER e guarda 3 a 7 dias (documentado, 2026-11-07); activepieces `packages/pieces/common/src/lib/polling/index.ts:38-140` (o começo em `Date.now()` ao ligar, `:119-134`); n8n `nodes-base/nodes/Airtable/AirtableTrigger.node.ts:249,274`; Pipedream `dedupe: "unique"`; Zapier deduplica pelo `id` (documentado) | Olhar de tempos em tempos as notas dos tipos escolhidos, lembrar as vistas pelo número da nota, e começar uma execução por orçamento novo | remendo: o agendador do Mastra só publica `workflow.start` e não guarda cursor (`workflows/scheduler/scheduler.ts:18-29`) | `@mastra/core@1.82.0` lido: sem cursor; critérios 6 e 7 com o dublê; [boundaries](../reference/boundaries.md), "the trigger remembers what it has seen" | a decisão B | `apps/server/src/builder/workflows/trigger.ts`, migração `e246_workflow_trigger` |
 | A agenda do gatilho | U2 | `mastra.schedules.create` (`builder/automations/automations.ts:143-188`), data D27 | Mastra 1.82 `mastra.schedules` (`dist/schedules/schedules.d.ts:181-189`); um disparo perdido não volta (`docs-workflows-scheduled-workflows.md:45`) | Uma linha de agenda por workflow ligado, no workflow fixo `conexus-workflow-poll` | nativo | — | a decisão C | `trigger.ts` |
-| A lista de execuções e cada balão aceso | U2, U4 | `builder/automations/runs.ts:122-190` | Mastra 1.82 `listWorkflowRuns` (`workflows/workflow.ts:3517`), `WorkflowRunState` (`workflows/types.ts:409-450`), os estados (`:305-316`); n8n `packages/workflow/src/execution-status.ts:1-12`; activepieces `flow-execution.ts:5-23`; provado no estudo (P5): só o principal tem retrato, e o ramo guarda a saída final e a retomada | O estado de cada balão vem do retrato do Mastra (fora de um ramo, por passo; dentro, pelo caminho suspenso e pelo fim do ramo) e da decisão gravada | nativo | — | não precisa | `apps/server/src/builder/workflows/runs.ts` |
-| Tentar de novo | U2 | nenhum (a 24.2 não repete) | Mastra 1.82 `run.timeTravel` (`dist/agent-BP9OWM6D.js:11833`), `run.restart` (`:11267`), a posse de 15 s (`packages/core/src/agent/run-ownership.ts:9`, `workflows/run-ownership.ts:6`) | Provado no estudo: `timeTravel` termina uma falha sem rodar os anteriores (P4, P6); numa execução que ficou `running`, `timeTravel` recusa e `restart()` a termina depois da posse vencer (P7) | nativo | — | não precisa | `runs.ts` |
+| A lista de execuções e cada balão aceso | U2, U4 | `builder/automations/runs.ts:122-190` | Mastra 1.82 `listWorkflowRuns` (`workflows/workflow.ts:3517`), `WorkflowRunState` (`workflows/types.ts:409-450`), os estados (`:305-316`); n8n `packages/workflow/src/execution-status.ts:1-12`; activepieces `flow-execution.ts:5-23`; provado no estudo (P5): só o principal tem retrato, e o ramo guarda a saída final e a retomada | O estado de cada balão vem do retrato do Mastra (fora de um ramo, por passo; dentro, pelo caminho suspenso e pelo fim do ramo) e da decisão gravada; a lista de uma workflow com várias versões vem de `workflow_run`, porque `listWorkflowRuns` é por id | embrulhado: o índice `workflow_run` | — | não precisa | `apps/server/src/builder/workflows/runs.ts` |
+| Tentar de novo | U2 | nenhum (a 24.2 não repete) | Mastra 1.82 `run.timeTravel` (`dist/agent-BP9OWM6D.js:11833`), `run.restart` (`:11267`), a posse de 15 s (`packages/core/src/agent/run-ownership.ts:9`, `workflows/run-ownership.ts:6`) | Provado no estudo: `timeTravel` termina uma falha sem rodar os anteriores (P4, P6), e num balão de dentro de um ramo refaz o ramo do começo (P8); numa execução que ficou `running`, `timeTravel` recusa e `restart()` a termina depois da posse vencer (P7, fora de um ramo) | nativo | — | não precisa | `runs.ts` |
 | Montar o workflow conversando | U3 | o Construtor monta agentes (`builder/construtor/tools.ts:105-238`) | Mastra Code: `create-workflow` entrega o pedido a um subagente (`mastracode/sdk/src/tools/workflows/create-workflow.ts:30-59`) que grava o desenho inteiro com `save-workflow` (`save-workflow.ts:41`); `createWorkflowBuilderAgent` (`packages/core/src/workflows/builder/agent.ts:17-24`); activepieces `ap_build_flow` (`packages/server/api/src/app/mcp/tools/ap-build-flow.ts:47`); Zapier Copilot e Make Maia (documentados) | O modelo grava o desenho inteiro numa ferramenta que valida e devolve os problemas pelo caminho; o roteiro do Mastra escreve o grafo cru e diz que não suspende, por isso o Construtor escreve balões | embrulhado: as ferramentas do Construtor | — | não precisa | `apps/server/src/builder/construtor/workflow-tools.ts` |
 | O trem de balões na tela | U4 | nenhum | painel do Mastra `@xyflow/react` e `@dagrejs/dagre` (`packages/playground-ui/package.json:194,206`); activepieces `@xyflow/react` 12.3.5; n8n Vue Flow 1.48; Zapier, lista vertical (documentado); o esboço 5 | Cartões em coluna ligados por setas, o ramo "se sim" recuado | embrulhado: as peças de `ui/`, sem biblioteca de desenho (com `F1`) | — | a decisão F | `apps/web/src/builder/workflows/train.tsx` |
 | Quem monta, publica e responde | U1, U2 | `manageAutomations` (`hub/identity/admission.ts:103`); `agent: publishUnattendedWrite` (`hub/identity/roles.ts:37`); a reconferência, `run.ts:189-219` | Zapier e Dify escolhem quem aprova no passo; no Copilot Studio e no Agentforce, a autoridade é de quem montou (cartão da 24.5) | Quem publica é o dono; cada volta e cada execução reconferem; quem aprova é escolhido no balão | embrulhado | — | a decisão A | — |
@@ -367,8 +369,9 @@ de escrita, e a chave nova do registro de envios é concorrência.
 | --- | --- | --- |
 | `packages/hub-api/src/workflows.ts`, `workflow-failures.ts` | Cria | o servidor, a web |
 | `packages/hub-api/src/failures.ts` | Muda (espalha `WORKFLOW_FAILURES`) | todo o Hub |
-| `apps/server/src/builder/workflows/` | Cria (`tables.ts`, `ids.ts`, `compile.ts`, `publish.ts`, `routes.ts`, `public.ts`) | `conversations-of.ts`, a U2, a U3 |
-| `apps/server/src/builder/conversations-of.ts` | Muda (as rotas) | `main.ts` |
+| `apps/server/src/builder/workflows/` | Cria (`tables.ts`, `ids.ts`, `compile.ts`, `publish.ts`, `routes.ts`, `public.ts`, `tools.ts` só com as ids) | `conversations-of.ts`, a U2, a U3 |
+| `apps/server/src/conversations-of.ts` | Muda (as rotas) | `main.ts` |
+| `apps/server/src/builder/mastra/` | Muda (`mastra.ts`: as `tools`; `hub-mastra.ts`: apagar as definições sem versão no início) | `main.ts` |
 | `apps/server/src/hub/connectors/` | Muda (`write.ts`, `write-record.ts`, `tables.ts`: `WORKFLOW` e a chave `RUN`) | `builder/agents/tools.ts`, a U2 |
 | `apps/server/migrations/`, `database-grants.sql` | Cria (`e246_workflow`, `e246_workflow_write`) | o catálogo (`catalog.test.ts`) |
 
@@ -382,8 +385,13 @@ export const BalloonId = z.string().regex(/^b[0-9]{1,3}$/).brand<'BalloonId'>()
 
 /** Um valor do gatilho ou de um balão anterior: '{{gatilho.valor}}', '{{b2.texto}}'. */
 export const Template = z.string().max(2000)
-/** Onde está um número: no gatilho ou na saída de um balão anterior. */
-export const ValuePath = z.object({ from: z.union([z.literal('gatilho'), BalloonId]), field: z.string().regex(/^[a-zA-Z0-9_.]{1,80}$/) })
+/** Um campo do orçamento que disparou, o único lugar de onde um `IF` lê um número (prova P8). */
+export const TriggerField = z.enum(['valor'])
+/** O que o gatilho entrega a cada execução: a entrada do workflow, com o esquema declarado. */
+export const QuoteInput = z.object({
+  numero: z.number().int().positive(), tipo: z.number().int().positive(),
+  data: z.iso.date(), valor: z.number(), cliente: z.number().int().positive(),
+})
 
 export const Trigger = z.discriminatedUnion('kind', [
   z.object({
@@ -411,7 +419,7 @@ export const LeafBalloon = z.discriminatedUnion('kind', Leaf)
 export const Balloon = z.discriminatedUnion('kind', [
   ...Leaf,
   z.object({ kind: z.literal('IF'), id: BalloonId, title: z.string().min(1).max(80),
-    value: ValuePath, op: z.enum(['GT', 'GTE', 'LT', 'LTE', 'EQ', 'NEQ']), than: z.number(),
+    value: TriggerField, op: z.enum(['GT', 'GTE', 'LT', 'LTE', 'EQ', 'NEQ']), than: z.number(),
     then: z.array(LeafBalloon).min(1).max(10) }),
 ])
 
@@ -442,9 +450,14 @@ export const DraftSaved = z.discriminatedUnion('kind', [
 
 `OperationName` é o nome de operação do kit de hoje (`packages/connectors`), conferido contra a
 lista do conector e a classe (`read` num `READ`, `write` num `WRITE`) na validação do rascunho.
-Um `IF` não tem `IF` dentro. O texto `{{gatilho.<campo>}}` vira o `template` do Mastra com
-`${initData.<campo>}` e `{{bN.<campo>}}` com `${stepResults.<id do passo de bN>.<campo>}`; a
-compilação é a única dona dessa gramática (C26).
+Um `IF` não tem `IF` dentro, e nenhum balão depois de um `IF` usa a saída de um balão de dentro do
+ramo. O texto `{{gatilho.<campo>}}` vira o `template` do Mastra com `${initData.<campo>}` e
+`{{bN.<campo>}}` com `${stepResults.<id do passo de bN>.<campo>}`; nunca uma fonte `step` + `path`,
+que o Mastra confere contra o esquema de saída da ferramenta e recusa (prova P8). Antes de cada
+`conditional`, um `mapping` de cima entrega ao ramo, com nomes próprios, cada valor de fora que os
+balões do ramo usam (como `template`) e o campo do `IF` (como `initData` + `path`); dentro do ramo,
+as referências de fora viram `${initData.<nome>}`. A compilação é a única dona dessa gramática
+(C26).
 
 Em `apps/server/src/builder/workflows/ids.ts`, a dona dos ids do Mastra:
 
@@ -452,7 +465,7 @@ Em `apps/server/src/builder/workflows/ids.ts`, a dona dos ids do Mastra:
 export type MastraWorkflowId =
   | { kind: 'VERSION'; workflowId: WorkflowId; version: number }        // wf-<w>-v<n>
   | { kind: 'BRANCH'; workflowId: WorkflowId; version: number; balloon: BalloonId } // wf-<w>-v<n>-<b>
-  | { kind: 'TEST'; workflowId: WorkflowId; branch: BalloonId | null }   // wf-<w>-teste[-<b>]
+  | { kind: 'TEST'; workflowId: WorkflowId; branch: BalloonId | null }   // wf-<w>-teste[-<b>], lê workflow.test_draft
 export function parseMastraWorkflowId(raw: string): MastraWorkflowId | null
 export function mastraWorkflowIdOf(id: MastraWorkflowId): string
 ```
@@ -476,7 +489,8 @@ Tabelas (esquema do Hub, `company_id` e a política de linha como as do agente, 
 permissões num pull request próprio da unidade):
 
 - `workflow(id uuid pk, company_id, project_id fk on delete cascade, name text not null, draft jsonb
-  null, state text not null check in ('ON','PAUSED','PAUSED_OWNER'), created_by, created_at)`.
+  null, test_draft jsonb null, state text not null check in ('ON','PAUSED','PAUSED_OWNER'),
+  created_by, created_at)`; `test_draft` é escrito pela U2.
 - `workflow_version(workflow_id fk on delete cascade, number int, draft jsonb not null,
   published_by not null, published_at not null, primary key (workflow_id, number))`.
 - Lidas de volta, `draft` passa por `WorkflowDraft.parse` (C27).
@@ -517,16 +531,21 @@ skill `mastra` (com a doc instalada primeiro), `fastify-best-practices`, `typesc
 1. O contrato e as falhas em `hub-api`, com o teste de esquema. Regras: C21, C23, C27, C28, C51.
 2. As tabelas e a migração `e246_workflow`; as permissões num pull request próprio (D11).
 3. `ids.ts` e a compilação (`compile.ts`): `WorkflowDraft` e a versão → as definições do Mastra
-   (o principal e um por `IF`), sem I/O, com teste de mesa. Cada balão-folha vira `mapping`
-   (`{ balloon: { value: '<id>' }, …os valores do template… }`) e `tool`. As ferramentas são as
-   da U2 (`conexus-ler`, `conexus-agente`, `conexus-aprovar`, `conexus-escrever`,
-   `conexus-avisar`); a U1 registra, para os seus testes, ferramentas de mesmo id que só devolvem
-   a entrada.
+   (o principal, com `inputSchema` de `QuoteInput`, e um por `IF`), sem I/O, com teste de mesa.
+   Cada balão-folha vira `mapping` (`{ balloon: { value: '<id>' }, …os valores do template… }`) e
+   `tool`; cada `IF`, o `mapping` de cima e o `conditional` com o ramo aninhado. A forma é a da
+   prova P8 do estudo (`p8.mjs`). As ferramentas são as da U2 (`conexus-ler`, `conexus-agente`,
+   `conexus-aprovar`, `conexus-escrever`, `conexus-avisar`); os testes da U1 trocam o `execute`
+   por um que devolve a entrada.
 4. A validação do rascunho: o esquema, depois as regras que pedem o banco (o agente, a ligação, a
    operação e a classe, as referências que vêm antes, o campo numérico do `IF`).
 5. Publicar (`publish.ts`): a conferência do papel; na transação, o `INSERT` da versão e, antes do
    `COMMIT`, `addDynamicWorkflows` com o ramo e o principal; recusado, a transação volta. No início
-   (`hub-mastra.ts`, antes de `startWorkers()`), arquivar as definições `wf-*` sem versão no Hub.
+   (`hub-mastra.ts`, depois de `startWorkers()`), apagar as definições `wf-*` sem versão no Hub como
+   o Mastra apaga uma (`store.delete(id)` no domínio `workflowDefinitions` e `mastra.removeWorkflow(id)`,
+   `packages/server/src/server/handlers/dynamic-workflows.ts:161-185` em `6e8dfcb8`).
+   As cinco ferramentas entram no `new Mastra({ tools })` com as suas ids e um `execute` que lança
+   `INTERNAL_UNEXPECTED` até a U2.
 6. A migração `e246_workflow_write` e quem fala `WORKFLOW` no funil.
 
 ### Como se prova
@@ -538,8 +557,8 @@ segundo Hub ao lado do mesmo banco.
 
 - O `addDynamicWorkflows` recusar uma ferramenta registrada no `new Mastra({ tools })`: relatar com
   a saída; não registrar por fora.
-- O predicado do `conditional` não comparar o número de um `ValuePath`: relatar; não escrever uma
-  comparação nossa sem o cartão.
+- O predicado do `conditional` não comparar o número de um `TriggerField` entregue pelo `mapping`
+  de cima: relatar; não escrever uma comparação nossa sem o cartão.
 - `addDynamicWorkflows` não puder rodar dentro da transação do Hub (outra conexão do Mastra ao mesmo
   banco espera a transação): relatar; a ordem muda só com o cartão.
 
@@ -582,22 +601,27 @@ segundo Hub ao lado do mesmo banco.
 | `apps/server/src/hub/notifications/` | Muda (dois tipos novos) | o sino, o e-mail |
 | `packages/hub-api/src/{workflows,automations,workflow-failures}.ts` | Muda | o servidor, a web |
 | `apps/server/migrations/`, `database-grants.sql` | Cria (`e246_workflow_trigger`) | o catálogo |
-| `apps/server/src/platform/recordings/mastra/` | Cria as gravações do retrato | os testes |
+| `apps/server/src/platform/recordings/` | Cria as gravações do retrato do Mastra | os testes |
 
 ### Os contratos que a unidade cria
 
 - Tabelas: `workflow_trigger(workflow_id pk fk on delete cascade, since timestamptz not null,
   last_lap jsonb null)`, `workflow_trigger_seen(workflow_id fk on delete cascade, item_key text,
-  run_id text null, seen_at timestamptz not null, primary key (workflow_id, item_key))`,
-  `workflow_run_decision(run_id text pk, workflow_id fk on delete cascade, balloon_id text,
-  person_id, approved boolean not null, decided_at timestamptz not null)`; as linhas de
-  `workflow_trigger_seen` de mais de 7 dias saem na própria volta.
+  run_id text null, seen_at timestamptz not null, baseline boolean not null, primary key
+  (workflow_id, item_key))`, `workflow_run(run_id text pk, workflow_id fk on delete cascade,
+  version int not null, item_key text not null, item_label text not null, started_at timestamptz
+  not null)`, `workflow_run_decision(run_id text, balloon_id text, workflow_id fk on delete
+  cascade, person_id not null, approved boolean not null, decided_at timestamptz not null, primary
+  key (run_id, balloon_id))`. `since` avança, a cada volta que deu certo, para a hora em que ela
+  começou; a volta lê as notas com data de negociação desde o dia de `since` menos um; as vistas
+  com `seen_at` de mais de dois dias antes de `since` saem na própria volta. A leitura de base, ao
+  ligar e ao religar, grava as notas da janela com `baseline = true` e sem execução.
 - O que a ferramenta de aprovar suspende (`suspendSchema`) e retoma (`resumeSchema`):
   `{ balloonId, approver: PersonId, question: string }` e `{ approved: true }`.
 - `RunView` em `hub-api`:
 
 ```ts
-export const RunState = z.enum(['RUNNING', 'WAITING', 'DONE', 'FAILED', 'DECLINED', 'INTERRUPTED', 'PAUSED_OWNER'])
+export const RunState = z.enum(['RUNNING', 'WAITING', 'DONE', 'FAILED', 'DECLINED', 'INTERRUPTED'])
 export const BalloonState = z.enum(['PENDING', 'RUNNING', 'DONE', 'FAILED', 'WAITING', 'SKIPPED'])
 export const RunView = z.object({
   runId: WorkflowRunId, versionNumber: z.number().int().positive(),
@@ -631,9 +655,11 @@ As da U1, e [testing](../guides/testing.md) T26 para as gravações.
 3. As cinco ferramentas (`tools.ts`), cada uma achando a versão por `parseMastraWorkflowId` do
    contexto e o balão pela id na entrada, nunca confiando em empresa, ligação ou pessoa vindas do
    grafo (S7, S8, S9).
-4. `trigger.ts`: o workflow fixo; a volta (a reconferência, ler, `INSERT … ON CONFLICT DO NOTHING
-   RETURNING`, começar as execuções das linhas sem `run_id`, até 20, a última volta); a agenda ao
-   ligar, pausar, religar e apagar; o início.
+4. `trigger.ts`: o workflow fixo; a leitura de base; a volta (a reconferência, ler, `INSERT … ON
+   CONFLICT DO NOTHING RETURNING`, `INSERT workflow_run` e começar as execuções das linhas sem
+   `run_id` e sem `baseline`, até 20, avançar `since`, limpar, a última volta); a agenda ao ligar,
+   pausar, religar e apagar; o início (a agenda segue o `state`, e as decisões gravadas sem
+   retomada são retomadas).
 5. `runs.ts`: a lista, a vista, aprovar e recusar, tentar de novo, a interrompida, o teste.
 6. A lista de Automações com as duas espécies. O #754: o teste da agenda recebe o relógio
    injetado (testing T20).
@@ -650,6 +676,8 @@ lado do mesmo banco.
 - O campo do valor do orçamento ou do tipo de operação tiver outro nome na gravação do fundador:
   ajustar só o nome, e dizer no relatório.
 - Retomar sem `step` não achar o caminho dentro de um ramo no Hub: relatar com a saída.
+- Uma execução cortada dentro de um ramo não terminar com `restart()` (a prova P7 cortou fora de
+  um ramo): relatar com a saída; não escrever uma retomada nossa sem o cartão.
 
 ## U3 O Construtor monta
 
