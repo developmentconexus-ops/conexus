@@ -173,16 +173,19 @@ test('máquina: o trabalho não guardado que cabe no que o Hub aceita não leva 
 })
 
 test('máquina: um comando da máquina que não termina no prazo falha a religada com a causa nomeada, em vez de segurar a conversa até o fim da máquina', async (t) => {
-  const here = await world(t, 5_000, INSTALLATION, undefined, { commandMs: 400 })
+  const here = await world(t)
   await (await here.open()).filesystem?.writeFile('a.ts', 'um\n')
   const hook = join(here.folder, 'app', '.git', 'hooks', 'post-checkout')
   writeFileSync(hook, '#!/bin/sh\nsleep 20\n')
   chmodSync(hook, 0o755)
   here.control.outcome = 'connected'
   const started = Date.now()
-  await assert.rejects((await here.open()).filesystem?.exists('a.ts') ?? Promise.reject(), {
-    code: 'MACHINE_UNAVAILABLE',
-  })
+  await assert.rejects(
+    (await here.openWithCommandMs(400)).filesystem?.exists('a.ts') ?? Promise.reject(),
+    {
+      code: 'MACHINE_UNAVAILABLE',
+    },
+  )
   assert.ok(Date.now() - started < 4_000, 'the sync gave up at its own budget')
   assert.deepEqual(here.errors, ['MACHINE_SYNC_FAILED', 'MACHINE_UNAVAILABLE'])
 })

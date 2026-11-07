@@ -1,4 +1,5 @@
 import type { ConversationId } from '@conexus/hub-api'
+import type { CodeModeTransport } from '@mastra/core/tools'
 import type {
   SandboxStartHook,
   WorkspaceFilesystem,
@@ -15,6 +16,8 @@ export const MARK = {
   origin: 'conexus_origin',
   company: 'conexus_company',
   project: 'conexus_project',
+  /** The agent whose conversation the machine is (step 24.4, U4). */
+  agent: 'conexus_agent',
   conversation: 'conexus_conversation',
   /** The template the machine was made from: E2B's own record of a machine names no tag. */
   template: 'conexus_template',
@@ -22,6 +25,9 @@ export const MARK = {
 
 /** The hosts a machine may reach: `npm install` needs the registry and nothing else (decision 0051). */
 export const ALLOWED_HOSTS = ['registry.npmjs.org']
+
+/** The hosts a conversation's machine may reach: the package registries, for pip and npm (decision 0059). */
+export const PACKAGE_HOSTS = ['registry.npmjs.org', 'pypi.org', 'files.pythonhosted.org']
 
 /**
  * The most bytes the Hub takes from the machine in one read, by the file tools or as the turn's
@@ -172,23 +178,25 @@ export type MachineApi = {
 }
 
 /**
- * The Assistant's API also finds the conversation's machine of `template` by the same marks, and
+ * The conversations' API also finds the conversation's machine of `template` by the same marks, and
  * says its provider id, or none; throws when the provider fails, so a failed list is never "none".
  */
-export type AssistantMachineApi = MachineApi & {
+export type ConversationMachineApi = MachineApi & {
   find(conversationId: ConversationId, template: string): Promise<string | undefined>
 }
 
 /**
- * What the Assistant's machines are made of, one spelling for the ports, the Assistant and the
+ * What the conversations' machines are made of, one spelling for the ports, their users and the
  * machines: the Builder's kit, its API with the find, its template, installation and mark (the
  * mark the kill and the find look for, which the machine carries too: code C26).
  */
-export type AssistantMachine = {
+export type ConversationMachine = {
   kit: KitFactory
-  api: AssistantMachineApi
+  api: ConversationMachineApi
   template: MachineTemplate
   installation: InstallationId
   /** The marks every machine of this installation carries, with which `api.kill` finds them (security S36). */
   mark: Record<string, string>
+  /** How a program of an agent's code mode runs in the machine (step 24.4, U5). */
+  codeMode: CodeModeTransport
 }

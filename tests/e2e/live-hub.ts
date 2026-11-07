@@ -17,7 +17,10 @@ import { testBuilderPorts } from '../../apps/server/src/builder/runs/test-runs.t
 import { createIdentity } from '../../apps/server/src/hub/identity/public.ts'
 import { createStatus } from '../../apps/server/src/hub/status/public.ts'
 import { createEdgeHub, createHub, subjectsOf } from '../../apps/server/src/main.ts'
-import { createCloudflareApps } from '../../apps/server/src/platform/cloudflare.ts'
+import {
+  createCloudflareApps,
+  createCloudflareTools,
+} from '../../apps/server/src/platform/cloudflare.ts'
 import { createCompanyPostgres } from '../../apps/server/src/platform/company-postgres.ts'
 import type { Config } from '../../apps/server/src/platform/config.ts'
 import { ConnectorApps } from '../../apps/server/src/platform/config-connectors.ts'
@@ -124,9 +127,9 @@ export async function liveHub(
   const status = createStatus({ version: config.version, database: database.database })
   const sendMail = createMail({ config, log: silent })
   const identity = createIdentity({ database: database.database, config, log: silent, sendMail })
-  const { machinesOf, assistantMachine, repository, copy, folder } = testBuilderPorts(config)
+  const { machinesOf, conversationMachine, repository, copy, folder } = testBuilderPorts(config)
   const subjects = subjectsOf({
-    ...{ machinesOf, assistantMachine, repository, copy },
+    ...{ machinesOf, conversationMachine, repository, copy },
     database: database.database,
     mastraPool: database.mastraPool,
     config,
@@ -138,6 +141,7 @@ export async function liveHub(
       appLoginKey: config.appLoginKey,
     }),
     cloudflare: createCloudflareApps({ config, log: silent }),
+    cloudflareTools: createCloudflareTools({ config, log: silent }),
     log: silent,
   })
   const { apps, conversations, connectors } = subjects

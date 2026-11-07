@@ -46,7 +46,9 @@ Sua empresa usa o Conexus desde 2026-11-02, recebendo cada etapa.
 - **24.3.3 A lista e os Projetos.** Busca.
 - **24.3.1 Ferramentas.** Vê as ferramentas do Projeto e todos os agentes da empresa.
 - **24.3.4 Papéis e pedidos.** O membro pede para publicar.
+- **Assinatura ChatGPT.** Liga a assinatura do ChatGPT em Contas de modelo e conversa pelo GPT (a parte OpenAI da 21).
 - **24.4 Ferramentas em código.** Código que calcula.
+- **24.3.5 O Assistente anota no caderno.** Ensina ao Assistente o que um código quer dizer e vê a anotação na ligação.
 - **Papéis da empresa.** A empresa cria papéis e escolhe o que cada um, o Membro também, usa de cada conector.
 - **24.5 Os agentes escrevem, com aprovação.** Um agente ou app pede "Aprovar?" antes de escrever (resposta B, 2026-10-18; leva a 20.1).
 - **24.6 Workflows e automações.** Monta conversando o fluxo do orçamento do Sankhya e o vê como trem de balões.
@@ -65,7 +67,6 @@ O que tem molde anda numa segunda fila, de método leve (2026-10-30: "1. Sim 2. 
 2. **Os sistemas das quatro empresas.**
 3. **Bling**, **Omie** (login por chave fixa) e **Conta Azul**.
 4. Shopee, Nuvemshop, Google Sheets, NF-e recebida, extratos de banco; a Jet (20.3) quando alguém a usar.
-5. **21 Outras contas.** Liga a da OpenAI, se os termos confirmarem.
 
 Em espera: 19.2 Central de Ajuda. Sai: o pg-boss; a agenda do Mastra, gatilho de toda automação, e os workflows o substituem.
 
@@ -106,9 +107,7 @@ Login social. Arquivos enviados por pessoas para dentro de um app ou da máquina
 
 | Etapa | O que precisa antes | Decisão sua nela | Conhecimento trazido |
 | --- | --- | --- | --- |
-| Papéis e pedidos | A 24.3.1 | Três | — |
-| 24.4 Ferramentas em código | Os pedidos | Nenhuma | Protótipo: Workers ou E2B |
-| 24.5 Escrita com aprovação | A 24.4 e Papéis da empresa | Quatro: perguntar, sempre permitir, a liberação da escrita, a primeira escrita | A `suspend()` do Mastra, `yolo` mantido; a trava da 0053 some no ritmo de uma pessoa. Escrita nova pede nova liberação |
+| 24.5 Escrita com aprovação | Papéis da empresa | Duas: a liberação da escrita no Projeto, cancelar pelo agente | `requireApproval` do Mastra como função em cada ferramenta, `yolo` desligado nos agentes, medido sem perda. Escrita nova chega só ao Dono e ao Administrador (`B1` de Papéis) |
 | 24.6 Workflows e automações | A 24.5 | O gatilho do Sankhya | Workflows dinâmicos do Mastra. Seu orçamento é o aceite |
 | 24.7 Canais | A 24.6 | Nenhuma | — |
 | 21.1 Ver o que acontece | A 24.7 | Grafana no Brasil, provado | Um só caminho OTel (0052). O uso por empresa. O rastro por ferramenta: as ferramentas de conector (`connector_read`, `connector_notes`, `connector_note_save`) escondem entrada e saída no span, com o exportador de lista permitida, porque o `TracingPolicy` do Mastra só tem `internal` (veio da 20, critério 29) |
@@ -116,4 +115,3 @@ Login social. Arquivos enviados por pessoas para dentro de um app ou da máquina
 | 22 Ensaio geral | A 16 | O lugar da cópia fora do Neon | Ensaios das etapas 2, 7, 9, 12 e 13. Carga de um painel e de uma rotina |
 | 23 As outras empresas | A 22 | Os riscos aceitos. O plano pago | A seção 11 da arquitetura |
 | 20.2 App que se atualiza | A 23 e os webhooks | Nenhuma | Avisos do fornecedor (S48), num workflow do Mastra |
-| 21 Outras contas | Fila do molde | Nenhuma | A leitura dos termos da OpenAI |

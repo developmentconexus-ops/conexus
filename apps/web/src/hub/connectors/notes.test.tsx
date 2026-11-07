@@ -43,14 +43,19 @@ test('o Caderno mostra conceito, mapa, quando, quantas linhas e quem, e a dona a
   fireEvent.click(notebook.getByRole('button', { name: 'Apagar: Vendedor do pedido' }))
   const dialog = await screen.findByRole('alertdialog')
   expect(within(dialog).getByText('Apagar a anotação "Vendedor do pedido"?')).toBeTruthy()
+  expect(
+    within(dialog).getByText(
+      'Quem conversa deixa de usar essa anotação. Ela pode ser anotada de novo.',
+    ),
+  ).toBeTruthy()
   fireEvent.click(within(dialog).getByRole('button', { name: 'Apagar' }))
   await waitFor(() => expect(gone).toEqual(['Vendedor do pedido']))
-  expect(await screen.findByText('O Builder ainda não anotou nada desta ligação.')).toBeTruthy()
+  expect(await screen.findByText('Nada anotado nesta ligação ainda.')).toBeTruthy()
 })
 
-test('o caderno vazio diz que o Builder ainda não anotou', async () => {
+test('o caderno vazio não nomeia quem anota', async () => {
   open({ mayManage: true, notes: [] })
-  expect(await screen.findByText('O Builder ainda não anotou nada desta ligação.')).toBeTruthy()
+  expect(await screen.findByText('Nada anotado nesta ligação ainda.')).toBeTruthy()
 })
 
 test('o membro lê o Caderno sem Apagar', async () => {

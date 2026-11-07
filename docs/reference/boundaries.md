@@ -1222,3 +1222,23 @@ reference tool checks a read against its documentation.
   and the test fails.
 - **Revisit when** CLIProxyAPI keeps the tools' `enum` for Gemini, or the `google_cliproxy` path leaves
   the product. Then delete the file, its test, the lines in `processors.ts`, the removal row and this entry.
+
+## Mastra 1.82.0: the sign-in kinds an operator opens to a company (Assinatura ChatGPT)
+
+- **Library line.** None. At `@mastra/core` 1.82.0 the model router reaches every provider of
+  `dist/provider-registry.json`, and Mastra Code's `auth/storage.ts` (`@mastra/code-sdk` 1.18.0)
+  keeps one person's credentials. Neither has a switch per company for a kind of sign-in, and the
+  Codex CLI has no company at all.
+- **Hand-made piece.** `builder.company_account_kind` (`apps/server/src/builder/model-accounts/tables.ts`)
+  and `openKindsOf` in `kinds.ts`, read by `admitOpen` in `sign-ins.ts` when a sign-in starts, when a
+  pasted code completes it and on every device-code poll (`sign-in-poll.ts`). The API key is open to
+  every company; `claude_subscription`, `google_cliproxy` and `openai_codex` start off.
+- **Why.** Decision 0049: each subscription signs in as the vendor's own client and carries the
+  vendor's terms, so an operator opens it company by company. Decision 0060 adds `openai_codex`,
+  off by default; the founder's "3. Da empresa também sem gambiarra aptch, seguindo nosso padrão e
+  lógica" keeps one path for every kind.
+- **Proof.** `model-account-kinds.test.ts` "Assinatura ChatGPT vem desligada; o operador a liga e a
+  desliga como os outros tipos"; `sign-ins.test.ts` "tipo desligado: start e complete dão 422
+  MODEL_ACCOUNT_KIND_OFF"; `openai/sign-in-refusals.test.ts` "tipo desligado: recusa sem chamar a
+  OpenAI"; `openai/sign-in.test.ts` "tipo desligado no meio".
+- **Revisit when** Mastra or an auth library ships a per-tenant switch of providers or sign-in kinds.

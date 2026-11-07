@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify'
 import type { AppDataPort } from './builder/agents/public.ts'
 import { agentsAlive } from './builder/agents/public.ts'
-import type { HandOffDoors, MachineTuning } from './builder/assistant/public.ts'
+import type { HandOffDoors } from './builder/assistant/public.ts'
 import { createAssistant, speakersOf } from './builder/assistant/public.ts'
 import {
   AUTOMATION_TURN_MS,
@@ -14,7 +14,7 @@ import { createBuilderConversations, createMastraStorage } from './builder/conve
 import { createHubMastra } from './builder/mastra/public.ts'
 import type { openGoogleCalls } from './builder/model-accounts/public.ts'
 import { isChoosable } from './builder/model-accounts/public.ts'
-import type { AssistantMachine, Runs } from './builder/runs/public.ts'
+import type { ConversationMachine, MachineTuning, Runs } from './builder/runs/public.ts'
 import type { Apps } from './hub/apps/public.ts'
 import { publishedVersionsOf } from './hub/apps/public.ts'
 import type { Connectors } from './hub/connectors/public.ts'
@@ -22,8 +22,10 @@ import type { IdentityPorts } from './hub/identity/public.ts'
 import type { Notify } from './hub/notifications/public.ts'
 import type { ProjectPorts } from './hub/projects/public.ts'
 import { liveProjectIdsOf, liveProjectOf, liveProjectsOf } from './hub/projects/public.ts'
+import type { CloudflareApps } from './platform/cloudflare.ts'
 import type { Config } from './platform/config.ts'
 import type { Database, MastraPool } from './platform/database.ts'
+import type { EdgeTools } from './platform/edge-tools.ts'
 import type { FailureLog } from './platform/failure.ts'
 import type { SealKeys } from './platform/seal.ts'
 
@@ -33,8 +35,14 @@ function doorOf(connectors: () => Connectors): Connectors['assistant'] {
     connections: (scope) => connectors().assistant.connections(scope),
     read: (scope, call) => connectors().assistant.read(scope, call),
     notes: (scope, connectionId) => connectors().assistant.notes(scope, connectionId),
+    saveNote: (scope, call) => connectors().assistant.saveNote(scope, call),
     operationOf: (scope, target) => connectors().assistant.operationOf(scope, target),
   }
+}
+
+/** The saved tools' live calls (step 24.4): reached when an agent's turn calls one. */
+function toolCallsOf(connectors: () => Connectors): Connectors['tools'] {
+  return { open: (call) => connectors().tools.open(call) }
 }
 
 /** The apps' door as the agents and the Construtor read the app's data (step 24.3): reached when called. */
@@ -62,6 +70,11 @@ function handOffsOf(
   }
 }
 
+/** The provider's machines and the tests' tuning of them, which the Assistant and the Construtor open. */
+function machineOf(deps: { machine: ConversationMachine; machineTuning?: MachineTuning }) {
+  return { machine: deps.machine, machineTuning: deps.machineTuning }
+}
+
 /**
  * The Builder's conversations, the Assistant beside them (step 24.1, U2, `H1`), its automations
  * (step 24.2) and a Projeto's agents with their conversations (step 24.3): one Mastra store on the pool of Mastra's own login (0010) and one account queue,
@@ -78,10 +91,12 @@ export function conversationsOf(deps: {
   google: ReturnType<typeof openGoogleCalls>
   mastraPool: MastraPool
   runs: Runs
-  machine: AssistantMachine
+  machine: ConversationMachine
   /** The tests' folder and start deadline for the Assistant's machines; E2B's when absent. */
   machineTuning?: MachineTuning
   connectors: () => Connectors
+  /** The saved tools' namespace and their host on the edge (step 24.4, U3). */
+  tools: { cloudflare: CloudflareApps; edge: EdgeTools }
   /** The Projects are made after the conversations; a hand-off creates one when it is touched. */
   projects: () => Pick<ProjectPorts, 'createProject'>
   /** The apps are made after the agents; an agent reads its app's data when a turn calls it. */
@@ -102,8 +117,7 @@ export function conversationsOf(deps: {
   const door = doorOf(deps.connectors)
   const assistant = createAssistant({
     ...{ storage, database, identity, queue, log },
-    machine: deps.machine,
-    machineTuning: deps.machineTuning,
+    ...machineOf(deps),
     connectors: door,
     projects: { liveProjectOf, liveProjectsOf, publishedVersionsOf },
     handOffs: () => handOffsOf(deps, builder.handOffs, hub.updating),
@@ -113,7 +127,7 @@ export function conversationsOf(deps: {
   const appData = appDataOf(deps.apps)
   const agents = agentsAlive({
     ...{ storage, database, identity, queue, liveProjectOf, liveProjectIdsOf, isChoosable, log },
-    connectors: door,
+    ...{ ...machineOf(deps), ...deps.tools, connectors: door, calls: toolCallsOf(deps.connectors) },
     speakersOf: (scope) => speakersOf({ database, identity, projects: { liveProjectOf } }, scope),
     appData,
     mastra: () => hub.mastra,
@@ -122,6 +136,7 @@ export function conversationsOf(deps: {
     ...{ storage, database, identity, queue, liveProjectOf, log, agents, connectors: door },
     speakersOf: (scope) => speakersOf({ database, identity, projects: { liveProjectOf } }, scope),
     ...{ automations: () => automations, appTables: appTablesOf(appData) },
+    ...machineOf(deps),
   })
   const clock = deps.automationClock
   const run = automationRun({

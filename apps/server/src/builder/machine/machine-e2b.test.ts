@@ -1,28 +1,26 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { readFileSync } from 'node:fs'
-import { createServer } from 'node:http'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { CompanyId, ConversationId, PersonId, ProjectId } from '@conexus/hub-api'
+import { CompanyId, ConversationId } from '@conexus/hub-api'
 import { RequestContext } from '@mastra/core/request-context'
 import { testConfig, unreachableDatabaseUrl } from '../../platform/test-database.ts'
-import { ASSISTANT_HOSTS, createAssistantMachines } from '../assistant/public.ts'
 import {
   ALLOWED_HOSTS,
   APP_FOLDER,
+  createConversationMachines,
   createE2bApi,
+  createE2bCodeMode,
   createE2bKit,
   MARK,
   machineInstructions,
+  PACKAGE_HOSTS,
 } from './public.ts'
 import { INSTALLATION, realE2b } from './test-machine.ts'
 
 const COMPANY = CompanyId.parse('companyAAAAAAAAAAAAAAAAAAAAAAAAA')
-const PROJECT = ProjectId.parse('projectAAAAAAAAAAAAAAAAAAAAAAAAA')
 const CONVERSATION = ConversationId.parse('00000000-0000-4000-8000-00000000000a')
-const PERSON = PersonId.parse('person-ana')
-const HOME = { kind: 'COMPANY' } as const
 const IN_APP = {
   allowOut: ALLOWED_HOSTS,
   workingDirectory: APP_FOLDER,
@@ -78,7 +76,7 @@ test('máquina: a lista de endereços que quem monta passa é a que o E2B recebe
     return Reflect.get(kit.sandbox, '_constructorOptions').network
   }
   assert.deepEqual(networkOf(ALLOWED_HOSTS).allowOut, ['registry.npmjs.org'])
-  assert.deepEqual(networkOf(ASSISTANT_HOSTS), {
+  assert.deepEqual(networkOf(PACKAGE_HOSTS), {
     allowOut: ['registry.npmjs.org', 'pypi.org', 'files.pythonhosted.org'],
     denyOut: ['0.0.0.0/0'],
   })
@@ -141,7 +139,7 @@ test('opt-in: no E2B de verdade, a máquina do Assistente instala com pip e npm,
   t.after(() => api.kill(conversation))
   const kit = createE2bKit(config)({
     id: `conexus-e241-u3-real-${conversation}`,
-    allowOut: ASSISTANT_HOSTS,
+    allowOut: PACKAGE_HOSTS,
     metadata: { ...mark, [MARK.conversation]: conversation },
     onStart: () => undefined,
     workingDirectory: '/home/user',
@@ -189,14 +187,16 @@ test('opt-in: no E2B de verdade, a máquina do Assistente liga pelo início do H
   const api = createE2bApi(config, mark)
   const conversation = ConversationId.parse(randomUUID())
   t.after(() => api.kill(conversation))
-  const machines = createAssistantMachines({
+  const machines = createConversationMachines({
     kit: createE2bKit(config),
     api,
     template: config.machineTemplate,
     installation: INSTALLATION,
     mark,
+    codeMode: createE2bCodeMode(),
     log: { info: () => undefined, error: () => undefined },
-    scopeOf: async () => ({ companyId: COMPANY, personId: PERSON, place: HOME, chosen: [] }),
+    hosts: PACKAGE_HOSTS,
+    marksOf: async () => ({ [MARK.company]: COMPANY }),
   })
   const context = new RequestContext<unknown>([['controller', { sessionId: conversation }]])
   const files = (await machines.workspace(context))?.filesystem

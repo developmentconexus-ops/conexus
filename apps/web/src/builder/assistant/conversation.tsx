@@ -1,5 +1,9 @@
 import type { AssistantConversation, CompanyId, ConversationId, ProjectId } from '@conexus/hub-api'
-import { ASSISTANT_CONTROLLER, listAssistantConversations } from '@conexus/hub-api'
+import {
+  ASSISTANT_CONTROLLER,
+  assistantFilePath,
+  listAssistantConversations,
+} from '@conexus/hub-api'
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 import { hubQueryPrefix } from '../../platform/hub.ts'
@@ -10,13 +14,13 @@ import {
   ASSISTANT_ROOM,
   Beside,
   Chat,
+  fileSide,
   ModelChoice,
   RoomContext,
   START_NO_ACCOUNT,
 } from '../conversation/public.ts'
 import { useComposerTools } from './composer-tools.tsx'
 import { useConnectorCatalog } from './connector-names.ts'
-import { FilePanel } from './file.tsx'
 import { AppProposalCard } from './propose.tsx'
 import { assistantConversationQuery, sendAssistantModel } from './queries.ts'
 import { EMPTY_ASSISTANT, titleOf } from './text.ts'
@@ -121,17 +125,10 @@ function Conversation(props: Props) {
                 />
               </div>
             }
-            side={
-              file === undefined ? undefined : (
-                <FilePanel
-                  companyId={companyId}
-                  conversationId={conversationId}
-                  shown={file}
-                  onClose={phone ? undefined : () => setFile(undefined)}
-                  inSheet={phone}
-                />
-              )
-            }
+            side={fileSide(file, (path) => assistantFilePath({ companyId, conversationId, path }), {
+              phone,
+              close: () => setFile(undefined),
+            })}
           />
         </div>
       </div>

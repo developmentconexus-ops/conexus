@@ -1,8 +1,9 @@
 import type { ConversationId } from '@conexus/hub-api'
-import { E2BSandbox } from '@mastra/e2b'
+import type { CodeModeTransport } from '@mastra/core/tools'
+import { E2BCodeModeTransport, E2BSandbox } from '@mastra/e2b'
 import { ALL_TRAFFIC, Sandbox } from 'e2b'
 import type { Config } from '../../platform/config.ts'
-import type { AssistantMachineApi, Kit, KitFactory } from './kit.ts'
+import type { ConversationMachineApi, Kit, KitFactory } from './kit.ts'
 import { MARK } from './kit.ts'
 
 /** E2B's free plan keeps a machine up an hour at most; it pauses then, and the next start resumes it. */
@@ -46,6 +47,11 @@ export function createE2bKit(config: Credentials): KitFactory {
   }
 }
 
+/** The transport that runs an agent's program in its E2B machine (step 24.4, U5): the `E2BSandbox` is the workspace's. */
+export function createE2bCodeMode(): CodeModeTransport {
+  return new E2BCodeModeTransport()
+}
+
 /**
  * Kills by the mark this installation puts on every machine and the conversation's id (security
  * S36): every machine listed, running or paused, for a failed find can have made a second one of
@@ -55,7 +61,7 @@ export function createE2bApi(
   config: Credentials,
   mark: Record<string, string>,
   apiUrl?: string,
-): AssistantMachineApi {
+): ConversationMachineApi {
   const apiKey = config.e2bApiKey.reveal()
   const where = { apiKey, ...(apiUrl === undefined ? {} : { apiUrl }), requestTimeoutMs: CALL_MS }
   async function killWhere(

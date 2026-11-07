@@ -2,7 +2,6 @@ import { appendFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { FAILURES, getStatus } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
-import type { MachineTuning } from './builder/assistant/public.ts'
 import type { GitCopy } from './builder/git/public.ts'
 import { repositoriesIn } from './builder/git/public.ts'
 import {
@@ -11,7 +10,12 @@ import {
   resealModelAccounts,
   signInFlows,
 } from './builder/model-accounts/public.ts'
-import type { AssistantMachine, MachinesOf, RepositoryOf } from './builder/runs/public.ts'
+import type {
+  ConversationMachine,
+  MachinesOf,
+  MachineTuning,
+  RepositoryOf,
+} from './builder/runs/public.ts'
 import { builderPortsOf, createRuns } from './builder/runs/public.ts'
 import { conversationsOf } from './conversations-of.ts'
 import { firstPersonArguments } from './first-person-arguments.ts'
@@ -28,7 +32,7 @@ import { requestsOf } from './hub/requests/public.ts'
 import type { Status } from './hub/status/public.ts'
 import { createStatus } from './hub/status/public.ts'
 import type { CloudflareApps } from './platform/cloudflare.ts'
-import { createCloudflareApps } from './platform/cloudflare.ts'
+import { createCloudflareApps, createCloudflareTools } from './platform/cloudflare.ts'
 import type { CompanyPostgres } from './platform/company-postgres.ts'
 import { createCompanyPostgres, neonTransport } from './platform/company-postgres.ts'
 import type { Config } from './platform/config.ts'
@@ -42,6 +46,7 @@ import {
   openMastraPool,
 } from './platform/database.ts'
 import { createEdgeServer } from './platform/edge-server.ts'
+import { createEdgeTools } from './platform/edge-tools.ts'
 import type { FailureLog } from './platform/failure.ts'
 import { Failure, logFailure } from './platform/failure.ts'
 import { registerHealth } from './platform/health.ts'
@@ -114,11 +119,13 @@ export function subjectsOf(deps: {
   neon: NeonProjects
   companyPostgres: CompanyPostgres
   cloudflare: CloudflareApps
+  /** The saved tools' namespace (step 24.4); the Hub calls their host through `createEdgeTools`. */
+  cloudflareTools: CloudflareApps
   mastraPool: MastraPool
   machinesOf: MachinesOf
-  assistantMachine: AssistantMachine
-  /** The tests' folder and start deadline for the Assistant's machines (`test-runs.ts`). */
-  assistantTuning?: MachineTuning
+  conversationMachine: ConversationMachine
+  /** The tests' folder and start deadline for the conversations' machines (`test-runs.ts`). */
+  machineTuning?: MachineTuning
   repository: RepositoryOf
   copy: GitCopy
   log: FailureLog
@@ -143,7 +150,8 @@ export function subjectsOf(deps: {
   const notifications = notificationsOf({ ...deps, identity, publicOrigin: config.publicOrigin })
   const { conversations, assistant, automations, agents } = conversationsOf({
     ...{ database, identity, sealKeys, google, log, runs, mastraPool: deps.mastraPool },
-    ...{ machine: deps.assistantMachine, machineTuning: deps.assistantTuning },
+    ...{ machine: deps.conversationMachine, machineTuning: deps.machineTuning },
+    tools: { cloudflare: deps.cloudflareTools, edge: createEdgeTools({ config, log }) },
     ...{ connectors: () => connectors, apps: () => apps, projects: () => projects.ports },
     ...{ notify: notifications.notify, automationClock: config.automationClock },
   })
@@ -196,9 +204,10 @@ async function runServer(): Promise<void> {
       appLoginKey: config.appLoginKey,
     })
     const cloudflare = createCloudflareApps({ config, log })
+    const cloudflareTools = createCloudflareTools({ config, log })
     const subjects = subjectsOf({
       ...{ database, config, identity, sendMail },
-      ...{ neon, companyPostgres, cloudflare, mastraPool, log },
+      ...{ neon, companyPostgres, cloudflare, cloudflareTools, mastraPool, log },
       ...builderPortsOf({ config, log }),
     })
     const { projects, apps, conversations, modelAccounts, runs, connectors } = subjects

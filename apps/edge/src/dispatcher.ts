@@ -1,6 +1,6 @@
 // The dispatcher's Worker: every request to an app's host passes here first (decision 0041). Its
 // entrypoints `Db` and `Connectors` are the `db` and `connectors` each app version receives
-// (decision 0043).
+// (decision 0043); `ToolData` is the `data` each saved tool receives on the tools' host (step 24.4).
 
 import { WorkerEntrypoint } from 'cloudflare:workers'
 import type {
@@ -16,6 +16,8 @@ import type { DbProps } from './db.ts'
 import { dbOf } from './db.ts'
 import { serveDispatch } from './dispatch.ts'
 import { hubOf } from './hub.ts'
+import type { ToolDataProps } from './tools.ts'
+import { serveTool, TOOLS_LABEL, toolDataOf } from './tools.ts'
 
 /**
  * The stub the dispatcher hands in `props.db`, bound to one login: the app can reach no other, and
@@ -56,8 +58,23 @@ export class Connectors extends WorkerEntrypoint<Env, ConnectorsProps> {
   }
 }
 
+/** The stub the tools' host hands in `props.data`: it holds the Hub's key of the call, the tool none. */
+export class ToolData extends WorkerEntrypoint<Env, ToolDataProps> {
+  read(operation: string, input: unknown): Promise<unknown> {
+    return toolDataOf(hubOf(this.env), this.ctx.props).read(operation, input)
+  }
+}
+
 export default {
   fetch(request: Request, env: Env, ctx: ExecutionContext) {
+    if (new URL(request.url).hostname === `${TOOLS_LABEL}.${env.APPS_DOMAIN}`) {
+      return serveTool(
+        request,
+        env,
+        { ToolData: (options) => ctx.exports.ToolData(options) },
+        ctx.access,
+      )
+    }
     return serveDispatch(request, env, {
       Db: (options) => ctx.exports.Db(options),
       Connectors: (options) => ctx.exports.Connectors(options),

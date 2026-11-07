@@ -189,6 +189,16 @@ function Values(props: {
   )
 }
 
+/** What the save said: that another version is newer (#707), else the error the caller worded. */
+function FormFailure(props: { newer: boolean; error: string | undefined }) {
+  if (!props.newer && props.error === undefined) return null
+  return (
+    <p role="alert" className="text-danger">
+      {props.newer ? reasonText('STALE_VERSION') : props.error}
+    </p>
+  )
+}
+
 /**
  * The form of a tool of the library (step 24.3, U5; U7 uses it for the next version): one read of a
  * connection the Projeto offers, the values it fixes and the fields the model fills. `fixed` is an
@@ -208,6 +218,8 @@ export function ToolForm(props: {
   submitLabel: string
   onSubmit: (input: ToolInput) => void
   onCancel: () => void
+  /** Reads the tool again when another version was saved over the one this form started from (#707). */
+  onReload?: () => void
 }) {
   const { fixed, initial, refused } = props
   const first = props.offered[0]
@@ -222,6 +234,7 @@ export function ToolForm(props: {
   const [bound, setBound] = useState(JSON.stringify(initial?.bound ?? {}, null, 2))
   const [open, setOpen] = useState((initial?.open ?? []).join(', '))
   const [local, setLocal] = useState<Local>()
+  const newer = refused?.reason === 'STALE_VERSION'
 
   function say(field: string): string | undefined {
     if (local?.field === field) return local.text
@@ -273,12 +286,13 @@ export function ToolForm(props: {
         />
       </DialogBody>
       <DialogFooter>
-        {props.error !== undefined && (
-          <p role="alert" className="text-danger">
-            {props.error}
-          </p>
-        )}
+        <FormFailure newer={newer} error={props.error} />
         <div className="flex flex-wrap gap-md">
+          {newer && props.onReload !== undefined && (
+            <Button type="button" onClick={props.onReload}>
+              Recarregar
+            </Button>
+          )}
           <Button
             type="submit"
             variant="primary"

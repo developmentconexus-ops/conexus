@@ -146,6 +146,7 @@ test('o recorte: a ferramenta chama a leitura pela porta com os valores fixos po
       description: 'Os pedidos da empresa 2.',
       bound: { codigoEmpresa: 2 },
       open: ['page', 'dataNegociacaoInicio', 'dataNegociacaoFinal'],
+      basedOn: 1,
     },
     randomUUID(),
   )

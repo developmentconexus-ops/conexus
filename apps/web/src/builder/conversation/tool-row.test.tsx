@@ -4,6 +4,7 @@ import {
   CARD_TOOLS,
   CLOSED_TOOLS,
   CONSTRUTOR_TOOL,
+  MACHINE_TOOL,
   TASK_TOOLS,
 } from '@conexus/hub-api'
 import { fireEvent, render, screen } from '@testing-library/react'
@@ -190,11 +191,13 @@ test('cada ferramenta do conjunto fechado e do Assistente tem frase e abre no co
     CONSTRUTOR_TOOL.projectRead,
     CONSTRUTOR_TOOL.toolSearch,
     CONSTRUTOR_TOOL.toolSave,
+    CONSTRUTOR_TOOL.toolCodeSave,
     CONSTRUTOR_TOOL.agentRead,
     CONSTRUTOR_TOOL.agentDraft,
     CONSTRUTOR_TOOL.agentSet,
     CONSTRUTOR_TOOL.agentTest,
     AGENT_TOOL.appDataRead,
+    MACHINE_TOOL.codeMode,
   ]
   expect(Object.keys(TOOLS).sort()).toEqual([...drawn].sort())
   for (const name of drawn) {

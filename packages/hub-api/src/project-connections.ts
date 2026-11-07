@@ -1,6 +1,7 @@
 import { ConnectorAnswer } from '@conexus/app-contract'
 import { z } from 'zod'
 import { HostLabel } from './address.ts'
+import { ToolVersionId } from './agent-ids.ts'
 import { InCompany } from './companies.ts'
 import {
   CALL_DEADLINE_MS,
@@ -12,6 +13,7 @@ import {
 } from './connectors.ts'
 import { ProjectId } from './library-ids.ts'
 import { defineOperation } from './operation.ts'
+import { ToolCallKey } from './tools.ts'
 
 /** A Projeto's permission to read a connection: who gave it (null: they left) and when. */
 export const Grant = z.object({ by: z.string().nullable(), at: z.iso.datetime() })
@@ -154,4 +156,35 @@ export const listAppConnections = defineOperation({
   input: { query: OnConnector },
   success: { status: 200, body: z.object({ names: z.array(z.string()) }) },
   failures: APP_CALL_FAILURES,
+})
+
+/**
+ * What a saved tool's read answers the edge: the read's whole answer, a read the call may not make
+ * (`NOT_DECLARED`: no live call by that key, another version's, or an operation the version did not
+ * declare), the turn's 50 reads spent, or the connector's own refusals, as data (step 24.4).
+ */
+export const ToolDataAnswer = z.union([
+  ConnectorAnswer,
+  z.strictObject({ kind: z.enum(['NOT_DECLARED', 'CALLS_SPENT']) }),
+])
+export type ToolDataAnswer = z.infer<typeof ToolDataAnswer>
+
+export const callToolConnector = defineOperation({
+  id: 'callToolConnector',
+  summary: "Reads through a connector for a saved tool's Worker, by the Hub's live call of it.",
+  access: 'edge',
+  method: 'POST',
+  path: '/api/tool-connector-calls',
+  bodyLimit: 64 * 1024,
+  input: {
+    body: z.object({
+      toolVersionId: ToolVersionId,
+      call: ToolCallKey,
+      operation: z.string().max(64),
+      input: z.unknown(),
+      deadlineMs: z.int().min(1).max(CALL_DEADLINE_MS),
+    }),
+  },
+  success: { status: 200, body: ToolDataAnswer },
+  failures: ['DATABASE_UNAVAILABLE'],
 })

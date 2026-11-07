@@ -1,8 +1,15 @@
-import { AGENT_TOOL, CONSTRUTOR_TOOL, ProjectReadResult, ToolSearchResult } from '@conexus/hub-api'
+import {
+  AGENT_TOOL,
+  CONSTRUTOR_TOOL,
+  CodeSaveResult,
+  ProjectReadResult,
+  ToolSearchResult,
+} from '@conexus/hub-api'
 import {
   BotIcon,
   BuildingIcon,
   CircleAlertIcon,
+  CodeIcon,
   DatabaseIcon,
   FlaskConicalIcon,
   SearchIcon,
@@ -70,6 +77,43 @@ function searchText(tool: Tool): string | undefined {
     : `${tools}, ${automationsText(found.automations.length)}`
 }
 
+/** The tool in code: what its test read when it passed, and the error when it did not. */
+function codeSaveRow(tool: Tool, status: Parameters<typeof headOf>[1]) {
+  const saved = CodeSaveResult.safeParse(tool.result).data
+  const failed = status === 'error' || status === 'denied' || saved?.kind === 'REFUSED'
+  const test = saved?.kind === 'SAVED' ? saved.tool.versions.at(-1) : undefined
+  const detail =
+    saved?.kind === 'REFUSED' && saved.code === 'TOOL_TEST_FAILED'
+      ? saved.output
+          ?.split('\n')
+          .find((line) => line.trim() !== '')
+          ?.slice(0, 160)
+      : test?.kind === 'CODE'
+        ? `Testei com ${test.test.rows} ${test.test.rows === 1 ? 'linha' : 'linhas'}`
+        : undefined
+  return {
+    icon: failed ? CircleAlertIcon : CodeIcon,
+    sentence:
+      failed && saved?.kind === 'REFUSED' && saved.code === 'TOOL_TEST_FAILED'
+        ? 'O teste não passou'
+        : headOf(CODE_SAVE, failed && status === 'done' ? 'error' : status),
+    detail,
+    beside: detail !== undefined,
+  }
+}
+
+const CODE_SAVE: ToolSpec = {
+  icon: CodeIcon,
+  running: 'Escrevendo e testando uma ferramenta',
+  done: 'Escreveu e testou uma ferramenta',
+  failed: 'Não conseguiu fazer a ferramenta',
+  verb: 'escreveu e testou uma ferramenta',
+  body: 'generic',
+  groups: false,
+  refusal: refusedResult,
+  present: codeSaveRow,
+}
+
 /** The rows of the Construtor's own tools (step 24.3, U5): the person reads what was done to the agent, never a tool's name. */
 export const CONSTRUTOR_SPECS: Record<ConstrutorRowTool, ToolSpec> = {
   [CONSTRUTOR_TOOL.projectRead]: withDetail(
@@ -106,6 +150,7 @@ export const CONSTRUTOR_SPECS: Record<ConstrutorRowTool, ToolSpec> = {
     groups: false,
     refusal: refusedResult,
   },
+  [CONSTRUTOR_TOOL.toolCodeSave]: CODE_SAVE,
   [CONSTRUTOR_TOOL.agentRead]: {
     icon: BotIcon,
     running: 'Lendo o rascunho do agente',

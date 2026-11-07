@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import type { AgentId as AgentIdType, Effort, ModelId, OfProject } from '@conexus/hub-api'
-import { AgentId, CompanyId, PersonId, ProjectId } from '@conexus/hub-api'
-import type { AgentInstructions } from '@mastra/core/agent'
+import { AgentId, CompanyId, MACHINE_TOOL, PersonId, ProjectId } from '@conexus/hub-api'
+import type { AgentInstructions, ToolsInput } from '@mastra/core/agent'
 import { Agent } from '@mastra/core/agent'
 import type { MastraMemory } from '@mastra/core/memory'
 import type { InputProcessor } from '@mastra/core/processors'
@@ -16,10 +16,15 @@ import type { ConnectorAccess } from '../connectors/public.ts'
 import { connectorTools } from '../connectors/public.ts'
 import { agentDefaults, oncePerRun, turnKeyOn } from '../controller-kit/public.ts'
 import { routedModel, toolsOf } from '../conversation/public.ts'
+import type { ConversationMachines } from '../machine/public.ts'
+import { showFileTool } from '../machine/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import { conversationStart, memoryModelsFor, setTurn, Turn } from '../model-accounts/public.ts'
 import type { AppDataPort } from './app-data.ts'
 import { appDataTools } from './app-data.ts'
+import { codeModeOf } from './code-mode.ts'
+import type { CodeToolsDeps } from './code-tools.ts'
+import { codeTools } from './code-tools.ts'
 import type { FrozenVersion } from './frozen.ts'
 import { presetTools } from './tools.ts'
 
@@ -88,6 +93,13 @@ export type AgentDeps = {
   speakersOf: (scope: SessionScope) => Promise<Speakers>
   /** The 24.1 memory with the observational one, and one without it, each made once. */
   memories: { observational: MastraMemory; plain: MastraMemory }
+  /**
+   * The conversations' machines, which the agents' controller owns (step 24.4, U4); an agent that
+   * runs alone (the Construtor's test of the draft) gets none.
+   */
+  machines?: Pick<ConversationMachines, 'folder' | 'serving' | 'codeMode'>
+  /** The saved tools' calls at the edge (step 24.4, U3). */
+  codeTools: CodeToolsDeps
   log: FailureLog
 }
 
@@ -97,6 +109,8 @@ export type Plan = {
   start: { model: ModelId; effort: Effort }
   scope: SessionScope
   offered: Awaited<ReturnType<Connectors['assistant']['connections']>>
+  /** Whether the version has its Computador: the conversation's machine and `show_file`. */
+  machine: boolean
 }
 
 const plans = new WeakMap<Agent, (requestContext: RequestContext) => Promise<Plan>>()
@@ -135,7 +149,56 @@ function planner(deps: AgentDeps, frozen: FrozenVersion & OfProject & { agentId:
       place: { kind: 'PROJECT', projectId },
       chosen,
     }
-    return { run, start, scope, offered: await deps.connectors.connections(scope) }
+    return {
+      ...{ run, start, scope, machine: frozen.machine },
+      offered: await deps.connectors.connections(scope),
+    }
+  })
+}
+
+/**
+ * The run's tools, made once: the program tool fixes the ids of the tools it orchestrates when it is
+ * made (`createCodeMode`), and its instructions list them, so the instructions and the tools of a
+ * run come from one making. The Computador's, the web's and `show_file` stay direct only.
+ */
+function runToolsOf(
+  deps: AgentDeps,
+  frozen: FrozenVersion & OfProject & { agentId: AgentIdType },
+  plan: (requestContext: RequestContext) => Promise<Plan>,
+  ownConnections: ReadonlySet<string>,
+) {
+  const machines = frozen.machine ? deps.machines : undefined
+  const showFile = machines === undefined ? undefined : showFileTool(machines)
+  return oncePerRun(async (requestContext) => {
+    const { run, scope, offered, start } = await plan(requestContext)
+    const access: ConnectorAccess = {
+      connections: offered.filter((each) => ownConnections.has(each.connectionId)),
+      log: deps.log,
+      read: (call, context) => deps.connectors.read(scope, { ...call, turn: turnKey.of(context) }),
+      notes: (connectionId) => deps.connectors.notes(scope, connectionId),
+      wording: { whose: 'this agent reads', limit: '50 connector calls per answer' },
+    }
+    const { companyId, personId, projectId } = run.scope
+    const mayReadApp =
+      frozen.appData && (await deps.appData.hasApp({ scope: { companyId, personId }, projectId }))
+    const ofTheAgent: ToolsInput = {
+      ...connectorTools(access, { noteSave: false }),
+      ...(mayReadApp
+        ? appDataTools({ appData: deps.appData, scope: { companyId, personId }, projectId })
+        : {}),
+      ...(await presetTools({ ...deps, scope, tools: frozen.tools, turnOf: turnKey.of })),
+      ...codeTools({ ...deps.codeTools, scope, tools: frozen.tools, turnOf: turnKey.of }),
+    }
+    const program = machines === undefined ? undefined : codeModeOf(ofTheAgent, machines.codeMode)
+    return {
+      program,
+      tools: {
+        ...(frozen.web ? toolsOf(start.model) : {}),
+        ...(showFile === undefined ? {} : { [MACHINE_TOOL.showFile]: showFile }),
+        ...(program === undefined ? {} : { [MACHINE_TOOL.codeMode]: program.tool }),
+        ...ofTheAgent,
+      },
+    }
   })
 }
 
@@ -169,42 +232,26 @@ export function agentOf(
     },
   }
   const ownConnections = new Set(frozen.connections)
+  const toolsOfRun = runToolsOf(deps, frozen, plan, ownConnections)
   const agent = new Agent({
     id: agentKey(frozen.agentId),
     name: frozen.name,
     description: frozen.description,
     instructions: async ({ requestContext }) => {
       const { scope, offered } = await plan(requestContext)
+      const { program } = await toolsOfRun(requestContext)
       const shown = offered.filter((each) => ownConnections.has(each.connectionId))
       return [
         { role: 'system', content: FIXED, providerOptions: CACHED },
         { role: 'system', content: blockOf(await deps.speakersOf(scope), shown) },
         { role: 'system', content: `${frozen.instructions}\n\n${READ_ONLY}` },
+        ...(program === undefined
+          ? []
+          : [{ role: 'system' as const, content: program.instructions }]),
       ] satisfies AgentInstructions
     },
     model: async ({ requestContext }) => routedModel((await plan(requestContext)).start.model),
-    tools: async ({ requestContext }) => {
-      const { run, scope, offered, start } = await plan(requestContext)
-      const access: ConnectorAccess = {
-        connections: offered.filter((each) => ownConnections.has(each.connectionId)),
-        log: deps.log,
-        read: (call, context) =>
-          deps.connectors.read(scope, { ...call, turn: turnKey.of(context) }),
-        notes: (connectionId) => deps.connectors.notes(scope, connectionId),
-        wording: { whose: 'this agent reads', limit: '50 connector calls per answer' },
-      }
-      const { companyId, personId, projectId } = run.scope
-      const mayReadApp =
-        frozen.appData && (await deps.appData.hasApp({ scope: { companyId, personId }, projectId }))
-      return {
-        ...(frozen.web ? toolsOf(start.model) : {}),
-        ...connectorTools(access, { noteSave: false }),
-        ...(mayReadApp
-          ? appDataTools({ appData: deps.appData, scope: { companyId, personId }, projectId })
-          : {}),
-        ...(await presetTools({ ...deps, scope, tools: frozen.tools, turnOf: turnKey.of })),
-      }
-    },
+    tools: async ({ requestContext }) => (await toolsOfRun(requestContext)).tools,
     memory: frozen.memory.observational ? deps.memories.observational : deps.memories.plain,
     ...agentDefaults(deps.queue, { processor: turn }),
   })

@@ -61,7 +61,13 @@ function offered(deps: AgentsDeps, scope: InProject) {
 function defaults(body: CreateAgent): AgentConfig {
   return {
     ...{ name: body.name, description: body.description ?? '', instructions: '', model: null },
-    ...{ memory: { observational: true }, connections: [], web: false, appData: false },
+    ...{
+      memory: { observational: true },
+      connections: [],
+      web: false,
+      appData: false,
+      machine: false,
+    },
   }
 }
 

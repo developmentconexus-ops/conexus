@@ -4,6 +4,7 @@ import type { RequestContext } from '@mastra/core/request-context'
 import { z } from 'zod'
 import type { SessionScope } from '../../hub/connectors/public.ts'
 import { oncePerRun, ownerOfResource } from '../controller-kit/public.ts'
+import { MARK } from '../machine/public.ts'
 
 /**
  * The thread's marks, stamped by `createSession({ tags })` at creation; never changed. A
@@ -68,4 +69,16 @@ export function sessionScopes(deps: { chosenOf: ChosenOf }): ScopeOf {
     const owned = { companyId, personId }
     return scopeOn(owned, await deps.chosenOf(owned, run.sessionId))
   })
+}
+
+/** The marks of the conversation's machine: its company and, in a Projeto, the Projeto (S36). */
+export function machineMarks(scopeOf: ScopeOf) {
+  return async (requestContext: RequestContext) => {
+    const scope = await scopeOf(requestContext)
+    if (scope === undefined) return undefined
+    return {
+      [MARK.company]: scope.companyId,
+      ...(scope.place.kind === 'PROJECT' ? { [MARK.project]: scope.place.projectId } : {}),
+    }
+  }
 }

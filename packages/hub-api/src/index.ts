@@ -77,9 +77,6 @@ export {
   readAssistantConversation,
   renameAssistantConversation,
   SessionConnection,
-  SHOWN_TEXT_MAX,
-  ShowFileInput,
-  ShownFile,
   setAssistantConnections,
   setAssistantModel,
 } from './assistant.ts'
@@ -190,6 +187,7 @@ export {
   setPassword,
 } from './identity.ts'
 export * from './library-ids.ts'
+export * from './machine.ts'
 export * from './model-account-sign-ins.ts'
 export {
   ACCOUNT_KEY_MAX_LENGTH,
@@ -264,6 +262,7 @@ export { PAGES, REDIRECT_PATH } from './pages.ts'
 export {
   APP_CONNECTOR_REPLY_BYTES,
   callAppConnector,
+  callToolConnector,
   deleteConnectionNote,
   Grant,
   grantProjectConnection,
@@ -272,6 +271,7 @@ export {
   ProjectAccess,
   ProjectConnections,
   revokeProjectConnection,
+  ToolDataAnswer,
 } from './project-connections.ts'
 export {
   createProject,

@@ -871,8 +871,19 @@
   {
     "id": "edge-outbound-wall",
     "file": "apps/edge/wrangler.jsonc",
-    "find": ",\n      \"outbound\": { \"service\": \"conexus-outbound\" }",
-    "replace": "",
+    "find": "\"conexus-apps\",\n      \"outbound\": { \"service\": \"conexus-outbound\" }",
+    "replace": "\"conexus-apps\"",
+    "test": {
+      "cwd": "apps/edge",
+      "file": "src/outbound.test.ts",
+      "name": "o muro"
+    }
+  },
+  {
+    "id": "edge-tools-outbound-wall",
+    "file": "apps/edge/wrangler.jsonc",
+    "find": "\"conexus-tools\",\n      \"outbound\": { \"service\": \"conexus-outbound\" }",
+    "replace": "\"conexus-tools\"",
     "test": {
       "cwd": "apps/edge",
       "file": "src/outbound.test.ts",
@@ -2190,9 +2201,9 @@
   },
   {
     "id": "assistant-file-read-logged",
-    "file": "apps/server/src/builder/assistant/file-route.ts",
-    "find": "        'ASSISTANT_FILE_READ',",
-    "replace": "        'ASSISTANT_FILE_SERVED',",
+    "file": "apps/server/src/builder/assistant/routes.ts",
+    "find": "    served: 'ASSISTANT_FILE_READ',",
+    "replace": "    served: 'ASSISTANT_FILE_SERVED',",
     "test": {
       "cwd": "apps/server",
       "file": "src/builder/assistant/file.test.ts",
@@ -2201,7 +2212,7 @@
   },
   {
     "id": "assistant-machine-mark",
-    "file": "apps/server/src/builder/assistant/machine.ts",
+    "file": "apps/server/src/builder/machine/conversation.ts",
     "find": "        ...mark,\n        ...marks,",
     "replace": "        [MARK.origin]: installation,\n        ...marks,",
     "test": {
@@ -2212,7 +2223,7 @@
   },
   {
     "id": "assistant-serving-short-lived",
-    "file": "apps/server/src/builder/assistant/machine.ts",
+    "file": "apps/server/src/builder/machine/conversation.ts",
     "find": "return session === undefined ? undefined : this.shortLived(session)",
     "replace": "return session?.files",
     "test": {
@@ -2223,7 +2234,7 @@
   },
   {
     "id": "assistant-file-links-checked",
-    "file": "apps/server/src/builder/assistant/machine.ts",
+    "file": "apps/server/src/builder/machine/conversation.ts",
     "find": "      workdir: this.folder,\n      verifySymlinks: true,",
     "replace": "      workdir: this.folder,\n      verifySymlinks: false,",
     "test": {
@@ -2245,7 +2256,7 @@
   },
   {
     "id": "assistant-stop-all-waits",
-    "file": "apps/server/src/builder/assistant/machine.ts",
+    "file": "apps/server/src/builder/machine/conversation.ts",
     "find": "    await Promise.all([...this.pausing])\n",
     "replace": "",
     "test": {
@@ -2267,7 +2278,7 @@
   },
   {
     "id": "assistant-machine-stale-killed",
-    "file": "apps/server/src/builder/assistant/machine.ts",
+    "file": "apps/server/src/builder/machine/conversation.ts",
     "find": "session.found === undefined ? api.killStale(conversationId, template) : undefined",
     "replace": "undefined",
     "test": {
@@ -2289,7 +2300,7 @@
   },
   {
     "id": "assistant-read-numbered",
-    "file": "apps/server/src/builder/assistant/assistant.ts",
+    "file": "apps/server/src/builder/assistant/connector-access.ts",
     "find": "const n = (readsOfRun.get(requestContext) ?? 0) + 1",
     "replace": "const n = 1",
     "test": {
@@ -2311,12 +2322,12 @@
   },
   {
     "id": "assistant-locate-where-tools-put-it",
-    "file": "apps/server/src/builder/assistant/machine-file.ts",
+    "file": "apps/server/src/builder/machine/conversation-file.ts",
     "find": "const found = await files.stat(path)",
     "replace": "const found = await files.stat(path.startsWith('/') ? `..${path}` : path)",
     "test": {
       "cwd": "apps/server",
-      "file": "src/builder/assistant/locate.test.ts",
+      "file": "src/builder/machine/locate.test.ts",
       "name": "o caminho cai na pasta"
     }
   },
@@ -2333,7 +2344,7 @@
   },
   {
     "id": "assistant-file-sandbox",
-    "file": "apps/server/src/builder/assistant/file-route.ts",
+    "file": "apps/server/src/builder/machine/file-route.ts",
     "find": "sandboxed(reply.getHeader('content-security-policy'))",
     "replace": "String(reply.getHeader('content-security-policy'))",
     "test": {
@@ -2355,7 +2366,7 @@
   },
   {
     "id": "assistant-download-makes-no-machine",
-    "file": "apps/server/src/builder/assistant/machine.ts",
+    "file": "apps/server/src/builder/machine/conversation.ts",
     "find": "      if (found === undefined) return { kind: 'FILE_GONE' }\n",
     "replace": "",
     "test": {
@@ -2454,7 +2465,7 @@
   },
   {
     "id": "agents-member-refused",
-    "file": "apps/server/src/builder/tools/tools.ts",
+    "file": "apps/server/src/builder/tools/access.ts",
     "find": "  await deps.identity.admitMember({ tx, companyId, personId, action })\n",
     "replace": "",
     "test": {
@@ -2503,8 +2514,8 @@
     "replace": "ALTER TABLE \"builder\".\"agent_tool\" ADD CONSTRAINT \"agent_tool_tool_version_fkey\" FOREIGN KEY (\"tool_id\",\"tool_version_id\") REFERENCES \"builder\".\"tool_version\"(\"tool_id\",\"id\") ON DELETE CASCADE;--> statement-breakpoint\nALTER TABLE \"builder\".\"agent_tool\" ADD CONSTRAINT \"agent_tool_company_tool_version_fkey\" FOREIGN KEY (\"company_id\",\"tool_version_id\") REFERENCES \"builder\".\"tool_version\"(\"company_id\",\"id\") ON DELETE CASCADE;",
     "test": {
       "cwd": "apps/server",
-      "file": "src/builder/tools/routes.test.ts",
-      "name": "apagar"
+      "file": "src/builder/tools/code-removal.test.ts",
+      "name": "um rascunho que a escolhe enquanto os Workers saem"
     }
   },
   {
@@ -2582,6 +2593,39 @@
       "cwd": "apps/server",
       "file": "src/builder/assistant/member.test.ts",
       "name": "o membro não recebe propor automação"
+    }
+  },
+  {
+    "id": "assistant-note-only-for-connection-managers",
+    "file": "apps/server/src/hub/connectors/notes.ts",
+    "find": "      if (manage) await admitted(deps, tx, input, 'manageConnections')\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/connectors/assistant-port-note.test.ts",
+      "name": "a anotação recusada"
+    }
+  },
+  {
+    "id": "assistant-note-never-in-automation-run",
+    "file": "apps/server/src/builder/assistant/assistant.ts",
+    "find": "        !byAutomation &&\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/assistant/note-save.test.ts",
+      "name": "a rodada de automação"
+    }
+  },
+  {
+    "id": "assistant-note-never-for-those-who-do-not-manage-connections",
+    "file": "apps/server/src/builder/assistant/assistant.ts",
+    "find": "deps.identity.allows(speakers.role, 'manageConnections')",
+    "replace": "true",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/assistant/note-save.test.ts",
+      "name": "o membro"
     }
   },
   {
@@ -2703,6 +2747,94 @@
       "cwd": "apps/server",
       "file": "src/builder/model-accounts/google/flat-unions.test.ts",
       "name": "sem união"
+    }
+  },
+  {
+    "id": "edge-tools-access-audience",
+    "file": "apps/edge/src/tools.ts",
+    "find": "access === undefined || access.aud !== env.TOOLS_ACCESS_AUD",
+    "replace": "access === undefined",
+    "test": {
+      "cwd": "apps/edge",
+      "file": "src/tools.test.ts",
+      "name": "sem o Access ou com outro público"
+    }
+  },
+  {
+    "id": "edge-tools-runtime-access",
+    "file": "apps/edge/src/dispatcher.ts",
+    "find": "        ctx.access,\n",
+    "replace": "        { aud: env.TOOLS_ACCESS_AUD },\n",
+    "test": {
+      "cwd": "apps/edge",
+      "file": "src/dispatcher-clone.test.ts",
+      "name": "a entrada do despachante"
+    }
+  },
+  {
+    "id": "tool-door-same-version",
+    "file": "apps/server/src/hub/connectors/tool-door.ts",
+    "find": "call.toolVersionId !== body.toolVersionId",
+    "replace": "false",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/connectors/tool-door.test.ts",
+      "name": "a chave da chamada"
+    }
+  },
+  {
+    "id": "tool-door-declared-reads",
+    "file": "apps/server/src/hub/connectors/tool-door.ts",
+    "find": "call.reads.includes(body.operation)",
+    "replace": "true",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/connectors/tool-door.test.ts",
+      "name": "a chave da chamada"
+    }
+  },
+  {
+    "id": "tool-call-closes",
+    "file": "apps/server/src/builder/agents/code-tools.ts",
+    "find": "          live.close()\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/agents/code-tool.test.ts",
+      "name": "a ferramenta salva sobe ao gravar"
+    }
+  },
+  {
+    "id": "edge-tools-status",
+    "file": "apps/server/src/platform/edge-tools.ts",
+    "find": "response.status !== 200",
+    "replace": "false",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/edge-tools.test.ts",
+      "name": "a borda fora"
+    }
+  },
+  {
+    "id": "edge-tools-margin",
+    "file": "apps/server/src/platform/edge-tools.ts",
+    "find": " + EDGE_MARGIN_MS",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/edge-tools.test.ts",
+      "name": "o prazo"
+    }
+  },
+  {
+    "id": "tool-upload-budget",
+    "file": "apps/server/src/platform/cloudflare.ts",
+    "find": "  budget?: AbortSignal,\n): Promise<CloudflareAnswer<'UPLOADED' | 'NOT_STARTING'>> {\n  // A form body under a signal that already ended rejects inside undici, where no one catches it.\n  if (budget?.aborted) return { kind: 'NO_ANSWER' }\n  const deadline = AbortSignal.timeout(CLOUDFLARE_DEADLINE_MS)\n  const signal = budget === undefined ? deadline : AbortSignal.any([deadline, budget])",
+    "replace": "  budget?: AbortSignal,\n): Promise<CloudflareAnswer<'UPLOADED' | 'NOT_STARTING'>> {\n  // A form body under a signal that already ended rejects inside undici, where no one catches it.\n  if (budget?.aborted) return { kind: 'NO_ANSWER' }\n  const deadline = AbortSignal.timeout(CLOUDFLARE_DEADLINE_MS)\n  const signal = deadline",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/cloudflare.test.ts",
+      "name": "quem a pediu desiste"
     }
   }
 ]
