@@ -23,7 +23,12 @@ export type Ungranted = (
   declared: NonNullable<Manifest['connectors']>,
   by: PersonId,
 ) => Promise<
-  readonly { connector: string; operation: string | null; reason: 'NOT_GRANTED' | 'NOT_IN_ROLE' }[]
+  readonly {
+    connector: string
+    operation: string | null
+    reason: 'NOT_GRANTED' | 'NOT_IN_ROLE'
+    label?: string
+  }[]
 >
 
 export type PublishInput = {
@@ -60,7 +65,9 @@ export async function publishIn(
   if (lacking !== undefined)
     throw new Failure(lacking.reason === 'NOT_IN_ROLE' ? 'NOT_IN_ROLE' : 'CONNECTOR_NOT_GRANTED', {
       details: { connector: lacking.connector, operation: lacking.operation ?? '' },
-      ...(lacking.reason === 'NOT_IN_ROLE' ? { person: lacking.operation ?? '' } : {}),
+      ...(lacking.reason === 'NOT_IN_ROLE'
+        ? { named: { operation: lacking.label ?? lacking.operation ?? '' } }
+        : {}),
     })
   const view = versionView(row, { ...held, publishedVersionId: row.id })
   if (held.publishedVersionId === row.id) return view

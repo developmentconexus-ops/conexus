@@ -10,6 +10,7 @@ import {
 } from '@conexus/hub-api'
 import { and, eq, max, sql } from 'drizzle-orm'
 import type { KitRead } from '../../hub/connectors/public.ts'
+import { operationLabel } from '../../hub/connectors/public.ts'
 import type { IdentityPorts } from '../../hub/identity/public.ts'
 import type { CommandTx, ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
@@ -94,12 +95,16 @@ async function refuseByRole(
           { kind: 'PERSON', personId: scope.personId, role },
           targets,
         )
-  const refused = declared.find((_, index) => !answers[index])
-  if (refused !== undefined) {
+  const at = declared.findIndex((_, index) => !answers[index])
+  const refused = declared[at]
+  const target = targets[at]
+  if (refused !== undefined && target !== undefined) {
     throw new Failure('NOT_IN_ROLE', {
       details: { tool: refused.slug, operation: refused.operation },
-      person: refused.operation,
-      named: { field: 'tools' },
+      named: {
+        field: 'tools',
+        operation: operationLabel(target.connectorId, refused.operation),
+      },
     })
   }
 }

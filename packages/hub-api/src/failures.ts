@@ -266,7 +266,7 @@ export const FAILURES = {
     category: 'USER',
     settles: true,
     status: 409,
-    phrase: 'Seu papel não pode usar a operação {person}.',
+    phrase: 'Seu papel não pode usar a ferramenta {operation}.',
     action: 'Peça a quem tem esse acesso para publicar, ou tire a operação.',
     actionKind: 'NONE',
   },
@@ -293,6 +293,8 @@ export const Problem = z.object({
   traceId: z.string(),
   /** The person a failure names in its phrase, where the row has `{person}` (`RUN_BUSY`). */
   person: z.string().optional(),
+  /** The label of the operation a refusal names in its phrase, where the row has `{operation}` (`NOT_IN_ROLE`). */
+  operation: z.string().optional(),
   /** RFC 9457 extension members, each written only by the refusal that owns it (step 24.3). */
   field: ProblemField.optional(),
   reason: ProblemReason.optional(),
@@ -300,7 +302,9 @@ export const Problem = z.object({
 })
 export type Problem = z.infer<typeof Problem>
 
-/** The phrase of a failure row, with the person it names put in place of `{person}`. */
-export function phraseOf(code: FailureCode, person?: string): string {
-  return FAILURES[code].phrase.replace('{person}', person ?? 'outra pessoa')
+/** The phrase of a failure row, with the person and the operation it names put in place of `{person}` and `{operation}`. */
+export function phraseOf(code: FailureCode, person?: string, operation?: string): string {
+  return FAILURES[code].phrase
+    .replace('{person}', person ?? 'outra pessoa')
+    .replace('{operation}', operation ?? 'essa operação')
 }

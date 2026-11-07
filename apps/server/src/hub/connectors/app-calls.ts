@@ -100,6 +100,8 @@ export function createAppCalls(deps: Deps, door: AppDoorPort) {
         input: body.input,
         deadlineMs: Math.min(body.deadlineMs, CALL_DEADLINE_MS),
       })
+      // The manifest is the guard: the speaker declares only the operation checked above, so a role
+      // refusal cannot come from here; the funnel is total over speakers, hence the mapping.
       return answered.kind === 'NOT_IN_ROLE' ? NOT_GRANTED : answered
     },
 

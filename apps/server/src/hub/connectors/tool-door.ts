@@ -26,12 +26,6 @@ type ToolRead = Readonly<{
 
 const NOT_DECLARED = { kind: 'NOT_DECLARED' } as const
 
-/**
- * The reads of saved tools (step 24.4): the edge names only the call's key, which the Hub opened
- * before calling it, so a read is the open call's version's, of a read it declared, in the turn that
- * opened it, through the agents' own door and its count of 50 (security S10: any other is
- * `NOT_DECLARED` to the tool, the reason in the log).
- */
 /** Why the call may not read, or nothing when the version declared the operation. */
 function refusalOf(call: LiveToolCall | undefined, body: ToolRead): string | undefined {
   if (call === undefined) return 'NO_CALL'
@@ -45,6 +39,12 @@ function toolAnswer(answered: Awaited<ReturnType<AssistantConnectors['read']>>):
   return answered.kind === 'OK' ? { kind: 'OK', value: answered.whole } : answered
 }
 
+/**
+ * The reads of saved tools (step 24.4): the edge names only the call's key, which the Hub opened
+ * before calling it, so a read is the open call's version's, of a read it declared, in the turn that
+ * opened it, through the agents' own door and its count of 50 (security S10: any other is
+ * `NOT_DECLARED` to the tool, the reason in the log).
+ */
 export function createToolDoor(assistant: Pick<AssistantConnectors, 'read'>, log: FailureLog) {
   const live = new Map<ToolCallKey, LiveToolCall>()
   return {

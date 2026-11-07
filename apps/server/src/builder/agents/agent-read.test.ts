@@ -46,6 +46,15 @@ test('selecionar a ligação não dá leitura: o modelo recebe só o caderno del
   })
   assert.deepEqual(chosen.draft.connections, [on.matriz], 'a tool brings its connection')
   assert.equal(chosen.draft.byTool, true)
+  const published = await post(on.hub, on.ana, `${on.agents}/${made.id}/publish`, {
+    revision: chosen.revision,
+    message: '',
+  })
+  assert.equal(published.statusCode, 200, published.body)
+  const offered = await offeredTo(t, on, made.id)
+  assert.ok(offered?.includes('tool_pedidos_matriz'))
+  assert.ok(!offered?.includes('connector_read'))
+  assert.ok(!offered?.some((name) => /consultar/.test(name)), 'the free query is not marked')
 })
 
 test('a versão antiga sem a consulta livre: connections [X] sem ferramenta de X se lê como as leituras do kit de X, sem a porta de leitura, e nada é regravado', async (t) => {

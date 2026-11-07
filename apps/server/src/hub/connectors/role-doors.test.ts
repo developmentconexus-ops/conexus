@@ -3,8 +3,9 @@ import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
 import { CompanyId, ConnectionId, OperationId, PersonId, ProjectId, RunId } from '@conexus/hub-api'
 import { call, post } from '../identity/test-hub.ts'
+import { SANKHYA_READS } from '../identity/test-kit.ts'
 import type { SessionScope } from './public.ts'
-import { TurnKey } from './public.ts'
+import { operationLabel, TurnKey } from './public.ts'
 import { appCalls } from './test-app-calls.ts'
 
 const ATENDENTE = { label: 'Atendente', connectors: { sankhya: ['pedidos'] } }
@@ -150,8 +151,48 @@ test('publicar pelo papel: quem publica o app precisa poder cada operação que 
   const refused = await call(on.hub, on.bruno, 'PUT', route, { number: 1 })
   assert.equal(refused.statusCode, 409, refused.body)
   assert.equal(Object(refused.json()).code, 'NOT_IN_ROLE')
-  assert.equal(Object(refused.json()).person, 'empresas')
+  assert.equal(Object(refused.json()).operation, operationLabel('sankhya', 'empresas'))
   const [none] = await on.hub.test.asOwner('select published_version_id from apps.app')
   assert.equal(Object(none).published_version_id, null)
   assert.equal((await call(on.hub, on.ana, 'PUT', route, { number: 1 })).statusCode, 200)
+})
+
+test('mudar o Membro: sem o Financeiro, o Assistente do Membro não traz contasAReceber e a leitura dá NOT_IN_ROLE com o papel, sem pedido ao dublê', async (t) => {
+  const on = await appCalls(t)
+  const matriz = ConnectionId.parse(await on.connect('Matriz'))
+  const base = `/api/companies/${on.companyId}`
+  const financeiro = ['contasAReceber', 'contasAPagar']
+  const changed = await call(on.hub, on.ana, 'PUT', `${base}/roles/member`, {
+    connectors: { sankhya: SANKHYA_READS.filter((read) => !financeiro.includes(read)) },
+  })
+  assert.equal(changed.statusCode, 200, changed.body)
+  const scope: SessionScope = {
+    companyId: CompanyId.parse(on.companyId),
+    personId: PersonId.parse(on.carla.id),
+    place: { kind: 'PROJECT', projectId: ProjectId.parse(on.projectId) },
+    chosen: [matriz],
+  }
+  const [connection] = await on.hub.connectors.assistant.connections(scope)
+  const offered = connection?.reads.map((read) => read.operation) ?? []
+  assert.ok(offered.includes('pedidos'))
+  assert.ok(!offered.includes('contasAReceber'))
+  const before = on.hub.lines.filter((line) => line.message === 'CONNECTOR_CALLED').length
+  const refused = await on.hub.connectors.assistant.read(scope, {
+    connectionId: matriz,
+    turn: TurnKey.parse(randomUUID()),
+    operation: 'contasAReceber',
+    input: { page: 0 },
+  })
+  assert.deepEqual(refused, { kind: 'NOT_IN_ROLE', role: 'member', operation: 'contasAReceber' })
+  assert.equal(on.hub.lines.filter((line) => line.message === 'CONNECTOR_CALLED').length, before)
+})
+
+test('a versão publicada roda para quem conversa sem a operação: a que declara empresas lê para um Atendente que só tem pedidos, e sem a versão ele é recusado', async (t) => {
+  const on = await atendenteOn(t)
+  const declared = [{ connectionId: on.matriz, operation: OperationId.parse('empresas') }]
+  assert.equal((await on.ask('empresas')).kind, 'NOT_IN_ROLE')
+  const version = { ...on.scope(), agentVersion: { kind: 'VERSION', declared } } as const
+  const answered = await on.ask('empresas', { page: 0 }, version)
+  assert.equal(answered.kind, 'OK')
+  assert.equal(on.called(), 1)
 })

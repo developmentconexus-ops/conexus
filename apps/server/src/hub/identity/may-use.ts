@@ -41,7 +41,8 @@ export function roleOfSpeaker(speaker: Speaker): string | null {
 /**
  * Whether the speaker may use the operation, read now: the library's own `hasPermission` (not its
  * route, which needs a session) over the company's stored roles, with no cache of ours and the
- * library's memory cache off, so a role changed answers differently on the next call. The library
+ * library's memory cache off for each call's first target, so a role changed answers differently on
+ * the next call. The library
  * reads in a short transaction of its own, never the caller's.
  */
 export function createMayUse(auth: Auth, database: Database, roles: RoleSet) {
@@ -54,7 +55,7 @@ export function createMayUse(auth: Auth, database: Database, roles: RoleSet) {
     )
   }
 
-  /** Each target answered in one short transaction of the library's, so a long list is one read of the roles. */
+  /** Each target answered in one short transaction of the library's, with one read of the roles for the whole list. */
   async function mayUseEach(
     companyId: CompanyId,
     speaker: Speaker,
@@ -65,13 +66,16 @@ export function createMayUse(auth: Auth, database: Database, roles: RoleSet) {
     const context = await auth.$context
     return command({ kind: 'COMPANY', companyId, personId: null }, async () => {
       const answers: boolean[] = []
-      for (const target of targets) {
+      for (const [index, target] of targets.entries()) {
         answers.push(
           await hasPermission(
             {
               options,
               organizationId: companyId,
               role: speaker.role,
+              // The first target reads the roles and the library keeps them for the company; the rest of
+              // this call take that read, so a long list is one read, and the next call reads again.
+              useMemoryCache: index > 0,
               permissions: { [`connector_${target.connectorId}`]: [target.operationId] },
             },
             // @ts-expect-error: better-auth 1.7.8 types the context parameter with an options type no configured auth's context matches (invariant); the function reads only context.adapter and context.logger.

@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { operationLabel } from '../../hub/connectors/public.ts'
 import { call, codeOf, memberOn, post } from '../../hub/identity/test-hub.ts'
 import {
   agentOf,
@@ -45,7 +46,7 @@ test('a consulta livre pelo papel: publicar por quem não tem consultar dá NOT_
   })
   assert.equal(refused.statusCode, 409, refused.body)
   assert.equal(codeOf(refused), 'NOT_IN_ROLE')
-  assert.equal(Object(refused.json()).person, 'consultar')
+  assert.equal(Object(refused.json()).operation, operationLabel('sankhya', 'consultar'))
   const after = await call(on.hub, on.ana, 'GET', `${on.agents}/${made.id}`)
   assert.deepEqual(agentOf(after).state, { kind: 'DRAFT' })
 
@@ -71,7 +72,7 @@ test('publicar pelo papel: uma ferramenta de leitura que o papel de quem publica
     message: '',
   })
   assert.equal(codeOf(refused), 'NOT_IN_ROLE')
-  assert.equal(Object(refused.json()).person, 'pedidos')
+  assert.equal(Object(refused.json()).operation, operationLabel('sankhya', 'pedidos'))
 })
 
 test('a seleção: gravar uma ferramenta acrescenta a ligação dela às selecionadas, e tirar a ligação tira as ferramentas dela', async (t) => {
@@ -102,7 +103,7 @@ test('a ferramenta em código: declarar uma leitura que o papel de quem publica 
     message: '',
   })
   assert.equal(codeOf(refused), 'NOT_IN_ROLE')
-  assert.equal(Object(refused.json()).person, 'pedidos')
+  assert.equal(Object(refused.json()).operation, operationLabel('sankhya', 'pedidos'))
   assert.deepEqual((await publishedNow(on.hub, on.ana, on.agents, chosen)).state, {
     kind: 'PUBLISHED',
     version: 1,

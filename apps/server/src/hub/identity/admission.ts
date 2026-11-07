@@ -290,27 +290,26 @@ async function admitCompanyOperator(input: CompanyInput, action: CompanyAction) 
 
 type CompanyInput = { tx: ReadTx; personId: PersonId; companyId: CompanyId }
 
-/** The person's role in the company, or nothing for an outsider and an unknown company. */
-async function membershipOf(input: CompanyInput, action: RoleAction) {
-  const query = input.tx
-    .select({ role: member.role })
-    .from(member)
-    .where(and(eq(member.organizationId, input.companyId), eq(member.userId, input.personId)))
-  const [row] = await (ACTIONS[action].locks ? query.for('share') : query)
-  return row === undefined ? undefined : Role.parse(row.role)
-}
-
-/** The role a person holds in the company now, read in the caller's transaction; none for an outsider. */
+/**
+ * The role a person holds in the company now, read in the caller's transaction, shared-locked when
+ * a role action is about to be decided on it; none for an outsider and an unknown company.
+ */
 export async function roleOf(
   tx: ReadTx,
   companyId: CompanyId,
   personId: PersonId,
+  locks = false,
 ): Promise<Role | undefined> {
-  const [row] = await tx
+  const query = tx
     .select({ role: member.role })
     .from(member)
     .where(and(eq(member.organizationId, companyId), eq(member.userId, personId)))
+  const [row] = await (locks ? query.for('share') : query)
   return row === undefined ? undefined : Role.parse(row.role)
+}
+
+function membershipOf(input: CompanyInput, action: RoleAction) {
+  return roleOf(input.tx, input.companyId, input.personId, ACTIONS[action].locks)
 }
 
 function admitMember(input: CompanyInput, role: Role, action: RoleAction): MemberProof {

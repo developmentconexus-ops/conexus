@@ -3,6 +3,7 @@ import { ConnectionId, ConnectorId, OperationId } from '@conexus/hub-api'
 import { eq } from 'drizzle-orm'
 import type { IdentityPorts } from '../identity/public.ts'
 import { ungranted } from './grants.ts'
+import { operationLabel } from './role-kit.ts'
 import { projectConnection } from './tables.ts'
 
 export type UngrantedBy = (
@@ -15,6 +16,8 @@ export type UngrantedBy = (
     connector: string
     operation: string | null
     reason: 'NOT_GRANTED' | 'NOT_IN_ROLE'
+    /** The operation's label in the kit, which the refusal says to the person. */
+    label?: string
   }[]
 >
 
@@ -23,6 +26,11 @@ export type UngrantedBy = (
  * then the first declared operation the role of who publishes does not hold (decision C1). The
  * version then runs as what it declares, whoever uses it.
  */
+function refusedByRole(each: { connector: string; operation: string | null }) {
+  const label = each.operation === null ? undefined : operationLabel(each.connector, each.operation)
+  return { ...each, reason: 'NOT_IN_ROLE' as const, ...(label === undefined ? {} : { label }) }
+}
+
 export function ungrantedBy(identity: Pick<IdentityPorts, 'roleOf' | 'mayUseEach'>): UngrantedBy {
   return async (tx, ids, declared, by) => {
     const lacking = await ungranted(tx, ids, declared)
@@ -32,8 +40,7 @@ export function ungrantedBy(identity: Pick<IdentityPorts, 'roleOf' | 'mayUseEach
       one.operations.map((operation) => ({ connector: one.connector, operation })),
     )
     const role = await identity.roleOf(tx, ids.companyId, by)
-    if (role === undefined)
-      return targets.slice(0, 1).map((each) => ({ ...each, reason: 'NOT_IN_ROLE' as const }))
+    if (role === undefined) return targets.slice(0, 1).map(refusedByRole)
     const homes = await tx
       .select({ id: projectConnection.connectionId, connector: projectConnection.connectorId })
       .from(projectConnection)
@@ -48,6 +55,6 @@ export function ungrantedBy(identity: Pick<IdentityPorts, 'roleOf' | 'mayUseEach
       })),
     )
     const refused = targets.filter((_, index) => !answers[index])
-    return refused.slice(0, 1).map((each) => ({ ...each, reason: 'NOT_IN_ROLE' as const }))
+    return refused.slice(0, 1).map(refusedByRole)
   }
 }
