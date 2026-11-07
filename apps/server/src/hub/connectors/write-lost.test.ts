@@ -1,10 +1,9 @@
 import assert from 'node:assert/strict'
-import { randomUUID } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import { test } from 'node:test'
 import { ConversationId, ToolCallId } from '@conexus/hub-api'
 import { markOf, openText, TurnKey, uncertainText } from './public.ts'
 import { ORDER, writing } from './test-write.ts'
-import { hashOf } from './write-record.ts'
 
 test('o mesmo toolCallId: a repetição devolve o que o registro diz sem enviar, outra entrada sob a mesma chave não, e noutra conversa é outra escrita', async (t) => {
   const on = await writing(t)
@@ -71,7 +70,14 @@ test('um processo que morreu depois do registro: a linha SENDING faz a chamada d
     `insert into connectors.connector_write(company_id, thread_id, tool_call_id, connection_id,
        operation_id, input_hash, person_id, state, created_at)
      values ($1, $2, $3, $4, 'lancarPedido', $5, $6, 'SENDING', now())`,
-    [on.companyId, first.threadId, first.toolCallId, on.matriz, hashOf(ORDER), on.ana.id],
+    [
+      on.companyId,
+      first.threadId,
+      first.toolCallId,
+      on.matriz,
+      createHash('sha256').update(JSON.stringify(ORDER)).digest('hex'),
+      on.ana.id,
+    ],
   )
   assert.deepEqual(await on.ask(first), {
     kind: 'WRITE_UNCERTAIN',
