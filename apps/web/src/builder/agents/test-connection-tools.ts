@@ -1,7 +1,7 @@
-import type { AgentDetail, ReadyTool } from '@conexus/hub-api'
-import { HttpResponse, http } from 'msw'
-import { SANKHYA } from '../../hub/connectors/fixtures.ts'
-import { FILIAL, MATRIZ, agent } from './test-agents.ts'
+import type { AgentDetail } from '@conexus/hub-api'
+import { ReadyTool } from '@conexus/hub-api'
+import type { FILIAL } from './test-agents.ts'
+import { agent, MATRIZ } from './test-agents.ts'
 
 /** The reads the Sankhya's kit offers a Projeto here: two of the kit and the free query of its door. */
 const READS = [
@@ -18,7 +18,7 @@ export function offered(
   return { connectionId, connector: 'sankhya', name, reads }
 }
 
-/** An agent with the given connections offered and none selected, no tool chosen. */
+/** An agent with the Matriz offered, none selected and no tool chosen. */
 export function bare(fields: Partial<AgentDetail> = {}): AgentDetail {
   const one = agent()
   return agent({
@@ -30,16 +30,13 @@ export function bare(fields: Partial<AgentDetail> = {}): AgentDetail {
 }
 
 export function readyOf(connectionId: typeof MATRIZ | typeof FILIAL): ReadyTool[] {
-  return READS.map(({ operation, label, summary }) => ({
-    connectionId,
-    operation,
-    label,
-    summary,
-    slug: `${operation.toLowerCase()}_${connectionId.slice(0, 2)}`,
-  })) as ReadyTool[]
+  return READS.map(({ operation, label, summary }) =>
+    ReadyTool.parse({
+      connectionId,
+      operation,
+      label,
+      summary,
+      slug: `${operation.toLowerCase()}_${connectionId.slice(0, 2)}`,
+    }),
+  )
 }
-
-/** The catalog the Hub reads, with the Sankhya's subjects: the door's read marked as the free query. */
-export const catalog = http.get('*/api/companies/:companyId/connections', () =>
-  HttpResponse.json({ connectors: [SANKHYA], connections: [], mayManage: true }),
-)

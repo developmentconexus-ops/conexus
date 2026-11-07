@@ -40,6 +40,15 @@ export const ConnectorSubject = z.object({
 })
 export type ConnectorSubject = z.infer<typeof ConnectorSubject>
 
+/** A read of a connection a Projeto offers, for the panel of an agent to choose from. */
+export const OfferedRead = z.object({
+  operation: z.string(),
+  label: z.string(),
+  summary: z.string(),
+  /** `false`: the role of whoever edits the agent does not use this read, so the screen shows it and does not let it be chosen. Absent means yes. */
+  allowed: z.boolean().optional(),
+})
+
 /** A connector of the kit's catalog, as the screen offers it: its fields by their labels, help and visibility. */
 export const ConnectorEntry = z.object({
   id: z.string(),
@@ -49,7 +58,8 @@ export const ConnectorEntry = z.object({
   summary: z.string(),
   // The kit's SVG, shown by the screen as a data: image.
   logo: z.string(),
-  subjects: z.array(ConnectorSubject),
+  // What the kit offers to choose among; a catalog written before the subjects were read has none.
+  subjects: z.array(ConnectorSubject).default([]),
   // How the company links it: pasted fields, or a trip to the provider (`fields` empty).
   auth: z.enum(['client_credentials', 'oauth2_code']),
   fields: z.array(

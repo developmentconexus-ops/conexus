@@ -1,9 +1,11 @@
-import type { ConnectorEntry, ConnectorSubject } from '@conexus/hub-api'
+import type { ConnectorEntry } from '@conexus/hub-api'
 import { useId, useState } from 'react'
 import { Button } from '../../ui/button.tsx'
 import { Checkbox } from '../../ui/checkbox.tsx'
 import { ConnectorLogo } from '../connectors/public.ts'
 import { EFFECT_WORD, NO_USE } from './role-text.ts'
+
+type ConnectorSubject = ConnectorEntry['subjects'][number]
 
 type PickerProps = {
   entry: ConnectorEntry

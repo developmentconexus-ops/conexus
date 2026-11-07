@@ -36,15 +36,21 @@ test('criar um papel: o dono cria "Atendente", marca Vendas, deixa só Pedidos, 
   )
   open()
   fireEvent.click(await screen.findByRole('link', { name: /Novo papel/ }))
-  fireEvent.change(await screen.findByLabelText('Nome do papel'), { target: { value: 'Atendente' } })
+  fireEvent.change(await screen.findByLabelText('Nome do papel'), {
+    target: { value: 'Atendente' },
+  })
   const sankhya = within(screen.getByRole('region', { name: 'Sankhya' }))
-  expect(sankhya.getAllByRole('checkbox').every((box) => box.getAttribute('aria-checked') === 'false')).toBe(true)
+  expect(
+    sankhya.getAllByRole('checkbox').every((box) => box.getAttribute('aria-checked') === 'false'),
+  ).toBe(true)
   fireEvent.click(sankhya.getByRole('checkbox', { name: /Vendas/ }))
   fireEvent.click(sankhya.getByRole('button', { name: 'Detalhe de Vendas' }))
   fireEvent.click(sankhya.getByRole('checkbox', { name: /Lançar pedido/ }))
   fireEvent.click(sankhya.getByRole('checkbox', { name: /Cancelar pedido/ }))
   expect(sankhya.getByText('lê')).toBeTruthy()
-  expect(sankhya.getByRole('checkbox', { name: /Pedidos/ }).getAttribute('aria-checked')).toBe('true')
+  expect(sankhya.getByRole('checkbox', { name: /Pedidos/ }).getAttribute('aria-checked')).toBe(
+    'true',
+  )
   fireEvent.click(screen.getByRole('button', { name: 'Criar papel' }))
   expect(await screen.findByText('Sankhya: 1 operação de Vendas')).toBeTruthy()
   expect(bodies).toEqual([{ label: 'Atendente', connectors: { sankhya: ['pedidos'] } }])
@@ -60,7 +66,9 @@ test('o nome tomado fica no campo, com o que foi marcado', async () => {
   fireEvent.click(sankhya.getByRole('checkbox', { name: /Financeiro/ }))
   fireEvent.click(screen.getByRole('button', { name: 'Criar papel' }))
   expect(await screen.findByText(/Já existe um papel com esse nome/)).toBeTruthy()
-  expect(sankhya.getByRole('checkbox', { name: /Financeiro/ }).getAttribute('aria-checked')).toBe('true')
+  expect(sankhya.getByRole('checkbox', { name: /Financeiro/ }).getAttribute('aria-checked')).toBe(
+    'true',
+  )
 })
 
 test('mudar o Membro: desmarca Financeiro e a Porta de leitura e salva só os conectores', async () => {
@@ -85,7 +93,11 @@ test('Dono e Administrador abrem só para ler', async () => {
   open('/settings/roles?role=owner')
   expect(await screen.findByText(/Este papel não muda/)).toBeTruthy()
   const sankhya = within(screen.getByRole('region', { name: 'Sankhya' }))
-  expect(sankhya.getAllByRole('checkbox').every((box) => box.hasAttribute('disabled') || box.getAttribute('aria-disabled') === 'true')).toBe(true)
+  expect(
+    sankhya
+      .getAllByRole('checkbox')
+      .every((box) => box.hasAttribute('disabled') || box.getAttribute('aria-disabled') === 'true'),
+  ).toBe(true)
   expect(screen.queryByRole('button', { name: 'Salvar' })).toBeNull()
 })
 
@@ -101,7 +113,12 @@ test('apagar um papel em uso mostra quem o usa e não apaga (critério 14)', asy
     as: 'owner',
     roles: [...FIXED, ATENDENTE],
     people: [
-      { personId: 'person-bruno', name: 'Bruno Souza', email: 'bruno@example.test', role: 'atendente' },
+      {
+        personId: 'person-bruno',
+        name: 'Bruno Souza',
+        email: 'bruno@example.test',
+        role: 'atendente',
+      },
     ],
   })
   server.use(
@@ -114,7 +131,9 @@ test('apagar um papel em uso mostra quem o usa e não apaga (critério 14)', asy
   fireEvent.click(await screen.findByRole('button', { name: 'Apagar papel: Atendente' }))
   const dialog = within(await screen.findByRole('alertdialog'))
   fireEvent.click(dialog.getByRole('button', { name: 'Apagar papel' }))
-  expect(await dialog.findByText(/Uma pessoa ou um convite aberto ainda usa este papel/)).toBeTruthy()
+  expect(
+    await dialog.findByText(/Uma pessoa ou um convite aberto ainda usa este papel/),
+  ).toBeTruthy()
   const who = await dialog.findByRole('list', { name: 'Quem usa este papel' })
   expect(who.textContent).toContain('Bruno Souza')
   expect(deletes).toHaveLength(1)
@@ -122,7 +141,10 @@ test('apagar um papel em uso mostra quem o usa e não apaga (critério 14)', asy
 })
 
 test('apagar um papel sem ninguém: apaga e volta à lista sem ele', async () => {
-  const { roles } = hub({ as: 'owner', roles: [...FIXED, customRole('Estagiário', 'estagiario', ['pedidos'])] })
+  const { roles } = hub({
+    as: 'owner',
+    roles: [...FIXED, customRole('Estagiário', 'estagiario', ['pedidos'])],
+  })
   server.use(
     http.delete(`${ROLES}/estagiario`, () => {
       roles.pop()

@@ -1,12 +1,19 @@
-import type { AgentDetail, OfferedConnection, ReadyTool, ToolSummary, ToolVersionId } from '@conexus/hub-api'
+import type {
+  AgentDetail,
+  OfferedConnection,
+  ReadyTool,
+  ToolSummary,
+  ToolVersionId,
+} from '@conexus/hub-api'
 import { useQuery } from '@tanstack/react-query'
 import { sentenceOf } from '../../platform/hub.ts'
 import { Button } from '../../ui/button.tsx'
 import { Checkbox } from '../../ui/checkbox.tsx'
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { ReadFailure } from '../../ui/states.tsx'
-import type { Part } from './section.tsx'
+import { useConnectorCatalog } from '../assistant/public.ts'
 import { toolsQuery } from './queries.ts'
+import type { Part } from './section.tsx'
 import {
   COMPANY_TOOLS,
   FREE_QUERY_WARNING,
@@ -15,7 +22,6 @@ import {
   toolTitle,
 } from './text.ts'
 import type { Saving } from './use-draft-save.ts'
-import { useConnectorCatalog } from '../assistant/public.ts'
 
 type Catalog = ReturnType<typeof useConnectorCatalog>
 type Listed = { tools: ToolSummary[]; ready: ReadyTool[] }
@@ -32,7 +38,12 @@ type Read = {
   ready: ReadyTool | undefined
 }
 
-function readsOf(connection: OfferedConnection, agent: AgentDetail, list: Listed, catalog: Catalog): Read[] {
+function readsOf(
+  connection: OfferedConnection,
+  agent: AgentDetail,
+  list: Listed,
+  catalog: Catalog,
+): Read[] {
   const at = connection.connectionId
   const reads = connection.reads.map((read) => ({
     ...read,
@@ -73,8 +84,12 @@ function Line(props: {
       />
       <label htmlFor={props.id} className="flex min-w-0 flex-1 flex-col">
         <span>{props.title}</span>
-        {props.detail !== undefined && <span className="text-fact text-text-2">{props.detail}</span>}
-        {props.warning !== undefined && <span className="text-fact text-danger">{props.warning}</span>}
+        {props.detail !== undefined && (
+          <span className="text-fact text-text-2">{props.detail}</span>
+        )}
+        {props.warning !== undefined && (
+          <span className="text-fact text-danger">{props.warning}</span>
+        )}
       </label>
     </li>
   )
@@ -84,7 +99,10 @@ function ReadLine(props: { connection: OfferedConnection; read: Read; saving: Sa
   const { connection, read, saving } = props
   function change(on: boolean) {
     saving.save((now) => {
-      if (!on) return { tools: versionsOf(now, new Set(read.chosen === undefined ? [] : [read.chosen.id])) }
+      if (!on)
+        return {
+          tools: versionsOf(now, new Set(read.chosen === undefined ? [] : [read.chosen.id])),
+        }
       if (read.library !== undefined) return { tools: [...versionsOf(now), read.library.latest.id] }
       if (read.ready === undefined) return {}
       const { connectionId, operation } = read.ready
@@ -109,7 +127,10 @@ function ReadLine(props: { connection: OfferedConnection; read: Read; saving: Sa
 function markAll(reads: readonly Read[], saving: Saving) {
   const wanted = reads.filter((read) => !read.door && read.allowed && read.chosen === undefined)
   saving.save((now) => ({
-    tools: [...versionsOf(now), ...wanted.flatMap((read) => (read.library ? [read.library.latest.id] : []))],
+    tools: [
+      ...versionsOf(now),
+      ...wanted.flatMap((read) => (read.library ? [read.library.latest.id] : [])),
+    ],
     ready: wanted.flatMap((read) =>
       read.library === undefined && read.ready !== undefined
         ? [{ connectionId: read.ready.connectionId, operation: read.ready.operation }]
@@ -138,12 +159,11 @@ export function ConnectionTools(props: Part & { connection: OfferedConnection; s
       !reads.some((one) => one.library?.id === tool.id),
   )
   // The connection's name titles the group when the Projeto has two of the same system.
-  const sameSystem = agent.offered.filter((one) => one.connector === connection.connector).length > 1
+  const sameSystem =
+    agent.offered.filter((one) => one.connector === connection.connector).length > 1
   return (
     <div className="flex flex-col gap-xs pl-lg">
-      {sameSystem && (
-        <h4 className="font-body text-label font-semibold">{connection.name}</h4>
-      )}
+      {sameSystem && <h4 className="font-body text-label font-semibold">{connection.name}</h4>}
       <ul aria-label={`Ferramentas de ${connection.name}`} className="flex flex-col">
         {reads.map((one) => (
           <ReadLine key={one.operation} connection={connection} read={one} saving={saving} />

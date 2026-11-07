@@ -1,9 +1,10 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { expect, test } from 'vitest'
 import { hubServer } from '../../platform/test-hub.tsx'
-import { AREA, AGENT, MATRIZ } from './test-agents.ts'
-import { bare, catalog, readyOf } from './test-connection-tools.ts'
+import { AGENT, AREA, MATRIZ } from './test-agents.ts'
+import { bare, readyOf } from './test-connection-tools.ts'
 import { agentScreens } from './test-hub.tsx'
+import { catalog } from './test-hub-tools.tsx'
 
 const server = hubServer()
 const { at } = agentScreens(server)
@@ -15,7 +16,9 @@ test('marcar todas as leituras marca as leituras do kit e deixa a consulta livre
   const hub = at(PAGE, { agents: [one], ready: readyOf(MATRIZ) })
   server.use(catalog)
   const section = within(await screen.findByRole('region', { name: 'Ligações' }))
-  fireEvent.click(await section.findByRole('button', { name: 'Marcar todas as leituras de Matriz' }))
+  fireEvent.click(
+    await section.findByRole('button', { name: 'Marcar todas as leituras de Matriz' }),
+  )
   await waitFor(() => expect(hub.writes()).toHaveLength(1))
   expect(hub.writes()[0]?.body).toMatchObject({
     tools: [],

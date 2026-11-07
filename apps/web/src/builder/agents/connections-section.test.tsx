@@ -1,9 +1,10 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { expect, test } from 'vitest'
 import { hubServer } from '../../platform/test-hub.tsx'
-import { AREA, AGENT, FILIAL, MATRIZ, agent } from './test-agents.ts'
-import { bare, catalog, offered, readyOf } from './test-connection-tools.ts'
+import { AGENT, AREA, agent, FILIAL, MATRIZ } from './test-agents.ts'
+import { bare, offered, readyOf } from './test-connection-tools.ts'
 import { agentScreens } from './test-hub.tsx'
+import { catalog } from './test-hub-tools.tsx'
 
 // As ligações do agente como seletores, com as ferramentas embaixo (decisão E4, critério 24).
 const server = hubServer()
@@ -65,7 +66,12 @@ test('uma ferramenta fora do papel de quem edita aparece sem poder marcar', asyn
     offered: [
       offered(MATRIZ, 'Matriz', [
         { operation: 'pedidos', label: 'Pedidos', summary: 'Os pedidos de venda.' },
-        { operation: 'contasAReceber', label: 'Contas a receber', summary: 'Os títulos.', allowed: false },
+        {
+          operation: 'contasAReceber',
+          label: 'Contas a receber',
+          summary: 'Os títulos.',
+          allowed: false,
+        },
       ]),
     ],
   })

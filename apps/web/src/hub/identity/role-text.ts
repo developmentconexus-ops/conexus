@@ -1,7 +1,7 @@
-import type { ConnectorEntry, OperationEffect, RoleView } from '@conexus/hub-api'
+import type { ConnectorEntry, RoleView } from '@conexus/hub-api'
 
 /** What a role does with an operation, in the words of the screen. */
-export const EFFECT_WORD: Record<OperationEffect, string> = {
+export const EFFECT_WORD: Record<'READ' | 'WRITE' | 'DESTROY', string> = {
   READ: 'lê',
   WRITE: 'escreve',
   DESTROY: 'apaga',
@@ -34,8 +34,9 @@ export function connectorLine(entry: Kit[number], held: readonly string[]): stri
 
 /** The lines a role's row says: all of all, the reads of all, or one line for each connector it uses. */
 export function summaryOf(role: Pick<RoleView, 'connectors'>, kit: Kit): string[] {
-  const held = (entry: Kit[number]): readonly string[] =>
-    Object.entries(role.connectors).find(([id]) => id === entry.id)?.[1] ?? []
+  function held(entry: Kit[number]): readonly string[] {
+    return Object.entries(role.connectors).find(([id]) => id === entry.id)?.[1] ?? []
+  }
   const everyOperation = kit.flatMap(operationsOf)
   const chosen = kit.flatMap((entry) =>
     operationsOf(entry).filter((operation) => held(entry).includes(operation.id)),

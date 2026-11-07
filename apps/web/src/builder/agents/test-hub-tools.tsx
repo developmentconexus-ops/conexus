@@ -1,6 +1,7 @@
 import type { ToolSummary, ToolVersionDetail } from '@conexus/hub-api'
 import { FAILURES, PROBLEM_MEDIA_TYPE, ToolVersionBody, ToolVersionId } from '@conexus/hub-api'
 import { HttpResponse, http } from 'msw'
+import { SANKHYA } from '../../hub/connectors/fixtures.ts'
 import { problemOf } from '../../platform/fixtures.ts'
 import { refusal } from '../../platform/test-hub.tsx'
 
@@ -56,3 +57,8 @@ export function toolRoutes(
     }),
   ]
 }
+
+/** The catalog the Hub reads, with the Sankhya's subjects: the door's read is the free query. */
+export const catalog = http.get('*/api/companies/:companyId/connections', () =>
+  HttpResponse.json({ connectors: [SANKHYA], connections: [], mayManage: true }),
+)

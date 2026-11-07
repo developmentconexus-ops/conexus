@@ -240,6 +240,21 @@ function ConexusGroup(props: {
   )
 }
 
+/** The library's tools and the ready reads the window offers: the free query is chosen only under its connection, with its warning (decision E4). */
+function offeredBy(list: Listed | undefined, agent: AgentDetail, catalog: Catalog) {
+  function isDoor(connectionId: string, operation: string) {
+    return catalog.isDoor(connectorOf(agent, connectionId), operation)
+  }
+  return {
+    library: (list?.tools ?? [])
+      .filter((tool) => tool.kind !== 'PRESET' || !isDoor(tool.connectionId, tool.operation))
+      .map((tool) => ({ tool, title: toolTitle(tool, agent.offered) })),
+    readies: (list?.ready ?? [])
+      .filter((one) => !isDoor(one.connectionId, one.operation))
+      .map((one) => ({ one, title: one.label })),
+  }
+}
+
 /**
  * The window of the Ferramentas section: the library's tools, the connectors' ready reads and the web
  * search, as the "+" menu lists a conversation's. Nothing is saved until **Usar as escolhidas**.
@@ -257,15 +272,7 @@ export function Chooser(props: Part & { saving: Saving; onClose: () => void }) {
   const [query, setQuery] = useState('')
   if (read.isError)
     return <ReadFailure text={sentenceOf(read.error)} onRetry={() => void read.refetch()} />
-  // The free query is chosen only under its connection, with its warning (decision E4).
-  const doorRead = (connectionId: string, operation: string) =>
-    catalog.isDoor(connectorOf(agent, connectionId), operation)
-  const library = (read.data?.tools ?? [])
-    .filter((tool) => tool.kind !== 'PRESET' || !doorRead(tool.connectionId, tool.operation))
-    .map((tool) => ({ tool, title: toolTitle(tool, agent.offered) }))
-  const readies = (read.data?.ready ?? [])
-    .filter((one) => !doorRead(one.connectionId, one.operation))
-    .map((one) => ({ one, title: one.label }))
+  const { library, readies } = offeredBy(read.data, agent, catalog)
   const shown = {
     tools: library.filter((each) => matches(each.title, query)),
     readies: readies.filter((each) => matches(each.title, query)),

@@ -43,7 +43,11 @@ function RoleRow(props: { companyId: CompanyId; role: RoleView; kit: readonly Co
   )
 }
 
-function RoleList(props: { companyId: CompanyId; roles: readonly RoleView[]; kit: readonly ConnectorEntry[] }) {
+function RoleList(props: {
+  companyId: CompanyId
+  roles: readonly RoleView[]
+  kit: readonly ConnectorEntry[]
+}) {
   const own = props.roles.filter((one) => one.kind === 'CUSTOM')
   const at = { companyId: props.companyId, kit: props.kit }
   return (
@@ -96,7 +100,13 @@ export function Roles() {
     return <ReadFailure text={sentenceOf(catalog.error)} onRetry={() => void catalog.refetch()} />
   }
   const kit = catalog.data?.connectors ?? []
-  const back = () => void router.navigate({ to: '/companies/$companyId/settings/roles', params: { companyId }, search: {} })
+  function back() {
+    void router.navigate({
+      to: '/companies/$companyId/settings/roles',
+      params: { companyId },
+      search: {},
+    })
+  }
   if (search.novo) return <NewRole companyId={companyId} kit={kit} onDone={back} />
   if (search.role !== undefined) {
     const found = data.roles.find((one) => one.role === search.role)

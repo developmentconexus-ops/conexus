@@ -5,7 +5,14 @@ import { Link } from '@tanstack/react-router'
 import { ArrowLeftIcon } from 'lucide-react'
 import { useController, useFormContext } from 'react-hook-form'
 import { buttonVariants } from '../../ui/button.tsx'
-import { Form, FormAlert, SubmitButton, setWriteError, TextField, useSchemaForm } from '../../ui/form.tsx'
+import {
+  Form,
+  FormAlert,
+  SubmitButton,
+  setWriteError,
+  TextField,
+  useSchemaForm,
+} from '../../ui/form.tsx'
 import { PageTitle } from '../../ui/list.tsx'
 import { changeCompanyRole, createCompanyRole } from './queries.ts'
 import { DeleteRole } from './role-delete.tsx'
@@ -72,7 +79,13 @@ export function NewRole({ companyId, kit, onDone }: Common) {
           }
         }}
       >
-        <TextField name="label" label="Nome do papel" type="text" autoComplete="off" invalid="Escreva o nome do papel." />
+        <TextField
+          name="label"
+          label="Nome do papel"
+          type="text"
+          autoComplete="off"
+          invalid="Escreva o nome do papel."
+        />
         <Picked kit={kit} readOnly={false} />
         <FormAlert />
         <SubmitButton idle="Criar papel" pending="Criando…" />
@@ -86,7 +99,9 @@ export function OpenRole({ companyId, kit, role, onDone }: Common & { role: Role
   const send = useMutation(changeCompanyRole)
   const fixed = role.kind === 'ALL'
   const form = useSchemaForm(updateRole.input.body, {
-    connectors: role.connectors as Connectors,
+    connectors: Object.fromEntries(
+      Object.entries(role.connectors).map(([id, operations]) => [id, [...operations]]),
+    ),
   })
   return (
     <div className="flex flex-col gap-lg">

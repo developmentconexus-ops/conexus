@@ -27,7 +27,6 @@ const sankhya = ConnectorEntry.parse({
   version: '1.0.0',
   summary: 'Resumo.',
   logo: LOGO,
-  subjects: [],
   fields: [],
 })
 const matriz = {

@@ -249,7 +249,10 @@ test('papel próprio: a troca e o convite listam "Atendente" pelo rótulo, e a l
   fireEvent.click(people.getByRole('button', { name: 'Mudar papel: Bruno Souza' }))
   const dialog = within(await screen.findByRole('alertdialog'))
   fireEvent.click(dialog.getByLabelText('Papel'))
-  expect((await screen.findAllByRole('option')).map((one) => one.textContent)).toEqual(['Membro', 'Atendente'])
+  expect((await screen.findAllByRole('option')).map((one) => one.textContent)).toEqual([
+    'Membro',
+    'Atendente',
+  ])
   await pickOption('Membro')
   fireEvent.click(dialog.getByRole('button', { name: 'Cancelar' }))
   await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull())

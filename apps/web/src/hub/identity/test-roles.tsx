@@ -23,16 +23,44 @@ export { server } from './test-people.tsx'
 const EVERY = SANKHYA.subjects.flatMap((subject) => subject.operations)
 const READS = EVERY.filter((operation) => operation.effect === 'READ')
 
-function viewOf(role: string, label: string, kind: RoleView['kind'], ops: readonly string[], members = 0) {
+function viewOf(
+  role: string,
+  label: string,
+  kind: RoleView['kind'],
+  ops: readonly string[],
+  members = 0,
+) {
   return RoleView.parse({ role, label, kind, connectors: { sankhya: ops }, members })
 }
 
 /** The four roles every company has, as a company that created none sees them. */
 export const FIXED = [
-  viewOf('owner', 'Dono', 'ALL', EVERY.map((one) => one.id), 1),
-  viewOf('admin', 'Administrador', 'ALL', EVERY.map((one) => one.id)),
-  viewOf('developer', 'Desenvolvedor', 'EDITABLE', READS.map((one) => one.id)),
-  viewOf('member', 'Membro', 'EDITABLE', READS.map((one) => one.id), 1),
+  viewOf(
+    'owner',
+    'Dono',
+    'ALL',
+    EVERY.map((one) => one.id),
+    1,
+  ),
+  viewOf(
+    'admin',
+    'Administrador',
+    'ALL',
+    EVERY.map((one) => one.id),
+  ),
+  viewOf(
+    'developer',
+    'Desenvolvedor',
+    'EDITABLE',
+    READS.map((one) => one.id),
+  ),
+  viewOf(
+    'member',
+    'Membro',
+    'EDITABLE',
+    READS.map((one) => one.id),
+    1,
+  ),
 ]
 
 export const ATENDENTE = viewOf('atendente', 'Atendente', 'CUSTOM', ['pedidos'], 1)
@@ -61,7 +89,9 @@ export function hub(view: View) {
         getCompany.success.body.parse({
           company: COMPANY,
           role: view.as,
-          mayInviteAs: view.mayInviteAs ?? (view.as === 'owner' || view.as === 'admin' ? ['admin', 'member'] : []),
+          mayInviteAs:
+            view.mayInviteAs ??
+            (view.as === 'owner' || view.as === 'admin' ? ['admin', 'member'] : []),
           may: mayOf(view.as),
         }),
       ),
@@ -81,7 +111,11 @@ export function hub(view: View) {
     ),
     http.get(`*/api/companies/${COMPANY.id}/projects`, () =>
       HttpResponse.json(
-        listProjects.success.body.parse({ projects: [], next: { kind: 'END' }, databaseReady: true }),
+        listProjects.success.body.parse({
+          projects: [],
+          next: { kind: 'END' },
+          databaseReady: true,
+        }),
       ),
     ),
     http.get(`*/api/companies/${COMPANY.id}/connections`, () =>
