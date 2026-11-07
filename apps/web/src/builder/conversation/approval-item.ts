@@ -27,7 +27,7 @@ export type Outcome =
   | { kind: 'FAILED'; why: FailedWhy; text: string | undefined }
 
 /** Why a write that was approved did not go out: the Hub's refusals, the connection's, or the call that threw. */
-export type FailedWhy =
+type FailedWhy =
   | 'UNREACHABLE'
   | 'DEADLINE'
   | 'NOT_IN_ROLE'
