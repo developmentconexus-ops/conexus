@@ -94,6 +94,7 @@ const DRAFT = {
   connections: [],
   web: false,
   appData: false,
+  byTool: true,
 }
 const AGENT_DETAIL = {
   id: AGENT,

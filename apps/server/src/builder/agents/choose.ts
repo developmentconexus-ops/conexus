@@ -27,6 +27,8 @@ export async function choose(
   const held = new Set((await versionsWithTools(tx, asked)).map((row) => row.tool.id))
   const extra = (await versionsWithTools(tx, added)).filter((row) => !held.has(row.tool.id))
   const wanted: ToolVersionId[] = [...asked, ...extra.map((row) => VersionId.parse(row.version.id))]
+  const ids = a.around.map((each) => each.connectionId)
+  const usable = await deps.tools.usable(tx, ids, wanted)
   // Taking a connection out of the selected takes its tools out (decision E4).
   const selected = a.patch.tools === undefined ? a.patch.connections : undefined
   const homed = await versionsWithTools(tx, wanted)
@@ -34,9 +36,8 @@ export async function choose(
     (row) =>
       selected === undefined || selected.includes(ConnectionIdSchema.parse(row.tool.connectionId)),
   )
-  const versions = kept.map((row) => VersionId.parse(row.version.id))
-  const ids = a.around.map((each) => each.connectionId)
-  const rows = await deps.tools.usable(tx, ids, versions)
+  const keptVersions = new Set(kept.map((row) => row.version.id))
+  const rows = usable.filter((row) => keptVersions.has(row.toolVersionId))
   await tx.delete(agentTool).where(eq(agentTool.agentId, a.agentId))
   if (rows.length > 0) {
     await tx

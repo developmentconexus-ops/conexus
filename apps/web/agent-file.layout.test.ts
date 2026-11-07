@@ -39,6 +39,7 @@ const DRAFT = {
   connections: [CONNECTION],
   web: false,
   appData: false,
+  byTool: true,
   machine: true,
 }
 const DETAIL = {

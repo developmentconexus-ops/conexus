@@ -10,6 +10,7 @@ import {
   madeTool,
   ordersOf,
   publishedNow,
+  savedCodeTool,
 } from './test-agents.ts'
 
 const DORA = { name: 'Dora Reis', email: 'dora@example.test' }
@@ -85,4 +86,29 @@ test('a seleção: gravar uma ferramenta acrescenta a ligação dela às selecio
   const unselected = await drafted(on.hub, on.ana, on.agents, chosen, { connections: [] })
   assert.deepEqual(unselected.tools, [])
   assert.deepEqual(unselected.draft.connections, [])
+})
+
+test('a ferramenta em código: declarar uma leitura que o papel de quem publica não tem dá NOT_IN_ROLE com a operação', async (t) => {
+  const on = await developerWithoutFreeQuery(t)
+  const lost = await call(on.hub, on.ana, 'PUT', `${on.company}/roles/developer`, {
+    connectors: { sankhya: ['empresas'] },
+  })
+  assert.equal(lost.statusCode, 200, lost.body)
+  const saved = await savedCodeTool(on)
+  const made = await madeAgent(on.hub, on.ana, on.agents)
+  const chosen = await drafted(on.hub, on.ana, on.agents, made, {
+    instructions: INSTRUCTIONS,
+    tools: [saved.latest.id],
+  })
+  const refused = await post(on.hub, on.dora, `${on.agents}/${made.id}/publish`, {
+    revision: chosen.revision,
+    message: '',
+  })
+  assert.equal(codeOf(refused), 'NOT_IN_ROLE')
+  assert.equal(Object(refused.json()).person, 'pedidos')
+  assert.deepEqual((await publishedNow(on.hub, on.ana, on.agents, chosen)).state, {
+    kind: 'PUBLISHED',
+    version: 1,
+    changed: false,
+  })
 })

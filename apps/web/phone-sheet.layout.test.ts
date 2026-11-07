@@ -80,6 +80,7 @@ const DRAFTED = {
     connections: [],
     web: false,
     appData: false,
+    byTool: true,
   },
   revision: 3,
   tools: [],

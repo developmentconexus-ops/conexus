@@ -42,6 +42,7 @@ export function agent(fields: Partial<AgentDetail> = {}): AgentDetail {
       connections: [MATRIZ],
       web: false,
       appData: false,
+      byTool: true,
       machine: false,
     },
     revision: 3,
