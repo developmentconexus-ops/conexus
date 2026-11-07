@@ -27,12 +27,15 @@ import {
 } from './routes.ts'
 import { createToolDoor } from './tool-door.ts'
 
-export type { KitRead, SessionScope } from './assistant-port.ts'
-export { TurnKey } from './assistant-port.ts'
+export type { KitRead } from './assistant-port.ts'
 /** The cut of what a read sends the model: the agents' app reads cut the same way (code C26). */
 export { shaped } from './cut.ts'
 export { operationLabel, roleKit } from './role-kit.ts'
+export type { SessionScope } from './scope.ts'
+export { TurnKey } from './scope.ts'
 export type { LiveToolCall } from './tool-door.ts'
+export { markOf, uncertainText } from './write.ts'
+export type { WriteRequest } from './write-record.ts'
 
 /** Tests shorten the deadline. */
 export type ConnectorDeadlines = { callDeadlineMs?: number }

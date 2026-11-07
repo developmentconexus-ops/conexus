@@ -68,7 +68,7 @@ function answerOf(
 const ISSUES_MAX = 1000
 
 /** The schema's refusal as the caller can act on it: each path with the schema's message, no value. */
-function issuesOf(error: z.ZodError): string {
+export function issuesOf(error: z.ZodError): string {
   const each = error.issues.map((issue) => `${issue.path.join('.') || '(input)'}: ${issue.message}`)
   return each.join('; ').slice(0, ISSUES_MAX)
 }

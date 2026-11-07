@@ -23,6 +23,7 @@ async function unused(): Promise<never> {
 export const NO_EXECUTOR: Executor = {
   login: unused,
   call: unused,
+  write: unused,
   grant: unused,
   revoke: unused,
   who: unused,
