@@ -1,31 +1,21 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
-import type { GenericEndpointContext } from '@better-auth/core'
-import { CompanyId, PersonId } from '@conexus/hub-api'
-import { hasPermission } from 'better-auth/plugins'
-import { createTestDatabase, silent, testConfig } from '../../platform/test-database.ts'
-import { libraryCommandOn, ORGANIZATION } from './auth.ts'
-import { createAuth } from './public.ts'
+import { createTestDatabase } from '../../platform/test-database.ts'
+import { call, codeOf, id, plantCompany, post } from './test-hub.ts'
 import {
   ATENDENTE,
   everyOperation,
   everyRead,
   FINANCEIRO,
+  memberMay,
   roleOf,
   roles,
   world,
-} from './roles-world.ts'
-import { call, codeOf, id, plantCompany, post } from './test-hub.ts'
+} from './test-roles.ts'
 
 test('a soma da linha semeada: o Better Auth soma a linha da empresa ao papel fixo, sob o adaptador Drizzle do Hub', async (t) => {
   const database = await createTestDatabase(t)
-  const auth = createAuth({
-    database: database.database,
-    config: testConfig(database.runtimeUrl),
-    log: silent,
-  })
-  const command = libraryCommandOn(auth, database.database)
   const ownerId = id()
   await database.asOwner('insert into auth.user (id, name, email) values ($1, $1, $2)', [
     ownerId,
@@ -33,22 +23,7 @@ test('a soma da linha semeada: o Better Auth soma a linha da empresa ao papel fi
   ])
   const companyId = await plantCompany(database, ownerId)
   await database.asOwner(`delete from auth.organization_role where company_id = $1`, [companyId])
-  const context = await auth.$context
-  const scope = {
-    kind: 'COMPANY',
-    companyId: CompanyId.parse(companyId),
-    personId: PersonId.parse(ownerId),
-  } as const
-  // biome-ignore lint/nursery/noUnsafeTypeAssertion: the library types its context as an endpoint's, and the permission check reads only `context`
-  const endpoint = { context } as GenericEndpointContext
-  function permitted(permissions: Record<string, string[]>) {
-    return command(scope, () =>
-      hasPermission(
-        { options: ORGANIZATION, organizationId: companyId, role: 'member', permissions },
-        endpoint,
-      ),
-    )
-  }
+  const permitted = await memberMay(database, companyId, ownerId)
   const sankhya = { connector_sankhya: ['pedidos'] }
   assert.equal(await permitted(sankhya), false)
   await database.asOwner(

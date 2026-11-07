@@ -2,8 +2,8 @@ import assert from 'node:assert/strict'
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { everyRead, OPERATOR, world } from './roles-world.ts'
 import { personOn, post } from './test-hub.ts'
+import { everyRead, OPERATOR, world } from './test-roles.ts'
 
 test('a semente: a migração semeia Membro e Desenvolvedor em cada empresa, rodar de novo não duplica, e a empresa nova já nasce com elas', async (t) => {
   const w = await world(t)

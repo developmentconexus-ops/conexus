@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { ATENDENTE, roleOf, roles, world } from './roles-world.ts'
 import { call, codeOf, post } from './test-hub.ts'
+import { ATENDENTE, roleOf, roles, world } from './test-roles.ts'
 
 test('apagar um papel: em uso por uma pessoa ou por um convite não apaga; sem ninguém apaga e a lista não o traz', async (t) => {
   const w = await world(t)

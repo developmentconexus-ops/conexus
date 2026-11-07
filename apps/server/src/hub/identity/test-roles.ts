@@ -1,6 +1,12 @@
 import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
-import { listRoles } from '@conexus/hub-api'
+import type { GenericEndpointContext } from '@better-auth/core'
+import { CompanyId, listRoles, PersonId } from '@conexus/hub-api'
+import { hasPermission } from 'better-auth/plugins'
+import type { TestDatabase } from '../../platform/test-database.ts'
+import { silent, testConfig } from '../../platform/test-database.ts'
+import { libraryCommandOn, ORGANIZATION } from './auth.ts'
+import { createAuth } from './public.ts'
 import { KIT } from './roles.ts'
 import type { Person } from './test-hub.ts'
 import {
@@ -56,3 +62,28 @@ export const everyRead = Object.fromEntries(
     connector.operations.filter(({ class: kind }) => kind === 'read').map(({ id }) => id),
   ]),
 )
+
+/** Asks the library whether the company's `member` role holds the statements, as the Hub's adapter reads its rows. */
+export async function memberMay(database: TestDatabase, companyId: string, ownerId: string) {
+  const auth = createAuth({
+    database: database.database,
+    config: testConfig(database.runtimeUrl),
+    log: silent,
+  })
+  const command = libraryCommandOn(auth, database.database)
+  const context = await auth.$context
+  const scope = {
+    kind: 'COMPANY',
+    companyId: CompanyId.parse(companyId),
+    personId: PersonId.parse(ownerId),
+  } as const
+  // biome-ignore lint/nursery/noUnsafeTypeAssertion: the library types its context as an endpoint's, and the permission check reads only `context`
+  const endpoint = { context } as GenericEndpointContext
+  return (permissions: Record<string, string[]>) =>
+    command(scope, () =>
+      hasPermission(
+        { options: ORGANIZATION, organizationId: companyId, role: 'member', permissions },
+        endpoint,
+      ),
+    )
+}

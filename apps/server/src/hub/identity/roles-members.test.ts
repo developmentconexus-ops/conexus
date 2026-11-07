@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { TEST_ORIGIN } from '../../platform/test-database.ts'
-import { ATENDENTE, roles, world } from './roles-world.ts'
 import type { Person } from './test-hub.ts'
 import { call, codeOf, personOn, post } from './test-hub.ts'
+import { ATENDENTE, roles, world } from './test-roles.ts'
 
 const INVITEE = 'davi@example.test'
 

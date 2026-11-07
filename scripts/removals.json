@@ -596,8 +596,8 @@
   {
     "id": "member-actor-rank",
     "file": "apps/server/src/hub/identity/admission.ts",
-    "find": "      return target !== 'owner' && next !== 'owner'",
-    "replace": "      return true",
+    "find": "  if (actor === 'admin') return target !== 'owner' && next !== 'owner'",
+    "replace": "  if (actor === 'admin') return true",
     "test": {
       "cwd": "apps/server",
       "file": "src/hub/identity/memberships.test.ts",
@@ -2565,8 +2565,8 @@
   {
     "id": "developer-changes-no-role",
     "file": "apps/server/src/hub/identity/admission.ts",
-    "find": "    case 'developer':\n    case 'member':\n      return false",
-    "replace": "    case 'member':\n      return false",
+    "find": "&& next !== 'owner'\n  return false",
+    "replace": "&& next !== 'owner'\n  return actor === 'developer'",
     "test": {
       "cwd": "apps/server",
       "file": "src/hub/identity/developer.test.ts",
