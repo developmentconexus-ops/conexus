@@ -1242,3 +1242,40 @@ reference tool checks a read against its documentation.
   MODEL_ACCOUNT_KIND_OFF"; `openai/sign-in-refusals.test.ts` "tipo desligado: recusa sem chamar a
   OpenAI"; `openai/sign-in.test.ts` "tipo desligado no meio".
 - **Revisit when** Mastra or an auth library ships a per-tenant switch of providers or sign-in kinds.
+
+## Mastra 1.82.0: a published workflow version is its own workflow id (step 24.6)
+
+- **Library line.** At `@mastra/core` 1.82.0, a stored workflow definition has no version column
+  (`mastra_workflow_definitions`, `packages/core/src/storage/constants.ts:374-389` at `6e8dfcb8`),
+  and a run copies the workflow's live graph when it is created (`workflows/workflow.ts:3083`).
+  After a restart a suspended run resumes on whatever graph its id holds then, a step inserted
+  before the waiting one included; the docs' "runs that already started continue with their
+  original graph" holds only within one process.
+- **Hand-made piece.** Each published version is registered with `addDynamicWorkflow` under its
+  own id, `wf-<workflow>-v<number>`, and stays `active` while the workflow exists
+  (`apps/server/src/builder/workflows/compile.ts`, `publish.ts`); the Hub's `workflow_version`
+  holds the design.
+- **Why.** A run waiting for an approval must finish the flow the person saw when it started.
+- **Proof.** The step 24.6 study's P2 (two processes, Postgres 18): with one id, the resumed run
+  ran `s1-greet, s2-approval, s1b-greet, s3-finish`. The card's criterion on a run waiting on
+  version n after version n+1 is published. Founder's word: the approval of the step 24.6 card.
+  Revisit when Mastra versions stored workflow definitions.
+
+## Mastra 1.82.0: the trigger remembers what it has seen (step 24.6)
+
+- **Library line.** At `@mastra/core` 1.82.0, the scheduler loads due rows, advances
+  `nextFireAt` and publishes `workflow.start`; it keeps no cursor for the source it polls
+  (`packages/core/src/workflows/scheduler/scheduler.ts:18-29` at `6e8dfcb8`). A workflow's `state`
+  lives within one run. Sankhya's public API has no webhook (`developer.sankhya.com.br/llms.txt`,
+  read 2026-11-07); its change log needs a customer parameter and keeps 3 to 7 days.
+- **Hand-made piece.** `workflow_trigger` (the start mark) and `workflow_trigger_seen` (one row
+  per workflow and Sankhya note number) in `apps/server/src/builder/workflows/trigger.ts`: each lap
+  reads the notes of the chosen operation types since the mark, inserts with `ON CONFLICT DO
+  NOTHING`, and starts one run per inserted row; the mark starts at the moment the workflow is
+  switched on, as Activepieces' polling helper does (`pieces/common/src/lib/polling/index.ts:119-134`
+  at `f34c43cd`).
+- **Why.** The founder's quote flow starts when a quote enters Sankhya, which tells nobody.
+- **Proof.** The card's trigger criteria with the Sankhya double: first lap fires nothing, each
+  new quote fires once, two laps at once fire once, a failed lap keeps the mark. Founder's word:
+  decision B of the step 24.6 card.
+  Revisit when Mastra keeps a trigger cursor or Sankhya sends events.
