@@ -168,12 +168,13 @@ tudo". The lines of [screens](../reference/screens.md) say which screen is on wh
   início" ([code C48](code.md); founder, 2026-10-20: "2. A"). A missing permission takes one of two
   forms, as the references do (Mastra 1.82 Studio's `filterItem`,
   `packages/playground/src/components/ui/app-sidebar.tsx:64-77`; GitHub's organization roles). An
-  administration area the person's role never uses is hidden and its address answers not found
-  (S10): Automações and Agentes for the member (founder, 2026-11-01: "1 A"; 2026-11-02: "3.A"),
-  Papéis for the developer and the member; the developer sees Automações and Agentes (step 24.3.4,
-  founder, 2026-11-04: "2. Aprovo"). On a page the person uses, an action outside their role
-  says who can (design V29), as Conectores and Contas de modelo do. Founder, 2026-11-07: "Vamos
-  revisar a regra W34 então, se referencias fazem assim não teriamso que mudar", then "1. Aprovo".
+  administration area the person's role never uses is hidden from the navigation and its address
+  answers not found (S10): Automações and Agentes for the member (founder, 2026-11-01: "1 A";
+  2026-11-02: "3.A"), Papéis for the developer and the member; the developer sees Automações and
+  Agentes (step 24.3.4, founder, 2026-11-04: "2. Aprovo"). On a page the person uses, an action
+  outside their role says who can (design V29), as Conectores and Contas de modelo do. Founder,
+  2026-11-07: "Vamos revisar a regra W34 então, se referencias fazem assim não teriamso que
+  mudar", then "1. Aprovo".
   Failure: a used page hiding an action leaves them guessing. [review]
 - **W35.** The Hub added to the iPhone home screen (iOS 26.1 or newer) draws a blurred band under
   the status bar: WebKit bug 301994, with no fix in the page. The page **must not** carry a
