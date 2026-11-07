@@ -95,6 +95,7 @@ export function readCompany(
       may: {
         manageAgents: allows(admitted.role, 'manageAgents'),
         manageAutomations: allows(admitted.role, 'manageAutomations'),
+        manageRoles: allows(admitted.role, 'manageRoles'),
       },
     }
   })

@@ -98,12 +98,13 @@ test('o que a pessoa pode: a empresa diz, para cada um dos quatro papéis, o que
     ['member', davi, false],
   ] as const
   for (const [role, person, mayBuild] of roles) {
+    const mayGovern = role === 'owner' || role === 'admin'
     const read = await call(hub, person, 'GET', base)
     assert.equal(read.statusCode, 200, role)
     assert.equal(Object(read.json()).role, role)
     assert.deepEqual(
       Object(read.json()).may,
-      { manageAgents: mayBuild, manageAutomations: mayBuild },
+      { manageAgents: mayBuild, manageAutomations: mayBuild, manageRoles: mayGovern },
       role,
     )
   }

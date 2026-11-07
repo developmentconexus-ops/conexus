@@ -24,9 +24,9 @@ import type { Replies } from './layout-harness.ts'
 import { ok } from './layout-harness.ts'
 import { ANA, COMPANY } from './src/platform/fixtures.ts'
 import { mayOf } from './src/platform/test-may.ts'
-import { connectionsPage } from './sweep-connections.ts'
 import { modelAccountsPage } from './sweep-model-accounts.ts'
 import { railListsPage } from './sweep-rail-lists.ts'
+import { settingsLists } from './sweep-role-list.ts'
 
 export const INVITATION = 'i'.repeat(32)
 export const LONG_EMAIL =
@@ -116,7 +116,7 @@ function companyPage(role: string, mayInviteAs: string[], id = COMPANY.id, name 
     ...projectsPage(id),
     ...railListsPage(id),
     ...modelAccountsPage(id, MANAGES.has(role)),
-    ...connectionsPage(id, MANAGES.has(role)),
+    ...settingsLists(id, MANAGES.has(role)),
     // Início of the owner and the administrators asks the Assistant: the connections it offers and its conversations.
     [`GET /api/companies/${id}/assistant/connections`]: ok(listAssistantConnections, {
       connections: [],

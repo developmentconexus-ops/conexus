@@ -17,6 +17,27 @@ export const CONNECTIONS_MAX = 50
 export const ConnectionSignInId = z.uuid().brand('ConnectionSignInId')
 export type ConnectionSignInId = z.infer<typeof ConnectionSignInId>
 
+/** What an operation does to the provider's data, as a role's screen says it: reads, writes, deletes. */
+const OperationEffect = z.enum(['READ', 'WRITE', 'DESTROY'])
+
+/**
+ * A subject of the kit with its operations, for the screens that choose among them (a role, an
+ * agent's tools). `door` marks a read of what the company has of its own, the free query's kind.
+ */
+const ConnectorSubject = z.object({
+  id: z.string(),
+  label: z.string(),
+  operations: z.array(
+    z.object({
+      id: z.string(),
+      label: z.string(),
+      summary: z.string(),
+      effect: OperationEffect,
+      door: z.boolean(),
+    }),
+  ),
+})
+
 /** A read of a connection a Projeto offers, for the panel of an agent to choose from. */
 export const OfferedRead = z.object({
   operation: z.string(),
@@ -35,6 +56,8 @@ export const ConnectorEntry = z.object({
   summary: z.string(),
   // The kit's SVG, shown by the screen as a data: image.
   logo: z.string(),
+  // What the kit offers to choose among: a role's screen and an agent's tools read it.
+  subjects: z.array(ConnectorSubject),
   // How the company links it: pasted fields, or a trip to the provider (`fields` empty).
   auth: z.enum(['client_credentials', 'oauth2_code']),
   fields: z.array(

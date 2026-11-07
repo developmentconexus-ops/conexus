@@ -1,4 +1,4 @@
-export { matches, ROW, SEARCH_FROM, Search } from './choice-list.tsx'
+export { ROW } from './choice-list.tsx'
 export { useConnectorCatalog } from './connector-names.ts'
 export { AssistantChat } from './conversation.tsx'
 export { AssistantDay } from './day.tsx'

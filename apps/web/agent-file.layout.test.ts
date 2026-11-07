@@ -200,7 +200,7 @@ for (const viewport of [DESKTOP, PHONE]) {
       `/companies/${COMPANY.id}/projects/${PROJECT_ID}/agents/${AGENT}`,
       { viewport, replies },
     )
-    const connection = page.getByRole('switch', { name: 'Sankhya · Matriz' })
+    const connection = page.getByRole('checkbox', { name: 'Sankhya · Matriz' })
     await connection.waitFor()
     assert.equal(await connection.isChecked(), true, 'a ligação do agente não está ligada')
     const tools = page.getByRole('region', { name: 'Ferramentas' })

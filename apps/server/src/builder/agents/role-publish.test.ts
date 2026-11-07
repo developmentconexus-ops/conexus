@@ -86,7 +86,7 @@ test('a seleção: gravar uma ferramenta acrescenta a ligação dela às selecio
   assert.deepEqual(unselected.draft.connections, [])
 })
 
-test('a ferramenta em código: declarar uma leitura que o papel de quem publica não tem dá NOT_IN_ROLE com a operação', async (t) => {
+test('a ferramenta em código: declarar uma leitura que o papel de quem publica não tem dá NOT_IN_ROLE com o nome da ferramenta marcada', async (t) => {
   const on = await developerWithoutFreeQuery(t)
   const lost = await call(on.hub, on.ana, 'PUT', `${on.company}/roles/developer`, {
     connectors: { sankhya: ['empresas'] },
@@ -103,7 +103,7 @@ test('a ferramenta em código: declarar uma leitura que o papel de quem publica 
     message: '',
   })
   assert.equal(codeOf(refused), 'NOT_IN_ROLE')
-  assert.equal(Object(refused.json()).operation, operationLabel('sankhya', 'pedidos'))
+  assert.equal(Object(refused.json()).operation, 'Conta os pedidos de um mês.')
   assert.deepEqual((await publishedNow(on.hub, on.ana, on.agents, chosen)).state, {
     kind: 'PUBLISHED',
     version: 1,
