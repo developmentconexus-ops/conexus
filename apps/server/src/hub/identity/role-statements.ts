@@ -36,20 +36,15 @@ export function connectorsOf(set: RoleSet, permission: Statements): RoleConnecto
 }
 
 /** The statements a company's own role holds: the member's base besides its connectors. */
-export function customStatements(
-  set: RoleSet,
-  connectors: RoleConnectors,
-  unattended: boolean,
-): Statements {
+export function customStatements(set: RoleSet, connectors: RoleConnectors): Statements {
   const base: Statements = Object.fromEntries(
     Object.entries(set.memberBase).map(([resource, actions]) => [resource, [...actions]]),
   )
   return {
     ...base,
     ...statementsOf(set, connectors),
-    ...(unattended ? { agent: [...(base.agent ?? []), UNATTENDED_ACTION] } : {}),
   }
 }
 
-/** The action that publishes an agent whose write runs without asking (step 24.5, Papéis `D1`). */
+/** The action that publishes an agent whose write runs without asking (step 24.5, decision D1-a): the owner's and the administrator's, and the developer's when the company's row for it adds it. */
 export const UNATTENDED_ACTION = 'publishUnattendedWrite'

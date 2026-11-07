@@ -4,9 +4,9 @@ import { Checkbox } from '../../ui/checkbox.tsx'
 import { UNATTENDED_ACTION, UNATTENDED_HINT } from './role-text.ts'
 
 /**
- * The action of a role that no connector owns (step 24.5, Papéis `D1`): publishing an agent whose
- * write runs without asking. Fixed on the owner and the administrator, and off on the developer and
- * the member; only a role of the company's own changes it.
+ * The action of a role that no connector owns (step 24.5, decision D1-a): publishing an agent whose
+ * write runs without asking. Fixed and ticked on the owner and the administrator; the developer's
+ * is the only one that changes. The member and the roles of the company's own do not show it.
  */
 export function UnattendedAction(props: { readOnly: boolean }) {
   const { control } = useFormContext()

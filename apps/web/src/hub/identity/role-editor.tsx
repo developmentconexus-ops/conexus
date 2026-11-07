@@ -78,7 +78,6 @@ export function NewRole({ companyId, kit, logo, onDone }: Common) {
   const form = useSchemaForm(createRole.input.body, {
     label: '',
     connectors: {},
-    unattended: false,
   })
   return (
     <div className="flex flex-col gap-lg">
@@ -106,7 +105,6 @@ export function NewRole({ companyId, kit, logo, onDone }: Common) {
           invalid={`Escreva o nome do papel, com até ${ROLE_LABEL_MAX} letras.`}
         />
         <Picked kit={kit} readOnly={false} logo={logo} />
-        <UnattendedAction readOnly={false} />
         <FormAlert />
         <SubmitButton idle="Criar papel" pending="Criando…" />
       </Form>
@@ -151,7 +149,7 @@ export function OpenRole({ companyId, kit, logo, role, onDone }: Common & { role
         }}
       >
         <Picked kit={kit} readOnly={fixed} logo={logo} />
-        <UnattendedAction readOnly={role.kind !== 'CUSTOM'} />
+        {role.role !== 'member' && role.kind !== 'CUSTOM' && <UnattendedAction readOnly={fixed} />}
         <FormAlert />
         {!fixed && <SubmitButton idle="Salvar" pending="Salvando…" />}
       </Form>

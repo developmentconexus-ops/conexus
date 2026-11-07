@@ -101,31 +101,30 @@ async function readRoles(set: RoleSet, tx: ReadTx, companyId: CompanyId): Promis
   const fixed = (['owner', 'admin', 'developer', 'member'] as const).map((name): RoleView => {
     const held = stored.get(fixedRole(name))
     const all = name === 'owner' || name === 'admin'
-    const connectors = all
-      ? connectorsOf(set, set.allOperations)
-      : connectorsOf(set, Statements.parse(JSON.parse(held?.permission ?? '{}')))
+    const permission = Statements.parse(JSON.parse(held?.permission ?? '{}'))
+    const connectors = all ? connectorsOf(set, set.allOperations) : connectorsOf(set, permission)
     return {
       role: fixedRole(name),
       label: ROLE_LABELS[name],
       kind: all ? 'ALL' : 'EDITABLE',
       connectors,
-      unattended: all,
+      unattended:
+        all || (name === 'developer' && permission.agent?.includes(UNATTENDED_ACTION) === true),
       members: members.get(name) ?? 0,
     }
   })
   const own = rows
     .filter((row) => !isFixedRole(row.role))
-    .map((row) => {
-      const held = Statements.parse(JSON.parse(row.permission))
-      return RoleView.parse({
+    .map((row) =>
+      RoleView.parse({
         role: row.role,
         label: row.label,
         kind: 'CUSTOM',
-        connectors: connectorsOf(set, held),
-        unattended: held.agent?.includes(UNATTENDED_ACTION) === true,
+        connectors: connectorsOf(set, Statements.parse(JSON.parse(row.permission))),
+        unattended: false,
         members: members.get(row.role) ?? 0,
-      })
-    })
+      }),
+    )
   return [...fixed, ...own]
 }
 
@@ -202,7 +201,7 @@ export function createRoleCommand(deps: Deps) {
     deps.libraryCommand(companyScope(input), async (tx) => {
       const { companyId, headers, body, attemptKey } = input
       await admitted(tx, input)
-      const wanted = customStatements(deps.roles, body.connectors, body.unattended === true)
+      const wanted = customStatements(deps.roles, body.connectors)
       const replayed = await replayOf(tx, { companyId, attemptKey, label: body.label, wanted })
       if (replayed !== undefined) {
         return { role: await viewOf(deps.roles, tx, companyId, replayed), created: false }
@@ -237,10 +236,15 @@ export function updateRoleCommand(deps: Deps) {
       const { companyId, headers, role, body } = input
       await admitted(tx, input)
       if (role === 'owner' || role === 'admin') throw new Failure('ROLE_FIXED')
-      if (isFixedRole(role) && body.unattended === true) throw malformed('UNATTENDED_FIXED')
+      const unattended = body.unattended === true
+      if (unattended && role !== 'developer') throw malformed('UNATTENDED_NOT_BUILDER')
+      const before = (await readRoles(deps.roles, tx, companyId)).find((one) => one.role === role)
       const permission = isFixedRole(role)
-        ? statementsOf(deps.roles, body.connectors)
-        : customStatements(deps.roles, body.connectors, body.unattended === true)
+        ? {
+            ...statementsOf(deps.roles, body.connectors),
+            ...(unattended ? { agent: [UNATTENDED_ACTION] } : {}),
+          }
+        : customStatements(deps.roles, body.connectors)
       await refusedAs(
         () =>
           deps.auth.api.updateOrgRole({
@@ -249,7 +253,14 @@ export function updateRoleCommand(deps: Deps) {
           }),
         ROLE_REFUSALS,
       )
-      return viewOf(deps.roles, tx, companyId, role)
+      const changed = unattended !== (before?.unattended === true)
+      return {
+        role: await viewOf(deps.roles, tx, companyId, role),
+        actions: {
+          added: changed && unattended ? [UNATTENDED_ACTION] : [],
+          removed: changed && !unattended ? [UNATTENDED_ACTION] : [],
+        },
+      }
     })
 }
 

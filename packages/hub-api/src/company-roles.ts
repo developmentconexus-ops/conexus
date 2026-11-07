@@ -26,7 +26,7 @@ export const RoleView = z.object({
   label: z.string(),
   kind: RoleKind,
   connectors: RoleConnectors,
-  /** Whether the role publishes an agent whose write runs without asking (step 24.5): the owner and the administrator always, a role of the company's own when marked. */
+  /** Whether the role publishes an agent whose write runs without asking (step 24.5, D1-a): the owner and the administrator always, the developer when the company's row adds it, no other role. */
   unattended: z.boolean(),
   members: z.number().int().nonnegative(),
 })
@@ -35,7 +35,6 @@ export type RoleView = z.infer<typeof RoleView>
 export const RoleCreate = z.object({
   label: z.string().trim().min(1).max(ROLE_LABEL_MAX),
   connectors: RoleConnectors,
-  unattended: z.boolean().optional(),
 })
 export type RoleCreate = z.infer<typeof RoleCreate>
 

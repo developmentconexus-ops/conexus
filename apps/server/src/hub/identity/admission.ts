@@ -20,7 +20,6 @@ const MANAGE_CONNECTIONS = { connection: ['manage'] } as const
 const PUBLISH_APP = { app: ['publish'] } as const
 const MANAGE_AGENTS = { agent: ['manage'] } as const
 const PUBLISH_AGENT = { agent: ['publish'] } as const
-const PUBLISH_UNATTENDED = { agent: ['publishUnattendedWrite'] } as const
 const MANAGE_AUTOMATIONS = { automation: ['manage'] } as const
 const ASK_ASSISTANT = { assistant: ['ask'] } as const
 const REQUEST_PUBLISH = { request: ['create'] } as const
@@ -42,7 +41,6 @@ type ActionRule = {
     | typeof PUBLISH_APP
     | typeof MANAGE_AGENTS
     | typeof PUBLISH_AGENT
-    | typeof PUBLISH_UNATTENDED
     | typeof MANAGE_AUTOMATIONS
     | typeof ASK_ASSISTANT
     | typeof REQUEST_PUBLISH
@@ -100,8 +98,6 @@ const ACTIONS = {
   readAgents: { by: 'MEMBER', statement: MANAGE_AGENTS, locks: false },
   manageAgents: { by: 'MEMBER', statement: MANAGE_AGENTS, locks: true },
   publishAgent: { by: 'MEMBER', statement: PUBLISH_AGENT, locks: true },
-  // The screens read it to turn Faz sozinho on or off (step 24.5); the publication checks it again at the role as stored.
-  publishUnattendedWrite: { by: 'MEMBER', statement: PUBLISH_UNATTENDED, locks: false },
   // The same three create, change and remove automations (step 24.3.4, C1). They live in Mastra's
   // schedules and are admitted in a read-only transaction, which cannot hold the role.
   manageAutomations: { by: 'MEMBER', statement: MANAGE_AUTOMATIONS, locks: false },

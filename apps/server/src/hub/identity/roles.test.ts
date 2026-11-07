@@ -257,34 +257,51 @@ test('mudar o Membro: tirar o Financeiro some da lista, e um papel próprio muda
   assert.deepEqual(Object(JSON.parse(String(Object(row).permission))).assistant, ['ask'])
 })
 
-test('a ação da escrita sozinha: só um papel próprio a recebe, na criação e na mudança, e a lista a mostra', async (t) => {
+test('a ação da escrita sozinha (D1-a): só o Desenvolvedor a recebe pela linha da empresa, a tela dele a lê, e o Membro e um papel próprio a recusam', async (t) => {
   const w = await world(t)
-  const created = await post(w.hub, w.ana, `${w.base}/roles`, { ...ATENDENTE, unattended: true })
-  assert.equal(created.statusCode, 201)
-  assert.equal(roleOf(await roles(w), 'atendente').unattended, true)
+  async function may() {
+    const read = await call(w.hub, w.developer, 'GET', w.base)
+    return Object(Object(read.json()).may).publishUnattendedWrite
+  }
+  assert.equal(await may(), false)
+  assert.equal(roleOf(await roles(w), 'developer').unattended, false)
+  const given = await call(w.hub, w.ana, 'PUT', `${w.base}/roles/developer`, {
+    connectors: everyRead,
+    unattended: true,
+  })
+  assert.equal(given.statusCode, 200)
+  assert.equal(roleOf(await roles(w), 'developer').unattended, true)
+  assert.equal(await may(), true)
   const [row] = await w.hub.test.asOwner(
-    `select permission from auth.organization_role where company_id = $1 and role = 'atendente'`,
+    `select permission from auth.organization_role where company_id = $1 and role = 'developer'`,
     [w.companyId],
   )
   assert.deepEqual(Object(JSON.parse(String(Object(row).permission))).agent, [
     'publishUnattendedWrite',
   ])
-  const without = await call(w.hub, w.ana, 'PUT', `${w.base}/roles/atendente`, {
-    connectors: ATENDENTE.connectors,
+  const taken = await call(w.hub, w.admin, 'PUT', `${w.base}/roles/developer`, {
+    connectors: everyRead,
     unattended: false,
   })
-  assert.equal(without.statusCode, 200)
+  assert.equal(taken.statusCode, 200)
+  assert.equal(await may(), false)
+  assert.equal(roleOf(await roles(w), 'developer').unattended, false)
+})
+
+test('a ação da escrita sozinha: pedida para o Membro ou para um papel próprio, 400 REQUEST_MALFORMED; ao criar, o papel próprio não a tem', async (t) => {
+  const w = await world(t)
+  const created = await post(w.hub, w.ana, `${w.base}/roles`, { ...ATENDENTE, unattended: true })
+  assert.equal(created.statusCode, 201)
   assert.equal(roleOf(await roles(w), 'atendente').unattended, false)
-  for (const fixed of ['developer', 'member']) {
-    const change = await call(w.hub, w.ana, 'PUT', `${w.base}/roles/${fixed}`, {
+  for (const role of ['member', 'atendente']) {
+    const change = await call(w.hub, w.ana, 'PUT', `${w.base}/roles/${role}`, {
       connectors: {},
       unattended: true,
     })
-    assert.deepEqual([change.statusCode, codeOf(change)], [400, 'REQUEST_MALFORMED'], fixed)
+    assert.deepEqual([change.statusCode, codeOf(change)], [400, 'REQUEST_MALFORMED'], role)
   }
-  const list = await roles(w)
   assert.deepEqual(
-    list.filter((one) => one.unattended).map((one) => one.role),
+    (await roles(w)).filter((one) => one.unattended).map((one) => one.role),
     ['owner', 'admin'],
   )
 })

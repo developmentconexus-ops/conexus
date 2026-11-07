@@ -53,9 +53,7 @@ test('criar um papel: o dono cria "Atendente", marca Vendas, deixa só Pedidos, 
   )
   fireEvent.click(screen.getByRole('button', { name: 'Criar papel' }))
   expect(await screen.findByText('Sankhya: 1 operação de Vendas')).toBeTruthy()
-  expect(bodies).toEqual([
-    { label: 'Atendente', connectors: { sankhya: ['pedidos'] }, unattended: false },
-  ])
+  expect(bodies).toEqual([{ label: 'Atendente', connectors: { sankhya: ['pedidos'] } }])
   expect(screen.queryByText('Sua empresa ainda não criou papéis.')).toBeNull()
 })
 
@@ -136,41 +134,44 @@ test('Dono e Administrador abrem só para ler', async () => {
   expect(screen.queryByRole('button', { name: 'Salvar' })).toBeNull()
 })
 
-test('a ação da escrita sozinha: marcada e fixa no Dono e no Administrador, desmarcada e fixa no Membro, e marcá-la num papel próprio grava (critério 17)', async () => {
+test('a ação da escrita sozinha: marcada e fixa no Dono e no Administrador, editável no Desenvolvedor, e ausente no Membro e num papel próprio (critério 17)', async () => {
   const { roles } = hub({ as: 'owner' })
   const action = 'Publicar agente que escreve sozinho'
   function checkbox() {
     return screen.getByRole('checkbox', { name: new RegExp(action) })
   }
-  for (const [role, marked] of [
-    ['owner', 'true'],
-    ['admin', 'true'],
-    ['member', 'false'],
-  ] as const) {
+  for (const role of ['owner', 'admin']) {
     open(`/settings/roles?role=${role}`)
     await screen.findByRole('heading', { name: 'Agentes' })
-    expect(checkbox().getAttribute('aria-checked')).toBe(marked)
+    expect(checkbox().getAttribute('aria-checked')).toBe('true')
     expect(
       checkbox().hasAttribute('disabled') || checkbox().getAttribute('aria-disabled'),
     ).toBeTruthy()
     cleanup()
   }
   roles.push(ATENDENTE)
+  for (const role of ['member', 'atendente']) {
+    open(`/settings/roles?role=${role}`)
+    await screen.findByRole('button', { name: 'Salvar' })
+    expect(screen.queryByRole('heading', { name: 'Agentes' })).toBeNull()
+    expect(screen.queryByRole('checkbox', { name: new RegExp(action) })).toBeNull()
+    cleanup()
+  }
   const bodies: unknown[] = []
   server.use(
-    http.put(`${ROLES}/atendente`, async ({ request }) => {
+    http.put(`${ROLES}/developer`, async ({ request }) => {
       bodies.push(await request.json())
-      return HttpResponse.json({ role: ATENDENTE })
+      return HttpResponse.json({ role: FIXED[2] })
     }),
   )
-  open('/settings/roles?role=atendente')
+  open('/settings/roles?role=developer')
   await screen.findByRole('heading', { name: 'Agentes' })
   expect(checkbox().getAttribute('aria-checked')).toBe('false')
+  expect(checkbox().hasAttribute('disabled')).toBe(false)
   fireEvent.click(checkbox())
   fireEvent.click(screen.getByRole('button', { name: 'Salvar' }))
-  await waitFor(() =>
-    expect(bodies).toEqual([{ connectors: { sankhya: ['pedidos'] }, unattended: true }]),
-  )
+  await waitFor(() => expect(bodies).toHaveLength(1))
+  expect(bodies[0]).toMatchObject({ unattended: true })
 })
 
 test('um papel apagado: "Este papel não existe mais."', async () => {
