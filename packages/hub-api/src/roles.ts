@@ -44,5 +44,9 @@ export function isFixedRole(role: string): role is FixedRole {
  * What the person may do in the company, for the screens to read instead of the role: the Hub
  * answers from the same table its routes admit by (code C26).
  */
-export const CompanyMay = z.object({ manageAgents: z.boolean(), manageAutomations: z.boolean() })
+export const CompanyMay = z.object({
+  manageAgents: z.boolean(),
+  manageAutomations: z.boolean(),
+  manageRoles: z.boolean(),
+})
 export type CompanyMay = z.infer<typeof CompanyMay>

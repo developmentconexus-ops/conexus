@@ -6,8 +6,10 @@ import {
   changeMemberRole,
   createInvitation,
   createInvitationPassword,
+  createRole,
   createSession,
   declineInvitation,
+  deleteRole,
   deleteSession,
   getCompany,
   getInvitation,
@@ -17,12 +19,14 @@ import {
   listInvitations,
   listMembers,
   listMyApps,
+  listRoles,
   removeMember,
   renewInvitation,
   requestPasswordRecovery,
   revokeAllAppAccess,
   setCompanyNickname,
   setPassword,
+  updateRole,
 } from '@conexus/hub-api'
 import type { QueryClient } from '@tanstack/react-query'
 import { hubMutation, hubQuery, hubQueryPrefix } from '../../platform/hub.ts'
@@ -84,6 +88,13 @@ export const renewCompanyInvitation = hubMutation(renewInvitation)
 export const createReceivedPassword = { ...hubMutation(createInvitationPassword), meta: KEEP_CACHE }
 export const declineReceivedInvitation = hubMutation(declineInvitation)
 export const acceptReceivedInvitation = hubMutation(acceptInvitation)
+
+export function rolesQuery(companyId: CompanyId) {
+  return hubQuery(listRoles, { params: { companyId } })
+}
+export const createCompanyRole = hubMutation(createRole)
+export const changeCompanyRole = hubMutation(updateRole)
+export const deleteCompanyRole = hubMutation(deleteRole)
 
 export const removePerson = hubMutation(removeMember)
 export const changePersonRole = hubMutation(changeMemberRole)

@@ -26,6 +26,7 @@ import {
   sessionQuery,
 } from './queries.ts'
 import { RoleBadge } from './role-badge.tsx'
+import { RoleLabels } from './role-labels.tsx'
 
 const route = getRouteApi('/_app/companies/$companyId_/settings/people')
 
@@ -261,10 +262,12 @@ export function CompanyPeople(props: {
   company: Company
   pages: PeoplePages
   mayInviteAs: readonly Role[]
+  /** Whether the viewer reads the company's roles, which give the labels of its own. */
+  readsRoles?: boolean
 }) {
   const { company, pages, mayInviteAs } = props
   return (
-    <>
+    <RoleLabels companyId={company.id} known={props.readsRoles ?? false}>
       <Members company={company} page={pages.members} />
       {mayInviteAs.length > 0 && (
         <>
@@ -272,7 +275,7 @@ export function CompanyPeople(props: {
           <InviteForm companyId={company.id} roles={mayInviteAs} />
         </>
       )}
-    </>
+    </RoleLabels>
   )
 }
 
@@ -286,7 +289,12 @@ export function People() {
       {data.mayInviteAs.length === 0 && (
         <p className="text-text-2">Só o dono ou um administrador convida pessoas.</p>
       )}
-      <CompanyPeople company={data.company} pages={pages} mayInviteAs={data.mayInviteAs} />
+      <CompanyPeople
+        company={data.company}
+        pages={pages}
+        mayInviteAs={data.mayInviteAs}
+        readsRoles={data.may.manageRoles}
+      />
       <AppUsers companyId={data.company.id} page={pages.apps} />
     </div>
   )

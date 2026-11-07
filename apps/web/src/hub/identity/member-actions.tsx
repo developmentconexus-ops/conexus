@@ -1,5 +1,5 @@
 import type { CompanyId, Member } from '@conexus/hub-api'
-import { FIXED_ROLES, fixedNameOf, Role, roleLabel } from '@conexus/hub-api'
+import { FIXED_ROLES, fixedNameOf, Role } from '@conexus/hub-api'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
@@ -11,6 +11,7 @@ import { Button } from '../../ui/button.tsx'
 import { Field, FieldLabel } from '../../ui/field.tsx'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select.tsx'
 import { changePersonRole, forgetCompany, removePerson } from './queries.ts'
+import { useRoleLabel } from './role-labels.tsx'
 
 const UNCONFIRMED = 'Não confirmamos a mudança. Veja a lista.'
 
@@ -158,6 +159,7 @@ function ChangeRole({ companyId, member }: Pick<Subject, 'companyId' | 'member'>
   const [picked, setPicked] = useState<Role>(member.role)
   const send = useMutation(changePersonRole)
   const id = useId()
+  const roleLabel = useRoleLabel()
   // The current role is on offer so it shows marked; the Hub's list says which others.
   const roles = [member.role, ...member.mayChangeTo].toSorted((a, b) => rank(a) - rank(b))
   const role = roles.includes(picked) ? picked : member.role
