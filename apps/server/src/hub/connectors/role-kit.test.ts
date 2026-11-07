@@ -26,3 +26,11 @@ test('o kit dos papéis traz as escritas do conector, com a classe write e o ró
   )
   assert.equal(operationLabel('sankhya', 'lancarPedido'), 'Lançar pedido')
 })
+
+test('um conector sem escritas não ganha nenhuma operação a mais no kit dos papéis', () => {
+  const operations = roleKit().find(({ id }) => id === 'mercado-livre')?.operations ?? []
+  assert.ok(operations.length > 0)
+  assert.ok(
+    operations.every((operation) => operation.class !== 'write' && operation.id !== undefined),
+  )
+})
