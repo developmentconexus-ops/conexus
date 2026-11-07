@@ -18,14 +18,14 @@ export const ConnectionSignInId = z.uuid().brand('ConnectionSignInId')
 export type ConnectionSignInId = z.infer<typeof ConnectionSignInId>
 
 /** What an operation does to the provider's data, as a role's screen says it: reads, writes, deletes. */
-export const OperationEffect = z.enum(['READ', 'WRITE', 'DESTROY'])
-export type OperationEffect = z.infer<typeof OperationEffect>
+const OperationEffect = z.enum(['READ', 'WRITE', 'DESTROY'])
+type OperationEffect = z.infer<typeof OperationEffect>
 
 /**
  * A subject of the kit with its operations, for the screens that choose among them (a role, an
  * agent's tools). `door` marks a read of what the company has of its own, the free query's kind.
  */
-export const ConnectorSubject = z.object({
+const ConnectorSubject = z.object({
   id: z.string(),
   label: z.string(),
   operations: z.array(
@@ -38,7 +38,7 @@ export const ConnectorSubject = z.object({
     }),
   ),
 })
-export type ConnectorSubject = z.infer<typeof ConnectorSubject>
+type ConnectorSubject = z.infer<typeof ConnectorSubject>
 
 /** A read of a connection a Projeto offers, for the panel of an agent to choose from. */
 export const OfferedRead = z.object({

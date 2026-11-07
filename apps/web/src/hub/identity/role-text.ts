@@ -7,9 +7,9 @@ export const EFFECT_WORD: Record<'READ' | 'WRITE' | 'DESTROY', string> = {
   DESTROY: 'apaga',
 }
 
-export const ALL_OF_ALL = 'Usa tudo de todos os conectores'
-export const READS_OF_ALL = 'Lê tudo de todos os conectores'
-export const NO_CONNECTORS = 'Não usa conectores.'
+const ALL_OF_ALL = 'Usa tudo de todos os conectores'
+const READS_OF_ALL = 'Lê tudo de todos os conectores'
+const NO_CONNECTORS = 'Não usa conectores.'
 export const NO_USE = 'Não usa'
 
 type Kit = readonly Pick<ConnectorEntry, 'id' | 'name' | 'subjects'>[]
@@ -24,7 +24,7 @@ function countPhrase(count: number, subject: string): string {
 }
 
 /** One connector's line for a role: "Sankhya: 1 operação de Vendas", or nothing when the role uses none of it. */
-export function connectorLine(entry: Kit[number], held: readonly string[]): string | undefined {
+function connectorLine(entry: Kit[number], held: readonly string[]): string | undefined {
   const parts = entry.subjects.flatMap((subject) => {
     const count = subject.operations.filter((operation) => held.includes(operation.id)).length
     return count === 0 ? [] : [countPhrase(count, subject.label)]

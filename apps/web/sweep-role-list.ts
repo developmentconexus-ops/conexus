@@ -16,7 +16,7 @@ function role(
   return { role: name, label, kind, connectors: { sankhya: ids }, members }
 }
 
-export const ROLES = [
+const ROLES = [
   role(
     'owner',
     'Dono',

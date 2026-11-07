@@ -1,7 +1,6 @@
 import { getAgent, listAgentConversations, listAgentVersions, listTools } from '@conexus/hub-api'
 import type { Replies } from './layout-harness.ts'
 import { ok } from './layout-harness.ts'
-import { COMPANY } from './src/platform/fixtures.ts'
 import { companies, PROJECT_ID } from './sweep-replies.ts'
 
 export const COMPANY_ID = '0'.repeat(32)
@@ -72,5 +71,3 @@ export function agentReplies(selected: boolean): Replies {
     }),
   }
 }
-
-export { COMPANY }
