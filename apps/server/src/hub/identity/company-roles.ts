@@ -274,7 +274,7 @@ export function updateRoleCommand(deps: Deps) {
     })
 }
 
-/** Deletes a role no person and no open invitation uses; the library counts the people, the Hub the invitations (an expired one is no longer open). */
+/** Deletes a role no person and no open invitation uses; the Hub counts both (an expired invitation is not open), and the library checks the people again. */
 export function deleteRoleCommand(deps: Deps) {
   return (input: Acting & { role: Role; log: FailureLog }) =>
     deps.libraryCommand(companyScope(input), async (tx) => {

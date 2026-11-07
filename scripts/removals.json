@@ -45,7 +45,7 @@
   },
   {
     "id": "company-creation-closed",
-    "file": "apps/server/src/hub/identity/auth.ts",
+    "file": "apps/server/src/hub/identity/organization.ts",
     "find": "allowUserToCreateOrganization: false,",
     "replace": "allowUserToCreateOrganization: true,",
     "test": {
@@ -474,7 +474,7 @@
   },
   {
     "id": "client-delete-operator-only",
-    "file": "apps/server/src/hub/identity/auth.ts",
+    "file": "apps/server/src/hub/identity/organization.ts",
     "find": "  disableOrganizationDeletion: true,\n",
     "replace": "",
     "test": {
