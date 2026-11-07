@@ -24,6 +24,7 @@ async function developerWithoutFreeQuery(t: Parameters<typeof agentsOn>[0]) {
   const without = { sankhya: EVERY_READ.filter((one) => one !== 'consultar') }
   const changed = await call(on.hub, on.ana, 'PUT', `${on.company}/roles/developer`, {
     connectors: without,
+    unattended: false,
   })
   assert.equal(changed.statusCode, 200, changed.body)
   return { ...on, dora }
@@ -65,6 +66,7 @@ test('publicar pelo papel: uma ferramenta de leitura que o papel de quem publica
   assert.deepEqual(chosen.draft.connections, [on.matriz])
   const lost = await call(on.hub, on.ana, 'PUT', `${on.company}/roles/developer`, {
     connectors: { sankhya: ['empresas'] },
+    unattended: false,
   })
   assert.equal(lost.statusCode, 200, lost.body)
   const refused = await post(on.hub, on.dora, `${on.agents}/${made.id}/publish`, {
@@ -90,6 +92,7 @@ test('a ferramenta em código: declarar uma leitura que o papel de quem publica 
   const on = await developerWithoutFreeQuery(t)
   const lost = await call(on.hub, on.ana, 'PUT', `${on.company}/roles/developer`, {
     connectors: { sankhya: ['empresas'] },
+    unattended: false,
   })
   assert.equal(lost.statusCode, 200, lost.body)
   const saved = await savedCodeTool(on)

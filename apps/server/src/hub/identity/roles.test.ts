@@ -110,6 +110,7 @@ test('criar um papel: dono ou administrador cria Atendente, a lista o traz, e a 
     label: 'Atendente',
     kind: 'CUSTOM',
     connectors: { sankhya: ['pedidos'] },
+    unattended: false,
     members: 0,
   })
   const again = await post(w.hub, w.admin, `${w.base}/roles`, {
@@ -161,8 +162,11 @@ test('o papel recusado: quem não gerencia recebe NOT_FOUND, o que o kit não te
   const refused = [
     post(w.hub, w.developer, `${w.base}/roles`, ATENDENTE),
     post(w.hub, w.bruno, `${w.base}/roles`, ATENDENTE),
-    call(w.hub, w.developer, 'PUT', `${w.base}/roles/member`, { connectors: {} }),
-    call(w.hub, w.bruno, 'PUT', `${w.base}/roles/member`, { connectors: {} }),
+    call(w.hub, w.developer, 'PUT', `${w.base}/roles/member`, {
+      connectors: {},
+      unattended: false,
+    }),
+    call(w.hub, w.bruno, 'PUT', `${w.base}/roles/member`, { connectors: {}, unattended: false }),
     call(w.hub, w.developer, 'DELETE', `${w.base}/roles/member`),
     call(w.hub, w.bruno, 'DELETE', `${w.base}/roles/member`),
     call(w.hub, w.bruno, 'GET', `${w.base}/roles`),
@@ -196,7 +200,10 @@ test('o papel recusado: quem não gerencia recebe NOT_FOUND, o que o kit não te
     assert.equal(codeOf(response), 'ROLE_NAME_TAKEN', label)
   }
   for (const fixed of ['owner', 'admin']) {
-    const change = await call(w.hub, w.ana, 'PUT', `${w.base}/roles/${fixed}`, { connectors: {} })
+    const change = await call(w.hub, w.ana, 'PUT', `${w.base}/roles/${fixed}`, {
+      connectors: {},
+      unattended: false,
+    })
     assert.equal(change.statusCode, 409)
     assert.equal(codeOf(change), 'ROLE_FIXED')
     assert.equal(
@@ -206,7 +213,12 @@ test('o papel recusado: quem não gerencia recebe NOT_FOUND, o que o kit não te
   }
   assert.equal(codeOf(await call(w.hub, w.ana, 'DELETE', `${w.base}/roles/member`)), 'ROLE_FIXED')
   assert.equal(
-    codeOf(await call(w.hub, w.ana, 'PUT', `${w.base}/roles/fantasma`, { connectors: {} })),
+    codeOf(
+      await call(w.hub, w.ana, 'PUT', `${w.base}/roles/fantasma`, {
+        connectors: {},
+        unattended: false,
+      }),
+    ),
     'ROLE_NOT_FOUND',
   )
   assert.deepEqual(await roles(w), before)
@@ -220,6 +232,7 @@ test('mudar o Membro: tirar o Financeiro some da lista, e um papel próprio muda
   }
   const changed = await call(w.hub, w.admin, 'PUT', `${w.base}/roles/member`, {
     connectors: without,
+    unattended: false,
   })
   assert.equal(changed.statusCode, 200)
   assert.deepEqual(Object(changed.json()).role.connectors, without)
@@ -230,6 +243,7 @@ test('mudar o Membro: tirar o Financeiro some da lista, e um papel próprio muda
   await post(w.hub, w.ana, `${w.base}/roles`, ATENDENTE)
   const own = await call(w.hub, w.ana, 'PUT', `${w.base}/roles/atendente`, {
     connectors: { sankhya: ['clientes', 'pedidos'], 'mercado-livre': ['anuncios'] },
+    unattended: false,
   })
   assert.equal(own.statusCode, 200)
   assert.deepEqual(roleOf(await roles(w), 'atendente').connectors, {
@@ -241,4 +255,36 @@ test('mudar o Membro: tirar o Financeiro some da lista, e um papel próprio muda
     [w.companyId],
   )
   assert.deepEqual(Object(JSON.parse(String(Object(row).permission))).assistant, ['ask'])
+})
+
+test('a ação da escrita sozinha: só um papel próprio a recebe, na criação e na mudança, e a lista a mostra', async (t) => {
+  const w = await world(t)
+  const created = await post(w.hub, w.ana, `${w.base}/roles`, { ...ATENDENTE, unattended: true })
+  assert.equal(created.statusCode, 201)
+  assert.equal(roleOf(await roles(w), 'atendente').unattended, true)
+  const [row] = await w.hub.test.asOwner(
+    `select permission from auth.organization_role where company_id = $1 and role = 'atendente'`,
+    [w.companyId],
+  )
+  assert.deepEqual(Object(JSON.parse(String(Object(row).permission))).agent, [
+    'publishUnattendedWrite',
+  ])
+  const without = await call(w.hub, w.ana, 'PUT', `${w.base}/roles/atendente`, {
+    connectors: ATENDENTE.connectors,
+    unattended: false,
+  })
+  assert.equal(without.statusCode, 200)
+  assert.equal(roleOf(await roles(w), 'atendente').unattended, false)
+  for (const fixed of ['developer', 'member']) {
+    const change = await call(w.hub, w.ana, 'PUT', `${w.base}/roles/${fixed}`, {
+      connectors: {},
+      unattended: true,
+    })
+    assert.deepEqual([change.statusCode, codeOf(change)], [400, 'REQUEST_MALFORMED'], fixed)
+  }
+  const list = await roles(w)
+  assert.deepEqual(
+    list.filter((one) => one.unattended).map((one) => one.role),
+    ['owner', 'admin'],
+  )
 })
