@@ -164,6 +164,7 @@ test('um turno de 96 passos com uma página que não lê não enche o heap do Hu
   assert.deepEqual(Object.keys(await reading.seed()).toSorted(), [
     'isRunning',
     'omProgress',
+    'pendingApprovals',
     'pendingSuspensions',
   ])
   assert.equal((await sent(hub, ana, url, 'Leia os clientes')).statusCode, 200)

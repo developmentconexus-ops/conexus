@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import type { Reply } from '../../platform/test-anthropic.ts'
-import type { Sent } from '../../platform/test-anthropic-body.ts'
+import type { Reply, Sent } from '../../platform/test-anthropic.ts'
 import type { StreamEvent } from '../conversation/test-conversation.ts'
 import { endOf, sent } from '../conversation/test-conversation.ts'
 import { tool } from '../conversation/test-questions.ts'

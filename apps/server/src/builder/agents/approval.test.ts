@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { setTimeout as sleep } from 'node:timers/promises'
-import type { Block } from '../../platform/test-anthropic-stream.ts'
+import type { Reply } from '../../platform/test-anthropic.ts'
 import { said } from '../assistant/test-assistant.ts'
 import { endOf, hubBeside, sent, stopped, streamOf } from '../conversation/test-conversation.ts'
 import { tool } from '../conversation/test-questions.ts'
@@ -20,7 +20,7 @@ import {
 } from './test-approval.ts'
 
 // Every other tool of an agent with all of them on, called in one step; the write in the next.
-const EVERY_OTHER: Block[] = [
+const EVERY_OTHER: Extract<Reply, { kind: 'blocks' }>['blocks'] = [
   tool('tool_pedidos_matriz', { page: 1 }),
   tool('tool_vendas_do_mes', { mes: '2026-10' }),
   tool('connector_notes', {}),

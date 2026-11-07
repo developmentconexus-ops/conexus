@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { setTimeout as sleep } from 'node:timers/promises'
-import { sankhyaFake } from '@conexus/connectors'
+import { salesSankhya } from '../../hub/connectors/test-sales.ts'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import { post } from '../../hub/identity/test-hub.ts'
 import { assisting } from '../assistant/test-assistant.ts'
@@ -32,10 +32,8 @@ export async function approving(
   model: Parameters<typeof assisting>[1],
   change?: Parameters<typeof assisting>[3],
 ) {
-  const fake = sankhyaFake()
-  const served = await fake.serve()
-  t.after(() => served.close())
-  const sankhya = { origin: served.origin, matriz: fake.credential, filial: fake.credential }
+  const sankhya = await salesSankhya(t)
+  const { fake } = sankhya
   const on = await assisting(t, model, sankhya, change)
   const project = `${on.company}/projects/${on.projectId}`
   const agents = `${project}/agents`
