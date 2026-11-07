@@ -20,7 +20,7 @@ export type OrderSwitches = { lostAfterStore: boolean; lostBeforeStore: boolean 
 
 const FIRST_CODE = 98001
 
-export const OrderBody = z.looseObject({
+const OrderBody = z.looseObject({
   codigoCliente: z.number().int(),
   observacao: z.string().optional(),
   itens: z.array(z.looseObject({ codigoProduto: z.number().int() })).min(1),
@@ -48,14 +48,15 @@ function gatewayTimeout(): Response {
 export type OrderBook = Readonly<{
   switches: OrderSwitches
   orders: () => readonly StoredOrder[]
-  add: (body: ReturnType<typeof OrderBody.safeParse>) => Response
+  add: (body: unknown) => Response
 }>
 
 export function orderBook(): OrderBook {
   const stored: StoredOrder[] = []
   const switches: OrderSwitches = { lostAfterStore: false, lostBeforeStore: false }
 
-  function add(parsed: ReturnType<typeof OrderBody.safeParse>): Response {
+  function add(raw: unknown): Response {
+    const parsed = OrderBody.safeParse(raw)
     if (!parsed.success) return refused('Pedido sem cliente ou sem itens.')
     const body = parsed.data
     const known = new Set(PRODUTOS.map((produto) => produto.codigoProduto))

@@ -185,7 +185,7 @@ export function get(
   }
 }
 
-/** The write: a JSON body sent to the path; `headers` are fixed, public ones. */
+/** The write: a JSON body sent to the path. */
 export function post(path: `/${string}`, body: unknown): ProviderRequest {
   return { method: 'POST', path, query: {}, body }
 }

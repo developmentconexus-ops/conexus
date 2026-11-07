@@ -179,7 +179,7 @@ const Created = z.looseObject({
   retorno: z.unknown().optional(),
 })
 
-/** The add's success: only a `retorno.codigoPedido` counts, and never beside a `[CORE_E…]` in the message. */
+/** The add's success: only an integer `retorno.codigoPedido` counts (the page declares `type: integer`, no text format), and never beside a `[CORE_E…]` in the message. */
 const Placed = z
   .object({ retorno: z.object({ codigoPedido: z.number().int().positive() }) })
   .transform(({ retorno }) => ({ codigoPedido: retorno.codigoPedido }))
@@ -187,7 +187,7 @@ const Placed = z
 /**
  * An order's add: a refusal outside 2xx as the reads see it, and a 2xx that carries no `codigoPedido`
  * or a `[CORE_E…]` in its message is the vendor's refusal too, never a success; a body that is no
- * object at all is unreadable.
+ * object, or a `retorno` whose `codigoPedido` is not an integer, is unreadable.
  */
 export function placed() {
   function answer(answer: ProviderAnswer): Answered<z.infer<typeof Placed>> {
@@ -199,19 +199,25 @@ export function placed() {
         kind: 'UNREADABLE',
         native: { ...nativeOf(answer), reason: shapeOf(body.error, answer.body) },
       }
-    const { mensagem } = body.data
+    const { mensagem, retorno } = body.data
+    if (mensagem?.includes('[CORE_E') || retorno === undefined || retorno === null)
+      return {
+        kind: 'REFUSED',
+        native: {
+          status: answer.status,
+          code: mensagem?.match(/CORE_E\d+/)?.[0] ?? null,
+          message: mensagem ?? null,
+          body: answer.body,
+        },
+      }
     const created = Placed.safeParse(body.data)
-    if (created.success && !mensagem?.includes('[CORE_E'))
-      return { kind: 'OK', value: created.data }
-    return {
-      kind: 'REFUSED',
-      native: {
-        status: answer.status,
-        code: mensagem?.match(/CORE_E\d+/)?.[0] ?? null,
-        message: mensagem ?? null,
-        body: answer.body,
-      },
-    }
+    // A `retorno` that does not read is a success we cannot read, never a refusal: the order may exist.
+    return created.success
+      ? { kind: 'OK', value: created.data }
+      : {
+          kind: 'UNREADABLE',
+          native: { ...nativeOf(answer), reason: shapeOf(created.error, answer.body) },
+        }
   }
   return { output: Placed, answer }
 }

@@ -110,7 +110,7 @@ export const Spec = z.object({
 export type Spec = z.infer<typeof Spec>
 
 /** Every field of a body schema as a dotted path; a list's fields sit under the list's name. */
-function fieldsOf(schema: unknown, prefix = ''): string[] {
+export function fieldsOf(schema: unknown, prefix = ''): string[] {
   const parsed = Fields.safeParse(schema)
   if (!parsed.success) return []
   const { properties, items } = parsed.data

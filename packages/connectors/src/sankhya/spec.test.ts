@@ -9,7 +9,7 @@ import { fetchText } from '../kernel/page.ts'
 import { toRequest } from '../kernel/request.ts'
 import { sankhya } from './definition.ts'
 import { sankhyaFake } from './fake.ts'
-import { downloadSpec, SITE, Spec } from './spec-source.ts'
+import { downloadSpec, fieldsOf, SITE, Spec } from './spec-source.ts'
 
 // The documentation is Sankhya's ("Licença Sankhya") and the repository is public, so none of it is
 // kept here. The check reads it when it runs: SANKHYA_SPEC names a file or an address of the cut
@@ -81,21 +81,6 @@ function queriedKeys(operation: Operation<unknown, unknown>, probe: unknown): st
       name in
       operation.request({ ...z.looseObject({}).parse(probe), [name]: '1' }, { ref: null }).query,
   )
-}
-
-const Fields = z.object({
-  properties: z.record(z.string(), z.unknown()).optional(),
-  items: z.unknown().optional(),
-})
-
-/** Every field an input schema takes as a dotted path; a list's fields sit under the list's name. */
-function fieldsOf(schema: unknown, prefix = ''): string[] {
-  const { properties = {}, items } = Fields.parse(schema)
-  if (items !== undefined) return fieldsOf(items, prefix)
-  return Object.entries(properties).flatMap(([name, value]) => [
-    `${prefix}${name}`,
-    ...fieldsOf(value, `${prefix}${name}.`),
-  ])
 }
 
 /** The probes in order, as the conformance runs them, against the fake. */

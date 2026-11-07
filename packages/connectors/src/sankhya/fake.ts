@@ -15,7 +15,7 @@ import {
   SERVICE_PATH,
 } from './fake-data.ts'
 import type { OrderSwitches, StoredOrder } from './fake-orders.ts'
-import { ORDERS_PATH, OrderBody, orderBook } from './fake-orders.ts'
+import { ORDERS_PATH, orderBook } from './fake-orders.ts'
 import { forbidden, routeOf } from './fake-rest.ts'
 import type { SalesSet } from './fake-sales.ts'
 import { salesDatabase } from './fake-sales.ts'
@@ -121,11 +121,14 @@ function isAdd(request: Request, url: URL): boolean {
 }
 
 /** The name a `refuse` switch answers to: the order's add, a door service, or a REST route. */
-function switchName(request: Request, url: URL): string {
-  if (isAdd(request, url)) return 'lancarPedido'
-  if (url.pathname !== SERVICE_PATH) return routeOf(url.pathname)?.name ?? ''
-  const service = url.searchParams.get('serviceName') ?? ''
-  return DOOR_NAMES[service] ?? service
+function switchName(
+  adding: boolean,
+  door: boolean,
+  service: string,
+  route: { name: string } | null,
+) {
+  if (adding) return 'lancarPedido'
+  return door ? (DOOR_NAMES[service] ?? service) : (route?.name ?? '')
 }
 
 async function serveCall(
@@ -139,13 +142,13 @@ async function serveCall(
   const service = door ? (url.searchParams.get('serviceName') ?? '') : ''
   const route = door ? null : routeOf(url.pathname)
   const adding = isAdd(request, url)
-  if (switches.refuse.has(switchName(request, url))) {
+  if (switches.refuse.has(switchName(adding, door, service, route))) {
     return door ? envelope(service, '0') : forbidden(url.pathname, 'NO_ACCESS', 'Sem permissão')
   }
   if (switches.oversize) return json(OVERSIZE)
   if (switches.malformed) return json({ unexpected: true })
   if (switches.notJson) return new Response('<html>valor da empresa</html>', { status: 200 })
-  if (adding) return orders.add(OrderBody.safeParse(await request.json()))
+  if (adding) return orders.add(z.unknown().parse(await request.json()))
   if (!door) return restAnswer(route, url, switches)
   const { requestBody } = DoorBody.parse(await request.json())
   if (service === 'CRUDServiceProvider.loadRecords') return loadRecords(requestBody)

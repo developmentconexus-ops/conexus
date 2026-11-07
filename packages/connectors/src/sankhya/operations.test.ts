@@ -146,3 +146,11 @@ test('as escritas do conector são só write, sem id repetido e de um assunto de
     /Unknown subject/,
   )
 })
+
+test('um 200 de sucesso cujo codigoPedido não é inteiro é ilegível, nunca recusa: o pedido pode existir', () => {
+  const sucesso = 'Pedido Incluído/Atualizado/Cancelado com sucesso.'
+  for (const retorno of [{ codigoPedido: '98001' }, { codigoPedido: 98001.5 }, {}, 'texto']) {
+    const answered = lancarPedido.answer({ status: 200, body: { mensagem: sucesso, retorno } })
+    assert.equal(answered.kind, 'UNREADABLE', JSON.stringify(retorno))
+  }
+})
