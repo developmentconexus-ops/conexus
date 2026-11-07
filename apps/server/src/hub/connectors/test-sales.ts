@@ -78,6 +78,8 @@ export async function salesSankhya(
     origin: `http://127.0.0.1:${port}`,
     matriz: matriz.credential,
     filial: { ...matriz.credential, xToken: FILIAL_X_TOKEN },
+    /** The Matriz's double, for a test that counts its orders. */
+    fake: matriz,
   }
 }
 
