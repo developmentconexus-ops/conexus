@@ -1,5 +1,5 @@
 import type { ServerResponse } from 'node:http'
-import type { CompanyId, FailureCode, Person } from '@conexus/hub-api'
+import type { CompanyId, ConnectionId, FailureCode, Person } from '@conexus/hub-api'
 import { BUILDER_ROUTES, ConversationId, PersonId, ToolCallId } from '@conexus/hub-api'
 import type { Mastra } from '@mastra/core/mastra'
 import type { RequestContext } from '@mastra/core/request-context'
@@ -44,6 +44,11 @@ const ApprovedCall = z.object({ toolCallId: ToolCallId, personId: PersonId })
 export function approvedCallOf(requestContext: RequestContext) {
   return ApprovedCall.safeParse(requestContext.get(APPROVED_CALL)).data
 }
+
+/** What the guard writes to the log once Mastra's handler has taken the answer, and not before. */
+const TOLD = 'conexus-write-answer'
+const Told = z.object({ fields: z.record(z.string(), z.string()), message: z.string() })
+const Taken = z.object({ ok: z.literal(true) })
 
 const ToolAnswer = z.object({ toolCallId: ToolCallId, approved: z.boolean() })
 
@@ -115,10 +120,18 @@ type Admission = (input: {
   conversationId: ConversationId
 }) => Promise<void>
 
+/** The connection and operation of the write a conversation's tool names, as the agent that holds it keeps them (step 24.5). */
+type WriteOf = (input: {
+  companyId: CompanyId
+  personId: PersonId
+  conversationId: ConversationId
+  toolName: string
+}) => Promise<{ connectionId: ConnectionId; operation: string } | undefined>
+
 /** The controllers on the one `Mastra`, as the guard consults them (`builder/mastra/`). */
 export type GuardedMastra = {
   mastra: Mastra
-  part(kind: ControllerKind): { admit: Admission } | undefined
+  part(kind: ControllerKind): { admit: Admission; writeOf?: WriteOf } | undefined
   updating(): boolean
 }
 
@@ -167,7 +180,7 @@ async function guard(deps: { builder: Builder; hub: GuardedMastra }, request: Fa
     throw new Failure('HUB_UPDATING')
   }
   request.requestContext.setRaw(MASTRA_MESSAGE_AUTHOR_KEY, { id: person.id, name: person.name })
-  return { person, controllerId, conversationId, companyId: owner.companyId }
+  return { person, controllerId, conversationId, companyId: owner.companyId, part }
 }
 
 /**
@@ -193,11 +206,20 @@ async function toolAnswer(
     return { ok: false, reason: 'not_pending' }
   }
   const toolName = session.displayState.get().pendingApprovals.get(toolCallId)?.toolName
-  const about = { companyId: at.companyId, conversationId: at.conversationId, toolCallId }
-  deps.log.info(
-    { ...about, personId: at.person.id, ...(toolName === undefined ? {} : { toolName }) },
-    approved ? 'CONNECTOR_WRITE_APPROVED' : 'CONNECTOR_WRITE_DECLINED',
-  )
+  const write =
+    toolName === undefined
+      ? undefined
+      : await at.part.writeOf?.({
+          ...{ companyId: at.companyId, personId: at.person.id, conversationId: at.conversationId },
+          toolName,
+        })
+  request.requestContext.set(TOLD, {
+    fields: {
+      ...{ companyId: at.companyId, conversationId: at.conversationId, toolCallId },
+      ...{ personId: at.person.id, ...(toolName === undefined ? {} : { toolName }), ...write },
+    },
+    message: approved ? 'CONNECTOR_WRITE_APPROVED' : 'CONNECTOR_WRITE_DECLINED',
+  })
   if (approved) {
     request.requestContext.set(APPROVED_CALL, { toolCallId, personId: at.person.id })
   }
@@ -247,6 +269,14 @@ export function registerBuilderRoutes(
     server.registerContextMiddleware()
     // Mastra's multipart parser reads no body, so no limit holds it: JSON stays the only one (S25).
     scope.removeContentTypeParser('multipart/form-data')
+    // A Parar between the guard's check and Mastra's handler leaves `not_pending`: no line says "approved" for a write that did not run.
+    scope.addHook('onSend', async (request, _reply, payload) => {
+      const told = Told.safeParse(request.requestContext.get(TOLD))
+      if (!told.success || typeof payload !== 'string') return payload
+      if (Taken.safeParse(JSON.parse(payload)).success)
+        deps.log.info(told.data.fields, told.data.message)
+      return payload
+    })
     scope.addHook('preHandler', async (request, reply) => {
       const at = await guard(deps, request)
       if (request.routeOptions.url?.endsWith('/tool-approval')) {

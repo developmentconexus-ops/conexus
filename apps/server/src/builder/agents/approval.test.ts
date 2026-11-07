@@ -102,6 +102,7 @@ test('aprovar, recusar, mensagem, Parar: Aprovar roda a escrita uma vez e o turn
   assert.deepEqual(
     yes.map(({ fields }) => [fields.toolCallId, fields.personId, fields.toolName]),
     [[approved, on.ana.id, WRITE]],
+    'the late second Aprovar (not_pending) wrote no second line',
   )
 
   await sent(on.hub, on.ana, url, 'Lance outro')
@@ -111,8 +112,9 @@ test('aprovar, recusar, mensagem, Parar: Aprovar roda a escrita uma vez e o turn
   assert.match(on.calls[3]?.texts.join('\n') ?? '', /not approved|declined/i)
   const no = on.hub.lines.filter((line) => line.message === 'CONNECTOR_WRITE_DECLINED')
   assert.deepEqual(
-    no.map(({ fields }) => fields.toolCallId),
-    [declined],
+    no.map(({ fields }) => [fields.toolCallId, fields.connectionId, fields.operation]),
+    [[declined, on.matriz, 'lancarPedido']],
+    'a Recusar has no send to join: its line says which write it was about',
   )
 
   await sent(on.hub, on.ana, url, 'Lance mais um')
@@ -135,6 +137,9 @@ test('aprovar, recusar, mensagem, Parar: Aprovar roda a escrita uma vez e o turn
     reason: 'not_pending',
   })
   assert.equal(on.fake.orders().length, 1, 'only the approved call reached the Sankhya')
+  const answered = on.hub.lines.filter((line) => line.message.startsWith('CONNECTOR_WRITE_A'))
+  assert.equal(answered.length, 1, 'the answers that found nothing pending logged nothing')
+  assert.equal(on.hub.lines.filter((line) => line.message === 'CONNECTOR_WRITE_DECLINED').length, 1)
 })
 
 test('depois do reinício: o Hub novo não traz o pedido, o Aprovar velho responde ok: false sem enviar e a mensagem seguinte roda um turno normal (8)', async (t) => {
