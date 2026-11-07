@@ -6,6 +6,34 @@ import { createIdentity } from './public.ts'
 import type { RoleKit } from './roles.ts'
 import { rolesFor } from './roles.ts'
 
+/** The typed reads of the Sankhya kit, written out so the kit may grow and no test moves (T6). */
+export const SANKHYA_READS = [
+  'consultar',
+  'carregar',
+  'empresas',
+  'clientes',
+  'vendedores',
+  'tiposOperacao',
+  'naturezas',
+  'centrosResultado',
+  'produtos',
+  'gruposProduto',
+  'pedidos',
+  'notasFiscais',
+  'notaFiscal',
+  'devolucoes',
+  'notasCanceladas',
+  'estoque',
+  'locaisEstoque',
+  'contasAReceber',
+  'contasAPagar',
+  'tiposPagamento',
+  'precosDoProduto',
+  'precosDaTabela',
+  'transportadoras',
+  'ordensCarga',
+] as const
+
 /**
  * The kit the test Hub starts with, written out: two connectors, the door's reads and the
  * Financeiro subject among them, so a test never moves when the real kit grows (T6).
@@ -15,9 +43,7 @@ export const TEST_KIT = [
     id: 'sankhya',
     resource: 'connector_sankhya',
     operations: [
-      ...['consultar', 'carregar', 'pedidos', 'clientes', 'contasAReceber', 'contasAPagar'].map(
-        (id) => ({ id, class: 'read' }),
-      ),
+      ...SANKHYA_READS.map((id) => ({ id, class: 'read' })),
       { id: 'lancarPedido', class: 'write' },
     ],
   },

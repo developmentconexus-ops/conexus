@@ -20,6 +20,7 @@ import {
   plantCompany,
   TEST_ROLES,
 } from './test-hub.ts'
+import { SANKHYA_READS } from './test-kit.ts'
 
 export const OPERATOR = { name: 'Central Conexus', email: 'central@example.test', role: 'admin' }
 export const ATENDENTE = { label: 'Atendente', connectors: { sankhya: ['pedidos'] } }
@@ -56,7 +57,7 @@ export function roleOf(list: Awaited<ReturnType<typeof roles>>, name: string) {
 
 /** What the test kit offers, written out so a change of the kit's code moves nothing here (T6). */
 export const everyRead = {
-  sankhya: ['consultar', 'carregar', 'pedidos', 'clientes', 'contasAReceber', 'contasAPagar'],
+  sankhya: [...SANKHYA_READS],
   'mercado-livre': ['anuncios'],
 }
 export const everyOperation = {
