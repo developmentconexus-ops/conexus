@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { roleKit } from './public.ts'
+import { operationLabel, roleKit } from './public.ts'
 
 test('o kit dos papéis: cada conector vira o recurso connector_<id>, com a porta de leitura do Sankhya entre as operações', () => {
   const kit = roleKit()
@@ -16,4 +16,13 @@ test('o kit dos papéis: cada conector vira o recurso connector_<id>, com a port
   )
   for (const door of ['consultar', 'carregar', 'pedidos', 'contasAReceber'])
     assert.ok(sankhya.has(door), door)
+})
+
+test('o kit dos papéis traz as escritas do conector, com a classe write e o rótulo do kit', () => {
+  const sankhya = roleKit().find(({ id }) => id === 'sankhya')
+  assert.deepEqual(
+    sankhya?.operations.filter((operation) => operation.class === 'write'),
+    [{ id: 'lancarPedido', class: 'write' }],
+  )
+  assert.equal(operationLabel('sankhya', 'lancarPedido'), 'Lançar pedido')
 })

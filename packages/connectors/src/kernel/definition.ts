@@ -40,6 +40,8 @@ export type Connector = Readonly<{
   subjects: Readonly<Record<string, string>> // subject id → label ("vendas" → "Vendas"); each has an operation
   operations: readonly Operation<unknown, unknown>[] // typed, the same for every company
   readDoor?: ReadDoor // for what each company has of its own
+  // The writes the connector declares, the one list the Hub's write funnel reads (the read door and `operations` refuse a write); never probed.
+  writes?: readonly Operation<unknown, unknown, 'write'>[]
   // The one read Testar sends (Nango's `verification`, n8n's credential `test`): one of
   // `operations`, reading from no earlier one; each read's own health is the platform's.
   check: Operation<unknown, unknown, 'read'>
@@ -56,7 +58,7 @@ const Origin = z
       URL.canParse(value) && new URL(value).origin === value && value.startsWith('https://'),
   )
 
-/** Takes `id` as a plain string and brands it; throws on a `perProject` other than 'one' or 'many', a reported account with a login that is not OAuth, a repeated operation id, a bad version or origin, a door entry that is not 'read', an operation of a subject the connector lacks, a subject with no operation, a `from` that is not an earlier operation, or a check that is not one of its operations or needs an earlier one. */
+/** Takes `id` as a plain string and brands it; throws on a `perProject` other than 'one' or 'many', a reported account with a login that is not OAuth, a repeated operation id, a bad version or origin, a door entry that is not 'read', a write that is not 'write' or repeats an id, an operation of a subject the connector lacks, a subject with no operation, a `from` that is not an earlier operation, or a check that is not one of its operations or needs an earlier one. */
 export function defineConnector<A extends Auth>(
   connector: Omit<Connector, 'id' | 'auth'> & { id: string; auth: A },
 ): Connector & Readonly<{ auth: A }> {
@@ -66,13 +68,15 @@ export function defineConnector<A extends Auth>(
   if (connector.account.kind === 'reported' && connector.auth.kind !== 'oauth2_code')
     throw new Error(`Reported account without an OAuth login in ${connector.id}`)
   const all = inProbeOrder(connector)
-  const ids = all.map((operation) => operation.id)
+  const declared = declaredOf(connector)
+  const ids = declared.map((operation) => operation.id)
   if (new Set(ids).size !== ids.length) throw new Error(`Repeated operation id in ${connector.id}`)
+  assertWritesWrite(connector)
   for (const [key, operation] of Object.entries(connector.readDoor ?? {})) {
     if (operation.class !== 'read') throw new Error(`Door entry not read: ${key}`)
     if (operation.id !== key) throw new Error(`Door entry ${key} is named ${operation.id}`)
   }
-  const named = new Set(all.map((operation) => operation.subject))
+  const named = new Set(declared.map((operation) => operation.subject))
   for (const subject of named)
     if (!(subject in connector.subjects)) throw new Error(`Unknown subject ${subject}`)
   for (const subject of Object.keys(connector.subjects))
@@ -80,6 +84,16 @@ export function defineConnector<A extends Auth>(
   assertSourcesEarlier(all)
   assertCheckStandsAlone(connector)
   return Object.freeze({ ...connector, id: ConnectorId.parse(connector.id) })
+}
+
+/** Every operation the connector declares: the door's, the reads and the writes. */
+function declaredOf(connector: Pick<Connector, 'operations' | 'readDoor' | 'writes'>) {
+  return [...inProbeOrder(connector), ...(connector.writes ?? [])]
+}
+
+function assertWritesWrite(connector: Pick<Connector, 'writes'>): void {
+  for (const operation of connector.writes ?? [])
+    if (operation.class !== 'write') throw new Error(`Write not write: ${operation.id}`)
 }
 
 function assertCheckStandsAlone(connector: Pick<Connector, 'operations' | 'check'>): void {

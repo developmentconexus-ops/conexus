@@ -13,7 +13,14 @@ import { contasAPagar, contasAReceber, tiposPagamento } from './financeiro.ts'
 import { ordensCarga, transportadoras } from './logistica.ts'
 import { precosDaTabela, precosDoProduto } from './precos.ts'
 import { gruposProduto, produtos } from './produtos.ts'
-import { devolucoes, notaFiscal, notasCanceladas, notasFiscais, pedidos } from './vendas.ts'
+import {
+  devolucoes,
+  lancarPedido,
+  notaFiscal,
+  notasCanceladas,
+  notasFiscais,
+  pedidos,
+} from './vendas.ts'
 
 /** The order the probes run in: `empresas` first, since seven probes read it (their `from`); each subject keeps the ready five before the rest. */
 const ready = readsOf({
@@ -43,6 +50,9 @@ const ready = readsOf({
 
 /** The ready reads, in that order: what the connector declares as its `operations`. */
 export const sankhyaOperations = Object.values(ready)
+
+/** The connector's writes: the list the Hub's write funnel reads; the reads above never include one. */
+export const sankhyaWrites = [lancarPedido]
 
 /** Every read of the connector by its id, the door's included: what an app's typed client is made of (`calls.ts`). */
 export const sankhyaReads = readsOf({ ...sankhyaDoor, ...ready })

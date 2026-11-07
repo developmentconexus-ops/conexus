@@ -1,6 +1,6 @@
 import { z } from 'zod'
-import { defineOperation, get } from '../../kernel/operation.ts'
-import { rows } from '../answers.ts'
+import { defineOperation, get, post } from '../../kernel/operation.ts'
+import { placed, rows } from '../answers.ts'
 import { empresaPage, empresas } from './cadastros.ts'
 import { Code, DashDate, Date_, firstCode, Page } from './shared.ts'
 
@@ -99,4 +99,38 @@ export const notasCanceladas = defineOperation({
   from: [empresas.id],
   probe: empresaPage(0),
   request: (input) => get('/v1/vendas/nfe/canceladas', input),
+})
+
+export const LancarPedidoInput = z.object({
+  notaModelo: z.number().int().positive(),
+  codigoCliente: z.number().int().positive(),
+  codigoVendedor: z.number().int().positive().optional(),
+  observacao: z
+    .string()
+    .max(150)
+    .describe('Até 150 caracteres menos 17: o Conexus acrescenta a sua marca no fim.')
+    .optional(),
+  itens: z
+    .array(
+      z.object({
+        codigoProduto: z.number().int().positive(),
+        quantidade: z.number().positive(),
+        valorUnitario: z.number().nonnegative().optional(),
+      }),
+    )
+    .min(1),
+})
+
+export const lancarPedido = defineOperation({
+  id: 'lancarPedido',
+  class: 'write' as const,
+  subject: 'vendas',
+  idempotent: false,
+  summary:
+    'Lança um pedido de venda no Sankhya, sempre "a confirmar": nota modelo, cliente, itens e, se quiser, vendedor e observação. Devolve o código do pedido.',
+  label: 'Lançar pedido',
+  input: LancarPedidoInput,
+  ...placed(),
+  probe: () => ({ notaModelo: 1, codigoCliente: 1, itens: [{ codigoProduto: 1, quantidade: 1 }] }),
+  request: (input) => post('/v1/vendas/pedidos', input),
 })
