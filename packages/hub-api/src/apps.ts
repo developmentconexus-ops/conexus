@@ -188,6 +188,7 @@ export const publishAppVersion = defineOperation({
     'NOT_FOUND',
     'APP_VERSION_NOT_FOUND',
     'CONNECTOR_NOT_GRANTED',
+    'NOT_IN_ROLE',
     'SESSION_REQUIRED',
     'DATABASE_UNAVAILABLE',
   ],

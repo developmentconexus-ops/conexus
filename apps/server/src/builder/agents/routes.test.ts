@@ -39,7 +39,7 @@ test('criar: 201 com o rascunho e os padrões; a mesma chave e o mesmo corpo dã
   assert.deepEqual(agent.draft, {
     ...{ name: 'Vendas do dia', description: 'Os pedidos de ontem.', instructions: '' },
     ...{ model: null, memory: { observational: true }, connections: [], web: false },
-    ...{ appData: false, machine: false },
+    ...{ appData: false, byTool: true, machine: false },
   })
   assert.deepEqual(agent.tools, [])
   assert.deepEqual(agent.createdBy, { personId: on.ana.id, name: 'Ana Lima' })

@@ -1,10 +1,22 @@
-import type { AgentId, Publish } from '@conexus/hub-api'
-import { AgentConfig, AgentId as AgentIdSchema } from '@conexus/hub-api'
+import type { AgentId, ConnectionId, OperationId, Publish } from '@conexus/hub-api'
+import {
+  AgentConfig,
+  AgentId as AgentIdSchema,
+  CodeToolRead,
+  ConnectionId as ConnectionIdSchema,
+  ConnectorId as ConnectorIdSchema,
+  OperationId as OperationIdSchema,
+  ToolKind,
+} from '@conexus/hub-api'
 import { and, eq, max, sql } from 'drizzle-orm'
+import type { KitRead } from '../../hub/connectors/public.ts'
+import { operationLabel } from '../../hub/connectors/public.ts'
+import type { IdentityPorts } from '../../hub/identity/public.ts'
 import type { CommandTx, ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { InProject, OfferedConnection } from '../tools/public.ts'
 import { versionsWithTools } from '../tools/public.ts'
+import { legacyReads } from './legacy.ts'
 import { chosenIds, ofProject } from './store.ts'
 import { agent, agentTool, agentVersion, agentVersionTool } from './tables.ts'
 
@@ -21,6 +33,80 @@ export async function invalidField(
   const tools = await versionsWithTools(tx, await chosenIds(tx, agentId))
   if (tools.some((each) => !ids.has(each.tool.connectionId))) return 'tools'
   return undefined
+}
+
+type Declared = { slug: string; connectionId: ConnectionId; operation: OperationId }
+
+/** Each read the draft will give the agent: its chosen tools', or for a draft written before E4 the kit's reads of its connections. */
+async function declaredBy(
+  tx: ReadTx,
+  a: { draft: AgentConfig; agentId: AgentId; kit: readonly KitRead[] },
+): Promise<Declared[]> {
+  const rows = await versionsWithTools(tx, await chosenIds(tx, a.agentId))
+  const chosen = rows.flatMap((row): Declared[] => {
+    const { slug, connectionId } = row.tool
+    const home = ConnectionIdSchema.parse(connectionId)
+    if (ToolKind.parse(row.tool.kind) === 'CODE') {
+      return CodeToolRead.parse(row.version.config).reads.map((operation) => ({
+        ...{ slug, connectionId: home, operation: OperationIdSchema.parse(operation) },
+      }))
+    }
+    return [{ slug, connectionId: home, operation: OperationIdSchema.parse(row.tool.operation) }]
+  })
+  if (a.draft.byTool) return chosen
+  const kit = legacyReads(a.kit, a.draft.connections).map((read) => ({
+    slug: read.operation,
+    connectionId: read.connectionId,
+    operation: read.operation,
+  }))
+  return [...chosen, ...kit]
+}
+
+/**
+ * Whether the role of who publishes holds every read the version will give the agent, the free
+ * query included (decision C1 and E4): the first it lacks is `NOT_IN_ROLE` with the tool.
+ */
+async function refuseByRole(
+  tx: ReadTx,
+  scope: InProject,
+  a: {
+    draft: AgentConfig
+    agentId: AgentId
+    around: readonly OfferedConnection[]
+    kit: readonly KitRead[]
+    identity: Pick<IdentityPorts, 'roleOf' | 'mayUseEach'>
+  },
+): Promise<void> {
+  const declared = await declaredBy(tx, a)
+  if (declared.length === 0) return
+  const role = await a.identity.roleOf(tx, scope.companyId, scope.personId)
+  const targets = declared.map((each) => ({
+    connectionId: each.connectionId,
+    connectorId: ConnectorIdSchema.parse(
+      a.around.find((one) => one.connectionId === each.connectionId)?.connector,
+    ),
+    operationId: each.operation,
+  }))
+  const answers =
+    role === undefined
+      ? declared.map(() => false)
+      : await a.identity.mayUseEach(
+          scope.companyId,
+          { kind: 'PERSON', personId: scope.personId, role },
+          targets,
+        )
+  const at = declared.findIndex((_, index) => !answers[index])
+  const refused = declared[at]
+  const target = targets[at]
+  if (refused !== undefined && target !== undefined) {
+    throw new Failure('NOT_IN_ROLE', {
+      details: { tool: refused.slug, operation: refused.operation },
+      named: {
+        field: 'tools',
+        operation: operationLabel(target.connectorId, refused.operation),
+      },
+    })
+  }
 }
 
 /** Makes the version the agent's active one; the draft does not change. */
@@ -96,7 +182,13 @@ async function frozen(
 export async function published(
   tx: CommandTx,
   scope: InProject,
-  a: { agentId: AgentId; body: Publish; around: readonly OfferedConnection[] },
+  a: {
+    agentId: AgentId
+    body: Publish
+    around: readonly OfferedConnection[]
+    kit: readonly KitRead[]
+    identity: Pick<IdentityPorts, 'roleOf' | 'mayUseEach'>
+  },
 ): Promise<Published> {
   const { agentId, body } = a
   const [row] = await tx.select().from(agent).where(ofProject(scope, agentId)).for('update')
@@ -107,5 +199,6 @@ export async function published(
   const draft = AgentConfig.parse(row.draft)
   const field = await invalidField(tx, draft, agentId, a.around)
   if (field !== undefined) throw new Failure('AGENT_DRAFT_INVALID', { named: { field } })
+  await refuseByRole(tx, scope, { ...a, draft })
   return frozen(tx, scope, { agentId, draft, body })
 }

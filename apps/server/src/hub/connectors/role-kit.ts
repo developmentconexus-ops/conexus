@@ -1,4 +1,4 @@
-import { CONNECTORS } from '@conexus/connectors'
+import { CONNECTORS, connectorOf } from '@conexus/connectors'
 
 /**
  * What the kit offers a company's roles: each connector's resource and its operations, the door's
@@ -13,4 +13,13 @@ export function roleKit() {
       (operation) => ({ id: operation.id, class: operation.class }),
     ),
   }))
+}
+
+/** What a person reads for a connector's operation, the read door's included; the id when the kit has none. */
+export function operationLabel(connector: string, operation: string): string {
+  const kit = connectorOf(connector)
+  const found = [...Object.values(kit?.readDoor ?? {}), ...(kit?.operations ?? [])].find(
+    (each) => each.id === operation,
+  )
+  return found?.label ?? operation
 }

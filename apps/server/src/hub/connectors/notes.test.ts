@@ -10,7 +10,10 @@ const QUERY = 'SELECT COUNT(*) AS N FROM TSIEMP'
 async function builderOn(t: Parameters<typeof appCalls>[0]) {
   const on = await appCalls(t)
   const connectionId = ConnectionId.parse(await on.connect('Matriz'))
-  const ids = { companyId: CompanyId.parse(on.companyId), projectId: ProjectId.parse(on.projectId) }
+  const ids = {
+    ...{ companyId: CompanyId.parse(on.companyId), projectId: ProjectId.parse(on.projectId) },
+    personId: PersonId.parse(on.ana.id),
+  }
   function who(run = randomUUID()) {
     return { connectionId, personId: PersonId.parse(on.ana.id), runId: RunId.parse(run) }
   }
