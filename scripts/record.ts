@@ -27,7 +27,6 @@ import {
   webSearchTool,
 } from '@mastra/core/tools'
 import { Memory } from '@mastra/memory'
-import { PostgresStore } from '@mastra/pg'
 import { z } from 'zod'
 import { PADARIA_SOL_MATRIZ, salesDatabase } from '../apps/server/src/hub/connectors/test-sales.ts'
 import type { Block } from '../apps/server/src/platform/test-anthropic-stream.ts'
@@ -41,7 +40,7 @@ import {
   replayed,
 } from '../apps/server/src/platform/test-recordings.ts'
 import { orderBook } from '../packages/connectors/src/sankhya/fake-orders.ts'
-import { APPROVALS, approvalReaction, approvalTool, isApproval, wired } from './record-approval.ts'
+import * as approval from './record-approval.ts'
 import {
   APPROVAL_CALLS,
   APPROVAL_PROMPT,
@@ -77,7 +76,7 @@ const Scenario = z.enum([
   'tasks',
   'reads',
   'handoff',
-  ...APPROVALS,
+  ...approval.APPROVALS,
 ])
 
 const PLAN_FILE = '.conexus/plans/encomendas.md'
@@ -180,7 +179,7 @@ async function run(session: Session, scenario: z.infer<typeof Scenario>): Promis
   const ended = Promise.withResolvers<void>()
   let ends = 0
   session.subscribe((event) => {
-    events.push(wired(event))
+    events.push(approval.wired(event))
     if (event.type === 'message_update' && event.event.type === 'text-delta') deltas += 1
     if (scenario === 'abort' && deltas === ABORT_AFTER) session.abort()
     if (event.type === 'tool_suspended') suspended = event.toolCallId
@@ -197,7 +196,7 @@ async function run(session: Session, scenario: z.infer<typeof Scenario>): Promis
       event.type === 'agent_end'
     )
       ended.resolve()
-    approvalReaction(session, scenario, event, ended)
+    approval.approvalReaction(session, scenario, event, ended)
     if (scenario === 'plan' && event.type === 'agent_end') {
       ends += 1
       if (ends === 2) ended.resolve()
@@ -221,7 +220,7 @@ async function run(session: Session, scenario: z.infer<typeof Scenario>): Promis
     } else if (scenario === 'handoff') {
       await session.sendSignal(HANDOFF_SIGNAL, { requireDelivery: true }).accepted
       await ended.promise
-    } else if (isApproval(scenario)) {
+    } else if (approval.isApproval(scenario)) {
       await session.sendMessage({ content: APPROVAL_PROMPT })
       await ended.promise
     } else if (scenario === 'tasks' || scenario === 'reads') {
@@ -266,29 +265,13 @@ const RECORDED_TOOLS = {
       return { kind: 'OK', value: { linhas, completo: true }, complete: true }
     },
   }),
-  [APPROVAL_TOOL]: approvalTool(orders),
+  [APPROVAL_TOOL]: approval.approvalTool(orders),
   anotar: createTool({
     id: 'anotar',
     description: 'Anota uma nota.',
     inputSchema: z.object({ nota: z.string() }),
     execute: async () => 'Anotado.',
   }),
-}
-
-/**
- * The store the agents' controller keeps its threads in: the `approval` scenarios run on Postgres, as
- * the Hub does, since a call that waits on the person is read from what the store holds. The database is
- * a disposable one, named by `RECORD_DATABASE_URL`; each scenario takes a schema of its own.
- */
-function postgresStore(scenario: string): PostgresStore {
-  const connectionString = process.env.RECORD_DATABASE_URL
-  if (connectionString === undefined)
-    throw new Error('The approval scenarios record on Postgres: set RECORD_DATABASE_URL.')
-  return new PostgresStore({
-    id: 'record',
-    connectionString,
-    schemaName: `record_${scenario.replaceAll('-', '_')}`,
-  })
 }
 
 async function record(scenario: z.infer<typeof Scenario>) {
@@ -302,7 +285,9 @@ async function record(scenario: z.infer<typeof Scenario>) {
   )
   // Mastra's router reads the key of the provider from the environment; this one is invented.
   process.env.ANTHROPIC_API_KEY = 'invented-key'
-  const storage = isApproval(scenario) ? postgresStore(scenario) : new InMemoryStore()
+  const storage = approval.isApproval(scenario)
+    ? approval.approvalStore(scenario)
+    : new InMemoryStore()
   const memory = new Memory({ storage })
   const agent = new Agent({
     id: 'builder',
@@ -320,7 +305,7 @@ async function record(scenario: z.infer<typeof Scenario>) {
     agent,
     modes: [{ id: 'conversa' }],
     // As the Builder runs its tools (decision 0053): without asking; the agents' controller asks about a write.
-    initialState: { yolo: !isApproval(scenario) },
+    initialState: { yolo: !approval.isApproval(scenario) },
   })
   await controller.init()
   const session = await controller.createSession({ resourceId: OWNER, id: scenario })

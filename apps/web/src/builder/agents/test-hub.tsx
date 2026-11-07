@@ -2,7 +2,6 @@ import type {
   AgentConversationSummary,
   AgentDetail,
   AgentVersionSummary,
-  Connection,
   ConstrutorConversationSummary,
   ReadyTool,
 } from '@conexus/hub-api'
@@ -19,7 +18,6 @@ import {
 import { HttpResponse, http } from 'msw'
 import type { setupServer } from 'msw/node'
 import { z } from 'zod'
-import { SANKHYA } from '../../hub/connectors/fixtures.ts'
 import { COMPANY } from '../../platform/fixtures.ts'
 import { PEDIDOS, refusal } from '../../platform/test-hub.tsx'
 import type { ChosenModels } from '../assistant/test-model.tsx'
@@ -28,17 +26,9 @@ import type { View } from '../conversation/test-hub.tsx'
 import { screens, view } from '../conversation/test-hub.tsx'
 import { START } from '../conversation/test-start.tsx'
 import { displayOf, openLine } from '../conversation/test-stream.tsx'
-import {
-  BUILDER_CHAT,
-  CHAT,
-  MATRIZ,
-  TEST_CHAT,
-  TOOL_V1,
-  toolSummary,
-  version,
-} from './test-agents.ts'
+import { BUILDER_CHAT, CHAT, TEST_CHAT, TOOL_V1, toolSummary, version } from './test-agents.ts'
 import type { ToolHeld } from './test-hub-tools.tsx'
-import { openWritesRoute, toolRoutes } from './test-hub-tools.tsx'
+import { catalogRoute, openWritesRoute, toolRoutes } from './test-hub-tools.tsx'
 
 const PROJECT_API = `*/api/companies/${COMPANY.id}/projects/${PEDIDOS.id}`
 
@@ -282,27 +272,6 @@ function memberRoutes() {
     http.all(`${PROJECT_API}/tools*`, refused),
     http.all(`*/api/companies/${COMPANY.id}/agents`, refused),
   ]
-}
-
-/** The company's Matriz, linked to the Sankhya: the card of a write shows the connector's logo from it. */
-const MATRIZ_LINK: Connection = {
-  id: MATRIZ,
-  connector: 'sankhya',
-  name: 'Matriz',
-  connectorVersion: '1.0.0',
-  state: 'ACTIVE',
-  linkedBy: null,
-  linkedAt: '2026-11-01T12:00:00.000Z',
-  testedAt: null,
-  testedBy: null,
-  account: null,
-}
-
-/** The company's catalog with the Sankhya, where the screens read the connectors' names and logos. */
-function catalogRoute() {
-  return http.get('*/api/companies/:companyId/connections', () =>
-    HttpResponse.json({ connectors: [SANKHYA], connections: [MATRIZ_LINK], mayManage: true }),
-  )
 }
 
 /**

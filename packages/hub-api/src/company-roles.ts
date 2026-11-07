@@ -35,11 +35,14 @@ export type RoleView = z.infer<typeof RoleView>
 export const RoleCreate = z.object({
   label: z.string().trim().min(1).max(ROLE_LABEL_MAX),
   connectors: RoleConnectors,
-  unattended: z.boolean(),
+  unattended: z.boolean().optional(),
 })
 export type RoleCreate = z.infer<typeof RoleCreate>
 
-export const RoleChange = z.object({ connectors: RoleConnectors, unattended: z.boolean() })
+export const RoleChange = z.object({
+  connectors: RoleConnectors,
+  unattended: z.boolean().optional(),
+})
 export type RoleChange = z.infer<typeof RoleChange>
 
 const InCompany = z.object({ companyId: CompanyId })

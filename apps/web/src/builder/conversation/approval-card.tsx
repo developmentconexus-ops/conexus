@@ -140,7 +140,9 @@ function Decided(props: { part: ApprovalCardItem; connector: string; action: str
   return (
     <>
       {part.state !== 'open' && <p className="font-semibold">{ANSWERED[part.state]}</p>}
-      {part.outcome !== undefined && <Result outcome={part.outcome} connector={connector} action={action} />}
+      {part.outcome !== undefined && (
+        <Result outcome={part.outcome} connector={connector} action={action} />
+      )}
     </>
   )
 }
@@ -205,7 +207,9 @@ export function ApprovalCard({ part }: { part: ApprovalCardItem }) {
           </h3>
         </div>
         <Fields fields={fieldsOf(write?.operation, part.args)} />
-        {open && read?.kind === 'FAILED' && <ReadFailure text={read.text} onRetry={() => refresh?.()} />}
+        {open && read?.kind === 'FAILED' && (
+          <ReadFailure text={read.text} onRetry={() => refresh?.()} />
+        )}
         {open && same !== undefined && <Notice>{openWriteText(same.sentAt, same.mark)}</Notice>}
         {open ? (
           <Answer lit={part.lit && checked} sending={sending} error={error} reply={reply} />

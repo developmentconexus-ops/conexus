@@ -46,7 +46,9 @@ test('o cartão mostra o agente, a ação, cada campo, Aprovar e Recusar, e a fr
   expect(screen.getByText('Escrever outra mensagem recusa este pedido.')).toBeTruthy()
   // The box stays open while the card waits: a message is how the person declines by writing.
   expect(
-    screen.getByRole('textbox', { name: 'Mensagem para o Conferente de metas' }).hasAttribute('disabled'),
+    screen
+      .getByRole('textbox', { name: 'Mensagem para o Conferente de metas' })
+      .hasAttribute('disabled'),
   ).toBe(false)
 })
 
@@ -174,7 +176,9 @@ test('uma escrita que lançou o erro depois de Aprovar diz "Não conseguiu lanç
   fireEvent.click(within(card).getByRole('button', { name: 'Aprovar' }))
   for (const event of rest) {
     line.emit(
-      ends(event) ? { ...event, result: 'connect ECONNREFUSED', isError: true, denied: false } : event,
+      ends(event)
+        ? { ...event, result: 'connect ECONNREFUSED', isError: true, denied: false }
+        : event,
     )
   }
   expect(await screen.findByText('Aprovado por você')).toBeTruthy()
@@ -186,10 +190,7 @@ test('uma escrita que lançou o erro depois de Aprovar diz "Não conseguiu lanç
 test.each([
   [{ kind: 'NOT_IN_ROLE' }, 'Seu papel não pode usar a ferramenta Lançar pedido.'],
   [{ kind: 'NOT_GRANTED' }, 'Esta ligação não está disponível nesta conversa.'],
-  [
-    { kind: 'CALLS_SPENT' },
-    'Esta resposta já usou as 50 leituras que cabem em uma resposta.',
-  ],
+  [{ kind: 'CALLS_SPENT' }, 'Esta resposta já usou as 50 leituras que cabem em uma resposta.'],
   [
     { kind: 'WRITE_OPEN', mark: 'Conexus 7f3a2b1c', instruction: 'Do not call this again' },
     'Um pedido igual pode já existir, e este não foi enviado.',

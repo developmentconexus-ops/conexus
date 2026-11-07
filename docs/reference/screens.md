@@ -81,21 +81,21 @@ Agente, Ligações
 ## Boxes of the write that asks (24.5 U3)
 
 The card is the plan card's design: the same width as the chat column at 1280 px and the whole
-column at 390 px; the buttons stack at 390 px.
+column at 390 px; the buttons stay side by side at 390 px.
 
 ```text
 Na conversa do agente (1280)                       (390)
- ┌ O Conferente de metas quer lançar pedido ┐      ┌ O Conferente de metas quer ┐
- │ no Sankhya · Matriz              [logo]  │      │ lançar pedido no Sankhya   │
- │ Cliente            1                     │      │ · Matriz           [logo]  │
- │ Itens              2 × produto 11 a R$ 10,00     │ Cliente            1       │
- │ Total              R$ 20,00              │      │ Itens  2 × produto 11 ...  │
- │ [!] Um pedido foi enviado às 10:12 e não │      │ Total              R$ 20,00│
- │     sabemos se entrou. Confira no ...    │      │ [!] aviso (só com envio    │
- │                    [Recusar] [Aprovar]   │      │     aberto da mesma escrita)│
- └──────────────────────────────────────────┘      │ [Recusar]                  │
- Escrever outra mensagem recusa este pedido.       │ [Aprovar]                  │
-                                                   └────────────────────────────┘
+ ┌ [logo] O Pedidos quer lançar pedido no  ┐      ┌ [logo] O Pedidos quer      ┐
+ │        Sankhya · Matriz                 │      │        lançar pedido no    │
+ │ Cliente            1                    │      │        Sankhya · Matriz    │
+ │ Itens              2 × produto 11 a R$ 10,00│      │ Cliente            1       │
+ │ Total              R$ 20,00             │      │ Itens  2 × produto 11 ...  │
+ │ ┃ Um pedido foi enviado às 10:12 e não  │      │ Total              R$ 20,00│
+ │ ┃ sabemos se entrou. Confira no ...     │      │ ┃ aviso (só com envio      │
+ │                   [Recusar] [Aprovar]   │      │ ┃ aberto da mesma escrita) │
+ └─────────────────────────────────────────┘      │      [Recusar] [Aprovar]   │
+ Escrever outra mensagem recusa este pedido.      └────────────────────────────┘
+
 Decidido: o título e os campos ficam; no lugar dos botões, uma linha
  Aprovado por você · Pedido 98001 lançado, a confirmar.
  Recusado | Recusado porque você mandou outra mensagem
@@ -104,9 +104,10 @@ Decidido: o título e os campos ficam; no lugar dos botões, uma linha
 
 Página do agente, Ligações
  [x] Sankhya · Matriz  Funcionando
-     [x] Lançar pedido  escreve     (Pergunta antes | Faz sozinho)
      [ ] Pedidos
+     [x] Lançar pedido  escreve     (Pergunta antes | Faz sozinho)
+          o motivo, sob a chave, para quem não tem a ação
 ```
 
-The key is lit on Pergunta antes by default. Faz sozinho on a version that publishes shows, under
-Publicar, "Seu papel não publica escrita que faz sozinha" to whoever lacks the action.
+The key is lit on Pergunta antes by default. Faz sozinho is off for whoever lacks the action, with
+the reason under the key.

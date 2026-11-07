@@ -1,9 +1,11 @@
-import type { OpenWrite, ToolSummary, ToolVersionDetail } from '@conexus/hub-api'
+import type { Connection, OpenWrite, ToolSummary, ToolVersionDetail } from '@conexus/hub-api'
 import { FAILURES, PROBLEM_MEDIA_TYPE, ToolVersionBody, ToolVersionId } from '@conexus/hub-api'
 import { HttpResponse, http } from 'msw'
+import { SANKHYA as SANKHYA_ENTRY } from '../../hub/connectors/fixtures.ts'
 import { problemOf } from '../../platform/fixtures.ts'
 import { refusal } from '../../platform/test-hub.tsx'
 import { KIT_SANKHYA as SANKHYA } from '../../platform/test-kit.ts'
+import { MATRIZ } from './test-agents.ts'
 
 export type ToolHeld = {
   tools?: ToolSummary[]
@@ -18,8 +20,9 @@ type Held = ToolHeld
 
 /** The sends of a conversation whose end is not known. */
 export function openWritesRoute(held: Held, projectApi: string) {
-  return http.get(`${projectApi}/agents/:id/conversations/:conversationId/open-writes`, () =>
-    held.openWritesAnswer?.() ?? HttpResponse.json({ writes: held.openWrites ?? [] }),
+  return http.get(
+    `${projectApi}/agents/:id/conversations/:conversationId/open-writes`,
+    () => held.openWritesAnswer?.() ?? HttpResponse.json({ writes: held.openWrites ?? [] }),
   )
 }
 
@@ -78,3 +81,24 @@ export function toolRoutes(
 export const catalog = http.get('*/api/companies/:companyId/connections', () =>
   HttpResponse.json({ connectors: [SANKHYA], connections: [], mayManage: true }),
 )
+
+/** The company's Matriz, linked to the Sankhya: the card of a write shows the connector's logo from it. */
+const MATRIZ_LINK: Connection = {
+  id: MATRIZ,
+  connector: 'sankhya',
+  name: 'Matriz',
+  connectorVersion: '1.0.0',
+  state: 'ACTIVE',
+  linkedBy: null,
+  linkedAt: '2026-11-01T12:00:00.000Z',
+  testedAt: null,
+  testedBy: null,
+  account: null,
+}
+
+/** The company's catalog with the Sankhya, where the screens read the connectors' names and logos. */
+export function catalogRoute() {
+  return http.get('*/api/companies/:companyId/connections', () =>
+    HttpResponse.json({ connectors: [SANKHYA_ENTRY], connections: [MATRIZ_LINK], mayManage: true }),
+  )
+}

@@ -1,5 +1,6 @@
 import type { AgentController } from '@mastra/core/agent-controller'
 import { createTool } from '@mastra/core/tools'
+import { PostgresStore } from '@mastra/pg'
 import { z } from 'zod'
 import type { OrderBook } from '../packages/connectors/src/sankhya/fake-orders.ts'
 import { APPROVAL_STEER, APPROVAL_TOOL } from './record-calls.ts'
@@ -15,6 +16,22 @@ export const APPROVALS = [
 ] as const
 export function isApproval(scenario: string): scenario is (typeof APPROVALS)[number] {
   return APPROVALS.some((each) => each === scenario)
+}
+
+/**
+ * The store the agents' controller keeps its threads in: the `approval` scenarios run on Postgres, as
+ * the Hub does, since a call that waits on the person is read from what the store holds. The database is
+ * a disposable one, named by `RECORD_DATABASE_URL`, empty at each run: the thread a scenario leaves stays in its schema.
+ */
+export function approvalStore(scenario: string): PostgresStore {
+  const connectionString = process.env.RECORD_DATABASE_URL
+  if (connectionString === undefined)
+    throw new Error('The approval scenarios record on Postgres: set RECORD_DATABASE_URL.')
+  return new PostgresStore({
+    id: 'record',
+    connectionString,
+    schemaName: `record_${scenario.replaceAll('-', '_')}`,
+  })
 }
 
 type Session = Awaited<ReturnType<AgentController['createSession']>>

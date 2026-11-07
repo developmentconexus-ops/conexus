@@ -237,10 +237,10 @@ export function updateRoleCommand(deps: Deps) {
       const { companyId, headers, role, body } = input
       await admitted(tx, input)
       if (role === 'owner' || role === 'admin') throw new Failure('ROLE_FIXED')
-      if (isFixedRole(role) && body.unattended) throw malformed('UNATTENDED_FIXED')
+      if (isFixedRole(role) && body.unattended === true) throw malformed('UNATTENDED_FIXED')
       const permission = isFixedRole(role)
         ? statementsOf(deps.roles, body.connectors)
-        : customStatements(deps.roles, body.connectors, body.unattended)
+        : customStatements(deps.roles, body.connectors, body.unattended === true)
       await refusedAs(
         () =>
           deps.auth.api.updateOrgRole({
