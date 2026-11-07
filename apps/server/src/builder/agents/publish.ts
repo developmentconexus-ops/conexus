@@ -96,6 +96,8 @@ async function refuseByRole(
   if (refused !== undefined) {
     throw new Failure('NOT_IN_ROLE', {
       details: { tool: refused.slug, operation: refused.operation },
+      person: refused.operation,
+      named: { field: 'tools' },
     })
   }
 }

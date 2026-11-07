@@ -60,6 +60,7 @@ export async function publishIn(
   if (lacking !== undefined)
     throw new Failure(lacking.reason === 'NOT_IN_ROLE' ? 'NOT_IN_ROLE' : 'CONNECTOR_NOT_GRANTED', {
       details: { connector: lacking.connector, operation: lacking.operation ?? '' },
+      ...(lacking.reason === 'NOT_IN_ROLE' ? { person: lacking.operation ?? '' } : {}),
     })
   const view = versionView(row, { ...held, publishedVersionId: row.id })
   if (held.publishedVersionId === row.id) return view

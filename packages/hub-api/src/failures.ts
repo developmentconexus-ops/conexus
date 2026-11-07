@@ -266,7 +266,7 @@ export const FAILURES = {
     category: 'USER',
     settles: true,
     status: 409,
-    phrase: 'Seu papel não pode usar uma operação desta versão.',
+    phrase: 'Seu papel não pode usar a operação {person}.',
     action: 'Peça a quem tem esse acesso para publicar, ou tire a operação.',
     actionKind: 'NONE',
   },
