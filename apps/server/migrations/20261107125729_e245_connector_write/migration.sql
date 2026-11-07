@@ -17,4 +17,5 @@ CREATE TABLE "connectors"."connector_write" (
 );
 --> statement-breakpoint
 ALTER TABLE "connectors"."connector_write" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+ALTER TABLE "connectors"."connector_write" ADD CONSTRAINT "connector_write_company_id_fkey" FOREIGN KEY ("company_id") REFERENCES "auth"."company"("id") ON DELETE CASCADE;--> statement-breakpoint
 CREATE POLICY "company_all" ON "connectors"."connector_write" AS PERMISSIVE FOR ALL TO "hub_company" USING (company_id = nullif(current_setting('conexus.company_id', true), '')) WITH CHECK (company_id = nullif(current_setting('conexus.company_id', true), ''));

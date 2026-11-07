@@ -208,8 +208,9 @@ const WRITE_STATES = sql.raw(CONNECTOR_WRITE_STATES.map((state) => `'${state}'`)
 /**
  * What an agent sent to an outside system, one row per conversation and tool call, written before
  * the call (card 24.5, U1): a write is never repeated, so a row still `SENDING` is a call that may
- * have gone. No foreign key to the connection, the version or the person: the record of a send
- * outlives each of them (data D17). The published version that spoke is `agent_id` and
+ * have gone. The row leaves with its company by the foreign key's cascade (the founder, 2026-11-07),
+ * but has none to the connection, the version or the person: the record of a send outlives each of
+ * them (data D17). The published version that spoke is `agent_id` and
  * `version_number` (a version has no id of its own), `person_id` the person talking to a draft,
  * which has no version.
  */
@@ -230,6 +231,11 @@ export const connectorWrite = connectors.table(
     createdAt: instant('created_at').notNull(),
   },
   (table) => [
+    foreignKey({
+      name: 'connector_write_company_id_fkey',
+      columns: [table.companyId],
+      foreignColumns: [company.id],
+    }).onDelete('cascade'),
     primaryKey({ columns: [table.companyId, table.threadId, table.toolCallId] }),
     check(
       'connector_write_speaker',
