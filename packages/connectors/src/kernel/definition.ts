@@ -68,16 +68,15 @@ export function defineConnector<A extends Auth>(
   if (connector.account.kind === 'reported' && connector.auth.kind !== 'oauth2_code')
     throw new Error(`Reported account without an OAuth login in ${connector.id}`)
   const all = inProbeOrder(connector)
-  const writes = connector.writes ?? []
-  const ids = [...all, ...writes].map((operation) => operation.id)
+  const declared = declaredOf(connector)
+  const ids = declared.map((operation) => operation.id)
   if (new Set(ids).size !== ids.length) throw new Error(`Repeated operation id in ${connector.id}`)
-  for (const operation of writes)
-    if (operation.class !== 'write') throw new Error(`Write not write: ${operation.id}`)
+  assertWritesWrite(connector)
   for (const [key, operation] of Object.entries(connector.readDoor ?? {})) {
     if (operation.class !== 'read') throw new Error(`Door entry not read: ${key}`)
     if (operation.id !== key) throw new Error(`Door entry ${key} is named ${operation.id}`)
   }
-  const named = new Set([...all, ...writes].map((operation) => operation.subject))
+  const named = new Set(declared.map((operation) => operation.subject))
   for (const subject of named)
     if (!(subject in connector.subjects)) throw new Error(`Unknown subject ${subject}`)
   for (const subject of Object.keys(connector.subjects))
@@ -85,6 +84,16 @@ export function defineConnector<A extends Auth>(
   assertSourcesEarlier(all)
   assertCheckStandsAlone(connector)
   return Object.freeze({ ...connector, id: ConnectorId.parse(connector.id) })
+}
+
+/** Every operation the connector declares: the door's, the reads and the writes. */
+function declaredOf(connector: Pick<Connector, 'operations' | 'readDoor' | 'writes'>) {
+  return [...inProbeOrder(connector), ...(connector.writes ?? [])]
+}
+
+function assertWritesWrite(connector: Pick<Connector, 'writes'>): void {
+  for (const operation of connector.writes ?? [])
+    if (operation.class !== 'write') throw new Error(`Write not write: ${operation.id}`)
 }
 
 function assertCheckStandsAlone(connector: Pick<Connector, 'operations' | 'check'>): void {

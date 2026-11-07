@@ -120,6 +120,14 @@ function isAdd(request: Request, url: URL): boolean {
   return request.method === 'POST' && url.pathname === ORDERS_PATH
 }
 
+/** The name a `refuse` switch answers to: the order's add, a door service, or a REST route. */
+function switchName(request: Request, url: URL): string {
+  if (isAdd(request, url)) return 'lancarPedido'
+  if (url.pathname !== SERVICE_PATH) return routeOf(url.pathname)?.name ?? ''
+  const service = url.searchParams.get('serviceName') ?? ''
+  return DOOR_NAMES[service] ?? service
+}
+
 async function serveCall(
   request: Request,
   url: URL,
@@ -131,12 +139,7 @@ async function serveCall(
   const service = door ? (url.searchParams.get('serviceName') ?? '') : ''
   const route = door ? null : routeOf(url.pathname)
   const adding = isAdd(request, url)
-  const name = adding
-    ? 'lancarPedido'
-    : door
-      ? (DOOR_NAMES[service] ?? service)
-      : (route?.name ?? '')
-  if (switches.refuse.has(name)) {
+  if (switches.refuse.has(switchName(request, url))) {
     return door ? envelope(service, '0') : forbidden(url.pathname, 'NO_ACCESS', 'Sem permissão')
   }
   if (switches.oversize) return json(OVERSIZE)
