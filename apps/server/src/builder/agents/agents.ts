@@ -26,7 +26,7 @@ import { admitted, databaseScopeOf, derivedUuid, sessionScopeOf } from '../tools
 import { choose } from './choose.ts'
 import type { AgentEvent } from './events.ts'
 import { legacyReads } from './legacy.ts'
-import { invalidField, makeActive, published } from './publish.ts'
+import { invalidField, makeActive, published, refuseUnheld, versionBack } from './publish.ts'
 import {
   agentIn,
   agentsIn,
@@ -36,7 +36,7 @@ import {
   ofProject,
   versionsOf,
 } from './store.ts'
-import { agent, agentVersion } from './tables.ts'
+import { agent } from './tables.ts'
 
 export type AgentsDeps = Pick<ToolsDeps, 'database' | 'liveProjectOf'> & {
   identity: ToolsDeps['identity'] & Pick<IdentityPorts, 'mayPublishUnattended'>
@@ -231,7 +231,7 @@ async function publish(deps: AgentsDeps, scope: InProject, agentId: AgentId, bod
   if (done.did !== 'NONE') {
     const { companyId } = scope
     const line = done.did === 'PUBLISHED' ? 'AGENT_PUBLISHED' : 'AGENT_ACTIVATED'
-    deps.log.info({ companyId, agentId, version: done.number }, line)
+    deps.log.info({ companyId, agentId, version: done.number, by: scope.personId }, line)
     await deps.emit({ kind: 'ACTIVATED', companyId, agentId, version: done.number })
   }
   return deps.database.read(databaseScopeOf(scope), async (tx) => {
@@ -264,22 +264,26 @@ async function testable(deps: AgentsDeps, scope: InProject, agentId: AgentId): P
   })
 }
 
-/** Makes a published version the active one; the draft does not change. The last one written wins. */
+/**
+ * Makes a published version the active one; the draft does not change. The last one written wins.
+ * Bringing a version back is publishing it (step 24.5, option A): who does it passes the same
+ * checks over that version's configuration (`refuseUnheld`).
+ */
 async function activate(deps: AgentsDeps, scope: InProject, agentId: AgentId, number: number) {
+  const around = await offered(deps, scope)
   const shown = await shownOf(deps, scope)
+  const kit = await deps.connectors.kitReads(sessionScopeOf(scope))
   const made = await deps.database.command(databaseScopeOf(scope), async (tx) => {
     await admitted(deps, tx, scope, 'publishAgent')
     await agentIn(tx, scope, agentId)
-    const [version] = await tx
-      .select({ number: agentVersion.number })
-      .from(agentVersion)
-      .where(and(eq(agentVersion.agentId, agentId), eq(agentVersion.number, number)))
-    if (version === undefined) throw new Failure('AGENT_VERSION_NOT_FOUND')
+    const back = await versionBack(tx, agentId, number)
+    if (back === undefined) throw new Failure('AGENT_VERSION_NOT_FOUND')
+    await refuseUnheld(tx, scope, { ...back, around, kit, identity: deps.identity })
     await makeActive(tx, agentId, number)
     return detail(tx, scope, agentId, shown)
   })
   const { companyId } = scope
-  deps.log.info({ companyId, agentId, version: number }, 'AGENT_ACTIVATED')
+  deps.log.info({ companyId, agentId, version: number, by: scope.personId }, 'AGENT_ACTIVATED')
   await deps.emit({ kind: 'ACTIVATED', companyId, agentId, version: number })
   return made
 }

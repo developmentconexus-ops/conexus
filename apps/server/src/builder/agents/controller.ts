@@ -41,7 +41,7 @@ import type { AgentEvent, AgentEvents } from './events.ts'
 import type { AgentReads, Registry } from './registry.ts'
 import { createRegistry } from './registry.ts'
 import { agent, agentConversation } from './tables.ts'
-import { writeOfAgents } from './write-of.ts'
+import { mayApproveAgents, writeOfAgents } from './write-of.ts'
 
 const MODE = 'conversa'
 const TITLE =
@@ -292,6 +292,7 @@ export function createAgentConversations(deps: Deps) {
       /** Whether the person may talk to the Projeto's agents now (`manageAgents`). */
       admit: agentManagerAdmission({ database, identity: deps.identity }),
       writeOf: writeOfAgents((owner, id) => keptRun(database, owner, id), deps.agents),
+      mayApprove: mayApproveAgents((owner, id) => keptRun(database, owner, id), deps.agents, deps),
       async release(scope: ReleaseScope): Promise<void> {
         const count = await sweep({
           [AGENT_MARK.company]: scope.companyId,
