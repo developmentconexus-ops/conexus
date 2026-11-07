@@ -1,12 +1,12 @@
 import { createHash } from 'node:crypto'
 import type { Answered, Native } from '@conexus/connectors'
 import type {
+  AgentId,
   ConnectionId,
   ConversationId,
   OperationId,
   PersonId,
   ToolCallId,
-  VersionId,
 } from '@conexus/hub-api'
 import { and, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
@@ -23,7 +23,7 @@ type Version = Extract<Speaker, { kind: 'VERSION' }>
 
 /**
  * One write an agent asks for, once per conversation and tool call. A published version speaks by what
- * it declares and is named by `versionId`; a person talking to a draft, which has no version, speaks
+ * it declares and is named by `agentId` and `number` (a version has no id of its own); a person talking to a draft, which has no version, speaks
  * by their role. The role is read again on every call.
  */
 export type WriteRequest = Readonly<{
@@ -37,7 +37,7 @@ export type WriteRequest = Readonly<{
   turn: TurnKey
   signal?: AbortSignal
 }> &
-  (Readonly<{ speaker: Person }> | Readonly<{ speaker: Version; versionId: VersionId }>)
+  (Readonly<{ speaker: Person }> | Readonly<{ speaker: Version; agentId: AgentId; number: number }>)
 
 /**
  * What the model and the screen are told of a write. `WRITE_UNCERTAIN` means the request may have
@@ -79,12 +79,12 @@ export function plain(native: Native): z.infer<typeof Plain> {
 }
 
 type Author =
-  | Readonly<{ kind: 'VERSION'; versionId: VersionId }>
+  | Readonly<{ kind: 'VERSION'; agentId: AgentId; number: number }>
   | Readonly<{ kind: 'PERSON'; personId: PersonId }>
 
 function authorOf(a: WriteRequest): Author {
-  return 'versionId' in a
-    ? { kind: 'VERSION', versionId: a.versionId }
+  return 'agentId' in a
+    ? { kind: 'VERSION', agentId: a.agentId, number: a.number }
     : { kind: 'PERSON', personId: a.speaker.personId }
 }
 
@@ -98,7 +98,7 @@ export function aboutOf(a: WriteRequest, connector?: string): Record<string, Sca
     operation: a.operation,
     toolCallId: a.toolCallId,
     ...(author.kind === 'VERSION'
-      ? { versionId: author.versionId }
+      ? { agentId: author.agentId, versionNumber: author.number }
       : { personId: author.personId }),
   }
 }
@@ -148,7 +148,8 @@ export async function register(
         connectionId: a.connectionId,
         operationId: a.operation,
         inputHash: put.hash,
-        versionId: author.kind === 'VERSION' ? author.versionId : null,
+        agentId: author.kind === 'VERSION' ? author.agentId : null,
+        versionNumber: author.kind === 'VERSION' ? author.number : null,
         personId: author.kind === 'PERSON' ? author.personId : null,
         state: 'SENDING',
         createdAt: sql`statement_timestamp()`,

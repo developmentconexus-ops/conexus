@@ -169,7 +169,7 @@ export async function writeThrough(deps: Deps, a: WriteRequest): Promise<Written
   // The kit's own schema judges what was written, and the mark must still fit the field: nothing is registered or sent when it refuses.
   if (!checked.success) {
     deps.log.info({ ...aboutOf(a, connector), reason: 'INPUT_INVALID' }, 'CONNECTOR_INPUT_REFUSED')
-    const message = issuesOf(checked.error)
+    const message = parsed.success ? roomLeft(checked.error, mark) : issuesOf(checked.error)
     return { kind: 'REFUSED', native: { status: 400, code: 'INPUT_INVALID', message, body: null } }
   }
   const registered = await register(deps, a, { hash: hashOf(parsed.data), mark, connector })
@@ -185,6 +185,18 @@ export async function writeThrough(deps: Deps, a: WriteRequest): Promise<Written
   logSent(deps, a, connector, written)
   await finish(deps, a, written, connector)
   return written
+}
+
+/** The refusal of a text that fit alone and no longer fits with the mark: each field's room once the mark is added, never the schema's bare limit. */
+function roomLeft(error: z.ZodError, mark: string): string {
+  return error.issues
+    .map((issue) => {
+      const field = issue.path.join('.') || '(input)'
+      return issue.code === 'too_big' && typeof issue.maximum === 'number'
+        ? `${field}: at most ${issue.maximum - mark.length - 1} characters, because "${mark}" is added at the end`
+        : `${field}: ${issue.message}`
+    })
+    .join('; ')
 }
 
 const Observed = z.looseObject({ observacao: z.string().optional() })

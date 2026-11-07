@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto'
 import { createServer } from 'node:http'
 import type { TestContext } from 'node:test'
 import {
+  AgentId,
   CompanyId,
   ConnectionId,
   ConversationId,
@@ -11,7 +12,6 @@ import {
   ProjectId,
   Role,
   ToolCallId,
-  VersionId,
 } from '@conexus/hub-api'
 import { z } from 'zod'
 import { post } from '../identity/test-hub.ts'
@@ -90,7 +90,7 @@ function requesters(on: Awaited<ReturnType<typeof appCalls>>, matriz: Connection
     }
   }
   const thread = ConversationId.parse(randomUUID())
-  const versionId = VersionId.parse(randomUUID())
+  const agentId = AgentId.parse(randomUUID())
   function base(over: Over) {
     return {
       scope: scopeOf(on.ana.id),
@@ -113,7 +113,7 @@ function requesters(on: Awaited<ReturnType<typeof appCalls>>, matriz: Connection
   }
   function byVersion(over: Over = {}): WriteRequest {
     const declared = [{ connectionId: matriz, operation: LANCAR }]
-    return { ...base(over), speaker: { kind: 'VERSION', declared }, versionId }
+    return { ...base(over), speaker: { kind: 'VERSION', declared }, agentId, number: 1 }
   }
   function byCarla(over: Over = {}): WriteRequest {
     const speaker = {
@@ -123,7 +123,7 @@ function requesters(on: Awaited<ReturnType<typeof appCalls>>, matriz: Connection
     } as const
     return { ...base({ scope: scopeOf(on.carla.id), ...over }), speaker }
   }
-  return { scopeOf, byAna, byVersion, byCarla, thread, versionId }
+  return { scopeOf, byAna, byVersion, byCarla, thread, agentId }
 }
 
 /** Empresa A with the Sankhya double released to the Projeto, and a way to ask the write funnel as Ana, as a version, or as Carla in a role without the write. */
@@ -159,13 +159,13 @@ export async function writing(t: TestContext, a: { order?: () => Promise<Respons
     "update auth.member set role = 'atendente' where company_id = $1 and user_id = $2",
     [on.companyId, on.carla.id],
   )
-  const { scopeOf, byAna, byVersion, byCarla, thread, versionId } = requesters(on, matriz)
+  const { scopeOf, byAna, byVersion, byCarla, thread, agentId } = requesters(on, matriz)
   function ask(request: WriteRequest) {
     return on.hub.connectors.assistant.write(request)
   }
   function ledger() {
     return on.hub.test.asOwner(
-      'select thread_id, tool_call_id, state, answer, version_id, person_id, input_hash from connectors.connector_write order by created_at',
+      'select thread_id, tool_call_id, state, answer, agent_id, version_number, person_id, input_hash from connectors.connector_write order by created_at',
     )
   }
   function lines(message: string) {
@@ -176,7 +176,7 @@ export async function writing(t: TestContext, a: { order?: () => Promise<Respons
     mode,
     matriz,
     thread,
-    versionId,
+    agentId,
     byAna,
     byVersion,
     byCarla,

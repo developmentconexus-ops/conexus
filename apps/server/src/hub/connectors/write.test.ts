@@ -18,20 +18,28 @@ test('o pedido sai: de uma versão e de uma pessoa num rascunho, com a marca na 
   assert.equal(stored[0]?.observacao, markOf(first.threadId, first.toolCallId))
   assert.equal(stored[1]?.observacao, markOf(second.threadId, second.toolCallId))
   assert.match(markOf(first.threadId, first.toolCallId), /^Conexus [0-9a-f]{8}$/)
+  // The kit's description of `observacao` says 17: the mark and the space before it.
+  assert.equal(markOf(first.threadId, first.toolCallId).length + 1, 17)
   const sent = on.lines('CONNECTOR_WRITE_SENT')
   assert.equal(sent.length, 2)
   assert.equal(sent[0]?.fields.codigoPedido, 98001)
   assert.equal(sent[0]?.fields.personId, on.ana.id)
-  assert.equal(sent[1]?.fields.versionId, on.versionId)
+  assert.equal(sent[1]?.fields.agentId, on.agentId)
+  assert.equal(sent[1]?.fields.versionNumber, 1)
   assert.equal(sent[1]?.fields.connectionId, on.matriz)
   assert.equal(sent[1]?.fields.operation, 'lancarPedido')
   assert.ok(!JSON.stringify(sent).includes('codigoCliente'))
   const rows = await on.ledger()
   assert.deepEqual(
-    rows.map((row) => [row.state, row.version_id === null, row.person_id === null]),
+    rows.map((row) => [
+      row.state,
+      row.agent_id === null,
+      row.version_number,
+      row.person_id === null,
+    ]),
     [
-      ['DONE', true, false],
-      ['DONE', false, true],
+      ['DONE', true, null, false],
+      ['DONE', false, 1, true],
     ],
   )
 })
@@ -65,6 +73,7 @@ test('a escrita recusada: sem a operação no papel, sem a liberação, sem a es
   assert.equal(invalid.kind, 'REFUSED')
   const tooLong = await on.ask(on.byAna({ input: { ...ORDER, observacao: 'x'.repeat(150) } }))
   assert.equal(tooLong.kind, 'REFUSED')
+  assert.match(String(Object(Object(tooLong).native).message), /at most 133 characters/)
   assert.equal(on.mode.posts, 0)
   assert.equal(on.fake.orders().length, 0)
   assert.equal((await on.ledger()).length, 0)

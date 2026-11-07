@@ -27,6 +27,8 @@ test('o corte depois de sair, o 5xx e o GTW3503 dão WRITE_UNCERTAIN com a marca
     () => Promise.reject(new TypeError('terminated', { cause: { code: 'UND_ERR_SOCKET' } })),
     () => Promise.resolve(Response.json({ code: 'X' }, { status: 502 })),
     () => Promise.resolve(Response.json({ code: 'GTW3503', message: 'tempo' }, { status: 504 })),
+    // The gateway's own code decides, whatever the status it travels under.
+    () => Promise.resolve(Response.json({ code: 'GTW3503', message: 'tempo' }, { status: 408 })),
   ]
   for (const order of answers) {
     const { on, request, first, again } = await scripted(t, order)
