@@ -150,8 +150,8 @@ test('o foi?: depois de um corte, outro toolCallId na mesma conversa, conexão e
 test('o foi? não alcança outra operação, outra conexão nem outra conversa, e a linha acabada não bloqueia', async (t) => {
   const on = await writing(t)
   const first = on.byAna()
-  const hold = (over: Record<string, string>) =>
-    on.hub.test.asOwner(
+  function hold(over: Record<string, string>) {
+    return on.hub.test.asOwner(
       `insert into connectors.connector_write(company_id, thread_id, tool_call_id, connection_id,
          operation_id, input_hash, person_id, state, created_at)
        values ($1, $2, $3, $4, $5, 'x', $6, $7, now())`,
@@ -165,6 +165,7 @@ test('o foi? não alcança outra operação, outra conexão nem outra conversa, 
         over.state ?? 'SENDING',
       ],
     )
+  }
   await hold({ operation: 'outraOperacao' })
   await hold({ connection: randomUUID() })
   await hold({ thread: randomUUID() })

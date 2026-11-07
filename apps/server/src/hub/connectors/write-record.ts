@@ -1,13 +1,7 @@
 import { createHash } from 'node:crypto'
 import type { Answered, Native } from '@conexus/connectors'
-import type {
-  AgentId,
-  ConnectionId,
-  ConversationId,
-  OperationId,
-  PersonId,
-  ToolCallId,
-} from '@conexus/hub-api'
+import type { AgentId, ConnectionId, ConversationId, OperationId, PersonId } from '@conexus/hub-api'
+import { ToolCallId } from '@conexus/hub-api'
 import { and, eq, inArray, ne, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { Scalar } from '../../platform/failure.ts'
@@ -196,7 +190,7 @@ export async function register(
 }
 
 /** An earlier write of the conversation whose end the record does not know. */
-export type OpenWrite = Readonly<{ state: Row['state']; since: Date; mark: string }>
+type OpenWrite = Readonly<{ state: Row['state']; since: Date; mark: string }>
 
 /**
  * The writes of this conversation, connection and operation that may exist in the provider: rows still
@@ -227,7 +221,7 @@ export async function openWritesOf(deps: Deps, a: WriteRequest): Promise<readonl
   return rows.map((row) => ({
     state: row.state,
     since: row.createdAt,
-    mark: markOf(a.threadId, row.toolCallId),
+    mark: markOf(a.threadId, ToolCallId.parse(row.toolCallId)),
   }))
 }
 
