@@ -88,11 +88,12 @@ página. No fim: faz o roteiro na sua empresa, diz o que viu e aprova os textos 
   ferramentas o `connector_read` com a consulta livre: hoje só o modelo o manteve longe dela. Ela
   chegou pela chave **Ligações › Sankhya** da versão, que dá ao agente toda leitura da ligação e na
   tela só diz "Sankhya · Sankhya, Funcionando". Esta etapa fecha isso pela estrutura, com o `mayUse`
-  dentro de `readThrough` e a decisão `E4`: o agente deixa de ter a seção Ligações e o
-  `connector_read`; ele só tem as ferramentas escolhidas em **Ferramentas**, agrupadas por
-  conector, e a consulta livre é uma delas, desmarcada, no fim do grupo, com o aviso "Consulta
-  livre: roda qualquer SQL no banco inteiro". O agente de teste, publicado de novo assim, não teria
-  a consulta livre na lista, e um pedido dela seria recusado no funil.
+  dentro de `readThrough` e a decisão `E4`: o agente deixa de ter o `connector_read`; selecionar
+  uma ligação não dá nada sozinho, só mostra as ferramentas dela, nenhuma marcada, e o agente lê só
+  pelas que forem marcadas. A consulta livre é uma delas, no fim do grupo, com o aviso "Consulta
+  livre: roda qualquer SQL no banco inteiro", e o botão "Marcar todas as leituras" nunca a marca. O
+  agente de teste, publicado de novo assim, não teria a consulta livre na lista, e um pedido dela
+  seria recusado no funil.
 - **Sobre a D, o pedido no Sankhya** (lido na documentação pública, sem chamar o Sankhya). Lançar um
   pedido é `POST /v1/vendas/pedidos`, e ele nasce "a confirmar". Desfazer pela API é **cancelar**,
   com um motivo; apagar de vez não está na API, e um pedido faturado não cancela. Está no anexo "O
@@ -115,7 +116,8 @@ página. No fim: faz o roteiro na sua empresa, diz o que viu e aprova os textos 
 **As decisões suas nesta etapa.** Decididas em 2026-11-06: `A1`, `B1`, `C1` e `D1`. Primeiro "A um,
 B um, C um", e depois, com os exemplos, "confirma o seu 1 e D1". A página foi aprovada no mesmo dia
 ("Aprovo tudo"). A E entrou depois, por emenda, depois do teste ao vivo: primeiro a `E1` ("Ah,
-entendi. Tá, pode ser um, então, aprovado."), e no mesmo dia a `E4` no lugar dela ("E4"). As opções ficam abaixo como foram apresentadas, com a recomendação
+entendi. Tá, pode ser um, então, aprovado."), e no mesmo dia a `E4` no lugar dela ("E4"), com a tela refinada por ele: "você pode selecionar as
+ligações sim pro agente" e "eu prefiro que venha nada marcado". As opções ficam abaixo como foram apresentadas, com a recomendação
 primeiro.
 
 - **A. O papel escolhe por conector ou por ligação?**
@@ -167,20 +169,24 @@ primeiro.
     argumentos), mas é uma tela a mais; fica para depois.
 - **E. Onde se escolhe o que um agente lê de uma ligação.** O agente nunca recebe mais que o papel
   de quem publica (`C1`); a E diz onde quem publica escolhe abaixo desse teto.
-  - `E4` (recomendo, decidida no lugar da `E1`): uma lista só. **Ferramentas** é o único lugar,
-    agrupado por conector; quando o Projeto tem duas ligações do mesmo sistema, o nome da ligação dá
-    título ao grupo. A seção **Ligações** sai da página do agente, e o agente deixa de ter o
-    `connector_read` (ele fica no Assistente e no Builder, cortado pelo `mayUse`). As leituras do
-    kit e as ferramentas da empresa ficam juntas no grupo; a consulta livre é mais uma ferramenta,
-    desmarcada, no fim do grupo, com o aviso "Consulta livre: roda qualquer SQL no banco inteiro". O
-    caderno da ligação (`connector_notes`) vem com qualquer ferramenta escolhida dela. A
-    conferência de publicar da `C1` cobre toda ferramenta, e a chave da `D1` fica na linha de cada
-    uma. As versões que já existem se leem como as leituras do kit das suas ligações, sem a consulta
-    livre; um rascunho grava assim no próximo salvamento. Exemplo: o agente de teste do Hub no ar
-    teria `pedidos` e as outras leituras do Sankhya como ferramentas, e não a consulta livre.
-    Nativo: uma `createTool` por operação (`builder/agents/tools.ts:38-70`), como o `tools()` do
-    Mastra Connect, e a escolha guardada na versão, como o editor do Mastra e
-    `builder.agent_version_tool` já fazem.
+  - `E4` (recomendo, decidida no lugar da `E1`, com a tela refinada pelo fundador): a versão guarda
+    a lista de ferramentas, e só ela dá leitura. A página do agente mostra primeiro as ligações do
+    Projeto como seletores. Selecionar uma não dá nada sozinho: mostra embaixo as ferramentas dela
+    (as leituras do kit, as ferramentas da empresa feitas sobre ela e, na 24.5, as escritas) e traz
+    o caderno dela (`connector_notes`, só nomes e códigos). Nada vem marcado ao selecionar. O botão
+    "Marcar todas as leituras" marca só as leituras do kit, nunca a consulta livre e nunca uma
+    escrita. A consulta livre fica no fim do grupo, desmarcada, com o aviso "Consulta livre: roda
+    qualquer SQL no banco inteiro". Tirar a seleção de uma ligação tira as ferramentas dela do
+    rascunho. Quando o Projeto tem duas ligações do mesmo sistema, o nome da ligação dá título ao
+    grupo. O agente deixa de ter o `connector_read` (ele fica no Assistente e no Builder, cortado
+    pelo `mayUse`). A conferência de publicar da `C1` cobre toda ferramenta, e a chave da `D1` fica
+    na linha de cada uma. As versões que já existem se leem com as leituras do kit das suas ligações
+    como ferramentas, sem a consulta livre; um rascunho grava assim no próximo salvamento. Exemplo:
+    você cria um agente e seleciona o Mercado Livre; aparecem as ferramentas dele, nenhuma marcada;
+    sem selecionar, nenhuma aparece. Nativo: o `tools()` do Mastra Connect por ligação escolhida, com
+    `connectionId` e `allowTools` como as ferramentas marcadas (`docs/src/content/en/reference/connect/tools.mdx:123-139`,
+    Mastra 1.82.0, `6e8dfcb8`), feito aqui com uma `createTool` por operação
+    (`builder/agents/tools.ts:38-70`) e a escolha guardada na versão (`builder.agent_version_tool`).
   - `E1` (escolhida antes, substituída): a seção Ligações guardaria as operações escolhidas em cada
     ligação. Seriam dois lugares para um conector, Ferramentas e Ligações, e a `D1` teria de entrar
     também em cada operação de Ligações.
@@ -194,8 +200,8 @@ primeiro.
 | Unidade | O que entrega | Pastas | Guia além do de código | Depende de |
 | --- | --- | --- | --- | --- |
 | U1 Os papéis no servidor | `dynamicAccessControl` ligado; os recursos de conector montados do kit; a tabela `auth.organization_role` e as linhas semeadas do Membro e do Desenvolvedor; `Role` aberto a nome conferido; as rotas de listar, criar, mudar e apagar um papel; dar um papel próprio a uma pessoa e convidar com ele | `apps/server/src/hub/identity/`, `packages/hub-api/src/{roles,identity,failures}.ts`, `apps/server/migrations/` | [security](../guides/security.md) | esta página aprovada |
-| U2 O papel vale em toda porta | Uma função `mayUse` sobre o `hasPermission` nativo; a lista do modelo só com o que a pessoa pode (Builder e Assistente); a recusa na hora de rodar (leitura, porta de leitura, ferramenta da biblioteca, ferramenta em código, caderno); a conferência de publicar (quem publica pode cada operação da versão); o agente sem `connector_read` e sem `AgentConfig.connections`, só com as ferramentas escolhidas (decisão `E4`) | `apps/server/src/hub/connectors/`, `apps/server/src/builder/{assistant,agents,tools,connectors}/`, `packages/hub-api/src/agents.ts` | [security](../guides/security.md) | U1 |
-| U3 A tela | **Configurações › Papéis**: a lista, o papel novo, a edição por conector, assunto e operação; **Pessoas**: os papéis próprios na troca e no convite; **o agente › Ferramentas**: a lista única agrupada por conector, com a consulta livre desmarcada e o aviso; a seção Ligações sai (decisão `E4`) | `apps/web/src/hub/identity/`, `apps/web/src/builder/agents/`, `docs/reference/screens.md` | [web](../guides/web.md) | U1; a tela do agente, também o contrato de `AgentConfig` da U2 |
+| U2 O papel vale em toda porta | Uma função `mayUse` sobre o `hasPermission` nativo; a lista do modelo só com o que a pessoa pode (Builder e Assistente); a recusa na hora de rodar (leitura, porta de leitura, ferramenta da biblioteca, ferramenta em código, caderno); a conferência de publicar (quem publica pode cada operação da versão); o agente sem `connector_read`, só com as ferramentas escolhidas; `AgentConfig.connections` passa a ser só as ligações selecionadas, que não dão leitura (decisão `E4`) | `apps/server/src/hub/connectors/`, `apps/server/src/builder/{assistant,agents,tools,connectors}/`, `packages/hub-api/src/agents.ts` | [security](../guides/security.md) | U1 |
+| U3 A tela | **Configurações › Papéis**: a lista, o papel novo, a edição por conector, assunto e operação; **Pessoas**: os papéis próprios na troca e no convite; **o agente**: as ligações do Projeto como seletores e, embaixo de cada selecionada, as ferramentas dela, nada marcado, o botão "Marcar todas as leituras" e a consulta livre com o aviso (decisão `E4`) | `apps/web/src/hub/identity/`, `apps/web/src/builder/agents/`, `docs/reference/screens.md` | [web](../guides/web.md) | U1; a tela do agente, também o contrato de `AgentConfig` da U2 |
 
 A U2 e a U3 correm em paralelo depois da U1: não dividem pasta.
 
@@ -204,10 +210,11 @@ editáveis, a migração e a semente, o `Role` aberto em hub-api, admissão, `ra
 `mayInviteAs`, `manageRoles`, as quatro rotas, as falhas). U2:
 ~1.100 (a função; `allows` para papéis próprios; o `Speaker` obrigatório no pedido de leitura e o
 `mayUse` dentro de `readThrough`; a lista do modelo filtrada no Builder e no Assistente; a conferência nova de publicar agente e app; os textos de
-recusa ao modelo; ~+20 da `E4`: sai o campo, as conferências, `ownConnections` e o `connector_read`
-do agente, entram o caderno pelas ferramentas e a leitura das versões antigas). U3: ~1.180 (duas
-telas, o diálogo de apagar, a troca de papel; ~−20 da `E4`: sai a seção Ligações, entram o grupo
-por ligação e o aviso). Total da etapa: ~3.550, dentro da regra L2 (estimado pela leitura, sem
+recusa ao modelo; ~+20 da `E4`: saem `ownConnections` e o `connector_read` do agente, entram o
+caderno das ligações selecionadas, a regra de que toda ferramenta tem a sua ligação selecionada e a
+leitura das versões antigas). U3: ~1.230 (duas telas, o diálogo de apagar, a troca de papel; ~+30
+da `E4`: a seção de ligações vira seletores com as ferramentas embaixo, o botão "Marcar todas as
+leituras" e o aviso). Total da etapa: ~3.600, dentro da regra L2 (estimado pela leitura, sem
 protótipo).
 
 ## Os critérios de aceite
@@ -231,13 +238,13 @@ protótipo).
 | 15 | U2 | O funil: `ReadRequest` de `hub/connectors/read.ts` exige o `speaker`, e `readThrough` chama `mayUse` antes do executor; um pedido sem `speaker` não compila (o `npm run typecheck` prova), e um `speaker` sem a operação dá `NOT_IN_ROLE` sem pedido ao dublê | `hub/connectors/read.test.ts` (novo), "o funil confere o papel" | must |
 | 16 | U2 | A ferramenta da biblioteca presa à consulta livre: publicar a versão por quem não tem `consultar` dá `NOT_IN_ROLE`; publicada por quem tem, ela roda para quem conversa, e uma versão que não declara `consultar` é recusada no funil | `builder/agents/publish.test.ts` (novo), "a ferramenta presa à Porta" | must |
 | 17 | U2 | A ferramenta em código: uma leitura que a versão não declarou continua `NOT_DECLARED` (`tool-door.ts:45-61`); declarar `consultar` e publicar sem ter a operação dá `NOT_IN_ROLE`; o Worker continua sem saída (o muro de `apps/edge/src/outbound.ts`, `outbound.test.ts`) | `hub/connectors/tool-door.test.ts`, "o papel na ferramenta em código"; `apps/edge/src/outbound.test.ts` | must |
-| 18 | U2 | O agente publicado não tem `connector_read` (decisão `E4`): a lista que o modelo recebe só traz as ferramentas da versão e o caderno das suas ligações; uma versão sem a ferramenta Consulta livre não tem ferramenta nenhuma que leia `consultar`, e a porta recusa (`tool-door.ts:45-61`) e o funil dá `NOT_IN_ROLE`, sem pedido ao dublê | `builder/agents/agent-read.test.ts` (novo), "o agente lê só pelas ferramentas" | must |
+| 18 | U2 | O agente publicado não tem `connector_read` (decisão `E4`): uma ligação selecionada sem ferramenta marcada dá ao modelo só o `connector_notes` dela, e nenhuma leitura; a lista do modelo traz as ferramentas da versão e o caderno das ligações selecionadas; uma versão sem a ferramenta Consulta livre não tem ferramenta nenhuma que leia `consultar`, e a porta recusa (`tool-door.ts:45-61`) e o funil dá `NOT_IN_ROLE`, sem pedido ao dublê | `builder/agents/agent-read.test.ts` (novo), "selecionar a ligação não dá leitura" | must |
 | 19 | U2 | O app publicado: publicar uma versão cujo manifesto declara uma operação que o papel de quem publica não tem dá `NOT_IN_ROLE`; quem só usa o app continua usando (o "8. Sim"); `app-calls.ts` continua recusando o que o manifesto não declara | `hub/apps/live.test.ts` (novo), "publicar pelo papel"; `hub/connectors/app-calls.test.ts`, "a versão no funil" | must |
 | 20 | U2 | O caderno: num papel sem `consultar`, gravar uma nota pelo Builder ou pelo Assistente dá `NOT_IN_ROLE`, e o dublê não recebe a consulta de prova | `hub/connectors/notes.test.ts`, "a prova do caderno pelo papel" | must |
 | 21 | U2 | A automação roda como o dono dela (`builder/automations/run.ts:113`), com o papel dele: tirar a operação do papel do dono faz a próxima execução recusar | `builder/automations/run.test.ts`, "a automação pelo papel do dono" | should |
 | 22 | U2 | Os muros de fora continuam: a máquina nasce sem variáveis de ambiente e com `denyOut: ['0.0.0.0/0']` (`builder/machine/machine-e2b.test.ts`, já existe); o `web_fetch` recusa `127.0.0.1`, `localhost`, `[::1]`, `10.0.0.0/8` e `169.254.169.254`, e um servidor local que imita o Hub recebe zero pedidos | `builder/machine/machine-e2b.test.ts`; `builder/conversation/web-fetch.test.ts` (novo), "o web_fetch não alcança o Hub" | must |
-| 23 | U2 | A lista única (decisão `E4`): publicar uma versão com a ferramenta Consulta livre por quem não tem `consultar` no papel dá `NOT_IN_ROLE` e não publica; uma versão gravada antes (com `connections: [X]`) se lê como as ferramentas das leituras do kit de X, sem a `readDoor`, mais o caderno de X, sem gravar; um rascunho assim grava a mesma forma no próximo salvamento; `AgentConfig` não tem mais `connections` | `builder/agents/publish.test.ts`, "a consulta livre pelo papel"; `builder/agents/frozen.test.ts`, "a versão antiga sem a consulta livre" | must |
-| 24 | U3 | No agente, **Ferramentas** é o único lugar: Adicionar abre a lista agrupada por conector (o nome da ligação no título quando o Projeto tem duas do mesmo sistema), com as leituras do kit e as ferramentas da empresa no grupo e "Consulta livre: roda qualquer SQL no banco inteiro" desmarcada no fim; a seção Ligações não aparece; uma ferramenta fora do papel de quem edita aparece sem poder marcar | `apps/web/src/builder/agents/chooser.test.tsx`, "a lista única por conector"; `agent-page.test.tsx`, "sem a seção Ligações" | must |
+| 23 | U2 | A lista única (decisão `E4`): publicar uma versão com a ferramenta Consulta livre por quem não tem `consultar` no papel dá `NOT_IN_ROLE` e não publica; uma versão gravada antes (com `connections: [X]`) se lê como as ferramentas das leituras do kit de X, sem a `readDoor`, mais o caderno de X, sem gravar; um rascunho assim grava a mesma forma no próximo salvamento; gravar uma ferramenta cuja ligação não está selecionada a acrescenta às selecionadas, e tirar uma ligação das selecionadas tira as ferramentas dela | `builder/agents/publish.test.ts`, "a consulta livre pelo papel"; `builder/agents/frozen.test.ts`, "a versão antiga sem a consulta livre" | must |
+| 24 | U3 | No agente, as ligações do Projeto aparecem como seletores; selecionar Sankhya mostra embaixo as ferramentas dele (as leituras do kit e as ferramentas da empresa), **nenhuma marcada**, e "Consulta livre: roda qualquer SQL no banco inteiro" no fim; "Marcar todas as leituras" marca as leituras do kit e deixa a consulta livre desmarcada; tirar a seleção tira as ferramentas dele do rascunho; o nome da ligação titula o grupo quando o Projeto tem duas do mesmo sistema; uma ferramenta fora do papel de quem edita aparece sem poder marcar | `apps/web/src/builder/agents/connections-section.test.tsx` (novo), "selecionar a ligação mostra as ferramentas"; `chooser.test.tsx`, "marcar todas as leituras" | must |
 
 ## A matriz de estados
 
@@ -246,7 +253,7 @@ protótipo).
 | Configurações › Papéis | Os quatro fixos, sem papel próprio, e o botão **Novo papel** | "Sua empresa ainda não criou papéis." abaixo dos fixos | A lista em esqueleto | "Não deu para carregar os papéis." com **Tentar de novo** | — | O item não aparece para Desenvolvedor e Membro | — |
 | O papel aberto | Os conectores do kit, cada um com os assuntos | Um conector sem operação que o papel use mostra "Não usa" | Os conectores em esqueleto | O erro ao salvar fica na tela, com o que foi marcado | "Este papel não existe mais." ao abrir um apagado | Dono e Administrador abertos só para ler | `ROLE_NAME_TAKEN`, `ROLE_IN_USE` com quem usa |
 | Pessoas, troca de papel | Os quatro fixos e os próprios | — | — | O erro na linha da pessoa | `ROLE_NOT_FOUND` se o papel foi apagado | Como hoje | — |
-| O agente › Ferramentas, Adicionar | Os grupos por conector, com as leituras do kit e as ferramentas da empresa; "Consulta livre: roda qualquer SQL no banco inteiro" desmarcada no fim do grupo | Um Projeto sem ligação mostra só "Do Conexus" | Como hoje | O erro ao salvar fica na tela, como hoje | A ligação deixou de ser oferecida ao Projeto: como hoje (`NOT_OFFERED`) | Uma ferramenta fora do papel de quem edita aparece sem poder marcar | `NOT_IN_ROLE` ao publicar, com a ferramenta |
+| O agente, as ligações e as ferramentas | As ligações do Projeto como seletores, nenhuma selecionada | Um Projeto sem ligação mostra só "Do Conexus"; uma ligação selecionada sem ferramenta marcada mostra as ferramentas desmarcadas e o botão "Marcar todas as leituras" | Como hoje | O erro ao salvar fica na tela, como hoje | A ligação deixou de ser oferecida ao Projeto: como hoje (`NOT_OFFERED`) | Uma ferramenta fora do papel de quem edita aparece sem poder marcar | `NOT_IN_ROLE` ao publicar, com a ferramenta |
 
 | Campo de contrato | Quem escreve | Quem lê |
 | --- | --- | --- |
@@ -257,7 +264,7 @@ protótipo).
 | `RoleView.kind` (`ALL`, `EDITABLE`, `CUSTOM`) | U1 | U3 (o que se edita) |
 | `RoleView.members` (quantas pessoas usam) | U1 | U3 (apagar) |
 | `NOT_IN_ROLE` (falha ao modelo e à rota de publicar) | U2 | O modelo; U3 (a operação recusada ao publicar o agente) |
-| `AgentConfig` sem `connections` (decisão `E4`) | U2, `packages/hub-api/src/agents.ts` | U3 (o agente › Ferramentas; a seção Ligações sai) |
+| `AgentConfig.connections` (as ligações selecionadas, que não dão leitura; decisão `E4`) | U2, `packages/hub-api/src/agents.ts` | U3 (os seletores de ligação do agente), U2 (o caderno das selecionadas) |
 
 As caixas das telas, a 1280 e a 390 px, são desenhadas pela U3 em `docs/reference/screens.md` antes
 do código, seguindo a tela de Pessoas de hoje e as regras de Impeccable; o produto antigo não tinha
@@ -288,7 +295,7 @@ papéis próprios.
 | Conferir se a pessoa pode uma operação | U2 | nenhum: as portas não leem papel (`hub/connectors/builder-port.ts`, `assistant-port.ts`); `allows()` lê só os fixos (`hub/identity/admission.ts:130-134`) | `better-auth@1.7.8` `has-permission.mjs:7-32` | Lê as linhas da empresa a cada chamada | embrulhado: `mayUse` chama a função `hasPermission` do plugin (sem sessão, com o adaptador de `organizationAdapter`, `auth.ts:291-294`), fora da transação do Hub; uma leitura só (C26) | não precisa | "2. ... configurável" | `apps/server/src/hub/identity/may-use.ts` |
 | O modelo só vê o que a pessoa pode | U2 | `builder-port.ts:135-158`; `builder/assistant/assistant.ts:240-270` | `@mastra/core@1.82.0` `tools` por chamada; ferramenta ausente dá "Tool not found" | Fora do papel, fora da lista | nativo | não precisa | não precisa | — |
 | Ferramenta da biblioteca ou em código | U2 | `builder/agents/tools.ts:33-75`, `builder/agents/code-tools.ts`; `hub/connectors/grants.ts:215 ungranted()` só nos apps e nos pedidos | Copilot Studio credencial do criador; Agentforce usuário do agente (documentado, 2026-11-06) | O agente age com o que o dono declarou | embrulhado: uma conferência nova ao publicar um agente, pelo papel de quem publica | não precisa | "8. Sim"; decisão C | — |
-| Onde se escolhe o que um agente lê | U2, U3 | Duas seções: Ferramentas (`apps/web/src/builder/agents/chooser.tsx:131-209`, a ferramenta guarda a sua `connectionId`, `builder/tools/choice.ts:67`) e Ligações (`connections-section.tsx`, `config-panel.tsx:8,97`); `AgentConfig.connections` (`packages/hub-api/src/agents.ts:37-41`) vira o acesso (`builder/agents/agent.ts:175`, `:185`, `:234`) e o `connector_read` com toda leitura, a Porta incluída (`builder/connectors/connector-tools.ts:177-193`, `:275-277`) | Mastra Connect `tools()` (uma ferramenta por operação); o editor do Mastra guarda as ferramentas na versão (`reference/editor/tools.mdx`); Copilot Studio e ServiceNow, ação por ação, desligada por padrão (documentado, 2026-11-06); nenhuma referência lida tem uma chave de conexão que dê ferramentas por fora da lista | Cada ferramenta se escolhe numa lista; o que não foi escolhido não existe para o modelo | nativo: uma `createTool` por operação (`builder/agents/tools.ts:38-70`) e `builder.agent_version_tool`; sai a seção Ligações, o campo e o `connector_read` do agente; a versão antiga se lê como as ferramentas das leituras do kit, sem a `readDoor` (`packages/connectors/src/kernel/definition.ts:42`) | não precisa | "E4", 2026-11-06 (no lugar de "Ah, entendi. Tá, pode ser um, então, aprovado."); decisão E | — |
+| Onde se escolhe o que um agente lê | U2, U3 | Duas seções: Ferramentas (`apps/web/src/builder/agents/chooser.tsx:131-209`, a ferramenta guarda a sua `connectionId`, `builder/tools/choice.ts:67`) e Ligações (`connections-section.tsx`, `config-panel.tsx:8,97`); `AgentConfig.connections` (`packages/hub-api/src/agents.ts:37-41`) vira o acesso (`builder/agents/agent.ts:175`, `:185`, `:234`) e o `connector_read` com toda leitura, a Porta incluída (`builder/connectors/connector-tools.ts:177-193`, `:275-277`) | Mastra Connect `tools()`: por provedor, `connectionId` fixa a ligação e `allowTools` dá as ferramentas, uma por operação (`docs/src/content/en/reference/connect/tools.mdx:123-139`, Mastra 1.82.0, `6e8dfcb8`); o editor do Mastra guarda as ferramentas na versão (`reference/editor/tools.mdx`); Copilot Studio e ServiceNow, ação por ação, desligada por padrão (documentado, 2026-11-06) | Escolhe a ligação; dela, só as ferramentas permitidas existem para o modelo | nativo: uma `createTool` por operação (`builder/agents/tools.ts:38-70`) e `builder.agent_version_tool`, como `tools()` com `allowTools` por ligação; `connections` fica, só como as ligações selecionadas; sai o `connector_read` do agente; a versão antiga se lê como as ferramentas das leituras do kit, sem a `readDoor` (`packages/connectors/src/kernel/definition.ts:42`) | não precisa | "E4" e "eu prefiro que venha nada marcado", 2026-11-06; decisão E | — |
 | Papel próprio numa pessoa e num convite | U1 | `admission.ts:146 rankAllows`; `mayInviteAs` | `better-auth@1.7.8` `routes/crud-members.mjs:311-330`, `crud-invites.mjs:101-122` | Aceita um nome que exista na empresa | nativo | não precisa | não precisa | — |
 | A tela dos papéis | U3 | `apps/web/src/hub/identity/people.tsx`, `role-badge.tsx` | Claude Enterprise, papéis com conectores e ações (documentado, 2026-11-05); Activepieces, ações por projeto | Lista de papéis; dentro, conectores com ações marcadas | nativo nos componentes da casa (0033) | não precisa | "7. Sim" | `apps/web/src/hub/identity/roles.tsx` |
 | Se o agente pergunta antes (24.5) | fica de fora: 24.5 | `initialState: { yolo: true }` em `builder/agents/controller.ts:269`, `assistant.ts:305` | `@mastra/core@1.82.0` `createTool({ requireApproval: fn })`, `agent-BP9OWM6D.js:15124-15143`; `docs-agents-human-in-the-loop.md:155-157` | A regra da ferramenta é a palavra final | nativo, com `yolo: false` nos agentes e no Assistente | estudo, a medida do controlador, P2 e P3: 0 de 200 perdidas | decisão D | — |
@@ -423,7 +430,7 @@ quatro chamadores: `assistant-port.ts:228`, `builder-port.ts:177`, `notes.ts:126
 | `apps/server/src/hub/apps/` | Muda a conferência de publicar um app (`live.ts:51`) | as rotas de publicar |
 | `apps/server/src/hub/identity/admission.ts` | Muda `allows` para papéis próprios | todo módulo que admite |
 | `apps/server/src/builder/{assistant,agents,tools,connectors}/` | Muda a montagem das ferramentas e a conferência de publicar; `agents.ts`, `agent.ts`, `publish.ts`, `frozen.ts` e `connector-tools.ts` sem o `connector_read` do agente e sem `connections` | as conversas |
-| `packages/hub-api/src/agents.ts` | Apaga `AgentConfig.connections` | a U3 (o agente › Ferramentas), as rotas do agente |
+| `packages/hub-api/src/agents.ts` | Muda o sentido de `AgentConfig.connections` (as ligações selecionadas, sem leitura) | a U3 (os seletores de ligação), as rotas do agente |
 
 ### Os contratos que a unidade cria
 
@@ -437,10 +444,16 @@ export function mayUse(tx: CompanyTx, speaker: Speaker, connectorId: ConnectorId
   conferido ao publicar contra o papel de quem publica. Um agente só lê pelas ferramentas que a
   versão escolheu (decisão `E4`): ele não tem `connector_read`, e a consulta livre só existe para
   ele se a ferramenta Consulta livre foi marcada por quem a tem no papel.
-- `AgentConfig` perde `connections`. Uma versão gravada antes, com `connections: [X]`, se lê como
-  as ferramentas das leituras do kit de X, sem as da `readDoor`
-  (`packages/connectors/src/kernel/definition.ts:42`), mais o caderno de X; a leitura converte, nada
-  se regrava. Um rascunho assim grava a forma nova no próximo salvamento (`saveReady`).
+- A forma mínima (decisão `E4`): a versão guarda a lista de ferramentas, como hoje, e
+  `AgentConfig.connections: ConnectionId[]` fica, só com outro sentido: as ligações selecionadas, que
+  não dão leitura nenhuma e trazem o caderno de cada uma. O servidor mantém a regra de que a ligação
+  de toda ferramenta escolhida está selecionada: gravar uma ferramenta acrescenta a sua ligação, e
+  tirar uma ligação tira as ferramentas dela. Assim as selecionadas são as ligações das ferramentas
+  mais as que foram escolhidas só pelo caderno, sem campo novo.
+- Uma versão gravada antes, com `connections: [X]` e sem ferramenta de X, se lê como as ferramentas
+  das leituras do kit de X, sem as da `readDoor` (`packages/connectors/src/kernel/definition.ts:42`),
+  com X selecionada; a leitura converte, nada se regrava. Um rascunho assim grava a forma nova no
+  próximo salvamento (`saveReady`).
 - `ReadRequest` (`hub/connectors/read.ts`) ganha `speaker: Speaker`, obrigatório: é o que faz um
   caminho novo que esqueça o papel não compilar.
 - A função `hasPermission` do plugin devolve um booleano (`permission.mjs:2-11`), e não
@@ -469,7 +482,7 @@ export function mayUse(tx: CompanyTx, speaker: Speaker, connectorId: ConnectorId
    `NOT_IN_ROLE` com a ferramenta (decisão `E4`). Ao rodar, o agente deixa de chamar `readTool`
    (`connector-tools.ts:177-193`, `:275-277`) e de montar `ownConnections` (`agent.ts:175`, `:185`,
    `:234`, `:243`); `connectorTools` ganha a opção de só o caderno (`connector_notes`), que vem para
-   cada ligação que alguma ferramenta escolhida usa. O `connector_read` do Assistente e do Builder
+   cada ligação selecionada. O `connector_read` do Assistente e do Builder
    fica, cortado pelo `mayUse`. Publicar um app: `ungranted` (`grants.ts:215`, chamado em
    `hub/apps/live.ts:51`) passa a receber quem publica. Nos dois, quem publica pode cada operação que
    a versão declara.
@@ -503,8 +516,8 @@ recebe.
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
 | `apps/web/src/hub/identity/` | Cria `roles.tsx`; muda `people.tsx`, `member-actions.tsx`, `invite-form.tsx`, `role-badge.tsx`, `queries.ts` | as rotas de Configurações |
-| `apps/web/src/builder/agents/` | Apaga `connections-section.tsx` e a linha dela em `config-panel.tsx`; muda `chooser.tsx` (grupo por ligação, a consulta livre no fim com o aviso) e os testes que usavam a seção | o painel do rascunho (`draft-panel.tsx`) |
-| `docs/reference/screens.md` | As caixas das duas telas e da lista de Ferramentas do agente | a QA |
+| `apps/web/src/builder/agents/` | Muda `connections-section.tsx` (as chaves viram seletores, com as ferramentas de cada ligação selecionada embaixo) e `chooser.tsx` (o grupo por ligação, "Marcar todas as leituras", a consulta livre no fim com o aviso), e os testes deles | o painel do rascunho (`draft-panel.tsx`) |
+| `docs/reference/screens.md` | As caixas das duas telas e dos seletores de ligação com as ferramentas do agente | a QA |
 
 ### A ordem do trabalho
 
@@ -512,11 +525,14 @@ recebe.
 2. A lista e o papel aberto: conector, assuntos com caixa de marcar, o detalhe por operação com "lê",
    "escreve" ou "apaga". Regras: W da [web](../guides/web.md) para formulários e erros.
 3. Pessoas: a troca e o convite com os papéis próprios; apagar com quem usa.
-4. O agente › Ferramentas (decisão `E4`): a seção Ligações sai; Adicionar agrupa por conector, com
-   o nome da ligação no título quando o Projeto tem duas do mesmo sistema; a Consulta livre fica no
-   fim do grupo, desmarcada, com o aviso "Consulta livre: roda qualquer SQL no banco inteiro"; uma
-   ferramenta fora do papel de quem edita aparece sem poder marcar. Na 24.5, a chave da `D1` fica na
-   linha de cada ferramenta.
+4. O agente (decisão `E4`): as ligações do Projeto vêm primeiro, como seletores. Selecionar uma
+   mostra embaixo as ferramentas dela (as leituras do kit, as ferramentas da empresa feitas sobre
+   ela e, na 24.5, as escritas), nenhuma marcada, e o botão "Marcar todas as leituras", que marca só
+   as leituras do kit. A consulta livre fica no fim do grupo, desmarcada, com o aviso "Consulta
+   livre: roda qualquer SQL no banco inteiro". Tirar a seleção tira as ferramentas dela do rascunho.
+   O nome da ligação titula o grupo quando o Projeto tem duas do mesmo sistema. Uma ferramenta fora
+   do papel de quem edita aparece sem poder marcar. Na 24.5, a chave da `D1` fica na linha de cada
+   ferramenta.
 
 ### Como se prova
 
