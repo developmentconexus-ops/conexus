@@ -94,7 +94,7 @@ for (const [name, hang, message] of hanging) {
     const { run, count } = deploy('hub@sha256:new', { running: 'hub@sha256:old', hang })
     assert.equal(run.status, 124, run.stderr)
     assert.match(run.stderr, message)
-    assert.equal(count('docker pull'), 0)
+    assert.equal(count('pull --quiet'), 0)
     assert.equal(count('run --rm migrate'), 0)
     assert.equal(count(' up '), 0)
   })
