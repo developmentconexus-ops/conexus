@@ -229,6 +229,14 @@ function addText(items: TranscriptItem[], id: string, text: string, run: boolean
   return true
 }
 
+/** A tool call's row: the card of a write that asked the person, or the call as the others are. */
+function toolItem(inv: Parameters<typeof approvalItem>[0], view: View) {
+  return (
+    approvalItem(inv, view.approval(inv.toolCallId)) ??
+    invocationToItem(inv, view.suspended[inv.toolCallId])
+  )
+}
+
 function fromParts(
   message: Message,
   thoughts: ReadonlyMap<string, number>,
@@ -249,10 +257,7 @@ function fromParts(
         streaming: false,
       })
     else if (part.type === 'tool-invocation') {
-      const { toolCallId } = part.toolInvocation
-      const item =
-        approvalItem(part.toolInvocation, view.approval(toolCallId)) ??
-        invocationToItem(part.toolInvocation, view.suspended[toolCallId])
+      const item = toolItem(part.toolInvocation, view)
       if (item) items.push(item)
     } else if (
       part.type.startsWith('data-conexus-') &&

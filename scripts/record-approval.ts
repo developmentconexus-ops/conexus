@@ -76,3 +76,15 @@ export function approvalTool(orders: OrderBook) {
     },
   })
 }
+
+/** What the recorder does on an event of an `approval` scenario: the person's answer when the call asks, the end when the run ends. */
+export function approvalReaction(
+  session: Session,
+  scenario: string,
+  event: Event,
+  ended: { resolve: () => void },
+): void {
+  if (event.type === 'tool_approval_required')
+    void answerApproval(session, scenario, event.toolCallId)
+  if (isApproval(scenario) && event.type === 'agent_end') ended.resolve()
+}

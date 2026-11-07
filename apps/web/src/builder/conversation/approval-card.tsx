@@ -102,6 +102,58 @@ const ANSWERED = {
   stopped: APPROVAL_TEXT.stopped,
 } as const
 
+type Fields = ReturnType<typeof fieldsOf>
+
+function Fields({ fields }: { fields: Fields }) {
+  return (
+    <dl className="grid grid-cols-[6rem_1fr] gap-x-md gap-y-xs max-md:grid-cols-1">
+      {fields.map((field) => (
+        <div key={field.label} className="contents max-md:flex max-md:flex-col">
+          <dt className="text-text-2">{field.label}</dt>
+          <dd className="min-w-0 wrap-anywhere">
+            {field.lines.map((line) => (
+              <span key={line} className="block">
+                {line}
+              </span>
+            ))}
+          </dd>
+        </div>
+      ))}
+    </dl>
+  )
+}
+
+/** How the card ended: who decided, and what the write did. */
+function Decided({ part, connector }: { part: ApprovalCardItem; connector: string }) {
+  return (
+    <>
+      {part.state !== 'open' && <p className="font-semibold">{ANSWERED[part.state]}</p>}
+      {part.outcome !== undefined && <Result outcome={part.outcome} connector={connector} />}
+    </>
+  )
+}
+
+type Replying = ReturnType<typeof useReply>
+
+/** Recusar and Aprovar, lit only while the session's state holds the call. */
+function Answer(props: { lit: boolean } & Pick<Replying, 'sending' | 'error' | 'reply'>) {
+  const { lit, sending, error, reply } = props
+  const off = sending !== undefined || !lit
+  return (
+    <div className="flex flex-col gap-sm">
+      <div className="flex flex-wrap justify-end gap-sm">
+        <Button disabled={off} onClick={() => void reply('decline')}>
+          {sending === 'decline' ? APPROVAL_TEXT.declining : APPROVAL_TEXT.decline}
+        </Button>
+        <Button variant="primary" disabled={off} onClick={() => void reply('approve')}>
+          {sending === 'approve' ? APPROVAL_TEXT.approving : APPROVAL_TEXT.approve}
+        </Button>
+      </div>
+      {error !== undefined && <Alert tone="danger">{error}</Alert>}
+    </div>
+  )
+}
+
 /**
  * The card of a write that asks the person (step 24.5, reference table row "O cartão"), drawn on
  * the plan's: who wants to write what, where, the fields, and **Aprovar** or **Recusar**. The buttons
@@ -122,7 +174,6 @@ export function ApprovalCard({ part }: { part: ApprovalCardItem }) {
   const same = room.openWrites?.find(
     (one) => one.connectionId === write?.connectionId && one.operation === write?.operation,
   )
-  const busy = sending !== undefined
   return (
     <div className="flex min-w-0 flex-col gap-xs">
       <Card role="region" aria-label={title} className="items-stretch gap-md">
@@ -134,44 +185,12 @@ export function ApprovalCard({ part }: { part: ApprovalCardItem }) {
             {write !== undefined && <span className="text-text-2"> · {write.connection}</span>}
           </h3>
         </div>
-        <dl className="grid grid-cols-[6rem_1fr] gap-x-md gap-y-xs max-md:grid-cols-1">
-          {fieldsOf(write?.operation, part.args).map((field) => (
-            <div key={field.label} className="contents max-md:flex max-md:flex-col">
-              <dt className="text-text-2">{field.label}</dt>
-              <dd className="min-w-0 wrap-anywhere">
-                {field.lines.map((line) => (
-                  <span key={line} className="block">
-                    {line}
-                  </span>
-                ))}
-              </dd>
-            </div>
-          ))}
-        </dl>
+        <Fields fields={fieldsOf(write?.operation, part.args)} />
         {open && same !== undefined && <Notice>{openWriteText(same.sentAt, same.mark)}</Notice>}
         {open ? (
-          <div className="flex flex-col gap-sm">
-            <div className="flex flex-wrap justify-end gap-sm">
-              <Button disabled={busy || !part.lit} onClick={() => void reply('decline')}>
-                {sending === 'decline' ? APPROVAL_TEXT.declining : APPROVAL_TEXT.decline}
-              </Button>
-              <Button
-                variant="primary"
-                disabled={busy || !part.lit}
-                onClick={() => void reply('approve')}
-              >
-                {sending === 'approve' ? APPROVAL_TEXT.approving : APPROVAL_TEXT.approve}
-              </Button>
-            </div>
-            {error !== undefined && <Alert tone="danger">{error}</Alert>}
-          </div>
+          <Answer lit={part.lit} sending={sending} error={error} reply={reply} />
         ) : (
-          <>
-            {part.state !== 'open' && <p className="font-semibold">{ANSWERED[part.state]}</p>}
-            {part.outcome !== undefined && (
-              <Result outcome={part.outcome} connector={write?.connector ?? ''} />
-            )}
-          </>
+          <Decided part={part} connector={write?.connector ?? ''} />
         )}
       </Card>
       {open && <p className="px-xs text-label text-text-2">{APPROVAL_TEXT.steer}</p>}

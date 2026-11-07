@@ -40,7 +40,7 @@ import {
   replayed,
 } from '../apps/server/src/platform/test-recordings.ts'
 import { orderBook } from '../packages/connectors/src/sankhya/fake-orders.ts'
-import { APPROVALS, answerApproval, approvalTool, isApproval, wired } from './record-approval.ts'
+import { APPROVALS, approvalReaction, approvalTool, isApproval, wired } from './record-approval.ts'
 import {
   APPROVAL_CALLS,
   APPROVAL_PROMPT,
@@ -196,9 +196,7 @@ async function run(session: Session, scenario: z.infer<typeof Scenario>): Promis
       event.type === 'agent_end'
     )
       ended.resolve()
-    if (event.type === 'tool_approval_required')
-      void answerApproval(session, scenario, event.toolCallId)
-    if (isApproval(scenario) && event.type === 'agent_end') ended.resolve()
+    approvalReaction(session, scenario, event, ended)
     if (scenario === 'plan' && event.type === 'agent_end') {
       ends += 1
       if (ends === 2) ended.resolve()
