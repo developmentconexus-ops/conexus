@@ -28,6 +28,7 @@ import { createToolDoor } from './tool-door.ts'
 
 export type { SessionScope } from './assistant-port.ts'
 export { TurnKey } from './assistant-port.ts'
+export { subjectsOf } from './catalog-subjects.ts'
 /** The cut of what a read sends the model: the agents' app reads cut the same way (code C26). */
 export { shaped } from './cut.ts'
 export { roleKit } from './role-kit.ts'

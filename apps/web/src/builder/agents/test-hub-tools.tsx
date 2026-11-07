@@ -1,9 +1,9 @@
 import type { ToolSummary, ToolVersionDetail } from '@conexus/hub-api'
 import { FAILURES, PROBLEM_MEDIA_TYPE, ToolVersionBody, ToolVersionId } from '@conexus/hub-api'
 import { HttpResponse, http } from 'msw'
-import { SANKHYA } from '../../hub/connectors/fixtures.ts'
 import { problemOf } from '../../platform/fixtures.ts'
 import { refusal } from '../../platform/test-hub.tsx'
+import { KIT_SANKHYA as SANKHYA } from '../../platform/test-kit.ts'
 
 type Held = { tools?: ToolSummary[]; toolVersions?: ToolVersionDetail[] }
 

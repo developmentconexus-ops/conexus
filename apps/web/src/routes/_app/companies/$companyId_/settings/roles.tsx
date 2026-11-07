@@ -1,7 +1,8 @@
-import { createFileRoute, notFound } from '@tanstack/react-router'
+import { useSuspenseQuery } from '@tanstack/react-query'
+import { createFileRoute, getRouteApi, notFound } from '@tanstack/react-router'
 import { ShieldCheckIcon } from 'lucide-react'
 import { z } from 'zod'
-import { connectionsQuery } from '../../../../../hub/connectors/public.ts'
+import { ConnectorLogo, connectionsQuery } from '../../../../../hub/connectors/public.ts'
 import { companyQuery, Roles, rolesQuery } from '../../../../../hub/identity/public.ts'
 import { readOrNotFound } from '../../../../../platform/hub.ts'
 
@@ -36,5 +37,14 @@ export const Route = createFileRoute('/_app/companies/$companyId_/settings/roles
       ]),
     )
   },
-  component: Roles,
+  component: RolesPage,
 })
+
+const route = getRouteApi('/_app/companies/$companyId_/settings/roles')
+
+/** The catalog and its logos come from Integrações here, so Identity never imports the connectors. */
+function RolesPage() {
+  const { companyId } = route.useParams()
+  const { data } = useSuspenseQuery(connectionsQuery(companyId))
+  return <Roles kit={data.connectors} logo={(entry) => <ConnectorLogo small entry={entry} />} />
+}

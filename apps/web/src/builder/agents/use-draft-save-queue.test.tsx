@@ -25,8 +25,8 @@ function offeredOf(...names: [ConnectionId | null, string][]) {
 
 async function switches() {
   const links = await screen.findByRole('region', { name: 'Ligações' })
-  await within(links).findByRole('switch', { name: 'Sankhya · Matriz' })
-  return (name: string) => within(links).getByRole('switch', { name: `Sankhya · ${name}` })
+  await within(links).findByRole('checkbox', { name: 'Sankhya · Matriz' })
+  return (name: string) => within(links).getByRole('checkbox', { name: `Sankhya · ${name}` })
 }
 
 function checked(element: HTMLElement) {

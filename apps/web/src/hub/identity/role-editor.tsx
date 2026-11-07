@@ -3,6 +3,7 @@ import { createRole, RoleConnectors, updateRole } from '@conexus/hub-api'
 import { useMutation } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { ArrowLeftIcon } from 'lucide-react'
+import type { ReactNode } from 'react'
 import { useController, useFormContext } from 'react-hook-form'
 import { buttonVariants } from '../../ui/button.tsx'
 import { cn } from '../../ui/cn.ts'
@@ -23,7 +24,7 @@ const UNCONFIRMED = 'Não confirmamos a gravação. Veja a lista de papéis.'
 
 type Connectors = Record<string, string[]>
 
-function Picked(props: { kit: readonly ConnectorEntry[]; readOnly: boolean }) {
+function Picked(props: { kit: readonly ConnectorEntry[]; readOnly: boolean; logo: Logo }) {
   const { control } = useFormContext()
   const { field } = useController({ name: 'connectors', control })
   const value: Connectors = field.value
@@ -35,6 +36,7 @@ function Picked(props: { kit: readonly ConnectorEntry[]; readOnly: boolean }) {
           entry={entry}
           held={value[entry.id] ?? []}
           readOnly={props.readOnly}
+          logo={props.logo}
           onChange={(next) => {
             const { [entry.id]: _, ...others } = value
             field.onChange(next.length === 0 ? others : { ...others, [entry.id]: next })
@@ -59,10 +61,16 @@ function Back({ companyId }: { companyId: CompanyId }) {
   )
 }
 
-type Common = { companyId: CompanyId; kit: readonly ConnectorEntry[]; onDone: () => void }
+type Logo = (entry: ConnectorEntry) => ReactNode
+type Common = {
+  companyId: CompanyId
+  kit: readonly ConnectorEntry[]
+  logo: Logo
+  onDone: () => void
+}
 
 /** "Novo papel": the name, then what the role uses of each connector. */
-export function NewRole({ companyId, kit, onDone }: Common) {
+export function NewRole({ companyId, kit, logo, onDone }: Common) {
   const send = useMutation(createCompanyRole)
   const form = useSchemaForm(createRole.input.body, { label: '', connectors: {} })
   return (
@@ -87,7 +95,7 @@ export function NewRole({ companyId, kit, onDone }: Common) {
           autoComplete="off"
           invalid="Escreva o nome do papel."
         />
-        <Picked kit={kit} readOnly={false} />
+        <Picked kit={kit} readOnly={false} logo={logo} />
         <FormAlert />
         <SubmitButton idle="Criar papel" pending="Criando…" />
       </Form>
@@ -96,7 +104,7 @@ export function NewRole({ companyId, kit, onDone }: Common) {
 }
 
 /** An open role: the owner and the administrator only read, the others change what they use of each connector. */
-export function OpenRole({ companyId, kit, role, onDone }: Common & { role: RoleView }) {
+export function OpenRole({ companyId, kit, logo, role, onDone }: Common & { role: RoleView }) {
   const send = useMutation(changeCompanyRole)
   const fixed = role.kind === 'ALL'
   const form = useSchemaForm(updateRole.input.body, {
@@ -127,7 +135,7 @@ export function OpenRole({ companyId, kit, role, onDone }: Common & { role: Role
           }
         }}
       >
-        <Picked kit={kit} readOnly={fixed} />
+        <Picked kit={kit} readOnly={fixed} logo={logo} />
         <FormAlert />
         {!fixed && <SubmitButton idle="Salvar" pending="Salvando…" />}
       </Form>

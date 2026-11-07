@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { CONNECTORS } from '@conexus/connectors'
-import { subjectsOf } from './catalog-subjects.ts'
+import { subjectsOf } from './public.ts'
 
 test('o catálogo traz os assuntos do kit com as operações, e marca as da porta de leitura', () => {
   const sankhya = CONNECTORS.find(({ id }) => id === 'sankhya')

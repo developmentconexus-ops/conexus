@@ -46,8 +46,8 @@ test('ligar a Matriz e logo a Filial, antes de a primeira gravação voltar, gra
     ],
   })
   const links = await screen.findByRole('region', { name: 'Ligações' })
-  fireEvent.click(await within(links).findByRole('switch', { name: 'Sankhya · Matriz' }))
-  fireEvent.click(within(links).getByRole('switch', { name: 'Sankhya · Filial' }))
+  fireEvent.click(await within(links).findByRole('checkbox', { name: 'Sankhya · Matriz' }))
+  fireEvent.click(within(links).getByRole('checkbox', { name: 'Sankhya · Filial' }))
   await waitFor(() => expect(hub.writes()).toHaveLength(2))
   expect(DraftPatch.parse(hub.writes()[1]?.body).connections).toEqual([MATRIZ, FILIAL])
   expect(screen.queryByRole('alert')).toBeNull()
@@ -81,13 +81,13 @@ test('três ligações seguidas, com a segunda gravação em voo, gravam as trê
   })
   const links = await screen.findByRole('region', { name: 'Ligações' })
   function on(name: string) {
-    return within(links).getByRole('switch', { name }).getAttribute('aria-checked')
+    return within(links).getByRole('checkbox', { name }).getAttribute('aria-checked')
   }
-  fireEvent.click(await within(links).findByRole('switch', { name: 'Sankhya · Matriz' }))
-  fireEvent.click(within(links).getByRole('switch', { name: 'Sankhya · Filial' }))
+  fireEvent.click(await within(links).findByRole('checkbox', { name: 'Sankhya · Matriz' }))
+  fireEvent.click(within(links).getByRole('checkbox', { name: 'Sankhya · Filial' }))
   await waitFor(() => expect(hub.writes()).toHaveLength(2))
   await waitFor(() => expect(on('Sankhya · Filial')).toBe('true'))
-  fireEvent.click(within(links).getByRole('switch', { name: 'Sankhya · Loja' }))
+  fireEvent.click(within(links).getByRole('checkbox', { name: 'Sankhya · Loja' }))
   release?.()
   await waitFor(() => expect(hub.writes()).toHaveLength(3))
   expect(DraftPatch.parse(hub.writes()[2]?.body).connections).toEqual([MATRIZ, FILIAL, loja])

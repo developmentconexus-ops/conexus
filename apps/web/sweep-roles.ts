@@ -1,67 +1,14 @@
-import {
-  getAgent,
-  listAgentConversations,
-  listAgentVersions,
-  listRoles,
-  listTools,
-} from '@conexus/hub-api'
+import { getAgent, listAgentConversations, listAgentVersions, listTools } from '@conexus/hub-api'
 import type { Replies } from './layout-harness.ts'
 import { ok } from './layout-harness.ts'
-import { SANKHYA } from './src/hub/connectors/fixtures.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import { companies, PROJECT_ID } from './sweep-replies.ts'
 
 export const COMPANY_ID = '0'.repeat(32)
-const EVERY = SANKHYA.subjects.flatMap((subject) => subject.operations)
-const READS = EVERY.filter((operation) => operation.effect === 'READ')
-
-function role(
-  name: string,
-  label: string,
-  kind: 'ALL' | 'EDITABLE' | 'CUSTOM',
-  ids: string[],
-  members: number,
-) {
-  return { role: name, label, kind, connectors: { sankhya: ids }, members }
-}
-
-export const ROLES = [
-  role(
-    'owner',
-    'Dono',
-    'ALL',
-    EVERY.map((one) => one.id),
-    1,
-  ),
-  role(
-    'admin',
-    'Administrador',
-    'ALL',
-    EVERY.map((one) => one.id),
-    0,
-  ),
-  role(
-    'developer',
-    'Desenvolvedor',
-    'EDITABLE',
-    READS.map((one) => one.id),
-    0,
-  ),
-  role(
-    'member',
-    'Membro',
-    'EDITABLE',
-    READS.map((one) => one.id),
-    1,
-  ),
-  role('atendente', 'Atendente', 'CUSTOM', ['pedidos'], 1),
-]
-
 /** The company page of an owner, with the roles. */
 export function rolesReplies(): Replies {
   return {
     ...companies([{ name: 'Empresa Teste', role: 'owner' }], false),
-    [`GET /api/companies/${COMPANY_ID}/roles`]: ok(listRoles, { roles: ROLES }),
   }
 }
 

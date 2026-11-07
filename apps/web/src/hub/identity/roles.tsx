@@ -1,12 +1,11 @@
 import type { CompanyId, ConnectorEntry, RoleView } from '@conexus/hub-api'
-import { useQuery, useSuspenseQuery } from '@tanstack/react-query'
+import { useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi, Link, useRouter } from '@tanstack/react-router'
 import { PlusIcon } from 'lucide-react'
-import { sentenceOf } from '../../platform/hub.ts'
+import type { ReactNode } from 'react'
 import { buttonVariants } from '../../ui/button.tsx'
 import { List, Row, rowBody, SectionTitle } from '../../ui/list.tsx'
-import { Empty, NotFound, ReadFailure } from '../../ui/states.tsx'
-import { connectionsQuery } from '../connectors/public.ts'
+import { Empty, NotFound } from '../../ui/states.tsx'
 import { rolesQuery } from './queries.ts'
 import { NewRole, OpenRole } from './role-editor.tsx'
 import { summaryOf } from './role-text.ts'
@@ -90,16 +89,15 @@ function RoleList(props: {
 }
 
 /** Configurações › Papéis: the list, a new role, and a role opened by its name in the address (web W18). */
-export function Roles() {
+export function Roles(props: {
+  kit: readonly ConnectorEntry[]
+  logo: (entry: ConnectorEntry) => ReactNode
+}) {
   const { companyId } = route.useParams()
   const search = route.useSearch()
   const router = useRouter()
   const { data } = useSuspenseQuery(rolesQuery(companyId))
-  const catalog = useQuery(connectionsQuery(companyId))
-  if (catalog.isError) {
-    return <ReadFailure text={sentenceOf(catalog.error)} onRetry={() => void catalog.refetch()} />
-  }
-  const kit = catalog.data?.connectors ?? []
+  const { kit, logo } = props
   function back() {
     void router.navigate({
       to: '/companies/$companyId/settings/roles',
@@ -107,11 +105,11 @@ export function Roles() {
       search: {},
     })
   }
-  if (search.novo) return <NewRole companyId={companyId} kit={kit} onDone={back} />
+  if (search.novo) return <NewRole companyId={companyId} kit={kit} logo={logo} onDone={back} />
   if (search.role !== undefined) {
     const found = data.roles.find((one) => one.role === search.role)
     if (found === undefined) return <NotFound hint={ROLE_GONE} />
-    return <OpenRole companyId={companyId} kit={kit} role={found} onDone={back} />
+    return <OpenRole companyId={companyId} kit={kit} logo={logo} role={found} onDone={back} />
   }
   return <RoleList companyId={companyId} roles={data.roles} kit={kit} />
 }

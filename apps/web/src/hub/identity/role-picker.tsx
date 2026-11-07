@@ -1,8 +1,8 @@
 import type { ConnectorEntry } from '@conexus/hub-api'
+import type { ReactNode } from 'react'
 import { useId, useState } from 'react'
 import { Button } from '../../ui/button.tsx'
 import { Checkbox } from '../../ui/checkbox.tsx'
-import { ConnectorLogo } from '../connectors/public.ts'
 import { EFFECT_WORD, NO_USE } from './role-text.ts'
 
 type ConnectorSubject = ConnectorEntry['subjects'][number]
@@ -12,6 +12,8 @@ type PickerProps = {
   /** The ids of the operations of this connector the role uses. */
   held: readonly string[]
   readOnly: boolean
+  /** The connector's logo, drawn by the caller: Identity does not import the connectors. */
+  logo: (entry: ConnectorEntry) => ReactNode
   onChange: (next: string[]) => void
 }
 
@@ -42,7 +44,7 @@ function Operation(props: {
   )
 }
 
-function Subject(props: { subject: ConnectorSubject } & Omit<PickerProps, 'entry'>) {
+function Subject(props: { subject: ConnectorSubject } & Omit<PickerProps, 'entry' | 'logo'>) {
   const { subject, held, readOnly } = props
   const [open, setOpen] = useState(false)
   const id = useId()
@@ -110,7 +112,7 @@ export function ConnectorPicker(props: PickerProps) {
       className="flex flex-col gap-sm rounded-control border border-line p-md"
     >
       <h3 className="flex items-center gap-sm font-body text-label font-semibold">
-        <ConnectorLogo small entry={entry} />
+        {props.logo(entry)}
         {entry.name}
         {used === 0 && <span className="font-normal text-text-2">{NO_USE}</span>}
       </h3>

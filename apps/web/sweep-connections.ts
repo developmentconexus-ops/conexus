@@ -2,6 +2,7 @@ import { Connection, getConnection, listConnections } from '@conexus/hub-api'
 import type { Replies } from './layout-harness.ts'
 import { ok } from './layout-harness.ts'
 import { connectionOf as fixtureOf, SANKHYA } from './src/hub/connectors/fixtures.ts'
+import { rolesPage } from './sweep-role-list.ts'
 
 let made = 0
 
@@ -23,6 +24,7 @@ export function connectionsPage(
   connections: ReturnType<typeof connectionOf>[] = [],
 ): Replies {
   return {
+    ...rolesPage(id, mayManage),
     [`GET /api/companies/${id}/connections`]: ok(listConnections, {
       connectors: [SANKHYA],
       connections,
