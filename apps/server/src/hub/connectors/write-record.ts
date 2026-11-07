@@ -196,7 +196,7 @@ export async function register(
 }
 
 /** An earlier write of the conversation whose end the record does not know. */
-export type OpenWrite = Readonly<{ state: 'SENDING' | 'UNCERTAIN'; since: Date; mark: string }>
+export type OpenWrite = Readonly<{ state: Row['state']; since: Date; mark: string }>
 
 /**
  * The writes of this conversation, connection and operation that may exist in the provider: rows still
@@ -224,11 +224,11 @@ export async function openWritesOf(deps: Deps, a: WriteRequest): Promise<readonl
       )
       .orderBy(connectorWrite.createdAt),
   )
-  return rows.flatMap((row) =>
-    row.state === 'SENDING' || row.state === 'UNCERTAIN'
-      ? [{ state: row.state, since: row.createdAt, mark: markOf(a.threadId, row.toolCallId) }]
-      : [],
-  )
+  return rows.map((row) => ({
+    state: row.state,
+    since: row.createdAt,
+    mark: markOf(a.threadId, row.toolCallId),
+  }))
 }
 
 const STATES = { OK: 'DONE', WRITE_UNCERTAIN: 'UNCERTAIN' } as const
