@@ -1,5 +1,5 @@
 import type { CompanyId, Member } from '@conexus/hub-api'
-import { ROLE_LABELS, Role } from '@conexus/hub-api'
+import { FIXED_ROLES, fixedNameOf, Role } from '@conexus/hub-api'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
@@ -11,6 +11,7 @@ import { Button } from '../../ui/button.tsx'
 import { Field, FieldLabel } from '../../ui/field.tsx'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select.tsx'
 import { changePersonRole, forgetCompany, removePerson } from './queries.ts'
+import { useRoleLabel } from './role-labels.tsx'
 
 const UNCONFIRMED = 'Não confirmamos a mudança. Veja a lista.'
 
@@ -147,15 +148,20 @@ function LeaveCompany({ companyId, companyName, member }: Subject) {
   )
 }
 
+/** The four fixed roles from the most to the least privileged, then the company's own. */
+function rank(role: Role): number {
+  const fixed = fixedNameOf(role)
+  return fixed === undefined ? FIXED_ROLES.length : FIXED_ROLES.indexOf(fixed)
+}
+
 function ChangeRole({ companyId, member }: Pick<Subject, 'companyId' | 'member'>) {
   const [open, setOpen] = useState(false)
   const [picked, setPicked] = useState<Role>(member.role)
   const send = useMutation(changePersonRole)
   const id = useId()
+  const roleLabel = useRoleLabel()
   // The current role is on offer so it shows marked; the Hub's list says which others.
-  const roles = Role.options.filter(
-    (role) => role === member.role || member.mayChangeTo.includes(role),
-  )
+  const roles = [member.role, ...member.mayChangeTo].toSorted((a, b) => rank(a) - rank(b))
   const role = roles.includes(picked) ? picked : member.role
 
   function change() {
@@ -175,7 +181,7 @@ function ChangeRole({ companyId, member }: Pick<Subject, 'companyId' | 'member'>
       onOpenChange={setOpen}
       trigger={{ label: 'Mudar papel', name: `Mudar papel: ${member.name}`, danger: false }}
       title={`Mudar o papel de ${member.name}`}
-      description={`Papel atual: ${ROLE_LABELS[member.role]}.`}
+      description={`Papel atual: ${roleLabel(member.role)}.`}
       confirm={{ label: 'Mudar papel', pending: 'Salvando…', disabled: role === member.role }}
       write={send}
       onConfirm={change}
@@ -186,7 +192,7 @@ function ChangeRole({ companyId, member }: Pick<Subject, 'companyId' | 'member'>
           id={id}
           value={role}
           onValueChange={(next) => setPicked(Role.parse(next))}
-          items={roles.map((one) => ({ value: one, label: ROLE_LABELS[one] }))}
+          items={roles.map((one) => ({ value: one, label: roleLabel(one) }))}
         >
           <SelectTrigger>
             <SelectValue />
@@ -194,7 +200,7 @@ function ChangeRole({ companyId, member }: Pick<Subject, 'companyId' | 'member'>
           <SelectContent>
             {roles.map((one) => (
               <SelectItem key={one} value={one}>
-                {ROLE_LABELS[one]}
+                {roleLabel(one)}
               </SelectItem>
             ))}
           </SelectContent>

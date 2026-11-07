@@ -21,7 +21,15 @@ export type Ungranted = (
   tx: ReadTx,
   ids: OfProject,
   declared: NonNullable<Manifest['connectors']>,
-) => Promise<readonly { connector: string; operation: string | null }[]>
+  by: PersonId,
+) => Promise<
+  readonly {
+    connector: string
+    operation: string | null
+    reason: 'NOT_GRANTED' | 'NOT_IN_ROLE'
+    label?: string
+  }[]
+>
 
 export type PublishInput = {
   companyId: CompanyId
@@ -52,10 +60,14 @@ export async function publishIn(
     tx,
     { companyId, projectId },
     Manifest.parse(row.manifest).connectors ?? [],
+    input.by,
   )
   if (lacking !== undefined)
-    throw new Failure('CONNECTOR_NOT_GRANTED', {
+    throw new Failure(lacking.reason === 'NOT_IN_ROLE' ? 'NOT_IN_ROLE' : 'CONNECTOR_NOT_GRANTED', {
       details: { connector: lacking.connector, operation: lacking.operation ?? '' },
+      ...(lacking.reason === 'NOT_IN_ROLE'
+        ? { named: { operation: lacking.label ?? lacking.operation ?? '' } }
+        : {}),
     })
   const view = versionView(row, { ...held, publishedVersionId: row.id })
   if (held.publishedVersionId === row.id) return view

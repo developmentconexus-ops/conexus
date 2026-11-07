@@ -3,11 +3,12 @@ import { test } from 'node:test'
 import { hashPassword } from 'better-auth/crypto'
 import { createTestDatabase, silent, testConfig } from '../../platform/test-database.ts'
 import { createAuth } from './public.ts'
-import { ANA, BRUNO, hubOn, PASSWORD, personOn, plantCompany } from './test-hub.ts'
+import { ANA, BRUNO, hubOn, PASSWORD, personOn, plantCompany, TEST_ROLES } from './test-hub.ts'
 
 test('cadastro fechado: signUpEmail no servidor é recusado e ninguém é criado', async (t) => {
   const test = await createTestDatabase(t)
   const auth = createAuth({
+    roles: TEST_ROLES,
     database: test.database,
     config: testConfig(test.runtimeUrl),
     log: silent,
@@ -25,6 +26,7 @@ test('cadastro fechado: signUpEmail no servidor é recusado e ninguém é criado
 test('empresa só pela Central: createOrganization direto é recusado ao operador e a quem não é, e nenhuma empresa nasce', async (t) => {
   const test = await createTestDatabase(t)
   const auth = createAuth({
+    roles: TEST_ROLES,
     database: test.database,
     config: testConfig(test.runtimeUrl),
     log: silent,
@@ -66,6 +68,7 @@ test('apagar só pela Central: deleteOrganization direto é recusado ao dono e a
   const operator = await personOn(hub, ANA)
   const companyId = await plantCompany(hub.test, owner.id)
   const auth = createAuth({
+    roles: TEST_ROLES,
     database: hub.test.database,
     config: testConfig(hub.test.runtimeUrl),
     log: silent,

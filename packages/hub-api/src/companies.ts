@@ -175,7 +175,7 @@ export const changeMemberRole = defineOperation({
   bodyLimit: 1024,
   input: { params: OfMember, body: z.object({ role: Role, from: Role }) },
   success: { status: 200, body: z.object({ member: Member }) },
-  failures: ['NOT_FOUND', 'LAST_OWNER', 'MEMBER_STALE', 'SESSION_REQUIRED', 'DATABASE_UNAVAILABLE'],
+  failures: [...MEMBER_READ_FAILURES, 'LAST_OWNER', 'MEMBER_STALE', 'ROLE_NOT_FOUND'],
 })
 
 export const listInvitations = defineOperation({
@@ -213,6 +213,7 @@ export const createInvitation = defineOperation({
   failures: [
     'NOT_FOUND',
     'INVITATION_ROLE_REFUSED',
+    'ROLE_NOT_FOUND',
     'INVITATION_STALE',
     'INVITATION_CLOSED',
     'MEMBER_EXISTS',
@@ -278,6 +279,7 @@ export const renewInvitation = defineOperation({
     'INVITATION_STALE',
     'INVITATION_CLOSED',
     'INVITATION_ROLE_REFUSED',
+    'ROLE_NOT_FOUND',
     'MEMBER_EXISTS',
     'INVITATIONS_EXCEEDED',
     'MAIL_BOUNCED',

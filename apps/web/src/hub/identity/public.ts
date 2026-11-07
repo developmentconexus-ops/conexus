@@ -21,8 +21,10 @@ export {
   membersQuery,
   myAppsQuery,
   receivedInvitationQuery,
+  rolesQuery,
   sessionQuery,
 } from './queries.ts'
+export { Roles } from './roles.tsx'
 export { type PasswordLinkKind, SetPasswordForm } from './set-password-form.tsx'
 export { goBack, SameOriginPath, SignInForm } from './sign-in-form.tsx'
 export { SignOutButton } from './sign-out-button.tsx'

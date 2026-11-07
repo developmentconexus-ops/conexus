@@ -91,10 +91,11 @@ export function readCompany(
     return {
       company: detail,
       role: admitted.role,
-      mayInviteAs: mayInviteAs(admitted),
+      mayInviteAs: await mayInviteAs(tx, admitted),
       may: {
         manageAgents: allows(admitted.role, 'manageAgents'),
         manageAutomations: allows(admitted.role, 'manageAutomations'),
+        manageRoles: allows(admitted.role, 'manageRoles'),
       },
     }
   })

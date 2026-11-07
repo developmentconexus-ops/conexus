@@ -1,4 +1,3 @@
-import type { Role } from '@conexus/hub-api'
 import {
   getAccountKinds,
   getClient,
@@ -25,9 +24,9 @@ import type { Replies } from './layout-harness.ts'
 import { ok } from './layout-harness.ts'
 import { ANA, COMPANY } from './src/platform/fixtures.ts'
 import { mayOf } from './src/platform/test-may.ts'
-import { connectionsPage } from './sweep-connections.ts'
 import { modelAccountsPage } from './sweep-model-accounts.ts'
 import { railListsPage } from './sweep-rail-lists.ts'
+import { settingsLists } from './sweep-role-list.ts'
 
 export const INVITATION = 'i'.repeat(32)
 export const LONG_EMAIL =
@@ -63,9 +62,9 @@ export const SIGNED_IN: Replies = {
 }
 
 /** The roles that manage the company's model accounts and connections: the owner and the administrators. */
-const MANAGES: ReadonlySet<Role> = new Set(['owner', 'admin'])
+const MANAGES: ReadonlySet<string> = new Set(['owner', 'admin'])
 
-export function companies(list: { name: string; role: Role }[], mayOperate: boolean) {
+export function companies(list: { name: string; role: string }[], mayOperate: boolean) {
   const body = {
     companies: list.map(({ name, role }, index) => ({
       company: { id: String(index).repeat(32), name },
@@ -89,7 +88,7 @@ export function companies(list: { name: string; role: Role }[], mayOperate: bool
   }
 }
 
-function companyPage(role: Role, mayInviteAs: Role[], id = COMPANY.id, name = LONG_NAME) {
+function companyPage(role: string, mayInviteAs: string[], id = COMPANY.id, name = LONG_NAME) {
   const company = { id, name, nickname: 'empresa-teste', appsDomain: 'apps.example.test' }
   const people = [
     {
@@ -117,7 +116,7 @@ function companyPage(role: Role, mayInviteAs: Role[], id = COMPANY.id, name = LO
     ...projectsPage(id),
     ...railListsPage(id),
     ...modelAccountsPage(id, MANAGES.has(role)),
-    ...connectionsPage(id, MANAGES.has(role)),
+    ...settingsLists(id, MANAGES.has(role)),
     // Início of the owner and the administrators asks the Assistant: the connections it offers and its conversations.
     [`GET /api/companies/${id}/assistant/connections`]: ok(listAssistantConnections, {
       connections: [],

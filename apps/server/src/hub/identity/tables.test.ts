@@ -11,7 +11,17 @@ test('catálogo: o esquema auth tem as tabelas da biblioteca e as três do plugi
   )
   assert.deepEqual(
     tables.map((row) => row.name),
-    ['account', 'company', 'invitation', 'member', 'rate_limit', 'session', 'user', 'verification'],
+    [
+      'account',
+      'company',
+      'invitation',
+      'member',
+      'organization_role',
+      'rate_limit',
+      'session',
+      'user',
+      'verification',
+    ],
   )
 })
 
@@ -60,6 +70,7 @@ test('catálogo: as colunas de empresa, membro e convite, e as dos plugins em pe
       'member.user_id text NO',
       'member.role text NO',
       `member.created_at ${ts} NO`,
+      'organization_role.role text NO',
       'session.active_organization_id text YES',
       'session.impersonated_by text YES',
       'user.role text YES',
@@ -117,6 +128,7 @@ test('catálogo: os únicos, as chaves estrangeiras RESTRICT das novas tabelas e
       'invitation.inviter_id RESTRICT',
       'member.company_id RESTRICT',
       'member.user_id RESTRICT',
+      'organization_role.company_id CASCADE',
       'session.user_id CASCADE',
     ],
   )
@@ -124,7 +136,7 @@ test('catálogo: os únicos, as chaves estrangeiras RESTRICT das novas tabelas e
     `select data_type as type, count(*)::int as columns from information_schema.columns
       where table_schema = 'auth' and data_type like 'timestamp%' group by data_type`,
   )
-  assert.deepEqual(dates, [{ type: 'timestamp with time zone', columns: 20 }])
+  assert.deepEqual(dates, [{ type: 'timestamp with time zone', columns: 22 }])
 })
 
 test('catálogo: um só convite pendente por empresa e endereço, em qualquer caixa; o cancelado não conta', async (t) => {

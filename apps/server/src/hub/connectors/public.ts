@@ -16,8 +16,9 @@ import { createAssistantConnectors } from './assistant-port.ts'
 import { createBuilderConnectors } from './builder-port.ts'
 import { createExecutor } from './executor.ts'
 import type { OfGrant } from './grants.ts'
-import { grant, mayGrant, ungranted } from './grants.ts'
+import { grant, mayGrant } from './grants.ts'
 import { createLimits } from './limits.ts'
+import { ungrantedBy } from './publish-check.ts'
 import { reseal } from './reseal.ts'
 import {
   registerAppCallRoutes,
@@ -26,10 +27,12 @@ import {
 } from './routes.ts'
 import { createToolDoor } from './tool-door.ts'
 
-export type { SessionScope } from './assistant-port.ts'
+export type { KitRead, SessionScope } from './assistant-port.ts'
 export { TurnKey } from './assistant-port.ts'
+export { subjectsOf } from './catalog-subjects.ts'
 /** The cut of what a read sends the model: the agents' app reads cut the same way (code C26). */
 export { shaped } from './cut.ts'
+export { operationLabel, roleKit } from './role-kit.ts'
 export type { LiveToolCall } from './tool-door.ts'
 
 /** Tests shorten the deadline. */
@@ -93,8 +96,8 @@ export function createConnectors(deps: {
       registerAppCallRoutes(edge, appCalls)
       registerToolCallRoutes(edge, toolDoor)
     },
-    /** What Publicar asks: the declared connectors and operations the Projeto may not read. */
-    ungranted,
+    /** What Publicar asks: what the Projeto may not read, then what the role of who publishes lacks (decision C1). */
+    ungranted: ungrantedBy(deps.identity),
     /** What the Builder's tools and instructions read; the Builder wires it in U5. */
     builder: createBuilderConnectors(routeDeps),
     /** What the Assistant's tools and conversation scope read: the chosen connections of its place, read only (step 24.1, U1). */

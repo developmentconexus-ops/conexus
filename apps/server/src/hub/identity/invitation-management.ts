@@ -8,6 +8,7 @@ import { admit, admitCompany } from './admission.ts'
 import type { Auth, LibraryCommand } from './auth.ts'
 import { invitationExpiry, organizationAdapter, refusedAs } from './auth.ts'
 import { companyById } from './companies.ts'
+import { roleLabelOf } from './company-roles.ts'
 import {
   CompanyPendingRow,
   cancelThrough,
@@ -215,6 +216,7 @@ export function renewInvitationCommand(deps: {
         invitation: await renewed(deps, tx, { admitted, row, headers: input.headers }),
         companyName: (await companyById(tx, input.companyId)).name,
         inviter: inviterOf(admitted, input.person),
+        roleLabel: await roleLabelOf(tx, { companyId: input.companyId, role: row.role }),
       }
     })
 }

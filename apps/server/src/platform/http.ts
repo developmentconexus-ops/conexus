@@ -68,7 +68,7 @@ function problemOf(code: FailureCode, traceId: string, person?: string, named?: 
   const row = FAILURES[code]
   return Problem.parse({
     type: `urn:conexus:problem:${code}`,
-    title: phraseOf(code, person),
+    title: phraseOf(code, person, named?.operation),
     status: row.status,
     code,
     traceId,

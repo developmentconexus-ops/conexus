@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
-import type { Member, Role } from '@conexus/hub-api'
+import type { FixedRole, Member } from '@conexus/hub-api'
 import { TEST_ORIGIN } from '../../platform/test-database.ts'
 import type { Hub, Person } from './test-hub.ts'
 import {
@@ -26,7 +26,7 @@ const NAMES = {
 
 const SEATED = ['ana', 'gil', 'bruno', 'carla', 'davi', 'edu'] as const
 type Name = (typeof SEATED)[number]
-type Roster = Partial<Record<Name, Role>>
+type Roster = Partial<Record<Name, FixedRole>>
 /** Two owners, two administrators, two members. */
 const FULL: Roster = {
   ana: 'owner',
@@ -92,7 +92,7 @@ function remove(w: World, actor: Person, target: Person, companyId = w.companyId
   return act(w.hub, actor, 'DELETE', `/api/companies/${companyId}/members/${target.id}`)
 }
 
-function change(w: World, actor: Person, target: Person, role: Role, from: Role) {
+function change(w: World, actor: Person, target: Person, role: string, from: string) {
   return act(w.hub, actor, 'PUT', `${w.base}/members/${target.id}`, { role, from })
 }
 
@@ -156,8 +156,8 @@ type Cell = [
   label: string,
   actor: Name | 'central' | 'fabi',
   target: Name | 'fabi',
-  role: Role,
-  from: Role,
+  role: FixedRole,
+  from: FixedRole,
   status: number,
   changed: Roster,
 ]

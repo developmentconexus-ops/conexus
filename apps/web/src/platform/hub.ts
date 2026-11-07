@@ -22,6 +22,8 @@ export class HubFailure extends Error {
   readonly outcomeUnknown: boolean
   /** The person the Hub's phrase names, for the rows that do. */
   readonly person: string | undefined
+  /** The label of the operation a refusal names, for the rows that do (`NOT_IN_ROLE`); never the operation's id. */
+  readonly operation: string | undefined
   /** The field and the reason a refusal of a form names (step 24.3), for the screen to show beside it. */
   readonly field: ProblemField | undefined
   readonly reason: ProblemReason | undefined
@@ -34,6 +36,7 @@ export class HubFailure extends Error {
       cause?: unknown
       outcomeUnknown?: boolean
       person?: string
+      operation?: string
       field?: ProblemField
       reason?: ProblemReason
       agents?: ProblemAgents
@@ -44,6 +47,7 @@ export class HubFailure extends Error {
     this.code = code
     this.outcomeUnknown = options.outcomeUnknown ?? true
     this.person = options.person
+    this.operation = options.operation
     this.field = options.field
     this.reason = options.reason
     this.agents = options.agents
@@ -75,6 +79,7 @@ export function failureOfProblem(body: unknown): HubFailure {
   return new HubFailure(code, {
     outcomeUnknown: !settled,
     person: problem.data.person,
+    operation: problem.data.operation,
     field: problem.data.field,
     reason: problem.data.reason,
     agents: problem.data.agents,
@@ -233,14 +238,14 @@ export function hubMutation(operation: Operation, options?: { deadlineMs: number
 }
 
 /** What a person reads for a failure code: its phrase and what to do, from the failure table (V43). */
-export function sentenceOfCode(code: FailureCode, person?: string): string {
-  return [phraseOf(code, person), FAILURES[code].action].filter(Boolean).join(' ')
+export function sentenceOfCode(code: FailureCode, person?: string, operation?: string): string {
+  return [phraseOf(code, person, operation), FAILURES[code].action].filter(Boolean).join(' ')
 }
 
 /** What a person reads for a failure: its phrase and what to do, from the failure table (V43). */
 export function sentenceOf(error: unknown): string {
   return error instanceof HubFailure
-    ? sentenceOfCode(error.code, error.person)
+    ? sentenceOfCode(error.code, error.person, error.operation)
     : sentenceOfCode('INTERNAL_UNEXPECTED')
 }
 

@@ -20,6 +20,7 @@ import {
 import { testMail } from '../../platform/test-mail.ts'
 import { createStatus } from '../status/public.ts'
 import { createIdentity } from './public.ts'
+import { TEST_KIT } from './test-hub.ts'
 
 const run = promisify(execFile)
 const _ROOT = join(import.meta.dirname, '..', '..', '..', '..', '..')
@@ -69,7 +70,7 @@ async function hubOn(t: TestContext, test: TestDatabase) {
   const status = createStatus({ version: config.version, database: test.database })
   const { database } = test
   const sendMail = testMail(config)
-  const identity = createIdentity({ database, config, log: silent, sendMail })
+  const identity = createIdentity({ kit: TEST_KIT, database, config, log: silent, sendMail })
   const ports = { ...testAppPorts(config), log: silent, mastraPool: test.mastraPool }
   const subjects = subjectsOf({ database, config, identity, sendMail, ...ports })
   const app = await createHub(config, { status, identity, ...subjects })
@@ -268,7 +269,7 @@ test('mídia: JSON inválido 400 e corpo acima de 4 KiB 413 em PUT /api/password
 function identityOn(test: TestDatabase) {
   const config = testConfig(test.runtimeUrl)
   const sendMail = testMail(config)
-  return createIdentity({ database: test.database, config, log: silent, sendMail })
+  return createIdentity({ kit: TEST_KIT, database: test.database, config, log: silent, sendMail })
 }
 
 test('ao mesmo tempo, com dois e-mails: uma pessoa só, e a outra chamada recusa FIRST_PERSON_EXISTS', async (t) => {

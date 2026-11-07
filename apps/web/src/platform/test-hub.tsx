@@ -46,8 +46,9 @@ type MemberFields = {
   personId: string
   name: string
   email: string
-  role: MemberRow['role']
-} & Partial<Pick<MemberRow, 'mayRemove' | 'mayChangeTo' | 'invitationsSent'>>
+  role: string
+  mayChangeTo?: string[]
+} & Partial<Pick<MemberRow, 'mayRemove' | 'invitationsSent'>>
 
 /** A person of a company as the Hub lists them: nothing to do to them unless the test says so. */
 export function memberView(person: MemberFields) {

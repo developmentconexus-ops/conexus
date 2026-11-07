@@ -9,7 +9,7 @@ import {
 } from '../../../../../hub/identity/public.ts'
 import { Frame } from '../../../../../ui/frame.tsx'
 import { PageTitle } from '../../../../../ui/list.tsx'
-import type { SettingsSection } from '../../../../../ui/settings-index.tsx'
+import type { SectionMeta, SettingsSection } from '../../../../../ui/settings-index.tsx'
 import { SettingsIndex } from '../../../../../ui/settings-index.tsx'
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '../../../../../ui/sidebar.tsx'
 
@@ -29,11 +29,16 @@ export const Route = createFileRoute('/_app/companies/$companyId_/settings')({
  */
 function useSections(): SettingsSection[] {
   const { companyId } = Route.useParams()
+  const { may } = useSuspenseQuery(companyQuery(companyId)).data
   const { routesById } = useRouter()
   return Object.values(routesById)
     .flatMap((route) => {
       const section = route.options.staticData?.section
       return route.parentRoute?.id === SETTINGS && section ? [{ route, section }] : []
+    })
+    .filter(({ section }) => {
+      const needs: SectionMeta['needs'] = section.needs
+      return needs === undefined || may[needs]
     })
     .sort((a, b) => a.section.order - b.section.order)
     .map(({ route, section }) => ({ to: route.fullPath, params: { companyId }, ...section }))

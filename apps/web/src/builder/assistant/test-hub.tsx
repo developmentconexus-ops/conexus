@@ -129,6 +129,7 @@ export const SANKHYA = {
   summary: 'ERP',
   logo: 'data:image/svg+xml,',
   auth: 'client_credentials',
+  subjects: [],
   fields: [],
 }
 
