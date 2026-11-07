@@ -136,7 +136,7 @@ fora".
 
 | Unidade | O que entrega | Pastas | Guia além do de código | Depende de |
 | --- | --- | --- | --- | --- |
-| U1 A escrita no Sankhya | A operação `lancar_pedido` (classe `write`) e o dublê dos pedidos; o funil de escrita `writeThrough`, gêmeo do `readThrough`, com o mesmo `mayUse`; o registro de cada envio por execução e `toolCallId` antes de mandar (a tabela nova e as suas permissões, D11, no primeiro pull request da unidade); o executor que nunca repete uma escrita depois de enviada | `packages/connectors/src/{kernel,sankhya}/`, `apps/server/src/hub/connectors/`, `apps/server/migrations/`, `apps/server/database-grants.sql` | [data](../guides/data.md) | esta página aprovada; Papéis U2 no `main` |
+| U1 A escrita no Sankhya | A operação `lancar_pedido` (classe `write`) e o dublê dos pedidos; o funil de escrita `writeThrough`, gêmeo do `readThrough`, com o mesmo `mayUse`; o registro de cada envio por conversa e `toolCallId` antes de mandar (a tabela nova e as suas permissões, D11, no primeiro pull request da unidade); o executor que nunca repete uma escrita depois de enviada | `packages/connectors/src/{kernel,sankhya}/`, `apps/server/src/hub/connectors/`, `apps/server/migrations/`, `apps/server/database-grants.sql` | [data](../guides/data.md) | esta página aprovada; Papéis U2 no `main` |
 | U2 O agente pergunta ou faz sozinho | O `yolo` desligado no controlador dos agentes; `requireApproval` em função em toda ferramenta do agente; a ferramenta da escrita com a chave da versão; a ação **Publicar agente que escreve sozinho** e a conferência ao publicar; a escrita fora do programa; a rota `tool-approval` na lista fixa; os registros; as gravações do Mastra | `apps/server/src/builder/{agents,conversation,machine}/`, `apps/server/src/hub/identity/`, `apps/server/src/platform/recordings/mastra/`, `packages/hub-api/src/{agents,tools,roles}.ts` | [security](../guides/security.md) | U1; Papéis U2 e U3 no `main` |
 | U3 As telas | A chave **Pergunta antes / Faz sozinho** na linha da escrita da página do agente; o cartão **Aprovar?** na conversa do agente e os seus estados; a ação nova na tela de Papéis; o texto da confirmação de "Liberar" | `apps/web/src/builder/{agents,conversation}/`, `apps/web/src/hub/{identity,connectors}/`, `docs/reference/screens.md` | [web](../guides/web.md) | U2 |
 
@@ -159,7 +159,7 @@ os seus estados, a ação na tela de Papéis, o texto). Total da etapa: ~1.850, 
 | --- | --- | --- | --- | --- |
 | 1 | U1 | `writeThrough` com uma versão (`speaker: VERSION`), ou com a pessoa num rascunho (`speaker: PERSON`), que declara `lancar_pedido` manda ao dublê do Sankhya um `POST /v1/vendas/pedidos` com os campos e devolve `{ kind: 'OK', value: { codigoPedido } }`; o dublê guarda o pedido "a confirmar" com a marca `Conexus <id>` na observação; imprime `CONNECTOR_WRITE_SENT` com ligação, operação, versão e `codigoPedido`, sem os campos (S40) | `hub/connectors/write.test.ts` (novo), "o pedido sai" | must |
 | 2 | U1 | Recusa antes de enviar: sem a operação no papel (o `mayUse` de Papéis) dá `NOT_IN_ROLE`; a ligação não liberada ao Projeto, ou de outro Projeto ou empresa, dá `NOT_GRANTED` (T10); uma operação `read` pedida ao funil de escrita dá `REQUEST_MALFORMED`; o dublê não recebe nada e nada se grava no registro | `hub/connectors/write.test.ts`, "a escrita recusada" | must |
-| 3 | U1 | Uma escrita nunca se repete: um corte depois do envio, um 502, 503, 504 ou o `GTW3503` dão `WRITE_UNCERTAIN` com a marca, e o dublê conta um só pedido; uma segunda chamada com o mesmo `runId` e `toolCallId` não envia e devolve o que o registro diz (o `codigoPedido` guardado, ou `WRITE_UNCERTAIN`), e com a mesma chave e outra entrada dá `WRITE_UNCERTAIN` sem enviar; o mesmo `toolCallId` noutra execução é outra escrita; uma falha antes do envio (a ligação recusa a conexão) e o `TOKEN_EXPIRED` do gateway dão a falha ao modelo, sem repetir; o texto de `WRITE_UNCERTAIN` ao modelo diz para não chamar de novo e contar à pessoa a marca | `packages/connectors/src/sankhya/operations.test.ts`, "lançar pedido"; `hub/connectors/write.test.ts`, "a resposta perdida" e "o mesmo toolCallId" | must |
+| 3 | U1 | Uma escrita nunca se repete: um corte depois do envio, um 502, 503, 504 ou o `GTW3503` dão `WRITE_UNCERTAIN` com a marca, e o dublê conta um só pedido; uma segunda chamada com a mesma conversa (`threadId`) e o mesmo `toolCallId` não envia e devolve o que o registro diz (o `codigoPedido` guardado, ou `WRITE_UNCERTAIN`), e com a mesma chave e outra entrada dá `WRITE_UNCERTAIN` sem enviar; o mesmo `toolCallId` noutra conversa é outra escrita; uma falha antes do envio (a ligação recusa a conexão) e o `TOKEN_EXPIRED` do gateway dão a falha ao modelo, sem repetir; o texto de `WRITE_UNCERTAIN` ao modelo diz para não chamar de novo e contar à pessoa a marca | `packages/connectors/src/sankhya/operations.test.ts`, "lançar pedido"; `hub/connectors/write.test.ts`, "a resposta perdida" e "o mesmo toolCallId" | must |
 | 4 | U1 | Um 200 sem `retorno.codigoPedido`, ou com `[CORE_E…]` na mensagem, e um 400 `INVALID_REQUEST` dão `REFUSED` com o texto do Sankhya ao modelo; nada fica "enviado com sucesso" no registro | `packages/connectors/src/sankhya/operations.test.ts`, "o pedido recusado" | must |
 | 5 | U2 | Numa conversa do agente com `yolo: false`, a escrita em **Pergunta antes** não envia: o stream traz `tool_approval_required` com `toolName` e `args`, o estado da sessão traz o pedido em `pendingApprovals`, e o dublê não recebe nada; o teste percorre o mapa de ferramentas de verdade de `runToolsOf` de um agente com leitura, ferramenta em código, app, `web_fetch`, `web_search`, `show_file`, programa e Computador, e cada uma roda sem `tool_approval_required` | `builder/agents/approval.test.ts` (novo), "a escrita espera, o resto não" | must |
 | 6 | U2 | `POST …/sessions/{id}/tool-approval` com `approved: true` roda a escrita uma vez e o turno termina; com `approved: false`, nada roda e o modelo recebe a recusa; uma segunda resposta ao mesmo pedido responde `ok: false`; uma mensagem nova da pessoa recusa o pedido aberto, e aprovar depois dela responde `ok: false` sem rodar; Parar recusa | `builder/agents/approval.test.ts`, "aprovar, recusar, mensagem, Parar" | must |
@@ -214,7 +214,7 @@ os seus estados, a ação na tela de Papéis, o texto). Total da etapa: ~1.850, 
 
 | Gravação ou comando, da etapa ou da biblioteca | Duas vezes ao mesmo tempo | Recusada no meio, depois de uma instrução ou de uma chamada | Uma dependência fora (o banco, ou um terceiro) | O que o processo imprime | Critérios |
 | --- | --- | --- | --- | --- | --- |
-| O registro do envio (`INSERT` em `connector_write` antes de chamar o Sankhya, numa transação curta e confirmada) | o mesmo `runId` e `toolCallId`: a chave primária deixa um só; o segundo lê a linha e não envia; a mesma chave com outra entrada (o hash não bate): `WRITE_UNCERTAIN`, sem enviar | o processo morre depois do `INSERT` e antes da resposta: a linha fica `SENDING`, e uma retomada do Mastra que rode a chamada de novo (`agent-BP9OWM6D.js:84330-84336`) recebe `WRITE_UNCERTAIN` sem enviar | o banco fora: nada é enviado, a falha sobe | `CONNECTOR_WRITE_SENT`, `_UNCERTAIN` ou `_REFUSED` com ligação, operação, versão e `toolCallId`, sem os campos | 1, 3 |
+| O registro do envio (`INSERT` em `connector_write` antes de chamar o Sankhya, numa transação curta e confirmada) | a mesma conversa e o mesmo `toolCallId`: a chave primária deixa um só; o segundo lê a linha e não envia; a mesma chave com outra entrada (o hash não bate): `WRITE_UNCERTAIN`, sem enviar | o processo morre depois do `INSERT` e antes da resposta: a linha fica `SENDING`, e uma retomada do Mastra que rode a chamada de novo (`agent-BP9OWM6D.js:84330-84336`) recebe `WRITE_UNCERTAIN` sem enviar | o banco fora: nada é enviado, a falha sobe | `CONNECTOR_WRITE_SENT`, `_UNCERTAIN` ou `_REFUSED` com ligação, operação, versão e `toolCallId`, sem os campos | 1, 3 |
 | O pedido no Sankhya (`POST /v1/vendas/pedidos`, pelo executor) | duas chamadas diferentes são dois pedidos, cada uma com o seu cartão ou a sua linha | corte, 502, 503, 504 ou `GTW3503` depois de enviar: `WRITE_UNCERTAIN`, sem repetir; um 200 com `[CORE_E…]` ou sem `codigoPedido`: `REFUSED` | o Sankhya fora: a falha do fornecedor ao modelo; o token vencido (`TOKEN_EXPIRED`): a falha ao modelo, sem repetir; a chave se renova na próxima chamada pelo caminho de hoje do executor | o mesmo acima | 3, 4 |
 | O fim do registro (`UPDATE` de `connector_write` para `DONE`, `REFUSED` ou `UNCERTAIN`, depois da resposta) | — | o banco cai depois de um envio com sucesso: `CONNECTOR_WRITE_SENT` já foi impresso com o `codigoPedido` antes do `UPDATE`, o modelo recebe o `OK` que está na memória, e a linha fica `SENDING` (uma repetição da mesma chamada recebe `WRITE_UNCERTAIN`) | o banco fora: imprime `CONNECTOR_WRITE_UNRECORDED` com a chave | `CONNECTOR_WRITE_UNRECORDED` | 3 |
 | A aprovação guardada (o Mastra suspende a execução e guarda a espera) | duas escritas no mesmo turno são dois cartões, cada um pelo seu `toolCallId` | ninguém responde: espera sem prazo; Parar ou uma mensagem nova recusam, e uma resposta depois não roda nada; o Hub reinicia: o portão vivo some, a espera fica guardada no Mastra sem cartão, e o guarda recusa respondê-la | o banco do Mastra fora: a rodada falha como hoje, nada enviado | nada novo | 5, 6, 8 |
@@ -228,7 +228,7 @@ os seus estados, a ação na tela de Papéis, o texto). Total da etapa: ~1.850, 
 | A operação que lança o pedido | U1 | `packages/connectors/src/kernel/operation.ts:3-4` (`write` existe), `:141-143` (`class`, `idempotent`); toda operação do Sankhya lê (`sankhya/operations/vendas.ts:16-28`) | Sankhya `addPedido`, `POST /v1/vendas/pedidos`, escopo `write:vendas/pedidos`, Sankhya Om 4.34; resposta `retorno.codigoPedido`; recusa 400 `INVALID_REQUEST` ou 200 com `[CORE_E…]` (developer.sankhya.com.br, lido em 2026-11-06) | a operação declara a classe e o esquema; o executor manda pela origem fixa | nativo (o kit, decisão 0056) | o passo 1 da U1 confere o mínimo real dos campos | "Poderia ser lançar um pedido no Sunker" | — |
 | O dublê dos pedidos | U1 | `sankhya/fake.ts:20-47` (as chaves), `:112-135` (todo serviço desconhecido responde `status "0"`); não guarda pedido | o próprio repositório (T26) | um estado por pedido e as chaves "perdida depois de gravar" e "perdida antes de gravar" | nativo | — | não precisa | `packages/connectors/src/sankhya/fake-orders.ts` |
 | O funil de escrita | U1 | `hub/connectors/read.ts` (`readThrough`, os seus quatro chamadores) e o `mayUse` de Papéis (U2 dela) | o próprio funil de leitura | o pedido leva o `speaker`, e o papel se confere antes do executor | nativo: um gêmeo, `writeThrough`, com o **mesmo** `mayUse`; gêmeo porque a escrita não repete e grava o envio antes | — | "coeso a nossa plataforma inteira" | `apps/server/src/hub/connectors/write.ts` |
-| Nunca duas vezes | U1 | `executor.ts:268` (`repeat: operation.idempotent`); `read.ts` repete o 401 | Mastra: uma retomada de processo morto roda de novo a ferramenta em voo (`agent-BP9OWM6D.js:84330-84336`); o Sankhya não tem chave de idempotência (boas práticas, 2026-11-06) | quem chama guarda o envio | embrulhado: o registro por execução e `toolCallId`, com o hash da entrada, é nosso, porque nem o Mastra nem o Sankhya garantem uma vez, e um provedor pode repetir um `toolCallId` curto em outra execução | os critérios 3 e 11 | não precisa | migração `connector_write` |
+| Nunca duas vezes | U1 | `executor.ts:268` (`repeat: operation.idempotent`); `read.ts` repete o 401 | Mastra: uma retomada de processo morto roda de novo a ferramenta em voo (`agent-BP9OWM6D.js:84330-84336`); o Sankhya não tem chave de idempotência (boas práticas, 2026-11-06) | quem chama guarda o envio | embrulhado: o registro por conversa (`threadId`, que o contexto da ferramenta traz, `@mastra/core` `tools/types.d.ts:172-200`, onde não há `runId`) e `toolCallId`, com o hash da entrada, é nosso, porque nem o Mastra nem o Sankhya garantem uma vez; um `toolCallId` repetido na conversa com outra entrada dá `WRITE_UNCERTAIN`, nunca um `OK` de outro pedido | os critérios 3 e 11 | não precisa | migração `connector_write` |
 | Quem usa a escrita | U1 | o papel de Papéis (`createAccessControl` com as operações do kit como ações) | `better-auth@1.7.8` `has-permission.mjs:7-32` | a ação `lancar_pedido` no recurso `connector_sankhya` | nativo | — | `B1` de Papéis | — |
 | A escrita como linha de ferramenta | U2, U3 | a página do agente de Papéis (`E4`): as ferramentas da ligação selecionada, nada marcado | Mastra Connect `tools()` com `allowTools` (`reference/connect/tools.mdx:123-139`, `6e8dfcb8`) | a ferramenta existe para o modelo só se marcada | nativo | — | `E4` | — |
 | A chave **Pergunta antes / Faz sozinho** | U2 | `builder.agent_version_tool` (`builder/agents/tables.ts:137-162`), sem coluna de aprovação | `@mastra/core@1.82.0` `createTool({ requireApproval: fn })`, a palavra final da ferramenta (`agent-BP9OWM6D.js:15114-15143`; `docs-agents-human-in-the-loop.md:109,157`); OpenAI `needsApproval`, Copilot Studio "Ask the end user before running" (Papéis, `market/autonomy.md`) | por ferramenta, lida a cada chamada | nativo: a coluna `approval` na linha da versão, lida pela função | Papéis P2 e P3: 0 de 200 | `D1` de Papéis | — |
@@ -246,7 +246,7 @@ os seus estados, a ação na tela de Papéis, o texto). Total da etapa: ~1.850, 
 | O cartão | U3 | `apps/web/src/builder/conversation/plan-card.tsx`, `question-card.tsx` | bolt.diy `app/components/chat/ToolApprovalTray.tsx:43-110` (`353b44c`); Glean (o sistema, o registro e os campos) | o que vai ser escrito e dois botões | nativo (as peças da casa) | — | não precisa | `apps/web/src/builder/conversation/approval-card.tsx` |
 | O cartão depois de recarregar | U3 | `apps/web/src/builder/conversation/session-state.ts` (o cartão do plano volta por `pendingSuspensions`) | `@mastra/server` `agent-controller.js:542-543` (`pendingApprovals` no estado da sessão) | o estado traz os pedidos abertos | nativo | o critério 16 | não precisa | — |
 | A liberação ao Projeto | U3 (o texto) | `apps/server/src/hub/connectors/tables.ts:170` ("to read, the whole connection"); `apps/web/src/hub/connectors/text.ts:182,216` | Claude Enterprise (papel com conectores e ações); Activepieces (ações por projeto) | um lugar para quem, outro para onde | nativo com `A1`; com `A2`, embrulhado (coluna e caixa nossas) | — | decisão `A` | — |
-| Cancelar pelo agente | fica de fora com `B1` | — | Sankhya `POST /v1/vendas/pedidos/{codigoPedido}/cancela` com `{ motivo }`; "Pedidos faturados não serão cancelados" | cancela, não apaga | nativo (o kit), se `B2` | — | decisão `B` | — |
+| Cancelar pelo agente | fica de fora: uma escrita depois, o comportamento num pedido "a confirmar" não documentado | — | Sankhya `POST /v1/vendas/pedidos/{codigoPedido}/cancela` com `{ motivo }`; "Pedidos faturados não serão cancelados" | cancela, não apaga | nativo (o kit), quando vier | — | "que aí eu consigo deletar depois" | — |
 | O Builder, o Construtor e o Assistente | fica de fora: sem mudança | `construtor.ts:275`, `conversation/permissions.ts:60`, `assistant.ts:305` | Mastra Code começa em `yolo` (`mastracode/sdk/src/index.ts:1129`, `6e8dfcb8`) | ferramentas sem pergunta | nativo | — | 0053 | — |
 
 **As medidas** (2026-11-05 e 06, `@mastra/core` 1.82.0, `@mastra/pg` 1.35.0, Postgres 18 local,
@@ -310,8 +310,8 @@ LancarPedidoInput = z.object({
 
 // apps/server/src/hub/connectors/write.ts
 // ToolCallId: packages/hub-api/src/questions.ts:4 (já existe); TurnKey: hub/connectors/assistant-port.ts:39
-export type WriteRequest = Readonly<{ speaker: Speaker; scope: SessionScope; connectionId: ConnectionId; operation: OperationId; input: unknown; runId: string; toolCallId: ToolCallId; turn: TurnKey; signal?: AbortSignal }>
-export function markOf(runId: string, toolCallId: ToolCallId): string // "Conexus " + 8 caracteres de um hash dos dois; o dono único da marca
+export type WriteRequest = Readonly<{ speaker: Speaker; scope: SessionScope; connectionId: ConnectionId; operation: OperationId; input: unknown; threadId: string; toolCallId: ToolCallId; turn: TurnKey; signal?: AbortSignal }>
+export function markOf(threadId: string, toolCallId: ToolCallId): string // "Conexus " + 8 caracteres de um hash dos dois; o dono único da marca
 export type Written =
   | Readonly<{ kind: 'OK'; value: unknown }>
   | Readonly<{ kind: 'NOT_IN_ROLE' }>
@@ -322,13 +322,13 @@ export function writeThrough(deps: WriteDeps, request: WriteRequest): Promise<Wr
 
 // apps/server/src/hub/connectors/tables.ts
 connectors.connector_write (
-  company_id text not null, run_id text not null, tool_call_id text not null,
+  company_id text not null, thread_id text not null, tool_call_id text not null,
   connection_id uuid not null, operation_id text not null, input_hash text not null,
   version_id uuid null, person_id text null, -- a versão publicada, ou a pessoa num rascunho
   check ((version_id is null) <> (person_id is null)),
   state text not null check (state in ('SENDING', 'DONE', 'REFUSED', 'UNCERTAIN')),
   answer jsonb null, created_at timestamptz not null,
-  primary key (company_id, run_id, tool_call_id)
+  primary key (company_id, thread_id, tool_call_id)
 ) // política de linha da empresa (0039); hub_company: SELECT, INSERT, UPDATE (state, answer)
 ```
 
@@ -449,7 +449,7 @@ createTool({ id: `tool_${slug}`, requireApproval: () => tool.approval === 'ASK',
    `tool_approval_required` (critério 5); a mensagem nova recusa e o **Aprovar** atrasado não roda
    (critério 6, que a medida H11 só provou na memória); a retomada depois de **Aprovar** leva o
    `conexus-agent-run` e a chave do turno (`conexus-agent-turn-key`, que só o `processInput` põe,
-   `agent.ts:219-231`, e a retomada não passa por ele), e o `runId` da retomada é o da chamada; o
+   `agent.ts:219-231`, e a retomada não passa por ele), e o `threadId` e o `toolCallId` do contexto da ferramenta na retomada são os da chamada; que os modelos que o Hub usa não repetem um `toolCallId` numa conversa (as gravações de Anthropic, OpenAI e Google); o
    reinício do critério 8, com a mensagem seguinte rodando normal ao lado da espera guardada.
 2. `ToolEffect`, a coluna `approval` e a escolha da ferramenta; a gravação da versão grava `ASK`
    numa escrita sem a chave.
@@ -461,8 +461,12 @@ createTool({ id: `tool_${slug}`, requireApproval: () => tool.approval === 'ASK',
    ação.
    `controller.ts`: `yolo: false`, e o comentário da 0053 sai.
 5. `guard.ts`: `POST ${SESSION}/tool-approval` na lista fixa (S39), recusando `alwaysAllowCategory`
-   e respondendo `ok: false, reason: 'not_pending'` quando o `toolCallId` não é um portão vivo da
-   sessão (`session.approval.isArmed({ toolCallId })`), antes do handler do Mastra.
+   e respondendo `ok: false, reason: 'not_pending'` quando o `toolCallId` do corpo já lido não é um
+   portão vivo da sessão, antes do handler do Mastra: a sessão vem de
+   `mastra.getAgentController(CONTROLLER_KINDS[kind].id)?.getSession(conversationId)` (como
+   `construtor/routes.test.ts:185`), e `session.approval.isArmed({ toolCallId })`
+   (`agent-controller-BDds1y5w.js:3084`); sem sessão, o mesmo `not_pending`. O gancho de hoje só
+   lança `Failure`; aqui ele responde com `reply.send` e para a cadeia.
    Imprima `CONNECTOR_WRITE_APPROVED` ou `_DECLINED`.
 6. As gravações do Mastra (T26) e os testes sobre elas.
 
@@ -475,7 +479,8 @@ o 8 sobe um Hub novo ao lado do mesmo banco. Os testes de `permissions.test.ts` 
 
 - Um tipo de ferramenta do agente não aceitar a regra e suspender com `yolo: false`: diga qual e
   pare; não se põe regra na sessão (é ela que perde chamadas).
-- A retomada perder o `conexus-agent-run`, a chave do turno ou o `runId`: diga onde e pare.
+- A retomada perder o `conexus-agent-run`, a chave do turno, o `threadId` ou o `toolCallId`: diga onde e pare.
+- Um modelo que o Hub usa repetir um `toolCallId` na mesma conversa: diga qual e pare; a chave do registro volta ao estudo.
 - A mensagem nova não recusar no Postgres, ou um **Aprovar** atrasado rodar a escrita: pare com os
   números.
 - O critério 11 perder uma chamada, ou uma escrita rodar duas vezes: volte ao firstmate com os
