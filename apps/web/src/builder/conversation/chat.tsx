@@ -16,7 +16,7 @@ import { MemoryStatus } from './memory-status.tsx'
 import { NoAccount } from './model-choice.tsx'
 import type { SessionRead } from './queries.ts'
 import { sessionReadQuery } from './queries.ts'
-import { AnswerProvider, SayProvider } from './room.ts'
+import { AnswerProvider, ApproveProvider, SayProvider } from './room.ts'
 import type { BuilderSession, Place } from './session.ts'
 import type { Action, SessionState } from './session-state.ts'
 import { TaskPanel } from './task-panel.tsx'
@@ -240,7 +240,7 @@ export function Chat(props: ChatProps) {
   useHandedOver({ conversationId, draft, send, setError, following })
 
   const turns = useMemo(() => shownOf(state), [state])
-  const waiting = Object.keys(state.suspended).length > 0
+  const waiting = Object.keys(state.suspended).length + Object.keys(state.approvals).length > 0
   if (gone) return <NotFound />
   const empty = state.messages.length === 0 && !state.running
   return (
@@ -253,36 +253,38 @@ export function Chat(props: ChatProps) {
       />
       <div className="min-h-24 flex-1 md:min-h-40">
         <AnswerProvider value={builder.answer}>
-          <SayProvider
-            value={(words) => send({ content: words, files: [] }, state.running || waiting)}
-          >
-            <Transcript
-              turns={turns}
-              steers={state.steers}
-              model={session.model}
-              older={older}
-              onAsk={(text) => {
-                draft.append(text)
-                field.current?.focus()
-              }}
+          <ApproveProvider value={builder.approve}>
+            <SayProvider
+              value={(words) => send({ content: words, files: [] }, state.running || waiting)}
             >
-              <Tail error={error} state={state} waiting={waiting} />
-              <ChatComposer
-                chat={props}
-                session={session}
-                providers={accounts.choices.mine}
-                state={state}
-                draft={draft}
-                field={field}
-                placeholder={props.placeholder}
-                onSend={(outgoing) => send(outgoing, state.running || waiting)}
-                onStop={halt}
-                onError={setError}
-                canAnswer={canAnswer}
-                waiting={waiting}
-              />
-            </Transcript>
-          </SayProvider>
+              <Transcript
+                turns={turns}
+                steers={state.steers}
+                model={session.model}
+                older={older}
+                onAsk={(text) => {
+                  draft.append(text)
+                  field.current?.focus()
+                }}
+              >
+                <Tail error={error} state={state} waiting={waiting} />
+                <ChatComposer
+                  chat={props}
+                  session={session}
+                  providers={accounts.choices.mine}
+                  state={state}
+                  draft={draft}
+                  field={field}
+                  placeholder={props.placeholder}
+                  onSend={(outgoing) => send(outgoing, state.running || waiting)}
+                  onStop={halt}
+                  onError={setError}
+                  canAnswer={canAnswer}
+                  waiting={waiting}
+                />
+              </Transcript>
+            </SayProvider>
+          </ApproveProvider>
         </AnswerProvider>
       </div>
     </>

@@ -1,10 +1,10 @@
-import type { AgentDetail, CompanyId, ConversationId, ProjectId } from '@conexus/hub-api'
+import type { AgentDetail, CompanyId, ConversationId, OpenWrite, ProjectId } from '@conexus/hub-api'
 import { AGENTS_CONTROLLER, agentFilePath } from '@conexus/hub-api'
-import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { useContext, useEffect, useMemo, useState } from 'react'
 import { useIsMobile } from '../../ui/use-mobile.ts'
 import { useConnectorCatalog } from '../assistant/public.ts'
-import type { OpenedFile } from '../conversation/public.ts'
+import type { OpenedFile, WriteTool } from '../conversation/public.ts'
 import {
   agentRoom,
   Beside,
@@ -14,26 +14,49 @@ import {
   START_NO_ACCOUNT,
 } from '../conversation/public.ts'
 import { FileWidth } from './file-width.ts'
-import { agentConversationsQuery, agentQuery } from './queries.ts'
+import { agentConversationsQuery, agentQuery, openWritesQuery } from './queries.ts'
 import { askAgent, TEST_BANNER } from './text.ts'
 
 /** The room of a conversation with the agent: its name, its tools' words and the file its Computador showed beside it. */
 function useAgentRoom(
   agent: AgentDetail,
   words: ReturnType<typeof useConnectorCatalog>['words'],
-  held: { file: OpenedFile | undefined; setFile: (file: OpenedFile) => void },
+  held: {
+    file: OpenedFile | undefined
+    setFile: (file: OpenedFile) => void
+    writes: { openWrites: readonly OpenWrite[]; refresh: () => void }
+  },
 ) {
-  const { file, setFile } = held
+  const { file, setFile, writes } = held
   return useMemo(
     () => ({
       ...agentRoom(agent.name, words),
       toolDescription: (slug: string) =>
         agent.tools.find((one) => one.slug === slug)?.version.description,
+      writeOf: (toolName: string) => writeOf(agent, toolName),
+      openWrites: writes.openWrites,
+      refreshOpenWrites: writes.refresh,
       openFile: setFile,
       openedPath: file?.path,
     }),
-    [agent.name, agent.tools, words, file?.path, setFile],
+    [agent, words, file?.path, setFile, writes],
   )
+}
+
+/** The write a tool of the agent is, with its connection and the operation's name; none for a read. */
+function writeOf(agent: AgentDetail, toolName: string): WriteTool | undefined {
+  const tool = agent.tools.find((one) => `tool_${one.slug}` === toolName)
+  if (tool === undefined || tool.kind !== 'PRESET' || tool.effect !== 'WRITE') return undefined
+  const connection = agent.offered.find((one) => one.connectionId === tool.connectionId)
+  if (connection === undefined) return undefined
+  const label = connection.writes.find((one) => one.operation === tool.operation)?.label
+  return {
+    connectionId: tool.connectionId,
+    connector: connection.connector,
+    connection: connection.name,
+    operation: tool.operation,
+    label: label ?? tool.operation,
+  }
 }
 
 /** A conversation with an agent, published or the test one with the draft: the conversation of the 24.1 over the `agents` controller (web W31). */
@@ -53,7 +76,12 @@ export function AgentChat(props: {
   const listKey = agentConversationsQuery(scope, agentId).queryKey
   const [file, setFile] = useState<OpenedFile>()
   const phone = useIsMobile()
-  const room = useAgentRoom(agent, words, { file, setFile })
+  const opened = useQuery(openWritesQuery(scope, agentId, conversationId))
+  const writes = useMemo(
+    () => ({ openWrites: opened.data?.writes ?? [], refresh: () => void opened.refetch() }),
+    [opened.data, opened.refetch],
+  )
+  const room = useAgentRoom(agent, words, { file, setFile, writes })
   const widen = useContext(FileWidth)
   const open = file !== undefined
   useEffect(() => {

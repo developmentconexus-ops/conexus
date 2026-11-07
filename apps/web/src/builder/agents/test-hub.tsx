@@ -4,8 +4,6 @@ import type {
   AgentVersionSummary,
   ConstrutorConversationSummary,
   ReadyTool,
-  ToolSummary,
-  ToolVersionDetail,
 } from '@conexus/hub-api'
 import {
   AGENTS_CONTROLLER,
@@ -30,7 +28,8 @@ import { screens, view } from '../conversation/test-hub.tsx'
 import { START } from '../conversation/test-start.tsx'
 import { displayOf, openLine } from '../conversation/test-stream.tsx'
 import { BUILDER_CHAT, CHAT, TEST_CHAT, TOOL_V1, toolSummary, version } from './test-agents.ts'
-import { toolRoutes } from './test-hub-tools.tsx'
+import type { ToolHeld } from './test-hub-tools.tsx'
+import { openWritesRoute, toolRoutes } from './test-hub-tools.tsx'
 
 const PROJECT_API = `*/api/companies/${COMPANY.id}/projects/${PEDIDOS.id}`
 
@@ -59,12 +58,9 @@ type Answers = {
 }
 
 type Sent = { method: string; path: string; body: unknown; key: string | null }
-type Held = {
+type Held = ToolHeld & {
   agents: AgentDetail[]
   versions?: AgentVersionSummary[]
-  tools?: ToolSummary[]
-  /** The versions of every tool the Projeto reads, newest last; a tool read without them has version 1 alone. */
-  toolVersions?: ToolVersionDetail[]
   ready?: ReadyTool[]
   conversations?: AgentConversationSummary[]
   construtor?: ConstrutorConversationSummary[]
@@ -166,6 +162,7 @@ const OpenConversation = z.object({ draft: z.boolean().optional() })
 
 function conversationRoutes(held: Held, chosen: ChosenModels, note: Note) {
   return [
+    openWritesRoute(held, PROJECT_API),
     http.get(`${PROJECT_API}/agents/:id/conversations`, () =>
       HttpResponse.json({ conversations: held.conversations ?? [] }),
     ),
