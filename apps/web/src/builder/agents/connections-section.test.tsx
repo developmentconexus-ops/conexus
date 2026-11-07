@@ -228,3 +228,34 @@ test('um rascunho antigo com ferramenta de ligação não selecionada mostra a l
   const pedidos = await section.findByRole('checkbox', { name: /Pedidos/ })
   expect(pedidos.getAttribute('aria-checked')).toBe('true')
 })
+
+test('uma ferramenta da empresa já marcada e fora do papel se desmarca', async () => {
+  const marked = limited(false)
+  marked.tools = [
+    {
+      kind: 'CODE',
+      id: TOOL,
+      slug: 'titulos_da_empresa',
+      connectionId: MATRIZ,
+      effect: 'READ',
+      latest: { id: TOOL_V1, number: 1 },
+      version: {
+        ...{ kind: 'CODE', id: TOOL_V1, number: 1, description: COMPANY_TOOL.description },
+        ...{ source: 'export default {}', reads: COMPANY_TOOL.reads },
+        ...{ inputSchema: { type: 'object' }, outputSchema: { type: 'object' } },
+        test: { passed: true, rows: 1, at: '2026-11-05T12:00:00.000Z' },
+      },
+    },
+  ]
+  const hub = at(PAGE, { agents: [marked], tools: [COMPANY_TOOL] })
+  server.use(catalog)
+  const tools = within(
+    await (await connections()).findByRole('list', { name: 'Ferramentas de Matriz' }),
+  )
+  const box = await tools.findByRole('checkbox', { name: /Títulos a receber da empresa 1/ })
+  expect(box.getAttribute('aria-checked')).toBe('true')
+  expect(box.hasAttribute('disabled')).toBe(false)
+  fireEvent.click(box)
+  await waitFor(() => expect(hub.writes()).toHaveLength(1))
+  expect(hub.writes()[0]?.body).toMatchObject({ tools: [] })
+})

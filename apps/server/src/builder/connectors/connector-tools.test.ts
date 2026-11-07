@@ -216,3 +216,32 @@ test('uma operação que o papel não tem chega à porta e o modelo recebe NOT_I
   })
   assert.deepEqual(asked, ['contasAReceber'])
 })
+
+test('uma operação que não tem a forma conector.operação é erro de esquema e nunca chega à porta nem ao registro (S41)', async () => {
+  const logged: string[] = []
+  const asked: string[] = []
+  const access: ConnectorAccess = {
+    connections: [granted('sankhya', SANKHYA)],
+    read: async (call) => {
+      asked.push(call.operation)
+      return { kind: 'NOT_GRANTED' }
+    },
+    log: {
+      info: (fields, message) => logged.push(JSON.stringify({ fields, message })),
+      error: (fields, message) => logged.push(JSON.stringify({ fields, message })),
+    },
+    notes: async () => null,
+    wording: { whose: 'x', limit: 'y' },
+  }
+  const read = Object(connectorTools(access, { noteSave: false })).connector_read
+  const planted = `sankhya.${'x'.repeat(5000)}`
+  for (const operation of [planted, 'sem ponto', `${'a'.repeat(100)}.pedidos`]) {
+    const refused = await read.execute(
+      { connection: 'Matriz', operation, input: {} },
+      { requestContext: new RequestContext() },
+    )
+    assert.equal(refused.error, true)
+  }
+  assert.deepEqual(asked, [])
+  assert.ok(!logged.join('').includes('xxxxx'))
+})

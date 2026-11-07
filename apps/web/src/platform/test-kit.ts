@@ -13,6 +13,13 @@ export const SANKHYA_SUBJECTS: ConnectorEntry['subjects'] = [
         effect: 'READ',
         door: true,
       },
+      {
+        id: 'carregar',
+        label: 'Leitura genérica',
+        summary: 'Carrega registros de uma tabela do Sankhya.',
+        effect: 'READ',
+        door: true,
+      },
     ],
   },
   {
