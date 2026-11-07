@@ -107,7 +107,7 @@ export function createIdentity(deps: {
       lockCompany,
       admitMember: admit,
       allows,
-      ...createMayUse(auth, deps.database),
+      ...createMayUse(auth, deps.database, roles),
       // Who a request to publish tells, the members who decide it, and its asker held while it
       // is decided (step 24.3.4).
       membersAllowed,

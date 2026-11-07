@@ -10,7 +10,9 @@ import { hasPermission } from 'better-auth/plugins'
 import type { Database } from '../../platform/database.ts'
 import { roleOf } from './admission.ts'
 import type { Auth, LibraryCommand } from './auth.ts'
-import { libraryCommandOn, ORGANIZATION } from './auth.ts'
+import { libraryCommandOn } from './auth.ts'
+import { organizationWith } from './organization.ts'
+import type { RoleSet } from './roles.ts'
 
 /**
  * Who asks for a read. A person is held to their role in the company; a published version (an
@@ -42,7 +44,8 @@ export function roleOfSpeaker(speaker: Speaker): string | null {
  * library's memory cache off, so a role changed answers differently on the next call. The library
  * reads in a short transaction of its own, never the caller's.
  */
-export function createMayUse(auth: Auth, database: Database) {
+export function createMayUse(auth: Auth, database: Database, roles: RoleSet) {
+  const options = organizationWith(roles)
   const command: LibraryCommand = libraryCommandOn(auth, database)
 
   function declares(speaker: Extract<Speaker, { kind: 'VERSION' }>, target: Target): boolean {
@@ -66,7 +69,7 @@ export function createMayUse(auth: Auth, database: Database) {
         answers.push(
           await hasPermission(
             {
-              options: ORGANIZATION,
+              options,
               organizationId: companyId,
               role: speaker.role,
               permissions: { [`connector_${target.connectorId}`]: [target.operationId] },
