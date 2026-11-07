@@ -60,8 +60,7 @@ escreveu.
   uma coisa que não faz sentido em enrijecer." A escrita entra como mais uma linha de ferramenta, no
   mesmo lugar das leituras (a `E4`), com o mesmo teto (o papel de quem publica, a `C1`) e o mesmo
   funil que confere o papel em toda leitura. A liberação de escrita por Projeto do rascunho saiu da
-  recomendação: seria um quarto lugar. Como ela muda o que "Liberar" quer dizer hoje, fica com você
-  (decisão `A`).
+  recomendação: seria um quarto lugar. Você decidiu sem ela (decisão `A`, "A1").
 - **D.** "responder uma pergunta do Mercado Livre pelo agente depende muito de vir uma pergunta ...
   Poderia ser lançar um pedido no Sunker, que aí eu consigo deletar depois." A primeira escrita é
   lançar um pedido no Sankhya. Pela API, o pedido nasce "a confirmar"; desfazer pela API é
@@ -105,29 +104,25 @@ escreveu.
   outra mensagem ou parar a conversa.
 - **Os avisos guardados para um cartão** (`next-card`): nenhum toca a escrita de um agente.
 
-**A decisão sua nesta etapa.** A recomendação vem primeiro.
+**A decisão sua nesta etapa.** Decidida em 2026-11-07: "A1".
 
 - **A. Liberar a ligação ao Projeto deixa os agentes dele escreverem, ou a escrita pede uma
   liberação à parte?** Hoje "Liberar" é "Liberar para ler" (a sua `S1`), e o roteiro diz "Escrita
   nova pede nova liberação".
-  - `A1` (recomendo): não pede à parte. O papel já diz quem usa cada escrita, e uma escrita nova do
+  - `A1` (decidida): não pede à parte. O papel já diz quem usa cada escrita, e uma escrita nova do
     kit chega só ao Dono e ao Administrador até você marcá-la em outro papel (`B1` de Papéis): é a
     "nova liberação" do roteiro. Caso real: o Claude Enterprise dá a cada papel os conectores e as
     ações, sem segundo lugar. Exemplo: a ligação do Sankhya já liberada ao "Vendas" serve ao
     "Pedidos" para lançar, se quem publica tem **Lançar pedido** no papel. Objetivo: três donos,
     nenhum repetido, como você pediu na C. Nativo: nada novo além da linha da ferramenta; o texto
     da confirmação de "Liberar" deixa de dizer que é só para ler.
-  - `A2`: uma caixa **Liberar para escrever** por Projeto, além do papel. Caso real: o Activepieces
-    escolhe as ações por projeto. Exemplo: o "Vendas" lê o Sankhya, mas só lança pedido depois de
-    você marcar a escrita ali. Como: uma coluna nova na liberação, uma caixa e a permissão de banco
-    (D11), cerca de 400 linhas nossas.
 
 ## O que este cartão tira do rascunho de 2026-11-06
 
 A `suspend()` na ferramenta que escreve, a conferência nossa de "a pessoa mandou outra mensagem" e
 o motivo escrito ao recusar (a rota nativa não leva motivo; você escreve uma mensagem); a resposta
 de uma pergunta do Mercado Livre, a sua operação e o dublê; a coluna `writes` em
-`project_connection`, a caixa **Liberar para escrever** e a sua permissão D11 (se `A1`); a marca
+`project_connection`, a caixa **Liberar para escrever** e a sua permissão D11 (pela `A1`); a marca
 **Pede aprovação** na biblioteca e as três formas de "sempre permitir"; o critério da carga com a
 `suspend()`; o 401 repetido numa escrita; a decisão de cancelar pelo agente, que foi para "Fica de
 fora".
@@ -151,7 +146,7 @@ a sua migração, o executor sem repetição). U2: ~500 (o controlador, as regra
 ferramenta, a ferramenta da escrita, a coluna da chave, a ação e a conferência de publicar, o
 programa sem escrita, a rota, os registros, as gravações). U3: ~600 (a chave na linha, o cartão e
 os seus estados, a ação na tela de Papéis, o texto). Total da etapa: ~1.850, dentro da regra L2
-(estimado pela leitura, sem protótipo). Com `A2`, ~2.250.
+(estimado pela leitura, sem protótipo).
 
 ## Os critérios de aceite
 
@@ -245,7 +240,7 @@ os seus estados, a ação na tela de Papéis, o texto). Total da etapa: ~1.850, 
 | Quem aprovou, no registro | U2 | `hub/connectors/routes.ts` (as linhas de log da liberação) | Claude Code, o evento `tool_decision` (relato) | uma linha por decisão | embrulhado (a linha é nossa) | — | não precisa | — |
 | O cartão | U3 | `apps/web/src/builder/conversation/plan-card.tsx`, `question-card.tsx` | bolt.diy `app/components/chat/ToolApprovalTray.tsx:43-110` (`353b44c`); Glean (o sistema, o registro e os campos) | o que vai ser escrito e dois botões | nativo (as peças da casa) | — | não precisa | `apps/web/src/builder/conversation/approval-card.tsx` |
 | O cartão depois de recarregar | U3 | `apps/web/src/builder/conversation/session-state.ts` (o cartão do plano volta por `pendingSuspensions`) | `@mastra/server` `agent-controller.js:542-543` (`pendingApprovals` no estado da sessão) | o estado traz os pedidos abertos | nativo | o critério 16 | não precisa | — |
-| A liberação ao Projeto | U3 (o texto) | `apps/server/src/hub/connectors/tables.ts:170` ("to read, the whole connection"); `apps/web/src/hub/connectors/text.ts:182,216` | Claude Enterprise (papel com conectores e ações); Activepieces (ações por projeto) | um lugar para quem, outro para onde | nativo com `A1`; com `A2`, embrulhado (coluna e caixa nossas) | — | decisão `A` | — |
+| A liberação ao Projeto | U3 (o texto) | `apps/server/src/hub/connectors/tables.ts:170` ("to read, the whole connection"); `apps/web/src/hub/connectors/text.ts:182,216` | Claude Enterprise (papel com conectores e ações); Activepieces (ações por projeto) | um lugar para quem, outro para onde | nativo | — | "A1", 2026-11-07 | — |
 | Cancelar pelo agente | fica de fora: uma escrita depois, o comportamento num pedido "a confirmar" não documentado | — | Sankhya `POST /v1/vendas/pedidos/{codigoPedido}/cancela` com `{ motivo }`; "Pedidos faturados não serão cancelados" | cancela, não apaga | nativo (o kit), quando vier | — | "que aí eu consigo deletar depois" | — |
 | O Builder, o Construtor e o Assistente | fica de fora: sem mudança | `construtor.ts:275`, `conversation/permissions.ts:60`, `assistant.ts:305` | Mastra Code começa em `yolo` (`mastracode/sdk/src/index.ts:1129`, `6e8dfcb8`) | ferramentas sem pergunta | nativo | — | 0053 | — |
 
@@ -505,7 +500,7 @@ Papéis os deixou, `apps/web/src/builder/conversation/{plan-card,rows,session-st
 | `apps/web/src/builder/agents/` | Muda `chooser.tsx` (a linha "escreve" com a chave; "Marcar todas as leituras" a ignora) | a página do agente |
 | `apps/web/src/builder/conversation/` | Cria `approval-card.tsx`; muda `rows.ts` (o `tool_approval_required` vira o cartão), `session-state.ts` (`pendingApprovals`), `text.ts` | a sala do agente |
 | `apps/web/src/hub/identity/` | Muda `roles.tsx` (a ação, fixa no Dono e no Administrador) | Configurações › Papéis |
-| `apps/web/src/hub/connectors/` | Muda `text.ts` (a confirmação de "Liberar", com `A1`) | Integrações do Projeto |
+| `apps/web/src/hub/connectors/` | Muda `text.ts` (a confirmação de "Liberar", pela `A1`) | Integrações do Projeto |
 | `docs/reference/screens.md` | As caixas do cartão e da linha da escrita | a QA |
 
 ### A ordem do trabalho
