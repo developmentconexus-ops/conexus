@@ -72,6 +72,7 @@ ALTER TABLE builder.tool OWNER TO test_owner;
 ALTER TABLE builder.tool_version OWNER TO test_owner;
 ALTER TABLE connectors.connection OWNER TO test_owner;
 ALTER TABLE connectors.connection_sign_in OWNER TO test_owner;
+ALTER TABLE connectors.connector_write OWNER TO test_owner;
 ALTER TABLE connectors.project_connection OWNER TO test_owner;
 ALTER TABLE drizzle.__drizzle_migrations OWNER TO test_owner;
 ALTER SEQUENCE drizzle.__drizzle_migrations_id_seq OWNER TO test_owner;
@@ -324,6 +325,12 @@ GRANT SELECT(account_label),UPDATE(account_label) ON TABLE connectors.connection
 -- take it back, and read and change a connection's notes.
 GRANT SELECT(notes),UPDATE(notes) ON TABLE connectors.connection TO hub_company;
 GRANT SELECT,INSERT,DELETE ON TABLE connectors.connection_sign_in TO hub_company;
+-- Step 24.5, U1, the founder's word on the card (D11, page approval "Sim"): a company's routes read and
+-- record each write an agent sends to an outside system, and finish its record with the state and the
+-- answer, never any other column; the Hub never deletes one.
+GRANT SELECT,INSERT ON TABLE connectors.connector_write TO hub_company;
+GRANT UPDATE(state) ON TABLE connectors.connector_write TO hub_company;
+GRANT UPDATE(answer) ON TABLE connectors.connector_write TO hub_company;
 GRANT SELECT,INSERT,DELETE ON TABLE connectors.project_connection TO hub_company;
 GRANT SELECT ON TABLE drizzle.__drizzle_migrations TO hub_runtime;
 GRANT SELECT,INSERT ON TABLE hub.starts TO hub_runtime;
