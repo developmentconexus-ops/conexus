@@ -23,10 +23,21 @@ export function useConnectorCatalog(companyId: CompanyId) {
   function logo(connector: string): string | undefined {
     return connectors?.find((one) => one.id === connector)?.logo
   }
+  /** Whether the operation is a read of what the company has of its own, the free query's kind. */
+  function isDoor(connector: string, operation: string): boolean {
+    return (
+      connectors
+        ?.find((one) => one.id === connector)
+        ?.subjects.some((subject) =>
+          subject.operations.some((one) => one.id === operation && one.door),
+        ) ?? false
+    )
+  }
   return {
     words,
     name: words.name,
     logo,
+    isDoor,
     failure: read.isError ? sentenceOf(read.error) : undefined,
   }
 }

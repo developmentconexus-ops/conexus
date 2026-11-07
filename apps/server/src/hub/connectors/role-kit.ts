@@ -1,4 +1,5 @@
 import { CONNECTORS, connectorOf } from '@conexus/connectors'
+import { operationsOf } from './catalog-subjects.ts'
 
 /**
  * What the kit offers a company's roles: each connector's resource and its operations, the door's
@@ -9,21 +10,17 @@ export function roleKit() {
   return CONNECTORS.map((connector) => ({
     id: connector.id,
     resource: `connector_${connector.id}`,
-    operations: [
-      ...Object.values(connector.readDoor ?? {}),
-      ...connector.operations,
-      ...(connector.writes ?? []),
-    ].map((operation) => ({ id: operation.id, class: operation.class })),
+    operations: operationsOf(connector).map((operation) => ({
+      id: operation.id,
+      class: operation.class,
+    })),
   }))
 }
 
 /** What a person reads for a connector's operation, the read door's included; the id when the kit has none. */
 export function operationLabel(connector: string, operation: string): string {
   const kit = connectorOf(connector)
-  const found = [
-    ...Object.values(kit?.readDoor ?? {}),
-    ...(kit?.operations ?? []),
-    ...(kit?.writes ?? []),
-  ].find((each) => each.id === operation)
+  const found =
+    kit === undefined ? undefined : operationsOf(kit).find((each) => each.id === operation)
   return found?.label ?? operation
 }

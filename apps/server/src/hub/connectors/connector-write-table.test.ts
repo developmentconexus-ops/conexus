@@ -84,3 +84,14 @@ test('o registro de um envio: a empresa lê e grava só o seu, termina só o est
     await assert.rejects(as(A, `update connectors.connector_write set ${column}`), denied)
   await assert.rejects(as(A, 'delete from connectors.connector_write'), denied)
 })
+
+test('o registro de um envio sai com a empresa, apagada pelo dono: a chave estrangeira em cascata', async (t) => {
+  const { asOwner } = await createTestDatabase(t)
+  await asOwner(SEED)
+  await asOwner(record(A, 'call-1', BY_VERSION))
+  await asOwner(record(A, 'call-2', BY_PERSON))
+  await asOwner(record(B, 'call-1', BY_VERSION))
+  await asOwner(`delete from auth.company where id = '${A}'`)
+  const rows = await asOwner('select company_id from connectors.connector_write')
+  assert.deepEqual(rows, [{ company_id: B }])
+})

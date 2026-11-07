@@ -13,6 +13,7 @@ import {
   companyAppAccessRead,
 } from '../../platform/test-hub-access.tsx'
 import { bodyRows, hub, open, sectionOf, server } from './test-people.tsx'
+import * as roles from './test-roles.tsx'
 
 test('dono: os membros com o papel, os convites pendentes e o formulário "Convidar pessoa"', async () => {
   hub({ role: 'owner', mayInviteAs: ['owner', 'admin', 'member'] })
@@ -206,4 +207,83 @@ test('Quem usa os apps: tirar de quem o Hub já não encontra fecha a confirmaç
     within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Tirar de todos' }),
   )
   await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull())
+})
+
+async function pickOption(name: string) {
+  const option = await screen.findByRole('option', { name })
+  for (const event of [
+    fireEvent.pointerDown,
+    fireEvent.mouseDown,
+    fireEvent.pointerUp,
+    fireEvent.mouseUp,
+    fireEvent.click,
+  ]) {
+    event(option)
+  }
+}
+
+test('papel próprio: a troca e o convite listam "Atendente" pelo rótulo, e a lista o mostra na linha (critério 14)', async () => {
+  roles.hub({
+    as: 'owner',
+    roles: [...roles.FIXED, roles.ATENDENTE],
+    mayInviteAs: ['admin', 'member', 'atendente'],
+    people: [
+      { personId: ANA.id, name: ANA.name, email: ANA.email, role: 'owner' },
+      {
+        personId: 'person-bruno',
+        name: 'Bruno Souza',
+        email: 'bruno@example.test',
+        role: 'atendente',
+        mayChangeTo: ['member'],
+        mayRemove: true,
+      },
+    ],
+  })
+  roles.open('/settings/people')
+  const people = within(sectionOf(await screen.findByRole('heading', { name: 'Pessoas' })))
+  await waitFor(() =>
+    expect(bodyRows(people).map((row) => row.textContent)).toContain(
+      'Bruno Souzabruno@example.testAtendenteMudar papelTirar da empresa',
+    ),
+  )
+  fireEvent.click(people.getByRole('button', { name: 'Mudar papel: Bruno Souza' }))
+  const dialog = within(await screen.findByRole('alertdialog'))
+  fireEvent.click(dialog.getByLabelText('Papel'))
+  expect((await screen.findAllByRole('option')).map((one) => one.textContent)).toEqual([
+    'Membro',
+    'Atendente',
+  ])
+  await pickOption('Membro')
+  fireEvent.click(dialog.getByRole('button', { name: 'Cancelar' }))
+  await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull())
+  const invite = within(sectionOf(screen.getByRole('heading', { name: 'Convidar pessoa' })))
+  fireEvent.click(invite.getByLabelText('Papel'))
+  expect((await screen.findAllByRole('option', { name: 'Atendente' })).length).toBeGreaterThan(0)
+})
+
+test('papel próprio com acento: quem lê os papéis vê o rótulo; quem não lê vê o nome guardado em palavras (o Hub ainda não leva o rótulo)', async () => {
+  const sao = roles.customRole('Atendente São Paulo', 'atendente-sao-paulo', ['pedidos'], 1)
+  const people = [
+    { personId: ANA.id, name: ANA.name, email: ANA.email, role: 'developer' },
+    {
+      personId: 'person-bruno',
+      name: 'Bruno Souza',
+      email: 'bruno@example.test',
+      role: 'atendente-sao-paulo',
+    },
+  ]
+  for (const [as, shown] of [
+    ['owner', 'Atendente São Paulo'],
+    ['developer', 'Atendente sao paulo'],
+  ] as const) {
+    roles.hub({ as, roles: [...roles.FIXED, sao], people })
+    const { unmount } = roles.open('/settings/people')
+    const list = within(sectionOf(await screen.findByRole('heading', { name: 'Pessoas' })))
+    await waitFor(() =>
+      expect(bodyRows(list).map((row) => row.textContent)).toContain(
+        `Bruno Souzabruno@example.test${shown}`,
+      ),
+    )
+    unmount()
+  }
 })

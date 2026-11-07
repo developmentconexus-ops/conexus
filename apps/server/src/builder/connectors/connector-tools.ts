@@ -172,15 +172,13 @@ function otherSystem(access: ConnectorAccess, connection: string, operation: str
   }
 }
 
+/** The operation as the model writes it, bounded because a refusal logs it: a string that is not `connector.operation` never reaches the door (S41). */
+const OPERATION_MAX = 80
+const OPERATION_FORMAT = /^[a-z0-9-]+\.[A-Za-z0-9_]+$/
+
 function readTool(access: ConnectorAccess): ToolsInput {
   const { connections } = access
-  const operations = [
-    ...new Set(
-      connections.flatMap((g) => g.reads.map((read) => `${g.connector}.${read.operation}`)),
-    ),
-  ]
-  const [first, ...rest] = operations
-  if (first === undefined) return {}
+  if (!connections.some((each) => each.reads.length > 0)) return {}
   return {
     [BUILDER_TOOL.connectorRead]: createTool({
       id: BUILDER_TOOL.connectorRead,
@@ -190,7 +188,14 @@ function readTool(access: ConnectorAccess): ToolsInput {
       ].join('\n'),
       inputSchema: z.object({
         connection: connectionField(connections),
-        operation: z.enum([first, ...rest]),
+        // Not an enum of the listed reads: one the role lacks must reach the door, which answers `NOT_IN_ROLE` with the role's name, instead of a validation error that says nothing of the role.
+        operation: z
+          .string()
+          .max(OPERATION_MAX)
+          .regex(OPERATION_FORMAT)
+          .describe(
+            'The operation as "connector.operation", one of those listed under the connections',
+          ),
         input: z.record(z.string(), z.unknown()),
       }),
       execute: async (

@@ -1,6 +1,6 @@
 {
-  "id": "b1b9d7c2-da0e-409d-948d-84f275c29ed7",
-  "prevIds": ["51f33f99-1727-47fb-bf71-c4eb0a6c1e05"],
+  "id": "7fdb0f4f-0cd8-4a4d-89d1-de252d426226",
+  "prevIds": ["261fc372-eba6-458c-9fff-c8d7d515617e"],
   "version": "8",
   "dialect": "postgres",
   "ddl": [
@@ -223,6 +223,12 @@
     {
       "isRlsEnabled": true,
       "name": "member",
+      "entityType": "tables",
+      "schema": "auth"
+    },
+    {
+      "isRlsEnabled": true,
+      "name": "organization_role",
       "entityType": "tables",
       "schema": "auth"
     },
@@ -3481,6 +3487,97 @@
       "name": "id",
       "entityType": "columns",
       "schema": "auth",
+      "table": "organization_role"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "company_id",
+      "entityType": "columns",
+      "schema": "auth",
+      "table": "organization_role"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "role",
+      "entityType": "columns",
+      "schema": "auth",
+      "table": "organization_role"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "permission",
+      "entityType": "columns",
+      "schema": "auth",
+      "table": "organization_role"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "label",
+      "entityType": "columns",
+      "schema": "auth",
+      "table": "organization_role"
+    },
+    {
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "schema": "auth",
+      "table": "organization_role"
+    },
+    {
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "updated_at",
+      "entityType": "columns",
+      "schema": "auth",
+      "table": "organization_role"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "auth",
       "table": "rate_limit"
     },
     {
@@ -4816,6 +4913,34 @@
       "nameExplicit": true,
       "columns": [
         {
+          "value": "company_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "role",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": true,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "organization_role_company_id_role_key",
+      "entityType": "indexes",
+      "schema": "auth",
+      "table": "organization_role"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
           "value": "user_id",
           "isExpression": false,
           "asc": true,
@@ -5542,6 +5667,19 @@
     },
     {
       "nameExplicit": true,
+      "columns": ["company_id"],
+      "schemaTo": "auth",
+      "tableTo": "company",
+      "columnsTo": ["id"],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "connector_write_company_id_fkey",
+      "entityType": "fks",
+      "schema": "connectors",
+      "table": "connector_write"
+    },
+    {
+      "nameExplicit": true,
       "columns": ["company_id", "connector_id", "connection_id"],
       "schemaTo": "connectors",
       "tableTo": "connection",
@@ -5630,6 +5768,19 @@
       "entityType": "fks",
       "schema": "auth",
       "table": "member"
+    },
+    {
+      "nameExplicit": false,
+      "columns": ["company_id"],
+      "schemaTo": "auth",
+      "tableTo": "company",
+      "columnsTo": ["id"],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "organization_role_company_id_company_id_fkey",
+      "entityType": "fks",
+      "schema": "auth",
+      "table": "organization_role"
     },
     {
       "nameExplicit": false,
@@ -6002,6 +6153,14 @@
       "name": "member_pkey",
       "schema": "auth",
       "table": "member",
+      "entityType": "pks"
+    },
+    {
+      "columns": ["id"],
+      "nameExplicit": false,
+      "name": "organization_role_pkey",
+      "schema": "auth",
+      "table": "organization_role",
       "entityType": "pks"
     },
     {
@@ -7462,6 +7621,28 @@
       "entityType": "policies",
       "schema": "auth",
       "table": "member"
+    },
+    {
+      "as": "PERMISSIVE",
+      "for": "ALL",
+      "roles": ["hub_company"],
+      "using": "company_id = nullif(current_setting('conexus.company_id', true), '')",
+      "withCheck": "company_id = nullif(current_setting('conexus.company_id', true), '')",
+      "name": "company_all",
+      "entityType": "policies",
+      "schema": "auth",
+      "table": "organization_role"
+    },
+    {
+      "as": "PERMISSIVE",
+      "for": "INSERT",
+      "roles": ["hub_operator"],
+      "using": null,
+      "withCheck": "auth.is_installation_administrator(nullif(current_setting('conexus.person_id', true), ''))",
+      "name": "operator_insert",
+      "entityType": "policies",
+      "schema": "auth",
+      "table": "organization_role"
     },
     {
       "as": "PERMISSIVE",

@@ -35,7 +35,8 @@ export async function invalidField(
   return undefined
 }
 
-type Declared = { slug: string; connectionId: ConnectionId; operation: OperationId }
+/** A read a chosen tool declares; `tool` names a company's own (code) tool by the title the person read, where one tool holds several reads. */
+type Declared = { slug: string; connectionId: ConnectionId; operation: OperationId; tool?: string }
 
 /** Each read the draft will give the agent: its chosen tools', or for a draft written before E4 the kit's reads of its connections. */
 async function declaredBy(
@@ -47,8 +48,10 @@ async function declaredBy(
     const { slug, connectionId } = row.tool
     const home = ConnectionIdSchema.parse(connectionId)
     if (ToolKind.parse(row.tool.kind) === 'CODE') {
-      return CodeToolRead.parse(row.version.config).reads.map((operation) => ({
+      const code = CodeToolRead.parse(row.version.config)
+      return code.reads.map((operation) => ({
         ...{ slug, connectionId: home, operation: OperationIdSchema.parse(operation) },
+        tool: code.description,
       }))
     }
     return [{ slug, connectionId: home, operation: OperationIdSchema.parse(row.tool.operation) }]
@@ -103,7 +106,7 @@ async function refuseByRole(
       details: { tool: refused.slug, operation: refused.operation },
       named: {
         field: 'tools',
-        operation: operationLabel(target.connectorId, refused.operation),
+        operation: refused.tool ?? operationLabel(target.connectorId, refused.operation),
       },
     })
   }
