@@ -54,7 +54,7 @@ function RoleList(props: {
     <div className="flex flex-col gap-xl">
       <section className="flex flex-col gap-lg">
         <div className="flex flex-wrap items-center justify-between gap-md">
-          <SectionTitle>Papéis</SectionTitle>
+          <SectionTitle>Papéis de fábrica</SectionTitle>
           <Link
             to="/companies/$companyId/settings/roles"
             params={{ companyId: props.companyId }}

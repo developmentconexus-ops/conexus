@@ -5,6 +5,7 @@ import { Link } from '@tanstack/react-router'
 import { ArrowLeftIcon } from 'lucide-react'
 import { useController, useFormContext } from 'react-hook-form'
 import { buttonVariants } from '../../ui/button.tsx'
+import { cn } from '../../ui/cn.ts'
 import {
   Form,
   FormAlert,
@@ -50,7 +51,7 @@ function Back({ companyId }: { companyId: CompanyId }) {
       to="/companies/$companyId/settings/roles"
       params={{ companyId }}
       search={{}}
-      className={buttonVariants({ variant: 'ghost', size: 'sm' })}
+      className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'self-start')}
     >
       <ArrowLeftIcon aria-hidden="true" className="size-4" />
       Papéis
