@@ -1,6 +1,6 @@
 import type { CompanyId, ConversationId, PersonId } from '@conexus/hub-api'
-import type { Database } from '../../platform/database.ts'
-import { keptRun } from './controller.ts'
+import type { Owner } from '../controller-kit/public.ts'
+import type { AgentRun } from './agent.ts'
 import type { AgentReads } from './registry.ts'
 
 /**
@@ -8,7 +8,10 @@ import type { AgentReads } from './registry.ts'
  * draft: the log of a card's answer says which connection and operation it was about, and a
  * Recusar has no send to join it to.
  */
-export function writeOfAgents(database: Database, reads: Pick<AgentReads, 'activeOf' | 'draftOf'>) {
+export function writeOfAgents(
+  keptRun: (owner: Owner, id: ConversationId) => Promise<AgentRun | undefined>,
+  reads: Pick<AgentReads, 'activeOf' | 'draftOf'>,
+) {
   return async (input: {
     companyId: CompanyId
     personId: PersonId
@@ -16,7 +19,7 @@ export function writeOfAgents(database: Database, reads: Pick<AgentReads, 'activ
     toolName: string
   }) => {
     const { companyId, personId, conversationId, toolName } = input
-    const run = await keptRun(database, { companyId, personId }, conversationId)
+    const run = await keptRun({ companyId, personId }, conversationId)
     if (run === undefined) return undefined
     const version =
       run.kind === 'DRAFT'

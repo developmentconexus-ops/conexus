@@ -291,7 +291,7 @@ export function createAgentConversations(deps: Deps) {
       memory,
       /** Whether the person may talk to the Projeto's agents now (`manageAgents`). */
       admit: agentManagerAdmission({ database, identity: deps.identity }),
-      writeOf: writeOfAgents(database, deps.agents),
+      writeOf: writeOfAgents((owner, id) => keptRun(database, owner, id), deps.agents),
       async release(scope: ReleaseScope): Promise<void> {
         const count = await sweep({
           [AGENT_MARK.company]: scope.companyId,
