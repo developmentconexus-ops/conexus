@@ -70,7 +70,9 @@ export function agent(fields: Partial<AgentDetail> = {}): AgentDetail {
         connectionId: MATRIZ,
         connector: 'sankhya',
         name: 'Matriz',
-        reads: [{ operation: 'pedidos', label: 'Pedidos', summary: 'Pedidos de venda' }],
+        reads: [
+          { operation: 'pedidos', label: 'Pedidos', summary: 'Pedidos de venda', allowed: true },
+        ],
       },
     ],
     createdBy: null,

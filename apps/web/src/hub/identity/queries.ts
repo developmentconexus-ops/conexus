@@ -1,4 +1,4 @@
-import type { CompanyId, InvitationId, Member } from '@conexus/hub-api'
+import type { CompanyId, InvitationId, ListedInvitation, Member } from '@conexus/hub-api'
 import {
   acceptInvitation,
   CAPACITY,
@@ -6,8 +6,10 @@ import {
   changeMemberRole,
   createInvitation,
   createInvitationPassword,
+  createRole,
   createSession,
   declineInvitation,
+  deleteRole,
   deleteSession,
   getCompany,
   getInvitation,
@@ -17,12 +19,14 @@ import {
   listInvitations,
   listMembers,
   listMyApps,
+  listRoles,
   removeMember,
   renewInvitation,
   requestPasswordRecovery,
   revokeAllAppAccess,
   setCompanyNickname,
   setPassword,
+  updateRole,
 } from '@conexus/hub-api'
 import type { QueryClient } from '@tanstack/react-query'
 import { hubMutation, hubQuery, hubQueryPrefix } from '../../platform/hub.ts'
@@ -73,6 +77,22 @@ export const revokeEveryApp = hubMutation(revokeAllAppAccess)
 export function invitationsQuery(companyId: CompanyId, page: string | undefined) {
   return hubQuery(listInvitations, { params: { companyId }, query: { page } })
 }
+/** Every open invitation of the company, all the pages of the list, for what must not miss one. */
+export function everyInvitationQuery(companyId: CompanyId) {
+  return {
+    queryKey: [...hubQueryPrefix(listInvitations, { companyId }), 'every'],
+    queryFn: async (context: Parameters<ReturnType<typeof invitationsQuery>['queryFn']>[0]) => {
+      const invitations: ListedInvitation[] = []
+      let page: string | undefined
+      do {
+        const read = await invitationsQuery(companyId, page).queryFn(context)
+        invitations.push(...read.invitations)
+        page = read.next.kind === 'MORE' ? read.next.page : undefined
+      } while (page !== undefined && invitations.length < CAPACITY.openInvitations)
+      return invitations
+    },
+  }
+}
 export function receivedInvitationQuery(invitationId: InvitationId) {
   return hubQuery(getInvitation, { params: { invitationId } })
 }
@@ -84,6 +104,13 @@ export const renewCompanyInvitation = hubMutation(renewInvitation)
 export const createReceivedPassword = { ...hubMutation(createInvitationPassword), meta: KEEP_CACHE }
 export const declineReceivedInvitation = hubMutation(declineInvitation)
 export const acceptReceivedInvitation = hubMutation(acceptInvitation)
+
+export function rolesQuery(companyId: CompanyId) {
+  return hubQuery(listRoles, { params: { companyId } })
+}
+export const createCompanyRole = hubMutation(createRole)
+export const changeCompanyRole = hubMutation(updateRole)
+export const deleteCompanyRole = hubMutation(deleteRole)
 
 export const removePerson = hubMutation(removeMember)
 export const changePersonRole = hubMutation(changeMemberRole)

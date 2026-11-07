@@ -31,7 +31,7 @@ function ready(operation: string, label: string) {
   }
 }
 
-test('Adicionar da biblioteca lista pelo nome da leitura, por origem, sem o texto do modelo nem o slug', async () => {
+test('Adicionar da biblioteca oferece só as ferramentas da Conexus, nunca as de uma ligação (E4, uma lista só)', async () => {
   at(PAGE, {
     agents: [agent({ tools: [] })],
     tools: [toolSummary()],
@@ -39,30 +39,13 @@ test('Adicionar da biblioteca lista pelo nome da leitura, por origem, sem o text
   })
   fireEvent.click(await screen.findByRole('button', { name: 'Adicionar da biblioteca' }))
   const dialog = await screen.findByRole('dialog')
-  expect(await within(dialog).findByRole('switch', { name: /Pedidos/ })).toBeTruthy()
-  expect(within(dialog).getByRole('region', { name: 'Da biblioteca' })).toBeTruthy()
-  expect(within(dialog).getByRole('region', { name: 'Sankhya · prontas do conector' })).toBeTruthy()
-  expect(within(dialog).queryByText(/a página começa em 0/)).toBeNull()
-  expect(within(dialog).queryByText(/pedidos_aaaaaa/)).toBeNull()
-  expect(within(dialog).queryByRole('checkbox')).toBeNull()
-  expect(within(dialog).queryByRole('searchbox')).toBeNull()
+  expect(await within(dialog).findByRole('switch', { name: 'Pesquisar na web' })).toBeTruthy()
+  expect(within(dialog).queryByRole('switch', { name: /Pedidos|Clientes/ })).toBeNull()
+  expect(within(dialog).queryByRole('region', { name: 'Da biblioteca' })).toBeNull()
+  expect(within(dialog).queryByRole('region', { name: 'Sankhya · prontas do conector' })).toBeNull()
 })
 
-test('Adicionar da biblioteca busca a partir de sete linhas', async () => {
-  const labels = ['Pedidos', 'Clientes', 'Vendedores', 'Metas', 'Estoque', 'Notas', 'Empresas']
-  at(PAGE, {
-    agents: [agent({ tools: [] })],
-    ready: labels.map((label) => ready(label.toLowerCase(), label)),
-  })
-  fireEvent.click(await screen.findByRole('button', { name: 'Adicionar da biblioteca' }))
-  const dialog = await screen.findByRole('dialog')
-  fireEvent.change(await within(dialog).findByRole('searchbox', { name: 'Buscar ferramenta' }), {
-    target: { value: 'metas' },
-  })
-  expect(within(dialog).getAllByRole('switch')).toHaveLength(1)
-})
-
-test('a ferramenta pronta do painel tem o nome da leitura; a feita à mão, a descrição', async () => {
+test('a ferramenta pronta da ligação tem o nome da leitura, sem o slug, e fica só embaixo dela', async () => {
   const pronta = agent().tools[0]
   if (pronta?.kind !== 'PRESET') throw new Error('the fixture has a preset tool')
   at(PAGE, {
@@ -72,16 +55,11 @@ test('a ferramenta pronta do painel tem o nome da leitura; a feita à mão, a de
       }),
     ],
   })
-  const panel = await screen.findByRole('region', { name: 'Ferramentas' })
-  expect(await within(panel).findByText('Pedidos')).toBeTruthy()
-  expect(within(panel).queryByText('vendas_de_ontem')).toBeNull()
-})
-
-test('a ferramenta feita à mão mostra o nome dela junto da descrição, para distinguir duas parecidas', async () => {
-  at(PAGE, { agents: [agent()] })
-  const panel = await screen.findByRole('region', { name: 'Ferramentas' })
-  expect(await within(panel).findByText('Vendas de ontem por vendedor.')).toBeTruthy()
-  expect(within(panel).getByText('vendas_de_ontem')).toBeTruthy()
+  const connections = await screen.findByRole('region', { name: 'Ligações' })
+  expect(await within(connections).findByRole('checkbox', { name: /Pedidos/ })).toBeTruthy()
+  expect(within(connections).queryByText('vendas_de_ontem')).toBeNull()
+  const tools = screen.getByRole('region', { name: 'Ferramentas' })
+  expect(within(tools).queryByText(/Pedidos/)).toBeNull()
 })
 
 test('sem conversa aberta, o painel de teste diz a frase da matriz e traz os dois botões', async () => {

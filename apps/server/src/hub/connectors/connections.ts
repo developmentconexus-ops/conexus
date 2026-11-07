@@ -17,6 +17,7 @@ import { Failure } from '../../platform/failure.ts'
 import { Credential, open, seal } from '../../platform/seal.ts'
 import type { OAuthConnector } from './apps.ts'
 import { appKeysOf, isOAuth } from './apps.ts'
+import { subjectsOf } from './catalog-subjects.ts'
 import type { BearerToken, OpenedConnection } from './executor.ts'
 import { notesOf } from './notes.ts'
 import type { Deps, OfConnection, Viewer } from './rows.ts'
@@ -35,6 +36,7 @@ function entryOf(connector: Connector): ConnectorEntry {
     category: connector.category,
     summary: connector.summary,
     logo: connector.logo,
+    subjects: subjectsOf(connector),
     auth: connector.auth.kind,
     fields:
       connector.auth.kind === 'client_credentials'

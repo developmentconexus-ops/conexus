@@ -1,3 +1,4 @@
+import type { CompanyMay } from '@conexus/hub-api'
 import type { LinkProps } from '@tanstack/react-router'
 import type { LucideIcon } from 'lucide-react'
 import { SearchIcon } from 'lucide-react'
@@ -15,6 +16,8 @@ export type SectionMeta = {
   summary: string
   order: number
   keywords?: readonly string[]
+  /** What the Hub must say the person may do for the section to show; the section's address answers not found otherwise. */
+  needs?: keyof CompanyMay
 }
 
 export type SettingsSection = Pick<LinkProps, 'to' | 'params'> & SectionMeta

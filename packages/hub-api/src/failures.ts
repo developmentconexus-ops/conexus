@@ -267,7 +267,7 @@ export const FAILURES = {
     settles: true,
     status: 409,
     phrase: 'Seu papel não pode usar a ferramenta {operation}.',
-    action: 'Peça a quem tem esse acesso para publicar, ou tire a operação.',
+    action: 'Peça a quem tem esse acesso para publicar, ou tire a ferramenta.',
     actionKind: 'NONE',
   },
   ...PROJECT_FAILURES,
@@ -306,5 +306,5 @@ export type Problem = z.infer<typeof Problem>
 export function phraseOf(code: FailureCode, person?: string, operation?: string): string {
   return FAILURES[code].phrase
     .replace('{person}', person ?? 'outra pessoa')
-    .replace('{operation}', operation ?? 'essa operação')
+    .replace('{operation}', operation?.replace(/\.+$/, '') ?? 'essa operação')
 }
