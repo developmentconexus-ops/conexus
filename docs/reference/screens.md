@@ -25,6 +25,7 @@ L24](../guides/delivery.md)): it grows by one line per screen.
 | Configurações' index: the sections as a list on a phone; a wide screen opens Minha conta | `/companies/<c>/settings` | Empresa | owner, administrator, developer, member |
 | Configurações: Minha conta, Contas de modelo, Meus padrões | `/companies/<c>/settings/account`, `model-accounts`, `my-defaults` | Empresa | owner, administrator, developer, member |
 | Configurações: Geral, Pessoas e convites (with Quem usa os apps), Padrões da empresa | `/companies/<c>/settings/general`, `people`, `defaults` | Empresa | owner, administrator, developer (reads), member (reads) |
+| Configurações: Papéis, the four roles and the company's own with what each uses of each connector; `?new=true` makes one, `?role=<name>` opens one with its connectors, subjects and operations (lê, escreve, apaga) and Apagar papel | `/companies/<c>/settings/roles` | Empresa | owner, administrator |
 | The owner's first entry, steps 1 to 4 | `/companies/<c>/welcome/company`, `model-account`, `team`, `build` | Empresa | owner |
 | A Projeto, on its latest conversation; above the area, its open publish request (who asked, the message, Cancelar pedido for the asker, Publicar a versão n and Recusar for an owner or an administrator) and, for whoever does not publish, Pedir para publicar with its box | `/companies/<c>/projects/<p>` | Projeto | owner, administrator, developer, member |
 | A Projeto's conversation, with the tab Prévia or Código (`?lens=`) | `/companies/<c>/projects/<p>/conversations/<id>` | Projeto | owner, administrator, developer, member |
@@ -34,7 +35,7 @@ L24](../guides/delivery.md)): it grows by one line per screen.
 | Ferramentas of a Projeto, the tab beside Agentes: the library's tools it may use, each with what it reads, its latest version and the agents that use it, Nova versão and Apagar; a tool the Construtor wrote carries the badge Em código and has no Nova versão | `/companies/<c>/projects/<p>/agents/tools` | Projeto | owner, administrator, developer |
 | A tool of the library: its versions, newest first, and Nova versão; a code tool shows each version's code, what it reads and its test result | `/companies/<c>/projects/<p>/agents/tools/<tool>` | Projeto | owner, administrator, developer |
 | A conversation with the Construtor, with the draft card of the agent it makes | `/companies/<c>/projects/<p>/agents/construtor/<id>` | Projeto | owner, administrator, developer |
-| An agent: the person's conversations with it, the editable configuration, Publicar and Versões | `/companies/<c>/projects/<p>/agents/<agent>` | Projeto | owner, administrator, developer |
+| An agent: the person's conversations with it, the editable configuration (Ligações as selectors, each selected one with its tools beneath, none marked, Marcar todas as leituras and the free query last with its warning), Publicar and Versões | `/companies/<c>/projects/<p>/agents/<agent>` | Projeto | owner, administrator, developer |
 | A conversation with an agent, published or the test one with its draft, inside the agent's page | `/companies/<c>/projects/<p>/agents/<agent>/<id>` | Projeto | owner, administrator, developer |
 | Automações of a Projeto: the person's own, with state, next time and actions | `/companies/<c>/projects/<p>/automations` | Projeto | owner, administrator, developer |
 | The history of one automation of a Projeto, with its runs | `/companies/<c>/projects/<p>/automations/<id>` | Projeto | owner, administrator, developer |
@@ -45,3 +46,34 @@ L24](../guides/delivery.md)): it grows by one line per screen.
 | Estado do Hub | `/operations/status` | Central | whoever operates the installation |
 | Cadastrar cliente | `/operations/clients/new` | Central | whoever operates the installation |
 | Cliente | `/operations/clients/<c>` | Central | whoever operates the installation |
+
+## Boxes of Papéis da empresa (U3)
+
+At 1280 px the sidebar of Configurações is on the left and the page beside it; at 390 px the page
+takes the width and the index is the list of Configurações.
+
+```text
+1280                                         390
+Papéis                    [+ Novo papel]     Papéis        [+ Novo papel]
+Papéis de fábrica                            ───────────────────────────
+ Dono            Usa tudo ...   1 pessoa     Dono
+ Membro          Lê tudo ...    1 pessoa     Usa tudo de todos os conectores
+Papéis da empresa                            1 pessoa
+ Atendente  Sankhya: 1 operação de Vendas    ...
+
+Papel aberto / Novo papel
+ ← Papéis                                    ← Papéis
+ Nome do papel [____________]                Nome do papel [________]
+ ┌ Sankhya ───────────────────────────┐      ┌ Sankhya ───────────────┐
+ │ [x] Vendas  1 de 3       [Detalhe] │      │ [x] Vendas 1 de 3 [Det]│
+ │      [x] Pedidos  lê               │      │   [x] Pedidos  lê      │
+ │ [ ] Financeiro 0 de 1    [Detalhe] │      └────────────────────────┘
+ └────────────────────────────────────┘      [Criar papel]
+ [Criar papel]   [Apagar papel]
+
+Agente, Ligações
+ [x] Sankhya · Matriz  Funcionando
+     [ ] Pedidos
+     [ ] Consulta   Consulta livre: roda qualquer SQL no banco inteiro
+     [Marcar todas as leituras]
+```

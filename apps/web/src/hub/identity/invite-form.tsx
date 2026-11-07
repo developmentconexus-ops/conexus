@@ -1,9 +1,10 @@
-import type { CompanyId, FailureCode } from '@conexus/hub-api'
-import { createInvitation, ROLE_LABELS, Role } from '@conexus/hub-api'
+import type { CompanyId, FailureCode, Role } from '@conexus/hub-api'
+import { createInvitation, FIXED_ROLES } from '@conexus/hub-api'
 import { useMutation } from '@tanstack/react-query'
 import { SectionTitle } from '../../ui/list.tsx'
 import { InviteFields } from './invite-fields.tsx'
 import { inviteToCompany } from './queries.ts'
+import { useRoleLabel } from './role-labels.tsx'
 
 const FIELD_OF: Partial<Record<FailureCode, 'email' | 'role'>> = {
   MEMBER_EXISTS: 'email',
@@ -14,14 +15,18 @@ const FIELD_OF: Partial<Record<FailureCode, 'email' | 'role'>> = {
 /** "Convidar pessoa": the roles on offer are the ones the Hub says this person may invite as. */
 export function InviteForm({ companyId, roles }: { companyId: CompanyId; roles: readonly Role[] }) {
   const send = useMutation(inviteToCompany)
+  const roleLabel = useRoleLabel()
   return (
     <section className="flex w-full max-w-column flex-col gap-lg">
       <SectionTitle>Convidar pessoa</SectionTitle>
       <InviteFields
         schema={createInvitation.input.body}
-        // `Role.options` runs from the most to the least privileged; the form starts on the least offered.
-        defaults={{ email: '', role: Role.options.findLast((role) => roles.includes(role)) }}
-        options={roles.map((role) => ({ value: role, label: ROLE_LABELS[role] }))}
+        // `FIXED_ROLES` runs from the most to the least privileged; the form starts on the least offered.
+        defaults={{
+          email: '',
+          role: FIXED_ROLES.findLast((fixed) => roles.some((offered) => offered === fixed)),
+        }}
+        options={roles.map((role) => ({ value: role, label: roleLabel(role) }))}
         fieldOf={FIELD_OF}
         send={async (values, attemptKey) =>
           (await send.mutateAsync({ params: { companyId }, body: values, attemptKey })).invitation

@@ -2,8 +2,11 @@ import type { ConnectorAnswer } from '@conexus/app-contract'
 import type { Answered, Native, Operation } from '@conexus/connectors'
 import { CONCURRENT_CALL } from '@conexus/connectors'
 import type { CompanyId, ProjectId } from '@conexus/hub-api'
+import { ConnectorId, OperationId } from '@conexus/hub-api'
 import { and, eq, sql } from 'drizzle-orm'
 import type { z } from 'zod'
+import type { Speaker } from '../identity/public.ts'
+import { roleOfSpeaker } from '../identity/public.ts'
 import type { Login, OpenedConnection } from './executor.ts'
 import type { Deps, Viewer } from './rows.ts'
 import { scopeOf } from './rows.ts'
@@ -19,6 +22,8 @@ export type ReadRequest = Readonly<{
   /** The Projeto only where the reader works in one: the Assistant at the Início has none. */
   ids: Readonly<{ companyId: CompanyId; projectId?: ProjectId }>
   viewer: Viewer
+  /** Who asks, held to the role or to what the version declares: a path that forgets it does not compile. */
+  speaker: Speaker
   opened: OpenedConnection
   operation: Operation<unknown, unknown, 'read'>
   input: unknown
@@ -26,6 +31,9 @@ export type ReadRequest = Readonly<{
   /** The reader's turn stopped: a read still in the connection's line leaves it, and one not begun is not made. */
   signal?: AbortSignal
 }>
+
+/** The speaker's role (or version) does not hold the operation: the model hears the role's name and never the input (S40). */
+export type NotInRole = Readonly<{ kind: 'NOT_IN_ROLE'; role: string | null; operation: string }>
 
 /** What of the provider's answer an app may see: never its body (S41). */
 function summaryOf(native: Native) {
@@ -124,8 +132,27 @@ function stopped(deps: Deps, a: ReadRequest): ConnectorAnswer {
  * leaves one `CONNECTOR_CALLED` line with scalars alone, and the envelope "4" (ours, never repeated)
  * its own error line (#470).
  */
-export async function readThrough(deps: Deps, a: ReadRequest): Promise<ConnectorAnswer> {
+export async function readThrough(
+  deps: Deps,
+  a: ReadRequest,
+): Promise<ConnectorAnswer | NotInRole> {
   if (isStopped(a)) return stopped(deps, a)
+  const allowed = await deps.identity.mayUse(a.ids.companyId, a.speaker, {
+    connectionId: a.opened.id,
+    connectorId: ConnectorId.parse(a.opened.connector.id),
+    operationId: OperationId.parse(a.operation.id),
+  })
+  if (!allowed) {
+    const role = roleOfSpeaker(a.speaker)
+    deps.log.info(
+      {
+        ...{ connectionId: a.opened.id, operation: a.operation.id, by: a.by },
+        ...(role === null ? {} : { role }),
+      },
+      'CONNECTOR_READ_REFUSED',
+    )
+    return { kind: 'NOT_IN_ROLE', role, operation: a.operation.id }
+  }
   const started = performance.now()
   const parsed = a.operation.input.safeParse(a.input)
   // The kit's own schema judges what the caller wrote: nothing reaches the provider when it refuses,

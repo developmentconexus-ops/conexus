@@ -77,6 +77,7 @@ export function TextField(props: {
   type: 'email' | 'password' | 'text'
   autoComplete: string
   invalid?: string
+  maxLength?: number
 }) {
   const { register } = useFormContext()
   const shown = useFieldError(props.name, props.invalid)
@@ -87,6 +88,7 @@ export function TextField(props: {
         id={shown.id}
         type={props.type}
         autoComplete={props.autoComplete}
+        maxLength={props.maxLength}
         {...shown.control}
         {...register(props.name)}
       />

@@ -1,10 +1,11 @@
-import { ConnectionId, DraftPatch, ToolId, ToolVersionId } from '@conexus/hub-api'
+import { ConnectionId, DraftPatch, OperationId, ToolId, ToolVersionId } from '@conexus/hub-api'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { COMPANY } from '../../platform/fixtures.ts'
 import { hubServer } from '../../platform/test-hub.tsx'
 import { AGENT, AREA, agent, FILIAL, MATRIZ } from './test-agents.ts'
+import { offered } from './test-connection-tools.ts'
 import { agentScreens } from './test-hub.tsx'
 
 // A fila de gravação do rascunho (web W12): o que a pessoa muda com uma gravação em voo não se perde.
@@ -20,25 +21,38 @@ const LOJA_E = ConnectionId.parse('eeeeeeee-aaaa-4aaa-8aaa-eeeeeeeeeeee')
 function offeredOf(...names: [ConnectionId | null, string][]) {
   const base = agent().offered[0]
   if (base === undefined) throw new Error('the fixture offers the Matriz')
-  return names.map(([id, name]) => ({ ...base, connectionId: id ?? base.connectionId, name }))
+  const { reads } = offered(MATRIZ, 'Matriz')
+  return names.map(([id, name]) => ({
+    ...base,
+    connectionId: id ?? base.connectionId,
+    name,
+    reads,
+  }))
 }
 
 async function switches() {
   const links = await screen.findByRole('region', { name: 'Ligações' })
-  await within(links).findByRole('switch', { name: 'Sankhya · Matriz' })
-  return (name: string) => within(links).getByRole('switch', { name: `Sankhya · ${name}` })
+  await within(links).findByRole('checkbox', { name: 'Sankhya · Matriz' })
+  return (name: string) => within(links).getByRole('checkbox', { name: `Sankhya · ${name}` })
+}
+
+function inMatriz(name: RegExp) {
+  return within(screen.getByRole('list', { name: 'Ferramentas de Matriz' })).getByRole('checkbox', {
+    name,
+  })
 }
 
 function checked(element: HTMLElement) {
   return element.getAttribute('aria-checked')
 }
 
-function toolOf(digit: string, slug: string) {
+function toolOf(digit: string, slug: string, operation: string) {
   const [base] = agent().tools
   if (base?.kind !== 'PRESET') throw new Error('the fixture has a preset tool')
   const versionId = ToolVersionId.parse(`${digit.repeat(8)}-cccc-4ccc-8ccc-${digit.repeat(12)}`)
   return {
     ...base,
+    operation: OperationId.parse(operation),
     id: ToolId.parse(`${digit.repeat(8)}-bbbb-4bbb-8bbb-${digit.repeat(12)}`),
     slug,
     latest: { id: versionId, number: 1 },
@@ -53,6 +67,7 @@ test('cinco ligações ligadas, a segunda gravação em voo: as cinco chegam ao 
     agents: [
       agent({
         draft: { ...agent().draft, connections: [] },
+        tools: [],
         offered: offeredOf(
           [null, 'Matriz'],
           [FILIAL, 'Filial'],
@@ -93,9 +108,13 @@ test('cinco ligações ligadas, a segunda gravação em voo: as cinco chegam ao 
 
 test('seções misturadas com a segunda gravação em voo: toda mudança chega ao Hub e fica na tela', async () => {
   const held = agent({
-    draft: { ...agent().draft, connections: [] },
+    draft: { ...agent().draft, connections: [MATRIZ] },
     offered: offeredOf([null, 'Matriz'], [FILIAL, 'Filial']),
-    tools: [toolOf('1', 'um'), toolOf('2', 'dois'), toolOf('3', 'tres')],
+    tools: [
+      toolOf('1', 'um', 'pedidos'),
+      toolOf('2', 'dois', 'contasAReceber'),
+      toolOf('3', 'tres', 'consultar'),
+    ],
   })
   const sent: DraftPatch[] = []
   const releases: (() => void)[] = []
@@ -104,7 +123,7 @@ test('seções misturadas com a segunda gravação em voo: toda mudança chega a
     http.patch(DRAFT, async ({ request }) => {
       const body = DraftPatch.parse(await request.json())
       sent.push(body)
-      if (sent.length === 2) await new Promise<void>((resolve) => releases.push(resolve))
+      if (sent.length === 1) await new Promise<void>((resolve) => releases.push(resolve))
       if (body.revision !== held.revision)
         return HttpResponse.json({ stale: true }, { status: 409 })
       const { revision: _revision, tools, ready: _ready, ...fields } = body
@@ -115,25 +134,27 @@ test('seções misturadas com a segunda gravação em voo: toda mudança chega a
     }),
   )
   const sw = await switches()
-  fireEvent.click(sw('Matriz'))
-  fireEvent.click(await screen.findByRole('button', { name: 'Tirar um' }))
-  await waitFor(() => expect(sent).toHaveLength(2))
+  await waitFor(() => inMatriz(/^Pedidos/))
+  fireEvent.click(inMatriz(/^Pedidos/))
+  await waitFor(() => expect(sent).toHaveLength(1))
   fireEvent.click(sw('Filial'))
   fireEvent.click(screen.getByRole('switch', { name: 'Memória observacional' }))
-  fireEvent.click(screen.getByRole('button', { name: 'Tirar dois' }))
+  fireEvent.click(inMatriz(/^Contas a receber/))
   const field = screen.getByRole('textbox', { name: 'Instruções' })
   fireEvent.change(field, { target: { value: 'Texto da fila.' } })
   fireEvent.blur(field)
-  await waitFor(() => expect(screen.queryByRole('button', { name: 'Tirar dois' })).toBeNull())
+  await waitFor(() =>
+    expect(inMatriz(/^Contas a receber/).getAttribute('aria-checked')).toBe('false'),
+  )
   releases[0]?.()
-  await waitFor(() => expect(sent).toHaveLength(6))
+  await waitFor(() => expect(sent).toHaveLength(5))
   await waitFor(() => expect(held.draft.instructions).toBe('Texto da fila.'))
-  expect(sent.map((one) => one.revision)).toEqual([3, 4, 5, 6, 7, 8])
+  expect(sent.map((one) => one.revision)).toEqual([3, 4, 5, 6, 7])
   expect(held.draft.connections).toEqual([MATRIZ, FILIAL])
   expect(held.draft.memory.observational).toBe(false)
   expect(held.tools.map((one) => one.slug)).toEqual(['tres'])
   expect(screen.queryByRole('alert')).toBeNull()
-  expect(screen.queryByRole('button', { name: 'Tirar um' })).toBeNull()
+  expect(inMatriz(/^Pedidos/).getAttribute('aria-checked')).toBe('false')
   expect(
     screen.getByRole('switch', { name: 'Memória observacional' }).getAttribute('aria-checked'),
   ).toBe('false')
@@ -146,6 +167,7 @@ test('seções misturadas com a segunda gravação em voo: toda mudança chega a
 test('uma leitura do agente em voo quando a mudança seguinte começa não a apaga', async () => {
   const held = agent({
     draft: { ...agent().draft, connections: [] },
+    tools: [],
     offered: offeredOf([null, 'Matriz'], [FILIAL, 'Filial'], [LOJA_C, 'Loja']),
   })
   at(PAGE, { agents: [held] })

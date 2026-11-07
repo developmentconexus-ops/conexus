@@ -21,14 +21,13 @@ const PROJECT = `/companies/${COMPANY.id}/projects/${PEDIDOS.id}`
 const API = `*/api/companies/${COMPANY.id}`
 const LOGO =
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28"><rect width="28" height="28"/></svg>'
+const SHARED = { version: '1.0.0', summary: 'Resumo.', logo: LOGO, subjects: [], fields: [] }
 const ASK = 'Peça ao dono ou a um administrador.'
 
 const catalog = [
   { id: 'sankhya', name: 'Sankhya', category: 'ERP', auth: 'client_credentials' },
   { id: 'mercado-livre', name: 'Mercado Livre', category: 'Marketplace', auth: 'oauth2_code' },
-].map((one) =>
-  ConnectorEntry.parse({ ...one, version: '1.0.0', summary: 'Resumo.', logo: LOGO, fields: [] }),
-)
+].map((one) => ConnectorEntry.parse({ ...one, ...SHARED }))
 
 const LineShape = ListShape.shape.connectors.element.shape.connections.element
 type Line = ProjectConnections['connectors'][number]['connections'][number]

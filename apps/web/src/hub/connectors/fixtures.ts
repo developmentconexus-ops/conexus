@@ -1,6 +1,7 @@
 import type { Connection as ConnectionOf } from '@conexus/hub-api'
 import { Connection, ConnectorEntry, TestResult } from '@conexus/hub-api'
 import { ANA } from '../../platform/fixtures.ts'
+import { SANKHYA_SUBJECTS } from '../../platform/test-kit.ts'
 
 const KEYS_GUIDE = 'https://developer.example.test/chaves'
 
@@ -13,6 +14,7 @@ export const SANKHYA = ConnectorEntry.parse({
   summary: 'O sistema de gestão da empresa: pedidos, estoque, financeiro e cadastros.',
   logo: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28"><rect width="28" height="28" rx="6" fill="#66CB66"/></svg>',
   auth: 'client_credentials',
+  subjects: SANKHYA_SUBJECTS,
   fields: [
     {
       name: 'clientId',
@@ -47,6 +49,7 @@ export const MERCADO_LIVRE = ConnectorEntry.parse({
   summary: 'O marketplace da loja: anúncios, vendas, envios e perguntas.',
   logo: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28"><circle cx="14" cy="14" r="14" fill="#FFE600"/></svg>',
   auth: 'oauth2_code',
+  subjects: [],
   fields: [],
 })
 

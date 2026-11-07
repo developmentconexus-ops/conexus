@@ -13,7 +13,7 @@ import {
 import { testMail } from '../../platform/test-mail.ts'
 import { createStatus } from '../status/public.ts'
 import { createIdentity } from './public.ts'
-import { codeOf, companyOn, INVITEE } from './test-hub.ts'
+import { codeOf, companyOn, INVITEE, TEST_KIT } from './test-hub.ts'
 
 const LEAKED = '123456789'
 const CLEAN = 'uma-senha-que-ninguem-vazou-7'
@@ -25,7 +25,13 @@ async function linked(t: TestContext) {
   const config = testConfig(test.runtimeUrl)
   const status = createStatus({ version: config.version, database: test.database })
   const sendMail = testMail(config)
-  const identity = createIdentity({ database: test.database, config, log: silent, sendMail })
+  const identity = createIdentity({
+    kit: TEST_KIT,
+    database: test.database,
+    config,
+    log: silent,
+    sendMail,
+  })
   const subjects = subjectsOf({
     mastraPool: test.mastraPool,
     database: test.database,

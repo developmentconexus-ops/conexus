@@ -1,5 +1,5 @@
 import type { AppEntry, InvitationView } from '@conexus/hub-api'
-import { createInvitationPassword, ROLE_LABELS } from '@conexus/hub-api'
+import { createInvitationPassword, roleLabel } from '@conexus/hub-api'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { getRouteApi, Link, useRouter } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
@@ -47,7 +47,7 @@ function invitationTitle(invitation: OpenView): string {
     return `${inviterName} convidou você para usar o app ${invitation.app.projectName}, da ${company.name}.`
   if (invitation.firstOwner)
     return `${inviterName} convidou você para ser o primeiro dono de ${company.name}.`
-  const as = invitation.role === null ? '' : ` como ${ROLE_LABELS[invitation.role]}`
+  const as = invitation.role === null ? '' : ` como ${roleLabel(invitation.role)}`
   return `${inviterName} convidou você para ${company.name}${as}.`
 }
 
