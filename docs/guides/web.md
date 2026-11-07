@@ -165,13 +165,16 @@ tudo". The lines of [screens](../reference/screens.md) say which screen is on wh
 - **W34.** Every card's state matrix **must** carry the columns 'primeira vez' and 'sem
   permissão' beside its other states. Loading shows the frame at once and a skeleton only in the
   content; an error stays in the content area with "Tentar de novo"; not found offers "Voltar ao
-  início" ([code C48](code.md); founder, 2026-10-20: "2. A"); a missing permission shows the page
-  and says who can (design V29), and never hides it. The exceptions: the Automações and Agentes
-  entries are hidden from the member and their addresses answer not found (S10), because the member
-  never creates them (founder, 2026-11-01: "1 A"; 2026-11-02: "3.A"); the developer creates both and
-  sees them (step 24.3.4, founder, 2026-11-04: "2. Aprovo"). Failure: a screen that hides what a person
-  may not do
-  leaves them guessing. [review]
+  início" ([code C48](code.md); founder, 2026-10-20: "2. A"). A missing permission takes one of two
+  forms, as the references do (Mastra 1.82 Studio's `filterItem`,
+  `packages/playground/src/components/ui/app-sidebar.tsx:64-77`; GitHub's organization roles). An
+  administration area the person's role never uses is hidden and its address answers not found
+  (S10): Automações and Agentes for the member (founder, 2026-11-01: "1 A"; 2026-11-02: "3.A"),
+  Papéis for the developer and the member; the developer sees Automações and Agentes (step 24.3.4,
+  founder, 2026-11-04: "2. Aprovo"). On a page the person uses, an action outside their role
+  says who can (design V29), as Conectores and Contas de modelo do. Founder, 2026-11-07: "Vamos
+  revisar a regra W34 então, se referencias fazem assim não teriamso que mudar", then "1. Aprovo".
+  Failure: a used page hiding an action leaves them guessing. [review]
 - **W35.** The Hub added to the iPhone home screen (iOS 26.1 or newer) draws a blurred band under
   the status bar: WebKit bug 301994, with no fix in the page. The page **must not** carry a
   workaround for it, such as a fixed padding or a status-bar style, and each iOS release is
