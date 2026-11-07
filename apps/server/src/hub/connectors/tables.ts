@@ -201,3 +201,39 @@ export const projectConnection = connectors.table(
     policy(SCOPE_ROLES.COMPANY, 'all', sql`company_id = ${scoped.companyId}`),
   ],
 )
+
+export const CONNECTOR_WRITE_STATES = ['SENDING', 'DONE', 'REFUSED', 'UNCERTAIN'] as const
+const WRITE_STATES = sql.raw(CONNECTOR_WRITE_STATES.map((state) => `'${state}'`).join(', '))
+
+/**
+ * What an agent sent to an outside system, one row per conversation and tool call, written before
+ * the call (card 24.5, U1): a write is never repeated, so a row still `SENDING` is a call that may
+ * have gone. No foreign key to the connection, the version or the person: the record of a send
+ * outlives each of them (data D17). `version_id` is the published version that spoke, `person_id`
+ * the person talking to a draft, which has no version.
+ */
+export const connectorWrite = connectors.table(
+  'connector_write',
+  {
+    companyId: text('company_id').notNull(),
+    threadId: text('thread_id').notNull(),
+    toolCallId: text('tool_call_id').notNull(),
+    connectionId: uuid('connection_id').notNull(),
+    operationId: text('operation_id').notNull(),
+    inputHash: text('input_hash').notNull(),
+    versionId: uuid('version_id'),
+    personId: text('person_id'),
+    state: text('state', { enum: CONNECTOR_WRITE_STATES }).notNull(),
+    answer: jsonb('answer'),
+    createdAt: instant('created_at').notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.companyId, table.threadId, table.toolCallId] }),
+    check(
+      'connector_write_speaker',
+      sql`(${table.versionId} is null) <> (${table.personId} is null)`,
+    ),
+    check('connector_write_state', sql`${table.state} in (${WRITE_STATES})`),
+    policy(SCOPE_ROLES.COMPANY, 'all', sql`company_id = ${scoped.companyId}`),
+  ],
+)
