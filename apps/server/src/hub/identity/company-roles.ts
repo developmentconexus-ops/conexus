@@ -1,12 +1,10 @@
 import { randomUUID } from 'node:crypto'
-import type { CompanyId, Person, RoleChange, RoleConnectors, RoleCreate } from '@conexus/hub-api'
+import type { CompanyId, Person, RoleChange, RoleCreate } from '@conexus/hub-api'
 import {
-  ConnectorId,
   FIXED_ROLES,
   fixedNameOf,
   fixedRole,
   isFixedRole,
-  OperationId,
   ROLE_LABELS,
   Role,
   RoleView,
@@ -21,6 +19,13 @@ import type { Auth, LibraryCommand } from './auth.ts'
 import { refusedAs } from './auth.ts'
 import { companyScope, LIVE, lockCompany } from './invitations.ts'
 import { replayOf } from './role-attempt.ts'
+import {
+  connectorsOf,
+  customStatements,
+  malformed,
+  statementsOf,
+  UNATTENDED_ACTION,
+} from './role-statements.ts'
 import type { RoleSet } from './roles.ts'
 import { Statements } from './roles.ts'
 import { invitation, member, organizationRole } from './tables.ts'
@@ -48,46 +53,6 @@ function roleNameOf(label: string): string {
 
 /** The stored names of the fixed roles as a person reads them: a role of the company's own may not take one. */
 const FIXED_NAMES = new Set(FIXED_ROLES.map((role) => roleNameOf(ROLE_LABELS[role])))
-
-function malformed(reason: string) {
-  return new Failure('REQUEST_MALFORMED', { details: { reason } })
-}
-
-/**
- * The statements a role's connectors become. The library checks only that a resource exists, so
- * the connector and each operation are checked against the kit before it is called (code C23).
- */
-function statementsOf(set: RoleSet, connectors: RoleConnectors): Statements {
-  const statements: Statements = {}
-  for (const [connectorId, operations] of Object.entries(connectors)) {
-    const connector = set.kit.find((one) => one.id === connectorId)
-    if (connector === undefined) throw malformed('CONNECTOR_UNKNOWN')
-    const known = new Set(connector.operations.map((operation) => operation.id))
-    if (operations.some((operation) => !known.has(operation))) throw malformed('OPERATION_UNKNOWN')
-    if (operations.length > 0) statements[connector.resource] = [...new Set(operations)]
-  }
-  return statements
-}
-
-/** The connectors a stored permission names, in the kit's order; its other statements are no connector's. */
-function connectorsOf(set: RoleSet, permission: Statements): RoleConnectors {
-  const connectors: RoleConnectors = {}
-  for (const connector of set.kit) {
-    const held = new Set(permission[connector.resource])
-    const operations = connector.operations.map(({ id }) => id).filter((id) => held.has(id))
-    if (operations.length > 0)
-      connectors[ConnectorId.parse(connector.id)] = operations.map((id) => OperationId.parse(id))
-  }
-  return connectors
-}
-
-/** The statements a company's own role holds: the member's base besides its connectors. */
-function customStatements(set: RoleSet, connectors: RoleConnectors): Statements {
-  const base: Statements = Object.fromEntries(
-    Object.entries(set.memberBase).map(([resource, actions]) => [resource, [...actions]]),
-  )
-  return { ...base, ...statementsOf(set, connectors) }
-}
 
 /** The rows the company's two editable roles start with: every read of the kit (founder, B1). */
 export function seededRoles(set: RoleSet, companyId: CompanyId) {
@@ -144,6 +109,7 @@ async function readRoles(set: RoleSet, tx: ReadTx, companyId: CompanyId): Promis
       label: ROLE_LABELS[name],
       kind: all ? 'ALL' : 'EDITABLE',
       connectors,
+      unattended: all,
       members: members.get(name) ?? 0,
     }
   })
@@ -155,6 +121,8 @@ async function readRoles(set: RoleSet, tx: ReadTx, companyId: CompanyId): Promis
         label: row.label,
         kind: 'CUSTOM',
         connectors: connectorsOf(set, Statements.parse(JSON.parse(row.permission))),
+        unattended:
+          Statements.parse(JSON.parse(row.permission)).agent?.includes(UNATTENDED_ACTION) === true,
         members: members.get(row.role) ?? 0,
       }),
     )
@@ -234,7 +202,7 @@ export function createRoleCommand(deps: Deps) {
     deps.libraryCommand(companyScope(input), async (tx) => {
       const { companyId, headers, body, attemptKey } = input
       await admitted(tx, input)
-      const wanted = customStatements(deps.roles, body.connectors)
+      const wanted = customStatements(deps.roles, body.connectors, body.unattended === true)
       const replayed = await replayOf(tx, { companyId, attemptKey, label: body.label, wanted })
       if (replayed !== undefined) {
         return { role: await viewOf(deps.roles, tx, companyId, replayed), created: false }
@@ -269,9 +237,10 @@ export function updateRoleCommand(deps: Deps) {
       const { companyId, headers, role, body } = input
       await admitted(tx, input)
       if (role === 'owner' || role === 'admin') throw new Failure('ROLE_FIXED')
+      if (isFixedRole(role) && body.unattended) throw malformed('UNATTENDED_FIXED')
       const permission = isFixedRole(role)
         ? statementsOf(deps.roles, body.connectors)
-        : customStatements(deps.roles, body.connectors)
+        : customStatements(deps.roles, body.connectors, body.unattended)
       await refusedAs(
         () =>
           deps.auth.api.updateOrgRole({

@@ -96,6 +96,7 @@ export function readCompany(
         manageAgents: allows(admitted.role, 'manageAgents'),
         manageAutomations: allows(admitted.role, 'manageAutomations'),
         manageRoles: allows(admitted.role, 'manageRoles'),
+        publishUnattendedWrite: allows(admitted.role, 'publishUnattendedWrite'),
       },
     }
   })

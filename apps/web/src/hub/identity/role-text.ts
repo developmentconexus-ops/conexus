@@ -11,6 +11,9 @@ const ALL_OF_ALL = 'Usa tudo de todos os conectores'
 const READS_OF_ALL = 'Lê tudo de todos os conectores'
 const NO_CONNECTORS = 'Não usa conectores.'
 export const NO_USE = 'Não usa'
+export const UNATTENDED_ACTION = 'Publicar agente que escreve sozinho'
+export const UNATTENDED_HINT =
+  'Quem tem esta ação deixa um agente publicado lançar uma escrita sem pedir “Aprovar?”.'
 const SUBJECTS_NAMED = 2
 
 type Kit = readonly Pick<ConnectorEntry, 'id' | 'name' | 'subjects'>[]

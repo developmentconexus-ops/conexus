@@ -53,7 +53,9 @@ test('criar um papel: o dono cria "Atendente", marca Vendas, deixa só Pedidos, 
   )
   fireEvent.click(screen.getByRole('button', { name: 'Criar papel' }))
   expect(await screen.findByText('Sankhya: 1 operação de Vendas')).toBeTruthy()
-  expect(bodies).toEqual([{ label: 'Atendente', connectors: { sankhya: ['pedidos'] } }])
+  expect(bodies).toEqual([
+    { label: 'Atendente', connectors: { sankhya: ['pedidos'] }, unattended: false },
+  ])
   expect(screen.queryByText('Sua empresa ainda não criou papéis.')).toBeNull()
 })
 
@@ -116,7 +118,9 @@ test('mudar o Membro: desmarca Financeiro e a Porta de leitura e salva só os co
   fireEvent.click(sankhya.getByRole('checkbox', { name: /Financeiro/ }))
   fireEvent.click(sankhya.getByRole('checkbox', { name: /Porta de leitura/ }))
   fireEvent.click(screen.getByRole('button', { name: 'Salvar' }))
-  await waitFor(() => expect(bodies).toEqual([{ connectors: { sankhya: ['pedidos'] } }]))
+  await waitFor(() =>
+    expect(bodies).toEqual([{ connectors: { sankhya: ['pedidos'] }, unattended: false }]),
+  )
 })
 
 test('Dono e Administrador abrem só para ler', async () => {
@@ -130,6 +134,43 @@ test('Dono e Administrador abrem só para ler', async () => {
       .every((box) => box.hasAttribute('disabled') || box.getAttribute('aria-disabled') === 'true'),
   ).toBe(true)
   expect(screen.queryByRole('button', { name: 'Salvar' })).toBeNull()
+})
+
+test('a ação da escrita sozinha: marcada e fixa no Dono e no Administrador, desmarcada e fixa no Membro, e marcá-la num papel próprio grava (critério 17)', async () => {
+  const { roles } = hub({ as: 'owner' })
+  const action = 'Publicar agente que escreve sozinho'
+  function checkbox() {
+    return screen.getByRole('checkbox', { name: new RegExp(action) })
+  }
+  for (const [role, marked] of [
+    ['owner', 'true'],
+    ['admin', 'true'],
+    ['member', 'false'],
+  ] as const) {
+    open(`/settings/roles?role=${role}`)
+    await screen.findByRole('heading', { name: 'Agentes' })
+    expect(checkbox().getAttribute('aria-checked')).toBe(marked)
+    expect(
+      checkbox().hasAttribute('disabled') || checkbox().getAttribute('aria-disabled'),
+    ).toBeTruthy()
+    cleanup()
+  }
+  roles.push(ATENDENTE)
+  const bodies: unknown[] = []
+  server.use(
+    http.put(`${ROLES}/atendente`, async ({ request }) => {
+      bodies.push(await request.json())
+      return HttpResponse.json({ role: ATENDENTE })
+    }),
+  )
+  open('/settings/roles?role=atendente')
+  await screen.findByRole('heading', { name: 'Agentes' })
+  expect(checkbox().getAttribute('aria-checked')).toBe('false')
+  fireEvent.click(checkbox())
+  fireEvent.click(screen.getByRole('button', { name: 'Salvar' }))
+  await waitFor(() =>
+    expect(bodies).toEqual([{ connectors: { sankhya: ['pedidos'] }, unattended: true }]),
+  )
 })
 
 test('um papel apagado: "Este papel não existe mais."', async () => {
