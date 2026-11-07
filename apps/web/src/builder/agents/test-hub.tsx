@@ -104,7 +104,13 @@ function draftRoutes(held: Held, note: Note) {
       const found = find(params.id)
       if (!found) return refusal('AGENT_NOT_FOUND')
       if (body.revision !== found.revision) return refusal('AGENT_DRAFT_STALE')
-      const { revision: _revision, tools: _tools, ready: _ready, ...fields } = body
+      const {
+        revision: _revision,
+        tools: _tools,
+        ready: _ready,
+        approvals: _approvals,
+        ...fields
+      } = body
       Object.assign(found, { revision: found.revision + 1, draft: { ...found.draft, ...fields } })
       return HttpResponse.json({ agent: found })
     }),
