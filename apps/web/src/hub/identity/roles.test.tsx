@@ -1,4 +1,4 @@
-import { createRole } from '@conexus/hub-api'
+import { ATTEMPT_KEY_HEADER, createRole } from '@conexus/hub-api'
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
@@ -55,6 +55,37 @@ test('criar um papel: o dono cria "Atendente", marca Vendas, deixa só Pedidos, 
   expect(await screen.findByText('Sankhya: 1 operação de Vendas')).toBeTruthy()
   expect(bodies).toEqual([{ label: 'Atendente', connectors: { sankhya: ['pedidos'] } }])
   expect(screen.queryByText('Sua empresa ainda não criou papéis.')).toBeNull()
+})
+
+test('a resposta de criar o papel se perde: tocar de novo leva a mesma chave e mostra o papel criado, não "Já existe"', async () => {
+  const { roles } = hub({ as: 'owner' })
+  const keys: (string | null)[] = []
+  server.use(
+    http.post(ROLES, async ({ request }) => {
+      const key = request.headers.get(ATTEMPT_KEY_HEADER)
+      const repeated = keys.includes(key)
+      keys.push(key)
+      const body = createRole.input.body.parse(await request.json())
+      if (repeated) return HttpResponse.json({ role: roles.at(-1) }, { status: 201 })
+      roles.push(customRole(body.label, 'atendente', []))
+      return keys.length === 1 ? HttpResponse.error() : refusal('ROLE_NAME_TAKEN')
+    }),
+  )
+  open('/settings/roles?new=true')
+  fireEvent.change(await screen.findByLabelText('Nome do papel'), {
+    target: { value: 'Atendente' },
+  })
+  fireEvent.click(screen.getByRole('button', { name: 'Criar papel' }))
+  expect(
+    await screen.findByText('Não confirmamos a gravação. Veja a lista de papéis.'),
+  ).toBeTruthy()
+  fireEvent.click(screen.getByRole('button', { name: 'Criar papel' }))
+  await waitFor(() => expect(keys).toHaveLength(2))
+  expect(keys[0]).not.toBeNull()
+  expect(keys[1]).toBe(keys[0])
+  expect(await screen.findByRole('heading', { name: 'Papéis da empresa' })).toBeTruthy()
+  expect(await screen.findByText('Atendente')).toBeTruthy()
+  expect(screen.queryByText(/Já existe um papel com esse nome/)).toBeNull()
 })
 
 test('o nome tomado fica no campo, com o que foi marcado', async () => {

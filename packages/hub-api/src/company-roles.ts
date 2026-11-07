@@ -63,11 +63,13 @@ export const createRole = defineOperation({
   path: '/api/companies/{companyId}/roles',
   bodyLimit: 8192,
   input: { params: InCompany, body: RoleCreate },
+  attemptKey: true,
   success: { status: 201, body: z.object({ role: RoleView }) },
   failures: [
     'NOT_FOUND',
     'REQUEST_MALFORMED',
     'ROLE_NAME_TAKEN',
+    'IDEMPOTENCY_CONFLICT',
     'SESSION_REQUIRED',
     'DATABASE_UNAVAILABLE',
   ],

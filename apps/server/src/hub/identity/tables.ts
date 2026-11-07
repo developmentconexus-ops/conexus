@@ -277,11 +277,17 @@ export const organizationRole = auth.table(
     role: text('role').notNull(),
     permission: text('permission').notNull(),
     label: text('label').notNull(),
+    // The key of the attempt that created the role (code C37); the seeded two have none.
+    attemptKey: text('attempt_key'),
     createdAt: instant('created_at').notNull(),
     updatedAt: instant('updated_at'),
   },
   (table) => [
     uniqueIndex('organization_role_company_id_role_key').on(table.organizationId, table.role),
+    uniqueIndex('organization_role_company_id_attempt_key_key').on(
+      table.organizationId,
+      table.attemptKey,
+    ),
     policy(SCOPE_ROLES.COMPANY, 'all', sql`company_id = ${companyId}`),
     // The Central seeds the developer's and the member's rows when it creates a company.
     policy(SCOPE_ROLES.OPERATOR, 'insert', ADMINISTRATOR),

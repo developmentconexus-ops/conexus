@@ -1,0 +1,2 @@
+ALTER TABLE "auth"."organization_role" ADD COLUMN "attempt_key" text;--> statement-breakpoint
+CREATE UNIQUE INDEX "organization_role_company_id_attempt_key_key" ON "auth"."organization_role" ("company_id","attempt_key");
