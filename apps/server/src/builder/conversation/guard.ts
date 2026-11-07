@@ -121,7 +121,7 @@ type Admission = (input: {
 }) => Promise<void>
 
 /** The connection and operation of the write a conversation's tool names, as the agent that holds it keeps them (step 24.5). */
-type WriteOf = (input: {
+export type WriteOf = (input: {
   companyId: CompanyId
   personId: PersonId
   conversationId: ConversationId

@@ -6,7 +6,7 @@ import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { ControllerKind, ReleaseScope } from '../controller-kit/public.ts'
 import { CONTROLLER_KINDS } from '../controller-kit/public.ts'
-import type { Watched } from '../conversation/public.ts'
+import type { Watched, WriteOf } from '../conversation/public.ts'
 import { watchRuns } from '../conversation/public.ts'
 import { createMastra } from './mastra.ts'
 
@@ -25,12 +25,7 @@ type Part = {
     conversationId: ConversationId
   }): Promise<void>
   /** The connection and operation of the write a tool of the conversation is (step 24.5), for the log of an answer. */
-  writeOf?(input: {
-    companyId: CompanyId
-    personId: PersonId
-    conversationId: ConversationId
-    toolName: string
-  }): Promise<{ connectionId: ConnectionId; operation: string } | undefined>
+  writeOf?: WriteOf
   release(scope: ReleaseScope): Promise<void>
   /** The Builder's end of a turn (`finish`, `onPhase`); without it, `watchRuns` keeps only the failure it said. */
   ends?: Pick<Watched, 'finish' | 'onPhase'>

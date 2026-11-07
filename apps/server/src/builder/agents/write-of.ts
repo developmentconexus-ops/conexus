@@ -1,5 +1,6 @@
-import type { CompanyId, ConversationId, PersonId } from '@conexus/hub-api'
+import type { ConversationId } from '@conexus/hub-api'
 import type { Owner } from '../controller-kit/public.ts'
+import type { WriteOf } from '../conversation/public.ts'
 import type { AgentRun } from './agent.ts'
 import type { AgentReads } from './registry.ts'
 
@@ -12,12 +13,7 @@ export function writeOfAgents(
   keptRun: (owner: Owner, id: ConversationId) => Promise<AgentRun | undefined>,
   reads: Pick<AgentReads, 'activeOf' | 'draftOf'>,
 ) {
-  return async (input: {
-    companyId: CompanyId
-    personId: PersonId
-    conversationId: ConversationId
-    toolName: string
-  }) => {
+  return async (input: Parameters<WriteOf>[0]): ReturnType<WriteOf> => {
     const { companyId, personId, conversationId, toolName } = input
     const run = await keptRun({ companyId, personId }, conversationId)
     if (run === undefined) return undefined

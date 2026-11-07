@@ -5,7 +5,14 @@ import type { Reply } from '../../platform/test-anthropic.ts'
 import { said } from '../assistant/test-assistant.ts'
 import { endOf, hubBeside, sent, stopped, streamOf } from '../conversation/test-conversation.ts'
 import { tool } from '../conversation/test-questions.ts'
-import { madeTool, ordersOf, savedCodeTool } from './test-agents.ts'
+import {
+  drafted,
+  madeTool,
+  ordersOf,
+  publishedNow,
+  savedCodeTool,
+  talkedTo,
+} from './test-agents.ts'
 import {
   ASKED,
   answer,
@@ -138,7 +145,11 @@ test('aprovar, recusar, mensagem, Parar: Aprovar roda a escrita uma vez e o turn
   })
   assert.equal(on.fake.orders().length, 1, 'only the approved call reached the Sankhya')
   const answered = on.hub.lines.filter((line) => line.message.startsWith('CONNECTOR_WRITE_A'))
-  assert.equal(answered.length, 1, 'the answers that found nothing pending logged nothing')
+  assert.equal(
+    answered.length,
+    1,
+    'the answers the guard found nothing pending to (after a message, after a Parar) logged nothing',
+  )
   assert.equal(on.hub.lines.filter((line) => line.message === 'CONNECTOR_WRITE_DECLINED').length, 1)
 })
 
@@ -193,4 +204,38 @@ test('o pedido sem resposta pergunta: com um envio aberto da mesma escrita na co
   assert.equal(endOf(elsewhere), 'complete')
   assert.deepEqual(approvalsIn(elsewhere), [])
   assert.equal(on.fake.orders().length, 3)
+})
+
+test('a linha do Recusar diz a ligação da versão que a conversa roda: a publicada, mesmo com o rascunho sem a escrita, e o rascunho, mesmo com a versão ativa sem ela (6)', async (t) => {
+  const on = await approving(t, [[launched()], [said('Não lancei.')], [launched()], [said('Não.')]])
+  const agent = await on.writer('ASK')
+  const published = await on.opened(agent.id)
+  await sent(on.hub, on.ana, published.url, 'Lance o pedido')
+  const first = askedOf(await untilAsked(published.stream)).toolCallId
+
+  const bare = await drafted(on.hub, on.ana, on.agents, agent, { tools: [], approvals: {} })
+  assert.deepEqual(await answer(on.hub, on.ana, published.url, first, false), { ok: true })
+  assert.equal(endOf(await published.stream.turn()), 'complete')
+
+  const v2 = await publishedNow(on.hub, on.ana, on.agents, bare)
+  await drafted(on.hub, on.ana, on.agents, v2, {
+    tools: [on.write.latest.id],
+    approvals: { [on.write.id]: 'ASK' },
+  })
+  const url = await talkedTo(on.hub, on.ana, on.agents, agent.id, { draft: true })
+  const stream = await streamOf(on.hub, on.ana, url)
+  t.after(() => stream.close())
+  await sent(on.hub, on.ana, url, 'Lance o pedido')
+  const second = askedOf(await untilAsked(stream)).toolCallId
+  assert.deepEqual(await answer(on.hub, on.ana, url, second, false), { ok: true })
+  assert.equal(endOf(await stream.turn()), 'complete')
+
+  const no = on.hub.lines.filter((line) => line.message === 'CONNECTOR_WRITE_DECLINED')
+  assert.deepEqual(
+    no.map(({ fields }) => [fields.toolCallId, fields.connectionId, fields.operation]),
+    [
+      [first, on.matriz, 'lancarPedido'],
+      [second, on.matriz, 'lancarPedido'],
+    ],
+  )
 })
