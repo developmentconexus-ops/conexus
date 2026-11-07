@@ -67,8 +67,10 @@ export function createIdentity(deps: {
   const libraryCommand = libraryCommandOn(auth, deps.database)
   const readSession = createSessionReader({ auth })
   const recovery = createPasswordRecovery({
-    ...{ auth, database, sendMail },
+    auth,
+    database,
     publicOrigin: config.publicOrigin,
+    sendMail,
   })
   return Object.freeze({
     readSession,
