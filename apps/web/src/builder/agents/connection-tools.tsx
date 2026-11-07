@@ -137,8 +137,13 @@ export function ConnectionTools(props: Part & { connection: OfferedConnection; s
       tool.connectionId === connection.connectionId &&
       !reads.some((one) => one.library?.id === tool.id),
   )
+  // The connection's name titles the group when the Projeto has two of the same system.
+  const sameSystem = agent.offered.filter((one) => one.connector === connection.connector).length > 1
   return (
     <div className="flex flex-col gap-xs pl-lg">
+      {sameSystem && (
+        <h4 className="font-body text-label font-semibold">{connection.name}</h4>
+      )}
       <ul aria-label={`Ferramentas de ${connection.name}`} className="flex flex-col">
         {reads.map((one) => (
           <ReadLine key={one.operation} connection={connection} read={one} saving={saving} />
