@@ -14,7 +14,7 @@ import { openedIn } from './testing.ts'
 import type { AppRefused } from './tokens.ts'
 import { accessFor } from './tokens.ts'
 import type { WriteRequest, Written } from './write-record.ts'
-import { aboutOf, finish, hashOf, markOf, openWritesOf, plain, register } from './write-record.ts'
+import { aboutOf, finish, hashOf, markOf, plain, register } from './write-record.ts'
 import type { Wrote } from './wrote.ts'
 
 /** The text the model reads for `WRITE_UNCERTAIN` and for `IDEMPOTENCY_CONFLICT`: the one place that says what to do with them. */
@@ -166,20 +166,6 @@ export async function writeThrough(deps: Deps, a: WriteRequest): Promise<Written
     deps.log.info({ ...aboutOf(a, connector), reason: 'INPUT_INVALID' }, 'CONNECTOR_INPUT_REFUSED')
     const message = parsed.success ? roomLeft(checked.error, mark) : issuesOf(checked.error)
     return { kind: 'REFUSED', native: { status: 400, code: 'INPUT_INVALID', message, body: null } }
-  }
-  // U2's approval gate calls with `approvedBy`: a person who saw the earlier write lets this one past it.
-  if (a.approvedBy === undefined) {
-    const [open] = await openWritesOf(deps, {
-      ...{ scope: a.scope, threadId: a.threadId, connectionId: a.connectionId },
-      ...{ operation: a.operation, except: a.toolCallId },
-    })
-    if (open !== undefined) {
-      deps.log.info(
-        { ...aboutOf(a, connector), openMark: open.mark, openState: open.state },
-        'CONNECTOR_WRITE_OPEN',
-      )
-      return { kind: 'WRITE_OPEN', mark: open.mark, since: open.since }
-    }
   }
   const registered = await register(deps, a, { hash: hashOf(parsed.data), mark, connector })
   if (registered.kind === 'FOUND') return registered.written

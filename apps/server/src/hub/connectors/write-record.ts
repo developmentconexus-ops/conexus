@@ -8,6 +8,8 @@ import {
 } from '@conexus/hub-api'
 import { and, eq, inArray, ne, sql } from 'drizzle-orm'
 import { z } from 'zod'
+import type { CommandTx, ReadTx } from '../../platform/database.ts'
+import { transactionLock } from '../../platform/database.ts'
 import type { Scalar } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { Speaker } from '../identity/public.ts'
@@ -140,57 +142,99 @@ function key(a: WriteRequest) {
   )
 }
 
+/** The call's own row: a repeat of the call reads it and is never sent. */
+async function ownRow(tx: ReadTx, a: WriteRequest): Promise<Row | undefined> {
+  const [row] = await tx
+    .select({
+      state: connectorWrite.state,
+      inputHash: connectorWrite.inputHash,
+      answer: connectorWrite.answer,
+    })
+    .from(connectorWrite)
+    .where(key(a))
+  return row
+}
+
+type Put = Readonly<{ hash: string; mark: string; connector: string }>
+
+/** The row of a call about to send, `SENDING`; false when a row of the same key already holds it. */
+async function inserted(tx: CommandTx, a: WriteRequest, put: Put): Promise<boolean> {
+  const author = authorOf(a)
+  const rows = await tx
+    .insert(connectorWrite)
+    .values({
+      companyId: a.scope.companyId,
+      threadId: a.threadId,
+      toolCallId: a.toolCallId,
+      connectionId: a.connectionId,
+      operationId: a.operation,
+      inputHash: put.hash,
+      agentId: author.kind === 'VERSION' ? author.agentId : null,
+      versionNumber: author.kind === 'VERSION' ? author.number : null,
+      personId: author.kind === 'PERSON' ? author.personId : null,
+      state: 'SENDING',
+      createdAt: sql`statement_timestamp()`,
+    })
+    .onConflictDoNothing()
+    .returning({ state: connectorWrite.state })
+  return rows.length > 0
+}
+
+/** What a call answers from its own row: never sent again, and a `SENDING` row is an uncertain write now. */
+async function found(deps: Deps, tx: CommandTx, a: WriteRequest, put: Put, row: Row) {
+  if (row.state === 'SENDING')
+    await tx
+      .update(connectorWrite)
+      .set({ state: 'UNCERTAIN' })
+      .where(and(key(a), eq(connectorWrite.state, 'SENDING')))
+  deps.log.info(
+    { ...aboutOf(a, put.connector), state: row.state, sameInput: row.inputHash === put.hash },
+    'CONNECTOR_WRITE_REPEATED',
+  )
+  return { kind: 'FOUND', written: foundIn(row, put.hash, put.mark) } as const
+}
+
+/** The refusal of a call while an earlier write of its kind may exist; none when a person approved it (U2's gate sets `approvedBy`). */
+async function heldBy(deps: Deps, tx: CommandTx, a: WriteRequest, put: Put) {
+  if (a.approvedBy !== undefined) return undefined
+  const [open] = await openRows(tx, {
+    ...{ scope: a.scope, threadId: a.threadId, connectionId: a.connectionId },
+    ...{ operation: a.operation, except: a.toolCallId },
+  })
+  if (open === undefined) return undefined
+  deps.log.info(
+    { ...aboutOf(a, put.connector), openMark: open.mark, openState: open.state },
+    'CONNECTOR_WRITE_OPEN',
+  )
+  return {
+    kind: 'FOUND',
+    written: { kind: 'WRITE_OPEN', mark: open.mark, since: open.since },
+  } as const
+}
+
 /**
  * The record of the send, committed before the provider is called, so a process that dies between
- * leaves a `SENDING` row and no repeat sends again. The key (company, conversation, call) lets one
- * insert in; the other reads the row (a `SENDING` one is an uncertain write now).
+ * leaves a `SENDING` row and no repeat sends again. One short transaction, locked on the company,
+ * conversation, connection and operation (code C65), so two calls of the same write take turns: the
+ * call's own row answers first, then an open write of another call refuses unless a person approved,
+ * and only then the row is inserted.
  */
-export async function register(
-  deps: Deps,
-  a: WriteRequest,
-  put: Readonly<{ hash: string; mark: string; connector: string }>,
-): Promise<Registered> {
-  const author = authorOf(a)
+export async function register(deps: Deps, a: WriteRequest, put: Put): Promise<Registered> {
   const viewer = { person: { id: a.scope.personId }, companyId: a.scope.companyId }
   return deps.database.command(scopeOf(viewer), async (tx) => {
-    const inserted = await tx
-      .insert(connectorWrite)
-      .values({
-        companyId: a.scope.companyId,
-        threadId: a.threadId,
-        toolCallId: a.toolCallId,
-        connectionId: a.connectionId,
-        operationId: a.operation,
-        inputHash: put.hash,
-        agentId: author.kind === 'VERSION' ? author.agentId : null,
-        versionNumber: author.kind === 'VERSION' ? author.number : null,
-        personId: author.kind === 'PERSON' ? author.personId : null,
-        state: 'SENDING',
-        createdAt: sql`statement_timestamp()`,
-      })
-      .onConflictDoNothing()
-      .returning({ state: connectorWrite.state })
-    if (inserted.length > 0) return { kind: 'OWNED' }
-    const [row] = await tx
-      .select({
-        state: connectorWrite.state,
-        inputHash: connectorWrite.inputHash,
-        answer: connectorWrite.answer,
-      })
-      .from(connectorWrite)
-      .where(key(a))
-    if (row === undefined) throw new Failure('INTERNAL_UNEXPECTED')
-    if (row.state === 'SENDING')
-      await tx
-        .update(connectorWrite)
-        .set({ state: 'UNCERTAIN' })
-        .where(and(key(a), eq(connectorWrite.state, 'SENDING')))
-    const written = foundIn(row, put.hash, put.mark)
-    deps.log.info(
-      { ...aboutOf(a, put.connector), state: row.state, sameInput: row.inputHash === put.hash },
-      'CONNECTOR_WRITE_REPEATED',
+    await transactionLock(
+      tx,
+      `connector_write\n${a.scope.companyId}\n${a.threadId}\n${a.connectionId}\n${a.operation}`,
     )
-    return { kind: 'FOUND', written }
+    const own = await ownRow(tx, a)
+    if (own !== undefined) return found(deps, tx, a, put, own)
+    const held = await heldBy(deps, tx, a, put)
+    if (held !== undefined) return held
+    if (await inserted(tx, a, put)) return { kind: 'OWNED' }
+    // The key without the lock's connection or operation: another call under it got in first, and its row answers.
+    const raced = await ownRow(tx, a)
+    if (raced === undefined) throw new Failure('INTERNAL_UNEXPECTED')
+    return found(deps, tx, a, put, raced)
   })
 }
 
@@ -215,35 +259,32 @@ export type OpenWritesKey = Readonly<{
 }>
 
 /**
- * The writes of the conversation that may exist in the provider: rows still `SENDING` or `UNCERTAIN`.
- * The funnel leaves the call's own key out (`except`), for `register` answers it.
+ * The writes of the conversation that may exist in the provider: rows still `SENDING` or `UNCERTAIN`,
+ * of one connection and operation when the key names them, without the call `except` names.
  */
-export async function openWritesOf(deps: Deps, key: OpenWritesKey): Promise<readonly OpenWrite[]> {
-  const viewer = { person: { id: key.scope.personId }, companyId: key.scope.companyId }
-  const rows = await deps.database.read(scopeOf(viewer), (tx) =>
-    tx
-      .select({
-        toolCallId: connectorWrite.toolCallId,
-        connectionId: connectorWrite.connectionId,
-        operation: connectorWrite.operationId,
-        state: connectorWrite.state,
-        createdAt: connectorWrite.createdAt,
-      })
-      .from(connectorWrite)
-      .where(
-        and(
-          eq(connectorWrite.companyId, key.scope.companyId),
-          eq(connectorWrite.threadId, key.threadId),
-          key.connectionId === undefined
-            ? undefined
-            : eq(connectorWrite.connectionId, key.connectionId),
-          key.operation === undefined ? undefined : eq(connectorWrite.operationId, key.operation),
-          key.except === undefined ? undefined : ne(connectorWrite.toolCallId, key.except),
-          inArray(connectorWrite.state, ['SENDING', 'UNCERTAIN']),
-        ),
-      )
-      .orderBy(connectorWrite.createdAt),
-  )
+async function openRows(tx: ReadTx, key: OpenWritesKey): Promise<readonly OpenWrite[]> {
+  const rows = await tx
+    .select({
+      toolCallId: connectorWrite.toolCallId,
+      connectionId: connectorWrite.connectionId,
+      operation: connectorWrite.operationId,
+      state: connectorWrite.state,
+      createdAt: connectorWrite.createdAt,
+    })
+    .from(connectorWrite)
+    .where(
+      and(
+        eq(connectorWrite.companyId, key.scope.companyId),
+        eq(connectorWrite.threadId, key.threadId),
+        key.connectionId === undefined
+          ? undefined
+          : eq(connectorWrite.connectionId, key.connectionId),
+        key.operation === undefined ? undefined : eq(connectorWrite.operationId, key.operation),
+        key.except === undefined ? undefined : ne(connectorWrite.toolCallId, key.except),
+        inArray(connectorWrite.state, ['SENDING', 'UNCERTAIN']),
+      ),
+    )
+    .orderBy(connectorWrite.createdAt)
   return rows.map((row) => ({
     connectionId: ConnectionIdSchema.parse(row.connectionId),
     operation: OperationIdSchema.parse(row.operation),
@@ -251,6 +292,12 @@ export async function openWritesOf(deps: Deps, key: OpenWritesKey): Promise<read
     since: row.createdAt,
     mark: markOf(key.threadId, ToolCallId.parse(row.toolCallId)),
   }))
+}
+
+/** The conversation's open writes, read on their own (step 24.5): what a write's rule and the card's notice read. */
+export function openWritesOf(deps: Deps, key: OpenWritesKey): Promise<readonly OpenWrite[]> {
+  const viewer = { person: { id: key.scope.personId }, companyId: key.scope.companyId }
+  return deps.database.read(scopeOf(viewer), (tx) => openRows(tx, key))
 }
 
 const STATES = { OK: 'DONE', WRITE_UNCERTAIN: 'UNCERTAIN' } as const
