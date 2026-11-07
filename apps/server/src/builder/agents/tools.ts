@@ -113,7 +113,6 @@ function writeTool(deps: Deps, tool: PresetFrozenTool, input: z.ZodObject) {
     id: `tool_${tool.slug}`,
     description: tool.description,
     inputSchema: openOf(input, tool),
-    // A context without the conversation asks: Mastra asks too when the rule throws.
     requireApproval: async (_given, context) => {
       if (tool.approval !== 'AUTO') return true
       const threadId = ConversationId.safeParse(context?.requestContext?.[MASTRA_THREAD_ID_KEY])

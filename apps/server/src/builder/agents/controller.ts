@@ -254,10 +254,8 @@ export function createAgentConversations(deps: Deps) {
     deps.machineTuning,
   )
   const turns = agentTurns(queue, runOf, resolvedOf, { database, log, machines })
-  // Step 24.5: `yolo` off, so a tool asks unless its own rule says no; every tool of the version
-  // says no but a write in Pergunta antes or with an open send (`agent.ts`, `tools.ts`). No rule of
-  // the session's: its `allow` approves at once and loses calls (Papéis P1). The mode lists no
-  // tools: the closed set is the version's, which only this code builds.
+  // `yolo` off (step 24.5): a write asks by its own rule; no session rule, whose `allow` loses calls.
+  // The mode lists no tools: the closed set is the version's, which only this code builds.
   const controller = controllerOf({
     ...{
       kind: 'agents',

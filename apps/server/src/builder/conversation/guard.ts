@@ -173,7 +173,7 @@ async function guard(deps: { builder: Builder; hub: GuardedMastra }, request: Fa
 /**
  * A write's Aprovar or Recusar reaches Mastra only for a gate parked in this session now (step
  * 24.5): after Parar, a new message or a restart, Mastra would answer the stored wait and run the
- * write, and the card no longer exists (measured, the U2 proof). The autonomy lives in the version
+ * write, and the card no longer exists. The autonomy lives in the version
  * alone, so the always-allow of Mastra's body is refused. Anything else answers `not_pending`.
  */
 async function toolAnswer(
