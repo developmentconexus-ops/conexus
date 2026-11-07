@@ -3,14 +3,14 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { HubFailure } from '../../platform/hub.ts'
 import { ActionDialog } from './member-actions.tsx'
-import { deleteCompanyRole, everyMemberQuery, invitationsQuery } from './queries.ts'
+import { deleteCompanyRole, everyInvitationQuery, everyMemberQuery } from './queries.ts'
 
 /** Who still uses the role, read from the lists the Hub already gives: the people and the open invitations. */
 function WhoUses({ companyId, role }: { companyId: CompanyId; role: Role }) {
   const people = useQuery(everyMemberQuery(companyId))
-  const invited = useQuery(invitationsQuery(companyId, undefined))
+  const invited = useQuery(everyInvitationQuery(companyId))
   const names = (people.data ?? []).filter((one) => one.role === role)
-  const invitations = (invited.data?.invitations ?? []).filter((one) => one.role === role)
+  const invitations = (invited.data ?? []).filter((one) => one.role === role)
   return (
     <ul aria-label="Quem usa este papel" className="flex flex-col gap-xs">
       {names.map((one) => (

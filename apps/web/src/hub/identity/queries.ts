@@ -1,4 +1,4 @@
-import type { CompanyId, InvitationId, Member } from '@conexus/hub-api'
+import type { CompanyId, InvitationId, ListedInvitation, Member } from '@conexus/hub-api'
 import {
   acceptInvitation,
   CAPACITY,
@@ -76,6 +76,22 @@ export const myAppsQuery = hubQuery(listMyApps)
 export const revokeEveryApp = hubMutation(revokeAllAppAccess)
 export function invitationsQuery(companyId: CompanyId, page: string | undefined) {
   return hubQuery(listInvitations, { params: { companyId }, query: { page } })
+}
+/** Every open invitation of the company, all the pages of the list, for what must not miss one. */
+export function everyInvitationQuery(companyId: CompanyId) {
+  return {
+    queryKey: [...hubQueryPrefix(listInvitations, { companyId }), 'every'],
+    queryFn: async (context: Parameters<ReturnType<typeof invitationsQuery>['queryFn']>[0]) => {
+      const invitations: ListedInvitation[] = []
+      let page: string | undefined
+      do {
+        const read = await invitationsQuery(companyId, page).queryFn(context)
+        invitations.push(...read.invitations)
+        page = read.next.kind === 'MORE' ? read.next.page : undefined
+      } while (page !== undefined && invitations.length < CAPACITY.openInvitations)
+      return invitations
+    },
+  }
 }
 export function receivedInvitationQuery(invitationId: InvitationId) {
   return hubQuery(getInvitation, { params: { invitationId } })

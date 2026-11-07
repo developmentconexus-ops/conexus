@@ -57,7 +57,7 @@ function RoleList(props: {
           <Link
             to="/companies/$companyId/settings/roles"
             params={{ companyId: props.companyId }}
-            search={{ novo: true }}
+            search={{ new: true }}
             className={buttonVariants({ variant: 'primary', size: 'sm' })}
           >
             <PlusIcon aria-hidden="true" className="size-4" />
@@ -105,7 +105,7 @@ export function Roles(props: {
       search: {},
     })
   }
-  if (search.novo) return <NewRole companyId={companyId} kit={kit} logo={logo} onDone={back} />
+  if (search.new) return <NewRole companyId={companyId} kit={kit} logo={logo} onDone={back} />
   if (search.role !== undefined) {
     const found = data.roles.find((one) => one.role === search.role)
     if (found === undefined) return <NotFound hint={ROLE_GONE} />

@@ -1,14 +1,15 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { createFileRoute, getRouteApi, notFound } from '@tanstack/react-router'
+import { createFileRoute, getRouteApi, notFound, useRouter } from '@tanstack/react-router'
 import { ShieldCheckIcon } from 'lucide-react'
 import { z } from 'zod'
 import { ConnectorLogo, connectionsQuery } from '../../../../../hub/connectors/public.ts'
 import { companyQuery, Roles, rolesQuery } from '../../../../../hub/identity/public.ts'
 import { readOrNotFound } from '../../../../../platform/hub.ts'
+import { ReadFailure } from '../../../../../ui/states.tsx'
 
 const Search = z.object({
   role: z.string().min(1).max(40).optional().catch(undefined),
-  novo: z.literal(true).optional().catch(undefined),
+  new: z.literal(true).optional().catch(undefined),
 })
 
 export const Route = createFileRoute('/_app/companies/$companyId_/settings/roles')({
@@ -37,8 +38,20 @@ export const Route = createFileRoute('/_app/companies/$companyId_/settings/roles
       ]),
     )
   },
+  errorComponent: RolesFailure,
   component: RolesPage,
 })
+
+/** The roles could not be read: the page's own sentence and a way to read again. */
+function RolesFailure({ reset }: { reset: () => void }) {
+  const router = useRouter()
+  return (
+    <ReadFailure
+      text="Não deu para carregar os papéis."
+      onRetry={() => void router.invalidate().then(reset)}
+    />
+  )
+}
 
 const route = getRouteApi('/_app/companies/$companyId_/settings/roles')
 

@@ -60,7 +60,7 @@ test('criar um papel: o dono cria "Atendente", marca Vendas, deixa só Pedidos, 
 test('o nome tomado fica no campo, com o que foi marcado', async () => {
   hub({ as: 'owner' })
   server.use(http.post(ROLES, () => refusal('ROLE_NAME_TAKEN')))
-  open('/settings/roles?novo=true')
+  open('/settings/roles?new=true')
   fireEvent.change(await screen.findByLabelText('Nome do papel'), { target: { value: 'Membro' } })
   const sankhya = within(screen.getByRole('region', { name: 'Sankhya' }))
   fireEvent.click(sankhya.getByRole('checkbox', { name: /Financeiro/ }))
@@ -119,6 +119,11 @@ test('apagar um papel em uso mostra quem o usa e não apaga (critério 14)', asy
         email: 'bruno@example.test',
         role: 'atendente',
       },
+      { personId: 'person-carla', name: 'Carla Dias', email: 'carla@example.test', role: 'member' },
+    ],
+    invitationPages: [
+      [{ email: 'outro@example.test', role: 'member' }],
+      [{ email: 'dora@example.test', role: 'atendente' }],
     ],
   })
   server.use(
@@ -136,6 +141,9 @@ test('apagar um papel em uso mostra quem o usa e não apaga (critério 14)', asy
   ).toBeTruthy()
   const who = await dialog.findByRole('list', { name: 'Quem usa este papel' })
   expect(who.textContent).toContain('Bruno Souza')
+  expect(who.textContent).toContain('Convite para dora@example.test')
+  expect(who.textContent).not.toContain('Carla Dias')
+  expect(who.textContent).not.toContain('outro@example.test')
   expect(deletes).toHaveLength(1)
   expect(screen.getByRole('heading', { name: 'Atendente', hidden: true })).toBeTruthy()
 })
@@ -175,4 +183,16 @@ test('o dono vê o item Papéis em Configurações', async () => {
   hub({ as: 'owner' })
   open('/settings/people')
   expect(await screen.findByRole('link', { name: /Papéis/ })).toBeTruthy()
+})
+
+test('a lista de papéis não abre: "Não deu para carregar os papéis." e Tentar de novo lê outra vez', async () => {
+  hub({ as: 'owner' })
+  let fail = true
+  server.use(http.get(ROLES, () => (fail ? new HttpResponse(null, { status: 500 }) : undefined)))
+  open('/settings/roles')
+  expect(await screen.findByText('Não deu para carregar os papéis.')).toBeTruthy()
+  fail = false
+  server.use(http.get(ROLES, () => HttpResponse.json({ roles: FIXED })))
+  fireEvent.click(screen.getByRole('button', { name: 'Tentar de novo' }))
+  expect(await screen.findByText('Papéis de fábrica')).toBeTruthy()
 })

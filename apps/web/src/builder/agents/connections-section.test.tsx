@@ -83,3 +83,42 @@ test('uma ferramenta fora do papel de quem edita aparece sem poder marcar', asyn
   expect(box.hasAttribute('disabled') || box.getAttribute('aria-disabled') === 'true').toBe(true)
   expect(section.getByText('Fora do seu papel')).toBeTruthy()
 })
+
+test('a consulta livre fica no fim mesmo quando o Projeto a oferece primeiro', async () => {
+  const first = bare({
+    offered: [
+      offered(MATRIZ, 'Matriz', [
+        { operation: 'consultar', label: 'Consulta', summary: 'Roda uma consulta SQL.' },
+        { operation: 'pedidos', label: 'Pedidos', summary: 'Os pedidos de venda.' },
+      ]),
+    ],
+  })
+  first.draft.connections = [MATRIZ]
+  at(PAGE, { agents: [first], ready: readyOf(MATRIZ) })
+  server.use(catalog)
+  const section = await connections()
+  const tools = within(await section.findByRole('list', { name: 'Ferramentas de Matriz' }))
+  const rows = tools.getAllByRole('listitem').map((row) => row.textContent)
+  expect(rows[0]).toContain('Pedidos')
+  expect(rows[1]).toContain('Consulta')
+})
+
+test('uma lista só: a ferramenta de uma ligação não selecionada não aparece em lugar nenhum', async () => {
+  const held = agent({ offered: [offered(MATRIZ, 'Matriz')] })
+  held.draft.connections = []
+  at(PAGE, { agents: [held], ready: readyOf(MATRIZ) })
+  server.use(catalog)
+  const section = await connections()
+  await section.findByRole('checkbox', { name: /Sankhya · Matriz/ })
+  expect(screen.queryByRole('list', { name: 'Ferramentas de Matriz' })).toBeNull()
+  expect(screen.queryByRole('checkbox', { name: /Pedidos/ })).toBeNull()
+  expect(screen.queryByText(/vendas_de_ontem/)).toBeNull()
+  fireEvent.click(
+    within(screen.getByRole('region', { name: 'Ferramentas' })).getByRole('button', {
+      name: 'Adicionar da biblioteca',
+    }),
+  )
+  const dialog = within(await screen.findByRole('dialog'))
+  expect(await dialog.findByRole('switch', { name: 'Pesquisar na web' })).toBeTruthy()
+  expect(dialog.queryByRole('switch', { name: /Pedidos/ })).toBeNull()
+})

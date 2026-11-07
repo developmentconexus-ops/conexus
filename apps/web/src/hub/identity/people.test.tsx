@@ -260,3 +260,30 @@ test('papel próprio: a troca e o convite listam "Atendente" pelo rótulo, e a l
   fireEvent.click(invite.getByLabelText('Papel'))
   expect((await screen.findAllByRole('option', { name: 'Atendente' })).length).toBeGreaterThan(0)
 })
+
+test('papel próprio com acento: quem lê os papéis vê o rótulo; quem não lê vê o nome guardado em palavras (o Hub ainda não leva o rótulo)', async () => {
+  const sao = roles.customRole('Atendente São Paulo', 'atendente-sao-paulo', ['pedidos'], 1)
+  const people = [
+    { personId: ANA.id, name: ANA.name, email: ANA.email, role: 'developer' },
+    {
+      personId: 'person-bruno',
+      name: 'Bruno Souza',
+      email: 'bruno@example.test',
+      role: 'atendente-sao-paulo',
+    },
+  ]
+  for (const [as, shown] of [
+    ['owner', 'Atendente São Paulo'],
+    ['developer', 'Atendente sao paulo'],
+  ] as const) {
+    roles.hub({ as, roles: [...roles.FIXED, sao], people })
+    const { unmount } = roles.open('/settings/people')
+    const list = within(sectionOf(await screen.findByRole('heading', { name: 'Pessoas' })))
+    await waitFor(() =>
+      expect(bodyRows(list).map((row) => row.textContent)).toContain(
+        `Bruno Souzabruno@example.test${shown}`,
+      ),
+    )
+    unmount()
+  }
+})

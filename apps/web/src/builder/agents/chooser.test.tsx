@@ -30,12 +30,12 @@ test('marcar todas as leituras marca as leituras do kit e deixa a consulta livre
   expect(JSON.stringify(hub.writes()[0]?.body)).not.toContain('consultar')
 })
 
-test('a janela de Adicionar da biblioteca não oferece a consulta livre', async () => {
+test('a janela de Adicionar da biblioteca não oferece nenhuma leitura de ligação, nem a consulta livre', async () => {
   at(PAGE, { agents: [bare()], ready: readyOf(MATRIZ) })
   server.use(catalog)
   const tools = await screen.findByRole('region', { name: 'Ferramentas' })
   fireEvent.click(within(tools).getByRole('button', { name: 'Adicionar da biblioteca' }))
   const dialog = within(await screen.findByRole('dialog'))
-  expect(await dialog.findByRole('switch', { name: /Pedidos/ })).toBeTruthy()
-  expect(dialog.queryByRole('switch', { name: /Consulta/ })).toBeNull()
+  expect(await dialog.findByRole('switch', { name: 'Pesquisar na web' })).toBeTruthy()
+  expect(dialog.queryByRole('switch', { name: /Pedidos|Consulta/ })).toBeNull()
 })

@@ -32,6 +32,7 @@ import {
   SIGNED_OUT,
   WITH_EXPIRED,
 } from './sweep-replies.ts'
+import { ROLES_STATES } from './sweep-roles-states.ts'
 
 /** Submits the invitation form, which the state's replies refuse, and waits for the refusal. */
 async function inviteRefused(page: Page, sentence: string) {
@@ -55,6 +56,7 @@ export const STATES: State[] = [
   ...ACCOUNT_STATES,
   ...INTEGRATIONS_STATES,
   ...PROJECT_INTEGRATIONS_STATES,
+  ...ROLES_STATES,
   {
     name: 'Central sem clientes',
     path: '/operations/clients',

@@ -81,16 +81,17 @@ test('uma ligação que o Projeto não oferece mais é dita ao lado dela', async
   expect(await screen.findByText('O Projeto não oferece mais')).toBeTruthy()
 })
 
-test('as ferramentas escolhidas aparecem, e a lista de Escolher traz as que o Projeto pode usar', async () => {
+test('as ferramentas da Conexus aparecem, e a lista de Escolher não traz as de uma ligação', async () => {
   at(PAGE, {
     agents: [agent({ tools: [] })],
     tools: [toolSummary()],
   })
   expect(
-    await screen.findByText('Nenhuma ferramenta. Peça ao Construtor, escolha ou crie aqui.'),
+    await screen.findByText('Nenhuma ferramenta da Conexus. As de cada ligação ficam em Ligações.'),
   ).toBeTruthy()
   fireEvent.click(screen.getByRole('button', { name: 'Adicionar da biblioteca' }))
-  expect(await screen.findByRole('switch', { name: /Vendas de ontem por vendedor\./ })).toBeTruthy()
+  expect(await screen.findByRole('switch', { name: 'Pesquisar na web' })).toBeTruthy()
+  expect(screen.queryByRole('switch', { name: /Vendas de ontem por vendedor\./ })).toBeNull()
 })
 
 test('o membro: o endereço do agente dá não encontrado', async () => {

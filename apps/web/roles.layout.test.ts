@@ -21,7 +21,7 @@ const SCREENS = [
     wait: 'Salvar',
     agent: false,
   },
-  { name: 'o papel novo', path: `${SETTINGS}/roles?novo=true`, wait: 'Criar papel', agent: false },
+  { name: 'o papel novo', path: `${SETTINGS}/roles?new=true`, wait: 'Criar papel', agent: false },
   {
     name: 'o agente com a ligação selecionada',
     path: AGENT_PATH,

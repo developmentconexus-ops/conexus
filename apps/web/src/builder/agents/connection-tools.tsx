@@ -18,6 +18,7 @@ import {
   COMPANY_TOOLS,
   FREE_QUERY_WARNING,
   MARK_ALL_READS,
+  newVersionText,
   OUT_OF_ROLE,
   toolTitle,
 } from './text.ts'
@@ -61,6 +62,18 @@ function readsOf(
   return [...reads.filter((one) => !one.door), ...reads.filter((one) => one.door)]
 }
 
+/** The chosen tool's newer version, as the line offers it: the draft then holds that version. */
+function newerOf(tool: AgentDetail['tools'][number] | undefined, saving: Saving) {
+  if (tool === undefined || tool.latest.number <= tool.version.number) return undefined
+  return {
+    number: tool.latest.number,
+    onUse: () =>
+      saving.save((now) => ({
+        tools: now.tools.map((one) => (one.id === tool.id ? tool.latest.id : one.version.id)),
+      })),
+  }
+}
+
 function versionsOf(now: AgentDetail, without: ReadonlySet<string> = new Set()): ToolVersionId[] {
   return now.tools.filter((one) => !without.has(one.id)).map((one) => one.version.id)
 }
@@ -73,9 +86,11 @@ function Line(props: {
   checked: boolean
   disabled: boolean
   onChange: (on: boolean) => void
+  /** The chosen tool, when a newer version of it exists. */
+  newer?: { number: number; onUse: () => void } | undefined
 }) {
   return (
-    <li className="flex items-start gap-sm py-xs">
+    <li className="flex flex-wrap items-start gap-sm py-xs">
       <Checkbox
         id={props.id}
         checked={props.checked}
@@ -91,6 +106,14 @@ function Line(props: {
           <span className="text-fact text-danger">{props.warning}</span>
         )}
       </label>
+      {props.newer !== undefined && (
+        <span className="flex flex-wrap items-center gap-xs">
+          <span className="text-fact text-text-2">{newVersionText(props.newer.number)}</span>
+          <Button size="sm" onClick={props.newer.onUse}>
+            Usar a versão {props.newer.number}
+          </Button>
+        </span>
+      )}
     </li>
   )
 }
@@ -119,6 +142,7 @@ function ReadLine(props: { connection: OfferedConnection; read: Read; saving: Sa
       checked={read.chosen !== undefined}
       disabled={!read.allowed || !known}
       onChange={change}
+      newer={newerOf(read.chosen, saving)}
     />
   )
 }
@@ -179,6 +203,10 @@ export function ConnectionTools(props: Part & { connection: OfferedConnection; s
               detail={tool.description}
               checked={agent.tools.some((one) => one.id === tool.id)}
               disabled={false}
+              newer={newerOf(
+                agent.tools.find((one) => one.id === tool.id),
+                saving,
+              )}
               onChange={(on) =>
                 saving.save((now) => ({
                   tools: on

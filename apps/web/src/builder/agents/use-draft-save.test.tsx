@@ -1,10 +1,11 @@
-import { ConnectionId, DraftPatch, ToolId, ToolVersionId } from '@conexus/hub-api'
+import { ConnectionId, DraftPatch, OperationId, ToolId, ToolVersionId } from '@conexus/hub-api'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { COMPANY } from '../../platform/fixtures.ts'
 import { hubServer } from '../../platform/test-hub.tsx'
 import { AGENT, AREA, agent, FILIAL, MATRIZ, TOOL_V1 } from './test-agents.ts'
+import { offered } from './test-connection-tools.ts'
 import { agentScreens } from './test-hub.tsx'
 
 // A fila de gravação do rascunho do agente (step 24.3, U5, criterion 27).
@@ -16,10 +17,6 @@ const OLD = 'Outra pessoa ou o Construtor mudou este rascunho. Recarregue.'
 function textOf(field: HTMLElement) {
   if (!(field instanceof HTMLTextAreaElement)) throw new Error('the field is a textarea')
   return field.value
-}
-
-function isDisabled(button: HTMLElement) {
-  return button.hasAttribute('disabled') || button.getAttribute('aria-disabled') === 'true'
 }
 
 test('duas gravações seguidas da mesma pessoa levam o revision que a anterior devolveu', async () => {
@@ -94,19 +91,27 @@ test('três ligações seguidas, com a segunda gravação em voo, gravam as trê
 })
 
 test('três ferramentas tiradas seguidas, com a segunda gravação em voo, não voltam', async () => {
-  function tool(digit: string, slug: string) {
+  function tool(digit: string, slug: string, operation: string) {
     const [base] = agent().tools
     if (base?.kind !== 'PRESET') throw new Error('the fixture has a preset tool')
     const versionId = ToolVersionId.parse(`${digit.repeat(8)}-cccc-4ccc-8ccc-${digit.repeat(12)}`)
     return {
       ...base,
+      operation: OperationId.parse(operation),
       id: ToolId.parse(`${digit.repeat(8)}-bbbb-4bbb-8bbb-${digit.repeat(12)}`),
       slug,
       latest: { id: versionId, number: 1 },
       version: { ...base.version, id: versionId, description: slug },
     }
   }
-  const held = agent({ tools: [tool('1', 'um'), tool('2', 'dois'), tool('3', 'tres')] })
+  const held = agent({
+    offered: [offered(MATRIZ, 'Matriz')],
+    tools: [
+      tool('1', 'um', 'pedidos'),
+      tool('2', 'dois', 'contasAReceber'),
+      tool('3', 'tres', 'consultar'),
+    ],
+  })
   let release: (() => void) | undefined
   const sent: DraftPatch[] = []
   at(PAGE, { agents: [held] })
@@ -128,11 +133,15 @@ test('três ferramentas tiradas seguidas, com a segunda gravação em voo, não 
       },
     ),
   )
-  fireEvent.click(await screen.findByRole('button', { name: 'Tirar um' }))
-  fireEvent.click(screen.getByRole('button', { name: 'Tirar dois' }))
+  fireEvent.click(await screen.findByRole('checkbox', { name: /^Pedidos/ }))
+  fireEvent.click(screen.getByRole('checkbox', { name: /^Contas a receber/ }))
   await waitFor(() => expect(sent).toHaveLength(2))
-  await waitFor(() => expect(screen.queryByRole('button', { name: 'Tirar dois' })).toBeNull())
-  fireEvent.click(screen.getByRole('button', { name: 'Tirar tres' }))
+  await waitFor(() =>
+    expect(
+      screen.getByRole('checkbox', { name: /^Contas a receber/ }).getAttribute('aria-checked'),
+    ).toBe('false'),
+  )
+  fireEvent.click(screen.getByRole('checkbox', { name: /^Consulta/ }))
   release?.()
   await waitFor(() => expect(sent).toHaveLength(3))
   expect(sent[2]?.tools).toEqual([])
@@ -164,31 +173,16 @@ test('a gravação das instruções falha, outra seção grava, e o aviso fica n
   )
 })
 
-test('Usar as escolhidas espera a lista chegar, e mantém a escolhida que a lista não traz', async () => {
-  let release: (() => void) | undefined
-  const hub = at(PAGE, {
-    agents: [agent()],
-    answers: {
-      tools: () =>
-        release === undefined
-          ? new Promise((resolve) => {
-              release = () => resolve(HttpResponse.json({ tools: [], ready: [] }))
-            })
-          : undefined,
-    },
-  })
+test('Usar as escolhidas grava só as ferramentas da Conexus e deixa as das ligações como estão', async () => {
+  const hub = at(PAGE, { agents: [agent()] })
   fireEvent.click(await screen.findByRole('button', { name: 'Adicionar da biblioteca' }))
-  const dialog = await screen.findByRole('dialog')
-  function use() {
-    return within(dialog).getByRole('button', { name: 'Usar as escolhidas' })
-  }
-  expect(isDisabled(use())).toBe(true)
-  await waitFor(() => expect(release).toBeDefined())
-  release?.()
-  await waitFor(() => expect(isDisabled(use())).toBe(false))
-  fireEvent.click(use())
+  const dialog = within(await screen.findByRole('dialog'))
+  fireEvent.click(await dialog.findByRole('switch', { name: 'Pesquisar na web' }))
+  fireEvent.click(dialog.getByRole('button', { name: 'Usar as escolhidas' }))
   await waitFor(() => expect(hub.writes()).toHaveLength(1))
-  expect(DraftPatch.parse(hub.writes()[0]?.body).tools).toEqual([TOOL_V1])
+  const body = DraftPatch.parse(hub.writes()[0]?.body)
+  expect(body.web).toBe(true)
+  expect(body.tools).toBeUndefined()
 })
 
 test('o que a pessoa digita enquanto a gravação anterior está em voo fica no campo', async () => {

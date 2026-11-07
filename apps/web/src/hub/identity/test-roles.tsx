@@ -12,7 +12,7 @@ import { render } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { Conexus, createConexus } from '../../main.tsx'
 import { ANA, COMPANY } from '../../platform/fixtures.ts'
-import { memberView, refusal, sessionRead } from '../../platform/test-hub.tsx'
+import { memberView, sessionRead } from '../../platform/test-hub.tsx'
 import { companyAppAccessRead } from '../../platform/test-hub-access.tsx'
 import { KIT_SANKHYA as SANKHYA } from '../../platform/test-kit.ts'
 import { mayOf } from '../../platform/test-may.ts'
@@ -75,6 +75,8 @@ type View = {
   roles?: RoleView[]
   people?: Parameters<typeof memberView>[0][]
   mayInviteAs?: string[]
+  /** The open invitations, one list for each page the Hub answers. */
+  invitationPages?: { email: string; role: string }[][]
 }
 
 /** The Hub as one person sees it; the roles written are kept, and each write recorded. */
@@ -104,11 +106,22 @@ export function hub(view: View) {
         }),
       ),
     ),
-    http.get(`*/api/companies/${COMPANY.id}/invitations`, () =>
-      HttpResponse.json(
-        listInvitations.success.body.parse({ invitations: [], next: { kind: 'END' } }),
-      ),
-    ),
+    http.get(`*/api/companies/${COMPANY.id}/invitations`, ({ request }) => {
+      const pages = view.invitationPages ?? [[]]
+      const at = Number(new URL(request.url).searchParams.get('page') ?? 0)
+      return HttpResponse.json(
+        listInvitations.success.body.parse({
+          invitations: (pages[at] ?? []).map((one, index) => ({
+            id: `${at}${index}`.padEnd(32, 'i'),
+            expiresAt: '2026-10-17T12:00:00.000Z',
+            revision: 0,
+            state: 'PENDING',
+            ...one,
+          })),
+          next: at + 1 < pages.length ? { kind: 'MORE', page: String(at + 1) } : { kind: 'END' },
+        }),
+      )
+    }),
     http.get(`*/api/companies/${COMPANY.id}/projects`, () =>
       HttpResponse.json(
         listProjects.success.body.parse({
@@ -128,9 +141,7 @@ export function hub(view: View) {
       ),
     ),
     http.get(`*/api/companies/${COMPANY.id}/roles`, () =>
-      view.as === 'owner' || view.as === 'admin'
-        ? HttpResponse.json(listRoles.success.body.parse({ roles }))
-        : refusal('NOT_FOUND'),
+      HttpResponse.json(listRoles.success.body.parse({ roles })),
     ),
   )
   return { roles, written, server }

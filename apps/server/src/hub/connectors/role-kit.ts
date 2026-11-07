@@ -1,4 +1,5 @@
 import { CONNECTORS } from '@conexus/connectors'
+import { operationsOf } from './catalog-subjects.ts'
 
 /**
  * What the kit offers a company's roles: each connector's resource and its operations, the door's
@@ -9,8 +10,9 @@ export function roleKit() {
   return CONNECTORS.map((connector) => ({
     id: connector.id,
     resource: `connector_${connector.id}`,
-    operations: [...Object.values(connector.readDoor ?? {}), ...connector.operations].map(
-      (operation) => ({ id: operation.id, class: operation.class }),
-    ),
+    operations: operationsOf(connector).map((operation) => ({
+      id: operation.id,
+      class: operation.class,
+    })),
   }))
 }

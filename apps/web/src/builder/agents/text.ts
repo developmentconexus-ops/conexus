@@ -39,30 +39,10 @@ export const UNCONFIRMED_DELETE = 'Não confirmamos a exclusão. Confira a lista
 export const AGENT_GONE = 'Este agente foi apagado.'
 export const NO_AGENT_CONVERSATIONS = 'Ainda não há conversas com este agente.'
 export const NO_VERSIONS = 'Ainda não publicado.'
-export const NO_TOOLS = 'Nenhuma ferramenta. Peça ao Construtor, escolha ou crie aqui.'
-export const NO_TOOL_MATCH = 'Nenhuma ferramenta com essas palavras.'
-export const LIBRARY_TOOLS = 'Da biblioteca'
+export const NO_TOOLS = 'Nenhuma ferramenta da Conexus. As de cada ligação ficam em Ligações.'
 export const CONEXUS_TOOLS = 'Do Conexus'
 export const ADD_FROM_LIBRARY = 'Adicionar da biblioteca'
 
-/** The group of a connector's ready reads: "Sankhya · prontas do conector". */
-export function readyGroup(connector: string): string {
-  return `${connector} · prontas do conector`
-}
-
-/** What a tool does to the system it reads: the library only holds reads, so a new effect is a type error here until it has its words. */
-const EFFECT_TEXT = { READ: 'lê' } as const
-
-/** The second line of a tool: its connector and what it does; the connection only when the Projeto has more than one. */
-export function toolFact(
-  connector: string,
-  connection: string | undefined,
-  effect: keyof typeof EFFECT_TEXT,
-): string {
-  return [connector, connection, EFFECT_TEXT[effect]]
-    .filter((part) => part !== undefined)
-    .join(' · ')
-}
 export const NO_CONNECTIONS = 'Este Projeto não recebeu nenhuma ligação.'
 export const MARK_ALL_READS = 'Marcar todas as leituras'
 export const FREE_QUERY_WARNING = 'Consulta livre: roda qualquer SQL no banco inteiro'
@@ -142,7 +122,7 @@ export function titleOf(conversation: { title: string; updatedAt: string }): str
 }
 
 /** The ready read of the kit a tool still is, when its description is the read's own; a tool made by hand, or in code, has none. */
-export function readOfTool(
+function readOfTool(
   tool: { connectionId: string; operation?: string; description: string },
   offered: AgentDetail['offered'],
 ) {

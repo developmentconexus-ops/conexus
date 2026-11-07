@@ -19,7 +19,6 @@ export type ConnectionSignInId = z.infer<typeof ConnectionSignInId>
 
 /** What an operation does to the provider's data, as a role's screen says it: reads, writes, deletes. */
 const OperationEffect = z.enum(['READ', 'WRITE', 'DESTROY'])
-type OperationEffect = z.infer<typeof OperationEffect>
 
 /**
  * A subject of the kit with its operations, for the screens that choose among them (a role, an
@@ -38,7 +37,6 @@ const ConnectorSubject = z.object({
     }),
   ),
 })
-type ConnectorSubject = z.infer<typeof ConnectorSubject>
 
 /** A read of a connection a Projeto offers, for the panel of an agent to choose from. */
 export const OfferedRead = z.object({
@@ -58,8 +56,8 @@ export const ConnectorEntry = z.object({
   summary: z.string(),
   // The kit's SVG, shown by the screen as a data: image.
   logo: z.string(),
-  // What the kit offers to choose among; a catalog written before the subjects were read has none.
-  subjects: z.array(ConnectorSubject).default([]),
+  // What the kit offers to choose among: a role's screen and an agent's tools read it.
+  subjects: z.array(ConnectorSubject),
   // How the company links it: pasted fields, or a trip to the provider (`fields` empty).
   auth: z.enum(['client_credentials', 'oauth2_code']),
   fields: z.array(
