@@ -5,13 +5,14 @@ CREATE TABLE "connectors"."connector_write" (
 	"connection_id" uuid NOT NULL,
 	"operation_id" text NOT NULL,
 	"input_hash" text NOT NULL,
-	"version_id" uuid,
+	"agent_id" uuid,
+	"version_number" integer,
 	"person_id" text,
 	"state" text NOT NULL,
 	"answer" jsonb,
 	"created_at" timestamp with time zone NOT NULL,
 	CONSTRAINT "connector_write_pkey" PRIMARY KEY("company_id","thread_id","tool_call_id"),
-	CONSTRAINT "connector_write_speaker" CHECK (("version_id" is null) <> ("person_id" is null)),
+	CONSTRAINT "connector_write_speaker" CHECK (("agent_id" is not null and "version_number" is not null and "person_id" is null) or ("agent_id" is null and "version_number" is null and "person_id" is not null)),
 	CONSTRAINT "connector_write_state" CHECK ("state" in ('SENDING', 'DONE', 'REFUSED', 'UNCERTAIN'))
 );
 --> statement-breakpoint

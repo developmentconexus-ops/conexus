@@ -14,22 +14,22 @@ const SEED = `
   insert into auth.company(id, name, slug, created_at, attempt_key) values
     ('${A}', 'Empresa A', 'key-a', now(), 'key-a'), ('${B}', 'Empresa B', 'key-b', now(), 'key-b');`
 
-/** A record of a send: by a version (`speaker` a uuid) or by a person talking to a draft. */
+/** A record of a send: by a version (agent uuid and number) or by a person talking to a draft. */
 function record(
   company: string,
   call: string,
-  speaker: [string | null, string | null],
+  speaker: [string | null, number | null, string | null],
   state = 'SENDING',
 ) {
-  const [version, person] = speaker.map((value) => (value === null ? 'null' : `'${value}'`))
+  const [agent, number, person] = speaker.map((value) => (value === null ? 'null' : `'${value}'`))
   return `insert into connectors.connector_write(company_id, thread_id, tool_call_id, connection_id,
-    operation_id, input_hash, version_id, person_id, state, created_at) values
-    ('${company}', 'thread-1', '${call}', '${CONNECTION}', 'lancarPedido', 'hash-1', ${version},
-     ${person}, '${state}', now())`
+    operation_id, input_hash, agent_id, version_number, person_id, state, created_at) values
+    ('${company}', 'thread-1', '${call}', '${CONNECTION}', 'lancarPedido', 'hash-1', ${agent},
+     ${number}, ${person}, '${state}', now())`
 }
 
-const BY_VERSION: [string, null] = [VERSION, null]
-const BY_PERSON: [null, string] = [null, 'person-a']
+const BY_VERSION: [string, number, null] = [VERSION, 1, null]
+const BY_PERSON: [null, null, string] = [null, null, 'person-a']
 
 test('o registro de um envio: uma conversa e um toolCallId só uma vez, de uma versão ou de uma pessoa, em um estado conhecido', async (t) => {
   const { asOwner } = await createTestDatabase(t)
@@ -42,8 +42,10 @@ test('o registro de um envio: uma conversa e um toolCallId só uma vez, de uma v
     constraint: 'connector_write_pkey',
   })
   for (const speaker of [
-    [VERSION, 'person-a'],
-    [null, null],
+    [VERSION, 1, 'person-a'],
+    [null, null, null],
+    [VERSION, null, null],
+    [null, 1, 'person-a'],
   ] as const)
     await assert.rejects(asOwner(record(A, 'call-3', [...speaker])), {
       code: '23514',

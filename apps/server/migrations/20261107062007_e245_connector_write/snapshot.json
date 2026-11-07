@@ -1,8 +1,8 @@
 {
-  "id": "8a5e9f94-49f8-4e0d-b8fd-0071696afcce",
-  "prevIds": ["5f84583a-9b0b-43b8-8fea-202521aad2c1"],
   "version": "8",
   "dialect": "postgres",
+  "id": "51f33f99-1727-47fb-bf71-c4eb0a6c1e05",
+  "prevIds": ["5a1967d3-7cf5-498a-9ce5-7ffdab7aac02"],
   "ddl": [
     {
       "name": "builder",
@@ -2763,7 +2763,20 @@
       "default": null,
       "generated": null,
       "identity": null,
-      "name": "version_id",
+      "name": "agent_id",
+      "entityType": "columns",
+      "schema": "connectors",
+      "table": "connector_write"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "version_number",
       "entityType": "columns",
       "schema": "connectors",
       "table": "connector_write"
@@ -6601,7 +6614,7 @@
       "table": "connection_sign_in"
     },
     {
-      "value": "(\"version_id\" is null) <> (\"person_id\" is null)",
+      "value": "(\"agent_id\" is not null and \"version_number\" is not null and \"person_id\" is null) or (\"agent_id\" is null and \"version_number\" is null and \"person_id\" is not null)",
       "name": "connector_write_speaker",
       "entityType": "checks",
       "schema": "connectors",
