@@ -229,6 +229,29 @@ export function createRoleCommand(deps: Deps) {
     })
 }
 
+/**
+ * What a role's row holds after a change: the connectors' statements, and for the developer the
+ * action that publishes a write that runs without asking, when marked (step 24.5, D1-a). The
+ * owner, the administrator and the member never hold it by a row: asking for it is refused.
+ */
+function permissionOf(deps: Deps, role: Role, body: RoleChange): Statements {
+  const unattended = body.unattended === true
+  if (unattended && role !== 'developer') throw malformed('UNATTENDED_NOT_BUILDER')
+  const connectors = isFixedRole(role)
+    ? statementsOf(deps.roles, body.connectors)
+    : customStatements(deps.roles, body.connectors)
+  return unattended ? { ...connectors, agent: [UNATTENDED_ACTION] } : connectors
+}
+
+/** The actions a change added or took, as ids (S41): the one action of this step, when its mark changed. */
+function actionsOf(before: boolean, after: boolean) {
+  const changed = before !== after
+  return {
+    added: changed && after ? [UNATTENDED_ACTION] : [],
+    removed: changed && !after ? [UNATTENDED_ACTION] : [],
+  }
+}
+
 /** Changes what a role uses of each connector; the owner and the administrator never change. */
 export function updateRoleCommand(deps: Deps) {
   return (input: Acting & { role: Role; body: RoleChange }) =>
@@ -236,15 +259,8 @@ export function updateRoleCommand(deps: Deps) {
       const { companyId, headers, role, body } = input
       await admitted(tx, input)
       if (role === 'owner' || role === 'admin') throw new Failure('ROLE_FIXED')
-      const unattended = body.unattended === true
-      if (unattended && role !== 'developer') throw malformed('UNATTENDED_NOT_BUILDER')
+      const permission = permissionOf(deps, role, body)
       const before = (await readRoles(deps.roles, tx, companyId)).find((one) => one.role === role)
-      const permission = isFixedRole(role)
-        ? {
-            ...statementsOf(deps.roles, body.connectors),
-            ...(unattended ? { agent: [UNATTENDED_ACTION] } : {}),
-          }
-        : customStatements(deps.roles, body.connectors)
       await refusedAs(
         () =>
           deps.auth.api.updateOrgRole({
@@ -253,13 +269,9 @@ export function updateRoleCommand(deps: Deps) {
           }),
         ROLE_REFUSALS,
       )
-      const changed = unattended !== (before?.unattended === true)
       return {
         role: await viewOf(deps.roles, tx, companyId, role),
-        actions: {
-          added: changed && unattended ? [UNATTENDED_ACTION] : [],
-          removed: changed && !unattended ? [UNATTENDED_ACTION] : [],
-        },
+        actions: actionsOf(before?.unattended === true, body.unattended === true),
       }
     })
 }
