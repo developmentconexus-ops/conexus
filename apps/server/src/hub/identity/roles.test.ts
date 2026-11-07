@@ -64,7 +64,22 @@ test('criar um papel de novo: a mesma chave devolve o mesmo papel, uma linha só
   assert.deepEqual(lost.json(), first.json())
   const renamed = await post(w.hub, w.ana, `${w.base}/roles`, { ...ATENDENTE, label: 'Outro' }, key)
   assert.deepEqual([renamed.statusCode, codeOf(renamed)], [409, 'IDEMPOTENCY_CONFLICT'])
-  const widened = await post(w.hub, w.ana, `${w.base}/roles`, { ...ATENDENTE, connectors: {} }, key)
+  const narrowed = await post(
+    w.hub,
+    w.ana,
+    `${w.base}/roles`,
+    { ...ATENDENTE, connectors: {} },
+    key,
+  )
+  assert.deepEqual([narrowed.statusCode, codeOf(narrowed)], [409, 'IDEMPOTENCY_CONFLICT'])
+  const more = { sankhya: ['pedidos', ...FINANCEIRO] }
+  const widened = await post(
+    w.hub,
+    w.ana,
+    `${w.base}/roles`,
+    { ...ATENDENTE, connectors: more },
+    key,
+  )
   assert.deepEqual([widened.statusCode, codeOf(widened)], [409, 'IDEMPOTENCY_CONFLICT'])
   const other = await post(w.hub, w.ana, `${w.base}/roles`, ATENDENTE)
   assert.deepEqual([other.statusCode, codeOf(other)], [409, 'ROLE_NAME_TAKEN'])

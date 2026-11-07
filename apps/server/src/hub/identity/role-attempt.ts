@@ -1,13 +1,10 @@
 import type { CompanyId } from '@conexus/hub-api'
 import { Role } from '@conexus/hub-api'
 import { and, eq } from 'drizzle-orm'
-import { z } from 'zod'
 import type { CommandTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
+import { Statements } from './roles.ts'
 import { organizationRole } from './tables.ts'
-
-export const Statements = z.record(z.string(), z.array(z.string()))
-export type Statements = z.infer<typeof Statements>
 
 /** Whether two statement sets hold the same actions, whatever their order. */
 function sameStatements(left: Statements, right: Statements): boolean {

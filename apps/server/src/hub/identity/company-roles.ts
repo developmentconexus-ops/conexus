@@ -20,8 +20,9 @@ import { admit } from './admission.ts'
 import type { Auth, LibraryCommand } from './auth.ts'
 import { refusedAs } from './auth.ts'
 import { companyScope, LIVE, lockCompany } from './invitations.ts'
-import { replayOf, Statements } from './role-attempt.ts'
+import { replayOf } from './role-attempt.ts'
 import type { RoleSet } from './roles.ts'
+import { Statements } from './roles.ts'
 import { invitation, member, organizationRole } from './tables.ts'
 
 /**

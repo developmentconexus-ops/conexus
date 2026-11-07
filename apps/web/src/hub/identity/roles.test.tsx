@@ -62,13 +62,13 @@ test('a resposta de criar o papel se perde: tocar de novo leva a mesma chave e m
   const keys: (string | null)[] = []
   server.use(
     http.post(ROLES, async ({ request }) => {
-      keys.push(request.headers.get(ATTEMPT_KEY_HEADER))
+      const key = request.headers.get(ATTEMPT_KEY_HEADER)
+      const repeated = keys.includes(key)
+      keys.push(key)
       const body = createRole.input.body.parse(await request.json())
-      if (keys.length === 1) {
-        roles.push(customRole(body.label, 'atendente', []))
-        return HttpResponse.error()
-      }
-      return HttpResponse.json({ role: roles.at(-1) }, { status: 201 })
+      if (repeated) return HttpResponse.json({ role: roles.at(-1) }, { status: 201 })
+      roles.push(customRole(body.label, 'atendente', []))
+      return keys.length === 1 ? HttpResponse.error() : refusal('ROLE_NAME_TAKEN')
     }),
   )
   open('/settings/roles?new=true')
@@ -83,8 +83,9 @@ test('a resposta de criar o papel se perde: tocar de novo leva a mesma chave e m
   await waitFor(() => expect(keys).toHaveLength(2))
   expect(keys[0]).not.toBeNull()
   expect(keys[1]).toBe(keys[0])
-  expect(screen.queryByText(/Já existe um papel com esse nome/)).toBeNull()
   expect(await screen.findByRole('heading', { name: 'Papéis da empresa' })).toBeTruthy()
+  expect(await screen.findByText('Atendente')).toBeTruthy()
+  expect(screen.queryByText(/Já existe um papel com esse nome/)).toBeNull()
 })
 
 test('o nome tomado fica no campo, com o que foi marcado', async () => {
