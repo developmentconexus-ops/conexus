@@ -29,6 +29,7 @@ function role(kind: RoleView['kind'], held: string[]) {
     label: 'Papel',
     kind,
     connectors: { sankhya: held },
+    unattended: false,
     members: 0,
   })
 }

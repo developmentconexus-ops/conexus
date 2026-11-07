@@ -42,7 +42,7 @@ export function wired(event: Event): unknown {
 const PERSON_PACE_MS = 1_500
 
 /** What the person does with the card, after reading it: touch a button, write, or stop. */
-export async function answerApproval(
+async function answerApproval(
   session: Session,
   scenario: string,
   toolCallId: string,
