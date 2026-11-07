@@ -30,8 +30,11 @@ async function readSpec(): Promise<Spec | null> {
   return process.env.SANKHYA_SPEC_ONLINE === '1' ? downloadSpec() : null
 }
 
-/** `queried` is every key of the input that `request` puts in the query, not only the ones the probe sends. */
-type Sample = { id: OperationId; request: ProviderRequest; queried: string[] }
+/** `queried` is every key of the input that `request` puts in the query, not only the ones the probe sends; `bodied`, every field of a write's input as a dotted path. */
+type Sample = { id: OperationId; request: ProviderRequest; queried: string[]; bodied: string[] }
+
+/** The routes the documentation has and the kit has no operation for yet: cancelling an order comes later, as one more write. */
+const NOT_BUILT = ['POST /v1/vendas/pedidos/{codigoPedido}/cancela']
 
 /** The route of a request: a literal path before one with `{param}`, a parameter standing for one segment. */
 function routeOf(spec: Spec, request: ProviderRequest) {
@@ -64,7 +67,10 @@ function problemsOf(spec: Spec, sample: Sample): string[] {
   const problems = [...new Set([...Object.keys(sample.request.query), ...sample.queried])]
     .filter((name) => !route.query.includes(name))
     .map((name) => `${sample.id}: ${key} declares no query parameter ${name}`)
-  return problems
+  const fields = sample.bodied
+    .filter((name) => !route.body.includes(name))
+    .map((name) => `${sample.id}: ${key} declares no body field ${name}`)
+  return [...problems, ...fields]
 }
 
 /** The keys of an operation's input that its request sends in the query, each tried on its own beside the probe's input. */
@@ -75,6 +81,21 @@ function queriedKeys(operation: Operation<unknown, unknown>, probe: unknown): st
       name in
       operation.request({ ...z.looseObject({}).parse(probe), [name]: '1' }, { ref: null }).query,
   )
+}
+
+const Fields = z.object({
+  properties: z.record(z.string(), z.unknown()).optional(),
+  items: z.unknown().optional(),
+})
+
+/** Every field an input schema takes as a dotted path; a list's fields sit under the list's name. */
+function fieldsOf(schema: unknown, prefix = ''): string[] {
+  const { properties = {}, items } = Fields.parse(schema)
+  if (items !== undefined) return fieldsOf(items, prefix)
+  return Object.entries(properties).flatMap(([name, value]) => [
+    `${prefix}${name}`,
+    ...fieldsOf(value, `${prefix}${name}.`),
+  ])
 }
 
 /** The probes in order, as the conformance runs them, against the fake. */
@@ -96,7 +117,15 @@ async function samples(): Promise<Sample[]> {
     const body = z.unknown().parse(await response.json())
     const answered = operation.answer({ status: response.status, body })
     if (answered.kind === 'OK') earlier.set(operation.id, answered.value)
-    out.push({ id: operation.id, request, queried: queriedKeys(operation, input) })
+    out.push({ id: operation.id, request, queried: queriedKeys(operation, input), bodied: [] })
+  }
+  // A write is never sent: its request is built from its probe, and its input is held to the page.
+  for (const operation of sankhya.writes ?? []) {
+    const input = operation.probe(new Map())
+    assert.notEqual(input, null, operation.id)
+    const request = requestOf(operation, input, { ref: null })
+    const bodied = fieldsOf(z.toJSONSchema(operation.input, { io: 'input' }))
+    out.push({ id: operation.id, request, queried: [], bodied })
   }
   return out
 }
@@ -124,7 +153,7 @@ describe('a documentação do Sankhya', () => {
     )
     const used = new Set(all.flatMap((sample) => routeOf(spec, sample.request)?.[0] ?? []))
     assert.deepEqual(
-      Object.keys(spec.routes).filter((key) => !used.has(key)),
+      Object.keys(spec.routes).filter((key) => !used.has(key) && !NOT_BUILT.includes(key)),
       [],
       'rota sem operação',
     )

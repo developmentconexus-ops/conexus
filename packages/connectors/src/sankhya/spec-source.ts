@@ -33,13 +33,25 @@ const PAGES = [
   'getprecotabela',
   'gettransportadoras',
   'getordenscarga',
+  'addpedido',
+  'postcancelapedido',
 ]
 
 const Json = z.record(z.string(), z.unknown())
 const Parameter = z.object({ name: z.string(), in: z.string() })
-const Method = z.object({ parameters: z.array(Parameter).default([]) })
+const Fields = z.object({
+  type: z.string().optional(),
+  properties: z.record(z.string(), z.unknown()).optional(),
+  items: z.unknown().optional(),
+})
+const Method = z.object({
+  parameters: z.array(Parameter).default([]),
+  requestBody: z
+    .object({ content: z.object({ 'application/json': z.object({ schema: z.unknown() }) }) })
+    .optional(),
+})
 const Page = z.object({
-  paths: z.record(z.string(), z.object({ get: Method })),
+  paths: z.record(z.string(), z.object({ get: Method.optional(), post: Method.optional() })),
 })
 
 function openApiOf(markdown: string): unknown {
@@ -86,6 +98,8 @@ function resolveEach(properties: unknown, root: unknown, seen: readonly string[]
 const Route = z.object({
   page: z.string(),
   query: z.array(z.string()),
+  // The JSON body's fields as dotted paths (`itens.codigoProduto`); empty for a read.
+  body: z.array(z.string()).default([]),
 })
 export const Spec = z.object({
   source: z.string(),
@@ -95,6 +109,18 @@ export const Spec = z.object({
 })
 export type Spec = z.infer<typeof Spec>
 
+/** Every field of a body schema as a dotted path; a list's fields sit under the list's name. */
+function fieldsOf(schema: unknown, prefix = ''): string[] {
+  const parsed = Fields.safeParse(schema)
+  if (!parsed.success) return []
+  const { properties, items } = parsed.data
+  if (properties === undefined) return items === undefined ? [] : fieldsOf(items, prefix)
+  return Object.entries(properties).flatMap(([name, value]) => {
+    const path = `${prefix}${name}`
+    return [path, ...fieldsOf(value, `${path}.`)]
+  })
+}
+
 /** The cut of the documentation the ready operations use: one page per route, 3 s apart. */
 export async function downloadSpec(): Promise<Spec> {
   const routes: Record<string, z.infer<typeof Route>> = {}
@@ -102,9 +128,16 @@ export async function downloadSpec(): Promise<Spec> {
     const document = Json.parse(openApiOf(await fetchText(`${SITE}/${page}.md`)))
     const parsed = Page.parse({ paths: resolve(document.paths, document) })
     for (const [path, item] of Object.entries(parsed.paths)) {
-      routes[`GET ${path}`] = {
-        page,
-        query: item.get.parameters.filter((p) => p.in === 'query').map((p) => p.name),
+      for (const [method, found] of [
+        ['GET', item.get],
+        ['POST', item.post],
+      ] as const) {
+        if (found === undefined) continue
+        routes[`${method} ${path}`] = {
+          page,
+          query: found.parameters.filter((p) => p.in === 'query').map((p) => p.name),
+          body: fieldsOf(found.requestBody?.content['application/json'].schema),
+        }
       }
     }
     await sleep(SECONDS_BETWEEN_PAGES * 1000)

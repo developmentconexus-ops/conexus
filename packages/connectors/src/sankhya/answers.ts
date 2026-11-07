@@ -10,7 +10,13 @@ const Refusal = z.looseObject({
   mensagem: z
     .union([
       z.string(),
-      z.looseObject({ codigo: Text.optional(), descricao: z.string().optional() }),
+      z.looseObject({
+        codigo: Text.optional(),
+        descricao: z.string().optional(),
+        code: Text.optional(),
+        message: z.string().optional(),
+        details: z.string().optional(),
+      }),
     ])
     .optional(),
   message: z.string().optional(),
@@ -18,6 +24,14 @@ const Refusal = z.looseObject({
     .union([z.string(), z.looseObject({ code: Text.optional(), message: z.string().optional() })])
     .optional(),
 })
+
+/** An add's 400 keeps the cause in `mensagem.details` ("O produto [9554] enviado não existe."), after the generic `message`. */
+function detailed(
+  mensagem: { message?: string; details?: string } | undefined,
+): string | undefined {
+  const text = [mensagem?.message, mensagem?.details].filter((part) => part !== undefined)
+  return text.length === 0 ? undefined : text.join(' ')
+}
 
 /**
  * Where a refused call keeps its code and message: `code`, the `mensagem.codigo` six pages document,
@@ -29,12 +43,12 @@ function locate(body: unknown): Pick<Native, 'code' | 'message'> {
   const { code, mensagem, message, error } = parsed.data
   const text = [
     message,
-    typeof mensagem === 'string' ? mensagem : mensagem?.descricao,
+    typeof mensagem === 'string' ? mensagem : (mensagem?.descricao ?? detailed(mensagem)),
     typeof error === 'string' ? error : error?.message,
   ].find((value) => value !== undefined)
   const given =
     code ??
-    (typeof mensagem === 'object' ? mensagem.codigo : undefined) ??
+    (typeof mensagem === 'object' ? (mensagem.codigo ?? mensagem.code) : undefined) ??
     (typeof error === 'object' ? error.code : undefined) ??
     text?.match(/^GTW\d+/)?.[0]
   return { code: given === undefined ? null : String(given), message: text ?? null }
@@ -158,4 +172,46 @@ export function gatewayAnswer<O>(answer: ProviderAnswer, responseBody: z.ZodType
       },
     }
   return read(responseBody, answer, envelope.data.responseBody)
+}
+
+const Created = z.looseObject({
+  mensagem: z.string().optional(),
+  retorno: z.unknown().optional(),
+})
+
+/** The add's success: only a `retorno.codigoPedido` counts, and never beside a `[CORE_E…]` in the message. */
+const Placed = z
+  .object({ retorno: z.object({ codigoPedido: z.number().int().positive() }) })
+  .transform(({ retorno }) => ({ codigoPedido: retorno.codigoPedido }))
+
+/**
+ * An order's add: a refusal outside 2xx as the reads see it, and a 2xx that carries no `codigoPedido`
+ * or a `[CORE_E…]` in its message is the vendor's refusal too, never a success; a body that is no
+ * object at all is unreadable.
+ */
+export function placed() {
+  function answer(answer: ProviderAnswer): Answered<z.infer<typeof Placed>> {
+    const failure = failureOf(answer)
+    if (failure) return failure
+    const body = Created.safeParse(answer.body)
+    if (!body.success)
+      return {
+        kind: 'UNREADABLE',
+        native: { ...nativeOf(answer), reason: shapeOf(body.error, answer.body) },
+      }
+    const { mensagem } = body.data
+    const created = Placed.safeParse(body.data)
+    if (created.success && !mensagem?.includes('[CORE_E'))
+      return { kind: 'OK', value: created.data }
+    return {
+      kind: 'REFUSED',
+      native: {
+        status: answer.status,
+        code: mensagem?.match(/CORE_E\d+/)?.[0] ?? null,
+        message: mensagem ?? null,
+        body: answer.body,
+      },
+    }
+  }
+  return { output: Placed, answer }
 }
