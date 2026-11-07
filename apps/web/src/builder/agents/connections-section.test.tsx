@@ -1,4 +1,5 @@
 import type { ToolSummary } from '@conexus/hub-api'
+import { OperationId } from '@conexus/hub-api'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { expect, test } from 'vitest'
 import { hubServer } from '../../platform/test-hub.tsx'
@@ -136,7 +137,7 @@ const COMPANY_TOOL = {
   effect: 'READ',
   latest: { id: TOOL_V1, number: 1 },
   usedBy: [],
-  reads: ['contasAReceber'],
+  reads: [OperationId.parse('contasAReceber')],
   readLabels: { contasAReceber: 'Contas a receber' },
 } satisfies ToolSummary
 
@@ -197,15 +198,13 @@ test('uma ferramenta da empresa que o papel tem mostra o que lê, não a descri�
 
 test('uma leitura já marcada e fora do papel se desmarca; a que não está marcada não se marca', async () => {
   const marked = limited(false)
-  marked.tools = [
-    {
-      ...agent().tools[0],
-      operation: 'contasAReceber',
-    } as (typeof marked.tools)[number],
-  ]
+  const [base] = agent().tools
+  if (base?.kind !== 'PRESET') throw new Error('o agente de teste leva uma ferramenta do kit')
+  const contas = OperationId.parse('contasAReceber')
+  marked.tools = [{ ...base, operation: contas }]
   const hub = at(PAGE, {
     agents: [marked],
-    tools: [toolSummary({ operation: 'contasAReceber' as never })],
+    tools: [toolSummary({ operation: contas })],
     ready: readyOf(MATRIZ),
   })
   server.use(catalog)

@@ -1,4 +1,5 @@
-import type { ConnectorEntry, RoleView } from '@conexus/hub-api'
+import type { ConnectorEntry } from '@conexus/hub-api'
+import { RoleView } from '@conexus/hub-api'
 import { expect, test } from 'vitest'
 import { summaryOf } from './role-text.ts'
 
@@ -22,8 +23,14 @@ function kit(
   ]
 }
 
-function role(kind: RoleView['kind'], held: string[]): Pick<RoleView, 'kind' | 'connectors'> {
-  return { kind, connectors: { sankhya: held } } as Pick<RoleView, 'kind' | 'connectors'>
+function role(kind: RoleView['kind'], held: string[]) {
+  return RoleView.parse({
+    role: 'papel',
+    label: 'Papel',
+    kind,
+    connectors: { sankhya: held },
+    members: 0,
+  })
 }
 
 const READ_ONLY_KIT = kit(['a', ['READ', 'READ']], ['b', ['READ']])

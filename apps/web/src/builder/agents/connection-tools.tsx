@@ -200,9 +200,9 @@ export function ConnectionTools(props: Part & { connection: OfferedConnection; s
   // The connection's name titles the group when the Projeto has two of the same system.
   const sameSystem =
     agent.offered.filter((one) => one.connector === connection.connector).length > 1
-  const line = (one: Read) => (
-    <ReadLine key={one.operation} connection={connection} read={one} saving={saving} />
-  )
+  function line(one: Read) {
+    return <ReadLine key={one.operation} connection={connection} read={one} saving={saving} />
+  }
   return (
     <div className="flex flex-col gap-xs pl-lg">
       {sameSystem && <h4 className="font-body text-label font-semibold">{connection.name}</h4>}

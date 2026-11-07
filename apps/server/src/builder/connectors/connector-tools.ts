@@ -187,7 +187,9 @@ function readTool(access: ConnectorAccess): ToolsInput {
         // Not an enum of the listed reads: one the role lacks must reach the door, which answers `NOT_IN_ROLE` with the role's name, instead of a validation error that says nothing of the role.
         operation: z
           .string()
-          .describe('The operation as "connector.operation", one of those listed under the connections'),
+          .describe(
+            'The operation as "connector.operation", one of those listed under the connections',
+          ),
         input: z.record(z.string(), z.unknown()),
       }),
       execute: async (

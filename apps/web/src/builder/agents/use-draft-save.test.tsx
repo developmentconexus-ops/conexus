@@ -4,7 +4,7 @@ import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { COMPANY } from '../../platform/fixtures.ts'
 import { hubServer } from '../../platform/test-hub.tsx'
-import { AGENT, AREA, agent, FILIAL, MATRIZ, TOOL_V1 } from './test-agents.ts'
+import { AGENT, AREA, agent, FILIAL, MATRIZ } from './test-agents.ts'
 import { offered } from './test-connection-tools.ts'
 import { agentScreens } from './test-hub.tsx'
 
