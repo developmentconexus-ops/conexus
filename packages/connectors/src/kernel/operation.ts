@@ -185,6 +185,11 @@ export function get(
   }
 }
 
+/** The write: a JSON body sent to the path. */
+export function post(path: `/${string}`, body: unknown): ProviderRequest {
+  return { method: 'POST', path, query: {}, body }
+}
+
 /** The only way a request is built from an input: the operation's own schema parses it first, so a refused input never reaches `request`. */
 export function requestOf<I>(
   operation: Operation<I, unknown>,

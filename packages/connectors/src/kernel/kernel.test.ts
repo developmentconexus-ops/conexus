@@ -5,7 +5,7 @@ import type { PerProject } from '../calls.ts'
 import { CONNECTORS } from '../index.ts'
 import { mercadoLivre } from '../mercado-livre/definition.ts'
 import { mercadoLivreReads } from '../mercado-livre/operations/index.ts'
-import { sankhya } from '../sankhya/definition.ts'
+import { sankhya as sankhyaWithWrites } from '../sankhya/definition.ts'
 import { sankhyaReads } from '../sankhya/operations/index.ts'
 import { clientCredentials, readToken, tokenRequest } from './auth.ts'
 import { defineConnector, defineReadDoor, inProbeOrder, readsOf } from './definition.ts'
@@ -13,6 +13,9 @@ import { LOGO_MAX_BYTES, logoProblems } from './logo.ts'
 import type { ProviderRequest } from './operation.ts'
 import { defineOperation, failedBy, locateOf, outcomeOf } from './operation.ts'
 import { toRequest } from './request.ts'
+
+/** The connector as the reads' tests build on: its one write would need a subject of its own in each lone connector. */
+const { writes: _writes, ...sankhya } = sankhyaWithWrites
 
 function get(path: `/${string}`, query: Record<string, string> = {}): ProviderRequest {
   return { method: 'GET', path, query, body: undefined }
