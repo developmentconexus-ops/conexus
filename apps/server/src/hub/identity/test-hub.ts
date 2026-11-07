@@ -23,7 +23,9 @@ import { mailServer, testMail } from '../../platform/test-mail.ts'
 import { fakeNeon } from '../../platform/test-neon.ts'
 import { createStatus } from '../status/public.ts'
 import { seededRoles } from './company-roles.ts'
-import { createIdentity } from './public.ts'
+import { TEST_ROLES, testIdentity } from './test-kit.ts'
+
+export { TEST_KIT, TEST_ROLES, testIdentity } from './test-kit.ts'
 
 export const PASSWORD = 'senha-certa-1'
 export const SESSIONS = '/api/sessions/current'
@@ -69,7 +71,7 @@ async function hubServing(
   const status = createStatus({ version: config.version, database: test.database })
   const neon = fakeNeon()
   const sendMail = testMail(config)
-  const identity = createIdentity({ database: test.database, config, log: silent, sendMail })
+  const identity = testIdentity({ database: test.database, config, sendMail })
   const cloudflare = fakeCloudflare()
   const tools = fakeCloudflare()
   const postgres = heldCompanyPostgres(config)
@@ -306,7 +308,7 @@ export async function plantCompany(
       values ($1, $2, $3, 'owner', now())`,
     [id(), companyId, ownerId],
   )
-  for (const row of seededRoles(CompanyId.parse(companyId))) {
+  for (const row of seededRoles(TEST_ROLES, CompanyId.parse(companyId))) {
     await test.asOwner(
       `insert into auth.organization_role (id, company_id, role, permission, label, created_at)
         values ($1, $2, $3, $4, $5, now())`,

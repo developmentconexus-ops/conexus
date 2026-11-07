@@ -14,6 +14,7 @@ import {
 import { hashPassword } from 'better-auth/crypto'
 import type { Browser, BrowserContext, Page } from 'playwright-core'
 import { testBuilderPorts } from '../../apps/server/src/builder/runs/test-runs.ts'
+import { roleKit } from '../../apps/server/src/hub/connectors/public.ts'
 import { createIdentity } from '../../apps/server/src/hub/identity/public.ts'
 import { createStatus } from '../../apps/server/src/hub/status/public.ts'
 import { createEdgeHub, createHub, subjectsOf } from '../../apps/server/src/main.ts'
@@ -126,7 +127,13 @@ export async function liveHub(
   }
   const status = createStatus({ version: config.version, database: database.database })
   const sendMail = createMail({ config, log: silent })
-  const identity = createIdentity({ database: database.database, config, log: silent, sendMail })
+  const identity = createIdentity({
+    database: database.database,
+    config,
+    log: silent,
+    sendMail,
+    kit: roleKit(),
+  })
   const { machinesOf, conversationMachine, repository, copy, folder } = testBuilderPorts(config)
   const subjects = subjectsOf({
     ...{ machinesOf, conversationMachine, repository, copy },

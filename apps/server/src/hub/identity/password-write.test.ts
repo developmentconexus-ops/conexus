@@ -21,6 +21,7 @@ import {
   post,
   signIn,
   signOut,
+  TEST_KIT,
 } from './test-hub.ts'
 
 // The library's scrypt hash is a hex salt and a hex key joined by a colon.
@@ -217,6 +218,7 @@ test('senha que n√£o grava: 503, nenhuma senha, o link continua valendo, e a sa√
   const test = await createTestDatabase(t)
   const config = testConfig(test.runtimeUrl)
   const identity = createIdentity({
+    kit: TEST_KIT,
     ...{ database: test.database, config, log: silent },
     sendMail: testMail(config),
   })

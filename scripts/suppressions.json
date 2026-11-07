@@ -13,6 +13,7 @@
   "apps/server/src/hub/identity/admission.check.ts": 6,
   "apps/server/src/hub/identity/auth.ts": 2,
   "apps/server/src/hub/identity/invitation-create.ts": 1,
+  "apps/server/src/hub/identity/test-roles.ts": 1,
   "apps/server/src/platform/cloudflare.ts": 1,
   "apps/server/src/platform/database.check.ts": 6,
   "apps/server/src/platform/database.ts": 1,

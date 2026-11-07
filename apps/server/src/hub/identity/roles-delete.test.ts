@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { ATENDENTE, roleOf, roles, world } from './roles-world.ts'
 import { call, codeOf, post } from './test-hub.ts'
+import { ATENDENTE, roleOf, roles, world } from './test-roles.ts'
 
-test('apagar um papel: em uso por uma pessoa ou por um convite não apaga; sem ninguém apaga e a lista não o traz', async (t) => {
+test('apagar um papel: em uso por uma pessoa ou por um convite aberto não apaga, um convite vencido não conta; sem ninguém apaga e a lista não o traz', async (t) => {
   const w = await world(t)
   await post(w.hub, w.ana, `${w.base}/roles`, ATENDENTE)
   const url = `${w.base}/roles/atendente`
@@ -29,11 +29,10 @@ test('apagar um papel: em uso por uma pessoa ou por um convite não apaga; sem n
   assert.equal(codeOf(await call(w.hub, w.ana, 'DELETE', url)), 'ROLE_IN_USE')
   assert.ok(roleOf(await roles(w), 'atendente'))
 
-  const invitationId = Object(invited.json()).invitation.id
-  const canceled = await call(w.hub, w.ana, 'DELETE', `${w.base}/invitations/${invitationId}`, {
-    revision: 0,
-  })
-  assert.ok(canceled.statusCode < 300, String(canceled.body))
+  await w.hub.test.asOwner(
+    `update auth.invitation set expires_at = now() - interval '1 minute' where company_id = $1`,
+    [w.companyId],
+  )
   const deleted = await call(w.hub, w.ana, 'DELETE', url)
   assert.equal(deleted.statusCode, 204)
   assert.equal(

@@ -19,6 +19,7 @@ import { testMail } from '../../platform/test-mail.ts'
 import { testMastraPool } from '../../platform/test-mastra-database.ts'
 import { createStatus } from '../status/public.ts'
 import { createIdentity } from './public.ts'
+import { TEST_KIT } from './test-hub.ts'
 
 type Config = ReturnType<typeof testConfig>
 const ANA = { id: 'person-ana', name: 'Ana Lima', email: 'ana@example.test' }
@@ -34,7 +35,7 @@ const UNAVAILABLE = {
 async function hubOn(t: TestContext, database: TestDatabase['database'], config: Config) {
   const status = createStatus({ version: config.version, database })
   const sendMail = testMail(config)
-  const identity = createIdentity({ database, config, log: silent, sendMail })
+  const identity = createIdentity({ kit: TEST_KIT, database, config, log: silent, sendMail })
   const {
     projects,
     operations,

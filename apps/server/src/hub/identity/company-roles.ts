@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import type { CompanyId, Person, RoleChange, RoleConnectors, RoleCreate } from '@conexus/hub-api'
 import {
   ConnectorId,
+  FIXED_ROLES,
   fixedNameOf,
   fixedRole,
   isFixedRole,
@@ -13,18 +14,23 @@ import {
 import { and, asc, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { CommandTx, ReadTx } from '../../platform/database.ts'
+import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import { admit } from './admission.ts'
 import type { Auth, LibraryCommand } from './auth.ts'
 import { refusedAs } from './auth.ts'
-import { companyScope, lockCompany } from './invitations.ts'
-import { ALL_OPERATIONS, ALL_READS, KIT, MEMBER_BASE } from './roles.ts'
+import { companyScope, LIVE, lockCompany } from './invitations.ts'
+import type { RoleSet } from './roles.ts'
 import { invitation, member, organizationRole } from './tables.ts'
 
 const Statements = z.record(z.string(), z.array(z.string()))
 type Statements = z.infer<typeof Statements>
 
-/** The library's refusals of a role's write, as the Hub's failures (code C50). */
+/**
+ * The library's refusals of a role's write, as the Hub's failures (code C50). Two of its refusals
+ * are not here because the Hub refuses first: `CANNOT_DELETE_A_PRE_DEFINED_ROLE` is `ROLE_FIXED`,
+ * and `FORBIDDEN` is the admission of `manageRoles`.
+ */
 const ROLE_REFUSALS = {
   ROLE_NAME_IS_ALREADY_TAKEN: 'ROLE_NAME_TAKEN',
   ROLE_NOT_FOUND: 'ROLE_NOT_FOUND',
@@ -32,7 +38,7 @@ const ROLE_REFUSALS = {
 } as const
 
 /** The stored name of a role: its label, lowercase and without accent or space. */
-export function roleNameOf(label: string): string {
+function roleNameOf(label: string): string {
   return label
     .normalize('NFD')
     .replaceAll(/\p{M}/gu, '')
@@ -40,6 +46,9 @@ export function roleNameOf(label: string): string {
     .replaceAll(/[^a-z0-9]+/g, '-')
     .replaceAll(/^-+|-+$/g, '')
 }
+
+/** The stored names of the fixed roles as a person reads them: a role of the company's own may not take one. */
+const FIXED_NAMES = new Set(FIXED_ROLES.map((role) => roleNameOf(ROLE_LABELS[role])))
 
 function malformed(reason: string) {
   return new Failure('REQUEST_MALFORMED', { details: { reason } })
@@ -49,10 +58,10 @@ function malformed(reason: string) {
  * The statements a role's connectors become. The library checks only that a resource exists, so
  * the connector and each operation are checked against the kit before it is called (code C23).
  */
-function statementsOf(connectors: RoleConnectors): Statements {
+function statementsOf(set: RoleSet, connectors: RoleConnectors): Statements {
   const statements: Statements = {}
   for (const [connectorId, operations] of Object.entries(connectors)) {
-    const connector = KIT.find((one) => one.id === connectorId)
+    const connector = set.kit.find((one) => one.id === connectorId)
     if (connector === undefined) throw malformed('CONNECTOR_UNKNOWN')
     const known = new Set(connector.operations.map((operation) => operation.id))
     if (operations.some((operation) => !known.has(operation))) throw malformed('OPERATION_UNKNOWN')
@@ -62,9 +71,9 @@ function statementsOf(connectors: RoleConnectors): Statements {
 }
 
 /** The connectors a stored permission names, in the kit's order; its other statements are no connector's. */
-function connectorsOf(permission: Statements): RoleConnectors {
+function connectorsOf(set: RoleSet, permission: Statements): RoleConnectors {
   const connectors: RoleConnectors = {}
-  for (const connector of KIT) {
+  for (const connector of set.kit) {
     const held = new Set(permission[connector.resource])
     const operations = connector.operations.map(({ id }) => id).filter((id) => held.has(id))
     if (operations.length > 0)
@@ -74,16 +83,16 @@ function connectorsOf(permission: Statements): RoleConnectors {
 }
 
 /** The statements a company's own role holds: the member's base besides its connectors. */
-function customStatements(connectors: RoleConnectors): Statements {
+function customStatements(set: RoleSet, connectors: RoleConnectors): Statements {
   const base: Statements = Object.fromEntries(
-    Object.entries(MEMBER_BASE).map(([resource, actions]) => [resource, [...actions]]),
+    Object.entries(set.memberBase).map(([resource, actions]) => [resource, [...actions]]),
   )
-  return { ...base, ...statementsOf(connectors) }
+  return { ...base, ...statementsOf(set, connectors) }
 }
 
 /** The rows the company's two editable roles start with: every read of the kit (founder, B1). */
-export function seededRoles(companyId: CompanyId) {
-  const permission = JSON.stringify(ALL_READS)
+export function seededRoles(set: RoleSet, companyId: CompanyId) {
+  const permission = JSON.stringify(set.allReads)
   return (['developer', 'member'] as const).map((role) => ({
     id: randomUUID(),
     organizationId: companyId,
@@ -95,8 +104,8 @@ export function seededRoles(companyId: CompanyId) {
 }
 
 /** Gives a company its developer's and member's rows; a company that has them keeps them. */
-export async function seedRoles(tx: CommandTx, companyId: CompanyId): Promise<void> {
-  await tx.insert(organizationRole).values(seededRoles(companyId)).onConflictDoNothing()
+export async function seedRoles(set: RoleSet, tx: CommandTx, companyId: CompanyId): Promise<void> {
+  await tx.insert(organizationRole).values(seededRoles(set, companyId)).onConflictDoNothing()
 }
 
 const Row = z.object({
@@ -106,7 +115,7 @@ const Row = z.object({
 })
 
 /** The company's roles as its screens list them: the four fixed first, then its own by label. */
-export async function readRoles(tx: ReadTx, companyId: CompanyId): Promise<RoleView[]> {
+async function readRoles(set: RoleSet, tx: ReadTx, companyId: CompanyId): Promise<RoleView[]> {
   const rows = (
     await tx
       .select({
@@ -129,8 +138,8 @@ export async function readRoles(tx: ReadTx, companyId: CompanyId): Promise<RoleV
     const held = stored.get(fixedRole(name))
     const all = name === 'owner' || name === 'admin'
     const connectors = all
-      ? connectorsOf(ALL_OPERATIONS)
-      : connectorsOf(Statements.parse(JSON.parse(held?.permission ?? '{}')))
+      ? connectorsOf(set, set.allOperations)
+      : connectorsOf(set, Statements.parse(JSON.parse(held?.permission ?? '{}')))
     return {
       role: fixedRole(name),
       label: ROLE_LABELS[name],
@@ -146,7 +155,7 @@ export async function readRoles(tx: ReadTx, companyId: CompanyId): Promise<RoleV
         role: row.role,
         label: row.label,
         kind: 'CUSTOM',
-        connectors: connectorsOf(Statements.parse(JSON.parse(row.permission))),
+        connectors: connectorsOf(set, Statements.parse(JSON.parse(row.permission))),
         members: members.get(row.role) ?? 0,
       }),
     )
@@ -191,7 +200,7 @@ export async function roleLabelOf(
   return found.label
 }
 
-type Deps = { auth: Auth; libraryCommand: LibraryCommand }
+type Deps = { auth: Auth; libraryCommand: LibraryCommand; roles: RoleSet }
 type Acting = { person: Person; headers: Headers; companyId: CompanyId }
 
 /** The company's lock, then the admission: the order of every change of people and roles. */
@@ -205,8 +214,13 @@ async function admitted(tx: CommandTx, input: Acting) {
   })
 }
 
-async function viewOf(tx: ReadTx, companyId: CompanyId, role: Role): Promise<RoleView> {
-  const found = (await readRoles(tx, companyId)).find((one) => one.role === role)
+async function viewOf(
+  set: RoleSet,
+  tx: ReadTx,
+  companyId: CompanyId,
+  role: Role,
+): Promise<RoleView> {
+  const found = (await readRoles(set, tx, companyId)).find((one) => one.role === role)
   if (found === undefined) throw new Failure('ROLE_NOT_FOUND')
   return found
 }
@@ -219,7 +233,8 @@ export function createRoleCommand(deps: Deps) {
       await admitted(tx, input)
       const role = roleNameOf(body.label)
       if (role === '') throw malformed('ROLE_NAME_EMPTY')
-      const permission = customStatements(body.connectors)
+      if (FIXED_NAMES.has(role)) throw new Failure('ROLE_NAME_TAKEN')
+      const permission = customStatements(deps.roles, body.connectors)
       await refusedAs(
         () =>
           deps.auth.api.createOrgRole({
@@ -233,7 +248,7 @@ export function createRoleCommand(deps: Deps) {
           }),
         ROLE_REFUSALS,
       )
-      return viewOf(tx, companyId, Role.parse(role))
+      return viewOf(deps.roles, tx, companyId, Role.parse(role))
     })
 }
 
@@ -245,8 +260,8 @@ export function updateRoleCommand(deps: Deps) {
       await admitted(tx, input)
       if (role === 'owner' || role === 'admin') throw new Failure('ROLE_FIXED')
       const permission = isFixedRole(role)
-        ? statementsOf(body.connectors)
-        : customStatements(body.connectors)
+        ? statementsOf(deps.roles, body.connectors)
+        : customStatements(deps.roles, body.connectors)
       await refusedAs(
         () =>
           deps.auth.api.updateOrgRole({
@@ -255,13 +270,13 @@ export function updateRoleCommand(deps: Deps) {
           }),
         ROLE_REFUSALS,
       )
-      return viewOf(tx, companyId, role)
+      return viewOf(deps.roles, tx, companyId, role)
     })
 }
 
-/** Deletes a role no person and no open invitation uses; the library counts the people, the Hub the invitations. */
+/** Deletes a role no person and no open invitation uses; the Hub counts both (an expired invitation is not open), and the library checks the people again. */
 export function deleteRoleCommand(deps: Deps) {
-  return (input: Acting & { role: Role }) =>
+  return (input: Acting & { role: Role; log: FailureLog }) =>
     deps.libraryCommand(companyScope(input), async (tx) => {
       const { companyId, headers, role } = input
       await admitted(tx, input)
@@ -273,9 +288,27 @@ export function deleteRoleCommand(deps: Deps) {
           eq(invitation.organizationId, companyId),
           eq(invitation.role, role),
           eq(invitation.status, 'pending'),
+          LIVE,
         ),
       )
-      if (invited > 0) throw new Failure('ROLE_IN_USE', { details: { reason: 'INVITATION' } })
+      if (invited > 0) {
+        input.log.info(
+          { companyId, role, by: input.person.id, reason: 'INVITATION' },
+          'ROLE_DELETE_REFUSED',
+        )
+        throw new Failure('ROLE_IN_USE', { details: { reason: 'INVITATION' } })
+      }
+      const held = await tx.$count(
+        member,
+        and(eq(member.organizationId, companyId), eq(member.role, role)),
+      )
+      if (held > 0) {
+        input.log.info(
+          { companyId, role, by: input.person.id, reason: 'MEMBER' },
+          'ROLE_DELETE_REFUSED',
+        )
+        throw new Failure('ROLE_IN_USE', { details: { reason: 'MEMBER' } })
+      }
       await refusedAs(
         () =>
           deps.auth.api.deleteOrgRole({
@@ -288,7 +321,7 @@ export function deleteRoleCommand(deps: Deps) {
 }
 
 /** The company's roles for the one who manages them. */
-export function listRolesCommand(deps: Pick<Deps, 'libraryCommand'>) {
+export function listRolesCommand(deps: Pick<Deps, 'libraryCommand' | 'roles'>) {
   return (input: Acting) =>
     deps.libraryCommand(companyScope(input), async (tx) => {
       await admit({
@@ -297,6 +330,6 @@ export function listRolesCommand(deps: Pick<Deps, 'libraryCommand'>) {
         companyId: input.companyId,
         action: 'manageRoles',
       })
-      return readRoles(tx, input.companyId)
+      return readRoles(deps.roles, tx, input.companyId)
     })
 }

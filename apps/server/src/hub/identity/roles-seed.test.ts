@@ -2,8 +2,67 @@ import assert from 'node:assert/strict'
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { everyRead, OPERATOR, world } from './roles-world.ts'
 import { personOn, post } from './test-hub.ts'
+import { everyRead, OPERATOR, world } from './test-roles.ts'
+
+/** What the migration wrote, written out: the kit may grow and the migration may not change (D7). */
+const MIGRATED_READS = {
+  sankhya: [
+    'consultar',
+    'carregar',
+    'empresas',
+    'clientes',
+    'vendedores',
+    'tiposOperacao',
+    'naturezas',
+    'centrosResultado',
+    'produtos',
+    'gruposProduto',
+    'pedidos',
+    'notasFiscais',
+    'notaFiscal',
+    'devolucoes',
+    'notasCanceladas',
+    'estoque',
+    'locaisEstoque',
+    'contasAReceber',
+    'contasAPagar',
+    'tiposPagamento',
+    'precosDoProduto',
+    'precosDaTabela',
+    'transportadoras',
+    'ordensCarga',
+  ],
+  'mercado-livre': [
+    'conta',
+    'anuncios',
+    'anunciosDetalhe',
+    'descricao',
+    'estoque',
+    'qualidade',
+    'pedidos',
+    'pedido',
+    'pacote',
+    'envio',
+    'prazoDoEnvio',
+    'estoqueFull',
+    'perguntas',
+    'tempoDeResposta',
+    'mensagensNaoLidas',
+    'mensagensDoPacote',
+    'reclamacoes',
+    'reclamacao',
+    'devolucao',
+    'promocoes',
+    'visitas',
+    'periodosDeFaturamento',
+    'cobrancasDoPeriodo',
+    'notaFiscalDoPedido',
+    'tendencias',
+    'maisVendidos',
+    'tarifaDeVenda',
+  ],
+}
 
 test('a semente: a migração semeia Membro e Desenvolvedor em cada empresa, rodar de novo não duplica, e a empresa nova já nasce com elas', async (t) => {
   const w = await world(t)
@@ -27,7 +86,8 @@ test('a semente: a migração semeia Membro e Desenvolvedor em cada empresa, rod
       [w.companyId, 'member', 'Membro'],
     ],
   )
-  for (const row of first) assert.deepEqual(JSON.parse(String(row.permission)), seeded(everyRead))
+  for (const row of first)
+    assert.deepEqual(JSON.parse(String(row.permission)), seeded(MIGRATED_READS))
   await w.hub.test.asOwner(sql)
   assert.deepEqual(await rows(), first)
 
@@ -40,13 +100,14 @@ test('a semente: a migração semeia Membro e Desenvolvedor em cada empresa, rod
   })
   assert.equal(registered.statusCode, 201)
   const born = await w.hub.test.asOwner(
-    'select role from auth.organization_role where company_id = $1 order by role',
+    'select role, permission from auth.organization_role where company_id = $1 order by role',
     [Object(registered.json()).client.companyId],
   )
   assert.deepEqual(
     born.map((row) => row.role),
     ['developer', 'member'],
   )
+  for (const row of born) assert.deepEqual(JSON.parse(String(row.permission)), seeded(everyRead))
 })
 
 function seeded(reads: Record<string, string[]>) {

@@ -1,31 +1,21 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
-import type { GenericEndpointContext } from '@better-auth/core'
-import { CompanyId, PersonId } from '@conexus/hub-api'
-import { hasPermission } from 'better-auth/plugins'
-import { createTestDatabase, silent, testConfig } from '../../platform/test-database.ts'
-import { libraryCommandOn, ORGANIZATION } from './auth.ts'
-import { createAuth } from './public.ts'
+import { createTestDatabase } from '../../platform/test-database.ts'
+import { call, codeOf, id, plantCompany, post } from './test-hub.ts'
 import {
   ATENDENTE,
   everyOperation,
   everyRead,
   FINANCEIRO,
+  memberMay,
   roleOf,
   roles,
   world,
-} from './roles-world.ts'
-import { call, codeOf, id, plantCompany, post } from './test-hub.ts'
+} from './test-roles.ts'
 
 test('a soma da linha semeada: o Better Auth soma a linha da empresa ao papel fixo, sob o adaptador Drizzle do Hub', async (t) => {
   const database = await createTestDatabase(t)
-  const auth = createAuth({
-    database: database.database,
-    config: testConfig(database.runtimeUrl),
-    log: silent,
-  })
-  const command = libraryCommandOn(auth, database.database)
   const ownerId = id()
   await database.asOwner('insert into auth.user (id, name, email) values ($1, $1, $2)', [
     ownerId,
@@ -33,22 +23,7 @@ test('a soma da linha semeada: o Better Auth soma a linha da empresa ao papel fi
   ])
   const companyId = await plantCompany(database, ownerId)
   await database.asOwner(`delete from auth.organization_role where company_id = $1`, [companyId])
-  const context = await auth.$context
-  const scope = {
-    kind: 'COMPANY',
-    companyId: CompanyId.parse(companyId),
-    personId: PersonId.parse(ownerId),
-  } as const
-  // biome-ignore lint/nursery/noUnsafeTypeAssertion: the library types its context as an endpoint's, and the permission check reads only `context`
-  const endpoint = { context } as GenericEndpointContext
-  function permitted(permissions: Record<string, string[]>) {
-    return command(scope, () =>
-      hasPermission(
-        { options: ORGANIZATION, organizationId: companyId, role: 'member', permissions },
-        endpoint,
-      ),
-    )
-  }
+  const permitted = await memberMay(database, companyId, ownerId)
   const sankhya = { connector_sankhya: ['pedidos'] }
   assert.equal(await permitted(sankhya), false)
   await database.asOwner(
@@ -121,6 +96,14 @@ test('criar um papel: dono ou administrador cria Atendente, a lista o traz, e a 
   })
   const project = await post(w.hub, w.bruno, `${w.base}/projects`, { name: 'Vendas' })
   assert.equal(project.statusCode, 201)
+  const assistant = await call(w.hub, w.bruno, 'GET', `${w.base}/assistant/connections`)
+  assert.equal(assistant.statusCode, 200)
+  const projectId = Object(project.json()).project.id
+  const publishing = await post(w.hub, w.bruno, `${w.base}/projects/${projectId}/publish-request`, {
+    number: 1,
+    message: 'pode publicar',
+  })
+  assert.equal(codeOf(publishing), 'APP_VERSION_NOT_FOUND')
   const company = await call(w.hub, w.bruno, 'GET', w.base)
   assert.equal(Object(company.json()).role, 'atendente')
   assert.deepEqual(Object(company.json()).mayInviteAs, [])
@@ -153,7 +136,16 @@ test('o papel recusado: quem não gerencia recebe NOT_FOUND, o que o kit não te
     assert.equal(response.statusCode, 400, JSON.stringify(body))
     assert.equal(codeOf(response), 'REQUEST_MALFORMED')
   }
-  for (const label of ['Owner', 'Admin', 'Developer', 'Member']) {
+  for (const label of [
+    'Owner',
+    'Admin',
+    'Developer',
+    'Member',
+    'Dono',
+    'Administrador',
+    'Desenvolvedor',
+    'Membro',
+  ]) {
     const response = await post(w.hub, w.ana, `${w.base}/roles`, { label, connectors: {} })
     assert.equal(codeOf(response), 'ROLE_NAME_TAKEN', label)
   }
@@ -191,12 +183,12 @@ test('mudar o Membro: tirar o Financeiro some da lista, e um papel próprio muda
 
   await post(w.hub, w.ana, `${w.base}/roles`, ATENDENTE)
   const own = await call(w.hub, w.ana, 'PUT', `${w.base}/roles/atendente`, {
-    connectors: { sankhya: ['clientes', 'pedidos'], 'mercado-livre': ['conta'] },
+    connectors: { sankhya: ['clientes', 'pedidos'], 'mercado-livre': ['anuncios'] },
   })
   assert.equal(own.statusCode, 200)
   assert.deepEqual(roleOf(await roles(w), 'atendente').connectors, {
-    sankhya: ['clientes', 'pedidos'],
-    'mercado-livre': ['conta'],
+    sankhya: ['pedidos', 'clientes'],
+    'mercado-livre': ['anuncios'],
   })
   const [row] = await w.hub.test.asOwner(
     `select permission from auth.organization_role where company_id = $1 and role = 'atendente'`,
