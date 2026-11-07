@@ -70,11 +70,13 @@ export async function saveReady(
     ids.push(id)
   }
   const versions = await versionsOf(tx, ids)
-  const rows = await Promise.all(ids.map((id) => toolOf(tx, scope.companyId, id)))
-  return rows.flatMap((row) => {
+  const current: ToolVersionId[] = []
+  for (const id of ids) {
+    const row = await toolOf(tx, scope.companyId, id)
     const newest = versions.find(
       (each) => each.toolId === row?.id && each.number === row?.currentVersion,
     )
-    return newest === undefined ? [] : [ToolVersionId.parse(newest.id)]
-  })
+    if (newest !== undefined) current.push(ToolVersionId.parse(newest.id))
+  }
+  return current
 }
