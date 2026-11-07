@@ -191,7 +191,10 @@ export async function register(
           { ...aboutOf(a, put.connector), openMark: open.mark, openState: open.state },
           'CONNECTOR_WRITE_OPEN',
         )
-        return { kind: 'FOUND', written: { kind: 'WRITE_OPEN', mark: open.mark, since: open.since } }
+        return {
+          kind: 'FOUND',
+          written: { kind: 'WRITE_OPEN', mark: open.mark, since: open.since },
+        }
       }
     }
     const inserted = await tx
@@ -226,7 +229,7 @@ type OpenWrite = Readonly<{ state: Row['state']; since: Date; mark: string }>
  * The writes of this conversation, connection and operation that may exist in the provider: rows still
  * `SENDING` or `UNCERTAIN` under another call. The key's own call is left out, for its own row answers it.
  */
-export async function openWritesOf(tx: ReadTx, a: WriteRequest): Promise<readonly OpenWrite[]> {
+async function openWritesOf(tx: ReadTx, a: WriteRequest): Promise<readonly OpenWrite[]> {
   const rows = await tx
     .select({
       toolCallId: connectorWrite.toolCallId,
