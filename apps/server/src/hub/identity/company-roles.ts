@@ -20,11 +20,9 @@ import { admit } from './admission.ts'
 import type { Auth, LibraryCommand } from './auth.ts'
 import { refusedAs } from './auth.ts'
 import { companyScope, LIVE, lockCompany } from './invitations.ts'
+import { replayOf, Statements } from './role-attempt.ts'
 import type { RoleSet } from './roles.ts'
 import { invitation, member, organizationRole } from './tables.ts'
-
-const Statements = z.record(z.string(), z.array(z.string()))
-type Statements = z.infer<typeof Statements>
 
 /**
  * The library's refusals of a role's write, as the Hub's failures (code C50). Two of its refusals
@@ -225,49 +223,6 @@ async function viewOf(
   return found
 }
 
-/** Whether two statement sets hold the same actions, whatever their order. */
-function sameStatements(left: Statements, right: Statements): boolean {
-  const resources = new Set([...Object.keys(left), ...Object.keys(right)])
-  return [...resources].every((resource) => {
-    const a = new Set(left[resource])
-    const b = new Set(right[resource])
-    return a.size === b.size && [...a].every((action) => b.has(action))
-  })
-}
-
-/**
- * The role a creation attempt already made, if any: the same key with another name or another set
- * of connectors is a conflict, not a replay (code C37).
- */
-async function replayOf(
-  deps: Deps,
-  tx: CommandTx,
-  input: { companyId: CompanyId; attemptKey: string; body: RoleCreate },
-): Promise<Role | undefined> {
-  const [found] = await tx
-    .select({
-      role: organizationRole.role,
-      label: organizationRole.label,
-      permission: organizationRole.permission,
-    })
-    .from(organizationRole)
-    .where(
-      and(
-        eq(organizationRole.organizationId, input.companyId),
-        eq(organizationRole.attemptKey, input.attemptKey),
-      ),
-    )
-  if (found === undefined) return undefined
-  const same =
-    found.label === input.body.label &&
-    sameStatements(
-      Statements.parse(JSON.parse(found.permission)),
-      customStatements(deps.roles, input.body.connectors),
-    )
-  if (!same) throw new Failure('IDEMPOTENCY_CONFLICT')
-  return Role.parse(found.role)
-}
-
 /**
  * Creates a role of the company through the library, which checks that the creator holds each
  * action. The attempt key is the role's own column: under the company's lock a replay finds the
@@ -278,14 +233,14 @@ export function createRoleCommand(deps: Deps) {
     deps.libraryCommand(companyScope(input), async (tx) => {
       const { companyId, headers, body, attemptKey } = input
       await admitted(tx, input)
-      const replayed = await replayOf(deps, tx, { companyId, attemptKey, body })
+      const wanted = customStatements(deps.roles, body.connectors)
+      const replayed = await replayOf(tx, { companyId, attemptKey, label: body.label, wanted })
       if (replayed !== undefined) {
         return { role: await viewOf(deps.roles, tx, companyId, replayed), created: false }
       }
       const role = roleNameOf(body.label)
       if (role === '') throw malformed('ROLE_NAME_EMPTY')
       if (FIXED_NAMES.has(role)) throw new Failure('ROLE_NAME_TAKEN')
-      const permission = customStatements(deps.roles, body.connectors)
       await refusedAs(
         () =>
           deps.auth.api.createOrgRole({
@@ -293,7 +248,7 @@ export function createRoleCommand(deps: Deps) {
             body: {
               organizationId: companyId,
               role,
-              permission,
+              permission: wanted,
               additionalFields: { label: body.label, attemptKey },
             },
           }),
