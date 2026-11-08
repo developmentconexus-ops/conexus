@@ -23,7 +23,7 @@ const READS = ['clientes', 'empresas', 'pedidos', 'consultar', 'carregar']
 const BRUNO = { name: 'Bruno Lima', email: 'bruno@example.test' }
 const BIA = { name: 'Bia Souza', email: 'bia@example.test' }
 const CARLA = { name: 'Carla Dias', email: 'carla@example.test' }
-const DORA ={ name: 'Dora Reis', email: 'dora@example.test' }
+const DORA = { name: 'Dora Reis', email: 'dora@example.test' }
 
 type On = Awaited<ReturnType<typeof approving>>
 
@@ -197,7 +197,11 @@ test('quem publica de novo a revisão responde pela versão: quem a pôs ativa p
     message: '',
   })
   assert.equal(again.statusCode, 200, again.body)
-  assert.deepEqual(await activeVersion(on, v1.id), { kind: 'PUBLISHED', version: 2, changed: false })
+  assert.deepEqual(await activeVersion(on, v1.id), {
+    kind: 'PUBLISHED',
+    version: 2,
+    changed: false,
+  })
 
   const { url, stream } = await on.opened(v1.id)
   await sent(on.hub, on.ana, url, 'Lance o pedido')
