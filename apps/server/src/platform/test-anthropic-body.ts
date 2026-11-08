@@ -30,11 +30,16 @@ export type Sent = {
   cached: Cached[]
   /** The `tool_use` parts of the conversation's messages, in order, with the `input` each went out with. */
   toolUses: ToolUse[]
+  /** The `tool_result` parts of the conversation's messages, in order. */
+  toolResults: ToolResultSent[]
   /** Where the conversation holds a `tool_use` whose `input` is not an object, or a `tool_result` with no `tool_use`, which the Messages API refuses; none if it holds neither. */
   unfilled: string | null
 }
 
 export type ToolUse = { name: string; input: unknown }
+
+/** A `tool_result` of the conversation as the model read it: its text and whether the provider marks it a failure (`is_error`). */
+export type ToolResultSent = { text: string; error: boolean }
 
 const Thinking = z.object({ type: z.string(), budget_tokens: z.number().optional() })
 type Thinking = z.infer<typeof Thinking>
@@ -71,15 +76,17 @@ const TextPart = z.object({ text: z.string() })
 const ToolResult = z.object({
   type: z.literal('tool_result'),
   content: z.union([z.string(), z.array(TextPart)]),
+  is_error: z.boolean().optional(),
 })
+
+function resultText(content: z.infer<typeof ToolResult>['content']): string {
+  return typeof content === 'string' ? content : content.map((each) => each.text).join('')
+}
 
 /** A message part as the model reads it: its text, or a tool's result; none for the rest. */
 function textOf(part: unknown): string[] {
   const result = ToolResult.safeParse(part)
-  if (result.success) {
-    const { content } = result.data
-    return [typeof content === 'string' ? content : content.map((each) => each.text).join('')]
-  }
+  if (result.success) return [resultText(result.data.content)]
   const text = TextPart.safeParse(part)
   return text.success ? [text.data.text] : []
 }
@@ -120,6 +127,20 @@ function toolUsesOf(body: z.infer<typeof Body>): ToolUse[] {
       : message.content.flatMap((part) => {
           const call = ToolUsePart.safeParse(part)
           return call.success ? [{ name: call.data.name, input: call.data.input }] : []
+        }),
+  )
+}
+
+/** The `tool_result` parts of a body, in order, with the failure mark the provider reads. */
+function toolResultsOf(body: z.infer<typeof Body>): ToolResultSent[] {
+  return body.messages.flatMap((message) =>
+    typeof message.content === 'string'
+      ? []
+      : message.content.flatMap((part) => {
+          const result = ToolResult.safeParse(part)
+          return result.success
+            ? [{ text: resultText(result.data.content), error: result.data.is_error === true }]
+            : []
         }),
   )
 }
@@ -187,6 +208,7 @@ export function sentOf(init: RequestInit | undefined): Sent {
     thinking: body.thinking ?? null,
     cached: cachedOf(body),
     toolUses: toolUsesOf(body),
+    toolResults: toolResultsOf(body),
     unfilled: unfilledOf(body),
   }
 }
