@@ -1,6 +1,6 @@
 name: hang probe (temporary)
 
-# Temporary: catches the agents.eval.test.ts child that never exits and dumps its threads. Removed
+# Temporary: catches the shard that stops printing and dumps the runner and its child. Removed
 # before the pull request is opened.
 on:
   push:
@@ -11,15 +11,16 @@ permissions:
 
 env:
   CONEXUS_TEST_RUNTIME_PASSWORD: ci-runtime
+  NODE_COMPILE_CACHE: /tmp/node-compile-cache
 
 jobs:
   probe:
     runs-on: ubuntu-24.04
-    timeout-minutes: 40
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
-        lane: [1, 2]
+        lane: [full-1, full-2, full-3, head-1, head-2]
     services:
       postgres:
         image: postgres:18@sha256:74935e72241653ca55e0414067e6d8763aceb8a810eb51b452253ec3dcfc4336
@@ -41,40 +42,41 @@ jobs:
         with:
           port: ${{ job.services.postgres.ports['5432'] }}
       - run: sudo apt-get install -y gdb >/dev/null 2>&1 || true
-      - run: npm run build -w @conexus/server
-      - name: loop the file
-        working-directory: apps/server
+      - name: run the shard, dump on silence
         env:
-          MASTRA_AGENT_THREAD_LEASE_TTL_MS: '3000'
+          LANE: ${{ matrix.lane }}
+          TEST_SHARD: 3/6
         run: |
           set +e
-          hangs=0
-          for i in $(seq 1 60); do
-            rm -rf /tmp/ncc-probe
-            export NODE_COMPILE_CACHE=/tmp/ncc-probe
-            NODE_OPTIONS="--trace-exit --report-on-signal --report-signal=SIGUSR2 --report-directory=/tmp/reports" \
-              node --test --test-concurrency=1 --test-force-exit --test-timeout=120000 \
-              --test-reporter=../../scripts/test-reporter.ts src/builder/agents/agents.eval.test.ts \
-              > /tmp/run.log 2>&1 &
-            pid=$!
-            for s in $(seq 1 40); do kill -0 $pid 2>/dev/null || break; sleep 1; done
-            if kill -0 $pid 2>/dev/null; then
-              hangs=$((hangs+1))
-              echo "::group::HANG run $i"
-              cat /tmp/run.log
-              for c in $(pgrep -P $pid); do
-                echo "== child $c"; grep -E 'State|Threads' /proc/$c/status
-                for t in /proc/$c/task/*; do echo "$(basename $t) $(cat $t/comm) $(awk '{print $3}' $t/stat) wchan=$(cat $t/wchan)"; done
-                sudo bash -c "for t in /proc/$c/task/*; do echo \"-- kernel stack \$t\"; cat \$t/stack; done"
-                sudo gdb -p $c -batch -ex 'thread apply all bt' 2>&1 | tail -150
-                ls -l /proc/$c/fd
-                kill -USR2 $c; sleep 3; ls /tmp/reports || true
-              done
-              echo "::endgroup::"
-              pkill -KILL -P $pid; kill -KILL $pid
+          dump() {
+            local root=$1
+            echo "::group::SILENT $2"
+            tail -5 /tmp/run.log
+            ps -eo pid,ppid,stat,etime,wchan:30,comm --forest | grep -E 'node|npm|sh|MainThread' | grep -v grep
+            for p in $(pgrep -f -- '--test-reporter' ) $(pgrep -f 'NODE_TEST_CONTEXT' ); do :; done
+            for p in $(pgrep node); do
+              echo "== pid $p ppid $(awk '{print $4}' /proc/$p/stat) $(tr '\0' ' ' < /proc/$p/cmdline | cut -c1-150)"
+              grep -E 'State|Threads|SigPnd|ShdPnd|SigBlk|SigCgt' /proc/$p/status
+              for t in /proc/$p/task/*; do echo "  $(basename $t) $(cat $t/comm) $(awk '{print $3}' $t/stat) wchan=$(cat $t/wchan)"; done
+              sudo bash -c "for t in /proc/$p/task/*; do echo \"-- kernel stack \$t\"; cat \$t/stack; done" | head -80
+              sudo gdb -p $p -batch -ex 'thread apply all bt' 2>&1 | grep -v '^\[New LWP' | tail -120
+              ls -l /proc/$p/fd | tail -40
+            done
+            echo "::endgroup::"
+          }
+          runs=40; [ "${LANE#full}" != "$LANE" ] && runs=2
+          for i in $(seq 1 $runs); do
+            rm -rf /tmp/node-compile-cache
+            if [ "${LANE#full}" != "$LANE" ]; then
+              npm test -w @conexus/server > /tmp/run.log 2>&1 &
+            else
+              (cd apps/server && npm run build >/dev/null 2>&1 && MASTRA_AGENT_THREAD_LEASE_TTL_MS=3000 node --test --test-concurrency=1 --test-force-exit --test-timeout=120000 --test-reporter=../../scripts/test-reporter.ts $(node ../../scripts/server-shards.ts 3/6 | head -4)) > /tmp/run.log 2>&1 &
             fi
-            wait $pid 2>/dev/null
-            echo "run $i trace-exit lines: $(grep -c 'Exited the environment' /tmp/run.log || true)"
-            [ $i = 1 ] && cat /tmp/run.log
+            pid=$!
+            while kill -0 $pid 2>/dev/null; do
+              sleep 5
+              age=$(( $(date +%s) - $(stat -c %Y /tmp/run.log) ))
+              if [ $age -gt 150 ]; then dump $pid "run $i"; pkill -KILL -f -- '--test'; break; fi
+            done
+            wait $pid; echo "run $i exit=$? lines=$(wc -l < /tmp/run.log)"
           done
-          echo "hangs=$hangs/60"
