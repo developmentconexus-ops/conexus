@@ -25,6 +25,7 @@ const BAD: Record<string, [string, string]> = {
 }
 const GOOD: Record<string, string> = {
   [`${SRC}/main.ts`]: './hub/b/public.ts',
+  [`${SRC}/hub/a/mail.tsx`]: '../b/public-mail.tsx',
   [`${SRC}/hub/a/tables.ts`]: '../b/public-tables.ts',
   'apps/server/drizzle.config.ts': './src/hub/b/public-tables.ts',
   [`${SRC}/hub/a/ok.test.ts`]: '../b/test-thing.ts',
@@ -35,6 +36,7 @@ before(() => {
   const files: Record<string, string> = {
     [`${SRC}/hub/b/public.ts`]: PUBLIC,
     [`${SRC}/hub/b/public-tables.ts`]: PUBLIC,
+    [`${SRC}/hub/b/public-mail.tsx`]: PUBLIC,
     [`${SRC}/hub/b/mail/public.ts`]: PUBLIC,
     [`${SRC}/hub/b/test-thing.ts`]: PUBLIC,
     [`${SRC}/hub/c/inner.ts`]: PUBLIC,

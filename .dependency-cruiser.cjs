@@ -6,8 +6,8 @@ const WEB = '^apps/web/src'
 // The Assistant's tests, and the automations', the tools' and the agents' beside them, drive the Builder's test Hub and stream, as a server test drives the test Hub (T5).
 const WEB_BUILDER_TESTS =
   '^apps/web/src/builder/(assistant/(test-hub|.*\\.test)|automations/.*\\.test|tools/.*\\.test|agents/(test-hub|test-hub-tools|test-approval|.*\\.test))\\.tsx$'
-// The door of a subject is the public.ts at its root; a file deeper in is the inside (C4).
-const PUBLIC_DOOR = '(^|/)(hub|builder)/[^/]+/public\\.tsx?$'
+// The door of a subject is the public.ts at its root, or a public-<name>.tsx there (Node strips no types from .tsx, so public.ts cannot re-export one); a file deeper in is the inside (C4).
+const PUBLIC_DOOR = '(^|/)(hub|builder)/[^/]+/public(-[a-z]+\\.tsx|\\.ts)$'
 // The door of a subject's tables: only a tables.ts (a foreign key) and the schema gatherer import it (C8).
 const TABLE_DOOR = '(^|/)(hub|builder)/[^/]+/public-tables\\.ts$'
 // The helpers a test shares are the files named test-*.ts, in any folder of the server (T5).

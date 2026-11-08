@@ -1,6 +1,12 @@
 import { render, toPlainText } from '@react-email/render'
 import { Heading, Text } from 'react-email'
-import { COLORS, MailAction, MailCard, MailFallbackLink, MailFrame } from '../identity/public.ts'
+import {
+  COLORS,
+  MailAction,
+  MailCard,
+  MailFallbackLink,
+  MailFrame,
+} from '../identity/public-mail.tsx'
 import type {
   AutomationMailProps,
   renderAutomation as RenderAutomation,

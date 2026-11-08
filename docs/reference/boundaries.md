@@ -570,7 +570,7 @@ rows for the five above wait on issue #458.
 - **Packaging.** Native esbuild 0.28.2 bundles, for us, `invitation-email.tsx` (which also exports the
   recovery template of `password-recovery-email.tsx`; both sit in the page of `mail-frame.tsx`) and
   `automation-email.tsx` of the notifications (step 24.2, in the same page through
-  `identity/public.ts`) as two ignored ESM artifacts, one command each, with
+  `identity/public-mail.tsx`) as two ignored ESM artifacts, one command each, with
   React/DOM 19.2.4 pinned independently from the web. Native aliases resolve those
   versions; the build replaces the dependencies' development-mode constant. No runtime environment
   branch or template substitution is added. `invitation-render.d.mts` and `notification-render.d.mts`

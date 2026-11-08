@@ -48,7 +48,7 @@ export async function requestNoticeRows(tx: ReadTx, where: SQL | undefined, limi
   )
   return notices.flatMap((notice) => {
     const view = views.get(notice.requestId)
-    return view === undefined ? [] : [{ ...notice, ...view }]
+    return view === undefined ? [] : [{ ...view, ...notice }]
   })
 }
 

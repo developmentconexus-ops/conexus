@@ -1,5 +1,5 @@
 {
   "extends": "../../tsconfig.base.json",
-  "compilerOptions": { "jsx": "react-jsx", "lib": ["esnext", "dom", "dom.iterable"] },
+  "compilerOptions": { "lib": ["esnext", "dom", "dom.iterable"] },
   "include": ["*.ts", "../../apps/edge/worker-configuration.d.ts"]
 }

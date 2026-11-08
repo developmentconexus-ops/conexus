@@ -36,8 +36,6 @@ export type { ProjectApps } from './app-invitations.ts'
 // The library's own configuration, for its tests: nothing routes to its sign-up, so only a direct
 // call can prove the sign-up stays closed (criterion 18).
 export { createAuth } from './auth.ts'
-// The page every Conexus e-mail sits in, for the templates that other subjects bundle (code C4).
-export { COLORS, MailAction, MailCard, MailFallbackLink, MailFrame } from './mail-frame.tsx'
 export type { Speaker } from './may-use.ts'
 export { roleOfSpeaker } from './may-use.ts'
 export type { PersonConversationRelease } from './memberships.ts'
