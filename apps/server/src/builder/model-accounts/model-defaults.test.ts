@@ -141,7 +141,7 @@ test('o nível guardado que o modelo não aceita desce ao mais alto aceito abaix
   assert.deepEqual(await pairOf(hub, carla, conversations, id), { model: GPT, effort: 'high' })
 })
 
-test('o modelo inicial: sem padrão a empresa só com chave OpenAI abre em GPT-5; com Claude e OpenAI, no Claude; só com Gemini, no Gemini', async (t) => {
+test('o modelo inicial: sem padrão a empresa só com chave OpenAI abre em GPT-5.6 Luna; com Claude e OpenAI, no Claude; só com Gemini, no Gemini', async (t) => {
   const { hub, ana, carla, conversations, accounts } = await company(t)
   await hub.test.asOwner(`delete from builder.company_model`)
   // Sonnet 5.5 always reasons, so the starter's `off` becomes the lowest level it takes.
@@ -155,8 +155,8 @@ test('o modelo inicial: sem padrão a empresa só com chave OpenAI abre em GPT-5
   const both = await created(hub, carla, conversations)
   assert.deepEqual(await pairOf(hub, carla, conversations, both.id), sonnet)
   await hub.test.asOwner(`delete from builder.model_account where provider = 'anthropic'`)
-  // GPT-5 cannot be off, so the starter's `off` becomes the lowest level it takes.
-  const expected = { model: GPT, effort: 'low' }
+  // Luna can be off, so the starter's `off` stays `off`.
+  const expected = { model: 'openai/gpt-5.6-luna', effort: 'off' }
   assert.deepEqual(await startOf(hub, carla, accounts), {
     ...expected,
     from: 'starter',
