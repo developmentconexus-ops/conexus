@@ -255,7 +255,7 @@ A 24.6 começa depois de duas coisas no `main`:
   - U1: `bodyHashOf` de `platform/attempt.ts` (a chave de tentativa de `createWorkflow`, C37);
     `speakerOf` de `hub/identity` e `mayLeaveAlone` de `hub/connectors/approval.ts` (o papel de quem
     publica e o `WRITE_AUTO_NOT_ALLOWED`, no `World` dos problemas).
-  - U2: `hub/connectors/approval.ts` com `mustAsk`, `mayApprove`, `publisherLeavesAlone`,
+  - U2: `hub/connectors/approval.ts` com `mustAsk`, `mayApprove`, `answererLeavesAlone`,
     `WriteAuthorOf` e `WriteTarget`, que a U2 só estende (`where: RUN` em `mustAsk`; o autor
     `WORKFLOW` entra no funil e em `Speaker`, e `WriteAuthorOf` fica como está).
   - U3: `mustAsk` e `mayApprove` (os balões que escrevem e a rota de responder), `speakerOf`
@@ -265,12 +265,17 @@ A 24.6 começa depois de duas coisas no `main`:
   - U5: `stepped` (o modelo de mentira do Construtor).
   - U6: `unconfirmedText` e o `titleOf` único da web. A 24.5.1 tirou `useCreate` e
     `<ConversationRoom>`, e a 24.6 não depende deles.
-- **A correção da 24.5 que leva `{ number, answeredBy }` no turno do agente** (a opção A do estudo
-  da causa da versão do turno: o PR 848, ou um PR seguinte da 24.5). A U3 depende dela: o balão de
-  agente põe a versão fixada e quem responde no `AgentRun`, e a ferramenta de escrita lê quem
-  responde do turno. A U3 acrescenta por cima o leitor de uma versão por número (`versionOf`) e a
-  montagem de uma versão fixada no registro, como o ramo do rascunho já faz. Se a correção que
-  entrar já montar a versão fixada, a U3 a usa e não faz outra.
+- **A correção da 24.5 que prende quem responde à versão** (a opção A do estudo da causa da versão
+  do turno), **já no `main`**: o PR 848 (`087f27df`). Quem responde vem lido com a versão
+  (`builder/agents/frozen.ts:133,146`), o autor `VERSION` leva `answeredBy`
+  (`builder/agents/tools.ts:30`), e `publisherLeavesAlone` virou `answererLeavesAlone(deps,
+  companyId, answeredBy, target)` (`builder/agents/publish.ts:240-252`). O que falta, e a U3 faz: o
+  `AgentRun` não leva o número da versão (`builder/agents/agent.ts:62-66`) e o registro só monta a
+  ativa (`registry.ts:120-135`). A U3 acrescenta o leitor de uma versão por número (`versionOf`) e
+  a montagem de uma versão fixada no registro, como o ramo do rascunho já faz
+  (`registry.ts:121-124`). Se um PR da 24.5 entrar antes com a retomada fixada (a parte B), a U3 a
+  usa e não faz outra. O cartão da 24.5.1 foi escrito antes do PR 848 e ainda chama a função de
+  `publisherLeavesAlone`; o nome que vale é o do `main`.
 
 ## As unidades
 
@@ -506,12 +511,12 @@ px são tiradas pela U6 antes de construir, como manda o estudo de uma tela; o e
 | A lista de problemas antes de rodar | U1, U5, U6 | o Construtor recusa um campo por vez (`builder/construtor/tools.ts:104-238`) | `validateDynamicWorkflow` (`dist/workflows/dynamic/validate/index.d.ts:17`), 16 códigos (`validate/types.d.ts:12`), o índice `WorkflowRegistryIndex` (`:71-76`, "chave ausente, sem conferência"); activepieces `valid:false` e `invalidSteps` (`ap-build-flow.ts:194-215`); Dify checklist (`header/checklist/index.tsx`); o estudo do Kiro do fundador, seções 1 e 2 (a validação antes de rodar e o laço de 3 reparos) | Grava o rascunho mesmo com problema, lista cada um pelo balão, e só bloqueia testar e publicar | nativo (a validação do Mastra) mais as regras nossas (papel, liberação, pessoa) | P9 | não precisa | `builder/workflows/problems.ts`, `builder/workflows/index.ts` |
 | Ler um sistema num balão | U3 | `readThrough` (`hub/connectors/read.ts:135`), a porta `read` do Assistente (`hub/connectors/assistant-port.ts:281-306`) | Mastra: a entrada `tool` resolve por id (`dynamic/rehydrate.ts:418-425`) e chama `tool.execute` (`run-tool-entry.ts:58`) | A ferramenta `conexus-ler` acha o balão pela `workflowId` e lê pelo funil de hoje com o autor `WORKFLOW` (o declarado da versão), admitida como quem ativou a versão | embrulhado | — | não precisa | `builder/workflows/balloons/read.ts` |
 | A conferência no começo de cada execução | U3 | a Automação reconfere o dono a cada execução (`builder/automations/run.ts:189-219`); o autor `VERSION` só confere o declarado (`hub/identity/may-use.ts:76`) | Mastra: a primeira entrada `tool` do grafo | A ferramenta `conexus-conferir` confere que quem ativou a versão está na empresa e tem cada leitura declarada; senão pausa | embrulhado | — | a decisão A | `builder/workflows/balloons/check.ts` |
-| A versão e quem a ativou presas à execução | U1, U3 | o agente: o turno não leva a versão (`builder/agents/agent.ts:62-68`), e `publisherLeavesAlone` lê o ponteiro atual (`builder/agents/publish.ts:235-262`) | Mastra: o `requestContext` gravado volta na retomada, no `restart` e no `timeTravel` (`workflows/workflow.ts:5374`, `:5715`, `:5863`; prova P13); n8n: a execução leva a versão com que começou ("Deliberately not the workflow row's `activeVersionId`"), lido no estudo da causa da versão do turno | `RunIdentity` leva a versão e quem a ativou, lidas na mesma linha de `workflow` ao começar | nativo (o `requestContext`) | P13 | a versão presa, 2026-11-08 | `builder/workflows/run-identity.ts` |
+| A versão e quem a ativou presas à execução | U1, U3 | o agente, depois do PR 848: quem responde vem lido com a versão (`builder/agents/frozen.ts:133,146`, `tools.ts:30`) e `answererLeavesAlone` o recebe (`builder/agents/publish.ts:240-252`); o `AgentRun` do turno ainda não leva o número da versão (`builder/agents/agent.ts:62-66`) e o registro só monta a ativa (`registry.ts:120-135`), então a retomada numa versão que deixou de ser a ativa é da U3 | Mastra: o `requestContext` gravado volta na retomada, no `restart` e no `timeTravel` (`workflows/workflow.ts:5374`, `:5715`, `:5863`; prova P13); n8n: a execução leva a versão com que começou ("Deliberately not the workflow row's `activeVersionId`"), lido no estudo da causa da versão do turno | `RunIdentity` leva a versão e quem a ativou, lidas na mesma linha de `workflow` ao começar | nativo (o `requestContext`) | P13 | a versão presa, 2026-11-08 | `builder/workflows/run-identity.ts` |
 | O agente fixado numa versão que não é a ativa | U3 | `registry.resolve` monta só a ativa (`builder/agents/registry.ts:120-135`); `frozen.ts` só tem `activeOf`, `draftOf`, `liveOf` e `publishedAll` (`:124-222`) | Mastra: `__agentVersionId` na execução (o estudo da causa da versão do turno, opção B); o ramo `DRAFT` de `registry.ts:121-124`, que monta um `Agent` por turno | `versionOf` lê a versão pelo número; o registro monta a versão fixada por turno quando ela não é a ativa | embrulhado | P11 | a versão presa, 2026-11-08 | `builder/agents/frozen.ts`, `builder/agents/registry.ts` |
 | Um agente num balão, com escrita ou não | U3 | a conversa da Automação (`builder/automations/run.ts:112-142`), o agente publicado (`builder/agents/agent.ts:305-351`, `agentOf`) | Mastra: a entrada `agent` e `createStep(agent)` travam numa aprovação (P3, `run-agent-entry.ts:166-173`) | A ferramenta `conexus-agente` abre uma conversa do agente marcada "Workflow", drena o stream, e num pedido de aprovação suspende o workflow; na retomada, `approveToolCall` | embrulhado (a entrada `agent` do Mastra trava) | P3, P11 | a decisão E | `builder/workflows/balloons/agent.ts` |
 | "Aprovar?" no meio do fluxo | U3 | o cartão da conversa, só na memória (24.5) | Mastra: `context.workflow.suspend` (`reference-tools-create-tool.md:75-77,105`), `run.resume` (`dist/agent-BP9OWM6D.js:11239`); Dify Human Input, n8n `sendAndWait`, Zapier Request Approval | A ferramenta suspende; a resposta retoma; sobrevive a um reinício, também num caminho aninhado (P15) | nativo | P2, P5, P15 | a decisão A e a D | `builder/workflows/balloons/approval.ts` |
 | Escrever num balão | U2, U3 | `writeThrough` (`hub/connectors/write.ts:154-183`), `connector_write` (`hub/connectors/tables.ts:205-247`) | Mastra: `requireApproval` ignorado num passo (P3); n8n, activepieces e Temporal repetem sem garantir escrita única | A mesma decisão `mustAsk` da conversa; suspende quando pergunta; envia pelo `writeThrough` com o autor `WORKFLOW` | embrulhado: o funil da 24.5 | P11 | a decisão E | `builder/workflows/balloons/write.ts` |
-| A decisão "pergunta ou faz" e quem aprova | U2 | 24.5.1: `hub/connectors/approval.ts` (`mustAsk`, `mayApprove`, `publisherLeavesAlone`, `WriteAuthorOf` com `answeredBy`) | — | Um lugar só, chamado pela conversa, pelos balões e pela rota de responder; a U2 acrescenta `where` | embrulhado (nosso, da 24.5.1) | P11 | não precisa | — |
+| A decisão "pergunta ou faz" e quem aprova | U2 | 24.5.1: `hub/connectors/approval.ts` (`mustAsk`, `mayApprove`, `answererLeavesAlone`, `WriteAuthorOf` com `answeredBy`) | — | Um lugar só, chamado pela conversa, pelos balões e pela rota de responder; a U2 acrescenta `where` | embrulhado (nosso, da 24.5.1) | P11 | não precisa | — |
 | O registro de envios com o terceiro autor | U2 | chave empresa, conversa, `toolCallId` (`hub/connectors/tables.ts:205-247`, PK `:239`, `CHECK` `:240-243`) | — | `thread_id` guarda a conversa ou a execução; `tool_call_id` guarda o `toolCallId` ou a chamada do balão; o autor `WORKFLOW` com `workflow_id` e `workflow_version`; o `CHECK` de quem fala com três braços | embrulhado | lido | a regra D11, pela aprovação desta página | migração `e246_connector_write_workflow` |
 | A escrita do agente no livro da execução | U2 | a escrita do agente grava a conversa e o `toolCallId` (`builder/agents/tools.ts:148-152`) | — | Com `conexus.run.call` no `requestContext`, a ferramenta do agente grava com `where: RUN`, e o `heldBy` da execução vê as tentativas anteriores | embrulhado | lido | não precisa | `builder/agents/tools.ts` |
 | Avisar uma pessoa | U3 | `deps.notify.automationRan` (`hub/notifications/notifications.ts:308-325`), `notifications.notification` (`tables.ts:37-90`) | Zapier e Make por um passo (documentado) | O sino e o e-mail de hoje, com tipos novos | embrulhado | — | não precisa | `builder/workflows/balloons/notify.ts` |
@@ -1320,7 +1325,7 @@ export async function mustAsk(deps: ApprovalDeps, a: Readonly<{
 O corpo só troca `threadId: a.threadId` por `where: a.where` na chamada de `openWrites`. Quem chama
 hoje (`builder/agents/tools.ts`, `requireApproval`) passa `where: { kind: 'CONVERSATION', threadId
 }`, ou `{ kind: 'RUN', runId }` quando há `conexus.run.call`. `mayApprove` e
-`publisherLeavesAlone` não mudam. O autor `WORKFLOW` não entra em `WriteAuthorOf`: para a regra,
+`answererLeavesAlone` não mudam. O autor `WORKFLOW` não entra em `WriteAuthorOf`: para a regra,
 uma versão de workflow é uma versão publicada com quem responde por ela, como a de agente.
 
 Em `hub/connectors/write-record.ts`:
