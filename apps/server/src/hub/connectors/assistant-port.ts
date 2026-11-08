@@ -40,6 +40,9 @@ type AssistantRead =
   | Exclude<ShapedRead, { kind: 'OK' }>
   | Spent
 
+/** A write's input and the fields of it that only whoever configures the tool sets. */
+export type WriteShape = Readonly<{ input: z.ZodObject; fixed: readonly string[] }>
+
 export type AssistantConnectors = {
   /** What the place offers (company: usable; Projeto: usable and released to it), each with chosen; [] for a person who may not ask, a removed one included. */
   connections(scope: SessionScope): Promise<readonly AssistantConnection[]>
@@ -83,11 +86,14 @@ export type AssistantConnectors = {
     scope: SessionScope,
     target: { connectionId: ConnectionId; operation: string },
   ): Promise<z.ZodObject | undefined>
-  /** The input of one write of a connection the place offers (step 24.5), as `operationOf` gives a read's; none otherwise. */
+  /**
+   * The input of one write of a connection the place offers (step 24.5), as `operationOf` gives a
+   * read's, with the fields only whoever configures the tool fixes (`fixed`, decision 0062); none otherwise.
+   */
   writeOf(
     scope: SessionScope,
     target: { connectionId: ConnectionId; operation: string },
-  ): Promise<z.ZodObject | undefined>
+  ): Promise<WriteShape | undefined>
   /**
    * The kit's typed reads of every connection the place offers, the read door's left out: what a
    * version written before decision E4 reads as its connections' tools.
@@ -261,6 +267,20 @@ function chosenAmong(scope: SessionScope) {
   })
 }
 
+/** One write of a connection the place offers, by the kit's declaration: its input and its fixed fields. */
+async function writeShapeOf(
+  deps: Deps,
+  scope: SessionScope,
+  target: { connectionId: ConnectionId; operation: string },
+): Promise<WriteShape | undefined> {
+  const [row] = (await offered(deps, scope)).filter((each) => each.id === target.connectionId)
+  const connector = row === undefined ? undefined : connectorOf(row.connector)
+  const write = connector?.writes?.find((each) => each.id === target.operation)
+  return write?.input instanceof z.ZodObject
+    ? { input: write.input, fixed: write.fixed ?? [] }
+    : undefined
+}
+
 export function createAssistantConnectors(deps: Deps): AssistantConnectors {
   const spend = createSpending()
   return {
@@ -311,12 +331,7 @@ export function createAssistantConnectors(deps: Deps): AssistantConnectors {
 
     openWrites: (key) => openWritesOf(deps, key),
 
-    async writeOf(scope, target) {
-      const [row] = (await offered(deps, scope)).filter((each) => each.id === target.connectionId)
-      const connector = row === undefined ? undefined : connectorOf(row.connector)
-      const input = connector?.writes?.find((each) => each.id === target.operation)?.input
-      return input instanceof z.ZodObject ? input : undefined
-    },
+    writeOf: (scope, target) => writeShapeOf(deps, scope, target),
 
     async operationOf(scope, target) {
       const [row] = (await offered(deps, scope)).filter((each) => each.id === target.connectionId)

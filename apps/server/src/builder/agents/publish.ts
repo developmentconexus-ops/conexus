@@ -14,15 +14,16 @@ import {
   ConnectorId as ConnectorIdSchema,
   OperationId as OperationIdSchema,
   ToolKind,
+  ToolVersionConfig,
 } from '@conexus/hub-api'
 import { and, eq, max, sql } from 'drizzle-orm'
 import type { KitRead } from '../../hub/connectors/public.ts'
-import { operationLabel } from '../../hub/connectors/public.ts'
+import { fixedFieldsOf, operationLabel } from '../../hub/connectors/public.ts'
 import type { IdentityPorts } from '../../hub/identity/public.ts'
 import type { CommandTx, Database, ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { InProject, OfferedConnection } from '../tools/public.ts'
-import { versionsWithTools } from '../tools/public.ts'
+import { unfixedOf, versionsWithTools } from '../tools/public.ts'
 import { legacyReads } from './legacy.ts'
 import type { Choice } from './store.ts'
 import { chosenIds, chosenOfDraft, ofProject, pinnedOf, versionBack } from './store.ts'
@@ -189,8 +190,34 @@ export async function mayLeaveAlone(
  */
 export async function refuseUnheld(tx: ReadTx, scope: InProject, a: Becoming): Promise<void> {
   await refuseByRole(tx, scope, a)
+  await refuseUnfixed(tx, a)
   const [alone] = await alonesOf(tx, a.choices, a.around)
   if (alone !== undefined) await mayLeaveAlone(a.identity, tx, scope, alone)
+}
+
+/**
+ * Whether every write the choices hold fixes the fields its operation declares `fixed` (decision
+ * 0062): the first that leaves one open or without a value is `AGENT_TOOL_REFUSED`, `NOT_FIXED`,
+ * naming the tool and the field, and nothing is published.
+ */
+async function refuseUnfixed(tx: ReadTx, a: Becoming): Promise<void> {
+  const rows = await versionsWithTools(
+    tx,
+    a.choices.map((each) => each.id),
+  )
+  for (const { tool, version } of rows) {
+    if (ToolKind.parse(tool.kind) !== 'PRESET') continue
+    const connector = a.around.find((each) => each.connectionId === tool.connectionId)?.connector
+    if (connector === undefined) continue
+    const fixed = fixedFieldsOf(connector, OperationIdSchema.parse(tool.operation))
+    const field = unfixedOf(fixed, ToolVersionConfig.parse(version.config))
+    if (field !== undefined) {
+      throw new Failure('AGENT_TOOL_REFUSED', {
+        details: { tool: tool.slug, field },
+        named: { field: 'tools', reason: 'NOT_FIXED' },
+      })
+    }
+  }
 }
 
 export type Holding = {
