@@ -227,33 +227,19 @@ export async function holdsWrite(
 /**
  * Whether a version's write in Faz sozinho still runs without asking (step 24.5, D2-a): who
  * answers for the version is still in the company, and their role, read now, holds both the action
- * and the write. Otherwise it asks; what the version declares does not change. The conversation
- * runs the active version (`activeOf`), answered for by who made it active, so restoring an old
- * version moves the answer to who restored it (`agent.active_by`); a version that is not the
- * active one keeps its publisher (`agent_version.published_by`).
+ * and the write. Otherwise it asks; what the version declares does not change. The run answers for
+ * the version by who made it active when the run began (`agent.active_by`, read with the version
+ * in `activeOf`), so a later publish or restore does not change who answers for a run in progress.
  */
 export async function answererLeavesAlone(
   deps: Holding,
   companyId: CompanyId,
-  version: { agentId: AgentId; number: number },
+  answeredBy: string | null,
   target: Target,
 ): Promise<boolean> {
-  const [row] = await deps.database.read({ kind: 'COMPANY', companyId, personId: null }, (tx) =>
-    tx
-      .select({
-        by: sql<
-          string | null
-        >`case when ${agent.activeVersion} = ${agentVersion.number} then ${agent.activeBy} else ${agentVersion.publishedBy} end`,
-      })
-      .from(agentVersion)
-      .innerJoin(agent, eq(agent.id, agentVersion.agentId))
-      .where(
-        and(eq(agentVersion.agentId, version.agentId), eq(agentVersion.number, version.number)),
-      ),
-  )
   // A person who left takes their authorship with them (`release.ts`), so no one leaves it alone.
-  if (row?.by == null) return false
-  const personId = PersonId.parse(row.by)
+  if (answeredBy == null) return false
+  const personId = PersonId.parse(answeredBy)
   const role = await roleNow(deps, companyId, personId)
   if (role === undefined || !(await deps.identity.mayPublishUnattended(companyId, role))) {
     return false

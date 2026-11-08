@@ -27,7 +27,7 @@ export function NEVER_ASKS() {
 
 /** Who an agent's write speaks as: a published version by its agent and number (it has no id of its own), or the person talking to the draft. */
 export type WriteAuthor =
-  | Readonly<{ kind: 'VERSION'; agentId: AgentId; number: number }>
+  | Readonly<{ kind: 'VERSION'; agentId: AgentId; number: number; answeredBy: string | null }>
   | Readonly<{ kind: 'DRAFT' }>
 
 type Deps = {

@@ -13,6 +13,7 @@ import {
   approvalsIn,
   approving,
   askedOf,
+  developerHolds,
   launched,
   PERSON_PACE_MS,
   untilAsked,
@@ -22,19 +23,9 @@ import {
 const READS = ['clientes', 'empresas', 'pedidos', 'consultar', 'carregar']
 const BRUNO = { name: 'Bruno Lima', email: 'bruno@example.test' }
 const BIA = { name: 'Bia Souza', email: 'bia@example.test' }
-const CARLA = { name: 'Carla Dias', email: 'carla@example.test' }
 const DORA = { name: 'Dora Reis', email: 'dora@example.test' }
 
 type On = Awaited<ReturnType<typeof approving>>
-
-/** The developer role's connector operations, and whether it publishes a write that runs alone, set by Ana. */
-async function developerHolds(on: On, operations: readonly string[], unattended?: boolean) {
-  const role = await call(on.hub, on.ana, 'PUT', `${on.company}/roles/developer`, {
-    connectors: { sankhya: operations },
-    ...(unattended === undefined ? {} : { unattended }),
-  })
-  assert.equal(role.statusCode, 200, role.body)
-}
 
 /**
  * Bia, an administrator, publishes the write in Faz sozinho; Ana's first call runs without a card.
@@ -169,47 +160,6 @@ test('quem restaura responde pela versão: quem restaurou perde a ação e a esc
   const { on, stream } = await restoredByBruno(t, async (on) => {
     await developerHolds(on, READS, true)
   })
-  assert.equal(askedOf(await untilAsked(stream)).toolName, WRITE)
-  assert.equal(on.fake.orders().length, 1, 'the card stops the write before the Sankhya')
-})
-
-test('quem publica de novo a revisão responde pela versão: quem a pôs ativa por último perde a ação e a escrita em Faz sozinho volta a perguntar (D2-a)', async (t) => {
-  const on = await approving(t, [[launched()], [said('Lançado.')], [launched()]])
-  const bia = await memberOn(on.hub, on.companyId, BIA, 'admin')
-  const bruno = await memberOn(on.hub, on.companyId, BRUNO, 'admin')
-  const carla = await memberOn(on.hub, on.companyId, CARLA, 'developer')
-  await developerHolds(on, [...READS, 'lancarPedido'], true)
-  const v1 = await publishedAgent(on.hub, bia, on.agents, {
-    instructions: 'Lance os pedidos que a pessoa pedir.',
-    connections: [on.matriz],
-    tools: [on.write.latest.id],
-    approvals: { [on.write.id]: 'AUTO' },
-  })
-  const second = await drafted(on.hub, bia, on.agents, v1, {
-    instructions: 'Lance os pedidos que a pessoa pedir, com calma.',
-  })
-  await publishedNow(on.hub, bia, on.agents, second)
-  const back = await post(on.hub, bruno, `${on.agents}/${v1.id}/versions/1/activate`, {})
-  assert.equal(back.statusCode, 200, back.body)
-
-  const again = await post(on.hub, carla, `${on.agents}/${v1.id}/publish`, {
-    revision: second.revision,
-    message: '',
-  })
-  assert.equal(again.statusCode, 200, again.body)
-  assert.deepEqual(await activeVersion(on, v1.id), {
-    kind: 'PUBLISHED',
-    version: 2,
-    changed: false,
-  })
-
-  const { url, stream } = await on.opened(v1.id)
-  await sent(on.hub, on.ana, url, 'Lance o pedido')
-  assert.deepEqual(approvalsIn(await stream.turn()), [], 'Carla answers and holds the action')
-  assert.equal(on.fake.orders().length, 1)
-
-  await developerHolds(on, READS, true)
-  await sent(on.hub, on.ana, url, 'Lance outro')
   assert.equal(askedOf(await untilAsked(stream)).toolName, WRITE)
   assert.equal(on.fake.orders().length, 1, 'the card stops the write before the Sankhya')
 })

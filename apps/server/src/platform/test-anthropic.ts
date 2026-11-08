@@ -22,11 +22,12 @@ const SUBSCRIPTION_LINE = "You are Claude Code, Anthropic's official CLI for Cla
 
 /**
  * How the double answers one call: text, a `web_fetch` call, the blocks given, a provider's
- * refusal (`cyber`: its cybersecurity safeguard's message), a hang, a connection the provider resets in the middle of its stream, a recording of the
+ * refusal (`cyber`: its cybersecurity safeguard's message), a hang, an answer that waits for the
+ * test to act first (`after`), a connection the provider resets in the middle of its stream, a recording of the
  * provider's own stream (`recordings/<name>.sse`), or (Chat Completions only) a stream that ends with
  * no content on Gemini's `MALFORMED_FUNCTION_CALL`, as CLIProxy relays it.
  */
-export type Reply =
+type Settled =
   | { kind: 'text'; text: string }
   | { kind: 'fetch'; url: string }
   | { kind: 'blocks'; blocks: Block[]; stop?: 'max_tokens' | 'refusal' }
@@ -35,6 +36,8 @@ export type Reply =
   | { kind: 'reset' }
   | { kind: 'recorded'; name: string }
   | { kind: 'malformed' }
+
+export type Reply = Settled | { kind: 'after'; until: () => Promise<void>; reply: Settled }
 
 /** The Messages API's `error.type` for each status it answers (its documented errors). */
 const ERROR_TYPES = {
@@ -209,7 +212,7 @@ function resetStream(head: string[]): Response {
   return new Response(body, { headers: { 'content-type': 'text/event-stream' } })
 }
 
-function replied(sent: Sent, reply: Reply, signal: AbortSignal | null | undefined): Response {
+function replied(sent: Sent, reply: Settled, signal: AbortSignal | null | undefined): Response {
   if (reply.kind === 'recorded') return replayed(reply.name, signal)
   if (reply.kind === 'refuse') {
     const error = {
@@ -308,6 +311,10 @@ export function plantAnthropic(t: Lifetime, answer: Anthropic['answer']): Anthro
     const reply = unidentified
       ? { kind: 'refuse' as const, status: 429 as const }
       : anthropic.answer(sent)
+    if (reply.kind === 'after') {
+      await reply.until()
+      return replied(sent, reply.reply, init?.signal)
+    }
     return replied(sent, reply, init?.signal)
   }
   t.after(() => {

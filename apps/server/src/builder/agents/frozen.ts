@@ -52,7 +52,9 @@ export type FrozenTool = PresetFrozenTool | CodeFrozenTool
 /** The configuration a version or the draft becomes an agent with, its tools as their versions hold them. */
 export type FrozenVersion = AgentConfig & {
   tools: readonly FrozenTool[]
-  source: { kind: 'VERSION'; number: number } | { kind: 'DRAFT'; revision: number }
+  source:
+    | { kind: 'VERSION'; number: number; answeredBy: string | null }
+    | { kind: 'DRAFT'; revision: number }
 }
 
 // A row of `builder.companies_with_agents()`.
@@ -124,7 +126,11 @@ async function toolsOf(tx: ReadTx, choices: readonly Choice[]): Promise<Tools> {
 export function activeOf(database: Database, ids: OfProject, agentId: AgentId) {
   return database.read(hubScope(ids.companyId), async (tx): Promise<FrozenVersion | null> => {
     const [row] = await tx
-      .select({ config: agentVersion.config, number: agentVersion.number })
+      .select({
+        config: agentVersion.config,
+        number: agentVersion.number,
+        answeredBy: agent.activeBy,
+      })
       .from(agent)
       .innerJoin(
         agentVersion,
@@ -133,7 +139,7 @@ export function activeOf(database: Database, ids: OfProject, agentId: AgentId) {
       .where(ofProject(ids, agentId))
     if (row === undefined) return null
     const tools = await toolsOf(tx, await pinnedOf(tx, agentId, row.number))
-    const source = { kind: 'VERSION', number: row.number } as const
+    const source = { kind: 'VERSION', number: row.number, answeredBy: row.answeredBy } as const
     return { ...AgentConfigSchema.parse(row.config), tools, source }
   })
 }
@@ -175,6 +181,7 @@ async function publishedOf(tx: ReadTx, companyId: CompanyId) {
       projectId: agent.projectId,
       config: agentVersion.config,
       number: agentVersion.number,
+      answeredBy: agent.activeBy,
     })
     .from(agent)
     .innerJoin(agentVersion, active)
@@ -197,7 +204,7 @@ async function publishedOf(tx: ReadTx, companyId: CompanyId) {
     return {
       ...AgentConfigSchema.parse(row.config),
       tools: sorted(own),
-      source: { kind: 'VERSION', number: row.number } as const,
+      source: { kind: 'VERSION', number: row.number, answeredBy: row.answeredBy } as const,
       ...ids,
       agentId: AgentId.parse(row.id),
     }

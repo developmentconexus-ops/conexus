@@ -16,7 +16,7 @@ const ids = {
 }
 const live: Live = Object.assign(Object.create(null), {
   ...ids,
-  source: { kind: 'VERSION', number: 1 },
+  source: { kind: 'VERSION', number: 1, answeredBy: null },
 })
 
 function agentNamed(id: string): Agent {
