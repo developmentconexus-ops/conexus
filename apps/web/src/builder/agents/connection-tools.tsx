@@ -139,7 +139,10 @@ export function ConnectionTools(props: Part & { connection: OfferedConnection; s
   const own = read.data.tools.filter(
     (tool) =>
       tool.connectionId === connection.connectionId &&
-      !reads.some((one) => one.library?.id === tool.id),
+      !reads.some((one) => one.library?.id === tool.id) &&
+      !(
+        tool.kind === 'PRESET' && connection.writes.some((one) => one.operation === tool.operation)
+      ),
   )
   // The connection's name titles the group when the Projeto has two of the same system.
   const sameSystem =
