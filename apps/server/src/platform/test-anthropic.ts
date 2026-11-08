@@ -281,6 +281,7 @@ export function plantAnthropic(t: Lifetime, answer: Anthropic['answer']): Anthro
     chat: () => ({ kind: 'text', text: 'ok' }),
     refresh: () => ({ status: 400 }),
   }
+  const held: unknown[] = []
   globalThis.fetch = async (input, init) => {
     const url = input instanceof Request ? input.url : String(input)
     if (url.startsWith(TOKEN_URL)) {
@@ -312,13 +313,19 @@ export function plantAnthropic(t: Lifetime, answer: Anthropic['answer']): Anthro
       ? { kind: 'refuse' as const, status: 429 as const }
       : anthropic.answer(sent)
     if (reply.kind === 'after') {
-      await reply.until()
+      // A test's own failure inside `until` must fail the test, not look like the provider's.
+      try {
+        await reply.until()
+      } catch (error) {
+        held.push(error)
+      }
       return replied(sent, reply.reply, init?.signal)
     }
     return replied(sent, reply, init?.signal)
   }
   t.after(() => {
     globalThis.fetch = real
+    if (held.length > 0) throw new AggregateError(held, 'An `after` reply failed in its `until`')
   })
   return anthropic
 }

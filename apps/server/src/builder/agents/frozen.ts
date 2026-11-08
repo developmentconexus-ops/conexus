@@ -16,6 +16,7 @@ import {
   CompanyId as CompanyIdSchema,
   ConnectionId,
   OperationId,
+  PersonId,
   ProjectId,
   ToolKind,
   ToolSlug as ToolSlugSchema,
@@ -53,7 +54,7 @@ export type FrozenTool = PresetFrozenTool | CodeFrozenTool
 export type FrozenVersion = AgentConfig & {
   tools: readonly FrozenTool[]
   source:
-    | { kind: 'VERSION'; number: number; answeredBy: string | null }
+    | { kind: 'VERSION'; number: number; answeredBy: PersonId | null }
     | { kind: 'DRAFT'; revision: number }
 }
 
@@ -139,7 +140,11 @@ export function activeOf(database: Database, ids: OfProject, agentId: AgentId) {
       .where(ofProject(ids, agentId))
     if (row === undefined) return null
     const tools = await toolsOf(tx, await pinnedOf(tx, agentId, row.number))
-    const source = { kind: 'VERSION', number: row.number, answeredBy: row.answeredBy } as const
+    const source = {
+      kind: 'VERSION',
+      number: row.number,
+      answeredBy: PersonId.nullable().parse(row.answeredBy),
+    } as const
     return { ...AgentConfigSchema.parse(row.config), tools, source }
   })
 }
@@ -204,7 +209,11 @@ async function publishedOf(tx: ReadTx, companyId: CompanyId) {
     return {
       ...AgentConfigSchema.parse(row.config),
       tools: sorted(own),
-      source: { kind: 'VERSION', number: row.number, answeredBy: row.answeredBy } as const,
+      source: {
+        kind: 'VERSION',
+        number: row.number,
+        answeredBy: PersonId.nullable().parse(row.answeredBy),
+      } as const,
       ...ids,
       agentId: AgentId.parse(row.id),
     }

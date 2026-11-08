@@ -1,4 +1,4 @@
-import type { AgentId, ConnectionId } from '@conexus/hub-api'
+import type { AgentId, ConnectionId, PersonId } from '@conexus/hub-api'
 import { ConversationId, ToolCallId } from '@conexus/hub-api'
 import type { ToolsInput } from '@mastra/core/agent'
 import type { RequestContext } from '@mastra/core/request-context'
@@ -27,7 +27,7 @@ export function NEVER_ASKS() {
 
 /** Who an agent's write speaks as: a published version by its agent and number (it has no id of its own), or the person talking to the draft. */
 export type WriteAuthor =
-  | Readonly<{ kind: 'VERSION'; agentId: AgentId; number: number; answeredBy: string | null }>
+  | Readonly<{ kind: 'VERSION'; agentId: AgentId; number: number; answeredBy: PersonId | null }>
   | Readonly<{ kind: 'DRAFT' }>
 
 type Deps = {

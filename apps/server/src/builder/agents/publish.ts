@@ -1,4 +1,11 @@
-import type { AgentId, CompanyId, ConnectionId, OperationId, Publish } from '@conexus/hub-api'
+import type {
+  AgentId,
+  CompanyId,
+  ConnectionId,
+  OperationId,
+  PersonId,
+  Publish,
+} from '@conexus/hub-api'
 import {
   AgentConfig,
   AgentId as AgentIdSchema,
@@ -6,7 +13,6 @@ import {
   ConnectionId as ConnectionIdSchema,
   ConnectorId as ConnectorIdSchema,
   OperationId as OperationIdSchema,
-  PersonId,
   ToolKind,
 } from '@conexus/hub-api'
 import { and, eq, max, sql } from 'drizzle-orm'
@@ -234,17 +240,16 @@ export async function holdsWrite(
 export async function answererLeavesAlone(
   deps: Holding,
   companyId: CompanyId,
-  answeredBy: string | null,
+  answeredBy: PersonId | null,
   target: Target,
 ): Promise<boolean> {
   // A person who left takes their authorship with them (`release.ts`), so no one leaves it alone.
-  if (answeredBy == null) return false
-  const personId = PersonId.parse(answeredBy)
-  const role = await roleNow(deps, companyId, personId)
+  if (answeredBy === null) return false
+  const role = await roleNow(deps, companyId, answeredBy)
   if (role === undefined || !(await deps.identity.mayPublishUnattended(companyId, role))) {
     return false
   }
-  return holdsWrite(deps, companyId, personId, target)
+  return holdsWrite(deps, companyId, answeredBy, target)
 }
 
 /** Makes the version the agent's active one, answered for by `by`; the draft does not change. */
