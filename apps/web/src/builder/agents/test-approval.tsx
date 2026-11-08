@@ -67,12 +67,18 @@ export function rowOf(scenario: string, fields: Partial<WrittenRow> = {}): Writt
   }
 }
 
+/** The stored rows with every value `change` names replaced: a test overlays what it is about and keeps the rest as Mastra stored it. */
+export function reshaped(
+  rows: readonly Stored[],
+  change: (key: string, value: unknown) => unknown,
+): Stored[] {
+  const swapped: unknown = JSON.parse(JSON.stringify(rows), change)
+  return z.array(IsStored).parse(swapped)
+}
+
 /** The stored rows with the arguments of every call replaced by `args`: what the model filled, for a card read after a reload. */
 export function withArgs(rows: readonly Stored[], args: object): Stored[] {
-  const swapped: unknown = JSON.parse(JSON.stringify(rows), (key, value) =>
-    key === 'args' ? args : value,
-  )
-  return z.array(IsStored).parse(swapped)
+  return reshaped(rows, (key, value) => (key === 'args' ? args : value))
 }
 
 /** The line of the open stream, once the screen opened it. */

@@ -7,6 +7,7 @@ import { Alert } from '../../ui/alert.tsx'
 import { Empty, NotFound } from '../../ui/states.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
 import { accountsQuery } from '../model-accounts/public.ts'
+import { approvedCalls } from './approval-item.ts'
 import type { Outgoing } from './attachments.ts'
 import type { ComposerTools } from './composer.tsx'
 import { Composer } from './composer.tsx'
@@ -16,7 +17,7 @@ import { MemoryStatus } from './memory-status.tsx'
 import { NoAccount } from './model-choice.tsx'
 import type { SessionRead } from './queries.ts'
 import { sessionReadQuery } from './queries.ts'
-import { AnswerProvider, ApproveProvider, SayProvider } from './room.ts'
+import { AnswerProvider, ApproveProvider, SayProvider, useRoom } from './room.ts'
 import type { BuilderSession, Place } from './session.ts'
 import type { Action, SessionState } from './session-state.ts'
 import { TaskPanel } from './task-panel.tsx'
@@ -239,7 +240,8 @@ export function Chat(props: ChatProps) {
   useEffect(() => field.current?.focus(), [])
   useHandedOver({ conversationId, draft, send, setError, following })
 
-  const turns = useMemo(() => shownOf(state), [state])
+  const { writes } = useRoom()
+  const turns = useMemo(() => shownOf(state, approvedCalls(writes)), [state, writes])
   const waiting = Object.keys(state.suspended).length > 0
   if (gone) return <NotFound />
   const empty = state.messages.length === 0 && !state.running

@@ -78,16 +78,33 @@ test('depois de recarregar, a escrita sem linha no registro mostra o que o Mastr
   await waitFor(() => expect(screen.queryByText('Aprovado por você')).toBeNull())
 })
 
-test('a recusa ao vivo: o cartão lê a linha do registro quando a chamada termina, não o errorText do modelo', async () => {
-  await approvedLive(
-    [rowOf('approval', { state: 'REFUSED', message: REFUSAL })],
-    JSON.stringify({ kind: 'REFUSED', message: 'uma frase que o modelo inventou' }),
-  )
+test('a recusa ao vivo: o cartão lê a linha do registro quando a chamada termina, não o errorText que o Mastra deu ao modelo', async () => {
+  const recorded = [rowOf('approval-refused', { state: 'REFUSED', message: REFUSAL })]
+  const opened = conversation(server, {
+    writesAnswer: () => HttpResponse.json({ writes: recorded }),
+  })
+  const line = await lineOf(opened)
+  const events = recordedRun('approval-refused').events
+  const rest = tell(line, events, holdsApproval)
+  const card = await screen.findByRole('region', { name: TITLE })
+  fireEvent.click(within(card).getByRole('button', { name: 'Aprovar' }))
+  for (const event of rest) line.emit(event)
   expect(await screen.findByText('O Sankhya não aceitou. Nada foi lançado.')).toBeTruthy()
   expect(screen.getByText(REFUSAL)).toBeTruthy()
   expect(screen.getByText('Aprovado por você')).toBeTruthy()
-  expect(screen.queryByText(/inventou/)).toBeNull()
+  expect(screen.queryByText(/"kind"/)).toBeNull()
   expect(screen.queryByRole('button', { name: 'Aprovar' })).toBeNull()
+})
+
+test('depois de recarregar, a recusa gravada vem do registro, com o texto que o Mastra guardou ao lado', async () => {
+  conversation(server, {
+    rows: recordedRun('approval-refused').read,
+    writes: [rowOf('approval-refused', { state: 'REFUSED', message: REFUSAL })],
+  })
+  expect(await screen.findByText('O Sankhya não aceitou. Nada foi lançado.')).toBeTruthy()
+  expect(screen.getByText('Aprovado por você')).toBeTruthy()
+  expect(screen.getByText(REFUSAL)).toBeTruthy()
+  expect(screen.queryByText(/"kind"/)).toBeNull()
 })
 
 test('o pedido com a nota modelo e os locais: a nota vem dos valores fixos da versão, e cada item traz local e lote', async () => {

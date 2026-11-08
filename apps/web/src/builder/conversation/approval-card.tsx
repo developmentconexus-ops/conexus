@@ -1,4 +1,3 @@
-import type { WrittenRow } from '@conexus/hub-api'
 import { phraseOf, ToolCallId } from '@conexus/hub-api'
 import { useEffect, useRef, useState } from 'react'
 import { ConnectorLogo } from '../../hub/connectors/public.ts'
@@ -10,7 +9,7 @@ import { Notice } from '../../ui/notice.tsx'
 import { ReadFailure } from '../../ui/states.tsx'
 import { fieldsOf } from './approval-fields.ts'
 import type { ApprovalCardItem, Decision, Outcome } from './approval-item.ts'
-import { decided } from './approval-item.ts'
+import { decided, writtenBy } from './approval-item.ts'
 import {
   APPROVAL_TEXT,
   launchedText,
@@ -20,7 +19,6 @@ import {
 } from './approval-text.ts'
 import { DEADLINE_TEXT, LOCAL_REFUSALS } from './connector-specs.ts'
 import { WaitingCaption } from './question-card.tsx'
-import type { WritesRead } from './room.ts'
 import { useApprove, useRoom } from './room.ts'
 import { refusedLabelText } from './text.ts'
 import type { ConnectorWords } from './tool-spec.ts'
@@ -182,11 +180,6 @@ function Answer(props: { lit: boolean } & Pick<Replying, 'sending' | 'error' | '
   )
 }
 
-/** The writes a read holds: what it read, or what it read before and is reading again. */
-function writesOf(read: Exclude<WritesRead, { kind: 'FAILED' }>): readonly WrittenRow[] {
-  return read.kind === 'READ' ? read.writes : read.kept
-}
-
 /**
  * The card of a write that asks the person (step 24.5, reference table row "O cartão"), drawn on
  * the plan's: who wants to write what, where, the fields, and **Aprovar** or **Recusar**. The buttons
@@ -209,9 +202,7 @@ export function ApprovalCard({ part }: { part: ApprovalCardItem }) {
   const action = write?.label ?? part.toolName
   const title = wantsText(room.agent, action, system)
   const read = room.writes
-  const kept = read === undefined || read.kind === 'FAILED' ? [] : writesOf(read)
-  const row = kept.find((one) => one.toolCallId === part.toolCallId)
-  const decision = decided(part, row, read?.kind === 'READING')
+  const decision = decided(part, writtenBy(read, part.toolCallId), read?.kind === 'READING')
   const same =
     read?.kind === 'READ'
       ? read.writes.find(

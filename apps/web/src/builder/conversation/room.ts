@@ -4,10 +4,10 @@ import type {
   ProposedApp,
   ProposedAutomation,
   ShownFile,
-  WrittenRow,
 } from '@conexus/hub-api'
 import type { ReactNode } from 'react'
 import { createContext, useContext } from 'react'
+import type { WritesRead } from './approval-item.ts'
 import { ASSISTANT_OVERRIDES } from './assistant-specs.ts'
 import { PLAIN_WORDS } from './connector-specs.ts'
 import type { BuilderSession } from './session.ts'
@@ -16,13 +16,6 @@ import type { ConnectorWords, RowTool, ToolSpec } from './tool-spec.ts'
 
 /** A file the Assistant shows beside the chat: the text to read, or the file to download. */
 export type OpenedFile = Extract<ShownFile, { kind: 'TEXT' | 'FILE' }>
-
-/** The read of the conversation's writes as the record keeps them: until it answers, or fails, a card does not let the person approve. */
-export type WritesRead =
-  /** `kept` is the last answer, which a card may still read the end of a call from; it does not let anyone approve. */
-  | { kind: 'READING'; kept: readonly WrittenRow[] }
-  | { kind: 'READ'; writes: readonly WrittenRow[] }
-  | { kind: 'FAILED'; text: string }
 
 /** A write of an agent's tool, as the card that asks about it names it: its connection and its operation. */
 export type WriteTool = {

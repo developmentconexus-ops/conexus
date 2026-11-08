@@ -135,3 +135,6 @@ export const FROM_ASSISTANT_LABEL = 'Enviado pelo Assistente'
 export function refusedLabelText(system: string): string {
   return `O ${system} não aceitou. Nada foi lançado.`
 }
+
+/** What a read's row says when the system answered and did not give what was asked; its message follows as it came. */
+export const SYSTEM_REFUSED = 'O sistema recusou.'
