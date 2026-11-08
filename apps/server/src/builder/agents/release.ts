@@ -25,19 +25,31 @@ export async function releaseAgents(deps: ReleaseDeps, scope: ReleaseScope): Pro
   const { companyId, projectId, personId } = scope
   const hub = { kind: 'COMPANY', companyId, personId: null } as const
   if (personId !== undefined) {
-    await deps.database.command(hub, async (tx) => {
+    const answering = await deps.database.command(hub, async (tx) => {
       const own = and(eq(agent.companyId, companyId), eq(agent.createdBy, personId))
       await tx.update(agent).set({ createdBy: null }).where(own)
-      await tx
+      const answered = await tx
         .update(agent)
         .set({ activeBy: null })
         .where(and(eq(agent.companyId, companyId), eq(agent.activeBy, personId)))
+        .returning({ id: agent.id, version: agent.activeVersion })
       await tx
         .update(agentVersion)
         .set({ publishedBy: null })
         .where(and(eq(agentVersion.companyId, companyId), eq(agentVersion.publishedBy, personId)))
       await deps.tools.releasePerson(tx, companyId, personId)
+      return answered
     })
+    // The registered agent carries who answers for it (step 24.5), so it is made again from the row.
+    for (const row of answering) {
+      if (row.version === null) continue
+      await deps.emit({
+        kind: 'ACTIVATED',
+        companyId,
+        agentId: AgentId.parse(row.id),
+        version: row.version,
+      })
+    }
     return 0
   }
   // The company's tool Workers leave before its library does (step 24.4); a Projeto's tools stay.

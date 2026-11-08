@@ -42,7 +42,7 @@ import type { CodeToolsDeps } from './code-tools.ts'
 import { codeTools } from './code-tools.ts'
 import type { FrozenTool, FrozenVersion } from './frozen.ts'
 import { legacyTools } from './legacy.ts'
-import { publisherLeavesAlone } from './publish.ts'
+import { answererLeavesAlone } from './publish.ts'
 import type { WriteAuthor } from './tools.ts'
 import { NEVER_ASKS, presetTools } from './tools.ts'
 
@@ -229,10 +229,18 @@ function neverAsking(tools: ToolsInput): ToolsInput {
   )
 }
 
-/** Who the version's writes speak as: the published version, or the person on its draft. */
+/**
+ * Who the version's writes speak as: the published version, answered for by who made it active
+ * when the run began, or the person on its draft.
+ */
 function authorOf(frozen: FrozenVersion & { agentId: AgentIdType }): WriteAuthor {
   return frozen.source.kind === 'VERSION'
-    ? { kind: 'VERSION', agentId: frozen.agentId, number: frozen.source.number }
+    ? {
+        kind: 'VERSION',
+        agentId: frozen.agentId,
+        number: frozen.source.number,
+        answeredBy: frozen.source.answeredBy,
+      }
     : { kind: 'DRAFT' }
 }
 
@@ -265,7 +273,7 @@ function runToolsOf(
       ...{ ...deps, scope, tools, turnOf: turnKey.of },
       ...{ author: authorOf(frozen), offered },
       leavesAlone: (version, target) =>
-        publisherLeavesAlone(deps, frozen.companyId, version, target),
+        answererLeavesAlone(deps, frozen.companyId, version.answeredBy, target),
     })
     const ofTheAgent: ToolsInput = {
       ...neverAsking({

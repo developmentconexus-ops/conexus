@@ -3,7 +3,7 @@ import type { TestContext } from 'node:test'
 import { setTimeout as sleep } from 'node:timers/promises'
 import { salesSankhya } from '../../hub/connectors/test-sales.ts'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
-import { post } from '../../hub/identity/test-hub.ts'
+import { call, post } from '../../hub/identity/test-hub.ts'
 import { assisting } from '../assistant/test-assistant.ts'
 import type { StreamEvent } from '../conversation/test-conversation.ts'
 import { sessionUrl, streamOf } from '../conversation/test-conversation.ts'
@@ -119,4 +119,17 @@ export function pendingOf(stream: Stream): Record<string, { toolName: string }> 
   const display = stream.seen.displays.at(-1)
   assert.ok(display?.type === 'display_state_changed')
   return Object(Reflect.get(display.displayState, 'pendingApprovals'))
+}
+
+/** The developer role's connector operations, and whether it publishes a write that runs alone, set by Ana. */
+export async function developerHolds(
+  on: Awaited<ReturnType<typeof approving>>,
+  operations: readonly string[],
+  unattended?: boolean,
+) {
+  const role = await call(on.hub, on.ana, 'PUT', `${on.company}/roles/developer`, {
+    connectors: { sankhya: operations },
+    ...(unattended === undefined ? {} : { unattended }),
+  })
+  assert.equal(role.statusCode, 200, role.body)
 }
