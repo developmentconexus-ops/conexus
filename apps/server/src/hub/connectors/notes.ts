@@ -1,4 +1,3 @@
-import type { ConnectorAnswer } from '@conexus/app-contract'
 import type { ConnectionNote } from '@conexus/hub-api'
 import { sql } from 'drizzle-orm'
 import { z } from 'zod'
@@ -8,7 +7,7 @@ import { Failure } from '../../platform/failure.ts'
 import { personNameColumn } from '../identity/public.ts'
 import { Listed } from './cut.ts'
 import { readOf } from './grants.ts'
-import type { NotInRole, ReadRequest } from './read.ts'
+import type { NotInRole, ReadAnswer, ReadRequest } from './read.ts'
 import { readThrough } from './read.ts'
 import type { Deps, OfConnection, Viewer } from './rows.ts'
 import { admitted, ofCompany, scopeOf } from './rows.ts'
@@ -27,7 +26,8 @@ type Note = z.infer<typeof Note>
 /** What a save answers: the rows the proving query returned, or why nothing was written. */
 export type NoteSaved =
   | Readonly<{ kind: 'SAVED'; provedRows: number }>
-  | Exclude<ConnectorAnswer, { kind: 'OK' }>
+  | Exclude<ReadAnswer, { kind: 'OK' }>
+  | Readonly<{ kind: 'NOT_GRANTED' }>
   | NotInRole
   | Readonly<{ kind: 'NOTE_INVALID' }>
 
