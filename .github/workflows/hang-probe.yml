@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        lane: [head-1, head-2, head-3]
+        lane: [head-1, head-2, head-3, head-4]
     services:
       postgres:
         image: postgres:18@sha256:74935e72241653ca55e0414067e6d8763aceb8a810eb51b452253ec3dcfc4336
@@ -69,7 +69,7 @@ jobs:
             if [ "${LANE#full}" != "$LANE" ]; then
               npm test -w @conexus/server > /tmp/run.log 2>&1 &
             else
-              (cd apps/server && npm run build >/dev/null 2>&1 && MASTRA_AGENT_THREAD_LEASE_TTL_MS=3000 node --test --test-concurrency=1 --test-force-exit --test-timeout=120000 --test-reporter=../../scripts/test-reporter.ts $(node ../../scripts/server-shards.ts 3/6 | head -4)) > /tmp/run.log 2>&1 &
+              (cd apps/server && npm run build >/dev/null 2>&1 && MASTRA_AGENT_THREAD_LEASE_TTL_MS=3000 node --no-concurrent-sparkplug --test --test-concurrency=1 --test-force-exit --test-timeout=120000 --test-reporter=../../scripts/test-reporter.ts $(node ../../scripts/server-shards.ts 3/6 | head -4)) > /tmp/run.log 2>&1 &
             fi
             pid=$!
             while kill -0 $pid 2>/dev/null; do
