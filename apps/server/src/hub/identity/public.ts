@@ -36,23 +36,17 @@ export type { ProjectApps } from './app-invitations.ts'
 // The library's own configuration, for its tests: nothing routes to its sign-up, so only a direct
 // call can prove the sign-up stays closed (criterion 18).
 export { createAuth } from './auth.ts'
+// The page every Conexus e-mail sits in, for the templates that other subjects bundle (code C4).
+export { COLORS, MailAction, MailCard, MailFallbackLink, MailFrame } from './mail-frame.tsx'
 export type { Speaker } from './may-use.ts'
 export { roleOfSpeaker } from './may-use.ts'
 export type { PersonConversationRelease } from './memberships.ts'
 export { passwordLinkText } from './messages.ts'
 export type { RoleKit } from './roles.ts'
-// The row policies' pieces, for the Central's own table, the Hub session's table, for the apps'
-// and the model accounts' foreign keys (code C8), and a person's name, for the version that
-// person sent, or a member's, for the request they decided.
-export {
-  ADMINISTRATOR,
-  company,
-  member,
-  memberNameColumn,
-  personNameColumn,
-  policy,
-  session,
-} from './tables.ts'
+// The row policies' pieces, for the Central's own table and the Hub session's table, and a
+// person's name, for the version that person sent, or a member's, for the request they decided.
+// The tables themselves leave by `public-tables.ts`, for the foreign keys (code C8).
+export { ADMINISTRATOR, memberNameColumn, personNameColumn, policy } from './tables.ts'
 export type { OperatorProof }
 export type Identity = ReturnType<typeof createIdentity>
 export type IdentityPorts = Identity['ports']
