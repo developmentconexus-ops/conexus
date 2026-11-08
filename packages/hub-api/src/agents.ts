@@ -248,6 +248,9 @@ export const saveAgentDraft = defineOperation({
   ],
 })
 
+/** What refuses a configuration that is about to become the active version: the role does not hold a tool, or a tool does not fit. */
+const NOT_HELD = ['NOT_IN_ROLE', 'AGENT_TOOL_REFUSED'] as const
+
 export const publishAgent = defineOperation({
   id: 'publishAgent',
   summary:
@@ -261,7 +264,7 @@ export const publishAgent = defineOperation({
     status: 200,
     body: z.object({ agent: AgentDetail, version: AgentVersionSummary }),
   },
-  failures: [...ONE_FAILURES, 'AGENT_DRAFT_INVALID', 'AGENT_DRAFT_STALE', 'NOT_IN_ROLE'],
+  failures: [...ONE_FAILURES, 'AGENT_DRAFT_INVALID', 'AGENT_DRAFT_STALE', ...NOT_HELD],
 })
 
 export const listAgentVersions = defineOperation({
@@ -285,7 +288,7 @@ export const activateAgentVersion = defineOperation({
   bodyLimit: 1024,
   input: { params: OfAgent.extend({ number: PathNumber }) },
   success: { status: 200, body: OneAgent },
-  failures: [...ONE_FAILURES, 'AGENT_VERSION_NOT_FOUND', 'NOT_IN_ROLE'],
+  failures: [...ONE_FAILURES, 'AGENT_VERSION_NOT_FOUND', ...NOT_HELD],
 })
 
 export const deleteAgent = defineOperation({
