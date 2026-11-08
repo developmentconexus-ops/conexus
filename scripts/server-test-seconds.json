@@ -46,7 +46,7 @@
   "src/builder/construtor/construtor-question.test.ts": 1.6,
   "src/builder/construtor/construtor.test.ts": 11.5,
   "src/builder/construtor/routes.test.ts": 7,
-  "src/builder/construtor/test-draft.test.ts": 0.1,
+  "src/builder/construtor/draft-trial.test.ts": 0.1,
   "src/builder/controller-kit/open.test.ts": 1.4,
   "src/builder/conversation/builder.eval.test.ts": 2.9,
   "src/builder/conversation/conversation-check.test.ts": 9.3,

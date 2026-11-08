@@ -25,8 +25,9 @@ export const noticeRequests: NoticeRequests = async (tx, notices) => {
 }
 
 /**
- * The bell's columns of a page of a person's request notices, each with what its request says now;
- * a notice whose request the reader may not see is left out.
+ * The bell's columns of a page of a person's request notices, each with what its request says now.
+ * The foreign key cascades and the request's row policy is the company's, so every notice has its
+ * request; one that has none is a broken invariant, not a row to leave out.
  */
 export async function requestNoticeRows(tx: ReadTx, where: SQL | undefined, limit: number) {
   const notices = await tx
@@ -46,9 +47,10 @@ export async function requestNoticeRows(tx: ReadTx, where: SQL | undefined, limi
     tx,
     notices.map((notice) => notice.requestId),
   )
-  return notices.flatMap((notice) => {
+  return notices.map((notice) => {
     const view = views.get(notice.requestId)
-    return view === undefined ? [] : [{ ...view, ...notice }]
+    if (view === undefined) throw new Error(`The request ${notice.requestId} of a notice is gone`)
+    return { ...view, ...notice }
   })
 }
 

@@ -15,13 +15,8 @@ Owners next door: [architecture](../architecture.md) for concepts and compositio
 ## 1. Modules and owners
 
 - **C3.** Inside a subject, imports **must** be relative and end in `.ts`. [dependency-cruiser]
-- **C4.** Another subject or module **must** be reached only through its `public.ts`, the one at
-  the root of the subject (a folder inside a subject has no door of its own; a
-  `public-<name>.tsx` at the root is a door too, for what Node cannot re-export from `public.ts`), and the Hub **must
-  not** import the Builder. The rule holds for the files at the root of the server too. The
-  contract (`@conexus/hub-api`) is the common vocabulary of the programs and the subjects: the Hub
-  may use its types, the Builder's included, without that counting as importing the Builder.
-  [dependency-cruiser]
+- **C4.** Another subject or module **must** be reached only through its `public.ts`, and the Hub
+  **must not** import the Builder. [dependency-cruiser]
 - **C5.** Between programs, code **must** import by package name, such as `@conexus/hub-api`, never
   by path. [dependency-cruiser]
 - **C6.** There **must not** be an import cycle, or a file loose in `hub/` or `builder/` outside a
@@ -29,8 +24,7 @@ Owners next door: [architecture](../architecture.md) for concepts and compositio
 - **C7.** `platform/` **must not** import a subject or hold a subject file. [dependency-cruiser]
 - **C8.** A module **must not** import another owner's table object; it calls the owner's
   operation, in the same transaction when needed. The exceptions are a foreign key and the file that
-  gathers the schema for migrations. The tables of an owner leave by its `public-tables.ts`, which
-  only a `tables.ts` (the foreign key) and `drizzle.config.ts` (the schema) import. Hand-written SQL that reads another owner's table is for the
+  gathers the schema for migrations. Hand-written SQL that reads another owner's table is for the
   reader. [dependency-cruiser, review]
 - **C11.** Code **must** use named exports, and **must not** use a default export except where a
   tool requires one. [Biome noDefaultExport]

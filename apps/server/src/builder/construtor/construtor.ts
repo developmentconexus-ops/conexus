@@ -51,9 +51,9 @@ import { ALLOWED_HOSTS, createConversationMachines, MARK } from '../machine/publ
 import type { QueueDeps } from '../model-accounts/public.ts'
 import type { InProject } from '../tools/public.ts'
 import { databaseScopeOf, sessionScopeOf } from '../tools/public.ts'
+import { testDraft } from './draft-trial.ts'
 import { CONSTRUTOR_MARK } from './open.ts'
 import { registerConstrutorRoutes } from './routes.ts'
-import { testDraft } from './test-draft.ts'
 import { construtorTools } from './tools.ts'
 
 const MODE = 'conversa'

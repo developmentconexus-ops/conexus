@@ -27,7 +27,6 @@ const GOOD: Record<string, string> = {
   [`${SRC}/main.ts`]: './hub/b/public.ts',
   [`${SRC}/hub/a/mail.tsx`]: '../b/public-mail.tsx',
   [`${SRC}/hub/a/tables.ts`]: '../b/public-tables.ts',
-  'apps/server/drizzle.config.ts': './src/hub/b/public-tables.ts',
   [`${SRC}/hub/a/ok.test.ts`]: '../b/test-thing.ts',
 }
 
@@ -63,7 +62,7 @@ for (const [rule, [file]] of Object.entries(BAD)) {
   })
 }
 
-test('dependency-cruiser aceita a raiz, o tables.ts, o esquema e o ajudante test-*.ts', () => {
+test('dependency-cruiser aceita a raiz, o tables.ts, a porta .tsx e o ajudante test-*.ts', () => {
   assert.deepEqual(
     violations.filter((violation) => Object.hasOwn(GOOD, violation.from)),
     [],
